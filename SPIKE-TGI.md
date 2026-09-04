@@ -32,12 +32,12 @@ A record opens with three CLUT ids, and the same three palettes appear again as 
 
 Models 7, 8, 9 and 10 are single quads onto textures 0 to 3, which are the four the world changes and the lattice's plain block styles draw. Model 11 is the shared panel at texture 8.
 
-**A cell carrying a record is not a differently skinned block.** 92 cells in the game carry more than one entity, and a block has only one skin, so a record's entities are things standing on the block rather than the block itself. Every lattice cell therefore draws one of the five styles, which is what the map does, and `tools/kula_tex.py` now derives the five from models 7 to 11 rather than being told them.
+**The record table is not a skin table.** A cell holds either a style or a record index, never both, so a block carrying a record has no style of its own. What settles which way that cuts is the record every level ends with: it carries the start cell, a look-at, two angles and the level's time, and on 70 of the 230 levels a lattice cell names it like any other. A table that has to describe a block's skin and the level's start at once is neither. Every lattice cell therefore draws one of the five styles, which is what the map does, and `tools/kula_tex.py` derives the five from models 7 to 11 rather than being told them.
 
 The loop at `0x000259b8` indexes section 5 with a stride of 4 bytes from a model id, so an object's model is a section-5 entry too. Which entry an entity picks is not settled, and neither `kind` nor `type` survives inspection: `kind` takes only ten values and would give 4477 of the game's entities the same single quad, while `type` runs up to 56 across a stretch of the table where models 24 to 33 are all the same placeholder. The likelier reading is that the objects are not in this table at all. Section 5 and 6 are quads, and a key or a piece of fruit is a solid; section 9 is 225 KB and unread, which is the space for real geometry.
 
 ## Not settled
 
-**Which texture goes on which block face.** That is the level records' problem, not the artwork's: a face's texture has to be named somewhere in the 32-byte entities, and nothing yet ties one of their fields to a texture index.
+**Which texture goes on which block face.** That is the level records' problem, not the artwork's, and nothing yet ties an entity field to a texture index. The unread ground is the 224 bytes after each record's entity: seven 32-byte groups whose second word carries a number out of a six-value vocabulary, 5,700 records deep.
 
 **Sections 0 to 5 and 7 to 9 are unread.** Section 9 is 225 KB and the largest after the artwork, and the four 2 KB sections at 1 to 4 are suspiciously uniform. The geometry lives somewhere in there.

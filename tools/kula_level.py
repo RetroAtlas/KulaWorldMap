@@ -6,17 +6,24 @@
     u16             record count
     u16             unknown, zero on all but 24 levels
     (padding to 256 bytes)
-    record[count]   256 bytes each: six 32-byte entities, only the first of
-                    which is used on all but a handful
+    record[count]   256 bytes each
     6 bytes         0xFF filler
 
 A lattice cell holds one of five plain block styles below 5, or 5 + i for a
 block carrying record i. The record repeats the cell's own coordinates, which
 is what pins the two representations together and is checked on every build.
 
-Entity fields are the game's own numbers. `kind` separates the classes the
-engine dispatches on; 666 marks the one record every level ends with, which
-carries the start, a look-at and the level's time.
+A record is eight 32-byte groups, and only the first holds an entity: a
+position, a kind the engine dispatches on, a type within that kind, and eleven
+more fields whose meaning follows from the kind. The other seven never hold a
+position, their first and third words taking no value but -1 and 0 anywhere in
+the game, and the one word of each that does carry a number is not decoded.
+`verify` asserts that, because a range test alone does not: the game leaves 51
+records zeroed past the entity, which puts a lattice-shaped (0, 0, 0) in every
+group of them.
+
+`kind` separates the classes the engine dispatches on; 666 marks the record
+every level ends with, which carries the start, a look-at and the level's time.
 """
 import struct
 
@@ -27,31 +34,21 @@ EMPTY = 0xFFFF
 STYLES = 5           # 0..4 are block styles the engine draws without a record
 FIRST_RECORD = 5     # from here up, a cell value names the record it carries
 RECORD = 256
-ENTITY = 32
-ENTITIES = 6
+GROUP = 32
+GROUPS = RECORD // GROUP
 START_KIND = 666
 
 
 class Entity:
-    __slots__ = ("x", "y", "z", "kind", "type", "f", "slot")
+    __slots__ = ("x", "y", "z", "kind", "type", "f")
 
-    def __init__(self, words, slot):
+    def __init__(self, words):
         self.x, self.y, self.z, self.kind, self.type = words[:5]
         self.f = list(words[5:])
-        self.slot = slot
-
-    @property
-    def placed(self):
-        """Unused entity slots are not blanked consistently, so what marks one
-        used is that its position is a cell the lattice actually has."""
-        return all(0 <= v < SIDE for v in (self.x, self.y, self.z))
 
     def as_dict(self):
-        d = {"x": self.x, "y": self.y, "z": self.z, "kind": self.kind, "type": self.type,
-             "f": self.f}
-        if self.slot:
-            d["slot"] = self.slot
-        return d
+        return {"x": self.x, "y": self.y, "z": self.z, "kind": self.kind, "type": self.type,
+                "f": self.f}
 
 
 class Level:
@@ -60,6 +57,7 @@ class Level:
             raise ValueError(f"{name}: {len(blob)} bytes is too short for a level")
         self.name = name
         self.theme = theme
+        self.blob = blob
         self.header = struct.unpack_from("<i", blob, GRID_BYTES)[0]
         self.count, self.flag = struct.unpack_from("<HH", blob, GRID_BYTES + 4)
         expect = GRID_BYTES + RECORD * (1 + self.count) + 6
@@ -72,31 +70,22 @@ class Level:
             if v != EMPTY:
                 self.cells.append((i // (SIDE * SIDE), (i // SIDE) % SIDE, i % SIDE, v))
 
-        self.records = []
-        for k in range(self.count):
-            base = GRID_BYTES + RECORD * (1 + k)
-            ents = []
-            for s in range(ENTITIES):
-                words = struct.unpack_from("<16h", blob, base + s * ENTITY)
-                e = Entity(words, s)
-                if e.placed:
-                    ents.append(e)
-            self.records.append(ents)
+        self.records = [Entity(struct.unpack_from("<16h", blob, self._at(k)))
+                        for k in range(self.count)]
+
+    def _at(self, k):
+        return GRID_BYTES + RECORD * (1 + k)
 
     @property
     def start(self):
         """The 666 record: every level ends with exactly one."""
-        for ents in reversed(self.records):
-            for e in ents:
-                if e.kind == START_KIND:
-                    return e
-        return None
+        return self.records[-1] if self.records and self.records[-1].kind == START_KIND else None
 
     def verify(self):
         """What has to hold if the lattice is being read the way the engine reads it.
 
-        The cross-check that matters is the last one: a cell that names a record
-        is named back by it. Nothing else pins the two representations together,
+        The cross-check that matters is the first: a cell that names a record is
+        named back by it. Nothing else pins the two representations together,
         and several size-based readings of this format fit a few levels and then
         come apart.
         """
@@ -108,12 +97,17 @@ class Level:
             if not 0 <= k < self.count:
                 bad.append(f"cell {x},{y},{z} names record {k} of {self.count}")
                 continue
-            e = self.records[k][0]
+            e = self.records[k]
             if (e.x, e.y, e.z) != (x, y, z):
                 bad.append(f"cell {x},{y},{z} names record {k}, which sits at {e.x},{e.y},{e.z}")
-        starts = sum(1 for ents in self.records for e in ents if e.kind == START_KIND)
-        if starts != 1:
-            bad.append(f"{starts} start records, expected 1")
+        for k in range(self.count):
+            for g in range(1, GROUPS):
+                a, _, c = struct.unpack_from("<3h", self.blob, self._at(k) + g * GROUP)
+                if a not in (-1, 0) or c not in (-1, 0):
+                    bad.append(f"record {k} group {g} reads as a position at {a},_,{c}")
+        starts = [k for k, e in enumerate(self.records) if e.kind == START_KIND]
+        if starts != [self.count - 1]:
+            bad.append(f"start records at {starts}, expected only {self.count - 1}")
         return bad
 
     def extent(self):

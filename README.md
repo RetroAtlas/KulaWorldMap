@@ -26,9 +26,9 @@ Every level is one zlib record inside its world's `.PAK`, and inflates to a fixe
 
 The five styles below 5 are the game's own numbers and carry no record: 4517 cells are style 0, then 1065, 527, 70 and 9 of styles 3, 2, 1 and 4. What tells them apart is not decoded, and the map draws them as shades of the world's tint.
 
-A record holds up to six 32-byte entities, though only the first is used except on a handful of levels: the five secondary slots hold exactly 51 entities each across the whole game. Unused slots are not blanked consistently, so what marks one used is that its position is a cell the lattice has.
+A record is eight 32-byte groups, and only the first holds an entity. The other seven never hold a position: across the game's 39,900 of them the first and third words take no value but `-1` and `0`, and the one word of each that does carry a number is not decoded. The build asserts that, because a range test alone would not catch it: 51 records are zeroed past the entity, which puts a lattice-shaped `(0, 0, 0)` in every group of them.
 
-An entity is a position, a `kind` the engine dispatches on, a `type` within that kind, and eleven more fields whose meaning follows from the kind. Kind and type are close to orthogonal: the game has only **33 distinct types**, and the same type appears under several kinds.
+An entity is a position, a `kind` the engine dispatches on, a `type` within that kind, and eleven more fields whose meaning follows from the kind. Kind and type are close to orthogonal: the game has ten kinds and **35 distinct types**, and the same type appears under several kinds, for 78 pairs in all.
 
 The field at the head of the trailer is signed, and negative on 16 levels. It matches the placed-cell count on 79 of the 230 and is unexplained on the rest, so the map counts the lattice itself and leaves that field unnamed.
 
@@ -38,7 +38,7 @@ Every level ends with exactly one record of kind **666**, carrying the start pos
 
 The map uses the three shipped brightnesses as the three faces of a cube, which is what they are for, so the lighting is the game's rather than invented. `tools/kula_tex.py` writes the atlas the viewer samples.
 
-A cell carrying a record is not a differently skinned block: 92 cells in the game carry more than one entity, and a block has one skin, so those records are things standing on the block. Every cell draws one of the five styles, and the map shows what is standing there as a marker above it. Drawing the objects themselves is a different job, and probably not one this table can do. [SPIKE-TGI.md](SPIKE-TGI.md) has the detail and the addresses it came from.
+A cell holds either a style or a record index, never both, so a block carrying a record has no style of its own and the record would have to supply one. That the record table is not a skin table is what the record every level ends with says: it carries the start cell, a look-at, two angles and the time, and on 70 of the 230 levels a lattice cell names it like any other. So the map draws every cell in one of the five styles and shows what is standing there as a marker above it. Which skin a record-carrying block really wears stays open, and drawing the objects themselves is a different job again, and probably not one the model table can do. [SPIKE-TGI.md](SPIKE-TGI.md) has the detail and the addresses it came from.
 
 **Object kinds ship as the game's own numbers.** The game names none of them, so [`public/annotations.json`](public/annotations.json) is where identified names go, per kind or per (kind, type) pair, and the viewer falls back to `kind 6 / type 1` for anything unnamed and says so in the detail panel. This mirrors OddworldMap, which curates its place names the same way.
 
@@ -46,7 +46,7 @@ A cell carrying a record is not a differently skinned block: 92 cells in the gam
 
 ## Two things the disc was hiding
 
-**`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: 45 objects on a flat floor covering **26 of the game's 33 types**, and the seven it misses are placed 85 times between them against the 26's four thousand. Walking it once in an emulator names most of the game's vocabulary. `tools/kula_objlevel.py` writes the floor plan and the sheet to fill in.
+**`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: 44 objects on a flat floor covering **28 of the game's 35 types**, and the seven it misses are placed 45 times between them against the 28's 5,425. Walking it once in an emulator names most of the game's vocabulary. `tools/kula_objlevel.py` writes the floor plan and the sheet to fill in.
 
 **`HIDDEN 10`**, the last hidden level of the last world, carries 178 blocks of which only 18 are the level. The other 160 lie flat on z=32, the ceiling of the lattice, 22 blocks above anything you can stand on, spelling **VERY WELL DONE** in block capitals six blocks tall.
 

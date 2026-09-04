@@ -28,7 +28,6 @@ export function showCell(c) {
     const note = kindNote(o.kind, o.type);
     if (note) html += `<p class="sub">${note}</p>`;
     html += "<table>";
-    if (o.slot) html += row("entity slot", o.slot);
     if (o.kind === state.data.startKind) {
       const st = l.start;
       html += row("looks at", st.look.join(", "));

@@ -38,19 +38,18 @@ def report(levels, only=None):
     for L in levels:
         cells = {(c[0], c[1], c[2]): c[3] for c in L.cells}
         here = Counter()
-        for ents in L.records:
-            for e in ents:
-                key = (e.kind, e.type)
-                here[key] += 1
-                s = seen[key]
-                s["total"] += 1
-                s["themes"][L.theme] += 1
-                for i, v in enumerate(e.f):
-                    if v != -1:
-                        s["fields"][f"f{i + 5}"][v] += 1
-                for dx, dy, dz in NEIGHBOURS:
-                    p = (e.x + dx, e.y + dy, e.z + dz)
-                    s["around"]["block" if p in cells else "air"] += 1
+        for e in L.records:
+            key = (e.kind, e.type)
+            here[key] += 1
+            s = seen[key]
+            s["total"] += 1
+            s["themes"][L.theme] += 1
+            for i, v in enumerate(e.f):
+                if v != -1:
+                    s["fields"][f"f{i + 5}"][v] += 1
+            for dx, dy, dz in NEIGHBOURS:
+                p = (e.x + dx, e.y + dy, e.z + dz)
+                s["around"]["block" if p in cells else "air"] += 1
         for key, n in here.items():
             seen[key]["levels"].append((L.name, n))
 

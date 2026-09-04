@@ -12,11 +12,15 @@ The field at the head of the trailer is **signed**, and negative on 16 levels, d
 
 ## Entities that are not there
 
-A record holds six 32-byte entity slots and the game does not blank the unused ones consistently: 56 of them across the game carry a readable-looking position of `(0, -1, -1)`. What marks a slot used is that its position is a cell the lattice actually has, which is what `Entity.placed` tests. The symmetry is the evidence: with that rule the five secondary slots hold exactly 51 entities each, and slot 2 stops being an outlier at 107.
+A record is 256 bytes and holds **one** entity, in the first 32. The seven 32-byte groups after it look like entities and are not: across all 39,900 of them in the game the first and third words take no value but `-1` and `0`, so no group is ever a position. Only the second word carries a number, out of a vocabulary of six values, and what it means is undecoded.
+
+Do not reach for a range test here. 51 records are zeroed from byte 32 on, which puts a perfectly lattice-shaped `(0, 0, 0)` in all seven of their groups: a rule that admits any position in `0..33` reads a phantom object out of every one of those groups, exactly 51 to a group, and that even spread reads as a symmetry confirming the rule rather than as the artefact it is. `Level.verify` asserts the `-1`/`0` invariant on every record so the reading cannot quietly come back.
 
 ## Blocks and the things on them
 
-A lattice cell below `firstRecord` is a block style, and the five styles are models 7 to 11 of the shared table in the artwork file, which is where `tools/kula_tex.py` gets them. A cell at or above it names a record, and that record is **not** a differently skinned block: 92 cells in the game carry more than one entity and a block has one skin, so the entities are things standing on it. Every cell draws a style; what is on it is a marker.
+A lattice cell below `firstRecord` is a block style, and the five styles are models 7 to 11 of the shared table in the artwork file, which is where `tools/kula_tex.py` gets them. A cell at or above it names a record instead, so a block carrying one has no style of its own and the record would have to supply it.
+
+The record table is not a skin table, and the record every level ends with is what says so: it carries the start cell, a look-at, two angles and the level's time, and on 70 of the 230 levels a lattice cell names it exactly like any other. One table cannot be both. So every cell draws a style and what stands on it is a marker, and which skin a record-carrying block really wears is open.
 
 ## Conventions
 

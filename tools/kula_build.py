@@ -24,11 +24,10 @@ def level_json(L, theme, pack, index):
     for x, y, z, v in L.cells:
         cells += [x, y, z, v]
     objects = []
-    for k, ents in enumerate(L.records):
-        for e in ents:
-            o = e.as_dict()
-            o["r"] = k
-            objects.append(o)
+    for k, e in enumerate(L.records):
+        o = e.as_dict()
+        o["r"] = k
+        objects.append(o)
     (x0, x1), (y0, y1), (z0, z1) = L.extent() or ((0, 0), (0, 0), (0, 0))
     start = L.start
     out = {
