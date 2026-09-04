@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kulaworld.retroatlas.org/sitemap.xml

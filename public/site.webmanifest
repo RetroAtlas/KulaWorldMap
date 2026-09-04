@@ -1,0 +1,14 @@
+{
+  "name": "Kula World Map",
+  "short_name": "Kula Map",
+  "description": "An interactive map of every level in Kula World (PlayStation), read straight off the disc.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111725",
+  "theme_color": "#111725",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/favicon-96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

@@ -5,9 +5,49 @@
   <title>Kula World Map</title>
   <meta
     name="description"
-    content="An interactive map of every level in Kula World (PlayStation), read straight off the disc."
+    content="An interactive map of every level in Kula World (PlayStation): the block lattice each level is built from, every object the game places on it, and the level's own name, time and start, read straight off the disc."
   />
-  <link rel="icon" href="favicon.svg" />
+  <meta name="theme-color" content="#111725" />
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="favicon-96.png" sizes="96x96" type="image/png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="canonical" href="https://kulaworld.retroatlas.org/" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://kulaworld.retroatlas.org/" />
+  <meta property="og:title" content="Kula World Map" />
+  <meta
+    property="og:description"
+    content="The block lattice each level is built from, every object the game places on it, and the level's own name, time and start. All 230 levels across ten worlds."
+  />
+  <meta property="og:site_name" content="Kula World Map" />
+  <meta property="og:image" content="https://kulaworld.retroatlas.org/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta
+    property="og:image:alt"
+    content="A Kula World level drawn as a lattice of textured blocks"
+  />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Kula World Map" />
+  <meta
+    name="twitter:description"
+    content="The block lattice each level is built from, every object the game places on it, and the level's own name, time and start. All 230 levels across ten worlds."
+  />
+  <meta name="twitter:image" content="https://kulaworld.retroatlas.org/og-image.png" />
+  <meta
+    name="twitter:image:alt"
+    content="A Kula World level drawn as a lattice of textured blocks"
+  />
+
+  <!-- the map is unusable until this lands, so start it during parse rather than
+       after the module graph; crossorigin matches fetch()'s cors mode so the
+       preload is consumed rather than fetched twice -->
+  <link rel="preload" href="map_data.json" as="fetch" crossorigin />
   <link rel="stylesheet" href="css/main.css" />
 
   <button

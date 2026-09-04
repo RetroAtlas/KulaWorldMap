@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Serve public/ with caching off, so a rebuild shows up on reload."""
+"""Serve public/ the way the host does: caching off so a rebuild shows up on
+reload, and 404.html for anything that is not there."""
 import http.server
 import os
 from pathlib import Path
@@ -18,6 +19,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def log_message(self, *a):
         pass
+
+    def send_error(self, code, message=None, explain=None):
+        page = ROOT / "404.html"
+        if code != 404 or not page.exists():
+            return super().send_error(code, message, explain)
+        body = page.read_bytes()
+        self.send_response(404)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
 
 
 if __name__ == "__main__":

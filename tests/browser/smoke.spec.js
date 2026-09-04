@@ -163,3 +163,30 @@ test("a panel is a dialog that a click inside does not dismiss", async ({ page }
   await page.locator("#help").click({ position: { x: 5, y: 5 } });
   await expect(help).toBeHidden();
 });
+
+test("the page a link lands on says what it is", async ({ page }) => {
+  await page.goto("/");
+  const head = await page.evaluate(() => ({
+    canonical: document.querySelector("link[rel=canonical]")?.href,
+    ogTitle: document.querySelector("meta[property='og:title']")?.content,
+    ogImage: document.querySelector("meta[property='og:image']")?.content,
+    twitter: document.querySelector("meta[name='twitter:card']")?.content,
+    manifest: document.querySelector("link[rel=manifest]")?.href,
+  }));
+  expect(head.canonical).toBe("https://kulaworld.retroatlas.org/");
+  expect(head.ogTitle).toBe("Kula World Map");
+  expect(head.ogImage).toMatch(/og-image\.png$/);
+  expect(head.twitter).toBe("summary_large_image");
+  for (const path of [
+    "og-image.png",
+    "favicon-96.png",
+    "apple-touch-icon.png",
+    "robots.txt",
+    "sitemap.xml",
+    "site.webmanifest",
+    "404.html",
+  ]) {
+    const res = await page.request.get(`/${path}`);
+    expect(res.status(), path).toBe(200);
+  }
+});
