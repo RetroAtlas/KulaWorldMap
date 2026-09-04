@@ -74,7 +74,7 @@ def main():
     if problems:
         for p in problems[:20]:
             print(f"  {p}", file=sys.stderr)
-        sys.exit(f"{len(problems)} levels do not read back consistently; refusing to write")
+        sys.exit(f"{len(problems)} readings do not check out; refusing to write")
 
     data = {
         "game": "Kula World",

@@ -69,7 +69,7 @@ python3 tools/serve.py
 
 ## What is in `tools/`
 
-Dependency-free Python 3, standard library only.
+Dependency-free Python 3, standard library only. `oxipng` is used to compress images where it is on PATH, and `ogcard.js` is the one Node tool.
 
 | | |
 | --- | --- |
@@ -82,8 +82,10 @@ Dependency-free Python 3, standard library only.
 | `kula_objlevel.py` | the floor plan and sheet for naming objects by walking OBJ LEVEL |
 | `kula_tgi.py` | a world's artwork: sections, VRAM page, textures |
 | `kula_tex.py` | the block atlas the viewer draws with |
+| `png.py` | write a PNG, and squeeze it with `oxipng` where that is installed |
 | `mips.py` | disassemble the executable, which is how the lattice was pinned down |
-| `serve.py` | local static server, caching off |
+| `ogcard.js` | render the social card from the map itself (Node, needs Playwright) |
+| `serve.py` | local static server, caching off, 404.html like the host |
 
 ## The viewer
 

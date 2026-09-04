@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Disassemble Metal Slug X's MIPS code: the executable, or a section overlay.
+"""Disassemble the game's MIPS code, which is how the lattice was pinned down.
 
-    python3 tools/mips.py --file SLUS_012.12 --at 0x800436e8 --count 40
-    python3 tools/mips.py --file X61_000.BIN --base 0x80130000 --at 0x80130000
+    python3 tools/mips.py --at 0x80033f6c --count 60
 
-The executable is a PS-EXE whose text sits at 0x80010000; an overlay carries no
-header, so its load address is recovered from where its own `jal`s point and
-passed with --base. --disc defaults to $METAL_SLUG_DISC_X.
+That is the level walk: three nested loops each bounded by `slti ..., 34`,
+stepping the inner pointer by 1, the middle by 34 and the outer by 1156, and
+reading `lh` against -1. Everything the map draws rests on it.
+
+The executable is a PS-EXE whose text sits at 0x80010000. A file that carries
+no such header is loaded wherever its own `jal`s point, which --base says.
+--disc defaults to $KULA_DISC.
 """
 import argparse
-import os
 import struct
 import sys
 from pathlib import Path
@@ -101,30 +103,23 @@ def listing(blob, base, start, count, mark=()):
     return "\n".join(out)
 
 
-EXE = "SLUS_012.12"
-EXE_BASE = 0x80010000 - 0x800   # the PS-EXE header occupies the first 0x800 bytes
-
-
 def main():
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from disc import Disc
+    from kula_disc import EXE, EXE_BASE, open_disc
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--disc", default=os.environ.get("METAL_SLUG_DISC_X"),
-                    help="raw PS1 disc image; defaults to $METAL_SLUG_DISC_X")
+    ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to $KULA_DISC")
     ap.add_argument("--file", default=EXE, help="file on the disc to disassemble")
     ap.add_argument("--base", type=lambda v: int(v, 0), default=None,
                     help="load address of the file (default: the executable's)")
     ap.add_argument("--at", type=lambda v: int(v, 0), required=True, help="address to start at")
     ap.add_argument("--count", type=int, default=32, help="instructions to print")
     args = ap.parse_args()
-    if not args.disc:
-        ap.error("no disc image: pass --disc or set $METAL_SLUG_DISC_X")
 
-    disc = Disc(args.disc)
+    disc = open_disc(args.disc)
     name = args.file.upper()
     blob = disc.read_file(name)
-    base = args.base if args.base is not None else (EXE_BASE if name == EXE else 0)
+    base = args.base if args.base is not None else (EXE_BASE if name == EXE.upper() else 0)
     print(listing(blob, base, args.at, args.count))
 
 
