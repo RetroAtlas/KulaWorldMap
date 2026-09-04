@@ -12,14 +12,32 @@
     "/HELL/HELL.PAK#18": {
       "note": "160 of its 178 blocks are not part of the level at all. They lie flat on z=32, the ceiling of the lattice and 22 blocks above the playable structure, spelling VERY WELL DONE in block letters six blocks tall."
     },
-    "/HILLS/HILLS.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
-    "/INCA/INCA.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
-    "/ARCTIC/ARCTIC.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
-    "/COWBOY/COWBOY.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
-    "/FIELD/FIELD.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
-    "/ATLANT/ATLANT.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
-    "/HAZE/HAZE.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
-    "/MARS/MARS.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
-    "/HELL/HELL.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds. One of nearly every object kind in the game, laid out in a row: walk it in an emulator and each one names itself." }
+    "/HILLS/HILLS.PAK#19": {
+      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan."
+    },
+    "/INCA/INCA.PAK#19": {
+      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan."
+    },
+    "/ARCTIC/ARCTIC.PAK#19": {
+      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan."
+    },
+    "/COWBOY/COWBOY.PAK#19": {
+      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan."
+    },
+    "/FIELD/FIELD.PAK#19": {
+      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan."
+    },
+    "/ATLANT/ATLANT.PAK#19": {
+      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan."
+    },
+    "/HAZE/HAZE.PAK#19": {
+      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan."
+    },
+    "/MARS/MARS.PAK#19": {
+      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan."
+    },
+    "/HELL/HELL.PAK#19": {
+      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan."
+    }
   }
 }
