@@ -1,16 +1,16 @@
 import { SIDE, cellKey } from "./state.js";
 
 export const WORLD_TINT = {
-  HIRO: "#7f8db0",
-  HILLS: "#6fae5a",
-  INCA: "#b99451",
-  ARCTIC: "#7fc6e0",
-  COWBOY: "#c98a4b",
-  FIELD: "#8ab84f",
-  ATLANT: "#4fb3a8",
-  HAZE: "#9a7fc0",
-  MARS: "#c4643f",
-  HELL: "#b04a4a",
+  HIRO: "#93a8d4",
+  HILLS: "#7fc96b",
+  INCA: "#d8ad62",
+  ARCTIC: "#96dcf2",
+  COWBOY: "#e59a5c",
+  FIELD: "#a8d963",
+  ATLANT: "#5ad2c3",
+  HAZE: "#b799e2",
+  MARS: "#e5744c",
+  HELL: "#d65a52",
 };
 
 let ann = { worlds: {}, kinds: {}, types: {}, levels: {} };

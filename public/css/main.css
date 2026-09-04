@@ -1,10 +1,10 @@
 :root {
-  --bg: #0d1017;
-  --panel: #151a24;
-  --panel-2: #1b2130;
-  --line: #27303f;
+  --bg: #111725;
+  --panel: #171d2b;
+  --panel-2: #202839;
+  --line: #303b4e;
   --ink: #dfe6f2;
-  --dim: #8b97ab;
+  --dim: #a3b1c6;
   --accent: #6fd3ff;
   --accent-dim: #2f8fc4;
   --warn: #ffcf6f;
@@ -380,7 +380,7 @@ body.sidebar-open .menu-btn {
   left: 12px;
   top: 12px;
   z-index: 10;
-  background: #151a24e6;
+  background: #171d2bf0;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 6px 10px;
@@ -407,8 +407,8 @@ body.sidebar-open .chip {
   bottom: 10px;
   z-index: 10;
   color: var(--dim);
-  font-size: 11.5px;
-  background: #0d1017cc;
+  font-size: 12px;
+  background: #111725e0;
   padding: 3px 7px;
   border-radius: 6px;
   pointer-events: none;
@@ -418,7 +418,7 @@ body.sidebar-open .chip {
   position: absolute;
   z-index: 20;
   pointer-events: none;
-  background: #0d1017f2;
+  background: #0c1119f7;
   border: 1px solid var(--line);
   border-radius: 7px;
   padding: 5px 8px;
@@ -434,7 +434,7 @@ body.sidebar-open .chip {
   width: 268px;
   max-height: calc(100% - 60px);
   overflow-y: auto;
-  background: #151a24f2;
+  background: #171d2bf7;
   border: 1px solid var(--line);
   border-radius: 9px;
   padding: 10px 12px;
