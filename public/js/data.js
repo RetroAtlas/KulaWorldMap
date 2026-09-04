@@ -43,7 +43,7 @@ export function kindName(kind, type) {
 export const kindNote = (kind, type) =>
   ann.types[`${kind}/${type}`]?.note || ann.kinds[String(kind)]?.note || "";
 
-export const levelLabel = (l) => l.name;
+export const levelNote = (l) => ann.levels[`${l.pack}#${l.index}`]?.note || "";
 
 /** A cell lookup plus the per-cell object list, built once per level. */
 export function index(l) {

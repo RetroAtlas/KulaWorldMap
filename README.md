@@ -34,6 +34,12 @@ Every level ends with exactly one record of kind **666**, carrying the start pos
 
 **Naming them is a job you can do by eye**, because a kind's meaning shows in where it sits. `python3 tools/kula_kinds.py` writes a contact sheet per kind: which levels place it, how many, and what sits around it.
 
+## Two things the disc was hiding
+
+**`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: one or a few of nearly every kind in the game, 33 distinct (kind, type) pairs, laid out in a row on a flat floor. It is the shortest route to naming the objects, because walking it in an emulator makes each one identify itself in a known order.
+
+**`HIDDEN 10`**, the last hidden level of the last world, carries 178 blocks of which only 18 are the level. The other 160 lie flat on z=32, the ceiling of the lattice, 22 blocks above anything you can stand on, spelling **VERY WELL DONE** in block capitals six blocks tall.
+
 ## Rebuilding from the disc
 
 The disc is never committed. Point `$KULA_DISC` at a raw 2352-byte-sector `.bin` image:

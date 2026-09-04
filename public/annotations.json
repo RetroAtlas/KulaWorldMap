@@ -1,5 +1,5 @@
 {
-  "_comment": "Hand-curated names for what the game leaves numbered. Never generated; see CLAUDE.md.",
+  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated; see CLAUDE.md.",
   "worlds": {},
   "kinds": {
     "666": {
@@ -8,5 +8,18 @@
     }
   },
   "types": {},
-  "levels": {}
+  "levels": {
+    "/HELL/HELL.PAK#18": {
+      "note": "160 of its 178 blocks are not part of the level at all. They lie flat on z=32, the ceiling of the lattice and 22 blocks above the playable structure, spelling VERY WELL DONE in block letters six blocks tall."
+    },
+    "/HILLS/HILLS.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
+    "/INCA/INCA.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
+    "/ARCTIC/ARCTIC.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
+    "/COWBOY/COWBOY.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
+    "/FIELD/FIELD.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
+    "/ATLANT/ATLANT.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
+    "/HAZE/HAZE.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
+    "/MARS/MARS.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds." },
+    "/HELL/HELL.PAK#17": { "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds. One of nearly every object kind in the game, laid out in a row: walk it in an emulator and each one names itself." }
+  }
 }

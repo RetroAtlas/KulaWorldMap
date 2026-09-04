@@ -1,6 +1,6 @@
 import { $, emit } from "./dom.js";
 import { state, SIDE, plane } from "./state.js";
-import { index, worldName } from "./data.js";
+import { index, worldName, levelNote } from "./data.js";
 import { draw, invalidatePick } from "./render.js";
 
 export function selectLevel(i, { keepView = false } = {}) {
@@ -67,6 +67,8 @@ export function chip() {
   if (l.objects.length) parts.push(`<span class="sep">·</span>${l.objects.length} objects`);
   if (t !== undefined) parts.push(`<span class="sep">·</span><span class="t">time ${t}</span>`);
   if (state.slice < l.max[2]) parts.push(`<span class="sep">·</span>sliced at z=${state.slice}`);
+  const note = levelNote(l);
+  if (note) parts.push(`<div class="note">${note}</div>`);
   $("chip").innerHTML = parts.join("");
 }
 

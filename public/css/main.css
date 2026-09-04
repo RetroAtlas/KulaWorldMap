@@ -400,6 +400,13 @@ body.sidebar-open .chip {
 .chip .t {
   color: var(--warn);
 }
+.chip .note {
+  color: var(--dim);
+  font-size: 12px;
+  margin-top: 5px;
+  border-top: 1px solid var(--line);
+  padding-top: 5px;
+}
 
 .readout {
   position: absolute;
