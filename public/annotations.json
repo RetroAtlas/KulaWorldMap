@@ -1,0 +1,12 @@
+{
+  "_comment": "Hand-curated names for what the game leaves numbered. Never generated; see CLAUDE.md.",
+  "worlds": {},
+  "kinds": {
+    "666": {
+      "name": "Start",
+      "note": "Every level ends with exactly one of these. It carries the start cell, a second cell it looks at, two angles, and a number that is 99 on 207 of the 230 levels and lower on a dozen of the numbered ones, which reads as the level's time."
+    }
+  },
+  "types": {},
+  "levels": {}
+}

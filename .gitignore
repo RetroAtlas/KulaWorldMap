@@ -2,3 +2,4 @@ __pycache__/
 out/
 *.bin
 *.cue
+.claude/settings.local.json

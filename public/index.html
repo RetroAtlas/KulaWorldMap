@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+  <title>Kula World Map</title>
+  <meta
+    name="description"
+    content="An interactive map of every level in Kula World (PlayStation), read straight off the disc."
+  />
+  <link rel="icon" href="favicon.svg" />
+  <link rel="stylesheet" href="css/main.css" />
+
+  <button
+    id="menuBtn"
+    class="menu-btn"
+    aria-controls="sidebar"
+    aria-expanded="false"
+    title="Levels and display (m)"
+  >
+    <span aria-hidden="true">☰</span><span class="sr">Levels and display</span>
+  </button>
+
+  <div class="app">
+    <aside id="sidebar" class="sidebar" aria-label="Levels and display">
+      <h1 class="wordmark">Kula World <span>Map</span></h1>
+      <p id="about" class="about"></p>
+
+      <div class="field">
+        <label class="sr" for="search">Search</label>
+        <input
+          id="search"
+          type="search"
+          placeholder="Search levels, worlds, kinds  ( / )"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div id="results" class="results" role="listbox" hidden></div>
+      </div>
+
+      <section class="panel">
+        <h2>Worlds</h2>
+        <div id="worlds" class="worlds"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Display <button id="resetDisplay" class="mini" type="button">reset</button></h2>
+        <label class="check"
+          ><input type="checkbox" id="showObjects" checked /> Objects <kbd>o</kbd></label
+        >
+        <label class="check"
+          ><input type="checkbox" id="showStart" checked /> Start and look-at <kbd>s</kbd></label
+        >
+        <label class="check"
+          ><input type="checkbox" id="showLabels" /> Object labels <kbd>l</kbd></label
+        >
+        <label class="check"
+          ><input type="checkbox" id="showBase" /> Ground grid <kbd>g</kbd></label
+        >
+        <label class="check"
+          ><input type="checkbox" id="showHidden" /> Dim what the slice hides</label
+        >
+        <div class="slice">
+          <label for="slice"
+            >Slice <span id="sliceVal" class="mono"></span> <kbd>,</kbd><kbd>.</kbd></label
+          >
+          <input type="range" id="slice" min="0" max="33" value="33" />
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Object kinds <button id="resetKinds" class="mini" type="button">reset</button></h2>
+        <div id="kinds" class="kinds"></div>
+      </section>
+
+      <p class="foot">
+        <a href="https://retroatlas.org/">RetroAtlas</a> ·
+        <a id="src" href="https://github.com/RetroAtlas/KulaWorldMap">source</a> ·
+        <button id="aboutBtn" class="linkish" type="button">about this map</button>
+      </p>
+    </aside>
+
+    <main class="map">
+      <canvas id="cv" tabindex="0" role="img" aria-label="Level map"></canvas>
+      <div id="chip" class="chip"></div>
+      <div id="readout" class="readout mono"></div>
+      <div id="tip" class="tip" hidden></div>
+      <div id="detail" class="detail" hidden></div>
+      <div id="help" class="modal" hidden></div>
+    </main>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</html>
