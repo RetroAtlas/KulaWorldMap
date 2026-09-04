@@ -6,7 +6,9 @@ Guidance for AI agents working in this repo. Read [README.md](README.md) first, 
 
 The lattice is **fixed at 34 x 34 x 34**, and the index is `x*1156 + y*34 + z`. This was not guessed: the executable's own level walk at `0x00033f6c`-`0x00034054` is three nested loops each bounded by `slti ..., 34`, stepping the inner pointer by 1, the middle by 34 and the outer by 1156, and reading `lh` against `-1`. `tools/mips.py` will show it. `z` is the vertical axis, which the extents confirm: it is the thinnest of the three on 160 of the 230 levels.
 
-Do not re-derive this by pattern-matching on file sizes. Level records vary in length only because the record table does, and several plausible-looking size relations fit a handful of levels and then fall apart. The check that actually holds is the one the build asserts: a record repeats the coordinates of the cell that points at it, on all 5540 records.
+Do not re-derive this by pattern-matching on file sizes. Level records vary in length only because the record table does, and several plausible-looking size relations fit a handful of levels and then fall apart. The check that actually holds is the one the build asserts: a record repeats the coordinates of the cell that points at it, on all 5540 records. Keep that assertion in `tools/kula_build.py` and keep it fatal. It has already caught one wrong reading, that every non-zero cell names a record, when in fact the five values below 5 are block styles carrying none.
+
+The `u32` at the head of the trailer is the game's own count of something block-shaped, and no subset rule over the cell values reproduces it on more than 80 of the 230 levels. It ships as a raw field rather than being called a block count.
 
 ## Conventions
 

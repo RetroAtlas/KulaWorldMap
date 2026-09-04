@@ -11,9 +11,9 @@ export function showCell(c) {
   const objs = state.idx.objects.get(cellKey(c.x, c.y, c.z)) || [];
   if (!stats) stats = kindStats(state.data);
   const box = $("detail");
-  const plain = c.v === state.data.plain;
+  const plain = c.v < state.data.firstRecord;
   let html = `<button class="x" title="Close (Esc)">×</button>`;
-  html += `<h3>${plain ? "Plain block" : `Block with record ${c.v - state.data.firstRecord}`}</h3>`;
+  html += `<h3>${plain ? `Block, style ${c.v}` : `Block with record ${c.v - state.data.firstRecord}`}</h3>`;
   html += `<p class="sub">${l.name} · cell ${c.x},${c.y},${c.z}</p>`;
   html += `<table>${row("lattice value", c.v)}${row("cell", `${c.x}, ${c.y}, ${c.z}`)}</table>`;
 

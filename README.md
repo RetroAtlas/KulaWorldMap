@@ -20,7 +20,9 @@ Part of [RetroAtlas](https://retroatlas.org/), a collection of interactive maps 
 
 ## What the disc stores, and what it does not
 
-Every level is one zlib record inside its world's `.PAK`, and inflates to a fixed **34 x 34 x 34 lattice** of `u16` cells followed by a table of 256-byte records. A cell holds `0xFFFF` for empty, `0` for a plain block, and `5 + i` for a block carrying record `i`; the record repeats the cell's own coordinates, which is what pins the two together. That cross-check passes on all 5540 of the game's records, which is the evidence the layout is right rather than merely plausible.
+Every level is one zlib record inside its world's `.PAK`, and inflates to a fixed **34 x 34 x 34 lattice** of `u16` cells followed by a table of 256-byte records. A cell holds `0xFFFF` for empty, one of five plain block styles below 5, or `5 + i` for a block carrying record `i`; the record repeats the cell's own coordinates, which is what pins the two representations together. `tools/kula_build.py` checks that on every build and refuses to write if it fails: all 5540 pairs in the game agree, which is the evidence the layout is right rather than merely plausible.
+
+The five styles below 5 are the game's own numbers and carry no record: 4517 cells are style 0, then 1065, 527, 70 and 9 of styles 3, 2, 1 and 4. What tells them apart is not decoded, and the map draws them as shades of the world's tint.
 
 A record holds up to six 32-byte entities, though only the first is used except on a handful of levels. An entity is a position, a `kind` the engine dispatches on, a `type` within that kind, and eleven more fields whose meaning follows from the kind.
 

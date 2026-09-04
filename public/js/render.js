@@ -127,8 +127,8 @@ export function draw() {
     if (px < -80 || px > w + 80 || py < -80 || py > h + 80) continue;
     const f = faceMask(idx, c);
     const objs = idx.objects.get(cellKey(c.x, c.y, c.z));
-    const special = c.v !== state.data.plain;
-    const base = special ? tint : shade(tint, 0.78);
+    const special = c.v >= state.data.firstRecord;
+    const base = special ? tint : shade(tint, 0.72 + c.v * 0.045);
     const sel = state.selected && state.selected.key === cellKey(c.x, c.y, c.z);
     const hov = state.hover && state.hover.key === cellKey(c.x, c.y, c.z);
     const lift = sel ? 1.5 : hov ? 1.25 : 1;

@@ -9,9 +9,9 @@
                     which is used on all but a handful
     6 bytes         0xFF filler
 
-A lattice cell holds 0 for a plain block and 5 + i for one that carries
-record i; the record repeats the cell's own coordinates, which is what pins
-the two together (verified on every one of the game's 5540 records).
+A lattice cell holds one of five plain block styles below 5, or 5 + i for a
+block carrying record i. The record repeats the cell's own coordinates, which
+is what pins the two representations together and is checked on every build.
 
 Entity fields are the game's own numbers. `kind` separates the classes the
 engine dispatches on; 666 marks the one record every level ends with, which
@@ -23,8 +23,8 @@ SIDE = 34
 CELLS = SIDE ** 3
 GRID_BYTES = CELLS * 2
 EMPTY = 0xFFFF
-PLAIN = 0            # a lattice cell with no record of its own
-FIRST_RECORD = 5     # lattice values below this are not record indices
+STYLES = 5           # 0..4 are block styles the engine draws without a record
+FIRST_RECORD = 5     # from here up, a cell value names the record it carries
 RECORD = 256
 ENTITY = 32
 ENTITIES = 6
@@ -88,6 +88,30 @@ class Level:
                 if e.kind == START_KIND:
                     return e
         return None
+
+    def verify(self):
+        """What has to hold if the lattice is being read the way the engine reads it.
+
+        The cross-check that matters is the last one: a cell that names a record
+        is named back by it. Nothing else pins the two representations together,
+        and several size-based readings of this format fit a few levels and then
+        come apart.
+        """
+        bad = []
+        for x, y, z, v in self.cells:
+            if v < FIRST_RECORD:
+                continue
+            k = v - FIRST_RECORD
+            if not 0 <= k < self.count:
+                bad.append(f"cell {x},{y},{z} names record {k} of {self.count}")
+                continue
+            e = self.records[k][0]
+            if (e.x, e.y, e.z) != (x, y, z):
+                bad.append(f"cell {x},{y},{z} names record {k}, which sits at {e.x},{e.y},{e.z}")
+        starts = sum(1 for ents in self.records for e in ents if e.kind == START_KIND)
+        if starts != 1:
+            bad.append(f"{starts} start records, expected 1")
+        return bad
 
     def extent(self):
         if not self.cells:

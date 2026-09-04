@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import open_disc, packs
-from kula_level import Level, SIDE, PLAIN, FIRST_RECORD, START_KIND
+from kula_level import Level, SIDE, STYLES, FIRST_RECORD, START_KIND
 from kula_pak import Pak
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
@@ -59,22 +59,29 @@ def main():
     args = ap.parse_args()
     disc = open_disc(args.disc)
 
-    levels, themes = [], []
+    levels, themes, checked, problems = [], [], 0, []
     for theme, path in packs(disc):
         pak = Pak(disc.read_file(path), path)
         if not themes or themes[-1]["id"] != theme:
             themes.append({"id": theme, "levels": []})
         for i in range(len(pak)):
             L = Level(pak.level(i), pak.name(i), theme)
+            for msg in L.verify():
+                problems.append(f"{path} {L.name}: {msg}")
+            checked += sum(1 for c in L.cells if c[3] >= FIRST_RECORD)
             themes[-1]["levels"].append(len(levels))
             levels.append(level_json(L, theme, path, i))
+    if problems:
+        for p in problems[:20]:
+            print(f"  {p}", file=sys.stderr)
+        sys.exit(f"{len(problems)} levels do not read back consistently; refusing to write")
 
     data = {
         "game": "Kula World",
         "platform": "PlayStation",
         "release": "Roll Away (NTSC-U, SLUS-00724)",
         "side": SIDE,
-        "plain": PLAIN,
+        "styles": STYLES,
         "firstRecord": FIRST_RECORD,
         "startKind": START_KIND,
         "themes": themes,
@@ -84,6 +91,7 @@ def main():
     OUT.write_text(json.dumps(data, indent=1))
     cells = sum(len(l["cells"]) // 4 for l in levels)
     objs = sum(len(l["objects"]) for l in levels)
+    print(f"cross-check: {checked} cell/record pairs agree, {len(levels)} start records found")
     print(f"{len(levels)} levels, {cells} placed cells, {objs} entities "
           f"-> {OUT.relative_to(OUT.parent.parent.parent)} ({OUT.stat().st_size/1024:.0f} KB)")
 
