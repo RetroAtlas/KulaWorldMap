@@ -93,7 +93,17 @@ let writing = false;
 let restoring = false;
 const r2 = (v) => Math.round(v * 100) / 100;
 
+// Browsers rate-limit replaceState (Safari at 100 per 30s, Firefox at 50 per
+// 10s) and throw once past it, so a drag that wrote on every pointer event
+// would take the throw inside the drag rather than merely lose the URL.
+let queued = 0;
+
 export function writeHash() {
+  if (!queued) queued = requestAnimationFrame(flushHash);
+}
+
+function flushHash() {
+  queued = 0;
   const l = state.lvl;
   if (!l || restoring) return;
   const c = state.cam;
