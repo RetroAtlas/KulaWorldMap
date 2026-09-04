@@ -373,7 +373,7 @@ canvas:focus-visible {
   border: 1px solid var(--line);
   border-radius: 8px;
   width: 34px;
-  height: 30px;
+  height: 34px;
   cursor: pointer;
   font-size: 15px;
 }
@@ -386,11 +386,14 @@ body.sidebar-open .menu-btn {
 .chip {
   position: absolute;
   left: 54px;
-  top: 12px;
+  top: 10px;
   z-index: 10;
   background: #171d2bf0;
   border: 1px solid var(--line);
   border-radius: 8px;
+  /* 20 line + 12 padding + 2 border meets the button's 34, so the two sit on
+     one row; a level with a note grows downward from there. */
+  line-height: 20px;
   padding: 6px 10px;
   font-size: 12.5px;
   max-width: min(60%, 460px);
