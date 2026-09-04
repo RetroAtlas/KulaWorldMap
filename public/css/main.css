@@ -381,9 +381,11 @@ body.sidebar-open .menu-btn {
   left: 320px;
 }
 
+/* The menu button sits at the map's top-left corner in both sidebar states, so
+   the chip starts clear of it rather than under it. */
 .chip {
   position: absolute;
-  left: 12px;
+  left: 54px;
   top: 12px;
   z-index: 10;
   background: #171d2bf0;
@@ -392,9 +394,6 @@ body.sidebar-open .menu-btn {
   padding: 6px 10px;
   font-size: 12.5px;
   max-width: min(60%, 460px);
-}
-body.sidebar-open .chip {
-  left: 12px;
 }
 .chip b {
   font-weight: 600;
