@@ -16,6 +16,8 @@ A record is 256 bytes and holds **one** entity, in the first 32. The seven 32-by
 
 Do not reach for a range test here. 51 records are zeroed from byte 32 on, which puts a perfectly lattice-shaped `(0, 0, 0)` in all seven of their groups: a rule that admits any position in `0..33` reads a phantom object out of every one of those groups, exactly 51 to a group, and that even spread reads as a symmetry confirming the rule rather than as the artefact it is. `Level.verify` asserts the `-1`/`0` invariant on every record so the reading cannot quietly come back.
 
+`tools/kula_tail.py` reports what the seven do hold, across the whole game rather than a level or two. They are entity-shaped, they are a list rather than a struct, and their length varies per record; [backlog/item-002](backlog/item-002-the-unread-record-bytes.md) has the measurements and what they rule out. It is the largest unread thing on the disc and the likeliest home for the block-skin field the artwork spike is missing.
+
 ## Blocks and the things on them
 
 A lattice cell below `firstRecord` is a block style, and the five styles are models 7 to 11 of the shared table in the artwork file, which is where `tools/kula_tex.py` gets them. A cell at or above it names a record instead, so a block carrying one has no style of its own and the record would have to supply it.

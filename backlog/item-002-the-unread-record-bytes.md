@@ -6,14 +6,16 @@
 
 A record is 256 bytes. The first 32 are the entity the map draws. The other 224 are read by nothing, in either the tooling or the map, and there are 5,700 records: **about 1.2 MB of the game's own level data that no one has looked at.**
 
-They are not filler. Measured 2026-09-05 across all 39,900 of the seven trailing 32-byte groups:
+They are not filler. Measured 2026-09-05 across all 39,900 of the seven trailing groups, reproducible with `python3 tools/kula_tail.py`:
 
-- the first and third words take no value but `-1` and `0`, so no group is ever a position
-- the second word carries a number from a vocabulary of six: `-1`, `-100`, `0`, `100`, `30`, `-17`
-- group 7 is `-1` throughout, on every record but the 51 that are zeroed
-- 51 records are zeroed from byte 32 on, which is what made a range test read 255 phantom objects out of them ([7](item-007-the-six-slot-misreading.md))
+- **They are entity-shaped.** Read on the entity's own layout, the words that carry anything are `type`, `f5`-`f15`, and the one at `y`; and their vocabularies match the entity's. `f12` is `386`, `256`, `500`; `f13` is `0` to `3`; `type` is `37`, `36`, `2`, `1`. Those are the same values the first group's fields take.
+- **They are never a position.** `x` and `z` take no value but `-1` and `0` in any of the 39,900, and `kind` is `-1` on 25,193 of the 25,601 live ones, so the engine cannot be dispatching on them.
+- **They are a list, not a struct.** The live ones form a prefix on 5,658 of the 5,700 records: groups 1..n are on and the rest are `-1`. The length is strongly moded at five (3,710 records), then six (1,056) and none (616).
+- **The length varies per instance, not per type.** 1,961 distinct tails across 5,700 records, and `kind 0 / type 0` alone has 991 of them; only 46 of the 103 kind/type pairs have one tail across all their records. So this is data, not a template the game stamps in.
+- **`y` is the odd one out**, taking a six-value vocabulary of `-100`, `100`, `30`, `-17`, `20`, `0`, which reads as an angle or a speed rather than an index.
+- 51 records are zeroed from byte 32 on, which is what made a range test read 255 phantom objects out of them ([7](item-007-the-six-slot-misreading.md)).
 
-`Level.verify` asserts the `-1`/`0` invariant on every build, so a reading that contradicts it will say so.
+`Level.verify` asserts the `x`/`z` invariant on every build, so a reading that contradicts it will say so.
 
 ## Why it matters
 
@@ -21,4 +23,12 @@ They are not filler. Measured 2026-09-05 across all 39,900 of the seven trailing
 
 ## Sketch
 
-The record table is walked by the engine somewhere; find the loop the way the lattice walk was found, with `tools/mips.py`, and read the offsets it touches. `-100`, `100` and `30` look like an angle or a speed rather than an index, so a field that is only ever one of six values is a small enum and the caller will say which.
+Start from the engine. The record table is walked somewhere; find the loop the way the lattice walk was found, with `tools/mips.py`, and read which offsets within the 256 it touches. A field that takes only six values is a small enum and the caller will name it.
+
+`python3 tools/kula_tail.py --kind 0 --type 37` narrows the same report to one kind, and `--dump 4` prints whole records with the groups laid out in rows, which is the readable form.
+
+## Ruled out
+
+**That the groups are further objects standing on the same block.** It is the obvious reading of an entity-shaped group, and it is what the six-slot reading amounted to. Their `kind` is unset on all but 408 of 25,601, and an entity the engine cannot dispatch on is not an object.
+
+**That the tail is a per-type template.** Ruled out by the 991 distinct tails on `kind 0 / type 0`.

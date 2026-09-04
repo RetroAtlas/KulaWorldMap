@@ -79,6 +79,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `kula_level.py` | the lattice and the record table, field by field |
 | `kula_build.py` | reads every level and writes `public/map_data.json` |
 | `kula_kinds.py` | per-kind contact sheets, for naming objects |
+| `kula_tail.py` | the 224 bytes after a record's entity, which nothing decodes |
 | `kula_objlevel.py` | the floor plan and sheet for naming objects by walking OBJ LEVEL |
 | `kula_tgi.py` | a world's artwork: sections, VRAM page, textures |
 | `kula_tex.py` | the block atlas the viewer draws with |
