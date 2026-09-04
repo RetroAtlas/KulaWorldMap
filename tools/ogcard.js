@@ -3,7 +3,7 @@
 //
 //     npx playwright install --with-deps chromium
 //     node tools/ogcard.js
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
@@ -70,6 +70,8 @@ try {
 
   await page.locator("#cv").screenshot({ path: join(ROOT, "public", "og-image.png") });
   await browser.close();
+  // the same squeeze tools/png.py puts over everything else it writes
+  spawnSync("oxipng", ["-q", "-o", "max", "--strip", "safe", join(ROOT, "public", "og-image.png")]);
   console.log(`public/og-image.png  ${W}x${H}`);
 } finally {
   server.kill();
