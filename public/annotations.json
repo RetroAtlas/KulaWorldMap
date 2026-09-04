@@ -4,7 +4,7 @@
   "kinds": {
     "666": {
       "name": "Start",
-      "note": "Every level ends with exactly one of these. It carries the start cell, a second cell it looks at, two angles, and a number that is 99 on 207 of the 230 levels and lower on a dozen of the numbered ones, which reads as the level's time."
+      "note": "Every level ends with exactly one of these, and it is the last record in the table. It carries the start cell, a second cell it looks at, two angles, and a number that is 99 on 218 of the 230 levels and lower on the other twelve, which reads as the level's time. It is not a thing standing on a block, so it draws as the start ring rather than as an object marker."
     }
   },
   "types": {},

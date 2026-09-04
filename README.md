@@ -32,7 +32,7 @@ An entity is a position, a `kind` the engine dispatches on, a `type` within that
 
 The field at the head of the trailer is signed, and negative on 16 levels. It matches the placed-cell count on 79 of the 230 and is unexplained on the rest, so the map counts the lattice itself and leaves that field unnamed.
 
-Every level ends with exactly one record of kind **666**, carrying the start position, a second position it looks at, two angles and a number that is 99 on 207 of the 230 levels and lower on a dozen of the numbered ones. That reads as the level's time, and the map shows it as such.
+Every level ends with exactly one record of kind **666**, carrying the start position, a second position it looks at, two angles and a number that is 99 on 218 of the 230 levels and lower on the other twelve. That reads as the level's time, and the map shows it as such.
 
 **Blocks wear the game's own artwork.** Each world's `.TGI` is a header, eleven sections, and a list of VRAM uploads the game feeds straight to `LoadImage`. Replaying them recovers the page exactly: **56 textures of 64x64 per world**, three 4bpp mip levels of each, and 96 palettes. Section 6 pairs every texture with three palettes, one per lighting level, and section 5 is a table of 119 models that is byte-identical in all ten worlds, so a model means the same thing everywhere and only the pixels change. Four of those models are the world's plain stone, which is what a lattice cell below `firstRecord` draws.
 
@@ -59,7 +59,7 @@ export KULA_DISC="/path/to/Roll Away.bin"
 python3 tools/kula_build.py
 ```
 
-That writes `public/map_data.json`, which is generated **and committed**, so regenerate it rather than hand-editing. A full build takes about four seconds, and the file is indented so that a rebuild diffs line by line.
+That writes `public/map_data.json`, which is generated **and committed**, so regenerate it rather than hand-editing. A full build takes under a second, and the file is indented so that a rebuild diffs line by line.
 
 To serve the viewer locally:
 

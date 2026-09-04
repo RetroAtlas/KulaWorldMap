@@ -35,7 +35,7 @@ The record table is not a skin table, and the record every level ends with is wh
 
 The game numbers its levels straight through the worlds (`LEVEL 1`-`LEVEL 150`) and keeps the bonus, hidden, final, Simon and lesson levels in the same packs under their own names. Those names are the game's own, spelling included: Atlantis really does contain a `LECEL 94`, and Hell numbers its levels 135-150 while Mars ends at 135 too, so a level number is not a unique key. **The pack path plus the index inside it is the key**; the name is for display.
 
-World ids are the disc's directory names (`HIRO`, `ATLANT`, ...). Where a world has a name players use, that belongs in `annotations.json` as a deliberate override, not baked into the data.
+World ids are the disc's directory names (`HIRO`, `ATLANT`, ...), and that is all the game has: the executable's only mention of a world is the path it loads the pack from, so the disc supplies no player-facing world name at all. A friendlier name is therefore a curated override with a source outside the disc, and it goes in `annotations.json` under `worlds`, never baked into the data or invented to fill the gap. The viewer already falls back to the id, which is why the gap costs nothing.
 
 ## Code comments
 
