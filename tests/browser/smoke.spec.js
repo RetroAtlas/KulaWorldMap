@@ -92,3 +92,24 @@ test("the catalogue's own note reaches the catalogue", async ({ page }) => {
   expect(note).toMatch(/object catalogue/i);
   await expect(page.locator("#chip .note")).toContainText("object catalogue");
 });
+
+test("the drawer stays dismissable on the narrowest phone", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto("/#L0");
+  await settle(page);
+  await page.locator("#menuBtn").click();
+  await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "true");
+  const btn = await page.locator("#menuBtn").boundingBox();
+  expect(btn.x + btn.width).toBeLessThanOrEqual(320);
+  await expect(page.locator("#scrim")).toBeVisible();
+  await page.locator("#scrim").click();
+  await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "false");
+});
+
+test("Escape leaves the drawer alone where it sits beside the map", async ({ page }) => {
+  await page.goto("/#L0");
+  await settle(page);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#scrim")).toBeHidden();
+  expect(await page.evaluate(() => document.body.classList.contains("sidebar-open"))).toBe(true);
+});

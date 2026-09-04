@@ -7,6 +7,14 @@ import { setSlice } from "./interaction.js";
 
 const KEY = "kula.display";
 
+/** Where the drawer floats over the map rather than sitting beside it. */
+export const sidebarOverlays = () => matchMedia("(max-width: 760px)").matches;
+
+export function setSidebar(open) {
+  document.body.classList.toggle("sidebar-open", open);
+  $("menuBtn").setAttribute("aria-expanded", String(open));
+}
+
 export function buildWorlds() {
   const box = $("worlds");
   box.textContent = "";
@@ -146,10 +154,8 @@ export function wireDisplay() {
     draw();
   };
 
-  $("menuBtn").onclick = () => {
-    const open = document.body.classList.toggle("sidebar-open");
-    $("menuBtn").setAttribute("aria-expanded", String(open));
-  };
+  $("menuBtn").onclick = () => setSidebar(!document.body.classList.contains("sidebar-open"));
+  $("scrim").onclick = () => setSidebar(false);
 }
 
 function save() {

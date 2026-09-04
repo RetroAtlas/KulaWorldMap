@@ -8,6 +8,7 @@
   --accent: #6fd3ff;
   --accent-dim: #2f8fc4;
   --warn: #ffcf6f;
+  --sidebar-w: 310px;
   color-scheme: dark;
 }
 
@@ -54,13 +55,14 @@ body {
 .app {
   display: flex;
   height: 100vh;
+  height: 100dvh; /* a phone's chrome is inside 100vh and cuts the map off */
 }
 
 /* ---------- sidebar ---------- */
 
 .sidebar {
-  width: 310px;
-  flex: 0 0 310px;
+  width: var(--sidebar-w);
+  flex: 0 0 var(--sidebar-w);
   background: var(--panel);
   border-right: 1px solid var(--line);
   overflow-y: auto;
@@ -69,7 +71,7 @@ body {
 }
 
 body:not(.sidebar-open) .sidebar {
-  margin-left: -310px;
+  margin-left: calc(-1 * var(--sidebar-w));
 }
 
 .wordmark {
@@ -378,7 +380,13 @@ canvas:focus-visible {
   font-size: 15px;
 }
 body.sidebar-open .menu-btn {
-  left: 320px;
+  left: calc(var(--sidebar-w) + 10px);
+}
+
+/* Nothing dismisses the drawer on a narrow screen but the button, which the
+   drawer itself would otherwise push off the side of a small phone. */
+.scrim {
+  display: none;
 }
 
 /* The menu button sits at the map's top-left corner in both sidebar states, so
@@ -532,14 +540,21 @@ body.sidebar-open .menu-btn {
 }
 
 @media (max-width: 760px) {
+  :root {
+    --sidebar-w: min(310px, calc(100vw - 58px));
+  }
   .sidebar {
     position: absolute;
     z-index: 25;
     height: 100%;
     box-shadow: 0 0 40px #000a;
   }
-  body.sidebar-open .menu-btn {
-    left: 320px;
+  body.sidebar-open .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 24;
+    background: #05070b80;
   }
   .detail {
     width: 218px;

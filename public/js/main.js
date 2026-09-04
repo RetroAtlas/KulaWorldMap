@@ -2,16 +2,14 @@ import { $, on } from "./dom.js";
 import { state } from "./state.js";
 import { resize, onFirstSize } from "./render.js";
 import { loadJson, setAnnotations } from "./data.js";
-import { buildWorlds, buildKinds, wireDisplay, restore } from "./sidebar.js";
+import { buildWorlds, buildKinds, wireDisplay, restore, setSidebar } from "./sidebar.js";
 import { applyHash, selectLevel, fit, chip, writeHash } from "./navigate.js";
 import "./interaction.js";
 import "./search.js";
 
-if (innerWidth > 860) document.body.classList.add("sidebar-open");
-$("menuBtn").setAttribute(
-  "aria-expanded",
-  String(document.body.classList.contains("sidebar-open")),
-);
+// Open beside the map where there is room for both, closed where it would
+// float over what it is for.
+setSidebar(innerWidth > 860);
 restore();
 
 on("help", showHelp);

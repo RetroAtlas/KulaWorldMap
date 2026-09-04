@@ -4,6 +4,7 @@ import { draw, cellAt, invalidatePick } from "./render.js";
 import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { kindName } from "./data.js";
+import { setSidebar, sidebarOverlays } from "./sidebar.js";
 
 const cv = $("cv");
 const tip = $("tip");
@@ -267,6 +268,10 @@ addEventListener("keydown", (e) => {
     case "Escape":
       if (!$("help").hidden) {
         $("help").hidden = true;
+        break;
+      }
+      if (sidebarOverlays() && document.body.classList.contains("sidebar-open")) {
+        setSidebar(false);
         break;
       }
       state.selected = null;
