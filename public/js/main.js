@@ -26,7 +26,7 @@ const HELP = [
   ["\\", "put the whole level back"],
   ["[ ]", "previous and next level (shift crosses worlds)"],
   ["f", "fit the level to the window"],
-  ["o s l g", "objects, start, labels, ground grid"],
+  ["t o s l g", "textures, objects, start, labels, ground grid"],
   ["/", "search"],
   ["m", "show and hide the sidebar"],
   ["Esc", "clear the selection"],
@@ -52,8 +52,10 @@ function showAbout() {
     Every level here is read from the game's own data on the ${d.release} disc: the
     ${d.side}&times;${d.side}&times;${d.side} lattice each level is built in, and the records the
     engine attaches to individual blocks.</p>
-    <p>The artwork is not decoded. Blocks are drawn in a stand-in palette per world, so the shape,
-    the objects and the routes are the game's and the colours are not.</p>
+    <p>Blocks wear the game's own textures, lifted from each world's artwork file, in the three
+    brightness levels the game itself ships them pre-shaded with, one per face orientation. Which
+    texture a block carrying an object wears is not decoded, so those draw the world's plain stone
+    and the marker above them says what is really there.</p>
     <p>Object kinds are the game's own numbers, because the game names none of them. Names appear
     here as they are identified and curated in <code>annotations.json</code>.</p>
     <p><a href="https://github.com/RetroAtlas/KulaWorldMap">Source and tooling</a> ·

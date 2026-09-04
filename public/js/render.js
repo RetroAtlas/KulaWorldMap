@@ -66,6 +66,16 @@ const shade = (hex, f, a = 1) => {
 // The six faces of a unit cube: outward normal, the neighbour it hides behind,
 // and its corners. Lighting comes from the world, not from the screen, so a
 // face keeps its brightness as the view turns and the solid reads as solid.
+// The atlas is one row per world and, along it, each block style in each of the
+// three shades the game ships it pre-lit with.
+const ATLAS = { img: new Image(), ready: false, size: 64, shades: 3 };
+ATLAS.img.onload = () => {
+  ATLAS.ready = true;
+  invalidatePick();
+  draw();
+};
+ATLAS.img.src = "tex/blocks.png";
+
 const FACES = [
   {
     n: [0, 0, 1],
@@ -140,6 +150,12 @@ const lit = FACES.map((f) => {
   return 0.5 + 0.75 * (0.5 + 0.5 * d);
 });
 
+// Which of the three shipped shades a face wears. Fixed in the world rather
+// than on the screen, so a face keeps its brightness as the view turns.
+const SHADE = FACES.map((f) =>
+  f.n[2] > 0 ? 2 : f.n[2] < 0 ? 0 : f.n[0] > 0 || f.n[1] < 0 ? 1 : 0,
+);
+
 function visible(idx) {
   const out = [];
   for (const c of idx.cells.values()) {
@@ -150,7 +166,7 @@ function visible(idx) {
   return out;
 }
 
-function cube(g, c, idx, colour, edge, alpha) {
+function cube(g, c, idx, colour, edge, alpha, skin) {
   const s = state.cam.zoom * BLOCK;
   const [ox, oy] = screen(c.x, c.y, c.z);
   for (let i = 0; i < FACES.length; i++) {
@@ -158,24 +174,44 @@ function cube(g, c, idx, colour, edge, alpha) {
     if (!facing(f.n)) continue;
     const nb = idx.cells.get(cellKey(c.x + f.d[0], c.y + f.d[1], c.z + f.d[2]));
     if (nb && nb.z <= state.slice) continue;
-    g.beginPath();
-    for (let k = 0; k < 4; k++) {
-      const [dx, dy, dz] = f.c[k];
+    const pts = f.c.map(([dx, dy, dz]) => {
       const [px, py] = project(dx, dy, dz);
-      const x = ox + px * s,
-        y = oy + py * s;
-      if (k) g.lineTo(x, y);
-      else g.moveTo(x, y);
-    }
+      return [ox + px * s, oy + py * s];
+    });
+    g.beginPath();
+    pts.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y)));
     g.closePath();
-    g.fillStyle = colour ? colour(i) : edge;
-    g.fill();
-    if (edge && colour) {
+    if (skin) {
+      g.save();
+      g.clip();
+      paint(g, pts, skin, SHADE[i], alpha);
+      g.restore();
+    } else {
+      g.fillStyle = colour ? colour(i) : edge;
+      g.fill();
+    }
+    if (edge) {
       g.strokeStyle = edge;
       g.lineWidth = 1;
       g.stroke();
     }
   }
+}
+
+/** Map the atlas cell onto a face, which orthographic projection keeps a
+    parallelogram, so an affine transform lands it exactly. */
+function paint(g, pts, skin, shade, alpha) {
+  const n = ATLAS.size;
+  const [p0, p1, , p3] = pts;
+  const ex = [(p1[0] - p0[0]) / n, (p1[1] - p0[1]) / n];
+  const ey = [(p3[0] - p0[0]) / n, (p3[1] - p0[1]) / n];
+  const d = state.view.dpr;
+  g.globalAlpha = alpha;
+  g.setTransform(d * ex[0], d * ex[1], d * ey[0], d * ey[1], d * p0[0], d * p0[1]);
+  const sx = (skin.style * ATLAS.shades + shade) * n;
+  g.drawImage(ATLAS.img, sx + 0.5, skin.world * n + 0.5, n - 1, n - 1, 0, 0, n, n);
+  g.setTransform(d, 0, 0, d, 0, 0);
+  g.globalAlpha = 1;
 }
 
 // The five styles below firstRecord are drawn as steps of the world's tint,
@@ -205,6 +241,7 @@ export function draw() {
   if (!l) return;
   const idx = state.idx;
   const tint = WORLD_TINT[l.theme] || "#93a8d4";
+  const world = state.data.themes.findIndex((t) => t.id === l.theme);
 
   if (state.show.base) drawBase(l);
 
@@ -226,6 +263,12 @@ export function draw() {
     const base = styleTint(tint, c.v);
     const boost = sel ? 0.22 : hov ? 0.12 : 0;
     const a = ghost ? 0.16 : 1;
+    // A cell carrying a record draws the world's own stone, because which
+    // texture its faces really wear is not decoded.
+    const skin =
+      state.show.skins && ATLAS.ready && world >= 0
+        ? { world, style: c.v < state.data.styles ? c.v : 0 }
+        : null;
     cube(
       ctx,
       c,
@@ -233,13 +276,17 @@ export function draw() {
       (i) => shade(base, lit[i] + boost, a),
       edges ? `rgba(9 13 20 / ${0.55 * a})` : null,
       a,
+      skin,
     );
+    if (skin && (sel || hov)) {
+      cube(ctx, c, idx, () => `rgba(255 255 255 / ${sel ? 0.22 : 0.12})`, null, a, null);
+    }
 
     if (pickStale && !ghost) {
       pickList.push(c);
       const id = pickList.length;
       const col = `rgb(${id & 255} ${(id >> 8) & 255} ${(id >> 16) & 255})`;
-      cube(pick, c, { cells: new Map() }, () => col, null, 1);
+      cube(pick, c, { cells: new Map() }, () => col, null, 1, null);
     }
 
     if (state.show.objects && !ghost) {

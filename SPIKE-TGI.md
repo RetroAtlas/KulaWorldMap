@@ -28,7 +28,13 @@ A record opens with three CLUT ids, and the same three palettes appear again as 
 
 **The three palettes are three lighting levels.** The header's three fixed-point triples are `0.7 0.6 0.6`, `0.9 0.8 0.8` and `1.2 1.1 1.1`, and the three palettes come out at mean luminance `0.87 : 1.00 : 1.18` in the same order. The measured spread is narrower than the multipliers because 15-bit colour clamps at both ends, but the ordering and the count match, so the game ships each texture pre-shaded three ways rather than lighting it at runtime.
 
+**Section 5 is a table of 119 models, and it is byte-identical in all ten worlds.** Each entry is `i16 first, i16 count` naming a run of section-6 quads, so a model index means the same thing everywhere and only the pixels behind it change. The copy loop at `0x0002569c` walks it, and for each quad works out `u = (x mod 64) * 2` and `v = y mod 256` before calling `getTPage(1, 0, ...)`, whose `tp` of 1 is what says the textures are 8bpp.
+
+Models 7, 8, 9 and 10 are single quads onto textures 0 to 3, which are the four the world changes and the lattice's plain block styles draw. Model 11 is the shared panel at texture 8.
+
 ## Not settled
+
+**Which model a cell carrying a record picks.** The four plain styles are settled, but an entity's `type` runs to 56 against 119 models and nothing yet proves the index. Those blocks draw the world's stone in the meantime.
 
 **Which texture goes on which block face.** That is the level records' problem, not the artwork's: a face's texture has to be named somewhere in the 32-byte entities, and nothing yet ties one of their fields to a texture index.
 

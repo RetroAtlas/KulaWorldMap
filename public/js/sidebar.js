@@ -91,6 +91,7 @@ export function buildKinds() {
 
 export function wireDisplay() {
   for (const [id, key] of [
+    ["showSkins", "skins"],
     ["showObjects", "objects"],
     ["showStart", "start"],
     ["showLabels", "labels"],
@@ -113,8 +114,16 @@ export function wireDisplay() {
   });
   $("slice").addEventListener("input", (e) => setSlice(Number(e.target.value)));
   $("resetDisplay").onclick = () => {
-    state.show = { objects: true, start: true, labels: false, base: false, hidden: false };
+    state.show = {
+      objects: true,
+      start: true,
+      labels: false,
+      base: false,
+      hidden: false,
+      skins: true,
+    };
     for (const [id, key] of [
+      ["showSkins", "skins"],
       ["showObjects", "objects"],
       ["showStart", "start"],
       ["showLabels", "labels"],

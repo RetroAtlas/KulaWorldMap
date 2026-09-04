@@ -243,6 +243,9 @@ addEventListener("keydown", (e) => {
       chip();
       writeHash();
       break;
+    case "t":
+      toggle("showSkins");
+      break;
     case "o":
       toggle("showObjects");
       break;

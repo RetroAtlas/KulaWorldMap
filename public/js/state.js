@@ -13,7 +13,7 @@ export const state = {
   target: [17, 17, 17],
   slice: SIDE - 1,
   view: { w: 0, h: 0, dpr: 1 },
-  show: { objects: true, start: true, labels: false, base: false, hidden: false },
+  show: { objects: true, start: true, labels: false, base: false, hidden: false, skins: true },
   hiddenKinds: new Set(),
   hover: null,
   selected: null,
