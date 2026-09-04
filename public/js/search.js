@@ -56,7 +56,7 @@ function search(q) {
       res.push({
         group: "Levels",
         label: l.name,
-        hint: `${worldName(l.theme)} · ${l.blocks} blocks`,
+        hint: `${worldName(l.theme)} · ${l.placed} blocks`,
         rank: i === state.li ? -1 : 0,
         go: () => selectLevel(i),
       });

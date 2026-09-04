@@ -294,7 +294,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 0,
-   "blocks": 20,
+   "placed": 20,
+   "header": 20,
    "records": 6,
    "min": [
     17,
@@ -539,7 +540,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 1,
-   "blocks": 38,
+   "placed": 38,
+   "header": 38,
    "records": 10,
    "min": [
     17,
@@ -940,7 +942,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 2,
-   "blocks": 40,
+   "placed": 40,
+   "header": 40,
    "records": 14,
    "min": [
     13,
@@ -1433,7 +1436,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 3,
-   "blocks": 50,
+   "placed": 50,
+   "header": 50,
    "records": 20,
    "min": [
     19,
@@ -2092,7 +2096,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 4,
-   "blocks": 13,
+   "placed": 13,
+   "header": 13,
    "records": 8,
    "min": [
     15,
@@ -2351,7 +2356,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 5,
-   "blocks": 47,
+   "placed": 47,
+   "header": 47,
    "records": 14,
    "min": [
     13,
@@ -2872,7 +2878,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 6,
-   "blocks": 57,
+   "placed": 57,
+   "header": 57,
    "records": 24,
    "min": [
     13,
@@ -3643,7 +3650,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 7,
-   "blocks": 25,
+   "placed": 31,
+   "header": 25,
    "records": 8,
    "min": [
     14,
@@ -3974,7 +3982,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 8,
-   "blocks": 38,
+   "placed": 38,
+   "header": 38,
    "records": 11,
    "min": [
     19,
@@ -4396,7 +4405,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 9,
-   "blocks": 56,
+   "placed": 56,
+   "header": 56,
    "records": 19,
    "min": [
     16,
@@ -5058,7 +5068,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 10,
-   "blocks": 22,
+   "placed": 22,
+   "header": 22,
    "records": 13,
    "min": [
     13,
@@ -5458,7 +5469,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 11,
-   "blocks": 21,
+   "placed": 21,
+   "header": 21,
    "records": 12,
    "min": [
     15,
@@ -5833,7 +5845,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 12,
-   "blocks": 21,
+   "placed": 21,
+   "header": 21,
    "records": 11,
    "min": [
     17,
@@ -6187,7 +6200,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 13,
-   "blocks": 18,
+   "placed": 18,
+   "header": 18,
    "records": 18,
    "min": [
     17,
@@ -6676,7 +6690,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 14,
-   "blocks": 25,
+   "placed": 25,
+   "header": 25,
    "records": 20,
    "min": [
     13,
@@ -7235,7 +7250,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 15,
-   "blocks": 48,
+   "placed": 48,
+   "header": 48,
    "records": 33,
    "min": [
     15,
@@ -8159,7 +8175,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 16,
-   "blocks": 23,
+   "placed": 23,
+   "header": 23,
    "records": 19,
    "min": [
     12,
@@ -8689,7 +8706,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 17,
-   "blocks": 20,
+   "placed": 20,
+   "header": 20,
    "records": 19,
    "min": [
     13,
@@ -9207,7 +9225,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 18,
-   "blocks": 22,
+   "placed": 22,
+   "header": 22,
    "records": 23,
    "min": [
     15,
@@ -9927,7 +9946,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIRO.PAK",
    "index": 19,
-   "blocks": 108,
+   "placed": 130,
+   "header": 108,
    "records": 59,
    "min": [
     9,
@@ -11725,7 +11745,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/COPYCAT.PAK",
    "index": 0,
-   "blocks": 36,
+   "placed": 36,
+   "header": 36,
    "records": 14,
    "min": [
     17,
@@ -12202,7 +12223,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/COPYCAT.PAK",
    "index": 1,
-   "blocks": 36,
+   "placed": 36,
+   "header": 36,
    "records": 15,
    "min": [
     14,
@@ -12810,7 +12832,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/COPYCAT.PAK",
    "index": 2,
-   "blocks": 8,
+   "placed": 50,
+   "header": 8,
    "records": 27,
    "min": [
     14,
@@ -13726,7 +13749,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/COPYCAT.PAK",
    "index": 3,
-   "blocks": 97,
+   "placed": 97,
+   "header": 97,
    "records": 50,
    "min": [
     11,
@@ -15313,7 +15337,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/COPYCAT.PAK",
    "index": 4,
-   "blocks": 63,
+   "placed": 78,
+   "header": 63,
    "records": 24,
    "min": [
     9,
@@ -16278,7 +16303,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/COPYCAT.PAK",
    "index": 5,
-   "blocks": 42,
+   "placed": 42,
+   "header": 42,
    "records": 33,
    "min": [
     9,
@@ -17288,7 +17314,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/COPYCAT.PAK",
    "index": 6,
-   "blocks": 25,
+   "placed": 30,
+   "header": 25,
    "records": 22,
    "min": [
     13,
@@ -17909,7 +17936,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/COPYCAT.PAK",
    "index": 7,
-   "blocks": 31,
+   "placed": 34,
+   "header": 31,
    "records": 25,
    "min": [
     11,
@@ -18720,7 +18748,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/COPYCAT.PAK",
    "index": 8,
-   "blocks": 22,
+   "placed": 22,
+   "header": 22,
    "records": 12,
    "min": [
     11,
@@ -19099,7 +19128,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/COPYCAT.PAK",
    "index": 9,
-   "blocks": 3,
+   "placed": 3,
+   "header": 3,
    "records": 2,
    "min": [
     17,
@@ -19302,7 +19332,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIROFI.PAK",
    "index": 0,
-   "blocks": 142,
+   "placed": 142,
+   "header": 142,
    "records": 38,
    "min": [
     10,
@@ -20707,7 +20738,8 @@
    "theme": "HIRO",
    "pack": "/HIRO/HIROFI.PAK",
    "index": 1,
-   "blocks": 57,
+   "placed": 70,
+   "header": 57,
    "records": 24,
    "min": [
     13,
@@ -21530,7 +21562,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 0,
-   "blocks": 16,
+   "placed": 31,
+   "header": 16,
    "records": 24,
    "min": [
     16,
@@ -22197,7 +22230,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 1,
-   "blocks": 21,
+   "placed": 34,
+   "header": 21,
    "records": 28,
    "min": [
     14,
@@ -23070,7 +23104,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 2,
-   "blocks": 40,
+   "placed": 40,
+   "header": 40,
    "records": 19,
    "min": [
     14,
@@ -23668,7 +23703,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 3,
-   "blocks": 33,
+   "placed": 39,
+   "header": 33,
    "records": 15,
    "min": [
     11,
@@ -24178,7 +24214,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 4,
-   "blocks": 19,
+   "placed": 37,
+   "header": 19,
    "records": 30,
    "min": [
     16,
@@ -25105,7 +25142,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 5,
-   "blocks": 8,
+   "placed": 8,
+   "header": 8,
    "records": 7,
    "min": [
     15,
@@ -25323,7 +25361,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 6,
-   "blocks": 23,
+   "placed": 23,
+   "header": 23,
    "records": 22,
    "min": [
     14,
@@ -26026,7 +26065,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 7,
-   "blocks": 17,
+   "placed": 18,
+   "header": 17,
    "records": 9,
    "min": [
     14,
@@ -26326,7 +26366,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 8,
-   "blocks": 25,
+   "placed": 25,
+   "header": 25,
    "records": 15,
    "min": [
     13,
@@ -26780,7 +26821,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 9,
-   "blocks": 24,
+   "placed": 24,
+   "header": 24,
    "records": 17,
    "min": [
     15,
@@ -27272,7 +27314,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 10,
-   "blocks": 32,
+   "placed": 32,
+   "header": 32,
    "records": 17,
    "min": [
     16,
@@ -27796,7 +27839,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 11,
-   "blocks": 23,
+   "placed": 23,
+   "header": 23,
    "records": 16,
    "min": [
     13,
@@ -28263,7 +28307,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 12,
-   "blocks": 14,
+   "placed": 14,
+   "header": 14,
    "records": 11,
    "min": [
     17,
@@ -28589,7 +28634,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 13,
-   "blocks": 28,
+   "placed": 28,
+   "header": 28,
    "records": 29,
    "min": [
     17,
@@ -29349,7 +29395,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 14,
-   "blocks": 51,
+   "placed": 51,
+   "header": 51,
    "records": 31,
    "min": [
     12,
@@ -30353,7 +30400,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 15,
-   "blocks": 65,
+   "placed": 74,
+   "header": 65,
    "records": 34,
    "min": [
     12,
@@ -31402,7 +31450,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 16,
-   "blocks": 19,
+   "placed": 26,
+   "header": 19,
    "records": 26,
    "min": [
     13,
@@ -32091,7 +32140,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 17,
-   "blocks": 14,
+   "placed": 14,
+   "header": 14,
    "records": 8,
    "min": [
     16,
@@ -32354,7 +32404,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 18,
-   "blocks": 5,
+   "placed": 15,
+   "header": 5,
    "records": 16,
    "min": [
     15,
@@ -32789,7 +32840,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLS.PAK",
    "index": 19,
-   "blocks": 97,
+   "placed": 115,
+   "header": 97,
    "records": 45,
    "min": [
     5,
@@ -34233,7 +34285,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLSFI.PAK",
    "index": 0,
-   "blocks": 4294967271,
+   "placed": 68,
+   "header": -25,
    "records": 43,
    "min": [
     10,
@@ -35448,7 +35501,8 @@
    "theme": "HILLS",
    "pack": "/HILLS/HILLSFI.PAK",
    "index": 1,
-   "blocks": 124,
+   "placed": 124,
+   "header": 124,
    "records": 28,
    "min": [
     3,
@@ -36571,7 +36625,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 0,
-   "blocks": 4,
+   "placed": 17,
+   "header": 4,
    "records": 14,
    "min": [
     13,
@@ -36972,7 +37027,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 1,
-   "blocks": 11,
+   "placed": 21,
+   "header": 11,
    "records": 17,
    "min": [
     15,
@@ -37452,7 +37508,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 2,
-   "blocks": 4294967295,
+   "placed": 26,
+   "header": -1,
    "records": 16,
    "min": [
     17,
@@ -38042,7 +38099,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 3,
-   "blocks": 9,
+   "placed": 16,
+   "header": 9,
    "records": 10,
    "min": [
     17,
@@ -38466,7 +38524,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 4,
-   "blocks": 7,
+   "placed": 20,
+   "header": 7,
    "records": 13,
    "min": [
     11,
@@ -38858,7 +38917,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 5,
-   "blocks": 4,
+   "placed": 11,
+   "header": 4,
    "records": 6,
    "min": [
     16,
@@ -39067,7 +39127,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 6,
-   "blocks": 19,
+   "placed": 19,
+   "header": 19,
    "records": 12,
    "min": [
     14,
@@ -39435,7 +39496,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 7,
-   "blocks": 4294967248,
+   "placed": 5,
+   "header": -48,
    "records": 6,
    "min": [
     15,
@@ -39621,7 +39683,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 8,
-   "blocks": 38,
+   "placed": 41,
+   "header": 38,
    "records": 13,
    "min": [
     16,
@@ -40098,7 +40161,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 9,
-   "blocks": 14,
+   "placed": 18,
+   "header": 14,
    "records": 16,
    "min": [
     12,
@@ -40545,7 +40609,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 10,
-   "blocks": 24,
+   "placed": 37,
+   "header": 24,
    "records": 25,
    "min": [
     12,
@@ -41257,7 +41322,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 11,
-   "blocks": 60,
+   "placed": 61,
+   "header": 60,
    "records": 35,
    "min": [
     13,
@@ -42385,7 +42451,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 12,
-   "blocks": 66,
+   "placed": 70,
+   "header": 66,
    "records": 38,
    "min": [
     15,
@@ -43502,7 +43569,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 13,
-   "blocks": 66,
+   "placed": 78,
+   "header": 66,
    "records": 42,
    "min": [
     9,
@@ -44735,7 +44803,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 14,
-   "blocks": 4294967276,
+   "placed": 148,
+   "header": -20,
    "records": 39,
    "min": [
     2,
@@ -46185,7 +46254,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 15,
-   "blocks": 54,
+   "placed": 96,
+   "header": 54,
    "records": 21,
    "min": [
     3,
@@ -47049,7 +47119,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 16,
-   "blocks": 49,
+   "placed": 49,
+   "header": 49,
    "records": 26,
    "min": [
     12,
@@ -47830,7 +47901,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 17,
-   "blocks": 6,
+   "placed": 26,
+   "header": 6,
    "records": 26,
    "min": [
     13,
@@ -48519,7 +48591,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 18,
-   "blocks": 32,
+   "placed": 32,
+   "header": 32,
    "records": 16,
    "min": [
     15,
@@ -49022,7 +49095,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCA.PAK",
    "index": 19,
-   "blocks": 97,
+   "placed": 115,
+   "header": 97,
    "records": 45,
    "min": [
     5,
@@ -50466,7 +50540,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCAFI.PAK",
    "index": 0,
-   "blocks": 136,
+   "placed": 136,
+   "header": 136,
    "records": 49,
    "min": [
     6,
@@ -52078,7 +52153,8 @@
    "theme": "INCA",
    "pack": "/INCA/INCAFI.PAK",
    "index": 1,
-   "blocks": 14,
+   "placed": 35,
+   "header": 14,
    "records": 31,
    "min": [
     10,
@@ -53019,7 +53095,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 0,
-   "blocks": 5,
+   "placed": 47,
+   "header": 5,
    "records": 18,
    "min": [
     14,
@@ -53734,7 +53811,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 1,
-   "blocks": 73,
+   "placed": 79,
+   "header": 73,
    "records": 29,
    "min": [
     14,
@@ -54698,7 +54776,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 2,
-   "blocks": 19,
+   "placed": 22,
+   "header": 19,
    "records": 18,
    "min": [
     14,
@@ -55203,7 +55282,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 3,
-   "blocks": 45,
+   "placed": 52,
+   "header": 45,
    "records": 20,
    "min": [
     15,
@@ -55870,7 +55950,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 4,
-   "blocks": 17,
+   "placed": 34,
+   "header": 17,
    "records": 21,
    "min": [
     12,
@@ -56486,7 +56567,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 5,
-   "blocks": 34,
+   "placed": 45,
+   "header": 34,
    "records": 9,
    "min": [
     13,
@@ -56894,7 +56976,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 6,
-   "blocks": 69,
+   "placed": 70,
+   "header": 69,
    "records": 29,
    "min": [
     13,
@@ -57822,7 +57905,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 7,
-   "blocks": 35,
+   "placed": 35,
+   "header": 35,
    "records": 18,
    "min": [
     12,
@@ -58379,7 +58463,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 8,
-   "blocks": 45,
+   "placed": 54,
+   "header": 45,
    "records": 17,
    "min": [
     12,
@@ -58991,7 +59076,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 9,
-   "blocks": 4294967288,
+   "placed": 30,
+   "header": -8,
    "records": 11,
    "min": [
     9,
@@ -59381,7 +59467,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 10,
-   "blocks": 29,
+   "placed": 29,
+   "header": 29,
    "records": 17,
    "min": [
     12,
@@ -59893,7 +59980,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 11,
-   "blocks": 15,
+   "placed": 46,
+   "header": 15,
    "records": 24,
    "min": [
     14,
@@ -60620,7 +60708,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 12,
-   "blocks": 70,
+   "placed": 70,
+   "header": 70,
    "records": 24,
    "min": [
     14,
@@ -61443,7 +61532,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 13,
-   "blocks": 92,
+   "placed": 92,
+   "header": 92,
    "records": 23,
    "min": [
     8,
@@ -62333,7 +62423,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 14,
-   "blocks": 55,
+   "placed": 73,
+   "header": 55,
    "records": 33,
    "min": [
     15,
@@ -63357,7 +63448,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 15,
-   "blocks": 4294967245,
+   "placed": 103,
+   "header": -51,
    "records": 22,
    "min": [
     3,
@@ -64270,7 +64362,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 16,
-   "blocks": 4294967258,
+   "placed": 77,
+   "header": -38,
    "records": 20,
    "min": [
     5,
@@ -65037,7 +65130,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 17,
-   "blocks": 21,
+   "placed": 44,
+   "header": 21,
    "records": 37,
    "min": [
     2,
@@ -66030,7 +66124,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 18,
-   "blocks": 12,
+   "placed": 12,
+   "header": 12,
    "records": 13,
    "min": [
     18,
@@ -66390,7 +66485,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTIC.PAK",
    "index": 19,
-   "blocks": 97,
+   "placed": 115,
+   "header": 97,
    "records": 45,
    "min": [
     5,
@@ -67834,7 +67930,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTICFI.PAK",
    "index": 0,
-   "blocks": 25,
+   "placed": 27,
+   "header": 25,
    "records": 27,
    "min": [
     17,
@@ -68658,7 +68755,8 @@
    "theme": "ARCTIC",
    "pack": "/ARCTIC/ARCTICFI.PAK",
    "index": 1,
-   "blocks": 18,
+   "placed": 39,
+   "header": 18,
    "records": 18,
    "min": [
     13,
@@ -69231,7 +69329,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 0,
-   "blocks": 33,
+   "placed": 33,
+   "header": 33,
    "records": 33,
    "min": [
     17,
@@ -70095,7 +70194,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 1,
-   "blocks": 40,
+   "placed": 40,
+   "header": 40,
    "records": 29,
    "min": [
     12,
@@ -70903,7 +71003,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 2,
-   "blocks": 5,
+   "placed": 56,
+   "header": 5,
    "records": 17,
    "min": [
     11,
@@ -71523,7 +71624,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 3,
-   "blocks": 60,
+   "placed": 60,
+   "header": 60,
    "records": 25,
    "min": [
     17,
@@ -72327,7 +72429,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 4,
-   "blocks": 60,
+   "placed": 60,
+   "header": 60,
    "records": 51,
    "min": [
     11,
@@ -73677,7 +73780,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 5,
-   "blocks": 35,
+   "placed": 40,
+   "header": 35,
    "records": 22,
    "min": [
     13,
@@ -74338,7 +74442,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 6,
-   "blocks": 41,
+   "placed": 62,
+   "header": 41,
    "records": 25,
    "min": [
     15,
@@ -75150,7 +75255,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 7,
-   "blocks": 16,
+   "placed": 59,
+   "header": 16,
    "records": 19,
    "min": [
     17,
@@ -75824,7 +75930,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 8,
-   "blocks": 63,
+   "placed": 68,
+   "header": 63,
    "records": 28,
    "min": [
     5,
@@ -76723,7 +76830,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 9,
-   "blocks": 58,
+   "placed": 58,
+   "header": 58,
    "records": 25,
    "min": [
     14,
@@ -77629,7 +77737,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 10,
-   "blocks": 66,
+   "placed": 86,
+   "header": 66,
    "records": 35,
    "min": [
     14,
@@ -78747,7 +78856,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 11,
-   "blocks": 8,
+   "placed": 12,
+   "header": 8,
    "records": 12,
    "min": [
     15,
@@ -79086,7 +79196,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 12,
-   "blocks": 8,
+   "placed": 11,
+   "header": 8,
    "records": 12,
    "min": [
     12,
@@ -79421,7 +79532,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 13,
-   "blocks": 12,
+   "placed": 16,
+   "header": 12,
    "records": 11,
    "min": [
     18,
@@ -79755,7 +79867,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 14,
-   "blocks": 27,
+   "placed": 31,
+   "header": 27,
    "records": 23,
    "min": [
     10,
@@ -80401,7 +80514,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 15,
-   "blocks": 17,
+   "placed": 23,
+   "header": 17,
    "records": 12,
    "min": [
     16,
@@ -80784,7 +80898,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 16,
-   "blocks": 20,
+   "placed": 20,
+   "header": 20,
    "records": 13,
    "min": [
     18,
@@ -81176,7 +81291,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 17,
-   "blocks": 14,
+   "placed": 24,
+   "header": 14,
    "records": 24,
    "min": [
     13,
@@ -81815,7 +81931,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 18,
-   "blocks": 45,
+   "placed": 46,
+   "header": 45,
    "records": 22,
    "min": [
     12,
@@ -82500,7 +82617,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOY.PAK",
    "index": 19,
-   "blocks": 97,
+   "placed": 115,
+   "header": 97,
    "records": 45,
    "min": [
     5,
@@ -83944,7 +84062,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOYFI.PAK",
    "index": 0,
-   "blocks": 40,
+   "placed": 47,
+   "header": 40,
    "records": 19,
    "min": [
     14,
@@ -84570,7 +84689,8 @@
    "theme": "COWBOY",
    "pack": "/COWBOY/COWBOYFI.PAK",
    "index": 1,
-   "blocks": 4294967293,
+   "placed": 23,
+   "header": -3,
    "records": 24,
    "min": [
     5,
@@ -85315,7 +85435,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 0,
-   "blocks": 4294967287,
+   "placed": 17,
+   "header": -9,
    "records": 13,
    "min": [
     21,
@@ -85695,7 +85816,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 1,
-   "blocks": 8,
+   "placed": 30,
+   "header": 8,
    "records": 28,
    "min": [
     6,
@@ -86552,7 +86674,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 2,
-   "blocks": 0,
+   "placed": 8,
+   "header": 0,
    "records": 9,
    "min": [
     23,
@@ -86812,7 +86935,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 3,
-   "blocks": 4294967275,
+   "placed": 16,
+   "header": -21,
    "records": 14,
    "min": [
     17,
@@ -87209,7 +87333,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 4,
-   "blocks": 3,
+   "placed": 11,
+   "header": 3,
    "records": 12,
    "min": [
     11,
@@ -87544,7 +87669,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 5,
-   "blocks": 70,
+   "placed": 70,
+   "header": 70,
    "records": 29,
    "min": [
     15,
@@ -88472,7 +88598,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 6,
-   "blocks": 29,
+   "placed": 59,
+   "header": 29,
    "records": 42,
    "min": [
     14,
@@ -89629,7 +89756,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 7,
-   "blocks": 8,
+   "placed": 22,
+   "header": 8,
    "records": 13,
    "min": [
     13,
@@ -90030,7 +90158,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 8,
-   "blocks": 79,
+   "placed": 79,
+   "header": 79,
    "records": 27,
    "min": [
     14,
@@ -90952,7 +91081,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 9,
-   "blocks": 83,
+   "placed": 83,
+   "header": 83,
    "records": 38,
    "min": [
     2,
@@ -92231,7 +92361,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 10,
-   "blocks": 61,
+   "placed": 61,
+   "header": 61,
    "records": 20,
    "min": [
     15,
@@ -93044,7 +93175,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 11,
-   "blocks": 25,
+   "placed": 25,
+   "header": 25,
    "records": 18,
    "min": [
     11,
@@ -93561,7 +93693,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 12,
-   "blocks": 38,
+   "placed": 38,
+   "header": 38,
    "records": 21,
    "min": [
     17,
@@ -94193,7 +94326,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 13,
-   "blocks": 12,
+   "placed": 15,
+   "header": 12,
    "records": 11,
    "min": [
     11,
@@ -94523,7 +94657,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 14,
-   "blocks": 39,
+   "placed": 39,
+   "header": 39,
    "records": 26,
    "min": [
     14,
@@ -95264,7 +95399,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 15,
-   "blocks": 60,
+   "placed": 60,
+   "header": 60,
    "records": 37,
    "min": [
     11,
@@ -96430,7 +96566,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 16,
-   "blocks": 2,
+   "placed": 29,
+   "header": 2,
    "records": 30,
    "min": [
     3,
@@ -97325,7 +97462,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 17,
-   "blocks": 30,
+   "placed": 30,
+   "header": 30,
    "records": 20,
    "min": [
     17,
@@ -97904,7 +98042,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 18,
-   "blocks": 16,
+   "placed": 27,
+   "header": 16,
    "records": 21,
    "min": [
     6,
@@ -98603,7 +98742,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELD.PAK",
    "index": 19,
-   "blocks": 97,
+   "placed": 115,
+   "header": 97,
    "records": 45,
    "min": [
     5,
@@ -100047,7 +100187,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELDFI.PAK",
    "index": 0,
-   "blocks": 1,
+   "placed": 23,
+   "header": 1,
    "records": 20,
    "min": [
     16,
@@ -100598,7 +100739,8 @@
    "theme": "FIELD",
    "pack": "/FIELD/FIELDFI.PAK",
    "index": 1,
-   "blocks": 38,
+   "placed": 54,
+   "header": 38,
    "records": 39,
    "min": [
     7,
@@ -101782,7 +101924,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 0,
-   "blocks": 16,
+   "placed": 17,
+   "header": 16,
    "records": 13,
    "min": [
     18,
@@ -102272,7 +102415,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 1,
-   "blocks": 13,
+   "placed": 18,
+   "header": 13,
    "records": 15,
    "min": [
     14,
@@ -102809,7 +102953,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 2,
-   "blocks": 16,
+   "placed": 34,
+   "header": 16,
    "records": 19,
    "min": [
     14,
@@ -103384,7 +103529,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 3,
-   "blocks": 4294967293,
+   "placed": 16,
+   "header": -3,
    "records": 16,
    "min": [
     15,
@@ -103823,7 +103969,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 4,
-   "blocks": 21,
+   "placed": 35,
+   "header": 21,
    "records": 23,
    "min": [
     17,
@@ -104485,7 +104632,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 5,
-   "blocks": 41,
+   "placed": 45,
+   "header": 41,
    "records": 35,
    "min": [
     13,
@@ -105439,7 +105587,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 6,
-   "blocks": 23,
+   "placed": 30,
+   "header": 23,
    "records": 22,
    "min": [
     14,
@@ -106060,7 +106209,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 7,
-   "blocks": 39,
+   "placed": 51,
+   "header": 39,
    "records": 31,
    "min": [
     14,
@@ -106954,7 +107104,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 8,
-   "blocks": 14,
+   "placed": 22,
+   "header": 14,
    "records": 17,
    "min": [
     9,
@@ -107438,7 +107589,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 9,
-   "blocks": 41,
+   "placed": 42,
+   "header": 41,
    "records": 18,
    "min": [
     10,
@@ -108134,7 +108286,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 10,
-   "blocks": 24,
+   "placed": 31,
+   "header": 24,
    "records": 27,
    "min": [
     11,
@@ -108865,7 +109018,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 11,
-   "blocks": 90,
+   "placed": 93,
+   "header": 90,
    "records": 27,
    "min": [
     15,
@@ -109953,7 +110107,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 12,
-   "blocks": 63,
+   "placed": 66,
+   "header": 63,
    "records": 38,
    "min": [
     11,
@@ -111054,7 +111209,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 13,
-   "blocks": 28,
+   "placed": 41,
+   "header": 28,
    "records": 24,
    "min": [
     6,
@@ -111871,7 +112027,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 14,
-   "blocks": 35,
+   "placed": 44,
+   "header": 35,
    "records": 29,
    "min": [
     14,
@@ -112695,7 +112852,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 15,
-   "blocks": 62,
+   "placed": 62,
+   "header": 62,
    "records": 19,
    "min": [
     14,
@@ -113381,7 +113539,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 16,
-   "blocks": 28,
+   "placed": 33,
+   "header": 28,
    "records": 25,
    "min": [
     14,
@@ -114077,7 +114236,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 17,
-   "blocks": 44,
+   "placed": 49,
+   "header": 44,
    "records": 31,
    "min": [
     14,
@@ -114963,7 +115123,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 18,
-   "blocks": 39,
+   "placed": 76,
+   "header": 39,
    "records": 51,
    "min": [
     11,
@@ -116487,7 +116648,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANT.PAK",
    "index": 19,
-   "blocks": 97,
+   "placed": 115,
+   "header": 97,
    "records": 45,
    "min": [
     5,
@@ -117931,7 +118093,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANTFI.PAK",
    "index": 0,
-   "blocks": 21,
+   "placed": 48,
+   "header": 21,
    "records": 29,
    "min": [
     12,
@@ -118881,7 +119044,8 @@
    "theme": "ATLANT",
    "pack": "/ATLANT/ATLANTFI.PAK",
    "index": 1,
-   "blocks": 61,
+   "placed": 76,
+   "header": 61,
    "records": 20,
    "min": [
     13,
@@ -119644,7 +119808,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 0,
-   "blocks": 3,
+   "placed": 74,
+   "header": 3,
    "records": 22,
    "min": [
     12,
@@ -120441,7 +120606,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 1,
-   "blocks": 2,
+   "placed": 22,
+   "header": 2,
    "records": 12,
    "min": [
     13,
@@ -120931,7 +121097,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 2,
-   "blocks": 7,
+   "placed": 134,
+   "header": 7,
    "records": 24,
    "min": [
     15,
@@ -122120,7 +122287,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 3,
-   "blocks": 21,
+   "placed": 26,
+   "header": 21,
    "records": 19,
    "min": [
     13,
@@ -122663,7 +122831,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 4,
-   "blocks": 25,
+   "placed": 52,
+   "header": 25,
    "records": 44,
    "min": [
     13,
@@ -123834,7 +124003,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 5,
-   "blocks": 12,
+   "placed": 108,
+   "header": 12,
    "records": 35,
    "min": [
     9,
@@ -125040,7 +125210,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 6,
-   "blocks": 4294967287,
+   "placed": 126,
+   "header": -9,
    "records": 43,
    "min": [
     5,
@@ -126487,7 +126658,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 7,
-   "blocks": 0,
+   "placed": 20,
+   "header": 0,
    "records": 10,
    "min": [
     18,
@@ -126816,7 +126988,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 8,
-   "blocks": 1,
+   "placed": 18,
+   "header": 1,
    "records": 10,
    "min": [
     9,
@@ -127247,7 +127420,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 9,
-   "blocks": 16,
+   "placed": 33,
+   "header": 16,
    "records": 18,
    "min": [
     16,
@@ -127797,7 +127971,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 10,
-   "blocks": 14,
+   "placed": 72,
+   "header": 14,
    "records": 13,
    "min": [
     12,
@@ -128397,7 +128572,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 11,
-   "blocks": 64,
+   "placed": 117,
+   "header": 64,
    "records": 29,
    "min": [
     8,
@@ -129513,7 +129689,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 12,
-   "blocks": 25,
+   "placed": 110,
+   "header": 25,
    "records": 31,
    "min": [
     5,
@@ -130643,7 +130820,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 13,
-   "blocks": 53,
+   "placed": 140,
+   "header": 53,
    "records": 51,
    "min": [
     2,
@@ -132313,7 +132491,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 14,
-   "blocks": 55,
+   "placed": 89,
+   "header": 55,
    "records": 36,
    "min": [
     5,
@@ -133464,7 +133643,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 15,
-   "blocks": 4294967275,
+   "placed": 39,
+   "header": -21,
    "records": 39,
    "min": [
     12,
@@ -134589,7 +134769,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 16,
-   "blocks": 59,
+   "placed": 64,
+   "header": 59,
    "records": 47,
    "min": [
     15,
@@ -135871,7 +136052,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 17,
-   "blocks": 63,
+   "placed": 63,
+   "header": 63,
    "records": 27,
    "min": [
     12,
@@ -136729,7 +136911,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 18,
-   "blocks": 4294967289,
+   "placed": 31,
+   "header": -7,
    "records": 8,
    "min": [
     5,
@@ -137060,7 +137243,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZE.PAK",
    "index": 19,
-   "blocks": 97,
+   "placed": 115,
+   "header": 97,
    "records": 45,
    "min": [
     5,
@@ -138504,7 +138688,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZEFI.PAK",
    "index": 0,
-   "blocks": 68,
+   "placed": 77,
+   "header": 68,
    "records": 35,
    "min": [
     20,
@@ -139586,7 +139771,8 @@
    "theme": "HAZE",
    "pack": "/HAZE/HAZEFI.PAK",
    "index": 1,
-   "blocks": 25,
+   "placed": 41,
+   "header": 25,
    "records": 37,
    "min": [
     17,
@@ -140676,7 +140862,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 0,
-   "blocks": 105,
+   "placed": 106,
+   "header": 105,
    "records": 16,
    "min": [
     15,
@@ -141475,7 +141662,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 1,
-   "blocks": 44,
+   "placed": 47,
+   "header": 44,
    "records": 33,
    "min": [
     13,
@@ -142395,7 +142583,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 2,
-   "blocks": 39,
+   "placed": 41,
+   "header": 39,
    "records": 13,
    "min": [
     15,
@@ -142871,7 +143060,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 3,
-   "blocks": 20,
+   "placed": 39,
+   "header": 20,
    "records": 37,
    "min": [
     8,
@@ -143953,7 +144143,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 4,
-   "blocks": 13,
+   "placed": 13,
+   "header": 13,
    "records": 8,
    "min": [
     18,
@@ -144212,7 +144403,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 5,
-   "blocks": 106,
+   "placed": 106,
+   "header": 106,
    "records": 76,
    "min": [
     9,
@@ -146381,7 +146573,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 6,
-   "blocks": 42,
+   "placed": 44,
+   "header": 42,
    "records": 22,
    "min": [
     15,
@@ -147058,7 +147251,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 7,
-   "blocks": 34,
+   "placed": 39,
+   "header": 34,
    "records": 24,
    "min": [
     12,
@@ -147757,7 +147951,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 8,
-   "blocks": 32,
+   "placed": 34,
+   "header": 32,
    "records": 23,
    "min": [
     15,
@@ -148415,7 +148610,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 9,
-   "blocks": 27,
+   "placed": 42,
+   "header": 27,
    "records": 28,
    "min": [
     7,
@@ -149210,7 +149406,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 10,
-   "blocks": 4294967295,
+   "placed": 37,
+   "header": -1,
    "records": 21,
    "min": [
     5,
@@ -149838,7 +150035,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 11,
-   "blocks": 68,
+   "placed": 68,
+   "header": 68,
    "records": 34,
    "min": [
     13,
@@ -150863,7 +151061,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 12,
-   "blocks": 95,
+   "placed": 98,
+   "header": 95,
    "records": 37,
    "min": [
     14,
@@ -152071,7 +152270,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 13,
-   "blocks": 32,
+   "placed": 33,
+   "header": 32,
    "records": 21,
    "min": [
     15,
@@ -152683,7 +152883,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 14,
-   "blocks": 52,
+   "placed": 61,
+   "header": 52,
    "records": 25,
    "min": [
     15,
@@ -153491,7 +153692,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 15,
-   "blocks": 35,
+   "placed": 35,
+   "header": 35,
    "records": 19,
    "min": [
     9,
@@ -154069,7 +154271,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 16,
-   "blocks": 27,
+   "placed": 27,
+   "header": 27,
    "records": 25,
    "min": [
     17,
@@ -154741,7 +154944,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 17,
-   "blocks": 7,
+   "placed": 15,
+   "header": 7,
    "records": 16,
    "min": [
     11,
@@ -155176,7 +155380,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 18,
-   "blocks": 37,
+   "placed": 60,
+   "header": 37,
    "records": 23,
    "min": [
     9,
@@ -155938,7 +156143,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARS.PAK",
    "index": 19,
-   "blocks": 97,
+   "placed": 115,
+   "header": 97,
    "records": 45,
    "min": [
     5,
@@ -157382,7 +157588,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARSFI.PAK",
    "index": 0,
-   "blocks": 9,
+   "placed": 64,
+   "header": 9,
    "records": 18,
    "min": [
     14,
@@ -158056,7 +158263,8 @@
    "theme": "MARS",
    "pack": "/MARS/MARSFI.PAK",
    "index": 1,
-   "blocks": 12,
+   "placed": 55,
+   "header": 12,
    "records": 31,
    "min": [
     18,
@@ -159076,7 +159284,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 0,
-   "blocks": 66,
+   "placed": 69,
+   "header": 66,
    "records": 58,
    "min": [
     10,
@@ -160719,7 +160928,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 1,
-   "blocks": 53,
+   "placed": 57,
+   "header": 53,
    "records": 31,
    "min": [
     14,
@@ -161637,7 +161847,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 2,
-   "blocks": 66,
+   "placed": 68,
+   "header": 66,
    "records": 22,
    "min": [
     6,
@@ -162411,7 +162622,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 3,
-   "blocks": 28,
+   "placed": 28,
+   "header": 28,
    "records": 26,
    "min": [
     8,
@@ -163108,7 +163320,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 4,
-   "blocks": 16,
+   "placed": 16,
+   "header": 16,
    "records": 12,
    "min": [
     14,
@@ -163463,7 +163676,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 5,
-   "blocks": 56,
+   "placed": 63,
+   "header": 56,
    "records": 25,
    "min": [
     14,
@@ -164279,7 +164493,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 6,
-   "blocks": 34,
+   "placed": 34,
+   "header": 34,
    "records": 18,
    "min": [
     6,
@@ -164832,7 +165047,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 7,
-   "blocks": 134,
+   "placed": 134,
+   "header": 134,
    "records": 25,
    "min": [
     13,
@@ -165933,7 +166149,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 8,
-   "blocks": 138,
+   "placed": 138,
+   "header": 138,
    "records": 56,
    "min": [
     13,
@@ -167810,7 +168027,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 9,
-   "blocks": 32,
+   "placed": 63,
+   "header": 32,
    "records": 28,
    "min": [
     8,
@@ -168689,7 +168907,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 10,
-   "blocks": 44,
+   "placed": 45,
+   "header": 44,
    "records": 25,
    "min": [
     17,
@@ -169543,7 +169762,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 11,
-   "blocks": 55,
+   "placed": 55,
+   "header": 55,
    "records": 38,
    "min": [
     13,
@@ -170710,7 +170930,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 12,
-   "blocks": 7,
+   "placed": 120,
+   "header": 7,
    "records": 44,
    "min": [
     5,
@@ -172153,7 +172374,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 13,
-   "blocks": 4294967266,
+   "placed": 29,
+   "header": -30,
    "records": 27,
    "min": [
     12,
@@ -172986,7 +173208,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 14,
-   "blocks": 12,
+   "placed": 31,
+   "header": 12,
    "records": 27,
    "min": [
     13,
@@ -173826,7 +174049,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 15,
-   "blocks": 52,
+   "placed": 52,
+   "header": 52,
    "records": 20,
    "min": [
     13,
@@ -174493,7 +174717,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 16,
-   "blocks": 49,
+   "placed": 49,
+   "header": 49,
    "records": 35,
    "min": [
     10,
@@ -175463,7 +175688,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 17,
-   "blocks": 63,
+   "placed": 63,
+   "header": 63,
    "records": 28,
    "min": [
     11,
@@ -176452,7 +176678,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 18,
-   "blocks": 178,
+   "placed": 178,
+   "header": 178,
    "records": 19,
    "min": [
     8,
@@ -177602,7 +177829,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELL.PAK",
    "index": 19,
-   "blocks": 97,
+   "placed": 115,
+   "header": 97,
    "records": 45,
    "min": [
     5,
@@ -179046,7 +179274,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELLFI.PAK",
    "index": 0,
-   "blocks": 74,
+   "placed": 74,
+   "header": 74,
    "records": 53,
    "min": [
     13,
@@ -180604,7 +180833,8 @@
    "theme": "HELL",
    "pack": "/HELL/HELLFI.PAK",
    "index": 1,
-   "blocks": 25,
+   "placed": 37,
+   "header": 25,
    "records": 29,
    "min": [
     13,

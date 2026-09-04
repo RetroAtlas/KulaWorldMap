@@ -1,7 +1,8 @@
 """A level record, inflated from a .PAK entry.
 
     u16[34*34*34]   the lattice, 0xFFFF where nothing is placed
-    u32             solid-block count
+    i32             the game's own, unnamed: usually the placed-cell count and
+                    sometimes a small negative number, so not a count
     u16             record count
     u16             unknown, zero on all but 24 levels
     (padding to 256 bytes)
@@ -59,7 +60,7 @@ class Level:
             raise ValueError(f"{name}: {len(blob)} bytes is too short for a level")
         self.name = name
         self.theme = theme
-        self.blocks = struct.unpack_from("<I", blob, GRID_BYTES)[0]
+        self.header = struct.unpack_from("<i", blob, GRID_BYTES)[0]
         self.count, self.flag = struct.unpack_from("<HH", blob, GRID_BYTES + 4)
         expect = GRID_BYTES + RECORD * (1 + self.count) + 6
         if len(blob) != expect:

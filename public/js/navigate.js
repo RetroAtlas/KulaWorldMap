@@ -68,7 +68,7 @@ export function chip() {
   const parts = [
     `<b>${l.name}</b>`,
     `<span class="sep">·</span>${worldName(l.theme)}`,
-    `<span class="sep">·</span>${l.blocks} blocks`,
+    `<span class="sep">·</span>${l.placed} blocks`,
   ];
   if (l.objects.length) parts.push(`<span class="sep">·</span>${l.objects.length} objects`);
   if (l.start?.time !== undefined)

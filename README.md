@@ -29,6 +29,8 @@ A record holds up to six 32-byte entities, though only the first is used except 
 
 An entity is a position, a `kind` the engine dispatches on, a `type` within that kind, and eleven more fields whose meaning follows from the kind. Kind and type are close to orthogonal: the game has only **33 distinct types**, and the same type appears under several kinds.
 
+The field at the head of the trailer is signed, and negative on 16 levels. It matches the placed-cell count on 79 of the 230 and is unexplained on the rest, so the map counts the lattice itself and leaves that field unnamed.
+
 Every level ends with exactly one record of kind **666**, carrying the start position, a second position it looks at, two angles and a number that is 99 on 207 of the 230 levels and lower on a dozen of the numbered ones. That reads as the level's time, and the map shows it as such.
 
 **The artwork is only half decoded.** Each world's `.TGI` holds its textures, 6.2 MB across the ten of them. The pixels are 8bpp indexed with 64-byte rows and render as legible artwork, and the palettes are found, but where the tile array starts and which palette goes with which texture are not settled. So the map still draws the lattice in a stand-in palette per world: the structure, the objects and the routes are the game's, and the colours are not. [SPIKE-TGI.md](SPIKE-TGI.md) records what is known, and `tools/kula_tgi.py` is the tool for the next attempt.
