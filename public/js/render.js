@@ -32,8 +32,14 @@ export function resize() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   pick.setTransform(dpr, 0, 0, dpr, 0, 0);
   invalidatePick();
+  if (state.needsFit) refit();
   draw();
 }
+
+let refit = () => {};
+export const onFirstSize = (fn) => {
+  refit = fn;
+};
 
 // The canvas resizes for reasons no window event reports: the sidebar slides
 // over 180ms, the pane changes, the page zooms. Measuring on a timer after any

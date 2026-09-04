@@ -1,9 +1,9 @@
 import { $, on } from "./dom.js";
 import { state } from "./state.js";
-import { resize } from "./render.js";
+import { resize, onFirstSize } from "./render.js";
 import { loadJson, setAnnotations } from "./data.js";
 import { buildWorlds, buildKinds, wireDisplay, restore } from "./sidebar.js";
-import { applyHash, selectLevel } from "./navigate.js";
+import { applyHash, selectLevel, fit, chip, writeHash } from "./navigate.js";
 import "./interaction.js";
 import "./search.js";
 
@@ -78,6 +78,11 @@ Promise.all([loadJson("map_data.json"), loadJson("annotations.json", {})]).then(
     `Press <kbd style="margin:0">?</kbd> for the keys.`;
   buildWorlds();
   wireDisplay();
+  onFirstSize(() => {
+    fit();
+    chip();
+    writeHash();
+  });
   resize();
   if (!applyHash()) selectLevel(0);
   buildKinds();

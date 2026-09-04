@@ -26,6 +26,13 @@ export function selectLevel(i, { keepView = false } = {}) {
 export function fit() {
   const l = state.lvl;
   if (!l) return;
+  // Fitting against a view of no size yields the zoom clamp rather than a fit,
+  // so wait for the size to arrive and fit then.
+  if (!state.view.w || !state.view.h) {
+    state.needsFit = true;
+    return;
+  }
+  state.needsFit = false;
   state.target = [
     (l.min[0] + l.max[0] + 1) / 2,
     (l.min[1] + l.max[1] + 1) / 2,
@@ -80,11 +87,15 @@ export function chip() {
 }
 
 let writing = false;
+// While the hash is being read back, the camera is still at its defaults until
+// the last line of applyHash. Anything that writes the hash before then would
+// put those defaults in the URL, and the next reload would believe them.
+let restoring = false;
 const r2 = (v) => Math.round(v * 100) / 100;
 
 export function writeHash() {
   const l = state.lvl;
-  if (!l) return;
+  if (!l || restoring) return;
   const c = state.cam;
   const t = state.target.map((v) => r2(v)).join(",");
   const h =
@@ -104,6 +115,7 @@ export function applyHash() {
   if (!m) return false;
   const i = Number(m[1]);
   if (!state.data.levels[i]) return false;
+  restoring = true;
   selectLevel(i, { keepView: true });
   if (m[2] !== undefined) {
     state.cam.yaw = Number(m[2]);
@@ -117,6 +129,8 @@ export function applyHash() {
     state.cam.panY = Number(m[9]);
   }
   state.slice = m[10] !== undefined ? Math.min(SIDE - 1, Number(m[10])) : SIDE - 1;
+  restoring = false;
+  writeHash();
   invalidatePick();
   emit("slice-changed");
   chip();
