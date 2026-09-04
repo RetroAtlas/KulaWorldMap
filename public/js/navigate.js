@@ -1,5 +1,5 @@
 import { $, emit } from "./dom.js";
-import { state, SIDE, plane } from "./state.js";
+import { state, SIDE, BLOCK, project } from "./state.js";
 import { index, worldName, levelNote } from "./data.js";
 import { draw, invalidatePick } from "./render.js";
 
@@ -22,50 +22,57 @@ export function selectLevel(i, { keepView = false } = {}) {
   writeHash();
 }
 
+/** Centre on the level and pick a zoom that shows all of it. */
 export function fit() {
   const l = state.lvl;
   if (!l) return;
+  state.target = [
+    (l.min[0] + l.max[0] + 1) / 2,
+    (l.min[1] + l.max[1] + 1) / 2,
+    (l.min[2] + l.max[2] + 1) / 2,
+  ];
+  state.cam.panX = state.cam.panY = 0;
+  const [tx, ty] = project(...state.target);
   let x0 = Infinity,
     y0 = Infinity,
     x1 = -Infinity,
     y1 = -Infinity;
   for (let i = 0; i < l.cells.length; i += 4) {
     const [x, y, z] = l.cells.slice(i, i + 3);
-    for (const [cx, cy, cz] of [
-      [x, y, z],
-      [x, y, z + 1],
-    ]) {
-      const [px, py] = plane(cx, cy, cz);
-      x0 = Math.min(x0, px - 30);
-      x1 = Math.max(x1, px + 30);
-      y0 = Math.min(y0, py - 30);
-      y1 = Math.max(y1, py + 30);
-    }
+    for (const dx of [0, 1])
+      for (const dy of [0, 1])
+        for (const dz of [0, 1]) {
+          const [px, py] = project(x + dx, y + dy, z + dz);
+          x0 = Math.min(x0, px - tx);
+          x1 = Math.max(x1, px - tx);
+          y0 = Math.min(y0, py - ty);
+          y1 = Math.max(y1, py - ty);
+        }
   }
   if (!Number.isFinite(x0)) return;
-  state.cam.x = (x0 + x1) / 2;
-  state.cam.y = (y0 + y1) / 2;
   const { w, h } = state.view;
-  state.cam.z = Math.max(0.12, Math.min(2.4, Math.min(w / (x1 - x0), h / (y1 - y0)) * 0.88));
+  const pad = 60;
+  const zx = (w - pad) / Math.max(1e-3, (x1 - x0) * BLOCK);
+  const zy = (h - pad) / Math.max(1e-3, (y1 - y0) * BLOCK);
+  state.cam.zoom = Math.max(0.08, Math.min(3, Math.min(zx, zy)));
 }
 
 export function centreOn(x, y, z) {
-  const [px, py] = plane(x, y, z);
-  state.cam.x = px;
-  state.cam.y = py;
+  state.target = [x + 0.5, y + 0.5, z + 0.5];
+  state.cam.panX = state.cam.panY = 0;
 }
 
 export function chip() {
   const l = state.lvl;
   if (!l) return;
-  const t = l.start?.time;
   const parts = [
     `<b>${l.name}</b>`,
     `<span class="sep">·</span>${worldName(l.theme)}`,
     `<span class="sep">·</span>${l.blocks} blocks`,
   ];
   if (l.objects.length) parts.push(`<span class="sep">·</span>${l.objects.length} objects`);
-  if (t !== undefined) parts.push(`<span class="sep">·</span><span class="t">time ${t}</span>`);
+  if (l.start?.time !== undefined)
+    parts.push(`<span class="sep">·</span><span class="t">time ${l.start.time}</span>`);
   if (state.slice < l.max[2]) parts.push(`<span class="sep">·</span>sliced at z=${state.slice}`);
   const note = levelNote(l);
   if (note) parts.push(`<div class="note">${note}</div>`);
@@ -73,12 +80,16 @@ export function chip() {
 }
 
 let writing = false;
+const r2 = (v) => Math.round(v * 100) / 100;
 
 export function writeHash() {
   const l = state.lvl;
   if (!l) return;
   const c = state.cam;
-  const h = `#L${state.li}/${Math.round(c.x)},${Math.round(c.y)}/${c.z.toFixed(2)}/${state.rot}/${state.slice}`;
+  const t = state.target.map((v) => r2(v)).join(",");
+  const h =
+    `#L${state.li}/${Math.round(c.yaw)},${Math.round(c.pitch)}/${c.zoom.toFixed(2)}` +
+    `/${t}/${r2(c.panX)},${r2(c.panY)}/${state.slice}`;
   if (location.hash === h) return;
   writing = true;
   history.replaceState(null, "", h);
@@ -86,22 +97,26 @@ export function writeHash() {
 }
 
 export function applyHash() {
-  const m = /^#L(\d+)(?:\/(-?\d+),(-?\d+))?(?:\/([\d.]+))?(?:\/(\d))?(?:\/(\d+))?/.exec(
-    location.hash,
-  );
+  const m =
+    /^#L(\d+)(?:\/(-?[\d.]+),(-?[\d.]+))?(?:\/([\d.]+))?(?:\/(-?[\d.]+),(-?[\d.]+),(-?[\d.]+))?(?:\/(-?[\d.]+),(-?[\d.]+))?(?:\/(\d+))?/.exec(
+      location.hash,
+    );
   if (!m) return false;
   const i = Number(m[1]);
   if (!state.data.levels[i]) return false;
-  state.rot = m[5] ? Number(m[5]) & 3 : 0;
   selectLevel(i, { keepView: true });
-  state.slice = m[6] !== undefined ? Math.min(SIDE - 1, Number(m[6])) : SIDE - 1;
   if (m[2] !== undefined) {
-    state.cam.x = Number(m[2]);
-    state.cam.y = Number(m[3]);
-    state.cam.z = m[4] ? Number(m[4]) : 1;
-  } else {
-    fit();
+    state.cam.yaw = Number(m[2]);
+    state.cam.pitch = Number(m[3]);
   }
+  if (m[4] !== undefined) state.cam.zoom = Number(m[4]);
+  if (m[5] !== undefined) state.target = [Number(m[5]), Number(m[6]), Number(m[7])];
+  else fit();
+  if (m[8] !== undefined) {
+    state.cam.panX = Number(m[8]);
+    state.cam.panY = Number(m[9]);
+  }
+  state.slice = m[10] !== undefined ? Math.min(SIDE - 1, Number(m[10])) : SIDE - 1;
   invalidatePick();
   emit("slice-changed");
   chip();
@@ -115,14 +130,10 @@ addEventListener("hashchange", () => {
 
 export function stepLevel(delta, crossWorld) {
   const data = state.data;
-  const l = state.lvl;
-  const world = data.themes.find((t) => t.id === l.theme);
-  const at = world.levels.indexOf(state.li);
-  let next = at + delta;
+  const world = data.themes.find((t) => t.id === state.lvl.theme);
+  const next = world.levels.indexOf(state.li) + delta;
   if (next >= 0 && next < world.levels.length) return selectLevel(world.levels[next]);
   if (!crossWorld) return;
-  const wi = data.themes.indexOf(world) + Math.sign(delta);
-  const w2 = data.themes[wi];
-  if (!w2) return;
-  selectLevel(delta > 0 ? w2.levels[0] : w2.levels[w2.levels.length - 1]);
+  const w2 = data.themes[data.themes.indexOf(world) + Math.sign(delta)];
+  if (w2) selectLevel(delta > 0 ? w2.levels[0] : w2.levels[w2.levels.length - 1]);
 }

@@ -20,9 +20,10 @@ on("help", showHelp);
 $("aboutBtn").onclick = showAbout;
 
 const HELP = [
-  ["drag / arrows", "pan"],
-  ["wheel, + −", "zoom"],
-  ["q e", "turn the level a quarter"],
+  ["drag", "turn the level"],
+  ["shift-drag, right-drag, arrows", "pan"],
+  ["wheel, pinch, + −", "zoom"],
+  ["q e", "snap the turn to 45°"],
   [", .", "lower and raise the slice"],
   ["\\", "put the whole level back"],
   ["[ ]", "previous and next level (shift crosses worlds)"],

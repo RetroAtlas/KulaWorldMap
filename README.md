@@ -10,13 +10,14 @@ Part of [RetroAtlas](https://retroatlas.org/), a collection of interactive maps 
 
 ## Using the map
 
-- **Pan** by dragging or with the arrow keys, **zoom** with the wheel, a pinch, or `+` / `-`.
-- **Rotate** the view a quarter turn with `q` and `e`. A lattice has no single right side to look from, so the map lets you walk around it; the rotation travels in the URL with everything else.
+- **Drag to turn the level.** A lattice has no side that is the right one to look from, so dragging orbits the camera around it rather than sliding the view: left and right swing around, up and down raise and lower the eye between looking along the floor and looking straight down. `q` and `e` snap the swing to 45°, and `f` frames the level again.
+- **Pan** with shift-drag, a right-drag, two fingers, or the arrow keys. If you would rather drag panned all the time, there is a switch for it under Display.
+- **Zoom** with the wheel, a pinch, or `+` / `-`, anchored wherever the pointer is.
 - **Slice** the level with `,` and `.`, which lower and raise a ceiling so you can see inside a stack. `\` puts the whole level back.
 - **Click** a block or an object for what the game stores about it: its lattice cell, its kind and type, and the raw fields the record carries. `Esc` clears.
 - **Search** with `/`: a level by name or number (`level 42`, `bonus`, `final 7`), a world by name (`inca`), an object kind by number or curated name, or a bare `x,y,z` to jump to a cell.
 - `[` and `]` step through the levels of the current world; `Shift` with either crosses into the next.
-- The URL is a permalink: `#L42/17,12,17/0.9/1/33` is level, centre, zoom, rotation and slice.
+- The URL is a permalink: `#L42/45,35/0.90/17,17,17/0,0/33` is level, the yaw and pitch it is turned to, zoom, the cell it orbits around, the pan away from that cell, and the slice.
 
 ## What the disc stores, and what it does not
 
@@ -78,7 +79,9 @@ Dependency-free Python 3, standard library only.
 
 ## The viewer
 
-`public/` is the deploy artifact: dependency-free ES modules, no build step. `js/main.js` boots, `js/state.js` holds shared state and the lattice-to-screen projection, and modules talk through the `emit`/`on` pair in `js/dom.js` rather than importing each other both ways.
+`public/` is the deploy artifact: dependency-free ES modules, no build step. `js/main.js` boots, `js/state.js` holds shared state and the camera, and modules talk through the `emit`/`on` pair in `js/dom.js` rather than importing each other both ways.
+
+The camera is a plain orbit: a yaw and a pitch give three unit vectors, and every point is projected orthographically onto two of them with the third as depth. Cubes are drawn back to front by that depth, which is exact for equal cubes on a lattice, and a face is drawn only when its outward normal turns toward the camera and the neighbour behind it is absent. Lighting comes from a fixed direction in the world rather than from the screen, so a face keeps its brightness as the view turns and the solid goes on reading as solid.
 
 ## Licensing
 

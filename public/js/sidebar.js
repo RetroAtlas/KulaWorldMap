@@ -106,6 +106,11 @@ export function wireDisplay() {
       draw();
     });
   }
+  $("panMode").checked = !!state.panMode;
+  $("panMode").addEventListener("change", (e) => {
+    state.panMode = e.target.checked;
+    save();
+  });
   $("slice").addEventListener("input", (e) => setSlice(Number(e.target.value)));
   $("resetDisplay").onclick = () => {
     state.show = { objects: true, start: true, labels: false, base: false, hidden: false };
@@ -118,6 +123,8 @@ export function wireDisplay() {
     ]) {
       $(id).checked = state.show[key];
     }
+    state.panMode = false;
+    $("panMode").checked = false;
     setSlice(SIDE - 1);
     save();
     invalidatePick();
@@ -139,14 +146,18 @@ export function wireDisplay() {
 
 function save() {
   try {
-    localStorage.setItem(KEY, JSON.stringify(state.show));
+    localStorage.setItem(KEY, JSON.stringify({ ...state.show, panMode: !!state.panMode }));
   } catch {}
 }
 
 export function restore() {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (v) Object.assign(state.show, v);
+    if (v) {
+      state.panMode = !!v.panMode;
+      delete v.panMode;
+      Object.assign(state.show, v);
+    }
   } catch {}
 }
 

@@ -1,13 +1,17 @@
 export const SIDE = 34;
-export const TILE = { w: 30, h: 15, v: 30 };
+export const BLOCK = 34;
+
+const DEG = Math.PI / 180;
+export const PITCH_MIN = -84;
+export const PITCH_MAX = 84;
 
 export const state = {
   data: null,
   lvl: null,
   li: -1,
-  rot: 0,
+  cam: { yaw: 45, pitch: 35, zoom: 1, panX: 0, panY: 0 },
+  target: [17, 17, 17],
   slice: SIDE - 1,
-  cam: { x: 0, y: 0, z: 1 },
   view: { w: 0, h: 0, dpr: 1 },
   show: { objects: true, start: true, labels: false, base: false, hidden: false },
   hiddenKinds: new Set(),
@@ -15,35 +19,54 @@ export const state = {
   selected: null,
 };
 
-const C = (SIDE - 1) / 2;
+let basis = null;
 
-export function rotate(x, y, r) {
-  const dx = x - C,
-    dy = y - C;
-  switch (r & 3) {
-    case 1:
-      return [dy, -dx];
-    case 2:
-      return [-dx, -dy];
-    case 3:
-      return [-dy, dx];
-    default:
-      return [dx, dy];
-  }
+/** Screen axes and the depth axis for the current yaw and pitch. */
+export function camera() {
+  const { yaw, pitch } = state.cam;
+  if (basis && basis.yaw === yaw && basis.pitch === pitch) return basis;
+  const cy = Math.cos(yaw * DEG),
+    sy = Math.sin(yaw * DEG);
+  const cp = Math.cos(pitch * DEG),
+    sp = Math.sin(pitch * DEG);
+  basis = {
+    yaw,
+    pitch,
+    right: [cy, sy, 0],
+    up: [-sp * sy, sp * cy, cp],
+    toward: [cp * sy, -cp * cy, sp], // scene toward camera
+  };
+  return basis;
 }
 
-/** Lattice cell to the flat plane the camera pans over. */
-export function plane(x, y, z) {
-  const [rx, ry] = rotate(x, y, state.rot);
-  return [(rx - ry) * TILE.w, (rx + ry) * TILE.h - (z - C) * TILE.v];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+/** A world point in projected units, before zoom and pan. */
+export function project(x, y, z) {
+  const c = camera();
+  return [
+    x * c.right[0] + y * c.right[1] + z * c.right[2],
+    -(x * c.up[0] + y * c.up[1] + z * c.up[2]),
+  ];
 }
 
-export const depth = (x, y, z) => {
-  const [rx, ry] = rotate(x, y, state.rot);
-  return rx + ry + z;
-};
+/** Distance away from the camera; larger is further, so draw larger first. */
+export function depth(x, y, z) {
+  const c = camera();
+  return -(x * c.toward[0] + y * c.toward[1] + z * c.toward[2]);
+}
 
-export const sx = (px) => (px - state.cam.x) * state.cam.z + state.view.w / 2;
-export const sy = (py) => (py - state.cam.y) * state.cam.z + state.view.h / 2;
+/** Whether a face with this outward normal turns toward the camera. */
+export const facing = (n) => dot(n, camera().toward) > 0;
+
+export function screen(x, y, z) {
+  const [px, py] = project(x, y, z);
+  const [tx, ty] = project(...state.target);
+  const { zoom, panX, panY } = state.cam;
+  return [
+    (px - tx - panX) * zoom * BLOCK + state.view.w / 2,
+    (py - ty - panY) * zoom * BLOCK + state.view.h / 2,
+  ];
+}
 
 export const cellKey = (x, y, z) => (x * SIDE + y) * SIDE + z;
