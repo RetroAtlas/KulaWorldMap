@@ -11,6 +11,13 @@ let cursor = -1;
 
 const norm = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
+// A number is answered as a whole word, so `level 45` does not also bring back
+// LEVEL 145. Words stay substrings, so `inc` still finds Inca.
+const matches = (hay, terms) => {
+  const words = hay.split(/[^a-z0-9]+/).filter(Boolean);
+  return terms.every((t) => (/^\d+$/.test(t) ? words.includes(t) : hay.includes(t)));
+};
+
 function levelHaystack(l) {
   return norm(`${l.name} ${l.theme} ${worldName(l.theme)}`);
 }
@@ -40,7 +47,7 @@ function search(q) {
 
   for (const w of state.data.themes) {
     const hay = norm(`${w.id} ${worldName(w.id)}`);
-    if (terms.every((t) => hay.includes(t))) {
+    if (matches(hay, terms)) {
       res.push({
         group: "Worlds",
         label: worldName(w.id),
@@ -52,7 +59,7 @@ function search(q) {
 
   state.data.levels.forEach((l, i) => {
     const hay = levelHaystack(l);
-    if (terms.every((t) => hay.includes(t))) {
+    if (matches(hay, terms)) {
       res.push({
         group: "Levels",
         label: l.name,
@@ -76,7 +83,7 @@ function search(q) {
   for (const [k, s] of kinds) {
     const name = kindName(s.kind, s.type);
     const hay = norm(`${name || ""} kind ${s.kind} type ${s.type} ${k}`);
-    if (terms.every((t) => hay.includes(t))) {
+    if (matches(hay, terms)) {
       res.push({
         group: "Object kinds",
         colour: kindColour(s.kind),
@@ -113,19 +120,40 @@ function jumpToKind(kind, type) {
   }
 }
 
+// The input drives a listbox it does not contain, so the pairing is spelled
+// out: the input owns aria-expanded and points at the row under the cursor,
+// and each row is an option the cursor can name.
+function open(expanded) {
+  out.hidden = !expanded;
+  box.setAttribute("aria-expanded", String(expanded));
+  const at = expanded && cursor >= 0 ? `hit${cursor}` : "";
+  if (at) box.setAttribute("aria-activedescendant", at);
+  else box.removeAttribute("aria-activedescendant");
+}
+
 function render() {
   out.textContent = "";
+  if (!box.value.trim()) {
+    open(false);
+    return;
+  }
   if (!hits.length) {
-    out.hidden = true;
+    out.append(el("div", { className: "empty", textContent: "Nothing matches that." }));
+    open(true);
     return;
   }
   let group = null;
+  let list = null;
   hits.forEach((h, i) => {
     if (h.group !== group) {
       group = h.group;
-      out.append(el("div", { className: "group", textContent: group }));
+      list = el("div", {}, el("div", { className: "group", textContent: group }));
+      list.setAttribute("role", "group");
+      list.setAttribute("aria-label", group);
+      out.append(list);
     }
-    const b = el("button", { type: "button" });
+    const b = el("button", { type: "button", id: `hit${i}` });
+    b.setAttribute("role", "option");
     if (h.colour)
       b.append(
         el("span", {
@@ -139,14 +167,15 @@ function render() {
       h.go();
       close();
     };
-    out.append(b);
+    list.append(b);
   });
-  out.hidden = false;
+  open(true);
+  if (cursor >= 0) $(`hit${cursor}`)?.scrollIntoView({ block: "nearest" });
 }
 
 const close = () => {
-  out.hidden = true;
   cursor = -1;
+  open(false);
   box.blur();
 };
 
@@ -185,5 +214,5 @@ box.addEventListener("keydown", (e) => {
   }
 });
 document.addEventListener("click", (e) => {
-  if (!out.hidden && !out.contains(e.target) && e.target !== box) out.hidden = true;
+  if (!out.hidden && !out.contains(e.target) && e.target !== box) open(false);
 });

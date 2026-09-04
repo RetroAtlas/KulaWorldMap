@@ -113,3 +113,22 @@ test("Escape leaves the drawer alone where it sits beside the map", async ({ pag
   await expect(page.locator("#scrim")).toBeHidden();
   expect(await page.evaluate(() => document.body.classList.contains("sidebar-open"))).toBe(true);
 });
+
+test("search answers a number as a whole word, and says when nothing matches", async ({ page }) => {
+  await page.goto("/");
+  await settle(page);
+  const search = page.locator("#search");
+  await search.fill("level 45");
+  await expect(page.locator("#results [role=option]")).toHaveCount(1);
+  await expect(page.locator("#results [role=option]").first()).toContainText("LEVEL 45");
+  await expect(search).toHaveAttribute("aria-expanded", "true");
+  await expect(search).toHaveAttribute("aria-activedescendant", "hit0");
+
+  await search.fill("zzzz");
+  await expect(page.locator("#results .empty")).toBeVisible();
+  await expect(search).not.toHaveAttribute("aria-activedescendant", /./);
+
+  await search.fill("");
+  await expect(page.locator("#results")).toBeHidden();
+  await expect(search).toHaveAttribute("aria-expanded", "false");
+});
