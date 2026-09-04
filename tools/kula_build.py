@@ -24,7 +24,7 @@ def level_json(L, theme, pack, index):
     for x, y, z, v in L.cells:
         cells += [x, y, z, v]
     objects = []
-    for k, e in enumerate(L.records):
+    for k, e in enumerate(L.objects):
         o = e.as_dict()
         o["r"] = k
         objects.append(o)

@@ -46,20 +46,19 @@ def main():
         sys.exit("no OBJ LEVEL in map_data.json; run tools/kula_build.py first")
     level = catalogues[0]
 
-    start_kind = data["startKind"]
     game = Counter()
     for l in data["levels"]:
         if l["name"] == "OBJ LEVEL":
             continue
         for o in l["objects"]:
-            if o["kind"] != start_kind:
-                game[(o["kind"], o["type"])] += 1
+            game[(o["kind"], o["type"])] += 1
 
     cells = level["cells"]
     floor = {(cells[i], cells[i + 1]): cells[i + 2] for i in range(0, len(cells), 4)}
     plane = Counter(floor.values()).most_common(1)[0][0]
     walk = serpentine(level["objects"])
     at = {(o["x"], o["y"]): i + 1 for i, o in enumerate(walk)}
+    start = level["start"]["at"]
 
     xs = [x for x, _ in floor] + [o["x"] for o in walk]
     ys = [y for _, y in floor] + [o["y"] for o in walk]
@@ -69,23 +68,22 @@ def main():
         for x in range(min(xs), max(xs) + 1):
             if (x, y) in at:
                 row.append(f"{at[(x, y)]:2d} ")
+            elif (x, y) == (start[0], start[1]):
+                row.append(" S ")
             elif (x, y) in floor:
                 row.append(" . ")
             else:
                 row.append("   ")
         plan.append("".join(row).rstrip())
-
-    start = level["start"]["at"]
     lines = [
         "# Naming Kula World's objects by walking OBJ LEVEL\n\n",
         f"`OBJ LEVEL` is {level['pack']} index {level['index']}, and eight more copies of it ",
         "sit in the other worlds' packs. The game never takes you there.\n\n",
         f"The floor is one plane at z={plane}, {max(xs) - min(xs) + 1} by ",
         f"{max(ys) - min(ys) + 1} blocks, carrying {len(walk)} objects of ",
-        f"{len({(o['kind'], o['type']) for o in walk if o['kind'] != start_kind})} "
-        "distinct kinds. ",
-        f"You start at ({start[0]},{start[1]},{start[2]}), which is number ",
-        f"{at.get((start[0], start[1]), '?')} on the plan.\n\n",
+        f"{len({(o['kind'], o['type']) for o in walk})} "
+        "distinct kind/type pairs. ",
+        f"You start at ({start[0]},{start[1]},{start[2]}), marked `S` on the plan.\n\n",
         "Numbers run left to right, then right to left on the next row, so walking them ",
         "in order never doubles back. Columns are x, rows are y, both increasing.\n\n",
         "```\n", "\n".join(plan), "\n```\n\n",
@@ -102,11 +100,10 @@ def main():
         n = game[key]
         where = "only here" if not n else f"{n}"
         fields = ", ".join(f"f{j + 5}={v}" for j, v in enumerate(o["f"]) if v != -1) or "none set"
-        note = " **start**" if [o["x"], o["y"], o["z"]] == start else ""
-        lines.append(f"| {i} | {o['x']},{o['y']},{o['z']} | {o['kind']}/{o['type']}{note} | "
+        lines.append(f"| {i} | {o['x']},{o['y']},{o['z']} | {o['kind']}/{o['type']} | "
                      f"{where} | {fields} | |\n")
 
-    seen = {(o["kind"], o["type"]) for o in walk if o["kind"] != start_kind}
+    seen = {(o["kind"], o["type"]) for o in walk}
     missing = sorted(k for k in game if k not in seen and game[k] >= 5)
     if missing:
         lines.append("\n## Not in the catalogue\n\n")
@@ -119,7 +116,7 @@ def main():
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(lines))
     print(f"{path} written: {len(walk)} objects, "
-          f"{len(seen)} distinct kinds, {len(missing)} common kinds not covered")
+          f"{len(seen)} kind/type pairs, {len(missing)} common ones not covered")
 
 
 if __name__ == "__main__":

@@ -81,6 +81,13 @@ class Level:
         """The 666 record: every level ends with exactly one."""
         return self.records[-1] if self.records and self.records[-1].kind == START_KIND else None
 
+    @property
+    def objects(self):
+        """The records that are things on blocks. The start is not one of them,
+        and reads as one only by accident: where an entity carries a type, it
+        carries the x of the cell it looks at."""
+        return self.records[:-1] if self.start else self.records
+
     def verify(self):
         """What has to hold if the lattice is being read the way the engine reads it.
 

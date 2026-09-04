@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import open_disc, packs
-from kula_level import Level, START_KIND
+from kula_level import Level
 from kula_pak import Pak
 
 OUT = Path(__file__).resolve().parent.parent / "out" / "kinds.md"
@@ -38,7 +38,7 @@ def report(levels, only=None):
     for L in levels:
         cells = {(c[0], c[1], c[2]): c[3] for c in L.cells}
         here = Counter()
-        for e in L.records:
+        for e in L.objects:
             key = (e.kind, e.type)
             here[key] += 1
             s = seen[key]
@@ -62,8 +62,6 @@ def report(levels, only=None):
         n_levels = len(s["levels"])
         once = sum(1 for _, n in s["levels"] if n == 1)
         out.append(f"## kind {kind} / type {typ}\n")
-        if kind == START_KIND:
-            out.append("The record every level ends with: start, look-at, angles, time.\n")
         out.append(f"- placed **{s['total']}** times across **{n_levels}** levels"
                    f"{', never more than once' if once == n_levels else f', exactly once in {once}'}\n")
         out.append(f"- worlds: {', '.join(f'{t}x{n}' for t, n in s['themes'].most_common())}\n")
