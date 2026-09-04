@@ -46,6 +46,7 @@ function showHelp() {
 
 function showAbout() {
   const d = state.data;
+  if (!d) return;
   const box = $("help");
   box.innerHTML = `<div class="box"><h3>About this map</h3>
     <p>An unofficial fan project, unaffiliated with the rights holders in <em>Kula World</em>.
