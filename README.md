@@ -33,7 +33,9 @@ The field at the head of the trailer is signed, and negative on 16 levels. It ma
 
 Every level ends with exactly one record of kind **666**, carrying the start position, a second position it looks at, two angles and a number that is 99 on 207 of the 230 levels and lower on a dozen of the numbered ones. That reads as the level's time, and the map shows it as such.
 
-**The artwork container is decoded; the map does not use it yet.** Each world's `.TGI` is a header, eleven sections, and a list of VRAM uploads that the game feeds straight to `LoadImage`. Replaying them recovers the page exactly: **56 textures of 64x64 per world**, three 4bpp mip levels of each, and 96 palettes. `tools/kula_tgi.py` will dump any of it. What is still open is which palette belongs to which texture, so the map goes on drawing the lattice in a stand-in tint per world. [SPIKE-TGI.md](SPIKE-TGI.md) has the detail and the addresses it came from.
+**The artwork is decoded; the map does not draw it yet.** Each world's `.TGI` is a header, eleven sections, and a list of VRAM uploads the game feeds straight to `LoadImage`. Replaying them recovers the page exactly: **56 textures of 64x64 per world**, three 4bpp mip levels of each, and 96 palettes. Section 6 says which palettes each texture wears, and every texture in every world pairs with exactly one triple of them, one per lighting level. `tools/kula_tgi.py --world HIRO --textures` writes the lot.
+
+What is still open is which texture belongs on which block face, which is a question about the level records rather than the artwork, so the map goes on drawing the lattice in a stand-in tint per world. [SPIKE-TGI.md](SPIKE-TGI.md) has the detail and the addresses it came from.
 
 **Object kinds ship as the game's own numbers.** The game names none of them, so [`public/annotations.json`](public/annotations.json) is where identified names go, per kind or per (kind, type) pair, and the viewer falls back to `kind 6 / type 1` for anything unnamed and says so in the detail panel. This mirrors OddworldMap, which curates its place names the same way.
 

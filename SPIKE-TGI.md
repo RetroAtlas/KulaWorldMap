@@ -22,8 +22,14 @@ The filenames are built at `0x0004ccf8`, which takes a world index, an extension
 
 **Palettes are two uploads parked off the side of the page**, 256 words wide at VRAM x=768, one 72 rows tall and one 25, giving 96 palettes of 256 colours. They are ordinary VRAM writes like anything else, which is why looking for them by scanning the file for smooth 16-bit runs found impostors: pixel data read as colour is smooth too.
 
+**Section 6 pairs each texture with its palettes.** A CLUT id for a palette at VRAM x=768 is `(row << 6) | 48`, so `id & 63 == 48` is a fingerprint, and section 6 is 16.5% such values against a fraction of a percent everywhere else. Its record is 20 `u16`, 427 of them, and the fingerprint falls on fixed slots within that stride.
+
+A record opens with three CLUT ids, and the same three palettes appear again as bare VRAM rows next to the position of each of the texture's four levels: `clut[3]`, then four times over a level's `x, y` and those rows again. Keying on the level-0 position pairs **all 56 textures with exactly one palette triple, in all ten worlds**, and that lack of any contradiction is what says the reading is right rather than merely possible. The 50 records whose position matches no texture point elsewhere in VRAM and are not needed for this.
+
+**The three palettes are three lighting levels.** The header's three fixed-point triples are `0.7 0.6 0.6`, `0.9 0.8 0.8` and `1.2 1.1 1.1`, and the three palettes come out at mean luminance `0.87 : 1.00 : 1.18` in the same order. The measured spread is narrower than the multipliers because 15-bit colour clamps at both ends, but the ordering and the count match, so the game ships each texture pre-shaded three ways rather than lighting it at runtime.
+
 ## Not settled
 
-**Which palette belongs to which texture.** There are 96 palettes and 56 textures, so it is not a plain pairing. Rendering texture *i* with palette *i* is visibly right for roughly the first third of them, sandstone hieroglyph blocks and hazard chevrons and a gold orb in Hiro's tomb world, and visibly wrong after that. The mapping is presumably in one of the nine sections ahead of the artwork, or carried on the geometry with the usual PS1 texture attributes. Note that a CLUT id of `(y << 6) | (x >> 4)` for these palettes would have `id & 63 == 48`, and none of the values that recur in the level records (`386`, `256`, `500`, `416`) do, so those fields are not it.
+**Which texture goes on which block face.** That is the level records' problem, not the artwork's: a face's texture has to be named somewhere in the 32-byte entities, and nothing yet ties one of their fields to a texture index.
 
-**Sections 0 to 9 are unread.** Section 9 is 225 KB and the largest after the artwork; the four 2 KB sections at 1 to 4 are suspiciously uniform. The geometry the game draws these textures on lives somewhere in there.
+**Sections 0 to 5 and 7 to 9 are unread.** Section 9 is 225 KB and the largest after the artwork, and the four 2 KB sections at 1 to 4 are suspiciously uniform. The geometry lives somewhere in there.

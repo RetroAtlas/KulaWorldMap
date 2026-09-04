@@ -32,6 +32,10 @@ HEADER = 400
 SECTIONS = 11
 COUNTS_AT = 356
 ART = 10              # the section holding the VRAM uploads
+MAP = 6               # the section pairing textures with their palettes
+MAP_STRIDE = 20       # u16 per record
+LEVELS = 4            # a texture and its three smaller levels
+SHADES = 3            # a palette per lighting level, which the header sets out
 VRAM_W, VRAM_H = 1024, 512
 TEX = (32, 64)        # the blit shape of a full-size texture, in words
 
@@ -91,11 +95,36 @@ def textures(blob):
     return [b for b in blits(blob)[0] if (b["w"], b["h"]) == TEX]
 
 
+def palette_map(blob):
+    """Which palettes each texture is drawn with.
+
+    Section 6 is a table of 20 u16. The first three are CLUT ids, and the same
+    palettes appear again as bare VRAM rows beside the position of each of the
+    texture's four levels. Keying on the level-0 position pairs every texture
+    with exactly one triple, which is the check that this reading is right.
+    """
+    bounds = sections(blob)
+    lo, hi = bounds[MAP], bounds[MAP + 1]
+    n = (hi - lo) // 2
+    w = struct.unpack_from(f"<{n}H", blob, lo)
+    at = {(b["x"], b["y"]): i for i, b in enumerate(textures(blob))}
+    out = {}
+    for r in range(n // MAP_STRIDE):
+        rec = w[r * MAP_STRIDE:(r + 1) * MAP_STRIDE]
+        i = at.get((rec[3], rec[4]))
+        if i is not None:
+            out[i] = rec[5:5 + SHADES]
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--disc", default=None)
     ap.add_argument("--world", default="HIRO", choices=THEMES)
-    ap.add_argument("--clut", type=int, default=0)
+    ap.add_argument("--clut", type=int, default=None,
+                    help="force one palette; default is each texture's own")
+    ap.add_argument("--shade", type=int, default=1, choices=range(SHADES),
+                    help="which of the three lighting levels to draw")
     ap.add_argument("--sections", action="store_true")
     ap.add_argument("--vram", action="store_true")
     ap.add_argument("--textures", action="store_true")
@@ -127,12 +156,19 @@ def main():
 
     if args.textures:
         tex = textures(blob)
-        pal = pals[args.clut][1] if pals else [(i, i, i) for i in range(256)]
+        by_row = dict(pals)
+        pmap = palette_map(blob)
         cols = 8
         rows = (len(tex) + cols - 1) // cols
         W, H = cols * 64, rows * 64
         px = bytearray(W * H * 4)
+        grey = [(i, i, i) for i in range(256)]
         for i, b in enumerate(tex):
+            if args.clut is not None:
+                pal = pals[args.clut][1] if pals else grey
+            else:
+                rows = pmap.get(i)
+                pal = by_row.get(rows[args.shade], grey) if rows else grey
             tx, ty = (i % cols) * 64, (i // cols) * 64
             for y in range(64):
                 for x in range(64):
@@ -140,9 +176,10 @@ def main():
                     r, g, bb = pal[v]
                     o = ((ty + y) * W + tx + x) * 4
                     px[o:o + 4] = bytes((r, g, bb, 255))
-        name = f"{args.world}-textures-clut{args.clut}.png"
+        tag = f"clut{args.clut}" if args.clut is not None else f"shade{args.shade}"
+        name = f"{args.world}-textures-{tag}.png"
         write_png(OUT / name, W, H, bytes(px))
-        print(f"{OUT / name}  {len(tex)} textures with palette {args.clut} of {len(pals)}")
+        print(f"{OUT / name}  {len(tex)} textures, {len(pmap)} of them paired with a palette")
 
 
 if __name__ == "__main__":
