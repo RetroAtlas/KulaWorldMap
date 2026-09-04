@@ -41,7 +41,9 @@ class Entity:
 
     @property
     def placed(self):
-        return self.x != -1
+        """Unused entity slots are not blanked consistently, so what marks one
+        used is that its position is a cell the lattice actually has."""
+        return all(0 <= v < SIDE for v in (self.x, self.y, self.z))
 
     def as_dict(self):
         d = {"x": self.x, "y": self.y, "z": self.z, "kind": self.kind, "type": self.type,

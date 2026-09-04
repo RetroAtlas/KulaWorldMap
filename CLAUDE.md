@@ -10,6 +10,10 @@ Do not re-derive this by pattern-matching on file sizes. Level records vary in l
 
 The `u32` at the head of the trailer is the game's own count of something block-shaped, and no subset rule over the cell values reproduces it on more than 80 of the 230 levels. It ships as a raw field rather than being called a block count.
 
+## Entities that are not there
+
+A record holds six 32-byte entity slots and the game does not blank the unused ones consistently: 56 of them across the game carry a readable-looking position of `(0, -1, -1)`. What marks a slot used is that its position is a cell the lattice actually has, which is what `Entity.placed` tests. The symmetry is the evidence: with that rule the five secondary slots hold exactly 51 entities each, and slot 2 stops being an outlier at 107.
+
 ## Conventions
 
 - The deployed site is `public/`, and the host serves that directory, so repo artefacts (`README.md`, this file) cannot ship by accident. `.github/workflows/static.yml` matches the sibling projects verbatim, action versions included.

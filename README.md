@@ -24,7 +24,9 @@ Every level is one zlib record inside its world's `.PAK`, and inflates to a fixe
 
 The five styles below 5 are the game's own numbers and carry no record: 4517 cells are style 0, then 1065, 527, 70 and 9 of styles 3, 2, 1 and 4. What tells them apart is not decoded, and the map draws them as shades of the world's tint.
 
-A record holds up to six 32-byte entities, though only the first is used except on a handful of levels. An entity is a position, a `kind` the engine dispatches on, a `type` within that kind, and eleven more fields whose meaning follows from the kind.
+A record holds up to six 32-byte entities, though only the first is used except on a handful of levels: the five secondary slots hold exactly 51 entities each across the whole game. Unused slots are not blanked consistently, so what marks one used is that its position is a cell the lattice has.
+
+An entity is a position, a `kind` the engine dispatches on, a `type` within that kind, and eleven more fields whose meaning follows from the kind. Kind and type are close to orthogonal: the game has only **33 distinct types**, and the same type appears under several kinds.
 
 Every level ends with exactly one record of kind **666**, carrying the start position, a second position it looks at, two angles and a number that is 99 on 207 of the 230 levels and lower on a dozen of the numbered ones. That reads as the level's time, and the map shows it as such.
 
@@ -36,7 +38,7 @@ Every level ends with exactly one record of kind **666**, carrying the start pos
 
 ## Two things the disc was hiding
 
-**`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: one or a few of nearly every kind in the game, 33 distinct (kind, type) pairs, laid out in a row on a flat floor. It is the shortest route to naming the objects, because walking it in an emulator makes each one identify itself in a known order.
+**`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: 45 objects on a flat floor covering **26 of the game's 33 types**, and the seven it misses are placed 85 times between them against the 26's four thousand. Walking it once in an emulator names most of the game's vocabulary. `tools/kula_objlevel.py` writes the floor plan and the sheet to fill in.
 
 **`HIDDEN 10`**, the last hidden level of the last world, carries 178 blocks of which only 18 are the level. The other 160 lie flat on z=32, the ceiling of the lattice, 22 blocks above anything you can stand on, spelling **VERY WELL DONE** in block capitals six blocks tall.
 
