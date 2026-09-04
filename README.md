@@ -38,7 +38,7 @@ Every level ends with exactly one record of kind **666**, carrying the start pos
 
 The map uses the three shipped brightnesses as the three faces of a cube, which is what they are for, so the lighting is the game's rather than invented. `tools/kula_tex.py` writes the atlas the viewer samples.
 
-**What a block carrying an object wears is not decoded.** Those draw the world's plain stone with the object's marker above them. [SPIKE-TGI.md](SPIKE-TGI.md) has the detail and the addresses it came from.
+A cell carrying a record is not a differently skinned block: 92 cells in the game carry more than one entity, and a block has one skin, so those records are things standing on the block. Every cell draws one of the five styles, and the map shows what is standing there as a marker above it. Drawing the objects themselves is a different job, and probably not one this table can do. [SPIKE-TGI.md](SPIKE-TGI.md) has the detail and the addresses it came from.
 
 **Object kinds ship as the game's own numbers.** The game names none of them, so [`public/annotations.json`](public/annotations.json) is where identified names go, per kind or per (kind, type) pair, and the viewer falls back to `kind 6 / type 1` for anything unnamed and says so in the detail panel. This mirrors OddworldMap, which curates its place names the same way.
 

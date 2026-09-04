@@ -32,7 +32,9 @@ HEADER = 400
 SECTIONS = 11
 COUNTS_AT = 356
 ART = 10              # the section holding the VRAM uploads
-MAP = 6               # the section pairing textures with their palettes
+MODELS = 5            # a table of (first, count) runs into the quads of section 6
+MAP = 6               # the quads, which also pair textures with their palettes
+STYLE_MODEL = 7       # the model a lattice cell of style 0 draws
 MAP_STRIDE = 20       # u16 per record
 LEVELS = 4            # a texture and its three smaller levels
 SHADES = 3            # a palette per lighting level, which the header sets out
@@ -93,6 +95,37 @@ def cluts(page):
 
 def textures(blob):
     return [b for b in blits(blob)[0] if (b["w"], b["h"]) == TEX]
+
+
+def models(blob):
+    """Each model as the textures of its quads, in order.
+
+    Section 5 is (first, count) pairs, and the loop at 0x000259b8 indexes it
+    with a stride of 4 bytes. The table is identical in all ten worlds, so a
+    model means the same thing everywhere and only the pixels change.
+    """
+    bounds = sections(blob)
+    pairs = struct.unpack_from(f"<{(bounds[MODELS + 1] - bounds[MODELS]) // 2}h",
+                               blob, bounds[MODELS])
+    quads = (bounds[MAP + 1] - bounds[MAP]) // 2 // MAP_STRIDE
+    w = struct.unpack_from(f"<{(bounds[MAP + 1] - bounds[MAP]) // 2}H", blob, bounds[MAP])
+    at = {(b["x"], b["y"]): i for i, b in enumerate(textures(blob))}
+    out = []
+    for i in range(len(pairs) // 2):
+        first, count = pairs[i * 2], pairs[i * 2 + 1]
+        out.append([at.get((w[r * MAP_STRIDE + 3], w[r * MAP_STRIDE + 4]))
+                    for r in range(first, first + max(0, count)) if 0 <= r < quads])
+    return out
+
+
+def style_textures(blob):
+    """The texture each lattice style below firstRecord draws.
+
+    The five styles are the five single-quad models from STYLE_MODEL up, which
+    hold the four textures a world changes plus one shared panel.
+    """
+    m = models(blob)
+    return [m[STYLE_MODEL + s][0] for s in range(5)]
 
 
 def palette_map(blob):

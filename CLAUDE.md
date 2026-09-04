@@ -14,6 +14,10 @@ The field at the head of the trailer is **signed**, and negative on 16 levels, d
 
 A record holds six 32-byte entity slots and the game does not blank the unused ones consistently: 56 of them across the game carry a readable-looking position of `(0, -1, -1)`. What marks a slot used is that its position is a cell the lattice actually has, which is what `Entity.placed` tests. The symmetry is the evidence: with that rule the five secondary slots hold exactly 51 entities each, and slot 2 stops being an outlier at 107.
 
+## Blocks and the things on them
+
+A lattice cell below `firstRecord` is a block style, and the five styles are models 7 to 11 of the shared table in the artwork file, which is where `tools/kula_tex.py` gets them. A cell at or above it names a record, and that record is **not** a differently skinned block: 92 cells in the game carry more than one entity and a block has one skin, so the entities are things standing on it. Every cell draws a style; what is on it is a marker.
+
 ## Conventions
 
 - The deployed site is `public/`, and the host serves that directory, so repo artefacts (`README.md`, this file) cannot ship by accident. `.github/workflows/static.yml` matches the sibling projects verbatim, action versions included.

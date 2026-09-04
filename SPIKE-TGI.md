@@ -32,9 +32,11 @@ A record opens with three CLUT ids, and the same three palettes appear again as 
 
 Models 7, 8, 9 and 10 are single quads onto textures 0 to 3, which are the four the world changes and the lattice's plain block styles draw. Model 11 is the shared panel at texture 8.
 
-## Not settled
+**A cell carrying a record is not a differently skinned block.** 92 cells in the game carry more than one entity, and a block has only one skin, so a record's entities are things standing on the block rather than the block itself. Every lattice cell therefore draws one of the five styles, which is what the map does, and `tools/kula_tex.py` now derives the five from models 7 to 11 rather than being told them.
 
-**Which model a cell carrying a record picks.** The four plain styles are settled, but an entity's `type` runs to 56 against 119 models and nothing yet proves the index. Those blocks draw the world's stone in the meantime.
+The loop at `0x000259b8` indexes section 5 with a stride of 4 bytes from a model id, so an object's model is a section-5 entry too. Which entry an entity picks is not settled, and neither `kind` nor `type` survives inspection: `kind` takes only ten values and would give 4477 of the game's entities the same single quad, while `type` runs up to 56 across a stretch of the table where models 24 to 33 are all the same placeholder. The likelier reading is that the objects are not in this table at all. Section 5 and 6 are quads, and a key or a piece of fruit is a solid; section 9 is 225 KB and unread, which is the space for real geometry.
+
+## Not settled
 
 **Which texture goes on which block face.** That is the level records' problem, not the artwork's: a face's texture has to be named somewhere in the 32-byte entities, and nothing yet ties one of their fields to a texture index.
 

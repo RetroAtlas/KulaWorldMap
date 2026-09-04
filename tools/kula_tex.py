@@ -28,7 +28,6 @@ from kula_disc import open_disc, THEMES
 from png import write_png
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "tex" / "blocks.png"
-STYLE_TEXTURE = [0, 1, 2, 3, 8]   # what each lattice style below firstRecord draws
 SHADES = 3
 SIZE = 64
 
@@ -39,7 +38,8 @@ def main():
     args = ap.parse_args()
     disc = open_disc(args.disc)
 
-    cols = len(STYLE_TEXTURE) * SHADES
+    first = tgi.style_textures(disc.read_file(f"/{THEMES[0]}/{THEMES[0]}.TGI"))
+    cols = len(first) * SHADES
     W, H = cols * SIZE, len(THEMES) * SIZE
     px = bytearray(W * H * 4)
     for row, world in enumerate(THEMES):
@@ -48,7 +48,10 @@ def main():
         pals = dict(tgi.cluts(page))
         pmap = tgi.palette_map(blob)
         tex = tgi.textures(blob)
-        for s, ti in enumerate(STYLE_TEXTURE):
+        styles = tgi.style_textures(blob)
+        if styles != first:
+            sys.exit(f"{world} names different style textures ({styles} vs {first})")
+        for s, ti in enumerate(styles):
             rows = pmap.get(ti)
             for k in range(SHADES):
                 pal = pals.get(rows[k]) if rows else None
@@ -64,7 +67,7 @@ def main():
     OUT.parent.mkdir(parents=True, exist_ok=True)
     write_png(OUT, W, H, bytes(px))
     print(f"{OUT.relative_to(OUT.parent.parent.parent)}  {W}x{H}  "
-          f"{len(THEMES)} worlds x {len(STYLE_TEXTURE)} styles x {SHADES} shades "
+          f"{len(THEMES)} worlds x {len(first)} styles {first} x {SHADES} shades "
           f"({OUT.stat().st_size/1024:.0f} KB)")
 
 
