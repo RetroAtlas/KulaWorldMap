@@ -291,7 +291,7 @@ export function draw() {
 
     if (state.show.objects && !ghost) {
       const objs = idx.objects.get(key);
-      if (objs) drawObjects(objs, c);
+      if (objs) for (const o of objs) drawObject(o, c);
     }
     if (sel || hov) outline(c, idx, sel ? "#ffffff" : "#ffffffb0");
   }
@@ -329,34 +329,47 @@ function above(c) {
   return [px, py];
 }
 
-function drawObjects(objs, c) {
-  const shown = objs.filter((o) => !state.hiddenKinds.has(`${o.kind}/${o.type}`));
-  if (!shown.length) return;
+// A cell names one record and a record holds one entity, so a marker stands
+// for exactly one object. Colour carries its kind, of which there are nine;
+// the number is its type, of which there are 35, and there is no encoding of
+// that many a reader could hold, so the marker says it outright once it has
+// the room.
+function drawObject(o, c) {
+  if (state.hiddenKinds.has(`${o.kind}/${o.type}`)) return;
   const [px, top] = above(c);
   const r = Math.max(4, 7 * state.cam.zoom);
+  const oy = top - 8 * state.cam.zoom;
   ctx.strokeStyle = "rgba(232 238 251 / 0.35)";
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(px, top);
-  ctx.lineTo(px, top - 8 * state.cam.zoom - (shown.length - 1) * (r * 1.8));
+  ctx.lineTo(px, oy);
   ctx.stroke();
-  shown.forEach((o, i) => {
-    const oy = top - 8 * state.cam.zoom - i * (r * 1.8);
-    ctx.fillStyle = kindColour(o.kind);
-    ctx.strokeStyle = "rgba(9 13 20 / 0.9)";
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(px, oy - r);
-    ctx.lineTo(px + r, oy);
-    ctx.lineTo(px, oy + r);
-    ctx.lineTo(px - r, oy);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    if (state.show.labels && state.cam.zoom > 0.45) {
-      label(kindName(o.kind, o.type) || `kind ${o.kind}/${o.type}`, px + r + 4, oy + 4, "#e8eefb");
-    }
-  });
+
+  ctx.fillStyle = kindColour(o.kind);
+  ctx.strokeStyle = "rgba(9 13 20 / 0.9)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(px, oy - r);
+  ctx.lineTo(px + r, oy);
+  ctx.lineTo(px, oy + r);
+  ctx.lineTo(px - r, oy);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  if (r >= 9) {
+    ctx.font = `${Math.round(r * 0.95)}px ui-monospace, Menlo, monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "rgba(9 13 20 / 0.85)";
+    ctx.fillText(String(o.type), px, oy + 0.5);
+    ctx.textAlign = "start";
+    ctx.textBaseline = "alphabetic";
+  }
+  if (state.show.labels && state.cam.zoom > 0.45) {
+    label(kindName(o.kind, o.type) || `kind ${o.kind}/${o.type}`, px + r + 4, oy + 4, "#e8eefb");
+  }
 }
 
 function label(text, x, y, colour) {

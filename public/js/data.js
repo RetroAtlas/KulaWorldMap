@@ -81,9 +81,21 @@ export function kindStats(data) {
   return stats;
 }
 
-export function kindColour(kind) {
-  const hue = (kind * 47 + 200) % 360;
-  return `hsl(${hue} 78% 62%)`;
-}
+// Nine kinds is few enough to pick colours for: spacing that many by formula
+// leaves several of them a few degrees apart. Kind 0 is three markers in every
+// four, so it takes the quiet one and the rest read as the exceptions they are.
+const KIND_COLOUR = {
+  0: "#9fb3d1",
+  1: "#a78bfa",
+  2: "#e879f9",
+  3: "#a3e635",
+  5: "#22d3ee",
+  6: "#fbbf24",
+  7: "#60a5fa",
+  8: "#34d399",
+  9: "#fb7185",
+};
+
+export const kindColour = (kind) => KIND_COLOUR[kind] || "#94a3b8";
 
 export const inLattice = (v) => Number.isInteger(v) && v >= 0 && v < SIDE;
