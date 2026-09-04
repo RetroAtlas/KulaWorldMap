@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
-"""Probe a world's .TGI, the file that holds its artwork.
+"""A world's .TGI: its artwork, as the game itself reads it.
 
-The format is partly decoded; see SPIKE-TGI.md for what is settled and what is
-not. This tool is the fast way to look at it, because the questions left are
-visual ones: dump the atlas and see whether a guess lines up.
+The file is a 400-byte header, then eleven sections whose lengths are counts of
+u16 stored at header offsets 356..396. The parser at 0x000253e0 walks exactly
+that, and the cumulative lengths land on the file size in all ten worlds.
 
-    python3 tools/kula_tgi.py --world HIRO --grey      out/tgi/HIRO-grey.png
-    python3 tools/kula_tgi.py --world HIRO --palettes  out/tgi/HIRO-clut.png
-    python3 tools/kula_tgi.py --world HIRO --colour --clut 3
-    python3 tools/kula_tgi.py --world HIRO --profile   where the regions are
+The last section is the artwork, and it is not a picture: it is a list of VRAM
+uploads. Each is `u16 x, y, w, h` followed by w*h halfwords of raw VRAM, handed
+straight to the Psy-Q LoadImage at 0x000254e0. So `w` counts 16-bit words, and
+an 8bpp texture is twice that many pixels wide.
+
+Each world uploads 56 textures of 64x64 at 8bpp, three smaller 4bpp mip levels
+of each, and two blocks of 256-entry palettes parked off to the side of VRAM.
+
+    python3 tools/kula_tgi.py --world HIRO --sections
+    python3 tools/kula_tgi.py --world HIRO --vram
+    python3 tools/kula_tgi.py --world HIRO --textures --clut 0
 """
 import argparse
 import struct
@@ -21,113 +28,121 @@ from png import write_png
 
 OUT = Path(__file__).resolve().parent.parent / "out" / "tgi"
 
-HEADER = 400          # lighting and shading parameters, then the data
-TILE = 64             # pixels; rows are 64 bytes, so the pixels are 8bpp
-CLUT_ENTRIES = 256
-CLUT_BYTES = CLUT_ENTRIES * 2
+HEADER = 400
+SECTIONS = 11
+COUNTS_AT = 356
+ART = 10              # the section holding the VRAM uploads
+VRAM_W, VRAM_H = 1024, 512
+TEX = (32, 64)        # the blit shape of a full-size texture, in words
 
 
-def clut_run(blob):
-    """The stretch of 512-byte blocks that really are palettes.
-
-    Smoothness alone is not enough: pixel data read as 16-bit passes it. What
-    separates them is that every entry of a real palette has its top bit set,
-    and that a palette holds far more distinct values than pixel data does.
-    """
-    def is_clut(off):
-        v = struct.unpack_from(f"<{CLUT_ENTRIES}H", blob, off)
-        return (sum(1 for x in v if x & 0x8000) == CLUT_ENTRIES
-                and len(set(v)) >= 120)
-
-    best = None
-    start = None
-    for off in range(0, len(blob) - CLUT_BYTES, CLUT_BYTES):
-        ok = is_clut(off)
-        if ok and start is None:
-            start = off
-        elif not ok and start is not None:
-            if best is None or off - start > best[1] - best[0]:
-                best = (start, off)
-            start = None
-    if start is not None and (best is None or len(blob) - start > best[1] - best[0]):
-        best = (start, len(blob) // CLUT_BYTES * CLUT_BYTES)
-    return best
+def sections(blob):
+    counts = struct.unpack_from(f"<{SECTIONS}I", blob, COUNTS_AT)
+    bounds, off = [HEADER], HEADER
+    for c in counts:
+        off += c * 2
+        bounds.append(off)
+    return bounds
 
 
-def palette(blob, base, i):
-    v = struct.unpack_from(f"<{CLUT_ENTRIES}H", blob, base + i * CLUT_BYTES)
-    return [(((x & 31) << 3), (((x >> 5) & 31) << 3), (((x >> 10) & 31) << 3)) for x in v]
+def blits(blob):
+    bounds = sections(blob)
+    p, end = bounds[ART], bounds[ART + 1]
+    out = []
+    while p + 8 <= end:
+        x, y, w, h = struct.unpack_from("<4H", blob, p)
+        p += 8
+        n = w * h * 2
+        if not n or p + n > end:
+            break
+        out.append({"x": x, "y": y, "w": w, "h": h, "at": p})
+        p += n
+    return out, p == end
 
 
-def sheet(blob, start, cols, rows, pal=None):
-    w, h = cols * TILE, rows * TILE
-    out = bytearray(w * h * 4)
-    for i in range(cols * rows):
-        base = start + i * TILE * TILE
-        tx, ty = i % cols, i // cols
-        for y in range(TILE):
-            for x in range(TILE):
-                p = base + y * TILE + x
-                v = blob[p] if p < len(blob) else 0
-                c = pal[v] if pal else (v, v, v)
-                o = ((ty * TILE + y) * w + (tx * TILE + x)) * 4
-                out[o], out[o + 1], out[o + 2], out[o + 3] = c[0], c[1], c[2], 255
-    return w, h, bytes(out)
+def vram(blob):
+    """Replay every upload into a 1024x512 page of 16-bit words."""
+    page = bytearray(VRAM_W * VRAM_H * 2)
+    for b in blits(blob)[0]:
+        for row in range(b["h"]):
+            src = b["at"] + row * b["w"] * 2
+            dst = ((b["y"] + row) * VRAM_W + b["x"]) * 2
+            if b["y"] + row >= VRAM_H:
+                break
+            page[dst:dst + b["w"] * 2] = blob[src:src + b["w"] * 2]
+    return page
+
+
+def rgb(word):
+    return ((word & 31) << 3, ((word >> 5) & 31) << 3, ((word >> 10) & 31) << 3)
+
+
+def cluts(page):
+    """Every 256-entry palette row parked to the right of the textures."""
+    out = []
+    for y in range(VRAM_H):
+        row = struct.unpack_from("<256H", page, (y * VRAM_W + 768) * 2)
+        if sum(1 for v in row if v & 0x8000) == 256 and len(set(row)) >= 32:
+            out.append((y, [rgb(v) for v in row]))
+    return out
+
+
+def textures(blob):
+    return [b for b in blits(blob)[0] if (b["w"], b["h"]) == TEX]
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--disc", default=None)
     ap.add_argument("--world", default="HIRO", choices=THEMES)
-    ap.add_argument("--start", type=lambda v: int(v, 0), default=HEADER)
-    ap.add_argument("--cols", type=int, default=12)
-    ap.add_argument("--rows", type=int, default=12)
-    ap.add_argument("--clut", type=int, default=None, help="palette index for --colour")
-    ap.add_argument("--grey", action="store_true")
-    ap.add_argument("--colour", action="store_true")
-    ap.add_argument("--palettes", action="store_true")
-    ap.add_argument("--profile", action="store_true")
+    ap.add_argument("--clut", type=int, default=0)
+    ap.add_argument("--sections", action="store_true")
+    ap.add_argument("--vram", action="store_true")
+    ap.add_argument("--textures", action="store_true")
     args = ap.parse_args()
 
     disc = open_disc(args.disc)
     blob = disc.read_file(f"/{args.world}/{args.world}.TGI")
     OUT.mkdir(parents=True, exist_ok=True)
-    run = clut_run(blob)
+    bl, exact = blits(blob)
+    page = vram(blob)
+    pals = cluts(page)
 
-    if args.profile or not (args.grey or args.colour or args.palettes):
+    if args.sections or not (args.vram or args.textures):
+        bounds = sections(blob)
         print(f"{args.world}.TGI  {len(blob)} bytes")
-        print(f"  header       0 - {HEADER}")
-        if run:
-            n = (run[1] - run[0]) // CLUT_BYTES
-            print(f"  palettes  {run[0]:6} - {run[1]:6}   {n} of {CLUT_ENTRIES} colours")
-            print(f"  pixels    {HEADER:6} - {run[0]:6} and {run[1]:6} - {len(blob)}"
-                  f"   ({(run[0] - HEADER + len(blob) - run[1]) / (TILE * TILE):.1f} tiles' worth)")
-        else:
-            print("  no palette run found")
-        if not (args.grey or args.colour or args.palettes):
-            return
+        for i in range(SECTIONS):
+            print(f"  section {i:2}: {bounds[i]:7} .. {bounds[i+1]:7}  {bounds[i+1]-bounds[i]:7} bytes")
+        print(f"  section {ART} holds {len(bl)} VRAM uploads, "
+              f"{'ending exactly on the section' if exact else 'NOT ending on the section'}")
+        print(f"  {len(textures(blob))} textures of 64x64, {len(pals)} palettes")
 
-    if args.palettes and run:
-        n = (run[1] - run[0]) // CLUT_BYTES
-        scale = 3
-        w, h = CLUT_ENTRIES, n * scale
-        out = bytearray(w * h * 4)
-        for r in range(n):
-            p = palette(blob, run[0], r)
-            for i, c in enumerate(p):
-                for s in range(scale):
-                    o = ((r * scale + s) * w + i) * 4
-                    out[o], out[o + 1], out[o + 2], out[o + 3] = c[0], c[1], c[2], 255
-        path = OUT / f"{args.world}-clut.png"
-        write_png(path, w, h, bytes(out))
-        print(f"{path}  {n} palettes")
+    if args.vram:
+        px = bytearray(VRAM_W * VRAM_H * 4)
+        for i in range(VRAM_W * VRAM_H):
+            r, g, b = rgb(struct.unpack_from("<H", page, i * 2)[0])
+            px[i * 4:i * 4 + 4] = bytes((r, g, b, 255))
+        write_png(OUT / f"{args.world}-vram.png", VRAM_W, VRAM_H, bytes(px))
+        print(f"{OUT / f'{args.world}-vram.png'}  the whole page as 16-bit colour")
 
-    if args.grey or args.colour:
-        pal = palette(blob, run[0], args.clut) if (args.colour and run and args.clut is not None) else None
-        w, h, px = sheet(blob, args.start, args.cols, args.rows, pal)
-        name = f"{args.world}-{'colour' if pal else 'grey'}-{args.start}.png"
-        write_png(OUT / name, w, h, px)
-        print(f"{OUT / name}  {w}x{h}, {args.cols * args.rows} tiles from {args.start}")
+    if args.textures:
+        tex = textures(blob)
+        pal = pals[args.clut][1] if pals else [(i, i, i) for i in range(256)]
+        cols = 8
+        rows = (len(tex) + cols - 1) // cols
+        W, H = cols * 64, rows * 64
+        px = bytearray(W * H * 4)
+        for i, b in enumerate(tex):
+            tx, ty = (i % cols) * 64, (i // cols) * 64
+            for y in range(64):
+                for x in range(64):
+                    v = blob[b["at"] + y * 64 + x]
+                    r, g, bb = pal[v]
+                    o = ((ty + y) * W + tx + x) * 4
+                    px[o:o + 4] = bytes((r, g, bb, 255))
+        name = f"{args.world}-textures-clut{args.clut}.png"
+        write_png(OUT / name, W, H, bytes(px))
+        print(f"{OUT / name}  {len(tex)} textures with palette {args.clut} of {len(pals)}")
 
 
 if __name__ == "__main__":

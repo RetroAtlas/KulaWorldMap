@@ -33,7 +33,7 @@ The field at the head of the trailer is signed, and negative on 16 levels. It ma
 
 Every level ends with exactly one record of kind **666**, carrying the start position, a second position it looks at, two angles and a number that is 99 on 207 of the 230 levels and lower on a dozen of the numbered ones. That reads as the level's time, and the map shows it as such.
 
-**The artwork is only half decoded.** Each world's `.TGI` holds its textures, 6.2 MB across the ten of them. The pixels are 8bpp indexed with 64-byte rows and render as legible artwork, and the palettes are found, but where the tile array starts and which palette goes with which texture are not settled. So the map still draws the lattice in a stand-in palette per world: the structure, the objects and the routes are the game's, and the colours are not. [SPIKE-TGI.md](SPIKE-TGI.md) records what is known, and `tools/kula_tgi.py` is the tool for the next attempt.
+**The artwork container is decoded; the map does not use it yet.** Each world's `.TGI` is a header, eleven sections, and a list of VRAM uploads that the game feeds straight to `LoadImage`. Replaying them recovers the page exactly: **56 textures of 64x64 per world**, three 4bpp mip levels of each, and 96 palettes. `tools/kula_tgi.py` will dump any of it. What is still open is which palette belongs to which texture, so the map goes on drawing the lattice in a stand-in tint per world. [SPIKE-TGI.md](SPIKE-TGI.md) has the detail and the addresses it came from.
 
 **Object kinds ship as the game's own numbers.** The game names none of them, so [`public/annotations.json`](public/annotations.json) is where identified names go, per kind or per (kind, type) pair, and the viewer falls back to `kind 6 / type 1` for anything unnamed and says so in the detail panel. This mirrors OddworldMap, which curates its place names the same way.
 
@@ -75,7 +75,7 @@ Dependency-free Python 3, standard library only.
 | `kula_build.py` | reads every level and writes `public/map_data.json` |
 | `kula_kinds.py` | per-kind contact sheets, for naming objects |
 | `kula_objlevel.py` | the floor plan and sheet for naming objects by walking OBJ LEVEL |
-| `kula_tgi.py` | probe a world's artwork; see SPIKE-TGI.md |
+| `kula_tgi.py` | a world's artwork: sections, VRAM page, textures |
 | `mips.py` | disassemble the executable, which is how the lattice was pinned down |
 | `serve.py` | local static server, caching off |
 
