@@ -1,0 +1,4 @@
+# JSON keeps its committed formats
+*.json
+# prose Markdown is never wrapped
+*.md

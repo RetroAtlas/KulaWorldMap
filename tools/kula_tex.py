@@ -18,12 +18,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import importlib.util
-
-_spec = importlib.util.spec_from_file_location("kula_tgi", Path(__file__).resolve().parent / "kula_tgi.py")
-tgi = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(tgi)
-
+import kula_tgi as tgi
 from kula_disc import open_disc, THEMES
 from png import write_png
 

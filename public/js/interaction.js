@@ -1,5 +1,5 @@
 import { $, emit } from "./dom.js";
-import { state, SIDE, BLOCK, PITCH_MIN, PITCH_MAX, project, cellKey } from "./state.js";
+import { state, SIDE, BLOCK, PITCH_MIN, PITCH_MAX, cellKey } from "./state.js";
 import { draw, cellAt, invalidatePick } from "./render.js";
 import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";

@@ -23,7 +23,7 @@ export async function loadJson(url, fallback) {
     const r = await fetch(url);
     if (!r.ok) throw new Error(r.status);
     return await r.json();
-  } catch (e) {
+  } catch {
     if (fallback !== undefined) return fallback;
     return null;
   }

@@ -155,7 +155,9 @@ export function wireDisplay() {
 function save() {
   try {
     localStorage.setItem(KEY, JSON.stringify({ ...state.show, panMode: !!state.panMode }));
-  } catch {}
+  } catch {
+    /* ignore */
+  }
 }
 
 export function restore() {
@@ -166,7 +168,9 @@ export function restore() {
       delete v.panMode;
       Object.assign(state.show, v);
     }
-  } catch {}
+  } catch {
+    /* ignore */
+  }
 }
 
 function syncSlice() {

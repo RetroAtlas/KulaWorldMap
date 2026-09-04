@@ -1,5 +1,5 @@
 import { $ } from "./dom.js";
-import { state, SIDE, BLOCK, project, depth, facing, screen, cellKey, camera } from "./state.js";
+import { state, SIDE, BLOCK, project, depth, facing, screen, cellKey } from "./state.js";
 import { WORLD_TINT, kindColour, kindName } from "./data.js";
 
 const cv = $("cv");
