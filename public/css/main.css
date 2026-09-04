@@ -510,6 +510,7 @@ body.sidebar-open .menu-btn {
   background: #05070bcc;
 }
 .modal .box {
+  position: relative;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -520,6 +521,21 @@ body.sidebar-open .menu-btn {
 }
 .modal h3 {
   margin: 0 0 10px;
+  padding-right: 20px;
+}
+.modal .x {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  background: none;
+  border: 0;
+  color: var(--dim);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.modal .x:hover {
+  color: var(--ink);
 }
 .modal dl {
   display: grid;

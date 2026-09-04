@@ -20,6 +20,8 @@
     <span aria-hidden="true">☰</span><span class="sr">Levels and display</span>
   </button>
 
+  <div id="say" class="sr" role="status" aria-live="polite"></div>
+
   <div id="scrim" class="scrim"></div>
 
   <div class="app">
@@ -97,7 +99,7 @@
       <div id="readout" class="readout mono"></div>
       <div id="tip" class="tip" hidden></div>
       <div id="detail" class="detail" hidden></div>
-      <div id="help" class="modal" hidden></div>
+      <div id="help" class="modal" role="dialog" aria-modal="true" hidden></div>
     </main>
   </div>
 

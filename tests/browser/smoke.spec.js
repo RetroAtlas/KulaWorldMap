@@ -132,3 +132,34 @@ test("search answers a number as a whole word, and says when nothing matches", a
   await expect(page.locator("#results")).toBeHidden();
   await expect(search).toHaveAttribute("aria-expanded", "false");
 });
+
+test("arriving somewhere is spoken, and names the map with it", async ({ page }) => {
+  await page.goto("/#L0");
+  await settle(page);
+  const line = "LEVEL 1, HIRO, 20 blocks, 5 objects, time 99.";
+  await expect(page.locator("#say")).toHaveText(line);
+  await expect(page.locator("#cv")).toHaveAttribute("aria-label", line);
+  await page.keyboard.press("]");
+  await expect(page.locator("#say")).toContainText("LEVEL 2");
+});
+
+test("a panel is a dialog that a click inside does not dismiss", async ({ page }) => {
+  await page.goto("/");
+  await settle(page);
+  await page.locator("#aboutBtn").click();
+  const help = page.locator("#help");
+  await expect(help).toBeVisible();
+  await expect(help).toHaveAttribute("aria-label", "About this map");
+  await expect(page.locator("#help .x")).toBeFocused();
+
+  await page.locator("#help .box p").first().click();
+  await expect(help).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(help).toBeHidden();
+  await expect(page.locator("#aboutBtn")).toBeFocused();
+
+  await page.locator("#aboutBtn").click();
+  await page.locator("#help").click({ position: { x: 5, y: 5 } });
+  await expect(help).toBeHidden();
+});

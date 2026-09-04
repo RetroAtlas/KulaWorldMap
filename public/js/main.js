@@ -4,6 +4,8 @@ import { resize, onFirstSize } from "./render.js";
 import { loadJson, setAnnotations } from "./data.js";
 import { buildWorlds, buildKinds, wireDisplay, restore, setSidebar } from "./sidebar.js";
 import { applyHash, selectLevel, fit, chip, writeHash } from "./navigate.js";
+import { openModal } from "./modal.js";
+import "./a11y.js";
 import "./interaction.js";
 import "./search.js";
 
@@ -32,22 +34,15 @@ const HELP = [
 ];
 
 function showHelp() {
-  const box = $("help");
-  box.innerHTML = `<div class="box"><h3>Keyboard</h3><dl>${HELP.map(
-    ([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`,
-  ).join("")}</dl></div>`;
-  box.hidden = false;
-  box.onclick = () => {
-    box.hidden = true;
-  };
+  openModal("Keyboard", `<dl>${HELP.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`);
 }
 
 function showAbout() {
   const d = state.data;
   if (!d) return;
-  const box = $("help");
-  box.innerHTML = `<div class="box"><h3>About this map</h3>
-    <p>An unofficial fan project, unaffiliated with the rights holders in <em>Kula World</em>.
+  openModal(
+    "About this map",
+    `<p>An unofficial fan project, unaffiliated with the rights holders in <em>Kula World</em>.
     Every level here is read from the game's own data on the ${d.release} disc: the
     ${d.side}&times;${d.side}&times;${d.side} lattice each level is built in, and the records the
     engine attaches to individual blocks.</p>
@@ -57,12 +52,9 @@ function showAbout() {
     and the marker above them says what is really there.</p>
     <p>Object kinds are the game's own numbers, because the game names none of them. Names appear
     here as they are identified and curated in <code>annotations.json</code>.</p>
-    <p><a href="https://github.com/RetroAtlas/KulaWorldMap">Source and tooling</a> ·
-    <a href="https://retroatlas.org/">RetroAtlas</a></p></div>`;
-  box.hidden = false;
-  box.onclick = () => {
-    box.hidden = true;
-  };
+    <p><a href="https://github.com/RetroAtlas/KulaWorldMap">Source and tooling</a> &middot;
+    <a href="https://retroatlas.org/">RetroAtlas</a></p>`,
+  );
 }
 
 Promise.all([loadJson("map_data.json"), loadJson("annotations.json", {})]).then(([data, ann]) => {

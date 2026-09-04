@@ -5,6 +5,7 @@ import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { kindName } from "./data.js";
 import { setSidebar, sidebarOverlays } from "./sidebar.js";
+import { closeModal, modalOpen } from "./modal.js";
 
 const cv = $("cv");
 const tip = $("tip");
@@ -266,8 +267,8 @@ addEventListener("keydown", (e) => {
       emit("help");
       break;
     case "Escape":
-      if (!$("help").hidden) {
-        $("help").hidden = true;
+      if (modalOpen()) {
+        closeModal();
         break;
       }
       if (sidebarOverlays() && document.body.classList.contains("sidebar-open")) {
