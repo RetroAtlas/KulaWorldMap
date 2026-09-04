@@ -148,8 +148,10 @@ export function applyHash() {
   return true;
 }
 
+// A hash the viewer cannot honour would otherwise sit in the address bar
+// naming a level that is not the one on screen.
 addEventListener("hashchange", () => {
-  if (!writing) applyHash();
+  if (!writing && !applyHash()) writeHash();
 });
 
 export function stepLevel(delta, crossWorld) {
