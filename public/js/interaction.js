@@ -75,7 +75,8 @@ cv.addEventListener("pointerleave", () => {
 });
 
 export function orbit(dx, dy) {
-  state.cam.yaw = (state.cam.yaw + dx * ORBIT) % 360;
+  // Dragging turns the level under the hand, so the camera goes the other way.
+  state.cam.yaw = (state.cam.yaw - dx * ORBIT) % 360;
   state.cam.pitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, state.cam.pitch + dy * ORBIT));
   redraw();
   chip();

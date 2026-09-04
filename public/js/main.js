@@ -1,7 +1,7 @@
 import { $, on } from "./dom.js";
 import { state } from "./state.js";
-import { loadJson, setAnnotations } from "./data.js";
 import { resize } from "./render.js";
+import { loadJson, setAnnotations } from "./data.js";
 import { buildWorlds, buildKinds, wireDisplay, restore } from "./sidebar.js";
 import { applyHash, selectLevel } from "./navigate.js";
 import "./interaction.js";
@@ -14,8 +14,6 @@ $("menuBtn").setAttribute(
 );
 restore();
 
-addEventListener("resize", resize);
-on("resize-needed", () => requestAnimationFrame(resize));
 on("help", showHelp);
 $("aboutBtn").onclick = showAbout;
 

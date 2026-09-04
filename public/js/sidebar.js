@@ -1,4 +1,4 @@
-import { $, el, on, emit } from "./dom.js";
+import { $, el, on } from "./dom.js";
 import { state, SIDE } from "./state.js";
 import { WORLD_TINT, worldName, kindName, kindColour } from "./data.js";
 import { selectLevel } from "./navigate.js";
@@ -140,7 +140,6 @@ export function wireDisplay() {
   $("menuBtn").onclick = () => {
     const open = document.body.classList.toggle("sidebar-open");
     $("menuBtn").setAttribute("aria-expanded", String(open));
-    requestAnimationFrame(() => emit("resize-needed"));
   };
 }
 

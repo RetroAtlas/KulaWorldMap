@@ -20,6 +20,10 @@ export function resize() {
   const dpr = Math.min(devicePixelRatio || 1, 2);
   const w = cv.clientWidth,
     h = cv.clientHeight;
+  // A zero size means the page is not laid out; keeping the old one leaves
+  // something sane to draw with rather than dividing by nothing.
+  if (!w || !h) return;
+  if (state.view.w === w && state.view.h === h && state.view.dpr === dpr) return;
   state.view = { w, h, dpr };
   for (const c of [cv, pickCv]) {
     c.width = Math.round(w * dpr);
@@ -27,8 +31,16 @@ export function resize() {
   }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   pick.setTransform(dpr, 0, 0, dpr, 0, 0);
+  invalidatePick();
   draw();
 }
+
+// The canvas resizes for reasons no window event reports: the sidebar slides
+// over 180ms, the pane changes, the page zooms. Measuring on a timer after any
+// of those catches an intermediate width and leaves the backing store scaled
+// against the element, which puts the picture and the pointer on different
+// grids. Watching the element itself is the only reading that cannot go stale.
+new ResizeObserver(() => resize()).observe(cv);
 
 const rgb = (hex) => {
   const n = parseInt(hex.slice(1), 16);
@@ -358,8 +370,16 @@ function drawScale() {
 /** The cell under a client point, or null. */
 export function cellAt(cx, cy) {
   if (pickStale) draw();
-  const d = state.view.dpr;
-  const p = pick.getImageData(Math.round(cx * d), Math.round(cy * d), 1, 1).data;
+  // Read the scale off the two canvases rather than assuming it is the device
+  // ratio. Whenever the backing store and the element disagree the browser
+  // stretches one onto the other, and a hit test that assumed otherwise would
+  // land further from the pointer the further it got from the centre.
+  const kx = pickCv.width / Math.max(1, cv.clientWidth);
+  const ky = pickCv.height / Math.max(1, cv.clientHeight);
+  const px = Math.round(cx * kx),
+    py = Math.round(cy * ky);
+  if (px < 0 || py < 0 || px >= pickCv.width || py >= pickCv.height) return null;
+  const p = pick.getImageData(px, py, 1, 1).data;
   const id = p[0] | (p[1] << 8) | (p[2] << 16);
   if (!id || id > pickList.length || p[3] === 0) return null;
   return pickList[id - 1];
