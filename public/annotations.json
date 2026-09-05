@@ -7,7 +7,24 @@
       "note": "Every level ends with exactly one of these, and it is the last record in the table. It carries the start cell, a second cell it looks at, two angles, and a number that is 99 on 218 of the 230 levels and lower on the other twelve, which reads as the level's time. It is not a thing standing on a block, so it draws as the start ring rather than as an object marker."
     }
   },
-  "types": {},
+  "types": {
+    "0/37": {
+      "name": "Bronze coin",
+      "note": "1005 placed across 154 levels, up to 45 in one. LEVEL 1 holds exactly two, and the game shows exactly two bronze coins there."
+    },
+    "0/0": {
+      "name": "Blue coin",
+      "note": "1206 placed across 159 levels, the game's most numerous object. Absent from LEVEL 1, where no blue coin appears; it starts turning up from LEVEL 3."
+    },
+    "0/31": {
+      "name": "Key",
+      "note": "One to four a level and never more: 66 levels with one, 40 with two, 7 with three, 1 with four. Collecting every key is what turns the exit from red to green."
+    },
+    "0/30": {
+      "name": "Fruit",
+      "note": "Exactly one in each of 173 levels and never two, which is the shape of the fruit slot. Which fruit stands in it is not in the level: no field here takes five values, and the game carries an uncollected fruit forward to the next level, so the choice is progress rather than data."
+    }
+  },
   "levels": {
     "/HELL/HELL.PAK#18": {
       "note": "160 of its 178 blocks are not part of the level at all. They lie flat on z=32, the ceiling of the lattice and 22 blocks above the playable structure, spelling VERY WELL DONE in block letters six blocks tall."
