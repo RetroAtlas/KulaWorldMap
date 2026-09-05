@@ -128,7 +128,8 @@ def main():
         for k in sorted(missing, key=lambda k: -game[k]):
             lines.append(f"- `{k[0]}/{k[1]}` — {game[k]} placed\n")
 
-    path = Path(args.out)
+    path = Path(args.out) if args.out else (
+        OUT if catalogue else OUT.with_name("naming-" + level["name"].lower().replace(" ", "-") + ".md"))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(lines))
     print(f"{path} written: {len(walk)} objects, "
