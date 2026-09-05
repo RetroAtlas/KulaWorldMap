@@ -10,7 +10,12 @@ This writes a floor plan with every object numbered, and a table to fill in as
 you walk it. Load the level in an emulator with a save-state hack or a level
 warp, walk the numbers, and write down what each one looks like.
 
-    python3 tools/kula_objlevel.py            # out/obj-level.md
+    python3 tools/kula_objlevel.py                 # out/obj-level.md
+    python3 tools/kula_objlevel.py --level "LEVEL 1"
+
+The catalogue needs a level warp to reach. The early numbered levels do not,
+and between them they place the objects the game uses most, so `--level` writes
+the same sheet for any level you can simply play to.
 """
 import argparse
 import json
@@ -37,14 +42,17 @@ def serpentine(objects):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--level", default="OBJ LEVEL",
+                    help="the level to write a sheet for; default is the catalogue")
     args = ap.parse_args()
     data = json.loads(DATA.read_text())
 
-    catalogues = [l for l in data["levels"] if l["name"] == "OBJ LEVEL"]
-    if not catalogues:
-        sys.exit("no OBJ LEVEL in map_data.json; run tools/kula_build.py first")
-    level = catalogues[0]
+    named = [l for l in data["levels"] if l["name"] == args.level]
+    if not named:
+        sys.exit(f"no level called {args.level!r} in map_data.json")
+    level = named[0]
+    catalogue = args.level == "OBJ LEVEL"
 
     game = Counter()
     for l in data["levels"]:
@@ -76,9 +84,13 @@ def main():
                 row.append("   ")
         plan.append("".join(row).rstrip())
     lines = [
-        "# Naming Kula World's objects by walking OBJ LEVEL\n\n",
-        f"`OBJ LEVEL` is {level['pack']} index {level['index']}, and eight more copies of it ",
-        "sit in the other worlds' packs. The game never takes you there.\n\n",
+        f"# Naming Kula World's objects: {level['name']}\n\n",
+        (f"`OBJ LEVEL` is {level['pack']} index {level['index']}, and eight more copies of it "
+         "sit in the other worlds' packs. The game never takes you there, so reaching it "
+         "needs a level warp.\n\n"
+         if catalogue else
+         f"{level['name']} is {level['pack']} index {level['index']}, in {level['theme']}. "
+         "You can reach it by playing.\n\n"),
         f"The floor is one plane at z={plane}, {max(xs) - min(xs) + 1} by ",
         f"{max(ys) - min(ys) + 1} blocks, carrying {len(walk)} objects of ",
         f"{len({(o['kind'], o['type']) for o in walk})} "
@@ -106,9 +118,13 @@ def main():
     seen = {(o["kind"], o["type"]) for o in walk}
     missing = sorted(k for k in game if k not in seen and game[k] >= 5)
     if missing:
-        lines.append("\n## Not in the catalogue\n\n")
-        lines.append("Kinds placed five or more times in the game that OBJ LEVEL does not "
-                     "carry, so they have to be named from a real level:\n\n")
+        lines.append("\n## Not here\n\n")
+        lines.append(
+            "Kinds placed five or more times in the game that OBJ LEVEL does not carry, so "
+            "they have to be named from a real level:\n\n"
+            if catalogue else
+            f"Kinds placed five or more times in the game that {level['name']} does not "
+            "carry, so another level has to name them:\n\n")
         for k in sorted(missing, key=lambda k: -game[k]):
             lines.append(f"- `{k[0]}/{k[1]}` — {game[k]} placed\n")
 
