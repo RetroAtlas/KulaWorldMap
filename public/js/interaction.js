@@ -3,6 +3,7 @@ import { state, SIDE, BLOCK, PITCH_MIN, PITCH_MAX, cellKey } from "./state.js";
 import { draw, cellAt, invalidatePick } from "./render.js";
 import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
+import { surveying, place } from "./survey.js";
 import { kindName } from "./data.js";
 import { setSidebar, sidebarOverlays } from "./sidebar.js";
 import { closeModal, modalOpen } from "./modal.js";
@@ -56,7 +57,9 @@ cv.addEventListener("pointerup", (e) => {
   const r = cv.getBoundingClientRect();
   if (drag && moved < 5) {
     const c = cellAt(e.clientX - r.left, e.clientY - r.top);
-    if (c) {
+    if (c && surveying()) {
+      place(c, e.altKey);
+    } else if (c) {
       state.selected = { ...c, key: cellKey(c.x, c.y, c.z) };
       showCell(c);
     } else {

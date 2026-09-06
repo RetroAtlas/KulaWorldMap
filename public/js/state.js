@@ -17,6 +17,7 @@ export const state = {
   hiddenKinds: new Set(),
   hover: null,
   selected: null,
+  survey: { on: false, marks: new Map() },
 };
 
 let basis = null;

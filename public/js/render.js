@@ -293,6 +293,10 @@ export function draw() {
       const objs = idx.objects.get(key);
       if (objs) for (const o of objs) drawObject(o, c);
     }
+    if (state.survey.on && !ghost) {
+      const m = state.survey.marks.get(key);
+      if (m) drawMark(m, c);
+    }
     if (sel || hov) outline(c, idx, sel ? "#ffffff" : "#ffffffb0");
   }
   pickStale = false;
@@ -375,6 +379,23 @@ function drawObject(o, c) {
   }
   if (state.show.labels && state.cam.zoom > 0.45) {
     label(kindName(o.kind, o.type) || `kind ${o.kind}/${o.type}`, px + r + 4, oy + 4, "#e8eefb");
+  }
+}
+
+// A survey mark hangs below the block, where a decoded marker never goes, so
+// the two readings of the same cell can be compared at a glance.
+function drawMark(m, c) {
+  const [px, py] = screen(c.x + 0.5, c.y + 0.5, c.z);
+  const r = Math.max(3, 5 * state.cam.zoom);
+  ctx.fillStyle = "#ffd166";
+  ctx.strokeStyle = "rgba(9 13 20 / 0.9)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(px, py, r, 0, 7);
+  ctx.fill();
+  ctx.stroke();
+  if (state.cam.zoom > 0.4) {
+    label(m.face ? `${m.name} ${m.face}` : m.name, px + r + 3, py + 4, "#ffd166");
   }
 }
 

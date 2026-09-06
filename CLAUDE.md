@@ -33,6 +33,7 @@ The record table is not a skin table, and the record every level ends with is wh
 - `public/annotations.json` is the opposite: hand-curated, never generated. It is where names for the game's numbered kinds go, and the viewer treats a missing name as normal rather than as an error.
 - Images are compressed on the way out, never in a follow-up commit: `tools/png.py` writes RGB wherever the alpha says nothing and runs `oxipng` over what it wrote, and `tools/ogcard.js` does the same to the card it renders. Without `oxipng` on PATH the build still produces a correct file, only a larger one, so do not commit one built that way.
 - The disc is never committed, and `.gitignore` keeps `*.bin` and `*.cue` out.
+- `?survey` on the viewer opens the notebook behind the map: click a block to write down what the game really shows on it, then copy or download the marks. A mark is keyed to the lattice cell and nothing else, never to a record, which is what lets a decode be scored against it rather than confirmed by it. Marks live in `localStorage` until exported, and the deployed page keeps the panel hidden without the flag.
 
 ## Naming
 

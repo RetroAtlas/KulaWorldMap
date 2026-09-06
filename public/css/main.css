@@ -582,3 +582,46 @@ body.sidebar-open .menu-btn {
   color: var(--dim);
   font-size: 12.5px;
 }
+
+.survey {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  z-index: 15;
+  width: 250px;
+  background: #171d2bf7;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+}
+.survey h3 {
+  margin: 0 0 2px;
+  font-size: 14px;
+}
+.survey .sub {
+  color: var(--dim);
+  font-size: 11.5px;
+  margin: 0 0 8px;
+}
+.survey .sub:empty {
+  margin: 0;
+}
+.survey .row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.survey select {
+  flex: 1;
+  min-width: 0;
+  background: #0e1320;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 5px;
+  font: inherit;
+}
+.survey .warn {
+  color: var(--warn);
+}
