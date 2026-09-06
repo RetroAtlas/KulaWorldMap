@@ -323,10 +323,16 @@ function outline(c, idx, colour) {
   ctx.restore();
 }
 
-/** The screen point just above a cell's top face, where its markers sit. */
-function above(c) {
-  const [px, py] = screen(c.x + 0.5, c.y + 0.5, c.z + 1);
-  return [px, py];
+// Markers hover over the block they belong to, and the hover is a distance in
+// the world rather than on the screen: a screen offset does not shrink as the
+// view turns overhead, so it would carry the marker onto the next block in a
+// plan view, which is the one view a reader uses to say which block is which.
+const OBJECT_HOVER = 8 / BLOCK;
+const START_HOVER = 18 / BLOCK;
+
+/** The screen point above a cell's top face, where its markers sit. */
+function above(c, hover = 0) {
+  return screen(c.x + 0.5, c.y + 0.5, c.z + 1 + hover);
 }
 
 // A cell names one record and a record holds one entity, so a marker stands
@@ -338,7 +344,7 @@ function drawObject(o, c) {
   if (state.hiddenKinds.has(`${o.kind}/${o.type}`)) return;
   const [px, top] = above(c);
   const r = Math.max(4, 7 * state.cam.zoom);
-  const oy = top - 8 * state.cam.zoom;
+  const [, oy] = above(c, OBJECT_HOVER);
   ctx.strokeStyle = "rgba(232 238 251 / 0.35)";
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -384,8 +390,7 @@ function label(text, x, y, colour) {
 
 function drawStart(l) {
   const mark = (p, colour, text) => {
-    const [px, py] = screen(p[0] + 0.5, p[1] + 0.5, p[2] + 1);
-    const y = py - 18 * state.cam.zoom;
+    const [px, y] = screen(p[0] + 0.5, p[1] + 0.5, p[2] + 1 + START_HOVER);
     ctx.strokeStyle = colour;
     ctx.fillStyle = colour;
     ctx.lineWidth = 2;
