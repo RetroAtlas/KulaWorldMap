@@ -2,6 +2,7 @@ import { $, emit } from "./dom.js";
 import { state, SIDE, BLOCK, project, sliceZ } from "./state.js";
 import { index, worldName, levelNote } from "./data.js";
 import { draw, invalidatePick } from "./render.js";
+import { clearDetail } from "./detail.js";
 
 export function selectLevel(i, { keepView = false } = {}) {
   const l = state.data.levels[i];
@@ -9,7 +10,7 @@ export function selectLevel(i, { keepView = false } = {}) {
   state.li = i;
   state.lvl = l;
   state.idx = index(l);
-  state.selected = null;
+  clearDetail();
   state.hover = null;
   if (!keepView) {
     state.slice = SIDE - 1;
