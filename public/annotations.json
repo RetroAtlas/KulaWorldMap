@@ -2,6 +2,10 @@
   "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated; see CLAUDE.md.",
   "worlds": {},
   "kinds": {
+    "8": {
+      "name": "Laser",
+      "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 117 in the game, and no block ever stands between its ends. One field gives that axis and another says whether it starts lit. Its ends carry the emitter blocks, and 61 of the 234 sit on cells the lattice leaves empty, which is the game placing geometry a level's own grid does not."
+    },
     "666": {
       "name": "Start",
       "note": "Every level ends with exactly one of these, and it is the last record in the table. It carries the start cell, a second cell it looks at, two angles, and a number that is 99 on 218 of the 230 levels and lower on the other twelve, which reads as the level's time. It is not a thing standing on a block, so it draws as the start ring rather than as an object marker."

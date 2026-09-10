@@ -1,6 +1,6 @@
 import { $ } from "./dom.js";
 import { state, cellKey } from "./state.js";
-import { kindName, kindNote, kindColour, kindStats } from "./data.js";
+import { OFF_LATTICE, kindName, kindNote, kindColour, kindStats } from "./data.js";
 
 let stats = null;
 
@@ -14,11 +14,15 @@ export function showCell(c) {
   const objs = state.idx.objects.get(cellKey(c.x, c.y, c.z)) || [];
   if (!stats) stats = kindStats(state.data);
   const box = $("detail");
+  const off = c.v === OFF_LATTICE;
   const plain = c.v < state.data.firstRecord;
   let html = `<button class="x" title="Close (Esc)">×</button>`;
-  html += `<h3>${plain ? `Block, style ${c.v}` : `Block with record ${c.v - state.data.firstRecord}`}</h3>`;
+  html += `<h3>${off ? "Block at a beam's end" : plain ? `Block, style ${c.v}` : `Block with record ${c.v - state.data.firstRecord}`}</h3>`;
   html += `<p class="sub">${l.name} · cell ${c.x},${c.y},${c.z}</p>`;
-  html += `<table>${row("lattice value", c.v)}${row("cell", `${c.x}, ${c.y}, ${c.z}`)}</table>`;
+  if (off)
+    html += `<p class="sub">The lattice holds nothing here. A beam record names this cell as one
+      of its two ends, and the game stands a block on it.</p>`;
+  html += `<table>${row("lattice value", off ? "empty" : c.v)}${row("cell", `${c.x}, ${c.y}, ${c.z}`)}</table>`;
 
   if (l.start && l.start.at.every((v, i) => v === [c.x, c.y, c.z][i])) html += startSection(l);
 

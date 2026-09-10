@@ -1,6 +1,6 @@
 import { $ } from "./dom.js";
 import { state, SIDE, BLOCK, project, depth, facing, screen, cellKey, sliceZ } from "./state.js";
-import { WORLD_TINT, kindColour, kindName } from "./data.js";
+import { WORLD_TINT, OFF_LATTICE, kindColour, kindName } from "./data.js";
 
 const cv = $("cv");
 const ctx = cv.getContext("2d");
@@ -217,7 +217,7 @@ function paint(g, pts, skin, shade, alpha) {
 // The five styles below firstRecord are drawn as steps of the world's tint,
 // since what tells them apart in the engine is not decoded.
 function styleTint(tint, v) {
-  if (v >= state.data.firstRecord) return tint;
+  if (v === OFF_LATTICE || v >= state.data.firstRecord) return tint;
   const c = rgb(tint);
   const k = 0.16 * (v / Math.max(1, state.data.styles - 1));
   return (
@@ -267,7 +267,7 @@ export function draw() {
     // texture its faces really wear is not decoded.
     const skin =
       state.show.skins && ATLAS.ready && world >= 0
-        ? { world, style: c.v < state.data.styles ? c.v : 0 }
+        ? { world, style: c.v > 0 && c.v < state.data.styles ? c.v : 0 }
         : null;
     cube(
       ctx,
@@ -301,6 +301,7 @@ export function draw() {
   }
   pickStale = false;
 
+  for (const r of idx.rays) drawBeam(r);
   if (state.show.start && l.start) drawStart(l);
   drawScale();
 }
@@ -397,6 +398,26 @@ function drawMark(m, c) {
   if (state.cam.zoom > 0.4) {
     label(m.face ? `${m.name} ${m.face}` : m.name, px + r + 3, py + 4, "#ffd166");
   }
+}
+
+// A beam is drawn over the blocks rather than among them: it runs through the
+// space between its ends, and showing where it goes is worth more than letting
+// a block in front of it hide it.
+function drawBeam({ a, b, lit }) {
+  const p = screen(a[0] + 0.5, a[1] + 0.5, a[2] + 0.5);
+  const q = screen(b[0] + 0.5, b[1] + 0.5, b[2] + 0.5);
+  ctx.save();
+  ctx.strokeStyle = kindColour(8);
+  ctx.lineWidth = Math.max(1.5, 2.5 * state.cam.zoom);
+  if (!lit) {
+    ctx.globalAlpha = 0.45;
+    ctx.setLineDash([4 * state.cam.zoom, 4 * state.cam.zoom]);
+  }
+  ctx.beginPath();
+  ctx.moveTo(p[0], p[1]);
+  ctx.lineTo(q[0], q[1]);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function label(text, x, y, colour) {

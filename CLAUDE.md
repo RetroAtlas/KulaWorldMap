@@ -22,6 +22,8 @@ Do not reach for a range test here. 51 records are zeroed from byte 32 on, which
 
 A lattice cell below `firstRecord` is a block style, and the five styles are models 7 to 11 of the shared table in the artwork file, which is where `tools/kula_tex.py` gets them. A cell at or above it names a record instead, so a block carrying one has no style of its own and the record would have to supply it.
 
+A level is wider than its lattice. A `kind 8` record spans a beam between two cells it names itself, in the words after its entity's own position: on all 117 in the game the pair differs on exactly one axis, one field gives that axis and another says whether the beam starts lit, and no block ever stands between the two ends. **61 of the 234 ends are cells the lattice leaves empty**, and the game stands a block on each anyway, which `OBJ LEVEL` shows in play: it carries one lattice block above its floor and the game draws two, joined by a beam. So `placed` counts the lattice and the lattice alone, and the viewer adds the ends a beam names. Which end holds the emitter, and what tells the six types apart beyond the axis, are not decoded.
+
 The record table is not a skin table, and the record every level ends with is what says so: it carries the start cell, a look-at, two angles and the level's time, and on 70 of the 230 levels a lattice cell names it exactly like any other. One table cannot be both. So every cell draws a style and what stands on it is a marker, and which skin a record-carrying block really wears is open.
 
 ## Conventions

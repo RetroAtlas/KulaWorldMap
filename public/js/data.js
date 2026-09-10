@@ -45,6 +45,18 @@ export const kindNote = (kind, type) =>
 
 export const levelNote = (l) => ann.levels[`${l.pack}#${l.index}`]?.note || "";
 
+const BEAM_KIND = 8;
+/** A cell the lattice does not carry, so nothing about it can be read as a style. */
+export const OFF_LATTICE = -1;
+
+// A beam record spans two cells on one axis and nothing stands between them in
+// any of the game's. The blocks at its ends are not always in the lattice, so
+// the level is wider than the lattice alone says it is.
+export const beams = (l) =>
+  l.objects
+    .filter((o) => o.kind === BEAM_KIND)
+    .map((o) => ({ a: o.f.slice(2, 5), b: o.f.slice(5, 8), lit: o.f[1] === 1 }));
+
 /** A cell lookup plus the per-cell object list, built once per level. */
 export function index(l) {
   const cells = new Map();
@@ -52,13 +64,20 @@ export function index(l) {
     const [x, y, z, v] = l.cells.slice(i, i + 4);
     cells.set(cellKey(x, y, z), { x, y, z, v });
   }
+  const rays = beams(l);
+  for (const r of rays) {
+    for (const [x, y, z] of [r.a, r.b]) {
+      const k = cellKey(x, y, z);
+      if (!cells.has(k)) cells.set(k, { x, y, z, v: OFF_LATTICE });
+    }
+  }
   const objects = new Map();
   for (const o of l.objects) {
     const k = cellKey(o.x, o.y, o.z);
     if (!objects.has(k)) objects.set(k, []);
     objects.get(k).push(o);
   }
-  return { cells, objects };
+  return { cells, objects, rays };
 }
 
 /** How often a (kind, type) is placed, and in how many levels, across the game. */
