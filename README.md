@@ -48,7 +48,7 @@ A cell holds either a style or a record index, never both, so a block carrying a
 
 **`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: 44 objects on a flat floor covering **28 of the game's 35 types**, and the seven it misses are placed 45 times between them against the 28's 5,425. Walking it once in an emulator names most of the game's vocabulary. `tools/kula_objlevel.py` writes the floor plan and the sheet to fill in, and `tools/kula_warp.py` writes a disc copy that answers to it where LEVEL 1 used to be.
 
-**`HIDDEN 10`**, the last hidden level of the last world, carries 178 blocks of which only 18 are the level. The other 160 lie flat on z=32, the ceiling of the lattice, 22 blocks above anything you can stand on, spelling **VERY WELL DONE** in block capitals six blocks tall.
+**`HIDDEN 10`**, the last hidden level of the last world, carries 178 blocks of which only 18 are the level. The other 160 lie flat on z=32, the floor of the lattice, 22 blocks below anything you can stand on, spelling **VERY WELL DONE** in block capitals six blocks tall.
 
 ## Rebuilding from the disc
 

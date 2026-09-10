@@ -6,7 +6,15 @@ import { draw } from "./render.js";
 // never derived from the records, so a decode can be scored against it: a mark
 // on a cell the file says carries nothing is exactly the finding worth keeping.
 const KEY = "kula.survey";
-const FACES = ["", "+x", "-x", "+y", "-y", "+z", "-z"];
+const FACES = [
+  ["", "face unset"],
+  ["-z", "top"],
+  ["+z", "underside"],
+  ["+x", "+x side"],
+  ["-x", "-x side"],
+  ["+y", "+y side"],
+  ["-y", "-y side"],
+];
 const NAMES = [
   "start",
   "exit",
@@ -130,7 +138,7 @@ function build() {
   };
 
   const faces = el("select", { id: "surveyFace" });
-  for (const f of FACES) faces.append(el("option", { value: f, textContent: f || "face unset" }));
+  for (const [v, t] of FACES) faces.append(el("option", { value: v, textContent: t }));
   faces.onchange = () => (face = faces.value);
 
   const copy = el("button", { type: "button", className: "mini", textContent: "copy" });

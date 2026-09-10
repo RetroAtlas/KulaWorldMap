@@ -1,5 +1,5 @@
 import { $ } from "./dom.js";
-import { state, SIDE, BLOCK, project, depth, facing, screen, cellKey } from "./state.js";
+import { state, SIDE, BLOCK, project, depth, facing, screen, cellKey, sliceZ } from "./state.js";
 import { WORLD_TINT, kindColour, kindName } from "./data.js";
 
 const cv = $("cv");
@@ -140,7 +140,7 @@ const FACES = [
 ];
 
 const LIGHT = (() => {
-  const v = [0.35, -0.55, 0.78];
+  const v = [0.35, -0.55, -0.78];
   const m = Math.hypot(...v);
   return v.map((x) => x / m);
 })();
@@ -153,13 +153,13 @@ const lit = FACES.map((f) => {
 // Which of the three shipped shades a face wears. Fixed in the world rather
 // than on the screen, so a face keeps its brightness as the view turns.
 const SHADE = FACES.map((f) =>
-  f.n[2] > 0 ? 2 : f.n[2] < 0 ? 0 : f.n[0] > 0 || f.n[1] < 0 ? 1 : 0,
+  f.n[2] < 0 ? 2 : f.n[2] > 0 ? 0 : f.n[0] > 0 || f.n[1] < 0 ? 1 : 0,
 );
 
 function visible(idx) {
   const out = [];
   for (const c of idx.cells.values()) {
-    if (c.z > state.slice && !state.show.hidden) continue;
+    if (c.z < sliceZ() && !state.show.hidden) continue;
     out.push(c);
   }
   out.sort((a, b) => depth(b.x, b.y, b.z) - depth(a.x, a.y, a.z));
@@ -173,7 +173,7 @@ function cube(g, c, idx, colour, edge, alpha, skin) {
     const f = FACES[i];
     if (!facing(f.n)) continue;
     const nb = idx.cells.get(cellKey(c.x + f.d[0], c.y + f.d[1], c.z + f.d[2]));
-    if (nb && nb.z <= state.slice) continue;
+    if (nb && nb.z >= sliceZ()) continue;
     const pts = f.c.map(([dx, dy, dz]) => {
       const [px, py] = project(dx, dy, dz);
       return [ox + px * s, oy + py * s];
@@ -256,7 +256,7 @@ export function draw() {
     const [px, py] = screen(c.x, c.y, c.z);
     const r = BLOCK * state.cam.zoom * 2;
     if (px < -r || px > w + r || py < -r || py > h + r) continue;
-    const ghost = c.z > state.slice;
+    const ghost = c.z < sliceZ();
     const key = cellKey(c.x, c.y, c.z);
     const sel = state.selected?.key === key;
     const hov = state.hover?.key === key;
@@ -336,7 +336,7 @@ const START_HOVER = 18 / BLOCK;
 
 /** The screen point above a cell's top face, where its markers sit. */
 function above(c, hover = 0) {
-  return screen(c.x + 0.5, c.y + 0.5, c.z + 1 + hover);
+  return screen(c.x + 0.5, c.y + 0.5, c.z - hover);
 }
 
 // A cell names one record and a record holds one entity, so a marker stands
@@ -411,7 +411,7 @@ function label(text, x, y, colour) {
 
 function drawStart(l) {
   const mark = (p, colour, text) => {
-    const [px, y] = screen(p[0] + 0.5, p[1] + 0.5, p[2] + 1 + START_HOVER);
+    const [px, y] = screen(p[0] + 0.5, p[1] + 0.5, p[2] - START_HOVER);
     ctx.strokeStyle = colour;
     ctx.fillStyle = colour;
     ctx.lineWidth = 2;
@@ -429,8 +429,9 @@ function drawStart(l) {
 }
 
 function drawBase(l) {
-  const [x0, y0, z0] = l.min,
-    [x1, y1] = l.max;
+  const [x0, y0] = l.min,
+    [x1, y1, z1] = l.max;
+  const z0 = z1 + 1;
   ctx.strokeStyle = "#ffffff20";
   ctx.lineWidth = 1;
   const line = (a, b) => {

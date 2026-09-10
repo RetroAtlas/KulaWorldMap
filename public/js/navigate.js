@@ -1,5 +1,5 @@
 import { $, emit } from "./dom.js";
-import { state, SIDE, BLOCK, project } from "./state.js";
+import { state, SIDE, BLOCK, project, sliceZ } from "./state.js";
 import { index, worldName, levelNote } from "./data.js";
 import { draw, invalidatePick } from "./render.js";
 
@@ -80,7 +80,7 @@ export function chip() {
   if (l.objects.length) parts.push(`<span class="sep">·</span>${l.objects.length} objects`);
   if (l.start?.time !== undefined)
     parts.push(`<span class="sep">·</span><span class="t">time ${l.start.time}</span>`);
-  if (state.slice < l.max[2]) parts.push(`<span class="sep">·</span>sliced at z=${state.slice}`);
+  if (sliceZ() > l.min[2]) parts.push(`<span class="sep">·</span>sliced to z\u2265${sliceZ()}`);
   const note = levelNote(l);
   if (note) parts.push(`<div class="note">${note}</div>`);
   $("chip").innerHTML = parts.join("");

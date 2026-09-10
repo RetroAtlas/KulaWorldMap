@@ -30,12 +30,13 @@ export function camera() {
     sy = Math.sin(yaw * DEG);
   const cp = Math.cos(pitch * DEG),
     sp = Math.sin(pitch * DEG);
+  // The lattice's third axis counts downward, so screen up runs against it.
   basis = {
     yaw,
     pitch,
     right: [cy, sy, 0],
-    up: [-sp * sy, sp * cy, cp],
-    toward: [cp * sy, -cp * cy, sp], // scene toward camera
+    up: [-sp * sy, sp * cy, -cp],
+    toward: [cp * sy, -cp * cy, -sp], // scene toward camera
   };
   return basis;
 }
@@ -69,5 +70,8 @@ export function screen(x, y, z) {
     (py - ty - panY) * zoom * BLOCK + state.view.h / 2,
   ];
 }
+
+/** The smallest z the slice still draws, counting down from the top. */
+export const sliceZ = () => SIDE - 1 - state.slice;
 
 export const cellKey = (x, y, z) => (x * SIDE + y) * SIDE + z;

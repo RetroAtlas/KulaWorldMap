@@ -1,5 +1,5 @@
 import { $, el, on } from "./dom.js";
-import { state, SIDE } from "./state.js";
+import { state, SIDE, sliceZ } from "./state.js";
 import { WORLD_TINT, worldName, kindName, kindColour } from "./data.js";
 import { selectLevel } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
@@ -182,8 +182,7 @@ export function restore() {
 function syncSlice() {
   $("slice").max = SIDE - 1;
   $("slice").value = state.slice;
-  $("sliceVal").textContent =
-    state.slice >= (state.lvl?.max[2] ?? 33) ? "off" : `z \u2264 ${state.slice}`;
+  $("sliceVal").textContent = sliceZ() <= (state.lvl?.min[2] ?? 0) ? "off" : `z \u2265 ${sliceZ()}`;
 }
 
 on("slice-changed", syncSlice);
