@@ -81,7 +81,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `kula_kinds.py` | per-kind contact sheets, for naming objects |
 | `kula_tail.py` | the 224 bytes after a record's entity, which nothing decodes |
 | `kula_objlevel.py` | the floor plan and sheet for naming objects by walking OBJ LEVEL |
-| `kula_warp.py` | a disc copy that reaches OBJ LEVEL, which no menu asks for |
+| `kula_warp.py` | a disc copy that reaches a level no menu asks for |
 | `kula_tgi.py` | a world's artwork: sections, VRAM page, textures |
 | `kula_tex.py` | the block atlas the viewer draws with |
 | `png.py` | write a PNG, and squeeze it with `oxipng` where that is installed |

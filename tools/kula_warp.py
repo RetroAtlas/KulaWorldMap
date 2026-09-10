@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
-"""Write a disc copy that reaches OBJ LEVEL, the catalogue the game never loads.
+"""Write a disc copy that reaches a level the game will not take you to.
 
     export KULA_DISC="/path/to/Roll Away.bin"
     python3 tools/kula_warp.py
+    python3 tools/kula_warp.py --level /HELL/HELL.PAK#18
 
-Every world pack but HIRO's carries `OBJ LEVEL` in its twentieth slot, and no
-menu asks for it. A pack addresses its records by offset and size, so pointing a
-slot a player does reach at those bytes is an eight-byte edit and leaves every
-length on the disc alone, which is what keeps the ISO valid without rebuilding
-it. Where the target pack has no copy of its own the record is written over one
-of its own slots first, which fits because the slot it lands on is longer.
+`OBJ LEVEL`, the developers' object catalogue, sits in the twentieth slot of
+every world pack but HIRO's and no menu asks for it, so it is what this reaches
+by default. A pack addresses its records by offset and size, so pointing a slot
+a player does reach at another slot's bytes is an eight-byte edit and leaves
+every length on the disc alone, which is what keeps the ISO valid without
+rebuilding it. Across packs the record is written over a slot of the target's
+own first, the roomiest, which is why what it displaces is named on the way
+out.
 
-The catalogue carries no world of its own, so it wears whichever world's
-artwork the pack it is reached from belongs to.
+A level carries no world of its own, so it wears whichever world's artwork the
+pack it is reached from belongs to.
 
 Writing user data leaves each touched sector's EDC and ECC stale. Emulators do
 not read them; a real console would.
@@ -77,16 +80,15 @@ def main():
     ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to $KULA_DISC")
     ap.add_argument("--out", default=None, help="patched image to write")
     ap.add_argument("--into", default="/HIRO/HIRO.PAK#0",
-                    help="pack path and slot the catalogue should answer to")
-    ap.add_argument("--donor", default=None, help="pack to take the record from")
+                    help="pack path and slot the level should answer to")
+    ap.add_argument("--level", default=None,
+                    help="pack path and slot to make reachable; defaults to the catalogue")
     args = ap.parse_args()
 
     src = args.disc or os.environ.get("KULA_DISC")
     if not src:
         sys.exit("no disc image: pass --disc or set $KULA_DISC")
     src = Path(src)
-    out = Path(args.out) if args.out else src.with_name(f"{src.stem} (obj level).bin")
-
     disc = open_disc(str(src))
     target_path, _, slot = args.into.rpartition("#")
     if not target_path or not slot.isdigit():
@@ -95,13 +97,23 @@ def main():
     if target_path.upper() not in disc.files:
         sys.exit(f"no such pack on the disc: {target_path}")
 
-    found = find(disc, args.donor or target_path)
-    donor = next(((p, k, slot_named(k, CATALOGUE)) for p, k in found
-                  if slot_named(k, CATALOGUE) is not None), None)
-    if not donor:
-        sys.exit(f"no pack on this disc carries {CATALOGUE}")
-    donor_path, donor_pak, donor_slot = donor
+    if args.level:
+        donor_path, _, ds = args.level.rpartition("#")
+        if donor_path.upper() not in disc.files or not ds.isdigit():
+            sys.exit(f"--level wants a pack path and a slot, not {args.level!r}")
+        donor_pak, donor_slot = Pak(disc.read_file(donor_path), donor_path), int(ds)
+        if donor_slot >= len(donor_pak):
+            sys.exit(f"{donor_path} has {len(donor_pak)} slots, so #{donor_slot} is not one")
+    else:
+        donor = next(((p, k, slot_named(k, CATALOGUE))
+                      for p, k in find(disc, target_path)
+                      if slot_named(k, CATALOGUE) is not None), None)
+        if not donor:
+            sys.exit(f"no pack on this disc carries {CATALOGUE}")
+        donor_path, donor_pak, donor_slot = donor
     record = donor_pak.entries[donor_slot]["blob"]
+    what = donor_pak.name(donor_slot)
+    out = Path(args.out) if args.out else src.with_name(f"{src.stem} ({what.lower()}).bin")
 
     target = Pak(disc.read_file(target_path), target_path)
     if slot >= len(target):
@@ -118,11 +130,12 @@ def main():
         laid = None
     else:
         # The record has to live inside the pack that names it, so it goes over a
-        # slot of that pack's own: the last, which is the one no world reaches.
-        laid = len(target) - 1
+        # slot of that pack's own: the roomiest that is not the one being aimed.
+        laid = max((i for i in range(len(target)) if i != slot),
+                   key=lambda i: target.entries[i]["size"])
         room = target.entries[laid]
         if room["size"] < len(record):
-            sys.exit(f"{target_path}#{laid} holds {room['size']} bytes, too few for {len(record)}")
+            sys.exit(f"{target_path} has no slot roomy enough for {len(record)} bytes")
         at, size = room["offset"], len(record)
         img.write(lba, at, record)
 
@@ -133,13 +146,13 @@ def main():
 
     check = Pak(open_disc(str(out)).read_file(target_path), target_path)
     if zlib.decompress(check.entries[slot]["blob"]) != zlib.decompress(record):
-        sys.exit(f"wrote {out}, but {target_path}#{slot} does not read back as {CATALOGUE}")
+        sys.exit(f"wrote {out}, but {target_path}#{slot} does not read back as {what}")
 
     print(f"{out}")
-    print(f"  {CATALOGUE} taken from {donor_path}#{donor_slot}, {len(record)} bytes")
+    print(f"  {what} taken from {donor_path}#{donor_slot}, {len(record)} bytes")
     if laid is not None:
-        print(f"  laid over {target_path}#{laid} ({target.name(laid)})")
-    print(f"  {target_path}#{slot} ({target.name(slot)}) now loads it")
+        print(f"  laid over {target_path}#{laid} ({target.name(laid)}), which it replaces")
+    print(f"  {target_path}#{slot} now loads it")
     print(f"  play it as {target.name(slot)}")
 
 
