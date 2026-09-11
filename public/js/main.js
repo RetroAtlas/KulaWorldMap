@@ -26,7 +26,7 @@ const HELP = [
   ["\\", "put the whole level back"],
   ["[ ]", "previous and next level (shift crosses worlds)"],
   ["f", "fit the level to the window"],
-  ["t o s l g", "textures, objects, start, labels, ground grid"],
+  ["t o s l g", "textures, objects, look-at, labels, ground grid"],
   ["/", "search"],
   ["m", "show and hide the sidebar"],
   ["Esc", "clear the selection"],

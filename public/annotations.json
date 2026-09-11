@@ -4,11 +4,11 @@
   "kinds": {
     "8": {
       "name": "Laser",
-      "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 117 in the game, and no block ever stands between its ends. One field gives that axis, another is read as whether it starts lit, and the type carries the colour, which is what pairs a laser with the button and teleporter of the same colour. Its ends carry the emitter blocks, and 61 of the 234 sit on cells the lattice leaves empty, which is the game placing geometry a level's own grid does not."
+      "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 117 in the game, and no block ever stands between its ends. One field gives that axis and another says whether it starts lit. Its ends carry the emitter blocks, and 61 of the 234 sit on cells the lattice leaves empty, which is the game placing geometry a level's own grid does not."
     },
     "666": {
-      "name": "Start",
-      "note": "Every level ends with exactly one of these, and it is the last record in the table. It carries the start cell, a second cell it looks at, two angles, and a number that is 99 on 218 of the 230 levels and lower on the other twelve, which reads as the level's time. It is not a thing standing on a block, so it draws as the start ring rather than as an object marker."
+      "name": "Camera",
+      "note": "The record every level ends with, and the one entity that stands on no cell: where its position would be, the disc writes three 0xFFFF. It carries a cell for the camera to look at, two angles, and a number that is 99 on 218 of the 230 levels and lower on the other twelve, which reads as the level's time. It draws as the look-at ring rather than as an object marker."
     }
   },
   "types": {
@@ -16,17 +16,25 @@
       "name": "Blue coin",
       "note": "1206 placed across 159 levels, the game's most numerous object. Absent from LEVEL 1, where no blue coin appears; it starts turning up from LEVEL 3."
     },
+    "0/7": {
+      "name": "Exit",
+      "note": "The exit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. Exactly one in each of 122 levels and never two; what the other 108 levels leave for is not yet read."
+    },
     "0/30": {
-      "name": "Fruit",
-      "note": "Exactly one in each of 173 levels and never two, which is the shape of the fruit slot. Which fruit stands in it is not in the level: no field here takes five values, and the game carries an uncollected fruit forward to the next level, so the choice is progress rather than data."
+      "name": "Start",
+      "note": "The block the ball starts on, in LEVEL 1 and LEVEL 2, and exactly one in each of 182 levels and never two. The 48 without one are not yet understood."
     },
     "0/31": {
       "name": "Key",
-      "note": "One to four a level and never more: 66 levels with one, 40 with two, 7 with three, 1 with four. Collecting every key is what turns the exit from red to green."
+      "note": "One to four a level and never more: 69 levels with one, 51 with more. Collecting every key is what turns the exit from red to green. LEVEL 1's and LEVEL 2's are on the cells the map draws them on."
     },
     "0/37": {
       "name": "Bronze coin",
-      "note": "1005 placed across 154 levels, up to 45 in one. LEVEL 1 holds exactly two, and the game shows exactly two bronze coins there."
+      "note": "1044 placed across 155 levels, up to 45 in one. LEVEL 1 holds exactly two and LEVEL 2 six, and the game shows exactly that many bronze coins in each, on the cells the map draws them on."
+    },
+    "0/46": {
+      "name": "Fruit",
+      "note": "The fruit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. Exactly one in each of 59 levels and never two; which fruit stands in it is not in the level, and the game carries an uncollected fruit forward, so the choice is progress rather than data."
     },
     "8/0": {
       "name": "Red laser",

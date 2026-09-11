@@ -26,6 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "out" / "obj-level.md"
 DATA = ROOT / "public" / "map_data.json"
+NAMES = ROOT / "public" / "annotations.json"
 
 
 def serpentine(objects):
@@ -64,9 +65,13 @@ def main():
     cells = level["cells"]
     floor = {(cells[i], cells[i + 1]): cells[i + 2] for i in range(0, len(cells), 4)}
     plane = Counter(floor.values()).most_common(1)[0][0]
+    # The start is an entity like any other, known by its curated name, so it is
+    # walked and numbered rather than marked apart; the sheet says which it is.
+    named = json.loads(NAMES.read_text()).get("types", {})
+    start = next(((o["x"], o["y"], o["z"]) for o in level["objects"]
+                  if named.get(f"{o['kind']}/{o['type']}", {}).get("name") == "Start"), None)
     walk = serpentine(level["objects"])
     at = {(o["x"], o["y"]): i + 1 for i, o in enumerate(walk)}
-    start = level["start"]["at"]
 
     xs = [x for x, _ in floor] + [o["x"] for o in walk]
     ys = [y for _, y in floor] + [o["y"] for o in walk]
@@ -76,8 +81,6 @@ def main():
         for x in range(min(xs), max(xs) + 1):
             if (x, y) in at:
                 row.append(f"{at[(x, y)]:2d} ")
-            elif (x, y) == (start[0], start[1]):
-                row.append(" S ")
             elif (x, y) in floor:
                 row.append(" . ")
             else:
@@ -95,7 +98,8 @@ def main():
         f"{max(ys) - min(ys) + 1} blocks, carrying {len(walk)} objects of ",
         f"{len({(o['kind'], o['type']) for o in walk})} "
         "distinct kind/type pairs. ",
-        f"You start at ({start[0]},{start[1]},{start[2]}), marked `S` on the plan.\n\n",
+        (f"You start at ({start[0]},{start[1]},{start[2]}), number {at[start[:2]]} on the plan.\n\n"
+         if start else "Where the ball starts is not among the entities.\n\n"),
         "Numbers run left to right, then right to left on the next row, so walking them ",
         "in order never doubles back. Columns are x, rows are y, both increasing.\n\n",
         "```\n", "\n".join(plan), "\n```\n\n",

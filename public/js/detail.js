@@ -24,8 +24,6 @@ export function showCell(c) {
       of its two ends, and the game stands a block on it.</p>`;
   html += `<table>${row("lattice value", off ? "empty" : c.v)}${row("cell", `${c.x}, ${c.y}, ${c.z}`)}</table>`;
 
-  if (l.start && l.start.at.every((v, i) => v === [c.x, c.y, c.z][i])) html += startSection(l);
-
   for (const o of objs) {
     const name = kindName(o.kind, o.type);
     html += `<h3 style="margin-top:12px">${dot(kindColour(o.kind))}
@@ -50,21 +48,6 @@ export function showCell(c) {
   box.innerHTML = html;
   box.hidden = false;
   box.querySelector(".x").onclick = clearDetail;
-}
-
-/** The record every level ends with. It is not a thing on a block, so it has no
-    kind list entry and no marker of its own beyond the start ring. */
-function startSection(l) {
-  const kind = state.data.startKind;
-  const st = l.start;
-  const note = kindNote(kind);
-  return (
-    `<h3 style="margin-top:12px">${dot("#7dff9b")} ${kindName(kind) || `kind ${kind}`}</h3>` +
-    `<p class="sub">kind ${kind} · the level's last record</p>` +
-    (note ? `<p class="sub">${note}</p>` : "") +
-    `<table>${row("looks at", st.look.join(", "))}${row("angles", st.angle.join(", "))}` +
-    `${row("time", st.time)}</table>`
-  );
 }
 
 export function clearDetail() {

@@ -302,7 +302,7 @@ export function draw() {
   pickStale = false;
 
   for (const r of idx.rays) drawBeam(r);
-  if (state.show.start && l.start) drawStart(l);
+  if (state.show.start && l.camera) drawLook(l);
   drawScale();
 }
 
@@ -333,7 +333,7 @@ function outline(c, idx, colour) {
 // view turns overhead, so it would carry the marker onto the next block in a
 // plan view, which is the one view a reader uses to say which block is which.
 const OBJECT_HOVER = 8 / BLOCK;
-const START_HOVER = 18 / BLOCK;
+const LOOK_HOVER = 18 / BLOCK;
 
 /** The screen point above a cell's top face, where its markers sit. */
 function above(c, hover = 0) {
@@ -431,23 +431,21 @@ function label(text, x, y, colour) {
   ctx.fillText(text, x, y);
 }
 
-function drawStart(l) {
-  const mark = (p, colour, text) => {
-    const [px, y] = screen(p[0] + 0.5, p[1] + 0.5, p[2] - START_HOVER);
-    ctx.strokeStyle = colour;
-    ctx.fillStyle = colour;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(px, y, Math.max(5, 8 * state.cam.zoom), 0, 7);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(px, y, Math.max(2, 3 * state.cam.zoom), 0, 7);
-    ctx.fill();
-    label(text, px + Math.max(9, 12 * state.cam.zoom), y + 4, colour);
-  };
-  mark(l.start.at, "#7dff9b", "start");
-  const look = l.start.look;
-  if (look && look.every((v) => v >= 0 && v < SIDE)) mark(look, "#ffcf6f", "look-at");
+function drawLook(l) {
+  const p = l.camera.look;
+  if (!p.every((v) => v >= 0 && v < SIDE)) return;
+  const colour = "#ffcf6f";
+  const [px, y] = screen(p[0] + 0.5, p[1] + 0.5, p[2] - LOOK_HOVER);
+  ctx.strokeStyle = colour;
+  ctx.fillStyle = colour;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(px, y, Math.max(5, 8 * state.cam.zoom), 0, 7);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(px, y, Math.max(2, 3 * state.cam.zoom), 0, 7);
+  ctx.fill();
+  label("look-at", px + Math.max(9, 12 * state.cam.zoom), y + 4, colour);
 }
 
 function drawBase(l) {

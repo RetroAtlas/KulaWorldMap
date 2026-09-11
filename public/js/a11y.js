@@ -6,7 +6,7 @@ import { worldName, levelNote } from "./data.js";
 export function describeLevel(l) {
   const parts = [l.name, worldName(l.theme), `${l.placed} blocks`];
   if (l.objects.length) parts.push(`${l.objects.length} objects`);
-  if (l.start?.time !== undefined) parts.push(`time ${l.start.time}`);
+  if (l.camera?.time !== undefined) parts.push(`time ${l.camera.time}`);
   const note = levelNote(l);
   return parts.join(", ") + (note ? `. ${note}` : ".");
 }

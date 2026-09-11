@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import open_disc, packs
-from kula_level import Level, SIDE, STYLES, FIRST_RECORD, START_KIND
+from kula_level import Level, SIDE, STYLES, FIRST_RECORD
 from kula_pak import Pak
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
@@ -29,7 +29,7 @@ def level_json(L, theme, pack, index):
         o["r"] = k
         objects.append(o)
     (x0, x1), (y0, y1), (z0, z1) = L.extent() or ((0, 0), (0, 0), (0, 0))
-    start = L.start
+    t = L.trailer
     out = {
         "name": L.name,
         "theme": theme,
@@ -42,14 +42,10 @@ def level_json(L, theme, pack, index):
         "max": [x1, y1, z1],
         "cells": cells,
         "objects": objects,
+        "camera": {"look": [t.type, t.f[0], t.f[1]], "angle": [t.f[2], t.f[3]], "time": t.f[4]},
     }
     if L.flag:
         out["flag"] = L.flag
-    if start:
-        out["start"] = {"at": [start.x, start.y, start.z],
-                        "look": [start.type, start.f[0], start.f[1]],
-                        "angle": [start.f[2], start.f[3]],
-                        "time": start.f[4]}
     return out
 
 
@@ -83,7 +79,6 @@ def main():
         "side": SIDE,
         "styles": STYLES,
         "firstRecord": FIRST_RECORD,
-        "startKind": START_KIND,
         "themes": themes,
         "levels": levels,
     }
@@ -91,7 +86,7 @@ def main():
     OUT.write_text(json.dumps(data, indent=1))
     cells = sum(len(l["cells"]) // 4 for l in levels)
     objs = sum(len(l["objects"]) for l in levels)
-    print(f"cross-check: {checked} cell/record pairs agree, {len(levels)} start records found")
+    print(f"cross-check: {checked} cell/entity pairs agree, {len(levels)} camera records found")
     print(f"{len(levels)} levels, {cells} placed cells, {objs} entities "
           f"-> {OUT.relative_to(OUT.parent.parent.parent)} ({OUT.stat().st_size/1024:.0f} KB)")
 

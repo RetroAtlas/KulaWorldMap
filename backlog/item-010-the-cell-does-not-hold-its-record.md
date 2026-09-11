@@ -1,6 +1,8 @@
 # 10. The object on a block is not the record the block names
 
-**Status:** open · **Effort:** large · **Where:** the disc, plus `tools/mips.py` · **Filed:** playing LEVEL 1 and LEVEL 2 against the map, 2026-09-06
+**Status:** resolved 2026-09-11 · **Filed:** playing LEVEL 1 and LEVEL 2 against the map, 2026-09-06
+
+**Resolution.** The block does hold its entity; the reader was pairing each payload with the position one slot behind it. An entity's position is the *last* six bytes of its 256, not the first, and the six bytes that open the table are the level header, not padding: the first entity's payload was never being read at all, and the last slot's payload, the camera record, was being given the last object's cell as its position. `Level.verify` passes under both framings because the positions stay in order either way, which is exactly why the contradiction below could not be argued away and had to be settled in play. Under the corrected reading every cell of LEVEL 1 and LEVEL 2 carries what the game shows on it, with one type to a thing: `0/37` coin, `0/31` key, `0/30` start, `0/46` fruit, `0/7` exit. The account below is kept as it was written, because the reasoning that ruled out every other explanation is what made the framing the only one left.
 
 ## What and why
 

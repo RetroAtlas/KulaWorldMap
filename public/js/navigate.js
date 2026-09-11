@@ -79,8 +79,8 @@ export function chip() {
     `<span class="sep">·</span>${l.placed} blocks`,
   ];
   if (l.objects.length) parts.push(`<span class="sep">·</span>${l.objects.length} objects`);
-  if (l.start?.time !== undefined)
-    parts.push(`<span class="sep">·</span><span class="t">time ${l.start.time}</span>`);
+  if (l.camera?.time !== undefined)
+    parts.push(`<span class="sep">·</span><span class="t">time ${l.camera.time}</span>`);
   if (sliceZ() > l.min[2]) parts.push(`<span class="sep">·</span>sliced to z\u2265${sliceZ()}`);
   const note = levelNote(l);
   if (note) parts.push(`<div class="note">${note}</div>`);
