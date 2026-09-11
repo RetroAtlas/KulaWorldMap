@@ -26,7 +26,7 @@ Every level is one zlib record inside its world's `.PAK`, and inflates to a fixe
 
 The five styles below 5 are the game's own numbers and carry no record: 4517 cells are style 0, then 1065, 527, 70 and 9 of styles 3, 2, 1 and 4. What tells them apart is not decoded, and the map draws them as shades of the world's tint.
 
-The seven 32-byte groups inside an entity look like entities and are not. They never hold a position: across the game's 39,900 of them the first and third words take no value but `-1` and `0`. The build asserts that, because a range test alone would not catch it: 51 entities are zeroed past their fields, which puts a lattice-shaped `(0, 0, 0)` in every group of them. What the groups do hold is undecoded.
+The seven 32-byte groups inside an entity look like entities and are not. They never hold a position: across the game's 39,900 of them the first and third words take no value but `-1` and `0`. The build asserts that, because a range test alone would not catch it: 51 entities are zeroed past their fields, which puts a lattice-shaped `(0, 0, 0)` in every group of them. Most of what the groups do hold is undecoded; for a laser, one word of the first group is the colour of its beam.
 
 An entity is a position, a `kind` the engine dispatches on, a `type` within that kind, and eleven more fields whose meaning follows from the kind. Kind and type are close to orthogonal: the game has ten kinds and **35 distinct types**, and the same type appears under several kinds, for 78 pairs in all.
 

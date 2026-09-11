@@ -27,7 +27,8 @@ their first and third words take no value but -1 and 0 anywhere in the game.
 `verify` asserts that, because a range test alone does not: the game leaves
 51 entities zeroed past their fields, which puts a lattice-shaped (0, 0, 0)
 in every group of them. What the groups do hold is per entity rather than
-per kind, and undecoded.
+per kind, and mostly undecoded; for a laser, the second word of the first
+group is its colour.
 """
 import struct
 
@@ -42,6 +43,7 @@ GROUP = 32
 GROUPS = 7           # the groups after an entity's fields
 HEAD = 6             # the position that ends an entity, or the level header
 START_KIND = 666
+LASER_KIND = 8
 NOWHERE = (-1, -1, -1)
 
 
@@ -58,9 +60,17 @@ class Entity:
     def cell(self):
         return (self.x, self.y, self.z)
 
+    @property
+    def colour(self):
+        """A laser's circuit: which switches it answers to, and the beam's colour."""
+        return self.groups[0][9] if self.kind == LASER_KIND else None
+
     def as_dict(self):
-        return {"x": self.x, "y": self.y, "z": self.z, "kind": self.kind, "type": self.type,
-                "f": self.f}
+        d = {"x": self.x, "y": self.y, "z": self.z, "kind": self.kind, "type": self.type,
+             "f": self.f}
+        if self.kind == LASER_KIND:
+            d["colour"] = self.colour
+        return d
 
 
 class Level:

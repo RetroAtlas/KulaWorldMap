@@ -18,6 +18,7 @@ from kula_level import (  # noqa: E402
     GROUP,
     GROUPS,
     HEAD,
+    LASER_KIND,
     NOWHERE,
     RECORD,
     SIDE,
@@ -80,6 +81,16 @@ class Reads(unittest.TestCase):
         L = Level(level({}, []))
         self.assertEqual(L.objects, [])
         self.assertEqual(L.verify(), [])
+
+    def test_a_laser_reads_its_colour_out_of_its_first_group(self):
+        tail = bytearray(TAIL)
+        struct.pack_into("<16h", tail, 0, -1, -1, -1, -1, 1, -1, -1, 5, -1, 3, -1, -1, -1, -1, -1, -1)
+        L = Level(level({(1, 2, 3): FIRST_RECORD},
+                        [((1, 2, 3), payload(LASER_KIND, 1, 1, 1, 1, 2, 3, 9, 2, 3, tail=bytes(tail)))]))
+        self.assertEqual(L.objects[0].colour, 3)
+        self.assertEqual(L.objects[0].as_dict()["colour"], 3)
+        self.assertNotIn("colour", Level(level({(1, 2, 3): FIRST_RECORD}, [((1, 2, 3), COIN)]))
+                         .objects[0].as_dict())
 
     def test_the_lattice_index_is_the_one_the_game_walks(self):
         L = Level(level({(0, 0, 1): 0, (0, 1, 0): 1, (1, 0, 0): 2}, []))

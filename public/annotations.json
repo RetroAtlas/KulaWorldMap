@@ -4,7 +4,7 @@
   "kinds": {
     "8": {
       "name": "Laser",
-      "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 117 in the game, and no block ever stands between its ends. One field gives that axis and another says whether it starts lit. Its ends carry the emitter blocks, and 61 of the 234 sit on cells the lattice leaves empty, which is the game placing geometry a level's own grid does not."
+      "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 117 in the game, and no block ever stands between its ends. One field gives that axis, another whether it starts lit, and the second word of its first trailing group is its circuit: the colour of the beam, and of the switch that toggles it. Its ends carry the emitter blocks, and 61 of the 234 sit on cells the lattice leaves empty, which is the game placing geometry a level's own grid does not."
     },
     "666": {
       "name": "Camera",
@@ -35,16 +35,6 @@
     "0/46": {
       "name": "Fruit",
       "note": "The fruit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. Exactly one in each of 59 levels and never two; which fruit stands in it is not in the level, and the game carries an uncollected fruit forward, so the choice is progress rather than data."
-    },
-    "8/0": {
-      "name": "Red laser",
-      "colour": "#ff4a4a",
-      "note": "Seen in OBJ LEVEL: the vertical beam from the floating block to the floor, red at both ends and off until something turns it on. Every one of the nine in the game starts dark."
-    },
-    "8/1": {
-      "name": "Green laser",
-      "colour": "#3ad07c",
-      "note": "Seen in OBJ LEVEL: the beam between the two floating blocks, green at both ends and lit. Colour is read as the type's rather than the start-state flag's; LEVEL 109 has four of these that start dark and settles which."
     }
   },
   "levels": {

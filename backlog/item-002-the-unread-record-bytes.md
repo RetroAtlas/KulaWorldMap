@@ -1,6 +1,8 @@
 # 2. Read the 224 bytes after a record's entity
 
-**Status:** open · **Effort:** medium-large · **Where:** the disc, plus `tools/mips.py`
+**Status:** open, one word decoded · **Effort:** medium-large · **Where:** the disc, plus `tools/mips.py`
+
+**2026-09-11.** For a laser, the second word of the first group is its colour, a circuit number: LEVEL 109's five beams read `3, 0, 2, 0, 3` and the game shows red, yellow, green, yellow, red. The measurements below were taken under the earlier framing of the table, which paired each group set with the position one slot behind it; the groups themselves sit in the same bytes under either framing, so the counts stand.
 
 ## What and why
 
