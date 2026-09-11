@@ -30,13 +30,14 @@ export function camera() {
     sy = Math.sin(yaw * DEG);
   const cp = Math.cos(pitch * DEG),
     sp = Math.sin(pitch * DEG);
-  // The lattice's third axis counts downward, so screen up runs against it.
+  // The lattice's third axis counts downward, and seen from above its second
+  // counts down the page, which is the one way the game's own lettering reads.
   basis = {
     yaw,
     pitch,
-    right: [cy, sy, 0],
-    up: [-sp * sy, sp * cy, -cp],
-    toward: [cp * sy, -cp * cy, -sp], // scene toward camera
+    right: [cy, -sy, 0],
+    up: [-sp * sy, -sp * cy, -cp],
+    toward: [cp * sy, cp * cy, -sp], // scene toward camera
   };
   return basis;
 }
