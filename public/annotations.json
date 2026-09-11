@@ -4,7 +4,7 @@
   "kinds": {
     "8": {
       "name": "Laser",
-      "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 117 in the game, and no block ever stands between its ends. One field gives that axis and another says whether it starts lit. Its ends carry the emitter blocks, and 61 of the 234 sit on cells the lattice leaves empty, which is the game placing geometry a level's own grid does not."
+      "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 117 in the game, and no block ever stands between its ends. One field gives that axis, another is read as whether it starts lit, and the type carries the colour, which is what pairs a laser with the button and teleporter of the same colour. Its ends carry the emitter blocks, and 61 of the 234 sit on cells the lattice leaves empty, which is the game placing geometry a level's own grid does not."
     },
     "666": {
       "name": "Start",
@@ -12,21 +12,31 @@
     }
   },
   "types": {
-    "0/37": {
-      "name": "Bronze coin",
-      "note": "1005 placed across 154 levels, up to 45 in one. LEVEL 1 holds exactly two, and the game shows exactly two bronze coins there."
-    },
     "0/0": {
       "name": "Blue coin",
       "note": "1206 placed across 159 levels, the game's most numerous object. Absent from LEVEL 1, where no blue coin appears; it starts turning up from LEVEL 3."
+    },
+    "0/30": {
+      "name": "Fruit",
+      "note": "Exactly one in each of 173 levels and never two, which is the shape of the fruit slot. Which fruit stands in it is not in the level: no field here takes five values, and the game carries an uncollected fruit forward to the next level, so the choice is progress rather than data."
     },
     "0/31": {
       "name": "Key",
       "note": "One to four a level and never more: 66 levels with one, 40 with two, 7 with three, 1 with four. Collecting every key is what turns the exit from red to green."
     },
-    "0/30": {
-      "name": "Fruit",
-      "note": "Exactly one in each of 173 levels and never two, which is the shape of the fruit slot. Which fruit stands in it is not in the level: no field here takes five values, and the game carries an uncollected fruit forward to the next level, so the choice is progress rather than data."
+    "0/37": {
+      "name": "Bronze coin",
+      "note": "1005 placed across 154 levels, up to 45 in one. LEVEL 1 holds exactly two, and the game shows exactly two bronze coins there."
+    },
+    "8/0": {
+      "name": "Red laser",
+      "colour": "#ff4a4a",
+      "note": "Seen in OBJ LEVEL: the vertical beam from the floating block to the floor, red at both ends and off until something turns it on. Every one of the nine in the game starts dark."
+    },
+    "8/1": {
+      "name": "Green laser",
+      "colour": "#3ad07c",
+      "note": "Seen in OBJ LEVEL: the beam between the two floating blocks, green at both ends and lit. Colour is read as the type's rather than the start-state flag's; LEVEL 109 has four of these that start dark and settles which."
     }
   },
   "levels": {

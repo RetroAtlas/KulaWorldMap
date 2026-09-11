@@ -40,6 +40,9 @@ export function kindName(kind, type) {
   return null;
 }
 
+/** A colour the game itself gives a type, where one has been seen and written down. */
+export const typeColour = (kind, type) => ann.types[`${kind}/${type}`]?.colour || null;
+
 export const kindNote = (kind, type) =>
   ann.types[`${kind}/${type}`]?.note || ann.kinds[String(kind)]?.note || "";
 
@@ -55,7 +58,7 @@ export const OFF_LATTICE = -1;
 export const beams = (l) =>
   l.objects
     .filter((o) => o.kind === BEAM_KIND)
-    .map((o) => ({ a: o.f.slice(2, 5), b: o.f.slice(5, 8), lit: o.f[1] === 1 }));
+    .map((o) => ({ a: o.f.slice(2, 5), b: o.f.slice(5, 8), lit: o.f[1] === 1, type: o.type }));
 
 /** A cell lookup plus the per-cell object list, built once per level. */
 export function index(l) {

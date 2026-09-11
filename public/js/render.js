@@ -1,6 +1,6 @@
 import { $ } from "./dom.js";
 import { state, SIDE, BLOCK, project, depth, facing, screen, cellKey, sliceZ } from "./state.js";
-import { WORLD_TINT, OFF_LATTICE, kindColour, kindName } from "./data.js";
+import { WORLD_TINT, OFF_LATTICE, kindColour, kindName, typeColour } from "./data.js";
 
 const cv = $("cv");
 const ctx = cv.getContext("2d");
@@ -402,12 +402,13 @@ function drawMark(m, c) {
 
 // A beam is drawn over the blocks rather than among them: it runs through the
 // space between its ends, and showing where it goes is worth more than letting
-// a block in front of it hide it.
-function drawBeam({ a, b, lit }) {
+// a block in front of it hide it. Its colour is the game's own where that has
+// been seen; a beam whose colour nobody has written down draws in plain ink.
+function drawBeam({ a, b, lit, type }) {
   const p = screen(a[0] + 0.5, a[1] + 0.5, a[2] + 0.5);
   const q = screen(b[0] + 0.5, b[1] + 0.5, b[2] + 0.5);
   ctx.save();
-  ctx.strokeStyle = kindColour(8);
+  ctx.strokeStyle = typeColour(8, type) || "#e8eefb";
   ctx.lineWidth = Math.max(1.5, 2.5 * state.cam.zoom);
   if (!lit) {
     ctx.globalAlpha = 0.45;
