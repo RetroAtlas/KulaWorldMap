@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Write a disc copy that reaches a level the game will not take you to.
+"""Reach a level the game will not take you to: a cheat, or a patched disc.
 
     export KULA_DISC="/path/to/Roll Away.bin"
-    python3 tools/kula_warp.py
+    python3 tools/kula_warp.py --cheat                       # the catalogue
+    python3 tools/kula_warp.py --cheat --level /HELL/HELL.PAK#18
+    python3 tools/kula_warp.py                               # a disc copy instead
     python3 tools/kula_warp.py --level /HELL/HELL.PAK#18
 
 `OBJ LEVEL`, the developers' object catalogue, sits in the twentieth slot of
@@ -19,8 +21,10 @@ pack it is reached from belongs to.
 
 The game keeps the world it is loading at 0x800A340C and 0x800A3410 and the
 slot at 0x800A3408 (the NTSC release; the PAL one at 0x800A2EA4, 0x800A2EA8 and
-0x800A2EA0), so an emulator cheat that writes those reaches the same levels
-without a patched disc. This tool is for when a disc is what is wanted.
+0x800A2EA0), so an emulator cheat that writes those reaches any slot of any
+world pack without a patched disc; `--cheat` prints it in the form DuckStation
+takes. The disc copy is for the packs the cheat cannot name, and for a real
+console.
 
 Writing user data leaves each touched sector's EDC and ECC stale. Emulators do
 not read them; a real console would.
@@ -34,13 +38,15 @@ import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import open_disc, packs
+from kula_disc import THEMES, open_disc, packs
 from kula_pak import Pak
 
 SECTOR_RAW = 2352
 USER = 2048
 USER_OFF = 24
 CATALOGUE = "OBJ LEVEL"
+WORLD_WORDS = (0x800A340C, 0x800A3410)
+SLOT_WORD = 0x800A3408
 
 
 def find(disc, want):
@@ -88,6 +94,8 @@ def main():
                     help="pack path and slot the level should answer to")
     ap.add_argument("--level", default=None,
                     help="pack path and slot to make reachable; defaults to the catalogue")
+    ap.add_argument("--cheat", action="store_true",
+                    help="print the emulator cheat that loads the level, instead of writing a disc")
     args = ap.parse_args()
 
     src = args.disc or os.environ.get("KULA_DISC")
@@ -118,6 +126,17 @@ def main():
         donor_path, donor_pak, donor_slot = donor
     record = donor_pak.entries[donor_slot]["blob"]
     what = donor_pak.name(donor_slot)
+
+    if args.cheat:
+        world = donor_path.strip("/").split("/")[0].upper()
+        if world not in THEMES or not donor_path.upper().endswith(f"/{world}.PAK"):
+            sys.exit(f"the cheat reaches the world packs only, not {donor_path}")
+        print(f"[{what} ({world})]")
+        print("Type = Gameshark")
+        for word in WORLD_WORDS:
+            print(f"{word:08X} {THEMES.index(world):04X}")
+        print(f"{SLOT_WORD:08X} {donor_slot:04X}")
+        return
     out = Path(args.out) if args.out else src.with_name(f"{src.stem} ({what.lower()}).bin")
 
     target = Pak(disc.read_file(target_path), target_path)

@@ -46,7 +46,7 @@ A cell holds either a style or a record index, never both, so a block carrying a
 
 **`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: 36 objects and nine records of the kinds that are their own thing on a flat floor, covering **23 of the game's 30 object types**, and the seven it misses are placed 125 times between them against the 23's 5,459. Everything on it stands on top, so walking it once in an emulator names most of the game's vocabulary and says nothing about faces. `tools/kula_objlevel.py` writes the floor plan and the sheet to fill in, and `tools/kula_warp.py` writes a disc copy that answers to it where LEVEL 1 used to be.
 
-**Any level is a cheat away.** The walkthrough's GameShark section, from Aris Efraimidis, names the three words the game loads a level from: `800A340C` and `800A3410` take the world, 0 to 9 in pack order, and `800A3408` the slot within it, 0 to 14 for the numbered levels, 15 to 17 the bonus ones, 18 the hidden one, and 19 the slot no menu asks for, which is `OBJ LEVEL` in every world but the first, where it is the Japanese release's tutorial. An emulator cheat that sets those reaches any of the 200 without touching the disc; `tools/kula_warp.py` is the other way, for a disc image.
+**Any level is a cheat away.** The walkthrough's GameShark section, from Aris Efraimidis, names the three words the game loads a level from: `800A340C` and `800A3410` take the world, 0 to 9 in pack order, and `800A3408` the slot within it, 0 to 14 for the numbered levels, 15 to 17 the bonus ones, 18 the hidden one, and 19 the slot no menu asks for, which is `OBJ LEVEL` in every world but the first, where it is the Japanese release's tutorial. An emulator cheat that sets those reaches any of the 200 without touching the disc, and `python3 tools/kula_warp.py --cheat --level /HELL/HELL.PAK#18` prints it in the form DuckStation takes; without `--cheat` the same tool writes a patched disc image instead, which is the way for a real console or for the packs the cheat cannot name.
 
 **`HIDDEN 10`**, the last hidden level of the last world, carries 178 blocks of which only 18 are the level. The other 160 lie flat on z=32, the floor of the lattice, 22 blocks below anything you can stand on, spelling **VERY WELL DONE** in block capitals six blocks tall.
 
@@ -82,7 +82,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `kula_score.py` | what each level scores, and the check of the names against the walkthrough |
 | `kula_faces.py` | what the six slots of every record hold, per kind and per face |
 | `kula_objlevel.py` | the floor plan and sheet for naming objects by walking OBJ LEVEL |
-| `kula_warp.py` | a disc copy that reaches a level no menu asks for |
+| `kula_warp.py` | the cheat, or a disc copy, that reaches a level no menu asks for |
 | `kula_tgi.py` | a world's artwork: sections, VRAM page, textures |
 | `kula_tex.py` | the block atlas the viewer draws with |
 | `png.py` | write a PNG, and squeeze it with `oxipng` where that is installed |
