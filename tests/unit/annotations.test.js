@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapData, annotations, levelKey } from "./fixtures.js";
+import { mapData, annotations, levelKey, CAMERA_KIND } from "./fixtures.js";
 
 // annotations.json is hand-curated against generated data, so every key in it
 // has to name something the data still has.
@@ -18,20 +18,32 @@ test("every annotated world names a world", () => {
   }
 });
 
-test("every annotated kind and type is placed somewhere", () => {
-  const kinds = new Set([String(mapData.startKind)]);
-  const pairs = new Set();
+test("every annotated kind, type and variant is placed somewhere", () => {
+  const kinds = new Set([String(CAMERA_KIND)]);
+  const objects = new Map();
   for (const l of mapData.levels) {
-    for (const o of l.objects) {
-      kinds.add(String(o.kind));
-      pairs.add(`${o.kind}/${o.type}`);
+    for (let i = 3; i < l.cells.length; i += 4) {
+      if (l.cells[i] < mapData.firstRecord) kinds.add(String(l.cells[i]));
+    }
+    for (const r of l.records) {
+      kinds.add(String(r.kind));
+      for (const o of r.on) {
+        if (!objects.has(o.type)) objects.set(o.type, []);
+        objects.get(o.type).push(o);
+      }
     }
   }
   for (const k of Object.keys(annotations.kinds ?? {})) {
     assert.ok(kinds.has(k), `annotations.json names no such kind: ${k}`);
   }
-  for (const p of Object.keys(annotations.types ?? {})) {
-    assert.ok(pairs.has(p), `annotations.json names no such kind/type: ${p}`);
+  for (const [t, entry] of Object.entries(annotations.types ?? {})) {
+    const placed = objects.get(Number(t));
+    assert.ok(placed, `annotations.json names no such type: ${t}`);
+    if (!entry.by) continue;
+    const values = new Set(placed.map((o) => String(o.f[Number(entry.by.slice(1)) - 5])));
+    for (const v of Object.keys(entry.variants ?? {})) {
+      assert.ok(values.has(v), `annotations.json names no type ${t} with ${entry.by} = ${v}`);
+    }
   }
 });
 

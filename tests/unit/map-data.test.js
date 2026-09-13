@@ -1,12 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapData, levelKey } from "./fixtures.js";
+import { mapData, levelKey, CAMERA_KIND, UNPLACED_KIND } from "./fixtures.js";
+
+const FACES = 6;
 
 const cellsOf = (l) => {
-  const set = new Set();
-  for (let i = 0; i < l.cells.length; i += 4) set.add(l.cells.slice(i, i + 3).join(","));
-  return set;
+  const map = new Map();
+  for (let i = 0; i < l.cells.length; i += 4) {
+    map.set(l.cells.slice(i, i + 3).join(","), l.cells[i + 3]);
+  }
+  return map;
 };
+const at = (r) => `${r.x},${r.y},${r.z}`;
+const names = (cells, l, k) => cells.get(at(l.records[k])) === mapData.firstRecord + k;
 
 test("the pack path and the index inside it are the key", () => {
   const keys = mapData.levels.map(levelKey);
@@ -27,25 +33,26 @@ test("every world lists its own levels, and between them all of them", () => {
   );
 });
 
-test("a record holds one entity, and the last one is the start", () => {
+test("a record is a block carrying up to six objects, one to a face", () => {
   for (const l of mapData.levels) {
-    assert.equal(l.objects.length, l.records - 1, `${l.name}`);
-    assert.ok(l.start, `${l.name} has no start`);
-    assert.ok(
-      l.objects.every((o) => o.kind !== mapData.startKind),
-      `${l.name}`,
-    );
-    assert.deepEqual(
-      l.objects.map((o) => o.r),
-      l.objects.map((_, i) => i),
-      `${l.name}`,
-    );
+    for (const r of l.records) {
+      const where = `${l.name} record at ${at(r)}`;
+      for (const c of [r.x, r.y, r.z]) assert.ok(c >= 0 && c < mapData.side, where);
+      assert.notEqual(r.kind, CAMERA_KIND, where);
+      assert.ok(r.on.length <= FACES, `${where} carries ${r.on.length}`);
+      assert.equal(new Set(r.on.map((o) => o.face)).size, r.on.length, `${where} doubles a face`);
+      for (const o of r.on) {
+        assert.ok(o.face >= 0 && o.face < FACES, `${where} face ${o.face}`);
+        assert.ok(o.type > 0, `${where} face ${o.face} is bare`);
+        // a kind with a payload of its own keeps its first two slots for it
+        if ("type" in r) assert.ok(o.face >= 2, `${where} kind ${r.kind} face ${o.face}`);
+      }
+    }
   }
 });
 
 test("a cell holds a block style or names a record that names it back", () => {
   for (const l of mapData.levels) {
-    const byRecord = new Map(l.objects.map((o) => [o.r, o]));
     for (let i = 0; i < l.cells.length; i += 4) {
       const [x, y, z, v] = l.cells.slice(i, i + 4);
       for (const c of [x, y, z]) assert.ok(c >= 0 && c < mapData.side, `${l.name} ${x},${y},${z}`);
@@ -53,13 +60,10 @@ test("a cell holds a block style or names a record that names it back", () => {
         assert.ok(v < mapData.styles, `${l.name} cell ${x},${y},${z} has style ${v}`);
         continue;
       }
-      const r = v - mapData.firstRecord;
-      assert.ok(r < l.records, `${l.name} cell ${x},${y},${z} names record ${r}`);
-      const o = byRecord.get(r);
-      // the start is the one record a cell can name that is not in the object
-      // list, since it is not a thing standing on a block
-      if (o) assert.deepEqual([o.x, o.y, o.z], [x, y, z], `${l.name} record ${r}`);
-      else assert.deepEqual(l.start.at, [x, y, z], `${l.name} record ${r}`);
+      const k = v - mapData.firstRecord;
+      const r = l.records[k];
+      assert.ok(r, `${l.name} cell ${x},${y},${z} names record ${k} of ${l.records.length}`);
+      assert.deepEqual([r.x, r.y, r.z], [x, y, z], `${l.name} record ${k}`);
     }
   }
 });
@@ -67,9 +71,22 @@ test("a cell holds a block style or names a record that names it back", () => {
 test("every object stands on a placed cell", () => {
   for (const l of mapData.levels) {
     const cells = cellsOf(l);
-    for (const o of l.objects) {
-      assert.ok(cells.has(`${o.x},${o.y},${o.z}`), `${l.name}: object at ${o.x},${o.y},${o.z}`);
-    }
+    l.records.forEach((r, k) => {
+      if (r.on.length) assert.ok(names(cells, l, k), `${l.name}: objects at ${at(r)}`);
+    });
+  }
+});
+
+test("kind 9 is named by no cell, carries nothing, and ends the records", () => {
+  for (const l of mapData.levels) {
+    const cells = cellsOf(l);
+    l.records.forEach((r, k) => {
+      const where = `${l.name} record ${k} at ${at(r)}`;
+      assert.equal(names(cells, l, k), r.kind !== UNPLACED_KIND, where);
+      if (r.kind !== UNPLACED_KIND) return;
+      assert.equal(r.on.length, 0, where);
+      assert.equal(k, l.records.length - 1, where);
+    });
   }
 });
 
@@ -94,10 +111,13 @@ test("the extent is the extent of the cells", () => {
   }
 });
 
-test("the start looks at a cell of the lattice", () => {
+test("the camera looks at a cell of the lattice", () => {
   for (const l of mapData.levels) {
-    for (const p of [l.start.at, l.start.look]) {
-      for (const c of p) assert.ok(c >= 0 && c < mapData.side, `${l.name}: ${p}`);
-    }
+    assert.ok(l.camera, `${l.name} has no camera`);
+    assert.equal(l.camera.look.length, 3, `${l.name}`);
+    for (const c of l.camera.look)
+      assert.ok(c >= 0 && c < mapData.side, `${l.name}: ${l.camera.look}`);
+    assert.equal(l.camera.angle.length, 2, `${l.name}`);
+    assert.ok(Number.isInteger(l.camera.time), `${l.name}: time ${l.camera.time}`);
   }
 });
