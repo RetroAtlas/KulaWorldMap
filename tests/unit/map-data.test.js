@@ -121,3 +121,14 @@ test("the camera looks at a cell of the lattice", () => {
     assert.ok(Number.isInteger(l.camera.time), `${l.name}: time ${l.camera.time}`);
   }
 });
+
+test("the game numbers the levels it shows a number for straight through the worlds", () => {
+  const shown = mapData.levels.filter((l) => l.shown).map((l) => l.shown);
+  const run = (word) =>
+    shown.filter((s) => s.startsWith(`${word} `)).map((s) => Number(s.slice(word.length + 1)));
+  const upTo = (n) => Array.from({ length: n }, (_, i) => i + 1);
+  const worlds = mapData.themes.length;
+  assert.deepEqual(run("LEVEL"), upTo(15 * worlds));
+  assert.deepEqual(run("FINAL"), upTo(2 * worlds));
+  assert.equal(shown.length, 17 * worlds);
+});
