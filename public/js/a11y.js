@@ -1,12 +1,14 @@
 import { $, on } from "./dom.js";
 import { state } from "./state.js";
-import { worldName, levelNote, levelMarkers } from "./data.js";
+import { worldName, levelNote, levelMarkers, levelPoints } from "./data.js";
 
 /** What a reader who cannot see the map is told on arriving somewhere. */
 export function describeLevel(l) {
   const parts = [l.name, worldName(l.theme), `${l.placed} blocks`];
   const n = levelMarkers(l).length;
   if (n) parts.push(`${n} objects`);
+  const points = levelPoints(l);
+  if (points) parts.push(`${points} points`);
   if (l.camera?.time !== undefined) parts.push(`time ${l.camera.time}`);
   const note = levelNote(l);
   return parts.join(", ") + (note ? `. ${note}` : ".");

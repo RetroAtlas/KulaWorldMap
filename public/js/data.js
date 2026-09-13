@@ -35,6 +35,7 @@ export const worldNote = (id) => ann.worlds[id]?.note || "";
 export const levelNote = (l) => ann.levels[`${l.pack}#${l.index}`]?.note || "";
 
 const BEAM_KIND = 8;
+const RAIL_KIND = 5;
 // The kinds whose record is a block and nothing more, so all it carries is
 // what stands on its faces. The others are a thing in their own right as well.
 const PLAIN_KINDS = new Set([0, 1, 2, 3]);
@@ -51,26 +52,46 @@ export const FACE_NORMAL = [
   [0, 0, 1],
 ];
 export const FACE_NAME = ["top", "+x side", "+y side", "-y side", "-x side", "underside"];
+export const DIRECTION_NAME = ["-z", "+x", "+y", "-y", "-x", "+z"];
 
 // What a record puts on the map: an object on each face that carries one and,
 // for a kind that is its own thing, a marker for the record itself. Each has
 // an id that names what it is rather than where, for the legend and search.
+// A type's annotation may single out one field as telling its variants apart,
+// a colour or a tier, and then the id carries that field's value too.
 export function markersOf(r) {
   const out = [];
   if (!PLAIN_KINDS.has(r.kind))
-    out.push({ id: `k${r.kind}`, kind: r.kind, type: r.type, f: r.f, face: null });
-  for (const o of r.on) out.push({ id: `t${o.type}`, type: o.type, face: o.face, f: o.f, v: o.v });
+    out.push({ id: `k${r.kind}`, kind: r.kind, type: r.type, f: r.f, face: null, variant: null });
+  for (const o of r.on) {
+    const by = ann.types[String(o.type)]?.by;
+    const variant = by ? String(o.f[Number(by.slice(1)) - 5]) : null;
+    const id = variant === null ? `t${o.type}` : `t${o.type}/${variant}`;
+    out.push({ id, type: o.type, face: o.face, f: o.f, v: o.v, variant });
+  }
   return out;
 }
 
-export const markerName = (m) =>
-  (m.face === null ? ann.kinds[String(m.kind)] : ann.types[String(m.type)])?.name || null;
+// A variant may carry its own name, colour and points; what it leaves unsaid
+// falls back to the type, and a marker for a record itself reads the kind.
+const entry = (m) => (m.face === null ? ann.kinds[String(m.kind)] : ann.types[String(m.type)]);
+const variant = (m) => (m.variant === null ? null : entry(m)?.variants?.[m.variant] || null);
+export const markerName = (m) => variant(m)?.name || entry(m)?.name || null;
 export const markerLabel = (m) =>
   markerName(m) || (m.face === null ? `kind ${m.kind}` : `type ${m.type}`);
-export const markerNote = (m) =>
-  (m.face === null ? ann.kinds[String(m.kind)] : ann.types[String(m.type)])?.note || "";
-export const markerColour = (m) => (m.face === null ? kindColour(m.kind) : OBJECT_COLOUR);
+export const markerNote = (m) => entry(m)?.note || "";
+export const markerColour = (m) =>
+  variant(m)?.colour || (m.face === null ? kindColour(m.kind) : OBJECT_COLOUR);
+export const markerPoints = (m) => variant(m)?.points ?? entry(m)?.points ?? 0;
+/** The direction a marker's thing points, as an index into FACE_NORMAL, or null. */
+export const markerFacing = (m) => {
+  const by = entry(m)?.facing;
+  if (!by || m.face === null) return null;
+  const d = m.f[Number(by.slice(1)) - 5];
+  return d >= 0 && d < FACE_NORMAL.length ? d : null;
+};
 export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
+export const kindNote = (kind) => ann.kinds[String(kind)]?.note || "";
 
 // A beam record spans two cells on one axis and nothing stands between them in
 // any of the game's. The blocks at its ends are not always in the lattice, so
@@ -79,6 +100,13 @@ export const beams = (l) =>
   l.records
     .filter((r) => r.kind === BEAM_KIND)
     .map((r) => ({ a: r.f.slice(2, 5), b: r.f.slice(5, 8), lit: r.f[1] === 1, colour: r.colour }));
+
+// A moving platform's record has the same shape: the block and the far end of
+// its run, on one axis.
+export const rails = (l) =>
+  l.records
+    .filter((r) => r.kind === RAIL_KIND)
+    .map((r) => ({ a: r.f.slice(2, 5), b: r.f.slice(5, 8) }));
 
 // A laser's circuit number, in the colour the game paints that circuit. Which
 // is which was read off LEVEL 109, whose five beams line up red, yellow,
@@ -112,10 +140,22 @@ export function index(l) {
     records.get(k).push(r);
     markers.get(k).push(...markersOf(r));
   }
-  return { cells, records, markers, rays };
+  return { cells, records, markers, rays, rails: rails(l) };
 }
 
 export const levelMarkers = (l) => l.records.flatMap(markersOf);
+
+// Every world pack keeps its three bonus levels in the same slots, and a bonus
+// level scores each block rolled over rather than an exit reached.
+const BONUS_SLOTS = [15, 16, 17];
+const BLOCK_POINTS = 50;
+
+/** What collecting everything on a level would score. */
+export function levelPoints(l) {
+  let points = levelMarkers(l).reduce((sum, m) => sum + markerPoints(m), 0);
+  if (BONUS_SLOTS.includes(l.index)) points += BLOCK_POINTS * (l.cells.length / 4);
+  return points;
+}
 
 /** How often each marker id is placed, and in how many levels, across the game. */
 export function markerStats(data) {

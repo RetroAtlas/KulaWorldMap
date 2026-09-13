@@ -1,6 +1,8 @@
 # 1. Name the game's objects
 
-**Status:** open · **Effort:** medium, mostly away from the keyboard · **Where:** an emulator, then `public/annotations.json`
+**Status:** mostly resolved 2026-09-13, a survey still owed · **Effort:** medium, mostly away from the keyboard · **Where:** an emulator, then `public/annotations.json`
+
+**2026-09-13.** Named from Syonyx's Roll Away walkthrough (GameFAQs, 2006, not in the repo) rather than from a sitting in the emulator: for each thing the walkthrough introduces, the level it introduces it on carries the game's first placements of one type or kind and nothing else new, and the maximum scores it states pin the points, which `tools/kula_score.py --guide` checks. 26 of the 30 object types and every block kind but 4 are named that way; each note in `annotations.json` says what it rests on. What the survey still has to settle: the coin tiers' colours (the 250 kind read bronze in play and the 750 kind gold in a screenshot, and the walkthrough calls the 500 kind blue); which of types 50 and 52 is the fast short-spiked captivator and which the slow long-spiked one; and types 29 (two placements), 34 and 42 (catalogue only) and block kind 4 (catalogue only), which the walkthrough never meets.
 
 ## What and why
 

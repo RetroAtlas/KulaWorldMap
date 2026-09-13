@@ -3,10 +3,14 @@ import { state, cellKey } from "./state.js";
 import {
   OFF_LATTICE,
   FACE_NAME,
+  DIRECTION_NAME,
   kindName,
+  kindNote,
   markerName,
   markerNote,
   markerColour,
+  markerPoints,
+  markerFacing,
   markerStats,
 } from "./data.js";
 
@@ -26,15 +30,17 @@ export function showCell(c) {
   const box = $("detail");
   const off = c.v === OFF_LATTICE;
   const plain = c.v < state.data.firstRecord;
+  const kind = off ? null : plain ? c.v : records[0]?.kind;
+  const what = kind === null ? "Block at a beam's end" : kindName(kind) || `Block of kind ${kind}`;
   let html = `<button class="x" title="Close (Esc)">×</button>`;
-  html += `<h3>${off ? "Block at a beam's end" : plain ? `Block, style ${c.v}` : `Block with record ${c.v - state.data.firstRecord}`}</h3>`;
+  html += `<h3>${what}${plain || off ? "" : `, with record ${c.v - state.data.firstRecord}`}</h3>`;
   html += `<p class="sub">${l.name} · cell ${c.x},${c.y},${c.z}</p>`;
   if (off)
     html += `<p class="sub">The lattice holds nothing here. A beam record names this cell as one
       of its two ends, and the game stands a block on it.</p>`;
+  else if (kindNote(kind)) html += `<p class="sub">${kindNote(kind)}</p>`;
   html += `<table>${row("lattice value", off ? "empty" : c.v)}${row("cell", `${c.x}, ${c.y}, ${c.z}`)}`;
-  for (const r of records)
-    html += row("block kind", kindName(r.kind) ? `${r.kind} · ${kindName(r.kind)}` : r.kind);
+  if (kind !== null) html += row("block kind", kind);
   html += "</table>";
 
   for (const m of marks) {
@@ -45,6 +51,10 @@ export function showCell(c) {
     const note = markerNote(m);
     if (note) html += `<p class="sub">${note}</p>`;
     html += "<table>";
+    const points = markerPoints(m);
+    if (points) html += row("points", points);
+    const facing = markerFacing(m);
+    if (facing !== null) html += row("facing", DIRECTION_NAME[facing]);
     m.f.forEach((v, i) => {
       if (v !== -1) html += row(`f${i + 5}`, v);
     });

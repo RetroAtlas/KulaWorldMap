@@ -1,10 +1,41 @@
 {
-  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated; see CLAUDE.md.",
+  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated; see CLAUDE.md. `kinds` names the block kinds, which the lattice's style values and the records' kind word share. `types` names what stands on a face: `by` names the field whose value tells a type's variants apart, each with its own name and, where it has one, colour and points; `facing` names the field that holds the way a thing points, in the game's own direction numbering; and `points` is what collecting one scores, read off the walkthrough's per-level maximums, which the disc reproduces.",
   "worlds": {},
   "kinds": {
+    "0": {
+      "name": "Block"
+    },
+    "1": {
+      "name": "Fire block",
+      "note": "A block whose every face is fire: touching it inflates the ball until it pops or reaches cooler ground. The lattice's style 1 and a record's kind 1 are the same thing, the second being a fire block with something standing on it: LEVEL 35, the walkthrough's first fire, is style 1 and kind 1 and nothing else new, and so are LEVEL 44, 123 and 126."
+    },
+    "2": {
+      "name": "Ice block",
+      "note": "A block the ball slides across without stopping until it reaches a normal square or the edge. Style 2 in the lattice, kind 2 in a record: LEVEL 46, the walkthrough's first ice, is 29 of them and nothing else new. Nearly all of the game's are in Arctic and Hell."
+    },
+    "3": {
+      "name": "Invisible block",
+      "note": "A block that cannot be seen until the ball is close, or, on some levels, only from far away; sunglasses reveal it for a while. Style 3 in the lattice, kind 3 in a record: LEVEL 31, the walkthrough's first invisible platform, is eight of them and nothing else new. Two thirds of the game's are in Haze."
+    },
+    "4": {
+      "note": "One cell in each copy of OBJ LEVEL and nowhere else. It draws the shared panel texture rather than the world's stone."
+    },
+    "5": {
+      "name": "Moving platform",
+      "note": "A block that travels between two cells named in its own fields, on one axis, and back. The record's type is the direction from its block to the far end and its tail keeps a fixed-point copy of where it is. LEVEL 71, the walkthrough's first moving platform, carries the game's first kind 5, and every later mention of one lands on a level with them."
+    },
+    "6": {
+      "name": "Crumbling block",
+      "points": 50,
+      "note": "A block that disappears once rolled onto, leaving time for one move, for 50 points. LEVEL 16 introduces them in the walkthrough and carries the game's first kind 6, fifteen of them, and the 50 is what the walkthrough's maximum scores need on every level that has them. The record keeps a fixed-point copy of its own cell, which is what a block that falls would need."
+    },
+    "7": {
+      "name": "Vanishing block",
+      "note": "A block that fades in and out of existence on a cycle. LEVEL 76 introduces them in the walkthrough and carries the game's first kind 7, and the record's own fields are not decoded."
+    },
     "8": {
       "name": "Laser",
-      "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 117 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, and the slot after its own holds its circuit: the colour of the beam, and of the switch that toggles it. Its ends carry the emitter blocks, and 61 of the 234 sit on cells the lattice leaves empty, which is the game placing geometry a level's own grid does not."
+      "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 117 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, and the slot after its own holds its circuit: the colour of the beam, and of the switch and teleporter that share it. Its ends carry the emitter blocks, and 61 of the 234 sit on cells the lattice leaves empty, which is the game placing geometry a level's own grid does not."
     },
     "9": {
       "note": "The last record on 160 levels, and the one kind no lattice cell ever names, so the engine's walk over the level does not reach it. It stands on an empty cell on 114 of the 160. Its slots hold objects like any block's, and the map leaves them out."
@@ -15,25 +46,212 @@
     }
   },
   "types": {
+    "1": {
+      "name": "Fire",
+      "note": "Fire on one face of an otherwise normal block. LEVEL 38 is a start block and four blocks two squares out, each with fire on four faces and, as the walkthrough says, fire-free on two. A block that is fire all over is a fire block instead."
+    },
+    "2": {
+      "name": "Ice",
+      "note": "Ice on one face of an otherwise normal block, the ice patch the walkthrough keeps warning about on column tips. LEVEL 47 carries seventeen and no ice blocks."
+    },
+    "5": {
+      "name": "Teleporter",
+      "by": "f6",
+      "variants": {
+        "0": {
+          "name": "Yellow teleporter",
+          "colour": "#f5c542"
+        },
+        "1": {
+          "name": "Blue teleporter",
+          "colour": "#4f8ef7"
+        },
+        "2": {
+          "name": "Green teleporter",
+          "colour": "#3ad07c"
+        },
+        "3": {
+          "name": "Red teleporter",
+          "colour": "#ff4a4a"
+        }
+      },
+      "note": "Rolling onto one carries the ball to another of the same colour; a switch of that colour turns the pair on and off. LEVEL 66, the walkthrough's first teleporters, carries the game's first two. The colour is the circuit number the lasers and switches use: LEVEL 68's are yellow and blue and read 0 and 1, LEVEL 70's yellow, red and green read 0, 3 and 2."
+    },
     "7": {
       "name": "Exit",
-      "note": "The exit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on, and HIDDEN 10's on the face. One in each of 190 levels, two in three of them, and none on the 30 bonus and 10 Simon levels, which have no exit to reach."
+      "note": "Red until every key is collected, then green, and touching it ends the level. One in each of 190 levels, two in three of them, and none on the 30 bonus and 10 Simon levels, which have no exit to reach; LEVEL 1's, LEVEL 2's and HIDDEN 10's stand on the cells and faces the map draws them on."
+    },
+    "8": {
+      "name": "Clock",
+      "note": "A square that freezes the timer while the ball sits on it. LEVEL 56 is the walkthrough's first clock and carries seven, and LEVEL 58, 59, 118 and 136 each have one where the walkthrough says."
+    },
+    "9": {
+      "name": "Switch",
+      "by": "f6",
+      "variants": {
+        "0": {
+          "name": "Yellow switch",
+          "colour": "#f5c542"
+        },
+        "1": {
+          "name": "Blue switch",
+          "colour": "#4f8ef7"
+        },
+        "2": {
+          "name": "Green switch",
+          "colour": "#3ad07c"
+        },
+        "3": {
+          "name": "Red switch",
+          "colour": "#ff4a4a"
+        }
+      },
+      "note": "A button that toggles every laser and teleporter of its colour. LEVEL 84 has the walkthrough's first button and the game's first of these; LEVEL 98's red, green and blue read 3, 2 and 1, the same numbers its three lasers carry."
+    },
+    "10": {
+      "name": "Boost button",
+      "note": "Launches the ball three squares forward, or two forward and one up. LEVEL 26, which introduces them, carries the game's first three."
+    },
+    "11": {
+      "name": "Moving spikes",
+      "note": "Spikes that rise and retract in turn; safe to roll over when down. LEVEL 41 carries the game's first six where the walkthrough first says to wait for them to retract, and the field that varies takes four values, which reads as where in the cycle each one starts."
+    },
+    "12": {
+      "name": "Spikes",
+      "note": "Pops the ball on touch; jump over them. LEVEL 4 carries the game's first four where the walkthrough first says to jump the spikes."
+    },
+    "26": {
+      "name": "Hidden exit",
+      "note": "Appears once every key is collected, colourless, and leads to the world's hidden level. Exactly the ten levels the walkthrough marks as hidden-level access carry one, LEVEL 82 two, and LEVEL 132's is the one the NTSC release puts out of reach."
+    },
+    "28": {
+      "name": "Arrow",
+      "facing": "f5",
+      "note": "A square the ball can only leave in the direction the arrow points. LEVEL 61, the walkthrough's first arrows, carries the game's first twelve, and the field that varies takes the four in-plane directions in the game's own numbering."
+    },
+    "29": {
+      "note": "Two in the game, on LEVEL 58 and Hell's LEVEL 135, and nothing the walkthrough says about either level names it."
     },
     "30": {
       "name": "Start",
-      "note": "The block and face the ball starts on, in LEVEL 1, LEVEL 2 and HIDDEN 10. One in each of 228 levels, two in MARS LEVEL 130, and none on ARCTIC LEVEL 58 and HELL LEVEL 135."
+      "facing": "f5",
+      "note": "The block and face the ball starts on, in LEVEL 1, LEVEL 2 and HIDDEN 10. One in each of 228 levels, two in MARS LEVEL 130, and none on ARCTIC LEVEL 58 and HELL LEVEL 135. The field that varies is the way the ball faces: LEVEL 1's reads -y, and the first coin is two blocks that way."
     },
     "31": {
       "name": "Key",
-      "note": "One to six a level: 61 levels with one, 92 with two, 31 with three, five with four, one with six. Collecting every key is what turns the exit from red to green. LEVEL 1's and LEVEL 2's are on the cells the map draws them on, and HIDDEN 10's four are on the face."
+      "points": 1000,
+      "note": "Collecting every key turns the exit green. One to six a level: 61 levels with one, 92 with two, 31 with three, five with four, one with six. LEVEL 1's and LEVEL 2's are on the cells the map draws them on, and HIDDEN 10's four are on the face."
+    },
+    "32": {
+      "name": "Lethargy pill",
+      "note": "Slows the ball, rocks the screen and runs the timer fast for fifteen seconds; the walkthrough's dizzy pill. LEVEL 10 introduces them and carries the game's first four, and LEVEL 34, 43, 56 and 87 have them where it says."
+    },
+    "33": {
+      "name": "Bouncy pill",
+      "note": "Makes every forward move a two-square bounce and a jump three, until the level ends. LEVEL 86 introduces them and carries the game's first; LEVEL 88 has either of two, as the walkthrough says."
+    },
+    "34": {
+      "note": "Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use."
+    },
+    "35": {
+      "name": "Hourglass",
+      "points": 1190,
+      "note": "Flips the timer, and scores 1200 less twelve times the seconds left, so 1190 at best. LEVEL 6 introduces it and carries the game's first; the walkthrough's maximum scores need 1190 for each one, which is collecting it with a second on the clock."
+    },
+    "36": {
+      "name": "Gem",
+      "points": 2975,
+      "by": "f6",
+      "variants": {
+        "0": {
+          "name": "Blue gem",
+          "colour": "#4f8ef7"
+        },
+        "1": {
+          "name": "Green gem",
+          "colour": "#3ad07c"
+        },
+        "2": {
+          "name": "Red gem",
+          "colour": "#ff4a4a"
+        }
+      },
+      "note": "Worth 2975 whatever the colour, which is what the walkthrough's maximum scores need on every level that has one. The colour is the field that varies: LEVEL 5's blue gems read 0, LEVEL 64's green one 1, and the red ones of LEVEL 77, 103 and 118 read 2."
     },
     "37": {
-      "name": "Bronze coin",
-      "note": "2175 placed across 211 levels, up to 48 in one, the game's most numerous object. LEVEL 1 holds exactly two and LEVEL 2 six, and the game shows exactly that many bronze coins in each, on the cells the map draws them on."
+      "name": "Coin",
+      "by": "f6",
+      "variants": {
+        "2": {
+          "name": "Bronze coin",
+          "points": 250
+        },
+        "1": {
+          "name": "Blue coin",
+          "points": 500
+        },
+        "0": {
+          "name": "Gold coin",
+          "points": 750
+        }
+      },
+      "note": "Three tiers, told apart by the field that varies, and the walkthrough's maximum scores settle the points: 250, 500 and 750 fit 133 of its 148 arcade levels exactly and every miss is one it explains itself, an unreachable coin or block. LEVEL 1's and LEVEL 2's are the 250 kind and read bronze in play; LEVEL 112's thirteen, which the walkthrough calls orange, and HIDDEN 10's eight, which show gold, are the 750 kind; the middle tier is what it calls blue, on BONUS 15 and HIDDEN 5 among others."
+    },
+    "38": {
+      "name": "Sunglasses",
+      "points": 500,
+      "note": "Reveals invisible blocks for a while, for 500 points. LEVEL 113 introduces them and carries three, and the walkthrough's scores for LEVEL 113 to 117 need exactly 500 for each."
+    },
+    "42": {
+      "note": "Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use."
+    },
+    "43": {
+      "name": "Fruit",
+      "points": 2500,
+      "note": "One placement in the game, on LEVEL 83, where the walkthrough's pumpkin is. Which fruit a level shows is progress rather than data, so this is a fruit like the common one and the map does not say which."
+    },
+    "44": {
+      "name": "Fruit",
+      "points": 2500,
+      "note": "Five in the game, on levels where the walkthrough's fruit stands and the common fruit type is absent. Worth 2500 like the rest, which is what those levels' maximum scores need."
+    },
+    "45": {
+      "name": "Fruit",
+      "points": 2500,
+      "note": "Three in the game, on levels where the walkthrough's fruit stands and the common fruit type is absent. Worth 2500 like the rest."
     },
     "46": {
       "name": "Fruit",
-      "note": "The fruit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. One in each of 151 levels and two in one; which fruit stands in it is not in the level, and the game carries an uncollected fruit forward, so the choice is progress rather than data."
+      "points": 2500,
+      "note": "Apple, watermelon, pumpkin, bananas and strawberry in turn, and five of them earn a bonus level; which one a level shows is progress rather than data. The fruit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. One in each of 151 levels and two in one."
+    },
+    "47": {
+      "name": "Fruit",
+      "points": 2500,
+      "note": "One placement in the game, on LEVEL 19, where the walkthrough's fruit stands and the common fruit type is absent. Worth 2500 like the rest."
+    },
+    "50": {
+      "name": "Captivator",
+      "facing": "f5",
+      "note": "A moving spiked thing that restarts the level on touch, with a direction in the field that varies. LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line; which of the walkthrough's two travelling kinds this is, the fast short-spiked ball or the slow long-spiked one that turns at obstacles, is not settled."
+    },
+    "51": {
+      "name": "Rolling stone",
+      "facing": "f5",
+      "note": "The grey cylinder that rolls slowly round a set course and can be jumped over. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise."
+    },
+    "52": {
+      "name": "Captivator",
+      "facing": "f5",
+      "note": "A moving spiked thing that restarts the level on touch, with a direction in the field that varies. The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away; which of its two travelling kinds this is, against type 50, is not settled."
+    },
+    "53": {
+      "name": "Captivator, wandering",
+      "note": "The blue hexagonal ball that shakes, then moves one square in a random direction. LEVEL 84 carries four where the walkthrough says to watch their shaking to tell which way they will go, and it has no direction field."
+    },
+    "56": {
+      "name": "Captivator, bouncing",
+      "note": "The corkscrew that bounces up and down: roll under it when up, jump it when down. LEVEL 45 carries six where the walkthrough says to roll under them when raised, and LEVEL 122's go up in sequence, which is what the four-valued field reads as."
     }
   },
   "levels": {

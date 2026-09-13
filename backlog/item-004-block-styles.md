@@ -1,6 +1,8 @@
 # 4. What tells the five block styles apart
 
-**Status:** open · **Effort:** small-medium · **Where:** the disc, plus `tools/mips.py`
+**Status:** resolved 2026-09-13 · **Effort:** small-medium · **Where:** the disc, plus `tools/mips.py`
+
+**Resolution.** The style is the block's kind, and it is the same enumeration a record's kind word uses: 0 plain, 1 fire, 2 ice, 3 invisible. A block with something standing on it keeps its kind in the record instead of the cell, which is why the split looked lopsided: the 70 fire cells go with 62 kind-1 records, the 527 ice with 141 kind-2, the 1065 invisible with 216 kind-3, and each pair clusters in the same worlds. The walkthrough fixed which is which by introduction: LEVEL 35, its first fire, is style 1 and kind 1 and nothing else new; LEVEL 46, its first ice, is 29 style-2 blocks; LEVEL 31, its first invisible platform, is eight kind-3 records. Style 4 is one cell in each copy of `OBJ LEVEL` and nowhere else, so it is catalogue stock; what it is stays open, and the sketch below still applies to it. The viewer draws each kind over its skin and names it in the panel.
 
 ## What and why
 

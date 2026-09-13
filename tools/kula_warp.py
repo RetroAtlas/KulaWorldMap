@@ -17,6 +17,11 @@ out.
 A level carries no world of its own, so it wears whichever world's artwork the
 pack it is reached from belongs to.
 
+The game keeps the world it is loading at 0x800A340C and 0x800A3410 and the
+slot at 0x800A3408 (the NTSC release; the PAL one at 0x800A2EA4, 0x800A2EA8 and
+0x800A2EA0), so an emulator cheat that writes those reaches the same levels
+without a patched disc. This tool is for when a disc is what is wanted.
+
 Writing user data leaves each touched sector's EDC and ECC stale. Emulators do
 not read them; a real console would.
 """
