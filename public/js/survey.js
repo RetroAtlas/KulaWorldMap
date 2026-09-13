@@ -15,16 +15,72 @@ const FACES = [
   ["+y", "+y side"],
   ["-y", "-y side"],
 ];
-const NAMES = [
-  "start",
-  "exit",
-  "key",
-  "bronze coin",
-  "silver coin",
-  "gold coin",
-  "fruit",
-  "hourglass",
+// The game's vocabulary as a player meets it, grouped the way the walkthrough
+// groups it, so a mark can say what was seen without first knowing what the
+// disc calls it.
+const GROUPS = [
+  [
+    "Pickups",
+    [
+      "bronze coin",
+      "blue coin",
+      "gold coin",
+      "blue gem",
+      "green gem",
+      "red gem",
+      "key",
+      "fruit",
+      "hourglass",
+      "sunglasses",
+      "lethargy pill",
+      "bouncy pill",
+    ],
+  ],
+  [
+    "Hazards",
+    [
+      "spikes",
+      "moving spikes",
+      "captivator, short spikes",
+      "captivator, long spikes",
+      "captivator, bouncing",
+      "captivator, wandering",
+      "rolling stone",
+      "laser",
+    ],
+  ],
+  [
+    "Blocks",
+    [
+      "fire",
+      "ice",
+      "crumbling block",
+      "invisible block",
+      "vanishing block",
+      "moving platform",
+      "clock",
+      "boost button",
+      "arrow",
+    ],
+  ],
+  [
+    "Devices",
+    [
+      "start",
+      "exit",
+      "hidden exit",
+      "yellow teleporter",
+      "blue teleporter",
+      "green teleporter",
+      "red teleporter",
+      "yellow switch",
+      "blue switch",
+      "green switch",
+      "red switch",
+    ],
+  ],
 ];
+const NAMES = GROUPS.flatMap(([, names]) => names);
 
 let all = {};
 let brush = NAMES[0];
@@ -119,7 +175,11 @@ function panel() {
 function build() {
   const box = $("survey");
   const pick = el("select", { id: "surveyName" });
-  for (const n of NAMES) pick.append(el("option", { value: n, textContent: n }));
+  for (const [group, names] of GROUPS) {
+    const g = el("optgroup", { label: group });
+    for (const n of names) g.append(el("option", { value: n, textContent: n }));
+    pick.append(g);
+  }
   pick.append(el("option", { value: "?", textContent: "something else…" }));
   pick.onchange = () => {
     if (pick.value !== "?") {
