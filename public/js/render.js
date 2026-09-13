@@ -7,6 +7,7 @@ import {
   FACE_NAME,
   markerColour,
   markerLabel,
+  markerFacing,
   beamColour,
 } from "./data.js";
 
@@ -222,12 +223,10 @@ function paint(g, pts, skin, shade, alpha) {
   g.globalAlpha = 1;
 }
 
-// The five styles below firstRecord are drawn as steps of the world's tint,
-// since what tells them apart in the engine is not decoded.
-function styleTint(tint, v) {
-  if (v === OFF_LATTICE || v >= state.data.firstRecord) return tint;
+// Without textures a block is a step of the world's tint by kind.
+function kindTint(tint, kind) {
   const c = rgb(tint);
-  const k = 0.16 * (v / Math.max(1, state.data.styles - 1));
+  const k = 0.16 * (Math.min(kind, state.data.styles - 1) / Math.max(1, state.data.styles - 1));
   return (
     "#" +
     c
@@ -238,6 +237,24 @@ function styleTint(tint, v) {
       )
       .join("")
   );
+}
+
+// How a kind of block reads over its skin: a wash for what the game paints
+// onto the block, and a fainter, broken cube for a block that is not solidly
+// there, whether never seen, gone once rolled on, or gone half the time.
+const LOOK = {
+  1: { wash: "rgba(255 70 30 / 0.45)" },
+  2: { wash: "rgba(160 225 255 / 0.45)" },
+  3: { alpha: 0.35, dash: [3, 3] },
+  6: { wash: "rgba(0 0 0 / 0.3)", dash: [6, 3] },
+  7: { alpha: 0.55, dash: [2, 4] },
+};
+
+/** The kind of block a cell draws: its style, or the kind of the record it names. */
+function kindOf(c, idx, key) {
+  if (c.v === OFF_LATTICE) return 0;
+  if (c.v < state.data.firstRecord) return c.v;
+  return idx.records.get(key)?.[0]?.kind ?? 0;
 }
 
 export function draw() {
@@ -268,14 +285,16 @@ export function draw() {
     const key = cellKey(c.x, c.y, c.z);
     const sel = state.selected?.key === key;
     const hov = state.hover?.key === key;
-    const base = styleTint(tint, c.v);
+    const kind = kindOf(c, idx, key);
+    const look = LOOK[kind] || {};
+    const base = kindTint(tint, kind);
     const boost = sel ? 0.22 : hov ? 0.12 : 0;
-    const a = ghost ? 0.16 : 1;
-    // A cell carrying a record draws the world's own stone, because which
-    // texture its faces really wear is not decoded.
+    const a = (ghost ? 0.16 : 1) * (look.alpha ?? 1);
+    // A block wears the skin of its kind, and a kind past the skinned ones
+    // wears the plain stone with its marker saying what it is.
     const skin =
       state.show.skins && ATLAS.ready && world >= 0
-        ? { world, style: c.v > 0 && c.v < state.data.styles ? c.v : 0 }
+        ? { world, style: kind < state.data.styles ? kind : 0 }
         : null;
     cube(
       ctx,
@@ -286,6 +305,8 @@ export function draw() {
       a,
       skin,
     );
+    if (look.wash) cube(ctx, c, idx, () => look.wash, null, a, null);
+    if (look.dash && !ghost) outline(c, idx, "rgba(232 238 251 / 0.7)", look.dash);
     if (skin && (sel || hov)) {
       cube(ctx, c, idx, () => `rgba(255 255 255 / ${sel ? 0.22 : 0.12})`, null, a, null);
     }
@@ -309,15 +330,17 @@ export function draw() {
   }
   pickStale = false;
 
+  for (const r of idx.rails) drawRail(r);
   for (const r of idx.rays) drawBeam(r);
   if (state.show.start && l.camera) drawLook(l);
   drawScale();
 }
 
-function outline(c, idx, colour) {
+function outline(c, idx, colour, dash = []) {
   ctx.save();
   ctx.strokeStyle = colour;
   ctx.lineWidth = 1.6;
+  ctx.setLineDash(dash.map((d) => d * Math.max(0.5, state.cam.zoom)));
   const s = state.cam.zoom * BLOCK;
   const [ox, oy] = screen(c.x, c.y, c.z);
   for (const f of FACES) {
@@ -344,11 +367,39 @@ function outline(c, idx, colour) {
 const OBJECT_HOVER = 8 / BLOCK;
 const LOOK_HOVER = 18 / BLOCK;
 
-/** The screen point off the centre of one of a cell's faces. */
-function off(c, face, hover = 0) {
+/** The world point off the centre of one of a cell's faces. */
+function at(c, face, hover = 0) {
   const n = FACE_NORMAL[face];
   const d = 0.5 + hover;
-  return screen(c.x + 0.5 + n[0] * d, c.y + 0.5 + n[1] * d, c.z + 0.5 + n[2] * d);
+  return [c.x + 0.5 + n[0] * d, c.y + 0.5 + n[1] * d, c.z + 0.5 + n[2] * d];
+}
+const off = (c, face, hover = 0) => screen(...at(c, face, hover));
+
+// The way a thing points is drawn as a stroke from its marker, in the world
+// rather than on the screen, so it turns with the view.
+const FACING_REACH = 0.45;
+function drawFacing(m, c, face, colour) {
+  const d = markerFacing(m);
+  if (d === null) return;
+  const n = FACE_NORMAL[d];
+  const from = at(c, face, OBJECT_HOVER);
+  const [px, py] = screen(...from);
+  const [qx, qy] = screen(
+    from[0] + n[0] * FACING_REACH,
+    from[1] + n[1] * FACING_REACH,
+    from[2] + n[2] * FACING_REACH,
+  );
+  const r = Math.max(2, 3 * state.cam.zoom);
+  ctx.strokeStyle = colour;
+  ctx.fillStyle = colour;
+  ctx.lineWidth = Math.max(1.5, 2 * state.cam.zoom);
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.lineTo(qx, qy);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(qx, qy, r, 0, 7);
+  ctx.fill();
 }
 
 // A marker stands for one thing: an object on a face, or a record of a kind
@@ -373,6 +424,7 @@ function drawMarker(m, c) {
   ctx.lineTo(px, py);
   ctx.stroke();
 
+  drawFacing(m, c, face, markerColour(m));
   ctx.fillStyle = markerColour(m);
   ctx.strokeStyle = "rgba(9 13 20 / 0.9)";
   ctx.lineWidth = 1.5;
@@ -432,6 +484,22 @@ function drawBeam({ a, b, lit, colour }) {
     ctx.globalAlpha = 0.45;
     ctx.setLineDash([4 * state.cam.zoom, 4 * state.cam.zoom]);
   }
+  ctx.beginPath();
+  ctx.moveTo(p[0], p[1]);
+  ctx.lineTo(q[0], q[1]);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// A moving platform's rail is the run between the two cells its record names,
+// drawn faint, since the block itself is drawn where the level keeps it.
+function drawRail({ a, b }) {
+  const p = screen(a[0] + 0.5, a[1] + 0.5, a[2] + 0.5);
+  const q = screen(b[0] + 0.5, b[1] + 0.5, b[2] + 0.5);
+  ctx.save();
+  ctx.strokeStyle = "rgba(232 238 251 / 0.5)";
+  ctx.lineWidth = Math.max(1, 1.5 * state.cam.zoom);
+  ctx.setLineDash([2 * state.cam.zoom, 5 * state.cam.zoom]);
   ctx.beginPath();
   ctx.moveTo(p[0], p[1]);
   ctx.lineTo(q[0], q[1]);
