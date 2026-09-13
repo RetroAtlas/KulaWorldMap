@@ -80,8 +80,19 @@ def main():
     plane = Counter(floor.values()).most_common(1)[0][0]
     # The start is an object like any other, known by its curated name, so it is
     # walked and numbered rather than marked apart; the sheet says which it is.
-    named = json.loads(NAMES.read_text()).get("types", {})
+    ann = json.loads(NAMES.read_text())
+    named = ann.get("types", {})
     start_key = next((f"type {t}" for t, v in named.items() if v.get("name") == "Start"), None)
+
+    def map_says(o):
+        """The curated name the map already gives the thing, variant included, or nothing."""
+        what, num = o["key"].split()
+        e = (ann.get("types") if what == "type" else ann.get("kinds", {})).get(num, {})
+        if e.get("by") and what == "type":
+            v = e.get("variants", {}).get(str(o["f"][int(e["by"][1:]) - 5]), {})
+            if v.get("name"):
+                return v["name"]
+        return e.get("name", "")
     walk = serpentine(things(level))
     start = next(((o["x"], o["y"], o["z"]) for o in walk if o["key"] == start_key), None)
     at = {}
@@ -122,17 +133,19 @@ def main():
         "`elsewhere` is how many times the type is placed in the rest of the game, which is ",
         "how much a name is worth. A type that appears only here is marked `only here`: it is ",
         "cut content or a developer marker, and naming it is optional.\n\n",
-        "Write names into `public/annotations.json` under `types`, keyed by the type number, ",
+        "`map says` is the name the map already gives the thing, from the walkthrough; the last ",
+        "column is for what the game shows, so that the two can be scored against each other. ",
+        "Names go into `public/annotations.json` under `types`, keyed by the type number, ",
         "or under `kinds` for a record that is its own thing.\n\n",
-        "| # | cell | face | type | elsewhere | fields | what it is |\n",
-        "| --- | --- | --- | --- | --- | --- | --- |\n",
+        "| # | cell | face | type | elsewhere | fields | map says | what it is |\n",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |\n",
     ]
     for i, o in enumerate(walk, 1):
         n = game[o["key"]]
         where = "only here" if not n else f"{n}"
         fields = ", ".join(f"f{j + 5}={v}" for j, v in enumerate(o["f"]) if v != -1) or "none set"
         lines.append(f"| {i} | {o['x']},{o['y']},{o['z']} | {o['face'] or ''} | {o['key']} | "
-                     f"{where} | {fields} | |\n")
+                     f"{where} | {fields} | {map_says(o)} | |\n")
 
     seen = {o["key"] for o in walk}
     missing = sorted(k for k in game if k not in seen and game[k] >= 5)
