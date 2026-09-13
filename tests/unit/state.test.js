@@ -50,8 +50,8 @@ test("depth orders a face's own side of the lattice toward the camera", () => {
 
 test("a face is drawn when its normal turns toward the camera", () => {
   Object.assign(state.cam, { yaw: 0, pitch: 90 });
-  assert.ok(facing([0, 0, 1]), "looking down, the top face shows");
-  assert.ok(!facing([0, 0, -1]), "and the bottom does not");
+  assert.ok(facing([0, 0, -1]), "looking down, the top face shows");
+  assert.ok(!facing([0, 0, 1]), "and the underside does not");
 });
 
 test("projection is linear, which is what makes a face a parallelogram", () => {
