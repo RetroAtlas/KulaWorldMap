@@ -6,14 +6,21 @@ import { mapData } from "./fixtures.js";
 
 const readme = readFileSync(fileURLToPath(new URL("../../README.md", import.meta.url)), "utf8");
 
-const objects = mapData.levels.flatMap((l) => l.objects);
+const objectsOf = (levels) => levels.flatMap((l) => l.records.flatMap((r) => r.on));
+// What the game has is counted over the levels the game plays: the catalogue is
+// not one of them, and two of its types are placed nowhere else.
+const played = mapData.levels.filter((l) => l.name !== "OBJ LEVEL");
+const objects = objectsOf(played);
 const cellValues = mapData.levels.flatMap((l) => l.cells.filter((_, i) => i % 4 === 3));
 const count = (v) => cellValues.filter((c) => c === v).length;
+const onFace = (test) => objectsOf(mapData.levels).filter((o) => test(o.face)).length;
 const catalogue = mapData.levels.find(
   (l) => l.name === "OBJ LEVEL" && l.pack === "/HILLS/HILLS.PAK",
 );
 const types = new Set(objects.map((o) => o.type));
-const here = new Set(catalogue.objects.map((o) => o.type));
+const here = new Set(objectsOf([catalogue]).map((o) => o.type));
+const covered = [...types].filter((t) => here.has(t));
+const number = (s) => Number(s.replace(/,/g, ""));
 
 // The README argues from counts, and a rebuild can move any of them. Each row
 // is the figure a sentence rests on, so a claim cannot go stale in silence.
@@ -25,34 +32,47 @@ const claims = [
     cellValues.filter((c) => c >= mapData.firstRecord).length,
     /all (\d+) pairs in the game agree/,
   ],
-  ["style 0 cells", count(0), /(\d+) cells are style 0/],
-  ["distinct types", types.size, /\*\*(\d+) distinct types\*\*/],
   [
-    "kind/type pairs",
-    new Set(objects.map((o) => `${o.kind}/${o.type}`)).size,
-    /for (\d+) pairs in all/,
+    "cells by style",
+    [count(0), count(3), count(2), count(1)],
+    /(\d+) cells are plain, then (\d+) invisible, (\d+) ice and (\d+) fire/,
   ],
   [
-    "trailing groups",
-    mapData.levels.reduce((n, l) => n + l.records * 7, 0),
-    /the game's ([\d,]+) of them/,
+    "objects by face",
+    [onFace((f) => f === 0), onFace((f) => f === 5), onFace((f) => f > 0 && f < 5)],
+    /(\d+) on tops, (\d+) on undersides and (\d+) on sides/,
   ],
+  ["distinct types", types.size, /\*\*(\d+) distinct object types\*\*/],
   [
     "levels at time 99",
-    mapData.levels.filter((l) => l.start.time === 99).length,
+    mapData.levels.filter((l) => l.camera.time === 99).length,
     /99 on (\d+) of the 230 levels/,
   ],
-  ["catalogue objects", catalogue.objects.length, /catalogue: (\d+) objects on a flat floor/],
-  ["types the catalogue covers", here.size, /covering \*\*(\d+) of the game's \d+ types\*\*/],
+  ["catalogue objects", objectsOf([catalogue]).length, /object catalogue: (\d+) objects and/],
+  [
+    "types the catalogue covers",
+    [covered.length, types.size],
+    /covering \*\*(\d+) of the game's (\d+) object types\*\*/,
+  ],
 ];
 
 for (const [what, value, pattern] of claims) {
   test(`the README's ${what} is what the data holds`, () => {
     const m = pattern.exec(readme);
     assert.ok(m, `README has no sentence matching ${pattern}`);
-    assert.equal(Number(m[1].replace(/,/g, "")), value);
+    assert.deepEqual(m.slice(1).map(number), [].concat(value));
   });
 }
+
+test("the README's catalogue records are the nine that are their own thing", () => {
+  const m =
+    /object catalogue: \d+ objects and (\w+) records of the kinds that are their own thing/.exec(
+      readme,
+    );
+  assert.ok(m, "README has no sentence about the catalogue's records");
+  assert.equal(m[1], "nine");
+  assert.equal(catalogue.records.filter((r) => "type" in r).length, 9);
+});
 
 test("the README's catalogue arithmetic adds up", () => {
   const missing = [...types].filter((t) => !here.has(t));
@@ -64,6 +84,6 @@ test("the README's catalogue arithmetic adds up", () => {
   assert.ok(m, "README has no sentence about what the catalogue misses");
   assert.equal(m[1], "seven");
   assert.equal(missing.length, 7);
-  assert.equal(Number(m[2].replace(/,/g, "")), placed(missing));
-  assert.equal(Number(m[3].replace(/,/g, "")), placed([...here]));
+  assert.equal(number(m[2]), placed(missing));
+  assert.equal(number(m[3]), placed(covered));
 });
