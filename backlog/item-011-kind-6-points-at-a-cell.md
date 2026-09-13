@@ -1,30 +1,28 @@
 # 11. Kind 6 carries a cell, in 1/512 units
 
-**Status:** open · **Effort:** small-medium · **Filed:** reading the laser records in `LECEL 94`, 2026-09-10 · **Remeasured:** 2026-09-11, after the entity framing was corrected
+**Status:** remeasured 2026-09-13, open · **Effort:** small · **Filed:** reading the laser records in `LECEL 94`, 2026-09-10
 
 ## What and why
 
-`kind 6 / type 1` is the second most numerous entity in the game, 435 of them across 70 levels, and the map says nothing about it beyond the number. Its first three fields are a cell.
+`kind 6 / type 1` is the second most numerous record in the game, 435 of them across 70 levels, and the map says nothing about it beyond the number. Its first three fields are a cell in 1/512 units.
 
-Measured 2026-09-11 across all 435, reproducible from `public/map_data.json`:
+Measured 2026-09-13 across all 435, reproducible from `public/map_data.json`:
 
 - **Every one of the three fields divides by 512**, and every quotient lands in `0..33`. No exceptions, no remainders.
-- **Every cell they name is a cell the level's lattice carries.** 435 of 435. A field that is a position by accident does not land on a placed block 435 times.
-- **431 of them name another `6/1`**, and the other four name a `9/0`.
-- **Following the pointers from any of the 435 comes back to a cell already walked.** They are rings.
+- **Every one names the record's own cell.** 435 of 435.
 
-The first reading of this, under the entity framing that paired each payload with the cell one slot behind, had 248 pointing at another `6/1` and none of the chains closing, which read as paths ending on a coin or a key. That was the off-by-one, not the data: with each entity on its own cell the chains close. `LECEL 94` (`/ATLANT/ATLANT.PAK#3`) is the smallest place to read one: sixteen blocks, sixteen entities, two rings.
+The two earlier readings of this were both artefacts. Under the entity framing that paired each payload with the cell one slot behind, the fields read as pointing one record along, which looked like paths; with each record on its own cell the lookup found the kind 9 record standing on four of the same cells, which looked like rings. The field is the block's own position, kept as a fixed-point copy, and a kind 5 record keeps the same copy at the end of its record next to three words of `256`.
 
 ## Why it matters
 
-A ring of cells, each naming the next, is a circuit: the path something travels round, or the order something is visited in. Whatever it is, the map currently draws each link as an unrelated marker, so the shape of the thing is invisible even though the data is already parsed and in hand. The beams of [10](item-010-the-cell-does-not-hold-its-record.md) were the same shape of finding and turned out to be geometry the lattice does not carry.
+A block that keeps its own position in fixed point is a block that moves, and the game has moving platforms. If that is what kind 6 is, the map draws 435 of them as a marker on a block and says nothing about the motion, and the rest of the record, which the other kinds leave unset, is where the path would have to be.
 
 ## Sketch
 
-The unit is the lead. 512 is not the 256 that shows up in `f12` elsewhere in an entity, so whatever writes these is not sharing that scale, and 512 sub-units to a block is the kind of number a position gets when it has to interpolate between cells. Check whether the remaining fields hold a speed or a dwell, and what the four that point at a `9/0` are doing that the rest are not.
-
-`?survey` settles what it is faster than the disc will: mark what actually moves in a level that has a long chain, and the answer is either along it or it is not. `tools/kula_kinds.py` writes the contact sheet of where `6/1` is placed, and `tools/kula_warp.py` reaches any level that is awkward to play to.
+`?survey` settles what it is faster than the disc will: mark what actually moves in a level that has several, and the answer is either kind 6 or it is not. `tools/kula_kinds.py --kind 6` writes the contact sheet of where it is placed, `tools/kula_faces.py --kind 6 --dump 8` prints whole records, and `tools/kula_warp.py` reaches any level that is awkward to play to. Kind 5, which names two cells the way a laser does and keeps the same fixed-point copy, is the other candidate for a platform on a rail.
 
 ## Ruled out
 
 **That the fields are a raw position.** They are 512 times one, and reading them as cells directly puts every record outside the lattice.
+
+**That they point at another record.** They point at the record's own cell, all 435; the paths and rings were the framing and the lookup, not the data.
