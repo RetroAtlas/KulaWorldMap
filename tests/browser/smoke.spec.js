@@ -63,19 +63,20 @@ test("the camera writes the URL once a frame, not once an event", async ({ page 
   expect(page.url()).toMatch(/#L0\//);
 });
 
-test("clicking the start's block opens the record every level ends with", async ({ page }) => {
+test("clicking the start's block opens the object standing on it", async ({ page }) => {
   await page.goto("/#L0");
   await settle(page);
   await page.evaluate(async () => {
     const { state } = await import(new URL("js/state.js", location.href).href);
     const { showCell } = await import(new URL("js/detail.js", location.href).href);
-    const [x, y, z] = state.lvl.start.at;
-    showCell({ x, y, z, v: 5 });
+    const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === 30));
+    const { x, y, z } = state.lvl.records[i];
+    showCell({ x, y, z, v: state.data.firstRecord + i });
   });
   const detail = page.locator("#detail");
   await expect(detail).toBeVisible();
   await expect(detail).toContainText("Start");
-  await expect(detail).toContainText("time");
+  await expect(detail).toContainText("on the top");
 });
 
 test("the catalogue's own note reaches the catalogue", async ({ page }) => {
@@ -136,7 +137,7 @@ test("search answers a number as a whole word, and says when nothing matches", a
 test("arriving somewhere is spoken, and names the map with it", async ({ page }) => {
   await page.goto("/#L0");
   await settle(page);
-  const line = "LEVEL 1, HIRO, 20 blocks, 5 objects, time 99.";
+  const line = "LEVEL 1, HIRO, 20 blocks, 6 objects, 4000 points, time 99.";
   await expect(page.locator("#say")).toHaveText(line);
   await expect(page.locator("#cv")).toHaveAttribute("aria-label", line);
   await page.keyboard.press("]");
