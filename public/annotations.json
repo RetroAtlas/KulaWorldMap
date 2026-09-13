@@ -4,42 +4,41 @@
   "kinds": {
     "8": {
       "name": "Laser",
-      "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 117 in the game, and no block ever stands between its ends. One field gives that axis, another whether it starts lit, and the second word of its first trailing group is its circuit: the colour of the beam, and of the switch that toggles it. Its ends carry the emitter blocks, and 61 of the 234 sit on cells the lattice leaves empty, which is the game placing geometry a level's own grid does not."
+      "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 117 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, and the slot after its own holds its circuit: the colour of the beam, and of the switch that toggles it. Its ends carry the emitter blocks, and 61 of the 234 sit on cells the lattice leaves empty, which is the game placing geometry a level's own grid does not."
+    },
+    "9": {
+      "note": "The last record on 160 levels, and the one kind no lattice cell ever names, so the engine's walk over the level does not reach it. It stands on an empty cell on 114 of the 160. Its slots hold objects like any block's, and the map leaves them out."
     },
     "666": {
       "name": "Camera",
-      "note": "The record every level ends with, and the one entity that stands on no cell: where its position would be, the disc writes three 0xFFFF. It carries a cell for the camera to look at, two angles, and a number that is 99 on 218 of the 230 levels and lower on the other twelve, which reads as the level's time. It draws as the look-at ring rather than as an object marker."
+      "note": "The record every level ends with, and the one that stands on no cell: where its cell would be, the disc writes three 0xFFFF. It carries a cell for the camera to look at, two angles, and a number that is 99 on 218 of the 230 levels and lower on the other twelve, which reads as the level's time. It draws as the look-at ring rather than as a marker."
     }
   },
   "types": {
-    "0/0": {
-      "name": "Blue coin",
-      "note": "1206 placed across 159 levels, the game's most numerous object. Absent from LEVEL 1, where no blue coin appears; it starts turning up from LEVEL 3."
-    },
-    "0/7": {
+    "7": {
       "name": "Exit",
-      "note": "The exit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. Exactly one in each of 122 levels and never two; what the other 108 levels leave for is not yet read."
+      "note": "The exit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on, and HIDDEN 10's on the face. One in each of 190 levels, two in three of them, and none on the 30 bonus and 10 Simon levels, which have no exit to reach."
     },
-    "0/30": {
+    "30": {
       "name": "Start",
-      "note": "The block the ball starts on, in LEVEL 1 and LEVEL 2, and exactly one in each of 182 levels and never two. The 48 without one are not yet understood."
+      "note": "The block and face the ball starts on, in LEVEL 1, LEVEL 2 and HIDDEN 10. One in each of 228 levels, two in MARS LEVEL 130, and none on ARCTIC LEVEL 58 and HELL LEVEL 135."
     },
-    "0/31": {
+    "31": {
       "name": "Key",
-      "note": "One to four a level and never more: 69 levels with one, 51 with more. Collecting every key is what turns the exit from red to green. LEVEL 1's and LEVEL 2's are on the cells the map draws them on."
+      "note": "One to six a level: 61 levels with one, 92 with two, 31 with three, five with four, one with six. Collecting every key is what turns the exit from red to green. LEVEL 1's and LEVEL 2's are on the cells the map draws them on, and HIDDEN 10's four are on the face."
     },
-    "0/37": {
+    "37": {
       "name": "Bronze coin",
-      "note": "1044 placed across 155 levels, up to 45 in one. LEVEL 1 holds exactly two and LEVEL 2 six, and the game shows exactly that many bronze coins in each, on the cells the map draws them on."
+      "note": "2175 placed across 211 levels, up to 48 in one, the game's most numerous object. LEVEL 1 holds exactly two and LEVEL 2 six, and the game shows exactly that many bronze coins in each, on the cells the map draws them on."
     },
-    "0/46": {
+    "46": {
       "name": "Fruit",
-      "note": "The fruit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. Exactly one in each of 59 levels and never two; which fruit stands in it is not in the level, and the game carries an uncollected fruit forward, so the choice is progress rather than data."
+      "note": "The fruit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. One in each of 151 levels and two in one; which fruit stands in it is not in the level, and the game carries an uncollected fruit forward, so the choice is progress rather than data."
     }
   },
   "levels": {
     "/HELL/HELL.PAK#18": {
-      "note": "160 of its 178 blocks are not part of the level at all. They lie flat on z=32, the floor of the lattice and 22 blocks below the playable structure, spelling VERY WELL DONE in block letters six blocks tall."
+      "note": "160 of its 178 blocks are not part of the level at all. They lie flat on z=32, the floor of the lattice and 22 blocks below the playable structure, spelling VERY WELL DONE in block letters six blocks tall. The other 18 are a frame standing in the xz plane, and everything the level places, the start, the exit, four keys, eight bronze coins and four of an unnamed type, stands on its -y face, from where the lettering reads the right way round."
     },
     "/HILLS/HILLS.PAK#19": {
       "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py` writes a disc copy that reaches it."

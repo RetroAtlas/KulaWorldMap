@@ -1,6 +1,6 @@
 import { $, emit } from "./dom.js";
 import { state, SIDE, BLOCK, project, sliceZ } from "./state.js";
-import { index, worldName, levelNote } from "./data.js";
+import { index, worldName, levelNote, levelMarkers } from "./data.js";
 import { draw, invalidatePick } from "./render.js";
 import { clearDetail } from "./detail.js";
 
@@ -78,7 +78,8 @@ export function chip() {
     `<span class="sep">·</span>${worldName(l.theme)}`,
     `<span class="sep">·</span>${l.placed} blocks`,
   ];
-  if (l.objects.length) parts.push(`<span class="sep">·</span>${l.objects.length} objects`);
+  const n = levelMarkers(l).length;
+  if (n) parts.push(`<span class="sep">·</span>${n} objects`);
   if (l.camera?.time !== undefined)
     parts.push(`<span class="sep">·</span><span class="t">time ${l.camera.time}</span>`);
   if (sliceZ() > l.min[2]) parts.push(`<span class="sep">·</span>sliced to z\u2265${sliceZ()}`);

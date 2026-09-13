@@ -27,6 +27,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "out" / "obj-level.md"
 DATA = ROOT / "public" / "map_data.json"
 NAMES = ROOT / "public" / "annotations.json"
+FACE = ["-z", "+x", "+y", "-y", "-x", "+z"]
 
 
 def serpentine(objects):
@@ -55,23 +56,37 @@ def main():
     level = named[0]
     catalogue = args.level == "OBJ LEVEL"
 
+    def things(l):
+        """What stands in a level, one entry a marker, with the key its name goes under."""
+        out = []
+        for r in l["records"]:
+            if "type" in r or r["kind"] == 9:
+                out.append({"x": r["x"], "y": r["y"], "z": r["z"], "key": f"kind {r['kind']}",
+                            "f": r.get("f", []), "face": None})
+            for o in r["on"]:
+                out.append({"x": r["x"], "y": r["y"], "z": r["z"], "key": f"type {o['type']}",
+                            "f": o["f"], "face": FACE[o["face"]]})
+        return out
+
     game = Counter()
     for l in data["levels"]:
         if l["name"] == "OBJ LEVEL":
             continue
-        for o in l["objects"]:
-            game[(o["kind"], o["type"])] += 1
+        for o in things(l):
+            game[o["key"]] += 1
 
     cells = level["cells"]
     floor = {(cells[i], cells[i + 1]): cells[i + 2] for i in range(0, len(cells), 4)}
     plane = Counter(floor.values()).most_common(1)[0][0]
-    # The start is an entity like any other, known by its curated name, so it is
+    # The start is an object like any other, known by its curated name, so it is
     # walked and numbered rather than marked apart; the sheet says which it is.
     named = json.loads(NAMES.read_text()).get("types", {})
-    start = next(((o["x"], o["y"], o["z"]) for o in level["objects"]
-                  if named.get(f"{o['kind']}/{o['type']}", {}).get("name") == "Start"), None)
-    walk = serpentine(level["objects"])
-    at = {(o["x"], o["y"]): i + 1 for i, o in enumerate(walk)}
+    start_key = next((f"type {t}" for t, v in named.items() if v.get("name") == "Start"), None)
+    walk = serpentine(things(level))
+    start = next(((o["x"], o["y"], o["z"]) for o in walk if o["key"] == start_key), None)
+    at = {}
+    for i, o in enumerate(walk):
+        at.setdefault((o["x"], o["y"]), i + 1)
 
     xs = [x for x, _ in floor] + [o["x"] for o in walk]
     ys = [y for _, y in floor] + [o["y"] for o in walk]
@@ -96,48 +111,48 @@ def main():
          "You can reach it by playing.\n\n"),
         f"The floor is one plane at z={plane}, {max(xs) - min(xs) + 1} by ",
         f"{max(ys) - min(ys) + 1} blocks, carrying {len(walk)} objects of ",
-        f"{len({(o['kind'], o['type']) for o in walk})} "
-        "distinct kind/type pairs. ",
+        f"{len({o['key'] for o in walk})} distinct types. ",
         (f"You start at ({start[0]},{start[1]},{start[2]}), number {at[start[:2]]} on the plan.\n\n"
-         if start else "Where the ball starts is not among the entities.\n\n"),
+         if start else "Where the ball starts is not among the objects.\n\n"),
         "Numbers run left to right, then right to left on the next row, so walking them ",
-        "in order never doubles back. Columns are x, rows are y, both increasing.\n\n",
+        "in order never doubles back. Columns are x, rows are y, both increasing. A block ",
+        "carrying more than one object shows its first number; the table lists them all.\n\n",
         "```\n", "\n".join(plan), "\n```\n\n",
         "## What to fill in\n\n",
-        "`elsewhere` is how many times the kind is placed in the rest of the game, which is ",
-        "how much a name is worth. A kind that appears only here is marked `only here`: it is ",
+        "`elsewhere` is how many times the type is placed in the rest of the game, which is ",
+        "how much a name is worth. A type that appears only here is marked `only here`: it is ",
         "cut content or a developer marker, and naming it is optional.\n\n",
-        "Write names into `public/annotations.json` under `types`, keyed `kind/type`.\n\n",
-        "| # | cell | kind/type | elsewhere | fields | what it is |\n",
-        "| --- | --- | --- | --- | --- | --- |\n",
+        "Write names into `public/annotations.json` under `types`, keyed by the type number, ",
+        "or under `kinds` for a record that is its own thing.\n\n",
+        "| # | cell | face | type | elsewhere | fields | what it is |\n",
+        "| --- | --- | --- | --- | --- | --- | --- |\n",
     ]
     for i, o in enumerate(walk, 1):
-        key = (o["kind"], o["type"])
-        n = game[key]
+        n = game[o["key"]]
         where = "only here" if not n else f"{n}"
         fields = ", ".join(f"f{j + 5}={v}" for j, v in enumerate(o["f"]) if v != -1) or "none set"
-        lines.append(f"| {i} | {o['x']},{o['y']},{o['z']} | {o['kind']}/{o['type']} | "
+        lines.append(f"| {i} | {o['x']},{o['y']},{o['z']} | {o['face'] or ''} | {o['key']} | "
                      f"{where} | {fields} | |\n")
 
-    seen = {(o["kind"], o["type"]) for o in walk}
+    seen = {o["key"] for o in walk}
     missing = sorted(k for k in game if k not in seen and game[k] >= 5)
     if missing:
         lines.append("\n## Not here\n\n")
         lines.append(
-            "Kinds placed five or more times in the game that OBJ LEVEL does not carry, so "
+            "Types placed five or more times in the game that OBJ LEVEL does not carry, so "
             "they have to be named from a real level:\n\n"
             if catalogue else
-            f"Kinds placed five or more times in the game that {level['name']} does not "
+            f"Types placed five or more times in the game that {level['name']} does not "
             "carry, so another level has to name them:\n\n")
         for k in sorted(missing, key=lambda k: -game[k]):
-            lines.append(f"- `{k[0]}/{k[1]}` — {game[k]} placed\n")
+            lines.append(f"- `{k}` — {game[k]} placed\n")
 
     path = Path(args.out) if args.out else (
         OUT if catalogue else OUT.with_name("naming-" + level["name"].lower().replace(" ", "-") + ".md"))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(lines))
     print(f"{path} written: {len(walk)} objects, "
-          f"{len(seen)} kind/type pairs, {len(missing)} common ones not covered")
+          f"{len(seen)} types, {len(missing)} common ones not covered")
 
 
 if __name__ == "__main__":

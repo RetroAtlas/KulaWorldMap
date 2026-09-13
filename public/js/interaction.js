@@ -4,7 +4,7 @@ import { draw, cellAt, invalidatePick } from "./render.js";
 import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
-import { kindName } from "./data.js";
+import { FACE_NAME, markerLabel } from "./data.js";
 import { setSidebar, sidebarOverlays } from "./sidebar.js";
 import { closeModal, modalOpen } from "./modal.js";
 
@@ -114,9 +114,9 @@ function hoverTip(c, px, py) {
     tip.hidden = true;
     return;
   }
-  const objs = state.idx.objects.get(cellKey(c.x, c.y, c.z)) || [];
+  const marks = state.idx.markers.get(cellKey(c.x, c.y, c.z)) || [];
   const lines = [`<b>${c.x}, ${c.y}, ${c.z}</b>`];
-  for (const o of objs) lines.push(kindName(o.kind, o.type) || `kind ${o.kind} / type ${o.type}`);
+  for (const m of marks) lines.push(markerLabel(m) + (m.face ? ` · ${FACE_NAME[m.face]}` : ""));
   tip.innerHTML = lines.join("<br>");
   tip.hidden = false;
   tip.style.left = `${Math.min(px + 14, state.view.w - tip.offsetWidth - 8)}px`;

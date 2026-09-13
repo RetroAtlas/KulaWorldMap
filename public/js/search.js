@@ -1,6 +1,14 @@
 import { $, el } from "./dom.js";
 import { state } from "./state.js";
-import { worldName, kindName, kindColour, inLattice } from "./data.js";
+import {
+  worldName,
+  levelMarkers,
+  markersOf,
+  markerLabel,
+  markerName,
+  markerColour,
+  inLattice,
+} from "./data.js";
 import { selectLevel, centreOn, writeHash } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
 
@@ -70,26 +78,27 @@ function search(q) {
     }
   });
 
-  const kinds = new Map();
+  const things = new Map();
   for (const l of state.data.levels) {
-    for (const o of l.objects) {
-      const k = `${o.kind}/${o.type}`;
-      if (!kinds.has(k)) kinds.set(k, { kind: o.kind, type: o.type, n: 0, levels: new Set() });
-      const s = kinds.get(k);
+    for (const m of levelMarkers(l)) {
+      if (!things.has(m.id)) things.set(m.id, { m, n: 0, levels: new Set() });
+      const s = things.get(m.id);
       s.n++;
       s.levels.add(l.name);
     }
   }
-  for (const [k, s] of kinds) {
-    const name = kindName(s.kind, s.type);
-    const hay = norm(`${name || ""} kind ${s.kind} type ${s.type} ${k}`);
+  for (const [id, s] of things) {
+    const m = s.m;
+    const hay = norm(
+      `${markerName(m) || ""} ${m.face === null ? `kind ${m.kind}` : `type ${m.type}`} ${id}`,
+    );
     if (matches(hay, terms)) {
       res.push({
-        group: "Object kinds",
-        colour: kindColour(s.kind),
-        label: name || `kind ${s.kind} / type ${s.type}`,
+        group: "Objects",
+        colour: markerColour(m),
+        label: markerLabel(m),
         hint: `${s.n} placed in ${s.levels.size} levels`,
-        go: () => jumpToKind(s.kind, s.type),
+        go: () => jumpTo(id),
       });
     }
   }
@@ -98,8 +107,10 @@ function search(q) {
   return res.slice(0, 60);
 }
 
-function jumpToKind(kind, type) {
-  const here = state.lvl?.objects.find((o) => o.kind === kind && o.type === type);
+const firstOf = (l, id) => l.records.find((r) => markersOf(r).some((m) => m.id === id));
+
+function jumpTo(id) {
+  const here = state.lvl && firstOf(state.lvl, id);
   if (here) {
     centreOn(here.x, here.y, here.z);
     invalidatePick();
@@ -107,13 +118,11 @@ function jumpToKind(kind, type) {
     writeHash();
     return;
   }
-  const i = state.data.levels.findIndex((l) =>
-    l.objects.some((o) => o.kind === kind && o.type === type),
-  );
+  const i = state.data.levels.findIndex((l) => firstOf(l, id));
   if (i >= 0) {
     selectLevel(i);
-    const o = state.data.levels[i].objects.find((x) => x.kind === kind && x.type === type);
-    centreOn(o.x, o.y, o.z);
+    const r = firstOf(state.data.levels[i], id);
+    centreOn(r.x, r.y, r.z);
     invalidatePick();
     draw();
     writeHash();

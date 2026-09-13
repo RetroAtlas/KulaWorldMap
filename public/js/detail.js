@@ -1,6 +1,14 @@
 import { $ } from "./dom.js";
 import { state, cellKey } from "./state.js";
-import { OFF_LATTICE, kindName, kindNote, kindColour, kindStats } from "./data.js";
+import {
+  OFF_LATTICE,
+  FACE_NAME,
+  kindName,
+  markerName,
+  markerNote,
+  markerColour,
+  markerStats,
+} from "./data.js";
 
 let stats = null;
 
@@ -11,8 +19,10 @@ const dot = (colour) =>
 
 export function showCell(c) {
   const l = state.lvl;
-  const objs = state.idx.objects.get(cellKey(c.x, c.y, c.z)) || [];
-  if (!stats) stats = kindStats(state.data);
+  const key = cellKey(c.x, c.y, c.z);
+  const records = state.idx.records.get(key) || [];
+  const marks = state.idx.markers.get(key) || [];
+  if (!stats) stats = markerStats(state.data);
   const box = $("detail");
   const off = c.v === OFF_LATTICE;
   const plain = c.v < state.data.firstRecord;
@@ -22,23 +32,27 @@ export function showCell(c) {
   if (off)
     html += `<p class="sub">The lattice holds nothing here. A beam record names this cell as one
       of its two ends, and the game stands a block on it.</p>`;
-  html += `<table>${row("lattice value", off ? "empty" : c.v)}${row("cell", `${c.x}, ${c.y}, ${c.z}`)}</table>`;
+  html += `<table>${row("lattice value", off ? "empty" : c.v)}${row("cell", `${c.x}, ${c.y}, ${c.z}`)}`;
+  for (const r of records)
+    html += row("block kind", kindName(r.kind) ? `${r.kind} · ${kindName(r.kind)}` : r.kind);
+  html += "</table>";
 
-  for (const o of objs) {
-    const name = kindName(o.kind, o.type);
-    html += `<h3 style="margin-top:12px">${dot(kindColour(o.kind))}
-      ${name ? name : `<span class="unnamed">kind ${o.kind} / type ${o.type}</span>`}</h3>`;
-    if (name) html += `<p class="sub">kind ${o.kind} · type ${o.type}</p>`;
-    const note = kindNote(o.kind, o.type);
+  for (const m of marks) {
+    const name = markerName(m);
+    html += `<h3 style="margin-top:12px">${dot(markerColour(m))}
+      ${name ? name : `<span class="unnamed">${m.face === null ? `kind ${m.kind}` : `type ${m.type}`}</span>`}</h3>`;
+    html += `<p class="sub">${m.face === null ? `kind ${m.kind} · type ${m.type}` : `type ${m.type} · on the ${FACE_NAME[m.face]}`}</p>`;
+    const note = markerNote(m);
     if (note) html += `<p class="sub">${note}</p>`;
     html += "<table>";
-    o.f.forEach((v, i) => {
+    m.f.forEach((v, i) => {
       if (v !== -1) html += row(`f${i + 5}`, v);
     });
-    const dead = o.f.filter((v) => v === -1).length;
-    if (dead) html += row("unset", `${dead} of ${o.f.length} fields`);
+    if (m.v !== undefined && m.v !== -1) html += row("v", m.v);
+    const dead = m.f.filter((v) => v === -1).length;
+    if (dead) html += row("unset", `${dead} of ${m.f.length} fields`);
     html += "</table>";
-    const s = stats.get(`${o.kind}/${o.type}`);
+    const s = stats.get(m.id);
     if (s) {
       html += `<p class="sub" style="margin-top:6px">Placed ${s.total} times in ${s.levels} level${s.levels === 1 ? "" : "s"}`;
       if (s.only === s.levels) html += `, never more than once`;

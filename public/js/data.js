@@ -32,30 +32,53 @@ export async function loadJson(url, fallback) {
 export const worldName = (id) => ann.worlds[id]?.name || id;
 export const worldNote = (id) => ann.worlds[id]?.note || "";
 
-export function kindName(kind, type) {
-  const t = ann.types[`${kind}/${type}`];
-  if (t?.name) return t.name;
-  const k = ann.kinds[String(kind)];
-  if (k?.name) return type === undefined ? k.name : `${k.name} ${type}`;
-  return null;
-}
-
-export const kindNote = (kind, type) =>
-  ann.types[`${kind}/${type}`]?.note || ann.kinds[String(kind)]?.note || "";
-
 export const levelNote = (l) => ann.levels[`${l.pack}#${l.index}`]?.note || "";
 
 const BEAM_KIND = 8;
+// The kinds whose record is a block and nothing more, so all it carries is
+// what stands on its faces. The others are a thing in their own right as well.
+const PLAIN_KINDS = new Set([0, 1, 2, 3]);
 /** A cell the lattice does not carry, so nothing about it can be read as a style. */
 export const OFF_LATTICE = -1;
+
+// The six faces of a block, in the order the game numbers them.
+export const FACE_NORMAL = [
+  [0, 0, -1],
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, -1, 0],
+  [-1, 0, 0],
+  [0, 0, 1],
+];
+export const FACE_NAME = ["top", "+x side", "+y side", "-y side", "-x side", "underside"];
+
+// What a record puts on the map: an object on each face that carries one and,
+// for a kind that is its own thing, a marker for the record itself. Each has
+// an id that names what it is rather than where, for the legend and search.
+export function markersOf(r) {
+  const out = [];
+  if (!PLAIN_KINDS.has(r.kind))
+    out.push({ id: `k${r.kind}`, kind: r.kind, type: r.type, f: r.f, face: null });
+  for (const o of r.on) out.push({ id: `t${o.type}`, type: o.type, face: o.face, f: o.f, v: o.v });
+  return out;
+}
+
+export const markerName = (m) =>
+  (m.face === null ? ann.kinds[String(m.kind)] : ann.types[String(m.type)])?.name || null;
+export const markerLabel = (m) =>
+  markerName(m) || (m.face === null ? `kind ${m.kind}` : `type ${m.type}`);
+export const markerNote = (m) =>
+  (m.face === null ? ann.kinds[String(m.kind)] : ann.types[String(m.type)])?.note || "";
+export const markerColour = (m) => (m.face === null ? kindColour(m.kind) : OBJECT_COLOUR);
+export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
 
 // A beam record spans two cells on one axis and nothing stands between them in
 // any of the game's. The blocks at its ends are not always in the lattice, so
 // the level is wider than the lattice alone says it is.
 export const beams = (l) =>
-  l.objects
-    .filter((o) => o.kind === BEAM_KIND)
-    .map((o) => ({ a: o.f.slice(2, 5), b: o.f.slice(5, 8), lit: o.f[1] === 1, colour: o.colour }));
+  l.records
+    .filter((r) => r.kind === BEAM_KIND)
+    .map((r) => ({ a: r.f.slice(2, 5), b: r.f.slice(5, 8), lit: r.f[1] === 1, colour: r.colour }));
 
 // A laser's circuit number, in the colour the game paints that circuit. Which
 // is which was read off LEVEL 109, whose five beams line up red, yellow,
@@ -64,7 +87,7 @@ export const beams = (l) =>
 const BEAM_COLOUR = { 0: "#f5c542", 1: "#4f8ef7", 2: "#3ad07c", 3: "#ff4a4a" };
 export const beamColour = (circuit) => BEAM_COLOUR[circuit] || null;
 
-/** A cell lookup plus the per-cell object list, built once per level. */
+/** A cell lookup plus the per-cell records and markers, built once per level. */
 export function index(l) {
   const cells = new Map();
   for (let i = 0; i < l.cells.length; i += 4) {
@@ -78,24 +101,28 @@ export function index(l) {
       if (!cells.has(k)) cells.set(k, { x, y, z, v: OFF_LATTICE });
     }
   }
-  const objects = new Map();
-  for (const o of l.objects) {
-    const k = cellKey(o.x, o.y, o.z);
-    if (!objects.has(k)) objects.set(k, []);
-    objects.get(k).push(o);
+  const records = new Map();
+  const markers = new Map();
+  for (const r of l.records) {
+    const k = cellKey(r.x, r.y, r.z);
+    if (!records.has(k)) {
+      records.set(k, []);
+      markers.set(k, []);
+    }
+    records.get(k).push(r);
+    markers.get(k).push(...markersOf(r));
   }
-  return { cells, objects, rays };
+  return { cells, records, markers, rays };
 }
 
-/** How often a (kind, type) is placed, and in how many levels, across the game. */
-export function kindStats(data) {
+export const levelMarkers = (l) => l.records.flatMap(markersOf);
+
+/** How often each marker id is placed, and in how many levels, across the game. */
+export function markerStats(data) {
   const stats = new Map();
   for (const l of data.levels) {
     const seen = new Map();
-    for (const o of l.objects) {
-      const k = `${o.kind}/${o.type}`;
-      seen.set(k, (seen.get(k) || 0) + 1);
-    }
+    for (const m of levelMarkers(l)) seen.set(m.id, (seen.get(m.id) || 0) + 1);
     for (const [k, n] of seen) {
       const s = stats.get(k) || { total: 0, levels: 0, only: 0 };
       s.total += n;
@@ -107,14 +134,12 @@ export function kindStats(data) {
   return stats;
 }
 
-// Nine kinds is few enough to pick colours for: spacing that many by formula
-// leaves several of them a few degrees apart. Kind 0 is three markers in every
-// four, so it takes the quiet one and the rest read as the exceptions they are.
+// An object on a face is the marker in nine of every ten, so it takes the
+// quiet colour and a record that is its own thing reads as the exception it
+// is. Few enough kinds to pick by hand: spacing them by formula leaves several
+// a few degrees apart.
+const OBJECT_COLOUR = "#9fb3d1";
 const KIND_COLOUR = {
-  0: "#9fb3d1",
-  1: "#a78bfa",
-  2: "#e879f9",
-  3: "#a3e635",
   5: "#22d3ee",
   6: "#fbbf24",
   7: "#60a5fa",

@@ -1,6 +1,8 @@
 # 2. Read the 224 bytes after a record's entity
 
-**Status:** open, one word decoded · **Effort:** medium-large · **Where:** the disc, plus `tools/mips.py`
+**Status:** resolved 2026-09-13 · **Effort:** medium-large · **Where:** the disc, plus `tools/mips.py`
+
+**Resolution, 2026-09-13.** The 224 bytes are the other five faces of the block, and the 32 before them are the first. A record is a block: a kind word, then six 32-byte slots in the order `-z +x +y -y -x +z`, each a kind word, a type, eleven fields, a pad, a value and a pad, and a slot whose type is not zero is an object standing on that face. What was read as the entity was slot 0, the top face, and the "groups" were the other slots misaligned by three words, which is why their `type`, `f5`-`f15` and `y` (the value word) carried the entity's own vocabulary and their `x`, `z` and `kind` never did: a face has no position of its own, and the kind word is the block's. The reading ruled out below, further objects on the same block, was the right one; what was wrong with the six-slot reading of [7](item-007-the-six-slot-misreading.md) was giving each slot a position, not giving each slot an object. The order of the six was fixed by LEVEL 1 and 2 (slot 0, the top), HIDDEN 10 (slot 3, the `-y` face of its frame in play) and the lasers, whose type is the direction from their block to the far end on all 117; and under it 8 of 5885 face objects would sit inside a neighbouring block, against 94 for the next best of the 720 orders. `tools/kula_faces.py` reports what the slots hold; CLAUDE.md carries the reading. What the value word and the kind word of a block mean stays open, as does kind 7.
 
 **2026-09-11.** For a laser, the second word of the first group is its colour, a circuit number: LEVEL 109's five beams read `3, 0, 2, 0, 3` and the game shows red, yellow, green, yellow, red. The measurements below were taken under the earlier framing of the table, which paired each group set with the position one slot behind it; the groups themselves sit in the same bytes under either framing, so the counts stand.
 
@@ -31,6 +33,6 @@ Start from the engine. The record table is walked somewhere; find the loop the w
 
 ## Ruled out
 
-**That the groups are further objects standing on the same block.** It is the obvious reading of an entity-shaped group, and it is what the six-slot reading amounted to. Their `kind` is unset on all but 408 of 25,601, and an entity the engine cannot dispatch on is not an object.
+**That the groups are further objects standing on the same block.** It is the obvious reading of an entity-shaped group, and it is what the six-slot reading amounted to. Their `kind` is unset on all but 408 of 25,601, and an entity the engine cannot dispatch on is not an object. *Wrongly ruled out, see the resolution: the kind word is the block's, not the object's, so a face was never going to carry one.*
 
 **That the tail is a per-type template.** Ruled out by the 991 distinct tails on `kind 0 / type 0`.

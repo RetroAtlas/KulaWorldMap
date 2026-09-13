@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Contact sheets for naming the game's numbered object kinds.
+"""Contact sheets for naming the game's numbered objects and record kinds.
 
-The game names none of its objects, so what a kind *is* has to be argued from
-where it sits. This writes one section per (kind, type): how often it is
-placed, which levels place it, whether a level ever gets more than one, what
+The game names none of its objects, so what a type *is* has to be argued from
+where it sits. This writes one section per object type, and one per kind of
+record that is more than a block: how often it is placed, which levels place
+it, whether a level ever gets more than one, which faces it stands on, what
 its fields hold, and what sits on the blocks around it.
 
     python3 tools/kula_kinds.py            # out/kinds.md
-    python3 tools/kula_kinds.py --kind 30  # just that kind, to stdout
+    python3 tools/kula_kinds.py --type 30  # just that type, to stdout
+    python3 tools/kula_kinds.py --kind 8   # just that record kind
 """
 import argparse
 import sys
@@ -16,11 +18,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import open_disc, packs
-from kula_level import Level
+from kula_level import PAYLOAD_KINDS, UNPLACED_KIND, Level
 from kula_pak import Pak
 
 OUT = Path(__file__).resolve().parent.parent / "out" / "kinds.md"
 NEIGHBOURS = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
+FACE = ["-z", "+x", "+y", "-y", "-x", "+z"]
 
 
 def collect(disc):
@@ -32,39 +35,51 @@ def collect(disc):
     return levels
 
 
+def things(L):
+    """(key, cell, fields, face) for each object and each record that is its own thing."""
+    for r in L.records:
+        if r.kind in PAYLOAD_KINDS or r.kind == UNPLACED_KIND:
+            yield ("kind", r.kind), r.cell, r.f, None
+        for o in r.objects:
+            yield ("type", o.type), r.cell, o.f, o.face
+
+
 def report(levels, only=None):
     seen = defaultdict(lambda: {"total": 0, "levels": [], "fields": defaultdict(Counter),
-                                "around": Counter(), "themes": Counter()})
+                                "around": Counter(), "themes": Counter(), "faces": Counter()})
     for L in levels:
         cells = {(c[0], c[1], c[2]): c[3] for c in L.cells}
         here = Counter()
-        for e in L.objects:
-            key = (e.kind, e.type)
+        for key, cell, fields, face in things(L):
             here[key] += 1
             s = seen[key]
             s["total"] += 1
             s["themes"][L.theme] += 1
-            for i, v in enumerate(e.f):
+            if face is not None:
+                s["faces"][face] += 1
+            for i, v in enumerate(fields):
                 if v != -1:
                     s["fields"][f"f{i + 5}"][v] += 1
             for dx, dy, dz in NEIGHBOURS:
-                p = (e.x + dx, e.y + dy, e.z + dz)
+                p = (cell[0] + dx, cell[1] + dy, cell[2] + dz)
                 s["around"]["block" if p in cells else "air"] += 1
         for key, n in here.items():
             seen[key]["levels"].append((L.name, n))
 
     out = []
     for key in sorted(seen, key=lambda k: -seen[k]["total"]):
-        if only is not None and key[0] != only:
+        if only is not None and key != only:
             continue
-        kind, typ = key
+        what, num = key
         s = seen[key]
         n_levels = len(s["levels"])
         once = sum(1 for _, n in s["levels"] if n == 1)
-        out.append(f"## kind {kind} / type {typ}\n")
+        out.append(f"## {what} {num}\n")
         out.append(f"- placed **{s['total']}** times across **{n_levels}** levels"
                    f"{', never more than once' if once == n_levels else f', exactly once in {once}'}\n")
         out.append(f"- worlds: {', '.join(f'{t}x{n}' for t, n in s['themes'].most_common())}\n")
+        if s["faces"]:
+            out.append("- faces: " + ", ".join(f"{FACE[j]}x{n}" for j, n in sorted(s["faces"].items())) + "\n")
         air = s["around"]["air"]
         blk = s["around"]["block"]
         out.append(f"- neighbours: {blk} block, {air} air "
@@ -80,15 +95,17 @@ def report(levels, only=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--disc", default=None)
-    ap.add_argument("--kind", type=int, default=None)
+    ap.add_argument("--type", type=int, default=None, help="one object type, to stdout")
+    ap.add_argument("--kind", type=int, default=None, help="one record kind, to stdout")
     args = ap.parse_args()
     levels = collect(open_disc(args.disc))
-    text = report(levels, args.kind)
-    if args.kind is not None:
+    only = ("type", args.type) if args.type is not None else ("kind", args.kind) if args.kind is not None else None
+    text = report(levels, only)
+    if only:
         print(text)
         return
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(f"# Object kinds in Kula World\n\n"
+    OUT.write_text(f"# Objects and record kinds in Kula World\n\n"
                    f"Generated by `tools/kula_kinds.py`; names go in "
                    f"`public/annotations.json`, not here.\n\n{text}")
     print(f"{OUT} written")

@@ -1,6 +1,6 @@
 # 7. The six-slot record reading, and why it held
 
-**Status:** closed 2026-09-05 · **Filed:** repo review, 2026-09-05
+**Status:** closed 2026-09-05, revisited 2026-09-13 · **Filed:** repo review, 2026-09-05
 
 ## What happened
 
@@ -19,3 +19,7 @@ One entity per record, and `Level.verify` asserting that the seven trailing grou
 ## What to take from it
 
 A count that makes an argument goes in a test, not only in prose. Ten of the README's now do. And a symmetry is not evidence until you have asked what else would produce it.
+
+## Postscript, 2026-09-13
+
+The six slots were real. What was wrong was giving each one a position: a slot is a face of the block the record stands on, and the record's cell is the block's, so a rule that read a position out of a slot read the zeroed ones as `(0, 0, 0)` and everything else as nothing. Read as faces, the slots carry 5908 objects, and "the true count of records holding more than one entity is zero" above is wrong: 690 blocks carry two and 4 carry six. [2](item-002-the-unread-record-bytes.md) has the reading and the checks. The lesson stands as written; the symmetry that was taken for evidence was the artefact, and the thing it was evidence of was there all along, one framing over.

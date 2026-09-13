@@ -1,6 +1,6 @@
 import { $, el, on } from "./dom.js";
 import { state, SIDE, sliceZ } from "./state.js";
-import { WORLD_TINT, worldName, kindName, kindColour } from "./data.js";
+import { WORLD_TINT, worldName, levelMarkers, markerLabel, markerColour } from "./data.js";
 import { selectLevel } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
 import { setSlice } from "./interaction.js";
@@ -64,9 +64,10 @@ export function buildKinds() {
   const box = $("kinds");
   box.textContent = "";
   const counts = new Map();
-  for (const o of state.lvl.objects) {
-    const k = `${o.kind}/${o.type}`;
-    counts.set(k, (counts.get(k) || 0) + 1);
+  const first = new Map();
+  for (const m of levelMarkers(state.lvl)) {
+    counts.set(m.id, (counts.get(m.id) || 0) + 1);
+    if (!first.has(m.id)) first.set(m.id, m);
   }
   if (!counts.size) {
     box.append(el("p", { className: "about", textContent: "This level places no objects." }));
@@ -74,12 +75,12 @@ export function buildKinds() {
   }
   const keys = [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a));
   for (const k of keys) {
-    const [kind, type] = k.split("/").map(Number);
+    const m = first.get(k);
     const b = el(
       "button",
       { className: "kind", type: "button" },
-      el("span", { className: "dot", style: `background:${kindColour(kind)}` }),
-      el("span", {}, kindName(kind, type) || `kind ${kind} / ${type}`),
+      el("span", { className: "dot", style: `background:${markerColour(m)}` }),
+      el("span", {}, markerLabel(m)),
       el("span", { className: "n" }, String(counts.get(k))),
     );
     b.setAttribute("aria-pressed", state.hiddenKinds.has(k) ? "false" : "true");

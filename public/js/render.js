@@ -1,6 +1,14 @@
 import { $ } from "./dom.js";
 import { state, SIDE, BLOCK, project, depth, facing, screen, cellKey, sliceZ } from "./state.js";
-import { WORLD_TINT, OFF_LATTICE, kindColour, kindName, beamColour } from "./data.js";
+import {
+  WORLD_TINT,
+  OFF_LATTICE,
+  FACE_NORMAL,
+  FACE_NAME,
+  markerColour,
+  markerLabel,
+  beamColour,
+} from "./data.js";
 
 const cv = $("cv");
 const ctx = cv.getContext("2d");
@@ -290,8 +298,8 @@ export function draw() {
     }
 
     if (state.show.objects && !ghost) {
-      const objs = idx.objects.get(key);
-      if (objs) for (const o of objs) drawObject(o, c);
+      const marks = idx.markers.get(key);
+      if (marks) for (const m of marks) drawMarker(m, c);
     }
     if (state.survey.on && !ghost) {
       const m = state.survey.marks.get(key);
@@ -328,43 +336,51 @@ function outline(c, idx, colour) {
   ctx.restore();
 }
 
-// Markers hover over the block they belong to, and the hover is a distance in
-// the world rather than on the screen: a screen offset does not shrink as the
-// view turns overhead, so it would carry the marker onto the next block in a
-// plan view, which is the one view a reader uses to say which block is which.
+// A marker hovers off the face its object stands on, and the hover is a
+// distance in the world rather than on the screen: a screen offset does not
+// shrink as the view turns overhead, so it would carry the marker onto the
+// next block in a plan view, which is the one view a reader uses to say which
+// block is which. A record that is its own thing hovers over the top.
 const OBJECT_HOVER = 8 / BLOCK;
 const LOOK_HOVER = 18 / BLOCK;
 
-/** The screen point above a cell's top face, where its markers sit. */
-function above(c, hover = 0) {
-  return screen(c.x + 0.5, c.y + 0.5, c.z - hover);
+/** The screen point off the centre of one of a cell's faces. */
+function off(c, face, hover = 0) {
+  const n = FACE_NORMAL[face];
+  const d = 0.5 + hover;
+  return screen(c.x + 0.5 + n[0] * d, c.y + 0.5 + n[1] * d, c.z + 0.5 + n[2] * d);
 }
 
-// A cell names one record and a record holds one entity, so a marker stands
-// for exactly one object. Colour carries its kind, of which there are nine;
-// the number is its type, of which there are 35, and there is no encoding of
-// that many a reader could hold, so the marker says it outright once it has
-// the room.
-function drawObject(o, c) {
-  if (state.hiddenKinds.has(`${o.kind}/${o.type}`)) return;
-  const [px, top] = above(c);
+// A marker stands for one thing: an object on a face, or a record of a kind
+// that is more than a block. Colour tells the two apart, and the number is the
+// type or the kind, of which there are too many for an encoding a reader could
+// hold, so the marker says it outright once it has the room. One on a face
+// turned away from the view is drawn faint rather than left out, since a plan
+// view is the one a reader counts from.
+function drawMarker(m, c) {
+  if (state.hiddenKinds.has(m.id)) return;
+  const face = m.face ?? 0;
+  const away = m.face !== null && !facing(FACE_NORMAL[face]);
+  const [fx, fy] = off(c, face);
+  const [px, py] = off(c, face, OBJECT_HOVER);
   const r = Math.max(4, 7 * state.cam.zoom);
-  const [, oy] = above(c, OBJECT_HOVER);
+  ctx.save();
+  if (away) ctx.globalAlpha = 0.4;
   ctx.strokeStyle = "rgba(232 238 251 / 0.35)";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(px, top);
-  ctx.lineTo(px, oy);
+  ctx.moveTo(fx, fy);
+  ctx.lineTo(px, py);
   ctx.stroke();
 
-  ctx.fillStyle = kindColour(o.kind);
+  ctx.fillStyle = markerColour(m);
   ctx.strokeStyle = "rgba(9 13 20 / 0.9)";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(px, oy - r);
-  ctx.lineTo(px + r, oy);
-  ctx.lineTo(px, oy + r);
-  ctx.lineTo(px - r, oy);
+  ctx.moveTo(px, py - r);
+  ctx.lineTo(px + r, py);
+  ctx.lineTo(px, py + r);
+  ctx.lineTo(px - r, py);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
@@ -374,13 +390,15 @@ function drawObject(o, c) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "rgba(9 13 20 / 0.85)";
-    ctx.fillText(String(o.type), px, oy + 0.5);
+    ctx.fillText(String(m.face === null ? m.kind : m.type), px, py + 0.5);
     ctx.textAlign = "start";
     ctx.textBaseline = "alphabetic";
   }
   if (state.show.labels && state.cam.zoom > 0.45) {
-    label(kindName(o.kind, o.type) || `kind ${o.kind}/${o.type}`, px + r + 4, oy + 4, "#e8eefb");
+    const side = m.face ? ` · ${FACE_NAME[m.face]}` : "";
+    label(markerLabel(m) + side, px + r + 4, py + 4, "#e8eefb");
   }
+  ctx.restore();
 }
 
 // A survey mark hangs below the block, where a decoded marker never goes, so

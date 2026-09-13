@@ -23,11 +23,6 @@ def level_json(L, theme, pack, index):
     cells = []
     for x, y, z, v in L.cells:
         cells += [x, y, z, v]
-    objects = []
-    for k, e in enumerate(L.objects):
-        o = e.as_dict()
-        o["r"] = k
-        objects.append(o)
     (x0, x1), (y0, y1), (z0, z1) = L.extent() or ((0, 0), (0, 0), (0, 0))
     t = L.trailer
     out = {
@@ -37,11 +32,10 @@ def level_json(L, theme, pack, index):
         "index": index,
         "placed": len(L.cells),
         "header": L.header,
-        "records": L.count,
         "min": [x0, y0, z0],
         "max": [x1, y1, z1],
         "cells": cells,
-        "objects": objects,
+        "records": [r.as_dict() for r in L.records],
         "camera": {"look": [t.type, t.f[0], t.f[1]], "angle": [t.f[2], t.f[3]], "time": t.f[4]},
     }
     if L.flag:
@@ -85,9 +79,10 @@ def main():
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(data, indent=1))
     cells = sum(len(l["cells"]) // 4 for l in levels)
-    objs = sum(len(l["objects"]) for l in levels)
-    print(f"cross-check: {checked} cell/entity pairs agree, {len(levels)} camera records found")
-    print(f"{len(levels)} levels, {cells} placed cells, {objs} entities "
+    records = sum(len(l["records"]) for l in levels)
+    objs = sum(len(r["on"]) for l in levels for r in l["records"])
+    print(f"cross-check: {checked} cell/record pairs agree, {len(levels)} camera records found")
+    print(f"{len(levels)} levels, {cells} placed cells, {records} records carrying {objs} objects "
           f"-> {OUT.relative_to(OUT.parent.parent.parent)} ({OUT.stat().st_size/1024:.0f} KB)")
 
 
