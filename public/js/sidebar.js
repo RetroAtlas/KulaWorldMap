@@ -1,6 +1,13 @@
 import { $, el, on } from "./dom.js";
 import { state, SIDE, sliceZ } from "./state.js";
-import { WORLD_TINT, worldName, levelMarkers, markerLabel, markerColour } from "./data.js";
+import {
+  WORLD_TINT,
+  worldName,
+  levelTitle,
+  levelMarkers,
+  markerLabel,
+  markerColour,
+} from "./data.js";
 import { selectLevel } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
 import { setSlice } from "./interaction.js";
@@ -32,7 +39,11 @@ export function buildWorlds() {
     const list = el("div", { className: "levels" });
     for (const i of w.levels) {
       const l = state.data.levels[i];
-      const b = el("button", { type: "button", textContent: short(l.name), title: l.name });
+      const b = el("button", {
+        type: "button",
+        textContent: short(levelTitle(l)),
+        title: levelTitle(l),
+      });
       b.dataset.i = i;
       b.onclick = () => selectLevel(i);
       list.append(b);

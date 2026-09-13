@@ -2,6 +2,7 @@ import { $, el } from "./dom.js";
 import { state } from "./state.js";
 import {
   worldName,
+  levelTitle,
   levelMarkers,
   markersOf,
   markerLabel,
@@ -27,7 +28,7 @@ const matches = (hay, terms) => {
 };
 
 function levelHaystack(l) {
-  return norm(`${l.name} ${l.theme} ${worldName(l.theme)}`);
+  return norm(`${levelTitle(l)} ${l.name} ${l.theme} ${worldName(l.theme)}`);
 }
 
 function search(q) {
@@ -70,7 +71,7 @@ function search(q) {
     if (matches(hay, terms)) {
       res.push({
         group: "Levels",
-        label: l.name,
+        label: levelTitle(l),
         hint: `${worldName(l.theme)} · ${l.placed} blocks`,
         rank: i === state.li ? -1 : 0,
         go: () => selectLevel(i),
@@ -84,7 +85,7 @@ function search(q) {
       if (!things.has(m.id)) things.set(m.id, { m, n: 0, levels: new Set() });
       const s = things.get(m.id);
       s.n++;
-      s.levels.add(l.name);
+      s.levels.add(`${l.pack}#${l.index}`);
     }
   }
   for (const [id, s] of things) {

@@ -2,7 +2,7 @@
 
 An interactive map of every level in **Kula World** (PlayStation), read straight off the disc: the block lattice each level is built from, every object the game places on it, and the level's own name, time and start.
 
-All 230 levels are here, which is more than the game ever shows you in one place: 150 numbered levels across ten worlds, 30 bonus and 10 hidden levels, the 20 finals, the 10 Simon rooms and the lesson.
+All 230 levels are here, which is more than the game ever shows you in one place: 150 numbered levels across ten worlds, 30 bonus and 10 hidden levels, the 20 finals, the 10 Simon rooms and the lesson. A level is titled by the number the game's pause screen gives it, which the engine counts through the worlds rather than reading from the level record; where the record calls it something else, Atlantis's `LECEL 94` or Hell's first four, which are numbered one short, the map says so beside the title.
 
 The data is read from the NTSC-U release, sold as **Roll Away** (SLUS-00724). The same game shipped as Kula World in PAL territories and Kula Quest in Japan; the level data is the game's own and applies to all three.
 
@@ -44,7 +44,7 @@ A cell holds either a style or a record index, never both, so a block carrying a
 
 ## Two things the disc was hiding
 
-**`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: 36 objects and nine records of the kinds that are their own thing on a flat floor, covering **23 of the game's 30 object types**, and the seven it misses are placed 125 times between them against the 23's 5,459. Everything on it stands on top, so walking it once in an emulator names most of the game's vocabulary and says nothing about faces. `tools/kula_objlevel.py` writes the floor plan and the sheet to fill in, and `tools/kula_warp.py` writes a disc copy that answers to it where LEVEL 1 used to be.
+**`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: 36 objects and nine records of the kinds that are their own thing on a flat floor, covering **23 of the game's 30 object types**, and the seven it misses are placed 125 times between them against the 23's 5,459. Everything on it stands on top, so walking it once in an emulator names most of the game's vocabulary and says nothing about faces. `tools/kula_objlevel.py` writes the floor plan and the sheet to fill in, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it.
 
 **Any level is a cheat away.** The walkthrough's GameShark section, from Aris Efraimidis, names the three words the game loads a level from: `800A340C` and `800A3410` take the world, 0 to 9 in pack order, and `800A3408` the slot within it, 0 to 14 for the numbered levels, 15 to 17 the bonus ones, 18 the hidden one, and 19 the slot no menu asks for, which is `OBJ LEVEL` in every world but the first, where it is the Japanese release's tutorial. An emulator cheat that sets those reaches any of the 200 without touching the disc, and `python3 tools/kula_warp.py --cheat --level /HELL/HELL.PAK#18` prints it in the form DuckStation takes; without `--cheat` the same tool writes a patched disc image instead, which is the way for a real console or for the packs the cheat cannot name.
 

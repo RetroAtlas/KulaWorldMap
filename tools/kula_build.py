@@ -12,11 +12,25 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import open_disc, packs
+from kula_disc import THEMES, open_disc, packs
 from kula_level import Level, SIDE, STYLES, FIRST_RECORD
 from kula_pak import Pak
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
+WORLD_LEVELS = 15
+FINAL_LEVELS = 2
+
+
+def shown_as(theme, pack, index):
+    """The number the game's pause screen gives a level, which is not read
+    from the pack: the routine at 0x800478dc computes world * 15 + slot + 1
+    for the arcade levels and world * 2 + slot + 151 for The Final."""
+    w = THEMES.index(theme)
+    if pack.upper() == f"/{theme}/{theme}.PAK" and index < WORLD_LEVELS:
+        return f"LEVEL {WORLD_LEVELS * w + index + 1}"
+    if pack.upper().endswith("FI.PAK"):
+        return f"FINAL {FINAL_LEVELS * w + index + 1}"
+    return None
 
 
 def level_json(L, theme, pack, index):
@@ -40,6 +54,9 @@ def level_json(L, theme, pack, index):
     }
     if L.flag:
         out["flag"] = L.flag
+    shown = shown_as(theme, pack, index)
+    if shown:
+        out["shown"] = shown
     return out
 
 

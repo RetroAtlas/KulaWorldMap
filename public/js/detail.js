@@ -4,6 +4,7 @@ import {
   OFF_LATTICE,
   FACE_NAME,
   DIRECTION_NAME,
+  levelTitle,
   kindName,
   kindNote,
   markerName,
@@ -34,7 +35,7 @@ export function showCell(c) {
   const what = kind === null ? "Block at a beam's end" : kindName(kind) || `Block of kind ${kind}`;
   let html = `<button class="x" title="Close (Esc)">×</button>`;
   html += `<h3>${what}${plain || off ? "" : `, with record ${c.v - state.data.firstRecord}`}</h3>`;
-  html += `<p class="sub">${l.name} · cell ${c.x},${c.y},${c.z}</p>`;
+  html += `<p class="sub">${levelTitle(l)} · cell ${c.x},${c.y},${c.z}</p>`;
   if (off)
     html += `<p class="sub">The lattice holds nothing here. A beam record names this cell as one
       of its two ends, and the game stands a block on it.</p>`;

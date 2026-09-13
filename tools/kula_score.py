@@ -73,21 +73,18 @@ def guide_scores(text):
 
 
 def played_as(level, worlds):
-    """The number a player meets the level under: its world's place and its slot.
+    """The number the walkthrough files the level under.
 
-    The name the disc gives a level is for display, and Hell's first four are
-    numbered one short of where the game puts them, so the walkthrough's
-    numbering is derived from the packs rather than read off the names.
+    The game numbers the arcade and Final levels itself, which the build ships
+    as `shown`; the bonus and hidden levels it counts through the worlds.
     """
+    if level.get("shown"):
+        return level["shown"]
     w = worlds.index(level["theme"])
     slot = level["index"]
-    if level["pack"].endswith("FI.PAK"):
-        return f"FINAL {2 * w + slot + 1}"
     if level["pack"].endswith("COPYCAT.PAK"):
         return None
-    if slot < 15:
-        return f"LEVEL {15 * w + slot + 1}"
-    if slot < 18:
+    if 15 <= slot < 18:
         return f"BONUS {3 * w + slot - 14}"
     if slot == 18:
         return f"HIDDEN {w + 1}"

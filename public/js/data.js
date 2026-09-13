@@ -33,6 +33,9 @@ export const worldName = (id) => ann.worlds[id]?.name || id;
 export const worldNote = (id) => ann.worlds[id]?.note || "";
 
 export const levelNote = (l) => ann.levels[`${l.pack}#${l.index}`]?.note || "";
+// The game numbers the levels it shows a number for itself rather than reading
+// the pack's name, and five packs name a level something else.
+export const levelTitle = (l) => l.shown || l.name;
 
 const BEAM_KIND = 8;
 const RAIL_KIND = 5;

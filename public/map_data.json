@@ -556,7 +556,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 1"
   },
   {
    "name": "LEVEL 2",
@@ -1002,7 +1003,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 2"
   },
   {
    "name": "LEVEL 3",
@@ -1560,7 +1562,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 3"
   },
   {
    "name": "LEVEL 4",
@@ -2350,7 +2353,8 @@
      10
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 4"
   },
   {
    "name": "LEVEL 5",
@@ -2680,7 +2684,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 5"
   },
   {
    "name": "LEVEL 6",
@@ -3266,7 +3271,8 @@
      5
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 6"
   },
   {
    "name": "LEVEL 7",
@@ -4170,7 +4176,8 @@
      5
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 7"
   },
   {
    "name": "LEVEL 8",
@@ -4554,7 +4561,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 8"
   },
   {
    "name": "LEVEL 9",
@@ -5044,7 +5052,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 9"
   },
   {
    "name": "LEVEL 10",
@@ -5868,7 +5877,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 10"
   },
   {
    "name": "LEVEL 11",
@@ -6363,7 +6373,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 11"
   },
   {
    "name": "LEVEL 12",
@@ -6882,7 +6893,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 12"
   },
   {
    "name": "LEVEL 13",
@@ -7340,7 +7352,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 13"
   },
   {
    "name": "LEVEL 14",
@@ -8166,7 +8179,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 14"
   },
   {
    "name": "LEVEL 15",
@@ -8892,7 +8906,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 15"
   },
   {
    "name": "BONUS 1",
@@ -24024,7 +24039,8 @@
      -5
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 1"
   },
   {
    "name": "FINAL 2",
@@ -24959,7 +24975,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 2"
   },
   {
    "name": "LEVEL 16",
@@ -25684,7 +25701,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 16"
   },
   {
    "name": "LEVEL 17",
@@ -26526,7 +26544,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 17"
   },
   {
    "name": "LEVEL 18",
@@ -27194,7 +27213,8 @@
      0
     ],
     "time": 25
-   }
+   },
+   "shown": "LEVEL 18"
   },
   {
    "name": "LEVEL 19",
@@ -27772,7 +27792,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 19"
   },
   {
    "name": "LEVEL 20",
@@ -28648,7 +28669,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 20"
   },
   {
    "name": "LEVEL 21",
@@ -28932,7 +28954,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 21"
   },
   {
    "name": "LEVEL 22",
@@ -29773,7 +29796,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 22"
   },
   {
    "name": "LEVEL 23",
@@ -30121,7 +30145,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 23"
   },
   {
    "name": "LEVEL 24",
@@ -30716,7 +30741,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 24"
   },
   {
    "name": "LEVEL 25",
@@ -31485,7 +31511,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 25"
   },
   {
    "name": "LEVEL 26",
@@ -32088,7 +32115,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 26"
   },
   {
    "name": "LEVEL 27",
@@ -32648,7 +32676,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 27"
   },
   {
    "name": "LEVEL 28",
@@ -33060,7 +33089,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 28"
   },
   {
    "name": "LEVEL 29",
@@ -33941,7 +33971,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 29"
   },
   {
    "name": "LEVEL 30",
@@ -34966,7 +34997,8 @@
      5
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 30"
   },
   {
    "name": "BONUS 4",
@@ -41408,7 +41440,8 @@
     ],
     "time": 99
    },
-   "flag": -1
+   "flag": -1,
+   "shown": "FINAL 3"
   },
   {
    "name": "FINAL 4",
@@ -42664,7 +42697,8 @@
      -1620
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 4"
   },
   {
    "name": "LEVEL 31",
@@ -43111,7 +43145,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 31"
   },
   {
    "name": "LEVEL 32",
@@ -43655,7 +43690,8 @@
      -5
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 32"
   },
   {
    "name": "LEVEL 33",
@@ -44191,7 +44227,8 @@
     ],
     "time": 99
    },
-   "flag": -1
+   "flag": -1,
+   "shown": "LEVEL 33"
   },
   {
    "name": "LEVEL 34",
@@ -44584,7 +44621,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 34"
   },
   {
    "name": "LEVEL 35",
@@ -45036,7 +45074,8 @@
      -5
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 35"
   },
   {
    "name": "LEVEL 36",
@@ -45324,7 +45363,8 @@
      0
     ],
     "time": 75
-   }
+   },
+   "shown": "LEVEL 36"
   },
   {
    "name": "LEVEL 37",
@@ -45746,7 +45786,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 37"
   },
   {
    "name": "LEVEL 38",
@@ -46082,7 +46123,8 @@
     ],
     "time": 99
    },
-   "flag": -1
+   "flag": -1,
+   "shown": "LEVEL 38"
   },
   {
    "name": "LEVEL 39",
@@ -46689,7 +46731,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 39"
   },
   {
    "name": "LEVEL 40",
@@ -47162,7 +47205,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 40"
   },
   {
    "name": "LEVEL 41",
@@ -48045,7 +48089,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 41"
   },
   {
    "name": "LEVEL 42",
@@ -49289,7 +49334,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 42"
   },
   {
    "name": "LEVEL 43",
@@ -50680,7 +50726,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 43"
   },
   {
    "name": "LEVEL 44",
@@ -52117,7 +52164,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 44"
   },
   {
    "name": "LEVEL 45",
@@ -53739,7 +53787,8 @@
     ],
     "time": 99
    },
-   "flag": -1
+   "flag": -1,
+   "shown": "LEVEL 45"
   },
   {
    "name": "BONUS 7",
@@ -60687,7 +60736,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 5"
   },
   {
    "name": "FINAL 6",
@@ -61772,7 +61822,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 6"
   },
   {
    "name": "LEVEL 46",
@@ -62443,7 +62494,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 46"
   },
   {
    "name": "LEVEL 47",
@@ -63617,7 +63669,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 47"
   },
   {
    "name": "LEVEL 48",
@@ -64279,7 +64332,8 @@
      0
     ],
     "time": 20
-   }
+   },
+   "shown": "LEVEL 48"
   },
   {
    "name": "LEVEL 49",
@@ -65041,7 +65095,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 49"
   },
   {
    "name": "LEVEL 50",
@@ -65774,7 +65829,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 50"
   },
   {
    "name": "LEVEL 51",
@@ -66258,7 +66314,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 51"
   },
   {
    "name": "LEVEL 52",
@@ -67307,7 +67364,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 52"
   },
   {
    "name": "LEVEL 53",
@@ -67967,7 +68025,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 53"
   },
   {
    "name": "LEVEL 54",
@@ -68658,7 +68717,8 @@
      0
     ],
     "time": 35
-   }
+   },
+   "shown": "LEVEL 54"
   },
   {
    "name": "LEVEL 55",
@@ -69170,7 +69230,8 @@
     ],
     "time": 99
    },
-   "flag": -1
+   "flag": -1,
+   "shown": "LEVEL 55"
   },
   {
    "name": "LEVEL 56",
@@ -69833,7 +69894,8 @@
      0
     ],
     "time": 34
-   }
+   },
+   "shown": "LEVEL 56"
   },
   {
    "name": "LEVEL 57",
@@ -70746,7 +70808,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 57"
   },
   {
    "name": "LEVEL 58",
@@ -71881,7 +71944,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 58"
   },
   {
    "name": "LEVEL 59",
@@ -72989,7 +73053,8 @@
      360
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 59"
   },
   {
    "name": "LEVEL 60",
@@ -74172,7 +74237,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 60"
   },
   {
    "name": "BONUS 10",
@@ -80822,7 +80888,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 7"
   },
   {
    "name": "FINAL 8",
@@ -81479,7 +81546,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 8"
   },
   {
    "name": "LEVEL 61",
@@ -82503,7 +82571,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 61"
   },
   {
    "name": "LEVEL 62",
@@ -83451,7 +83520,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 62"
   },
   {
    "name": "LEVEL 63",
@@ -84151,7 +84221,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 63"
   },
   {
    "name": "LEVEL 64",
@@ -85129,7 +85200,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 64"
   },
   {
    "name": "LEVEL 65",
@@ -86729,7 +86801,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 65"
   },
   {
    "name": "LEVEL 66",
@@ -87512,7 +87585,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 66"
   },
   {
    "name": "LEVEL 67",
@@ -88539,7 +88613,8 @@
      -185
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 67"
   },
   {
    "name": "LEVEL 68",
@@ -89428,7 +89503,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 68"
   },
   {
    "name": "LEVEL 69",
@@ -90582,7 +90658,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 69"
   },
   {
    "name": "LEVEL 70",
@@ -91569,7 +91646,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 70"
   },
   {
    "name": "LEVEL 71",
@@ -92826,7 +92904,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 71"
   },
   {
    "name": "LEVEL 72",
@@ -93189,7 +93268,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 72"
   },
   {
    "name": "LEVEL 73",
@@ -93640,7 +93720,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 73"
   },
   {
    "name": "LEVEL 74",
@@ -94121,7 +94202,8 @@
      175
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 74"
   },
   {
    "name": "LEVEL 75",
@@ -94972,7 +95054,8 @@
      -5
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 75"
   },
   {
    "name": "BONUS 13",
@@ -100317,7 +100400,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 9"
   },
   {
    "name": "FINAL 10",
@@ -101441,7 +101525,8 @@
     ],
     "time": 99
    },
-   "flag": -1
+   "flag": -1,
+   "shown": "FINAL 10"
   },
   {
    "name": "LEVEL 76",
@@ -101995,7 +102080,8 @@
     ],
     "time": 99
    },
-   "flag": -1
+   "flag": -1,
+   "shown": "LEVEL 76"
   },
   {
    "name": "LEVEL 77",
@@ -103040,7 +103126,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 77"
   },
   {
    "name": "LEVEL 78",
@@ -103527,7 +103614,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 78"
   },
   {
    "name": "LEVEL 79",
@@ -103968,7 +104056,8 @@
     ],
     "time": 99
    },
-   "flag": -1
+   "flag": -1,
+   "shown": "LEVEL 79"
   },
   {
    "name": "LEVEL 80",
@@ -104431,7 +104520,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 80"
   },
   {
    "name": "LEVEL 81",
@@ -105480,7 +105570,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 81"
   },
   {
    "name": "LEVEL 82",
@@ -107204,7 +107295,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 82"
   },
   {
    "name": "LEVEL 83",
@@ -107615,7 +107707,8 @@
      -165
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 83"
   },
   {
    "name": "LEVEL 84",
@@ -108666,7 +108759,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 84"
   },
   {
    "name": "LEVEL 85",
@@ -110091,7 +110185,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 85"
   },
   {
    "name": "LEVEL 86",
@@ -110870,7 +110965,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 86"
   },
   {
    "name": "LEVEL 87",
@@ -111472,7 +111568,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 87"
   },
   {
    "name": "LEVEL 88",
@@ -112204,7 +112301,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 88"
   },
   {
    "name": "LEVEL 89",
@@ -112574,7 +112672,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 89"
   },
   {
    "name": "LEVEL 90",
@@ -113421,7 +113520,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 90"
   },
   {
    "name": "BONUS 16",
@@ -119632,7 +119732,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 11"
   },
   {
    "name": "FINAL 12",
@@ -121053,7 +121154,8 @@
      -360
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 12"
   },
   {
    "name": "LEVEL 91",
@@ -121498,7 +121600,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 91"
   },
   {
    "name": "LEVEL 92",
@@ -122021,7 +122124,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 92"
   },
   {
    "name": "LEVEL 93",
@@ -122740,7 +122844,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 93"
   },
   {
    "name": "LECEL 94",
@@ -123339,7 +123444,8 @@
     ],
     "time": 99
    },
-   "flag": -1
+   "flag": -1,
+   "shown": "LEVEL 94"
   },
   {
    "name": "LEVEL 95",
@@ -124259,7 +124365,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 95"
   },
   {
    "name": "LEVEL 96",
@@ -125455,7 +125562,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 96"
   },
   {
    "name": "LEVEL 97",
@@ -126244,7 +126352,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 97"
   },
   {
    "name": "LEVEL 98",
@@ -127289,7 +127398,8 @@
      -180
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 98"
   },
   {
    "name": "LEVEL 99",
@@ -127927,7 +128037,8 @@
      5
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 99"
   },
   {
    "name": "LEVEL 100",
@@ -128609,7 +128720,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 100"
   },
   {
    "name": "LEVEL 101",
@@ -129512,7 +129624,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 101"
   },
   {
    "name": "LEVEL 102",
@@ -130655,7 +130768,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 102"
   },
   {
    "name": "LEVEL 103",
@@ -131976,7 +132090,8 @@
      -5
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 103"
   },
   {
    "name": "LEVEL 104",
@@ -132949,7 +133064,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 104"
   },
   {
    "name": "LEVEL 105",
@@ -133862,7 +133978,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 105"
   },
   {
    "name": "BONUS 19",
@@ -140566,7 +140683,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 13"
   },
   {
    "name": "FINAL 14",
@@ -141437,7 +141555,8 @@
      -5
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 14"
   },
   {
    "name": "LEVEL 106",
@@ -142392,7 +142511,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 106"
   },
   {
    "name": "LEVEL 107",
@@ -142807,7 +142927,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 107"
   },
   {
    "name": "LEVEL 108",
@@ -143982,7 +144103,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 108"
   },
   {
    "name": "LEVEL 109",
@@ -144571,7 +144693,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 109"
   },
   {
    "name": "LEVEL 110",
@@ -145938,7 +146061,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 110"
   },
   {
    "name": "LEVEL 111",
@@ -147295,7 +147419,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 111"
   },
   {
    "name": "LEVEL 112",
@@ -148951,7 +149076,8 @@
     ],
     "time": 99
    },
-   "flag": -1
+   "flag": -1,
+   "shown": "LEVEL 112"
   },
   {
    "name": "LEVEL 113",
@@ -149396,7 +149522,8 @@
      0
     ],
     "time": 98
-   }
+   },
+   "shown": "LEVEL 113"
   },
   {
    "name": "LEVEL 114",
@@ -149790,7 +149917,8 @@
      5
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 114"
   },
   {
    "name": "LEVEL 115",
@@ -150603,7 +150731,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 115"
   },
   {
    "name": "LEVEL 116",
@@ -151766,7 +151895,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 116"
   },
   {
    "name": "LEVEL 117",
@@ -153094,7 +153224,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 117"
   },
   {
    "name": "LEVEL 118",
@@ -154409,7 +154540,8 @@
      0
     ],
     "time": 43
-   }
+   },
+   "shown": "LEVEL 118"
   },
   {
    "name": "LEVEL 119",
@@ -156329,7 +156461,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 119"
   },
   {
    "name": "LEVEL 120",
@@ -157654,7 +157787,8 @@
      0
     ],
     "time": 35
-   }
+   },
+   "shown": "LEVEL 120"
   },
   {
    "name": "BONUS 22",
@@ -164897,7 +165031,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 15"
   },
   {
    "name": "FINAL 16",
@@ -166284,7 +166419,8 @@
      -540
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 16"
   },
   {
    "name": "LEVEL 121",
@@ -167139,7 +167275,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 121"
   },
   {
    "name": "LEVEL 122",
@@ -168240,7 +168377,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 122"
   },
   {
    "name": "LEVEL 123",
@@ -168793,7 +168931,8 @@
      0
     ],
     "time": 30
-   }
+   },
+   "shown": "LEVEL 123"
   },
   {
    "name": "LEVEL 124",
@@ -170147,7 +170286,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 124"
   },
   {
    "name": "LEVEL 125",
@@ -170675,7 +170815,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 125"
   },
   {
    "name": "LEVEL 126",
@@ -173090,7 +173231,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 126"
   },
   {
    "name": "LEVEL 127",
@@ -173961,7 +174103,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 127"
   },
   {
    "name": "LEVEL 128",
@@ -174803,7 +174946,8 @@
      0
     ],
     "time": 30
-   }
+   },
+   "shown": "LEVEL 128"
   },
   {
    "name": "LEVEL 129",
@@ -175649,7 +175793,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 129"
   },
   {
    "name": "LEVEL 130",
@@ -176781,7 +176926,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 130"
   },
   {
    "name": "LEVEL 131",
@@ -177770,7 +177916,8 @@
     ],
     "time": 99
    },
-   "flag": -1
+   "flag": -1,
+   "shown": "LEVEL 131"
   },
   {
    "name": "LEVEL 132",
@@ -178941,7 +179088,8 @@
      5
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 132"
   },
   {
    "name": "LEVEL 133",
@@ -180331,7 +180479,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 133"
   },
   {
    "name": "LEVEL 134",
@@ -181244,7 +181393,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 134"
   },
   {
    "name": "LEVEL 135",
@@ -182159,7 +182309,8 @@
      0
     ],
     "time": 30
-   }
+   },
+   "shown": "LEVEL 135"
   },
   {
    "name": "BONUS 25",
@@ -187612,7 +187763,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 17"
   },
   {
    "name": "FINAL 18",
@@ -188800,7 +188952,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 18"
   },
   {
    "name": "LEVEL 135",
@@ -190583,7 +190736,8 @@
      5
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 136"
   },
   {
    "name": "LEVEL 136",
@@ -191679,7 +191833,8 @@
      0
     ],
     "time": 30
-   }
+   },
+   "shown": "LEVEL 137"
   },
   {
    "name": "LEVEL 137",
@@ -192541,7 +192696,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 138"
   },
   {
    "name": "LEVEL 138",
@@ -193543,7 +193699,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 139"
   },
   {
    "name": "LEVEL 140",
@@ -194006,7 +194163,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 140"
   },
   {
    "name": "LEVEL 141",
@@ -194918,7 +195076,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 141"
   },
   {
    "name": "LEVEL 142",
@@ -195591,7 +195750,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 142"
   },
   {
    "name": "LEVEL 143",
@@ -196810,7 +196970,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 143"
   },
   {
    "name": "LEVEL 144",
@@ -198884,7 +199045,8 @@
      115
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 144"
   },
   {
    "name": "LEVEL 145",
@@ -199931,7 +200093,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 145"
   },
   {
    "name": "LEVEL 146",
@@ -200902,7 +201065,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 146"
   },
   {
    "name": "LEVEL 147",
@@ -202251,7 +202415,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 147"
   },
   {
    "name": "LEVEL 148",
@@ -204592,7 +204757,8 @@
      85
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 148"
   },
   {
    "name": "LEVEL 149",
@@ -205521,7 +205687,8 @@
     ],
     "time": 99
    },
-   "flag": -1
+   "flag": -1,
+   "shown": "LEVEL 149"
   },
   {
    "name": "LEVEL 150",
@@ -206513,7 +206680,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "LEVEL 150"
   },
   {
    "name": "BONUS 28",
@@ -214521,7 +214689,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 19"
   },
   {
    "name": "FINAL 20",
@@ -215967,7 +216136,8 @@
      0
     ],
     "time": 99
-   }
+   },
+   "shown": "FINAL 20"
   }
  ]
 }
