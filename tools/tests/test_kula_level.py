@@ -47,13 +47,13 @@ def block(cell, kind=0, faces=None, second=None):
     return struct.pack(f"<{WORDS}h", *words, *cell)
 
 
-def level(cells, records, trailer=None, header=None, flag=0):
+def level(cells, records, trailer=None, header=None):
     """cells is {(x, y, z): value}; records is a list of 256-byte blocks."""
     grid = [EMPTY] * CELLS
     for (x, y, z), v in cells.items():
         grid[(x * SIDE + y) * SIDE + z] = v
     blob = struct.pack(f"<{CELLS}H", *grid)
-    blob += struct.pack("<hhH", len(cells) if header is None else header, flag, len(records))
+    blob += struct.pack("<iH", len(cells) if header is None else header, len(records))
     blob += b"".join(records)
     if trailer is None:
         trailer = block(NOWHERE, kind=TRAILER_KIND, faces={0: slot(20, 13, 17, -5, 0, 99)})
@@ -78,8 +78,8 @@ class Reads(unittest.TestCase):
         record's slots are not padding and are read like any other's."""
         L = Level(level({(1, 2, 3): FIRST_RECORD, (4, 5, 6): FIRST_RECORD + 1},
                         [block((1, 2, 3), faces={0: KEY}), block((4, 5, 6), faces={0: COIN})],
-                        header=20, flag=-1))
-        self.assertEqual((L.header, L.flag, L.count), (20, -1, 2))
+                        header=-20))
+        self.assertEqual((L.header, L.count), (-20, 2))
         self.assertEqual([(r.cell, r.objects[0].type) for r in L.records],
                          [((1, 2, 3), 31), ((4, 5, 6), 37)])
         self.assertEqual(L.verify(), [])

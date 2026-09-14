@@ -126,7 +126,7 @@ class Level:
         self.name = name
         self.theme = theme
         self.blob = blob
-        self.header, self.flag, self.count = struct.unpack_from("<hhH", blob, GRID_BYTES)
+        self.header, self.count = struct.unpack_from("<iH", blob, GRID_BYTES)
         expect = GRID_BYTES + HEAD + RECORD * (1 + self.count)
         if len(blob) != expect:
             raise ValueError(f"{name}: {len(blob)} bytes, expected {expect}")

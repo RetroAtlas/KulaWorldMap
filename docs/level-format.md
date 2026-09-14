@@ -10,7 +10,7 @@ Level records vary in length only because the record table does, and several pla
 
 ## A record ends with its cell
 
-The six bytes after the lattice are the level header: an `i16` that equals the placed-cell count on 79 of the 230 levels and is unexplained on the rest, an `i16` that is `0` or, on sixteen levels, `-1`, and a `u16` record count. It ships as `header` and `flag`, unnamed, and nothing in the viewer presents either as a count; what the viewer shows as a level's blocks is `placed`, derived by counting the lattice.
+The six bytes after the lattice are the level header: a signed 32-bit word that equals the placed-cell count on 79 of the 230 levels, is negative on 16, down to -51, and is unexplained on the rest, and then a `u16` record count. It ships as `header`, unnamed. Its high half is `-1` on exactly the 16 levels where the word is negative and `0` on the other 214, which is what a sign extension looks like and not what a separate flag would, and no level's count reaches the high half. Nothing in the viewer presents it as a count; what the viewer shows as a level's blocks is `placed`, derived by counting the lattice.
 
 Then come `count + 1` stretches of 256 bytes. Read each as *a kind word, six 32-byte slots, 32 bytes never set, 26 of extras, and then the three words of the cell the record stands on*: **the cell closes a record, it does not open the next one.** The first stretch's cell words are where the header sits, so the first record's slots are not padding. The last is kind 666 and where its cell would be the disc writes three `0xFFFF`, on all 230 levels: it stands on no cell. It carries a cell for the camera to look at, two angles and the level's time, and ships as `camera`.
 

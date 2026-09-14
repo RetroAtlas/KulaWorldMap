@@ -52,8 +52,6 @@ def level_json(L, theme, pack, index):
         "records": [r.as_dict() for r in L.records],
         "camera": {"look": [t.type, t.f[0], t.f[1]], "angle": [t.f[2], t.f[3]], "time": t.f[4]},
     }
-    if L.flag:
-        out["flag"] = L.flag
     shown = shown_as(theme, pack, index)
     if shown:
         out["shown"] = shown
