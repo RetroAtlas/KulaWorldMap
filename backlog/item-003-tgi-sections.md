@@ -1,7 +1,5 @@
 # 3. The TGI sections nobody has read
 
-**Status:** open · **Effort:** large · **Where:** the disc, plus `tools/kula_tgi.py` and `tools/mips.py`
-
 ## What and why
 
 [docs/tgi.md](../docs/tgi.md) settles the container, the VRAM page, the 56 textures, the 96 palettes, the texture/palette pairing and the 119-model table. Sections 0 to 5 and 7 to 9 are unread. Section 9 is 225 KB, the largest after the artwork itself, and the four 2 KB sections at 1 to 4 are suspiciously uniform.

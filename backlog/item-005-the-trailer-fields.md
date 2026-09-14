@@ -1,7 +1,5 @@
 # 5. The unnamed word at the head of the trailer
 
-**Status:** open · **Effort:** small · **Where:** the disc
-
 ## What and why
 
 The level header holds one number the map ships without naming: **`header`**, a signed 32-bit word before the record count. It equals the placed-cell count on 79 of the 230 levels, is negative on 16 (down to -51) and is unexplained on the rest. Nothing in the viewer presents it as a count: reading it as unsigned once put "4294967276 blocks" on the chip for Inca's LEVEL 45, which is how the sign was caught.
