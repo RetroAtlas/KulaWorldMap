@@ -1,6 +1,6 @@
 # Backlog
 
-What this map plans, what a review of it found, and what happened to both, one file per item. Most of it is history rather than queue: an item is kept after it ships, because what was decided and what was ruled out are worth more then than before. A working list, not user-facing documentation. [README.md](../README.md) is that, [CLAUDE.md](../CLAUDE.md) carries the conventions a fresh session should read first, and [SPIKE-TGI.md](../SPIKE-TGI.md) carries the artwork format and the addresses it came from.
+What this map plans, what a review of it found, and what happened to both, one file per item. Most of it is history rather than queue: an item is kept after it ships, because what was decided and what was ruled out are worth more then than before. A working list, not user-facing documentation. [README.md](../README.md) is that, [CLAUDE.md](../CLAUDE.md) carries the conventions a fresh session should read first, and [docs/](../docs/) carries the formats and the addresses they came from.
 
 One id space, minted once and never reused or renumbered, numbered from `1` with no gaps. The sequence is not chronological. A source worth preserving, a review or an investigation, goes on the item's **Filed:** line rather than being encoded in its number. A measurement carries the date it was taken and points at the command that reproduces it, or says plainly that it is stale.
 

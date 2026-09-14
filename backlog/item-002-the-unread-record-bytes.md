@@ -23,7 +23,7 @@ They are not filler. Measured 2026-09-05 across all 39,900 of the seven trailing
 
 ## Why it matters
 
-[SPIKE-TGI.md](../SPIKE-TGI.md) names "which texture goes on which block face" as the open question and assumes the answer is somewhere in the 32-byte entity. It may be here instead. A record-carrying cell has no style of its own, so something has to say what it wears, and this is the unexamined space.
+[docs/tgi.md](../docs/tgi.md) names "which texture goes on which block face" as the open question and assumes the answer is somewhere in the 32-byte entity. It may be here instead. A record-carrying cell has no style of its own, so something has to say what it wears, and this is the unexamined space.
 
 ## Sketch
 
