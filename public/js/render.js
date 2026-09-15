@@ -386,8 +386,11 @@ function drawThing(m, c, l) {
 const SPIN = 0.35; // turns per second
 const GAP = 0.03; // between a thing and its face, in blocks
 const BOUNCE = 0.55; // how high the corkscrew rises, in blocks
+const WHIRL = 0.5; // turns the corkscrew makes on the way up, and unmakes coming down
 const BEAT = 2; // seconds, the bounce's and the spikes' cycle
 const ROLL = 0.5; // turns per second of the wheel
+const SHADOW = "rgba(0 0 0 / 0.32)";
+const FLOATING = 0.02; // a lift beyond this is off the face, in blocks
 
 function drawObject(m, c, model) {
   const up = FACE_NORMAL[m.face];
@@ -399,18 +402,21 @@ function drawObject(m, c, model) {
     const phase = ((c.x * 7 + c.y * 13 + c.z * 5) % 17) / 17;
     turn = (t * SPIN + phase) * Math.PI * 2;
   }
+  const unit = modelUnit();
+  let lift = GAP + Math.max(0, -model.box[0][1]) * unit;
+  if (m.type === BOUNCING) {
+    spinning = true;
+    const rise = 0.5 - 0.5 * Math.cos((t / BEAT + markerPhase(m)) * Math.PI * 2);
+    lift += BOUNCE * rise;
+    turn = rise * WHIRL * Math.PI * 2;
+  }
+  const o = at(c, m.face, lift);
+  if (lift > GAP + FLOATING || m.type === BOUNCING) drawShadow(m, c, model, unit);
   const side = cross(up, forward);
   const ct = Math.cos(turn),
     st = Math.sin(turn);
   const fwd = forward.map((v, i) => v * ct + side[i] * st);
   const right = cross(up, fwd);
-  const unit = modelUnit();
-  let lift = GAP + Math.max(0, -model.box[0][1]) * unit;
-  if (m.type === BOUNCING) {
-    spinning = true;
-    lift += BOUNCE * (0.5 - 0.5 * Math.cos((t / BEAT + markerPhase(m)) * Math.PI * 2));
-  }
-  const o = at(c, m.face, lift);
   const cycle = model.frames.length;
   const frame = model.frames[cycle > 1 ? Math.floor(((t / BEAT + markerPhase(m)) % 1) * cycle) : 0];
   if (cycle > 1) spinning = true;
@@ -620,6 +626,30 @@ function drawBeam({ a, b, lit, colour }) {
   ctx.lineTo(q[0], q[1]);
   ctx.stroke();
   ctx.restore();
+}
+
+// What floats casts a shadow straight down onto its face, whatever the light,
+// as the game does: a disc the width of the thing, on the face's plane.
+const SHADOW_SIDES = 14;
+function drawShadow(m, c, model, unit) {
+  const [lo, hi] = model.box;
+  const r = (Math.max(hi[0], -lo[0], hi[2], -lo[2]) * unit) / 2 + 0.06;
+  const up = FACE_NORMAL[m.face];
+  const a = TANGENT[m.face];
+  const b = cross(up, a);
+  const o = at(c, m.face, 0.005);
+  ctx.fillStyle = SHADOW;
+  ctx.beginPath();
+  for (let i = 0; i < SHADOW_SIDES; i++) {
+    const ang = (i / SHADOW_SIDES) * Math.PI * 2;
+    const ca = Math.cos(ang) * r,
+      sa = Math.sin(ang) * r;
+    const [x, y] = screen(...o.map((v, k) => v + a[k] * ca + b[k] * sa));
+    if (i) ctx.lineTo(x, y);
+    else ctx.moveTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
 }
 
 // A moving platform's rail is the run between the two cells its record names,
