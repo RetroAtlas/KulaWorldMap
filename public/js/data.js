@@ -1,4 +1,4 @@
-import { SIDE, cellKey } from "./state.js";
+import { state, SIDE, cellKey } from "./state.js";
 
 export const WORLD_TINT = {
   HIRO: "#93a8d4",
@@ -152,11 +152,24 @@ export const levelMarkers = (l) => l.records.flatMap(markersOf);
 // level scores each block rolled over rather than an exit reached.
 const BONUS_SLOTS = [15, 16, 17];
 const BLOCK_POINTS = 50;
+const INVISIBLE_KIND = 3;
+
+/** The blocks a bonus level counts: rolling over an invisible one scores nothing. */
+function tallied(l) {
+  const kindAt = new Map(l.records.map((r) => [cellKey(r.x, r.y, r.z), r.kind]));
+  let n = 0;
+  for (let i = 0; i < l.cells.length; i += 4) {
+    const [x, y, z, v] = l.cells.slice(i, i + 4);
+    const kind = v < state.data.firstRecord ? v : kindAt.get(cellKey(x, y, z));
+    if (kind !== INVISIBLE_KIND) n++;
+  }
+  return n;
+}
 
 /** What collecting everything on a level would score. */
 export function levelPoints(l) {
   let points = levelMarkers(l).reduce((sum, m) => sum + markerPoints(m), 0);
-  if (BONUS_SLOTS.includes(l.index)) points += BLOCK_POINTS * (l.cells.length / 4);
+  if (BONUS_SLOTS.includes(l.index)) points += BLOCK_POINTS * tallied(l);
   return points;
 }
 

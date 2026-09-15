@@ -28,6 +28,7 @@ DATA = ROOT / "public" / "map_data.json"
 NAMES = ROOT / "public" / "annotations.json"
 BONUS_SLOTS = (15, 16, 17)
 BLOCK_POINTS = 50
+INVISIBLE_KIND = 3
 FIELD_BASE = 5
 
 
@@ -46,14 +47,25 @@ def points_of(ann):
     return kinds, types
 
 
-def level_points(level, kinds, types):
+def tallied(level, first_record):
+    """The blocks a bonus level counts: rolling over an invisible one scores nothing."""
+    kind_at = {(r["x"], r["y"], r["z"]): r["kind"] for r in level["records"]}
+    n = 0
+    for i in range(0, len(level["cells"]), 4):
+        x, y, z, v = level["cells"][i:i + 4]
+        kind = v if v < first_record else kind_at[(x, y, z)]
+        n += kind != INVISIBLE_KIND
+    return n
+
+
+def level_points(level, kinds, types, first_record):
     total = 0
     for r in level["records"]:
         total += kinds.get(r["kind"], 0)
         for o in r["on"]:
             total += types.get(o["type"], lambda o: 0)(o)
     if level["index"] in BONUS_SLOTS:
-        total += BLOCK_POINTS * (len(level["cells"]) // 4)
+        total += BLOCK_POINTS * tallied(level, first_record)
     return total
 
 
@@ -102,7 +114,7 @@ def main():
 
     tally = Counter()
     for l in data["levels"]:
-        total = level_points(l, kinds, types)
+        total = level_points(l, kinds, types, data["firstRecord"])
         line = f"{l['theme']:7} {l['name']:10} {total:6}"
         if guide is not None:
             stated = guide.get(played_as(l, worlds))

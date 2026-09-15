@@ -15,7 +15,7 @@
     },
     "3": {
       "name": "Invisible block",
-      "note": "A block that cannot be seen until the ball is close, or, on some levels, only from far away; sunglasses reveal it for a while. Style 3 in the lattice, kind 3 in a record: LEVEL 31, the walkthrough's first invisible platform, is eight of them and nothing else new. Two thirds of the game's are in Haze."
+      "note": "A block that cannot be seen until the ball is close, or, on some levels, only from far away; sunglasses reveal it for a while. Style 3 in the lattice, kind 3 in a record: LEVEL 31, the walkthrough's first invisible platform, is eight of them and nothing else new. Two thirds of the game's are in Haze. Rolling over one in a bonus level scores nothing: the six bonus levels that have invisible blocks each fall short of the walkthrough's maximum by 50 times their count, and no other bonus level has one."
     },
     "4": {
       "note": "One cell in each copy of OBJ LEVEL and nowhere else. It draws the shared panel texture rather than the world's stone."

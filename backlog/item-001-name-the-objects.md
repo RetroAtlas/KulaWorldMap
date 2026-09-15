@@ -1,6 +1,6 @@
 # 1. Score the names against the game
 
-The 32 object types and the block kinds are named from Syonyx's Roll Away walkthrough (GameFAQs, 2006, not in the repo), and the names are checked by arithmetic: with the points curated in `annotations.json`, `python3 tools/kula_score.py --guide <walkthrough.txt>` reproduces the walkthrough's maximum score exactly on 185 of the 209 levels it rates, holds more on the other 24, which is what an unreachable coin leaves, and never less. Two names rest on play alone and are unchecked: the coin tiers' colours, and which of the two directional captivator types, 50 and 52, is which.
+The 32 object types and the block kinds are named from Syonyx's Roll Away walkthrough (GameFAQs, 2006, not in the repo), and the names are checked by arithmetic: with the points curated in `annotations.json`, `python3 tools/kula_score.py --guide <walkthrough.txt>` reproduces the walkthrough's maximum score exactly on 191 of the 209 levels it rates, holds more on the other 18, which is what an unreachable coin leaves, and never less. Two names rest on play alone and are unchecked: the coin tiers' colours, and which of the two directional captivator types, 50 and 52, is which.
 
 ## Sketch
 
