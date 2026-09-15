@@ -265,6 +265,9 @@ addEventListener("keydown", (e) => {
     case "o":
       toggle("showObjects");
       break;
+    case "d":
+      toggle("showModels");
+      break;
     case "s":
       toggle("showStart");
       break;

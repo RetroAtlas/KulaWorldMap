@@ -1,7 +1,7 @@
 import { $, on } from "./dom.js";
 import { state } from "./state.js";
 import { resize, onFirstSize } from "./render.js";
-import { loadJson, setAnnotations } from "./data.js";
+import { loadJson, setAnnotations, setObjects } from "./data.js";
 import { buildWorlds, buildKinds, wireDisplay, restore, setSidebar } from "./sidebar.js";
 import { applyHash, selectLevel, fit, chip, writeHash } from "./navigate.js";
 import { openModal } from "./modal.js";
@@ -26,7 +26,7 @@ const HELP = [
   ["\\", "put the whole level back"],
   ["[ ]", "previous and next level (shift crosses worlds)"],
   ["f", "fit the level to the window"],
-  ["t o s l g", "textures, objects, look-at, labels, ground grid"],
+  ["t o d s l g", "textures, objects, objects as themselves, look-at, labels, ground grid"],
   ["/", "search"],
   ["m", "show and hide the sidebar"],
   ["Esc", "clear the selection"],
@@ -47,9 +47,10 @@ function showAbout() {
     ${d.side}&times;${d.side}&times;${d.side} lattice each level is built in, and the records the
     engine attaches to individual blocks.</p>
     <p>Blocks wear the game's own textures, lifted from each world's artwork file, in the three
-    brightness levels the game itself ships them pre-shaded with, one per face orientation. Which
-    texture a block carrying an object wears is not decoded, so those draw the world's plain stone
-    and a marker off each face says what really stands on it.</p>
+    brightness levels the game itself ships them pre-shaded with, one per face orientation. The
+    objects are the game's own meshes in the game's own colours, stood on the face each one
+    stands on; which texture a block carrying an object wears is not decoded, so those draw the
+    world's plain stone.</p>
     <p>Objects are the game's own numbers, because the game names none of them. Names appear
     here as they are identified and curated in <code>annotations.json</code>.</p>
     <p><a href="https://github.com/RetroAtlas/KulaWorldMap">Source and tooling</a> &middot;
@@ -57,12 +58,17 @@ function showAbout() {
   );
 }
 
-Promise.all([loadJson("map_data.json"), loadJson("annotations.json", {})]).then(([data, ann]) => {
+Promise.all([
+  loadJson("map_data.json"),
+  loadJson("annotations.json", {}),
+  loadJson("objects.json", {}),
+]).then(([data, ann, objects]) => {
   if (!data) {
     $("chip").textContent = "map_data.json failed to load";
     return;
   }
   setAnnotations(ann);
+  setObjects(objects);
   state.data = data;
   const cells = data.levels.reduce((n, l) => n + l.cells.length / 4, 0);
   $("about").innerHTML =

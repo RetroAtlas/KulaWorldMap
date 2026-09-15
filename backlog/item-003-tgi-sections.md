@@ -8,11 +8,13 @@ Drawing the objects as themselves rather than as markers is the largest visual s
 python3 tools/kula_ggi.py --sheet          # out/ggi/models.png, models.md
 ```
 
+The viewer draws them, from `public/objects.json`, stood on their faces and turning where the game turns them. What is left is what a sitting in the emulator settles.
+
 ## What is still to find
 
-1. **Which star is which.** The first table's entries 20 to 24 are the five things that move, types 50 to 56; the wheel, the hexagonal ball and the corkscrew are unmistakable, and the three-pointed and four-pointed stars are types 50 and 52 in an order the disc does not give. The same emulator sitting that names them names their models.
-2. **The fruit rule.** Types 43 to 47 are the five fruit in the walkthrough's order, and LEVEL 1's fruit is type 46, the bananas, where the walkthrough finds an apple: in play the fruit shown follows the player's progress. The map can draw the type's own model and say so, or draw the first fruit everywhere; a decision, not a finding.
-3. **The viewer.** With no textures to sample, a polygon is a fill in its corners' colours, which canvas 2D does cheaply: the objects can be drawn straight into the scene, back to front with the blocks, behind a toggle beside the markers. Item 9 is this.
+1. **Which star is which.** The first table's entries 20 to 24 are the five things that move, types 50 to 56; the wheel, the hexagonal ball and the corkscrew are unmistakable, and the three-pointed and four-pointed stars are types 50 and 52 in an order the disc does not give. `MOVING` in `tools/kula_ggi.py` is the coin toss.
+2. **Which way a thing is turned.** The map points a model's `+z` along its `facing` field, so the arrow's tip goes that way and the wheel's axle too, which is one convention for all and checked against nothing. The arrows of LEVEL 61 in play would settle the arrow; whether the wheel rolls along or across its field, the wheel.
+3. **Where a pickup hangs.** The map sets a model's lowest vertex just off its face. The game's height above the block is not read.
 
 ## Ruled out
 

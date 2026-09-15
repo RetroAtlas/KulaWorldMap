@@ -165,6 +165,46 @@ test("a panel is a dialog that a click inside does not dismiss", async ({ page }
   await expect(help).toBeHidden();
 });
 
+test("objects draw as themselves, keep turning, and go back to markers on d", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#L0");
+  await settle(page);
+  const probe = async () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { markerModel, levelMarkers } = await import(new URL("js/data.js", location.href).href);
+      const marks = levelMarkers(state.lvl);
+      return {
+        models: state.show.models,
+        drawn: marks.filter((m) => markerModel(m, state.lvl)).length,
+        of: marks.length,
+      };
+    });
+  const before = await probe();
+  expect(before.models).toBe(true);
+  // LEVEL 1: two coins, a key, a fruit and the exit have meshes; the start does not
+  expect(before.drawn).toBe(5);
+  expect(before.of).toBe(6);
+  // the coins turn, so the frame is drawn again without anyone touching the page
+  const frames = await page.evaluate(
+    () =>
+      new Promise((done) => {
+        let n = 0;
+        const cv = document.getElementById("cv");
+        const g = cv.getContext("2d");
+        const fill = g.fill.bind(g);
+        g.fill = (...a) => (n++, fill(...a));
+        setTimeout(() => done(n), 400);
+      }),
+  );
+  expect(frames).toBeGreaterThan(50);
+  await page.keyboard.press("d");
+  const after = await probe();
+  expect(after.models).toBe(false);
+  await expect(page.locator("#showModels")).not.toBeChecked();
+  expect(errors).toEqual([]);
+});
+
 test("the page a link lands on says what it is", async ({ page }) => {
   await page.goto("/");
   const head = await page.evaluate(() => ({

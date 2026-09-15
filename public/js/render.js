@@ -9,6 +9,9 @@ import {
   markerLabel,
   markerFacing,
   markerState,
+  markerModel,
+  markerSpins,
+  modelUnit,
   beamColour,
 } from "./data.js";
 
@@ -321,7 +324,7 @@ export function draw() {
 
     if (state.show.objects && !ghost) {
       const marks = idx.markers.get(key);
-      if (marks) for (const m of marks) drawMarker(m, c);
+      if (marks) for (const m of marks) drawThing(m, c, l);
     }
     if (state.survey.on && !ghost) {
       const m = state.survey.marks.get(key);
@@ -335,6 +338,123 @@ export function draw() {
   for (const r of idx.rays) drawBeam(r);
   if (state.show.start && l.camera) drawLook(l);
   drawScale();
+  if (spinning) animate();
+}
+
+// The things that turn in play turn here, which means drawing again every
+// frame while any is on screen and the page is looked at; the frame is cheap
+// enough, and the loop ends itself when there is nothing left turning.
+let spinning = false;
+let queuedFrame = 0;
+function animate() {
+  if (queuedFrame || document.hidden) return;
+  queuedFrame = requestAnimationFrame(() => {
+    queuedFrame = 0;
+    spinning = false;
+    draw();
+  });
+}
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) draw();
+});
+
+/** An object as itself where it has a mesh and the display asks for it, else its marker. */
+function drawThing(m, c, l) {
+  if (state.hiddenKinds.has(m.id)) return;
+  const model = state.show.models ? markerModel(m, l) : null;
+  if (!model) return drawMarker(m, c);
+  drawObject(m, c, model);
+  if (state.show.labels && state.cam.zoom > 0.45) {
+    const [px, py] = off(c, m.face, OBJECT_HOVER);
+    const dark = markerState(m) === "off" ? " · off" : "";
+    label(markerLabel(m) + dark + ` · ${FACE_NAME[m.face]}`, px + 8, py + 4, "#e8eefb");
+  }
+}
+
+// An object is its mesh stood on its face: the model's y runs along the face's
+// outward normal, its z along the way the thing points where it has one, and
+// its lowest vertex sits just off the face. The polygons are filled back to
+// front in their own colours, since the shading is baked into them, and both
+// sides are drawn, since the meshes wind their faces either way. A thing on a
+// face turned away from the view is drawn faint, like its marker.
+const SPIN = 0.35; // turns per second
+const GAP = 0.03; // between a thing and its face, in blocks
+const TANGENT = [
+  [0, 1, 0],
+  [0, 0, -1],
+  [0, 0, -1],
+  [0, 0, -1],
+  [0, 0, -1],
+  [0, 1, 0],
+];
+const cross = (a, b) => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+
+function drawObject(m, c, model) {
+  const up = FACE_NORMAL[m.face];
+  const heading = markerFacing(m);
+  const forward =
+    heading !== null && !FACE_NORMAL[heading].some((v, i) => v && up[i])
+      ? FACE_NORMAL[heading]
+      : TANGENT[m.face];
+  let turn = 0;
+  if (markerSpins(m)) {
+    spinning = true;
+    const phase = ((c.x * 7 + c.y * 13 + c.z * 5) % 17) / 17;
+    turn = (performance.now() / 1000) * SPIN * Math.PI * 2 + phase * Math.PI * 2;
+  }
+  const side = cross(up, forward);
+  const ct = Math.cos(turn),
+    st = Math.sin(turn);
+  const fwd = forward.map((v, i) => v * ct + side[i] * st);
+  const right = cross(up, fwd);
+  const unit = modelUnit();
+  const lift = GAP + Math.max(0, -model.box[0][1]) * unit;
+  const o = at(c, m.face, lift);
+  const frame =
+    model.frames[
+      model.frames.length > 1 ? Math.floor(performance.now() / 60) % model.frames.length : 0
+    ];
+  if (model.frames.length > 1) spinning = true;
+  const pts = [];
+  for (let i = 0; i < frame.length; i += 3) {
+    const x = frame[i] * unit,
+      y = frame[i + 1] * unit,
+      z = frame[i + 2] * unit;
+    const wx = o[0] + x * right[0] + y * up[0] + z * fwd[0];
+    const wy = o[1] + x * right[1] + y * up[1] + z * fwd[1];
+    const wz = o[2] + x * right[2] + y * up[2] + z * fwd[2];
+    pts.push([...screen(wx, wy, wz), depth(wx, wy, wz)]);
+  }
+  const away = !facing(up);
+  const polys = [];
+  model.polys.forEach((poly, k) => {
+    const p = poly.map((i) => pts[i]);
+    const rgb = model.rgb[k];
+    const n = poly.length;
+    const mean = [0, 1, 2].map((ch) => {
+      let sum = 0;
+      for (let i = 0; i < n; i++) sum += rgb[i * 3 + ch];
+      return Math.round(sum / n);
+    });
+    let z = 0;
+    for (const q of p) z += q[2];
+    polys.push({ p, z: z / n, fill: mean, blend: model.flags[k] & 2 });
+  });
+  polys.sort((a, b) => b.z - a.z);
+  ctx.save();
+  if (away) ctx.globalAlpha = 0.3;
+  for (const { p, fill, blend } of polys) {
+    ctx.fillStyle = `rgba(${fill[0]} ${fill[1]} ${fill[2]} / ${blend ? 0.75 : 1})`;
+    ctx.beginPath();
+    p.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 function outline(c, idx, colour, dash = []) {

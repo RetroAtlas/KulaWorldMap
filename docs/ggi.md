@@ -45,4 +45,4 @@ The filename is built at `0x8004ccf8` from a world index, an extension index int
 
 **The header's `i16` and the flags' bit 0.**
 
-**How a level object finds its model in play**, which is only inferred from the tables' shape; and whether the fruit a level shows is its type's model or, as the walkthrough's apple on LEVEL 1 (type 46, the bananas) says, the next one the player needs.
+**How a level object finds its model in play**, which is only inferred from the tables' shape, and which way a thing with a direction is turned: the map points the arrow's tip, the model's `+z`, along its `facing` field, and turns every model the same way, which is consistent with itself and not yet checked against the game. The fruit a level shows is not its type's: LEVEL 1's fruit is type 46, the bananas, where the walkthrough finds an apple, and every named fruit down the walkthrough is the level's number counted round the five, so the map draws the arcade levels that way.

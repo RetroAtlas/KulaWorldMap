@@ -13,6 +13,16 @@ import { draw, invalidatePick } from "./render.js";
 import { setSlice } from "./interaction.js";
 
 const KEY = "kula.display";
+const SHOWN = [
+  ["showSkins", "skins"],
+  ["showObjects", "objects"],
+  ["showModels", "models"],
+  ["showStart", "start"],
+  ["showLabels", "labels"],
+  ["showBase", "base"],
+  ["showHidden", "hidden"],
+];
+const DEFAULTS = { ...state.show };
 
 /** Where the drawer floats over the map rather than sitting beside it. */
 export const sidebarOverlays = () => matchMedia("(max-width: 760px)").matches;
@@ -110,14 +120,7 @@ export function buildKinds() {
 }
 
 export function wireDisplay() {
-  for (const [id, key] of [
-    ["showSkins", "skins"],
-    ["showObjects", "objects"],
-    ["showStart", "start"],
-    ["showLabels", "labels"],
-    ["showBase", "base"],
-    ["showHidden", "hidden"],
-  ]) {
+  for (const [id, key] of SHOWN) {
     const box = $(id);
     box.checked = state.show[key];
     box.addEventListener("change", () => {
@@ -134,24 +137,8 @@ export function wireDisplay() {
   });
   $("slice").addEventListener("input", (e) => setSlice(Number(e.target.value)));
   $("resetDisplay").onclick = () => {
-    state.show = {
-      objects: true,
-      start: true,
-      labels: false,
-      base: false,
-      hidden: false,
-      skins: true,
-    };
-    for (const [id, key] of [
-      ["showSkins", "skins"],
-      ["showObjects", "objects"],
-      ["showStart", "start"],
-      ["showLabels", "labels"],
-      ["showBase", "base"],
-      ["showHidden", "hidden"],
-    ]) {
-      $(id).checked = state.show[key];
-    }
+    state.show = { ...DEFAULTS };
+    for (const [id, key] of SHOWN) $(id).checked = state.show[key];
     state.panMode = false;
     $("panMode").checked = false;
     setSlice(SIDE - 1);

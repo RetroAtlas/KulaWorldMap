@@ -18,6 +18,12 @@ export const setAnnotations = (a) => {
   ann = { worlds: {}, kinds: {}, types: {}, levels: {}, ...a };
 };
 
+let shapes = { block: 512, types: {} };
+export const setObjects = (o) => {
+  shapes = { block: 512, types: {}, ...o };
+};
+export const modelUnit = () => 1 / shapes.block;
+
 export async function loadJson(url, fallback) {
   try {
     const r = await fetch(url);
@@ -111,6 +117,32 @@ export const markerState = (m) => {
   return v === STATE_ON ? "on" : v === STATE_OFF ? "off" : null;
 };
 export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
+
+// The five fruit are five types, and in the arcade levels the game shows the
+// one the player needs next, which is the level's number counted round the
+// five; every other level shows its type's own.
+const FRUIT_FIRST = 43;
+const FRUIT = 5;
+// A variant the level opens on where no field picks one: the exit is red until
+// the keys are found, and its green model comes first.
+const OPENS_ON = { 7: 1 };
+/** The model a marker draws, or null for one the game draws on the face. */
+export function markerModel(m, l) {
+  if (m.face === null) return null;
+  let type = m.type;
+  const n = /^LEVEL (\d+)$/.exec(l.shown || "");
+  if (n && type >= FRUIT_FIRST && type < FRUIT_FIRST + FRUIT)
+    type = FRUIT_FIRST + ((Number(n[1]) - 1) % FRUIT);
+  const models = shapes.types[String(type)];
+  if (!models) return null;
+  const variant = m.variant !== null ? Number(m.variant) : (OPENS_ON[type] ?? 0);
+  return models[variant] || models[0];
+}
+
+// What turns on the spot in play: everything picked up, and the devices that
+// rotate to say they are live.
+const SPINNING = new Set([5, 7, 26, 31, 32, 33, 34, 35, 36, 37, 38, 43, 44, 45, 46, 47]);
+export const markerSpins = (m) => m.face !== null && SPINNING.has(m.type);
 export const kindNote = (kind) => ann.kinds[String(kind)]?.note || "";
 
 // A beam record spans two cells on one axis and nothing stands between them in
