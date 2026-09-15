@@ -7,7 +7,9 @@ import {
   levelMarkers,
   markerLabel,
   markerColour,
+  markerModel,
 } from "./data.js";
+import { iconFor } from "./icons.js";
 import { selectLevel } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
 import { setSlice } from "./interaction.js";
@@ -97,10 +99,13 @@ export function buildKinds() {
   const keys = [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a));
   for (const k of keys) {
     const m = first.get(k);
+    const model = markerModel(m, state.lvl);
     const b = el(
       "button",
       { className: "kind", type: "button" },
-      el("span", { className: "dot", style: `background:${markerColour(m)}` }),
+      model
+        ? iconFor(model)
+        : el("span", { className: "dot", style: `background:${markerColour(m)}` }),
       el("span", {}, markerLabel(m)),
       el("span", { className: "n" }, String(counts.get(k))),
     );

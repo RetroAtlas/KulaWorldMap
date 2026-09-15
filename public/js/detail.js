@@ -15,8 +15,10 @@ import {
   markerState,
   markerNumber,
   markerLabel,
+  markerModel,
   markerStats,
 } from "./data.js";
+import { iconFor } from "./icons.js";
 
 let stats = null;
 
@@ -47,9 +49,14 @@ export function showCell(c) {
   if (kind !== null) html += row("block kind", kind);
   html += "</table>";
 
+  const icons = [];
   for (const m of marks) {
     const name = markerName(m);
-    html += `<h3 style="margin-top:12px">${dot(markerColour(m))}
+    const model = markerModel(m, l);
+    const mark = model
+      ? `<span class="icon-at" data-icon="${icons.push(model) - 1}"></span>`
+      : dot(markerColour(m));
+    html += `<h3 style="margin-top:12px">${mark}
       ${name ? name : `<span class="unnamed">${m.face === null ? `kind ${m.kind}` : `type ${m.type}`}</span>`}</h3>`;
     html += `<p class="sub">${m.face === null ? `kind ${m.kind} · type ${m.type}` : `type ${m.type} · on the ${FACE_NAME[m.face]}`}</p>`;
     const note = markerNote(m);
@@ -87,6 +94,8 @@ export function showCell(c) {
     }
   }
   box.innerHTML = html;
+  for (const at of box.querySelectorAll(".icon-at"))
+    at.replaceWith(iconFor(icons[at.dataset.icon], 26));
   box.hidden = false;
   box.querySelector(".x").onclick = clearDetail;
 }
