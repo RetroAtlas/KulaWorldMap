@@ -13,7 +13,7 @@ Read [docs/level-format.md](docs/level-format.md) before changing anything under
 
 Keep the cross-check in `tools/kula_build.py` fatal, and keep `tools/kula_score.py --guide` passing when a name or a points value changes: those two hold the readings and the names to the disc. Do not re-derive the lattice from file sizes.
 
-Read [docs/tgi.md](docs/tgi.md) before touching `tools/kula_tgi.py` or `tools/kula_tex.py`.
+Read [docs/tgi.md](docs/tgi.md) before touching `tools/kula_tgi.py` or `tools/kula_tex.py`, and [docs/ggi.md](docs/ggi.md) before touching `tools/kula_ggi.py`.
 
 ## Conventions
 
