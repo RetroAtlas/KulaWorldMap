@@ -450,7 +450,10 @@ function drawObject(m, c, model) {
   for (const { p, fill, blend } of polys) {
     ctx.fillStyle = `rgba(${fill[0]} ${fill[1]} ${fill[2]} / ${blend ? 0.75 : 1})`;
     ctx.beginPath();
-    p.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    // A quad's corners come two edges at a time, 0-1 and 2-3, so its outline
+    // runs 0, 1, 3, 2; traced in index order it is a bow-tie with two holes.
+    const ring = p.length === 4 ? [p[0], p[1], p[3], p[2]] : p;
+    ring.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
     ctx.closePath();
     ctx.fill();
   }
