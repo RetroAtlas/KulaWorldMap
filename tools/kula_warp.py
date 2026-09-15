@@ -23,8 +23,9 @@ The game keeps the world it is loading at 0x800A340C and 0x800A3410 and the
 slot at 0x800A3408 (the NTSC release; the PAL one at 0x800A2EA4, 0x800A2EA8 and
 0x800A2EA0), so an emulator cheat that writes those reaches any slot of any
 world pack without a patched disc; `--cheat` prints it in the form DuckStation
-takes. The disc copy is for the packs the cheat cannot name, and for a real
-console.
+takes, with a second cheat that frees the camera to orbit the level, which is
+the fastest way to survey one. The disc copy is for the packs the cheat cannot
+name, and for a real console.
 
 Writing user data leaves each touched sector's EDC and ECC stale. Emulators do
 not read them; a real console would.
@@ -47,6 +48,9 @@ USER_OFF = 24
 CATALOGUE = "OBJ LEVEL"
 WORLD_WORDS = (0x800A340C, 0x800A3410)
 SLOT_WORD = 0x800A3408
+# The Japanese release frees the camera on Select; this byte does it on the
+# NTSC one, from The Cutting Room Floor, and is what a survey wants.
+CAMERA_WORD = 0x800BA296
 
 
 def find(disc, want):
@@ -136,6 +140,10 @@ def main():
         for word in WORLD_WORDS:
             print(f"{word:08X} {THEMES.index(world):04X}")
         print(f"{SLOT_WORD:08X} {donor_slot:04X}")
+        print()
+        print("[Free camera]")
+        print("Type = Gameshark")
+        print(f"{CAMERA_WORD:08X} 0001")
         return
     out = Path(args.out) if args.out else src.with_name(f"{src.stem} ({what.lower()}).bin")
 
