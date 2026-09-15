@@ -28,11 +28,11 @@ def packed(frames):
 
 
 def records(polys):
-    """A texture record per polygon; polys are (indices, is a quad, texture number)."""
+    """A colour record per polygon; polys are (indices, is a quad, a grey level)."""
     out = b""
-    for _, quad, tex in polys:
-        flags = (QUAD if quad else 0) | 0x2000
-        out += struct.pack("<BBHBBHBBHBBH", 1, 2, flags, 3, 4, tex, 5, 6, 0, 7, 8, 0)
+    for _, quad, grey in polys:
+        flags = (QUAD if quad else 0) | 0x20
+        out += bytes((grey, grey, grey, flags)) + bytes((grey, grey, grey, 0)) * 3
     return struct.pack("<II", 1, len(out)) + out
 
 
@@ -56,8 +56,9 @@ class Reads(unittest.TestCase):
         pts = [(0, 0, 0), (10, 0, 0), (10, 0, 10), (0, 0, 10)]
         m = Model(model(polys, [pts]), 0, len(model(polys, [pts])))
         self.assertEqual(m.polygons(), [(0, 1, 2, 3), (1, 2, 3)])
-        self.assertEqual([r["tex"] for r in m.uv], [7, 8])
-        self.assertEqual(m.uv[0]["uv"], [(1, 2), (3, 4), (5, 6), (7, 8)])
+        self.assertEqual([c["rgb"][0] for c in m.colours], [(7, 7, 7), (8, 8, 8)])
+        self.assertEqual(m.colours[0]["flags"] & QUAD, QUAD)
+        self.assertEqual(m.colours[1]["flags"] & QUAD, 0)
 
     def test_vertices_come_back_with_y_up_and_one_frame_per_item(self):
         pts = [(1, 2, 3), (4, 5, 6), (7, 8, 9), (10, 11, 12)]

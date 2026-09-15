@@ -15,18 +15,23 @@ hexagonal ball and the corkscrew.
 A model is a header of `i16 x, z, y` for its centre, `u16 radius, i16, u16
 flags`, and three or four block offsets, the first of which says how long the
 header is, then the blocks. Polygons of four u8 vertex indices, as many as
-the texture block has records, and a triangle's fourth byte is whatever it
+the colour block has records, and a triangle's fourth byte is whatever it
 is. Then three blocks that each open with `u32 count, u32 bytes per item`:
 vertices, packed three at a time as three (x, z) i16 pairs, three y i16 and
-a pad, with y up and one item per animation frame; one 16-byte record per
-polygon in the POLY_FT4 layout, `u0 v0 flags, u1 v1 tex, u2 v2 pad, u3 v3
-pad`, where bit 11 of the flags makes it a quad and the low byte of each word
-is a number the loader turns into the GPU's clut and tpage; and, where there
-is a fourth block, normals packed like the vertices.
+a pad, with y up and one item per animation frame; one 16-byte colour record
+per polygon, four corners of `u8 r, g, b, flags`, the flags on the first
+corner only: 0x20 always, 0x10 for a Gouraud polygon, 0x08 for a quad and
+0x02 for a translucent one; and, where there is a fourth block, normals
+packed like the vertices. The meshes carry no texture coordinates: every
+polygon is coloured, and the shading is baked into the colours.
+
+After the models come the sprites and the lettering the game draws flat, 148
+VRAM uploads with their palettes; none of the meshes is textured.
 
     python3 tools/kula_ggi.py --sections
     python3 tools/kula_ggi.py --tables
     python3 tools/kula_ggi.py --sheet          # out/ggi/models.png and models.md
+    python3 tools/kula_ggi.py --textures       # out/ggi/textures.png and textures.md
 """
 import argparse
 import math
@@ -53,12 +58,15 @@ SLOTS = 4                # variants per level of detail
 ABSENT = 0xFFFFFFFF
 GROUP = 20               # bytes per three packed vertices
 PREFIX = 8               # the count and length that open a packed block
-QUAD = 0x0800            # the record flag that makes a polygon four-sided
+# The flags a colour record carries in its first corner's fourth byte.
+GOURAUD = 0x10
+QUAD = 0x08
+BLEND = 0x02
 
 
 class Model:
     __slots__ = ("at", "size", "centre", "radius", "kind", "flags", "blocks",
-                 "quads", "frames", "uv", "normals")
+                 "quads", "frames", "colours", "normals")
 
     def __init__(self, blob, at, size):
         self.at, self.size = at, size
@@ -70,15 +78,15 @@ class Model:
         n = (first - 12) // 4
         self.blocks = list(struct.unpack_from(f"<{n}I", blob, at + 12)) + [size]
         body = blob[at:at + size]
-        self.uv = self._uv(body, self.blocks[2])
-        self.quads = self._quads(body, self.blocks[0], len(self.uv))
+        self.colours = self._colours(body, self.blocks[2])
+        self.quads = self._quads(body, self.blocks[0], len(self.colours))
         self.frames = self._packed(body, self.blocks[1], self.blocks[2])
         self.normals = self._packed(body, self.blocks[3], self.blocks[4]) if n == 4 else []
 
     def polygons(self):
         """Each polygon's vertex indices: four where its record's flag says quad,
         else three, and the fourth byte then holds whatever it holds."""
-        return [q if r["flags"] & QUAD else q[:3] for q, r in zip(self.quads, self.uv)]
+        return [q if c["flags"] & QUAD else q[:3] for q, c in zip(self.quads, self.colours)]
 
     def points(self):
         """Every vertex index a polygon names."""
@@ -107,17 +115,13 @@ class Model:
         return frames
 
     @staticmethod
-    def _uv(body, a):
-        """One texture record per polygon; the block's prefix counts them. The two
-        words where a POLY_FT4 keeps its clut and tpage hold flags and a number
-        in the low byte of each, which the loader turns into the GPU's words."""
+    def _colours(body, a):
+        """One colour record per polygon; the block's prefix counts them."""
         one, length = struct.unpack_from("<II", body, a)
         out = []
         for i in range(length // 16):
-            u0, v0, flags, u1, v1, tex, u2, v2, _, u3, v3, _ = struct.unpack_from(
-                "<BBHBBHBBHBBH", body, a + PREFIX + i * 16)
-            out.append({"uv": [(u0, v0), (u1, v1), (u2, v2), (u3, v3)],
-                        "flags": flags, "tex": tex})
+            b = struct.unpack_from("<16B", body, a + PREFIX + i * 16)
+            out.append({"rgb": [tuple(b[k:k + 3]) for k in range(0, 16, 4)], "flags": b[3]})
         return out
 
     def bbox(self, frame=0):
@@ -172,6 +176,130 @@ class Ggi:
                 if v != ABSENT:
                     seen.setdefault(t1 + v, []).append(f"single {i}/{s}")
         return [(labels, self.models[at]) for at, labels in sorted(seen.items())]
+
+
+# The last section is the sprites, walked by 0x80022fd8 into a table of 180
+# twelve-byte descriptors: `u32 count`, then per sprite `i16 bpp, i16 abr`,
+# for a paletted one `u16 x, y` of its palette in VRAM, `i16 inline, u16 late`
+# and the palette's words where `inline` is 0, and then `u16 x, y, w, h` of
+# the image with its pixels where `late` is 0, w in pixels and the data padded
+# to four bytes. Everything is a VRAM upload, like the artwork's.
+TEXTURES = 6
+VRAM_W, VRAM_H = 1024, 512
+
+
+def textures(g):
+    blob, p, end = g.blob, g.bounds[TEXTURES], g.bounds[TEXTURES + 1]
+    count = struct.unpack_from("<I", blob, p)[0]
+    p += 4
+    out = []
+    for i in range(count):
+        bpp, abr = struct.unpack_from("<hh", blob, p)
+        p += 4
+        if bpp == -1:
+            p += 2
+            out.append(None)
+            continue
+        t = {"bpp": bpp, "abr": abr, "clut": None, "palette": None}
+        px, py, inline, late = struct.unpack_from("<HHhH", blob, p)
+        p += 8
+        if bpp != 16:
+            t["clut"] = (px, py)
+            if inline == 0:
+                n = (1 << bpp) * 2
+                t["palette"] = (px, py, p, n)
+                p += n
+        x, y, w, h = struct.unpack_from("<4H", blob, p)
+        p += 8
+        words = (w * bpp) >> 4
+        t.update({"x": x, "y": y, "w": w, "h": h, "words": words, "at": None})
+        if late == 0:
+            t["at"] = p
+            p += words * h * 2
+            if (words * h) & 1:
+                p += 2
+        out.append(t)
+    return out, p == end
+
+
+def vram(g):
+    """Replay every upload into a 1024x512 page of 16-bit words."""
+    page = bytearray(VRAM_W * VRAM_H * 2)
+    for t in textures(g)[0]:
+        if t is None:
+            continue
+        if t["palette"]:
+            px, py, at, n = t["palette"]
+            dst = (py * VRAM_W + px) * 2
+            page[dst:dst + n] = g.blob[at:at + n]
+        if t["at"] is not None:
+            for row in range(t["h"]):
+                src = t["at"] + row * t["words"] * 2
+                dst = ((t["y"] + row) * VRAM_W + t["x"]) * 2
+                page[dst:dst + t["words"] * 2] = g.blob[src:src + t["words"] * 2]
+    return page
+
+
+def rgb(word):
+    return ((word & 31) << 3, ((word >> 5) & 31) << 3, ((word >> 10) & 31) << 3, 255)
+
+
+def texel(page, t, u, v):
+    """The colour of one pixel of a texture, read the way the GPU would."""
+    if u < 0 or v < 0 or u >= t["w"] or v >= t["h"]:
+        return (0, 0, 0, 0)
+    row = (t["y"] + v) * VRAM_W
+    if t["bpp"] == 16:
+        word = struct.unpack_from("<H", page, (row + t["x"] + u) * 2)[0]
+        return rgb(word) if word else (0, 0, 0, 0)
+    if t["bpp"] == 8:
+        index = page[(row + t["x"]) * 2 + u]
+    else:
+        byte = page[(row + t["x"]) * 2 + u // 2]
+        index = byte & 15 if u % 2 == 0 else byte >> 4
+    px, py = t["clut"]
+    word = struct.unpack_from("<H", page, (py * VRAM_W + px + index) * 2)[0]
+    return rgb(word) if word else (0, 0, 0, 0)
+
+
+def texture_sheet(g):
+    """Every sprite decoded with its own palette, in a grid, numbered."""
+    tex, exact = textures(g)
+    page = vram(g)
+    cell = 72
+    cols = 12
+    rows = math.ceil(len(tex) / cols)
+    w, h = cols * cell, rows * cell
+    buf = bytearray(b"\x11\x17\x25\xff" * (w * h))
+    for i, t in enumerate(tex):
+        ox, oy = (i % cols) * cell + 4, (i // cols) * cell + 12
+        label(buf, w, h, str(i), (i % cols) * cell + 3, (i // cols) * cell + 2)
+        if t is None:
+            continue
+        sx = min(1.0, (cell - 8) / max(t["w"], t["h"]))
+        for v in range(t["h"]):
+            for u in range(t["w"]):
+                c = texel(page, t, u, v)
+                if not c[3]:
+                    continue
+                x, y = ox + int(u * sx), oy + int(v * sx)
+                if x < w and y < h:
+                    k = (y * w + x) * 4
+                    buf[k:k + 4] = bytes(c)
+    OUT.mkdir(parents=True, exist_ok=True)
+    write_png(OUT / "textures.png", w, h, buf)
+    lines = ["# Sprites in HIRO.GGI", "",
+             f"Generated by `tools/kula_ggi.py --textures`; {len(tex)} uploads in the last section, "
+             f"{'walked exactly' if exact else 'NOT walked exactly'}. The sheet is `textures.png`.", "",
+             "| # | bpp | abr | palette at | image at | size |", "| --- | --- | --- | --- | --- | --- |"]
+    for i, t in enumerate(tex):
+        if t is None:
+            lines.append(f"| {i} | - | | | | |")
+            continue
+        lines.append(f"| {i} | {t['bpp']} | {t['abr']} | {t['clut'] or ''}"
+                     f"{' (inline)' if t['palette'] else ''} | {t['x']},{t['y']} | {t['w']}x{t['h']} |")
+    (OUT / "textures.md").write_text("\n".join(lines) + "\n")
+    print(f"{len(tex)} sprites -> {OUT / 'textures.png'} and textures.md")
 
 
 def read(disc=None):
@@ -252,34 +380,28 @@ def raster(buf, w, h, pts, colour):
             buf[i:i + 4] = colour
 
 
-def draw(buf, w, h, model, ox, oy, scale, light=(0.4, 0.8, 0.45)):
+def draw(buf, w, h, model, ox, oy, scale):
+    """The model in its own colours, back to front, a triangle filled with the
+    mean of its corners' colours since the shading is already in them."""
     right, up, toward = basis()
     pts = model.frames[0] if model.frames else []
     if not pts:
         return
     tris = []
-    for q in model.polygons():
-        for a, b, c in ((q[0], q[1], q[2]), (q[1], q[3], q[2])) if len(q) == 4 else (q,):
-            pa, pb, pc = pts[a], pts[b], pts[c]
-            if len({a, b, c}) < 3:
+    for q, c in zip(model.polygons(), model.colours):
+        corners = ((0, 1, 2), (1, 3, 2)) if len(q) == 4 else ((0, 1, 2),)
+        for i, j, k in corners:
+            tri = (pts[q[i]], pts[q[j]], pts[q[k]])
+            if len({q[i], q[j], q[k]}) < 3:
                 continue
-            e1 = [pb[i] - pa[i] for i in range(3)]
-            e2 = [pc[i] - pa[i] for i in range(3)]
-            nrm = (e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2],
-                   e1[0] * e2[1] - e1[1] * e2[0])
-            ln = math.hypot(*nrm) or 1
-            nrm = tuple(v / ln for v in nrm)
-            depth = sum(dot(p, toward) for p in (pa, pb, pc)) / 3
-            tris.append((depth, nrm, (pa, pb, pc)))
+            rgb = [c["rgb"][i], c["rgb"][j], c["rgb"][k]]
+            mean = tuple(sum(x[n] for x in rgb) // 3 for n in range(3))
+            depth = sum(dot(p, toward) for p in tri) / 3
+            tris.append((depth, mean, tri))
     tris.sort(key=lambda t: t[0])
-    for _, nrm, tri in tris:
-        # Both windings are drawn, since the game's and this projection's need not
-        # agree; the light is applied to whichever way the face turns.
-        lit = 0.35 + 0.65 * abs(dot(nrm, light))
-        shade = int(60 + 170 * lit)
-        colour = bytes((shade, int(shade * 0.92), int(shade * 0.75), 255))
+    for _, rgb, tri in tris:
         screen = [(ox + dot(p, right) * scale, oy - dot(p, up) * scale) for p in tri]
-        raster(buf, w, h, screen, colour)
+        raster(buf, w, h, screen, bytes(rgb + (255,)))
 
 
 def label(buf, w, h, text, x, y):
@@ -338,14 +460,17 @@ def main():
     ap.add_argument("--sections", action="store_true", help="the header and the seven sections")
     ap.add_argument("--tables", action="store_true", help="both model tables and every model")
     ap.add_argument("--sheet", action="store_true", help="draw every model to out/ggi/")
+    ap.add_argument("--textures", action="store_true", help="draw every sprite to out/ggi/")
     args = ap.parse_args()
     g = read(args.disc)
-    if args.sections or not (args.tables or args.sheet):
+    if args.sections or not (args.tables or args.sheet or args.textures):
         show_sections(g)
     if args.tables:
         show_tables(g)
     if args.sheet:
         sheet(g)
+    if args.textures:
+        texture_sheet(g)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,12 @@
 # The .GGI file: the objects' geometry
 
-`/HIRO/HIRO.GGI` is the one file of its kind on the disc, 310,376 bytes, and it holds the meshes of everything the game draws in 3D that is not a block: the ball, every object a level places, and the things that move. It is loaded once at startup rather than per world, which is why the objects look the same in every world while the blocks change. `tools/kula_ggi.py` reads it, and what is left is the texture page.
+`/HIRO/HIRO.GGI` is the one file of its kind on the disc, 310,376 bytes, and it holds the meshes of everything the game draws in 3D that is not a block: the ball, every object a level places, and the things that move, each in its own colours, and after them the sprites and the lettering the game draws flat. It is loaded once at startup rather than per world, which is why the objects look the same in every world while the blocks change. `tools/kula_ggi.py` reads all of it.
 
 ```bash
 python3 tools/kula_ggi.py --sections
 python3 tools/kula_ggi.py --tables          # both model tables, and every model's shape
-python3 tools/kula_ggi.py --sheet           # out/ggi/models.png, every model drawn flat
+python3 tools/kula_ggi.py --sheet           # out/ggi/models.png, every model in its colours
+python3 tools/kula_ggi.py --textures        # out/ggi/textures.png, every sprite and glyph
 ```
 
 ## How it was found
@@ -27,15 +28,19 @@ The filename is built at `0x8004ccf8` from a world index, an extension index int
 - `i16 x, z, y` of the model's centre, `u16` bounding radius, `i16` (-1, 0 or 3), `u16` flags, then `u32` block offsets, the first of which is 24 or 28 and so says how many there are.
 - Polygons: four `u8` vertex indices each, as many as the texture block has records.
 - Vertices: `u32 frames, u32 bytes per frame`, then per frame three vertices to a 20-byte group, `x1 z1 x2 z2 x3 z3 y1 y2 y3 pad` as `i16`, unused slots holding `-1`. Y is up. Every model has one frame except the moving spikes, which have 32.
-- Texture records: `u32 1, u32 bytes`, then 16 bytes per polygon in the POLY_FT4 layout, `u0 v0 A, u1 v1 B, u2 v2 pad, u3 v3 pad`. Bit 11 of `A` makes the polygon a quad; without it the fourth index and the fourth coordinate are whatever they are, and 3,306 of the 6,449 polygons are triangles. Reading the flag rather than the fourth index is what settled it: a triangle's fourth byte is 0 on the spikes, 116 to 120 on the ball's pole, and quads read with a fourth corner were off their plane by a triangle's width on 88% of the records whose flag was clear and on none whose flag was set. The low byte of `A` and of `B` are numbers, not the GPU's clut and tpage words; the loader turns them into those, and what they index is the texture question below.
+- Colours: `u32 1, u32 bytes`, then 16 bytes per polygon, four corners of `r, g, b, flags`, the flags on the first corner only: `0x20` always, `0x10` for a Gouraud polygon, `0x08` for a quad, `0x02` for a translucent one. That these are colours and not texture coordinates is what the coins say: tier 0 is `(201, 157, 78)`, gold, tier 1 `(79, 157, 201)`, blue, tier 2 `(173, 86, 0)`, bronze; the four teleporters' panels are `(255, 255, 0)`, `(0, 0, 255)`, `(0, 255, 0)` and `(255, 0, 0)`; the exit's two variants are green and red, the lethargy pill red and yellow and the bouncy pill purple and pink, as the walkthrough describes them. The shading is baked in, a teleporter's grey body running from 38 to 167 by face. The quad flag is what settled the triangles, which the fourth index could not: it is 0 on the spikes and 116 to 120 on the ball's pole, and read as quads the polygons without the flag were off their plane by a triangle's width on 88% of them, the ones with it on none. 3,306 of the 6,449 polygons are triangles.
 - Normals, where there is a fourth block and bit 1 of the flags is set: packed like the vertices, unit length 4096. Only the balls have them.
+
+**No mesh is textured.** Every polygon is coloured, flat or Gouraud, and nothing in a model names a texture. The fourteen balls are the beach-ball designs the Japanese release lets a player pick from.
+
+**The last section is the sprites and the lettering**, 148 uploads walked by `0x80022fd8` into a table of 180 twelve-byte descriptors (bpp, whether it has a palette, the GPU's clut and tpage words, the offset within the page, width, height) that the HUD code indexes. Each is `i16 bpp, i16 abr`, for a paletted one `u16 x, y` of its palette in VRAM, `i16 inline, u16 late` and the palette's words where `inline` is 0, then `u16 x, y, w, h` of the image and its pixels where `late` is 0, `w` in pixels and the data padded to four bytes; every one is a VRAM upload like the artwork's, to the right of the world's textures at `x` 496 and up. Entries 0 to 9 are the five fruit icons grey and lit, in the same order as types 43 to 47; 10 to 16 are seven 64x64 pictures (a purple glow, the ball's stripes, a red disc, an electric blue ball, a shell, two rings of sparks) that read as the sprites drawn around the teleporters and exits and under the ball; 23 to 26 and 126 are the controller's four symbols; 27 to 70 and 132 to 147 the menus' words; 71 to 102 thirty-two 4x3 swatches; 119 and 125 the digits; 123 and 124 the key icon grey and gold. The header's six bounds (10, 17, 27, 71, 103, 116) are where these groups begin.
 
 **The scale.** A block is 512 units: a crumbling block's record keeps its cell times 512, and the spikes and the teleporter, which cover a block's face, are 462 and 486 across. The ball is radius 100, the exit 266 wide, a coin 186. The sheet draws every model at one scale on that reading.
 
 ## Not settled
 
-**The textures.** S6 at 100 KB is the size of a page and S2 and S3 at 8 KB each are the size of sixteen 256-colour palettes, and the UVs are bytes, which says one page 256 wide. It is not an upload list like the TGI's section 10 (that walk does not consume it). The parser calls `0x80022fd8(base, ?, 180)` before the ball records, which is where the numbers in the texture records would be turned into GPU words.
+**Sections 1 to 5**, 1,920, 8,192, 8,192, 12 and 204 bytes; the two of 8 KB are the size of sixteen 256-colour palettes and are not needed to draw anything above.
 
-**The header's `i16` and the flags' bit 0**, and what the six category bounds of words 0 to 5 bound.
+**The header's `i16` and the flags' bit 0.**
 
 **How a level object finds its model in play**, which is only inferred from the tables' shape; and whether the fruit a level shows is its type's model or, as the walkthrough's apple on LEVEL 1 (type 46, the bananas) says, the next one the player needs.
