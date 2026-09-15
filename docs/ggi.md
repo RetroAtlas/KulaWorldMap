@@ -2,6 +2,8 @@
 
 `/HIRO/HIRO.GGI` is the one file of its kind on the disc, 310,376 bytes, and it holds the meshes of everything the game draws in 3D that is not a block: the ball, every object a level places, and the things that move, each in its own colours, and after them the sprites and the lettering the game draws flat. It is loaded once at startup rather than per world, which is why the objects look the same in every world while the blocks change. `tools/kula_ggi.py` reads all of it.
 
+`tools/kula_build.py` writes what the viewer draws to `public/objects.json`: for every type some level places and that has a mesh, its models at full detail, one per variant, as vertices per frame, polygons, a colour per corner and the flags, in the game's units with a block 512 across. The types that move are keyed by their type numbers from the first table, on the reading below.
+
 ```bash
 python3 tools/kula_ggi.py --sections
 python3 tools/kula_ggi.py --tables          # both model tables, and every model's shape

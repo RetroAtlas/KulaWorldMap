@@ -59,7 +59,7 @@ export KULA_DISC="/path/to/Roll Away.bin"
 python3 tools/kula_build.py
 ```
 
-That writes `public/map_data.json`, which is generated **and committed**, so regenerate it rather than hand-editing. A full build takes under a second, and the file is indented so that a rebuild diffs line by line.
+That writes `public/map_data.json` and `public/objects.json`, the levels and the objects' meshes, both generated **and committed**, so regenerate them rather than hand-editing. A full build takes under a second, and the files are laid out so that a rebuild diffs line by line, or model by model.
 
 To serve the viewer locally:
 
@@ -77,7 +77,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `kula_disc.py` | where this game keeps its packs, textures and executable |
 | `kula_pak.py` | the `.PAK` container, and the names inside it |
 | `kula_level.py` | the lattice and the record table, field by field |
-| `kula_build.py` | reads every level and writes `public/map_data.json` |
+| `kula_build.py` | reads every level and every mesh, and writes `public/map_data.json` and `public/objects.json` |
 | `kula_kinds.py` | per-type contact sheets, for naming objects |
 | `kula_score.py` | what each level scores, and the check of the names against the walkthrough |
 | `kula_faces.py` | what the six slots of every record hold, per kind and per face |

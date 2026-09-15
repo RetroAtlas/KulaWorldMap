@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Read every level off the disc and write public/map_data.json.
+"""Read every level off the disc and write public/map_data.json, and every
+object's mesh and write public/objects.json.
 
     export KULA_DISC="/path/to/Roll Away.bin"
     python3 tools/kula_build.py
@@ -13,10 +14,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import THEMES, open_disc, packs
+from kula_ggi import FILE as GGI, Ggi, write_objects
 from kula_level import Level, SIDE, STYLES, FIRST_RECORD
 from kula_pak import Pak
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
+OBJECTS = OUT.parent / "objects.json"
 WORLD_LEVELS = 15
 FINAL_LEVELS = 2
 
@@ -99,6 +102,12 @@ def main():
     print(f"cross-check: {checked} cell/record pairs agree, {len(levels)} camera records found")
     print(f"{len(levels)} levels, {cells} placed cells, {records} records carrying {objs} objects "
           f"-> {OUT.relative_to(OUT.parent.parent.parent)} ({OUT.stat().st_size/1024:.0f} KB)")
+
+    placed = {o["type"] for l in levels for r in l["records"] for o in r["on"]}
+    shapes = write_objects(Ggi(disc.read_file(GGI)), OBJECTS, placed)
+    models = sum(len(v) for v in shapes["types"].values())
+    print(f"{len(shapes['types'])} object types drawn by {models} models "
+          f"-> {OBJECTS.relative_to(OUT.parent.parent.parent)} ({OBJECTS.stat().st_size/1024:.0f} KB)")
 
 
 if __name__ == "__main__":

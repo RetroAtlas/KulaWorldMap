@@ -34,6 +34,7 @@ VRAM uploads with their palettes; none of the meshes is textured.
     python3 tools/kula_ggi.py --textures       # out/ggi/textures.png and textures.md
 """
 import argparse
+import json
 import math
 import struct
 import sys
@@ -57,6 +58,7 @@ ROWS = 4                 # levels of detail per model
 SLOTS = 4                # variants per level of detail
 ABSENT = 0xFFFFFFFF
 GROUP = 20               # bytes per three packed vertices
+BLOCK = 512              # a lattice cell in model units
 PREFIX = 8               # the count and length that open a packed block
 # The flags a colour record carries in its first corner's fourth byte.
 GOURAUD = 0x10
@@ -302,6 +304,55 @@ def texture_sheet(g):
     print(f"{len(tex)} sprites -> {OUT / 'textures.png'} and textures.md")
 
 
+# The things that move are the first table's last five entries, and their
+# types are the captivators' and the rolling stone's. The wheel, the hexagonal
+# ball and the corkscrew are unmistakable; which star is which of the two
+# directional captivators the disc does not say, and this is a coin toss until
+# someone sees them in play.
+MOVING = {50: 20, 51: 21, 52: 22, 53: 23, 56: 24}
+
+
+def objects(g, placed=None):
+    """Every object type's models at full detail, one per variant, for the viewer:
+    vertices per frame, polygons, a colour per corner, and the flags. `placed`
+    keeps it to the types some level places."""
+    t1, t2 = g.table_at
+    out = {}
+    for t, rows in enumerate(g.types):
+        models = [g.models[t2 + v] for v in rows[0] if v != ABSENT]
+        if models and (placed is None or t in placed):
+            out[str(t)] = [as_dict(m) for m in models]
+    for t, e in MOVING.items():
+        if placed is None or t in placed:
+            out[str(t)] = [as_dict(g.models[t1 + g.singles[e][0]])]
+    return {"block": BLOCK, "types": out}
+
+
+def as_dict(m):
+    used = max(max(q) for q in m.polygons()) + 1
+    return {
+        "box": list(m.bbox()),
+        "frames": [[c for p in f[:used] for c in p] for f in m.frames],
+        "polys": [list(q) for q in m.polygons()],
+        "rgb": [[c for rgb in col["rgb"][:len(q)] for c in rgb]
+                for q, col in zip(m.polygons(), m.colours)],
+        "flags": [col["flags"] & (GOURAUD | BLEND) for col in m.colours],
+    }
+
+
+def write_objects(g, path, placed=None):
+    """One model to a line, so a rebuild diffs by model."""
+    data = objects(g, placed)
+    lines = ["{", f' "block": {data["block"]},', ' "types": {']
+    types = list(data["types"].items())
+    for i, (t, models) in enumerate(types):
+        body = ",\n".join("   " + json.dumps(m, separators=(",", ":")) for m in models)
+        lines.append(f'  "{t}": [\n{body}\n  ]' + ("," if i < len(types) - 1 else ""))
+    lines += [" }", "}", ""]
+    Path(path).write_text("\n".join(lines))
+    return data
+
+
 def read(disc=None):
     return Ggi(open_disc(disc).read_file(FILE))
 
@@ -340,12 +391,10 @@ def show_tables(g):
               f"box {lo}..{hi}  {'; '.join(labels)}")
 
 
-# The sheet draws each model flat-shaded in the same three-quarter view, at one
-# scale, so a reader can say which thing each is and how big it is next to the
-# others; the block the objects stand on is 512 units across.
+# The sheet draws each model in the same three-quarter view, at one scale, so
+# a reader can say which thing each is and how big it is next to the others.
 CELL = 128
 COLS = 12
-BLOCK = 512
 
 
 def basis(yaw=35, pitch=28):
