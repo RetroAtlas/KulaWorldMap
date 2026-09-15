@@ -9,3 +9,9 @@ So this waits on a source outside the disc, which is the whole of the question: 
 ## Ruled out
 
 **Inventing them.** Eight of the ten ids suggest an obvious theme and it would read fine, which is exactly the risk. This project's whole claim is that what it says comes off the disc.
+
+**The PAL manual** (the English scan on archive.org, read 2026-09-15). It calls them "the many continents" and names none.
+
+**The disc's music.** The soundtrack is fourteen tracks in the four XA files under `/XA`, and the game's Discogs entry lists them untitled; the names on fan uploads (Egypt, Hills, Inca, ...) are the uploaders', not the disc's.
+
+**The Cutting Room Floor's Roll Away page** names levels and hidden exits by number and worlds not at all. The Japanese release's ball designer, offered "between worlds", is the one place a world might be named on screen, and nobody has looked.
