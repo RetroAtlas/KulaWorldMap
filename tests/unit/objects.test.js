@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { mapData, annotations, objects } from "./fixtures.js";
 
 // The types drawn on a block's face rather than standing on it: fire, ice, the
-// clock, the start, and one unnamed type, which have no mesh of their own.
-const FACELESS = new Set([1, 2, 8, 29, 30]);
+// clock and one unnamed type, which have no mesh of their own.
+const FACELESS = new Set([1, 2, 8, 29]);
 
 const placed = new Set(
   mapData.levels.flatMap((l) => l.records.flatMap((r) => r.on.map((o) => o.type))),

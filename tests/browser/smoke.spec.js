@@ -182,8 +182,8 @@ test("objects draw as themselves, keep turning, and go back to markers on d", as
     });
   const before = await probe();
   expect(before.models).toBe(true);
-  // LEVEL 1: two coins, a key, a fruit and the exit have meshes; the start does not
-  expect(before.drawn).toBe(5);
+  // LEVEL 1: two coins, a key, a fruit, the exit, and the ball at the start
+  expect(before.drawn).toBe(6);
   expect(before.of).toBe(6);
   // the coins turn, so the frame is drawn again without anyone touching the page
   const frames = await page.evaluate(
