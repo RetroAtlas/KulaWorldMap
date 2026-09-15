@@ -12,7 +12,6 @@ import {
   markerState,
   markerModel,
   markerSpins,
-  markerPace,
   markerPhase,
   ROLLING,
   BOUNCING,
@@ -370,7 +369,6 @@ function drawThing(m, c, l) {
   if (state.hiddenKinds.has(m.id)) return;
   const model = state.show.models ? markerModel(m, l) : null;
   if (!model) return drawMarker(m, c);
-  if (m.run && m.run[0] + m.run[1]) drawRun(m, c);
   drawObject(m, c, model);
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(c, m.face, OBJECT_HOVER);
@@ -391,19 +389,9 @@ const BOUNCE = 0.55; // how high the corkscrew rises, in blocks
 const BEAT = 2; // seconds, the bounce's and the spikes' cycle
 const ROLL = 0.5; // turns per second of the wheel
 
-/** A shuttle's place along its run at time t, in cells from where it stands. */
-function along(run, pace, t) {
-  const [back, forth] = run;
-  const span = back + forth;
-  if (!span) return 0;
-  const u = (pace * t + back) % (2 * span);
-  return (u < span ? u : 2 * span - u) - back;
-}
-
 function drawObject(m, c, model) {
   const up = FACE_NORMAL[m.face];
-  const heading = markerHeading(m);
-  const forward = heading || TANGENT[m.face];
+  const forward = markerHeading(m) || TANGENT[m.face];
   const t = performance.now() / 1000;
   let turn = 0;
   if (markerSpins(m)) {
@@ -423,11 +411,6 @@ function drawObject(m, c, model) {
     lift += BOUNCE * (0.5 - 0.5 * Math.cos((t / BEAT + markerPhase(m)) * Math.PI * 2));
   }
   const o = at(c, m.face, lift);
-  if (m.run) {
-    spinning = true;
-    const d = along(m.run, markerPace(m), t);
-    for (let i = 0; i < 3; i++) o[i] += heading[i] * d;
-  }
   const cycle = model.frames.length;
   const frame = model.frames[cycle > 1 ? Math.floor(((t / BEAT + markerPhase(m)) % 1) * cycle) : 0];
   if (cycle > 1) spinning = true;
@@ -632,25 +615,6 @@ function drawBeam({ a, b, lit, colour }) {
     ctx.globalAlpha = 0.45;
     ctx.setLineDash([4 * state.cam.zoom, 4 * state.cam.zoom]);
   }
-  ctx.beginPath();
-  ctx.moveTo(p[0], p[1]);
-  ctx.lineTo(q[0], q[1]);
-  ctx.stroke();
-  ctx.restore();
-}
-
-// A star's patrol is drawn the way a rail is: the run it shuttles along, from
-// the far end of one reach to the far end of the other.
-function drawRun(m, c) {
-  const h = markerHeading(m);
-  const [back, forth] = m.run;
-  const mid = at(c, m.face, GAP);
-  const p = screen(...mid.map((v, i) => v - h[i] * back));
-  const q = screen(...mid.map((v, i) => v + h[i] * forth));
-  ctx.save();
-  ctx.strokeStyle = "rgba(232 238 251 / 0.5)";
-  ctx.lineWidth = Math.max(1, 1.5 * state.cam.zoom);
-  ctx.setLineDash([2 * state.cam.zoom, 5 * state.cam.zoom]);
   ctx.beginPath();
   ctx.moveTo(p[0], p[1]);
   ctx.lineTo(q[0], q[1]);

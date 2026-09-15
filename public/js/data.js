@@ -171,35 +171,11 @@ export function markerModel(m, l) {
 const SPINNING = new Set([5, 7, 26, 31, 32, 33, 34, 35, 36, 37, 38, 43, 44, 45, 46, 47, 50, 52]);
 export const markerSpins = (m) => m.face !== null && SPINNING.has(m.type);
 
-// The two stars travel back and forth along the way they face, over the
-// straight run of cells a ball could stand on, to the edge or a wall, which is
-// how the walkthrough has them move and how LEVEL 141's four in a line lie.
-// The pace is the map's: the walkthrough calls one kind quick and the other
-// slow and does not say which is which.
-const SHUTTLING = { 50: 1.2, 52: 2 }; // cells per second
-export const markerPace = (m) => (m.face === null ? 0 : SHUTTLING[m.type] || 0);
 /** The wheel rolls where it stands, the corkscrew bounces, in the map's own time. */
 export const ROLLING = 51;
 export const BOUNCING = 56;
 /** Where a type's cycle starts is the field after its colour, a quarter each. */
 export const markerPhase = (m) => (m.face === null ? 0 : (m.f[1] & 3) / 4);
-
-/** How far a shuttling thing can go back and forth along its heading, in cells. */
-function runOf(m, r, cells) {
-  const h = markerHeading(m);
-  const n = FACE_NORMAL[m.face];
-  if (!h || !markerPace(m)) return null;
-  const reach = (sign) => {
-    let k = 0;
-    for (;;) {
-      k++;
-      const under = [r.x + sign * k * h[0], r.y + sign * k * h[1], r.z + sign * k * h[2]];
-      const at = under.map((v, i) => v + n[i]);
-      if (!cells.has(cellKey(...under)) || cells.has(cellKey(...at))) return k - 1;
-    }
-  };
-  return [reach(-1), reach(1)];
-}
 export const kindNote = (kind) => ann.kinds[String(kind)]?.note || "";
 
 // A beam record spans two cells on one axis and nothing stands between them in
@@ -252,7 +228,6 @@ export function index(l) {
     records.get(k).push(r);
     for (const m of markersOf(r)) {
       markers.get(k).push(m);
-      m.run = runOf(m, r, cells);
       const n = markerNumber(m);
       if (n === null) continue;
       if (!numbered.has(n)) numbered.set(n, []);
