@@ -33,6 +33,8 @@ export const worldName = (id) => ann.worlds[id]?.name || id;
 export const worldNote = (id) => ann.worlds[id]?.note || "";
 
 export const levelNote = (l) => ann.levels[`${l.pack}#${l.index}`]?.note || "";
+/** The maximum a level can score where that is less than everything it holds, else null. */
+export const levelScore = (l) => ann.levels[`${l.pack}#${l.index}`]?.score ?? null;
 // The game numbers the levels it shows a number for itself rather than reading
 // the pack's name, and five packs name a level something else.
 export const levelTitle = (l) => l.shown || l.name;

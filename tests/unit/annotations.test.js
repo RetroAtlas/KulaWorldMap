@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations, levelKey, CAMERA_KIND } from "./fixtures.js";
+import { state } from "../../public/js/state.js";
+import { setAnnotations, levelPoints, levelScore } from "../../public/js/data.js";
 
 // annotations.json is hand-curated against generated data, so every key in it
 // has to name something the data still has.
@@ -54,4 +56,21 @@ test("the catalogue note is on OBJ LEVEL, in nine worlds", () => {
   const byKey = new Map(mapData.levels.map((l) => [levelKey(l), l]));
   assert.equal(named.length, 9);
   for (const key of named) assert.equal(byKey.get(key).name, "OBJ LEVEL");
+});
+
+// A curated score exists to say that not everything on a level can be had,
+// so one that is not below the disc's own total has lost its reason.
+test("a curated score is below what the disc holds, and says why", () => {
+  setAnnotations(annotations);
+  state.data = mapData;
+  let curated = 0;
+  for (const l of mapData.levels) {
+    const score = levelScore(l);
+    if (score === null) continue;
+    curated++;
+    assert.ok(Number.isInteger(score) && score > 0, `${levelKey(l)}: score ${score}`);
+    assert.ok(score < levelPoints(l), `${levelKey(l)}: ${score} is not below ${levelPoints(l)}`);
+    assert.ok(annotations.levels[levelKey(l)].note, `${levelKey(l)}: no note`);
+  }
+  assert.ok(curated > 0);
 });

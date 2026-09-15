@@ -13,8 +13,13 @@ file, scores it against every maximum the walkthrough states.
 The walkthrough is not in the repo; save GameFAQs' text of it and pass
 the path.
 
-A miss is worth reading rather than hiding: the walkthrough explains its own,
-an unreachable coin here, a crumbling block that cannot be broken there.
+Where the disc holds more than a level lets you collect, an unreachable coin
+here, a crumbling block that cannot be broken there, annotations.json curates
+the walkthrough's maximum as the level's `score` with a note saying what is
+out of reach. The check then holds both ends: a level without a curated score
+must reproduce the walkthrough exactly, and one with it must match the
+walkthrough and fall short of the disc, so a curated number can neither drift
+from its source nor outlive its reason.
 """
 import argparse
 import json
@@ -33,8 +38,10 @@ FIELD_BASE = 5
 
 
 def points_of(ann):
-    """(kind points, type points): a type's may depend on the value of one of its fields."""
+    """(kind points, type points, curated level scores): a type's points may
+    depend on the value of one of its fields."""
     kinds = {int(k): v.get("points", 0) for k, v in ann["kinds"].items()}
+    scores = {k: v["score"] for k, v in ann.get("levels", {}).items() if "score" in v}
     types = {}
     for t, e in ann["types"].items():
         base = e.get("points", 0)
@@ -44,7 +51,7 @@ def points_of(ann):
             types[int(t)] = lambda o, idx=idx, variants=variants, base=base: variants.get(o["f"][idx], base)
         else:
             types[int(t)] = lambda o, base=base: base
-    return kinds, types
+    return kinds, types, scores
 
 
 def tallied(level, first_record):
@@ -108,14 +115,20 @@ def main():
     ap.add_argument("--guide", default=None, help="the walkthrough as a text file, to score against")
     args = ap.parse_args()
     data = json.loads(DATA.read_text())
-    kinds, types = points_of(json.loads(NAMES.read_text()))
+    kinds, types, scores = points_of(json.loads(NAMES.read_text()))
     guide = guide_scores(Path(args.guide).read_text(errors="replace")) if args.guide else None
     worlds = [t["id"] for t in data["themes"]]
 
     tally = Counter()
+    bad = []
     for l in data["levels"]:
         total = level_points(l, kinds, types, data["firstRecord"])
+        score = scores.get(f"{l['pack']}#{l['index']}")
         line = f"{l['theme']:7} {l['name']:10} {total:6}"
+        if score is not None:
+            line += f"   curated {score:6}   {score - total:+d}"
+            if score >= total:
+                bad.append(f"{l['name']}: the curated {score} is not below the disc's {total}")
         if guide is not None:
             stated = guide.get(played_as(l, worlds))
             if stated is None:
@@ -124,15 +137,17 @@ def main():
                 off = total - stated
                 tally["exact" if off == 0 else "over" if off > 0 else "under"] += 1
                 line += f"   walkthrough {stated:6}" + (f"   {off:+d}" if off else "")
+                if score is None and off:
+                    bad.append(f"{l['name']}: the disc holds {total}, the walkthrough {stated}, "
+                               "and nothing is curated")
+                if score is not None and score != stated:
+                    bad.append(f"{l['name']}: the curated {score} is not the walkthrough's {stated}")
         print(line)
     if guide is not None:
         print(f"\n{tally['exact']} exact, {tally['over']} the walkthrough rates lower, "
               f"{tally['under']} it rates higher, {tally['unrated']} it does not rate")
-        # A level the disc holds more on than the walkthrough scored is one with
-        # something unreachable, which it says itself; one it scores higher than
-        # the disc holds is a reading gone wrong, or a name matched to the wrong level.
-        if tally["under"]:
-            sys.exit("the walkthrough scores higher than the disc holds somewhere")
+    if bad:
+        sys.exit("\n".join(bad))
 
 
 if __name__ == "__main__":
