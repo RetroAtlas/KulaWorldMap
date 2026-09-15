@@ -105,8 +105,8 @@ def main():
 
     placed = {o["type"] for l in levels for r in l["records"] for o in r["on"]}
     shapes = write_objects(Ggi(disc.read_file(GGI)), OBJECTS, placed)
-    models = sum(len(v) for v in shapes["types"].values())
-    print(f"{len(shapes['types'])} object types drawn by {models} models "
+    models = sum(len(v) for v in shapes["types"].values()) + len(shapes["balls"])
+    print(f"{len(shapes['types'])} object types and the ball drawn by {models} models "
           f"-> {OBJECTS.relative_to(OUT.parent.parent.parent)} ({OBJECTS.stat().st_size/1024:.0f} KB)")
 
 

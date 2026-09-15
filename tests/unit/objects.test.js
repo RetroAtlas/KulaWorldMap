@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import { mapData, annotations, objects } from "./fixtures.js";
 
 // The types drawn on a block's face rather than standing on it: fire, ice, the
-// clock and one unnamed type, which have no mesh of their own.
+// clock and one unnamed type, which have no mesh of their own; and the start,
+// which is drawn as the ball.
 const FACELESS = new Set([1, 2, 8, 29]);
+const START = 30;
 
 const placed = new Set(
   mapData.levels.flatMap((l) => l.records.flatMap((r) => r.on.map((o) => o.type))),
@@ -12,8 +14,9 @@ const placed = new Set(
 const drawn = new Set(Object.keys(objects.types).map(Number));
 
 test("every placed type is drawn, or is one drawn on the face", () => {
-  for (const t of placed) assert.ok(drawn.has(t) || FACELESS.has(t), `type ${t}`);
+  for (const t of placed) assert.ok(drawn.has(t) || FACELESS.has(t) || t === START, `type ${t}`);
   for (const t of drawn) assert.ok(placed.has(t), `type ${t} is drawn but never placed`);
+  assert.equal(objects.balls.length, 14);
 });
 
 test("a type with variants has a model for each", () => {
@@ -26,7 +29,7 @@ test("a type with variants has a model for each", () => {
 
 test("a model's polygons name its vertices and carry a colour per corner", () => {
   assert.equal(objects.block, 512);
-  for (const [t, models] of Object.entries(objects.types)) {
+  for (const [t, models] of [...Object.entries(objects.types), ["ball", objects.balls]]) {
     for (const m of models) {
       const n = m.frames[0].length / 3;
       assert.ok(Number.isInteger(n) && n > 0, `type ${t}`);

@@ -18,9 +18,9 @@ export const setAnnotations = (a) => {
   ann = { worlds: {}, kinds: {}, types: {}, levels: {}, ...a };
 };
 
-let shapes = { block: 512, types: {} };
+let shapes = { block: 512, types: {}, balls: [] };
 export const setObjects = (o) => {
-  shapes = { block: 512, types: {}, ...o };
+  shapes = { block: 512, types: {}, balls: [], ...o };
 };
 export const modelUnit = () => 1 / shapes.block;
 
@@ -153,9 +153,23 @@ const FRUIT = 5;
 // A variant the level opens on where no field picks one: the exit is red until
 // the keys are found, and its green model comes first.
 const OPENS_ON = { 7: 1 };
+// The start is where the ball is, and the ball is thematic: the game picks
+// the design by the world's place for an arcade level, and one of three
+// others for a bonus or hidden level, in an order it keeps as the player goes.
+const START = 30;
+const SPECIAL_BALL = 10;
+const WORLD_LEVELS = 15;
+export function ballFor(l) {
+  const world = state.data.themes.findIndex((t) => t.id === l.theme);
+  const special =
+    !l.pack.endsWith("FI.PAK") && l.index >= WORLD_LEVELS && l.index < WORLD_LEVELS + 4;
+  const design = special ? SPECIAL_BALL + ((l.index - WORLD_LEVELS) % 3) : world;
+  return shapes.balls[design] || shapes.balls[0] || null;
+}
 /** The model a marker draws, or null for one the game draws on the face. */
 export function markerModel(m, l) {
   if (m.face === null) return null;
+  if (m.type === START) return ballFor(l);
   let type = m.type;
   const n = /^LEVEL (\d+)$/.exec(l.shown || "");
   if (n && type >= FRUIT_FIRST && type < FRUIT_FIRST + FRUIT)

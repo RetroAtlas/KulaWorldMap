@@ -10,7 +10,7 @@ from its own table's start, -1 for absent. In the second table the model index
 is the object type, the row is the level of detail and the slot is the colour
 or tier a type's varying field picks; the first holds fourteen balls and, in
 its last five entries, the things that move: the two stars, the wheel, the
-hexagonal ball and the corkscrew. The viewer gets the first ball for the start.
+hexagonal ball and the corkscrew. The viewer gets all fourteen balls for the start.
 
 A model is a header of `i16 x, z, y` for its centre, `u16 radius, i16, u16
 flags`, and three or four block offsets, the first of which says how long the
@@ -309,10 +309,9 @@ def texture_sheet(g):
 # three points is type 50 and the fuller one with four is 52, which play
 # settled, and the wheel, the hexagonal ball and the corkscrew are themselves.
 MOVING = {50: 20, 51: 21, 52: 22, 53: 23, 56: 24}
-# The start is where the ball is, and the first of the fourteen designs is the
-# white beach ball with the coloured panels that every release plays.
-START = 30
-BALL = 0
+# The fourteen ball designs, one an entry, and the game picks one by the
+# world's place for an arcade level, at 0x80035ff4: the ball is thematic.
+BALLS = 14
 
 
 def objects(g, placed=None):
@@ -325,10 +324,11 @@ def objects(g, placed=None):
         models = [g.models[t2 + v] for v in rows[0] if v != ABSENT]
         if models and (placed is None or t in placed):
             out[str(t)] = [as_dict(m) for m in models]
-    for t, e in {**MOVING, START: BALL}.items():
+    for t, e in MOVING.items():
         if placed is None or t in placed:
             out[str(t)] = [as_dict(g.models[t1 + g.singles[e][0]])]
-    return {"block": BLOCK, "types": out}
+    balls = [as_dict(g.models[t1 + g.singles[e][0]]) for e in range(BALLS)]
+    return {"block": BLOCK, "types": out, "balls": balls}
 
 
 def as_dict(m):
@@ -351,7 +351,9 @@ def write_objects(g, path, placed=None):
     for i, (t, models) in enumerate(types):
         body = ",\n".join("   " + json.dumps(m, separators=(",", ":")) for m in models)
         lines.append(f'  "{t}": [\n{body}\n  ]' + ("," if i < len(types) - 1 else ""))
-    lines += [" }", "}", ""]
+    lines += [" },", ' "balls": [']
+    lines.append(",\n".join("  " + json.dumps(m, separators=(",", ":")) for m in data["balls"]))
+    lines += [" ]", "}", ""]
     Path(path).write_text("\n".join(lines))
     return data
 

@@ -137,7 +137,7 @@
     "30": {
       "name": "Start",
       "facing": "f5",
-      "note": "The block and face the ball starts on, in LEVEL 1, LEVEL 2 and HIDDEN 10. One in each of 228 levels, two in MARS LEVEL 130, and none on ARCTIC LEVEL 58 and HELL LEVEL 135. The field that varies is the way the ball faces, in the quarter turns the arrows use: LEVEL 1's reads 3, which is -y, and the first coin is two blocks that way. The map stands the ball there, the first of the disc's fourteen designs, which is the white one with the coloured panels the game plays."
+      "note": "The block and face the ball starts on, in LEVEL 1, LEVEL 2 and HIDDEN 10. One in each of 228 levels, two in MARS LEVEL 130, and none on ARCTIC LEVEL 58 and HELL LEVEL 135. The field that varies is the way the ball faces, in the quarter turns the arrows use: LEVEL 1's reads 3, which is -y, and the first coin is two blocks that way. The map stands the ball there in the world's own design, which the game picks by the world's place from the fourteen the disc holds, Hiro's the white one with the coloured panels."
     },
     "31": {
       "name": "Key",
