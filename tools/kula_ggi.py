@@ -305,10 +305,9 @@ def texture_sheet(g):
 
 
 # The things that move are the first table's last five entries, and their
-# types are the captivators' and the rolling stone's. The wheel, the hexagonal
-# ball and the corkscrew are unmistakable; which star is which of the two
-# directional captivators the disc does not say, and this is a coin toss until
-# someone sees them in play.
+# types are the captivators' and the rolling stone's: the thinner star with
+# three points is type 50 and the fuller one with four is 52, which play
+# settled, and the wheel, the hexagonal ball and the corkscrew are themselves.
 MOVING = {50: 20, 51: 21, 52: 22, 53: 23, 56: 24}
 
 

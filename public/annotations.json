@@ -235,17 +235,17 @@
     "50": {
       "name": "Captivator",
       "facing": "f5",
-      "note": "A moving spiked thing that restarts the level on touch, with a direction in the field that varies. LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line; which of the walkthrough's two travelling kinds this is, the fast short-spiked ball or the slow long-spiked one that turns at obstacles, is not settled."
+      "note": "A moving spiked thing that restarts the level on touch, with a direction in the field that varies. LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. It is the thinner star with three points, seen in play beside type 52; which of the walkthrough's two travelling kinds it is, the fast short-spiked ball or the slow long-spiked one that turns at obstacles, is not settled."
     },
     "51": {
       "name": "Rolling stone",
       "facing": "f5",
-      "note": "The grey cylinder that rolls slowly round a set course and can be jumped over. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise."
+      "note": "The grey cylinder that rolls slowly round a set course and can be jumped over, drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise."
     },
     "52": {
       "name": "Captivator",
       "facing": "f5",
-      "note": "A moving spiked thing that restarts the level on touch, with a direction in the field that varies. The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away; which of its two travelling kinds this is, against type 50, is not settled."
+      "note": "A moving spiked thing that restarts the level on touch, with a direction in the field that varies. The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. It is the fuller star with four points, seen in play beside type 50; which of the walkthrough's two travelling kinds it is is not settled."
     },
     "53": {
       "name": "Captivator, wandering",

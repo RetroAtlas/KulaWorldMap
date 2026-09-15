@@ -12,9 +12,8 @@ The viewer draws them, from `public/objects.json`, stood on their faces and turn
 
 ## What is still to find
 
-1. **Which star is which.** The first table's entries 20 to 24 are the five things that move, types 50 to 56; the wheel, the hexagonal ball and the corkscrew are unmistakable, and the three-pointed and four-pointed stars are types 50 and 52 in an order the disc does not give. `MOVING` in `tools/kula_ggi.py` is the coin toss.
-2. **Which way a thing is turned.** The map points a model's `+z` along its `facing` field, so the arrow's tip goes that way and the wheel's axle too, which is one convention for all and checked against nothing. The arrows of LEVEL 61 in play would settle the arrow; whether the wheel rolls along or across its field, the wheel.
-3. **Where a pickup hangs.** The map sets a model's lowest vertex just off its face. The game's height above the block is not read.
+1. **Which way a thing on a side face is turned.** The `facing` field is quarter turns on the face, fixed on a block's top by LEVEL 62's arrows in play; on the four sides and the underside the map turns from a tangent it chose, and an arrow on a side face in play would say whether the game's tangent is the same. Whether the wheel rolls along or across its field is the same question.
+2. **Where a pickup hangs.** The map sets a model's lowest vertex just off its face. The game's height above the block is not read; in play it is not much.
 
 ## Ruled out
 
