@@ -12,6 +12,10 @@ import {
   markerState,
   markerModel,
   markerSpins,
+  markerPace,
+  markerPhase,
+  ROLLING,
+  BOUNCING,
   modelUnit,
   beamColour,
   TANGENT,
@@ -366,6 +370,7 @@ function drawThing(m, c, l) {
   if (state.hiddenKinds.has(m.id)) return;
   const model = state.show.models ? markerModel(m, l) : null;
   if (!model) return drawMarker(m, c);
+  if (m.run && m.run[0] + m.run[1]) drawRun(m, c);
   drawObject(m, c, model);
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(c, m.face, OBJECT_HOVER);
@@ -382,15 +387,29 @@ function drawThing(m, c, l) {
 // face turned away from the view is drawn faint, like its marker.
 const SPIN = 0.35; // turns per second
 const GAP = 0.03; // between a thing and its face, in blocks
+const BOUNCE = 0.55; // how high the corkscrew rises, in blocks
+const BEAT = 2; // seconds, the bounce's and the spikes' cycle
+const ROLL = 0.5; // turns per second of the wheel
+
+/** A shuttle's place along its run at time t, in cells from where it stands. */
+function along(run, pace, t) {
+  const [back, forth] = run;
+  const span = back + forth;
+  if (!span) return 0;
+  const u = (pace * t + back) % (2 * span);
+  return (u < span ? u : 2 * span - u) - back;
+}
 
 function drawObject(m, c, model) {
   const up = FACE_NORMAL[m.face];
-  const forward = markerHeading(m) || TANGENT[m.face];
+  const heading = markerHeading(m);
+  const forward = heading || TANGENT[m.face];
+  const t = performance.now() / 1000;
   let turn = 0;
   if (markerSpins(m)) {
     spinning = true;
     const phase = ((c.x * 7 + c.y * 13 + c.z * 5) % 17) / 17;
-    turn = (performance.now() / 1000) * SPIN * Math.PI * 2 + phase * Math.PI * 2;
+    turn = (t * SPIN + phase) * Math.PI * 2;
   }
   const side = cross(up, forward);
   const ct = Math.cos(turn),
@@ -398,17 +417,32 @@ function drawObject(m, c, model) {
   const fwd = forward.map((v, i) => v * ct + side[i] * st);
   const right = cross(up, fwd);
   const unit = modelUnit();
-  const lift = GAP + Math.max(0, -model.box[0][1]) * unit;
+  let lift = GAP + Math.max(0, -model.box[0][1]) * unit;
+  if (m.type === BOUNCING) {
+    spinning = true;
+    lift += BOUNCE * (0.5 - 0.5 * Math.cos((t / BEAT + markerPhase(m)) * Math.PI * 2));
+  }
   const o = at(c, m.face, lift);
-  const frame =
-    model.frames[
-      model.frames.length > 1 ? Math.floor(performance.now() / 60) % model.frames.length : 0
-    ];
-  if (model.frames.length > 1) spinning = true;
+  if (m.run) {
+    spinning = true;
+    const d = along(m.run, markerPace(m), t);
+    for (let i = 0; i < 3; i++) o[i] += heading[i] * d;
+  }
+  const cycle = model.frames.length;
+  const frame = model.frames[cycle > 1 ? Math.floor(((t / BEAT + markerPhase(m)) % 1) * cycle) : 0];
+  if (cycle > 1) spinning = true;
+  let roll = 0;
+  if (m.type === ROLLING) {
+    spinning = true;
+    roll = t * ROLL * Math.PI * 2;
+  }
+  const cr = Math.cos(roll),
+    sr = Math.sin(roll);
   const pts = [];
   for (let i = 0; i < frame.length; i += 3) {
-    const x = frame[i] * unit,
-      y = frame[i + 1] * unit,
+    // the wheel turns about its own axle, the model's z, before it is placed
+    const x = (frame[i] * cr - frame[i + 1] * sr) * unit,
+      y = (frame[i] * sr + frame[i + 1] * cr) * unit,
       z = frame[i + 2] * unit;
     const wx = o[0] + x * right[0] + y * up[0] + z * fwd[0];
     const wy = o[1] + x * right[1] + y * up[1] + z * fwd[1];
@@ -598,6 +632,25 @@ function drawBeam({ a, b, lit, colour }) {
     ctx.globalAlpha = 0.45;
     ctx.setLineDash([4 * state.cam.zoom, 4 * state.cam.zoom]);
   }
+  ctx.beginPath();
+  ctx.moveTo(p[0], p[1]);
+  ctx.lineTo(q[0], q[1]);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// A star's patrol is drawn the way a rail is: the run it shuttles along, from
+// the far end of one reach to the far end of the other.
+function drawRun(m, c) {
+  const h = markerHeading(m);
+  const [back, forth] = m.run;
+  const mid = at(c, m.face, GAP);
+  const p = screen(...mid.map((v, i) => v - h[i] * back));
+  const q = screen(...mid.map((v, i) => v + h[i] * forth));
+  ctx.save();
+  ctx.strokeStyle = "rgba(232 238 251 / 0.5)";
+  ctx.lineWidth = Math.max(1, 1.5 * state.cam.zoom);
+  ctx.setLineDash([2 * state.cam.zoom, 5 * state.cam.zoom]);
   ctx.beginPath();
   ctx.moveTo(p[0], p[1]);
   ctx.lineTo(q[0], q[1]);
