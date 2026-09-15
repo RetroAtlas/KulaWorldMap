@@ -27,8 +27,13 @@ const matches = (hay, terms) => {
   return terms.every((t) => (/^\d+$/.test(t) ? words.includes(t) : hay.includes(t)));
 };
 
+// The Final is counted on from 150 by the game and the walkthrough, so its
+// seventh level answers to 157 as well as to 7.
+const ARCADE = 150;
 function levelHaystack(l) {
-  return norm(`${levelTitle(l)} ${l.name} ${l.theme} ${worldName(l.theme)}`);
+  const final = /^FINAL (\d+)$/.exec(levelTitle(l));
+  const also = final ? ` level ${ARCADE + Number(final[1])}` : "";
+  return norm(`${levelTitle(l)} ${l.name} ${l.theme} ${worldName(l.theme)}${also}`);
 }
 
 function search(q) {
