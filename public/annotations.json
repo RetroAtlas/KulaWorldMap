@@ -38,7 +38,7 @@
       "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 123 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, and the slot after its own holds its circuit: the colour of the beam, and of the switch and teleporter that share it. At load the engine's routine at 0x80035a70 writes a plain block into the lattice at both ends and marks every cell between as beam, which is why 64 of the 246 ends are cells the level file leaves empty and the game stands a block on anyway."
     },
     "9": {
-      "note": "The last record on 160 levels, and the one kind no lattice cell ever names, so the engine's walk over the level does not reach it. It stands on an empty cell on 114 of the 160. Its slots hold objects like any block's, and the map leaves them out."
+      "note": "The last record on 160 levels, and the one kind no lattice cell ever names, so the engine's walk over the level does not reach it. It stands on an empty cell on 114 of the 160. Its slots hold objects like any block's, 65 of them on 49 levels, and they are not in play: counted, they would push 27 levels past the walkthrough's maximum, LEVEL 24 by a fruit and LEVEL 142 by two gems, where without them those levels are exact. So it reads as a block deleted in the editor with its faces left as they were, and the map leaves them out."
     },
     "666": {
       "name": "Camera",
@@ -124,7 +124,7 @@
     },
     "26": {
       "name": "Hidden exit",
-      "note": "Appears once every key is collected, colourless, and leads to the world's hidden level. Exactly the ten levels the walkthrough marks as hidden-level access carry one, LEVEL 82 two, and LEVEL 132's is the one the NTSC release puts out of reach."
+      "note": "Appears once every key is collected, colourless, and leads to the world's hidden level. Exactly the ten levels the walkthrough marks as hidden-level access carry one, LEVEL 82 two, and LEVEL 132's is the one the NTSC release puts out of reach; the PAL release has none there at all, and the Japanese release moved it to LEVEL 134."
     },
     "28": {
       "name": "Arrow",
@@ -210,27 +210,27 @@
     "43": {
       "name": "Fruit",
       "points": 2500,
-      "note": "One placement in the game, on LEVEL 83, where the walkthrough's pumpkin is. Which fruit a level shows is progress rather than data, so this is a fruit like the common one and the map does not say which."
+      "note": "One placement in the game, on LEVEL 83, where the walkthrough's pumpkin is. Which fruit a level shows is progress rather than data, so this is a fruit like the common one and the map does not say which. Its mesh is the apple."
     },
     "44": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Five in the game, on levels where the walkthrough's fruit stands and the common fruit type is absent. Worth 2500 like the rest, which is what those levels' maximum scores need."
+      "note": "Five in the game, on levels where the walkthrough's fruit stands and the common fruit type is absent. Worth 2500 like the rest, which is what those levels' maximum scores need. Its mesh is the watermelon."
     },
     "45": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Three in the game, on levels where the walkthrough's fruit stands and the common fruit type is absent. Worth 2500 like the rest."
+      "note": "Three in the game, on levels where the walkthrough's fruit stands and the common fruit type is absent, and one of them on HIDDEN 9, which the Japanese release removed. Worth 2500 like the rest. Its mesh is the pumpkin."
     },
     "46": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Apple, watermelon, pumpkin, bananas and strawberry in turn, and five of them earn a bonus level; which one a level shows is progress rather than data. The fruit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. One in each of 151 levels and two in one."
+      "note": "Apple, watermelon, pumpkin, bananas and strawberry in turn, and five of them earn a bonus level; which one a level shows is progress rather than data. The fruit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. One in each of 151 levels and two in one. Its mesh is the bananas."
     },
     "47": {
       "name": "Fruit",
       "points": 2500,
-      "note": "One placement in the game, on LEVEL 19, where the walkthrough's fruit stands and the common fruit type is absent. Worth 2500 like the rest."
+      "note": "One placement in the game, on LEVEL 19, where the walkthrough's fruit stands and the common fruit type is absent. Worth 2500 like the rest. Its mesh is the strawberry."
     },
     "50": {
       "name": "Captivator",
@@ -257,6 +257,9 @@
     }
   },
   "levels": {
+    "/HIRO/HIRO.PAK#19": {
+      "note": "The training level the Japanese release lists as Lesson on its main menu, with one of nearly everything the game has on one floor; the other two releases keep it on the disc and off the menu, where the walkthrough's GameShark section found it. `tools/kula_warp.py --cheat --level /HIRO/HIRO.PAK#19` prints the cheat that reaches it."
+    },
     "/HILLS/HILLS.PAK#15": {
       "score": 25100,
       "note": "The walkthrough's maximum. The disc holds 3500 more, the twelve coins on the corners of the lowest ring: they and the four gems inside that ring cannot both be had, and the walkthrough takes the gems. The Japanese release removes the coins."
@@ -267,6 +270,9 @@
     },
     "/HILLS/HILLS.PAK#19": {
       "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
+    },
+    "/HILLS/HILLSFI.PAK#0": {
+      "note": "The Final has no fruit, and the PAL release put an apple on this level anyway, which the US and Japanese releases removed, leaving the blue teleporter it stood beside with nothing to reach (The Cutting Room Floor's Roll Away page)."
     },
     "/INCA/INCA.PAK#9": {
       "score": 8675,
@@ -285,9 +291,15 @@
       "score": 4650,
       "note": "The walkthrough's maximum. The disc holds 150 more, three crumbling blocks on the top level that the walkthrough says cannot be broken by any means."
     },
+    "/FIELD/FIELD.PAK#15": {
+      "note": "The Japanese release redesigned this level, taking out the gem ringed with spike traps (The Cutting Room Floor's Roll Away page); this is the US layout, which R. Agsten's route in the walkthrough clears with seven seconds to spare."
+    },
     "/FIELD/FIELD.PAK#16": {
       "score": 19050,
       "note": "The walkthrough's maximum. The disc holds 4475 more, the gem and two gold coins on whichever end block is reached last: touching the last block ends a bonus level before anything on it can be collected. The Japanese release puts a single gem on each end instead."
+    },
+    "/FIELD/FIELD.PAK#18": {
+      "note": "The Japanese release took a coin and the two moving platforms out of this level; the platforms made the coin easier to reach and back from, and were not the only way (The Cutting Room Floor's Roll Away page)."
     },
     "/FIELD/FIELD.PAK#19": {
       "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
@@ -326,6 +338,15 @@
       "score": 10315,
       "note": "The walkthrough's maximum. The disc holds 100 more, two of the five crumbling blocks, which the walkthrough's route leaves standing without saying so."
     },
+    "/MARS/MARS.PAK#10": {
+      "note": "The Japanese release un-iced one face of the solid ice block for an arrow that nothing can reach, and removed a coin on the same block that nothing could reach either (The Cutting Room Floor's Roll Away page). Both are still here."
+    },
+    "/MARS/MARS.PAK#11": {
+      "note": "The hidden exit at 14,19,18 is the one the walkthrough gave up on: the PAL release forgot to place it, the US release placed it on a block that cannot be reached once it has appeared, and the Japanese release moved it to LEVEL 134, so only there can every hidden level be played (The Cutting Room Floor's Roll Away page and the walkthrough)."
+    },
+    "/MARS/MARS.PAK#12": {
+      "note": "The Japanese release moved one of the gems off the lethal tile it stands on here onto a kinder one (The Cutting Room Floor's Roll Away page)."
+    },
     "/MARS/MARS.PAK#13": {
       "score": 14125,
       "note": "The walkthrough's maximum. The disc holds 2500 more: the level carries two fruit, and the one on the +y face of 17,16,20 shares its pickup number with the lethargy pill on 15,14,17, so that taking the pill takes the fruit; the walkthrough collects the other. The Japanese release moves the world's hidden exit to this level."
@@ -333,6 +354,9 @@
     "/MARS/MARS.PAK#16": {
       "score": 19000,
       "note": "The walkthrough's maximum. The disc holds 8925 more, three gems under the three far blocks, which only the bouncy pill reaches and which the pill then keeps you from collecting; the Japanese release removes them."
+    },
+    "/MARS/MARS.PAK#18": {
+      "note": "A hidden level with a fruit on it, the only one, at 9,18,15, which the Japanese release removed; not that a player of this release can see it, since the exit that leads here is out of reach (The Cutting Room Floor's Roll Away page)."
     },
     "/MARS/MARS.PAK#19": {
       "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
