@@ -8,6 +8,7 @@ import {
   markerColour,
   markerLabel,
   markerFacing,
+  markerState,
   beamColour,
 } from "./data.js";
 
@@ -407,11 +408,15 @@ function drawFacing(m, c, face, colour) {
 // type or the kind, of which there are too many for an encoding a reader could
 // hold, so the marker says it outright once it has the room. One on a face
 // turned away from the view is drawn faint rather than left out, since a plan
-// view is the one a reader counts from.
+// view is the one a reader counts from, and a device that starts switched off
+// is drawn hollow, the way a beam that starts dark is drawn broken.
 function drawMarker(m, c) {
   if (state.hiddenKinds.has(m.id)) return;
   const face = m.face ?? 0;
   const away = m.face !== null && !facing(FACE_NORMAL[face]);
+  const dark = markerState(m) === "off";
+  const colour = markerColour(m);
+  const ink = "rgba(9 13 20 / 0.9)";
   const [fx, fy] = off(c, face);
   const [px, py] = off(c, face, OBJECT_HOVER);
   const r = Math.max(4, 7 * state.cam.zoom);
@@ -424,9 +429,9 @@ function drawMarker(m, c) {
   ctx.lineTo(px, py);
   ctx.stroke();
 
-  drawFacing(m, c, face, markerColour(m));
-  ctx.fillStyle = markerColour(m);
-  ctx.strokeStyle = "rgba(9 13 20 / 0.9)";
+  drawFacing(m, c, face, colour);
+  ctx.fillStyle = dark ? "#111725" : colour;
+  ctx.strokeStyle = dark ? colour : ink;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(px, py - r);
@@ -441,14 +446,14 @@ function drawMarker(m, c) {
     ctx.font = `${Math.round(r * 0.95)}px ui-monospace, Menlo, monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = "rgba(9 13 20 / 0.85)";
+    ctx.fillStyle = dark ? colour : "rgba(9 13 20 / 0.85)";
     ctx.fillText(String(m.face === null ? m.kind : m.type), px, py + 0.5);
     ctx.textAlign = "start";
     ctx.textBaseline = "alphabetic";
   }
   if (state.show.labels && state.cam.zoom > 0.45) {
     const side = m.face ? ` · ${FACE_NAME[m.face]}` : "";
-    label(markerLabel(m) + side, px + r + 4, py + 4, "#e8eefb");
+    label(markerLabel(m) + (dark ? " · off" : "") + side, px + r + 4, py + 4, "#e8eefb");
   }
   ctx.restore();
 }

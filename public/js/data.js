@@ -100,6 +100,16 @@ const NUMBER_FIELD = 3;
 /** A pickup's number within its level, or null for anything unnumbered. */
 export const markerNumber = (m) =>
   m.face === null || m.f[NUMBER_FIELD] === -1 ? null : m.f[NUMBER_FIELD];
+// How the game writes a switched device's starting state.
+const STATE_ON = 1;
+const STATE_OFF = 2;
+/** Whether a device a switch toggles starts on or off, or null for anything else. */
+export const markerState = (m) => {
+  const by = entry(m)?.state;
+  if (!by || m.face === null) return null;
+  const v = m.f[Number(by.slice(1)) - 5];
+  return v === STATE_ON ? "on" : v === STATE_OFF ? "off" : null;
+};
 export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
 export const kindNote = (kind) => ann.kinds[String(kind)]?.note || "";
 

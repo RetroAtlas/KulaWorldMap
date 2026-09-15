@@ -1,5 +1,5 @@
 {
-  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated; see CLAUDE.md. `kinds` names the block kinds, which the lattice's style values and the records' kind word share. `types` names what stands on a face: `by` names the field whose value tells a type's variants apart, each with its own name and, where it has one, colour and points; `facing` names the field that holds the way a thing points, in the game's own direction numbering; and `points` is what collecting one scores, read off the walkthrough's per-level maximums, which the disc reproduces. `levels` is keyed by pack path and index; a level's `score` is the walkthrough's maximum where the disc holds more than can be collected, and its note says what is out of reach.",
+  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated; see CLAUDE.md. `kinds` names the block kinds, which the lattice's style values and the records' kind word share. `types` names what stands on a face: `by` names the field whose value tells a type's variants apart, each with its own name and, where it has one, colour and points; `facing` names the field that holds the way a thing points, in the game's own direction numbering; `state` names the field that says whether a device a switch toggles starts on; and `points` is what collecting one scores, read off the walkthrough's per-level maximums, which the disc reproduces. `levels` is keyed by pack path and index; a level's `score` is the walkthrough's maximum where the disc holds more than can be collected, and its note says what is out of reach.",
   "worlds": {},
   "kinds": {
     "0": {
@@ -57,6 +57,7 @@
     "5": {
       "name": "Teleporter",
       "by": "f6",
+      "state": "f7",
       "variants": {
         "0": {
           "name": "Yellow teleporter",
@@ -75,7 +76,7 @@
           "colour": "#ff4a4a"
         }
       },
-      "note": "Rolling onto one carries the ball to another of the same colour; a switch of that colour turns the pair on and off. LEVEL 66, the walkthrough's first teleporters, carries the game's first two. The colour is the circuit number the lasers and switches use: LEVEL 68's are yellow and blue and read 0 and 1, LEVEL 70's yellow, red and green read 0, 3 and 2."
+      "note": "Rolling onto one carries the ball to another of the same colour; a switch of that colour turns the pair on and off. LEVEL 66, the walkthrough's first teleporters, carries the game's first two. The colour is the circuit number the lasers and switches use: LEVEL 68's are yellow and blue and read 0 and 1, LEVEL 70's yellow, red and green read 0, 3 and 2. The field after the colour says whether it starts on, 1 for on and 2 for off: the ones the walkthrough uses on arrival, LEVEL 66 to 71 among them, read 1, the ones it sends you to a button for first, LEVEL 84, 97, 99, 100, 101, 102, 117, 128, 133, 137, 142 and 145, read 2, and on every level with lasers of the same colour the field agrees with whether the beams start lit."
     },
     "7": {
       "name": "Exit",
@@ -88,6 +89,7 @@
     "9": {
       "name": "Switch",
       "by": "f6",
+      "state": "f7",
       "variants": {
         "0": {
           "name": "Yellow switch",
@@ -106,7 +108,7 @@
           "colour": "#ff4a4a"
         }
       },
-      "note": "A button that toggles every laser and teleporter of its colour. LEVEL 84 has the walkthrough's first button and the game's first of these; LEVEL 98's red, green and blue read 3, 2 and 1, the same numbers its three lasers carry."
+      "note": "A button that toggles every laser and teleporter of its colour. LEVEL 84 has the walkthrough's first button and the game's first of these; LEVEL 98's red, green and blue read 3, 2 and 1, the same numbers its three lasers carry. The field after the colour is the circuit's starting state, 1 for on and 2 for off, and agrees with the lasers and teleporters of that colour on every level: LEVEL 105's all read 1 and the walkthrough turns them off, LEVEL 97's all read 2 and it turns red on."
     },
     "10": {
       "name": "Boost button",

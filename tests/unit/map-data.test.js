@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapData, levelKey, CAMERA_KIND, UNPLACED_KIND } from "./fixtures.js";
+import { mapData, annotations, levelKey, CAMERA_KIND, UNPLACED_KIND } from "./fixtures.js";
 
 const FACES = 6;
 
@@ -153,4 +153,36 @@ test("a level numbers its pickups from 0, and repeats one on four levels only", 
     assert.equal(distinct.size !== numbers.length, repeated.has(l.name), `${l.name}`);
   }
   assert.equal(numbered, 228);
+});
+
+// A switch or teleporter's starting state is its circuit's, and the lasers of
+// that circuit carry the same bit, so within a level a colour has one state.
+test("a circuit starts on or off as one, across its lasers, switches and teleporters", () => {
+  const LASER_KIND = 8;
+  const LIT_FIELD = 1;
+  const switched = Object.entries(annotations.types)
+    .filter(([, e]) => e.state)
+    .map(([t, e]) => [Number(t), Number(e.by.slice(1)) - 5, Number(e.state.slice(1)) - 5]);
+  assert.ok(switched.length >= 2);
+  let circuits = 0;
+  for (const l of mapData.levels) {
+    const states = new Map();
+    const note = (colour, on, where) => {
+      const seen = states.get(colour);
+      if (seen !== undefined) assert.equal(on, seen, `${l.name}: circuit ${colour} at ${where}`);
+      else states.set(colour, on);
+    };
+    for (const r of l.records) {
+      if (r.kind === LASER_KIND) note(r.colour, r.f[LIT_FIELD] === 1, `${r.x},${r.y},${r.z}`);
+      for (const o of r.on) {
+        const entry = switched.find(([t]) => t === o.type);
+        if (!entry) continue;
+        const [, colourAt, stateAt] = entry;
+        assert.ok([1, 2].includes(o.f[stateAt]), `${l.name}: state ${o.f[stateAt]}`);
+        note(o.f[colourAt], o.f[stateAt] === 1, `${r.x},${r.y},${r.z}`);
+      }
+    }
+    circuits += states.size;
+  }
+  assert.ok(circuits > 100);
 });

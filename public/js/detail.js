@@ -12,6 +12,7 @@ import {
   markerColour,
   markerPoints,
   markerFacing,
+  markerState,
   markerNumber,
   markerLabel,
   markerStats,
@@ -58,6 +59,8 @@ export function showCell(c) {
     if (points) html += row("points", points);
     const facing = markerFacing(m);
     if (facing !== null) html += row("facing", DIRECTION_NAME[facing]);
+    const started = markerState(m);
+    if (started !== null) html += row("starts", started);
     const number = markerNumber(m);
     if (number !== null) html += row("pickup number", number);
     m.f.forEach((v, i) => {
