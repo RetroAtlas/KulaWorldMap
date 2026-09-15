@@ -1,5 +1,5 @@
 {
-  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated; see CLAUDE.md. `kinds` names the block kinds, which the lattice's style values and the records' kind word share. `types` names what stands on a face: `by` names the field whose value tells a type's variants apart, each with its own name and, where it has one, colour and points; `facing` names the field that holds the way a thing points, in the game's own direction numbering; `state` names the field that says whether a device a switch toggles starts on; and `points` is what collecting one scores, read off the walkthrough's per-level maximums, which the disc reproduces. `levels` is keyed by pack path and index; a level's `score` is the walkthrough's maximum where the disc holds more than can be collected, and its note says what is out of reach.",
+  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated; see CLAUDE.md. `kinds` names the block kinds, which the lattice's style values and the records' kind word share. `types` names what stands on a face: `by` names the field whose value tells a type's variants apart, each with its own name and, where it has one, colour and points; `facing` names the field that holds the way a thing points, as quarter turns on its face; `state` names the field that says whether a device a switch toggles starts on; and `points` is what collecting one scores, read off the walkthrough's per-level maximums, which the disc reproduces. `levels` is keyed by pack path and index; a level's `score` is the walkthrough's maximum where the disc holds more than can be collected, and its note says what is out of reach.",
   "worlds": {},
   "kinds": {
     "0": {
@@ -129,7 +129,7 @@
     "28": {
       "name": "Arrow",
       "facing": "f5",
-      "note": "A square the ball can only leave in the direction the arrow points. LEVEL 61, the walkthrough's first arrows, carries the game's first twelve, and the field that varies takes the four in-plane directions in the game's own numbering."
+      "note": "A square the ball can only leave in the direction the arrow points. LEVEL 61, the walkthrough's first arrows, carries the game's first twelve, and the field that varies takes 1 to 4, a quarter turn each on the face: on a block's top they point +y, -x, -y and +x, which LEVEL 62's arrows in play fixed, one of each."
     },
     "29": {
       "note": "Two in the game, on LEVEL 58 and Hell's LEVEL 135, and nothing the walkthrough says about either level names it."
@@ -137,7 +137,7 @@
     "30": {
       "name": "Start",
       "facing": "f5",
-      "note": "The block and face the ball starts on, in LEVEL 1, LEVEL 2 and HIDDEN 10. One in each of 228 levels, two in MARS LEVEL 130, and none on ARCTIC LEVEL 58 and HELL LEVEL 135. The field that varies is the way the ball faces: LEVEL 1's reads -y, and the first coin is two blocks that way."
+      "note": "The block and face the ball starts on, in LEVEL 1, LEVEL 2 and HIDDEN 10. One in each of 228 levels, two in MARS LEVEL 130, and none on ARCTIC LEVEL 58 and HELL LEVEL 135. The field that varies is the way the ball faces, in the quarter turns the arrows use: LEVEL 1's reads 3, which is -y, and the first coin is two blocks that way."
     },
     "31": {
       "name": "Key",

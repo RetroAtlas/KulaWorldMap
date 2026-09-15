@@ -8,11 +8,14 @@ import {
   markerColour,
   markerLabel,
   markerFacing,
+  markerHeading,
   markerState,
   markerModel,
   markerSpins,
   modelUnit,
   beamColour,
+  TANGENT,
+  cross,
 } from "./data.js";
 
 const cv = $("cv");
@@ -379,27 +382,10 @@ function drawThing(m, c, l) {
 // face turned away from the view is drawn faint, like its marker.
 const SPIN = 0.35; // turns per second
 const GAP = 0.03; // between a thing and its face, in blocks
-const TANGENT = [
-  [0, 1, 0],
-  [0, 0, -1],
-  [0, 0, -1],
-  [0, 0, -1],
-  [0, 0, -1],
-  [0, 1, 0],
-];
-const cross = (a, b) => [
-  a[1] * b[2] - a[2] * b[1],
-  a[2] * b[0] - a[0] * b[2],
-  a[0] * b[1] - a[1] * b[0],
-];
 
 function drawObject(m, c, model) {
   const up = FACE_NORMAL[m.face];
-  const heading = markerFacing(m);
-  const forward =
-    heading !== null && !FACE_NORMAL[heading].some((v, i) => v && up[i])
-      ? FACE_NORMAL[heading]
-      : TANGENT[m.face];
+  const forward = markerHeading(m) || TANGENT[m.face];
   let turn = 0;
   if (markerSpins(m)) {
     spinning = true;

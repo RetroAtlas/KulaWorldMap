@@ -94,12 +94,39 @@ export const markerNote = (m) => entry(m)?.note || "";
 export const markerColour = (m) =>
   variant(m)?.colour || (m.face === null ? kindColour(m.kind) : OBJECT_COLOUR);
 export const markerPoints = (m) => variant(m)?.points ?? entry(m)?.points ?? 0;
-/** The direction a marker's thing points, as an index into FACE_NORMAL, or null. */
-export const markerFacing = (m) => {
+// A thing that points is turned on its face in quarter turns, counted from
+// the face's first tangent the way the arrows of LEVEL 62 turn in play: on the
+// top, 1 to 4 point +y, -x, -y and +x. The turn is about the inward normal.
+export const TANGENT = [
+  [0, 1, 0],
+  [0, 0, -1],
+  [0, 0, -1],
+  [0, 0, -1],
+  [0, 0, -1],
+  [0, 1, 0],
+];
+export const cross = (a, b) => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+/** The way a marker's thing points, as a unit vector in the world, or null. */
+export const markerHeading = (m) => {
   const by = entry(m)?.facing;
   if (!by || m.face === null) return null;
-  const d = m.f[Number(by.slice(1)) - 5];
-  return d >= 0 && d < FACE_NORMAL.length ? d : null;
+  const turns = m.f[Number(by.slice(1)) - 5] - 1;
+  if (turns < 0 || turns > 3) return null;
+  const axis = FACE_NORMAL[m.face].map((v) => -v);
+  let v = TANGENT[m.face];
+  for (let i = 0; i < turns; i++) v = cross(axis, v);
+  return v;
+};
+/** The same, as an index into FACE_NORMAL, or null. */
+export const markerFacing = (m) => {
+  const v = markerHeading(m);
+  if (!v) return null;
+  const d = FACE_NORMAL.findIndex((n) => n.every((c, i) => c === v[i]));
+  return d < 0 ? null : d;
 };
 // The field that numbers a level's pickups, set on the pickup types and no other.
 const NUMBER_FIELD = 3;
