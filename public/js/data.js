@@ -95,6 +95,11 @@ export const markerFacing = (m) => {
   const d = m.f[Number(by.slice(1)) - 5];
   return d >= 0 && d < FACE_NORMAL.length ? d : null;
 };
+// The field that numbers a level's pickups, set on the pickup types and no other.
+const NUMBER_FIELD = 3;
+/** A pickup's number within its level, or null for anything unnumbered. */
+export const markerNumber = (m) =>
+  m.face === null || m.f[NUMBER_FIELD] === -1 ? null : m.f[NUMBER_FIELD];
 export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
 export const kindNote = (kind) => ann.kinds[String(kind)]?.note || "";
 
@@ -136,6 +141,9 @@ export function index(l) {
   }
   const records = new Map();
   const markers = new Map();
+  // Two pickups with one number are a pair the game cannot tell apart, so
+  // each number keeps the markers that carry it, with the cell each stands on.
+  const numbered = new Map();
   for (const r of l.records) {
     const k = cellKey(r.x, r.y, r.z);
     if (!records.has(k)) {
@@ -143,9 +151,15 @@ export function index(l) {
       markers.set(k, []);
     }
     records.get(k).push(r);
-    markers.get(k).push(...markersOf(r));
+    for (const m of markersOf(r)) {
+      markers.get(k).push(m);
+      const n = markerNumber(m);
+      if (n === null) continue;
+      if (!numbered.has(n)) numbered.set(n, []);
+      numbered.get(n).push({ m, cell: [r.x, r.y, r.z] });
+    }
   }
-  return { cells, records, markers, rays, rails: rails(l) };
+  return { cells, records, markers, numbered, rays, rails: rails(l) };
 }
 
 export const levelMarkers = (l) => l.records.flatMap(markersOf);

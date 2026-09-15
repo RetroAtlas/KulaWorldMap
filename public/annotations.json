@@ -292,7 +292,7 @@
     },
     "/FIELD/FIELDFI.PAK#0": {
       "score": 21650,
-      "note": "The walkthrough's maximum. The disc holds 2975 more, the blue gem on the -x face of 17,12,19: the fourth field of a pickup's slot numbers it within the level, this gem and the gold coin on top of 17,23,16 carry the same number, and taking one takes the other. The walkthrough takes the coin."
+      "note": "The walkthrough's maximum. The disc holds 2975 more, the blue gem on the -x face of 17,12,19, which shares its pickup number with the gold coin on top of 17,23,16: taking one takes the other, and the walkthrough takes the coin."
     },
     "/FIELD/FIELDFI.PAK#1": {
       "score": 21430,
@@ -300,7 +300,7 @@
     },
     "/ATLANT/ATLANT.PAK#3": {
       "score": 9975,
-      "note": "The walkthrough's maximum. The disc holds 2740 more: a crumbling block the walkthrough says is out of reach, and the hourglass and two gold coins on the far platform, each of which carries the same number in the fourth field of its slot as a coin or the fruit on the near one. That field numbers a level's pickups, and taking one of a pair takes the other; the walkthrough never sees the hourglass."
+      "note": "The walkthrough's maximum. The disc holds 2740 more: a crumbling block the walkthrough says is out of reach, and the hourglass and two gold coins on the far platform, which share their pickup numbers with a coin or the fruit on the near one, so that taking one of a pair takes the other; the walkthrough never sees the hourglass."
     },
     "/ATLANT/ATLANT.PAK#11": {
       "score": 23115,
@@ -311,7 +311,7 @@
     },
     "/ATLANT/ATLANTFI.PAK#0": {
       "score": 15915,
-      "note": "The walkthrough's maximum. The disc holds 3200 more: four of the fifteen crumbling blocks, which the walkthrough calls a necessary evil, and three of the six keys, which carry the same number in the fourth field of their slot as a blue gem and a gold coin. That field numbers a level's pickups, and taking the gem and the coin takes the keys."
+      "note": "The walkthrough's maximum. The disc holds 3200 more: four of the fifteen crumbling blocks, which the walkthrough calls a necessary evil, and three of the six keys, which share their pickup numbers with a blue gem and a gold coin, so that taking the gem and the coin takes the keys."
     },
     "/HAZE/HAZE.PAK#19": {
       "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
@@ -326,7 +326,7 @@
     },
     "/MARS/MARS.PAK#13": {
       "score": 14125,
-      "note": "The walkthrough's maximum. The disc holds 2500 more: the level carries two fruit, and the one on the +y face of 17,16,20 carries the same number in the fourth field of its slot as the lethargy pill on 15,14,17. That field numbers a level's pickups, and taking the pill takes the fruit; the walkthrough collects the other. The Japanese release moves the world's hidden exit to this level."
+      "note": "The walkthrough's maximum. The disc holds 2500 more: the level carries two fruit, and the one on the +y face of 17,16,20 shares its pickup number with the lethargy pill on 15,14,17, so that taking the pill takes the fruit; the walkthrough collects the other. The Japanese release moves the world's hidden exit to this level."
     },
     "/MARS/MARS.PAK#16": {
       "score": 19000,
@@ -349,7 +349,7 @@
     },
     "/HELL/HELL.PAK#17": {
       "score": 14125,
-      "note": "The walkthrough's maximum. The disc holds 250 more, a bronze coin's worth that the walkthrough's route does not take and does not name. This is the one arcade level rebuilt between the PAL and the NTSC release, and its thirty pickups are the only ones in the game with the fourth field of their slot unset."
+      "note": "The walkthrough's maximum. The disc holds 250 more, a bronze coin's worth that the walkthrough's route does not take and does not name. This is the one arcade level rebuilt between the PAL and the NTSC release, and its thirty pickups are the only ones in the game without a pickup number."
     },
     "/HELL/HELL.PAK#18": {
       "note": "160 of its 178 blocks are not part of the level at all. They lie flat on z=32, the floor of the lattice and 22 blocks below the playable structure, spelling VERY WELL DONE in block letters six blocks tall. The other 18 are a frame standing in the xz plane, and everything the level places, the start, the exit, four keys, eight bronze coins and four of an unnamed type, stands on its -y face, from where the lettering reads the right way round."
