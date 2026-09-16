@@ -94,15 +94,16 @@ export const markerNote = (m) => entry(m)?.note || "";
 export const markerColour = (m) =>
   variant(m)?.colour || (m.face === null ? kindColour(m.kind) : OBJECT_COLOUR);
 export const markerPoints = (m) => variant(m)?.points ?? entry(m)?.points ?? 0;
-// A thing that points is turned on its face in quarter turns, counted from
-// the face's first tangent the way the arrows of LEVEL 62 turn in play: on the
-// top, 1 to 4 point +y, -x, -y and +x. The turn is about the inward normal.
+// A thing that points is turned on its face in quarter turns about the inward
+// normal, from a first tangent that is the world's +y laid onto the face, or
+// the world's up where the face runs across y: the arrows of LEVEL 62 on the
+// top and of LEVEL 106 on three sides turn that way in play.
 export const TANGENT = [
+  [0, 1, 0],
   [0, 1, 0],
   [0, 0, -1],
   [0, 0, -1],
-  [0, 0, -1],
-  [0, 0, -1],
+  [0, 1, 0],
   [0, 1, 0],
 ];
 export const cross = (a, b) => [

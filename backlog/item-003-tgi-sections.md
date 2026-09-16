@@ -12,7 +12,7 @@ The viewer draws them, from `public/objects.json`, stood on their faces and turn
 
 ## What is still to find
 
-1. **Which way a thing on a side face is turned.** The `facing` field is quarter turns on the face, fixed on a block's top by LEVEL 62's arrows in play; on the four sides and the underside the map turns from a tangent it chose, and an arrow on a side face in play would say whether the game's tangent is the same. Whether the wheel rolls along or across its field is the same question.
+1. **The wheel's axle.** Every model turns by the one rule LEVEL 62 and LEVEL 106 fixed for the arrows, so the wheel's axle lies along its field; whether it rolls along or across that line in play is not seen yet.
 2. **Where a pickup hangs.** The map sets a model's lowest vertex just off its face. The game's height above the block is not read; in play it is not much.
 
 ## Ruled out
