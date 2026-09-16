@@ -8,12 +8,11 @@ Drawing the objects as themselves rather than as markers is the largest visual s
 python3 tools/kula_ggi.py --sheet          # out/ggi/models.png, models.md
 ```
 
-The viewer draws them, from `public/objects.json`, stood on their faces and turning where the game turns them. What is left is what a sitting in the emulator settles.
+The viewer draws them, from `public/objects.json`, stood on their faces, turned by the one rule LEVEL 62 and LEVEL 106 fixed in play, and turning where the game turns them.
 
 ## What is still to find
 
-1. **The wheel's axle.** Every model turns by the one rule LEVEL 62 and LEVEL 106 fixed for the arrows, so the wheel's axle lies along its field; whether it rolls along or across that line in play is not seen yet.
-2. **Where a pickup hangs.** The map sets a model's lowest vertex just off its face. The game's height above the block is not read; in play it is not much.
+**Which way the rolling stone rolls.** Type 51, the grey cylinder that rolls round a set course, is drawn with its axle along the line its `facing` field gives, since every model turns by the same rule; whether it rolls along that line or across it is what a look at LEVEL 51 in play would say, where it stands at 15,16,17.
 
 ## Ruled out
 
