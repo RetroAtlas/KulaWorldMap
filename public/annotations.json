@@ -235,7 +235,7 @@
     "50": {
       "name": "Captivator",
       "facing": "f5",
-      "note": "A moving spiked thing that restarts the level on touch, with a direction in the field that varies. LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. It is the thinner star with three points, seen in play beside type 52; which of the walkthrough's two travelling kinds it is, the fast short-spiked ball or the slow long-spiked one that turns at obstacles, is not settled."
+      "note": "A moving spiked thing that restarts the level on touch, with a direction in the field that varies. LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. It is the thinner star with three long points, seen in play beside type 52, and it is the walkthrough's slower kind: it travels the space it has and turns back at any wall or object in its way, a coin included."
     },
     "51": {
       "name": "Rolling stone",
@@ -245,7 +245,7 @@
     "52": {
       "name": "Captivator",
       "facing": "f5",
-      "note": "A moving spiked thing that restarts the level on touch, with a direction in the field that varies. The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. It is the fuller star with four points, seen in play beside type 50; which of the walkthrough's two travelling kinds it is is not settled."
+      "note": "A moving spiked thing that restarts the level on touch, with a direction in the field that varies. The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. It is the fuller star with four short points, seen in play beside type 50, and it is the walkthrough's quick kind: back and forth over a fixed stretch, as if on a spring."
     },
     "53": {
       "name": "Captivator, wandering",
