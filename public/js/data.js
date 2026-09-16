@@ -204,7 +204,17 @@ export const kindNote = (kind) => ann.kinds[String(kind)]?.note || "";
 export const beams = (l) =>
   l.records
     .filter((r) => r.kind === BEAM_KIND)
-    .map((r) => ({ a: r.f.slice(2, 5), b: r.f.slice(5, 8), lit: r.f[1] === 1, colour: r.colour }));
+    .map((r) => {
+      const a = r.f.slice(2, 5),
+        b = r.f.slice(5, 8);
+      return {
+        a,
+        b,
+        axis: [0, 1, 2].find((i) => a[i] !== b[i]),
+        lit: r.f[1] === 1,
+        colour: r.colour,
+      };
+    });
 
 // A moving platform's record has the same shape: the block and the far end of
 // its run, on one axis.
@@ -228,10 +238,23 @@ export function index(l) {
     cells.set(cellKey(x, y, z), { x, y, z, v });
   }
   const rays = beams(l);
+  // A beam is drawn a cell at a time so that each stretch takes its place
+  // among the blocks: the cells it crosses are empty, so a stretch sorts as
+  // a block there would, and a block in front of it hides it.
+  const beamCells = new Map();
   for (const r of rays) {
     for (const [x, y, z] of [r.a, r.b]) {
       const k = cellKey(x, y, z);
       if (!cells.has(k)) cells.set(k, { x, y, z, v: OFF_LATTICE });
+    }
+    const lo = Math.min(r.a[r.axis], r.b[r.axis]);
+    const hi = Math.max(r.a[r.axis], r.b[r.axis]);
+    for (let t = lo + 1; t < hi; t++) {
+      const cell = [...r.a];
+      cell[r.axis] = t;
+      const k = cellKey(...cell);
+      if (!beamCells.has(k)) beamCells.set(k, { x: cell[0], y: cell[1], z: cell[2], beams: [] });
+      beamCells.get(k).beams.push({ ray: r, k: t - lo - 1 });
     }
   }
   const records = new Map();
@@ -254,7 +277,7 @@ export function index(l) {
       numbered.get(n).push({ m, cell: [r.x, r.y, r.z] });
     }
   }
-  return { cells, records, markers, numbered, rays, rails: rails(l) };
+  return { cells, records, markers, numbered, beamCells, rails: rails(l) };
 }
 
 export const levelMarkers = (l) => l.records.flatMap(markersOf);

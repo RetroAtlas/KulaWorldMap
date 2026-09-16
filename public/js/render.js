@@ -175,11 +175,14 @@ const SHADE = FACES.map((f) =>
   f.n[2] < 0 ? 2 : f.n[2] > 0 ? 0 : f.n[0] > 0 || f.n[1] < 0 ? 1 : 0,
 );
 
+/** The cells to draw, blocks and the stretches of beam between them, back to front. */
 function visible(idx) {
   const out = [];
-  for (const c of idx.cells.values()) {
-    if (c.z < sliceZ() && !state.show.hidden) continue;
-    out.push(c);
+  for (const cells of [idx.cells, idx.beamCells]) {
+    for (const c of cells.values()) {
+      if (c.z < sliceZ() && !state.show.hidden) continue;
+      out.push(c);
+    }
   }
   out.sort((a, b) => depth(b.x, b.y, b.z) - depth(a.x, a.y, a.z));
   return out;
@@ -292,6 +295,10 @@ export function draw() {
     const r = BLOCK * state.cam.zoom * 2;
     if (px < -r || px > w + r || py < -r || py > h + r) continue;
     const ghost = c.z < sliceZ();
+    if (c.beams) {
+      drawBeams(c, ghost);
+      continue;
+    }
     const key = cellKey(c.x, c.y, c.z);
     const sel = state.selected?.key === key;
     const hov = state.hover?.key === key;
@@ -341,7 +348,6 @@ export function draw() {
   pickStale = false;
 
   for (const r of idx.rails) drawRail(r);
-  for (const r of idx.rays) drawBeam(r);
   if (state.show.start && l.camera) drawLook(l);
   drawScale();
   if (spinning) animate();
@@ -608,25 +614,36 @@ function drawMark(m, c) {
   }
 }
 
-// A beam is drawn over the blocks rather than among them: it runs through the
-// space between its ends, and showing where it goes is worth more than letting
-// a block in front of it hide it. A circuit nobody has yet seen lit draws in
-// plain ink rather than in a guess.
-function drawBeam({ a, b, lit, colour }) {
-  const p = screen(a[0] + 0.5, a[1] + 0.5, a[2] + 0.5);
-  const q = screen(b[0] + 0.5, b[1] + 0.5, b[2] + 0.5);
-  ctx.save();
-  ctx.strokeStyle = beamColour(colour) || "#e8eefb";
-  ctx.lineWidth = Math.max(1.5, 2.5 * state.cam.zoom);
-  if (!lit) {
-    ctx.globalAlpha = 0.45;
-    ctx.setLineDash([4 * state.cam.zoom, 4 * state.cam.zoom]);
+// The stretches of beam through one empty cell, each from the face it comes
+// in by to the face it leaves by, so a beam runs from the emitter's face to
+// the far block's and never through either. A beam that starts dark is drawn
+// broken, with the dashes carried across the cells so it reads as one line,
+// and a circuit nobody has yet seen lit draws in plain ink rather than in a
+// guess. The caps overlap the next stretch by half a line, which is what
+// keeps a seam from showing at every cell.
+function drawBeams(c, ghost) {
+  for (const { ray, k } of c.beams) {
+    const from = [c.x + 0.5, c.y + 0.5, c.z + 0.5];
+    const to = [...from];
+    from[ray.axis] -= 0.5;
+    to[ray.axis] += 0.5;
+    const p = screen(...from);
+    const q = screen(...to);
+    ctx.save();
+    ctx.strokeStyle = beamColour(ray.colour) || "#e8eefb";
+    ctx.lineWidth = Math.max(1.5, 2.5 * state.cam.zoom);
+    ctx.lineCap = "square";
+    ctx.globalAlpha = (ghost ? 0.16 : 1) * (ray.lit ? 1 : 0.45);
+    if (!ray.lit) {
+      ctx.setLineDash([4 * state.cam.zoom, 4 * state.cam.zoom]);
+      ctx.lineDashOffset = k * Math.hypot(q[0] - p[0], q[1] - p[1]);
+    }
+    ctx.beginPath();
+    ctx.moveTo(p[0], p[1]);
+    ctx.lineTo(q[0], q[1]);
+    ctx.stroke();
+    ctx.restore();
   }
-  ctx.beginPath();
-  ctx.moveTo(p[0], p[1]);
-  ctx.lineTo(q[0], q[1]);
-  ctx.stroke();
-  ctx.restore();
 }
 
 // What floats casts a shadow straight down onto its face, whatever the light,
