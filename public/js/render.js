@@ -390,6 +390,7 @@ const WHIRL = 0.5; // turns the corkscrew makes on the way up, and unmakes comin
 const BEAT = 2; // seconds, the bounce's and the spikes' cycle
 const ROLL = 0.5; // turns per second of the wheel
 const SHADOW = "rgba(0 0 0 / 0.32)";
+const GLASS = 0.55; // how much a translucent polygon covers
 const FLOATING = 0.02; // a lift beyond this is off the face, in blocks
 
 function drawObject(m, c, model) {
@@ -457,7 +458,7 @@ function drawObject(m, c, model) {
   ctx.save();
   if (away) ctx.globalAlpha = 0.3;
   for (const { p, fill, blend } of polys) {
-    ctx.fillStyle = `rgba(${fill[0]} ${fill[1]} ${fill[2]} / ${blend ? 0.75 : 1})`;
+    ctx.fillStyle = `rgba(${fill[0]} ${fill[1]} ${fill[2]} / ${blend ? GLASS : 1})`;
     ctx.beginPath();
     // A quad's corners come two edges at a time, 0-1 and 2-3, so its outline
     // runs 0, 1, 3, 2; traced in index order it is a bow-tie with two holes.

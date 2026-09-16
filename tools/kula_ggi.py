@@ -415,8 +415,12 @@ def dot(a, b):
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 
 
-def raster(buf, w, h, pts, colour):
-    """Fill one triangle of screen points into an RGBA buffer."""
+GLASS = 0.55             # how much a translucent polygon covers
+
+
+def raster(buf, w, h, pts, colour, cover=1.0):
+    """Fill one triangle of screen points into an RGBA buffer, mixing it over
+    what is there by `cover`."""
     (x0, y0), (x1, y1), (x2, y2) = pts
     ymin, ymax = max(0, int(min(y0, y1, y2))), min(h - 1, int(max(y0, y1, y2)) + 1)
     area = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)
@@ -431,7 +435,11 @@ def raster(buf, w, h, pts, colour):
             continue
         for x in range(max(0, int(min(xs))), min(w - 1, int(max(xs))) + 1):
             i = (y * w + x) * 4
-            buf[i:i + 4] = colour
+            if cover >= 1:
+                buf[i:i + 4] = colour
+            else:
+                buf[i:i + 3] = bytes(int(buf[i + k] + (colour[k] - buf[i + k]) * cover)
+                                     for k in range(3))
 
 
 def draw(buf, w, h, model, ox, oy, scale):
@@ -451,11 +459,11 @@ def draw(buf, w, h, model, ox, oy, scale):
             rgb = [c["rgb"][i], c["rgb"][j], c["rgb"][k]]
             mean = tuple(sum(x[n] for x in rgb) // 3 for n in range(3))
             depth = sum(dot(p, toward) for p in tri) / 3
-            tris.append((depth, mean, tri))
+            tris.append((depth, mean, tri, GLASS if c["flags"] & BLEND else 1.0))
     tris.sort(key=lambda t: t[0])
-    for _, rgb, tri in tris:
+    for _, rgb, tri, cover in tris:
         screen = [(ox + dot(p, right) * scale, oy - dot(p, up) * scale) for p in tri]
-        raster(buf, w, h, screen, bytes(rgb + (255,)))
+        raster(buf, w, h, screen, bytes(rgb + (255,)), cover)
 
 
 def label(buf, w, h, text, x, y):

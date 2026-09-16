@@ -9,6 +9,7 @@ const RIGHT = [Math.cos(YAW), 0, -Math.sin(YAW)];
 const UP = [-Math.sin(PITCH) * Math.sin(YAW), Math.cos(PITCH), -Math.sin(PITCH) * Math.cos(YAW)];
 const TOWARD = [Math.cos(PITCH) * Math.sin(YAW), Math.sin(PITCH), Math.cos(PITCH) * Math.cos(YAW)];
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const GLASS = 0.55;
 
 const drawn = new Map();
 
@@ -61,7 +62,7 @@ function render(model, size) {
   });
   polys.sort((a, b) => a.z - b.z);
   for (const { p, mean, blend } of polys) {
-    g.fillStyle = `rgba(${mean[0]} ${mean[1]} ${mean[2]} / ${blend ? 0.75 : 1})`;
+    g.fillStyle = `rgba(${mean[0]} ${mean[1]} ${mean[2]} / ${blend ? GLASS : 1})`;
     g.beginPath();
     const ring = p.length === 4 ? [p[0], p[1], p[3], p[2]] : p;
     ring.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
