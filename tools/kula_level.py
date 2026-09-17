@@ -117,6 +117,12 @@ class Record:
         which end it starts from and how many blocks long it is."""
         return self.slots[1][2] if self.kind == PLATFORM_KIND else None
 
+    @property
+    def length(self):
+        """How many blocks long a moving platform is, laid from its cell along
+        the positive way of its run's axis."""
+        return self.slots[1][1] if self.kind == PLATFORM_KIND else None
+
     def as_dict(self):
         d = {"x": self.x, "y": self.y, "z": self.z, "kind": self.kind}
         if self.kind in PAYLOAD_KINDS:
@@ -124,6 +130,8 @@ class Record:
             d["f"] = self.f
         if self.kind == LASER_KIND:
             d["colour"] = self.colour
+        if self.kind == PLATFORM_KIND:
+            d["length"] = self.length
         d["on"] = [o.as_dict() for o in self.objects]
         return d
 
