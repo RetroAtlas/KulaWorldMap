@@ -88,3 +88,10 @@ export function orbit(table, entry, key, frame, phase) {
     turn: turns(table, table.turn / 4 - angle),
   };
 }
+
+/** A vanishing block's state and brightness at a frame, from its phase field. */
+export function blockPhase(entry, r, frame) {
+  const phase = r.f[0] & 3;
+  const k = Math.floor(frame) % entry.cycle[phase].length;
+  return { state: entry.cycle[phase][k], level: entry.level[phase][k] };
+}

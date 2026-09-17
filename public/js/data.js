@@ -27,6 +27,7 @@ export const modelUnit = () => 1 / shapes.block;
 export const motionTable = () => shapes.motion;
 export const motionOf = (m) =>
   m.face === null ? null : (shapes.motion?.types[String(m.type)] ?? null);
+export const kindMotion = (kind) => shapes.motion?.kinds[String(kind)] ?? null;
 
 export async function loadJson(url, fallback) {
   try {

@@ -13,12 +13,13 @@ import {
   markerModel,
   motionTable,
   motionOf,
+  kindMotion,
   modelUnit,
   beamColour,
   TANGENT,
   cross,
 } from "./data.js";
-import { frameAt, phasesOf, pose, orbit } from "./motion.js";
+import { frameAt, phasesOf, pose, orbit, blockPhase } from "./motion.js";
 
 const cv = $("cv");
 const ctx = cv.getContext("2d");
@@ -253,14 +254,28 @@ function kindTint(tint, kind) {
 
 // How a kind of block reads over its skin: a wash for what the game paints
 // onto the block, and a fainter, broken cube for a block that is not solidly
-// there, whether never seen, gone once rolled on, or gone half the time.
+// there, whether never seen or gone once rolled on. A vanishing block runs
+// the game's cycle instead: solid while it is there, lit or darkened as the
+// game lights it, faint and broken while it is gone.
 const LOOK = {
   1: { wash: "rgba(255 70 30 / 0.45)" },
   2: { wash: "rgba(160 225 255 / 0.45)" },
   3: { alpha: 0.35, dash: [3, 3] },
   6: { wash: "rgba(0 0 0 / 0.3)", dash: [6, 3] },
-  7: { alpha: 0.55, dash: [2, 4] },
+  7: { alpha: 0.2, dash: [2, 4] },
 };
+const VANISHING = 7;
+const NEUTRAL = 128; // the brightness at which a face is its own colour
+const TRANSLUCENT = 4; // the state from which a vanishing block is drawn through
+
+/** How a vanishing block looks at this frame, from where its cycle stands. */
+function vanishingLook(r, frame) {
+  const { state, level } = blockPhase(kindMotion(VANISHING), r, frame);
+  if (state === 0) return LOOK[VANISHING];
+  const k = Math.abs(level - NEUTRAL) / NEUTRAL;
+  const wash = level > NEUTRAL ? `rgba(255 255 255 / ${0.8 * k})` : `rgba(0 0 0 / ${0.8 * k})`;
+  return { alpha: state >= TRANSLUCENT ? 0.6 : 1, wash };
+}
 
 /** The kind of block a cell draws: its style, or the kind of the record it names. */
 function kindOf(c, idx, key) {
@@ -303,7 +318,11 @@ export function draw() {
     const sel = state.selected?.key === key;
     const hov = state.hover?.key === key;
     const kind = kindOf(c, idx, key);
-    const look = LOOK[kind] || {};
+    let look = LOOK[kind] || {};
+    if (kind === VANISHING && kindMotion(kind)) {
+      spinning = true;
+      look = vanishingLook(idx.records.get(key)[0], frame);
+    }
     const base = kindTint(tint, kind);
     const boost = sel ? 0.22 : hov ? 0.12 : 0;
     const a = (ghost ? 0.16 : 1) * (look.alpha ?? 1);

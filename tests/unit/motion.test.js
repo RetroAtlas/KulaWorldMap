@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects } from "./fixtures.js";
-import { frameAt, phasesOf, phaseField, pose, orbit } from "../../public/js/motion.js";
+import { frameAt, phasesOf, phaseField, pose, orbit, blockPhase } from "../../public/js/motion.js";
 
 const table = objects.motion;
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
@@ -102,4 +102,17 @@ test("the catalogue star circles fast in the brown form and slowly in the green"
   const a = orbit(table, e, key, 300, still);
   const b = orbit(table, e, key, 301, still);
   for (const v of [a, b]) near(Math.hypot(...v.offset), 100, 1e-6);
+});
+
+test("a vanishing block is where its phase's cycle puts it, solid with its brightness", () => {
+  const e = table.kinds[7];
+  const record = (f5) => ({ f: [f5, -1, -1] });
+  for (const f5 of [0, 1, 2, 3]) {
+    const gone = e.cycle[f5].indexOf(0);
+    assert.equal(blockPhase(e, record(f5), gone + 0.9).state, 0);
+    const solid = e.cycle[f5].indexOf(3);
+    assert.deepEqual(blockPhase(e, record(f5), solid), { state: 3, level: 128 });
+    assert.deepEqual(blockPhase(e, record(f5), solid + 224), { state: 3, level: 128 });
+  }
+  assert.notEqual(blockPhase(e, record(0), 100).state, blockPhase(e, record(2), 100).state);
 });
