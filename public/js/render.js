@@ -20,6 +20,7 @@ import {
   cross,
 } from "./data.js";
 import { frameAt, phasesOf, pose, orbit, blockPhase } from "./motion.js";
+import { walkers, probe, advance, place } from "./travel.js";
 
 const cv = $("cv");
 const ctx = cv.getContext("2d");
@@ -175,16 +176,54 @@ const SHADE = FACES.map((f) =>
   f.n[2] < 0 ? 2 : f.n[2] > 0 ? 0 : f.n[0] > 0 || f.n[1] < 0 ? 1 : 0,
 );
 
-/** The cells to draw, blocks and the stretches of beam between them, back to front. */
-function visible(idx) {
+const PLATFORM = 5;
+const AXIS = { 1: 0, 2: 1 }; // a platform's first field names the axis it is laid along
+
+/** The cells to draw, blocks and the stretches of beam between them, back to
+    front. A moving platform is as many blocks as its record says, laid from
+    its cell along its axis, and on the move they are drawn where its run has
+    them and sort there. */
+function visible(idx, moving) {
   const out = [];
   for (const cells of [idx.cells, idx.beamCells]) {
     for (const c of cells.values()) {
       if (c.z < sliceZ() && !state.show.hidden) continue;
-      out.push(c);
+      const key = cellKey(c.x, c.y, c.z);
+      const r = c.v >= state.data.firstRecord ? idx.records.get(key)?.[0] : null;
+      if (r?.kind !== PLATFORM) {
+        out.push(c);
+        continue;
+      }
+      const offset = moving?.get(`${key}/null`)?.offset || [0, 0, 0];
+      for (let k = 0; k < (r.length || 1); k++) {
+        const at = [c.x + offset[0], c.y + offset[1], c.z + offset[2]];
+        at[AXIS[r.f[0]] ?? 2] += k;
+        out.push({ ...c, x: at[0], y: at[1], z: at[2], home: c, k });
+      }
     }
   }
   out.sort((a, b) => depth(b.x, b.y, b.z) - depth(a.x, a.y, a.z));
+  return out;
+}
+
+// What travels does so only while the display asks, from the frame the level
+// was opened with it on, one game frame at a time; turning it off forgets
+// where everything got to, so turning it on again starts the level afresh.
+let travel = { level: null, walkers: null, probe: null };
+function travelling(l, idx, frame) {
+  if (!state.show.travel || !motionTable()) {
+    travel.level = null;
+    return null;
+  }
+  if (travel.level !== l) {
+    travel = { level: l, walkers: walkers(l, idx, motionTable(), frame), probe: probe(l) };
+  }
+  const out = new Map();
+  for (const [key, w] of travel.walkers) {
+    advance(w, travel.probe, frame);
+    out.set(key, { w, ...place(w) });
+  }
+  if (out.size) spinning = true;
   return out;
 }
 
@@ -298,7 +337,8 @@ export function draw() {
   if (state.show.base) drawBase(l);
   const frame = motionTable() ? frameAt(motionTable(), performance.now()) : 0;
 
-  const cells = visible(idx);
+  const moving = travelling(l, idx, frame);
+  const cells = visible(idx, moving);
   if (pickStale) {
     pickList = [];
     pick.clearRect(0, 0, w, h);
@@ -309,12 +349,13 @@ export function draw() {
     const [px, py] = screen(c.x, c.y, c.z);
     const r = BLOCK * state.cam.zoom * 2;
     if (px < -r || px > w + r || py < -r || py > h + r) continue;
-    const ghost = c.z < sliceZ();
+    const home = c.home || c;
+    const ghost = home.z < sliceZ();
     if (c.beams) {
       drawBeams(c, ghost);
       continue;
     }
-    const key = cellKey(c.x, c.y, c.z);
+    const key = cellKey(home.x, home.y, home.z);
     const sel = state.selected?.key === key;
     const hov = state.hover?.key === key;
     const kind = kindOf(c, idx, key);
@@ -347,16 +388,17 @@ export function draw() {
       cube(ctx, c, idx, () => `rgba(255 255 255 / ${sel ? 0.22 : 0.12})`, null, a, null);
     }
 
-    if (pickStale && !ghost) {
-      pickList.push(c);
+    if (pickStale && !ghost && !c.k) {
+      pickList.push(home);
       const id = pickList.length;
       const col = `rgb(${id & 255} ${(id >> 8) & 255} ${(id >> 16) & 255})`;
-      cube(pick, c, { cells: new Map() }, () => col, null, 1, null);
+      cube(pick, home, { cells: new Map() }, () => col, null, 1, null);
     }
 
-    if (state.show.objects && !ghost) {
+    if (state.show.objects && !ghost && !c.k) {
       const marks = idx.markers.get(key);
-      if (marks) for (const m of marks) drawThing(m, c, l, frame);
+      if (marks)
+        for (const m of marks) drawThing(m, c, l, frame, home, moving?.get(`${key}/${m.face}`));
     }
     if (state.survey.on && !ghost) {
       const m = state.survey.marks.get(key);
@@ -389,17 +431,19 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) draw();
 });
 
-/** An object as itself where it has a mesh and the display asks for it, else its marker. */
-function drawThing(m, c, l, frame) {
+/** An object as itself where it has a mesh and the display asks for it, else
+    its marker; on a moving platform the cell is where the platform is, and
+    a thing that travels brings where it has got to and which way it faces. */
+function drawThing(m, c, l, frame, home = c, going = null) {
   if (state.hiddenKinds.has(m.id)) return;
   const motion = state.show.models ? motionOf(m) : null;
-  const phase = motion ? phasesOf(motionTable(), c.x, c.y, c.z, m.face) : null;
+  const phase = motion ? phasesOf(motionTable(), home.x, home.y, home.z, m.face) : null;
   const round = motion?.orbit
-    ? orbit(motionTable(), motion, `${cellKey(c.x, c.y, c.z)}/${m.face}`, frame, phase)
+    ? orbit(motionTable(), motion, `${cellKey(home.x, home.y, home.z)}/${m.face}`, frame, phase)
     : null;
   const model = state.show.models ? markerModel(m, l, round?.form ?? null) : null;
   if (!model) return drawMarker(m, c);
-  drawObject(m, c, model, motion, frame, phase, round, l.camera?.time ?? 0);
+  drawObject(m, c, model, motion, frame, phase, round, l.camera?.time ?? 0, going);
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(c, m.face, OBJECT_HOVER);
     const dark = markerState(m) === "off" ? " · off" : "";
@@ -422,9 +466,9 @@ const SHADOW = "rgba(0 0 0 / 0.32)";
 const GLASS = 0.55; // how much a translucent polygon covers
 const FLOATING = 0.02; // a lift beyond this is off the face, in blocks
 
-function drawObject(m, c, model, motion, frame, phase, round, time) {
+function drawObject(m, c, model, motion, frame, phase, round, time, going) {
   const up = FACE_NORMAL[m.face];
-  const forward = markerHeading(m) || TANGENT[m.face];
+  const forward = going?.fwd || markerHeading(m) || TANGENT[m.face];
   const unit = modelUnit();
   const rest = GAP + Math.max(0, -model.box[0][1]) * unit;
   let lift = rest;
@@ -433,6 +477,7 @@ function drawObject(m, c, model, motion, frame, phase, round, time) {
   let shown = model.frames[0];
   let wide = 1,
     tall = 1;
+  if (going) for (let i = 0; i < 3; i++) o[i] += going.offset[i];
   if (motion) {
     spinning = true;
     const p = pose(motionTable(), motion, m, frame, phase, time);
@@ -440,6 +485,7 @@ function drawObject(m, c, model, motion, frame, phase, round, time) {
     wide = 1 + p.squash;
     tall = 1 - 2 * p.squash;
     if (markerState(m) === "off") about = [0, 0, 0];
+    if (motion.roll && going) about[2] = going.roll / motionTable().turn;
     if (motion.bob) lift += motion.bob.reach * unit;
     lift += p.lift * unit;
     o[2] += p.bob * unit;
@@ -451,7 +497,7 @@ function drawObject(m, c, model, motion, frame, phase, round, time) {
     shown = model.frames[p.frame] || shown;
   }
   for (let i = 0; i < 3; i++) o[i] += up[i] * lift;
-  if (rest > GAP + FLOATING || motion?.bounce) drawShadow(m, c, model, unit);
+  if (rest > GAP + FLOATING || motion?.bounce) drawShadow(m, c, model, unit, going?.offset);
   const side = cross(up, forward);
   const ct = Math.cos(about[1] * Math.PI * 2),
     st = Math.sin(about[1] * Math.PI * 2);
@@ -693,13 +739,14 @@ function drawBeams(c, ghost) {
 // What floats casts a shadow straight down onto its face, whatever the light,
 // as the game does: a disc the width of the thing, on the face's plane.
 const SHADOW_SIDES = 14;
-function drawShadow(m, c, model, unit) {
+function drawShadow(m, c, model, unit, offset = null) {
   const [lo, hi] = model.box;
   const r = (Math.max(hi[0], -lo[0], hi[2], -lo[2]) * unit) / 2 + 0.06;
   const up = FACE_NORMAL[m.face];
   const a = TANGENT[m.face];
   const b = cross(up, a);
   const o = at(c, m.face, 0.005);
+  if (offset) for (let i = 0; i < 3; i++) o[i] += offset[i];
   ctx.fillStyle = SHADOW;
   ctx.beginPath();
   for (let i = 0; i < SHADOW_SIDES; i++) {

@@ -277,6 +277,9 @@ addEventListener("keydown", (e) => {
     case "g":
       toggle("showBase");
       break;
+    case "v":
+      toggle("showTravel");
+      break;
     case "m":
       $("menuBtn").click();
       break;

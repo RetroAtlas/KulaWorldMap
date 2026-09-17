@@ -23,6 +23,7 @@ const SHOWN = [
   ["showLabels", "labels"],
   ["showBase", "base"],
   ["showHidden", "hidden"],
+  ["showTravel", "travel"],
 ];
 const DEFAULTS = { ...state.show };
 

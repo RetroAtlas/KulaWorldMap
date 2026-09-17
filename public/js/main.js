@@ -27,6 +27,7 @@ const HELP = [
   ["[ ]", "previous and next level (shift crosses worlds)"],
   ["f", "fit the level to the window"],
   ["t o d s l g", "textures, objects, objects as themselves, look-at, labels, ground grid"],
+  ["v", "let what travels travel, as it does in play"],
   ["/", "search"],
   ["m", "show and hide the sidebar"],
   ["Esc", "clear the selection"],

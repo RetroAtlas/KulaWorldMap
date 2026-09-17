@@ -21,6 +21,7 @@ export const state = {
     base: false,
     hidden: false,
     skins: true,
+    travel: false,
   },
   hiddenKinds: new Set(),
   hover: null,
