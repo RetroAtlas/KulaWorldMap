@@ -91,6 +91,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `kula_tex.py` | the block atlas the viewer draws with |
 | `png.py` | write a PNG, and squeeze it with `oxipng` where that is installed |
 | `mips.py` | disassemble the executable, which is how the lattice was pinned down |
+| `kula_motion.py` | what the executable does to each thing every frame, the rates behind `docs/motion.md` |
 | `ogcard.js` | render the social card from the map itself (Node, needs Playwright) |
 | `serve.py` | local static server, caching off, 404.html like the host |
 
