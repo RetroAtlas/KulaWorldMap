@@ -11,15 +11,14 @@ import {
   markerHeading,
   markerState,
   markerModel,
-  markerSpins,
-  markerPhase,
-  ROLLING,
-  BOUNCING,
+  motionTable,
+  motionOf,
   modelUnit,
   beamColour,
   TANGENT,
   cross,
 } from "./data.js";
+import { frameAt, phasesOf, pose, orbit } from "./motion.js";
 
 const cv = $("cv");
 const ctx = cv.getContext("2d");
@@ -282,6 +281,7 @@ export function draw() {
   const world = state.data.themes.findIndex((t) => t.id === l.theme);
 
   if (state.show.base) drawBase(l);
+  const frame = motionTable() ? frameAt(motionTable(), performance.now()) : 0;
 
   const cells = visible(idx);
   if (pickStale) {
@@ -337,7 +337,7 @@ export function draw() {
 
     if (state.show.objects && !ghost) {
       const marks = idx.markers.get(key);
-      if (marks) for (const m of marks) drawThing(m, c, l);
+      if (marks) for (const m of marks) drawThing(m, c, l, frame);
     }
     if (state.survey.on && !ghost) {
       const m = state.survey.marks.get(key);
@@ -371,11 +371,16 @@ document.addEventListener("visibilitychange", () => {
 });
 
 /** An object as itself where it has a mesh and the display asks for it, else its marker. */
-function drawThing(m, c, l) {
+function drawThing(m, c, l, frame) {
   if (state.hiddenKinds.has(m.id)) return;
-  const model = state.show.models ? markerModel(m, l) : null;
+  const motion = state.show.models ? motionOf(m) : null;
+  const phase = motion ? phasesOf(motionTable(), c.x, c.y, c.z, m.face) : null;
+  const round = motion?.orbit
+    ? orbit(motionTable(), motion, `${cellKey(c.x, c.y, c.z)}/${m.face}`, frame, phase)
+    : null;
+  const model = state.show.models ? markerModel(m, l, round?.form ?? null) : null;
   if (!model) return drawMarker(m, c);
-  drawObject(m, c, model);
+  drawObject(m, c, model, motion, frame, phase, round);
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(c, m.face, OBJECT_HOVER);
     const dark = markerState(m) === "off" ? " · off" : "";
@@ -385,61 +390,63 @@ function drawThing(m, c, l) {
 
 // An object is its mesh stood on its face: the model's y runs along the face's
 // outward normal, its z along the way the thing points where it has one, and
-// its lowest vertex sits just off the face. The polygons are filled back to
-// front in their own colours, since the shading is baked into them, and both
-// sides are drawn, since the meshes wind their faces either way. A thing on a
-// face turned away from the view is drawn faint, like its marker.
-const SPIN = 0.35; // turns per second
+// its lowest vertex sits just off the face. What moves in play moves here at
+// the game's rate, from the table the build read off the executable, about
+// those same axes; a thing that bobs is stood its bob's reach higher so that
+// it never dips into its face, and a device that starts switched off stands
+// still, as it does in play. The polygons are filled back to front in their
+// own colours, since the shading is baked into them, and both sides are
+// drawn, since the meshes wind their faces either way. A thing on a face
+// turned away from the view is drawn faint, like its marker.
 const GAP = 0.03; // between a thing and its face, in blocks
-const BOUNCE = 0.55; // how high the corkscrew rises, in blocks
-const WHIRL = 0.5; // turns the corkscrew makes on the way up, and unmakes coming down
-const BEAT = 2; // seconds, the bounce's and the spikes' cycle
-const ROLL = 0.5; // turns per second of the wheel
 const SHADOW = "rgba(0 0 0 / 0.32)";
 const GLASS = 0.55; // how much a translucent polygon covers
 const FLOATING = 0.02; // a lift beyond this is off the face, in blocks
 
-function drawObject(m, c, model) {
+function drawObject(m, c, model, motion, frame, phase, round) {
   const up = FACE_NORMAL[m.face];
   const forward = markerHeading(m) || TANGENT[m.face];
-  const t = performance.now() / 1000;
-  let turn = 0;
-  if (markerSpins(m)) {
-    spinning = true;
-    const phase = ((c.x * 7 + c.y * 13 + c.z * 5) % 17) / 17;
-    turn = (t * SPIN + phase) * Math.PI * 2;
-  }
   const unit = modelUnit();
-  let lift = GAP + Math.max(0, -model.box[0][1]) * unit;
-  if (m.type === BOUNCING) {
+  const rest = GAP + Math.max(0, -model.box[0][1]) * unit;
+  let lift = rest;
+  const o = at(c, m.face, 0);
+  let about = [0, 0, 0];
+  let shown = model.frames[0];
+  if (motion) {
     spinning = true;
-    const rise = 0.5 - 0.5 * Math.cos((t / BEAT + markerPhase(m)) * Math.PI * 2);
-    lift += BOUNCE * rise;
-    turn = rise * WHIRL * Math.PI * 2;
+    const p = pose(motionTable(), motion, m, frame, phase);
+    about = p.about;
+    if (markerState(m) === "off") about = [0, 0, 0];
+    if (motion.bob) lift += motion.bob.reach * unit;
+    lift += p.lift * unit;
+    o[2] += p.bob * unit;
+    if (round) {
+      o[0] += round.offset[0] * unit;
+      o[1] += round.offset[1] * unit;
+      about[1] += round.turn;
+    }
+    shown = model.frames[p.frame] || shown;
   }
-  const o = at(c, m.face, lift);
-  if (lift > GAP + FLOATING || m.type === BOUNCING) drawShadow(m, c, model, unit);
+  for (let i = 0; i < 3; i++) o[i] += up[i] * lift;
+  if (rest > GAP + FLOATING || motion?.bounce) drawShadow(m, c, model, unit);
   const side = cross(up, forward);
-  const ct = Math.cos(turn),
-    st = Math.sin(turn);
+  const ct = Math.cos(about[1] * Math.PI * 2),
+    st = Math.sin(about[1] * Math.PI * 2);
   const fwd = forward.map((v, i) => v * ct + side[i] * st);
   const right = cross(up, fwd);
-  const cycle = model.frames.length;
-  const frame = model.frames[cycle > 1 ? Math.floor(((t / BEAT + markerPhase(m)) % 1) * cycle) : 0];
-  if (cycle > 1) spinning = true;
-  let roll = 0;
-  if (m.type === ROLLING) {
-    spinning = true;
-    roll = t * ROLL * Math.PI * 2;
-  }
-  const cr = Math.cos(roll),
-    sr = Math.sin(roll);
+  const cx = Math.cos(about[0] * Math.PI * 2),
+    sx = Math.sin(about[0] * Math.PI * 2);
+  const cz = Math.cos(about[2] * Math.PI * 2),
+    sz = Math.sin(about[2] * Math.PI * 2);
   const pts = [];
-  for (let i = 0; i < frame.length; i += 3) {
-    // the wheel turns about its own axle, the model's z, before it is placed
-    const x = (frame[i] * cr - frame[i + 1] * sr) * unit,
-      y = (frame[i] * sr + frame[i + 1] * cr) * unit,
-      z = frame[i + 2] * unit;
+  for (let i = 0; i < shown.length; i += 3) {
+    // about its own z, the way it points, then about its own x, across the
+    // face, before it is placed; the turn about its normal is in the basis
+    const x = (shown[i] * cz - shown[i + 1] * sz) * unit,
+      ty = (shown[i] * sz + shown[i + 1] * cz) * unit,
+      tz = shown[i + 2] * unit;
+    const y = ty * cx - tz * sx,
+      z = ty * sx + tz * cx;
     const wx = o[0] + x * right[0] + y * up[0] + z * fwd[0];
     const wy = o[1] + x * right[1] + y * up[1] + z * fwd[1];
     const wz = o[2] + x * right[2] + y * up[2] + z * fwd[2];

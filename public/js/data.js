@@ -18,11 +18,15 @@ export const setAnnotations = (a) => {
   ann = { worlds: {}, kinds: {}, types: {}, levels: {}, ...a };
 };
 
-let shapes = { block: 512, types: {}, balls: [] };
+let shapes = { block: 512, types: {}, balls: [], motion: null };
 export const setObjects = (o) => {
-  shapes = { block: 512, types: {}, balls: [], ...o };
+  shapes = { block: 512, types: {}, balls: [], motion: null, ...o };
 };
 export const modelUnit = () => 1 / shapes.block;
+/** The rates the build read off the executable, or null where the file has none. */
+export const motionTable = () => shapes.motion;
+export const motionOf = (m) =>
+  m.face === null ? null : (shapes.motion?.types[String(m.type)] ?? null);
 
 export async function loadJson(url, fallback) {
   try {
@@ -172,8 +176,9 @@ export function ballFor(l) {
   else if (slot >= WORLD_LEVELS && slot < HIDDEN) design = BONUS_BALL + (slot - WORLD_LEVELS);
   return shapes.balls[design] || shapes.balls[0] || null;
 }
-/** The model a marker draws, or null for one the game draws on the face. */
-export function markerModel(m, l) {
+/** The model a marker draws, or null for one the game draws on the face; a
+    thing that changes its form in play names the form to draw. */
+export function markerModel(m, l, form = null) {
   if (m.face === null) return null;
   if (m.type === START) return ballFor(l);
   let type = m.type;
@@ -182,20 +187,9 @@ export function markerModel(m, l) {
     type = FRUIT_FIRST + ((Number(n[1]) - 1) % FRUIT);
   const models = shapes.types[String(type)];
   if (!models) return null;
-  const variant = m.variant !== null ? Number(m.variant) : (OPENS_ON[type] ?? 0);
+  const variant = form ?? (m.variant !== null ? Number(m.variant) : (OPENS_ON[type] ?? 0));
   return models[variant] || models[0];
 }
-
-// What turns on the spot in play: everything picked up, the devices that
-// rotate to say they are live, and the stars.
-const SPINNING = new Set([5, 7, 26, 31, 32, 33, 34, 35, 36, 37, 38, 43, 44, 45, 46, 47, 50, 52]);
-export const markerSpins = (m) => m.face !== null && SPINNING.has(m.type);
-
-/** The wheel rolls where it stands, the corkscrew bounces, in the map's own time. */
-export const ROLLING = 51;
-export const BOUNCING = 56;
-/** Where a type's cycle starts is the field after its colour, a quarter each. */
-export const markerPhase = (m) => (m.face === null ? 0 : (m.f[1] & 3) / 4);
 export const kindNote = (kind) => ann.kinds[String(kind)]?.note || "";
 
 // A beam record spans two cells on one axis and nothing stands between them in
