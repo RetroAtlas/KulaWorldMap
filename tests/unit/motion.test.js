@@ -32,7 +32,7 @@ test("a turn is its rate in 4096ths of a turn a frame", () => {
   near(gem.about[1], (1000 + 29 * 100) / 4096);
 });
 
-test("a bob is a sine of its reach along the vertical, a lift stays on the normal", () => {
+test("a bob is a sine of its reach, and a lift is the corkscrew's alone", () => {
   const coin = table.types[37];
   near(pose(table, coin, marker(), 0, still).bob, 0);
   near(pose(table, coin, marker(), 1024 / 58, still).bob, -20, 1e-6);

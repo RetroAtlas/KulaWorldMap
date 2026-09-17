@@ -502,6 +502,7 @@ function drawObject(m, c, model, motion, frame, phase, round, time, going) {
   let wide = 1,
     tall = 1;
   if (going) for (let i = 0; i < 3; i++) o[i] += going.offset[i];
+  const side = cross(up, forward);
   if (motion) {
     spinning = true;
     const p = pose(motionTable(), motion, m, frame, phase, time);
@@ -513,19 +514,19 @@ function drawObject(m, c, model, motion, frame, phase, round, time, going) {
       about[1] += ACROSS;
       about[2] = -(going ? going.roll / motionTable().turn : about[2]);
     }
-    if (motion.bob) lift += motion.bob.reach * unit;
+    if (motion.bob) lift += (motion.bob.reach + p.bob) * unit;
     lift += p.lift * unit;
-    o[2] += p.bob * unit;
     if (round) {
-      o[0] += round.offset[0] * unit;
-      o[1] += round.offset[1] * unit;
+      // the orbit is in the face's own plane, its x across the way the thing points
+      for (let i = 0; i < 3; i++) {
+        o[i] += (forward[i] * round.offset[1] - side[i] * round.offset[0]) * unit;
+      }
       about[1] += round.turn;
     }
     shown = model.frames[p.frame] || shown;
   }
   for (let i = 0; i < 3; i++) o[i] += up[i] * lift;
   if (rest > GAP + FLOATING || motion?.bounce) drawShadow(m, c, model, unit, going?.offset);
-  const side = cross(up, forward);
   const ct = Math.cos(about[1] * Math.PI * 2),
     st = Math.sin(about[1] * Math.PI * 2);
   const fwd = forward.map((v, i) => v * ct + side[i] * st);

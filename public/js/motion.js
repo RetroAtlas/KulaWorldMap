@@ -30,11 +30,11 @@ export const phaseField = (m) => m.f[1] & 3;
 
 /**
  * Where a thing stands at a frame: turns about its own axes, x across the
- * face, y along the normal and z the way it points; a lift along the normal
- * and a bob along the world's vertical, in units; a squash, as a share of its
- * width it is wider by and twice of which it is shorter; and which frame of
- * its model to show. The ball breathes faster the less time the level gives,
- * so the level's time is what its rate is read from.
+ * face, y along the normal and z the way it points; a lift and a bob along
+ * the normal, in units; a squash, as a share of its width it is wider by and
+ * twice of which it is shorter; and which frame of its model to show. The
+ * ball breathes faster the less time the level gives, so the level's time is
+ * what its rate is read from.
  */
 export function pose(table, entry, m, frame, phase, time = 0) {
   const about = [0, 0, 0];
