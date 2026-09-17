@@ -399,7 +399,7 @@ function drawThing(m, c, l, frame) {
     : null;
   const model = state.show.models ? markerModel(m, l, round?.form ?? null) : null;
   if (!model) return drawMarker(m, c);
-  drawObject(m, c, model, motion, frame, phase, round);
+  drawObject(m, c, model, motion, frame, phase, round, l.camera?.time ?? 0);
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(c, m.face, OBJECT_HOVER);
     const dark = markerState(m) === "off" ? " · off" : "";
@@ -422,7 +422,7 @@ const SHADOW = "rgba(0 0 0 / 0.32)";
 const GLASS = 0.55; // how much a translucent polygon covers
 const FLOATING = 0.02; // a lift beyond this is off the face, in blocks
 
-function drawObject(m, c, model, motion, frame, phase, round) {
+function drawObject(m, c, model, motion, frame, phase, round, time) {
   const up = FACE_NORMAL[m.face];
   const forward = markerHeading(m) || TANGENT[m.face];
   const unit = modelUnit();
@@ -431,10 +431,14 @@ function drawObject(m, c, model, motion, frame, phase, round) {
   const o = at(c, m.face, 0);
   let about = [0, 0, 0];
   let shown = model.frames[0];
+  let wide = 1,
+    tall = 1;
   if (motion) {
     spinning = true;
-    const p = pose(motionTable(), motion, m, frame, phase);
+    const p = pose(motionTable(), motion, m, frame, phase, time);
     about = p.about;
+    wide = 1 + p.squash;
+    tall = 1 - 2 * p.squash;
     if (markerState(m) === "off") about = [0, 0, 0];
     if (motion.bob) lift += motion.bob.reach * unit;
     lift += p.lift * unit;
@@ -461,11 +465,11 @@ function drawObject(m, c, model, motion, frame, phase, round) {
   for (let i = 0; i < shown.length; i += 3) {
     // about its own z, the way it points, then about its own x, across the
     // face, before it is placed; the turn about its normal is in the basis
-    const x = (shown[i] * cz - shown[i + 1] * sz) * unit,
+    const x = (shown[i] * cz - shown[i + 1] * sz) * unit * wide,
       ty = (shown[i] * sz + shown[i + 1] * cz) * unit,
       tz = shown[i + 2] * unit;
-    const y = ty * cx - tz * sx,
-      z = ty * sx + tz * cx;
+    const y = (ty * cx - tz * sx) * tall,
+      z = (ty * sx + tz * cx) * wide;
     const wx = o[0] + x * right[0] + y * up[0] + z * fwd[0];
     const wy = o[1] + x * right[1] + y * up[1] + z * fwd[1];
     const wz = o[2] + x * right[2] + y * up[2] + z * fwd[2];

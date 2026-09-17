@@ -116,3 +116,15 @@ test("a vanishing block is where its phase's cycle puts it, solid with its brigh
   }
   assert.notEqual(blockPhase(e, record(0), 100).state, blockPhase(e, record(2), 100).state);
 });
+
+test("the ball breathes, wider and shorter by turns, faster the less time the level gives", () => {
+  const ball = table.types[30];
+  const at = (frame, time) => pose(table, ball, marker(), frame, still, time).squash;
+  near(at(0, 99), 0);
+  const step = 40 + Math.trunc((6000 - 50 * 99) / 40);
+  assert.equal(step, 66);
+  near(at(1024 / step, 99), 200 / 4096, 1e-6);
+  near(at(3072 / step, 99), -200 / 4096, 1e-6);
+  near(at(1024 / (40 + 150), 0), 200 / 4096, 1e-6);
+  assert.equal(pose(table, ball, marker(), 5, still, 99).about.join(), "0,0,0");
+});

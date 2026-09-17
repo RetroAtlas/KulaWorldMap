@@ -58,7 +58,25 @@ GAME = {
 }
 
 
+def lui(rt, imm):
+    return (0x0F << 26) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
+def ori(rt, rs, imm):
+    return (0x0D << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
+def sra(rd, rt, sa):
+    return (R[rt] << 16) | (R[rd] << 11) | (sa << 6) | 3
+
+
 class Reads(unittest.TestCase):
+    def test_a_divisor_is_read_back_from_its_reciprocal_and_shift(self):
+        c = code(lui("a0", 0x6666), ori("a0", "a0", 0x6667), sra("v1", "a2", 4))
+        self.assertEqual(c.divisor(AT, "lui $a0, {}", AT + 4, "ori $a0, $a0, {}", AT + 8, "sra $v1, $a2, {}"), 40)
+        c = code(lui("a0", 0x38e3), ori("a0", "a0", 0x8e39), sra("v1", "a2", 1))
+        self.assertEqual(c.divisor(AT, "lui $a0, {}", AT + 4, "ori $a0, $a0, {}", AT + 8, "sra $v1, $a2, {}"), 9)
+
     def test_an_immediate_is_read_from_the_instruction_it_lives_in(self):
         c = code(addiu("a0", "v1", -75))
         self.assertEqual(c.immediate(AT, "addiu $a0, $v1, {}"), -75)
@@ -146,7 +164,8 @@ class Table(unittest.TestCase):
                     "star50.tumble.x", "star50.tumble.y", "star50.tumble.z", "star50.travel",
                     "ball53.shake", "ball53.lurch.reach", "ball53.dash", "wheel.roll",
                     "wheel.travel", "wheel.turning", "wheel.turn.right", "wheel.turn.about",
-                    "captivator.standoff"):
+                    "captivator.standoff", "ball.breathe", "ball.breathe.reach",
+                    "ball.breathe.full", "ball.breathe.over", "time.tick"):
             r.setdefault(key, 1)
         r["platform.scale"] = 50
         t = table(r, 30)
@@ -157,7 +176,7 @@ class Table(unittest.TestCase):
         self.assertEqual([len(c) for c in t["kinds"]["7"]["level"]], [224] * PHASES)
         self.assertEqual(t["types"]["56"]["phases"], [1, 1, 1, 0])
         self.assertEqual(set(t["types"]), {str(k) for k in
-                                           (5, 7, 11, 26, 31, 32, 33, 34, 35, 36, 37, 38, 42,
+                                           (5, 7, 11, 26, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42,
                                             43, 44, 45, 46, 47, 50, 51, 52, 53, 56)})
 
 

@@ -75,6 +75,9 @@ IMMEDIATES = [
     ("on a block", "button.rise", "boost button: rises per frame after", 0x80039c7c, "addiu $v0, $v1, {}"),
     ("on a block", "button.full", "boost button: full height", 0x80039c74, "slti $v0, $v0, {}"),
 
+    ("the ball", "ball.breathe", "breathes at this angle a frame at least", 0x800326b4, "addiu $v0, $v1, {}"),
+    ("the ball", "ball.breathe.full", "and faster by the ticks its time is short of this", 0x80032690, "addiu $v0, $zero, {}"),
+
     ("moving spikes", "spikes.phase.down", "phase: down, if phase times step is under", 0x8002a120, "slti $v0, $v1, {}"),
     ("moving spikes", "spikes.phase.held", "phase: held up, if under", 0x8002a148, "slti $v0, $v1, {}"),
     ("moving spikes", "spikes.phase.retracting", "phase: retracting, if under", 0x8002a160, "slti $v0, $v1, {}"),
@@ -136,6 +139,8 @@ MULTIPLIERS = [
     ("on a block", "fruit.bob.reach", "fruit: bob's reach, units", 0x800397c0, 3, "v0", "v1"),
     ("on a block", "fruit.tilt.reach", "fruit: tilt's reach, angle", 0x80039810, 5, "v0", "v1"),
     ("on a block", "star42.orbit.radius", "type 42: orbit's radius, units", 0x800394f0, 5, "v0", "v1"),
+    ("the ball", "ball.breathe.reach", "breathes this much of 4096 wider and twice as much shorter", 0x800326e0, 5, "v0", "v0"),
+    ("the ball", "time.tick", "the level's time is this many ticks a second", 0x80035f90, 6, "v1", "v0"),
     ("moving spikes", "spikes.phase.step", "phase: frames per step", 0x8002a110, 4, "v1", "v1"),
     ("vanishing block", "vanish.phase.step", "phase: frames per step", 0x80028c10, 3, "a1", "v1"),
     ("moving platform", "platform.scale", "speed on the disc is scaled by this over sixty", 0x80032a60, 5, "v1", "v0"),
@@ -151,6 +156,13 @@ MULTIPLIERS = [
 
 # The one reach that is a square held in two halves of a word.
 BUTTON_REACH = (0x80039bbc, "lui $v1, {}", 0x80039bc0, "ori $v1, $v1, {}")
+
+# A divisor the compiler turned into a multiply by a reciprocal and a shift:
+# the two halves of the reciprocal and the shift of the high word.
+DIVISORS = [
+    ("the ball", "ball.breathe.over", "over this", 0x80032680, "lui $a0, {}", 0x80032684, "ori $a0, $a0, {}",
+     0x800326a8, "sra $v1, $a2, {}"),
+]
 
 
 class Code:
@@ -170,6 +182,11 @@ class Code:
         if not m:
             sys.exit(f"0x{addr:08x} reads `{text}`, not `{pattern}`")
         return int(m.group(1), 0) if m.lastindex else None
+
+    def divisor(self, hi, hp, lo, lp, sa, sp):
+        """The number a multiply by a reciprocal and a shift divides by."""
+        magic = (self.immediate(hi, hp) << 16) | (self.immediate(lo, lp) & 0xFFFF)
+        return round(2 ** (32 + self.immediate(sa, sp)) / magic)
 
     def multiplier(self, addr, count, src, dst):
         """The factor applied to `src` by `count` instructions of shifts and adds."""
@@ -207,6 +224,8 @@ def readings(code):
         out[key] = code.multiplier(addr, count, src, dst)
     hi, hp, lo, lp = BUTTON_REACH
     out["button.reach"] = round(((code.immediate(hi, hp) << 16) + code.immediate(lo, lp)) ** 0.5)
+    for _, key, _, *args in DIVISORS:
+        out[key] = code.divisor(*args)
     return out
 
 
@@ -330,6 +349,9 @@ def table(r, platform_speed):
     star50 = [r["star50.tumble.x"], r["star50.tumble.y"], r["star50.tumble.z"]]
     types = {
         5: {"turn": r["teleporter.turn"]},
+        30: {"breathe": {"rate": r["ball.breathe"], "reach": r["ball.breathe.reach"],
+                         "full": r["ball.breathe.full"], "over": r["ball.breathe.over"],
+                         "tick": r["time.tick"]}},
         7: {"turn": r["exit.turn"], "open": r["exit.turn.open"]},
         26: {"turn": r["exit.turn"], "open": r["exit.turn.open"]},
         31: {"turn": r["coin.turn"], "bob": bob},
@@ -383,6 +405,8 @@ def show_readings(code):
         rows.append((group, what, addr, code.multiplier(addr, count, src, dst)))
     rows.append(("on a block", "boost button: sinks while the ball is within, units",
                  BUTTON_REACH[0], readings(code)["button.reach"]))
+    for group, key, what, hi, hp, lo, lp, sa, sp in DIVISORS:
+        rows.append((group, what, hi, code.divisor(hi, hp, lo, lp, sa, sp)))
     order = {g: i for i, g in enumerate(dict.fromkeys(r[0] for r in rows))}
     rows.sort(key=lambda r: (order[r[0]], r[2]))
     last = None

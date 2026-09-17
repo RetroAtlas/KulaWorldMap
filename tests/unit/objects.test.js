@@ -55,7 +55,7 @@ test("the motion table is in the game's units and cycles per phase", () => {
   assert.equal(m.hz, 60);
   assert.equal(m.turn, 4096);
   for (const t of Object.keys(m.types))
-    assert.ok(drawn.has(Number(t)), `type ${t} moves but is not drawn`);
+    assert.ok(drawn.has(Number(t)) || Number(t) === START, `type ${t} moves but is not drawn`);
   for (const [n, len] of [
     [m.types[11].cycle, objects.types[11][0].frames.length],
     [m.kinds[7].cycle, 6],

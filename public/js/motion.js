@@ -31,13 +31,15 @@ export const phaseField = (m) => m.f[1] & 3;
 /**
  * Where a thing stands at a frame: turns about its own axes, x across the
  * face, y along the normal and z the way it points; a lift along the normal
- * and a bob along the world's vertical, in units; which of its models to show
- * and which frame of that model.
+ * and a bob along the world's vertical, in units; a squash, as a share of its
+ * width it is wider by and twice of which it is shorter; and which frame of
+ * its model to show. The ball breathes faster the less time the level gives,
+ * so the level's time is what its rate is read from.
  */
-export function pose(table, entry, m, frame, phase) {
+export function pose(table, entry, m, frame, phase, time = 0) {
   const about = [0, 0, 0];
   const angle = (rate, k) => phase[k] + rate * frame;
-  const p = { about, lift: 0, bob: 0, frame: 0 };
+  const p = { about, lift: 0, bob: 0, squash: 0, frame: 0 };
   if (entry.turn) about[1] += turns(table, angle(entry.turn, 0));
   if (entry.tilt)
     about[0] += turns(table, entry.tilt.reach * sin(table, angle(entry.tilt.rate, 1)));
@@ -64,6 +66,11 @@ export function pose(table, entry, m, frame, phase) {
   if (entry.cycle) {
     const program = entry.cycle[phaseField(m)];
     p.frame = program[Math.floor(frame) % program.length];
+  }
+  if (entry.breathe) {
+    const b = entry.breathe;
+    const rate = b.rate + Math.trunc((b.full - b.tick * time) / b.over);
+    p.squash = turns(table, b.reach * sin(table, angle(rate, 0)));
   }
   return p;
 }
