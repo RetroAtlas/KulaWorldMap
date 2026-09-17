@@ -188,3 +188,26 @@ test("a platform runs its rail at 25 a frame and waits 48 at each end", () => {
   assert.equal(w.length, 2);
   assert.equal(w.axis, 1);
 });
+
+test("the wandering ball shakes toward its way for 76 frames, then dashes a block onto the grid", () => {
+  const l = level(row(10, 14, 10, 17), [{ x: 12, y: 10, z: 17, kind: 0, on: [object(0, 53, 4)] }]);
+  const w = [...walkers(l, index(l), table).values()][0];
+  let roll = 0;
+  w.dice = () => [2, 3, 0, 1][roll++ % 4] / 4 + 0.01;
+  const p = probe(l);
+  const xs = [];
+  for (let f = 1; f <= 86 * 3 + 1; f++) {
+    advance(w, p, f);
+    xs.push(w.pos[0]);
+    assert.equal(w.pos[1], 10 * UNIT, "it keeps to its row");
+  }
+  const home = 12 * UNIT;
+  for (let f = 0; f < 76; f++)
+    assert.ok(xs[f] >= home && xs[f] <= home + 130, `frame ${f} at ${xs[f]}`);
+  assert.equal(xs[75], home, "and comes back to rest before it goes");
+  assert.equal(xs[76], home + 53);
+  assert.equal(xs[85], home + 530);
+  assert.equal(xs[86], home + UNIT, "a block on, settled on the grid, shaking again");
+  assert.equal(xs[86 * 2], home, "back, as the dice said, and settled");
+  assert.equal(xs[86 * 3], home - UNIT, "then on the way it faced last");
+});

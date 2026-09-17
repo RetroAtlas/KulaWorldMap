@@ -3,7 +3,8 @@
 // start: a captivator keeps its position in the game's units, its heading and
 // its side as the game's unit vectors, and asks the lattice the game's own
 // questions at the game's own moments. A moving platform runs its rail the
-// same way. The wandering ball draws its way by dice and stays put here.
+// same way. The wandering ball draws its way by dice, so its walk here is one
+// the game could take and not the one it will.
 import { FACE_NORMAL, OFF_LATTICE, kindMotion } from "./data.js";
 import { cellKey } from "./state.js";
 import { blockPhase } from "./motion.js";
@@ -15,6 +16,8 @@ const PROBE = 400; // how far back toward the block it looks for the next one
 const SLOW_STAR = 50;
 const WHEEL = 51;
 const FAST_STAR = 52;
+const WANDERER = 53;
+const GRID = 256; // it settles on a multiple of this, the middle of a cell or its edge
 const PLATFORM_KIND = 5;
 const CRUMBLING_KIND = 6;
 const VANISHING_KIND = 7;
@@ -136,6 +139,7 @@ const ahead = (w, p, way, frame) => {
   const next = add(block(w), way, 1);
   return p.free(next, w.face, frame) && p.empty(add(next, w.n, 1), frame);
 };
+const travelled = (w) => Math.abs(w.pos.reduce((sum, v, i) => sum + v - w.home[i], 0));
 const turnTo = (w, way) => {
   const d = w.d;
   if (way === w.s) {
@@ -195,6 +199,7 @@ export function walker(m, c, l, table, frame = 0) {
   });
   w.pos = [...w.home];
   w.turn = { from: w.d, way: null, part: 0 };
+  if (m.type === WANDERER) Object.assign(w, { mode: 0, fresh: true, dice: Math.random });
   return w;
 }
 
@@ -250,6 +255,46 @@ function stepWheel(w, p, frame) {
   w.state = 0;
 }
 
+// The wandering ball settles on the grid, draws ways until one is open, then
+// shakes toward it for 76 frames, faster and faster, and dashes a block.
+function decide(w, p, frame) {
+  w.mode = 0;
+  w.theta = 0;
+  w.home = w.pos.map((v, i) => (w.d[i] ? (v + GRID / 2) & ~(GRID - 1) : v));
+  w.pos = [...w.home];
+  for (let tries = 0; tries < 64; tries++) {
+    const way = Math.floor(w.dice() * w.entry.ways);
+    if (way === 0 && beside(w, p, w.s, frame)) turnTo(w, w.s);
+    else if (way === 1 && beside(w, p, neg(w.s), frame)) turnTo(w, neg(w.s));
+    else if (way === 2 && ahead(w, p, w.d, frame)) void 0;
+    else if (way === 3 && ahead(w, p, neg(w.d), frame)) about(w);
+    else continue;
+    w.mode = 1;
+    return;
+  }
+  w.mode = -1;
+  w.stuck = true;
+}
+
+function stepWanderer(w, p, frame) {
+  const e = w.entry;
+  if (w.fresh || (w.mode === -1 && !w.stuck && travelled(w) >= e.settle)) decide(w, p, frame);
+  w.fresh = false;
+  if (w.mode === -1) {
+    if (!w.stuck) w.pos = add(w.pos, w.d, e.dash);
+    return;
+  }
+  w.theta = (w.theta + Math.floor((w.mode * w.mode) / 8)) % 4096;
+  const lurch =
+    e.shake.reach - Math.round(e.shake.reach * Math.cos((w.theta / 4096) * Math.PI * 2));
+  w.pos = add(w.home, w.d, lurch);
+  w.mode += 1;
+  if (w.mode >= e.shake.frames) {
+    w.mode = -1;
+    w.pos = [...w.home];
+  }
+}
+
 function stepFastStar(w) {
   const e = w.entry;
   w.theta = (w.theta + e.sway.rate) % 4096;
@@ -276,6 +321,7 @@ export function advance(w, p, frame) {
     else if (w.type === SLOW_STAR) stepStar(w, p, w.at);
     else if (w.type === WHEEL) stepWheel(w, p, w.at);
     else if (w.type === FAST_STAR) stepFastStar(w);
+    else if (w.type === WANDERER) stepWanderer(w, p, w.at);
   }
 }
 
@@ -287,7 +333,9 @@ export function walkers(l, idx, table, frame = 0) {
     const c = idx.cells.get(key);
     for (const m of marks) {
       const moves =
-        m.face === null ? m.kind === PLATFORM_KIND : [SLOW_STAR, WHEEL, FAST_STAR].includes(m.type);
+        m.face === null
+          ? m.kind === PLATFORM_KIND
+          : [SLOW_STAR, WHEEL, FAST_STAR, WANDERER].includes(m.type);
       if (moves) out.set(`${key}/${m.face}`, walker(m, c, l, table, frame));
     }
   }

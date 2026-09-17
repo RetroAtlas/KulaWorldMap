@@ -162,7 +162,8 @@ class Table(unittest.TestCase):
                     "corkscrew.wrap", "corkscrew.rise", "corkscrew.spin", "star52.sway",
                     "star52.sway.reach", "star52.tumble.x", "star52.tumble.y",
                     "star50.tumble.x", "star50.tumble.y", "star50.tumble.z", "star50.travel",
-                    "ball53.shake", "ball53.lurch.reach", "ball53.dash", "wheel.roll",
+                    "ball53.shake", "ball53.lurch.reach", "ball53.dash", "ball53.settle",
+                    "ball53.ways", "wheel.roll",
                     "wheel.travel", "wheel.turning", "wheel.turn.right", "wheel.turn.about",
                     "captivator.standoff", "ball.breathe", "ball.breathe.reach",
                     "ball.breathe.full", "ball.breathe.over", "time.tick"):

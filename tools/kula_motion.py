@@ -373,7 +373,7 @@ def table(r, platform_speed):
              "sway": {"rate": r["star52.sway"], "reach": r["star52.sway.reach"]}},
         53: {"tumble": star50,
              "shake": {"frames": r["ball53.shake"], "reach": r["ball53.lurch.reach"]},
-             "dash": r["ball53.dash"]},
+             "dash": r["ball53.dash"], "settle": r["ball53.settle"], "ways": r["ball53.ways"]},
         56: {"bounce": {"rate": r["corkscrew.bounce"], "wrap": r["corkscrew.wrap"],
                         "rise": r["corkscrew.rise"], "spin": r["corkscrew.spin"]},
              "phases": [r["corkscrew.phase0"], r["corkscrew.phase1"], r["corkscrew.phase2"], 0]},
