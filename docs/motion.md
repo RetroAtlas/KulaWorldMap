@@ -77,7 +77,7 @@ Types 50, 51, 52, 53 and 56 are lifted out of their slots at load into 180-byte 
 | --- | --- | --- |
 | 50 slow star | 13 units a frame along its heading, a block in 0.66 s, and decides what to do next each time it crosses the middle of a cell (`0x8003bb98`) | tumbles about its three axes by 11, −100 and 43, turns in 6.2, 0.68 and 1.6 s |
 | 52 fast star | sways about its home along its heading by 600·sin θ, 1.17 blocks either way, with θ stepping 53, a swing and back in 1.29 s, starting at its home | tumbles by 64 and 32, turns in 1.07 and 2.1 s |
-| 51 wheel | rolls 12 units a frame, a block in 0.71 s, and decides at cell middles; a turn takes 76 frames at 13 a frame, a quarter, and an about-turn 26 a frame | rolls about its axle by −53, a turn in 1.29 s, while moving |
+| 51 wheel | rolls 12 units a frame, a block in 0.71 s, and decides at cell middles; a turn takes 76 frames at 13 a frame, a quarter, and an about-turn 26 a frame | rolls about its axle by −53, a turn in 1.29 s, while moving; the axle lies across the way its facing gives, which play on OBJ LEVEL fixed (2026-09-17) and which the viewer draws as a quarter turn on the mesh |
 | 53 wandering ball | shakes for 77 frames, 1.3 s, lurching along the way it will go by 65·(1 − cos θ), up to 130 units, with θ stepping n²/8 on the nth frame so the shaking quickens; then dashes 53 units a frame, a block in ten, settles on the grid and draws a new way from four (`0x8003c730`) | tumbles like the slow star |
 | 56 corkscrew | rises 400·sin θ along the normal, 0.78 blocks, with θ stepping 23 and wrapping at 2048, a half sine, so it lands and leaves at speed: a bounce every 89 frames, 1.48 s, with sound 24 at each landing | spins about the normal by 400·cos θ a frame, 2.8 turns up and 2.8 back |
 

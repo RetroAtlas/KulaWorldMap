@@ -484,6 +484,11 @@ const GAP = 0.03; // between a thing and its face, in blocks
 const SHADOW = "rgba(0 0 0 / 0.32)";
 const GLASS = 0.55; // how much a translucent polygon covers
 const FLOATING = 0.02; // a lift beyond this is off the face, in blocks
+// The rolling stone's axle is its model's z, which lies across the way it
+// rolls, so it stands a quarter turn from the way its facing gives and rolls
+// about that axle with its top going the way it travels.
+const STONE = 51;
+const ACROSS = 0.25;
 
 function drawObject(m, c, model, motion, frame, phase, round, time, going) {
   const up = FACE_NORMAL[m.face];
@@ -504,7 +509,10 @@ function drawObject(m, c, model, motion, frame, phase, round, time, going) {
     wide = 1 + p.squash;
     tall = 1 - 2 * p.squash;
     if (markerState(m) === "off") about = [0, 0, 0];
-    if (motion.roll && going) about[2] = going.roll / motionTable().turn;
+    if (m.type === STONE) {
+      about[1] += ACROSS;
+      about[2] = -(going ? going.roll / motionTable().turn : about[2]);
+    }
     if (motion.bob) lift += motion.bob.reach * unit;
     lift += p.lift * unit;
     o[2] += p.bob * unit;
