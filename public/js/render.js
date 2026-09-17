@@ -202,6 +202,17 @@ function visible(idx, moving) {
       }
     }
   }
+  // A thing on its way across blocks is drawn where it is, among the blocks
+  // there, rather than with the block it started on.
+  if (moving) {
+    for (const going of moving.values()) {
+      const { w, offset } = going;
+      if (w.face === undefined) continue;
+      const n = FACE_NORMAL[w.face];
+      const at = [w.c.x, w.c.y, w.c.z].map((v, i) => v + 0.5 + offset[i] + n[i] * 0.5);
+      out.push({ x: at[0], y: at[1], z: at[2], home: w.c, thing: going });
+    }
+  }
   out.sort((a, b) => depth(b.x, b.y, b.z) - depth(a.x, a.y, a.z));
   return out;
 }
@@ -355,6 +366,10 @@ export function draw() {
       drawBeams(c, ghost);
       continue;
     }
+    if (c.thing) {
+      if (state.show.objects && !ghost) drawThing(c.thing.w.m, home, l, frame, home, c.thing);
+      continue;
+    }
     const key = cellKey(home.x, home.y, home.z);
     const sel = state.selected?.key === key;
     const hov = state.hover?.key === key;
@@ -397,8 +412,12 @@ export function draw() {
 
     if (state.show.objects && !ghost && !c.k) {
       const marks = idx.markers.get(key);
-      if (marks)
-        for (const m of marks) drawThing(m, c, l, frame, home, moving?.get(`${key}/${m.face}`));
+      if (marks) {
+        for (const m of marks) {
+          if (moving?.has(`${key}/${m.face}`)) continue;
+          drawThing(m, c, l, frame, home);
+        }
+      }
     }
     if (state.survey.on && !ghost) {
       const m = state.survey.marks.get(key);
