@@ -343,8 +343,9 @@ def as_dict(m):
     }
 
 
-def write_objects(g, path, placed=None):
-    """One model to a line, so a rebuild diffs by model."""
+def write_objects(g, path, placed=None, motion=None):
+    """One model to a line, so a rebuild diffs by model, and the motion table
+    after them, a type or a kind to a line."""
     data = objects(g, placed)
     lines = ["{", f' "block": {data["block"]},', ' "types": {']
     types = list(data["types"].items())
@@ -353,7 +354,20 @@ def write_objects(g, path, placed=None):
         lines.append(f'  "{t}": [\n{body}\n  ]' + ("," if i < len(types) - 1 else ""))
     lines += [" },", ' "balls": [']
     lines.append(",\n".join("  " + json.dumps(m, separators=(",", ":")) for m in data["balls"]))
-    lines += [" ]", "}", ""]
+    lines += [" ]" + ("," if motion else "")]
+    if motion:
+        data["motion"] = motion
+        head = {k: v for k, v in motion.items() if k not in ("types", "kinds")}
+        lines.append(' "motion": {' + json.dumps(head, separators=(",", ":"))[1:-1] + ",")
+        for group in ("types", "kinds"):
+            entries = list(motion[group].items())
+            lines.append(f'  "{group}": {{')
+            for i, (k, v) in enumerate(entries):
+                lines.append(f'   "{k}": ' + json.dumps(v, separators=(",", ":"))
+                             + ("," if i < len(entries) - 1 else ""))
+            lines.append("  }" + ("," if group == "types" else ""))
+        lines.append(" }")
+    lines += ["}", ""]
     Path(path).write_text("\n".join(lines))
     return data
 

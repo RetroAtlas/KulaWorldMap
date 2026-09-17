@@ -13,9 +13,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import THEMES, open_disc, packs
+from kula_disc import EXE, THEMES, open_disc, packs
 from kula_ggi import FILE as GGI, Ggi, write_objects
-from kula_level import Level, SIDE, STYLES, FIRST_RECORD
+from kula_level import Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
+from kula_motion import Code, readings, table
 from kula_pak import Pak
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
@@ -67,7 +68,7 @@ def main():
     args = ap.parse_args()
     disc = open_disc(args.disc)
 
-    levels, themes, checked, problems = [], [], 0, []
+    levels, themes, checked, problems, speeds = [], [], 0, [], set()
     for theme, path in packs(disc):
         pak = Pak(disc.read_file(path), path)
         if not themes or themes[-1]["id"] != theme:
@@ -77,8 +78,11 @@ def main():
             for msg in L.verify():
                 problems.append(f"{path} {L.name}: {msg}")
             checked += sum(1 for c in L.cells if c[3] >= FIRST_RECORD)
+            speeds |= {r.speed for r in L.records if r.kind == PLATFORM_KIND}
             themes[-1]["levels"].append(len(levels))
             levels.append(level_json(L, theme, path, i))
+    if len(speeds) != 1:
+        problems.append(f"moving platforms run at {sorted(speeds)}, not one speed")
     if problems:
         for p in problems[:20]:
             print(f"  {p}", file=sys.stderr)
@@ -104,9 +108,11 @@ def main():
           f"-> {OUT.relative_to(OUT.parent.parent.parent)} ({OUT.stat().st_size/1024:.0f} KB)")
 
     placed = {o["type"] for l in levels for r in l["records"] for o in r["on"]}
-    shapes = write_objects(Ggi(disc.read_file(GGI)), OBJECTS, placed)
+    motion = table(readings(Code(disc.read_file(EXE))), speeds.pop())
+    shapes = write_objects(Ggi(disc.read_file(GGI)), OBJECTS, placed, motion)
     models = sum(len(v) for v in shapes["types"].values()) + len(shapes["balls"])
-    print(f"{len(shapes['types'])} object types and the ball drawn by {models} models "
+    print(f"{len(shapes['types'])} object types and the ball drawn by {models} models, "
+          f"{len(motion['types'])} types and {len(motion['kinds'])} kinds of block in motion "
           f"-> {OBJECTS.relative_to(OUT.parent.parent.parent)} ({OBJECTS.stat().st_size/1024:.0f} KB)")
 
 

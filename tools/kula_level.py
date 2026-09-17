@@ -23,7 +23,8 @@ a block carries up to six, and one whose top is bare is not empty. The kind
 word is set in the first slot only. It is the block's, and a few kinds do not
 carry objects in their first two slots: a laser or a rail names its two ends
 there, with the type the direction from the block to the far end numbered as
-above, and kind 6 keeps a fixed-point copy of its own cell.
+above, a rail keeping which end it starts from, its length in blocks and its
+speed in the second, and kind 6 keeps a fixed-point copy of its own cell.
 
 A lattice cell holds one of five plain block styles below 5, or 5 + i for a
 block carrying record i. The record repeats the cell's own coordinates, which
@@ -45,6 +46,7 @@ FIELDS = 11
 HEAD = 6             # the cell that ends a record, or the level header
 TRAILER_KIND = 666
 LASER_KIND = 8
+PLATFORM_KIND = 5
 NOWHERE = (-1, -1, -1)
 
 # The kinds whose first two slots are the block's own payload, not its faces.
@@ -52,7 +54,7 @@ PAYLOAD_KINDS = frozenset({5, 6, 7, LASER_KIND})
 # The kind the lattice never names: it is the last record on the levels that
 # have it, and whatever its slots hold, the engine's walk does not reach it.
 UNPLACED_KIND = 9
-SPANS = frozenset({5, LASER_KIND})    # kinds whose fields name two cells
+SPANS = frozenset({PLATFORM_KIND, LASER_KIND})    # kinds whose fields name two cells
 
 
 class Face:
@@ -107,6 +109,13 @@ class Record:
     def colour(self):
         """A laser's circuit: which switches it answers to, and the beam's colour."""
         return self.slots[1][6] if self.kind == LASER_KIND else None
+
+    @property
+    def speed(self):
+        """A moving platform's speed in units a frame, as the level data holds it
+        before the loader scales it: the third word of its second slot, after
+        which end it starts from and how many blocks long it is."""
+        return self.slots[1][2] if self.kind == PLATFORM_KIND else None
 
     def as_dict(self):
         d = {"x": self.x, "y": self.y, "z": self.z, "kind": self.kind}

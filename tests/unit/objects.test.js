@@ -46,3 +46,26 @@ test("a model's polygons name its vertices and carry a colour per corner", () =>
     }
   }
 });
+
+// What moves is read off the executable at a frame a sixtieth of a second, and
+// the two things that run a cycle of states carry it as a frame program, one
+// per value of their phase field.
+test("the motion table is in the game's units and cycles per phase", () => {
+  const m = objects.motion;
+  assert.equal(m.hz, 60);
+  assert.equal(m.turn, 4096);
+  for (const t of Object.keys(m.types))
+    assert.ok(drawn.has(Number(t)), `type ${t} moves but is not drawn`);
+  for (const [n, len] of [
+    [m.types[11].cycle, objects.types[11][0].frames.length],
+    [m.kinds[7].cycle, 6],
+    [m.kinds[7].level, 256],
+  ]) {
+    assert.equal(n.length, 4);
+    for (const p of n) {
+      assert.equal(p.length, n[0].length);
+      for (const v of p) assert.ok(Number.isInteger(v) && v >= 0 && v < len);
+    }
+  }
+  assert.equal(m.types[56].phases.length, 4);
+});
