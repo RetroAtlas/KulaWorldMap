@@ -18,13 +18,15 @@ export const setAnnotations = (a) => {
   ann = { worlds: {}, kinds: {}, types: {}, levels: {}, ...a };
 };
 
-let shapes = { block: 512, types: {}, balls: [], motion: null };
+let shapes = { block: 512, types: {}, balls: [], motion: null, skins: null };
 export const setObjects = (o) => {
-  shapes = { block: 512, types: {}, balls: [], motion: null, ...o };
+  shapes = { block: 512, types: {}, balls: [], motion: null, skins: null, ...o };
 };
 export const modelUnit = () => 1 / shapes.block;
 /** The rates the build read off the executable, or null where the file has none. */
 export const motionTable = () => shapes.motion;
+/** What the game paints on every face, read off the executable, or null where the file has none. */
+export const skinsTable = () => shapes.skins;
 export const motionOf = (m) =>
   m.face === null ? null : (shapes.motion?.types[String(m.type)] ?? null);
 export const kindMotion = (kind) => shapes.motion?.kinds[String(kind)] ?? null;

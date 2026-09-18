@@ -12,6 +12,7 @@ import {
   markerState,
   markerModel,
   motionTable,
+  skinsTable,
   motionOf,
   kindMotion,
   modelUnit,
@@ -106,12 +107,14 @@ function atlasFor(world) {
 const STYLE_TEXTURE = [0, 1, 2, 3, 8];
 
 // The six faces of a unit cube: outward normal, the neighbour it hides behind,
-// and its corners. Lighting comes from the world, not from the screen, so a
-// face keeps its brightness as the view turns and the solid reads as solid.
+// its corners, and the number the game gives it. Lighting comes from the
+// world, not from the screen, so a face keeps its brightness as the view
+// turns and the solid reads as solid.
 const FACES = [
   {
     n: [0, 0, 1],
     d: [0, 0, 1],
+    game: 5,
     c: [
       [0, 0, 1],
       [1, 0, 1],
@@ -122,6 +125,7 @@ const FACES = [
   {
     n: [0, 0, -1],
     d: [0, 0, -1],
+    game: 0,
     c: [
       [0, 0, 0],
       [0, 1, 0],
@@ -132,6 +136,7 @@ const FACES = [
   {
     n: [1, 0, 0],
     d: [1, 0, 0],
+    game: 1,
     c: [
       [1, 0, 0],
       [1, 1, 0],
@@ -142,6 +147,7 @@ const FACES = [
   {
     n: [-1, 0, 0],
     d: [-1, 0, 0],
+    game: 4,
     c: [
       [0, 0, 0],
       [0, 0, 1],
@@ -152,6 +158,7 @@ const FACES = [
   {
     n: [0, 1, 0],
     d: [0, 1, 0],
+    game: 2,
     c: [
       [0, 1, 0],
       [0, 1, 1],
@@ -162,6 +169,7 @@ const FACES = [
   {
     n: [0, -1, 0],
     d: [0, -1, 0],
+    game: 3,
     c: [
       [0, 0, 0],
       [1, 0, 0],
@@ -182,11 +190,13 @@ const lit = FACES.map((f) => {
   return 0.5 + 0.75 * (0.5 + 0.5 * d);
 });
 
-// Which of the three shipped shades a face wears. Fixed in the world rather
-// than on the screen, so a face keeps its brightness as the view turns.
+// Which of the three shipped shades a face wears: the world's own table says,
+// and a face keeps its shade as the view turns. Without the table, lit from
+// above and one side.
 const SHADE = FACES.map((f) =>
   f.n[2] < 0 ? 2 : f.n[2] > 0 ? 0 : f.n[0] > 0 || f.n[1] < 0 ? 1 : 0,
 );
+const shadeOf = (i, world) => skinsTable()?.shade[world]?.[FACES[i].game] ?? SHADE[i];
 
 const PLATFORM = 5;
 const AXIS = { 1: 0, 2: 1 }; // a platform's first field names the axis it is laid along
@@ -280,7 +290,7 @@ function cube(g, c, idx, colour, edge, alpha, skin) {
     if (skin) {
       g.save();
       g.clip();
-      paint(g, pts, skin, SHADE[i], alpha);
+      paint(g, pts, skin, shadeOf(i, skin.world), alpha);
       g.restore();
     } else {
       g.fillStyle = colour ? colour(i) : edge;
@@ -408,7 +418,7 @@ export function draw() {
     // A block wears the skin of its kind, and a kind past the skinned ones
     // wears the plain stone with its marker saying what it is.
     const skin = atlas
-      ? { img: atlas, tex: STYLE_TEXTURE[kind < state.data.styles ? kind : 0] }
+      ? { img: atlas, world: l.theme, tex: STYLE_TEXTURE[kind < state.data.styles ? kind : 0] }
       : null;
     cube(
       ctx,
