@@ -53,6 +53,7 @@ NOWHERE = (-1, -1, -1)
 PAYLOAD_KINDS = frozenset({5, 6, 7, LASER_KIND})
 # The kind the lattice never names: it is the last record on the levels that
 # have it, and whatever its slots hold, the engine's walk does not reach it.
+# Its first slot is the level's settings instead, which the loader reads.
 UNPLACED_KIND = 9
 SPANS = frozenset({PLATFORM_KIND, LASER_KIND})    # kinds whose fields name two cells
 
@@ -125,7 +126,7 @@ class Record:
 
     def as_dict(self):
         d = {"x": self.x, "y": self.y, "z": self.z, "kind": self.kind}
-        if self.kind in PAYLOAD_KINDS:
+        if self.kind in PAYLOAD_KINDS or self.kind == UNPLACED_KIND:
             d["type"] = self.type
             d["f"] = self.f
         if self.kind == LASER_KIND:
