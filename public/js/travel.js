@@ -190,14 +190,16 @@ export function walker(m, c, l, table, frame = 0) {
   Object.assign(w, heading(m.face, m.f[0]), {
     n,
     face: m.face,
-    home: add(home, n, STANDOFF),
+    origin: add(home, n, STANDOFF),
     entry,
     state: 0,
     timer: 0,
     theta: 0,
     roll: 0,
   });
-  w.pos = [...w.home];
+  // where it stands at the start; the wandering ball moves its home on
+  w.home = [...w.origin];
+  w.pos = [...w.origin];
   w.turn = { from: w.d, way: null, part: 0 };
   if (m.type === WANDERER) Object.assign(w, { mode: 0, fresh: true, dice: Math.random });
   return w;
@@ -205,7 +207,7 @@ export function walker(m, c, l, table, frame = 0) {
 
 /** The thing's displacement from its cell, in blocks, and the way it is drawn heading. */
 export function place(w) {
-  const from = w.kind === PLATFORM_KIND ? [w.c.x, w.c.y, w.c.z].map((v) => v * UNIT) : w.home;
+  const from = w.kind === PLATFORM_KIND ? [w.c.x, w.c.y, w.c.z].map((v) => v * UNIT) : w.origin;
   const offset = w.pos.map((v, i) => (v - from[i]) / UNIT);
   if (w.kind === PLATFORM_KIND) return { offset };
   let fwd = w.d;
@@ -299,7 +301,7 @@ function stepFastStar(w) {
   const e = w.entry;
   w.theta = (w.theta + e.sway.rate) % 4096;
   const sway = Math.round(e.sway.reach * Math.sin((w.theta / 4096) * Math.PI * 2));
-  w.pos = add(w.home, w.d, sway);
+  w.pos = add(w.origin, w.d, sway);
 }
 
 function stepPlatform(w) {

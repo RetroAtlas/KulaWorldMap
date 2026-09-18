@@ -210,4 +210,5 @@ test("the wandering ball shakes toward its way for 76 frames, then dashes a bloc
   assert.equal(xs[86], home + UNIT, "a block on, settled on the grid, shaking again");
   assert.equal(xs[86 * 2], home, "back, as the dice said, and settled");
   assert.equal(xs[86 * 3], home - UNIT, "then on the way it faced last");
+  assert.deepEqual(place(w).offset, [-1, 0, 0], "and is drawn a block from where it started");
 });
