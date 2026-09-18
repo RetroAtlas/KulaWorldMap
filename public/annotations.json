@@ -18,7 +18,8 @@
       "note": "A block that cannot be seen until the ball is close, or, on some levels, only from far away; sunglasses reveal it for a while. Style 3 in the lattice, kind 3 in a record: LEVEL 31, the walkthrough's first invisible platform, is eight of them and nothing else new. Two thirds of the game's are in Haze. Rolling over one in a bonus level scores nothing: the six bonus levels that have invisible blocks each fall short of the walkthrough's maximum by 50 times their count, and no other bonus level has one."
     },
     "4": {
-      "note": "One cell in each copy of OBJ LEVEL and nowhere else. It draws the shared panel texture rather than the world's stone."
+      "name": "Acid block",
+      "note": "One cell in each copy of OBJ LEVEL and nowhere else, so the walkthrough never meets it. The loader paints it with the green splat, the fifteenth model of the artwork's table, and on OBJ LEVEL in play it is the green block (2026-09-16); the game never names it, and the name is what it looks like."
     },
     "5": {
       "name": "Moving platform",
@@ -38,7 +39,8 @@
       "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 123 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, and the slot after its own holds its circuit: the colour of the beam, and of the switch and teleporter that share it. At load the engine's routine at 0x80035a70 writes a plain block into the lattice at both ends and marks every cell between as beam, which is why 64 of the 246 ends are cells the level file leaves empty and the game stands a block on anyway."
     },
     "9": {
-      "note": "The last record on 160 levels, and the one kind no lattice cell ever names, so the engine's walk over the level does not reach it. It stands on an empty cell on 114 of the 160. Its slots hold objects like any block's, 65 of them on 49 levels, and they are not in play: counted, they would push 27 levels past the walkthrough's maximum, LEVEL 24 by a fruit and LEVEL 142 by two gems, where without them those levels are exact. So it reads as a block deleted in the editor with its faces left as they were, and the map leaves them out."
+      "name": "Level settings",
+      "note": "The last record on 160 levels, and the one kind no lattice cell ever names, so the engine's walk over the level does not reach it. The loader reads its first slot as the level's settings: a type of 1 marks a hidden level, which draws its blocks half-transparent and the glass ball, and is 1 on exactly the ten; a first field of 1 pulls the camera back, on LEVEL 106 to 108, 110 and 111, SIMON 9 and HIDDEN 8. It stands on an empty cell on 114 of the 160. Its other slots hold objects like any block's, 65 of them on 49 levels, and they are not in play: counted, they would push 27 levels past the walkthrough's maximum, LEVEL 24 by a fruit and LEVEL 142 by two gems, where without them those levels are exact. So the slots read as a block deleted in the editor with its faces left as they were, and the map leaves them out."
     },
     "666": {
       "name": "Camera",
@@ -132,7 +134,7 @@
       "note": "A square the ball can only leave in the direction the arrow points. LEVEL 61, the walkthrough's first arrows, carries the game's first twelve, and the field that varies takes 1 to 4, a quarter turn each on the face: on a block's top they point +y, -x, -y and +x, which LEVEL 62's arrows in play fixed, one of each."
     },
     "29": {
-      "note": "Two in the game, on LEVEL 58 and Hell's LEVEL 135, and nothing the walkthrough says about either level names it."
+      "note": "Two in the game, on LEVEL 58 and Hell's LEVEL 135, and nothing the walkthrough says about either level names it. The loader paints the clock's face under it as it does under type 8, which is the one thing the disc says about it, and the map draws it so."
     },
     "30": {
       "name": "Start",
