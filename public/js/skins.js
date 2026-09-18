@@ -37,14 +37,22 @@ export function seed(x, y, z, face) {
 
 /**
  * How a level is drawn: from which of the two sets of skins, which the
- * loader decides by whether the level holds a key, with the world's place,
- * whose parity picks a bonus level's colours.
+ * loader decides by whether the level holds a key, and whether its faces are
+ * half-transparent, which the settings record of a hidden level asks for;
+ * with the world's place, whose parity picks a bonus level's colours.
  */
 export function lookOf(skins, l, world) {
   const keyed = l.records.some(
     (r) => r.kind < skins.keys.kinds && r.on.some((o) => o.type === skins.keys.type),
   );
-  return { set: skins.sets[keyed ? "arcade" : "bonus"], bonus: !keyed, world, parity: world % 2 };
+  const glass = l.records.some((r) => r.kind === skins.hidden.kind && r.type === skins.hidden.type);
+  return {
+    set: skins.sets[keyed ? "arcade" : "bonus"],
+    bonus: !keyed,
+    glass,
+    world,
+    parity: world % 2,
+  };
 }
 
 /** The face at each end of a beam that looks along it, in the beam's colour, by cell. */
