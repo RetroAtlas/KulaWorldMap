@@ -211,4 +211,26 @@ test("the wandering ball shakes toward its way for 76 frames, then dashes a bloc
   assert.equal(xs[86 * 2], home, "back, as the dice said, and settled");
   assert.equal(xs[86 * 3], home - UNIT, "then on the way it faced last");
   assert.deepEqual(place(w).offset, [-1, 0, 0], "and is drawn a block from where it started");
+  assert.deepEqual(place(w).fwd, [1, 0, 0], "facing as it did at the start");
+});
+
+test("a star keeps its bearing through a turn, and only the wheel swings its nose round", () => {
+  const corner = [...row(10, 12, 10, 17), [12, 11, 17], [12, 12, 17]];
+  for (const [type, fixed] of [
+    [50, true],
+    [51, false],
+  ]) {
+    const l = level(corner, [{ x: 10, y: 10, z: 17, kind: 0, on: [object(0, type, 4)] }]);
+    const w = [...walkers(l, index(l), table).values()][0];
+    const p = probe(l);
+    const headings = new Set();
+    let far = 0;
+    for (let f = 1; f <= 400; f++) {
+      advance(w, p, f);
+      headings.add(place(w).fwd.join());
+      far = Math.max(far, w.pos[1]);
+    }
+    assert.ok(far > 11 * UNIT, "it went round the corner");
+    assert.equal(headings.size === 1, fixed);
+  }
 });

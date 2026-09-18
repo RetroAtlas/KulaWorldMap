@@ -200,23 +200,29 @@ export function walker(m, c, l, table, frame = 0) {
   // where it stands at the start; the wandering ball moves its home on
   w.home = [...w.origin];
   w.pos = [...w.origin];
+  w.first = w.d;
   w.turn = { from: w.d, way: null, part: 0 };
   if (m.type === WANDERER) Object.assign(w, { mode: 0, fresh: true, dice: Math.random });
   return w;
 }
 
-/** The thing's displacement from its cell, in blocks, and the way it is drawn heading. */
+/** The thing's displacement from its cell, in blocks, and the way it is drawn
+    heading: only the wheel turns its body with its way, and it swings its
+    nose from the old heading to the new, or round; a star tumbles the same
+    whichever way it walks. */
 export function place(w) {
   const from = w.kind === PLATFORM_KIND ? [w.c.x, w.c.y, w.c.z].map((v) => v * UNIT) : w.origin;
   const offset = w.pos.map((v, i) => (v - from[i]) / UNIT);
   if (w.kind === PLATFORM_KIND) return { offset };
-  let fwd = w.d;
-  if (w.state) {
-    // a turning wheel swings its nose from the old heading to the new, or round
-    const { from, way, part } = w.turn;
-    const angle = part * (way ? Math.PI / 2 : Math.PI);
-    const toward = way || neg(w.s);
-    fwd = from.map((c, i) => c * Math.cos(angle) + toward[i] * Math.sin(angle));
+  let fwd = w.first;
+  if (w.type === WHEEL) {
+    fwd = w.d;
+    if (w.state) {
+      const { from, way, part } = w.turn;
+      const angle = part * (way ? Math.PI / 2 : Math.PI);
+      const toward = way || neg(w.s);
+      fwd = from.map((c, i) => c * Math.cos(angle) + toward[i] * Math.sin(angle));
+    }
   }
   return { offset, fwd, roll: w.roll };
 }
