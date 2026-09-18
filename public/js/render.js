@@ -202,18 +202,30 @@ function visible(idx, moving) {
       }
     }
   }
-  // A thing on its way across blocks is drawn where it is, among the blocks
-  // there, rather than with the block it started on.
+  // A thing on its way across blocks is drawn where it is, right after the
+  // nearest of the blocks it stands over, so that neither the block it is
+  // leaving nor the one it is coming onto is painted over it, while what is
+  // nearer still comes in front.
   if (moving) {
     for (const going of moving.values()) {
       const { w, offset } = going;
       if (w.face === undefined) continue;
       const n = FACE_NORMAL[w.face];
-      const at = [w.c.x, w.c.y, w.c.z].map((v, i) => v + 0.5 + offset[i] + n[i] * 0.5);
-      out.push({ x: at[0], y: at[1], z: at[2], home: w.c, thing: going });
+      const at = [w.c.x, w.c.y, w.c.z].map((v, i) => v + 0.5 + offset[i]);
+      let d = Infinity;
+      for (const axis of [0, 1, 2]) {
+        for (const k of n[axis] ? [0] : [-0.5, 0.5]) {
+          const cell = at.map((v, i) => Math.floor(i === axis ? v + k : v));
+          const c = idx.cells.get(cellKey(...cell));
+          if (c) d = Math.min(d, depth(c.x, c.y, c.z));
+        }
+      }
+      d = d === Infinity ? depth(...at.map((v, i) => v + n[i] * 0.5)) : d - 1e-6;
+      out.push({ x: at[0], y: at[1], z: at[2], d, home: w.c, thing: going });
     }
   }
-  out.sort((a, b) => depth(b.x, b.y, b.z) - depth(a.x, a.y, a.z));
+  const far = (e) => e.d ?? depth(e.x, e.y, e.z);
+  out.sort((a, b) => far(b) - far(a));
   return out;
 }
 
