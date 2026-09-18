@@ -83,19 +83,31 @@ const shade = (hex, f, a = 1) => {
   return `rgba(${m[0]} ${m[1]} ${m[2]} / ${a})`;
 };
 
+// A world's atlas is one row per shade the game ships a texture pre-lit in
+// and, along the row, every texture of the world in order. It is fetched the
+// first time a level of the world is drawn, and the level draws flat until
+// it arrives.
+const ATLAS = { size: 64, worlds: new Map() };
+function atlasFor(world) {
+  let a = ATLAS.worlds.get(world);
+  if (!a) {
+    a = { img: new Image(), ready: false };
+    a.img.onload = () => {
+      a.ready = true;
+      invalidatePick();
+      draw();
+    };
+    a.img.src = `tex/${world}.png`;
+    ATLAS.worlds.set(world, a);
+  }
+  return a.ready ? a.img : null;
+}
+// The five lattice styles as the textures the model table pairs them with.
+const STYLE_TEXTURE = [0, 1, 2, 3, 8];
+
 // The six faces of a unit cube: outward normal, the neighbour it hides behind,
 // and its corners. Lighting comes from the world, not from the screen, so a
 // face keeps its brightness as the view turns and the solid reads as solid.
-// The atlas is one row per world and, along it, each block style in each of the
-// three shades the game ships it pre-lit with.
-const ATLAS = { img: new Image(), ready: false, size: 64, shades: 3 };
-ATLAS.img.onload = () => {
-  ATLAS.ready = true;
-  invalidatePick();
-  draw();
-};
-ATLAS.img.src = "tex/blocks.png";
-
 const FACES = [
   {
     n: [0, 0, 1],
@@ -292,8 +304,7 @@ function paint(g, pts, skin, shade, alpha) {
   const d = state.view.dpr;
   g.globalAlpha = alpha;
   g.setTransform(d * ex[0], d * ex[1], d * ey[0], d * ey[1], d * p0[0], d * p0[1]);
-  const sx = (skin.style * ATLAS.shades + shade) * n;
-  g.drawImage(ATLAS.img, sx + 0.5, skin.world * n + 0.5, n - 1, n - 1, 0, 0, n, n);
+  g.drawImage(skin.img, skin.tex * n + 0.5, shade * n + 0.5, n - 1, n - 1, 0, 0, n, n);
   g.setTransform(d, 0, 0, d, 0, 0);
   g.globalAlpha = 1;
 }
@@ -355,7 +366,7 @@ export function draw() {
   if (!l) return;
   const idx = state.idx;
   const tint = WORLD_TINT[l.theme] || "#93a8d4";
-  const world = state.data.themes.findIndex((t) => t.id === l.theme);
+  const atlas = state.show.skins ? atlasFor(l.theme) : null;
 
   if (state.show.base) drawBase(l);
   const frame = motionTable() ? frameAt(motionTable(), performance.now()) : 0;
@@ -396,10 +407,9 @@ export function draw() {
     const a = (ghost ? 0.16 : 1) * (look.alpha ?? 1);
     // A block wears the skin of its kind, and a kind past the skinned ones
     // wears the plain stone with its marker saying what it is.
-    const skin =
-      state.show.skins && ATLAS.ready && world >= 0
-        ? { world, style: kind < state.data.styles ? kind : 0 }
-        : null;
+    const skin = atlas
+      ? { img: atlas, tex: STYLE_TEXTURE[kind < state.data.styles ? kind : 0] }
+      : null;
     cube(
       ctx,
       c,
