@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Read every level off the disc and write public/map_data.json, and every
-object's mesh and write public/objects.json.
+object's mesh, with how everything moves and what every face wears, and write
+public/objects.json.
 
     export KULA_DISC="/path/to/Roll Away.bin"
     python3 tools/kula_build.py
@@ -18,6 +19,7 @@ from kula_ggi import FILE as GGI, Ggi, write_objects
 from kula_level import Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
 from kula_motion import Code, readings, table
 from kula_pak import Pak
+from kula_skins import table as skins_table
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
 OBJECTS = OUT.parent / "objects.json"
@@ -108,11 +110,14 @@ def main():
           f"-> {OUT.relative_to(OUT.parent.parent.parent)} ({OUT.stat().st_size/1024:.0f} KB)")
 
     placed = {o["type"] for l in levels for r in l["records"] for o in r["on"]}
-    motion = table(readings(Code(disc.read_file(EXE))), speeds.pop())
-    shapes = write_objects(Ggi(disc.read_file(GGI)), OBJECTS, placed, motion)
+    code = Code(disc.read_file(EXE))
+    motion = table(readings(code), speeds.pop())
+    skins = skins_table(code, {t: disc.read_file(f"/{t}/{t}.TGI") for t in THEMES})
+    shapes = write_objects(Ggi(disc.read_file(GGI)), OBJECTS, placed, motion, skins)
     models = sum(len(v) for v in shapes["types"].values()) + len(shapes["balls"])
     print(f"{len(shapes['types'])} object types and the ball drawn by {models} models, "
-          f"{len(motion['types'])} types and {len(motion['kinds'])} kinds of block in motion "
+          f"{len(motion['types'])} types and {len(motion['kinds'])} kinds of block in motion, "
+          f"the skins of {len(skins['sets'])} sets of faces "
           f"-> {OBJECTS.relative_to(OUT.parent.parent.parent)} ({OBJECTS.stat().st_size/1024:.0f} KB)")
 
 
