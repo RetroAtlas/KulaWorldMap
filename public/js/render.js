@@ -22,6 +22,7 @@ import {
 } from "./data.js";
 import { frameAt, phasesOf, pose, orbit, blockPhase } from "./motion.js";
 import { walkers, probe, advance, place } from "./travel.js";
+import { lookOf, platformPlace, faceSkin } from "./skins.js";
 
 const cv = $("cv");
 const ctx = cv.getContext("2d");
@@ -103,9 +104,6 @@ function atlasFor(world) {
   }
   return a.ready ? a.img : null;
 }
-// The five lattice styles as the textures the model table pairs them with.
-const STYLE_TEXTURE = [0, 1, 2, 3, 8];
-
 // The six faces of a unit cube: outward normal, the neighbour it hides behind,
 // its corners, and the number the game gives it. Lighting comes from the
 // world, not from the screen, so a face keeps its brightness as the view
@@ -272,6 +270,8 @@ function travelling(l, idx, frame) {
   return out;
 }
 
+/** Draw a block's visible faces: each in the skin `skin(i)` gives it, or in
+    `colour(i)` without one. A face the game leaves undrawn is skipped. */
 function cube(g, c, idx, colour, edge, alpha, skin) {
   const s = state.cam.zoom * BLOCK;
   const [ox, oy] = screen(c.x, c.y, c.z);
@@ -280,6 +280,8 @@ function cube(g, c, idx, colour, edge, alpha, skin) {
     if (!facing(f.n)) continue;
     const nb = idx.cells.get(cellKey(c.x + f.d[0], c.y + f.d[1], c.z + f.d[2]));
     if (nb && nb.z >= sliceZ()) continue;
+    const sk = skin ? skin(i) : undefined;
+    if (sk === null) continue;
     const pts = f.c.map(([dx, dy, dz]) => {
       const [px, py] = project(dx, dy, dz);
       return [ox + px * s, oy + py * s];
@@ -287,10 +289,10 @@ function cube(g, c, idx, colour, edge, alpha, skin) {
     g.beginPath();
     pts.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y)));
     g.closePath();
-    if (skin) {
+    if (sk) {
       g.save();
       g.clip();
-      paint(g, pts, skin, shadeOf(i, skin.world), alpha);
+      paint(g, c, sk, shadeOf(i, sk.world), alpha);
       g.restore();
     } else {
       g.fillStyle = colour ? colour(i) : edge;
@@ -304,18 +306,43 @@ function cube(g, c, idx, colour, edge, alpha, skin) {
   }
 }
 
-/** Map the atlas cell onto a face, which orthographic projection keeps a
-    parallelogram, so an affine transform lands it exactly. */
-function paint(g, pts, skin, shade, alpha) {
+/** Map the texture onto the face, its top left, top right and bottom left
+    on the block's corners the game's own face routine puts them on, which
+    orthographic projection keeps a parallelogram, so an affine transform
+    lands it exactly. Then the colour the game draws the face through, where
+    it cycles one: a darker one as a black wash, a brighter one as a white
+    wash, and a tinted one by multiplying, which cannot brighten a channel
+    but keeps the hue. */
+function paint(g, c, sk, shade, alpha) {
   const n = ATLAS.size;
-  const [p0, p1, , p3] = pts;
+  const [p0, p1, p3] = sk.corners.map(([dx, dy, dz]) => screen(c.x + dx, c.y + dy, c.z + dz));
   const ex = [(p1[0] - p0[0]) / n, (p1[1] - p0[1]) / n];
   const ey = [(p3[0] - p0[0]) / n, (p3[1] - p0[1]) / n];
   const d = state.view.dpr;
   g.globalAlpha = alpha;
+  if (sk.add) g.globalCompositeOperation = "lighter";
   g.setTransform(d * ex[0], d * ex[1], d * ey[0], d * ey[1], d * p0[0], d * p0[1]);
-  g.drawImage(skin.img, skin.tex * n + 0.5, shade * n + 0.5, n - 1, n - 1, 0, 0, n, n);
+  g.drawImage(sk.img, sk.tex * n + 0.5, shade * n + 0.5, n - 1, n - 1, 0, 0, n, n);
   g.setTransform(d, 0, 0, d, 0, 0);
+  if (sk.colour) {
+    const [r, gg, b] = sk.colour;
+    if (r === gg && gg === b) {
+      if (r !== NEUTRAL) {
+        g.globalCompositeOperation = "source-over";
+        g.fillStyle =
+          r < NEUTRAL
+            ? `rgba(0 0 0 / ${alpha * (1 - r / NEUTRAL)})`
+            : `rgba(255 255 255 / ${alpha * Math.min(1, (r - NEUTRAL) / NEUTRAL)})`;
+        g.fill();
+      }
+    } else {
+      g.globalCompositeOperation = "multiply";
+      const ch = (v) => Math.min(255, Math.round((v * 255) / NEUTRAL));
+      g.fillStyle = `rgba(${ch(r)} ${ch(gg)} ${ch(b)} / ${alpha})`;
+      g.fill();
+    }
+  }
+  g.globalCompositeOperation = "source-over";
   g.globalAlpha = 1;
 }
 
@@ -335,11 +362,13 @@ function kindTint(tint, kind) {
   );
 }
 
-// How a kind of block reads over its skin: a wash for what the game paints
-// onto the block, and a fainter, broken cube for a block that is not solidly
-// there, whether never seen or gone once rolled on. A vanishing block runs
-// the game's cycle instead: solid while it is there, lit or darkened as the
-// game lights it, faint and broken while it is gone.
+// How a kind of block reads without its textures: a wash for what the game
+// paints onto the block, and a fainter, broken cube for a block that is not
+// solidly there, whether never seen or gone once rolled on. With the textures
+// the paint speaks for itself, and only the broken outline stays on a block
+// that is not there to be stood on. A vanishing block runs the game's cycle
+// instead: solid while it is there, lit or darkened as the game lights it,
+// faint and broken while it is gone.
 const LOOK = {
   1: { wash: "rgba(255 70 30 / 0.45)" },
   2: { wash: "rgba(160 225 255 / 0.45)" },
@@ -347,14 +376,21 @@ const LOOK = {
   6: { wash: "rgba(0 0 0 / 0.3)", dash: [6, 3] },
   7: { alpha: 0.2, dash: [2, 4] },
 };
+const SKINNED_LOOK = {
+  3: { alpha: 0.7, dash: [3, 3] },
+  7: { alpha: 0.2, dash: [2, 4] },
+};
 const VANISHING = 7;
+// The types the game draws on the face and nowhere else, so that once the
+// face is painted the marker would say the same thing twice.
+const FACE_ONLY = new Set([1, 2, 8, 29]);
 const NEUTRAL = 128; // the brightness at which a face is its own colour
 const TRANSLUCENT = 4; // the state from which a vanishing block is drawn through
 
 /** How a vanishing block looks at this frame, from where its cycle stands. */
-function vanishingLook(r, frame) {
+function vanishingLook(r, frame, skinned) {
   const { state, level } = blockPhase(kindMotion(VANISHING), r, frame);
-  if (state === 0) return LOOK[VANISHING];
+  if (state === 0) return (skinned ? SKINNED_LOOK : LOOK)[VANISHING];
   const k = Math.abs(level - NEUTRAL) / NEUTRAL;
   const wash = level > NEUTRAL ? `rgba(255 255 255 / ${0.8 * k})` : `rgba(0 0 0 / ${0.8 * k})`;
   return { alpha: state >= TRANSLUCENT ? 0.6 : 1, wash };
@@ -376,7 +412,15 @@ export function draw() {
   if (!l) return;
   const idx = state.idx;
   const tint = WORLD_TINT[l.theme] || "#93a8d4";
-  const atlas = state.show.skins ? atlasFor(l.theme) : null;
+  const skins = skinsTable();
+  const atlas = state.show.skins && skins ? atlasFor(l.theme) : null;
+  const look = atlas
+    ? lookOf(
+        skins,
+        l,
+        state.data.themes.findIndex((t) => t.id === l.theme),
+      )
+    : null;
 
   if (state.show.base) drawBase(l);
   const frame = motionTable() ? frameAt(motionTable(), performance.now()) : 0;
@@ -407,19 +451,31 @@ export function draw() {
     const sel = state.selected?.key === key;
     const hov = state.hover?.key === key;
     const kind = kindOf(c, idx, key);
-    let look = LOOK[kind] || {};
+    const rec = c.v >= state.data.firstRecord ? idx.records.get(key)?.[0] : null;
+    let style = (atlas ? SKINNED_LOOK : LOOK)[kind] || {};
     if (kind === VANISHING && kindMotion(kind)) {
       spinning = true;
-      look = vanishingLook(idx.records.get(key)[0], frame);
+      style = vanishingLook(rec, frame, !!atlas);
     }
     const base = kindTint(tint, kind);
     const boost = sel ? 0.22 : hov ? 0.12 : 0;
-    const a = (ghost ? 0.16 : 1) * (look.alpha ?? 1);
-    // A block wears the skin of its kind, and a kind past the skinned ones
-    // wears the plain stone with its marker saying what it is.
-    const skin = atlas
-      ? { img: atlas, world: l.theme, tex: STYLE_TEXTURE[kind < state.data.styles ? kind : 0] }
-      : null;
+    const a = (ghost ? 0.16 : 1) * (style.alpha ?? 1);
+    // Every face wears what the game paints on it: a stone, its kind's own
+    // texture, the plate or the shadow of what stands on it, a beam's end or
+    // a platform's cap, and the fire, the invisible block and a bonus level's
+    // stone run their cycles.
+    let skin = null;
+    if (atlas) {
+      const place = c.k !== undefined && rec?.kind === PLATFORM ? platformPlace(rec, c.k) : null;
+      const still = place ? { ...home, [place.axis]: home[place.axis] + c.k } : home;
+      const plates = idx.plates.get(key);
+      skin = (i) => {
+        const g = FACES[i].game;
+        const sk = faceSkin(skins, look, still, g, kind, rec, frame, place, plates?.get(g));
+        if (sk?.live) spinning = true;
+        return sk && { ...sk, img: atlas, world: l.theme, corners: skins.corners[g][sk.turn] };
+      };
+    }
     cube(
       ctx,
       c,
@@ -429,8 +485,8 @@ export function draw() {
       a,
       skin,
     );
-    if (look.wash) cube(ctx, c, idx, () => look.wash, null, a, null);
-    if (look.dash && !ghost) outline(c, idx, "rgba(232 238 251 / 0.7)", look.dash);
+    if (style.wash) cube(ctx, c, idx, () => style.wash, null, a, null);
+    if (style.dash && !ghost) outline(c, idx, "rgba(232 238 251 / 0.7)", style.dash);
     if (skin && (sel || hov)) {
       cube(ctx, c, idx, () => `rgba(255 255 255 / ${sel ? 0.22 : 0.12})`, null, a, null);
     }
@@ -447,7 +503,8 @@ export function draw() {
       if (marks) {
         for (const m of marks) {
           if (moving?.has(`${key}/${m.face}`)) continue;
-          drawThing(m, c, l, frame, home);
+          if (atlas && state.show.models && m.face !== null && FACE_ONLY.has(m.type)) continue;
+          drawThing(m, c, l, frame, home, null, atlas && m.type < skins.plainFrom);
         }
       }
     }
@@ -485,7 +542,7 @@ document.addEventListener("visibilitychange", () => {
 /** An object as itself where it has a mesh and the display asks for it, else
     its marker; on a moving platform the cell is where the platform is, and
     a thing that travels brings where it has got to and which way it faces. */
-function drawThing(m, c, l, frame, home = c, going = null) {
+function drawThing(m, c, l, frame, home = c, going = null, painted = false) {
   if (state.hiddenKinds.has(m.id)) return;
   const motion = state.show.models ? motionOf(m) : null;
   const phase = motion ? phasesOf(motionTable(), home.x, home.y, home.z, m.face) : null;
@@ -494,7 +551,7 @@ function drawThing(m, c, l, frame, home = c, going = null) {
     : null;
   const model = state.show.models ? markerModel(m, l, round?.form ?? null) : null;
   if (!model) return drawMarker(m, c);
-  drawObject(m, c, model, motion, frame, phase, round, l.camera?.time ?? 0, going);
+  drawObject(m, c, model, motion, frame, phase, round, l.camera?.time ?? 0, going, painted);
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(c, m.face, OBJECT_HOVER);
     const dark = markerState(m) === "off" ? " · off" : "";
@@ -511,7 +568,8 @@ function drawThing(m, c, l, frame, home = c, going = null) {
 // still, as it does in play. The polygons are filled back to front in their
 // own colours, since the shading is baked into them, and both sides are
 // drawn, since the meshes wind their faces either way. A thing on a face
-// turned away from the view is drawn faint, like its marker.
+// turned away from the view is drawn faint, like its marker. A thing whose
+// face is painted with the game's own shadow, or with a plate, casts none.
 const GAP = 0.03; // between a thing and its face, in blocks
 const SHADOW = "rgba(0 0 0 / 0.32)";
 const GLASS = 0.55; // how much a translucent polygon covers
@@ -522,7 +580,7 @@ const FLOATING = 0.02; // a lift beyond this is off the face, in blocks
 const STONE = 51;
 const ACROSS = 0.25;
 
-function drawObject(m, c, model, motion, frame, phase, round, time, going) {
+function drawObject(m, c, model, motion, frame, phase, round, time, going, painted) {
   const up = FACE_NORMAL[m.face];
   const forward = going?.fwd || markerHeading(m) || TANGENT[m.face];
   const unit = modelUnit();
@@ -558,7 +616,8 @@ function drawObject(m, c, model, motion, frame, phase, round, time, going) {
     shown = model.frames[p.frame] || shown;
   }
   for (let i = 0; i < 3; i++) o[i] += up[i] * lift;
-  if (rest > GAP + FLOATING || motion?.bounce) drawShadow(m, c, model, unit, going?.offset);
+  if (!painted && (rest > GAP + FLOATING || motion?.bounce))
+    drawShadow(m, c, model, unit, going?.offset);
   const ct = Math.cos(about[1] * Math.PI * 2),
     st = Math.sin(about[1] * Math.PI * 2);
   const fwd = forward.map((v, i) => v * ct + side[i] * st);

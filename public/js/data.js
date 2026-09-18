@@ -1,4 +1,5 @@
 import { state, SIDE, cellKey } from "./state.js";
+import { platesOf } from "./skins.js";
 
 export const WORLD_TINT = {
   HIRO: "#93a8d4",
@@ -275,7 +276,7 @@ export function index(l) {
       numbered.get(n).push({ m, cell: [r.x, r.y, r.z] });
     }
   }
-  return { cells, records, markers, numbered, beamCells, rails: rails(l) };
+  return { cells, records, markers, numbered, beamCells, plates: platesOf(rays), rails: rails(l) };
 }
 
 export const levelMarkers = (l) => l.records.flatMap(markersOf);
