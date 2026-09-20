@@ -28,7 +28,6 @@ cv.addEventListener("pointerdown", (e) => {
   cv.setPointerCapture(e.pointerId);
   drag = { x: e.clientX, y: e.clientY, pan: panning(e) };
   moved = 0;
-  cv.focus();
 });
 
 cv.addEventListener("pointermove", (e) => {
