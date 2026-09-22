@@ -12,7 +12,7 @@ import {
 import { draw, invalidatePick } from "./render.js";
 import { clearDetail } from "./detail.js";
 
-export function selectLevel(i, { keepView = false } = {}) {
+export function selectLevel(i, { keepView = false, entry = true } = {}) {
   const l = state.data.levels[i];
   if (!l) return;
   state.li = i;
@@ -28,7 +28,7 @@ export function selectLevel(i, { keepView = false } = {}) {
   emit("level-changed", i);
   chip();
   draw();
-  writeHash();
+  writeHash(entry && !keepView);
 }
 
 /** Centre on the level and pick a zoom that shows all of it. */
@@ -116,7 +116,6 @@ export function chip() {
   $("chip").innerHTML = parts.join("");
 }
 
-let writing = false;
 // While the hash is being read back, the camera is still at its defaults until
 // the last line of applyHash. Anything that writes the hash before then would
 // put those defaults in the URL, and the next reload would believe them.
@@ -127,13 +126,25 @@ const r2 = (v) => Math.round(v * 100) / 100;
 // 10s) and throw once past it, so a drag that wrote on every pointer event
 // would take the throw inside the drag rather than merely lose the URL.
 let queued = 0;
+// A change of level or a find is a history entry, so Back returns to what
+// was left behind; a turn, a pan, a zoom or a slice only brings the entry up
+// to date. The entry outlives the quieter writes that ride on its heels in
+// the same frame, so the one write carries it.
+let entry = false;
+// An entry the viewer makes comes back to it as a hashchange like any other,
+// and is not read back: reading it would clear the selection it was made for.
+let written = null;
+let ownEntries = 0;
 
-export function writeHash() {
+export function writeHash(push = false) {
+  entry ||= push;
   if (!queued) queued = requestAnimationFrame(flushHash);
 }
 
 function flushHash() {
   queued = 0;
+  const push = entry;
+  entry = false;
   const l = state.lvl;
   if (!l || restoring) return;
   const c = state.cam;
@@ -142,9 +153,11 @@ function flushHash() {
     `#L${state.li}/${Math.round(c.yaw)},${Math.round(c.pitch)}/${c.zoom.toFixed(2)}` +
     `/${t}/${r2(c.panX)},${r2(c.panY)}/${state.slice}`;
   if (location.hash === h) return;
-  writing = true;
-  history.replaceState(null, "", h);
-  writing = false;
+  written = h;
+  if (push) {
+    ownEntries++;
+    location.hash = h;
+  } else history.replaceState(null, "", h);
 }
 
 export function applyHash() {
@@ -181,7 +194,11 @@ export function applyHash() {
 // A hash the viewer cannot honour would otherwise sit in the address bar
 // naming a level that is not the one on screen.
 addEventListener("hashchange", () => {
-  if (!writing && !applyHash()) writeHash();
+  if (ownEntries && location.hash === written) {
+    ownEntries--;
+    return;
+  }
+  if (!applyHash()) writeHash();
 });
 
 export function stepLevel(delta, crossWorld) {

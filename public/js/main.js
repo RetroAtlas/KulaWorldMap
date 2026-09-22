@@ -84,6 +84,6 @@ Promise.all([
     writeHash();
   });
   resize();
-  if (!applyHash()) selectLevel(0);
+  if (!applyHash()) selectLevel(0, { entry: false });
   buildKinds();
 });

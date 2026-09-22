@@ -99,7 +99,7 @@ function goTo(x, y, z) {
   }
   invalidatePick();
   draw();
-  writeHash();
+  writeHash(true);
 }
 
 function jump(h) {

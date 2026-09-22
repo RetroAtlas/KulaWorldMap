@@ -34,6 +34,57 @@ test("a hash naming no level puts the address bar back", async ({ page }) => {
   expect(page.url()).toContain("#L11/");
 });
 
+test("a change of level or a find is a history entry; a turn is not", async ({ page }) => {
+  await page.goto("/#L0");
+  await settle(page);
+  await frame(page);
+  const entries = () => page.evaluate(() => history.length);
+  const level = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      return { li: state.li, target: state.target, selected: !!state.selected };
+    });
+  const drag = () =>
+    page.evaluate(() => {
+      const cv = document.getElementById("cv");
+      cv.dispatchEvent(
+        new PointerEvent("pointerdown", { clientX: 600, clientY: 400, pointerId: 1 }),
+      );
+      cv.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: 640, clientY: 420, pointerId: 1 }),
+      );
+      cv.dispatchEvent(new PointerEvent("pointerup", { clientX: 640, clientY: 420, pointerId: 1 }));
+    });
+  const booted = await entries();
+  await drag();
+  await frame(page);
+  expect(await entries()).toBe(booted);
+
+  await page.keyboard.press("]");
+  await frame(page);
+  expect(await entries()).toBe(booted + 1);
+  expect(page.url()).toContain("#L1/");
+  await page.locator("#search").fill("key");
+  await page.locator("#search").press("Enter");
+  await frame(page);
+  expect(await entries()).toBe(booted + 2);
+  const found = await level();
+  expect(found.selected).toBe(true);
+
+  // the entry the viewer made is not read back, so the find stays selected
+  await frame(page);
+  expect((await level()).selected).toBe(true);
+
+  await page.goBack();
+  await expect.poll(async () => (await level()).target).not.toEqual(found.target);
+  expect((await level()).li).toBe(1);
+  await page.goBack();
+  await expect.poll(async () => (await level()).li).toBe(0);
+  await expect(page.locator("#chip")).toContainText("LEVEL 1");
+  await page.goForward();
+  await expect.poll(async () => (await level()).li).toBe(1);
+});
+
 test("the camera writes the URL once a frame, not once an event", async ({ page }) => {
   await page.goto("/#L0");
   await settle(page);
