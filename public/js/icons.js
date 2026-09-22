@@ -11,16 +11,14 @@ const TOWARD = [Math.cos(PITCH) * Math.sin(YAW), Math.sin(PITCH), Math.cos(PITCH
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const GLASS = 0.55;
 
-const drawn = new Map();
+const drawn = new WeakMap();
 
 /** A fresh canvas of the model, `size` CSS pixels square. */
 export function iconFor(model, size = 22) {
-  const key = `${size}:${model.frames[0].length}:${model.box}`;
-  let master = drawn.get(key);
-  if (!master) {
-    master = render(model, size);
-    drawn.set(key, master);
-  }
+  let sizes = drawn.get(model);
+  if (!sizes) drawn.set(model, (sizes = new Map()));
+  let master = sizes.get(size);
+  if (!master) sizes.set(size, (master = render(model, size)));
   const cv = document.createElement("canvas");
   cv.width = master.width;
   cv.height = master.height;
