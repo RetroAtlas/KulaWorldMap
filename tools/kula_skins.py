@@ -58,6 +58,10 @@ CHECKS = [
     (0x80028e98, "lw $v0, 12840($at)", "the face routines are a table indexed by face"),
     (0x8004f480, "sb $s2, 3($t6)", "an animated face's frame is byte 3 of its flags"),
     (0x8004fa18, "sll $s4, $s4, 5", "and picks the quad that many entries into its model"),
+    (0x80027cb4, "lw $v1, 13232($v1)", "the set is decided over again by the mode the game is in"),
+    (0x80027cc4, "sw $zero, 9372($gp)", "which puts one mode back on the first set whatever the keys"),
+    (0x8004cd10, "lw $v1, 13232($v1)", "and that mode is the one that names a pack of its own"),
+    (0x8004cd70, "lw $v0, 13528($at)", "out of a table of paths indexed past the ten worlds"),
     (0x800277ec, "ori $s0, $s0, 2", "a hidden level's faces carry a flag"),
     (0x80056a0c, "ori $t9, $t9, 44", "that is the semi-transparent bit of a textured quad"),
     (0x8004fa2c, "andi $s7, $t2, 768", "and bits 8 and 9 of the flags are the blend mode"),
@@ -90,6 +94,10 @@ IMMEDIATES = [
     ("sets", "keys.below", "counting keys on records of kinds below", 0x80027b64, "sltiu $v0, $v0, {}"),
     ("sets", "hidden.kind", "the record whose first slot flags a hidden level", 0x80027c34, "addiu $t2, $zero, {}"),
     ("sets", "hidden.flag", "by this type", 0x80027c38, "addiu $a0, $zero, {}"),
+    ("sets", "copycat.mode", "the mode that draws the first set whatever the keys", 0x80027cb8, "addiu $v0, $zero, {}"),
+    ("sets", "copycat.names", "the mode that names its own pack", 0x8004cd14, "addiu $v0, $zero, {}"),
+    ("sets", "copycat.pak", "when the file wanted is the extension", 0x8004cd20, "addiu $v0, $zero, {}"),
+    ("sets", "copycat.world", "taking the path of this world", 0x8004cd2c, "addiu $a0, $zero, {}"),
 
     ("platform", "platform.stone", "a face drawn as a stone at random", 0x80027ec8, "addiu $v0, $zero, {}"),
     ("platform", "platform.none", "a face not drawn", 0x80027ec0, "addiu $v0, $zero, {}"),
@@ -116,6 +124,12 @@ CYCLES = {
               "shadowed": (0x800270e4, 0x800270e8),
               "level": ((0x80027044, 0x80027048), (0x80027004, 0x80027008))},
 }
+# The tables the namer at 0x8004ccf8 builds a path out of: a path per world,
+# and the five extensions.
+PATH_TABLE = (0x8004cd68, 0x8004cd70)
+EXT_TABLE = (0x8004cdd0, 0x8004cdd8)
+MIRROR = 0x80000000   # the tables hold addresses without RAM's mirror bit
+
 PHASE_SPREAD = (0x80027a98, 3, "t0", "v0")     # the phase divides the face's position by unit times this
 BONUS_CYCLES = 4     # colour cycles for the bonus stone: a pair per world parity, blocks then platforms
 FACE_TABLE = (0x80028e90, 0x80028e98)
@@ -128,6 +142,36 @@ def address(code, lui, addiu):
     if not hi or not lo:
         sys.exit(f"0x{lui:08x} and 0x{addiu:08x} read `{code.text(lui)}` and `{code.text(addiu)}`, not an address")
     return (0x80000000 | (int(hi.group(1), 0) << 16)) + int(lo.group(1))
+
+
+def text_at(code, addr):
+    """The zero-terminated string at an address."""
+    p = addr - EXE_BASE
+    end = code.blob.index(b"\0", p)
+    return code.blob[p:end].decode("ascii")
+
+
+def entry(code, table, i):
+    """The i'th address in a table of them."""
+    return struct.unpack_from("<I", code.blob, table + 4 * i - EXE_BASE)[0] | MIRROR
+
+
+def copycat_pack(code, r):
+    """The pack the game loads in the mode that draws the first set whatever
+    the keys, in the form the disc's directory gives it.
+
+    The namer at 0x8004ccf8 builds every path out of a table of paths, one
+    per world, and a table of the five extensions; in that mode, and only for
+    the level pack, it takes the path one past the ten worlds. So the levels
+    of that pack are the ones the rule above lets off, and the artwork around
+    them stays the world's own, since the artwork is named without the
+    override.
+    """
+    if r["copycat.mode"] != r["copycat.names"]:
+        sys.exit("the mode that names its own pack is not the one that keeps the first set")
+    path = text_at(code, entry(code, address(code, *PATH_TABLE), r["copycat.world"]))
+    ext = text_at(code, entry(code, address(code, *EXT_TABLE), r["copycat.pak"]))
+    return (path + ext).replace("\\", "/").split(";")[0]
 
 
 class Machine:
@@ -406,6 +450,7 @@ def table(code, tgis):
         "corners": face_corners(code),
         "sets": sets(models, groups, r),
         "keys": {"type": r["key.type"], "kinds": r["keys.below"]},
+        "copycat": copycat_pack(code, r),
         "hidden": {"kind": r["hidden.kind"], "type": r["hidden.flag"]},
         "plainFrom": r["plain.from"],
         "shadow": {"from": shadow_from, "to": shadow_from + r["shadow.span"] - 1,
@@ -441,6 +486,7 @@ def show_readings(code, tgis):
     for axis, roles in platform_table(code, r).items():
         for role, faces in roles.items():
             print(f"  {axis} {role:6}: " + "  ".join("-" if f is None else f"{f[0]},{f[1]}" for f in faces))
+    print(f"\nthe pack that keeps the first set whatever the keys: {copycat_pack(code, r)}")
     cyc = cycles(code, r)
     print(f"\nfire runs {len(cyc['fire']['frames'])} frames over its quads, the invisible block "
           f"{len(cyc['invisible']['frames'])} with a brightness cycle of {len(cyc['invisible']['level'])}, "

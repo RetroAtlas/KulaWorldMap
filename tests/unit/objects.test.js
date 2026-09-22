@@ -69,3 +69,28 @@ test("the motion table is in the game's units and cycles per phase", () => {
   }
   assert.equal(m.types[56].phases.length, 4);
 });
+
+// The skins the build reads off the executable: two sets of models, the
+// second for a level the loader finds no key on, except in the mode that
+// plays one pack of its own, which keeps the first set (docs/tgi.md).
+test("the second set of skins is drawn by the bonus levels and no others", () => {
+  const { skins } = objects;
+  const BONUS_SLOTS = [15, 16, 17];
+  const keyed = (l) =>
+    l.pack === skins.copycat ||
+    l.records.some(
+      (r) => r.kind < skins.keys.kinds && r.on.some((o) => o.type === skins.keys.type),
+    );
+  const second = mapData.levels.filter((l) => !keyed(l));
+  assert.ok(
+    mapData.levels.some((l) => l.pack === skins.copycat),
+    `no pack is ${skins.copycat}`,
+  );
+  assert.deepEqual(
+    second.map((l) => l.name),
+    mapData.levels
+      .filter((l) => BONUS_SLOTS.includes(l.index) && !l.pack.endsWith("FI.PAK"))
+      .map((l) => l.name),
+  );
+  assert.equal(second.length, BONUS_SLOTS.length * mapData.themes.length);
+});

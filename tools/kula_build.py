@@ -113,6 +113,8 @@ def main():
     code = Code(disc.read_file(EXE))
     motion = table(readings(code), speeds.pop())
     skins = skins_table(code, {t: disc.read_file(f"/{t}/{t}.TGI") for t in THEMES})
+    if skins["copycat"] not in {l["pack"] for l in levels}:
+        sys.exit(f"the skins name {skins['copycat']}, which is no pack on the disc")
     shapes = write_objects(Ggi(disc.read_file(GGI)), OBJECTS, placed, motion, skins)
     models = sum(len(v) for v in shapes["types"].values()) + len(shapes["balls"])
     print(f"{len(shapes['types'])} object types and the ball drawn by {models} models, "
