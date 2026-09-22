@@ -22,7 +22,7 @@ import {
 } from "./data.js";
 import { frameAt, phasesOf, pose, orbit, blockPhase } from "./motion.js";
 import { walkers, probe, advance, place } from "./travel.js";
-import { lookOf, platformPlace, faceSkin } from "./skins.js";
+import { lookOf, platformPlace, faceSkin, shadowed } from "./skins.js";
 
 const cv = $("cv");
 const ctx = cv.getContext("2d");
@@ -509,7 +509,15 @@ export function draw() {
         for (const m of marks) {
           if (moving?.has(`${key}/${m.face}`)) continue;
           if (atlas && state.show.models && paintSays(m, skins)) continue;
-          drawThing(m, c, l, frame, home, null, atlas && m.type < skins.plainFrom);
+          drawThing(
+            m,
+            c,
+            l,
+            frame,
+            home,
+            null,
+            atlas && m.face !== null && shadowed(skins, m.type),
+          );
         }
       }
     }
@@ -574,7 +582,7 @@ function drawThing(m, c, l, frame, home = c, going = null, painted = false) {
 // own colours, since the shading is baked into them, and both sides are
 // drawn, since the meshes wind their faces either way. A thing on a face
 // turned away from the view is drawn faint, like its marker. A thing whose
-// face is painted with the game's own shadow, or with a plate, casts none.
+// face is painted with the game's own shadow casts none of its own.
 const GAP = 0.03; // between a thing and its face, in blocks
 const SHADOW = "rgba(0 0 0 / 0.32)";
 const GLASS = 0.55; // how much a translucent polygon covers

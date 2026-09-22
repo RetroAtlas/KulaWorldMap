@@ -96,7 +96,8 @@ function spread(skins, c, face, length) {
   return Math.floor((at[0] + at[1] + at[2]) / skins.cycles.spread) % length;
 }
 
-const shadowed = (skins, type) =>
+/** Whether the game paints a thing's shadow into the face under it. */
+export const shadowed = (skins, type) =>
   type >= skins.shadow.from && type <= skins.shadow.to && !skins.shadow.except.includes(type);
 
 /**
