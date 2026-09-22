@@ -521,10 +521,6 @@ body.sidebar-open .menu-btn {
   font-size: 11.5px;
   margin-bottom: 8px;
 }
-.detail .warn {
-  color: var(--warn);
-  margin-top: 6px;
-}
 .detail table {
   width: 100%;
   border-collapse: collapse;

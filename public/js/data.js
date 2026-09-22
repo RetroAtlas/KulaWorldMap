@@ -261,9 +261,6 @@ export function index(l) {
   }
   const records = new Map();
   const markers = new Map();
-  // Two pickups with one number are a pair the game cannot tell apart, so
-  // each number keeps the markers that carry it, with the cell each stands on.
-  const numbered = new Map();
   for (const r of l.records) {
     const k = cellKey(r.x, r.y, r.z);
     if (!records.has(k)) {
@@ -271,15 +268,9 @@ export function index(l) {
       markers.set(k, []);
     }
     records.get(k).push(r);
-    for (const m of markersOf(r)) {
-      markers.get(k).push(m);
-      const n = markerNumber(m);
-      if (n === null) continue;
-      if (!numbered.has(n)) numbered.set(n, []);
-      numbered.get(n).push({ m, cell: [r.x, r.y, r.z] });
-    }
+    for (const m of markersOf(r)) markers.get(k).push(m);
   }
-  return { cells, records, markers, numbered, beamCells, plates: platesOf(rays), rails: rails(l) };
+  return { cells, records, markers, beamCells, plates: platesOf(rays), rails: rails(l) };
 }
 
 export const levelMarkers = (l) => l.records.flatMap(markersOf);

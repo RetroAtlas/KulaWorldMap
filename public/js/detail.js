@@ -14,7 +14,6 @@ import {
   markerFacing,
   markerState,
   markerNumber,
-  markerLabel,
   markerModel,
   markerStats,
 } from "./data.js";
@@ -77,15 +76,6 @@ export function showCell(c) {
     const dead = m.f.filter((v) => v === -1).length;
     if (dead) html += row("unset", `${dead} of ${m.f.length} fields`);
     html += "</table>";
-    const mates = (state.idx.numbered.get(number) || []).filter((e) => e.m !== m);
-    if (mates.length) {
-      const list = mates.map(
-        (e) => `the ${markerLabel(e.m)} on the ${FACE_NAME[e.m.face]} of ${e.cell.join(",")}`,
-      );
-      html += `<p class="sub warn">Shares pickup number ${number} with ${list.join(" and ")}.
-        The game keeps what has been collected by this number, so taking one of them takes
-        the rest, which is what the level's curated maximum is short by.</p>`;
-    }
     const s = stats.get(m.id);
     if (s) {
       html += `<p class="sub" style="margin-top:6px">Placed ${s.total} times in ${s.levels} level${s.levels === 1 ? "" : "s"}`;
