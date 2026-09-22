@@ -133,12 +133,12 @@ test("the game numbers the levels it shows a number for straight through the wor
   assert.equal(shown.length, 17 * worlds);
 });
 
-// The fourth field numbers a level's pickups from 0 with no repeats, and the
-// four levels that repeat one are the four whose curated maximum is short by
-// exactly the object that shares it (docs/level-format.md).
-test("a level numbers its pickups from 0, and repeats one on four levels only", () => {
+// The fourth field numbers a level's pickups from 0 with no repeats: the disc
+// repeats one on four levels, and on each the repeat stands on a crumbling
+// block, which the game never walks and the build leaves out
+// (docs/level-format.md).
+test("a level numbers its pickups from 0 with no repeats", () => {
   const NUMBER_FIELD = 3;
-  const repeated = new Set(["LEVEL 134", "LECEL 94", "FINAL 11", "FINAL 13"]);
   let numbered = 0;
   for (const l of mapData.levels) {
     const numbers = l.records
@@ -150,7 +150,7 @@ test("a level numbers its pickups from 0, and repeats one on four levels only", 
     assert.equal(numbers[0], 0, `${l.name} starts at ${numbers[0]}`);
     const distinct = new Set(numbers);
     assert.equal(distinct.size, numbers[numbers.length - 1] + 1, `${l.name} has a gap`);
-    assert.equal(distinct.size !== numbers.length, repeated.has(l.name), `${l.name}`);
+    assert.equal(distinct.size, numbers.length, `${l.name} repeats a number`);
   }
   assert.equal(numbered, 228);
 });

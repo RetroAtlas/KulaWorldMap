@@ -25,6 +25,10 @@ carry objects in their first two slots: a laser or a rail names its two ends
 there, with the type the direction from the block to the far end numbered as
 above, a rail keeping which end it starts from, its length in blocks and its
 speed in the second, and kind 6 keeps a fixed-point copy of its own cell.
+Whatever the other slots of those kinds hold is not in play: every walk the
+game makes over the records for the things on them takes a record of a kind
+below 5 and no other, so an object on a platform, a crumbling, vanishing or
+laser block or the settings record is never numbered, drawn or collected.
 
 A lattice cell holds one of five plain block styles below 5, or 5 + i for a
 block carrying record i. The record repeats the cell's own coordinates, which
@@ -38,6 +42,9 @@ GRID_BYTES = CELLS * 2
 EMPTY = 0xFFFF
 STYLES = 5           # 0..4 are block styles the engine draws without a record
 FIRST_RECORD = 5     # from here up, a cell value names the record it carries
+BLOCK_KINDS = 5      # a kind below this is a block and nothing more, and the
+                     # game's walks over the records for the things on them
+                     # take only these
 RECORD = 256
 WORDS = RECORD // 2
 SLOT = 16            # words in a slot
@@ -52,8 +59,7 @@ NOWHERE = (-1, -1, -1)
 # The kinds whose first two slots are the block's own payload, not its faces.
 PAYLOAD_KINDS = frozenset({5, 6, 7, LASER_KIND})
 # The kind the lattice never names: it is the last record on the levels that
-# have it, and whatever its slots hold, the engine's walk does not reach it.
-# Its first slot is the level's settings instead, which the loader reads.
+# have it, and its first slot is the level's settings, which the loader reads.
 UNPLACED_KIND = 9
 SPANS = frozenset({PLATFORM_KIND, LASER_KIND})    # kinds whose fields name two cells
 
@@ -95,10 +101,10 @@ class Record:
 
     @property
     def objects(self):
-        if self.kind == UNPLACED_KIND:
+        """What stands on the block and is in play."""
+        if self.kind >= BLOCK_KINDS:
             return []
-        first = 2 if self.kind in PAYLOAD_KINDS else 0
-        return [Face(j, s) for j, s in enumerate(self.slots) if j >= first and s[1] > 0]
+        return [Face(j, s) for j, s in enumerate(self.slots) if s[1] > 0]
 
     @property
     def span(self):

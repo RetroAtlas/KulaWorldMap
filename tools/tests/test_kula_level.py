@@ -20,6 +20,7 @@ from kula_level import (  # noqa: E402
     HEAD,
     LASER_KIND,
     NOWHERE,
+    PAYLOAD_KINDS,
     SIDE,
     TRAILER_KIND,
     UNPLACED_KIND,
@@ -107,16 +108,16 @@ class Reads(unittest.TestCase):
                         [block((1, 2, 3), kind=LASER_KIND, faces={0: beam, 2: slot(7)}, second=tail)]))
         r = L.records[0]
         self.assertEqual((r.type, r.span, r.colour), (1, ((1, 2, 3), (9, 2, 3)), 3))
-        self.assertEqual([(o.face, o.type) for o in r.objects], [(2, 7)])
+        self.assertEqual(r.objects, [])
         d = r.as_dict()
         self.assertEqual((d["type"], d["colour"], d["f"][:2]), (1, 3, [1, 1]))
         self.assertNotIn("colour", Level(level({(1, 2, 3): FIRST_RECORD},
                                                [block((1, 2, 3), faces={0: COIN})])).records[0].as_dict())
 
-    def test_the_kind_the_lattice_never_names_keeps_its_slots_to_itself(self):
-        L = Level(level({}, [block((1, 2, 3), kind=UNPLACED_KIND, faces={5: COIN})]))
-        self.assertEqual(L.records[0].objects, [])
-        self.assertEqual(L.verify(), [])
+    def test_what_stands_on_a_kind_the_game_never_walks_is_not_in_play(self):
+        for kind in (PAYLOAD_KINDS | {UNPLACED_KIND}):
+            L = Level(level({}, [block((1, 2, 3), kind=kind, faces={5: COIN})]))
+            self.assertEqual(L.records[0].objects, [])
 
     def test_the_trailer_is_not_a_record_and_stands_nowhere(self):
         L = Level(level({(1, 2, 3): FIRST_RECORD}, [block((1, 2, 3), faces={0: COIN})]))
