@@ -96,6 +96,8 @@ export function markersOf(r) {
 const entry = (m) => (m.face === null ? ann.kinds[String(m.kind)] : ann.types[String(m.type)]);
 const variant = (m) => (m.variant === null ? null : entry(m)?.variants?.[m.variant] || null);
 export const markerName = (m) => variant(m)?.name || entry(m)?.name || null;
+/** The name of the type or kind itself, whatever variant the marker is. */
+export const entryName = (m) => entry(m)?.name || null;
 export const markerLabel = (m) =>
   markerName(m) || (m.face === null ? `kind ${m.kind}` : `type ${m.type}`);
 export const markerNote = (m) => entry(m)?.note || "";
