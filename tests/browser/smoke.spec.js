@@ -134,6 +134,76 @@ test("search answers a number as a whole word, and says when nothing matches", a
   await expect(search).toHaveAttribute("aria-expanded", "false");
 });
 
+test("an object search lists every one round the level in hand, and a row goes there", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#L11");
+  await settle(page);
+  const search = page.locator("#search");
+  await search.fill("key");
+  const groups = page.locator("#results [role=group]");
+  await expect(groups.first()).toHaveAttribute("aria-label", "HIRO · LEVEL 12");
+  await expect(groups.nth(1)).toHaveAttribute("aria-label", "HIRO");
+  const rows = page.locator("#results [role=option]");
+  await expect(rows.first()).toContainText("LEVEL 12");
+  await expect(rows.first()).toContainText("number=");
+  await expect(page.locator("#results .more")).toContainText(/^\d+ objects · HIRO \d+ · HILLS/);
+  // eight to a group, the rest a click away
+  const hiro = groups.nth(1);
+  await expect(hiro.locator("[role=option]")).toHaveCount(8);
+  await hiro.locator(".showmore").click();
+  expect(await hiro.locator("[role=option]").count()).toBeGreaterThan(8);
+
+  // a row in another level goes there and keeps the list, laid out round the new level
+  const row = hiro.locator("[role=option]").first();
+  const where = await row.textContent();
+  await row.click();
+  const at = await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    return { name: state.lvl.name, target: state.target };
+  });
+  expect(where).toContain(at.name);
+  const [, x, y, z] = /(\d+),(\d+),(\d+)/.exec(where);
+  expect(at.target).toEqual([x, y, z].map((v) => Number(v) + 0.5));
+  await expect(page.locator("#results")).toBeVisible();
+  await expect(groups.first()).toHaveAttribute("aria-label", `HIRO · ${at.name}`);
+  await expect(rows.first()).toHaveAttribute("aria-selected", "true");
+  await expect(search).not.toBeFocused();
+
+  // the scope bar narrows the list to the level in hand
+  await page.locator("#scope button").nth(2).click();
+  await expect(rows).toHaveCount(1);
+  await expect(page.locator("#results .more")).toContainText(`1 object in ${at.name}`);
+  await page.locator("#results .widen").click();
+  expect(await rows.count()).toBeGreaterThan(1);
+  expect(errors).toEqual([]);
+});
+
+test("a field is searched as name=value, and a match outside the row is appended to it", async ({
+  page,
+}) => {
+  await page.goto("/#L0");
+  await settle(page);
+  const search = page.locator("#search");
+  await search.fill("starts=off");
+  const rows = page.locator("#results [role=option]");
+  await expect(rows.first()).toContainText("starts=off");
+  await expect(rows.first().locator("mark")).toHaveText("starts=off");
+  await search.fill("f12=500");
+  await expect(rows.first()).toContainText("f12=500");
+  await search.fill("f12=50");
+  await expect(page.locator("#results .empty")).toBeVisible();
+  // the keys walk the rows and Enter chooses
+  await search.fill("coin");
+  await search.press("ArrowDown");
+  await expect(search).toHaveAttribute("aria-activedescendant", "hit1");
+  const before = await page.evaluate(() => location.hash);
+  await search.press("Enter");
+  await frame(page);
+  expect(await page.evaluate(() => location.hash)).not.toBe(before);
+});
+
 test("arriving somewhere is spoken, and names the map with it", async ({ page }) => {
   await page.goto("/#L0");
   await settle(page);

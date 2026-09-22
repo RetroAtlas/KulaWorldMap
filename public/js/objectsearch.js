@@ -18,7 +18,8 @@ import { matchesBy, rankFor } from "./searchquery.js";
 import { indexed, answers } from "./searchtext.js";
 
 // The pairs a row always shows are what tells two of a thing apart in play;
-// the rest show only when a term matched them.
+// the rest show only when a term matched them, the number of the type first,
+// so a search by number says on every row why the row is there.
 function pairs(m) {
   const shown = [];
   const number = markerNumber(m);
@@ -28,6 +29,8 @@ function pairs(m) {
   const state = markerState(m);
   if (state !== null) shown.push(`starts=${state}`);
   const more = [];
+  if (m.face === null) more.push(`kind=${m.kind}`);
+  more.push(`type=${m.type}`);
   const points = markerPoints(m);
   if (points) more.push(`points=${points}`);
   m.f.forEach((v, i) => {
@@ -85,13 +88,9 @@ export function objectCandidates(data) {
   return rows;
 }
 
-/** Every object a query matches, in the disc's order, each with its name's rank; at most `cap` of them. */
-export function matchObjects(data, groups, terms, cap = Infinity) {
-  const hits = [];
-  for (const c of objectCandidates(data)) {
-    if (!matchesBy(groups, answers(c))) continue;
-    hits.push({ ...c, rank: rankFor(c.name, terms) });
-    if (hits.length >= cap) break;
-  }
-  return hits;
+/** Every object a query matches, in the disc's order, each with its name's rank. */
+export function matchObjects(data, groups, terms) {
+  return objectCandidates(data)
+    .filter((c) => matchesBy(groups, answers(c)))
+    .map((c) => ({ ...c, rank: rankFor(c.name, terms) }));
 }

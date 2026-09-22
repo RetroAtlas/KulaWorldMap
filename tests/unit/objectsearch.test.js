@@ -7,9 +7,9 @@ import { matchObjects, objectCandidates } from "../../public/js/objectsearch.js"
 
 setAnnotations(annotations);
 
-const find = (q, cap) => {
+const find = (q) => {
   const groups = parseQuery(q);
-  return matchObjects(mapData, groups, queryTerms(groups), cap);
+  return matchObjects(mapData, groups, queryTerms(groups));
 };
 const placed = mapData.levels.reduce((n, l) => n + l.records.flatMap(markersOf).length, 0);
 
@@ -62,8 +62,4 @@ test("the name's rank: exact, prefix, substring, then a match outside the name",
   for (const c of find("coin")) assert.equal(c.rank, c.name === "Coin" ? 0 : 2);
   for (const c of find("bronze")) assert.equal(c.rank, 1);
   for (const c of find("starts=off")) assert.equal(c.rank, 3);
-});
-
-test("a cap stops the scan", () => {
-  assert.equal(find("top", 10).length, 10);
 });

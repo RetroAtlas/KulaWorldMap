@@ -1,233 +1,330 @@
-import { $, el } from "./dom.js";
+import { $, el, on } from "./dom.js";
 import { state } from "./state.js";
-import {
-  worldName,
-  levelTitle,
-  levelMarkers,
-  markersOf,
-  markerLabel,
-  markerName,
-  markerColour,
-  inLattice,
-} from "./data.js";
+import { worldName, levelTitle, inLattice } from "./data.js";
 import { selectLevel, centreOn, writeHash } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
+import { parseQuery, queryTerms } from "./searchquery.js";
+import { whole } from "./searchtext.js";
+import { matchPlaces } from "./placesearch.js";
+import { matchObjects } from "./objectsearch.js";
+import { setSidebar, sidebarOverlays } from "./sidebar.js";
 
 const box = $("search");
+const bar = $("scope");
 const out = $("results");
-let hits = [];
+
+const GROUP_MAX = 8;
+
+// all | world | level, relative to the level in hand
+let scope = "all";
+let expanded = new Set();
+let rows = [];
 let cursor = -1;
+// The row the cursor is on, by what it names rather than by its place in
+// the list, so it is found again when a change of level lays the list out
+// round the new one.
+let current = null;
 
-const norm = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
+const SCOPES = [
+  ["all", () => "All"],
+  ["world", () => worldName(state.lvl.theme)],
+  ["level", () => levelTitle(state.lvl)],
+];
+const scopeLabel = () => SCOPES.find(([key]) => key === scope)[1]();
 
-// A number is answered as a whole word, so `level 45` does not also bring back
-// LEVEL 145. Words stay substrings, so `inc` still finds Inca.
-const matches = (hay, terms) => {
-  const words = hay.split(/[^a-z0-9]+/).filter(Boolean);
-  return terms.every((t) => (/^\d+$/.test(t) ? words.includes(t) : hay.includes(t)));
+const inScope = (li, theme) =>
+  scope === "all" ||
+  (scope === "world" && theme === state.lvl.theme) ||
+  (scope === "level" && li === state.li);
+
+function scopeBar() {
+  bar.textContent = "";
+  for (const [key, label] of SCOPES) {
+    const b = el("button", { type: "button", textContent: label() });
+    b.setAttribute("aria-pressed", String(scope === key));
+    b.onclick = () => {
+      scope = key;
+      render();
+    };
+    bar.append(b);
+  }
+}
+
+// Every occurrence of every term, overlaps merged, as text and <mark> nodes.
+function marked(text, terms) {
+  const lower = text.toLowerCase();
+  const ranges = [];
+  for (const term of terms)
+    for (let i = lower.indexOf(term); i >= 0; i = lower.indexOf(term, i + term.length))
+      ranges.push([i, i + term.length]);
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  for (const [s, e] of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && s <= last[1]) last[1] = Math.max(last[1], e);
+    else merged.push([s, e]);
+  }
+  const nodes = [];
+  let pos = 0;
+  for (const [s, e] of merged) {
+    if (s > pos) nodes.push(text.slice(pos, s));
+    nodes.push(el("mark", { textContent: text.slice(s, e) }));
+    pos = e;
+  }
+  if (pos < text.length) nodes.push(text.slice(pos));
+  return nodes;
+}
+
+const cell = (q) => {
+  const m = /^(\d+)\s*,\s*(\d+)\s*,\s*(\d+)$/.exec(q);
+  if (!m) return null;
+  const at = m.slice(1).map(Number);
+  return at.every(inLattice) ? at : null;
 };
 
-// The Final is counted on from 150 by the game and the walkthrough, so its
-// seventh level answers to 157 as well as to 7.
-const ARCADE = 150;
-function levelHaystack(l) {
-  const final = /^FINAL (\d+)$/.exec(levelTitle(l));
-  const also = final ? ` level ${ARCADE + Number(final[1])}` : "";
-  return norm(`${levelTitle(l)} ${l.name} ${l.theme} ${worldName(l.theme)}${also}`);
+function goTo(x, y, z) {
+  centreOn(x, y, z);
+  invalidatePick();
+  draw();
+  writeHash();
 }
 
-function search(q) {
-  const terms = norm(q).split(" ").filter(Boolean);
-  if (!terms.length) return [];
-  const res = [];
-
-  const cell = /^(\d+)\s*,\s*(\d+)\s*,\s*(\d+)$/.exec(q.trim());
-  if (cell) {
-    const [x, y, z] = cell.slice(1).map(Number);
-    if ([x, y, z].every(inLattice)) {
-      res.push({
-        group: "Cell",
-        label: `${x}, ${y}, ${z}`,
-        hint: "centre the view here",
-        go: () => {
-          centreOn(x, y, z);
-          invalidatePick();
-          draw();
-          writeHash();
-        },
-      });
-    }
-  }
-
-  for (const w of state.data.themes) {
-    const hay = norm(`${w.id} ${worldName(w.id)}`);
-    if (matches(hay, terms)) {
-      res.push({
-        group: "Worlds",
-        label: worldName(w.id),
-        hint: `${w.levels.length} levels`,
-        go: () => selectLevel(w.levels[0]),
-      });
-    }
-  }
-
-  state.data.levels.forEach((l, i) => {
-    const hay = levelHaystack(l);
-    if (matches(hay, terms)) {
-      res.push({
-        group: "Levels",
-        label: levelTitle(l),
-        hint: `${worldName(l.theme)} · ${l.placed} blocks`,
-        rank: i === state.li ? -1 : 0,
-        go: () => selectLevel(i),
-      });
-    }
-  });
-
-  const things = new Map();
-  for (const l of state.data.levels) {
-    for (const m of levelMarkers(l)) {
-      if (!things.has(m.id)) things.set(m.id, { m, n: 0, levels: new Set() });
-      const s = things.get(m.id);
-      s.n++;
-      s.levels.add(`${l.pack}#${l.index}`);
-    }
-  }
-  for (const [id, s] of things) {
-    const m = s.m;
-    const hay = norm(
-      `${markerName(m) || ""} ${m.face === null ? `kind ${m.kind}` : `type ${m.type}`} ${id}`,
-    );
-    if (matches(hay, terms)) {
-      res.push({
-        group: "Objects",
-        colour: markerColour(m),
-        label: markerLabel(m),
-        hint: `${s.n} placed in ${s.levels.size} levels`,
-        go: () => jumpTo(id),
-      });
-    }
-  }
-
-  res.sort((a, b) => (a.rank || 0) - (b.rank || 0));
-  return res.slice(0, 60);
+function jump(h) {
+  if (h.li !== state.li) selectLevel(h.li);
+  goTo(h.record.x, h.record.y, h.record.z);
 }
 
-const firstOf = (l, id) => l.records.find((r) => markersOf(r).some((m) => m.id === id));
+// A row is an option the cursor can name; choosing one keeps the list, so
+// the next can be chosen after it, and gives the keys back to the map.
+function option(key, go, ...kids) {
+  const b = el("button", { type: "button" }, ...kids);
+  b.setAttribute("role", "option");
+  b.dataset.key = key;
+  b.onclick = () => {
+    current = key;
+    const li = state.li;
+    go();
+    // A change of level scrolls the sidebar to the level's button, which
+    // sits under the list; the list, laid out again round the new level with
+    // the chosen row at its head, is what the eye is on.
+    if (state.li !== li) box.scrollIntoView({ block: "nearest" });
+    mark();
+    box.blur();
+    if (sidebarOverlays()) setSidebar(false);
+  };
+  rows.push(b);
+  return b;
+}
 
-function jumpTo(id) {
-  const here = state.lvl && firstOf(state.lvl, id);
-  if (here) {
-    centreOn(here.x, here.y, here.z);
-    invalidatePick();
-    draw();
-    writeHash();
+const hint = (text) => [" ", el("span", { className: "hint", textContent: text })];
+
+// The index matched every pair but the row shows only the telling ones; a
+// hit on any other would look inexplicable, so what matched is appended.
+function objectRow(h, terms) {
+  const shown = [h.where, ...h.shown];
+  const seen = `${h.name} ${shown.join(" ")}`.toLowerCase();
+  const missing = terms.filter((t) => !seen.includes(t));
+  const matched = h.more.filter((s) => missing.some((t) => (whole(t) ? s === t : s.includes(t))));
+  const ex = [...shown, ...matched].join(" · ");
+  return option(
+    `${h.li}:${h.key}:${h.marker.face}:${h.marker.id}`,
+    () => jump(h),
+    el("span", { className: "loc", textContent: levelTitle(h.level) }),
+    " ",
+    ...marked(h.name, terms),
+    " ",
+    el("span", { className: "ex" }, ...marked(ex, terms)),
+  );
+}
+
+function group(label, items, make, key) {
+  const g = el(
+    "div",
+    {},
+    el("div", { className: "group" }, el("span", {}, label), el("span", {}, String(items.length))),
+  );
+  g.setAttribute("role", "group");
+  g.setAttribute("aria-label", label);
+  const all = key === undefined || expanded.has(key);
+  for (const item of all ? items : items.slice(0, GROUP_MAX)) g.append(make(item));
+  if (!all && items.length > GROUP_MAX) {
+    const rest = items.length - GROUP_MAX;
+    const more = el("button", {
+      className: "showmore",
+      type: "button",
+      textContent: `show ${rest} more`,
+    });
+    more.onclick = () => {
+      expanded.add(key);
+      render();
+    };
+    g.append(more);
+  }
+  out.append(g);
+}
+
+function render() {
+  out.textContent = "";
+  rows = [];
+  const q = box.value.trim();
+  if (!q || !state.lvl) {
+    show(false);
     return;
   }
-  const i = state.data.levels.findIndex((l) => firstOf(l, id));
-  if (i >= 0) {
-    selectLevel(i);
-    const r = firstOf(state.data.levels[i], id);
-    centreOn(r.x, r.y, r.z);
-    invalidatePick();
-    draw();
-    writeHash();
+  const groups = parseQuery(q);
+  const terms = queryTerms(groups);
+
+  const places = matchPlaces(state.data, groups, terms, state.li);
+  const worlds = places.filter(
+    (c) => c.world && (scope === "all" || c.world.id === state.lvl.theme),
+  );
+  const levels = places.filter((c) => c.level && inScope(c.li, c.level.theme));
+  const at = cell(q);
+  if (at)
+    group("Cell", [at], ([x, y, z]) =>
+      option(
+        `c:${x},${y},${z}`,
+        () => goTo(x, y, z),
+        `${x}, ${y}, ${z}`,
+        hint("centre the view here"),
+      ),
+    );
+  if (worlds.length)
+    group("Worlds", worlds, (c) =>
+      option(
+        `w:${c.world.id}`,
+        () => selectLevel(c.world.levels[0]),
+        c.name,
+        hint(`${c.world.levels.length} levels`),
+      ),
+    );
+  if (levels.length)
+    group("Levels", levels, (c) =>
+      option(
+        `l:${c.li}`,
+        () => selectLevel(c.li),
+        c.name,
+        hint(`${worldName(c.level.theme)} · ${c.level.placed} blocks`),
+      ),
+    );
+
+  // Objects group by where they stand: the level in hand, the rest of its
+  // world, then every other world in the disc's order.
+  const hits = matchObjects(state.data, groups, terms).filter((h) => inScope(h.li, h.level.theme));
+  const here = {
+    key: "level",
+    label: `${worldName(state.lvl.theme)} · ${levelTitle(state.lvl)}`,
+    hits: [],
+  };
+  const byWorld = new Map();
+  for (const t of [state.lvl.theme, ...state.data.themes.map((t) => t.id)])
+    if (!byWorld.has(t)) byWorld.set(t, { key: t, label: worldName(t), hits: [] });
+  for (const h of hits) (h.li === state.li ? here : byWorld.get(h.level.theme)).hits.push(h);
+  for (const g of [here, ...byWorld.values()]) {
+    if (!g.hits.length) continue;
+    g.hits.sort((a, b) => a.rank - b.rank);
+    group(g.label, g.hits, (h) => objectRow(h, terms), g.key);
   }
+
+  const found = at || worlds.length || levels.length;
+  const where = scope === "all" ? "" : ` in ${scopeLabel()}`;
+  if (!hits.length && !found) {
+    out.append(
+      el("div", { className: "empty", textContent: `Nothing matches that${where}.` }, widen()),
+    );
+  } else {
+    const perWorld = state.data.themes
+      .map((t) => [worldName(t.id), hits.filter((h) => h.level.theme === t.id).length])
+      .filter(([, n]) => n)
+      .map(([name, n]) => `${name} ${n}`);
+    const text = hits.length
+      ? `${hits.length} object${hits.length === 1 ? "" : "s"}${where}` +
+        (scope === "all" && perWorld.length > 1 ? ` · ${perWorld.join(" · ")}` : "")
+      : `no objects${where}`;
+    out.append(el("div", { className: "more", textContent: text }, widen()));
+  }
+  show(true);
+  mark();
+}
+
+// A scoped search says so, with the way out beside it.
+function widen() {
+  if (scope === "all") return [];
+  const w = el("span", { className: "widen", textContent: "search everywhere" });
+  w.onclick = () => {
+    scope = "all";
+    render();
+  };
+  return [" · ", w];
 }
 
 // The input drives a listbox it does not contain, so the pairing is spelled
 // out: the input owns aria-expanded and points at the row under the cursor,
 // and each row is an option the cursor can name.
-function open(expanded) {
-  out.hidden = !expanded;
-  box.setAttribute("aria-expanded", String(expanded));
-  const at = expanded && cursor >= 0 ? `hit${cursor}` : "";
-  if (at) box.setAttribute("aria-activedescendant", at);
-  else box.removeAttribute("aria-activedescendant");
+function show(shown) {
+  out.hidden = !shown;
+  bar.hidden = !shown;
+  if (shown) scopeBar();
+  box.setAttribute("aria-expanded", String(shown));
 }
 
-function render() {
-  out.textContent = "";
-  if (!box.value.trim()) {
-    open(false);
-    return;
-  }
-  if (!hits.length) {
-    out.append(el("div", { className: "empty", textContent: "Nothing matches that." }));
-    open(true);
-    return;
-  }
-  let group = null;
-  let list = null;
-  hits.forEach((h, i) => {
-    if (h.group !== group) {
-      group = h.group;
-      list = el("div", {}, el("div", { className: "group", textContent: group }));
-      list.setAttribute("role", "group");
-      list.setAttribute("aria-label", group);
-      out.append(list);
-    }
-    const b = el("button", { type: "button", id: `hit${i}` });
-    b.setAttribute("role", "option");
-    if (h.colour)
-      b.append(
-        el("span", {
-          className: "dot",
-          style: `display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:${h.colour}`,
-        }),
-      );
-    b.append(h.label, el("span", { className: "hint", textContent: `  ${h.hint}` }));
+function mark() {
+  cursor = rows.findIndex((b) => b.dataset.key === current);
+  rows.forEach((b, i) => {
+    b.id = `hit${i}`;
     b.setAttribute("aria-selected", String(i === cursor));
-    b.onclick = () => {
-      h.go();
-      close();
-    };
-    list.append(b);
   });
-  open(true);
-  if (cursor >= 0) $(`hit${cursor}`)?.scrollIntoView({ block: "nearest" });
+  if (cursor < 0) {
+    box.removeAttribute("aria-activedescendant");
+    return;
+  }
+  box.setAttribute("aria-activedescendant", `hit${cursor}`);
+  rows[cursor].scrollIntoView({ block: "nearest" });
 }
 
-const close = () => {
-  cursor = -1;
-  open(false);
+function moveTo(i) {
+  current = rows[i].dataset.key;
+  mark();
+}
+
+function search() {
+  expanded = new Set();
+  current = null;
+  render();
+  if (rows.length) moveTo(0);
+}
+
+const clear = () => {
+  box.value = "";
+  current = null;
+  scope = "all";
+  render();
   box.blur();
 };
 
-box.addEventListener("input", () => {
-  hits = search(box.value);
-  cursor = hits.length ? 0 : -1;
-  render();
-});
-box.addEventListener("focus", () => {
-  if (box.value) {
-    hits = search(box.value);
-    render();
-  }
-});
+box.addEventListener("input", search);
 box.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
-    box.value = "";
-    close();
+    clear();
     return;
   }
-  if (!hits.length) return;
+  if (!rows.length) return;
   if (e.key === "ArrowDown") {
-    cursor = (cursor + 1) % hits.length;
-    render();
+    moveTo((cursor + 1) % rows.length);
     e.preventDefault();
   }
   if (e.key === "ArrowUp") {
-    cursor = (cursor - 1 + hits.length) % hits.length;
-    render();
+    moveTo((cursor - 1 + rows.length) % rows.length);
     e.preventDefault();
   }
-  if (e.key === "Enter" && cursor >= 0) {
-    hits[cursor].go();
-    close();
+  if (e.key === "Enter") {
+    (rows[cursor] || rows[0]).click();
     e.preventDefault();
   }
 });
-document.addEventListener("click", (e) => {
-  if (!out.hidden && !out.contains(e.target) && e.target !== box) open(false);
+
+// The groups are drawn round the level in hand, so a change of level lays
+// the same list out again.
+on("level-changed", () => {
+  if (box.value.trim()) render();
 });

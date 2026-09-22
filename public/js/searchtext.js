@@ -7,6 +7,9 @@
 
 const WHOLE = /^(\d+|[^=\s]+=[^=\s]*)$/;
 
+/** Whether a term is answered by a whole word rather than a substring. */
+export const whole = (term) => WHOLE.test(term);
+
 export function indexed(words) {
   const text = words
     .filter((w) => w !== null && w !== undefined && w !== "")
@@ -18,4 +21,4 @@ export function indexed(words) {
 }
 
 export const answers = (c) => (term) =>
-  WHOLE.test(term) ? c.tokens.includes(term) : c.text.includes(term);
+  whole(term) ? c.tokens.includes(term) : c.text.includes(term);
