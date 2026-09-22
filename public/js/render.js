@@ -386,7 +386,7 @@ const GLASS_FACE = 0.5; // how much of a hidden level's face shows, the GPU's ha
 // face is painted the marker would say the same thing twice; and so would a
 // marker for a record's own kind, once its block is painted, but for the
 // settings record, which stands on no block of its own.
-const FACE_ONLY = new Set([1, 2, 8, 29]);
+const FACE_ONLY = new Set([1, 2, 8]);
 const paintSays = (m, skins) =>
   m.face === null ? m.kind !== skins.hidden.kind : FACE_ONLY.has(m.type);
 const NEUTRAL = 128; // the brightness at which a face is its own colour

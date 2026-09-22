@@ -163,11 +163,12 @@ const FRUIT = 5;
 // A variant the level opens on where no field picks one: the exit is red until
 // the keys are found, and its green model comes first.
 const OPENS_ON = { 7: 1 };
-// The start is where the ball is, and the ball is thematic: the game picks
-// the design by the world's place for an arcade level, one of three others
-// for a bonus level in an order the player's path decides, and the glass one
-// with the shards inside for a hidden level.
-const START = 30;
+// The start is where the ball is, on a plain face or on a clock, and the
+// ball is thematic: the game picks the design by the world's place for an
+// arcade level, one of three others for a bonus level in an order the
+// player's path decides, and the glass one with the shards inside for a
+// hidden level.
+const STARTS = new Set([29, 30]);
 const BONUS_BALL = 10;
 const BONUS_BALLS = 3;
 const HIDDEN_BALL = 13;
@@ -185,7 +186,7 @@ export function ballFor(l) {
     thing that changes its form in play names the form to draw. */
 export function markerModel(m, l, form = null) {
   if (m.face === null) return null;
-  if (m.type === START) return ballFor(l);
+  if (STARTS.has(m.type)) return ballFor(l);
   let type = m.type;
   const n = /^LEVEL (\d+)$/.exec(l.shown || "");
   if (n && type >= FRUIT_FIRST && type < FRUIT_FIRST + FRUIT)

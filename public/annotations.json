@@ -86,7 +86,7 @@
     },
     "8": {
       "name": "Clock",
-      "note": "A square that freezes the timer while the ball sits on it. LEVEL 56 is the walkthrough's first clock and carries seven, and LEVEL 58, 59, 118 and 136 each have one where the walkthrough says."
+      "note": "A square that freezes the timer while the ball sits on it. LEVEL 56 is the walkthrough's first clock and carries seven, and LEVEL 58, 59 and 118 each have one where the walkthrough says; the clock LEVEL 136 starts you on is the start itself, type 29, which the loader makes a clock of."
     },
     "9": {
       "name": "Switch",
@@ -134,12 +134,14 @@
       "note": "A square the ball can only leave in the direction the arrow points. LEVEL 61, the walkthrough's first arrows, carries the game's first twelve, and the field that varies takes 1 to 4, a quarter turn each on the face: on a block's top they point +y, -x, -y and +x, which LEVEL 62's arrows in play fixed, one of each."
     },
     "29": {
-      "note": "Two in the game, on LEVEL 58 and Hell's LEVEL 135, and nothing the walkthrough says about either level names it. The loader paints the clock's face under it as it does under type 8, which is the one thing the disc says about it, and the map draws it so."
+      "name": "Start on a clock",
+      "facing": "f5",
+      "note": "Two in the game, on LEVEL 58 and Hell's LEVEL 135, and each level's only start. The routine that places the ball at 0x80036100 takes a type 29 like a type 30, faces the ball by the same field, and then makes the slot a clock, type 8, at 0x8003627c, so the ball starts on a clock: the walkthrough opens LEVEL 136 with just that, and both starts were checked in play (2026-09-21). The face is painted with the clock's face like any clock's."
     },
     "30": {
       "name": "Start",
       "facing": "f5",
-      "note": "The block and face the ball starts on, in LEVEL 1, LEVEL 2 and HIDDEN 10. One in each of 228 levels, two in MARS LEVEL 130, and none on ARCTIC LEVEL 58 and HELL LEVEL 135. The field that varies is the way the ball faces, in the quarter turns the arrows use: LEVEL 1's reads 3, which is -y, and the first coin is two blocks that way. The map stands the ball there in the world's own design, which the game picks by the world's place from the fourteen the disc holds, Hiro's the white one with the coloured panels."
+      "note": "The block and face the ball starts on, in LEVEL 1, LEVEL 2 and HIDDEN 10. One in each of 228 levels; ARCTIC LEVEL 58 and HELL LEVEL 135 start the ball on a clock instead, type 29. The field that varies is the way the ball faces, in the quarter turns the arrows use: LEVEL 1's reads 3, which is -y, and the first coin is two blocks that way. The map stands the ball there in the world's own design, which the game picks by the world's place from the fourteen the disc holds, Hiro's the white one with the coloured panels."
     },
     "31": {
       "name": "Key",
