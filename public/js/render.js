@@ -612,6 +612,9 @@ function drawObject(m, c, model, motion, frame, phase, round, time, going, paint
     about = p.about;
     wide = 1 + p.squash;
     tall = 1 - 2 * p.squash;
+    // squashed about its centre, so it is stood lower by as much, and its
+    // underside stays on the face while its top comes down
+    lift = GAP + (rest - GAP) * tall;
     if (markerState(m) === "off") about = [0, 0, 0];
     if (m.type === STONE) {
       about[1] += ACROSS;
