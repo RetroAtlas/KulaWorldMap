@@ -161,11 +161,18 @@ test("an object search lists every one round the level in hand, and a row goes t
   await row.click();
   const at = await page.evaluate(async () => {
     const { state } = await import(new URL("js/state.js", location.href).href);
-    return { name: state.lvl.name, target: state.target };
+    const { x, y, z } = state.selected;
+    return { name: state.lvl.name, target: state.target, selected: [x, y, z] };
   });
   expect(where).toContain(at.name);
   const [, x, y, z] = /(\d+),(\d+),(\d+)/.exec(where);
   expect(at.target).toEqual([x, y, z].map((v) => Number(v) + 0.5));
+  // the find is selected, so the panel and the outline say which one it was
+  expect(at.selected).toEqual([x, y, z].map(Number));
+  await expect(page.locator("#detail")).toBeVisible();
+  await expect(page.locator("#detail")).toContainText("Key");
+  await expect(page.locator("#detail")).toContainText(`cell ${x},${y},${z}`);
+  await expect(page.locator("#say")).toHaveText(`Key, top, ${x},${y},${z}, ${at.name}`);
   await expect(page.locator("#results")).toBeVisible();
   await expect(groups.first()).toHaveAttribute("aria-label", `HIRO · ${at.name}`);
   await expect(rows.first()).toHaveAttribute("aria-selected", "true");

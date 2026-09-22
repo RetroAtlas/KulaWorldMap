@@ -1,8 +1,10 @@
 import { $, el, on } from "./dom.js";
-import { state } from "./state.js";
+import { state, cellKey } from "./state.js";
 import { worldName, levelTitle, inLattice } from "./data.js";
 import { selectLevel, centreOn, writeHash } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
+import { showCell } from "./detail.js";
+import { say } from "./a11y.js";
 import { parseQuery, queryTerms } from "./searchquery.js";
 import { whole } from "./searchtext.js";
 import { matchPlaces } from "./placesearch.js";
@@ -82,8 +84,16 @@ const cell = (q) => {
   return at.every(inLattice) ? at : null;
 };
 
+// A find is selected as a click would select it, so the outline and the
+// panel say which block the view was centred on.
 function goTo(x, y, z) {
   centreOn(x, y, z);
+  const key = cellKey(x, y, z);
+  const c = state.idx.cells.get(key);
+  if (c) {
+    state.selected = { ...c, key };
+    showCell(c);
+  }
   invalidatePick();
   draw();
   writeHash();
@@ -92,6 +102,7 @@ function goTo(x, y, z) {
 function jump(h) {
   if (h.li !== state.li) selectLevel(h.li);
   goTo(h.record.x, h.record.y, h.record.z);
+  say(`${h.name}, ${h.where.replace(" · ", ", ")}, ${levelTitle(h.level)}`);
 }
 
 // A row is an option the cursor can name; choosing one keeps the list, so
