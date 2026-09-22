@@ -1,5 +1,5 @@
 import { $, emit } from "./dom.js";
-import { state, SIDE, BLOCK, project, sliceZ } from "./state.js";
+import { state, SIDE, BLOCK, project, retarget, cellKey, sliceZ } from "./state.js";
 import {
   index,
   worldName,
@@ -42,11 +42,8 @@ export function fit() {
     return;
   }
   state.needsFit = false;
-  state.target = [
-    (l.min[0] + l.max[0] + 1) / 2,
-    (l.min[1] + l.max[1] + 1) / 2,
-    (l.min[2] + l.max[2] + 1) / 2,
-  ];
+  state.target = levelCentre(l);
+  state.pinned = null;
   state.cam.panX = state.cam.panY = 0;
   const [tx, ty] = project(...state.target);
   let x0 = Infinity,
@@ -73,9 +70,26 @@ export function fit() {
   state.cam.zoom = Math.max(0.08, Math.min(3, Math.min(zx, zy)));
 }
 
+const levelCentre = (l) => [0, 1, 2].map((i) => (l.min[i] + l.max[i] + 1) / 2);
+
 export function centreOn(x, y, z) {
   state.target = [x + 0.5, y + 0.5, z + 0.5];
+  state.pinned = cellKey(x, y, z);
   state.cam.panX = state.cam.panY = 0;
+}
+
+// The view turns about the cell a search centred it on for as long as that
+// cell stays selected, and about the level otherwise; the change is made
+// when a turn begins, without moving the picture, so clearing the selection
+// is the whole of the way back.
+export function pivot() {
+  const l = state.lvl;
+  if (!l) return;
+  const pinned = state.pinned !== null && state.selected?.key === state.pinned;
+  if (!pinned) state.pinned = null;
+  const s = state.selected;
+  const want = pinned ? [s.x + 0.5, s.y + 0.5, s.z + 0.5] : levelCentre(l);
+  if (want.some((v, i) => v !== state.target[i])) retarget(want);
 }
 
 export function chip() {

@@ -1,7 +1,7 @@
 import { $, emit } from "./dom.js";
 import { state, SIDE, BLOCK, PITCH_MIN, PITCH_MAX, cellKey } from "./state.js";
 import { draw, cellAt, invalidatePick } from "./render.js";
-import { chip, writeHash, stepLevel, fit } from "./navigate.js";
+import { chip, writeHash, stepLevel, fit, pivot } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
 import { OFF_LATTICE, FACE_NAME, kindName, markerLabel, markerState } from "./data.js";
@@ -79,6 +79,7 @@ cv.addEventListener("pointerleave", () => {
 });
 
 export function orbit(dx, dy) {
+  pivot();
   // Dragging turns the level under the hand, so the camera goes the other way.
   state.cam.yaw = (state.cam.yaw - dx * ORBIT) % 360;
   state.cam.pitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, state.cam.pitch + dy * ORBIT));
@@ -96,6 +97,7 @@ export function pan(dx, dy) {
 }
 
 export function setYaw(deg) {
+  pivot();
   state.cam.yaw = ((deg % 360) + 360) % 360;
   redraw();
   chip();

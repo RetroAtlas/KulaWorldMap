@@ -11,6 +11,7 @@ export const state = {
   li: -1,
   cam: { yaw: 45, pitch: 35, zoom: 1, panX: 0, panY: 0 },
   target: [17, 17, 17],
+  pinned: null,
   slice: SIDE - 1,
   view: { w: 0, h: 0, dpr: 1 },
   show: {
@@ -79,6 +80,15 @@ export function screen(x, y, z) {
     (px - tx - panX) * zoom * BLOCK + state.view.w / 2,
     (py - ty - panY) * zoom * BLOCK + state.view.h / 2,
   ];
+}
+
+/** Move the point the view turns about, and the pan the other way, so nothing on screen moves. */
+export function retarget(t) {
+  const [ax, ay] = project(...state.target);
+  const [bx, by] = project(...t);
+  state.cam.panX += ax - bx;
+  state.cam.panY += ay - by;
+  state.target = t;
 }
 
 /** The smallest z the slice still draws, counting down from the top. */

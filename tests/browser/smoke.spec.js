@@ -228,6 +228,61 @@ test("a find above the slice's ceiling lifts the ceiling to it", async ({ page }
   await expect(page.locator("#slice")).toHaveValue(String(at.slice));
 });
 
+test("the view turns about a find only while it stays selected", async ({ page }) => {
+  await page.goto("/#L11");
+  await settle(page);
+  await page.locator("#search").fill("key");
+  await page.locator("#search").press("Enter");
+  const probe = () =>
+    page.evaluate(async () => {
+      const { state, screen } = await import(new URL("js/state.js", location.href).href);
+      const l = state.lvl;
+      return {
+        target: state.target,
+        centre: [0, 1, 2].map((i) => (l.min[i] + l.max[i] + 1) / 2),
+        at: screen(20, 15, 17),
+        yaw: state.cam.yaw,
+        selected: !!state.selected,
+      };
+    });
+  const drag = () =>
+    page.evaluate(() => {
+      const cv = document.getElementById("cv");
+      cv.dispatchEvent(
+        new PointerEvent("pointerdown", { clientX: 600, clientY: 400, pointerId: 1 }),
+      );
+      cv.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: 640, clientY: 400, pointerId: 1 }),
+      );
+      cv.dispatchEvent(new PointerEvent("pointerup", { clientX: 640, clientY: 400, pointerId: 1 }));
+    });
+  const found = await probe();
+  expect(found.selected).toBe(true);
+  expect(found.target).not.toEqual(found.centre);
+  await drag();
+  const turned = await probe();
+  expect(turned.yaw).not.toBe(found.yaw);
+  expect(turned.target).toEqual(found.target);
+
+  await page.keyboard.press("Escape");
+  const cleared = await probe();
+  expect(cleared.selected).toBe(false);
+  // the pivot goes back to the level as the next turn begins, moving nothing
+  const moved = await page.evaluate(async () => {
+    const { state, screen } = await import(new URL("js/state.js", location.href).href);
+    const { pivot } = await import(new URL("js/navigate.js", location.href).href);
+    const before = screen(20, 15, 17);
+    pivot();
+    const after = screen(20, 15, 17);
+    return { target: state.target, dx: after[0] - before[0], dy: after[1] - before[1] };
+  });
+  expect(moved.target).toEqual(cleared.centre);
+  expect(Math.abs(moved.dx)).toBeLessThan(1e-6);
+  expect(Math.abs(moved.dy)).toBeLessThan(1e-6);
+  await drag();
+  expect((await probe()).target).toEqual(cleared.centre);
+});
+
 test("arriving somewhere is spoken, and names the map with it", async ({ page }) => {
   await page.goto("/#L0");
   await settle(page);

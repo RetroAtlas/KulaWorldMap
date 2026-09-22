@@ -10,7 +10,7 @@ Part of [RetroAtlas](https://retroatlas.org/), a collection of interactive maps 
 
 ## Using the map
 
-- **Drag to turn the level.** A lattice has no side that is the right one to look from, so dragging orbits the camera around it rather than sliding the view: left and right swing around, up and down raise and lower the eye between looking along the floor and looking straight down. `q` and `e` snap the swing to 45°, and `f` frames the level again.
+- **Drag to turn the level.** A lattice has no side that is the right one to look from, so dragging orbits the camera around it rather than sliding the view: left and right swing around, up and down raise and lower the eye between looking along the floor and looking straight down. `q` and `e` snap the swing to 45°, and `f` frames the level again. Once a search has centred the view on a find, dragging turns about the find for as long as it stays selected; `Esc` clears it and the level is back under the hand, with nothing on screen moving until the next drag.
 - **Pan** with shift-drag, a right-drag, two fingers, or the arrow keys. If you would rather drag panned all the time, there is a switch for it under Display.
 - **Zoom** with the wheel, a pinch, or `+` / `-`, anchored wherever the pointer is.
 - **Slice** the level with `,` and `.`, which lower and raise a ceiling so you can see inside a stack. `\` puts the whole level back.

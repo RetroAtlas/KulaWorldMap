@@ -8,6 +8,7 @@ import {
   depth,
   facing,
   screen,
+  retarget,
   cellKey,
 } from "../../public/js/state.js";
 
@@ -60,6 +61,18 @@ test("projection is linear, which is what makes a face a parallelogram", () => {
   const b = project(11, 2, 1);
   const sum = project(14, 7, 8);
   for (const i of [0, 1]) near(a[i] + b[i], sum[i]);
+});
+
+test("moving the orbit target moves nothing on screen", () => {
+  Object.assign(state.cam, { yaw: 30, pitch: 20, zoom: 1.5, panX: 0.3, panY: -0.2 });
+  state.target = [17, 17, 17];
+  state.view = { w: 800, h: 600, dpr: 1 };
+  const before = screen(5, 6, 7);
+  retarget([3.5, 4.5, 5.5]);
+  assert.deepEqual(state.target, [3.5, 4.5, 5.5]);
+  const after = screen(5, 6, 7);
+  near(after[0], before[0], 1e-9);
+  near(after[1], before[1], 1e-9);
 });
 
 test("the orbit target lands in the middle of the view", () => {
