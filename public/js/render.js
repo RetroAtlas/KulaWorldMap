@@ -383,8 +383,12 @@ const SKINNED_LOOK = {
 const VANISHING = 7;
 const GLASS_FACE = 0.5; // how much of a hidden level's face shows, the GPU's half and half
 // The types the game draws on the face and nowhere else, so that once the
-// face is painted the marker would say the same thing twice.
+// face is painted the marker would say the same thing twice; and so would a
+// marker for a record's own kind, once its block is painted, but for the
+// settings record, which stands on no block of its own.
 const FACE_ONLY = new Set([1, 2, 8, 29]);
+const paintSays = (m, skins) =>
+  m.face === null ? m.kind !== skins.hidden.kind : FACE_ONLY.has(m.type);
 const NEUTRAL = 128; // the brightness at which a face is its own colour
 const TRANSLUCENT = 4; // the state from which a vanishing block is drawn through
 
@@ -504,7 +508,7 @@ export function draw() {
       if (marks) {
         for (const m of marks) {
           if (moving?.has(`${key}/${m.face}`)) continue;
-          if (atlas && state.show.models && m.face !== null && FACE_ONLY.has(m.type)) continue;
+          if (atlas && state.show.models && paintSays(m, skins)) continue;
           drawThing(m, c, l, frame, home, null, atlas && m.type < skins.plainFrom);
         }
       }

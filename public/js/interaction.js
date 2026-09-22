@@ -122,7 +122,9 @@ function hoverTip(c, px, py) {
         ? c.v
         : state.idx.records.get(key)?.[0]?.kind;
   const lines = [`<b>${c.x}, ${c.y}, ${c.z}</b>`];
-  if (kind && kindName(kind)) lines.push(kindName(kind));
+  if (kind && kindName(kind) && !marks.some((m) => m.face === null && m.kind === kind)) {
+    lines.push(kindName(kind));
+  }
   for (const m of marks) {
     const off = markerState(m) === "off" ? " · off" : "";
     lines.push(markerLabel(m) + off + (m.face ? ` · ${FACE_NAME[m.face]}` : ""));
