@@ -13,6 +13,8 @@ Read [docs/level-format.md](docs/level-format.md) before changing anything under
 
 Keep the cross-check in `tools/kula_build.py` fatal, and keep `tools/kula_score.py --guide` passing when a name or a points value changes: those two hold the readings and the names to the disc. Do not re-derive the lattice from file sizes.
 
+Before a commit: `npm test` (the unit tests pin the README's figures to the data, so a rebuild that moves a count fails there rather than going stale in silence), `npm run format:check`, `npm run lint`, `python3 -m unittest discover -s tools/tests`, and `npm run test:browser` when the viewer changed.
+
 Read [docs/tgi.md](docs/tgi.md) before touching `tools/kula_tgi.py`, `tools/kula_tex.py` or `tools/kula_skins.py`, or anything in the viewer that picks a texture for a face, and [docs/ggi.md](docs/ggi.md) before touching `tools/kula_ggi.py`.
 
 ## Conventions
