@@ -136,6 +136,15 @@ let entry = false;
 let written = null;
 let ownEntries = 0;
 
+// A level is keyed by its pack and its slot in it, which is the disc's own
+// address and the one the cheat takes.
+const slotOf = (l) => `${/([^/]+)\.PAK$/.exec(l.pack)[1]}/${l.index}`;
+let slots = null;
+const levelAt = (slot) => {
+  if (!slots) slots = new Map(state.data.levels.map((l, i) => [slotOf(l), i]));
+  return slots.get(slot.toUpperCase());
+};
+
 export function writeHash(push = false) {
   entry ||= push;
   if (!queued) queued = requestAnimationFrame(flushHash);
@@ -150,7 +159,7 @@ function flushHash() {
   const c = state.cam;
   const t = state.target.map((v) => r2(v)).join(",");
   const h =
-    `#L${state.li}/${Math.round(c.yaw)},${Math.round(c.pitch)}/${c.zoom.toFixed(2)}` +
+    `#${slotOf(l)}/${Math.round(c.yaw)},${Math.round(c.pitch)}/${c.zoom.toFixed(2)}` +
     `/${t}/${r2(c.panX)},${r2(c.panY)}/${state.slice}`;
   if (location.hash === h) return;
   written = h;
@@ -162,12 +171,12 @@ function flushHash() {
 
 export function applyHash() {
   const m =
-    /^#L(\d+)(?:\/(-?[\d.]+),(-?[\d.]+))?(?:\/([\d.]+))?(?:\/(-?[\d.]+),(-?[\d.]+),(-?[\d.]+))?(?:\/(-?[\d.]+),(-?[\d.]+))?(?:\/(\d+))?/.exec(
+    /^#([A-Za-z0-9]+\/\d+)(?:\/(-?[\d.]+),(-?[\d.]+))?(?:\/([\d.]+))?(?:\/(-?[\d.]+),(-?[\d.]+),(-?[\d.]+))?(?:\/(-?[\d.]+),(-?[\d.]+))?(?:\/(\d+))?/.exec(
       location.hash,
     );
   if (!m) return false;
-  const i = Number(m[1]);
-  if (!state.data.levels[i]) return false;
+  const i = levelAt(m[1]);
+  if (i === undefined || !state.data.levels[i]) return false;
   restoring = true;
   selectLevel(i, { keepView: true });
   if (m[2] !== undefined) {

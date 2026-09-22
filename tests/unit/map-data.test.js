@@ -19,6 +19,11 @@ test("the pack path and the index inside it are the key", () => {
   assert.equal(new Set(keys).size, keys.length);
 });
 
+test("the pack's own name and the slot key a level as well, which is what a link carries", () => {
+  const slots = mapData.levels.map((l) => `${/([^/]+)\.PAK$/.exec(l.pack)[1]}/${l.index}`);
+  assert.equal(new Set(slots).size, slots.length);
+});
+
 test("every world lists its own levels, and between them all of them", () => {
   const seen = [];
   for (const t of mapData.themes) {

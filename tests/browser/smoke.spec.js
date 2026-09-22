@@ -12,7 +12,7 @@ test("the map boots into standards mode with nothing on the console", async ({ p
 });
 
 test("a permalink opens on the level and the camera it names", async ({ page }) => {
-  await page.goto("/#L11/30,20/1.25/18,13,17/0,0/25");
+  await page.goto("/#HIRO/11/30,20/1.25/18,13,17/0,0/25");
   await settle(page);
   const cam = await page.evaluate(async () => {
     const { state } = await import(new URL("js/state.js", location.href).href);
@@ -26,16 +26,27 @@ test("a permalink opens on the level and the camera it names", async ({ page }) 
   expect(cam.target).toEqual([18, 13, 17]);
 });
 
-test("a hash naming no level puts the address bar back", async ({ page }) => {
-  await page.goto("/#L11");
+test("a link naming a pack and a slot opens that level, whatever its case", async ({ page }) => {
+  await page.goto("/#copycat/4/30,20");
   await settle(page);
-  await page.evaluate(() => (location.hash = "#L999"));
   await frame(page);
-  expect(page.url()).toContain("#L11/");
+  await expect(page.locator("#chip")).toContainText("SIMON 5");
+  expect(page.url()).toContain("#COPYCAT/4/30,20/");
+});
+
+test("a hash naming no level puts the address bar back", async ({ page }) => {
+  await page.goto("/#HIRO/11");
+  await settle(page);
+  await page.evaluate(() => (location.hash = "#nonsense"));
+  await frame(page);
+  expect(page.url()).toContain("#HIRO/11/");
+  await page.evaluate(() => (location.hash = "#HIRO/99"));
+  await frame(page);
+  expect(page.url()).toContain("#HIRO/11/");
 });
 
 test("a change of level or a find is a history entry; a turn is not", async ({ page }) => {
-  await page.goto("/#L0");
+  await page.goto("/#HIRO/0");
   await settle(page);
   await frame(page);
   const entries = () => page.evaluate(() => history.length);
@@ -63,7 +74,7 @@ test("a change of level or a find is a history entry; a turn is not", async ({ p
   await page.keyboard.press("]");
   await frame(page);
   expect(await entries()).toBe(booted + 1);
-  expect(page.url()).toContain("#L1/");
+  expect(page.url()).toContain("#HIRO/1/");
   await page.locator("#search").fill("key");
   await page.locator("#search").press("Enter");
   await frame(page);
@@ -86,7 +97,7 @@ test("a change of level or a find is a history entry; a turn is not", async ({ p
 });
 
 test("the camera writes the URL once a frame, not once an event", async ({ page }) => {
-  await page.goto("/#L0");
+  await page.goto("/#HIRO/0");
   await settle(page);
   const calls = await page.evaluate(() => {
     let n = 0;
@@ -111,11 +122,11 @@ test("the camera writes the URL once a frame, not once an event", async ({ page 
   });
   expect(calls).toBe(0);
   await frame(page);
-  expect(page.url()).toMatch(/#L0\//);
+  expect(page.url()).toMatch(/#HIRO\/0\//);
 });
 
 test("clicking the start's block opens the object standing on it", async ({ page }) => {
-  await page.goto("/#L0");
+  await page.goto("/#HIRO/0");
   await settle(page);
   await page.evaluate(async () => {
     const { state } = await import(new URL("js/state.js", location.href).href);
@@ -147,7 +158,7 @@ test("the catalogue's own note reaches the catalogue", async ({ page }) => {
 
 test("the drawer stays dismissable on the narrowest phone", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
-  await page.goto("/#L0");
+  await page.goto("/#HIRO/0");
   await settle(page);
   await page.locator("#menuBtn").click();
   await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "true");
@@ -159,7 +170,7 @@ test("the drawer stays dismissable on the narrowest phone", async ({ page }) => 
 });
 
 test("Escape leaves the drawer alone where it sits beside the map", async ({ page }) => {
-  await page.goto("/#L0");
+  await page.goto("/#HIRO/0");
   await settle(page);
   await page.keyboard.press("Escape");
   await expect(page.locator("#scrim")).toBeHidden();
@@ -189,7 +200,7 @@ test("an object search lists every one round the level in hand, and a row goes t
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto("/#L11");
+  await page.goto("/#HIRO/11");
   await settle(page);
   const search = page.locator("#search");
   await search.fill("key");
@@ -241,7 +252,7 @@ test("an object search lists every one round the level in hand, and a row goes t
 test("a field is searched as name=value, and a match outside the row is appended to it", async ({
   page,
 }) => {
-  await page.goto("/#L0");
+  await page.goto("/#HIRO/0");
   await settle(page);
   const search = page.locator("#search");
   await search.fill("starts=off");
@@ -263,7 +274,7 @@ test("a field is searched as name=value, and a match outside the row is appended
 });
 
 test("a find above the slice's ceiling lifts the ceiling to it", async ({ page }) => {
-  await page.goto("/#L11/45,35/1/17,17,17/0,0/14");
+  await page.goto("/#HIRO/11/45,35/1/17,17,17/0,0/14");
   await settle(page);
   const search = page.locator("#search");
   await search.fill("key");
@@ -280,7 +291,7 @@ test("a find above the slice's ceiling lifts the ceiling to it", async ({ page }
 });
 
 test("the view turns about a find only while it stays selected", async ({ page }) => {
-  await page.goto("/#L11");
+  await page.goto("/#HIRO/11");
   await settle(page);
   await page.locator("#search").fill("key");
   await page.locator("#search").press("Enter");
@@ -335,7 +346,7 @@ test("the view turns about a find only while it stays selected", async ({ page }
 });
 
 test("arriving somewhere is spoken, and names the map with it", async ({ page }) => {
-  await page.goto("/#L0");
+  await page.goto("/#HIRO/0");
   await settle(page);
   const line = "LEVEL 1, HIRO, 20 blocks, 6 objects, 4000 points, time 99.";
   await expect(page.locator("#say")).toHaveText(line);
@@ -367,7 +378,7 @@ test("a panel is a dialog that a click inside does not dismiss", async ({ page }
 
 test("objects draw as themselves, keep turning, and go back to markers on d", async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto("/#L0");
+  await page.goto("/#HIRO/0");
   await settle(page);
   const probe = async () =>
     page.evaluate(async () => {
