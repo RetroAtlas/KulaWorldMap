@@ -1,5 +1,5 @@
 import { $, el, on } from "./dom.js";
-import { state, cellKey } from "./state.js";
+import { state, SIDE, cellKey, sliceZ } from "./state.js";
 import { worldName, levelTitle, inLattice } from "./data.js";
 import { selectLevel, centreOn, writeHash } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
@@ -10,6 +10,7 @@ import { whole } from "./searchtext.js";
 import { matchPlaces } from "./placesearch.js";
 import { matchObjects } from "./objectsearch.js";
 import { setSidebar, sidebarOverlays } from "./sidebar.js";
+import { setSlice } from "./interaction.js";
 
 const box = $("search");
 const bar = $("scope");
@@ -85,8 +86,10 @@ const cell = (q) => {
 };
 
 // A find is selected as a click would select it, so the outline and the
-// panel say which block the view was centred on.
+// panel say which block the view was centred on; one above the slice's
+// ceiling lifts the ceiling to it, since a cell above it is not drawn.
 function goTo(x, y, z) {
+  if (z < sliceZ()) setSlice(SIDE - 1 - z);
   centreOn(x, y, z);
   const key = cellKey(x, y, z);
   const c = state.idx.cells.get(key);

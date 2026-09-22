@@ -211,6 +211,23 @@ test("a field is searched as name=value, and a match outside the row is appended
   expect(await page.evaluate(() => location.hash)).not.toBe(before);
 });
 
+test("a find above the slice's ceiling lifts the ceiling to it", async ({ page }) => {
+  await page.goto("/#L11/45,35/1/17,17,17/0,0/14");
+  await settle(page);
+  const search = page.locator("#search");
+  await search.fill("key");
+  await expect(page.locator("#results [role=option]").first()).toContainText("LEVEL 12");
+  await search.press("Enter");
+  const at = await page.evaluate(async () => {
+    const { state, sliceZ } = await import(new URL("js/state.js", location.href).href);
+    return { z: state.selected.z, ceiling: sliceZ(), slice: state.slice };
+  });
+  expect(at.z).toBeLessThan(19);
+  expect(at.ceiling).toBe(at.z);
+  await expect(page.locator("#chip")).toContainText(`sliced to z≥${at.z}`);
+  await expect(page.locator("#slice")).toHaveValue(String(at.slice));
+});
+
 test("arriving somewhere is spoken, and names the map with it", async ({ page }) => {
   await page.goto("/#L0");
   await settle(page);
