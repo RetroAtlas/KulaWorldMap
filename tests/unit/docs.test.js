@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { mapData } from "./fixtures.js";
+import { mapData, annotations } from "./fixtures.js";
 
 const readme = readFileSync(fileURLToPath(new URL("../../README.md", import.meta.url)), "utf8");
 
@@ -86,4 +86,29 @@ test("the README's catalogue arithmetic adds up", () => {
   assert.equal(missing.length, 7);
   assert.equal(number(m[2]), placed(missing));
   assert.equal(number(m[3]), placed(covered));
+});
+
+// The points are curated rather than read, and the README's arithmetic is what
+// they rest on, so neither can change without the other.
+test("the README's points are the ones annotations.json scores", () => {
+  const m =
+    /coins worth (\d+), (\d+) or (\d+) by their colour field, gems (\d+), keys (\d+), fruit (\d+), an hourglass (\d+), sunglasses (\d+) and a crumbling block (\d+)/.exec(
+      readme,
+    );
+  assert.ok(m, "README has no sentence giving the points");
+  const type = (t) => annotations.types[t];
+  const coin = (tier) => type(37).variants[tier].points;
+  const fruit = new Set([43, 44, 45, 46, 47].map((t) => type(t).points));
+  assert.equal(fruit.size, 1, "the five fruit score differently");
+  assert.deepEqual(m.slice(1).map(number), [
+    coin(2),
+    coin(1),
+    coin(0),
+    type(36).points,
+    type(31).points,
+    [...fruit][0],
+    type(35).points,
+    type(38).points,
+    annotations.kinds[6].points,
+  ]);
 });

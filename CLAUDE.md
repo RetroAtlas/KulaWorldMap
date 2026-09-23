@@ -11,7 +11,7 @@ Read [docs/level-format.md](docs/level-format.md) before changing anything under
 - The six slots of a record are the six faces of its block, in the order top, `+x`, `+y`, `-y`, `-x`, underside. A slot has no position of its own: 51 records are zeroed past the first slot, and a range test on slots once read 255 objects out of them.
 - The five lattice styles and a record's kind word are one enumeration of block kinds; what stands on a block is named by its type alone.
 
-Keep the cross-check in `tools/kula_build.py` fatal, and keep `tools/kula_score.py --guide` passing when a name or a points value changes: those two hold the readings and the names to the disc. Do not re-derive the lattice from file sizes.
+Keep the cross-check in `tools/kula_build.py` fatal: it holds the readings to the disc. A points value changes only with the README's arithmetic, which a unit test holds it to. Do not re-derive the lattice from file sizes.
 
 Before a commit: `npm test` (the unit tests pin the README's figures to the data, so a rebuild that moves a count fails there rather than going stale in silence), `npm run format:check`, `npm run lint`, `python3 -m unittest discover -s tools/tests`, and `npm run test:browser` when the viewer changed.
 
