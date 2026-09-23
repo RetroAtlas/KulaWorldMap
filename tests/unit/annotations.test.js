@@ -1,8 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { mapData, annotations, levelKey, CAMERA_KIND } from "./fixtures.js";
 import { state } from "../../public/js/state.js";
 import { setAnnotations, levelPoints, levelScore } from "../../public/js/data.js";
+
+const reasons = readFileSync(
+  fileURLToPath(new URL("../../docs/annotations.md", import.meta.url)),
+  "utf8",
+);
 
 // annotations.json is hand-curated against generated data, so every key in it
 // has to name something the data still has.
@@ -73,4 +80,33 @@ test("a curated score is below what the disc holds, and says why", () => {
     assert.ok(annotations.levels[levelKey(l)].note, `${levelKey(l)}: no note`);
   }
   assert.ok(curated > 0);
+});
+
+// A note is what the map says; why it is believed lives in docs/annotations.md
+// under the entry's key, so nothing goes in without its reasons and nothing is
+// left there once its entry is gone.
+test("every annotation has its reasons in docs/annotations.md, and only those", () => {
+  const entries = new Set([
+    ...Object.keys(annotations.worlds ?? {}).map((id) => `world ${id}`),
+    ...Object.keys(annotations.kinds ?? {}).map((k) => `kind ${k}`),
+    ...Object.keys(annotations.types ?? {}).map((t) => `type ${t}`),
+    ...Object.keys(annotations.levels ?? {}),
+  ]);
+  const sections = new Set();
+  for (const heading of reasons.split("\n").filter((line) => line.startsWith("### "))) {
+    const named = [
+      ...heading.matchAll(/^### ((?:world|kind|type) \w+)|(\/[A-Z]+\/[A-Z]+\.PAK#\d+)/g),
+    ].map((m) => m[1] ?? m[2]);
+    assert.ok(named.length, `docs/annotations.md: "${heading}" names no entry`);
+    for (const key of named) {
+      assert.ok(
+        entries.has(key),
+        `docs/annotations.md has a section for ${key}, which is not annotated`,
+      );
+      sections.add(key);
+    }
+  }
+  for (const key of entries) {
+    assert.ok(sections.has(key), `docs/annotations.md has no section for ${key}`);
+  }
 });
