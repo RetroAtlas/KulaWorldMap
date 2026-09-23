@@ -262,125 +262,125 @@
   },
   "levels": {
     "/HIRO/HIRO.PAK#19": {
-      "note": "The training level the Japanese release lists as Lesson on its main menu, with one of nearly everything the game has on one floor; the other two releases keep it on the disc and off the menu, where the walkthrough's GameShark section found it. `tools/kula_warp.py --cheat --level /HIRO/HIRO.PAK#19` prints the cheat that reaches it."
+      "note": "The training level the Japanese release lists as Lesson on its main menu, with one of nearly everything the game has on one floor. The other two releases keep it on the disc but off the menu."
     },
     "/HILLS/HILLS.PAK#15": {
       "score": 25100,
-      "note": "The walkthrough's maximum. The disc holds 3500 more, the twelve coins on the corners of the lowest ring: they and the four gems inside that ring cannot both be had, and the walkthrough takes the gems. The Japanese release removes the coins."
+      "note": "The disc holds 3500 more, the twelve coins on the corners of the lowest ring: they and the four gems inside that ring cannot both be had, and the gems score more. The Japanese release removes the coins."
     },
     "/HILLS/HILLS.PAK#18": {
       "score": 7200,
-      "note": "The walkthrough's figure, which it marks with a question mark: it leaves one of the ten crumbling blocks, and counts the coin under the exit block that the Japanese release removes as unreachable. The disc holds 50 more."
+      "note": "The best known score, and not a certain one: it takes the coin under the exit block, which the Japanese release removes as unreachable, and leaves one of the ten crumbling blocks, the 50 more the disc holds."
     },
     "/HILLS/HILLS.PAK#19": {
-      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
+      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/HILLS/HILLSFI.PAK#0": {
-      "note": "The Final has no fruit, and the PAL release put an apple on this level anyway, which the US and Japanese releases removed, leaving the blue teleporter it stood beside with nothing to reach (The Cutting Room Floor's Roll Away page)."
+      "note": "The Final has no fruit, and the PAL release put an apple on this level anyway, which the US and Japanese releases removed, leaving the blue teleporter it stood beside with nothing to reach."
     },
     "/INCA/INCA.PAK#9": {
       "score": 8675,
-      "note": "The walkthrough's maximum. The disc holds 100 more, two crumbling blocks the walkthrough says cannot be reached."
+      "note": "The disc holds 100 more, two crumbling blocks that cannot be reached."
     },
     "/INCA/INCA.PAK#19": {
-      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
+      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/ARCTIC/ARCTIC.PAK#19": {
-      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
+      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/COWBOY/COWBOY.PAK#19": {
-      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
+      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/FIELD/FIELD.PAK#7": {
       "score": 4650,
-      "note": "The walkthrough's maximum. The disc holds 150 more, three crumbling blocks on the top level that the walkthrough says cannot be broken by any means."
+      "note": "The disc holds 150 more, three crumbling blocks on the top level that cannot be broken by any means."
     },
     "/FIELD/FIELD.PAK#15": {
-      "note": "The Japanese release redesigned this level, taking out the gem ringed with spike traps (The Cutting Room Floor's Roll Away page); this is the US layout, which R. Agsten's route in the walkthrough clears with seven seconds to spare."
+      "note": "The Japanese release redesigned this level, taking out the gem ringed with spike traps; this is the US layout."
     },
     "/FIELD/FIELD.PAK#16": {
       "score": 19050,
-      "note": "The walkthrough's maximum. The disc holds 4475 more, the gem and two gold coins on whichever end block is reached last: touching the last block ends a bonus level before anything on it can be collected. The Japanese release puts a single gem on each end instead."
+      "note": "The disc holds 4475 more, the gem and two gold coins on whichever end block is reached last: touching the last block ends a bonus level before anything on it can be collected. The Japanese release puts a single gem on each end instead."
     },
     "/FIELD/FIELD.PAK#18": {
-      "note": "The Japanese release took a coin and the two moving platforms out of this level; the platforms made the coin easier to reach and back from, and were not the only way (The Cutting Room Floor's Roll Away page)."
+      "note": "The Japanese release took a coin and the two moving platforms out of this level; the platforms made the coin easier to reach and back from, and were not the only way."
     },
     "/FIELD/FIELD.PAK#19": {
-      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
+      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/FIELD/FIELDFI.PAK#1": {
       "score": 21430,
-      "note": "The walkthrough's maximum. The disc holds 50 more, a crumbling block the walkthrough says is unattainable."
+      "note": "The disc holds 50 more, a crumbling block that cannot be reached."
     },
     "/ATLANT/ATLANT.PAK#3": {
       "score": 9975,
-      "note": "The walkthrough's maximum. The disc holds 50 more, a crumbling block the walkthrough says is out of reach. The hourglass and two gold coins the disc keeps on two crumbling blocks at 15,25,17 and 16,25,17 are not in play, since the game never walks what stands on a crumbling block, and the walkthrough never sees the hourglass."
+      "note": "The disc holds 50 more, a crumbling block that is out of reach. It also keeps an hourglass and two gold coins on the crumbling blocks at 15,25,17 and 16,25,17, but the game never places anything stored on a crumbling block, so they are not in play and the map leaves them out."
     },
     "/ATLANT/ATLANT.PAK#11": {
       "score": 23115,
-      "note": "The walkthrough's maximum. The disc holds 750 more, a gold coin inside one of the rings that the walkthrough says cannot be reached; the Japanese release removes it."
+      "note": "The disc holds 750 more, a gold coin inside one of the rings that cannot be reached; the Japanese release removes it."
     },
     "/ATLANT/ATLANT.PAK#19": {
-      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
+      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/ATLANT/ATLANTFI.PAK#0": {
       "score": 15915,
-      "note": "The walkthrough's maximum. The disc holds 200 more, four of the fifteen crumbling blocks, which the walkthrough calls a necessary evil. Three more keys the disc keeps on the undersides of crumbling blocks are not in play, since the game never walks what stands on one, so the level asks for three keys and not six."
+      "note": "The disc holds 200 more, four of the fifteen crumbling blocks, which the best known route leaves. It also keeps three keys on the undersides of crumbling blocks, which the game never places, so the level asks for three keys and not six."
     },
     "/HAZE/HAZE.PAK#19": {
-      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
+      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/HAZE/HAZEFI.PAK#1": {
       "score": 24065,
-      "note": "R. Agsten's figure in the walkthrough, one gem better than the author's. The disc holds 30500 more: ten of the eleven gems on the ring at y=28, which cannot be left once reached, and a gold coin."
+      "note": "The disc holds 30500 more: ten of the eleven gems on the ring at y=28, which cannot be left once reached, and a gold coin."
     },
     "/MARS/MARS.PAK#7": {
       "score": 10315,
-      "note": "The walkthrough's maximum. The disc holds 100 more, two of the five crumbling blocks, which the walkthrough's route leaves standing without saying so."
+      "note": "The disc holds 100 more, two of the five crumbling blocks, which the best known route leaves standing."
     },
     "/MARS/MARS.PAK#10": {
-      "note": "The Japanese release un-iced one face of the solid ice block for an arrow that nothing can reach, and removed a coin on the same block that nothing could reach either (The Cutting Room Floor's Roll Away page). Both are still here."
+      "note": "The Japanese release un-iced one face of the solid ice block for an arrow that nothing can reach, and removed a coin on the same block that nothing could reach either. Both are still here."
     },
     "/MARS/MARS.PAK#11": {
-      "note": "The hidden exit at 14,19,18 is the one the walkthrough gave up on: the PAL release forgot to place it, the US release placed it on a block that cannot be reached once it has appeared, and the Japanese release moved it to LEVEL 134, so only there can every hidden level be played (The Cutting Room Floor's Roll Away page and the walkthrough)."
+      "note": "The hidden exit at 14,19,18 stands on a block that cannot be reached once it has appeared. The PAL release forgot to place it, and the Japanese release moved it to LEVEL 134, the one release in which every hidden level can be played."
     },
     "/MARS/MARS.PAK#12": {
-      "note": "The Japanese release moved one of the gems off the lethal tile it stands on here onto a kinder one (The Cutting Room Floor's Roll Away page)."
+      "note": "The Japanese release moved one of the gems off the lethal tile it stands on here onto a kinder one."
     },
     "/MARS/MARS.PAK#13": {
-      "note": "The disc keeps a second fruit on the +y face of 17,16,20, a crumbling block, which is not in play, since the game never walks what stands on one. The Japanese release moves the world's hidden exit to this level."
+      "note": "The disc also keeps a second fruit on the crumbling block at 17,16,20, but the game never places anything stored on a crumbling block, so it is not in play and the map leaves it out. The Japanese release moves the world's hidden exit to this level."
     },
     "/MARS/MARS.PAK#16": {
       "score": 19000,
-      "note": "The walkthrough's maximum. The disc holds 8925 more, three gems under the three far blocks, which only the bouncy pill reaches and which the pill then keeps you from collecting; the Japanese release removes them."
+      "note": "The disc holds 8925 more, three gems under the three far blocks, which only the bouncy pill reaches and which the pill then keeps you from collecting; the Japanese release removes them."
     },
     "/MARS/MARS.PAK#18": {
-      "note": "A hidden level with a fruit on it, the only one, at 9,18,15, which the Japanese release removed; not that a player of this release can see it, since the exit that leads here is out of reach (The Cutting Room Floor's Roll Away page)."
+      "note": "The only hidden level with a fruit, at 9,18,15, which the Japanese release removed; in this release the exit that leads here is out of reach."
     },
     "/MARS/MARS.PAK#19": {
-      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
+      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/HELL/HELL.PAK#14": {
       "score": 22440,
-      "note": "The walkthrough's maximum. The disc holds 50 more, the one crumbling block the walkthrough leaves."
+      "note": "The disc holds 50 more, one crumbling block that the best known route leaves."
     },
     "/HELL/HELL.PAK#15": {
       "score": 21475,
-      "note": "The walkthrough's maximum. The disc holds 1000 more, the two coins on top of the first platform, a face the walkthrough says cannot be reached; the Japanese release removes them."
+      "note": "The disc holds 1000 more, the two coins on top of the first platform, a face that cannot be reached; the Japanese release removes them."
     },
     "/HELL/HELL.PAK#16": {
       "score": 18675,
-      "note": "The walkthrough's maximum. The disc holds 750 more, a gold coin's worth that the walkthrough's route does not take and does not name."
+      "note": "The disc holds 750 more, a gold coin's worth that the best known route does not collect."
     },
     "/HELL/HELL.PAK#17": {
       "score": 14125,
-      "note": "The walkthrough's maximum. The disc holds 250 more, a bronze coin's worth that the walkthrough's route does not take and does not name. This is the one arcade level rebuilt between the PAL and the NTSC release, and its thirty pickups are the only ones in the game without a pickup number."
+      "note": "The disc holds 250 more, a bronze coin's worth that the best known route does not collect. This is the one arcade level rebuilt between the PAL and the NTSC release."
     },
     "/HELL/HELL.PAK#18": {
-      "note": "160 of its 178 blocks are not part of the level at all. They lie flat on z=32, the floor of the lattice and 22 blocks below the playable structure, spelling VERY WELL DONE in block letters six blocks tall. The other 18 are a frame standing in the xz plane, and everything the level places, the start, the exit, four keys, eight bronze coins and four of an unnamed type, stands on its -y face, from where the lettering reads the right way round."
+      "note": "160 of its 178 blocks are not part of the level: they lie flat far below it, spelling VERY WELL DONE in block letters six blocks tall. The other 18 are an upright frame, and everything on the level stands on one side of it, the side from which the lettering reads the right way round."
     },
     "/HELL/HELL.PAK#19": {
-      "note": "The developer object catalogue, shipped unchanged in nine of the ten worlds and never reached in play. One of nearly every object in the game stands on a flat floor: walk it in an emulator and each one names itself. `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it."
+      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     }
   }
 }

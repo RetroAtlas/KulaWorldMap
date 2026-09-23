@@ -110,3 +110,25 @@ test("every annotation has its reasons in docs/annotations.md, and only those", 
     assert.ok(sections.has(key), `docs/annotations.md has no section for ${key}`);
   }
 });
+
+// A note is read by someone looking at the map: what a thing is and does, in
+// a sentence or three. Anything that proves it, or names this project's
+// workings, belongs in docs/annotations.md, where it can go stale in private.
+const LONGEST_NOTE = 320;
+const INTERNALS =
+  /tools\/|\.py\b|\.json\b|\b0x[0-9a-f]+|\b\d{4}-\d{2}-\d{2}\b|walkthrough|\bf\d+\b|lattice|\brecords?\b|\bslots?\b|\b(?:type|kind|style) \d+\b/i;
+
+test("a note is short and free of the project's workings", () => {
+  for (const section of ["worlds", "kinds", "types", "levels"]) {
+    for (const [key, entry] of Object.entries(annotations[section] ?? {})) {
+      if (!entry.note) continue;
+      const where = `annotations.json ${section} ${key}`;
+      assert.ok(
+        entry.note.length <= LONGEST_NOTE,
+        `${where}: ${entry.note.length} characters, over ${LONGEST_NOTE}`,
+      );
+      const hit = INTERNALS.exec(entry.note);
+      assert.ok(!hit, `${where}: "${hit?.[0]}" belongs in docs/annotations.md`);
+    }
+  }
+});
