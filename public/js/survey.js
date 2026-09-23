@@ -15,9 +15,8 @@ const FACES = [
   ["+y", "+y side"],
   ["-y", "-y side"],
 ];
-// The game's vocabulary as a player meets it, grouped the way the walkthrough
-// groups it, so a mark can say what was seen without first knowing what the
-// disc calls it.
+// The game's vocabulary as a player meets it, grouped, so a mark can say what
+// was seen without first knowing what the disc calls it.
 const GROUPS = [
   [
     "Pickups",

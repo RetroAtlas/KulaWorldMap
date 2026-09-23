@@ -4,8 +4,8 @@ import { worldName, levelTitle } from "./data.js";
 import { matchesBy, rankFor } from "./searchquery.js";
 import { indexed, answers } from "./searchtext.js";
 
-// The Final is counted on from 150 by the game and the walkthrough, so its
-// seventh level answers to 157 as well as to 7.
+// The game counts The Final on from 150, so its seventh level answers to 157
+// as well as to 7.
 const ARCADE = 150;
 
 function candidates(data) {

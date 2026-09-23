@@ -133,7 +133,7 @@ def main():
         "`elsewhere` is how many times the type is placed in the rest of the game, which is ",
         "how much a name is worth. A type that appears only here is marked `only here`: it is ",
         "cut content or a developer marker, and naming it is optional.\n\n",
-        "`map says` is the name the map already gives the thing, from the walkthrough; the last ",
+        "`map says` is the name the map already gives the thing; the last ",
         "column is for what the game shows, so that the two can be scored against each other. ",
         "Names go into `public/annotations.json` under `types`, keyed by the type number, ",
         "or under `kinds` for a record that is its own thing.\n\n",
