@@ -529,6 +529,15 @@ body.sidebar-open .menu-btn {
   padding: 1px 0;
   vertical-align: top;
 }
+.detail th {
+  padding: 6px 0 1px;
+  color: var(--dim);
+  font-size: 10.5px;
+  font-weight: normal;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 .detail td:first-child {
   color: var(--dim);
   padding-right: 8px;

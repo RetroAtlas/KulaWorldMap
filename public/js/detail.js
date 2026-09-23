@@ -22,6 +22,7 @@ import { iconFor } from "./icons.js";
 let stats = null;
 
 const row = (k, v) => `<tr><td>${k}</td><td class="mono">${v}</td></tr>`;
+const STORED = `<tr><th colspan="2">on the disc</th></tr>`;
 
 const dot = (colour) =>
   `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${colour}"></span>`;
@@ -36,16 +37,17 @@ export function showCell(c) {
   const off = c.v === OFF_LATTICE;
   const plain = c.v < state.data.firstRecord;
   const kind = off ? null : plain ? c.v : records[0]?.kind;
-  const what = kind === null ? "Block at a beam's end" : kindName(kind) || `Block of kind ${kind}`;
+  const what = kind === null ? "Laser end" : kindName(kind) || `Block, kind ${kind}`;
   let html = `<button class="x" title="Close (Esc)">×</button>`;
-  html += `<h3>${what}${plain || off ? "" : `, with record ${c.v - state.data.firstRecord}`}</h3>`;
+  html += `<h3>${what}</h3>`;
   html += `<p class="sub">${levelTitle(l)} · cell ${c.x},${c.y},${c.z}</p>`;
   if (off)
-    html += `<p class="sub">The lattice holds nothing here. A beam record names this cell as one
-      of its two ends, and the game stands a block on it.</p>`;
+    html += `<p class="sub">The level leaves this cell empty, and the game puts a block here as
+      the level loads, as one end of a laser.</p>`;
   else if (kindNote(kind)) html += `<p class="sub">${kindNote(kind)}</p>`;
-  html += `<table>${row("lattice value", off ? "empty" : c.v)}${row("cell", `${c.x}, ${c.y}, ${c.z}`)}`;
-  if (kind !== null) html += row("block kind", kind);
+  html += `<table>${STORED}${row("cell", `${c.x}, ${c.y}, ${c.z}`)}${row("cell value", off ? "empty" : c.v)}`;
+  if (kind !== null) html += row("kind", kind);
+  if (!plain && !off) html += row("record", c.v - state.data.firstRecord);
   html += "</table>";
 
   const icons = [];
@@ -69,6 +71,7 @@ export function showCell(c) {
     if (started !== null) html += row("starts", started);
     const number = markerNumber(m);
     if (number !== null) html += row("pickup number", number);
+    html += STORED;
     m.f.forEach((v, i) => {
       if (v !== -1) html += row(`f${i + 5}`, v);
     });
