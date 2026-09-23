@@ -936,7 +936,7 @@ function drawLook(l) {
   ctx.beginPath();
   ctx.arc(px, y, Math.max(2, 3 * state.cam.zoom), 0, 7);
   ctx.fill();
-  label("look-at", px + Math.max(9, 12 * state.cam.zoom), y + 4, colour);
+  label("camera target", px + Math.max(9, 12 * state.cam.zoom), y + 4, colour);
 }
 
 function drawBase(l) {
