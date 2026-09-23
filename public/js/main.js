@@ -44,16 +44,15 @@ function showAbout() {
   openModal(
     "About this map",
     `<p>An unofficial fan project, unaffiliated with the rights holders in <em>Kula World</em>.
-    Every level here is read from the game's own data on the ${d.release} disc: the
-    ${d.side}&times;${d.side}&times;${d.side} lattice each level is built in, and the records the
-    engine attaches to individual blocks.</p>
-    <p>Blocks wear the game's own textures, lifted from each world's artwork file, in the three
-    brightness levels the game itself ships them pre-shaded with, one per face orientation. The
-    objects are the game's own meshes in the game's own colours, stood on the face each one
-    stands on; which texture a block carrying an object wears is not decoded, so those draw the
-    world's plain stone.</p>
-    <p>Objects are the game's own numbers, because the game names none of them. Names appear
-    here as they are identified and curated in <code>annotations.json</code>.</p>
+    Every level is read from the game's own data on the ${d.release} disc; the same game
+    shipped as <em>Kula World</em> in PAL territories and as <em>Kula Quest</em> in Japan.</p>
+    <p>Blocks wear the game's own textures, painted face by face and shaded as the game does
+    it, and the objects are the game's own models in its own colours, standing on the faces the
+    game puts them on and moving at its pace.</p>
+    <p>The game never names its objects; the names here were settled against the disc and in
+    play, with Syonyx's Roll Away walkthrough (GameFAQs, 2006) as a guide. What the Japanese and
+    PAL releases changed comes from The Cutting Room Floor's Roll Away page. Anything still
+    unnamed shows the number the game gives it.</p>
     <p><a href="https://github.com/RetroAtlas/KulaWorldMap">Source and tooling</a> &middot;
     <a href="https://retroatlas.org/">RetroAtlas</a></p>`,
   );
