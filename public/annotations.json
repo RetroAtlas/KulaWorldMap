@@ -50,11 +50,11 @@
   "types": {
     "1": {
       "name": "Fire",
-      "note": "Fire on one face of an otherwise normal block. LEVEL 38 is a start block and four blocks two squares out, each with fire on four faces and, as the walkthrough says, fire-free on two. A block that is fire all over is a fire block instead."
+      "note": "Fire on one face of an otherwise normal block; a block that is fire all over is a fire block instead."
     },
     "2": {
       "name": "Ice",
-      "note": "Ice on one face of an otherwise normal block, the ice patch the walkthrough keeps warning about on column tips. LEVEL 47 carries seventeen and no ice blocks."
+      "note": "Ice on one face of an otherwise normal block."
     },
     "5": {
       "name": "Teleporter",
@@ -78,15 +78,15 @@
           "colour": "#ff4a4a"
         }
       },
-      "note": "Rolling onto one carries the ball to another of the same colour; a switch of that colour turns the pair on and off. LEVEL 66, the walkthrough's first teleporters, carries the game's first two. The colour is the circuit number the lasers and switches use: LEVEL 68's are yellow and blue and read 0 and 1, LEVEL 70's yellow, red and green read 0, 3 and 2. The field after the colour says whether it starts on, 1 for on and 2 for off: the ones the walkthrough uses on arrival, LEVEL 66 to 71 among them, read 1, the ones it sends you to a button for first, LEVEL 84, 97, 99, 100, 101, 102, 117, 128, 133, 137, 142 and 145, read 2, and on every level with lasers of the same colour the field agrees with whether the beams start lit."
+      "note": "Rolling onto one carries the ball to another of the same colour; a switch of that colour turns the pair on and off."
     },
     "7": {
       "name": "Exit",
-      "note": "Red until every key is collected, then green, and touching it ends the level. One in each of 190 levels, two in three of them, and none on the 30 bonus and 10 Simon levels, which have no exit to reach; LEVEL 1's, LEVEL 2's and HIDDEN 10's stand on the cells and faces the map draws them on."
+      "note": "Red until every key is collected, then green; touching it ends the level."
     },
     "8": {
       "name": "Clock",
-      "note": "A square that freezes the timer while the ball sits on it. LEVEL 56 is the walkthrough's first clock and carries seven, and LEVEL 58, 59 and 118 each have one where the walkthrough says; the clock LEVEL 136 starts you on is the start itself, type 29, which the loader makes a clock of."
+      "note": "A square that freezes the timer while the ball sits on it."
     },
     "9": {
       "name": "Switch",
@@ -110,59 +110,59 @@
           "colour": "#ff4a4a"
         }
       },
-      "note": "A button that toggles every laser and teleporter of its colour. LEVEL 84 has the walkthrough's first button and the game's first of these; LEVEL 98's red, green and blue read 3, 2 and 1, the same numbers its three lasers carry. The field after the colour is the circuit's starting state, 1 for on and 2 for off, and agrees with the lasers and teleporters of that colour on every level: LEVEL 105's all read 1 and the walkthrough turns them off, LEVEL 97's all read 2 and it turns red on."
+      "note": "A button that turns every laser and teleporter of its colour on and off."
     },
     "10": {
       "name": "Boost button",
-      "note": "Launches the ball three squares forward, or two forward and one up. LEVEL 26, which introduces them, carries the game's first three."
+      "note": "Launches the ball three squares forward, or two forward and one up."
     },
     "11": {
       "name": "Moving spikes",
-      "note": "Spikes that rise and retract in turn; safe to roll over when down. LEVEL 41 carries the game's first six where the walkthrough first says to wait for them to retract, and the field that varies takes four values, which reads as where in the cycle each one starts."
+      "note": "Spikes that rise and retract in turn, each from its own point in the cycle; safe to roll over when down."
     },
     "12": {
       "name": "Spikes",
-      "note": "Pops the ball on touch; jump over them. LEVEL 4 carries the game's first four where the walkthrough first says to jump the spikes."
+      "note": "Pops the ball on touch; jump over them."
     },
     "26": {
       "name": "Hidden exit",
-      "note": "Appears once every key is collected, colourless, and leads to the world's hidden level. Exactly the ten levels the walkthrough marks as hidden-level access carry one, LEVEL 82 two, and LEVEL 132's is the one the NTSC release puts out of reach; the PAL release has none there at all, and the Japanese release moved it to LEVEL 134."
+      "note": "Appears once every key is collected, colourless, and leads to the world's hidden level."
     },
     "28": {
       "name": "Arrow",
       "facing": "f5",
-      "note": "A square the ball can only leave in the direction the arrow points. LEVEL 61, the walkthrough's first arrows, carries the game's first twelve, and the field that varies takes 1 to 4, a quarter turn each on the face: on a block's top they point +y, -x, -y and +x, which LEVEL 62's arrows in play fixed, one of each."
+      "note": "A square the ball can only leave in the direction the arrow points."
     },
     "29": {
       "name": "Start on a clock",
       "facing": "f5",
-      "note": "Two in the game, on LEVEL 58 and Hell's LEVEL 135, and each level's only start. The routine that places the ball at 0x80036100 takes a type 29 like a type 30, faces the ball by the same field, and then makes the slot a clock, type 8, at 0x8003627c, so the ball starts on a clock: the walkthrough opens LEVEL 136 with just that, and both starts were checked in play (2026-09-21). The face is painted with the clock's face like any clock's."
+      "note": "Where the ball starts the level, and the way it faces, on a clock rather than a plain square."
     },
     "30": {
       "name": "Start",
       "facing": "f5",
-      "note": "The block and face the ball starts on, in LEVEL 1, LEVEL 2 and HIDDEN 10. One in each of 228 levels; ARCTIC LEVEL 58 and HELL LEVEL 135 start the ball on a clock instead, type 29. The field that varies is the way the ball faces, in the quarter turns the arrows use: LEVEL 1's reads 3, which is -y, and the first coin is two blocks that way. The map stands the ball there in the world's own design, which the game picks by the world's place from the fourteen the disc holds, Hiro's the white one with the coloured panels."
+      "note": "Where the ball starts the level, and the way it faces. The ball is drawn in its world's own design, Hiro's the white beach ball with the coloured panels, and on a hidden level the glass one with the shards inside. LEVEL 58 and LEVEL 136 start the ball on a clock instead."
     },
     "31": {
       "name": "Key",
       "points": 1000,
-      "note": "Collecting every key turns the exit green. One to six a level: 61 levels with one, 92 with two, 31 with three, five with four, one with six. LEVEL 1's and LEVEL 2's are on the cells the map draws them on, and HIDDEN 10's four are on the face."
+      "note": "Collecting every key on a level opens the exit, which turns from red to green."
     },
     "32": {
       "name": "Lethargy pill",
-      "note": "Slows the ball, rocks the screen and runs the timer fast for fifteen seconds; the walkthrough's dizzy pill. LEVEL 10 introduces them and carries the game's first four, and LEVEL 34, 43, 56 and 87 have them where it says."
+      "note": "Slows the ball, rocks the screen and runs the timer fast for fifteen seconds."
     },
     "33": {
       "name": "Bouncy pill",
-      "note": "Makes every forward move a two-square bounce and a jump three, until the level ends. LEVEL 86 introduces them and carries the game's first; LEVEL 88 has either of two, as the walkthrough says."
+      "note": "Makes every forward move a two-square bounce and a jump three, until the level ends."
     },
     "34": {
-      "note": "Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use."
+      "note": "Only on the object catalogue level, so nothing in play uses it."
     },
     "35": {
       "name": "Hourglass",
       "points": 1190,
-      "note": "Flips the timer, and scores 1200 less twelve times the seconds left, so 1190 at best. LEVEL 6 introduces it and carries the game's first; the walkthrough's maximum scores need 1190 for each one, which is collecting it with a second on the clock."
+      "note": "Flips the timer, and scores 1200 less twelve times the seconds left, so 1190 at best."
     },
     "36": {
       "name": "Gem",
@@ -182,7 +182,7 @@
           "colour": "#ff4a4a"
         }
       },
-      "note": "Worth 2975 whatever the colour, which is what the walkthrough's maximum scores need on every level that has one. The colour is the field that varies: LEVEL 5's blue gems read 0, LEVEL 64's green one 1, and the red ones of LEVEL 77, 103 and 118 read 2."
+      "note": "Blue, green or red, and worth the same whatever the colour."
     },
     "37": {
       "name": "Coin",
@@ -201,63 +201,63 @@
           "points": 750
         }
       },
-      "note": "Three tiers, told apart by the field that varies, and the walkthrough's maximum scores settle the points: 250, 500 and 750 fit 133 of its 148 arcade levels exactly and every miss is one it explains itself, an unreachable coin or block. LEVEL 1's and LEVEL 2's are the 250 kind and read bronze in play; LEVEL 112's thirteen, which the walkthrough calls orange, and HIDDEN 10's eight, which show gold, are the 750 kind; the middle tier is what it calls blue, on BONUS 15 and HIDDEN 5 among others."
+      "note": "Three tiers told apart by colour: bronze is worth 250, blue 500 and gold 750."
     },
     "38": {
       "name": "Sunglasses",
       "points": 500,
-      "note": "Reveals invisible blocks for a while, for 500 points. LEVEL 113 introduces them and carries three, and the walkthrough's scores for LEVEL 113 to 117 need exactly 500 for each."
+      "note": "Reveals invisible blocks for a while."
     },
     "42": {
-      "note": "Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use."
+      "note": "Only on the object catalogue level, so nothing in play uses it."
     },
     "43": {
       "name": "Fruit",
       "points": 2500,
-      "note": "One placement in the game, on LEVEL 83, where the walkthrough's pumpkin is. Which fruit a level shows is progress rather than data, so this is a fruit like the common one and the map does not say which. Its mesh is the apple."
+      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level. On a numbered level the map shows the one the level's number brings round."
     },
     "44": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Five in the game, on levels where the walkthrough's fruit stands and the common fruit type is absent. Worth 2500 like the rest, which is what those levels' maximum scores need. Its mesh is the watermelon."
+      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level. On a numbered level the map shows the one the level's number brings round."
     },
     "45": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Three in the game, on levels where the walkthrough's fruit stands and the common fruit type is absent, and one of them on HIDDEN 9, which the Japanese release removed. Worth 2500 like the rest. Its mesh is the pumpkin."
+      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level. On a numbered level the map shows the one the level's number brings round."
     },
     "46": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Apple, watermelon, pumpkin, bananas and strawberry in turn, and five of them earn a bonus level; which one a level shows is progress rather than data. The fruit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. One in each of 151 levels and two in one. Its mesh is the bananas."
+      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level. On a numbered level the map shows the one the level's number brings round."
     },
     "47": {
       "name": "Fruit",
       "points": 2500,
-      "note": "One placement in the game, on LEVEL 19, where the walkthrough's fruit stands and the common fruit type is absent. Worth 2500 like the rest. Its mesh is the strawberry."
+      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level. On a numbered level the map shows the one the level's number brings round."
     },
     "50": {
       "name": "Captivator",
       "facing": "f5",
-      "note": "A moving spiked thing that restarts the level on touch, with a direction in the field that varies. LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. It is the thinner star with three long points, seen in play beside type 52, and it is the walkthrough's slower kind: it travels the space it has and turns back at any wall or object in its way, a coin included."
+      "note": "A spiked star that restarts the level on touch: the thinner one, with three long points, which travels the space it has and turns back at any wall or object in its way, a coin included."
     },
     "51": {
       "name": "Rolling stone",
       "facing": "f5",
-      "note": "The grey cylinder that rolls slowly round a set course and can be jumped over, drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise."
+      "note": "A grey cylinder that rolls slowly round a set course and can be jumped over."
     },
     "52": {
       "name": "Captivator",
       "facing": "f5",
-      "note": "A moving spiked thing that restarts the level on touch, with a direction in the field that varies. The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. It is the fuller star with four short points, seen in play beside type 50, and it is the walkthrough's quick kind: back and forth over a fixed stretch, as if on a spring."
+      "note": "A spiked star that restarts the level on touch: the fuller one, with four short points, which slides back and forth over a fixed stretch, as if on a spring."
     },
     "53": {
       "name": "Captivator, wandering",
-      "note": "The blue hexagonal ball that shakes, then moves one square in a random direction. LEVEL 84 carries four where the walkthrough says to watch their shaking to tell which way they will go, and it has no direction field."
+      "note": "A blue hexagonal ball that shakes, then moves one square in a random direction; the way it shakes gives away where it is going."
     },
     "56": {
       "name": "Captivator, bouncing",
-      "note": "The corkscrew that bounces up and down: roll under it when up, jump it when down. LEVEL 45 carries six where the walkthrough says to roll under them when raised, and LEVEL 122's go up in sequence, which is what the four-valued field reads as."
+      "note": "A corkscrew that bounces up and down: roll under it when it is up, and jump it when it is down."
     }
   },
   "levels": {
