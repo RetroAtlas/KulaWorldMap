@@ -7,44 +7,44 @@
     },
     "1": {
       "name": "Fire block",
-      "note": "A block whose every face is fire: touching it inflates the ball until it pops or reaches cooler ground. The lattice's style 1 and a record's kind 1 are the same thing, the second being a fire block with something standing on it: LEVEL 35, the walkthrough's first fire, is style 1 and kind 1 and nothing else new, and so are LEVEL 44, 123 and 126."
+      "note": "A block whose every face is fire: touching it inflates the ball until it pops or reaches cooler ground."
     },
     "2": {
       "name": "Ice block",
-      "note": "A block the ball slides across without stopping until it reaches a normal square or the edge. Style 2 in the lattice, kind 2 in a record: LEVEL 46, the walkthrough's first ice, is 29 of them and nothing else new. Nearly all of the game's are in Arctic and Hell."
+      "note": "A block the ball slides across without stopping until it reaches a normal square or the edge."
     },
     "3": {
       "name": "Invisible block",
-      "note": "A block that cannot be seen until the ball is close, or, on some levels, only from far away; sunglasses reveal it for a while. Style 3 in the lattice, kind 3 in a record: LEVEL 31, the walkthrough's first invisible platform, is eight of them and nothing else new. Two thirds of the game's are in Haze. Rolling over one in a bonus level scores nothing: the six bonus levels that have invisible blocks each fall short of the walkthrough's maximum by 50 times their count, and no other bonus level has one."
+      "note": "A block that cannot be seen until the ball is close, or, on some levels, only from far away; sunglasses reveal it for a while. Rolling over one in a bonus level scores nothing."
     },
     "4": {
       "name": "Acid block",
-      "note": "One cell in each copy of OBJ LEVEL and nowhere else, so the walkthrough never meets it. The loader paints it with the green splat, the fifteenth model of the artwork's table, and on OBJ LEVEL in play it is the green block (2026-09-16); the game never names it, and the name is what it looks like."
+      "note": "A green block painted with an acid splat, found only on the object catalogue level. The game never names it, so the name says what it looks like."
     },
     "5": {
       "name": "Moving platform",
-      "note": "A block that travels between two cells named in its own fields, on one axis, and back. The record's type is the direction from its block to the far end and its tail keeps a fixed-point copy of where it is. LEVEL 71, the walkthrough's first moving platform, carries the game's first kind 5, and every later mention of one lands on a level with them."
+      "note": "A platform that travels back and forth along a straight run, stopping briefly at each end."
     },
     "6": {
       "name": "Crumbling block",
       "points": 50,
-      "note": "A block that disappears once rolled onto, leaving time for one move, for 50 points. LEVEL 16 introduces them in the walkthrough and carries the game's first kind 6, fifteen of them, and the 50 is what the walkthrough's maximum scores need on every level that has them. The record keeps a fixed-point copy of its own cell, which is what a block that falls would need."
+      "note": "A block that disappears once rolled onto, leaving time for one move."
     },
     "7": {
       "name": "Vanishing block",
-      "note": "A block that fades in and out of existence on a cycle. LEVEL 76 introduces them in the walkthrough and carries the game's first kind 7, and the record's own fields are not decoded."
+      "note": "A block that fades in and out of existence on a cycle."
     },
     "8": {
       "name": "Laser",
-      "note": "A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 123 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, and the slot after its own holds its circuit: the colour of the beam, and of the switch and teleporter that share it. At load the engine's routine at 0x80035a70 writes a plain block into the lattice at both ends and marks every cell between as beam, which is why 64 of the 246 ends are cells the level file leaves empty and the game stands a block on anyway."
+      "note": "A laser beam between two blocks. Its colour is its circuit: a switch of that colour turns it on and off, with the teleporters of the same colour, and a beam drawn broken starts switched off. The game puts a block at each end as the level loads, so an end can stand where the level itself has no block."
     },
     "9": {
       "name": "Level settings",
-      "note": "The last record on 160 levels, and the one kind no lattice cell ever names, so the engine's walk over the level does not reach it. The loader reads its first slot as the level's settings: a type of 1 marks a hidden level, which draws its blocks half-transparent and the glass ball, and is 1 on exactly the ten; a first field of 1 pulls the camera back, on LEVEL 106 to 108, 110 and 111, SIMON 9 and HIDDEN 8. It stands on an empty cell on 114 of the 160. Its other slots hold objects like any block's, 65 of them on 49 levels, and they are not in play: counted, they would push 27 levels past the walkthrough's maximum, LEVEL 24 by a fruit and LEVEL 142 by two gems, where without them those levels are exact. So the slots read as a block deleted in the editor with its faces left as they were, and the map leaves them out."
+      "note": "Not a block but the level's settings, kept where a block would be, often on an empty cell. They mark a hidden level, which the game draws half-transparent with the glass ball, and on a few levels pull the camera further back."
     },
     "666": {
       "name": "Camera",
-      "note": "The record every level ends with, and the one that stands on no cell: where its cell would be, the disc writes three 0xFFFF. It carries a cell for the camera to look at, two angles, and a number that is 99 on 218 of the 230 levels and lower on the other twelve, which reads as the level's time. It draws as the look-at ring rather than as a marker."
+      "note": "Where the level's camera looks, and from what angles, with the level's time."
     }
   },
   "types": {
