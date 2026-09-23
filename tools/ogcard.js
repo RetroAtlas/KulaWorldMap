@@ -42,9 +42,23 @@ try {
     state.cam.pitch = 30;
     nav.fit();
     state.cam.zoom *= 0.78;
-    state.cam.panX = -2.2;
-    state.cam.panY = -0.9;
+    state.cam.panX = -6.4;
+    state.cam.panY = 2.1;
     state.show.labels = false;
+    state.show.start = false;
+    render.invalidatePick();
+    render.draw();
+
+    // The level draws flat until its world's atlas arrives, and redraws every
+    // frame while anything on it turns, which would paint over the title; so
+    // the card waits for the atlas and then stops the clock.
+    while (!performance.getEntriesByType("resource").some((e) => e.name.includes("/tex/"))) {
+      if (Date.now() > deadline) throw new Error("the atlas did not load");
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    await new Promise((r) => setTimeout(r, 300));
+    window.requestAnimationFrame = () => 0;
+    await new Promise((r) => setTimeout(r, 100));
     render.invalidatePick();
     render.draw();
 
