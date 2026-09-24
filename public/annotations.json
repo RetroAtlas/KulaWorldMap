@@ -26,13 +26,13 @@
     "5": {
       "name": "Moving platform",
       "fields": {
-        "f5": "axis",
-        "f7": "low end x",
-        "f8": "low end y",
-        "f9": "low end z",
-        "f10": "high end x",
-        "f11": "high end y",
-        "f12": "high end z"
+        "f2": "axis",
+        "f4": "low end x",
+        "f5": "low end y",
+        "f6": "low end z",
+        "f7": "high end x",
+        "f8": "high end y",
+        "f9": "high end z"
       },
       "note": "A platform that travels back and forth along a straight run, stopping briefly at each end."
     },
@@ -40,16 +40,16 @@
       "name": "Crumbling block",
       "points": 50,
       "fields": {
-        "f5": "position x",
-        "f6": "position y",
-        "f7": "position z"
+        "f2": "position x",
+        "f3": "position y",
+        "f4": "position z"
       },
       "note": "A block that disappears once rolled onto, leaving time for one move."
     },
     "7": {
       "name": "Vanishing block",
       "fields": {
-        "f5": "phase"
+        "f2": "phase"
       },
       "note": "A block that fades in and out of existence on a cycle."
     },
@@ -57,14 +57,14 @@
       "name": "Laser",
       "hazard": true,
       "fields": {
-        "f5": "axis",
-        "f6": "lit",
-        "f7": "low end x",
-        "f8": "low end y",
-        "f9": "low end z",
-        "f10": "high end x",
-        "f11": "high end y",
-        "f12": "high end z"
+        "f2": "axis",
+        "f3": "lit",
+        "f4": "low end x",
+        "f5": "low end y",
+        "f6": "low end z",
+        "f7": "high end x",
+        "f8": "high end y",
+        "f9": "high end z"
       },
       "note": "A laser beam between two blocks that burns the ball on touch. Its colour is its circuit: a switch of that colour turns it on and off, with the teleporters of the same colour, and a beam drawn broken starts switched off. The game puts a block at each end as the level loads, even where the level has none."
     },
@@ -89,10 +89,10 @@
     },
     "5": {
       "name": "Teleporter",
-      "by": "f6",
-      "state": "f7",
+      "by": "f3",
+      "state": "f4",
       "fields": {
-        "f6": "circuit"
+        "f3": "circuit"
       },
       "variants": {
         "0": {
@@ -124,10 +124,10 @@
     },
     "9": {
       "name": "Switch",
-      "by": "f6",
-      "state": "f7",
+      "by": "f3",
+      "state": "f4",
       "fields": {
-        "f6": "circuit"
+        "f3": "circuit"
       },
       "variants": {
         "0": {
@@ -157,7 +157,7 @@
       "name": "Moving spikes",
       "hazard": true,
       "fields": {
-        "f6": "phase"
+        "f3": "phase"
       },
       "note": "Spikes that rise and retract in turn, each from its own point in the cycle; safe to roll over when down."
     },
@@ -172,17 +172,17 @@
     },
     "28": {
       "name": "Arrow",
-      "facing": "f5",
+      "facing": "f2",
       "note": "A square the ball can only leave in the direction the arrow points."
     },
     "29": {
       "name": "Start on a clock",
-      "facing": "f5",
+      "facing": "f2",
       "note": "The block and face the ball starts the level on, a clock rather than a plain square."
     },
     "30": {
       "name": "Start",
-      "facing": "f5",
+      "facing": "f2",
       "note": "The block and face the ball starts the level on."
     },
     "31": {
@@ -210,9 +210,9 @@
     "36": {
       "name": "Gem",
       "points": 2975,
-      "by": "f6",
+      "by": "f3",
       "fields": {
-        "f6": "colour"
+        "f3": "colour"
       },
       "variants": {
         "0": {
@@ -232,9 +232,9 @@
     },
     "37": {
       "name": "Coin",
-      "by": "f6",
+      "by": "f3",
       "fields": {
-        "f6": "tier"
+        "f3": "tier"
       },
       "variants": {
         "2": {
@@ -290,19 +290,19 @@
     "50": {
       "name": "Captivator",
       "hazard": true,
-      "facing": "f5",
+      "facing": "f2",
       "note": "A spiked star that pops the ball on touch: the thinner one, with three long points, which travels the space it has and turns back at any wall or object in its way."
     },
     "51": {
       "name": "Rolling stone",
       "hazard": true,
-      "facing": "f5",
+      "facing": "f2",
       "note": "A grey cylinder that rolls slowly round a set course and captures the ball on touch; it can be jumped over."
     },
     "52": {
       "name": "Captivator",
       "hazard": true,
-      "facing": "f5",
+      "facing": "f2",
       "note": "A spiked star that pops the ball on touch: the fuller one, with four short points, which slides back and forth over a fixed stretch, as if on a spring."
     },
     "53": {
@@ -314,7 +314,7 @@
       "name": "Captivator, bouncing",
       "hazard": true,
       "fields": {
-        "f6": "phase"
+        "f3": "phase"
       },
       "note": "A corkscrew that bounces up and down and pops the ball on touch: roll under it when it is up, and jump it when it is down."
     }

@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { mapData, annotations, levelKey, CAMERA_KIND } from "./fixtures.js";
 import { state } from "../../public/js/state.js";
-import { setAnnotations, levelPoints, levelScore } from "../../public/js/data.js";
+import { setAnnotations, levelPoints, levelScore, fieldIndex } from "../../public/js/data.js";
 
 const reasons = readFileSync(
   fileURLToPath(new URL("../../docs/annotations.md", import.meta.url)),
@@ -49,7 +49,7 @@ test("every annotated kind, type and variant is placed somewhere", () => {
     const placed = objects.get(Number(t));
     assert.ok(placed, `annotations.json names no such type: ${t}`);
     if (!entry.by) continue;
-    const values = new Set(placed.map((o) => String(o.f[Number(entry.by.slice(1)) - 5])));
+    const values = new Set(placed.map((o) => String(o.f[fieldIndex(entry.by)])));
     for (const v of Object.keys(entry.variants ?? {})) {
       assert.ok(values.has(v), `annotations.json names no type ${t} with ${entry.by} = ${v}`);
     }
@@ -174,9 +174,8 @@ test("a note is short and free of the project's workings", () => {
 // A field's name is shown beside its number, so it has to name a field the
 // kind or type sets wherever it is placed, in a few plain words, and no field
 // a `facing` or `state` key already names.
-const FIELD = /^f(\d+)$/;
-const FIRST_FIELD = 5;
-const LAST_FIELD = 15;
+const FIELD = /^f\d+$/;
+const FIELDS = 11;
 
 test("a named field is set wherever its kind or type is placed", () => {
   const placed = { kinds: new Map(), types: new Map() };
@@ -192,13 +191,13 @@ test("a named field is set wherever its kind or type is placed", () => {
     for (const [key, entry] of Object.entries(annotations[section] ?? {})) {
       for (const [field, name] of Object.entries(entry.fields ?? {})) {
         const where = `annotations.json ${section} ${key} ${field}`;
-        const n = Number(FIELD.exec(field)?.[1]);
-        assert.ok(n >= FIRST_FIELD && n <= LAST_FIELD, `${where}: no such field`);
+        const n = fieldIndex(field);
+        assert.ok(FIELD.test(field) && n >= 0 && n < FIELDS, `${where}: no such field`);
         assert.ok(field !== entry.facing && field !== entry.state, `${where}: named by its key`);
         assert.match(name, /^[a-z]+(?: [a-z]+)*$/, `${where}: "${name}" is not plain words`);
         assert.ok(!INTERNALS.test(name), `${where}: "${name}" belongs in docs/annotations.md`);
         for (const f of placed[section].get(key) ?? []) {
-          assert.notEqual(f[n - FIRST_FIELD], -1, `${where}: unset where it is placed`);
+          assert.notEqual(f[n], -1, `${where}: unset where it is placed`);
         }
         named++;
       }

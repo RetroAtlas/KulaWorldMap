@@ -50,6 +50,8 @@ WORDS = RECORD // 2
 SLOT = 16            # words in a slot
 FACES = 6
 FIELDS = 11
+FIELD_WORD = 2       # the word of a slot the fields start at, and what names them
+VALUE_WORD = 14
 HEAD = 6             # the cell that ends a record, or the level header
 TRAILER_KIND = 666
 LASER_KIND = 8
@@ -71,8 +73,8 @@ class Face:
     def __init__(self, face, slot):
         self.face = face
         self.type = slot[1]
-        self.f = list(slot[2:2 + FIELDS])
-        self.v = slot[14]
+        self.f = list(slot[FIELD_WORD:FIELD_WORD + FIELDS])
+        self.v = slot[VALUE_WORD]
 
     def as_dict(self):
         return {"face": self.face, "type": self.type, "f": self.f, "v": self.v}
@@ -97,7 +99,7 @@ class Record:
 
     @property
     def f(self):
-        return list(self.slots[0][2:2 + FIELDS])
+        return list(self.slots[0][FIELD_WORD:FIELD_WORD + FIELDS])
 
     @property
     def objects(self):

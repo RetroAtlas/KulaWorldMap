@@ -30,19 +30,19 @@ One cell in each copy of OBJ LEVEL and nowhere else, so the walkthrough never me
 
 ### kind 5: Moving platform
 
-A block that travels between two cells named in its own fields, on one axis, and back. The record's type is the direction from its block to the far end, and its tail keeps a fixed-point copy of where it is; [motion.md](motion.md) has the rest of the record and the pause at each end. `f5` is the axis, as the direction number of its positive way, 1, 2 or 5, and `f7` to `f9` and `f10` to `f12` are the two ends, the lower along the axis first on all 37 ([level-format.md](level-format.md)). LEVEL 71, the walkthrough's first moving platform, carries the game's first kind 5, and every later mention of one lands on a level with them.
+A block that travels between two cells named in its own fields, on one axis, and back. The record's type is the direction from its block to the far end, and its tail keeps a fixed-point copy of where it is; [motion.md](motion.md) has the rest of the record and the pause at each end. `f2` is the axis, as the direction number of its positive way, 1, 2 or 5, and `f4` to `f6` and `f7` to `f9` are the two ends, the lower along the axis first on all 37 ([level-format.md](level-format.md)). LEVEL 71, the walkthrough's first moving platform, carries the game's first kind 5, and every later mention of one lands on a level with them.
 
 ### kind 6: Crumbling block
 
-LEVEL 16 introduces them in the walkthrough and carries the game's first kind 6, fifteen of them, and 50 points each is what the walkthrough's maximum scores need on every level that has them. The record keeps its position in `f5` to `f7`, 512 times its own cell on all 435, which the game does not use ([motion.md](motion.md)).
+LEVEL 16 introduces them in the walkthrough and carries the game's first kind 6, fifteen of them, and 50 points each is what the walkthrough's maximum scores need on every level that has them. The record keeps its position in `f2` to `f4`, 512 times its own cell on all 435, which the game does not use ([motion.md](motion.md)).
 
 ### kind 7: Vanishing block
 
-LEVEL 76 introduces them in the walkthrough and carries the game's first kind 7. The record's `f5`, 0 to 3, is its phase, where in the cycle the block starts, which [motion.md](motion.md) decodes.
+LEVEL 76 introduces them in the walkthrough and carries the game's first kind 7. The record's `f2`, 0 to 3, is its phase, where in the cycle the block starts, which [motion.md](motion.md) decodes.
 
 ### kind 8: Laser
 
-A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 123 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, its `f5` the axis and `f7` to `f12` the two ends, as on a moving platform and the lower first on all 123, and the slot after its own holds its circuit: the colour of the beam, and of the switch and teleporter that share it. At load the engine's routine at `0x80035a70` writes a plain block into the lattice at both ends and marks every cell between as beam, which is why 64 of the 246 ends are cells the level file leaves empty and the game stands a block on anyway. That a beam drawn broken starts switched off is the record's own flag, `f6`, 1 where the beam starts lit and 0 where it starts dark, which agrees with the switches of its colour on every level ([level-format.md](level-format.md)). The walkthrough calls lasers deadly to touch, and in play a beam burns the ball the moment it reaches it (2026-09-24), which makes it a hazard.
+A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 123 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, its `f2` the axis and `f4` to `f9` the two ends, as on a moving platform and the lower first on all 123, and the slot after its own holds its circuit: the colour of the beam, and of the switch and teleporter that share it. At load the engine's routine at `0x80035a70` writes a plain block into the lattice at both ends and marks every cell between as beam, which is why 64 of the 246 ends are cells the level file leaves empty and the game stands a block on anyway. That a beam drawn broken starts switched off is the record's own flag, `f3`, 1 where the beam starts lit and 0 where it starts dark, which agrees with the switches of its colour on every level ([level-format.md](level-format.md)). The walkthrough calls lasers deadly to touch, and in play a beam burns the ball the moment it reaches it (2026-09-24), which makes it a hazard.
 
 ### kind 9: Level settings
 
@@ -64,7 +64,7 @@ The ice patch the walkthrough keeps warning about on column tips. LEVEL 47 carri
 
 ### type 5: Teleporter
 
-LEVEL 66, the walkthrough's first teleporters, carries the game's first two. The colour is `f6`, the circuit number the lasers and switches use: LEVEL 68's are yellow and blue and read 0 and 1, LEVEL 70's yellow, red and green read 0, 3 and 2. `f7` says whether it starts on, 1 for on and 2 for off: the ones the walkthrough uses on arrival, LEVEL 66 to 71 among them, read 1, the ones it sends you to a button for first, LEVEL 84, 97, 99, 100, 101, 102, 117, 128, 133, 137, 142 and 145, read 2, and on every level with lasers of the same colour the field agrees with whether the beams start lit ([level-format.md](level-format.md)).
+LEVEL 66, the walkthrough's first teleporters, carries the game's first two. The colour is `f3`, the circuit number the lasers and switches use: LEVEL 68's are yellow and blue and read 0 and 1, LEVEL 70's yellow, red and green read 0, 3 and 2. `f4` says whether it starts on, 1 for on and 2 for off: the ones the walkthrough uses on arrival, LEVEL 66 to 71 among them, read 1, the ones it sends you to a button for first, LEVEL 84, 97, 99, 100, 101, 102, 117, 128, 133, 137, 142 and 145, read 2, and on every level with lasers of the same colour the field agrees with whether the beams start lit ([level-format.md](level-format.md)).
 
 ### type 7: Exit
 
@@ -76,7 +76,7 @@ LEVEL 56 is the walkthrough's first clock and carries seven, and LEVEL 58, 59 an
 
 ### type 9: Switch
 
-LEVEL 84 has the walkthrough's first button and the game's first of these; LEVEL 98's red, green and blue read 3, 2 and 1 in `f6`, the same circuit numbers its three lasers carry. The field after the colour is the circuit's starting state, 1 for on and 2 for off, and agrees with the lasers and teleporters of that colour on every level: LEVEL 105's all read 1 and the walkthrough turns them off, LEVEL 97's all read 2 and it turns red on.
+LEVEL 84 has the walkthrough's first button and the game's first of these; LEVEL 98's red, green and blue read 3, 2 and 1 in `f3`, the same circuit numbers its three lasers carry. The field after the colour is the circuit's starting state, 1 for on and 2 for off, and agrees with the lasers and teleporters of that colour on every level: LEVEL 105's all read 1 and the walkthrough turns them off, LEVEL 97's all read 2 and it turns red on.
 
 ### type 10: Boost button
 
@@ -84,7 +84,7 @@ LEVEL 26, which the walkthrough introduces them on, carries the game's first thr
 
 ### type 11: Moving spikes
 
-LEVEL 41 carries the game's first six where the walkthrough first says to wait for them to retract. `f6` takes four values, which is where in the cycle each one starts, its phase ([motion.md](motion.md)). They are a hazard while up: the ball's code at `0x8003b0d0` sets it dying on a type 11 whose `f7` is 1, which the cycle sets as the spikes rise and clears as they retract.
+LEVEL 41 carries the game's first six where the walkthrough first says to wait for them to retract. `f3` takes four values, which is where in the cycle each one starts, its phase ([motion.md](motion.md)). They are a hazard while up: the ball's code at `0x8003b0d0` sets it dying on a type 11 whose `f4` is 1, which the cycle sets as the spikes rise and clears as they retract.
 
 ### type 12: Spikes
 
@@ -96,7 +96,7 @@ Exactly the ten levels the walkthrough marks as hidden-level access carry one, a
 
 ### type 28: Arrow
 
-LEVEL 61, the walkthrough's first arrows, carries the game's first twelve. `f5` takes 1 to 4, a quarter turn each on the face: on a block's top they point +y, -x, -y and +x, which LEVEL 62's arrows in play fixed, one of each; [level-format.md](level-format.md) has the sides.
+LEVEL 61, the walkthrough's first arrows, carries the game's first twelve. `f2` takes 1 to 4, a quarter turn each on the face: on a block's top they point +y, -x, -y and +x, which LEVEL 62's arrows in play fixed, one of each; [level-format.md](level-format.md) has the sides.
 
 ### type 29: Start on a clock
 
@@ -104,7 +104,7 @@ Two in the game, on LEVEL 58 and LEVEL 136 (`LEVEL 135` on the disc), and each l
 
 ### type 30: Start
 
-The block and face the ball starts on, checked in play on LEVEL 1, LEVEL 2 and HIDDEN 10. One on each of 228 levels; the other two start the ball on a clock instead, type 29. `f5` is the way the ball faces, in the quarter turns the arrows use: LEVEL 1's reads 3, which is -y, and the first coin is two blocks that way. The game picks the ball's design by the world's place from the fourteen the disc holds ([ggi.md](ggi.md)).
+The block and face the ball starts on, checked in play on LEVEL 1, LEVEL 2 and HIDDEN 10. One on each of 228 levels; the other two start the ball on a clock instead, type 29. `f2` is the way the ball faces, in the quarter turns the arrows use: LEVEL 1's reads 3, which is -y, and the first coin is two blocks that way. The game picks the ball's design by the world's place from the fourteen the disc holds ([ggi.md](ggi.md)).
 
 ### type 31: Key
 
@@ -128,11 +128,11 @@ LEVEL 6 introduces it and carries the game's first; the walkthrough's maximum sc
 
 ### type 36: Gem
 
-2975 whatever the colour is what the walkthrough's maximum scores need on every level that has one. The colour is `f6`: LEVEL 5's blue gems read 0, LEVEL 64's green one 1, and the red ones of LEVEL 77, 103 and 118 read 2.
+2975 whatever the colour is what the walkthrough's maximum scores need on every level that has one. The colour is `f3`: LEVEL 5's blue gems read 0, LEVEL 64's green one 1, and the red ones of LEVEL 77, 103 and 118 read 2.
 
 ### type 37: Coin
 
-Three tiers, told apart by `f6`, and the walkthrough's maximum scores settle the points: 250, 500 and 750 fit 133 of its 148 arcade levels exactly and every miss is one it explains itself, an unreachable coin or block. LEVEL 1's and LEVEL 2's are the 250 kind and read bronze in play; LEVEL 112's thirteen, which the walkthrough calls orange, and HIDDEN 10's eight, which show gold, are the 750 kind; the middle tier is what it calls blue, on BONUS 15 and HIDDEN 5 among others.
+Three tiers, told apart by `f3`, and the walkthrough's maximum scores settle the points: 250, 500 and 750 fit 133 of its 148 arcade levels exactly and every miss is one it explains itself, an unreachable coin or block. LEVEL 1's and LEVEL 2's are the 250 kind and read bronze in play; LEVEL 112's thirteen, which the walkthrough calls orange, and HIDDEN 10's eight, which show gold, are the 750 kind; the middle tier is what it calls blue, on BONUS 15 and HIDDEN 5 among others.
 
 ### type 38: Sunglasses
 
@@ -140,7 +140,7 @@ LEVEL 113 introduces them and carries three, and the walkthrough's scores for LE
 
 ### type 42
 
-Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use, and nothing names it. What it does is in the code. Its `f8` is set as on every pickup ([level-format.md](level-format.md)), and the ball's contact walk at `0x80038548`, which sends a type 27 to 47 through the table at `0x80010238`, gives it a case of its own at `0x800386a4` that reads its form, `f6`, which changes every 2.6 s ([motion.md](motion.md)). In the green form, 1, it adds 1550 to the score at `0x800a53c8`, the word the same walk adds a key's 1000, a gem's 2975, a coin's 250, 500 or 750 and a fruit's 2500 to, and the walk's tail takes it off its face. In the brown form, 0, it stays, and sets the ball dying with the cause a captivator's touch sets (`0x80036814`), which makes it a hazard.
+Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use, and nothing names it. What it does is in the code. Its `f5` is set as on every pickup ([level-format.md](level-format.md)), and the ball's contact walk at `0x80038548`, which sends a type 27 to 47 through the table at `0x80010238`, gives it a case of its own at `0x800386a4` that reads its form, `f3`, which changes every 2.6 s ([motion.md](motion.md)). In the green form, 1, it adds 1550 to the score at `0x800a53c8`, the word the same walk adds a key's 1000, a gem's 2975, a coin's 250, 500 or 750 and a fruit's 2500 to, and the walk's tail takes it off its face. In the brown form, 0, it stays, and sets the ball dying with the cause a captivator's touch sets (`0x80036814`), which makes it a hazard.
 
 ### type 43: Fruit
 
@@ -164,7 +164,7 @@ One placement in the game, on LEVEL 19, where the walkthrough's fruit stands and
 
 ### type 50: Captivator
 
-LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. That it is the thinner star with three long points was seen in play beside type 52, and it is the walkthrough's slower kind; `f5` is its direction. Touching it pops the ball, as spikes do, and the lost life is what restarts the level (play, 2026-09-24). It is a hazard by the routine the things that travel share.
+LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. That it is the thinner star with three long points was seen in play beside type 52, and it is the walkthrough's slower kind; `f2` is its direction. Touching it pops the ball, as spikes do, and the lost life is what restarts the level (play, 2026-09-24). It is a hazard by the routine the things that travel share.
 
 ### type 51: Rolling stone
 
@@ -172,7 +172,7 @@ Drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's 
 
 ### type 52: Captivator
 
-The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. That it is the fuller star with four short points was seen in play beside type 50, and it is the walkthrough's quick kind; `f5` is its direction. Touching it pops the ball, as spikes do, and the lost life is what restarts the level (play, 2026-09-24). It is a hazard by the routine the things that travel share.
+The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. That it is the fuller star with four short points was seen in play beside type 50, and it is the walkthrough's quick kind; `f2` is its direction. Touching it pops the ball, as spikes do, and the lost life is what restarts the level (play, 2026-09-24). It is a hazard by the routine the things that travel share.
 
 ### type 53: Captivator, wandering
 
@@ -180,7 +180,7 @@ LEVEL 84 carries four where the walkthrough says to watch their shaking to tell 
 
 ### type 56: Captivator, bouncing
 
-LEVEL 45 carries six where the walkthrough says to roll under them when raised, and LEVEL 122's go up in sequence, which is what `f6`, four-valued, reads as: its phase ([motion.md](motion.md)). Touching it pops the ball (play, 2026-09-24). It is a hazard by the routine the things that travel share.
+LEVEL 45 carries six where the walkthrough says to roll under them when raised, and LEVEL 122's go up in sequence, which is what `f3`, four-valued, reads as: its phase ([motion.md](motion.md)). Touching it pops the ball (play, 2026-09-24). It is a hazard by the routine the things that travel share.
 
 ## Levels
 

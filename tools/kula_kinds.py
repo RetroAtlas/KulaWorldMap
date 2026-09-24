@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import open_disc, packs
-from kula_level import PAYLOAD_KINDS, UNPLACED_KIND, Level
+from kula_level import FIELD_WORD, PAYLOAD_KINDS, UNPLACED_KIND, Level
 from kula_pak import Pak
 
 OUT = Path(__file__).resolve().parent.parent / "out" / "kinds.md"
@@ -59,7 +59,7 @@ def report(levels, only=None):
                 s["faces"][face] += 1
             for i, v in enumerate(fields):
                 if v != -1:
-                    s["fields"][f"f{i + 5}"][v] += 1
+                    s["fields"][f"f{i + FIELD_WORD}"][v] += 1
             for dx, dy, dz in NEIGHBOURS:
                 p = (cell[0] + dx, cell[1] + dy, cell[2] + dz)
                 s["around"]["block" if p in cells else "air"] += 1

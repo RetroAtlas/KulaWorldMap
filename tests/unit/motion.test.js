@@ -6,7 +6,7 @@ import { frameAt, phasesOf, phaseField, pose, orbit, blockPhase } from "../../pu
 const table = objects.motion;
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
 const still = [0, 0, 0];
-const marker = (f6 = 0) => ({ f: [0, f6, 1, 0, -1, -1, -1, 386, 1, -1, -1] });
+const marker = (f3 = 0) => ({ f: [0, f3, 1, 0, -1, -1, -1, 386, 1, -1, -1] });
 
 test("a frame is a sixtieth of a second", () => {
   near(frameAt(table, 1000), 60);
@@ -76,10 +76,10 @@ test("the corkscrew rises a half sine from its phase and spins nearly three turn
 
 test("the moving spikes show the frame their phase's program gives", () => {
   const s = table.types[11];
-  for (const f6 of [0, 1, 2, 3]) {
-    const program = s.cycle[f6];
-    assert.equal(pose(table, s, marker(f6), 5.7, still).frame, program[5]);
-    assert.equal(pose(table, s, marker(f6), program.length + 5, still).frame, program[5]);
+  for (const f3 of [0, 1, 2, 3]) {
+    const program = s.cycle[f3];
+    assert.equal(pose(table, s, marker(f3), 5.7, still).frame, program[5]);
+    assert.equal(pose(table, s, marker(f3), program.length + 5, still).frame, program[5]);
   }
   assert.notEqual(
     pose(table, s, marker(0), 70, still).frame,
@@ -106,13 +106,13 @@ test("the catalogue star circles fast in the brown form and slowly in the green"
 
 test("a vanishing block is where its phase's cycle puts it, solid with its brightness", () => {
   const e = table.kinds[7];
-  const record = (f5) => ({ f: [f5, -1, -1] });
-  for (const f5 of [0, 1, 2, 3]) {
-    const gone = e.cycle[f5].indexOf(0);
-    assert.equal(blockPhase(e, record(f5), gone + 0.9).state, 0);
-    const solid = e.cycle[f5].indexOf(3);
-    assert.deepEqual(blockPhase(e, record(f5), solid), { state: 3, level: 128 });
-    assert.deepEqual(blockPhase(e, record(f5), solid + 224), { state: 3, level: 128 });
+  const record = (f2) => ({ f: [f2, -1, -1] });
+  for (const f2 of [0, 1, 2, 3]) {
+    const gone = e.cycle[f2].indexOf(0);
+    assert.equal(blockPhase(e, record(f2), gone + 0.9).state, 0);
+    const solid = e.cycle[f2].indexOf(3);
+    assert.deepEqual(blockPhase(e, record(f2), solid), { state: 3, level: 128 });
+    assert.deepEqual(blockPhase(e, record(f2), solid + 224), { state: 3, level: 128 });
   }
   assert.notEqual(blockPhase(e, record(0), 100).state, blockPhase(e, record(2), 100).state);
 });

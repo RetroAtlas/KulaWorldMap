@@ -12,13 +12,14 @@ import json
 import sys
 from pathlib import Path
 
+from kula_level import FIELD_WORD
+
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "public" / "map_data.json"
 NAMES = ROOT / "public" / "annotations.json"
 BONUS_SLOTS = (15, 16, 17)
 BLOCK_POINTS = 50
 INVISIBLE_KIND = 3
-FIELD_BASE = 5
 
 
 def points_of(ann):
@@ -30,7 +31,7 @@ def points_of(ann):
     for t, e in ann["types"].items():
         base = e.get("points", 0)
         if e.get("by"):
-            idx = int(e["by"][1:]) - FIELD_BASE
+            idx = int(e["by"][1:]) - FIELD_WORD
             variants = {int(v): x.get("points", base) for v, x in e.get("variants", {}).items()}
             types[int(t)] = lambda o, idx=idx, variants=variants, base=base: variants.get(o["f"][idx], base)
         else:

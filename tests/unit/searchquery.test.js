@@ -9,7 +9,7 @@ import {
 } from "../../public/js/searchquery.js";
 
 // A stand-in for the lowercased "name + fields" blob an object is searched by.
-const TELEPORTER = "blue teleporter type 5 top facing=+x starts=off f6=1 f7=2";
+const TELEPORTER = "blue teleporter type 5 top facing=+x starts=off f3=1 f4=2";
 
 test("parseQuery: space = AND within one group", () => {
   assert.deepEqual(parseQuery("Teleporter starts=off"), [["teleporter", "starts=off"]]);
@@ -29,7 +29,7 @@ test("parseQuery: bare 'and'/'or' are operators, never terms", () => {
 });
 
 test("parseQuery: '=' is never a split point; field=value stays one term", () => {
-  assert.deepEqual(parseQuery("f12=500"), [["f12=500"]]);
+  assert.deepEqual(parseQuery("f9=500"), [["f9=500"]]);
 });
 
 test("parseQuery: substrings like 'wandering' aren't treated as operators", () => {
@@ -63,10 +63,10 @@ test("matchesQuery: OR matches when any group matches", () => {
 
 test("matchesBy: the same AND/OR shape over a test that isn't one blob", () => {
   // an index of two parts, only one of which answers a whole term
-  const has = (term) => "gold coin".includes(term) || ["f6=0", "f8=3"].includes(term);
+  const has = (term) => "gold coin".includes(term) || ["f3=0", "f5=3"].includes(term);
   assert.ok(matchesBy(parseQuery("gold coin"), has));
-  assert.ok(matchesBy(parseQuery("f6=0 f8=3"), has));
-  assert.ok(!matchesBy(parseQuery("f6=0 f8=4"), has));
+  assert.ok(matchesBy(parseQuery("f3=0 f5=3"), has));
+  assert.ok(!matchesBy(parseQuery("f3=0 f5=4"), has));
   assert.ok(!matchesBy(parseQuery("f"), has)); // a term inside a token is not a match
 });
 

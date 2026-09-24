@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations, levelKey, CAMERA_KIND, UNPLACED_KIND } from "./fixtures.js";
+import { fieldIndex } from "../../public/js/data.js";
 
 const FACES = 6;
 
@@ -167,7 +168,7 @@ test("a circuit starts on or off as one, across its lasers, switches and telepor
   const LIT_FIELD = 1;
   const switched = Object.entries(annotations.types)
     .filter(([, e]) => e.state)
-    .map(([t, e]) => [Number(t), Number(e.by.slice(1)) - 5, Number(e.state.slice(1)) - 5]);
+    .map(([t, e]) => [Number(t), fieldIndex(e.by), fieldIndex(e.state)]);
   assert.ok(switched.length >= 2);
   let circuits = 0;
   for (const l of mapData.levels) {

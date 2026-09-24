@@ -1,7 +1,7 @@
 // What a search candidate is made of: its words, lowercased and run together
 // with single spaces, and the same words one by one. A number or a key=value
 // pair is answered by a whole word only, so `level 45` does not also bring
-// back LEVEL 145 and `f6=2` does not bring back f6=20; any other term is a
+// back LEVEL 145 and `f3=2` does not bring back f3=20; any other term is a
 // substring, so `inc` still finds Inca. No DOM, so it stays importable in
 // bare Node.
 

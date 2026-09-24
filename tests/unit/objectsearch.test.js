@@ -44,11 +44,18 @@ test("a decoded field is a pair the row shows, and a term can name it", () => {
   assert.ok(second.every((c) => c.marker.type === 31 && c.shown.includes("number=1")));
 });
 
-test("a raw field is a whole word, so f6=2 is not also f6=20", () => {
-  const hits = find("f6=2");
+test("a raw field is a whole word, so f3=2 is not also f3=20", () => {
+  const hits = find("f3=2");
   assert.ok(hits.length > 0);
   assert.ok(hits.every((c) => c.marker.f[1] === 2));
-  assert.ok(hits.every((c) => c.more.includes("f6=2")));
+  assert.ok(hits.every((c) => c.more.includes("f3=2")));
+});
+
+test("the value word is searched by the name the panel gives it", () => {
+  const hits = find("f14=30");
+  assert.ok(hits.length > 0);
+  assert.ok(hits.every((c) => c.marker.v === 30 && c.more.includes("f14=30")));
+  assert.equal(find("v=30").length, 0);
 });
 
 test("a record that is its own thing answers to its kind", () => {

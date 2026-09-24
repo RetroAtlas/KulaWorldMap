@@ -202,7 +202,7 @@ test("a block that is a thing of its own is named once, with what its record hol
   });
   expect(await headings(page)).toEqual(["Crumbling block", "Level settings"]);
   const block = page.locator("#detail table").first();
-  for (const label of ["points", "kind", "type", "record", "f5 position x", "unset"])
+  for (const label of ["points", "kind", "type", "record", "f2 position x", "unset"])
     await expect(block.locator("td", { hasText: new RegExp(`^${label}$`) })).toHaveCount(1);
   await expect(page.locator("#detail p", { hasText: /^Placed / })).toHaveCount(2);
 });
@@ -252,10 +252,10 @@ test("a raw field reads by its number, then what it holds where that is known", 
       showCell({ x, y, z, v: state.data.firstRecord + i });
       return [...document.querySelectorAll("#detail td:first-child")].map((td) => td.textContent);
     }, type);
-  expect(await labels(9)).toContain("f6 circuit");
-  expect(await labels(9)).toContain("f7 state");
-  expect(await labels(28)).toContain("f5 facing");
-  expect(await labels(31)).toContain("f8 pickup number");
+  expect(await labels(9)).toContain("f3 circuit");
+  expect(await labels(9)).toContain("f4 state");
+  expect(await labels(28)).toContain("f2 facing");
+  expect(await labels(31)).toContain("f5 pickup number");
 });
 
 test("the catalogue's own note reaches the catalogue", async ({ page }) => {
@@ -376,9 +376,9 @@ test("a field is searched as name=value, and a match outside the row is appended
   const rows = page.locator("#results [role=option]");
   await expect(rows.first()).toContainText("starts=off");
   await expect(rows.first().locator("mark")).toHaveText("starts=off");
-  await search.fill("f12=500");
-  await expect(rows.first()).toContainText("f12=500");
-  await search.fill("f12=50");
+  await search.fill("f9=500");
+  await expect(rows.first()).toContainText("f9=500");
+  await search.fill("f9=50");
   await expect(page.locator("#results .empty")).toBeVisible();
   // the keys walk the rows and Enter chooses
   await search.fill("coin");

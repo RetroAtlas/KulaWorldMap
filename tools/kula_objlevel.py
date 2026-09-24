@@ -23,6 +23,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from kula_level import FIELD_WORD
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "out" / "obj-level.md"
 DATA = ROOT / "public" / "map_data.json"
@@ -89,7 +91,7 @@ def main():
         what, num = o["key"].split()
         e = (ann.get("types") if what == "type" else ann.get("kinds", {})).get(num, {})
         if e.get("by") and what == "type":
-            v = e.get("variants", {}).get(str(o["f"][int(e["by"][1:]) - 5]), {})
+            v = e.get("variants", {}).get(str(o["f"][int(e["by"][1:]) - FIELD_WORD]), {})
             if v.get("name"):
                 return v["name"]
         return e.get("name", "")
@@ -143,7 +145,7 @@ def main():
     for i, o in enumerate(walk, 1):
         n = game[o["key"]]
         where = "only here" if not n else f"{n}"
-        fields = ", ".join(f"f{j + 5}={v}" for j, v in enumerate(o["f"]) if v != -1) or "none set"
+        fields = ", ".join(f"f{j + FIELD_WORD}={v}" for j, v in enumerate(o["f"]) if v != -1) or "none set"
         lines.append(f"| {i} | {o['x']},{o['y']},{o['z']} | {o['face'] or ''} | {o['key']} | "
                      f"{where} | {fields} | {map_says(o)} | |\n")
 

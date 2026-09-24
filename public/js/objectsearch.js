@@ -13,6 +13,8 @@ import {
   markerFacing,
   markerState,
   markerPoints,
+  fieldKey,
+  VALUE_KEY,
 } from "./data.js";
 import { matchesBy, rankFor } from "./searchquery.js";
 import { indexed, answers } from "./searchtext.js";
@@ -34,9 +36,9 @@ function pairs(m) {
   const points = markerPoints(m);
   if (points) more.push(`points=${points}`);
   m.f.forEach((v, i) => {
-    if (v !== -1) more.push(`f${i + 5}=${v}`);
+    if (v !== -1) more.push(`${fieldKey(i)}=${v}`);
   });
-  if (m.v !== undefined && m.v !== -1) more.push(`v=${m.v}`);
+  if (m.v !== undefined && m.v !== -1) more.push(`${VALUE_KEY}=${m.v}`);
   return { shown, more };
 }
 

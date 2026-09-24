@@ -81,6 +81,16 @@ export const FACE_NORMAL = [
 export const FACE_NAME = ["top", "+x side", "+y side", "-y side", "-x side", "underside"];
 export const DIRECTION_NAME = ["-z", "+x", "+y", "-y", "-x", "+z"];
 
+// A raw word goes by its place in its slot, counted from the kind word.
+const FIRST_FIELD = 2;
+const VALUE_WORD = 14;
+/** The name of the field at index `i` of a marker's fields. */
+export const fieldKey = (i) => `f${i + FIRST_FIELD}`;
+/** The index into a marker's fields of the field a name like `f3` names. */
+export const fieldIndex = (key) => Number(key.slice(1)) - FIRST_FIELD;
+/** The name of a slot's value word. */
+export const VALUE_KEY = `f${VALUE_WORD}`;
+
 // What a record puts on the map: an object on each face that carries one and,
 // for a kind that is its own thing, a marker for the record itself. Each has
 // an id that names what it is rather than where, for the legend and search.
@@ -92,7 +102,7 @@ export function markersOf(r) {
     out.push({ id: `k${r.kind}`, kind: r.kind, type: r.type, f: r.f, face: null, variant: null });
   for (const o of r.on) {
     const by = ann.types[String(o.type)]?.by;
-    const variant = by ? String(o.f[Number(by.slice(1)) - 5]) : null;
+    const variant = by ? String(o.f[fieldIndex(by)]) : null;
     const id = variant === null ? `t${o.type}` : `t${o.type}/${variant}`;
     out.push({ id, type: o.type, face: o.face, f: o.f, v: o.v, variant });
   }
@@ -139,7 +149,7 @@ export const cross = (a, b) => [
 export const markerHeading = (m) => {
   const by = entry(m)?.facing;
   if (!by || m.face === null) return null;
-  const turns = m.f[Number(by.slice(1)) - 5] - 1;
+  const turns = m.f[fieldIndex(by)] - 1;
   if (turns < 0 || turns > 3) return null;
   const axis = FACE_NORMAL[m.face].map((v) => -v);
   let v = TANGENT[m.face];
@@ -165,13 +175,13 @@ const STATE_OFF = 2;
 export const markerState = (m) => {
   const by = entry(m)?.state;
   if (!by || m.face === null) return null;
-  const v = m.f[Number(by.slice(1)) - 5];
+  const v = m.f[fieldIndex(by)];
   return v === STATE_ON ? "on" : v === STATE_OFF ? "off" : null;
 };
 /** What the raw field at index `i` of a marker's fields holds, where that is settled, or null. */
 export const fieldName = (m, i) => {
   if (i === NUMBER_FIELD && markerNumber(m) !== null) return "pickup number";
-  const f = `f${i + 5}`;
+  const f = fieldKey(i);
   if (entry(m)?.facing === f) return "facing";
   if (entry(m)?.state === f) return "state";
   return entry(m)?.fields?.[f] ?? null;
