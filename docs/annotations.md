@@ -124,7 +124,7 @@ Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the le
 
 ### type 35: Hourglass
 
-LEVEL 6 introduces it and carries the game's first; the walkthrough's maximum scores need 1190 for each one, which is collecting it with a second on the clock.
+LEVEL 6 introduces it and carries the game's first; the walkthrough's maximum scores need 1190 for each one, which is collecting it with a second on the clock. The formula is the walkthrough's, 1200 less twelve times the seconds left, rounded to the nearest 10, which is how a second left scores 1190 and not 1188.
 
 ### type 36: Gem
 

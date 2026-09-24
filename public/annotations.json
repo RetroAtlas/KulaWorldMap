@@ -205,7 +205,7 @@
     "35": {
       "name": "Hourglass",
       "points": 1190,
-      "note": "Flips the timer, and scores 1200 less twelve times the seconds left, so 1190 at best."
+      "note": "Flips the timer, and scores more the less time is left when you take it. It scores 1200 − 12 × (seconds left), rounded to the nearest 10."
     },
     "36": {
       "name": "Gem",
