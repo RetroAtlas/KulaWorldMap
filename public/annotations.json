@@ -19,7 +19,7 @@
     },
     "4": {
       "name": "Acid block",
-      "note": "A green block painted with an acid splat, found only on the object catalogue level."
+      "note": "A green block painted with an acid splat, found only on the object catalogue level; touching it melts the ball."
     },
     "5": {
       "name": "Moving platform",

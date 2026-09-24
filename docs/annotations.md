@@ -24,7 +24,7 @@ Style 3 in the lattice, kind 3 in a record: LEVEL 31, the walkthrough's first in
 
 ### kind 4: Acid block
 
-One cell in each copy of OBJ LEVEL and nowhere else, so the walkthrough never meets it. The loader paints it with the green splat, the fifteenth model of the artwork's table, and on OBJ LEVEL in play it is the green block (2026-09-16). The name was what it looks like until play settled it: the ball dies on it with the game calling out ACID! (2026-09-24).
+One cell in each copy of OBJ LEVEL and nowhere else, so the walkthrough never meets it. The loader paints it with the green splat, the fifteenth model of the artwork's table, and on OBJ LEVEL in play it is the green block (2026-09-16). The name was what it looks like until play settled it: the ball melts on it with the game calling out ACID! (2026-09-24).
 
 ### kind 5: Moving platform
 
