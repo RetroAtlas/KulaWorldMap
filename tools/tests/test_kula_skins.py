@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import Code  # noqa: E402
-from kula_skins import (BLOCK, HEADER, Machine, address, header, sets)  # noqa: E402
+from kula_skins import (BLOCK, HEADER, Machine, header, sets)  # noqa: E402
 
 R = {"zero": 0, "at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7,
      "t0": 8, "t1": 9, "sp": 29, "ra": 31}
@@ -73,13 +73,13 @@ def jr(rs):
 class Addresses(unittest.TestCase):
     def test_an_address_is_a_lui_and_the_addiu_or_load_after_it(self):
         c = code(lui("v0", 0x0007), addiu("v0", "v0", 12072), lui("a3", 0x0007), lw("a3", "a3", 20864))
-        self.assertEqual(address(c, AT, AT + 4), 0x80072F28)
-        self.assertEqual(address(c, AT + 8, AT + 12), 0x80075180)
+        self.assertEqual(c.address(AT, AT + 4), 0x80072F28)
+        self.assertEqual(c.address(AT + 8, AT + 12), 0x80075180)
 
     def test_anything_else_there_stops_the_reading(self):
         c = code(addiu("v0", "v0", 12072), lui("v0", 0x0007))
         with self.assertRaises(SystemExit):
-            address(c, AT, AT + 4)
+            c.address(AT, AT + 4)
 
 
 class TheMachine(unittest.TestCase):

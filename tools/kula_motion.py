@@ -183,6 +183,14 @@ class Code:
             sys.exit(f"0x{addr:08x} reads `{text}`, not `{pattern}`")
         return int(m.group(1), 0) if m.lastindex else None
 
+    def address(self, lui, addiu):
+        """The address a lui and the addiu or load after it build, in RAM's mirror."""
+        hi = re.match(r"lui \$\w+, (0x[0-9a-f]+)$", self.text(lui))
+        lo = re.match(r"(?:addiu \$\w+, \$\w+, |lw \$\w+, )(-?\d+)", self.text(addiu))
+        if not hi or not lo:
+            sys.exit(f"0x{lui:08x} and 0x{addiu:08x} read `{self.text(lui)}` and `{self.text(addiu)}`, not an address")
+        return (0x80000000 | (int(hi.group(1), 0) << 16)) + int(lo.group(1))
+
     def divisor(self, hi, hp, lo, lp, sa, sp):
         """The number a multiply by a reciprocal and a shift divides by."""
         magic = (self.immediate(hi, hp) << 16) | (self.immediate(lo, lp) & 0xFFFF)

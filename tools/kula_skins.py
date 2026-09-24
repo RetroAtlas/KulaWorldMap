@@ -24,7 +24,6 @@ for the order they lay a texture's corners in.
 """
 import argparse
 import json
-import re
 import struct
 import sys
 from pathlib import Path
@@ -135,15 +134,6 @@ BONUS_CYCLES = 4     # colour cycles for the bonus stone: a pair per world parit
 FACE_TABLE = (0x80028e90, 0x80028e98)
 
 
-def address(code, lui, addiu):
-    """The address a lui and the addiu or load after it build, in RAM's mirror."""
-    hi = re.match(r"lui \$\w+, (0x[0-9a-f]+)$", code.text(lui))
-    lo = re.match(r"(?:addiu \$\w+, \$\w+, |lw \$\w+, )(-?\d+)", code.text(addiu))
-    if not hi or not lo:
-        sys.exit(f"0x{lui:08x} and 0x{addiu:08x} read `{code.text(lui)}` and `{code.text(addiu)}`, not an address")
-    return (0x80000000 | (int(hi.group(1), 0) << 16)) + int(lo.group(1))
-
-
 def text_at(code, addr):
     """The zero-terminated string at an address."""
     p = addr - EXE_BASE
@@ -169,8 +159,8 @@ def copycat_pack(code, r):
     """
     if r["copycat.mode"] != r["copycat.names"]:
         sys.exit("the mode that names its own pack is not the one that keeps the first set")
-    path = text_at(code, entry(code, address(code, *PATH_TABLE), r["copycat.world"]))
-    ext = text_at(code, entry(code, address(code, *EXT_TABLE), r["copycat.pak"]))
+    path = text_at(code, entry(code, code.address(*PATH_TABLE), r["copycat.world"]))
+    ext = text_at(code, entry(code, code.address(*EXT_TABLE), r["copycat.pak"]))
     return (path + ext).replace("\\", "/").split(";")[0]
 
 
@@ -275,7 +265,7 @@ def face_corners(code):
     order. Running each routine on a block of known size and centre and
     reading the vertices back is what gives the order.
     """
-    table = address(code, *FACE_TABLE)
+    table = code.address(*FACE_TABLE)
     m = Machine(code)
     centre = (BLOCK * 3, BLOCK * 5, BLOCK * 7)
     low = [c - BLOCK // 2 for c in centre]
@@ -313,7 +303,7 @@ def platform_table(code, r):
     for a, axis in enumerate(PLATFORM_AXES):
         out[axis] = {}
         for role, lui, addiu in PLATFORM_TABLES:
-            at = address(code, lui, addiu) + a * stride
+            at = code.address(lui, addiu) + a * stride
             pairs = struct.unpack_from(f"<{FACES * 2}h", code.blob, at - EXE_BASE)
             faces = []
             for f in range(FACES):
@@ -336,7 +326,7 @@ def cycles(code, r):
     colours are four cycles, of which a world uses the pair its parity picks,
     the first of the pair for its blocks and the second for a platform's."""
     def span(start, end):
-        a, b = address(code, *start), address(code, *end)
+        a, b = code.address(*start), code.address(*end)
         return code.blob[a - EXE_BASE:b - EXE_BASE]
 
     def colours(raw):
@@ -351,9 +341,9 @@ def cycles(code, r):
     inv = CYCLES["invisible"]
     bonus = CYCLES["bonus"]
     frames = list(span(*bonus["frames"]))
-    shadowed_at = address(code, *bonus["shadowed"])
-    base = address(code, *bonus["level"][0])
-    length_at = address(code, *bonus["level"][1])
+    shadowed_at = code.address(*bonus["shadowed"])
+    base = code.address(*bonus["level"][0])
+    length_at = code.address(*bonus["level"][1])
     length = struct.unpack_from("<I", code.blob, length_at - EXE_BASE)[0]
     palette = colours(code.blob[base - EXE_BASE:base - EXE_BASE + BONUS_CYCLES * length * 4])
     return {
