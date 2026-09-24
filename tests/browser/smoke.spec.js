@@ -326,11 +326,13 @@ test("search answers a number as a whole word, and says when nothing matches", a
   await expect(search).toHaveAttribute("aria-activedescendant", "hit0");
 
   await search.fill("zzzz");
-  await expect(page.locator("#results .empty")).toBeVisible();
+  await expect(page.locator("#found")).toHaveText("Nothing matches that.");
+  await expect(page.locator("#results")).toBeHidden();
+  await expect(search).toHaveAttribute("aria-expanded", "false");
   await expect(search).not.toHaveAttribute("aria-activedescendant", /./);
 
   await search.fill("");
-  await expect(page.locator("#results")).toBeHidden();
+  await expect(page.locator("#found")).toBeHidden();
   await expect(search).toHaveAttribute("aria-expanded", "false");
 });
 
@@ -338,10 +340,10 @@ test("a search counts objects, blocks by their kind, and settings apart", async 
   await page.goto("/#ATLANT/3");
   await settle(page);
   const search = page.locator("#search");
-  const more = page.locator("#results .more");
+  const more = page.locator("#found");
   await search.fill("key, crumbling, settings");
-  await expect(more).toContainText(
-    /^\d+ objects, \d+ crumbling blocks and the settings of \d+ levels · HIRO \d+/,
+  await expect(more).toHaveText(
+    /^\d+ objects, \d+ crumbling blocks and the settings of \d+ levels$/,
   );
   await page.locator("#scope button").nth(2).click();
   await expect(more).toContainText("1 object, 6 crumbling blocks and the level's settings in");
@@ -363,12 +365,18 @@ test("an object search lists every one round the level in hand, and a row goes t
   const rows = page.locator("#results [role=option]");
   await expect(rows.first()).toContainText("LEVEL 12");
   await expect(rows.first()).toContainText("number=");
-  await expect(page.locator("#results .more")).toContainText(/^\d+ objects · HIRO \d+ · HILLS/);
-  // eight to a group, the rest a click away
+  await expect(page.locator("#found")).toHaveText(/^\d+ objects$/);
+  // eight to a group, the rest a row away that the keys reach too
   const hiro = groups.nth(1);
-  await expect(hiro.locator("[role=option]")).toHaveCount(8);
-  await hiro.locator(".showmore").click();
+  await expect(hiro.locator("[role=option]:not(.showmore)")).toHaveCount(8);
+  await search.focus();
+  for (let i = 0; i < 9; i++) await search.press("ArrowDown");
+  await expect(hiro.locator(".showmore")).toHaveAttribute("aria-selected", "true");
+  await search.press("Enter");
+  await expect(hiro.locator(".showmore")).toHaveCount(0);
   expect(await hiro.locator("[role=option]").count()).toBeGreaterThan(8);
+  await expect(hiro.locator("[role=option]").nth(8)).toHaveAttribute("aria-selected", "true");
+  await expect(search).toBeFocused();
 
   // a row in another level goes there and leaves the list as it was
   const row = hiro.locator("[role=option]").first();
@@ -396,8 +404,8 @@ test("an object search lists every one round the level in hand, and a row goes t
   // the scope bar narrows the list to the level in hand
   await page.locator("#scope button").nth(2).click();
   await expect(rows).toHaveCount(1);
-  await expect(page.locator("#results .more")).toContainText(`1 object in ${at.name}`);
-  await page.locator("#results .widen").click();
+  await expect(page.locator("#found")).toContainText(`1 object in ${at.name}`);
+  await page.locator("#found .widen").click();
   expect(await rows.count()).toBeGreaterThan(1);
   expect(errors).toEqual([]);
 });
@@ -435,7 +443,7 @@ test("a field is searched as name=value, and a match outside the row is appended
   await search.fill("f9=500");
   await expect(rows.first()).toContainText("f9=500");
   await search.fill("f9=50");
-  await expect(page.locator("#results .empty")).toBeVisible();
+  await expect(page.locator("#found")).toHaveText("Nothing matches that.");
   // the keys walk the rows and Enter chooses
   await search.fill("coin");
   await search.press("ArrowDown");

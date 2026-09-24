@@ -22,6 +22,7 @@ import { setSlice } from "./interaction.js";
 
 const box = $("search");
 const bar = $("scope");
+const found = $("found");
 const out = $("results");
 
 const GROUP_MAX = 8;
@@ -153,12 +154,14 @@ function objectRow(h, terms) {
   );
 }
 
+// A group's heading is for the eye, and its label for a screen reader. The
+// rows past the first few wait behind a row of their own, which the cursor
+// reaches like any other and which leaves the cursor on the first it shows.
 function group(label, items, make, capped = false) {
-  const g = el(
-    "div",
-    {},
-    el("div", { className: "group" }, el("span", {}, label), el("span", {}, String(items.length))),
-  );
+  const head = el("div", { className: "group" }, el("span", {}, label));
+  head.append(el("span", {}, String(items.length)));
+  head.setAttribute("aria-hidden", "true");
+  const g = el("div", {}, head);
   g.setAttribute("role", "group");
   g.setAttribute("aria-label", label);
   const shown = capped ? items.slice(0, GROUP_MAX) : items;
@@ -169,9 +172,12 @@ function group(label, items, make, capped = false) {
       type: "button",
       textContent: `show ${items.length - shown.length} more`,
     });
+    more.setAttribute("role", "option");
+    more.dataset.key = `more:${label}`;
     more.onclick = () => {
-      for (const item of items.slice(shown.length)) g.insertBefore(make(item), more);
-      more.remove();
+      const rest = items.slice(shown.length).map(make);
+      more.replaceWith(...rest);
+      current = rest[0].dataset.key;
       mark();
     };
     g.append(more);
@@ -181,6 +187,7 @@ function group(label, items, make, capped = false) {
 
 function render() {
   out.textContent = "";
+  found.textContent = "";
   const q = box.value.trim();
   if (!q || !state.lvl) {
     show(false);
@@ -241,23 +248,15 @@ function render() {
     group(g.label, g.hits, (h) => objectRow(h, terms), true);
   }
 
-  const found = at || worlds.length || levels.length;
   const where = scope === "all" ? "" : ` in ${scopeLabel()}`;
-  if (!hits.length && !found) {
-    out.append(
-      el("div", { className: "empty", textContent: `Nothing matches that${where}.` }, widen()),
-    );
-  } else {
-    const perWorld = state.data.themes
-      .map((t) => [worldName(t.id), hits.filter((h) => h.level.theme === t.id).length])
-      .filter(([, n]) => n)
-      .map(([name, n]) => `${name} ${n}`);
-    const text = hits.length
-      ? `${tally(hits)}${where}` +
-        (scope === "all" && perWorld.length > 1 ? ` · ${perWorld.join(" · ")}` : "")
-      : `no objects, blocks or settings${where}`;
-    out.append(el("div", { className: "more", textContent: text }, widen()));
-  }
+  found.append(
+    hits.length
+      ? `${tally(hits)}${where}`
+      : at || worlds.length || levels.length
+        ? `no objects, blocks or settings${where}`
+        : `Nothing matches that${where}.`,
+    ...widen(),
+  );
   show(true);
   mark();
 }
@@ -301,10 +300,11 @@ function widen() {
 // out: the input owns aria-expanded and points at the row under the cursor,
 // and each row is an option the cursor can name.
 function show(shown) {
-  out.hidden = !shown;
-  bar.hidden = !shown;
+  const listed = shown && out.childElementCount > 0;
+  bar.hidden = found.hidden = !shown;
+  out.hidden = !listed;
   if (shown) scopeBar();
-  box.setAttribute("aria-expanded", String(shown));
+  box.setAttribute("aria-expanded", String(listed));
 }
 
 function mark() {
