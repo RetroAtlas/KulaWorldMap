@@ -442,7 +442,7 @@ export function draw() {
     const home = c.home || c;
     const ghost = home.z < sliceZ();
     if (c.beams) {
-      drawBeams(ctx, c, ghost);
+      if (drawBeams(ctx, c, ghost, frame)) spinning = true;
       continue;
     }
     if (c.thing) {

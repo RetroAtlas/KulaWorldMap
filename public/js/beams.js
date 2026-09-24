@@ -1,54 +1,108 @@
 import { state, screen } from "./state.js";
+import { kindMotion } from "./data.js";
+import { seed } from "./skins.js";
 
-// A laser's circuit number, in the colour the game paints that circuit. Which
-// is which was read off LEVEL 109, whose five beams line up red, yellow,
-// green, yellow, red, and LEVEL 98, whose blue switch carries the number of
-// the beam it turns off; a circuit not yet seen in play has no entry.
-const BEAM_COLOUR = { 0: "#f5c542", 1: "#4f8ef7", 2: "#3ad07c", 3: "#ff4a4a" };
-const beamColour = (circuit) => BEAM_COLOUR[circuit] || null;
+const BEAM_KIND = 8;
+const BLOCK = 512; // the game's units to a block
+const INK = [232, 238, 251];
+const WHITE = [8, 8, 8]; // a colour for a circuit the game gives none
+// Which side of the axis each of the four lines sits, on the two axes across it.
+const SIDES = [
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+];
 
-// A beam is the four lines the game draws, one from each nozzle of the plate
-// on the emitter's face to the same nozzle on the far block's, set square
-// about the axis. The stretches of it through one empty cell run from the
-// face it comes in by to the face it leaves by, so a beam runs from the
-// emitter's face to the far block's and never through either. A beam that
-// starts dark is drawn broken, with the dashes carried across the cells so it
-// reads as one line, and a circuit nobody has yet seen lit draws in plain ink
-// rather than in a guess. The caps overlap the next stretch by half a line,
-// which is what keeps a seam from showing at every cell.
-const NOZZLE = 1 / 6; // how far each of a beam's four lines sits from its axis, in blocks
+// A beam is laid a cell at a time, from the face it comes in by to the face
+// it leaves by, so that it runs between the faces of its end blocks and each
+// stretch takes its place among the blocks. Each of its four lines is two
+// flat quads crossed along it and a line down their middle, added to what is
+// behind, in its circuit's channels times a level the line steps through on
+// its own, from a start the game draws at random and the map hashes from the
+// beam's first cell. A beam that starts dark, which the game does not draw,
+// is drawn broken, its dashes carried across the cells so it reads as one line.
 
-export function drawBeams(ctx, c, ghost) {
+/** Draws the stretches of beam through one cell, and says whether any is to
+    change by the next frame. */
+export function drawBeams(ctx, c, ghost, frame) {
+  const beam = kindMotion(BEAM_KIND);
+  let live = false;
   for (const { ray, k } of c.beams) {
     const [u, v] = [0, 1, 2].filter((i) => i !== ray.axis);
-    const from = [c.x + 0.5, c.y + 0.5, c.z + 0.5];
-    const to = [...from];
-    from[ray.axis] -= 0.5;
-    to[ray.axis] += 0.5;
+    const centre = [c.x + 0.5, c.y + 0.5, c.z + 0.5];
+    const at = (t, du, dv) => {
+      const p = [...centre];
+      p[ray.axis] += t;
+      p[u] += du;
+      p[v] += dv;
+      return screen(...p);
+    };
+    const reach = (beam?.reach ?? BLOCK / 2) / BLOCK;
+    const nozzle = (beam?.nozzle ?? 0) / BLOCK;
+    const half = (beam?.width ?? 0) / 2 / BLOCK;
+    const sides = beam ? SIDES : [[0, 0]];
     ctx.save();
-    ctx.strokeStyle = beamColour(ray.colour) || "#e8eefb";
-    ctx.lineWidth = Math.max(1, 1.2 * state.cam.zoom);
-    ctx.lineCap = "square";
-    ctx.globalAlpha = (ghost ? 0.16 : 1) * (ray.lit ? 0.9 : 0.45);
-    if (!ray.lit) {
-      const p = screen(...from);
-      const q = screen(...to);
-      ctx.setLineDash([4 * state.cam.zoom, 4 * state.cam.zoom]);
-      ctx.lineDashOffset = k * Math.hypot(q[0] - p[0], q[1] - p[1]);
-    }
-    for (const su of [-1, 1]) {
-      for (const sv of [-1, 1]) {
-        const o = [0, 0, 0];
-        o[u] = su * NOZZLE;
-        o[v] = sv * NOZZLE;
-        const p = screen(from[0] + o[0], from[1] + o[1], from[2] + o[2]);
-        const q = screen(to[0] + o[0], to[1] + o[1], to[2] + o[2]);
-        ctx.beginPath();
-        ctx.moveTo(p[0], p[1]);
-        ctx.lineTo(q[0], q[1]);
-        ctx.stroke();
+    if (!ray.lit || !beam) {
+      const rgb = beam ? tint(beam, ray, Math.max(...beam.levels)) : INK;
+      const p = at(-reach, 0, 0);
+      const q = at(reach, 0, 0);
+      ctx.strokeStyle = `rgb(${rgb.join(" ")})`;
+      ctx.lineWidth = Math.max(1, 1.2 * state.cam.zoom);
+      ctx.globalAlpha = (ghost ? 0.16 : 1) * (ray.lit ? 1 : 0.45);
+      if (!ray.lit) {
+        ctx.setLineDash([4 * state.cam.zoom, 4 * state.cam.zoom]);
+        ctx.lineDashOffset = k * Math.hypot(q[0] - p[0], q[1] - p[1]);
       }
+      for (const [su, sv] of sides)
+        line(ctx, at(-reach, su * nozzle, sv * nozzle), at(reach, su * nozzle, sv * nozzle));
+      ctx.restore();
+      continue;
     }
+    live = true;
+    ctx.globalCompositeOperation = beam.add ? "lighter" : "source-over";
+    ctx.globalAlpha = ghost ? 0.16 : 1;
+    ctx.lineWidth = 1;
+    sides.forEach(([su, sv], n) => {
+      const level =
+        beam.levels[(seed(...ray.a, n) + Math.floor(frame) * beam.step) % beam.levels.length];
+      const colour = `rgb(${tint(beam, ray, level).join(" ")})`;
+      const du = su * nozzle,
+        dv = sv * nozzle;
+      ctx.fillStyle = colour;
+      ctx.strokeStyle = colour;
+      quad(ctx, [
+        at(reach, du, dv + half),
+        at(reach, du, dv - half),
+        at(-reach, du, dv - half),
+        at(-reach, du, dv + half),
+      ]);
+      quad(ctx, [
+        at(reach, du + half, dv),
+        at(reach, du - half, dv),
+        at(-reach, du - half, dv),
+        at(-reach, du + half, dv),
+      ]);
+      line(ctx, at(-reach, du, dv), at(reach, du, dv));
+    });
     ctx.restore();
   }
+  return live;
+}
+
+const tint = (beam, ray, level) =>
+  (beam.colours[ray.colour] ?? WHITE).map((m) => Math.min(255, m * level));
+
+function line(ctx, p, q) {
+  ctx.beginPath();
+  ctx.moveTo(p[0], p[1]);
+  ctx.lineTo(q[0], q[1]);
+  ctx.stroke();
+}
+
+function quad(ctx, pts) {
+  ctx.beginPath();
+  pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  ctx.closePath();
+  ctx.fill();
 }

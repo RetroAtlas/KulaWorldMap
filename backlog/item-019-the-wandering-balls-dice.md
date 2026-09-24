@@ -2,7 +2,7 @@
 
 ## What and why
 
-Everything the game leaves to chance the map draws from a hash of the thing's place, so a level looks the same on every visit: which of the world's four stones a face wears and how it is turned, the frame a fire or an invisible block starts on, the three angles a pickup spins from (`seed` in [skins.js](../public/js/skins.js), `phasesOf` in [motion.js](../public/js/motion.js)). The wandering ball, type 53, is the one thing left that is not: it draws its next way from `Math.random` ([travel.js](../public/js/travel.js), `dice` on the walker), so two viewers watching the same level see different walks, a reload changes one, and no test can pin the route. Its way really is drawn at load in play, so the map cannot show the walk the game will take; what it can do is take one of the walks the game could take and take the same one every time.
+Everything the game leaves to chance the map draws from a hash of the thing's place, so a level looks the same on every visit: which of the world's four stones a face wears and how it is turned, the frame a fire or an invisible block starts on, the three angles a pickup spins from, where each line of a beam starts its flicker (`seed` in [skins.js](../public/js/skins.js), `phasesOf` in [motion.js](../public/js/motion.js)). The wandering ball, type 53, is the one thing left that is not: it draws its next way from `Math.random` ([travel.js](../public/js/travel.js), `dice` on the walker), so two viewers watching the same level see different walks, a reload changes one, and no test can pin the route. Its way really is drawn at load in play, so the map cannot show the walk the game will take; what it can do is take one of the walks the game could take and take the same one every time.
 
 ## Sketch
 
