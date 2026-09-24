@@ -171,6 +171,27 @@ test("a hazard says so in its heading", async ({ page }) => {
   const block = page.locator("#detail h3").first();
   await expect(block).toContainText("Fire block");
   await expect(block.locator(".tag")).toHaveText("Hazard");
+
+  const farEnd = async (hash) => {
+    await page.goto(hash);
+    await settle(page);
+    await page.evaluate(async () => {
+      const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
+      const { showCell } = await import(new URL("js/detail.js", location.href).href);
+      const r = state.lvl.records.find((r) => r.kind === 8);
+      const own = [r.x, r.y, r.z].join();
+      const end = [r.f.slice(2, 5), r.f.slice(5, 8)].find((e) => e.join() !== own);
+      showCell(state.idx.cells.get(cellKey(...end)));
+    });
+    return page.locator("#detail h3").first();
+  };
+  const added = await farEnd("/#COPYCAT/7");
+  await expect(added).toContainText("Laser end");
+  await expect(added.locator(".tag")).toHaveText("Hazard");
+  const plain = await farEnd("/#INCAFI/1");
+  await expect(plain).toContainText("Block");
+  await expect(plain.locator(".tag")).toHaveText("Hazard");
+  await expect(page.locator("#detail")).toContainText("One end of a laser.");
 });
 
 const headings = (page) =>

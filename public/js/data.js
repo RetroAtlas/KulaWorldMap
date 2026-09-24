@@ -237,6 +237,12 @@ export function markerModel(m, l, form = null) {
 }
 export const kindNote = (kind) => ann.kinds[String(kind)]?.note || "";
 export const kindHazard = (kind) => ann.kinds[String(kind)]?.hazard === true;
+// A beam's ends belong to the laser, so a block standing at either one carries
+// its mark whatever the lattice holds there.
+export const blockHazard = (kind, end) =>
+  (kind !== null && kindHazard(kind)) || (end && kindHazard(BEAM_KIND));
+/** A beam's end that holds a block of its own rather than the laser's record. */
+export const farEnd = (kind, end) => end && kind !== null && kind !== BEAM_KIND;
 
 // A beam record spans two cells on one axis and nothing stands between them in
 // any of the game's. The blocks at its ends are not always in the lattice, so
@@ -297,9 +303,11 @@ export function index(l) {
   // among the blocks: the cells it crosses are empty, so a stretch sorts as
   // a block there would, and a block in front of it hides it.
   const beamCells = new Map();
+  const beamEnds = new Set();
   for (const r of rays) {
     for (const [x, y, z] of [r.a, r.b]) {
       const k = cellKey(x, y, z);
+      beamEnds.add(k);
       if (!cells.has(k)) cells.set(k, { x, y, z, v: OFF_LATTICE });
     }
     const lo = Math.min(r.a[r.axis], r.b[r.axis]);
@@ -323,7 +331,7 @@ export function index(l) {
     records.get(k).push(r);
     for (const m of markersOf(r)) markers.get(k).push(m);
   }
-  return { cells, records, markers, beamCells, plates: platesOf(rays), rails: rails(l) };
+  return { cells, records, markers, beamCells, beamEnds, plates: platesOf(rays), rails: rails(l) };
 }
 
 export const levelMarkers = (l) => l.records.flatMap(markersOf);

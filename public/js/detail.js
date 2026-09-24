@@ -7,7 +7,8 @@ import {
   levelTitle,
   kindName,
   kindNote,
-  kindHazard,
+  blockHazard,
+  farEnd,
   ownMarker,
   markerName,
   markerNote,
@@ -81,12 +82,14 @@ export function showCell(c) {
   const own = ownMarker(marks, kind);
   const what = kind === null ? "Laser end" : kindName(kind) || `Block, kind ${kind}`;
   let html = `<button class="x" title="Close (Esc)">×</button>`;
-  html += `<h3>${what}${kind !== null && kindHazard(kind) ? HAZARD : ""}</h3>`;
+  const end = state.idx.beamEnds.has(key);
+  html += `<h3>${what}${blockHazard(kind, end) ? HAZARD : ""}</h3>`;
   html += `<p class="sub">${levelTitle(l)} · cell ${c.x},${c.y},${c.z}</p>`;
   if (off)
     html += `<p class="sub">The level leaves this cell empty, and the game puts a block here as
       the level loads, as one end of a laser.</p>`;
   else if (kindNote(kind)) html += `<p class="sub">${kindNote(kind)}</p>`;
+  if (farEnd(kind, end)) html += `<p class="sub">One end of a laser.</p>`;
   html += `<table>${own ? decoded(own) : ""}${STORED}`;
   html += `${row("cell", `${c.x}, ${c.y}, ${c.z}`)}${row("cell value", off ? "empty" : c.v)}`;
   if (!plain && !off) html += row("record", c.v - state.data.firstRecord);
