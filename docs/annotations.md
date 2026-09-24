@@ -248,7 +248,7 @@ The walkthrough's maximum. The disc holds 100 more, two of the five crumbling bl
 
 ### /MARS/MARS.PAK#10: LEVEL 131
 
-From The Cutting Room Floor's Roll Away page.
+The regional difference is The Cutting Room Floor's, which also calls the coin unreachable; in this release it is not. It is the blue coin on the -x face of the ice block at 7,16,21, and it was collected in play for the level's full 12,290, everything the disc holds (2026-09-24).
 
 ### /MARS/MARS.PAK#11: LEVEL 132
 
