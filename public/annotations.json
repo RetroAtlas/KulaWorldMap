@@ -215,7 +215,9 @@
       "note": "Reveals invisible blocks for a while."
     },
     "42": {
-      "note": "Only on the object catalogue level, so nothing in play uses it."
+      "points": 1550,
+      "hazard": true,
+      "note": "A many-pointed star that turns from brown to green and back every few seconds: while brown it pops the ball on touch, and while green it can be collected for 1550. Only on the object catalogue level, so nothing in play uses it."
     },
     "43": {
       "name": "Fruit",

@@ -2,7 +2,7 @@
 
 [`public/annotations.json`](../public/annotations.json) is what the map says about the things the game leaves numbered: a name, the points a pickup scores, whether a thing is a hazard, a level's best score where the disc holds more than can be collected, and a note for whoever is looking at the map. This file is why each of those is believed, one section per entry under the entry's key, and a unit test fails when an entry has no section here or a section names no entry. The note says what a thing is and does; the reasons stay here.
 
-Most names rest on Syonyx's Roll Away walkthrough (GameFAQs, 2006), which the repo does not carry: the level it first mentions a thing on carries the game's first placement of one kind or type, and usually nothing else new. The points rest on its per-level maximum scores, which the disc reproduces exactly on 193 of the 209 levels it rates and exceeds on the other 16, each of which curates the walkthrough's figure as its `score`; [level-format.md](level-format.md) has the arithmetic. The names that rest on play are the coin tiers' colours, which of the two directional captivators is which, and the acid block. Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page.
+Most names rest on Syonyx's Roll Away walkthrough (GameFAQs, 2006), which the repo does not carry: the level it first mentions a thing on carries the game's first placement of one kind or type, and usually nothing else new. The points rest on its per-level maximum scores, which the disc reproduces exactly on 193 of the 209 levels it rates and exceeds on the other 16, each of which curates the walkthrough's figure as its `score`; [level-format.md](level-format.md) has the arithmetic. Type 42's rest on the executable instead, since no level it rates holds one. The names that rest on play are the coin tiers' colours, which of the two directional captivators is which, and the acid block. Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page.
 
 An entry marked `hazard` is one that can cost the ball its life, and its section says what shows it. The things that travel share one routine for it: the loader puts every type 50 to 53 and 56 into one table (`0x8003b678`), and once a frame the ball's routine tests the ball against every entry in it (`0x8003d570`, called at `0x8003679c`) and on a hit sets it dying with the cause the game keeps for them (`0x80036814`), the wandering ball's reach being the shorter.
 
@@ -140,7 +140,7 @@ LEVEL 113 introduces them and carries three, and the walkthrough's scores for LE
 
 ### type 42
 
-Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use, and nothing names it.
+Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use, and nothing names it. What it does is in the code. Its `f8` is set as on every pickup ([level-format.md](level-format.md)), and the ball's contact walk at `0x80038548`, which sends a type 27 to 47 through the table at `0x80010238`, gives it a case of its own at `0x800386a4` that reads its form, `f6`, which changes every 2.6 s ([motion.md](motion.md)). In the green form, 1, it adds 1550 to the score at `0x800a53c8`, the word the same walk adds a key's 1000, a gem's 2975, a coin's 250, 500 or 750 and a fruit's 2500 to, and the walk's tail takes it off its face. In the brown form, 0, it stays, and sets the ball dying with the cause a captivator's touch sets (`0x80036814`), which makes it a hazard.
 
 ### type 43: Fruit
 

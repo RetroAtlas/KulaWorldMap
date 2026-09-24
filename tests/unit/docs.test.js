@@ -111,4 +111,9 @@ test("the README's points are the ones annotations.json scores", () => {
     type(38).points,
     annotations.kinds[6].points,
   ]);
+  const star = /Type 42, which only the catalogue places, scores (\d+) while it is green/.exec(
+    readme,
+  );
+  assert.ok(star, "README has no sentence giving the catalogue star's points");
+  assert.equal(number(star[1]), type(42).points);
 });
