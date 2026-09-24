@@ -313,6 +313,21 @@ test("search answers a number as a whole word, and says when nothing matches", a
   await expect(search).toHaveAttribute("aria-expanded", "false");
 });
 
+test("a search counts objects, blocks by their kind, and settings apart", async ({ page }) => {
+  await page.goto("/#ATLANT/3");
+  await settle(page);
+  const search = page.locator("#search");
+  const more = page.locator("#results .more");
+  await search.fill("key, crumbling, settings");
+  await expect(more).toContainText(
+    /^\d+ objects, \d+ crumbling blocks and the settings of \d+ levels · HIRO \d+/,
+  );
+  await page.locator("#scope button").nth(2).click();
+  await expect(more).toContainText("1 object, 6 crumbling blocks and the level's settings in");
+  await search.fill("level 94");
+  await expect(more).toContainText("no objects, blocks or settings in");
+});
+
 test("an object search lists every one round the level in hand, and a row goes there", async ({
   page,
 }) => {

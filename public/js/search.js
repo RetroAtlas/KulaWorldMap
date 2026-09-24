@@ -1,6 +1,14 @@
 import { $, el, on } from "./dom.js";
 import { state, SIDE, cellKey, sliceZ } from "./state.js";
-import { worldName, levelTitle, inLattice, blockCount, counted } from "./data.js";
+import {
+  worldName,
+  levelTitle,
+  inLattice,
+  blockCount,
+  counted,
+  markerGroup,
+  kindName,
+} from "./data.js";
 import { selectLevel, centreOn, writeHash } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
 import { showCell } from "./detail.js";
@@ -252,13 +260,37 @@ function render() {
       .filter(([, n]) => n)
       .map(([name, n]) => `${name} ${n}`);
     const text = hits.length
-      ? `${hits.length} object${hits.length === 1 ? "" : "s"}${where}` +
+      ? `${tally(hits)}${where}` +
         (scope === "all" && perWorld.length > 1 ? ` · ${perWorld.join(" · ")}` : "")
-      : `no objects${where}`;
+      : `no objects, blocks or settings${where}`;
     out.append(el("div", { className: "more", textContent: text }, widen()));
   }
   show(true);
   mark();
+}
+
+function tally(hits) {
+  let objects = 0,
+    settings = 0;
+  const blocks = new Map();
+  for (const h of hits) {
+    const group = markerGroup(h.marker);
+    if (group === "object") objects++;
+    else if (group === "settings") settings++;
+    else blocks.set(h.marker.kind, (blocks.get(h.marker.kind) || 0) + 1);
+  }
+  const parts = objects ? [counted(objects, "object")] : [];
+  for (const [kind, n] of [...blocks].sort((a, b) => b[1] - a[1])) {
+    const name = kindName(kind);
+    parts.push(
+      name
+        ? counted(n, name[0].toLowerCase() + name.slice(1))
+        : `${counted(n, "block")} of kind ${kind}`,
+    );
+  }
+  if (settings)
+    parts.push(settings === 1 ? "the level's settings" : `the settings of ${settings} levels`);
+  return parts.length < 2 ? parts.join("") : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
 }
 
 // A scoped search says so, with the way out beside it.
