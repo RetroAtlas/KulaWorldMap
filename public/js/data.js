@@ -158,9 +158,6 @@ const NUMBER_FIELD = 3;
 /** The number the disc gives a pickup within its level, or null for anything unnumbered. */
 export const markerNumber = (m) =>
   m.face === null || m.f[NUMBER_FIELD] === -1 ? null : m.f[NUMBER_FIELD];
-/** How the panel labels the raw field at index `i` of a marker's fields. */
-export const fieldLabel = (m, i) =>
-  i === NUMBER_FIELD && markerNumber(m) !== null ? `pickup number (f${i + 5})` : `f${i + 5}`;
 // How the game writes a switched device's starting state.
 const STATE_ON = 1;
 const STATE_OFF = 2;
@@ -170,6 +167,14 @@ export const markerState = (m) => {
   if (!by || m.face === null) return null;
   const v = m.f[Number(by.slice(1)) - 5];
   return v === STATE_ON ? "on" : v === STATE_OFF ? "off" : null;
+};
+/** What the raw field at index `i` of a marker's fields holds, where that is settled, or null. */
+export const fieldName = (m, i) => {
+  if (i === NUMBER_FIELD && markerNumber(m) !== null) return "pickup number";
+  const f = `f${i + 5}`;
+  if (entry(m)?.facing === f) return "facing";
+  if (entry(m)?.state === f) return "state";
+  return null;
 };
 export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
 

@@ -554,6 +554,11 @@ body.sidebar-open .menu-btn {
   cursor: pointer;
   line-height: 1;
 }
+.detail .field {
+  margin-left: 3px;
+  font-size: 11px;
+  opacity: 0.7;
+}
 .detail .unnamed {
   color: var(--dim);
   font-style: italic;

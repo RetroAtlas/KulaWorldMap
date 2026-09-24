@@ -16,7 +16,7 @@ import {
   markerPoints,
   markerFacing,
   markerState,
-  fieldLabel,
+  fieldName,
   markerModel,
   markerStats,
 } from "./data.js";
@@ -42,10 +42,15 @@ const decoded = (m) => {
   return html;
 };
 
+const label = (m, i) => {
+  const name = fieldName(m, i);
+  return `f${i + 5}${name ? ` <span class="field">${name}</span>` : ""}`;
+};
+
 const fields = (m) => {
   let html = "";
   m.f.forEach((v, i) => {
-    if (v !== -1) html += row(fieldLabel(m, i), v);
+    if (v !== -1) html += row(label(m, i), v);
   });
   if (m.v !== undefined && m.v !== -1) html += row("v", m.v);
   const dead = m.f.filter((v) => v === -1).length;

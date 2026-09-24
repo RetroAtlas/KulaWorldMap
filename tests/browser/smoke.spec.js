@@ -238,6 +238,25 @@ test("a whole block of fire or ice reads apart from one face of it", async ({ pa
   }
 });
 
+test("a raw field reads by its number, then what it holds where that is known", async ({
+  page,
+}) => {
+  await page.goto("/#ATLANT/7");
+  await settle(page);
+  const labels = (type) =>
+    page.evaluate(async (type) => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { showCell } = await import(new URL("js/detail.js", location.href).href);
+      const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === type));
+      const { x, y, z } = state.lvl.records[i];
+      showCell({ x, y, z, v: state.data.firstRecord + i });
+      return [...document.querySelectorAll("#detail td:first-child")].map((td) => td.textContent);
+    }, type);
+  expect(await labels(9)).toContain("f7 state");
+  expect(await labels(28)).toContain("f5 facing");
+  expect(await labels(31)).toContain("f8 pickup number");
+});
+
 test("the catalogue's own note reaches the catalogue", async ({ page }) => {
   await page.goto("/");
   await settle(page);
