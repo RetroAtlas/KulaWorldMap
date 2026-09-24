@@ -147,31 +147,32 @@ function flushHash() {
   else history.replaceState(null, "", h);
 }
 
+/** A segment of the hash as `n` numbers, or null where it is missing or is not that. */
+const numbers = (segment, n) => {
+  const v = segment ? segment.split(",").map(Number) : [];
+  return v.length === n && v.every(Number.isFinite) ? v : null;
+};
+
 export function applyHash() {
-  const m =
-    /^#([A-Za-z0-9]+\/\d+)(?:\/(-?[\d.]+),(-?[\d.]+))?(?:\/([\d.]+))?(?:\/(-?[\d.]+),(-?[\d.]+),(-?[\d.]+))?(?:\/(-?[\d.]+),(-?[\d.]+))?(?:\/(\d+))?/.exec(
-      location.hash,
-    );
-  if (!m) return false;
-  const i = levelAt(m[1]);
-  if (i === undefined || !state.data.levels[i]) return false;
+  const [pack, slot, turn, zoom, target, pan, slice] = location.hash.slice(1).split("/");
+  const i = levelAt(`${pack}/${slot}`);
+  if (i === undefined) return false;
   restoring = true;
   // Going back to another view of the level in hand keeps what was set on it,
   // the kinds hidden in the legend among them.
   if (i === state.li) clearDetail();
   else selectLevel(i, { keepView: true });
-  if (m[2] !== undefined) {
-    state.cam.yaw = Number(m[2]);
-    state.cam.pitch = Number(m[3]);
-  }
-  if (m[4] !== undefined) state.cam.zoom = Number(m[4]);
-  if (m[5] !== undefined) state.target = [Number(m[5]), Number(m[6]), Number(m[7])];
+  const angles = numbers(turn, 2);
+  if (angles) [state.cam.yaw, state.cam.pitch] = angles;
+  const scale = numbers(zoom, 1)?.[0];
+  if (scale > 0) state.cam.zoom = scale;
+  const centre = numbers(target, 3);
+  if (centre) state.target = centre;
   else fit();
-  if (m[8] !== undefined) {
-    state.cam.panX = Number(m[8]);
-    state.cam.panY = Number(m[9]);
-  }
-  state.slice = m[10] !== undefined ? Math.min(SIDE - 1, Number(m[10])) : SIDE - 1;
+  const offset = numbers(pan, 2);
+  if (offset) [state.cam.panX, state.cam.panY] = offset;
+  const ceiling = numbers(slice, 1)?.[0];
+  state.slice = Number.isInteger(ceiling) && ceiling >= 0 ? Math.min(SIDE - 1, ceiling) : SIDE - 1;
   restoring = false;
   writeHash();
   invalidatePick();

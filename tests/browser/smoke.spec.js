@@ -26,6 +26,19 @@ test("a permalink opens on the level and the camera it names", async ({ page }) 
   expect(cam.target).toEqual([18, 13, 17]);
 });
 
+test("a permalink keeps the parts it can read and drops the rest", async ({ page }) => {
+  await page.goto("/#HIRO/11/30,20/0/18,13,17/x/3.5");
+  await settle(page);
+  const cam = await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    return { ...state.cam, slice: state.slice, target: state.target };
+  });
+  expect([cam.yaw, cam.pitch]).toEqual([30, 20]);
+  expect(cam.zoom).toBeGreaterThan(0);
+  expect(cam.target).toEqual([18, 13, 17]);
+  expect(cam.slice).toBe(33);
+});
+
 test("a link naming a pack and a slot opens that level, whatever its case", async ({ page }) => {
   await page.goto("/#copycat/4/30,20");
   await settle(page);
