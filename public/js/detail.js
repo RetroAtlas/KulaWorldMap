@@ -7,8 +7,10 @@ import {
   levelTitle,
   kindName,
   kindNote,
+  kindHazard,
   markerName,
   markerNote,
+  markerHazard,
   markerColour,
   markerPoints,
   markerFacing,
@@ -23,6 +25,7 @@ let stats = null;
 
 const row = (k, v) => `<tr><td>${k}</td><td class="mono">${v}</td></tr>`;
 const STORED = `<tr><th colspan="2">on the disc</th></tr>`;
+const HAZARD = `<span class="tag">Hazard</span>`;
 
 const dot = (colour) =>
   `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${colour}"></span>`;
@@ -39,7 +42,7 @@ export function showCell(c) {
   const kind = off ? null : plain ? c.v : records[0]?.kind;
   const what = kind === null ? "Laser end" : kindName(kind) || `Block, kind ${kind}`;
   let html = `<button class="x" title="Close (Esc)">×</button>`;
-  html += `<h3>${what}</h3>`;
+  html += `<h3>${what}${kind !== null && kindHazard(kind) ? HAZARD : ""}</h3>`;
   html += `<p class="sub">${levelTitle(l)} · cell ${c.x},${c.y},${c.z}</p>`;
   if (off)
     html += `<p class="sub">The level leaves this cell empty, and the game puts a block here as
@@ -58,7 +61,7 @@ export function showCell(c) {
       ? `<span class="icon-at" data-icon="${icons.push(model) - 1}"></span>`
       : dot(markerColour(m));
     html += `<h3 style="margin-top:12px">${mark}
-      ${name ? name : `<span class="unnamed">${m.face === null ? `kind ${m.kind}` : `type ${m.type}`}</span>`}</h3>`;
+      ${name ? name : `<span class="unnamed">${m.face === null ? `kind ${m.kind}` : `type ${m.type}`}</span>`}${markerHazard(m) ? HAZARD : ""}</h3>`;
     html += `<p class="sub">${m.face === null ? `kind ${m.kind} · type ${m.type}` : `type ${m.type} · on the ${FACE_NAME[m.face]}`}</p>`;
     const note = markerNote(m);
     if (note) html += `<p class="sub">${note}</p>`;

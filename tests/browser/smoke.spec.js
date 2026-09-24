@@ -139,6 +139,38 @@ test("clicking the start's block opens the object standing on it", async ({ page
   await expect(detail).toBeVisible();
   await expect(detail).toContainText("Start");
   await expect(detail).toContainText("on the top");
+  await expect(detail.locator(".tag", { hasText: "Hazard" })).toHaveCount(0);
+});
+
+test("a hazard says so in its heading", async ({ page }) => {
+  await page.goto("/#HIRO/3");
+  await settle(page);
+  await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === 12));
+    const { x, y, z } = state.lvl.records[i];
+    showCell({ x, y, z, v: state.data.firstRecord + i });
+  });
+  const spikes = page.locator("#detail h3", { hasText: "Spikes" });
+  await expect(spikes.locator(".tag")).toHaveText("Hazard");
+  const gap = await spikes.evaluate(
+    (h) => h.getBoundingClientRect().right - h.querySelector(".tag").getBoundingClientRect().right,
+  );
+  expect(gap).toBeLessThan(1);
+
+  await page.goto("/#INCA/4");
+  await settle(page);
+  await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const c = state.lvl.cells;
+    const i = c.findIndex((v, j) => j % 4 === 3 && v === 1) - 3;
+    showCell({ x: c[i], y: c[i + 1], z: c[i + 2], v: 1 });
+  });
+  const block = page.locator("#detail h3").first();
+  await expect(block).toContainText("Fire block");
+  await expect(block.locator(".tag")).toHaveText("Hazard");
 });
 
 test("the catalogue's own note reaches the catalogue", async ({ page }) => {

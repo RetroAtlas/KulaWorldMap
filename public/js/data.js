@@ -109,6 +109,7 @@ export const entryName = (m) => entry(m)?.name || null;
 export const markerLabel = (m) =>
   markerName(m) || (m.face === null ? `kind ${m.kind}` : `type ${m.type}`);
 export const markerNote = (m) => entry(m)?.note || "";
+export const markerHazard = (m) => entry(m)?.hazard === true;
 export const markerColour = (m) =>
   variant(m)?.colour || (m.face === null ? kindColour(m.kind) : OBJECT_COLOUR);
 export const markerPoints = (m) => variant(m)?.points ?? entry(m)?.points ?? 0;
@@ -210,6 +211,7 @@ export function markerModel(m, l, form = null) {
   return models[variant] || models[0];
 }
 export const kindNote = (kind) => ann.kinds[String(kind)]?.note || "";
+export const kindHazard = (kind) => ann.kinds[String(kind)]?.hazard === true;
 
 // A beam record spans two cells on one axis and nothing stands between them in
 // any of the game's. The blocks at its ends are not always in the lattice, so

@@ -558,6 +558,21 @@ body.sidebar-open .menu-btn {
   color: var(--dim);
   font-style: italic;
 }
+.detail .x + h3 {
+  padding-right: 28px;
+}
+.detail .tag {
+  margin-left: auto;
+  color: var(--warn);
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 16px;
+}
 
 .modal {
   position: absolute;
