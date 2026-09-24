@@ -380,8 +380,12 @@ const SKINNED_LOOK = {
   3: { alpha: 0.7, dash: [3, 3] },
   7: { alpha: 0.2, dash: [2, 4] },
 };
+const INVISIBLE = 3;
 const VANISHING = 7;
 const GLASS_FACE = 0.5; // how much of a hidden level's face shows, the GPU's half and half
+// A hidden level draws its blocks as glass, but for the kinds the game
+// builds on a path of their own and leaves out of it.
+const UNGLAZED = new Set([INVISIBLE, VANISHING]);
 // The types the game draws on the face and nowhere else, so that once the
 // face is painted the marker would say the same thing twice; and so would a
 // marker for a record's own kind, once its block is painted, but for the
@@ -464,7 +468,8 @@ export function draw() {
     }
     const base = kindTint(tint, kind);
     const boost = sel ? 0.22 : hov ? 0.12 : 0;
-    const a = (ghost ? 0.16 : 1) * (style.alpha ?? 1) * (look?.glass ? GLASS_FACE : 1);
+    const glass = look?.glass && !UNGLAZED.has(kind) ? GLASS_FACE : 1;
+    const a = (ghost ? 0.16 : 1) * (style.alpha ?? 1) * glass;
     // Every face wears what the game paints on it: a stone, its kind's own
     // texture, the plate or the shadow of what stands on it, a beam's end or
     // a platform's cap, and the fire, the invisible block and a bonus level's
