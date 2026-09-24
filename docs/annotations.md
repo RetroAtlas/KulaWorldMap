@@ -24,6 +24,8 @@ Style 2 in the lattice, kind 2 in a record: LEVEL 46, the walkthrough's first ic
 
 Style 3 in the lattice, kind 3 in a record: LEVEL 31, the walkthrough's first invisible platform, is eight of them and nothing else new. Two thirds of the game's are in Haze. That rolling over one in a bonus level scores nothing, which the map's totals count on, is arithmetic: the six bonus levels that have invisible blocks each fall short of the walkthrough's maximum by 50 times their count, and no other bonus level has one.
 
+How one shows is the executable's: [motion.md](motion.md) has the routine. It is hidden and lights up only within a block of the ball, and on the seven levels whose settings record carries a first field of 1 it is the other way round, seen everywhere and fading out as the ball comes within three and a half blocks, gone within two and a half, which is the note's "only from far away". The sunglasses show them all.
+
 ### kind 4: Acid block
 
 One cell in each copy of OBJ LEVEL and nowhere else, so the walkthrough never meets it. The loader paints it with the green splat, the fifteenth model of the artwork's table, and on OBJ LEVEL in play it is the green block (2026-09-16). The name was what it looks like until play settled it: the ball melts on it with the game calling out ACID! (2026-09-24), which makes it a hazard.
@@ -46,7 +48,7 @@ A beam between two cells, named in the record's own fields rather than drawn bet
 
 ### kind 9: Level settings
 
-The last record on 160 levels, and the one kind no lattice cell ever names, so the engine's walk over the level does not reach it. The loader reads its first slot as the level's settings: a type of 1 marks a hidden level, which draws its blocks half-transparent and the glass ball, and is 1 on exactly the ten; a first field of 1 pulls the camera back, on LEVEL 106 to 108, 110 and 111, SIMON 9 and HIDDEN 8. It stands on an empty cell on 114 of the 160. Its other slots hold objects like any block's, 65 of them on 49 levels, and they are not in play: counted, they would push 27 levels past the walkthrough's maximum, LEVEL 24 by a fruit and LEVEL 142 by two gems, where without them those levels are exact. So the slots read as a block deleted in the editor with its faces left as they were, and the build ships the record without them. [level-format.md](level-format.md) has the addresses.
+The last record on 160 levels, and the one kind no lattice cell ever names, so the engine's walk over the level does not reach it. The loader reads its first slot as the level's settings: a type of 1 marks a hidden level, which draws its blocks half-transparent and the glass ball, and is 1 on exactly the ten; a first field of 1 turns round how invisible blocks show, on LEVEL 106 to 108, 110 and 111, SIMON 9 and HIDDEN 8, which kind 3 has. It stands on an empty cell on 114 of the 160. Its other slots hold objects like any block's, 65 of them on 49 levels, and they are not in play: counted, they would push 27 levels past the walkthrough's maximum, LEVEL 24 by a fruit and LEVEL 142 by two gems, where without them those levels are exact. So the slots read as a block deleted in the editor with its faces left as they were, and the build ships the record without them. [level-format.md](level-format.md) has the addresses.
 
 ### kind 666: Camera
 

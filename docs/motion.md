@@ -61,6 +61,14 @@ Kind 7 keeps its state in the first slot's `f3` and a countdown in `f4`, and the
 
 **The cycle is 224 frames, 3.7 s, and `f2` is a phase of 56 frames a step**, a quarter exactly: a phase under 2 starts absent with 91 − 56·f2 to go and the others start solid with 196 − 56·f2 to go. The block is in the lattice, and can be stood on, from the moment it starts fading in to the moment it finishes flashing out, 133 frames, and out of it for 91. What the disc holds in the record's `type` word is overwritten at load with the lattice's own value for the cell, which is what the routine writes back when the block returns.
 
+## The invisible block
+
+Kind 3 is hidden until the ball comes near it, and the routine at `0x80051318` decides that every frame. It reads a struct at `0x800a5a58`: the ball's position, which the ball's routine writes there every frame (`0x80036914`), a near and a far distance, and a flag. While the sunglasses last (the pickup that scores 500 starts their timer at `0x8002bec8`, and `0x8002bf50` counts it down) every invisible face is drawn and nothing else happens. Otherwise every invisible face is first hidden, or shown where the flag is set, and then each invisible block within the far distance of the ball is lit corner by corner: full within the near distance, falling in a straight line to nothing at the far one, and where the flag is set the other way round, nothing within the near distance and full from the far one out. A face with any corner lit is drawn, shaded between its corners' brightnesses, and added to what is behind it.
+
+The loader sets the struct at `0x80027bf8`: 350 and 512 and no flag, so a block shows only within about a block of the ball; and on a level whose settings record, kind 9, carries a first field of 1 (`0x80027c78`), 1280 and 1792 with the flag, so its invisible blocks show everywhere, fade as the ball comes within three and a half blocks and are gone within two and a half. Seven levels do: LEVEL 106 to 108, 110 and 111, SIMON 9 and HIDDEN 8.
+
+With the sunglasses the faces are drawn flat, through the colour the animator at `0x8004f3b8` pulses from 48 to 136 of 128 over 90 frames while they cycle through their seven frames of shimmer over 144, which is the look the map draws them in.
+
 ## The crumbling block
 
 Kind 6's first slot holds 512 times its cell in `f2` to `f4` on the disc and the game does nothing with that: the loader at `0x80028a98` writes 512 into `f2`, and once the ball has broken the block (its `type` word goes from 1 to 2, then 3) the routine at `0x8002b3f4` takes 26 off `f2` a frame and drops the block from the lattice when it goes negative, twenty frames later, a third of a second, spawning debris from each face on the way.
@@ -99,4 +107,4 @@ The moving platform's run is in [level-format.md](level-format.md): from its cel
 
 ## Not settled
 
-Which of the two tangents a pill flips about and a fruit tilts about rests on the naming of the model's axes in [ggi.md](ggi.md) and on RotMatrix's order; a pill beside the map in play on 2026-09-17 flipped the way the map does. What the PAL release runs at is not on this disc. The faint glow of an invisible block near the ball lives in the hand-written renderer at `0x8004f000` onward and was not read, nor was the laser's beam looked at for a pulse.
+Which of the two tangents a pill flips about and a fruit tilts about rests on the naming of the model's axes in [ggi.md](ggi.md) and on RotMatrix's order; a pill beside the map in play on 2026-09-17 flipped the way the map does. What the PAL release runs at is not on this disc. The laser's beam was not looked at for a pulse.

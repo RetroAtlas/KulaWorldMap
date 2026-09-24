@@ -70,7 +70,7 @@
     },
     "9": {
       "name": "Level settings",
-      "note": "Not a block but the level's settings, kept where a block would be, often on an empty cell. They mark a hidden level, which the game draws half-transparent with the glass ball, and on a few levels pull the camera further back."
+      "note": "Not a block but the level's settings, kept where a block would be, often on an empty cell. They mark a hidden level, which the game draws half-transparent with the glass ball, and on a few levels let invisible blocks show from far away and fade as the ball comes near."
     },
     "666": {
       "name": "Camera",
