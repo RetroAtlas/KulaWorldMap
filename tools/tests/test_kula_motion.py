@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
-from kula_motion import PHASES, Code, spike_cycle, table, vanish_cycle  # noqa: E402
+from kula_motion import PHASES, Code, laser, spike_cycle, table, vanish_cycle  # noqa: E402
 
 R = {"v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "s0": 16, "zero": 0}
 
@@ -55,6 +55,10 @@ GAME = {
     "vanish.phase.step": 56, "vanish.phase.absent": 2, "vanish.phase.absent.from": 91,
     "vanish.phase.solid.from": 196, "vanish.absent": 91, "vanish.in": 9, "vanish.settle": 5,
     "vanish.solid": 91, "vanish.dim": 9, "vanish.out": 19,
+    "laser.reach": 256, "laser.reach.back": -256, "laser.nozzle": 90, "laser.nozzle.back": -90,
+    "laser.width": 7, "laser.width.back": -7, "laser.colour.0a": 3, "laser.colour.0b": 11,
+    "laser.colour.1": 19, "laser.colour.2": 11, "laser.colour.3": 3, "laser.step": 1,
+    "laser.mode": 32, "laser.levels": [31, 27, 23, 19, 15, 11, 25, 11, 12, 4, 6],
 }
 
 
@@ -149,6 +153,25 @@ class Cycles(unittest.TestCase):
         self.assertEqual([(appear[0] - a) % 224 for a in appear], [0, 56, 112, 168])
 
 
+class Laser(unittest.TestCase):
+    def test_a_circuit_is_its_level_shifted_into_one_channel_or_two(self):
+        beam = laser(GAME)
+        self.assertEqual(beam["colours"], [[8, 8, 0], [0, 0, 8], [0, 8, 0], [8, 0, 0]])
+        self.assertEqual((beam["reach"], beam["nozzle"], beam["width"]), (256, 90, 14))
+
+    def test_a_shift_past_its_channel_stops_the_reading(self):
+        with self.assertRaises(SystemExit):
+            laser({**GAME, "laser.colour.2": 14})
+
+    def test_a_stretch_short_of_its_faces_stops_the_reading(self):
+        with self.assertRaises(SystemExit):
+            laser({**GAME, "laser.reach": 200, "laser.reach.back": -200})
+
+    def test_a_blend_that_does_not_add_stops_the_reading(self):
+        with self.assertRaises(SystemExit):
+            laser({**GAME, "laser.mode": 0})
+
+
 class Table(unittest.TestCase):
     def test_the_table_carries_a_program_per_phase_and_the_platform_scaled(self):
         r = dict(GAME)
@@ -172,6 +195,7 @@ class Table(unittest.TestCase):
         t = table(r, 30)
         self.assertEqual(t["hz"], 60)
         self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1})
+        self.assertEqual(t["kinds"]["8"]["levels"], GAME["laser.levels"])
         self.assertEqual([len(c) for c in t["types"]["11"]["cycle"]], [143] * PHASES)
         self.assertEqual([len(c) for c in t["kinds"]["7"]["cycle"]], [224] * PHASES)
         self.assertEqual([len(c) for c in t["kinds"]["7"]["level"]], [224] * PHASES)

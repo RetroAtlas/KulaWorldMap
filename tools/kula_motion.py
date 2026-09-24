@@ -43,6 +43,25 @@ CHECKS = [
     (0x800406b8, "addu $a0, $zero, $zero", "and waits for one vertical blank"),
     (0x80040ad0, "lw $v0, 22316($v0)", "the half-rate word the loop reads is 0x800a572c"),
     (0x80039608, "lw $v0, 13264($v0)", "the view word the updates read is 0x800a33d0"),
+    # The laser: built at load by 0x800280d0, drawn every frame by 0x80051754.
+    (0x80028214, "addiu $v0, $zero, 8", "the laser builder takes the records of kind 8"),
+    (0x8002833c, "addiu $v0, $s5, 6", "and keeps where the record says it is lit, f3"),
+    (0x8002844c, "lh $v1, 44($s5)", "the colour is the circuit, a word of the second slot"),
+    (0x8002856c, "addiu $s2, $s2, 1", "a beam along x is laid a cell at a time from its first end up"),
+    (0x800286b0, "addiu $s3, $s3, 1", "and along y"),
+    (0x800287f8, "addiu $s4, $s4, 1", "and along z"),
+    (0x800284e0, "jal 0x80047418", "each of its four lines starts its brightness at random"),
+    (0x8002815c, "beq $s1, $zero, 0x80028184", "circuit 0's colour is two shifts"),
+    (0x80028198, "or $v0, $v0, $v1", "put together"),
+    (0x8002814c, "beq $s1, $t3, 0x8002819c", "circuit 1's is one"),
+    (0x8002816c, "beq $s1, $t2, 0x800281a8", "and circuit 2's"),
+    (0x80028174, "beq $s1, $t1, 0x800281b4", "and circuit 3's"),
+    (0x8005190c, "lhu $fp, 0($fp)", "the renderer reads whether a beam is lit"),
+    (0x80051914, "bne $fp, $zero, 0x8005192c", "and draws only one that is"),
+    (0x80051a18, "sra $t9, $t9, 6", "filing a cell's stretch by the depth of its centre"),
+    (0x800518ec, "lui $a2, 0xe100", "in a draw mode set for the purpose"),
+    (0x80051b2c, "lui $at, 0x2a00", "each line is two flat quads blended with what is behind"),
+    (0x80051be4, "lui $at, 0x4200", "and a flat line down the middle, blended the same way"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -129,7 +148,30 @@ IMMEDIATES = [
     ("captivators", "wheel.turn.left", "wheel: turns per frame, one way", 0x8003cda0, "addiu $v0, $v0, {}"),
     ("captivators", "wheel.turn.right", "wheel: turns per frame, the other", 0x8003ce30, "addiu $v0, $v0, {}"),
     ("captivators", "wheel.turn.about", "wheel: turns per frame, about", 0x8003cec0, "addiu $v0, $v0, {}"),
+
+    ("laser", "laser.reach", "a stretch reaches this far along the beam from its cell's centre, units", 0x80028578, "addiu $t2, $a0, {}"),
+    ("laser", "laser.reach.back", "and this far back", 0x8002857c, "addiu $t1, $a0, {}"),
+    ("laser", "laser.nozzle", "each of the four lines is this far off the axis, units", 0x800285d8, "addiu $a2, $a2, {}"),
+    ("laser", "laser.nozzle.back", "or this far", 0x800285ec, "addiu $a2, $a2, {}"),
+    ("laser", "laser.width", "a line's two quads reach this far either side of it, units", 0x80028600, "addiu $v1, $a3, {}"),
+    ("laser", "laser.width.back", "and this far the other side", 0x80028604, "addiu $v0, $a3, {}"),
+    ("laser", "laser.colour.0a", "circuit 0: its level shifted this far is one channel", 0x8002818c, "sll $v1, $v0, {}"),
+    ("laser", "laser.colour.0b", "circuit 0: and this far another", 0x80028190, "sll $v0, $v0, {}"),
+    ("laser", "laser.colour.1", "circuit 1: its level shifted this far", 0x800281a4, "sll $v0, $v0, {}"),
+    ("laser", "laser.colour.2", "circuit 2: its level shifted this far", 0x800281b0, "sll $v0, $v0, {}"),
+    ("laser", "laser.colour.3", "circuit 3: its level shifted this far", 0x800281bc, "sll $v0, $v0, {}"),
+    ("laser", "laser.step", "each line steps this many entries of its table a frame", 0x8005194c, "addi $s5, $s5, {}"),
+    ("laser", "laser.mode", "the draw mode's low half, whose bits 5 and 6 are the blend", 0x800518f0, "ori $a2, $a2, {}"),
 ]
+
+# The table of brightness a beam's lines step through, from its first byte to
+# the one past its last, each an address built by a lui and an addiu.
+LASER_LEVELS = ((0x800280dc, 0x800280e0), (0x800280d4, 0x800280d8))
+LASER_CIRCUITS = [["laser.colour.0a", "laser.colour.0b"], ["laser.colour.1"],
+                  ["laser.colour.2"], ["laser.colour.3"]]
+CHANNEL = 8          # bits to a channel of a colour word, red lowest
+LEVEL_BITS = 5       # the depth the GPU draws a colour at
+ADD = 1              # the blend that adds a quad to what is behind it
 
 # A number that is the multiplier a run of shifts and adds applies to what a
 # register held on entry: the run starts at the address and is this many
@@ -234,7 +276,40 @@ def readings(code):
     out["button.reach"] = round(((code.immediate(hi, hp) << 16) + code.immediate(lo, lp)) ** 0.5)
     for _, key, _, *args in DIVISORS:
         out[key] = code.divisor(*args)
+    start, end = (code.address(*pair) for pair in LASER_LEVELS)
+    out["laser.levels"] = list(code.blob[start - EXE_BASE:end - EXE_BASE])
     return out
+
+
+def laser(r):
+    """What the game draws for a beam: every stretch reaches from its cell's
+    centre to both faces, and carries four lines set square about the axis,
+    each two flat quads crossed along it and a line down their middle, all
+    added to what is behind, in the circuit's colour times a level each line
+    steps through on its own. A colour is given as what the level is
+    multiplied by in red, green and blue."""
+    for key in ("laser.reach", "laser.nozzle", "laser.width"):
+        if r[key + ".back"] != -r[key]:
+            sys.exit(f"{key} is {r[key]} one way and {r[key + '.back']} the other")
+    if r["laser.reach"] * 2 != BLOCK:
+        sys.exit(f"a beam's stretch reaches {r['laser.reach']} either way, not to its cell's faces")
+    if (r["laser.mode"] >> 5) & 3 != ADD:
+        sys.exit("a beam is not drawn in the blend that adds")
+    colours = []
+    for keys in LASER_CIRCUITS:
+        colour = [0, 0, 0]
+        for key in keys:
+            channel, shift = divmod(r[key], CHANNEL)
+            if channel > 2 or shift + LEVEL_BITS > CHANNEL:
+                sys.exit(f"{key} shifts a level by {r[key]}, out of any one channel")
+            colour[channel] = 1 << shift
+        colours.append(colour)
+    levels = r["laser.levels"]
+    if max(levels) >= 1 << LEVEL_BITS:
+        sys.exit(f"the beam's table holds a level of {max(levels)}")
+    return {"reach": r["laser.reach"], "nozzle": r["laser.nozzle"],
+            "width": r["laser.width"] - r["laser.width.back"], "colours": colours,
+            "levels": levels, "step": r["laser.step"], "add": True}
 
 
 def spike_cycle(r, phase, frames=SPIKE_FRAMES, at=None):
@@ -392,6 +467,7 @@ def table(r, platform_speed):
         5: {"speed": platform_speed * r["platform.scale"] // HZ, "dwell": r["platform.dwell"]},
         7: {"cycle": [[s for s, _ in vanish_cycle(r, p)] for p in range(PHASES)],
             "level": [[v for _, v in vanish_cycle(r, p)] for p in range(PHASES)]},
+        8: laser(r),
     }
     return {"hz": HZ, "turn": TURN, "standoff": r["captivator.standoff"],
             "types": {str(t): types[t] for t in sorted(types)},
@@ -415,6 +491,9 @@ def show_readings(code):
                  BUTTON_REACH[0], readings(code)["button.reach"]))
     for group, key, what, hi, hp, lo, lp, sa, sp in DIVISORS:
         rows.append((group, what, hi, code.divisor(hi, hp, lo, lp, sa, sp)))
+    levels = readings(code)["laser.levels"]
+    rows.append(("laser", f"steps in the beam's table, levels {min(levels)} to {max(levels)}",
+                 code.address(*LASER_LEVELS[0]), len(levels)))
     order = {g: i for i, g in enumerate(dict.fromkeys(r[0] for r in rows))}
     rows.sort(key=lambda r: (order[r[0]], r[2]))
     last = None
