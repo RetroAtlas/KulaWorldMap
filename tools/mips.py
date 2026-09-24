@@ -37,6 +37,24 @@ OPS = {0x02: "j", 0x03: "jal", 0x04: "beq", 0x05: "bne", 0x06: "blez", 0x07: "bg
 
 LOADS = {"lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "sb", "sh", "swl", "sw", "swr"}
 
+# The geometry coprocessor: its data and control registers, the four moves
+# between them and the CPU's, and its commands by their low six bits.
+GTE_DATA = ["vxy0", "vz0", "vxy1", "vz1", "vxy2", "vz2", "rgbc", "otz",
+            "ir0", "ir1", "ir2", "ir3", "sxy0", "sxy1", "sxy2", "sxyp",
+            "sz0", "sz1", "sz2", "sz3", "rgb0", "rgb1", "rgb2", "res1",
+            "mac0", "mac1", "mac2", "mac3", "irgb", "orgb", "lzcs", "lzcr"]
+GTE_CONTROL = ["rt11rt12", "rt13rt21", "rt22rt23", "rt31rt32", "rt33", "trx", "try", "trz",
+               "l11l12", "l13l21", "l22l23", "l31l32", "l33", "rbk", "gbk", "bbk",
+               "lr1lr2", "lr3lg1", "lg2lg3", "lb1lb2", "lb3", "rfc", "gfc", "bfc",
+               "ofx", "ofy", "h", "dqa", "dqb", "zsf3", "zsf4", "flag"]
+GTE_MOVES = {0: ("mfc2", GTE_DATA), 2: ("cfc2", GTE_CONTROL),
+             4: ("mtc2", GTE_DATA), 6: ("ctc2", GTE_CONTROL)}
+GTE_COMMANDS = {0x01: "rtps", 0x06: "nclip", 0x0c: "op", 0x10: "dpcs", 0x11: "intpl",
+                0x12: "mvmva", 0x13: "ncds", 0x14: "cdp", 0x16: "ncdt", 0x1b: "nccs",
+                0x1c: "cc", 0x1e: "ncs", 0x20: "nct", 0x28: "sqr", 0x29: "dcpl",
+                0x2a: "dpct", 0x2d: "avsz3", 0x2e: "avsz4", 0x30: "rtpt", 0x3d: "gpf",
+                0x3e: "gpl", 0x3f: "ncct"}
+
 
 def decode(word, pc):
     op = word >> 26
@@ -65,6 +83,15 @@ def decode(word, pc):
         if name in ("mult", "multu", "div", "divu"):
             return f"{name} {R(rs)}, {R(rt)}", None
         return f"{name} {R(rd)}, {R(rs)}, {R(rt)}", None
+    if op == 0x12:
+        if word & 0x02000000:
+            return GTE_COMMANDS.get(funct, f".word 0x{word:08x}"), None
+        if rs not in GTE_MOVES:
+            return f".word 0x{word:08x}", None
+        name, regs = GTE_MOVES[rs]
+        return f"{name} {R(rt)}, {regs[rd]}", None
+    if op in (0x32, 0x3a):
+        return f"{'lwc2' if op == 0x32 else 'swc2'} {GTE_DATA[rt]}, {simm}({R(rs)})", None
     if op == 1:
         name = {0: "bltz", 1: "bgez", 16: "bltzal", 17: "bgezal"}.get(rt, f"regimm{rt}")
         t = pc + 4 + simm * 4
