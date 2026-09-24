@@ -111,12 +111,12 @@ test("every annotation has its reasons in docs/annotations.md, and only those", 
   }
 });
 
-// A note is read by someone looking at the map: what a thing is and does, in
-// a sentence or three. Anything that proves it, or names this project's
-// workings, belongs in docs/annotations.md, where it can go stale in private.
+// A note is read by someone looking at the map, in a sentence or three. It
+// never names this project's scripts or files, a path on a machine, a sibling
+// map, an address, a date or the walkthrough: those belong in docs/.
 const LONGEST_NOTE = 320;
 const INTERNALS =
-  /tools\/|\.py\b|\.json\b|\b0x[0-9a-f]+|\b\d{4}-\d{2}-\d{2}\b|walkthrough|\bf\d+\b|lattice|\brecords?\b|\bslots?\b|\b(?:type|kind|style) \d+\b/i;
+  /tools\/|\.(?:py|js|json|md)\b|\/Users\/|\/home\/|~\/|oddworld|hercules|metal ?slug|\b0x[0-9a-f]+|\b\d{4}-\d{2}-\d{2}\b|walkthrough/i;
 
 test("a note is short and free of the project's workings", () => {
   for (const section of ["worlds", "kinds", "types", "levels"]) {
