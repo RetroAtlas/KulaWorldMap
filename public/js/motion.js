@@ -24,8 +24,7 @@ export function phasesOf(table, x, y, z, face) {
   return out;
 }
 
-// The moving spikes and the corkscrew read their phase from the field after
-// the colour slot, one of four values.
+// The moving spikes and the corkscrew read their phase from f3, one of four values.
 export const phaseField = (m) => m.f[1] & 3;
 
 /**
