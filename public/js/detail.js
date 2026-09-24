@@ -1,4 +1,4 @@
-import { $ } from "./dom.js";
+import { $, emit } from "./dom.js";
 import { state, cellKey } from "./state.js";
 import {
   OFF_LATTICE,
@@ -124,9 +124,11 @@ export function showCell(c) {
     clearDetail();
     draw();
   };
+  emit("selection-changed");
 }
 
 export function clearDetail() {
   $("detail").hidden = true;
   state.selected = null;
+  emit("selection-changed");
 }

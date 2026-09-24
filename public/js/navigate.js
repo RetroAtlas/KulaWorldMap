@@ -1,5 +1,5 @@
-import { $, emit } from "./dom.js";
-import { state, SIDE, BLOCK, project, levelCentre, sliceZ } from "./state.js";
+import { $, emit, on } from "./dom.js";
+import { state, SIDE, BLOCK, project, levelCentre, cellKey, sliceZ } from "./state.js";
 import {
   index,
   worldName,
@@ -12,7 +12,7 @@ import {
   levelScore,
 } from "./data.js";
 import { draw, invalidatePick } from "./render.js";
-import { clearDetail } from "./detail.js";
+import { showCell, clearDetail } from "./detail.js";
 
 export function selectLevel(i, { keepView = false } = {}) {
   const l = state.data.levels[i];
@@ -138,10 +138,12 @@ function flushHash() {
   const l = state.lvl;
   if (!l || restoring) return;
   const c = state.cam;
+  const s = state.selected;
   const t = state.target.map((v) => r2(v)).join(",");
   const h =
     `#${slotOf(l)}/${Math.round(c.yaw)},${Math.round(c.pitch)}/${c.zoom.toFixed(2)}` +
-    `/${t}/${r2(c.panX)},${r2(c.panY)}/${state.slice}`;
+    `/${t}/${r2(c.panX)},${r2(c.panY)}/${state.slice}` +
+    (s ? `/${s.x},${s.y},${s.z}` : "");
   if (location.hash === h) return;
   if (push) history.pushState(null, "", h);
   else history.replaceState(null, "", h);
@@ -154,14 +156,13 @@ const numbers = (segment, n) => {
 };
 
 export function applyHash() {
-  const [pack, slot, turn, zoom, target, pan, slice] = location.hash.slice(1).split("/");
+  const [pack, slot, turn, zoom, target, pan, slice, picked] = location.hash.slice(1).split("/");
   const i = levelAt(`${pack}/${slot}`);
   if (i === undefined) return false;
   restoring = true;
   // Going back to another view of the level in hand keeps what was set on it,
   // the kinds hidden in the legend among them.
-  if (i === state.li) clearDetail();
-  else selectLevel(i, { keepView: true });
+  if (i !== state.li) selectLevel(i, { keepView: true });
   const angles = numbers(turn, 2);
   if (angles) [state.cam.yaw, state.cam.pitch] = angles;
   const scale = numbers(zoom, 1)?.[0];
@@ -173,6 +174,10 @@ export function applyHash() {
   if (offset) [state.cam.panX, state.cam.panY] = offset;
   const ceiling = numbers(slice, 1)?.[0];
   state.slice = Number.isInteger(ceiling) && ceiling >= 0 ? Math.min(SIDE - 1, ceiling) : SIDE - 1;
+  const at = numbers(picked, 3);
+  const cell = at && state.idx.cells.get(cellKey(...at));
+  if (cell) showCell(cell);
+  else clearDetail();
   restoring = false;
   writeHash();
   invalidatePick();
@@ -181,6 +186,8 @@ export function applyHash() {
   draw();
   return true;
 }
+
+on("selection-changed", () => writeHash());
 
 // The viewer's own writes raise no hashchange, so what arrives here is a hash
 // typed, followed or gone back to. One the viewer cannot honour would

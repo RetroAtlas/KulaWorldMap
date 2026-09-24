@@ -39,6 +39,26 @@ test("a permalink keeps the parts it can read and drops the rest", async ({ page
   expect(cam.slice).toBe(33);
 });
 
+test("a permalink carries the selected block, and opens with it selected", async ({ page }) => {
+  await page.goto("/#HIRO/11/45,35/1/21.5,13.5,18.5/0,0/33/21,13,18");
+  await settle(page);
+  await expect(page.locator("#detail")).toContainText("cell 21,13,18");
+  await expect(page.locator("#detail")).toContainText("Key");
+  // a click selects without making an entry, and Escape takes the block back out
+  const entries = await page.evaluate(() => history.length);
+  await page.keyboard.press("Escape");
+  await frame(page);
+  expect(page.url()).toMatch(/\/33$/);
+  await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    showCell([...state.idx.cells.values()][0]);
+  });
+  await frame(page);
+  expect(page.url()).toMatch(/\/33\/\d+,\d+,\d+$/);
+  expect(await page.evaluate(() => history.length)).toBe(entries);
+});
+
 test("a link naming a pack and a slot opens that level, whatever its case", async ({ page }) => {
   await page.goto("/#copycat/4/30,20");
   await settle(page);
@@ -129,11 +149,24 @@ test("going back to another view of the same level keeps the kinds hidden in it"
     });
   const before = await hidden();
   expect(before).toHaveLength(1);
-  const hash = await page.evaluate(() => location.hash);
+  const selected = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      return state.selected && [state.selected.x, state.selected.y, state.selected.z];
+    });
+  const second = await selected();
   await page.goBack();
-  await expect.poll(() => page.evaluate(() => location.hash)).not.toBe(hash);
+  await expect.poll(selected).not.toEqual(second);
   await frame(page);
   expect(await hidden()).toEqual(before);
+  // the find gone back to is selected again, and the view turns about it
+  const first = await selected();
+  expect(first).not.toBeNull();
+  const target = await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    return state.target;
+  });
+  expect(target).toEqual(first.map((v) => v + 0.5));
 });
 
 test("the camera writes the URL once a frame, not once an event", async ({ page }) => {
