@@ -8,7 +8,7 @@
     "1": {
       "name": "Fire block",
       "hazard": true,
-      "note": "A block whose every face is fire: touching it inflates the ball until it pops or reaches cooler ground."
+      "note": "A block whose every face is fire: touching it swells the ball until it burns or reaches cooler ground."
     },
     "2": {
       "name": "Ice block",
@@ -81,7 +81,7 @@
     "1": {
       "name": "Fire",
       "hazard": true,
-      "note": "Fire on one face of an otherwise normal block; a block that is fire all over is a fire block instead."
+      "note": "Fire on one face of an otherwise normal block, which swells the ball until it burns or reaches cooler ground; a block that is fire all over is a fire block instead."
     },
     "2": {
       "name": "Ice",
@@ -260,7 +260,7 @@
     "42": {
       "points": 1550,
       "hazard": true,
-      "note": "A many-pointed star that turns from brown to green and back every few seconds: while brown it pops the ball on touch, and while green it can be collected for 1550. Only on the object catalogue level, so nothing in play uses it."
+      "note": "A many-pointed star that turns from brown to green and back every few seconds: while brown it captures the ball on touch, and while green it can be collected for 1550. Only on the object catalogue level, so nothing in play uses it."
     },
     "43": {
       "name": "Fruit",
@@ -291,7 +291,7 @@
       "name": "Captivator",
       "hazard": true,
       "facing": "f2",
-      "note": "A spiked star that pops the ball on touch: the thinner one, with three long points, which travels the space it has and turns back at any wall or object in its way."
+      "note": "A spiked star that captures the ball on touch: the thinner one, with three long points, which travels the space it has and turns back at any wall or object in its way."
     },
     "51": {
       "name": "Rolling stone",
@@ -303,7 +303,7 @@
       "name": "Captivator",
       "hazard": true,
       "facing": "f2",
-      "note": "A spiked star that pops the ball on touch: the fuller one, with four short points, which slides back and forth over a fixed stretch, as if on a spring."
+      "note": "A spiked star that captures the ball on touch: the fuller one, with four short points, which slides back and forth over a fixed stretch, as if on a spring."
     },
     "53": {
       "name": "Captivator, wandering",
@@ -316,7 +316,7 @@
       "fields": {
         "f3": "phase"
       },
-      "note": "A corkscrew that bounces up and down and pops the ball on touch: roll under it when it is up, and jump it when it is down."
+      "note": "A corkscrew that bounces up and down and captures the ball on touch: roll under it when it is up, and jump it when it is down."
     }
   },
   "levels": {

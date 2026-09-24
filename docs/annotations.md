@@ -4,7 +4,7 @@
 
 Most names rest on Syonyx's Roll Away walkthrough (GameFAQs, 2006), which the repo does not carry: the level it first mentions a thing on carries the game's first placement of one kind or type, and usually nothing else new. The points rest on its per-level maximum scores, which the disc reproduces exactly on 193 of the 209 levels it rates and exceeds on the other 16, each of which curates the walkthrough's figure as its `score`; [level-format.md](level-format.md) has the arithmetic. Type 42's rest on the executable instead, since no level it rates holds one. The names that rest on play are the coin tiers' colours, which of the two directional captivators is which, the acid block and the invincibility pill. Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page.
 
-An entry marked `hazard` is one that can cost the ball its life, and its section says what shows it. The things that travel share one routine for it: the loader puts every type 50 to 53 and 56 into one table (`0x8003b678`), and once a frame the ball's routine tests the ball against every entry in it (`0x8003d570`, called at `0x8003679c`) and on a hit sets it dying with the cause the game keeps for them (`0x80036814`), the wandering ball's reach being the shorter. No hazard harms the ball while the invincibility pill lasts (type 34).
+An entry marked `hazard` is one that can cost the ball its life, and its section says what shows it. The things that travel share one routine for it: the loader puts every type 50 to 53 and 56 into one table (`0x8003b678`), and once a frame the ball's routine tests the ball against every entry in it (`0x8003d570`, called at `0x8003679c`) and on a hit sets it dying with the cause the game keeps for them (`0x80036814`), the wandering ball's reach being the shorter. The notes call that capturing the ball, a word taken from the captivators' name, and use it for all of them and for type 42's brown form, since all set the same cause. No hazard harms the ball while the invincibility pill lasts (type 34).
 
 ## Block kinds
 
@@ -14,7 +14,7 @@ The plain block, style 0 in the lattice and kind 0 in a record: every block that
 
 ### kind 1: Fire block
 
-The lattice's style 1 and a record's kind 1 are the same thing, the second being a fire block with something standing on it: LEVEL 35, the walkthrough's first fire, is style 1 and kind 1 and nothing else new, and so are LEVEL 44, 123 and 126. It is a hazard: the walkthrough's fire inflates the ball until it pops or reaches cooler ground, and in play the third fire square in a row burns it (2026-09-24).
+The lattice's style 1 and a record's kind 1 are the same thing, the second being a fire block with something standing on it: LEVEL 35, the walkthrough's first fire, is style 1 and kind 1 and nothing else new, and so are LEVEL 44, 123 and 126. It is a hazard: the walkthrough's fire inflates the ball until it pops or reaches cooler ground, and in play the ball swells and reddens on it and burns on the third fire square in a row (2026-09-24). The code heats the ball on fire, by 40 a frame and by 600 at a time besides, and past 2000 sets it dying with a cause of its own rather than the captivators' (`0x8003ab40` to `0x8003ac14`), which is why the notes say it burns.
 
 ### kind 2: Ice block
 
@@ -164,23 +164,23 @@ One placement in the game, on LEVEL 19, where the walkthrough's fruit stands and
 
 ### type 50: Captivator
 
-LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. That it is the thinner star with three long points was seen in play beside type 52, and it is the walkthrough's slower kind; `f2` is its direction. Touching it pops the ball, as spikes do, and the lost life is what restarts the level (play, 2026-09-24). It is a hazard by the routine the things that travel share.
+LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. That it is the thinner star with three long points was seen in play beside type 52, and it is the walkthrough's slower kind; `f2` is its direction. In play, touching it costs the ball its life, and the lost life is what restarts the level (2026-09-24). It is a hazard by the routine the things that travel share.
 
 ### type 51: Rolling stone
 
-Drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise. In play, touching it costs the ball its life (2026-09-24); the note calls that capturing it, a word taken from the captivators' name rather than from the game. It is a hazard by the routine the things that travel share.
+Drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise. In play, touching it costs the ball its life (2026-09-24). It is a hazard by the routine the things that travel share.
 
 ### type 52: Captivator
 
-The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. That it is the fuller star with four short points was seen in play beside type 50, and it is the walkthrough's quick kind; `f2` is its direction. Touching it pops the ball, as spikes do, and the lost life is what restarts the level (play, 2026-09-24). It is a hazard by the routine the things that travel share.
+The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. That it is the fuller star with four short points was seen in play beside type 50, and it is the walkthrough's quick kind; `f2` is its direction. In play, touching it costs the ball its life, and the lost life is what restarts the level (2026-09-24). It is a hazard by the routine the things that travel share.
 
 ### type 53: Captivator, wandering
 
-LEVEL 84 carries four where the walkthrough says to watch their shaking to tell which way they will go. It has no direction field. Touching it captures the ball, as the rolling stone does (play, 2026-09-24). It is a hazard by the routine the things that travel share.
+LEVEL 84 carries four where the walkthrough says to watch their shaking to tell which way they will go. It has no direction field. In play, touching it costs the ball its life, as the rolling stone does (2026-09-24). It is a hazard by the routine the things that travel share.
 
 ### type 56: Captivator, bouncing
 
-LEVEL 45 carries six where the walkthrough says to roll under them when raised, and LEVEL 122's go up in sequence, which is what `f3`, four-valued, reads as: its phase ([motion.md](motion.md)). Touching it pops the ball (play, 2026-09-24). It is a hazard by the routine the things that travel share.
+LEVEL 45 carries six where the walkthrough says to roll under them when raised, and LEVEL 122's go up in sequence, which is what `f3`, four-valued, reads as: its phase ([motion.md](motion.md)). In play, touching it costs the ball its life (2026-09-24). It is a hazard by the routine the things that travel share.
 
 ## Levels
 
