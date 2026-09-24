@@ -8,6 +8,7 @@ import {
   kindName,
   kindNote,
   kindHazard,
+  ownMarker,
   markerName,
   markerNote,
   markerHazard,
@@ -30,6 +31,36 @@ const HAZARD = `<span class="tag">Hazard</span>`;
 const dot = (colour) =>
   `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${colour}"></span>`;
 
+const decoded = (m) => {
+  let html = "";
+  const points = markerPoints(m);
+  if (points) html += row("points", points);
+  const facing = markerFacing(m);
+  if (facing !== null) html += row("facing", DIRECTION_NAME[facing]);
+  const started = markerState(m);
+  if (started !== null) html += row("starts", started);
+  return html;
+};
+
+const fields = (m) => {
+  let html = "";
+  m.f.forEach((v, i) => {
+    if (v !== -1) html += row(fieldLabel(m, i), v);
+  });
+  if (m.v !== undefined && m.v !== -1) html += row("v", m.v);
+  const dead = m.f.filter((v) => v === -1).length;
+  if (dead) html += row("unset", `${dead} of ${m.f.length} fields`);
+  return html;
+};
+
+const placed = (m) => {
+  const s = stats.get(m.id);
+  if (!s) return "";
+  let html = `<p class="sub" style="margin-top:6px">Placed ${s.total} times in ${s.levels} level${s.levels === 1 ? "" : "s"}`;
+  if (s.only === s.levels) html += `, never more than once`;
+  return `${html}.</p>`;
+};
+
 export function showCell(c) {
   const l = state.lvl;
   const key = cellKey(c.x, c.y, c.z);
@@ -40,6 +71,7 @@ export function showCell(c) {
   const off = c.v === OFF_LATTICE;
   const plain = c.v < state.data.firstRecord;
   const kind = off ? null : plain ? c.v : records[0]?.kind;
+  const own = ownMarker(marks, kind);
   const what = kind === null ? "Laser end" : kindName(kind) || `Block, kind ${kind}`;
   let html = `<button class="x" title="Close (Esc)">×</button>`;
   html += `<h3>${what}${kind !== null && kindHazard(kind) ? HAZARD : ""}</h3>`;
@@ -48,13 +80,17 @@ export function showCell(c) {
     html += `<p class="sub">The level leaves this cell empty, and the game puts a block here as
       the level loads, as one end of a laser.</p>`;
   else if (kindNote(kind)) html += `<p class="sub">${kindNote(kind)}</p>`;
-  html += `<table>${STORED}${row("cell", `${c.x}, ${c.y}, ${c.z}`)}${row("cell value", off ? "empty" : c.v)}`;
-  if (kind !== null) html += row("kind", kind);
+  html += `<table>${own ? decoded(own) : ""}${STORED}`;
+  html += `${row("cell", `${c.x}, ${c.y}, ${c.z}`)}${row("cell value", off ? "empty" : c.v)}`;
   if (!plain && !off) html += row("record", c.v - state.data.firstRecord);
+  if (kind !== null) html += row("kind", kind);
+  if (own) html += row("type", own.type) + fields(own);
   html += "</table>";
+  if (own) html += placed(own);
 
   const icons = [];
   for (const m of marks) {
+    if (m === own) continue;
     const name = markerName(m);
     const model = markerModel(m, l);
     const mark = model
@@ -65,27 +101,7 @@ export function showCell(c) {
     html += `<p class="sub">${m.face === null ? `kind ${m.kind} · type ${m.type}` : `type ${m.type} · on the ${FACE_NAME[m.face]}`}</p>`;
     const note = markerNote(m);
     if (note) html += `<p class="sub">${note}</p>`;
-    html += "<table>";
-    const points = markerPoints(m);
-    if (points) html += row("points", points);
-    const facing = markerFacing(m);
-    if (facing !== null) html += row("facing", DIRECTION_NAME[facing]);
-    const started = markerState(m);
-    if (started !== null) html += row("starts", started);
-    html += STORED;
-    m.f.forEach((v, i) => {
-      if (v !== -1) html += row(fieldLabel(m, i), v);
-    });
-    if (m.v !== undefined && m.v !== -1) html += row("v", m.v);
-    const dead = m.f.filter((v) => v === -1).length;
-    if (dead) html += row("unset", `${dead} of ${m.f.length} fields`);
-    html += "</table>";
-    const s = stats.get(m.id);
-    if (s) {
-      html += `<p class="sub" style="margin-top:6px">Placed ${s.total} times in ${s.levels} level${s.levels === 1 ? "" : "s"}`;
-      if (s.only === s.levels) html += `, never more than once`;
-      html += `.</p>`;
-    }
+    html += `<table>${decoded(m)}${STORED}${fields(m)}</table>${placed(m)}`;
   }
   box.innerHTML = html;
   for (const at of box.querySelectorAll(".icon-at"))

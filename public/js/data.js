@@ -99,6 +99,10 @@ export function markersOf(r) {
   return out;
 }
 
+/** Among a cell's markers, the one for its block's own kind, or null where the kind is only a block. */
+export const ownMarker = (marks, kind) =>
+  marks.find((m) => m.face === null && m.kind === kind) ?? null;
+
 // A variant may carry its own name, colour and points; what it leaves unsaid
 // falls back to the type, and a marker for a record itself reads the kind.
 const entry = (m) => (m.face === null ? ann.kinds[String(m.kind)] : ann.types[String(m.type)]);

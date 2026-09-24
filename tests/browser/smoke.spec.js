@@ -173,6 +173,71 @@ test("a hazard says so in its heading", async ({ page }) => {
   await expect(block.locator(".tag")).toHaveText("Hazard");
 });
 
+const headings = (page) =>
+  page.locator("#detail h3").evaluateAll((hs) =>
+    hs.map((h) =>
+      [...h.childNodes]
+        .filter((n) => !n.classList?.contains("tag"))
+        .map((n) => n.textContent)
+        .join("")
+        .trim(),
+    ),
+  );
+
+test("a block that is a thing of its own is named once, with what its record holds", async ({
+  page,
+}) => {
+  await page.goto("/#ATLANT/3");
+  await settle(page);
+  await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const i = state.lvl.records.findIndex(
+      (r) =>
+        r.kind === 6 &&
+        state.lvl.records.some((s) => s.kind === 9 && s.x === r.x && s.y === r.y && s.z === r.z),
+    );
+    const { x, y, z } = state.lvl.records[i];
+    showCell({ x, y, z, v: state.data.firstRecord + i });
+  });
+  expect(await headings(page)).toEqual(["Crumbling block", "Level settings"]);
+  const block = page.locator("#detail table").first();
+  for (const label of ["points", "kind", "type", "record", "f5", "unset"])
+    await expect(block.locator("td", { hasText: new RegExp(`^${label}$`) })).toHaveCount(1);
+  await expect(page.locator("#detail p", { hasText: /^Placed / })).toHaveCount(2);
+});
+
+test("a whole block of fire or ice reads apart from one face of it", async ({ page }) => {
+  for (const [hash, kind, block, face] of [
+    ["#INCA/7", 1, "Fire block", "Fire"],
+    ["#ARCTIC/1", 2, "Ice block", "Ice"],
+  ]) {
+    await page.goto(`/${hash}`);
+    await settle(page);
+    const open = (whole) =>
+      page.evaluate(
+        async ([kind, whole]) => {
+          const { state } = await import(new URL("js/state.js", location.href).href);
+          const { showCell } = await import(new URL("js/detail.js", location.href).href);
+          const records = state.lvl.records;
+          const c = [...state.idx.cells.values()].find((c) => {
+            const r = records[c.v - state.data.firstRecord];
+            if (whole) return c.v === kind || r?.kind === kind;
+            return r?.kind === 0 && r.on.some((o) => o.type === kind);
+          });
+          showCell(c);
+        },
+        [kind, whole],
+      );
+    await open(true);
+    expect((await headings(page))[0]).toBe(block);
+    expect(await headings(page)).not.toContain(face);
+    await open(false);
+    expect((await headings(page))[0]).toBe("Block");
+    expect(await headings(page)).toContain(face);
+  }
+});
+
 test("the catalogue's own note reaches the catalogue", async ({ page }) => {
   await page.goto("/");
   await settle(page);
