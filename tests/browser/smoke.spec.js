@@ -96,6 +96,33 @@ test("a change of level or a find is a history entry; a turn is not", async ({ p
   await expect.poll(async () => (await level()).li).toBe(1);
 });
 
+test("going back to another view of the same level keeps the kinds hidden in it", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/1");
+  await settle(page);
+  const search = page.locator("#search");
+  await search.fill("coin");
+  await search.press("Enter");
+  await page.keyboard.press("/");
+  await search.press("ArrowDown");
+  await search.press("Enter");
+  await frame(page);
+  await page.locator("#kinds .kind").first().click();
+  const hidden = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      return [...state.hiddenKinds];
+    });
+  const before = await hidden();
+  expect(before).toHaveLength(1);
+  const hash = await page.evaluate(() => location.hash);
+  await page.goBack();
+  await expect.poll(() => page.evaluate(() => location.hash)).not.toBe(hash);
+  await frame(page);
+  expect(await hidden()).toEqual(before);
+});
+
 test("the camera writes the URL once a frame, not once an event", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);

@@ -156,7 +156,10 @@ export function applyHash() {
   const i = levelAt(m[1]);
   if (i === undefined || !state.data.levels[i]) return false;
   restoring = true;
-  selectLevel(i, { keepView: true });
+  // Going back to another view of the level in hand keeps what was set on it,
+  // the kinds hidden in the legend among them.
+  if (i === state.li) clearDetail();
+  else selectLevel(i, { keepView: true });
   if (m[2] !== undefined) {
     state.cam.yaw = Number(m[2]);
     state.cam.pitch = Number(m[3]);
