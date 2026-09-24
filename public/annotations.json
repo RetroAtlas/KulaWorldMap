@@ -159,7 +159,7 @@
       "fields": {
         "f3": "phase"
       },
-      "note": "Spikes that rise and retract in turn, each from its own point in the cycle; safe to roll over when down."
+      "note": "Spikes that rise and retract in turn; safe to roll over when down."
     },
     "12": {
       "name": "Spikes",
