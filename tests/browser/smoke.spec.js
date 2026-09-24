@@ -336,6 +336,22 @@ test("search answers a number as a whole word, and says when nothing matches", a
   await expect(search).toHaveAttribute("aria-expanded", "false");
 });
 
+test("the places are eight to a group like the objects, and keep to the scope", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await settle(page);
+  const search = page.locator("#search");
+  await search.fill("level");
+  const levels = page.locator("#results [role=group][aria-label=Levels]");
+  await expect(levels.locator("[role=option]:not(.showmore)")).toHaveCount(8);
+  await expect(levels.locator(".showmore")).toHaveText(/^show \d+ more$/);
+  await search.fill("hiro");
+  await expect(page.locator("#results [aria-label=Worlds]")).toHaveCount(1);
+  await page.locator("#scope button").nth(2).click();
+  await expect(page.locator("#results [aria-label=Worlds]")).toHaveCount(0);
+});
+
 test("a search counts objects, blocks by their kind, and settings apart", async ({ page }) => {
   await page.goto("/#ATLANT/3");
   await settle(page);

@@ -157,14 +157,14 @@ function objectRow(h, terms) {
 // A group's heading is for the eye, and its label for a screen reader. The
 // rows past the first few wait behind a row of their own, which the cursor
 // reaches like any other and which leaves the cursor on the first it shows.
-function group(label, items, make, capped = false) {
+function group(label, items, make) {
   const head = el("div", { className: "group" }, el("span", {}, label));
   head.append(el("span", {}, String(items.length)));
   head.setAttribute("aria-hidden", "true");
   const g = el("div", {}, head);
   g.setAttribute("role", "group");
   g.setAttribute("aria-label", label);
-  const shown = capped ? items.slice(0, GROUP_MAX) : items;
+  const shown = items.slice(0, GROUP_MAX);
   for (const item of shown) g.append(make(item));
   if (shown.length < items.length) {
     const more = el("button", {
@@ -197,9 +197,7 @@ function render() {
   const terms = queryTerms(groups);
 
   const places = matchPlaces(state.data, groups, terms, state.li);
-  const worlds = places.filter(
-    (c) => c.world && (scope === "all" || c.world.id === state.lvl.theme),
-  );
+  const worlds = places.filter((c) => c.world && scope !== "level" && inScope(-1, c.world.id));
   const levels = places.filter((c) => c.level && inScope(c.li, c.level.theme));
   const at = cell(q);
   if (at)
@@ -245,7 +243,7 @@ function render() {
   for (const g of [here, ...byWorld.values()]) {
     if (!g.hits.length) continue;
     g.hits.sort((a, b) => a.rank - b.rank);
-    group(g.label, g.hits, (h) => objectRow(h, terms), true);
+    group(g.label, g.hits, (h) => objectRow(h, terms));
   }
 
   const where = scope === "all" ? "" : ` in ${scopeLabel()}`;
