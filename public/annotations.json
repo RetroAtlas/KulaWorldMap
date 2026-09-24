@@ -81,7 +81,7 @@
     "1": {
       "name": "Fire",
       "hazard": true,
-      "note": "Fire on one face of an otherwise normal block, which swells the ball until it burns or reaches cooler ground; a block that is fire all over is a fire block instead."
+      "note": "Fire on one face of an otherwise normal block, which swells the ball until it burns or reaches cooler ground."
     },
     "2": {
       "name": "Ice",
