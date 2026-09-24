@@ -11,7 +11,7 @@ import {
 } from "./data.js";
 import { selectLevel, centreOn, writeHash } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
-import { showCell } from "./detail.js";
+import { showCell, clearDetail } from "./detail.js";
 import { say } from "./a11y.js";
 import { parseQuery, queryTerms } from "./searchquery.js";
 import { spans } from "./searchtext.js";
@@ -81,12 +81,9 @@ const CELL = /^(\d+)\s*,\s*(\d+)\s*,\s*(\d+)$/;
 function goTo(x, y, z) {
   if (z < sliceZ()) setSlice(SIDE - 1 - z);
   centreOn(x, y, z);
-  const key = cellKey(x, y, z);
-  const c = state.idx.cells.get(key);
-  if (c) {
-    state.selected = { ...c, key };
-    showCell(c);
-  }
+  const c = state.idx.cells.get(cellKey(x, y, z));
+  if (c) showCell(c);
+  else clearDetail();
   invalidatePick();
   draw();
   writeHash(true);

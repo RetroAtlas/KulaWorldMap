@@ -59,7 +59,6 @@ cv.addEventListener("pointerup", (e) => {
     if (c && surveying()) {
       place(c, e.altKey);
     } else if (c) {
-      state.selected = { ...c, key: cellKey(c.x, c.y, c.z) };
       showCell(c);
     } else {
       clearDetail();
@@ -298,7 +297,6 @@ addEventListener("keydown", (e) => {
         setSidebar(false);
         break;
       }
-      state.selected = null;
       clearDetail();
       draw();
       break;

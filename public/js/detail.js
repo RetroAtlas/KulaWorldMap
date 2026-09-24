@@ -24,6 +24,7 @@ import {
   markerStats,
 } from "./data.js";
 import { iconFor } from "./icons.js";
+import { draw } from "./render.js";
 
 let stats = null;
 
@@ -69,9 +70,11 @@ const placed = (m) => {
   return `${html}.</p>`;
 };
 
+/** Select a cell, and say in the panel what the game stores on it. */
 export function showCell(c) {
   const l = state.lvl;
   const key = cellKey(c.x, c.y, c.z);
+  state.selected = { ...c, key };
   const records = state.idx.records.get(key) || [];
   const marks = state.idx.markers.get(key) || [];
   if (!stats) stats = markerStats(state.data);
@@ -117,7 +120,10 @@ export function showCell(c) {
   for (const at of box.querySelectorAll(".icon-at"))
     at.replaceWith(iconFor(icons[at.dataset.icon], 26));
   box.hidden = false;
-  box.querySelector(".x").onclick = clearDetail;
+  box.querySelector(".x").onclick = () => {
+    clearDetail();
+    draw();
+  };
 }
 
 export function clearDetail() {
