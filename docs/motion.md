@@ -18,7 +18,7 @@ The routine at `0x80039200` walks every record of kinds 0 to 4, every slot of ea
 | 36 gem | turns by 29, a turn in 2.35 s; no bob |
 | 43 to 47 fruit | turns by 20 (3.4 s a turn); tilts by 150·sin B about the first tangent, 13° either way, with B stepping −66 (1.03 s); bobs by 20·sin C + 10 with C stepping −50 (1.37 s) |
 | 35 hourglass | swings by 2048·sin A + 30 about the second tangent, half a turn either way and back, with A stepping 26, so it goes over twice in 2.63 s; and turns about the normal by −16, a turn in 4.3 s |
-| 32, 33 pills, 34 tablet | flips about the second tangent by 66 (1.03 s a turn) while turning about the normal by 20 (3.4 s) |
+| 32 to 34 pills | flips about the second tangent by 66 (1.03 s a turn) while turning about the normal by 20 (3.4 s) |
 | 42 catalogue star | A steps 13 and the form is the brown model while A is below 2049 and the green one after, so it changes every 2.6 s; it circles its block's centre at radius 100 with C stepping 83 in the brown form (a lap in 0.82 s) and 6 in the green (11 s), turned about the normal by 1024 − C; a third angle B grows while green and is not drawn with |
 | 5 teleporter | turns about the normal by 25 (2.7 s) while its `f7` is 1, on, and stands still off |
 | 7 exit, 26 hidden exit | turns by −20 (3.4 s) while shut, `f7` = 2, and −45 (1.5 s) once open; the last key sets the exit's `f6` to 0, the green model, and `f7` to 1, and gives the hidden exit the `f7` the loader took from it (`0x80038a78`, `0x80035898`) |

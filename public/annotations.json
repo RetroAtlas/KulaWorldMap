@@ -163,7 +163,8 @@
       "note": "Makes every forward move a two-square bounce and a jump three, until the level ends."
     },
     "34": {
-      "note": "Only on the object catalogue level, so nothing in play uses it."
+      "name": "Invincibility pill",
+      "note": "Makes the ball invincible for fourteen seconds, flashing in colours while it lasts: no hazard harms it. Only on the object catalogue level, so nothing in play uses it."
     },
     "35": {
       "name": "Hourglass",

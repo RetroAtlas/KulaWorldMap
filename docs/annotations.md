@@ -2,9 +2,9 @@
 
 [`public/annotations.json`](../public/annotations.json) is what the map says about the things the game leaves numbered: a name, the points a pickup scores, whether a thing is a hazard, a level's best score where the disc holds more than can be collected, and a note for whoever is looking at the map. This file is why each of those is believed, one section per entry under the entry's key, and a unit test fails when an entry has no section here or a section names no entry. The note says what a thing is and does; the reasons stay here.
 
-Most names rest on Syonyx's Roll Away walkthrough (GameFAQs, 2006), which the repo does not carry: the level it first mentions a thing on carries the game's first placement of one kind or type, and usually nothing else new. The points rest on its per-level maximum scores, which the disc reproduces exactly on 193 of the 209 levels it rates and exceeds on the other 16, each of which curates the walkthrough's figure as its `score`; [level-format.md](level-format.md) has the arithmetic. Type 42's rest on the executable instead, since no level it rates holds one. The names that rest on play are the coin tiers' colours, which of the two directional captivators is which, and the acid block. Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page.
+Most names rest on Syonyx's Roll Away walkthrough (GameFAQs, 2006), which the repo does not carry: the level it first mentions a thing on carries the game's first placement of one kind or type, and usually nothing else new. The points rest on its per-level maximum scores, which the disc reproduces exactly on 193 of the 209 levels it rates and exceeds on the other 16, each of which curates the walkthrough's figure as its `score`; [level-format.md](level-format.md) has the arithmetic. Type 42's rest on the executable instead, since no level it rates holds one. The names that rest on play are the coin tiers' colours, which of the two directional captivators is which, the acid block and the invincibility pill. Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page.
 
-An entry marked `hazard` is one that can cost the ball its life, and its section says what shows it. The things that travel share one routine for it: the loader puts every type 50 to 53 and 56 into one table (`0x8003b678`), and once a frame the ball's routine tests the ball against every entry in it (`0x8003d570`, called at `0x8003679c`) and on a hit sets it dying with the cause the game keeps for them (`0x80036814`), the wandering ball's reach being the shorter.
+An entry marked `hazard` is one that can cost the ball its life, and its section says what shows it. The things that travel share one routine for it: the loader puts every type 50 to 53 and 56 into one table (`0x8003b678`), and once a frame the ball's routine tests the ball against every entry in it (`0x8003d570`, called at `0x8003679c`) and on a hit sets it dying with the cause the game keeps for them (`0x80036814`), the wandering ball's reach being the shorter. No hazard harms the ball while the invincibility pill lasts (type 34).
 
 ## Block kinds
 
@@ -118,9 +118,9 @@ The walkthrough's dizzy pill. LEVEL 10 introduces them and carries the game's fi
 
 LEVEL 86 introduces them and carries the game's first; LEVEL 88 has either of two, as the walkthrough says.
 
-### type 34
+### type 34: Invincibility pill
 
-Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use, and nothing names it.
+Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use, and the walkthrough never meets it. The name is play's: taken on OBJ LEVEL, it sets the ball flashing in colours, and while it does nothing harms it, not the spikes, the moving spikes, the stars, the rolling stone, the corkscrew or fire (2026-09-24). The code says the same. The ball's contact walk at `0x80038548` sends it to its case at `0x80038804`, which scores nothing, sets the word at `0x800ba340` to 840 and takes the pill off its face; the loader sets that word to -1 (`0x80035df8`), and the ball's routine counts it down by one a frame back to -1 (`0x8003b2f8`), so the pill lasts 14 s. Every path that sets the ball dying first tests that the word is -1: the laser's beam (`0x8003a960`), fire (`0x8003ab64`, `0x8003abc8`), the acid block (`0x8003acbc`), the spikes (`0x8003b050`), the moving spikes (`0x8003b108`), the things that travel (`0x80036760`) and type 42's brown form (`0x800386d8`).
 
 ### type 35: Hourglass
 
