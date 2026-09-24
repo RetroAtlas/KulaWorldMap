@@ -3,10 +3,10 @@
 // adjacent). Space = AND, comma or the word "or" = OR; a bare "and"/"or" is an
 // operator wherever it sits and never a term.
 
-// "Mudokon state=chisle" -> [["mudokon", "state=chisle"]]; "Slig, Slog" and
-// "Slig or Slog" -> [["slig"], ["slog"]]. Only whitespace-delimited and/or are
-// operators, so substrings like "hand" are untouched; "=" is never split, so
-// field=value stays one term.
+// "Teleporter starts=off" -> [["teleporter", "starts=off"]]; "Coin, Key" and
+// "Coin or Key" -> [["coin"], ["key"]]. Only whitespace-delimited and/or are
+// operators, so substrings like "wandering" are untouched; "=" is never split,
+// so field=value stays one term.
 export function parseQuery(q) {
   return q
     .toLowerCase()
