@@ -46,7 +46,7 @@ const decoded = (m) => {
 
 const label = (m, i) => {
   const name = fieldName(m, i);
-  return `${fieldKey(i)}${name ? ` <span class="field">${name}</span>` : ""}`;
+  return `${fieldKey(i)}${name ? ` <span class="field-name">${name}</span>` : ""}`;
 };
 
 const fields = (m) => {
