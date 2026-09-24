@@ -109,6 +109,12 @@ export function markersOf(r) {
   return out;
 }
 
+const SETTINGS_KIND = 9;
+/** Whether a marker is a thing on a face, a block that is its own thing, or
+    the level's settings, which are neither. */
+export const markerGroup = (m) =>
+  m.face !== null ? "object" : m.kind === SETTINGS_KIND ? "settings" : "block";
+
 /** Among a cell's markers, the one for its block's own kind, or null where the kind is only a block. */
 export const ownMarker = (marks, kind) =>
   marks.find((m) => m.face === null && m.kind === kind) ?? null;

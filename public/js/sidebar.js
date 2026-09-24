@@ -5,6 +5,7 @@ import {
   worldName,
   levelTitle,
   levelMarkers,
+  markerGroup,
   markerLabel,
   markerColour,
   markerModel,
@@ -84,6 +85,14 @@ function markLevel() {
   }
 }
 
+// What stands on the faces is listed apart from the blocks that are a thing
+// of their own, and the level's settings, which are neither, come last.
+const GROUPS = [
+  ["object", "Objects"],
+  ["block", "Blocks"],
+  ["settings", null],
+];
+
 export function buildKinds() {
   const box = $("kinds");
   box.textContent = "";
@@ -98,31 +107,37 @@ export function buildKinds() {
     return;
   }
   const keys = [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a));
-  for (const k of keys) {
-    const m = first.get(k);
-    const model = markerModel(m, state.lvl);
-    const b = el(
-      "button",
-      { className: "kind", type: "button" },
-      model
-        ? iconFor(model)
-        : el("span", { className: "dot", style: `background:${markerColour(m)}` }),
-      el("span", {}, markerLabel(m)),
-      el("span", { className: "n" }, String(counts.get(k))),
-    );
-    b.setAttribute("aria-pressed", state.hiddenKinds.has(k) ? "false" : "true");
-    b.onclick = (e) => {
-      if (e.shiftKey) {
-        const only = state.hiddenKinds.size === keys.length - 1 && !state.hiddenKinds.has(k);
-        state.hiddenKinds = new Set(only ? [] : keys.filter((x) => x !== k));
-      } else if (state.hiddenKinds.has(k)) state.hiddenKinds.delete(k);
-      else state.hiddenKinds.add(k);
-      buildKinds();
-      invalidatePick();
-      draw();
-    };
-    box.append(b);
+  for (const [group, title] of GROUPS) {
+    const mine = keys.filter((k) => markerGroup(first.get(k)) === group);
+    if (!mine.length) continue;
+    box.append(title ? el("h3", { textContent: title }) : el("hr"));
+    for (const k of mine) box.append(kindButton(k, first.get(k), counts.get(k), keys));
   }
+}
+
+function kindButton(k, m, n, keys) {
+  const model = markerModel(m, state.lvl);
+  const b = el(
+    "button",
+    { className: "kind", type: "button" },
+    model
+      ? iconFor(model)
+      : el("span", { className: "dot", style: `background:${markerColour(m)}` }),
+    el("span", {}, markerLabel(m)),
+    el("span", { className: "n" }, String(n)),
+  );
+  b.setAttribute("aria-pressed", state.hiddenKinds.has(k) ? "false" : "true");
+  b.onclick = (e) => {
+    if (e.shiftKey) {
+      const only = state.hiddenKinds.size === keys.length - 1 && !state.hiddenKinds.has(k);
+      state.hiddenKinds = new Set(only ? [] : keys.filter((x) => x !== k));
+    } else if (state.hiddenKinds.has(k)) state.hiddenKinds.delete(k);
+    else state.hiddenKinds.add(k);
+    buildKinds();
+    invalidatePick();
+    draw();
+  };
+  return b;
 }
 
 export function wireDisplay() {

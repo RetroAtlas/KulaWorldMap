@@ -472,6 +472,32 @@ test("arriving somewhere is spoken, and names the map with it", async ({ page })
   await expect(page.locator("#say")).toContainText("LEVEL 2");
 });
 
+test("the legend lists the objects the chip counts, the blocks, and the settings apart", async ({
+  page,
+}) => {
+  await page.goto("/#ATLANT/3");
+  await settle(page);
+  await expect(page.locator("#chip")).toContainText("19 blocks");
+  await expect(page.locator("#chip")).toContainText("10 objects");
+  const groups = await page.evaluate(() => {
+    const out = [];
+    for (const c of document.getElementById("kinds").children) {
+      if (c.tagName !== "BUTTON")
+        out.push({ head: c.tagName === "H3" ? c.textContent : "", rows: [] });
+      else
+        out
+          .at(-1)
+          .rows.push([c.children[1].textContent, Number(c.querySelector(".n").textContent)]);
+    }
+    return out;
+  });
+  const sum = (g) => g.rows.reduce((n, [, k]) => n + k, 0);
+  expect(groups.map((g) => g.head)).toEqual(["Objects", "Blocks", ""]);
+  expect(sum(groups[0])).toBe(10);
+  expect(sum(groups[1])).toBe(9);
+  expect(groups[2].rows).toEqual([["Level settings", 1]]);
+});
+
 test("a panel is a dialog that a click inside does not dismiss", async ({ page }) => {
   await page.goto("/");
   await settle(page);
