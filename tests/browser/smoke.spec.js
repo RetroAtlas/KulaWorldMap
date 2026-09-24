@@ -322,6 +322,7 @@ test("search answers a number as a whole word, and says when nothing matches", a
   await search.fill("level 45");
   await expect(page.locator("#results [role=option]")).toHaveCount(1);
   await expect(page.locator("#results [role=option]").first()).toContainText("LEVEL 45");
+  await expect(page.locator("#results [role=option] mark")).toHaveText(["LEVEL", "45"]);
   await expect(search).toHaveAttribute("aria-expanded", "true");
   await expect(search).toHaveAttribute("aria-activedescendant", "hit0");
 

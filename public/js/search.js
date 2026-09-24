@@ -14,7 +14,7 @@ import { draw, invalidatePick } from "./render.js";
 import { showCell } from "./detail.js";
 import { say } from "./a11y.js";
 import { parseQuery, queryTerms } from "./searchquery.js";
-import { whole } from "./searchtext.js";
+import { whole, spans } from "./searchtext.js";
 import { matchPlaces } from "./placesearch.js";
 import { matchObjects } from "./objectsearch.js";
 import { setSidebar, sidebarOverlays } from "./sidebar.js";
@@ -61,23 +61,10 @@ function scopeBar() {
   }
 }
 
-// Every occurrence of every term, overlaps merged, as text and <mark> nodes.
 function marked(text, terms) {
-  const lower = text.toLowerCase();
-  const ranges = [];
-  for (const term of terms)
-    for (let i = lower.indexOf(term); i >= 0; i = lower.indexOf(term, i + term.length))
-      ranges.push([i, i + term.length]);
-  ranges.sort((a, b) => a[0] - b[0]);
-  const merged = [];
-  for (const [s, e] of ranges) {
-    const last = merged[merged.length - 1];
-    if (last && s <= last[1]) last[1] = Math.max(last[1], e);
-    else merged.push([s, e]);
-  }
   const nodes = [];
   let pos = 0;
-  for (const [s, e] of merged) {
+  for (const [s, e] of spans(text, terms)) {
     if (s > pos) nodes.push(text.slice(pos, s));
     nodes.push(el("mark", { textContent: text.slice(s, e) }));
     pos = e;
@@ -217,7 +204,7 @@ function render() {
       option(
         `w:${c.world.id}`,
         () => selectLevel(c.world.levels[0]),
-        c.name,
+        ...marked(c.name, terms),
         hint(`${c.world.levels.length} levels`),
       ),
     );
@@ -226,7 +213,7 @@ function render() {
       option(
         `l:${c.li}`,
         () => selectLevel(c.li),
-        c.name,
+        ...marked(c.name, terms),
         hint(`${worldName(c.level.theme)} · ${counted(blockCount(c.level), "block")}`),
       ),
     );

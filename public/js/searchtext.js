@@ -22,3 +22,26 @@ export function indexed(words) {
 
 export const answers = (c) => (term) =>
   whole(term) ? c.tokens.includes(term) : c.text.includes(term);
+
+/** Where the terms fall in a text, as sorted spans with overlaps merged: a
+    whole term only where it is a whole word or the value of a name=value
+    word, so a number is not marked inside a cell's coordinates. */
+export function spans(text, terms) {
+  const found = [];
+  for (const { 0: word, index: at } of text.toLowerCase().matchAll(/\S+/g))
+    for (const t of terms) {
+      if (!whole(t))
+        for (let i = word.indexOf(t); i >= 0; i = word.indexOf(t, i + t.length))
+          found.push([at + i, at + i + t.length]);
+      else if (word === t) found.push([at, at + t.length]);
+      else if (word.endsWith(`=${t}`)) found.push([at + word.length - t.length, at + word.length]);
+    }
+  found.sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  for (const [s, e] of found) {
+    const last = merged.at(-1);
+    if (last && s <= last[1]) last[1] = Math.max(last[1], e);
+    else merged.push([s, e]);
+  }
+  return merged;
+}
