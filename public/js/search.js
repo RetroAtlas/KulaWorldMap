@@ -86,12 +86,7 @@ function marked(text, terms) {
   return nodes;
 }
 
-const cell = (q) => {
-  const m = /^(\d+)\s*,\s*(\d+)\s*,\s*(\d+)$/.exec(q);
-  if (!m) return null;
-  const at = m.slice(1).map(Number);
-  return at.every(inLattice) ? at : null;
-};
+const CELL = /^(\d+)\s*,\s*(\d+)\s*,\s*(\d+)$/;
 
 // A find is selected as a click would select it, so the outline and the
 // panel say which block the view was centred on; one above the slice's
@@ -193,22 +188,30 @@ function render() {
     show(false);
     return;
   }
+  // A cell is answered by itself alone: read as a query, its commas would
+  // ask for anything numbered like any of its three.
+  const cell = CELL.exec(q)?.slice(1).map(Number);
+  if (cell) {
+    if (cell.every(inLattice))
+      group("Cell", [cell], ([x, y, z]) =>
+        option(
+          `c:${x},${y},${z}`,
+          () => goTo(x, y, z),
+          `${x}, ${y}, ${z}`,
+          hint("centre the view here"),
+        ),
+      );
+    else found.append("Nothing matches that.");
+    show(true);
+    mark();
+    return;
+  }
   const groups = parseQuery(q);
   const terms = queryTerms(groups);
 
   const places = matchPlaces(state.data, groups, terms, state.li);
   const worlds = places.filter((c) => c.world && scope !== "level" && inScope(-1, c.world.id));
   const levels = places.filter((c) => c.level && inScope(c.li, c.level.theme));
-  const at = cell(q);
-  if (at)
-    group("Cell", [at], ([x, y, z]) =>
-      option(
-        `c:${x},${y},${z}`,
-        () => goTo(x, y, z),
-        `${x}, ${y}, ${z}`,
-        hint("centre the view here"),
-      ),
-    );
   if (worlds.length)
     group("Worlds", worlds, (c) =>
       option(
@@ -250,7 +253,7 @@ function render() {
   found.append(
     hits.length
       ? `${tally(hits)}${where}`
-      : at || worlds.length || levels.length
+      : worlds.length || levels.length
         ? `no objects, blocks or settings${where}`
         : `Nothing matches that${where}.`,
     ...widen(),
@@ -299,7 +302,8 @@ function widen() {
 // and each row is an option the cursor can name.
 function show(shown) {
   const listed = shown && out.childElementCount > 0;
-  bar.hidden = found.hidden = !shown;
+  bar.hidden = !shown;
+  found.hidden = !shown || !found.textContent;
   out.hidden = !listed;
   if (shown) scopeBar();
   box.setAttribute("aria-expanded", String(listed));

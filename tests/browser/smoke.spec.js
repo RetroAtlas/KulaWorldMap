@@ -336,6 +336,21 @@ test("search answers a number as a whole word, and says when nothing matches", a
   await expect(search).toHaveAttribute("aria-expanded", "false");
 });
 
+test("a cell is answered by itself alone", async ({ page }) => {
+  await page.goto("/#HIRO/11");
+  await settle(page);
+  const search = page.locator("#search");
+  await search.fill("17,12,17");
+  await expect(page.locator("#results [role=group]")).toHaveCount(1);
+  await expect(page.locator("#results [role=option]")).toHaveText(
+    "17, 12, 17 centre the view here",
+  );
+  await expect(page.locator("#found")).toBeHidden();
+  await search.fill("40,1,1");
+  await expect(page.locator("#results")).toBeHidden();
+  await expect(page.locator("#found")).toHaveText("Nothing matches that.");
+});
+
 test("the places are eight to a group like the objects, and keep to the scope", async ({
   page,
 }) => {
