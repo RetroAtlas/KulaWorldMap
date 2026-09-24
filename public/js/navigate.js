@@ -5,7 +5,8 @@ import {
   worldName,
   levelNote,
   levelTitle,
-  levelMarkers,
+  objectCount,
+  counted,
   levelPoints,
   levelScore,
 } from "./data.js";
@@ -100,8 +101,8 @@ export function chip() {
     `<span class="sep">·</span>${worldName(l.theme)}`,
     `<span class="sep">·</span>${l.placed} blocks`,
   ];
-  const n = levelMarkers(l).length;
-  if (n) parts.push(`<span class="sep">·</span>${n} objects`);
+  const n = objectCount(l);
+  if (n) parts.push(`<span class="sep">·</span>${counted(n, "object")}`);
   const points = levelPoints(l);
   const score = levelScore(l);
   if (score !== null) parts.push(`<span class="sep">·</span>${score} points`);

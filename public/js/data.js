@@ -307,6 +307,11 @@ export function index(l) {
 
 export const levelMarkers = (l) => l.records.flatMap(markersOf);
 
+/** How many things stand on a level's faces. */
+export const objectCount = (l) => l.records.reduce((n, r) => n + r.on.length, 0);
+/** A count with its noun, singular for one. */
+export const counted = (n, noun) => `${n} ${noun}${n === 1 ? "" : "s"}`;
+
 // Every world pack keeps its three bonus levels in the same slots, and a bonus
 // level scores each block rolled over rather than an exit reached.
 const BONUS_SLOTS = [15, 16, 17];
