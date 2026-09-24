@@ -14,9 +14,9 @@ import { draw, invalidatePick } from "./render.js";
 import { showCell } from "./detail.js";
 import { say } from "./a11y.js";
 import { parseQuery, queryTerms } from "./searchquery.js";
-import { whole, spans } from "./searchtext.js";
+import { spans } from "./searchtext.js";
 import { matchPlaces } from "./placesearch.js";
-import { matchObjects } from "./objectsearch.js";
+import { matchObjects, rowOf } from "./objectsearch.js";
 import { setSidebar, sidebarOverlays } from "./sidebar.js";
 import { setSlice } from "./interaction.js";
 
@@ -95,7 +95,7 @@ function goTo(x, y, z) {
 function jump(h) {
   if (h.li !== state.li) selectLevel(h.li);
   goTo(h.record.x, h.record.y, h.record.z);
-  say(`${h.name}, ${h.where.replace(" · ", ", ")}, ${levelTitle(h.level)}`);
+  say([h.name, h.face, h.cell, levelTitle(h.level)].filter(Boolean).join(", "));
 }
 
 // A row is an option the cursor can name. Choosing one leaves the list as it
@@ -117,14 +117,8 @@ function option(key, go, ...kids) {
 
 const hint = (text) => [" ", el("span", { className: "hint", textContent: text })];
 
-// The index matched every pair but the row shows only the telling ones; a
-// hit on any other would look inexplicable, so what matched is appended.
 function objectRow(h, terms) {
-  const shown = [h.where, ...h.shown];
-  const seen = `${h.name} ${shown.join(" ")}`.toLowerCase();
-  const missing = terms.filter((t) => !seen.includes(t));
-  const matched = h.more.filter((s) => missing.some((t) => (whole(t) ? s === t : s.includes(t))));
-  const ex = [...shown, ...matched].join(" · ");
+  const ex = rowOf(h, terms).join(" · ");
   return option(
     `${h.li}:${h.key}:${h.marker.face}:${h.marker.id}`,
     () => jump(h),

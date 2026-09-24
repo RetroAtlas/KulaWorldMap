@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mapData, annotations } from "./fixtures.js";
 import { setAnnotations, markersOf } from "../../public/js/data.js";
 import { parseQuery, queryTerms } from "../../public/js/searchquery.js";
-import { matchObjects, objectCandidates } from "../../public/js/objectsearch.js";
+import { matchObjects, objectCandidates, rowOf } from "../../public/js/objectsearch.js";
 
 setAnnotations(annotations);
 
@@ -62,11 +62,36 @@ test("a record that is its own thing answers to its kind", () => {
   const hits = find("kind 6");
   assert.ok(hits.length > 0);
   assert.ok(hits.every((c) => c.marker.face === null && c.marker.kind === 6));
-  assert.ok(hits.every((c) => !c.where.includes("·")));
+  assert.ok(hits.every((c) => c.face === null));
 });
 
 test("the name's rank: exact, prefix, substring, then a match outside the name", () => {
   for (const c of find("coin")) assert.equal(c.rank, c.name === "Coin" ? 0 : 2);
   for (const c of find("bronze")) assert.equal(c.rank, 1);
   for (const c of find("starts=off")) assert.equal(c.rank, 3);
+});
+
+const rowFor = (q) => {
+  const groups = parseQuery(q);
+  const terms = queryTerms(groups);
+  return matchObjects(mapData, groups, terms).map((h) => rowOf(h, terms));
+};
+
+test("a row names the face and cell, and nothing more where the name says why", () => {
+  for (const row of rowFor("key")) {
+    assert.match(row[0], /^(top|[+-][xy] side|underside)$/);
+    assert.match(row[1], /^\d+,\d+,\d+$/);
+    assert.ok(!row.some((s) => s.startsWith("type=")));
+  }
+});
+
+test("a bare number says on every row which type or kind it named", () => {
+  for (const row of rowFor("31")) assert.ok(row.includes("type=31"), row.join(" "));
+  for (const row of rowFor("kind 6")) assert.ok(row.includes("kind=6"), row.join(" "));
+});
+
+test("a raw pair a term named joins the row, once", () => {
+  for (const row of rowFor("f3=2")) assert.equal(row.filter((s) => s === "f3=2").length, 1);
+  for (const row of rowFor("starts=off"))
+    assert.equal(row.filter((s) => s === "starts=off").length, 1);
 });

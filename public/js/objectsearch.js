@@ -17,7 +17,7 @@ import {
   VALUE_KEY,
 } from "./data.js";
 import { matchesBy, rankFor } from "./searchquery.js";
-import { indexed, answers } from "./searchtext.js";
+import { indexed, answers, whole } from "./searchtext.js";
 
 // The pairs a row always shows are what tells two of a thing apart in play;
 // the rest show only when a term matched them, the number of the type first,
@@ -65,7 +65,8 @@ function candidate(li, l, r, m) {
     marker: m,
     key: cellKey(r.x, r.y, r.z),
     name,
-    where: face ? `${face} · ${cell}` : cell,
+    face,
+    cell,
     shown,
     more,
     ...indexed(words),
@@ -88,6 +89,24 @@ export function objectCandidates(data) {
   let rows = cache.get(data);
   if (!rows) cache.set(data, (rows = candidates(data)));
   return rows;
+}
+
+// A bare number is looked for as a type or a kind, so that is the pair that
+// says why it matched.
+const NUMBERED = /^(type|kind)=/;
+const explains = (pair, t) =>
+  !whole(t)
+    ? pair.includes(t)
+    : pair === t || (/^\d+$/.test(t) && NUMBERED.test(pair) && pair.endsWith(`=${t}`));
+
+/** What a find's row says after its name: the face and cell it stands on,
+    the pairs that tell it apart, and any other pair a term matched that
+    nothing else on the row accounts for. */
+export function rowOf(h, terms) {
+  const own = answers(indexed([h.name, h.face, ...h.shown]));
+  const missing = terms.filter((t) => !own(t));
+  const matched = h.more.filter((s) => missing.some((t) => explains(s, t)));
+  return [h.face, h.cell, ...h.shown, ...matched].filter(Boolean);
 }
 
 /** Every object a query matches, in the disc's order, each with its name's rank. */
