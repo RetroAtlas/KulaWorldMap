@@ -5,7 +5,7 @@
 // questions at the game's own moments. A moving platform runs its rail the
 // same way. The wandering ball draws its way by dice, so its walk here is one
 // the game could take and not the one it will.
-import { FACE_NORMAL, OFF_LATTICE, kindMotion, platformAxis } from "./data.js";
+import { FACE_NORMAL, OFF_LATTICE, beams, kindMotion, platformAxis } from "./data.js";
 import { cellKey } from "./state.js";
 import { blockPhase } from "./motion.js";
 
@@ -22,7 +22,7 @@ const PLATFORM_KIND = 5;
 const CRUMBLING_KIND = 6;
 const VANISHING_KIND = 7;
 const BEAM_KIND = 8;
-const BETWEEN = -2; // what the game writes into the cells a beam crosses
+const BETWEEN = -2; // what the game writes into the cells a lit beam crosses, every frame
 const FIRST_RECORD = 5;
 const STYLES = 5;
 // Things standing on a face that a captivator may still cross: the start,
@@ -76,12 +76,9 @@ export function probe(l) {
   for (let i = 0; i < l.cells.length; i += 4) {
     cells.set(cellKey(l.cells[i], l.cells[i + 1], l.cells[i + 2]), l.cells[i + 3]);
   }
-  for (const r of l.records) {
-    if (r.kind !== BEAM_KIND) continue;
-    const a = r.f.slice(2, 5),
-      b = r.f.slice(5, 8);
-    const axis = [0, 1, 2].find((i) => a[i] !== b[i]);
+  for (const { a, b, axis, lit } of beams(l)) {
     for (const end of [a, b]) if (!cells.has(cellKey(...end))) cells.set(cellKey(...end), 0);
+    if (!lit) continue;
     for (let t = Math.min(a[axis], b[axis]) + 1; t < Math.max(a[axis], b[axis]); t++) {
       const cell = [...a];
       cell[axis] = t;

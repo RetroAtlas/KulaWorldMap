@@ -65,6 +65,30 @@ test("the lattice answers as the game reads it: a coin blocks, fire and a star d
   assert.equal(p.free([0, 10, 17], 0, 0), false, "and nothing to stand over");
 });
 
+test("a lit beam's cells are filled, and a dark one's are empty, as the game writes them", () => {
+  const beam = (y, lit) => ({
+    x: 10,
+    y,
+    z: 17,
+    kind: 8,
+    type: 1,
+    f: [1, lit, 10, y, 17, 14, y, 17, -1, -1, -1],
+  });
+  const l = level(
+    [
+      [10, 10, 17],
+      [14, 10, 17],
+      [10, 12, 17],
+      [14, 12, 17],
+    ],
+    [beam(10, 1), beam(12, 0)],
+  );
+  const p = probe(l);
+  assert.equal(p.empty([12, 10, 17], 0), false);
+  assert.equal(p.empty([12, 12, 17], 0), true);
+  assert.equal(p.empty([14, 12, 17], 0), false);
+});
+
 test("a slow star walks its corridor and turns back at each end", () => {
   const l = level(row(10, 15, 10, 17), [{ x: 12, y: 10, z: 17, kind: 0, on: [object(0, 50, 4)] }]);
   const idx = index(l);

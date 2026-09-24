@@ -62,6 +62,10 @@ CHECKS = [
     (0x800518ec, "lui $a2, 0xe100", "in a draw mode set for the purpose"),
     (0x80051b2c, "lui $at, 0x2a00", "each line is two flat quads blended with what is behind"),
     (0x80051be4, "lui $at, 0x4200", "and a flat line down the middle, blended the same way"),
+    (0x80051c44, "bne $fp, $zero, 0x80051c14", "every frame a dark beam's cells"),
+    (0x80051c38, "addiu $t4, $zero, -1", "are written empty"),
+    (0x80051c9c, "beq $fp, $zero, 0x80051c6c", "and a lit one's"),
+    (0x80051c90, "addiu $t4, $zero, -2", "are written as beam"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
