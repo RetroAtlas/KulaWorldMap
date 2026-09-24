@@ -31,7 +31,7 @@ Read [docs/tgi.md](docs/tgi.md) before touching `tools/kula_tgi.py`, `tools/kula
 
 ## Naming
 
-A level is titled by the number the game's pause screen gives it, which the build ships as `shown` wherever the engine computes one, and where the disc's own name differs the viewer says so beside the title. **The pack path plus the index inside it is the key**, since a name is not unique. World ids are the disc's directory names, which is all the game has; a friendlier name is a curated override in `annotations.json` under `worlds`, with a source outside the disc, and the viewer falls back to the id rather than inventing one.
+A level is titled by the number the game's pause screen gives it, which the build ships as `shown` wherever the engine computes one, and where the disc's own name differs the level's note says so. **The pack path plus the index inside it is the key**, since a name is not unique. World ids are the disc's directory names, which is all the game has; a friendlier name is a curated override in `annotations.json` under `worlds`, with a source outside the disc, and the viewer falls back to the id rather than inventing one.
 
 ## Code comments
 

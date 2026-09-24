@@ -46,7 +46,15 @@ export async function loadJson(url, fallback) {
 export const worldName = (id) => ann.worlds[id]?.name || id;
 export const worldNote = (id) => ann.worlds[id]?.note || "";
 
-export const levelNote = (l) => ann.levels[`${l.pack}#${l.index}`]?.note || "";
+// The game never shows the name the disc files a numbered level under, so
+// where it differs from the number shown it is a curiosity for the note.
+export const levelNote = (l) =>
+  [
+    levelTitle(l) !== l.name ? `On the disc this level is named ${l.name}.` : "",
+    ann.levels[`${l.pack}#${l.index}`]?.note,
+  ]
+    .filter(Boolean)
+    .join(" ");
 /** The maximum a level can score where that is less than everything it holds, else null. */
 export const levelScore = (l) => ann.levels[`${l.pack}#${l.index}`]?.score ?? null;
 // The game numbers the levels it shows a number for itself rather than reading

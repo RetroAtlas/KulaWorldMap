@@ -109,7 +109,6 @@ export function chip() {
   if (l.camera?.time !== undefined)
     parts.push(`<span class="sep">·</span><span class="t">time ${l.camera.time}</span>`);
   if (sliceZ() > l.min[2]) parts.push(`<span class="sep">·</span>sliced to z\u2265${sliceZ()}`);
-  if (levelTitle(l) !== l.name) parts.push(`<span class="sep">·</span>named ${l.name} on the disc`);
   if (score !== null) parts.push(`<span class="sep">·</span>${points} points on the disc`);
   const note = levelNote(l);
   if (note) parts.push(`<div class="note">${note}</div>`);
