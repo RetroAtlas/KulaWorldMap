@@ -40,7 +40,7 @@ LEVEL 76 introduces them in the walkthrough and carries the game's first kind 7.
 
 ### kind 8: Laser
 
-A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 123 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, and the slot after its own holds its circuit: the colour of the beam, and of the switch and teleporter that share it. At load the engine's routine at `0x80035a70` writes a plain block into the lattice at both ends and marks every cell between as beam, which is why 64 of the 246 ends are cells the level file leaves empty and the game stands a block on anyway. That a beam drawn broken starts switched off is the record's own flag, which agrees with the switches of its colour on every level ([level-format.md](level-format.md)).
+A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 123 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, and the slot after its own holds its circuit: the colour of the beam, and of the switch and teleporter that share it. At load the engine's routine at `0x80035a70` writes a plain block into the lattice at both ends and marks every cell between as beam, which is why 64 of the 246 ends are cells the level file leaves empty and the game stands a block on anyway. That a beam drawn broken starts switched off is the record's own flag, which agrees with the switches of its colour on every level ([level-format.md](level-format.md)). The walkthrough calls lasers deadly to touch, and in play a beam burns the ball the moment it reaches it (2026-09-24).
 
 ### kind 9: Level settings
 
@@ -166,7 +166,7 @@ LEVEL 132 sends the ball through a gap between twelve of them as they move aroun
 
 ### type 51: Rolling stone
 
-Drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise.
+Drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise. Touching it captures the ball, the game's word for a captivator costing the ball its life (play, 2026-09-24).
 
 ### type 52: Captivator
 
@@ -174,11 +174,11 @@ The game's first are LEVEL 22's seven, which the walkthrough says glide in front
 
 ### type 53: Captivator, wandering
 
-LEVEL 84 carries four where the walkthrough says to watch their shaking to tell which way they will go. It has no direction field.
+LEVEL 84 carries four where the walkthrough says to watch their shaking to tell which way they will go. It has no direction field. Touching it captures the ball, as the rolling stone does (play, 2026-09-24).
 
 ### type 56: Captivator, bouncing
 
-LEVEL 45 carries six where the walkthrough says to roll under them when raised, and LEVEL 122's go up in sequence, which is what the four-valued field reads as.
+LEVEL 45 carries six where the walkthrough says to roll under them when raised, and LEVEL 122's go up in sequence, which is what the four-valued field reads as. Touching it pops the ball (play, 2026-09-24).
 
 ## Levels
 

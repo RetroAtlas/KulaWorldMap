@@ -36,7 +36,7 @@
     },
     "8": {
       "name": "Laser",
-      "note": "A laser beam between two blocks. Its colour is its circuit: a switch of that colour turns it on and off, with the teleporters of the same colour, and a beam drawn broken starts switched off. The game puts a block at each end as the level loads, so an end can stand where the level itself has no block."
+      "note": "A laser beam between two blocks that burns the ball on touch. Its colour is its circuit: a switch of that colour turns it on and off, with the teleporters of the same colour, and a beam drawn broken starts switched off. The game puts a block at each end as the level loads, even where the level has none."
     },
     "9": {
       "name": "Level settings",
@@ -244,7 +244,7 @@
     "51": {
       "name": "Rolling stone",
       "facing": "f5",
-      "note": "A grey cylinder that rolls slowly round a set course and can be jumped over."
+      "note": "A grey cylinder that rolls slowly round a set course and captures the ball on touch; it can be jumped over."
     },
     "52": {
       "name": "Captivator",
@@ -253,11 +253,11 @@
     },
     "53": {
       "name": "Captivator, wandering",
-      "note": "A blue hexagonal ball that shakes, then moves one square in a random direction; the way it shakes gives away where it is going."
+      "note": "A blue hexagonal ball that captures yours on touch: it shakes, then moves one square in a random direction, and the way it shakes gives away where it is going."
     },
     "56": {
       "name": "Captivator, bouncing",
-      "note": "A corkscrew that bounces up and down: roll under it when it is up, and jump it when it is down."
+      "note": "A corkscrew that bounces up and down and pops the ball on touch: roll under it when it is up, and jump it when it is down."
     }
   },
   "levels": {
