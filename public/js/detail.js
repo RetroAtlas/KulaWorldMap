@@ -13,7 +13,7 @@ import {
   markerPoints,
   markerFacing,
   markerState,
-  markerNumber,
+  fieldLabel,
   markerModel,
   markerStats,
 } from "./data.js";
@@ -69,11 +69,9 @@ export function showCell(c) {
     if (facing !== null) html += row("facing", DIRECTION_NAME[facing]);
     const started = markerState(m);
     if (started !== null) html += row("starts", started);
-    const number = markerNumber(m);
-    if (number !== null) html += row("pickup number", number);
     html += STORED;
     m.f.forEach((v, i) => {
-      if (v !== -1) html += row(`f${i + 5}`, v);
+      if (v !== -1) html += row(fieldLabel(m, i), v);
     });
     if (m.v !== undefined && m.v !== -1) html += row("v", m.v);
     const dead = m.f.filter((v) => v === -1).length;

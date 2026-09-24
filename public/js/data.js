@@ -150,9 +150,12 @@ export const markerFacing = (m) => {
 };
 // The field that numbers a level's pickups, set on the pickup types and no other.
 const NUMBER_FIELD = 3;
-/** A pickup's number within its level, or null for anything unnumbered. */
+/** The number the disc gives a pickup within its level, or null for anything unnumbered. */
 export const markerNumber = (m) =>
   m.face === null || m.f[NUMBER_FIELD] === -1 ? null : m.f[NUMBER_FIELD];
+/** How the panel labels the raw field at index `i` of a marker's fields. */
+export const fieldLabel = (m, i) =>
+  i === NUMBER_FIELD && markerNumber(m) !== null ? `pickup number (f${i + 5})` : `f${i + 5}`;
 // How the game writes a switched device's starting state.
 const STATE_ON = 1;
 const STATE_OFF = 2;
