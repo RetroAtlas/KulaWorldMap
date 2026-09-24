@@ -28,13 +28,12 @@ const GROUP_MAX = 8;
 
 // all | world | level, relative to the level in hand
 let scope = "all";
-let expanded = new Set();
-let rows = [];
 let cursor = -1;
 // The row the cursor is on, by what it names rather than by its place in
-// the list, so it is found again when a change of level lays the list out
-// round the new one.
+// the list, so it is found again when the list grows under it.
 let current = null;
+
+const options = () => [...out.querySelectorAll("[role=option]")];
 
 const SCOPES = [
   ["all", () => "All"],
@@ -116,25 +115,20 @@ function jump(h) {
   say(`${h.name}, ${h.where.replace(" · ", ", ")}, ${levelTitle(h.level)}`);
 }
 
-// A row is an option the cursor can name; choosing one keeps the list, so
-// the next can be chosen after it, and gives the keys back to the map.
+// A row is an option the cursor can name. Choosing one leaves the list as it
+// was laid out, so the next row down is the next find wherever the view has
+// gone, and gives the keys back to the map.
 function option(key, go, ...kids) {
   const b = el("button", { type: "button" }, ...kids);
   b.setAttribute("role", "option");
   b.dataset.key = key;
   b.onclick = () => {
     current = key;
-    const li = state.li;
     go();
-    // A change of level scrolls the sidebar to the level's button, which
-    // sits under the list; the list, laid out again round the new level with
-    // the chosen row at its head, is what the eye is on.
-    if (state.li !== li) box.scrollIntoView({ block: "nearest" });
     mark();
     box.blur();
     if (sidebarOverlays()) setSidebar(false);
   };
-  rows.push(b);
   return b;
 }
 
@@ -159,7 +153,7 @@ function objectRow(h, terms) {
   );
 }
 
-function group(label, items, make, key) {
+function group(label, items, make, capped = false) {
   const g = el(
     "div",
     {},
@@ -167,18 +161,18 @@ function group(label, items, make, key) {
   );
   g.setAttribute("role", "group");
   g.setAttribute("aria-label", label);
-  const all = key === undefined || expanded.has(key);
-  for (const item of all ? items : items.slice(0, GROUP_MAX)) g.append(make(item));
-  if (!all && items.length > GROUP_MAX) {
-    const rest = items.length - GROUP_MAX;
+  const shown = capped ? items.slice(0, GROUP_MAX) : items;
+  for (const item of shown) g.append(make(item));
+  if (shown.length < items.length) {
     const more = el("button", {
       className: "showmore",
       type: "button",
-      textContent: `show ${rest} more`,
+      textContent: `show ${items.length - shown.length} more`,
     });
     more.onclick = () => {
-      expanded.add(key);
-      render();
+      for (const item of items.slice(shown.length)) g.insertBefore(make(item), more);
+      more.remove();
+      mark();
     };
     g.append(more);
   }
@@ -187,7 +181,6 @@ function group(label, items, make, key) {
 
 function render() {
   out.textContent = "";
-  rows = [];
   const q = box.value.trim();
   if (!q || !state.lvl) {
     show(false);
@@ -245,7 +238,7 @@ function render() {
   for (const g of [here, ...byWorld.values()]) {
     if (!g.hits.length) continue;
     g.hits.sort((a, b) => a.rank - b.rank);
-    group(g.label, g.hits, (h) => objectRow(h, terms), g.key);
+    group(g.label, g.hits, (h) => objectRow(h, terms), true);
   }
 
   const found = at || worlds.length || levels.length;
@@ -315,8 +308,9 @@ function show(shown) {
 }
 
 function mark() {
-  cursor = rows.findIndex((b) => b.dataset.key === current);
-  rows.forEach((b, i) => {
+  const list = options();
+  cursor = list.findIndex((b) => b.dataset.key === current);
+  list.forEach((b, i) => {
     b.id = `hit${i}`;
     b.setAttribute("aria-selected", String(i === cursor));
   });
@@ -325,19 +319,18 @@ function mark() {
     return;
   }
   box.setAttribute("aria-activedescendant", `hit${cursor}`);
-  rows[cursor].scrollIntoView({ block: "nearest" });
+  list[cursor].scrollIntoView({ block: "nearest" });
 }
 
 function moveTo(i) {
-  current = rows[i].dataset.key;
+  current = options()[i].dataset.key;
   mark();
 }
 
 function search() {
-  expanded = new Set();
   current = null;
   render();
-  if (rows.length) moveTo(0);
+  if (options().length) moveTo(0);
 }
 
 const clear = () => {
@@ -354,23 +347,24 @@ box.addEventListener("keydown", (e) => {
     clear();
     return;
   }
-  if (!rows.length) return;
+  const list = options();
+  if (!list.length) return;
   if (e.key === "ArrowDown") {
-    moveTo((cursor + 1) % rows.length);
+    moveTo((cursor + 1) % list.length);
     e.preventDefault();
   }
   if (e.key === "ArrowUp") {
-    moveTo((cursor - 1 + rows.length) % rows.length);
+    moveTo((cursor - 1 + list.length) % list.length);
     e.preventDefault();
   }
   if (e.key === "Enter") {
-    (rows[cursor] || rows[0]).click();
+    (list[cursor] || list[0]).click();
     e.preventDefault();
   }
 });
 
-// The groups are drawn round the level in hand, so a change of level lays
-// the same list out again.
+// The scope bar names the world and the level in hand, and choosing one lays
+// the list out again from there.
 on("level-changed", () => {
-  if (box.value.trim()) render();
+  if (!bar.hidden) scopeBar();
 });

@@ -370,7 +370,7 @@ test("an object search lists every one round the level in hand, and a row goes t
   await hiro.locator(".showmore").click();
   expect(await hiro.locator("[role=option]").count()).toBeGreaterThan(8);
 
-  // a row in another level goes there and keeps the list, laid out round the new level
+  // a row in another level goes there and leaves the list as it was
   const row = hiro.locator("[role=option]").first();
   const where = await row.textContent();
   await row.click();
@@ -389,8 +389,8 @@ test("an object search lists every one round the level in hand, and a row goes t
   await expect(page.locator("#detail")).toContainText(`cell ${x},${y},${z}`);
   await expect(page.locator("#say")).toHaveText(`Key, top, ${x},${y},${z}, ${at.name}`);
   await expect(page.locator("#results")).toBeVisible();
-  await expect(groups.first()).toHaveAttribute("aria-label", `HIRO · ${at.name}`);
-  await expect(rows.first()).toHaveAttribute("aria-selected", "true");
+  await expect(groups.first()).toHaveAttribute("aria-label", "HIRO · LEVEL 12");
+  await expect(row).toHaveAttribute("aria-selected", "true");
   await expect(search).not.toBeFocused();
 
   // the scope bar narrows the list to the level in hand
@@ -400,6 +400,26 @@ test("an object search lists every one round the level in hand, and a row goes t
   await page.locator("#results .widen").click();
   expect(await rows.count()).toBeGreaterThan(1);
   expect(errors).toEqual([]);
+});
+
+test("down and Enter walk the finds in order, wherever the view has gone", async ({ page }) => {
+  await page.goto("/#HIRO/11");
+  await settle(page);
+  await page.locator("#search").fill("key");
+  const walked = [];
+  for (let i = 0; i < 3; i++) {
+    // choosing gives the keys back to the map, and / takes them again
+    if (i) await page.keyboard.press("/");
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    walked.push(
+      await page.evaluate(async () => {
+        const { state } = await import(new URL("js/state.js", location.href).href);
+        return state.lvl.name;
+      }),
+    );
+  }
+  expect(walked).toEqual(["LEVEL 1", "LEVEL 2", "LEVEL 3"]);
 });
 
 test("a field is searched as name=value, and a match outside the row is appended to it", async ({
