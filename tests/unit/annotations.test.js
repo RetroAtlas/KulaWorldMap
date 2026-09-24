@@ -111,6 +111,44 @@ test("every annotation has its reasons in docs/annotations.md, and only those", 
   }
 });
 
+// A hazard is a flag on a kind or a type as a whole, and the entry's section
+// says what shows it can cost the ball its life.
+test("a hazard is flagged on a kind or a type, and its section says why", () => {
+  const sections = new Map();
+  let key = null;
+  for (const line of reasons.split("\n")) {
+    if (line.startsWith("#")) key = /^### ((?:kind|type) \w+)/.exec(line)?.[1] ?? null;
+    else if (key) sections.set(key, `${sections.get(key) ?? ""}${line}\n`);
+  }
+  let flagged = 0;
+  for (const [section, word] of [
+    ["kinds", "kind"],
+    ["types", "type"],
+  ]) {
+    for (const [k, entry] of Object.entries(annotations[section] ?? {})) {
+      const where = `annotations.json ${section} ${k}`;
+      for (const v of Object.values(entry.variants ?? {})) {
+        assert.ok(!("hazard" in v), `${where}: a variant is a hazard only as its type is`);
+      }
+      if (!("hazard" in entry)) continue;
+      assert.equal(entry.hazard, true, `${where}: hazard is true or absent`);
+      assert.ok(entry.note, `${where}: a hazard has no note`);
+      assert.match(
+        sections.get(`${word} ${k}`) ?? "",
+        /\bhazard\b/i,
+        `docs/annotations.md: ${word} ${k} does not say why it is a hazard`,
+      );
+      flagged++;
+    }
+  }
+  for (const section of ["worlds", "levels"]) {
+    for (const [k, entry] of Object.entries(annotations[section] ?? {})) {
+      assert.ok(!("hazard" in entry), `annotations.json ${section} ${k}: not a kind or a type`);
+    }
+  }
+  assert.ok(flagged > 0);
+});
+
 // A note is read by someone looking at the map, in a sentence or three. It
 // never names this project's scripts or files, a path on a machine, a sibling
 // map, an address, a date or the walkthrough: those belong in docs/.

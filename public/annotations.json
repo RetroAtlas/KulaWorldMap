@@ -1,5 +1,5 @@
 {
-  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated; see CLAUDE.md. `kinds` names the block kinds, which the lattice's style values and the records' kind word share. `types` names what stands on a face: `by` names the field whose value tells a type's variants apart, each with its own name and, where it has one, colour and points; `facing` names the field that holds the way a thing points, as quarter turns on its face; `state` names the field that says whether a device a switch toggles starts on; and `points` is what collecting one scores. `levels` is keyed by pack path and index; a level's `score` is the most it scores where the disc holds more than can be collected, and its note says what is out of reach.",
+  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated; see CLAUDE.md. `kinds` names the block kinds, which the lattice's style values and the records' kind word share. `types` names what stands on a face: `by` names the field whose value tells a type's variants apart, each with its own name and, where it has one, colour and points; `facing` names the field that holds the way a thing points, as quarter turns on its face; `state` names the field that says whether a device a switch toggles starts on; and `points` is what collecting one scores. On a kind or a type, `hazard` marks one that can cost the ball its life. `levels` is keyed by pack path and index; a level's `score` is the most it scores where the disc holds more than can be collected, and its note says what is out of reach.",
   "worlds": {},
   "kinds": {
     "0": {
@@ -7,6 +7,7 @@
     },
     "1": {
       "name": "Fire block",
+      "hazard": true,
       "note": "A block whose every face is fire: touching it inflates the ball until it pops or reaches cooler ground."
     },
     "2": {
@@ -19,6 +20,7 @@
     },
     "4": {
       "name": "Acid block",
+      "hazard": true,
       "note": "A green block painted with an acid splat, found only on the object catalogue level; touching it melts the ball."
     },
     "5": {
@@ -36,6 +38,7 @@
     },
     "8": {
       "name": "Laser",
+      "hazard": true,
       "note": "A laser beam between two blocks that burns the ball on touch. Its colour is its circuit: a switch of that colour turns it on and off, with the teleporters of the same colour, and a beam drawn broken starts switched off. The game puts a block at each end as the level loads, even where the level has none."
     },
     "9": {
@@ -50,6 +53,7 @@
   "types": {
     "1": {
       "name": "Fire",
+      "hazard": true,
       "note": "Fire on one face of an otherwise normal block; a block that is fire all over is a fire block instead."
     },
     "2": {
@@ -118,10 +122,12 @@
     },
     "11": {
       "name": "Moving spikes",
+      "hazard": true,
       "note": "Spikes that rise and retract in turn, each from its own point in the cycle; safe to roll over when down."
     },
     "12": {
       "name": "Spikes",
+      "hazard": true,
       "note": "Pops the ball on touch; jump over them."
     },
     "26": {
@@ -238,25 +244,30 @@
     },
     "50": {
       "name": "Captivator",
+      "hazard": true,
       "facing": "f5",
       "note": "A spiked star that pops the ball on touch: the thinner one, with three long points, which travels the space it has and turns back at any wall or object in its way."
     },
     "51": {
       "name": "Rolling stone",
+      "hazard": true,
       "facing": "f5",
       "note": "A grey cylinder that rolls slowly round a set course and captures the ball on touch; it can be jumped over."
     },
     "52": {
       "name": "Captivator",
+      "hazard": true,
       "facing": "f5",
       "note": "A spiked star that pops the ball on touch: the fuller one, with four short points, which slides back and forth over a fixed stretch, as if on a spring."
     },
     "53": {
       "name": "Captivator, wandering",
+      "hazard": true,
       "note": "A blue hexagonal ball that captures yours on touch: it shakes, then moves one square in a random direction, and the way it shakes gives away where it is going."
     },
     "56": {
       "name": "Captivator, bouncing",
+      "hazard": true,
       "note": "A corkscrew that bounces up and down and pops the ball on touch: roll under it when it is up, and jump it when it is down."
     }
   },

@@ -1,8 +1,10 @@
 # What the curated names rest on
 
-[`public/annotations.json`](../public/annotations.json) is what the map says about the things the game leaves numbered: a name, the points a pickup scores, a level's best score where the disc holds more than can be collected, and a note for whoever is looking at the map. This file is why each of those is believed, one section per entry under the entry's key, and a unit test fails when an entry has no section here or a section names no entry. The note says what a thing is and does; the reasons stay here.
+[`public/annotations.json`](../public/annotations.json) is what the map says about the things the game leaves numbered: a name, the points a pickup scores, whether a thing is a hazard, a level's best score where the disc holds more than can be collected, and a note for whoever is looking at the map. This file is why each of those is believed, one section per entry under the entry's key, and a unit test fails when an entry has no section here or a section names no entry. The note says what a thing is and does; the reasons stay here.
 
 Most names rest on Syonyx's Roll Away walkthrough (GameFAQs, 2006), which the repo does not carry: the level it first mentions a thing on carries the game's first placement of one kind or type, and usually nothing else new. The points rest on its per-level maximum scores, which the disc reproduces exactly on 193 of the 209 levels it rates and exceeds on the other 16, each of which curates the walkthrough's figure as its `score`; [level-format.md](level-format.md) has the arithmetic. The names that rest on play are the coin tiers' colours, which of the two directional captivators is which, and the acid block. Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page.
+
+An entry marked `hazard` is one that can cost the ball its life, and its section says what shows it. The things that travel share one routine for it: the loader puts every type 50 to 53 and 56 into one table (`0x8003b678`), and once a frame the ball's routine tests the ball against every entry in it (`0x8003d570`, called at `0x8003679c`) and on a hit sets it dying with the cause the game keeps for them (`0x80036814`), the wandering ball's reach being the shorter.
 
 ## Block kinds
 
@@ -12,7 +14,7 @@ The plain block, style 0 in the lattice and kind 0 in a record: every block that
 
 ### kind 1: Fire block
 
-The lattice's style 1 and a record's kind 1 are the same thing, the second being a fire block with something standing on it: LEVEL 35, the walkthrough's first fire, is style 1 and kind 1 and nothing else new, and so are LEVEL 44, 123 and 126.
+The lattice's style 1 and a record's kind 1 are the same thing, the second being a fire block with something standing on it: LEVEL 35, the walkthrough's first fire, is style 1 and kind 1 and nothing else new, and so are LEVEL 44, 123 and 126. It is a hazard: the walkthrough's fire inflates the ball until it pops or reaches cooler ground, and in play the third fire square in a row burns it (2026-09-24).
 
 ### kind 2: Ice block
 
@@ -24,7 +26,7 @@ Style 3 in the lattice, kind 3 in a record: LEVEL 31, the walkthrough's first in
 
 ### kind 4: Acid block
 
-One cell in each copy of OBJ LEVEL and nowhere else, so the walkthrough never meets it. The loader paints it with the green splat, the fifteenth model of the artwork's table, and on OBJ LEVEL in play it is the green block (2026-09-16). The name was what it looks like until play settled it: the ball melts on it with the game calling out ACID! (2026-09-24).
+One cell in each copy of OBJ LEVEL and nowhere else, so the walkthrough never meets it. The loader paints it with the green splat, the fifteenth model of the artwork's table, and on OBJ LEVEL in play it is the green block (2026-09-16). The name was what it looks like until play settled it: the ball melts on it with the game calling out ACID! (2026-09-24), which makes it a hazard.
 
 ### kind 5: Moving platform
 
@@ -40,7 +42,7 @@ LEVEL 76 introduces them in the walkthrough and carries the game's first kind 7.
 
 ### kind 8: Laser
 
-A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 123 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, and the slot after its own holds its circuit: the colour of the beam, and of the switch and teleporter that share it. At load the engine's routine at `0x80035a70` writes a plain block into the lattice at both ends and marks every cell between as beam, which is why 64 of the 246 ends are cells the level file leaves empty and the game stands a block on anyway. That a beam drawn broken starts switched off is the record's own flag, which agrees with the switches of its colour on every level ([level-format.md](level-format.md)). The walkthrough calls lasers deadly to touch, and in play a beam burns the ball the moment it reaches it (2026-09-24).
+A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 123 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, and the slot after its own holds its circuit: the colour of the beam, and of the switch and teleporter that share it. At load the engine's routine at `0x80035a70` writes a plain block into the lattice at both ends and marks every cell between as beam, which is why 64 of the 246 ends are cells the level file leaves empty and the game stands a block on anyway. That a beam drawn broken starts switched off is the record's own flag, which agrees with the switches of its colour on every level ([level-format.md](level-format.md)). The walkthrough calls lasers deadly to touch, and in play a beam burns the ball the moment it reaches it (2026-09-24), which makes it a hazard.
 
 ### kind 9: Level settings
 
@@ -54,7 +56,7 @@ The record every level ends with, and the one that stands on no cell: where its 
 
 ### type 1: Fire
 
-LEVEL 38 is a start block and four blocks two squares out, each with fire on four faces and, as the walkthrough says, fire-free on two.
+LEVEL 38 is a start block and four blocks two squares out, each with fire on four faces and, as the walkthrough says, fire-free on two. It is a hazard for the fire block's reasons.
 
 ### type 2: Ice
 
@@ -82,11 +84,11 @@ LEVEL 26, which the walkthrough introduces them on, carries the game's first thr
 
 ### type 11: Moving spikes
 
-LEVEL 41 carries the game's first six where the walkthrough first says to wait for them to retract. The field that varies takes four values, which is where in the cycle each one starts ([motion.md](motion.md)).
+LEVEL 41 carries the game's first six where the walkthrough first says to wait for them to retract. The field that varies takes four values, which is where in the cycle each one starts ([motion.md](motion.md)). They are a hazard while up: the ball's code at `0x8003b0d0` sets it dying on a type 11 whose `f7` is 1, which the cycle sets as the spikes rise and clears as they retract.
 
 ### type 12: Spikes
 
-LEVEL 4 carries the game's first four where the walkthrough first says to jump the spikes.
+LEVEL 4 carries the game's first four where the walkthrough first says to jump the spikes. They are a hazard: the walkthrough's list of hazards opens with spikes that pop the ball, and the ball's code at `0x8003b02c` sets it dying on a type 12 under it.
 
 ### type 26: Hidden exit
 
@@ -162,23 +164,23 @@ One placement in the game, on LEVEL 19, where the walkthrough's fruit stands and
 
 ### type 50: Captivator
 
-LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. That it is the thinner star with three long points was seen in play beside type 52, and it is the walkthrough's slower kind; `f5` is its direction. Touching it pops the ball, as spikes do, and the lost life is what restarts the level (play, 2026-09-24).
+LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. That it is the thinner star with three long points was seen in play beside type 52, and it is the walkthrough's slower kind; `f5` is its direction. Touching it pops the ball, as spikes do, and the lost life is what restarts the level (play, 2026-09-24). It is a hazard by the routine the things that travel share.
 
 ### type 51: Rolling stone
 
-Drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise. Touching it captures the ball, the game's word for a captivator costing the ball its life (play, 2026-09-24).
+Drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise. In play, touching it costs the ball its life (2026-09-24); the note calls that capturing it, a word taken from the captivators' name rather than from the game. It is a hazard by the routine the things that travel share.
 
 ### type 52: Captivator
 
-The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. That it is the fuller star with four short points was seen in play beside type 50, and it is the walkthrough's quick kind; `f5` is its direction. Touching it pops the ball, as spikes do, and the lost life is what restarts the level (play, 2026-09-24).
+The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. That it is the fuller star with four short points was seen in play beside type 50, and it is the walkthrough's quick kind; `f5` is its direction. Touching it pops the ball, as spikes do, and the lost life is what restarts the level (play, 2026-09-24). It is a hazard by the routine the things that travel share.
 
 ### type 53: Captivator, wandering
 
-LEVEL 84 carries four where the walkthrough says to watch their shaking to tell which way they will go. It has no direction field. Touching it captures the ball, as the rolling stone does (play, 2026-09-24).
+LEVEL 84 carries four where the walkthrough says to watch their shaking to tell which way they will go. It has no direction field. Touching it captures the ball, as the rolling stone does (play, 2026-09-24). It is a hazard by the routine the things that travel share.
 
 ### type 56: Captivator, bouncing
 
-LEVEL 45 carries six where the walkthrough says to roll under them when raised, and LEVEL 122's go up in sequence, which is what the four-valued field reads as. Touching it pops the ball (play, 2026-09-24).
+LEVEL 45 carries six where the walkthrough says to roll under them when raised, and LEVEL 122's go up in sequence, which is what the four-valued field reads as. Touching it pops the ball (play, 2026-09-24). It is a hazard by the routine the things that travel share.
 
 ## Levels
 
