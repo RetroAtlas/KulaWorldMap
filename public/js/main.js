@@ -70,10 +70,8 @@ Promise.all([
   setAnnotations(ann);
   setObjects(objects);
   state.data = data;
-  const cells = data.levels.reduce((n, l) => n + l.cells.length / 4, 0);
   $("about").innerHTML =
-    `${data.levels.length} levels across ${data.themes.length} worlds, ` +
-    `${cells.toLocaleString()} placed blocks, read off the ${data.release} disc. ` +
+    `All ${data.levels.length} levels across ${data.themes.length} worlds. ` +
     `Press <kbd style="margin:0">?</kbd> for the keys.`;
   buildWorlds();
   wireDisplay();
