@@ -284,13 +284,6 @@ export function platformCells(r) {
   });
 }
 
-// A laser's circuit number, in the colour the game paints that circuit. Which
-// is which was read off LEVEL 109, whose five beams line up red, yellow,
-// green, yellow, red, and LEVEL 98, whose blue switch carries the number of
-// the beam it turns off; a circuit not yet seen in play has no entry.
-const BEAM_COLOUR = { 0: "#f5c542", 1: "#4f8ef7", 2: "#3ad07c", 3: "#ff4a4a" };
-export const beamColour = (circuit) => BEAM_COLOUR[circuit] || null;
-
 /** A cell lookup plus the per-cell records and markers, built once per level. */
 export function index(l) {
   const cells = new Map();
