@@ -314,7 +314,7 @@
     },
     "/ATLANT/ATLANT.PAK#3": {
       "score": 9975,
-      "note": "The disc holds 50 more, a crumbling block that is out of reach. It also keeps an hourglass and two gold coins on the crumbling blocks at 15,25,17 and 16,25,17, but the game never places anything stored on a crumbling block, so they are not in play and the map leaves them out."
+      "note": "The disc holds 50 more, a crumbling block that is out of reach."
     },
     "/ATLANT/ATLANT.PAK#11": {
       "score": 23115,
@@ -325,7 +325,7 @@
     },
     "/ATLANT/ATLANTFI.PAK#0": {
       "score": 15915,
-      "note": "The disc holds 200 more, four of the fifteen crumbling blocks, which the best known route leaves. It also keeps three keys on the undersides of crumbling blocks, which the game never places, so the level asks for three keys and not six."
+      "note": "The disc holds 200 more, four of the fifteen crumbling blocks, which the best known route leaves."
     },
     "/HAZE/HAZE.PAK#19": {
       "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
@@ -348,7 +348,7 @@
       "note": "The Japanese release moved one of the gems off the lethal tile it stands on here onto a kinder one."
     },
     "/MARS/MARS.PAK#13": {
-      "note": "The disc also keeps a second fruit on the crumbling block at 17,16,20, but the game never places anything stored on a crumbling block, so it is not in play and the map leaves it out. The Japanese release moves the world's hidden exit to this level."
+      "note": "The Japanese release moves the world's hidden exit to this level."
     },
     "/MARS/MARS.PAK#16": {
       "score": 19000,
