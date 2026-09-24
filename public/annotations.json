@@ -164,7 +164,7 @@
     },
     "34": {
       "name": "Invincibility pill",
-      "note": "Makes the ball invincible for fourteen seconds, flashing in colours while it lasts: no hazard harms it. Only on the object catalogue level, so nothing in play uses it."
+      "note": "Makes the ball invincible for fourteen seconds, flashing in colours while it lasts: no hazard harms it, and it cancels the lethargy and bouncy pills. Only on the object catalogue level, so nothing in play uses it."
     },
     "35": {
       "name": "Hourglass",
