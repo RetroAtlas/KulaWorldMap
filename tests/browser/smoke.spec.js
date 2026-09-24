@@ -202,7 +202,7 @@ test("a block that is a thing of its own is named once, with what its record hol
   });
   expect(await headings(page)).toEqual(["Crumbling block", "Level settings"]);
   const block = page.locator("#detail table").first();
-  for (const label of ["points", "kind", "type", "record", "f5", "unset"])
+  for (const label of ["points", "kind", "type", "record", "f5 position x", "unset"])
     await expect(block.locator("td", { hasText: new RegExp(`^${label}$`) })).toHaveCount(1);
   await expect(page.locator("#detail p", { hasText: /^Placed / })).toHaveCount(2);
 });
@@ -252,6 +252,7 @@ test("a raw field reads by its number, then what it holds where that is known", 
       showCell({ x, y, z, v: state.data.firstRecord + i });
       return [...document.querySelectorAll("#detail td:first-child")].map((td) => td.textContent);
     }, type);
+  expect(await labels(9)).toContain("f6 circuit");
   expect(await labels(9)).toContain("f7 state");
   expect(await labels(28)).toContain("f5 facing");
   expect(await labels(31)).toContain("f8 pickup number");

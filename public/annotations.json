@@ -1,5 +1,5 @@
 {
-  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated; see CLAUDE.md. `kinds` names the block kinds, which the lattice's style values and the records' kind word share. `types` names what stands on a face: `by` names the field whose value tells a type's variants apart, each with its own name and, where it has one, colour and points; `facing` names the field that holds the way a thing points, as quarter turns on its face; `state` names the field that says whether a device a switch toggles starts on; and `points` is what collecting one scores. On a kind or a type, `hazard` marks one that can cost the ball its life. `levels` is keyed by pack path and index; a level's `score` is the most it scores where the disc holds more than can be collected, and its note says what is out of reach.",
+  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated; see CLAUDE.md. `kinds` names the block kinds, which the lattice's style values and the records' kind word share. `types` names what stands on a face: `by` names the field whose value tells a type's variants apart, each with its own name and, where it has one, colour and points; `facing` names the field that holds the way a thing points, as quarter turns on its face; `state` names the field that says whether a device a switch toggles starts on; and `points` is what collecting one scores. On a kind or a type, `hazard` marks one that can cost the ball its life, and `fields` says what a raw field holds, by its number, where that is settled; a `facing` or `state` field is named by its key. `levels` is keyed by pack path and index; a level's `score` is the most it scores where the disc holds more than can be collected, and its note says what is out of reach.",
   "worlds": {},
   "kinds": {
     "0": {
@@ -25,20 +25,47 @@
     },
     "5": {
       "name": "Moving platform",
+      "fields": {
+        "f5": "axis",
+        "f7": "low end x",
+        "f8": "low end y",
+        "f9": "low end z",
+        "f10": "high end x",
+        "f11": "high end y",
+        "f12": "high end z"
+      },
       "note": "A platform that travels back and forth along a straight run, stopping briefly at each end."
     },
     "6": {
       "name": "Crumbling block",
       "points": 50,
+      "fields": {
+        "f5": "position x",
+        "f6": "position y",
+        "f7": "position z"
+      },
       "note": "A block that disappears once rolled onto, leaving time for one move."
     },
     "7": {
       "name": "Vanishing block",
+      "fields": {
+        "f5": "phase"
+      },
       "note": "A block that fades in and out of existence on a cycle."
     },
     "8": {
       "name": "Laser",
       "hazard": true,
+      "fields": {
+        "f5": "axis",
+        "f6": "lit",
+        "f7": "low end x",
+        "f8": "low end y",
+        "f9": "low end z",
+        "f10": "high end x",
+        "f11": "high end y",
+        "f12": "high end z"
+      },
       "note": "A laser beam between two blocks that burns the ball on touch. Its colour is its circuit: a switch of that colour turns it on and off, with the teleporters of the same colour, and a beam drawn broken starts switched off. The game puts a block at each end as the level loads, even where the level has none."
     },
     "9": {
@@ -64,6 +91,9 @@
       "name": "Teleporter",
       "by": "f6",
       "state": "f7",
+      "fields": {
+        "f6": "circuit"
+      },
       "variants": {
         "0": {
           "name": "Yellow teleporter",
@@ -96,6 +126,9 @@
       "name": "Switch",
       "by": "f6",
       "state": "f7",
+      "fields": {
+        "f6": "circuit"
+      },
       "variants": {
         "0": {
           "name": "Yellow switch",
@@ -123,6 +156,9 @@
     "11": {
       "name": "Moving spikes",
       "hazard": true,
+      "fields": {
+        "f6": "phase"
+      },
       "note": "Spikes that rise and retract in turn, each from its own point in the cycle; safe to roll over when down."
     },
     "12": {
@@ -175,6 +211,9 @@
       "name": "Gem",
       "points": 2975,
       "by": "f6",
+      "fields": {
+        "f6": "colour"
+      },
       "variants": {
         "0": {
           "name": "Blue gem",
@@ -194,6 +233,9 @@
     "37": {
       "name": "Coin",
       "by": "f6",
+      "fields": {
+        "f6": "tier"
+      },
       "variants": {
         "2": {
           "name": "Bronze coin",
@@ -271,6 +313,9 @@
     "56": {
       "name": "Captivator, bouncing",
       "hazard": true,
+      "fields": {
+        "f6": "phase"
+      },
       "note": "A corkscrew that bounces up and down and pops the ball on touch: roll under it when it is up, and jump it when it is down."
     }
   },

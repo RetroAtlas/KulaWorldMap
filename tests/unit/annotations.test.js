@@ -170,3 +170,39 @@ test("a note is short and free of the project's workings", () => {
     }
   }
 });
+
+// A field's name is shown beside its number, so it has to name a field the
+// kind or type sets wherever it is placed, in a few plain words, and no field
+// a `facing` or `state` key already names.
+const FIELD = /^f(\d+)$/;
+const FIRST_FIELD = 5;
+const LAST_FIELD = 15;
+
+test("a named field is set wherever its kind or type is placed", () => {
+  const placed = { kinds: new Map(), types: new Map() };
+  const add = (map, key, f) => map.set(key, [...(map.get(key) ?? []), f]);
+  for (const l of mapData.levels) {
+    for (const r of l.records) {
+      add(placed.kinds, String(r.kind), r.f);
+      for (const o of r.on) add(placed.types, String(o.type), o.f);
+    }
+  }
+  let named = 0;
+  for (const section of ["kinds", "types"]) {
+    for (const [key, entry] of Object.entries(annotations[section] ?? {})) {
+      for (const [field, name] of Object.entries(entry.fields ?? {})) {
+        const where = `annotations.json ${section} ${key} ${field}`;
+        const n = Number(FIELD.exec(field)?.[1]);
+        assert.ok(n >= FIRST_FIELD && n <= LAST_FIELD, `${where}: no such field`);
+        assert.ok(field !== entry.facing && field !== entry.state, `${where}: named by its key`);
+        assert.match(name, /^[a-z]+(?: [a-z]+)*$/, `${where}: "${name}" is not plain words`);
+        assert.ok(!INTERNALS.test(name), `${where}: "${name}" belongs in docs/annotations.md`);
+        for (const f of placed[section].get(key) ?? []) {
+          assert.notEqual(f[n - FIRST_FIELD], -1, `${where}: unset where it is placed`);
+        }
+        named++;
+      }
+    }
+  }
+  assert.ok(named > 0);
+});

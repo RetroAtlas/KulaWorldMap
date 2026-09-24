@@ -174,7 +174,7 @@ export const fieldName = (m, i) => {
   const f = `f${i + 5}`;
   if (entry(m)?.facing === f) return "facing";
   if (entry(m)?.state === f) return "state";
-  return null;
+  return entry(m)?.fields?.[f] ?? null;
 };
 export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
 
