@@ -66,7 +66,7 @@
         "f8": "high end y",
         "f9": "high end z"
       },
-      "note": "A laser beam between two blocks that burns the ball on touch. Its colour is its circuit: a switch of that colour turns it on and off, with the teleporters of the same colour, and a beam drawn broken starts switched off. The game puts a block at each end as the level loads, even where the level has none."
+      "note": "A laser beam between two blocks; it burns the ball on touch. Its colour is its circuit: a switch of that colour turns it on and off, with the teleporters of the same colour, and a beam drawn broken starts switched off. The game puts a block at each end as the level loads, even where the level has none."
     },
     "9": {
       "name": "Level settings",
