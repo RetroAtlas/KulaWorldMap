@@ -2,10 +2,10 @@
 // with single spaces, and the same words one by one. A number or a key=value
 // pair is answered by a whole word only, so `level 45` does not also bring
 // back LEVEL 145 and `f3=2` does not bring back f3=20; any other term is a
-// substring, so `inc` still finds Inca. No DOM, so it stays importable in
-// bare Node.
+// substring, so `inc` still finds Inca and `starts=` every starts= pair. No
+// DOM, so it stays importable in bare Node.
 
-const WHOLE = /^(\d+|[^=\s]+=[^=\s]*)$/;
+const WHOLE = /^(\d+|[^=\s]+=[^=\s]+)$/;
 
 /** Whether a term is answered by a whole word rather than a substring. */
 export const whole = (term) => WHOLE.test(term);

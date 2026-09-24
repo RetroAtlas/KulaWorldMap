@@ -20,6 +20,11 @@ test("a key=value pair is answered by a whole word only", () => {
   assert.ok(!answers(c)("f3=2"));
 });
 
+test("a pair still waiting for its value is a substring, so it finds what it starts", () => {
+  assert.ok(answers(c)("f3="));
+  assert.ok(!answers(c)("f4="));
+});
+
 test("any other term is a substring", () => {
   assert.ok(answers(c)("hir"));
   assert.ok(answers(c)("level 145"));
