@@ -1,6 +1,6 @@
 import { $, el, on } from "./dom.js";
 import { state, SIDE, cellKey, sliceZ } from "./state.js";
-import { worldName, levelTitle, inLattice } from "./data.js";
+import { worldName, levelTitle, inLattice, blockCount, counted } from "./data.js";
 import { selectLevel, centreOn, writeHash } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
 import { showCell } from "./detail.js";
@@ -218,7 +218,7 @@ function render() {
         `l:${c.li}`,
         () => selectLevel(c.li),
         c.name,
-        hint(`${worldName(c.level.theme)} · ${c.level.placed} blocks`),
+        hint(`${worldName(c.level.theme)} · ${counted(blockCount(c.level), "block")}`),
       ),
     );
 

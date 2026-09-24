@@ -5,6 +5,7 @@ import {
   levelNote,
   levelTitle,
   objectCount,
+  blockCount,
   counted,
   levelPoints,
   levelScore,
@@ -12,7 +13,7 @@ import {
 
 /** What a reader who cannot see the map is told on arriving somewhere. */
 export function describeLevel(l) {
-  const parts = [levelTitle(l), worldName(l.theme), `${l.placed} blocks`];
+  const parts = [levelTitle(l), worldName(l.theme), counted(blockCount(l), "block")];
   const n = objectCount(l);
   if (n) parts.push(counted(n, "object"));
   const points = levelPoints(l);

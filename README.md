@@ -32,7 +32,7 @@ The five styles below 5 are the block's kind, and a record's kind word is the sa
 
 The order was fixed three ways: LEVEL 1 and LEVEL 2 put everything in the first slot and on top; `HIDDEN 10` puts all eighteen of its objects in the fourth, and in play they stand on the `-y` face of its frame; and a laser's type is the direction from its block to the far end of the beam, on all 123, which is where the numbering of the six comes from. Under that order 8 of the 5885 objects on blocks of the four plain kinds would sit inside a neighbouring block, against 94 for the best of the other 719 orders.
 
-The field at the head of the trailer is signed, and negative on 16 levels. It matches the placed-cell count on 79 of the 230 and is unexplained on the rest, so the map counts the lattice itself and leaves that field unnamed.
+The field at the head of the trailer is signed, and negative on 16 levels. It matches the placed-cell count on 79 of the 230 and is unexplained on the rest, so the map counts the blocks itself and leaves that field unnamed.
 
 Every level ends with exactly one record of kind **666**, standing on no cell and carrying a cell for the camera to look at, two angles and a number that is 99 on 218 of the 230 levels and lower on the other twelve. That reads as the level's time, and the map shows it as such.
 

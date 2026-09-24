@@ -257,6 +257,21 @@ export const rails = (l) =>
     .filter((r) => r.kind === RAIL_KIND)
     .map((r) => ({ a: r.f.slice(2, 5), b: r.f.slice(5, 8) }));
 
+// A moving platform is as many blocks as its record says, laid from its cell
+// along the axis its first field names.
+const PLATFORM_AXIS = { 1: 0, 2: 1 };
+/** The axis a moving platform is laid and runs along, 0 to 2 for x to z. */
+export const platformAxis = (r) => PLATFORM_AXIS[r.f[0]] ?? 2;
+/** The cells a moving platform's blocks stand on where its record puts it, its own first. */
+export function platformCells(r) {
+  const axis = platformAxis(r);
+  return Array.from({ length: r.length || 1 }, (_, k) => {
+    const at = [r.x, r.y, r.z];
+    at[axis] += k;
+    return at;
+  });
+}
+
 // A laser's circuit number, in the colour the game paints that circuit. Which
 // is which was read off LEVEL 109, whose five beams line up red, yellow,
 // green, yellow, red, and LEVEL 98, whose blue switch carries the number of
@@ -307,6 +322,17 @@ export function index(l) {
 
 export const levelMarkers = (l) => l.records.flatMap(markersOf);
 
+/** How many blocks a level puts in play: the lattice's, and the ones the game
+    stands where the lattice leaves a cell empty, at the ends of a beam and
+    along a moving platform. */
+export function blockCount(l) {
+  const cells = new Set();
+  for (let i = 0; i < l.cells.length; i += 4) cells.add(cellKey(...l.cells.slice(i, i + 3)));
+  for (const r of beams(l)) for (const c of [r.a, r.b]) cells.add(cellKey(...c));
+  for (const r of l.records)
+    if (r.kind === RAIL_KIND) for (const c of platformCells(r)) cells.add(cellKey(...c));
+  return cells.size;
+}
 /** How many things stand on a level's faces. */
 export const objectCount = (l) => l.records.reduce((n, r) => n + r.on.length, 0);
 /** A count with its noun, singular for one. */

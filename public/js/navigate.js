@@ -6,6 +6,7 @@ import {
   levelNote,
   levelTitle,
   objectCount,
+  blockCount,
   counted,
   levelPoints,
   levelScore,
@@ -99,7 +100,7 @@ export function chip() {
   const parts = [
     `<b>${levelTitle(l)}</b>`,
     `<span class="sep">·</span>${worldName(l.theme)}`,
-    `<span class="sep">·</span>${l.placed} blocks`,
+    `<span class="sep">·</span>${counted(blockCount(l), "block")}`,
   ];
   const n = objectCount(l);
   if (n) parts.push(`<span class="sep">·</span>${counted(n, "object")}`);

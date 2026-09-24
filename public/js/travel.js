@@ -5,7 +5,7 @@
 // questions at the game's own moments. A moving platform runs its rail the
 // same way. The wandering ball draws its way by dice, so its walk here is one
 // the game could take and not the one it will.
-import { FACE_NORMAL, OFF_LATTICE, kindMotion } from "./data.js";
+import { FACE_NORMAL, OFF_LATTICE, kindMotion, platformAxis } from "./data.js";
 import { cellKey } from "./state.js";
 import { blockPhase } from "./motion.js";
 
@@ -170,7 +170,7 @@ export function walker(m, c, l, table, frame = 0) {
     const r = l.records.find(
       (r) => r.kind === PLATFORM_KIND && r.x === c.x && r.y === c.y && r.z === c.z,
     );
-    const axis = r.f[0] === 1 ? 0 : r.f[0] === 2 ? 1 : 2;
+    const axis = platformAxis(r);
     const entry = table.kinds[String(PLATFORM_KIND)];
     Object.assign(w, {
       axis,

@@ -17,6 +17,7 @@ import {
   kindMotion,
   modelUnit,
   beamColour,
+  platformCells,
   TANGENT,
   cross,
 } from "./data.js";
@@ -197,12 +198,10 @@ const SHADE = FACES.map((f) =>
 const shadeOf = (i, world) => skinsTable()?.shade[world]?.[FACES[i].game] ?? SHADE[i];
 
 const PLATFORM = 5;
-const AXIS = { 1: 0, 2: 1 }; // a platform's first field names the axis it is laid along
 
 /** The cells to draw, blocks and the stretches of beam between them, back to
-    front. A moving platform is as many blocks as its record says, laid from
-    its cell along its axis, and on the move they are drawn where its run has
-    them and sort there. */
+    front. A moving platform's blocks, on the move, are drawn where its run
+    has them and sort there. */
 function visible(idx, moving) {
   const out = [];
   for (const cells of [idx.cells, idx.beamCells]) {
@@ -215,11 +214,9 @@ function visible(idx, moving) {
         continue;
       }
       const offset = moving?.get(`${key}/null`)?.offset || [0, 0, 0];
-      for (let k = 0; k < (r.length || 1); k++) {
-        const at = [c.x + offset[0], c.y + offset[1], c.z + offset[2]];
-        at[AXIS[r.f[0]] ?? 2] += k;
-        out.push({ ...c, x: at[0], y: at[1], z: at[2], home: c, k });
-      }
+      platformCells(r).forEach(([x, y, z], k) =>
+        out.push({ ...c, x: x + offset[0], y: y + offset[1], z: z + offset[2], home: c, k }),
+      );
     }
   }
   // A thing on its way across blocks is drawn where it is, right after the
