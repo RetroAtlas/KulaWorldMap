@@ -15,7 +15,9 @@ face with something standing on it the model its type numbers, which is how
 the plates under the devices and the shadows under the pickups get painted.
 A moving platform's faces come from a table of their own, a laser's two ends
 wear a plate in the circuit's colour, and a level with no key draws from the
-second half of the model table.
+second half of the model table. A face is left out only against a neighbour
+of a kind that hides it, which is not every kind: the stone behind an
+invisible block is built, and shows through it.
 
 Every number is read by matching the instruction it lives in, so a build laid
 out differently stops this rather than yielding a reading that looks like
@@ -61,6 +63,10 @@ CHECKS = [
     (0x80027cc4, "sw $zero, 9372($gp)", "which puts one mode back on the first set whatever the keys"),
     (0x8004cd10, "lw $v1, 13232($v1)", "and that mode is the one that names a pack of its own"),
     (0x8004cd70, "lw $v0, 13528($at)", "out of a table of paths indexed past the ten worlds"),
+    (0x80027384, "jal 0x8002dfac", "a face is built knowing its neighbour's kind"),
+    (0x80027374, "subu $s1, $zero, $s1", "a kind past the styles selects its own path, negated"),
+    (0x800273a4, "beq $s1, $v0, 0x80027590", "and the vanishing block's path asks nothing of the neighbour"),
+    (0x800277d8, "and $s0, $s0, $v0", "a face hidden while its neighbour stands is built unseen"),
     (0x800277ec, "ori $s0, $s0, 2", "a hidden level's faces carry a flag"),
     (0x80056a0c, "ori $t9, $t9, 44", "that is the semi-transparent bit of a textured quad"),
     (0x8004fa2c, "andi $s7, $t2, 768", "and bits 8 and 9 of the flags are the blend mode"),
@@ -97,6 +103,22 @@ IMMEDIATES = [
     ("sets", "copycat.names", "the mode that names its own pack", 0x8004cd14, "addiu $v0, $zero, {}"),
     ("sets", "copycat.pak", "when the file wanted is the extension", 0x8004cd20, "addiu $v0, $zero, {}"),
     ("sets", "copycat.world", "taking the path of this world", 0x8004cd2c, "addiu $a0, $zero, {}"),
+
+    ("hiding", "path.crumbling", "the selector that takes the crumbling block's path", 0x80027390, "addiu $v0, $zero, {}"),
+    ("hiding", "path.vanishing", "the vanishing block's", 0x800273a0, "addiu $v0, $zero, {}"),
+    ("hiding", "path.invisible", "the invisible block's", 0x800273b4, "addiu $v0, $zero, {}"),
+    ("hiding", "hide.below", "any other face is not built toward a neighbour of a kind below", 0x800273a8, "sltiu $v0, $s2, {}"),
+    ("hiding", "hide.also.a", "nor toward this kind", 0x8002767c, "addiu $t1, $zero, {}"),
+    ("hiding", "hide.also.b", "or this", 0x80027684, "addiu $v0, $zero, {}"),
+    ("hiding", "hide.while", "and is hidden while a neighbour of this kind stands", 0x800277cc, "addiu $v0, $zero, {}"),
+    ("hiding", "invisible.below", "an invisible face is not built toward a kind below", 0x800273bc, "sltiu $v0, $s2, {}"),
+    ("hiding", "invisible.from", "nor toward one from minus this", 0x800273c4, "addiu $v0, $s2, {}"),
+    ("hiding", "invisible.span", "for this many kinds", 0x800273c8, "sltiu $v0, $v0, {}"),
+    ("hiding", "invisible.also", "nor toward this kind", 0x800273d0, "addiu $v0, $zero, {}"),
+    ("hiding", "crumbling.below", "a crumbling face is hidden toward a kind below", 0x80027484, "sltiu $v0, $s2, {}"),
+    ("hiding", "crumbling.a", "and toward this kind", 0x80027490, "addiu $t1, $zero, {}"),
+    ("hiding", "crumbling.b", "this", 0x80027498, "addiu $v0, $zero, {}"),
+    ("hiding", "crumbling.c", "and this", 0x800274a0, "addiu $v0, $zero, {}"),
 
     ("platform", "platform.stone", "a face drawn as a stone at random", 0x80027ec8, "addiu $v0, $zero, {}"),
     ("platform", "platform.none", "a face not drawn", 0x80027ec0, "addiu $v0, $zero, {}"),
@@ -356,6 +378,28 @@ def cycles(code, r):
     }
 
 
+def hiding(r):
+    """The neighbours a face is not built toward, or built unseen behind, by
+    the kind of the block it belongs to: the loader asks the neighbour's kind
+    (0x8002dfac) and takes one of four paths by its own, the crumbling
+    block's, the vanishing block's, which asks nothing, the invisible
+    block's, and one for every other face. A neighbour that is empty, or a
+    kind none of the tests names, lets the face be built."""
+    below = lambda n: set(range(n))
+    other = below(r["hide.below"]) | {r["hide.also.a"], r["hide.also.b"], r["hide.while"]}
+    start = -r["invisible.from"]
+    invisible = below(r["invisible.below"]) | set(range(start, start + r["invisible.span"])) | {r["invisible.also"]}
+    crumbling = below(r["crumbling.below"]) | {r["crumbling.a"], r["crumbling.b"], r["crumbling.c"]}
+    return {
+        "other": sorted(other),
+        "kinds": {
+            str(r["path.invisible"]): sorted(invisible),
+            str(-r["path.crumbling"]): sorted(crumbling),
+            str(-r["path.vanishing"]): [],
+        },
+    }
+
+
 def readings(code):
     """Every number, by its id, after the checks have passed."""
     for addr, pattern, _ in CHECKS:
@@ -441,6 +485,7 @@ def table(code, tgis):
         "sets": sets(models, groups, r),
         "keys": {"type": r["key.type"], "kinds": r["keys.below"]},
         "copycat": copycat_pack(code, r),
+        "hides": hiding(r),
         "hidden": {"kind": r["hidden.kind"], "type": r["hidden.flag"]},
         "plainFrom": r["plain.from"],
         "shadow": {"from": shadow_from, "to": shadow_from + r["shadow.span"] - 1,

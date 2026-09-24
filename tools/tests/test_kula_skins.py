@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import Code  # noqa: E402
-from kula_skins import (BLOCK, HEADER, Machine, header, sets)  # noqa: E402
+from kula_skins import (BLOCK, HEADER, Machine, header, hiding, sets)  # noqa: E402
 
 R = {"zero": 0, "at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7,
      "t0": 8, "t1": 9, "sp": 29, "ra": 31}
@@ -159,6 +159,23 @@ class Sets(unittest.TestCase):
         groups = [7, 4, 49, 1, 50]
         with self.assertRaises(SystemExit):
             sets(fake_models(groups), groups, READINGS)
+
+
+class Hiding(unittest.TestCase):
+    GAME = {"path.crumbling": -6, "path.vanishing": -7, "path.invisible": 3,
+            "hide.below": 2, "hide.also.a": 2, "hide.also.b": 4, "hide.while": 6,
+            "invisible.below": 2, "invisible.from": -2, "invisible.span": 2, "invisible.also": 4,
+            "crumbling.below": 2, "crumbling.a": 2, "crumbling.b": 4, "crumbling.c": 6}
+
+    def test_a_face_is_hidden_by_the_kinds_its_own_path_tests(self):
+        h = hiding(self.GAME)
+        self.assertEqual(h["other"], [0, 1, 2, 4, 6])
+        self.assertEqual(h["kinds"], {"3": [0, 1, 2, 3, 4], "6": [0, 1, 2, 4, 6], "7": []})
+
+    def test_an_invisible_block_hides_nothing_but_another_invisible_blocks_face(self):
+        h = hiding(self.GAME)
+        self.assertNotIn(3, h["other"])
+        self.assertIn(3, h["kinds"]["3"])
 
 
 if __name__ == "__main__":

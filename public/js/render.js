@@ -267,16 +267,29 @@ function travelling(l, idx, frame) {
   return out;
 }
 
+const BEAM_KIND = 8;
+
+/** Whether a block of `kind` has no face toward the neighbour `nb`, by the
+    kinds the game hides a face behind; the loader stands a plain block at a
+    beam's ends before it builds a face, so an end hides like one. A block
+    whose kind is not given is hidden by any neighbour. */
+function hiddenBehind(kind, nb, idx) {
+  const hides = skinsTable()?.hides;
+  if (!hides || kind === undefined) return true;
+  const theirs = kindOf(nb, idx, cellKey(nb.x, nb.y, nb.z));
+  return (hides.kinds[String(kind)] ?? hides.other).includes(theirs === BEAM_KIND ? 0 : theirs);
+}
+
 /** Draw a block's visible faces: each in the skin `skin(i)` gives it, or in
     `colour(i)` without one. A face the game leaves undrawn is skipped. */
-function cube(g, c, idx, colour, edge, alpha, skin) {
+function cube(g, c, idx, colour, edge, alpha, skin, kind) {
   const s = state.cam.zoom * BLOCK;
   const [ox, oy] = screen(c.x, c.y, c.z);
   for (let i = 0; i < FACES.length; i++) {
     const f = FACES[i];
     if (!facing(f.n)) continue;
     const nb = idx.cells.get(cellKey(c.x + f.d[0], c.y + f.d[1], c.z + f.d[2]));
-    if (nb && nb.z >= sliceZ()) continue;
+    if (nb && nb.z >= sliceZ() && hiddenBehind(kind, nb, idx)) continue;
     const sk = skin ? skin(i) : undefined;
     if (sk === null) continue;
     const pts = f.c.map(([dx, dy, dz]) => {
@@ -494,11 +507,13 @@ export function draw() {
       edges ? `rgba(9 13 20 / ${0.55 * a})` : null,
       a,
       skin,
+      kind,
     );
-    if (style.wash) cube(ctx, c, idx, () => style.wash, null, a, null);
+    if (style.wash) cube(ctx, c, idx, () => style.wash, null, a, null, kind);
     if (style.dash && !ghost) outline(c, idx, "rgba(232 238 251 / 0.7)", style.dash);
     if (skin && (sel || hov)) {
-      cube(ctx, c, idx, () => `rgba(255 255 255 / ${sel ? 0.22 : 0.12})`, null, a, null);
+      const glow = `rgba(255 255 255 / ${sel ? 0.22 : 0.12})`;
+      cube(ctx, c, idx, () => glow, null, a, null, kind);
     }
 
     if (pickStale && !ghost && !c.k) {
