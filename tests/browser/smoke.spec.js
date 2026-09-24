@@ -396,7 +396,7 @@ test("an object search lists every one round the level in hand, and a row goes t
   await expect(groups.nth(1)).toHaveAttribute("aria-label", "HIRO");
   const rows = page.locator("#results [role=option]");
   await expect(rows.first()).toContainText("LEVEL 12");
-  await expect(rows.first()).toContainText("number=");
+  await expect(rows.first()).toContainText(/top · \d+,\d+,\d+$/);
   await expect(page.locator("#found")).toHaveText(/^\d+ objects$/);
   // eight to a group, the rest a row away that the keys reach too
   const hiro = groups.nth(1);

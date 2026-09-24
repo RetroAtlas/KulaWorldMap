@@ -39,9 +39,9 @@ test("a decoded field is a pair the row shows, and a term can name it", () => {
   const off = find("starts=off");
   assert.ok(off.length > 0);
   assert.ok(off.every((c) => c.shown.includes("starts=off")));
-  const second = find("key number=1");
-  assert.ok(second.length > 0);
-  assert.ok(second.every((c) => c.marker.type === 31 && c.shown.includes("number=1")));
+  const east = find("arrow facing=+x");
+  assert.ok(east.length > 0);
+  assert.ok(east.every((c) => c.shown.includes("facing=+x")));
 });
 
 test("a raw field is a whole word, so f3=2 is not also f3=20", () => {

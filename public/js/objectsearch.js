@@ -9,7 +9,6 @@ import {
   markersOf,
   markerLabel,
   entryName,
-  markerNumber,
   markerFacing,
   markerState,
   markerPoints,
@@ -20,12 +19,9 @@ import { matchesBy, rankFor } from "./searchquery.js";
 import { indexed, answers, whole } from "./searchtext.js";
 
 // The pairs a row always shows are what tells two of a thing apart in play;
-// the rest show only when a term matched them, the number of the type first,
-// so a search by number says on every row why the row is there.
+// the rest show only when a term matched them.
 function pairs(m) {
   const shown = [];
-  const number = markerNumber(m);
-  if (number !== null) shown.push(`number=${number}`);
   const facing = markerFacing(m);
   if (facing !== null) shown.push(`facing=${DIRECTION_NAME[facing]}`);
   const state = markerState(m);
@@ -53,7 +49,6 @@ function candidate(li, l, r, m) {
     family !== name ? family : null,
     m.face === null ? `kind ${m.kind}` : null,
     `type ${m.type}`,
-    m.id,
     face,
     ...shown,
     ...more,
