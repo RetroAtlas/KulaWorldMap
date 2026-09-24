@@ -15,11 +15,11 @@
     },
     "3": {
       "name": "Invisible block",
-      "note": "A block that cannot be seen until the ball is close, or, on some levels, only from far away; sunglasses reveal it for a while. Rolling over one in a bonus level scores nothing."
+      "note": "A block that cannot be seen until the ball is close, or, on some levels, only from far away; sunglasses reveal it for a while."
     },
     "4": {
       "name": "Acid block",
-      "note": "A green block painted with an acid splat, found only on the object catalogue level. The game never names it, so the name says what it looks like."
+      "note": "A green block painted with an acid splat, found only on the object catalogue level."
     },
     "5": {
       "name": "Moving platform",
@@ -136,12 +136,12 @@
     "29": {
       "name": "Start on a clock",
       "facing": "f5",
-      "note": "Where the ball starts the level, and the way it faces, on a clock rather than a plain square."
+      "note": "The block and face the ball starts the level on, a clock rather than a plain square."
     },
     "30": {
       "name": "Start",
       "facing": "f5",
-      "note": "Where the ball starts the level, and the way it faces. The ball is drawn in its world's own design, Hiro's the white beach ball with the coloured panels, and on a hidden level the glass one with the shards inside. LEVEL 58 and LEVEL 136 start the ball on a clock instead."
+      "note": "The block and face the ball starts the level on."
     },
     "31": {
       "name": "Key",
@@ -214,32 +214,32 @@
     "43": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level. On a numbered level the map shows the one the level's number brings round."
+      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level."
     },
     "44": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level. On a numbered level the map shows the one the level's number brings round."
+      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level."
     },
     "45": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level. On a numbered level the map shows the one the level's number brings round."
+      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level."
     },
     "46": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level. On a numbered level the map shows the one the level's number brings round."
+      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level."
     },
     "47": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level. On a numbered level the map shows the one the level's number brings round."
+      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level."
     },
     "50": {
       "name": "Captivator",
       "facing": "f5",
-      "note": "A spiked star that restarts the level on touch: the thinner one, with three long points, which travels the space it has and turns back at any wall or object in its way, a coin included."
+      "note": "A spiked star that restarts the level on touch: the thinner one, with three long points, which travels the space it has and turns back at any wall or object in its way."
     },
     "51": {
       "name": "Rolling stone",

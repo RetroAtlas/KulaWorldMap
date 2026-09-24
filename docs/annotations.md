@@ -2,7 +2,7 @@
 
 [`public/annotations.json`](../public/annotations.json) is what the map says about the things the game leaves numbered: a name, the points a pickup scores, a level's best score where the disc holds more than can be collected, and a note for whoever is looking at the map. This file is why each of those is believed, one section per entry under the entry's key, and a unit test fails when an entry has no section here or a section names no entry. The note says what a thing is and does; the reasons stay here.
 
-Most names rest on Syonyx's Roll Away walkthrough (GameFAQs, 2006), which the repo does not carry: the level it first mentions a thing on carries the game's first placement of one kind or type, and usually nothing else new. The points rest on its per-level maximum scores, which the disc reproduces exactly on 193 of the 209 levels it rates and exceeds on the other 16, each of which curates the walkthrough's figure as its `score`; [level-format.md](level-format.md) has the arithmetic. The names that rest on play alone are the coin tiers' colours and which of the two directional captivators is which. Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page.
+Most names rest on Syonyx's Roll Away walkthrough (GameFAQs, 2006), which the repo does not carry: the level it first mentions a thing on carries the game's first placement of one kind or type, and usually nothing else new. The points rest on its per-level maximum scores, which the disc reproduces exactly on 193 of the 209 levels it rates and exceeds on the other 16, each of which curates the walkthrough's figure as its `score`; [level-format.md](level-format.md) has the arithmetic. The names that rest on play are the coin tiers' colours, which of the two directional captivators is which, and the acid block. Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page.
 
 ## Block kinds
 
@@ -20,11 +20,11 @@ Style 2 in the lattice, kind 2 in a record: LEVEL 46, the walkthrough's first ic
 
 ### kind 3: Invisible block
 
-Style 3 in the lattice, kind 3 in a record: LEVEL 31, the walkthrough's first invisible platform, is eight of them and nothing else new. Two thirds of the game's are in Haze. That rolling over one in a bonus level scores nothing is arithmetic: the six bonus levels that have invisible blocks each fall short of the walkthrough's maximum by 50 times their count, and no other bonus level has one.
+Style 3 in the lattice, kind 3 in a record: LEVEL 31, the walkthrough's first invisible platform, is eight of them and nothing else new. Two thirds of the game's are in Haze. That rolling over one in a bonus level scores nothing, which the map's totals count on, is arithmetic: the six bonus levels that have invisible blocks each fall short of the walkthrough's maximum by 50 times their count, and no other bonus level has one.
 
 ### kind 4: Acid block
 
-One cell in each copy of OBJ LEVEL and nowhere else, so the walkthrough never meets it. The loader paints it with the green splat, the fifteenth model of the artwork's table, and on OBJ LEVEL in play it is the green block (2026-09-16). The game never names it, and the name is what it looks like.
+One cell in each copy of OBJ LEVEL and nowhere else, so the walkthrough never meets it. The loader paints it with the green splat, the fifteenth model of the artwork's table, and on OBJ LEVEL in play it is the green block (2026-09-16). The name was what it looks like until play settled it: the ball dies on it with the game calling out ACID! (2026-09-24).
 
 ### kind 5: Moving platform
 
