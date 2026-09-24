@@ -14,9 +14,11 @@ import {
 import { draw, invalidatePick } from "./render.js";
 import { clearDetail } from "./detail.js";
 
-export function selectLevel(i, { keepView = false, entry = true } = {}) {
+export function selectLevel(i, { keepView = false } = {}) {
   const l = state.data.levels[i];
   if (!l) return;
+  // Nothing lies behind the first level shown, so arriving there is no entry.
+  const left = state.lvl !== null;
   state.li = i;
   state.lvl = l;
   state.idx = index(l);
@@ -30,7 +32,7 @@ export function selectLevel(i, { keepView = false, entry = true } = {}) {
   emit("level-changed", i);
   chip();
   draw();
-  writeHash(entry && !keepView);
+  writeHash(left && !keepView);
 }
 
 /** Centre on the level and pick a zoom that shows all of it. */
@@ -114,10 +116,6 @@ let queued = 0;
 // to date. The entry outlives the quieter writes that ride on its heels in
 // the same frame, so the one write carries it.
 let entry = false;
-// An entry the viewer makes comes back to it as a hashchange like any other,
-// and is not read back: reading it would clear the selection it was made for.
-let written = null;
-let ownEntries = 0;
 
 // A level is keyed by its pack and its slot in it, which is the disc's own
 // address and the one the cheat takes.
@@ -145,11 +143,8 @@ function flushHash() {
     `#${slotOf(l)}/${Math.round(c.yaw)},${Math.round(c.pitch)}/${c.zoom.toFixed(2)}` +
     `/${t}/${r2(c.panX)},${r2(c.panY)}/${state.slice}`;
   if (location.hash === h) return;
-  written = h;
-  if (push) {
-    ownEntries++;
-    location.hash = h;
-  } else history.replaceState(null, "", h);
+  if (push) history.pushState(null, "", h);
+  else history.replaceState(null, "", h);
 }
 
 export function applyHash() {
@@ -183,13 +178,10 @@ export function applyHash() {
   return true;
 }
 
-// A hash the viewer cannot honour would otherwise sit in the address bar
-// naming a level that is not the one on screen.
+// The viewer's own writes raise no hashchange, so what arrives here is a hash
+// typed, followed or gone back to. One the viewer cannot honour would
+// otherwise sit in the address bar naming a level that is not on screen.
 addEventListener("hashchange", () => {
-  if (ownEntries && location.hash === written) {
-    ownEntries--;
-    return;
-  }
   if (!applyHash()) writeHash();
 });
 
