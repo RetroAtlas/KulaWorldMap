@@ -544,8 +544,7 @@ test("the view turns about a find only while it stays selected", async ({ page }
   expect(cleared.selected).toBe(false);
   // the pivot goes back to the level as the next turn begins, moving nothing
   const moved = await page.evaluate(async () => {
-    const { state, screen } = await import(new URL("js/state.js", location.href).href);
-    const { pivot } = await import(new URL("js/navigate.js", location.href).href);
+    const { state, screen, pivot } = await import(new URL("js/state.js", location.href).href);
     const before = screen(20, 15, 17);
     pivot();
     const after = screen(20, 15, 17);

@@ -1,7 +1,7 @@
 import { $, emit } from "./dom.js";
-import { state, SIDE, BLOCK, PITCH_MIN, PITCH_MAX, cellKey } from "./state.js";
+import { state, SIDE, BLOCK, PITCH_MIN, PITCH_MAX, cellKey, pivot } from "./state.js";
 import { draw, cellAt, invalidatePick } from "./render.js";
-import { chip, writeHash, stepLevel, fit, pivot } from "./navigate.js";
+import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
 import { OFF_LATTICE, FACE_NAME, kindName, ownMarker, markerLabel, markerState } from "./data.js";

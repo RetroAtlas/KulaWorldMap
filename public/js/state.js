@@ -11,7 +11,6 @@ export const state = {
   li: -1,
   cam: { yaw: 45, pitch: 35, zoom: 1, panX: 0, panY: 0 },
   target: [17, 17, 17],
-  pinned: null,
   slice: SIDE - 1,
   view: { w: 0, h: 0, dpr: 1 },
   show: {
@@ -89,6 +88,19 @@ export function retarget(t) {
   state.cam.panX += ax - bx;
   state.cam.panY += ay - by;
   state.target = t;
+}
+
+/** The middle of a level's extent. */
+export const levelCentre = (l) => [0, 1, 2].map((i) => (l.min[i] + l.max[i] + 1) / 2);
+
+// The view turns about the selected cell while it is centred on that cell,
+// which only a search does, and about the level otherwise. The change is made
+// as a turn begins and moves nothing on screen, so clearing the selection is
+// the whole of the way back.
+export function pivot() {
+  const s = state.selected;
+  if (!state.lvl || (s && [s.x, s.y, s.z].every((v, i) => v + 0.5 === state.target[i]))) return;
+  retarget(levelCentre(state.lvl));
 }
 
 /** The smallest z the slice still draws, counting down from the top. */

@@ -9,6 +9,7 @@ import {
   facing,
   screen,
   retarget,
+  pivot,
   cellKey,
 } from "../../public/js/state.js";
 
@@ -82,4 +83,29 @@ test("the orbit target lands in the middle of the view", () => {
   const [x, y] = screen(17, 17, 17);
   near(x, 400, 1e-6);
   near(y, 300, 1e-6);
+});
+
+test("the view turns about a selected cell only while it is centred on that cell", () => {
+  Object.assign(state.cam, { yaw: 30, pitch: 20, zoom: 1, panX: 0, panY: 0 });
+  state.view = { w: 800, h: 600, dpr: 1 };
+  state.lvl = { min: [10, 10, 15], max: [20, 20, 17] };
+  const centre = [15.5, 15.5, 16.5];
+
+  state.target = [12.5, 13.5, 16.5];
+  state.selected = { x: 12, y: 13, z: 16 };
+  pivot();
+  assert.deepEqual(state.target, [12.5, 13.5, 16.5]);
+
+  state.selected = { x: 11, y: 13, z: 16 };
+  const before = screen(4, 5, 6);
+  pivot();
+  assert.deepEqual(state.target, centre);
+  near(screen(4, 5, 6)[0], before[0]);
+  near(screen(4, 5, 6)[1], before[1]);
+
+  state.target = [12.5, 13.5, 16.5];
+  state.selected = null;
+  pivot();
+  assert.deepEqual(state.target, centre);
+  state.lvl = null;
 });
