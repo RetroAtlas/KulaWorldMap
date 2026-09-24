@@ -112,7 +112,7 @@ One to six a level on the disc: 61 levels with one, 92 with two, 31 with three, 
 
 ### type 32: Lethargy pill
 
-The walkthrough's dizzy pill. LEVEL 10 introduces them and carries the game's first four, and LEVEL 34, 43, 56 and 87 have them where it says.
+The walkthrough's dizzy pill. LEVEL 10 introduces them and carries the game's first four, and LEVEL 34, 43, 56 and 87 have them where it says. How long it lasts is the code's: its case sets the word at `0x800ba338` to 360 (`0x800387d4`), and the ball's routine, which the play loop runs once a frame, takes 2 off it a frame (`0x8003b388`) and 4 ticks off the clock with it (`0x8003b390`, through `0x8003b468`), so the pill lasts 180 frames, three seconds, and costs 720 ticks beyond the clock's own, 14.4 of its seconds at fifty ticks to the second ([motion.md](motion.md)). The walkthrough's fifteen seconds is that loss.
 
 ### type 33: Bouncy pill
 
