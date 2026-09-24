@@ -162,7 +162,7 @@ One placement in the game, on LEVEL 19, where the walkthrough's fruit stands and
 
 ### type 50: Captivator
 
-LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. That it is the thinner star with three long points was seen in play beside type 52, and it is the walkthrough's slower kind; `f5` is its direction.
+LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. That it is the thinner star with three long points was seen in play beside type 52, and it is the walkthrough's slower kind; `f5` is its direction. Touching it pops the ball, as spikes do, and the lost life is what restarts the level (play, 2026-09-24).
 
 ### type 51: Rolling stone
 
@@ -170,7 +170,7 @@ Drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's 
 
 ### type 52: Captivator
 
-The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. That it is the fuller star with four short points was seen in play beside type 50, and it is the walkthrough's quick kind; `f5` is its direction.
+The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. That it is the fuller star with four short points was seen in play beside type 50, and it is the walkthrough's quick kind; `f5` is its direction. Touching it pops the ball, as spikes do, and the lost life is what restarts the level (play, 2026-09-24).
 
 ### type 53: Captivator, wandering
 

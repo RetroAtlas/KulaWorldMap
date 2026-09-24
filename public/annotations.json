@@ -239,7 +239,7 @@
     "50": {
       "name": "Captivator",
       "facing": "f5",
-      "note": "A spiked star that restarts the level on touch: the thinner one, with three long points, which travels the space it has and turns back at any wall or object in its way."
+      "note": "A spiked star that pops the ball on touch: the thinner one, with three long points, which travels the space it has and turns back at any wall or object in its way."
     },
     "51": {
       "name": "Rolling stone",
@@ -249,7 +249,7 @@
     "52": {
       "name": "Captivator",
       "facing": "f5",
-      "note": "A spiked star that restarts the level on touch: the fuller one, with four short points, which slides back and forth over a fixed stretch, as if on a spring."
+      "note": "A spiked star that pops the ball on touch: the fuller one, with four short points, which slides back and forth over a fixed stretch, as if on a spring."
     },
     "53": {
       "name": "Captivator, wandering",
