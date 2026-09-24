@@ -5,7 +5,8 @@
       "name": "kula",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["tools/serve.py"],
-      "port": 8479
+      "port": 8479,
+      "autoPort": true
     }
   ]
 }
