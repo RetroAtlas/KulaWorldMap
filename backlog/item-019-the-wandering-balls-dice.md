@@ -6,7 +6,7 @@ Everything the game leaves to chance the map draws from a hash of the thing's pl
 
 ## Sketch
 
-A small generator seeded from the ball's cell and face, in place of `Math.random`, of the shape `seed` already has; `walker` takes it, `decide` calls it. Then a test can assert a known route on a level with a wandering ball, which nothing does today, and the drift the user found on 2026-09-17 (the ball leaving the floor, the reset after a move) would have a regression test. Whether the generator belongs beside `seed` in skins.js or in a module of its own is for whoever does it; both files hash the same way, which [item 21](item-021-two-duplications.md) is about.
+A small generator seeded from the ball's cell and face, in place of `Math.random`, of the shape `seed` already has; `walker` takes it, `decide` calls it. Then a test can assert a known route on a level with a wandering ball, which nothing does today, and the drift the user found on 2026-09-17 (the ball leaving the floor, the reset after a move) would have a regression test. Whether the generator belongs beside `seed` in skins.js or in a module of its own is for whoever does it; both files hash the same way, which [item 21](item-021-one-hash-written-twice.md) is about.
 
 ## Ruled out
 

@@ -8,6 +8,10 @@
 import { cellKey } from "./state.js";
 
 const BLOCK = 512; // the game's units to a block
+const ICE = 2;
+const INVISIBLE = 3;
+const CRUMBLING = 6;
+const VANISHING = 7;
 const BEAM_KIND = 8;
 const PLATFORM_ROLES = ["first", "middle", "last"];
 const STONE_AT_RANDOM = -2;
@@ -150,20 +154,20 @@ export function faceSkin(skins, look, c, face, kind, r, frame, place, plate) {
   const out = { tex: 0, turn: 0, live: look.bonus || sel === cyc.fire.of };
   if (kinds) {
     out.tex = kinds[0];
-    if (kind === 2 && on && shadowed(skins, on.type)) out.tex = pick(kinds, 1);
-    else if (kind === 3) {
+    if (kind === ICE && on && shadowed(skins, on.type)) out.tex = pick(kinds, 1);
+    else if (kind === INVISIBLE) {
       out.tex = at(kinds, cyc.invisible.frames);
       const level = cycled(cyc.invisible.level);
       out.colour = [level, level, level];
       out.add = skins.blend[String(kind)] === 1;
       out.live = true;
-    } else if (kind === 7) {
+    } else if (kind === VANISHING) {
       out.turn = stoneTurn(skins, look, h);
       if (look.bonus) {
         out.tex = at(kinds, cyc.bonus.frames);
         out.colour = bonusColour();
       }
-    } else if (kind === 6 && look.bonus) out.colour = bonusColour();
+    } else if (kind === CRUMBLING && look.bonus) out.colour = bonusColour();
   } else if (type) {
     const texs = set.types[String(type)];
     out.tex = pick(texs, shadowed(skins, type) ? 1 : 0);
