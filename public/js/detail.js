@@ -21,6 +21,7 @@ import {
   markerCircuit,
   isSwitch,
   flip,
+  markerDestination,
   fieldName,
   fieldKey,
   VALUE_KEY,
@@ -39,7 +40,7 @@ const HAZARD = `<span class="tag">Hazard</span>`;
 const dot = (colour) =>
   `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${colour}"></span>`;
 
-const decoded = (m) => {
+const decoded = (m, c) => {
   let html = "";
   const points = markerPoints(m);
   if (points) html += row("points", points);
@@ -47,7 +48,20 @@ const decoded = (m) => {
   if (facing !== null) html += row("facing", DIRECTION_NAME[facing]);
   const started = markerState(m);
   if (started !== null) html += row("starts", started);
+  const to = markerDestination(m, state.lvl);
+  if (to) html += row("leads to", destination(to, m, c));
   return html;
+};
+
+// Where a teleporter leads is a place on the map to go to, as a find is.
+const destination = (to, m, c) => {
+  if (to.x === c.x && to.y === c.y && to.z === c.z && to.face === m.face) return "itself";
+  const where = `${to.x}, ${to.y}, ${to.z} · ${FACE_NAME[to.face]}`;
+  const there = (state.idx.markers.get(cellKey(to.x, to.y, to.z)) || []).find(
+    (n) => n.face === to.face,
+  );
+  const said = [markerName(there), FACE_NAME[to.face], `${to.x},${to.y},${to.z}`].join(", ");
+  return `<button type="button" class="goto" data-to="${to.x},${to.y},${to.z}" data-said="${said}">${where}</button>`;
 };
 
 const label = (m, i) => {
@@ -106,7 +120,7 @@ export function showCell(c) {
       the level loads, as one end of a laser.</p>`;
   else if (kindNote(kind)) html += `<p class="sub">${kindNote(kind)}</p>`;
   if (farEnd(kind, end)) html += `<p class="sub">One end of a laser.</p>`;
-  html += `<table>${own ? decoded(own) : ""}${STORED}`;
+  html += `<table>${own ? decoded(own, c) : ""}${STORED}`;
   html += `${row("cell", `${c.x}, ${c.y}, ${c.z}`)}${row("cell value", off ? "empty" : c.v)}`;
   if (!plain && !off) html += row("record", c.v - state.data.firstRecord);
   if (kind !== null) html += row("kind", kind);
@@ -128,7 +142,7 @@ export function showCell(c) {
     const note = markerNote(m);
     if (note) html += `<p class="sub">${note}</p>`;
     if (isSwitch(m)) html += press(m);
-    html += `<table>${decoded(m)}${STORED}${fields(m)}</table>${placed(m)}`;
+    html += `<table>${decoded(m, c)}${STORED}${fields(m)}</table>${placed(m)}`;
   }
   box.innerHTML = html;
   for (const at of box.querySelectorAll(".icon-at"))
@@ -141,6 +155,10 @@ export function showCell(c) {
       box.querySelector(`.press button[data-circuit="${b.dataset.circuit}"]`)?.focus();
       draw();
     };
+  }
+  for (const b of box.querySelectorAll(".goto")) {
+    const [x, y, z] = b.dataset.to.split(",").map(Number);
+    b.onclick = () => emit("go-to", { x, y, z, said: b.dataset.said });
   }
   box.querySelector(".x").onclick = () => {
     clearDetail();

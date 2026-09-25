@@ -1,13 +1,23 @@
 import { $, on } from "./dom.js";
 import { state, BLOCK, depth, facing, screen, cellKey, sliceZ } from "./state.js";
-import { WORLD_TINT, FACE_NORMAL, motionTable, skinsTable, platformCells, litNow } from "./data.js";
+import {
+  WORLD_TINT,
+  FACE_NORMAL,
+  motionTable,
+  skinsTable,
+  platformCells,
+  litNow,
+  markerDestination,
+  markerColour,
+  markerNow,
+} from "./data.js";
 import { frameAt } from "./motion.js";
 import { walkers, probe, advance, place, under, dice } from "./travel.js";
 import { lookOf, paintedShadow } from "./skins.js";
 import { drawBeams } from "./beams.js";
 import { atlasFor } from "./atlas.js";
 import { drawBlock, cube, outline, covers } from "./blocks.js";
-import { drawRails, drawBase, drawLook, drawScale, drawMark } from "./overlays.js";
+import { drawRails, drawBase, drawLook, drawScale, drawMark, drawLink } from "./overlays.js";
 import { drawThing, paintSays, thingDisc } from "./things.js";
 
 const cv = $("cv");
@@ -272,6 +282,14 @@ export function draw() {
     ctx.restore();
   }
   for (const [m, c] of noted) drawMark(ctx, m, c);
+  // where a selected teleporter leads goes over everything, as a mark does
+  for (const m of idx.markers.get(chosen) || []) {
+    const to = markerDestination(m, l);
+    const from = { ...state.selected, face: m.face };
+    if (!to || ["x", "y", "z", "face"].every((k) => to[k] === from[k])) continue;
+    outline(ctx, to, idx, markerColour(m), [4, 3]);
+    drawLink(ctx, from, to, markerColour(m), markerNow(m) === "off");
+  }
   if (state.show.start && l.camera) drawLook(ctx, l);
   drawScale(ctx);
   if (spinning) animate();

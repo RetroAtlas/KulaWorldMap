@@ -202,6 +202,18 @@ export function flip(circuit) {
 const SWITCH = 9;
 /** Whether a marker is a switch, whose press turns its circuit over. */
 export const isSwitch = (m) => m.face !== null && m.type === SWITCH;
+// A teleporter names the one it sends the ball to by that one's record, times
+// sixteen, plus its face.
+const TELEPORTER = 5;
+const DESTINATION = fieldIndex("f7");
+/** Where a teleporter sends the ball, as a cell and a face, or null for anything else. */
+export function markerDestination(m, l) {
+  if (m.face === null || m.type !== TELEPORTER || m.f[DESTINATION] < 0) return null;
+  const r = l.records[m.f[DESTINATION] >> 4];
+  const face = m.f[DESTINATION] & 15;
+  if (!r?.on.some((o) => o.face === face && o.type === TELEPORTER)) return null;
+  return { x: r.x, y: r.y, z: r.z, face };
+}
 /** What the raw field at index `i` of a marker's fields holds, where that is settled, or null. */
 export const fieldName = (m, i) => {
   if (i === NUMBER_FIELD && markerNumber(m) !== null) return "pickup number";

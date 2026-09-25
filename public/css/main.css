@@ -623,6 +623,16 @@ body.sidebar-open .menu-btn {
 .detail .lamp.off {
   background: none;
 }
+.detail .goto {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
 .detail .tag {
   margin-left: auto;
   color: var(--warn);

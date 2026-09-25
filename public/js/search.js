@@ -89,6 +89,12 @@ function goTo(x, y, z) {
   writeHash(true);
 }
 
+// A place the panel names, where a teleporter leads, is gone to as a find is.
+on("go-to", ({ x, y, z, said }) => {
+  goTo(x, y, z);
+  say(said);
+});
+
 function jump(h) {
   if (h.li !== state.li) selectLevel(h.li);
   goTo(h.record.x, h.record.y, h.record.z);

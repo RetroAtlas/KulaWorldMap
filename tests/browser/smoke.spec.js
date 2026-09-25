@@ -871,6 +871,49 @@ test("a switch's panel presses it, turning its colour over until the level is le
   expect(errors).toEqual([]);
 });
 
+test("a teleporter's panel names where it leads, and going there is a find", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#COWBOY/7/45,35/1");
+  await settle(page);
+  await page.evaluate(async () => {
+    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    showCell(state.idx.cells.get(cellKey(17, 7, 17)));
+  });
+  // LEVEL 68's blue teleporters send the ball round a ring of three
+  const go = page.locator("#detail .goto");
+  await expect(go).toHaveText("17, 25, 17 · top");
+  const entries = await page.evaluate(() => history.length);
+  await go.click();
+  await expect(page.locator("#detail")).toContainText("cell 17,25,17");
+  await expect(go).toHaveText("17, 21, 17 · top");
+  const view = await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    return { target: state.target, pan: [state.cam.panX, state.cam.panY] };
+  });
+  expect(view).toEqual({ target: [17.5, 25.5, 17.5], pan: [0, 0] });
+  await frame(page);
+  expect(page.url()).toMatch(/\/17,25,17$/);
+  expect(await page.evaluate(() => history.length)).toBe(entries + 1);
+  await expect(page.locator("#say")).toContainText("Blue teleporter, top, 17,25,17");
+  await go.click();
+  await go.click();
+  await expect(page.locator("#detail")).toContainText("cell 17,7,17");
+  // a teleporter alone in its colour sends the ball back onto itself
+  await page.goto("/#HILLS/19");
+  await settle(page);
+  await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === 5));
+    const { x, y, z } = state.lvl.records[i];
+    showCell({ x, y, z, v: state.data.firstRecord + i });
+  });
+  await expect(page.locator("#detail")).toContainText("leads toitself");
+  await expect(page.locator("#detail .goto")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test("b takes the lines off the blocks", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#HIRO/0/45,35/1");

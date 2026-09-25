@@ -12,6 +12,7 @@ import {
   litNow,
   flip,
   isSwitch,
+  markerDestination,
 } from "../../public/js/data.js";
 
 const levelNamed = (name, pack) =>
@@ -52,4 +53,28 @@ test("only a device a switch toggles is on a circuit", () => {
     assert.equal(markerNow(m), null);
     assert.equal(isSwitch(m), false);
   }
+});
+
+test("a teleporter leads to one of its own colour, and nothing else leads anywhere", () => {
+  setAnnotations(annotations);
+  let led = 0;
+  for (const l of mapData.levels) {
+    const marks = new Map();
+    for (const r of l.records) for (const m of levelMarkers({ records: [r] })) marks.set(m, r);
+    for (const [m, r] of marks) {
+      const to = markerDestination(m, l);
+      if (m.face === null || m.type !== 5) {
+        assert.equal(to, null);
+        continue;
+      }
+      const there = [...marks].find(
+        ([n, s]) => n.face === to.face && s.x === to.x && s.y === to.y && s.z === to.z,
+      );
+      assert.ok(there, `${l.name}: the teleporter at ${r.x},${r.y},${r.z} leads nowhere`);
+      assert.equal(there[0].type, 5);
+      assert.equal(markerCircuit(there[0]), markerCircuit(m));
+      led++;
+    }
+  }
+  assert.equal(led, 147);
 });

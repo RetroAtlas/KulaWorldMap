@@ -27,6 +27,7 @@ const LEVELS = {
   F6: ["INCAFI.PAK", 1],
   L51: ["ARCTIC.PAK", 5],
   L58: ["ARCTIC.PAK", 12],
+  L68: ["COWBOY.PAK", 7],
   L71: ["COWBOY.PAK", 10],
   B15: ["COWBOY.PAK", 17],
   L76: ["FIELD.PAK", 0],
@@ -174,6 +175,14 @@ add("I/LESSON/yellow", "LESSON", V1, { flip: [0], show: { labels: true }, frames
 add("I/F3/all", "F3", V1, { flip: [0, 1, 2, 3], frames: [T0, T1] });
 add("I/F6/all", "F6", V3, { flip: [0, 1, 2, 3], show: { models: false, labels: true } });
 add("I/S8/beam", "S8", V1, { flip: [0, 1, 2, 3], show: { objects: false } });
+add("I/LESSON/teleporter", "LESSON", V1, { flip: [0], select: "type5" });
+
+// J: where a selected teleporter leads, round a ring, off and on, and to itself
+add("J/L68/ring", "L68", V1, { select: "type5" });
+add("J/L68/ring-next", "L68", V3, { select: "type5", nth: 2, show: { models: false } });
+add("J/LESSON/off", "LESSON", V3, { select: "type5", nth: 1 });
+add("J/OBJ/itself", "OBJ", V1, { select: "type5" });
+add("J/H/L68", "L68", V1, { select: "type5", nth: 4, dpr: 2 });
 
 const seen = new Set();
 for (const c of cases) {
