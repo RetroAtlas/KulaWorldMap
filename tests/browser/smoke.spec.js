@@ -302,12 +302,14 @@ test("a block that is a thing of its own is named once, with what its record hol
 });
 
 test("a whole block of fire or ice reads apart from one face of it", async ({ page }) => {
-  for (const [hash, kind, block, face] of [
-    ["#INCA/7", 1, "Fire block", "Fire"],
-    ["#ARCTIC/1", 2, "Ice block", "Ice"],
+  for (const [hash, title, kind, block, face] of [
+    ["#INCA/7", "LEVEL 38", 1, "Fire block", "Fire"],
+    ["#ARCTIC/1", "LEVEL 47", 2, "Ice block", "Ice"],
   ]) {
     await page.goto(`/${hash}`);
     await settle(page);
+    // a second goto only changes the hash, and the level before it is still loaded
+    await expect(page.locator("#chip")).toContainText(title);
     const open = (whole) =>
       page.evaluate(
         async ([kind, whole]) => {
