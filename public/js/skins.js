@@ -6,6 +6,7 @@
 // stone among the world's four or the frame a fire starts on, the map hashes
 // the face's place instead, so it shows the same thing on every visit.
 import { cellKey } from "./state.js";
+import { seed } from "./hash.js";
 
 const BLOCK = 512; // the game's units to a block
 const ICE = 2;
@@ -30,14 +31,6 @@ const FACE_ALONG = [
   [3, 2],
   [0, 5],
 ];
-
-/** A hash of a face's place, for what the game draws by the dice. */
-export function seed(x, y, z, face) {
-  let h = (x * 73856093) ^ (y * 19349663) ^ (z * 83492791) ^ ((face + 1) * 2971215073);
-  h = Math.imul(h ^ (h >>> 15), 2246822519) >>> 0;
-  h = Math.imul(h ^ (h >>> 13), 3266489917) >>> 0;
-  return h;
-}
 
 /**
  * How a level is drawn: from which of the two sets of skins, the second for

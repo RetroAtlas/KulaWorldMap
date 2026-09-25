@@ -1,6 +1,6 @@
 import { state, screen } from "./state.js";
 import { kindMotion } from "./data.js";
-import { seed } from "./skins.js";
+import { seed } from "./hash.js";
 
 const BEAM_KIND = 8;
 const BLOCK = 512; // the game's units to a block

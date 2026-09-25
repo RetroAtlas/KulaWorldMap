@@ -5,6 +5,7 @@
 // was when it started, and a thing's phase is either the one its record
 // gives it or, where the game draws one at random on every visit, one hashed
 // from its cell and face, so the map shows the same thing on every visit.
+import { hashes } from "./hash.js";
 
 /** The game's frame count at a page time in milliseconds. */
 export const frameAt = (table, ms) => (ms / 1000) * table.hz;
@@ -14,14 +15,8 @@ const turns = (table, angle) => angle / table.turn;
 
 /** Three starting angles for a thing the game starts at random, by its place. */
 export function phasesOf(table, x, y, z, face) {
-  let h = (x * 73856093) ^ (y * 19349663) ^ (z * 83492791) ^ ((face + 1) * 2971215073);
-  const out = [];
-  for (let k = 0; k < 3; k++) {
-    h = Math.imul(h ^ (h >>> 15), 2246822519) >>> 0;
-    h = Math.imul(h ^ (h >>> 13), 3266489917) >>> 0;
-    out.push(h % table.turn);
-  }
-  return out;
+  const next = hashes(x, y, z, face);
+  return [next() % table.turn, next() % table.turn, next() % table.turn];
 }
 
 // The moving spikes and the corkscrew read their phase from f3, one of four values.
