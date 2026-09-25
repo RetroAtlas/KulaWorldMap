@@ -16,6 +16,7 @@ export const state = {
   show: {
     objects: true,
     models: true,
+    through: false,
     start: true,
     labels: false,
     faces: true,

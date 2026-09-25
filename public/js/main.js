@@ -30,6 +30,7 @@ const HELP = [
   ["n", "say in each label which face the thing stands on"],
   ["b", "outlines: the blocks' edges, the broken outlines and the platforms' routes"],
   ["v", "let moving platforms and hazards travel, as in play"],
+  ["x", "see what stands on the far faces through the blocks"],
   ["/", "search"],
   ["m", "show and hide the sidebar"],
   ["Esc", "clear the selection"],

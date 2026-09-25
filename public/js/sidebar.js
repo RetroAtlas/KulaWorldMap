@@ -21,6 +21,7 @@ const SHOWN = [
   ["showOutlines", "outlines"],
   ["showObjects", "objects"],
   ["showModels", "models"],
+  ["showThrough", "through"],
   ["showStart", "start"],
   ["showLabels", "labels"],
   ["showFaces", "faces"],

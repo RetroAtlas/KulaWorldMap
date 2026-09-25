@@ -783,6 +783,45 @@ test("b takes the lines off the blocks", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("a thing on a face turned away shows where no block covers it, and x shows the rest", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // LEVEL 1's things all stand on top; at 45° a block's middle would fall on its near edge
+  await page.goto("/#HIRO/0/30,35");
+  await settle(page);
+  await expect(page.locator("#showThrough")).not.toBeChecked();
+  /** Whether the middle of the ball at the start, seen from `pitch`, is drawn
+      over what is there without it; both in one frame, as the canvas may
+      still be settling to its size. */
+  const shows = (pitch) =>
+    page.evaluate(async (pitch) => {
+      const { state, screen } = await import(new URL("js/state.js", location.href).href);
+      const { draw } = await import(new URL("js/render.js", location.href).href);
+      const { ballFor, modelUnit } = await import(new URL("js/data.js", location.href).href);
+      const [key] = [...state.idx.markers].find(([, ms]) => ms.some((m) => m.type === 30));
+      const c = state.idx.cells.get(key);
+      const [lo, hi] = ballFor(state.lvl).box;
+      const g = document.getElementById("cv").getContext("2d");
+      state.cam.pitch = pitch;
+      const at = (objects) => {
+        state.show.objects = objects;
+        draw();
+        const [x, y] = screen(c.x + 0.5, c.y + 0.5, c.z - ((hi[1] - lo[1]) / 2) * modelUnit());
+        return String(g.getImageData(Math.round(x), Math.round(y), 1, 1).data);
+      };
+      return at(true) !== at(false);
+    }, pitch);
+  // from just below the tops the ball stands clear of its block, and from
+  // further down its block covers its middle
+  expect(await shows(-6)).toBe(true);
+  expect(await shows(-40)).toBe(false);
+  await page.keyboard.press("x");
+  await expect(page.locator("#showThrough")).toBeChecked();
+  expect(await shows(-40)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
 test("the page a link lands on says what it is", async ({ page }) => {
   await page.goto("/");
   const head = await page.evaluate(() => ({

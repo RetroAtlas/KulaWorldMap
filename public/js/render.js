@@ -26,7 +26,8 @@ import { lookOf, platformPlace, faceSkin, paintedShadow } from "./skins.js";
 import { drawBeams } from "./beams.js";
 
 const cv = $("cv");
-const ctx = cv.getContext("2d");
+const main = cv.getContext("2d");
+let ctx = main;
 
 // A second canvas painted with one flat colour per cell, so a click can be
 // resolved by reading a pixel rather than by intersecting cubes.
@@ -34,6 +35,12 @@ const pickCv = document.createElement("canvas");
 const pick = pickCv.getContext("2d", { willReadFrequently: true });
 let pickStale = true;
 let pickList = [];
+
+// What shows through the blocks is drawn whole on a layer of its own and laid
+// over the map at once, so a faint thing does not show its own far side
+// through its near one, and where nothing is in front of it, it shows as it is.
+const layerCv = document.createElement("canvas");
+const layer = layerCv.getContext("2d");
 
 export const invalidatePick = () => {
   pickStale = true;
@@ -52,8 +59,7 @@ export function resize() {
     c.width = Math.round(w * dpr);
     c.height = Math.round(h * dpr);
   }
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  pick.setTransform(dpr, 0, 0, dpr, 0, 0);
+  for (const g of [main, pick]) g.setTransform(dpr, 0, 0, dpr, 0, 0);
   invalidatePick();
   if (state.needsFit) refit();
   draw();
@@ -198,6 +204,9 @@ const SHADE = FACES.map((f) =>
 const shadeOf = (i, world) => skinsTable()?.shade[world]?.[FACES[i].game] ?? SHADE[i];
 
 const PLATFORM = 5;
+const THROUGH = 0.35; // how much of a thing shows through the blocks in front of it
+/** Whether a thing stands on a face turned away from the view. */
+const away = (face) => face !== null && face !== undefined && !facing(FACE_NORMAL[face]);
 
 /** The cells to draw, blocks and the stretches of beam between them, back to
     front. A moving platform's blocks, on the move, are drawn where its run
@@ -211,6 +220,16 @@ function visible(idx, moving) {
       const r = c.v >= state.data.firstRecord ? idx.records.get(key)?.[0] : null;
       if (r?.kind !== PLATFORM) {
         out.push(c);
+        // A thing on a face turned away from the view sorts as the cell it
+        // stands in, which is behind its block, so that its block hides what
+        // it covers of the thing and no more.
+        if (cells !== idx.cells) continue;
+        for (const m of idx.markers.get(key) || []) {
+          if (!away(m.face)) continue;
+          const n = FACE_NORMAL[m.face];
+          const d = depth(c.x + n[0], c.y + n[1], c.z + n[2]);
+          out.push({ x: c.x + n[0], y: c.y + n[1], z: c.z + n[2], d: d + 1e-6, home: c, mark: m });
+        }
         continue;
       }
       const offset = moving?.get(`${key}/null`)?.offset || [0, 0, 0];
@@ -222,7 +241,9 @@ function visible(idx, moving) {
   // A thing on its way across blocks is drawn where it is, right after the
   // nearest of the blocks it stands over, so that neither the block it is
   // leaving nor the one it is coming onto is painted over it, while what is
-  // nearer still comes in front.
+  // nearer still comes in front. On a face turned away from the view it sorts
+  // as the furthest of the cells it stands in, so every block it stands over
+  // comes in front of it.
   if (moving) {
     for (const going of moving.values()) {
       const { w, offset } = going;
@@ -231,8 +252,11 @@ function visible(idx, moving) {
       const cells = under(w, offset);
       const blocks = cells.filter((c) => idx.cells.has(cellKey(...c)));
       // over no block, it sorts as if one were under its middle
-      const d = Math.min(...(blocks.length ? blocks : cells.slice(0, 1)).map((c) => depth(...c)));
-      out.push({ x: at[0], y: at[1], z: at[2], d: d - 1e-6, home: w.c, thing: going });
+      const below = (blocks.length ? blocks : cells.slice(0, 1)).map((c) => depth(...c));
+      const d = away(w.face)
+        ? Math.max(...below) + depth(...FACE_NORMAL[w.face]) + 1e-6
+        : Math.min(...below) - 1e-6;
+      out.push({ x: at[0], y: at[1], z: at[2], d, home: w.c, thing: going });
     }
   }
   const far = (e) => e.d ?? depth(e.x, e.y, e.z);
@@ -451,6 +475,18 @@ export function draw() {
     pick.clearRect(0, 0, w, h);
   }
   const edges = state.show.outlines && state.cam.zoom > 0.3;
+  // A thing on a face turned away from the view is drawn again once every
+  // block is down, faintly, where the display asks to see it through them.
+  const through = [];
+  const put = (m, ...rest) => {
+    drawThing(m, ...rest);
+    if (state.show.through && away(m.face)) through.push([m, ...rest]);
+  };
+  const mark = (m, c, home, key) => {
+    if (moving?.has(`${key}/${m.face}`)) return;
+    if (atlas && state.show.models && paintSays(m, skins)) return;
+    put(m, c, l, frame, home, null, atlas && m.face !== null && paintedShadow(skins, m.type));
+  };
 
   for (const c of cells) {
     const [px, py] = screen(c.x, c.y, c.z);
@@ -463,10 +499,14 @@ export function draw() {
       continue;
     }
     if (c.thing) {
-      if (state.show.objects && !ghost) drawThing(c.thing.w.m, home, l, frame, home, c.thing);
+      if (state.show.objects && !ghost) put(c.thing.w.m, home, l, frame, home, c.thing);
       continue;
     }
     const key = cellKey(home.x, home.y, home.z);
+    if (c.mark) {
+      if (state.show.objects && !ghost) mark(c.mark, home, home, key);
+      continue;
+    }
     const sel = state.selected?.key === key;
     const hov = state.hover?.key === key;
     const kind = kindOf(c, idx, key);
@@ -522,22 +562,7 @@ export function draw() {
     }
 
     if (state.show.objects && !ghost && !c.k) {
-      const marks = idx.markers.get(key);
-      if (marks) {
-        for (const m of marks) {
-          if (moving?.has(`${key}/${m.face}`)) continue;
-          if (atlas && state.show.models && paintSays(m, skins)) continue;
-          drawThing(
-            m,
-            c,
-            l,
-            frame,
-            home,
-            null,
-            atlas && m.face !== null && paintedShadow(skins, m.type),
-          );
-        }
-      }
+      for (const m of idx.markers.get(key) || []) if (!away(m.face)) mark(m, c, home, key);
     }
     if (state.survey.on && !ghost) {
       const m = state.survey.marks.get(key);
@@ -547,6 +572,24 @@ export function draw() {
   }
   pickStale = false;
 
+  if (through.length) {
+    if (layerCv.width !== cv.width || layerCv.height !== cv.height) {
+      layerCv.width = cv.width;
+      layerCv.height = cv.height;
+    }
+    layer.setTransform(state.view.dpr, 0, 0, state.view.dpr, 0, 0);
+    layer.clearRect(0, 0, w, h);
+    ctx = layer;
+    try {
+      for (const t of through) drawThing(...t);
+    } finally {
+      ctx = main;
+    }
+    ctx.save();
+    ctx.globalAlpha = THROUGH;
+    ctx.drawImage(layerCv, 0, 0, w, h);
+    ctx.restore();
+  }
   if (state.show.outlines) for (const r of idx.rails) drawRail(r);
   if (state.show.start && l.camera) drawLook(l);
   drawScale();
@@ -610,8 +653,7 @@ function drawThing(m, c, l, frame, home = c, going = null, painted = false) {
 // that it never dips into its face, and a device that starts switched off
 // stands still, as it does in play. The polygons are filled back to front in
 // their own colours, since the shading is baked into them, and both sides are
-// drawn, since the meshes wind their faces either way. A thing on a face turned
-// away from the view is drawn faint, like its marker. A thing whose face is
+// drawn, since the meshes wind their faces either way. A thing whose face is
 // painted with the game's own shadow casts none of its own.
 const GAP = 0.03; // between a thing and its face, in blocks
 const SHADOW = "rgba(0 0 0 / 0.32)";
@@ -688,7 +730,6 @@ function drawObject(m, c, model, motion, frame, phase, round, time, going, paint
     const wz = o[2] + x * right[2] + y * up[2] + z * fwd[2];
     pts.push([...screen(wx, wy, wz), depth(wx, wy, wz)]);
   }
-  const away = !facing(up);
   const polys = [];
   model.polys.forEach((poly, k) => {
     const p = poly.map((i) => pts[i]);
@@ -704,8 +745,6 @@ function drawObject(m, c, model, motion, frame, phase, round, time, going, paint
     polys.push({ p, z: z / n, fill: mean, blend: model.flags[k] & 2 });
   });
   polys.sort((a, b) => b.z - a.z);
-  ctx.save();
-  if (away) ctx.globalAlpha = 0.3;
   for (const { p, fill, blend } of polys) {
     ctx.fillStyle = `rgba(${fill[0]} ${fill[1]} ${fill[2]} / ${blend ? GLASS : 1})`;
     ctx.beginPath();
@@ -716,7 +755,6 @@ function drawObject(m, c, model, motion, frame, phase, round, time, going, paint
     ctx.closePath();
     ctx.fill();
   }
-  ctx.restore();
 }
 
 function outline(c, idx, colour, dash = []) {
@@ -788,14 +826,12 @@ function drawFacing(m, c, face, colour) {
 // A marker stands for one thing: an object on a face, or a record of a kind
 // that is more than a block. Colour tells the two apart, and the number is the
 // type or the kind, of which there are too many for an encoding a reader could
-// hold, so the marker says it outright once it has the room. One on a face
-// turned away from the view is drawn faint rather than left out, since a plan
-// view is the one a reader counts from, and a device that starts switched off
-// is drawn hollow, the way a beam that starts dark is drawn broken.
+// hold, so the marker says it outright once it has the room. A device that
+// starts switched off is drawn hollow, the way a beam that starts dark is
+// drawn broken.
 function drawMarker(m, c) {
   if (state.hiddenKinds.has(m.id)) return;
   const face = m.face ?? 0;
-  const away = m.face !== null && !facing(FACE_NORMAL[face]);
   const dark = markerState(m) === "off";
   const colour = markerColour(m);
   const ink = "rgba(9 13 20 / 0.9)";
@@ -803,7 +839,6 @@ function drawMarker(m, c) {
   const [px, py] = off(c, face, OBJECT_HOVER);
   const r = Math.max(4, 7 * state.cam.zoom);
   ctx.save();
-  if (away) ctx.globalAlpha = 0.4;
   ctx.strokeStyle = "rgba(232 238 251 / 0.35)";
   ctx.lineWidth = 1;
   ctx.beginPath();
