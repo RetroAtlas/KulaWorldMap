@@ -208,12 +208,12 @@ const THROUGH = 0.35; // how much of a thing shows through the blocks in front o
 /** Whether a thing stands on a face turned away from the view. */
 const away = (face) => face !== null && face !== undefined && !facing(FACE_NORMAL[face]);
 
-/** The cells to draw, blocks and the stretches of beam between them, back to
-    front. A moving platform's blocks, on the move, are drawn where its run
-    has them and sort there. */
+/** The cells to draw, blocks and the stretches of beam and of a platform's
+    route between them, back to front. A moving platform's blocks, on the
+    move, are drawn where its run has them and sort there. */
 function visible(idx, moving) {
   const out = [];
-  for (const cells of [idx.cells, idx.beamCells]) {
+  for (const cells of [idx.cells, idx.beamCells, idx.railCells]) {
     for (const c of cells.values()) {
       if (c.z < sliceZ() && !state.show.hidden) continue;
       const key = cellKey(c.x, c.y, c.z);
@@ -498,6 +498,10 @@ export function draw() {
       if (drawBeams(ctx, c, ghost, frame)) spinning = true;
       continue;
     }
+    if (c.rails) {
+      if (state.show.outlines) drawRails(c, ghost, moving);
+      continue;
+    }
     if (c.thing) {
       if (state.show.objects && !ghost) put(c.thing.w.m, home, l, frame, home, c.thing);
       continue;
@@ -590,7 +594,6 @@ export function draw() {
     ctx.drawImage(layerCv, 0, 0, w, h);
     ctx.restore();
   }
-  if (state.show.outlines) for (const r of idx.rails) drawRail(r);
   if (state.show.start && l.camera) drawLook(l);
   drawScale();
   if (spinning) animate();
@@ -917,20 +920,47 @@ function drawShadow(m, c, model, unit, offset = null) {
   ctx.fill();
 }
 
-// A moving platform's rail is the run between the two cells its record names,
-// drawn faint, since the block itself is drawn where the level keeps it.
-function drawRail({ a, b }) {
-  const p = screen(a[0] + 0.5, a[1] + 0.5, a[2] + 0.5);
-  const q = screen(b[0] + 0.5, b[1] + 0.5, b[2] + 0.5);
-  ctx.save();
-  ctx.strokeStyle = "rgba(232 238 251 / 0.5)";
-  ctx.lineWidth = Math.max(1, 1.5 * state.cam.zoom);
-  ctx.setLineDash([2 * state.cam.zoom, 5 * state.cam.zoom]);
-  ctx.beginPath();
-  ctx.moveTo(p[0], p[1]);
-  ctx.lineTo(q[0], q[1]);
-  ctx.stroke();
-  ctx.restore();
+// A moving platform's route is the run between the middles of the two cells
+// its record names, drawn faint and a cell at a time, so that a block in front
+// of it hides it, its dashes carried across the cells so it reads as one line.
+// The stretch inside the platform's own blocks, wherever they have got to, is
+// left out.
+function drawRails(c, ghost, moving) {
+  for (const { a, b, axis, cell, length } of c.rails) {
+    const lo = Math.min(a[axis], b[axis]) + 0.5;
+    const hi = Math.max(a[axis], b[axis]) + 0.5;
+    const at = (v) => {
+      const p = [c.x + 0.5, c.y + 0.5, c.z + 0.5];
+      p[axis] = v;
+      return screen(...p);
+    };
+    const offset = moving?.get(`${cellKey(...cell)}/null`)?.offset ?? [0, 0, 0];
+    const near = cell[axis] + offset[axis];
+    const far = near + length;
+    const t = [c.x, c.y, c.z][axis];
+    const from = Math.max(t, lo);
+    const to = Math.min(t + 1, hi);
+    const [p, q] = [at(lo), at(lo + 1)];
+    const block = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    ctx.save();
+    ctx.strokeStyle = "rgba(232 238 251 / 0.5)";
+    ctx.globalAlpha = ghost ? 0.16 : 1;
+    ctx.lineWidth = Math.max(1, 1.5 * state.cam.zoom);
+    ctx.setLineDash([2 * state.cam.zoom, 5 * state.cam.zoom]);
+    for (const [s, e] of [
+      [from, Math.min(to, near)],
+      [Math.max(from, far), to],
+    ]) {
+      if (e <= s) continue;
+      ctx.lineDashOffset = (s - lo) * block;
+      const [u, v] = [at(s), at(e)];
+      ctx.beginPath();
+      ctx.moveTo(u[0], u[1]);
+      ctx.lineTo(v[0], v[1]);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 }
 
 function label(text, x, y, colour) {

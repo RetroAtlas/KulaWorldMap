@@ -10,6 +10,7 @@ import {
   blockCount,
   counted,
   platformCells,
+  index,
 } from "../../public/js/data.js";
 
 setAnnotations(annotations);
@@ -84,4 +85,28 @@ test("a count of one takes the singular", () => {
   assert.equal(counted(1, "object"), "1 object");
   assert.equal(counted(0, "object"), "0 objects");
   assert.equal(counted(30, "object"), "30 objects");
+});
+
+test("a platform's route is laid a cell at a time, from the cell at one end to the other's", () => {
+  let routes = 0;
+  for (const l of mapData.levels) {
+    const { railCells } = index(l);
+    const laid = new Map();
+    for (const r of l.records.filter((r) => r.kind === 5)) {
+      const [a, b] = ends(r);
+      const axis = [0, 1, 2].find((i) => a[i] !== b[i]);
+      for (let t = Math.min(a[axis], b[axis]); t <= Math.max(a[axis], b[axis]); t++) {
+        const cell = [...a];
+        cell[axis] = t;
+        const key = cell.join();
+        laid.set(key, (laid.get(key) || 0) + 1);
+      }
+      routes++;
+    }
+    const got = new Map(
+      [...railCells.values()].map((c) => [[c.x, c.y, c.z].join(), c.rails.length]),
+    );
+    assert.deepEqual(got, laid, l.name);
+  }
+  assert.equal(routes, 37);
 });

@@ -267,7 +267,17 @@ export const beams = (l) =>
 export const rails = (l) =>
   l.records
     .filter((r) => r.kind === RAIL_KIND)
-    .map((r) => ({ a: r.f.slice(2, 5), b: r.f.slice(5, 8) }));
+    .map((r) => {
+      const a = r.f.slice(2, 5),
+        b = r.f.slice(5, 8);
+      return {
+        a,
+        b,
+        axis: [0, 1, 2].find((i) => a[i] !== b[i]),
+        cell: [r.x, r.y, r.z],
+        length: r.length || 1,
+      };
+    });
 
 // A moving platform is as many blocks as its record says, laid from its cell
 // along the axis its first field names.
@@ -313,6 +323,20 @@ export function index(l) {
       beamCells.get(k).beams.push({ ray: r, k: t - lo - 1 });
     }
   }
+  // A moving platform's route is laid the same way, from the middle of the
+  // cell at one end of its run to the middle of the cell at the other.
+  const railCells = new Map();
+  for (const r of rails(l)) {
+    const lo = Math.min(r.a[r.axis], r.b[r.axis]);
+    const hi = Math.max(r.a[r.axis], r.b[r.axis]);
+    for (let t = lo; t <= hi; t++) {
+      const cell = [...r.a];
+      cell[r.axis] = t;
+      const k = cellKey(...cell);
+      if (!railCells.has(k)) railCells.set(k, { x: cell[0], y: cell[1], z: cell[2], rails: [] });
+      railCells.get(k).rails.push(r);
+    }
+  }
   const records = new Map();
   const markers = new Map();
   for (const r of l.records) {
@@ -324,7 +348,7 @@ export function index(l) {
     records.get(k).push(r);
     for (const m of markersOf(r)) markers.get(k).push(m);
   }
-  return { cells, records, markers, beamCells, beamEnds, plates: platesOf(rays), rails: rails(l) };
+  return { cells, records, markers, beamCells, railCells, beamEnds, plates: platesOf(rays) };
 }
 
 export const levelMarkers = (l) => l.records.flatMap(markersOf);
