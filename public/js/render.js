@@ -328,9 +328,10 @@ function cube(g, c, idx, colour, edge, alpha, skin, kind) {
     pts.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y)));
     g.closePath();
     if (sk) {
+      const at = sk.corners.map(([dx, dy, dz]) => screen(c.x + dx, c.y + dy, c.z + dz));
       g.save();
       g.clip();
-      paint(g, c, sk, shadeOf(i, sk.world), alpha);
+      paint(g, at, sk, shadeOf(i, sk.world), alpha);
       g.restore();
     } else {
       g.fillStyle = colour ? colour(i) : edge;
@@ -344,27 +345,26 @@ function cube(g, c, idx, colour, edge, alpha, skin, kind) {
   }
 }
 
-/** Map the texture onto the face, its top left, top right and bottom left
-    on the block's corners the game's own face routine puts them on, which
-    orthographic projection keeps a parallelogram, so an affine transform
-    lands it exactly. Then the colour the game draws the face through, where
-    it cycles one. A face the game adds to what is behind is dimmed by adding
-    less of it, since a wash over it would darken what shows through too.
-    Any other face takes a darker grey as a black wash, a brighter one as a
-    white wash, and a tint by multiplying, which cannot brighten a channel
-    but keeps the hue. */
-function paint(g, c, sk, shade, alpha) {
+/** Map the texture onto a face, its top left, top right and bottom left on
+    the three points on the screen given, the block's corners the game's own
+    face routine puts them on, which orthographic projection keeps a
+    parallelogram, so an affine transform lands it exactly. Then the colour
+    the game draws the face through, where it cycles one. A face the game
+    adds to what is behind is dimmed by adding less of it, since a wash over
+    it would darken what shows through too. Any other face takes a darker
+    grey as a black wash, a brighter one as a white wash, and a tint by
+    multiplying, which cannot brighten a channel but keeps the hue. */
+function paint(g, [p0, p1, p3], sk, shade, alpha) {
   const n = ATLAS.size;
-  const [p0, p1, p3] = sk.corners.map(([dx, dy, dz]) => screen(c.x + dx, c.y + dy, c.z + dz));
   const ex = [(p1[0] - p0[0]) / n, (p1[1] - p0[1]) / n];
   const ey = [(p3[0] - p0[0]) / n, (p3[1] - p0[1]) / n];
-  const d = state.view.dpr;
   const level = sk.colour ? (sk.colour[0] + sk.colour[1] + sk.colour[2]) / 3 : NEUTRAL;
   g.globalAlpha = sk.add ? alpha * Math.min(1, level / NEUTRAL) : alpha;
   if (sk.add) g.globalCompositeOperation = "lighter";
-  g.setTransform(d * ex[0], d * ex[1], d * ey[0], d * ey[1], d * p0[0], d * p0[1]);
+  const base = g.getTransform();
+  g.transform(ex[0], ex[1], ey[0], ey[1], p0[0], p0[1]);
   g.drawImage(sk.img, sk.tex * n + 0.5, shade * n + 0.5, n - 1, n - 1, 0, 0, n, n);
-  g.setTransform(d, 0, 0, d, 0, 0);
+  g.setTransform(base);
   if (sk.colour && !sk.add) {
     const [r, gg, b] = sk.colour;
     if (r === gg && gg === b) {
