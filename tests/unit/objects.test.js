@@ -3,11 +3,10 @@ import assert from "node:assert/strict";
 import { mapData, annotations, objects } from "./fixtures.js";
 import { lookOf } from "../../public/js/skins.js";
 
-// The types drawn on a block's face rather than standing on it: fire, ice, the
-// clock and one unnamed type, which have no mesh of their own; and the start,
-// which is drawn as the ball.
-const FACELESS = new Set([1, 2, 8, 29]);
-const START = 30;
+// The types drawn on a block's face rather than standing on it, which have no
+// mesh of their own; and the starts, which are drawn as the ball.
+const FACELESS = new Set([1, 2, 8]);
+const STARTS = new Set([29, 30]);
 
 const placed = new Set(
   mapData.levels.flatMap((l) => l.records.flatMap((r) => r.on.map((o) => o.type))),
@@ -15,7 +14,7 @@ const placed = new Set(
 const drawn = new Set(Object.keys(objects.types).map(Number));
 
 test("every placed type is drawn, or is one drawn on the face", () => {
-  for (const t of placed) assert.ok(drawn.has(t) || FACELESS.has(t) || t === START, `type ${t}`);
+  for (const t of placed) assert.ok(drawn.has(t) || FACELESS.has(t) || STARTS.has(t), `type ${t}`);
   for (const t of drawn) assert.ok(placed.has(t), `type ${t} is drawn but never placed`);
   assert.equal(objects.balls.length, 14);
 });
@@ -56,7 +55,7 @@ test("the motion table is in the game's units and cycles per phase", () => {
   assert.equal(m.hz, 60);
   assert.equal(m.turn, 4096);
   for (const t of Object.keys(m.types))
-    assert.ok(drawn.has(Number(t)) || Number(t) === START, `type ${t} moves but is not drawn`);
+    assert.ok(drawn.has(Number(t)) || STARTS.has(Number(t)), `type ${t} moves but is not drawn`);
   for (const [n, len] of [
     [m.types[11].cycle, objects.types[11][0].frames.length],
     [m.kinds[7].cycle, 6],
