@@ -287,7 +287,7 @@ function drawMarker(ctx, m, c) {
 }
 
 // What floats casts a shadow straight down onto its face, whatever the light,
-// as the game does: a disc the width of the thing, on the face's plane.
+// as the game does: a disc on the face's plane, under the thing.
 const SHADOW_SIDES = 14;
 function drawShadow(ctx, m, c, model, unit, offset = null) {
   const [lo, hi] = model.box;
