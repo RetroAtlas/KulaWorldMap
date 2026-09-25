@@ -224,6 +224,22 @@ export function place(w) {
   return { offset, fwd, roll: w.roll };
 }
 
+/** The cells a travelling thing stands over, the one under its middle first,
+    then the one under either half of it across its face. */
+export function under(w, offset) {
+  const n = FACE_NORMAL[w.face];
+  const at = [w.c.x, w.c.y, w.c.z].map((v, i) => v + 0.5 + offset[i]);
+  const cells = [at.map(Math.floor)];
+  for (let axis = 0; axis < 3; axis++) {
+    if (n[axis]) continue;
+    for (const k of [-0.5, 0.5]) {
+      const cell = at.map((v, i) => Math.floor(i === axis ? v + k : v));
+      if (!cells.some((c) => c.every((v, i) => v === cell[i]))) cells.push(cell);
+    }
+  }
+  return cells;
+}
+
 function stepStar(w, p, frame) {
   const e = w.entry;
   if (progress(w) < HALF && progress(w) + e.travel >= HALF) {

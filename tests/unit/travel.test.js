@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects, mapData } from "./fixtures.js";
 import { setObjects, index, markersOf } from "../../public/js/data.js";
-import { heading, probe, walkers, advance, place, dice } from "../../public/js/travel.js";
+import { heading, probe, walkers, advance, place, dice, under } from "../../public/js/travel.js";
 
 setObjects(objects);
 const table = objects.motion;
@@ -88,6 +88,26 @@ test("a lit beam's cells are filled, and a dark one's are empty, as the game wri
   assert.equal(p.empty([12, 10, 17], 0), false);
   assert.equal(p.empty([12, 12, 17], 0), true);
   assert.equal(p.empty([14, 12, 17], 0), false);
+});
+
+test("a thing on its way stands over the block it leaves and the one it comes onto", () => {
+  const w = { c: { x: 12, y: 10, z: 17 }, face: 0 };
+  assert.deepEqual(under(w, [0, 0, 0])[0], [12, 10, 17], "at rest, its own block first");
+  const between = under(w, [0.5, 0, 0]);
+  assert.ok(
+    between.some((c) => c.join() === "12,10,17"),
+    "the block it leaves",
+  );
+  assert.ok(
+    between.some((c) => c.join() === "13,10,17"),
+    "and the one it comes onto",
+  );
+  const side = under({ c: { x: 6, y: 21, z: 20 }, face: 3 }, [0, 0, 0.5]);
+  assert.ok(
+    side.every((c) => c[1] === 21),
+    "on a side face, across that face alone",
+  );
+  assert.ok(side.some((c) => c.join() === "6,21,21"));
 });
 
 test("a slow star walks its corridor and turns back at each end", () => {
