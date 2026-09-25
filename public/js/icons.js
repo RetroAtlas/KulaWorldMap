@@ -28,15 +28,25 @@ export function iconFor(model, size = 22) {
   return cv;
 }
 
+const bounds = (frame) =>
+  [Math.min, Math.max].map((pick) =>
+    [0, 1, 2].map((k) => pick(...frame.filter((_, i) => i % 3 === k))),
+  );
+const span = (frame) => {
+  const [lo, hi] = bounds(frame);
+  return Math.hypot(...hi.map((v, i) => v - lo[i]));
+};
+
 function render(model, size) {
   const cv = document.createElement("canvas");
   const dpr = Math.min(devicePixelRatio || 1, 3);
   cv.width = cv.height = Math.round(size * dpr);
   const g = cv.getContext("2d");
   g.scale(dpr, dpr);
-  const [lo, hi] = model.box;
+  // A thing that changes shape in play is shown at its fullest.
+  const frame = model.frames.reduce((a, f) => (span(f) > span(a) ? f : a));
+  const [lo, hi] = bounds(frame);
   const centre = lo.map((v, i) => (v + hi[i]) / 2);
-  const frame = model.frames[0];
   let reach = 1;
   for (let i = 0; i < frame.length; i += 3) {
     reach = Math.max(reach, Math.hypot(...[0, 1, 2].map((k) => frame[i + k] - centre[k])));
