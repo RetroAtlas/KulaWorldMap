@@ -82,17 +82,21 @@ CHECKS = [
     (0x8003e5f0, "subu $v0, $v0, $v1", "less a multiple of its normal"),
     (0x8003e658, "jal 0x800606b8", "and then as it is"),
     # The game's one random routine, and the one draw from it that moves a
-    # thing: the play routine seeds it afresh before anything else in a frame,
-    # and before the captivators move nothing draws from it but the screen's
-    # shake, which is off in normal play; the captivators move in the order
-    # the loader lifted them, record by record.
-    (0x80040748, "jal 0x80025054", "every frame the play routine first calls the routine"),
+    # thing: the level's routine seeds it once, before its frame loop, and in
+    # the loop nothing else draws from it while the ball stands still, since
+    # the screen's shake and the effects a pickup starts draw only while they
+    # run; the captivators move in the order the loader lifted them.
+    (0x80040690, "jal 0x80040718", "the play loop runs a level's routine"),
+    (0x80040748, "jal 0x80025054", "which first calls the routine"),
     (0x80025064, "jal 0x8004740c", "that seeds the dice"),
+    (0x80041c34, "beq $t2, $zero, 0x80040aa0", "and then loops a frame at a time from after it"),
     (0x8004740c, "sw $a0, 2380($gp)", "whose state is one word"),
     (0x80047430, "andi $v0, $v1, -1", "a draw of n is n times the state's low half"),
     (0x80047444, "srl $v0, $a1, 16", "over 65536"),
     (0x80040d44, "jal 0x80022814", "the screen's shake is drawn before the captivators move"),
     (0x80022820, "bne $v1, $v0, 0x80022984", "and draws only while the screen shakes"),
+    (0x8004102c, "jal 0x80011ac0", "the effects are drawn after them"),
+    (0x80011b10, "blez $v0, 0x80012b3c", "and draw only while one runs"),
     (0x80040ffc, "jal 0x800362e8", "then the ball's routine"),
     (0x800366f4, "jal 0x8003ba88", "moves the captivators"),
     (0x8003b644, "slti $v0, $v0, 5", "which the loader lifts record by record"),
@@ -185,7 +189,7 @@ IMMEDIATES = [
     ("captivators", "wheel.turn.right", "wheel: turns per frame, the other", 0x8003ce30, "addiu $v0, $v0, {}"),
     ("captivators", "wheel.turn.about", "wheel: turns per frame, about", 0x8003cec0, "addiu $v0, $v0, {}"),
 
-    ("dice", "dice.seed", "seeded with this at the start of every frame", 0x80025058, "addiu $a0, $zero, {}"),
+    ("dice", "dice.seed", "seeded with this as a level starts", 0x80025058, "addiu $a0, $zero, {}"),
     ("dice", "dice.plus", "a draw adds this after it multiplies", 0x8004742c, "addiu $v1, $a1, {}"),
 
     ("laser", "laser.reach", "a stretch reaches this far along the beam from its cell's centre, units", 0x80028578, "addiu $t2, $a0, {}"),
@@ -469,7 +473,7 @@ def table(r, platform_speed):
     platform's speed is the one the level data holds, scaled as the loader
     scales it. A type the loader lifts into an entry of its own says how far
     off its face the game draws the model's origin. The dice are the game's
-    random routine, which it seeds afresh every frame.
+    random routine, which it seeds once as a level starts.
     """
     bob = {"rate": r["coin.bob"], "reach": r["coin.bob.reach"]}
     fruit = {"turn": r["fruit.turn"],
