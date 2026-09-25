@@ -25,7 +25,7 @@ Mechanics: a repo of its own under the RetroAtlas org, plain ES modules with no 
 
 The proof is that both suites pass unchanged, since none of this is a behaviour change on either side, plus the library's own tests: `node --test` for the DOM-free parts, which is most of the search, and a fixture page under Playwright for the list, the drawer and the dialog. That fixture is also what gives HerculesMap and MetalSlugMap their first checks.
 
-What stays in each map: `render.js` and the camera half of `interaction.js`, since this map orbits a 34-cube lattice and the others pan and zoom a plane; `data.js` and `model.js`, which are each disc's own shapes; everything under `tools/`, which shares no file with OddworldMap's today. [Item 20](item-020-split-the-renderer.md) cuts the renderer's seam, which makes this easier but does not block it: the first slice does not touch the renderer.
+What stays in each map: the renderer, `render.js` and the modules it draws with, and the camera half of `interaction.js`, since this map orbits a 34-cube lattice and the others pan and zoom a plane; `data.js` and `model.js`, which are each disc's own shapes; everything under `tools/`, which shares no file with OddworldMap's today. This map's renderer is split between the frame, the blocks and the things that stand on them, and none of the slices above touches it.
 
 This file goes when the library exists and its first two slices, the search list and the hash writer, are running in this map and in OddworldMap. A slice on its own is a commit here and a commit there, not a deletion, and the commit that lands one says which map's version won and why.
 
