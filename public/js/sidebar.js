@@ -23,10 +23,10 @@ const SHOWN = [
   ["showModels", "models"],
   ["showTravel", "travel"],
   ["showThrough", "through"],
-  ["showStart", "start"],
   ["showLabels", "labels"],
   ["showFaces", "faces"],
   ["showBase", "base"],
+  ["showStart", "start"],
   ["showHidden", "hidden"],
 ];
 const DEFAULTS = { ...state.show };

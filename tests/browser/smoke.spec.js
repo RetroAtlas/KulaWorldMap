@@ -857,6 +857,16 @@ test("what travels does so from the start, its label with it, until v stops it",
   expect(errors).toEqual([]);
 });
 
+test("the camera target shows only on s", async ({ page }) => {
+  await page.goto("/#HIRO/0/45,35/1");
+  await settle(page);
+  await expect(page.locator("#showStart")).not.toBeChecked();
+  expect(await written(page)).not.toContain("camera target");
+  await page.keyboard.press("s");
+  await expect(page.locator("#showStart")).toBeChecked();
+  expect(await written(page)).toContain("camera target");
+});
+
 test("the page a link lands on says what it is", async ({ page }) => {
   await page.goto("/");
   const head = await page.evaluate(() => ({

@@ -26,7 +26,7 @@ const HELP = [
   ["\\", "put the whole level back"],
   ["[ ]", "previous and next level (shift crosses worlds)"],
   ["f", "fit the level to the window"],
-  ["t o d s l g", "textures, objects, models, camera target, labels, ground grid"],
+  ["t o d l g s", "textures, objects, models, labels, ground grid, camera target"],
   ["n", "say in each label which face the thing stands on"],
   ["b", "outlines: the blocks' edges, the broken outlines and the platforms' routes"],
   ["v", "let moving platforms and hazards travel, as in play"],
