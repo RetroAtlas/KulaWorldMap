@@ -489,7 +489,7 @@ export function draw() {
   const through = [];
   const chosen = state.selected?.key;
   const put = (...t) => {
-    drawThing(ctx, ...t);
+    if (drawThing(ctx, ...t)) spinning = true;
     const [m, , , , home] = t;
     if (away(m.face) && (state.show.through || cellKey(home.x, home.y, home.z) === chosen))
       through.push(t);
@@ -658,9 +658,10 @@ function pickGoing(going, home, l) {
 /** An object as itself where it has a mesh and the display asks for it, else
     its marker; on a moving platform the cell is where the platform is, and
     a thing that travels brings where it has got to and which way it faces,
-    its marker and its label going with it. */
+    its marker and its label going with it. Says whether it moves by the
+    next frame. */
 function drawThing(ctx, m, c, l, frame, home = c, going = null, painted = false) {
-  if (state.hiddenKinds.has(m.id)) return;
+  if (state.hiddenKinds.has(m.id)) return false;
   const motion = state.show.models ? motionOf(m) : null;
   // the game starts a pickup's angles at random and an entry's at zero, so
   // the things of one type that travel turn in step
@@ -676,7 +677,10 @@ function drawThing(ctx, m, c, l, frame, home = c, going = null, painted = false)
   const where = going
     ? { x: c.x + going.offset[0], y: c.y + going.offset[1], z: c.z + going.offset[2] }
     : c;
-  if (!model) return drawMarker(ctx, m, where);
+  if (!model) {
+    drawMarker(ctx, m, where);
+    return false;
+  }
   drawObject(ctx, m, c, model, motion, frame, phase, round, l.camera?.time ?? 0, going, painted);
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(where, m.face, OBJECT_HOVER);
@@ -684,6 +688,7 @@ function drawThing(ctx, m, c, l, frame, home = c, going = null, painted = false)
     const side = state.show.faces ? ` · ${FACE_NAME[m.face]}` : "";
     label(ctx, markerLabel(m) + dark + side, px + 8, py + 4, "#e8eefb");
   }
+  return !!motion;
 }
 
 // An object is its mesh stood on its face: the model's y runs along the face's
@@ -723,7 +728,6 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
   if (going) for (let i = 0; i < 3; i++) o[i] += going.offset[i];
   const side = cross(up, forward);
   if (motion) {
-    spinning = true;
     const p = pose(motionTable(), motion, m, frame, phase, time);
     about = p.about;
     wide = 1 + p.squash;
