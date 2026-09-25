@@ -675,6 +675,9 @@ function thingDisc(m, where, l) {
   return [p[0], p[1], r];
 }
 
+/** Whether a device a switch toggles is drawn off, as the level starts it. */
+const switchedOff = (m) => markerState(m) === "off";
+
 /** An object as itself where it has a mesh and the display asks for it, else
     its marker; on a moving platform the cell is where the platform is, and
     a thing that travels brings where it has got to and which way it faces,
@@ -704,7 +707,7 @@ function drawThing(ctx, m, c, l, frame, home = c, going = null, painted = false)
   drawObject(ctx, m, c, model, motion, frame, phase, round, l.camera?.time ?? 0, going, painted);
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(where, m.face, OBJECT_HOVER);
-    const dark = markerState(m) === "off" ? " · off" : "";
+    const dark = switchedOff(m) ? " · off" : "";
     const side = state.show.faces ? ` · ${FACE_NAME[m.face]}` : "";
     label(ctx, markerLabel(m) + dark + side, px + 8, py + 4, "#e8eefb");
   }
@@ -755,7 +758,7 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
     // squashed about its centre, so it is stood lower by as much, and its
     // underside stays on the face while its top comes down
     lift = GAP + (rest - GAP) * tall;
-    if (markerState(m) === "off") about = [0, 0, 0];
+    if (switchedOff(m)) about = [0, 0, 0];
     if (m.type === STONE) {
       about[1] += ACROSS;
       about[2] = -(going ? going.roll / motionTable().turn : about[2]);
@@ -898,7 +901,7 @@ function drawFacing(ctx, m, c, face, colour) {
 function drawMarker(ctx, m, c) {
   if (state.hiddenKinds.has(m.id)) return;
   const face = m.face ?? 0;
-  const dark = markerState(m) === "off";
+  const dark = switchedOff(m);
   const colour = markerColour(m);
   const ink = "rgba(9 13 20 / 0.9)";
   const [fx, fy] = off(c, face);
