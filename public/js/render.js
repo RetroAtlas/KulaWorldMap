@@ -194,6 +194,9 @@ export function draw() {
   // block is down, faintly, where the display asks to see it through them,
   // and on the selected block whatever the display says.
   const through = [];
+  // A survey mark goes over every block, as the other overlays do, so that no
+  // nearer block hides it.
+  const noted = [];
   const chosen = state.selected?.key;
   const put = (...t) => {
     if (drawThing(ctx, ...t)) spinning = true;
@@ -249,7 +252,7 @@ export function draw() {
     }
     if (state.survey.on && !ghost) {
       const m = state.survey.marks.get(key);
-      if (m) drawMark(ctx, m, c);
+      if (m) noted.push([m, c]);
     }
     if (sel || hov) outline(ctx, c, idx, sel ? "#ffffff" : "#ffffffb0");
   }
@@ -268,6 +271,7 @@ export function draw() {
     ctx.drawImage(layerCv, 0, 0, w, h);
     ctx.restore();
   }
+  for (const [m, c] of noted) drawMark(ctx, m, c);
   if (state.show.start && l.camera) drawLook(ctx, l);
   drawScale(ctx);
   if (spinning) animate();

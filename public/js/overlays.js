@@ -3,7 +3,7 @@ import { state, SIDE, BLOCK, screen, cellKey } from "./state.js";
 // A survey mark hangs below the block, where a decoded marker never goes, so
 // the two readings of the same cell can be compared at a glance.
 export function drawMark(ctx, m, c) {
-  const [px, py] = screen(c.x + 0.5, c.y + 0.5, c.z);
+  const [px, py] = screen(c.x + 0.5, c.y + 0.5, c.z + 1);
   const r = Math.max(3, 5 * state.cam.zoom);
   ctx.fillStyle = "#ffd166";
   ctx.strokeStyle = "rgba(9 13 20 / 0.9)";
