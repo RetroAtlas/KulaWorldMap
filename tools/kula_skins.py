@@ -485,6 +485,7 @@ def table(code, tgis):
         "sets": sets(models, groups, r),
         "keys": {"type": r["key.type"], "kinds": r["keys.below"]},
         "copycat": copycat_pack(code, r),
+        "clock": {"alias": r["clock.alias"], "type": r["clock.type"]},
         "hides": hiding(r),
         "hidden": {"kind": r["hidden.kind"], "type": r["hidden.flag"]},
         "plainFrom": r["plain.from"],

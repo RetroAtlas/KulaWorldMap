@@ -22,7 +22,7 @@ import {
 } from "./data.js";
 import { frameAt, phasesOf, pose, orbit, blockPhase } from "./motion.js";
 import { walkers, probe, advance, place } from "./travel.js";
-import { lookOf, platformPlace, faceSkin, shadowed } from "./skins.js";
+import { lookOf, platformPlace, faceSkin, paintedShadow } from "./skins.js";
 import { drawBeams } from "./beams.js";
 
 const cv = $("cv");
@@ -536,7 +536,7 @@ export function draw() {
             frame,
             home,
             null,
-            atlas && m.face !== null && shadowed(skins, m.type),
+            atlas && m.face !== null && paintedShadow(skins, m.type),
           );
         }
       }
