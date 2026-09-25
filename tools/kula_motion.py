@@ -34,13 +34,16 @@ HZ = 60
 PHASES = 4           # the values a phase field takes
 SPIKE_FRAMES = 32    # frames in the moving spikes' mesh, flat to full
 
-# What has to be there for the numbers below to mean what the doc says: the
-# frame loop's one wait is VSync(0), one vertical blank, and the words that
-# would halve the rate or pick another view are never written, so they keep
-# the zero the executable loads with.
+# What has to be there for the numbers below to mean what the doc says: a
+# level's frame loop waits once a pass, for a flag a callback sets, and the
+# words that would halve the rate or pick another view are never written, so
+# they keep the zero the executable loads with.
 CHECKS = [
-    (0x800406b4, "jal 0x80065b68", "the frame loop waits once, at VSync"),
-    (0x800406b8, "addu $a0, $zero, $zero", "and waits for one vertical blank"),
+    (0x80040a78, "addiu $a0, $a0, -588", "before its frame loop a level installs the callback at 0x8003fdb4"),
+    (0x80040a7c, "jal 0x80065e28", "through the system library"),
+    (0x8003fdbc, "sw $v0, -17288($at)", "which sets the flag at 0x800cbc78"),
+    (0x80040b04, "jal 0x80051d08", "and each pass of the loop waits once"),
+    (0x80051d18, "beq $t1, $zero, 0x80051d10", "until the flag is set"),
     (0x80040ad0, "lw $v0, 22316($v0)", "the half-rate word the loop reads is 0x800a572c"),
     (0x80039608, "lw $v0, 13264($v0)", "the view word the updates read is 0x800a33d0"),
     # The laser: built at load by 0x800280d0, drawn every frame by 0x80051754.
