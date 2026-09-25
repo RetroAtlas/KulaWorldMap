@@ -1,4 +1,4 @@
-import { $ } from "./dom.js";
+import { $, on, emit } from "./dom.js";
 import { state, SIDE, BLOCK, project, depth, facing, screen, cellKey, sliceZ } from "./state.js";
 import {
   WORLD_TINT,
@@ -84,6 +84,11 @@ export const onFirstSize = (fn) => {
 // grids. Watching the element itself is the only reading that cannot go stale.
 new ResizeObserver(() => resize()).observe(cv);
 
+on("atlas-loaded", () => {
+  invalidatePick();
+  draw();
+});
+
 const rgb = (hex) => {
   const n = parseInt(hex.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
@@ -110,8 +115,7 @@ function atlasFor(world) {
     a = { img: new Image(), ready: false };
     a.img.onload = () => {
       a.ready = true;
-      invalidatePick();
-      draw();
+      emit("atlas-loaded", world);
     };
     a.img.src = `tex/${world}.png`;
     ATLAS.worlds.set(world, a);
