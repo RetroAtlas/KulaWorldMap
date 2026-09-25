@@ -33,6 +33,13 @@ laser block or the settings record is never numbered, drawn or collected.
 A lattice cell holds one of five plain block styles below 5, or 5 + i for a
 block carrying record i. The record repeats the cell's own coordinates, which
 is what pins the two representations together and is checked on every build.
+
+A switch and a teleporter name other slots by a link, the record's index times
+sixteen plus the face, with 6 for a laser's own record. A teleporter's names
+where it sends the ball, a teleporter of its own colour. A switch's starts the
+list of what it flips, each switch or teleporter on it naming the next and a
+laser doing so in its second slot, and the list is every switch, teleporter
+and laser of the switch's colour. Both are checked on every build.
 """
 import struct
 
@@ -64,6 +71,18 @@ PAYLOAD_KINDS = frozenset({5, 6, 7, LASER_KIND})
 # have it, and its first slot is the level's settings, which the loader reads.
 UNPLACED_KIND = 9
 SPANS = frozenset({PLATFORM_KIND, LASER_KIND})    # kinds whose fields name two cells
+
+TELEPORTER = 5
+SWITCH = 9
+COLOUR_WORD = 3      # a switch's or a teleporter's circuit
+NEXT_WORD = 6        # the next slot on a switch's list
+LINK_WORD = 7        # where a switch's list starts, and where a teleporter sends the ball
+OWN = 6              # the face a link names a laser's own record by
+
+
+def link(word):
+    """The record and face a link names, or None where the word is unset."""
+    return None if word == -1 else ((word & 0xFFFF) >> 4, word & 15)
 
 
 class Face:
@@ -198,6 +217,42 @@ class Level:
             bad.append(f"the trailer is kind {self.trailer.kind}, expected {TRAILER_KIND}")
         if self.trailer.cell != NOWHERE:
             bad.append(f"the trailer claims a cell at {self.trailer.x},{self.trailer.y},{self.trailer.z}")
+        bad += self._circuits()
+        return bad
+
+    def circuit(self, k, face):
+        """What the switch on a record's face flips: the slots on the list its
+        link starts, in order, each naming the next."""
+        out, at = [], link(self.records[k].slots[face][LINK_WORD])
+        while at is not None and at not in out and at[0] < self.count and at[1] <= OWN:
+            out.append(at)
+            r = self.records[at[0]]
+            at = link(r.slots[1][LINK_WORD] if at[1] == OWN else r.slots[at[1]][NEXT_WORD])
+        return out
+
+    def _circuits(self):
+        colour = {}
+        for k, r in enumerate(self.records):
+            if r.kind == LASER_KIND:
+                colour[(k, OWN)] = r.colour
+            for o in r.objects:
+                if o.type in (SWITCH, TELEPORTER):
+                    colour[(k, o.face)] = self.records[k].slots[o.face][COLOUR_WORD]
+        bad = []
+        for (k, face), c in colour.items():
+            if face == OWN:
+                continue
+            kind = self.records[k].slots[face][1]
+            where = f"the {'switch' if kind == SWITCH else 'teleporter'} on record {k} face {face}"
+            if kind == SWITCH:
+                flips = self.circuit(k, face)
+                same = sorted(at for at, other in colour.items() if other == c)
+                if sorted(flips) != same:
+                    bad.append(f"{where} flips {sorted(flips)}, not its colour's {same}")
+                continue
+            to = link(self.records[k].slots[face][LINK_WORD])
+            if colour.get(to) != c or to[1] == OWN or self.records[to[0]].slots[to[1]][1] != TELEPORTER:
+                bad.append(f"{where} sends the ball to {to}, not to a teleporter of its colour")
         return bad
 
     def extent(self):

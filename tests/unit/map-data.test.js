@@ -192,3 +192,35 @@ test("a circuit starts on or off as one, across its lasers, switches and telepor
   }
   assert.ok(circuits > 100);
 });
+
+// A teleporter names the one it sends the ball to, as the record's index times
+// sixteen plus the face, and those of a colour send the ball round one ring.
+test("a teleporter sends the ball to one of its own colour, round one ring a colour", () => {
+  const TELEPORTER = 5;
+  const COLOUR = 1;
+  const TO = 5;
+  let rings = 0;
+  for (const l of mapData.levels) {
+    const at = new Map();
+    l.records.forEach((r, k) => {
+      for (const o of r.on) if (o.type === TELEPORTER) at.set(k * 16 + o.face, o);
+    });
+    const colours = new Map();
+    for (const [key, o] of at) {
+      const to = at.get(o.f[TO]);
+      assert.ok(to, `${l.name}: the teleporter ${key} sends the ball to ${o.f[TO]}`);
+      assert.equal(to.f[COLOUR], o.f[COLOUR], `${l.name}: teleporter ${key}`);
+      colours.set(o.f[COLOUR], [...(colours.get(o.f[COLOUR]) ?? []), key]);
+    }
+    for (const keys of colours.values()) {
+      const round = [keys[0]];
+      for (let key = at.get(keys[0]).f[TO]; key !== keys[0]; key = at.get(key).f[TO]) {
+        assert.ok(!round.includes(key), `${l.name}: the ring from ${keys[0]} loops at ${key}`);
+        round.push(key);
+      }
+      assert.equal(round.length, keys.length, `${l.name}: a colour's teleporters are not one ring`);
+      rings++;
+    }
+  }
+  assert.equal(rings, 77);
+});

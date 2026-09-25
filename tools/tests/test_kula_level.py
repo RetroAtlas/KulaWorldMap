@@ -20,8 +20,11 @@ from kula_level import (  # noqa: E402
     HEAD,
     LASER_KIND,
     NOWHERE,
+    OWN,
     PAYLOAD_KINDS,
     SIDE,
+    SWITCH,
+    TELEPORTER,
     TRAILER_KIND,
     UNPLACED_KIND,
     WORDS,
@@ -169,6 +172,59 @@ class Verifies(unittest.TestCase):
     def test_the_trailer_kind_among_the_records(self):
         L = Level(level({(1, 2, 3): FIRST_RECORD}, [block((1, 2, 3), kind=TRAILER_KIND)]))
         self.assertIn(f"kind {TRAILER_KIND} among the records, at [0]", L.verify()[0])
+
+
+def device(typ, colour, next_=-1, to=-1):
+    """A switch or a teleporter: its facing, its circuit, on, a pickup number,
+    the next on a switch's list and the slot it names."""
+    return slot(typ, 1, colour, 1, -1, next_, to)
+
+
+def at(k, face):
+    return k * 16 + face
+
+
+def circuit_level(*records):
+    cells = {r[0]: FIRST_RECORD + k for k, r in enumerate(records)}
+    return Level(level(cells, [block(cell, **kw) for cell, kw in records]))
+
+
+def laser(colour, next_=-1):
+    beam = slot(1, 1, 1, 1, 2, 3, 9, 2, 3)
+    return {"kind": LASER_KIND, "faces": {0: beam}, "second": slot(1, -1, -1, 5, -1, colour, next_)}
+
+
+class Circuits(unittest.TestCase):
+    def test_a_switch_flips_its_list_and_a_teleporter_names_where_it_leads(self):
+        L = circuit_level(
+            ((1, 2, 3), {"faces": {0: device(SWITCH, 2, at(1, 3), at(2, OWN))}}),
+            ((1, 4, 3), {"faces": {3: device(TELEPORTER, 2, -1, at(3, 0))}}),
+            ((9, 2, 3), laser(2, at(3, 0))),
+            ((5, 5, 5), {"faces": {0: device(TELEPORTER, 2, at(0, 0), at(1, 3))}}),
+        )
+        self.assertEqual(L.circuit(0, 0), [(2, OWN), (3, 0), (0, 0), (1, 3)])
+        self.assertEqual(L.verify(), [])
+
+    def test_a_switch_that_leaves_out_a_device_of_its_colour(self):
+        L = circuit_level(
+            ((1, 2, 3), {"faces": {0: device(SWITCH, 1, -1, at(0, 0))}}),
+            ((1, 4, 3), {"faces": {0: device(TELEPORTER, 1, -1, at(1, 0))}}),
+        )
+        self.assertIn("flips [(0, 0)], not its colour's [(0, 0), (1, 0)]", L.verify()[0])
+
+    def test_a_teleporter_that_sends_the_ball_to_another_colour(self):
+        L = circuit_level(
+            ((1, 2, 3), {"faces": {0: device(TELEPORTER, 0, -1, at(1, 0))}}),
+            ((1, 4, 3), {"faces": {0: device(TELEPORTER, 3, -1, at(0, 0))}}),
+        )
+        self.assertIn("sends the ball to (1, 0), not to a teleporter of its colour", L.verify()[0])
+
+    def test_what_stands_on_a_kind_the_game_never_walks_is_on_no_circuit(self):
+        L = circuit_level(
+            ((1, 2, 3), {"faces": {0: device(SWITCH, 1, -1, at(0, 0))}}),
+            ((1, 4, 3), {"kind": 6, "faces": {2: device(TELEPORTER, 1, -1, at(0, 0))}}),
+        )
+        self.assertEqual(L.verify(), [])
 
 
 if __name__ == "__main__":

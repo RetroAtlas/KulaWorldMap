@@ -66,7 +66,7 @@ The ice patch the walkthrough keeps warning about on column tips. LEVEL 47 carri
 
 ### type 5: Teleporter
 
-LEVEL 66, the walkthrough's first teleporters, carries the game's first two. The colour is `f3`, the circuit number the lasers and switches use: LEVEL 68's are yellow and blue and read 0 and 1, LEVEL 70's yellow, red and green read 0, 3 and 2. `f4` says whether it starts on, 1 for on and 2 for off: the ones the walkthrough uses on arrival, LEVEL 66 to 71 among them, read 1, the ones it sends you to a button for first, LEVEL 84, 97, 99, 100, 101, 102, 117, 128, 133, 137, 142 and 145, read 2, and on every level with lasers of the same colour the field agrees with whether the beams start lit ([level-format.md](level-format.md)).
+LEVEL 66, the walkthrough's first teleporters, carries the game's first two. The colour is `f3`, the circuit number the lasers and switches use: LEVEL 68's are yellow and blue and read 0 and 1, LEVEL 70's yellow, red and green read 0, 3 and 2. `f4` says whether it starts on, 1 for on and 2 for off: the ones the walkthrough uses on arrival, LEVEL 66 to 71 among them, read 1, the ones it sends you to a button for first, LEVEL 84, 97, 99, 100, 101, 102, 117, 128, 133, 137, 142 and 145, read 2, and on every level with lasers of the same colour the field agrees with whether the beams start lit ([level-format.md](level-format.md)). `f7` is its destination: the teleporter's routine reads it at `0x8003a6e4` as the record and face of the teleporter the ball comes out of, on all 147 one of the same colour, and where three or more share a colour on a level they send the ball round a ring, one way ([level-format.md](level-format.md)).
 
 ### type 7: Exit
 
@@ -78,7 +78,7 @@ LEVEL 56 is the walkthrough's first clock and carries seven, and LEVEL 58, 59 an
 
 ### type 9: Switch
 
-LEVEL 84 has the walkthrough's first button and the game's first of these; LEVEL 98's red, green and blue read 3, 2 and 1 in `f3`, the same circuit numbers its three lasers carry. The field after the colour is the circuit's starting state, 1 for on and 2 for off, and agrees with the lasers and teleporters of that colour on every level: LEVEL 105's all read 1 and the walkthrough turns them off, LEVEL 97's all read 2 and it turns red on.
+LEVEL 84 has the walkthrough's first button and the game's first of these; LEVEL 98's red, green and blue read 3, 2 and 1 in `f3`, the same circuit numbers its three lasers carry. The field after the colour is the circuit's starting state, 1 for on and 2 for off, and agrees with the lasers and teleporters of that colour on every level: LEVEL 105's all read 1 and the walkthrough turns them off, LEVEL 97's all read 2 and it turns red on. That a switch turns every laser and teleporter of its colour on and off is the code's: a press walks a list its `f7` starts (`0x8003a388`) and turns over each thing on it, and on every level the list is exactly the switches, teleporters and lasers of the switch's colour ([level-format.md](level-format.md)).
 
 ### type 10: Boost button
 
