@@ -194,6 +194,7 @@ class Table(unittest.TestCase):
         r["platform.scale"] = 50
         r["captivator.standoff"] = 456
         r["corkscrew.drop"] = 150
+        r.update({"dice.seed": 1, "dice.times": 0x41C64E6D, "dice.plus": 12345})
         t = table(r, 30)
         self.assertEqual(t["hz"], 60)
         self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1})
@@ -206,6 +207,7 @@ class Table(unittest.TestCase):
             self.assertEqual(t["types"][k]["entry"], {"stand": 200})
         self.assertEqual(t["types"]["56"]["entry"], {"stand": 50})
         self.assertNotIn("entry", t["types"]["37"])
+        self.assertEqual(t["dice"], {"seed": 1, "times": 1103515245, "plus": 12345})
         self.assertEqual(set(t["types"]), {str(k) for k in
                                            (5, 7, 11, 26, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42,
                                             43, 44, 45, 46, 47, 50, 51, 52, 53, 56)})

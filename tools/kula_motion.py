@@ -81,6 +81,23 @@ CHECKS = [
     (0x8003e574, "addu $v0, $v0, $s5", "and the corkscrew"),
     (0x8003e5f0, "subu $v0, $v0, $v1", "less a multiple of its normal"),
     (0x8003e658, "jal 0x800606b8", "and then as it is"),
+    # The game's one random routine, and the one draw from it that moves a
+    # thing: the play routine seeds it afresh before anything else in a frame,
+    # and before the captivators move nothing draws from it but the screen's
+    # shake, which is off in normal play; the captivators move in the order
+    # the loader lifted them, record by record.
+    (0x80040748, "jal 0x80025054", "every frame the play routine first calls the routine"),
+    (0x80025064, "jal 0x8004740c", "that seeds the dice"),
+    (0x8004740c, "sw $a0, 2380($gp)", "whose state is one word"),
+    (0x80047430, "andi $v0, $v1, -1", "a draw of n is n times the state's low half"),
+    (0x80047444, "srl $v0, $a1, 16", "over 65536"),
+    (0x80040d44, "jal 0x80022814", "the screen's shake is drawn before the captivators move"),
+    (0x80022820, "bne $v1, $v0, 0x80022984", "and draws only while the screen shakes"),
+    (0x80040ffc, "jal 0x800362e8", "then the ball's routine"),
+    (0x800366f4, "jal 0x8003ba88", "moves the captivators"),
+    (0x8003b644, "slti $v0, $v0, 5", "which the loader lifts record by record"),
+    (0x8003cf34, "addiu $v0, $v0, 1", "and the move visits in that order"),
+    (0x8003c72c, "jal 0x80047418", "and the wandering ball draws its way from the dice"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -168,6 +185,9 @@ IMMEDIATES = [
     ("captivators", "wheel.turn.right", "wheel: turns per frame, the other", 0x8003ce30, "addiu $v0, $v0, {}"),
     ("captivators", "wheel.turn.about", "wheel: turns per frame, about", 0x8003cec0, "addiu $v0, $v0, {}"),
 
+    ("dice", "dice.seed", "seeded with this at the start of every frame", 0x80025058, "addiu $a0, $zero, {}"),
+    ("dice", "dice.plus", "a draw adds this after it multiplies", 0x8004742c, "addiu $v1, $a1, {}"),
+
     ("laser", "laser.reach", "a stretch reaches this far along the beam from its cell's centre, units", 0x80028578, "addiu $t2, $a0, {}"),
     ("laser", "laser.reach.back", "and this far back", 0x8002857c, "addiu $t1, $a0, {}"),
     ("laser", "laser.nozzle", "each of the four lines is this far off the axis, units", 0x800285d8, "addiu $a2, $a2, {}"),
@@ -218,6 +238,9 @@ MULTIPLIERS = [
 
 # The one reach that is a square held in two halves of a word.
 BUTTON_REACH = (0x80039bbc, "lui $v1, {}", 0x80039bc0, "ori $v1, $v1, {}")
+
+# What a draw multiplies the dice's state by, held in two halves of a word.
+DICE_TIMES = (0x80047418, "lui $v1, {}", 0x80047420, "ori $v1, $v1, {}")
 
 # A divisor the compiler turned into a multiply by a reciprocal and a shift:
 # the two halves of the reciprocal and the shift of the high word.
@@ -294,6 +317,8 @@ def readings(code):
         out[key] = code.multiplier(addr, count, src, dst)
     hi, hp, lo, lp = BUTTON_REACH
     out["button.reach"] = round(((code.immediate(hi, hp) << 16) + code.immediate(lo, lp)) ** 0.5)
+    hi, hp, lo, lp = DICE_TIMES
+    out["dice.times"] = (code.immediate(hi, hp) << 16) | code.immediate(lo, lp)
     for _, key, _, *args in DIVISORS:
         out[key] = code.divisor(*args)
     start, end = (code.address(*pair) for pair in LASER_LEVELS)
@@ -443,7 +468,8 @@ def table(r, platform_speed):
     units of which a block is 512. A cycle is a frame program per phase. The
     platform's speed is the one the level data holds, scaled as the loader
     scales it. A type the loader lifts into an entry of its own says how far
-    off its face the game draws the model's origin.
+    off its face the game draws the model's origin. The dice are the game's
+    random routine, which it seeds afresh every frame.
     """
     bob = {"rate": r["coin.bob"], "reach": r["coin.bob.reach"]}
     fruit = {"turn": r["fruit.turn"],
@@ -495,6 +521,7 @@ def table(r, platform_speed):
         8: laser(r),
     }
     return {"hz": HZ, "turn": TURN, "standoff": r["captivator.standoff"],
+            "dice": {"seed": r["dice.seed"], "times": r["dice.times"], "plus": r["dice.plus"]},
             "types": {str(t): types[t] for t in sorted(types)},
             "kinds": {str(k): kinds[k] for k in sorted(kinds)}}
 
@@ -514,6 +541,8 @@ def show_readings(code):
         rows.append((group, what, addr, code.multiplier(addr, count, src, dst)))
     rows.append(("on a block", "boost button: sinks while the ball is within, units",
                  BUTTON_REACH[0], readings(code)["button.reach"]))
+    rows.append(("dice", "a draw multiplies the state by this", DICE_TIMES[0],
+                 readings(code)["dice.times"]))
     for group, key, what, hi, hp, lo, lp, sa, sp in DIVISORS:
         rows.append((group, what, hi, code.divisor(hi, hp, lo, lp, sa, sp)))
     levels = readings(code)["laser.levels"]
