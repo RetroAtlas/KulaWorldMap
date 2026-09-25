@@ -453,6 +453,58 @@ function kindOf(c, idx, key) {
   return idx.records.get(key)?.[0]?.kind ?? 0;
 }
 
+/** Draw a block as its kind looks at this frame, lit up where it is selected
+    or under the pointer, and say whether it is to change by the next frame. */
+function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
+  const { l, idx, tint, skins, atlas, look, frame, edges } = scene;
+  let live = false;
+  const kind = kindOf(c, idx, key);
+  const rec = c.v >= state.data.firstRecord ? idx.records.get(key)?.[0] : null;
+  let style = (atlas ? SKINNED_LOOK : LOOK)[kind] || {};
+  if (kind === VANISHING && kindMotion(kind)) {
+    live = true;
+    style = vanishingLook(rec, frame, !!atlas);
+  }
+  const base = kindTint(tint, kind);
+  const boost = sel ? 0.22 : hov ? 0.12 : 0;
+  const glass = look?.glass && !UNGLAZED.has(kind) ? GLASS_FACE : 1;
+  const a = (ghost ? 0.16 : 1) * (style.alpha ?? 1) * glass;
+  // Every face wears what the game paints on it: a stone, its kind's own
+  // texture, the plate or the shadow of what stands on it, a beam's end or
+  // a platform's cap, and the fire, the invisible block and a bonus level's
+  // stone run their cycles.
+  let skin = null;
+  if (atlas) {
+    const place = c.k !== undefined && rec?.kind === PLATFORM ? platformPlace(rec, c.k) : null;
+    const still = place ? { ...home, [place.axis]: home[place.axis] + c.k } : home;
+    const plates = idx.plates.get(key);
+    skin = (i) => {
+      const g = FACES[i].game;
+      const sk = faceSkin(skins, look, still, g, kind, rec, frame, place, plates?.get(g));
+      if (sk?.live) live = true;
+      return sk && { ...sk, img: atlas, world: l.theme, corners: skins.corners[g][sk.turn] };
+    };
+  }
+  cube(
+    ctx,
+    c,
+    idx,
+    (i) => shade(base, lit[i] + boost, a),
+    edges ? `rgba(9 13 20 / ${0.55 * a})` : null,
+    a,
+    skin,
+    kind,
+  );
+  if (style.wash) cube(ctx, c, idx, () => style.wash, null, a, null, kind);
+  if (style.dash && !ghost && state.show.outlines)
+    outline(ctx, c, idx, "rgba(232 238 251 / 0.7)", style.dash);
+  if (skin && (sel || hov)) {
+    const glow = `rgba(255 255 255 / ${sel ? 0.22 : 0.12})`;
+    cube(ctx, c, idx, () => glow, null, a, null, kind);
+  }
+  return live;
+}
+
 export function draw() {
   const { w, h } = state.view;
   ctx.clearRect(0, 0, w, h);
@@ -483,6 +535,7 @@ export function draw() {
     pick.clearRect(0, 0, w, h);
   }
   const edges = state.show.outlines && state.cam.zoom > 0.3;
+  const scene = { l, idx, tint, skins, atlas, look, frame, edges };
   // A thing on a face turned away from the view is drawn again once every
   // block is down, faintly, where the display asks to see it through them,
   // and on the selected block whatever the display says.
@@ -528,50 +581,7 @@ export function draw() {
     }
     const sel = state.selected?.key === key;
     const hov = state.hover?.key === key;
-    const kind = kindOf(c, idx, key);
-    const rec = c.v >= state.data.firstRecord ? idx.records.get(key)?.[0] : null;
-    let style = (atlas ? SKINNED_LOOK : LOOK)[kind] || {};
-    if (kind === VANISHING && kindMotion(kind)) {
-      spinning = true;
-      style = vanishingLook(rec, frame, !!atlas);
-    }
-    const base = kindTint(tint, kind);
-    const boost = sel ? 0.22 : hov ? 0.12 : 0;
-    const glass = look?.glass && !UNGLAZED.has(kind) ? GLASS_FACE : 1;
-    const a = (ghost ? 0.16 : 1) * (style.alpha ?? 1) * glass;
-    // Every face wears what the game paints on it: a stone, its kind's own
-    // texture, the plate or the shadow of what stands on it, a beam's end or
-    // a platform's cap, and the fire, the invisible block and a bonus level's
-    // stone run their cycles.
-    let skin = null;
-    if (atlas) {
-      const place = c.k !== undefined && rec?.kind === PLATFORM ? platformPlace(rec, c.k) : null;
-      const still = place ? { ...home, [place.axis]: home[place.axis] + c.k } : home;
-      const plates = idx.plates.get(key);
-      skin = (i) => {
-        const g = FACES[i].game;
-        const sk = faceSkin(skins, look, still, g, kind, rec, frame, place, plates?.get(g));
-        if (sk?.live) spinning = true;
-        return sk && { ...sk, img: atlas, world: l.theme, corners: skins.corners[g][sk.turn] };
-      };
-    }
-    cube(
-      ctx,
-      c,
-      idx,
-      (i) => shade(base, lit[i] + boost, a),
-      edges ? `rgba(9 13 20 / ${0.55 * a})` : null,
-      a,
-      skin,
-      kind,
-    );
-    if (style.wash) cube(ctx, c, idx, () => style.wash, null, a, null, kind);
-    if (style.dash && !ghost && state.show.outlines)
-      outline(ctx, c, idx, "rgba(232 238 251 / 0.7)", style.dash);
-    if (skin && (sel || hov)) {
-      const glow = `rgba(255 255 255 / ${sel ? 0.22 : 0.12})`;
-      cube(ctx, c, idx, () => glow, null, a, null, kind);
-    }
+    if (drawBlock(ctx, c, home, key, ghost, sel, hov, scene)) spinning = true;
 
     // a moving platform's blocks are picked where they are drawn, each as its record's cell
     if (pickStale && !ghost) {
