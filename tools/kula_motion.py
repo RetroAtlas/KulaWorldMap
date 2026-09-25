@@ -66,6 +66,21 @@ CHECKS = [
     (0x80051c38, "addiu $t4, $zero, -1", "are written empty"),
     (0x80051c9c, "beq $fp, $zero, 0x80051c6c", "and a lit one's"),
     (0x80051c90, "addiu $t4, $zero, -2", "are written as beam"),
+    # A captivator is drawn where its entry is: each type's draw copies the
+    # entry's position and turns it into the view with nothing added, save
+    # the corkscrew's, which takes a multiple of its normal off first.
+    (0x8003d6d4, "addiu $s5, $s4, -32", "the draw's s5 is an entry's position"),
+    (0x8003d81c, "addu $v0, $v0, $s5", "the slow star is drawn at its entry's position"),
+    (0x8003d84c, "jal 0x800606b8", "as it is"),
+    (0x8003ed3c, "addu $v0, $v0, $s5", "and the wheel"),
+    (0x8003ed6c, "jal 0x800606b8", "as it is"),
+    (0x8003f3e8, "addu $v0, $v0, $s5", "and the fast star"),
+    (0x8003f418, "jal 0x800606b8", "as it is"),
+    (0x8003dea0, "addu $v0, $v0, $s5", "and the wandering ball"),
+    (0x8003ded0, "jal 0x800606b8", "as it is"),
+    (0x8003e574, "addu $v0, $v0, $s5", "and the corkscrew"),
+    (0x8003e5f0, "subu $v0, $v0, $v1", "less a multiple of its normal"),
+    (0x8003e658, "jal 0x800606b8", "and then as it is"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -196,6 +211,7 @@ MULTIPLIERS = [
     ("captivators", "star52.sway.reach", "fast star: sways this far either way, units", 0x8003c008, 5, "v1", "v1"),
     ("captivators", "corkscrew.rise", "corkscrew: rises this far, units", 0x8003c3a0, 5, "a0", "v1"),
     ("captivators", "corkscrew.spin", "corkscrew: spins this much times the cosine per frame", 0x8003e474, 5, "v0", "a2"),
+    ("captivators", "corkscrew.drop", "corkscrew: drawn this far nearer its face than its entry, units", 0x8003e5d8, 6, "v1", "v1"),
     ("captivators", "ball53.lurch.reach", "wandering ball: lurch's reach, units", 0x8003c98c, 2, "v0", "v1"),
     ("captivators", "ball53.dash", "wandering ball: dashes per frame, units", 0x8003cc40, 6, "v1", "v0"),
 ]
@@ -426,7 +442,8 @@ def table(r, platform_speed):
     A rate is per frame and an angle is in 4096ths of a turn; a reach is in
     units of which a block is 512. A cycle is a frame program per phase. The
     platform's speed is the one the level data holds, scaled as the loader
-    scales it.
+    scales it. A type the loader lifts into an entry of its own says how far
+    off its face the game draws the model's origin.
     """
     bob = {"rate": r["coin.bob"], "reach": r["coin.bob.reach"]}
     fruit = {"turn": r["fruit.turn"],
@@ -434,6 +451,7 @@ def table(r, platform_speed):
              "bob": {"rate": r["fruit.bob"], "reach": r["fruit.bob.reach"]}}
     pill = {"turn": r["pill.turn"], "flip": r["pill.flip"]}
     star50 = [r["star50.tumble.x"], r["star50.tumble.y"], r["star50.tumble.z"]]
+    stand = r["captivator.standoff"] - BLOCK // 2
     types = {
         5: {"turn": r["teleporter.turn"]},
         30: {"breathe": {"rate": r["ball.breathe"], "reach": r["ball.breathe.reach"],
@@ -467,6 +485,9 @@ def table(r, platform_speed):
     }
     for t in range(43, 48):
         types[t] = fruit
+    for t in (50, 51, 52, 53):
+        types[t]["entry"] = {"stand": stand}
+    types[56]["entry"] = {"stand": stand - r["corkscrew.drop"]}
     kinds = {
         5: {"speed": platform_speed * r["platform.scale"] // HZ, "dwell": r["platform.dwell"]},
         7: {"cycle": [[s for s, _ in vanish_cycle(r, p)] for p in range(PHASES)],

@@ -188,10 +188,12 @@ class Table(unittest.TestCase):
                     "ball53.shake", "ball53.lurch.reach", "ball53.dash", "ball53.settle",
                     "ball53.ways", "wheel.roll",
                     "wheel.travel", "wheel.turning", "wheel.turn.right", "wheel.turn.about",
-                    "captivator.standoff", "ball.breathe", "ball.breathe.reach",
+                    "corkscrew.drop", "ball.breathe", "ball.breathe.reach",
                     "ball.breathe.full", "ball.breathe.over", "time.tick"):
             r.setdefault(key, 1)
         r["platform.scale"] = 50
+        r["captivator.standoff"] = 456
+        r["corkscrew.drop"] = 150
         t = table(r, 30)
         self.assertEqual(t["hz"], 60)
         self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1})
@@ -200,6 +202,10 @@ class Table(unittest.TestCase):
         self.assertEqual([len(c) for c in t["kinds"]["7"]["cycle"]], [224] * PHASES)
         self.assertEqual([len(c) for c in t["kinds"]["7"]["level"]], [224] * PHASES)
         self.assertEqual(t["types"]["56"]["phases"], [1, 1, 1, 0])
+        for k in ("50", "51", "52", "53"):
+            self.assertEqual(t["types"][k]["entry"], {"stand": 200})
+        self.assertEqual(t["types"]["56"]["entry"], {"stand": 50})
+        self.assertNotIn("entry", t["types"]["37"])
         self.assertEqual(set(t["types"]), {str(k) for k in
                                            (5, 7, 11, 26, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42,
                                             43, 44, 45, 46, 47, 50, 51, 52, 53, 56)})

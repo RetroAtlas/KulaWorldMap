@@ -132,11 +132,11 @@
    "45": {"turn":20,"tilt":{"rate":-66,"reach":150},"bob":{"rate":-50,"reach":20}},
    "46": {"turn":20,"tilt":{"rate":-66,"reach":150},"bob":{"rate":-50,"reach":20}},
    "47": {"turn":20,"tilt":{"rate":-66,"reach":150},"bob":{"rate":-50,"reach":20}},
-   "50": {"tumble":[11,-100,43],"travel":13},
-   "51": {"roll":-53,"travel":12,"turning":{"frames":76,"rate":13,"about":26}},
-   "52": {"tumble":[64,32,0],"sway":{"rate":53,"reach":600}},
-   "53": {"tumble":[11,-100,43],"shake":{"frames":77,"reach":65},"dash":53,"settle":513,"ways":4},
-   "56": {"bounce":{"rate":23,"wrap":2048,"rise":400,"spin":400},"phases":[1024,682,341,0]}
+   "50": {"tumble":[11,-100,43],"travel":13,"entry":{"stand":200}},
+   "51": {"roll":-53,"travel":12,"turning":{"frames":76,"rate":13,"about":26},"entry":{"stand":200}},
+   "52": {"tumble":[64,32,0],"sway":{"rate":53,"reach":600},"entry":{"stand":200}},
+   "53": {"tumble":[11,-100,43],"shake":{"frames":77,"reach":65},"dash":53,"settle":513,"ways":4,"entry":{"stand":200}},
+   "56": {"bounce":{"rate":23,"wrap":2048,"rise":400,"spin":400},"phases":[1024,682,341,0],"entry":{"stand":50}}
   },
   "kinds": {
    "5": {"speed":25,"dwell":48},

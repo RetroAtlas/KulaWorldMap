@@ -87,7 +87,7 @@ Kind 8 is built at load by `0x800280d0` and drawn every frame by `0x80051754`, w
 
 ## The captivators
 
-Types 50, 51, 52, 53 and 56 are lifted out of their slots at load into 180-byte entries at `0x800ba3dc` (`0x8003b5dc`), each standing **456 units from its block's centre along the face normal**, 200 off the face, with the normal, a home position, a heading from `f2` and three angles of its own. `0x8003ba88` moves them each frame and `0x8003d680` turns them, and the `f3` of a corkscrew alone survives as a phase.
+Types 50, 51, 52, 53 and 56 are lifted out of their slots at load into 180-byte entries at `0x800ba3dc` (`0x8003b5dc`), each standing **456 units from its block's centre along the face normal**, 200 off the face, with the normal, a home position, a heading from `f2` and three angles of its own. `0x8003ba88` moves them each frame and `0x8003d680` turns them, and the `f3` of a corkscrew alone survives as a phase. **Each is drawn with its model's origin where its entry is**: the draw copies the entry's position and turns it into the view as it is (`0x8003d81c`, `0x8003ed3c`, `0x8003f3e8`, `0x8003dea0`), so the stars, the wheel and the wandering ball all have their middles 200 off the face whatever their size, which leaves the small wandering ball clear of the floor by more than half its height; the corkscrew alone is drawn 150 nearer its face than its entry (`0x8003e5d8`), 50 off, and bounces from there. The table ships that height with each of the five as its `entry`, and the viewer stands them there rather than on their lowest points.
 
 | type | moves | turns |
 | --- | --- | --- |
