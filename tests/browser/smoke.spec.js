@@ -867,6 +867,23 @@ test("the camera target shows only on s", async ({ page }) => {
   expect(await written(page)).toContain("camera target");
 });
 
+test("the display keeps only the switches set away from their defaults", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
+  await page.keyboard.press("l");
+  expect(await kept()).toEqual({ labels: true });
+  await page.keyboard.press("v");
+  expect(await kept()).toEqual({ labels: true, travel: false });
+  await page.keyboard.press("l");
+  expect(await kept()).toEqual({ travel: false });
+  await page.reload();
+  await settle(page);
+  await expect(page.locator("#showTravel")).not.toBeChecked();
+  await expect(page.locator("#showLabels")).not.toBeChecked();
+  await expect(page.locator("#showOutlines")).toBeChecked();
+});
+
 test("the page a link lands on says what it is", async ({ page }) => {
   await page.goto("/");
   const head = await page.evaluate(() => ({

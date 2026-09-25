@@ -181,9 +181,13 @@ export function wireDisplay() {
   $("scrim").onclick = () => setSidebar(false);
 }
 
+/** Keeps only the switches set away from their defaults, so that a default
+    that changes reaches whoever left that switch alone. */
 function save() {
+  const set = Object.fromEntries(Object.entries(state.show).filter(([k, v]) => v !== DEFAULTS[k]));
+  if (state.panMode) set.panMode = true;
   try {
-    localStorage.setItem(KEY, JSON.stringify({ ...state.show, panMode: !!state.panMode }));
+    localStorage.setItem(KEY, JSON.stringify(set));
   } catch {
     /* ignore */
   }
