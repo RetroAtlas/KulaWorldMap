@@ -22,6 +22,7 @@ const SHOWN = [
   ["showModels", "models"],
   ["showStart", "start"],
   ["showLabels", "labels"],
+  ["showFaces", "faces"],
   ["showBase", "base"],
   ["showHidden", "hidden"],
   ["showTravel", "travel"],

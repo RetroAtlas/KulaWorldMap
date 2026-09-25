@@ -595,7 +595,8 @@ function drawThing(m, c, l, frame, home = c, going = null, painted = false) {
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(where, m.face, OBJECT_HOVER);
     const dark = markerState(m) === "off" ? " · off" : "";
-    label(markerLabel(m) + dark + ` · ${FACE_NAME[m.face]}`, px + 8, py + 4, "#e8eefb");
+    const side = state.show.faces ? ` · ${FACE_NAME[m.face]}` : "";
+    label(markerLabel(m) + dark + side, px + 8, py + 4, "#e8eefb");
   }
 }
 
@@ -832,7 +833,7 @@ function drawMarker(m, c) {
     ctx.textBaseline = "alphabetic";
   }
   if (state.show.labels && state.cam.zoom > 0.45) {
-    const side = m.face ? ` · ${FACE_NAME[m.face]}` : "";
+    const side = m.face && state.show.faces ? ` · ${FACE_NAME[m.face]}` : "";
     label(markerLabel(m) + (dark ? " · off" : "") + side, px + r + 4, py + 4, "#e8eefb");
   }
   ctx.restore();

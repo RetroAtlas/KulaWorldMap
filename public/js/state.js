@@ -18,6 +18,7 @@ export const state = {
     models: true,
     start: true,
     labels: false,
+    faces: true,
     base: false,
     hidden: false,
     skins: true,

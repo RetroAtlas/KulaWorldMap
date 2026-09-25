@@ -727,6 +727,36 @@ test("objects draw as themselves, keep turning, and go back to markers on d", as
   expect(errors).toEqual([]);
 });
 
+/** The text one frame writes on the canvas. */
+const written = (page) =>
+  page.evaluate(async () => {
+    const { draw } = await import(new URL("js/render.js", location.href).href);
+    const g = document.getElementById("cv").getContext("2d");
+    const seen = [];
+    const fillText = g.fillText;
+    g.fillText = (text, ...rest) => (seen.push(text), fillText.call(g, text, ...rest));
+    draw();
+    g.fillText = fillText;
+    return seen;
+  });
+
+test("a label names the face its thing stands on, and n leaves the face out", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0/45,35/1");
+  await settle(page);
+  await expect(page.locator("#showFaces")).toBeChecked();
+  await page.keyboard.press("l");
+  // LEVEL 1 puts all six of its things on top
+  const named = (await written(page)).filter((t) => t.endsWith(" · top"));
+  expect(named).toHaveLength(6);
+  await page.keyboard.press("n");
+  await expect(page.locator("#showFaces")).not.toBeChecked();
+  const plain = await written(page);
+  expect(plain.filter((t) => t.includes(" · top"))).toEqual([]);
+  for (const t of named) expect(plain).toContain(t.slice(0, -" · top".length));
+  expect(errors).toEqual([]);
+});
+
 test("the page a link lands on says what it is", async ({ page }) => {
   await page.goto("/");
   const head = await page.evaluate(() => ({

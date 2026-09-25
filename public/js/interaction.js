@@ -276,6 +276,9 @@ addEventListener("keydown", (e) => {
     case "l":
       toggle("showLabels");
       break;
+    case "n":
+      toggle("showFaces");
+      break;
     case "g":
       toggle("showBase");
       break;
