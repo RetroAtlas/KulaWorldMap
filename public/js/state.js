@@ -34,23 +34,26 @@ export const state = {
 
 let basis = null;
 
-/** Screen axes and the depth axis for the current yaw and pitch. */
-export function camera() {
-  const { yaw, pitch } = state.cam;
-  if (basis && basis.yaw === yaw && basis.pitch === pitch) return basis;
+/** Screen axes and the depth axis for a yaw and a pitch in degrees. */
+export function basisAt(yaw, pitch) {
   const cy = Math.cos(yaw * DEG),
     sy = Math.sin(yaw * DEG);
   const cp = Math.cos(pitch * DEG),
     sp = Math.sin(pitch * DEG);
   // The lattice's third axis counts downward, and seen from above its second
   // counts down the page, which is the one way the game's own lettering reads.
-  basis = {
-    yaw,
-    pitch,
+  return {
     right: [cy, -sy, 0],
     up: [-sp * sy, -sp * cy, -cp],
     toward: [cp * sy, cp * cy, -sp], // scene toward camera
   };
+}
+
+/** Screen axes and the depth axis for the current yaw and pitch. */
+export function camera() {
+  const { yaw, pitch } = state.cam;
+  if (basis && basis.yaw === yaw && basis.pitch === pitch) return basis;
+  basis = { yaw, pitch, ...basisAt(yaw, pitch) };
   return basis;
 }
 

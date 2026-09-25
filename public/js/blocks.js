@@ -23,7 +23,7 @@ const shade = (hex, f, a = 1) => {
 // its corners, and the number the game gives it. Lighting comes from the
 // world, not from the screen, so a face keeps its brightness as the view
 // turns and the solid reads as solid.
-const FACES = [
+export const FACES = [
   {
     n: [0, 0, 1],
     d: [0, 0, 1],
@@ -109,7 +109,7 @@ const lit = FACES.map((f) => {
 const SHADE = FACES.map((f) =>
   f.n[2] < 0 ? 2 : f.n[2] > 0 ? 0 : f.n[0] > 0 || f.n[1] < 0 ? 1 : 0,
 );
-const shadeOf = (i, world) => skinsTable()?.shade[world]?.[FACES[i].game] ?? SHADE[i];
+export const shadeOf = (i, world) => skinsTable()?.shade[world]?.[FACES[i].game] ?? SHADE[i];
 
 const PLATFORM = 5;
 const BEAM_KIND = 8;
@@ -178,6 +178,9 @@ function kindTint(tint, kind) {
   );
 }
 
+/** The colour face `i` of a block of `kind` takes without textures, in a world's tint. */
+export const flatFace = (tint, kind, i) => shade(kindTint(tint, kind), lit[i]);
+
 // How a kind of block reads without its textures: a wash for what the game
 // paints onto the block, and a fainter, broken cube for a block that is not
 // solidly there, whether never seen or gone once rolled on. With the textures
@@ -192,7 +195,7 @@ const LOOK = {
   6: { wash: "rgba(0 0 0 / 0.3)", dash: [6, 3] },
   7: { alpha: 0.2, dash: [2, 4] },
 };
-const SKINNED_LOOK = {
+export const SKINNED_LOOK = {
   3: { alpha: 0.7, dash: [3, 3] },
   7: { alpha: 0.2, dash: [2, 4] },
 };

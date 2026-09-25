@@ -689,6 +689,25 @@ test("a panel is a dialog that a click inside does not dismiss", async ({ page }
   await expect(help).toBeHidden();
 });
 
+test("an invisible block's icon shows it at the peak of its pulse", async ({ page }) => {
+  await page.goto("/#HILLS/19");
+  await settle(page);
+  const { median, peak } = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { atlasFor }, { SKINNED_LOOK }, { blockIcon }] = await Promise.all(
+      ["state.js", "atlas.js", "blocks.js", "icons.js"].map(at),
+    );
+    while (!atlasFor(state.lvl.theme)) await new Promise(requestAnimationFrame);
+    const cv = blockIcon(state.lvl, 3);
+    const px = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
+    const alphas = [];
+    for (let i = 3; i < px.length; i += 4) if (px[i]) alphas.push(px[i]);
+    alphas.sort((a, b) => a - b);
+    return { median: alphas[alphas.length >> 1], peak: SKINNED_LOOK[3].alpha * 255 };
+  });
+  expect(Math.abs(median - peak)).toBeLessThan(8);
+});
+
 test("objects draw as themselves, keep turning, and go back to markers on d", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#HIRO/0");

@@ -10,7 +10,7 @@ import {
   markerColour,
   markerModel,
 } from "./data.js";
-import { iconFor } from "./icons.js";
+import { iconFor, blockIcon, paintIcon } from "./icons.js";
 import { selectLevel } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
 import { setSlice } from "./interaction.js";
@@ -118,14 +118,23 @@ export function buildKinds() {
   }
 }
 
-function kindButton(k, m, n, keys) {
+// A row shows the thing's model, or, for what has none, what the game paints:
+// the block, or the face under a thing drawn on it and nowhere else. The
+// settings are neither and have a dot.
+function iconOf(m) {
   const model = markerModel(m, state.lvl);
+  if (model) return iconFor(model);
+  const group = markerGroup(m);
+  if (group === "block") return blockIcon(state.lvl, m.kind);
+  if (group === "object") return paintIcon(state.lvl, m.type);
+  return el("span", { className: "dot", style: `background:${markerColour(m)}` });
+}
+
+function kindButton(k, m, n, keys) {
   const b = el(
     "button",
     { className: "kind", type: "button" },
-    model
-      ? iconFor(model)
-      : el("span", { className: "dot", style: `background:${markerColour(m)}` }),
+    iconOf(m),
     el("span", {}, markerLabel(m)),
     el("span", { className: "n" }, String(n)),
   );
@@ -213,6 +222,10 @@ function syncSlice() {
 }
 
 on("slice-changed", syncSlice);
+
+on("atlas-loaded", (world) => {
+  if (world === state.lvl?.theme) buildKinds();
+});
 
 on("level-changed", () => {
   markLevel();
