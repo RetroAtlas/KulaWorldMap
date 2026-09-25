@@ -36,23 +36,22 @@ export function seed(x, y, z, face) {
 }
 
 /**
- * How a level is drawn: from which of the two sets of skins, which the loader
- * decides by whether the level holds a key and then by the mode the game is
- * in, since the mode that plays one pack of its own keeps the first set
- * however few keys a level has; whether its faces are half-transparent, which
- * the settings record of a hidden level asks for; and the world's place,
- * whose parity picks a bonus level's colours.
+ * How a level is drawn: from which of the two sets of skins, the second for
+ * a level the loader finds no key on, unless the level is a hidden one or the
+ * game is in the mode that plays one pack of its own, either of which puts it
+ * back on the first; whether its faces are half-transparent, which the
+ * settings record of a hidden level asks for; and the world's place, whose
+ * parity picks a bonus level's colours.
  */
 export function lookOf(skins, l, world) {
-  const keyed =
-    l.pack === skins.copycat ||
-    l.records.some(
-      (r) => r.kind < skins.keys.kinds && r.on.some((o) => o.type === skins.keys.type),
-    );
+  const keyed = l.records.some(
+    (r) => r.kind < skins.keys.kinds && r.on.some((o) => o.type === skins.keys.type),
+  );
   const glass = l.records.some((r) => r.kind === skins.hidden.kind && r.type === skins.hidden.type);
+  const bonus = !keyed && !glass && l.pack !== skins.copycat;
   return {
-    set: skins.sets[keyed ? "arcade" : "bonus"],
-    bonus: !keyed,
+    set: skins.sets[bonus ? "bonus" : "arcade"],
+    bonus,
     glass,
     world,
     parity: world % 2,

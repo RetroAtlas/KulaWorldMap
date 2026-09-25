@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations, objects } from "./fixtures.js";
+import { lookOf } from "../../public/js/skins.js";
 
 // The types drawn on a block's face rather than standing on it: fire, ice, the
 // clock and one unnamed type, which have no mesh of their own; and the start,
@@ -71,17 +72,12 @@ test("the motion table is in the game's units and cycles per phase", () => {
 });
 
 // The skins the build reads off the executable: two sets of models, the
-// second for a level the loader finds no key on, except in the mode that
-// plays one pack of its own, which keeps the first set (docs/tgi.md).
+// second for a level the loader finds no key on, except a hidden level and
+// the mode that plays one pack of its own, which keep the first (docs/tgi.md).
 test("the second set of skins is drawn by the bonus levels and no others", () => {
   const { skins } = objects;
   const BONUS_SLOTS = [15, 16, 17];
-  const keyed = (l) =>
-    l.pack === skins.copycat ||
-    l.records.some(
-      (r) => r.kind < skins.keys.kinds && r.on.some((o) => o.type === skins.keys.type),
-    );
-  const second = mapData.levels.filter((l) => !keyed(l));
+  const second = mapData.levels.filter((l) => lookOf(skins, l, 0).bonus);
   assert.ok(
     mapData.levels.some((l) => l.pack === skins.copycat),
     `no pack is ${skins.copycat}`,
