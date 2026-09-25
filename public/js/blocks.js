@@ -272,6 +272,25 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
   return live;
 }
 
+/** Whether a cell's cube, where `c` stands, covers a point on the screen as
+    the pick paints it: every face turned toward the view. */
+export function covers(c, x, y) {
+  const s = state.cam.zoom * BLOCK;
+  const [ox, oy] = screen(c.x, c.y, c.z);
+  return FACES.some((f) => {
+    if (!facing(f.n)) return false;
+    const pts = f.c.map(([dx, dy, dz]) => {
+      const [px, py] = project(dx, dy, dz);
+      return [ox + px * s, oy + py * s];
+    });
+    const sides = pts.map(([ax, ay], i) => {
+      const [bx, by] = pts[(i + 1) % pts.length];
+      return Math.sign((bx - ax) * (y - ay) - (by - ay) * (x - ax));
+    });
+    return !sides.includes(1) || !sides.includes(-1);
+  });
+}
+
 export function outline(ctx, c, idx, colour, dash = []) {
   ctx.save();
   ctx.strokeStyle = colour;

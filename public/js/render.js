@@ -6,7 +6,7 @@ import { walkers, probe, advance, place, under, dice } from "./travel.js";
 import { lookOf, paintedShadow } from "./skins.js";
 import { drawBeams } from "./beams.js";
 import { atlasFor } from "./atlas.js";
-import { drawBlock, cube, outline } from "./blocks.js";
+import { drawBlock, cube, outline, covers } from "./blocks.js";
 import { drawRails, drawBase, drawLook, drawScale, drawMark } from "./overlays.js";
 import { drawThing, paintSays, thingDisc } from "./things.js";
 
@@ -14,7 +14,7 @@ const cv = $("cv");
 const ctx = cv.getContext("2d");
 
 // A second canvas painted with one flat colour per cell, so a click can be
-// resolved by reading a pixel rather than by intersecting cubes.
+// resolved by reading a pixel rather than by intersecting every cube.
 const pickCv = document.createElement("canvas");
 const pick = pickCv.getContext("2d", { willReadFrequently: true });
 let pickStale = true;
@@ -242,7 +242,7 @@ export function draw() {
 
     // a moving platform's blocks are picked where they are drawn, each as its record's cell
     if (pickStale && !ghost) {
-      pickList.push(home);
+      pickList.push({ home, at: c });
       const col = pickColour(pickList.length);
       cube(pick, c, { cells: new Map() }, () => col, null, 1, null);
     }
@@ -306,12 +306,32 @@ function pickGoing(going, home, l) {
     z: home.z + going.offset[2],
   };
   const [x, y, r] = thingDisc(m, where, l);
-  pickList.push(home);
+  pickList.push({ home, disc: [x, y, r] });
   pick.fillStyle = pickColour(pickList.length);
   pick.beginPath();
   pick.arc(x, y, r, 0, 7);
   pick.fill();
 }
+
+// The pick is drawn smoothed like any canvas, so a pixel on the edge between
+// two cells holds a blend of their colours, which can read as a third cell
+// anywhere on the map. A colour read around a point only proposes a cell:
+// the point takes the frontmost of those, the last the pick painted, whose
+// shape covers the middle of the pixel it falls in, or failing that its rim.
+const AROUND = 2; // how far, in the pick's pixels, the colours proposed are read
+const TRIES = [
+  [0.5, 0.5],
+  [0, 0],
+  [1, 0],
+  [0, 1],
+  [1, 1],
+  [0.5, 0],
+  [0.5, 1],
+  [0, 0.5],
+  [1, 0.5],
+];
+const shows = (e, x, y) =>
+  e.disc ? Math.hypot(x - e.disc[0], y - e.disc[1]) <= e.disc[2] : covers(e.at, x, y);
 
 /** The cell under a client point, or null. */
 export function cellAt(cx, cy) {
@@ -325,8 +345,22 @@ export function cellAt(cx, cy) {
   const px = Math.round(cx * kx),
     py = Math.round(cy * ky);
   if (px < 0 || py < 0 || px >= pickCv.width || py >= pickCv.height) return null;
-  const p = pick.getImageData(px, py, 1, 1).data;
-  const id = p[0] | (p[1] << 8) | (p[2] << 16);
-  if (!id || id > pickList.length || p[3] === 0) return null;
-  return pickList[id - 1];
+  const x0 = Math.max(0, px - AROUND);
+  const y0 = Math.max(0, py - AROUND);
+  const w = Math.min(pickCv.width, px + AROUND + 1) - x0;
+  const h = Math.min(pickCv.height, py + AROUND + 1) - y0;
+  const p = pick.getImageData(x0, y0, w, h).data;
+  if (p[((py - y0) * w + (px - x0)) * 4 + 3] === 0) return null;
+  const proposed = new Set();
+  for (let i = 0; i < p.length; i += 4) {
+    const id = p[i] | (p[i + 1] << 8) | (p[i + 2] << 16);
+    if (p[i + 3] && id && id <= pickList.length) proposed.add(id);
+  }
+  const front = [...proposed].sort((a, b) => b - a);
+  const dpr = state.view.dpr;
+  for (const [dx, dy] of TRIES) {
+    const id = front.find((v) => shows(pickList[v - 1], (px + dx) / dpr, (py + dy) / dpr));
+    if (id) return pickList[id - 1].home;
+  }
+  return null;
 }

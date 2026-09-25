@@ -973,6 +973,60 @@ test("a travelling thing, and every block of a platform, picks the cell its reco
   expect(errors).toEqual([]);
 });
 
+test("a point on the edge between two blocks names one drawn there, never one far off", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // HIDDEN 10: nothing travels or runs a route, so every cell the pick names
+  // is drawn where its cell is, and its 178 blocks take pick colours past one
+  // byte, so a blend of two can decode as a block anywhere
+  await page.goto("/#HELL/18/45,35");
+  await settle(page);
+  await expect(page.locator("#chip")).toContainText("HIDDEN 10");
+  const far = await page.evaluate(async () => {
+    const { screen } = await import(new URL("js/state.js", location.href).href);
+    const { cellAt } = await import(new URL("js/render.js", location.href).href);
+    /** How far a point lies outside a cell's cube as the screen shows it. */
+    const away = (c, x, y) => {
+      const pts = [];
+      for (const dx of [0, 1])
+        for (const dy of [0, 1])
+          for (const dz of [0, 1]) pts.push(screen(c.x + dx, c.y + dy, c.z + dz));
+      pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      const turn = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+      const half = (list) =>
+        list.reduce((h, p) => {
+          while (h.length >= 2 && turn(h.at(-2), h.at(-1), p) <= 0) h.pop();
+          return [...h, p];
+        }, []);
+      const hull = [...half(pts).slice(0, -1), ...half([...pts].reverse()).slice(0, -1)];
+      let inside = true;
+      let nearest = Infinity;
+      hull.forEach((a, i) => {
+        const b = hull[(i + 1) % hull.length];
+        const [ex, ey] = [b[0] - a[0], b[1] - a[1]];
+        if (ex * (y - a[1]) - ey * (x - a[0]) < 0) inside = false;
+        const t = Math.max(
+          0,
+          Math.min(1, ((x - a[0]) * ex + (y - a[1]) * ey) / (ex * ex + ey * ey)),
+        );
+        nearest = Math.min(nearest, Math.hypot(a[0] + t * ex - x, a[1] + t * ey - y));
+      });
+      return inside ? 0 : nearest;
+    };
+    const cv = document.getElementById("cv");
+    const out = [];
+    for (let y = 0; y < cv.clientHeight; y += 2)
+      for (let x = 0; x < cv.clientWidth; x += 2) {
+        const c = cellAt(x, y);
+        if (c && away(c, x, y) > 4) out.push(`${x},${y} names ${c.x},${c.y},${c.z}`);
+      }
+    return out;
+  });
+  expect(far.length, far.slice(0, 3).join("; ")).toBe(0);
+  expect(errors).toEqual([]);
+});
+
 test("the page a link lands on says what it is", async ({ page }) => {
   await page.goto("/");
   const head = await page.evaluate(() => ({
