@@ -1,6 +1,7 @@
 // The matrix: every case names a level by pack and slot, a yaw and pitch, and
 // optionally a zoom (else the fit), the display switches it changes, a
-// selection and a hover, and the page times it is captured at.
+// selection and a hover, the circuits turned over, and the page times it is
+// captured at.
 const T0 = 10000;
 const T1 = 10617;
 const T2 = 14167;
@@ -162,6 +163,17 @@ for (const name of ["L1", "LESSON", "OBJ", "B15", "H3", "L94", "F6", "H10"]) {
 }
 add("H/LESSON/select", "LESSON", V1, { dpr: 2, select: "things", hover: "plain" });
 add("H/OBJ/flat", "OBJ", V1, { dpr: 2, show: { skins: false, base: true, start: true } });
+
+// I: circuits turned over, beams and devices together, and what travels
+// meeting the beams it finds changed
+add("I/OBJ/red", "OBJ", V1, { flip: [3], show: { labels: true }, frames: [T0, T1] });
+add("I/OBJ/red-markers", "OBJ", V3, { flip: [3], show: { models: false, labels: true } });
+add("I/OBJ/both", "OBJ", V1, { flip: [2, 3], frames: [T0, T1, T2] });
+add("I/OBJ/twice", "OBJ", V1, { flip: [3, 3] });
+add("I/LESSON/yellow", "LESSON", V1, { flip: [0], show: { labels: true }, frames: [T0, T1] });
+add("I/F3/all", "F3", V1, { flip: [0, 1, 2, 3], frames: [T0, T1] });
+add("I/F6/all", "F6", V3, { flip: [0, 1, 2, 3], show: { models: false, labels: true } });
+add("I/S8/beam", "S8", V1, { flip: [0, 1, 2, 3], show: { objects: false } });
 
 const seen = new Set();
 for (const c of cases) {

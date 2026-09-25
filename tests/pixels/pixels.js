@@ -182,6 +182,10 @@ async function capture(page, c, keep) {
       state.cam.yaw = c.yaw;
       state.cam.pitch = c.pitch;
       N.selectLevel(li);
+      state.flipped = new Set();
+      for (const colour of c.flip || []) {
+        if (!state.flipped.delete(colour)) state.flipped.add(colour);
+      }
       if (c.zoom) state.cam.zoom = c.zoom;
       if (c.pan) [state.cam.panX, state.cam.panY] = c.pan;
       const l = state.lvl;
@@ -265,6 +269,7 @@ async function capture(page, c, keep) {
       state.hiddenKinds = new Set();
       state.survey.on = false;
       state.survey.marks = new Map();
+      state.flipped = new Set();
       return shots;
     },
     { c, keep },

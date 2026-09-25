@@ -88,6 +88,39 @@ test("a lit beam's cells are filled, and a dark one's are empty, as the game wri
   assert.equal(p.empty([12, 10, 17], 0), false);
   assert.equal(p.empty([12, 12, 17], 0), true);
   assert.equal(p.empty([14, 12, 17], 0), false);
+  const switched = new Set();
+  const turned = probe(l, (ray) => ray.lit !== switched.has(ray.a[1]));
+  switched.add(10).add(12);
+  assert.equal(turned.empty([12, 10, 17], 0), true, "a beam switched off opens its cells");
+  assert.equal(turned.empty([12, 12, 17], 0), false, "and one switched on fills them");
+});
+
+test("where two beams cross, a lit one fills the cell whichever comes first", () => {
+  const beam = (a, b, lit) => ({
+    x: a[0],
+    y: a[1],
+    z: a[2],
+    kind: 8,
+    type: 1,
+    f: [1, lit, ...a, ...b, -1, -1, -1],
+  });
+  const along = beam([10, 12, 17], [14, 12, 17], 1);
+  const across = beam([12, 10, 17], [12, 14, 17], 0);
+  const ends = [
+    [10, 12, 17],
+    [14, 12, 17],
+    [12, 10, 17],
+    [12, 14, 17],
+  ];
+  for (const records of [
+    [along, across],
+    [across, along],
+  ]) {
+    const p = probe(level(ends, records));
+    assert.equal(p.empty([12, 12, 17], 0), false);
+    assert.equal(p.empty([12, 11, 17], 0), true);
+    assert.equal(p.empty([11, 12, 17], 0), false);
+  }
 });
 
 test("a thing on its way stands over the block it leaves and the one it comes onto", () => {

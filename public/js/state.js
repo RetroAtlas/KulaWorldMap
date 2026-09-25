@@ -27,6 +27,8 @@ export const state = {
     outlines: true,
   },
   hiddenKinds: new Set(),
+  // the circuits a switch has turned over since the level was opened, by colour
+  flipped: new Set(),
   hover: null,
   selected: null,
   survey: { on: false, marks: new Map() },

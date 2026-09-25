@@ -6,7 +6,7 @@ import {
   markerLabel,
   markerFacing,
   markerHeading,
-  markerState,
+  markerNow,
   markerModel,
   motionTable,
   motionOf,
@@ -41,8 +41,8 @@ export function thingDisc(m, where, l) {
   return [p[0], p[1], r];
 }
 
-/** Whether a device a switch toggles is drawn off, as the level starts it. */
-const switchedOff = (m) => markerState(m) === "off";
+/** Whether a device a switch toggles is drawn off. */
+const switchedOff = (m) => markerNow(m) === "off";
 
 /** An object as itself where it has a mesh and the display asks for it, else
     its marker; on a moving platform the cell is where the platform is, and
@@ -86,8 +86,8 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null, painted =
 // entry of its own for stands where the game draws it. What moves in play moves
 // here at the game's rate, from the table the build read off the executable,
 // about those same axes; a thing that bobs is stood its bob's reach higher so
-// that it never dips into its face, and a device that starts switched off
-// stands still, as it does in play. The polygons are filled back to front in
+// that it never dips into its face, and a device switched off stands still,
+// as it does in play. The polygons are filled back to front in
 // their own colours, since the shading is baked into them, and both sides are
 // drawn, since the meshes wind their faces either way. A thing whose face is
 // painted with the game's own shadow casts none of its own.
@@ -237,9 +237,8 @@ function drawFacing(ctx, m, c, face, colour) {
 // A marker stands for one thing: an object on a face, or a record of a kind
 // that is more than a block. Colour tells the two apart, and the number is the
 // type or the kind, of which there are too many for an encoding a reader could
-// hold, so the marker says it outright once it has the room. A device that
-// starts switched off is drawn hollow, the way a beam that starts dark is
-// drawn broken.
+// hold, so the marker says it outright once it has the room. A device
+// switched off is drawn hollow, the way a dark beam is drawn broken.
 function drawMarker(ctx, m, c) {
   if (state.hiddenKinds.has(m.id)) return;
   const face = m.face ?? 0;

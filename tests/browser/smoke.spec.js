@@ -822,6 +822,55 @@ test("a label names the face its thing stands on, and n leaves the face out", as
   expect(errors).toEqual([]);
 });
 
+test("a switch's panel presses it, turning its colour over until the level is left", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/19/45,35/1");
+  await settle(page);
+  await page.keyboard.press("l");
+  const select = (type) =>
+    page.evaluate(async (type) => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { showCell } = await import(new URL("js/detail.js", location.href).href);
+      const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === type));
+      const { x, y, z } = state.lvl.records[i];
+      showCell({ x, y, z, v: state.data.firstRecord + i });
+    }, type);
+  const off = async () => (await written(page)).filter((t) => t.includes(" · off")).length;
+  // LESSON's yellow switch and its two teleporters start off
+  expect(await off()).toBe(3);
+  await select(9);
+  const press = page.locator("#detail .press button");
+  await expect(press).toHaveText(/Off · press to turn on/);
+  const url = page.url();
+  await press.click();
+  await expect(press).toHaveText(/On · press to turn off/);
+  await expect(press).toBeFocused();
+  await expect(page.locator("#detail")).toContainText("startsoff");
+  expect(await off()).toBe(0);
+  expect(page.url()).toBe(url);
+  await select(5);
+  await expect(page.locator("#detail .press")).toHaveCount(0);
+  await page.evaluate(async () => {
+    const { state, screen } = await import(new URL("js/state.js", location.href).href);
+    const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === 5));
+    const c = state.lvl.records[i];
+    const cv = document.getElementById("cv");
+    const r = cv.getBoundingClientRect();
+    const [x, y] = screen(c.x + 0.5, c.y + 0.5, c.z);
+    cv.dispatchEvent(new PointerEvent("pointermove", { clientX: r.left + x, clientY: r.top + y }));
+  });
+  await expect(page.locator("#tip")).toContainText("Yellow teleporter · top");
+  await expect(page.locator("#tip")).not.toContainText("off");
+  await page.keyboard.press("]");
+  await expect(page.locator("#chip")).not.toContainText("LESSON");
+  await page.keyboard.press("[");
+  await expect(page.locator("#chip")).toContainText("LESSON");
+  expect(await off()).toBe(3);
+  expect(errors).toEqual([]);
+});
+
 test("b takes the lines off the blocks", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#HIRO/0/45,35/1");

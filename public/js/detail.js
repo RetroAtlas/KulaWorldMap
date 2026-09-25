@@ -17,6 +17,10 @@ import {
   markerPoints,
   markerFacing,
   markerState,
+  markerNow,
+  markerCircuit,
+  isSwitch,
+  flip,
   fieldName,
   fieldKey,
   VALUE_KEY,
@@ -60,6 +64,15 @@ const fields = (m) => {
   const dead = m.f.filter((v) => v === -1).length;
   if (dead) html += row("unset", `${dead} of ${m.f.length} fields`);
   return html;
+};
+
+// A switch is pressed from its panel as in play, which turns its whole circuit
+// over; the button says whether the circuit is on now.
+const press = (m) => {
+  const on = markerNow(m) === "on";
+  return `<p class="press"><button type="button" data-circuit="${markerCircuit(m)}">
+    <span class="lamp${on ? "" : " off"}" style="--lamp:${markerColour(m)}"></span>
+    ${on ? "On" : "Off"} · press to turn ${on ? "off" : "on"}</button></p>`;
 };
 
 const placed = (m) => {
@@ -114,12 +127,21 @@ export function showCell(c) {
     html += `<p class="sub">${m.face === null ? `kind ${m.kind} · type ${m.type}` : `type ${m.type} · on the ${FACE_NAME[m.face]}`}</p>`;
     const note = markerNote(m);
     if (note) html += `<p class="sub">${note}</p>`;
+    if (isSwitch(m)) html += press(m);
     html += `<table>${decoded(m)}${STORED}${fields(m)}</table>${placed(m)}`;
   }
   box.innerHTML = html;
   for (const at of box.querySelectorAll(".icon-at"))
     at.replaceWith(iconFor(icons[at.dataset.icon], 26));
   box.hidden = false;
+  for (const b of box.querySelectorAll(".press button")) {
+    b.onclick = () => {
+      flip(Number(b.dataset.circuit));
+      showCell(state.selected);
+      box.querySelector(`.press button[data-circuit="${b.dataset.circuit}"]`)?.focus();
+      draw();
+    };
+  }
   box.querySelector(".x").onclick = () => {
     clearDetail();
     draw();

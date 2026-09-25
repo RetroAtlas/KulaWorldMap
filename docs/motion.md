@@ -83,7 +83,7 @@ Kind 8 is built at load by `0x800280d0` and drawn every frame by `0x80051754`, w
 
 **A line's colour is its circuit's channels times a level it steps through on its own.** The builder makes a table per circuit (`0x80028128`) out of 240 levels at `0x8009a040`, each from 0 to 31, shifted into red and green for circuit 0, blue for 1, green for 2 and red for 3, so a full level is 248 in each channel it lights. Each of a beam's four lines starts at a random place in the table (`0x800284e0`) and steps one entry a frame, so the table runs through in 4 s and the four lines shimmer out of step: it holds 31 on most frames, with a few fades, dips as low as 4 and runs of 31 and 12 on alternate frames. The map hashes each line's start from its beam's first cell, and draws a dark beam broken where the game draws nothing.
 
-**The lattice follows the switch.** Every frame, after drawing, the renderer writes −1 into every cell a dark beam crosses and −2 into every cell a lit one crosses (`0x80051c0c`), so a dark beam's cells are open to the ball and to a captivator's probe alike.
+**The lattice follows the switch.** Every frame, after drawing, the renderer writes −1 into every cell a dark beam crosses (`0x80051c0c`) and then −2 into every cell a lit one crosses (`0x80051c64`), so a dark beam's cells are open to the ball and to a captivator's probe alike, and where two beams cross, as on LEVEL 96, 98, 105 and 124 and FINAL 10, a lit one fills the cell. A switch turns the beam over in its record ([level-format.md](level-format.md)), so the writes follow it from the next frame on.
 
 ## The captivators
 

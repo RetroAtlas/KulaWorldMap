@@ -71,24 +71,31 @@ export function heading(face, facing) {
   ][facing >= 2 && facing <= 4 ? facing - 1 : 0];
 }
 
-/** The questions the game asks of the lattice, over the level as loaded. */
-export function probe(l) {
+/** The questions the game asks of the lattice, over the level as loaded, with
+    each beam lit or dark as `lit` says at the moment of asking. */
+export function probe(l, lit = (ray) => ray.lit) {
   const cells = new Map();
   for (let i = 0; i < l.cells.length; i += 4) {
     cells.set(cellKey(l.cells[i], l.cells[i + 1], l.cells[i + 2]), l.cells[i + 3]);
   }
-  for (const { a, b, axis, lit } of beams(l)) {
+  // Every frame the game empties the cells of every dark beam and then fills
+  // those of every lit one, so where two cross a lit one fills the cell.
+  const crossed = new Map();
+  for (const ray of beams(l)) {
+    const { a, b, axis } = ray;
     for (const end of [a, b]) if (!cells.has(cellKey(...end))) cells.set(cellKey(...end), 0);
-    if (!lit) continue;
     for (let t = Math.min(a[axis], b[axis]) + 1; t < Math.max(a[axis], b[axis]); t++) {
       const cell = [...a];
       cell[axis] = t;
-      cells.set(cellKey(...cell), BETWEEN);
+      const k = cellKey(...cell);
+      crossed.set(k, [...(crossed.get(k) ?? []), ray]);
     }
   }
   const vanishing = kindMotion(VANISHING_KIND);
   const value = ([x, y, z], frame) => {
     if ([x, y, z].some((c) => c < 1 || c > 32)) return OFF_LATTICE;
+    const rays = crossed.get(cellKey(x, y, z));
+    if (rays) return rays.some(lit) ? BETWEEN : OFF_LATTICE;
     const v = cells.get(cellKey(x, y, z)) ?? OFF_LATTICE;
     if (v >= FIRST_RECORD && vanishing) {
       const r = l.records[v - FIRST_RECORD];

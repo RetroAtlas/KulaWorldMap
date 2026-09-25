@@ -1,6 +1,6 @@
 import { $, on } from "./dom.js";
 import { state, BLOCK, depth, facing, screen, cellKey, sliceZ } from "./state.js";
-import { WORLD_TINT, FACE_NORMAL, motionTable, skinsTable, platformCells } from "./data.js";
+import { WORLD_TINT, FACE_NORMAL, motionTable, skinsTable, platformCells, litNow } from "./data.js";
 import { frameAt } from "./motion.js";
 import { walkers, probe, advance, place, under, dice } from "./travel.js";
 import { lookOf, paintedShadow } from "./skins.js";
@@ -148,7 +148,7 @@ function travelling(l, idx, frame) {
     travel = {
       level: l,
       walkers: walkers(l, idx, motionTable(), frame),
-      probe: probe(l),
+      probe: probe(l, litNow),
       roll: dice(motionTable().dice),
     };
   }

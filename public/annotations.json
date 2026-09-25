@@ -66,7 +66,7 @@
         "f8": "high end y",
         "f9": "high end z"
       },
-      "note": "A laser beam between two blocks; it burns the ball on touch. A switch of the same colour turns it on and off, and a beam drawn broken starts switched off."
+      "note": "A laser beam between two blocks; it burns the ball on touch. A switch of the same colour turns it on and off, and a beam drawn broken is switched off."
     },
     "9": {
       "name": "Level settings",

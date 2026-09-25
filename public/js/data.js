@@ -185,6 +185,23 @@ export const markerState = (m) => {
   const v = m.f[fieldIndex(by)];
   return v === STATE_ON ? "on" : v === STATE_OFF ? "off" : null;
 };
+/** The circuit a device a switch toggles is on, which is its colour, or null for anything else. */
+export const markerCircuit = (m) => (markerState(m) === null ? null : m.f[fieldIndex(entry(m).by)]);
+/** Whether a device a switch toggles is on or off now, or null for anything else. */
+export const markerNow = (m) => {
+  const start = markerState(m);
+  if (start === null || !state.flipped.has(markerCircuit(m))) return start;
+  return start === "on" ? "off" : "on";
+};
+/** Whether a beam is lit now. */
+export const litNow = (ray) => ray.lit !== state.flipped.has(ray.colour);
+/** Turn a circuit over, as pressing one of its switches does. */
+export function flip(circuit) {
+  if (!state.flipped.delete(circuit)) state.flipped.add(circuit);
+}
+const SWITCH = 9;
+/** Whether a marker is a switch, whose press turns its circuit over. */
+export const isSwitch = (m) => m.face !== null && m.type === SWITCH;
 /** What the raw field at index `i` of a marker's fields holds, where that is settled, or null. */
 export const fieldName = (m, i) => {
   if (i === NUMBER_FIELD && markerNumber(m) !== null) return "pickup number";

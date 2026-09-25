@@ -1,5 +1,5 @@
 import { state, screen } from "./state.js";
-import { kindMotion } from "./data.js";
+import { kindMotion, litNow } from "./data.js";
 import { seed } from "./hash.js";
 
 const BEAM_KIND = 8;
@@ -20,8 +20,8 @@ const SIDES = [
 // flat quads crossed along it and a line down their middle, added to what is
 // behind, in its circuit's channels times a level the line steps through on
 // its own, from a start the game draws at random and the map hashes from the
-// beam's first cell. A beam that starts dark, which the game does not draw,
-// is drawn broken, its dashes carried across the cells so it reads as one line.
+// beam's first cell. A dark beam, which the game does not draw, is drawn
+// broken, its dashes carried across the cells so it reads as one line.
 
 /** Draws the stretches of beam through one cell, and says whether any is to
     change by the next frame. */
@@ -42,15 +42,16 @@ export function drawBeams(ctx, c, ghost, frame) {
     const nozzle = (beam?.nozzle ?? 0) / BLOCK;
     const half = (beam?.width ?? 0) / 2 / BLOCK;
     const sides = beam ? SIDES : [[0, 0]];
+    const lit = litNow(ray);
     ctx.save();
-    if (!ray.lit || !beam) {
+    if (!lit || !beam) {
       const rgb = beam ? tint(beam, ray, Math.max(...beam.levels)) : INK;
       const p = at(-reach, 0, 0);
       const q = at(reach, 0, 0);
       ctx.strokeStyle = `rgb(${rgb.join(" ")})`;
       ctx.lineWidth = Math.max(1, 1.2 * state.cam.zoom);
-      ctx.globalAlpha = (ghost ? 0.16 : 1) * (ray.lit ? 1 : 0.45);
-      if (!ray.lit) {
+      ctx.globalAlpha = (ghost ? 0.16 : 1) * (lit ? 1 : 0.45);
+      if (!lit) {
         ctx.setLineDash([4 * state.cam.zoom, 4 * state.cam.zoom]);
         ctx.lineDashOffset = k * Math.hypot(q[0] - p[0], q[1] - p[1]);
       }

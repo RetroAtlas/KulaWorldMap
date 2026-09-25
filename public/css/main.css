@@ -593,6 +593,36 @@ body.sidebar-open .menu-btn {
 .detail .x + h3 {
   padding-right: 28px;
 }
+.detail .press {
+  margin: 0 0 8px;
+}
+.detail .press button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 2px 9px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+}
+.detail .press button:hover {
+  border-color: var(--accent-dim);
+}
+.detail .lamp {
+  width: 9px;
+  height: 9px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--lamp);
+  border-radius: 50%;
+  background: var(--lamp);
+}
+.detail .lamp.off {
+  background: none;
+}
 .detail .tag {
   margin-left: auto;
   color: var(--warn);
