@@ -642,7 +642,7 @@ test("arriving somewhere is spoken, and names the map with it", async ({ page })
   await expect(page.locator("#say")).toContainText("LEVEL 2");
 });
 
-test("the legend lists the objects the chip counts, the blocks, and the settings apart", async ({
+test("the legend lists the objects the chip counts, every kind of block but the plain one, and the settings apart", async ({
   page,
 }) => {
   await page.goto("/#ATLANT/3");
@@ -664,7 +664,8 @@ test("the legend lists the objects the chip counts, the blocks, and the settings
   const sum = (g) => g.rows.reduce((n, [, k]) => n + k, 0);
   expect(groups.map((g) => g.head)).toEqual(["Objects", "Blocks", ""]);
   expect(sum(groups[0])).toBe(10);
-  expect(sum(groups[1])).toBe(9);
+  expect(groups[1].rows).toContainEqual(["Ice block", 1]);
+  expect(sum(groups[1])).toBe(10);
   expect(groups[2].rows).toEqual([["Level settings", 1]]);
 });
 

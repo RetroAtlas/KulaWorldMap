@@ -11,7 +11,10 @@ import {
   counted,
   platformCells,
   index,
+  levelMarkers,
+  blockMarkers,
 } from "../../public/js/data.js";
+import { state } from "../../public/js/state.js";
 
 setAnnotations(annotations);
 
@@ -79,6 +82,26 @@ test("a level's blocks are the lattice's and the ones the game adds on its empty
   assert.ok(platform, "level-format.md has no sentence about a platform's other blocks");
   assert.deepEqual([Number(platform[1]), Number(platform[2])], [carried, along]);
   assert.equal(blockCount(level("LEVEL 94")), 19);
+});
+
+test("the legend counts a block of a painted kind once, whether its cell or its record keeps the kind", () => {
+  state.data = mapData;
+  const painted = (k) => k > 0 && k < mapData.styles;
+  for (const l of mapData.levels) {
+    const want = new Map();
+    const add = (k) => want.set(k, (want.get(k) || 0) + 1);
+    for (let i = 3; i < l.cells.length; i += 4) if (painted(l.cells[i])) add(l.cells[i]);
+    for (const r of l.records) if (painted(r.kind)) add(r.kind);
+    const got = new Map();
+    for (const m of blockMarkers(l)) got.set(m.kind, (got.get(m.kind) || 0) + 1);
+    assert.deepEqual(got, want, l.name);
+    const twice = levelMarkers(l).filter((m) => m.face === null && painted(m.kind));
+    assert.deepEqual(twice, [], l.name);
+  }
+  assert.deepEqual(
+    blockMarkers(level("LEVEL 94")).map((m) => m.id),
+    ["k2"],
+  );
 });
 
 test("a count of one takes the singular", () => {

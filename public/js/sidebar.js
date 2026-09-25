@@ -5,6 +5,7 @@ import {
   worldName,
   levelTitle,
   levelMarkers,
+  blockMarkers,
   markerGroup,
   markerLabel,
   markerColour,
@@ -101,7 +102,7 @@ export function buildKinds() {
   box.textContent = "";
   const counts = new Map();
   const first = new Map();
-  for (const m of levelMarkers(state.lvl)) {
+  for (const m of [...levelMarkers(state.lvl), ...blockMarkers(state.lvl)]) {
     counts.set(m.id, (counts.get(m.id) || 0) + 1);
     if (!first.has(m.id)) first.set(m.id, m);
   }

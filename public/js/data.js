@@ -65,7 +65,8 @@ const BEAM_KIND = 8;
 const RAIL_KIND = 5;
 // The kinds whose record is a block and nothing more, so all it carries is
 // what stands on its faces. The others are a thing in their own right as well.
-const PLAIN_KINDS = new Set([0, 1, 2, 3]);
+const PLAIN_KINDS = new Set([0, 1, 2, 3, 4]);
+const PLAIN = 0;
 /** A cell the lattice does not carry, so nothing about it can be read as a style. */
 export const OFF_LATTICE = -1;
 
@@ -352,6 +353,21 @@ export function index(l) {
 }
 
 export const levelMarkers = (l) => l.records.flatMap(markersOf);
+
+/** A marker for every block of a kind that is only a block, but a plain one,
+    one per block: the lattice keeps the kind as the cell's value, or the
+    record the cell names keeps it where something stands on the block. */
+export function blockMarkers(l) {
+  const first = state.data.firstRecord;
+  const out = [];
+  for (let i = 3; i < l.cells.length; i += 4) {
+    const v = l.cells[i];
+    const kind = v < first ? v : l.records[v - first].kind;
+    if (kind !== PLAIN && PLAIN_KINDS.has(kind))
+      out.push({ id: `k${kind}`, kind, type: null, f: [], face: null, variant: null });
+  }
+  return out;
+}
 
 /** How many blocks a level puts in play: the lattice's, and the ones the game
     stands where the lattice leaves a cell empty, at the ends of a beam and
