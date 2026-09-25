@@ -594,15 +594,16 @@ function drawThing(m, c, l, frame, home = c, going = null, painted = false) {
 
 // An object is its mesh stood on its face: the model's y runs along the face's
 // outward normal, its z along the way the thing points where it has one, and
-// its lowest vertex sits just off the face. What moves in play moves here at
-// the game's rate, from the table the build read off the executable, about
-// those same axes; a thing that bobs is stood its bob's reach higher so that
-// it never dips into its face, and a device that starts switched off stands
-// still, as it does in play. The polygons are filled back to front in their
-// own colours, since the shading is baked into them, and both sides are
-// drawn, since the meshes wind their faces either way. A thing on a face
-// turned away from the view is drawn faint, like its marker. A thing whose
-// face is painted with the game's own shadow casts none of its own.
+// its lowest vertex sits just off the face, save that a thing the game keeps an
+// entry of its own for stands where the game draws it. What moves in play moves
+// here at the game's rate, from the table the build read off the executable,
+// about those same axes; a thing that bobs is stood its bob's reach higher so
+// that it never dips into its face, and a device that starts switched off
+// stands still, as it does in play. The polygons are filled back to front in
+// their own colours, since the shading is baked into them, and both sides are
+// drawn, since the meshes wind their faces either way. A thing on a face turned
+// away from the view is drawn faint, like its marker. A thing whose face is
+// painted with the game's own shadow casts none of its own.
 const GAP = 0.03; // between a thing and its face, in blocks
 const SHADOW = "rgba(0 0 0 / 0.32)";
 const GLASS = 0.55; // how much a translucent polygon covers
@@ -617,7 +618,9 @@ function drawObject(m, c, model, motion, frame, phase, round, time, going, paint
   const up = FACE_NORMAL[m.face];
   const forward = going?.fwd || markerHeading(m) || TANGENT[m.face];
   const unit = modelUnit();
-  const rest = GAP + Math.max(0, -model.box[0][1]) * unit;
+  const rest = motion?.entry
+    ? motion.entry.stand * unit
+    : GAP + Math.max(0, -model.box[0][1]) * unit;
   let lift = rest;
   const o = at(c, m.face, 0);
   let about = [0, 0, 0];

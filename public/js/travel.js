@@ -11,7 +11,6 @@ import { blockPhase } from "./motion.js";
 
 const UNIT = 512; // units across a block
 const HALF = UNIT / 2;
-const STANDOFF = 456; // a captivator's centre off its block's centre, along the normal
 const PROBE = 400; // how far back toward the block it looks for the next one
 const SLOW_STAR = 50;
 const WHEEL = 51;
@@ -187,7 +186,7 @@ export function walker(m, c, l, table, frame = 0) {
   Object.assign(w, heading(m.face, m.f[0]), {
     n,
     face: m.face,
-    origin: add(home, n, STANDOFF),
+    origin: add(home, n, table.standoff),
     entry,
     state: 0,
     timer: 0,
