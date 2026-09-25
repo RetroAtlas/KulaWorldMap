@@ -30,8 +30,9 @@ const CROSSABLE = new Set([30, 1, 2, 4]);
 const CAPTIVATORS_FROM = 50;
 
 // The two tangents the game lays on each face, and the normal: a facing of 1
-// heads along the second, and each further value turns a quarter about the
-// normal, the side following the heading.
+// heads along the second, and each further value up to 4 turns a quarter
+// about the normal, the side following the heading. The game turns for those
+// three values alone, so any other heads as 1 does.
 const TANGENTS = [
   [
     [-1, 0, 0],
@@ -66,7 +67,7 @@ export function heading(face, facing) {
     { d: a, s: neg(b) },
     { d: neg(b), s: neg(a) },
     { d: neg(a), s: b },
-  ][(facing - 1) & 3];
+  ][facing >= 2 && facing <= 4 ? facing - 1 : 0];
 }
 
 /** The questions the game asks of the lattice, over the level as loaded. */

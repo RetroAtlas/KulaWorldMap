@@ -33,6 +33,7 @@ test("a facing heads along the game's second tangent and turns a quarter at a ti
   assert.deepEqual(heading(0, 4), { d: [1, 0, 0], s: [0, 1, 0] });
   assert.deepEqual(heading(3, 1).d, [0, 0, 1]);
   assert.deepEqual(heading(2, 1).d, [0, 0, -1]);
+  assert.deepEqual(heading(0, 0), heading(0, 1), "a facing the game does not turn for heads as 1");
 });
 
 test("the lattice answers as the game reads it: a coin blocks, fire and a star do not", () => {
