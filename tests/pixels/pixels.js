@@ -5,9 +5,11 @@
 // whether a world's atlas redraws the map when it lands. A change that is to
 // draw exactly as before passes with nothing named.
 //
-//     npm run pixels -- [<ref>] [--save <dir>]
+//     npm run pixels -- [<ref>] [--save <dir>] [--all]
 //
-// --save writes both sides of every capture that differs as PNGs.
+// --save writes both sides of every capture that differs as PNGs. Past a few
+// differing captures the rest are counted by what differs rather than named,
+// and --all names every one.
 import { spawnSync } from "node:child_process";
 import http from "node:http";
 import { mkdtemp, readFile, writeFile, mkdir, rm } from "node:fs/promises";
@@ -26,6 +28,14 @@ const option = (name) => {
   return value;
 };
 const save = option("--save");
+const flag = (name) => {
+  const i = args.indexOf(name);
+  if (i < 0) return false;
+  args.splice(i, 1);
+  return true;
+};
+const all = flag("--all");
+const LISTED = 20; // how many differing captures are named before the rest are counted
 const ref = args[0] || "HEAD";
 
 const TYPES = {
@@ -367,7 +377,16 @@ try {
   const after = await render(browser, join(ROOT, "public"));
   const found = differences(before, after);
   const took = ((Date.now() - started) / 1000).toFixed(0);
-  for (const { id, differ } of found) console.log(`${id}: ${differ.join(" ")}`);
+  const listed = all ? found : found.slice(0, LISTED);
+  for (const { id, differ } of listed) console.log(`${id}: ${differ.join(" ")}`);
+  if (listed.length < found.length) {
+    const by = new Map();
+    for (const { differ } of found) for (const k of differ) by.set(k, (by.get(k) || 0) + 1);
+    const counts = [...by].map(([k, n]) => `${k} ${n}`).join(", ");
+    console.log(
+      `and ${found.length - listed.length} more (--all names them); differing: ${counts}`,
+    );
+  }
   console.log(
     found.length
       ? `${found.length} of ${after.length} captures differ from ${ref} (${took}s)`
