@@ -578,7 +578,13 @@ document.addEventListener("visibilitychange", () => {
 function drawThing(m, c, l, frame, home = c, going = null, painted = false) {
   if (state.hiddenKinds.has(m.id)) return;
   const motion = state.show.models ? motionOf(m) : null;
-  const phase = motion ? phasesOf(motionTable(), home.x, home.y, home.z, m.face) : null;
+  // the game starts a pickup's angles at random and an entry's at zero, so
+  // the things of one type that travel turn in step
+  const phase = !motion
+    ? null
+    : motion.entry
+      ? [0, 0, 0]
+      : phasesOf(motionTable(), home.x, home.y, home.z, m.face);
   const round = motion?.orbit
     ? orbit(motionTable(), motion, `${cellKey(home.x, home.y, home.z)}/${m.face}`, frame, phase)
     : null;
