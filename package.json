@@ -7,7 +7,8 @@
     "format:check": "prettier --check \"**/*.{js,css,html}\"",
     "lint": "eslint .",
     "test": "node --test",
-    "test:browser": "playwright test -c tests/browser"
+    "test:browser": "playwright test -c tests/browser",
+    "pixels": "node tests/pixels/pixels.js"
   },
   "devDependencies": {
     "@eslint/js": "^9",

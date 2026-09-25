@@ -13,7 +13,7 @@ Read [docs/level-format.md](docs/level-format.md) before changing anything under
 
 Keep the cross-check in `tools/kula_build.py` fatal: it holds the readings to the disc. A points value changes only with the README's arithmetic, which a unit test holds it to. Do not re-derive the lattice from file sizes.
 
-Before a commit: `npm test` (the unit tests pin the README's figures to the data, so a rebuild that moves a count fails there rather than going stale in silence), `npm run format:check`, `npm run lint`, `python3 -m unittest discover -s tools/tests`, and `npm run test:browser` when the viewer changed.
+Before a commit: `npm test` (the unit tests pin the README's figures to the data, so a rebuild that moves a count fails there rather than going stale in silence), `npm run format:check`, `npm run lint`, `python3 -m unittest discover -s tools/tests`, and `npm run test:browser` when the viewer changed. A change to the viewer that is to draw exactly as before, a move or a re-wiring, is proven with `npm run pixels`, which renders the working tree and `HEAD` (or the ref given) over the matrix in `tests/pixels/cases.js` with the clock held still and names every capture whose map, pick, hit test or animation differs; a change meant to draw differently runs it too, to see that nothing else moved.
 
 Read [docs/tgi.md](docs/tgi.md) before touching `tools/kula_tgi.py`, `tools/kula_tex.py` or `tools/kula_skins.py`, or anything in the viewer that picks a texture for a face, and [docs/ggi.md](docs/ggi.md) before touching `tools/kula_ggi.py`.
 

@@ -24,8 +24,8 @@ export default [
     },
   },
   {
-    // Playwright specs: Node test files whose page.evaluate bodies run in the browser
-    files: ["tests/browser/**/*.js"],
+    // Playwright: Node files whose page.evaluate bodies run in the browser
+    files: ["tests/browser/**/*.js", "tests/pixels/**/*.js"],
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: "module",
