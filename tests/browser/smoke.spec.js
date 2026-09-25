@@ -649,24 +649,52 @@ test("the legend lists the objects the chip counts, every kind of block but the 
   await settle(page);
   await expect(page.locator("#chip")).toContainText("19 blocks");
   await expect(page.locator("#chip")).toContainText("10 objects");
-  const groups = await page.evaluate(() => {
-    const out = [];
-    for (const c of document.getElementById("kinds").children) {
-      if (c.tagName !== "BUTTON")
-        out.push({ head: c.tagName === "H3" ? c.textContent : "", rows: [] });
-      else
-        out
-          .at(-1)
-          .rows.push([c.children[1].textContent, Number(c.querySelector(".n").textContent)]);
-    }
-    return out;
-  });
+  const groups = await page.evaluate(() =>
+    [...document.querySelectorAll("#kinds ul")].map((list) => ({
+      head: document.getElementById(list.getAttribute("aria-labelledby"))?.textContent ?? "",
+      rows: [...list.querySelectorAll(".kind")].map((c) => [
+        c.children[1].textContent,
+        Number(c.querySelector(".n").textContent),
+      ]),
+    })),
+  );
   const sum = (g) => g.rows.reduce((n, [, k]) => n + k, 0);
   expect(groups.map((g) => g.head)).toEqual(["Objects", "Blocks", ""]);
+  await expect(page.locator("#kinds ul[role=list]")).toHaveCount(groups.length);
   expect(sum(groups[0])).toBe(10);
   expect(groups[1].rows).toContainEqual(["Ice block", 1]);
   expect(sum(groups[1])).toBe(10);
   expect(groups[2].rows).toEqual([["Level settings", 1]]);
+});
+
+test("a legend row of objects shows and hides them, and a row of blocks only counts", async ({
+  page,
+}) => {
+  await page.goto("/#ATLANT/3");
+  await settle(page);
+  const objects = page.getByRole("list", { name: "Objects" });
+  const blocks = page.getByRole("list", { name: "Blocks" });
+  const rows = await objects.getByRole("listitem").count();
+  await expect(objects.getByRole("button", { pressed: true })).toHaveCount(rows);
+  await expect(blocks.getByRole("listitem")).toHaveCount(4);
+  await expect(blocks.getByRole("button")).toHaveCount(0);
+  await expect(blocks.locator("[aria-pressed]")).toHaveCount(0);
+  const hidden = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      return [...state.hiddenKinds];
+    });
+  await blocks.getByRole("listitem").first().click();
+  expect(await hidden()).toEqual([]);
+  const toggles = await page.locator("#kinds").getByRole("button").count();
+  await objects
+    .getByRole("button")
+    .first()
+    .click({ modifiers: ["Shift"] });
+  expect(await hidden()).toHaveLength(toggles - 1);
+  await expect(objects.getByRole("button", { pressed: true })).toHaveCount(1);
+  await page.locator("#resetKinds").click();
+  expect(await hidden()).toEqual([]);
 });
 
 test("a panel is a dialog that a click inside does not dismiss", async ({ page }) => {

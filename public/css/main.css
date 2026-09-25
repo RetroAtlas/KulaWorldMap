@@ -344,6 +344,14 @@ kbd + kbd {
 .kinds h3:first-child {
   margin-top: 0;
 }
+.kinds ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 .kinds hr {
   width: 100%;
   border: 0;
@@ -356,7 +364,6 @@ kbd + kbd {
   gap: 8px;
   padding: 2px 5px;
   border-radius: 5px;
-  cursor: pointer;
   font: inherit;
   font-size: 12.5px;
   line-height: normal;
@@ -366,7 +373,10 @@ kbd + kbd {
   text-align: left;
   width: 100%;
 }
-.kind:hover {
+button.kind {
+  cursor: pointer;
+}
+button.kind:hover {
   background: var(--panel-2);
 }
 .kind[aria-pressed="false"] {

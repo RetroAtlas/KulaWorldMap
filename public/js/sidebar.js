@@ -89,13 +89,17 @@ function markLevel() {
   }
 }
 
-// What stands on the faces is listed apart from the blocks that are a thing
-// of their own, and the level's settings, which are neither, come last.
+// What stands on the faces is listed apart from the blocks, and the level's
+// settings, which are neither, come last. Each group is a list, named by its
+// heading where it has one.
 const GROUPS = [
   ["object", "Objects"],
   ["block", "Blocks"],
   ["settings", null],
 ];
+// A row of a group here only counts; any other row shows and hides what it
+// lists on the map.
+const COUNT_ONLY = new Set(["block"]);
 
 export function buildKinds() {
   const box = $("kinds");
@@ -111,11 +115,27 @@ export function buildKinds() {
     return;
   }
   const keys = [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a));
+  const toggled = keys.filter((k) => !COUNT_ONLY.has(markerGroup(first.get(k))));
   for (const [group, title] of GROUPS) {
     const mine = keys.filter((k) => markerGroup(first.get(k)) === group);
     if (!mine.length) continue;
-    box.append(title ? el("h3", { textContent: title }) : el("hr"));
-    for (const k of mine) box.append(kindButton(k, first.get(k), counts.get(k), keys));
+    // Safari drops the list role from a list whose bullets are styled away.
+    const list = el("ul");
+    list.setAttribute("role", "list");
+    if (title) {
+      const head = el("h3", { id: `kinds-${group}`, textContent: title });
+      list.setAttribute("aria-labelledby", head.id);
+      box.append(head);
+    } else box.append(el("hr"));
+    for (const k of mine) {
+      const [m, n] = [first.get(k), counts.get(k)];
+      list.append(
+        COUNT_ONLY.has(group)
+          ? el("li", { className: "kind" }, rowOf(m, n))
+          : el("li", {}, kindButton(k, m, n, toggled)),
+      );
+    }
+    box.append(list);
   }
 }
 
@@ -131,14 +151,14 @@ function iconOf(m) {
   return el("span", { className: "dot", style: `background:${markerColour(m)}` });
 }
 
+const rowOf = (m, n) => [
+  iconOf(m),
+  el("span", {}, markerLabel(m)),
+  el("span", { className: "n" }, String(n)),
+];
+
 function kindButton(k, m, n, keys) {
-  const b = el(
-    "button",
-    { className: "kind", type: "button" },
-    iconOf(m),
-    el("span", {}, markerLabel(m)),
-    el("span", { className: "n" }, String(n)),
-  );
+  const b = el("button", { className: "kind", type: "button" }, rowOf(m, n));
   b.setAttribute("aria-pressed", state.hiddenKinds.has(k) ? "false" : "true");
   b.onclick = (e) => {
     if (e.shiftKey) {
