@@ -572,7 +572,8 @@ document.addEventListener("visibilitychange", () => {
 
 /** An object as itself where it has a mesh and the display asks for it, else
     its marker; on a moving platform the cell is where the platform is, and
-    a thing that travels brings where it has got to and which way it faces. */
+    a thing that travels brings where it has got to and which way it faces,
+    its marker and its label going with it. */
 function drawThing(m, c, l, frame, home = c, going = null, painted = false) {
   if (state.hiddenKinds.has(m.id)) return;
   const motion = state.show.models ? motionOf(m) : null;
@@ -587,10 +588,13 @@ function drawThing(m, c, l, frame, home = c, going = null, painted = false) {
     ? orbit(motionTable(), motion, `${cellKey(home.x, home.y, home.z)}/${m.face}`, frame, phase)
     : null;
   const model = state.show.models ? markerModel(m, l, round?.form ?? null) : null;
-  if (!model) return drawMarker(m, c);
+  const where = going
+    ? { x: c.x + going.offset[0], y: c.y + going.offset[1], z: c.z + going.offset[2] }
+    : c;
+  if (!model) return drawMarker(m, where);
   drawObject(m, c, model, motion, frame, phase, round, l.camera?.time ?? 0, going, painted);
   if (state.show.labels && state.cam.zoom > 0.45) {
-    const [px, py] = off(c, m.face, OBJECT_HOVER);
+    const [px, py] = off(where, m.face, OBJECT_HOVER);
     const dark = markerState(m) === "off" ? " · off" : "";
     label(markerLabel(m) + dark + ` · ${FACE_NAME[m.face]}`, px + 8, py + 4, "#e8eefb");
   }
