@@ -49,3 +49,66 @@ test("a world's stones are turned only where its header lets them be", () => {
   assert.deepEqual([...plainTurns("HIRO", 0)], [0]);
   assert.ok(plainTurns("HILLS", 1).size > 1);
 });
+
+// One face of a block, as the loader paints it, in Hiro and in a level with
+// a key unless a test says otherwise.
+const TOP = 0;
+const PLUS_X = 1;
+const FIRE = 1;
+const ICE = 2;
+const INVISIBLE = 3;
+const ARROW = 28;
+const at = { x: 17, y: 17, z: 17 };
+const arcade = lookOf(skins, levelOf([block(KEY)]), 0);
+const bonus = lookOf(skins, levelOf([block(COIN)]), 0);
+const face = (kind, types = [], { look = arcade, place = null, plate } = {}) =>
+  faceSkin(skins, look, at, TOP, kind, types.length ? block(...types) : null, 0, place, plate);
+const set = skins.sets.arcade;
+
+test("a plain face is one of the world's stones", () => {
+  assert.ok(set.stone.flat().includes(face(0).tex));
+});
+
+test("a clock, and the start on one, paint the clock's face", () => {
+  assert.equal(face(0, [CLOCK]).tex, set.types[CLOCK][0]);
+  assert.equal(face(0, [START_ON_A_CLOCK]).tex, set.types[CLOCK][0]);
+});
+
+test("a pickup's face carries its shadow on stone and on ice, and a star's does not", () => {
+  assert.equal(face(0, [COIN]).tex, set.types[COIN][1]);
+  assert.equal(face(ICE, [COIN]).tex, set.kinds[ICE][1]);
+  assert.equal(face(ICE, [ARROW]).tex, set.kinds[ICE][0]);
+  assert.ok(set.stone.flat().includes(face(0, [SLOW_STAR]).tex));
+});
+
+test("fire burns through its frames, on a fire block and on a face with fire on it", () => {
+  const block = face(FIRE);
+  const patch = face(0, [FIRE]);
+  assert.ok(set.kinds[FIRE].includes(block.tex) && block.live);
+  assert.ok(set.types[FIRE].includes(patch.tex) && patch.live);
+});
+
+test("an invisible face is added to what is behind it, through a grey that pulses", () => {
+  const f = face(INVISIBLE);
+  assert.ok(set.kinds[INVISIBLE].includes(f.tex));
+  assert.equal(f.add, true);
+  assert.ok(f.colour.every((v) => v === f.colour[0]) && f.live);
+});
+
+test("a beam's end wears the plate of its colour", () => {
+  for (let colour = 0; colour < set.laser.length; colour++) {
+    assert.equal(face(0, [], { plate: colour }).tex, set.laser[colour]);
+  }
+});
+
+test("a platform's blocks have no face where they join", () => {
+  const first = { axis: "x", role: "first" };
+  assert.equal(faceSkin(skins, arcade, at, PLUS_X, 5, null, 0, first, undefined), null);
+  assert.ok(set.platform.flat().includes(face(5, [], { place: first }).tex));
+});
+
+test("a bonus level's plain face is the swirl, run through its colour cycle", () => {
+  const f = face(0, [], { look: bonus });
+  assert.ok(skins.sets.bonus.stone.flat().includes(f.tex));
+  assert.ok(f.live && !f.colour.every((v) => v === f.colour[0]));
+});
