@@ -637,8 +637,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 /** Paint a travelling thing into the pick where it has got to, as the cell it
-    started from, which holds its record: a disc as wide as its model, about
-    the model's middle, or its marker. A survey marks the block under the
+    started from, which holds its record. A survey marks the block under the
     pointer, so there it is left out. */
 function pickGoing(going, home, l) {
   const m = going.w.m;
@@ -648,6 +647,17 @@ function pickGoing(going, home, l) {
     y: home.y + going.offset[1],
     z: home.z + going.offset[2],
   };
+  const [x, y, r] = thingDisc(m, where, l);
+  pickList.push(home);
+  pick.fillStyle = pickColour(pickList.length);
+  pick.beginPath();
+  pick.arc(x, y, r, 0, 7);
+  pick.fill();
+}
+
+/** The disc a thing at a cell covers on the screen, as its centre and radius:
+    as wide as its model, about the model's middle, or its marker. */
+function thingDisc(m, where, l) {
   const model = state.show.models ? markerModel(m, l) : null;
   let p, r;
   if (model) {
@@ -658,11 +668,7 @@ function pickGoing(going, home, l) {
     p = off(where, m.face, OBJECT_HOVER);
     r = Math.max(4, 7 * state.cam.zoom);
   }
-  pickList.push(home);
-  pick.fillStyle = pickColour(pickList.length);
-  pick.beginPath();
-  pick.arc(p[0], p[1], r, 0, 7);
-  pick.fill();
+  return [p[0], p[1], r];
 }
 
 /** An object as itself where it has a mesh and the display asks for it, else
