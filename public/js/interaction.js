@@ -128,7 +128,7 @@ function hoverTip(c, px, py) {
   }
   for (const m of marks) {
     const off = markerState(m) === "off" ? " · off" : "";
-    lines.push(markerLabel(m) + off + (m.face ? ` · ${FACE_NAME[m.face]}` : ""));
+    lines.push(markerLabel(m) + off + (m.face !== null ? ` · ${FACE_NAME[m.face]}` : ""));
   }
   tip.innerHTML = lines.join("<br>");
   tip.hidden = false;

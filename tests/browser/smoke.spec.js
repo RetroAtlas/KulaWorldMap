@@ -756,6 +756,21 @@ test("a label names the face its thing stands on, and n leaves the face out", as
   const plain = await written(page);
   expect(plain.filter((t) => t.includes(" · top"))).toEqual([]);
   for (const t of named) expect(plain).toContain(t.slice(0, -" · top".length));
+  // a marker's label says the same, and so does the tooltip, whatever the switch
+  await page.keyboard.press("n");
+  await page.keyboard.press("d");
+  expect((await written(page)).filter((t) => t.endsWith(" · top")).sort()).toEqual(named.sort());
+  await page.evaluate(async () => {
+    const { state, screen } = await import(new URL("js/state.js", location.href).href);
+    const { markerLabel } = await import(new URL("js/data.js", location.href).href);
+    const [key] = [...state.idx.markers].find(([, ms]) => ms.some((m) => markerLabel(m) === "Key"));
+    const c = state.idx.cells.get(key);
+    const cv = document.getElementById("cv");
+    const r = cv.getBoundingClientRect();
+    const [x, y] = screen(c.x + 0.5, c.y + 0.5, c.z);
+    cv.dispatchEvent(new PointerEvent("pointermove", { clientX: r.left + x, clientY: r.top + y }));
+  });
+  await expect(page.locator("#tip")).toContainText("Key · top");
   expect(errors).toEqual([]);
 });
 

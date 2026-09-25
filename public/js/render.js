@@ -872,7 +872,7 @@ function drawMarker(m, c) {
     ctx.textBaseline = "alphabetic";
   }
   if (state.show.labels && state.cam.zoom > 0.45) {
-    const side = m.face && state.show.faces ? ` · ${FACE_NAME[m.face]}` : "";
+    const side = m.face !== null && state.show.faces ? ` · ${FACE_NAME[m.face]}` : "";
     label(markerLabel(m) + (dark ? " · off" : "") + side, px + r + 4, py + 4, "#e8eefb");
   }
   ctx.restore();
