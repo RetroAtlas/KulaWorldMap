@@ -822,6 +822,41 @@ test("a thing on a face turned away shows where no block covers it, and x shows 
   expect(errors).toEqual([]);
 });
 
+test("what travels does so from the start, its label with it, until v stops it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // LEVEL 22's fast stars sway along their stretch without a stop
+  await page.goto("/#HILLS/6/45,35/1");
+  await settle(page);
+  await expect(page.locator("#showTravel")).toBeChecked();
+  await page.keyboard.press("l");
+  const at = () =>
+    page.evaluate(async () => {
+      const { draw } = await import(new URL("js/render.js", location.href).href);
+      const g = document.getElementById("cv").getContext("2d");
+      const seen = [];
+      const fillText = g.fillText;
+      g.fillText = (text, x, y, ...rest) => (
+        text.startsWith("Captivator") && seen.push([text, x, y]),
+        fillText.call(g, text, x, y, ...rest)
+      );
+      draw();
+      g.fillText = fillText;
+      return seen;
+    });
+  const before = await at();
+  expect(before.length).toBeGreaterThan(0);
+  await page.waitForTimeout(300);
+  expect(await at()).not.toEqual(before);
+  await page.keyboard.press("v");
+  await expect(page.locator("#showTravel")).not.toBeChecked();
+  const still = await at();
+  await page.waitForTimeout(300);
+  expect(await at()).toEqual(still);
+  expect(errors).toEqual([]);
+});
+
 test("the page a link lands on says what it is", async ({ page }) => {
   await page.goto("/");
   const head = await page.evaluate(() => ({

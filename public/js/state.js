@@ -16,6 +16,7 @@ export const state = {
   show: {
     objects: true,
     models: true,
+    travel: true,
     through: false,
     start: true,
     labels: false,
@@ -24,7 +25,6 @@ export const state = {
     hidden: false,
     skins: true,
     outlines: true,
-    travel: false,
   },
   hiddenKinds: new Set(),
   hover: null,
