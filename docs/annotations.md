@@ -178,7 +178,7 @@ The game's first are LEVEL 22's seven, which the walkthrough says glide in front
 
 ### type 53: Captivator, wandering
 
-LEVEL 84 carries four where the walkthrough says to watch their shaking to tell which way they will go. It has no direction field. Its walk is the same on every play of a level, which play on OBJ LEVEL showed (2026-09-25) and the game's dice explain, seeded afresh every frame ([motion.md](motion.md)). In play, touching it costs the ball its life, as the rolling stone does (2026-09-24). It is a hazard by the routine the things that travel share.
+LEVEL 84 carries four where the walkthrough says to watch their shaking to tell which way they will go. It has no direction field. Its walk is the same on every play of a level, which play on OBJ LEVEL showed (2026-09-25) and the game's dice explain, seeded as the level starts and drawn from by nothing else while the ball stands still ([motion.md](motion.md)). In play, touching it costs the ball its life, as the rolling stone does (2026-09-24). It is a hazard by the routine the things that travel share.
 
 ### type 56: Captivator, bouncing
 

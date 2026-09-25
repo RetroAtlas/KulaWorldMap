@@ -4,7 +4,8 @@
 // its side as the game's unit vectors, and asks the lattice the game's own
 // questions at the game's own moments. A moving platform runs its rail the
 // same way. The wandering ball draws its way from the game's own dice, which
-// the game seeds afresh every frame, so it takes the walk it takes in play.
+// the game seeds as the level starts and nothing else draws from while the
+// ball stands still, so it takes the walk it takes in play.
 import { FACE_NORMAL, OFF_LATTICE, beams, kindMotion, platformAxis } from "./data.js";
 import { cellKey } from "./state.js";
 import { blockPhase } from "./motion.js";
@@ -353,12 +354,11 @@ function stepPlatform(w) {
 }
 
 /** Bring a level's walkers up to a frame of its clock together, one game
-    frame at a time, in the order the game moves them, the dice seeded afresh
-    for each frame. */
-export function advance(ws, p, frame, table) {
+    frame at a time, in the order the game moves them, drawing from the dice
+    the level was started with. */
+export function advance(ws, p, frame, roll) {
   const to = Math.floor(frame);
   for (let at = ws[0]?.at ?? to; at < to; at++) {
-    const roll = dice(table.dice);
     for (const w of ws) {
       if (w.kind === PLATFORM_KIND) stepPlatform(w);
       else if (w.type === SLOW_STAR) stepStar(w, p, at);

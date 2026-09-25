@@ -21,7 +21,7 @@ import {
   cross,
 } from "./data.js";
 import { frameAt, phasesOf, pose, orbit, blockPhase } from "./motion.js";
-import { walkers, probe, advance, place, under } from "./travel.js";
+import { walkers, probe, advance, place, under, dice } from "./travel.js";
 import { lookOf, platformPlace, faceSkin, paintedShadow } from "./skins.js";
 import { drawBeams } from "./beams.js";
 
@@ -243,16 +243,21 @@ function visible(idx, moving) {
 // What travels does so only while the display asks, from the frame the level
 // was opened with it on, one game frame at a time; turning it off forgets
 // where everything got to, so turning it on again starts the level afresh.
-let travel = { level: null, walkers: null, probe: null };
+let travel = { level: null, walkers: null, probe: null, roll: null };
 function travelling(l, idx, frame) {
   if (!state.show.travel || !motionTable()) {
     travel.level = null;
     return null;
   }
   if (travel.level !== l) {
-    travel = { level: l, walkers: walkers(l, idx, motionTable(), frame), probe: probe(l) };
+    travel = {
+      level: l,
+      walkers: walkers(l, idx, motionTable(), frame),
+      probe: probe(l),
+      roll: dice(motionTable().dice),
+    };
   }
-  advance([...travel.walkers.values()], travel.probe, frame, motionTable());
+  advance([...travel.walkers.values()], travel.probe, frame, travel.roll);
   const out = new Map();
   for (const [key, w] of travel.walkers) out.set(key, { w, ...place(w) });
   if (out.size) spinning = true;
