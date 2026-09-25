@@ -831,6 +831,16 @@ test("a thing on a face turned away shows where no block covers it, and x shows 
   // further down its block covers its middle
   expect(await shows(-6)).toBe(true);
   expect(await shows(-40)).toBe(false);
+  // but the selected block's shows through whatever the switch says
+  await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const [key] = [...state.idx.markers].find(([, ms]) => ms.some((m) => m.type === 30));
+    showCell(state.idx.cells.get(key));
+  });
+  expect(await shows(-40)).toBe(true);
+  await page.keyboard.press("Escape");
+  expect(await shows(-40)).toBe(false);
   await page.keyboard.press("x");
   await expect(page.locator("#showThrough")).toBeChecked();
   expect(await shows(-40)).toBe(true);

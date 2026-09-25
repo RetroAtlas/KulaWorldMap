@@ -476,11 +476,15 @@ export function draw() {
   }
   const edges = state.show.outlines && state.cam.zoom > 0.3;
   // A thing on a face turned away from the view is drawn again once every
-  // block is down, faintly, where the display asks to see it through them.
+  // block is down, faintly, where the display asks to see it through them,
+  // and on the selected block whatever the display says.
   const through = [];
-  const put = (m, ...rest) => {
-    drawThing(m, ...rest);
-    if (state.show.through && away(m.face)) through.push([m, ...rest]);
+  const chosen = state.selected?.key;
+  const put = (...t) => {
+    drawThing(...t);
+    const [m, , , , home] = t;
+    if (away(m.face) && (state.show.through || cellKey(home.x, home.y, home.z) === chosen))
+      through.push(t);
   };
   const mark = (m, c, home, key) => {
     if (moving?.has(`${key}/${m.face}`)) return;
