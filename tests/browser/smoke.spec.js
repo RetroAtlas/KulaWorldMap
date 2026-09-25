@@ -909,6 +909,70 @@ test("the display keeps only the switches set away from their defaults", async (
   await expect(page.locator("#showOutlines")).toBeChecked();
 });
 
+test("a travelling thing, and every block of a platform, picks the cell its record is on", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // LEVEL 22's one fast star on a top, as a marker, once it has swayed off its own block
+  await page.goto("/#HILLS/6/45,35/1.5");
+  await settle(page);
+  await page.keyboard.press("d");
+  await page.keyboard.press("l");
+  const star = () =>
+    page.evaluate(async () => {
+      const { state, screen, BLOCK } = await import(new URL("js/state.js", location.href).href);
+      const { draw, cellAt, invalidatePick } = await import(
+        new URL("js/render.js", location.href).href
+      );
+      const g = document.getElementById("cv").getContext("2d");
+      const seen = [];
+      const fillText = g.fillText;
+      g.fillText = (text, x, y, ...rest) => (
+        text === "Captivator · top" && seen.push([x, y]),
+        fillText.call(g, text, x, y, ...rest)
+      );
+      invalidatePick();
+      draw();
+      g.fillText = fillText;
+      const [key] = [...state.idx.markers].find(([, ms]) =>
+        ms.some((m) => m.type === 52 && m.face === 0),
+      );
+      const home = state.idx.cells.get(key);
+      const r = Math.max(4, 7 * state.cam.zoom);
+      const [x, y] = [seen[0][0] - r - 4, seen[0][1] - 4];
+      const [hx, hy] = screen(home.x + 0.5, home.y + 0.5, home.z - 8 / BLOCK);
+      const c = cellAt(x, y);
+      return {
+        away: Math.hypot(x - hx, y - hy) / (state.cam.zoom * BLOCK),
+        picked: c && [c.x, c.y, c.z],
+        home: [home.x, home.y, home.z],
+      };
+    });
+  let seen = await star();
+  for (let i = 0; i < 40 && seen.away < 0.6; i++) {
+    await page.waitForTimeout(50);
+    seen = await star();
+  }
+  expect(seen.away).toBeGreaterThanOrEqual(0.6);
+  expect(seen.picked).toEqual(seen.home);
+
+  // LEVEL 94's platform, two blocks long, standing where its level puts it
+  await page.goto("/#ATLANT/3/45,35/1.5");
+  await settle(page);
+  await expect(page.locator("#chip")).toContainText("LEVEL 94");
+  await page.keyboard.press("v");
+  const picked = await page.evaluate(async () => {
+    const { state, screen } = await import(new URL("js/state.js", location.href).href);
+    const { cellAt } = await import(new URL("js/render.js", location.href).href);
+    const r = state.lvl.records.find((r) => r.kind === 5);
+    const [x, y] = screen(r.x + 0.5, r.y + 1.5, r.z);
+    const c = cellAt(x, y);
+    return { picked: c && [c.x, c.y, c.z], record: [r.x, r.y, r.z] };
+  });
+  expect(picked.picked).toEqual(picked.record);
+  expect(errors).toEqual([]);
+});
+
 test("the page a link lands on says what it is", async ({ page }) => {
   await page.goto("/");
   const head = await page.evaluate(() => ({

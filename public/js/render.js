@@ -35,6 +35,14 @@ const pickCv = document.createElement("canvas");
 const pick = pickCv.getContext("2d", { willReadFrequently: true });
 let pickStale = true;
 let pickList = [];
+const pickColour = (id) => `rgb(${id & 255} ${(id >> 8) & 255} ${(id >> 16) & 255})`;
+// What travels moves every frame, so while the pointer is over the map the
+// pick is painted again with every frame that moves anything.
+let pointerIn = false;
+/** Say whether the pointer is over the map. */
+export const pointing = (on) => {
+  pointerIn = on;
+};
 
 // What shows through the blocks is drawn whole on a layer of its own and laid
 // over the map at once, so a faint thing does not show its own far side
@@ -469,6 +477,7 @@ export function draw() {
   const frame = motionTable() ? frameAt(motionTable(), performance.now()) : 0;
 
   const moving = travelling(l, idx, frame);
+  if (moving?.size && pointerIn) pickStale = true;
   const cells = visible(idx, moving);
   if (pickStale) {
     pickList = [];
@@ -507,7 +516,10 @@ export function draw() {
       continue;
     }
     if (c.thing) {
-      if (state.show.objects && !ghost) put(c.thing.w.m, home, l, frame, home, c.thing);
+      if (state.show.objects && !ghost) {
+        put(c.thing.w.m, home, l, frame, home, c.thing);
+        if (pickStale) pickGoing(c.thing, home, l);
+      }
       continue;
     }
     const key = cellKey(home.x, home.y, home.z);
@@ -562,11 +574,11 @@ export function draw() {
       cube(ctx, c, idx, () => glow, null, a, null, kind);
     }
 
-    if (pickStale && !ghost && !c.k) {
+    // a moving platform's blocks are picked where they are drawn, each as its record's cell
+    if (pickStale && !ghost) {
       pickList.push(home);
-      const id = pickList.length;
-      const col = `rgb(${id & 255} ${(id >> 8) & 255} ${(id >> 16) & 255})`;
-      cube(pick, home, { cells: new Map() }, () => col, null, 1, null);
+      const col = pickColour(pickList.length);
+      cube(pick, c, { cells: new Map() }, () => col, null, 1, null);
     }
 
     if (state.show.objects && !ghost && !c.k) {
@@ -619,6 +631,35 @@ function animate() {
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) draw();
 });
+
+/** Paint a travelling thing into the pick where it has got to, as the cell it
+    started from, which holds its record: a disc as wide as its model, about
+    the model's middle, or its marker. A survey marks the block under the
+    pointer, so there it is left out. */
+function pickGoing(going, home, l) {
+  const m = going.w.m;
+  if (state.hiddenKinds.has(m.id) || state.survey.on) return;
+  const where = {
+    x: home.x + going.offset[0],
+    y: home.y + going.offset[1],
+    z: home.z + going.offset[2],
+  };
+  const model = state.show.models ? markerModel(m, l) : null;
+  let p, r;
+  if (model) {
+    const [lo, hi] = model.box;
+    p = off(where, m.face, (motionOf(m)?.entry?.stand ?? 0) * modelUnit());
+    r = Math.max(...hi, ...lo.map((v) => -v)) * modelUnit() * state.cam.zoom * BLOCK;
+  } else {
+    p = off(where, m.face, OBJECT_HOVER);
+    r = Math.max(4, 7 * state.cam.zoom);
+  }
+  pickList.push(home);
+  pick.fillStyle = pickColour(pickList.length);
+  pick.beginPath();
+  pick.arc(p[0], p[1], r, 0, 7);
+  pick.fill();
+}
 
 /** An object as itself where it has a mesh and the display asks for it, else
     its marker; on a moving platform the cell is where the platform is, and

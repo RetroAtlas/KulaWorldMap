@@ -1,6 +1,6 @@
 import { $, emit } from "./dom.js";
 import { state, SIDE, BLOCK, PITCH_MIN, PITCH_MAX, cellKey, pivot } from "./state.js";
-import { draw, cellAt, invalidatePick } from "./render.js";
+import { draw, cellAt, invalidatePick, pointing } from "./render.js";
 import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
@@ -25,12 +25,14 @@ const panning = (e) => e.shiftKey || e.button === 1 || e.button === 2 || state.p
 cv.addEventListener("contextmenu", (e) => e.preventDefault());
 
 cv.addEventListener("pointerdown", (e) => {
+  pointing(true);
   cv.setPointerCapture(e.pointerId);
   drag = { x: e.clientX, y: e.clientY, pan: panning(e) };
   moved = 0;
 });
 
 cv.addEventListener("pointermove", (e) => {
+  pointing(true);
   const r = cv.getBoundingClientRect();
   if (drag) {
     const dx = e.clientX - drag.x,
@@ -71,6 +73,7 @@ cv.addEventListener("pointercancel", () => {
   drag = null;
 });
 cv.addEventListener("pointerleave", () => {
+  pointing(false);
   state.hover = null;
   tip.hidden = true;
   $("readout").textContent = "";
