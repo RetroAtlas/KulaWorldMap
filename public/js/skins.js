@@ -53,7 +53,7 @@ export function lookOf(skins, l, world) {
     set: skins.sets[bonus ? "bonus" : "arcade"],
     bonus,
     glass,
-    world,
+    world: l.theme,
     parity: world % 2,
   };
 }

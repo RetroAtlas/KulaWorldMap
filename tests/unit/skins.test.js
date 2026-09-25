@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects } from "./fixtures.js";
-import { lookOf, paintedShadow } from "../../public/js/skins.js";
+import { faceSkin, lookOf, paintedShadow } from "../../public/js/skins.js";
 
 const { skins } = objects;
 const COIN = 37;
@@ -26,7 +26,7 @@ test("the start on a clock is painted as the clock, which carries no shadow", ()
 const KEY = skins.keys.type;
 const settings = (type) => ({ kind: skins.hidden.kind, type, on: [] });
 const block = (...types) => ({ kind: 0, on: types.map((type, face) => ({ face, type })) });
-const levelOf = (records, pack = "/HIRO/HIRO.PAK") => ({ pack, records });
+const levelOf = (records, pack = "/HIRO/HIRO.PAK", theme = "HIRO") => ({ pack, theme, records });
 
 test("a level without a key draws the second set, unless it is hidden or a Simon room", () => {
   assert.equal(lookOf(skins, levelOf([block(KEY)]), 0).bonus, false);
@@ -35,4 +35,17 @@ test("a level without a key draws the second set, unless it is hidden or a Simon
   const hidden = lookOf(skins, levelOf([block(COIN), settings(skins.hidden.type)]), 0);
   assert.equal(hidden.bonus, false);
   assert.equal(hidden.glass, true);
+});
+
+const plainTurns = (theme, world) => {
+  const look = lookOf(skins, levelOf([block(KEY)], `/${theme}/${theme}.PAK`, theme), world);
+  const turns = new Set();
+  for (let x = 0; x < 34; x++)
+    turns.add(faceSkin(skins, look, { x, y: 17, z: 17 }, 0, 0, null, 0).turn);
+  return turns;
+};
+
+test("a world's stones are turned only where its header lets them be", () => {
+  assert.deepEqual([...plainTurns("HIRO", 0)], [0]);
+  assert.ok(plainTurns("HILLS", 1).size > 1);
 });
