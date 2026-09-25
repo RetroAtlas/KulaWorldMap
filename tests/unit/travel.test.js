@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { objects } from "./fixtures.js";
+import { objects, mapData } from "./fixtures.js";
 import { setObjects, index, markersOf } from "../../public/js/data.js";
-import { heading, probe, walkers, advance, place } from "../../public/js/travel.js";
+import { heading, probe, walkers, advance, place, dice } from "../../public/js/travel.js";
 
 setObjects(objects);
 const table = objects.motion;
@@ -100,7 +100,7 @@ test("a slow star walks its corridor and turns back at each end", () => {
   assert.deepEqual(w.pos, [12 * UNIT, 10 * UNIT, 17 * UNIT - 456]);
   const xs = [];
   for (let f = 1; f <= 600; f++) {
-    advance(w, p, f);
+    advance([w], p, f, table);
     xs.push(w.pos[0]);
     assert.equal(w.pos[1], 10 * UNIT, "it keeps to its row");
   }
@@ -124,7 +124,7 @@ test("a slow star turns toward a block beside it before going on, and a coin sto
   const p = probe(l);
   const seen = new Set();
   for (let f = 1; f <= 400; f++) {
-    advance(w, p, f);
+    advance([w], p, f, table);
     const cell = w.pos.map((v) => Math.round(v / UNIT));
     seen.add(`${cell[0]},${cell[1]}`);
   }
@@ -147,7 +147,7 @@ test("a wheel rolls straight until the way ends, then turns over 77 frames towar
   const cells = [];
   const turns = [];
   for (let f = 1; f <= 1400; f++) {
-    advance(w, p, f);
+    advance([w], p, f, table);
     if (w.state && turns[turns.length - 1]?.until !== f - 1) turns.push({ from: f, until: f });
     if (w.state) turns[turns.length - 1].until = f;
     cells.push(
@@ -171,7 +171,7 @@ test("a fast star sways six hundred units either way along its heading", () => {
   const p = probe(l);
   const xs = [];
   for (let f = 1; f <= 160; f++) {
-    advance(w, p, f);
+    advance([w], p, f, table);
     xs.push(w.pos[0] - 12 * UNIT);
   }
   assert.ok(Math.abs(Math.max(...xs) - 600) <= 1);
@@ -201,7 +201,7 @@ test("a platform runs its rail at 25 a frame and waits 48 at each end", () => {
   const p = probe(l);
   const ys = [];
   for (let f = 1; f <= 400; f++) {
-    advance(w, p, f);
+    advance([w], p, f, table);
     ys.push(w.pos[1]);
   }
   assert.equal(ys[0], 18 * UNIT - 25);
@@ -214,15 +214,19 @@ test("a platform runs its rail at 25 a frame and waits 48 at each end", () => {
   assert.equal(w.axis, 1);
 });
 
+test("the game's dice give the same draws every time they are seeded", () => {
+  const draws = (roll) => Array.from({ length: 11 }, () => roll(4));
+  assert.deepEqual(draws(dice(table.dice)), [1, 2, 3, 2, 3, 1, 2, 2, 2, 3, 0]);
+  assert.deepEqual(draws(dice(table.dice)), draws(dice(table.dice)));
+});
+
 test("the wandering ball shakes toward its way for 76 frames, then dashes a block onto the grid", () => {
   const l = level(row(10, 14, 10, 17), [{ x: 12, y: 10, z: 17, kind: 0, on: [object(0, 53, 4)] }]);
   const w = [...walkers(l, index(l), table).values()][0];
-  let roll = 0;
-  w.dice = () => [2, 3, 0, 1][roll++ % 4] / 4 + 0.01;
   const p = probe(l);
   const xs = [];
   for (let f = 1; f <= 86 * 3 + 1; f++) {
-    advance(w, p, f);
+    advance([w], p, f, table);
     xs.push(w.pos[0]);
     assert.equal(w.pos[1], 10 * UNIT, "it keeps to its row");
   }
@@ -232,11 +236,65 @@ test("the wandering ball shakes toward its way for 76 frames, then dashes a bloc
   assert.equal(xs[75], home, "and comes back to rest before it goes");
   assert.equal(xs[76], home + 53);
   assert.equal(xs[85], home + 530);
-  assert.equal(xs[86], home + UNIT, "a block on, settled on the grid, shaking again");
-  assert.equal(xs[86 * 2], home, "back, as the dice said, and settled");
-  assert.equal(xs[86 * 3], home - UNIT, "then on the way it faced last");
-  assert.deepEqual(place(w).offset, [-1, 0, 0], "and is drawn a block from where it started");
+  assert.equal(xs[86], home + UNIT, "on, its side being shut, settled on the grid");
+  assert.equal(xs[86 * 2], home + 2 * UNIT, "and on again");
+  assert.equal(xs[86 * 3], home + UNIT, "then back, the row ending");
+  assert.deepEqual(place(w).offset, [1, 0, 0], "and is drawn a block from where it started");
   assert.deepEqual(place(w).fwd, [1, 0, 0], "facing as it did at the start");
+});
+
+test("a second ball deciding in the same frame draws on from where the first stopped", () => {
+  const rows = [...row(10, 14, 10, 17), ...row(10, 14, 20, 17)];
+  const ball = (y) => ({ x: 12, y, z: 17, kind: 0, on: [object(0, 53, 4)] });
+  const first = (records) => {
+    const l = level(rows, records);
+    const ws = [...walkers(l, index(l), table).values()];
+    advance(ws, probe(l), 86, table);
+    return ws.map((w) => w.d[0]);
+  };
+  assert.deepEqual(first([ball(20)]), [1], "alone, it draws 1, shut, then 2, on");
+  assert.deepEqual(first([ball(10), ball(20)]), [1, -1], "second, it draws 3, back");
+});
+
+test("OBJ LEVEL's two wandering balls walk the walk the game walks them", () => {
+  const l = mapData.levels.find((l) => l.name === "OBJ LEVEL" && l.pack.includes("HILLS"));
+  const ws = [...walkers(l, index(l), table).values()];
+  const balls = ws.filter((w) => w.type === 53);
+  const p = probe(l);
+  const at = (w) => [0, 1].map((i) => Math.floor((w.pos[i] + 256) / UNIT)).join(",");
+  const trails = balls.map((w) => [at(w)]);
+  for (let f = 86; f <= 86 * 16; f += 86) {
+    advance(ws, p, f, table);
+    balls.forEach((w, k) => trails[k].push(at(w)));
+  }
+  assert.deepEqual(
+    trails,
+    [
+      "24,21 25,21 26,21 27,21 26,21 25,21 24,21 24,22 24,23 24,24 25,24 26,24 27,24 27,23 27,22 27,21 26,21",
+      "24,24 23,24 24,24 23,24 22,24 23,24 22,24 21,24 22,24 21,24 22,24 21,24 22,24 23,24 22,24 23,24 24,24",
+    ].map((t) => t.split(" ")),
+  );
+});
+
+test("every wandering ball on the disc walks over blocks, never shut in", () => {
+  let balls = 0;
+  for (const l of mapData.levels) {
+    const idx = index(l);
+    const ws = [...walkers(l, idx, table).values()];
+    const mine = ws.filter((w) => w.type === 53);
+    if (!mine.length) continue;
+    balls += mine.length;
+    const p = probe(l);
+    for (let f = 1; f <= 3000; f++) {
+      advance(ws, p, f, table);
+      for (const w of mine) {
+        const under = w.pos.map((v, i) => Math.floor((v - w.n[i] * 400 + 256) / UNIT));
+        assert.ok(p.value(under, f) >= 0, `${l.name}: over no block at ${under}`);
+        assert.ok(!w.stuck, `${l.name}: a ball with every way shut`);
+      }
+    }
+  }
+  assert.equal(balls, 46);
 });
 
 test("a star keeps its bearing through a turn, and only the wheel swings its nose round", () => {
@@ -251,7 +309,7 @@ test("a star keeps its bearing through a turn, and only the wheel swings its nos
     const headings = new Set();
     let far = 0;
     for (let f = 1; f <= 400; f++) {
-      advance(w, p, f);
+      advance([w], p, f, table);
       headings.add(place(w).fwd.join());
       far = Math.max(far, w.pos[1]);
     }

@@ -258,11 +258,9 @@ function travelling(l, idx, frame) {
   if (travel.level !== l) {
     travel = { level: l, walkers: walkers(l, idx, motionTable(), frame), probe: probe(l) };
   }
+  advance([...travel.walkers.values()], travel.probe, frame, motionTable());
   const out = new Map();
-  for (const [key, w] of travel.walkers) {
-    advance(w, travel.probe, frame);
-    out.set(key, { w, ...place(w) });
-  }
+  for (const [key, w] of travel.walkers) out.set(key, { w, ...place(w) });
   if (out.size) spinning = true;
   return out;
 }

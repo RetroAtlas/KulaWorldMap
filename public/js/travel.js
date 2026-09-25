@@ -3,8 +3,8 @@
 // start: a captivator keeps its position in the game's units, its heading and
 // its side as the game's unit vectors, and asks the lattice the game's own
 // questions at the game's own moments. A moving platform runs its rail the
-// same way. The wandering ball draws its way by dice, so its walk here is one
-// the game could take and not the one it will.
+// same way. The wandering ball draws its way from the game's own dice, which
+// the game seeds afresh every frame, so it takes the walk it takes in play.
 import { FACE_NORMAL, OFF_LATTICE, beams, kindMotion, platformAxis } from "./data.js";
 import { cellKey } from "./state.js";
 import { blockPhase } from "./motion.js";
@@ -199,7 +199,7 @@ export function walker(m, c, l, table, frame = 0) {
   w.pos = [...w.origin];
   w.first = w.d;
   w.turn = { from: w.d, way: null, part: 0 };
-  if (m.type === WANDERER) Object.assign(w, { mode: 0, fresh: true, dice: Math.random });
+  if (m.type === WANDERER) Object.assign(w, { mode: 0, fresh: true });
   return w;
 }
 
@@ -260,30 +260,48 @@ function stepWheel(w, p, frame) {
   w.state = 0;
 }
 
-// The wandering ball settles on the grid, draws ways until one is open, then
-// shakes toward it for 76 frames, faster and faster, and dashes a block.
-function decide(w, p, frame) {
+/** The game's dice as it seeds them: a draw of n is n times the low half of
+    the state over 65536, and the state steps once a draw. */
+export function dice({ seed, times, plus }) {
+  let state = seed;
+  return (n) => {
+    state = (Math.imul(state, times) + plus) >>> 0;
+    return (n * (state & 0xffff)) >>> 16;
+  };
+}
+
+// The wandering ball settles on the grid, draws ways until one is open, the
+// side, the other side, on or back, then shakes toward it for 76 frames,
+// faster and faster, and dashes a block. The game would draw for ever with
+// every way shut, where the ball here stands.
+function decide(w, p, frame, roll) {
   w.mode = 0;
   w.theta = 0;
   w.home = w.pos.map((v, i) => (w.d[i] ? (v + GRID / 2) & ~(GRID - 1) : v));
   w.pos = [...w.home];
-  for (let tries = 0; tries < 64; tries++) {
-    const way = Math.floor(w.dice() * w.entry.ways);
-    if (way === 0 && beside(w, p, w.s, frame)) turnTo(w, w.s);
-    else if (way === 1 && beside(w, p, neg(w.s), frame)) turnTo(w, neg(w.s));
-    else if (way === 2 && ahead(w, p, w.d, frame)) void 0;
-    else if (way === 3 && ahead(w, p, neg(w.d), frame)) about(w);
-    else continue;
-    w.mode = 1;
+  const open = [
+    beside(w, p, w.s, frame),
+    beside(w, p, neg(w.s), frame),
+    ahead(w, p, w.d, frame),
+    ahead(w, p, neg(w.d), frame),
+  ];
+  if (!open.includes(true)) {
+    w.mode = -1;
+    w.stuck = true;
     return;
   }
-  w.mode = -1;
-  w.stuck = true;
+  let way;
+  do way = roll(w.entry.ways);
+  while (!open[way]);
+  if (way === 0) turnTo(w, w.s);
+  else if (way === 1) turnTo(w, neg(w.s));
+  else if (way === 3) about(w);
+  w.mode = 1;
 }
 
-function stepWanderer(w, p, frame) {
+function stepWanderer(w, p, frame, roll) {
   const e = w.entry;
-  if (w.fresh || (w.mode === -1 && !w.stuck && travelled(w) >= e.settle)) decide(w, p, frame);
+  if (w.fresh || (w.mode === -1 && !w.stuck && travelled(w) >= e.settle)) decide(w, p, frame, roll);
   w.fresh = false;
   if (w.mode === -1) {
     if (!w.stuck) w.pos = add(w.pos, w.d, e.dash);
@@ -318,19 +336,26 @@ function stepPlatform(w) {
   w.dwell = w.wait;
 }
 
-/** Bring a walker up to a frame of the level's clock, one game frame at a time. */
-export function advance(w, p, frame) {
+/** Bring a level's walkers up to a frame of its clock together, one game
+    frame at a time, in the order the game moves them, the dice seeded afresh
+    for each frame. */
+export function advance(ws, p, frame, table) {
   const to = Math.floor(frame);
-  for (; w.at < to; w.at++) {
-    if (w.kind === PLATFORM_KIND) stepPlatform(w);
-    else if (w.type === SLOW_STAR) stepStar(w, p, w.at);
-    else if (w.type === WHEEL) stepWheel(w, p, w.at);
-    else if (w.type === FAST_STAR) stepFastStar(w);
-    else if (w.type === WANDERER) stepWanderer(w, p, w.at);
+  for (let at = ws[0]?.at ?? to; at < to; at++) {
+    const roll = dice(table.dice);
+    for (const w of ws) {
+      if (w.kind === PLATFORM_KIND) stepPlatform(w);
+      else if (w.type === SLOW_STAR) stepStar(w, p, at);
+      else if (w.type === WHEEL) stepWheel(w, p, at);
+      else if (w.type === FAST_STAR) stepFastStar(w);
+      else if (w.type === WANDERER) stepWanderer(w, p, at, roll);
+      w.at = at + 1;
+    }
   }
 }
 
-/** Every walker a level has, keyed by the cell and face it starts from. */
+/** Every walker a level has, keyed by the cell and face it starts from, in
+    the order the game lifts them: record by record, face by face. */
 export function walkers(l, idx, table, frame = 0) {
   const out = new Map();
   if (!table) return out;

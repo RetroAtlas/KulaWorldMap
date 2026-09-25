@@ -308,7 +308,7 @@
     "53": {
       "name": "Captivator, wandering",
       "hazard": true,
-      "note": "A blue hexagonal ball that captures yours on touch: it shakes, then moves one square in a random direction, and the way it shakes gives away where it is going."
+      "note": "A blue hexagonal ball that captures yours on touch: it shakes, then moves one square, and the way it shakes gives away where it is going. Its walk looks random but is the same every time the level is played."
     },
     "56": {
       "name": "Captivator, bouncing",
