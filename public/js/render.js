@@ -450,7 +450,7 @@ export function draw() {
     pickList = [];
     pick.clearRect(0, 0, w, h);
   }
-  const edges = state.cam.zoom > 0.3;
+  const edges = state.show.outlines && state.cam.zoom > 0.3;
 
   for (const c of cells) {
     const [px, py] = screen(c.x, c.y, c.z);
@@ -507,7 +507,8 @@ export function draw() {
       kind,
     );
     if (style.wash) cube(ctx, c, idx, () => style.wash, null, a, null, kind);
-    if (style.dash && !ghost) outline(c, idx, "rgba(232 238 251 / 0.7)", style.dash);
+    if (style.dash && !ghost && state.show.outlines)
+      outline(c, idx, "rgba(232 238 251 / 0.7)", style.dash);
     if (skin && (sel || hov)) {
       const glow = `rgba(255 255 255 / ${sel ? 0.22 : 0.12})`;
       cube(ctx, c, idx, () => glow, null, a, null, kind);
@@ -546,7 +547,7 @@ export function draw() {
   }
   pickStale = false;
 
-  for (const r of idx.rails) drawRail(r);
+  if (state.show.outlines) for (const r of idx.rails) drawRail(r);
   if (state.show.start && l.camera) drawLook(l);
   drawScale();
   if (spinning) animate();

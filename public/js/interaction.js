@@ -264,6 +264,9 @@ addEventListener("keydown", (e) => {
     case "t":
       toggle("showSkins");
       break;
+    case "b":
+      toggle("showOutlines");
+      break;
     case "o":
       toggle("showObjects");
       break;

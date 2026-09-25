@@ -759,6 +759,30 @@ test("a label names the face its thing stands on, and n leaves the face out", as
   expect(errors).toEqual([]);
 });
 
+test("b takes the lines off the blocks", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0/45,35/1");
+  await settle(page);
+  const strokes = () =>
+    page.evaluate(async () => {
+      const { draw } = await import(new URL("js/render.js", location.href).href);
+      const g = document.getElementById("cv").getContext("2d");
+      let n = 0;
+      const stroke = g.stroke;
+      g.stroke = (...a) => (n++, stroke.apply(g, a));
+      draw();
+      g.stroke = stroke;
+      return n;
+    });
+  await expect(page.locator("#showOutlines")).toBeChecked();
+  const lined = await strokes();
+  await page.keyboard.press("b");
+  await expect(page.locator("#showOutlines")).not.toBeChecked();
+  // each of LEVEL 1's twenty blocks shows its top at least
+  expect(lined - (await strokes())).toBeGreaterThanOrEqual(20);
+  expect(errors).toEqual([]);
+});
+
 test("the page a link lands on says what it is", async ({ page }) => {
   await page.goto("/");
   const head = await page.evaluate(() => ({

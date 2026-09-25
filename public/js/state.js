@@ -22,6 +22,7 @@ export const state = {
     base: false,
     hidden: false,
     skins: true,
+    outlines: true,
     travel: false,
   },
   hiddenKinds: new Set(),
