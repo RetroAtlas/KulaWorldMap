@@ -26,8 +26,7 @@ import { lookOf, platformPlace, faceSkin, paintedShadow } from "./skins.js";
 import { drawBeams } from "./beams.js";
 
 const cv = $("cv");
-const main = cv.getContext("2d");
-let ctx = main;
+const ctx = cv.getContext("2d");
 
 // A second canvas painted with one flat colour per cell, so a click can be
 // resolved by reading a pixel rather than by intersecting cubes.
@@ -67,7 +66,7 @@ export function resize() {
     c.width = Math.round(w * dpr);
     c.height = Math.round(h * dpr);
   }
-  for (const g of [main, pick]) g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  for (const g of [ctx, pick]) g.setTransform(dpr, 0, 0, dpr, 0, 0);
   invalidatePick();
   if (state.needsFit) refit();
   draw();
@@ -473,7 +472,7 @@ export function draw() {
       )
     : null;
 
-  if (state.show.base) drawBase(l);
+  if (state.show.base) drawBase(ctx, l);
   const frame = motionTable() ? frameAt(motionTable(), performance.now()) : 0;
 
   const moving = travelling(l, idx, frame);
@@ -490,7 +489,7 @@ export function draw() {
   const through = [];
   const chosen = state.selected?.key;
   const put = (...t) => {
-    drawThing(...t);
+    drawThing(ctx, ...t);
     const [m, , , , home] = t;
     if (away(m.face) && (state.show.through || cellKey(home.x, home.y, home.z) === chosen))
       through.push(t);
@@ -512,7 +511,7 @@ export function draw() {
       continue;
     }
     if (c.rails) {
-      if (state.show.outlines) drawRails(c, ghost, moving);
+      if (state.show.outlines) drawRails(ctx, c, ghost, moving);
       continue;
     }
     if (c.thing) {
@@ -568,7 +567,7 @@ export function draw() {
     );
     if (style.wash) cube(ctx, c, idx, () => style.wash, null, a, null, kind);
     if (style.dash && !ghost && state.show.outlines)
-      outline(c, idx, "rgba(232 238 251 / 0.7)", style.dash);
+      outline(ctx, c, idx, "rgba(232 238 251 / 0.7)", style.dash);
     if (skin && (sel || hov)) {
       const glow = `rgba(255 255 255 / ${sel ? 0.22 : 0.12})`;
       cube(ctx, c, idx, () => glow, null, a, null, kind);
@@ -586,9 +585,9 @@ export function draw() {
     }
     if (state.survey.on && !ghost) {
       const m = state.survey.marks.get(key);
-      if (m) drawMark(m, c);
+      if (m) drawMark(ctx, m, c);
     }
-    if (sel || hov) outline(c, idx, sel ? "#ffffff" : "#ffffffb0");
+    if (sel || hov) outline(ctx, c, idx, sel ? "#ffffff" : "#ffffffb0");
   }
   pickStale = false;
 
@@ -599,19 +598,14 @@ export function draw() {
     }
     layer.setTransform(state.view.dpr, 0, 0, state.view.dpr, 0, 0);
     layer.clearRect(0, 0, w, h);
-    ctx = layer;
-    try {
-      for (const t of through) drawThing(...t);
-    } finally {
-      ctx = main;
-    }
+    for (const t of through) drawThing(layer, ...t);
     ctx.save();
     ctx.globalAlpha = THROUGH;
     ctx.drawImage(layerCv, 0, 0, w, h);
     ctx.restore();
   }
-  if (state.show.start && l.camera) drawLook(l);
-  drawScale();
+  if (state.show.start && l.camera) drawLook(ctx, l);
+  drawScale(ctx);
   if (spinning) animate();
 }
 
@@ -665,7 +659,7 @@ function pickGoing(going, home, l) {
     its marker; on a moving platform the cell is where the platform is, and
     a thing that travels brings where it has got to and which way it faces,
     its marker and its label going with it. */
-function drawThing(m, c, l, frame, home = c, going = null, painted = false) {
+function drawThing(ctx, m, c, l, frame, home = c, going = null, painted = false) {
   if (state.hiddenKinds.has(m.id)) return;
   const motion = state.show.models ? motionOf(m) : null;
   // the game starts a pickup's angles at random and an entry's at zero, so
@@ -682,13 +676,13 @@ function drawThing(m, c, l, frame, home = c, going = null, painted = false) {
   const where = going
     ? { x: c.x + going.offset[0], y: c.y + going.offset[1], z: c.z + going.offset[2] }
     : c;
-  if (!model) return drawMarker(m, where);
-  drawObject(m, c, model, motion, frame, phase, round, l.camera?.time ?? 0, going, painted);
+  if (!model) return drawMarker(ctx, m, where);
+  drawObject(ctx, m, c, model, motion, frame, phase, round, l.camera?.time ?? 0, going, painted);
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(where, m.face, OBJECT_HOVER);
     const dark = markerState(m) === "off" ? " · off" : "";
     const side = state.show.faces ? ` · ${FACE_NAME[m.face]}` : "";
-    label(markerLabel(m) + dark + side, px + 8, py + 4, "#e8eefb");
+    label(ctx, markerLabel(m) + dark + side, px + 8, py + 4, "#e8eefb");
   }
 }
 
@@ -713,7 +707,7 @@ const FLOATING = 0.02; // a lift beyond this is off the face, in blocks
 const STONE = 51;
 const ACROSS = 0.25;
 
-function drawObject(m, c, model, motion, frame, phase, round, time, going, painted) {
+function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, painted) {
   const up = FACE_NORMAL[m.face];
   const forward = going?.fwd || markerHeading(m) || TANGENT[m.face];
   const unit = modelUnit();
@@ -755,7 +749,7 @@ function drawObject(m, c, model, motion, frame, phase, round, time, going, paint
   }
   for (let i = 0; i < 3; i++) o[i] += up[i] * lift;
   if (!painted && (rest > GAP + FLOATING || motion?.bounce))
-    drawShadow(m, c, model, unit, going?.offset);
+    drawShadow(ctx, m, c, model, unit, going?.offset);
   const ct = Math.cos(about[1] * Math.PI * 2),
     st = Math.sin(about[1] * Math.PI * 2);
   const fwd = forward.map((v, i) => v * ct + side[i] * st);
@@ -805,7 +799,7 @@ function drawObject(m, c, model, motion, frame, phase, round, time, going, paint
   }
 }
 
-function outline(c, idx, colour, dash = []) {
+function outline(ctx, c, idx, colour, dash = []) {
   ctx.save();
   ctx.strokeStyle = colour;
   ctx.lineWidth = 1.6;
@@ -847,7 +841,7 @@ const off = (c, face, hover = 0) => screen(...at(c, face, hover));
 // The way a thing points is drawn as a stroke from its marker, in the world
 // rather than on the screen, so it turns with the view.
 const FACING_REACH = 0.45;
-function drawFacing(m, c, face, colour) {
+function drawFacing(ctx, m, c, face, colour) {
   const d = markerFacing(m);
   if (d === null) return;
   const n = FACE_NORMAL[d];
@@ -877,7 +871,7 @@ function drawFacing(m, c, face, colour) {
 // hold, so the marker says it outright once it has the room. A device that
 // starts switched off is drawn hollow, the way a beam that starts dark is
 // drawn broken.
-function drawMarker(m, c) {
+function drawMarker(ctx, m, c) {
   if (state.hiddenKinds.has(m.id)) return;
   const face = m.face ?? 0;
   const dark = markerState(m) === "off";
@@ -894,7 +888,7 @@ function drawMarker(m, c) {
   ctx.lineTo(px, py);
   ctx.stroke();
 
-  drawFacing(m, c, face, colour);
+  drawFacing(ctx, m, c, face, colour);
   ctx.fillStyle = dark ? "#111725" : colour;
   ctx.strokeStyle = dark ? colour : ink;
   ctx.lineWidth = 1.5;
@@ -918,14 +912,14 @@ function drawMarker(m, c) {
   }
   if (state.show.labels && state.cam.zoom > 0.45) {
     const side = m.face !== null && state.show.faces ? ` · ${FACE_NAME[m.face]}` : "";
-    label(markerLabel(m) + (dark ? " · off" : "") + side, px + r + 4, py + 4, "#e8eefb");
+    label(ctx, markerLabel(m) + (dark ? " · off" : "") + side, px + r + 4, py + 4, "#e8eefb");
   }
   ctx.restore();
 }
 
 // A survey mark hangs below the block, where a decoded marker never goes, so
 // the two readings of the same cell can be compared at a glance.
-function drawMark(m, c) {
+function drawMark(ctx, m, c) {
   const [px, py] = screen(c.x + 0.5, c.y + 0.5, c.z);
   const r = Math.max(3, 5 * state.cam.zoom);
   ctx.fillStyle = "#ffd166";
@@ -936,14 +930,14 @@ function drawMark(m, c) {
   ctx.fill();
   ctx.stroke();
   if (state.cam.zoom > 0.4) {
-    label(m.face ? `${m.name} ${m.face}` : m.name, px + r + 3, py + 4, "#ffd166");
+    label(ctx, m.face ? `${m.name} ${m.face}` : m.name, px + r + 3, py + 4, "#ffd166");
   }
 }
 
 // What floats casts a shadow straight down onto its face, whatever the light,
 // as the game does: a disc the width of the thing, on the face's plane.
 const SHADOW_SIDES = 14;
-function drawShadow(m, c, model, unit, offset = null) {
+function drawShadow(ctx, m, c, model, unit, offset = null) {
   const [lo, hi] = model.box;
   const r = (Math.max(hi[0], -lo[0], hi[2], -lo[2]) * unit) / 2 + 0.06;
   const up = FACE_NORMAL[m.face];
@@ -970,7 +964,7 @@ function drawShadow(m, c, model, unit, offset = null) {
 // of it hides it, its dashes carried across the cells so it reads as one line.
 // The stretch inside the platform's own blocks, wherever they have got to, is
 // left out.
-function drawRails(c, ghost, moving) {
+function drawRails(ctx, c, ghost, moving) {
   for (const { a, b, axis, cell, length } of c.rails) {
     const lo = Math.min(a[axis], b[axis]) + 0.5;
     const hi = Math.max(a[axis], b[axis]) + 0.5;
@@ -1008,7 +1002,7 @@ function drawRails(c, ghost, moving) {
   }
 }
 
-function label(text, x, y, colour) {
+function label(ctx, text, x, y, colour) {
   ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
   ctx.lineJoin = "round";
   ctx.lineWidth = 3;
@@ -1018,7 +1012,7 @@ function label(text, x, y, colour) {
   ctx.fillText(text, x, y);
 }
 
-function drawLook(l) {
+function drawLook(ctx, l) {
   const p = l.camera.look;
   if (!p.every((v) => v >= 0 && v < SIDE)) return;
   const colour = "#ffcf6f";
@@ -1032,10 +1026,10 @@ function drawLook(l) {
   ctx.beginPath();
   ctx.arc(px, y, Math.max(2, 3 * state.cam.zoom), 0, 7);
   ctx.fill();
-  label("camera target", px + Math.max(9, 12 * state.cam.zoom), y + 4, colour);
+  label(ctx, "camera target", px + Math.max(9, 12 * state.cam.zoom), y + 4, colour);
 }
 
-function drawBase(l) {
+function drawBase(ctx, l) {
   const [x0, y0] = l.min,
     [x1, y1, z1] = l.max;
   const z0 = z1 + 1;
@@ -1053,7 +1047,7 @@ function drawBase(l) {
   for (let y = y0; y <= y1 + 1; y++) line([x0, y, z0], [x1 + 1, y, z0]);
 }
 
-function drawScale() {
+function drawScale(ctx) {
   const n = 4;
   const px = 18,
     py = state.view.h - 26;
@@ -1064,7 +1058,7 @@ function drawScale() {
   ctx.moveTo(px, py);
   ctx.lineTo(px + len, py);
   ctx.stroke();
-  label(`${n} blocks`, px, py - 6, "#b3c0d4");
+  label(ctx, `${n} blocks`, px, py - 6, "#b3c0d4");
 }
 
 /** The cell under a client point, or null. */
