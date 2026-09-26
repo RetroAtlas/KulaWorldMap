@@ -8,7 +8,7 @@
     "1": {
       "name": "Fire block",
       "hazard": true,
-      "note": "A block whose every face is fire: touching it swells the ball until it burns or reaches cooler ground."
+      "note": "A block whose every face is fire. Touching it swells the ball until it burns or reaches cooler ground."
     },
     "2": {
       "name": "Ice block",
@@ -16,12 +16,12 @@
     },
     "3": {
       "name": "Invisible block",
-      "note": "A block that cannot be seen until the ball is close, or, on some levels, only from far away; sunglasses reveal it for a while."
+      "note": "A block that cannot be seen until the ball is close, or on some levels only from far away. Sunglasses reveal it for a while."
     },
     "4": {
       "name": "Acid block",
       "hazard": true,
-      "note": "A green block painted with an acid splat, found only on the object catalogue level; touching it melts the ball."
+      "note": "A green block painted with an acid splat, found only on the object catalogue level. Touching it melts the ball."
     },
     "5": {
       "name": "Moving platform",
@@ -66,11 +66,11 @@
         "f8": "high end y",
         "f9": "high end z"
       },
-      "note": "A laser beam between two blocks; it burns the ball on touch. A switch of the same colour turns it on and off, and a beam drawn broken is switched off."
+      "note": "A laser beam between two blocks. It burns the ball on touch. A switch of the same colour turns it on and off, and a beam drawn broken is switched off."
     },
     "9": {
       "name": "Level settings",
-      "note": "Not a block but the level's settings, kept where a block would be, often on an empty cell. They mark a hidden level, which the game draws half-transparent with the glass ball, and on a few levels let invisible blocks show from far away and fade as the ball comes near."
+      "note": "Not a block but the level's settings, kept where a block would be, often on an empty cell. They mark a hidden level, which the game draws half-transparent with the glass ball. On a few levels they let invisible blocks show from far away and fade as the ball comes near."
     },
     "666": {
       "name": "Camera",
@@ -117,7 +117,7 @@
     },
     "7": {
       "name": "Exit",
-      "note": "Red until every key is collected, then green; touching it ends the level."
+      "note": "Red until every key is collected, then green. Touching it ends the level."
     },
     "8": {
       "name": "Clock",
@@ -160,16 +160,16 @@
       "fields": {
         "f3": "phase"
       },
-      "note": "Spikes that rise and retract in turn; safe to roll over when down."
+      "note": "Spikes that rise and retract in turn. They are safe to roll over when down."
     },
     "12": {
       "name": "Spikes",
       "hazard": true,
-      "note": "Pops the ball on touch; jump over them."
+      "note": "Pops the ball on touch. Jump over them."
     },
     "26": {
       "name": "Hidden exit",
-      "note": "Appears once every key is collected, colourless, and leads to the world's hidden level."
+      "note": "A colourless exit that appears once every key is collected. It leads to the world's hidden level."
     },
     "28": {
       "name": "Arrow",
@@ -179,7 +179,7 @@
     "29": {
       "name": "Start on a clock",
       "facing": "f2",
-      "note": "The block and face the ball starts the level on, a clock rather than a plain square."
+      "note": "The block and face the ball starts the level on. Here it is a clock rather than a plain square."
     },
     "30": {
       "name": "Start",
@@ -193,7 +193,7 @@
     },
     "32": {
       "name": "Lethargy pill",
-      "note": "Slows the ball, rocks the screen and runs the timer fast for three seconds, costing about fifteen extra seconds on the clock."
+      "note": "Slows the ball, rocks the screen and runs the timer fast for three seconds. That costs about fifteen extra seconds on the clock."
     },
     "33": {
       "name": "Bouncy pill",
@@ -201,7 +201,7 @@
     },
     "34": {
       "name": "Invincibility pill",
-      "note": "Makes the ball invincible for fourteen seconds, flashing in colours while it lasts: no hazard harms it, and it cancels the lethargy and bouncy pills. Only on the object catalogue level, so nothing in play uses it."
+      "note": "Makes the ball invincible for fourteen seconds, flashing in colours while it lasts. No hazard harms it, and it cancels the lethargy and bouncy pills. Only on the object catalogue level, so nothing in play uses it."
     },
     "35": {
       "name": "Hourglass",
@@ -251,7 +251,7 @@
           "points": 750
         }
       },
-      "note": "Three tiers told apart by colour: bronze is worth 250, blue 500 and gold 750."
+      "note": "Three tiers, told apart by colour. Bronze is worth 250, blue 500 and gold 750."
     },
     "38": {
       "name": "Sunglasses",
@@ -261,55 +261,55 @@
     "42": {
       "points": 1550,
       "hazard": true,
-      "note": "A many-pointed star that turns from brown to green and back every few seconds: while brown it captures the ball on touch, and while green it can be collected for 1550. Only on the object catalogue level, so nothing in play uses it."
+      "note": "A many-pointed star that turns from brown to green and back every few seconds. While brown it captures the ball on touch, and while green it can be collected for 1550. Only on the object catalogue level, so nothing in play uses it."
     },
     "43": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level."
+      "note": "Apple, watermelon, pumpkin, bananas and strawberry come round in turn. Collecting all five earns a bonus level."
     },
     "44": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level."
+      "note": "Apple, watermelon, pumpkin, bananas and strawberry come round in turn. Collecting all five earns a bonus level."
     },
     "45": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level."
+      "note": "Apple, watermelon, pumpkin, bananas and strawberry come round in turn. Collecting all five earns a bonus level."
     },
     "46": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level."
+      "note": "Apple, watermelon, pumpkin, bananas and strawberry come round in turn. Collecting all five earns a bonus level."
     },
     "47": {
       "name": "Fruit",
       "points": 2500,
-      "note": "Five fruit come round in turn, apple, watermelon, pumpkin, bananas and strawberry, and collecting all five earns a bonus level."
+      "note": "Apple, watermelon, pumpkin, bananas and strawberry come round in turn. Collecting all five earns a bonus level."
     },
     "50": {
       "name": "Captivator",
       "hazard": true,
       "facing": "f2",
-      "note": "A spiked star that captures the ball on touch: the thinner one, with three long points, which travels the space it has and turns back at any wall or object in its way."
+      "note": "A spiked star that captures the ball on touch. It is the thinner one, with three long points. It travels the space it has and turns back at any wall or object in its way."
     },
     "51": {
       "name": "Rolling stone",
       "hazard": true,
       "facing": "f2",
-      "note": "A grey cylinder that rolls slowly round a set course and captures the ball on touch; it can be jumped over."
+      "note": "A grey cylinder that rolls slowly round a set course and captures the ball on touch. It can be jumped over."
     },
     "52": {
       "name": "Captivator",
       "hazard": true,
       "facing": "f2",
-      "note": "A spiked star that captures the ball on touch: the fuller one, with four short points, which slides back and forth over a fixed stretch, as if on a spring."
+      "note": "A spiked star that captures the ball on touch. It is the fuller one, with four short points. It slides back and forth over a fixed stretch, as if on a spring."
     },
     "53": {
       "name": "Captivator, wandering",
       "hazard": true,
-      "note": "A blue hexagonal ball that captures yours on touch: it shakes, then moves one square, and the way it shakes gives away where it is going. Its walk looks random, but it starts out the same way every time the level begins."
+      "note": "A blue hexagonal ball that captures yours on touch. It shakes, then moves one square, and the way it shakes gives away where it is going. Its walk looks random, but it starts out the same way every time the level begins."
     },
     "56": {
       "name": "Captivator, bouncing",
@@ -317,7 +317,7 @@
       "fields": {
         "f3": "phase"
       },
-      "note": "A corkscrew that bounces up and down and captures the ball on touch: roll under it when it is up, and jump it when it is down."
+      "note": "A corkscrew that bounces up and down and captures the ball on touch. Roll under it when it is up, and jump it when it is down."
     }
   },
   "levels": {
@@ -326,47 +326,47 @@
     },
     "/HILLS/HILLS.PAK#15": {
       "score": 25100,
-      "note": "The disc holds 3500 more, the twelve coins on the corners of the lowest ring: they and the four gems inside that ring cannot both be had, and the gems score more. The Japanese release removes the coins."
+      "note": "The disc holds 3500 more, in the twelve coins on the corners of the lowest ring. They and the four gems inside that ring cannot both be had, and the gems score more. The Japanese release removes the coins."
     },
     "/HILLS/HILLS.PAK#18": {
       "score": 7200,
-      "note": "The best known score, and not a certain one: it takes the coin under the exit block, which the Japanese release removes as unreachable, and leaves one of the ten crumbling blocks, the 50 more the disc holds."
+      "note": "The best known score, and not a certain one. It takes the coin under the exit block, which the Japanese release removes as unreachable. It leaves one of the ten crumbling blocks, the 50 more the disc holds."
     },
     "/HILLS/HILLS.PAK#19": {
-      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
+      "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/HILLS/HILLSFI.PAK#0": {
-      "note": "The Final has no fruit, and the PAL release put an apple on this level anyway, which the US and Japanese releases removed, leaving the blue teleporter it stood beside with nothing to reach."
+      "note": "The Final has no fruit, but the PAL release put an apple on this level anyway. The US and Japanese releases removed it, leaving the blue teleporter it stood beside with nothing to reach."
     },
     "/INCA/INCA.PAK#9": {
       "score": 8675,
       "note": "The disc holds 100 more, two crumbling blocks that cannot be reached."
     },
     "/INCA/INCA.PAK#19": {
-      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
+      "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/ARCTIC/ARCTIC.PAK#19": {
-      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
+      "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/COWBOY/COWBOY.PAK#19": {
-      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
+      "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/FIELD/FIELD.PAK#7": {
       "score": 4650,
       "note": "The disc holds 150 more, three crumbling blocks on the top level that cannot be broken by any means."
     },
     "/FIELD/FIELD.PAK#15": {
-      "note": "The Japanese release redesigned this level, taking out the gem ringed with spike traps; this is the US layout."
+      "note": "The Japanese release redesigned this level, taking out the gem ringed with spike traps. This is the US layout."
     },
     "/FIELD/FIELD.PAK#16": {
       "score": 19050,
-      "note": "The disc holds 4475 more, the gem and two gold coins on whichever end block is reached last: touching the last block ends a bonus level before anything on it can be collected. The Japanese release puts a single gem on each end instead."
+      "note": "The disc holds 4475 more, in the gem and two gold coins on whichever end block is reached last. Touching the last block ends a bonus level before anything on it can be collected. The Japanese release puts a single gem on each end instead."
     },
     "/FIELD/FIELD.PAK#18": {
-      "note": "The Japanese release took a coin and the two moving platforms out of this level; the platforms made the coin easier to reach and back from, and were not the only way."
+      "note": "The Japanese release took a coin and the two moving platforms out of this level. The platforms made the coin easier to reach and back from, and were not the only way."
     },
     "/FIELD/FIELD.PAK#19": {
-      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
+      "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/FIELD/FIELDFI.PAK#1": {
       "score": 21430,
@@ -378,28 +378,28 @@
     },
     "/ATLANT/ATLANT.PAK#11": {
       "score": 23115,
-      "note": "The disc holds 750 more, a gold coin inside one of the rings that cannot be reached; the Japanese release removes it."
+      "note": "The disc holds 750 more, in a gold coin inside one of the rings that cannot be reached. The Japanese release removes it."
     },
     "/ATLANT/ATLANT.PAK#19": {
-      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
+      "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/ATLANT/ATLANTFI.PAK#0": {
       "score": 15915,
       "note": "The disc holds 200 more, four of the fifteen crumbling blocks, which the best score leaves standing."
     },
     "/HAZE/HAZE.PAK#19": {
-      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
+      "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/HAZE/HAZEFI.PAK#1": {
       "score": 24065,
-      "note": "The disc holds 30500 more: ten of the eleven gems on the ring at y=28, which cannot be left once reached, and a gold coin."
+      "note": "The disc holds 30500 more. That is ten of the eleven gems on the ring at y=28, which cannot be left once reached, and a gold coin."
     },
     "/MARS/MARS.PAK#7": {
       "score": 10315,
       "note": "The disc holds 100 more, two of the five crumbling blocks, which the best score leaves standing."
     },
     "/MARS/MARS.PAK#10": {
-      "note": "The Japanese release un-iced one face of the solid ice block for an arrow that nothing can reach, and removed the blue coin on the same block, which can be collected here."
+      "note": "The Japanese release un-iced one face of the solid ice block for an arrow that nothing can reach. It also removed the blue coin on the same block, which can be collected here."
     },
     "/MARS/MARS.PAK#11": {
       "note": "The hidden exit at 14,19,18 stands on a block that cannot be reached once it has appeared. The PAL release forgot to place it, and the Japanese release moved it to LEVEL 134, the one release in which every hidden level can be played."
@@ -412,13 +412,13 @@
     },
     "/MARS/MARS.PAK#16": {
       "score": 19000,
-      "note": "The disc holds 8925 more, three gems under the three far blocks, which only the bouncy pill reaches and which the pill then keeps you from collecting; the Japanese release removes them."
+      "note": "The disc holds 8925 more, in three gems under the three far blocks. Only the bouncy pill reaches them, and the pill then keeps you from collecting them. The Japanese release removes them."
     },
     "/MARS/MARS.PAK#18": {
-      "note": "The only hidden level with a fruit, at 9,18,15, which the Japanese release removed; in this release the exit that leads here is out of reach."
+      "note": "The only hidden level with a fruit, at 9,18,15, which the Japanese release removed. In this release the exit that leads here is out of reach."
     },
     "/MARS/MARS.PAK#19": {
-      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
+      "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/HELL/HELL.PAK#14": {
       "score": 22440,
@@ -426,7 +426,7 @@
     },
     "/HELL/HELL.PAK#15": {
       "score": 21475,
-      "note": "The disc holds 1000 more, the two coins on top of the first platform, a face that cannot be reached; the Japanese release removes them."
+      "note": "The disc holds 1000 more, in the two coins on top of the first platform, a face that cannot be reached. The Japanese release removes them."
     },
     "/HELL/HELL.PAK#16": {
       "score": 18675,
@@ -437,10 +437,10 @@
       "note": "The disc holds 250 more, and what the best score leaves out is not known. This is the one arcade level rebuilt between the PAL and the US release."
     },
     "/HELL/HELL.PAK#18": {
-      "note": "160 of its 178 blocks are not part of the level: they lie flat far below it, spelling VERY WELL DONE in block letters six blocks tall. The other 18 are an upright frame, and everything on the level stands on one side of it, the side from which the lettering reads the right way round."
+      "note": "160 of its 178 blocks are not part of the level. They lie flat far below it, spelling VERY WELL DONE in block letters six blocks tall. The other 18 are an upright frame, and everything on the level stands on the side from which the lettering reads the right way round."
     },
     "/HELL/HELL.PAK#19": {
-      "note": "The developers' object catalogue: one of nearly every object in the game, laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
+      "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     }
   }
 }
