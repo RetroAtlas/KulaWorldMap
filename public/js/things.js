@@ -13,8 +13,10 @@ import {
   modelUnit,
   TANGENT,
   cross,
+  startsOf,
+  ballFor,
 } from "./data.js";
-import { phasesOf, pose, orbit } from "./motion.js";
+import { phasesOf, pose, orbit, press, inReach } from "./motion.js";
 import { label } from "./overlays.js";
 
 // The types the game draws on the face and nowhere else, so that once the
@@ -44,6 +46,24 @@ export function thingDisc(m, where, l) {
 /** Whether a device a switch toggles is drawn off. */
 const switchedOff = (m) => markerNow(m) === "off";
 
+// A boost button is pressed by the ball standing within its reach: the ball
+// at the level's start, on its own face and its radius off it. Positions are
+// in the game's units, the button's where it stands on its face.
+const point = (c, face, off) =>
+  [c.x, c.y, c.z].map((v, i) => (v + 0.5) / modelUnit() + FACE_NORMAL[face][i] * off);
+const balls = new WeakMap();
+function pressedAt(motion, m, home, l) {
+  if (!balls.has(l)) {
+    const r = ballFor(l)?.box[1][1] ?? 0;
+    balls.set(
+      l,
+      startsOf(l).map((s) => point(s, s.face, 0.5 / modelUnit() + r)),
+    );
+  }
+  const button = point(home, m.face, 0.5 / modelUnit());
+  return balls.get(l).some((b) => inReach(motion, b, button));
+}
+
 /** An object as itself where it has a mesh and the display asks for it, else
     its marker; on a moving platform the cell is where the platform is, and
     a thing that travels brings where it has got to and which way it faces,
@@ -70,14 +90,35 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null, painted =
     drawMarker(ctx, m, where);
     return false;
   }
-  drawObject(ctx, m, c, model, motion, frame, phase, round, l.camera?.time ?? 0, going, painted);
+  const pushed = motion?.press
+    ? press(
+        motion,
+        `${l.pack}#${l.index}/${cellKey(home.x, home.y, home.z)}/${m.face}`,
+        frame,
+        pressedAt(motion, m, home, l),
+      )
+    : null;
+  drawObject(
+    ctx,
+    m,
+    c,
+    model,
+    motion,
+    frame,
+    phase,
+    round,
+    l.camera?.time ?? 0,
+    going,
+    painted,
+    pushed?.height,
+  );
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(where, m.face, OBJECT_HOVER);
     const dark = switchedOff(m) ? " · off" : "";
     const side = state.show.faces ? ` · ${FACE_NAME[m.face]}` : "";
     label(ctx, markerLabel(m) + dark + side, px + 8, py + 4, "#e8eefb");
   }
-  return !!motion;
+  return pushed ? pushed.moving : !!motion;
 }
 
 // An object is its mesh stood on its face: the model's y runs along the face's
@@ -101,7 +142,20 @@ const FLOATING = 0.02; // a lift beyond this is off the face, in blocks
 const STONE = 51;
 const ACROSS = 0.25;
 
-function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, painted) {
+function drawObject(
+  ctx,
+  m,
+  c,
+  model,
+  motion,
+  frame,
+  phase,
+  round,
+  time,
+  going,
+  painted,
+  height = 1,
+) {
   const up = FACE_NORMAL[m.face];
   const forward = going?.fwd || markerHeading(m) || TANGENT[m.face];
   const unit = modelUnit();
@@ -120,7 +174,7 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
     const p = pose(motionTable(), motion, m, frame, phase, time);
     about = p.about;
     wide = 1 + p.squash;
-    tall = 1 - 2 * p.squash;
+    tall = (1 - 2 * p.squash) * height;
     // squashed about its centre, so it is stood lower by as much, and its
     // underside stays on the face while its top comes down
     lift = GAP + (rest - GAP) * tall;

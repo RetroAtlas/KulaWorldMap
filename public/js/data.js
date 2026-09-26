@@ -251,6 +251,11 @@ export function ballFor(l) {
   else if (slot >= WORLD_LEVELS && slot < HIDDEN) design = BONUS_BALL + (slot - WORLD_LEVELS);
   return shapes.balls[design] || shapes.balls[0] || null;
 }
+/** Where the ball stands as a level starts: the cell and the face. */
+export const startsOf = (l) =>
+  l.records.flatMap((r) =>
+    r.on.filter((o) => STARTS.has(o.type)).map((o) => ({ x: r.x, y: r.y, z: r.z, face: o.face })),
+  );
 /** The model a marker draws, or null for one the game draws on the face; a
     thing that changes its form in play names the form to draw. */
 export function markerModel(m, l, form = null) {

@@ -1,7 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects } from "./fixtures.js";
-import { frameAt, phasesOf, phaseField, pose, orbit, blockPhase } from "../../public/js/motion.js";
+import {
+  frameAt,
+  phasesOf,
+  phaseField,
+  pose,
+  orbit,
+  blockPhase,
+  press,
+  inReach,
+} from "../../public/js/motion.js";
 
 const table = objects.motion;
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
@@ -127,4 +136,45 @@ test("the ball breathes, wider and shorter by turns, faster the less time the le
   near(at(3072 / step, 99), -200 / 4096, 1e-6);
   near(at(1024 / (40 + 150), 0), 200 / 4096, 1e-6);
   assert.equal(pose(table, ball, marker(), 5, still, 99).about.join(), "0,0,0");
+});
+
+test("a boost button sinks a sixteenth a frame to flat, and springs back four at a time", () => {
+  const e = table.types[10];
+  const heights = (key, from, to, pressed) => {
+    const out = [];
+    for (let f = from; f <= to; f++) out.push(press(e, key, f, pressed).height);
+    return out;
+  };
+  press(e, "sink", 0, false);
+  const down = heights("sink", 1, 18, true);
+  near(down[0], 15 / 16);
+  near(down[15], 0);
+  near(down[17], 0, 1e-12);
+  assert.equal(press(e, "sink", 18, true).moving, false, "flat, it stays");
+  assert.deepEqual(heights("sink", 19, 23, false), [4 / 16, 8 / 16, 12 / 16, 1, 1]);
+  assert.equal(press(e, "sink", 23, false).moving, false);
+});
+
+test("a boost button risen from part way overshoots for one frame, then stands at full", () => {
+  const e = table.types[10];
+  press(e, "part", 0, false);
+  for (let f = 1; f <= 3; f++) press(e, "part", f, true);
+  const up = [];
+  for (let f = 4; f <= 6; f++) up.push(press(e, "part", f, false).height);
+  assert.deepEqual(up, [17 / 16, 1, 1]);
+});
+
+test("a press after a still spell starts from the frame it is seen", () => {
+  const e = table.types[10];
+  press(e, "late", 0, false);
+  near(press(e, "late", 600, true).height, 15 / 16);
+});
+
+test("a ball is in a boost button's reach on its block or a block sharing a face", () => {
+  const e = table.types[10];
+  const button = [0, 0, -256];
+  assert.ok(inReach(e, [0, 0, -356], button), "on it");
+  assert.ok(inReach(e, [512, 0, -356], button), "on the block beside");
+  assert.ok(!inReach(e, [512, 512, -356], button), "not on the one across a corner");
+  assert.ok(!inReach(e, [512, 0, -356], [0, 0, 256]), "nor on the block beside, it being under");
 });

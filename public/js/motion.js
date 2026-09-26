@@ -96,3 +96,39 @@ export function blockPhase(entry, r, frame) {
   const k = Math.floor(frame) % entry.cycle[phase].length;
   return { state: entry.cycle[phase][k], level: entry.level[phase][k] };
 }
+
+/** Whether a ball at a point is within a boost button's reach of it, both in
+    the game's units, the button's point being where it stands on its face. */
+export const inReach = (entry, ball, button) =>
+  Math.hypot(ball[0] - button[0], ball[1] - button[1], ball[2] - button[2]) < entry.press.reach;
+
+// A boost button's count steps as the game steps it, down to flat while a
+// ball is in reach and back up after, and it is drawn that count over full
+// high while it moves and at full once it is back, where the game stops
+// scaling it. The count is kept per button between draws; a draw that finds
+// what presses it changed counts the change from its own frame, so a press
+// after a still spell starts then rather than having run all along.
+const presses = new Map();
+export function press(entry, key, frame, pressed) {
+  const e = entry.press;
+  const now = Math.floor(frame);
+  let s = presses.get(key);
+  if (!s || s.at > now) {
+    s = { at: now, count: e.start, height: 1, pressed };
+    presses.set(key, s);
+  }
+  if (s.pressed !== pressed) {
+    s.at = Math.max(s.at, now - 1);
+    s.pressed = pressed;
+  }
+  for (; s.at < now; s.at++) {
+    if (pressed) {
+      if (s.count > 0) s.count += e.sink;
+      s.height = s.count / e.full;
+    } else if (s.count < e.full) {
+      s.count += e.rise;
+      s.height = s.count / e.full;
+    } else s.height = 1;
+  }
+  return { height: s.height, moving: pressed ? s.count > 0 : s.height !== 1 || s.count < e.full };
+}
