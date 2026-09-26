@@ -29,7 +29,9 @@ export const motionTable = () => shapes.motion;
 /** What the game paints on every face, read off the executable, or null where the file has none. */
 export const skinsTable = () => shapes.skins;
 export const motionOf = (m) =>
-  m.face === null ? null : (shapes.motion?.types[String(m.type)] ?? null);
+  m.face === null
+    ? null
+    : (shapes.motion?.types[String(STARTS.has(m.type) ? START : m.type)] ?? null);
 export const kindMotion = (kind) => shapes.motion?.kinds[String(kind)] ?? null;
 
 export async function loadJson(url, fallback) {
@@ -259,7 +261,8 @@ const OPENS_ON = { 7: 1 };
 // arcade level, one of three others for a bonus level in an order the
 // player's path decides, and the glass one with the shards inside for a
 // hidden level.
-const STARTS = new Set([29, 30]);
+const START = 30;
+const STARTS = new Set([29, START]);
 const BONUS_BALL = 10;
 const BONUS_BALLS = 3;
 const HIDDEN_BALL = 13;
