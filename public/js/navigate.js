@@ -166,11 +166,11 @@ export function applyHash() {
   if (i !== state.li) selectLevel(i, { keepView: true });
   const angles = numbers(turn, 2);
   if (angles) [state.cam.yaw, state.cam.pitch] = angles;
-  const scale = numbers(zoom, 1)?.[0];
-  if (scale > 0) state.cam.zoom = scale;
   const centre = numbers(target, 3);
   if (centre) state.target = centre;
   else fit();
+  const scale = numbers(zoom, 1)?.[0];
+  if (scale > 0) state.cam.zoom = scale;
   const offset = numbers(pan, 2);
   if (offset) [state.cam.panX, state.cam.panY] = offset;
   const ceiling = numbers(slice, 1)?.[0];

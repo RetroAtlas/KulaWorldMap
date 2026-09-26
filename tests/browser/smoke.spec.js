@@ -39,6 +39,19 @@ test("a permalink keeps the parts it can read and drops the rest", async ({ page
   expect(cam.slice).toBe(33);
 });
 
+test("a permalink that names a zoom and no cell opens at that zoom on the level's middle", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/11/30,20/1.25");
+  await settle(page);
+  const cam = await page.evaluate(async () => {
+    const { state, levelCentre } = await import(new URL("js/state.js", location.href).href);
+    return { zoom: state.cam.zoom, target: state.target, middle: levelCentre(state.lvl) };
+  });
+  expect(cam.zoom).toBeCloseTo(1.25, 5);
+  expect(cam.target).toEqual(cam.middle);
+});
+
 test("a permalink carries the selected block, and opens with it selected", async ({ page }) => {
   await page.goto("/#HIRO/11/45,35/1/21.5,13.5,18.5/0,0/33/21,13,18");
   await settle(page);
