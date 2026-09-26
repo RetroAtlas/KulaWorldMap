@@ -13,7 +13,7 @@ import {
 } from "./data.js";
 import { frameAt } from "./motion.js";
 import { walkers, probe, advance, place, under, dice } from "./travel.js";
-import { lookOf, paintedShadow } from "./skins.js";
+import { lookOf } from "./skins.js";
 import { drawBeams } from "./beams.js";
 import { atlasFor } from "./atlas.js";
 import { drawBlock, cube, outline, covers } from "./blocks.js";
@@ -220,7 +220,7 @@ export function draw() {
   const mark = (m, c, home, key) => {
     if (moving?.has(`${key}/${m.face}`)) return;
     if (state.show.models && quietAmongModels(m, !!atlas, key === chosen)) return;
-    put(m, c, l, frame, home, null, atlas && m.face !== null && paintedShadow(skins, m.type));
+    put(m, c, l, frame, home);
   };
 
   for (const c of cells) {

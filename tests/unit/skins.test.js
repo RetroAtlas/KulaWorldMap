@@ -1,26 +1,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects } from "./fixtures.js";
-import { faceSkin, lookOf, paintedShadow } from "../../public/js/skins.js";
+import { faceSkin, lookOf, shadowed } from "../../public/js/skins.js";
 
 const { skins } = objects;
 const COIN = 37;
 const GEM = 36;
-const START = 30;
 const START_ON_A_CLOCK = 29;
 const CLOCK = 8;
 const SLOW_STAR = 50;
 
-test("a pickup's shadow is painted into its face, and the ball's and a star's are not", () => {
-  assert.equal(paintedShadow(skins, COIN), true);
-  assert.equal(paintedShadow(skins, GEM), true);
-  assert.equal(paintedShadow(skins, START), false);
-  assert.equal(paintedShadow(skins, SLOW_STAR), false);
-});
-
-test("the start on a clock is painted as the clock, which carries no shadow", () => {
-  assert.equal(paintedShadow(skins, CLOCK), false);
-  assert.equal(paintedShadow(skins, START_ON_A_CLOCK), false);
+test("a pickup's shadow is painted into its face, and the ball and the captivators cast their own", () => {
+  assert.equal(shadowed(skins, COIN), true);
+  assert.equal(shadowed(skins, GEM), true);
+  const cast = Object.entries(objects.motion.types).filter(([, e]) => e.shadow);
+  assert.deepEqual(
+    cast.map(([t]) => Number(t)).sort((a, b) => a - b),
+    [30, 50, 51, 52, 53, 56],
+  );
+  for (const [t] of cast) assert.equal(shadowed(skins, Number(t)), false, `type ${t}`);
 });
 
 const KEY = skins.keys.type;

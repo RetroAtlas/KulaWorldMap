@@ -100,11 +100,6 @@ function spread(skins, c, face, length) {
 export const shadowed = (skins, type) =>
   type >= skins.shadow.from && type <= skins.shadow.to && !skins.shadow.except.includes(type);
 
-/** Whether a thing's shadow is one the game paints, and so none it draws:
-    the loader takes a type it draws as the clock for the clock first. */
-export const paintedShadow = (skins, type) =>
-  shadowed(skins, type === skins.clock.alias ? skins.clock.type : type);
-
 /**
  * The skin of one face of a block: `tex`, the texture's number in the
  * world's atlas; `turn`, the quarter turns it is laid at; `colour`, the

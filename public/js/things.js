@@ -80,7 +80,7 @@ function pressedAt(motion, m, home, l) {
     a thing that travels brings where it has got to and which way it faces,
     its marker and its label going with it. Says whether it moves by the
     next frame. */
-export function drawThing(ctx, m, c, l, frame, home = c, going = null, painted = false) {
+export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
   if (state.hiddenKinds.has(m.id)) return false;
   const motion = state.show.models ? motionOf(m) : null;
   // the game starts a pickup's angles at random and an entry's at zero, so
@@ -120,7 +120,6 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null, painted =
     round,
     l.camera?.time ?? 0,
     going,
-    painted,
     pushed?.height,
   );
   if (state.show.labels && state.cam.zoom > 0.45) {
@@ -141,32 +140,17 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null, painted =
 // that it never dips into its face, and a device switched off stands still
 // at the angle it has turned to, as it does in play. The polygons are filled
 // back to front in their own colours, since the shading is baked into them,
-// and both sides are drawn, since the meshes wind their faces either way. A
-// thing whose face is painted with the game's own shadow casts none of its own.
+// and both sides are drawn, since the meshes wind their faces either way.
 const GAP = 0.03; // between a thing and its face, in blocks
 const SHADOW = "rgba(0 0 0 / 0.32)";
 const GLASS = 0.55; // how much a translucent polygon covers
-const FLOATING = 0.02; // a lift beyond this is off the face, in blocks
 // The rolling stone's axle is its model's z, which lies across the way it
 // rolls, so it stands a quarter turn from the way its facing gives and rolls
 // about that axle with its top going the way it travels.
 const STONE = 51;
 const ACROSS = 0.25;
 
-function drawObject(
-  ctx,
-  m,
-  c,
-  model,
-  motion,
-  frame,
-  phase,
-  round,
-  time,
-  going,
-  painted,
-  height = 1,
-) {
+function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, height = 1) {
   const up = FACE_NORMAL[m.face];
   const forward = going?.fwd || markerHeading(m) || TANGENT[m.face];
   const unit = modelUnit();
@@ -205,8 +189,7 @@ function drawObject(
     shown = model.frames[p.frame] || shown;
   }
   for (let i = 0; i < 3; i++) o[i] += up[i] * lift;
-  if (!painted && (rest > GAP + FLOATING || motion?.bounce))
-    drawShadow(ctx, m, c, model, unit, going?.offset);
+  if (motion?.shadow) drawShadow(ctx, m, c, model, unit, going?.offset);
   const ct = Math.cos(about[1] * Math.PI * 2),
     st = Math.sin(about[1] * Math.PI * 2);
   const fwd = forward.map((v, i) => v * ct + side[i] * st);
@@ -353,8 +336,8 @@ function drawMarker(ctx, m, c) {
   ctx.restore();
 }
 
-// What floats casts a shadow straight down onto its face, whatever the light,
-// as the game does: a disc on the face's plane, under the thing.
+// A thing the game draws a shadow under casts one straight down onto its face,
+// whatever the light: a disc on the face's plane, under the thing.
 const SHADOW_SIDES = 14;
 function drawShadow(ctx, m, c, model, unit, offset = null) {
   const [lo, hi] = model.box;
