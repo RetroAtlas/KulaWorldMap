@@ -1,4 +1,4 @@
-import { $, emit } from "./dom.js";
+import { $, el, on, emit } from "./dom.js";
 import { state, cellKey } from "./state.js";
 import {
   OFF_LATTICE,
@@ -25,10 +25,9 @@ import {
   fieldName,
   fieldKey,
   VALUE_KEY,
-  markerModel,
   markerStats,
 } from "./data.js";
-import { iconFor } from "./icons.js";
+import { blockIcon, markerIcon } from "./icons.js";
 import { draw } from "./render.js";
 
 let stats = null;
@@ -37,8 +36,29 @@ const row = (k, v) => `<tr><td>${k}</td><td class="mono">${v}</td></tr>`;
 const STORED = `<tr><th colspan="2">on the disc</th></tr>`;
 const HAZARD = `<span class="tag">Hazard</span>`;
 
+const ICON = 26;
+
 const dot = (colour) =>
-  `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${colour}"></span>`;
+  el("span", {
+    style: `display:inline-block;width:9px;height:9px;border-radius:50%;background:${colour}`,
+  });
+
+// A heading's icon is drawn over a stand-in once the panel is laid out, and
+// again when the world's textures land, since one drawn before is flat.
+let icons = [];
+const iconAt = (make) => `<span data-icon="${icons.push(make) - 1}"></span>`;
+function drawIcons(box) {
+  for (const at of box.querySelectorAll("[data-icon]")) {
+    const icon = icons[at.dataset.icon]();
+    icon.dataset.icon = at.dataset.icon;
+    at.replaceWith(icon);
+  }
+}
+
+on("atlas-loaded", (world) => {
+  const box = $("detail");
+  if (!box.hidden && world === state.lvl?.theme) drawIcons(box);
+});
 
 const decoded = (m, c) => {
   let html = "";
@@ -113,7 +133,11 @@ export function showCell(c) {
   const what = kind === null ? "Laser end" : kindName(kind) || `Block, kind ${kind}`;
   let html = `<button class="x" title="Close (Esc)">×</button>`;
   const end = state.idx.beamEnds.has(key);
-  html += `<h3>${what}${blockHazard(kind, end) ? HAZARD : ""}</h3>`;
+  icons = [];
+  const plate = [...(state.idx.plates.get(key)?.values() ?? [])][0];
+  // A laser's end the lattice leaves empty is a plain block the game stands there.
+  const block = () => blockIcon(l, kind ?? 0, { size: ICON, r: records[0] ?? null, plate });
+  html += `<h3>${iconAt(block)}${what}${blockHazard(kind, end) ? HAZARD : ""}</h3>`;
   html += `<p class="sub">${levelTitle(l)} · cell ${c.x},${c.y},${c.z}</p>`;
   if (off)
     html += `<p class="sub">The level leaves this cell empty, and the game puts a block here as
@@ -128,14 +152,10 @@ export function showCell(c) {
   html += "</table>";
   if (own) html += placed(own);
 
-  const icons = [];
   for (const m of marks) {
     if (m === own) continue;
     const name = markerName(m);
-    const model = markerModel(m, l);
-    const mark = model
-      ? `<span class="icon-at" data-icon="${icons.push(model) - 1}"></span>`
-      : dot(markerColour(m));
+    const mark = iconAt(() => markerIcon(m, l, ICON) ?? dot(markerColour(m)));
     html += `<h3 style="margin-top:12px">${mark}
       ${name ? name : `<span class="unnamed">${m.face === null ? `kind ${m.kind}` : `type ${m.type}`}</span>`}${markerHazard(m) ? HAZARD : ""}</h3>`;
     html += `<p class="sub">${m.face === null ? `kind ${m.kind} · type ${m.type}` : `type ${m.type} · on the ${FACE_NAME[m.face]}`}</p>`;
@@ -145,8 +165,7 @@ export function showCell(c) {
     html += `<table>${decoded(m, c)}${STORED}${fields(m)}</table>${placed(m)}`;
   }
   box.innerHTML = html;
-  for (const at of box.querySelectorAll(".icon-at"))
-    at.replaceWith(iconFor(icons[at.dataset.icon], 26));
+  drawIcons(box);
   box.hidden = false;
   for (const b of box.querySelectorAll(".press button")) {
     b.onclick = () => {

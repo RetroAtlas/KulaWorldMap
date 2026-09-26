@@ -930,6 +930,53 @@ test("a teleporter's panel names where it leads, and going there is a find", asy
   expect(errors).toEqual([]);
 });
 
+test("the panel heads a block and a face painting with its icon, and the settings with a dot", async ({
+  page,
+}) => {
+  const heads = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll("#detail h3")].map((h) => [
+        h.textContent.trim().replace(/\s+/g, " "),
+        h.firstElementChild.tagName,
+      ]),
+    );
+  // LEVEL 94 keeps its settings on the cell of a crumbling block
+  await page.goto("/#ATLANT/3/45,35/1.00/17,17,17/0,0/33/17,23,17");
+  await settle(page);
+  await expect.poll(heads).toEqual([
+    ["Crumbling block", "CANVAS"],
+    ["Level settings", "SPAN"],
+  ]);
+  // and LEVEL 56 a clock on the top of a block and one under it
+  await page.goto("/#ARCTIC/10/45,35/1.00/17,17,17/0,0/33/15,13,17");
+  await settle(page);
+  await expect.poll(heads).toEqual([
+    ["Block", "CANVAS"],
+    ["Clock", "CANVAS"],
+    ["Clock", "CANVAS"],
+  ]);
+});
+
+test("the panel's icons are drawn again in the world's textures when they land", async ({
+  page,
+}) => {
+  await page.goto("/#ATLANT/3/45,35/1.00/17,17,17/0,0/33/17,23,17");
+  await settle(page);
+  const same = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { atlasFor }, { blockIcon }] = await Promise.all(
+      ["state.js", "atlas.js", "icons.js"].map(at),
+    );
+    while (!atlasFor(state.lvl.theme)) await new Promise(requestAnimationFrame);
+    const shown = document.querySelector("#detail h3 canvas");
+    const r = state.lvl.records.find((x) => x.x === 17 && x.y === 23 && x.z === 17);
+    const fresh = blockIcon(state.lvl, r.kind, { size: shown.clientWidth, r });
+    const pixels = (cv) => cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data.join();
+    return pixels(shown) === pixels(fresh);
+  });
+  expect(same).toBe(true);
+});
+
 test("b takes the lines off the blocks", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#HIRO/0/45,35/1");

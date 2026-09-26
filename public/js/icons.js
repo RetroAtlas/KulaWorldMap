@@ -1,5 +1,5 @@
 import { state, SIDE, basisAt } from "./state.js";
-import { WORLD_TINT, skinsTable } from "./data.js";
+import { WORLD_TINT, skinsTable, markerModel, markerGroup } from "./data.js";
 import { atlasFor, paint } from "./atlas.js";
 import { lookOf, faceSkin, platformPlace } from "./skins.js";
 import { FACES, SKINNED_LOOK, shadeOf, flatFace } from "./blocks.js";
@@ -145,17 +145,23 @@ const trace = (g, pts) => {
 };
 
 /** A fresh canvas of a block of `kind` as level `l` paints it, `size` CSS
-    pixels square, in the world's tint until its textures arrive. */
-export function blockIcon(l, kind, size = 22) {
+    pixels square, in the world's tint until its textures arrive. A platform
+    takes its axis from `r`, the block's record, and a laser's end shows its
+    plate in `plate`, the beam's colour; they default to the level's first
+    record of the kind and that record's colour. */
+export function blockIcon(
+  l,
+  kind,
+  { size = 22, r = l.records.find((x) => x.kind === kind), plate } = {},
+) {
   const { cv, g } = canvasOf(size);
   const scale = (size / 2 - 1) / (Math.sqrt(3) / 2);
   const to = ([x, y, z]) => {
     const p = [x - 0.5, y - 0.5, z - 0.5];
     return [size / 2 + dot(p, VIEW.right) * scale, size / 2 - dot(p, VIEW.up) * scale];
   };
-  const r = l.records.find((x) => x.kind === kind);
   const place = kind === PLATFORM && r ? platformPlace({ ...r, length: 1 }, 0) : null;
-  const plate = kind === BEAM_KIND && r ? r.colour : undefined;
+  const beam = plate ?? (kind === BEAM_KIND ? r?.colour : undefined);
   const style = SKINNED_LOOK[kind] || {};
   const alpha = style.alpha ?? 1;
   const paints = looks(l);
@@ -165,7 +171,7 @@ export function blockIcon(l, kind, size = 22) {
     trace(g, FACES[i].c.map(to));
     if (paints) {
       const { skins, look, img } = paints;
-      const at = face === PLATE_FACE ? plate : undefined;
+      const at = face === PLATE_FACE ? beam : undefined;
       const sk = faceSkin(skins, look, CELL, face, kind, null, frame, place, at);
       g.save();
       g.clip();
@@ -208,4 +214,16 @@ export function paintIcon(l, type, size = 22) {
   g.clip();
   paint(g, corners, { ...sk, img }, shadeOf(TOP, l.theme), 1);
   return cv;
+}
+
+/** A marker's icon, `size` CSS pixels square: its model, or, for what has
+    none, what the game paints, the block or the face under a thing drawn on
+    it and nowhere else; null for the settings, which are neither. */
+export function markerIcon(m, l, size = 22) {
+  const model = markerModel(m, l);
+  if (model) return iconFor(model, size);
+  const group = markerGroup(m);
+  if (group === "block") return blockIcon(l, m.kind, { size });
+  if (group === "object") return paintIcon(l, m.type, size);
+  return null;
 }

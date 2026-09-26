@@ -9,9 +9,8 @@ import {
   markerGroup,
   markerLabel,
   markerColour,
-  markerModel,
 } from "./data.js";
-import { iconFor, blockIcon, paintIcon } from "./icons.js";
+import { markerIcon } from "./icons.js";
 import { selectLevel } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
 import { setSlice } from "./interaction.js";
@@ -142,17 +141,10 @@ export function buildKinds() {
   if (focused) [...box.querySelectorAll("button")].find((b) => b.dataset.kind === focused)?.focus();
 }
 
-// A row shows the thing's model, or, for what has none, what the game paints:
-// the block, or the face under a thing drawn on it and nowhere else. The
-// settings are neither and have a dot.
-function iconOf(m) {
-  const model = markerModel(m, state.lvl);
-  if (model) return iconFor(model);
-  const group = markerGroup(m);
-  if (group === "block") return blockIcon(state.lvl, m.kind);
-  if (group === "object") return paintIcon(state.lvl, m.type);
-  return el("span", { className: "dot", style: `background:${markerColour(m)}` });
-}
+// The settings have no icon, and a row of them shows a dot.
+const iconOf = (m) =>
+  markerIcon(m, state.lvl) ??
+  el("span", { className: "dot", style: `background:${markerColour(m)}` });
 
 const rowOf = (m, n) => [
   iconOf(m),
