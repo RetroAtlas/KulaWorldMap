@@ -18,7 +18,7 @@ import { drawBeams } from "./beams.js";
 import { atlasFor } from "./atlas.js";
 import { drawBlock, cube, outline, covers } from "./blocks.js";
 import { drawRails, drawBase, drawLook, drawScale, drawMark, drawLink } from "./overlays.js";
-import { drawThing, paintSays, thingDisc } from "./things.js";
+import { drawThing, quietAmongModels, thingDisc } from "./things.js";
 
 const cv = $("cv");
 const ctx = cv.getContext("2d");
@@ -219,7 +219,7 @@ export function draw() {
   };
   const mark = (m, c, home, key) => {
     if (moving?.has(`${key}/${m.face}`)) return;
-    if (atlas && state.show.models && paintSays(m, skins)) return;
+    if (state.show.models && quietAmongModels(m, !!atlas, key === chosen)) return;
     put(m, c, l, frame, home, null, atlas && m.face !== null && paintedShadow(skins, m.type));
   };
 

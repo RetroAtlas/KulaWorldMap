@@ -4,6 +4,7 @@ import {
   FACE_NAME,
   markerColour,
   markerLabel,
+  markerGroup,
   markerFacing,
   markerHeading,
   markerNow,
@@ -22,11 +23,15 @@ import { label } from "./overlays.js";
 
 // The types the game draws on the face and nowhere else, so that once the
 // face is painted the marker would say the same thing twice; and so would a
-// marker for a record's own kind, once its block is painted, but for the
-// settings record, which stands on no block of its own.
+// marker for a record's own kind, once its block is painted.
 const FACE_ONLY = new Set([1, 2, 8]);
-export const paintSays = (m, skins) =>
-  m.face === null ? m.kind !== skins.hidden.kind : FACE_ONLY.has(m.type);
+const paintSays = (m) => m.face === null || FACE_ONLY.has(m.type);
+
+/** Whether a marker is left out among the models: where the paint says what it
+    would, and for the settings, which have neither mesh nor paint, anywhere but
+    on the selected block. */
+export const quietAmongModels = (m, painted, selected) =>
+  markerGroup(m) === "settings" ? !selected : painted && paintSays(m);
 
 /** The disc a thing at a cell covers on the screen, as its centre and radius:
     as wide as its model, about the model's middle, or its marker. */

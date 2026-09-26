@@ -838,6 +838,41 @@ test("a label names the face its thing stands on, and n leaves the face out", as
   expect(errors).toEqual([]);
 });
 
+test("the settings have no model, so among the models they show only while selected", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // LEVEL 24 keeps its settings on the cell of a plain block, and from low
+  // down where their marker stands is clear of every block
+  await page.goto("/#HILLS/8/45,15/1.6/16,22,17");
+  await settle(page);
+  await page.keyboard.press("v");
+  await page.keyboard.press("l");
+  const shown = async () => (await written(page)).filter((t) => t === "Level settings").length;
+  expect(await shown()).toBe(0);
+  await expect(page.locator("#kinds button", { hasText: "Level settings" })).toContainText("1");
+  const picked = await page.evaluate(async () => {
+    const { state, screen, BLOCK } = await import(new URL("js/state.js", location.href).href);
+    const { cellAt } = await import(new URL("js/render.js", location.href).href);
+    const r = state.lvl.records.find((r) => r.kind === 9);
+    const c = cellAt(...screen(r.x + 0.5, r.y + 0.5, r.z - 8 / BLOCK));
+    return c && [c.x, c.y, c.z];
+  });
+  expect(picked).toBeNull();
+  await page.evaluate(async () => {
+    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const r = state.lvl.records.find((r) => r.kind === 9);
+    showCell(state.idx.cells.get(cellKey(r.x, r.y, r.z)));
+  });
+  expect(await shown()).toBe(1);
+  await page.keyboard.press("Escape");
+  expect(await shown()).toBe(0);
+  await page.keyboard.press("d");
+  expect(await shown()).toBe(1);
+  expect(errors).toEqual([]);
+});
+
 test("a switch's panel presses it, turning its colour over until the level is left", async ({
   page,
 }) => {
