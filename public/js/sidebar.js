@@ -103,6 +103,8 @@ const COUNT_ONLY = new Set(["block"]);
 
 export function buildKinds() {
   const box = $("kinds");
+  // A row that has the focus has it again once the rows are built anew.
+  const focused = box.contains(document.activeElement) ? document.activeElement.dataset.kind : null;
   box.textContent = "";
   const counts = new Map();
   const first = new Map();
@@ -137,6 +139,7 @@ export function buildKinds() {
     }
     box.append(list);
   }
+  if (focused) [...box.querySelectorAll("button")].find((b) => b.dataset.kind === focused)?.focus();
 }
 
 // A row shows the thing's model, or, for what has none, what the game paints:
@@ -159,6 +162,7 @@ const rowOf = (m, n) => [
 
 function kindButton(k, m, n, keys) {
   const b = el("button", { className: "kind", type: "button" }, rowOf(m, n));
+  b.dataset.kind = k;
   b.setAttribute("aria-pressed", state.hiddenKinds.has(k) ? "false" : "true");
   b.onclick = (e) => {
     if (e.shiftKey) {

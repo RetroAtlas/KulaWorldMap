@@ -697,6 +697,22 @@ test("a legend row of objects shows and hides them, and a row of blocks only cou
   expect(await hidden()).toEqual([]);
 });
 
+test("a legend row keeps the focus when the legend is built anew", async ({ page }) => {
+  await page.goto("/#ATLANT/3");
+  await settle(page);
+  const key = page.getByRole("list", { name: "Objects" }).getByRole("button", { name: "Key" });
+  await key.focus();
+  await page.keyboard.press("Space");
+  await expect(key).toHaveAttribute("aria-pressed", "false");
+  await expect(key).toBeFocused();
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ emit }, { state }] = await Promise.all(["dom.js", "state.js"].map(at));
+    emit("atlas-loaded", state.lvl.theme);
+  });
+  await expect(key).toBeFocused();
+});
+
 test("a panel is a dialog that a click inside does not dismiss", async ({ page }) => {
   await page.goto("/");
   await settle(page);
