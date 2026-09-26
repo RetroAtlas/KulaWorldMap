@@ -206,15 +206,21 @@ const GLASS_FACE = 0.5; // how much of a hidden level's face shows, the GPU's ha
 // builds on a path of their own and leaves out of it.
 const UNGLAZED = new Set([INVISIBLE, VANISHING]);
 const TRANSLUCENT = 4; // the state from which a vanishing block is drawn through
+const FADING = 0.6; // how much of a vanishing block shows once it is drawn through
 
-/** How a vanishing block looks at this frame, from where its cycle stands. */
+/** How a vanishing block looks at this frame, from where its cycle stands,
+    and held still, as it looks when it starts to go: there, and seen through. */
 function vanishingLook(r, frame, skinned) {
-  const { state, level } = blockPhase(kindMotion(VANISHING), r, frame);
-  if (state === 0) return (skinned ? SKINNED_LOOK : LOOK)[VANISHING];
+  if (!state.show.motion) return { alpha: FADING };
+  const { state: step, level } = blockPhase(kindMotion(VANISHING), r, frame);
+  if (step === 0) return (skinned ? SKINNED_LOOK : LOOK)[VANISHING];
   const k = Math.abs(level - NEUTRAL) / NEUTRAL;
   const wash = level > NEUTRAL ? `rgba(255 255 255 / ${0.8 * k})` : `rgba(0 0 0 / ${0.8 * k})`;
-  return { alpha: state >= TRANSLUCENT ? 0.6 : 1, wash };
+  return { alpha: step >= TRANSLUCENT ? FADING : 1, wash };
 }
+
+/** An invisible face's colour at the peak of its pulse. */
+const peak = (skins) => Array(3).fill(Math.max(...skins.cycles.invisible.level));
 
 /** The kind of block a cell draws: its style, or the kind of the record it names. */
 function kindOf(c, idx, key) {
@@ -252,6 +258,8 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
       const g = FACES[i].game;
       const sk = faceSkin(skins, look, still, g, kind, rec, frame, place, plates?.get(g));
       if (sk?.live) live = true;
+      // held still, an invisible face stands at the peak of its pulse
+      if (sk && kind === INVISIBLE && !state.show.motion) sk.colour = peak(skins);
       return sk && { ...sk, img: atlas, world: l.theme, corners: skins.corners[g][sk.turn] };
     };
   }

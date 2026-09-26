@@ -65,8 +65,10 @@ export function drawBeams(ctx, c, ghost, frame) {
     ctx.globalAlpha = ghost ? 0.16 : 1;
     ctx.lineWidth = 1;
     sides.forEach(([su, sv], n) => {
-      const level =
-        beam.levels[(seed(...ray.a, n) + Math.floor(frame) * beam.step) % beam.levels.length];
+      // held still, every line stands at its brightest
+      const level = state.show.motion
+        ? beam.levels[(seed(...ray.a, n) + Math.floor(frame) * beam.step) % beam.levels.length]
+        : Math.max(...beam.levels);
       const colour = `rgb(${tint(beam, ray, level).join(" ")})`;
       const du = su * nozzle,
         dv = sv * nozzle;

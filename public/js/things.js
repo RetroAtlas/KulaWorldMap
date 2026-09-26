@@ -19,7 +19,7 @@ import {
   ballFor,
   shadowSprites,
 } from "./data.js";
-import { phasesOf, pose, orbit, press, inReach } from "./motion.js";
+import { phasesOf, phaseField, pose, orbit, press, inReach } from "./motion.js";
 import { label } from "./overlays.js";
 import { NEUTRAL } from "./atlas.js";
 
@@ -189,7 +189,9 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
       }
       about[1] += round.turn;
     }
-    shown = model.frames[p.frame] || shown;
+    // held still, a model that runs through its frames shows the furthest its cycle reaches
+    const held = motion.cycle && !state.show.motion;
+    shown = model.frames[held ? Math.max(...motion.cycle[phaseField(m)]) : p.frame] || shown;
   }
   for (let i = 0; i < 3; i++) o[i] += up[i] * lift;
   const ct = Math.cos(about[1] * Math.PI * 2),
