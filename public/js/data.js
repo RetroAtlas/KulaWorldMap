@@ -206,6 +206,10 @@ export const litNow = (ray) => ray.lit !== turned(ray.colour);
 export function flip(circuit, frame) {
   state.presses.set(circuit, [...pressesOf(circuit), frame]);
 }
+/** Keep every circuit turned as it is, as if turned before the clock's first frame. */
+export function settleCircuits() {
+  for (const [circuit, at] of state.presses) state.presses.set(circuit, at.length % 2 ? [0] : []);
+}
 /** How many frames of the clock up to `frame` a device has been on, from
     whether it starts on and the frames its circuit was turned over at. */
 export function framesOn(on, presses, frame) {

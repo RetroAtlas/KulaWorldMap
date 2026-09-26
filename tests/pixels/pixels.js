@@ -179,11 +179,15 @@ async function capture(page, c, keep) {
         (l) => l.pack.endsWith("/" + c.level[0]) && l.index === c.level[1],
       );
       if (li < 0) throw new Error(`no level ${c.level}`);
+      // the level's clock starts again at page time zero, before anything
+      // is pressed
       window.__setNow(0);
-      Object.assign(state.show, window.__defaults, c.show || {}, { travel: false });
+      Object.assign(state.show, window.__defaults, c.show || {}, { motion: false });
       state.cam.yaw = c.yaw;
       state.cam.pitch = c.pitch;
       N.selectLevel(li);
+      state.show.motion = c.show?.motion ?? window.__defaults.motion;
+      R.draw();
       // a press is a colour pressed before the first frame, or a colour and a page time
       state.presses = new Map();
       for (const press of c.flip || []) {
@@ -196,10 +200,8 @@ async function capture(page, c, keep) {
       const l = state.lvl;
       const idx = state.idx;
       if (c.slice === "mid") state.slice = SIDE - 1 - Math.round((l.min[2] + l.max[2]) / 2);
-      // what orbits and what travels starts again from the case's first time
       R.invalidatePick();
       R.draw();
-      state.show.travel = c.show?.travel ?? window.__defaults.travel;
 
       const kindAt = (at) =>
         at.v >= state.data.firstRecord

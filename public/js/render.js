@@ -7,6 +7,7 @@ import {
   skinsTable,
   platformCells,
   litNow,
+  settleCircuits,
   markerDestination,
   markerColour,
   markerNow,
@@ -145,40 +146,44 @@ function visible(idx, moving) {
   return out;
 }
 
-// What travels does so only while the display asks, from the frame the level
-// was opened with it on, one game frame at a time; turning it off forgets
-// where everything got to, so turning it on again starts the level afresh.
-let travel = { level: null, walkers: null, probe: null, roll: null };
-function travelling(l, idx, frame) {
-  if (!state.show.travel || !motionTable()) {
-    travel.level = null;
-    return null;
+// Everything that moves runs on its level's own clock, which starts at the
+// level's first frame as the level opens or motion is turned on, as play's
+// does, and stands at that frame while motion is off. Starting it keeps
+// every circuit as it is turned, and what travels starts where the level
+// puts it.
+let run = null;
+/** The frame of the level's clock everything that moves is drawn at. */
+export function clock() {
+  const table = motionTable();
+  if (!table || !state.show.motion) {
+    run = null;
+    return 0;
   }
-  if (travel.level !== l) {
-    travel = {
-      level: l,
-      walkers: walkers(l, idx, motionTable(), frame),
+  const now = frameAt(table, performance.now());
+  if (run?.level !== state.lvl) {
+    run = { level: state.lvl, at: now, travel: null };
+    settleCircuits();
+  }
+  return now - run.at;
+}
+
+/** Where what travels has got to by a frame of the level's clock, stepped
+    one game frame at a time, or null while the clock stands. */
+function travelling(l, idx, frame) {
+  if (!run) return null;
+  if (!run.travel) {
+    run.travel = {
+      walkers: walkers(l, idx, motionTable()),
       probe: probe(l, litNow),
       roll: dice(motionTable().dice),
     };
   }
+  const travel = run.travel;
   advance([...travel.walkers.values()], travel.probe, frame, travel.roll);
   const out = new Map();
   for (const [key, w] of travel.walkers) out.set(key, { w, ...place(w) });
   if (out.size) spinning = true;
   return out;
-}
-
-// Everything that moves runs on its level's own clock, which starts at the
-// level's first frame as the level opens, as play's does.
-let opened = { level: null, at: 0 };
-/** The frame of the level's clock everything that moves is drawn at. */
-export function clock() {
-  const table = motionTable();
-  if (!table) return 0;
-  const now = frameAt(table, performance.now());
-  if (opened.level !== state.lvl) opened = { level: state.lvl, at: now };
-  return now - opened.at;
 }
 
 export function draw() {
@@ -304,12 +309,13 @@ export function draw() {
   }
   if (state.show.start && l.camera) drawLook(ctx, l);
   drawScale(ctx);
-  if (spinning) animate();
+  if (spinning && state.show.motion) animate();
 }
 
 // The things that turn in play turn here, which means drawing again every
-// frame while any is on screen and the page is looked at; the frame is cheap
-// enough, and the loop ends itself when there is nothing left turning.
+// frame while any is on screen, motion is on and the page is looked at; the
+// frame is cheap enough, and the loop ends itself when there is nothing left
+// turning.
 let spinning = false;
 let queuedFrame = 0;
 function animate() {

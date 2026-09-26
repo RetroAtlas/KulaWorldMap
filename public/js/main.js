@@ -29,7 +29,7 @@ const HELP = [
   ["t o d l g s", "textures, objects, models, labels, ground grid, camera target"],
   ["n", "say in each label which face the thing stands on"],
   ["b", "outlines: the blocks' edges, the broken outlines and the platforms' routes"],
-  ["v", "let moving platforms and hazards travel, as in play"],
+  ["v", "motion: everything moving as in play, or the level held still as it starts"],
   ["x", "see what stands on the far faces through the blocks"],
   ["/", "search"],
   ["m", "show and hide the sidebar"],

@@ -1127,14 +1127,14 @@ test("the ball's shadow takes the same off every channel of the face beside it",
   expect(errors).toEqual([]);
 });
 
-test("what travels does so from the start, its label with it, until v stops it", async ({
+test("what travels does so from the start, its label with it, until v holds it", async ({
   page,
 }) => {
   const errors = trackErrors(page);
   // LEVEL 22's fast stars sway along their stretch without a stop
   await page.goto("/#HILLS/6/45,35/1");
   await settle(page);
-  await expect(page.locator("#showTravel")).toBeChecked();
+  await expect(page.locator("#showMotion")).toBeChecked();
   await page.keyboard.press("l");
   const at = () =>
     page.evaluate(async () => {
@@ -1155,7 +1155,7 @@ test("what travels does so from the start, its label with it, until v stops it",
   await page.waitForTimeout(300);
   expect(await at()).not.toEqual(before);
   await page.keyboard.press("v");
-  await expect(page.locator("#showTravel")).not.toBeChecked();
+  await expect(page.locator("#showMotion")).not.toBeChecked();
   const still = await at();
   await page.waitForTimeout(300);
   expect(await at()).toEqual(still);
@@ -1172,6 +1172,101 @@ test("a level's clock starts at its first frame as the level opens", async ({ pa
   await page.keyboard.press("]");
   await expect(page.locator("#chip")).toContainText("LEVEL 2");
   expect(await clock()).toBeLessThan(20);
+});
+
+/** A digest of what the map's canvas shows. */
+const picture = (page) =>
+  page.evaluate(async () => {
+    const cv = document.getElementById("cv");
+    const data = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
+    return [...new Uint8Array(await crypto.subtle.digest("SHA-256", data))].join();
+  });
+
+/** Wait for the world's textures to land and the drawer to finish sliding,
+    after which only what moves draws the map again. */
+const landed = (page) =>
+  page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { atlasFor }] = await Promise.all(["state.js", "atlas.js"].map(at));
+    while (!atlasFor(state.lvl.theme)) await new Promise(requestAnimationFrame);
+    await new Promise((r) => setTimeout(r, 300));
+  });
+
+/** How many frames the map draws of its own over a spell. */
+const drawn = (page, ms = 400) =>
+  page.evaluate(
+    (ms) =>
+      new Promise((done) => {
+        const g = document.getElementById("cv").getContext("2d");
+        let n = 0;
+        const clear = g.clearRect;
+        g.clearRect = function (...a) {
+          n++;
+          return clear.apply(this, a);
+        };
+        setTimeout(() => {
+          g.clearRect = clear;
+          done(n);
+        }, ms);
+      }),
+    ms,
+  );
+
+test("v holds the whole level still, the same every time, and draws nothing more", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // OBJ LEVEL has something of every kind that moves: things that turn and
+  // bob, spikes, vanishing blocks, beams, and all four captivators travelling
+  await page.goto("/#HILLS/19/45,35");
+  await settle(page);
+  await landed(page);
+  await expect(page.locator("#showMotion")).toBeChecked();
+  const moving = await picture(page);
+  await page.waitForTimeout(300);
+  expect(await picture(page)).not.toEqual(moving);
+  expect(await drawn(page)).toBeGreaterThan(8);
+
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await frame(page);
+  const still = await picture(page);
+  expect(await drawn(page)).toBe(0);
+  expect(await picture(page)).toEqual(still);
+  // and it is the picture the level holds whenever it is opened still
+  await page.keyboard.press("[");
+  await expect(page.locator("#chip")).not.toContainText("OBJ LEVEL");
+  await page.keyboard.press("]");
+  await expect(page.locator("#chip")).toContainText("OBJ LEVEL");
+  await frame(page);
+  expect(await picture(page)).toEqual(still);
+
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).toBeChecked();
+  expect(await drawn(page)).toBeGreaterThan(8);
+  expect(await picture(page)).not.toEqual(still);
+  expect(errors).toEqual([]);
+});
+
+test("where the system asks for reduced motion the map opens still, and a choice to move is kept", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await landed(page);
+  expect(await drawn(page)).toBe(0);
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
+  expect(await kept()).toBeNull();
+  await page.keyboard.press("v");
+  expect(await kept()).toEqual({ motion: true });
+  expect(await drawn(page)).toBeGreaterThan(8);
+  await page.reload();
+  await settle(page);
+  await expect(page.locator("#showMotion")).toBeChecked();
+  await page.keyboard.press("v");
+  expect(await kept()).toEqual({});
 });
 
 test("the camera target shows only on s", async ({ page }) => {
@@ -1191,12 +1286,12 @@ test("the display keeps only the switches set away from their defaults", async (
   await page.keyboard.press("l");
   expect(await kept()).toEqual({ labels: true });
   await page.keyboard.press("v");
-  expect(await kept()).toEqual({ labels: true, travel: false });
+  expect(await kept()).toEqual({ labels: true, motion: false });
   await page.keyboard.press("l");
-  expect(await kept()).toEqual({ travel: false });
+  expect(await kept()).toEqual({ motion: false });
   await page.reload();
   await settle(page);
-  await expect(page.locator("#showTravel")).not.toBeChecked();
+  await expect(page.locator("#showMotion")).not.toBeChecked();
   await expect(page.locator("#showLabels")).not.toBeChecked();
   await expect(page.locator("#showOutlines")).toBeChecked();
 });

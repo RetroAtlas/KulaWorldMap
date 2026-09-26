@@ -2,6 +2,7 @@ export const SIDE = 34;
 export const BLOCK = 34;
 
 const DEG = Math.PI / 180;
+const REDUCED = "(prefers-reduced-motion: reduce)";
 export const PITCH_MIN = -84;
 export const PITCH_MAX = 84;
 
@@ -16,7 +17,8 @@ export const state = {
   show: {
     objects: true,
     models: true,
-    travel: true,
+    // a visitor whose system asks for reduced motion opens a still map
+    motion: !globalThis.matchMedia?.(REDUCED).matches,
     through: false,
     labels: false,
     faces: true,

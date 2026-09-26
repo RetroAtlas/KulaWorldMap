@@ -15,7 +15,7 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${PORT}`,
     viewport: { width: 1280, height: 720 },
     deviceScaleFactor: 1, // the renderer multiplies by DPR unrounded; 1 keeps canvas px = CSS px
-    reducedMotion: "reduce",
+    contextOptions: { reducedMotion: "no-preference" },
   },
   projects: [{ name: "chromium", use: { browserName: "chromium" } }],
   webServer: {

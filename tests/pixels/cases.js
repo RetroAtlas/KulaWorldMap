@@ -72,7 +72,7 @@ const FLIPS = {
   outlines: { outlines: false },
   objects: { objects: false },
   models: { models: false },
-  travel: { travel: false },
+  motion: { motion: false },
   through: { through: true },
   labels: { labels: true },
   faces: { labels: true, faces: false },
@@ -88,7 +88,7 @@ const FLIPS = {
 };
 for (const name of ["LESSON", "OBJ", "F6", "L94", "B15", "H3", "H10", "L22"]) {
   for (const [flip, show] of Object.entries(FLIPS)) {
-    const extra = { show, frames: flip === "travel" ? [T0, T1] : [T1] };
+    const extra = { show, frames: flip === "motion" ? [T0, T1] : [T1] };
     if (flip === "hidden" || flip === "everythingOn") extra.slice = "mid";
     add(`B/${name}/${flip}/v1`, name, V1, extra);
     add(`B/${name}/${flip}/v3`, name, V3, extra);
@@ -132,7 +132,7 @@ add("E/L94/platform", "L94", V1, { select: "kind5", hover: "end", frames: two })
 add("E/L94/platform-still", "L94", V3, {
   select: "kind5",
   hover: "kind6",
-  show: { travel: false },
+  show: { motion: false },
   frames: two,
 });
 add("E/OBJ/vanishing", "OBJ", V1, { select: "kind7", hover: "kind3", frames: [T0, T1, T2] });
@@ -200,7 +200,8 @@ for (const c of cases) {
 }
 
 // Whether the frame goes on being drawn: each on its own, a thing that turns,
-// a block that cycles, a skin that cycles, a beam, and what travels.
+// a block that cycles, a skin that cycles, a beam, and what travels, and
+// none of them held still.
 const quiet = { objects: false, skins: false };
 export const live = [
   ["L1", {}],
@@ -212,12 +213,13 @@ export const live = [
   ["S8/beam-skinned", { objects: false }],
   ["L76/vanishing", quiet],
   ["L22/markers", { models: false, skins: false }],
-  ["L22/still", { models: false, skins: false, travel: false }],
+  ["L22/still", { models: false, skins: false, motion: false }],
   ["B1/swirl", { objects: false }],
   ["S5/invisible", { objects: false }],
   ["L94/platform", { objects: false, skins: false }],
-  ["L94/still", { objects: false, skins: false, travel: false }],
+  ["L94/still", { objects: false, skins: false, motion: false }],
   ["OBJ", {}],
+  ["OBJ/still", { motion: false }],
   ["OBJ/quiet", quiet],
   ["H10", {}],
   ["L51/wheel", { models: false, skins: false }],
