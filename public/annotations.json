@@ -90,6 +90,7 @@
     "5": {
       "name": "Teleporter",
       "by": "f3",
+      "facing": "f2",
       "state": "f4",
       "fields": {
         "f3": "circuit",

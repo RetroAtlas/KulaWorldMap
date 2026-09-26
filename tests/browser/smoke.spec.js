@@ -926,6 +926,9 @@ test("a teleporter's panel names where it leads, and going there is a find", asy
     showCell({ x, y, z, v: state.data.firstRecord + i });
   });
   await expect(page.locator("#detail")).toContainText("leads toitself");
+  // and names the way the ball faces as it comes out
+  await expect(page.locator("#detail")).toContainText("facing+x");
+  await expect(page.locator("#detail")).toContainText("f2 facing4");
   await expect(page.locator("#detail .goto")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
