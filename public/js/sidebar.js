@@ -224,8 +224,8 @@ export function restore() {
     const v = JSON.parse(localStorage.getItem(KEY) || "null");
     if (v) {
       state.panMode = !!v.panMode;
-      delete v.panMode;
-      Object.assign(state.show, v);
+      // a saved switch the display does not have is left behind
+      for (const k of Object.keys(DEFAULTS)) if (k in v) state.show[k] = v[k];
     }
   } catch {
     /* ignore */
