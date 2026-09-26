@@ -47,21 +47,26 @@ export function thingDisc(m, where, l) {
 const switchedOff = (m) => markerNow(m) === "off";
 
 // A boost button is pressed by the ball standing within its reach: the ball
-// at the level's start, on its own face and its radius off it. Positions are
-// in the game's units, the button's where it stands on its face.
+// at the level's start, on its own face and its radius off it, and the block
+// under the pointer or the one selected, each as the ball on the face of that
+// block the button stands on, which is as near as a block can say. Positions
+// are in the game's units, the button's where it stands on its face.
 const point = (c, face, off) =>
   [c.x, c.y, c.z].map((v, i) => (v + 0.5) / modelUnit() + FACE_NORMAL[face][i] * off);
-const balls = new WeakMap();
+const starts = new WeakMap();
 function pressedAt(motion, m, home, l) {
-  if (!balls.has(l)) {
+  const half = 0.5 / modelUnit();
+  if (!starts.has(l)) {
     const r = ballFor(l)?.box[1][1] ?? 0;
-    balls.set(
-      l,
-      startsOf(l).map((s) => point(s, s.face, 0.5 / modelUnit() + r)),
-    );
+    starts.set(l, { r, balls: startsOf(l).map((s) => point(s, s.face, half + r)) });
   }
-  const button = point(home, m.face, 0.5 / modelUnit());
-  return balls.get(l).some((b) => inReach(motion, b, button));
+  const { r, balls } = starts.get(l);
+  const button = point(home, m.face, half);
+  const pointed = [state.hover, state.selected].filter(Boolean);
+  return (
+    balls.some((b) => inReach(motion, b, button)) ||
+    pointed.some((c) => inReach(motion, point(c, m.face, half + r), button))
+  );
 }
 
 /** An object as itself where it has a mesh and the display asks for it, else
