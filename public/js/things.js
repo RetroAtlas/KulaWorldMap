@@ -179,7 +179,7 @@ function drawObject(
     const p = pose(motionTable(), motion, m, frame, phase, time);
     about = p.about;
     wide = 1 + p.squash;
-    tall = (1 - 2 * p.squash) * height;
+    tall = 1 - 2 * p.squash;
     // squashed about its centre, so it is stood lower by as much, and its
     // underside stays on the face while its top comes down
     lift = GAP + (rest - GAP) * tall;
@@ -210,6 +210,9 @@ function drawObject(
     sx = Math.sin(about[0] * Math.PI * 2);
   const cz = Math.cos(about[2] * Math.PI * 2),
     sz = Math.sin(about[2] * Math.PI * 2);
+  // A polygon is sorted by the depth it has unpressed, so that a model pressed
+  // flat keeps the order of its layers, the top one over the rest, where
+  // their depths would otherwise tie and trade places as the view turns.
   const pts = [];
   for (let i = 0; i < shown.length; i += 3) {
     // about its own z, the way it points, then about its own x, across the
@@ -219,10 +222,11 @@ function drawObject(
       tz = shown[i + 2] * unit;
     const y = (ty * cx - tz * sx) * tall,
       z = (ty * sx + tz * cx) * wide;
-    const wx = o[0] + x * right[0] + y * up[0] + z * fwd[0];
-    const wy = o[1] + x * right[1] + y * up[1] + z * fwd[1];
-    const wz = o[2] + x * right[2] + y * up[2] + z * fwd[2];
-    pts.push([...screen(wx, wy, wz), depth(wx, wy, wz)]);
+    const at = (k, h) => o[k] + x * right[k] + y * h * up[k] + z * fwd[k];
+    pts.push([
+      ...screen(at(0, height), at(1, height), at(2, height)),
+      depth(at(0, 1), at(1, 1), at(2, 1)),
+    ]);
   }
   const polys = [];
   model.polys.forEach((poly, k) => {
