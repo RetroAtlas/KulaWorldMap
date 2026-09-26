@@ -12,6 +12,9 @@ export const state = {
   li: -1,
   cam: { yaw: 45, pitch: 35, zoom: 1, panX: 0, panY: 0 },
   target: [17, 17, 17],
+  // how the map framed the view, which frames it again at every size the
+  // canvas takes until the camera is moved on purpose, and null after that
+  framing: null,
   slice: SIDE - 1,
   view: { w: 0, h: 0, dpr: 1 },
   show: {

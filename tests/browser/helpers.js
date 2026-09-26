@@ -21,3 +21,11 @@ export async function settle(page) {
 
 export const frame = (page) =>
   page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+
+/** Wait for the page's transitions to end and the canvas to take the size they leave it. */
+export async function still(page) {
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))),
+  );
+  await frame(page);
+}

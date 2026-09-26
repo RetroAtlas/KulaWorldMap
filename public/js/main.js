@@ -1,9 +1,9 @@
 import { $, on } from "./dom.js";
 import { state } from "./state.js";
-import { resize, onFirstSize } from "./render.js";
+import { resize, onResize } from "./render.js";
 import { loadJson, setAnnotations, setObjects } from "./data.js";
 import { buildWorlds, buildKinds, wireDisplay, restore, setSidebar } from "./sidebar.js";
-import { applyHash, selectLevel, fit, chip, writeHash } from "./navigate.js";
+import { applyHash, selectLevel, writeHash } from "./navigate.js";
 import { openModal } from "./modal.js";
 import "./a11y.js";
 import "./interaction.js";
@@ -78,9 +78,9 @@ Promise.all([
     `Press <kbd style="margin:0">?</kbd> for the keys.`;
   buildWorlds();
   wireDisplay();
-  onFirstSize(() => {
-    fit();
-    chip();
+  onResize(() => {
+    if (!state.framing) return;
+    state.framing();
     writeHash();
   });
   resize();

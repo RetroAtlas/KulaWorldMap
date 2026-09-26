@@ -36,17 +36,15 @@ export function selectLevel(i, { keepView = false } = {}) {
   writeHash(left && !keepView);
 }
 
-/** Centre on the level and pick a zoom that shows all of it. */
+/** Centre on the level and pick a zoom that shows all of it, and keep the
+    view framed so as the canvas resizes. */
 export function fit() {
   const l = state.lvl;
   if (!l) return;
+  state.framing = fit;
   // Fitting against a view of no size yields the zoom clamp rather than a fit,
-  // so wait for the size to arrive and fit then.
-  if (!state.view.w || !state.view.h) {
-    state.needsFit = true;
-    return;
-  }
-  state.needsFit = false;
+  // so the fit waits for the size to arrive.
+  if (!state.view.w || !state.view.h) return;
   state.target = levelCentre(l);
   state.cam.panX = state.cam.panY = 0;
   const [tx, ty] = project(...state.target);
@@ -77,6 +75,7 @@ export function fit() {
 export function centreOn(x, y, z) {
   state.target = [x + 0.5, y + 0.5, z + 0.5];
   state.cam.panX = state.cam.panY = 0;
+  state.framing = null;
 }
 
 export function chip() {
@@ -173,6 +172,9 @@ export function applyHash() {
   if (scale > 0) state.cam.zoom = scale;
   const offset = numbers(pan, 2);
   if (offset) [state.cam.panX, state.cam.panY] = offset;
+  // A link that names where the camera is holds it there, and one that names
+  // no more than the turn is framed at that turn.
+  if (scale > 0 || centre || offset) state.framing = null;
   const ceiling = numbers(slice, 1)?.[0];
   state.slice = Number.isInteger(ceiling) && ceiling >= 0 ? Math.min(SIDE - 1, ceiling) : SIDE - 1;
   const at = numbers(picked, 3);

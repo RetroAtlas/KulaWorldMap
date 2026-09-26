@@ -16,9 +16,17 @@ const redraw = () => {
 };
 
 const ORBIT = 0.42; // degrees per pixel dragged
+const CLICK = 5; // how far a press may wander and still be a click
 
 let drag = null;
 let moved = 0;
+
+// Moving the camera on purpose leaves it where it is put rather than framed
+// again as the canvas resizes. A press that has not wandered past a click has
+// moved it by accident.
+function hold() {
+  if (!drag || moved >= CLICK) state.framing = null;
+}
 
 const panning = (e) => e.shiftKey || e.button === 1 || e.button === 2 || state.panMode;
 
@@ -56,7 +64,7 @@ cv.addEventListener("pointermove", (e) => {
 
 cv.addEventListener("pointerup", (e) => {
   const r = cv.getBoundingClientRect();
-  if (drag && moved < 5) {
+  if (drag && moved < CLICK) {
     const c = cellAt(e.clientX - r.left, e.clientY - r.top);
     if (c && surveying()) {
       place(c, e.altKey);
@@ -81,6 +89,7 @@ cv.addEventListener("pointerleave", () => {
 });
 
 export function orbit(dx, dy) {
+  hold();
   pivot();
   // Dragging turns the level under the hand, so the camera goes the other way.
   state.cam.yaw = (state.cam.yaw - dx * ORBIT) % 360;
@@ -91,6 +100,7 @@ export function orbit(dx, dy) {
 }
 
 export function pan(dx, dy) {
+  hold();
   const k = state.cam.zoom * BLOCK;
   state.cam.panX -= dx / k;
   state.cam.panY -= dy / k;
@@ -99,6 +109,7 @@ export function pan(dx, dy) {
 }
 
 export function setYaw(deg) {
+  hold();
   pivot();
   state.cam.yaw = ((deg % 360) + 360) % 360;
   redraw();
@@ -154,6 +165,7 @@ cv.addEventListener(
 );
 
 export function zoomAt(px, py, factor) {
+  hold();
   const { w, h } = state.view;
   const before = state.cam.zoom * BLOCK;
   state.cam.zoom = Math.max(0.08, Math.min(5, state.cam.zoom * factor));

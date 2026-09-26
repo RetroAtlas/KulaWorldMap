@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { trackErrors, settle, frame } from "./helpers.js";
+import { trackErrors, settle, frame, still } from "./helpers.js";
 
 test("the map boots into standards mode with nothing on the console", async ({ page }) => {
   const errors = trackErrors(page);
@@ -643,6 +643,126 @@ test("the view turns about a find only while it stays selected", async ({ page }
   expect(Math.abs(moved.dy)).toBeLessThan(1e-6);
   await drag();
   expect((await probe()).target).toEqual(cleared.centre);
+});
+
+/** The zoom the view is at, and the one a fit taken now gives it. */
+const fitted = (page) =>
+  page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { fit } = await import(new URL("js/navigate.js", location.href).href);
+    const zoom = state.cam.zoom;
+    fit();
+    const width = document.getElementById("cv").clientWidth;
+    return { zoom, fit: state.cam.zoom, width, measured: state.view.w };
+  });
+
+/** A press on the map that wanders `dx` and `dy` before it lets go. */
+const press = (page, dx, dy) =>
+  page.evaluate(
+    ([dx, dy]) => {
+      const cv = document.getElementById("cv");
+      const at = (type, x, y) =>
+        cv.dispatchEvent(new PointerEvent(type, { clientX: x, clientY: y, pointerId: 1 }));
+      at("pointerdown", 600, 400);
+      at("pointermove", 600 + dx, 400 + dy);
+      at("pointerup", 600 + dx, 400 + dy);
+    },
+    [dx, dy],
+  );
+
+test("a view the map framed is framed again as the canvas settles and resizes", async ({
+  page,
+}) => {
+  await page.goto("/#HILLS/19/200,10");
+  await settle(page);
+  await still(page);
+  const settled = await fitted(page);
+  expect(settled.measured).toBe(settled.width);
+  expect(settled.zoom).toBe(settled.fit);
+
+  await page.setViewportSize({ width: 1100, height: 640 });
+  await still(page);
+  const resized = await fitted(page);
+  expect(resized.measured).toBeLessThan(settled.measured);
+  expect(resized.zoom).toBe(resized.fit);
+  expect(page.url()).toContain(`/${resized.fit.toFixed(2)}/`);
+
+  // a press that wanders less than a drag is a click, and leaves the view framed
+  await press(page, 2, 1);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await still(page);
+  const clicked = await fitted(page);
+  expect(clicked.measured).toBe(settled.measured);
+  expect(clicked.zoom).toBe(clicked.fit);
+});
+
+test("a camera moved on purpose stays where it was put as the canvas resizes, until f", async ({
+  page,
+}) => {
+  await page.goto("/#HILLS/19/200,10");
+  await settle(page);
+  await still(page);
+  const camera = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      return { ...state.cam, target: state.target };
+    });
+  const sizes = [
+    { width: 1100, height: 640 },
+    { width: 1280, height: 720 },
+  ];
+  let n = 0;
+  const resize = async () => {
+    await page.setViewportSize(sizes[n++ % sizes.length]);
+    await still(page);
+  };
+  const search = page.locator("#search");
+  const touches = [
+    ["a drag", () => press(page, 40, 20)],
+    [
+      "the wheel",
+      () =>
+        page.evaluate(() =>
+          document.getElementById("cv").dispatchEvent(
+            new WheelEvent("wheel", {
+              deltaY: -120,
+              clientX: 500,
+              clientY: 300,
+              cancelable: true,
+            }),
+          ),
+        ),
+    ],
+    ["an arrow", () => page.keyboard.press("ArrowLeft")],
+    ["a zoom key", () => page.keyboard.press("-")],
+    ["a snap of the turn", () => page.keyboard.press("q")],
+    [
+      "a find",
+      async () => {
+        const cell = await page.evaluate(async () => {
+          const { state } = await import(new URL("js/state.js", location.href).href);
+          const c = [...state.idx.cells.values()][0];
+          return `${c.x},${c.y},${c.z}`;
+        });
+        await search.fill(cell);
+        await search.press("Enter");
+      },
+    ],
+    ["a link naming its zoom", () => page.evaluate(() => (location.hash = "#HILLS/19/200,10/1.2"))],
+  ];
+  for (const [what, touch] of touches) {
+    await page.keyboard.press("f");
+    await touch();
+    await frame(page);
+    const before = await camera();
+    await resize();
+    expect(await camera(), what).toEqual(before);
+  }
+
+  await page.keyboard.press("f");
+  await resize();
+  const framed = await fitted(page);
+  expect(framed.zoom).toBe(framed.fit);
 });
 
 test("arriving somewhere is spoken, and names the map with it", async ({ page }) => {
