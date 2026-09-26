@@ -132,11 +132,12 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null, painted =
 // entry of its own for stands where the game draws it. What moves in play moves
 // here at the game's rate, from the table the build read off the executable,
 // about those same axes; a thing that bobs is stood its bob's reach higher so
-// that it never dips into its face, and a device switched off stands still,
-// as it does in play. The polygons are filled back to front in
-// their own colours, since the shading is baked into them, and both sides are
-// drawn, since the meshes wind their faces either way. A thing whose face is
-// painted with the game's own shadow casts none of its own.
+// that it never dips into its face, and a device switched off stands still
+// at the angle it starts at, as one that starts off does in play. The polygons
+// are filled back to front in their own colours, since the shading is baked
+// into them, and both sides are drawn, since the meshes wind their faces
+// either way. A thing whose face is painted with the game's own shadow casts
+// none of its own.
 const GAP = 0.03; // between a thing and its face, in blocks
 const SHADOW = "rgba(0 0 0 / 0.32)";
 const GLASS = 0.55; // how much a translucent polygon covers
@@ -176,14 +177,13 @@ function drawObject(
   if (going) for (let i = 0; i < 3; i++) o[i] += going.offset[i];
   const side = cross(up, forward);
   if (motion) {
-    const p = pose(motionTable(), motion, m, frame, phase, time);
+    const p = pose(motionTable(), motion, m, switchedOff(m) ? 0 : frame, phase, time);
     about = p.about;
     wide = 1 + p.squash;
     tall = 1 - 2 * p.squash;
     // squashed about its centre, so it is stood lower by as much, and its
     // underside stays on the face while its top comes down
     lift = GAP + (rest - GAP) * tall;
-    if (switchedOff(m)) about = [0, 0, 0];
     if (m.type === STONE) {
       about[1] += ACROSS;
       about[2] = -(going ? going.roll / motionTable().turn : about[2]);
