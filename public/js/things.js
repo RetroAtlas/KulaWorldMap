@@ -1,4 +1,4 @@
-import { state, BLOCK, depth, screen, cellKey } from "./state.js";
+import { state, BLOCK, depth, facing, screen, cellKey } from "./state.js";
 import {
   FACE_NORMAL,
   FACE_NAME,
@@ -17,9 +17,11 @@ import {
   cross,
   startsOf,
   ballFor,
+  shadowSprites,
 } from "./data.js";
 import { phasesOf, pose, orbit, press, inReach } from "./motion.js";
 import { label } from "./overlays.js";
+import { NEUTRAL } from "./atlas.js";
 
 // The types the game draws on the face and nowhere else, so that once the
 // face is painted the marker would say the same thing twice; and so would a
@@ -142,7 +144,6 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
 // back to front in their own colours, since the shading is baked into them,
 // and both sides are drawn, since the meshes wind their faces either way.
 const GAP = 0.03; // between a thing and its face, in blocks
-const SHADOW = "rgba(0 0 0 / 0.32)";
 const GLASS = 0.55; // how much a translucent polygon covers
 // The rolling stone's axle is its model's z, which lies across the way it
 // rolls, so it stands a quarter turn from the way its facing gives and rolls
@@ -162,7 +163,8 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
   let about = [0, 0, 0];
   let shown = model.frames[0];
   let wide = 1,
-    tall = 1;
+    tall = 1,
+    bounce = 0;
   if (going) for (let i = 0; i < 3; i++) o[i] += going.offset[i];
   const side = cross(up, forward);
   if (motion) {
@@ -179,6 +181,7 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
     }
     if (motion.bob) lift += (motion.bob.reach + p.bob) * unit;
     lift += p.lift * unit;
+    if (motion.bounce) bounce = p.lift / motion.bounce.rise;
     if (round) {
       // the orbit is in the face's own plane, its x across the way the thing points
       for (let i = 0; i < 3; i++) {
@@ -189,11 +192,19 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
     shown = model.frames[p.frame] || shown;
   }
   for (let i = 0; i < 3; i++) o[i] += up[i] * lift;
-  if (motion?.shadow) drawShadow(ctx, m, c, model, unit, going?.offset);
   const ct = Math.cos(about[1] * Math.PI * 2),
     st = Math.sin(about[1] * Math.PI * 2);
   const fwd = forward.map((v, i) => v * ct + side[i] * st);
   const right = cross(up, fwd);
+  const shade = motion?.shadow;
+  if (shade) {
+    let strength = shade.strength;
+    if (shade.fade) strength -= shade.fade * bounce;
+    // the ball's middle is as far off its face as the model reaches below it
+    if (shade.top) strength = (strength * (shade.top + model.box[0][1])) / shade.over;
+    const along = shade.turns ? fwd : TANGENT[m.face];
+    drawShadow(ctx, m, c, shade, unit, going?.offset, along, strength, shade.squash ? wide : 1);
+  }
   const cx = Math.cos(about[0] * Math.PI * 2),
     sx = Math.sin(about[0] * Math.PI * 2);
   const cz = Math.cos(about[2] * Math.PI * 2),
@@ -336,27 +347,70 @@ function drawMarker(ctx, m, c) {
   ctx.restore();
 }
 
-// A thing the game draws a shadow under casts one straight down onto its face,
-// whatever the light: a disc on the face's plane, under the thing.
-const SHADOW_SIDES = 14;
-function drawShadow(ctx, m, c, model, unit, offset = null) {
-  const [lo, hi] = model.box;
-  const r = (Math.max(hi[0], -lo[0], hi[2], -lo[2]) * unit) / 2 + 0.06;
-  const up = FACE_NORMAL[m.face];
-  const a = TANGENT[m.face];
-  const b = cross(up, a);
-  const o = at(c, m.face, 0.005);
-  if (offset) for (let i = 0; i < 3; i++) o[i] += offset[i];
-  ctx.fillStyle = SHADOW;
-  ctx.beginPath();
-  for (let i = 0; i < SHADOW_SIDES; i++) {
-    const ang = (i / SHADOW_SIDES) * Math.PI * 2;
-    const ca = Math.cos(ang) * r,
-      sa = Math.sin(ang) * r;
-    const [x, y] = screen(...o.map((v, k) => v + a[k] * ca + b[k] * sa));
-    if (i) ctx.lineTo(x, y);
-    else ctx.moveTo(x, y);
+// The game's shadow is a square laid on the face under the thing, textured
+// with one of its sprites and taken away from what is behind it, as strong as
+// its colour over neutral. A canvas cannot subtract, so the square's box is
+// turned over, the sprite added and the box turned back, which leaves each
+// pixel what the sprite takes off it and never less than nothing, where the
+// pixel was opaque. It is drawn only on the map's own canvas, which is opaque
+// before anything is drawn on it; dropping it on faces turned away, as the
+// game does, keeps it off the see-through layer, which starts transparent.
+const sprites = [];
+function spriteOf(k) {
+  const rows = shadowSprites()?.[k];
+  if (!rows) return null;
+  if (!sprites[k]) {
+    const cv = document.createElement("canvas");
+    cv.width = rows[0].length;
+    cv.height = rows.length;
+    const g = cv.getContext("2d");
+    const img = g.createImageData(cv.width, cv.height);
+    rows.forEach((row, v) =>
+      [...row].forEach((ch, u) => {
+        // a level of 31 is a whole channel, as a texel's is
+        const level = parseInt(ch, 32) << 3;
+        img.data.set([level, level, level, level ? 255 : 0], (v * cv.width + u) * 4);
+      }),
+    );
+    g.putImageData(img, 0, 0);
+    sprites[k] = cv;
   }
-  ctx.closePath();
-  ctx.fill();
+  return sprites[k];
+}
+
+function drawShadow(ctx, m, c, shade, unit, offset, along, strength, scale) {
+  const up = FACE_NORMAL[m.face];
+  const sprite = spriteOf(shade.sprite);
+  if (!sprite || strength <= 0 || !facing(up)) return;
+  const half = motionTable().shadow.half * unit * scale;
+  const o = at(c, m.face, shade.off * unit);
+  if (offset) for (let i = 0; i < 3; i++) o[i] += offset[i];
+  const across = cross(up, along);
+  const t = ctx.getTransform();
+  const corner = (i, j) => {
+    const [x, y] = screen(...o.map((v, k) => v + (along[k] * i + across[k] * j) * half));
+    return t.transformPoint(new DOMPoint(x, y));
+  };
+  const p = [corner(-1, -1), corner(1, -1), corner(-1, 1), corner(1, 1)];
+  const x0 = Math.max(0, Math.floor(Math.min(...p.map((q) => q.x))));
+  const y0 = Math.max(0, Math.floor(Math.min(...p.map((q) => q.y))));
+  const x1 = Math.min(ctx.canvas.width, Math.ceil(Math.max(...p.map((q) => q.x))));
+  const y1 = Math.min(ctx.canvas.height, Math.ceil(Math.max(...p.map((q) => q.y))));
+  if (x1 <= x0 || y1 <= y0) return;
+  const n = sprite.width;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = "difference";
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = Math.min(1, strength / NEUTRAL);
+  const [a, b, d] = p;
+  ctx.setTransform((b.x - a.x) / n, (b.y - a.y) / n, (d.x - a.x) / n, (d.y - a.y) / n, a.x, a.y);
+  ctx.drawImage(sprite, 0, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "difference";
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.restore();
 }

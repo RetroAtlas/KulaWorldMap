@@ -1088,6 +1088,45 @@ test("a thing on a face turned away shows where no block covers it, and x shows 
   expect(errors).toEqual([]);
 });
 
+test("the ball's shadow takes the same off every channel of the face beside it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0/30,60");
+  await settle(page);
+  // what drawing the objects takes off the face a little way from the ball's
+  // middle, all round it, in one frame each
+  const drops = await page.evaluate(async () => {
+    const { state, screen } = await import(new URL("js/state.js", location.href).href);
+    const { draw } = await import(new URL("js/render.js", location.href).href);
+    const [key] = [...state.idx.markers].find(([, ms]) => ms.some((m) => m.type === 30));
+    const c = state.idx.cells.get(key);
+    const g = document.getElementById("cv").getContext("2d");
+    const dpr = state.view.dpr;
+    const points = [
+      [0.25, 0],
+      [-0.25, 0],
+      [0, 0.25],
+      [0, -0.25],
+    ].map(([dx, dy]) => screen(c.x + 0.5 + dx, c.y + 0.5 + dy, c.z));
+    const at = (objects) => {
+      state.show.objects = objects;
+      draw();
+      return points.map(([x, y]) =>
+        [...g.getImageData(Math.round(x * dpr), Math.round(y * dpr), 1, 1).data].slice(0, 3),
+      );
+    };
+    const on = at(true);
+    const off = at(false);
+    state.show.objects = true;
+    draw();
+    return on.map((p, i) => p.map((v, k) => off[i][k] - v));
+  });
+  const shadowed = drops.filter((d) => d[0] > 0 && d.every((v) => Math.abs(v - d[0]) <= 1));
+  expect(shadowed.length).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
+
 test("what travels does so from the start, its label with it, until v stops it", async ({
   page,
 }) => {

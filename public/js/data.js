@@ -19,15 +19,17 @@ export const setAnnotations = (a) => {
   ann = { worlds: {}, kinds: {}, types: {}, levels: {}, ...a };
 };
 
-let shapes = { block: 512, types: {}, balls: [], motion: null, skins: null };
+let shapes = { block: 512, types: {}, balls: [], shadows: [], motion: null, skins: null };
 export const setObjects = (o) => {
-  shapes = { block: 512, types: {}, balls: [], motion: null, skins: null, ...o };
+  shapes = { block: 512, types: {}, balls: [], shadows: [], motion: null, skins: null, ...o };
 };
 export const modelUnit = () => 1 / shapes.block;
 /** The rates the build read off the executable, or null where the file has none. */
 export const motionTable = () => shapes.motion;
 /** What the game paints on every face, read off the executable, or null where the file has none. */
 export const skinsTable = () => shapes.skins;
+/** The game's shadow sprites, each a row of texels to a string, in base 32. */
+export const shadowSprites = () => shapes.shadows;
 export const motionOf = (m) =>
   m.face === null
     ? null
