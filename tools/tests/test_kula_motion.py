@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
-from kula_motion import PHASES, Code, laser, spike_cycle, table, vanish_cycle  # noqa: E402
+from kula_motion import PHASES, SHADOW_SQUARE, Code, laser, shadow_half, spike_cycle, table, vanish_cycle  # noqa: E402
 
 R = {"v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "s0": 16, "zero": 0}
 
@@ -59,6 +59,12 @@ GAME = {
     "laser.width": 7, "laser.width.back": -7, "laser.colour.0a": 3, "laser.colour.0b": 11,
     "laser.colour.1": 19, "laser.colour.2": 11, "laser.colour.3": 3, "laser.step": 1,
     "laser.mode": 32, "laser.levels": [31, 27, 23, 19, 15, 11, 25, 11, 12, 4, 6],
+    "shadow.sprite": 14, "shadow.sprites": 2, "shadow.half": 150,
+    "shadow.drop.50": -200, "shadow.drop.51": -200, "shadow.drop.52": -200, "shadow.drop.53": -200,
+    "shadow.strength.50": 128, "shadow.strength.51": 128, "shadow.strength.52": 128,
+    "shadow.strength.53": 128, "shadow.sprite.51": 1, "shadow.strength.56": 128,
+    "shadow.corkscrew.drop": 170, "shadow.corkscrew.fade": 48,
+    "shadow.ball.top": 512, "shadow.ball.shift": 7, "shadow.ball.over": 412,
 }
 
 
@@ -103,6 +109,29 @@ class Reads(unittest.TestCase):
         c = code(sll("v1", "v0", 1), lh("v0", "a0", 8), addu("v1", "v1", "v0"))
         with self.assertRaises(SystemExit):
             c.multiplier(AT, 3, "v0", "v1")
+
+
+class Shadow(unittest.TestCase):
+    def square(self, corners):
+        """An executable whose draws load these four corners."""
+        lui_at, addiu_at = SHADOW_SQUARE
+        at = 0x800a0040 - EXE_BASE
+        blob = bytearray(at + 8 * len(corners))
+        struct.pack_into("<I", blob, lui_at - EXE_BASE, lui("a0", 0x000a))
+        struct.pack_into("<I", blob, addiu_at - EXE_BASE, addiu("a0", "a0", 0x40))
+        for i, c in enumerate(corners):
+            struct.pack_into("<4h", blob, at + 8 * i, *c)
+        return Code(bytes(blob))
+
+    def test_the_square_is_read_as_how_far_it_reaches_from_its_middle(self):
+        c = self.square([(150, 0, 150, 0), (-150, 0, 150, 0), (150, 0, -150, 0), (-150, 0, -150, 0)])
+        self.assertEqual(shadow_half(c), 150)
+
+    def test_a_shape_that_is_not_a_flat_square_stops_the_reading(self):
+        for corners in ([(150, 0, 150, 0), (-150, 0, 150, 0), (150, 0, -150, 0), (-150, 0, -140, 0)],
+                        [(150, 0, 150, 0), (-150, 9, 150, 0), (150, 0, -150, 0), (-150, 0, -150, 0)]):
+            with self.assertRaises(SystemExit):
+                shadow_half(self.square(corners))
 
 
 def rise_at(seq):
@@ -210,6 +239,20 @@ class Table(unittest.TestCase):
         self.assertNotIn("entry", t["types"]["37"])
         self.assertEqual(t["dice"], {"seed": 1, "times": 1103515245, "plus": 12345})
         self.assertEqual(set(t["types"]["10"]["press"]), {"start", "full", "sink", "rise", "reach"})
+        self.assertEqual(t["shadow"], {"half": 150})
+        for k in ("50", "52", "53"):
+            self.assertEqual(t["types"][k]["shadow"], {"sprite": 0, "off": 0, "strength": 128})
+        self.assertEqual(t["types"]["51"]["shadow"],
+                         {"sprite": 1, "off": 0, "strength": 128, "turns": True})
+        self.assertEqual(t["types"]["56"]["shadow"],
+                         {"sprite": 0, "off": 30, "strength": 128, "fade": 48})
+        self.assertEqual(t["types"]["30"]["shadow"],
+                         {"sprite": 0, "off": 0, "strength": 128, "top": 512, "over": 412,
+                          "squash": True})
+        self.assertEqual({k for k, v in t["types"].items() if "shadow" in v},
+                         {"30", "50", "51", "52", "53", "56"})
+        with self.assertRaises(SystemExit):
+            table({**r, "shadow.sprite.51": 2}, 30)
         self.assertEqual(set(t["types"]), {str(k) for k in
                                            (5, 7, 10, 11, 26, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42,
                                             43, 44, 45, 46, 47, 50, 51, 52, 53, 56)})

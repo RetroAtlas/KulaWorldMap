@@ -8,10 +8,11 @@ import struct
 import sys
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_ggi import GROUP, PREFIX, QUAD, Model  # noqa: E402
+from kula_ggi import GROUP, PREFIX, QUAD, TEXTURES, Model, shadows  # noqa: E402
 
 
 def packed(frames):
@@ -83,6 +84,31 @@ class Reads(unittest.TestCase):
     def test_the_packing_is_twenty_bytes_a_three(self):
         self.assertEqual(GROUP, 20)
         self.assertEqual(len(packed([[(0, 0, 0)] * 4])), PREFIX + 2 * GROUP)
+
+
+def sprites(palette, abr=2):
+    """A .GGI whose last section holds one 4 by 2 sprite at 4 bits, its
+    pixels naming palette entries 0, 1, 2, 0 and then 1 four times."""
+    section = struct.pack("<I", 1) + struct.pack("<hh", 4, abr)
+    section += struct.pack("<HHhH", 0, 10, 0, 0) + struct.pack("<16H", *palette, *[0] * (16 - len(palette)))
+    section += struct.pack("<4H", 0, 20, 4, 2) + bytes((0x10, 0x02, 0x11, 0x11))
+    return SimpleNamespace(blob=section, bounds=[0] * TEXTURES + [0, len(section)], header=[0] * 6)
+
+
+GREY = 0x421
+STP = 0x8000
+
+
+class Shadows(unittest.TestCase):
+    def test_a_shadow_ships_what_each_texel_takes_off_in_base_32(self):
+        g = sprites([0, STP | 3 * GREY, STP | 10 * GREY])
+        self.assertEqual(shadows(g, 0, 1), [["03a0", "3333"]])
+
+    def test_a_tinted_or_opaque_texel_or_another_blend_stops_the_build(self):
+        for g in (sprites([0, STP | 3, STP | 10 * GREY]), sprites([0, 3 * GREY, STP | 10 * GREY]),
+                  sprites([0, STP | 3 * GREY, STP | 10 * GREY], abr=1)):
+            with self.assertRaises(SystemExit):
+                shadows(g, 0, 1)
 
 
 if __name__ == "__main__":

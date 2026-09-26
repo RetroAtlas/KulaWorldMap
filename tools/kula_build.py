@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import EXE, THEMES, open_disc, packs
-from kula_ggi import FILE as GGI, Ggi, write_objects
+from kula_ggi import FILE as GGI, Ggi, shadows, write_objects
 from kula_level import Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
 from kula_motion import Code, readings, table
 from kula_pak import Pak
@@ -111,15 +111,18 @@ def main():
 
     placed = {o["type"] for l in levels for r in l["records"] for o in r["on"]}
     code = Code(disc.read_file(EXE))
-    motion = table(readings(code), speeds.pop())
+    r = readings(code)
+    motion = table(r, speeds.pop())
     skins = skins_table(code, {t: disc.read_file(f"/{t}/{t}.TGI") for t in THEMES})
     if skins["copycat"] not in {l["pack"] for l in levels}:
         sys.exit(f"the skins name {skins['copycat']}, which is no pack on the disc")
-    shapes = write_objects(Ggi(disc.read_file(GGI)), OBJECTS, placed, motion, skins)
+    g = Ggi(disc.read_file(GGI))
+    shapes = write_objects(g, OBJECTS, placed, motion, skins,
+                           shadows(g, r["shadow.sprite"], r["shadow.sprites"]))
     models = sum(len(v) for v in shapes["types"].values()) + len(shapes["balls"])
     print(f"{len(shapes['types'])} object types and the ball drawn by {models} models, "
           f"{len(motion['types'])} types and {len(motion['kinds'])} kinds of block in motion, "
-          f"the skins of {len(skins['sets'])} sets of faces "
+          f"the skins of {len(skins['sets'])} sets of faces, {len(shapes['shadows'])} shadows "
           f"-> {OBJECTS.relative_to(OUT.parent.parent.parent)} ({OBJECTS.stat().st_size/1024:.0f} KB)")
 
 

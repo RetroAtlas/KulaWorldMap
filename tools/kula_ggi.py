@@ -264,6 +264,52 @@ def texel(page, t, u, v):
     return rgb(word) if word else (0, 0, 0, 0)
 
 
+def palette_word(page, t, u, v):
+    """The palette word a paletted texture's pixel names, flags and all."""
+    row = (t["y"] + v) * VRAM_W
+    if t["bpp"] == 8:
+        index = page[(row + t["x"]) * 2 + u]
+    else:
+        byte = page[(row + t["x"]) * 2 + u // 2]
+        index = byte & 15 if u % 2 == 0 else byte >> 4
+    px, py = t["clut"]
+    return struct.unpack_from("<H", page, (py * VRAM_W + px + index) * 2)[0]
+
+
+# The shadows the game draws under the ball and the captivators are sprites
+# counted past the group the header's six bounds end on, drawn in the blend
+# that takes each texel away from what is behind it. They ship as rows of a
+# character a texel, in base 32, what the texel takes off every channel, of
+# 31: grey, since a shadow darkens without tinting, and semi-transparent
+# wherever it is not nothing, since only such a texel is blended.
+SUBTRACT = 2
+BASE32 = "0123456789abcdefghijklmnopqrstuv"
+STP = 0x8000
+
+
+def shadows(g, past, count):
+    tex, _ = textures(g)
+    page = vram(g)
+    first = sum(g.header[:6]) + past
+    out = []
+    for i in range(first, first + count):
+        t = tex[i]
+        if t is None or t["bpp"] == 16 or t["abr"] != SUBTRACT:
+            sys.exit(f"sprite {i} is not a paletted one drawn in the blend that subtracts")
+        rows = []
+        for v in range(t["h"]):
+            row = ""
+            for u in range(t["w"]):
+                word = palette_word(page, t, u, v)
+                level = word & 31
+                if word and (word & ~STP != level * 0x421 or not word & STP):
+                    sys.exit(f"sprite {i} has a texel {word:#06x}, not a semi-transparent grey")
+                row += BASE32[level]
+            rows.append(row)
+        out.append(rows)
+    return out
+
+
 def texture_sheet(g):
     """Every sprite decoded with its own palette, in a grid, numbered."""
     tex, exact = textures(g)
@@ -343,9 +389,10 @@ def as_dict(m):
     }
 
 
-def write_objects(g, path, placed=None, motion=None, skins=None):
-    """One model to a line, so a rebuild diffs by model, then the motion table,
-    a type or a kind to a line, then the skins, a reading to a line."""
+def write_objects(g, path, placed=None, motion=None, skins=None, shadows=None):
+    """One model to a line, so a rebuild diffs by model, then the shadows'
+    sprites, one to a line, then the motion table, a type or a kind to a
+    line, then the skins, a reading to a line."""
     data = objects(g, placed)
     lines = ["{", f' "block": {data["block"]},', ' "types": {']
     types = list(data["types"].items())
@@ -354,7 +401,12 @@ def write_objects(g, path, placed=None, motion=None, skins=None):
         lines.append(f'  "{t}": [\n{body}\n  ]' + ("," if i < len(types) - 1 else ""))
     lines += [" },", ' "balls": [']
     lines.append(",\n".join("  " + json.dumps(m, separators=(",", ":")) for m in data["balls"]))
-    lines += [" ]" + ("," if motion or skins else "")]
+    lines += [" ]" + ("," if shadows or motion or skins else "")]
+    if shadows:
+        data["shadows"] = shadows
+        lines.append(' "shadows": [')
+        lines.append(",\n".join("  " + json.dumps(s, separators=(",", ":")) for s in shadows))
+        lines.append(" ]" + ("," if motion or skins else ""))
     if motion:
         data["motion"] = motion
         head = {k: v for k, v in motion.items() if k not in ("types", "kinds")}

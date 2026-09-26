@@ -113,6 +113,35 @@ CHECKS = [
     (0x80039c78, "beq $v0, $zero, 0x80039cac", "and back at full it is drawn as it is"),
     (0x80039ca4, "sra $v0, $v0, 4", "else its height scaled by its count over 16"),
     (0x80039ca8, "sh $v0, 7400($gp)", "on the axis of its face's normal"),
+    # The shadow under the ball and the captivators: a square of four
+    # vertices, laid flat on the face and dropped where it faces away,
+    # textured with one of two sprites past the group the .GGI's header
+    # bounds last, and taken away from what is behind it, as strong as the
+    # colour each draw writes into it.
+    (0x80022f28, "sw $v0, 10240($gp)", "the parser keeps the .GGI header's sixth bound"),
+    (0x800290f8, "lw $v1, 22328($v1)", "which the shadow's sprites are counted past"),
+    (0x800290ec, "addiu $v0, $zero, 44", "each shadow is a textured quad"),
+    (0x800292f4, "jal 0x8005f8c8", "semi-transparent where its sprite is"),
+    (0x80051ebc, "nclip", "the square's corners are tested for their winding"),
+    (0x80051edc, "bgtz $v0, 0x80051eec", "and it is drawn only where they wind toward the view"),
+    (0x8002c990, "sb $s4, 4($s0)", "a captivator's shadow is as strong as its caller says"),
+    (0x8002cff8, "sb $s4, 4($s0)", "and the ball's"),
+    (0x8003db78, "addiu $v0, $zero, 1024", "the square is laid flat by a quarter turn"),
+    (0x8003dd50, "sw $zero, 72($sp)", "the slow star's is the round one"),
+    (0x8003e3d4, "sw $zero, 72($sp)", "the wandering ball's"),
+    (0x8003f91c, "sw $zero, 72($sp)", "the fast star's"),
+    (0x8003eb40, "sw $zero, 72($sp)", "the corkscrew's"),
+    (0x80032450, "sw $zero, 72($sp)", "and the ball's"),
+    (0x8003f0bc, "lhu $v0, -23528($at)", "the wheel's is turned by its third angle"),
+    (0x8003f0cc, "jal 0x80060cc8", "after the quarter turn, so about its normal"),
+    (0x8003cdac, "sh $v0, -23528($at)", "which is the angle the wheel's turns step"),
+    (0x8003b7c4, "addiu $v0, $s4, 24", "the loader copies an entry's position"),
+    (0x8003b7bc, "addiu $v1, $s4, 32", "into its home"),
+    (0x8003e87c, "addu $v0, $v0, $fp", "and the corkscrew's shadow lies under its home"),
+    (0x8003e9e4, "lh $v0, -23414($at)", "as strong as the corkscrew's bounce"),
+    (0x8003ea08, "jal 0x8005fb58", "less a multiple of its sine"),
+    (0x80031f3c, "jal 0x800603f8", "the ball's shadow is widened by the landing's squash"),
+    (0x80031f54, "jal 0x800603f8", "and by the breath's"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -200,6 +229,21 @@ IMMEDIATES = [
     ("captivators", "wheel.turn.right", "wheel: turns per frame, the other", 0x8003ce30, "addiu $v0, $v0, {}"),
     ("captivators", "wheel.turn.about", "wheel: turns per frame, about", 0x8003cec0, "addiu $v0, $v0, {}"),
 
+    ("shadows", "shadow.sprite", "the round one is this sprite past the .GGI header's sixth bound", 0x80029098, "addiu $s1, $s5, {}"),
+    ("shadows", "shadow.sprites", "and the square one the next, of this many", 0x80029374, "slti $v0, $s5, {}"),
+    ("shadows", "shadow.drop.50", "slow star: lies this far along its normal from its entry, units", 0x8003db5c, "addiu $a3, $zero, {}"),
+    ("shadows", "shadow.drop.51", "wheel: lies this far along its normal from its entry, units", 0x8003f07c, "addiu $a3, $zero, {}"),
+    ("shadows", "shadow.drop.52", "fast star: lies this far along its normal from its entry, units", 0x8003f728, "addiu $a3, $zero, {}"),
+    ("shadows", "shadow.drop.53", "wandering ball: lies this far along its normal from its entry, units", 0x8003e1e0, "addiu $a3, $zero, {}"),
+    ("shadows", "shadow.strength.50", "slow star: strength, of 128", 0x8003dd3c, "addiu $v0, $zero, {}"),
+    ("shadows", "shadow.strength.51", "wheel: strength, of 128", 0x8003f280, "addiu $v0, $zero, {}"),
+    ("shadows", "shadow.strength.52", "fast star: strength, of 128", 0x8003f908, "addiu $v0, $zero, {}"),
+    ("shadows", "shadow.strength.53", "wandering ball: strength, of 128", 0x8003e3c0, "addiu $v0, $zero, {}"),
+    ("shadows", "shadow.sprite.51", "wheel: its sprite, of the two", 0x8003f288, "addiu $v0, $zero, {}"),
+    ("shadows", "shadow.strength.56", "corkscrew: strength on its face, of 128", 0x8003ea2c, "addiu $v0, $zero, {}"),
+    ("shadows", "shadow.ball.top", "ball: fades to nothing this far off its face, units", 0x80031f30, "addiu $v0, $zero, {}"),
+    ("shadows", "shadow.ball.shift", "ball: its height short of that, shifted up this far", 0x80032458, "sll $v1, $v1, {}"),
+
     ("dice", "dice.seed", "seeded with this as a level starts", 0x80025058, "addiu $a0, $zero, {}"),
     ("dice", "dice.plus", "a draw adds this after it multiplies", 0x8004742c, "addiu $v1, $a1, {}"),
 
@@ -249,6 +293,8 @@ MULTIPLIERS = [
     ("captivators", "corkscrew.drop", "corkscrew: drawn this far nearer its face than its entry, units", 0x8003e5d8, 6, "v1", "v1"),
     ("captivators", "ball53.lurch.reach", "wandering ball: lurch's reach, units", 0x8003c98c, 2, "v0", "v1"),
     ("captivators", "ball53.dash", "wandering ball: dashes per frame, units", 0x8003cc40, 6, "v1", "v0"),
+    ("shadows", "shadow.corkscrew.drop", "corkscrew: lies this far from its home toward the block, units", 0x8003e8e0, 6, "v1", "v0"),
+    ("shadows", "shadow.corkscrew.fade", "corkscrew: weaker by this times the sine of its bounce", 0x8003ea10, 3, "v0", "v1"),
 ]
 
 # The one reach that is a square held in two halves of a word.
@@ -262,7 +308,13 @@ DICE_TIMES = (0x80047418, "lui $v1, {}", 0x80047420, "ori $v1, $v1, {}")
 DIVISORS = [
     ("the ball", "ball.breathe.over", "over this", 0x80032680, "lui $a0, {}", 0x80032684, "ori $a0, $a0, {}",
      0x800326a8, "sra $v1, $a2, {}"),
+    ("shadows", "shadow.ball.over", "ball: and divided by this", 0x800323d4, "lui $s2, {}", 0x800323d8,
+     "ori $s2, $s2, {}", 0x80032494, "sra $v0, $t8, {}"),
 ]
+
+# The shadow's four vertices, each x, y, z and a pad, where both draws load
+# them from.
+SHADOW_SQUARE = (0x8002c8d0, 0x8002c8d4)
 
 
 class Code:
@@ -338,7 +390,20 @@ def readings(code):
         out[key] = code.divisor(*args)
     start, end = (code.address(*pair) for pair in LASER_LEVELS)
     out["laser.levels"] = list(code.blob[start - EXE_BASE:end - EXE_BASE])
+    out["shadow.half"] = shadow_half(code)
     return out
+
+
+def shadow_half(code):
+    """How far the shadow's square reaches either way of its middle, from the
+    four vertices both draws load: every corner of a square, flat in y."""
+    at = code.address(*SHADOW_SQUARE) - EXE_BASE
+    corners = [struct.unpack_from("<4h", code.blob, at + 8 * i) for i in range(4)]
+    half = abs(corners[0][0])
+    if sorted((x, z) for x, _, z, _ in corners) != [(-half, -half), (-half, half), (half, -half), (half, half)] \
+            or any(y or pad for _, y, _, pad in corners):
+        sys.exit(f"the shadow's vertices are {corners}, not a square flat in y")
+    return half
 
 
 def laser(r):
@@ -483,8 +548,10 @@ def table(r, platform_speed):
     units of which a block is 512. A cycle is a frame program per phase. The
     platform's speed is the one the level data holds, scaled as the loader
     scales it. A type the loader lifts into an entry of its own says how far
-    off its face the game draws the model's origin. The dice are the game's
-    random routine, which it seeds once as a level starts.
+    off its face the game draws the model's origin. A type the game draws a
+    shadow under says which of the two sprites, how far off its face it lies
+    and how strong it is, of 128. The dice are the game's random routine,
+    which it seeds once as a level starts.
     """
     bob = {"rate": r["coin.bob"], "reach": r["coin.bob.reach"]}
     fruit = {"turn": r["fruit.turn"],
@@ -531,7 +598,20 @@ def table(r, platform_speed):
         types[t] = fruit
     for t in (50, 51, 52, 53):
         types[t]["entry"] = {"stand": stand}
+        types[t]["shadow"] = {"sprite": 0, "off": stand + r[f"shadow.drop.{t}"],
+                              "strength": r[f"shadow.strength.{t}"]}
+    types[51]["shadow"].update({"sprite": r["shadow.sprite.51"], "turns": True})
     types[56]["entry"] = {"stand": stand - r["corkscrew.drop"]}
+    types[56]["shadow"] = {"sprite": 0, "off": stand - r["shadow.corkscrew.drop"],
+                           "strength": r["shadow.strength.56"], "fade": r["shadow.corkscrew.fade"]}
+    # the ball's lies as far toward the block from its middle as the middle
+    # is off the face, so on the face
+    types[30]["shadow"] = {"sprite": 0, "off": 0, "strength": 1 << r["shadow.ball.shift"],
+                           "top": r["shadow.ball.top"], "over": r["shadow.ball.over"],
+                           "squash": True}
+    for t, entry in types.items():
+        if "shadow" in entry and entry["shadow"]["sprite"] >= r["shadow.sprites"]:
+            sys.exit(f"type {t}'s shadow is sprite {entry['shadow']['sprite']} of {r['shadow.sprites']}")
     kinds = {
         5: {"speed": platform_speed * r["platform.scale"] // HZ, "dwell": r["platform.dwell"]},
         7: {"cycle": [[s for s, _ in vanish_cycle(r, p)] for p in range(PHASES)],
@@ -540,6 +620,7 @@ def table(r, platform_speed):
     }
     return {"hz": HZ, "turn": TURN, "standoff": r["captivator.standoff"],
             "dice": {"seed": r["dice.seed"], "times": r["dice.times"], "plus": r["dice.plus"]},
+            "shadow": {"half": r["shadow.half"]},
             "types": {str(t): types[t] for t in sorted(types)},
             "kinds": {str(k): kinds[k] for k in sorted(kinds)}}
 
@@ -563,6 +644,8 @@ def show_readings(code):
                  readings(code)["dice.times"]))
     for group, key, what, hi, hp, lo, lp, sa, sp in DIVISORS:
         rows.append((group, what, hi, code.divisor(hi, hp, lo, lp, sa, sp)))
+    rows.append(("shadows", "the square reaches this far either way of its middle, units",
+                 code.address(*SHADOW_SQUARE), readings(code)["shadow.half"]))
     levels = readings(code)["laser.levels"]
     rows.append(("laser", f"steps in the beam's table, levels {min(levels)} to {max(levels)}",
                  code.address(*LASER_LEVELS[0]), len(levels)))
