@@ -139,6 +139,8 @@ add("E/OBJ/vanishing", "OBJ", V1, { select: "kind7", hover: "kind3", frames: [T0
 add("E/OBJ/acid", "OBJ", V3, { select: "kind4", hover: "kind1", frames: two });
 add("E/H3/glass", "H3", V1, { select: "plain", hover: "things", frames: two });
 add("E/B15/bonus", "B15", V1, { select: "kind7", hover: "plain", frames: two });
+add("E/S8/button", "S8", V1, { hover: "type10", nth: 3, frames: two });
+add("E/S8/button-selected", "S8", V3, { select: "type10", nth: 3, frames: two });
 add("E/OBJ/sliced", "OBJ", V1, {
   select: "things",
   hover: "plain",
