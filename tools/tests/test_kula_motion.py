@@ -189,6 +189,7 @@ class Table(unittest.TestCase):
                     "ball53.ways", "wheel.roll",
                     "wheel.travel", "wheel.turning", "wheel.turn.right", "wheel.turn.about",
                     "corkscrew.drop", "ball.breathe", "ball.breathe.reach",
+                    "button.start", "button.full", "button.sink", "button.rise", "button.reach",
                     "ball.breathe.full", "ball.breathe.over", "time.tick"):
             r.setdefault(key, 1)
         r["platform.scale"] = 50
@@ -208,8 +209,9 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["56"]["entry"], {"stand": 50})
         self.assertNotIn("entry", t["types"]["37"])
         self.assertEqual(t["dice"], {"seed": 1, "times": 1103515245, "plus": 12345})
+        self.assertEqual(set(t["types"]["10"]["press"]), {"start", "full", "sink", "rise", "reach"})
         self.assertEqual(set(t["types"]), {str(k) for k in
-                                           (5, 7, 11, 26, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42,
+                                           (5, 7, 10, 11, 26, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42,
                                             43, 44, 45, 46, 47, 50, 51, 52, 53, 56)})
 
 

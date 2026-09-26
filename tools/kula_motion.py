@@ -105,6 +105,14 @@ CHECKS = [
     (0x8003b644, "slti $v0, $v0, 5", "which the loader lifts record by record"),
     (0x8003cf34, "addiu $v0, $v0, 1", "and the move visits in that order"),
     (0x8003c72c, "jal 0x80047418", "and the wandering ball draws its way from the dice"),
+    # The boost button: a count that sinks while the ball is in reach and
+    # rises after, scaling the model's height along its normal, and left
+    # unscaled once it is back to full.
+    (0x80039bd0, "slt $v1, $v1, $v0", "the boost button sinks while the ball is in reach"),
+    (0x80039c08, "blez $v0, 0x80039c18", "and no lower than flat"),
+    (0x80039c78, "beq $v0, $zero, 0x80039cac", "and back at full it is drawn as it is"),
+    (0x80039ca4, "sra $v0, $v0, 4", "else its height scaled by its count over 16"),
+    (0x80039ca8, "sh $v0, 7400($gp)", "on the axis of its face's normal"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -487,6 +495,9 @@ def table(r, platform_speed):
     stand = r["captivator.standoff"] - BLOCK // 2
     types = {
         5: {"turn": r["teleporter.turn"]},
+        10: {"press": {"start": r["button.start"], "full": r["button.full"],
+                       "sink": r["button.sink"], "rise": r["button.rise"],
+                       "reach": r["button.reach"]}},
         30: {"breathe": {"rate": r["ball.breathe"], "reach": r["ball.breathe.reach"],
                          "full": r["ball.breathe.full"], "over": r["ball.breathe.over"],
                          "tick": r["time.tick"]}},
