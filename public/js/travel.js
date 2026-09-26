@@ -161,7 +161,7 @@ const about = (w) => {
 };
 
 /** A captivator or platform as the game keeps it, at the level's first frame,
-    which is the frame of the page's clock it is made at. */
+    which is the frame of the clock it is made at. */
 export function walker(m, c, l, table, frame = 0) {
   const w = {
     m,

@@ -1162,6 +1162,18 @@ test("what travels does so from the start, its label with it, until v stops it",
   expect(errors).toEqual([]);
 });
 
+test("a level's clock starts at its first frame as the level opens", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const clock = () =>
+    page.evaluate(async () => (await import(new URL("js/render.js", location.href).href)).clock());
+  await page.waitForTimeout(600);
+  expect(await clock()).toBeGreaterThan(30);
+  await page.keyboard.press("]");
+  await expect(page.locator("#chip")).toContainText("LEVEL 2");
+  expect(await clock()).toBeLessThan(20);
+});
+
 test("the camera target shows only on s", async ({ page }) => {
   await page.goto("/#HIRO/0/45,35/1");
   await settle(page);

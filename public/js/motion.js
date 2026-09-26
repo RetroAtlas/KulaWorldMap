@@ -1,10 +1,10 @@
 // What moves on the spot moves at the game's own rate, from the table the
 // build reads off the executable: a rate is per frame, an angle is in 4096ths
 // of a turn and a reach is in units of which a block is 512. A frame here is
-// the game's, a sixtieth of a second, counted from wherever the page's clock
-// was when it started, and a thing's phase is either the one its record
-// gives it or, where the game draws one at random on every visit, one hashed
-// from its cell and face, so the map shows the same thing on every visit.
+// the game's, a sixtieth of a second, counted from the level's first frame,
+// and a thing's phase is either the one its record gives it or, where the
+// game draws one at random on every visit, one hashed from its cell and
+// face, so the map shows the same thing on every visit.
 import { hashes } from "./hash.js";
 
 /** The game's frame count at a page time in milliseconds. */

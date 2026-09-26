@@ -169,8 +169,17 @@ function travelling(l, idx, frame) {
   return out;
 }
 
-/** The frame of the clock everything that moves is drawn at. */
-export const clock = () => (motionTable() ? frameAt(motionTable(), performance.now()) : 0);
+// Everything that moves runs on its level's own clock, which starts at the
+// level's first frame as the level opens, as play's does.
+let opened = { level: null, at: 0 };
+/** The frame of the level's clock everything that moves is drawn at. */
+export function clock() {
+  const table = motionTable();
+  if (!table) return 0;
+  const now = frameAt(table, performance.now());
+  if (opened.level !== state.lvl) opened = { level: state.lvl, at: now };
+  return now - opened.at;
+}
 
 export function draw() {
   const { w, h } = state.view;
