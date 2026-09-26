@@ -187,18 +187,40 @@ export const markerState = (m) => {
 };
 /** The circuit a device a switch toggles is on, which is its colour, or null for anything else. */
 export const markerCircuit = (m) => (markerState(m) === null ? null : m.f[fieldIndex(entry(m).by)]);
+const pressesOf = (circuit) => state.presses.get(circuit) ?? [];
+/** Whether a circuit has been turned over from how the level starts it. */
+const turned = (circuit) => pressesOf(circuit).length % 2 === 1;
 /** Whether a device a switch toggles is on or off now, or null for anything else. */
 export const markerNow = (m) => {
   const start = markerState(m);
-  if (start === null || !state.flipped.has(markerCircuit(m))) return start;
+  if (start === null || !turned(markerCircuit(m))) return start;
   return start === "on" ? "off" : "on";
 };
 /** Whether a beam is lit now. */
-export const litNow = (ray) => ray.lit !== state.flipped.has(ray.colour);
-/** Turn a circuit over, as pressing one of its switches does. */
-export function flip(circuit) {
-  if (!state.flipped.delete(circuit)) state.flipped.add(circuit);
+export const litNow = (ray) => ray.lit !== turned(ray.colour);
+/** Turn a circuit over at a frame of the clock, as pressing one of its switches does. */
+export function flip(circuit, frame) {
+  state.presses.set(circuit, [...pressesOf(circuit), frame]);
 }
+/** How many frames of the clock up to `frame` a device has been on, from
+    whether it starts on and the frames its circuit was turned over at. */
+export function framesOn(on, presses, frame) {
+  let total = 0;
+  let from = 0;
+  for (const at of presses) {
+    if (at >= frame) break;
+    if (on) total += at - from;
+    on = !on;
+    from = at;
+  }
+  return on ? total + frame - from : total;
+}
+/** The frames a thing has moved for by `frame`: all of them, or for a device
+    a switch toggles only those it has been on, since it stands still off. */
+export const movedFor = (m, frame) =>
+  markerState(m) === null
+    ? frame
+    : framesOn(markerState(m) === "on", pressesOf(markerCircuit(m)), frame);
 const SWITCH = 9;
 /** Whether a marker is a switch, whose press turns its circuit over. */
 export const isSwitch = (m) => m.face !== null && m.type === SWITCH;

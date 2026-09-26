@@ -178,6 +178,13 @@ add("I/F3/all", "F3", V1, { flip: [0, 1, 2, 3], frames: [T0, T1] });
 add("I/F6/all", "F6", V3, { flip: [0, 1, 2, 3], show: { models: false, labels: true } });
 add("I/S8/beam", "S8", V1, { flip: [0, 1, 2, 3], show: { objects: false } });
 add("I/LESSON/teleporter", "LESSON", V1, { flip: [0], select: "type5" });
+// a press at a page time, before the times the case is captured at
+const PRESS = 10300;
+const AGAIN = 10450;
+const all = (...at) => [0, 1, 2, 3].flatMap((c) => at.map((t) => [c, t]));
+add("I/F3/pressed", "F3", V1, { flip: all(PRESS), frames: [T1, T2] });
+add("I/F3/resumed", "F3", V1, { flip: all(PRESS, AGAIN), frames: [T1, T2] });
+add("I/LESSON/pressed", "LESSON", V1, { flip: [[0, PRESS]], frames: [T1, T2] });
 
 // J: where a selected teleporter leads, round a ring, off and on, and to itself
 add("J/L68/ring", "L68", V1, { select: "type5" });

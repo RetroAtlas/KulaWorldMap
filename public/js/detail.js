@@ -28,7 +28,7 @@ import {
   markerStats,
 } from "./data.js";
 import { blockIcon, markerIcon } from "./icons.js";
-import { draw } from "./render.js";
+import { draw, clock } from "./render.js";
 
 let stats = null;
 
@@ -169,7 +169,7 @@ export function showCell(c) {
   box.hidden = false;
   for (const b of box.querySelectorAll(".press button")) {
     b.onclick = () => {
-      flip(Number(b.dataset.circuit));
+      flip(Number(b.dataset.circuit), clock());
       showCell(state.selected);
       box.querySelector(`.press button[data-circuit="${b.dataset.circuit}"]`)?.focus();
       draw();

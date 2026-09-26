@@ -19,7 +19,7 @@ export function selectLevel(i, { keepView = false } = {}) {
   if (!l) return;
   // Nothing lies behind the first level shown, so arriving there is no entry.
   const left = state.lvl !== null;
-  if (i !== state.li) state.flipped = new Set();
+  if (i !== state.li) state.presses = new Map();
   state.li = i;
   state.lvl = l;
   state.idx = index(l);

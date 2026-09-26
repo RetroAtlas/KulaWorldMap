@@ -169,6 +169,9 @@ function travelling(l, idx, frame) {
   return out;
 }
 
+/** The frame of the clock everything that moves is drawn at. */
+export const clock = () => (motionTable() ? frameAt(motionTable(), performance.now()) : 0);
+
 export function draw() {
   const { w, h } = state.view;
   ctx.clearRect(0, 0, w, h);
@@ -189,7 +192,7 @@ export function draw() {
     : null;
 
   if (state.show.base) drawBase(ctx, l);
-  const frame = motionTable() ? frameAt(motionTable(), performance.now()) : 0;
+  const frame = clock();
 
   const moving = travelling(l, idx, frame);
   if (moving?.size && pointerIn) pickStale = true;

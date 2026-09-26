@@ -173,6 +173,8 @@ async function capture(page, c, keep) {
       const { state, cellKey, SIDE } = await import("/js/state.js");
       const R = await import("/js/render.js");
       const N = await import("/js/navigate.js");
+      const { frameAt } = await import("/js/motion.js");
+      const { motionTable } = await import("/js/data.js");
       const li = state.data.levels.findIndex(
         (l) => l.pack.endsWith("/" + c.level[0]) && l.index === c.level[1],
       );
@@ -182,9 +184,12 @@ async function capture(page, c, keep) {
       state.cam.yaw = c.yaw;
       state.cam.pitch = c.pitch;
       N.selectLevel(li);
-      state.flipped = new Set();
-      for (const colour of c.flip || []) {
-        if (!state.flipped.delete(colour)) state.flipped.add(colour);
+      // a press is a colour pressed before the first frame, or a colour and a page time
+      state.presses = new Map();
+      for (const press of c.flip || []) {
+        const [colour, ms] = Array.isArray(press) ? press : [press, 0];
+        const at = frameAt(motionTable(), ms);
+        state.presses.set(colour, [...(state.presses.get(colour) ?? []), at]);
       }
       if (c.zoom) state.cam.zoom = c.zoom;
       if (c.pan) [state.cam.panX, state.cam.panY] = c.pan;
@@ -269,7 +274,7 @@ async function capture(page, c, keep) {
       state.hiddenKinds = new Set();
       state.survey.on = false;
       state.survey.marks = new Map();
-      state.flipped = new Set();
+      state.presses = new Map();
       return shots;
     },
     { c, keep },

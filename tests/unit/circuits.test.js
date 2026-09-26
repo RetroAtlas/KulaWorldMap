@@ -13,6 +13,8 @@ import {
   flip,
   isSwitch,
   markerDestination,
+  framesOn,
+  movedFor,
 } from "../../public/js/data.js";
 
 const levelNamed = (name, pack) =>
@@ -21,7 +23,7 @@ const levelNamed = (name, pack) =>
 test("a switch turns its colour over, and a second press turns it back", () => {
   setAnnotations(annotations);
   state.data = mapData;
-  state.flipped = new Set();
+  state.presses = new Map();
   const l = levelNamed("OBJ LEVEL", "/HILLS/HILLS.PAK");
   const marks = levelMarkers(l);
   const red = marks.find((m) => isSwitch(m) && markerCircuit(m) === 3);
@@ -32,17 +34,33 @@ test("a switch turns its colour over, and a second press turns it back", () => {
   for (const m of [red, blue, teleporter]) assert.equal(markerNow(m), markerState(m));
   assert.equal(litNow(laser), laser.lit);
 
-  flip(markerCircuit(red));
+  flip(markerCircuit(red), 100);
   assert.equal(markerNow(red), "on");
   assert.equal(markerNow(teleporter), "on");
   assert.equal(litNow(laser), true);
   assert.equal(markerNow(blue), "off", "another colour stays as it was");
   assert.equal(markerState(red), "off", "and the start is still what the disc holds");
 
-  flip(markerCircuit(red));
+  flip(markerCircuit(red), 250);
   assert.equal(markerNow(teleporter), "off");
   assert.equal(litNow(laser), false);
-  state.flipped = new Set();
+  assert.equal(movedFor(teleporter, 300), 150, "it turned only while it was on");
+  const coin = marks.find((m) => m.face !== null && m.type === 37);
+  assert.equal(movedFor(coin, 300), 300, "and what no switch toggles moves all along");
+  state.presses = new Map();
+});
+
+test("a device turns only for the frames it has been on, and stands where it stopped", () => {
+  assert.equal(framesOn(true, [], 300), 300);
+  assert.equal(framesOn(false, [], 300), 0);
+  assert.equal(framesOn(true, [100], 300), 100, "switched off, it stops where it was");
+  assert.equal(framesOn(true, [100], 60), 60, "a press still to come changes nothing yet");
+  assert.equal(framesOn(false, [100, 250], 300), 150);
+  assert.equal(framesOn(false, [100, 250], 200), 100);
+  assert.equal(framesOn(true, [100, 250], 300), 150, "and carries on from there when on again");
+  for (const frame of [99, 100, 101]) {
+    assert.ok(Math.abs(framesOn(true, [100], frame) - Math.min(frame, 100)) < 1e-9, "no jump");
+  }
 });
 
 test("only a device a switch toggles is on a circuit", () => {
