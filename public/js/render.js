@@ -148,24 +148,25 @@ function visible(idx, moving) {
 
 // Everything that moves runs on its level's own clock, which starts at the
 // level's first frame as the level opens or motion is turned on, as play's
-// does, and stands at that frame while motion is off. Starting it keeps
-// every circuit as it is turned, and what travels starts where the level
-// puts it.
+// does, and stands at that frame while motion is off. A draw starts the
+// level's run, or ends it, before it reads the clock; starting it keeps every
+// circuit as it is turned, and what travels starts where the level puts it.
 let run = null;
-/** The frame of the level's clock everything that moves is drawn at. */
-export function clock() {
+function syncRun() {
   const table = motionTable();
-  if (!table || !state.show.motion) {
-    run = null;
-    return 0;
-  }
-  const now = frameAt(table, performance.now());
-  if (run?.level !== state.lvl) {
-    run = { level: state.lvl, at: now, travel: null };
+  if (!table || !state.show.motion) run = null;
+  else if (run?.level !== state.lvl) {
+    run = { level: state.lvl, at: frameAt(table, performance.now()), travel: null };
     settleCircuits();
   }
-  return now - run.at;
 }
+
+/** The frame of the level's clock everything that moves is drawn at, which
+    is the first until a draw starts the level's run. */
+export const clock = () =>
+  run && state.show.motion && run.level === state.lvl
+    ? frameAt(motionTable(), performance.now()) - run.at
+    : 0;
 
 /** Where what travels has got to by a frame of the level's clock, stepped
     one game frame at a time, or null while the clock stands. */
@@ -206,6 +207,7 @@ export function draw() {
     : null;
 
   if (state.show.base) drawBase(ctx, l);
+  syncRun();
   const frame = clock();
 
   const moving = travelling(l, idx, frame);
