@@ -109,6 +109,23 @@ The slow star decides each time it crosses the middle of a cell along its headin
 
 The moving platform's run is in [level-format.md](level-format.md): from its cell toward the far end at 25 a frame, stopping when it reaches or passes the end, 48 frames still, then back, and its blocks are laid from its cell along the positive way of its axis.
 
+## The shadows
+
+Under a pickup the loader paints the shadow into the face ([tgi.md](tgi.md)). Under the ball and the five captivators the game draws one every frame, **a flat square 300 units across laid on the face, textured with one of two sprites and taken away from what is behind it.** Nothing else has one: the square is drawn by the ball's draw (`0x80031024`, through `0x8002ca2c`) and the captivators' (`0x8003d680`, through `0x8002c4b0`), and its two sprites are read by nothing but the loop that sets up its primitives.
+
+**The square.** Both routines transform the same four vertices, at `0x800a32c0`, 150 either way in x and z, by a matrix their caller builds, and drop the square when its corners wind the wrong way on the screen (`0x80051e8c`), so a shadow shows only on a face turned toward the view. The caller builds the matrix with `0x8003a114` from the face and a point it moves toward the block by a distance it gives, and turns it a quarter about x before the rest (1024, `0x8003db78`), which lays the square flat on the face.
+
+**The sprites and the blend.** `0x80029048` sets up the primitives once, sixteen of each of two kinds: a textured quad, semi-transparent, drawing the sprite 14 or 15 past the group the .GGI header's sixth bound starts, which the parser keeps at `0x800a5738` (116, `0x80022f28`), so [ggi.md](ggi.md)'s sprites 130 and 131, both 32 by 32 at 4 bits: a soft round blot and a square with rounded corners. Both uploads ask for blend 2, which the sprite table puts in the page word (`0x80023198`) and which takes each texel away from what is behind, and their palettes run from 0, drawn as nothing, up to 10 of 31 in each channel, so a shadow's middle takes 10 of 31 off whatever it lies on, darkening a pale stone a little and a dark one to black, and falls off evenly to nothing at its rim, 150 units out. The quad's colour, written into it with each draw (`0x8002c990`), scales every texel by itself over 128, and is how strong the shadow is.
+
+| under | sprite | where | how strong |
+| --- | --- | --- | --- |
+| 50, 52 and 53 | round | on the face, its entry's position moved 200 toward the block (`0x8003db5c`, `0x8003f728`, `0x8003e1e0`), so it goes where the entry goes | 128 (`0x8003dd3c`, `0x8003f908`, `0x8003e3c0`) |
+| 51 wheel | square (`0x8003f288`), turned about the normal by the wheel's third angle, the one its turns step, since the quarter turn that lays it flat comes first (`0x80060cc8` takes x before z) | on the face (`0x8003f07c`) | 128 (`0x8003f280`) |
+| 56 corkscrew | round | 30 off its face, under its home: 170 toward the block from where the loader put its entry, which the bounce never moves (`0x8003e8f8`) | 128 − 48·sin θ, θ its bounce (`0x8003ea2c`), so 80 at the top of a bounce |
+| the ball | round, and scaled across the face by the ball's two squash matrices, the landing's and the breath's (`0x80031f3c`, `0x80031f54`) | moved toward the block by h, how far the ball's middle is off its face, which the ball's state keeps (`0x80037bc4`), or by 512 where the block under it is a moving platform or there is none (`0x80031e98`) | 128·(512 − h)/412 (`0x8003245c`): full at rest, 100 off, fading as the ball rises, and nothing a block up, over a platform or over a gap |
+
+So the ball's shadow breathes with it, wider and narrower by 200 of 4096, and a corkscrew's thins as it rises, its faint rim dropping out first, so it reads as smaller at the top of a bounce. The stars' and the wandering ball's shadows stay the same size and strength however they tumble.
+
 ## Not settled
 
-Which of the two tangents a pill flips about and a fruit tilts about rests on the naming of the model's axes in [ggi.md](ggi.md) and on RotMatrix's order; a pill beside the map in play on 2026-09-17 flipped the way the map does. What the PAL release runs at is not on this disc. The laser's beam was not looked at for a pulse.
+Which of the two tangents a pill flips about and a fruit tilts about rests on the naming of the model's axes in [ggi.md](ggi.md) and on RotMatrix's order; a pill beside the map in play on 2026-09-17 flipped the way the map does. What the PAL release runs at is not on this disc. The laser's beam was not looked at for a pulse. In one state of the ball, where the word at 356 in its state is 96, h is scaled by a table before the shadow's strength is taken from it (`0x8003237c`), and that state was not traced.
