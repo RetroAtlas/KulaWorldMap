@@ -695,7 +695,7 @@ test("a view the map framed is framed again as the canvas settles and resizes", 
   const resized = await fitted(page);
   expect(resized.measured).toBeLessThan(settled.measured);
   expect(resized.zoom).toBe(resized.fit);
-  expect(page.url()).toContain(`/${resized.fit.toFixed(2)}/`);
+  expect(page.url()).toContain("#HILLS/19/200,10/fit/33");
 
   // a press that wanders less than a drag is a click, and leaves the view framed
   await press(page, 2, 1);
@@ -704,6 +704,37 @@ test("a view the map framed is framed again as the canvas settles and resizes", 
   const clicked = await fitted(page);
   expect(clicked.measured).toBe(settled.measured);
   expect(clicked.zoom).toBe(clicked.fit);
+});
+
+test("a fitted view's link opens fitted to the window it is opened in", async ({ page }) => {
+  await page.goto("/#HIRO/11");
+  await settle(page);
+  await still(page);
+  await page.evaluate(async () => {
+    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    showCell(state.idx.cells.get(cellKey(21, 13, 18)));
+  });
+  await page.keyboard.press(",");
+  await frame(page);
+  const link = page.url();
+  expect(link).toMatch(/#HIRO\/11\/-?\d+,\d+\/fit\/32\/21,13,18$/);
+  const wide = await fitted(page);
+
+  await page.setViewportSize({ width: 390, height: 720 });
+  await page.goto("about:blank");
+  await page.goto(link);
+  await settle(page);
+  await still(page);
+  const narrow = await fitted(page);
+  expect(narrow.zoom).toBe(narrow.fit);
+  expect(narrow.zoom).toBeLessThan(wide.zoom);
+  await expect(page.locator("#detail")).toContainText("cell 21,13,18");
+  expect(page.url()).toBe(link);
+
+  await press(page, 40, 20);
+  await frame(page);
+  expect(page.url()).not.toContain("/fit/");
 });
 
 test("a camera moved on purpose stays where it was put as the canvas resizes, until f", async ({

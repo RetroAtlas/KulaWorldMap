@@ -141,6 +141,7 @@ function flushHash() {
     target: state.target,
     slice: state.slice,
     picked: s && [s.x, s.y, s.z],
+    fitted: state.framing === fit,
   });
   if (location.hash === h) return;
   if (push) history.pushState(null, "", h);
@@ -160,8 +161,8 @@ export function applyHash() {
   else fit();
   if (link.zoom) state.cam.zoom = link.zoom;
   if (link.pan) [state.cam.panX, state.cam.panY] = link.pan;
-  // A link that names where the camera is holds it there, and one that names
-  // no more than the turn is framed at that turn.
+  // A link that names where the camera is holds it there, and one that is
+  // fitted, or names no more than the turn, is framed at that turn.
   if (link.zoom || link.target || link.pan) state.framing = null;
   state.slice = link.slice ?? SIDE - 1;
   const cell = link.picked && state.idx.cells.get(cellKey(...link.picked));

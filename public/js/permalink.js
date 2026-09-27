@@ -9,11 +9,17 @@ export const slotOf = (l) => `${/([^/]+)\.PAK$/.exec(l.pack)[1]}/${l.index}`;
 const r2 = (v) => Math.round(v * 100) / 100;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+// A view framed to fit the window says so in place of where the camera is,
+// so it opens framed to whatever window it is opened in.
+const FIT = "fit";
+
 /** The hash for a view of a level, ending with the selected cell where there is one. */
-export function formatHash({ slot, cam, target, slice, picked }) {
+export function formatHash({ slot, cam, target, slice, picked, fitted }) {
+  const view = fitted
+    ? FIT
+    : `${cam.zoom.toFixed(2)}/${target.map(r2).join(",")}/${r2(cam.panX)},${r2(cam.panY)}`;
   return (
-    `#${slot}/${Math.round(cam.yaw)},${Math.round(cam.pitch)}/${cam.zoom.toFixed(2)}` +
-    `/${target.map(r2).join(",")}/${r2(cam.panX)},${r2(cam.panY)}/${slice}` +
+    `#${slot}/${Math.round(cam.yaw)},${Math.round(cam.pitch)}/${view}/${slice}` +
     (picked ? `/${picked.join(",")}` : "")
   );
 }
@@ -43,9 +49,9 @@ const unescaped = (text) => {
     A number past what the camera can reach is held where the camera stops,
     and a cell outside the lattice names nothing. */
 export function parseHash(hash) {
-  const [pack, slot, turn, zoom, target, pan, slice, ...tail] = unescaped(
-    hash.replace(/^#/, ""),
-  ).split("/");
+  const [pack, slot, turn, ...rest] = unescaped(hash.replace(/^#/, "")).split("/");
+  const [zoom, target, pan, slice, ...tail] =
+    rest[0]?.toLowerCase() === FIT ? [null, null, null, ...rest.slice(1)] : rest;
   const scale = numbers(zoom, 1)?.[0];
   const ceiling = numbers(slice, 1)?.[0];
   const angles = numbers(turn, 2);

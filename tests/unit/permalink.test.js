@@ -128,3 +128,23 @@ test("a link puts the lattice where it always has on the screen", (t) => {
     assert.ok(Math.abs(x - at[0]) < 1e-3 && Math.abs(y - at[1]) < 1e-3, `${cell}: ${x},${y}`);
   }
 });
+
+test("a fitted view's link says so in place of where the camera is", () => {
+  const hash = formatHash({
+    slot: "INCA/11",
+    cam,
+    target: [17.5, 12, 17],
+    slice: 20,
+    picked: [17, 12, 17],
+    fitted: true,
+  });
+  assert.equal(hash, "#INCA/11/45,35/fit/20/17,12,17");
+  for (const link of [parseHash(hash), parseHash(hash.replace("fit", "FIT"))]) {
+    assert.deepEqual(link.turn, [45, 35]);
+    assert.equal(link.zoom, null);
+    assert.equal(link.target, null);
+    assert.equal(link.pan, null);
+    assert.equal(link.slice, 20);
+    assert.deepEqual(link.picked, [17, 12, 17]);
+  }
+});
