@@ -222,10 +222,12 @@ function save() {
 export function restore() {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (v) {
-      state.panMode = !!v.panMode;
-      // a saved switch the display does not have is left behind
-      for (const k of Object.keys(DEFAULTS)) if (k in v) state.show[k] = v[k];
+    if (v && typeof v === "object") {
+      state.panMode = v.panMode === true;
+      // a saved switch the display does not have, or a value not of the
+      // switch's kind, is left behind
+      for (const k of Object.keys(DEFAULTS))
+        if (typeof v[k] === typeof DEFAULTS[k]) state.show[k] = v[k];
     }
   } catch {
     /* ignore */

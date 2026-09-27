@@ -1488,6 +1488,26 @@ test("a saved switch the display does not have is left behind", async ({ page })
   expect(await kept()).toEqual({ labels: true, outlines: false });
 });
 
+test("a saved value not of its switch's kind is left behind", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
+  await page.evaluate(() =>
+    localStorage.setItem(
+      "kula.display",
+      JSON.stringify({ labels: "yes", through: 1, outlines: false, panMode: "yes" }),
+    ),
+  );
+  await page.reload();
+  await settle(page);
+  await expect(page.locator("#showLabels")).not.toBeChecked();
+  await expect(page.locator("#showThrough")).not.toBeChecked();
+  await expect(page.locator("#showOutlines")).not.toBeChecked();
+  await expect(page.locator("#panMode")).not.toBeChecked();
+  await page.keyboard.press("l");
+  expect(await kept()).toEqual({ labels: true, outlines: false });
+});
+
 test("a travelling thing, and every block of a platform, picks the cell its record is on", async ({
   page,
 }) => {
