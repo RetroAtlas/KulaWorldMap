@@ -23,11 +23,16 @@ const numbers = (segment, n) => {
   return v.length === n && v.every(Number.isFinite) ? v : null;
 };
 
-/** What a hash names, each part null where the hash leaves it out or it cannot be read. */
+const CELL = /^\d+,\d+,\d+$/;
+
+/** What a hash names, each part null where the hash leaves it out or it cannot be read.
+    The head is read by position and the rest by shape, in any order, so a
+    segment the reader does not know is passed over rather than read as another. */
 export function parseHash(hash) {
-  const [pack, slot, turn, zoom, target, pan, slice, picked] = hash.replace(/^#/, "").split("/");
+  const [pack, slot, turn, zoom, target, pan, slice, ...tail] = hash.replace(/^#/, "").split("/");
   const scale = numbers(zoom, 1)?.[0];
   const ceiling = numbers(slice, 1)?.[0];
+  const cell = tail.find((segment) => CELL.test(segment));
   return {
     slot: `${pack}/${slot}`.toUpperCase(),
     turn: numbers(turn, 2),
@@ -35,6 +40,6 @@ export function parseHash(hash) {
     target: numbers(target, 3),
     pan: numbers(pan, 2),
     slice: Number.isInteger(ceiling) && ceiling >= 0 ? Math.min(SIDE - 1, ceiling) : null,
-    picked: numbers(picked, 3),
+    picked: cell ? cell.split(",").map(Number) : null,
   };
 }

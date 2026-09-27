@@ -58,3 +58,11 @@ test("a slice past the top of the lattice is the whole level", () => {
   assert.equal(parseHash("#HIRO/0/45,35/1/17,17,17/0,0/99").slice, SIDE - 1);
   assert.equal(parseHash("#HIRO/0/45,35/1/17,17,17/0,0/0").slice, 0);
 });
+
+test("what follows the slice is read by its shape, and a segment the reader does not know is passed over", () => {
+  const head = "#HIRO/11/45,35/1/21.5,13.5,18.5/0,0/33";
+  for (const tail of ["/21,13,18", "/on=red/21,13,18", "/21,13,18/v2/-y", "/2.5,1,1/21,13,18"])
+    assert.deepEqual(parseHash(head + tail).picked, [21, 13, 18], tail);
+  for (const tail of ["", "/on=red", "/21,13", "/21.5,13,18", "/-21,13,18"])
+    assert.equal(parseHash(head + tail).picked, null, tail);
+});
