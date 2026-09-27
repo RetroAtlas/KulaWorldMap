@@ -116,6 +116,10 @@ let queued = 0;
 // to date. The entry outlives the quieter writes that ride on its heels in
 // the same frame, so the one write carries it.
 let entry = false;
+// The hash the viewer last read or wrote. The address bar holding another is
+// a hash typed, followed or gone back to whose hashchange has yet to arrive,
+// and a write queued before it would put the old view back over it.
+let known = location.hash;
 
 let slots = null;
 const levelAt = (slot) => {
@@ -133,7 +137,7 @@ function flushHash() {
   const push = entry;
   entry = false;
   const l = state.lvl;
-  if (!l || restoring) return;
+  if (!l || restoring || location.hash !== known) return;
   const s = state.selected;
   const h = formatHash({
     slot: slotOf(l),
@@ -146,10 +150,12 @@ function flushHash() {
   if (location.hash === h) return;
   if (push) history.pushState(null, "", h);
   else history.replaceState(null, "", h);
+  known = location.hash;
 }
 
 export function applyHash() {
-  const link = parseHash(location.hash);
+  known = location.hash;
+  const link = parseHash(known);
   const i = levelAt(link.slot);
   if (i === undefined) return false;
   restoring = true;

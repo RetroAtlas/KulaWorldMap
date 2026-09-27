@@ -90,6 +90,22 @@ test("a link escaped on its way opens where it points, and the address bar says 
   expect(page.url()).toContain("#INCA/11/45,35/");
 });
 
+test("a hash that arrives while a write of the URL is queued is the one the map goes to", async ({
+  page,
+}) => {
+  await page.goto("/#INCA/7");
+  await settle(page);
+  await still(page);
+  await page.evaluate(async () => {
+    const { writeHash } = await import(new URL("js/navigate.js", location.href).href);
+    // the hash changes in the frame the write is queued for, before the write runs
+    requestAnimationFrame(() => (location.hash = "#ARCTIC/1"));
+    writeHash();
+  });
+  await expect(page.locator("#chip")).toContainText("LEVEL 47");
+  await expect(page).toHaveURL(/#ARCTIC\/1\//);
+});
+
 test("a hash naming no level puts the address bar back", async ({ page }) => {
   await page.goto("/#HIRO/11");
   await settle(page);
