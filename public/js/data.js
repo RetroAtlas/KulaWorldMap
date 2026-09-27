@@ -419,20 +419,27 @@ export function index(l) {
 
 export const levelMarkers = (l) => l.records.flatMap(markersOf);
 
-/** A marker for every block of a kind that is only a block, but a plain one,
-    one per block: the lattice keeps the kind as the cell's value, or the
-    record the cell names keeps it where something stands on the block. */
-export function blockMarkers(l) {
-  const first = state.data.firstRecord;
+/** Every block of a kind that is only a block, but a plain one, with its cell
+    and a marker for it: the lattice keeps the kind as the cell's value, or
+    the record the cell names keeps it where something stands on the block. */
+export function kindBlocks(l, first) {
   const out = [];
-  for (let i = 3; i < l.cells.length; i += 4) {
-    const v = l.cells[i];
+  for (let i = 0; i < l.cells.length; i += 4) {
+    const [x, y, z, v] = l.cells.slice(i, i + 4);
     const kind = v < first ? v : l.records[v - first].kind;
     if (kind !== PLAIN && PLAIN_KINDS.has(kind))
-      out.push({ id: `k${kind}`, kind, type: null, f: [], face: null, variant: null });
+      out.push({
+        x,
+        y,
+        z,
+        marker: { id: `k${kind}`, kind, type: null, f: [], face: null, variant: null },
+      });
   }
   return out;
 }
+
+/** A marker for every block of a kind that is only a block, but a plain one, one per block. */
+export const blockMarkers = (l) => kindBlocks(l, state.data.firstRecord).map((b) => b.marker);
 
 /** How many blocks a level puts in play: the lattice's, and the ones the game
     stands where the lattice leaves a cell empty, at the ends of a beam and

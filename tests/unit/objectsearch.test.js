@@ -1,7 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations } from "./fixtures.js";
-import { setAnnotations, markersOf } from "../../public/js/data.js";
+import {
+  setAnnotations,
+  markersOf,
+  kindBlocks,
+  levelMarkers,
+  blockMarkers,
+  kindName,
+} from "../../public/js/data.js";
+import { state } from "../../public/js/state.js";
 import { parseQuery, queryTerms } from "../../public/js/searchquery.js";
 import { matchObjects, objectCandidates, rowOf } from "../../public/js/objectsearch.js";
 
@@ -11,9 +19,12 @@ const find = (q) => {
   const groups = parseQuery(q);
   return matchObjects(mapData, groups, queryTerms(groups));
 };
-const placed = mapData.levels.reduce((n, l) => n + l.records.flatMap(markersOf).length, 0);
+const blocks = mapData.levels.flatMap((l) => kindBlocks(l, mapData.firstRecord));
+const placed =
+  mapData.levels.reduce((n, l) => n + l.records.flatMap(markersOf).length, 0) + blocks.length;
+const ofKind = (kind) => blocks.filter((b) => b.marker.kind === kind).length;
 
-test("every marker the game places is a candidate, once, in the disc's order", () => {
+test("every marker the game places, and every block of a kind of its own, is a candidate, once, in the disc's order", () => {
   const rows = objectCandidates(mapData);
   assert.equal(rows.length, placed);
   assert.equal(objectCandidates(mapData), rows);
@@ -71,6 +82,53 @@ test("the name's rank: exact, prefix, substring, then a match outside the name",
   for (const c of find("starts=off")) assert.equal(c.rank, 3);
 });
 
+test("a block of a kind of its own answers to its name, its kind and its number", () => {
+  for (const kind of [1, 2, 3, 4]) {
+    const byName = find(kindName(kind));
+    assert.ok(byName.length > 0, kindName(kind));
+    assert.ok(byName.every((c) => c.marker.face === null && c.marker.kind === kind));
+    assert.equal(byName.length, ofKind(kind), kindName(kind));
+    assert.equal(find(`kind=${kind}`).length, ofKind(kind));
+    const bare = find(String(kind)).filter((c) => c.marker.face === null && c.marker.type === null);
+    assert.equal(bare.length, ofKind(kind));
+    assert.ok(bare.every((c) => c.marker.kind === kind));
+  }
+  assert.equal(find("invisible").length, ofKind(3));
+  assert.equal(find("acid").length, ofKind(4));
+  // a single face of ice is an object, and the whole block is not
+  const ice = find("ice");
+  assert.ok(ice.some((c) => c.marker.face !== null));
+  assert.equal(ice.filter((c) => c.marker.face === null).length, ofKind(2));
+});
+
+test("block alone finds every block named for its kind, and no plain one", () => {
+  const hits = find("block");
+  assert.ok(hits.every((c) => c.marker.face === null && / block$/.test(c.name)));
+  const kinds = new Set(hits.map((c) => c.marker.kind));
+  assert.deepEqual([...kinds].sort(), [1, 2, 3, 4, 6, 7]);
+  assert.equal(find("kind=0").length, 0);
+});
+
+test("a block's row carries no type, since a block has none", () => {
+  for (const c of objectCandidates(mapData).filter((c) => c.marker.type === null))
+    assert.ok(!c.tokens.includes("null") && !c.more.some((s) => s.startsWith("type=")));
+  assert.equal(find("null").length, 0);
+});
+
+test("the search finds in a level what the legend counts there", () => {
+  state.data = mapData;
+  const tally = (markers) => {
+    const n = new Map();
+    for (const m of markers) n.set(m.id, (n.get(m.id) || 0) + 1);
+    return n;
+  };
+  const byLevel = Map.groupBy(objectCandidates(mapData), (c) => c.li);
+  mapData.levels.forEach((l, li) => {
+    const legend = tally([...levelMarkers(l), ...blockMarkers(l)]);
+    assert.deepEqual(tally((byLevel.get(li) ?? []).map((c) => c.marker)), legend, l.name);
+  });
+});
+
 const rowFor = (q) => {
   const groups = parseQuery(q);
   const terms = queryTerms(groups);
@@ -88,6 +146,10 @@ test("a row names the face and cell, and nothing more where the name says why", 
 test("a bare number says on every row which type or kind it named", () => {
   for (const row of rowFor("31")) assert.ok(row.includes("type=31"), row.join(" "));
   for (const row of rowFor("kind 6")) assert.ok(row.includes("kind=6"), row.join(" "));
+  const rows = rowFor("2");
+  assert.ok(rows.some((row) => row.includes("kind=2")));
+  for (const row of rows)
+    assert.ok(row.includes("type=2") || row.includes("kind=2"), row.join(" "));
 });
 
 test("a raw pair a term named joins the row, once", () => {

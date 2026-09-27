@@ -1,12 +1,13 @@
-// Every object the game places, one candidate each, as search targets: what
-// it is, where it stands, and the fields its record carries, decoded where
-// the map decodes them and raw beside that. No DOM, so it stays importable
-// in bare Node.
+// Every object the game places, and every block of a kind of its own, one
+// candidate each, as search targets: what it is, where it stands, and the
+// fields its record carries, decoded where the map decodes them and raw beside
+// that. No DOM, so it stays importable in bare Node.
 import { cellKey } from "./state.js";
 import {
   FACE_NAME,
   DIRECTION_NAME,
   markersOf,
+  kindBlocks,
   markerLabel,
   entryName,
   markerFacing,
@@ -28,7 +29,7 @@ function pairs(m) {
   if (state !== null) shown.push(`starts=${state}`);
   const more = [];
   if (m.face === null) more.push(`kind=${m.kind}`);
-  more.push(`type=${m.type}`);
+  if (m.type !== null) more.push(`type=${m.type}`);
   const points = markerPoints(m);
   if (points) more.push(`points=${points}`);
   m.f.forEach((v, i) => {
@@ -38,17 +39,17 @@ function pairs(m) {
   return { shown, more };
 }
 
-function candidate(li, l, r, m) {
+function candidate(li, l, at, m) {
   const name = markerLabel(m);
   const family = entryName(m);
   const face = m.face === null ? null : FACE_NAME[m.face];
-  const cell = `${r.x},${r.y},${r.z}`;
+  const cell = `${at.x},${at.y},${at.z}`;
   const { shown, more } = pairs(m);
   const words = [
     name,
     family !== name ? family : null,
     m.face === null ? `kind ${m.kind}` : null,
-    `type ${m.type}`,
+    m.type !== null ? `type ${m.type}` : null,
     face,
     ...shown,
     ...more,
@@ -56,9 +57,9 @@ function candidate(li, l, r, m) {
   return {
     li,
     level: l,
-    record: r,
+    at: { x: at.x, y: at.y, z: at.z },
     marker: m,
-    key: cellKey(r.x, r.y, r.z),
+    key: cellKey(at.x, at.y, at.z),
     name,
     face,
     cell,
@@ -72,12 +73,13 @@ function candidates(data) {
   const out = [];
   data.levels.forEach((l, li) => {
     for (const r of l.records) for (const m of markersOf(r)) out.push(candidate(li, l, r, m));
+    for (const b of kindBlocks(l, data.firstRecord)) out.push(candidate(li, l, b, b.marker));
   });
   return out;
 }
 
-// The index reads the records and the names, which nothing changes after
-// boot, so the key needs no invalidation.
+// The index reads the lattice, the records and the names, which nothing
+// changes after boot, so the key needs no invalidation.
 const cache = new WeakMap();
 
 export function objectCandidates(data) {
@@ -104,7 +106,7 @@ export function rowOf(h, terms) {
   return [h.face, h.cell, ...h.shown, ...matched].filter(Boolean);
 }
 
-/** Every object a query matches, in the disc's order, each with its name's rank. */
+/** Every object and block a query matches, in the disc's order, each with its name's rank. */
 export function matchObjects(data, groups, terms) {
   return objectCandidates(data)
     .filter((c) => matchesBy(groups, answers(c)))

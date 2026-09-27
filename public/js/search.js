@@ -97,7 +97,7 @@ on("go-to", ({ x, y, z, said }) => {
 
 function jump(h) {
   if (h.li !== state.li) selectLevel(h.li);
-  goTo(h.record.x, h.record.y, h.record.z);
+  goTo(h.at.x, h.at.y, h.at.z);
   say([h.name, h.face, h.cell, levelTitle(h.level)].filter(Boolean).join(", "));
 }
 

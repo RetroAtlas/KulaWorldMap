@@ -497,6 +497,55 @@ test("a search counts objects, blocks by their kind, and settings apart", async 
   await expect(more).toContainText("no objects, blocks or settings in");
 });
 
+test("a block of a kind of its own is found as often as the legend counts it, and a row goes to it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  for (const [hash, title, name, kind, alone] of [
+    ["#INCA/7", "LEVEL 38", "Fire block", 1, "fire"],
+    ["#ARCTIC/1", "LEVEL 47", "Ice block", 2, "ice"],
+  ]) {
+    await page.goto(`/${hash}`);
+    await settle(page);
+    await expect(page.locator("#chip")).toContainText(title);
+    const search = page.locator("#search");
+    const found = page.locator("#found");
+    const noun = name.toLowerCase();
+    await search.fill(noun);
+    await expect(page.locator("#results [role=group]").first()).toHaveAttribute(
+      "aria-label",
+      new RegExp(` · ${title}$`),
+    );
+    await expect(found).toHaveText(new RegExp(`^\\d+ ${noun}s$`));
+    await page.locator("#scope button").nth(2).click();
+    const legend = page.locator("#kinds li", { hasText: name }).locator(".n");
+    const n = Number(await legend.textContent());
+    expect(n).toBeGreaterThan(1);
+    await expect(found).toHaveText(new RegExp(`^${n} ${noun}s in ${title} · `));
+    const rows = page.locator("#results [role=option]");
+    await expect(rows).toHaveCount(n);
+    await search.fill(alone);
+    await expect(found).toContainText(`${n} ${noun}s in ${title}`);
+    await search.fill(`kind=${kind}`);
+    await expect(found).toHaveText(new RegExp(`^${n} ${noun}s in ${title} · `));
+
+    // Enter goes to the first and selects it, as a click on the block would
+    await expect(rows.first()).toContainText(new RegExp(`${name} \\d+,\\d+,\\d+ · kind=${kind}$`));
+    const [, x, y, z] = /(\d+),(\d+),(\d+)/.exec(await rows.first().textContent());
+    await search.press("Enter");
+    const selected = await page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { x, y, z } = state.selected;
+      return [x, y, z];
+    });
+    expect(selected).toEqual([x, y, z].map(Number));
+    expect((await headings(page))[0]).toBe(name);
+    await expect(page.locator("#say")).toHaveText(`${name}, ${x},${y},${z}, ${title}`);
+    await search.press("Escape");
+  }
+  expect(errors).toEqual([]);
+});
+
 test("an object search lists every one round the level in hand, and a row goes there", async ({
   page,
 }) => {
