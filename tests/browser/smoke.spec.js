@@ -80,6 +80,16 @@ test("a link naming a pack and a slot opens that level, whatever its case", asyn
   expect(page.url()).toContain("#COPYCAT/4/30,20/");
 });
 
+test("a link escaped on its way opens where it points, and the address bar says it plainly", async ({
+  page,
+}) => {
+  await page.goto("/#INCA%2F11%2F45%2C35");
+  await settle(page);
+  await frame(page);
+  await expect(page.locator("#chip")).toContainText("LEVEL 42");
+  expect(page.url()).toContain("#INCA/11/45,35/");
+});
+
 test("a hash naming no level puts the address bar back", async ({ page }) => {
   await page.goto("/#HIRO/11");
   await settle(page);

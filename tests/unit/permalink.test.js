@@ -66,3 +66,12 @@ test("what follows the slice is read by its shape, and a segment the reader does
   for (const tail of ["", "/on=red", "/21,13", "/21.5,13,18", "/-21,13,18"])
     assert.equal(parseHash(head + tail).picked, null, tail);
 });
+
+test("a link escaped on its way reads as the link", () => {
+  const link = parseHash("#INCA%2F11%2F45%2C35%2F0.90%2F17%2C17%2C17%2F0%2C0%2F33%2F17%2C12%2C17");
+  assert.equal(link.slot, "INCA/11");
+  assert.deepEqual(link.turn, [45, 35]);
+  assert.deepEqual(link.picked, [17, 12, 17]);
+  assert.equal(parseHash("#HIRO/0/45%2c35").turn[1], 35);
+  assert.equal(parseHash("#HIRO/0/100%/1").slot, "HIRO/0");
+});

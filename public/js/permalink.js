@@ -25,11 +25,24 @@ const numbers = (segment, n) => {
 
 const CELL = /^\d+,\d+,\d+$/;
 
+// The map escapes nothing it writes, but a share sheet or a mail client may
+// escape a link on its way; a % that is no escape leaves the link as it came.
+const unescaped = (text) => {
+  if (!text.includes("%")) return text;
+  try {
+    return decodeURIComponent(text);
+  } catch {
+    return text;
+  }
+};
+
 /** What a hash names, each part null where the hash leaves it out or it cannot be read.
     The head is read by position and the rest by shape, in any order, so a
     segment the reader does not know is passed over rather than read as another. */
 export function parseHash(hash) {
-  const [pack, slot, turn, zoom, target, pan, slice, ...tail] = hash.replace(/^#/, "").split("/");
+  const [pack, slot, turn, zoom, target, pan, slice, ...tail] = unescaped(
+    hash.replace(/^#/, ""),
+  ).split("/");
   const scale = numbers(zoom, 1)?.[0];
   const ceiling = numbers(slice, 1)?.[0];
   const cell = tail.find((segment) => CELL.test(segment));
