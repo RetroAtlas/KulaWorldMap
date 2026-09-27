@@ -5,6 +5,8 @@ const DEG = Math.PI / 180;
 const REDUCED = "(prefers-reduced-motion: reduce)";
 export const PITCH_MIN = -84;
 export const PITCH_MAX = 84;
+export const ZOOM_MIN = 0.08;
+export const ZOOM_MAX = 5;
 
 export const state = {
   data: null,

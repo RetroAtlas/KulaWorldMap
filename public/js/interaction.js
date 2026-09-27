@@ -1,5 +1,15 @@
 import { $, emit } from "./dom.js";
-import { state, SIDE, BLOCK, PITCH_MIN, PITCH_MAX, cellKey, pivot } from "./state.js";
+import {
+  state,
+  SIDE,
+  BLOCK,
+  PITCH_MIN,
+  PITCH_MAX,
+  ZOOM_MIN,
+  ZOOM_MAX,
+  cellKey,
+  pivot,
+} from "./state.js";
 import { draw, cellAt, invalidatePick, pointing } from "./render.js";
 import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
@@ -168,7 +178,7 @@ export function zoomAt(px, py, factor) {
   hold();
   const { w, h } = state.view;
   const before = state.cam.zoom * BLOCK;
-  state.cam.zoom = Math.max(0.08, Math.min(5, state.cam.zoom * factor));
+  state.cam.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.cam.zoom * factor));
   const after = state.cam.zoom * BLOCK;
   // keep whatever sits under the pointer where it is
   const ox = px - w / 2,

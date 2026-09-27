@@ -1,5 +1,5 @@
 import { $, emit, on } from "./dom.js";
-import { state, SIDE, BLOCK, project, levelCentre, cellKey, sliceZ } from "./state.js";
+import { state, SIDE, BLOCK, ZOOM_MIN, project, levelCentre, cellKey, sliceZ } from "./state.js";
 import {
   index,
   worldName,
@@ -70,7 +70,7 @@ export function fit() {
   const pad = 60;
   const zx = (w - pad) / Math.max(1e-3, (x1 - x0) * BLOCK);
   const zy = (h - pad) / Math.max(1e-3, (y1 - y0) * BLOCK);
-  state.cam.zoom = Math.max(0.08, Math.min(3, Math.min(zx, zy)));
+  state.cam.zoom = Math.max(ZOOM_MIN, Math.min(3, Math.min(zx, zy)));
 }
 
 export function centreOn(x, y, z) {
