@@ -197,6 +197,8 @@ async function capture(page, c, keep) {
       }
       if (c.zoom) state.cam.zoom = c.zoom;
       if (c.pan) [state.cam.panX, state.cam.panY] = c.pan;
+      // a pose rather than a fit, which a resize leaves where it is
+      if (c.zoom || c.pan) state.framing = null;
       const l = state.lvl;
       const idx = state.idx;
       if (c.slice === "mid") state.slice = SIDE - 1 - Math.round((l.min[2] + l.max[2]) / 2);

@@ -44,6 +44,8 @@ try {
     state.cam.zoom *= 0.78;
     state.cam.panX = -6.4;
     state.cam.panY = 2.1;
+    // a pose rather than a fit, which a resize leaves where it is
+    state.framing = null;
     state.show.labels = false;
     state.show.start = false;
     render.invalidatePick();
