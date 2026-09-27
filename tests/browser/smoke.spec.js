@@ -790,6 +790,27 @@ test("a camera moved on purpose stays where it was put as the canvas resizes, un
           ),
         ),
     ],
+    [
+      "a pinch",
+      () =>
+        page.evaluate(() => {
+          const cv = document.getElementById("cv");
+          const finger = (id, x) =>
+            new Touch({ identifier: id, target: cv, clientX: x, clientY: 400 });
+          const touches = (type, list) => cv.dispatchEvent(new TouchEvent(type, { touches: list }));
+          // the first finger's press is still a click when the second lands
+          cv.dispatchEvent(
+            new PointerEvent("pointerdown", { clientX: 560, clientY: 400, pointerId: 1 }),
+          );
+          touches("touchstart", [finger(1, 560)]);
+          touches("touchstart", [finger(1, 560), finger(2, 640)]);
+          touches("touchmove", [finger(1, 530), finger(2, 690)]);
+          touches("touchend", []);
+          cv.dispatchEvent(
+            new PointerEvent("pointerup", { clientX: 530, clientY: 400, pointerId: 1 }),
+          );
+        }),
+    ],
     ["an arrow", () => page.keyboard.press("ArrowLeft")],
     ["a zoom key", () => page.keyboard.press("-")],
     ["a snap of the turn", () => page.keyboard.press("q")],
