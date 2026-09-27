@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData } from "./fixtures.js";
-import { SIDE, PITCH_MAX, ZOOM_MIN, ZOOM_MAX } from "../../public/js/state.js";
+import { SIDE, PITCH_MAX, ZOOM_MIN, ZOOM_MAX, state, screen } from "../../public/js/state.js";
 import { slotOf, formatHash, parseHash } from "../../public/js/permalink.js";
 
 const cam = { yaw: 45, pitch: 35, zoom: 0.9, panX: 0, panY: 0 };
@@ -89,4 +89,42 @@ test("a cell outside the lattice names nothing, and a slot is a number", () => {
   assert.equal(parseHash(`${head}/${SIDE},0,0`).picked, null);
   assert.deepEqual(parseHash(`${head}/${SIDE - 1},0,0`).picked, [SIDE - 1, 0, 0]);
   assert.equal(parseHash("#inca/011").slot, "INCA/11");
+});
+
+// Every later version reads the links already shared, so the zoom's scale and
+// the camera's axes cannot move without moving every one of them.
+test("a link puts the lattice where it always has on the screen", (t) => {
+  const was = structuredClone({ cam: state.cam, target: state.target, view: state.view });
+  t.after(() => {
+    Object.assign(state.cam, was.cam);
+    state.target = was.target;
+    state.view = was.view;
+  });
+  const link = parseHash("#INCA/11/30,20/1.50/17,12,17/0.5,-0.25/33");
+  [state.cam.yaw, state.cam.pitch] = link.turn;
+  [state.cam.panX, state.cam.panY] = link.pan;
+  state.cam.zoom = link.zoom;
+  state.target = link.target;
+  state.view = { w: 800, h: 600, dpr: 1 };
+  for (const [cell, at] of [
+    [
+      [17, 12, 17],
+      [374.5, 312.75],
+    ],
+    [
+      [18, 12, 17],
+      [418.667, 321.472],
+    ],
+    [
+      [17, 13, 17],
+      [349, 327.856],
+    ],
+    [
+      [17, 12, 18],
+      [374.5, 360.674],
+    ],
+  ]) {
+    const [x, y] = screen(...cell);
+    assert.ok(Math.abs(x - at[0]) < 1e-3 && Math.abs(y - at[1]) < 1e-3, `${cell}: ${x},${y}`);
+  }
 });
