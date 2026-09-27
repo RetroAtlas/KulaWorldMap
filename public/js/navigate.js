@@ -13,6 +13,7 @@ import {
 } from "./data.js";
 import { draw, invalidatePick } from "./render.js";
 import { showCell, clearDetail } from "./detail.js";
+import { slotOf, formatHash, parseHash } from "./permalink.js";
 
 export function selectLevel(i, { keepView = false } = {}) {
   const l = state.data.levels[i];
@@ -105,7 +106,6 @@ export function chip() {
 // the last line of applyHash. Anything that writes the hash before then would
 // put those defaults in the URL, and the next reload would believe them.
 let restoring = false;
-const r2 = (v) => Math.round(v * 100) / 100;
 
 // Browsers rate-limit replaceState (Safari at 100 per 30s, Firefox at 50 per
 // 10s) and throw once past it, so a drag that wrote on every pointer event
@@ -117,13 +117,10 @@ let queued = 0;
 // the same frame, so the one write carries it.
 let entry = false;
 
-// A level is keyed by its pack and its slot in it, which is the disc's own
-// address and the one the cheat takes.
-const slotOf = (l) => `${/([^/]+)\.PAK$/.exec(l.pack)[1]}/${l.index}`;
 let slots = null;
 const levelAt = (slot) => {
   if (!slots) slots = new Map(state.data.levels.map((l, i) => [slotOf(l), i]));
-  return slots.get(slot.toUpperCase());
+  return slots.get(slot);
 };
 
 export function writeHash(push = false) {
@@ -137,48 +134,37 @@ function flushHash() {
   entry = false;
   const l = state.lvl;
   if (!l || restoring) return;
-  const c = state.cam;
   const s = state.selected;
-  const t = state.target.map((v) => r2(v)).join(",");
-  const h =
-    `#${slotOf(l)}/${Math.round(c.yaw)},${Math.round(c.pitch)}/${c.zoom.toFixed(2)}` +
-    `/${t}/${r2(c.panX)},${r2(c.panY)}/${state.slice}` +
-    (s ? `/${s.x},${s.y},${s.z}` : "");
+  const h = formatHash({
+    slot: slotOf(l),
+    cam: state.cam,
+    target: state.target,
+    slice: state.slice,
+    picked: s && [s.x, s.y, s.z],
+  });
   if (location.hash === h) return;
   if (push) history.pushState(null, "", h);
   else history.replaceState(null, "", h);
 }
 
-/** A segment of the hash as `n` numbers, or null where it is missing or is not that. */
-const numbers = (segment, n) => {
-  const v = segment ? segment.split(",").map(Number) : [];
-  return v.length === n && v.every(Number.isFinite) ? v : null;
-};
-
 export function applyHash() {
-  const [pack, slot, turn, zoom, target, pan, slice, picked] = location.hash.slice(1).split("/");
-  const i = levelAt(`${pack}/${slot}`);
+  const link = parseHash(location.hash);
+  const i = levelAt(link.slot);
   if (i === undefined) return false;
   restoring = true;
   // Going back to another view of the level in hand keeps what was set on it,
   // the kinds hidden in the legend among them.
   if (i !== state.li) selectLevel(i, { keepView: true });
-  const angles = numbers(turn, 2);
-  if (angles) [state.cam.yaw, state.cam.pitch] = angles;
-  const centre = numbers(target, 3);
-  if (centre) state.target = centre;
+  if (link.turn) [state.cam.yaw, state.cam.pitch] = link.turn;
+  if (link.target) state.target = link.target;
   else fit();
-  const scale = numbers(zoom, 1)?.[0];
-  if (scale > 0) state.cam.zoom = scale;
-  const offset = numbers(pan, 2);
-  if (offset) [state.cam.panX, state.cam.panY] = offset;
+  if (link.zoom) state.cam.zoom = link.zoom;
+  if (link.pan) [state.cam.panX, state.cam.panY] = link.pan;
   // A link that names where the camera is holds it there, and one that names
   // no more than the turn is framed at that turn.
-  if (scale > 0 || centre || offset) state.framing = null;
-  const ceiling = numbers(slice, 1)?.[0];
-  state.slice = Number.isInteger(ceiling) && ceiling >= 0 ? Math.min(SIDE - 1, ceiling) : SIDE - 1;
-  const at = numbers(picked, 3);
-  const cell = at && state.idx.cells.get(cellKey(...at));
+  if (link.zoom || link.target || link.pan) state.framing = null;
+  state.slice = link.slice ?? SIDE - 1;
+  const cell = link.picked && state.idx.cells.get(cellKey(...link.picked));
   if (cell) showCell(cell);
   else clearDetail();
   restoring = false;

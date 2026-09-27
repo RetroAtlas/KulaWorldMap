@@ -1,0 +1,60 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mapData } from "./fixtures.js";
+import { SIDE } from "../../public/js/state.js";
+import { slotOf, formatHash, parseHash } from "../../public/js/permalink.js";
+
+const cam = { yaw: 45, pitch: 35, zoom: 0.9, panX: 0, panY: 0 };
+
+test("every level has a key of its own, and a link reads back the key it was written with", () => {
+  const keys = mapData.levels.map(slotOf);
+  assert.equal(new Set(keys).size, keys.length);
+  for (const slot of keys) {
+    const hash = formatHash({ slot, cam, target: [17, 17, 17], slice: SIDE - 1 });
+    assert.equal(parseHash(hash).slot, slot);
+  }
+});
+
+test("a view written into a link reads back as that view", () => {
+  const hash = formatHash({
+    slot: "INCA/11",
+    cam: { yaw: 44.6, pitch: 35.2, zoom: 0.904, panX: 1.234, panY: -0.5 },
+    target: [17.5, 12, 16.556],
+    slice: 20,
+    picked: [17, 12, 17],
+  });
+  assert.equal(hash, "#INCA/11/45,35/0.90/17.5,12,16.56/1.23,-0.5/20/17,12,17");
+  assert.deepEqual(parseHash(hash), {
+    slot: "INCA/11",
+    turn: [45, 35],
+    zoom: 0.9,
+    target: [17.5, 12, 16.56],
+    pan: [1.23, -0.5],
+    slice: 20,
+    picked: [17, 12, 17],
+  });
+});
+
+test("a link names its level whatever its case", () => {
+  assert.equal(parseHash("#copycat/4/30,20").slot, "COPYCAT/4");
+});
+
+test("a part a link leaves out, or that cannot be read, reads as not named", () => {
+  assert.deepEqual(parseHash("#HIRO/0"), {
+    slot: "HIRO/0",
+    turn: null,
+    zoom: null,
+    target: null,
+    pan: null,
+    slice: null,
+    picked: null,
+  });
+  const odd = parseHash("#HIRO/0/45/-1/1,2/x,y/3.5/1,2");
+  for (const part of ["turn", "zoom", "target", "pan", "slice", "picked"])
+    assert.equal(odd[part], null, part);
+});
+
+test("a slice past the top of the lattice is the whole level", () => {
+  assert.equal(parseHash("#HIRO/0/45,35/1/17,17,17/0,0/99").slice, SIDE - 1);
+  assert.equal(parseHash("#HIRO/0/45,35/1/17,17,17/0,0/0").slice, 0);
+});
