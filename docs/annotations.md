@@ -14,7 +14,7 @@ The plain block, style 0 in the lattice and kind 0 in a record: every block that
 
 ### kind 1: Fire block
 
-The lattice's style 1 and a record's kind 1 are the same thing, the second being a fire block with something standing on it: LEVEL 35, the walkthrough's first fire, is style 1 and kind 1 and nothing else new, and so are LEVEL 44, 123 and 126. It is a hazard: the walkthrough's fire inflates the ball until it pops or reaches cooler ground, and in play the ball swells and reddens on it and burns on the third fire square in a row (2026-09-24). The code heats the ball on fire, by 40 a frame and by 600 at a time besides, and past 2000 sets it dying with a cause of its own rather than the captivators' (`0x8003ab40` to `0x8003ac14`), which is why the notes say it burns.
+The lattice's style 1 and a record's kind 1 are the same thing, the second being a fire block with something standing on it: LEVEL 35, the walkthrough's first fire, is style 1 and kind 1 and nothing else new, and so are LEVEL 44, 123 and 126. It is a hazard: the walkthrough's fire inflates the ball until it pops or reaches cooler ground, and in play the ball swells and reddens on it and burns on the third fire square in a row. The code heats the ball on fire, by 40 a frame and by 600 at a time besides, and past 2000 sets it dying with a cause of its own rather than the captivators' (`0x8003ab40` to `0x8003ac14`), which is why the notes say it burns.
 
 ### kind 2: Ice block
 
@@ -28,7 +28,7 @@ How one shows is the executable's: [motion.md](motion.md) has the routine. It is
 
 ### kind 4: Acid block
 
-One cell in each copy of OBJ LEVEL and nowhere else, so the walkthrough never meets it. The loader paints it with the green splat, the fifteenth model of the artwork's table, and on OBJ LEVEL in play it is the green block (2026-09-16). The name was what it looks like until play settled it: the ball melts on it with the game calling out ACID! (2026-09-24), which makes it a hazard.
+One cell in each copy of OBJ LEVEL and nowhere else, so the walkthrough never meets it. The loader paints it with the green splat, the fifteenth model of the artwork's table, and on OBJ LEVEL in play it is the green block. The name was what it looks like until play settled it: the ball melts on it with the game calling out ACID!, which makes it a hazard.
 
 ### kind 5: Moving platform
 
@@ -44,7 +44,7 @@ LEVEL 76 introduces them in the walkthrough and carries the game's first kind 7.
 
 ### kind 8: Laser
 
-A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 123 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, its `f2` the axis and `f4` to `f9` the two ends, as on a moving platform and the lower first on all 123, and the slot after its own holds its circuit: the colour of the beam, and of the switch and teleporter that share it. At load the engine's routine at `0x80035a70` writes a plain block into the lattice at both ends and marks every cell between as beam, which is why 64 of the 246 ends are cells the level file leaves empty and the game stands a block on anyway. That a beam starts switched off, which the map draws broken, is the record's own flag, `f3`, 1 where the beam starts lit and 0 where it starts dark, which agrees with the switches of its colour on every level ([level-format.md](level-format.md)). The walkthrough calls lasers deadly to touch, and in play a beam burns the ball the moment it reaches it (2026-09-24), which makes it a hazard.
+A beam between two cells, named in the record's own fields rather than drawn between blocks that happen to line up. It runs on one axis on all 123 in the game, and no block ever stands between its ends. The record's type is the direction from its own block to the far end, one of the six the game numbers, its `f2` the axis and `f4` to `f9` the two ends, as on a moving platform and the lower first on all 123, and the slot after its own holds its circuit: the colour of the beam, and of the switch and teleporter that share it. At load the engine's routine at `0x80035a70` writes a plain block into the lattice at both ends and marks every cell between as beam, which is why 64 of the 246 ends are cells the level file leaves empty and the game stands a block on anyway. That a beam starts switched off, which the map draws broken, is the record's own flag, `f3`, 1 where the beam starts lit and 0 where it starts dark, which agrees with the switches of its colour on every level ([level-format.md](level-format.md)). The walkthrough calls lasers deadly to touch, and in play a beam burns the ball the moment it reaches it, which makes it a hazard.
 
 ### kind 9: Level settings
 
@@ -102,7 +102,7 @@ LEVEL 61, the walkthrough's first arrows, carries the game's first twelve. `f2` 
 
 ### type 29: Start on a clock
 
-Two in the game, on LEVEL 58 and LEVEL 136 (`LEVEL 135` on the disc), and each level's only start. The routine that places the ball at `0x80036100` takes a type 29 like a type 30, faces the ball by the same field, and then makes the slot a clock, type 8, at `0x8003627c`, so the ball starts on a clock: the walkthrough opens LEVEL 136 with just that, and both starts were checked in play (2026-09-21). The face is painted with the clock's face like any clock's.
+Two in the game, on LEVEL 58 and LEVEL 136 (`LEVEL 135` on the disc), and each level's only start. The routine that places the ball at `0x80036100` takes a type 29 like a type 30, faces the ball by the same field, and then makes the slot a clock, type 8, at `0x8003627c`, so the ball starts on a clock: the walkthrough opens LEVEL 136 with just that, and both starts were checked in play. The face is painted with the clock's face like any clock's.
 
 ### type 30: Start
 
@@ -122,7 +122,7 @@ LEVEL 86 introduces them and carries the game's first; LEVEL 88 has either of tw
 
 ### type 34: Invincibility pill
 
-Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use, and the walkthrough never meets it. The name is play's: taken on OBJ LEVEL, it sets the ball flashing in colours, and while it does nothing harms it, not the spikes, the moving spikes, the stars, the rolling stone, the corkscrew or fire (2026-09-24). The code says the same. The ball's contact walk at `0x80038548` sends it to its case at `0x80038804`, which scores nothing, sets the word at `0x800ba340` to 840 and takes the pill off its face; the loader sets that word to -1 (`0x80035df8`), and the ball's routine counts it down by one a frame back to -1 (`0x8003b2f8`), so the pill lasts 14 s. Every path that sets the ball dying first tests that the word is -1: the laser's beam (`0x8003a960`), fire (`0x8003ab64`, `0x8003abc8`), the acid block (`0x8003acbc`), the spikes (`0x8003b050`), the moving spikes (`0x8003b108`), the things that travel (`0x80036760`) and type 42's brown form (`0x800386d8`). While the word runs, the same routine also sets the bouncy pill's word at `0x800ba33c` to -1 and the lethargy pill's at `0x800ba338` to 0 (`0x8003b324` to `0x8003b358`), and in play it cancels both pills (2026-09-24).
+Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use, and the walkthrough never meets it. The name is play's: taken on OBJ LEVEL, it sets the ball flashing in colours, and while it does nothing harms it, not the spikes, the moving spikes, the stars, the rolling stone, the corkscrew or fire. The code says the same. The ball's contact walk at `0x80038548` sends it to its case at `0x80038804`, which scores nothing, sets the word at `0x800ba340` to 840 and takes the pill off its face; the loader sets that word to -1 (`0x80035df8`), and the ball's routine counts it down by one a frame back to -1 (`0x8003b2f8`), so the pill lasts 14 s. Every path that sets the ball dying first tests that the word is -1: the laser's beam (`0x8003a960`), fire (`0x8003ab64`, `0x8003abc8`), the acid block (`0x8003acbc`), the spikes (`0x8003b050`), the moving spikes (`0x8003b108`), the things that travel (`0x80036760`) and type 42's brown form (`0x800386d8`). While the word runs, the same routine also sets the bouncy pill's word at `0x800ba33c` to -1 and the lethargy pill's at `0x800ba338` to 0 (`0x8003b324` to `0x8003b358`), and in play it cancels both pills.
 
 ### type 35: Hourglass
 
@@ -166,23 +166,23 @@ One placement in the game, on LEVEL 19, where the walkthrough's fruit stands and
 
 ### type 50: Captivator
 
-LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. That it is the thinner star with three long points was seen in play beside type 52, and it is the walkthrough's slower kind; `f2` is its direction. In play, touching it costs the ball its life, and the lost life is what restarts the level (2026-09-24). It is a hazard by the routine the things that travel share.
+LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. That it is the thinner star with three long points was seen in play beside type 52, and it is the walkthrough's slower kind; `f2` is its direction. In play, touching it costs the ball its life, and the lost life is what restarts the level. It is a hazard by the routine the things that travel share.
 
 ### type 51: Rolling stone
 
-Drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise. In play, touching it costs the ball its life (2026-09-24). It is a hazard by the routine the things that travel share.
+Drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise. In play, touching it costs the ball its life. It is a hazard by the routine the things that travel share.
 
 ### type 52: Captivator
 
-The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. That it is the fuller star with four short points was seen in play beside type 50, and it is the walkthrough's quick kind; `f2` is its direction. In play, touching it costs the ball its life, and the lost life is what restarts the level (2026-09-24). It is a hazard by the routine the things that travel share.
+The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. That it is the fuller star with four short points was seen in play beside type 50, and it is the walkthrough's quick kind; `f2` is its direction. In play, touching it costs the ball its life, and the lost life is what restarts the level. It is a hazard by the routine the things that travel share.
 
 ### type 53: Captivator, wandering
 
-LEVEL 84 carries four where the walkthrough says to watch their shaking to tell which way they will go. It has no direction field. Its walk is the same on every play of a level, which play on OBJ LEVEL showed (2026-09-25) and the game's dice explain, seeded as the level starts and drawn from by nothing else while the ball stands still ([motion.md](motion.md)). In play, touching it costs the ball its life, as the rolling stone does (2026-09-24). It is a hazard by the routine the things that travel share.
+LEVEL 84 carries four where the walkthrough says to watch their shaking to tell which way they will go. It has no direction field. Its walk is the same on every play of a level, which play on OBJ LEVEL showed and the game's dice explain, seeded as the level starts and drawn from by nothing else while the ball stands still ([motion.md](motion.md)). In play, touching it costs the ball its life, as the rolling stone does. It is a hazard by the routine the things that travel share.
 
 ### type 56: Captivator, bouncing
 
-LEVEL 45 carries six where the walkthrough says to roll under them when raised, and LEVEL 122's go up in sequence, which is what `f3`, four-valued, reads as: its phase ([motion.md](motion.md)). In play, touching it costs the ball its life (2026-09-24). It is a hazard by the routine the things that travel share.
+LEVEL 45 carries six where the walkthrough says to roll under them when raised, and LEVEL 122's go up in sequence, which is what `f3`, four-valued, reads as: its phase ([motion.md](motion.md)). In play, touching it costs the ball its life. It is a hazard by the routine the things that travel share.
 
 ## Levels
 
@@ -252,7 +252,7 @@ The walkthrough's maximum. The disc holds 100 more, two of the five crumbling bl
 
 ### /MARS/MARS.PAK#10: LEVEL 131
 
-The regional difference is The Cutting Room Floor's, which also calls the coin unreachable; in this release it is not. It is the blue coin on the -x face of the ice block at 7,16,21, and it was collected in play for the level's full 12,290, everything the disc holds (2026-09-24).
+The regional difference is The Cutting Room Floor's, which also calls the coin unreachable; in this release it is not. It is the blue coin on the -x face of the ice block at 7,16,21, and it was collected in play for the level's full 12,290, everything the disc holds.
 
 ### /MARS/MARS.PAK#11: LEVEL 132
 
