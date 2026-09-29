@@ -10,7 +10,7 @@ import {
   cellKey,
   pivot,
 } from "./state.js";
-import { draw, cellAt, invalidatePick, pointing } from "./render.js";
+import { draw, cellAt, invalidatePick, pointing, pressing } from "./render.js";
 import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
@@ -45,6 +45,7 @@ cv.addEventListener("contextmenu", (e) => e.preventDefault());
 
 cv.addEventListener("pointerdown", (e) => {
   pointing(true);
+  pressing(true);
   cv.setPointerCapture(e.pointerId);
   drag = { x: e.clientX, y: e.clientY, pan: panning(e) };
   moved = 0;
@@ -74,6 +75,7 @@ cv.addEventListener("pointermove", (e) => {
 });
 
 cv.addEventListener("pointerup", (e) => {
+  pressing(false);
   const r = cv.getBoundingClientRect();
   if (drag && moved < CLICK) {
     const c = cellAt(e.clientX - r.left, e.clientY - r.top);
@@ -89,6 +91,7 @@ cv.addEventListener("pointerup", (e) => {
   drag = null;
 });
 cv.addEventListener("pointercancel", () => {
+  pressing(false);
   drag = null;
 });
 cv.addEventListener("pointerleave", () => {

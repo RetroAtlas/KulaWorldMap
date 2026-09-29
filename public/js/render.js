@@ -36,18 +36,27 @@ const cv = $("cv");
 const ctx = cv.getContext("2d");
 
 // A second canvas painted with one flat colour per cell, so a click can be
-// resolved by reading a pixel rather than by intersecting every cube.
+// resolved by reading a pixel rather than by intersecting every cube. It is
+// painted from the cells of the draw it goes stale at.
 const pickCv = document.createElement("canvas");
 const pick = pickCv.getContext("2d", { willReadFrequently: true });
 let pickStale = true;
+let pickFrom = null;
 let pickList = [];
 const pickColour = (id) => `rgb(${id & 255} ${(id >> 8) & 255} ${(id >> 16) & 255})`;
 // What travels moves every frame, so while the pointer is over the map the
-// pick is painted again with every frame that moves anything.
+// pick is painted again with every frame that moves anything. While it is
+// pressed, turning the view or panning it, nothing reads the pick until it
+// lifts, so the pick waits for the hit test that reads it.
 let pointerIn = false;
+let pressed = false;
 /** Say whether the pointer is over the map. */
 export const pointing = (on) => {
   pointerIn = on;
+};
+/** Say whether the pointer is pressed on the map. */
+export const pressing = (on) => {
+  pressed = on;
 };
 
 // What shows through the blocks is drawn whole on a layer of its own and laid
@@ -226,8 +235,9 @@ export function draw() {
   if (moving?.size && pointerIn) pickStale = true;
   const cells = visible(idx, moving);
   if (pickStale) {
-    pickList = [];
-    pick.clearRect(0, 0, w, h);
+    pickFrom = { cells, l };
+    pickStale = false;
+    if (!pressed) paintPick();
   }
   const edges = state.show.outlines && state.cam.zoom > 0.3;
   const effect = effectFrame(frame);
@@ -255,9 +265,7 @@ export function draw() {
   };
 
   for (const c of cells) {
-    const [px, py] = screen(c.x, c.y, c.z);
-    const r = BLOCK * state.cam.zoom * 2;
-    if (px < -r || px > w + r || py < -r || py > h + r) continue;
+    if (offScreen(c)) continue;
     const home = c.home || c;
     const ghost = home.z < sliceZ();
     if (c.beams) {
@@ -269,10 +277,7 @@ export function draw() {
       continue;
     }
     if (c.thing) {
-      if (state.show.objects && !ghost) {
-        put(c.thing.w.m, home, l, frame, home, c.thing);
-        if (pickStale) pickGoing(c.thing, home, l);
-      }
+      if (state.show.objects && !ghost) put(c.thing.w.m, home, l, frame, home, c.thing);
       continue;
     }
     const key = cellKey(home.x, home.y, home.z);
@@ -284,13 +289,6 @@ export function draw() {
     const hov = state.hover?.key === key;
     if (drawBlock(ctx, c, home, key, ghost, sel, hov, scene)) spinning = true;
 
-    // a moving platform's blocks are picked where they are drawn, each as its record's cell
-    if (pickStale && !ghost) {
-      pickList.push({ home, at: c });
-      const col = pickColour(pickList.length);
-      cube(pick, c, { cells: new Map() }, () => col, null, 1, null);
-    }
-
     if (state.show.objects && !ghost && !c.k) {
       for (const m of idx.markers.get(key) || []) if (!away(m.face)) mark(m, c, home, key);
     }
@@ -300,7 +298,6 @@ export function draw() {
     }
     if (sel || hov) outline(ctx, c, idx, sel ? "#ffffff" : "#ffffffb0");
   }
-  pickStale = false;
 
   if (through.length) {
     if (layerCv.width !== cv.width || layerCv.height !== cv.height) {
@@ -347,6 +344,36 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) draw();
 });
 
+/** Whether a cell is too far off the canvas for anything of it to show. */
+function offScreen(c) {
+  const [px, py] = screen(c.x, c.y, c.z);
+  const r = BLOCK * state.cam.zoom * 2;
+  const { w, h } = state.view;
+  return px < -r || px > w + r || py < -r || py > h + r;
+}
+
+/** Paint the pick from the cells of the draw it went stale at, back to front
+    as the draw laid them, a moving platform's blocks where they were drawn,
+    each as its record's cell. */
+function paintPick() {
+  const { cells, l } = pickFrom;
+  pickFrom = null;
+  pickList = [];
+  pick.clearRect(0, 0, state.view.w, state.view.h);
+  for (const c of cells) {
+    if (offScreen(c)) continue;
+    const home = c.home || c;
+    if (home.z < sliceZ() || c.beams || c.rails || c.mark) continue;
+    if (c.thing) {
+      if (state.show.objects) pickGoing(c.thing, home, l);
+      continue;
+    }
+    pickList.push({ home, at: c });
+    const col = pickColour(pickList.length);
+    cube(pick, c, { cells: new Map() }, () => col, null, 1, null);
+  }
+}
+
 /** Paint a travelling thing into the pick where it has got to, as the cell it
     started from, which holds its record. A survey marks the block under the
     pointer, so there it is left out. */
@@ -389,6 +416,7 @@ const shows = (e, x, y) =>
 /** The cell under a client point, or null. */
 export function cellAt(cx, cy) {
   if (pickStale) draw();
+  if (pickFrom) paintPick();
   // Read the scale off the two canvases rather than assuming it is the device
   // ratio. Whenever the backing store and the element disagree the browser
   // stretches one onto the other, and a hit test that assumed otherwise would
