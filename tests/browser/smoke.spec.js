@@ -1589,12 +1589,12 @@ test("where the system asks for reduced motion the map opens still, and a choice
   expect(await kept()).toEqual({});
 });
 
-test("the camera target shows only on s", async ({ page }) => {
+test("the camera target shows only on c", async ({ page }) => {
   await page.goto("/#HIRO/0/45,35/1");
   await settle(page);
   await expect(page.locator("#showStart")).not.toBeChecked();
   expect(await written(page)).not.toContain("camera target");
-  await page.keyboard.press("s");
+  await page.keyboard.press("c");
   await expect(page.locator("#showStart")).toBeChecked();
   expect(await written(page)).toContain("camera target");
 });
@@ -1631,6 +1631,39 @@ test("the settings hold the switches used less, which keep their keys", async ({
   await settle(page);
   await expect(page.locator("#showFaces")).toBeChecked();
   await expect(page.locator("#showStart")).toBeChecked();
+});
+
+test("every switch's key is the one its row shows and the key list names", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const rows = await page.evaluate(() =>
+    [...document.querySelectorAll("label.check")].map((l) => ({
+      id: l.querySelector("input").id,
+      key: l.querySelector("kbd")?.textContent,
+    })),
+  );
+  expect(rows.map((r) => r.id).sort()).toEqual(
+    [
+      ...["showSkins", "showObjects", "showModels", "showMotion", "showThrough", "showLabels"],
+      ...["showOutlines", "showBase", "panMode", "showFaces", "showHidden", "showStart"],
+    ].sort(),
+  );
+  const keys = rows.map((r) => r.key);
+  expect(new Set(keys).size).toBe(keys.length);
+  for (const { id, key } of rows) {
+    const box = page.locator(`#${id}`);
+    const was = await box.isChecked();
+    await page.keyboard.press(key);
+    expect(await box.isChecked(), `${key} sets ${id}`).toBe(!was);
+    await page.keyboard.press(key);
+    expect(await box.isChecked(), `${key} sets ${id} back`).toBe(was);
+  }
+  await page.keyboard.press("s");
+  await expect(page.locator("#settings")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("?");
+  const listed = (await page.locator("#help dt").allTextContents()).flatMap((t) => t.split(" "));
+  for (const key of [...keys, "s"]) expect(listed).toContain(key);
 });
 
 test("the settings fit a phone, over the drawer they open from", async ({ page }) => {

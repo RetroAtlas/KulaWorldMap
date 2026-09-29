@@ -16,6 +16,7 @@ import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
 import { OFF_LATTICE, FACE_NAME, kindName, ownMarker, markerLabel, markerNow } from "./data.js";
 import { setSidebar, sidebarOverlays } from "./sidebar.js";
+import { openSettings } from "./settings.js";
 
 const cv = $("cv");
 const tip = $("tip");
@@ -300,8 +301,17 @@ addEventListener("keydown", (e) => {
     case "x":
       toggle("showThrough");
       break;
-    case "s":
+    case "c":
       toggle("showStart");
+      break;
+    case "h":
+      toggle("showHidden");
+      break;
+    case "p":
+      toggle("panMode");
+      break;
+    case "s":
+      openSettings();
       break;
     case "l":
       toggle("showLabels");
