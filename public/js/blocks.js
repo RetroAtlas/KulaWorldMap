@@ -224,10 +224,11 @@ function vanishingLook(r, frame, skinned) {
 const peak = (skins) => Array(3).fill(Math.max(...skins.cycles.invisible.level));
 
 // Near the ball an invisible face is lit corner by corner as the game lights
-// it, over the look the map draws it in so that it can be seen at all. Where
-// the level turns the light round, that look is the game's own from afar,
-// and a face of a block the ball's light reaches is drawn as the game draws
-// it there instead.
+// it, and the look the map draws it in so that it can be seen at all fills
+// in what the light leaves dark, so a face in full light is the game's own.
+// Where the level turns the light round, that look is the game's own from
+// afar, and a face of a block the ball's light reaches is drawn as the game
+// draws it there instead.
 const lights = new WeakMap();
 function lightUp(sk, l, home, face, corners) {
   const entry = kindMotion(INVISIBLE)?.light;
@@ -240,7 +241,7 @@ function lightUp(sk, l, home, face, corners) {
   const levels = cornersLit(light, ballsFor(l, face), cell, at, block);
   if (!levels || (!light.turned && !levels.some(Boolean))) return;
   sk.shaded = levels;
-  sk.over = !light.turned;
+  sk.fill = !light.turned;
 }
 
 /** The kind of block a cell draws: its style, or the kind of the record it names. */

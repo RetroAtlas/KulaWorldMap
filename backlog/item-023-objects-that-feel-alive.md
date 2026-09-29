@@ -8,7 +8,7 @@ The rule for all four is the boost button's: draw only what the game does, from 
 
 ## Sketch
 
-**1. Invisible blocks lit near the pointer.** Done (2026-09-29): the light is read in [motion.md](../docs/motion.md) under "The invisible block", shipped as kind 3's `light`, and drawn over the sunglasses look, or on the seven levels in place of it, by the stand-ins the boost button takes.
+**1. Invisible blocks lit near the pointer.** Done (2026-09-29): the light is read in [motion.md](../docs/motion.md) under "The invisible block", shipped as kind 3's `light`, and drawn with the sunglasses look filling in what the light leaves dark, or on the seven levels in place of that look, by the stand-ins the boost button takes.
 
 **2. Sparkles from devices that are on.** A teleporter or a switch that is on, and an exit that is open, gives off a sprite every 19 frames, counted in the last pad of its slot, with the sprite's handle kept in the kind word of the slot after (`0x8002d424`, in the draw rather than the walk). The images are in the .GGI's sprite section, which `tools/kula_ggi.py --textures` draws. Not yet read: which sprite it is, how it moves and how long it lives; the sprite system's own routine is where that is. A new reading, so it starts in the disc.
 

@@ -1614,17 +1614,33 @@ test("v holds the whole level still, the same every time, and draws nothing more
 
 /** How bright the top of an invisible block is near its edge with the
     block beside it, alone and with that block selected, which stands in for
-    the ball on it; both drawn at one frame, without the objects. */
-const litBeside = (page, sel, top) =>
+    the ball on it; both drawn without the objects at one frame of the
+    level's clock, the one of the next pulse where the top is at its dimmest,
+    or its brightest where `bright` asks, since the light shows only against
+    the end of the pulse it is not like. */
+const litBeside = (page, sel, top, bright = false) =>
   page.evaluate(
-    async ([sel, [x, y, z]]) => {
+    async ([sel, [x, y, z], bright]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
-      const [{ state, screen, cellKey }, { draw }] = await Promise.all(
-        ["state.js", "render.js"].map(at),
+      const [{ state, screen, cellKey }, { draw, clock }, { skinsTable }, { lookOf, faceSkin }] =
+        await Promise.all(["state.js", "render.js", "data.js", "skins.js"].map(at));
+      const l = state.lvl;
+      const skins = skinsTable();
+      const look = lookOf(
+        skins,
+        l,
+        state.data.themes.findIndex((t) => t.id === l.theme),
       );
+      const rec = state.idx.records.get(cellKey(x, y, z))?.[0] ?? null;
+      const level = (f) => faceSkin(skins, look, { x, y, z }, 0, 3, rec, f).colour[0];
       const now = performance.now;
       const t = now.call(performance);
       performance.now = () => t;
+      const from = clock();
+      let end = Math.floor(from);
+      for (let f = end; f < end + skins.cycles.invisible.level.length; f++)
+        if (bright ? level(f) > level(end) : level(f) < level(end)) end = f;
+      performance.now = () => t + ((end + 0.5 - from) * 1000) / 60;
       state.show.objects = false;
       state.hover = null;
       const g = document.getElementById("cv").getContext("2d");
@@ -1651,7 +1667,7 @@ const litBeside = (page, sel, top) =>
       draw();
       return [alone, beside];
     },
-    [sel, top],
+    [sel, top, bright],
   );
 
 test("an invisible block lights up beside the ball, until v holds it", async ({ page }) => {
@@ -1669,6 +1685,68 @@ test("an invisible block lights up beside the ball, until v holds it", async ({ 
   expect(errors).toEqual([]);
 });
 
+test("a face in full light is the game's lit face at any pulse, and an unlit one its pulse", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#INCA/0/45,35");
+  await settle(page);
+  await landed(page);
+  // the brightness of the top and the bottom rows of an invisible face
+  // painted alone on a canvas of its own, lit full along its top edge
+  const rows = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { atlasFor, paint }, { skinsTable }] = await Promise.all(
+      ["state.js", "atlas.js", "data.js"].map(at),
+    );
+    const tex = skinsTable().sets.arcade.kinds["3"][0];
+    const cv = Object.assign(document.createElement("canvas"), { width: 64, height: 64 });
+    const g = cv.getContext("2d");
+    const edges = (sk) => {
+      g.fillStyle = "#000";
+      g.fillRect(0, 0, 64, 64);
+      g.save();
+      g.beginPath();
+      g.rect(0, 0, 64, 64);
+      g.clip();
+      const face = { img: atlasFor(state.lvl.theme), tex, add: true, ...sk };
+      paint(
+        g,
+        [
+          [0, 0],
+          [64, 0],
+          [0, 64],
+        ],
+        face,
+        1,
+        1,
+      );
+      g.restore();
+      const d = g.getImageData(0, 0, 64, 64).data;
+      const row = (y) =>
+        d.slice(y * 256, y * 256 + 256).reduce((s, v, i) => s + (i % 4 < 3 ? v : 0), 0);
+      return [row(0), row(63)];
+    };
+    const lit = [128, 128, 0, 0];
+    return {
+      lit: edges({ shaded: lit }),
+      dim: edges({ colour: [48, 48, 48], shaded: lit, fill: true }),
+      bright: edges({ colour: [120, 120, 120], shaded: lit, fill: true }),
+      dimAlone: edges({ colour: [48, 48, 48] }),
+      brightAlone: edges({ colour: [120, 120, 120] }),
+    };
+  });
+  // within four levels a channel, on average along the row
+  const near = (a, b) => expect(Math.abs(a - b)).toBeLessThanOrEqual(4 * 64 * 3);
+  near(rows.dim[0], rows.lit[0]);
+  near(rows.bright[0], rows.lit[0]);
+  near(rows.dim[1], rows.dimAlone[1]);
+  near(rows.bright[1], rows.brightAlone[1]);
+  expect(rows.dim[0]).toBeGreaterThan(rows.dimAlone[0] * 1.5);
+  expect(rows.brightAlone[1]).toBeGreaterThan(rows.dimAlone[1] * 1.5);
+  expect(errors).toEqual([]);
+});
+
 test("where a level turns the light round, an invisible block beside the ball is gone", async ({
   page,
 }) => {
@@ -1677,7 +1755,7 @@ test("where a level turns the light round, an invisible block beside the ball is
   await page.goto("/#HAZE/0/45,35");
   await settle(page);
   await landed(page);
-  const [seen, gone] = await litBeside(page, [20, 10, 17], [20, 9, 17]);
+  const [seen, gone] = await litBeside(page, [20, 10, 17], [20, 9, 17], true);
   expect(gone).toBeLessThan(seen - 20);
   expect(errors).toEqual([]);
 });

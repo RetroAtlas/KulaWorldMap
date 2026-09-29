@@ -25,7 +25,7 @@ export const NEUTRAL = 128; // the brightness at which a face is its own colour
 // brightnesses: a two by two image drawn so that the middle of each of its
 // pixels lands on a corner, which the canvas's smoothing interpolates between.
 let shading = null;
-function through(sk, shade) {
+function through(sk, shade, levels) {
   const n = ATLAS.size;
   if (!shading) {
     const canvas = (w) => Object.assign(document.createElement("canvas"), { width: w, height: w });
@@ -35,7 +35,7 @@ function through(sk, shade) {
     shading = { corners, face, cg, fg: face.getContext("2d"), img: cg.createImageData(2, 2) };
   }
   const { corners, face, cg, fg, img } = shading;
-  sk.shaded.forEach((v, k) =>
+  levels.forEach((v, k) =>
     img.data.set([255, 255, 255, Math.round((255 * Math.min(v, NEUTRAL)) / NEUTRAL)], 4 * k),
   );
   cg.putImageData(img, 0, 0);
@@ -56,8 +56,9 @@ function through(sk, shade) {
     grey as a black wash, a brighter one as a white wash, and a tint by
     multiplying, which cannot brighten a channel but keeps the hue. A face
     the game shades between its corners carries their four brightnesses in
-    the texture's order, and is drawn through them in place of its colour,
-    or over it where it says so. */
+    the texture's order, and is drawn through them in place of its colour;
+    where it says so, its colour fills in as much as each corner falls short
+    of full. */
 export function paint(g, [p0, p1, p3], sk, shade, alpha) {
   const n = ATLAS.size;
   const ex = [(p1[0] - p0[0]) / n, (p1[1] - p0[1]) / n];
@@ -65,14 +66,24 @@ export function paint(g, [p0, p1, p3], sk, shade, alpha) {
   const base = g.getTransform();
   g.transform(ex[0], ex[1], ey[0], ey[1], p0[0], p0[1]);
   if (sk.add) g.globalCompositeOperation = "lighter";
-  if (!sk.shaded || sk.over) {
+  if (!sk.shaded || sk.fill) {
     const level = sk.colour ? (sk.colour[0] + sk.colour[1] + sk.colour[2]) / 3 : NEUTRAL;
     g.globalAlpha = sk.add ? alpha * Math.min(1, level / NEUTRAL) : alpha;
-    g.drawImage(sk.img, sk.tex * n + 0.5, shade * n + 0.5, n - 1, n - 1, 0, 0, n, n);
+    if (sk.shaded)
+      g.drawImage(
+        through(
+          sk,
+          shade,
+          sk.shaded.map((v) => NEUTRAL - v),
+        ),
+        0,
+        0,
+      );
+    else g.drawImage(sk.img, sk.tex * n + 0.5, shade * n + 0.5, n - 1, n - 1, 0, 0, n, n);
   }
   if (sk.shaded) {
     g.globalAlpha = alpha;
-    g.drawImage(through(sk, shade), 0, 0);
+    g.drawImage(through(sk, shade, sk.shaded), 0, 0);
   }
   g.setTransform(base);
   if (sk.colour && !sk.add) {
