@@ -25,8 +25,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import EXE, EXE_BASE, open_disc
-from mips import decode
+from kula_disc import EXE, EXE_BASE, THEMES, open_disc
+from mips import Machine, decode
 
 TURN = 4096          # the angle that is one full turn
 BLOCK = 512          # units across a block
@@ -121,6 +121,41 @@ CHECKS = [
     (0x800361cc, "sll $v1, $v1, 8", "half a block, where it touches the face"),
     (0x80039b74, "lh $v1, -24240($v1)", "a boost button measures its reach from that position"),
     (0x800368f0, "lh $v0, -24240($v0)", "and the light from it and a platform's travel"),
+    # A device that is on turns a light over every so many frames: it makes
+    # one from its cell and face, a list of faces with a level at each
+    # corner, gives it its colour while it holds it, and lets it go when it
+    # is turned off; each frame the faces of every light are shaded between
+    # their corners with the light added, before the walk that turns it over.
+    (0x8002d3d4, "addiu $v0, $v0, -5", "the draw of a thing on a block sends it on by its type"),
+    (0x8002d3f8, "lw $v0, 116($at)", "through a table of cases"),
+    (0x8002d468, "jal 0x8002e3d8", "a teleporter's case makes a light"),
+    (0x8002d594, "jal 0x8002e3d8", "and an exit's"),
+    (0x8002d660, "jal 0x8002e3d8", "and a switch's"),
+    (0x8002d41c, "bne $v1, $s4, 0x8002d6e0", "only while its f4 is 1"),
+    (0x8002d6ec, "jal 0x8002d994", "and lets it go otherwise"),
+    (0x8002d424, "lhu $v0, 30($s2)", "counting in the last pad of its slot"),
+    (0x8002d48c, "sh $v0, 32($s2)", "and keeping the light in the kind word of the slot after"),
+    (0x8002d6d0, "jal 0x8002f2b4", "and gives the light it holds its colour"),
+    (0x8002f2c0, "sw $a1, -3708($at)", "the first word of the light's entry"),
+    (0x800297c4, "sh $t2, 30($a0)", "the loader starts the count"),
+    (0x800297c8, "sh $t0, 32($a0)", "holding no light"),
+    (0x8002a4ac, "jal 0x80051020", "the frame adds the lights to their faces"),
+    (0x8002a614, "jal 0x80036958", "before the walk that turns them over"),
+    (0x800369b4, "jal 0x80039200", "which is the walk over the things on the blocks"),
+    (0x80039e5c, "jal 0x8002d2ac", "that draws each"),
+    (0x8002f1b8, "beq $v0, $v1, 0x8002f2a8", "a light takes a face only where the lattice holds a block"),
+    (0x8002f1d8, "beq $a3, $v1, 0x8002f2a8", "that has the face"),
+    (0x8002f1e0, "lbu $v1, 6($a3)", "and turns the levels by the face's turn"),
+    (0x80051098, "sw $zero, 0($a3)", "a corner of level 0 takes nothing"),
+    (0x800510e4, "sw $t7, 8($a3)", "of level 2 the light's colour"),
+    (0x800510bc, "sll $s0, $t7, 4", "and of level 1 the colour sixteen times over"),
+    (0x800510e8, "mvmva", "times a matrix"),
+    (0x800510f8, "srl $t7, $t7, 4", "and back down by sixteen"),
+    (0x80051118, "sw $t7, 4($a3)", "each channel's lowest bit cleared"),
+    (0x80051180, "lw $t6, 0($t6)", "each corner takes its level by its two bits"),
+    (0x80051188, "add $t5, $t5, $t6", "added to its colour"),
+    (0x80051198, "ori $t5, $t5, 255", "a channel that passes 255 stands at it"),
+    (0x800511b4, "and $t5, $t5, $v0", "less its lowest bit"),
     # The shadow under the ball and the captivators: a square of four
     # vertices, laid flat on the face and dropped where it faces away,
     # textured with one of two sprites past the group the .GGI's header
@@ -315,6 +350,17 @@ IMMEDIATES = [
     ("invisible block", "light.turned.near", "nothing within this far, units", 0x80027c40, "addiu $t0, $zero, {}"),
     ("invisible block", "light.turned.far", "and full from this far", 0x80027c44, "addiu $a3, $zero, {}"),
 
+    ("devices' light", "glow.every", "a teleporter turns its light over every this many frames", 0x8002d440,
+     "addiu $v0, $zero, {}"),
+    ("devices' light", "glow.every.exit", "an exit", 0x8002d56c, "addiu $v0, $zero, {}"),
+    ("devices' light", "glow.every.switch", "a switch", 0x8002d638, "addiu $v0, $zero, {}"),
+    ("devices' light", "glow.every.load", "and the loader starts the count at this", 0x80029764,
+     "addiu $t2, $zero, {}"),
+    ("devices' light", "glow.part.x", "level 1 is the colour times this of 4096 in red", 0x8005106c,
+     "addiu $t7, $zero, {}"),
+    ("devices' light", "glow.part.y", "in green", 0x80051078, "addiu $t7, $zero, {}"),
+    ("devices' light", "glow.part.z", "in blue", 0x80051084, "addiu $t7, $zero, {}"),
+
     ("dice", "dice.seed", "seeded with this as a level starts", 0x80025058, "addiu $a0, $zero, {}"),
     ("dice", "dice.plus", "a draw adds this after it multiplies", 0x8004742c, "addiu $v1, $a1, {}"),
 
@@ -396,6 +442,20 @@ LIGHT_ROOT = (0x800513f8, 0x800513fc)
 ROOT_ROWS = 24
 INVISIBLE = 3
 
+# A device's light: the routine that makes it from a cell and a face, the one
+# that adds a face to it where the face is there, and the three cases of the
+# draw, with where each builds the address of its table of colours, a word
+# a colour, four a world by the circuit or one a world.
+GLOW_MAKE = 0x8002e3d8
+GLOW_FACE = 0x8002f16c
+GLOW_CASES = {5: 0x8002d408, 7: 0x8002d534, 9: 0x8002d600}
+GLOW_TYPES = (0x80010074, 5, 24)  # the draw's table of cases: where, the first type, how many
+GLOW_COLOURS = {5: ((0x8002d514, 0x8002d51c), 4), 7: ((0x8002d5ec, 0x8002d5f4), 1),
+                9: ((0x8002d6c4, 0x8002d6cc), 4)}
+GLOW_LEVELS = 3           # a corner's level is 0, 1 or 2
+MVMVA_SF = 1 << 19        # the command's bit that shifts its products down by 12
+FACES = 6
+
 
 class Code:
     def __init__(self, blob):
@@ -403,6 +463,9 @@ class Code:
 
     def word(self, addr):
         return struct.unpack_from("<I", self.blob, addr - EXE_BASE)[0]
+
+    def holds(self, addr):
+        return EXE_BASE <= addr and addr + 4 <= EXE_BASE + len(self.blob)
 
     def text(self, addr):
         return decode(self.word(addr), addr)[0]
@@ -472,6 +535,7 @@ def readings(code):
     out["laser.levels"] = list(code.blob[start - EXE_BASE:end - EXE_BASE])
     out["shadow.half"] = shadow_half(code)
     out["light.root"] = root_table(code)
+    out["glow"], out["glow.colours"] = glow(code, out)
     return out
 
 
@@ -518,6 +582,68 @@ def light(r):
             "bits": r["light.bits"], "root": r["light.root"],
             "turned": {"kind": r["light.turned.kind"], "value": r["light.turned.value"],
                        "near": r["light.turned.near"], "far": r["light.turned.far"]}}
+
+
+def glow_spill(code):
+    """What a device's light takes, for each face it can stand on: groups of
+    faces tried in order until one is there, the thing's own face first and
+    then one group for each of its four edges. A face is an offset from the
+    thing's cell, the face of the block there, and a level at each of its
+    corners in the order of its texture's first turn. Each group is read by
+    running the routine that makes a light, answering that no face is there
+    and then that each in turn is, which is how the groups are told apart."""
+    m = Machine(code)
+    origin = (10, 10, 10)
+    out = []
+    for face in range(FACES):
+        def trace(there):
+            calls = []
+
+            def add(args, words):
+                x, y, z, f = args
+                call = [x - origin[0], y - origin[1], z - origin[2], f, words]
+                calls.append(call)
+                return 0 if there(call) else 1
+            m.run(GLOW_MAKE, [*origin, face], [], {GLOW_FACE: add})
+            return calls
+        tried = trace(lambda call: False)
+        heads = trace(lambda call: True)
+        starts = [tried.index(h) for h in heads]
+        groups = [tried[a:b] for a, b in zip(starts, starts[1:] + [len(tried)])]
+        if groups[0] != [[0, 0, 0, face, [GLOW_LEVELS - 1] * 4]]:
+            sys.exit(f"a light on face {face} does not start from that face at full")
+        for g, group in enumerate(groups):
+            for k, call in enumerate(group):
+                expect = [c for i, grp in enumerate(groups) for j, c in enumerate(grp) if i != g or j <= k]
+                if trace(lambda c: c == call) != expect:
+                    sys.exit(f"a light on face {face} does not stop at the face it finds in group {g}")
+                if any(v not in range(GLOW_LEVELS) for v in call[4]) or call[3] not in range(FACES):
+                    sys.exit(f"a light on face {face} tries {call}")
+        out.append(groups)
+    return out
+
+
+def glow(code, r):
+    """A device's light: how often it is turned over, what level 1 is of the
+    colour, what the light takes for each face, and the colours by type."""
+    everies = {r[k] for k in ("glow.every", "glow.every.exit", "glow.every.switch", "glow.every.load")}
+    parts = {r[k] for k in ("glow.part.x", "glow.part.y", "glow.part.z")}
+    if len(everies) != 1 or len(parts) != 1:
+        sys.exit(f"the devices' light turns over every {everies} frames and takes {parts} for level 1")
+    if not code.word(0x800510e8) & MVMVA_SF:
+        sys.exit("level 1's product is not shifted down by 12")
+    at, first, count = GLOW_TYPES
+    for typ in range(first, first + count):
+        case = 0x80000000 | code.word(at + 4 * (typ - first))
+        if (typ in GLOW_CASES) != (case in GLOW_CASES.values()) or GLOW_CASES.get(typ, case) != case:
+            sys.exit(f"type {typ} goes to the case at 0x{case:08x}")
+    colours = {}
+    for t, (at, each) in GLOW_COLOURS.items():
+        base = code.address(*at)
+        words = [code.word(base + 4 * i) for i in range(len(THEMES) * each)]
+        colours[t] = [[[(w >> s) & 255 for s in (0, 8, 16)] for w in words[i * each:(i + 1) * each]]
+                      for i in range(len(THEMES))]
+    return {"every": everies.pop(), "part": [parts.pop(), 1 << 12], "spill": glow_spill(code)}, colours
 
 
 def laser(r):
@@ -666,7 +792,9 @@ def table(r, platform_speed):
     shadow under says which of the two sprites, how far off its face it lies
     and how strong it is, of 128. The dice are the game's random routine,
     which it seeds once as a level starts. The invisible block carries its
-    light.
+    light. What the devices' light takes is beside the types, with each
+    device's colours by its type, by world and then by circuit where it has
+    one, apart from the types, whose entries are what moves.
     """
     bob = {"rate": r["coin.bob"], "reach": r["coin.bob.reach"]}
     fruit = {"turn": r["fruit.turn"],
@@ -734,9 +862,11 @@ def table(r, platform_speed):
         3: {"light": light(r)},
         8: laser(r),
     }
+    colours = {str(t): r["glow.colours"][t] for t in sorted(r["glow.colours"])}
     return {"hz": HZ, "turn": TURN, "standoff": r["captivator.standoff"],
             "dice": {"seed": r["dice.seed"], "times": r["dice.times"], "plus": r["dice.plus"]},
             "shadow": {"half": r["shadow.half"]},
+            "glow": {**r["glow"], "colours": colours},
             "types": {str(t): types[t] for t in sorted(types)},
             "kinds": {str(k): kinds[k] for k in sorted(kinds)}}
 

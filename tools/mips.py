@@ -134,12 +134,16 @@ def listing(blob, base, start, count, mark=()):
 
 
 class Machine:
-    """Enough of a MIPS to run the six leaf routines that place a face."""
+    """Enough of a MIPS to run a routine of the game's to its return, from
+    the arguments and the words on the stack it is given. A call it makes is
+    answered by `calls`, by the address called, from the four arguments and
+    four stack words the call is made with; a word it loads that it has not
+    stored is the executable's. It stops on anything else it meets."""
 
     def __init__(self, code):
         self.code = code
 
-    def run(self, pc, args, stack):
+    def run(self, pc, args, stack, calls=None):
         R = [0] * 32
         R[4:4 + len(args)] = args
         sp = 0x801ff000
@@ -147,9 +151,13 @@ class Machine:
         mem = {}
 
         def ld(a, n):
+            a = ram(a)
+            if n == 4 and a not in mem and self.code.holds(a):
+                return self.code.word(a)
             return sum(mem.get(a + b, 0) << (8 * b) for b in range(n))
 
         def st(a, v, n):
+            a = ram(a)
             for b in range(n):
                 mem[a + b] = (v >> (8 * b)) & 255
 
@@ -182,6 +190,8 @@ class Machine:
                 R[rd] = int(signed(R[rs]) < signed(R[rt]))
             elif op == 2:
                 target = (pc & 0xF0000000) | ((w & 0x3FFFFFF) << 2)
+            elif op == 3:
+                return ("call", (pc & 0xF0000000) | ((w & 0x3FFFFFF) << 2))
             elif op == 4:
                 target = pc + 4 + simm * 4 if R[rs] == R[rt] else None
             elif op == 5:
@@ -190,6 +200,10 @@ class Machine:
                 R[rt] = (R[rs] + simm) & 0xFFFFFFFF
             elif op == 0xa:
                 R[rt] = int(signed(R[rs]) < simm)
+            elif op == 0xb:
+                R[rt] = int(R[rs] < (simm & 0xFFFFFFFF))
+            elif op == 0xf:
+                R[rt] = imm << 16
             elif op == 0x23:
                 R[rt] = ld((R[rs] + simm) & 0xFFFFFFFF, 4)
             elif op == 0x24:
@@ -199,20 +213,34 @@ class Machine:
             elif op == 0x28:
                 st((R[rs] + simm) & 0xFFFFFFFF, R[rt], 1)
             else:
-                sys.exit(f"0x{pc:08x} reads `{self.code.text(pc)}`, which a face routine was not expected to hold")
+                sys.exit(f"0x{pc:08x} reads `{self.code.text(pc)}`, which the routine was not expected to hold")
             R[0] = 0
             return target
 
-        for _ in range(1000):
+        for _ in range(10000):
             target = step(pc)
-            if target is not None:
+            if isinstance(target, tuple):
+                step(pc + 4)
+                answer = (calls or {}).get(target[1])
+                if answer is None:
+                    sys.exit(f"0x{pc:08x} calls 0x{target[1]:08x}, which nothing answers")
+                words = [signed(ld(R[29] + 16 + 4 * i, 4)) for i in range(4)]
+                R[2] = answer([signed(v) for v in R[4:8]], words) & 0xFFFFFFFF
+                pc += 8
+            elif target is not None:
                 step(pc + 4)
                 if target == 0:
                     return mem
-                pc = target
+                pc = ram(target)
             else:
                 pc += 4
         sys.exit(f"the routine at 0x{pc:08x} does not return")
+
+
+def ram(a):
+    """An address as the one it mirrors in RAM, where the unmapped mirror
+    names it without the top bit."""
+    return ((a & 0x1FFFFFFF) | 0x80000000) if (a & 0x1FFFFFFF) < 0x00800000 else a
 
 
 def signed(v):

@@ -13,10 +13,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
-    LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, Code, laser, light, root_table, shadow_half, spike_cycle, table,
-    vanish_cycle)
+    GLOW_FACE, GLOW_MAKE, LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, Code, glow_spill, laser, light, root_table,
+    shadow_half, spike_cycle, table, vanish_cycle)
 
-R = {"v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "s0": 16, "zero": 0}
+R = {"v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "zero": 0, "sp": 29, "ra": 31}
 
 
 def sll(rd, rt, sa):
@@ -72,6 +72,22 @@ GAME = {
     "light.turned.kind": 9, "light.turned.value": 1, "light.turned.near": 1280, "light.turned.far": 1792,
     "light.root": [[362, 150], [256, 106]],
 }
+
+
+def sw(rt, rs, imm):
+    return (0x2B << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
+def jal(target):
+    return (3 << 26) | ((target >> 2) & 0x3FFFFFF)
+
+
+def beq(rs, rt, at, target):
+    return (4 << 26) | (R[rs] << 21) | (R[rt] << 16) | (((target - at - 4) >> 2) & 0xFFFF)
+
+
+def jr(rs):
+    return (R[rs] << 21) | 8
 
 
 def lui(rt, imm):
@@ -193,6 +209,45 @@ class Light(unittest.TestCase):
             light({**GAME, "light.kind": 2})
 
 
+class Glow(unittest.TestCase):
+    OWN = [2, 2, 2, 2]
+    EDGE = [[-1, 0, -1, 1, [0, 2, 0, 2]], [-1, 0, 0, 0, [0, 2, 0, 2]], [0, 0, 0, 4, [0, 1, 0, 1]]]
+
+    def maker(self, own=OWN):
+        """A routine where the game's makes a light, which takes the face it is
+        given at `own`, then the first of three faces for one edge that is
+        there."""
+        words = [addu("s0", "a0", "zero"), addu("v1", "a2", "zero")]
+
+        def take(levels):
+            for i, v in enumerate(levels):
+                words.extend([addiu("t0", "zero", v), sw("t0", "sp", 16 + 4 * i)])
+            words.extend([jal(GLOW_FACE), 0])
+        take(own)
+        ends = []
+        for dx, _, dz, face, levels in self.EDGE:
+            words.extend([addiu("a0", "s0", dx), addiu("a2", "v1", dz), addiu("a3", "zero", face)])
+            take(levels)
+            ends.append(len(words))
+            words.extend([0, 0])
+        end = GLOW_MAKE + 4 * len(words)
+        for i in ends:
+            words[i] = beq("v0", "zero", GLOW_MAKE + 4 * i, end)
+        words.extend([jr("ra"), 0])
+        blob = bytearray(GLOW_MAKE - EXE_BASE) + b"".join(struct.pack("<I", w) for w in words)
+        return Code(bytes(blob))
+
+    def test_a_light_tries_an_edges_faces_in_order_until_one_is_there(self):
+        spill = glow_spill(self.maker())
+        self.assertEqual(len(spill), 6)
+        for face, groups in enumerate(spill):
+            self.assertEqual(groups, [[[0, 0, 0, face, self.OWN]], self.EDGE])
+
+    def test_a_light_not_started_from_its_own_face_at_full_stops_the_reading(self):
+        with self.assertRaises(SystemExit):
+            glow_spill(self.maker(own=[1, 1, 1, 1]))
+
+
 def rise_at(seq):
     """Where the spikes leave the ground: the frame after the last flat one."""
     return next(i for i in range(len(seq)) if seq[i - 1] == 0 and seq[i] == 6)
@@ -284,10 +339,15 @@ class Table(unittest.TestCase):
         r["captivator.standoff"] = 456
         r["corkscrew.drop"] = 150
         r.update({"dice.seed": 1, "dice.times": 0x41C64E6D, "dice.plus": 12345})
+        r["glow"] = {"every": 19, "part": [1792, 4096], "spill": []}
+        r["glow.colours"] = {5: [[[25, 25, 0]] * 4], 7: [[[16, 64, 16]]], 9: [[[25, 25, 0]] * 4]}
         t = table(r, 30)
         self.assertEqual(t["hz"], 60)
         self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1})
         self.assertEqual(t["kinds"]["3"]["light"]["far"], 512)
+        self.assertEqual(t["glow"]["colours"]["9"], [[[25, 25, 0]] * 4])
+        self.assertEqual(t["glow"]["every"], 19)
+        self.assertNotIn("glow", t["types"]["5"])
         self.assertEqual(t["kinds"]["8"]["levels"], GAME["laser.levels"])
         self.assertEqual([len(c) for c in t["types"]["11"]["cycle"]], [143] * PHASES)
         self.assertEqual([len(c) for c in t["kinds"]["7"]["cycle"]], [224] * PHASES)

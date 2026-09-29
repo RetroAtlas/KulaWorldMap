@@ -61,6 +61,18 @@ def jr(rs):
     return (R[rs] << 21) | 8
 
 
+def jal(target):
+    return (3 << 26) | ((target >> 2) & 0x3FFFFFF)
+
+
+def lui(rt, imm):
+    return (0x0F << 26) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
+def sltiu(rt, rs, imm):
+    return (0x0B << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
 class Gte(unittest.TestCase):
     def test_a_command_is_named_by_its_low_six_bits(self):
         self.assertEqual(decode(0x4A180001, 0)[0], "rtps")
@@ -98,6 +110,52 @@ class TheMachine(unittest.TestCase):
         mem = m.run(AT, [0x80191000, BLOCK, 1000, 2000], [3000, 1])
         self.assertEqual(mem[0x80191006], 1)
         self.assertEqual(struct.unpack("<HH", bytes(mem[0x80191020 + i] for i in range(4))), (1512, 2000))
+
+    def test_a_call_is_answered_from_its_arguments_and_stack_words(self):
+        # Calls a routine with a0 + 1 and a word on the stack, and returns
+        # what the answer gave it, stored where a1 points.
+        called = AT + 0x100
+        c = code(
+            addiu("t0", "zero", 7),
+            sw("t0", "sp", 16),
+            jal(called),
+            addiu("a0", "a0", 1),        # in the delay slot, so before the call
+            jr("ra"),
+            sw("v0", "a1", 0),
+        )
+        seen = []
+        mem = Machine(c).run(AT, [41, 0x80190000], [], {called: lambda a, w: seen.append((a, w)) or 99})
+        self.assertEqual(seen, [([42, 0x80190000 - (1 << 32), 0, 0], [7, 0, 0, 0])])
+        self.assertEqual(mem[0x80190000], 99)
+
+    def test_a_call_nothing_answers_stops_it(self):
+        c = code(jal(AT + 0x100), 0, jr("ra"), 0)
+        with self.assertRaises(SystemExit):
+            Machine(c).run(AT, [], [])
+
+    def test_a_jump_through_a_table_in_the_executable_lands_on_its_case(self):
+        # Picks case a0 of two from a table of addresses the executable holds,
+        # in the mirror that leaves off the top bit, and returns its number.
+        table = AT + 0x40
+        words = [
+            sltiu("v0", "a0", 2),
+            lui("at", (table >> 16) & 0x1FFF),
+            sll("v1", "a0", 2),
+            addiu("at", "at", table & 0xFFFF),
+            or_("at", "at", "v1"),
+            lw("v1", "at", 0),
+            0,
+            jr("v1"),
+            0,
+        ]
+        cases = [AT + 0x60, AT + 0x70]
+        blob = words + [0] * (16 - len(words)) + [a & 0x1FFFFFFF for a in cases] + [0] * 6
+        blob += [addiu("v0", "zero", 10), jr("ra"), sw("v0", "a1", 0), 0]
+        blob += [addiu("v0", "zero", 20), jr("ra"), sw("v0", "a1", 0), 0]
+        c = code(*blob)
+        for case, value in ((0, 10), (1, 20)):
+            mem = Machine(c).run(AT, [case, 0x80190000], [])
+            self.assertEqual(mem[0x80190000], value)
 
     def test_an_instruction_a_face_routine_should_not_hold_stops_it(self):
         c = code((0x1A << 26))          # a divide
