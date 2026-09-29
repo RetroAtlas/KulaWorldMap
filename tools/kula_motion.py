@@ -142,6 +142,52 @@ CHECKS = [
     (0x8003ea08, "jal 0x8005fb58", "less a multiple of its sine"),
     (0x80031f3c, "jal 0x800603f8", "the ball's shadow is widened by the landing's squash"),
     (0x80031f54, "jal 0x800603f8", "and by the breath's"),
+    # The invisible block's light: every frame it measures each corner of
+    # the invisible faces in a box of cells about the ball's middle, and a
+    # face with a corner lit is drawn shaded between its corners, where the
+    # rest are drawn flat or not at all.
+    (0x8002a4a0, "addiu $a0, $a0, 23128", "the frame hands the light its struct"),
+    (0x8002a4a4, "jal 0x80051318", "and runs it"),
+    (0x80036914, "sw $v0, 23128($at)", "into which the ball's routine writes its middle"),
+    (0x80027c14, "sw $v0, 23140($at)", "the loader keeps the near distance there"),
+    (0x80027c20, "sw $v0, 23144($at)", "and the far one"),
+    (0x80027c28, "sw $zero, 23148($at)", "and no flag"),
+    (0x80027c5c, "bne $v0, $t2, 0x80027ca0", "a record of the settings' kind"),
+    (0x80027c78, "lh $v0, 4($v1)", "whose first field"),
+    (0x80027c80, "bne $v0, $a0, 0x80027ca0", "holds the value"),
+    (0x80027c8c, "sw $t0, 23140($at)", "keeps its own near distance"),
+    (0x80027c94, "sw $a3, 23144($at)", "and far one"),
+    (0x80027c9c, "sw $v0, 23148($at)", "and the flag"),
+    (0x800513e0, "lw $a3, 12($a0)", "the light reads the near distance"),
+    (0x800513e4, "lw $t0, 16($a0)", "and the far one"),
+    (0x8005134c, "lw $t9, 20($a0)", "and the flag"),
+    (0x80051418, "sub $s3, $a0, $t0", "its box starts at the ball less the far distance"),
+    (0x8005141c, "addi $s3, $s3, 256", "in the cell that falls in"),
+    (0x80051424, "srl $s3, $s3, 9", "a cell to 512 units"),
+    (0x8005142c, "slti $at, $s3, 34", "within the lattice"),
+    (0x80051444, "add $s4, $a0, $t0", "and ends at the ball plus the far distance"),
+    (0x80051594, "add $s6, $s2, $t5", "each face's four vertices"),
+    (0x800515d0, "sqr", "are measured by their squares"),
+    (0x800515f0, "mtc2 $s3, lzcs", "and the root's row is the count of leading zeros in the sum"),
+    (0x80051604, "sll $s5, $s4, 4", "four words a row"),
+    (0x80051614, "and $s3, $s3, $s7", "the row's mask takes the sum's top bit off"),
+    (0x80051618, "multu $s6, $s3", "and its step times what is left"),
+    (0x80051630, "srlv $s6, $s3, $s6", "shifted down as far as the top bit is up"),
+    (0x80051640, "add $s3, $s3, $s5", "is added to its root"),
+    (0x80051644, "slt $at, $a3, $s3", "a corner past the near distance"),
+    (0x80051410, "divu $s3, $s4", "is lit less by the fixed point over the stretch to the far one"),
+    (0x80051658, "multu $s3, $t2", "times how far past it the corner is"),
+    (0x8005166c, "sll $s4, $s4, 9", "shifted down across the product's two words"),
+    (0x80051674, "sub $s3, $s5, $s3", "taken from full"),
+    (0x80051678, "bgtz $s3, 0x80051684", "and no lower than nothing"),
+    (0x80051684, "beq $t9, $zero, 0x80051690", "and where the flag is set"),
+    (0x8005168c, "sub $s3, $s4, $s3", "taken from full again"),
+    (0x80051690, "beq $s3, $zero, 0x800516ac", "a corner lit at all"),
+    (0x80051698, "ori $t8, $t8, 1", "draws its face"),
+    (0x8005157c, "addiu $t8, $zero, 22", "shaded between its corners"),
+    (0x800516ac, "sw $s3, 16($s4)", "whose colours the four are"),
+    (0x80056870, "andi $t9, $t1, 1", "the transform draws a face whose first bit is set"),
+    (0x800568d0, "andi $t9, $ra, 16", "and shades one whose fifth is between its corners"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -244,6 +290,23 @@ IMMEDIATES = [
     ("shadows", "shadow.ball.top", "ball: fades to nothing this far off its face, units", 0x80031f30, "addiu $v0, $zero, {}"),
     ("shadows", "shadow.ball.shift", "ball: its height short of that, shifted up this far", 0x80032458, "sll $v1, $v1, {}"),
 
+    ("invisible block", "light.kind", "the light takes blocks of this kind", 0x80051558, "addiu $s4, $zero, {}"),
+    ("invisible block", "light.near", "full within this far of the ball, units", 0x80027c0c, "addiu $v0, $zero, {}"),
+    ("invisible block", "light.far", "and nothing from this far", 0x80027c18, "addiu $v0, $zero, {}"),
+    ("invisible block", "light.full", "full is this, of 128", 0x80051654, "addiu $s3, $zero, {}"),
+    ("invisible block", "light.full.fade", "and fades from this", 0x8005165c, "addiu $s5, $zero, {}"),
+    ("invisible block", "light.full.turned", "and is taken from this where the flag is set", 0x80051688,
+     "addiu $s4, $zero, {}"),
+    ("invisible block", "light.scale", "over the stretch between the two, this in the top half of a word", 0x80051408,
+     "lui $s3, {}"),
+    ("invisible block", "light.bits", "the product shifted down this far", 0x80051664, "srl $s3, $s3, {}"),
+    ("invisible block", "light.bits.high", "its high word shifted up this far", 0x8005166c, "sll $s4, $s4, {}"),
+    ("invisible block", "light.turned.kind", "a record of this kind", 0x80027c34, "addiu $t2, $zero, {}"),
+    ("invisible block", "light.turned.value", "whose first field is this turns the light round", 0x80027c38,
+     "addiu $a0, $zero, {}"),
+    ("invisible block", "light.turned.near", "nothing within this far, units", 0x80027c40, "addiu $t0, $zero, {}"),
+    ("invisible block", "light.turned.far", "and full from this far", 0x80027c44, "addiu $a3, $zero, {}"),
+
     ("dice", "dice.seed", "seeded with this as a level starts", 0x80025058, "addiu $a0, $zero, {}"),
     ("dice", "dice.plus", "a draw adds this after it multiplies", 0x8004742c, "addiu $v1, $a1, {}"),
 
@@ -315,6 +378,15 @@ DIVISORS = [
 # The shadow's four vertices, each x, y, z and a pad, where both draws load
 # them from.
 SHADOW_SQUARE = (0x8002c8d0, 0x8002c8d4)
+
+# The square root the invisible block's light takes: a table of four words a
+# row, by the count of leading zeros in the square, where a lui and an addiu
+# build its address. The rows kept are those for a square of 2^8 or more,
+# which a ball's middle is from every corner; past them the words are not
+# the root's.
+LIGHT_ROOT = (0x800513f8, 0x800513fc)
+ROOT_ROWS = 24
+INVISIBLE = 3
 
 
 class Code:
@@ -391,6 +463,7 @@ def readings(code):
     start, end = (code.address(*pair) for pair in LASER_LEVELS)
     out["laser.levels"] = list(code.blob[start - EXE_BASE:end - EXE_BASE])
     out["shadow.half"] = shadow_half(code)
+    out["light.root"] = root_table(code)
     return out
 
 
@@ -404,6 +477,39 @@ def shadow_half(code):
             or any(y or pad for _, y, _, pad in corners):
         sys.exit(f"the shadow's vertices are {corners}, not a square flat in y")
     return half
+
+
+def root_table(code):
+    """The rows of the light's square root, by the count of leading zeros in
+    the square: the root of the power of two the square is past, and how far
+    it is to the root of the next. A row's mask takes that power of two off
+    the square, which is what lets a row be read as the two numbers."""
+    at = code.address(*LIGHT_ROOT) - EXE_BASE
+    rows = []
+    for zeros in range(ROOT_ROWS):
+        step, mask, root, pad = struct.unpack_from("<4I", code.blob, at + 16 * zeros)
+        if mask != (1 << (31 - zeros)) - 1 or pad:
+            sys.exit(f"the root's row for {zeros} leading zeros masks with 0x{mask:x} and pads with {pad}")
+        rows.append([root, step])
+    return rows
+
+
+def light(r):
+    """How the game lights an invisible block near the ball: a corner is full
+    within the near distance and falls in fixed point to nothing at the far
+    one, measured by the game's own square root; and on a level whose
+    settings record carries the value in its first field, the other way
+    round, with distances of its own."""
+    if r["light.kind"] != INVISIBLE:
+        sys.exit(f"the light takes blocks of kind {r['light.kind']}, not the invisible block's")
+    if not r["light.full"] == r["light.full.fade"] == r["light.full.turned"]:
+        sys.exit("the light is not full at the same brightness where it is full, fades and turns round")
+    if r["light.bits"] + r["light.bits.high"] != 32 or r["light.scale"] << 16 != r["light.full"] << r["light.bits"]:
+        sys.exit("the light's fixed point does not come back to full over the stretch")
+    return {"near": r["light.near"], "far": r["light.far"], "full": r["light.full"],
+            "bits": r["light.bits"], "root": r["light.root"],
+            "turned": {"kind": r["light.turned.kind"], "value": r["light.turned.value"],
+                       "near": r["light.turned.near"], "far": r["light.turned.far"]}}
 
 
 def laser(r):
@@ -551,7 +657,8 @@ def table(r, platform_speed):
     off its face the game draws the model's origin. A type the game draws a
     shadow under says which of the two sprites, how far off its face it lies
     and how strong it is, of 128. The dice are the game's random routine,
-    which it seeds once as a level starts.
+    which it seeds once as a level starts. The invisible block carries its
+    light.
     """
     bob = {"rate": r["coin.bob"], "reach": r["coin.bob.reach"]}
     fruit = {"turn": r["fruit.turn"],
@@ -616,6 +723,7 @@ def table(r, platform_speed):
         5: {"speed": platform_speed * r["platform.scale"] // HZ, "dwell": r["platform.dwell"]},
         7: {"cycle": [[s for s, _ in vanish_cycle(r, p)] for p in range(PHASES)],
             "level": [[v for _, v in vanish_cycle(r, p)] for p in range(PHASES)]},
+        3: {"light": light(r)},
         8: laser(r),
     }
     return {"hz": HZ, "turn": TURN, "standoff": r["captivator.standoff"],
@@ -646,6 +754,8 @@ def show_readings(code):
         rows.append((group, what, hi, code.divisor(hi, hp, lo, lp, sa, sp)))
     rows.append(("shadows", "the square reaches this far either way of its middle, units",
                  code.address(*SHADOW_SQUARE), readings(code)["shadow.half"]))
+    rows.append(("invisible block", "rows of the square root it measures a corner by",
+                 code.address(*LIGHT_ROOT), len(readings(code)["light.root"])))
     levels = readings(code)["laser.levels"]
     rows.append(("laser", f"steps in the beam's table, levels {min(levels)} to {max(levels)}",
                  code.address(*LASER_LEVELS[0]), len(levels)))

@@ -12,7 +12,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
-from kula_motion import PHASES, SHADOW_SQUARE, Code, laser, shadow_half, spike_cycle, table, vanish_cycle  # noqa: E402
+from kula_motion import (  # noqa: E402
+    LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, Code, laser, light, root_table, shadow_half, spike_cycle, table,
+    vanish_cycle)
 
 R = {"v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "s0": 16, "zero": 0}
 
@@ -65,6 +67,10 @@ GAME = {
     "shadow.strength.53": 128, "shadow.sprite.51": 1, "shadow.strength.56": 128,
     "shadow.corkscrew.drop": 170, "shadow.corkscrew.fade": 48,
     "shadow.ball.top": 512, "shadow.ball.shift": 7, "shadow.ball.over": 412,
+    "light.kind": 3, "light.near": 350, "light.far": 512, "light.full": 128, "light.full.fade": 128,
+    "light.full.turned": 128, "light.scale": 0x4000, "light.bits": 23, "light.bits.high": 9,
+    "light.turned.kind": 9, "light.turned.value": 1, "light.turned.near": 1280, "light.turned.far": 1792,
+    "light.root": [[362, 150], [256, 106]],
 }
 
 
@@ -132,6 +138,59 @@ class Shadow(unittest.TestCase):
                         [(150, 0, 150, 0), (-150, 9, 150, 0), (150, 0, -150, 0), (-150, 0, -150, 0)]):
             with self.assertRaises(SystemExit):
                 shadow_half(self.square(corners))
+
+
+class Light(unittest.TestCase):
+    def table(self, rows):
+        """An executable whose light builds the address of these rows."""
+        lui_at, addiu_at = LIGHT_ROOT
+        at = 0x80070040 - EXE_BASE
+        blob = bytearray(at + 16 * len(rows))
+        struct.pack_into("<I", blob, lui_at - EXE_BASE, lui("a0", 0x0007))
+        struct.pack_into("<I", blob, addiu_at - EXE_BASE, addiu("a0", "a0", 0x40))
+        for i, row in enumerate(rows):
+            struct.pack_into("<4I", blob, at + 16 * i, *row)
+        return Code(bytes(blob))
+
+    def chord(self):
+        """The rows the game holds: a straight line between the rounded roots
+        of the powers of two either side of a square."""
+        out = []
+        for zeros in range(ROOT_ROWS):
+            low = round((1 << (31 - zeros)) ** 0.5)
+            out.append((round((1 << (32 - zeros)) ** 0.5) - low, (1 << (31 - zeros)) - 1, low, 0))
+        return out
+
+    def test_a_row_is_the_root_below_a_square_and_the_step_to_the_next(self):
+        rows = root_table(self.table(self.chord()))
+        self.assertEqual(len(rows), ROOT_ROWS)
+        self.assertEqual(rows[14], [362, 150])
+        self.assertEqual(rows[13], [512, 212])
+
+    def test_a_row_that_masks_anything_but_its_power_of_two_stops_the_reading(self):
+        rows = self.chord()
+        rows[5] = (rows[5][0], rows[5][1] >> 1, rows[5][2], 0)
+        with self.assertRaises(SystemExit):
+            root_table(self.table(rows))
+
+    def test_the_light_ships_both_ways_round_with_the_root_it_measures_by(self):
+        lit = light(GAME)
+        self.assertEqual((lit["near"], lit["far"], lit["full"], lit["bits"]), (350, 512, 128, 23))
+        self.assertEqual(lit["turned"], {"kind": 9, "value": 1, "near": 1280, "far": 1792})
+        self.assertEqual(lit["root"], GAME["light.root"])
+
+    def test_a_light_not_full_at_one_brightness_stops_the_reading(self):
+        with self.assertRaises(SystemExit):
+            light({**GAME, "light.full.turned": 255})
+
+    def test_a_fixed_point_that_does_not_come_back_to_full_stops_the_reading(self):
+        for change in ({"light.scale": 0x2000}, {"light.bits.high": 8}):
+            with self.assertRaises(SystemExit):
+                light({**GAME, **change})
+
+    def test_a_light_on_another_kind_stops_the_reading(self):
+        with self.assertRaises(SystemExit):
+            light({**GAME, "light.kind": 2})
 
 
 def rise_at(seq):
@@ -228,6 +287,7 @@ class Table(unittest.TestCase):
         t = table(r, 30)
         self.assertEqual(t["hz"], 60)
         self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1})
+        self.assertEqual(t["kinds"]["3"]["light"]["far"], 512)
         self.assertEqual(t["kinds"]["8"]["levels"], GAME["laser.levels"])
         self.assertEqual([len(c) for c in t["types"]["11"]["cycle"]], [143] * PHASES)
         self.assertEqual([len(c) for c in t["kinds"]["7"]["cycle"]], [224] * PHASES)
