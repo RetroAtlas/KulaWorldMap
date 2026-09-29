@@ -71,7 +71,8 @@ export function paint(g, [p0, p1, p3], sk, shade, alpha) {
   const n = ATLAS.size;
   const ex = [(p1[0] - p0[0]) / n, (p1[1] - p0[1]) / n];
   const ey = [(p3[0] - p0[0]) / n, (p3[1] - p0[1]) / n];
-  const base = g.getTransform();
+  const m = g.getTransform();
+  const base = [m.a, m.b, m.c, m.d, m.e, m.f];
   g.transform(ex[0], ex[1], ey[0], ey[1], p0[0], p0[1]);
   if (sk.add) g.globalCompositeOperation = "lighter";
   if (!sk.shaded || sk.fill) {
@@ -93,7 +94,7 @@ export function paint(g, [p0, p1, p3], sk, shade, alpha) {
     g.globalAlpha = alpha;
     g.drawImage(through(sk, shade, sk.shaded), 0, 0);
   }
-  g.setTransform(base);
+  g.setTransform(...base);
   if (sk.colour && !sk.add) {
     const [r, gg, b] = sk.colour;
     if (r === gg && gg === b) {
@@ -123,7 +124,7 @@ export function paint(g, [p0, p1, p3], sk, shade, alpha) {
       g.drawImage(shaded(sk, shade, pass, "multiply"), 0, 0);
       gain = gain.map((rgb) => rgb.map((v) => v - 255));
     }
-    g.setTransform(base);
+    g.setTransform(...base);
   }
   g.globalCompositeOperation = "source-over";
   g.globalAlpha = 1;
