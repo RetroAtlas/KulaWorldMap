@@ -256,13 +256,14 @@ async function capture(page, c, keep) {
         R.draw();
         const pk = window.__pick;
         const main = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
-        const pick = pk.getContext("2d").getImageData(0, 0, pk.width, pk.height).data;
         const grid = [];
         for (let y = 2; y < cv.clientHeight; y += 8)
           for (let x = 2; x < cv.clientWidth; x += 8) {
             const at = R.cellAt(x, y);
             grid.push(at ? `${at.x},${at.y},${at.z}` : "");
           }
+        // the pick as the hit test found it
+        const pick = pk.getContext("2d").getImageData(0, 0, pk.width, pk.height).data;
         const shot = {
           id: `${c.id}@${t}`,
           main: await hash(main),
