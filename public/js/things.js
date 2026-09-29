@@ -371,7 +371,7 @@ function drawFacing(ctx, m, c, face, colour) {
 // that is more than a block. Colour tells the two apart, and the number is the
 // type or the kind, of which there are too many for an encoding a reader could
 // hold, so the marker says it outright once it has the room. A device
-// switched off is drawn hollow, the way a dark beam is drawn broken.
+// switched off is drawn hollow.
 function drawMarker(ctx, m, c) {
   if (state.hiddenKinds.has(m.id)) return;
   const face = m.face ?? 0;

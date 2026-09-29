@@ -184,7 +184,7 @@ add("I/OBJ/twice", "OBJ", V1, { flip: [3, 3] });
 add("I/LESSON/yellow", "LESSON", V1, { flip: [0], show: { labels: true }, frames: [T0, T1] });
 add("I/F3/all", "F3", V1, { flip: [0, 1, 2, 3], frames: [T0, T1] });
 add("I/F6/all", "F6", V3, { flip: [0, 1, 2, 3], show: { models: false, labels: true } });
-add("I/S8/beam", "S8", V1, { flip: [0, 1, 2, 3], show: { objects: false } });
+add("I/S8/beam", "S8", V1, { flip: [0, 1, 2, 3], show: { objects: false, outlines: true } });
 add("I/LESSON/teleporter", "LESSON", V1, { flip: [0], select: "type5" });
 // a press at a page time, before the times the case is captured at
 const PRESS = 10300;

@@ -20,8 +20,9 @@ const SIDES = [
 // flat quads crossed along it and a line down their middle, added to what is
 // behind, in its circuit's channels times a level the line steps through on
 // its own, from a start the game draws at random and the map hashes from the
-// beam's first cell. A dark beam, which the game does not draw, is drawn
-// broken, its dashes carried across the cells so it reads as one line.
+// beam's first cell. A dark beam, which the game does not draw, is one of the
+// map's outlines, drawn broken, its dashes carried across the cells so it
+// reads as one line.
 
 /** Draws the stretches of beam through one cell, and says whether any is to
     change by the next frame. */
@@ -29,6 +30,8 @@ export function drawBeams(ctx, c, ghost, frame) {
   const beam = kindMotion(BEAM_KIND);
   let live = false;
   for (const { ray, k } of c.beams) {
+    const lit = litNow(ray);
+    if (!lit && !state.show.outlines) continue;
     const [u, v] = [0, 1, 2].filter((i) => i !== ray.axis);
     const centre = [c.x + 0.5, c.y + 0.5, c.z + 0.5];
     const at = (t, du, dv) => {
@@ -42,7 +45,6 @@ export function drawBeams(ctx, c, ghost, frame) {
     const nozzle = (beam?.nozzle ?? 0) / BLOCK;
     const half = (beam?.width ?? 0) / 2 / BLOCK;
     const sides = beam ? SIDES : [[0, 0]];
-    const lit = litNow(ray);
     ctx.save();
     if (!lit || !beam) {
       const rgb = beam ? tint(beam, ray, Math.max(...beam.levels)) : INK;

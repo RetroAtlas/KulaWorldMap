@@ -1536,6 +1536,57 @@ test("b puts the lines on the blocks", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("a beam switched off is one of the outlines, and a beam that is on is drawn without them", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // LEVEL 104 starts six of its nine beams dark
+  await page.goto("/#ATLANT/13");
+  await settle(page);
+  const drawn = () =>
+    page.evaluate(async () => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { drawBeams }, { litNow }] = await Promise.all(
+        ["state.js", "beams.js", "data.js"].map(at),
+      );
+      const g = document.createElement("canvas").getContext("2d");
+      let marks = 0;
+      for (const f of ["stroke", "fill"]) {
+        const was = g[f];
+        g[f] = (...a) => (marks++, was.apply(g, a));
+      }
+      const out = { lit: [], dark: [] };
+      for (const c of state.idx.beamCells.values()) {
+        for (const b of c.beams) {
+          marks = 0;
+          drawBeams(g, { ...c, beams: [b] }, false, 0);
+          out[litNow(b.ray) ? "lit" : "dark"].push(marks > 0);
+        }
+      }
+      return out;
+    });
+  const bare = await drawn();
+  expect(bare.dark.length).toBeGreaterThan(0);
+  expect(bare.lit.length).toBeGreaterThan(0);
+  expect(bare.dark.every((d) => !d)).toBe(true);
+  expect(bare.lit.every((d) => d)).toBe(true);
+  await page.keyboard.press("b");
+  const lined = await drawn();
+  expect([...lined.dark, ...lined.lit].every((d) => d)).toBe(true);
+  // turned on by its switch, a dark beam is drawn with the outlines off
+  await page.keyboard.press("b");
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { flip, litNow, beams }] = await Promise.all(["state.js", "data.js"].map(at));
+    const dark = beams(state.lvl).filter((r) => !litNow(r));
+    for (const colour of new Set(dark.map((r) => r.colour))) flip(colour, 0);
+  });
+  const turned = await drawn();
+  expect(turned.dark).toEqual([]);
+  expect(turned.lit.every((d) => d)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
 test("a thing on a face turned away shows where no block covers it, and x shows the rest", async ({
   page,
 }) => {

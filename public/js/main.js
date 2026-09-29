@@ -35,7 +35,10 @@ const HELP = [
   ["x", "see what stands on the far faces through the blocks, with objects on"],
   ["l", "object labels, with objects on"],
   ["n", "name in each label the face its object stands on, with labels on"],
-  ["b", "outlines: the blocks' edges, the broken outlines and the platforms' routes"],
+  [
+    "b",
+    "outlines: the blocks' edges, the broken outlines, the platforms' routes and the beams switched off",
+  ],
   ["g", "ground grid"],
   ["p", "drag pans instead of turning"],
   ["s", "settings"],
