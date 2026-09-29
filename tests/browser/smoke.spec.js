@@ -1633,6 +1633,28 @@ test("the settings hold the camera target, which keeps its key", async ({ page }
   await expect(page.locator("#showStart")).toBeChecked();
 });
 
+test("a switch clicked leaves the keys to the map, and the slider keeps its own", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0/45,35/1");
+  await settle(page);
+  await page.locator("#showLabels").click();
+  await expect(page.locator("#showLabels")).toBeFocused();
+  await page.keyboard.press("b");
+  await expect(page.locator("#showOutlines")).toBeChecked();
+  const view = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      return { pan: [state.cam.panX, state.cam.panY], slice: state.slice };
+    });
+  const before = await view();
+  await page.locator("#slice").focus();
+  await page.keyboard.press("ArrowLeft");
+  const after = await view();
+  expect(after.pan).toEqual(before.pan);
+  expect(after.slice).toBe(before.slice - 1);
+});
+
 test("every switch's key is the one its row shows and the key list names", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);

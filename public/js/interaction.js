@@ -229,7 +229,8 @@ cv.addEventListener(
 );
 
 addEventListener("keydown", (e) => {
-  const typing = /^(INPUT|TEXTAREA)$/.test(e.target.tagName);
+  // a focused switch leaves the map its keys, and the slider keeps its arrows
+  const typing = /^(INPUT|TEXTAREA)$/.test(e.target.tagName) && e.target.type !== "checkbox";
   if (e.key === "/" && !typing) {
     e.preventDefault();
     $("search").focus();
