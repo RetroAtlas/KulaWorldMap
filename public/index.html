@@ -135,6 +135,9 @@
             ><input type="checkbox" id="showLabels" /> Object labels <kbd>l</kbd></label
           >
           <label class="check"
+            ><input type="checkbox" id="showFaces" /> Name the face in labels <kbd>n</kbd></label
+          >
+          <label class="check"
             ><input type="checkbox" id="showOutlines" /> Outlines <kbd>b</kbd></label
           >
           <label class="check"
@@ -151,6 +154,9 @@
             >
             <input type="range" id="slice" min="0" max="33" value="33" />
           </div>
+          <label class="check"
+            ><input type="checkbox" id="showHidden" /> Dim what the slice hides <kbd>h</kbd></label
+          >
         </div>
       </section>
 
@@ -191,18 +197,6 @@
       <h3 id="settingsTitle">Settings</h3>
       <section>
         <h4>Display</h4>
-        <label class="check"
-          ><input type="checkbox" id="showFaces" aria-describedby="showFacesSays" /> Name the face
-          in labels <span class="def"></span><kbd>n</kbd></label
-        >
-        <p id="showFacesSays" class="says">
-          An object's label says which face of its block it stands on.
-        </p>
-        <label class="check"
-          ><input type="checkbox" id="showHidden" aria-describedby="showHiddenSays" /> Dim what the
-          slice hides <span class="def"></span><kbd>h</kbd></label
-        >
-        <p id="showHiddenSays" class="says">What the slice takes off stays on the map, faint.</p>
         <label class="check"
           ><input type="checkbox" id="showStart" aria-describedby="showStartSays" /> Camera target
           <span class="def"></span><kbd>c</kbd></label

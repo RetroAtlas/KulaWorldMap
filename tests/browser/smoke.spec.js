@@ -1599,37 +1599,37 @@ test("the camera target shows only on c", async ({ page }) => {
   expect(await written(page)).toContain("camera target");
 });
 
-test("the settings hold the switches used less, which keep their keys", async ({ page }) => {
+test("the settings hold the camera target, which keeps its key", async ({ page }) => {
   await page.goto("/#HIRO/0/45,35/1");
   await settle(page);
   const panel = page.locator("#settings");
   const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
-  for (const id of ["showFaces", "showHidden", "showStart"]) {
-    await expect(panel.locator(`#${id}`)).toHaveCount(1);
-    await expect(page.locator(`#display #${id}`)).toHaveCount(0);
-  }
+  await expect(panel.locator("#showStart")).toHaveCount(1);
+  await expect(page.locator("#display #showStart")).toHaveCount(0);
   await expect(panel).toBeHidden();
-  await page.keyboard.press("n");
+  await page.keyboard.press("c");
   await page.locator("#settingsBtn").click();
   await expect(panel).toBeVisible();
   await expect(page.locator("#settings .x")).toBeFocused();
-  await expect(page.locator("#showFaces")).toBeChecked();
-  await expect(panel.locator(".def")).toHaveText(["off by default", "", ""]);
-  await panel.getByText("Camera target").click();
   await expect(page.locator("#showStart")).toBeChecked();
-  await expect(panel.locator(".def")).toHaveText(["off by default", "", "off by default"]);
+  await expect(panel.locator(".def")).toHaveText(["off by default"]);
+  await panel.getByText("Camera target").click();
+  await expect(page.locator("#showStart")).not.toBeChecked();
+  await expect(panel.locator(".def")).toHaveText([""]);
+  expect(await written(page)).not.toContain("camera target");
+  await panel.getByText("Camera target").click();
   expect(await written(page)).toContain("camera target");
-  expect(await kept()).toEqual({ faces: true, start: true });
+  expect(await kept()).toEqual({ start: true });
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();
   await expect(page.locator("#settingsBtn")).toBeFocused();
   // the display's reset puts back what is under its heading, and no setting
-  await page.keyboard.press("l");
+  await page.keyboard.press("n");
+  await page.keyboard.press("h");
   await page.locator("#resetDisplay").click();
-  expect(await kept()).toEqual({ faces: true, start: true });
+  expect(await kept()).toEqual({ start: true });
   await page.reload();
   await settle(page);
-  await expect(page.locator("#showFaces")).toBeChecked();
   await expect(page.locator("#showStart")).toBeChecked();
 });
 
@@ -1678,8 +1678,8 @@ test("Display puts the game's own look first, then what the map adds, then the c
   );
   expect(groups).toEqual([
     ["showSkins on", "showObjects on", "showModels on", "showMotion on"],
-    ["showThrough", "showLabels", "showOutlines", "showBase"],
-    ["panMode", "slice"],
+    ["showThrough", "showLabels", "showFaces", "showOutlines", "showBase"],
+    ["panMode", "slice", "showHidden"],
   ]);
 });
 
