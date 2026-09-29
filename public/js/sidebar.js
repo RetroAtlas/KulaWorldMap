@@ -175,7 +175,7 @@ export function wireDisplay() {
     box.checked = state.show[key];
     box.addEventListener("change", () => {
       state.show[key] = box.checked;
-      save();
+      choose(key, box.checked, DEFAULTS[key]);
       invalidatePick();
       draw();
     });
@@ -183,7 +183,7 @@ export function wireDisplay() {
   $("panMode").checked = !!state.panMode;
   $("panMode").addEventListener("change", (e) => {
     state.panMode = e.target.checked;
-    save();
+    choose("panMode", state.panMode, false);
   });
   $("slice").addEventListener("input", (e) => setSlice(Number(e.target.value)));
   $("resetDisplay").onclick = () => {
@@ -192,6 +192,7 @@ export function wireDisplay() {
     state.panMode = false;
     $("panMode").checked = false;
     setSlice(SIDE - 1);
+    chosen = {};
     save();
     invalidatePick();
     draw();
@@ -207,13 +208,20 @@ export function wireDisplay() {
   $("scrim").onclick = () => setSidebar(false);
 }
 
-/** Keeps only the switches set away from their defaults, so that a default
-    that changes reaches whoever left that switch alone. */
+// The switches set away from their defaults, each kept until it is set back to
+// its default, so that a default that changes reaches whoever left that switch
+// alone and no one who set it.
+let chosen = {};
+
+function choose(key, value, fallback) {
+  if (value === fallback) delete chosen[key];
+  else chosen[key] = value;
+  save();
+}
+
 function save() {
-  const set = Object.fromEntries(Object.entries(state.show).filter(([k, v]) => v !== DEFAULTS[k]));
-  if (state.panMode) set.panMode = true;
   try {
-    localStorage.setItem(KEY, JSON.stringify(set));
+    localStorage.setItem(KEY, JSON.stringify(chosen));
   } catch {
     /* ignore */
   }
@@ -223,11 +231,11 @@ export function restore() {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || "null");
     if (v && typeof v === "object") {
-      state.panMode = v.panMode === true;
       // a saved switch the display does not have, or a value not of the
       // switch's kind, is left behind
       for (const k of Object.keys(DEFAULTS))
-        if (typeof v[k] === typeof DEFAULTS[k]) state.show[k] = v[k];
+        if (typeof v[k] === typeof DEFAULTS[k]) state.show[k] = chosen[k] = v[k];
+      if (typeof v.panMode === "boolean") state.panMode = chosen.panMode = v.panMode;
     }
   } catch {
     /* ignore */

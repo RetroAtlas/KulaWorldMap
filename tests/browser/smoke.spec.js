@@ -1594,6 +1594,30 @@ test("a saved value not of its switch's kind is left behind", async ({ page }) =
   expect(await kept()).toEqual({ labels: true, outlines: false });
 });
 
+test("a saved switch stays saved until it is set again, though it matches the default", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
+  // a switch saved at its default, which is what a choice made against another
+  // default leaves
+  await page.evaluate(() =>
+    localStorage.setItem("kula.display", JSON.stringify({ labels: false })),
+  );
+  await page.reload();
+  await settle(page);
+  await expect(page.locator("#showLabels")).not.toBeChecked();
+  await page.keyboard.press("x");
+  expect(await kept()).toEqual({ labels: false, through: true });
+  await page.keyboard.press("l");
+  expect(await kept()).toEqual({ labels: true, through: true });
+  await page.keyboard.press("l");
+  expect(await kept()).toEqual({ through: true });
+  await page.locator("#resetDisplay").click();
+  expect(await kept()).toEqual({});
+});
+
 test("a travelling thing, and every block of a platform, picks the cell its record is on", async ({
   page,
 }) => {
