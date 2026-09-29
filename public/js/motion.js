@@ -161,6 +161,36 @@ export function cornersLit(light, balls, cell, corners, block) {
   });
 }
 
+/** Whether a device's light is on at a frame. While the device is on it
+    counts `every` frames down, from `every` as the level starts, and turns
+    its light over each time the count runs out; off, it drops the light at
+    once and holds the count. A frame's faces take the light as it stood the
+    frame before. `presses` are the frames its circuit was turned over at. */
+export function glowing(every, on, presses, frame) {
+  let count = every;
+  let lit = false;
+  let from = 0;
+  const run = (to) => {
+    const walks = to - from;
+    if (walks <= 0) return;
+    if (!on) lit = false;
+    else if (walks < count) count -= walks;
+    else {
+      const past = walks - count;
+      if (Math.floor(past / every) % 2 === 0) lit = !lit;
+      count = every - (past % every);
+    }
+  };
+  for (const at of presses) {
+    if (at >= frame) break;
+    run(at);
+    on = !on;
+    from = at;
+  }
+  run(Math.floor(frame));
+  return lit;
+}
+
 /** Whether a ball at a point is within a boost button's reach of it, both in
     the game's units, the button's point being where it stands on its face. */
 export const inReach = (entry, ball, button) =>

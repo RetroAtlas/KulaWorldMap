@@ -21,30 +21,36 @@ export function atlasFor(world) {
 
 export const NEUTRAL = 128; // the brightness at which a face is its own colour
 
-// A face shaded between its corners is its texture through a mask of their
-// brightnesses: a two by two image drawn so that the middle of each of its
-// pixels lands on a corner, which the canvas's smoothing interpolates between.
+// A face shaded between its corners is its texture through a mask of what
+// each corner takes: a two by two image drawn so that the middle of each of
+// its pixels lands on a corner, which the canvas's smoothing interpolates
+// between, taken as a share of each texel or as a colour it is multiplied by.
 let shading = null;
-function through(sk, shade, levels) {
+function shaded(sk, shade, corners, mode) {
   const n = ATLAS.size;
   if (!shading) {
     const canvas = (w) => Object.assign(document.createElement("canvas"), { width: w, height: w });
-    const corners = canvas(2);
+    const mask = canvas(2);
     const face = canvas(n);
-    const cg = corners.getContext("2d");
-    shading = { corners, face, cg, fg: face.getContext("2d"), img: cg.createImageData(2, 2) };
+    const mg = mask.getContext("2d");
+    shading = { mask, face, mg, fg: face.getContext("2d"), img: mg.createImageData(2, 2) };
   }
-  const { corners, face, cg, fg, img } = shading;
-  levels.forEach((v, k) =>
-    img.data.set([255, 255, 255, Math.round((255 * Math.min(v, NEUTRAL)) / NEUTRAL)], 4 * k),
-  );
-  cg.putImageData(img, 0, 0);
+  const { mask, face, mg, fg, img } = shading;
+  corners.forEach((rgba, k) => img.data.set(rgba.map(Math.round), 4 * k));
+  mg.putImageData(img, 0, 0);
   fg.globalCompositeOperation = "copy";
   fg.drawImage(sk.img, sk.tex * n + 0.5, shade * n + 0.5, n - 1, n - 1, 0, 0, n, n);
-  fg.globalCompositeOperation = "destination-in";
-  fg.drawImage(corners, -n / 2, -n / 2, 2 * n, 2 * n);
+  fg.globalCompositeOperation = mode;
+  fg.drawImage(mask, -n / 2, -n / 2, 2 * n, 2 * n);
   return face;
 }
+const through = (sk, shade, levels) =>
+  shaded(
+    sk,
+    shade,
+    levels.map((v) => [255, 255, 255, (255 * Math.min(v, NEUTRAL)) / NEUTRAL]),
+    "destination-in",
+  );
 
 /** Map the texture onto a face, its top left, top right and bottom left on
     the three points on the screen given, the block's corners the game's own
@@ -58,7 +64,9 @@ function through(sk, shade, levels) {
     the game shades between its corners carries their four brightnesses in
     the texture's order, and is drawn through them in place of its colour;
     where it says so, its colour fills in as much as each corner falls short
-    of full. */
+    of full. A light added to a face's corners is the texture times the
+    colour it adds at each, over 128, added once the face is drawn through
+    its colour, so that its colour does not scale the light. */
 export function paint(g, [p0, p1, p3], sk, shade, alpha) {
   const n = ATLAS.size;
   const ex = [(p1[0] - p0[0]) / n, (p1[1] - p0[1]) / n];
@@ -103,6 +111,19 @@ export function paint(g, [p0, p1, p3], sk, shade, alpha) {
       g.fillStyle = `rgba(${ch(r)} ${ch(gg)} ${ch(b)} / ${alpha})`;
       g.fill();
     }
+  }
+  if (sk.glow) {
+    g.transform(ex[0], ex[1], ey[0], ey[1], p0[0], p0[1]);
+    g.globalCompositeOperation = "lighter";
+    g.globalAlpha = alpha;
+    // a multiply takes a texel at most once over, so a gain past it is added again
+    let gain = sk.glow.map((rgb) => rgb.map((v) => (v * 255) / NEUTRAL));
+    while (gain.some((rgb) => rgb.some((v) => v > 0))) {
+      const pass = gain.map((rgb) => [...rgb.map((v) => Math.max(0, Math.min(255, v))), 255]);
+      g.drawImage(shaded(sk, shade, pass, "multiply"), 0, 0);
+      gain = gain.map((rgb) => rgb.map((v) => v - 255));
+    }
+    g.setTransform(base);
   }
   g.globalCompositeOperation = "source-over";
   g.globalAlpha = 1;

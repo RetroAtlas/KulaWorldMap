@@ -30,6 +30,7 @@ import { atlasFor } from "./atlas.js";
 import { drawBlock, cube, outline, covers } from "./blocks.js";
 import { drawRails, drawBase, drawLook, drawScale, drawMark, drawLink } from "./overlays.js";
 import { drawThing, quietAmongModels, thingDisc } from "./things.js";
+import { deviceLights } from "./lights.js";
 
 const cv = $("cv");
 const ctx = cv.getContext("2d");
@@ -230,7 +231,9 @@ export function draw() {
   }
   const edges = state.show.outlines && state.cam.zoom > 0.3;
   const effect = effectFrame(frame);
-  const scene = { l, idx, tint, skins, atlas, look, frame, effect, edges };
+  const lights = atlas ? deviceLights(l, idx, effect) : null;
+  if (lights?.on) spinning = true;
+  const scene = { l, idx, tint, skins, atlas, look, frame, effect, edges, lights: lights?.lit };
   // A thing on a face turned away from the view is drawn again once every
   // block is down, faintly, where the display asks to see it through them,
   // and on the selected block whatever the display says.

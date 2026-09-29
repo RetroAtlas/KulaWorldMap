@@ -1,5 +1,5 @@
 import { state, BLOCK, project, facing, screen, cellKey, sliceZ, effectsOn } from "./state.js";
-import { OFF_LATTICE, skinsTable, kindMotion, modelUnit } from "./data.js";
+import { OFF_LATTICE, FACE_NORMAL, skinsTable, kindMotion, modelUnit } from "./data.js";
 import { blockPhase, lightOn, cornersLit } from "./motion.js";
 import { ballsFor } from "./things.js";
 import { platformPlace, faceSkin } from "./skins.js";
@@ -126,6 +126,20 @@ function hiddenBehind(kind, nb, idx) {
   return (hides.kinds[String(kind)] ?? hides.other).includes(theirs === BEAM_KIND ? 0 : theirs);
 }
 
+/** Whether the block at a cell has face `g`, in the game's numbering of the
+    six, built as the loader builds it: unless a block its kind hides that
+    face behind stands against it, and even then behind a kind it leaves the
+    face unseen behind. */
+export function hasFace(idx, c, g) {
+  const n = FACE_NORMAL[g];
+  const nb = idx.cells.get(cellKey(c.x + n[0], c.y + n[1], c.z + n[2]));
+  const kind = kindOf(c, idx, cellKey(c.x, c.y, c.z));
+  if (!nb || !hiddenBehind(kind, nb, idx)) return true;
+  const hides = skinsTable().hides;
+  const unseen = !(String(kind) in hides.kinds) && hides.unseen;
+  return !!unseen && unseen.includes(kindOf(nb, idx, cellKey(nb.x, nb.y, nb.z)));
+}
+
 /** Draw a block's visible faces: each in the skin `skin(i)` gives it, or in
     `colour(i)` without one. A face the game leaves undrawn is skipped. */
 export function cube(g, c, idx, colour, edge, alpha, skin, kind) {
@@ -220,6 +234,18 @@ function vanishingLook(r, frame, skinned) {
   return { alpha: step >= TRANSLUCENT ? FADING : 1, wash };
 }
 
+// A device's light on a face comes in the order of the texture's first turn,
+// and is added to the colour the face is drawn through as the game adds it,
+// a channel that passes what it can hold standing at the most it can.
+function deviceLight(sums, sk, g, skins) {
+  const first = skins.corners[g][0];
+  const base = sk.colour ?? [NEUTRAL, NEUTRAL, NEUTRAL];
+  return skins.corners[g][sk.turn].map((corner) => {
+    const k = first.findIndex((f) => f.every((v, i) => v === corner[i]));
+    return sums[k].map((v, ch) => Math.max(0, Math.min(254, (base[ch] & ~1) + v) - base[ch]));
+  });
+}
+
 /** An invisible face's colour at the peak of its pulse. */
 const peak = (skins) => Array(3).fill(Math.max(...skins.cycles.invisible.level));
 
@@ -254,7 +280,7 @@ function kindOf(c, idx, key) {
 /** Draw a block as its kind looks at this frame, lit up where it is selected
     or under the pointer, and say whether it is to change by the next frame. */
 export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
-  const { l, idx, tint, skins, atlas, look, frame, effect, edges } = scene;
+  const { l, idx, tint, skins, atlas, look, frame, effect, edges, lights } = scene;
   let live = false;
   const kind = kindOf(c, idx, key);
   const rec = c.v >= state.data.firstRecord ? idx.records.get(key)?.[0] : null;
@@ -285,6 +311,8 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
         if (!effectsOn()) sk.colour = peak(skins);
         else lightUp(sk, l, home, g, skins.corners[g][sk.turn]);
       }
+      const added = !place && lights?.get(`${key}/${g}`);
+      if (sk && added && !sk.add) sk.glow = deviceLight(added, sk, g, skins);
       return sk && { ...sk, img: atlas, world: l.theme, corners: skins.corners[g][sk.turn] };
     };
   }

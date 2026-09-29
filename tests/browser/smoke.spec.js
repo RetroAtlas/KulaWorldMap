@@ -1783,6 +1783,116 @@ test("where a level turns the light round, an invisible block beside the ball is
   expect(errors).toEqual([]);
 });
 
+/** The red, green and blue of the top of a block, summed over points clear
+    of its middle, drawn without the objects at each frame of the level's
+    clock asked for. */
+const topAt = (page, [x, y, z], frames) =>
+  page.evaluate(
+    async ([[x, y, z], frames]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state, screen }, { draw, clock }] = await Promise.all(
+        ["state.js", "render.js"].map(at),
+      );
+      const now = performance.now;
+      const t = now.call(performance);
+      performance.now = () => t;
+      const from = clock();
+      state.show.objects = false;
+      state.hover = null;
+      const g = document.getElementById("cv").getContext("2d");
+      const dpr = state.view.dpr;
+      const out = frames.map((frame) => {
+        performance.now = () => t + ((frame + 0.5 - from) * 1000) / 60;
+        draw();
+        const sum = [0, 0, 0];
+        for (const [dx, dy] of [
+          [0.2, 0.2],
+          [0.8, 0.2],
+          [0.2, 0.8],
+          [0.8, 0.8],
+        ]) {
+          const [sx, sy] = screen(x + dx, y + dy, z);
+          const d = g.getImageData(Math.round(sx * dpr), Math.round(sy * dpr), 1, 1).data;
+          for (let ch = 0; ch < 3; ch++) sum[ch] += d[ch];
+        }
+        return sum;
+      });
+      state.show.objects = true;
+      performance.now = now;
+      draw();
+      return out;
+    },
+    [[x, y, z], frames],
+  );
+
+test("a light on a face with a colour of its own adds to that colour and is not scaled by it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // BONUS 14's teleporters stand on plates that take the swirl's colour
+  await page.goto("/#COWBOY/16/45,35");
+  await settle(page);
+  await landed(page);
+  // the green of a plate painted alone, through the swirl's colour where its
+  // cycle holds no green, without a light and with a yellow one
+  const green = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { atlasFor, paint }, { skinsTable }] = await Promise.all(
+      ["state.js", "atlas.js", "data.js"].map(at),
+    );
+    const tex = skinsTable().sets.bonus.types["5"][0];
+    const cv = Object.assign(document.createElement("canvas"), { width: 64, height: 64 });
+    const g = cv.getContext("2d");
+    const face = (glow) => {
+      g.fillStyle = "#000";
+      g.fillRect(0, 0, 64, 64);
+      g.save();
+      g.beginPath();
+      g.rect(0, 0, 64, 64);
+      g.clip();
+      const sk = { img: atlasFor(state.lvl.theme), tex, colour: [168, 0, 0], glow };
+      paint(
+        g,
+        [
+          [0, 0],
+          [64, 0],
+          [0, 64],
+        ],
+        sk,
+        1,
+        1,
+      );
+      g.restore();
+      return g.getImageData(0, 0, 64, 64).data.reduce((s, v, i) => s + (i % 4 === 1 ? v : 0), 0);
+    };
+    return [face(null), face(Array(4).fill([24, 50, 0]))];
+  });
+  expect(green[1]).toBeGreaterThan(green[0] + 4 * 64 * 64);
+  expect(errors).toEqual([]);
+});
+
+test("a teleporter that is on lights its face in its colour, 19 frames in every 38", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // LEVEL 68's blue teleporter stands on the top of this block, on from the start
+  await page.goto("/#COWBOY/7/45,55");
+  await settle(page);
+  await landed(page);
+  const blue = [17, 21, 17];
+  const [dark, lit, again] = await topAt(page, blue, [10, 25, 40]);
+  // Cowboy's blue adds the texel's own blue again, and nothing to red
+  expect(dark[2]).toBeGreaterThan(8);
+  expect(lit[2]).toBeGreaterThan(dark[2] * 1.8);
+  expect(Math.abs(lit[0] - dark[0])).toBeLessThan(4);
+  expect(again).toEqual(dark);
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  const [held] = await topAt(page, blue, [25]);
+  expect(held).toEqual(dark);
+  expect(errors).toEqual([]);
+});
+
 test("where the system asks for reduced motion the map opens still, and a choice to move is kept", async ({
   page,
 }) => {

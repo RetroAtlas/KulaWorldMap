@@ -1,5 +1,6 @@
 import { state, SIDE, cellKey } from "./state.js";
 import { platesOf } from "./skins.js";
+import { glowing } from "./motion.js";
 
 export const WORLD_TINT = {
   HIRO: "#93a8d4",
@@ -229,6 +230,11 @@ export const movedFor = (m, frame) =>
   markerState(m) === null
     ? frame
     : framesOn(markerState(m) === "on", pressesOf(markerCircuit(m)), frame);
+/** Whether a device a switch toggles casts its light at `frame`, turning it
+    over every `every` frames it has been on. */
+export const lightOnAt = (m, every, frame) =>
+  markerState(m) !== null &&
+  glowing(every, markerState(m) === "on", pressesOf(markerCircuit(m)), frame);
 const SWITCH = 9;
 /** Whether a marker is a switch, whose press turns its circuit over. */
 export const isSwitch = (m) => m.face !== null && m.type === SWITCH;

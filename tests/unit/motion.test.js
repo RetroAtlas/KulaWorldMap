@@ -13,6 +13,7 @@ import {
   lightOn,
   glow,
   cornersLit,
+  glowing,
 } from "../../public/js/motion.js";
 
 const table = objects.motion;
@@ -250,4 +251,20 @@ test("the seven levels whose settings ask turn the light round, with distances o
   assert.deepEqual(cornersLit(round, [ball], [0, 0, 5], top(0), 512), [0, 0, 0, 0]);
   assert.deepEqual(cornersLit(round, [ball], [3, 0, 5], top(3), 512), [2, 126, 2, 126]);
   assert.equal(lightOn(light, mapData.levels[0]).near, 350);
+});
+
+test("a device on from the start is dark for 19 frames, then lit for 19 and dark for 19", () => {
+  const every = table.glow.every;
+  const lit = (frame) => glowing(every, true, [], frame);
+  const frames = [0, 18, 19, 37, 38, 56, 57];
+  assert.deepEqual(frames.map(lit), [false, false, true, true, false, false, true]);
+  assert.equal(glowing(every, false, [], 100), false, "one that starts off never lights");
+});
+
+test("a device turned off loses its light at once and counts on from there once on again", () => {
+  const every = table.glow.every;
+  // on for frames 0 to 24, lit from 19; off from 25, dark from 26; on again
+  // from 30, with the 6 frames it counted while lit to go on from
+  const lit = (frame) => glowing(every, true, [25, 30], frame);
+  assert.deepEqual([25, 26, 30, 42, 43].map(lit), [true, false, false, false, true]);
 });
