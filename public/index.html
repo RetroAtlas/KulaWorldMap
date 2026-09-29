@@ -112,38 +112,45 @@
 
       <section id="display" class="panel">
         <h2>Display <button id="resetDisplay" class="mini" type="button">reset</button></h2>
-        <label class="check"
-          ><input type="checkbox" id="showSkins" checked /> Game textures <kbd>t</kbd></label
-        >
-        <label class="check"
-          ><input type="checkbox" id="showOutlines" /> Outlines <kbd>b</kbd></label
-        >
-        <label class="check"
-          ><input type="checkbox" id="showObjects" checked /> Objects <kbd>o</kbd></label
-        >
-        <label class="check"
-          ><input type="checkbox" id="showModels" checked /> Objects as models <kbd>d</kbd></label
-        >
-        <label class="check"
-          ><input type="checkbox" id="showMotion" checked /> Motion <kbd>v</kbd></label
-        >
-        <label class="check"
-          ><input type="checkbox" id="showThrough" /> See objects through blocks <kbd>x</kbd></label
-        >
-        <label class="check"
-          ><input type="checkbox" id="showLabels" /> Object labels <kbd>l</kbd></label
-        >
-        <label class="check"
-          ><input type="checkbox" id="showBase" /> Ground grid <kbd>g</kbd></label
-        >
-        <label class="check"
-          ><input type="checkbox" id="panMode" /> Drag pans instead of turning <kbd>p</kbd></label
-        >
-        <div class="slice">
-          <label for="slice"
-            >Slice <span id="sliceVal" class="mono"></span> <kbd>,</kbd><kbd>.</kbd></label
+        <div class="group">
+          <label class="check"
+            ><input type="checkbox" id="showSkins" checked /> Game textures <kbd>t</kbd></label
           >
-          <input type="range" id="slice" min="0" max="33" value="33" />
+          <label class="check"
+            ><input type="checkbox" id="showObjects" checked /> Objects <kbd>o</kbd></label
+          >
+          <label class="check"
+            ><input type="checkbox" id="showModels" checked /> Objects as models <kbd>d</kbd></label
+          >
+          <label class="check"
+            ><input type="checkbox" id="showMotion" checked /> Motion <kbd>v</kbd></label
+          >
+        </div>
+        <div class="group">
+          <label class="check"
+            ><input type="checkbox" id="showThrough" /> See objects through blocks
+            <kbd>x</kbd></label
+          >
+          <label class="check"
+            ><input type="checkbox" id="showLabels" /> Object labels <kbd>l</kbd></label
+          >
+          <label class="check"
+            ><input type="checkbox" id="showOutlines" /> Outlines <kbd>b</kbd></label
+          >
+          <label class="check"
+            ><input type="checkbox" id="showBase" /> Ground grid <kbd>g</kbd></label
+          >
+        </div>
+        <div class="group">
+          <label class="check"
+            ><input type="checkbox" id="panMode" /> Drag pans instead of turning <kbd>p</kbd></label
+          >
+          <div class="slice">
+            <label for="slice"
+              >Slice <span id="sliceVal" class="mono"></span> <kbd>,</kbd><kbd>.</kbd></label
+            >
+            <input type="range" id="slice" min="0" max="33" value="33" />
+          </div>
         </div>
       </section>
 

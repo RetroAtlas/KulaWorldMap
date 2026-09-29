@@ -1666,6 +1666,23 @@ test("every switch's key is the one its row shows and the key list names", async
   for (const key of [...keys, "s"]) expect(listed).toContain(key);
 });
 
+test("Display puts the game's own look first, then what the map adds, then the controls", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const groups = await page.evaluate(() =>
+    [...document.querySelectorAll("#display .group")].map((g) =>
+      [...g.querySelectorAll("input")].map((i) => `${i.id}${i.checked ? " on" : ""}`),
+    ),
+  );
+  expect(groups).toEqual([
+    ["showSkins on", "showObjects on", "showModels on", "showMotion on"],
+    ["showThrough", "showLabels", "showOutlines", "showBase"],
+    ["panMode", "slice"],
+  ]);
+});
+
 test("the settings fit a phone, over the drawer they open from", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 700 });
   await page.goto("/#HIRO/0");

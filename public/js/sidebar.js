@@ -18,16 +18,16 @@ import { setSlice } from "./interaction.js";
 const KEY = "kula.display";
 const SHOWN = [
   ["showSkins", "skins"],
-  ["showOutlines", "outlines"],
   ["showObjects", "objects"],
   ["showModels", "models"],
   ["showMotion", "motion"],
   ["showThrough", "through"],
   ["showLabels", "labels"],
-  ["showFaces", "faces"],
+  ["showOutlines", "outlines"],
   ["showBase", "base"],
-  ["showStart", "start"],
+  ["showFaces", "faces"],
   ["showHidden", "hidden"],
+  ["showStart", "start"],
 ];
 const DEFAULTS = { ...state.show };
 

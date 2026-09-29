@@ -320,6 +320,10 @@ body:not(.sidebar-open) .sidebar {
   border-color: var(--accent);
 }
 
+.group + .group {
+  margin-top: 8px;
+}
+
 .check {
   display: flex;
   align-items: center;
