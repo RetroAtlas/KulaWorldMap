@@ -1,6 +1,7 @@
 import { state, BLOCK, project, facing, screen, cellKey, sliceZ, effectsOn } from "./state.js";
-import { OFF_LATTICE, skinsTable, kindMotion } from "./data.js";
-import { blockPhase } from "./motion.js";
+import { OFF_LATTICE, skinsTable, kindMotion, modelUnit } from "./data.js";
+import { blockPhase, lightOn, cornersLit } from "./motion.js";
+import { ballsFor } from "./things.js";
 import { platformPlace, faceSkin } from "./skins.js";
 import { paint, NEUTRAL } from "./atlas.js";
 
@@ -222,6 +223,26 @@ function vanishingLook(r, frame, skinned) {
 /** An invisible face's colour at the peak of its pulse. */
 const peak = (skins) => Array(3).fill(Math.max(...skins.cycles.invisible.level));
 
+// Near the ball an invisible face is lit corner by corner as the game lights
+// it, over the look the map draws it in so that it can be seen at all. Where
+// the level turns the light round, that look is the game's own from afar,
+// and a face of a block the ball's light reaches is drawn as the game draws
+// it there instead.
+const lights = new WeakMap();
+function lightUp(sk, l, home, face, corners) {
+  const entry = kindMotion(INVISIBLE)?.light;
+  if (!entry) return;
+  if (!lights.has(l)) lights.set(l, lightOn(entry, l));
+  const light = lights.get(l);
+  const block = 1 / modelUnit();
+  const cell = [home.x, home.y, home.z];
+  const at = corners.map((c) => c.map((v, i) => (cell[i] + v) * block));
+  const levels = cornersLit(light, ballsFor(l, face), cell, at, block);
+  if (!levels || (!light.turned && !levels.some(Boolean))) return;
+  sk.shaded = levels;
+  sk.over = !light.turned;
+}
+
 /** The kind of block a cell draws: its style, or the kind of the record it names. */
 function kindOf(c, idx, key) {
   if (c.v === OFF_LATTICE) return 0;
@@ -258,8 +279,11 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
       const g = FACES[i].game;
       const sk = faceSkin(skins, look, still, g, kind, rec, effect, place, plates?.get(g));
       if (sk?.live) live = true;
-      // held still, an invisible face stands at the peak of its pulse
-      if (sk && kind === INVISIBLE && !effectsOn()) sk.colour = peak(skins);
+      // held still, an invisible face stands at the peak of its pulse, unlit
+      if (sk && kind === INVISIBLE) {
+        if (!effectsOn()) sk.colour = peak(skins);
+        else lightUp(sk, l, home, g, skins.corners[g][sk.turn]);
+      }
       return sk && { ...sk, img: atlas, world: l.theme, corners: skins.corners[g][sk.turn] };
     };
   }

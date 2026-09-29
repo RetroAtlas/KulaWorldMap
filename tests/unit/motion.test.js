@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { objects } from "./fixtures.js";
+import { objects, mapData } from "./fixtures.js";
 import {
   frameAt,
   phasesOf,
@@ -10,6 +10,9 @@ import {
   blockPhase,
   press,
   inReach,
+  lightOn,
+  glow,
+  cornersLit,
 } from "../../public/js/motion.js";
 
 const table = objects.motion;
@@ -177,4 +180,74 @@ test("a ball is in a boost button's reach on its block or a block sharing a face
   assert.ok(inReach(e, [512, 0, -356], button), "on the block beside");
   assert.ok(!inReach(e, [512, 512, -356], button), "not on the one across a corner");
   assert.ok(!inReach(e, [512, 0, -356], [0, 0, 256]), "nor on the block beside, it being under");
+});
+
+const light = objects.motion.kinds[3].light;
+const plain = { ...light, turned: false };
+// the top face of the block at (x, 0, 5), which the ball standing on the
+// block at (0, 0, 5) has its middle 100 off
+const top = (x) =>
+  [
+    [0, 0],
+    [1, 0],
+    [0, 1],
+    [1, 1],
+  ].map(([dx, dy]) => [(x + dx) * 512, dy * 512, 5 * 512]);
+const ball = [256, 256, 5 * 512 - 100];
+
+test("an invisible corner is full within 350 of the ball and fades to nothing at 512", () => {
+  assert.equal(glow(plain, 350), 128);
+  assert.equal(glow(plain, 351), 128, "the fade's fixed point takes nothing off a unit past");
+  assert.equal(glow(plain, 450), 49);
+  assert.equal(glow(plain, 512), 1);
+  assert.equal(glow(plain, 513), 0);
+});
+
+test("a corner is measured by the game's own root, which runs short between powers of two", () => {
+  // 418 squared is past 2^17, whose root the game rounds to 362, and it draws
+  // a straight line from there to 512, which reaches 411
+  assert.deepEqual(cornersLit(plain, [[0, 0, 0]], [0, 0, 0], [[418, 0, 0]], 512), [
+    glow(plain, 411),
+  ]);
+  assert.notEqual(glow(plain, 411), glow(plain, 418));
+  const close = [
+    [10, 0, 0],
+    [0, 0, 0],
+  ];
+  assert.deepEqual(
+    cornersLit(plain, [[0, 0, 0]], [0, 0, 0], close, 512),
+    [128, 128],
+    "too near for a row",
+  );
+});
+
+test("the ball lights the top it stands on and the near half of the next, and no further", () => {
+  assert.deepEqual(cornersLit(plain, [ball], [0, 0, 5], top(0), 512), [110, 110, 110, 110]);
+  assert.deepEqual(cornersLit(plain, [ball], [1, 0, 5], top(1), 512), [110, 0, 110, 0]);
+  assert.equal(cornersLit(plain, [ball], [2, 0, 5], top(2), 512), null, "outside its box");
+});
+
+test("of the balls whose box holds a block, the nearest lights each corner", () => {
+  const other = [256 + 2 * 512, 256, 5 * 512 - 100];
+  assert.deepEqual(cornersLit(plain, [ball, other], [1, 0, 5], top(1), 512), [110, 110, 110, 110]);
+  const far = [256 + 4 * 512, 256, 5 * 512 - 100];
+  assert.equal(cornersLit(plain, [far], [1, 0, 5], top(1), 512), null);
+});
+
+test("the seven levels whose settings ask turn the light round, with distances of their own", () => {
+  const turned = mapData.levels.filter((l) => lightOn(light, l).turned);
+  assert.deepEqual(turned.map((l) => l.shown || l.name).sort(), [
+    "HIDDEN 8",
+    "LEVEL 106",
+    "LEVEL 107",
+    "LEVEL 108",
+    "LEVEL 110",
+    "LEVEL 111",
+    "SIMON 9",
+  ]);
+  const round = lightOn(light, turned[0]);
+  assert.deepEqual([round.near, round.far], [1280, 1792]);
+  assert.deepEqual(cornersLit(round, [ball], [0, 0, 5], top(0), 512), [0, 0, 0, 0]);
+  assert.deepEqual(cornersLit(round, [ball], [3, 0, 5], top(3), 512), [3, 127, 3, 127]);
+  assert.equal(lightOn(light, mapData.levels[0]).near, 350);
 });

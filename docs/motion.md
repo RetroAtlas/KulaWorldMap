@@ -73,7 +73,9 @@ Kind 3 is hidden until the ball comes near it, and the routine at `0x80051318` d
 
 The loader sets the struct at `0x80027bf8`: 350 and 512 and no flag, so a block shows only within about a block of the ball; and on a level whose settings record, kind 9, carries a first field of 1 (`0x80027c78`), 1280 and 1792 with the flag, so its invisible blocks show everywhere, fade as the ball comes within three and a half blocks and are gone within two and a half. Seven levels do: LEVEL 106 to 108, 110 and 111, SIMON 9 and HIDDEN 8. The table ships both pairs of distances, the settings' kind and the value that turns the light round, full and the shift of its fixed point, and the root's rows, as kind 3's `light`.
 
-With the sunglasses the faces are drawn flat, through the colour the animator at `0x8004f3b8` pulses from 48 to 136 of 128 over 90 frames while they cycle through their seven frames of shimmer over 144, which is the look the map draws them in.
+With the sunglasses the faces are drawn flat, through the colour the animator at `0x8004f3b8` pulses from 48 to 136 of 128 over 90 frames while they cycle through their seven frames of shimmer over 144, which is the look the map draws them in, so that they can be seen at all.
+
+The viewer lights them as the game does, from the ball at the level's start and from the block under the pointer and the one selected, each as the ball standing on that block's face that looks the way the lit face does, the stand-ins the boost button takes: a face of a block in a stand-in's box is shaded between its corners' brightnesses, the nearest stand-in's at each corner, and the shading is added over the sunglasses' look. On the seven levels that look is the game's own for a face outside the box, and a face in it is drawn in the shading alone, as the game draws it, so it fades out as a stand-in comes near. The corners' shading is interpolated evenly across the face, which is what the game's quartered near faces come to. The light is one of the effects, which stand where the level starts while the Motion switch holds it, so there nothing is lit.
 
 ## The crumbling block
 

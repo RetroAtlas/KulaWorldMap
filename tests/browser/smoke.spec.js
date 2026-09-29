@@ -1612,6 +1612,76 @@ test("v holds the whole level still, the same every time, and draws nothing more
   expect(errors).toEqual([]);
 });
 
+/** How bright the top of an invisible block is near its edge with the
+    block beside it, alone and with that block selected, which stands in for
+    the ball on it; both drawn at one frame, without the objects. */
+const litBeside = (page, sel, top) =>
+  page.evaluate(
+    async ([sel, [x, y, z]]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state, screen, cellKey }, { draw }] = await Promise.all(
+        ["state.js", "render.js"].map(at),
+      );
+      const now = performance.now;
+      const t = now.call(performance);
+      performance.now = () => t;
+      state.show.objects = false;
+      state.hover = null;
+      const g = document.getElementById("cv").getContext("2d");
+      const dpr = state.view.dpr;
+      const mean = () => {
+        draw();
+        let sum = 0;
+        for (const dx of [0.3, 0.5, 0.7]) {
+          for (const dy of [0.65, 0.75, 0.85]) {
+            const [sx, sy] = screen(x + dx, y + dy, z);
+            const d = g.getImageData(Math.round(sx * dpr), Math.round(sy * dpr), 1, 1).data;
+            sum += d[0] + d[1] + d[2];
+          }
+        }
+        return sum / 9;
+      };
+      state.selected = null;
+      const alone = mean();
+      state.selected = { x: sel[0], y: sel[1], z: sel[2], key: cellKey(...sel) };
+      const beside = mean();
+      state.selected = null;
+      state.show.objects = true;
+      performance.now = now;
+      draw();
+      return [alone, beside];
+    },
+    [sel, top],
+  );
+
+test("an invisible block lights up beside the ball, until v holds it", async ({ page }) => {
+  const errors = trackErrors(page);
+  // LEVEL 31's invisible blocks run in a row
+  await page.goto("/#INCA/0/45,35");
+  await settle(page);
+  await landed(page);
+  const [alone, lit] = await litBeside(page, [15, 15, 17], [15, 14, 17]);
+  expect(lit).toBeGreaterThan(alone + 15);
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  const [still, held] = await litBeside(page, [15, 15, 17], [15, 14, 17]);
+  expect(Math.abs(held - still)).toBeLessThan(2);
+  expect(errors).toEqual([]);
+});
+
+test("where a level turns the light round, an invisible block beside the ball is gone", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // LEVEL 106's settings ask for its invisible blocks to show from afar
+  await page.goto("/#HAZE/0/45,35");
+  await settle(page);
+  await landed(page);
+  const [seen, gone] = await litBeside(page, [20, 10, 17], [20, 9, 17]);
+  expect(gone).toBeLessThan(seen - 20);
+  expect(errors).toEqual([]);
+});
+
 test("where the system asks for reduced motion the map opens still, and a choice to move is kept", async ({
   page,
 }) => {

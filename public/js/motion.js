@@ -97,6 +97,69 @@ export function blockPhase(entry, r, frame) {
   return { state: entry.cycle[phase][k], level: entry.level[phase][k] };
 }
 
+// An invisible block is lit afresh every frame from where the ball is: a
+// corner is full within the near distance of the ball's middle and fades in
+// fixed point to nothing at the far one, measured by the game's own square
+// root, and on a level whose settings turn the light round, the other way
+// about. The game looks only at the blocks in a box of cells the far
+// distance either way of the ball on each axis.
+
+/** The light on a level: the game's distances, or the pair the level's
+    settings turn it round with, where they carry the value that asks it. */
+export function lightOn(entry, l) {
+  const t = entry.turned;
+  const turned = l.records.some((r) => r.kind === t.kind && r.f[0] === t.value);
+  return turned ? { ...entry, near: t.near, far: t.far, turned } : { ...entry, turned };
+}
+
+// The game's square root: its table's row for the square's leading zeros
+// gives the root of the power of two below and a straight line to the next.
+// A square too small to have a row is well within any near distance.
+function root(rows, v) {
+  const zeros = Math.clz32(v);
+  if (zeros >= rows.length) return 0;
+  const [below, step] = rows[zeros];
+  const past = 2 ** (31 - zeros);
+  return below + Math.floor(((v - past) * step) / past);
+}
+
+/** How brightly the ball lights a corner a distance from its middle, of full. */
+export function glow(light, d) {
+  if (d <= light.near) return light.full;
+  const unit = 2 ** light.bits;
+  const step = Math.floor((light.full * unit) / (light.far - light.near));
+  return Math.max(0, light.full - Math.floor(((d - light.near) * step) / unit));
+}
+
+/** How brightly each of a face's corners is lit, of full, by the nearest of
+    the balls whose box holds the face's block, at `cell`, or null where none
+    does. The balls and the corners are in the game's units, of which a
+    block is `block`. */
+export function cornersLit(light, balls, cell, corners, block) {
+  const holding = balls.filter((b) =>
+    b.every(
+      (v, i) =>
+        Math.floor((v - light.far) / block) <= cell[i] &&
+        cell[i] <= Math.floor((v + light.far) / block),
+    ),
+  );
+  if (!holding.length) return null;
+  return corners.map((c) => {
+    const near = Math.max(
+      ...holding.map((b) =>
+        glow(
+          light,
+          root(
+            light.root,
+            c.reduce((sum, v, i) => sum + (v - b[i]) ** 2, 0),
+          ),
+        ),
+      ),
+    );
+    return light.turned ? light.full - near : near;
+  });
+}
+
 /** Whether a ball at a point is within a boost button's reach of it, both in
     the game's units, the button's point being where it stands on its face. */
 export const inReach = (entry, ball, button) =>
