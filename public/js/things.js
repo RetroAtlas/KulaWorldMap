@@ -1,4 +1,4 @@
-import { state, BLOCK, depth, facing, screen, cellKey, effectFrame } from "./state.js";
+import { state, BLOCK, depth, facing, screen, screenTo, cellKey, effectFrame } from "./state.js";
 import {
   FACE_NORMAL,
   FACE_NAME,
@@ -214,8 +214,11 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
   // A polygon is sorted by the depth it has unpressed, so that a model pressed
   // flat keeps the order of its layers, the top one over the rest, where
   // their depths would otherwise tie and trade places as the view turns.
-  const pts = [];
-  for (let i = 0; i < shown.length; i += 3) {
+  const n = shown.length / 3;
+  const polys = polygonsOf(model);
+  const { spots, depths, far } = scratch(n, polys.length);
+  for (let v = 0; v < n; v++) {
+    const i = 3 * v;
     // about its own z, the way it points, then about its own x, across the
     // face, before it is placed; the turn about its normal is in the basis
     const x = (shown[i] * cz - shown[i + 1] * sz) * unit * wide,
@@ -223,37 +226,103 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
       tz = shown[i + 2] * unit;
     const y = (ty * cx - tz * sx) * tall,
       z = (ty * sx + tz * cx) * wide;
-    const at = (k, h) => o[k] + x * right[k] + y * h * up[k] + z * fwd[k];
-    pts.push([
-      ...screen(at(0, height), at(1, height), at(2, height)),
-      depth(at(0, 1), at(1, 1), at(2, 1)),
-    ]);
+    const pressed = y * height;
+    screenTo(
+      spots,
+      2 * v,
+      o[0] + x * right[0] + pressed * up[0] + z * fwd[0],
+      o[1] + x * right[1] + pressed * up[1] + z * fwd[1],
+      o[2] + x * right[2] + pressed * up[2] + z * fwd[2],
+    );
+    depths[v] = depth(
+      o[0] + x * right[0] + y * up[0] + z * fwd[0],
+      o[1] + x * right[1] + y * up[1] + z * fwd[1],
+      o[2] + x * right[2] + y * up[2] + z * fwd[2],
+    );
   }
-  const polys = [];
-  model.polys.forEach((poly, k) => {
-    const p = poly.map((i) => pts[i]);
-    const rgb = model.rgb[k];
-    const n = poly.length;
-    const mean = [0, 1, 2].map((ch) => {
-      let sum = 0;
-      for (let i = 0; i < n; i++) sum += rgb[i * 3 + ch];
-      return Math.round(sum / n);
-    });
+  polys.forEach(({ corners }, k) => {
     let z = 0;
-    for (const q of p) z += q[2];
-    polys.push({ p, z: z / n, fill: mean, blend: model.flags[k] & 2 });
+    for (const i of corners) z += depths[i];
+    far[k] = z / corners.length;
   });
-  polys.sort((a, b) => b.z - a.z);
-  for (const { p, fill, blend } of polys) {
-    ctx.fillStyle = `rgba(${fill[0]} ${fill[1]} ${fill[2]} / ${blend ? GLASS : 1})`;
+  let colour = null;
+  for (const k of backToFront(m, model, far)) {
+    const { ring, fill } = polys[k];
+    if (fill !== colour) ctx.fillStyle = colour = fill;
     ctx.beginPath();
-    // A quad's corners come two edges at a time, 0-1 and 2-3, so its outline
-    // runs 0, 1, 3, 2; traced in index order it is a bow-tie with two holes.
-    const ring = p.length === 4 ? [p[0], p[1], p[3], p[2]] : p;
-    ring.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ring.forEach((i, j) =>
+      j ? ctx.lineTo(spots[2 * i], spots[2 * i + 1]) : ctx.moveTo(spots[2 * i], spots[2 * i + 1]),
+    );
     ctx.closePath();
     ctx.fill();
   }
+}
+
+// A model's polygons fill and run the same way in every frame, so each is
+// worked out once: its colour, the mean of its corners', and the order its
+// outline runs. A quad's corners come two edges at a time, 0-1 and 2-3, so
+// its outline runs 0, 1, 3, 2; traced in index order it is a bow-tie with
+// two holes.
+const polygons = new WeakMap();
+function polygonsOf(model) {
+  if (!polygons.has(model)) {
+    const polys = model.polys.map((corners, k) => {
+      const rgb = model.rgb[k];
+      const n = corners.length;
+      const mean = [0, 1, 2].map((ch) => {
+        let sum = 0;
+        for (let i = 0; i < n; i++) sum += rgb[i * 3 + ch];
+        return Math.round(sum / n);
+      });
+      const [a, b, c, d] = corners;
+      return {
+        corners,
+        ring: n === 4 ? [a, b, d, c] : corners,
+        fill: `rgba(${mean[0]} ${mean[1]} ${mean[2]} / ${model.flags[k] & 2 ? GLASS : 1})`,
+      };
+    });
+    polygons.set(model, polys);
+  }
+  return polygons.get(model);
+}
+
+// A thing's polygons, furthest first, and where two are as far as each other
+// in the model's own order. A thing turns little from one frame to the next,
+// so its order from the last frame is all but sorted and is where each sort
+// starts.
+const orders = new WeakMap();
+function backToFront(m, model, far) {
+  let last = orders.get(m);
+  if (last?.model !== model) {
+    last = { model, order: model.polys.map((_, k) => k) };
+    orders.set(m, last);
+  }
+  const { order } = last;
+  for (let i = 1; i < order.length; i++) {
+    const k = order[i];
+    let j = i - 1;
+    for (; j >= 0 && (far[order[j]] < far[k] || (far[order[j]] === far[k] && order[j] > k)); j--)
+      order[j + 1] = order[j];
+    order[j + 1] = k;
+  }
+  return order;
+}
+
+// Where a model's corners land on the screen, how far off they are and how
+// far off each polygon is, kept from one model to the next rather than made
+// afresh for each.
+const buffers = {
+  spots: new Float64Array(0),
+  depths: new Float64Array(0),
+  far: new Float64Array(0),
+};
+function scratch(corners, polys) {
+  if (buffers.depths.length < corners) {
+    buffers.spots = new Float64Array(2 * corners);
+    buffers.depths = new Float64Array(corners);
+  }
+  if (buffers.far.length < polys) buffers.far = new Float64Array(polys);
+  return buffers;
 }
 
 // A marker hovers off the face its object stands on, and the hover is a

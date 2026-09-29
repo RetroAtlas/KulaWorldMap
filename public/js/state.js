@@ -87,14 +87,35 @@ export function depth(x, y, z) {
 /** Whether a face with this outward normal turns toward the camera. */
 export const facing = (n) => dot(n, camera().toward) > 0;
 
-export function screen(x, y, z) {
-  const [px, py] = project(x, y, z);
-  const [tx, ty] = project(...state.target);
+// Every point on the screen is measured from where the orbit target
+// projects, which holds while the camera and the target do.
+let aim = { c: null, x: NaN, y: NaN, z: NaN, px: 0, py: 0 };
+function aimAt(c) {
+  const t = state.target;
+  if (aim.c !== c || aim.x !== t[0] || aim.y !== t[1] || aim.z !== t[2]) {
+    const [px, py] = project(t[0], t[1], t[2]);
+    aim = { c, x: t[0], y: t[1], z: t[2], px, py };
+  }
+  return aim;
+}
+
+/** Where a world point lands on the screen, written into `out` at `i` and
+    `i + 1`, for placing many points without an array for each. */
+export function screenTo(out, i, x, y, z) {
+  const c = camera();
+  const a = aimAt(c);
   const { zoom, panX, panY } = state.cam;
-  return [
-    (px - tx - panX) * zoom * BLOCK + state.view.w / 2,
-    (py - ty - panY) * zoom * BLOCK + state.view.h / 2,
-  ];
+  out[i] =
+    (x * c.right[0] + y * c.right[1] + z * c.right[2] - a.px - panX) * zoom * BLOCK +
+    state.view.w / 2;
+  out[i + 1] =
+    (-(x * c.up[0] + y * c.up[1] + z * c.up[2]) - a.py - panY) * zoom * BLOCK + state.view.h / 2;
+}
+
+export function screen(x, y, z) {
+  const out = [0, 0];
+  screenTo(out, 0, x, y, z);
+  return out;
 }
 
 /** Move the point the view turns about, and the pan the other way, so nothing on screen moves. */
