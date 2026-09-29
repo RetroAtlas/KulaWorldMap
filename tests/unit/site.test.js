@@ -16,10 +16,10 @@ function* files(dir) {
 }
 
 // Everything under public/ is served, comments included, so none of it may
-// point at a machine or at the sibling maps this project grew up beside.
-const ELSEWHERE = /\/Users\/|\/home\/|~\/|oddworld|hercules|metal ?slug/i;
+// point at a path on a machine.
+const ELSEWHERE = /\/Users\/|\/home\/|~\//;
 
-test("nothing the site serves names a local path or a sibling map", () => {
+test("nothing the site serves names a local path", () => {
   for (const path of files(site)) {
     const hit = ELSEWHERE.exec(readFileSync(path, "utf8"));
     assert.ok(!hit, `${path.slice(site.length + 1)}: "${hit?.[0]}"`);

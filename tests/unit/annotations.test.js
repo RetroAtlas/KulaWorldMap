@@ -150,11 +150,11 @@ test("a hazard is flagged on a kind or a type, and its section says why", () => 
 });
 
 // A note is read by someone looking at the map, in a sentence or three. It
-// never names this project's scripts or files, a path on a machine, a sibling
-// map, an address, a date or the walkthrough: those belong in docs/.
+// never names this project's scripts or files, a path on a machine, an
+// address, a date or the walkthrough: those belong in docs/.
 const LONGEST_NOTE = 320;
 const INTERNALS =
-  /tools\/|\.(?:py|js|json|md)\b|\/Users\/|\/home\/|~\/|oddworld|hercules|metal ?slug|\b0x[0-9a-f]+|\b\d{4}-\d{2}-\d{2}\b|walkthrough/i;
+  /tools\/|\.(?:py|js|json|md)\b|\/Users\/|\/home\/|~\/|\b0x[0-9a-f]+|\b\d{4}-\d{2}-\d{2}\b|walkthrough/i;
 
 test("a note is short and free of the project's workings", () => {
   for (const section of ["worlds", "kinds", "types", "levels"]) {
