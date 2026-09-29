@@ -11,7 +11,7 @@ the whole game rather than from a level or two.
     python3 tools/kula_faces.py --kind 8          # just that kind's records
     python3 tools/kula_faces.py --dump 4          # print whole records, a row a slot
 
-See backlog/item-002-the-unread-record-bytes.md for what this has settled.
+See docs/level-format.md for what this has settled.
 """
 import argparse
 import sys
