@@ -1,4 +1,4 @@
-import { $, emit } from "./dom.js";
+import { $, emit, on } from "./dom.js";
 import {
   state,
   SIDE,
@@ -127,6 +127,13 @@ export function setYaw(deg) {
   chip();
   writeHash();
 }
+
+// A level changed under a still pointer takes the cell it named with it,
+// and the next move names one of the new level's.
+on("level-changed", () => {
+  tip.hidden = true;
+  readout(null);
+});
 
 function readout(c) {
   const { zoom, yaw, pitch } = state.cam;

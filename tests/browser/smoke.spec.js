@@ -1202,6 +1202,29 @@ test("a label leaves out the face its thing stands on, and n names it", async ({
   expect(errors).toEqual([]);
 });
 
+test("a level changed under a still pointer leaves no word of the cell it was over", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#INCA/0/45,35");
+  await settle(page);
+  await page.evaluate(async () => {
+    const { state, screen } = await import(new URL("js/state.js", location.href).href);
+    const [start] = state.lvl.records.filter((r) => r.on.some((o) => o.type === 30));
+    const cv = document.getElementById("cv");
+    const r = cv.getBoundingClientRect();
+    const [x, y] = screen(start.x + 0.5, start.y + 0.5, start.z);
+    cv.dispatchEvent(new PointerEvent("pointermove", { clientX: r.left + x, clientY: r.top + y }));
+  });
+  await expect(page.locator("#tip")).toContainText("Start · top");
+  await expect(page.locator("#readout")).toContainText("17, 17, 17");
+  await page.keyboard.press("]");
+  await expect(page.locator("#chip")).toContainText("LEVEL 32");
+  await expect(page.locator("#tip")).toBeHidden();
+  await expect(page.locator("#readout")).not.toContainText("17, 17, 17");
+  expect(errors).toEqual([]);
+});
+
 test("the settings have no model, so among the models they show only while selected", async ({
   page,
 }) => {
