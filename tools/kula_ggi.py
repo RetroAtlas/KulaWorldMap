@@ -352,8 +352,8 @@ def texture_sheet(g):
 
 # The things that move are the first table's last five entries, and their
 # types are the captivators' and the rolling stone's: the thinner star with
-# three points is type 50 and the fuller one with four is 52, which play
-# settled, and the wheel, the hexagonal ball and the corkscrew are themselves.
+# three points is type 50 and the fuller one with four is 52, and the wheel,
+# the hexagonal ball and the corkscrew are themselves.
 MOVING = {50: 20, 51: 21, 52: 22, 53: 23, 56: 24}
 # The fourteen ball designs, one an entry, and the game picks one by the
 # world's place for an arcade level, at 0x80035ff4: the ball is thematic.

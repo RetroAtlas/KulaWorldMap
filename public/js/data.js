@@ -141,9 +141,7 @@ export const markerColour = (m) =>
 export const markerPoints = (m) => variant(m)?.points ?? entry(m)?.points ?? 0;
 // A thing that points is turned on its face in quarter turns about the inward
 // normal, from a first tangent that is the world's +y laid onto the face, or
-// the world's up on the +y face and its down on the -y face: the arrows of
-// LEVEL 62 on the top and of LEVEL 106 on three sides turn that way in play,
-// and the executable's own table of the six faces gives the fourth.
+// the world's up on the +y face and its down on the -y face.
 export const TANGENT = [
   [0, 1, 0],
   [0, 1, 0],

@@ -13,8 +13,8 @@ slots, 32 bytes that are never set, 26 bytes of extras, and then the three
 words of the cell it stands on. The cell that opens each 256-byte stretch
 therefore closes the record before it; reading it as the head of the record
 that follows pairs every block with the cell one slot behind, and the lattice
-cross-check cannot catch that, because the cells themselves stay in order. It
-was caught in play.
+cross-check cannot catch that, because the cells themselves stay in order;
+only play tells the two apart.
 
 A slot is [kind, type, eleven fields, pad, value, pad]. The six are the six
 faces of the block, in the order the game numbers directions: -z, +x, +y, -y,
