@@ -21,7 +21,14 @@ const server = spawn("python3", ["-m", "http.server", String(PORT), "-d", "publi
 
 try {
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+  // The map opens with Motion off for a visitor who asks for reduced motion,
+  // every thing where and as the level starts it, so the card comes out the
+  // same on every run.
+  const page = await browser.newPage({
+    viewport: { width: W, height: H },
+    deviceScaleFactor: 1,
+    reducedMotion: "reduce",
+  });
   await page.goto(`http://127.0.0.1:${PORT}/`);
   await page.evaluate(async (level) => {
     const url = (m) => new URL("js/" + m, location.href).href;
@@ -29,6 +36,7 @@ try {
     const nav = await import(url("navigate.js"));
     const render = await import(url("render.js"));
     const { setSidebar } = await import(url("sidebar.js"));
+    const { atlasFor } = await import(url("atlas.js"));
     const deadline = Date.now() + 30000;
     while (!state.data) {
       if (Date.now() > deadline) throw new Error("map_data.json did not load");
@@ -51,16 +59,12 @@ try {
     render.invalidatePick();
     render.draw();
 
-    // The level draws flat until its world's atlas arrives, and redraws every
-    // frame while anything on it turns, which would paint over the title; so
-    // the card waits for the atlas and then stops the clock.
-    while (!performance.getEntriesByType("resource").some((e) => e.name.includes("/tex/"))) {
+    // The level draws flat until its world's atlas arrives, and draws again
+    // as it lands, which would paint over the title.
+    while (!atlasFor(state.lvl.theme)) {
       if (Date.now() > deadline) throw new Error("the atlas did not load");
       await new Promise((r) => setTimeout(r, 50));
     }
-    await new Promise((r) => setTimeout(r, 300));
-    window.requestAnimationFrame = () => 0;
-    await new Promise((r) => setTimeout(r, 100));
     render.invalidatePick();
     render.draw();
 
