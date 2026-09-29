@@ -334,6 +334,10 @@ body:not(.sidebar-open) .sidebar {
 .check input {
   accent-color: var(--accent);
 }
+.check:has(input:disabled) {
+  opacity: 0.4;
+  cursor: default;
+}
 
 kbd {
   font:

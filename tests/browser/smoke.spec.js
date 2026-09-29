@@ -1624,8 +1624,8 @@ test("the settings hold the camera target, which keeps its key", async ({ page }
   await expect(panel).toBeHidden();
   await expect(page.locator("#settingsBtn")).toBeFocused();
   // the display's reset puts back what is under its heading, and no setting
-  await page.keyboard.press("n");
-  await page.keyboard.press("h");
+  await page.keyboard.press("l");
+  await page.keyboard.press("x");
   await page.locator("#resetDisplay").click();
   expect(await kept()).toEqual({ start: true });
   await page.reload();
@@ -1655,6 +1655,73 @@ test("a switch clicked leaves the keys to the map, and the slider keeps its own"
   expect(after.slice).toBe(before.slice - 1);
 });
 
+test("a switch that does something only under another is greyed while it is off, its tick kept", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0/45,35/1");
+  await settle(page);
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
+  const greyed = async (ids) => {
+    const all = ["showModels", "showThrough", "showLabels", "showFaces", "showHidden"];
+    for (const id of all)
+      if (ids.includes(id)) await expect(page.locator(`#${id}`), id).toBeDisabled();
+      else await expect(page.locator(`#${id}`), id).toBeEnabled();
+  };
+  // the labels open off and the slice cuts nothing
+  await greyed(["showFaces", "showHidden"]);
+  await page.keyboard.press("l");
+  await page.keyboard.press("n");
+  await greyed(["showHidden"]);
+  await page.keyboard.press("o");
+  await greyed(["showModels", "showThrough", "showLabels", "showFaces", "showHidden"]);
+  await expect(page.locator("#showLabels")).toBeChecked();
+  await expect(page.locator("#showFaces")).toBeChecked();
+  expect(await kept()).toEqual({ labels: true, faces: true, objects: false });
+  // its key and a click leave it as it is, and the key says what holds it back,
+  // by the whole of each name however the label is marked up
+  await page.evaluate(() => {
+    const label = document.getElementById("showFaces").closest("label");
+    const text = [...label.childNodes].find((n) => n.textContent.includes("face"));
+    const word = text.splitText(text.textContent.indexOf("face"));
+    word.splitText(4);
+    const em = document.createElement("em");
+    word.replaceWith(em);
+    em.append(word);
+  });
+  await page.keyboard.press("n");
+  await page.locator("label", { has: page.locator("#showLabels") }).click({ force: true });
+  await expect(page.locator("#showFaces")).toBeChecked();
+  await expect(page.locator("#showLabels")).toBeChecked();
+  await expect(page.locator("#say")).toHaveText("Name the face in labels needs Objects on.");
+  await expect(page.locator("label", { has: page.locator("#showFaces") })).toHaveAttribute(
+    "title",
+    "Name the face in labels needs Objects on.",
+  );
+  // a reader hears it by its name, greyed, and why
+  const faces = page.getByRole("checkbox", { name: "Name the face in labels", exact: false });
+  await expect(faces).toBeDisabled();
+  await expect(faces).toHaveAccessibleDescription("Name the face in labels needs Objects on.");
+  await page.keyboard.press("o");
+  await greyed(["showHidden"]);
+  expect(await written(page)).toContain("Key · top");
+  // the dim waits on the slice
+  await page.keyboard.press("h");
+  await expect(page.locator("#say")).toHaveText(
+    "Dim what the slice hides needs the slice lowered.",
+  );
+  await page.evaluate(async () => {
+    const { state, SIDE } = await import(new URL("js/state.js", location.href).href);
+    const { setSlice } = await import(new URL("js/interaction.js", location.href).href);
+    setSlice(SIDE - 2 - state.lvl.min[2]);
+  });
+  await greyed([]);
+  await page.keyboard.press("h");
+  await expect(page.locator("#showHidden")).toBeChecked();
+  await page.keyboard.press("\\");
+  await greyed(["showHidden"]);
+  await expect(page.locator("#showHidden")).toBeChecked();
+});
+
 test("every switch's key is the one its row shows and the key list names", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);
@@ -1672,6 +1739,14 @@ test("every switch's key is the one its row shows and the key list names", async
   );
   const keys = rows.map((r) => r.key);
   expect(new Set(keys).size).toBe(keys.length);
+  // every switch free to be set: the labels on, and the slice cutting into the level
+  await page.keyboard.press("l");
+  await page.evaluate(async () => {
+    const { state, SIDE } = await import(new URL("js/state.js", location.href).href);
+    const { setSlice } = await import(new URL("js/interaction.js", location.href).href);
+    setSlice(SIDE - 2 - state.lvl.min[2]);
+  });
+  await expect(page.locator("input:disabled")).toHaveCount(0);
   for (const { id, key } of rows) {
     const box = page.locator(`#${id}`);
     const was = await box.isChecked();

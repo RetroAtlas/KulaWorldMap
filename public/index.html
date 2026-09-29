@@ -120,7 +120,8 @@
             ><input type="checkbox" id="showObjects" checked /> Objects <kbd>o</kbd></label
           >
           <label class="check"
-            ><input type="checkbox" id="showModels" checked /> Objects as models <kbd>d</kbd></label
+            ><input type="checkbox" id="showModels" data-needs="showObjects" checked /> Objects as
+            models <kbd>d</kbd></label
           >
           <label class="check"
             ><input type="checkbox" id="showMotion" checked /> Motion <kbd>v</kbd></label
@@ -128,14 +129,16 @@
         </div>
         <div class="group">
           <label class="check"
-            ><input type="checkbox" id="showThrough" /> See objects through blocks
-            <kbd>x</kbd></label
+            ><input type="checkbox" id="showThrough" data-needs="showObjects" /> See objects through
+            blocks <kbd>x</kbd></label
           >
           <label class="check"
-            ><input type="checkbox" id="showLabels" /> Object labels <kbd>l</kbd></label
+            ><input type="checkbox" id="showLabels" data-needs="showObjects" /> Object labels
+            <kbd>l</kbd></label
           >
           <label class="check"
-            ><input type="checkbox" id="showFaces" /> Name the face in labels <kbd>n</kbd></label
+            ><input type="checkbox" id="showFaces" data-needs="showLabels" /> Name the face in
+            labels <kbd>n</kbd></label
           >
           <label class="check"
             ><input type="checkbox" id="showOutlines" /> Outlines <kbd>b</kbd></label
@@ -155,7 +158,8 @@
             <input type="range" id="slice" min="0" max="33" value="33" />
           </div>
           <label class="check"
-            ><input type="checkbox" id="showHidden" /> Dim what the slice hides <kbd>h</kbd></label
+            ><input type="checkbox" id="showHidden" data-needs="slice" /> Dim what the slice hides
+            <kbd>h</kbd></label
           >
         </div>
       </section>

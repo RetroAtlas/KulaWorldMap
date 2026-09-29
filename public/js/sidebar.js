@@ -177,6 +177,7 @@ export function wireDisplay() {
     box.addEventListener("change", () => {
       state.show[key] = box.checked;
       choose(key, box.checked, DEFAULTS[key]);
+      syncNeeds();
       invalidatePick();
       draw();
     });
@@ -198,9 +199,11 @@ export function wireDisplay() {
     delete chosen.panMode;
     setSlice(SIDE - 1);
     save();
+    syncNeeds();
     invalidatePick();
     draw();
   };
+  syncNeeds();
   $("resetKinds").onclick = () => {
     state.hiddenKinds.clear();
     buildKinds();
@@ -246,10 +249,46 @@ export function restore() {
   }
 }
 
+// A switch that does something only while another is on is greyed while that
+// one is off, and keeps its tick for when it comes back. The slice is on while
+// it cuts into the level.
+const slicing = () => sliceZ() > (state.lvl?.min[2] ?? 0);
+const isOn = (el) => (el.type === "range" ? slicing() : el.checked);
+
+/** What holds a switch back: the nearest it depends on that is off. */
+function holder(box) {
+  const up = box.dataset.needs && $(box.dataset.needs);
+  if (!up) return null;
+  return isOn(up) ? holder(up) : up;
+}
+
+/** A switch's name: its label's text, less the key and the note beside it. */
+function nameOf(box) {
+  const label = box.closest("label").cloneNode(true);
+  for (const aside of label.querySelectorAll("kbd, .def")) aside.remove();
+  return label.textContent.replace(/\s+/g, " ").trim();
+}
+
+/** Why a switch cannot be set just now, or null where it can. */
+export function held(box) {
+  const up = holder(box);
+  if (!up) return null;
+  return `${nameOf(box)} needs ${up.type === "range" ? "the slice lowered" : `${nameOf(up)} on`}`;
+}
+
+function syncNeeds() {
+  for (const box of document.querySelectorAll("input[data-needs]")) {
+    const why = held(box);
+    box.disabled = !!why;
+    box.title = box.closest("label").title = why ? `${why}.` : "";
+  }
+}
+
 function syncSlice() {
   $("slice").max = SIDE - 1;
   $("slice").value = state.slice;
-  $("sliceVal").textContent = sliceZ() <= (state.lvl?.min[2] ?? 0) ? "off" : `z \u2265 ${sliceZ()}`;
+  $("sliceVal").textContent = slicing() ? `z \u2265 ${sliceZ()}` : "off";
+  syncNeeds();
 }
 
 on("slice-changed", syncSlice);

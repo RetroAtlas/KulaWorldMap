@@ -15,7 +15,8 @@ import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
 import { OFF_LATTICE, FACE_NAME, kindName, ownMarker, markerLabel, markerNow } from "./data.js";
-import { setSidebar, sidebarOverlays } from "./sidebar.js";
+import { setSidebar, sidebarOverlays, held } from "./sidebar.js";
+import { say } from "./a11y.js";
 import { openSettings } from "./settings.js";
 
 const cv = $("cv");
@@ -356,6 +357,8 @@ export function setSlice(z) {
 
 function toggle(id) {
   const box = $(id);
+  const why = held(box);
+  if (why) return say(`${why}.`);
   box.checked = !box.checked;
   box.dispatchEvent(new Event("change"));
 }
