@@ -686,6 +686,80 @@ body.sidebar-open .menu-btn {
   line-height: 16px;
 }
 
+/* over the drawer where it floats over the map */
+.toasts {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 40px;
+  z-index: 26;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.toast {
+  position: relative;
+  overflow: hidden;
+  max-width: min(90%, 420px);
+  background: #171d2bf2;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  font-size: 12.5px;
+  padding: 6px 12px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.toast.show {
+  opacity: 1;
+  transform: none;
+}
+/* drains over the notice's time on screen, which the script hands down */
+.toast-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.55;
+  transform-origin: left center;
+  animation: toast-drain var(--toast-ms) linear forwards;
+}
+@keyframes toast-drain {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+/* the count of what waits sits above the stack, which column-reverse would
+   otherwise put below */
+.toast-more {
+  order: 1;
+  background: #171d2bd9;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  color: var(--dim);
+  font-size: 11px;
+  padding: 1px 8px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transition: none;
+  }
+  .toast-bar {
+    display: none;
+  }
+}
+
 .modal {
   position: fixed;
   inset: 0;

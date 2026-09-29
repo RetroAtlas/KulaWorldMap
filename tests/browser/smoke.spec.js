@@ -1054,6 +1054,50 @@ test("a dialog opened as another closes stays open, on an entry of its own", asy
   expect(await page.evaluate(() => history.state)).toBeNull();
 });
 
+/** Put up a notice as the map would. */
+const notice = (page, msg) =>
+  page.evaluate(
+    async (msg) => (await import(new URL("js/toast.js", location.href).href)).toast(msg),
+    msg,
+  );
+
+test("a notice comes and goes at the foot of the map, and a repeat does not stack", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const toasts = page.locator("#toastStack .toast");
+  await expect(page.locator("#toastStack")).toHaveAttribute("aria-live", "polite");
+  await notice(page, "One.");
+  await expect(toasts).toHaveText(["One."]);
+  await notice(page, "One.");
+  await expect(toasts).toHaveCount(1);
+  for (const msg of ["Two.", "Three.", "Four.", "Five."]) await notice(page, msg);
+  // three at once, the newest lowest, and the rest counted above them
+  await expect(toasts).toHaveText(["Three.", "Two.", "One."]);
+  await expect(page.locator("#toastStack .toast-more")).toHaveText("+2 more");
+  const tops = await toasts.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
+  expect(tops[0]).toBeGreaterThan(tops[1]);
+  expect(tops[1]).toBeGreaterThan(tops[2]);
+  // each leaves in its time, and what waited comes on as it does
+  await expect(toasts.filter({ hasText: "Five." })).toBeVisible({ timeout: 10000 });
+  await expect(page.locator("#toastStack .toast-more")).toHaveCount(0);
+  await expect(toasts).toHaveCount(0, { timeout: 10000 });
+});
+
+test("where the system asks for reduced motion a notice neither slides nor drains", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await notice(page, "Still.");
+  const toast = page.locator("#toastStack .toast");
+  await expect(toast).toBeVisible();
+  expect(await toast.evaluate((e) => getComputedStyle(e).transitionDuration)).toBe("0s");
+  await expect(page.locator("#toastStack .toast-bar")).toBeHidden();
+});
+
 test("an invisible block's icon shows it at the peak of its pulse", async ({ page }) => {
   await page.goto("/#HILLS/19");
   await settle(page);
