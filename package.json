@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "test": "node --test",
     "test:browser": "playwright test -c tests/browser",
-    "pixels": "node tests/pixels/pixels.js"
+    "pixels": "node tests/pixels/pixels.js",
+    "frame": "node tests/frame/frame.js"
   },
   "devDependencies": {
     "@eslint/js": "^9",
