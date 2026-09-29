@@ -206,6 +206,38 @@ test("[ and ] go on from one world into the next, and stop at the first level an
   expect(await entries()).toBe(there);
 });
 
+test("a key typed with Option or AltGr reaches the map, and a shortcut stays the browser's", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const title = page.locator("#chip b");
+  const taken = (init) =>
+    page.evaluate(
+      (init) =>
+        !document.body.dispatchEvent(
+          new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init }),
+        ),
+      init,
+    );
+  // AltGr on Windows, and Option on a Mac
+  expect(await taken({ key: "]", ctrlKey: true, altKey: true })).toBe(true);
+  await expect(title).toHaveText("LEVEL 2");
+  expect(await taken({ key: "[", altKey: true })).toBe(true);
+  await expect(title).toHaveText("LEVEL 1");
+  expect(await taken({ key: "\\", altKey: true, shiftKey: true })).toBe(true);
+
+  for (const init of [
+    { key: "]", metaKey: true },
+    { key: "]", metaKey: true, altKey: true },
+    { key: "-", ctrlKey: true },
+    { key: "d", altKey: true },
+    { key: "ArrowLeft", altKey: true },
+  ])
+    expect(await taken(init), JSON.stringify(init)).toBe(false);
+  await expect(title).toHaveText("LEVEL 1");
+});
+
 test("going back to another view of the same level keeps the kinds hidden in it", async ({
   page,
 }) => {

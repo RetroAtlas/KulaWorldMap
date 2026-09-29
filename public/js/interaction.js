@@ -248,7 +248,10 @@ addEventListener("keydown", (e) => {
     $("search").select();
     return;
   }
-  if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+  // Many layouts type punctuation with Option or AltGr, and AltGr arrives as
+  // Ctrl with Alt; with a letter, a digit or a named key, Alt is a shortcut.
+  const typed = e.altKey && !e.metaKey && /^[^\p{L}\p{N}]$/u.test(e.key);
+  if (typing || ((e.metaKey || e.ctrlKey || e.altKey) && !typed)) return;
   const step = e.shiftKey ? 220 : 70;
   switch (e.key) {
     case "ArrowLeft":
