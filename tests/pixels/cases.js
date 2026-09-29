@@ -69,22 +69,30 @@ for (const name of ["L1", "LESSON", "OBJ", "L94", "H10", "B15", "F6", "L111"]) {
 // B: each display switch away from its default, alone and in company
 const FLIPS = {
   skins: { skins: false },
-  outlines: { outlines: false },
+  outlines: { outlines: true },
   objects: { objects: false },
   models: { models: false },
   motion: { motion: false },
   through: { through: true },
   labels: { labels: true },
-  faces: { labels: true, faces: false },
+  faces: { labels: true, faces: true },
   base: { base: true },
   start: { start: true },
   hidden: { hidden: true },
   markersLabelled: { models: false, labels: true },
   markersThrough: { models: false, through: true, labels: true },
   flatThrough: { skins: false, through: true },
-  flatOff: { skins: false, outlines: false },
-  everythingOn: { labels: true, through: true, base: true, start: true, hidden: true },
-  bare: { skins: false, outlines: false, objects: false },
+  flatLined: { skins: false, outlines: true },
+  everythingOn: {
+    outlines: true,
+    labels: true,
+    faces: true,
+    through: true,
+    base: true,
+    start: true,
+    hidden: true,
+  },
+  bare: { skins: false, objects: false },
 };
 for (const name of ["LESSON", "OBJ", "F6", "L94", "B15", "H3", "H10", "L22"]) {
   for (const [flip, show] of Object.entries(FLIPS)) {

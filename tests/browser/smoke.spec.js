@@ -1066,24 +1066,24 @@ const written = (page) =>
     return seen;
   });
 
-test("a label names the face its thing stands on, and n leaves the face out", async ({ page }) => {
+test("a label leaves out the face its thing stands on, and n names it", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#HIRO/0/45,35/1");
   await settle(page);
-  await expect(page.locator("#showFaces")).toBeChecked();
+  await expect(page.locator("#showFaces")).not.toBeChecked();
   await page.keyboard.press("l");
+  const plain = await written(page);
+  expect(plain.filter((t) => t.includes(" · top"))).toEqual([]);
+  await page.keyboard.press("n");
+  await expect(page.locator("#showFaces")).toBeChecked();
   // LEVEL 1 puts all six of its things on top
   const named = (await written(page)).filter((t) => t.endsWith(" · top"));
   expect(named).toHaveLength(6);
-  await page.keyboard.press("n");
-  await expect(page.locator("#showFaces")).not.toBeChecked();
-  const plain = await written(page);
-  expect(plain.filter((t) => t.includes(" · top"))).toEqual([]);
   for (const t of named) expect(plain).toContain(t.slice(0, -" · top".length));
   // a marker's label says the same, and so does the tooltip, whatever the switch
-  await page.keyboard.press("n");
   await page.keyboard.press("d");
   expect((await written(page)).filter((t) => t.endsWith(" · top")).sort()).toEqual(named.sort());
+  await page.keyboard.press("n");
   await page.evaluate(async () => {
     const { state, screen } = await import(new URL("js/state.js", location.href).href);
     const { markerLabel } = await import(new URL("js/data.js", location.href).href);
@@ -1275,7 +1275,7 @@ test("the panel's icons are drawn again in the world's textures when they land",
   expect(same).toBe(true);
 });
 
-test("b takes the lines off the blocks", async ({ page }) => {
+test("b puts the lines on the blocks", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#HIRO/0/45,35/1");
   await settle(page);
@@ -1290,12 +1290,12 @@ test("b takes the lines off the blocks", async ({ page }) => {
       g.stroke = stroke;
       return n;
     });
-  await expect(page.locator("#showOutlines")).toBeChecked();
-  const lined = await strokes();
-  await page.keyboard.press("b");
   await expect(page.locator("#showOutlines")).not.toBeChecked();
+  const bare = await strokes();
+  await page.keyboard.press("b");
+  await expect(page.locator("#showOutlines")).toBeChecked();
   // each of LEVEL 1's twenty blocks shows its top at least
-  expect(lined - (await strokes())).toBeGreaterThanOrEqual(20);
+  expect((await strokes()) - bare).toBeGreaterThanOrEqual(20);
   expect(errors).toEqual([]);
 });
 
@@ -1553,7 +1553,7 @@ test("the display keeps only the switches set away from their defaults", async (
   await settle(page);
   await expect(page.locator("#showMotion")).not.toBeChecked();
   await expect(page.locator("#showLabels")).not.toBeChecked();
-  await expect(page.locator("#showOutlines")).toBeChecked();
+  await expect(page.locator("#showOutlines")).not.toBeChecked();
 });
 
 test("a saved switch the display does not have is left behind", async ({ page }) => {
@@ -1571,7 +1571,7 @@ test("a saved switch the display does not have is left behind", async ({ page })
   );
   expect(show).not.toHaveProperty("gone");
   await page.keyboard.press("b");
-  expect(await kept()).toEqual({ labels: true, outlines: false });
+  expect(await kept()).toEqual({ labels: true, outlines: true });
 });
 
 test("a saved value not of its switch's kind is left behind", async ({ page }) => {
@@ -1581,17 +1581,17 @@ test("a saved value not of its switch's kind is left behind", async ({ page }) =
   await page.evaluate(() =>
     localStorage.setItem(
       "kula.display",
-      JSON.stringify({ labels: "yes", through: 1, outlines: false, panMode: "yes" }),
+      JSON.stringify({ labels: "yes", through: 1, outlines: true, panMode: "yes" }),
     ),
   );
   await page.reload();
   await settle(page);
   await expect(page.locator("#showLabels")).not.toBeChecked();
   await expect(page.locator("#showThrough")).not.toBeChecked();
-  await expect(page.locator("#showOutlines")).not.toBeChecked();
+  await expect(page.locator("#showOutlines")).toBeChecked();
   await expect(page.locator("#panMode")).not.toBeChecked();
   await page.keyboard.press("l");
-  expect(await kept()).toEqual({ labels: true, outlines: false });
+  expect(await kept()).toEqual({ labels: true, outlines: true });
 });
 
 test("a saved switch stays saved until it is set again, though it matches the default", async ({
@@ -1627,6 +1627,7 @@ test("a travelling thing, and every block of a platform, picks the cell its reco
   await settle(page);
   await page.keyboard.press("d");
   await page.keyboard.press("l");
+  await page.keyboard.press("n");
   const star = () =>
     page.evaluate(async () => {
       const { state, screen, BLOCK } = await import(new URL("js/state.js", location.href).href);
