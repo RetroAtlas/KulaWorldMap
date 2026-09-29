@@ -344,6 +344,12 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) draw();
 });
 
+/** Draw the view as it now stands, or leave it to the frame already asked
+    for, which draws it before anything reaches the screen. */
+export function drawSoon() {
+  if (!queuedFrame) draw();
+}
+
 /** Whether a cell is too far off the canvas for anything of it to show. */
 function offScreen(c) {
   const [px, py] = screen(c.x, c.y, c.z);

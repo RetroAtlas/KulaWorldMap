@@ -10,7 +10,7 @@ import {
   cellKey,
   pivot,
 } from "./state.js";
-import { draw, cellAt, invalidatePick, pointing, pressing } from "./render.js";
+import { drawSoon, cellAt, invalidatePick, pointing, pressing } from "./render.js";
 import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
@@ -23,7 +23,7 @@ const cv = $("cv");
 const tip = $("tip");
 const redraw = () => {
   invalidatePick();
-  draw();
+  drawSoon();
 };
 
 const ORBIT = 0.42; // degrees per pixel dragged
@@ -68,7 +68,7 @@ cv.addEventListener("pointermove", (e) => {
   const key = c ? cellKey(c.x, c.y, c.z) : null;
   if ((state.hover?.key ?? null) !== key) {
     state.hover = c ? { ...c, key } : null;
-    draw();
+    drawSoon();
   }
   readout(c);
   hoverTip(c, e.clientX - r.left, e.clientY - r.top);
@@ -86,7 +86,7 @@ cv.addEventListener("pointerup", (e) => {
     } else {
       clearDetail();
     }
-    draw();
+    drawSoon();
   }
   drag = null;
 });
@@ -99,7 +99,7 @@ cv.addEventListener("pointerleave", () => {
   state.hover = null;
   tip.hidden = true;
   $("readout").textContent = "";
-  draw();
+  drawSoon();
 });
 
 export function orbit(dx, dy) {
@@ -349,7 +349,7 @@ addEventListener("keydown", (e) => {
         break;
       }
       clearDetail();
-      draw();
+      drawSoon();
       break;
     default:
       return;
