@@ -338,6 +338,10 @@ body:not(.sidebar-open) .sidebar {
   opacity: 0.4;
   cursor: default;
 }
+/* a click on a greyed box reaches its row */
+.check input:disabled {
+  pointer-events: none;
+}
 
 kbd {
   font:

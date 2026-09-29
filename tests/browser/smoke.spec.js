@@ -1704,6 +1704,8 @@ test("a switch that does something only under another is greyed while it is off,
 }) => {
   await page.goto("/#HIRO/0/45,35/1");
   await settle(page);
+  // the clicks below are forced, which does not wait for the sidebar to finish sliding in
+  await still(page);
   const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
   const greyed = async (ids) => {
     const all = ["showModels", "showThrough", "showLabels", "showFaces", "showHidden"];
@@ -1721,8 +1723,8 @@ test("a switch that does something only under another is greyed while it is off,
   await expect(page.locator("#showLabels")).toBeChecked();
   await expect(page.locator("#showFaces")).toBeChecked();
   expect(await kept()).toEqual({ labels: true, faces: true, objects: false });
-  // its key and a click leave it as it is, and the key says what holds it back,
-  // by the whole of each name however the label is marked up
+  // its key and a click leave it as it is and say for a moment what holds it
+  // back, by the whole of each name however the label is marked up
   await page.evaluate(() => {
     const label = document.getElementById("showFaces").closest("label");
     const text = [...label.childNodes].find((n) => n.textContent.includes("face"));
@@ -1732,27 +1734,30 @@ test("a switch that does something only under another is greyed while it is off,
     word.replaceWith(em);
     em.append(word);
   });
+  const said = page.locator("#toastStack .toast").first();
   await page.keyboard.press("n");
+  await expect(said).toHaveText("“Name the face in labels” needs “Objects” on.");
   await page.locator("label", { has: page.locator("#showLabels") }).click({ force: true });
+  await expect(said).toHaveText("“Object labels” needs “Objects” on.");
+  await page.locator("#showModels").click({ force: true });
+  await expect(said).toHaveText("“Objects as models” needs “Objects” on.");
   await expect(page.locator("#showFaces")).toBeChecked();
   await expect(page.locator("#showLabels")).toBeChecked();
-  await expect(page.locator("#say")).toHaveText("Name the face in labels needs Objects on.");
+  await expect(page.locator("#showModels")).toBeChecked();
   await expect(page.locator("label", { has: page.locator("#showFaces") })).toHaveAttribute(
     "title",
-    "Name the face in labels needs Objects on.",
+    "“Name the face in labels” needs “Objects” on.",
   );
   // a reader hears it by its name, greyed, and why
   const faces = page.getByRole("checkbox", { name: "Name the face in labels", exact: false });
   await expect(faces).toBeDisabled();
-  await expect(faces).toHaveAccessibleDescription("Name the face in labels needs Objects on.");
+  await expect(faces).toHaveAccessibleDescription("“Name the face in labels” needs “Objects” on.");
   await page.keyboard.press("o");
   await greyed(["showHidden"]);
   expect(await written(page)).toContain("Key · top");
   // the dim waits on the slice
   await page.keyboard.press("h");
-  await expect(page.locator("#say")).toHaveText(
-    "Dim what the slice hides needs the slice lowered.",
-  );
+  await expect(said).toHaveText("“Dim what the slice hides” needs the slice lowered.");
   await page.evaluate(async () => {
     const { state, SIDE } = await import(new URL("js/state.js", location.href).href);
     const { setSlice } = await import(new URL("js/interaction.js", location.href).href);

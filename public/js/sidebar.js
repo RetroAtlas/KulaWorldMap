@@ -14,6 +14,7 @@ import { markerIcon } from "./icons.js";
 import { selectLevel } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
 import { setSlice } from "./interaction.js";
+import { toast } from "./toast.js";
 
 const KEY = "kula.display";
 const SHOWN = [
@@ -203,6 +204,11 @@ export function wireDisplay() {
     invalidatePick();
     draw();
   };
+  // a greyed row says why when it is clicked or tapped, where there is no hover
+  for (const box of document.querySelectorAll("input[data-needs]"))
+    box.closest("label").addEventListener("click", () => {
+      if (box.disabled) toast(`${held(box)}.`);
+    });
   syncNeeds();
   $("resetKinds").onclick = () => {
     state.hiddenKinds.clear();
@@ -273,7 +279,7 @@ function nameOf(box) {
 export function held(box) {
   const up = holder(box);
   if (!up) return null;
-  return `${nameOf(box)} needs ${up.type === "range" ? "the slice lowered" : `${nameOf(up)} on`}`;
+  return `“${nameOf(box)}” needs ${up.type === "range" ? "the slice lowered" : `“${nameOf(up)}” on`}`;
 }
 
 function syncNeeds() {
