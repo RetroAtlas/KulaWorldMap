@@ -200,12 +200,8 @@ addEventListener("hashchange", () => {
   if (!applyHash()) writeHash();
 });
 
-export function stepLevel(delta, crossWorld) {
-  const data = state.data;
-  const world = data.themes.find((t) => t.id === state.lvl.theme);
-  const next = world.levels.indexOf(state.li) + delta;
-  if (next >= 0 && next < world.levels.length) return selectLevel(world.levels[next]);
-  if (!crossWorld) return;
-  const w2 = data.themes[data.themes.indexOf(world) + Math.sign(delta)];
-  if (w2) selectLevel(delta > 0 ? w2.levels[0] : w2.levels[w2.levels.length - 1]);
+export function stepLevel(delta) {
+  const order = state.data.themes.flatMap((t) => t.levels);
+  const i = order[order.indexOf(state.li) + delta];
+  if (i !== undefined) selectLevel(i);
 }

@@ -168,6 +168,44 @@ test("a change of level or a find is a history entry; a turn is not", async ({ p
   await expect.poll(async () => (await level()).li).toBe(1);
 });
 
+test("[ and ] go on from one world into the next, and stop at the first level and the last", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await frame(page);
+  const title = page.locator("#chip b");
+  const entries = () => page.evaluate(() => history.length);
+  const last = (world) =>
+    page.evaluate(async (world) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { selectLevel }] = await Promise.all(["state.js", "navigate.js"].map(at));
+      selectLevel(state.data.themes.find((t) => t.id === world).levels.at(-1));
+    }, world);
+
+  const booted = await entries();
+  await page.keyboard.press("[");
+  await frame(page);
+  await expect(title).toHaveText("LEVEL 1");
+  expect(await entries()).toBe(booted);
+
+  await last("HIRO");
+  await expect(title).toHaveText("FINAL 2");
+  await page.keyboard.press("]");
+  await expect(title).toHaveText("LEVEL 16");
+  await page.keyboard.press("[");
+  await expect(title).toHaveText("FINAL 2");
+
+  await last("HELL");
+  await expect(title).toHaveText("FINAL 20");
+  await frame(page);
+  const there = await entries();
+  await page.keyboard.press("]");
+  await frame(page);
+  await expect(title).toHaveText("FINAL 20");
+  expect(await entries()).toBe(there);
+});
+
 test("going back to another view of the same level keeps the kinds hidden in it", async ({
   page,
 }) => {

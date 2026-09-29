@@ -27,7 +27,7 @@ const HELP = [
   [", .", "lower and raise the slice"],
   ["\\", "put the whole level back"],
   ["h", "dim what the slice hides rather than take it off, while the slice cuts"],
-  ["[ ]", "previous and next level (shift crosses worlds)"],
+  ["[ ]", "previous and next level, on from one world into the next"],
   ["f", "fit the level to the window"],
   ["t o", "textures, objects"],
   ["d", "objects as models, with objects on"],

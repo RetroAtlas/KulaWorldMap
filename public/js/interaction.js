@@ -287,10 +287,10 @@ addEventListener("keydown", (e) => {
       setSlice(SIDE - 1);
       break;
     case "[":
-      stepLevel(-1, e.shiftKey);
+      stepLevel(-1);
       break;
     case "]":
-      stepLevel(1, e.shiftKey);
+      stepLevel(1);
       break;
     case "f":
       fit();
