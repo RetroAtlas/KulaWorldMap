@@ -54,28 +54,29 @@ export function thingDisc(m, where, l) {
 /** Whether a device a switch toggles is drawn off. */
 const switchedOff = (m) => markerNow(m) === "off";
 
-// A boost button is pressed by the ball standing within its reach: the ball
-// at the level's start, on its own face and its radius off it, and the block
-// under the pointer or the one selected, each as the ball on the face of that
-// block the button stands on, which is as near as a block can say. Positions
-// are in the game's units, the button's where it stands on its face.
+// What reacts to the ball reacts to the ball at the level's start, on its own
+// face and its radius off it, and to the block under the pointer and the one
+// selected, each as the ball on the face of that block that looks the same way
+// as the face that reacts, which is as near as a block can say. Positions are
+// in the game's units.
 const point = (c, face, off) =>
   [c.x, c.y, c.z].map((v, i) => (v + 0.5) / modelUnit() + FACE_NORMAL[face][i] * off);
 const starts = new WeakMap();
-function pressedAt(motion, m, home, l) {
+/** The middles of the balls a face looking the way of `face` reacts to. */
+export function ballsFor(l, face) {
   const half = 0.5 / modelUnit();
   if (!starts.has(l)) {
     const r = ballFor(l)?.box[1][1] ?? 0;
     starts.set(l, { r, balls: startsOf(l).map((s) => point(s, s.face, half + r)) });
   }
   const { r, balls } = starts.get(l);
-  const button = point(home, m.face, half);
   const pointed = [state.hover, state.selected].filter(Boolean);
-  return (
-    balls.some((b) => inReach(motion, b, button)) ||
-    pointed.some((c) => inReach(motion, point(c, m.face, half + r), button))
-  );
+  return [...balls, ...pointed.map((c) => point(c, face, half + r))];
 }
+
+// A boost button is pressed by a ball within its reach of where it stands.
+const pressedAt = (motion, m, home, l) =>
+  ballsFor(l, m.face).some((b) => inReach(motion, b, point(home, m.face, 0.5 / modelUnit())));
 
 /** An object as itself where it has a mesh and the display asks for it, else
     its marker; on a moving platform the cell is where the platform is, and
