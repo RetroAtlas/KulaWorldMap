@@ -5,6 +5,7 @@ import { loadJson, setAnnotations, setObjects } from "./data.js";
 import { buildWorlds, buildKinds, wireDisplay, restore, setSidebar } from "./sidebar.js";
 import { applyHash, selectLevel, writeHash } from "./navigate.js";
 import { openModal } from "./modal.js";
+import { wireSettings } from "./settings.js";
 import "./a11y.js";
 import "./interaction.js";
 import "./search.js";
@@ -13,6 +14,7 @@ import "./search.js";
 // float over what it is for.
 setSidebar(innerWidth > 860);
 restore();
+wireSettings();
 
 on("help", showHelp);
 $("aboutBtn").onclick = showAbout;

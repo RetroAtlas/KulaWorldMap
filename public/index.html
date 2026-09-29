@@ -66,7 +66,25 @@
 
   <div class="app">
     <aside id="sidebar" class="sidebar" aria-label="Levels and display">
-      <h1 class="wordmark">Kula World <span>Map</span></h1>
+      <div class="head">
+        <h1 class="wordmark">Kula World <span>Map</span></h1>
+        <button
+          id="settingsBtn"
+          class="gear"
+          type="button"
+          aria-haspopup="dialog"
+          aria-controls="settings"
+          aria-label="Settings"
+          title="Settings"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+            />
+          </svg>
+        </button>
+      </div>
       <p id="about" class="about"></p>
 
       <div class="field">
@@ -92,7 +110,7 @@
         <div id="worlds" class="worlds"></div>
       </section>
 
-      <section class="panel">
+      <section id="display" class="panel">
         <h2>Display <button id="resetDisplay" class="mini" type="button">reset</button></h2>
         <label class="check"
           ><input type="checkbox" id="showSkins" checked /> Game textures <kbd>t</kbd></label
@@ -116,19 +134,10 @@
           ><input type="checkbox" id="showLabels" /> Object labels <kbd>l</kbd></label
         >
         <label class="check"
-          ><input type="checkbox" id="showFaces" /> Name the face in labels <kbd>n</kbd></label
-        >
-        <label class="check"
           ><input type="checkbox" id="showBase" /> Ground grid <kbd>g</kbd></label
         >
         <label class="check"
-          ><input type="checkbox" id="showStart" /> Camera target <kbd>s</kbd></label
-        >
-        <label class="check"
           ><input type="checkbox" id="panMode" /> Drag pans instead of turning</label
-        >
-        <label class="check"
-          ><input type="checkbox" id="showHidden" /> Dim what the slice hides</label
         >
         <div class="slice">
           <label for="slice"
@@ -161,6 +170,42 @@
   </div>
 
   <div id="help" class="modal" role="dialog" aria-modal="true" hidden></div>
+
+  <div
+    id="settings"
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="settingsTitle"
+    hidden
+  >
+    <div class="box settings">
+      <button class="x" type="button" title="Close (Esc)" aria-label="Close">×</button>
+      <h3 id="settingsTitle">Settings</h3>
+      <section>
+        <h4>Display</h4>
+        <label class="check"
+          ><input type="checkbox" id="showFaces" aria-describedby="showFacesSays" /> Name the face
+          in labels <span class="def"></span><kbd>n</kbd></label
+        >
+        <p id="showFacesSays" class="says">
+          An object's label says which face of its block it stands on.
+        </p>
+        <label class="check"
+          ><input type="checkbox" id="showHidden" aria-describedby="showHiddenSays" /> Dim what the
+          slice hides <span class="def"></span
+        ></label>
+        <p id="showHiddenSays" class="says">What the slice takes off stays on the map, faint.</p>
+        <label class="check"
+          ><input type="checkbox" id="showStart" aria-describedby="showStartSays" /> Camera target
+          <span class="def"></span><kbd>s</kbd></label
+        >
+        <p id="showStartSays" class="says">
+          A ring marks the point the game's camera looks at as the level opens.
+        </p>
+      </section>
+    </div>
+  </div>
 
   <script type="module" src="js/main.js"></script>
 </html>

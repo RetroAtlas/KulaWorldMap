@@ -74,10 +74,42 @@ body:not(.sidebar-open) .sidebar {
   margin-left: calc(-1 * var(--sidebar-w));
 }
 
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .wordmark {
   font-size: 19px;
   margin: 2px 0 6px;
   letter-spacing: 0.2px;
+}
+
+.gear {
+  margin: -4px -6px 0 auto;
+  padding: 6px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  border-radius: 7px;
+  color: var(--dim);
+  cursor: pointer;
+}
+.gear:hover,
+.gear:focus-visible {
+  color: var(--accent);
+}
+.gear svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .wordmark span {
   color: var(--accent);
@@ -651,6 +683,7 @@ body.sidebar-open .menu-btn {
   inset: 0;
   z-index: 50;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 16px;
   background: #05070bcc;
@@ -699,6 +732,33 @@ body.sidebar-open .menu-btn {
 }
 .modal p {
   color: var(--dim);
+}
+
+.settings {
+  width: min(380px, 100%);
+}
+.settings h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--dim);
+  margin: 0 0 6px;
+}
+.settings .def {
+  margin-left: auto;
+  color: var(--dim);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.settings .def:empty {
+  display: none;
+}
+.settings .def:not(:empty) + kbd {
+  margin-left: 6px;
+}
+.settings .says {
+  font-size: 12.5px;
+  margin: 0 0 10px 21px;
 }
 
 @media (max-width: 760px) {

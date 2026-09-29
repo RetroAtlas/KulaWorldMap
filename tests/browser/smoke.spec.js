@@ -1599,6 +1599,57 @@ test("the camera target shows only on s", async ({ page }) => {
   expect(await written(page)).toContain("camera target");
 });
 
+test("the settings hold the switches used less, which keep their keys", async ({ page }) => {
+  await page.goto("/#HIRO/0/45,35/1");
+  await settle(page);
+  const panel = page.locator("#settings");
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
+  for (const id of ["showFaces", "showHidden", "showStart"]) {
+    await expect(panel.locator(`#${id}`)).toHaveCount(1);
+    await expect(page.locator(`#display #${id}`)).toHaveCount(0);
+  }
+  await expect(panel).toBeHidden();
+  await page.keyboard.press("n");
+  await page.locator("#settingsBtn").click();
+  await expect(panel).toBeVisible();
+  await expect(page.locator("#settings .x")).toBeFocused();
+  await expect(page.locator("#showFaces")).toBeChecked();
+  await expect(panel.locator(".def")).toHaveText(["off by default", "", ""]);
+  await panel.getByText("Camera target").click();
+  await expect(page.locator("#showStart")).toBeChecked();
+  await expect(panel.locator(".def")).toHaveText(["off by default", "", "off by default"]);
+  expect(await written(page)).toContain("camera target");
+  expect(await kept()).toEqual({ faces: true, start: true });
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(page.locator("#settingsBtn")).toBeFocused();
+  // the display's reset puts back what is under its heading, and no setting
+  await page.keyboard.press("l");
+  await page.locator("#resetDisplay").click();
+  expect(await kept()).toEqual({ faces: true, start: true });
+  await page.reload();
+  await settle(page);
+  await expect(page.locator("#showFaces")).toBeChecked();
+  await expect(page.locator("#showStart")).toBeChecked();
+});
+
+test("the settings fit a phone, over the drawer they open from", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 700 });
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.locator("#menuBtn").click();
+  await page.locator("#settingsBtn").click();
+  const box = await page.locator("#settings .box").boundingBox();
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(375);
+  expect(box.y + box.height).toBeLessThanOrEqual(700);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#settings")).toBeHidden();
+  await expect(page.locator("body")).toHaveClass(/sidebar-open/);
+  await expect(page.locator("#settingsBtn")).toBeFocused();
+});
+
 test("the display keeps only the switches set away from their defaults", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);

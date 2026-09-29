@@ -172,6 +172,7 @@ function kindButton(k, m, n, keys) {
 export function wireDisplay() {
   for (const [id, key] of SHOWN) {
     const box = $(id);
+    box.defaultChecked = DEFAULTS[key];
     box.checked = state.show[key];
     box.addEventListener("change", () => {
       state.show[key] = box.checked;
@@ -186,13 +187,16 @@ export function wireDisplay() {
     choose("panMode", state.panMode, false);
   });
   $("slice").addEventListener("input", (e) => setSlice(Number(e.target.value)));
+  // The reset puts back what is under its own heading and leaves the settings.
   $("resetDisplay").onclick = () => {
-    state.show = { ...DEFAULTS };
-    for (const [id, key] of SHOWN) $(id).checked = state.show[key];
-    state.panMode = false;
-    $("panMode").checked = false;
+    for (const [id, key] of SHOWN) {
+      if (!$("display").contains($(id))) continue;
+      state.show[key] = $(id).checked = DEFAULTS[key];
+      delete chosen[key];
+    }
+    state.panMode = $("panMode").checked = false;
+    delete chosen.panMode;
     setSlice(SIDE - 1);
-    chosen = {};
     save();
     invalidatePick();
     draw();
