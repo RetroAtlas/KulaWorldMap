@@ -100,6 +100,7 @@ const GROUPS = [
 // A row of a group here only counts; any other row shows and hides what it
 // lists on the map.
 const COUNT_ONLY = new Set(["block"]);
+const byName = new Intl.Collator("en", { numeric: true }).compare;
 
 export function buildKinds() {
   const box = $("kinds");
@@ -116,7 +117,12 @@ export function buildKinds() {
     box.append(el("p", { className: "about", textContent: "This level places no objects." }));
     return;
   }
-  const keys = [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a));
+  const keys = [...counts.keys()].sort(
+    (a, b) =>
+      counts.get(b) - counts.get(a) ||
+      byName(markerLabel(first.get(a)), markerLabel(first.get(b))) ||
+      byName(a, b),
+  );
   const toggled = keys.filter((k) => !COUNT_ONLY.has(markerGroup(first.get(k))));
   for (const [group, title] of GROUPS) {
     const mine = keys.filter((k) => markerGroup(first.get(k)) === group);

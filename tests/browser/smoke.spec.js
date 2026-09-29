@@ -965,6 +965,46 @@ test("the legend lists the objects the chip counts, every kind of block but the 
   expect(groups[2].rows).toEqual([["Level settings", 1]]);
 });
 
+test("the legend runs from the most to the fewest, rows with as many by name, then by number", async ({
+  page,
+}) => {
+  await page.goto("/#ATLANT/3");
+  await settle(page);
+  const rows = (name) =>
+    page
+      .getByRole("list", { name })
+      .locator(".kind")
+      .evaluateAll((rows) =>
+        rows.map((r) => [r.children[1].textContent, Number(r.querySelector(".n").textContent)]),
+      );
+  expect(await rows("Objects")).toEqual([
+    ["Gold coin", 4],
+    ["Blue gem", 1],
+    ["Bronze coin", 1],
+    ["Exit", 1],
+    ["Fruit", 1],
+    ["Key", 1],
+    ["Start", 1],
+  ]);
+  expect(await rows("Blocks")).toEqual([
+    ["Crumbling block", 6],
+    ["Laser", 2],
+    ["Ice block", 1],
+    ["Moving platform", 1],
+  ]);
+
+  // two types that share a name
+  await page.goto("/#HIRO/19");
+  await expect(page.locator("#chip b")).toHaveText("LESSON");
+  const alike = await page
+    .getByRole("list", { name: "Objects" })
+    .getByRole("button")
+    .evaluateAll((rows) =>
+      rows.filter((r) => r.children[1].textContent === "Captivator").map((r) => r.dataset.kind),
+    );
+  expect(alike).toEqual(["t50", "t52"]);
+});
+
 test("a legend row of objects shows and hides them, and a row of blocks only counts", async ({
   page,
 }) => {
