@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import Code  # noqa: E402
-from kula_skins import (BLOCK, HEADER, Machine, header, hiding, sets)  # noqa: E402
+from kula_skins import (HEADER, header, hiding, sets)  # noqa: E402
 
 R = {"zero": 0, "at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7,
      "t0": 8, "t1": 9, "sp": 29, "ra": 31}
@@ -80,36 +80,6 @@ class Addresses(unittest.TestCase):
         c = code(addiu("v0", "v0", 12072), lui("v0", 0x0007))
         with self.assertRaises(SystemExit):
             c.address(AT, AT + 4)
-
-
-class TheMachine(unittest.TestCase):
-    def test_a_routine_runs_to_its_return_with_its_delay_slots(self):
-        # Stores the turn at byte 6, packs x and y into a word at 32 by the
-        # turn, and returns with a store in the delay slot of the jump home.
-        c = code(
-            lw("v1", "sp", 20),          # the turn
-            sb("v1", "a0", 6),
-            beq("v1", "zero", AT + 8, AT + 24),
-            sll("v0", "a3", 16),         # y << 16, in the delay slot either way
-            addiu("a2", "a2", 512),      # turned: x + size
-            j(AT + 28),
-            or_("v0", "v0", "a2"),
-            or_("v0", "v0", "a2"),       # not turned: x
-            jr("ra"),
-            sw("v0", "a0", 32),
-        )
-        m = Machine(c)
-        mem = m.run(AT, [0x80191000, BLOCK, 1000, 2000], [3000, 0])
-        self.assertEqual(mem[0x80191006], 0)
-        self.assertEqual(struct.unpack("<HH", bytes(mem[0x80191020 + i] for i in range(4))), (1000, 2000))
-        mem = m.run(AT, [0x80191000, BLOCK, 1000, 2000], [3000, 1])
-        self.assertEqual(mem[0x80191006], 1)
-        self.assertEqual(struct.unpack("<HH", bytes(mem[0x80191020 + i] for i in range(4))), (1512, 2000))
-
-    def test_an_instruction_a_face_routine_should_not_hold_stops_it(self):
-        c = code((0x1A << 26))          # a divide
-        with self.assertRaises(SystemExit):
-            Machine(c).run(AT, [0, 0, 0, 0], [0, 0])
 
 
 def fake_header(shade, turn, groups):

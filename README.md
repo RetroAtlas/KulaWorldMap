@@ -96,7 +96,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `kula_skins.py` | what the game paints on every face of every block, read off the executable |
 | `kula_tex.py` | the atlases the viewer draws with, every texture of a world in its three shades |
 | `png.py` | write a PNG, and squeeze it with `oxipng` where that is installed |
-| `mips.py` | disassemble the executable, which is how the lattice was pinned down |
+| `mips.py` | disassemble the executable, which is how the lattice was pinned down, and run a routine of it |
 | `kula_motion.py` | what the executable does to each thing every frame, the rates behind `docs/motion.md` |
 | `ogcard.js` | render the social card from the map itself (Node, needs Playwright) |
 | `serve.py` | local static server, caching off, 404.html like the host |

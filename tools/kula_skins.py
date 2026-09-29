@@ -34,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kula_tgi as tgi
 from kula_disc import EXE, EXE_BASE, THEMES, open_disc
 from kula_motion import Code
+from mips import Machine
 
 FACES = 6
 TURNS = 4            # the quarter turns a texture can be laid at
@@ -184,92 +185,6 @@ def copycat_pack(code, r):
     path = text_at(code, entry(code, code.address(*PATH_TABLE), r["copycat.world"]))
     ext = text_at(code, entry(code, code.address(*EXT_TABLE), r["copycat.pak"]))
     return (path + ext).replace("\\", "/").split(";")[0]
-
-
-class Machine:
-    """Enough of a MIPS to run the six leaf routines that place a face."""
-
-    def __init__(self, code):
-        self.code = code
-
-    def run(self, pc, args, stack):
-        R = [0] * 32
-        R[4:4 + len(args)] = args
-        sp = 0x801ff000
-        R[29], R[31] = sp, 0
-        mem = {}
-
-        def ld(a, n):
-            return sum(mem.get(a + b, 0) << (8 * b) for b in range(n))
-
-        def st(a, v, n):
-            for b in range(n):
-                mem[a + b] = (v >> (8 * b)) & 255
-
-        for i, w in enumerate(stack):
-            st(sp + 16 + 4 * i, w, 4)
-
-        def step(pc):
-            w = self.code.word(pc)
-            op, rs, rt, rd = w >> 26, (w >> 21) & 31, (w >> 16) & 31, (w >> 11) & 31
-            sa, fn, imm = (w >> 6) & 31, w & 63, w & 0xFFFF
-            simm = imm - 0x10000 if imm & 0x8000 else imm
-            target = None
-            if w == 0:
-                pass
-            elif op == 0 and fn == 0:
-                R[rd] = (R[rt] << sa) & 0xFFFFFFFF
-            elif op == 0 and fn == 2:
-                R[rd] = R[rt] >> sa
-            elif op == 0 and fn == 3:
-                R[rd] = (signed(R[rt]) >> sa) & 0xFFFFFFFF
-            elif op == 0 and fn == 8:
-                target = R[rs]
-            elif op == 0 and fn in (0x20, 0x21):
-                R[rd] = (R[rs] + R[rt]) & 0xFFFFFFFF
-            elif op == 0 and fn in (0x22, 0x23):
-                R[rd] = (R[rs] - R[rt]) & 0xFFFFFFFF
-            elif op == 0 and fn == 0x25:
-                R[rd] = R[rs] | R[rt]
-            elif op == 0 and fn == 0x2a:
-                R[rd] = int(signed(R[rs]) < signed(R[rt]))
-            elif op == 2:
-                target = (pc & 0xF0000000) | ((w & 0x3FFFFFF) << 2)
-            elif op == 4:
-                target = pc + 4 + simm * 4 if R[rs] == R[rt] else None
-            elif op == 5:
-                target = pc + 4 + simm * 4 if R[rs] != R[rt] else None
-            elif op in (8, 9):
-                R[rt] = (R[rs] + simm) & 0xFFFFFFFF
-            elif op == 0xa:
-                R[rt] = int(signed(R[rs]) < simm)
-            elif op == 0x23:
-                R[rt] = ld((R[rs] + simm) & 0xFFFFFFFF, 4)
-            elif op == 0x24:
-                R[rt] = ld((R[rs] + simm) & 0xFFFFFFFF, 1)
-            elif op == 0x2b:
-                st((R[rs] + simm) & 0xFFFFFFFF, R[rt], 4)
-            elif op == 0x28:
-                st((R[rs] + simm) & 0xFFFFFFFF, R[rt], 1)
-            else:
-                sys.exit(f"0x{pc:08x} reads `{self.code.text(pc)}`, which a face routine was not expected to hold")
-            R[0] = 0
-            return target
-
-        for _ in range(1000):
-            target = step(pc)
-            if target is not None:
-                step(pc + 4)
-                if target == 0:
-                    return mem
-                pc = target
-            else:
-                pc += 4
-        sys.exit(f"the routine at 0x{pc:08x} does not return")
-
-
-def signed(v):
-    return v - 0x100000000 if v & 0x80000000 else v
 
 
 def halfword(v):
