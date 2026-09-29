@@ -98,11 +98,11 @@ export function blockPhase(entry, r, frame) {
 }
 
 // An invisible block is lit afresh every frame from where the ball is: a
-// corner is full within the near distance of the ball's middle and fades in
-// fixed point to nothing at the far one, measured by the game's own square
-// root, and on a level whose settings turn the light round, the other way
-// about. The game looks only at the blocks in a box of cells the far
-// distance either way of the ball on each axis.
+// corner is full within the near distance of where the ball touches its face
+// and fades in fixed point to nothing at the far one, measured by the game's
+// own square root, and on a level whose settings turn the light round, the
+// other way about. The game looks only at the blocks in a box of cells the
+// far distance either way of the ball on each axis.
 
 /** The light on a level: the game's distances, or the pair the level's
     settings turn it round with, where they carry the value that asks it. */
@@ -123,7 +123,8 @@ function root(rows, v) {
   return below + Math.floor(((v - past) * step) / past);
 }
 
-/** How brightly the ball lights a corner a distance from its middle, of full. */
+/** How brightly the ball lights a corner a distance from where it touches its
+    face, of full. */
 export function glow(light, d) {
   if (d <= light.near) return light.full;
   const unit = 2 ** light.bits;

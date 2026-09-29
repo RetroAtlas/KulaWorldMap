@@ -113,6 +113,14 @@ CHECKS = [
     (0x80039c78, "beq $v0, $zero, 0x80039cac", "and back at full it is drawn as it is"),
     (0x80039ca4, "sra $v0, $v0, 4", "else its height scaled by its count over 16"),
     (0x80039ca8, "sh $v0, 7400($gp)", "on the axis of its face's normal"),
+    # The ball's position is where it touches its face: the start puts it at
+    # its cell and half a block along the face's normal, and the button and
+    # the invisible block's light both measure from it.
+    (0x800361d0, "sll $v0, $v0, 9", "the start puts the ball's position at its cell"),
+    (0x800361c0, "lh $v1, -24272($v1)", "and along its face's normal"),
+    (0x800361cc, "sll $v1, $v1, 8", "half a block, where it touches the face"),
+    (0x80039b74, "lh $v1, -24240($v1)", "a boost button measures its reach from that position"),
+    (0x800368f0, "lh $v0, -24240($v0)", "and the light from it and a platform's travel"),
     # The shadow under the ball and the captivators: a square of four
     # vertices, laid flat on the face and dropped where it faces away,
     # textured with one of two sprites past the group the .GGI's header
@@ -143,12 +151,12 @@ CHECKS = [
     (0x80031f3c, "jal 0x800603f8", "the ball's shadow is widened by the landing's squash"),
     (0x80031f54, "jal 0x800603f8", "and by the breath's"),
     # The invisible block's light: every frame it measures each corner of
-    # the invisible faces in a box of cells about the ball's middle, and a
-    # face with a corner lit is drawn shaded between its corners, where the
-    # rest are drawn flat or not at all.
+    # the invisible faces in a box of cells about where the ball touches its
+    # face, and a face with a corner lit is drawn shaded between its corners,
+    # where the rest are drawn flat or not at all.
     (0x8002a4a0, "addiu $a0, $a0, 23128", "the frame hands the light its struct"),
     (0x8002a4a4, "jal 0x80051318", "and runs it"),
-    (0x80036914, "sw $v0, 23128($at)", "into which the ball's routine writes its middle"),
+    (0x80036914, "sw $v0, 23128($at)", "into which the ball's routine writes where it touches its face"),
     (0x80027c14, "sw $v0, 23140($at)", "the loader keeps the near distance there"),
     (0x80027c20, "sw $v0, 23144($at)", "and the far one"),
     (0x80027c28, "sw $zero, 23148($at)", "and no flag"),
@@ -381,9 +389,9 @@ SHADOW_SQUARE = (0x8002c8d0, 0x8002c8d4)
 
 # The square root the invisible block's light takes: a table of four words a
 # row, by the count of leading zeros in the square, where a lui and an addiu
-# build its address. The rows kept are those for a square of 2^8 or more,
-# which a ball's middle is from every corner; past them the words are not
-# the root's.
+# build its address. The rows kept are those for a square of 2^8 or more;
+# past them the words are not the root's, and a square that small is well
+# within any near distance.
 LIGHT_ROOT = (0x800513f8, 0x800513fc)
 ROOT_ROWS = 24
 INVISIBLE = 3

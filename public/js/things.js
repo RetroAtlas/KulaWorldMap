@@ -16,7 +16,6 @@ import {
   TANGENT,
   cross,
   startsOf,
-  ballFor,
   shadowSprites,
 } from "./data.js";
 import { phasesOf, phaseField, pose, orbit, press, inReach } from "./motion.js";
@@ -54,24 +53,24 @@ export function thingDisc(m, where, l) {
 /** Whether a device a switch toggles is drawn off. */
 const switchedOff = (m) => markerNow(m) === "off";
 
-// What reacts to the ball reacts to the ball at the level's start, on its own
-// face and its radius off it, and to the block under the pointer and the one
-// selected, each as the ball on the face of that block that looks the same way
-// as the face that reacts, which is as near as a block can say. Positions are
-// in the game's units.
+// What reacts to the ball reacts to where it touches its face: the ball at
+// the level's start, and the block under the pointer and the one selected,
+// each as the ball on the face of that block that looks the same way as the
+// face that reacts, which is as near as a block can say. Positions are in the
+// game's units.
 const point = (c, face, off) =>
   [c.x, c.y, c.z].map((v, i) => (v + 0.5) / modelUnit() + FACE_NORMAL[face][i] * off);
 const starts = new WeakMap();
-/** The middles of the balls a face looking the way of `face` reacts to. */
+/** Where the balls a face looking the way of `face` reacts to touch theirs. */
 export function ballsFor(l, face) {
   const half = 0.5 / modelUnit();
-  if (!starts.has(l)) {
-    const r = ballFor(l)?.box[1][1] ?? 0;
-    starts.set(l, { r, balls: startsOf(l).map((s) => point(s, s.face, half + r)) });
-  }
-  const { r, balls } = starts.get(l);
+  if (!starts.has(l))
+    starts.set(
+      l,
+      startsOf(l).map((s) => point(s, s.face, half)),
+    );
   const pointed = [state.hover, state.selected].filter(Boolean);
-  return [...balls, ...pointed.map((c) => point(c, face, half + r))];
+  return [...starts.get(l), ...pointed.map((c) => point(c, face, half))];
 }
 
 // A boost button is pressed by a ball within its reach of where it stands.
