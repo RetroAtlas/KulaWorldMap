@@ -10,16 +10,13 @@
 // --save writes both sides of every capture that differs as PNGs. Past a few
 // differing captures the rest are counted by what differs rather than named,
 // and --all names every one.
-import { spawnSync } from "node:child_process";
-import http from "node:http";
-import { mkdtemp, readFile, writeFile, mkdir, rm } from "node:fs/promises";
+import { mkdtemp, writeFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { extname, join, normalize, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import { chromium } from "@playwright/test";
+import { ROOT, serve, checkout } from "../public.js";
 import { cases, live } from "./cases.js";
 
-const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const args = process.argv.slice(2);
 const option = (name) => {
   const i = args.indexOf(name);
@@ -37,34 +34,6 @@ const flag = (name) => {
 const all = flag("--all");
 const LISTED = 20; // how many differing captures are named before the rest are counted
 const ref = args[0] || "HEAD";
-
-const TYPES = {
-  ".html": "text/html",
-  ".js": "text/javascript",
-  ".json": "application/json",
-  ".png": "image/png",
-  ".css": "text/css",
-  ".svg": "image/svg+xml",
-};
-
-function serve(root) {
-  return new Promise((done) => {
-    const server = http.createServer(async (req, res) => {
-      let path = decodeURIComponent(new URL(req.url, "http://x").pathname);
-      if (path.endsWith("/")) path += "index.html";
-      const file = normalize(join(root, path));
-      if (!file.startsWith(root)) return res.writeHead(403).end();
-      try {
-        const body = await readFile(file);
-        res.writeHead(200, { "content-type": TYPES[extname(file)] || "application/octet-stream" });
-        res.end(body);
-      } catch {
-        res.writeHead(404).end();
-      }
-    });
-    server.listen(0, "127.0.0.1", () => done(server));
-  });
-}
 
 /** The clock held at a time the runner sets, animation frames asked for and
     never run, and the atlases and the pick canvas where the runner finds them. */
@@ -379,16 +348,9 @@ function differences(before, after) {
 const scratch = await mkdtemp(join(tmpdir(), "kula-pixels-"));
 const browser = await chromium.launch();
 try {
-  const archive = join(scratch, "ref.tar");
-  for (const [cmd, ...rest] of [
-    ["git", "archive", "--format=tar", "-o", archive, ref, "public"],
-    ["tar", "-x", "-f", archive, "-C", scratch],
-  ]) {
-    const run = spawnSync(cmd, rest, { cwd: ROOT, encoding: "utf8" });
-    if (run.status !== 0) throw new Error(`${cmd} failed: ${run.stderr}`);
-  }
+  const theirs = checkout(ref, scratch);
   const started = Date.now();
-  const before = await render(browser, join(scratch, "public"));
+  const before = await render(browser, theirs);
   const after = await render(browser, join(ROOT, "public"));
   const found = differences(before, after);
   const took = ((Date.now() - started) / 1000).toFixed(0);
@@ -414,7 +376,7 @@ try {
     const dir = resolve(save);
     await mkdir(dir, { recursive: true });
     const files = [];
-    await render(browser, join(scratch, "public"), {
+    await render(browser, theirs, {
       only: shown,
       keep: { dir, side: ref, files },
     });
