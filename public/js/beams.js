@@ -1,4 +1,4 @@
-import { state, screen } from "./state.js";
+import { state, screen, effectsOn } from "./state.js";
 import { kindMotion, litNow } from "./data.js";
 import { seed } from "./hash.js";
 
@@ -66,7 +66,7 @@ export function drawBeams(ctx, c, ghost, frame) {
     ctx.lineWidth = 1;
     sides.forEach(([su, sv], n) => {
       // held still, every line stands at its brightest
-      const level = state.show.motion
+      const level = effectsOn()
         ? beam.levels[(seed(...ray.a, n) + Math.floor(frame) * beam.step) % beam.levels.length]
         : Math.max(...beam.levels);
       const colour = `rgb(${tint(beam, ray, level).join(" ")})`;

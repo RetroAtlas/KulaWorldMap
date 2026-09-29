@@ -1,4 +1,4 @@
-import { state, BLOCK, depth, facing, screen, cellKey } from "./state.js";
+import { state, BLOCK, depth, facing, screen, cellKey, effectFrame } from "./state.js";
 import {
   FACE_NORMAL,
   FACE_NAME,
@@ -108,7 +108,7 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
     ? press(
         motion,
         `${l.pack}#${l.index}/${cellKey(home.x, home.y, home.z)}/${m.face}`,
-        frame,
+        effectFrame(frame),
         pressedAt(motion, m, home, l),
       )
     : null;

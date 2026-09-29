@@ -1,5 +1,15 @@
 import { $, on } from "./dom.js";
-import { state, BLOCK, depth, facing, screen, cellKey, sliceZ } from "./state.js";
+import {
+  state,
+  BLOCK,
+  depth,
+  facing,
+  screen,
+  cellKey,
+  sliceZ,
+  effectsOn,
+  effectFrame,
+} from "./state.js";
 import {
   WORLD_TINT,
   FACE_NORMAL,
@@ -219,7 +229,8 @@ export function draw() {
     pick.clearRect(0, 0, w, h);
   }
   const edges = state.show.outlines && state.cam.zoom > 0.3;
-  const scene = { l, idx, tint, skins, atlas, look, frame, edges };
+  const effect = effectFrame(frame);
+  const scene = { l, idx, tint, skins, atlas, look, frame, effect, edges };
   // A thing on a face turned away from the view is drawn again once every
   // block is down, faintly, where the display asks to see it through them,
   // and on the selected block whatever the display says.
@@ -247,7 +258,7 @@ export function draw() {
     const home = c.home || c;
     const ghost = home.z < sliceZ();
     if (c.beams) {
-      if (drawBeams(ctx, c, ghost, frame)) spinning = true;
+      if (drawBeams(ctx, c, ghost, effect)) spinning = true;
       continue;
     }
     if (c.rails) {
@@ -312,13 +323,13 @@ export function draw() {
   }
   if (state.show.start && l.camera) drawLook(ctx, l);
   drawScale(ctx);
-  if (spinning && state.show.motion) animate();
+  if (spinning && (state.show.motion || effectsOn())) animate();
 }
 
 // The things that turn in play turn here, which means drawing again every
-// frame while any is on screen, motion is on and the page is looked at; the
-// frame is cheap enough, and the loop ends itself when there is nothing left
-// turning.
+// frame while any is on screen, motion or the effects are on and the page is
+// looked at; the frame is cheap enough, and the loop ends itself when there
+// is nothing left turning.
 let spinning = false;
 let queuedFrame = 0;
 function animate() {

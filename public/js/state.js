@@ -119,6 +119,14 @@ export function pivot() {
   retarget(levelCentre(state.lvl));
 }
 
+// What moves is one thing and the effects are another: what lights, flickers
+// and reacts to the ball. The effects follow the Motion switch.
+/** Whether the effects run, rather than stand as the level is held. */
+export const effectsOn = () => state.show.motion;
+/** The frame of the level's clock the effects are drawn at: the clock's own
+    while they run, and the first while they are held. */
+export const effectFrame = (frame) => (effectsOn() ? frame : 0);
+
 /** The smallest z the slice still draws, counting down from the top. */
 export const sliceZ = () => SIDE - 1 - state.slice;
 

@@ -1,4 +1,4 @@
-import { state, BLOCK, project, facing, screen, cellKey, sliceZ } from "./state.js";
+import { state, BLOCK, project, facing, screen, cellKey, sliceZ, effectsOn } from "./state.js";
 import { OFF_LATTICE, skinsTable, kindMotion } from "./data.js";
 import { blockPhase } from "./motion.js";
 import { platformPlace, faceSkin } from "./skins.js";
@@ -232,7 +232,7 @@ function kindOf(c, idx, key) {
 /** Draw a block as its kind looks at this frame, lit up where it is selected
     or under the pointer, and say whether it is to change by the next frame. */
 export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
-  const { l, idx, tint, skins, atlas, look, frame, edges } = scene;
+  const { l, idx, tint, skins, atlas, look, frame, effect, edges } = scene;
   let live = false;
   const kind = kindOf(c, idx, key);
   const rec = c.v >= state.data.firstRecord ? idx.records.get(key)?.[0] : null;
@@ -256,10 +256,10 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
     const plates = idx.plates.get(key);
     skin = (i) => {
       const g = FACES[i].game;
-      const sk = faceSkin(skins, look, still, g, kind, rec, frame, place, plates?.get(g));
+      const sk = faceSkin(skins, look, still, g, kind, rec, effect, place, plates?.get(g));
       if (sk?.live) live = true;
       // held still, an invisible face stands at the peak of its pulse
-      if (sk && kind === INVISIBLE && !state.show.motion) sk.colour = peak(skins);
+      if (sk && kind === INVISIBLE && !effectsOn()) sk.colour = peak(skins);
       return sk && { ...sk, img: atlas, world: l.theme, corners: skins.corners[g][sk.turn] };
     };
   }
