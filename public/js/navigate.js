@@ -149,9 +149,17 @@ function flushHash() {
   });
   if (location.hash === h) return;
   if (push) history.pushState(null, "", h);
-  else history.replaceState(null, "", h);
+  else history.replaceState(history.state, "", h);
   known = location.hash;
 }
+
+// A dialog opens on an entry of its own, so what is waiting to be written
+// goes onto the entry under it first.
+on("dialog-opened", () => {
+  if (!queued) return;
+  cancelAnimationFrame(queued);
+  flushHash();
+});
 
 export function applyHash() {
   known = location.hash;

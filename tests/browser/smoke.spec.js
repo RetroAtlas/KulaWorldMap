@@ -994,6 +994,66 @@ test("a panel is a dialog that a click inside does not dismiss", async ({ page }
   await expect(help).toBeHidden();
 });
 
+test("Back closes a dialog and leaves the map where it was", async ({ page }) => {
+  await page.goto("/#HIRO/11/30,20/1.25/18,13,17/0,0/25");
+  await settle(page);
+  const url = page.url();
+  const help = page.locator("#help");
+  await page.keyboard.press("?");
+  await expect(help).toBeVisible();
+  await page.goBack();
+  await expect(help).toBeHidden();
+  expect(page.url()).toBe(url);
+  await expect(page.locator("#chip")).toContainText("LEVEL 12");
+  // closed any other way, it gives back the entry it stood on
+  await page.keyboard.press("?");
+  await expect.poll(() => page.evaluate(() => history.state)).not.toBeNull();
+  await page.keyboard.press("Escape");
+  await expect(help).toBeHidden();
+  await expect.poll(() => page.evaluate(() => history.state)).toBeNull();
+  expect(page.url()).toBe(url);
+});
+
+test("a dialog keeps the keys to itself", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const help = page.locator("#help");
+  const inside = () =>
+    page.evaluate(() => document.getElementById("help").contains(document.activeElement));
+  await page.keyboard.press("?");
+  await page.keyboard.press("t");
+  await expect(page.locator("#showSkins")).toBeChecked();
+  await page.keyboard.press("Escape");
+  await expect(help).toBeHidden();
+  await page.keyboard.press("t");
+  await expect(page.locator("#showSkins")).not.toBeChecked();
+  await page.locator("#aboutBtn").click();
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press("Tab");
+    expect(await inside()).toBe(true);
+    await page.keyboard.press("Shift+Tab");
+    expect(await inside()).toBe(true);
+  }
+});
+
+test("a dialog opened as another closes stays open, on an entry of its own", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const help = page.locator("#help");
+  await page.keyboard.press("?");
+  // both at once, before the Back that closing the first spends has landed
+  await page.evaluate(() => {
+    for (const key of ["Escape", "?"])
+      document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+  });
+  await page.waitForTimeout(300);
+  await expect(help).toBeVisible();
+  expect(await page.evaluate(() => history.state?.dialog)).toBeTruthy();
+  await page.goBack();
+  await expect(help).toBeHidden();
+  expect(await page.evaluate(() => history.state)).toBeNull();
+});
+
 test("an invisible block's icon shows it at the peak of its pulse", async ({ page }) => {
   await page.goto("/#HILLS/19");
   await settle(page);

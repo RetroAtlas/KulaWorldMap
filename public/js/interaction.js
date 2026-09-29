@@ -16,7 +16,6 @@ import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
 import { OFF_LATTICE, FACE_NAME, kindName, ownMarker, markerLabel, markerNow } from "./data.js";
 import { setSidebar, sidebarOverlays } from "./sidebar.js";
-import { closeModal, modalOpen } from "./modal.js";
 
 const cv = $("cv");
 const tip = $("tip");
@@ -323,10 +322,6 @@ addEventListener("keydown", (e) => {
       emit("help");
       break;
     case "Escape":
-      if (modalOpen()) {
-        closeModal();
-        break;
-      }
       if (sidebarOverlays() && document.body.classList.contains("sidebar-open")) {
         setSidebar(false);
         break;

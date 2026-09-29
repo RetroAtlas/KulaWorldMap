@@ -647,11 +647,12 @@ body.sidebar-open .menu-btn {
 }
 
 .modal {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 50;
   display: grid;
   place-items: center;
+  padding: 16px;
   background: #05070bcc;
 }
 .modal .box {
