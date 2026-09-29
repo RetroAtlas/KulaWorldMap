@@ -299,7 +299,9 @@ def hiding(r):
     (0x8002dfac) and takes one of four paths by its own, the crumbling
     block's, the vanishing block's, which asks nothing, the invisible
     block's, and one for every other face. A neighbour that is empty, or a
-    kind none of the tests names, lets the face be built."""
+    kind none of the tests names, lets the face be built. Of the kinds the
+    last path names, the ones it builds a face unseen behind rather than not
+    at all are given apart."""
     below = lambda n: set(range(n))
     other = below(r["hide.below"]) | {r["hide.also.a"], r["hide.also.b"], r["hide.while"]}
     start = -r["invisible.from"]
@@ -307,6 +309,7 @@ def hiding(r):
     crumbling = below(r["crumbling.below"]) | {r["crumbling.a"], r["crumbling.b"], r["crumbling.c"]}
     return {
         "other": sorted(other),
+        "unseen": [r["hide.while"]],
         "kinds": {
             str(r["path.invisible"]): sorted(invisible),
             str(-r["path.crumbling"]): sorted(crumbling),

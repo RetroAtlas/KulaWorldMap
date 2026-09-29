@@ -142,6 +142,11 @@ class Hiding(unittest.TestCase):
         self.assertEqual(h["other"], [0, 1, 2, 4, 6])
         self.assertEqual(h["kinds"], {"3": [0, 1, 2, 3, 4], "6": [0, 1, 2, 4, 6], "7": []})
 
+    def test_a_face_built_unseen_behind_a_crumbling_block_is_given_apart(self):
+        h = hiding(self.GAME)
+        self.assertEqual(h["unseen"], [6])
+        self.assertTrue(set(h["unseen"]) <= set(h["other"]))
+
     def test_an_invisible_block_hides_nothing_but_another_invisible_blocks_face(self):
         h = hiding(self.GAME)
         self.assertNotIn(3, h["other"])
