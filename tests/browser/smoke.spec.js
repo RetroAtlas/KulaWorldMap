@@ -1084,6 +1084,18 @@ test("a camera moved on purpose stays where it was put as the canvas resizes, un
   expect(framed.zoom).toBe(framed.fit);
 });
 
+/** Bring the start's block under a client point, and close in on it. */
+const startUnder = (page, point) =>
+  page.evaluate(async ([px, py]) => {
+    const { state, screen } = await import(new URL("js/state.js", location.href).href);
+    const { pan, zoomAt } = await import(new URL("js/interaction.js", location.href).href);
+    const r = document.getElementById("cv").getBoundingClientRect();
+    const [start] = state.lvl.records.filter((r) => r.on.some((o) => o.type === 30));
+    const [x, y] = screen(start.x + 0.5, start.y + 0.5, start.z);
+    pan(px - r.left - x, py - r.top - y);
+    zoomAt(px - r.left, py - r.top, 2);
+  }, point);
+
 test("the button in the corner frames the level again as f does, and no block behind it hears a press", async ({
   page,
 }) => {
@@ -1097,16 +1109,7 @@ test("the button in the corner frames the level again as f does, and no block be
   const box = await button.boundingBox();
   expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
   const centre = [box.x + box.width / 2, box.y + box.height / 2];
-  // the start's block brought under the button and closed in on
-  await page.evaluate(async ([bx, by]) => {
-    const { state, screen } = await import(new URL("js/state.js", location.href).href);
-    const { pan, zoomAt } = await import(new URL("js/interaction.js", location.href).href);
-    const r = document.getElementById("cv").getBoundingClientRect();
-    const [start] = state.lvl.records.filter((r) => r.on.some((o) => o.type === 30));
-    const [x, y] = screen(start.x + 0.5, start.y + 0.5, start.z);
-    pan(bx - r.left - x, by - r.top - y);
-    zoomAt(bx - r.left, by - r.top, 2);
-  }, centre);
+  await startUnder(page, centre);
   await expect(page).not.toHaveURL(/\/fit\//);
   expect(await cellUnder(page, centre)).toBeTruthy();
   const beside = [box.x - box.width / 2, centre[1]];
@@ -1209,6 +1212,153 @@ test("the corner stands clear of the scale however far it reaches, the chip and 
       }
     }
   }
+});
+
+/** Keep what the compass writes each time it paints, from here on. */
+const watchCompass = (page) =>
+  page.evaluate(() => {
+    const g = document.getElementById("compass").getContext("2d");
+    const { clearRect, fillText } = g;
+    window.compassSays = [];
+    g.clearRect = (...a) => {
+      window.compassSays = [];
+      return clearRect.apply(g, a);
+    };
+    g.fillText = (text, x, y) => {
+      window.compassSays.push({ text, x, y, colour: g.fillStyle });
+      return fillText.call(g, text, x, y);
+    };
+  });
+
+test("the compass names every face and way as the panel does, each where it lies in the view", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#INCA/11");
+  await settle(page);
+  await still(page);
+  await expect(page.locator("#compass")).toHaveAccessibleName("Compass");
+  await watchCompass(page);
+  const turns = [
+    [200, 15, "top"],
+    [330, 70, "top"],
+    [120, -30, "underside"],
+    [45, 35, "top"],
+  ];
+  for (const [yaw, pitch, lid] of turns) {
+    const turn = `${yaw}°, ${pitch}°`;
+    await page.evaluate((link) => (location.hash = link), `#INCA/11/${yaw},${pitch}`);
+    await frame(page);
+    const said = await page.evaluate(async () => {
+      const { camera } = await import(new URL("js/state.js", location.href).href);
+      const { FACE_NORMAL, DIRECTION_NAME } = await import(
+        new URL("js/data.js", location.href).href
+      );
+      const cv = document.getElementById("compass");
+      const mid = [cv.clientWidth / 2, cv.clientHeight / 2];
+      const c = camera();
+      const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+      const says = window.compassSays;
+      const from = (w) => [w.x - mid[0], w.y - mid[1]];
+      return {
+        words: says.map((w) => w.text),
+        panel: DIRECTION_NAME,
+        ways: DIRECTION_NAME.map((name, i) => {
+          const w = says.find((s) => s.text === name);
+          if (!w) return { name };
+          const way = [dot(FACE_NORMAL[i], c.right), -dot(FACE_NORMAL[i], c.up)];
+          const at = from(w);
+          const cos = (at[0] * way[0] + at[1] * way[1]) / (Math.hypot(...at) * Math.hypot(...way));
+          return { name, cos, away: dot(FACE_NORMAL[i], c.toward) <= 0, colour: w.colour };
+        }),
+        lid: says.filter((w) => !DIRECTION_NAME.includes(w.text)).map((w) => from(w)[1]),
+      };
+    });
+    expect([...said.words].sort(), turn).toEqual([...said.panel, lid].sort());
+    for (const w of said.ways) expect(w.cos, `${turn}: ${w.name}`).toBeGreaterThan(0.8);
+    // the top is named above the middle, the underside below it
+    expect(said.lid.length, turn).toBe(1);
+    expect(Math.sign(said.lid[0]), turn).toBe(lid === "top" ? -1 : 1);
+    const inks = (away) => [
+      ...new Set(said.ways.filter((w) => w.away === away).map((w) => w.colour)),
+    ];
+    const [faint, plain] = [inks(true), inks(false)];
+    expect(faint.length, turn).toBe(1);
+    expect(plain.length, turn).toBe(1);
+    expect(faint[0], turn).not.toBe(plain[0]);
+  }
+  expect(errors).toEqual([]);
+});
+
+/** How bright each side of the compass's block is that turns to the view,
+    by the game's number for it, read clear of its name. */
+const compassLight = (page) =>
+  page.evaluate(async () => {
+    const { camera } = await import(new URL("js/state.js", location.href).href);
+    const { FACE_NORMAL } = await import(new URL("js/data.js", location.href).href);
+    const cv = document.getElementById("compass");
+    const k = cv.width / cv.clientWidth;
+    const c = camera();
+    const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    return FACE_NORMAL.map((n) => {
+      if (dot(n, c.toward) <= 0 || n[2] !== 0) return null;
+      // toward the side's lower edge, below its name
+      const p = n.map((v, i) => v * 0.5 + (i === 2 ? 0.35 : 0));
+      const x = cv.clientWidth / 2 + dot(p, c.right) * 0.4 * cv.clientWidth;
+      const y = cv.clientHeight / 2 - dot(p, c.up) * 0.4 * cv.clientWidth;
+      const [r, g, b] = cv
+        .getContext("2d")
+        .getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data;
+      return r + g + b;
+    });
+  });
+
+test("the compass shades its block as the map shades a face, with textures or without", async ({
+  page,
+}) => {
+  const [PLUS_X, PLUS_Y] = [1, 2];
+  // HIRO's textures light its +y sides brightest and INCA's its +x sides,
+  // and without them the light that falls on every world lights +x the more
+  for (const [link, keys, bright, dim] of [
+    ["#HIRO/11/45,35", [], PLUS_Y, PLUS_X],
+    ["#INCA/11/45,35", [], PLUS_X, PLUS_Y],
+    ["#HIRO/11/45,35", ["t"], PLUS_X, PLUS_Y],
+  ]) {
+    await page.goto(`/${link}`);
+    await settle(page);
+    await still(page);
+    for (const key of keys) await page.keyboard.press(key);
+    await frame(page);
+    const light = await compassLight(page);
+    expect(light[bright], `${link} ${keys}`).toBeGreaterThan(light[dim]);
+  }
+});
+
+test("a press on the compass reaches no block behind it, and moves nothing", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#INCA/11");
+  await settle(page);
+  await still(page);
+  const box = await page.locator("#compass").boundingBox();
+  const centre = [box.x + box.width / 2, box.y + box.height / 2];
+  // at the compass's corner, so that the block reaches under it and out beside it
+  await startUnder(page, [box.x, box.y]);
+  await frame(page);
+  const link = page.url();
+  expect(await cellUnder(page, centre)).toBeTruthy();
+  // off the compass, above the button beside it
+  const beside = [box.x - 10, box.y + 10];
+  expect(await cellUnder(page, beside)).toBeTruthy();
+  await page.mouse.move(...beside);
+  await expect.poll(() => hovered(page)).not.toBeNull();
+  await page.mouse.move(...centre);
+  await expect.poll(() => hovered(page)).toBeNull();
+  await expect(page.locator("#tip")).toBeHidden();
+  await page.mouse.click(...centre);
+  await frame(page);
+  await expect(page.locator("#detail")).toBeHidden();
+  expect(page.url()).toBe(link);
+  expect(errors).toEqual([]);
 });
 
 test("arriving somewhere is spoken, and names the map with it", async ({ page }) => {

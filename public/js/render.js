@@ -30,6 +30,7 @@ import { atlasFor } from "./atlas.js";
 import { drawBlock, cube, outline, covers } from "./blocks.js";
 import { drawRails, drawBase, drawLook, drawScale, drawMark, drawLink } from "./overlays.js";
 import { drawThing, quietAmongModels, thingDisc } from "./things.js";
+import { drawCompass } from "./compass.js";
 import { deviceLights } from "./lights.js";
 
 const cv = $("cv");
@@ -213,6 +214,7 @@ export function draw() {
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = "#111725";
   ctx.fillRect(0, 0, w, h);
+  drawCompass();
   const l = state.lvl;
   if (!l) return;
   const idx = state.idx;

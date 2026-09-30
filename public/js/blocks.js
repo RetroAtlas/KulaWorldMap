@@ -193,8 +193,11 @@ function kindTint(tint, kind) {
   );
 }
 
+/** The colour face `i` of a block takes without textures, from the block's colour. */
+export const litFace = (colour, i) => shade(colour, lit[i]);
+
 /** The colour face `i` of a block of `kind` takes without textures, in a world's tint. */
-export const flatFace = (tint, kind, i) => shade(kindTint(tint, kind), lit[i]);
+export const flatFace = (tint, kind, i) => litFace(kindTint(tint, kind), i);
 
 // How a kind of block reads without its textures: a wash for what the game
 // paints onto the block, and a fainter, broken cube for a block that is not

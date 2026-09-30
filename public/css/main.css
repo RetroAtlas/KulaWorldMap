@@ -466,7 +466,7 @@ button.kind:hover {
      band the scale bar is drawn in however far the bar reaches, and how tall
      the tallest of them is */
   --corner-foot: 44px;
-  --corner-h: 44px;
+  --corner-h: 96px;
 }
 canvas {
   display: block;
@@ -633,6 +633,18 @@ body.sidebar-open .menu-btn {
   stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.compass {
+  width: var(--corner-h);
+  height: var(--corner-h);
+  background: #171d2bf0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.compass,
+.compass:active {
+  cursor: default;
 }
 
 .tip {
@@ -970,6 +982,9 @@ body.sidebar-open .menu-btn {
   }
   .detail {
     width: 218px;
+  }
+  .map {
+    --corner-h: 84px;
   }
 }
 
