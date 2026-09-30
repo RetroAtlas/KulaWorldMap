@@ -143,6 +143,20 @@ export function setYaw(deg) {
   writeHash();
 }
 
+/** Frame the level in the window again, and keep it framed. */
+function refit() {
+  fit();
+  redraw();
+  chip();
+  writeHash();
+}
+
+$("fitBtn").onclick = refit;
+// nothing in the corner means anything until a level is on screen
+on("level-changed", () => {
+  $("corner").hidden = false;
+});
+
 // A level changed under a still pointer takes the cell it named with it,
 // and the next move names one of the new level's.
 on("level-changed", () => {
@@ -329,10 +343,7 @@ addEventListener("keydown", (e) => {
       stepLevel(1);
       break;
     case "f":
-      fit();
-      redraw();
-      chip();
-      writeHash();
+      refit();
       break;
     case "t":
       toggle("showSkins");

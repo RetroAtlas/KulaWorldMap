@@ -85,7 +85,7 @@ try {
     g.font = "21px ui-sans-serif, system-ui, sans-serif";
     g.fillStyle = "#a3b1c6";
     g.fillText("Every level of the PlayStation original, read straight off the disc", 66, 588);
-    for (const id of ["chip", "readout", "menuBtn"])
+    for (const id of ["chip", "readout", "corner", "menuBtn"])
       document.getElementById(id).style.display = "none";
   }, LEVEL);
 

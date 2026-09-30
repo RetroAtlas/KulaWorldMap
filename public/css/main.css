@@ -462,6 +462,11 @@ button.kind:hover {
   position: relative;
   flex: 1 1 auto;
   min-width: 0;
+  /* how far the corner's widgets stand off the foot of the map, clear of the
+     band the scale bar is drawn in however far the bar reaches, and how tall
+     the tallest of them is */
+  --corner-foot: 44px;
+  --corner-h: 44px;
 }
 canvas {
   display: block;
@@ -583,6 +588,53 @@ body.sidebar-open .menu-btn {
   pointer-events: none;
 }
 
+/* a press between the widgets reaches the map */
+.corner {
+  position: absolute;
+  right: 12px;
+  bottom: var(--corner-foot);
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+.corner > * {
+  pointer-events: auto;
+}
+
+.fit {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.fit:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+}
+@media (hover: hover) {
+  .fit:hover {
+    color: var(--accent);
+    border-color: var(--accent-dim);
+  }
+}
+.fit svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .tip {
   position: absolute;
   z-index: 20;
@@ -601,7 +653,8 @@ body.sidebar-open .menu-btn {
   top: 12px;
   z-index: 15;
   width: 268px;
-  max-height: calc(100% - 60px);
+  /* ending above the corner's widgets */
+  max-height: calc(100% - 20px - var(--corner-foot) - var(--corner-h));
   overflow-y: auto;
   background: #171d2bf7;
   border: 1px solid var(--line);

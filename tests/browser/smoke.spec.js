@@ -577,6 +577,27 @@ test.describe("on a phone", () => {
     await expect(note).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
   });
+
+  test("a tap on the button in the corner frames the level again, and leaves it unlit", async ({
+    page,
+  }) => {
+    await page.goto("/#INCA/11");
+    await settle(page);
+    await still(page);
+    await page.keyboard.press("+");
+    await expect(page).not.toHaveURL(/\/fit\//);
+    const button = page.locator("#fitBtn");
+    const box = await button.boundingBox();
+    expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
+    const ink = () => button.evaluate((b) => getComputedStyle(b).color);
+    const untouched = await ink();
+    await button.tap();
+    await expect(page).toHaveURL(/\/fit\//);
+    await expect(page.locator("#detail")).toBeHidden();
+    // a touch screen keeps the tapped button under its :hover until the next tap
+    expect(await button.evaluate((b) => b.matches(":hover"))).toBe(true);
+    expect(await ink()).toBe(untouched);
+  });
 });
 
 test("the drawer stays dismissable on the narrowest phone", async ({ page }) => {
@@ -1063,6 +1084,133 @@ test("a camera moved on purpose stays where it was put as the canvas resizes, un
   expect(framed.zoom).toBe(framed.fit);
 });
 
+test("the button in the corner frames the level again as f does, and no block behind it hears a press", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#INCA/11");
+  await settle(page);
+  await still(page);
+  const button = page.locator("#fitBtn");
+  await expect(button).toHaveAccessibleName("Fit the level");
+  await expect(button).toHaveAttribute("title", "Fit the level (f)");
+  const box = await button.boundingBox();
+  expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
+  const centre = [box.x + box.width / 2, box.y + box.height / 2];
+  // the start's block brought under the button and closed in on
+  await page.evaluate(async ([bx, by]) => {
+    const { state, screen } = await import(new URL("js/state.js", location.href).href);
+    const { pan, zoomAt } = await import(new URL("js/interaction.js", location.href).href);
+    const r = document.getElementById("cv").getBoundingClientRect();
+    const [start] = state.lvl.records.filter((r) => r.on.some((o) => o.type === 30));
+    const [x, y] = screen(start.x + 0.5, start.y + 0.5, start.z);
+    pan(bx - r.left - x, by - r.top - y);
+    zoomAt(bx - r.left, by - r.top, 2);
+  }, centre);
+  await expect(page).not.toHaveURL(/\/fit\//);
+  expect(await cellUnder(page, centre)).toBeTruthy();
+  const beside = [box.x - box.width / 2, centre[1]];
+  expect(await cellUnder(page, beside)).toBeTruthy();
+  const ink = () => button.evaluate((b) => getComputedStyle(b).color);
+  await page.mouse.move(...beside);
+  await expect.poll(() => hovered(page)).not.toBeNull();
+  const unlit = await ink();
+  await page.mouse.move(...centre);
+  await expect.poll(() => hovered(page)).toBeNull();
+  await expect(page.locator("#tip")).toBeHidden();
+  // where a pointer hovers, the button lights under it
+  expect(await ink()).not.toBe(unlit);
+  await page.mouse.click(...centre);
+  await expect(page).toHaveURL(/#INCA\/11\/45,35\/fit\/33$/);
+  await expect(page.locator("#detail")).toBeHidden();
+  const framed = await fitted(page);
+  expect(framed.zoom).toBe(framed.fit);
+  expect(errors).toEqual([]);
+});
+
+const overlaps = (a, b) =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+/** The box the scale bar is drawn in, read off the map drawn with the level
+    far off the canvas, which leaves the scale alone on it. */
+const scaleBox = (page) =>
+  page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { draw, invalidatePick } = await import(new URL("js/render.js", location.href).href);
+    const cv = document.getElementById("cv");
+    const was = state.cam.panX;
+    state.cam.panX += 1e4;
+    draw();
+    const { width, height } = cv;
+    const px = cv.getContext("2d").getImageData(0, 0, width, height).data;
+    let [x0, y0, x1, y1] = [width, height, -1, -1];
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = (y * width + x) * 4;
+        if (px[i] === px[0] && px[i + 1] === px[1] && px[i + 2] === px[2]) continue;
+        [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)];
+      }
+    }
+    state.cam.panX = was;
+    invalidatePick();
+    draw();
+    const r = cv.getBoundingClientRect();
+    const k = width / r.width;
+    return {
+      x: r.left + x0 / k,
+      y: r.top + y0 / k,
+      width: (x1 + 1 - x0) / k,
+      height: (y1 + 1 - y0) / k,
+    };
+  });
+
+test("the corner stands clear of the scale however far it reaches, the chip and the panel", async ({
+  page,
+}) => {
+  const sizes = [
+    { width: 1280, height: 720 },
+    { width: 375, height: 700 },
+    { width: 320, height: 560 },
+    { width: 740, height: 360 },
+  ];
+  for (const size of sizes) {
+    const at = `${size.width}x${size.height}`;
+    await page.setViewportSize(size);
+    // BONUS 17, whose chip says the most
+    await page.goto("/#FIELD/16");
+    await settle(page);
+    await still(page);
+    await page.evaluate(async () => {
+      const { state, ZOOM_MAX } = await import(new URL("js/state.js", location.href).href);
+      const { zoomAt } = await import(new URL("js/interaction.js", location.href).href);
+      const { showCell } = await import(new URL("js/detail.js", location.href).href);
+      zoomAt(0, state.view.h, ZOOM_MAX / state.cam.zoom);
+      // the block with the most on it, for the longest panel
+      const [key] = [...state.idx.markers].sort((a, b) => b[1].length - a[1].length)[0];
+      showCell(state.idx.cells.get(key));
+    });
+    await frame(page);
+    const scale = await scaleBox(page);
+    expect(scale.width, at).toBeGreaterThan(size.width / 2);
+    const map = await page.locator("#cv").boundingBox();
+    const others = {
+      scale,
+      chip: await page.locator("#chip").boundingBox(),
+      panel: await page.locator("#detail").boundingBox(),
+    };
+    const widgets = await page.locator(".corner > *").all();
+    expect(widgets.length, at).toBeGreaterThan(0);
+    for (const widget of widgets) {
+      const box = await widget.boundingBox();
+      expect(box.x, at).toBeGreaterThanOrEqual(map.x);
+      expect(box.x + box.width, at).toBeLessThanOrEqual(map.x + map.width);
+      for (const [name, other] of Object.entries(others)) {
+        expect(overlaps(box, other), `${at}: the corner and the ${name}`).toBe(false);
+      }
+    }
+  }
+});
+
 test("arriving somewhere is spoken, and names the map with it", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);
@@ -1496,7 +1644,9 @@ test("the readout follows the camera with the pointer off the map", async ({ pag
   expect(errors).toEqual([]);
 });
 
-test("the readout says nothing while no level is on screen", async ({ page }) => {
+test("the readout says nothing and the corner stays hidden while no level is on screen", async ({
+  page,
+}) => {
   // the blocked data is an error on the console, so only the page's own are counted
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -1505,6 +1655,7 @@ test("the readout says nothing while no level is on screen", async ({ page }) =>
   await expect(page.locator("#chip")).toContainText("could not be loaded");
   await still(page);
   await expect(page.locator("#readout")).toHaveText("");
+  await expect(page.locator("#corner")).toBeHidden();
   await page.evaluate(() => {
     const cv = document.getElementById("cv");
     cv.dispatchEvent(new PointerEvent("pointermove", { clientX: 700, clientY: 400 }));
