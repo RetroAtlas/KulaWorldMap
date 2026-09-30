@@ -1436,6 +1436,26 @@ test("a level changed under a still pointer leaves no word of the cell it was ov
   expect(errors).toEqual([]);
 });
 
+test("the readout follows the camera with the pointer off the map", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HAZEFI/1");
+  await settle(page);
+  await still(page);
+  const zoom = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      return `×${state.cam.zoom.toFixed(2)}`;
+    });
+  const fitted = await zoom();
+  expect(fitted).not.toBe("×1.00");
+  await expect(page.locator("#readout")).toHaveText(`${fitted}  45° / 35°`);
+  await page.keyboard.press("+");
+  const zoomed = await zoom();
+  expect(zoomed).not.toBe(fitted);
+  await expect(page.locator("#readout")).toHaveText(`${zoomed}  45° / 35°`);
+  expect(errors).toEqual([]);
+});
+
 test("the settings have no model, so among the models they show only while selected", async ({
   page,
 }) => {

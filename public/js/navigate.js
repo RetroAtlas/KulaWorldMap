@@ -156,6 +156,7 @@ const levelAt = (slot) => {
 export function writeHash(push = false) {
   entry ||= push;
   if (!queued) queued = requestAnimationFrame(flushHash);
+  emit("view-changed");
 }
 
 function flushHash() {

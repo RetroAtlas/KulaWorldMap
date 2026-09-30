@@ -69,8 +69,8 @@ cv.addEventListener("pointermove", (e) => {
   if ((state.hover?.key ?? null) !== key) {
     state.hover = c ? { ...c, key } : null;
     drawSoon();
+    readoutSoon();
   }
-  readout(c);
   hoverTip(c, e.clientX - r.left, e.clientY - r.top);
 });
 
@@ -98,7 +98,7 @@ cv.addEventListener("pointerleave", () => {
   pointing(false);
   state.hover = null;
   tip.hidden = true;
-  $("readout").textContent = "";
+  readoutSoon();
   drawSoon();
 });
 
@@ -135,10 +135,19 @@ export function setYaw(deg) {
 // and the next move names one of the new level's.
 on("level-changed", () => {
   tip.hidden = true;
-  readout(null);
 });
 
-function readout(c) {
+// Written at most once a frame, however often the camera or the pointer
+// moves it.
+let readoutQueued = 0;
+function readoutSoon() {
+  if (!readoutQueued) readoutQueued = requestAnimationFrame(readout);
+}
+on("view-changed", readoutSoon);
+
+function readout() {
+  readoutQueued = 0;
+  const c = state.hover;
   const { zoom, yaw, pitch } = state.cam;
   const view = `×${zoom.toFixed(2)}  ${Math.round(yaw)}° / ${Math.round(pitch)}°`;
   $("readout").textContent = c ? `${c.x}, ${c.y}, ${c.z}   ${view}` : view;
