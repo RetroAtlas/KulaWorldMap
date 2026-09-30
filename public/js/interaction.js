@@ -148,15 +148,13 @@ function refit() {
 }
 
 $("fitBtn").onclick = refit;
-on("level-changed", () => {
-  $("corner").hidden = false;
-});
 on("view-changed", () => {
   $("fitBtn").classList.toggle("fitted", state.framing === fit);
 });
 
 // A level changed under a still pointer names no cell until the pointer moves.
 on("level-changed", () => {
+  $("corner").hidden = false;
   tip.hidden = true;
   pointer = null;
 });
