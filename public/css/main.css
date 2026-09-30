@@ -2,6 +2,7 @@
   --bg: #111725;
   --panel: #171d2b;
   --panel-2: #202839;
+  --surface-float: #171d2bf0;
   --line: #303b4e;
   --ink: #dfe6f2;
   --dim: #a3b1c6;
@@ -514,7 +515,7 @@ body.sidebar-open .menu-btn {
   left: 54px;
   top: 10px;
   z-index: 10;
-  background: #171d2bf0;
+  background: var(--surface-float);
   border: 1px solid var(--line);
   border-radius: 8px;
   line-height: 20px;
@@ -617,7 +618,7 @@ body.sidebar-open .menu-btn {
 }
 .fit.fitted {
   color: var(--dim);
-  background: #171d2bf0;
+  background: var(--surface-float);
 }
 .fit:focus-visible {
   color: var(--accent);
@@ -642,7 +643,7 @@ body.sidebar-open .menu-btn {
 .compass {
   width: var(--corner-h);
   height: var(--corner-h);
-  background: #171d2bf0;
+  background: var(--surface-float);
   border: 1px solid var(--line);
   border-radius: 8px;
 }
