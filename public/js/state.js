@@ -14,15 +14,14 @@ export const state = {
   li: -1,
   cam: { yaw: 45, pitch: 35, zoom: 1, panX: 0, panY: 0 },
   target: [17, 17, 17],
-  // how the map framed the view, which frames it again at every size the
-  // canvas takes until the camera is moved on purpose, and null after that
+  // what framed the view, run again at every size the canvas takes; null once
+  // the camera is moved on purpose
   framing: null,
   slice: SIDE - 1,
   view: { w: 0, h: 0, dpr: 1 },
   show: {
     objects: true,
     models: true,
-    // a visitor whose system asks for reduced motion opens a still map
     motion: !globalThis.matchMedia?.(REDUCED).matches,
     through: false,
     labels: false,
@@ -32,11 +31,10 @@ export const state = {
     hidden: false,
     skins: true,
     outlines: false,
-    note: true, // the level's note, under the chip
+    note: true,
   },
   hiddenKinds: new Set(),
-  // the frames of the clock a switch turned each circuit over at since the
-  // level was opened, by colour
+  // by colour, the clock frames at which a switch turned each circuit over
   presses: new Map(),
   hover: null,
   selected: null,
@@ -45,14 +43,12 @@ export const state = {
 
 let basis = null;
 
-/** Screen axes and the depth axis for a yaw and a pitch in degrees. */
 export function basisAt(yaw, pitch) {
   const cy = Math.cos(yaw * DEG),
     sy = Math.sin(yaw * DEG);
   const cp = Math.cos(pitch * DEG),
     sp = Math.sin(pitch * DEG);
-  // The lattice's third axis counts downward, and seen from above its second
-  // counts down the page, which is the one way the game's own lettering reads.
+  // z counts downward, and seen from above y counts down the page.
   return {
     right: [cy, -sy, 0],
     up: [-sp * sy, -sp * cy, -cp],
@@ -60,7 +56,6 @@ export function basisAt(yaw, pitch) {
   };
 }
 
-/** Screen axes and the depth axis for the current yaw and pitch. */
 export function camera() {
   const { yaw, pitch } = state.cam;
   if (basis && basis.yaw === yaw && basis.pitch === pitch) return basis;
@@ -79,17 +74,15 @@ export function project(x, y, z) {
   ];
 }
 
-/** Distance away from the camera; larger is further, so draw larger first. */
+/** Larger is further from the camera. */
 export function depth(x, y, z) {
   const c = camera();
   return -(x * c.toward[0] + y * c.toward[1] + z * c.toward[2]);
 }
 
-/** Whether a face with this outward normal turns toward the camera. */
 export const facing = (n) => dot(n, camera().toward) > 0;
 
-// Every point on the screen is measured from where the orbit target
-// projects, which holds while the camera and the target do.
+// The orbit target's projection, kept while the camera and the target hold.
 let aim = { c: null, x: NaN, y: NaN, z: NaN, px: 0, py: 0 };
 function aimAt(c) {
   const t = state.target;
@@ -100,8 +93,8 @@ function aimAt(c) {
   return aim;
 }
 
-/** Where a world point lands on the screen, written into `out` at `i` and
-    `i + 1`, for placing many points without an array for each. */
+/** As `screen`, written into `out` at `i`, so placing many points makes no
+    array for each. */
 export function screenTo(out, i, x, y, z) {
   const c = camera();
   const a = aimAt(c);
@@ -119,7 +112,7 @@ export function screen(x, y, z) {
   return out;
 }
 
-/** Move the point the view turns about, and the pan the other way, so nothing on screen moves. */
+/** Move the point the view turns about without moving anything on screen. */
 export function retarget(t) {
   const [ax, ay] = project(...state.target);
   const [bx, by] = project(...t);
@@ -128,28 +121,21 @@ export function retarget(t) {
   state.target = t;
 }
 
-/** The middle of a level's extent. */
 export const levelCentre = (l) => [0, 1, 2].map((i) => (l.min[i] + l.max[i] + 1) / 2);
 
 // The view turns about the selected cell while it is centred on that cell,
-// which only a search does, and about the level otherwise. The change is made
-// as a turn begins and moves nothing on screen, so clearing the selection is
-// the whole of the way back.
+// and about the level otherwise.
 export function pivot() {
   const s = state.selected;
   if (!state.lvl || (s && [s.x, s.y, s.z].every((v, i) => v + 0.5 === state.target[i]))) return;
   retarget(levelCentre(state.lvl));
 }
 
-// What moves is one thing and the effects are another: what lights, flickers
-// and reacts to the ball. The effects follow the Motion switch.
-/** Whether the effects run, rather than stand as the level is held. */
+// The effects keep a guard of their own, which follows Motion.
 export const effectsOn = () => state.show.motion;
-/** The frame of the level's clock the effects are drawn at: the clock's own
-    while they run, and the first while they are held. */
 export const effectFrame = (frame) => (effectsOn() ? frame : 0);
 
-/** The smallest z the slice still draws, counting down from the top. */
+/** The smallest z the slice still draws. */
 export const sliceZ = () => SIDE - 1 - state.slice;
 
 export const cellKey = (x, y, z) => (x * SIDE + y) * SIDE + z;

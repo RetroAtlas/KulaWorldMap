@@ -1,19 +1,13 @@
-// The permalink: a level, the view of it, and the block selected on it. No
-// DOM, so it stays importable in bare Node.
+// No DOM, so it stays importable in bare Node.
 import { SIDE, PITCH_MIN, PITCH_MAX, ZOOM_MIN, ZOOM_MAX } from "./state.js";
 
-/** A level's key: its pack and its slot in it, which is the disc's own
-    address and the one the cheat takes. */
 export const slotOf = (l) => `${/([^/]+)\.PAK$/.exec(l.pack)[1]}/${l.index}`;
 
 const r2 = (v) => Math.round(v * 100) / 100;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-// A view framed to fit the window says so in place of where the camera is,
-// so it opens framed to whatever window it is opened in.
 const FIT = "fit";
 
-/** The hash for a view of a level, ending with the selected cell where there is one. */
 export function formatHash({ slot, cam, target, slice, picked, fitted }) {
   const view = fitted
     ? FIT
@@ -24,7 +18,6 @@ export function formatHash({ slot, cam, target, slice, picked, fitted }) {
   );
 }
 
-/** A segment of the hash as `n` numbers, or null where it is missing or is not that. */
 const numbers = (segment, n) => {
   const v = segment ? segment.split(",").map(Number) : [];
   return v.length === n && v.every(Number.isFinite) ? v : null;
@@ -32,8 +25,7 @@ const numbers = (segment, n) => {
 
 const CELL = /^\d+,\d+,\d+$/;
 
-// The map escapes nothing it writes, but a share sheet or a mail client may
-// escape a link on its way; a % that is no escape leaves the link as it came.
+// A share sheet or a mail client may escape a link on its way.
 const unescaped = (text) => {
   if (!text.includes("%")) return text;
   try {
@@ -43,11 +35,9 @@ const unescaped = (text) => {
   }
 };
 
-/** What a hash names, each part null where the hash leaves it out or it cannot be read.
-    The head is read by position and the rest by shape, in any order, so a
-    segment the reader does not know is passed over rather than read as another.
-    A number past what the camera can reach is held where the camera stops,
-    and a cell outside the lattice names nothing. */
+/** Each part is null where the hash leaves it out or it cannot be read. The
+    head is read by position and the rest by shape, in any order, so a segment
+    the reader does not know is passed over rather than read as another. */
 export function parseHash(hash) {
   const [pack, slot, turn, ...rest] = unescaped(hash.replace(/^#/, "")).split("/");
   const [zoom, target, pan, slice, ...tail] =

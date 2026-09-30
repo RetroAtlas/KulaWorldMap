@@ -37,8 +37,6 @@ export function selectLevel(i, { keepView = false } = {}) {
   writeHash(left && !keepView);
 }
 
-/** Centre on the level and pick a zoom that shows all of it, and keep the
-    view framed so as the canvas resizes. */
 export function fit() {
   const l = state.lvl;
   if (!l) return;
@@ -79,7 +77,6 @@ export function centreOn(x, y, z) {
   state.framing = null;
 }
 
-// the level the note under the chip was written for
 let noted = null;
 
 export function chip() {
@@ -104,9 +101,8 @@ export function chip() {
   noted = l;
   const note = levelNote(l);
   $("chipNote").innerHTML = note;
-  // The line is the button that folds the note where there is one, and
-  // plain text where there is nothing to fold, which hands the focus the
-  // button held to the map.
+  // The line sits in the button that folds the note only where there is a
+  // note, and the focus a hidden button held goes to the map.
   if (!note && document.activeElement === $("chipBtn")) $("cv").focus();
   $("chipBtn").hidden = !note;
   (note ? $("chipBtn") : $("chip")).prepend($("chipLine"));
@@ -127,23 +123,18 @@ $("chipBtn").onclick = () => {
   foldNote();
 };
 
-// While the hash is being read back, the camera is still at its defaults until
-// the last line of applyHash. Anything that writes the hash before then would
-// put those defaults in the URL, and the next reload would believe them.
+// Set while a hash is read back, so no write puts a half-restored view in the URL.
 let restoring = false;
 
-// Browsers rate-limit replaceState (Safari at 100 per 30s, Firefox at 50 per
-// 10s) and throw once past it, so a drag that wrote on every pointer event
-// would take the throw inside the drag rather than merely lose the URL.
+// Browsers rate-limit replaceState and throw past the limit, so writes wait
+// for the next frame and go out as one.
 let queued = 0;
-// A change of level or a find is a history entry, so Back returns to what
-// was left behind; a turn, a pan, a zoom or a slice only brings the entry up
-// to date. The entry outlives the quieter writes that ride on its heels in
-// the same frame, so the one write carries it.
+// Whether the waiting write pushes a history entry; a push outlives the
+// replacing writes that follow it in the same frame.
 let entry = false;
-// The hash the viewer last read or wrote. The address bar holding another is
-// a hash typed, followed or gone back to whose hashchange has yet to arrive,
-// and a write queued before it would put the old view back over it.
+// The hash the viewer last read or wrote. The address bar holding another has
+// a hashchange yet to arrive, and a waiting write would put the view on screen
+// over it.
 let known = location.hash;
 
 let slots = null;
@@ -193,16 +184,12 @@ export function applyHash() {
   const i = levelAt(link.slot);
   if (i === undefined) return false;
   restoring = true;
-  // Going back to another view of the level in hand keeps what was set on it,
-  // the kinds hidden in the legend among them.
   if (i !== state.li) selectLevel(i, { keepView: true });
   if (link.turn) [state.cam.yaw, state.cam.pitch] = link.turn;
   if (link.target) state.target = link.target;
   else fit();
   if (link.zoom) state.cam.zoom = link.zoom;
   if (link.pan) [state.cam.panX, state.cam.panY] = link.pan;
-  // A link that names where the camera is holds it there, and one that is
-  // fitted, or names no more than the turn, is framed at that turn.
   if (link.zoom || link.target || link.pan) state.framing = null;
   state.slice = link.slice ?? SIDE - 1;
   const cell = link.picked && state.idx.cells.get(cellKey(...link.picked));
@@ -219,9 +206,7 @@ export function applyHash() {
 
 on("selection-changed", () => writeHash());
 
-// The viewer's own writes raise no hashchange, so what arrives here is a hash
-// typed, followed or gone back to. One the viewer cannot honour would
-// otherwise sit in the address bar naming a level that is not on screen.
+// A hash the viewer cannot honour gives way to the view on screen.
 addEventListener("hashchange", () => {
   if (!applyHash()) writeHash();
 });
