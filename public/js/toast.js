@@ -1,10 +1,6 @@
-// Notices that come and go at the foot of the map: the newest lowest, older
-// ones riding above it, and what does not fit waiting behind a count. The
-// stack is a live region, so a notice is read out as it arrives.
-
-const SHOWN_MS = 3000; // how long a notice stays, and its bar's drain
-const OUT_MS = 150; // the fade before a spent notice leaves
-const MOST = 3; // notices on screen at once
+const SHOWN_MS = 3000;
+const OUT_MS = 150;
+const MOST = 3;
 
 const live = []; // oldest first; the stack runs the other way
 const waiting = [];
@@ -13,7 +9,6 @@ let badge = null;
 const stack = () => document.getElementById("toastStack");
 
 export function toast(msg) {
-  // the same notice again gives the standing one its full time back
   const newest = live.at(-1);
   if (newest && !newest.leaving && newest.msg === msg) {
     clearTimeout(newest.timer);

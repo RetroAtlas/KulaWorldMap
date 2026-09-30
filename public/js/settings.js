@@ -1,9 +1,7 @@
 import { $ } from "./dom.js";
 import { openDialog } from "./dialog.js";
 
-// The switches used less, in a dialog behind a button of their own. A switch
-// here is wired, saved and keyed as any other; the panel only shows it, and
-// says beside it when it stands away from its default.
+// The panel only shows its switches; each is wired, saved and keyed as any other.
 
 export function openSettings() {
   const panel = $("settings");

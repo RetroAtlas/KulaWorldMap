@@ -1,13 +1,7 @@
 import { emit } from "./dom.js";
 
-// A dialog is an overlay holding its box, shown and hidden by its `hidden`
-// attribute, and one is open at a time. While it is open the keys are its
-// own: Tab goes round its controls, Escape closes it and nothing reaches the
-// page behind. A click on the overlay lands beside the box and closes it, one
-// inside reaches the box first and does not. The dialog stands on a history
-// entry of its own, a copy of the one under it, so that Back closes it rather
-// than leaving the page, and closing it spends the entry. The focus goes back
-// to where it was.
+// An open dialog stands on a history entry of its own, a copy of the one under
+// it, so that Back closes it; closing it spends the entry.
 
 const FOCUSABLE = "button, input, select, textarea, a[href], [tabindex]:not([tabindex='-1'])";
 

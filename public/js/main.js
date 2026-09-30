@@ -10,8 +10,6 @@ import "./a11y.js";
 import "./interaction.js";
 import "./search.js";
 
-// Open beside the map where there is room for both, closed where it would
-// float over what it is for.
 setSidebar(innerWidth > 860);
 restore();
 wireSettings();
