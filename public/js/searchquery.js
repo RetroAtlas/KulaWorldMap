@@ -1,12 +1,5 @@
-// Query parsing for the search box: tokenise into OR-of-AND groups so terms
-// match independently across the "name + fields" blob (they need not be
-// adjacent). Space = AND, comma or the word "or" = OR; a bare "and"/"or" is an
-// operator wherever it sits and never a term.
-
-// "Teleporter starts=off" -> [["teleporter", "starts=off"]]; "Coin, Key" and
-// "Coin or Key" -> [["coin"], ["key"]]. Only whitespace-delimited and/or are
-// operators, so substrings like "wandering" are untouched; "=" is never split,
-// so field=value stays one term.
+// OR-of-AND groups: space is AND, and a comma or a bare "or" is OR. A bare
+// "and" or "or" is never a term.
 export function parseQuery(q) {
   return q
     .toLowerCase()
@@ -15,17 +8,14 @@ export function parseQuery(q) {
     .filter((g) => g.length);
 }
 
-// the distinct terms across every group; never empty strings, so substring
-// scans over them can't stall
+// never an empty string, on which a substring scan would not end
 export const queryTerms = (groups) => [...new Set(groups.flat())];
 
-// the AND-within-OR shape over any per-term test
 export const matchesBy = (groups, has) => groups.some((g) => g.every((term) => has(term)));
 
-// text (the already-lowercased blob) matches when any group's terms all appear
+// `text` is lowercased already
 export const matchesQuery = (text, groups) => matchesBy(groups, (term) => text.includes(term));
 
-// best (lowest) name-match rank across the terms: exact, prefix, substring, else 3
 export function rankFor(name, terms) {
   const n = name.toLowerCase();
   let best = 3;

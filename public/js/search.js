@@ -27,11 +27,9 @@ const out = $("results");
 
 const GROUP_MAX = 8;
 
-// all | world | level, relative to the level in hand
 let scope = "all";
 let cursor = -1;
-// The row the cursor is on, by what it names rather than by its place in
-// the list, so it is found again when the list grows under it.
+// The row the cursor is on, by key, so it is found again as the list grows.
 let current = null;
 
 const options = () => [...out.querySelectorAll("[role=option]")];
@@ -75,9 +73,6 @@ function marked(text, terms) {
 
 const CELL = /^(\d+)\s*,\s*(\d+)\s*,\s*(\d+)$/;
 
-// A find is selected as a click would select it, so the outline and the
-// panel say which block the view was centred on; one above the slice's
-// ceiling lifts the ceiling to it, since a cell above it is not drawn.
 function goTo(x, y, z) {
   if (z < sliceZ()) setSlice(SIDE - 1 - z);
   centreOn(x, y, z);
@@ -89,7 +84,6 @@ function goTo(x, y, z) {
   writeHash(true);
 }
 
-// A place the panel names, where a teleporter leads, is gone to as a find is.
 on("go-to", ({ x, y, z, said }) => {
   goTo(x, y, z);
   say(said);
@@ -101,9 +95,6 @@ function jump(h) {
   say([h.name, h.face, h.cell, levelTitle(h.level)].filter(Boolean).join(", "));
 }
 
-// A row is an option the cursor can name. Choosing one leaves the list as it
-// was laid out, so the next row down is the next find wherever the view has
-// gone, and gives the keys back to the map.
 function option(key, go, ...kids) {
   const b = el("button", { type: "button" }, ...kids);
   b.setAttribute("role", "option");
@@ -133,9 +124,6 @@ function objectRow(h, terms) {
   );
 }
 
-// A group's heading is for the eye, and its label for a screen reader. The
-// rows past the first few wait behind a row of their own, which the cursor
-// reaches like any other and which leaves the cursor on the first it shows.
 function group(label, items, make) {
   const head = el("div", { className: "group" }, el("span", {}, label));
   head.append(el("span", {}, String(items.length)));
@@ -172,8 +160,7 @@ function render() {
     show(false);
     return;
   }
-  // A cell is answered by itself alone: read as a query, its commas would
-  // ask for anything numbered like any of its three.
+  // Read as a query, a cell's commas would ask for any of its three numbers.
   const cell = CELL.exec(q)?.slice(1).map(Number);
   if (cell) {
     if (cell.every(inLattice))
@@ -215,8 +202,6 @@ function render() {
       ),
     );
 
-  // Objects group by where they stand: the level in hand, the rest of its
-  // world, then every other world in the disc's order.
   const hits = matchObjects(state.data, groups, terms).filter((h) => inScope(h.li, h.level.theme));
   const here = {
     key: "level",
@@ -270,7 +255,6 @@ function tally(hits) {
   return parts.length < 2 ? parts.join("") : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
 }
 
-// A scoped search says so, with the way out beside it.
 function widen() {
   if (scope === "all") return [];
   const w = el("span", { className: "widen", textContent: "search everywhere" });
@@ -281,9 +265,6 @@ function widen() {
   return [" · ", w];
 }
 
-// The input drives a listbox it does not contain, so the pairing is spelled
-// out: the input owns aria-expanded and points at the row under the cursor,
-// and each row is an option the cursor can name.
 function show(shown) {
   const listed = shown && out.childElementCount > 0;
   bar.hidden = !shown;
@@ -349,8 +330,6 @@ box.addEventListener("keydown", (e) => {
   }
 });
 
-// The scope bar names the world and the level in hand, and choosing one lays
-// the list out again from there.
 on("level-changed", () => {
   if (!bar.hidden) scopeBar();
 });
