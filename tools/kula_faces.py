@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
-"""What the six slots of a record hold, across every record in the game.
-
-A record is a block: a kind word, then six 32-byte slots, one per face in the
-order -z +x +y -y -x +z, then 32 bytes never set, 26 of extras and the cell.
-This walks the slots of all 5,700 and reports, per kind, which slots carry an
-object and what types and values they take, so a reading can be argued from
-the whole game rather than from a level or two.
+"""What the six slots of a record hold, across every record in the game: per
+kind, which slots carry an object and what types and values they take.
 
     python3 tools/kula_faces.py
     python3 tools/kula_faces.py --kind 8          # just that kind's records
     python3 tools/kula_faces.py --dump 4          # print whole records, a row a slot
-
-See docs/level-format.md for what this has settled.
 """
 import argparse
 import sys

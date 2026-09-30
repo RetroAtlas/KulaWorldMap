@@ -7,25 +7,20 @@
     python3 tools/kula_warp.py                               # a disc copy instead
     python3 tools/kula_warp.py --level /HELL/HELL.PAK#18
 
-`OBJ LEVEL`, the developers' object catalogue, sits in the twentieth slot of
-every world pack but HIRO's and no menu asks for it, so it is what this reaches
-by default. A pack addresses its records by offset and size, so pointing a slot
-a player does reach at another slot's bytes is an eight-byte edit and leaves
-every length on the disc alone, which is what keeps the ISO valid without
-rebuilding it. Across packs the record is written over a slot of the target's
-own first, the roomiest, which is why what it displaces is named on the way
-out.
+The default is `OBJ LEVEL`, the developers' object catalogue, which no menu
+asks for. A pack addresses its records by offset and size, so the patched disc
+points a slot a player does reach at another slot's bytes and leaves every
+length on the disc alone. Across packs the record is written over a slot of
+the target's own, and what it displaces is named on the way out.
 
 A level carries no world of its own, so it wears whichever world's artwork the
 pack it is reached from belongs to.
 
-The game keeps the world it is loading at 0x800A340C and 0x800A3410 and the
-slot at 0x800A3408 (the NTSC release; the PAL one at 0x800A2EA4, 0x800A2EA8 and
-0x800A2EA0), so an emulator cheat that writes those reaches any slot of any
-world pack without a patched disc; `--cheat` prints it in the form DuckStation
-takes, with a second cheat that frees the camera to orbit the level, which is
-the fastest way to survey one. The disc copy is for the packs the cheat cannot
-name, and for a real console.
+`--cheat` writes the world and the slot the game is loading, which reaches any
+slot of any world pack without a patched disc, in the form DuckStation takes,
+with a second cheat that frees the camera to orbit the level. The PAL release
+keeps them at 0x800A2EA4, 0x800A2EA8 and 0x800A2EA0. The disc copy is for the
+packs the cheat cannot name, and for a real console.
 
 Writing user data leaves each touched sector's EDC and ECC stale. Emulators do
 not read them; a real console would.
@@ -48,13 +43,12 @@ USER_OFF = 24
 CATALOGUE = "OBJ LEVEL"
 WORLD_WORDS = (0x800A340C, 0x800A3410)
 SLOT_WORD = 0x800A3408
-# The Japanese release frees the camera on Select; this byte does it on the
-# NTSC one, from The Cutting Room Floor, and is what a survey wants.
+# Frees the camera, as Select does on the Japanese release.
 CAMERA_WORD = 0x800BA296
 
 
 def find(disc, want):
-    """Every pack on the disc, as (path, Pak), with the catalogue's home first."""
+    """Every pack on the disc, as (path, Pak), `want` first."""
     out = []
     for _, path in packs(disc):
         pak = Pak(disc.read_file(path), path)

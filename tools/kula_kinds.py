@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
-"""Contact sheets for naming the game's numbered objects and record kinds.
-
-The game names none of its objects, so what a type *is* has to be argued from
-where it sits. This writes one section per object type, and one per kind of
-record that is more than a block: how often it is placed, which levels place
-it, whether a level ever gets more than one, which faces it stands on, what
-its fields hold, and what sits on the blocks around it.
+"""Contact sheets for naming the game's numbered objects and record kinds:
+where each is placed, what its fields hold and what sits around it.
 
     python3 tools/kula_kinds.py            # out/kinds.md
     python3 tools/kula_kinds.py --type 30  # just that type, to stdout

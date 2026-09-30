@@ -1,21 +1,12 @@
 #!/usr/bin/env python3
-"""The sheet for naming objects by walking the game's own catalogue.
-
-OBJ LEVEL ships in nine of the ten worlds, identical every time, and the game
-never takes you there. It is a flat floor with one or a few of nearly every
-object kind standing on it, which makes it the one place where every kind can
-be identified in a single sitting.
-
-This writes a floor plan with every object numbered, and a table to fill in as
-you walk it. Load the level in an emulator with a save-state hack or a level
-warp, walk the numbers, and write down what each one looks like.
+"""The sheet for naming objects by walking a level: a floor plan with every
+object numbered, and a table to fill in as you walk it.
 
     python3 tools/kula_objlevel.py                 # out/obj-level.md
     python3 tools/kula_objlevel.py --level "LEVEL 1"
 
-The catalogue needs a level warp to reach. The early numbered levels do not,
-and between them they place the objects the game uses most, so `--level` writes
-the same sheet for any level you can simply play to.
+The default is the game's catalogue, OBJ LEVEL, which needs a level warp to
+reach; `--level` writes the same sheet for a level you can play to.
 """
 import argparse
 import json
@@ -33,7 +24,6 @@ FACE = ["-z", "+x", "+y", "-y", "-x", "+z"]
 
 
 def serpentine(objects):
-    """Number the objects along a walk that does not double back."""
     rows = {}
     for o in objects:
         rows.setdefault(o["y"], []).append(o)
@@ -59,7 +49,6 @@ def main():
     catalogue = args.level == "OBJ LEVEL"
 
     def things(l):
-        """What stands in a level, one entry a marker, with the key its name goes under."""
         out = []
         for r in l["records"]:
             if "type" in r or r["kind"] == 9:
@@ -80,14 +69,11 @@ def main():
     cells = level["cells"]
     floor = {(cells[i], cells[i + 1]): cells[i + 2] for i in range(0, len(cells), 4)}
     plane = Counter(floor.values()).most_common(1)[0][0]
-    # The start is an object like any other, known by its curated name, so it is
-    # walked and numbered rather than marked apart; the sheet says which it is.
     ann = json.loads(NAMES.read_text())
     named = ann.get("types", {})
     start_key = next((f"type {t}" for t, v in named.items() if v.get("name") == "Start"), None)
 
     def map_says(o):
-        """The curated name the map already gives the thing, variant included, or nothing."""
         what, num = o["key"].split()
         e = (ann.get("types") if what == "type" else ann.get("kinds", {})).get(num, {})
         if e.get("by") and what == "type":
