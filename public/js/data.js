@@ -25,11 +25,8 @@ export const setObjects = (o) => {
   shapes = { block: 512, types: {}, balls: [], shadows: [], motion: null, skins: null, ...o };
 };
 export const modelUnit = () => 1 / shapes.block;
-/** The rates the build read off the executable, or null where the file has none. */
 export const motionTable = () => shapes.motion;
-/** What the game paints on every face, read off the executable, or null where the file has none. */
 export const skinsTable = () => shapes.skins;
-/** The game's shadow sprites, each a row of texels to a string, in base 32. */
 export const shadowSprites = () => shapes.shadows;
 export const motionOf = (m) =>
   m.face === null
@@ -51,8 +48,6 @@ export async function loadJson(url, fallback) {
 export const worldName = (id) => ann.worlds[id]?.name || id;
 export const worldNote = (id) => ann.worlds[id]?.note || "";
 
-// The game never shows the name the disc files a numbered level under, so
-// where it differs from the number shown it is a curiosity for the note.
 export const levelNote = (l) =>
   [
     levelTitle(l) !== l.name ? `The game's files name this level ${l.name}.` : "",
@@ -62,17 +57,14 @@ export const levelNote = (l) =>
     .join(" ");
 /** The maximum a level can score where that is less than everything it holds, else null. */
 export const levelScore = (l) => ann.levels[`${l.pack}#${l.index}`]?.score ?? null;
-// The game numbers the levels it shows a number for itself rather than reading
-// the pack's name, and five packs name a level something else.
 export const levelTitle = (l) => l.shown || l.name;
 
 const BEAM_KIND = 8;
 const RAIL_KIND = 5;
-// The kinds whose record is a block and nothing more, so all it carries is
-// what stands on its faces. The others are a thing in their own right as well.
+// The kinds whose record is a block and nothing more; the others are a thing
+// in their own right as well.
 const PLAIN_KINDS = new Set([0, 1, 2, 3, 4]);
 const PLAIN = 0;
-/** A cell the lattice does not carry, so nothing about it can be read as a style. */
 export const OFF_LATTICE = -1;
 
 // The six faces of a block, in the order the game numbers them.
@@ -90,18 +82,10 @@ export const DIRECTION_NAME = ["-z", "+x", "+y", "-y", "-x", "+z"];
 // A raw word goes by its place in its slot, counted from the kind word.
 const FIRST_FIELD = 2;
 const VALUE_WORD = 14;
-/** The name of the field at index `i` of a marker's fields. */
 export const fieldKey = (i) => `f${i + FIRST_FIELD}`;
-/** The index into a marker's fields of the field a name like `f3` names. */
 export const fieldIndex = (key) => Number(key.slice(1)) - FIRST_FIELD;
-/** The name of a slot's value word. */
 export const VALUE_KEY = `f${VALUE_WORD}`;
 
-// What a record puts on the map: an object on each face that carries one and,
-// for a kind that is its own thing, a marker for the record itself. Each has
-// an id that names what it is rather than where, for the legend and search.
-// A type's annotation may single out one field as telling its variants apart,
-// a colour or a tier, and then the id carries that field's value too.
 export function markersOf(r) {
   const out = [];
   if (!PLAIN_KINDS.has(r.kind))
@@ -116,21 +100,15 @@ export function markersOf(r) {
 }
 
 const SETTINGS_KIND = 9;
-/** Whether a marker is a thing on a face, a block that is its own thing, or
-    the level's settings, which are neither. */
 export const markerGroup = (m) =>
   m.face !== null ? "object" : m.kind === SETTINGS_KIND ? "settings" : "block";
 
-/** Among a cell's markers, the one for its block's own kind, or null where the kind is only a block. */
 export const ownMarker = (marks, kind) =>
   marks.find((m) => m.face === null && m.kind === kind) ?? null;
 
-// A variant may carry its own name, colour and points; what it leaves unsaid
-// falls back to the type, and a marker for a record itself reads the kind.
 const entry = (m) => (m.face === null ? ann.kinds[String(m.kind)] : ann.types[String(m.type)]);
 const variant = (m) => (m.variant === null ? null : entry(m)?.variants?.[m.variant] || null);
 export const markerName = (m) => variant(m)?.name || entry(m)?.name || null;
-/** The name of the type or kind itself, whatever variant the marker is. */
 export const entryName = (m) => entry(m)?.name || null;
 export const markerLabel = (m) =>
   markerName(m) || (m.face === null ? `kind ${m.kind}` : `type ${m.type}`);
@@ -139,9 +117,8 @@ export const markerHazard = (m) => entry(m)?.hazard === true;
 export const markerColour = (m) =>
   variant(m)?.colour || (m.face === null ? kindColour(m.kind) : OBJECT_COLOUR);
 export const markerPoints = (m) => variant(m)?.points ?? entry(m)?.points ?? 0;
-// A thing that points is turned on its face in quarter turns about the inward
-// normal, from a first tangent that is the world's +y laid onto the face, or
-// the world's up on the +y face and its down on the -y face.
+// A thing that points is turned in quarter turns about its face's inward
+// normal, from this first tangent.
 export const TANGENT = [
   [0, 1, 0],
   [0, 1, 0],
@@ -155,7 +132,6 @@ export const cross = (a, b) => [
   a[2] * b[0] - a[0] * b[2],
   a[0] * b[1] - a[1] * b[0],
 ];
-/** The way a marker's thing points, as a unit vector in the world, or null. */
 export const markerHeading = (m) => {
   const by = entry(m)?.facing;
   if (!by || m.face === null) return null;
@@ -166,42 +142,34 @@ export const markerHeading = (m) => {
   for (let i = 0; i < turns; i++) v = cross(axis, v);
   return v;
 };
-/** The same, as an index into FACE_NORMAL, or null. */
 export const markerFacing = (m) => {
   const v = markerHeading(m);
   if (!v) return null;
   const d = FACE_NORMAL.findIndex((n) => n.every((c, i) => c === v[i]));
   return d < 0 ? null : d;
 };
-// The field that numbers a level's pickups, set on the pickup types and no other.
 const NUMBER_FIELD = 3;
-/** The number the disc gives a pickup within its level, or null for anything unnumbered. */
 export const markerNumber = (m) =>
   m.face === null || m.f[NUMBER_FIELD] === -1 ? null : m.f[NUMBER_FIELD];
-// How the game writes a switched device's starting state.
 const STATE_ON = 1;
 const STATE_OFF = 2;
-/** Whether a device a switch toggles starts on or off, or null for anything else. */
+/** How a device a switch toggles starts, or null for anything else. */
 export const markerState = (m) => {
   const by = entry(m)?.state;
   if (!by || m.face === null) return null;
   const v = m.f[fieldIndex(by)];
   return v === STATE_ON ? "on" : v === STATE_OFF ? "off" : null;
 };
-/** The circuit a device a switch toggles is on, which is its colour, or null for anything else. */
+/** A switched device's circuit, which is its colour. */
 export const markerCircuit = (m) => (markerState(m) === null ? null : m.f[fieldIndex(entry(m).by)]);
 const pressesOf = (circuit) => state.presses.get(circuit) ?? [];
-/** Whether a circuit has been turned over from how the level starts it. */
 const turned = (circuit) => pressesOf(circuit).length % 2 === 1;
-/** Whether a device a switch toggles is on or off now, or null for anything else. */
 export const markerNow = (m) => {
   const start = markerState(m);
   if (start === null || !turned(markerCircuit(m))) return start;
   return start === "on" ? "off" : "on";
 };
-/** Whether a beam is lit now. */
 export const litNow = (ray) => ray.lit !== turned(ray.colour);
-/** Turn a circuit over at a frame of the clock, as pressing one of its switches does. */
 export function flip(circuit, frame) {
   state.presses.set(circuit, [...pressesOf(circuit), frame]);
 }
@@ -209,8 +177,6 @@ export function flip(circuit, frame) {
 export function settleCircuits() {
   for (const [circuit, at] of state.presses) state.presses.set(circuit, at.length % 2 ? [0] : []);
 }
-/** How many frames of the clock up to `frame` a device has been on, from
-    whether it starts on and the frames its circuit was turned over at. */
 export function framesOn(on, presses, frame) {
   let total = 0;
   let from = 0;
@@ -222,28 +188,23 @@ export function framesOn(on, presses, frame) {
   }
   return on ? total + frame - from : total;
 }
-/** The frames a thing has moved for by `frame`: all of them, or for a device
-    a switch toggles only those it has been on, since it stands still off. */
 export const movedFor = (m, frame) =>
   markerState(m) === null
     ? frame
     : framesOn(markerState(m) === "on", pressesOf(markerCircuit(m)), frame);
-/** Whether a device a switch toggles casts its light at `frame`, turning it
-    over every `every` frames it has been on. */
+/** Whether a switched device casts its light at `frame`, turning it over
+    every `every` frames it has been on. */
 export const lightOnAt = (m, every, frame) =>
   markerState(m) !== null &&
   glowing(every, markerState(m) === "on", pressesOf(markerCircuit(m)), frame);
 const SWITCH = 9;
-/** Whether a marker is a switch, whose press turns its circuit over. */
 export const isSwitch = (m) => m.face !== null && m.type === SWITCH;
-/** The colour the map gives a circuit, which its switches wear, or null where none is named. */
 export const circuitColour = (circuit) =>
   ann.types[String(SWITCH)]?.variants?.[String(circuit)]?.colour ?? null;
 // A teleporter names the one it sends the ball to by that one's record, times
 // sixteen, plus its face.
 const TELEPORTER = 5;
 const DESTINATION = fieldIndex("f7");
-/** Where a teleporter sends the ball, as a cell and a face, or null for anything else. */
 export function markerDestination(m, l) {
   if (m.face === null || m.type !== TELEPORTER || m.f[DESTINATION] < 0) return null;
   const r = l.records[m.f[DESTINATION] >> 4];
@@ -251,7 +212,6 @@ export function markerDestination(m, l) {
   if (!r?.on.some((o) => o.face === face && o.type === TELEPORTER)) return null;
   return { x: r.x, y: r.y, z: r.z, face };
 }
-/** What the raw field at index `i` of a marker's fields holds, where that is settled, or null. */
 export const fieldName = (m, i) => {
   if (i === NUMBER_FIELD && markerNumber(m) !== null) return "pickup number";
   const f = fieldKey(i);
@@ -261,19 +221,13 @@ export const fieldName = (m, i) => {
 };
 export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
 
-// The five fruit are five types, and in the arcade levels the game shows the
-// one the player needs next, which is the level's number counted round the
-// five; every other level shows its type's own.
+// Where the game numbers a level, every fruit shows as the one the player
+// needs next: the level's number counted round the fruit.
 const FRUIT_FIRST = 43;
 const FRUIT = 5;
-// A variant the level opens on where no field picks one: the exit is red until
-// the keys are found, and its green model comes first.
-const OPENS_ON = { 7: 1 };
-// The start is where the ball is, on a plain face or on a clock, and the
-// ball is thematic: the game picks the design by the world's place for an
-// arcade level, one of three others for a bonus level in an order the
-// player's path decides, and the glass one with the shards inside for a
-// hidden level.
+// The variant a level opens on where no field picks one.
+const OPENS_ON = { 7: 1 }; // the exit, red until the keys are found
+// The ball starts on a plain face or on a clock.
 const START = 30;
 const STARTS = new Set([29, START]);
 const BONUS_BALL = 10;
@@ -289,13 +243,12 @@ export function ballFor(l) {
   else if (slot >= WORLD_LEVELS && slot < HIDDEN) design = BONUS_BALL + (slot - WORLD_LEVELS);
   return shapes.balls[design] || shapes.balls[0] || null;
 }
-/** Where the ball stands as a level starts: the cell and the face. */
 export const startsOf = (l) =>
   l.records.flatMap((r) =>
     r.on.filter((o) => STARTS.has(o.type)).map((o) => ({ x: r.x, y: r.y, z: r.z, face: o.face })),
   );
-/** The model a marker draws, or null for one the game draws on the face; a
-    thing that changes its form in play names the form to draw. */
+/** Null for a thing the game draws on the face; `form` names the form to draw
+    of a thing that changes in play. */
 export function markerModel(m, l, form = null) {
   if (m.face === null) return null;
   if (STARTS.has(m.type)) return ballFor(l);
@@ -317,9 +270,8 @@ export const blockHazard = (kind, end) =>
 /** A beam's end that holds a block of its own rather than the laser's record. */
 export const farEnd = (kind, end) => end && kind !== null && kind !== BEAM_KIND;
 
-// A beam record spans two cells on one axis and nothing stands between them in
-// any of the game's. The blocks at its ends are not always in the lattice, so
-// the level is wider than the lattice alone says it is.
+// A beam record spans two cells on one axis, and the blocks at its ends are
+// not always in the lattice.
 export const beams = (l) =>
   l.records
     .filter((r) => r.kind === BEAM_KIND)
@@ -355,9 +307,7 @@ export const rails = (l) =>
 // A moving platform is as many blocks as its record says, laid from its cell
 // along the axis its first field names.
 const PLATFORM_AXIS = { 1: 0, 2: 1 };
-/** The axis a moving platform is laid and runs along, 0 to 2 for x to z. */
 export const platformAxis = (r) => PLATFORM_AXIS[r.f[0]] ?? 2;
-/** The cells a moving platform's blocks stand on where its record puts it, its own first. */
 export function platformCells(r) {
   const axis = platformAxis(r);
   return Array.from({ length: r.length || 1 }, (_, k) => {
@@ -367,7 +317,6 @@ export function platformCells(r) {
   });
 }
 
-/** A cell lookup plus the per-cell records and markers, built once per level. */
 export function index(l) {
   const cells = new Map();
   for (let i = 0; i < l.cells.length; i += 4) {
@@ -375,9 +324,8 @@ export function index(l) {
     cells.set(cellKey(x, y, z), { x, y, z, v });
   }
   const rays = beams(l);
-  // A beam is drawn a cell at a time so that each stretch takes its place
-  // among the blocks: the cells it crosses are empty, so a stretch sorts as
-  // a block there would, and a block in front of it hides it.
+  // A beam is split a cell at a time, so each stretch sorts among the blocks
+  // as a block in its empty cell would.
   const beamCells = new Map();
   const beamEnds = new Set();
   for (const r of rays) {
@@ -396,8 +344,7 @@ export function index(l) {
       beamCells.get(k).beams.push({ ray: r, k: t - lo - 1 });
     }
   }
-  // A moving platform's route is laid the same way, from the middle of the
-  // cell at one end of its run to the middle of the cell at the other.
+  // A platform's route is split the same way, over its run's end cells too.
   const railCells = new Map();
   for (const r of rails(l)) {
     const lo = Math.min(r.a[r.axis], r.b[r.axis]);
@@ -426,9 +373,9 @@ export function index(l) {
 
 export const levelMarkers = (l) => l.records.flatMap(markersOf);
 
-/** Every block of a kind that is only a block, but a plain one, with its cell
-    and a marker for it: the lattice keeps the kind as the cell's value, or
-    the record the cell names keeps it where something stands on the block. */
+/** Every block of a kind that is only a block, but not a plain one. The lattice
+    keeps the kind as the cell's value, or the record the cell names keeps it
+    where something stands on the block. */
 export function kindBlocks(l, first) {
   const out = [];
   for (let i = 0; i < l.cells.length; i += 4) {
@@ -445,12 +392,8 @@ export function kindBlocks(l, first) {
   return out;
 }
 
-/** A marker for every block of a kind that is only a block, but a plain one, one per block. */
 export const blockMarkers = (l) => kindBlocks(l, state.data.firstRecord).map((b) => b.marker);
 
-/** How many blocks a level puts in play: the lattice's, and the ones the game
-    stands where the lattice leaves a cell empty, at the ends of a beam and
-    along a moving platform. */
 export function blockCount(l) {
   const cells = new Set();
   for (let i = 0; i < l.cells.length; i += 4) cells.add(cellKey(...l.cells.slice(i, i + 3)));
@@ -459,13 +402,11 @@ export function blockCount(l) {
     if (r.kind === RAIL_KIND) for (const c of platformCells(r)) cells.add(cellKey(...c));
   return cells.size;
 }
-/** How many things stand on a level's faces. */
 export const objectCount = (l) => l.records.reduce((n, r) => n + r.on.length, 0);
-/** A count with its noun, singular for one. */
 export const counted = (n, noun) => `${n} ${noun}${n === 1 ? "" : "s"}`;
 
-// Every world pack keeps its three bonus levels in the same slots, and a bonus
-// level scores each block rolled over rather than an exit reached.
+// Every world pack keeps its bonus levels in the same slots, and a bonus level
+// scores each block rolled over.
 const BONUS_SLOTS = [15, 16, 17];
 const BLOCK_POINTS = 50;
 const INVISIBLE_KIND = 3;
@@ -482,14 +423,12 @@ function tallied(l) {
   return n;
 }
 
-/** What collecting everything on a level would score. */
 export function levelPoints(l) {
   let points = levelMarkers(l).reduce((sum, m) => sum + markerPoints(m), 0);
   if (BONUS_SLOTS.includes(l.index)) points += BLOCK_POINTS * tallied(l);
   return points;
 }
 
-/** How often each marker id is placed, and in how many levels, across the game. */
 export function markerStats(data) {
   const stats = new Map();
   for (const l of data.levels) {
@@ -506,10 +445,6 @@ export function markerStats(data) {
   return stats;
 }
 
-// An object on a face is the marker in nine of every ten, so it takes the
-// quiet colour and a record that is its own thing reads as the exception it
-// is. Few enough kinds to pick by hand: spacing them by formula leaves several
-// a few degrees apart.
 const OBJECT_COLOUR = "#9fb3d1";
 const KIND_COLOUR = {
   5: "#22d3ee",
