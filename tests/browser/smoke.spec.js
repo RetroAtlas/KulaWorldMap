@@ -1465,6 +1465,75 @@ test("a teleporter's panel names where it leads, and going there is a find", asy
   expect(errors).toEqual([]);
 });
 
+test("where a teleporter leads is an arrow in its colour, broken while it is off, and loops where its ends meet", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#COWBOY/7/45,35/1");
+  await settle(page);
+  // LEVEL 68's blue teleporter on 17,7,17 leads to the one on 17,25,17, both on top
+  const link = (dark, yaw, pitch) =>
+    page.evaluate(
+      async ([dark, yaw, pitch]) => {
+        const at = (p) => import(new URL(`js/${p}`, location.href).href);
+        const [{ state, screen, cellKey }, { drawLink }, data] = await Promise.all(
+          ["state.js", "overlays.js", "data.js"].map(at),
+        );
+        state.cam.yaw = yaw;
+        state.cam.pitch = pitch;
+        const m = state.idx.markers.get(cellKey(17, 7, 17)).find((m) => m.type === 5);
+        const from = { x: 17, y: 7, z: 17, face: m.face };
+        const to = data.markerDestination(m, state.lvl);
+        const g = document.createElement("canvas").getContext("2d");
+        const drawn = { curves: [], heads: [] };
+        let path = [];
+        for (const k of ["moveTo", "lineTo", "bezierCurveTo"]) {
+          const own = g[k];
+          g[k] = (...a) => {
+            path.push([k, ...a]);
+            own.apply(g, a);
+          };
+        }
+        const begin = g.beginPath;
+        g.beginPath = () => {
+          path = [];
+          begin.apply(g);
+        };
+        g.stroke = () => {
+          if (path.some(([k]) => k === "bezierCurveTo"))
+            drawn.curves.push({ ink: g.strokeStyle, dashed: g.getLineDash().length > 0, path });
+        };
+        g.fill = () => drawn.heads.push({ ink: g.fillStyle, tip: path[0].slice(1) });
+        drawLink(g, from, to, data.markerColour(m), dark);
+        const lifted = (c) => screen(c.x + 0.5, c.y + 0.5, c.z + 0.5 - 0.8);
+        return { colour: data.markerColour(m), from: lifted(from), to: lifted(to), ...drawn };
+      },
+      [dark, yaw, pitch],
+    );
+  const close = (a, b) => expect(Math.hypot(a[0] - b[0], a[1] - b[1])).toBeLessThan(0.01);
+  const on = await link(false, 45, 35);
+  expect(on.curves.map((c) => [c.ink, c.dashed])).toEqual([
+    [expect.any(String), false],
+    [on.colour, false],
+  ]);
+  expect(on.heads.map((h) => h.ink)).toEqual([expect.any(String), on.colour]);
+  close(on.curves[1].path[0].slice(1), on.from);
+  close(on.heads[1].tip, on.to);
+  const off = await link(true, 45, 35);
+  expect(off.curves.map((c) => c.dashed)).toEqual([true, true]);
+  expect(off.heads.map((h) => h.ink)).toEqual([expect.any(String), off.colour]);
+  // looking straight along the row, the one it leads to stands behind it
+  const meet = await link(false, 0, 0);
+  close(meet.from, meet.to);
+  close(meet.heads[1].tip, meet.to);
+  const [, ...bend] = meet.curves[1].path.find(([k]) => k === "bezierCurveTo");
+  const reach = Math.max(
+    ...[0, 2].map((i) => Math.hypot(bend[i] - meet.to[0], bend[i + 1] - meet.to[1])),
+  );
+  expect(reach).toBeGreaterThan(20);
+  expect(errors).toEqual([]);
+});
+
 test("the panel heads a block and a face painting with its icon, and the settings with a dot", async ({
   page,
 }) => {

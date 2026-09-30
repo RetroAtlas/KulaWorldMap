@@ -1,5 +1,6 @@
 import { state, SIDE, BLOCK, screen, cellKey } from "./state.js";
 import { FACE_NORMAL } from "./data.js";
+import { bow, arrow } from "./arrow.js";
 
 // A survey mark hangs below the block, where a decoded marker never goes, so
 // the two readings of the same cell can be compared at a glance.
@@ -61,45 +62,36 @@ export function drawRails(ctx, c, ghost, moving) {
   }
 }
 
-// Where a teleporter leads is a line in its colour from where it stands to
+// Where a teleporter leads is an arrow in its colour from where it stands to
 // where it sends the ball, off the faces at about the height of the thing,
-// with a head at the far end, since a ring is gone round one way. It is broken
-// while the teleporter is switched off, as a dark beam is.
+// since a ring is gone round one way. The curve is drawn on the screen between
+// the two ends, and loops where one stands in front of the other. It is broken
+// while the teleporter is switched off.
 const LINK_HOVER = 0.3;
+const LINK_RIM = "rgba(9 13 20 / 0.8)";
 export function drawLink(ctx, from, to, colour, dark) {
   const at = (c) => {
     const n = FACE_NORMAL[c.face];
     return screen(...[c.x, c.y, c.z].map((v, i) => v + 0.5 + n[i] * (0.5 + LINK_HOVER)));
   };
-  const [px, py] = at(from);
-  const [qx, qy] = at(to);
-  const len = Math.hypot(qx - px, qy - py);
-  const head = Math.max(6, 9 * state.cam.zoom);
-  const [ux, uy] = len > head ? [(qx - px) / len, (qy - py) / len] : [0, 0];
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  const block = state.cam.zoom * BLOCK;
+  const width = clamp(block / 16, 1.75, 3);
+  const head = clamp(block / 3, 9, 15);
+  const curve = bow(...at(from), ...at(to), { min: 2 * head, loop: 3 * head });
   ctx.save();
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  for (const [ink, width] of [
-    ["rgba(9 13 20 / 0.85)", 4.5],
-    [colour, 2],
+  for (const [ink, rim] of [
+    [LINK_RIM, 3],
+    [colour, 0],
   ]) {
     ctx.strokeStyle = ink;
     ctx.fillStyle = ink;
-    ctx.lineWidth = width;
-    ctx.setLineDash(dark ? [6, 5] : []);
-    ctx.beginPath();
-    ctx.moveTo(px, py);
-    ctx.lineTo(qx - ux * head * 0.8, qy - uy * head * 0.8);
-    ctx.stroke();
-    if (!ux && !uy) continue;
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(qx, qy);
-    ctx.lineTo(qx - ux * head - uy * head * 0.5, qy - uy * head + ux * head * 0.5);
-    ctx.lineTo(qx - ux * head + uy * head * 0.5, qy - uy * head - ux * head * 0.5);
-    ctx.closePath();
-    ctx.fill();
-    if (width > 2) ctx.stroke();
+    ctx.lineWidth = width + rim;
+    ctx.setLineDash(dark ? [2 * width, 4 * width] : []);
+    arrow(ctx, curve, head);
+    if (rim) ctx.stroke();
   }
   ctx.restore();
 }
