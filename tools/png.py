@@ -1,8 +1,5 @@
-"""Minimal PNG writer, and the squeeze that goes over what it writes.
-
-No third-party dependencies. `oxipng` is used where it is on PATH, which is
-what the committed images are compressed with; without it the file is still
-correct, only larger.
+"""Minimal PNG writer, with `oxipng` run over what it writes where it is on PATH;
+without it the file is still correct, only larger.
 """
 import shutil
 import struct
@@ -12,8 +9,7 @@ from pathlib import Path
 
 
 def write_png(path, w, h, rgba):
-    """RGBA in, and RGB out wherever the alpha channel says nothing, since it is
-    a quarter of the pixels and every committed image is opaque."""
+    """RGBA in, and RGB out wherever the alpha channel says nothing."""
     opaque = all(rgba[i] == 255 for i in range(3, len(rgba), 4))
     px, bpp, colour = (_drop_alpha(rgba), 3, 2) if opaque else (rgba, 4, 6)
 
@@ -40,8 +36,6 @@ def _drop_alpha(rgba):
 
 
 def optimise(path):
-    """Compress in place, and say nothing where the tool is not installed: a
-    build that cannot squeeze an image still has to produce it."""
     if not shutil.which("oxipng"):
         return
     subprocess.run(["oxipng", "-q", "-o", "max", "--strip", "safe", str(path)], check=False)

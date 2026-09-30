@@ -11,24 +11,20 @@
 A record is a block, and it ends with its cell: a kind word, six 32-byte
 slots, 32 bytes that are never set, 26 bytes of extras, and then the three
 words of the cell it stands on. The cell that opens each 256-byte stretch
-therefore closes the record before it; reading it as the head of the record
-that follows pairs every block with the cell one slot behind, and the lattice
-cross-check cannot catch that, because the cells themselves stay in order;
-only play tells the two apart.
+therefore closes the record before it, and the lattice cross-check passes
+under either framing.
 
 A slot is [kind, type, eleven fields, pad, value, pad]. The six are the six
 faces of the block, in the order the game numbers directions: -z, +x, +y, -y,
--x, +z. A slot whose type is not zero is an object standing on that face, so
-a block carries up to six, and one whose top is bare is not empty. The kind
-word is set in the first slot only. It is the block's, and a few kinds do not
-carry objects in their first two slots: a laser or a rail names its two ends
-there, with the type the direction from the block to the far end numbered as
-above, a rail keeping which end it starts from, its length in blocks and its
-speed in the second, and kind 6 keeps a fixed-point copy of its own cell.
-Whatever the other slots of those kinds hold is not in play: every walk the
-game makes over the records for the things on them takes a record of a kind
-below 5 and no other, so an object on a platform, a crumbling, vanishing or
-laser block or the settings record is never numbered, drawn or collected.
+-x, +z. A slot whose type is not zero is an object standing on that face, and
+a block whose top is bare is not empty. The kind word is set in the first slot
+only. It is the block's, and a few kinds do not carry objects in their first
+two slots: a laser or a rail names its two ends there, with the type the
+direction from the block to the far end numbered as above, a rail keeping
+which end it starts from, its length in blocks and its speed in the second,
+and kind 6 keeps a fixed-point copy of its own cell. Whatever the other slots
+of those kinds hold is not in play: the game takes the things on a record of
+a kind below 5 and no other.
 
 A lattice cell holds one of five plain block styles below 5, or 5 + i for a
 block carrying record i. The record repeats the cell's own coordinates, which
@@ -47,11 +43,10 @@ SIDE = 34
 CELLS = SIDE ** 3
 GRID_BYTES = CELLS * 2
 EMPTY = 0xFFFF
-STYLES = 5           # 0..4 are block styles the engine draws without a record
+STYLES = 5           # block styles the engine draws without a record
 FIRST_RECORD = 5     # from here up, a cell value names the record it carries
 BLOCK_KINDS = 5      # a kind below this is a block and nothing more, and the
-                     # game's walks over the records for the things on them
-                     # take only these
+                     # only kind whose objects are in play
 RECORD = 256
 WORDS = RECORD // 2
 SLOT = 16            # words in a slot
@@ -81,7 +76,6 @@ OWN = 6              # the face a link names a laser's own record by
 
 
 def link(word):
-    """The record and face a link names, or None where the word is unset."""
     return None if word == -1 else ((word & 0xFFFF) >> 4, word & 15)
 
 
@@ -129,7 +123,6 @@ class Record:
 
     @property
     def span(self):
-        """The two cells a beam or a rail runs between."""
         f = self.f
         return (tuple(f[2:5]), tuple(f[5:8])) if self.kind in SPANS else None
 
@@ -140,9 +133,7 @@ class Record:
 
     @property
     def speed(self):
-        """A moving platform's speed in units a frame, as the level data holds it
-        before the loader scales it: the third word of its second slot, after
-        which end it starts from and how many blocks long it is."""
+        """A moving platform's speed in units a frame, before the loader scales it."""
         return self.slots[1][2] if self.kind == PLATFORM_KIND else None
 
     @property
@@ -193,8 +184,7 @@ class Level:
 
         The cross-check that matters is the first: a cell that names a record
         is named back by it. Nothing else pins the two representations
-        together, and several size-based readings of this format fit a few
-        levels and then come apart.
+        together.
         """
         bad = []
         for x, y, z, v in self.cells:

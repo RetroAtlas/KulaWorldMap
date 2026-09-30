@@ -1,8 +1,5 @@
-"""Read a raw PS1 disc image (.bin, 2352-byte sectors) as an ISO9660 filesystem.
-
-Roll Away lays its data out one directory per theme, so files are addressed by
-their full path rather than by name alone.
-"""
+"""Read a raw PS1 disc image (.bin) as an ISO9660 filesystem, each file keyed by
+its full path."""
 import struct
 
 SECTOR_RAW = 2352

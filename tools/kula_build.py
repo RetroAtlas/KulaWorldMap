@@ -28,9 +28,8 @@ FINAL_LEVELS = 2
 
 
 def shown_as(theme, pack, index):
-    """The number the game's pause screen gives a level, which is not read
-    from the pack: the routine at 0x800478dc computes world * 15 + slot + 1
-    for the arcade levels and world * 2 + slot + 151 for The Final."""
+    """The number the game's pause screen gives a level, which the game
+    computes rather than reads from the pack."""
     w = THEMES.index(theme)
     if pack.upper() == f"/{theme}/{theme}.PAK" and index < WORLD_LEVELS:
         return f"LEVEL {WORLD_LEVELS * w + index + 1}"
