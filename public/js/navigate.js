@@ -93,8 +93,8 @@ export function chip() {
   const score = levelScore(l);
   if (score !== null) parts.push(`<span class="sep">·</span>${score} of ${points} points`);
   else if (points) parts.push(`<span class="sep">·</span>${points} points`);
-  if (l.camera?.time !== undefined)
-    parts.push(`<span class="sep">·</span><span class="t">time ${l.camera.time}</span>`);
+  if (l.time !== undefined)
+    parts.push(`<span class="sep">·</span><span class="t">time ${l.time}</span>`);
   if (sliceZ() > l.min[2]) parts.push(`<span class="sep">·</span>sliced to z\u2265${sliceZ()}`);
   $("chipLine").innerHTML = parts.join("");
   if (noted === l) return;

@@ -45,7 +45,7 @@ const claims = [
   ["distinct types", types.size, /\*\*(\d+) distinct object types\*\*/],
   [
     "levels at time 99",
-    mapData.levels.filter((l) => l.camera.time === 99).length,
+    mapData.levels.filter((l) => l.time === 99).length,
     /99 on (\d+) of the 230 levels/,
   ],
   ["catalogue objects", objectsOf([catalogue]).length, /object catalogue: (\d+) objects and/],

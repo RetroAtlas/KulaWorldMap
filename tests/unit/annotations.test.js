@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { mapData, annotations, levelKey, CAMERA_KIND } from "./fixtures.js";
+import { mapData, annotations, levelKey } from "./fixtures.js";
 import { state } from "../../public/js/state.js";
 import { setAnnotations, levelPoints, levelScore, fieldIndex } from "../../public/js/data.js";
 
@@ -28,7 +28,7 @@ test("every annotated world names a world", () => {
 });
 
 test("every annotated kind, type and variant is placed somewhere", () => {
-  const kinds = new Set([String(CAMERA_KIND)]);
+  const kinds = new Set();
   const objects = new Map();
   for (const l of mapData.levels) {
     for (let i = 3; i < l.cells.length; i += 4) {

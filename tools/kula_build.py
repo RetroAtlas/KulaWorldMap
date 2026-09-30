@@ -43,7 +43,6 @@ def level_json(L, theme, pack, index):
     for x, y, z, v in L.cells:
         cells += [x, y, z, v]
     (x0, x1), (y0, y1), (z0, z1) = L.extent() or ((0, 0), (0, 0), (0, 0))
-    t = L.trailer
     out = {
         "name": L.name,
         "theme": theme,
@@ -55,7 +54,7 @@ def level_json(L, theme, pack, index):
         "max": [x1, y1, z1],
         "cells": cells,
         "records": [r.as_dict() for r in L.records],
-        "camera": {"look": [t.type, t.f[0], t.f[1]], "angle": [t.f[2], t.f[3]], "time": t.f[4]},
+        "time": L.trailer.f[4],
     }
     shown = shown_as(theme, pack, index)
     if shown:
@@ -104,7 +103,7 @@ def main():
     cells = sum(len(l["cells"]) // 4 for l in levels)
     records = sum(len(l["records"]) for l in levels)
     objs = sum(len(r["on"]) for l in levels for r in l["records"])
-    print(f"cross-check: {checked} cell/record pairs agree, {len(levels)} camera records found")
+    print(f"cross-check: {checked} cell/record pairs agree, {len(levels)} level times found")
     print(f"{len(levels)} levels, {cells} placed cells, {records} records carrying {objs} objects "
           f"-> {OUT.relative_to(OUT.parent.parent.parent)} ({OUT.stat().st_size/1024:.0f} KB)")
 

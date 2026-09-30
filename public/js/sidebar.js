@@ -28,7 +28,6 @@ const SHOWN = [
   ["showBase", "base"],
   ["showFaces", "faces"],
   ["showHidden", "hidden"],
-  ["showStart", "start"],
 ];
 const DEFAULTS = { ...state.show };
 

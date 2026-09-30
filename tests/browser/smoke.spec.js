@@ -2858,50 +2858,6 @@ test("where the system asks for reduced motion the map opens still, and a choice
   expect(await kept()).toEqual({});
 });
 
-test("the camera target shows only on c", async ({ page }) => {
-  await page.goto("/#HIRO/0/45,35/1");
-  await settle(page);
-  await expect(page.locator("#showStart")).not.toBeChecked();
-  expect(await written(page)).not.toContain("camera target");
-  await page.keyboard.press("c");
-  await expect(page.locator("#showStart")).toBeChecked();
-  expect(await written(page)).toContain("camera target");
-});
-
-test("the settings hold the camera target, which keeps its key", async ({ page }) => {
-  await page.goto("/#HIRO/0/45,35/1");
-  await settle(page);
-  const panel = page.locator("#settings");
-  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
-  await expect(panel.locator("#showStart")).toHaveCount(1);
-  await expect(page.locator("#display #showStart")).toHaveCount(0);
-  await expect(panel).toBeHidden();
-  await page.keyboard.press("c");
-  await page.locator("#settingsBtn").click();
-  await expect(panel).toBeVisible();
-  await expect(page.locator("#settings .x")).toBeFocused();
-  await expect(page.locator("#showStart")).toBeChecked();
-  await expect(panel.locator(".def")).toHaveText(["off by default"]);
-  await panel.getByText("Camera target").click();
-  await expect(page.locator("#showStart")).not.toBeChecked();
-  await expect(panel.locator(".def")).toHaveText([""]);
-  expect(await written(page)).not.toContain("camera target");
-  await panel.getByText("Camera target").click();
-  expect(await written(page)).toContain("camera target");
-  expect(await kept()).toEqual({ start: true });
-  await page.keyboard.press("Escape");
-  await expect(panel).toBeHidden();
-  await expect(page.locator("#settingsBtn")).toBeFocused();
-  // the display's reset puts back what is under its heading, and no setting
-  await page.keyboard.press("l");
-  await page.keyboard.press("x");
-  await page.locator("#resetDisplay").click();
-  expect(await kept()).toEqual({ start: true });
-  await page.reload();
-  await settle(page);
-  await expect(page.locator("#showStart")).toBeChecked();
-});
-
 test("a switch clicked leaves the keys to the map, and the slider keeps its own", async ({
   page,
 }) => {
@@ -3008,7 +2964,7 @@ test("every switch's key is the one its row shows and the key list names", async
   expect(rows.map((r) => r.id).sort()).toEqual(
     [
       ...["showSkins", "showObjects", "showModels", "showMotion", "showThrough", "showLabels"],
-      ...["showOutlines", "showBase", "panMode", "showFaces", "showHidden", "showStart"],
+      ...["showOutlines", "showBase", "panMode", "showFaces", "showHidden"],
     ].sort(),
   );
   const keys = rows.map((r) => r.key);

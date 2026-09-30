@@ -19,7 +19,7 @@ export function describeLevel(l) {
   const score = levelScore(l);
   if (score !== null) parts.push(`${score} of ${points} points`);
   else if (points) parts.push(`${points} points`);
-  if (l.camera?.time !== undefined) parts.push(`time ${l.camera.time}`);
+  if (l.time !== undefined) parts.push(`time ${l.time}`);
   const note = levelNote(l);
   return parts.join(", ") + (note ? `. ${note}` : ".");
 }

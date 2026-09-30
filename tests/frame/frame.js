@@ -47,7 +47,6 @@ const PARTS = {
   paintPick: "pick",
   drawRails: "overlays",
   drawBase: "overlays",
-  drawLook: "overlays",
   drawScale: "overlays",
   drawLink: "overlays",
   outline: "overlays",

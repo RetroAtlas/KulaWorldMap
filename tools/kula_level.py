@@ -5,7 +5,8 @@
     i16             0, or -1 on sixteen levels
     u16             record count
     record[count]   256 bytes each, starting right after the count
-    trailer         the same shape, kind 666: a cell, two angles, the time
+    trailer         the same shape, kind 666: the level's time in f6, and a
+                    cell and two numbers the game never reads
     3 x 0xFFFF      where the trailer's cell would go
 
 A record is a block, and it ends with its cell: a kind word, six 32-byte

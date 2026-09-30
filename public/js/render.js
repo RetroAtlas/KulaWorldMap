@@ -28,7 +28,7 @@ import { lookOf } from "./skins.js";
 import { drawBeams } from "./beams.js";
 import { atlasFor } from "./atlas.js";
 import { drawBlock, cube, outline, covers } from "./blocks.js";
-import { drawRails, drawBase, drawLook, drawScale, drawMark, drawLink } from "./overlays.js";
+import { drawRails, drawBase, drawScale, drawMark, drawLink } from "./overlays.js";
 import { drawThing, quietAmongModels, thingDisc } from "./things.js";
 import { drawCompass } from "./compass.js";
 import { deviceLights } from "./lights.js";
@@ -293,7 +293,6 @@ export function draw() {
     outline(ctx, to, idx, markerColour(m), [4, 3]);
     drawLink(ctx, from, to, markerColour(m), markerNow(m) === "off");
   }
-  if (state.show.start && l.camera) drawLook(ctx, l);
   drawScale(ctx);
   if (spinning && (state.show.motion || effectsOn())) animate();
 }

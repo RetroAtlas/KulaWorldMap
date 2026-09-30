@@ -352,9 +352,6 @@ addEventListener("keydown", (e) => {
     case "x":
       toggle("showThrough");
       break;
-    case "c":
-      toggle("showStart");
-      break;
     case "h":
       toggle("showHidden");
       break;

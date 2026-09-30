@@ -40,7 +40,6 @@ const HELP = [
   ["g", "ground grid"],
   ["p", "drag pans instead of turning"],
   ["s", "settings"],
-  ["c", "camera target, in the settings"],
   ["/", "search"],
   ["m", "show and hide the sidebar"],
   ["Esc", "close, or clear the selection"],

@@ -1,4 +1,4 @@
-import { state, SIDE, BLOCK, screen, cellKey } from "./state.js";
+import { state, BLOCK, screen, cellKey } from "./state.js";
 import { FACE_NORMAL } from "./data.js";
 import { bow, arrow } from "./arrow.js";
 
@@ -95,25 +95,6 @@ export function label(ctx, text, x, y, colour) {
   ctx.strokeText(text, x, y);
   ctx.fillStyle = colour;
   ctx.fillText(text, x, y);
-}
-
-const LOOK_HOVER = 18 / BLOCK;
-
-export function drawLook(ctx, l) {
-  const p = l.camera.look;
-  if (!p.every((v) => v >= 0 && v < SIDE)) return;
-  const colour = "#ffcf6f";
-  const [px, y] = screen(p[0] + 0.5, p[1] + 0.5, p[2] - LOOK_HOVER);
-  ctx.strokeStyle = colour;
-  ctx.fillStyle = colour;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(px, y, Math.max(5, 8 * state.cam.zoom), 0, 7);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(px, y, Math.max(2, 3 * state.cam.zoom), 0, 7);
-  ctx.fill();
-  label(ctx, "camera target", px + Math.max(9, 12 * state.cam.zoom), y + 4, colour);
 }
 
 export function drawBase(ctx, l) {

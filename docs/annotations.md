@@ -50,10 +50,6 @@ A beam between two cells, named in the record's own fields rather than drawn bet
 
 The last record on 160 levels, and the one kind no lattice cell ever names, so the engine's walk over the level does not reach it. The loader reads its first slot as the level's settings: a type of 1 marks a hidden level, which draws its blocks half-transparent and the glass ball, and is 1 on exactly the ten; a first field of 1 turns round how invisible blocks show, on LEVEL 106 to 108, 110 and 111, SIMON 9 and HIDDEN 8, which kind 3 has. It stands on an empty cell on 114 of the 160. Its other slots hold objects like any block's, 65 of them on 49 levels, and they are not in play: counted, they would push 27 levels past the walkthrough's maximum, LEVEL 24 by a fruit and LEVEL 142 by two gems, where without them those levels are exact. So the slots read as a block deleted in the editor with its faces left as they were, and the build ships the record without them. [level-format.md](level-format.md) has the addresses.
 
-### kind 666: Camera
-
-The record every level ends with, and the one that stands on no cell: where its cell would be, the disc writes three `0xFFFF`. It carries a cell for the camera to look at, two angles, and a number that is 99 on 218 of the 230 levels and lower on the other twelve, which reads as the level's time. It ships as the level's `camera` rather than as a record, so the viewer draws it as the camera target and never shows this entry's note.
-
 ## Object types
 
 ### type 1: Fire

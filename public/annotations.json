@@ -71,10 +71,6 @@
     "9": {
       "name": "Level settings",
       "note": "Not a block but the level's settings, kept where a block would be, often on an empty cell. They say whether the level is a hidden one. On a few levels they also let invisible blocks show from far away and fade as the ball comes near."
-    },
-    "666": {
-      "name": "Camera",
-      "note": "Where the level's camera looks, and from what angles, with the level's time."
     }
   },
   "types": {

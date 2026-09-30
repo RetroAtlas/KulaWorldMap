@@ -27,7 +27,6 @@ export const state = {
     labels: false,
     faces: false,
     base: false,
-    start: false,
     hidden: false,
     skins: true,
     outlines: false,

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapData, annotations, levelKey, CAMERA_KIND, UNPLACED_KIND } from "./fixtures.js";
+import { mapData, annotations, levelKey, TRAILER_KIND, UNPLACED_KIND } from "./fixtures.js";
 import { fieldIndex } from "../../public/js/data.js";
 
 const FACES = 6;
@@ -44,7 +44,7 @@ test("a record is a block carrying up to six objects, one to a face", () => {
     for (const r of l.records) {
       const where = `${l.name} record at ${at(r)}`;
       for (const c of [r.x, r.y, r.z]) assert.ok(c >= 0 && c < mapData.side, where);
-      assert.notEqual(r.kind, CAMERA_KIND, where);
+      assert.notEqual(r.kind, TRAILER_KIND, where);
       assert.ok(r.on.length <= FACES, `${where} carries ${r.on.length}`);
       assert.equal(new Set(r.on.map((o) => o.face)).size, r.on.length, `${where} doubles a face`);
       for (const o of r.on) {
@@ -117,15 +117,9 @@ test("the extent is the extent of the cells", () => {
   }
 });
 
-test("the camera looks at a cell of the lattice", () => {
-  for (const l of mapData.levels) {
-    assert.ok(l.camera, `${l.name} has no camera`);
-    assert.equal(l.camera.look.length, 3, `${l.name}`);
-    for (const c of l.camera.look)
-      assert.ok(c >= 0 && c < mapData.side, `${l.name}: ${l.camera.look}`);
-    assert.equal(l.camera.angle.length, 2, `${l.name}`);
-    assert.ok(Number.isInteger(l.camera.time), `${l.name}: time ${l.camera.time}`);
-  }
+test("every level has a time of whole seconds, at most 99", () => {
+  for (const l of mapData.levels)
+    assert.ok(Number.isInteger(l.time) && l.time > 0 && l.time <= 99, `${l.name}: time ${l.time}`);
 });
 
 test("the game numbers the levels it shows a number for straight through the worlds", () => {

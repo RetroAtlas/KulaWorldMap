@@ -95,19 +95,7 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
         pressedAt(motion, m, home, l),
       )
     : null;
-  drawObject(
-    ctx,
-    m,
-    c,
-    model,
-    motion,
-    frame,
-    phase,
-    round,
-    l.camera?.time ?? 0,
-    going,
-    pushed?.height,
-  );
+  drawObject(ctx, m, c, model, motion, frame, phase, round, l.time ?? 0, going, pushed?.height);
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(where, m.face, OBJECT_HOVER);
     const dark = switchedOff(m) ? " · off" : "";

@@ -2,7 +2,7 @@
 
 ## What and why
 
-Time Trial plays the arcade levels against a target time per level, Easy, Medium and Hard, and the manual dares the player to beat the creators' own. Those targets are the one number per level the map does not show beside the time it has, and they are not in the level record: the trailer holds the look-at, two angles and the time and nothing else on all 230 levels (measured 2026-09-15, `tools/kula_faces.py --kind 666`). So they are in the executable, computed or packed.
+Time Trial plays the arcade levels against a target time per level, Easy, Medium and Hard, and the manual dares the player to beat the creators' own. Those targets are the one number per level the map does not show beside the time it has, and they are not in the level record: the trailer holds the time, and a cell and two numbers the game never reads, and nothing else on all 230 levels (measured 2026-09-15, `tools/kula_faces.py --kind 666`). So they are in the executable, computed or packed.
 
 ## Sketch
 
