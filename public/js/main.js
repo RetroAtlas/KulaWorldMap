@@ -64,8 +64,8 @@ function showAbout() {
     <p>Blocks wear the game's own textures, painted face by face and shaded as the game does
     it, and the objects are the game's own models in its own colours, standing on the faces the
     game puts them on and moving at its pace.</p>
-    <p>The game never names its objects; the names here were settled against the disc and in
-    play, with Syonyx's Roll Away walkthrough (GameFAQs, 2006) as a guide. What the Japanese and
+    <p>The game never names its objects; the names here were settled against the game's data and
+    in play, with Syonyx's Roll Away walkthrough (GameFAQs, 2006) as a guide. What the Japanese and
     PAL releases changed comes from The Cutting Room Floor's Roll Away page. Anything still
     unnamed shows the number the game gives it.</p>
     <p><a href="https://github.com/RetroAtlas/KulaWorldMap">Source and tooling</a> &middot;
