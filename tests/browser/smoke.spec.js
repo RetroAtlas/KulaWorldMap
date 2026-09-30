@@ -2858,6 +2858,57 @@ test("where the system asks for reduced motion the map opens still, and a choice
   expect(await kept()).toEqual({});
 });
 
+/** The map's colour where the game's camera stands as the level opens. */
+const atEye = (page) =>
+  page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state, screen }, { startCamera }] = await Promise.all(
+      ["state.js", "overlays.js"].map(at),
+    );
+    const [x, y] = screen(...startCamera(state.lvl).eye);
+    const cv = document.getElementById("cv");
+    const k = cv.width / cv.clientWidth;
+    return [...cv.getContext("2d").getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data];
+  });
+const amber = ([r, g, b]) => r > 200 && g > 150 && b < 150;
+
+test("the settings hold the start camera, which keeps its key", async ({ page }) => {
+  await page.goto("/#HIRO/0/45,35/1");
+  await settle(page);
+  const panel = page.locator("#settings");
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
+  await expect(panel.locator("#showCamera")).toHaveCount(1);
+  await expect(page.locator("#display #showCamera")).toHaveCount(0);
+  await expect(panel).toBeHidden();
+  expect(amber(await atEye(page))).toBe(false);
+  await page.keyboard.press("c");
+  await expect.poll(async () => amber(await atEye(page))).toBe(true);
+  await page.locator("#settingsBtn").click();
+  await expect(panel).toBeVisible();
+  await expect(page.locator("#settings .x")).toBeFocused();
+  await expect(page.locator("#showCamera")).toBeChecked();
+  await expect(panel.locator(".def")).toHaveText(["off by default"]);
+  await panel.getByText("Start camera").click();
+  await expect(page.locator("#showCamera")).not.toBeChecked();
+  await expect(panel.locator(".def")).toHaveText([""]);
+  await expect.poll(async () => amber(await atEye(page))).toBe(false);
+  await panel.getByText("Start camera").click();
+  await expect.poll(async () => amber(await atEye(page))).toBe(true);
+  expect(await kept()).toEqual({ camera: true });
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(page.locator("#settingsBtn")).toBeFocused();
+  // the display's reset puts back what is under its heading, and no setting
+  await page.keyboard.press("l");
+  await page.keyboard.press("x");
+  await page.locator("#resetDisplay").click();
+  expect(await kept()).toEqual({ camera: true });
+  await page.reload();
+  await settle(page);
+  await expect(page.locator("#showCamera")).toBeChecked();
+  await expect.poll(async () => amber(await atEye(page))).toBe(true);
+});
+
 test("a switch clicked leaves the keys to the map, and the slider keeps its own", async ({
   page,
 }) => {
@@ -2964,7 +3015,7 @@ test("every switch's key is the one its row shows and the key list names", async
   expect(rows.map((r) => r.id).sort()).toEqual(
     [
       ...["showSkins", "showObjects", "showModels", "showMotion", "showThrough", "showLabels"],
-      ...["showOutlines", "showBase", "panMode", "showFaces", "showHidden"],
+      ...["showOutlines", "showBase", "panMode", "showFaces", "showHidden", "showCamera"],
     ].sort(),
   );
   const keys = rows.map((r) => r.key);
@@ -3008,54 +3059,6 @@ test("Display puts the game's own look first, then what the map adds, then the c
     ["showThrough", "showLabels", "showFaces", "showOutlines", "showBase"],
     ["panMode", "slice", "showHidden"],
   ]);
-});
-
-/** Give Settings a switch before the page wires it, as a setting of its own would. */
-const aSetting = (page) =>
-  page.addInitScript(() => {
-    new MutationObserver((_, seen) => {
-      const box = document.querySelector("#settings .box");
-      if (!box) return;
-      seen.disconnect();
-      box.insertAdjacentHTML(
-        "beforeend",
-        '<section><label class="check"><input type="checkbox" id="probe" /> Probe <span class="def"></span></label></section>',
-      );
-    }).observe(document, { childList: true, subtree: true });
-  });
-
-test("Settings says settings will appear there while it holds none", async ({ page }) => {
-  await page.goto("/#HIRO/0");
-  await settle(page);
-  const panel = page.locator("#settings");
-  await page.locator("#settingsBtn").click();
-  await expect(panel).toBeVisible();
-  await expect(panel).toContainText("Settings will appear here.");
-  await expect(panel.locator("input")).toHaveCount(0);
-  await page.keyboard.press("Escape");
-  await expect(panel).toBeHidden();
-  await expect(page.locator("#settingsBtn")).toBeFocused();
-});
-
-test("a switch in Settings says its default while it is set away from it", async ({ page }) => {
-  await aSetting(page);
-  await page.goto("/#HIRO/0");
-  await settle(page);
-  const panel = page.locator("#settings");
-  await page.keyboard.press("s");
-  await expect(panel).toBeVisible();
-  await expect(panel.locator(".x")).toBeFocused();
-  await expect(panel.locator(".def")).toHaveText([""]);
-  await panel.getByText("Probe").click();
-  await expect(panel.locator(".def")).toHaveText(["off by default"]);
-  await panel.getByText("Probe").click();
-  await expect(panel.locator(".def")).toHaveText([""]);
-  await page.keyboard.press("Escape");
-  await expect(panel).toBeHidden();
-  await page.locator("#settingsBtn").click();
-  await expect(panel).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.locator("#settingsBtn")).toBeFocused();
 });
 
 test("the settings fit a phone, over the drawer they open from", async ({ page }) => {

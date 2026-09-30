@@ -1,5 +1,5 @@
 import { state, BLOCK, screen, cellKey } from "./state.js";
-import { FACE_NORMAL } from "./data.js";
+import { FACE_NORMAL, startsOf, markerHeading, cross } from "./data.js";
 import { bow, arrow } from "./arrow.js";
 
 export function drawMark(ctx, m, c) {
@@ -95,6 +95,71 @@ export function label(ctx, text, x, y, colour) {
   ctx.strokeText(text, x, y);
   ctx.fillStyle = colour;
   ctx.fillText(text, x, y);
+}
+
+// The game's view at rest, in its own units: pitched down from the ball's
+// heading, the middle of the face under the ball below the view's middle and
+// ahead of the eye, on a screen given as its half-width and half-height over its
+// distance.
+const PITCH = (250 / 4096) * 2 * Math.PI;
+const BELOW = 250 / 512;
+const AHEAD = 800 / 512;
+const HALF_WIDE = 160 / 160;
+const HALF_HIGH = 120 / 160;
+
+const along = (p, ...terms) => terms.reduce((q, [k, v]) => q.map((c, i) => c + k * v[i]), p);
+
+/** Where the game's camera stands as the level opens, and the corners of what
+    it sees at the depth of the face under the ball. */
+export function startCamera(l) {
+  const [start] = startsOf(l);
+  const heading = start && markerHeading(start);
+  if (!heading) return null;
+  const up = FACE_NORMAL[start.face];
+  const right = cross(heading, up);
+  const [c, s] = [Math.cos(PITCH), Math.sin(PITCH)];
+  const ahead = along([0, 0, 0], [c, heading], [-s, up]);
+  const down = along([0, 0, 0], [-c, up], [-s, heading]);
+  const under = along([start.x + 0.5, start.y + 0.5, start.z + 0.5], [0.5, up]);
+  const eye = along(under, [-AHEAD, ahead], [-BELOW, down]);
+  const sees = [
+    [-1, -1],
+    [1, -1],
+    [1, 1],
+    [-1, 1],
+  ].map(([x, y]) =>
+    along(eye, [AHEAD, ahead], [x * AHEAD * HALF_WIDE, right], [y * AHEAD * HALF_HIGH, down]),
+  );
+  return { eye, sees };
+}
+
+export function drawCamera(ctx, l) {
+  const camera = startCamera(l);
+  if (!camera) return;
+  const corners = camera.sees.map((p) => screen(...p));
+  const [ex, ey] = screen(...camera.eye);
+  const colour = "#ffcf6f";
+  ctx.save();
+  ctx.strokeStyle = colour;
+  ctx.fillStyle = colour;
+  ctx.lineWidth = 1.5;
+  ctx.globalAlpha = 0.12;
+  ctx.beginPath();
+  corners.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.stroke();
+  ctx.beginPath();
+  for (const [x, y] of corners) {
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(ex, ey, Math.max(3, 3 * state.cam.zoom), 0, 7);
+  ctx.fill();
+  ctx.restore();
 }
 
 export function drawBase(ctx, l) {

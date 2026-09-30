@@ -28,6 +28,7 @@ export const state = {
     faces: false,
     base: false,
     hidden: false,
+    camera: false,
     skins: true,
     outlines: false,
     note: true,

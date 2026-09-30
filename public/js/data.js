@@ -245,7 +245,9 @@ export function ballFor(l) {
 }
 export const startsOf = (l) =>
   l.records.flatMap((r) =>
-    r.on.filter((o) => STARTS.has(o.type)).map((o) => ({ x: r.x, y: r.y, z: r.z, face: o.face })),
+    r.on
+      .filter((o) => STARTS.has(o.type))
+      .map((o) => ({ x: r.x, y: r.y, z: r.z, face: o.face, type: o.type, f: o.f })),
   );
 /** Null for a thing the game draws on the face; `form` names the form to draw
     of a thing that changes in play. */

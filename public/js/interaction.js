@@ -352,6 +352,9 @@ addEventListener("keydown", (e) => {
     case "x":
       toggle("showThrough");
       break;
+    case "c":
+      toggle("showCamera");
+      break;
     case "h":
       toggle("showHidden");
       break;

@@ -28,6 +28,7 @@ const SHOWN = [
   ["showBase", "base"],
   ["showFaces", "faces"],
   ["showHidden", "hidden"],
+  ["showCamera", "camera"],
 ];
 const DEFAULTS = { ...state.show };
 

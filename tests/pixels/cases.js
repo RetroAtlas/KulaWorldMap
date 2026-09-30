@@ -75,6 +75,7 @@ const FLIPS = {
   labels: { labels: true },
   faces: { labels: true, faces: true },
   base: { base: true },
+  camera: { camera: true },
   hidden: { hidden: true },
   markersLabelled: { models: false, labels: true },
   markersThrough: { models: false, through: true, labels: true },
@@ -86,6 +87,7 @@ const FLIPS = {
     faces: true,
     through: true,
     base: true,
+    camera: true,
     hidden: true,
   },
   bare: { skins: false, objects: false },
@@ -169,7 +171,7 @@ for (const name of ["L1", "LESSON", "OBJ", "B15", "H3", "L94", "F6", "H10"]) {
   add(`H/${name}/v3`, name, V3, { dpr: 2, show: { through: true } });
 }
 add("H/LESSON/select", "LESSON", V1, { dpr: 2, select: "things", hover: "plain" });
-add("H/OBJ/flat", "OBJ", V1, { dpr: 2, show: { skins: false, base: true } });
+add("H/OBJ/flat", "OBJ", V1, { dpr: 2, show: { skins: false, base: true, camera: true } });
 
 // I: circuits turned over, beams and devices together, and what travels
 // meeting the beams it finds changed
