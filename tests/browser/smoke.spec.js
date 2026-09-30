@@ -3010,6 +3010,54 @@ test("Display puts the game's own look first, then what the map adds, then the c
   ]);
 });
 
+/** Give Settings a switch before the page wires it, as a setting of its own would. */
+const aSetting = (page) =>
+  page.addInitScript(() => {
+    new MutationObserver((_, seen) => {
+      const box = document.querySelector("#settings .box");
+      if (!box) return;
+      seen.disconnect();
+      box.insertAdjacentHTML(
+        "beforeend",
+        '<section><label class="check"><input type="checkbox" id="probe" /> Probe <span class="def"></span></label></section>',
+      );
+    }).observe(document, { childList: true, subtree: true });
+  });
+
+test("Settings says settings will appear there while it holds none", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const panel = page.locator("#settings");
+  await page.locator("#settingsBtn").click();
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText("Settings will appear here.");
+  await expect(panel.locator("input")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(page.locator("#settingsBtn")).toBeFocused();
+});
+
+test("a switch in Settings says its default while it is set away from it", async ({ page }) => {
+  await aSetting(page);
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const panel = page.locator("#settings");
+  await page.keyboard.press("s");
+  await expect(panel).toBeVisible();
+  await expect(panel.locator(".x")).toBeFocused();
+  await expect(panel.locator(".def")).toHaveText([""]);
+  await panel.getByText("Probe").click();
+  await expect(panel.locator(".def")).toHaveText(["off by default"]);
+  await panel.getByText("Probe").click();
+  await expect(panel.locator(".def")).toHaveText([""]);
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await page.locator("#settingsBtn").click();
+  await expect(panel).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#settingsBtn")).toBeFocused();
+});
+
 test("the settings fit a phone, over the drawer they open from", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 700 });
   await page.goto("/#HIRO/0");
