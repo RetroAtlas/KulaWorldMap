@@ -22,20 +22,14 @@ import { phasesOf, phaseField, pose, orbit, press, inReach } from "./motion.js";
 import { label } from "./overlays.js";
 import { NEUTRAL } from "./atlas.js";
 
-// The types the game draws on the face and nowhere else, so that once the
-// face is painted the marker would say the same thing twice; and so would a
-// marker for a record's own kind, once its block is painted.
+// The types the game draws on the face and nowhere else. The paint says what
+// their marker would, as a block's does for a record's own kind.
 const FACE_ONLY = new Set([1, 2, 8]);
 const paintSays = (m) => m.face === null || FACE_ONLY.has(m.type);
 
-/** Whether a marker is left out among the models: where the paint says what it
-    would, and for the settings, which have neither mesh nor paint, anywhere but
-    on the selected block. */
 export const quietAmongModels = (m, painted, selected) =>
   markerGroup(m) === "settings" ? !selected : painted && paintSays(m);
 
-/** The disc a thing at a cell covers on the screen, as its centre and radius:
-    as wide as its model, about the model's middle, or its marker. */
 export function thingDisc(m, where, l) {
   const model = state.show.models ? markerModel(m, l) : null;
   let p, r;
@@ -50,18 +44,14 @@ export function thingDisc(m, where, l) {
   return [p[0], p[1], r];
 }
 
-/** Whether a device a switch toggles is drawn off. */
 const switchedOff = (m) => markerNow(m) === "off";
 
-// What reacts to the ball reacts to where it touches its face: the ball at
-// the level's start, and the block under the pointer and the one selected,
-// each as the ball on the face of that block that looks the same way as the
-// face that reacts, which is as near as a block can say. Positions are in the
-// game's units.
+// A face reacts to the ball at the level's start, and to a ball on the face of
+// the hovered and the selected block that looks the same way. Positions are in
+// the game's units.
 const point = (c, face, off) =>
   [c.x, c.y, c.z].map((v, i) => (v + 0.5) / modelUnit() + FACE_NORMAL[face][i] * off);
 const starts = new WeakMap();
-/** Where the balls a face looking the way of `face` reacts to touch theirs. */
 export function ballsFor(l, face) {
   const half = 0.5 / modelUnit();
   if (!starts.has(l))
@@ -73,20 +63,14 @@ export function ballsFor(l, face) {
   return [...starts.get(l), ...pointed.map((c) => point(c, face, half))];
 }
 
-// A boost button is pressed by a ball within its reach of where it stands.
 const pressedAt = (motion, m, home, l) =>
   ballsFor(l, m.face).some((b) => inReach(motion, b, point(home, m.face, 0.5 / modelUnit())));
 
-/** An object as itself where it has a mesh and the display asks for it, else
-    its marker; on a moving platform the cell is where the platform is, and
-    a thing that travels brings where it has got to and which way it faces,
-    its marker and its label going with it. Says whether it moves by the
-    next frame. */
+/** Returns whether the thing moves by the next frame. */
 export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
   if (state.hiddenKinds.has(m.id)) return false;
   const motion = state.show.models ? motionOf(m) : null;
-  // the game starts a pickup's angles at random and an entry's at zero, so
-  // the things of one type that travel turn in step
+  // the game starts a pickup's angles at random and an entry's at zero
   const phase = !motion
     ? null
     : motion.entry
@@ -133,21 +117,15 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
   return pushed ? pushed.moving : !!motion;
 }
 
-// An object is its mesh stood on its face: the model's y runs along the face's
-// outward normal, its z along the way the thing points where it has one, and
-// its lowest vertex sits just off the face, save that a thing the game keeps an
-// entry of its own for stands where the game draws it. What moves in play moves
-// here at the game's rate, from the table the build read off the executable,
-// about those same axes; a thing that bobs is stood its bob's reach higher so
-// that it never dips into its face, and a device switched off stands still
-// at the angle it has turned to, as it does in play. The polygons are filled
-// back to front in their own colours, since the shading is baked into them,
-// and both sides are drawn, since the meshes wind their faces either way.
-const GAP = 0.03; // between a thing and its face, in blocks
-const GLASS = 0.55; // how much a translucent polygon covers
+// A model's y runs along its face's outward normal and its z the way the thing
+// points. Its lowest vertex sits just off the face, but a thing the game keeps
+// an entry of its own for stands where the game draws it, and a thing that
+// bobs stands its bob's reach higher so that it never dips into its face. Both
+// sides of a polygon are drawn, since the meshes wind their faces either way.
+const GAP = 0.03;
+const GLASS = 0.55;
 // The rolling stone's axle is its model's z, which lies across the way it
-// rolls, so it stands a quarter turn from the way its facing gives and rolls
-// about that axle with its top going the way it travels.
+// rolls, so it stands a quarter turn from its facing.
 const STONE = 51;
 const ACROSS = 0.25;
 
@@ -189,7 +167,6 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
       }
       about[1] += round.turn;
     }
-    // held still, a model that runs through its frames shows the furthest its cycle reaches
     const held = motion.cycle && !state.show.motion;
     shown = model.frames[held ? Math.max(...motion.cycle[phaseField(m)]) : p.frame] || shown;
   }
@@ -211,9 +188,8 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
     sx = Math.sin(about[0] * Math.PI * 2);
   const cz = Math.cos(about[2] * Math.PI * 2),
     sz = Math.sin(about[2] * Math.PI * 2);
-  // A polygon is sorted by the depth it has unpressed, so that a model pressed
-  // flat keeps the order of its layers, the top one over the rest, where
-  // their depths would otherwise tie and trade places as the view turns.
+  // A polygon sorts by its unpressed depth, so a model pressed flat keeps the
+  // order of its layers rather than letting their tied depths trade places.
   const n = shown.length / 3;
   const polys = polygonsOf(model);
   const { spots, depths, far } = scratch(n, polys.length);
@@ -258,11 +234,8 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
   }
 }
 
-// A model's polygons fill and run the same way in every frame, so each is
-// worked out once: its colour, the mean of its corners', and the order its
-// outline runs. A quad's corners come two edges at a time, 0-1 and 2-3, so
-// its outline runs 0, 1, 3, 2; traced in index order it is a bow-tie with
-// two holes.
+// A quad's corners come two edges at a time, 0-1 and 2-3, so its outline runs
+// 0, 1, 3, 2.
 const polygons = new WeakMap();
 function polygonsOf(model) {
   if (!polygons.has(model)) {
@@ -286,10 +259,8 @@ function polygonsOf(model) {
   return polygons.get(model);
 }
 
-// A thing's polygons, furthest first, and where two are as far as each other
-// in the model's own order. A thing turns little from one frame to the next,
-// so its order from the last frame is all but sorted and is where each sort
-// starts.
+// Furthest first, ties in the model's order. Each sort starts from the last
+// frame's order, which is all but sorted.
 const orders = new WeakMap();
 function backToFront(m, model, far) {
   let last = orders.get(m);
@@ -308,9 +279,6 @@ function backToFront(m, model, far) {
   return order;
 }
 
-// Where a model's corners land on the screen, how far off they are and how
-// far off each polygon is, kept from one model to the next rather than made
-// afresh for each.
 const buffers = {
   spots: new Float64Array(0),
   depths: new Float64Array(0),
@@ -325,14 +293,8 @@ function scratch(corners, polys) {
   return buffers;
 }
 
-// A marker hovers off the face its object stands on, and the hover is a
-// distance in the world rather than on the screen: a screen offset does not
-// shrink as the view turns overhead, so it would carry the marker onto the
-// next block in a plan view, which is the one view a reader uses to say which
-// block is which. A record that is its own thing hovers over the top.
 const OBJECT_HOVER = 8 / BLOCK;
 
-/** The world point off the centre of one of a cell's faces. */
 function at(c, face, hover = 0) {
   const n = FACE_NORMAL[face];
   const d = 0.5 + hover;
@@ -340,8 +302,6 @@ function at(c, face, hover = 0) {
 }
 const off = (c, face, hover = 0) => screen(...at(c, face, hover));
 
-// The way a thing points is drawn as a stroke from its marker, in the world
-// rather than on the screen, so it turns with the view.
 const FACING_REACH = 0.45;
 function drawFacing(ctx, m, c, face, colour) {
   const d = markerFacing(m);
@@ -367,11 +327,6 @@ function drawFacing(ctx, m, c, face, colour) {
   ctx.fill();
 }
 
-// A marker stands for one thing: an object on a face, or a record of a kind
-// that is more than a block. Colour tells the two apart, and the number is the
-// type or the kind, of which there are too many for an encoding a reader could
-// hold, so the marker says it outright once it has the room. A device
-// switched off is drawn hollow.
 function drawMarker(ctx, m, c) {
   if (state.hiddenKinds.has(m.id)) return;
   const face = m.face ?? 0;
@@ -418,14 +373,11 @@ function drawMarker(ctx, m, c) {
   ctx.restore();
 }
 
-// The game's shadow is a square laid on the face under the thing, textured
-// with one of its sprites and taken away from what is behind it, as strong as
-// its colour over neutral. A canvas cannot subtract, so the square's box is
-// turned over, the sprite added and the box turned back, which leaves each
-// pixel what the sprite takes off it and never less than nothing, where the
-// pixel was opaque. It is drawn only on the map's own canvas, which is opaque
-// before anything is drawn on it; dropping it on faces turned away, as the
-// game does, keeps it off the see-through layer, which starts transparent.
+// The game's shadow is a sprite taken away from what is behind it. A canvas
+// cannot subtract, so the box is turned over, the sprite added and the box
+// turned back, which is exact where the pixel was opaque: the map's own canvas
+// is, and a shadow is dropped on a face turned away, as the game drops it, so
+// it never reaches the see-through layer.
 const sprites = [];
 function spriteOf(k) {
   const rows = shadowSprites()?.[k];
