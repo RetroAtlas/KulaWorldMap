@@ -236,6 +236,9 @@ export const lightOnAt = (m, every, frame) =>
 const SWITCH = 9;
 /** Whether a marker is a switch, whose press turns its circuit over. */
 export const isSwitch = (m) => m.face !== null && m.type === SWITCH;
+/** The colour the map gives a circuit, which its switches wear, or null where none is named. */
+export const circuitColour = (circuit) =>
+  ann.types[String(SWITCH)]?.variants?.[String(circuit)]?.colour ?? null;
 // A teleporter names the one it sends the ball to by that one's record, times
 // sixteen, plus its face.
 const TELEPORTER = 5;

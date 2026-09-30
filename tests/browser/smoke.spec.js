@@ -1587,6 +1587,48 @@ test("a beam switched off is one of the outlines, and a beam that is on is drawn
   expect(errors).toEqual([]);
 });
 
+test("a beam switched off is one broken line in the colour its switches wear, as heavy as an outline", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#ATLANT/13");
+  await settle(page);
+  await page.keyboard.press("b");
+  const { worn, dark, weight } = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { drawBeams }, { outline }, data] = await Promise.all(
+      ["state.js", "beams.js", "blocks.js", "data.js"].map(at),
+    );
+    const worn = {};
+    for (const marks of state.idx.markers.values())
+      for (const m of marks)
+        if (data.isSwitch(m)) worn[data.markerCircuit(m)] = data.markerColour(m);
+    const g = document.createElement("canvas").getContext("2d");
+    let lines = [];
+    const stroke = g.stroke;
+    g.stroke = (...a) => {
+      lines.push([g.strokeStyle, g.getLineDash().length > 0, g.lineWidth]);
+      stroke.apply(g, a);
+    };
+    g.fill = () => lines.push(["fill"]);
+    const dark = [];
+    for (const c of state.idx.beamCells.values()) {
+      for (const b of c.beams) {
+        if (data.litNow(b.ray)) continue;
+        lines = [];
+        drawBeams(g, { ...c, beams: [b] }, false, 0);
+        dark.push({ circuit: b.ray.colour, lines });
+      }
+    }
+    lines = [];
+    outline(g, state.idx.cells.values().next().value, state.idx, "#ffffff", [3, 3]);
+    return { worn, dark, weight: lines[0][2] };
+  });
+  expect(dark.length).toBeGreaterThan(0);
+  for (const { circuit, lines } of dark) expect(lines).toEqual([[worn[circuit], true, weight]]);
+  expect(errors).toEqual([]);
+});
+
 test("a thing on a face turned away shows where no block covers it, and x shows the rest", async ({
   page,
 }) => {

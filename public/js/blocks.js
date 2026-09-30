@@ -355,11 +355,16 @@ export function covers(c, x, y) {
   });
 }
 
-export function outline(ctx, c, idx, colour, dash = []) {
-  ctx.save();
+/** Sets the stroke the map's outlines are drawn with, its dashes scaled to the zoom. */
+export function outlineStroke(ctx, colour, dash = []) {
   ctx.strokeStyle = colour;
   ctx.lineWidth = 1.6;
   ctx.setLineDash(dash.map((d) => d * Math.max(0.5, state.cam.zoom)));
+}
+
+export function outline(ctx, c, idx, colour, dash = []) {
+  ctx.save();
+  outlineStroke(ctx, colour, dash);
   const s = state.cam.zoom * BLOCK;
   const [ox, oy] = screen(c.x, c.y, c.z);
   for (const f of FACES) {

@@ -1,10 +1,13 @@
 import { state, screen, effectsOn } from "./state.js";
-import { kindMotion, litNow } from "./data.js";
+import { kindMotion, litNow, circuitColour } from "./data.js";
 import { seed } from "./hash.js";
+import { outlineStroke } from "./blocks.js";
 
 const BEAM_KIND = 8;
 const BLOCK = 512; // the game's units to a block
 const INK = [232, 238, 251];
+const DARK_DASH = [5, 3]; // at a zoom of one
+const DARK_ALPHA = 0.85;
 const WHITE = [8, 8, 8]; // a colour for a circuit the game gives none
 // Which side of the axis each of the four lines sits, on the two axes across it.
 const SIDES = [
@@ -21,8 +24,8 @@ const SIDES = [
 // behind, in its circuit's channels times a level the line steps through on
 // its own, from a start the game draws at random and the map hashes from the
 // beam's first cell. A dark beam, which the game does not draw, is one of the
-// map's outlines, drawn broken, its dashes carried across the cells so it
-// reads as one line.
+// map's outlines: a broken line down its middle in the colour the map gives
+// its circuit, its dashes carried across the cells so it reads as one line.
 
 /** Draws the stretches of beam through one cell, and says whether any is to
     change by the next frame. */
@@ -42,31 +45,30 @@ export function drawBeams(ctx, c, ghost, frame) {
       return screen(...p);
     };
     const reach = (beam?.reach ?? BLOCK / 2) / BLOCK;
-    const nozzle = (beam?.nozzle ?? 0) / BLOCK;
-    const half = (beam?.width ?? 0) / 2 / BLOCK;
-    const sides = beam ? SIDES : [[0, 0]];
+    const [p, q] = [at(-reach, 0, 0), at(reach, 0, 0)];
     ctx.save();
-    if (!lit || !beam) {
-      const rgb = beam ? tint(beam, ray, Math.max(...beam.levels)) : INK;
-      const p = at(-reach, 0, 0);
-      const q = at(reach, 0, 0);
-      ctx.strokeStyle = `rgb(${rgb.join(" ")})`;
+    ctx.globalAlpha = ghost ? 0.16 : 1;
+    if (!lit) {
+      outlineStroke(ctx, circuitColour(ray.colour) ?? `rgb(${INK.join(" ")})`, DARK_DASH);
+      ctx.globalAlpha *= DARK_ALPHA;
+      ctx.lineDashOffset = k * Math.hypot(q[0] - p[0], q[1] - p[1]);
+      line(ctx, p, q);
+      ctx.restore();
+      continue;
+    }
+    if (!beam) {
+      ctx.strokeStyle = `rgb(${INK.join(" ")})`;
       ctx.lineWidth = Math.max(1, 1.2 * state.cam.zoom);
-      ctx.globalAlpha = (ghost ? 0.16 : 1) * (lit ? 1 : 0.45);
-      if (!lit) {
-        ctx.setLineDash([4 * state.cam.zoom, 4 * state.cam.zoom]);
-        ctx.lineDashOffset = k * Math.hypot(q[0] - p[0], q[1] - p[1]);
-      }
-      for (const [su, sv] of sides)
-        line(ctx, at(-reach, su * nozzle, sv * nozzle), at(reach, su * nozzle, sv * nozzle));
+      line(ctx, p, q);
       ctx.restore();
       continue;
     }
     live = true;
+    const nozzle = (beam.nozzle ?? 0) / BLOCK;
+    const half = (beam.width ?? 0) / 2 / BLOCK;
     ctx.globalCompositeOperation = beam.add ? "lighter" : "source-over";
-    ctx.globalAlpha = ghost ? 0.16 : 1;
     ctx.lineWidth = 1;
-    sides.forEach(([su, sv], n) => {
+    SIDES.forEach(([su, sv], n) => {
       // held still, every line stands at its brightest
       const level = effectsOn()
         ? beam.levels[(seed(...ray.a, n) + Math.floor(frame) * beam.step) % beam.levels.length]
