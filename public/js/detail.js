@@ -33,7 +33,7 @@ import { draw, clock } from "./render.js";
 let stats = null;
 
 const row = (k, v) => `<tr><td>${k}</td><td class="mono">${v}</td></tr>`;
-const STORED = `<tr><th colspan="2">on the disc</th></tr>`;
+const STORED = `<tr><th colspan="2">raw data</th></tr>`;
 const HAZARD = `<span class="tag">Hazard</span>`;
 
 const ICON = 26;
