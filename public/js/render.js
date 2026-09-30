@@ -36,8 +36,7 @@ import { deviceLights } from "./lights.js";
 const cv = $("cv");
 const ctx = cv.getContext("2d");
 
-// A second canvas painted with one flat colour per cell, so a click can be
-// resolved by reading a pixel rather than by intersecting every cube. It is
+// A canvas painted one flat colour per cell and read back to hit-test a point,
 // painted from the cells of the draw it goes stale at.
 const pickCv = document.createElement("canvas");
 const pick = pickCv.getContext("2d", { willReadFrequently: true });
@@ -45,24 +44,21 @@ let pickStale = true;
 let pickFrom = null;
 let pickList = [];
 const pickColour = (id) => `rgb(${id & 255} ${(id >> 8) & 255} ${(id >> 16) & 255})`;
-// What travels moves every frame, so while the pointer is over the map the
-// pick is painted again with every frame that moves anything. While it is
-// pressed, turning the view or panning it, nothing reads the pick until it
-// lifts, so the pick waits for the hit test that reads it.
+// While anything travels, the pick goes stale every frame the pointer is over
+// the map; while the pointer is pressed nothing reads the pick, so it waits for
+// the hit test that does.
 let pointerIn = false;
 let pressed = false;
-/** Say whether the pointer is over the map. */
 export const pointing = (on) => {
   pointerIn = on;
 };
-/** Say whether the pointer is pressed on the map. */
 export const pressing = (on) => {
   pressed = on;
 };
 
 // What shows through the blocks is drawn whole on a layer of its own and laid
 // over the map at once, so a faint thing does not show its own far side
-// through its near one, and where nothing is in front of it, it shows as it is.
+// through its near one.
 const layerCv = document.createElement("canvas");
 const layer = layerCv.getContext("2d");
 
@@ -74,8 +70,6 @@ export function resize() {
   const dpr = Math.min(devicePixelRatio || 1, 2);
   const w = cv.clientWidth,
     h = cv.clientHeight;
-  // A zero size means the page is not laid out; keeping the old one leaves
-  // something sane to draw with rather than dividing by nothing.
   if (!w || !h) return;
   if (state.view.w === w && state.view.h === h && state.view.dpr === dpr) return;
   state.view = { w, h, dpr };
@@ -95,11 +89,6 @@ export const onResize = (fn) => {
   resized.push(fn);
 };
 
-// The canvas resizes for reasons no window event reports: the sidebar slides
-// over 180ms, the pane changes, the page zooms. Measuring on a timer after any
-// of those catches an intermediate width and leaves the backing store scaled
-// against the element, which puts the picture and the pointer on different
-// grids. Watching the element itself is the only reading that cannot go stale.
 new ResizeObserver(() => resize()).observe(cv);
 
 on("atlas-loaded", () => {
@@ -108,13 +97,10 @@ on("atlas-loaded", () => {
 });
 
 const PLATFORM = 5;
-const THROUGH = 0.35; // how much of a thing shows through the blocks in front of it
-/** Whether a thing stands on a face turned away from the view. */
+const THROUGH = 0.35;
 const away = (face) => face !== null && face !== undefined && !facing(FACE_NORMAL[face]);
 
-/** The cells to draw, blocks and the stretches of beam and of a platform's
-    route between them, back to front. A moving platform's blocks, on the
-    move, are drawn where its run has them and sort there. */
+/** What to draw, back to front. */
 function visible(idx, moving) {
   const out = [];
   for (const cells of [idx.cells, idx.beamCells, idx.railCells]) {
@@ -125,8 +111,7 @@ function visible(idx, moving) {
       if (r?.kind !== PLATFORM) {
         out.push(c);
         // A thing on a face turned away from the view sorts as the cell it
-        // stands in, which is behind its block, so that its block hides what
-        // it covers of the thing and no more.
+        // stands in, behind its block, so the block hides only what it covers.
         if (cells !== idx.cells) continue;
         for (const m of idx.markers.get(key) || []) {
           if (!away(m.face)) continue;
@@ -142,12 +127,10 @@ function visible(idx, moving) {
       );
     }
   }
-  // A thing on its way across blocks is drawn where it is, right after the
-  // nearest of the blocks it stands over, so that neither the block it is
-  // leaving nor the one it is coming onto is painted over it, while what is
-  // nearer still comes in front. On a face turned away from the view it sorts
-  // as the furthest of the cells it stands in, so every block it stands over
-  // comes in front of it.
+  // A travelling thing sorts just in front of the nearest block it stands
+  // over, so neither the block it leaves nor the one it rolls onto paints over
+  // it. On a face turned away from the view it sorts behind the furthest, so
+  // every block it stands over comes in front.
   if (moving) {
     for (const going of moving.values()) {
       const { w, offset } = going;
@@ -168,11 +151,8 @@ function visible(idx, moving) {
   return out;
 }
 
-// Everything that moves runs on its level's own clock, which starts at the
-// level's first frame as the level opens or motion is turned on, as play's
-// does, and stands at that frame while motion is off. A draw starts the
-// level's run, or ends it, before it reads the clock; starting it keeps every
-// circuit as it is turned, and what travels starts where the level puts it.
+// The level's clock starts at its first frame as the level opens or motion is
+// turned on, as play's does, and stands there while motion is off.
 let run = null;
 function syncRun() {
   const table = motionTable();
@@ -183,15 +163,11 @@ function syncRun() {
   }
 }
 
-/** The frame of the level's clock everything that moves is drawn at, which
-    is the first until a draw starts the level's run. */
 export const clock = () =>
   run && state.show.motion && run.level === state.lvl
     ? frameAt(motionTable(), performance.now()) - run.at
     : 0;
 
-/** Where what travels has got to by a frame of the level's clock, stepped
-    one game frame at a time, or null while the clock stands. */
 function travelling(l, idx, frame) {
   if (!run) return null;
   if (!run.travel) {
@@ -246,12 +222,7 @@ export function draw() {
   const lights = atlas ? deviceLights(l, idx, effect) : null;
   if (lights?.on) spinning = true;
   const scene = { l, idx, tint, skins, atlas, look, frame, effect, edges, lights: lights?.lit };
-  // A thing on a face turned away from the view is drawn again once every
-  // block is down, faintly, where the display asks to see it through them,
-  // and on the selected block whatever the display says.
   const through = [];
-  // A survey mark goes over every block, as the other overlays do, so that no
-  // nearer block hides it.
   const noted = [];
   const chosen = state.selected?.key;
   const put = (...t) => {
@@ -315,7 +286,6 @@ export function draw() {
     ctx.restore();
   }
   for (const [m, c] of noted) drawMark(ctx, m, c);
-  // where a selected teleporter leads goes over everything, as a mark does
   for (const m of idx.markers.get(chosen) || []) {
     const to = markerDestination(m, l);
     const from = { ...state.selected, face: m.face };
@@ -328,10 +298,8 @@ export function draw() {
   if (spinning && (state.show.motion || effectsOn())) animate();
 }
 
-// The things that turn in play turn here, which means drawing again every
-// frame while any is on screen, motion or the effects are on and the page is
-// looked at; the frame is cheap enough, and the loop ends itself when there
-// is nothing left turning.
+// Set by a draw with anything moving on screen, which then asks for the next
+// frame.
 let spinning = false;
 let queuedFrame = 0;
 function animate() {
@@ -346,13 +314,12 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) draw();
 });
 
-/** Draw the view as it now stands, or leave it to the frame already asked
-    for, which draws it before anything reaches the screen. */
+/** Draw, unless a frame already asked for will draw before anything reaches
+    the screen. */
 export function drawSoon() {
   if (!queuedFrame) draw();
 }
 
-/** Whether a cell is too far off the canvas for anything of it to show. */
 function offScreen(c) {
   const [px, py] = screen(c.x, c.y, c.z);
   const r = BLOCK * state.cam.zoom * 2;
@@ -360,9 +327,6 @@ function offScreen(c) {
   return px < -r || px > w + r || py < -r || py > h + r;
 }
 
-/** Paint the pick from the cells of the draw it went stale at, back to front
-    as the draw laid them, a moving platform's blocks where they were drawn,
-    each as its record's cell. */
 function paintPick() {
   const { cells, l } = pickFrom;
   pickFrom = null;
@@ -382,9 +346,8 @@ function paintPick() {
   }
 }
 
-/** Paint a travelling thing into the pick where it has got to, as the cell it
-    started from, which holds its record. A survey marks the block under the
-    pointer, so there it is left out. */
+/** A travelling thing picks as the cell it started from, which holds its
+    record. A survey marks blocks, so it leaves travellers out. */
 function pickGoing(going, home, l) {
   const m = going.w.m;
   if (state.hiddenKinds.has(m.id) || state.survey.on) return;
@@ -406,7 +369,7 @@ function pickGoing(going, home, l) {
 // anywhere on the map. A colour read around a point only proposes a cell:
 // the point takes the frontmost of those, the last the pick painted, whose
 // shape covers the middle of the pixel it falls in, or failing that its rim.
-const AROUND = 2; // how far, in the pick's pixels, the colours proposed are read
+const AROUND = 2;
 const TRIES = [
   [0.5, 0.5],
   [0, 0],
@@ -421,14 +384,11 @@ const TRIES = [
 const shows = (e, x, y) =>
   e.disc ? Math.hypot(x - e.disc[0], y - e.disc[1]) <= e.disc[2] : covers(e.at, x, y);
 
-/** The cell under a client point, or null. */
 export function cellAt(cx, cy) {
   if (pickStale) draw();
   if (pickFrom) paintPick();
-  // Read the scale off the two canvases rather than assuming it is the device
-  // ratio. Whenever the backing store and the element disagree the browser
-  // stretches one onto the other, and a hit test that assumed otherwise would
-  // land further from the pointer the further it got from the centre.
+  // The backing store and the element can disagree, so the scale is read off
+  // both rather than taken as the device ratio.
   const kx = pickCv.width / Math.max(1, cv.clientWidth);
   const ky = pickCv.height / Math.max(1, cv.clientHeight);
   const px = Math.round(cx * kx),
