@@ -1,5 +1,4 @@
-// The social card is a real render of a real level, posed by this script so it
-// can be redrawn whenever the renderer or the palette changes.
+// Renders the social card from a level of the map.
 //
 //     npx playwright install --with-deps chromium
 //     node tools/ogcard.js
@@ -12,7 +11,7 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const PORT = 8481;
 const W = 1200;
 const H = 630;
-const LEVEL = 30; // FINAL 1, whose lattice reads as a solid from every angle
+const LEVEL = 30; // FINAL 1
 
 const server = spawn("python3", ["-m", "http.server", String(PORT), "-d", "public"], {
   cwd: ROOT,
@@ -21,9 +20,8 @@ const server = spawn("python3", ["-m", "http.server", String(PORT), "-d", "publi
 
 try {
   const browser = await chromium.launch();
-  // The map opens with Motion off for a visitor who asks for reduced motion,
-  // every thing where and as the level starts it, so the card comes out the
-  // same on every run.
+  // Reduced motion opens the map held still, so the card comes out the same on
+  // every run.
   const page = await browser.newPage({
     viewport: { width: W, height: H },
     deviceScaleFactor: 1,
@@ -52,7 +50,6 @@ try {
     state.cam.zoom *= 0.78;
     state.cam.panX = -6.4;
     state.cam.panY = 2.1;
-    // a pose rather than a fit, which a resize leaves where it is
     state.framing = null;
     state.show.labels = false;
     state.show.start = false;
@@ -73,7 +70,7 @@ try {
     const g = cv.getContext("2d");
     const d = state.view.dpr;
     g.setTransform(d, 0, 0, d, 0, 0);
-    // the scale bar the map draws for itself has no business on a card
+    // over the scale bar the map draws
     g.fillStyle = "#111725";
     g.fillRect(0, 470, cv.width, cv.height);
     g.font = "600 52px ui-sans-serif, system-ui, sans-serif";
@@ -91,7 +88,6 @@ try {
 
   await page.locator("#cv").screenshot({ path: join(ROOT, "public", "og-image.png") });
   await browser.close();
-  // the same squeeze tools/png.py puts over everything else it writes
   spawnSync("oxipng", ["-q", "-o", "max", "--strip", "safe", join(ROOT, "public", "og-image.png")]);
   console.log(`public/og-image.png  ${W}x${H}`);
 } finally {
