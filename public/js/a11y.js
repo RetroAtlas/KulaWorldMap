@@ -18,7 +18,7 @@ export function describeLevel(l) {
   if (n) parts.push(counted(n, "object"));
   const points = levelPoints(l);
   const score = levelScore(l);
-  if (score !== null) parts.push(`${score} points, ${points} on the disc`);
+  if (score !== null) parts.push(`${score} of ${points} points`);
   else if (points) parts.push(`${points} points`);
   if (l.camera?.time !== undefined) parts.push(`time ${l.camera.time}`);
   const note = levelNote(l);

@@ -1073,6 +1073,18 @@ test("arriving somewhere is spoken, and names the map with it", async ({ page })
   await expect(page.locator("#say")).toContainText("LEVEL 2");
 });
 
+test("a level that holds more than can be scored gives its best out of all it holds", async ({
+  page,
+}) => {
+  await page.goto("/#FIELD/16");
+  await settle(page);
+  await expect(page.locator("#chipLine")).toContainText("19050 of 23525 points");
+  await expect(page.locator("#chipNote")).toHaveText(/^The level holds 4475 more points, /);
+  await expect(page.locator("#say")).toContainText(
+    "19050 of 23525 points, time 99. The level holds 4475 more points, ",
+  );
+});
+
 test("the legend lists the objects the chip counts, every kind of block but the plain one, and the settings apart", async ({
   page,
 }) => {
