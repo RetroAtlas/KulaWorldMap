@@ -26,18 +26,16 @@ const redraw = () => {
   drawSoon();
 };
 
-const ORBIT = 0.42; // degrees per pixel dragged
-const CLICK = 5; // how far a press may wander and still be a click
+const ORBIT = 0.42;
+const CLICK = 5;
 
 let drag = null;
 let moved = 0;
-// Where the pointer rests over the map, in client coordinates, since the
-// canvas can move under it.
+// In client coordinates, since the canvas can move under a still pointer.
 let pointer = null;
 
-// Moving the camera on purpose leaves it where it is put rather than framed
-// again as the canvas resizes. A press that has not wandered past a click has
-// moved it by accident.
+// A camera moved on purpose stops being framed; a press that has not wandered
+// past a click moved it by accident.
 function hold() {
   if (!drag || moved >= CLICK) state.framing = null;
 }
@@ -100,7 +98,6 @@ cv.addEventListener("pointerleave", () => {
   drawSoon();
 });
 
-/** Hover the cell under a client point, and say whether it is another. */
 function hoverAt({ x, y }) {
   const r = cv.getBoundingClientRect();
   const c = cellAt(x - r.left, y - r.top);
@@ -143,7 +140,6 @@ export function setYaw(deg) {
   writeHash();
 }
 
-/** Frame the level in the window again, and keep it framed. */
 function refit() {
   fit();
   redraw();
@@ -152,26 +148,21 @@ function refit() {
 }
 
 $("fitBtn").onclick = refit;
-// nothing in the corner means anything until a level is on screen
 on("level-changed", () => {
   $("corner").hidden = false;
 });
-// the button rests while the view is framed as a press would leave it
 on("view-changed", () => {
   $("fitBtn").classList.toggle("fitted", state.framing === fit);
 });
 
-// A level changed under a still pointer takes the cell it named with it,
-// and the next move names one of the new level's.
+// A level changed under a still pointer names no cell until the pointer moves.
 on("level-changed", () => {
   tip.hidden = true;
   pointer = null;
 });
 
-// Written at most once a frame, however often the camera or the pointer
-// moves it. Where the camera moved under a still pointer, the cell now under
-// it is hovered first, so the readout names that one; a press leaves the pick
-// unpainted until it lifts, and the cell waits for it.
+// Where the camera moved under a still pointer, the cell under it is hovered
+// first; a press leaves the pick unpainted, so that waits for the lift.
 let readoutQueued = 0;
 let repick = false;
 function readoutSoon() {
@@ -251,7 +242,6 @@ export function zoomAt(px, py, factor) {
   writeHash();
 }
 
-// Two fingers pinch to zoom and slide to pan; one finger orbits, handled above.
 let touch = null;
 const spread = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
 const middle = (t) => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
