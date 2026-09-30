@@ -478,6 +478,107 @@ test("the catalogue's own note reaches the catalogue", async ({ page }) => {
   await expect(page.locator("#chip .note")).toContainText("object catalogue");
 });
 
+test("a level's note folds away and back with a click on the chip, or with its keys", async ({
+  page,
+}) => {
+  await page.goto("/#MARS/12");
+  await settle(page);
+  const fold = page.getByRole("button", { name: /^LEVEL 133/ });
+  const note = page.locator("#chipNote");
+  await expect(fold).toHaveAttribute("aria-expanded", "true");
+  await expect(fold).toHaveAttribute("aria-controls", "chipNote");
+  await expect(note).toContainText("Japanese release");
+  await fold.click();
+  await expect(fold).toHaveAttribute("aria-expanded", "false");
+  await expect(note).toBeHidden();
+  await expect(page.locator("#detail")).toBeHidden();
+  // folded, the chip is back to the one row it shares with the menu button
+  const [chip, menu] = await Promise.all(
+    ["#chip", "#menuBtn"].map((s) => page.locator(s).boundingBox()),
+  );
+  expect(chip.height).toBe(menu.height);
+  await page.keyboard.press("Enter");
+  await expect(fold).toHaveAttribute("aria-expanded", "true");
+  await expect(note).toBeVisible();
+  await page.keyboard.press(" ");
+  await expect(fold).toHaveAttribute("aria-expanded", "false");
+  await expect(fold).toBeFocused();
+});
+
+test("a note folded stays folded from level to level and from one visit to the next", async ({
+  page,
+}) => {
+  await page.goto("/#MARS/12");
+  await settle(page);
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
+  const title = page.locator("#chip b");
+  const fold = page.locator("#chipBtn");
+  const note = page.locator("#chipNote");
+  await fold.click();
+  expect(await kept()).toEqual({ note: false });
+  await page.keyboard.press("]");
+  await expect(title).toHaveText("LEVEL 134");
+  await expect(fold).toHaveAttribute("aria-expanded", "false");
+  await expect(note).toBeHidden();
+  await page.keyboard.press("]");
+  await expect(title).toHaveText("LEVEL 135");
+  await expect(fold).toBeHidden();
+  await expect(page.locator("#cv")).toBeFocused();
+  await page.keyboard.press("[");
+  await expect(title).toHaveText("LEVEL 134");
+  await expect(fold).toHaveAttribute("aria-expanded", "false");
+  await page.reload();
+  await settle(page);
+  await expect(fold).toHaveAttribute("aria-expanded", "false");
+  await expect(note).toBeHidden();
+  // the Display's reset puts back what is under its own heading
+  await page.locator("#resetDisplay").click();
+  await expect(note).toBeHidden();
+  expect(await kept()).toEqual({ note: false });
+  await fold.click();
+  await expect(note).toBeVisible();
+  expect(await kept()).toEqual({});
+});
+
+test("a level without a note has nothing on its chip to fold", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await expect(page.locator("#chip")).toContainText("LEVEL 1");
+  await expect(page.locator("#chip").getByRole("button")).toHaveCount(0);
+  await expect(page.locator("#chipDot")).toBeHidden();
+  await expect(page.locator("#chipNote")).toBeHidden();
+});
+
+test.describe("on a phone", () => {
+  test.use({ viewport: { width: 375, height: 700 }, isMobile: true, hasTouch: true });
+
+  test("a tap anywhere on the chip's line folds the note, and leaves the chip unlit", async ({
+    page,
+  }) => {
+    await page.goto("/#MARS/12");
+    await settle(page);
+    const fold = page.locator("#chipBtn");
+    const note = page.locator("#chipNote");
+    const menu = await page.locator("#menuBtn").boundingBox();
+    const line = await fold.boundingBox();
+    expect(line.x).toBeGreaterThan(menu.x + menu.width);
+    expect(line.x + line.width).toBeLessThanOrEqual(375);
+    expect(line.height).toBeGreaterThanOrEqual(menu.height);
+    const border = () =>
+      page.evaluate(() => getComputedStyle(document.getElementById("chip")).borderTopColor);
+    const unlit = await border();
+    // the padding round the words is the line as much as the words are
+    await fold.tap({ position: { x: 4, y: 4 } });
+    await expect(fold).toHaveAttribute("aria-expanded", "false");
+    await expect(note).toBeHidden();
+    await expect(page.locator("#detail")).toBeHidden();
+    expect(await border()).toBe(unlit);
+    await fold.tap();
+    await expect(note).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
+  });
+});
+
 test("the drawer stays dismissable on the narrowest phone", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
   await page.goto("/#HIRO/0");

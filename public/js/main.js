@@ -79,7 +79,7 @@ Promise.all([
   loadJson("objects.json", {}),
 ]).then(([data, ann, objects]) => {
   if (!data) {
-    $("chip").textContent = "The map's data could not be loaded.";
+    $("chipLine").textContent = "The map's data could not be loaded.";
     return;
   }
   setAnnotations(ann);

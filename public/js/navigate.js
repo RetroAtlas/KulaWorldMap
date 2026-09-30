@@ -79,6 +79,9 @@ export function centreOn(x, y, z) {
   state.framing = null;
 }
 
+// the level the note under the chip was written for
+let noted = null;
+
 export function chip() {
   const l = state.lvl;
   if (!l) return;
@@ -97,10 +100,33 @@ export function chip() {
     parts.push(`<span class="sep">·</span><span class="t">time ${l.camera.time}</span>`);
   if (sliceZ() > l.min[2]) parts.push(`<span class="sep">·</span>sliced to z\u2265${sliceZ()}`);
   if (score !== null) parts.push(`<span class="sep">·</span>${points} points on the disc`);
+  $("chipLine").innerHTML = parts.join("");
+  if (noted === l) return;
+  noted = l;
   const note = levelNote(l);
-  if (note) parts.push(`<div class="note">${note}</div>`);
-  $("chip").innerHTML = parts.join("");
+  $("chipNote").innerHTML = note;
+  // The line is the button that folds the note where there is one, and
+  // plain text where there is nothing to fold, which hands the focus the
+  // button held to the map.
+  if (!note && document.activeElement === $("chipBtn")) $("cv").focus();
+  $("chipBtn").hidden = !note;
+  (note ? $("chipBtn") : $("chip")).prepend($("chipLine"));
+  foldNote();
 }
+
+function foldNote() {
+  const open = state.show.note;
+  const btn = $("chipBtn");
+  btn.setAttribute("aria-expanded", String(open));
+  btn.title = open ? "Fold the note away" : "Show the note";
+  $("chipNote").hidden = btn.hidden || !open;
+}
+
+$("chipBtn").onclick = () => {
+  state.show.note = !state.show.note;
+  emit("show-changed", "note");
+  foldNote();
+};
 
 // While the hash is being read back, the camera is still at its defaults until
 // the last line of applyHash. Anything that writes the hash before then would

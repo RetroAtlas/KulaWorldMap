@@ -178,7 +178,13 @@
 
     <main class="map">
       <canvas id="cv" tabindex="0" role="img" aria-label="Level map"></canvas>
-      <div id="chip" class="chip"></div>
+      <div id="chip" class="chip">
+        <span id="chipLine" class="line"></span>
+        <button id="chipBtn" type="button" aria-expanded="true" aria-controls="chipNote" hidden>
+          <span id="chipDot" aria-hidden="true"></span>
+        </button>
+        <div id="chipNote" class="note" hidden></div>
+      </div>
       <div id="readout" class="readout mono"></div>
       <div id="tip" class="tip" hidden></div>
       <div id="detail" class="detail" hidden></div>

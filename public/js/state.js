@@ -32,6 +32,7 @@ export const state = {
     hidden: false,
     skins: true,
     outlines: false,
+    note: true, // the level's note, under the chip
   },
   hiddenKinds: new Set(),
   // the frames of the clock a switch turned each circuit over at since the

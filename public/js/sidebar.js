@@ -261,6 +261,9 @@ export function restore() {
   }
 }
 
+// a switch set away from the display is kept as the display's own are
+on("show-changed", (key) => choose(key, state.show[key], DEFAULTS[key]));
+
 // A switch that does something only while another is on is greyed while that
 // one is off, and keeps its tick for when it comes back. The slice is on while
 // it cuts into the level.
