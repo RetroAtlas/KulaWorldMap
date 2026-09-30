@@ -4,10 +4,6 @@ import { atlasFor, paint } from "./atlas.js";
 import { lookOf, faceSkin, platformPlace } from "./skins.js";
 import { FACES, SKINNED_LOOK, shadeOf, flatFace } from "./blocks.js";
 
-// A model drawn small, once, in the same three-quarter view for every one, so
-// a legend or a heading can show the thing rather than a dot beside a number.
-// The view is fixed rather than the map's, since an icon is for telling a key
-// from a coin, not for saying which way either faces.
 const DEG = Math.PI / 180;
 const YAW = 35 * DEG;
 const PITCH = 28 * DEG;
@@ -19,7 +15,6 @@ const GLASS = 0.55;
 
 const drawn = new WeakMap();
 
-/** A fresh canvas of the model, `size` CSS pixels square. */
 export function iconFor(model, size = 22) {
   let sizes = drawn.get(model);
   if (!sizes) drawn.set(model, (sizes = new Map()));
@@ -49,7 +44,6 @@ function render(model, size) {
   cv.width = cv.height = Math.round(size * dpr);
   const g = cv.getContext("2d");
   g.scale(dpr, dpr);
-  // A thing that changes shape in play is shown at its fullest.
   const frame = model.frames.reduce((a, f) => (span(f) > span(a) ? f : a));
   const [lo, hi] = bounds(frame);
   const centre = lo.map((v, i) => (v + hi[i]) / 2);
@@ -86,17 +80,15 @@ function render(model, size) {
   return cv;
 }
 
-// A block is drawn in the same view on the lattice's own axes, painted as its
-// level paints it, and what the game paints on a face as a tile facing the view.
+// A block is drawn in the same view, on the lattice's axes.
 const VIEW = basisAt(YAW / DEG, PITCH / DEG);
 const toward = (i) => dot(FACES[i].n, VIEW.toward);
 const SHOWN = FACES.map((_, i) => i).filter((i) => toward(i) > 0);
-// A laser's end shows its plate on the side turned most toward the view.
 const nearest = SHOWN.filter((i) => FACES[i].n[2] === 0).sort((a, b) => toward(b) - toward(a));
 const PLATE_FACE = FACES[nearest[0]].game;
 const TOP = FACES.findIndex((f) => f.game === 0);
-// An icon's block stands mid-lattice, so that every face's place, which the
-// game phases its cycles by, is inside the lattice.
+// Mid-lattice, so that every face's place, which the game phases its cycles
+// by, is inside the lattice.
 const MID = SIDE / 2;
 const CELL = { x: MID, y: MID, z: MID };
 const TILE_MARGIN = 3;
@@ -117,7 +109,6 @@ function canvasOf(size) {
 
 const tintOf = (l) => WORLD_TINT[l.theme] || "#93a8d4";
 
-/** What a level paints its faces with, or null until the world's textures arrive. */
 function looks(l) {
   const skins = skinsTable();
   const img = skins && atlasFor(l.theme);
@@ -126,8 +117,6 @@ function looks(l) {
   return { skins, img, look: lookOf(skins, l, world) };
 }
 
-// An invisible block pulses, and is shown at the frame its faces in view are
-// brightest, as a model that changes shape is shown at its fullest.
 function brightest(skins, look) {
   const light = (frame) =>
     SHOWN.reduce((sum, i) => {
@@ -144,11 +133,6 @@ const trace = (g, pts) => {
   g.closePath();
 };
 
-/** A fresh canvas of a block of `kind` as level `l` paints it, `size` CSS
-    pixels square, in the world's tint until its textures arrive. A platform
-    takes its axis from `r`, the block's record, and a laser's end shows its
-    plate in `plate`, the beam's colour; they default to the level's first
-    record of the kind and that record's colour. */
 export function blockIcon(
   l,
   kind,
@@ -195,7 +179,6 @@ export function blockIcon(
   return cv;
 }
 
-/** A fresh canvas of what level `l` paints on a face under a thing of `type`. */
 export function paintIcon(l, type, size = 22) {
   const { cv, g } = canvasOf(size);
   const [lo, hi] = [TILE_MARGIN, size - TILE_MARGIN];
@@ -216,9 +199,6 @@ export function paintIcon(l, type, size = 22) {
   return cv;
 }
 
-/** A marker's icon, `size` CSS pixels square: its model, or, for what has
-    none, what the game paints, the block or the face under a thing drawn on
-    it and nowhere else; null for the settings, which are neither. */
 export function markerIcon(m, l, size = 22) {
   const model = markerModel(m, l);
   if (model) return iconFor(model, size);

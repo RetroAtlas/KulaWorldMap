@@ -1,10 +1,5 @@
-// What the game paints on a face, from the table the build reads off the
-// executable: which of the world's textures, laid at how many quarter turns,
-// drawn through what colour, or nothing at all. A level says what a block is
-// and what stands on it; how that looks is a rule in the code, and this is
-// the viewer's copy of it. Where the game picks at random on every visit, a
-// stone among the world's four or the frame a fire starts on, the map hashes
-// the face's place instead, so it shows the same thing on every visit.
+// A copy of the game's rule for what it paints on a face; a level stores only
+// what a block is and what stands on it.
 import { cellKey } from "./state.js";
 import { seed } from "./hash.js";
 
@@ -16,8 +11,8 @@ const VANISHING = 7;
 const BEAM_KIND = 8;
 const PLATFORM_ROLES = ["first", "middle", "last"];
 const STONE_AT_RANDOM = -2;
-// The game numbers the six directions -z, +x, +y, -y, -x, +z: the normal of
-// each, and the two faces along each axis, the one looking down it first.
+// The normal of each of the game's six faces, and the two faces along each
+// axis, the one looking down it first.
 const NORMAL = [
   [0, 0, -1],
   [1, 0, 0],
@@ -32,14 +27,8 @@ const FACE_ALONG = [
   [0, 5],
 ];
 
-/**
- * How a level is drawn: from which of the two sets of skins, the second for
- * a level the loader finds no key on, unless the level is a hidden one or the
- * game is in the mode that plays one pack of its own, either of which puts it
- * back on the first; whether its faces are half-transparent, which the
- * settings record of a hidden level asks for; and the world's place, whose
- * parity picks a bonus level's colours.
- */
+/** A level with no key wears the bonus skins, unless it is a hidden level or
+    the pack of the mode that plays one pack of its own. */
 export function lookOf(skins, l, world) {
   const keyed = l.records.some(
     (r) => r.kind < skins.keys.kinds && r.on.some((o) => o.type === skins.keys.type),
@@ -55,7 +44,6 @@ export function lookOf(skins, l, world) {
   };
 }
 
-/** The face at each end of a beam that looks along it, in the beam's colour, by cell. */
 export function platesOf(rays) {
   const plates = new Map();
   const add = (cell, other, colour) => {
@@ -71,7 +59,6 @@ export function platesOf(rays) {
   return plates;
 }
 
-/** Where a block of a moving platform stands in its run, for the table. */
 export function platformPlace(r, k) {
   const axis = "xyz"[r.f[0] === 1 ? 0 : r.f[0] === 2 ? 1 : 2];
   const role =
@@ -101,19 +88,14 @@ export const shadowed = (skins, type) =>
   type >= skins.shadow.from && type <= skins.shadow.to && !skins.shadow.except.includes(type);
 
 /**
- * The skin of one face of a block: `tex`, the texture's number in the
- * world's atlas; `turn`, the quarter turns it is laid at; `colour`, the
- * colour it is drawn through where the game cycles one, as [r, g, b] with 128
- * the texture's own; `add` where the game adds it to what is behind; and
- * `live` where any of that changes from frame to frame. Null
- * is a face the game leaves undrawn, such as the join between a platform's
- * blocks. `kind` is the block's, `r` its record or null, `place` a platform
- * block's place in its run, and `plate` the beam colour of a plate on the
- * face, or undefined.
+ * The skin of one face: `tex`, the texture's number in the world's atlas;
+ * `turn`, the quarter turns it is laid at; `colour`, what it is drawn through
+ * where the game cycles one; `add` where the game adds it to what is behind;
+ * and `live` where any of that changes from frame to frame. Null is a face the
+ * game leaves undrawn.
  *
- * The loader's selector for a face is its block's kind where that is not
- * plain, else the type of what stands on it, else nothing, and the model it
- * draws is the selector's; the cycles run on the selector too.
+ * The game picks a face's skin by its block's kind where that has skins of its
+ * own, else by the type of what stands on it, and runs the cycles on the same.
  */
 export function faceSkin(skins, look, c, face, kind, r, frame, place, plate) {
   const set = look.set;

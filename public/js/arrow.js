@@ -1,8 +1,5 @@
-// A link from one point to another: a curve bowed off the straight way,
-// always to the same side of the way it goes, so a pair leading both ways
-// draws apart, with a filled head at the far end. It works in the canvas's
-// own units and knows nothing of what it links. A curve is a cubic, eight
-// numbers from its start to its end.
+// A curve is a cubic, eight numbers from its start to its end. It bows always
+// to the same side of the way it goes, so a pair leading both ways draws apart.
 
 // filled arrowhead at (tx, ty) pointing along (dx, dy), h long in draw units
 export function arrowhead(ctx, tx, ty, dx, dy, h) {
@@ -20,11 +17,10 @@ export function arrowhead(ctx, tx, ty, dx, dy, h) {
 }
 
 /**
- * The curve from (sx, sy) to (tx, ty): at a distance, the quadratic whose
- * control point stands off the middle of the way by `share` of its length,
- * held between `min` and `max`. As the ends close in within twice `loop` of
- * each other the bow swells, into a loop about `loop` tall where they meet, so
- * the head still comes in along something where one end is in front of the other.
+ * At a distance, the quadratic whose control point stands off the middle of
+ * the way by `share` of its length, held between `min` and `max`. As the ends
+ * close within twice `loop` of each other the bow swells, into a loop about
+ * `loop` tall where they meet.
  */
 export function bow(sx, sy, tx, ty, { share = 0.18, min = 24, max = 110, loop = 0 } = {}) {
   const dx = tx - sx,
@@ -48,7 +44,6 @@ export function bow(sx, sy, tx, ty, { share = 0.18, min = 24, max = 110, loop = 
   ];
 }
 
-/** The point `t` of the way along curve `c`. */
 export function pointAt(c, t) {
   const s = 1 - t;
   const a = s * s * s,
@@ -98,10 +93,9 @@ export function cut(c, t) {
 }
 
 /**
- * Stroke curve `c` and fill a head `h` long at its end, in the context's own
- * style. The head's base sits on the curve, and the line stops inside the head
- * so that its end does not blunt the point. The head is left as the path, and
- * the dash cleared, so the caller can stroke a rim round it.
+ * The line stops inside the head so that its end does not blunt the point.
+ * The head is left as the path, and the dash cleared, so the caller can stroke
+ * a rim round it.
  */
 export function arrow(ctx, c, h) {
   const [bx, by] = pointAt(c, fromEnd(c, h));

@@ -3,20 +3,15 @@ import { state, camera } from "./state.js";
 import { FACE_NAME, DIRECTION_NAME, skinsTable } from "./data.js";
 import { FACES, shadeOf, litFace } from "./blocks.js";
 
-// A block turned as the level is, shaded as the map shades a face, and named
-// in the panel's words: each face turned to the view on the block, and
-// beyond it, where each way points, every way the block leaves unnamed, up
-// and down among them.
-
 const cv = $("compass");
 const g = cv.getContext("2d");
 
-const EDGE = 0.4; // the block's edge, as a part of the compass's width
-const TURNED = 0.25; // how far a face must turn to the view to hold its name
+const EDGE = 0.4;
+const TURNED = 0.25;
 const GAP = 3;
-const LINE = 11; // the height a name takes
+const LINE = 11;
 const FONT = "600 11px ui-sans-serif, system-ui, sans-serif";
-const SHADES = ["#3b465b", "#55637c", "#6d7d98"]; // the textures' dark, middle and bright
+const SHADES = ["#3b465b", "#55637c", "#6d7d98"];
 const EDGES = "rgba(223 230 242 / 0.55)";
 const INK = "#dfe6f2";
 const FAINT = "rgba(163 177 198 / 0.85)";
@@ -26,8 +21,6 @@ const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
 let size = 0;
 let painted = "";
-// the names written so far in a paint, as boxes, so that a later one steps
-// out of their way
 let placed = [];
 
 new ResizeObserver(() => {
@@ -35,7 +28,6 @@ new ResizeObserver(() => {
   drawCompass();
 }).observe(cv);
 
-/** Paint the compass for the view as it now stands, unless it already shows it. */
 export function drawCompass() {
   const c = camera();
   const world = state.lvl?.theme;
@@ -69,8 +61,6 @@ export function drawCompass() {
     g.lineJoin = "round";
     g.stroke();
   }
-  // a side by the way it faces, as the panel names a side, and the top and
-  // the underside by name
   const named = new Set();
   for (const { f, toward, way } of faces) {
     if (toward < TURNED) continue;
@@ -93,9 +83,6 @@ export function drawCompass() {
   }
 }
 
-/** Write a name centred at a point, inside the compass. Where it would cross
-    one already written, it goes further along `u`, and failing that beside
-    the one it crosses, on the side it leans to. */
 function write(text, [x, y], colour, u = null) {
   g.font = FONT;
   const w = g.measureText(text).width;
