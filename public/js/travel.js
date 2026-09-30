@@ -1,39 +1,31 @@
-// What travels across blocks travels here only when the display asks, and
-// then by the rules the executable runs, frame by frame from the level's
-// start: a captivator keeps its position in the game's units, its heading and
-// its side as the game's unit vectors, and asks the lattice the game's own
-// questions at the game's own moments. A moving platform runs its rail the
-// same way. The wandering ball draws its way from the game's own dice, which
-// the game seeds as the level starts and nothing else draws from while the
-// ball stands still, so it takes the walk it takes in play.
+// The game's own rules for what travels across blocks, stepped frame by frame
+// from the level's start in the game's units and unit vectors.
 import { FACE_NORMAL, OFF_LATTICE, beams, kindMotion, platformAxis } from "./data.js";
 import { cellKey } from "./state.js";
 import { blockPhase } from "./motion.js";
 
-const UNIT = 512; // units across a block
+const UNIT = 512;
 const HALF = UNIT / 2;
-const PROBE = 400; // how far back toward the block it looks for the next one
+const PROBE = 400;
 const SLOW_STAR = 50;
 const WHEEL = 51;
 const FAST_STAR = 52;
 const WANDERER = 53;
-const GRID = 256; // it settles on a multiple of this, the middle of a cell or its edge
+const GRID = 256;
 const PLATFORM_KIND = 5;
 const CRUMBLING_KIND = 6;
 const VANISHING_KIND = 7;
 const BEAM_KIND = 8;
-const BETWEEN = -2; // what the game writes into the cells a lit beam crosses, every frame
+const BETWEEN = -2;
 const FIRST_RECORD = 5;
 const STYLES = 5;
-// Things standing on a face that a captivator may still cross: the start,
-// another captivator, and the three the game paints onto the face.
+// The types standing on a face that a captivator may still cross.
 const CROSSABLE = new Set([30, 1, 2, 4]);
 const CAPTIVATORS_FROM = 50;
 
-// The two tangents the game lays on each face, and the normal: a facing of 1
-// heads along the second, and each further value up to 4 turns a quarter
-// about the normal, the side following the heading. The game turns for those
-// three values alone, so any other heads as 1 does.
+// The two tangents the game lays on each face. A facing of 1 heads along the
+// second, and each further value up to 4 turns a quarter about the normal, the
+// side following the heading; any other heads as 1 does.
 const TANGENTS = [
   [
     [-1, 0, 0],
@@ -71,8 +63,6 @@ export function heading(face, facing) {
   ][facing >= 2 && facing <= 4 ? facing - 1 : 0];
 }
 
-/** The questions the game asks of the lattice, over the level as loaded, with
-    each beam lit or dark as `lit` says at the moment of asking. */
 export function probe(l, lit = (ray) => ray.lit) {
   const cells = new Map();
   for (let i = 0; i < l.cells.length; i += 4) {
@@ -106,7 +96,6 @@ export function probe(l, lit = (ray) => ray.lit) {
   };
   return {
     value,
-    /** Whether a captivator could stand over this cell on this face. */
     free(cell, face, frame) {
       const v = value(cell, frame);
       if (v < 0) return false;
@@ -116,9 +105,8 @@ export function probe(l, lit = (ray) => ray.lit) {
       if (r.kind === PLATFORM_KIND) return false;
       if (r.kind === CRUMBLING_KIND) return true;
       let type = r.on.find((o) => o.face === face)?.type ?? 0;
-      // A record whose first two slots are its own payload reads them as a
-      // face's object all the same: a laser's direction, a vanishing block's
-      // own lattice value, and whatever the second holds, which is not read.
+      // A laser and a vanishing block keep their own payload in their first
+      // two slots, which the game reads as a face's object all the same.
       if (r.kind === BEAM_KIND && face === 0) type = r.type;
       if (r.kind === VANISHING_KIND && face === 0) type = v;
       if ((r.kind === BEAM_KIND || r.kind === VANISHING_KIND) && face === 1) return false;
@@ -160,8 +148,6 @@ const about = (w) => {
   w.s = neg(w.s);
 };
 
-/** A captivator or platform as the game keeps it, at the level's first frame,
-    which is the frame of the clock it is made at. */
 export function walker(m, c, l, table, frame = 0) {
   const w = {
     m,
@@ -211,10 +197,8 @@ export function walker(m, c, l, table, frame = 0) {
   return w;
 }
 
-/** The thing's displacement from its cell, in blocks, and the way it is drawn
-    heading: only the wheel turns its body with its way, and it swings its
-    nose from the old heading to the new, or round; a star tumbles the same
-    whichever way it walks. */
+/** The offset is in blocks. Only the wheel turns its body with its way; a star
+    tumbles the same whichever way it walks. */
 export function place(w) {
   const from = w.kind === PLATFORM_KIND ? [w.c.x, w.c.y, w.c.z].map((v) => v * UNIT) : w.origin;
   const offset = w.pos.map((v, i) => (v - from[i]) / UNIT);
@@ -232,8 +216,8 @@ export function place(w) {
   return { offset, fwd, roll: w.roll };
 }
 
-/** The cells a travelling thing stands over, the one under its middle first,
-    then the one under either half of it across its face. */
+/** The cell under its middle first, then those under either half of it across
+    its face. */
 export function under(w, offset) {
   const n = FACE_NORMAL[w.face];
   const at = [w.c.x, w.c.y, w.c.z].map((v, i) => v + 0.5 + offset[i]);
@@ -284,8 +268,6 @@ function stepWheel(w, p, frame) {
   w.state = 0;
 }
 
-/** The game's dice as it seeds them: a draw of n is n times the low half of
-    the state over 65536, and the state steps once a draw. */
 export function dice({ seed, times, plus }) {
   let state = seed;
   return (n) => {
@@ -294,10 +276,9 @@ export function dice({ seed, times, plus }) {
   };
 }
 
-// The wandering ball settles on the grid, draws ways until one is open, the
-// side, the other side, on or back, then shakes toward it for 76 frames,
-// faster and faster, and dashes a block. The game would draw for ever with
-// every way shut, where the ball here stands.
+// The wandering ball draws ways until one is open: the side, the other side,
+// on or back. The game would draw for ever with every way shut, where the
+// ball here stands.
 function decide(w, p, frame, roll) {
   w.mode = 0;
   w.theta = 0;
@@ -360,9 +341,7 @@ function stepPlatform(w) {
   w.dwell = w.wait;
 }
 
-/** Bring a level's walkers up to a frame of its clock together, one game
-    frame at a time, in the order the game moves them, drawing from the dice
-    the level was started with. */
+/** One game frame at a time, every walker in the order the game moves them. */
 export function advance(ws, p, frame, roll) {
   const to = Math.floor(frame);
   for (let at = ws[0]?.at ?? to; at < to; at++) {
@@ -377,8 +356,8 @@ export function advance(ws, p, frame, roll) {
   }
 }
 
-/** Every walker a level has, keyed by the cell and face it starts from, in
-    the order the game lifts them: record by record, face by face. */
+/** Keyed by the cell and face each starts from, in the order the game lifts
+    them: record by record, face by face. */
 export function walkers(l, idx, table, frame = 0) {
   const out = new Map();
   if (!table) return out;

@@ -1,34 +1,26 @@
-// What moves on the spot moves at the game's own rate, from the table the
-// build reads off the executable: a rate is per frame, an angle is in 4096ths
-// of a turn and a reach is in units of which a block is 512. A frame here is
-// the game's, a sixtieth of a second, counted from the level's first frame,
-// and a thing's phase is either the one its record gives it or, where the
-// game draws one at random on every visit, one hashed from its cell and
-// face, so the map shows the same thing on every visit.
+// In the game's units throughout: a frame is the game's, counted from the
+// level's first, a rate is per frame, an angle is in the table's parts of a
+// turn, and a reach is in model units.
 import { hashes } from "./hash.js";
 
-/** The game's frame count at a page time in milliseconds. */
 export const frameAt = (table, ms) => (ms / 1000) * table.hz;
 
 const sin = (table, angle) => Math.sin((angle / table.turn) * Math.PI * 2);
 const turns = (table, angle) => angle / table.turn;
 
-/** Three starting angles for a thing the game starts at random, by its place. */
 export function phasesOf(table, x, y, z, face) {
   const next = hashes(x, y, z, face);
   return [next() % table.turn, next() % table.turn, next() % table.turn];
 }
 
-// The moving spikes and the corkscrew read their phase from f3, one of four values.
+// A phase read from a field is f3's, one of four values.
 export const phaseField = (m) => m.f[1] & 3;
 
 /**
- * Where a thing stands at a frame: turns about its own axes, x across the
- * face, y along the normal and z the way it points; a lift and a bob along
- * the normal, in units; a squash, as a share of its width it is wider by and
- * twice of which it is shorter; and which frame of its model to show. The
- * ball breathes faster the less time the level gives, so the level's time is
- * what its rate is read from.
+ * Turns about the thing's own axes, x across the face, y along the normal and
+ * z the way it points; a lift and a bob along the normal; a squash, the share
+ * of its width it widens by, which it shortens by twice over; and the frame of
+ * its model to show. The ball breathes faster the less time the level gives.
  */
 export function pose(table, entry, m, frame, phase, time = 0) {
   const about = [0, 0, 0];
@@ -69,9 +61,9 @@ export function pose(table, entry, m, frame, phase, time = 0) {
   return p;
 }
 
-// The catalogue star's orbit runs at one rate in the one form and another in
-// the other, and the form changes on its own clock, so the orbit's angle is
-// the sum of every frame's step, kept per star between draws.
+// An orbit's rate changes with the thing's form, which runs on a clock of its
+// own, so the orbit's angle is the sum of every frame's step, kept between
+// draws.
 const orbits = new Map();
 export function orbit(table, entry, key, frame, phase) {
   const form = (at) => ((phase[0] + entry.form.rate * at) % table.turn >= entry.form.past ? 1 : 0);
@@ -90,22 +82,18 @@ export function orbit(table, entry, key, frame, phase) {
   };
 }
 
-/** A vanishing block's state and brightness at a frame, from its phase field. */
 export function blockPhase(entry, r, frame) {
   const phase = r.f[0] & 3;
   const k = Math.floor(frame) % entry.cycle[phase].length;
   return { state: entry.cycle[phase][k], level: entry.level[phase][k] };
 }
 
-// An invisible block is lit afresh every frame from where the ball is: a
-// corner is full within the near distance of where the ball touches its face
-// and fades in fixed point to nothing at the far one, measured by the game's
-// own square root, and on a level whose settings turn the light round, the
-// other way about. The game looks only at the blocks in a box of cells the
-// far distance either way of the ball on each axis.
+// An invisible block's corner is lit full within the near distance of where
+// the ball touches its face and fades in fixed point to nothing at the far
+// one, or the other way about where the level turns the light round. The game
+// looks only at the blocks in a box of cells the far distance either way of
+// the ball on each axis.
 
-/** The light on a level: the game's distances, or the pair the level's
-    settings turn it round with, where they carry the value that asks it. */
 export function lightOn(entry, l) {
   const t = entry.turned;
   const turned = l.records.some((r) => r.kind === t.kind && r.f[0] === t.value);
@@ -123,8 +111,6 @@ function root(rows, v) {
   return below + Math.floor(((v - past) * step) / past);
 }
 
-/** How brightly the ball lights a corner a distance from where it touches its
-    face, of full. */
 export function glow(light, d) {
   if (d <= light.near) return light.full;
   const unit = 2 ** light.bits;
@@ -132,10 +118,7 @@ export function glow(light, d) {
   return Math.max(0, light.full - Math.floor(((d - light.near) * step) / unit));
 }
 
-/** How brightly each of a face's corners is lit, of full, by the nearest of
-    the balls whose box holds the face's block, at `cell`, or null where none
-    does. The balls and the corners are in the game's units, of which a
-    block is `block`. */
+/** Null where no ball's box holds the block at `cell`. */
 export function cornersLit(light, balls, cell, corners, block) {
   const holding = balls.filter((b) =>
     b.every(
@@ -161,11 +144,11 @@ export function cornersLit(light, balls, cell, corners, block) {
   });
 }
 
-/** Whether a device's light is on at a frame. While the device is on it
-    counts `every` frames down, from `every` as the level starts, and turns
-    its light over each time the count runs out; off, it drops the light at
-    once and holds the count. A frame's faces take the light as it stood the
-    frame before. `presses` are the frames its circuit was turned over at. */
+/** While the device is on it counts `every` frames down, from `every` as the
+    level starts, and turns its light over each time the count runs out; off,
+    it drops the light at once and holds the count. A frame's faces take the
+    light as it stood the frame before. `presses` are the frames its circuit
+    was turned over at. */
 export function glowing(every, on, presses, frame) {
   let count = every;
   let lit = false;
@@ -191,17 +174,13 @@ export function glowing(every, on, presses, frame) {
   return lit;
 }
 
-/** Whether a ball at a point is within a boost button's reach of it, both in
-    the game's units, the button's point being where it stands on its face. */
 export const inReach = (entry, ball, button) =>
   Math.hypot(ball[0] - button[0], ball[1] - button[1], ball[2] - button[2]) < entry.press.reach;
 
-// A boost button's count steps as the game steps it, down to flat while a
-// ball is in reach and back up after, and it is drawn that count over full
-// high while it moves and at full once it is back, where the game stops
-// scaling it. The count is kept per button between draws; a draw that finds
-// what presses it changed counts the change from its own frame, so a press
-// after a still spell starts then rather than having run all along.
+// A boost button's count steps down to flat while a ball is in reach and back
+// up after, and the button is drawn that count over full high. The count is
+// kept between draws, and a change in what presses it counts from the frame
+// it is found at, so a press after a still spell starts then.
 const presses = new Map();
 export function press(entry, key, frame, pressed) {
   const e = entry.press;
