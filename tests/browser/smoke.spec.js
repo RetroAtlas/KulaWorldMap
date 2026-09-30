@@ -1656,7 +1656,6 @@ test("a dialog opened as another closes stays open, on an entry of its own", asy
   expect(await page.evaluate(() => history.state)).toBeNull();
 });
 
-/** Put up a notice as the map would. */
 const notice = (page, msg) =>
   page.evaluate(
     async (msg) => (await import(new URL("js/toast.js", location.href).href)).toast(msg),
@@ -1908,7 +1907,7 @@ test("a camera moved under a still pointer names the cell now under it", async (
   const moves = [
     ["a snap of the turn", () => page.keyboard.press("e")],
     ["a zoom key", () => page.keyboard.press("+")],
-    // the view is no longer framed, so a resize moves the picture and writes no link
+    // the view is not framed, so a resize moves the picture and writes no link
     [
       "a resize",
       async () => {

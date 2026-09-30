@@ -1,7 +1,5 @@
-// The matrix: every case names a level by pack and slot, a yaw and pitch, and
-// optionally a zoom (else the fit), the display switches it changes, a
-// selection and a hover, the circuits turned over, and the page times it is
-// captured at.
+// The matrix: every case names a level by pack and slot and a yaw and pitch,
+// and whatever it changes from the fitted view with the display's defaults.
 const T0 = 10000;
 const T1 = 10617;
 const T2 = 14167;
@@ -207,9 +205,8 @@ for (const c of cases) {
   seen.add(c.id);
 }
 
-// Whether the frame goes on being drawn: each on its own, a thing that turns,
-// a block that cycles, a skin that cycles, a beam, and what travels, and
-// none of them held still.
+// Whether the frame goes on being drawn, with each thing that moves on its own
+// and with none of them.
 const quiet = { objects: false, skins: false };
 export const live = [
   ["L1", {}],

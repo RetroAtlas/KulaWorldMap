@@ -6,7 +6,7 @@ const PORT = 8480;
 
 export default defineConfig({
   testDir: ".",
-  workers: 1, // one shared static server; determinism over speed
+  workers: 1, // one shared static server
   retries: 0, // a flake must surface as red, not be retried away
   timeout: 60_000,
   forbidOnly: !!process.env.CI,
@@ -14,7 +14,7 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     viewport: { width: 1280, height: 720 },
-    deviceScaleFactor: 1, // the renderer multiplies by DPR unrounded; 1 keeps canvas px = CSS px
+    deviceScaleFactor: 1, // canvas pixels are CSS pixels
     contextOptions: { reducedMotion: "no-preference" },
   },
   projects: [{ name: "chromium", use: { browserName: "chromium" } }],

@@ -55,9 +55,6 @@ test("a model's polygons name its vertices and carry a colour per corner", () =>
   }
 });
 
-// What moves is read off the executable at a frame a sixtieth of a second, and
-// the two things that run a cycle of states carry it as a frame program, one
-// per value of their phase field.
 test("the motion table is in the game's units and cycles per phase", () => {
   const m = objects.motion;
   assert.equal(m.hz, 60);
@@ -78,9 +75,8 @@ test("the motion table is in the game's units and cycles per phase", () => {
   assert.equal(m.types[56].phases.length, 4);
 });
 
-// The skins the build reads off the executable: two sets of models, the
-// second for a level the loader finds no key on, except a hidden level and
-// the mode that plays one pack of its own, which keep the first (docs/tgi.md).
+// A level with no key draws the second set of skins, unless it is a hidden
+// level or the copycat pack (docs/tgi.md).
 test("the second set of skins is drawn by the bonus levels and no others", () => {
   const { skins } = objects;
   const BONUS_SLOTS = [15, 16, 17];

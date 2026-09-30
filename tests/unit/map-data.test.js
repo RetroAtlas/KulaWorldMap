@@ -139,10 +139,8 @@ test("the game numbers the levels it shows a number for straight through the wor
   assert.equal(shown.length, 17 * worlds);
 });
 
-// The fourth field numbers a level's pickups from 0 with no repeats: the disc
-// repeats one on four levels, and on each the repeat stands on a crumbling
-// block, which the game never walks and the build leaves out
-// (docs/level-format.md).
+// The fourth field numbers a level's pickups from 0 with no repeats among the
+// objects in play (docs/level-format.md).
 test("a level numbers its pickups from 0 with no repeats", () => {
   const NUMBER_FIELD = 3;
   let numbered = 0;

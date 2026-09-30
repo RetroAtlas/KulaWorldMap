@@ -1,5 +1,3 @@
-// The public/ a harness loads the map from: the working tree's, or a git
-// ref's taken out into a directory of its own, served over HTTP.
 import { spawnSync } from "node:child_process";
 import http from "node:http";
 import { readFile } from "node:fs/promises";

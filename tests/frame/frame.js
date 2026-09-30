@@ -26,7 +26,7 @@ import { chromium } from "@playwright/test";
 import { ROOT, serve, checkout } from "../public.js";
 
 const VIEWS = {
-  bonus29: "#HELL/16/-333,-3/fit/33", // turned side on, every object in view
+  bonus29: "#HELL/16/-333,-3/fit/33",
   obj: "#HILLS/19/45,35/fit/33",
   invisible: "#INCA/14/45,35/fit/33",
   lasers: "#HELL/13/45,35/fit/33",

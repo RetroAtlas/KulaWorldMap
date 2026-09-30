@@ -47,7 +47,7 @@ test("queryTerms: distinct terms across all groups", () => {
 });
 
 test("matchesQuery: AND needs every term, non-adjacent is fine", () => {
-  // the original bug: terms straddle other fields in the blob
+  // terms straddle other fields in the blob
   assert.ok(matchesQuery(TELEPORTER, parseQuery("teleporter starts=off")));
   assert.ok(!matchesQuery(TELEPORTER, parseQuery("teleporter starts=on")));
 });

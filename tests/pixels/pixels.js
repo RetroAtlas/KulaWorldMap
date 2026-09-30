@@ -32,7 +32,7 @@ const flag = (name) => {
   return true;
 };
 const all = flag("--all");
-const LISTED = 20; // how many differing captures are named before the rest are counted
+const LISTED = 20;
 const ref = args[0] || "HEAD";
 
 /** The clock held at a time the runner sets, animation frames asked for and
@@ -166,7 +166,6 @@ async function capture(page, c, keep) {
       }
       if (c.zoom) state.cam.zoom = c.zoom;
       if (c.pan) [state.cam.panX, state.cam.panY] = c.pan;
-      // a pose rather than a fit, which a resize leaves where it is
       if (c.zoom || c.pan) state.framing = null;
       const l = state.lvl;
       const idx = state.idx;
