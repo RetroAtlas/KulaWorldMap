@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
-"""Disassemble the game's MIPS code, which is how the lattice was pinned down.
+"""Disassemble the game's MIPS code, and run a routine of it to its return.
 
     python3 tools/mips.py --at 0x80033f6c --count 60
-
-That is the level walk: three nested loops each bounded by `slti ..., 34`,
-stepping the inner pointer by 1, the middle by 34 and the outer by 1156, and
-reading `lh` against -1. Everything the map draws rests on it.
 
 The executable is a PS-EXE whose text sits at 0x80010000. A file that carries
 no such header is loaded wherever its own `jal`s point, which --base says.
 --disc defaults to $KULA_DISC.
-
-The readers also run a routine of the game's here, where reading its result is
-surer than reading its instructions.
 """
 import argparse
 import struct
@@ -119,7 +112,6 @@ def decode(word, pc):
 
 
 def listing(blob, base, start, count, mark=()):
-    """Disassemble `count` instructions from RAM address `start`."""
     out = []
     for i in range(count):
         pc = start + i * 4

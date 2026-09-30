@@ -4,18 +4,11 @@
     python3 tools/kula_motion.py            # every reading, with its address
     python3 tools/kula_motion.py --table    # the table the build ships
 
-Every rate, amplitude and timing behind docs/motion.md is either the immediate
-of one instruction or the multiplier a short run of shifts and adds applies to
-a register, and each is read by matching the instruction it lives in, so a
-build that lays the code out differently stops this with a message rather
-than yielding a number that looks like a reading. The disc is the NTSC-U
-release and the game runs its loop once per vertical blank, so a rate per
-frame is a rate per sixtieth of a second.
-
-The table is what public/objects.json carries under "motion": the rates by
-type and by kind of block, and for the two things that run a cycle of states,
-the moving spikes and the vanishing block, the cycle itself as a frame
-program per phase, simulated from their routines exactly as read.
+Every number is the immediate of one instruction or the multiplier a short
+run of shifts and adds applies to a register, read by matching the
+instruction it lives in, so a build that lays the code out differently stops
+this with a message rather than yielding a number that looks like a reading.
+The game runs its loop once per vertical blank.
 """
 import argparse
 import json
@@ -34,11 +27,9 @@ HZ = 60
 PHASES = 4           # the values a phase field takes
 SPIKE_FRAMES = 32    # frames in the moving spikes' mesh, flat to full
 
-# What has to be there for the numbers below to mean what the doc says: a
-# level's frame loop waits once a pass, for a flag a callback sets, and the
-# words that would halve the rate or pick another view are never written, so
-# they keep the zero the executable loads with.
+# What has to be there for the numbers below to mean what the doc says.
 CHECKS = [
+    # The frame loop.
     (0x80040a78, "addiu $a0, $a0, -588", "before its frame loop a level installs the callback at 0x8003fdb4"),
     (0x80040a7c, "jal 0x80065e28", "through the system library"),
     (0x8003fdbc, "sw $v0, -17288($at)", "which sets the flag at 0x800cbc78"),
@@ -46,7 +37,7 @@ CHECKS = [
     (0x80051d18, "beq $t1, $zero, 0x80051d10", "until the flag is set"),
     (0x80040ad0, "lw $v0, 22316($v0)", "the half-rate word the loop reads is 0x800a572c"),
     (0x80039608, "lw $v0, 13264($v0)", "the view word the updates read is 0x800a33d0"),
-    # The laser: built at load by 0x800280d0, drawn every frame by 0x80051754.
+    # The laser.
     (0x80028214, "addiu $v0, $zero, 8", "the laser builder takes the records of kind 8"),
     (0x8002833c, "addiu $v0, $s5, 6", "and keeps where the record says it is lit, f3"),
     (0x8002844c, "lh $v1, 44($s5)", "the colour is the circuit, a word of the second slot"),
@@ -69,9 +60,7 @@ CHECKS = [
     (0x80051c38, "addiu $t4, $zero, -1", "are written empty"),
     (0x80051c9c, "beq $fp, $zero, 0x80051c6c", "and a lit one's"),
     (0x80051c90, "addiu $t4, $zero, -2", "are written as beam"),
-    # A captivator is drawn where its entry is: each type's draw copies the
-    # entry's position and turns it into the view with nothing added, save
-    # the corkscrew's, which takes a multiple of its normal off first.
+    # Where a captivator is drawn.
     (0x8003d6d4, "addiu $s5, $s4, -32", "the draw's s5 is an entry's position"),
     (0x8003d81c, "addu $v0, $v0, $s5", "the slow star is drawn at its entry's position"),
     (0x8003d84c, "jal 0x800606b8", "as it is"),
@@ -84,11 +73,7 @@ CHECKS = [
     (0x8003e574, "addu $v0, $v0, $s5", "and the corkscrew"),
     (0x8003e5f0, "subu $v0, $v0, $v1", "less a multiple of its normal"),
     (0x8003e658, "jal 0x800606b8", "and then as it is"),
-    # The game's one random routine, and the one draw from it that moves a
-    # thing: the level's routine seeds it once, before its frame loop, and in
-    # the loop nothing else draws from it while the ball stands still, since
-    # the screen's shake and the effects a pickup starts draw only while they
-    # run; the captivators move in the order the loader lifted them.
+    # The dice, and the order the captivators move in.
     (0x80040690, "jal 0x80040718", "the play loop runs a level's routine"),
     (0x80040748, "jal 0x80025054", "which first calls the routine"),
     (0x80025064, "jal 0x8004740c", "that seeds the dice"),
@@ -105,27 +90,19 @@ CHECKS = [
     (0x8003b644, "slti $v0, $v0, 5", "which the loader lifts record by record"),
     (0x8003cf34, "addiu $v0, $v0, 1", "and the move visits in that order"),
     (0x8003c72c, "jal 0x80047418", "and the wandering ball draws its way from the dice"),
-    # The boost button: a count that sinks while the ball is in reach and
-    # rises after, scaling the model's height along its normal, and left
-    # unscaled once it is back to full.
+    # The boost button.
     (0x80039bd0, "slt $v1, $v1, $v0", "the boost button sinks while the ball is in reach"),
     (0x80039c08, "blez $v0, 0x80039c18", "and no lower than flat"),
     (0x80039c78, "beq $v0, $zero, 0x80039cac", "and back at full it is drawn as it is"),
     (0x80039ca4, "sra $v0, $v0, 4", "else its height scaled by its count over 16"),
     (0x80039ca8, "sh $v0, 7400($gp)", "on the axis of its face's normal"),
-    # The ball's position is where it touches its face: the start puts it at
-    # its cell and half a block along the face's normal, and the button and
-    # the invisible block's light both measure from it.
+    # The ball's position.
     (0x800361d0, "sll $v0, $v0, 9", "the start puts the ball's position at its cell"),
     (0x800361c0, "lh $v1, -24272($v1)", "and along its face's normal"),
     (0x800361cc, "sll $v1, $v1, 8", "half a block, where it touches the face"),
     (0x80039b74, "lh $v1, -24240($v1)", "a boost button measures its reach from that position"),
     (0x800368f0, "lh $v0, -24240($v0)", "and the light from it and a platform's travel"),
-    # A device that is on turns a light over every so many frames: it makes
-    # one from its cell and face, a list of faces with a level at each
-    # corner, gives it its colour while it holds it, and lets it go when it
-    # is turned off; each frame the faces of every light are shaded between
-    # their corners with the light added, before the walk that turns it over.
+    # A device's light.
     (0x8002d3d4, "addiu $v0, $v0, -5", "the draw of a thing on a block sends it on by its type"),
     (0x8002d3f8, "lw $v0, 116($at)", "through a table of cases"),
     (0x8002d468, "jal 0x8002e3d8", "a teleporter's case makes a light"),
@@ -156,11 +133,7 @@ CHECKS = [
     (0x80051188, "add $t5, $t5, $t6", "added to its colour"),
     (0x80051198, "ori $t5, $t5, 255", "a channel that passes 255 stands at it"),
     (0x800511b4, "and $t5, $t5, $v0", "less its lowest bit"),
-    # The shadow under the ball and the captivators: a square of four
-    # vertices, laid flat on the face and dropped where it faces away,
-    # textured with one of two sprites past the group the .GGI's header
-    # bounds last, and taken away from what is behind it, as strong as the
-    # colour each draw writes into it.
+    # The shadow under the ball and the captivators.
     (0x80022f28, "sw $v0, 10240($gp)", "the parser keeps the .GGI header's sixth bound"),
     (0x800290f8, "lw $v1, 22328($v1)", "which the shadow's sprites are counted past"),
     (0x800290ec, "addiu $v0, $zero, 44", "each shadow is a textured quad"),
@@ -185,10 +158,7 @@ CHECKS = [
     (0x8003ea08, "jal 0x8005fb58", "less a multiple of its sine"),
     (0x80031f3c, "jal 0x800603f8", "the ball's shadow is widened by the landing's squash"),
     (0x80031f54, "jal 0x800603f8", "and by the breath's"),
-    # The invisible block's light: every frame it measures each corner of
-    # the invisible faces in a box of cells about where the ball touches its
-    # face, and a face with a corner lit is drawn shaded between its corners,
-    # where the rest are drawn flat or not at all.
+    # The invisible block's light.
     (0x8002a4a0, "addiu $a0, $a0, 23128", "the frame hands the light its struct"),
     (0x8002a4a4, "jal 0x80051318", "and runs it"),
     (0x80036914, "sw $v0, 23128($at)", "into which the ball's routine writes where it touches its face"),
@@ -452,7 +422,7 @@ GLOW_CASES = {5: 0x8002d408, 7: 0x8002d534, 9: 0x8002d600}
 GLOW_TYPES = (0x80010074, 5, 24)  # the draw's table of cases: where, the first type, how many
 GLOW_COLOURS = {5: ((0x8002d514, 0x8002d51c), 4), 7: ((0x8002d5ec, 0x8002d5f4), 1),
                 9: ((0x8002d6c4, 0x8002d6cc), 4)}
-GLOW_LEVELS = 3           # a corner's level is 0, 1 or 2
+GLOW_LEVELS = 3           # the levels a corner can take
 MVMVA_SF = 1 << 19        # the command's bit that shifts its products down by 12
 FACES = 6
 
@@ -567,11 +537,8 @@ def root_table(code):
 
 
 def light(r):
-    """How the game lights an invisible block near the ball: a corner is full
-    within the near distance and falls in fixed point to nothing at the far
-    one, measured by the game's own square root; and on a level whose
-    settings record carries the value in its first field, the other way
-    round, with distances of its own."""
+    """How the game lights an invisible block near the ball, and the distances
+    of a level that turns the light round."""
     if r["light.kind"] != INVISIBLE:
         sys.exit(f"the light takes blocks of kind {r['light.kind']}, not the invisible block's")
     if not r["light.full"] == r["light.full.fade"] == r["light.full.turned"]:
@@ -647,12 +614,8 @@ def glow(code, r):
 
 
 def laser(r):
-    """What the game draws for a beam: every stretch reaches from its cell's
-    centre to both faces, and carries four lines set square about the axis,
-    each two flat quads crossed along it and a line down their middle, all
-    added to what is behind, in the circuit's colour times a level each line
-    steps through on its own. A colour is given as what the level is
-    multiplied by in red, green and blue."""
+    """What the game draws for a beam. A colour is given as what a line's level
+    is multiplied by in red, green and blue."""
     for key in ("laser.reach", "laser.nozzle", "laser.width"):
         if r[key + ".back"] != -r[key]:
             sys.exit(f"{key} is {r[key]} one way and {r[key + '.back']} the other")
@@ -680,10 +643,10 @@ def laser(r):
 def spike_cycle(r, phase, frames=SPIKE_FRAMES, at=None):
     """The frame the moving spikes show on each frame of one cycle, for a phase.
 
-    The routine at 0x8002bbec is run from the state the loader at 0x8002a078
-    gives that phase, past the first cycle, which the loader cuts short or
-    stretches, and one steady cycle is taken from the same frame for every
-    phase, so the four programs keep the game's spacing between them.
+    The game's routine is run from the state its loader gives that phase,
+    past the first cycle, which the loader cuts short or stretches, and one
+    steady cycle is taken from the same frame for every phase, so the
+    programs keep the game's spacing between them.
     """
     top = frames - 1
     v = phase * r["spikes.phase.step"]
@@ -726,12 +689,7 @@ def spike_cycle(r, phase, frames=SPIKE_FRAMES, at=None):
 
 def vanish_cycle(r, phase, at=None):
     """The state of a vanishing block on each frame of one cycle, for a phase,
-    with the brightness its faces are drawn at, 128 being their own colour.
-
-    The routine at 0x8002b6ec is run from the state the loader at 0x80028b14
-    gives that phase, and a steady cycle is taken the same way as the
-    spikes', from one frame for every phase.
-    """
+    with the brightness its faces are drawn at, taken as the spikes' cycle is."""
     v = phase * r["vanish.phase.step"]
     if phase < r["vanish.phase.absent"]:
         state, count, level = 0, r["vanish.phase.absent.from"] - v, 0
@@ -784,17 +742,13 @@ def period(seq, at, cycle, what):
 def table(r, platform_speed):
     """The motion table by type and by kind of block, in the game's units.
 
-    A rate is per frame and an angle is in 4096ths of a turn; a reach is in
-    units of which a block is 512. A cycle is a frame program per phase. The
-    platform's speed is the one the level data holds, scaled as the loader
-    scales it. A type the loader lifts into an entry of its own says how far
-    off its face the game draws the model's origin. A type the game draws a
-    shadow under says which of the two sprites, how far off its face it lies
-    and how strong it is, of 128. The dice are the game's random routine,
-    which it seeds once as a level starts. The invisible block carries its
-    light. What the devices' light takes is beside the types, with each
-    device's colours by its type, by world and then by circuit where it has
-    one, apart from the types, whose entries are what moves.
+    A cycle is a frame program per phase. The platform's speed is the one the
+    level data holds, scaled as the loader scales it. A type the loader lifts
+    into an entry of its own says how far off its face the game draws the
+    model's origin, and a type the game draws a shadow under says which
+    sprite, how far off its face it lies and how strong it is. The devices'
+    light and each device's colours, by world and then by circuit where it
+    has one, sit apart from the types, whose entries are what moves.
     """
     bob = {"rate": r["coin.bob"], "reach": r["coin.bob.reach"]}
     fruit = {"turn": r["fruit.turn"],
