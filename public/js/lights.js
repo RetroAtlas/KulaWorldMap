@@ -1,8 +1,5 @@
-// A device that is on casts a light of its colour on the faces round it,
-// which it turns on and off as the game does: its own face all over, and past
-// each edge the first face there of those the game tries, at the corners on
-// the edge. A frame's lights are summed at each corner, in the game's units,
-// where 128 is a face's own brightness.
+// A device's light takes its own face all over and, past each edge, the first
+// face there of those the game tries, at the corners on the edge.
 import { state, cellKey } from "./state.js";
 import { motionTable, markerCircuit, markerNow, lightOnAt } from "./data.js";
 import { hasFace } from "./blocks.js";
@@ -10,9 +7,6 @@ import { hasFace } from "./blocks.js";
 const FULL = 2;
 const PART = 1;
 
-// The faces each device's light takes, found once for a level, since what
-// they are found against holds still: for each, its key and the level at
-// each of its corners, in the order of its texture's first turn.
 const takes = new WeakMap();
 function takenBy(idx, glow) {
   if (takes.has(idx)) return takes.get(idx);
@@ -39,10 +33,9 @@ function takenBy(idx, glow) {
   return out;
 }
 
-/** The lights on a level at a frame: for each face lit, keyed by its cell's
-    key and its number in the game's six, the colour added at each corner in
-    the order of its texture's first turn; and whether any device is on,
-    whose light will turn over. */
+/** For each face lit, keyed by its cell and its number in the game's six, the
+    colour added at each corner in the order of its texture's first turn; and
+    whether any device is on. */
 export function deviceLights(l, idx, frame) {
   const glow = motionTable()?.glow;
   const lit = new Map();

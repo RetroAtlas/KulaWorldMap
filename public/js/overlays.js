@@ -2,8 +2,6 @@ import { state, SIDE, BLOCK, screen, cellKey } from "./state.js";
 import { FACE_NORMAL } from "./data.js";
 import { bow, arrow } from "./arrow.js";
 
-// A survey mark hangs below the block, where a decoded marker never goes, so
-// the two readings of the same cell can be compared at a glance.
 export function drawMark(ctx, m, c) {
   const [px, py] = screen(c.x + 0.5, c.y + 0.5, c.z + 1);
   const r = Math.max(3, 5 * state.cam.zoom);
@@ -19,11 +17,9 @@ export function drawMark(ctx, m, c) {
   }
 }
 
-// A moving platform's route is the run between the middles of the two cells
-// its record names, drawn faint and a cell at a time, so that a block in front
-// of it hides it, its dashes carried across the cells so it reads as one line.
-// The stretch inside the platform's own blocks, wherever they have got to, is
-// left out.
+// A route is drawn a cell at a time, its dashes carried across the cells so it
+// reads as one line, and left out inside the platform's own blocks wherever
+// they have got to.
 export function drawRails(ctx, c, ghost, moving) {
   for (const { a, b, axis, cell, length } of c.rails) {
     const lo = Math.min(a[axis], b[axis]) + 0.5;
@@ -62,11 +58,6 @@ export function drawRails(ctx, c, ghost, moving) {
   }
 }
 
-// Where a teleporter leads is an arrow in its colour from where it stands to
-// where it sends the ball, off the faces at about the height of the thing,
-// since a ring is gone round one way. The curve is drawn on the screen between
-// the two ends, and loops where one stands in front of the other. It is broken
-// while the teleporter is switched off.
 const LINK_HOVER = 0.3;
 const LINK_RIM = "rgba(9 13 20 / 0.8)";
 export function drawLink(ctx, from, to, colour, dark) {

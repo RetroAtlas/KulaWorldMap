@@ -6,10 +6,9 @@ import { outlineStroke } from "./blocks.js";
 const BEAM_KIND = 8;
 const BLOCK = 512; // the game's units to a block
 const INK = [232, 238, 251];
-const DARK_DASH = [5, 3]; // at a zoom of one
+const DARK_DASH = [5, 3];
 const DARK_ALPHA = 0.85;
-const WHITE = [8, 8, 8]; // a colour for a circuit the game gives none
-// Which side of the axis each of the four lines sits, on the two axes across it.
+const WHITE = [8, 8, 8];
 const SIDES = [
   [1, 1],
   [1, -1],
@@ -17,18 +16,12 @@ const SIDES = [
   [-1, -1],
 ];
 
-// A beam is laid a cell at a time, from the face it comes in by to the face
-// it leaves by, so that it runs between the faces of its end blocks and each
-// stretch takes its place among the blocks. Each of its four lines is two
-// flat quads crossed along it and a line down their middle, added to what is
-// behind, in its circuit's channels times a level the line steps through on
-// its own, from a start the game draws at random and the map hashes from the
-// beam's first cell. A dark beam, which the game does not draw, is one of the
-// map's outlines: a broken line down its middle in the colour the map gives
-// its circuit, its dashes carried across the cells so it reads as one line.
+// Each of a beam's four lines is two flat quads crossed along it and a line
+// down their middle, in its circuit's channels times a level the line steps
+// through on its own, from a start the map hashes where the game draws one at
+// random.
 
-/** Draws the stretches of beam through one cell, and says whether any is to
-    change by the next frame. */
+/** Returns whether any stretch through the cell changes by the next frame. */
 export function drawBeams(ctx, c, ghost, frame) {
   const beam = kindMotion(BEAM_KIND);
   let live = false;
@@ -69,7 +62,6 @@ export function drawBeams(ctx, c, ghost, frame) {
     ctx.globalCompositeOperation = beam.add ? "lighter" : "source-over";
     ctx.lineWidth = 1;
     SIDES.forEach(([su, sv], n) => {
-      // held still, every line stands at its brightest
       const level = effectsOn()
         ? beam.levels[(seed(...ray.a, n) + Math.floor(frame) * beam.step) % beam.levels.length]
         : Math.max(...beam.levels);
