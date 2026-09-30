@@ -10,8 +10,6 @@ const rgb = (hex) => {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 };
 
-// Faces are lit by mixing toward white or toward the page ground rather than by
-// scaling the channels, which would drain the colour out of the darker sides.
 const shade = (hex, f, a = 1) => {
   const c = rgb(hex);
   const t = f >= 1 ? [255, 255, 255] : [14, 19, 30];
@@ -21,9 +19,7 @@ const shade = (hex, f, a = 1) => {
 };
 
 // The six faces of a unit cube: outward normal, the neighbour it hides behind,
-// its corners, and the number the game gives it. Lighting comes from the
-// world, not from the screen, so a face keeps its brightness as the view
-// turns and the solid reads as solid.
+// its corners, and the number the game gives it.
 export const FACES = [
   {
     n: [0, 0, 1],
@@ -104,9 +100,7 @@ const lit = FACES.map((f) => {
   return 0.5 + 0.75 * (0.5 + 0.5 * d);
 });
 
-// Which of the three shipped shades a face wears: the world's own table says,
-// and a face keeps its shade as the view turns. Without the table, lit from
-// above and one side.
+// The shipped shade a face wears where the world's table gives none.
 const SHADE = FACES.map((f) =>
   f.n[2] < 0 ? 2 : f.n[2] > 0 ? 0 : f.n[0] > 0 || f.n[1] < 0 ? 1 : 0,
 );
@@ -115,10 +109,9 @@ export const shadeOf = (i, world) => skinsTable()?.shade[world]?.[FACES[i].game]
 const PLATFORM = 5;
 const BEAM_KIND = 8;
 
-/** Whether a block of `kind` has no face toward the neighbour `nb`, by the
-    kinds the game hides a face behind; the loader stands a plain block at a
-    beam's ends before it builds a face, so an end hides like one. A block
-    whose kind is not given is hidden by any neighbour. */
+/** Whether a block of `kind` builds no face toward the neighbour `nb`. The
+    game stands a plain block at a beam's ends before it builds a face, so an
+    end hides like one. */
 function hiddenBehind(kind, nb, idx) {
   const hides = skinsTable()?.hides;
   if (!hides || kind === undefined) return true;
@@ -126,10 +119,9 @@ function hiddenBehind(kind, nb, idx) {
   return (hides.kinds[String(kind)] ?? hides.other).includes(theirs === BEAM_KIND ? 0 : theirs);
 }
 
-/** Whether the block at a cell has face `g`, in the game's numbering of the
-    six, built as the loader builds it: unless a block its kind hides that
-    face behind stands against it, and even then behind a kind it leaves the
-    face unseen behind. */
+/** Whether the block at a cell has face `g`, in the game's numbering, as the
+    game builds it: a face hidden behind its neighbour is built all the same
+    where the neighbour is a kind it leaves the face unseen behind. */
 export function hasFace(idx, c, g) {
   const n = FACE_NORMAL[g];
   const nb = idx.cells.get(cellKey(c.x + n[0], c.y + n[1], c.z + n[2]));
@@ -140,8 +132,8 @@ export function hasFace(idx, c, g) {
   return !!unseen && unseen.includes(kindOf(nb, idx, cellKey(nb.x, nb.y, nb.z)));
 }
 
-/** Draw a block's visible faces: each in the skin `skin(i)` gives it, or in
-    `colour(i)` without one. A face the game leaves undrawn is skipped. */
+/** A face whose `skin(i)` is null is left undrawn, and one with no skin is
+    filled with `colour(i)`. */
 export function cube(g, c, idx, colour, edge, alpha, skin, kind) {
   const s = state.cam.zoom * BLOCK;
   const [ox, oy] = screen(c.x, c.y, c.z);
@@ -177,7 +169,6 @@ export function cube(g, c, idx, colour, edge, alpha, skin, kind) {
   }
 }
 
-// Without textures a block is a step of the world's tint by kind.
 function kindTint(tint, kind) {
   const c = rgb(tint);
   const k = 0.16 * (Math.min(kind, state.data.styles - 1) / Math.max(1, state.data.styles - 1));
@@ -193,19 +184,12 @@ function kindTint(tint, kind) {
   );
 }
 
-/** The colour face `i` of a block takes without textures, from the block's colour. */
 export const litFace = (colour, i) => shade(colour, lit[i]);
 
-/** The colour face `i` of a block of `kind` takes without textures, in a world's tint. */
 export const flatFace = (tint, kind, i) => litFace(kindTint(tint, kind), i);
 
-// How a kind of block reads without its textures: a wash for what the game
-// paints onto the block, and a fainter, broken cube for a block that is not
-// solidly there, whether never seen or gone once rolled on. With the textures
-// the paint speaks for itself, and only the broken outline stays on a block
-// that is not there to be stood on. A vanishing block runs the game's cycle
-// instead: solid while it is there, lit or darkened as the game lights it,
-// faint and broken while it is gone.
+// How a kind of block reads without its textures, and with them, where only a
+// block not there to be stood on keeps its broken outline.
 const LOOK = {
   1: { wash: "rgba(255 70 30 / 0.45)" },
   2: { wash: "rgba(160 225 255 / 0.45)" },
@@ -219,15 +203,14 @@ export const SKINNED_LOOK = {
 };
 const INVISIBLE = 3;
 const VANISHING = 7;
-const GLASS_FACE = 0.5; // how much of a hidden level's face shows, the GPU's half and half
-// A hidden level draws its blocks as glass, but for the kinds the game
-// builds on a path of their own and leaves out of it.
+const GLASS_FACE = 0.5;
+// The kinds the game builds on a path of their own, which a hidden level's
+// glass leaves out.
 const UNGLAZED = new Set([INVISIBLE, VANISHING]);
-const TRANSLUCENT = 4; // the state from which a vanishing block is drawn through
-const FADING = 0.6; // how much of a vanishing block shows once it is drawn through
+const TRANSLUCENT = 4;
+const FADING = 0.6;
 
-/** How a vanishing block looks at this frame, from where its cycle stands,
-    and held still, as it looks when it starts to go: there, and seen through. */
+/** Held still, a vanishing block looks as it does when it starts to go. */
 function vanishingLook(r, frame, skinned) {
   if (!state.show.motion) return { alpha: FADING };
   const { state: step, level } = blockPhase(kindMotion(VANISHING), r, frame);
@@ -238,8 +221,8 @@ function vanishingLook(r, frame, skinned) {
 }
 
 // A device's light on a face comes in the order of the texture's first turn,
-// and is added to the colour the face is drawn through as the game adds it,
-// a channel that passes what it can hold standing at the most it can.
+// and is added to the face's colour as the game adds it, a channel that passes
+// what it can hold standing at the most it can.
 function deviceLight(sums, sk, g, skins) {
   const first = skins.corners[g][0];
   const base = sk.colour ?? [NEUTRAL, NEUTRAL, NEUTRAL];
@@ -249,15 +232,12 @@ function deviceLight(sums, sk, g, skins) {
   });
 }
 
-/** An invisible face's colour at the peak of its pulse. */
 const peak = (skins) => Array(3).fill(Math.max(...skins.cycles.invisible.level));
 
 // Near the ball an invisible face is lit corner by corner as the game lights
-// it, and the look the map draws it in so that it can be seen at all fills
-// in what the light leaves dark, so a face in full light is the game's own.
-// Where the level turns the light round, that look is the game's own from
-// afar, and a face of a block the ball's light reaches is drawn as the game
-// draws it there instead.
+// it, and the map's look fills in what the light leaves dark. Where the level
+// turns the light round, a face the light reaches is drawn as the game draws
+// it there instead.
 const lights = new WeakMap();
 function lightUp(sk, l, home, face, corners) {
   const entry = kindMotion(INVISIBLE)?.light;
@@ -273,15 +253,13 @@ function lightUp(sk, l, home, face, corners) {
   sk.fill = !light.turned;
 }
 
-/** The kind of block a cell draws: its style, or the kind of the record it names. */
 function kindOf(c, idx, key) {
   if (c.v === OFF_LATTICE) return 0;
   if (c.v < state.data.firstRecord) return c.v;
   return idx.records.get(key)?.[0]?.kind ?? 0;
 }
 
-/** Draw a block as its kind looks at this frame, lit up where it is selected
-    or under the pointer, and say whether it is to change by the next frame. */
+/** Returns whether the block changes by the next frame. */
 export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
   const { l, idx, tint, skins, atlas, look, frame, effect, edges, lights } = scene;
   let live = false;
@@ -296,10 +274,6 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
   const boost = sel ? 0.22 : hov ? 0.12 : 0;
   const glass = look?.glass && !UNGLAZED.has(kind) ? GLASS_FACE : 1;
   const a = (ghost ? 0.16 : 1) * (style.alpha ?? 1) * glass;
-  // Every face wears what the game paints on it: a stone, its kind's own
-  // texture, the plate or the shadow of what stands on it, a beam's end or
-  // a platform's cap, and the fire, the invisible block and a bonus level's
-  // stone run their cycles.
   let skin = null;
   if (atlas) {
     const place = c.k !== undefined && rec?.kind === PLATFORM ? platformPlace(rec, c.k) : null;
@@ -309,7 +283,6 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
       const g = FACES[i].game;
       const sk = faceSkin(skins, look, still, g, kind, rec, effect, place, plates?.get(g));
       if (sk?.live) live = true;
-      // held still, an invisible face stands at the peak of its pulse, unlit
       if (sk && kind === INVISIBLE) {
         if (!effectsOn()) sk.colour = peak(skins);
         else lightUp(sk, l, home, g, skins.corners[g][sk.turn]);
@@ -339,8 +312,6 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
   return live;
 }
 
-/** Whether a cell's cube, where `c` stands, covers a point on the screen as
-    the pick paints it: every face turned toward the view. */
 export function covers(c, x, y) {
   const s = state.cam.zoom * BLOCK;
   const [ox, oy] = screen(c.x, c.y, c.z);
@@ -358,7 +329,6 @@ export function covers(c, x, y) {
   });
 }
 
-/** Sets the stroke the map's outlines are drawn with, its dashes scaled to the zoom. */
 export function outlineStroke(ctx, colour, dash = []) {
   ctx.strokeStyle = colour;
   ctx.lineWidth = 1.6;

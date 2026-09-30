@@ -1,9 +1,7 @@
 import { emit } from "./dom.js";
 
 // A world's atlas is one row per shade the game ships a texture pre-lit in
-// and, along the row, every texture of the world in order. It is fetched the
-// first time a level of the world is drawn, and the level draws flat until
-// it arrives.
+// and, along the row, every texture of the world in order.
 const ATLAS = { size: 64, worlds: new Map() };
 export function atlasFor(world) {
   let a = ATLAS.worlds.get(world);
@@ -21,10 +19,9 @@ export function atlasFor(world) {
 
 export const NEUTRAL = 128; // the brightness at which a face is its own colour
 
-// A face shaded between its corners is its texture through a mask of what
-// each corner takes: a two by two image drawn so that the middle of each of
-// its pixels lands on a corner, which the canvas's smoothing interpolates
-// between, taken as a share of each texel or as a colour it is multiplied by.
+// A face shaded between its corners is drawn through a two by two mask whose
+// pixels' middles land on the corners, so the canvas's smoothing interpolates
+// between them.
 let shading = null;
 function shaded(sk, shade, corners, mode) {
   const n = ATLAS.size;
@@ -52,21 +49,12 @@ const through = (sk, shade, levels) =>
     "destination-in",
   );
 
-/** Map the texture onto a face, its top left, top right and bottom left on
-    the three points on the screen given, the block's corners the game's own
-    face routine puts them on, which orthographic projection keeps a
-    parallelogram, so an affine transform lands it exactly. Then the colour
-    the game draws the face through, where it cycles one. A face the game
-    adds to what is behind is dimmed by adding less of it, since a wash over
-    it would darken what shows through too. Any other face takes a darker
-    grey as a black wash, a brighter one as a white wash, and a tint by
-    multiplying, which cannot brighten a channel but keeps the hue. A face
-    the game shades between its corners carries their four brightnesses in
-    the texture's order, and is drawn through them in place of its colour;
-    where it says so, its colour fills in as much as each corner falls short
-    of full. A light added to a face's corners is the texture times the
-    colour it adds at each, over 128, added once the face is drawn through
-    its colour, so that its colour does not scale the light. */
+/** Map the texture's top left, top right and bottom left onto the three
+    points given, which an affine transform lands exactly since the view is
+    orthographic. A face shaded between its corners is drawn through their
+    brightnesses, and where `fill` says so its colour fills in as much as each
+    corner falls short of full. A light is added once the face is drawn
+    through its colour, so the colour does not scale it. */
 export function paint(g, [p0, p1, p3], sk, shade, alpha) {
   const n = ATLAS.size;
   const ex = [(p1[0] - p0[0]) / n, (p1[1] - p0[1]) / n];
