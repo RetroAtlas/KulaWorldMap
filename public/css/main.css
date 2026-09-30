@@ -17,8 +17,7 @@
   box-sizing: border-box;
 }
 
-/* An author rule that sets display beats the UA's [hidden], so say it here
-   once rather than relying on every panel not to set one. */
+/* An author rule that sets display beats the UA's [hidden]. */
 [hidden] {
   display: none !important;
 }
@@ -58,8 +57,6 @@ body {
   height: 100vh;
   height: 100dvh; /* a phone's chrome is inside 100vh and cuts the map off */
 }
-
-/* ---------- sidebar ---------- */
 
 .sidebar {
   width: var(--sidebar-w);
@@ -457,15 +454,11 @@ button.kind:hover {
   text-decoration: underline;
 }
 
-/* ---------- map ---------- */
-
 .map {
   position: relative;
   flex: 1 1 auto;
   min-width: 0;
-  /* how far the corner's widgets stand off the foot of the map, clear of the
-     band the scale bar is drawn in however far the bar reaches, and how tall
-     the tallest of them is */
+  /* the corner's widgets stand clear of the band the scale bar is drawn in */
   --corner-foot: 44px;
   --corner-h: 96px;
 }
@@ -502,14 +495,11 @@ body.sidebar-open .menu-btn {
   left: calc(var(--sidebar-w) + 10px);
 }
 
-/* Nothing dismisses the drawer on a narrow screen but the button, which the
-   drawer itself would otherwise push off the side of a small phone. */
 .scrim {
   display: none;
 }
 
-/* The menu button sits at the map's top-left corner in both sidebar states, so
-   the chip starts clear of it rather than under it. */
+/* clear of the menu button, which sits at the map's top left either way */
 .chip {
   position: absolute;
   left: 54px;
@@ -522,15 +512,13 @@ body.sidebar-open .menu-btn {
   font-size: 12.5px;
   max-width: min(60%, 460px);
 }
-/* With the chip's line height and border, the padding makes the line as tall
-   as the menu button, so the two sit on one row; a level with a note grows
-   downward from there. */
+/* the padding makes the line as tall as the menu button, so the two sit on
+   one row */
 .chip > .line,
 .chip > button {
   display: block;
   padding: 6px 10px;
 }
-/* the whole line is the target, the padding with it */
 .chip > button {
   display: flex;
   align-items: flex-start;
@@ -841,7 +829,6 @@ body.sidebar-open .menu-btn {
   opacity: 1;
   transform: none;
 }
-/* drains over the notice's time on screen, which the script hands down */
 .toast-bar {
   position: absolute;
   left: 0;

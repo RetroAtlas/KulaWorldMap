@@ -44,9 +44,8 @@
     content="A Kula World level drawn block by block in the game's own textures"
   />
 
-  <!-- the map is unusable until this lands, so start it during parse rather than
-       after the module graph; crossorigin matches fetch()'s cors mode so the
-       preload is consumed rather than fetched twice -->
+  <!-- crossorigin matches fetch()'s cors mode, so the preload is used rather
+       than fetched twice -->
   <link rel="preload" href="map_data.json" as="fetch" crossorigin />
   <link rel="stylesheet" href="css/main.css" />
 
