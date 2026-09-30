@@ -84,14 +84,14 @@ export function resize() {
   }
   for (const g of [ctx, pick]) g.setTransform(dpr, 0, 0, dpr, 0, 0);
   invalidatePick();
-  resized();
+  for (const fn of resized) fn();
   draw();
 }
 
-let resized = () => {};
+const resized = [];
 /** Run `fn` at every size the canvas takes, before the frame drawn at it. */
 export const onResize = (fn) => {
-  resized = fn;
+  resized.push(fn);
 };
 
 // The canvas resizes for reasons no window event reports: the sidebar slides

@@ -1425,26 +1425,54 @@ test("a label leaves out the face its thing stands on, and n names it", async ({
   expect(errors).toEqual([]);
 });
 
-test("a level changed under a still pointer leaves no word of the cell it was over", async ({
-  page,
-}) => {
-  const errors = trackErrors(page);
-  await page.goto("/#INCA/0/45,35");
-  await settle(page);
-  await page.evaluate(async () => {
+/** Rest the pointer on the top of the level's start, and give the client point it rests at. */
+const restOnStart = (page) =>
+  page.evaluate(async () => {
     const { state, screen } = await import(new URL("js/state.js", location.href).href);
     const [start] = state.lvl.records.filter((r) => r.on.some((o) => o.type === 30));
     const cv = document.getElementById("cv");
     const r = cv.getBoundingClientRect();
     const [x, y] = screen(start.x + 0.5, start.y + 0.5, start.z);
-    cv.dispatchEvent(new PointerEvent("pointermove", { clientX: r.left + x, clientY: r.top + y }));
+    const at = [r.left + x, r.top + y];
+    cv.dispatchEvent(new PointerEvent("pointermove", { clientX: at[0], clientY: at[1] }));
+    return at;
   });
+
+/** The cell under a client point, as the readout writes it. */
+const cellUnder = (page, point) =>
+  page.evaluate(async ([x, y]) => {
+    const { cellAt } = await import(new URL("js/render.js", location.href).href);
+    const r = document.getElementById("cv").getBoundingClientRect();
+    const c = cellAt(x - r.left, y - r.top);
+    return c && `${c.x}, ${c.y}, ${c.z}`;
+  }, point);
+
+/** The hovered cell, as the readout writes it. */
+const hovered = (page) =>
+  page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const c = state.hover;
+    return c && `${c.x}, ${c.y}, ${c.z}`;
+  });
+
+test("a level changed under a still pointer leaves no word of the cell it was over", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#INCA/12/45,35");
+  await settle(page);
+  await still(page);
+  const point = await restOnStart(page);
   await expect(page.locator("#tip")).toContainText("Start · top");
-  await expect(page.locator("#readout")).toContainText("17, 17, 17");
+  await expect(page.locator("#readout")).toContainText("19, 19, 17");
   await page.keyboard.press("]");
-  await expect(page.locator("#chip")).toContainText("LEVEL 32");
+  await expect(page.locator("#chip")).toContainText("LEVEL 44");
+  // a block of the new level lies under the pointer, named only once it moves
+  expect(await cellUnder(page, point)).toBeTruthy();
+  await frame(page);
+  expect(await hovered(page)).toBeNull();
   await expect(page.locator("#tip")).toBeHidden();
-  await expect(page.locator("#readout")).not.toContainText("17, 17, 17");
+  await expect(page.locator("#readout")).not.toContainText("19, 19, 17");
   expect(errors).toEqual([]);
 });
 
@@ -1465,6 +1493,90 @@ test("the readout follows the camera with the pointer off the map", async ({ pag
   const zoomed = await zoom();
   expect(zoomed).not.toBe(fitted);
   await expect(page.locator("#readout")).toHaveText(`${zoomed}  45° / 35°`);
+  expect(errors).toEqual([]);
+});
+
+test("the readout says nothing while no level is on screen", async ({ page }) => {
+  // the blocked data is an error on the console, so only the page's own are counted
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.route("**/map_data.json", (route) => route.abort());
+  await page.goto("/");
+  await expect(page.locator("#chip")).toContainText("could not be loaded");
+  await still(page);
+  await expect(page.locator("#readout")).toHaveText("");
+  await page.evaluate(() => {
+    const cv = document.getElementById("cv");
+    cv.dispatchEvent(new PointerEvent("pointermove", { clientX: 700, clientY: 400 }));
+    cv.dispatchEvent(new PointerEvent("pointerleave", { clientX: 700, clientY: 400 }));
+  });
+  await frame(page);
+  await expect(page.locator("#readout")).toHaveText("");
+  expect(errors).toEqual([]);
+});
+
+test("a camera moved under a still pointer names the cell now under it", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#INCA/12/45,35");
+  await settle(page);
+  await still(page);
+  const point = await restOnStart(page);
+  let was = await cellUnder(page, point);
+  expect(await hovered(page)).toBe(was);
+  const moves = [
+    ["a snap of the turn", () => page.keyboard.press("e")],
+    ["a zoom key", () => page.keyboard.press("+")],
+    // the view is no longer framed, so a resize moves the picture and writes no link
+    [
+      "a resize",
+      async () => {
+        await page.setViewportSize({ width: 1100, height: 640 });
+        await still(page);
+      },
+    ],
+  ];
+  for (const [what, move] of moves) {
+    await move();
+    const now = await cellUnder(page, point);
+    expect(now, what).toBeTruthy();
+    expect(now, what).not.toBe(was);
+    await expect.poll(() => hovered(page), what).toBe(now);
+    await expect(page.locator("#tip"), what).toContainText(now);
+    await expect(page.locator("#readout"), what).toContainText(now);
+    was = now;
+  }
+  expect(errors).toEqual([]);
+});
+
+test("a drag names the cell under the pointer once it lets go, and not before", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#INCA/12/45,35");
+  await settle(page);
+  await still(page);
+  const [x, y] = await restOnStart(page);
+  const was = await hovered(page);
+  const at = (type, point) =>
+    page.evaluate(
+      ([type, [x, y]]) =>
+        document
+          .getElementById("cv")
+          .dispatchEvent(new PointerEvent(type, { clientX: x, clientY: y, pointerId: 1 })),
+      [type, point],
+    );
+  const to = [x + 40, y + 20];
+  await at("pointerdown", [x, y]);
+  await at("pointermove", to);
+  await frame(page);
+  expect(await hovered(page)).toBe(was);
+  await at("pointerup", to);
+  const now = await cellUnder(page, to);
+  expect(now).toBeTruthy();
+  expect(now).not.toBe(was);
+  await expect.poll(() => hovered(page)).toBe(now);
+  await expect(page.locator("#tip")).toContainText(now);
+  await expect(page.locator("#readout")).toContainText(now);
   expect(errors).toEqual([]);
 });
 

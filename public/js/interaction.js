@@ -10,7 +10,7 @@ import {
   cellKey,
   pivot,
 } from "./state.js";
-import { drawSoon, cellAt, invalidatePick, pointing, pressing } from "./render.js";
+import { drawSoon, cellAt, invalidatePick, pointing, pressing, onResize } from "./render.js";
 import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
@@ -31,6 +31,9 @@ const CLICK = 5; // how far a press may wander and still be a click
 
 let drag = null;
 let moved = 0;
+// Where the pointer rests over the map, in client coordinates, since the
+// canvas can move under it.
+let pointer = null;
 
 // Moving the camera on purpose leaves it where it is put rather than framed
 // again as the canvas resizes. A press that has not wandered past a click has
@@ -53,7 +56,7 @@ cv.addEventListener("pointerdown", (e) => {
 
 cv.addEventListener("pointermove", (e) => {
   pointing(true);
-  const r = cv.getBoundingClientRect();
+  pointer = { x: e.clientX, y: e.clientY };
   if (drag) {
     const dx = e.clientX - drag.x,
       dy = e.clientY - drag.y;
@@ -64,14 +67,7 @@ cv.addEventListener("pointermove", (e) => {
     drag.y = e.clientY;
     return;
   }
-  const c = cellAt(e.clientX - r.left, e.clientY - r.top);
-  const key = c ? cellKey(c.x, c.y, c.z) : null;
-  if ((state.hover?.key ?? null) !== key) {
-    state.hover = c ? { ...c, key } : null;
-    drawSoon();
-    readoutSoon();
-  }
-  hoverTip(c, e.clientX - r.left, e.clientY - r.top);
+  if (hoverAt(pointer)) readoutSoon();
 });
 
 cv.addEventListener("pointerup", (e) => {
@@ -89,6 +85,7 @@ cv.addEventListener("pointerup", (e) => {
     drawSoon();
   }
   drag = null;
+  repickSoon();
 });
 cv.addEventListener("pointercancel", () => {
   pressing(false);
@@ -96,11 +93,26 @@ cv.addEventListener("pointercancel", () => {
 });
 cv.addEventListener("pointerleave", () => {
   pointing(false);
+  pointer = null;
   state.hover = null;
   tip.hidden = true;
   readoutSoon();
   drawSoon();
 });
+
+/** Hover the cell under a client point, and say whether it is another. */
+function hoverAt({ x, y }) {
+  const r = cv.getBoundingClientRect();
+  const c = cellAt(x - r.left, y - r.top);
+  const key = c ? cellKey(c.x, c.y, c.z) : null;
+  const other = (state.hover?.key ?? null) !== key;
+  if (other) {
+    state.hover = c ? { ...c, key } : null;
+    drawSoon();
+  }
+  hoverTip(c, x - r.left, y - r.top);
+  return other;
+}
 
 export function orbit(dx, dy) {
   hold();
@@ -135,18 +147,30 @@ export function setYaw(deg) {
 // and the next move names one of the new level's.
 on("level-changed", () => {
   tip.hidden = true;
+  pointer = null;
 });
 
 // Written at most once a frame, however often the camera or the pointer
-// moves it.
+// moves it. Where the camera moved under a still pointer, the cell now under
+// it is hovered first, so the readout names that one; a press leaves the pick
+// unpainted until it lifts, and the cell waits for it.
 let readoutQueued = 0;
+let repick = false;
 function readoutSoon() {
   if (!readoutQueued) readoutQueued = requestAnimationFrame(readout);
 }
-on("view-changed", readoutSoon);
+function repickSoon() {
+  repick = true;
+  readoutSoon();
+}
+on("view-changed", repickSoon);
+onResize(repickSoon);
 
 function readout() {
   readoutQueued = 0;
+  if (repick && pointer && !drag && !touch) hoverAt(pointer);
+  repick = false;
+  if (!state.lvl) return;
   const c = state.hover;
   const { zoom, yaw, pitch } = state.cam;
   const view = `×${zoom.toFixed(2)}  ${Math.round(yaw)}° / ${Math.round(pitch)}°`;
