@@ -1,8 +1,6 @@
 """Unit tests for the skins reader: python3 -m unittest discover -s tools/tests
 
-Nothing here needs the disc: routines are assembled to order for the machine
-that runs the face routines, and the sets are cut from a model table made up
-to the header's shape.
+Nothing here needs the disc.
 """
 
 import struct

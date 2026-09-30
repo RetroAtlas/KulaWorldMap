@@ -1,7 +1,6 @@
 """Unit tests for the level parser: python3 -m unittest discover -s tools/tests
 
-Stdlib only, and nothing here needs a disc image: every level is built to
-order, which is the only way to exercise the readings the game never produces.
+Nothing here needs the disc.
 """
 
 import struct

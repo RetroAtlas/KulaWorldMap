@@ -1,7 +1,6 @@
 """Unit tests for the model reader: python3 -m unittest discover -s tools/tests
 
-Nothing here needs the disc: a model is built to order, the way the tables
-would place it, and read back.
+Nothing here needs the disc.
 """
 
 import struct

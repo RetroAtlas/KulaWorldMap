@@ -1,6 +1,6 @@
 """Unit tests for the disassembler: python3 -m unittest discover -s tools/tests
 
-Nothing here needs the disc: each word is one the executable holds.
+Nothing here needs the disc.
 """
 
 import struct

@@ -1,7 +1,6 @@
 """Unit tests for the motion reader: python3 -m unittest discover -s tools/tests
 
-Nothing here needs the disc: instructions are assembled to order for the
-reader, and the two cycles are run from the numbers the executable holds.
+Nothing here needs the disc.
 """
 
 import struct
