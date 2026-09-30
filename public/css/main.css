@@ -625,10 +625,13 @@ body.sidebar-open .menu-btn {
   cursor: pointer;
   line-height: 1;
 }
-.detail .field-name {
-  margin-left: 3px;
+.detail .field-name,
+.detail .goto .face {
   font-size: 11px;
   opacity: 0.7;
+}
+.detail .field-name {
+  margin-left: 3px;
 }
 .detail .unnamed {
   color: var(--dim);
@@ -673,9 +676,24 @@ body.sidebar-open .menu-btn {
   padding: 0;
   color: var(--accent);
   font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.detail .goto span {
+  white-space: nowrap;
+}
+.detail .goto .at {
   text-decoration: underline;
   text-underline-offset: 2px;
-  cursor: pointer;
+}
+.detail .goto .face {
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
 }
 .detail .tag {
   margin-left: auto;

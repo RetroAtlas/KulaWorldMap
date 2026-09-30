@@ -1430,11 +1430,11 @@ test("a teleporter's panel names where it leads, and going there is a find", asy
   });
   // LEVEL 68's blue teleporters send the ball round a ring of three
   const go = page.locator("#detail .goto");
-  await expect(go).toHaveText("17, 25, 17 · top");
+  await expect(go).toHaveText("17, 25, 17 top");
   const entries = await page.evaluate(() => history.length);
   await go.click();
   await expect(page.locator("#detail")).toContainText("cell 17,25,17");
-  await expect(go).toHaveText("17, 21, 17 · top");
+  await expect(go).toHaveText("17, 21, 17 top");
   const view = await page.evaluate(async () => {
     const { state } = await import(new URL("js/state.js", location.href).href);
     return { target: state.target, pan: [state.cam.panX, state.cam.panY] };
@@ -1463,6 +1463,52 @@ test("a teleporter's panel names where it leads, and going there is a find", asy
   await expect(page.locator("#detail")).toContainText("f2 facing4");
   await expect(page.locator("#detail .goto")).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test("where a teleporter leads reads as a row of the panel, the cell and its face each whole", async ({
+  page,
+}) => {
+  /** How the value of the leads-to row sits beside the row above it, with the panel `width` wide where one is given. */
+  const row = (hash, width) =>
+    page.evaluate(
+      async ([hash, width]) => {
+        location.hash = hash;
+        const cell = `cell ${hash.split("/").at(-1)}`;
+        const box = document.getElementById("detail");
+        while (!box.querySelector(".goto") || !box.textContent.includes(cell))
+          await new Promise(requestAnimationFrame);
+        box.style.width = width ? `${width}px` : "";
+        const go = box.querySelector(".goto");
+        const [at, face] = [".at", ".face"].map((s) => go.querySelector(s));
+        const [a] = at.getClientRects();
+        const [f] = face.getClientRects();
+        const above = go.closest("tr").previousElementSibling.lastElementChild;
+        const font = (e) => getComputedStyle(e).font;
+        const lines = f.top >= a.bottom ? 2 : 1;
+        return {
+          font: font(at) === font(above),
+          left: Math.round(a.left) === Math.round(above.getBoundingClientRect().left),
+          whole: at.getClientRects().length === 1 && face.getClientRects().length === 1,
+          // beside the cell on its line, or at the start of the next, under the cell
+          placed: lines === 2 ? Math.round(f.left) === Math.round(a.left) : f.left >= a.right,
+          lines,
+        };
+      },
+      [hash, width],
+    );
+  await page.goto("/#COWBOY/7/45,35/1");
+  await settle(page);
+  // LEVEL 68's blue teleporter leads to a top, LEVEL 70's red one to an underside
+  const top = "#COWBOY/7/45,35/fit/33/17,7,17";
+  const under = "#COWBOY/9/45,35/fit/33/23,13,15";
+  const reads = { font: true, left: true, whole: true, placed: true };
+  expect(await row(top)).toEqual({ ...reads, lines: 1 });
+  expect(await row(under)).toMatchObject(reads);
+  // a panel too narrow for the cell and the face side by side
+  expect(await row(under, 200)).toEqual({ ...reads, lines: 2 });
+  await page.setViewportSize({ width: 375, height: 812 });
+  expect(await row(top)).toMatchObject(reads);
+  expect(await row(under)).toMatchObject(reads);
 });
 
 test("where a teleporter leads is an arrow in its colour, broken while it is off, and loops where its ends meet", async ({

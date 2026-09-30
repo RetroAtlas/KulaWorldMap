@@ -76,7 +76,7 @@ const decoded = (m, c) => {
 // Where a teleporter leads is a place on the map to go to, as a find is.
 const destination = (to, m, c) => {
   if (to.x === c.x && to.y === c.y && to.z === c.z && to.face === m.face) return "itself";
-  const where = `${to.x}, ${to.y}, ${to.z} · ${FACE_NAME[to.face]}`;
+  const where = `<span class="at">${to.x}, ${to.y}, ${to.z}</span> <span class="face">${FACE_NAME[to.face]}</span>`;
   const there = (state.idx.markers.get(cellKey(to.x, to.y, to.z)) || []).find(
     (n) => n.face === to.face,
   );
