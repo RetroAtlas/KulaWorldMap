@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
 """A world's .TGI: its artwork, as the game itself reads it.
 
-The file is a 400-byte header, then eleven sections whose lengths are counts of
-u16 stored at header offsets 356..396. The parser at 0x000253e0 walks exactly
-that, and the cumulative lengths land on the file size in all ten worlds.
-
-The last section is the artwork, and it is not a picture: it is a list of VRAM
-uploads. Each is `u16 x, y, w, h` followed by w*h halfwords of raw VRAM, handed
-straight to the Psy-Q LoadImage at 0x000254e0. So `w` counts 16-bit words, and
-an 8bpp texture is twice that many pixels wide.
-
-Each world uploads 56 textures of 64x64 at 8bpp, three smaller 4bpp mip levels
-of each, and two blocks of 256-entry palettes parked off to the side of VRAM.
+The file is a header, then sections whose lengths are counts of u16 stored in
+the header. The artwork is not a picture but a list of VRAM uploads, each
+`u16 x, y, w, h` followed by w*h halfwords of raw VRAM, so `w` counts 16-bit
+words and an 8bpp texture is twice that many pixels wide.
 
     python3 tools/kula_tgi.py --world HIRO --sections
     python3 tools/kula_tgi.py --world HIRO --vram
@@ -32,12 +25,12 @@ HEADER = 400
 SECTIONS = 11
 COUNTS_AT = 356
 ART = 10              # the section holding the VRAM uploads
-MODELS = 5            # a table of (first, count) runs into the quads of section 6
+MODELS = 5            # a table of (first, count) runs into the quads
 MAP = 6               # the quads, which also pair textures with their palettes
 STYLE_MODEL = 7       # the model a lattice cell of style 0 draws
 MAP_STRIDE = 20       # u16 per record
-LEVELS = 4            # a texture and its three smaller levels
-SHADES = 3            # a palette per lighting level, which the header sets out
+LEVELS = 4            # a texture and its smaller mip levels
+SHADES = 3            # a palette per lighting level
 VRAM_W, VRAM_H = 1024, 512
 TEX = (32, 64)        # the blit shape of a full-size texture, in words
 
@@ -67,7 +60,7 @@ def blits(blob):
 
 
 def vram(blob):
-    """Replay every upload into a 1024x512 page of 16-bit words."""
+    """Replay every upload into a VRAM page of 16-bit words."""
     page = bytearray(VRAM_W * VRAM_H * 2)
     for b in blits(blob)[0]:
         for row in range(b["h"]):
@@ -98,12 +91,7 @@ def textures(blob):
 
 
 def models(blob):
-    """Each model as the textures of its quads, in order.
-
-    Section 5 is (first, count) pairs, and the loop at 0x000259b8 indexes it
-    with a stride of 4 bytes. The table is identical in all ten worlds, so a
-    model means the same thing everywhere and only the pixels change.
-    """
+    """Each model as the textures of its quads, in order."""
     bounds = sections(blob)
     pairs = struct.unpack_from(f"<{(bounds[MODELS + 1] - bounds[MODELS]) // 2}h",
                                blob, bounds[MODELS])
@@ -119,23 +107,15 @@ def models(blob):
 
 
 def style_textures(blob):
-    """The texture each lattice style below firstRecord draws.
-
-    The five styles are the five single-quad models from STYLE_MODEL up, which
-    hold the four textures a world changes plus one shared panel.
-    """
+    """The texture each lattice style draws: the single-quad models from
+    STYLE_MODEL up."""
     m = models(blob)
     return [m[STYLE_MODEL + s][0] for s in range(5)]
 
 
 def palette_map(blob):
-    """Which palettes each texture is drawn with.
-
-    Section 6 is a table of 20 u16. The first three are CLUT ids, and the same
-    palettes appear again as bare VRAM rows beside the position of each of the
-    texture's four levels. Keying on the level-0 position pairs every texture
-    with exactly one triple, which is the check that this reading is right.
-    """
+    """Which palette rows each texture is drawn with, from the quad record that
+    names its full-size level's position."""
     bounds = sections(blob)
     lo, hi = bounds[MAP], bounds[MAP + 1]
     n = (hi - lo) // 2

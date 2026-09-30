@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """The objects' geometry: /HIRO/HIRO.GGI, as the game itself reads it.
 
-The one .GGI on the disc is loaded once at startup, and the parser at
-0x80022de0 reads a 13-word header, seven sections laid end to end from byte 52
-whose sizes in u16 are words 6 to 12, and two model tables inside the first
-section, placed by words 13 and 14: 25 entries of four u32 at byte 60, and 50
-models of four rows of four u32 at byte 460. An entry's words are byte offsets
-from its own table's start, -1 for absent. In the second table the model index
-is the object type, the row is the level of detail and the slot is the colour
-or tier a type's varying field picks; the first holds fourteen balls and, in
-its last five entries, the things that move: the two stars, the wheel, the
-hexagonal ball and the corkscrew. The viewer gets all fourteen balls for the start.
+A header, then sections laid end to end whose sizes in u16 the header gives,
+and two model tables inside the first section that the header places: entries
+of four u32, and models of four rows of four u32. An entry's words are byte
+offsets from its own table's start, -1 for absent. In the second table the
+model index is the object type, the row is the level of detail and the slot is
+the colour or tier a type's varying field picks; the first holds the ball
+designs and, at its end, the things that move.
 
 A model is a header of `i16 x, z, y` for its centre, `u16 radius, i16, u16
 flags`, and three or four block offsets, the first of which says how long the
@@ -20,13 +17,12 @@ is. Then three blocks that each open with `u32 count, u32 bytes per item`:
 vertices, packed three at a time as three (x, z) i16 pairs, three y i16 and
 a pad, with y up and one item per animation frame; one 16-byte colour record
 per polygon, four corners of `u8 r, g, b, flags`, the flags on the first
-corner only: 0x20 always, 0x10 for a Gouraud polygon, 0x08 for a quad and
-0x02 for a translucent one; and, where there is a fourth block, normals
-packed like the vertices. The meshes carry no texture coordinates: every
-polygon is coloured, and the shading is baked into the colours.
+corner only; and, where there is a fourth block, normals packed like the
+vertices. The meshes carry no texture coordinates: every polygon is coloured,
+and the shading is baked into the colours.
 
-After the models come the sprites and the lettering the game draws flat, 148
-VRAM uploads with their palettes; none of the meshes is textured.
+After the models come the sprites and the lettering the game draws flat, as
+VRAM uploads with their palettes.
 
     python3 tools/kula_ggi.py --sections
     python3 tools/kula_ggi.py --tables
@@ -86,12 +82,9 @@ class Model:
         self.normals = self._packed(body, self.blocks[3], self.blocks[4]) if n == 4 else []
 
     def polygons(self):
-        """Each polygon's vertex indices: four where its record's flag says quad,
-        else three, and the fourth byte then holds whatever it holds."""
         return [q if c["flags"] & QUAD else q[:3] for q, c in zip(self.quads, self.colours)]
 
     def points(self):
-        """Every vertex index a polygon names."""
         return sorted({i for q in self.polygons() for i in q})
 
     @staticmethod
@@ -118,7 +111,6 @@ class Model:
 
     @staticmethod
     def _colours(body, a):
-        """One colour record per polygon; the block's prefix counts them."""
         one, length = struct.unpack_from("<II", body, a)
         out = []
         for i in range(length // 16):
@@ -165,7 +157,7 @@ class Ggi:
         return out
 
     def named(self):
-        """(label, model) for every distinct model, labelled by where the tables put it."""
+        """(labels, model) for every distinct model, labelled by where the tables put it."""
         seen = {}
         t1, t2 = self.table_at
         for m, rows in enumerate(self.types):
@@ -180,8 +172,7 @@ class Ggi:
         return [(labels, self.models[at]) for at, labels in sorted(seen.items())]
 
 
-# The last section is the sprites, walked by 0x80022fd8 into a table of 180
-# twelve-byte descriptors: `u32 count`, then per sprite `i16 bpp, i16 abr`,
+# The last section is the sprites: `u32 count`, then per sprite `i16 bpp, i16 abr`,
 # for a paletted one `u16 x, y` of its palette in VRAM, `i16 inline, u16 late`
 # and the palette's words where `inline` is 0, and then `u16 x, y, w, h` of
 # the image with its pixels where `late` is 0, w in pixels and the data padded
@@ -225,7 +216,7 @@ def textures(g):
 
 
 def vram(g):
-    """Replay every upload into a 1024x512 page of 16-bit words."""
+    """Replay every upload into a VRAM page of 16-bit words."""
     page = bytearray(VRAM_W * VRAM_H * 2)
     for t in textures(g)[0]:
         if t is None:
@@ -276,12 +267,11 @@ def palette_word(page, t, u, v):
     return struct.unpack_from("<H", page, (py * VRAM_W + px + index) * 2)[0]
 
 
-# The shadows the game draws under the ball and the captivators are sprites
-# counted past the group the header's six bounds end on, drawn in the blend
-# that takes each texel away from what is behind it. They ship as rows of a
-# character a texel, in base 32, what the texel takes off every channel, of
-# 31: grey, since a shadow darkens without tinting, and semi-transparent
-# wherever it is not nothing, since only such a texel is blended.
+# The shadows are sprites counted past the group the header's six bounds end
+# on, drawn in the blend that takes each texel away from what is behind it.
+# Each is written as rows of a character a texel, in base 32, what the texel
+# takes off every channel; the game's are grey, and semi-transparent wherever
+# they are not nothing.
 SUBTRACT = 2
 BASE32 = "0123456789abcdefghijklmnopqrstuv"
 STP = 0x8000
@@ -311,7 +301,6 @@ def shadows(g, past, count):
 
 
 def texture_sheet(g):
-    """Every sprite decoded with its own palette, in a grid, numbered."""
     tex, exact = textures(g)
     page = vram(g)
     cell = 72
@@ -350,19 +339,14 @@ def texture_sheet(g):
     print(f"{len(tex)} sprites -> {OUT / 'textures.png'} and textures.md")
 
 
-# The things that move are the first table's last five entries, and their
-# types are the captivators' and the rolling stone's: the thinner star with
-# three points is type 50 and the fuller one with four is 52, and the wheel,
-# the hexagonal ball and the corkscrew are themselves.
+# The first table's entries for the things that move, by their type.
 MOVING = {50: 20, 51: 21, 52: 22, 53: 23, 56: 24}
-# The fourteen ball designs, one an entry, and the game picks one by the
-# world's place for an arcade level, at 0x80035ff4: the ball is thematic.
+# The ball designs, one an entry from the first table's start.
 BALLS = 14
 
 
 def objects(g, placed=None):
-    """Every object type's models at full detail, one per variant, for the viewer:
-    vertices per frame, polygons, a colour per corner, and the flags. `placed`
+    """Every object type's models at full detail, one per variant. `placed`
     keeps it to the types some level places."""
     t1, t2 = g.table_at
     out = {}
@@ -390,9 +374,8 @@ def as_dict(m):
 
 
 def write_objects(g, path, placed=None, motion=None, skins=None, shadows=None):
-    """One model to a line, so a rebuild diffs by model, then the shadows'
-    sprites, one to a line, then the motion table, a type or a kind to a
-    line, then the skins, a reading to a line."""
+    """A model, a shadow, a motion entry or a skins reading to a line, so a
+    rebuild diffs by line."""
     data = objects(g, placed)
     lines = ["{", f' "block": {data["block"]},', ' "types": {']
     types = list(data["types"].items())
@@ -470,8 +453,6 @@ def show_tables(g):
               f"box {lo}..{hi}  {'; '.join(labels)}")
 
 
-# The sheet draws each model in the same three-quarter view, at one scale, so
-# a reader can say which thing each is and how big it is next to the others.
 CELL = 128
 COLS = 12
 
@@ -489,7 +470,7 @@ def dot(a, b):
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 
 
-GLASS = 0.55             # how much a translucent polygon covers
+GLASS = 0.55
 
 
 def raster(buf, w, h, pts, colour, cover=1.0):
@@ -517,8 +498,6 @@ def raster(buf, w, h, pts, colour, cover=1.0):
 
 
 def draw(buf, w, h, model, ox, oy, scale):
-    """The model in its own colours, back to front, a triangle filled with the
-    mean of its corners' colours since the shading is already in them."""
     right, up, toward = basis()
     pts = model.frames[0] if model.frames else []
     if not pts:
@@ -541,7 +520,6 @@ def draw(buf, w, h, model, ox, oy, scale):
 
 
 def label(buf, w, h, text, x, y):
-    """Five-by-seven digits and a few letters, enough to name a cell."""
     glyphs = {
         "0": "01110 10001 10011 10101 11001 10001 01110", "1": "00100 01100 00100 00100 00100 00100 01110",
         "2": "01110 10001 00001 00010 00100 01000 11111", "3": "11110 00001 00001 01110 00001 00001 11110",

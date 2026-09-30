@@ -5,24 +5,9 @@ and the artwork's model table.
     python3 tools/kula_skins.py            # every reading, with its address
     python3 tools/kula_skins.py --table    # the table the build ships
 
-A level says what a block is and what stands on it, and nothing about how it
-looks. The loader at 0x800271d8 walks the lattice and, for each face it will
-draw, files a request naming a model in the .TGI's shared table of quads, and
-0x80028d64 turns the requests into textured faces. Which model a face gets is
-a rule in the code, and this reads it: a plain face draws one of the world's
-stones at random, a fire, ice or acid block the model its kind numbers, and a
-face with something standing on it the model its type numbers, which is how
-the plates under the devices and the shadows under the pickups get painted.
-A moving platform's faces come from a table of their own, a laser's two ends
-wear a plate in the circuit's colour, and a level with no key draws from the
-second half of the model table. A face is left out only against a neighbour
-of a kind that hides it, which is not every kind: the stone behind an
-invisible block is built, and shows through it.
-
 Every number is read by matching the instruction it lives in, so a build laid
 out differently stops this rather than yielding a reading that looks like
-one. The six routines that place a face's corners are run rather than read,
-for the order they lay a texture's corners in.
+one. The routines that place a face's corners are run rather than read.
 """
 import argparse
 import json
@@ -146,8 +131,8 @@ CYCLES = {
               "shadowed": (0x800270e4, 0x800270e8),
               "level": ((0x80027044, 0x80027048), (0x80027004, 0x80027008))},
 }
-# The tables the namer at 0x8004ccf8 builds a path out of: a path per world,
-# and the five extensions.
+# The tables the game builds a file's path out of: a path per world, and the
+# extensions.
 PATH_TABLE = (0x8004cd68, 0x8004cd70)
 EXT_TABLE = (0x8004cdd0, 0x8004cdd8)
 MIRROR = 0x80000000   # the tables hold addresses without RAM's mirror bit
@@ -158,14 +143,12 @@ FACE_TABLE = (0x80028e90, 0x80028e98)
 
 
 def text_at(code, addr):
-    """The zero-terminated string at an address."""
     p = addr - EXE_BASE
     end = code.blob.index(b"\0", p)
     return code.blob[p:end].decode("ascii")
 
 
 def entry(code, table, i):
-    """The i'th address in a table of them."""
     return struct.unpack_from("<I", code.blob, table + 4 * i - EXE_BASE)[0] | MIRROR
 
 
@@ -173,12 +156,8 @@ def copycat_pack(code, r):
     """The pack the game loads in the mode that draws the first set whatever
     the keys, in the form the disc's directory gives it.
 
-    The namer at 0x8004ccf8 builds every path out of a table of paths, one
-    per world, and a table of the five extensions; in that mode, and only for
-    the level pack, it takes the path one past the ten worlds. So the levels
-    of that pack are the ones the rule above lets off, and the artwork around
-    them stays the world's own, since the artwork is named without the
-    override.
+    In that mode, and only for the level pack, the game takes the path one
+    past the worlds'.
     """
     if r["copycat.mode"] != r["copycat.names"]:
         sys.exit("the mode that names its own pack is not the one that keeps the first set")
@@ -197,10 +176,8 @@ def face_corners(code):
     as corners of the unit block.
 
     A routine takes the face's record, the block's size and centre and a
-    turn, and writes the four vertices at bytes 32 to 52 of the record; the
-    renderer at 0x8004f9e0 pairs them with the texture's corners in that
-    order. Running each routine on a block of known size and centre and
-    reading the vertices back is what gives the order.
+    turn, and writes the four vertices at bytes 32 to 52 of the record, in
+    the order the renderer pairs them with the texture's corners.
     """
     table = code.address(*FACE_TABLE)
     m = Machine(code)
@@ -231,8 +208,7 @@ def face_corners(code):
 def platform_table(code, r):
     """The (model, turn) each face of a moving platform's blocks draws, by the
     axis it runs along and whether the block is the only one, the first, one
-    between or the last: the tables at 0x80072f28 the builder at 0x80027cd4
-    picks from."""
+    between or the last."""
     stride = code.multiplier(*PLATFORM_AXIS_STRIDE)
     if stride != 2 * FACES * 2 * len(PLATFORM_TABLES):
         sys.exit(f"the platform tables are {stride} bytes an axis, not {2 * FACES * 2 * len(PLATFORM_TABLES)}")
@@ -257,11 +233,7 @@ def platform_table(code, r):
 
 def cycles(code, r):
     """The animator's tables: a frame index per game frame and, where a face
-    has one, a colour per frame of a second cycle to draw the texture through,
-    128 being the texture's own brightness. The lists are built at 0x80026f2c
-    and 0x8004f3b8 steps every face on them once a frame; the bonus stone's
-    colours are four cycles, of which a world uses the pair its parity picks,
-    the first of the pair for its blocks and the second for a platform's."""
+    has one, a colour per frame of a second cycle to draw the texture through."""
     def span(start, end):
         a, b = code.address(*start), code.address(*end)
         return code.blob[a - EXE_BASE:b - EXE_BASE]
@@ -295,13 +267,9 @@ def cycles(code, r):
 
 def hiding(r):
     """The neighbours a face is not built toward, or built unseen behind, by
-    the kind of the block it belongs to: the loader asks the neighbour's kind
-    (0x8002dfac) and takes one of four paths by its own, the crumbling
-    block's, the vanishing block's, which asks nothing, the invisible
-    block's, and one for every other face. A neighbour that is empty, or a
-    kind none of the tests names, lets the face be built. Of the kinds the
-    last path names, the ones it builds a face unseen behind rather than not
-    at all are given apart."""
+    the kind of the block it belongs to, which picks the path the game takes.
+    Of the kinds the path for every other face names, the ones it builds a
+    face unseen behind rather than not at all are given apart."""
     below = lambda n: set(range(n))
     other = below(r["hide.below"]) | {r["hide.also.a"], r["hide.also.b"], r["hide.while"]}
     start = -r["invisible.from"]
@@ -348,9 +316,7 @@ def sets(models, groups, r):
 
     A set is a group of special models, then the world's stones, then one
     model per type; the second set has the same shape with the group sizes the
-    header gives it. Kinds 1, 2 and 4 draw the model their number picks past
-    the stones, which is the same model a face with an object of that type
-    draws, and kinds 3 and 6 two of the special models.
+    header gives it.
     """
     out = {}
     first = 0
@@ -376,7 +342,7 @@ def table(code, tgis):
     """The table the build ships under "skins" in public/objects.json.
 
     `tgis` maps a world id to its .TGI. The model table has to be the same in
-    every world for the sets to mean anything, and it is.
+    every world for the sets to mean anything.
     """
     r = readings(code)
     models = None

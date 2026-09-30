@@ -1,16 +1,8 @@
 #!/usr/bin/env python3
-"""Export the block textures the viewer draws with, one atlas per world.
+"""Export the block textures, one atlas per world: a row per shade the game
+ships a texture pre-lit in and, along the row, every texture in order.
 
-A world ships 56 textures of 64x64, and the loader picks one for every face
-of every block from the shared model table (tools/kula_skins.py reads how).
-Each texture comes pre-shaded three ways, which is what the header's three
-multipliers are for and exactly what a cube needs: a brightness per face,
-and the header says which face wears which. An atlas is one row per shade
-and, along the row, every texture in order, so the viewer finds a texture by
-its number and a shade by its row. The viewer fetches a world's atlas when a
-level of that world is opened.
-
-    python3 tools/kula_tex.py        # public/tex/<WORLD>.png, ten of them
+    python3 tools/kula_tex.py        # public/tex/<WORLD>.png
 """
 import argparse
 import sys
@@ -27,7 +19,6 @@ SIZE = 64
 
 
 def atlas(blob):
-    """The world's textures, a row per shade, as RGBA pixels."""
     page = tgi.vram(blob)
     pals = dict(tgi.cluts(page))
     pmap = tgi.palette_map(blob)
