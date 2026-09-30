@@ -43,8 +43,6 @@ const dot = (colour) =>
     style: `display:inline-block;width:9px;height:9px;border-radius:50%;background:${colour}`,
   });
 
-// A heading's icon is drawn over a stand-in once the panel is laid out, and
-// again when the world's textures land, since one drawn before is flat.
 let icons = [];
 const iconAt = (make) => `<span data-icon="${icons.push(make) - 1}"></span>`;
 function drawIcons(box) {
@@ -73,7 +71,6 @@ const decoded = (m, c) => {
   return html;
 };
 
-// Where a teleporter leads is a place on the map to go to, as a find is.
 const destination = (to, m, c) => {
   if (to.x === c.x && to.y === c.y && to.z === c.z && to.face === m.face) return "itself";
   const where = `<span class="at">${to.x}, ${to.y}, ${to.z}</span> <span class="face">${FACE_NAME[to.face]}</span>`;
@@ -100,8 +97,6 @@ const fields = (m) => {
   return html;
 };
 
-// A switch is pressed from its panel as in play, which turns its whole circuit
-// over; the button says whether the circuit is on now.
 const press = (m) => {
   const on = markerNow(m) === "on";
   return `<p class="press"><button type="button" data-circuit="${markerCircuit(m)}">
@@ -117,7 +112,7 @@ const placed = (m) => {
   return `${html}.</p>`;
 };
 
-/** Select a cell, and say in the panel what the game stores on it. */
+/** Select a cell and show it in the panel. */
 export function showCell(c) {
   const l = state.lvl;
   const key = cellKey(c.x, c.y, c.z);

@@ -2,9 +2,8 @@ import { $, el, on } from "./dom.js";
 import { state, SIDE, cellKey } from "./state.js";
 import { draw } from "./render.js";
 
-// What a player saw, written down against the lattice and nothing else. It is
-// never derived from the records, so a decode can be scored against it: a mark
-// on a cell the file says carries nothing is exactly the finding worth keeping.
+// A mark is keyed to the lattice and never derived from the records, so a
+// decode can be scored against it.
 const KEY = "kula.survey";
 const FACES = [
   ["", "face unset"],
@@ -15,8 +14,7 @@ const FACES = [
   ["+y", "+y side"],
   ["-y", "-y side"],
 ];
-// The game's vocabulary as a player meets it, grouped, so a mark can say what
-// was seen without first knowing what the disc calls it.
+// Named as a player meets them, not as the disc files them.
 const GROUPS = [
   [
     "Pickups",
@@ -106,7 +104,6 @@ function save() {
   }
 }
 
-/** The stored form is a plain list so the export is the file, not a rendering of it. */
 export function loadLevel() {
   state.survey.marks = new Map();
   const l = state.lvl;
@@ -130,7 +127,6 @@ function store() {
   save();
 }
 
-/** Alt-click clears a cell; a plain click writes the brush over whatever is there. */
 export function place(c, clear) {
   const k = cellKey(c.x, c.y, c.z);
   if (clear) state.survey.marks.delete(k);
@@ -238,8 +234,6 @@ function build() {
   box.hidden = false;
 }
 
-// Kept off the deployed page unless it is asked for, so a reader meets the map
-// and not the notebook behind it.
 if (new URLSearchParams(location.search).has("survey")) {
   state.survey.on = true;
   load();

@@ -32,7 +32,6 @@ const SHOWN = [
 ];
 const DEFAULTS = { ...state.show };
 
-/** Where the drawer floats over the map rather than sitting beside it. */
 export const sidebarOverlays = () => matchMedia("(max-width: 760px)").matches;
 
 export function setSidebar(open) {
@@ -89,22 +88,16 @@ function markLevel() {
   }
 }
 
-// What stands on the faces is listed apart from the blocks, and the level's
-// settings, which are neither, come last. Each group is a list, named by its
-// heading where it has one.
 const GROUPS = [
   ["object", "Objects"],
   ["block", "Blocks"],
   ["settings", null],
 ];
-// A row of a group here only counts; any other row shows and hides what it
-// lists on the map.
 const COUNT_ONLY = new Set(["block"]);
 const byName = new Intl.Collator("en", { numeric: true }).compare;
 
 export function buildKinds() {
   const box = $("kinds");
-  // A row that has the focus has it again once the rows are built anew.
   const focused = box.contains(document.activeElement) ? document.activeElement.dataset.kind : null;
   box.textContent = "";
   const counts = new Map();
@@ -148,7 +141,6 @@ export function buildKinds() {
   if (focused) [...box.querySelectorAll("button")].find((b) => b.dataset.kind === focused)?.focus();
 }
 
-// The settings have no icon, and a row of them shows a dot.
 const iconOf = (m) =>
   markerIcon(m, state.lvl) ??
   el("span", { className: "dot", style: `background:${markerColour(m)}` });
@@ -195,7 +187,6 @@ export function wireDisplay() {
     choose("panMode", state.panMode, false);
   });
   $("slice").addEventListener("input", (e) => setSlice(Number(e.target.value)));
-  // The reset puts back what is under its own heading and leaves the settings.
   $("resetDisplay").onclick = () => {
     for (const [id, key] of SHOWN) {
       if (!$("display").contains($(id))) continue;
@@ -210,7 +201,6 @@ export function wireDisplay() {
     invalidatePick();
     draw();
   };
-  // a greyed row says why when it is clicked or tapped, where there is no hover
   for (const box of document.querySelectorAll("input[data-needs]"))
     box.closest("label").addEventListener("click", () => {
       if (box.disabled) toast(`${held(box)}.`);
@@ -227,9 +217,8 @@ export function wireDisplay() {
   $("scrim").onclick = () => setSidebar(false);
 }
 
-// The switches set away from their defaults, each kept until it is set back to
-// its default, so that a default that changes reaches whoever left that switch
-// alone and no one who set it.
+// Only the switches set away from their defaults, so a default that changes
+// reaches whoever left that switch alone.
 let chosen = {};
 
 function choose(key, value, fallback) {
@@ -250,8 +239,6 @@ export function restore() {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || "null");
     if (v && typeof v === "object") {
-      // a saved switch the display does not have, or a value not of the
-      // switch's kind, is left behind
       for (const k of Object.keys(DEFAULTS))
         if (typeof v[k] === typeof DEFAULTS[k]) state.show[k] = chosen[k] = v[k];
       if (typeof v.panMode === "boolean") state.panMode = chosen.panMode = v.panMode;
@@ -261,30 +248,23 @@ export function restore() {
   }
 }
 
-// a switch set away from the display is kept as the display's own are
 on("show-changed", (key) => choose(key, state.show[key], DEFAULTS[key]));
 
-// A switch that does something only while another is on is greyed while that
-// one is off, and keeps its tick for when it comes back. The slice is on while
-// it cuts into the level.
 const slicing = () => sliceZ() > (state.lvl?.min[2] ?? 0);
 const isOn = (el) => (el.type === "range" ? slicing() : el.checked);
 
-/** What holds a switch back: the nearest it depends on that is off. */
 function holder(box) {
   const up = box.dataset.needs && $(box.dataset.needs);
   if (!up) return null;
   return isOn(up) ? holder(up) : up;
 }
 
-/** A switch's name: its label's text, less the key and the note beside it. */
 function nameOf(box) {
   const label = box.closest("label").cloneNode(true);
   for (const aside of label.querySelectorAll("kbd, .def")) aside.remove();
   return label.textContent.replace(/\s+/g, " ").trim();
 }
 
-/** Why a switch cannot be set just now, or null where it can. */
 export function held(box) {
   const up = holder(box);
   if (!up) return null;
