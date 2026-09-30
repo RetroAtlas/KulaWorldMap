@@ -578,25 +578,26 @@ test.describe("on a phone", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
   });
 
-  test("a tap on the button in the corner frames the level again, and leaves it unlit", async ({
+  test("a tap on the button in the corner frames the level again, and leaves it at rest", async ({
     page,
   }) => {
     await page.goto("/#INCA/11");
     await settle(page);
     await still(page);
+    const button = page.locator("#fitBtn");
+    const ink = () => button.evaluate((b) => getComputedStyle(b).color);
+    const resting = await ink();
     await page.keyboard.press("+");
     await expect(page).not.toHaveURL(/\/fit\//);
-    const button = page.locator("#fitBtn");
+    expect(await ink()).not.toBe(resting);
     const box = await button.boundingBox();
     expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
-    const ink = () => button.evaluate((b) => getComputedStyle(b).color);
-    const untouched = await ink();
     await button.tap();
     await expect(page).toHaveURL(/\/fit\//);
     await expect(page.locator("#detail")).toBeHidden();
     // a touch screen keeps the tapped button under its :hover until the next tap
     expect(await button.evaluate((b) => b.matches(":hover"))).toBe(true);
-    expect(await ink()).toBe(untouched);
+    expect(await ink()).toBe(resting);
   });
 });
 
@@ -1128,6 +1129,68 @@ test("the button in the corner frames the level again as f does, and no block be
   await expect(page.locator("#detail")).toBeHidden();
   const framed = await fitted(page);
   expect(framed.zoom).toBe(framed.fit);
+  expect(errors).toEqual([]);
+});
+
+test("the button in the corner is dim while the level stays framed, and lights once the view leaves it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#INCA/11");
+  await settle(page);
+  await still(page);
+  const button = page.locator("#fitBtn");
+  const ink = () => button.evaluate((b) => getComputedStyle(b).color);
+  const light = (rgb) =>
+    rgb
+      .match(/\d+/g)
+      .slice(0, 3)
+      .reduce((a, v) => a + Number(v), 0);
+  const resting = await ink();
+  const leaves = [
+    ["a snap of the turn", () => page.keyboard.press("e")],
+    ["a zoom key", () => page.keyboard.press("+")],
+    ["an arrow", () => page.keyboard.press("ArrowLeft")],
+    ["a drag", () => press(page, 40, 20)],
+    ["a link naming its zoom", () => page.evaluate(() => (location.hash = "#INCA/11/45,35/1.2"))],
+  ];
+  for (const [what, leave] of leaves) {
+    await leave();
+    await expect.poll(ink, what).not.toBe(resting);
+    expect(light(await ink()), what).toBeGreaterThan(light(resting));
+    await page.keyboard.press("f");
+    expect(await ink(), what).toBe(resting);
+  }
+
+  // a framed view kept framed as the window changes keeps the button dim
+  await page.setViewportSize({ width: 1100, height: 640 });
+  await still(page);
+  expect(await ink()).toBe(resting);
+
+  const cell = await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const c = [...state.idx.cells.values()][0];
+    return `${c.x},${c.y},${c.z}`;
+  });
+  await page.locator("#search").fill(cell);
+  await page.locator("#search").press("Enter");
+  await expect.poll(ink, "a find").not.toBe(resting);
+
+  // pressed, it frames the level and rests, and pressed at rest it changes nothing
+  const camera = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      return { ...state.cam, target: state.target };
+    });
+  for (let i = 0; i < 2; i++) {
+    const before = await camera();
+    await button.click();
+    await page.mouse.move(0, 0);
+    await expect(page).toHaveURL(/\/fit\//);
+    await expect(button).toBeEnabled();
+    expect(await ink()).toBe(resting);
+    if (i) expect(await camera()).toEqual(before);
+  }
   expect(errors).toEqual([]);
 });
 

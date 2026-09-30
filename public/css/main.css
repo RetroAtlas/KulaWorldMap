@@ -615,6 +615,10 @@ body.sidebar-open .menu-btn {
   color: var(--ink);
   cursor: pointer;
 }
+.fit.fitted {
+  color: var(--dim);
+  background: #171d2bf0;
+}
 .fit:focus-visible {
   color: var(--accent);
   border-color: var(--accent-dim);

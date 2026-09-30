@@ -156,6 +156,10 @@ $("fitBtn").onclick = refit;
 on("level-changed", () => {
   $("corner").hidden = false;
 });
+// the button rests while the view is framed as a press would leave it
+on("view-changed", () => {
+  $("fitBtn").classList.toggle("fitted", state.framing === fit);
+});
 
 // A level changed under a still pointer takes the cell it named with it,
 // and the next move names one of the new level's.
