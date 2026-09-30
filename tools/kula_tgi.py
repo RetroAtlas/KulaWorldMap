@@ -29,7 +29,6 @@ MODELS = 5            # a table of (first, count) runs into the quads
 MAP = 6               # the quads, which also pair textures with their palettes
 STYLE_MODEL = 7       # the model a lattice cell of style 0 draws
 MAP_STRIDE = 20       # u16 per record
-LEVELS = 4            # a texture and its smaller mip levels
 SHADES = 3            # a palette per lighting level
 VRAM_W, VRAM_H = 1024, 512
 TEX = (32, 64)        # the blit shape of a full-size texture, in words
