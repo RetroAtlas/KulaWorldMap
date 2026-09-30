@@ -55,7 +55,7 @@ export const worldNote = (id) => ann.worlds[id]?.note || "";
 // where it differs from the number shown it is a curiosity for the note.
 export const levelNote = (l) =>
   [
-    levelTitle(l) !== l.name ? `On the disc this level is named ${l.name}.` : "",
+    levelTitle(l) !== l.name ? `The game's files name this level ${l.name}.` : "",
     ann.levels[`${l.pack}#${l.index}`]?.note,
   ]
     .filter(Boolean)
