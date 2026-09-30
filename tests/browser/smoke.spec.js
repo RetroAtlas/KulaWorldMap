@@ -1557,6 +1557,24 @@ test("a legend row keeps the focus when the legend is built anew", async ({ page
   await expect(key).toBeFocused();
 });
 
+test("a legend row's icon shows the row's pointer, and the map the hand that turns it", async ({
+  page,
+}) => {
+  await page.goto("/#ATLANT/3");
+  await settle(page);
+  const cursor = (at) => at.evaluate((e) => getComputedStyle(e).cursor);
+  const row = page.getByRole("list", { name: "Objects" }).getByRole("button").first();
+  expect(await cursor(row)).toBe("pointer");
+  expect(await cursor(row.locator(".icon"))).toBe("pointer");
+  const map = page.locator("#cv");
+  expect(await cursor(map)).toBe("grab");
+  const box = await map.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  expect(await cursor(map)).toBe("grabbing");
+  await page.mouse.up();
+});
+
 test("a panel is a dialog that a click inside does not dismiss", async ({ page }) => {
   await page.goto("/");
   await settle(page);

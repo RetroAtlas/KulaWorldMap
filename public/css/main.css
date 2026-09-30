@@ -469,17 +469,17 @@ button.kind:hover {
   --corner-foot: 44px;
   --corner-h: 96px;
 }
-canvas {
+#cv {
   display: block;
   width: 100%;
   height: 100%;
   cursor: grab;
   touch-action: none;
 }
-canvas:active {
+#cv:active {
   cursor: grabbing;
 }
-canvas:focus-visible {
+#cv:focus-visible {
   outline: 2px solid var(--accent-dim);
   outline-offset: -2px;
 }
@@ -646,10 +646,6 @@ body.sidebar-open .menu-btn {
   background: var(--surface-float);
   border: 1px solid var(--line);
   border-radius: 8px;
-}
-.compass,
-.compass:active {
-  cursor: default;
 }
 
 .tip {
