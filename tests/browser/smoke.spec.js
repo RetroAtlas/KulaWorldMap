@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { trackErrors, settle, frame, still } from "./helpers.js";
+import { trackErrors, settle, frame, still, textured } from "./helpers.js";
 
 test("the map boots into standards mode with nothing on the console", async ({ page }) => {
   const errors = trackErrors(page);
@@ -243,9 +243,11 @@ test("going back to another view of the same level keeps the kinds hidden in it"
 }) => {
   await page.goto("/#HIRO/1");
   await settle(page);
+  await textured(page);
   const search = page.locator("#search");
   await search.fill("coin");
   await search.press("Enter");
+  await frame(page);
   await page.keyboard.press("/");
   await search.press("ArrowDown");
   await search.press("Enter");
@@ -492,11 +494,16 @@ test("a level's note folds away and back with a click on the chip, or with its k
   await expect(fold).toHaveAttribute("aria-expanded", "false");
   await expect(note).toBeHidden();
   await expect(page.locator("#detail")).toBeHidden();
-  // folded, the chip is back to the one row it shares with the menu button
+  // folded, the chip is as tall as the menu button, and a row taller for each row its line adds
   const [chip, menu] = await Promise.all(
     ["#chip", "#menuBtn"].map((s) => page.locator(s).boundingBox()),
   );
-  expect(chip.height).toBe(menu.height);
+  const [rows, row] = await page.locator("#chipLine").evaluate((e) => {
+    const s = getComputedStyle(e);
+    const row = parseFloat(s.lineHeight);
+    return [(e.clientHeight - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom)) / row, row];
+  });
+  expect(chip.height).toBe(menu.height + (rows - 1) * row);
   await page.keyboard.press("Enter");
   await expect(fold).toHaveAttribute("aria-expanded", "true");
   await expect(note).toBeVisible();
@@ -527,6 +534,7 @@ test("a note folded stays folded from level to level and from one visit to the n
   await page.keyboard.press("[");
   await expect(title).toHaveText("LEVEL 134");
   await expect(fold).toHaveAttribute("aria-expanded", "false");
+  await expect(page).toHaveURL(/#MARS\/13\//);
   await page.reload();
   await settle(page);
   await expect(fold).toHaveAttribute("aria-expanded", "false");
@@ -549,6 +557,14 @@ test("a level without a note has nothing on its chip to fold", async ({ page }) 
   await expect(page.locator("#chipNote")).toBeHidden();
 });
 
+/** Tap as a finger does, with no mouse left elsewhere to take the hover away. */
+const fingerTap = async (page, target, position) => {
+  const box = await target.boundingBox();
+  const at = position ?? { x: box.width / 2, y: box.height / 2 };
+  await page.mouse.move(box.x + at.x, box.y + at.y);
+  await target.tap({ position: at });
+};
+
 test.describe("on a phone", () => {
   test.use({ viewport: { width: 375, height: 700 }, isMobile: true, hasTouch: true });
 
@@ -568,10 +584,11 @@ test.describe("on a phone", () => {
       page.evaluate(() => getComputedStyle(document.getElementById("chip")).borderTopColor);
     const unlit = await border();
     // the padding round the words is the line as much as the words are
-    await fold.tap({ position: { x: 4, y: 4 } });
+    await fingerTap(page, fold, { x: 4, y: 4 });
     await expect(fold).toHaveAttribute("aria-expanded", "false");
     await expect(note).toBeHidden();
     await expect(page.locator("#detail")).toBeHidden();
+    expect(await fold.evaluate((b) => b.matches(":hover"))).toBe(true);
     expect(await border()).toBe(unlit);
     await fold.tap();
     await expect(note).toBeVisible();
@@ -592,7 +609,7 @@ test.describe("on a phone", () => {
     expect(await ink()).not.toBe(resting);
     const box = await button.boundingBox();
     expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
-    await button.tap();
+    await fingerTap(page, button);
     await expect(page).toHaveURL(/\/fit\//);
     await expect(page.locator("#detail")).toBeHidden();
     // a touch screen keeps the tapped button under its :hover until the next tap
@@ -607,10 +624,13 @@ test("the drawer stays dismissable on the narrowest phone", async ({ page }) => 
   await settle(page);
   await page.locator("#menuBtn").click();
   await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "true");
+  await still(page);
   const btn = await page.locator("#menuBtn").boundingBox();
   expect(btn.x + btn.width).toBeLessThanOrEqual(320);
   await expect(page.locator("#scrim")).toBeVisible();
-  await page.locator("#scrim").click();
+  const drawer = await page.locator("#sidebar").boundingBox();
+  const beside = { x: (drawer.x + drawer.width + 320) / 2, y: drawer.height / 2 };
+  await page.locator("#scrim").click({ position: beside });
   await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "false");
 });
 
@@ -1516,6 +1536,7 @@ test("a legend row of objects shows and hides them, and a row of blocks only cou
 }) => {
   await page.goto("/#ATLANT/3");
   await settle(page);
+  await textured(page);
   const objects = page.getByRole("list", { name: "Objects" });
   const blocks = page.getByRole("list", { name: "Blocks" });
   const rows = await objects.getByRole("listitem").count();
@@ -1544,6 +1565,7 @@ test("a legend row of objects shows and hides them, and a row of blocks only cou
 test("a legend row keeps the focus when the legend is built anew", async ({ page }) => {
   await page.goto("/#ATLANT/3");
   await settle(page);
+  await textured(page);
   const key = page.getByRole("list", { name: "Objects" }).getByRole("button", { name: "Key" });
   await key.focus();
   await page.keyboard.press("Space");
@@ -1643,14 +1665,14 @@ test("a dialog opened as another closes stays open, on an entry of its own", asy
   await settle(page);
   const help = page.locator("#help");
   await page.keyboard.press("?");
+  const first = await page.evaluate(() => history.state.dialog);
   // both at once, before the Back that closing the first spends has landed
   await page.evaluate(() => {
     for (const key of ["Escape", "?"])
       document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
   });
-  await page.waitForTimeout(300);
+  await expect.poll(() => page.evaluate(() => history.state?.dialog)).toBeGreaterThan(first);
   await expect(help).toBeVisible();
-  expect(await page.evaluate(() => history.state?.dialog)).toBeTruthy();
   await page.goBack();
   await expect(help).toBeHidden();
   expect(await page.evaluate(() => history.state)).toBeNull();
@@ -1775,6 +1797,7 @@ test("a label leaves out the face its thing stands on, and n names it", async ({
   const errors = trackErrors(page);
   await page.goto("/#HIRO/0/45,35/1");
   await settle(page);
+  await still(page);
   await expect(page.locator("#showFaces")).not.toBeChecked();
   await page.keyboard.press("l");
   const plain = await written(page);
@@ -2017,6 +2040,7 @@ test("a switch's panel presses it, turning its colour over until the level is le
   await select(9);
   const press = page.locator("#detail .press button");
   await expect(press).toHaveText(/Off · press to turn on/);
+  await expect(page).toHaveURL(/\/\d+,\d+,\d+$/);
   const url = page.url();
   await press.click();
   await expect(press).toHaveText(/On · press to turn off/);
@@ -2500,9 +2524,17 @@ test("a level's clock starts at its first frame as the level opens", async ({ pa
     page.evaluate(async () => (await import(new URL("js/render.js", location.href).href)).clock());
   await page.waitForTimeout(600);
   expect(await clock()).toBeGreaterThan(30);
+  const pressed = await page.evaluate(() => performance.now());
   await page.keyboard.press("]");
   await expect(page.locator("#chip")).toContainText("LEVEL 2");
-  expect(await clock()).toBeLessThan(20);
+  const [now, since] = await page.evaluate(async (pressed) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ clock }, { frameAt }, { motionTable }] = await Promise.all(
+      ["render.js", "motion.js", "data.js"].map(at),
+    );
+    return [clock(), frameAt(motionTable(), performance.now() - pressed)];
+  }, pressed);
+  expect(now).toBeLessThan(since);
 });
 
 /** A digest of what the map's canvas shows. */
@@ -2515,32 +2547,30 @@ const picture = (page) =>
 
 /** Wait for the world's textures to land and the drawer to finish sliding,
     after which only what moves draws the map again. */
-const landed = (page) =>
-  page.evaluate(async () => {
-    const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { atlasFor }] = await Promise.all(["state.js", "atlas.js"].map(at));
-    while (!atlasFor(state.lvl.theme)) await new Promise(requestAnimationFrame);
-    await new Promise((r) => setTimeout(r, 300));
-  });
+const landed = async (page) => {
+  await textured(page);
+  await still(page);
+};
 
-/** How many frames the map draws of its own over a spell. */
-const drawn = (page, ms = 400) =>
+/** How many frames the map draws of its own over a spell that lasts both so
+    many of the page's frames and so long. */
+const drawn = (page, frames = 24, ms = 400) =>
   page.evaluate(
-    (ms) =>
-      new Promise((done) => {
-        const g = document.getElementById("cv").getContext("2d");
-        let n = 0;
-        const clear = g.clearRect;
-        g.clearRect = function (...a) {
-          n++;
-          return clear.apply(this, a);
-        };
-        setTimeout(() => {
-          g.clearRect = clear;
-          done(n);
-        }, ms);
-      }),
-    ms,
+    async ([frames, ms]) => {
+      const g = document.getElementById("cv").getContext("2d");
+      let n = 0;
+      const clear = g.clearRect;
+      g.clearRect = function (...a) {
+        n++;
+        return clear.apply(this, a);
+      };
+      const end = performance.now() + ms;
+      for (let i = 0; i < frames || performance.now() < end; i++)
+        await new Promise(requestAnimationFrame);
+      g.clearRect = clear;
+      return n;
+    },
+    [frames, ms],
   );
 
 test("v holds the whole level still, the same every time, and draws nothing more", async ({

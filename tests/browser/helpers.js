@@ -29,3 +29,11 @@ export async function still(page) {
   );
   await frame(page);
 }
+
+/** Wait for the world's textures, whose landing builds the legend anew. */
+export const textured = (page) =>
+  page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { atlasFor }] = await Promise.all(["state.js", "atlas.js"].map(at));
+    while (!atlasFor(state.lvl.theme)) await new Promise(requestAnimationFrame);
+  });
