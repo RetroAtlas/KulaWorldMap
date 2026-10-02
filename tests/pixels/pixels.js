@@ -75,7 +75,8 @@ async function open(page, base) {
   page.on("pageerror", (e) => console.error("pageerror:", e.message));
   page.on("console", (m) => m.type() === "error" && console.error("console:", m.text()));
   await page.addInitScript(instrument);
-  await page.goto(`${base}/#HIRO/0`);
+  // a world none of the arrive captures take, so each starts before its atlas lands
+  await page.goto(`${base}/#FIELD/0`);
   await page.evaluate(async () => {
     const { state } = await import("/js/state.js");
     const deadline = Date.now() + 30000;
@@ -102,10 +103,8 @@ async function arrival(page) {
     };
     const out = [];
     for (const world of ["HIRO", "INCA", "HAZE"]) {
-      if (world !== "HIRO") {
-        N.selectLevel(state.data.levels.findIndex((l) => l.theme === world));
-        R.draw();
-      }
+      N.selectLevel(state.data.levels.findIndex((l) => l.theme === world));
+      R.draw();
       const flat = await shot();
       await window.__atlasesIn();
       const arrived = await shot();
