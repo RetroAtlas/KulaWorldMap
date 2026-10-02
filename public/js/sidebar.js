@@ -288,6 +288,7 @@ function syncSlice() {
 
 on("slice-changed", syncSlice);
 
+on("density-changed", () => state.data && buildKinds());
 on("atlas-loaded", (world) => {
   if (world === state.lvl?.theme) buildKinds();
 });

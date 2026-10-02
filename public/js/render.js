@@ -1,4 +1,4 @@
-import { $, on } from "./dom.js";
+import { $, on, emit } from "./dom.js";
 import {
   state,
   BLOCK,
@@ -98,6 +98,7 @@ function watchDensity() {
     "change",
     () => {
       resize();
+      emit("density-changed");
       watchDensity();
     },
     { once: true },
