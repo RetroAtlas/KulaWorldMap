@@ -155,6 +155,10 @@ CHECKS = [
     (0x8003b7bc, "addiu $v1, $s4, 32", "into its home"),
     (0x8003e87c, "addu $v0, $v0, $fp", "and the corkscrew's shadow lies under its home"),
     (0x8003e9e4, "lh $v0, -23414($at)", "as strong as the corkscrew's bounce"),
+    # The vanishing block.
+    (0x8002b7e8, "sw $zero, 12($v0)", "a vanishing block that returns starts its faces black"),
+    (0x8002b9a0, "sb $zero, 1($v0)", "settled, its faces lose the translucent flag"),
+    (0x8002b9fc, "sb $t6, 1($v0)", "and take it as they start to dim"),
     (0x8003ea08, "jal 0x8005fb58", "less a multiple of its sine"),
     (0x80031f3c, "jal 0x800603f8", "the ball's shadow is widened by the landing's squash"),
     (0x80031f54, "jal 0x800603f8", "and by the breath's"),
@@ -258,6 +262,9 @@ IMMEDIATES = [
     ("vanishing block", "vanish.solid", "solid, frames", 0x8002b9c0, "addiu $a2, $zero, {}"),
     ("vanishing block", "vanish.dim", "dimming, frames", 0x8002b9d4, "addiu $a2, $zero, {}"),
     ("vanishing block", "vanish.out", "flashing out, frames", 0x8002bad4, "addiu $a2, $zero, {}"),
+    ("vanishing block", "vanish.in.over", "fading in: the count is taken from this", 0x8002b858, "addiu $v0, $zero, {}"),
+    ("vanishing block", "vanish.settle.floor", "settling: the ramp stands this far above black", 0x8002b93c, "addiu $a1, $v1, {}"),
+    ("vanishing block", "vanish.dim.from", "dimming: the ramp is taken from this", 0x8002ba50, "addiu $v0, $zero, {}"),
 
     ("crumbling block", "crumble.size", "size at load, units", 0x80028ab8, "addiu $a3, $zero, {}"),
     ("crumbling block", "crumble.shrink", "shrinks per frame once broken, units", 0x8002b5b8, "addiu $v0, $v0, {}"),
@@ -370,6 +377,10 @@ MULTIPLIERS = [
     ("the ball", "time.tick", "the level's time is this many ticks a second", 0x80035f90, 6, "v1", "v0"),
     ("moving spikes", "spikes.phase.step", "phase: frames per step", 0x8002a110, 4, "v1", "v1"),
     ("vanishing block", "vanish.phase.step", "phase: frames per step", 0x80028c10, 3, "a1", "v1"),
+    ("vanishing block", "vanish.in.scale", "fading in: the count's rise times this", 0x8002b860, 2, "v0", "v1"),
+    ("vanishing block", "vanish.settle.scale", "settling: the count times this", 0x8002b914, 3, "a2", "v0"),
+    ("vanishing block", "vanish.dim.scale", "dimming: the count times this", 0x8002ba28, 3, "a2", "v0"),
+    ("vanishing block", "vanish.out.scale", "flashing out: the count times this", 0x8002bae8, 2, "a2", "v0"),
     ("moving platform", "platform.scale", "speed on the disc is scaled by this over sixty", 0x80032a60, 5, "v1", "v0"),
     ("captivators", "captivator.standoff", "stand this far off the block's centre, units", 0x8003b720, 5, "a0", "v0"),
     ("captivators", "star50.travel", "slow star: travels per frame, units", 0x8003bcbc, 4, "v1", "v0"),
@@ -397,6 +408,23 @@ DIVISORS = [
      0x800326a8, "sra $v1, $a2, {}"),
     ("shadows", "shadow.ball.over", "ball: and divided by this", 0x800323d4, "lui $s2, {}", 0x800323d8,
      "ori $s2, $s2, {}", 0x80032494, "sra $v0, $t8, {}"),
+    ("vanishing block", "vanish.in.by", "fading in: over this", 0x8002b850, "lui $a0, {}", 0x8002b854,
+     "ori $a0, $a0, {}", 0x8002b87c, "sra $v0, $t7, {}"),
+    ("vanishing block", "vanish.settle.by", "settling: over this", 0x8002b90c, "lui $v1, {}", 0x8002b910,
+     "ori $v1, $v1, {}", 0x8002b934, "sra $v1, $t7, {}"),
+    ("vanishing block", "vanish.dim.by", "dimming: over this", 0x8002ba20, "lui $v1, {}", 0x8002ba24,
+     "ori $v1, $v1, {}", 0x8002ba48, "sra $v1, $t7, {}"),
+    ("vanishing block", "vanish.out.by", "flashing out: over this", 0x8002bae0, "lui $v1, {}", 0x8002bae4,
+     "ori $v1, $v1, {}", 0x8002bb04, "sra $v1, $t7, {}"),
+]
+
+# A brightness the vanishing block's faces take as a state ends, a grey held
+# as a colour word in two halves.
+GREYS = [
+    ("vanishing block", "vanish.in.to", "fading in: ends at", 0x8002b8c8, "lui $v1, {}", 0x8002b8cc, "ori $v1, $v1, {}"),
+    ("vanishing block", "vanish.settle.to", "settling: ends at", 0x8002b984, "lui $v1, {}", 0x8002b988, "ori $v1, $v1, {}"),
+    ("vanishing block", "vanish.dim.at", "dimming: starts at", 0x8002b9e0, "lui $v1, {}", 0x8002b9e4, "ori $v1, $v1, {}"),
+    ("vanishing block", "vanish.out.at", "flashing out: starts at", 0x8002ba9c, "lui $v1, {}", 0x8002baa0, "ori $v1, $v1, {}"),
 ]
 
 # The shadow's four vertices, each x, y, z and a pad, where both draws load
@@ -463,6 +491,13 @@ class Code:
         """The word a lui and an ori hold between them."""
         return (self.immediate(hi, hp) << 16) | (self.immediate(lo, lp) & 0xFFFF)
 
+    def grey(self, hi, hp, lo, lp):
+        """The level of a colour word whose three channels are one."""
+        word = self.word_of(hi, hp, lo, lp)
+        if word != (word & 0xFF) * 0x010101:
+            sys.exit(f"0x{hi:08x} and 0x{lo:08x} hold the colour 0x{word:08x}, not a grey")
+        return word & 0xFF
+
     def divisor(self, hi, hp, lo, lp, sa, sp):
         """The number a multiply by a reciprocal and a shift divides by."""
         return round(2 ** (32 + self.immediate(sa, sp)) / self.word_of(hi, hp, lo, lp))
@@ -505,6 +540,8 @@ def readings(code):
     out["dice.times"] = code.word_of(*DICE_TIMES)
     for _, key, _, *args in DIVISORS:
         out[key] = code.divisor(*args)
+    for _, key, _, *args in GREYS:
+        out[key] = code.grey(*args)
     start, end = (code.address(*pair) for pair in LASER_LEVELS)
     out["laser.levels"] = list(code.blob[start - EXE_BASE:end - EXE_BASE])
     out["shadow.half"] = shadow_half(code)
@@ -698,9 +735,14 @@ def vanish_cycle(r, phase, at=None):
     if phase < r["vanish.phase.absent"]:
         state, count, level = 0, r["vanish.phase.absent.from"] - v, 0
     else:
-        state, count, level = 3, r["vanish.phase.solid.from"] - v, 128
+        state, count, level = 3, r["vanish.phase.solid.from"] - v, r["vanish.settle.to"]
     lasts = [r["vanish.absent"], r["vanish.in"], r["vanish.settle"],
              r["vanish.solid"], r["vanish.dim"], r["vanish.out"]]
+    for name, last in zip(("in", "settle", "dim", "out"), (lasts[1], lasts[2], lasts[4], lasts[5])):
+        if r[f"vanish.{name}.by"] != last:
+            sys.exit(f"the vanishing block's ramp {name} runs over {r[f'vanish.{name}.by']} frames of {last}")
+    if r["vanish.in.over"] != lasts[1]:
+        sys.exit(f"the vanishing block fades in from {r['vanish.in.over']} over {lasts[1]} frames")
     cycle = sum(lasts)
     at = cycle * 2 if at is None else at
     seq = []
@@ -711,25 +753,25 @@ def vanish_cycle(r, phase, at=None):
                 state, count = 1, lasts[1]
         elif state == 1:
             if count > 0:
-                level = (lasts[1] - count) * 255 // lasts[1]
+                level = (r["vanish.in.over"] - count) * r["vanish.in.scale"] // r["vanish.in.by"]
             else:
-                state, count, level = 2, lasts[2], 255
+                state, count, level = 2, lasts[2], r["vanish.in.to"]
         elif state == 2:
             if count > 0:
-                level = count * 224 // lasts[2] + 32
+                level = count * r["vanish.settle.scale"] // r["vanish.settle.by"] + r["vanish.settle.floor"]
             else:
-                state, count, level = 3, lasts[3], 128
+                state, count, level = 3, lasts[3], r["vanish.settle.to"]
         elif state == 3:
             if count <= 0:
-                state, count, level = 4, lasts[4], 32
+                state, count, level = 4, lasts[4], r["vanish.dim.at"]
         elif state == 4:
             if count > 0:
-                level = 256 - count * 224 // lasts[4]
+                level = r["vanish.dim.from"] - count * r["vanish.dim.scale"] // r["vanish.dim.by"]
             else:
-                state, count, level = 5, lasts[5], 255
+                state, count, level = 5, lasts[5], r["vanish.out.at"]
         else:
             if count > 0:
-                level = 255 * count // lasts[5]
+                level = r["vanish.out.scale"] * count // r["vanish.out.by"]
             else:
                 state, count, level = 0, lasts[0], 0
         seq.append((state, level))
@@ -848,6 +890,8 @@ def show_readings(code):
                  readings(code)["dice.times"]))
     for group, key, what, hi, hp, lo, lp, sa, sp in DIVISORS:
         rows.append((group, what, hi, code.divisor(hi, hp, lo, lp, sa, sp)))
+    for group, key, what, hi, hp, lo, lp in GREYS:
+        rows.append((group, what, hi, code.grey(hi, hp, lo, lp)))
     rows.append(("shadows", "the square reaches this far either way of its middle, units",
                  code.address(*SHADOW_SQUARE), readings(code)["shadow.half"]))
     rows.append(("invisible block", "rows of the square root it measures a corner by",

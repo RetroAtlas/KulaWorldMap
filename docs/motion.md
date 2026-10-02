@@ -56,9 +56,9 @@ Kind 7 keeps its state in the first slot's `f3` and a countdown in `f4`, and the
 | --- | --- | --- | --- |
 | 0 | absent | 91 | nothing; the lattice cell is −1 |
 | 1 | fading in | 9 | the cell is set and the faces brighten from black to white |
-| 2 | settling | 5 | from 211 down to neutral grey |
+| 2 | settling | 5 | white, then 211, 166, 121 and 76, under neutral grey |
 | 3 | solid | 91 | neutral, `0x808080` |
-| 4 | dimming | 9 | from 57 up to 231 with the faces' translucent flag on |
+| 4 | dimming | 9 | 32, then from 57 up to 232 by 25 a frame, with the faces' translucent flag on |
 | 5 | flashing out | 19 | white fading to black; then the cell is −1 again |
 
 **The cycle is 224 frames, 3.7 s, and `f2` is a phase of 56 frames a step**, a quarter exactly: a phase under 2 starts absent with 91 − 56·f2 to go and the others start solid with 196 − 56·f2 to go. The block is in the lattice, and can be stood on, from the moment it starts fading in to the moment it finishes flashing out, 133 frames, and out of it for 91. What the disc holds in the record's `type` word is overwritten at load with the lattice's own value for the cell, which is what the routine writes back when the block returns.

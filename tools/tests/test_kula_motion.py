@@ -56,6 +56,10 @@ GAME = {
     "vanish.phase.step": 56, "vanish.phase.absent": 2, "vanish.phase.absent.from": 91,
     "vanish.phase.solid.from": 196, "vanish.absent": 91, "vanish.in": 9, "vanish.settle": 5,
     "vanish.solid": 91, "vanish.dim": 9, "vanish.out": 19,
+    "vanish.in.over": 9, "vanish.in.scale": 255, "vanish.in.by": 9, "vanish.in.to": 255,
+    "vanish.settle.scale": 224, "vanish.settle.by": 5, "vanish.settle.floor": 32, "vanish.settle.to": 128,
+    "vanish.dim.at": 32, "vanish.dim.from": 256, "vanish.dim.scale": 224, "vanish.dim.by": 9,
+    "vanish.out.at": 255, "vanish.out.scale": 255, "vanish.out.by": 19,
     "laser.reach": 256, "laser.reach.back": -256, "laser.nozzle": 90, "laser.nozzle.back": -90,
     "laser.width": 7, "laser.width.back": -7, "laser.colour.0a": 3, "laser.colour.0b": 11,
     "laser.colour.1": 19, "laser.colour.2": 11, "laser.colour.3": 3, "laser.step": 1,
@@ -112,6 +116,12 @@ class Reads(unittest.TestCase):
         c = code(lui("v1", 0x41c6), ori("v1", "v1", 0x4e6d), lui("a0", 0x38e3), ori("a0", "a0", 0x8e39))
         self.assertEqual(c.word_of(AT, "lui $v1, {}", AT + 4, "ori $v1, $v1, {}"), 0x41c64e6d)
         self.assertEqual(c.word_of(AT + 8, "lui $a0, {}", AT + 12, "ori $a0, $a0, {}"), 0x38e38e39)
+
+    def test_a_grey_is_the_one_level_of_a_colour_word_in_two_halves(self):
+        c = code(lui("v1", 0x0080), ori("v1", "v1", 0x8080), lui("v1", 0x00ff), ori("v1", "v1", 0xff00))
+        self.assertEqual(c.grey(AT, "lui $v1, {}", AT + 4, "ori $v1, $v1, {}"), 128)
+        with self.assertRaises(SystemExit):
+            c.grey(AT + 8, "lui $v1, {}", AT + 12, "ori $v1, $v1, {}")
 
     def test_an_immediate_is_read_from_the_instruction_it_lives_in(self):
         c = code(addiu("a0", "v1", -75))
@@ -300,7 +310,16 @@ class Cycles(unittest.TestCase):
                          [[0, 91], [1, 9], [2, 5], [3, 91], [4, 9], [5, 19]])
         self.assertTrue(all(0 <= v <= 255 for _, v in seq))
         self.assertTrue(all(v == 128 for s, v in seq if s == 3))
-        self.assertEqual(max(v for s, v in seq if s == 1), 226)
+        self.assertEqual([v for s, v in seq if s == 1], [0, 28, 56, 85, 113, 141, 170, 198, 226])
+        self.assertEqual([v for s, v in seq if s == 2], [255, 211, 166, 121, 76])
+        self.assertEqual([v for s, v in seq if s == 4], [32, 57, 82, 107, 132, 157, 182, 207, 232])
+        self.assertEqual([v for s, v in seq if s == 5][:3] + [v for s, v in seq if s == 5][-2:],
+                         [255, 241, 228, 26, 13])
+
+    def test_a_vanishing_ramp_that_does_not_run_over_its_state_stops_the_reading(self):
+        for change in ({"vanish.dim.by": 8}, {"vanish.in.over": 8}):
+            with self.assertRaises(SystemExit):
+                vanish_cycle({**GAME, **change}, 0)
 
     def test_the_vanishing_block_phases_are_a_quarter_cycle_apart(self):
         appear = [[s for s, _ in vanish_cycle(GAME, p)].index(1) for p in range(PHASES)]
