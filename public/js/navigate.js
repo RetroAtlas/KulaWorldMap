@@ -123,9 +123,6 @@ $("chipBtn").onclick = () => {
   foldNote();
 };
 
-// Set while a hash is read back, so no write puts a half-restored view in the URL.
-let restoring = false;
-
 // Browsers rate-limit replaceState and throw past the limit, so writes wait
 // for the next frame and go out as one.
 let queued = 0;
@@ -154,7 +151,7 @@ function flushHash() {
   const push = entry;
   entry = false;
   const l = state.lvl;
-  if (!l || restoring || location.hash !== known) return;
+  if (!l || location.hash !== known) return;
   const s = state.selected;
   const h = formatHash({
     slot: slotOf(l),
@@ -183,7 +180,6 @@ export function applyHash() {
   const link = parseHash(known);
   const i = levelAt(link.slot);
   if (i === undefined) return false;
-  restoring = true;
   if (i !== state.li) selectLevel(i, { keepView: true });
   if (link.turn) [state.cam.yaw, state.cam.pitch] = link.turn;
   if (link.target) state.target = link.target;
@@ -195,7 +191,6 @@ export function applyHash() {
   const cell = link.picked && state.idx.cells.get(cellKey(...link.picked));
   if (cell) showCell(cell);
   else clearDetail();
-  restoring = false;
   writeHash();
   invalidatePick();
   emit("slice-changed");
