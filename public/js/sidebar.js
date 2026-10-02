@@ -36,6 +36,7 @@ export const sidebarOverlays = () => matchMedia("(max-width: 760px)").matches;
 
 export function setSidebar(open) {
   document.body.classList.toggle("sidebar-open", open);
+  $("sidebar").inert = !open;
   $("menuBtn").setAttribute("aria-expanded", String(open));
 }
 

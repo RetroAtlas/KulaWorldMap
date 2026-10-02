@@ -642,6 +642,26 @@ test("Escape leaves the drawer alone where it sits beside the map", async ({ pag
   expect(await page.evaluate(() => document.body.classList.contains("sidebar-open"))).toBe(true);
 });
 
+test("the closed drawer is out of the tab order, and / opens it to search", async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 700 });
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "false");
+  const inDrawer = () =>
+    page.evaluate(() => document.getElementById("sidebar").contains(document.activeElement));
+  for (let i = 0; i < 6; i++) {
+    await page.keyboard.press("Tab");
+    expect(await inDrawer()).toBe(false);
+  }
+  await page.keyboard.press("/");
+  await expect(page.locator("body")).toHaveClass(/sidebar-open/);
+  await expect(page.locator("#search")).toBeFocused();
+  // closed with the focus still inside, as a key closes it
+  await page.evaluate(() => document.getElementById("menuBtn").click());
+  await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "false");
+  await expect.poll(inDrawer).toBe(false);
+});
+
 test("search answers a number as a whole word, and says when nothing matches", async ({ page }) => {
   await page.goto("/");
   await settle(page);

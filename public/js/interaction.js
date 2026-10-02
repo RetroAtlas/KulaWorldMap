@@ -283,6 +283,7 @@ addEventListener("keydown", (e) => {
   const typing = /^(INPUT|TEXTAREA)$/.test(e.target.tagName) && e.target.type !== "checkbox";
   if (e.key === "/" && !typing) {
     e.preventDefault();
+    setSidebar(true);
     $("search").focus();
     $("search").select();
     return;
