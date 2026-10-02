@@ -30,6 +30,7 @@ let scope = "all";
 let cursor = -1;
 // The row the cursor is on, by key, so it is found again as the list grows.
 let current = null;
+let builtFor = null;
 
 const options = () => [...out.querySelectorAll("[role=option]")];
 
@@ -152,6 +153,7 @@ function group(label, items, make) {
 }
 
 function render() {
+  builtFor = state.lvl.theme;
   out.textContent = "";
   found.textContent = "";
   const q = box.value.trim();
@@ -333,10 +335,10 @@ box.addEventListener("keydown", (e) => {
   }
 });
 
-// A list held to a world or a level is of the level in hand; one of
-// everything stays as it was, so a walk down it is not thrown off.
+// A list is built anew only where its finds no longer fit its scope; one
+// that still fits stays as it was, so a walk down it is not thrown off.
 on("level-changed", () => {
   if (bar.hidden) return;
-  if (scope === "all") scopeBar();
-  else render();
+  if (scope === "level" || (scope === "world" && state.lvl.theme !== builtFor)) render();
+  else scopeBar();
 });

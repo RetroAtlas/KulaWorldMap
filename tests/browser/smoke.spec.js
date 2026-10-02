@@ -3562,3 +3562,29 @@ test("the page a link lands on says what it is", async ({ page }) => {
     expect(res.status(), path).toBe(200);
   }
 });
+
+test("a search held to the world keeps its order as the level moves within the world", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const box = page.locator("#search");
+  await box.fill("key");
+  await page.locator("#scope button").nth(1).click();
+  const keys = () =>
+    page.locator("#results [role=option]").evaluateAll((els) => els.map((e) => e.dataset.key));
+  const before = await keys();
+  const away = before.findIndex((k) => !k.startsWith("0:"));
+  expect(away).toBeGreaterThan(0);
+  for (let i = 0; i <= away; i++) await box.press("ArrowDown");
+  await box.press("Enter");
+  await expect(page.locator("#chip b")).not.toHaveText("LEVEL 1");
+  expect(await keys()).toEqual(before);
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { selectLevel }] = await Promise.all(["state.js", "navigate.js"].map(at));
+    selectLevel(state.data.levels.findIndex((l) => l.theme === "INCA"));
+  });
+  await expect(page.locator("#scope button").nth(1)).toHaveText("INCA");
+  expect((await keys())[0]).not.toEqual(before[0]);
+});
