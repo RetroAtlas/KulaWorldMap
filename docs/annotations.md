@@ -22,7 +22,7 @@ Style 2 in the lattice, kind 2 in a record: LEVEL 46, the walkthrough's first ic
 
 ### kind 3: Invisible block
 
-Style 3 in the lattice, kind 3 in a record: LEVEL 31, the walkthrough's first invisible platform, is eight of them and nothing else new. More than half of the game's 1281 are in Haze, 709 of them. That rolling over one in a bonus level scores nothing, which the map's totals count on, is arithmetic: the six bonus levels that have invisible blocks each fall short of the walkthrough's maximum by 50 times their count, and no other bonus level has one.
+Style 3 in the lattice, kind 3 in a record: LEVEL 31, the walkthrough's first invisible platform, is eight of them and nothing else new. More than half of the game's 1245 are in Haze, 705 of them. That rolling over one in a bonus level scores nothing, which the map's totals count on, is arithmetic: the six bonus levels that have invisible blocks each fall short of the walkthrough's maximum by 50 times their count, and no other bonus level has one.
 
 How one shows is the executable's: [motion.md](motion.md) has the routine. It is hidden and lights up only within a block of the ball, and on the seven levels whose settings record carries a first field of 1 it is the other way round, seen everywhere and fading out as the ball comes within three and a half blocks, gone within two and a half, which is the note's "only from far away". The sunglasses show them all.
 

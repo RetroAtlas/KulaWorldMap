@@ -116,6 +116,7 @@ test("the kind sections' shares by world are what the data holds", () => {
   const byWorld = (kind) => {
     const out = new Map();
     for (const l of mapData.levels) {
+      if (l.name === "OBJ LEVEL") continue;
       const n = blockMarkers(l).filter((m) => m.kind === kind).length;
       out.set(l.theme, (out.get(l.theme) || 0) + n);
     }
