@@ -13,10 +13,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import open_disc, packs
-from kula_level import FACES, SLOT, WORDS, Level
+from kula_level import FACE, FACES, SLOT, WORDS, Level
 from kula_pak import Pak
-
-FACE = ["-z", "+x", "+y", "-y", "-x", "+z"]
 
 
 def records(disc):

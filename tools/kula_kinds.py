@@ -13,12 +13,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import open_disc, packs
-from kula_level import FIELD_WORD, PAYLOAD_KINDS, UNPLACED_KIND, Level
+from kula_level import FACE, FIELD_WORD, PAYLOAD_KINDS, UNPLACED_KIND, Level
 from kula_pak import Pak
 
 OUT = Path(__file__).resolve().parent.parent / "out" / "kinds.md"
 NEIGHBOURS = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
-FACE = ["-z", "+x", "+y", "-y", "-x", "+z"]
 
 
 def collect(disc):

@@ -14,13 +14,12 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from kula_level import FIELD_WORD
+from kula_level import FACE, FIELD_WORD
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "out" / "obj-level.md"
 DATA = ROOT / "public" / "map_data.json"
 NAMES = ROOT / "public" / "annotations.json"
-FACE = ["-z", "+x", "+y", "-y", "-x", "+z"]
 
 
 def serpentine(objects):
