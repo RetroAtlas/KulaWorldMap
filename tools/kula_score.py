@@ -12,7 +12,7 @@ import json
 import sys
 from pathlib import Path
 
-from kula_level import FIELD_WORD
+from kula_level import BLOCK_KINDS, FIELD_WORD
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "public" / "map_data.json"
@@ -51,7 +51,8 @@ def tallied(level, first_record):
 def level_points(level, kinds, types, first_record):
     total = 0
     for r in level["records"]:
-        total += kinds.get(r["kind"], 0)
+        if r["kind"] >= BLOCK_KINDS:
+            total += kinds.get(r["kind"], 0)
         for o in r["on"]:
             total += types.get(o["type"], lambda o: 0)(o)
     if level["index"] in BONUS_SLOTS:
