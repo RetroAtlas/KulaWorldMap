@@ -7,6 +7,7 @@ const r2 = (v) => Math.round(v * 100) / 100;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 const FIT = "fit";
+const PAN_MAX = 2 * SIDE;
 
 export function formatHash({ slot, cam, target, slice, picked, fitted }) {
   const view = fitted
@@ -46,16 +47,17 @@ export function parseHash(hash) {
   const ceiling = numbers(slice, 1)?.[0];
   const angles = numbers(turn, 2);
   const centre = numbers(target, 3);
+  const shift = numbers(pan, 2);
   const cell = tail
     .find((segment) => CELL.test(segment))
     ?.split(",")
     .map(Number);
   return {
     slot: `${pack}/${/^\d+$/.test(slot) ? Number(slot) : slot}`.toUpperCase(),
-    turn: angles && [angles[0], clamp(angles[1], PITCH_MIN, PITCH_MAX)],
+    turn: angles && [((angles[0] % 360) + 360) % 360, clamp(angles[1], PITCH_MIN, PITCH_MAX)],
     zoom: scale > 0 ? clamp(scale, ZOOM_MIN, ZOOM_MAX) : null,
     target: centre && centre.map((v) => clamp(v, 0, SIDE)),
-    pan: numbers(pan, 2),
+    pan: shift && shift.map((v) => clamp(v, -PAN_MAX, PAN_MAX)),
     slice: Number.isInteger(ceiling) && ceiling >= 0 ? Math.min(SIDE - 1, ceiling) : null,
     picked: cell?.every((v) => v < SIDE) ? cell : null,
   };
