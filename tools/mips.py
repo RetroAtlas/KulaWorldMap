@@ -131,8 +131,8 @@ class Machine:
     """Enough of a MIPS to run a routine of the game's to its return, from
     the arguments and the words on the stack it is given. A call it makes is
     answered by `calls`, by the address called, from the four arguments and
-    four stack words the call is made with; a word it loads that it has not
-    stored is the executable's. It stops on anything else it meets."""
+    four stack words the call is made with; what it loads and has not stored
+    is read from the executable. It stops on anything else it meets."""
 
     def __init__(self, code):
         self.code = code
@@ -146,8 +146,8 @@ class Machine:
 
         def ld(a, n):
             a = ram(a)
-            if n == 4 and a not in mem and self.code.holds(a):
-                return self.code.word(a)
+            if self.code.holds(a, n) and not any(a + b in mem for b in range(n)):
+                return int.from_bytes(self.code.read(a, n), "little")
             return sum(mem.get(a + b, 0) << (8 * b) for b in range(n))
 
         def st(a, v, n):

@@ -434,8 +434,11 @@ class Code:
     def word(self, addr):
         return struct.unpack_from("<I", self.blob, addr - EXE_BASE)[0]
 
-    def holds(self, addr):
-        return EXE_BASE <= addr and addr + 4 <= EXE_BASE + len(self.blob)
+    def holds(self, addr, n=4):
+        return EXE_BASE <= addr and addr + n <= EXE_BASE + len(self.blob)
+
+    def read(self, addr, n):
+        return self.blob[addr - EXE_BASE:addr - EXE_BASE + n]
 
     def text(self, addr):
         return decode(self.word(addr), addr)[0]

@@ -41,6 +41,10 @@ def sb(rt, rs, imm):
     return (0x28 << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
 
 
+def lbu(rt, rs, imm):
+    return (0x24 << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
 def sll(rd, rt, sa):
     return (R[rt] << 16) | (R[rd] << 11) | (sa << 6)
 
@@ -119,6 +123,11 @@ class TheMachine(unittest.TestCase):
         mem = m.run(AT, [0x80191000, BLOCK, 1000, 2000], [3000, 1])
         self.assertEqual(mem[0x80191006], 1)
         self.assertEqual(struct.unpack("<HH", bytes(mem[0x80191020 + i] for i in range(4))), (1512, 2000))
+
+    def test_a_byte_of_the_executable_is_read_as_a_word_of_it_is(self):
+        c = code(lbu("v0", "a0", 2), jr("ra"), sw("v0", "a1", 0), 0x44332211)
+        mem = Machine(c).run(AT, [AT + 12, 0x80191000], [])
+        self.assertEqual(mem[0x80191000], 0x33)
 
     def test_a_call_is_answered_from_its_arguments_and_stack_words(self):
         # Calls a routine with a0 + 1 and a word on the stack, and returns
