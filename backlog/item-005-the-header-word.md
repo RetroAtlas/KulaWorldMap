@@ -1,4 +1,4 @@
-# 5. The unnamed word at the head of the trailer
+# 5. The unnamed word in the level header
 
 ## What and why
 
