@@ -27,7 +27,6 @@ COUNTS_AT = 356
 ART = 10              # the section holding the VRAM uploads
 MODELS = 5            # a table of (first, count) runs into the quads
 MAP = 6               # the quads, which also pair textures with their palettes
-STYLE_MODEL = 7       # the model a lattice cell of style 0 draws
 MAP_STRIDE = 20       # u16 per record
 SHADES = 3            # a palette per lighting level
 VRAM_W, VRAM_H = 1024, 512
@@ -110,13 +109,6 @@ def models(blob):
         out.append([at.get((w[r * MAP_STRIDE + 3], w[r * MAP_STRIDE + 4]))
                     for r in range(first, first + max(0, count)) if 0 <= r < quads])
     return out
-
-
-def style_textures(blob):
-    """The texture each lattice style draws: the single-quad models from
-    STYLE_MODEL up."""
-    m = models(blob)
-    return [m[STYLE_MODEL + s][0] for s in range(5)]
 
 
 def palette_map(blob):
