@@ -98,15 +98,6 @@ def main():
         "themes": themes,
         "levels": levels,
     }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(data, indent=1))
-    cells = sum(len(l["cells"]) // 4 for l in levels)
-    records = sum(len(l["records"]) for l in levels)
-    objs = sum(len(r["on"]) for l in levels for r in l["records"])
-    print(f"cross-check: {checked} cell/record pairs agree, {len(levels)} level times found")
-    print(f"{len(levels)} levels, {cells} placed cells, {records} records carrying {objs} objects "
-          f"-> {OUT.relative_to(OUT.parent.parent.parent)} ({OUT.stat().st_size/1024:.0f} KB)")
-
     placed = {o["type"] for l in levels for r in l["records"] for o in r["on"]}
     code = Code(disc.read_file(EXE))
     r = readings(code)
@@ -115,8 +106,17 @@ def main():
     if skins["copycat"] not in {l["pack"] for l in levels}:
         sys.exit(f"the skins name {skins['copycat']}, which is no pack on the disc")
     g = Ggi(disc.read_file(GGI))
-    shapes = write_objects(g, OBJECTS, placed, motion, skins,
-                           shadows(g, r["shadow.sprite"], r["shadow.sprites"]))
+    cast = shadows(g, r["shadow.sprite"], r["shadow.sprites"])
+
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    shapes = write_objects(g, OBJECTS, placed, motion, skins, cast)
+    OUT.write_text(json.dumps(data, indent=1))
+    cells = sum(len(l["cells"]) // 4 for l in levels)
+    records = sum(len(l["records"]) for l in levels)
+    objs = sum(len(r["on"]) for l in levels for r in l["records"])
+    print(f"cross-check: {checked} cell/record pairs agree, {len(levels)} level times found")
+    print(f"{len(levels)} levels, {cells} placed cells, {records} records carrying {objs} objects "
+          f"-> {OUT.relative_to(OUT.parent.parent.parent)} ({OUT.stat().st_size/1024:.0f} KB)")
     models = sum(len(v) for v in shapes["types"].values()) + len(shapes["balls"])
     print(f"{len(shapes['types'])} object types and the ball drawn by {models} models, "
           f"{len(motion['types'])} types and {len(motion['kinds'])} kinds of block in motion, "
