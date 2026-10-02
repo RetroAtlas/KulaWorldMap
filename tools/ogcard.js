@@ -52,7 +52,6 @@ try {
     state.cam.panY = 2.1;
     state.framing = null;
     state.show.labels = false;
-    state.show.start = false;
     state.show.outlines = true;
     render.invalidatePick();
     render.draw();
