@@ -3110,7 +3110,7 @@ test("a switch that does something only under another is greyed while it is off,
   await expect(said).toHaveText("“Dim what the slice hides” needs the slice lowered.");
   await page.evaluate(async () => {
     const { state, SIDE } = await import(new URL("js/state.js", location.href).href);
-    const { setSlice } = await import(new URL("js/interaction.js", location.href).href);
+    const { setSlice } = await import(new URL("js/navigate.js", location.href).href);
     setSlice(SIDE - 2 - state.lvl.min[2]);
   });
   await greyed([]);
@@ -3142,7 +3142,7 @@ test("every switch's key is the one its row shows and the key list names", async
   await page.keyboard.press("l");
   await page.evaluate(async () => {
     const { state, SIDE } = await import(new URL("js/state.js", location.href).href);
-    const { setSlice } = await import(new URL("js/interaction.js", location.href).href);
+    const { setSlice } = await import(new URL("js/navigate.js", location.href).href);
     setSlice(SIDE - 2 - state.lvl.min[2]);
   });
   await expect(page.locator("input:disabled")).toHaveCount(0);

@@ -11,9 +11,8 @@ import {
   markerColour,
 } from "./data.js";
 import { markerIcon } from "./icons.js";
-import { selectLevel } from "./navigate.js";
+import { selectLevel, setSlice } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
-import { setSlice } from "./interaction.js";
 import { toast } from "./toast.js";
 
 const KEY = "kula.display";

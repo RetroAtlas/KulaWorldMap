@@ -9,7 +9,7 @@ import {
   markerGroup,
   kindName,
 } from "./data.js";
-import { selectLevel, centreOn, writeHash } from "./navigate.js";
+import { selectLevel, centreOn, writeHash, setSlice } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
 import { showCell, clearDetail } from "./detail.js";
 import { say } from "./a11y.js";
@@ -18,7 +18,6 @@ import { spans } from "./searchtext.js";
 import { matchPlaces } from "./placesearch.js";
 import { matchObjects, rowOf } from "./objectsearch.js";
 import { setSidebar, sidebarOverlays } from "./sidebar.js";
-import { setSlice } from "./interaction.js";
 
 const box = $("search");
 const bar = $("scope");

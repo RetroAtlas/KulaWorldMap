@@ -11,7 +11,7 @@ import {
   levelPoints,
   levelScore,
 } from "./data.js";
-import { draw, invalidatePick } from "./render.js";
+import { draw, drawSoon, invalidatePick } from "./render.js";
 import { showCell, clearDetail } from "./detail.js";
 import { slotOf, formatHash, parseHash } from "./permalink.js";
 
@@ -69,6 +69,15 @@ export function fit() {
   const zx = (w - pad) / Math.max(1e-3, (x1 - x0) * BLOCK);
   const zy = (h - pad) / Math.max(1e-3, (y1 - y0) * BLOCK);
   state.cam.zoom = Math.max(ZOOM_MIN, Math.min(3, Math.min(zx, zy)));
+}
+
+export function setSlice(z) {
+  state.slice = Math.max(0, Math.min(SIDE - 1, z));
+  emit("slice-changed");
+  invalidatePick();
+  drawSoon();
+  chip();
+  writeHash();
 }
 
 export function centreOn(x, y, z) {

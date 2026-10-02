@@ -11,7 +11,7 @@ import {
   pivot,
 } from "./state.js";
 import { drawSoon, cellAt, invalidatePick, pointing, pressing, onResize } from "./render.js";
-import { chip, writeHash, stepLevel, fit } from "./navigate.js";
+import { chip, writeHash, stepLevel, fit, setSlice } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
 import { FACE_NAME } from "./faces.js";
@@ -395,14 +395,6 @@ addEventListener("keydown", (e) => {
   }
   e.preventDefault();
 });
-
-export function setSlice(z) {
-  state.slice = Math.max(0, Math.min(SIDE - 1, z));
-  emit("slice-changed");
-  redraw();
-  chip();
-  writeHash();
-}
 
 function toggle(id) {
   const box = $(id);
