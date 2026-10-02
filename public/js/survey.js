@@ -1,9 +1,10 @@
 import { $, el, on } from "./dom.js";
 import { state, SIDE, cellKey } from "./state.js";
+import { counted } from "./data.js";
 import { draw } from "./render.js";
 
-// A mark is keyed to the lattice and never derived from the records, so a
-// decode can be scored against it.
+// A mark is keyed to a lattice cell and a face, one a face, and never derived
+// from the records, so a decode can be scored against it.
 const KEY = "kula.survey";
 const FACES = [
   ["", "face unset"],
@@ -78,6 +79,8 @@ const GROUPS = [
   ],
 ];
 const NAMES = GROUPS.flatMap(([, names]) => names);
+const byFace = (a, b) =>
+  FACES.findIndex(([v]) => v === a.face) - FACES.findIndex(([v]) => v === b.face);
 
 let all = {};
 let brush = NAMES[0];
@@ -109,7 +112,10 @@ export function loadLevel() {
   const l = state.lvl;
   if (!l) return;
   for (const m of all[levelKey(l)] || []) {
-    state.survey.marks.set(cellKey(...m.cell), { name: m.name, face: m.face || "" });
+    const k = cellKey(...m.cell);
+    const list = state.survey.marks.get(k) || [];
+    list.push({ name: m.name, face: m.face || "" });
+    state.survey.marks.set(k, list.sort(byFace));
   }
   panel();
 }
@@ -117,9 +123,9 @@ export function loadLevel() {
 function store() {
   const out = [];
   for (const k of [...state.survey.marks.keys()].sort((a, b) => a - b)) {
-    const m = state.survey.marks.get(k);
     const cell = [Math.floor(k / (SIDE * SIDE)), Math.floor(k / SIDE) % SIDE, k % SIDE];
-    out.push(m.face ? { cell, name: m.name, face: m.face } : { cell, name: m.name });
+    for (const m of state.survey.marks.get(k))
+      out.push(m.face ? { cell, name: m.name, face: m.face } : { cell, name: m.name });
   }
   const key = levelKey(state.lvl);
   if (out.length) all[key] = out;
@@ -127,10 +133,13 @@ function store() {
   save();
 }
 
+/** Mark the chosen face of a block with the brush, or clear that face's mark. */
 export function place(c, clear) {
   const k = cellKey(c.x, c.y, c.z);
-  if (clear) state.survey.marks.delete(k);
-  else state.survey.marks.set(k, { name: brush, face });
+  const list = (state.survey.marks.get(k) || []).filter((m) => m.face !== face);
+  if (!clear) list.push({ name: brush, face });
+  if (list.length) state.survey.marks.set(k, list.sort(byFace));
+  else state.survey.marks.delete(k);
   store();
   panel();
   draw();
@@ -159,11 +168,17 @@ function panel() {
     const [x, y, z, v] = l.cells.slice(i, i + 4);
     if (v >= state.data.firstRecord) recorded.add(cellKey(x, y, z));
   }
-  let off = 0;
-  for (const k of marks.keys()) if (!recorded.has(k)) off++;
+  let n = 0,
+    off = 0;
+  for (const [k, list] of marks) {
+    n += list.length;
+    if (!recorded.has(k)) off++;
+  }
   const missing = [...recorded].filter((k) => !marks.has(k)).length;
   $("surveyCount").innerHTML =
-    `<b>${marks.size}</b> marked · <b>${missing}</b> record cells still bare` +
+    `<b>${n}</b> marked` +
+    (n === marks.size ? "" : ` on ${counted(marks.size, "block")}`) +
+    ` · <b>${missing}</b> record cells still bare` +
     (off ? ` · <b class="warn">${off}</b> on cells the file says hold no record` : "");
 }
 
@@ -225,7 +240,11 @@ function build() {
 
   box.append(
     el("h3", {}, "Survey"),
-    el("p", { className: "sub" }, "Click a block to say what stands on it. Alt-click clears one."),
+    el(
+      "p",
+      { className: "sub" },
+      "Click a block to say what stands on the chosen face of it. Alt-click clears that face's mark.",
+    ),
     el("div", { className: "row" }, pick, faces),
     el("p", { className: "sub", id: "surveyCount" }),
     el("div", { className: "row" }, copy, down, wipe),

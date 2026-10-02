@@ -204,12 +204,13 @@ async function capture(page, c, keep) {
       if (c.survey) {
         state.survey.on = true;
         state.survey.marks = new Map();
-        [...idx.cells.values()].slice(0, c.survey).forEach((at, i) =>
-          state.survey.marks.set(cellKey(at.x, at.y, at.z), {
-            name: ["coin", "key", "exit"][i % 3],
-            face: ["top", "", "+x"][i % 3],
-          }),
-        );
+        [...idx.cells.values()]
+          .slice(0, c.survey)
+          .forEach((at, i) =>
+            state.survey.marks.set(cellKey(at.x, at.y, at.z), [
+              { name: ["coin", "key", "exit"][i % 3], face: ["top", "", "+x"][i % 3] },
+            ]),
+          );
       }
 
       const hash = async (bytes) =>

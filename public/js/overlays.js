@@ -2,7 +2,8 @@ import { state, BLOCK, screen, cellKey } from "./state.js";
 import { FACE_NORMAL, startsOf, markerHeading, cross } from "./data.js";
 import { bow, arrow } from "./arrow.js";
 
-export function drawMark(ctx, m, c) {
+/** A block's survey marks: one dot, and a line a mark. */
+export function drawMark(ctx, ms, c) {
   const [px, py] = screen(c.x + 0.5, c.y + 0.5, c.z + 1);
   const r = Math.max(3, 5 * state.cam.zoom);
   ctx.fillStyle = "#ffd166";
@@ -13,7 +14,9 @@ export function drawMark(ctx, m, c) {
   ctx.fill();
   ctx.stroke();
   if (state.cam.zoom > 0.4) {
-    label(ctx, m.face ? `${m.name} ${m.face}` : m.name, px + r + 3, py + 4, "#ffd166");
+    ms.forEach((m, i) =>
+      label(ctx, m.face ? `${m.name} ${m.face}` : m.name, px + r + 3, py + 4 + 12 * i, "#ffd166"),
+    );
   }
 }
 

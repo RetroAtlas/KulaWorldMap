@@ -267,8 +267,8 @@ export function draw() {
       for (const m of idx.markers.get(key) || []) if (!away(m.face)) mark(m, c, home, key);
     }
     if (state.survey.on && !ghost) {
-      const m = state.survey.marks.get(key);
-      if (m) noted.push([m, c]);
+      const ms = state.survey.marks.get(key);
+      if (ms) noted.push([ms, c]);
     }
     if (sel || hov) outline(ctx, c, idx, sel ? "#ffffff" : "#ffffffb0");
   }
@@ -286,7 +286,7 @@ export function draw() {
     ctx.drawImage(layerCv, 0, 0, w, h);
     ctx.restore();
   }
-  for (const [m, c] of noted) drawMark(ctx, m, c);
+  for (const [ms, c] of noted) drawMark(ctx, ms, c);
   for (const m of idx.markers.get(chosen) || []) {
     const to = markerDestination(m, l);
     const from = { ...state.selected, face: m.face };

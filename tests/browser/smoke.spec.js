@@ -642,6 +642,47 @@ test("Escape leaves the drawer alone where it sits beside the map", async ({ pag
   expect(await page.evaluate(() => document.body.classList.contains("sidebar-open"))).toBe(true);
 });
 
+test("the survey keeps a mark a face, and clears the chosen face alone", async ({ page }) => {
+  await page.goto("/?survey#HIRO/0");
+  await settle(page);
+  await expect(page.locator("#survey")).toBeVisible();
+  const got = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state, cellKey }, { place }] = await Promise.all(["state.js", "survey.js"].map(at));
+    const c = [...state.idx.cells.values()][0];
+    const key = cellKey(c.x, c.y, c.z);
+    const choose = (id, value) => {
+      const s = document.getElementById(id);
+      s.value = value;
+      s.dispatchEvent(new Event("change"));
+    };
+    const marks = () => state.survey.marks.get(key).map((m) => [m.name, m.face]);
+    choose("surveyName", "blue switch");
+    choose("surveyFace", "+x");
+    place(c);
+    choose("surveyName", "key");
+    choose("surveyFace", "-z");
+    place(c);
+    const two = marks();
+    const stored = JSON.parse(localStorage.getItem("kula.survey"));
+    const level = stored[`${state.lvl.pack}#${state.lvl.index}`];
+    const count = document.getElementById("surveyCount").textContent;
+    choose("surveyFace", "+x");
+    place(c, true);
+    return { two, level, count, one: marks() };
+  });
+  expect(got.two).toEqual([
+    ["key", "-z"],
+    ["blue switch", "+x"],
+  ]);
+  expect(got.level.map((m) => [m.cell.join(), m.face])).toEqual([
+    [got.level[0].cell.join(), "-z"],
+    [got.level[0].cell.join(), "+x"],
+  ]);
+  expect(got.count).toMatch(/^2 marked on 1 block · /);
+  expect(got.one).toEqual([["key", "-z"]]);
+});
+
 test("the closed drawer is out of the tab order, and / opens it to search", async ({ page }) => {
   await page.setViewportSize({ width: 800, height: 700 });
   await page.goto("/#HIRO/0");
