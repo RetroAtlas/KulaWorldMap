@@ -11,6 +11,7 @@ class Disc:
         self.f = open(path, "rb")
         pvd = self.sector(16)
         if pvd[1:6] != b"CD001":
+            self.f.close()
             raise ValueError(f"{path} is not a raw ISO9660 image")
         root = pvd[156:156 + 34]
         self.files = {}   # /PATH/NAME -> (lba, size)
