@@ -1,4 +1,5 @@
 import { state, SIDE, cellKey } from "./state.js";
+import { FACE_NORMAL } from "./faces.js";
 import { platesOf } from "./skins.js";
 import { glowing } from "./motion.js";
 
@@ -65,18 +66,6 @@ const RAIL_KIND = 5;
 const PLAIN_KINDS = new Set([0, 1, 2, 3, 4]);
 const PLAIN = 0;
 export const OFF_LATTICE = -1;
-
-// The six faces of a block, in the order the game numbers them.
-export const FACE_NORMAL = [
-  [0, 0, -1],
-  [1, 0, 0],
-  [0, 1, 0],
-  [0, -1, 0],
-  [-1, 0, 0],
-  [0, 0, 1],
-];
-export const FACE_NAME = ["top", "+x side", "+y side", "-y side", "-x side", "underside"];
-export const DIRECTION_NAME = ["-z", "+x", "+y", "-y", "-x", "+z"];
 
 // A raw word goes by its place in its slot, counted from the kind word.
 const FIRST_FIELD = 2;

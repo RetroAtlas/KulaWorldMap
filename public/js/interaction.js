@@ -14,7 +14,8 @@ import { drawSoon, cellAt, invalidatePick, pointing, pressing, onResize } from "
 import { chip, writeHash, stepLevel, fit } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
-import { OFF_LATTICE, FACE_NAME, kindName, ownMarker, markerLabel, markerNow } from "./data.js";
+import { FACE_NAME } from "./faces.js";
+import { OFF_LATTICE, kindName, ownMarker, markerLabel, markerNow } from "./data.js";
 import { setSidebar, sidebarOverlays, held } from "./sidebar.js";
 import { toast } from "./toast.js";
 import { openSettings } from "./settings.js";

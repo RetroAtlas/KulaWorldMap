@@ -1,5 +1,6 @@
 import { state, BLOCK, screen, cellKey } from "./state.js";
-import { FACE_NORMAL, startsOf, markerHeading, cross } from "./data.js";
+import { FACE_NORMAL } from "./faces.js";
+import { startsOf, markerHeading, cross } from "./data.js";
 import { bow, arrow } from "./arrow.js";
 
 /** A block's survey marks: one dot, and a line a mark. */

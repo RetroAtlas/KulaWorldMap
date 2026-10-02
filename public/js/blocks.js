@@ -1,5 +1,6 @@
 import { state, BLOCK, project, facing, screen, cellKey, sliceZ, effectsOn } from "./state.js";
-import { OFF_LATTICE, FACE_NORMAL, skinsTable, kindMotion, modelUnit } from "./data.js";
+import { FACE_NORMAL } from "./faces.js";
+import { OFF_LATTICE, skinsTable, kindMotion, modelUnit } from "./data.js";
 import { blockPhase, lightOn, cornersLit } from "./motion.js";
 import { ballsFor } from "./things.js";
 import { platformPlace, faceSkin } from "./skins.js";

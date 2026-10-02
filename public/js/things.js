@@ -1,7 +1,6 @@
 import { state, BLOCK, depth, facing, screen, screenTo, cellKey, effectFrame } from "./state.js";
+import { FACE_NORMAL, FACE_NAME } from "./faces.js";
 import {
-  FACE_NORMAL,
-  FACE_NAME,
   markerColour,
   markerLabel,
   markerGroup,

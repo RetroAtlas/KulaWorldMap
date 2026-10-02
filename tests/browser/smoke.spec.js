@@ -1396,7 +1396,7 @@ test("the compass names every face and way as the panel does, each where it lies
     const said = await page.evaluate(async () => {
       const { camera } = await import(new URL("js/state.js", location.href).href);
       const { FACE_NORMAL, DIRECTION_NAME } = await import(
-        new URL("js/data.js", location.href).href
+        new URL("js/faces.js", location.href).href
       );
       const cv = document.getElementById("compass");
       const mid = [cv.clientWidth / 2, cv.clientHeight / 2];
@@ -1439,7 +1439,7 @@ test("the compass names every face and way as the panel does, each where it lies
 const compassLight = (page) =>
   page.evaluate(async () => {
     const { camera } = await import(new URL("js/state.js", location.href).href);
-    const { FACE_NORMAL } = await import(new URL("js/data.js", location.href).href);
+    const { FACE_NORMAL } = await import(new URL("js/faces.js", location.href).href);
     const cv = document.getElementById("compass");
     const k = cv.width / cv.clientWidth;
     const c = camera();

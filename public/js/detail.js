@@ -1,9 +1,8 @@
 import { $, el, on, emit } from "./dom.js";
 import { state, cellKey } from "./state.js";
+import { FACE_NAME, DIRECTION_NAME } from "./faces.js";
 import {
   OFF_LATTICE,
-  FACE_NAME,
-  DIRECTION_NAME,
   levelTitle,
   kindName,
   kindNote,

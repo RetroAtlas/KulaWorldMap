@@ -1,6 +1,7 @@
 // A copy of the game's rule for what it paints on a face; a level stores only
 // what a block is and what stands on it.
 import { cellKey } from "./state.js";
+import { FACE_NORMAL } from "./faces.js";
 import { seed } from "./hash.js";
 
 const BLOCK = 512; // the game's units to a block
@@ -11,16 +12,7 @@ const VANISHING = 7;
 const BEAM_KIND = 8;
 const PLATFORM_ROLES = ["first", "middle", "last"];
 const STONE_AT_RANDOM = -2;
-// The normal of each of the game's six faces, and the two faces along each
-// axis, the one looking down it first.
-const NORMAL = [
-  [0, 0, -1],
-  [1, 0, 0],
-  [0, 1, 0],
-  [0, -1, 0],
-  [-1, 0, 0],
-  [0, 0, 1],
-];
+// The two faces along each axis, the one looking down it first.
 const FACE_ALONG = [
   [4, 1],
   [3, 2],
@@ -78,7 +70,7 @@ function stoneTurn(skins, look, h) {
 // A phase the game spreads across a level by position, so that neighbouring
 // faces pulse a step apart.
 function spread(skins, c, face, length) {
-  const n = NORMAL[face];
+  const n = FACE_NORMAL[face];
   const at = [c.x, c.y, c.z].map((v, i) => v * BLOCK + (n[i] * BLOCK) / 2);
   return Math.floor((at[0] + at[1] + at[2]) / skins.cycles.spread) % length;
 }

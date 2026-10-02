@@ -10,9 +10,9 @@ import {
   effectsOn,
   effectFrame,
 } from "./state.js";
+import { FACE_NORMAL } from "./faces.js";
 import {
   WORLD_TINT,
-  FACE_NORMAL,
   motionTable,
   skinsTable,
   platformCells,

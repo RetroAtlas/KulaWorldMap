@@ -1,6 +1,7 @@
 // The game's own rules for what travels across blocks, stepped frame by frame
 // from the level's start in the game's units and unit vectors.
-import { FACE_NORMAL, OFF_LATTICE, beams, kindMotion, platformAxis } from "./data.js";
+import { FACE_NORMAL } from "./faces.js";
+import { OFF_LATTICE, beams, kindMotion, platformAxis } from "./data.js";
 import { cellKey } from "./state.js";
 import { blockPhase } from "./motion.js";
 

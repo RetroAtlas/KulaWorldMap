@@ -1,8 +1,7 @@
 // No DOM, so it stays importable in bare Node.
 import { cellKey } from "./state.js";
+import { FACE_NAME, DIRECTION_NAME } from "./faces.js";
 import {
-  FACE_NAME,
-  DIRECTION_NAME,
   markersOf,
   kindBlocks,
   markerLabel,
