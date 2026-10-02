@@ -1,8 +1,8 @@
 """A level record, inflated from a .PAK entry.
 
     u16[34*34*34]   the lattice, 0xFFFF where nothing is placed
-    i16             usually the placed-cell count, and unexplained where not
-    i16             0, or -1 on sixteen levels
+    i32             the header word: usually the placed-cell count, negative
+                    on sixteen levels, and unexplained where it is neither
     u16             record count
     record[count]   256 bytes each, starting right after the count
     trailer         the same shape, kind 666: the level's time in f6, and a
