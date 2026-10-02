@@ -60,12 +60,12 @@ def blits(blob):
 def vram(blob):
     """Replay every upload into a VRAM page of 16-bit words."""
     page = bytearray(VRAM_W * VRAM_H * 2)
-    for b in blits(blob)[0]:
+    for i, b in enumerate(blits(blob)[0]):
+        if b["y"] + b["h"] > VRAM_H or b["x"] + b["w"] > VRAM_W:
+            sys.exit(f"upload {i} at {b['x']},{b['y']} lies outside the page")
         for row in range(b["h"]):
             src = b["at"] + row * b["w"] * 2
             dst = ((b["y"] + row) * VRAM_W + b["x"]) * 2
-            if b["y"] + row >= VRAM_H:
-                break
             page[dst:dst + b["w"] * 2] = blob[src:src + b["w"] * 2]
     return page
 

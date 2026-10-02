@@ -31,12 +31,12 @@ def upload(x, y, w, h, words):
     return struct.pack("<4H", x, y, w, h) + words
 
 
-def tgi_blob(rows=ROWS, record=True):
-    art = upload(*TEX_AT, 32, 64, PIXELS)
+def tgi_blob(rows=ROWS, record=True, tex_at=TEX_AT):
+    art = upload(*tex_at, 32, 64, PIXELS)
     for row, words in PALETTES.items():
         art += upload(768, row, 256, 1, struct.pack("<256H", *words))
     rec = [0] * tgi.MAP_STRIDE
-    rec[3], rec[4] = TEX_AT
+    rec[3], rec[4] = tex_at
     rec[5:5 + SHADES] = rows
     quads = struct.pack(f"<{tgi.MAP_STRIDE}H", *rec) if record else b""
     counts = [0] * tgi.SECTIONS
@@ -66,6 +66,10 @@ class TheAtlas(unittest.TestCase):
     def test_a_texture_without_a_record_stops_the_build(self):
         with self.assertRaises(SystemExit):
             atlas(tgi_blob(record=False))
+
+    def test_an_upload_off_the_page_stops_the_build(self):
+        with self.assertRaises(SystemExit):
+            atlas(tgi_blob(tex_at=(tgi.VRAM_W - 16, 0)))
 
     def test_a_row_outside_vram_stops_the_build(self):
         with self.assertRaises(SystemExit):
