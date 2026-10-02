@@ -1,6 +1,6 @@
 import { $, el, on } from "./dom.js";
 import { state, SIDE, cellKey } from "./state.js";
-import { counted } from "./data.js";
+import { counted, inLattice } from "./data.js";
 import { draw } from "./render.js";
 
 // A mark is keyed to a lattice cell and a face, one a face, and never derived
@@ -107,15 +107,22 @@ function save() {
   }
 }
 
+const isMark = (m) =>
+  Array.isArray(m?.cell) &&
+  m.cell.length === 3 &&
+  m.cell.every(inLattice) &&
+  typeof m.name === "string";
+
 export function loadLevel() {
   state.survey.marks = new Map();
   const l = state.lvl;
   if (!l) return;
-  for (const m of all[levelKey(l)] || []) {
+  const list = all[levelKey(l)];
+  for (const m of Array.isArray(list) ? list.filter(isMark) : []) {
     const k = cellKey(...m.cell);
-    const list = state.survey.marks.get(k) || [];
-    list.push({ name: m.name, face: m.face || "" });
-    state.survey.marks.set(k, list.sort(byFace));
+    const marks = state.survey.marks.get(k) || [];
+    marks.push({ name: m.name, face: m.face || "" });
+    state.survey.marks.set(k, marks.sort(byFace));
   }
   panel();
 }
