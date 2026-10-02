@@ -155,13 +155,13 @@ CHECKS = [
     (0x8003b7bc, "addiu $v1, $s4, 32", "into its home"),
     (0x8003e87c, "addu $v0, $v0, $fp", "and the corkscrew's shadow lies under its home"),
     (0x8003e9e4, "lh $v0, -23414($at)", "as strong as the corkscrew's bounce"),
+    (0x8003ea08, "jal 0x8005fb58", "less a multiple of its sine"),
+    (0x80031f3c, "jal 0x800603f8", "the ball's shadow is widened by the landing's squash"),
+    (0x80031f54, "jal 0x800603f8", "and by the breath's"),
     # The vanishing block.
     (0x8002b7e8, "sw $zero, 12($v0)", "a vanishing block that returns starts its faces black"),
     (0x8002b9a0, "sb $zero, 1($v0)", "settled, its faces lose the translucent flag"),
     (0x8002b9fc, "sb $t6, 1($v0)", "and take it as they start to dim"),
-    (0x8003ea08, "jal 0x8005fb58", "less a multiple of its sine"),
-    (0x80031f3c, "jal 0x800603f8", "the ball's shadow is widened by the landing's squash"),
-    (0x80031f54, "jal 0x800603f8", "and by the breath's"),
     # The invisible block's light.
     (0x8002a4a0, "addiu $a0, $a0, 23128", "the frame hands the light its struct"),
     (0x8002a4a4, "jal 0x80051318", "and runs it"),
