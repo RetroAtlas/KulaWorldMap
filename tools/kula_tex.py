@@ -20,16 +20,19 @@ SIZE = 64
 
 def atlas(blob):
     page = tgi.vram(blob)
-    pals = dict(tgi.cluts(page))
     pmap = tgi.palette_map(blob)
     tex = tgi.textures(blob)
     W, H = len(tex) * SIZE, SHADES * SIZE
     px = bytearray(W * H * 4)
-    grey = [(i, i, i) for i in range(256)]
+    pals = {}
     for i, t in enumerate(tex):
         rows = pmap.get(i)
+        if rows is None:
+            sys.exit(f"texture {i} at ({t['x']}, {t['y']}) has no record naming its palettes")
         for k in range(SHADES):
-            pal = pals.get(rows[k], grey) if rows else grey
+            if rows[k] not in pals:
+                pals[rows[k]] = tgi.palette(page, rows[k])
+            pal = pals[rows[k]]
             for y in range(SIZE):
                 src = t["at"] + y * SIZE
                 o = ((k * SIZE + y) * W + i * SIZE) * 4

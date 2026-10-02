@@ -85,6 +85,13 @@ def cluts(page):
     return out
 
 
+def palette(page, row):
+    """The 256 colours of the palette parked at VRAM x=768 on `row`."""
+    if not 0 <= row < VRAM_H:
+        sys.exit(f"palette row {row} lies outside VRAM")
+    return [rgb(v) for v in struct.unpack_from("<256H", page, (row * VRAM_W + 768) * 2)]
+
+
 def textures(blob):
     return [b for b in blits(blob)[0] if (b["w"], b["h"]) == TEX]
 

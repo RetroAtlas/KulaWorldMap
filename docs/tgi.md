@@ -22,7 +22,7 @@ The filenames are built at `0x8004ccf8`, which takes a world index, an extension
 
 **Each world ships 56 textures.** They arrive as 32x64-word uploads, which is 64x64 pixels at 8bpp, and each carries three smaller levels: 8x32, 4x16 and 2x8 words. Those only make sense as 32x32, 16x16 and 8x8 at 4bpp, so the mip levels are half-depth. 56 of each, four levels, 224 uploads.
 
-**Palettes are two uploads parked off the side of the page**, 256 words wide at VRAM x=768, one 72 rows tall and one 25, giving 96 palettes of 256 colours. They are ordinary VRAM writes like anything else, which is why looking for them by scanning the file for smooth 16-bit runs found impostors: pixel data read as colour is smooth too.
+**Palettes are two uploads parked off the side of the page**, 256 words wide at VRAM x=768, one 72 rows tall and one 25, giving 96 palettes of 256 colours. They are ordinary VRAM writes like anything else, which is why looking for them by scanning the file for smooth 16-bit runs found impostors: pixel data read as colour is smooth too. Arctic's stones show that a scan is no way to pick them out either: their palettes hold 23 greys in the dark shade and 25 in the bright, which a scan asking for 32 distinct words refuses, so the atlas reads the rows a texture's record names and nothing else.
 
 **Section 6 pairs each texture with its palettes.** A CLUT id for a palette at VRAM x=768 is `(row << 6) | 48`, so `id & 63 == 48` is a fingerprint, and section 6 is 16.5% such values against a fraction of a percent everywhere else. Its record is 20 `u16`, 427 of them, and the fingerprint falls on fixed slots within that stride.
 
