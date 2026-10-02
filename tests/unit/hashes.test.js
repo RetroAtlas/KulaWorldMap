@@ -6,7 +6,7 @@ import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
-const TEXT = new Set([".md", ".js", ".mjs", ".py", ".json", ".html", ".css", ".yml", ".txt"]);
+const BINARY = new Set([".png", ".ico", ".bin", ".cue"]);
 const GENERATED = new Set(["public/map_data.json", "public/objects.json", "package-lock.json"]);
 
 // A run of hex with a letter and a digit in it, standing alone: an address
@@ -14,9 +14,11 @@ const GENERATED = new Set(["public/map_data.json", "public/objects.json", "packa
 const HASH = /(?<![\w#./-])(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,40}(?!\w)/;
 
 test("nothing in the repo cites a commit by its hash", () => {
-  const tracked = execFileSync("git", ["ls-files"], { cwd: root, encoding: "utf8" }).split("\n");
+  const tracked = execFileSync("git", ["ls-files"], { cwd: root, encoding: "utf8" })
+    .split("\n")
+    .filter(Boolean);
   for (const path of tracked) {
-    if (!TEXT.has(extname(path)) || GENERATED.has(path)) continue;
+    if (BINARY.has(extname(path)) || GENERATED.has(path)) continue;
     const hit = HASH.exec(readFileSync(join(root, path), "utf8"));
     assert.ok(!hit, `${path}: "${hit?.[0]}"`);
   }
