@@ -463,14 +463,14 @@ class Code:
 
     def multiplier(self, addr, count, src, dst):
         """The factor applied to `src` by `count` instructions of shifts and adds."""
-        coef = {src: 1}
+        coef = {src: 1, "zero": 0}
         for i in range(count):
             pc = addr + 4 * i
             text = self.text(pc)
             m = re.match(r"(sll|addu|subu) \$(\w+), \$(\w+)(?:, \$(\w+)|, (\d+))$", text)
             if m:
                 op, rd, a, b, sa = m.groups()
-                x, y = coef.get(a, 0), coef.get(b, 0) if b else 0
+                x, y = coef.get(a), coef.get(b) if b else 0
                 if x is None or y is None:
                     coef[rd] = None
                 elif op == "sll":

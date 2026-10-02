@@ -124,6 +124,13 @@ class Reads(unittest.TestCase):
                  subu("v1", "v1", "a0"), sll("v1", "v1", 3))
         self.assertEqual(c.multiplier(AT, 5, "v1", "v1"), 600)
 
+    def test_a_register_the_run_never_derived_stops_the_reading(self):
+        c = code(sll("v1", "v0", 2), addu("v1", "v1", "a0"), sll("v1", "v1", 1))
+        with self.assertRaises(SystemExit):
+            c.multiplier(AT, 3, "v0", "v1")
+        c = code(sll("v1", "v0", 2), addu("v1", "v1", "zero"))
+        self.assertEqual(c.multiplier(AT, 2, "v0", "v1"), 4)
+
     def test_a_load_in_the_run_is_fine_unless_the_product_reads_it(self):
         c = code(sll("v1", "v0", 1), addu("v1", "v1", "v0"), lh("v0", "a0", 8), sll("v1", "v1", 2))
         self.assertEqual(c.multiplier(AT, 4, "v0", "v1"), 12)
