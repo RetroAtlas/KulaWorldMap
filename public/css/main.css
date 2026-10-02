@@ -422,7 +422,7 @@ button.kind:hover {
   background: var(--panel-2);
 }
 .kind[aria-pressed="false"] {
-  opacity: 0.38;
+  opacity: 0.55;
 }
 .kind .dot {
   width: 9px;
