@@ -138,6 +138,12 @@ class TheMachine(unittest.TestCase):
         mem = Machine(c).run(AT, [AT + 12, 0x80191000], [])
         self.assertEqual(mem[0x80191000], 0x33)
 
+    def test_a_word_partly_stored_over_the_executable_keeps_its_other_bytes(self):
+        c = code(sb("a2", "a0", 1), lw("v1", "a0", 0), jr("ra"), sw("v1", "a1", 0), 0x44332211)
+        mem = Machine(c).run(AT, [AT + 16, 0x80191000, 0xAA], [])
+        word = int.from_bytes(bytes(mem[0x80191000 + i] for i in range(4)), "little")
+        self.assertEqual(word, 0x4433AA11)
+
     def test_a_call_is_answered_from_its_arguments_and_stack_words(self):
         # Calls a routine with a0 + 1 and a word on the stack, and returns
         # what the answer gave it, stored where a1 points.

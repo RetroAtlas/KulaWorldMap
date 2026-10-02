@@ -149,9 +149,8 @@ class Machine:
 
         def ld(a, n):
             a = ram(a)
-            if self.code.holds(a, n) and not any(a + b in mem for b in range(n)):
-                return int.from_bytes(self.code.read(a, n), "little")
-            return sum(mem.get(a + b, 0) << (8 * b) for b in range(n))
+            under = self.code.read(a, n) if self.code.holds(a, n) else bytes(n)
+            return int.from_bytes(bytes(mem.get(a + b, under[b]) for b in range(n)), "little")
 
         def st(a, v, n):
             a = ram(a)
