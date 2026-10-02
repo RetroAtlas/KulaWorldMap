@@ -13,6 +13,7 @@ import {
   index,
   levelMarkers,
   blockMarkers,
+  levelPoints,
 } from "../../public/js/data.js";
 import { state } from "../../public/js/state.js";
 
@@ -102,6 +103,23 @@ test("the legend counts a block of a painted kind once, whether its cell or its 
     blockMarkers(level("LEVEL 94")).map((m) => m.id),
     ["k2"],
   );
+});
+
+test("a bonus level's tally reads a cell's kind off the record its value names, not off another on the cell", () => {
+  state.data = mapData;
+  const first = mapData.firstRecord;
+  const record = (x, y, z, kind) => ({ x, y, z, kind, type: 0, f: [], on: [] });
+  const l = {
+    index: 15,
+    cells: [10, 10, 17, first, 11, 10, 17, 0],
+    records: [record(10, 10, 17, 3), record(10, 10, 17, 9)],
+  };
+  assert.equal(levelPoints(l), 50);
+  l.records.reverse();
+  l.cells[3] = first + 1;
+  assert.equal(levelPoints(l), 50);
+  const bonus = mapData.levels.find((l) => (l.shown || l.name) === "BONUS 7");
+  assert.equal(levelPoints(bonus), 22900);
 });
 
 test("a count of one takes the singular", () => {

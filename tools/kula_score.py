@@ -41,11 +41,9 @@ def points_of(ann):
 
 def tallied(level, first_record):
     """The blocks a bonus level counts: rolling over an invisible one scores nothing."""
-    kind_at = {(r["x"], r["y"], r["z"]): r["kind"] for r in level["records"]}
     n = 0
-    for i in range(0, len(level["cells"]), 4):
-        x, y, z, v = level["cells"][i:i + 4]
-        kind = v if v < first_record else kind_at[(x, y, z)]
+    for v in level["cells"][3::4]:
+        kind = v if v < first_record else level["records"][v - first_record]["kind"]
         n += kind != INVISIBLE_KIND
     return n
 

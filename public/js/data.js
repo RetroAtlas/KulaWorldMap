@@ -415,11 +415,11 @@ const INVISIBLE_KIND = 3;
 
 /** The blocks a bonus level counts: rolling over an invisible one scores nothing. */
 function tallied(l) {
-  const kindAt = new Map(l.records.map((r) => [cellKey(r.x, r.y, r.z), r.kind]));
+  const first = state.data.firstRecord;
   let n = 0;
-  for (let i = 0; i < l.cells.length; i += 4) {
-    const [x, y, z, v] = l.cells.slice(i, i + 4);
-    const kind = v < state.data.firstRecord ? v : kindAt.get(cellKey(x, y, z));
+  for (let i = 3; i < l.cells.length; i += 4) {
+    const v = l.cells[i];
+    const kind = v < first ? v : l.records[v - first].kind;
     if (kind !== INVISIBLE_KIND) n++;
   }
   return n;
