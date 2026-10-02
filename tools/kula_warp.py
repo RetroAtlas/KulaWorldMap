@@ -170,7 +170,8 @@ def main():
         img.write(lba, 4 + i * 8, entry)
     img.close()
 
-    check = Pak(open_disc(str(out)).read_file(target_path), target_path)
+    with open_disc(str(out)) as written:
+        check = Pak(written.read_file(target_path), target_path)
     if zlib.decompress(check.entries[slot]["blob"]) != zlib.decompress(record):
         sys.exit(f"wrote {out}, but {target_path}#{slot} does not read back as {what}")
 

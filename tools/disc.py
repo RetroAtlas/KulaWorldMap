@@ -17,6 +17,15 @@ class Disc:
         self._read_dir(struct.unpack_from("<I", root, 2)[0],
                        struct.unpack_from("<I", root, 10)[0], "")
 
+    def close(self):
+        self.f.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
     def sector(self, lba):
         self.f.seek(lba * SECTOR_RAW)
         return self.f.read(SECTOR_RAW)[USER_OFF:USER_OFF + 2048]
