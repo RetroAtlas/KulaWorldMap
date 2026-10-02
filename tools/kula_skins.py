@@ -18,10 +18,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kula_tgi as tgi
 from kula_disc import EXE, EXE_BASE, THEMES, open_disc
+from kula_level import FACE, FACES
 from kula_motion import Code
 from mips import Machine
 
-FACES = 6
 TURNS = 4            # the quarter turns a texture can be laid at
 TYPES = 50           # the models past the stones, one per type
 BLOCK = 512
@@ -398,10 +398,9 @@ def show_readings(code, tgis):
         print(f"  0x{addr:08x}  {code.immediate(addr, pattern):>6}  {what}")
     r = readings(code)
     print("\nthe corners a face routine lays a texture's top left, top right, bottom left and bottom right on")
-    names = ["top", "+x", "+y", "-y", "-x", "under"]
     for face, turns in enumerate(face_corners(code)):
         for turn, corners in enumerate(turns):
-            print(f"  face {face} {names[face]:5} turn {turn}: " + "  ".join("".join(map(str, c)) for c in corners))
+            print(f"  face {face} {FACE[face]:3} turn {turn}: " + "  ".join("".join(map(str, c)) for c in corners))
     table = platform_table(code, r)
     print(f"\na moving platform's faces, (model, turn) by axis and place in the run; "
           f"model {table['stone']} is a stone at random")

@@ -19,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import EXE, EXE_BASE, THEMES, open_disc
+from kula_level import FACES
 from mips import Machine, decode
 
 TURN = 4096          # the angle that is one full turn
@@ -452,7 +453,6 @@ GLOW_COLOURS = {5: ((0x8002d514, 0x8002d51c), 4), 7: ((0x8002d5ec, 0x8002d5f4), 
                 9: ((0x8002d6c4, 0x8002d6cc), 4)}
 GLOW_LEVELS = 3           # the levels a corner can take
 MVMVA_SF = 1 << 19        # the command's bit that shifts its products down by 12
-FACES = 6
 
 
 class Code:
