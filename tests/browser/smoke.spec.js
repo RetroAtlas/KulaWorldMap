@@ -259,6 +259,35 @@ test("a key typed with Option or AltGr reaches the map, and a shortcut stays the
   await expect(title).toHaveText("LEVEL 1");
 });
 
+test("a pinch that opens from one point leaves the zoom a number", async ({ page }) => {
+  await page.goto("/#HIRO/0/45,35/1");
+  await settle(page);
+  const zoom = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      return state.cam.zoom;
+    });
+  const before = await zoom();
+  await page.evaluate(() => {
+    const cv = document.getElementById("cv");
+    const at = (id, x, y) => new Touch({ identifier: id, target: cv, clientX: x, clientY: y });
+    const fire = (type, touches) =>
+      cv.dispatchEvent(
+        new TouchEvent(type, { touches, changedTouches: touches, bubbles: true, cancelable: true }),
+      );
+    fire("touchstart", [at(1, 600, 400), at(2, 600, 400)]);
+    fire("touchmove", [at(1, 600, 400), at(2, 600, 400)]);
+    fire("touchmove", [at(1, 580, 400), at(2, 620, 400)]);
+    fire("touchmove", [at(1, 560, 400), at(2, 640, 400)]);
+    fire("touchend", []);
+  });
+  await frame(page);
+  const after = await zoom();
+  expect(Number.isFinite(after)).toBe(true);
+  expect(after).toBeGreaterThan(before);
+  expect(page.url()).not.toContain("NaN");
+});
+
 test("going back to another view of the same level keeps the kinds hidden in it", async ({
   page,
 }) => {

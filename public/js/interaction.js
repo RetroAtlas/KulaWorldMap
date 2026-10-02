@@ -225,6 +225,7 @@ cv.addEventListener(
 );
 
 export function zoomAt(px, py, factor) {
+  if (!Number.isFinite(factor)) return;
   hold();
   const { w, h } = state.view;
   const before = state.cam.zoom * BLOCK;
