@@ -118,7 +118,6 @@ export function orbit(dx, dy) {
   state.cam.yaw = (state.cam.yaw - dx * ORBIT) % 360;
   state.cam.pitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, state.cam.pitch + dy * ORBIT));
   redraw();
-  chip();
   writeHash();
 }
 
@@ -136,7 +135,6 @@ export function setYaw(deg) {
   pivot();
   state.cam.yaw = ((deg % 360) + 360) % 360;
   redraw();
-  chip();
   writeHash();
 }
 
