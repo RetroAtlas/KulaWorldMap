@@ -2,21 +2,16 @@
 //
 //     npx playwright install --with-deps chromium
 //     node tools/ogcard.js
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
+import { ROOT, serve } from "../tests/public.js";
 
-const ROOT = fileURLToPath(new URL("..", import.meta.url));
-const PORT = 8481;
 const W = 1200;
 const H = 630;
 const LEVEL = 30; // FINAL 1
 
-const server = spawn("python3", ["-m", "http.server", String(PORT), "-d", "public"], {
-  cwd: ROOT,
-  stdio: "ignore",
-});
+const server = await serve(join(ROOT, "public"));
 
 try {
   const browser = await chromium.launch();
@@ -27,7 +22,7 @@ try {
     deviceScaleFactor: 1,
     reducedMotion: "reduce",
   });
-  await page.goto(`http://127.0.0.1:${PORT}/`);
+  await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.evaluate(async (level) => {
     const url = (m) => new URL("js/" + m, location.href).href;
     const { state } = await import(url("state.js"));
@@ -90,5 +85,5 @@ try {
   spawnSync("oxipng", ["-q", "-o", "max", "--strip", "safe", join(ROOT, "public", "og-image.png")]);
   console.log(`public/og-image.png  ${W}x${H}`);
 } finally {
-  server.kill();
+  server.close();
 }
