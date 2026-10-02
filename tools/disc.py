@@ -10,7 +10,8 @@ class Disc:
     def __init__(self, path):
         self.f = open(path, "rb")
         pvd = self.sector(16)
-        assert pvd[1:6] == b"CD001", "not an ISO9660 raw image"
+        if pvd[1:6] != b"CD001":
+            raise ValueError(f"{path} is not a raw ISO9660 image")
         root = pvd[156:156 + 34]
         self.files = {}   # /PATH/NAME -> (lba, size)
         self._read_dir(struct.unpack_from("<I", root, 2)[0],

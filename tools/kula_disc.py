@@ -21,7 +21,12 @@ def open_disc(path=None):
     path = path or os.environ.get("KULA_DISC")
     if not path:
         sys.exit("no disc image: pass --disc or set $KULA_DISC")
-    return Disc(path)
+    if not Path(path).is_file():
+        sys.exit(f"no disc image at {path}")
+    try:
+        return Disc(path)
+    except ValueError as e:
+        sys.exit(str(e))
 
 
 def packs(disc):
