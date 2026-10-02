@@ -4,6 +4,7 @@ without it the file is still correct, only larger.
 import shutil
 import struct
 import subprocess
+import sys
 import zlib
 from pathlib import Path
 
@@ -38,4 +39,6 @@ def _drop_alpha(rgba):
 def optimise(path):
     if not shutil.which("oxipng"):
         return
-    subprocess.run(["oxipng", "-q", "-o", "max", "--strip", "safe", str(path)], check=False)
+    done = subprocess.run(["oxipng", "-o", "max", "--strip", "safe", str(path)], stdout=subprocess.DEVNULL)
+    if done.returncode:
+        sys.exit(f"oxipng could not squeeze {path}, which is not to be committed as it is")
