@@ -91,6 +91,20 @@ export const onResize = (fn) => {
 
 new ResizeObserver(() => resize()).observe(cv);
 
+// The observer sees the canvas's size and not the screen's density, which
+// changes under a window dragged to a screen of another.
+function watchDensity() {
+  matchMedia(`(resolution: ${devicePixelRatio}dppx)`).addEventListener(
+    "change",
+    () => {
+      resize();
+      watchDensity();
+    },
+    { once: true },
+  );
+}
+watchDensity();
+
 on("atlas-loaded", () => {
   invalidatePick();
   draw();

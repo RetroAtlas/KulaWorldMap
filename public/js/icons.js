@@ -14,12 +14,14 @@ const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const GLASS = 0.55;
 
 const drawn = new WeakMap();
+const density = () => Math.min(devicePixelRatio || 1, 3);
 
 export function iconFor(model, size = 22) {
   let sizes = drawn.get(model);
   if (!sizes) drawn.set(model, (sizes = new Map()));
-  let master = sizes.get(size);
-  if (!master) sizes.set(size, (master = render(model, size)));
+  const key = `${size}@${density()}`;
+  let master = sizes.get(key);
+  if (!master) sizes.set(key, (master = render(model, size)));
   const cv = document.createElement("canvas");
   cv.width = master.width;
   cv.height = master.height;
@@ -40,7 +42,7 @@ const span = (frame) => {
 
 function render(model, size) {
   const cv = document.createElement("canvas");
-  const dpr = Math.min(devicePixelRatio || 1, 3);
+  const dpr = density();
   cv.width = cv.height = Math.round(size * dpr);
   const g = cv.getContext("2d");
   g.scale(dpr, dpr);
@@ -98,7 +100,7 @@ const BEAM_KIND = 8;
 
 function canvasOf(size) {
   const cv = document.createElement("canvas");
-  const dpr = Math.min(devicePixelRatio || 1, 3);
+  const dpr = density();
   cv.width = cv.height = Math.round(size * dpr);
   cv.style.width = cv.style.height = `${size}px`;
   cv.className = "icon";
