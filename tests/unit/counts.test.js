@@ -23,6 +23,10 @@ const doc = readFileSync(
   fileURLToPath(new URL("../../docs/level-format.md", import.meta.url)),
   "utf8",
 );
+const reasons = readFileSync(
+  fileURLToPath(new URL("../../docs/annotations.md", import.meta.url)),
+  "utf8",
+);
 const level = (title) => mapData.levels.find((l) => (l.shown || l.name) === title);
 
 test("a level's objects are the markers that stand on a face", () => {
@@ -103,6 +107,31 @@ test("the legend counts a block of a painted kind once, whether its cell or its 
     blockMarkers(level("LEVEL 94")).map((m) => m.id),
     ["k2"],
   );
+});
+
+// Two kinds' reasons say where the game puts them, counted as the legend
+// counts, so the sentences hold the figures they rest on.
+test("the kind sections' shares by world are what the data holds", () => {
+  state.data = mapData;
+  const byWorld = (kind) => {
+    const out = new Map();
+    for (const l of mapData.levels) {
+      const n = blockMarkers(l).filter((m) => m.kind === kind).length;
+      out.set(l.theme, (out.get(l.theme) || 0) + n);
+    }
+    return out;
+  };
+  const total = (m) => [...m.values()].reduce((a, b) => a + b, 0);
+  const ice = byWorld(2);
+  const most = /Most of the game's (\d+) are in Arctic and Hell, (\d+) and (\d+)\./.exec(reasons);
+  assert.ok(most, "annotations.md has no sentence about where the ice blocks are");
+  assert.deepEqual(most.slice(1).map(Number), [total(ice), ice.get("ARCTIC"), ice.get("HELL")]);
+  assert.ok((ice.get("ARCTIC") + ice.get("HELL")) * 2 > total(ice));
+  const invisible = byWorld(3);
+  const half = /More than half of the game's (\d+) are in Haze, (\d+) of them\./.exec(reasons);
+  assert.ok(half, "annotations.md has no sentence about where the invisible blocks are");
+  assert.deepEqual(half.slice(1).map(Number), [total(invisible), invisible.get("HAZE")]);
+  assert.ok(invisible.get("HAZE") * 2 > total(invisible));
 });
 
 test("a bonus level's tally reads a cell's kind off the record its value names, not off another on the cell", () => {
