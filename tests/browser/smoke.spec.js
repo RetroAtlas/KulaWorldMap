@@ -117,6 +117,27 @@ test("a hash naming no level puts the address bar back", async ({ page }) => {
   expect(page.url()).toContain("#HIRO/11/");
 });
 
+test("a hash or a key that arrives before the data has loaded is read once it has", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  let release;
+  const held = new Promise((r) => (release = r));
+  await page.route("**/map_data.json", async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto("/#HIRO/0", { waitUntil: "commit" });
+  await page.evaluate(() => import(new URL("js/interaction.js", location.href).href));
+  await page.evaluate(() => (location.hash = "#HIRO/5"));
+  await page.keyboard.press("]");
+  await frame(page);
+  release();
+  await settle(page);
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 6");
+  expect(errors).toEqual([]);
+});
+
 test("a change of level or a find is a history entry; a turn is not", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);

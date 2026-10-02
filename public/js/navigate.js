@@ -185,6 +185,7 @@ on("dialog-opened", () => {
 });
 
 export function applyHash() {
+  if (!state.data) return false;
   known = location.hash;
   const link = parseHash(known);
   const i = levelAt(link.slot);
@@ -216,6 +217,7 @@ addEventListener("hashchange", () => {
 });
 
 export function stepLevel(delta) {
+  if (!state.data) return;
   const order = state.data.themes.flatMap((t) => t.levels);
   const i = order[order.indexOf(state.li) + delta];
   if (i !== undefined) selectLevel(i);
