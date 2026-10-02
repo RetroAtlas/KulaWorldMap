@@ -296,7 +296,9 @@ class Cycles(unittest.TestCase):
         self.assertEqual(twice[rise - 1:rise + 22],
                          [0, 6, 12, 19, 25, 31, 2, 31, 6, 31, 11, 31, 15, 31, 20, 31, 25, 31, 29, 31, 31, 31, 31])
         self.assertEqual(twice[rise + 20:rise + 34], [31] * 14)
-        self.assertEqual(twice[rise + 34:rise + 79], [c * 32 // 44 for c in range(43, -1, -1)] + [0])
+        self.assertEqual(twice[rise + 34:rise + 79],
+                         [31, 30, 29, 29, 28, 27, 26, 26, 25, 24, 24, 23, 22, 21, 21, 20, 19, 18, 18, 17, 16, 16,
+                          15, 14, 13, 13, 12, 11, 10, 10, 9, 8, 8, 7, 6, 5, 5, 4, 3, 2, 2, 1, 0, 0, 0])
         self.assertEqual(runs([f == 0 for f in seq]), [[False, 76], [True, 67]])
 
     def test_the_spikes_phases_are_35_frames_apart_from_the_second_cycle(self):
