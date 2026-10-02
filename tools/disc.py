@@ -9,14 +9,17 @@ USER_OFF = 24       # Mode 2 Form 1 user data within the raw sector
 class Disc:
     def __init__(self, path):
         self.f = open(path, "rb")
-        pvd = self.sector(16)
-        if pvd[1:6] != b"CD001":
+        try:
+            pvd = self.sector(16)
+            if pvd[1:6] != b"CD001":
+                raise ValueError(f"{path} is not a raw ISO9660 image")
+            root = pvd[156:156 + 34]
+            self.files = {}   # /PATH/NAME -> (lba, size)
+            self._read_dir(struct.unpack_from("<I", root, 2)[0],
+                           struct.unpack_from("<I", root, 10)[0], "")
+        except Exception:
             self.f.close()
-            raise ValueError(f"{path} is not a raw ISO9660 image")
-        root = pvd[156:156 + 34]
-        self.files = {}   # /PATH/NAME -> (lba, size)
-        self._read_dir(struct.unpack_from("<I", root, 2)[0],
-                       struct.unpack_from("<I", root, 10)[0], "")
+            raise
 
     def close(self):
         self.f.close()
@@ -29,7 +32,10 @@ class Disc:
 
     def sector(self, lba):
         self.f.seek(lba * SECTOR_RAW)
-        return self.f.read(SECTOR_RAW)[USER_OFF:USER_OFF + 2048]
+        raw = self.f.read(SECTOR_RAW)
+        if len(raw) < SECTOR_RAW:
+            raise ValueError(f"the image ends before sector {lba}")
+        return raw[USER_OFF:USER_OFF + 2048]
 
     def read(self, lba, size):
         out = bytearray()
