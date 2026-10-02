@@ -7,7 +7,8 @@ const r2 = (v) => Math.round(v * 100) / 100;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 const FIT = "fit";
-const PAN_MAX = 2 * SIDE;
+// as far as a pan can take the lattice and keep it on a screen at the furthest zoom
+const PAN_MAX = SIDE / ZOOM_MIN;
 
 export function formatHash({ slot, cam, target, slice, picked, fitted }) {
   const view = fitted

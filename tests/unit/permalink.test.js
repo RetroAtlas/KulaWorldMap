@@ -81,7 +81,8 @@ test("a number past what the camera can reach is held where the camera stops", (
   assert.deepEqual(far.turn, [40, PITCH_MAX]);
   assert.equal(far.zoom, ZOOM_MAX);
   assert.deepEqual(far.target, [SIDE, 0, 17]);
-  assert.deepEqual(far.pan, [2 * SIDE, -2 * SIDE]);
+  assert.deepEqual(far.pan, [SIDE / ZOOM_MIN, -SIDE / ZOOM_MIN]);
+  assert.deepEqual(parseHash("#HIRO/0/45,35/0.08/17,17,17/150,-150").pan, [150, -150]);
   assert.equal(parseHash("#HIRO/0/45,35/0.0001").zoom, ZOOM_MIN);
   assert.deepEqual(parseHash("#HIRO/0/-137,35").turn, [223, 35]);
   const written = formatHash({
@@ -90,7 +91,7 @@ test("a number past what the camera can reach is held where the camera stops", (
     target: far.target,
     slice: 33,
   });
-  assert.ok(/^#HIRO\/0\/45,35\/0\.90\/34,0,17\/68,0\/33$/.test(written), written);
+  assert.ok(/^#HIRO\/0\/45,35\/0\.90\/34,0,17\/425,0\/33$/.test(written), written);
 });
 
 test("a cell outside the lattice names nothing, and a slot is a number", () => {
