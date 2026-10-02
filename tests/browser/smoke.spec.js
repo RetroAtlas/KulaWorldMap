@@ -131,6 +131,8 @@ test("a hash or a key that arrives before the data has loaded is read once it ha
   await page.evaluate(() => import(new URL("js/interaction.js", location.href).href));
   await page.evaluate(() => (location.hash = "#HIRO/5"));
   await page.keyboard.press("]");
+  await page.locator("#search").fill("key");
+  await page.keyboard.press("Escape");
   await frame(page);
   release();
   await settle(page);

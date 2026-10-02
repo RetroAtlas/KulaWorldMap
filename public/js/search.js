@@ -153,7 +153,6 @@ function group(label, items, make) {
 }
 
 function render() {
-  builtFor = state.lvl.theme;
   out.textContent = "";
   found.textContent = "";
   const q = box.value.trim();
@@ -161,6 +160,7 @@ function render() {
     show(false);
     return;
   }
+  builtFor = state.lvl.theme;
   // Read as a query, a cell's commas would ask for any of its three numbers.
   const cell = CELL.exec(q)?.slice(1).map(Number);
   if (cell) {
