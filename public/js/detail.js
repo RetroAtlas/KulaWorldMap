@@ -179,13 +179,14 @@ export function showCell(c) {
   box.querySelector(".x").onclick = () => {
     clearDetail();
     draw();
-    $("cv").focus();
   };
   emit("selection-changed");
 }
 
 export function clearDetail() {
-  $("detail").hidden = true;
+  const box = $("detail");
+  if (box.contains(document.activeElement)) $("cv").focus();
+  box.hidden = true;
   state.selected = null;
   emit("selection-changed");
 }
