@@ -149,24 +149,40 @@ test("a hazard is flagged on a kind or a type, and its section says why", () => 
   assert.ok(flagged > 0);
 });
 
-// A note is read by someone looking at the map, in a sentence or three. It
+// A note is read by someone looking at the map, in a sentence or three, each
+// ending in a full stop rather than chained with colons and semicolons. It
 // never names this project's scripts or files, a path on a machine, an
 // address, a date or the walkthrough: those belong in docs/.
 const LONGEST_NOTE = 320;
+const SENTENCES = 3;
 const INTERNALS =
   /tools\/|\.(?:py|js|json|md)\b|\/Users\/|\/home\/|~\/|\b0x[0-9a-f]+|\b\d{4}-\d{2}-\d{2}\b|walkthrough/i;
 
-test("a note is short and free of the project's workings", () => {
+test("a note is a sentence or three, short and free of the project's workings", () => {
   for (const section of ["worlds", "kinds", "types", "levels"]) {
     for (const [key, entry] of Object.entries(annotations[section] ?? {})) {
-      if (!entry.note) continue;
-      const where = `annotations.json ${section} ${key}`;
-      assert.ok(
-        entry.note.length <= LONGEST_NOTE,
-        `${where}: ${entry.note.length} characters, over ${LONGEST_NOTE}`,
-      );
-      const hit = INTERNALS.exec(entry.note);
-      assert.ok(!hit, `${where}: "${hit?.[0]}" belongs in docs/annotations.md`);
+      const at = `annotations.json ${section} ${key}`;
+      const notes = [
+        [at, entry.note],
+        ...Object.entries(entry.variants ?? {}).map(([v, x]) => [`${at} ${entry.by} ${v}`, x.note]),
+      ];
+      for (const [where, note] of notes) {
+        if (!note) continue;
+        assert.ok(
+          note.length <= LONGEST_NOTE,
+          `${where}: ${note.length} characters, over ${LONGEST_NOTE}`,
+        );
+        assert.match(note, /\.$/, `${where}: does not end in a full stop`);
+        assert.doesNotMatch(
+          note,
+          /[;:]/,
+          `${where}: chains its clauses with a colon or a semicolon`,
+        );
+        const sentences = note.split(/(?<=\.)\s+/).length;
+        assert.ok(sentences <= SENTENCES, `${where}: ${sentences} sentences, over ${SENTENCES}`);
+        const hit = INTERNALS.exec(note);
+        assert.ok(!hit, `${where}: "${hit?.[0]}" belongs in docs/annotations.md`);
+      }
     }
   }
 });
