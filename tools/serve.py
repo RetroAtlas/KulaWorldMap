@@ -35,4 +35,4 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     print(f"http://localhost:{PORT}/  serving {ROOT}")
-    http.server.ThreadingHTTPServer(("", PORT), Handler).serve_forever()
+    http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
