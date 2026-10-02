@@ -14,7 +14,6 @@ import kula_tex as tex  # noqa: E402
 import kula_tgi as tgi  # noqa: E402
 
 TEX_W, TEX_H = tgi.TEX
-PIXELS = TEX_W * 2
 STP = 0x8000
 # Two palette rows, each with every entry marked semi-transparent and
 # distinct enough to be taken for a palette.
