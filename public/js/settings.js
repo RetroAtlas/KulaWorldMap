@@ -14,15 +14,19 @@ export function wireSettings() {
   const panel = $("settings");
   $("settingsBtn").onclick = openSettings;
   panel.addEventListener("change", (e) => mark(e.target));
-  panel.addEventListener("keydown", (e) => {
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const box = [...panel.querySelectorAll("label.check")]
-      .find((label) => label.querySelector("kbd")?.textContent === e.key)
-      ?.querySelector("input");
-    if (!box || box.disabled) return;
-    box.click();
-    e.preventDefault();
-  });
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (panel.hidden || e.metaKey || e.ctrlKey || e.altKey) return;
+      const box = [...panel.querySelectorAll("label.check")]
+        .find((label) => label.querySelector("kbd")?.textContent === e.key)
+        ?.querySelector("input");
+      if (!box || box.disabled) return;
+      box.click();
+      e.preventDefault();
+    },
+    { capture: true },
+  );
 }
 
 function mark(box) {

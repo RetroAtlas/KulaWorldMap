@@ -3163,6 +3163,7 @@ test("a setting's key works inside the settings, once a press", async ({ page })
   await page.keyboard.press("c");
   await expect(box).toBeChecked();
   await expect(panel.locator(".def")).toHaveText(["off by default"]);
+  await page.locator("#showCameraSays").click();
   await page.keyboard.press("c");
   await expect(box).not.toBeChecked();
   await expect(panel.locator(".def")).toHaveText([""]);
