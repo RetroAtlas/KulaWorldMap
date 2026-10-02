@@ -13,7 +13,7 @@ let returning = false;
 
 export function openDialog(overlay) {
   if (!entries) {
-    addEventListener("keydown", keys, { capture: true });
+    document.addEventListener("keydown", keys);
     addEventListener("popstate", backed);
   }
   if (open) {

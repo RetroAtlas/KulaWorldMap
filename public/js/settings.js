@@ -1,7 +1,8 @@
 import { $ } from "./dom.js";
 import { openDialog } from "./dialog.js";
 
-// The panel only shows its switches; each is wired, saved and keyed as any other.
+// The panel only shows its switches; each is wired, saved and keyed as any
+// other, and its key works inside the panel as well.
 
 export function openSettings() {
   const panel = $("settings");
@@ -10,8 +11,18 @@ export function openSettings() {
 }
 
 export function wireSettings() {
+  const panel = $("settings");
   $("settingsBtn").onclick = openSettings;
-  $("settings").addEventListener("change", (e) => mark(e.target));
+  panel.addEventListener("change", (e) => mark(e.target));
+  panel.addEventListener("keydown", (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const box = [...panel.querySelectorAll("label.check")]
+      .find((label) => label.querySelector("kbd")?.textContent === e.key)
+      ?.querySelector("input");
+    if (!box || box.disabled) return;
+    box.click();
+    e.preventDefault();
+  });
 }
 
 function mark(box) {

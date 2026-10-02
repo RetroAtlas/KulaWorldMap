@@ -3141,6 +3141,27 @@ test("the settings hold the start camera, which keeps its key", async ({ page })
   await expect.poll(async () => amber(await atEye(page))).toBe(true);
 });
 
+test("a setting's key works inside the settings, once a press", async ({ page }) => {
+  await page.goto("/#HIRO/0/45,35/1");
+  await settle(page);
+  const panel = page.locator("#settings");
+  const box = page.locator("#showCamera");
+  await page.keyboard.press("s");
+  await expect(panel).toBeVisible();
+  await expect(box).not.toBeChecked();
+  await page.keyboard.press("c");
+  await expect(box).toBeChecked();
+  await expect(panel.locator(".def")).toHaveText(["off by default"]);
+  await page.keyboard.press("c");
+  await expect(box).not.toBeChecked();
+  await expect(panel.locator(".def")).toHaveText([""]);
+  // a key of the display's stays the map's, and the dialog keeps it from the map
+  await page.keyboard.press("t");
+  await expect(page.locator("#showSkins")).toBeChecked();
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+});
+
 test("a switch clicked leaves the keys to the map, and the slider keeps its own", async ({
   page,
 }) => {
