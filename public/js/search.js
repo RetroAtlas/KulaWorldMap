@@ -267,6 +267,7 @@ function widen() {
   w.onclick = () => {
     scope = "all";
     render();
+    box.focus();
   };
   return [" · ", w];
 }

@@ -843,6 +843,7 @@ test("a search's way back to everywhere is a button the keyboard reaches", async
   await widen.focus();
   await page.keyboard.press("Enter");
   await expect(found).not.toContainText("in LEVEL 1");
+  await expect(page.locator("#search")).toBeFocused();
   await expect(page.locator("#scope button[aria-pressed=true]")).toHaveText("All");
 });
 
