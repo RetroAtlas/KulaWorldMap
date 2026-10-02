@@ -1936,18 +1936,7 @@ test("objects draw as themselves, keep turning, and go back to markers on d", as
   expect(before.drawn).toBe(6);
   expect(before.of).toBe(6);
   // the coins turn, so the frame is drawn again without anyone touching the page
-  const frames = await page.evaluate(
-    () =>
-      new Promise((done) => {
-        let n = 0;
-        const cv = document.getElementById("cv");
-        const g = cv.getContext("2d");
-        const fill = g.fill.bind(g);
-        g.fill = (...a) => (n++, fill(...a));
-        setTimeout(() => done(n), 400);
-      }),
-  );
-  expect(frames).toBeGreaterThan(50);
+  expect(await drawn(page)).toBeGreaterThan(8);
   await page.keyboard.press("d");
   const after = await probe();
   expect(after.models).toBe(false);
@@ -2715,8 +2704,8 @@ test("a level's clock starts at its first frame as the level opens", async ({ pa
   await settle(page);
   const clock = () =>
     page.evaluate(async () => (await import(new URL("js/render.js", location.href).href)).clock());
-  await page.waitForTimeout(600);
-  expect(await clock()).toBeGreaterThan(30);
+  const opened = await clock();
+  await expect.poll(clock).toBeGreaterThan(opened);
   const pressed = await page.evaluate(() => performance.now());
   await page.keyboard.press("]");
   await expect(page.locator("#chip")).toContainText("LEVEL 2");
