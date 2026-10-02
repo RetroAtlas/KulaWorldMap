@@ -844,6 +844,17 @@ test("a search's way back to everywhere is a button the keyboard reaches", async
   await expect(page.locator("#scope button[aria-pressed=true]")).toHaveText("All");
 });
 
+test("what a search found is said as well as shown", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const found = page.locator("#found");
+  await expect(found).toHaveRole("status");
+  await page.locator("#search").fill("zzzz");
+  await expect(found).toHaveText("Nothing matches that.");
+  await page.locator("#search").fill("key");
+  await expect(found).toHaveText(/^\d+ objects$/);
+});
+
 test("a search counts objects, blocks by their kind, and settings apart", async ({ page }) => {
   await page.goto("/#ATLANT/3");
   await settle(page);
