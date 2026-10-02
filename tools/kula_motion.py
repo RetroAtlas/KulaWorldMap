@@ -520,7 +520,7 @@ class Code:
                     coef[rd] = x + y if op == "addu" else x - y
             else:
                 m = re.match(r"\w+ \$(\w+)", text)
-                if m and m.group(1) in coef:
+                if m and m.group(1) in coef and m.group(1) != "zero":
                     coef[m.group(1)] = None      # overwritten by something not a shift or add
         if coef.get(dst) is None:
             sys.exit(f"0x{addr:08x}: {dst} is not a multiple of {src} after {count} instructions")
