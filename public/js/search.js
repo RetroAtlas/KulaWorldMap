@@ -155,6 +155,7 @@ function group(label, items, make) {
 function render() {
   out.textContent = "";
   found.textContent = "";
+  found.hidden = false;
   const q = box.value.trim();
   if (!q || !state.lvl) {
     show(false);
