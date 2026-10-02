@@ -80,9 +80,16 @@ try {
       document.getElementById(id).style.display = "none";
   }, LEVEL);
 
-  await page.locator("#cv").screenshot({ path: join(ROOT, "public", "og-image.png") });
+  const card = join(ROOT, "public", "og-image.png");
+  await page.locator("#cv").screenshot({ path: card });
   await browser.close();
-  spawnSync("oxipng", ["-q", "-o", "max", "--strip", "safe", join(ROOT, "public", "og-image.png")]);
+  const packed = spawnSync("oxipng", ["-o", "max", "--strip", "safe", card], {
+    stdio: ["ignore", "ignore", "inherit"],
+  });
+  if (packed.error || packed.status !== 0) {
+    console.error("oxipng did not compress public/og-image.png: do not commit it");
+    process.exitCode = 1;
+  }
   console.log(`public/og-image.png  ${W}x${H}`);
 } finally {
   server.close();
