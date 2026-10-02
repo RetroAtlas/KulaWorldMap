@@ -105,6 +105,11 @@ test("a platform's blocks have no face where they join", () => {
   assert.ok(set.platform.flat().includes(face(5, [], { place: first }).tex));
 });
 
+test("a platform's face between its ends is one of the world's stones", () => {
+  const middle = { axis: "x", role: "middle" };
+  assert.ok(set.stone.flat().includes(face(5, [], { place: middle }).tex));
+});
+
 test("a bonus level's plain face is the swirl, run through its colour cycle", () => {
   const f = face(0, [], { look: bonus });
   assert.ok(skins.sets.bonus.stone.flat().includes(f.tex));
