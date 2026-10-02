@@ -3,6 +3,7 @@ out/
 *.bin
 *.cue
 .claude/settings.local.json
+mise.local.toml
 node_modules/
 test-results/
 .DS_Store
