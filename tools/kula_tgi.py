@@ -141,7 +141,8 @@ def main():
     ap.add_argument("--disc", default=None)
     ap.add_argument("--world", default="HIRO", choices=THEMES)
     ap.add_argument("--clut", type=int, default=None,
-                    help="force one palette; default is each texture's own")
+                    help="paint every texture through the palette on this VRAM row; "
+                         "default is each texture's own")
     ap.add_argument("--shade", type=int, default=1, choices=range(SHADES),
                     help="which of the three lighting levels to draw")
     ap.add_argument("--sections", action="store_true")
@@ -163,7 +164,7 @@ def main():
             print(f"  section {i:2}: {bounds[i]:7} .. {bounds[i+1]:7}  {bounds[i+1]-bounds[i]:7} bytes")
         print(f"  section {ART} holds {len(bl)} VRAM uploads, "
               f"{'ending exactly on the section' if exact else 'NOT ending on the section'}")
-        print(f"  {len(textures(blob))} textures of 64x64, {len(pals)} palettes")
+        print(f"  {len(textures(blob))} textures of 64x64, {len(pals)} palette rows found by scan")
 
     if args.vram:
         px = bytearray(VRAM_W * VRAM_H * 4)
@@ -175,7 +176,6 @@ def main():
 
     if args.textures:
         tex = textures(blob)
-        by_row = dict(pals)
         pmap = palette_map(blob)
         cols = 8
         rows = (len(tex) + cols - 1) // cols
@@ -184,10 +184,10 @@ def main():
         grey = [(i, i, i) for i in range(256)]
         for i, b in enumerate(tex):
             if args.clut is not None:
-                pal = pals[args.clut][1] if pals else grey
+                pal = palette(page, args.clut)
             else:
                 rows = pmap.get(i)
-                pal = by_row.get(rows[args.shade], grey) if rows else grey
+                pal = palette(page, rows[args.shade]) if rows else grey
             tx, ty = (i % cols) * 64, (i // cols) * 64
             for y in range(64):
                 for x in range(64):
