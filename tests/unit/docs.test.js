@@ -5,6 +5,10 @@ import { fileURLToPath } from "node:url";
 import { mapData, annotations } from "./fixtures.js";
 
 const readme = readFileSync(fileURLToPath(new URL("../../README.md", import.meta.url)), "utf8");
+const page = readFileSync(
+  fileURLToPath(new URL("../../public/index.html", import.meta.url)),
+  "utf8",
+);
 
 const objectsOf = (levels) => levels.flatMap((l) => l.records.flatMap((r) => r.on));
 // What the game has is counted over the levels the game plays: the catalogue is
@@ -116,4 +120,21 @@ test("the README's points are the ones annotations.json scores", () => {
   );
   assert.ok(star, "README has no sentence giving the catalogue star's points");
   assert.equal(number(star[1]), type(42).points);
+});
+
+// The page describes itself three times over, to search engines and to the
+// sites that unfurl a link, each time by the two figures the README opens on.
+const WORDS = "no one two three four five six seven eight nine ten eleven twelve".split(" ");
+
+test("the page's descriptions count the levels and the worlds the data holds", () => {
+  const descriptions = [
+    ...page.matchAll(/(?:name|property)="(?:og:|twitter:)?description"\s+content="([^"]*)"/g),
+  ].map((m) => m[1]);
+  assert.equal(descriptions.length, 3);
+  for (const text of descriptions) {
+    const m = /\b(\d+) levels\b.*\bacross (\w+) worlds\b/.exec(text);
+    assert.ok(m, `the description "${text}" counts no levels across worlds`);
+    assert.equal(number(m[1]), mapData.levels.length);
+    assert.equal(m[2], WORDS[mapData.themes.length]);
+  }
 });
