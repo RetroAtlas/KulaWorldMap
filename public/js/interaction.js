@@ -330,10 +330,10 @@ addEventListener("keydown", (e) => {
       setSlice(SIDE - 1);
       break;
     case "[":
-      stepLevel(-1);
+      stepLevel(-1, !e.repeat);
       break;
     case "]":
-      stepLevel(1);
+      stepLevel(1, !e.repeat);
       break;
     case "f":
       refit();

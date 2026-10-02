@@ -227,6 +227,29 @@ test("[ and ] go on from one world into the next, and stop at the first level an
   expect(await entries()).toBe(there);
 });
 
+test("a bracket held down steps on through the levels on one history entry", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await frame(page);
+  const title = page.locator("#chip b");
+  const entries = () => page.evaluate(() => history.length);
+  const booted = await entries();
+  await page.keyboard.press("]");
+  await frame(page);
+  for (let i = 0; i < 3; i++) {
+    await page.evaluate(() =>
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "]", repeat: true, bubbles: true }),
+      ),
+    );
+    await frame(page);
+  }
+  await expect(title).toHaveText("LEVEL 5");
+  expect(await entries()).toBe(booted + 1);
+  await page.goBack();
+  await expect(title).toHaveText("LEVEL 1");
+});
+
 test("a key typed with Option or AltGr reaches the map, and a shortcut stays the browser's", async ({
   page,
 }) => {

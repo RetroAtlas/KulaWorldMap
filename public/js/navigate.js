@@ -15,7 +15,7 @@ import { draw, drawSoon, invalidatePick } from "./render.js";
 import { showCell, clearDetail } from "./detail.js";
 import { slotOf, formatHash, parseHash } from "./permalink.js";
 
-export function selectLevel(i, { keepView = false } = {}) {
+export function selectLevel(i, { keepView = false, push = true } = {}) {
   const l = state.data.levels[i];
   if (!l) return;
   // Nothing lies behind the first level shown, so arriving there is no entry.
@@ -34,7 +34,7 @@ export function selectLevel(i, { keepView = false } = {}) {
   emit("level-changed", i);
   chip();
   draw();
-  writeHash(left && !keepView);
+  writeHash(left && !keepView && push);
 }
 
 export function fit() {
@@ -216,9 +216,9 @@ addEventListener("hashchange", () => {
   if (!applyHash()) writeHash();
 });
 
-export function stepLevel(delta) {
+export function stepLevel(delta, push = true) {
   if (!state.data) return;
   const order = state.data.themes.flatMap((t) => t.levels);
   const i = order[order.indexOf(state.li) + delta];
-  if (i !== undefined) selectLevel(i);
+  if (i !== undefined) selectLevel(i, { push });
 }
