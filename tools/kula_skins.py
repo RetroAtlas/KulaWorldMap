@@ -208,11 +208,11 @@ def face_corners(code):
 def platform_table(code, r):
     """The (model, turn) each face of a moving platform's blocks draws, by the
     axis it runs along and whether the block is the only one, the first, one
-    between or the last."""
+    between or the last, with the model that stands for a stone at random."""
     stride = code.multiplier(*PLATFORM_AXIS_STRIDE)
     if stride != 2 * FACES * 2 * len(PLATFORM_TABLES):
         sys.exit(f"the platform tables are {stride} bytes an axis, not {2 * FACES * 2 * len(PLATFORM_TABLES)}")
-    out = {}
+    out = {"stone": r["platform.stone"]}
     for a, axis in enumerate(PLATFORM_AXES):
         out[axis] = {}
         for role, lui, addiu in PLATFORM_TABLES:
@@ -402,9 +402,11 @@ def show_readings(code, tgis):
     for face, turns in enumerate(face_corners(code)):
         for turn, corners in enumerate(turns):
             print(f"  face {face} {names[face]:5} turn {turn}: " + "  ".join("".join(map(str, c)) for c in corners))
-    print("\na moving platform's faces, (model, turn) by axis and place in the run")
-    for axis, roles in platform_table(code, r).items():
-        for role, faces in roles.items():
+    table = platform_table(code, r)
+    print(f"\na moving platform's faces, (model, turn) by axis and place in the run; "
+          f"model {table['stone']} is a stone at random")
+    for axis in PLATFORM_AXES:
+        for role, faces in table[axis].items():
             print(f"  {axis} {role:6}: " + "  ".join("-" if f is None else f"{f[0]},{f[1]}" for f in faces))
     print(f"\nthe pack that keeps the first set whatever the keys: {copycat_pack(code, r)}")
     cyc = cycles(code, r)

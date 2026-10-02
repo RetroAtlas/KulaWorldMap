@@ -11,7 +11,6 @@ const CRUMBLING = 6;
 const VANISHING = 7;
 const BEAM_KIND = 8;
 const PLATFORM_ROLES = ["first", "middle", "last"];
-const STONE_AT_RANDOM = -2;
 // The two faces along each axis, the one looking down it first.
 const FACE_ALONG = [
   [4, 1],
@@ -104,7 +103,7 @@ export function faceSkin(skins, look, c, face, kind, r, frame, place, plate) {
     const e = skins.platform[place.axis][place.role][face];
     if (!e) return null;
     const [model, turn] = e;
-    if (model === STONE_AT_RANDOM) return { tex: set.stone[h % set.stone.length][0], turn };
+    if (model === skins.platform.stone) return { tex: set.stone[h % set.stone.length][0], turn };
     return { tex: set.platform[model][0], turn };
   }
   if (plate !== undefined) return { tex: set.laser[plate] ?? set.laser[0], turn: 0 };
