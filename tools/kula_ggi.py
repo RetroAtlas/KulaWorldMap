@@ -218,14 +218,18 @@ def textures(g):
 def vram(g):
     """Replay every upload into a VRAM page of 16-bit words."""
     page = bytearray(VRAM_W * VRAM_H * 2)
-    for t in textures(g)[0]:
+    for i, t in enumerate(textures(g)[0]):
         if t is None:
             continue
         if t["palette"]:
             px, py, at, n = t["palette"]
+            if py >= VRAM_H or (px + n // 2) > VRAM_W:
+                sys.exit(f"sprite {i}'s palette at {px},{py} lies outside the page")
             dst = (py * VRAM_W + px) * 2
             page[dst:dst + n] = g.blob[at:at + n]
         if t["at"] is not None:
+            if t["y"] + t["h"] > VRAM_H or t["x"] + t["words"] > VRAM_W:
+                sys.exit(f"sprite {i} at {t['x']},{t['y']} lies outside the page")
             for row in range(t["h"]):
                 src = t["at"] + row * t["words"] * 2
                 dst = ((t["y"] + row) * VRAM_W + t["x"]) * 2
@@ -278,7 +282,9 @@ STP = 0x8000
 
 
 def shadows(g, past, count):
-    tex, _ = textures(g)
+    tex, exact = textures(g)
+    if not exact:
+        sys.exit("the sprites do not fill their section exactly, so they are not being read right")
     page = vram(g)
     first = sum(g.header[:6]) + past
     out = []

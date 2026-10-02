@@ -11,7 +11,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_ggi import GROUP, PREFIX, QUAD, TEXTURES, Model, shadows  # noqa: E402
+from kula_ggi import GROUP, PREFIX, QUAD, TEXTURES, VRAM_H, Model, shadows  # noqa: E402
 
 
 def packed(frames):
@@ -85,12 +85,13 @@ class Reads(unittest.TestCase):
         self.assertEqual(len(packed([[(0, 0, 0)] * 4])), PREFIX + 2 * GROUP)
 
 
-def sprites(palette, abr=2):
+def sprites(palette, abr=2, y=20, slack=0):
     """A .GGI whose last section holds one 4 by 2 sprite at 4 bits, its
-    pixels naming palette entries 0, 1, 2, 0 and then 1 four times."""
+    pixels naming palette entries 0, 1, 2, 0 and then 1 four times, with
+    `slack` bytes of the section left over past it."""
     section = struct.pack("<I", 1) + struct.pack("<hh", 4, abr)
     section += struct.pack("<HHhH", 0, 10, 0, 0) + struct.pack("<16H", *palette, *[0] * (16 - len(palette)))
-    section += struct.pack("<4H", 0, 20, 4, 2) + bytes((0x10, 0x02, 0x11, 0x11))
+    section += struct.pack("<4H", 0, y, 4, 2) + bytes((0x10, 0x02, 0x11, 0x11)) + bytes(slack)
     return SimpleNamespace(blob=section, bounds=[0] * TEXTURES + [0, len(section)], header=[0] * 6)
 
 
@@ -102,6 +103,12 @@ class Shadows(unittest.TestCase):
     def test_a_shadow_ships_what_each_texel_takes_off_in_base_32(self):
         g = sprites([0, STP | 3 * GREY, STP | 10 * GREY])
         self.assertEqual(shadows(g, 0, 1), [["03a0", "3333"]])
+
+    def test_a_sprite_outside_the_page_or_a_section_not_filled_stops_the_build(self):
+        good = [0, STP | 3 * GREY, STP | 10 * GREY]
+        for g in (sprites(good, y=VRAM_H - 1), sprites(good, slack=4)):
+            with self.assertRaises(SystemExit):
+                shadows(g, 0, 1)
 
     def test_a_tinted_or_opaque_texel_or_another_blend_stops_the_build(self):
         for g in (sprites([0, STP | 3, STP | 10 * GREY]), sprites([0, 3 * GREY, STP | 10 * GREY]),
