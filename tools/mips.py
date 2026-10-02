@@ -32,6 +32,7 @@ OPS = {0x02: "j", 0x03: "jal", 0x04: "beq", 0x05: "bne", 0x06: "blez", 0x07: "bg
        0x26: "lwr", 0x28: "sb", 0x29: "sh", 0x2a: "swl", 0x2b: "sw", 0x2e: "swr"}
 
 LOADS = {"lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "sb", "sh", "swl", "sw", "swr"}
+LOGIC = {"andi", "ori", "xori"}      # the immediates MIPS zero-extends
 
 # The geometry coprocessor: its data and control registers, the four moves
 # between them and the CPU's, and its commands by their low six bits.
@@ -110,6 +111,8 @@ def decode(word, pc):
         return f"lui {R(rt)}, 0x{imm:04x}", None
     if name in LOADS:
         return f"{name} {R(rt)}, {simm}({R(rs)})", None
+    if name in LOGIC:
+        return f"{name} {R(rt)}, {R(rs)}, {imm}", None
     return f"{name} {R(rt)}, {R(rs)}, {simm}", None
 
 

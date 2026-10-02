@@ -108,6 +108,11 @@ class Reads(unittest.TestCase):
         c = code(lui("a0", 0x38e3), ori("a0", "a0", 0x8e39), sra("v1", "a2", 1))
         self.assertEqual(c.divisor(AT, "lui $a0, {}", AT + 4, "ori $a0, $a0, {}", AT + 8, "sra $v1, $a2, {}"), 9)
 
+    def test_a_word_is_its_lui_and_ori_halves_whatever_the_low_halfs_top_bit(self):
+        c = code(lui("v1", 0x41c6), ori("v1", "v1", 0x4e6d), lui("a0", 0x38e3), ori("a0", "a0", 0x8e39))
+        self.assertEqual(c.word_of(AT, "lui $v1, {}", AT + 4, "ori $v1, $v1, {}"), 0x41c64e6d)
+        self.assertEqual(c.word_of(AT + 8, "lui $a0, {}", AT + 12, "ori $a0, $a0, {}"), 0x38e38e39)
+
     def test_an_immediate_is_read_from_the_instruction_it_lives_in(self):
         c = code(addiu("a0", "v1", -75))
         self.assertEqual(c.immediate(AT, "addiu $a0, $v1, {}"), -75)

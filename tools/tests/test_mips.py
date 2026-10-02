@@ -100,6 +100,15 @@ class Gte(unittest.TestCase):
         self.assertEqual(decode(0xC900FFD0, 0)[0], "lwc2 vxy0, -48($t0)")
 
 
+class Immediates(unittest.TestCase):
+    def test_a_logical_immediate_is_unsigned_and_an_arithmetic_one_signed(self):
+        self.assertEqual(decode(0x34848E39, 0)[0], "ori $a0, $a0, 36409")
+        self.assertEqual(decode(0x3062FFFF, 0)[0], "andi $v0, $v1, 65535")
+        self.assertEqual(decode(0x3842FFFF, 0)[0], "xori $v0, $v0, 65535")
+        self.assertEqual(decode(0x2442FFFF, 0)[0], "addiu $v0, $v0, -1")
+        self.assertEqual(decode(0x2C42FFFF, 0)[0], "sltiu $v0, $v0, -1")
+
+
 class TheMachine(unittest.TestCase):
     def test_a_routine_runs_to_its_return_with_its_delay_slots(self):
         # Stores the turn at byte 6, packs x and y into a word at 32 by the

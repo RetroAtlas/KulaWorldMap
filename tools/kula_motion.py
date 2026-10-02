@@ -79,7 +79,7 @@ CHECKS = [
     (0x80025064, "jal 0x8004740c", "that seeds the dice"),
     (0x80041c34, "beq $t2, $zero, 0x80040aa0", "and then loops a frame at a time from after it"),
     (0x8004740c, "sw $a0, 2380($gp)", "whose state is one word"),
-    (0x80047430, "andi $v0, $v1, -1", "a draw of n is n times the state's low half"),
+    (0x80047430, "andi $v0, $v1, 65535", "a draw of n is n times the state's low half"),
     (0x80047444, "srl $v0, $a1, 16", "over 65536"),
     (0x80040d44, "jal 0x80022814", "the screen's shake is drawn before the captivators move"),
     (0x80022820, "bne $v1, $v0, 0x80022984", "and draws only while the screen shakes"),
@@ -459,10 +459,13 @@ class Code:
             sys.exit(f"0x{lui:08x} and 0x{addiu:08x} read `{self.text(lui)}` and `{self.text(addiu)}`, not an address")
         return (0x80000000 | (int(hi.group(1), 0) << 16)) + int(lo.group(1))
 
+    def word_of(self, hi, hp, lo, lp):
+        """The word a lui and an ori hold between them."""
+        return (self.immediate(hi, hp) << 16) | (self.immediate(lo, lp) & 0xFFFF)
+
     def divisor(self, hi, hp, lo, lp, sa, sp):
         """The number a multiply by a reciprocal and a shift divides by."""
-        magic = (self.immediate(hi, hp) << 16) | (self.immediate(lo, lp) & 0xFFFF)
-        return round(2 ** (32 + self.immediate(sa, sp)) / magic)
+        return round(2 ** (32 + self.immediate(sa, sp)) / self.word_of(hi, hp, lo, lp))
 
     def multiplier(self, addr, count, src, dst):
         """The factor applied to `src` by `count` instructions of shifts and adds."""
@@ -498,10 +501,8 @@ def readings(code):
         out[key] = code.immediate(addr, pattern)
     for _, key, _, addr, count, src, dst in MULTIPLIERS:
         out[key] = code.multiplier(addr, count, src, dst)
-    hi, hp, lo, lp = BUTTON_REACH
-    out["button.reach"] = round(((code.immediate(hi, hp) << 16) + code.immediate(lo, lp)) ** 0.5)
-    hi, hp, lo, lp = DICE_TIMES
-    out["dice.times"] = (code.immediate(hi, hp) << 16) | code.immediate(lo, lp)
+    out["button.reach"] = round(code.word_of(*BUTTON_REACH) ** 0.5)
+    out["dice.times"] = code.word_of(*DICE_TIMES)
     for _, key, _, *args in DIVISORS:
         out[key] = code.divisor(*args)
     start, end = (code.address(*pair) for pair in LASER_LEVELS)
