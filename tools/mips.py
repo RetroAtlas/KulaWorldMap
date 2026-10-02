@@ -68,6 +68,8 @@ def decode(word, pc):
             return f".word 0x{word:08x}", None
         if name in ("sll", "srl", "sra"):
             return f"{name} {R(rd)}, {R(rt)}, {sa}", None
+        if name in ("sllv", "srlv", "srav"):
+            return f"{name} {R(rd)}, {R(rt)}, {R(rs)}", None
         if name == "jr":
             return f"jr {R(rs)}", None
         if name == "jalr":

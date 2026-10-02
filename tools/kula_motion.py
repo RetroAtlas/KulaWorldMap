@@ -185,7 +185,7 @@ CHECKS = [
     (0x80051604, "sll $s5, $s4, 4", "four words a row"),
     (0x80051614, "and $s3, $s3, $s7", "the row's mask takes the sum's top bit off"),
     (0x80051618, "multu $s6, $s3", "and its step times what is left"),
-    (0x80051630, "srlv $s6, $s3, $s6", "shifted down as far as the top bit is up"),
+    (0x80051630, "srlv $s6, $s6, $s3", "shifted down as far as the top bit is up"),
     (0x80051640, "add $s3, $s3, $s5", "is added to its root"),
     (0x80051644, "slt $at, $a3, $s3", "a corner past the near distance"),
     (0x80051410, "divu $s3, $s4", "is lit less by the fixed point over the stretch to the far one"),

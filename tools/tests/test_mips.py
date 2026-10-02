@@ -73,6 +73,15 @@ def sltiu(rt, rs, imm):
     return (0x0B << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
 
 
+class Shifts(unittest.TestCase):
+    def test_a_variable_shift_names_the_value_before_the_amount(self):
+        # rd = rt shifted by rs, so the value is named before the amount
+        self.assertEqual(decode(0x0276B006, 0)[0], "srlv $s6, $s6, $s3")
+        self.assertEqual(decode(0x00A62804, 0)[0], "sllv $a1, $a2, $a1")
+        self.assertEqual(decode(0x00A62807, 0)[0], "srav $a1, $a2, $a1")
+        self.assertEqual(decode(0x00062880, 0)[0], "sll $a1, $a2, 2")
+
+
 class Gte(unittest.TestCase):
     def test_a_command_is_named_by_its_low_six_bits(self):
         self.assertEqual(decode(0x4A180001, 0)[0], "rtps")
