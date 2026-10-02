@@ -256,7 +256,11 @@ function tally(hits) {
 
 function widen() {
   if (scope === "all") return [];
-  const w = el("span", { className: "widen", textContent: "search everywhere" });
+  const w = el("button", {
+    type: "button",
+    className: "linkish widen",
+    textContent: "search everywhere",
+  });
   w.onclick = () => {
     scope = "all";
     render();

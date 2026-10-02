@@ -829,6 +829,21 @@ test("the places are eight to a group like the objects, and keep to the scope", 
   await expect(page.locator("#results [aria-label=Worlds]")).toHaveCount(0);
 });
 
+test("a search's way back to everywhere is a button the keyboard reaches", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.locator("#search").fill("key");
+  await page.locator("#scope button").nth(2).click();
+  const found = page.locator("#found");
+  await expect(found).toContainText("in LEVEL 1");
+  const widen = found.locator(".widen");
+  await expect(widen).toHaveRole("button");
+  await widen.focus();
+  await page.keyboard.press("Enter");
+  await expect(found).not.toContainText("in LEVEL 1");
+  await expect(page.locator("#scope button[aria-pressed=true]")).toHaveText("All");
+});
+
 test("a search counts objects, blocks by their kind, and settings apart", async ({ page }) => {
   await page.goto("/#ATLANT/3");
   await settle(page);
