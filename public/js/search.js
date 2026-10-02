@@ -333,6 +333,10 @@ box.addEventListener("keydown", (e) => {
   }
 });
 
+// A list held to a world or a level is of the level in hand; one of
+// everything stays as it was, so a walk down it is not thrown off.
 on("level-changed", () => {
-  if (!bar.hidden) scopeBar();
+  if (bar.hidden) return;
+  if (scope === "all") scopeBar();
+  else render();
 });

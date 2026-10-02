@@ -855,6 +855,21 @@ test("what a search found is said as well as shown", async ({ page }) => {
   await expect(found).toHaveText(/^\d+ objects$/);
 });
 
+test("a search held to the level in hand follows the level as it changes", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.locator("#search").fill("key");
+  await page.locator("#scope button").nth(2).click();
+  const found = page.locator("#found");
+  const group = page.locator("#results [role=group]").first();
+  await expect(found).toContainText("in LEVEL 1");
+  await page.keyboard.press("]");
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 2");
+  await expect(found).toContainText("in LEVEL 2");
+  await expect(group).toHaveAttribute("aria-label", /LEVEL 2$/);
+  await expect(page.locator("#scope button").nth(2)).toHaveText("LEVEL 2");
+});
+
 test("a search counts objects, blocks by their kind, and settings apart", async ({ page }) => {
   await page.goto("/#ATLANT/3");
   await settle(page);
