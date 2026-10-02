@@ -46,7 +46,6 @@ export async function loadJson(url, fallback) {
 }
 
 export const worldName = (id) => ann.worlds[id]?.name || id;
-export const worldNote = (id) => ann.worlds[id]?.note || "";
 
 export const levelNote = (l) =>
   [
