@@ -2557,6 +2557,33 @@ test("a level's clock starts at its first frame as the level opens", async ({ pa
   expect(now).toBeLessThan(since);
 });
 
+test("a level's clock stands while the page is hidden", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.waitForTimeout(300);
+  const [moved, hiddenFor] = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ clock }, { frameAt }, { motionTable }] = await Promise.all(
+      ["render.js", "motion.js", "data.js"].map(at),
+    );
+    const hide = (hidden) => {
+      Object.defineProperty(document, "hidden", { configurable: true, get: () => hidden });
+      document.dispatchEvent(new Event("visibilitychange"));
+    };
+    const before = clock();
+    const since = performance.now();
+    hide(true);
+    await new Promise((r) => setTimeout(r, 500));
+    hide(false);
+    const out = [clock() - before, frameAt(motionTable(), performance.now() - since)];
+    delete document.hidden;
+    return out;
+  });
+  expect(hiddenFor).toBeGreaterThan(25);
+  expect(moved).toBeGreaterThanOrEqual(0);
+  expect(moved).toBeLessThan(hiddenFor / 2);
+});
+
 /** A digest of what the map's canvas shows. */
 const picture = (page) =>
   page.evaluate(async () => {

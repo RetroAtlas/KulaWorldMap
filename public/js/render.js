@@ -152,21 +152,22 @@ function visible(idx, moving) {
 }
 
 // The level's clock starts at its first frame as the level opens or motion is
-// turned on, as play's does, and stands there while motion is off.
+// turned on, as play's does, and stands there while motion is off, and while
+// the page is hidden, when the run moves on by the time it was hidden instead.
 let run = null;
+let hiddenAt = document.hidden ? performance.now() : null;
+const now = () => hiddenAt ?? performance.now();
 function syncRun() {
   const table = motionTable();
   if (!table || !state.show.motion) run = null;
   else if (run?.level !== state.lvl) {
-    run = { level: state.lvl, at: frameAt(table, performance.now()), travel: null };
+    run = { level: state.lvl, at: frameAt(table, now()), travel: null };
     settleCircuits();
   }
 }
 
 export const clock = () =>
-  run && state.show.motion && run.level === state.lvl
-    ? frameAt(motionTable(), performance.now()) - run.at
-    : 0;
+  run && state.show.motion && run.level === state.lvl ? frameAt(motionTable(), now()) - run.at : 0;
 
 function travelling(l, idx, frame) {
   if (!run) return null;
@@ -311,7 +312,13 @@ function animate() {
   });
 }
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) draw();
+  if (document.hidden) {
+    hiddenAt = performance.now();
+    return;
+  }
+  if (run && hiddenAt !== null) run.at += frameAt(motionTable(), performance.now() - hiddenAt);
+  hiddenAt = null;
+  draw();
 });
 
 /** Draw, unless a frame already asked for will draw before anything reaches
