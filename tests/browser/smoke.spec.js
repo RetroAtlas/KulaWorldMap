@@ -731,6 +731,7 @@ test("the survey keeps a mark a face, and clears the chosen face alone", async (
       s.value = value;
       s.dispatchEvent(new Event("change"));
     };
+    const cell = [c.x, c.y, c.z];
     const marks = () => state.survey.marks.get(key).map((m) => [m.name, m.face]);
     choose("surveyName", "blue switch");
     choose("surveyFace", "+x");
@@ -744,15 +745,15 @@ test("the survey keeps a mark a face, and clears the chosen face alone", async (
     const count = document.getElementById("surveyCount").textContent;
     choose("surveyFace", "+x");
     place(c, true);
-    return { two, level, count, one: marks() };
+    return { two, level, count, cell, one: marks() };
   });
   expect(got.two).toEqual([
     ["key", "-z"],
     ["blue switch", "+x"],
   ]);
-  expect(got.level.map((m) => [m.cell.join(), m.face])).toEqual([
-    [got.level[0].cell.join(), "-z"],
-    [got.level[0].cell.join(), "+x"],
+  expect(got.level.map((m) => [m.cell, m.face])).toEqual([
+    [got.cell, "-z"],
+    [got.cell, "+x"],
   ]);
   expect(got.count).toMatch(/^2 marked on 1 block · /);
   expect(got.one).toEqual([["key", "-z"]]);
@@ -3590,4 +3591,40 @@ test("a search held to the world keeps its order as the level moves within the w
   });
   await expect(page.locator("#scope button").nth(1)).toHaveText("INCA");
   expect((await keys())[0]).not.toEqual(before[0]);
+});
+
+test("the survey passes over a stored mark that is not one, and exports none of them", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "kula.survey",
+      JSON.stringify({
+        "/HIRO/HIRO.PAK#0": 5,
+        "/HIRO/HIRO.PAK#1": [
+          { name: "x" },
+          { cell: [1, 2], name: "short" },
+          { cell: [1, 2, 3], name: "coin", face: 7 },
+          { cell: [1, 2, 3], name: "coin", face: "-z" },
+          null,
+        ],
+      }),
+    );
+  });
+  await page.goto("/?survey#HIRO/0");
+  await settle(page);
+  await expect(page.locator("#surveyCount")).toContainText("0 marked");
+  await page.keyboard.press("]");
+  await expect(page.locator("#surveyCount")).toContainText("1 marked");
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.locator("#survey button", { hasText: "download" }).click(),
+  ]);
+  const text = await (await import("node:fs/promises")).readFile(await download.path(), "utf8");
+  expect(JSON.parse(text)).toEqual({
+    survey: 1,
+    levels: { "/HIRO/HIRO.PAK#1": [{ cell: [1, 2, 3], name: "coin", face: "-z" }] },
+  });
+  expect(errors).toEqual([]);
 });

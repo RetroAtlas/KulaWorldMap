@@ -111,7 +111,8 @@ const isMark = (m) =>
   Array.isArray(m?.cell) &&
   m.cell.length === 3 &&
   m.cell.every(inLattice) &&
-  typeof m.name === "string";
+  typeof m.name === "string" &&
+  (m.face === undefined || FACES.some(([v]) => v === m.face));
 
 export function loadLevel() {
   state.survey.marks = new Map();
@@ -154,7 +155,10 @@ export function place(c, clear) {
 
 function exportText() {
   const levels = {};
-  for (const [k, v] of Object.entries(all)) if (v.length) levels[k] = v;
+  for (const [k, v] of Object.entries(all)) {
+    const marks = Array.isArray(v) ? v.filter(isMark) : [];
+    if (marks.length) levels[k] = marks;
+  }
   return JSON.stringify({ survey: 1, levels }, null, 2);
 }
 
