@@ -2290,6 +2290,24 @@ test("a teleporter's panel names where it leads, and going there is a find", asy
   expect(errors).toEqual([]);
 });
 
+test("the panel keeps the focus when the button it was on goes", async ({ page }) => {
+  await page.goto("/#COWBOY/7/45,35/1");
+  await settle(page);
+  await page.evaluate(async () => {
+    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    showCell(state.idx.cells.get(cellKey(17, 7, 17)));
+  });
+  const panel = page.locator("#detail");
+  await panel.locator(".goto").focus();
+  await page.keyboard.press("Enter");
+  await expect(panel).toContainText("cell 17,25,17");
+  await expect(panel.locator(".x")).toBeFocused();
+  await panel.locator(".x").click();
+  await expect(panel).toBeHidden();
+  await expect(page.locator("#cv")).toBeFocused();
+});
+
 test("where a teleporter leads reads as a row of the panel, the cell and its face each whole", async ({
   page,
 }) => {

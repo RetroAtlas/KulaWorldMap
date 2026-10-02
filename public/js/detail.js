@@ -171,11 +171,15 @@ export function showCell(c) {
   }
   for (const b of box.querySelectorAll(".goto")) {
     const [x, y, z] = b.dataset.to.split(",").map(Number);
-    b.onclick = () => emit("go-to", { x, y, z, said: b.dataset.said });
+    b.onclick = () => {
+      emit("go-to", { x, y, z, said: b.dataset.said });
+      box.querySelector(".x")?.focus();
+    };
   }
   box.querySelector(".x").onclick = () => {
     clearDetail();
     draw();
+    $("cv").focus();
   };
   emit("selection-changed");
 }
