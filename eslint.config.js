@@ -5,7 +5,7 @@ import js from "@eslint/js";
 import globals from "globals";
 
 export default [
-  { ignores: ["node_modules/", "tools/"] },
+  { ignores: ["node_modules/"] },
   js.configs.recommended,
   {
     files: ["public/js/**/*.js", "eslint.config.js"],
@@ -25,7 +25,12 @@ export default [
   },
   {
     // Playwright: Node files whose page.evaluate bodies run in the browser
-    files: ["tests/browser/**/*.js", "tests/pixels/**/*.js", "tests/frame/**/*.js"],
+    files: [
+      "tests/browser/**/*.js",
+      "tests/pixels/**/*.js",
+      "tests/frame/**/*.js",
+      "tools/**/*.js",
+    ],
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: "module",
