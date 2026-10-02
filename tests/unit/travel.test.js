@@ -1,10 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects, mapData } from "./fixtures.js";
+import { state } from "../../public/js/state.js";
 import { setObjects, index, markersOf } from "../../public/js/data.js";
 import { heading, probe, walkers, advance, place, dice, under } from "../../public/js/travel.js";
 
 setObjects(objects);
+state.data = mapData;
 const table = objects.motion;
 const UNIT = 512;
 

@@ -2,7 +2,7 @@
 // from the level's start in the game's units and unit vectors.
 import { FACE_NORMAL } from "./faces.js";
 import { OFF_LATTICE, beams, kindMotion, platformAxis } from "./data.js";
-import { cellKey } from "./state.js";
+import { state, SIDE, cellKey } from "./state.js";
 import { blockPhase } from "./motion.js";
 
 const UNIT = 512;
@@ -18,8 +18,6 @@ const CRUMBLING_KIND = 6;
 const VANISHING_KIND = 7;
 const BEAM_KIND = 8;
 const BETWEEN = -2;
-const FIRST_RECORD = 5;
-const STYLES = 5;
 // The types standing on a face that a captivator may still cross.
 const CROSSABLE = new Set([30, 1, 2, 4]);
 const CAPTIVATORS_FROM = 50;
@@ -65,6 +63,7 @@ export function heading(face, facing) {
 }
 
 export function probe(l, lit = (ray) => ray.lit) {
+  const { firstRecord: first, styles } = state.data;
   const cells = new Map();
   for (let i = 0; i < l.cells.length; i += 4) {
     cells.set(cellKey(l.cells[i], l.cells[i + 1], l.cells[i + 2]), l.cells[i + 3]);
@@ -84,12 +83,12 @@ export function probe(l, lit = (ray) => ray.lit) {
   }
   const vanishing = kindMotion(VANISHING_KIND);
   const value = ([x, y, z], frame) => {
-    if ([x, y, z].some((c) => c < 1 || c > 32)) return OFF_LATTICE;
+    if ([x, y, z].some((c) => c < 1 || c > SIDE - 2)) return OFF_LATTICE;
     const rays = crossed.get(cellKey(x, y, z));
     if (rays) return rays.some(lit) ? BETWEEN : OFF_LATTICE;
     const v = cells.get(cellKey(x, y, z)) ?? OFF_LATTICE;
-    if (v >= FIRST_RECORD && vanishing) {
-      const r = l.records[v - FIRST_RECORD];
+    if (v >= first && vanishing) {
+      const r = l.records[v - first];
       if (r.kind === VANISHING_KIND && blockPhase(vanishing, r, frame).state === 0)
         return OFF_LATTICE;
     }
@@ -100,8 +99,8 @@ export function probe(l, lit = (ray) => ray.lit) {
     free(cell, face, frame) {
       const v = value(cell, frame);
       if (v < 0) return false;
-      if (v < STYLES) return true;
-      const i = v - FIRST_RECORD;
+      if (v < styles) return true;
+      const i = v - first;
       const r = l.records[i];
       if (r.kind === PLATFORM_KIND) return false;
       if (r.kind === CRUMBLING_KIND) return true;
