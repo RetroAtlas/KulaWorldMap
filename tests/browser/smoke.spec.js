@@ -3650,3 +3650,24 @@ test("the panel hands the focus to the map when Escape closes it", async ({ page
   await expect(panel).toBeHidden();
   await expect(page.locator("#cv")).toBeFocused();
 });
+
+test("the map and the legend follow the screen's density", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await textured(page);
+  const density = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      const icon = document.querySelector("#kinds canvas.icon");
+      return [state.view.dpr, icon.width / parseInt(icon.style.width)];
+    });
+  expect(await density()).toEqual([1, 1]);
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setDeviceMetricsOverride", {
+    width: 1200,
+    height: 700,
+    deviceScaleFactor: 2,
+    mobile: false,
+  });
+  await expect.poll(density).toEqual([2, 2]);
+});
