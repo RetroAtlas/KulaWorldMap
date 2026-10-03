@@ -30,6 +30,15 @@ def image(sectors, root_at, directory=b""):
     return bytes(raw)
 
 
+def subdirectory(at):
+    """A directory record naming the directory at a sector."""
+    record = bytearray(34)
+    record[0], record[25], record[32], record[33] = 34, 2, 1, ord("A")
+    struct.pack_into("<I", record, 2, at)
+    struct.pack_into("<I", record, 10, 2048)
+    return bytes(record)
+
+
 class TheImage(unittest.TestCase):
     def write(self, data):
         f = tempfile.NamedTemporaryFile(suffix=".bin", delete=False)
@@ -69,11 +78,16 @@ class TheImage(unittest.TestCase):
         self.refused(image(24, root_at=20, directory=broken), IndexError)
 
     def test_a_directory_that_holds_itself_is_refused_and_closed(self):
-        record = bytearray(34)
-        record[0], record[25], record[32], record[33] = 34, 2, 1, ord("A")
-        struct.pack_into("<I", record, 2, 20)
-        struct.pack_into("<I", record, 10, 2048)
-        self.refused(image(24, root_at=20, directory=bytes(record)), ValueError)
+        self.refused(image(24, root_at=20, directory=subdirectory(20)), ValueError)
+
+    def test_a_chain_of_directories_past_the_recursion_limit_is_refused(self):
+        depth = sys.getrecursionlimit() + 20
+        raw = bytearray(image(20 + depth + 1, root_at=20))
+        for n in range(depth):
+            at = SECTOR_RAW * (20 + n) + USER_OFF
+            raw[at:at + 34] = subdirectory(21 + n)
+        with self.assertRaises(SystemExit):
+            open_disc(self.write(bytes(raw)))
 
     def test_an_image_that_holds_its_directory_opens_and_closes(self):
         with Disc(self.write(image(24, root_at=20))) as disc:

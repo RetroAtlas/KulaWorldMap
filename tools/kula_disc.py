@@ -26,7 +26,7 @@ def open_disc(path=None):
         sys.exit(f"no disc image at {path}")
     try:
         return Disc(path)
-    except (ValueError, IndexError, struct.error) as e:
+    except (ValueError, IndexError, struct.error, RecursionError) as e:
         sys.exit(f"{path} does not read as a disc image: {e}")
 
 
