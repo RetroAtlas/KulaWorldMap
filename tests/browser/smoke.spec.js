@@ -3666,9 +3666,7 @@ test("the survey passes over a stored mark that is not one, and exports none of 
   expect(errors).toEqual([]);
 });
 
-test("the panel hands the focus to the map when Escape or a change of level closes it", async ({
-  page,
-}) => {
+test("the panel hands the focus to the map however it closes", async ({ page }) => {
   await page.goto("/#COWBOY/7/45,35/1");
   await settle(page);
   await page.evaluate(async () => {
@@ -3689,6 +3687,24 @@ test("the panel hands the focus to the map when Escape or a change of level clos
   await panel.locator(".x").focus();
   await page.keyboard.press("]");
   await expect(page.locator("#chip b")).toHaveText("LEVEL 69");
+  await expect(panel).toBeHidden();
+  await expect(page.locator("#cv")).toBeFocused();
+  await page.keyboard.press("[");
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 68");
+  await page.evaluate(async () => {
+    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    showCell(state.idx.cells.get(cellKey(17, 7, 17)));
+  });
+  await panel.locator(".x").focus();
+  // a click on empty map as events alone, so the canvas is focused by the handoff and not by the click
+  await page.evaluate(() => {
+    const cv = document.getElementById("cv");
+    for (const type of ["pointerdown", "pointerup"])
+      cv.dispatchEvent(
+        new PointerEvent(type, { pointerId: 1, clientX: 4, clientY: 4, button: 0, bubbles: true }),
+      );
+  });
   await expect(panel).toBeHidden();
   await expect(page.locator("#cv")).toBeFocused();
 });
