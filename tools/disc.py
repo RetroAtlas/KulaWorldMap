@@ -51,7 +51,7 @@ class Disc:
 
     def _read_dir(self, lba, size, prefix):
         if lba in self._walked:
-            raise ValueError(f"the directory at sector {lba} holds itself")
+            raise ValueError(f"the directory at sector {lba} is reached twice")
         self._walked.add(lba)
         data = self.read(lba, size)
         pos = 0

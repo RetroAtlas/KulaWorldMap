@@ -76,8 +76,10 @@ class TheImage(unittest.TestCase):
         # records to within a few bytes of the end, then one whose flags lie past it
         broken = (bytes([255]) + bytes(254)) * 7 + bytes([240]) + bytes(239) + bytes([1])
         self.refused(image(24, root_at=20, directory=broken), IndexError)
+        with self.assertRaises(SystemExit):
+            open_disc(self.write(image(24, root_at=20, directory=broken)))
 
-    def test_a_directory_that_holds_itself_is_refused_and_closed(self):
+    def test_a_directory_reached_twice_is_refused_and_closed(self):
         self.refused(image(24, root_at=20, directory=subdirectory(20)), ValueError)
 
     def test_a_chain_of_directories_past_the_recursion_limit_is_refused(self):
