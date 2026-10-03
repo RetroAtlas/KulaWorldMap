@@ -3662,7 +3662,9 @@ test("the survey passes over a stored mark that is not one, and exports none of 
   expect(errors).toEqual([]);
 });
 
-test("the panel hands the focus to the map when Escape closes it", async ({ page }) => {
+test("the panel hands the focus to the map when Escape or a change of level closes it", async ({
+  page,
+}) => {
   await page.goto("/#COWBOY/7/45,35/1");
   await settle(page);
   await page.evaluate(async () => {
