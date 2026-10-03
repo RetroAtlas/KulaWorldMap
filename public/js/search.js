@@ -264,10 +264,10 @@ function widen() {
     className: "linkish widen",
     textContent: "search everywhere",
   });
-  w.onclick = () => {
+  w.onclick = (e) => {
     scope = "all";
     render();
-    box.focus();
+    (e.detail ? out.querySelector("[role=option]") : box)?.focus();
   };
   return [" · ", w];
 }
