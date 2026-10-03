@@ -367,7 +367,7 @@ LEVEL_BITS = 5       # the depth the GPU draws a colour at
 ADD = 1              # the blend that adds a quad to what is behind it
 
 # The instructions whose first register is read rather than written.
-READS_FIRST = {"sb", "sh", "sw", "swl", "swr", "swc2", "mtc2", "ctc2", "mthi", "mtlo",
+READS_FIRST = {"sb", "sh", "sw", "swl", "swr", "mtc2", "ctc2", "mthi", "mtlo",
                "mult", "multu", "div", "divu", "beq", "bne", "blez", "bgtz", "bltz", "bgez",
                "bltzal", "bgezal", "jr"}
 

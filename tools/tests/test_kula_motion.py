@@ -146,7 +146,7 @@ class Reads(unittest.TestCase):
         c = code(sll("v1", "v0", 2), addu("v1", "v1", "zero"))
         self.assertEqual(c.multiplier(AT, 2, "v0", "v1"), 4)
 
-    def test_a_store_in_the_run_reads_its_register_and_overwrites_nothing(self):
+    def test_an_instruction_reading_its_first_register_overwrites_nothing_in_the_run(self):
         c = code(sw("zero", "a0", 0), sll("v1", "v0", 2), addu("v1", "v1", "zero"))
         self.assertEqual(c.multiplier(AT, 3, "v0", "v1"), 4)
         c = code(sll("v1", "v0", 2), sw("v1", "a0", 0), addu("v1", "v1", "v0"))
