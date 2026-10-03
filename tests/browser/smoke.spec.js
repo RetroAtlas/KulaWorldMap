@@ -3697,13 +3697,13 @@ test("the panel hands the focus to the map however it closes", async ({ page }) 
     showCell(state.idx.cells.get(cellKey(17, 7, 17)));
   });
   await panel.locator(".x").focus();
-  // a click on empty map as events alone, so the canvas is focused by the handoff and not by the click
+  // a click on an empty corner of the map as events alone, so the canvas is focused by the handoff
+  // and not by the click
   await page.evaluate(() => {
     const cv = document.getElementById("cv");
-    for (const type of ["pointerdown", "pointerup"])
-      cv.dispatchEvent(
-        new PointerEvent(type, { pointerId: 1, clientX: 4, clientY: 4, button: 0, bubbles: true }),
-      );
+    const r = cv.getBoundingClientRect();
+    const at = { pointerId: 1, clientX: r.left + 4, clientY: r.top + 4, button: 0, bubbles: true };
+    for (const type of ["pointerdown", "pointerup"]) cv.dispatchEvent(new PointerEvent(type, at));
   });
   await expect(panel).toBeHidden();
   await expect(page.locator("#cv")).toBeFocused();
