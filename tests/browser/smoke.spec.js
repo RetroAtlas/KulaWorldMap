@@ -3609,6 +3609,7 @@ test("the survey passes over a stored mark that is not one, and exports none of 
       "kula.survey",
       JSON.stringify({
         "/HIRO/HIRO.PAK#0": 5,
+        "/HIRO/HIRO.PAK#2": null,
         "/HIRO/HIRO.PAK#1": [
           { name: "x" },
           { cell: [1, 2], name: "short" },
