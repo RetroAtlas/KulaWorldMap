@@ -797,7 +797,7 @@ test("search answers a number as a whole word, and says when nothing matches", a
   await expect(search).not.toHaveAttribute("aria-activedescendant", /./);
 
   await search.fill("");
-  await expect(page.locator("#found")).toBeHidden();
+  await expect(page.locator("#found")).toBeEmpty();
   await expect(search).toHaveAttribute("aria-expanded", "false");
 });
 
@@ -810,7 +810,7 @@ test("a cell is answered by itself alone", async ({ page }) => {
   await expect(page.locator("#results [role=option]")).toHaveText(
     "17, 12, 17 centre the view here",
   );
-  await expect(page.locator("#found")).toBeHidden();
+  await expect(page.locator("#found")).toBeEmpty();
   await search.fill("40,1,1");
   await expect(page.locator("#results")).toBeHidden();
   await expect(page.locator("#found")).toHaveText("Nothing matches that.");
