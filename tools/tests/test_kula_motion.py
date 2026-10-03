@@ -146,9 +146,11 @@ class Reads(unittest.TestCase):
         c = code(sll("v1", "v0", 2), addu("v1", "v1", "zero"))
         self.assertEqual(c.multiplier(AT, 2, "v0", "v1"), 4)
 
-    def test_a_store_naming_zero_first_does_not_make_it_unknown(self):
+    def test_a_store_in_the_run_reads_its_register_and_overwrites_nothing(self):
         c = code(sw("zero", "a0", 0), sll("v1", "v0", 2), addu("v1", "v1", "zero"))
         self.assertEqual(c.multiplier(AT, 3, "v0", "v1"), 4)
+        c = code(sll("v1", "v0", 2), sw("v1", "a0", 0), addu("v1", "v1", "v0"))
+        self.assertEqual(c.multiplier(AT, 3, "v0", "v1"), 5)
 
     def test_a_load_in_the_run_is_fine_unless_the_product_reads_it(self):
         c = code(sll("v1", "v0", 1), addu("v1", "v1", "v0"), lh("v0", "a0", 8), sll("v1", "v1", 2))
