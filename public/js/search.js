@@ -273,7 +273,7 @@ function widen() {
     scope = "all";
     render();
     const finger = e.pointerType
-      ? e.pointerType === "touch"
+      ? e.pointerType !== "mouse"
       : e.detail && matchMedia("(pointer: coarse)").matches;
     (finger
       ? out.querySelector("[role=option]") || bar.querySelector("[aria-pressed=true]")
