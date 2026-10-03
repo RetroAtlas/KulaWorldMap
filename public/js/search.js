@@ -265,10 +265,16 @@ function widen() {
     className: "linkish widen",
     textContent: "search everywhere",
   });
+  // a finger would raise the keyboard over the finds, so it takes the first
+  // of them, or the scope, rather than the box
   w.onclick = (e) => {
     scope = "all";
     render();
-    (e.detail ? out.querySelector("[role=option]") : box)?.focus();
+    const finger = e.detail && matchMedia("(pointer: coarse)").matches;
+    (finger
+      ? out.querySelector("[role=option]") || bar.querySelector("[aria-pressed=true]")
+      : box
+    )?.focus();
   };
   return [" · ", w];
 }

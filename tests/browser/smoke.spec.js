@@ -852,7 +852,29 @@ test("a search's way back to everywhere is a button the keyboard reaches", async
   await expect(page.locator("#scope button").nth(2)).toHaveText("LEVEL 2");
   await expect(page.locator("#scope button").nth(2)).toBeFocused();
   await widen.click();
-  await expect(page.locator("#results [role=option]").first()).toBeFocused();
+  await expect(page.locator("#search")).toBeFocused();
+});
+
+test.describe("under a finger", () => {
+  test.use({ hasTouch: true });
+
+  test("widening the search takes the first find, or the scope where there is none", async ({
+    page,
+  }) => {
+    await page.goto("/#HIRO/0");
+    await settle(page);
+    await page.locator("#search").fill("key");
+    await page.locator("#scope button").nth(2).click();
+    const widen = page.locator("#found .widen");
+    await widen.click();
+    await expect(page.locator("#results [role=option]").first()).toBeFocused();
+    await page.locator("#search").fill("zzzz");
+    await page.locator("#scope button").nth(2).click();
+    await expect(page.locator("#found")).toContainText("Nothing matches that in LEVEL 1");
+    await widen.click();
+    await expect(page.locator("#found")).toHaveText("Nothing matches that.");
+    await expect(page.locator("#scope button[aria-pressed=true]")).toBeFocused();
+  });
 });
 
 test("what a search found is said as well as shown", async ({ page }) => {
