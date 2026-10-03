@@ -12,9 +12,10 @@ class Disc:
         try:
             pvd = self.sector(16)
             if pvd[1:6] != b"CD001":
-                raise ValueError(f"{path} is not a raw ISO9660 image")
+                raise ValueError("not a raw ISO9660 image")
             root = pvd[156:156 + 34]
             self.files = {}   # /PATH/NAME -> (lba, size)
+            self._walked = set()
             self._read_dir(struct.unpack_from("<I", root, 2)[0],
                            struct.unpack_from("<I", root, 10)[0], "")
         except Exception:
@@ -49,6 +50,9 @@ class Disc:
         return self.read(lba, size)
 
     def _read_dir(self, lba, size, prefix):
+        if lba in self._walked:
+            raise ValueError(f"the directory at sector {lba} holds itself")
+        self._walked.add(lba)
         data = self.read(lba, size)
         pos = 0
         while pos < len(data):

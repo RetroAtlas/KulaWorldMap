@@ -63,6 +63,18 @@ class TheImage(unittest.TestCase):
         with self.assertRaises(SystemExit):
             open_disc(self.write(image(24, root_at=20, directory=broken)))
 
+    def test_a_record_whose_flags_lie_past_the_table_is_refused_and_closed(self):
+        # records to within a few bytes of the end, then one whose flags lie past it
+        broken = (bytes([255]) + bytes(254)) * 7 + bytes([240]) + bytes(239) + bytes([1])
+        self.refused(image(24, root_at=20, directory=broken), IndexError)
+
+    def test_a_directory_that_holds_itself_is_refused_and_closed(self):
+        record = bytearray(34)
+        record[0], record[25], record[32], record[33] = 34, 2, 1, ord("A")
+        struct.pack_into("<I", record, 2, 20)
+        struct.pack_into("<I", record, 10, 2048)
+        self.refused(image(24, root_at=20, directory=bytes(record)), ValueError)
+
     def test_an_image_that_holds_its_directory_opens_and_closes(self):
         with Disc(self.write(image(24, root_at=20))) as disc:
             self.assertEqual(disc.files, {})
