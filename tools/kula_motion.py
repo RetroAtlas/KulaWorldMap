@@ -366,11 +366,14 @@ CHANNEL = 8          # bits to a channel of a colour word, red lowest
 LEVEL_BITS = 5       # the depth the GPU draws a colour at
 ADD = 1              # the blend that adds a quad to what is behind it
 
+# The instructions whose first register is read rather than written.
+READS_FIRST = {"sb", "sh", "sw", "swl", "swr", "swc2", "mtc2", "ctc2", "mthi", "mtlo",
+               "mult", "multu", "div", "divu", "beq", "bne", "blez", "bgtz", "bltz", "bgez",
+               "bltzal", "bgezal", "jr"}
+
 # A number that is the multiplier a run of shifts and adds applies to what a
 # register held on entry: the run starts at the address and is this many
 # instructions long, and the product is read from the last register named.
-STORES = {"sb", "sh", "sw", "swl", "swr"}
-
 MULTIPLIERS = [
     ("on a block", "coin.bob.reach", "coin, key, sunglasses: bob's reach, units", 0x800398e0, 3, "v0", "v1"),
     ("on a block", "fruit.bob.reach", "fruit: bob's reach, units", 0x800397c0, 3, "v0", "v1"),
@@ -522,7 +525,7 @@ class Code:
                     coef[rd] = x + y if op == "addu" else x - y
             else:
                 m = re.match(r"(\w+) \$(\w+)", text)
-                if m and m.group(1) not in STORES and m.group(2) in coef and m.group(2) != "zero":
+                if m and m.group(1) not in READS_FIRST and m.group(2) in coef and m.group(2) != "zero":
                     coef[m.group(2)] = None      # overwritten by something not a shift or add
         if coef.get(dst) is None:
             sys.exit(f"0x{addr:08x}: {dst} is not a multiple of {src} after {count} instructions")

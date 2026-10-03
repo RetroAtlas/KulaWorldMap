@@ -151,6 +151,8 @@ class Reads(unittest.TestCase):
         self.assertEqual(c.multiplier(AT, 3, "v0", "v1"), 4)
         c = code(sll("v1", "v0", 2), sw("v1", "a0", 0), addu("v1", "v1", "v0"))
         self.assertEqual(c.multiplier(AT, 3, "v0", "v1"), 5)
+        c = code(sll("v1", "v0", 2), beq("v1", "zero", AT + 4, AT + 12), addu("v1", "v1", "v0"))
+        self.assertEqual(c.multiplier(AT, 3, "v0", "v1"), 5)
 
     def test_a_load_in_the_run_is_fine_unless_the_product_reads_it(self):
         c = code(sll("v1", "v0", 1), addu("v1", "v1", "v0"), lh("v0", "a0", 8), sll("v1", "v1", 2))
