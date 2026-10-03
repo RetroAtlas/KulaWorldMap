@@ -3,6 +3,7 @@
 `$KULA_DISC` points at a raw .bin image of the NTSC-U release (SLUS-00724).
 """
 import os
+import struct
 import sys
 from pathlib import Path
 
@@ -25,8 +26,8 @@ def open_disc(path=None):
         sys.exit(f"no disc image at {path}")
     try:
         return Disc(path)
-    except ValueError as e:
-        sys.exit(str(e))
+    except (ValueError, IndexError, struct.error) as e:
+        sys.exit(f"{path} does not read as a disc image: {e}")
 
 
 def packs(disc):

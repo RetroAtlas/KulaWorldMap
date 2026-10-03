@@ -40,10 +40,7 @@ class Disc:
     def read(self, lba, size):
         out = bytearray()
         while len(out) < size:
-            sec = self.sector(lba)
-            if not sec:
-                raise EOFError(f"read past end of image at LBA {lba}")
-            out += sec
+            out += self.sector(lba)
             lba += 1
         return bytes(out[:size])
 
