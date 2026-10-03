@@ -47,6 +47,7 @@ const inScope = (li, theme) =>
   (scope === "level" && li === state.li);
 
 function scopeBar() {
+  const held = bar.contains(document.activeElement);
   bar.textContent = "";
   for (const [key, label] of SCOPES) {
     const b = el("button", { type: "button", textContent: label() });
@@ -54,10 +55,10 @@ function scopeBar() {
     b.onclick = () => {
       scope = key;
       render();
-      bar.querySelector("[aria-pressed=true]")?.focus();
     };
     bar.append(b);
   }
+  if (held) bar.querySelector("[aria-pressed=true]")?.focus();
 }
 
 function marked(text, terms) {
