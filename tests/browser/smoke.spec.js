@@ -117,7 +117,7 @@ test("a hash naming no level puts the address bar back", async ({ page }) => {
   expect(page.url()).toContain("#HIRO/11/");
 });
 
-test("a hash or a key that arrives before the data has loaded is read once it has", async ({
+test("a hash that arrives before the data has loaded is read once it has, and a key is let go", async ({
   page,
 }) => {
   const errors = trackErrors(page);
