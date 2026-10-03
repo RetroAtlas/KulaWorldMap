@@ -3709,18 +3709,28 @@ test("the panel hands the focus to the map however it closes", async ({ page }) 
   await expect(page.locator("#cv")).toBeFocused();
 });
 
-test("the map and the legend follow the screen's density", async ({ page }) => {
+test("the map, the legend and the panel follow the screen's density", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);
   await textured(page);
+  await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    showCell(state.idx.cells.get([...state.idx.markers.keys()][0]));
+  });
   const density = () =>
     page.evaluate(async () => {
       const { state } = await import(new URL("js/state.js", location.href).href);
       const cv = document.getElementById("cv");
-      const icon = document.querySelector("#kinds canvas.icon");
-      return [state.view.dpr, cv.width / cv.clientWidth, icon.width / parseInt(icon.style.width)];
+      const ratio = (c) => c.width / parseInt(c.style.width);
+      return [
+        state.view.dpr,
+        cv.width / cv.clientWidth,
+        ratio(document.querySelector("#kinds canvas.icon")),
+        ratio(document.querySelector("#detail canvas.icon")),
+      ];
     });
-  expect(await density()).toEqual([1, 1, 1]);
+  expect(await density()).toEqual([1, 1, 1, 1]);
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setDeviceMetricsOverride", {
     width: 1200,
@@ -3728,5 +3738,5 @@ test("the map and the legend follow the screen's density", async ({ page }) => {
     deviceScaleFactor: 2,
     mobile: false,
   });
-  await expect.poll(density).toEqual([2, 2, 2]);
+  await expect.poll(density).toEqual([2, 2, 2, 2]);
 });
