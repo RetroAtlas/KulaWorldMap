@@ -70,6 +70,8 @@ class TheAtlas(unittest.TestCase):
     def test_an_upload_off_the_page_stops_the_build(self):
         with self.assertRaises(SystemExit):
             atlas(tgi_blob(tex_at=(tgi.VRAM_W - 16, 0)))
+        with self.assertRaises(SystemExit):
+            atlas(tgi_blob(tex_at=(0, tgi.VRAM_H - 32)))
 
     def test_a_row_outside_vram_stops_the_build(self):
         with self.assertRaises(SystemExit):
