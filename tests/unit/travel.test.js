@@ -16,7 +16,7 @@ function level(blocks, records = []) {
   const placed = new Map(records.map((r, i) => [`${r.x},${r.y},${r.z}`, i]));
   for (const [x, y, z] of blocks) {
     const i = placed.get(`${x},${y},${z}`);
-    cells.push(x, y, z, i === undefined ? 0 : 5 + i);
+    cells.push(x, y, z, i === undefined ? 0 : mapData.firstRecord + i);
   }
   return { cells, records: records.map((r) => ({ on: [], ...r })) };
 }
