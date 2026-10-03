@@ -155,7 +155,6 @@ function group(label, items, make) {
 function render() {
   out.textContent = "";
   found.textContent = "";
-  found.hidden = false;
   const q = box.value.trim();
   if (!q || !state.lvl) {
     show(false);
@@ -275,7 +274,6 @@ function widen() {
 function show(shown) {
   const listed = shown && out.childElementCount > 0;
   bar.hidden = !shown;
-  found.hidden = !shown || !found.textContent;
   out.hidden = !listed;
   if (shown) scopeBar();
   box.setAttribute("aria-expanded", String(listed));
