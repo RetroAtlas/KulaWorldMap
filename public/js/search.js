@@ -234,7 +234,7 @@ function render() {
   );
   show(true);
   mark();
-  if (held) (found.querySelector(".widen") || bar.querySelector("[aria-pressed=true]"))?.focus();
+  if (held) found.querySelector(".widen")?.focus();
 }
 
 function tally(hits) {
