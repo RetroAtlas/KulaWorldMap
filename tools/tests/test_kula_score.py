@@ -39,8 +39,8 @@ class ThePoints(unittest.TestCase):
     def test_a_plain_kind_earns_nothing_and_a_bonus_level_counts_its_blocks(self):
         kinds = {2: 1000, 6: 50}
         types = {37: lambda o: 250}
-        lv = level(15, [10, 10, 17, 2, 11, 10, 17, FIRST],
-                   [record(11, 10, 17, 6, on=[37, 37])])
+        lv = level(15, [10, 10, 17, FIRST, 11, 10, 17, FIRST + 1],
+                   [record(10, 10, 17, 2), record(11, 10, 17, 6, on=[37, 37])])
         self.assertEqual(level_points(lv, kinds, types, FIRST), 50 + 500 + 2 * BLOCK_POINTS)
         lv["index"] = 0
         self.assertEqual(level_points(lv, kinds, types, FIRST), 550)
