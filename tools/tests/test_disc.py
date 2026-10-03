@@ -88,6 +88,7 @@ class TheImage(unittest.TestCase):
         for n in range(depth):
             at = SECTOR_RAW * (20 + n) + USER_OFF
             raw[at:at + 34] = subdirectory(21 + n)
+        self.refused(bytes(raw), RecursionError)
         with self.assertRaises(SystemExit):
             open_disc(self.write(bytes(raw)))
 
