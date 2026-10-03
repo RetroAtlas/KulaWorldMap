@@ -870,12 +870,12 @@ test.describe("under a finger", () => {
     await page.locator("#search").fill("key");
     await page.locator("#scope button").nth(2).click();
     const widen = page.locator("#found .widen");
-    await widen.click();
+    await widen.tap();
     await expect(page.locator("#results [role=option]").first()).toBeFocused();
     await page.locator("#search").fill("zzzz");
     await page.locator("#scope button").nth(2).click();
     await expect(page.locator("#found")).toContainText("Nothing matches that in LEVEL 1");
-    await widen.click();
+    await widen.tap();
     await expect(page.locator("#found")).toHaveText("Nothing matches that.");
     await expect(page.locator("#scope button[aria-pressed=true]")).toBeFocused();
   });

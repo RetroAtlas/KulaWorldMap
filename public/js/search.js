@@ -268,12 +268,13 @@ function widen() {
     className: "linkish widen",
     textContent: "search everywhere",
   });
-  // a finger would raise the keyboard over the finds, so it takes the first
-  // of them, or the scope, rather than the box
+  // A finger in the box would raise the keyboard over the finds.
   w.onclick = (e) => {
     scope = "all";
     render();
-    const finger = e.detail && matchMedia("(pointer: coarse)").matches;
+    const finger = e.pointerType
+      ? e.pointerType === "touch"
+      : e.detail && matchMedia("(pointer: coarse)").matches;
     (finger
       ? out.querySelector("[role=option]") || bar.querySelector("[aria-pressed=true]")
       : box
