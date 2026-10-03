@@ -82,7 +82,7 @@ class TheImage(unittest.TestCase):
     def test_a_directory_reached_twice_is_refused_and_closed(self):
         self.refused(image(24, root_at=20, directory=subdirectory(20)), ValueError)
 
-    def test_a_chain_of_directories_past_the_recursion_limit_is_refused(self):
+    def test_a_chain_of_directories_past_the_recursion_limit_is_refused_and_closed(self):
         depth = sys.getrecursionlimit() + 20
         raw = bytearray(image(20 + depth + 1, root_at=20))
         for n in range(depth):

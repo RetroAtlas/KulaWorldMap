@@ -866,7 +866,7 @@ test("a search's way back to everywhere is a button the keyboard reaches", async
 test.describe("under a finger", () => {
   test.use({ hasTouch: true });
 
-  test("widening the search takes the first find, or the scope where there is none", async ({
+  test("widening the search by touch takes the first find, or the scope where there is none, and by mouse the box", async ({
     page,
   }) => {
     await page.goto("/#HIRO/0");
