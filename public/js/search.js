@@ -155,6 +155,7 @@ function group(label, items, make) {
 }
 
 function render() {
+  const held = found.contains(document.activeElement);
   out.textContent = "";
   found.textContent = "";
   const q = box.value.trim();
@@ -232,6 +233,7 @@ function render() {
   );
   show(true);
   mark();
+  if (held) (found.querySelector(".widen") || bar.querySelector("[aria-pressed=true]"))?.focus();
 }
 
 function tally(hits) {

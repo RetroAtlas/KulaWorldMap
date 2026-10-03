@@ -851,6 +851,10 @@ test("a search's way back to everywhere is a button the keyboard reaches", async
   await page.keyboard.press("]");
   await expect(page.locator("#scope button").nth(2)).toHaveText("LEVEL 2");
   await expect(page.locator("#scope button").nth(2)).toBeFocused();
+  await widen.focus();
+  await page.keyboard.press("]");
+  await expect(found).toContainText("in LEVEL 3");
+  await expect(found.locator(".widen")).toBeFocused();
   await widen.click();
   await expect(page.locator("#search")).toBeFocused();
 });
