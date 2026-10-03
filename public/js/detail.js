@@ -56,6 +56,10 @@ on("atlas-loaded", (world) => {
   const box = $("detail");
   if (!box.hidden && world === state.lvl?.theme) drawIcons(box);
 });
+on("density-changed", () => {
+  const box = $("detail");
+  if (!box.hidden) drawIcons(box);
+});
 
 const decoded = (m, c) => {
   let html = "";
