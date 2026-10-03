@@ -3649,6 +3649,16 @@ test("the panel hands the focus to the map when Escape closes it", async ({ page
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();
   await expect(page.locator("#cv")).toBeFocused();
+  await page.evaluate(async () => {
+    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    showCell(state.idx.cells.get(cellKey(17, 7, 17)));
+  });
+  await panel.locator(".x").focus();
+  await page.keyboard.press("]");
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 69");
+  await expect(panel).toBeHidden();
+  await expect(page.locator("#cv")).toBeFocused();
 });
 
 test("the map and the legend follow the screen's density", async ({ page }) => {
