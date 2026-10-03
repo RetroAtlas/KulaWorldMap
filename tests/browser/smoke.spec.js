@@ -3696,10 +3696,11 @@ test("the map and the legend follow the screen's density", async ({ page }) => {
   const density = () =>
     page.evaluate(async () => {
       const { state } = await import(new URL("js/state.js", location.href).href);
+      const cv = document.getElementById("cv");
       const icon = document.querySelector("#kinds canvas.icon");
-      return [state.view.dpr, icon.width / parseInt(icon.style.width)];
+      return [state.view.dpr, cv.width / cv.clientWidth, icon.width / parseInt(icon.style.width)];
     });
-  expect(await density()).toEqual([1, 1]);
+  expect(await density()).toEqual([1, 1, 1]);
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setDeviceMetricsOverride", {
     width: 1200,
@@ -3707,5 +3708,5 @@ test("the map and the legend follow the screen's density", async ({ page }) => {
     deviceScaleFactor: 2,
     mobile: false,
   });
-  await expect.poll(density).toEqual([2, 2]);
+  await expect.poll(density).toEqual([2, 2, 2]);
 });
