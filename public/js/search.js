@@ -54,6 +54,7 @@ function scopeBar() {
     b.onclick = () => {
       scope = key;
       render();
+      bar.querySelector("[aria-pressed=true]")?.focus();
     };
     bar.append(b);
   }
