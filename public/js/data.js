@@ -87,9 +87,19 @@ export function markersOf(r) {
   return out;
 }
 
+/** Whether a type is paint on its face with nothing standing there: it has
+    no mesh, and it is below the types the loader stands on the stone. */
+export const paintsFace = (type) =>
+  !!shapes.skins && type < shapes.skins.shadow.from && !shapes.types[String(type)];
 const SETTINGS_KIND = 9;
 export const markerGroup = (m) =>
-  m.face !== null ? "object" : m.kind === SETTINGS_KIND ? "settings" : "block";
+  m.face !== null
+    ? paintsFace(m.type)
+      ? "face"
+      : "object"
+    : m.kind === SETTINGS_KIND
+      ? "settings"
+      : "block";
 
 export const ownMarker = (marks, kind) =>
   marks.find((m) => m.face === null && m.kind === kind) ?? null;

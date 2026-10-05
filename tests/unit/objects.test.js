@@ -2,11 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations, objects } from "./fixtures.js";
 import { lookOf } from "../../public/js/skins.js";
-import { setObjects, motionOf } from "../../public/js/data.js";
+import { setObjects, motionOf, paintsFace } from "../../public/js/data.js";
 
-// The types drawn on a block's face rather than standing on it, which have no
-// mesh of their own; and the starts, which are drawn as the ball.
-const FACELESS = new Set([1, 2, 8]);
+setObjects(objects);
+// The starts are drawn as the ball.
 const STARTS = new Set([29, 30]);
 
 const placed = new Set(
@@ -15,13 +14,12 @@ const placed = new Set(
 const drawn = new Set(Object.keys(objects.types).map(Number));
 
 test("every placed type is drawn, or is one drawn on the face", () => {
-  for (const t of placed) assert.ok(drawn.has(t) || FACELESS.has(t) || STARTS.has(t), `type ${t}`);
+  for (const t of placed) assert.ok(drawn.has(t) || paintsFace(t) || STARTS.has(t), `type ${t}`);
   for (const t of drawn) assert.ok(placed.has(t), `type ${t} is drawn but never placed`);
   assert.equal(objects.balls.length, 14);
 });
 
 test("the ball moves as itself on a clock start as on any other", () => {
-  setObjects(objects);
   const ball = motionOf({ face: 0, type: 30 });
   assert.ok(ball?.breathe);
   assert.equal(motionOf({ face: 0, type: 29 }), ball);

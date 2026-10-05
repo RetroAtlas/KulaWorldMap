@@ -204,8 +204,6 @@ export function paintIcon(l, type, size = 22) {
 export function markerIcon(m, l, size = 22) {
   const model = markerModel(m, l);
   if (model) return iconFor(model, size);
-  const group = markerGroup(m);
-  if (group === "block") return blockIcon(l, m.kind, { size });
-  if (group === "object") return paintIcon(l, m.type, size);
-  return null;
+  if (m.face !== null) return paintIcon(l, m.type, size);
+  return markerGroup(m) === "block" ? blockIcon(l, m.kind, { size }) : null;
 }

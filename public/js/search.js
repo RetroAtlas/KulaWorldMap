@@ -243,9 +243,9 @@ function tally(hits) {
   const blocks = new Map();
   for (const h of hits) {
     const group = markerGroup(h.marker);
-    if (group === "object") objects++;
-    else if (group === "settings") settings++;
-    else blocks.set(h.marker.kind, (blocks.get(h.marker.kind) || 0) + 1);
+    if (group === "settings") settings++;
+    else if (group === "block") blocks.set(h.marker.kind, (blocks.get(h.marker.kind) || 0) + 1);
+    else objects++;
   }
   const parts = objects ? [counted(objects, "object")] : [];
   for (const [kind, n] of [...blocks].sort((a, b) => b[1] - a[1])) {

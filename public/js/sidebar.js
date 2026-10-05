@@ -92,10 +92,10 @@ function markLevel() {
   }
 }
 
-const GROUPS = [
-  ["object", "Objects"],
-  ["block", "Blocks"],
-  ["settings", null],
+const SECTIONS = [
+  ["Objects", ["object"]],
+  ["Blocks and faces", ["block", "face"]],
+  [null, ["settings"]],
 ];
 const COUNT_ONLY = new Set(["block"]);
 const byName = new Intl.Collator("en", { numeric: true }).compare;
@@ -121,21 +121,21 @@ export function buildKinds() {
       byName(a, b),
   );
   const toggled = keys.filter((k) => !COUNT_ONLY.has(markerGroup(first.get(k))));
-  for (const [group, title] of GROUPS) {
-    const mine = keys.filter((k) => markerGroup(first.get(k)) === group);
+  for (const [title, groups] of SECTIONS) {
+    const mine = keys.filter((k) => groups.includes(markerGroup(first.get(k))));
     if (!mine.length) continue;
     // Safari drops the list role from a list whose bullets are styled away.
     const list = el("ul");
     list.setAttribute("role", "list");
     if (title) {
-      const head = el("h3", { id: `kinds-${group}`, textContent: title });
+      const head = el("h3", { id: `kinds-${groups[0]}`, textContent: title });
       list.setAttribute("aria-labelledby", head.id);
       box.append(head);
     } else box.append(el("hr"));
     for (const k of mine) {
       const [m, n] = [first.get(k), counts.get(k)];
       list.append(
-        COUNT_ONLY.has(group)
+        COUNT_ONLY.has(markerGroup(m))
           ? el("li", { className: "kind" }, rowOf(m, n))
           : el("li", {}, kindButton(k, m, n, toggled)),
       );

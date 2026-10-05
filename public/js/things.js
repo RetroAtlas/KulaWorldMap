@@ -21,13 +21,10 @@ import { phasesOf, phaseField, pose, orbit, press, inReach } from "./motion.js";
 import { label } from "./overlays.js";
 import { NEUTRAL } from "./atlas.js";
 
-// The types the game draws on the face and nowhere else. The paint says what
-// their marker would, as a block's does for a record's own kind.
-const FACE_ONLY = new Set([1, 2, 8]);
-const paintSays = (m) => m.face === null || FACE_ONLY.has(m.type);
-
+// The paint on a face says what its marker would, as a block's does for a
+// record's own kind.
 export const quietAmongModels = (m, painted, selected) =>
-  markerGroup(m) === "settings" ? !selected : painted && paintSays(m);
+  markerGroup(m) === "settings" ? !selected : painted && markerGroup(m) !== "object";
 
 export function thingDisc(m, where, l) {
   const model = state.show.models ? markerModel(m, l) : null;

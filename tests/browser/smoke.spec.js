@@ -1797,7 +1797,7 @@ test("the legend lists the objects the chip counts, every kind of block but the 
     })),
   );
   const sum = (g) => g.rows.reduce((n, [, k]) => n + k, 0);
-  expect(groups.map((g) => g.head)).toEqual(["Objects", "Blocks", ""]);
+  expect(groups.map((g) => g.head)).toEqual(["Objects", "Blocks and faces", ""]);
   await expect(page.locator("#kinds ul[role=list]")).toHaveCount(groups.length);
   expect(sum(groups[0])).toBe(10);
   expect(groups[1].rows).toContainEqual(["Ice block", 1]);
@@ -1826,7 +1826,7 @@ test("the legend runs from the most to the fewest, rows with as many by name, th
     ["Key", 1],
     ["Start", 1],
   ]);
-  expect(await rows("Blocks")).toEqual([
+  expect(await rows("Blocks and faces")).toEqual([
     ["Crumbling block", 6],
     ["Laser", 2],
     ["Ice block", 1],
@@ -1852,7 +1852,7 @@ test("a legend row of objects shows and hides them, and a row of blocks only cou
   await settle(page);
   await textured(page);
   const objects = page.getByRole("list", { name: "Objects" });
-  const blocks = page.getByRole("list", { name: "Blocks" });
+  const blocks = page.getByRole("list", { name: "Blocks and faces" });
   const rows = await objects.getByRole("listitem").count();
   await expect(objects.getByRole("button", { pressed: true })).toHaveCount(rows);
   await expect(blocks.getByRole("listitem")).toHaveCount(4);
@@ -1874,6 +1874,45 @@ test("a legend row of objects shows and hides them, and a row of blocks only cou
   await expect(objects.getByRole("button", { pressed: true })).toHaveCount(1);
   await page.locator("#resetKinds").click();
   expect(await hidden()).toEqual([]);
+});
+
+test("a type that is paint on a face is listed with the blocks, apart from the kind of its name, and toggles", async ({
+  page,
+}) => {
+  await page.goto("/#HILLSFI/0");
+  await settle(page);
+  await textured(page);
+  const objects = page.getByRole("list", { name: "Objects" });
+  const blocks = page.getByRole("list", { name: "Blocks and faces" });
+  await expect(objects.getByRole("button", { name: /^Ice/ })).toHaveCount(0);
+  const kind = blocks.getByRole("listitem").filter({ hasText: /^Ice block/ });
+  await expect(kind).toHaveCount(1);
+  await expect(kind.locator(".n")).toHaveText("26");
+  await expect(kind.getByRole("button")).toHaveCount(0);
+  const ice = blocks.getByRole("button", { name: /^Ice/ });
+  await expect(ice).toHaveCount(1);
+  await expect(ice.locator(".n")).toHaveText("8");
+  await expect(ice).toHaveAttribute("aria-pressed", "true");
+  await expect(ice.locator("canvas.icon")).toHaveCount(1);
+  const hidden = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      return [...state.hiddenKinds];
+    });
+  await ice.click();
+  expect(await hidden()).toEqual(["t2"]);
+  await expect(ice).toHaveAttribute("aria-pressed", "false");
+  await ice.click({ modifiers: ["Shift"] });
+  const toggles = await page.locator("#kinds").getByRole("button").count();
+  expect(await hidden()).toHaveLength(toggles - 1);
+  await expect(page.locator("#kinds").getByRole("button", { pressed: true })).toHaveText(/^Ice/);
+
+  // what paints a face and stands on it as well stays an object
+  await page.goto("/#HILLS/19");
+  await expect(page.locator("#chip b")).toHaveText("OBJ LEVEL");
+  await expect(blocks.getByRole("button", { name: /^Clock/ })).toHaveCount(1);
+  await expect(objects.getByRole("button", { name: /teleporter/i })).not.toHaveCount(0);
+  await expect(objects.getByRole("button", { name: /^Exit/ })).toHaveCount(1);
 });
 
 test("a legend row keeps the focus when the legend is built anew", async ({ page }) => {
