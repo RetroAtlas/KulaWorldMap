@@ -20,35 +20,39 @@ $("aboutBtn").onclick = showAbout;
 const HELP = [
   ["drag", "turn the level"],
   ["shift-drag, right-drag, arrows", "pan"],
-  ["wheel, pinch, + −", "zoom"],
-  ["q e", "snap the turn to 45°"],
-  [", .", "lower and raise the slice"],
-  ["\\", "put the whole level back"],
-  ["h", "dim what the slice hides rather than take it off, while the slice cuts"],
-  ["[ ]", "previous and next level, on from one world into the next"],
-  ["f", "fit the level to the window"],
-  ["t o", "textures, objects"],
-  ["d", "objects as models, with objects on"],
-  ["v", "motion: everything moving as in play, or the level held still as it starts"],
-  ["x", "see what stands on the far faces through the blocks, with objects on"],
-  ["l", "object labels, with objects on"],
-  ["n", "name in each label the face its object stands on, with labels on"],
+  ["wheel, pinch, `+` `−`", "zoom"],
+  ["`q` `e`", "snap the turn to 45°"],
+  ["`,` `.`", "lower and raise the slice"],
+  ["`\\`", "put the whole level back"],
+  ["`h`", "dim what the slice hides rather than take it off, while the slice cuts"],
+  ["`[` `]`", "previous and next level, on from one world into the next"],
+  ["`f`", "fit the level to the window"],
+  ["`t` `o`", "textures, objects"],
+  ["`d`", "objects as models, with objects on"],
+  ["`v`", "motion: everything moving as in play, or the level held still as it starts"],
+  ["`x`", "see what stands on the far faces through the blocks, with objects on"],
+  ["`l`", "object labels, with objects on"],
+  ["`n`", "name in each label the face its object stands on, with labels on"],
   [
-    "b",
+    "`b`",
     "outlines: the blocks' edges, the broken outlines, the platforms' routes and the beams switched off",
   ],
-  ["g", "ground grid"],
-  ["p", "drag pans instead of turning"],
-  ["s", "settings"],
-  ["c", "start camera, in the settings"],
-  ["/", "search"],
-  ["m", "show and hide the sidebar"],
-  ["Esc", "close, or clear the selection"],
-  ["?", "this list"],
+  ["`g`", "ground grid"],
+  ["`p`", "drag pans instead of turning"],
+  ["`s`", "settings"],
+  ["`c`", "start camera, in the settings"],
+  ["`/`", "search"],
+  ["`m`", "show and hide the sidebar"],
+  ["`Esc`", "close, or clear the selection"],
+  ["`?`", "this list"],
 ];
 
 function showHelp() {
-  openModal("Keyboard", `<dl>${HELP.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`);
+  const caps = (keys) => keys.replace(/`(.+?)`/g, "<kbd>$1</kbd>");
+  openModal(
+    "Keyboard",
+    `<dl>${HELP.map(([k, v]) => `<dt>${caps(k)}</dt><dd>${v}</dd>`).join("")}</dl>`,
+  );
 }
 
 function showAbout() {

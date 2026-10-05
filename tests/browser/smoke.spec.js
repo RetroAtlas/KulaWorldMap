@@ -1867,6 +1867,25 @@ test("a panel is a dialog that a click inside does not dismiss", async ({ page }
   await expect(help).toBeHidden();
 });
 
+test("the keys list wears each key as a cap and leaves a gesture in words", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.keyboard.press("?");
+  const rows = page.locator("#help dt");
+  await expect(rows.first()).toHaveText("drag");
+  await expect(rows.first().locator("kbd")).toHaveCount(0);
+  await expect(rows.filter({ hasText: "wheel" }).locator("kbd")).toHaveText(["+", "−"]);
+  await expect(rows.filter({ hasText: "Esc" }).locator("kbd")).toHaveText(["Esc"]);
+  await expect(rows.last().locator("kbd")).toHaveText(["?"]);
+  // a cap in the list is the hint beside a switch in the settings
+  const look = (sel) =>
+    page.evaluate((sel) => {
+      const s = getComputedStyle(document.querySelector(sel));
+      return [s.font, s.color, s.backgroundColor, s.borderBottomWidth, s.borderRadius].join();
+    }, sel);
+  expect(await look("#help dt kbd")).toBe(await look("#settings kbd"));
+});
+
 test("Back closes a dialog and leaves the map where it was", async ({ page }) => {
   await page.goto("/#HIRO/11/30,20/1.25/18,13,17/0,0/25");
   await settle(page);
@@ -3377,7 +3396,7 @@ test("every switch's key is the one its row shows and the key list names", async
   await expect(page.locator("#settings")).toBeVisible();
   await page.keyboard.press("Escape");
   await page.keyboard.press("?");
-  const listed = (await page.locator("#help dt").allTextContents()).flatMap((t) => t.split(" "));
+  const listed = await page.locator("#help dt kbd").allTextContents();
   for (const key of [...keys, "s"]) expect(listed).toContain(key);
 });
 

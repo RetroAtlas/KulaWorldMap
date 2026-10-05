@@ -917,8 +917,14 @@ body.sidebar-open .menu-btn {
   margin: 0;
 }
 .modal dt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px;
   color: var(--accent);
-  font-family: ui-monospace, Menlo, monospace;
+}
+.modal dt kbd {
+  margin: 0;
 }
 .modal dd {
   margin: 0;
