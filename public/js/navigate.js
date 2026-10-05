@@ -134,9 +134,10 @@ const levelAt = (slot) => {
 /** Write the view to the address bar: a frame later, or, for a camera on the
     move, once it has settled. */
 export function writeHash(push = false, moving = false) {
-  if (moving) pending = currentHash();
-  else if (timer || (push && pending)) flushNow();
   entry ||= push;
+  // a move while a push waits belongs to that push
+  if (moving) pending = entry ? pending : currentHash();
+  else if (timer || (entry && pending)) flushNow();
   if (moving && !entry && !queued) {
     clearTimeout(timer);
     timer = setTimeout(() => flushHash(true), SETTLE);
@@ -178,18 +179,22 @@ function flushHash(paced = false) {
   known = location.hash;
 }
 
-/** Write what waits now: the camera's last view where there is one, and
-    then, where a push waits as well, the state of the moment over it. */
-function flushNow() {
+/** Write what waits now: the camera's last view where there is one, and the
+    state of the moment, at once where the page is leaving and otherwise with
+    the frame, which may yet change it. */
+function flushNow(leaving = false) {
   if (!queued && !timer) return;
   cancelAnimationFrame(queued);
   clearTimeout(timer);
-  const push = entry;
   if (pending) {
+    const push = entry;
     entry = false;
     flushHash(true);
     entry = push;
-    if (!push) return;
+    if (!leaving) {
+      queued = requestAnimationFrame(() => flushHash());
+      return;
+    }
   }
   flushHash();
 }
@@ -197,9 +202,9 @@ function flushNow() {
 // A dialog opens on an entry of its own, so what is waiting to be written
 // goes onto the entry under it first; a page on its way out, or put out of
 // sight, writes it too.
-on("dialog-opened", flushNow);
-addEventListener("pagehide", flushNow);
-document.addEventListener("visibilitychange", () => document.hidden && flushNow());
+on("dialog-opened", () => flushNow(true));
+addEventListener("pagehide", () => flushNow(true));
+document.addEventListener("visibilitychange", () => document.hidden && flushNow(true));
 
 export function applyHash() {
   if (!state.data) return false;
