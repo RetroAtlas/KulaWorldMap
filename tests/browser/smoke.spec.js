@@ -746,6 +746,34 @@ test("the menu button rides the drawer's edge as it slides, beside the map and o
   }
 });
 
+test("the menu button shows a cross while the drawer is open and bars while it is closed", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const btn = page.locator("#menuBtn");
+  const bars = btn.locator(".bars");
+  const cross = btn.locator(".cross");
+  const says = async (label) => {
+    await expect(btn).toHaveAttribute("aria-label", label);
+    await expect(btn).toHaveAttribute("title", `${label} (m)`);
+  };
+  await expect(btn).toHaveAttribute("aria-expanded", "true");
+  await says("Hide the sidebar");
+  await expect(cross).toBeVisible();
+  await expect(bars).toBeHidden();
+  await page.keyboard.press("m");
+  await expect(btn).toHaveAttribute("aria-expanded", "false");
+  await says("Show the sidebar");
+  await expect(bars).toBeVisible();
+  await expect(cross).toBeHidden();
+  await btn.click();
+  await expect(btn).toHaveAttribute("aria-expanded", "true");
+  await says("Hide the sidebar");
+  await expect(cross).toBeVisible();
+  await expect(bars).toBeHidden();
+});
+
 test("Escape leaves the drawer alone where it sits beside the map", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);

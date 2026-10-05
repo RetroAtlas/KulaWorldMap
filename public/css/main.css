@@ -486,6 +486,9 @@ button.kind:hover {
   z-index: 30;
   left: 10px;
   top: 10px;
+  display: grid;
+  place-items: center;
+  padding: 0;
   background: var(--panel-2);
   color: var(--ink);
   border: 1px solid var(--line);
@@ -493,11 +496,23 @@ button.kind:hover {
   width: 34px;
   height: 34px;
   cursor: pointer;
-  font-size: 15px;
   transition: left var(--slide);
 }
 body.sidebar-open .menu-btn {
   left: calc(var(--sidebar-w) + 10px);
+}
+.menu-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+body.sidebar-open .menu-btn .bars,
+body:not(.sidebar-open) .menu-btn .cross {
+  display: none;
 }
 
 .scrim {
