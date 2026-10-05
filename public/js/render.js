@@ -346,15 +346,15 @@ export function drawSoon() {
   if (!queuedFrame) draw();
 }
 
-/** Whether a cell's block can reach into the area, which a whole cube about
-    its corner is well within twice its side of. */
-function reaches(c, area) {
-  const [px, py] = screen(c.x, c.y, c.z);
+/** Whether a block at the projected corner can reach into the area, which a
+    whole cube about its corner is well within twice its side of. */
+function reaches([px, py], area) {
   const r = BLOCK * state.cam.zoom * 2;
   return px >= area.x0 - r && px <= area.x1 + r && py >= area.y0 - r && py <= area.y1 + r;
 }
 
-const offScreen = (c) => !reaches(c, { x0: 0, y0: 0, x1: state.view.w, y1: state.view.h });
+const offScreen = (c) =>
+  !reaches(screen(c.x, c.y, c.z), { x0: 0, y0: 0, x1: state.view.w, y1: state.view.h });
 
 /** Paint the pick from the last draw's cells, within `area`. Every cell takes
     its place in the list whether painted or not, so a colour read means the
@@ -372,8 +372,10 @@ function paintPick(area) {
     pick.rect(area.x0, area.y0, area.x1 - area.x0, area.y1 - area.y0);
     pick.clip();
   }
+  const view = { x0: 0, y0: 0, x1: w, y1: h };
   for (const c of cells) {
-    if (offScreen(c)) continue;
+    const at = screen(c.x, c.y, c.z);
+    if (!reaches(at, view)) continue;
     const home = c.home || c;
     if (home.z < sliceZ() || c.beams || c.rails || c.mark) continue;
     if (c.thing) {
@@ -381,7 +383,7 @@ function paintPick(area) {
       continue;
     }
     pickList.push({ home, at: c });
-    if (!reaches(c, area)) continue;
+    if (!reaches(at, area)) continue;
     const col = pickColour(pickList.length);
     cube(pick, c, { cells: new Map() }, () => col, null, 1, null);
   }
