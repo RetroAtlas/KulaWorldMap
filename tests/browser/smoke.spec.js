@@ -1886,6 +1886,22 @@ test("the keys list wears each key as a cap and leaves a gesture in words", asyn
   expect(await look("#help dt kbd")).toBe(await look("#settings kbd"));
 });
 
+test("the keys list says what a key does and not what it waits on", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.keyboard.press("?");
+  const said = await page.locator("#help dd").allTextContents();
+  for (const line of [
+    "dim what the slice hides rather than take it off",
+    "previous and next level",
+    "objects as models",
+    "motion",
+    "object labels",
+    "start camera",
+  ])
+    expect(said).toContain(line);
+});
+
 test("Back closes a dialog and leaves the map where it was", async ({ page }) => {
   await page.goto("/#HIRO/11/30,20/1.25/18,13,17/0,0/25");
   await settle(page);
