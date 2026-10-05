@@ -20,6 +20,12 @@ What the map under `public/` does for whoever is looking at it, control by contr
 
 **Click** a block or an object for what the game stores about it: its lattice cell, its kind and type, and the raw fields the record carries, each by its word in the slot and, where what it holds is known, by name. `Esc` clears. A switch's panel has a button that presses it, as the ball would: every laser, teleporter and switch of its colour turns on or off, and what travels finds the beams' cells open or shut, until you leave the level. A teleporter's panel names the one it sends the ball to, which the map draws an arrow to while it is selected, looping where one stands in front of the other, broken while it is switched off, and a click on the name goes there as a find does, so where three or more share a colour the names lead round their ring. A teleporter's facing is the way the ball faces as it comes out of it.
 
+The panel folds to its title line with the chevron beside its cross, and stays folded from block to block until it is opened again.
+
+## The legend
+
+The sidebar's "On this level" lists what the level holds, by name and count: the objects first, then the blocks and the faces, which are the kinds of block the level uses and the things that are paint on a face rather than standing on it, fire, ice, acid and the clock among them. A row with a button hides and shows its kind on the map, and with it everything the kind shows, the light a device casts and the paint it puts on its face included; a kind of block's row only counts.
+
 ## The compass
 
 The block at the map's bottom right is a compass, turned as the level is and shaded as the map shades a face, with the textures or without, so the brightest side on it is the brightest on the level. It names each face turned to you on the block, a side by the way it faces (`+x`, `-y`) and the top and the underside by name, and beyond the block, where each way points, every way it leaves unnamed, faint where the way points away from you: `-z` is up and `+z` down, since `z` counts downward. These are the words the panel and the search use, for the side a thing stands on (`on the +x side`) and the way it faces (`facing=-y`).
@@ -40,7 +46,7 @@ The gear at the top of the sidebar, or `s`, opens Settings, for the switches use
 
 ## Search
 
-**Search** with `/` for a level (`level 42`, `bonus`, `final 7`), a world (`inca`), a cell (`17,12,17`), an object by name or type (`key`, `type 34`), or a block by the name or number of its kind (`ice block`, `kind=2`), where `block` alone finds every block named for its kind and none of the plain ones. A search for objects or blocks lists every one the game places, this level's first, then the rest of its world's, then the other worlds'; Enter or a click goes to one and selects it, and the list stays for the next. A space means every term must match and a comma or `or` means any (`coin, key`), and a field is searched as `name=value` (`starts=off`, `facing=+x`, or `type 34 f10=2` for the raw fields the panel shows). The bar under the box narrows a search to the world or the level in hand, or, by level, lists the levels that hold the thing with the one holding most of it first.
+**Search** with `/` for a level (`level 42`, `bonus`, `final 7`), a world (`inca`), a cell (`17,12,17`), an object by name or type (`key`, `type 34`), or a block by the name or number of its kind (`ice block`, `kind=2`), where `block` alone finds every block named for its kind and none of the plain ones. A search for objects or blocks lists every one the game places, this level's first, then the rest of its world's, then the other worlds'; Enter or a click goes to one and selects it, and the list stays for the next. The cross in the box clears it, as `Esc` does. A space means every term must match and a comma or `or` means any (`coin, key`), and a field is searched as `name=value` (`starts=off`, `facing=+x`, or `type 34 f10=2` for the raw fields the panel shows). The bar under the box narrows a search to the world or the level in hand, or, by level, lists the levels that hold the thing with the one holding most of it first.
 
 ## The level line and the order of the levels
 
