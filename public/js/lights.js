@@ -46,6 +46,7 @@ export function deviceLights(l, idx, frame) {
     state.data.themes.findIndex((t) => t.id === l.theme),
   );
   for (const { m, faces, colours } of takenBy(idx, glow)) {
+    if (state.hiddenKinds.has(m.id)) continue;
     if (markerNow(m) === "on") on = true;
     if (!lightOnAt(m, glow.every, frame)) continue;
     const colour = colours[world][markerCircuit(m) ?? 0] ?? colours[world][0];

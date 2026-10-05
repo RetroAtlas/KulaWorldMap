@@ -3505,6 +3505,31 @@ test("a teleporter that is on lights its face in its colour, 19 frames in every 
   expect(errors).toEqual([]);
 });
 
+test("a teleporter hidden from the legend casts no light, and casts it again once shown", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#COWBOY/7/45,55");
+  await settle(page);
+  await landed(page);
+  const blue = [17, 21, 17];
+  const [dark, lit] = await topAt(page, blue, [10, 25]);
+  expect(lit[2]).toBeGreaterThan(dark[2] * 1.8);
+  const row = page
+    .getByRole("list", { name: "Objects" })
+    .getByRole("button", { name: "Teleporter (blue)" });
+  await row.click();
+  await expect(row).toHaveAttribute("aria-pressed", "false");
+  // hidden, its face loses the plate too, so the dark and the lit frame are compared afresh
+  const [hiddenDark, hiddenLit] = await topAt(page, blue, [10, 25]);
+  expect(hiddenLit).toEqual(hiddenDark);
+  await row.click();
+  await expect(row).toHaveAttribute("aria-pressed", "true");
+  const [shown] = await topAt(page, blue, [25]);
+  expect(shown).toEqual(lit);
+  expect(errors).toEqual([]);
+});
+
 test("where the system asks for reduced motion the map opens still, and a choice to move is kept", async ({
   page,
 }) => {
