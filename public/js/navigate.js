@@ -133,8 +133,12 @@ $("chipBtn").onclick = () => {
 };
 
 // Browsers rate-limit replaceState and throw past the limit, so writes wait
-// for the next frame and go out as one.
+// for the next frame and go out as one, and while the camera keeps moving they
+// go out a few times a second, with one more as it rests.
+const PACE = 100;
 let queued = 0;
+let timer = 0;
+let wrote = -Infinity;
 // Whether the waiting write pushes a history entry; a push outlives the
 // replacing writes that follow it in the same frame.
 let entry = false;
@@ -149,14 +153,25 @@ const levelAt = (slot) => {
   return slots.get(slot);
 };
 
-export function writeHash(push = false) {
+/** Write the view to the address bar: a frame later, or, for a camera on the
+    move, at the pace above. */
+export function writeHash(push = false, moving = false) {
   entry ||= push;
-  if (!queued) queued = requestAnimationFrame(flushHash);
+  if (!moving && timer) {
+    clearTimeout(timer);
+    timer = 0;
+  }
+  if (!queued && !timer) {
+    const wait = moving && !entry ? wrote + PACE - performance.now() : 0;
+    if (wait > 0) timer = setTimeout(flushHash, wait);
+    else queued = requestAnimationFrame(flushHash);
+  }
   emit("view-changed");
 }
 
 function flushHash() {
   queued = 0;
+  timer = 0;
   const push = entry;
   entry = false;
   const l = state.lvl;
@@ -173,14 +188,16 @@ function flushHash() {
   if (location.hash === h) return;
   if (push) history.pushState(null, "", h);
   else history.replaceState(history.state, "", h);
+  wrote = performance.now();
   known = location.hash;
 }
 
 // A dialog opens on an entry of its own, so what is waiting to be written
 // goes onto the entry under it first.
 on("dialog-opened", () => {
-  if (!queued) return;
+  if (!queued && !timer) return;
   cancelAnimationFrame(queued);
+  clearTimeout(timer);
   flushHash();
 });
 

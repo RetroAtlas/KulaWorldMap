@@ -355,14 +355,18 @@ test("going back to another view of the same level keeps the kinds hidden in it"
   expect(target).toEqual(first.map((v) => v + 0.5));
 });
 
-test("the camera writes the URL once a frame, not once an event", async ({ page }) => {
+test("the camera writes the URL once a frame, a few times a second while it keeps moving, and once it rests", async ({
+  page,
+}) => {
   await page.goto("/#HIRO/0");
   await settle(page);
-  const calls = await page.evaluate(() => {
-    let n = 0;
+  await still(page);
+  const writes = () => page.evaluate(() => window.__writes);
+  await page.evaluate(() => {
+    window.__writes = 0;
     const orig = history.replaceState.bind(history);
     history.replaceState = (...a) => {
-      n++;
+      window.__writes++;
       return orig(...a);
     };
     const cv = document.getElementById("cv");
@@ -376,12 +380,32 @@ test("the camera writes the URL once a frame, not once an event", async ({ page 
         new WheelEvent("wheel", { deltaY: -50, clientX: 600, clientY: 400, cancelable: true }),
       );
     cv.dispatchEvent(new PointerEvent("pointerup", { clientX: 660, clientY: 460, pointerId: 1 }));
-    history.replaceState = orig;
+  });
+  expect(await writes()).toBe(0);
+  await frame(page);
+  expect(await writes()).toBe(1);
+  expect(page.url()).toMatch(/#HIRO\/0\//);
+  // a wheel step every frame for a third of a second
+  const steps = await page.evaluate(async () => {
+    const cv = document.getElementById("cv");
+    const t0 = performance.now();
+    let n = 0;
+    while (performance.now() - t0 < 300) {
+      cv.dispatchEvent(
+        new WheelEvent("wheel", { deltaY: 20, clientX: 600, clientY: 400, cancelable: true }),
+      );
+      n++;
+      await new Promise(requestAnimationFrame);
+    }
     return n;
   });
-  expect(calls).toBe(0);
-  await frame(page);
-  expect(page.url()).toMatch(/#HIRO\/0\//);
+  expect(steps).toBeGreaterThan(10);
+  expect(await writes()).toBeLessThanOrEqual(5);
+  const zoom = await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    return state.cam.zoom.toFixed(2);
+  });
+  await expect.poll(() => page.url()).toContain(`/${zoom}/`);
 });
 
 test("clicking the start's block opens the object standing on it", async ({ page }) => {
