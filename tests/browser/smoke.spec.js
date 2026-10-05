@@ -365,9 +365,7 @@ test("going back to another view of the same level keeps the kinds hidden in it"
   expect(target).toEqual(first.map((v) => v + 0.5));
 });
 
-test("the camera writes the URL once a frame, a few times a second while it keeps moving, and once it rests", async ({
-  page,
-}) => {
+test("the camera writes the URL once it has settled, and not while it moves", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);
   await still(page);
@@ -392,21 +390,22 @@ test("the camera writes the URL once a frame, a few times a second while it keep
     cv.dispatchEvent(new PointerEvent("pointerup", { clientX: 660, clientY: 460, pointerId: 1 }));
   });
   expect(await writes()).toBe(0);
+  await frame(page);
+  expect(await writes()).toBe(0);
   await expect.poll(writes).toBe(1);
   expect(page.url()).toMatch(/#HIRO\/0\//);
-  // a wheel step a frame for forty frames, however long they take
-  const took = await page.evaluate(async () => {
+  // a wheel step a frame for forty frames writes nothing while the steps keep coming
+  await page.evaluate(async () => {
     const cv = document.getElementById("cv");
-    const t0 = performance.now();
     for (let i = 0; i < 40; i++) {
       cv.dispatchEvent(
         new WheelEvent("wheel", { deltaY: 20, clientX: 600, clientY: 400, cancelable: true }),
       );
       await new Promise(requestAnimationFrame);
     }
-    return performance.now() - t0;
   });
-  expect(await writes()).toBeLessThanOrEqual(Math.ceil(took / 400) + 2);
+  expect(await writes()).toBe(1);
+  await expect.poll(writes).toBe(2);
   const zoom = await page.evaluate(async () => {
     const { state } = await import(new URL("js/state.js", location.href).href);
     return state.cam.zoom.toFixed(2);
@@ -1445,8 +1444,7 @@ test("a fitted view's link opens fitted to the window it is opened in", async ({
   expect(page.url()).toBe(link);
 
   await press(page, 40, 20);
-  await frame(page);
-  expect(page.url()).not.toContain("/fit/");
+  await expect.poll(() => page.url()).not.toContain("/fit/");
 });
 
 test("a camera moved on purpose stays where it was put as the canvas resizes, until f", async ({

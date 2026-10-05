@@ -109,14 +109,13 @@ $("chipBtn").onclick = () => {
 };
 
 // Browsers rate-limit replaceState and throw past the limit, so writes wait
-// for the next frame and go out as one, and while the camera keeps moving they
-// go out a few times a second, with one more as it rests.
-const PACE = 400;
+// for the next frame and go out as one, and a camera on the move writes once
+// it has settled.
+const SETTLE = 350;
 let queued = 0;
 let timer = 0;
-let wrote = -Infinity;
-// the view at the camera's last move, which a paced write writes even after
-// the level has changed under it
+// the view at the camera's last move, which its write writes even after the
+// level has changed under it
 let pending = null;
 // Whether the waiting write pushes a history entry; a push outlives the
 // replacing writes that follow it in the same frame.
@@ -133,20 +132,15 @@ const levelAt = (slot) => {
 };
 
 /** Write the view to the address bar: a frame later, or, for a camera on the
-    move, at the pace above. */
+    move, once it has settled. */
 export function writeHash(push = false, moving = false) {
   if (moving) pending = currentHash();
   if (push && timer) flushNow();
   entry ||= push;
-  if (!moving && timer) {
-    clearTimeout(timer);
-    timer = 0;
-  }
-  if (!queued && !timer) {
-    const wait = moving && !entry ? wrote + PACE - performance.now() : 0;
-    if (wait > 0) timer = setTimeout(() => flushHash(true), wait);
-    else queued = requestAnimationFrame(flushHash);
-  }
+  clearTimeout(timer);
+  timer = 0;
+  if (moving && !entry && !queued) timer = setTimeout(() => flushHash(true), SETTLE);
+  else if (!queued) queued = requestAnimationFrame(flushHash);
   emit("view-changed");
 }
 
@@ -181,7 +175,6 @@ function flushHash(paced = false) {
   } catch {
     // a browser past its limit of writes keeps the bar as it was
   }
-  wrote = performance.now();
   known = location.hash;
 }
 
