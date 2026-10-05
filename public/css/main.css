@@ -940,6 +940,9 @@ body:not(.sidebar-open) .menu-btn .cross {
   padding: 1px 8px;
 }
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --slide: 0s;
+  }
   .toast {
     transition: none;
   }
