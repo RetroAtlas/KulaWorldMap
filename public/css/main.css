@@ -994,7 +994,8 @@ body:not(.sidebar-open) .menu-btn .cross {
 .modal dt {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
+  align-content: start;
   gap: 3px;
   color: var(--accent);
 }
