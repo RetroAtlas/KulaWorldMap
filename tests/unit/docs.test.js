@@ -23,13 +23,42 @@ const catalogue = mapData.levels.find(
 const types = new Set(objects.map((o) => o.type));
 const here = new Set(objectsOf([catalogue]).map((o) => o.type));
 const covered = [...types].filter((t) => here.has(t));
-const number = (s) => Number(s.replace(/,/g, ""));
+const WORDS = "no one two three four five six seven eight nine ten eleven twelve".split(" ");
+const number = (s) => (WORDS.includes(s) ? WORDS.indexOf(s) : Number(s.replace(/,/g, "")));
 
 // The README and the level format argue from counts, and a rebuild can move
 // any of them. Each row is the figure a sentence rests on, so a claim cannot
 // go stale in silence.
+const inWorld = (l) => !/FI\.PAK|COPYCAT/.test(l.pack);
+const levels = (test) => mapData.levels.filter(test).length;
 const claims = [
   ["README.md", "levels", mapData.levels.length, /All (\d+) levels are here/],
+  [
+    "README.md",
+    "numbered levels",
+    levels((l) => inWorld(l) && l.index < 15),
+    /(\d+) numbered levels/,
+  ],
+  [
+    "README.md",
+    "bonus levels",
+    levels((l) => inWorld(l) && [15, 16, 17].includes(l.index)),
+    /(\d+) bonus/,
+  ],
+  [
+    "README.md",
+    "hidden levels",
+    levels((l) => inWorld(l) && l.index === 18),
+    /(\d+) hidden levels/,
+  ],
+  ["README.md", "finals", levels((l) => /FI\.PAK/.test(l.pack)), /the (\d+) finals/],
+  ["README.md", "Simon rooms", levels((l) => /COPYCAT/.test(l.pack)), /the (\d+) Simon rooms/],
+  [
+    "README.md",
+    "catalogue copies",
+    levels((l) => l.name === "OBJ LEVEL"),
+    /the (\w+) copies of the object catalogue/,
+  ],
   ["docs/level-format.md", "lattice side", mapData.side, /\*\*fixed at (\d+) x \d+ x \d+\*\*/],
   [
     "docs/level-format.md",
@@ -132,7 +161,6 @@ test("level-format.md's points are the ones annotations.json scores", () => {
 
 // The page describes itself three times over, to search engines and to the
 // sites that unfurl a link, each time by the two figures the README opens on.
-const WORDS = "no one two three four five six seven eight nine ten eleven twelve".split(" ");
 
 test("the page's descriptions count the levels and the worlds the data holds", () => {
   const descriptions = [
