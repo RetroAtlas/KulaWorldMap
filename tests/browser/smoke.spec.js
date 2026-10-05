@@ -316,10 +316,12 @@ test("a pinch that opens from one point leaves the zoom a number", async ({ page
     fire("touchmove", [at(1, 560, 400), at(2, 640, 400)]);
     fire("touchend", []);
   });
+  const opened = page.url();
   await frame(page);
   const after = await zoom();
   expect(Number.isFinite(after)).toBe(true);
   expect(after).toBeGreaterThan(before);
+  await expect.poll(() => page.url()).not.toBe(opened);
   expect(page.url()).not.toContain("NaN");
 });
 
@@ -1914,8 +1916,9 @@ test("a press on the compass reaches no block behind it, and moves nothing", asy
   const box = await page.locator("#compass").boundingBox();
   const centre = [box.x + box.width / 2, box.y + box.height / 2];
   // at the compass's corner, so that the block reaches under it and out beside it
+  const opened = page.url();
   await startUnder(page, [box.x, box.y]);
-  await frame(page);
+  await expect.poll(() => page.url()).not.toBe(opened);
   const link = page.url();
   expect(await cellUnder(page, centre)).toBeTruthy();
   // off the compass, above the button beside it
