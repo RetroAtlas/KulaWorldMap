@@ -124,6 +124,38 @@ export function retarget(t) {
 
 export const levelCentre = (l) => [0, 1, 2].map((i) => (l.min[i] + l.max[i] + 1) / 2);
 
+export const FIT_MARGIN = 60;
+export const FIT_ZOOM_MAX = 3;
+
+/** Aim at the level's middle, zoomed and panned so every block fits the view. */
+export function fitLevel(l) {
+  state.target = levelCentre(l);
+  const [tx, ty] = project(...state.target);
+  let x0 = Infinity,
+    y0 = Infinity,
+    x1 = -Infinity,
+    y1 = -Infinity;
+  for (let i = 0; i < l.cells.length; i += 4) {
+    const [x, y, z] = l.cells.slice(i, i + 3);
+    for (const dx of [0, 1])
+      for (const dy of [0, 1])
+        for (const dz of [0, 1]) {
+          const [px, py] = project(x + dx, y + dy, z + dz);
+          x0 = Math.min(x0, px - tx);
+          x1 = Math.max(x1, px - tx);
+          y0 = Math.min(y0, py - ty);
+          y1 = Math.max(y1, py - ty);
+        }
+  }
+  if (!Number.isFinite(x0)) return;
+  state.cam.panX = (x0 + x1) / 2;
+  state.cam.panY = (y0 + y1) / 2;
+  const { w, h } = state.view;
+  const zx = (w - FIT_MARGIN) / Math.max(1e-3, (x1 - x0) * BLOCK);
+  const zy = (h - FIT_MARGIN) / Math.max(1e-3, (y1 - y0) * BLOCK);
+  state.cam.zoom = Math.max(ZOOM_MIN, Math.min(FIT_ZOOM_MAX, zx, zy));
+}
+
 // The view turns about the selected cell while it is centred on that cell,
 // and about the level otherwise.
 export function pivot() {

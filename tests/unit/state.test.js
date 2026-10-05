@@ -1,7 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mapData } from "./fixtures.js";
 import {
   SIDE,
+  ZOOM_MIN,
+  FIT_MARGIN,
+  FIT_ZOOM_MAX,
   state,
   camera,
   project,
@@ -10,6 +14,8 @@ import {
   screen,
   retarget,
   pivot,
+  fitLevel,
+  levelCentre,
   cellKey,
 } from "../../public/js/state.js";
 
@@ -108,4 +114,48 @@ test("the view turns about a selected cell only while it is centred on that cell
   pivot();
   assert.deepEqual(state.target, centre);
   state.lvl = null;
+});
+
+test("a fitted level has every corner of every block inside the view, with the margin, at any turn", () => {
+  state.view = { w: 800, h: 600, dpr: 1 };
+  const m = FIT_MARGIN / 2;
+  const edge = (v, size) => Math.min(v - m, size - m - v);
+  for (const [yaw, pitch] of [
+    [45, 35],
+    [0, 0],
+    [135, 50],
+    [315, -30],
+    [10, 84],
+    [200, -84],
+  ]) {
+    Object.assign(state.cam, { yaw, pitch });
+    for (const l of mapData.levels) {
+      fitLevel(l);
+      const where = `${l.name} at ${yaw},${pitch}`;
+      assert.deepEqual(state.target, levelCentre(l), where);
+      let x0 = Infinity,
+        y0 = Infinity,
+        x1 = -Infinity,
+        y1 = -Infinity;
+      for (let i = 0; i < l.cells.length; i += 4) {
+        const [x, y, z] = l.cells.slice(i, i + 3);
+        for (const dx of [0, 1])
+          for (const dy of [0, 1])
+            for (const dz of [0, 1]) {
+              const [sx, sy] = screen(x + dx, y + dy, z + dz);
+              x0 = Math.min(x0, sx);
+              x1 = Math.max(x1, sx);
+              y0 = Math.min(y0, sy);
+              y1 = Math.max(y1, sy);
+            }
+      }
+      const room = Math.min(edge(x0, 800), edge(x1, 800), edge(y0, 600), edge(y1, 600));
+      assert.ok(room > -1e-6, `${where}: ${[x0, y0, x1, y1]}`);
+      // the blocks reach the margin on one axis, unless the zoom stopped first
+      const { zoom } = state.cam;
+      if (zoom > ZOOM_MIN && zoom < FIT_ZOOM_MAX) assert.ok(room < 1e-6, `${where}: ${room}`);
+      near(x0 - m, 800 - m - x1, 1e-6);
+      near(y0 - m, 600 - m - y1, 1e-6);
+    }
+  }
 });

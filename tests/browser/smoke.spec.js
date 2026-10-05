@@ -1531,6 +1531,63 @@ test("a camera moved on purpose stays where it was put as the canvas resizes, un
   expect(framed.zoom).toBe(framed.fit);
 });
 
+/** The box the level is drawn in, in canvas pixels, read off the map with
+    the scale bar's own box left out, and the room a fit leaves round it. */
+const drawnBox = (page) =>
+  page.evaluate(async () => {
+    const { state, FIT_MARGIN } = await import(new URL("js/state.js", location.href).href);
+    const { draw, invalidatePick } = await import(new URL("js/render.js", location.href).href);
+    const cv = document.getElementById("cv");
+    const { width, height } = cv;
+    const inked = (skip) => {
+      const px = cv.getContext("2d").getImageData(0, 0, width, height).data;
+      let [x0, y0, x1, y1] = [width, height, -1, -1];
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const i = (y * width + x) * 4;
+          if (px[i] === px[0] && px[i + 1] === px[1] && px[i + 2] === px[2]) continue;
+          if (skip && x >= skip[0] && y >= skip[1] && x <= skip[2] && y <= skip[3]) continue;
+          [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)];
+        }
+      }
+      return [x0, y0, x1, y1];
+    };
+    const was = state.cam.panX;
+    state.cam.panX += 1e4;
+    draw();
+    const scale = inked();
+    state.cam.panX = was;
+    invalidatePick();
+    draw();
+    const k = width / cv.clientWidth;
+    const [x0, y0, x1, y1] = inked(scale).map((v) => v / k);
+    const m = FIT_MARGIN / 2;
+    return {
+      box: [x0, y0, x1, y1],
+      room: [x0 - m, cv.clientWidth - m - (x1 + 1), y0 - m, cv.clientHeight - m - (y1 + 1)],
+    };
+  });
+
+test("f at a turn frames every block inside the canvas, with the margin round the level", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/2/135,50/1");
+  await settle(page);
+  await still(page);
+  await page.keyboard.press("o");
+  await expect(page).not.toHaveURL(/\/fit\//);
+  await page.keyboard.press("f");
+  await expect(page).toHaveURL(/#HIRO\/2\/135,50\/fit\/33$/);
+  await frame(page);
+  const { box, room } = await drawnBox(page);
+  for (const side of room) expect(side, `${box}`).toBeGreaterThan(-2);
+  // the blocks reach the margin on one axis, both sides alike
+  const [left, right, above, below] = room;
+  expect(Math.min(Math.max(left, right), Math.max(above, below)), `${box}`).toBeLessThan(3);
+  expect(errors).toEqual([]);
+});
+
 /** Bring the start's block under a client point, and close in on it. */
 const startUnder = (page, point) =>
   page.evaluate(async ([px, py]) => {

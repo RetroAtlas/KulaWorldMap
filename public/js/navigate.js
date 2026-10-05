@@ -1,5 +1,5 @@
 import { $, emit, on } from "./dom.js";
-import { state, SIDE, BLOCK, ZOOM_MIN, project, levelCentre, cellKey, sliceZ } from "./state.js";
+import { state, SIDE, fitLevel, cellKey, sliceZ } from "./state.js";
 import {
   index,
   worldName,
@@ -44,31 +44,7 @@ export function fit() {
   // Fitting against a view of no size yields the zoom clamp rather than a fit,
   // so the fit waits for the size to arrive.
   if (!state.view.w || !state.view.h) return;
-  state.target = levelCentre(l);
-  state.cam.panX = state.cam.panY = 0;
-  const [tx, ty] = project(...state.target);
-  let x0 = Infinity,
-    y0 = Infinity,
-    x1 = -Infinity,
-    y1 = -Infinity;
-  for (let i = 0; i < l.cells.length; i += 4) {
-    const [x, y, z] = l.cells.slice(i, i + 3);
-    for (const dx of [0, 1])
-      for (const dy of [0, 1])
-        for (const dz of [0, 1]) {
-          const [px, py] = project(x + dx, y + dy, z + dz);
-          x0 = Math.min(x0, px - tx);
-          x1 = Math.max(x1, px - tx);
-          y0 = Math.min(y0, py - ty);
-          y1 = Math.max(y1, py - ty);
-        }
-  }
-  if (!Number.isFinite(x0)) return;
-  const { w, h } = state.view;
-  const pad = 60;
-  const zx = (w - pad) / Math.max(1e-3, (x1 - x0) * BLOCK);
-  const zy = (h - pad) / Math.max(1e-3, (y1 - y0) * BLOCK);
-  state.cam.zoom = Math.max(ZOOM_MIN, Math.min(3, Math.min(zx, zy)));
+  fitLevel(l);
 }
 
 export function setSlice(z) {
