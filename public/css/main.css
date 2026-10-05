@@ -912,7 +912,7 @@ body.sidebar-open .menu-btn {
 }
 .modal dl {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: fit-content(50%) 1fr;
   gap: 3px 12px;
   margin: 0;
 }

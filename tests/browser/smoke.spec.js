@@ -3469,6 +3469,10 @@ test("the keys and the settings open in a box of one width, which a phone narrow
   expect(phone.x).toBeGreaterThanOrEqual(0);
   expect(phone.x + phone.width).toBeLessThanOrEqual(375);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
+  // the keys take no more than half the row, the gestures wrapping before the words do
+  const dl = await page.locator("#help dl").boundingBox();
+  const dt = await page.locator("#help dt").first().boundingBox();
+  expect(dt.width).toBeLessThanOrEqual(dl.width / 2 + 1);
 });
 
 test("the display keeps only the switches set away from their defaults", async ({ page }) => {
