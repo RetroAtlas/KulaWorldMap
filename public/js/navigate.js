@@ -135,7 +135,7 @@ const levelAt = (slot) => {
     move, once it has settled. */
 export function writeHash(push = false, moving = false) {
   if (moving) pending = currentHash();
-  else if (timer) flushNow();
+  else if (timer || (push && pending)) flushNow();
   entry ||= push;
   if (moving && !entry && !queued) {
     clearTimeout(timer);
@@ -178,12 +178,20 @@ function flushHash(paced = false) {
   known = location.hash;
 }
 
+/** Write what waits now: the camera's last view where there is one, and
+    then, where a push waits as well, the state of the moment over it. */
 function flushNow() {
   if (!queued && !timer) return;
-  const paced = !!timer;
   cancelAnimationFrame(queued);
   clearTimeout(timer);
-  flushHash(paced);
+  const push = entry;
+  if (pending) {
+    entry = false;
+    flushHash(true);
+    entry = push;
+    if (!push) return;
+  }
+  flushHash();
 }
 
 // A dialog opens on an entry of its own, so what is waiting to be written
@@ -199,6 +207,7 @@ export function applyHash() {
   clearTimeout(timer);
   timer = 0;
   pending = null;
+  entry = false;
   known = location.hash;
   const link = parseHash(known);
   const i = levelAt(link.slot);
