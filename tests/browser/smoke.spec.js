@@ -395,7 +395,7 @@ test("the camera writes the URL once it has settled, and not while it moves", as
   await frame(page);
   expect(await writes()).toBe(0);
   await expect.poll(writes).toBe(1);
-  expect(page.url()).toMatch(/#HIRO\/0\//);
+  expect(page.url()).not.toContain("/45,35/");
   // a wheel step a frame for forty frames writes nothing while the steps keep coming
   await page.evaluate(async () => {
     const cv = document.getElementById("cv");
@@ -4435,42 +4435,51 @@ test("a write inside the settle window carries the view it is given, with the ca
   await page.goto("/#HIRO/0");
   await settle(page);
   await still(page);
-  const drag = () =>
-    page.evaluate(() => {
-      const cv = document.getElementById("cv");
-      cv.dispatchEvent(
-        new PointerEvent("pointerdown", { clientX: 600, clientY: 400, pointerId: 1 }),
-      );
-      cv.dispatchEvent(
-        new PointerEvent("pointermove", { clientX: 660, clientY: 400, pointerId: 1 }),
-      );
-      cv.dispatchEvent(new PointerEvent("pointerup", { clientX: 660, clientY: 400, pointerId: 1 }));
-    });
-  const yaw = () =>
-    page.evaluate(async () => {
+  // a drag and, in the same breath, what follows it; the turn the drag made comes back
+  const dragThen = (follow) =>
+    page.evaluate(async (follow) => {
       const { state } = await import(new URL("js/state.js", location.href).href);
-      return ((Math.round(state.cam.yaw) % 360) + 360) % 360;
-    });
+      const cv = document.getElementById("cv");
+      const at = (type, x) =>
+        cv.dispatchEvent(new PointerEvent(type, { clientX: x, clientY: 400, pointerId: 1 }));
+      at("pointerdown", 600);
+      at("pointermove", 660);
+      at("pointerup", 660);
+      const yaw = ((Math.round(state.cam.yaw) % 360) + 360) % 360;
+      if (follow.key)
+        document.body.dispatchEvent(
+          new KeyboardEvent("keydown", { key: follow.key, bubbles: true }),
+        );
+      if (follow.hide) {
+        Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+        document.dispatchEvent(new Event("visibilitychange"));
+        delete document.hidden;
+      }
+      if (follow.back) history.back();
+      return yaw;
+    }, follow);
+  const entries = () => page.evaluate(() => history.length);
   // a slice straight after a drag names the slice, and the turn the drag made
-  await drag();
-  const turned = await yaw();
+  let turned = await dragThen({ key: "," });
   expect(turned).not.toBe(45);
-  await page.keyboard.press(",");
   await expect.poll(() => page.url()).toMatch(new RegExp(`#HIRO/0/${turned},35/.*/32$`));
   // a change of level straight after a drag pushes the new level, over an entry holding the turn
-  const entries = () => page.evaluate(() => history.length);
   const booted = await entries();
-  await drag();
-  const again = await yaw();
-  await page.keyboard.press("]");
+  turned = await dragThen({ key: "]" });
   await expect(page.locator("#chip b")).toHaveText("LEVEL 2");
   await expect.poll(() => page.url()).toMatch(/#HIRO\/1\//);
   expect(await entries()).toBe(booted + 1);
   await page.goBack();
-  await expect.poll(() => page.url()).toMatch(new RegExp(`#HIRO/0/${again},35/`));
+  await expect.poll(() => page.url()).toMatch(new RegExp(`#HIRO/0/${turned},35/`));
+  const beneath = page.url();
+  // Back straight after a drag drops the write waiting, and the entry gone back to stands as it was
+  await page.goForward();
+  await expect.poll(() => page.url()).toMatch(/#HIRO\/1\//);
+  await dragThen({ back: true });
+  await expect.poll(() => page.url()).toBe(beneath);
+  await page.evaluate(() => new Promise((r) => setTimeout(r, 500))); // past the settle
+  expect(page.url()).toBe(beneath);
   // a page put out of sight writes what waits
-  await drag();
-  const third = await yaw();
-  await page.evaluate(() => dispatchEvent(new Event("pagehide")));
-  expect(page.url()).toMatch(new RegExp(`#HIRO/0/${third},35/`));
+  turned = await dragThen({ hide: true });
+  expect(page.url()).toMatch(new RegExp(`#HIRO/0/${turned},35/`));
 });
