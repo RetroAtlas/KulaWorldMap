@@ -16,4 +16,4 @@ As a level opens, and again on a restart, `0x80033e94` lays a cubic curve (evalu
 
 ## The free camera
 
-The same routine measures the lattice: the box round every cell it fills, the box's middle, and the distance from the middle to the furthest of them, plus 1200. While the ball's word at `0x800ba296` is set, which the Japanese release's Select button does and the README's cheat does on this one, `0x80034684` holds the eye that far from the box's middle and turns it with the pad. The level feeds this camera nothing either.
+The same routine measures the lattice: the box round every cell it fills, the box's middle, and the distance from the middle to the furthest of them, plus 1200. While the ball's word at `0x800ba296` is set, which the Japanese release's Select button does and the cheat in [level-format.md](level-format.md) does on this one, `0x80034684` holds the eye that far from the box's middle and turns it with the pad. The level feeds this camera nothing either.
