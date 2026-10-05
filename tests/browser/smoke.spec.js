@@ -2590,6 +2590,34 @@ test("a zoom under a still pointer paints the pick about the pointer alone", asy
   expect(errors).toEqual([]);
 });
 
+test("a zoom under a still pointer leaves the tip as it stands", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#INCA/12/45,35");
+  await settle(page);
+  await still(page);
+  const point = await restOnStart(page);
+  await expect(page.locator("#tip")).toContainText("Start · top");
+  const was = await hovered(page);
+  await page.evaluate(([x, y]) => {
+    window.__changes = 0;
+    new MutationObserver((records) => (window.__changes += records.length)).observe(
+      document.getElementById("tip"),
+      { childList: true, characterData: true, attributes: true, subtree: true },
+    );
+    document
+      .getElementById("cv")
+      .dispatchEvent(
+        new WheelEvent("wheel", { deltaY: -50, clientX: x, clientY: y, cancelable: true }),
+      );
+  }, point);
+  await frame(page);
+  await frame(page);
+  expect(await hovered(page)).toBe(was);
+  await expect(page.locator("#tip")).toContainText("Start · top");
+  expect(await page.evaluate(() => window.__changes)).toBe(0);
+  expect(errors).toEqual([]);
+});
+
 test("a drag names the cell under the pointer once it lets go, and not before", async ({
   page,
 }) => {

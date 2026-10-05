@@ -180,6 +180,9 @@ function readout() {
   $("readout").textContent = c ? `${c.x}, ${c.y}, ${c.z}   ${view}` : view;
 }
 
+// What the tip says while it shows, with its size, so a pointer that rests
+// while the view moves under it costs no layout a frame.
+let said = null;
 function hoverTip(c, px, py) {
   if (!c) {
     tip.hidden = true;
@@ -201,10 +204,16 @@ function hoverTip(c, px, py) {
     const off = markerNow(m) === "off" ? " · off" : "";
     lines.push(markerLabel(m) + off + (m.face !== null ? ` · ${FACE_NAME[m.face]}` : ""));
   }
-  tip.innerHTML = lines.join("<br>");
-  tip.hidden = false;
-  tip.style.left = `${Math.min(px + 14, state.view.w - tip.offsetWidth - 8)}px`;
-  tip.style.top = `${Math.max(8, py - tip.offsetHeight - 12)}px`;
+  const html = lines.join("<br>");
+  if (tip.hidden || said.html !== html) {
+    tip.innerHTML = html;
+    tip.hidden = false;
+    said = { html, w: tip.offsetWidth, h: tip.offsetHeight };
+  }
+  const left = `${Math.min(px + 14, state.view.w - said.w - 8)}px`;
+  const top = `${Math.max(8, py - said.h - 12)}px`;
+  if (tip.style.left !== left) tip.style.left = left;
+  if (tip.style.top !== top) tip.style.top = top;
 }
 
 cv.addEventListener(
