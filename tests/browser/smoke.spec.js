@@ -4415,3 +4415,49 @@ test("the map, the legend and the panel follow the screen's density", async ({ p
   });
   await expect.poll(density).toEqual([2, 2, 2, 2]);
 });
+
+test("a write inside the settle window carries the view it is given, with the camera's last view beneath it", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await still(page);
+  const drag = () =>
+    page.evaluate(() => {
+      const cv = document.getElementById("cv");
+      cv.dispatchEvent(
+        new PointerEvent("pointerdown", { clientX: 600, clientY: 400, pointerId: 1 }),
+      );
+      cv.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: 660, clientY: 400, pointerId: 1 }),
+      );
+      cv.dispatchEvent(new PointerEvent("pointerup", { clientX: 660, clientY: 400, pointerId: 1 }));
+    });
+  const yaw = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      return Math.round(state.cam.yaw);
+    });
+  // a slice straight after a drag names the slice, and the turn the drag made
+  await drag();
+  const turned = await yaw();
+  expect(turned).not.toBe(45);
+  await page.keyboard.press(",");
+  await expect.poll(() => page.url()).toMatch(new RegExp(`#HIRO/0/${turned},35/.*/32$`));
+  // a change of level straight after a drag pushes the new level, over an entry holding the turn
+  const entries = () => page.evaluate(() => history.length);
+  const booted = await entries();
+  await drag();
+  const again = await yaw();
+  await page.keyboard.press("]");
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 2");
+  await expect.poll(() => page.url()).toMatch(/#HIRO\/1\//);
+  expect(await entries()).toBe(booted + 1);
+  await page.goBack();
+  await expect.poll(() => page.url()).toMatch(new RegExp(`#HIRO/0/${again},35/`));
+  // a page put out of sight writes what waits
+  await drag();
+  const third = await yaw();
+  await page.evaluate(() => dispatchEvent(new Event("pagehide")));
+  expect(page.url()).toMatch(new RegExp(`#HIRO/0/${third},35/`));
+});

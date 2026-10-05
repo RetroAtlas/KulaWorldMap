@@ -135,12 +135,12 @@ const levelAt = (slot) => {
     move, once it has settled. */
 export function writeHash(push = false, moving = false) {
   if (moving) pending = currentHash();
-  if (push && timer) flushNow();
+  else if (timer) flushNow();
   entry ||= push;
-  clearTimeout(timer);
-  timer = 0;
-  if (moving && !entry && !queued) timer = setTimeout(() => flushHash(true), SETTLE);
-  else if (!queued) queued = requestAnimationFrame(flushHash);
+  if (moving && !entry && !queued) {
+    clearTimeout(timer);
+    timer = setTimeout(() => flushHash(true), SETTLE);
+  } else if (!queued) queued = requestAnimationFrame(() => flushHash());
   emit("view-changed");
 }
 
@@ -187,12 +187,18 @@ function flushNow() {
 }
 
 // A dialog opens on an entry of its own, so what is waiting to be written
-// goes onto the entry under it first; a page on its way out writes it too.
+// goes onto the entry under it first; a page on its way out, or put out of
+// sight, writes it too.
 on("dialog-opened", flushNow);
 addEventListener("pagehide", flushNow);
+document.addEventListener("visibilitychange", () => document.hidden && flushNow());
 
 export function applyHash() {
   if (!state.data) return false;
+  // the bar has moved under a waiting write, which has no entry left to go to
+  clearTimeout(timer);
+  timer = 0;
+  pending = null;
   known = location.hash;
   const link = parseHash(known);
   const i = levelAt(link.slot);
