@@ -10,7 +10,7 @@ import {
   cellKey,
   pivot,
 } from "./state.js";
-import { drawSoon, cellAt, invalidatePick, pointing, pressing, onResize } from "./render.js";
+import { drawSoon, cellAt, invalidatePick, pointing, onResize } from "./render.js";
 import { chip, writeHash, stepLevel, fit, setSlice } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
 import { surveying, place } from "./survey.js";
@@ -47,7 +47,6 @@ cv.addEventListener("contextmenu", (e) => e.preventDefault());
 
 cv.addEventListener("pointerdown", (e) => {
   pointing(true);
-  pressing(true);
   cv.setPointerCapture(e.pointerId);
   drag = { x: e.clientX, y: e.clientY, pan: panning(e) };
   moved = 0;
@@ -70,7 +69,6 @@ cv.addEventListener("pointermove", (e) => {
 });
 
 cv.addEventListener("pointerup", (e) => {
-  pressing(false);
   const r = cv.getBoundingClientRect();
   if (drag && moved < CLICK) {
     const c = cellAt(e.clientX - r.left, e.clientY - r.top);
@@ -87,7 +85,6 @@ cv.addEventListener("pointerup", (e) => {
   repickSoon();
 });
 cv.addEventListener("pointercancel", () => {
-  pressing(false);
   drag = null;
 });
 cv.addEventListener("pointerleave", () => {
@@ -99,9 +96,9 @@ cv.addEventListener("pointerleave", () => {
   drawSoon();
 });
 
-function hoverAt({ x, y }) {
+function hoverAt({ x, y }, near = false) {
   const r = cv.getBoundingClientRect();
-  const c = cellAt(x - r.left, y - r.top);
+  const c = cellAt(x - r.left, y - r.top, near);
   const key = c ? cellKey(c.x, c.y, c.z) : null;
   const other = (state.hover?.key ?? null) !== key;
   if (other) {
@@ -174,7 +171,7 @@ onResize(repickSoon);
 
 function readout() {
   readoutQueued = 0;
-  if (repick && pointer && !drag && !touch) hoverAt(pointer);
+  if (repick && pointer && !drag && !touch) hoverAt(pointer, true);
   repick = false;
   if (!state.lvl) return;
   const c = state.hover;

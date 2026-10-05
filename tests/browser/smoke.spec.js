@@ -2495,6 +2495,77 @@ test("a camera moved under a still pointer names the cell now under it", async (
   expect(errors).toEqual([]);
 });
 
+test("a zoom under a still pointer paints the pick about the pointer alone", async ({ page }) => {
+  const errors = trackErrors(page);
+  // the pick is the one canvas read back often, and its fills are counted
+  await page.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type, opts) {
+      if (opts?.willReadFrequently) window.__pick = this;
+      return getContext.call(this, type, opts);
+    };
+    const fill = CanvasRenderingContext2D.prototype.fill;
+    window.__fills = 0;
+    CanvasRenderingContext2D.prototype.fill = function (...a) {
+      if (this.canvas === window.__pick) window.__fills++;
+      return fill.apply(this, a);
+    };
+  });
+  await page.goto("/#INCA/14/45,35");
+  await settle(page);
+  await still(page);
+  const point = await restOnStart(page);
+  const was = await cellUnder(page, point);
+  expect(await hovered(page)).toBe(was);
+  const fills = () => page.evaluate(() => window.__fills);
+  const whole = await page.evaluate(async ([x, y]) => {
+    const { invalidatePick, cellAt } = await import(new URL("js/render.js", location.href).href);
+    const r = document.getElementById("cv").getBoundingClientRect();
+    window.__fills = 0;
+    invalidatePick();
+    cellAt(x - r.left, y - r.top);
+    return window.__fills;
+  }, point);
+  expect(whole).toBeGreaterThan(100);
+  await page.evaluate(([x, y]) => {
+    window.__fills = 0;
+    document
+      .getElementById("cv")
+      .dispatchEvent(
+        new WheelEvent("wheel", { deltaY: -50, clientX: x, clientY: y, cancelable: true }),
+      );
+  }, point);
+  await frame(page);
+  // the zoom keeps the point under the pointer where it is, so the cell holds
+  await expect.poll(() => hovered(page)).toBe(was);
+  expect(await fills()).toBeGreaterThan(0);
+  expect(await fills()).toBeLessThan(whole / 4);
+  // a move elsewhere finds the cell there as a whole pick does
+  const other = await page.evaluate(async () => {
+    const { state, screen } = await import(new URL("js/state.js", location.href).href);
+    const { cellAt } = await import(new URL("js/render.js", location.href).href);
+    const cv = document.getElementById("cv");
+    const r = cv.getBoundingClientRect();
+    const tops = [...state.idx.cells.values()].sort((a, b) => a.z - b.z);
+    for (const c of tops) {
+      const [x, y] = screen(c.x + 0.5, c.y + 0.5, c.z);
+      const at = cellAt(x, y);
+      if (!at || (at.x === c.x && at.y === c.y && at.z === c.z)) continue;
+      cv.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: r.left + x, clientY: r.top + y }),
+      );
+      return `${at.x}, ${at.y}, ${at.z}`;
+    }
+    const c = tops.at(-1);
+    const [x, y] = screen(c.x + 0.5, c.y + 0.5, c.z);
+    cv.dispatchEvent(new PointerEvent("pointermove", { clientX: r.left + x, clientY: r.top + y }));
+    return `${c.x}, ${c.y}, ${c.z}`;
+  });
+  expect(other).not.toBe(was);
+  await expect.poll(() => hovered(page)).toBe(other);
+  expect(errors).toEqual([]);
+});
+
 test("a drag names the cell under the pointer once it lets go, and not before", async ({
   page,
 }) => {

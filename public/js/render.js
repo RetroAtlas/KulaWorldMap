@@ -37,23 +37,26 @@ const cv = $("cv");
 const ctx = cv.getContext("2d");
 
 // A canvas painted one flat colour per cell and read back to hit-test a point,
-// painted from the cells of the draw it goes stale at.
+// painted from the cells of the draw it goes stale at, by the first hit test
+// after, and only about the point asked for where that is all the hit test
+// wants.
 const pickCv = document.createElement("canvas");
 const pick = pickCv.getContext("2d", { willReadFrequently: true });
 let pickStale = true;
 let pickFrom = null;
 let pickList = [];
+// where the canvas holds paint, and where that paint is the last draw's
+let laid = null;
+let painted = null;
+const WHOLE = { x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
+const NEAR = 12;
+const within = (a, b) => a.x0 >= b.x0 && a.y0 >= b.y0 && a.x1 <= b.x1 && a.y1 <= b.y1;
 const pickColour = (id) => `rgb(${id & 255} ${(id >> 8) & 255} ${(id >> 16) & 255})`;
 // While anything travels, the pick goes stale every frame the pointer is over
-// the map; while the pointer is pressed nothing reads the pick, so it waits for
-// the hit test that does.
+// the map.
 let pointerIn = false;
-let pressed = false;
 export const pointing = (on) => {
   pointerIn = on;
-};
-export const pressing = (on) => {
-  pressed = on;
 };
 
 // What shows through the blocks is drawn whole on a layer of its own and laid
@@ -78,6 +81,7 @@ export function resize() {
     c.height = Math.round(h * dpr);
   }
   for (const g of [ctx, pick]) g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  laid = null;
   invalidatePick();
   for (const fn of resized) fn();
   draw();
@@ -231,7 +235,7 @@ export function draw() {
   if (pickStale) {
     pickFrom = { cells, l };
     pickStale = false;
-    if (!pressed) paintPick();
+    painted = null;
   }
   const edges = state.show.outlines && state.cam.zoom > 0.3;
   const effect = effectFrame(frame);
@@ -342,35 +346,52 @@ export function drawSoon() {
   if (!queuedFrame) draw();
 }
 
-function offScreen(c) {
+/** Whether a cell's block can reach into the area, which a whole cube about
+    its corner is well within twice its side of. */
+function reaches(c, area) {
   const [px, py] = screen(c.x, c.y, c.z);
   const r = BLOCK * state.cam.zoom * 2;
-  const { w, h } = state.view;
-  return px < -r || px > w + r || py < -r || py > h + r;
+  return px >= area.x0 - r && px <= area.x1 + r && py >= area.y0 - r && py <= area.y1 + r;
 }
 
-function paintPick() {
+const offScreen = (c) => !reaches(c, { x0: 0, y0: 0, x1: state.view.w, y1: state.view.h });
+
+/** Paint the pick from the last draw's cells, within `area`. Every cell takes
+    its place in the list whether painted or not, so a colour read means the
+    same cell whatever part was painted. */
+function paintPick(area) {
   const { cells, l } = pickFrom;
-  pickFrom = null;
   pickList = [];
-  pick.clearRect(0, 0, state.view.w, state.view.h);
+  const { w, h } = state.view;
+  if (laid === WHOLE || area === WHOLE) pick.clearRect(0, 0, w, h);
+  else if (laid)
+    pick.clearRect(laid.x0 - 1, laid.y0 - 1, laid.x1 - laid.x0 + 2, laid.y1 - laid.y0 + 2);
+  pick.save();
+  if (area !== WHOLE) {
+    pick.beginPath();
+    pick.rect(area.x0, area.y0, area.x1 - area.x0, area.y1 - area.y0);
+    pick.clip();
+  }
   for (const c of cells) {
     if (offScreen(c)) continue;
     const home = c.home || c;
     if (home.z < sliceZ() || c.beams || c.rails || c.mark) continue;
     if (c.thing) {
-      if (state.show.objects) pickGoing(c.thing, home, l);
+      if (state.show.objects) pickGoing(c.thing, home, l, area);
       continue;
     }
     pickList.push({ home, at: c });
+    if (!reaches(c, area)) continue;
     const col = pickColour(pickList.length);
     cube(pick, c, { cells: new Map() }, () => col, null, 1, null);
   }
+  pick.restore();
+  laid = painted = area;
 }
 
 /** A travelling thing picks as the cell it started from, which holds its
     record. A survey marks blocks, so it leaves travellers out. */
-function pickGoing(going, home, l) {
+function pickGoing(going, home, l, area) {
   const m = going.w.m;
   if (state.hiddenKinds.has(m.id) || state.survey.on) return;
   const where = {
@@ -380,6 +401,7 @@ function pickGoing(going, home, l) {
   };
   const [x, y, r] = thingDisc(m, where, l);
   pickList.push({ home, disc: [x, y, r] });
+  if (x + r < area.x0 || x - r > area.x1 || y + r < area.y0 || y - r > area.y1) return;
   pick.fillStyle = pickColour(pickList.length);
   pick.beginPath();
   pick.arc(x, y, r, 0, 7);
@@ -406,9 +428,13 @@ const TRIES = [
 const shows = (e, x, y) =>
   e.disc ? Math.hypot(x - e.disc[0], y - e.disc[1]) <= e.disc[2] : covers(e.at, x, y);
 
-export function cellAt(cx, cy) {
+/** The cell under a point of the canvas. With `near`, the pick is painted
+    about the point alone where it is not painted already. */
+export function cellAt(cx, cy, near = false) {
   if (pickStale) draw();
-  if (pickFrom) paintPick();
+  if (!pickFrom) return null;
+  const area = near ? { x0: cx - NEAR, y0: cy - NEAR, x1: cx + NEAR, y1: cy + NEAR } : WHOLE;
+  if (!painted || !within(area, painted)) paintPick(area);
   // The backing store and the element can disagree, so the scale is read off
   // both rather than taken as the device ratio.
   const kx = pickCv.width / Math.max(1, cv.clientWidth);
