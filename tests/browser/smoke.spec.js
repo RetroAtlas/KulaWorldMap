@@ -1081,6 +1081,36 @@ test("a field is searched as name=value, and a match outside the row is appended
   expect(await page.evaluate(() => location.hash)).not.toBe(before);
 });
 
+test("a coloured thing is named thing first, and found by colour and thing in either order", async ({
+  page,
+}) => {
+  await page.goto("/#ATLANT/3");
+  await settle(page);
+  const search = page.locator("#search");
+  const rows = page.locator("#results [role=option]:not(.showmore)");
+  // the name is what sits between the row's level and its face and cell
+  const named = () =>
+    rows.evaluateAll((all) =>
+      all.map((r) =>
+        [...r.childNodes]
+          .filter((n) => !n.className)
+          .map((n) => n.textContent)
+          .join("")
+          .trim(),
+      ),
+    );
+  await search.fill("blue gem");
+  await expect(rows.first()).toContainText("LEVEL 94");
+  const byColour = await named();
+  expect(byColour.length).toBeGreaterThan(1);
+  expect(new Set(byColour)).toEqual(new Set(["Gem (blue)"]));
+  await expect(rows.first().locator("mark")).toHaveText(["Gem", "blue"]);
+  await search.fill("gem blue");
+  await expect(rows.first()).toContainText("LEVEL 94");
+  expect(await named()).toEqual(byColour);
+  await expect(rows.first().locator("mark")).toHaveText(["Gem", "blue"]);
+});
+
 test("a find above the slice's ceiling lifts the ceiling to it", async ({ page }) => {
   await page.goto("/#HIRO/11/45,35/1/17,17,17/0,0/14");
   await settle(page);
@@ -1723,11 +1753,11 @@ test("the legend runs from the most to the fewest, rows with as many by name, th
         rows.map((r) => [r.children[1].textContent, Number(r.querySelector(".n").textContent)]),
       );
   expect(await rows("Objects")).toEqual([
-    ["Gold coin", 4],
-    ["Blue gem", 1],
-    ["Bronze coin", 1],
+    ["Coin (gold)", 4],
+    ["Coin (bronze)", 1],
     ["Exit", 1],
     ["Fruit", 1],
+    ["Gem (blue)", 1],
     ["Key", 1],
     ["Start", 1],
   ]);
@@ -2267,7 +2297,7 @@ test("a switch's panel presses it, turning its colour over until the level is le
     const [x, y] = screen(c.x + 0.5, c.y + 0.5, c.z);
     cv.dispatchEvent(new PointerEvent("pointermove", { clientX: r.left + x, clientY: r.top + y }));
   });
-  await expect(page.locator("#tip")).toContainText("Yellow teleporter · top");
+  await expect(page.locator("#tip")).toContainText("Teleporter (yellow) · top");
   await expect(page.locator("#tip")).not.toContainText("off");
   await page.keyboard.press("]");
   await expect(page.locator("#chip")).not.toContainText("LESSON");
@@ -2301,7 +2331,7 @@ test("a teleporter's panel names where it leads, and going there is a find", asy
   await frame(page);
   expect(page.url()).toMatch(/\/17,25,17$/);
   expect(await page.evaluate(() => history.length)).toBe(entries + 1);
-  await expect(page.locator("#say")).toContainText("Blue teleporter, top, 17,25,17");
+  await expect(page.locator("#say")).toContainText("Teleporter (blue), top, 17,25,17");
   await go.click();
   await go.click();
   await expect(page.locator("#detail")).toContainText("cell 17,7,17");

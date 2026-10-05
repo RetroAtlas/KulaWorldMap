@@ -42,7 +42,7 @@ test("a name, its type number and the bare number find the same things", () => {
 test("a variant answers to its own name and to its type's", () => {
   const bronze = find("bronze");
   assert.ok(bronze.length > 0);
-  assert.ok(bronze.every((c) => c.name === "Bronze coin"));
+  assert.ok(bronze.every((c) => c.name === "Coin (bronze)"));
   assert.ok(find("coin").length > bronze.length);
 });
 
@@ -77,8 +77,8 @@ test("a record that is its own thing answers to its kind", () => {
 });
 
 test("the name's rank: exact, prefix, substring, then a match outside the name", () => {
-  for (const c of find("coin")) assert.equal(c.rank, c.name === "Coin" ? 0 : 2);
-  for (const c of find("bronze")) assert.equal(c.rank, 1);
+  for (const c of find("coin")) assert.equal(c.rank, c.name === "Coin" ? 0 : 1);
+  for (const c of find("bronze")) assert.equal(c.rank, 2);
   for (const c of find("starts=off")) assert.equal(c.rank, 3);
 });
 

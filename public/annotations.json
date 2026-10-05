@@ -94,19 +94,19 @@
       },
       "variants": {
         "0": {
-          "name": "Yellow teleporter",
+          "name": "Teleporter (yellow)",
           "colour": "#f5c542"
         },
         "1": {
-          "name": "Blue teleporter",
+          "name": "Teleporter (blue)",
           "colour": "#4f8ef7"
         },
         "2": {
-          "name": "Green teleporter",
+          "name": "Teleporter (green)",
           "colour": "#3ad07c"
         },
         "3": {
-          "name": "Red teleporter",
+          "name": "Teleporter (red)",
           "colour": "#ff4a4a"
         }
       },
@@ -129,19 +129,19 @@
       },
       "variants": {
         "0": {
-          "name": "Yellow switch",
+          "name": "Switch (yellow)",
           "colour": "#f5c542"
         },
         "1": {
-          "name": "Blue switch",
+          "name": "Switch (blue)",
           "colour": "#4f8ef7"
         },
         "2": {
-          "name": "Green switch",
+          "name": "Switch (green)",
           "colour": "#3ad07c"
         },
         "3": {
-          "name": "Red switch",
+          "name": "Switch (red)",
           "colour": "#ff4a4a"
         }
       },
@@ -214,15 +214,15 @@
       },
       "variants": {
         "0": {
-          "name": "Blue gem",
+          "name": "Gem (blue)",
           "colour": "#4f8ef7"
         },
         "1": {
-          "name": "Green gem",
+          "name": "Gem (green)",
           "colour": "#3ad07c"
         },
         "2": {
-          "name": "Red gem",
+          "name": "Gem (red)",
           "colour": "#ff4a4a"
         }
       },
@@ -236,15 +236,15 @@
       },
       "variants": {
         "2": {
-          "name": "Bronze coin",
+          "name": "Coin (bronze)",
           "points": 250
         },
         "1": {
-          "name": "Blue coin",
+          "name": "Coin (blue)",
           "points": 500
         },
         "0": {
-          "name": "Gold coin",
+          "name": "Coin (gold)",
           "points": 750
         }
       },
