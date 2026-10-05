@@ -25,3 +25,13 @@ test("nothing the site serves names a local path", () => {
     assert.ok(!hit, `${path.slice(site.length + 1)}: "${hit?.[0]}"`);
   }
 });
+
+test("the manifest's icons are files, each raster at the size it promises", () => {
+  const manifest = JSON.parse(readFileSync(join(site, "site.webmanifest"), "utf8"));
+  assert.ok(manifest.icons.length > 0);
+  for (const { src, sizes, type } of manifest.icons) {
+    const file = readFileSync(join(site, src.replace(/^\//, "")));
+    if (type !== "image/png") continue;
+    assert.equal(`${file.readUInt32BE(16)}x${file.readUInt32BE(20)}`, sizes, src);
+  }
+});

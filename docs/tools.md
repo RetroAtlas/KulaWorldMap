@@ -1,6 +1,6 @@
 # What is in `tools/`
 
-Dependency-free Python 3, standard library only. `oxipng` is used to compress images where it is on PATH, and `ogcard.js` is the one Node tool. Every tool that reads the disc takes it from `$KULA_DISC`, a raw 2352-byte-sector `.bin` image, which is never committed.
+Dependency-free Python 3, standard library only. `oxipng` is used to compress images where it is on PATH, and `ogcard.js` and `icons.js` are the two Node tools. Every tool that reads the disc takes it from `$KULA_DISC`, a raw 2352-byte-sector `.bin` image, which is never committed.
 
 | | |
 | --- | --- |
@@ -22,6 +22,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `mips.py` | disassemble the executable, which is how the lattice was pinned down, and run a routine of it |
 | `kula_motion.py` | what the executable does to each thing every frame, the rates behind [motion.md](motion.md) |
 | `ogcard.js` | render the social card from the map itself (Node, needs Playwright) |
+| `icons.js` | render the raster icons from the favicon (Node, needs Playwright) |
 | `serve.py` | local static server, caching off, 404.html like the host |
 
 `kula_build.py` writes both JSON files in under a second, laid out so that a rebuild diffs line by line, or model by model, and refuses to write when the level file's cross-check fails ([level-format.md](level-format.md)). [tgi.md](tgi.md) and [ggi.md](ggi.md) show the artwork and geometry tools' own switches.
