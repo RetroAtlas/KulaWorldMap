@@ -24,7 +24,7 @@ The panel folds to its title line with the chevron beside its cross, and stays f
 
 ## The legend
 
-The sidebar's "On this level" lists what the level holds, by name and count: the objects first, then the blocks and the faces, which are the kinds of block the level uses and the things that are paint on a face rather than standing on it, fire, ice, acid and the clock among them. A row with a button hides and shows its kind on the map, and with it everything the kind shows, the light a device casts and the paint it puts on its face included; a kind of block's row only counts.
+The sidebar's "On this level" lists what the level holds, by name and count: the objects first, then the blocks and the faces, which are the kinds of block the level uses and the things that are paint on a face rather than standing on it, fire, ice and the clock among them. A row with a button hides and shows its kind on the map, and with it everything the kind shows, the light a device casts and the paint it puts on its face included; shift-click shows that kind alone, and again shows all of them; the heading's reset puts every kind back; a kind of block's row only counts.
 
 ## The compass
 
