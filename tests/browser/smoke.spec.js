@@ -739,7 +739,7 @@ test("the menu button rides the drawer's edge as it slides, beside the map and o
     page.evaluate(() =>
       document.getAnimations().forEach((a) => {
         a.pause();
-        a.currentTime = 90;
+        a.currentTime = 5000;
       }),
     );
   for (const width of [1280, 375]) {
@@ -747,6 +747,8 @@ test("the menu button rides the drawer's edge as it slides, beside the map and o
     await page.goto("/#HIRO/0");
     await settle(page);
     await still(page);
+    // a slide too slow for a runner to miss
+    await page.addStyleTag({ content: ":root { --slide: 10s linear; }" });
     for (const way of ["there", "back"]) {
       const at = `${width} ${way}`;
       await page.locator("#menuBtn").click();
