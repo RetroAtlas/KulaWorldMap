@@ -98,3 +98,7 @@ test("the second set of skins is drawn by the bonus levels and no others", () =>
   );
   assert.equal(second.length, BONUS_SLOTS.length * mapData.themes.length);
 });
+
+test("twenty-seven of the placed types are drawn as meshes of their own", () => {
+  assert.equal([...placed].filter((t) => drawn.has(t)).length, 27);
+});
