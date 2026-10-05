@@ -709,6 +709,43 @@ test("the drawer stays dismissable on the narrowest phone", async ({ page }) => 
   await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "false");
 });
 
+test("the menu button rides the drawer's edge as it slides, beside the map and over it", async ({
+  page,
+}) => {
+  const boxes = () =>
+    Promise.all(["#menuBtn", "#sidebar", "#chip"].map((s) => page.locator(s).boundingBox()));
+  // held half way through the slide, both ways
+  const midway = () =>
+    page.evaluate(() =>
+      document.getAnimations().forEach((a) => {
+        a.pause();
+        a.currentTime = 90;
+      }),
+    );
+  for (const width of [1280, 375]) {
+    await page.setViewportSize({ width, height: 700 });
+    await page.goto("/#HIRO/0");
+    await settle(page);
+    await still(page);
+    for (const way of ["there", "back"]) {
+      const at = `${width} ${way}`;
+      await page.locator("#menuBtn").click();
+      await midway();
+      await frame(page);
+      const [mid, drawer, chip] = await boxes();
+      const edge = drawer.x + drawer.width;
+      expect(edge, at).toBeGreaterThan(0);
+      expect(edge, at).toBeLessThan(drawer.width);
+      expect(mid.x, at).toBeCloseTo(edge + 10, 0);
+      if (width > 760) expect(chip.x, at).toBeGreaterThanOrEqual(mid.x + mid.width);
+      await page.evaluate(() => document.getAnimations().forEach((a) => a.finish()));
+      await still(page);
+      const [rest, settled] = await boxes();
+      expect(rest.x, at).toBe(settled.x + settled.width + 10);
+    }
+  }
+});
+
 test("Escape leaves the drawer alone where it sits beside the map", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);
