@@ -1014,6 +1014,59 @@ test("a search held to the level in hand follows the level as it changes", async
   await expect(page.locator("#scope button").nth(2)).toHaveText("LEVEL 2");
 });
 
+test("by level, a search lists the levels that hold the thing, most first, and a row opens one", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const box = page.locator("#search");
+  await box.fill("key");
+  const bylevel = page.locator("#scope button").nth(3);
+  await expect(bylevel).toHaveText("By level");
+  await bylevel.click();
+  await expect(bylevel).toHaveAttribute("aria-pressed", "true");
+  const groups = page.locator("#results [role=group]");
+  await expect(groups).toHaveCount(1);
+  await expect(groups.first()).toHaveAttribute("aria-label", "By level");
+  const found = page.locator("#found");
+  await expect(found).toHaveText(/^\d+ objects in \d+ levels · search everywhere$/);
+  const rows = page.locator("#results [role=option]:not(.showmore)");
+  await expect(rows).toHaveCount(8);
+  await expect(rows.first()).toHaveText(/^LEVEL \d+ \d+ objects [A-Z]+$/);
+  const counts = await rows.evaluateAll((els) =>
+    els.map((e) => Number(/(\d+) objects?/.exec(e.textContent)[1])),
+  );
+  expect(counts[0]).toBeGreaterThan(1);
+  expect(counts).toEqual([...counts].sort((a, b) => b - a));
+  const keys = () =>
+    page.locator("#results [role=option]").evaluateAll((els) => els.map((e) => e.dataset.key));
+  const before = await keys();
+  await page.keyboard.press("]");
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 2");
+  expect(await keys()).toEqual(before);
+  await expect(page.locator("#scope button").nth(2)).toHaveText("LEVEL 2");
+  await box.focus();
+  await box.press("ArrowDown");
+  await box.press("ArrowDown");
+  await expect(rows.nth(1)).toHaveAttribute("aria-selected", "true");
+  const title = await rows.nth(1).locator(".loc").textContent();
+  await box.press("Enter");
+  await expect(page.locator("#chip b")).toHaveText(title);
+  expect(
+    await page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      return state.selected;
+    }),
+  ).toBeNull();
+  await expect(page.locator("#detail")).toBeHidden();
+  expect(await keys()).toEqual(before);
+  await box.fill("inca");
+  await expect(page.locator("#results [aria-label=Worlds]")).toHaveCount(1);
+  await expect(found).toHaveText("no objects, blocks or settings in any level · search everywhere");
+  await box.fill("zzzz");
+  await expect(found).toHaveText("Nothing matches that in any level. · search everywhere");
+});
+
 test("a search counts objects, blocks by their kind, and settings apart", async ({ page }) => {
   await page.goto("/#ATLANT/3");
   await settle(page);

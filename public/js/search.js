@@ -39,13 +39,12 @@ const SCOPES = [
   ["all", () => "All"],
   ["world", () => worldName(state.lvl.theme)],
   ["level", () => levelTitle(state.lvl)],
+  ["bylevel", () => "By level"],
 ];
 const scopeLabel = () => SCOPES.find(([key]) => key === scope)[1]();
 
 const inScope = (li, theme) =>
-  scope === "all" ||
-  (scope === "world" && theme === state.lvl.theme) ||
-  (scope === "level" && li === state.li);
+  scope === "level" ? li === state.li : scope === "world" ? theme === state.lvl.theme : true;
 
 function scopeBar() {
   const held = [...bar.children].indexOf(document.activeElement);
@@ -125,6 +124,18 @@ function objectRow(h, terms) {
     ...marked(h.name, terms),
     " ",
     el("span", { className: "ex" }, ...marked(ex, terms)),
+  );
+}
+
+function levelRow(g) {
+  return option(
+    `b:${g.li}`,
+    () => selectLevel(g.li),
+    el("span", { className: "loc", textContent: levelTitle(g.level) }),
+    " ",
+    tally(g.hits),
+    " ",
+    el("span", { className: "ex", textContent: worldName(g.level.theme) }),
   );
 }
 
@@ -210,22 +221,33 @@ function render() {
     );
 
   const hits = matchObjects(state.data, groups, terms).filter((h) => inScope(h.li, h.level.theme));
-  const here = {
-    key: "level",
-    label: `${worldName(state.lvl.theme)} · ${levelTitle(state.lvl)}`,
-    hits: [],
-  };
-  const byWorld = new Map();
-  for (const t of [state.lvl.theme, ...state.data.themes.map((t) => t.id)])
-    if (!byWorld.has(t)) byWorld.set(t, { key: t, label: worldName(t), hits: [] });
-  for (const h of hits) (h.li === state.li ? here : byWorld.get(h.level.theme)).hits.push(h);
-  for (const g of [here, ...byWorld.values()]) {
-    if (!g.hits.length) continue;
-    g.hits.sort((a, b) => a.rank - b.rank);
-    group(g.label, g.hits, (h) => objectRow(h, terms));
+  let where = scope === "all" ? "" : ` in ${scopeLabel()}`;
+  if (scope === "bylevel") {
+    const holders = new Map();
+    for (const h of hits) {
+      if (!holders.has(h.li)) holders.set(h.li, { li: h.li, level: h.level, hits: [] });
+      holders.get(h.li).hits.push(h);
+    }
+    const ranked = [...holders.values()].sort((a, b) => b.hits.length - a.hits.length);
+    if (ranked.length) group(scopeLabel(), ranked, levelRow);
+    where = hits.length ? ` in ${counted(ranked.length, "level")}` : " in any level";
+  } else {
+    const here = {
+      key: "level",
+      label: `${worldName(state.lvl.theme)} · ${levelTitle(state.lvl)}`,
+      hits: [],
+    };
+    const byWorld = new Map();
+    for (const t of [state.lvl.theme, ...state.data.themes.map((t) => t.id)])
+      if (!byWorld.has(t)) byWorld.set(t, { key: t, label: worldName(t), hits: [] });
+    for (const h of hits) (h.li === state.li ? here : byWorld.get(h.level.theme)).hits.push(h);
+    for (const g of [here, ...byWorld.values()]) {
+      if (!g.hits.length) continue;
+      g.hits.sort((a, b) => a.rank - b.rank);
+      group(g.label, g.hits, (h) => objectRow(h, terms));
+    }
   }
 
-  const where = scope === "all" ? "" : ` in ${scopeLabel()}`;
   found.append(
     hits.length
       ? `${tally(hits)}${where}`
