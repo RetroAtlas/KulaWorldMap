@@ -2641,6 +2641,54 @@ test("the panel keeps the focus when the button it was on goes", async ({ page }
   await expect(page.locator("#cv")).toBeFocused();
 });
 
+test("the panel folds to its title, and stays folded from block to block", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const show = (cell) =>
+    page.evaluate(async (cell) => {
+      const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
+      const { showCell } = await import(new URL("js/detail.js", location.href).href);
+      showCell(state.idx.cells.get(cellKey(...cell)));
+    }, cell);
+  await show([17, 12, 17]);
+  const panel = page.locator("#detail");
+  const fold = panel.locator(".fold");
+  const body = page.locator("#detailBody");
+  await expect(fold).toHaveAttribute("aria-expanded", "true");
+  await expect(fold).toHaveAttribute("aria-controls", "detailBody");
+  await expect(body).toContainText("Exit");
+  const open = await panel.boundingBox();
+  await fold.click();
+  await expect(fold).toHaveAttribute("aria-expanded", "false");
+  await expect(fold).toBeFocused();
+  await expect(body).toBeHidden();
+  // folded, the panel is the block's name and its cell, beside the two buttons
+  await expect(panel).toContainText("Block");
+  await expect(panel).toContainText("LEVEL 1 · cell 17,12,17");
+  const folded = await panel.boundingBox();
+  expect(folded.height).toBeLessThan(open.height / 4);
+  expect(folded.width).toBe(open.width);
+  const x = await panel.locator(".x").boundingBox();
+  expect(overlaps(await fold.boundingBox(), x)).toBe(false);
+  expect(x.y + x.height).toBeLessThanOrEqual(folded.y + folded.height);
+  // another block opens folded, under the hand that folded the last
+  await show([18, 12, 17]);
+  await expect(panel).toContainText("cell 18,12,17");
+  await expect(body).toBeHidden();
+  await expect(fold).toHaveAttribute("aria-expanded", "false");
+  await expect(fold).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(fold).toHaveAttribute("aria-expanded", "true");
+  await expect(body).toBeVisible();
+  await page.keyboard.press(" ");
+  await expect(body).toBeHidden();
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(page.locator("#cv")).toBeFocused();
+  await show([17, 12, 17]);
+  await expect(body).toBeHidden();
+});
+
 test("where a teleporter leads reads as a row of the panel, the cell and its face each whole", async ({
   page,
 }) => {

@@ -30,6 +30,7 @@ import { blockIcon, markerIcon } from "./icons.js";
 import { draw, clock } from "./render.js";
 
 let stats = null;
+let folded = false;
 
 const row = (k, v) => `<tr><td>${k}</td><td class="mono">${v}</td></tr>`;
 const STORED = `<tr><th colspan="2">raw data</th></tr>`;
@@ -130,13 +131,15 @@ export function showCell(c) {
   const own = ownMarker(marks, kind);
   const what = kind === null ? "Laser end" : kindName(kind) || `Block, kind ${kind}`;
   let html = `<button class="x" title="Close (Esc)">×</button>`;
+  html += `<button class="fold" type="button" aria-controls="detailBody">
+    <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg></button>`;
   const end = state.idx.beamEnds.has(key);
   icons = [];
   const plate = [...(state.idx.plates.get(key)?.values() ?? [])][0];
   // A laser's end the lattice leaves empty is a plain block the game stands there.
   const block = () => blockIcon(l, kind ?? 0, { size: ICON, r: records[0] ?? null, plate });
   html += `<h3>${iconAt(block)}${what}${blockHazard(kind, end) ? HAZARD : ""}</h3>`;
-  html += `<p class="sub">${levelTitle(l)} · cell ${c.x},${c.y},${c.z}</p>`;
+  html += `<p class="sub">${levelTitle(l)} · cell ${c.x},${c.y},${c.z}</p><div id="detailBody">`;
   if (off)
     html += `<p class="sub">The level leaves this cell empty, and the game puts a block here as
       the level loads, as one end of a laser.</p>`;
@@ -162,9 +165,16 @@ export function showCell(c) {
     if (isSwitch(m)) html += press(m);
     html += `<table>${decoded(m, c)}${STORED}${fields(m)}</table>${placed(m)}`;
   }
-  box.innerHTML = html;
+  const folding = document.activeElement === box.querySelector(".fold");
+  box.innerHTML = `${html}</div>`;
   drawIcons(box);
+  fold(box);
   box.hidden = false;
+  box.querySelector(".fold").onclick = () => {
+    folded = !folded;
+    fold(box);
+  };
+  if (folding) box.querySelector(".fold").focus();
   for (const b of box.querySelectorAll(".press button")) {
     b.onclick = () => {
       flip(Number(b.dataset.circuit), clock());
@@ -185,6 +195,15 @@ export function showCell(c) {
     draw();
   };
   emit("selection-changed");
+}
+
+function fold(box) {
+  const btn = box.querySelector(".fold");
+  btn.setAttribute("aria-expanded", String(!folded));
+  btn.title = folded ? "Show the panel" : "Fold the panel to its title";
+  btn.setAttribute("aria-label", btn.title);
+  box.classList.toggle("folded", folded);
+  $("detailBody").hidden = folded;
 }
 
 export function clearDetail() {
