@@ -3415,6 +3415,27 @@ test("the settings fit a phone, over the drawer they open from", async ({ page }
   await expect(page.locator("#settingsBtn")).toBeFocused();
 });
 
+test("the keys and the settings open in a box of one width, which a phone narrows", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.keyboard.press("?");
+  const help = await page.locator("#help .box").boundingBox();
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("s");
+  const settings = await page.locator("#settings .box").boundingBox();
+  expect(settings.width).toBe(help.width);
+  expect(help.width).toBeGreaterThan(400);
+  await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 375, height: 700 });
+  await page.keyboard.press("?");
+  const phone = await page.locator("#help .box").boundingBox();
+  expect(phone.x).toBeGreaterThanOrEqual(0);
+  expect(phone.x + phone.width).toBeLessThanOrEqual(375);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
+});
+
 test("the display keeps only the switches set away from their defaults", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);

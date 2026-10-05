@@ -887,7 +887,8 @@ body.sidebar-open .menu-btn {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 16px 18px;
-  max-width: 520px;
+  width: var(--dialog-w, 460px);
+  max-width: 100%;
   max-height: 80%;
   overflow-y: auto;
 }
@@ -927,9 +928,6 @@ body.sidebar-open .menu-btn {
   color: var(--dim);
 }
 
-.settings {
-  width: min(380px, 100%);
-}
 .settings h4 {
   font-size: 11px;
   text-transform: uppercase;
