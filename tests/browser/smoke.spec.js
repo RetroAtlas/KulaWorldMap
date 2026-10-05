@@ -913,6 +913,8 @@ test("the box's clear button shows for as long as it holds text, and the keyboar
   await expect(box).not.toBeFocused();
   await expect(clear).toBeVisible();
   await expect(clear).toHaveAccessibleName("Clear the search");
+  const target = await clear.boundingBox();
+  expect(Math.min(target.width, target.height)).toBeGreaterThanOrEqual(24);
   // Tab reaches it from the box, and Enter empties the box and gives it the focus
   await box.focus();
   await page.keyboard.press("Tab");
@@ -1096,6 +1098,8 @@ test("by level, a search lists the levels that hold the thing, most first, and a
   await box.fill("inca");
   await expect(page.locator("#results [aria-label=Worlds]")).toHaveCount(1);
   await expect(found).toHaveText("no objects, blocks or settings in any level · search everywhere");
+  await box.fill("settings");
+  await expect(found).toHaveText(/^the settings in \d+ levels · search everywhere$/);
   await box.fill("zzzz");
   await expect(found).toHaveText("Nothing matches that in any level. · search everywhere");
 });
@@ -2363,6 +2367,10 @@ test("where the system asks for reduced motion a notice neither slides nor drain
   await expect(toast).toBeVisible();
   expect(await toast.evaluate((e) => getComputedStyle(e).transitionDuration)).toBe("0s");
   await expect(page.locator("#toastStack .toast-bar")).toBeHidden();
+  for (const s of ["#menuBtn", "#sidebar"])
+    expect(await page.locator(s).evaluate((e) => getComputedStyle(e).transitionDuration)).toBe(
+      "0s",
+    );
 });
 
 test("an invisible block's icon shows it at the peak of its pulse", async ({ page }) => {
@@ -2880,6 +2888,8 @@ test("the panel folds to its title, and stays folded from block to block", async
   const body = page.locator("#detailBody");
   await expect(fold).toHaveAttribute("aria-expanded", "true");
   await expect(fold).toHaveAttribute("aria-controls", "detailBody");
+  const target = await fold.boundingBox();
+  expect(Math.min(target.width, target.height)).toBeGreaterThanOrEqual(24);
   await expect(body).toContainText("Exit");
   const open = await panel.boundingBox();
   await fold.click();
