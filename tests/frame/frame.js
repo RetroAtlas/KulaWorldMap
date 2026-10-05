@@ -8,11 +8,14 @@
 // runs of the same tree differ by a few per cent.
 //
 //     npm run frame -- [<ref>] [--views a,b] [--dpr 1,3] [--rate 4] [--secs 4]
-//         [--rounds 2] [--size 412x915] [--pointer hover|drag]
+//         [--rounds 2] [--size 412x915] [--pointer hover|drag|zoom]
 //         [--show key=value,...] [--detail] [--lines <file pattern>]
 //
 // A view is one of VIEWS by name or a permalink's hash. --pointer moves the
-// mouse over the map for the whole run, pressed or not; --show sets display
+// mouse over the map for the whole run, pressed or not, or holds it still
+// over the middle and zooms there, in for a spell and then out, through the
+// viewer's own zoom rather than a stream of wheel events, whose handling the
+// browser charges to the frame as well; --show sets display
 // switches; --detail names what each part spends its time in; --lines counts
 // the time in each line of the files whose names the pattern matches.
 //
@@ -136,10 +139,23 @@ async function open(browser, base, view, dpr) {
   return { page, about };
 }
 
-/** Move the mouse round the middle of the map until stopped, pressed for a drag. */
+/** Move the mouse round the middle of the map until stopped, pressed for a
+    drag; or leave it there and zoom under it. */
 async function move(page, how) {
   const [cx, cy] = [width / 2, height / 2];
   await page.mouse.move(cx, cy);
+  if (how === "zoom") {
+    await page.evaluate(
+      async ([cx, cy]) => {
+        const { zoomAt } = await import("/js/interaction.js");
+        let i = 0;
+        const step = () => zoomAt(cx, cy, Math.floor(i++ / 20) % 2 ? 1 / 1.07 : 1.07);
+        window.__zooming = setInterval(step, 8);
+      },
+      [cx, cy],
+    );
+    return () => page.evaluate(() => clearInterval(window.__zooming));
+  }
   if (how === "drag") await page.mouse.down();
   let going = true;
   const done = (async () => {
@@ -297,7 +313,10 @@ try {
   browser = await chromium.launch({ channel: "chromium" });
   console.log(
     `CPU throttled ${rate}x, ${width}x${height}, ${secs}s a run, ${ref ? rounds : 1} round${ref && rounds > 1 ? "s" : ""}` +
-      (pointer ? `, the mouse ${pointer === "drag" ? "dragging" : "hovering"}` : ""),
+      (pointer === "zoom" ? ", the view zooming under the mouse" : "") +
+      (pointer && pointer !== "zoom"
+        ? `, the mouse ${pointer === "drag" ? "dragging" : "hovering"}`
+        : ""),
   );
   for (const view of views)
     for (const dpr of dprs) {
