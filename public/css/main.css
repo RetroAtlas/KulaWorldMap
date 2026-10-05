@@ -683,6 +683,7 @@ body:not(.sidebar-open) .menu-btn .cross {
 .tip {
   position: absolute;
   z-index: 20;
+  width: max-content;
   pointer-events: none;
   background: #0c1119f7;
   border: 1px solid var(--line);
