@@ -250,7 +250,7 @@ function render() {
 
   found.append(
     hits.length
-      ? `${tally(hits)}${where}`
+      ? `${tally(hits, scope === "bylevel")}${where}`
       : worlds.length || levels.length
         ? `no objects, blocks or settings${where}`
         : `Nothing matches that${where}.`,
@@ -261,7 +261,7 @@ function render() {
   if (held) found.querySelector(".widen")?.focus();
 }
 
-function tally(hits) {
+function tally(hits, byLevel = false) {
   let objects = 0,
     settings = 0;
   const blocks = new Map();
@@ -281,7 +281,13 @@ function tally(hits) {
     );
   }
   if (settings)
-    parts.push(settings === 1 ? "the level's settings" : `the settings of ${settings} levels`);
+    parts.push(
+      byLevel
+        ? "the settings"
+        : settings === 1
+          ? "the level's settings"
+          : `the settings of ${settings} levels`,
+    );
   return parts.length < 2 ? parts.join("") : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
 }
 
