@@ -77,7 +77,8 @@ const flag = (name) => {
   if (i >= 0) args.splice(i, 1);
   return i >= 0;
 };
-const views = option("--views", Object.keys(VIEWS).join(",")).split(",");
+// a hash has commas of its own, and a view begins with a letter or a hash sign
+const views = option("--views", Object.keys(VIEWS).join(",")).split(/,(?=[#a-z])/);
 const dprs = option("--dpr", "3").split(",").map(Number);
 const rate = Number(option("--rate", "4"));
 const secs = Number(option("--secs", "4"));
