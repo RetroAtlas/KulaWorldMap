@@ -49,6 +49,24 @@ const through = (sk, shade, levels) =>
     "destination-in",
   );
 
+// A light holds while it is on, so a texture times a light is drawn once and kept.
+const KEPT = 256;
+const kept = new Map();
+function litFace(sk, shade, pass) {
+  const key = `${sk.img.src}/${sk.tex}/${shade}/${pass.flat().join()}`;
+  let face = kept.get(key);
+  if (!face) {
+    if (kept.size >= KEPT) kept.clear();
+    const n = ATLAS.size;
+    face = Object.assign(document.createElement("canvas"), { width: n, height: n });
+    const g = face.getContext("2d");
+    g.globalCompositeOperation = "copy";
+    g.drawImage(shaded(sk, shade, pass, "multiply"), 0, 0);
+    kept.set(key, face);
+  }
+  return face;
+}
+
 /** Map the texture's top left, top right and bottom left onto the three
     points given, which an affine transform lands exactly since the view is
     orthographic. A face shaded between its corners is drawn through their
@@ -108,8 +126,11 @@ export function paint(g, [p0, p1, p3], sk, shade, alpha) {
     // a multiply takes a texel at most once over, so a gain past it is added again
     let gain = sk.glow.map((rgb) => rgb.map((v) => (v * 255) / NEUTRAL));
     while (gain.some((rgb) => rgb.some((v) => v > 0))) {
-      const pass = gain.map((rgb) => [...rgb.map((v) => Math.max(0, Math.min(255, v))), 255]);
-      g.drawImage(shaded(sk, shade, pass, "multiply"), 0, 0);
+      const pass = gain.map((rgb) => [
+        ...rgb.map((v) => Math.round(Math.max(0, Math.min(255, v)))),
+        255,
+      ]);
+      g.drawImage(litFace(sk, shade, pass), 0, 0);
       gain = gain.map((rgb) => rgb.map((v) => v - 255));
     }
     g.setTransform(...base);
