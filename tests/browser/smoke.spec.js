@@ -4429,57 +4429,115 @@ test("the map, the legend and the panel follow the screen's density", async ({ p
   await expect.poll(density).toEqual([2, 2, 2, 2]);
 });
 
-test("a write inside the settle window carries the view it is given, with the camera's last view beneath it", async ({
+test("a write inside the settle window carries the view it is given: a slice, a change of level, Back, a hash, a dialog, the page out of sight or leaving", async ({
   page,
 }) => {
   await page.goto("/#HIRO/0");
   await settle(page);
   await still(page);
-  // a drag and, in the same breath, what follows it; the turn the drag made comes back
-  const dragThen = (follow) =>
-    page.evaluate(async (follow) => {
+  await page.evaluate(() => {
+    window.__wrote = { push: 0, replace: 0 };
+    for (const way of ["pushState", "replaceState"]) {
+      const orig = history[way].bind(history);
+      history[way] = (...a) => {
+        window.__wrote[way === "pushState" ? "push" : "replace"]++;
+        return orig(...a);
+      };
+    }
+  });
+  const wrote = () => page.evaluate(() => ({ ...window.__wrote }));
+  const entries = () => page.evaluate(() => history.length);
+  const key = (k) =>
+    `document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "${k}", bubbles: true }))`;
+  // a script of inputs in one breath, with a drag among them; the turn the drag made comes back
+  const script = (steps) =>
+    page.evaluate(async (steps) => {
       const { state } = await import(new URL("js/state.js", location.href).href);
       const cv = document.getElementById("cv");
       const at = (type, x) =>
         cv.dispatchEvent(new PointerEvent(type, { clientX: x, clientY: 400, pointerId: 1 }));
-      at("pointerdown", 600);
-      at("pointermove", 660);
-      at("pointerup", 660);
-      const yaw = ((Math.round(state.cam.yaw) % 360) + 360) % 360;
-      if (follow.key)
-        document.body.dispatchEvent(
-          new KeyboardEvent("keydown", { key: follow.key, bubbles: true }),
-        );
-      if (follow.hide) {
-        Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
-        document.dispatchEvent(new Event("visibilitychange"));
-        delete document.hidden;
+      let yaw = null;
+      for (const step of steps) {
+        if (step === "drag") {
+          at("pointerdown", 600);
+          at("pointermove", 660);
+          at("pointerup", 660);
+          yaw = ((Math.round(state.cam.yaw) % 360) + 360) % 360;
+        } else if (step === "hide") {
+          Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+          document.dispatchEvent(new Event("visibilitychange"));
+          delete document.hidden;
+        } else if (step === "leave") dispatchEvent(new Event("pagehide"));
+        else if (step === "back") history.back();
+        else if (step.startsWith("#")) location.hash = step;
+        else new Function(step)();
       }
-      if (follow.back) history.back();
       return yaw;
-    }, follow);
-  const entries = () => page.evaluate(() => history.length);
+    }, steps);
   // a slice straight after a drag names the slice, and the turn the drag made
-  let turned = await dragThen({ key: "," });
+  let turned = await script(["drag", key(",")]);
   expect(turned).not.toBe(45);
   await expect.poll(() => page.url()).toMatch(new RegExp(`#HIRO/0/${turned},35/.*/32$`));
-  // a change of level straight after a drag pushes the new level, over an entry holding the turn
-  const booted = await entries();
-  turned = await dragThen({ key: "]" });
+  // a slice, a drag and a change of level in one frame: the entry left holds the slice and the turn
+  let booted = await entries();
+  turned = await script([key(","), "drag", key("]")]);
   await expect(page.locator("#chip b")).toHaveText("LEVEL 2");
   await expect.poll(() => page.url()).toMatch(/#HIRO\/1\//);
   expect(await entries()).toBe(booted + 1);
   await page.goBack();
-  await expect.poll(() => page.url()).toMatch(new RegExp(`#HIRO/0/${turned},35/`));
-  const beneath = page.url();
-  // Back straight after a drag drops the write waiting, and the entry gone back to stands as it was
+  await expect.poll(() => page.url()).toMatch(new RegExp(`#HIRO/0/${turned},35/.*/31$`));
   await page.goForward();
   await expect.poll(() => page.url()).toMatch(/#HIRO\/1\//);
-  await dragThen({ back: true });
+  // a change of level straight after a drag pushes the new level over an entry holding the turn
+  booted = await entries();
+  turned = await script(["drag", key("]")]);
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 3");
+  await expect.poll(() => page.url()).toMatch(/#HIRO\/2\//);
+  expect(await entries()).toBe(booted + 1);
+  await page.goBack();
+  await expect.poll(() => page.url()).toMatch(new RegExp(`#HIRO/1/${turned},35/`));
+  const beneath = page.url();
+  await page.goForward();
+  await expect.poll(() => page.url()).toMatch(/#HIRO\/2\//);
+  // Back straight after a drag drops the write waiting: the entry gone back to stands, and nothing is written
+  const before = await wrote();
+  await script(["drag", "back"]);
   await expect.poll(() => page.url()).toBe(beneath);
   await page.evaluate(() => new Promise((r) => setTimeout(r, 500))); // past the settle
   expect(page.url()).toBe(beneath);
-  // a page put out of sight writes what waits
-  turned = await dragThen({ hide: true });
-  expect(page.url()).toMatch(new RegExp(`#HIRO/0/${turned},35/`));
+  expect(await wrote()).toEqual(before);
+  // a hash arriving in the frame of a change of level drops the push, and the hash is read
+  await page.goForward();
+  await expect.poll(() => page.url()).toMatch(/#HIRO\/2\//);
+  booted = await entries();
+  await script(["#HIRO/5", key("]")]);
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 6");
+  await expect.poll(() => page.url()).toMatch(/#HIRO\/5\//);
+  expect(await entries()).toBe(booted + 1);
+  // a change of level, a drag and a slice in one frame: the drag belongs to the level entered,
+  // whose slice stands at its top again
+  booted = await entries();
+  const stood = page.url();
+  turned = await script([key("]"), "drag", key(",")]);
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 7");
+  await expect.poll(() => page.url()).toMatch(new RegExp(`#HIRO/6/${turned},35/.*/32$`));
+  expect(await entries()).toBe(booted + 1);
+  await page.goBack();
+  await expect.poll(() => page.url()).toBe(stood);
+  await page.goForward();
+  await expect.poll(() => page.url()).toMatch(/#HIRO\/6\//);
+  // a dialog opened straight after a drag stands on an entry holding the turn
+  turned = await script(["drag", key("?")]);
+  await expect(page.locator("#help")).toBeVisible();
+  expect(page.url()).toMatch(new RegExp(`#HIRO/6/${turned},35/`));
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#help")).toBeHidden();
+  await expect.poll(() => page.evaluate(() => history.state)).toBeNull();
+  expect(page.url()).toMatch(new RegExp(`#HIRO/6/${turned},35/`));
+  // a page put out of sight, or on its way out, writes the state of the moment: a slice made
+  // after the drag, which a kept view written on its own would leave out
+  turned = await script([key(","), "drag", key(","), "hide"]);
+  expect(page.url()).toMatch(new RegExp(`#HIRO/6/${turned},35/.*/30$`));
+  turned = await script([key(","), "drag", key(","), "leave"]);
+  expect(page.url()).toMatch(new RegExp(`#HIRO/6/${turned},35/.*/28$`));
 });
