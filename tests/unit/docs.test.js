@@ -39,6 +39,7 @@ const claims = [
     levels((l) => inWorld(l) && l.index < 15),
     /(\d+) numbered levels/,
   ],
+  ["README.md", "worlds", mapData.themes.length, /across (\w+) worlds/],
   [
     "README.md",
     "bonus levels",
