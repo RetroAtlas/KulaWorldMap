@@ -13,8 +13,15 @@ const placed = new Set(
 );
 const drawn = new Set(Object.keys(objects.types).map(Number));
 
+// A face's paint is a model of the loader's own, not the placeholder every unplaced type shares.
+const PLACEHOLDER = 8;
+const painted = (t) => {
+  const model = objects.skins.sets.arcade.types[String(t)];
+  return paintsFace(t) && !!model && !model.every((tex) => tex === PLACEHOLDER);
+};
+
 test("every placed type is drawn, or is one drawn on the face", () => {
-  for (const t of placed) assert.ok(drawn.has(t) || paintsFace(t) || STARTS.has(t), `type ${t}`);
+  for (const t of placed) assert.ok(drawn.has(t) || painted(t) || STARTS.has(t), `type ${t}`);
   for (const t of drawn) assert.ok(placed.has(t), `type ${t} is drawn but never placed`);
   assert.equal(objects.balls.length, 14);
 });
