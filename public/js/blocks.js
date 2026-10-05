@@ -1,6 +1,6 @@
 import { state, BLOCK, project, facing, screen, cellKey, sliceZ, effectsOn } from "./state.js";
 import { FACE_NORMAL } from "./faces.js";
-import { OFF_LATTICE, skinsTable, kindMotion, modelUnit } from "./data.js";
+import { OFF_LATTICE, skinsTable, kindMotion, modelUnit, objectId } from "./data.js";
 import { blockPhase, lightOn, cornersLit } from "./motion.js";
 import { ballsFor } from "./things.js";
 import { platformPlace, faceSkin } from "./skins.js";
@@ -254,6 +254,8 @@ function lightUp(sk, l, home, face, corners) {
   sk.fill = !light.turned;
 }
 
+const showing = (o) => !state.hiddenKinds.has(objectId(o));
+
 function kindOf(c, idx, key) {
   if (c.v === OFF_LATTICE) return 0;
   if (c.v < state.data.firstRecord) return c.v;
@@ -280,9 +282,10 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
     const place = c.k !== undefined && rec?.kind === PLATFORM ? platformPlace(rec, c.k) : null;
     const still = place ? { ...home, [place.axis]: home[place.axis] + c.k } : home;
     const plates = idx.plates.get(key);
+    const shown = rec && state.hiddenKinds.size ? { ...rec, on: rec.on.filter(showing) } : rec;
     skin = (i) => {
       const g = FACES[i].game;
-      const sk = faceSkin(skins, look, still, g, kind, rec, effect, place, plates?.get(g));
+      const sk = faceSkin(skins, look, still, g, kind, shown, effect, place, plates?.get(g));
       if (sk?.live) live = true;
       if (sk && kind === INVISIBLE) {
         if (!effectsOn()) sk.colour = peak(skins);

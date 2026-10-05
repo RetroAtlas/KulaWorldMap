@@ -1915,6 +1915,49 @@ test("a type that is paint on a face is listed with the blocks, apart from the k
   await expect(objects.getByRole("button", { name: /^Exit/ })).toHaveCount(1);
 });
 
+test("hiding a row of paint strips the face back to the stone the block wears without it", async ({
+  page,
+}) => {
+  await page.goto("/#ARCTIC/13/30,60");
+  await settle(page);
+  await textured(page);
+  await still(page);
+  const ice = page
+    .getByRole("list", { name: "Blocks and faces" })
+    .getByRole("button", { name: /^Ice/ });
+  /** The colour at the middle of a top face with ice on it and nothing above,
+      drawn afresh, with the ice taken off the record first where `bare`. */
+  const face = (bare) =>
+    page.evaluate(async (bare) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state, screen }, { draw }] = await Promise.all(["state.js", "render.js"].map(at));
+      const [key] = [...state.idx.markers].find(
+        ([k, ms]) => ms.some((m) => m.type === 2 && m.face === 0) && !state.idx.cells.has(k - 1),
+      );
+      const c = state.idx.cells.get(key);
+      const r = state.idx.records.get(key)[0];
+      const on = r.on;
+      if (bare) r.on = on.filter((o) => o.face !== 0);
+      draw();
+      r.on = on;
+      const [x, y] = screen(c.x + 0.5, c.y + 0.5, c.z);
+      const cv = document.getElementById("cv");
+      const k = cv.width / cv.clientWidth;
+      return String(
+        cv.getContext("2d").getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data,
+      );
+    }, bare);
+  const iced = await face(false);
+  const stone = await face(true);
+  expect(stone).not.toEqual(iced);
+  await ice.click();
+  await expect(ice).toHaveAttribute("aria-pressed", "false");
+  expect(await face(false)).toEqual(stone);
+  await expect(ice.locator("canvas.icon")).toHaveCount(1);
+  await page.locator("#resetKinds").click();
+  expect(await face(false)).toEqual(iced);
+});
+
 test("a legend row keeps the focus when the legend is built anew", async ({ page }) => {
   await page.goto("/#ATLANT/3");
   await settle(page);

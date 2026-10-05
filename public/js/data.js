@@ -74,15 +74,24 @@ export const fieldKey = (i) => `f${i + FIRST_FIELD}`;
 export const fieldIndex = (key) => Number(key.slice(1)) - FIRST_FIELD;
 export const VALUE_KEY = `f${VALUE_WORD}`;
 
+const variantOf = (o) => {
+  const by = ann.types[String(o.type)]?.by;
+  return by ? String(o.f[fieldIndex(by)]) : null;
+};
+/** The legend's key for a thing on a face: its type, and its variant where one
+    field tells the type's rows apart. */
+export const objectId = (o) => {
+  const variant = variantOf(o);
+  return variant === null ? `t${o.type}` : `t${o.type}/${variant}`;
+};
+
 export function markersOf(r) {
   const out = [];
   if (!PLAIN_KINDS.has(r.kind))
     out.push({ id: `k${r.kind}`, kind: r.kind, type: r.type, f: r.f, face: null, variant: null });
   for (const o of r.on) {
-    const by = ann.types[String(o.type)]?.by;
-    const variant = by ? String(o.f[fieldIndex(by)]) : null;
-    const id = variant === null ? `t${o.type}` : `t${o.type}/${variant}`;
-    out.push({ id, type: o.type, face: o.face, f: o.f, v: o.v, variant });
+    const variant = variantOf(o);
+    out.push({ id: objectId(o), type: o.type, face: o.face, f: o.f, v: o.v, variant });
   }
   return out;
 }
