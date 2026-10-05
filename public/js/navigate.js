@@ -111,10 +111,13 @@ $("chipBtn").onclick = () => {
 // Browsers rate-limit replaceState and throw past the limit, so writes wait
 // for the next frame and go out as one, and while the camera keeps moving they
 // go out a few times a second, with one more as it rests.
-const PACE = 100;
+const PACE = 400;
 let queued = 0;
 let timer = 0;
 let wrote = -Infinity;
+// the view at the camera's last move, which a paced write writes even after
+// the level has changed under it
+let pending = null;
 // Whether the waiting write pushes a history entry; a push outlives the
 // replacing writes that follow it in the same frame.
 let entry = false;
@@ -132,6 +135,8 @@ const levelAt = (slot) => {
 /** Write the view to the address bar: a frame later, or, for a camera on the
     move, at the pace above. */
 export function writeHash(push = false, moving = false) {
+  if (moving) pending = currentHash();
+  if (push && timer) flushNow();
   entry ||= push;
   if (!moving && timer) {
     clearTimeout(timer);
@@ -139,43 +144,59 @@ export function writeHash(push = false, moving = false) {
   }
   if (!queued && !timer) {
     const wait = moving && !entry ? wrote + PACE - performance.now() : 0;
-    if (wait > 0) timer = setTimeout(flushHash, wait);
+    if (wait > 0) timer = setTimeout(() => flushHash(true), wait);
     else queued = requestAnimationFrame(flushHash);
   }
   emit("view-changed");
 }
 
-function flushHash() {
+function currentHash() {
+  const l = state.lvl;
+  const s = state.selected;
+  return (
+    l &&
+    formatHash({
+      slot: slotOf(l),
+      cam: state.cam,
+      target: state.target,
+      slice: state.slice,
+      picked: s && [s.x, s.y, s.z],
+      fitted: state.framing === fit,
+    })
+  );
+}
+
+function flushHash(paced = false) {
   queued = 0;
   timer = 0;
   const push = entry;
   entry = false;
-  const l = state.lvl;
-  if (!l || location.hash !== known) return;
-  const s = state.selected;
-  const h = formatHash({
-    slot: slotOf(l),
-    cam: state.cam,
-    target: state.target,
-    slice: state.slice,
-    picked: s && [s.x, s.y, s.z],
-    fitted: state.framing === fit,
-  });
+  const h = (paced && pending) || currentHash();
+  pending = null;
+  if (!h || location.hash !== known) return;
   if (location.hash === h) return;
-  if (push) history.pushState(null, "", h);
-  else history.replaceState(history.state, "", h);
+  try {
+    if (push) history.pushState(null, "", h);
+    else history.replaceState(history.state, "", h);
+  } catch {
+    // a browser past its limit of writes keeps the bar as it was
+  }
   wrote = performance.now();
   known = location.hash;
 }
 
-// A dialog opens on an entry of its own, so what is waiting to be written
-// goes onto the entry under it first.
-on("dialog-opened", () => {
+function flushNow() {
   if (!queued && !timer) return;
+  const paced = !!timer;
   cancelAnimationFrame(queued);
   clearTimeout(timer);
-  flushHash();
-});
+  flushHash(paced);
+}
+
+// A dialog opens on an entry of its own, so what is waiting to be written
+// goes onto the entry under it first; a page on its way out writes it too.
+on("dialog-opened", flushNow);
+addEventListener("pagehide", flushNow);
 
 export function applyHash() {
   if (!state.data) return false;

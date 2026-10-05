@@ -382,25 +382,21 @@ test("the camera writes the URL once a frame, a few times a second while it keep
     cv.dispatchEvent(new PointerEvent("pointerup", { clientX: 660, clientY: 460, pointerId: 1 }));
   });
   expect(await writes()).toBe(0);
-  await frame(page);
-  expect(await writes()).toBe(1);
+  await expect.poll(writes).toBe(1);
   expect(page.url()).toMatch(/#HIRO\/0\//);
-  // a wheel step every frame for a third of a second
-  const steps = await page.evaluate(async () => {
+  // a wheel step a frame for forty frames, however long they take
+  const took = await page.evaluate(async () => {
     const cv = document.getElementById("cv");
     const t0 = performance.now();
-    let n = 0;
-    while (performance.now() - t0 < 300) {
+    for (let i = 0; i < 40; i++) {
       cv.dispatchEvent(
         new WheelEvent("wheel", { deltaY: 20, clientX: 600, clientY: 400, cancelable: true }),
       );
-      n++;
       await new Promise(requestAnimationFrame);
     }
-    return n;
+    return performance.now() - t0;
   });
-  expect(steps).toBeGreaterThan(10);
-  expect(await writes()).toBeLessThanOrEqual(5);
+  expect(await writes()).toBeLessThanOrEqual(Math.ceil(took / 400) + 2);
   const zoom = await page.evaluate(async () => {
     const { state } = await import(new URL("js/state.js", location.href).href);
     return state.cam.zoom.toFixed(2);
