@@ -14,8 +14,9 @@ export function formatHash({ slot, cam, target, slice, picked, fitted }) {
   const view = fitted
     ? FIT
     : `${cam.zoom.toFixed(2)}/${target.map(r2).join(",")}/${r2(cam.panX)},${r2(cam.panY)}`;
+  const yaw = ((Math.round(cam.yaw) % 360) + 360) % 360;
   return (
-    `#${slot}/${Math.round(cam.yaw)},${Math.round(cam.pitch)}/${view}/${slice}` +
+    `#${slot}/${yaw},${Math.round(cam.pitch)}/${view}/${slice}` +
     (picked ? `/${picked.join(",")}` : "")
   );
 }

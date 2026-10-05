@@ -4449,7 +4449,7 @@ test("a write inside the settle window carries the view it is given, with the ca
   const yaw = () =>
     page.evaluate(async () => {
       const { state } = await import(new URL("js/state.js", location.href).href);
-      return Math.round(state.cam.yaw);
+      return ((Math.round(state.cam.yaw) % 360) + 360) % 360;
     });
   // a slice straight after a drag names the slice, and the turn the drag made
   await drag();

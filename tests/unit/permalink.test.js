@@ -85,6 +85,10 @@ test("a number past what the camera can reach is held where the camera stops", (
   assert.deepEqual(parseHash("#HIRO/0/45,35/0.08/17,17,17/150,-150").pan, [150, -150]);
   assert.equal(parseHash("#HIRO/0/45,35/0.0001").zoom, ZOOM_MIN);
   assert.deepEqual(parseHash("#HIRO/0/-137,35").turn, [223, 35]);
+  assert.match(
+    formatHash({ slot: "HIRO/0", cam: { ...cam, yaw: -98 }, target: [17, 17, 17], slice: 33 }),
+    /^#HIRO\/0\/262,/,
+  );
   const written = formatHash({
     slot: "HIRO/0",
     cam: { ...cam, panX: far.pan[0] },
