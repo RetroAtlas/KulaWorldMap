@@ -30,6 +30,8 @@ new ResizeObserver(() => {
 }).observe(cv);
 
 export function drawCompass() {
+  cv.hidden = !state.show.compass;
+  if (cv.hidden) return;
   const c = camera();
   const world = state.lvl?.theme;
   const textured = state.show.skins;

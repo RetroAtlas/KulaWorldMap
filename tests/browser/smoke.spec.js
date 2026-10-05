@@ -1846,6 +1846,41 @@ test("a press on the compass reaches no block behind it, and moves nothing", asy
   expect(errors).toEqual([]);
 });
 
+test("a switch in the settings puts the compass away, and is remembered", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
+  const compass = page.locator("#compass");
+  const box = page.locator("#showCompass");
+  await expect(compass).toBeVisible();
+  await page.keyboard.press("s");
+  await expect(page.locator("#settings")).toBeVisible();
+  await expect(box).toBeChecked();
+  await box.click();
+  await expect(compass).toBeHidden();
+  await expect(page.locator("#settings label:has(#showCompass) .def")).toHaveText("on by default");
+  expect(await kept()).toEqual({ compass: false });
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#settings")).toBeHidden();
+  // the button beside it moves into the corner the compass held
+  const [fit, map] = await Promise.all(
+    ["#fitBtn", "#cv"].map((sel) => page.locator(sel).boundingBox()),
+  );
+  expect(fit.x + fit.width).toBe(map.x + map.width - 12);
+  await page.reload();
+  await settle(page);
+  await expect(compass).toBeHidden();
+  // the Display's reset leaves it as it leaves the other settings
+  await page.locator("#resetDisplay").click();
+  await expect(compass).toBeHidden();
+  expect(await kept()).toEqual({ compass: false });
+  await page.keyboard.press("s");
+  await expect(box).not.toBeChecked();
+  await box.click();
+  await expect(compass).toBeVisible();
+  expect(await kept()).toEqual({});
+});
+
 test("arriving somewhere is spoken, and names the map with it", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);
@@ -3520,10 +3555,10 @@ test("the settings hold the start camera, which keeps its key", async ({ page })
   await expect(panel).toBeVisible();
   await expect(page.locator("#settings .x")).toBeFocused();
   await expect(page.locator("#showCamera")).toBeChecked();
-  await expect(panel.locator(".def")).toHaveText(["off by default"]);
+  await expect(panel.locator("label:has(#showCamera) .def")).toHaveText("off by default");
   await panel.getByText("Start camera").click();
   await expect(page.locator("#showCamera")).not.toBeChecked();
-  await expect(panel.locator(".def")).toHaveText([""]);
+  await expect(panel.locator("label:has(#showCamera) .def")).toHaveText("");
   await expect.poll(async () => amber(await atEye(page))).toBe(false);
   await panel.getByText("Start camera").click();
   await expect.poll(async () => amber(await atEye(page))).toBe(true);
@@ -3552,11 +3587,11 @@ test("a setting's key works inside the settings, once a press", async ({ page })
   await expect(box).not.toBeChecked();
   await page.keyboard.press("c");
   await expect(box).toBeChecked();
-  await expect(panel.locator(".def")).toHaveText(["off by default"]);
+  await expect(panel.locator("label:has(#showCamera) .def")).toHaveText("off by default");
   await page.locator("#showCameraSays").click();
   await page.keyboard.press("c");
   await expect(box).not.toBeChecked();
-  await expect(panel.locator(".def")).toHaveText([""]);
+  await expect(panel.locator("label:has(#showCamera) .def")).toHaveText("");
   // a key of the display's stays the map's, and the dialog keeps it from the map
   await page.keyboard.press("t");
   await expect(page.locator("#showSkins")).toBeChecked();
@@ -3671,9 +3706,13 @@ test("every switch's key is the one its row shows and the key list names", async
     [
       ...["showSkins", "showObjects", "showModels", "showMotion", "showThrough", "showLabels"],
       ...["showOutlines", "showBase", "panMode", "showFaces", "showHidden", "showCamera"],
+      "showCompass",
     ].sort(),
   );
-  const keys = rows.map((r) => r.key);
+  // the compass alone has no key, every letter that reads as it being taken
+  expect(rows.filter((r) => !r.key).map((r) => r.id)).toEqual(["showCompass"]);
+  const keyed = rows.filter((r) => r.key);
+  const keys = keyed.map((r) => r.key);
   expect(new Set(keys).size).toBe(keys.length);
   // every switch free to be set: the labels on, and the slice cutting into the level
   await page.keyboard.press("l");
@@ -3683,7 +3722,7 @@ test("every switch's key is the one its row shows and the key list names", async
     setSlice(SIDE - 2 - state.lvl.min[2]);
   });
   await expect(page.locator("input:disabled")).toHaveCount(0);
-  for (const { id, key } of rows) {
+  for (const { id, key } of keyed) {
     const box = page.locator(`#${id}`);
     const was = await box.isChecked();
     await page.keyboard.press(key);

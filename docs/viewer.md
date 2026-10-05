@@ -36,7 +36,7 @@ What moves in play moves here, as the game moves it: the platforms, the stars, t
 
 A switch that does something only while another is on is greyed while that one is off, and keeps its tick for when it comes back: the models, seeing through the blocks and the labels need the objects on, the face in the labels needs the labels, and dimming what the slice hides needs the slice lowered. Its key, or a click or tap on it, then leaves it as it is and says for a moment at the foot of the map what it needs.
 
-The gear at the top of the sidebar, or `s`, opens Settings, for the switches used less, their keys working from the map as the others do and in the panel itself. The Display's reset leaves them as they are. Among them, `c` draws where the game's camera stands as the level opens, behind the ball and above it, and the wedge it sees ([camera.md](camera.md)). `m` shows and hides the sidebar itself.
+The gear at the top of the sidebar, or `s`, opens Settings, for the switches used less, their keys working from the map as the others do and in the panel itself. The Display's reset leaves them as they are. Among them, `c` draws where the game's camera stands as the level opens, behind the ball and above it, and the wedge it sees ([camera.md](camera.md)), and the compass at the map's bottom right can be put away. `m` shows and hides the sidebar itself.
 
 ## Search
 

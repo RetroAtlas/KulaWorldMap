@@ -29,6 +29,7 @@ export const state = {
     base: false,
     hidden: false,
     camera: false,
+    compass: true,
     skins: true,
     outlines: false,
     note: true,
