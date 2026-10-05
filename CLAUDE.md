@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidance for AI agents working in this repo. Read [README.md](README.md) first: what this is, how to run and rebuild it, and which document holds what. This file is rules. The readings of the disc and the evidence for each are in [docs/](docs/), the viewer's controls and modules in [docs/viewer.md](docs/viewer.md), and the argument for a reading is in the commit that landed it, so a new finding goes to those two places and not here.
+Guidance for AI agents working in this repo. Read [README.md](README.md) first: what this is, how to run and rebuild it, and which document holds what. This file is rules. The readings of the disc and the evidence for each are in [docs/](docs/), the viewer's controls and modules in [docs/viewer.md](docs/viewer.md), and the argument for a reading is in the commit that landed it, so a new finding goes to those places and not here.
 
 ## Before touching the parser, the viewer's axes or the artwork
 
