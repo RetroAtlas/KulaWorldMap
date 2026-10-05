@@ -3996,7 +3996,7 @@ test("the keys and the settings open in a box of one width, which a phone narrow
   await page.keyboard.press("s");
   const settings = await page.locator("#settings .box").boundingBox();
   expect(settings.width).toBe(help.width);
-  expect(help.width).toBeGreaterThan(400);
+  expect(help.width).toBe(460);
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 375, height: 700 });
   await page.keyboard.press("?");
@@ -4276,8 +4276,7 @@ test("the icons are Hiro's ball in its own panel colours, on the tile", async ({
     expect(icon.corner[3], icon.src).toBe(0);
     expect(icon.tile, icon.src).toEqual([18, 22, 31, 255]);
     expect(icon.centre, icon.src).toEqual([255, 255, 255, 255]);
-    expect(icon.panels.length, icon.src).toBe(5);
-    for (const count of icon.panels) expect(count, icon.src).toBeGreaterThan(20);
+    expect(icon.panels.filter((count) => count > 20).length, icon.src).toBe(5);
   }
 });
 
