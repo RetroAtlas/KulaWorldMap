@@ -125,9 +125,12 @@ body:not(.sidebar-open) .sidebar {
   margin-bottom: 14px;
 }
 
+.query {
+  position: relative;
+}
 #search {
   width: 100%;
-  padding: 7px 9px;
+  padding: 7px 28px 7px 9px;
   background: var(--panel-2);
   color: var(--ink);
   border: 1px solid var(--line);
@@ -137,6 +140,27 @@ body:not(.sidebar-open) .sidebar {
 #search:focus {
   outline: 2px solid var(--accent-dim);
   outline-offset: -1px;
+}
+#search::-webkit-search-cancel-button {
+  display: none;
+}
+.query .x {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 2px 5px;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  color: var(--dim);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.query .x:hover,
+.query .x:focus-visible {
+  color: var(--ink);
 }
 
 .scope {

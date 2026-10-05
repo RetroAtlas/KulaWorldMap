@@ -866,6 +866,41 @@ test("search answers a number as a whole word, and says when nothing matches", a
   await expect(search).toHaveAttribute("aria-expanded", "false");
 });
 
+test("the box's clear button shows for as long as it holds text, and the keyboard reaches it", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const box = page.locator("#search");
+  const clear = page.locator("#clear");
+  await expect(clear).toBeHidden();
+  await box.fill("key");
+  await expect(clear).toBeVisible();
+  await page.locator("#cv").focus();
+  await expect(box).not.toBeFocused();
+  await expect(clear).toBeVisible();
+  await expect(clear).toHaveAccessibleName("Clear the search");
+  // Tab reaches it from the box, and Enter empties the box and gives it the focus
+  await box.focus();
+  await page.keyboard.press("Tab");
+  await expect(clear).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(box).toHaveValue("");
+  await expect(box).toBeFocused();
+  await expect(clear).toBeHidden();
+  await expect(page.locator("#results")).toBeHidden();
+  await expect(page.locator("#scope")).toBeHidden();
+  // a scope chosen goes with the text, as it does under Escape
+  await box.fill("key");
+  await page.locator("#scope button").nth(2).click();
+  await clear.click();
+  await box.fill("key");
+  await expect(page.locator("#scope button[aria-pressed=true]")).toHaveText("All");
+  await box.press("Escape");
+  await expect(clear).toBeHidden();
+  await expect(box).not.toBeFocused();
+});
+
 test("a cell is answered by itself alone", async ({ page }) => {
   await page.goto("/#HIRO/11");
   await settle(page);

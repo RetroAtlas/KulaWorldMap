@@ -93,17 +93,29 @@
 
       <div class="field">
         <label class="sr" for="search">Search</label>
-        <input
-          id="search"
-          type="search"
-          placeholder="level 42 · key · starts=off  ( / )"
-          autocomplete="off"
-          spellcheck="false"
-          role="combobox"
-          aria-controls="results"
-          aria-expanded="false"
-          aria-autocomplete="list"
-        />
+        <div class="query">
+          <input
+            id="search"
+            type="search"
+            placeholder="level 42 · key · starts=off  ( / )"
+            autocomplete="off"
+            spellcheck="false"
+            role="combobox"
+            aria-controls="results"
+            aria-expanded="false"
+            aria-autocomplete="list"
+          />
+          <button
+            id="clear"
+            class="x"
+            type="button"
+            title="Clear"
+            aria-label="Clear the search"
+            hidden
+          >
+            ×
+          </button>
+        </div>
         <div id="scope" class="scope" hidden></div>
         <div id="found" class="found" role="status"></div>
         <div id="results" class="results" role="listbox" hidden></div>

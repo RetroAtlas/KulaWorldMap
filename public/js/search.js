@@ -20,6 +20,7 @@ import { matchObjects, rowOf } from "./objectsearch.js";
 import { setSidebar, sidebarOverlays } from "./sidebar.js";
 
 const box = $("search");
+const eraser = $("clear");
 const bar = $("scope");
 const found = $("found");
 const out = $("results");
@@ -159,6 +160,7 @@ function render() {
   const held = found.contains(document.activeElement);
   out.textContent = "";
   found.textContent = "";
+  eraser.hidden = !box.value;
   const q = box.value.trim();
   if (!q || !state.lvl) {
     show(false);
@@ -322,13 +324,18 @@ const clear = () => {
   current = null;
   scope = "all";
   render();
-  box.blur();
+};
+
+eraser.onclick = () => {
+  clear();
+  box.focus();
 };
 
 box.addEventListener("input", search);
 box.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     clear();
+    box.blur();
     return;
   }
   const list = options();
