@@ -7,7 +7,7 @@ const PORT = 8480;
 export default defineConfig({
   testDir: ".",
   retries: 0, // a flake must surface as red, not be retried away
-  timeout: 60_000,
+  timeout: 20_000,
   forbidOnly: !!process.env.CI,
   reporter: "list",
   use: {

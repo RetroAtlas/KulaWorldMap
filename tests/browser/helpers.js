@@ -11,7 +11,7 @@ export function trackErrors(page) {
 export async function settle(page) {
   await page.evaluate(async () => {
     const st = await import(new URL("js/state.js", location.href).href);
-    const deadline = Date.now() + 30000;
+    const deadline = Date.now() + 10000;
     while (!(st.state.lvl && document.getElementById("cv").clientWidth > 0)) {
       if (Date.now() > deadline) throw new Error("settle timeout");
       await new Promise(requestAnimationFrame);
