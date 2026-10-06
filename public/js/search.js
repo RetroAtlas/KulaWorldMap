@@ -7,6 +7,7 @@ import {
   blockCount,
   counted,
   markerGroup,
+  markerName,
   kindName,
 } from "./data.js";
 import { selectLevel, centreOn, writeHash, settle, setSlice } from "./navigate.js";
@@ -134,7 +135,7 @@ function levelRow(g) {
     () => selectLevel(g.li),
     el("span", { className: "loc", textContent: levelTitle(g.level) }),
     " ",
-    tally(g.hits),
+    tally(g.hits, { named: true }),
     " ",
     el("span", { className: "ex", textContent: worldName(g.level.theme) }),
   );
@@ -251,7 +252,7 @@ function render() {
 
   found.append(
     hits.length
-      ? `${tally(hits, scope === "bylevel")}${where}`
+      ? `${tally(hits, { named: scope === "bylevel", byLevel: scope === "bylevel" })}${where}`
       : worlds.length || levels.length
         ? `no objects, blocks or settings${where}`
         : `Nothing matches that${where}.`,
@@ -262,17 +263,30 @@ function render() {
   if (held) found.querySelector(".widen")?.focus();
 }
 
-function tally(hits, byLevel = false) {
+// The plural goes on the head of the name, before a variant, a manner or a place.
+function things(n, name) {
+  const cut = name.search(/,| \(| on /);
+  const head = cut < 0 ? name : name.slice(0, cut);
+  const tail = cut < 0 ? "" : name.slice(cut);
+  const plural = n === 1 || head.endsWith("s") ? head : `${head}s`;
+  return `${n} ${plural[0].toLowerCase()}${plural.slice(1)}${tail}`;
+}
+
+function tally(hits, { named = false, byLevel = false } = {}) {
   let objects = 0,
-    settings = 0;
+    settings = 0,
+    one = null;
   const blocks = new Map();
   for (const h of hits) {
     const group = markerGroup(h.marker);
     if (group === "settings") settings++;
     else if (group === "block") blocks.set(h.marker.kind, (blocks.get(h.marker.kind) || 0) + 1);
-    else objects++;
+    else {
+      const own = markerName(h.marker);
+      one = objects++ === 0 || own === one ? own : null;
+    }
   }
-  const parts = objects ? [counted(objects, "object")] : [];
+  const parts = !objects ? [] : [named && one ? things(objects, one) : counted(objects, "object")];
   for (const [kind, n] of [...blocks].sort((a, b) => b[1] - a[1])) {
     const name = kindName(kind);
     parts.push(

@@ -188,12 +188,12 @@ test("by level, a search lists the levels that hold the thing, most first, and a
   await expect(groups).toHaveCount(1);
   await expect(groups.first()).toHaveAttribute("aria-label", "By level");
   const found = page.locator("#found");
-  await expect(found).toHaveText(/^\d+ objects in \d+ levels · search everywhere$/);
+  await expect(found).toHaveText(/^\d+ keys in \d+ levels · search everywhere$/);
   const rows = page.locator("#results [role=option]:not(.showmore)");
   await expect(rows).toHaveCount(8);
-  await expect(rows.first()).toHaveText(/^LEVEL \d+ \d+ objects [A-Z]+$/);
+  await expect(rows.first()).toHaveText(/^LEVEL \d+ \d+ keys [A-Z]+$/);
   const counts = await rows.evaluateAll((els) =>
-    els.map((e) => Number(/(\d+) objects?/.exec(e.textContent)[1])),
+    els.map((e) => Number(/(\d+) keys?/.exec(e.textContent)[1])),
   );
   expect(counts[0]).toBeGreaterThan(1);
   expect(counts).toEqual([...counts].sort((a, b) => b - a));
@@ -219,6 +219,11 @@ test("by level, a search lists the levels that hold the thing, most first, and a
   ).toBeNull();
   await expect(page.locator("#detail")).toBeHidden();
   expect(await keys()).toEqual(before);
+  await box.fill("red gem");
+  await expect(found).toHaveText(/^\d+ gems \(red\) in \d+ levels · search everywhere$/);
+  for (const text of await rows.allTextContents()) expect(text).toMatch(/ \d+ gems? \(red\) /);
+  await box.fill("gem");
+  await expect(found).toHaveText(/^\d+ objects in \d+ levels · search everywhere$/);
   await box.fill("inca");
   await expect(page.locator("#results [aria-label=Worlds]")).toHaveCount(1);
   await expect(found).toHaveText("no objects, blocks or settings in any level · search everywhere");
