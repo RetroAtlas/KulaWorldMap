@@ -6,7 +6,6 @@ const PORT = 8480;
 
 export default defineConfig({
   testDir: ".",
-  workers: 1, // one shared static server
   retries: 0, // a flake must surface as red, not be retried away
   timeout: 60_000,
   forbidOnly: !!process.env.CI,
