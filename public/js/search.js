@@ -9,7 +9,7 @@ import {
   markerGroup,
   kindName,
 } from "./data.js";
-import { selectLevel, centreOn, writeHash, setSlice } from "./navigate.js";
+import { selectLevel, centreOn, writeHash, settle, setSlice } from "./navigate.js";
 import { draw, invalidatePick } from "./render.js";
 import { showCell, clearDetail } from "./detail.js";
 import { say } from "./a11y.js";
@@ -76,7 +76,9 @@ function marked(text, terms) {
 
 const CELL = /^(\d+)\s*,\s*(\d+)\s*,\s*(\d+)$/;
 
-function goTo(x, y, z) {
+function goTo(x, y, z, li = state.li) {
+  settle();
+  if (li !== state.li) selectLevel(li, { push: false });
   if (z < sliceZ()) setSlice(SIDE - 1 - z);
   centreOn(x, y, z);
   const c = state.idx.cells.get(cellKey(x, y, z));
@@ -93,8 +95,7 @@ on("go-to", ({ x, y, z, said }) => {
 });
 
 function jump(h) {
-  if (h.li !== state.li) selectLevel(h.li);
-  goTo(h.at.x, h.at.y, h.at.z);
+  goTo(h.at.x, h.at.y, h.at.z, h.li);
   say([h.name, h.face, h.cell, levelTitle(h.level)].filter(Boolean).join(", "));
 }
 

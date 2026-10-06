@@ -60,15 +60,13 @@ test("a permalink carries the selected block, and opens with it selected", async
   // a click selects without making an entry, and Escape takes the block back out
   const entries = await page.evaluate(() => history.length);
   await page.keyboard.press("Escape");
-  await frame(page);
-  expect(page.url()).toMatch(/\/33$/);
+  await expect.poll(() => page.url()).toMatch(/\/33$/);
   await page.evaluate(async () => {
     const { state } = await import(new URL("js/state.js", location.href).href);
     const { showCell } = await import(new URL("js/detail.js", location.href).href);
     showCell([...state.idx.cells.values()][0]);
   });
-  await frame(page);
-  expect(page.url()).toMatch(/\/33\/\d+,\d+,\d+$/);
+  await expect.poll(() => page.url()).toMatch(/\/33\/\d+,\d+,\d+$/);
   expect(await page.evaluate(() => history.length)).toBe(entries);
 });
 
@@ -77,7 +75,7 @@ test("a link naming a pack and a slot opens that level, whatever its case", asyn
   await settle(page);
   await frame(page);
   await expect(page.locator("#chip")).toContainText("SIMON 5");
-  expect(page.url()).toContain("#COPYCAT/4/30,20/");
+  await expect.poll(() => page.url()).toContain("#COPYCAT/4/30,20/");
 });
 
 test("a link escaped on its way opens where it points, and the address bar says it plainly", async ({
@@ -87,7 +85,7 @@ test("a link escaped on its way opens where it points, and the address bar says 
   await settle(page);
   await frame(page);
   await expect(page.locator("#chip")).toContainText("LEVEL 42");
-  expect(page.url()).toContain("#INCA/11/45,35/");
+  await expect.poll(() => page.url()).toContain("#INCA/11/45,35/");
 });
 
 test("a hash that arrives while a write of the URL is queued is the one the map goes to", async ({
@@ -110,11 +108,9 @@ test("a hash naming no level puts the address bar back", async ({ page }) => {
   await page.goto("/#HIRO/11");
   await settle(page);
   await page.evaluate(() => (location.hash = "#nonsense"));
-  await frame(page);
-  expect(page.url()).toContain("#HIRO/11/");
+  await expect.poll(() => page.url()).toContain("#HIRO/11/");
   await page.evaluate(() => (location.hash = "#HIRO/99"));
-  await frame(page);
-  expect(page.url()).toContain("#HIRO/11/");
+  await expect.poll(() => page.url()).toContain("#HIRO/11/");
 });
 
 test("a hash that arrives before the data has loaded is read once it has, and a key is let go", async ({
@@ -189,6 +185,23 @@ test("a change of level or a find is a history entry; a turn is not", async ({ p
   await expect(page.locator("#chip")).toContainText("LEVEL 1");
   await page.goForward();
   await expect.poll(async () => (await level()).li).toBe(1);
+
+  // a find on another level is one entry, and the entry left keeps the view as it was
+  await page.goForward();
+  await expect.poll(async () => (await level()).selected).toBe(true);
+  const stood = page.url();
+  await drag();
+  await expect.poll(() => page.url()).not.toBe(stood);
+  const left = page.url();
+  const made = await entries();
+  await page.locator("#search").fill("gem");
+  await page.locator("#search").press("Enter");
+  await expect.poll(async () => (await level()).li).not.toBe(1);
+  expect((await level()).selected).toBe(true);
+  expect(await entries()).toBe(made + 1);
+  await page.goBack();
+  await expect.poll(async () => (await level()).li).toBe(1);
+  expect(page.url()).toBe(left);
 });
 
 test("[ and ] go on from one world into the next, and stop at the first level and the last", async ({
@@ -499,7 +512,7 @@ test("a view the map framed is framed again as the canvas settles and resizes", 
   const resized = await fitted(page);
   expect(resized.measured).toBeLessThan(settled.measured);
   expect(resized.zoom).toBe(resized.fit);
-  expect(page.url()).toContain("#HILLS/19/200,10/fit/33");
+  await expect.poll(() => page.url()).toContain("#HILLS/19/200,10/fit/33");
 
   // a press that wanders less than a drag is a click, and leaves the view framed
   await press(page, 2, 1);
@@ -520,9 +533,8 @@ test("a fitted view's link opens fitted to the window it is opened in", async ({
     showCell(state.idx.cells.get(cellKey(21, 13, 18)));
   });
   await page.keyboard.press(",");
-  await frame(page);
+  await expect.poll(() => page.url()).toMatch(/#HIRO\/11\/-?\d+,\d+\/fit\/32\/21,13,18$/);
   const link = page.url();
-  expect(link).toMatch(/#HIRO\/11\/-?\d+,\d+\/fit\/32\/21,13,18$/);
   const wide = await fitted(page);
 
   await page.setViewportSize({ width: 390, height: 720 });

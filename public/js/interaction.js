@@ -116,7 +116,7 @@ export function orbit(dx, dy) {
   state.cam.yaw = (state.cam.yaw - dx * ORBIT) % 360;
   state.cam.pitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, state.cam.pitch + dy * ORBIT));
   redraw();
-  writeHash(false, true);
+  writeHash();
 }
 
 export function pan(dx, dy) {
@@ -125,7 +125,7 @@ export function pan(dx, dy) {
   state.cam.panX -= dx / k;
   state.cam.panY -= dy / k;
   redraw();
-  writeHash(false, true);
+  writeHash();
 }
 
 export function setYaw(deg) {
@@ -133,7 +133,7 @@ export function setYaw(deg) {
   pivot();
   state.cam.yaw = ((deg % 360) + 360) % 360;
   redraw();
-  writeHash(false, true);
+  writeHash();
 }
 
 function refit() {
@@ -243,7 +243,7 @@ export function zoomAt(px, py, factor) {
   state.cam.panX += ox / before - ox / after;
   state.cam.panY += oy / before - oy / after;
   redraw();
-  writeHash(false, true);
+  writeHash();
 }
 
 let touch = null;

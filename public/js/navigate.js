@@ -18,6 +18,7 @@ import { slotOf, formatHash, parseHash } from "./permalink.js";
 export function selectLevel(i, { keepView = false, push = true } = {}) {
   const l = state.data.levels[i];
   if (!l) return;
+  settle();
   // Nothing lies behind the first level shown, so arriving there is no entry.
   const left = state.lvl !== null;
   if (i !== state.li) state.presses = new Map();
@@ -108,18 +109,10 @@ $("chipBtn").onclick = () => {
   foldNote();
 };
 
-// Browsers rate-limit replaceState and throw past the limit, so writes wait
-// for the next frame and go out as one, and a camera on the move writes once
-// it has settled.
+// Browsers rate-limit replaceState and throw past the limit, so the bar
+// follows a change once the view has rested.
 const SETTLE = 350;
-let queued = 0;
 let timer = 0;
-// the view at the camera's last move, which its write writes even after the
-// level has changed under it
-let pending = null;
-// Whether the waiting write pushes a history entry; a push outlives the
-// replacing writes that follow it in the same frame.
-let entry = false;
 // The hash the viewer last read or wrote. The address bar holding another has
 // a hashchange yet to arrive, and a waiting write would put the view on screen
 // over it.
@@ -131,17 +124,12 @@ const levelAt = (slot) => {
   return slots.get(slot);
 };
 
-/** Write the view to the address bar: a frame later, or, for a camera on the
-    move, once it has settled. */
-export function writeHash(push = false, moving = false) {
-  entry ||= push;
-  // a move while a push waits belongs to that push
-  if (moving) pending = entry ? pending : currentHash();
-  else if (timer || (entry && pending)) flushNow();
-  if (moving && !entry && !queued) {
-    clearTimeout(timer);
-    timer = setTimeout(() => flushHash(true), SETTLE);
-  } else if (!queued) queued = requestAnimationFrame(() => flushHash());
+/** Write the view to the address bar once it has rested, or at once as a
+    history entry. */
+export function writeHash(push = false) {
+  drop();
+  if (push) flush(true);
+  else timer = setTimeout(flush, SETTLE);
   emit("view-changed");
 }
 
@@ -161,15 +149,10 @@ function currentHash() {
   );
 }
 
-function flushHash(paced = false) {
-  queued = 0;
-  timer = 0;
-  const push = entry;
-  entry = false;
-  const h = (paced && pending) || currentHash();
-  pending = null;
-  if (!h || location.hash !== known) return;
-  if (location.hash === h) return;
+function flush(push = false) {
+  drop();
+  const h = currentHash();
+  if (!h || location.hash !== known || location.hash === h) return;
   try {
     if (push) history.pushState(null, "", h);
     else history.replaceState(history.state, "", h);
@@ -179,40 +162,27 @@ function flushHash(paced = false) {
   known = location.hash;
 }
 
-/** Write what waits now: the camera's last view where there is one, and the
-    state of the moment, at once where the page is leaving and otherwise with
-    the frame, which may yet change it. */
-function flushNow(leaving = false) {
-  if (!queued && !timer) return;
-  cancelAnimationFrame(queued);
+/** Write what waits now, before the view it holds is left. */
+export function settle() {
+  if (timer) flush();
+}
+
+function drop() {
   clearTimeout(timer);
-  if (pending) {
-    const push = entry;
-    entry = false;
-    flushHash(true);
-    entry = push;
-    if (!leaving) {
-      queued = requestAnimationFrame(() => flushHash());
-      return;
-    }
-  }
-  flushHash();
+  timer = 0;
 }
 
 // A dialog opens on an entry of its own, so what is waiting to be written
 // goes onto the entry under it first; a page on its way out, or put out of
 // sight, writes it too.
-on("dialog-opened", () => flushNow(true));
-addEventListener("pagehide", () => flushNow(true));
-document.addEventListener("visibilitychange", () => document.hidden && flushNow(true));
+on("dialog-opened", settle);
+addEventListener("pagehide", settle);
+document.addEventListener("visibilitychange", () => document.hidden && settle());
 
 export function applyHash() {
   if (!state.data) return false;
   // the bar has moved under a waiting write, which has no entry left to go to
-  clearTimeout(timer);
-  timer = 0;
-  pending = null;
-  entry = false;
+  drop();
   known = location.hash;
   const link = parseHash(known);
   const i = levelAt(link.slot);
