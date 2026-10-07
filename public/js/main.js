@@ -71,7 +71,8 @@ function showAbout() {
     PAL releases changed comes from The Cutting Room Floor's Roll Away page. Anything still
     unnamed shows the number the game gives it.</p>
     <p><a href="https://github.com/RetroAtlas/KulaWorldMap">Source and tooling</a> &middot;
-    <a href="https://retroatlas.org/">RetroAtlas</a></p>`,
+    <a href="https://retroatlas.org/">RetroAtlas</a> &middot;
+    <a href="mailto:${["hello", "retroatlas.org"].join("@")}">Get in touch</a></p>`,
   );
 }
 
