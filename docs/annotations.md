@@ -160,7 +160,7 @@ The common fruit: one on each of 151 levels, and a second on LEVEL 134 on a crum
 
 One placement in the game, on LEVEL 19, where the walkthrough's fruit stands and the common fruit type is absent. Its model is the strawberry.
 
-### type 50: Captivator
+### type 50: Captivator, slow
 
 LEVEL 132 sends the ball through a gap between twelve of them as they move around, LEVEL 141 past a group of four travelling in a line. That it is the thinner star with three long points was seen in play beside type 52, and it is the walkthrough's slower kind; `f2` is its direction. In play, touching it costs the ball its life, and the lost life is what restarts the level. It is a hazard by the routine the things that travel share.
 
@@ -168,7 +168,7 @@ LEVEL 132 sends the ball through a gap between twelve of them as they move aroun
 
 Drawn as the wheel the disc keeps beside the stars. LEVEL 51 carries the game's first where the walkthrough says to jump the rolling stone, and LEVEL 52's four are the captivators it follows clockwise. In play, touching it costs the ball its life. It is a hazard by the routine the things that travel share.
 
-### type 52: Captivator
+### type 52: Captivator, quick
 
 The game's first are LEVEL 22's seven, which the walkthrough says glide in front of the ball and are jumped past as they move away. That it is the fuller star with four short points was seen in play beside type 50, and it is the walkthrough's quick kind; `f2` is its direction. In play, touching it costs the ball its life, and the lost life is what restarts the level. It is a hazard by the routine the things that travel share.
 

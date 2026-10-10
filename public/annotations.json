@@ -286,7 +286,7 @@
       "note": "Apple, watermelon, pumpkin, bananas and strawberry come round in turn. Collecting all five earns a bonus level."
     },
     "50": {
-      "name": "Captivator",
+      "name": "Captivator, slow",
       "hazard": true,
       "facing": "f2",
       "note": "A spiked star that captures the ball on touch. It is the thinner one, with three long points. It travels the space it has and turns back at any wall or object in its way."
@@ -298,7 +298,7 @@
       "note": "A grey cylinder that rolls slowly round a set course and captures the ball on touch. It can be jumped over."
     },
     "52": {
-      "name": "Captivator",
+      "name": "Captivator, quick",
       "hazard": true,
       "facing": "f2",
       "note": "A spiked star that captures the ball on touch. It is the fuller one, with four short points. It slides back and forth over a fixed stretch, as if on a spring."

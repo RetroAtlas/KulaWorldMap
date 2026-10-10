@@ -803,7 +803,7 @@ test("a travelling thing, and every block of a platform, picks the cell its reco
       const seen = [];
       const fillText = g.fillText;
       g.fillText = (text, x, y, ...rest) => (
-        text === "Captivator · top" && seen.push([x, y]),
+        text === "Captivator, quick · top" && seen.push([x, y]),
         fillText.call(g, text, x, y, ...rest)
       );
       invalidatePick();

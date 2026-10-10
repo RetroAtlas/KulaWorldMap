@@ -203,16 +203,22 @@ test("the legend runs from the most to the fewest, rows with as many by name, th
     ["Moving platform", 1],
   ]);
 
-  // two types that share a name
+  // two kinds of captivator, told apart by their pace
   await page.goto("/#HIRO/19");
   await expect(page.locator("#chip b")).toHaveText("LESSON");
-  const alike = await page
+  const stars = await page
     .getByRole("list", { name: "Objects" })
     .getByRole("button")
     .evaluateAll((rows) =>
-      rows.filter((r) => r.children[1].textContent === "Captivator").map((r) => r.dataset.kind),
+      rows
+        .filter((r) => ["t50", "t52"].includes(r.dataset.kind))
+        .map((r) => [r.dataset.kind, r.children[1].textContent])
+        .sort(),
     );
-  expect(alike).toEqual(["t50", "t52"]);
+  expect(stars).toEqual([
+    ["t50", "Captivator, slow"],
+    ["t52", "Captivator, quick"],
+  ]);
 });
 
 test("a legend row of objects shows and hides them, and a row of blocks only counts", async ({
