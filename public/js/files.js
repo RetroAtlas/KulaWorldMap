@@ -41,8 +41,10 @@ function parsed(bytes) {
   }
 }
 
-/** { project, report } for the bytes of a file, read by what they hold; throws
-    with the sentence to show where they hold no level. */
+/** { project, report } for the bytes of a file, read by what they hold, or
+    nothing where the visitor was asked which level to take and declined; throws
+    with the sentence to show where they hold no level. A reader that has to
+    ask answers later. */
 export function readLevelFile(bytes, name, world) {
   const json = parsed(bytes);
   let read;

@@ -80,11 +80,12 @@ async function openFile() {
   const bytes = new Uint8Array(await file.arrayBuffer());
   let read;
   try {
-    read = readLevelFile(bytes, file.name, state.lvl.theme);
+    read = await readLevelFile(bytes, file.name, state.lvl.theme);
   } catch (e) {
     toast(e.message);
     return;
   }
+  if (!read) return;
   const id = drafts.create(read.project, { saved: Date.now() });
   imported = { id, lines: read.report };
   open(id, `Opened ${nameOf(read.project)}`);
