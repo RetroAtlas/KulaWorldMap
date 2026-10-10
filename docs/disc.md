@@ -1,6 +1,6 @@
 # The disc
 
-What the disc holds for writing a level back onto it, reading by reading, with what each rests on: the image and where its room is, how a sector is built so that a console takes it as pressed, and the packs with the bytes each has to spare. Every figure here is measured on the NTSC-U image under `$KULA_DISC` by `tools/kula_sector.py`, whose `--check` rebuilds the disc's own sectors and compares, and the unit tests hold the readings to the disc wherever it is present. [level-format.md](level-format.md) is the level inside a pack; where a level goes inside its pack, and how a patch is written out, are later work and will join this document with it.
+What the disc holds for writing a level back onto it, reading by reading, with what each rests on: the image and where its room is, how a sector is built so that a console takes it as pressed, and the packs with the bytes each has to spare. Every figure here is measured on the NTSC-U image under `$KULA_DISC`: by `tools/kula_sector.py`, whose `--check` rebuilds the disc's own sectors and compares, and by `tools/kula_place.py`, which puts a level into a pack on a copy of the image; the unit tests hold the readings to the disc wherever it is present. [level-format.md](level-format.md) is the level inside a pack, and [editor.md](editor.md) how a level is written from its fields; how a patch carries a placement is later work and will join this document.
 
 ## The image
 
@@ -63,4 +63,52 @@ The 21 packs and their room, as the disc allots it: the size is the directory re
 | `/HELL/HELL.PAK` | 2961 | 16,129 | 8 | 16,384 | 255 |
 | `/HELL/HELLFI.PAK` | 2969 | 2,126 | 2 | 4,096 | 1,970 |
 
-Between them the packs hold 156,146 bytes in 85 sectors, 174,080 bytes of capacity, so 17,934 bytes are spare across the disc. How a level is placed in a pack, in its slot's own bytes, in a pack rebuilt within these sectors or in a pack moved into `/3.00`, and how a patch carries the result, are the later readings this document will take up.
+Between them the packs hold 156,146 bytes in 85 sectors, 174,080 bytes of capacity, so 17,934 bytes are spare across the disc.
+
+## The pack, written back
+
+A pack is written back as the disc lays it out: the count, the table of offsets and sizes, the name offsets, which start at `4 + 12n` for a pack of `n` records, the names, each ending in a newline before its NUL, one to four bytes of padding to the next four-byte boundary, and the records back to back in slot order, the file ending where the last record ends. The padding is the one thing the disc fills with leftovers, a few bytes of a name's text on some packs and zeros on others, and nothing reads it, so the writer pads with zeros; with that one allowance, `kula_pak.pack` reproduces every pack of the disc from its names and records, and the unit tests hold it to all 21.
+
+The game never reads a name, so what a slot is called is for the next reader of the pack. A level placed in its slot's own bytes keeps the slot's name, since nothing else of the pack moves. A pack rebuilt or moved names the slot after the level's title, in upper-case ASCII and no longer than the name it replaces, or keeps the old name where the title gives nothing; the length rule keeps the name table from growing, so that how much room a slot has is a matter of the records alone and a fit worked out from the table's sizes is never optimistic.
+
+## Placing a level
+
+A level arrives as a zlib stream of the file [editor.md](editor.md) writes, deflated at level 6 as the disc's own streams are, and goes into a slot by the first of three paths that fits, each a reading of how the game reads a pack. The game loads a pack by its directory record's size, reading `(size >> 11) + 1` sectors into a 32,768-byte buffer, and takes a record from the buffer by the offset and size the table gives, so a record's bytes beyond its size and a pack's bytes beyond its size are never read.
+
+**In place**, when the stream is no longer than the record it replaces: the stream is written over the record's first bytes, the table's size for the slot is set, and nothing else moves, not the other records, not the names, not the directory. The bytes the old record had past the new one are left as they were. The room is what the slot had over; LEVEL 1, 299 bytes on the disc, comes back from its fields at 292 and goes in with seven to spare.
+
+**Rebuilt**, when the pack laid out again fits the sectors it has: first with the other records as they are, then, when that overflows, with the other records recompressed at level 9, which the game's inflater takes like any other zlib stream and which wins the bytes in the table below, 505 to 951 a world pack. The rebuilt pack is written over the pack's own sectors with zeros to the end of the last, as the disc's slack is, and the directory record's size is rewritten in both byte orders where it changed. A rebuilt pack carries the game's other levels, recompressed where that is what made room, so a patch of it carries them too. A rebuild never reaches fewer sectors than the pack had: it happens only for a stream longer than the one it replaces, and recompression is tried only when the pack would otherwise overflow, and wins less than a sector.
+
+**Moved**, when even that does not fit: the pack is written into the first sectors of `/3.00`, the one file on the disc whose sectors are free, and the directory record's extent and size are rewritten. The sector after the pack is kept clear, since the game reads one sector past a pack whose size is a multiple of 2048, and the move is refused where the head of `/3.00` is not zero. A pack is never longer than 32,767 bytes on any path, the most the buffer takes with the sector the game reads over.
+
+| pack | slack | level 9 wins | room for a level, by slot | records |
+| --- | --- | --- | --- | --- |
+| `/HIRO/HIRO.PAK` | 1,133 | 505 | 1,927 to 2,718 | 299 to 1,192 |
+| `/HIRO/COPYCAT.PAK` | 890 | 252 | 1,312 to 1,920 | 172 to 802 |
+| `/HIRO/HIROFI.PAK` | 384 | 81 | 1,139 to 1,326 | 702 to 914 |
+| `/HILLS/HILLS.PAK` | 499 | 525 | 1,366 to 2,033 | 349 to 1,096 |
+| `/HILLS/HILLSFI.PAK` | 62 | 110 | 973 to 1,199 | 857 to 1,081 |
+| `/INCA/INCA.PAK` | 0 | 704 | 1,013 to 1,713 | 321 to 1,096 |
+| `/INCA/INCAFI.PAK` | 276 | 95 | 1,138 to 1,233 | 795 to 929 |
+| `/ARCTIC/ARCTIC.PAK` | 1,486 | 723 | 2,611 to 3,218 | 426 to 1,096 |
+| `/ARCTIC/ARCTICFI.PAK` | 699 | 52 | 1,311 to 1,440 | 586 to 715 |
+| `/COWBOY/COWBOY.PAK` | 926 | 696 | 2,001 to 2,631 | 400 to 1,096 |
+| `/COWBOY/COWBOYFI.PAK` | 510 | 52 | 1,169 to 1,393 | 642 to 848 |
+| `/FIELD/FIELD.PAK` | 1,989 | 631 | 2,967 to 3,629 | 352 to 1,096 |
+| `/FIELD/FIELDFI.PAK` | 317 | 105 | 1,105 to 1,313 | 708 to 971 |
+| `/ATLANT/ATLANT.PAK` | 1,601 | 667 | 2,755 to 3,277 | 511 to 1,096 |
+| `/ATLANT/ATLANTFI.PAK` | 657 | 80 | 1,296 to 1,437 | 587 to 752 |
+| `/HAZE/HAZE.PAK` | 1,980 | 888 | 3,230 to 3,906 | 377 to 1,096 |
+| `/HAZE/HAZEFI.PAK` | 317 | 73 | 1,155 to 1,231 | 800 to 879 |
+| `/MARS/MARS.PAK` | 1,546 | 729 | 2,646 to 3,354 | 385 to 1,130 |
+| `/MARS/MARSFI.PAK` | 437 | 75 | 1,118 to 1,390 | 652 to 907 |
+| `/HELL/HELL.PAK` | 255 | 951 | 1,637 to 2,378 | 453 to 1,262 |
+| `/HELL/HELLFI.PAK` | 1,970 | 174 | 3,043 to 3,145 | 961 to 1,113 |
+
+The slack is the last sector's, as above; level 9 wins what recompressing every record of the pack at level 9 saves, 8,168 bytes across the disc; and the room for a level is the longest stream a slot takes without a move, the pack's capacity less the table, the names and the other records at level 9, smallest for the slot whose record is smallest. A stream no longer than the slot's record goes in place, one no longer than the record plus the slack rebuilds the pack as it is, one within the room rebuilds it recompressed, and a longer one moves the pack. Written back from their fields, 224 of the disc's 230 levels go into their own slot in place; six come out a few bytes longer than the disc's stream, BONUS 30 by 82 since its pickups are renumbered, and rebuild their pack, LEVEL 33 recompressing INCA's, which has no slack at all.
+
+## What changes on the disc
+
+A placement is a list of sectors, each built whole with its address, subheader, EDC and ECC, and written only where it differs from the sector the image has. In place, the sectors holding the table entry and the record change and no other, which for a record in a pack's first sector is one sector. Rebuilt, every sector of the pack changes, since the records after the slot move, and the world's directory sector changes where the size did, by the eight bytes of the record's size in its two byte orders. Moved, the sectors of the pack at the head of `/3.00` are new, data sectors ending on an end-of-file sector as a pack's are everywhere else on the disc, and the directory sector changes by the extent and the size; the pack's old sectors are left as they were, named by nothing. The placer reads the result back through the same readers that read the disc, the directory walk and the pack reader, inflates the slot and compares it with the level, compares every record and name with what it meant to write, and checks every sector it wrote.
+
+The unit tests drive every path over a synthetic image, built with the disc's structure in 43 sectors: the volume descriptor, the root and one world's directory, `SYSTEM.CNF`, a world pack and a finals pack of one sector each holding small levels written by the level writer, the world pack's at level 1 so that recompression wins room, a `/3.00` of twelve zero sectors and a postgap; under `$KULA_DISC` they do the same on a copy of the disc, placing LEVEL 1's own stream and larger levels by every path into HIRO's first slot and a longer one into INCA's, and prove after each that nothing outside the written sectors moved. The image is known by its structure and never by a hash: a raw image of 2352-byte sectors with the volume descriptor at sector 16, the system identifier `PLAYSTATION`, a `SYSTEM.CNF` booting `cdrom:SLUS_007.24;1` and the 21 packs by path, so that a size or a file that is not the disc's is a warning rather than a refusal.

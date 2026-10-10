@@ -9,12 +9,15 @@ import json
 import os
 import struct
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from disc import Disc  # noqa: E402
 from kula_disc import open_disc, packs  # noqa: E402
+from kula_place import SYNTHETIC_SECTORS, synthetic_image  # noqa: E402
 from kula_sector import (  # noqa: E402
     DATA_SUBMODE,
     ECC_OFF,
@@ -35,6 +38,7 @@ from kula_sector import (  # noqa: E402
     rewrite,
     sector,
     sectors_of,
+    sweep,
     verify,
 )
 
@@ -108,6 +112,21 @@ class TheSector(unittest.TestCase):
             sector(0, bytes(USER - 1), DATA_SUBMODE)
         with self.assertRaises(ValueError):
             rewrite(sector(0, bytes(USER), DATA_SUBMODE), bytes(USER + 1))
+
+
+class TheSweep(unittest.TestCase):
+    def test_every_form_1_sector_of_an_image_is_rebuilt_and_one_that_differs_is_named(self):
+        image = bytearray(synthetic_image())
+        with tempfile.TemporaryDirectory() as scratch:
+            path = Path(scratch) / "image.bin"
+            path.write_bytes(image)
+            with Disc(path) as disc:
+                self.assertEqual(sweep(disc), (SYNTHETIC_SECTORS, []))
+            image[25 * SECTOR_RAW + USER_OFF + 9] ^= 0x10
+            image[30 * SECTOR_RAW + EDC_OFF] ^= 0x01
+            path.write_bytes(image)
+            with Disc(path) as disc:
+                self.assertEqual(sweep(disc), (SYNTHETIC_SECTORS - 2, [25, 30]))
 
 
 @unittest.skipUnless(os.environ.get("KULA_DISC"), "needs the disc under $KULA_DISC")
