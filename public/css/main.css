@@ -1639,3 +1639,195 @@ body:not(.sidebar-open) .menu-btn .cross {
     padding-right: 100px;
   }
 }
+
+/* the panel's edit form: the block, the chosen face, the circuits and the checks */
+.detail .form {
+  margin: 0 0 10px;
+}
+.detail .form h4 {
+  margin: 10px 0 4px;
+  color: var(--dim);
+  font-size: 10.5px;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.detail .form .faces {
+  display: flex;
+  gap: 4px;
+  margin: 2px 0 6px;
+}
+.detail .form .faces button {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 3px 0;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.detail .form .faces button[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.detail .form .faces button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.detail .form .faces .dot {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.detail .form .field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+.detail .form .field > span:first-child {
+  flex: 0 0 56px;
+  color: var(--dim);
+}
+.detail .form .field .value {
+  color: var(--ink);
+}
+.detail .form select,
+.detail .form input[type="number"] {
+  flex: 1;
+  min-width: 0;
+  background: #0e1320;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 2px 5px;
+  font: inherit;
+  font-size: 12px;
+}
+.detail .form input[type="number"] {
+  flex: 0 0 64px;
+}
+.detail .form select:focus-visible,
+.detail .form input:focus-visible,
+.detail .form button:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: -1px;
+}
+.detail .form .swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.detail .form .swatches button {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  background: var(--swatch, var(--panel-2));
+  border: 2px solid var(--line);
+  border-radius: 5px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.detail .form .swatches button[aria-pressed="true"] {
+  border-color: var(--ink);
+}
+.detail .form .facing button,
+.detail .form .swatches button[style*="transparent"] {
+  background: var(--panel-2);
+}
+.detail .form .facing button[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.detail .form .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.detail .form .row button,
+.detail .form .circuit button {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.detail .form .row button:hover,
+.detail .form .circuit button:hover {
+  border-color: var(--accent-dim);
+}
+.detail .form .circuit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+.detail .form .circuit .name {
+  flex: 0 0 44px;
+}
+.detail .form .circuit button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.detail .form .circuit .members {
+  flex: 1;
+  min-width: 0;
+  color: var(--dim);
+  font-size: 11px;
+}
+.detail .form .plays,
+.detail .form .counts {
+  margin: 10px 0 0;
+  color: var(--dim);
+  font-size: 11.5px;
+}
+.detail .form .plays + .counts {
+  margin-top: 2px;
+}
+.detail .form .over {
+  color: #ff7b7b;
+}
+.detail .form .high {
+  color: var(--warn);
+}
+.detail .form .findings {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  color: var(--dim);
+  font-size: 11.5px;
+}
+.detail .form .findings .error {
+  color: var(--warn);
+}
+.detail .form .there {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.detail .raw > summary {
+  cursor: pointer;
+  margin: 6px 0;
+  color: var(--dim);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

@@ -1,6 +1,6 @@
 // The editor, loaded only when the page is opened to make levels: the mode,
 // its tools and keys, and what it draws over the map through the frame's hooks.
-import { $, on } from "./dom.js";
+import { $, emit, on } from "./dom.js";
 import { state, SIDE, facing as turnedToView, screen, cellKey, sliceZ } from "./state.js";
 import { FACE_NORMAL, FACE_NAME } from "./faces.js";
 import { entryName, kindName, levelTitle, markerLabel, skinsTable } from "./data.js";
@@ -40,6 +40,7 @@ import {
 import { get, load } from "./drafts.js";
 import { canRedo, canUndo, edit, redo, undo } from "./trail.js";
 import { copyShown, levelFor, wireDrafts } from "./draftlist.js";
+import { wireForm } from "./editform.js";
 import * as palette from "./palette.js";
 
 const EDGE = "The game builds nothing past the edge.";
@@ -129,6 +130,7 @@ export function bootEditor() {
   provideLevels(levelFor);
   wireDrafts();
   wireTools();
+  wireForm();
 }
 
 // --- the mode and the strip ---------------------------------------------------------
@@ -227,6 +229,7 @@ function wireTools() {
       dropRun();
       disarm();
       say(`Brush: ${e.label}`);
+      emit("brush-changed");
       drawSoon();
     },
     () => togglePalette(false),

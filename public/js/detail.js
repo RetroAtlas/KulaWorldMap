@@ -31,6 +31,12 @@ import { draw, clock } from "./render.js";
 
 let stats = null;
 let folded = false;
+const hooks = [];
+
+/** Register a function the panel calls after it has drawn, with the box and the cell it shows. */
+export function onShow(fn) {
+  hooks.push(fn);
+}
 
 const row = (k, v) => `<tr><td>${k}</td><td class="mono">${v}</td></tr>`;
 const STORED = `<tr><th colspan="2">raw data</th></tr>`;
@@ -168,6 +174,7 @@ export function showCell(c) {
   const folding = document.activeElement === box.querySelector(".fold");
   box.innerHTML = `${html}</div>`;
   drawIcons(box);
+  for (const fn of hooks) fn(box, c);
   fold(box);
   box.hidden = false;
   box.querySelector(".fold").onclick = () => {

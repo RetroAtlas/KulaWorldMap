@@ -120,6 +120,7 @@ test("Place lays a block across the face clicked and selects it, and refuses the
   expect((await shown(page)).selected).toEqual([18, 17, 17]);
   expect((await blocks(page)).map((b) => b.cell)).toEqual([start, [18, 17, 17]]);
   await expect(page.locator("#say")).toHaveText("Placed a block at 18, 17, 17");
+  await page.keyboard.press("Escape");
 
   // a block at the edge: its +x side looks past it
   await page.evaluate(async () => {
