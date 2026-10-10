@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations, objects } from "./fixtures.js";
 import { lookOf } from "../../public/js/skins.js";
-import { setObjects, motionOf, paintsFace } from "../../public/js/data.js";
+import { setObjects, motionOf, paintsFace, ballFor } from "../../public/js/data.js";
+import { state } from "../../public/js/state.js";
 
 setObjects(objects);
 // The starts are drawn as the ball.
@@ -101,4 +102,31 @@ test("the second set of skins is drawn by the bonus levels and no others", () =>
 
 test("twenty-seven of the placed types are drawn as meshes of their own", () => {
   assert.equal([...placed].filter((t) => drawn.has(t)).length, 27);
+});
+
+// The game turns a bonus level's ball with a counter the level cannot know;
+// the map stands the slot in for it where the level has one.
+test("the ball follows the hidden flag and the keys, the slot standing in for the game's counter", () => {
+  state.data = mapData;
+  const { skins, balls } = objects;
+  for (const l of mapData.levels) {
+    const world = mapData.themes.findIndex((t) => t.id === l.theme);
+    const slot = l.pack.endsWith("FI.PAK") ? 0 : l.index;
+    const design = slot === 18 ? 13 : slot >= 15 && slot < 18 ? 10 + slot - 15 : world;
+    assert.equal(ballFor(l), balls[design], l.name);
+  }
+  const level = (records, pack = "/HELL/HELL.PAK", index = 3) => ({
+    theme: "HELL",
+    pack,
+    index,
+    records,
+  });
+  const block = (...types) => ({ kind: 0, on: types.map((type, face) => ({ face, type })) });
+  const settings = { kind: skins.hidden.kind, type: skins.hidden.type, on: [] };
+  const COIN = 37;
+  assert.equal(ballFor(level([block(skins.keys.type)])), balls[9]);
+  assert.equal(ballFor(level([block(COIN)])), balls[10]);
+  assert.equal(ballFor(level([block(COIN)], "/HELL/HELL.PAK", 16)), balls[11]);
+  assert.equal(ballFor(level([block(COIN), settings])), balls[13]);
+  assert.equal(ballFor(level([block(COIN)], skins.copycat)), balls[9]);
 });

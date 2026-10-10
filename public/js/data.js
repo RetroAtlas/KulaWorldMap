@@ -1,6 +1,6 @@
 import { state, SIDE, cellKey } from "./state.js";
 import { FACE_NORMAL } from "./faces.js";
-import { platesOf } from "./skins.js";
+import { platesOf, lookOf } from "./skins.js";
 import { glowing } from "./motion.js";
 
 export const WORLD_TINT = {
@@ -237,17 +237,23 @@ const OPENS_ON = { 7: 1 }; // the exit, red until the keys are found
 // The ball starts on a plain face or on a clock.
 const START = 30;
 const STARTS = new Set([29, START]);
+// The glass ball for a level the hidden flag marks, one of three for a level
+// with no key, turned by a counter the level cannot know, and the world's
+// otherwise. A bonus slot stands in for the counter where the level has one.
 const BONUS_BALL = 10;
 const BONUS_BALLS = 3;
 const HIDDEN_BALL = 13;
 const WORLD_LEVELS = 15;
-const HIDDEN = WORLD_LEVELS + BONUS_BALLS;
 export function ballFor(l) {
   const world = state.data.themes.findIndex((t) => t.id === l.theme);
-  const slot = l.pack.endsWith("FI.PAK") ? 0 : l.index;
+  const skins = skinsTable();
+  const look = skins && lookOf(skins, l, world);
   let design = world;
-  if (slot === HIDDEN) design = HIDDEN_BALL;
-  else if (slot >= WORLD_LEVELS && slot < HIDDEN) design = BONUS_BALL + (slot - WORLD_LEVELS);
+  if (look?.glass) design = HIDDEN_BALL;
+  else if (look?.bonus) {
+    const slot = l.index - WORLD_LEVELS;
+    design = BONUS_BALL + (slot >= 0 && slot < BONUS_BALLS ? slot : 0);
+  }
   return shapes.balls[design] || shapes.balls[0] || null;
 }
 export const startsOf = (l) =>
