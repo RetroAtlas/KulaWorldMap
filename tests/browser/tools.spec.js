@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
 
-const EDIT = "/?edit#HIRO/0/45,35/fit/33";
+const EDIT = "/#HIRO/0/45,35/fit/33";
 
 const shown = (page) =>
   page.evaluate(async () => {
@@ -69,6 +69,7 @@ test("w makes a copy of a shipped level and edits it, toggles on a draft, and le
   await settle(page);
   await expect(strip(page)).toBeHidden();
   await page.keyboard.press("w");
+  await expect(strip(page)).toBeVisible();
   // a group of plain tab stops, with no arrow keys of its own to take from the map
   await expect(strip(page)).toHaveAttribute("role", "group");
   const copy = await shown(page);

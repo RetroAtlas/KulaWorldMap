@@ -6,7 +6,7 @@ import { settle, trackErrors } from "./helpers.js";
 import { blank, readProject, setMeta, writeProject } from "../../public/js/project.js";
 import { RECORD, readKwl, writeKwl } from "../../public/js/kwl.js";
 
-const EDIT = "/?edit#HIRO/0/45,35/fit/33";
+const EDIT = "/#HIRO/0/45,35/fit/33";
 const digests = JSON.parse(
   readFileSync(fileURLToPath(new URL("../fixtures/kwl-digests.json", import.meta.url)), "utf8"),
 );
@@ -113,11 +113,11 @@ test("a shipped level exports its own level file, the bytes the fixture holds", 
   const errors = trackErrors(page);
   await page.goto(EDIT);
   await settle(page);
+  const out = await saved(page, page.locator("#draftExport"));
   await expect(page.locator("#draftExport")).toHaveAttribute(
     "title",
     "Save LEVEL 1 as the file the game loads",
   );
-  const out = await saved(page, page.locator("#draftExport"));
   expect(out.name).toBe("level-1.kwl");
   expect(sha256(out.bytes)).toBe(digests["/HIRO/HIRO.PAK#0"].kwl);
   await expect(page.locator("#draftRows button")).toHaveCount(0);

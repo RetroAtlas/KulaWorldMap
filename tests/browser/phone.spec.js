@@ -193,7 +193,7 @@ test("the settings fit a phone, over the drawer they open from", async ({ page }
 test.describe("editing on a phone", () => {
   test.use({ viewport: { width: 375, height: 700 }, isMobile: true, hasTouch: true });
 
-  const EDIT = "/?edit#HIRO/0/45,35/fit/33";
+  const EDIT = "/#HIRO/0/45,35/fit/33";
   const START = [17, 17, 17];
   const at = (page, x, y, z) =>
     page.evaluate(

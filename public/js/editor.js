@@ -173,7 +173,7 @@ function dropRun() {
   status("");
 }
 
-function toggleEditing() {
+export function toggleEditing() {
   if (!state.lvl) return;
   if (onDraft()) {
     setMode(!mode.on);

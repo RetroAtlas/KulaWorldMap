@@ -38,18 +38,13 @@ export function levelFor(slot) {
 
 export function wireDrafts() {
   $("yours").hidden = false;
+  if (state.li >= 0) lastDisc = state.li;
   $("draftNew").onclick = () => open(drafts.create(blank(state.lvl.theme)), "Made a new level");
   $("draftCopy").onclick = copyShown;
   $("draftOpen").onclick = () => $("draftFile").click();
   $("draftFile").onchange = openFile;
-  const paste = el("button", {
-    id: "draftPaste",
-    type: "button",
-    textContent: "paste a link…",
-    title: "Open a shared level by its link",
-  });
-  paste.onclick = async () => openRead(await pasteLevelLink(state.lvl.theme, readLevelText));
-  $("draftExport").before(paste);
+  $("draftPaste").onclick = async () =>
+    openRead(await pasteLevelLink(state.lvl.theme, readLevelText));
   $("draftExport").onclick = () => {
     const l = state.lvl;
     if (l.draft !== undefined) saveAs(l.draft, true);

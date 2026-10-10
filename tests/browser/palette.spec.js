@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
 
-const EDIT = "/?edit#HIRO/0/45,35/fit/33";
+const EDIT = "/#HIRO/0/45,35/fit/33";
 const START = [17, 17, 17];
 
 const shown = (page) =>

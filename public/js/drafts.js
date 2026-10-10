@@ -4,8 +4,8 @@ import { emit } from "./dom.js";
 import { toast } from "./toast.js";
 import { WORLDS, writeKwl } from "./kwl.js";
 import { readProject } from "./project.js";
+import { KEY, draftShaped, idOf } from "./held.js";
 
-export const KEY = "kula.drafts";
 const VERSION = 1;
 const SETTLE = 300;
 const FULL = "This browser cannot hold more drafts; save them to files and delete some.";
@@ -25,7 +25,6 @@ const dirty = new Set();
 const deleted = new Set();
 
 function entryOf(raw) {
-  if (!raw || typeof raw !== "object") return null;
   let project;
   try {
     ({ project } = readProject(raw.doc));
@@ -56,10 +55,9 @@ function parse(text) {
   const drafts = raw.drafts && typeof raw.drafts === "object" ? raw.drafts : {};
   const ids = [];
   for (const [key, d] of Object.entries(drafts)) {
-    const id = Number(key);
-    const named = Number.isInteger(id) && id > 0;
-    if (named) ids.push(id);
-    const entry = named ? entryOf(d) : null;
+    const id = idOf(key);
+    if (id !== null) ids.push(id);
+    const entry = id !== null && draftShaped(d) ? entryOf(d) : null;
     if (entry) out.drafts[id] = entry;
     else left[key] = d;
   }
