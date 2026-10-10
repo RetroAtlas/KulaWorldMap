@@ -300,8 +300,19 @@
         >
           Redo
         </button>
+        <button
+          id="paletteBtn"
+          type="button"
+          aria-pressed="false"
+          aria-controls="palette"
+          title="Show and hide the palette"
+          hidden
+        >
+          Palette
+        </button>
         <span id="toolStatus" class="status" role="status"></span>
       </div>
+      <div id="palette" class="palette" role="group" aria-label="Palette" hidden></div>
       <div id="toastStack" class="toasts" aria-live="polite"></div>
     </main>
   </div>

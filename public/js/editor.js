@@ -3,7 +3,7 @@
 import { $, on } from "./dom.js";
 import { state, SIDE, screen, cellKey, sliceZ } from "./state.js";
 import { FACE_NORMAL, FACE_NAME } from "./faces.js";
-import { kindName, levelTitle, markerLabel, skinsTable } from "./data.js";
+import { entryName, kindName, levelTitle, markerLabel, skinsTable } from "./data.js";
 import { provideLevels, setSlice } from "./navigate.js";
 import { drawSoon, overlayWith } from "./render.js";
 import { facePoints, outline, outlineStroke } from "./blocks.js";
@@ -11,7 +11,7 @@ import { onCellClick, hoverFaces, tipWith } from "./interaction.js";
 import { showCell } from "./detail.js";
 import { describeLevel, say } from "./a11y.js";
 import { toast } from "./toast.js";
-import { inner } from "./kwl.js";
+import { CRUMBLING_KIND, FACING_TYPES, PLAIN_ONLY, VANISHING_KIND, inner } from "./kwl.js";
 import {
   ERROR,
   blockAt,
@@ -25,18 +25,26 @@ import {
 import { get, load } from "./drafts.js";
 import { canRedo, canUndo, edit, redo, undo } from "./trail.js";
 import { copyShown, levelFor, wireDrafts } from "./draftlist.js";
+import * as palette from "./palette.js";
 
 const EDGE = "The game builds nothing past the edge.";
 const HELD = "That cell holds a block already.";
 const LAST = "A level keeps its last block.";
+const BRITTLE = "Nothing stands on a crumbling or vanishing block's faces.";
+const LOOKS_INTO = "That face looks into another block.";
 const TOOL_KEYS = { a: "place", z: "erase", i: "select" };
 const WASH = "rgba(111 211 255 / 0.28)";
 const RIM = "#6fd3ff";
 const GHOST = "#ffffffd0";
 const BLOCKED = "#ff6b6b";
+const ICON = 28;
+const TURNS = 4;
 
 const mode = { on: false, tool: "place" };
-const brush = { kind: 0 };
+// What Place lays: a kind of block, or a thing for a face, turned as `facing` says.
+let brush = { id: "k0", kind: 0 };
+let facing = 1;
+let paletteOpen = !matchMedia("(max-width: 760px)").matches;
 
 const onDraft = () => state.lvl?.draft !== undefined;
 export const editing = () => mode.on && onDraft();
@@ -52,6 +60,16 @@ const kindWord = (kind) => lower(kindName(kind) || "plain block");
 const sentence = (text) => `${capital(text)}.`;
 const place3 = (cell) => cell.join(", ");
 const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
+const brushWord = () =>
+  brush.kind !== undefined ? kindWord(brush.kind) : lower(palette.chosen()?.label ?? "thing");
+const thingOn = (cell, face) =>
+  (state.idx.markers.get(cellKey(...cell)) || []).find((m) => m.face === face) ?? null;
+const plainOnly = (e) => {
+  const name = lower(entryName(e.marker) ?? e.label);
+  return name.endsWith("s")
+    ? `${capital(name)} work on a plain block only.`
+    : `A ${name} works on a plain block only.`;
+};
 
 export function bootEditor() {
   load();
@@ -98,9 +116,13 @@ function strip() {
     b.setAttribute("aria-pressed", String(b.dataset.tool === mode.tool));
   }
   const id = state.lvl?.draft;
-  for (const b of [$("undoBtn"), $("redoBtn")]) b.hidden = !mode.on;
+  for (const b of [$("undoBtn"), $("redoBtn"), $("paletteBtn")]) b.hidden = !mode.on;
   $("undoBtn").disabled = !canUndo(id);
   $("redoBtn").disabled = !canRedo(id);
+  $("paletteBtn").setAttribute("aria-pressed", String(paletteOpen));
+  const shown = editing() && paletteOpen;
+  if (shown) palette.sync();
+  $("palette").hidden = !shown;
 }
 
 const status = (text) => {
@@ -118,16 +140,31 @@ function wireTools() {
   for (const b of $("tools").querySelectorAll(".tool")) b.onclick = () => setTool(b.dataset.tool);
   $("undoBtn").onclick = stepBack;
   $("redoBtn").onclick = stepAgain;
+  $("paletteBtn").onclick = () => {
+    paletteOpen = !paletteOpen;
+    strip();
+  };
+  palette.wirePalette((e) => {
+    brush = e.kind !== undefined ? { id: e.id, kind: e.kind } : { id: e.id, type: e.type };
+    if (e.variant !== undefined) brush.variant = e.variant;
+    say(`Brush: ${e.label}`);
+    drawSoon();
+  });
   on("level-changed", () => {
     // the level chosen has been announced, and leaving with it needs no word of its own
     if (!onDraft() && mode.on) setMode(false, null);
     strip();
   });
+  // the palette stands on the strip, however tall its line makes it
+  new ResizeObserver(([e]) =>
+    $("palette").style.setProperty("--strip-h", `${e.target.offsetHeight}px`),
+  ).observe($("tools"));
   on("level-updated", strip);
   on("trail-changed", strip);
   document.addEventListener("keydown", keys, { capture: true });
   onCellClick((c, e) => {
     if (!editing()) return false;
+    if (e.altKey) return pick(c);
     if (e.shiftKey || mode.tool === "erase") return erase(c);
     if (mode.tool === "place") return place(c, e);
     return false;
@@ -135,7 +172,7 @@ function wireTools() {
   hoverFaces(() => editing() && mode.tool !== "select");
   tipWith((c) =>
     editing() && mode.tool === "place" && c?.face != null
-      ? [`Place a ${kindWord(brush.kind)} on the ${FACE_NAME[c.face]}`]
+      ? [`Place a ${brushWord()} on the ${FACE_NAME[c.face]}`]
       : [],
   );
   overlayWith({ under: drawFloor, cell: drawHover, frame: drawGhost });
@@ -156,6 +193,10 @@ function keys(e) {
   else if (mod || e.altKey) return;
   else if (e.key === "w") toggleEditing();
   else if (editing() && TOOL_KEYS[e.key]) setTool(TOOL_KEYS[e.key]);
+  else if (editing() && key === "r") turn(e.shiftKey ? -1 : 1);
+  else if (editing() && key === "j") palette.step(1);
+  else if (editing() && key === "k") palette.step(-1);
+  else if (editing() && /^[1-9]$/.test(e.key)) palette.pickDigit(Number(e.key));
   else return;
   e.preventDefault();
   e.stopPropagation();
@@ -186,9 +227,9 @@ function commit(id, next, label) {
   say(capital(label));
 }
 
-function select(cell) {
+function select(cell, face = null) {
   const at = state.idx.cells.get(cellKey(...cell));
-  if (at) showCell(at);
+  if (at) showCell(face === null ? at : { ...at, face });
 }
 
 /** The errors `next` has that `before` had not. */
@@ -203,6 +244,7 @@ function newErrors(before, next) {
 function place(c, e) {
   const d = current();
   if (!d) return false;
+  if (brush.kind === undefined) return placeThing(c, d);
   let target;
   if (c) {
     if (c.face == null) return false;
@@ -213,12 +255,34 @@ function place(c, e) {
   }
   if (!target.every(inner)) return refuse(EDGE);
   if (blockAt(d.doc, target)) return refuse(HELD);
-  const next = setBlock(d.doc, target, { ...brush });
+  const next = setBlock(d.doc, target, { kind: brush.kind });
   const grew = newErrors(d.doc, next);
   if (grew.length) return refuse(sentence(grew[0].text));
   if (target[2] < sliceZ()) setSlice(SIDE - 1 - target[2]);
   commit(d.id, next, `placed a ${kindWord(brush.kind)} at ${place3(target)}`);
   select(target);
+  return true;
+}
+
+/** Put the brush's thing on the clicked face, in place of whatever stood there. */
+function placeThing(c, d) {
+  if (!c || c.face == null) return false;
+  const cell = [c.x, c.y, c.z];
+  const b = blockAt(d.doc, cell);
+  if (!b) return false;
+  const e = palette.chosen();
+  if (PLAIN_ONLY.has(brush.type) && b.kind !== 0) return refuse(plainOnly(e));
+  if (b.kind === CRUMBLING_KIND || b.kind === VANISHING_KIND) return refuse(BRITTLE);
+  if (blockAt(d.doc, across(c, c.face))) return refuse(LOOKS_INTO);
+  const o = { type: brush.type };
+  if (brush.variant !== undefined) o.variant = brush.variant;
+  if (FACING_TYPES.has(brush.type)) o.facing = facing;
+  const next = setFace(d.doc, cell, c.face, o);
+  const grew = newErrors(d.doc, next);
+  if (grew.length) return refuse(sentence(grew[0].text));
+  state.hiddenKinds.delete(brush.id);
+  commit(d.id, next, `placed a ${lower(e.label)} on the ${FACE_NAME[c.face]} of ${place3(cell)}`);
+  select(cell, c.face);
   return true;
 }
 
@@ -230,19 +294,56 @@ function erase(c) {
   if (!b) return false;
   const face = c.face ?? null;
   if (face !== null && faceAt(d.doc, cell, face)) {
-    const m = (state.idx.markers.get(cellKey(...cell)) || []).find((m) => m.face === face);
+    const m = thingOn(cell, face);
     const name = m ? lower(markerLabel(m)) : "object";
     commit(
       d.id,
       setFace(d.doc, cell, face, null),
       `removed the ${name} from the ${FACE_NAME[face]} of ${place3(cell)}`,
     );
-    select(cell);
+    select(cell, face);
     return true;
   }
   if (d.doc.blocks.length === 1) return refuse(LAST);
   commit(d.id, removeBlock(d.doc, cell), `removed the ${kindWord(b.kind)} at ${place3(cell)}`);
   return true;
+}
+
+/** Take what is under the pointer as the brush: the thing on the face, else the block's kind. */
+function pick(c) {
+  const d = current();
+  if (!c || !d) return false;
+  const cell = [c.x, c.y, c.z];
+  const b = blockAt(d.doc, cell);
+  if (!b) return false;
+  const o = c.face == null ? null : faceAt(d.doc, cell, c.face);
+  if (o) {
+    if (o.facing) facing = o.facing;
+    return palette.choose(palette.idOf(o));
+  }
+  return palette.choose(`k${b.kind}`);
+}
+
+/** Turn the selected thing a quarter turn where its kind faces, else the brush. */
+function turn(delta) {
+  const s = state.selected;
+  const d = current();
+  const cell = s && [s.x, s.y, s.z];
+  const o = s && s.face != null && d ? faceAt(d.doc, cell, s.face) : null;
+  if (o && FACING_TYPES.has(o.type)) {
+    const turned = ((((o.facing ?? 1) - 1 + delta) % TURNS) + TURNS) % TURNS;
+    const m = thingOn(cell, s.face);
+    const name = m ? lower(markerLabel(m)) : "thing";
+    commit(
+      d.id,
+      setFace(d.doc, cell, s.face, { ...o, facing: turned + 1 }),
+      `turned the ${name} on the ${FACE_NAME[s.face]} of ${place3(cell)}`,
+    );
+    select(cell, s.face);
+    return;
+  }
+  facing = ((((facing - 1 + delta) % TURNS) + TURNS) % TURNS) + 1;
+  say(`Brush facing ${facing} of ${TURNS}`);
 }
 
 // The floor the ground grid draws lies one layer under the lowest block, and
@@ -300,10 +401,24 @@ function drawHover(ctx, c, home, key, ghost) {
   ctx.restore();
 }
 
+let icon = null;
+on("atlas-loaded", () => {
+  icon = null;
+});
+
 function drawGhost(ctx) {
   if (!editing() || mode.tool !== "place") return;
   const h = state.hover;
   if (!h || h.face == null) return;
+  if (brush.kind === undefined) {
+    if (icon?.id !== brush.id || icon.theme !== state.lvl.theme)
+      icon = { id: brush.id, theme: state.lvl.theme, cv: palette.brushIcon(ICON) };
+    if (!icon.cv) return;
+    const n = FACE_NORMAL[h.face];
+    const [x, y] = screen(h.x + 0.5 + n[0] / 2, h.y + 0.5 + n[1] / 2, h.z + 0.5 + n[2] / 2);
+    ctx.drawImage(icon.cv, x - ICON / 2, y - ICON / 2, ICON, ICON);
+    return;
+  }
   const target = across(h, h.face);
   const d = current();
   const blocked = !target.every(inner) || (d && blockAt(d.doc, target) !== null);
