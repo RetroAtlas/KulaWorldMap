@@ -1,0 +1,76 @@
+{
+ "image": "27d6e1302232df91de80f89871b60768e109581fd5b758b05be98d836f8cd8f9",
+ "pack": "/HIRO/HIRO.PAK",
+ "slot": 1,
+ "title": "Spiral",
+ "cases": [
+  {
+   "name": "in place",
+   "blocks": 6,
+   "stream": 305,
+   "path": "in place",
+   "recompressed": false,
+   "size": 1503,
+   "room": 179,
+   "lba": 25,
+   "sectors": [
+    25
+   ],
+   "patched": "8e50349357697d2d4222d87b4cd0336c97f53ba64d0d9d2cca56794205eebc23",
+   "ppf": "e418bd8586bcc22057eb9689ef3603bf228f1bd6d8cb5a6e68f53b1c42895f2e",
+   "xdelta": "255c85172b8152d5666983f4b7ead8173f503884a7abb7c11a38604d32ea1703"
+  },
+  {
+   "name": "rebuild",
+   "blocks": 30,
+   "stream": 723,
+   "path": "rebuild",
+   "recompressed": false,
+   "size": 1742,
+   "room": 306,
+   "lba": 25,
+   "sectors": [
+    24,
+    25
+   ],
+   "patched": "fab2fbb91321313d8a1be78b725b36f94972cc1b53facbfbb1171b05a79f8bb9",
+   "ppf": "50937fd143721c4415d54538a17220d4336c2fa6ed92ce20d3c09ce9e981f7ee",
+   "xdelta": "f43c05b6b3da80139f7741cb46c879f573e660667af26c855b16125da7e522de"
+  },
+  {
+   "name": "rebuild, recompressed",
+   "blocks": 60,
+   "stream": 1216,
+   "path": "rebuild",
+   "recompressed": true,
+   "size": 1641,
+   "room": 407,
+   "lba": 25,
+   "sectors": [
+    24,
+    25
+   ],
+   "patched": "35b0d9b05c30c6ca9dc8f23904c68d87560363922439164681ee2f652a299561",
+   "ppf": "e43b8b0ee1e44938ca61193e9126b332bcdc815fc81a6270a3defaa747d6b258",
+   "xdelta": "6ec4c47ee316e887737daf08dd6113f0a22c6dc53407c136a7c751715ce54fb9"
+  },
+  {
+   "name": "relocate",
+   "blocks": 120,
+   "stream": 2105,
+   "path": "relocate",
+   "recompressed": false,
+   "size": 3124,
+   "room": 29643,
+   "lba": 27,
+   "sectors": [
+    24,
+    27,
+    28
+   ],
+   "patched": "3b0bed66a8d16bac266ca6996ba577d3594fef165bc03c69b77f9edccfe72688",
+   "ppf": "5608844bd58ee3b78808130f1e9966d4312259ae8da98f8e5d162fe1214d82b4",
+   "xdelta": "70d1497e48948f7ee1ff041387ca4281e84e7858d6a4dec6870a751474a8778f"
+  }
+ ]
+}
