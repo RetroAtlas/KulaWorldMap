@@ -3,8 +3,9 @@
 // one to four bytes of padding to a four-byte boundary, and the zlib records
 // back to back in slot order. The game reads a pack by its directory record's
 // size into a fixed buffer and never reads a name, so a level goes into a slot
-// by one of three paths, decided here from the packs' layout alone, as
-// tools/kula_place.py decides it from the pack itself.
+// by one of three paths, decided here from a pack read off the image or from
+// the packs' layout alone, as tools/kula_place.py decides it from the pack.
+import { deflate } from "./deflate.js";
 
 export const IN_PLACE = "in place";
 export const REBUILD = "rebuild";
@@ -58,4 +59,132 @@ export function fit(pack, slot, size) {
     if (total <= LARGEST)
       return { path: RELOCATE, recompressed, size: total, room: LARGEST - total };
   throw new Error(`a pack of ${again} bytes is more than the game reads`);
+}
+
+const ascii = (bytes) =>
+  Array.from(bytes, (b) => (b < 128 ? String.fromCharCode(b) : "\ufffd")).join("");
+
+/** The names, the records and where each record lies in a container read off the image. */
+export function readPak(bytes) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const count = view.getUint32(0, true);
+  const names = [];
+  const offsets = [];
+  const streams = [];
+  for (let i = 0; i < count; i++) {
+    const offset = view.getUint32(4 + i * 8, true);
+    const size = view.getUint32(8 + i * 8, true);
+    const at = view.getUint32(4 + count * 8 + i * 4, true);
+    let end = at;
+    while (end < bytes.length && bytes[end] !== 0) end++;
+    if (end === bytes.length) throw new Error(`the name of slot ${i} runs past the pack`);
+    names.push(ascii(bytes.subarray(at, end)).trim());
+    offsets.push(offset);
+    streams.push(bytes.slice(offset, offset + size));
+  }
+  return { size: bytes.length, names, offsets, streams };
+}
+
+/** The container holding these records under these names, laid out as the disc has it. */
+export function writePak(names, streams) {
+  const count = names.length;
+  const out = new Uint8Array(
+    packSize(
+      names,
+      streams.map((s) => s.length),
+    ),
+  );
+  const view = new DataView(out.buffer);
+  view.setUint32(0, count, true);
+  const table = 4 + count * 12;
+  const text = names.reduce((sum, name) => sum + name.length + NAME_END, 0);
+  let at = table + text + (ALIGN - ((table + text) % ALIGN));
+  streams.forEach((s, i) => {
+    view.setUint32(4 + i * 8, at, true);
+    view.setUint32(8 + i * 8, s.length, true);
+    out.set(s, at);
+    at += s.length;
+  });
+  at = table;
+  names.forEach((name, i) => {
+    view.setUint32(4 + count * 8 + i * 4, at, true);
+    for (let k = 0; k < name.length; k++) {
+      const code = name.charCodeAt(k);
+      if (code > 127) throw new Error(`a pack's name is ASCII, and ${JSON.stringify(name)} is not`);
+      out[at + k] = code;
+    }
+    out[at + name.length] = 0x0a;
+    at += name.length + NAME_END;
+  });
+  return out;
+}
+
+/**
+ * The name a slot takes from a level's title: upper-case ASCII no longer than
+ * the name it replaces, or that name where the title gives nothing.
+ */
+export function packName(title, old) {
+  const text = [...title.toUpperCase()]
+    .filter((c) => c >= " " && c <= "~")
+    .join("")
+    .slice(0, old.length)
+    .trim();
+  return text || old;
+}
+
+/**
+ * How the stream goes into the slot of a pack read off the image, with so many
+ * bytes of sectors: the three paths of fit, with every slot's record and name
+ * as the pack will carry them. Recompressing the other records needs their
+ * levels, inflated, in slot order.
+ */
+export function fitPak(pak, capacity, slot, stream, title = null, levels = null) {
+  const count = pak.streams.length;
+  if (!Number.isInteger(slot) || slot < 0 || slot >= count)
+    throw new Error(`the pack has ${count} slots, so #${slot} is not one of them`);
+  const names = [...pak.names];
+  const streams = [...pak.streams];
+  const old = streams[slot].length;
+  streams[slot] = stream;
+  const sizes = (ss) => ss.map((s) => s.length);
+  if (stream.length <= old)
+    return {
+      path: IN_PLACE,
+      streams,
+      names,
+      size: pak.size,
+      room: old - stream.length,
+      recompressed: false,
+    };
+  if (title != null) names[slot] = packName(title, names[slot]);
+  const limit = Math.min(capacity, LARGEST);
+  const size = packSize(names, sizes(streams));
+  if (size <= limit)
+    return { path: REBUILD, streams, names, size, room: limit - size, recompressed: false };
+  if (!levels) throw new Error("the other records can only be recompressed from their levels");
+  const again = streams.map((s, i) => (i === slot ? s : deflate(levels[i], RECOMPRESS)));
+  const size9 = packSize(names, sizes(again));
+  if (size9 <= limit)
+    return {
+      path: REBUILD,
+      streams: again,
+      names,
+      size: size9,
+      room: limit - size9,
+      recompressed: true,
+    };
+  for (const [ss, total, recompressed] of [
+    [streams, size, false],
+    [again, size9, true],
+  ])
+    if (total <= LARGEST)
+      return {
+        path: RELOCATE,
+        streams: ss,
+        names,
+        size: total,
+        room: LARGEST - total,
+        recompressed,
+      };
+  throw new Error(`a pack of ${size9} bytes is more than the game reads`);
 }
