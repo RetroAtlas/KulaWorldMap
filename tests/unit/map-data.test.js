@@ -216,3 +216,13 @@ test("a teleporter sends the ball to one of its own colour, round one ring a col
   }
   assert.equal(rings, 77);
 });
+
+// The game builds faces for the inner cells alone, so no level places a block
+// at the lattice's edge.
+test("every placed cell lies within 1 to 32 on each axis", () => {
+  const edge = mapData.side - 1;
+  for (const l of mapData.levels)
+    for (let i = 0; i < l.cells.length; i += 4)
+      for (const v of l.cells.slice(i, i + 3))
+        assert.ok(v > 0 && v < edge, `${l.name}: ${l.cells.slice(i, i + 3)}`);
+});
