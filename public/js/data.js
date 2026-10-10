@@ -420,30 +420,6 @@ export function blockCount(l) {
 export const objectCount = (l) => l.records.reduce((n, r) => n + r.on.length, 0);
 export const counted = (n, noun) => `${n} ${noun}${n === 1 ? "" : "s"}`;
 
-// Every world pack keeps its bonus levels in the same slots, and a bonus level
-// scores each block rolled over.
-const BONUS_SLOTS = [15, 16, 17];
-const BLOCK_POINTS = 50;
-const INVISIBLE_KIND = 3;
-
-/** The blocks a bonus level counts: rolling over an invisible one scores nothing. */
-function tallied(l) {
-  const first = state.data.firstRecord;
-  let n = 0;
-  for (let i = 3; i < l.cells.length; i += 4) {
-    const v = l.cells[i];
-    const kind = v < first ? v : l.records[v - first].kind;
-    if (kind !== INVISIBLE_KIND) n++;
-  }
-  return n;
-}
-
-export function levelPoints(l) {
-  let points = levelMarkers(l).reduce((sum, m) => sum + markerPoints(m), 0);
-  if (BONUS_SLOTS.includes(l.index)) points += BLOCK_POINTS * tallied(l);
-  return points;
-}
-
 export function markerStats(data) {
   const stats = new Map();
   for (const l of data.levels) {

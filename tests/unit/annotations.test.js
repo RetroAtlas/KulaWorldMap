@@ -2,9 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { mapData, annotations, levelKey } from "./fixtures.js";
+import { mapData, annotations, objects, levelKey } from "./fixtures.js";
 import { state } from "../../public/js/state.js";
-import { setAnnotations, levelPoints, levelScore, fieldIndex } from "../../public/js/data.js";
+import { setAnnotations, setObjects, levelScore, fieldIndex } from "../../public/js/data.js";
+import { levelPoints } from "../../public/js/points.js";
 
 const reasons = readFileSync(
   fileURLToPath(new URL("../../docs/annotations.md", import.meta.url)),
@@ -69,6 +70,7 @@ test("the catalogue note is on OBJ LEVEL, in nine worlds", () => {
 // so one that is not below the disc's own total has lost its reason.
 test("a curated score is below what the disc holds, and says why", () => {
   setAnnotations(annotations);
+  setObjects(objects);
   state.data = mapData;
   let curated = 0;
   for (const l of mapData.levels) {

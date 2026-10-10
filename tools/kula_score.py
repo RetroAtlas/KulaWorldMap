@@ -17,9 +17,13 @@ from kula_level import BLOCK_KINDS, FIELD_WORD
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "public" / "map_data.json"
 NAMES = ROOT / "public" / "annotations.json"
-BONUS_SLOTS = (15, 16, 17)
+OBJECTS = ROOT / "public" / "objects.json"
 BLOCK_POINTS = 50
-INVISIBLE_KIND = 3
+# The kinds the game's walk over the inner lattice builds and counts.
+COUNTED_KINDS = frozenset({0, 1, 2, 4, 6, 7})
+INNER = range(1, 33)
+LASER_KIND = 8
+NORMALS = ((0, 0, -1), (1, 0, 0), (0, 1, 0), (0, -1, 0), (-1, 0, 0), (0, 0, 1))
 
 
 def points_of(ann):
@@ -39,34 +43,70 @@ def points_of(ann):
     return kinds, types, scores
 
 
-def tallied(level, first_record):
-    """The blocks a bonus level counts: rolling over an invisible one scores nothing."""
+def plays_bonus(level, skins):
+    """Whether the level plays by the bonus rules: no key on a block the ball
+    can roll on, outside the Simon rooms."""
+    keys = skins["keys"]
+    keyed = any(o["type"] == keys["type"]
+                for r in level["records"] if r["kind"] < keys["kinds"] for o in r["on"])
+    return not keyed and level.get("pack") != skins["copycat"]
+
+
+def _built(hides, kinds_at, cell, kind):
+    """Whether the game builds a face of the block: one of its six looks at no
+    block its kind hides behind, or at one it is built unseen behind. A laser's
+    own cell hides as the plain block the loader has made of it."""
+    hidden = hides["kinds"].get(str(kind), hides["other"])
+    unseen = hides["unseen"] if str(kind) not in hides["kinds"] else ()
+    for n in NORMALS:
+        theirs = kinds_at.get((cell[0] + n[0], cell[1] + n[1], cell[2] + n[2]))
+        if theirs == LASER_KIND:
+            theirs = 0
+        if theirs is None or theirs not in hidden or theirs in unseen:
+            return True
+    return False
+
+
+def tallied(level, first_record, hides):
+    """The blocks a level with no key counts: the kinds the game's walk over the
+    inner lattice builds, with at least one face built. A beam's end stands a
+    plain block on an empty cell before the faces are built."""
+    cells = level["cells"]
+    kinds_at = {}
+    for i in range(0, len(cells), 4):
+        v = cells[i + 3]
+        kinds_at[tuple(cells[i:i + 3])] = v if v < first_record else level["records"][v - first_record]["kind"]
+    for r in level["records"]:
+        if r["kind"] == LASER_KIND:
+            for end in (r["f"][2:5], r["f"][5:8]):
+                kinds_at.setdefault(tuple(end), 0)
     n = 0
-    for v in level["cells"][3::4]:
-        kind = v if v < first_record else level["records"][v - first_record]["kind"]
-        n += kind != INVISIBLE_KIND
+    for cell, kind in kinds_at.items():
+        if kind in COUNTED_KINDS and all(c in INNER for c in cell) and _built(hides, kinds_at, cell, kind):
+            n += 1
     return n
 
 
-def level_points(level, kinds, types, first_record):
+def level_points(level, kinds, types, first_record, skins):
     total = 0
     for r in level["records"]:
         if r["kind"] >= BLOCK_KINDS:
             total += kinds.get(r["kind"], 0)
         for o in r["on"]:
             total += types.get(o["type"], lambda o: 0)(o)
-    if level["index"] in BONUS_SLOTS:
-        total += BLOCK_POINTS * tallied(level, first_record)
+    if plays_bonus(level, skins):
+        total += BLOCK_POINTS * tallied(level, first_record, skins["hides"])
     return total
 
 
 def main():
     data = json.loads(DATA.read_text())
     kinds, types, scores = points_of(json.loads(NAMES.read_text()))
+    skins = json.loads(OBJECTS.read_text())["skins"]
 
     bad = []
     for l in data["levels"]:
-        total = level_points(l, kinds, types, data["firstRecord"])
+        total = level_points(l, kinds, types, data["firstRecord"], skins)
         score = scores.get(f"{l['pack']}#{l['index']}")
         line = f"{l['theme']:7} {l['name']:10} {total:6}"
         if score is not None:

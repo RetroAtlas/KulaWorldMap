@@ -8,9 +8,9 @@ import {
   objectCount,
   blockCount,
   counted,
-  levelPoints,
   levelScore,
 } from "./data.js";
+import { levelPoints } from "./points.js";
 import { draw, drawSoon, invalidatePick } from "./render.js";
 import { showCell, clearDetail } from "./detail.js";
 import { slotOf, formatHash, parseHash } from "./permalink.js";

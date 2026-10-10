@@ -7,9 +7,9 @@ import {
   objectCount,
   blockCount,
   counted,
-  levelPoints,
   levelScore,
 } from "./data.js";
+import { levelPoints } from "./points.js";
 
 export function describeLevel(l) {
   const parts = [levelTitle(l), worldName(l.theme), counted(blockCount(l), "block")];

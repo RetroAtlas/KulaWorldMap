@@ -2,9 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { mapData, annotations } from "./fixtures.js";
+import { mapData, annotations, objects } from "./fixtures.js";
 import {
   setAnnotations,
+  setObjects,
   markersOf,
   objectCount,
   blockCount,
@@ -13,11 +14,12 @@ import {
   index,
   levelMarkers,
   blockMarkers,
-  levelPoints,
 } from "../../public/js/data.js";
+import { levelPoints, tallied, playsBonus } from "../../public/js/points.js";
 import { state } from "../../public/js/state.js";
 
 setAnnotations(annotations);
+setObjects(objects);
 
 const doc = readFileSync(
   fileURLToPath(new URL("../../docs/level-format.md", import.meta.url)),
@@ -140,7 +142,7 @@ test("a bonus level's tally reads a cell's kind off the record its value names, 
   const first = mapData.firstRecord;
   const record = (x, y, z, kind) => ({ x, y, z, kind, type: 0, f: [], on: [] });
   const l = {
-    index: 15,
+    pack: "/HIRO/HIRO.PAK",
     cells: [10, 10, 17, first, 11, 10, 17, 0],
     records: [record(10, 10, 17, 3), record(10, 10, 17, 9)],
   };
@@ -150,6 +152,58 @@ test("a bonus level's tally reads a cell's kind off the record its value names, 
   assert.equal(levelPoints(l), 50);
   const bonus = mapData.levels.find((l) => (l.shown || l.name) === "BONUS 7");
   assert.equal(levelPoints(bonus), 22900);
+});
+
+// The game scores the blocks it builds as it builds them, and whether a level
+// plays by the bonus rules is a matter of its keys, not its slot.
+test("a level with no key counts the blocks the game builds, and a key turns the count off", () => {
+  state.data = mapData;
+  const first = mapData.firstRecord;
+  const { skins } = objects;
+  const keyless = mapData.levels.filter((l) => playsBonus(l));
+  assert.deepEqual(
+    keyless.map((l) => l.name),
+    mapData.levels
+      .filter((l) => [15, 16, 17].includes(l.index) && !/FI\.PAK/.test(l.pack))
+      .map((l) => l.name),
+  );
+  for (const l of keyless) {
+    let seen = 0;
+    for (let i = 3; i < l.cells.length; i += 4) {
+      const v = l.cells[i];
+      if ((v < first ? v : l.records[v - first].kind) !== 3) seen++;
+    }
+    assert.equal(tallied(l), seen, l.name);
+  }
+  const cell = (x, y, z, v = 0) => [x, y, z, v];
+  const at = (cells, records = []) => ({ pack: "/HIRO/HIRO.PAK", cells: cells.flat(), records });
+  const floor = [];
+  for (let x = 10; x < 13; x++)
+    for (let y = 10; y < 13; y++) for (let z = 16; z < 19; z++) floor.push(cell(x, y, z));
+  assert.equal(tallied(at(floor)), 26, "the middle block of a solid cube has no face");
+  assert.equal(tallied(at([cell(0, 10, 17), cell(10, 33, 17), cell(10, 10, 17)])), 1);
+  const platform = {
+    x: 10,
+    y: 10,
+    z: 17,
+    kind: 5,
+    type: 2,
+    f: [2, 1, 10, 10, 17, 10, 14, 17],
+    length: 2,
+    on: [],
+  };
+  assert.equal(tallied(at([cell(10, 10, 17, first), cell(12, 12, 17)], [platform])), 1);
+  const key = {
+    x: 10,
+    y: 10,
+    z: 17,
+    kind: 0,
+    on: [{ face: 0, type: skins.keys.type, f: [], v: 0 }],
+  };
+  const keyedLevel = at([cell(10, 10, 17, first), cell(11, 10, 17)], [key]);
+  assert.equal(playsBonus(keyedLevel), false);
+  assert.equal(levelPoints(keyedLevel), 1000);
+  assert.equal(playsBonus({ ...at([cell(10, 10, 17)]), pack: skins.copycat }), false);
 });
 
 test("a count of one takes the singular", () => {

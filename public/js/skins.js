@@ -18,14 +18,15 @@ const FACE_ALONG = [
   [0, 5],
 ];
 
+/** Whether a key stands on a block the ball can roll on. */
+export const keyed = (skins, l) =>
+  l.records.some((r) => r.kind < skins.keys.kinds && r.on.some((o) => o.type === skins.keys.type));
+
 /** A level with no key wears the bonus skins, unless it is a hidden level or
     the pack of the mode that plays one pack of its own. */
 export function lookOf(skins, l, world) {
-  const keyed = l.records.some(
-    (r) => r.kind < skins.keys.kinds && r.on.some((o) => o.type === skins.keys.type),
-  );
   const glass = l.records.some((r) => r.kind === skins.hidden.kind && r.type === skins.hidden.type);
-  const bonus = !keyed && !glass && l.pack !== skins.copycat;
+  const bonus = !keyed(skins, l) && !glass && l.pack !== skins.copycat;
   return {
     set: skins.sets[bonus ? "bonus" : "arcade"],
     bonus,
