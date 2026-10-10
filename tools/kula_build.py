@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Read every level off the disc and write public/map_data.json, and every
+"""Read every level off the disc and write public/map_data.json; every
 object's mesh, with how everything moves and what every face wears, and write
-public/objects.json.
+public/objects.json; and every pack's layout, from which a level is fitted to
+a slot without the image, and write public/packs.json.
 
     export KULA_DISC="/path/to/Roll Away.bin"
     python3 tools/kula_build.py
@@ -11,6 +12,7 @@ The output is generated and committed, so regenerate it rather than editing it.
 import argparse
 import json
 import sys
+import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -19,10 +21,13 @@ from kula_ggi import FILE as GGI, Ggi, shadows, write_objects
 from kula_level import Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
 from kula_motion import Code, readings, table
 from kula_pak import Pak
+from kula_place import RECOMPRESS, ROOM
+from kula_sector import USER, sectors_of
 from kula_skins import table as skins_table
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
 OBJECTS = OUT.parent / "objects.json"
+PACKS = OUT.parent / "packs.json"
 WORLD_LEVELS = 15
 FINAL_LEVELS = 2
 
@@ -59,6 +64,22 @@ def level_json(L, theme, pack, index):
     shown = shown_as(theme, pack, index)
     if shown:
         out["shown"] = shown
+    return out
+
+
+def packs_json(disc):
+    """Where every pack lies and how much room it has, the length of each
+    record as stored and as recompressed, and where the free sectors are."""
+    lba, size = disc.files[ROOM]
+    out = {"room": {"path": ROOM, "lba": lba, "size": size}, "packs": []}
+    for _, path in packs(disc):
+        pak = Pak(disc.read_file(path), path)
+        lba, size = disc.files[path]
+        slots = [{"name": e["name"], "size": e["size"],
+                  "size9": len(zlib.compress(pak.level(i), RECOMPRESS))}
+                 for i, e in enumerate(pak.entries)]
+        out["packs"].append({"path": path, "lba": lba, "size": size,
+                             "capacity": len(sectors_of(lba, size)) * USER, "slots": slots})
     return out
 
 
@@ -105,12 +126,16 @@ def main():
     skins = skins_table(code, {t: disc.read_file(f"/{t}/{t}.TGI") for t in THEMES})
     if skins["copycat"] not in {l["pack"] for l in levels}:
         sys.exit(f"the skins name {skins['copycat']}, which is no pack on the disc")
+    if ROOM not in disc.files:
+        sys.exit(f"the disc has no {ROOM}, so nothing says where a pack can move to")
+    layout = packs_json(disc)
     g = Ggi(disc.read_file(GGI))
     cast = shadows(g, r["shadow.sprite"], r["shadow.sprites"])
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     shapes = write_objects(g, OBJECTS, placed, motion, skins, cast)
     OUT.write_text(json.dumps(data, indent=1))
+    PACKS.write_text(json.dumps(layout, indent=1))
     cells = sum(len(l["cells"]) // 4 for l in levels)
     records = sum(len(l["records"]) for l in levels)
     objs = sum(len(r["on"]) for l in levels for r in l["records"])
@@ -122,6 +147,10 @@ def main():
           f"{len(motion['types'])} types and {len(motion['kinds'])} kinds of block in motion, "
           f"the skins of {len(skins['sets'])} sets of faces, {len(shapes['shadows'])} shadows "
           f"-> {OBJECTS.relative_to(OUT.parent.parent.parent)} ({OBJECTS.stat().st_size/1024:.0f} KB)")
+    held = sum(p["size"] for p in layout["packs"])
+    capacity = sum(p["capacity"] for p in layout["packs"])
+    print(f"{len(layout['packs'])} packs holding {held:,} bytes in {capacity // USER} sectors of "
+          f"{capacity:,} -> {PACKS.relative_to(OUT.parent.parent.parent)} ({PACKS.stat().st_size/1024:.0f} KB)")
 
 
 if __name__ == "__main__":

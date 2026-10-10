@@ -1,0 +1,1327 @@
+{
+ "room": {
+  "path": "/3.00",
+  "lba": 93953,
+  "size": 31752000
+ },
+ "packs": [
+  {
+   "path": "/HIRO/HIRO.PAK",
+   "lba": 1002,
+   "size": 11155,
+   "capacity": 12288,
+   "slots": [
+    {
+     "name": "LEVEL 1",
+     "size": 299,
+     "size9": 289
+    },
+    {
+     "name": "LEVEL 2",
+     "size": 398,
+     "size9": 368
+    },
+    {
+     "name": "LEVEL 3",
+     "size": 481,
+     "size9": 461
+    },
+    {
+     "name": "LEVEL 4",
+     "size": 611,
+     "size9": 577
+    },
+    {
+     "name": "LEVEL 5",
+     "size": 395,
+     "size9": 381
+    },
+    {
+     "name": "LEVEL 6",
+     "size": 539,
+     "size9": 512
+    },
+    {
+     "name": "LEVEL 7",
+     "size": 688,
+     "size9": 658
+    },
+    {
+     "name": "LEVEL 8",
+     "size": 408,
+     "size9": 391
+    },
+    {
+     "name": "LEVEL 9",
+     "size": 430,
+     "size9": 418
+    },
+    {
+     "name": "LEVEL 10",
+     "size": 604,
+     "size9": 579
+    },
+    {
+     "name": "LEVEL 11",
+     "size": 503,
+     "size9": 477
+    },
+    {
+     "name": "LEVEL 12",
+     "size": 436,
+     "size9": 421
+    },
+    {
+     "name": "LEVEL 13",
+     "size": 454,
+     "size9": 430
+    },
+    {
+     "name": "LEVEL 14",
+     "size": 586,
+     "size9": 569
+    },
+    {
+     "name": "LEVEL 15",
+     "size": 653,
+     "size9": 628
+    },
+    {
+     "name": "BONUS 1",
+     "size": 552,
+     "size9": 538
+    },
+    {
+     "name": "BONUS 2",
+     "size": 537,
+     "size9": 515
+    },
+    {
+     "name": "BONUS 3",
+     "size": 534,
+     "size9": 508
+    },
+    {
+     "name": "HIDDEN 1",
+     "size": 423,
+     "size9": 418
+    },
+    {
+     "name": "LESSON",
+     "size": 1192,
+     "size9": 1080
+    }
+   ]
+  },
+  {
+   "path": "/HIRO/COPYCAT.PAK",
+   "lba": 1009,
+   "size": 5254,
+   "capacity": 6144,
+   "slots": [
+    {
+     "name": "SIMON 1",
+     "size": 432,
+     "size9": 384
+    },
+    {
+     "name": "SIMON 2",
+     "size": 403,
+     "size9": 368
+    },
+    {
+     "name": "SIMON 3",
+     "size": 536,
+     "size9": 509
+    },
+    {
+     "name": "SIMON 4",
+     "size": 802,
+     "size9": 778
+    },
+    {
+     "name": "SIMON 5",
+     "size": 550,
+     "size9": 524
+    },
+    {
+     "name": "SIMON 6",
+     "size": 663,
+     "size9": 631
+    },
+    {
+     "name": "SIMON 7",
+     "size": 465,
+     "size9": 453
+    },
+    {
+     "name": "SIMON 8",
+     "size": 602,
+     "size9": 570
+    },
+    {
+     "name": "SIMON 9",
+     "size": 413,
+     "size9": 399
+    },
+    {
+     "name": "SIMON10",
+     "size": 172,
+     "size9": 170
+    }
+   ]
+  },
+  {
+   "path": "/HIRO/HIROFI.PAK",
+   "lba": 1008,
+   "size": 1664,
+   "capacity": 2048,
+   "slots": [
+    {
+     "name": "FINAL 1",
+     "size": 914,
+     "size9": 861
+    },
+    {
+     "name": "FINAL 2",
+     "size": 702,
+     "size9": 674
+    }
+   ]
+  },
+  {
+   "path": "/HILLS/HILLS.PAK",
+   "lba": 3286,
+   "size": 11789,
+   "capacity": 12288,
+   "slots": [
+    {
+     "name": "LEVEL 16",
+     "size": 554,
+     "size9": 538
+    },
+    {
+     "name": "LEVEL 17",
+     "size": 646,
+     "size9": 610
+    },
+    {
+     "name": "LEVEL 18",
+     "size": 562,
+     "size9": 530
+    },
+    {
+     "name": "LEVEL 19",
+     "size": 532,
+     "size9": 504
+    },
+    {
+     "name": "LEVEL 20",
+     "size": 671,
+     "size9": 643
+    },
+    {
+     "name": "LEVEL 21",
+     "size": 349,
+     "size9": 342
+    },
+    {
+     "name": "LEVEL 22",
+     "size": 604,
+     "size9": 579
+    },
+    {
+     "name": "LEVEL 23",
+     "size": 410,
+     "size9": 396
+    },
+    {
+     "name": "LEVEL 24",
+     "size": 553,
+     "size9": 515
+    },
+    {
+     "name": "LEVEL 25",
+     "size": 482,
+     "size9": 471
+    },
+    {
+     "name": "LEVEL 26",
+     "size": 537,
+     "size9": 517
+    },
+    {
+     "name": "LEVEL 27",
+     "size": 452,
+     "size9": 442
+    },
+    {
+     "name": "LEVEL 28",
+     "size": 394,
+     "size9": 382
+    },
+    {
+     "name": "LEVEL 29",
+     "size": 484,
+     "size9": 466
+    },
+    {
+     "name": "LEVEL 30",
+     "size": 666,
+     "size9": 632
+    },
+    {
+     "name": "BONUS 4",
+     "size": 842,
+     "size9": 795
+    },
+    {
+     "name": "BONUS 5",
+     "size": 667,
+     "size9": 651
+    },
+    {
+     "name": "BONUS 6",
+     "size": 418,
+     "size9": 411
+    },
+    {
+     "name": "HIDDEN 2",
+     "size": 426,
+     "size9": 387
+    },
+    {
+     "name": "OBJ LEVEL",
+     "size": 1096,
+     "size9": 1009
+    }
+   ]
+  },
+  {
+   "path": "/HILLS/HILLSFI.PAK",
+   "lba": 3292,
+   "size": 1986,
+   "capacity": 2048,
+   "slots": [
+    {
+     "name": "FINAL 3",
+     "size": 1081,
+     "size9": 1027
+    },
+    {
+     "name": "FINAL 4",
+     "size": 857,
+     "size9": 801
+    }
+   ]
+  },
+  {
+   "path": "/INCA/INCA.PAK",
+   "lba": 3609,
+   "size": 12288,
+   "capacity": 12288,
+   "slots": [
+    {
+     "name": "LEVEL 31",
+     "size": 408,
+     "size9": 401
+    },
+    {
+     "name": "LEVEL 32",
+     "size": 490,
+     "size9": 475
+    },
+    {
+     "name": "LEVEL 33",
+     "size": 397,
+     "size9": 379
+    },
+    {
+     "name": "LEVEL 34",
+     "size": 391,
+     "size9": 380
+    },
+    {
+     "name": "LEVEL 35",
+     "size": 417,
+     "size9": 404
+    },
+    {
+     "name": "LEVEL 36",
+     "size": 321,
+     "size9": 309
+    },
+    {
+     "name": "LEVEL 37",
+     "size": 464,
+     "size9": 454
+    },
+    {
+     "name": "LEVEL 38",
+     "size": 323,
+     "size9": 318
+    },
+    {
+     "name": "LEVEL 39",
+     "size": 485,
+     "size9": 452
+    },
+    {
+     "name": "LEVEL 40",
+     "size": 467,
+     "size9": 440
+    },
+    {
+     "name": "LEVEL 41",
+     "size": 656,
+     "size9": 621
+    },
+    {
+     "name": "LEVEL 42",
+     "size": 829,
+     "size9": 795
+    },
+    {
+     "name": "LEVEL 43",
+     "size": 916,
+     "size9": 852
+    },
+    {
+     "name": "LEVEL 44",
+     "size": 863,
+     "size9": 805
+    },
+    {
+     "name": "LEVEL 45",
+     "size": 944,
+     "size9": 819
+    },
+    {
+     "name": "BONUS 7",
+     "size": 612,
+     "size9": 571
+    },
+    {
+     "name": "BONUS 8",
+     "size": 617,
+     "size9": 579
+    },
+    {
+     "name": "BONUS 9",
+     "size": 710,
+     "size9": 669
+    },
+    {
+     "name": "HIDDEN 3",
+     "size": 438,
+     "size9": 408
+    },
+    {
+     "name": "OBJ LEVEL",
+     "size": 1096,
+     "size9": 1009
+    }
+   ]
+  },
+  {
+   "path": "/INCA/INCAFI.PAK",
+   "lba": 3615,
+   "size": 1772,
+   "capacity": 2048,
+   "slots": [
+    {
+     "name": "FINAL 5",
+     "size": 929,
+     "size9": 862
+    },
+    {
+     "name": "FINAL 6",
+     "size": 795,
+     "size9": 767
+    }
+   ]
+  },
+  {
+   "path": "/ARCTIC/ARCTIC.PAK",
+   "lba": 1332,
+   "size": 12850,
+   "capacity": 14336,
+   "slots": [
+    {
+     "name": "LEVEL 46",
+     "size": 487,
+     "size9": 462
+    },
+    {
+     "name": "LEVEL 47",
+     "size": 707,
+     "size9": 685
+    },
+    {
+     "name": "LEVEL 48",
+     "size": 485,
+     "size9": 469
+    },
+    {
+     "name": "LEVEL 49",
+     "size": 543,
+     "size9": 507
+    },
+    {
+     "name": "LEVEL 50",
+     "size": 599,
+     "size9": 575
+    },
+    {
+     "name": "LEVEL 51",
+     "size": 426,
+     "size9": 402
+    },
+    {
+     "name": "LEVEL 52",
+     "size": 708,
+     "size9": 658
+    },
+    {
+     "name": "LEVEL 53",
+     "size": 516,
+     "size9": 503
+    },
+    {
+     "name": "LEVEL 54",
+     "size": 553,
+     "size9": 528
+    },
+    {
+     "name": "LEVEL 55",
+     "size": 461,
+     "size9": 441
+    },
+    {
+     "name": "LEVEL 56",
+     "size": 509,
+     "size9": 499
+    },
+    {
+     "name": "LEVEL 57",
+     "size": 688,
+     "size9": 650
+    },
+    {
+     "name": "LEVEL 58",
+     "size": 571,
+     "size9": 549
+    },
+    {
+     "name": "LEVEL 59",
+     "size": 678,
+     "size9": 648
+    },
+    {
+     "name": "LEVEL 60",
+     "size": 757,
+     "size9": 709
+    },
+    {
+     "name": "BONUS 10",
+     "size": 577,
+     "size9": 495
+    },
+    {
+     "name": "BONUS 11",
+     "size": 770,
+     "size9": 678
+    },
+    {
+     "name": "BONUS 12",
+     "size": 835,
+     "size9": 786
+    },
+    {
+     "name": "HIDDEN 4",
+     "size": 436,
+     "size9": 426
+    },
+    {
+     "name": "OBJ LEVEL",
+     "size": 1096,
+     "size9": 1009
+    }
+   ]
+  },
+  {
+   "path": "/ARCTIC/ARCTICFI.PAK",
+   "lba": 1339,
+   "size": 1349,
+   "capacity": 2048,
+   "slots": [
+    {
+     "name": "FINAL 7",
+     "size": 715,
+     "size9": 689
+    },
+    {
+     "name": "FINAL 8",
+     "size": 586,
+     "size9": 560
+    }
+   ]
+  },
+  {
+   "path": "/COWBOY/COWBOY.PAK",
+   "lba": 1983,
+   "size": 13410,
+   "capacity": 14336,
+   "slots": [
+    {
+     "name": "LEVEL 61",
+     "size": 579,
+     "size9": 566
+    },
+    {
+     "name": "LEVEL 62",
+     "size": 580,
+     "size9": 560
+    },
+    {
+     "name": "LEVEL 63",
+     "size": 502,
+     "size9": 462
+    },
+    {
+     "name": "LEVEL 64",
+     "size": 691,
+     "size9": 645
+    },
+    {
+     "name": "LEVEL 65",
+     "size": 752,
+     "size9": 720
+    },
+    {
+     "name": "LEVEL 66",
+     "size": 639,
+     "size9": 610
+    },
+    {
+     "name": "LEVEL 67",
+     "size": 732,
+     "size9": 703
+    },
+    {
+     "name": "LEVEL 68",
+     "size": 604,
+     "size9": 571
+    },
+    {
+     "name": "LEVEL 69",
+     "size": 850,
+     "size9": 782
+    },
+    {
+     "name": "LEVEL 70",
+     "size": 746,
+     "size9": 695
+    },
+    {
+     "name": "LEVEL 71",
+     "size": 940,
+     "size9": 874
+    },
+    {
+     "name": "LEVEL 72",
+     "size": 446,
+     "size9": 425
+    },
+    {
+     "name": "LEVEL 73",
+     "size": 465,
+     "size9": 446
+    },
+    {
+     "name": "LEVEL 74",
+     "size": 465,
+     "size9": 453
+    },
+    {
+     "name": "LEVEL 75",
+     "size": 722,
+     "size9": 701
+    },
+    {
+     "name": "BONUS 13",
+     "size": 400,
+     "size9": 379
+    },
+    {
+     "name": "BONUS 14",
+     "size": 432,
+     "size9": 414
+    },
+    {
+     "name": "BONUS 15",
+     "size": 642,
+     "size9": 622
+    },
+    {
+     "name": "HIDDEN 5",
+     "size": 679,
+     "size9": 629
+    },
+    {
+     "name": "OBJ LEVEL",
+     "size": 1096,
+     "size9": 1009
+    }
+   ]
+  },
+  {
+   "path": "/COWBOY/COWBOYFI.PAK",
+   "lba": 1990,
+   "size": 1538,
+   "capacity": 2048,
+   "slots": [
+    {
+     "name": "FINAL 9",
+     "size": 642,
+     "size9": 607
+    },
+    {
+     "name": "FINAL 10",
+     "size": 848,
+     "size9": 831
+    }
+   ]
+  },
+  {
+   "path": "/FIELD/FIELD.PAK",
+   "lba": 2313,
+   "size": 12347,
+   "capacity": 14336,
+   "slots": [
+    {
+     "name": "LEVEL 76",
+     "size": 448,
+     "size9": 430
+    },
+    {
+     "name": "LEVEL 77",
+     "size": 670,
+     "size9": 641
+    },
+    {
+     "name": "LEVEL 78",
+     "size": 352,
+     "size9": 347
+    },
+    {
+     "name": "LEVEL 79",
+     "size": 402,
+     "size9": 386
+    },
+    {
+     "name": "LEVEL 80",
+     "size": 402,
+     "size9": 389
+    },
+    {
+     "name": "LEVEL 81",
+     "size": 566,
+     "size9": 523
+    },
+    {
+     "name": "LEVEL 82",
+     "size": 1023,
+     "size9": 982
+    },
+    {
+     "name": "LEVEL 83",
+     "size": 413,
+     "size9": 396
+    },
+    {
+     "name": "LEVEL 84",
+     "size": 681,
+     "size9": 645
+    },
+    {
+     "name": "LEVEL 85",
+     "size": 731,
+     "size9": 687
+    },
+    {
+     "name": "LEVEL 86",
+     "size": 523,
+     "size9": 473
+    },
+    {
+     "name": "LEVEL 87",
+     "size": 445,
+     "size9": 422
+    },
+    {
+     "name": "LEVEL 88",
+     "size": 525,
+     "size9": 496
+    },
+    {
+     "name": "LEVEL 89",
+     "size": 474,
+     "size9": 451
+    },
+    {
+     "name": "LEVEL 90",
+     "size": 559,
+     "size9": 531
+    },
+    {
+     "name": "BONUS 16",
+     "size": 836,
+     "size9": 780
+    },
+    {
+     "name": "BONUS 17",
+     "size": 621,
+     "size9": 614
+    },
+    {
+     "name": "BONUS 18",
+     "size": 459,
+     "size9": 432
+    },
+    {
+     "name": "HIDDEN 6",
+     "size": 673,
+     "size9": 634
+    },
+    {
+     "name": "OBJ LEVEL",
+     "size": 1096,
+     "size9": 1009
+    }
+   ]
+  },
+  {
+   "path": "/FIELD/FIELDFI.PAK",
+   "lba": 2320,
+   "size": 1731,
+   "capacity": 2048,
+   "slots": [
+    {
+     "name": "FINAL 11",
+     "size": 708,
+     "size9": 683
+    },
+    {
+     "name": "FINAL 12",
+     "size": 971,
+     "size9": 891
+    }
+   ]
+  },
+  {
+   "path": "/ATLANT/ATLANT.PAK",
+   "lba": 1666,
+   "size": 14783,
+   "capacity": 16384,
+   "slots": [
+    {
+     "name": "LEVEL 91",
+     "size": 511,
+     "size9": 487
+    },
+    {
+     "name": "LEVEL 92",
+     "size": 521,
+     "size9": 504
+    },
+    {
+     "name": "LEVEL 93",
+     "size": 683,
+     "size9": 657
+    },
+    {
+     "name": "LECEL 94",
+     "size": 563,
+     "size9": 543
+    },
+    {
+     "name": "LEVEL 95",
+     "size": 796,
+     "size9": 751
+    },
+    {
+     "name": "LEVEL 96",
+     "size": 827,
+     "size9": 775
+    },
+    {
+     "name": "LEVEL 97",
+     "size": 664,
+     "size9": 641
+    },
+    {
+     "name": "LEVEL 98",
+     "size": 863,
+     "size9": 807
+    },
+    {
+     "name": "LEVEL 99",
+     "size": 540,
+     "size9": 525
+    },
+    {
+     "name": "LEVEL 100",
+     "size": 634,
+     "size9": 601
+    },
+    {
+     "name": "LEVEL 101",
+     "size": 757,
+     "size9": 717
+    },
+    {
+     "name": "LEVEL 102",
+     "size": 767,
+     "size9": 729
+    },
+    {
+     "name": "LEVEL 103",
+     "size": 919,
+     "size9": 872
+    },
+    {
+     "name": "LEVEL 104",
+     "size": 788,
+     "size9": 759
+    },
+    {
+     "name": "LEVEL 105",
+     "size": 767,
+     "size9": 749
+    },
+    {
+     "name": "BONUS 19",
+     "size": 579,
+     "size9": 561
+    },
+    {
+     "name": "BONUS 20",
+     "size": 526,
+     "size9": 512
+    },
+    {
+     "name": "BONUS 21",
+     "size": 676,
+     "size9": 640
+    },
+    {
+     "name": "HIDDEN 7",
+     "size": 854,
+     "size9": 825
+    },
+    {
+     "name": "OBJ LEVEL",
+     "size": 1096,
+     "size9": 1009
+    }
+   ]
+  },
+  {
+   "path": "/ATLANT/ATLANTFI.PAK",
+   "lba": 1674,
+   "size": 1391,
+   "capacity": 2048,
+   "slots": [
+    {
+     "name": "FINAL 13",
+     "size": 752,
+     "size9": 700
+    },
+    {
+     "name": "FINAL 14",
+     "size": 587,
+     "size9": 559
+    }
+   ]
+  },
+  {
+   "path": "/HAZE/HAZE.PAK",
+   "lba": 2636,
+   "size": 14404,
+   "capacity": 16384,
+   "slots": [
+    {
+     "name": "LEVEL 106",
+     "size": 633,
+     "size9": 590
+    },
+    {
+     "name": "LEVEL 107",
+     "size": 451,
+     "size9": 425
+    },
+    {
+     "name": "LEVEL 108",
+     "size": 667,
+     "size9": 573
+    },
+    {
+     "name": "LEVEL 109",
+     "size": 591,
+     "size9": 576
+    },
+    {
+     "name": "LEVEL 110",
+     "size": 620,
+     "size9": 611
+    },
+    {
+     "name": "LEVEL 111",
+     "size": 741,
+     "size9": 644
+    },
+    {
+     "name": "LEVEL 112",
+     "size": 882,
+     "size9": 763
+    },
+    {
+     "name": "LEVEL 113",
+     "size": 438,
+     "size9": 421
+    },
+    {
+     "name": "LEVEL 114",
+     "size": 377,
+     "size9": 365
+    },
+    {
+     "name": "LEVEL 115",
+     "size": 554,
+     "size9": 527
+    },
+    {
+     "name": "LEVEL 116",
+     "size": 695,
+     "size9": 643
+    },
+    {
+     "name": "LEVEL 117",
+     "size": 772,
+     "size9": 743
+    },
+    {
+     "name": "LEVEL 118",
+     "size": 826,
+     "size9": 780
+    },
+    {
+     "name": "LEVEL 119",
+     "size": 1064,
+     "size9": 1038
+    },
+    {
+     "name": "LEVEL 120",
+     "size": 798,
+     "size9": 773
+    },
+    {
+     "name": "BONUS 22",
+     "size": 710,
+     "size9": 665
+    },
+    {
+     "name": "BONUS 23",
+     "size": 920,
+     "size9": 867
+    },
+    {
+     "name": "BONUS 24",
+     "size": 724,
+     "size9": 677
+    },
+    {
+     "name": "HIDDEN 8",
+     "size": 381,
+     "size9": 362
+    },
+    {
+     "name": "OBJ LEVEL",
+     "size": 1096,
+     "size9": 1009
+    }
+   ]
+  },
+  {
+   "path": "/HAZE/HAZEFI.PAK",
+   "lba": 2644,
+   "size": 1731,
+   "capacity": 2048,
+   "slots": [
+    {
+     "name": "FINAL 15",
+     "size": 800,
+     "size9": 765
+    },
+    {
+     "name": "FINAL 16",
+     "size": 879,
+     "size9": 841
+    }
+   ]
+  },
+  {
+   "path": "/MARS/MARS.PAK",
+   "lba": 3937,
+   "size": 14838,
+   "capacity": 16384,
+   "slots": [
+    {
+     "name": "LEVEL 121",
+     "size": 511,
+     "size9": 497
+    },
+    {
+     "name": "LEVEL 122",
+     "size": 862,
+     "size9": 811
+    },
+    {
+     "name": "LEVEL 123",
+     "size": 535,
+     "size9": 513
+    },
+    {
+     "name": "LEVEL 124",
+     "size": 1025,
+     "size9": 984
+    },
+    {
+     "name": "LEVEL 125",
+     "size": 385,
+     "size9": 371
+    },
+    {
+     "name": "LEVEL 126",
+     "size": 1130,
+     "size9": 1079
+    },
+    {
+     "name": "LEVEL 127",
+     "size": 696,
+     "size9": 658
+    },
+    {
+     "name": "LEVEL 128",
+     "size": 715,
+     "size9": 690
+    },
+    {
+     "name": "LEVEL 129",
+     "size": 651,
+     "size9": 625
+    },
+    {
+     "name": "LEVEL 130",
+     "size": 775,
+     "size9": 732
+    },
+    {
+     "name": "LEVEL 131",
+     "size": 664,
+     "size9": 625
+    },
+    {
+     "name": "LEVEL 132",
+     "size": 749,
+     "size9": 702
+    },
+    {
+     "name": "LEVEL 133",
+     "size": 855,
+     "size9": 803
+    },
+    {
+     "name": "LEVEL 134",
+     "size": 676,
+     "size9": 641
+    },
+    {
+     "name": "LEVEL 135",
+     "size": 718,
+     "size9": 677
+    },
+    {
+     "name": "BONUS 25",
+     "size": 511,
+     "size9": 495
+    },
+    {
+     "name": "BONUS 26",
+     "size": 633,
+     "size9": 604
+    },
+    {
+     "name": "BONUS 27",
+     "size": 507,
+     "size9": 482
+    },
+    {
+     "name": "HIDDEN 9",
+     "size": 680,
+     "size9": 647
+    },
+    {
+     "name": "OBJ LEVEL",
+     "size": 1096,
+     "size9": 1009
+    }
+   ]
+  },
+  {
+   "path": "/MARS/MARSFI.PAK",
+   "lba": 3945,
+   "size": 1611,
+   "capacity": 2048,
+   "slots": [
+    {
+     "name": "FINAL 17",
+     "size": 652,
+     "size9": 606
+    },
+    {
+     "name": "FINAL 18",
+     "size": 907,
+     "size9": 878
+    }
+   ]
+  },
+  {
+   "path": "/HELL/HELL.PAK",
+   "lba": 2961,
+   "size": 16129,
+   "capacity": 16384,
+   "slots": [
+    {
+     "name": "LEVEL 135",
+     "size": 1081,
+     "size9": 1064
+    },
+    {
+     "name": "LEVEL 136",
+     "size": 785,
+     "size9": 741
+    },
+    {
+     "name": "LEVEL 137",
+     "size": 706,
+     "size9": 662
+    },
+    {
+     "name": "LEVEL 138",
+     "size": 519,
+     "size9": 490
+    },
+    {
+     "name": "LEVEL 140",
+     "size": 453,
+     "size9": 431
+    },
+    {
+     "name": "LEVEL 141",
+     "size": 661,
+     "size9": 632
+    },
+    {
+     "name": "LEVEL 142",
+     "size": 644,
+     "size9": 622
+    },
+    {
+     "name": "LEVEL 143",
+     "size": 779,
+     "size9": 702
+    },
+    {
+     "name": "LEVEL 144",
+     "size": 1262,
+     "size9": 1172
+    },
+    {
+     "name": "LEVEL 145",
+     "size": 795,
+     "size9": 743
+    },
+    {
+     "name": "LEVEL 146",
+     "size": 608,
+     "size9": 585
+    },
+    {
+     "name": "LEVEL 147",
+     "size": 916,
+     "size9": 862
+    },
+    {
+     "name": "LEVEL 148",
+     "size": 1075,
+     "size9": 1024
+    },
+    {
+     "name": "LEVEL 149",
+     "size": 863,
+     "size9": 838
+    },
+    {
+     "name": "LEVEL 150",
+     "size": 671,
+     "size9": 645
+    },
+    {
+     "name": "BONUS 28",
+     "size": 640,
+     "size9": 596
+    },
+    {
+     "name": "BONUS 29",
+     "size": 851,
+     "size9": 796
+    },
+    {
+     "name": "BONUS 30",
+     "size": 584,
+     "size9": 556
+    },
+    {
+     "name": "HIDDEN 10",
+     "size": 676,
+     "size9": 544
+    },
+    {
+     "name": "OBJ LEVEL",
+     "size": 1096,
+     "size9": 1009
+    }
+   ]
+  },
+  {
+   "path": "/HELL/HELLFI.PAK",
+   "lba": 2969,
+   "size": 2126,
+   "capacity": 4096,
+   "slots": [
+    {
+     "name": "FINAL 19",
+     "size": 1113,
+     "size9": 1001
+    },
+    {
+     "name": "FINAL 20",
+     "size": 961,
+     "size9": 899
+    }
+   ]
+  }
+ ]
+}

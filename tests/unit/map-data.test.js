@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapData, annotations, levelKey, TRAILER_KIND, UNPLACED_KIND } from "./fixtures.js";
+import { mapData, annotations, packs, levelKey, TRAILER_KIND, UNPLACED_KIND } from "./fixtures.js";
 import { fieldIndex } from "../../public/js/data.js";
 
 const FACES = 6;
@@ -225,4 +225,43 @@ test("every placed cell lies within 1 to 32 on each axis", () => {
     for (let i = 0; i < l.cells.length; i += 4)
       for (const v of l.cells.slice(i, i + 3))
         assert.ok(v > 0 && v < edge, `${l.name}: ${l.cells.slice(i, i + 3)}`);
+});
+
+// The packs' layout is read off the same disc as the levels, so it names every
+// pack they come from, in their order, with one slot a level.
+test("packs.json lists every pack the levels come from, in their order, one slot a level", () => {
+  assert.deepEqual(
+    packs.packs.map((p) => p.path),
+    [...new Set(mapData.levels.map((l) => l.pack))],
+  );
+  for (const p of packs.packs) {
+    const levels = mapData.levels.filter((l) => l.pack === p.path);
+    assert.equal(p.slots.length, levels.length, p.path);
+    for (const l of levels) assert.equal(p.slots[l.index].name, l.name, levelKey(l));
+  }
+});
+
+test("a pack's capacity is the sectors its size fills, and no record grows when recompressed", () => {
+  const SECTOR = 2048;
+  for (const p of packs.packs) {
+    assert.ok(p.size > 0 && p.size <= p.capacity, p.path);
+    assert.equal(p.capacity, Math.ceil(p.size / SECTOR) * SECTOR, p.path);
+    for (const s of p.slots) {
+      const where = `${p.path} ${s.name}`;
+      assert.ok(Number.isInteger(s.size) && s.size > 0, where);
+      assert.ok(Number.isInteger(s.size9) && s.size9 > 0 && s.size9 <= s.size, where);
+    }
+  }
+});
+
+test("the packs lie each in its own sectors, and the free room after all of them", () => {
+  const SECTOR = 2048;
+  const runs = packs.packs
+    .map((p) => [p.lba, p.lba + p.capacity / SECTOR])
+    .sort((a, b) => a[0] - b[0]);
+  const capacity = Math.max(...packs.packs.map((p) => p.capacity));
+  for (let i = 1; i < runs.length; i++) assert.ok(runs[i][0] >= runs[i - 1][1], `${runs[i]}`);
+  assert.equal(packs.room.path, "/3.00");
+  assert.ok(packs.room.lba >= runs[runs.length - 1][1]);
+  assert.ok(packs.room.size > capacity, "the room takes any pack");
 });

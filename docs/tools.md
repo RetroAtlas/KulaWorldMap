@@ -8,7 +8,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `kula_disc.py` | where this game keeps its packs, textures and executable |
 | `kula_pak.py` | the `.PAK` container, and the names inside it |
 | `kula_level.py` | the lattice and the record table, field by field |
-| `kula_build.py` | reads every level and every mesh, and writes `public/map_data.json` and `public/objects.json` |
+| `kula_build.py` | reads every level, every mesh and every pack's layout, and writes `public/map_data.json`, `public/objects.json` and `public/packs.json` |
 | `kula_kinds.py` | per-type contact sheets, for naming objects |
 | `kula_score.py` | what each level scores, beside the curated score where there is one |
 | `kula_faces.py` | what the six slots of every record hold, per kind and per face |
@@ -29,4 +29,4 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `icons.js` | render the raster icons from the favicon (Node, needs Playwright) |
 | `serve.py` | local static server, caching off, 404.html like the host |
 
-`kula_build.py` writes both JSON files in under a second, laid out so that a rebuild diffs line by line, or model by model, and refuses to write when the level file's cross-check fails ([level-format.md](level-format.md)). [tgi.md](tgi.md) and [ggi.md](ggi.md) show the artwork and geometry tools' own switches.
+`kula_build.py` writes the three JSON files in under a second, laid out so that a rebuild diffs line by line, or model by model, and refuses to write when the level file's cross-check fails ([level-format.md](level-format.md)). [tgi.md](tgi.md) and [ggi.md](ggi.md) show the artwork and geometry tools' own switches.

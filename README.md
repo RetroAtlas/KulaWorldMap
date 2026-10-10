@@ -27,7 +27,7 @@ export KULA_DISC="/path/to/Roll Away.bin"
 python3 tools/kula_build.py
 ```
 
-That writes `public/map_data.json` and `public/objects.json`, the levels and the objects' meshes, both generated **and committed**, so regenerate them rather than hand-editing.
+That writes `public/map_data.json`, `public/objects.json` and `public/packs.json`, the levels, the objects' meshes and the packs' layout, all three generated **and committed**, so regenerate them rather than hand-editing.
 
 ## Where the rest is
 

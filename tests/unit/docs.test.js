@@ -2,11 +2,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { mapData, annotations } from "./fixtures.js";
+import { mapData, annotations, packs } from "./fixtures.js";
+import { LARGEST, packSize } from "../../public/js/pak.js";
 
 const text = (path) =>
   readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
 const format = text("docs/level-format.md");
+const disc = text("docs/disc.md");
 const page = text("public/index.html");
 
 const objectsOf = (levels) => levels.flatMap((l) => l.records.flatMap((r) => r.on));
@@ -31,6 +33,11 @@ const number = (s) => (WORDS.includes(s) ? WORDS.indexOf(s) : Number(s.replace(/
 // go stale in silence.
 const inWorld = (l) => !/FI\.PAK|COPYCAT/.test(l.pack);
 const levels = (test) => mapData.levels.filter(test).length;
+const SECTOR = 2048;
+const sum = (xs, f) => xs.reduce((n, x) => n + f(x), 0);
+const held = sum(packs.packs, (p) => p.size);
+const capacity = sum(packs.packs, (p) => p.capacity);
+const wins = (p) => sum(p.slots, (s) => s.size - s.size9);
 const claims = [
   ["README.md", "levels", mapData.levels.length, /All (\d+) levels are here/],
   [
@@ -97,6 +104,24 @@ const claims = [
     "types the catalogue covers",
     [covered.length, types.size],
     /covering \*\*(\d+) of the game's (\d+) object types\*\*/,
+  ],
+  [
+    "docs/disc.md",
+    "bytes the packs hold, their sectors, capacity and spare",
+    [held, capacity / SECTOR, capacity, capacity - held],
+    /Between them the packs hold ([\d,]+) bytes in (\d+) sectors, ([\d,]+) bytes of capacity, so ([\d,]+) bytes are spare/,
+  ],
+  [
+    "docs/disc.md",
+    "level 9 wins",
+    sum(packs.packs, wins),
+    /at level 9 saves, ([\d,]+) bytes across the disc/,
+  ],
+  [
+    "docs/disc.md",
+    "free room",
+    [packs.room.size, packs.room.lba, Math.ceil(packs.room.size / SECTOR)],
+    /`\/3\.00`, the last file: ([\d,]+) bytes at sector (\d+), ([\d,]+) sectors/,
   ],
 ];
 
@@ -174,4 +199,52 @@ test("the page's descriptions count the levels and the worlds the data holds", (
     assert.equal(number(m[1]), mapData.levels.length);
     assert.equal(m[2], WORDS[mapData.themes.length]);
   }
+});
+
+// disc.md's two pack tables, row by row: where each pack lies and the room it
+// has, then what its records leave a level.
+const rows = (pattern) => [...disc.matchAll(pattern)].map((m) => [m[1], ...m.slice(2).map(number)]);
+
+test("disc.md's pack table is where packs.json puts every pack, and the room it has", () => {
+  assert.deepEqual(
+    rows(/^\| `([^`]+)` \| (\d+) \| ([\d,]+) \| (\d+) \| ([\d,]+) \| ([\d,]+) \|$/gm),
+    packs.packs.map((p) => [
+      p.path,
+      p.lba,
+      p.size,
+      p.capacity / SECTOR,
+      p.capacity,
+      p.capacity - p.size,
+    ]),
+  );
+});
+
+test("disc.md's room table is what the packs' records leave a level, slot by slot", () => {
+  assert.deepEqual(
+    rows(
+      /^\| `([^`]+)` \| ([\d,]+) \| ([\d,]+) \| ([\d,]+) to ([\d,]+) \| ([\d,]+) to ([\d,]+) \|$/gm,
+    ),
+    packs.packs.map((p) => {
+      const names = p.slots.map((s) => s.name);
+      const sizes = p.slots.map((s) => s.size);
+      const limit = Math.min(p.capacity, LARGEST);
+      const room = p.slots.map(
+        (_, k) =>
+          limit -
+          packSize(
+            names,
+            p.slots.map((s, i) => (i === k ? 0 : s.size9)),
+          ),
+      );
+      return [
+        p.path,
+        p.capacity - p.size,
+        wins(p),
+        Math.min(...room),
+        Math.max(...room),
+        Math.min(...sizes),
+        Math.max(...sizes),
+      ];
+    }),
+  );
 });
