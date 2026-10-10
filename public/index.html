@@ -248,7 +248,42 @@
       </div>
       <div id="tip" class="tip" hidden></div>
       <div id="detail" class="detail" hidden></div>
-      <div id="survey" class="survey" hidden></div>
+      <div id="tools" class="tools" role="group" aria-label="Editing" hidden>
+        <button id="editBtn" type="button" aria-pressed="false" title="Edit this level (w)">
+          Edit
+        </button>
+        <button
+          class="tool"
+          type="button"
+          data-tool="place"
+          aria-pressed="false"
+          title="Place a block against the face you click (a)"
+          hidden
+        >
+          Place
+        </button>
+        <button
+          class="tool"
+          type="button"
+          data-tool="erase"
+          aria-pressed="false"
+          title="Erase what stands on the face you click, or the block (z)"
+          hidden
+        >
+          Erase
+        </button>
+        <button
+          class="tool"
+          type="button"
+          data-tool="select"
+          aria-pressed="false"
+          title="Select a block (i)"
+          hidden
+        >
+          Select
+        </button>
+        <span id="toolStatus" class="status" role="status"></span>
+      </div>
       <div id="toastStack" class="toasts" aria-live="polite"></div>
     </main>
   </div>

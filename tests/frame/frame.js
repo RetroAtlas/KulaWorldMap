@@ -53,7 +53,9 @@ const PARTS = {
   drawScale: "overlays",
   drawLink: "overlays",
   outline: "overlays",
-  drawMark: "overlays",
+  drawFloor: "editor",
+  drawHover: "editor",
+  drawGhost: "editor",
 };
 const OUTSIDE = { "(idle)": "idle", "(program)": "native", "(garbage collector)": "gc" };
 

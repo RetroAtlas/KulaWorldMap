@@ -69,10 +69,13 @@ export const invalidatePick = () => {
   pickStale = true;
 };
 
-// What draws over the map from outside it: a cell hook runs after each block
-// is drawn, a frame hook once the see-through layer is laid.
-const overlays = { cell: [], frame: [] };
-export function overlayWith({ cell, frame }) {
+// What draws over the map from outside it: an under hook runs before any
+// block, where the ground grid is drawn, and skips the grid by returning true;
+// a cell hook runs after each block is drawn, a frame hook once the
+// see-through layer is laid.
+const overlays = { under: [], cell: [], frame: [] };
+export function overlayWith({ under, cell, frame }) {
+  if (under) overlays.under.push(under);
   if (cell) overlays.cell.push(cell);
   if (frame) overlays.frame.push(frame);
 }
@@ -233,7 +236,9 @@ export function draw() {
       )
     : null;
 
-  if (state.show.base) drawBase(ctx, l);
+  let covered = false;
+  for (const fn of overlays.under) covered = fn(ctx, l) || covered;
+  if (state.show.base && !covered) drawBase(ctx, l);
   syncRun();
   const frame = clock();
 
@@ -396,10 +401,10 @@ function paintPick(area) {
 }
 
 /** A travelling thing picks as the cell it started from, which holds its
-    record. A survey marks blocks, so it leaves travellers out. */
+    record. */
 function pickGoing(going, home, l, area) {
   const m = going.w.m;
-  if (state.hiddenKinds.has(m.id) || state.survey.on) return;
+  if (state.hiddenKinds.has(m.id)) return;
   const where = {
     x: home.x + going.offset[0],
     y: home.y + going.offset[1],

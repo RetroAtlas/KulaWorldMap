@@ -146,48 +146,6 @@ test("a raw field reads by its number, then what it holds where that is known", 
   expect(await labels(31)).toContain("f5 pickup number");
 });
 
-test("the survey keeps a mark a face, and clears the chosen face alone", async ({ page }) => {
-  await page.goto("/?survey#HIRO/0");
-  await settle(page);
-  await expect(page.locator("#survey")).toBeVisible();
-  const got = await page.evaluate(async () => {
-    const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state, cellKey }, { place }] = await Promise.all(["state.js", "survey.js"].map(at));
-    const c = [...state.idx.cells.values()][0];
-    const key = cellKey(c.x, c.y, c.z);
-    const choose = (id, value) => {
-      const s = document.getElementById(id);
-      s.value = value;
-      s.dispatchEvent(new Event("change"));
-    };
-    const cell = [c.x, c.y, c.z];
-    const marks = () => state.survey.marks.get(key).map((m) => [m.name, m.face]);
-    choose("surveyName", "blue switch");
-    choose("surveyFace", "+x");
-    place(c);
-    choose("surveyName", "key");
-    choose("surveyFace", "-z");
-    place(c);
-    const two = marks();
-    const stored = JSON.parse(localStorage.getItem("kula.survey"));
-    const level = stored[`${state.lvl.pack}#${state.lvl.index}`];
-    const count = document.getElementById("surveyCount").textContent;
-    choose("surveyFace", "+x");
-    place(c, true);
-    return { two, level, count, cell, one: marks() };
-  });
-  expect(got.two).toEqual([
-    ["key", "-z"],
-    ["blue switch", "+x"],
-  ]);
-  expect(got.level.map((m) => [m.cell, m.face])).toEqual([
-    [got.cell, "-z"],
-    [got.cell, "+x"],
-  ]);
-  expect(got.count).toMatch(/^2 marked on 1 block · /);
-  expect(got.one).toEqual([["key", "-z"]]);
-});
-
 test("a switch's panel presses it, turning its colour over until the level is left", async ({
   page,
 }) => {
@@ -443,43 +401,6 @@ test("the panel's icons are drawn again in the world's textures when they land",
     return pixels(shown) === pixels(fresh);
   });
   expect(same).toBe(true);
-});
-
-test("the survey passes over a stored mark that is not one, and exports none of them", async ({
-  page,
-}) => {
-  const errors = trackErrors(page);
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      "kula.survey",
-      JSON.stringify({
-        "/HIRO/HIRO.PAK#0": 5,
-        "/HIRO/HIRO.PAK#2": null,
-        "/HIRO/HIRO.PAK#1": [
-          { name: "x" },
-          { cell: [1, 2], name: "short" },
-          { cell: [1, 2, 3], name: "coin", face: 7 },
-          { cell: [1, 2, 3], name: "coin", face: "-z" },
-          null,
-        ],
-      }),
-    );
-  });
-  await page.goto("/?survey#HIRO/0");
-  await settle(page);
-  await expect(page.locator("#surveyCount")).toContainText("0 marked");
-  await page.keyboard.press("]");
-  await expect(page.locator("#surveyCount")).toContainText("1 marked");
-  const [download] = await Promise.all([
-    page.waitForEvent("download"),
-    page.locator("#survey button", { hasText: "download" }).click(),
-  ]);
-  const text = await (await import("node:fs/promises")).readFile(await download.path(), "utf8");
-  expect(JSON.parse(text)).toEqual({
-    survey: 1,
-    levels: { "/HIRO/HIRO.PAK#1": [{ cell: [1, 2, 3], name: "coin", face: "-z" }] },
-  });
-  expect(errors).toEqual([]);
 });
 
 test("the panel hands the focus to the map however it closes", async ({ page }) => {

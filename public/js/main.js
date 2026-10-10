@@ -43,6 +43,8 @@ const HELP = [
   ["`c`", "start camera"],
   ["`/`", "search"],
   ["`m`", "show and hide the sidebar"],
+  ["`w`", "edit the level, or make a copy of this one to edit"],
+  ["`a` `z` `i`", "while editing: place, erase, select"],
   ["`Esc`", "close, or clear the selection"],
   ["`?`", "this list"],
 ];

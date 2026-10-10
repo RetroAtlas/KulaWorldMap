@@ -39,7 +39,6 @@ export const state = {
   presses: new Map(),
   hover: null,
   selected: null,
-  survey: { on: false, marks: new Map() },
 };
 
 let basis = null;

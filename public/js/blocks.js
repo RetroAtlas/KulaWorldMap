@@ -324,6 +324,24 @@ const inside = (pts, x, y) => {
   return !sides.includes(1) || !sides.includes(-1);
 };
 
+const pointsOf = (f, ox, oy, s) =>
+  f.c.map(([dx, dy, dz]) => {
+    const [px, py] = project(dx, dy, dz);
+    return [ox + px * s, oy + py * s];
+  });
+
+/** The screen points of a face of the cube at `c`, by the game's number. */
+export function facePoints(c, game) {
+  const s = state.cam.zoom * BLOCK;
+  const [ox, oy] = screen(c.x, c.y, c.z);
+  return pointsOf(
+    FACES.find((f) => f.game === game),
+    ox,
+    oy,
+    s,
+  );
+}
+
 /** The game's number of the face of the block at `c` that the point lies on,
     among the faces turned to the camera, or null where none covers it. */
 export function faceAt(c, x, y) {
@@ -331,11 +349,7 @@ export function faceAt(c, x, y) {
   const [ox, oy] = screen(c.x, c.y, c.z);
   for (const f of FACES) {
     if (!facing(f.n)) continue;
-    const pts = f.c.map(([dx, dy, dz]) => {
-      const [px, py] = project(dx, dy, dz);
-      return [ox + px * s, oy + py * s];
-    });
-    if (inside(pts, x, y)) return f.game;
+    if (inside(pointsOf(f, ox, oy, s), x, y)) return f.game;
   }
   return null;
 }
@@ -356,10 +370,7 @@ export function outline(ctx, c, idx, colour, dash = []) {
   for (const f of FACES) {
     if (!facing(f.n)) continue;
     ctx.beginPath();
-    f.c.forEach(([dx, dy, dz], k) => {
-      const [px, py] = project(dx, dy, dz);
-      const x = ox + px * s,
-        y = oy + py * s;
+    pointsOf(f, ox, oy, s).forEach(([x, y], k) => {
       if (k) ctx.lineTo(x, y);
       else ctx.moveTo(x, y);
     });

@@ -101,7 +101,8 @@ for (const name of ["LESSON", "OBJ", "F6", "L94", "B15", "H3", "H10", "L22"]) {
   }
 }
 
-// C: zoom, across the edge and label thresholds and the marker's number
+// C: zoom, across the edge and label thresholds and the marker's number, and
+// far out from below
 for (const name of ["L1", "LESSON", "OBJ", "F6", "L94"]) {
   for (const zoom of [0.25, 0.3, 0.42, 0.6, 1, 1.3, 2.2, 3]) {
     add(`C/${name}/${zoom}/models`, name, V1, { zoom, show: { labels: true } });
@@ -109,6 +110,7 @@ for (const name of ["L1", "LESSON", "OBJ", "F6", "L94"]) {
   }
   add(`C/${name}/panned`, name, V3, { zoom: 1.6, pan: [3.5, -2.25], show: { labels: true } });
 }
+add("C/LESSON/far", "LESSON", V3, { zoom: 0.35 });
 
 // D: the slice, with and without the dim
 for (const name of ["LESSON", "OBJ", "L45", "H10", "L71", "L94"]) {
@@ -154,11 +156,6 @@ add("E/OBJ/sliced", "OBJ", V1, {
   show: { hidden: true },
   frames: two,
 });
-
-// F: the survey's marks
-add("F/LESSON/near", "LESSON", V1, { survey: 5, zoom: 1, show: { labels: true } });
-add("F/LESSON/far", "LESSON", V3, { survey: 5, zoom: 0.35 });
-add("F/L22/travel", "L22", V1, { survey: 4, frames: [T0, T1] });
 
 // G: kinds hidden from the legend
 add("G/OBJ", "OBJ", V1, { hide: 3, frames: [T0, T1] });

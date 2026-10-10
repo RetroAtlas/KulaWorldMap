@@ -13,7 +13,6 @@ import {
 import { drawSoon, cellAt, invalidatePick, pointing, onResize } from "./render.js";
 import { chip, writeHash, stepLevel, fit, setSlice } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
-import { surveying, place } from "./survey.js";
 import { FACE_NAME } from "./faces.js";
 import { OFF_LATTICE, kindName, ownMarker, markerLabel, markerNow } from "./data.js";
 import { setSidebar, sidebarOverlays, held } from "./sidebar.js";
@@ -42,6 +41,22 @@ function hold() {
 }
 
 const panning = (e) => e.shiftKey || e.button === 1 || e.button === 2 || state.panMode;
+
+// What hooks into the pointer from outside: a click handler that takes a click
+// by returning true, a test for whether the face under the pointer matters to
+// the hover, and lines for the tip.
+let clicked = null;
+export const onCellClick = (fn) => {
+  clicked = fn;
+};
+let faceMatters = () => false;
+export const hoverFaces = (fn) => {
+  faceMatters = fn;
+};
+let tipLines = () => [];
+export const tipWith = (fn) => {
+  tipLines = fn;
+};
 
 cv.addEventListener("contextmenu", (e) => e.preventDefault());
 
@@ -72,13 +87,10 @@ cv.addEventListener("pointerup", (e) => {
   const r = cv.getBoundingClientRect();
   if (drag && moved < CLICK) {
     const c = cellAt(e.clientX - r.left, e.clientY - r.top);
-    if (c && surveying()) {
-      place(c, e.altKey);
-    } else if (c) {
-      showCell(c);
-    } else {
-      clearDetail();
-    }
+    // a right click selects whatever the tool
+    const taken = e.button !== 2 && clicked?.(c, e);
+    if (!taken && c) showCell(c);
+    else if (!taken) clearDetail();
     drawSoon();
   }
   drag = null;
@@ -100,7 +112,9 @@ function hoverAt({ x, y }, near = false) {
   const r = cv.getBoundingClientRect();
   const c = cellAt(x - r.left, y - r.top, near);
   const key = c ? cellKey(c.x, c.y, c.z) : null;
-  const other = (state.hover?.key ?? null) !== key;
+  const was = state.hover;
+  const other =
+    (was?.key ?? null) !== key || (faceMatters() && (was?.face ?? null) !== (c?.face ?? null));
   if (other) {
     state.hover = c ? { ...c, key } : null;
     drawSoon();
@@ -204,6 +218,7 @@ function hoverTip(c, px, py) {
     const off = markerNow(m) === "off" ? " · off" : "";
     lines.push(markerLabel(m) + off + (m.face !== null ? ` · ${FACE_NAME[m.face]}` : ""));
   }
+  lines.push(...tipLines(c));
   const html = lines.join("<br>");
   if (tip.hidden || said.html !== html) {
     tip.innerHTML = html;
@@ -286,7 +301,7 @@ cv.addEventListener(
 
 addEventListener("keydown", (e) => {
   // a focused switch leaves the map its keys, and the slider keeps its arrows
-  const typing = /^(INPUT|TEXTAREA)$/.test(e.target.tagName) && e.target.type !== "checkbox";
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
   if (e.key === "/" && !typing) {
     e.preventDefault();
     setSidebar(true);

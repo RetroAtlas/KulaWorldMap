@@ -200,17 +200,6 @@ async function capture(page, c, keep) {
         const ids = [...new Set([...idx.markers.values()].flat().map((m) => m.id))];
         state.hiddenKinds = new Set(ids.slice(0, c.hide));
       }
-      if (c.survey) {
-        state.survey.on = true;
-        state.survey.marks = new Map();
-        [...idx.cells.values()]
-          .slice(0, c.survey)
-          .forEach((at, i) =>
-            state.survey.marks.set(cellKey(at.x, at.y, at.z), [
-              { name: ["coin", "key", "exit"][i % 3], face: ["top", "", "+x"][i % 3] },
-            ]),
-          );
-      }
 
       const hash = async (bytes) =>
         [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
@@ -249,8 +238,6 @@ async function capture(page, c, keep) {
       state.selected = null;
       state.hover = null;
       state.hiddenKinds = new Set();
-      state.survey.on = false;
-      state.survey.marks = new Map();
       state.presses = new Map();
       return shots;
     },

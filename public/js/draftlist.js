@@ -36,11 +36,7 @@ export function levelFor(slot) {
 export function wireDrafts() {
   $("yours").hidden = false;
   $("draftNew").onclick = () => open(drafts.create(blank(state.lvl.theme)), "Made a new level");
-  $("draftCopy").onclick = () => {
-    const l = state.lvl;
-    if (l.draft !== undefined) open(drafts.duplicate(l.draft), "Copied the level");
-    else open(drafts.create(fromLevel(l)), `Copied ${levelTitle(l)}`);
-  };
+  $("draftCopy").onclick = copyShown;
   $("draftOpen").onclick = () => $("draftFile").click();
   $("draftFile").onchange = openFile;
   $("draftExport").onclick = () => {
@@ -61,6 +57,13 @@ export function wireDrafts() {
 function show(id, doc, opts) {
   drawn = doc;
   showLevel(toLevel(doc, id), opts);
+}
+
+/** Open a copy of the level on screen, a shipped level as the game loads it or a draft as it is. */
+export function copyShown() {
+  const l = state.lvl;
+  if (l.draft !== undefined) open(drafts.duplicate(l.draft), "Copied the level");
+  else open(drafts.create(fromLevel(l)), `Copied ${levelTitle(l)}`);
 }
 
 function open(id, verb) {
@@ -278,11 +281,6 @@ function buildForm(id, box) {
     $("draftNew").focus();
     drafts.remove(id);
     say(`Deleted ${name}. ${describeLevel(state.lvl)}`);
-  };
-
-  // The map's keys leave a focused list alone, as they do a field.
-  box.onkeydown = (e) => {
-    if (e.target.tagName === "SELECT") e.stopPropagation();
   };
 
   box.append(
