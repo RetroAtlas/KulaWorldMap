@@ -15,6 +15,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `kula_objlevel.py` | the floor plan and sheet for naming objects by walking OBJ LEVEL |
 | `kula_warp.py` | the cheat, or a disc copy, that reaches a level no menu asks for |
 | `kula_kwl.py` | a level written back to the game's bytes from its fields, read out of any file the game would load, and held to the disc word for word ([editor.md](editor.md)) |
+| `kula_sector.py` | a Mode 2 Form 1 sector built as the disc has it, EDC and ECC included, and the disc's own sectors rebuilt to prove it ([disc.md](disc.md)) |
 | `kula_tgi.py` | a world's artwork: sections, VRAM page, textures |
 | `kula_ggi.py` | the objects' geometry: the model tables, every mesh, and a sheet of them drawn |
 | `kula_skins.py` | what the game paints on every face of every block, read off the executable |

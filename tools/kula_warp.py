@@ -22,8 +22,8 @@ with a second cheat that frees the camera to orbit the level. The PAL release
 keeps them at 0x800A2EA4, 0x800A2EA8 and 0x800A2EA0. The disc copy is for the
 packs the cheat cannot name, and for a real console.
 
-Writing user data leaves each touched sector's EDC and ECC stale. Emulators do
-not read them; a real console would.
+Every sector a write touches is rebuilt whole, EDC and ECC included, as the
+disc has them.
 """
 import argparse
 import os
@@ -36,10 +36,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import THEMES, open_disc, packs
 from kula_pak import Pak
+from kula_sector import SECTOR_RAW, USER, USER_OFF, rewrite
 
-SECTOR_RAW = 2352
-USER = 2048
-USER_OFF = 24
 CATALOGUE = "OBJ LEVEL"
 WORLD_WORDS = (0x800A340C, 0x800A3410)
 SLOT_WORD = 0x800A3408
@@ -75,8 +73,13 @@ class Image:
         while data:
             sec, within = divmod(offset, USER)
             n = min(len(data), USER - within)
-            self.f.seek((lba + sec) * SECTOR_RAW + USER_OFF + within)
-            self.f.write(data[:n])
+            at = (lba + sec) * SECTOR_RAW
+            self.f.seek(at)
+            raw = self.f.read(SECTOR_RAW)
+            user = bytearray(raw[USER_OFF:USER_OFF + USER])
+            user[within:within + n] = data[:n]
+            self.f.seek(at)
+            self.f.write(rewrite(raw, user))
             data = data[n:]
             offset += n
 
