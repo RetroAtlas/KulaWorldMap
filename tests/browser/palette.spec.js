@@ -99,9 +99,16 @@ test("the palette's groups and rows come from the data, named as the legend name
   const expected = await page.evaluate(
     async (ids) => {
       const { kindName, markerLabel } = await import(new URL("js/data.js", location.href).href);
+      const colour = (c) =>
+        /\(([^)]*)\)/.exec(
+          markerLabel({ type: 9, face: 0, f: Array(16).fill(0), variant: String(c) }),
+        )[1];
       return ids.map((id) => {
-        const k = /^k(\d+)$/.exec(id);
-        if (k) return kindName(Number(k[1]));
+        const k = /^k(\d+)(?:\/(\d))?$/.exec(id);
+        if (k)
+          return k[2] === undefined
+            ? kindName(Number(k[1]))
+            : `${kindName(Number(k[1]))} (${colour(k[2])})`;
         const [, type, variant] = /^t(\d+)(?:\/(\d))?$/.exec(id);
         return markerLabel({
           type: Number(type),
@@ -114,7 +121,11 @@ test("the palette's groups and rows come from the data, named as the legend name
     rows.map((r) => r.id),
   );
   expect(rows.map((r) => r.label)).toEqual(expected);
-  expect(groups.Blocks.map((r) => r.id)).toEqual(["k0", "k1", "k2", "k3", "k4", "k6", "k7"]);
+  expect(groups.Blocks.map((r) => r.id)).toEqual([
+    ...["k0", "k1", "k2", "k3", "k4", "k5", "k6", "k7"],
+    ...["k8/0", "k8/1", "k8/2", "k8/3"],
+  ]);
+  expect(groups.Blocks.find((r) => r.id === "k8/0").label).toBe("Laser (yellow)");
   const ids = rows.map((r) => r.id);
   expect(ids).not.toContain("t4");
   expect(ids.filter((id) => /^t4[3-7]$/.test(id))).toEqual(["t46"]);
@@ -214,7 +225,9 @@ test("a device wants a plain block, a brittle block takes nothing, and a face in
   await lay(page, [18, 18, 17], 6);
   await pick(page, "Pickups", "t31");
   await click(page, await top(page, [18, 18, 17]));
-  expect(await toasts(page)).toContain("Nothing stands on a crumbling or vanishing block's faces.");
+  expect(await toasts(page)).toContain(
+    "Nothing stands on a platform's, laser's, crumbling or vanishing block's faces.",
+  );
   expect(await facesAt(page, [18, 18, 17])).toEqual({});
 
   await lay(page, [17, 17, 16], 0);

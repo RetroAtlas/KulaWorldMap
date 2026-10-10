@@ -1,7 +1,7 @@
 // The editor, loaded only when the page is opened to make levels: the mode,
 // its tools and keys, and what it draws over the map through the frame's hooks.
 import { $, on } from "./dom.js";
-import { state, SIDE, screen, cellKey, sliceZ } from "./state.js";
+import { state, SIDE, facing as turnedToView, screen, cellKey, sliceZ } from "./state.js";
 import { FACE_NORMAL, FACE_NAME } from "./faces.js";
 import { entryName, kindName, levelTitle, markerLabel, skinsTable } from "./data.js";
 import { provideLevels, setSlice } from "./navigate.js";
@@ -11,7 +11,21 @@ import { onCellClick, hoverFaces, tipWith } from "./interaction.js";
 import { showCell } from "./detail.js";
 import { describeLevel, say } from "./a11y.js";
 import { toast } from "./toast.js";
-import { CRUMBLING_KIND, FACING_TYPES, PLAIN_ONLY, VANISHING_KIND, inner } from "./kwl.js";
+import {
+  CRUMBLING_KIND,
+  DEFAULT_LENGTH,
+  DEFAULT_SPEED,
+  FACING_TYPES,
+  LASER_KIND,
+  PLAIN_ONLY,
+  PLATFORM_KIND,
+  SPAN_KINDS,
+  VANISHING_KIND,
+  facesOf,
+  inner,
+  sameCell,
+  spanAxis,
+} from "./kwl.js";
 import {
   ERROR,
   blockAt,
@@ -30,13 +44,26 @@ import * as palette from "./palette.js";
 const EDGE = "The game builds nothing past the edge.";
 const HELD = "That cell holds a block already.";
 const LAST = "A level keeps its last block.";
-const BRITTLE = "Nothing stands on a crumbling or vanishing block's faces.";
+const BRITTLE = "Nothing stands on a platform's, laser's, crumbling or vanishing block's faces.";
 const LOOKS_INTO = "That face looks into another block.";
+const ONE_CELL = "A run needs two cells.";
+const CHANGED = "The run's own block changed while it waited.";
+const WAITING = "The run waits for its far end. Click where it ends, or press Esc.";
 const TOOL_KEYS = { a: "place", z: "erase", i: "select" };
 const WASH = "rgba(111 211 255 / 0.28)";
 const RIM = "#6fd3ff";
 const GHOST = "#ffffffd0";
 const BLOCKED = "#ff6b6b";
+const FREE = "#7ee2a8";
+const FREE_TINT = "rgba(126 226 168 / 0.22)";
+const BLOCKED_TINT = "rgba(255 107 107 / 0.25)";
+// a run's cells by what else lies in them: nothing, a block or the edge, a beam, another run
+const VERDICT = {
+  free: [FREE, FREE_TINT],
+  blocked: [BLOCKED, BLOCKED_TINT],
+  beam: ["#f3c969", "rgba(243 201 105 / 0.25)"],
+  run: ["#9fb4ff", "rgba(159 180 255 / 0.25)"],
+};
 const ICON = 28;
 const TURNS = 4;
 
@@ -44,6 +71,8 @@ const mode = { on: false, tool: "place" };
 // What Place lays: a kind of block, or a thing for a face, turned as `facing` says.
 let brush = { id: "k0", kind: 0 };
 let facing = 1;
+// A run waiting for its far end: its own cell, and whether it re-lays the span there.
+let pending = null;
 let paletteOpen = !matchMedia("(max-width: 760px)").matches;
 
 const onDraft = () => state.lvl?.draft !== undefined;
@@ -60,8 +89,18 @@ const kindWord = (kind) => lower(kindName(kind) || "plain block");
 const sentence = (text) => `${capital(text)}.`;
 const place3 = (cell) => cell.join(", ");
 const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
-const brushWord = () =>
-  brush.kind !== undefined ? kindWord(brush.kind) : lower(palette.chosen()?.label ?? "thing");
+const brushWord = () => {
+  if (brush.kind === LASER_KIND)
+    return `${palette.colourName(brush.colour)} ${kindWord(brush.kind)}`;
+  return brush.kind !== undefined
+    ? kindWord(brush.kind)
+    : lower(palette.chosen()?.label ?? "thing");
+};
+const spanWord = (b) =>
+  b.kind === LASER_KIND
+    ? `${palette.colourName(b.colour ?? 0)} ${kindWord(b.kind)}`
+    : kindWord(b.kind);
+const toCell = ([x, y, z]) => ({ x, y, z });
 const thingOn = (cell, face) =>
   (state.idx.markers.get(cellKey(...cell)) || []).find((m) => m.face === face) ?? null;
 const plainOnly = (e) => {
@@ -83,6 +122,7 @@ export function bootEditor() {
 function setMode(onNow, said = onNow ? "Editing on" : "Editing off") {
   if (mode.on === onNow) return;
   mode.on = onNow;
+  pending = null;
   status("");
   strip();
   if (said) say(said);
@@ -91,9 +131,16 @@ function setMode(onNow, said = onNow ? "Editing on" : "Editing off") {
 
 function setTool(tool) {
   mode.tool = tool;
+  dropRun();
   status("");
   strip();
   drawSoon();
+}
+
+function dropRun() {
+  if (!pending) return;
+  pending = null;
+  status("");
 }
 
 function toggleEditing() {
@@ -147,12 +194,15 @@ function wireTools() {
   palette.wirePalette((e) => {
     brush = e.kind !== undefined ? { id: e.id, kind: e.kind } : { id: e.id, type: e.type };
     if (e.variant !== undefined) brush.variant = e.variant;
+    if (e.colour !== undefined) brush.colour = e.colour;
+    dropRun();
     say(`Brush: ${e.label}`);
     drawSoon();
   });
   on("level-changed", () => {
     // the level chosen has been announced, and leaving with it needs no word of its own
     if (!onDraft() && mode.on) setMode(false, null);
+    dropRun();
     strip();
   });
   // the palette stands on the strip, however tall its line makes it
@@ -170,11 +220,10 @@ function wireTools() {
     return false;
   });
   hoverFaces(() => editing() && mode.tool !== "select");
-  tipWith((c) =>
-    editing() && mode.tool === "place" && c?.face != null
-      ? [`Place a ${brushWord()} on the ${FACE_NAME[c.face]}`]
-      : [],
-  );
+  tipWith((c) => {
+    if (!editing() || mode.tool !== "place" || c?.face == null) return [];
+    return [pending ? "End the run here" : `Place a ${brushWord()} on the ${FACE_NAME[c.face]}`];
+  });
   overlayWith({ under: drawFloor, cell: drawHover, frame: drawGhost });
   strip();
 }
@@ -191,7 +240,10 @@ function keys(e) {
   else if (editing() && !mod && !e.altKey && (e.key === "Delete" || e.key === "Backspace"))
     eraseSelection();
   else if (mod || e.altKey) return;
-  else if (e.key === "w") toggleEditing();
+  else if (e.key === "Escape" && editing() && pending) {
+    dropRun();
+    drawSoon();
+  } else if (e.key === "w") toggleEditing();
   else if (editing() && TOOL_KEYS[e.key]) setTool(TOOL_KEYS[e.key]);
   else if (editing() && key === "r") turn(e.shiftKey ? -1 : 1);
   else if (editing() && key === "j") palette.step(1);
@@ -241,18 +293,22 @@ function newErrors(before, next) {
   return errorsOf(next).filter((f) => !seen.has(describe(f)));
 }
 
+/** The cell a block would be laid in: across the clicked face, or on the floor
+    through the grid; null where the click lands on nothing to build against. */
+function landing(c, e) {
+  if (c) return c.face == null ? null : across(c, c.face);
+  const target = state.show.base ? onFloor(e) : null;
+  return target && target.every(inner) ? target : null;
+}
+
 function place(c, e) {
   const d = current();
   if (!d) return false;
+  if (pending) return finishRun(c, e, d);
   if (brush.kind === undefined) return placeThing(c, d);
-  let target;
-  if (c) {
-    if (c.face == null) return false;
-    target = across(c, c.face);
-  } else {
-    target = state.show.base ? onFloor(e) : null;
-    if (!target || !target.every(inner)) return false;
-  }
+  if (SPAN_KINDS.has(brush.kind)) return startRun(c, e, d);
+  const target = landing(c, e);
+  if (!target) return false;
   if (!target.every(inner)) return refuse(EDGE);
   if (blockAt(d.doc, target)) return refuse(HELD);
   const next = setBlock(d.doc, target, { kind: brush.kind });
@@ -264,6 +320,169 @@ function place(c, e) {
   return true;
 }
 
+// --- runs: a platform or a laser laid in two clicks ------------------------------------------
+
+/** Every cell a span takes: its run, and for a platform the blocks beyond the far end. */
+function runCells(b) {
+  const axis = spanAxis(b.cell, b.far);
+  if (axis === null) return [b.cell];
+  const lo = Math.min(b.cell[axis], b.far[axis]);
+  const extra = b.kind === PLATFORM_KIND ? (b.length ?? DEFAULT_LENGTH) - 1 : 0;
+  const hi = Math.max(b.cell[axis], b.far[axis]) + extra;
+  const cells = [];
+  for (let t = lo; t <= hi; t++) {
+    const c = [...b.cell];
+    c[axis] = t;
+    cells.push(c);
+  }
+  return cells;
+}
+
+const spanAt = (doc, cell) =>
+  doc.blocks.find(
+    (b) => SPAN_KINDS.has(b.kind) && b.far && runCells(b).some((c) => sameCell(c, cell)),
+  ) ?? null;
+
+/** The far end a run would take toward `cand`: along the axis it leaves the
+    anchor by most, or null where it leaves it by nothing. */
+function snap(anchor, cand) {
+  const d = cand.map((v, i) => v - anchor[i]);
+  const axis = d.reduce((best, v, i) => (Math.abs(v) > Math.abs(d[best]) ? i : best), 0);
+  if (!d[axis]) return null;
+  const far = [...anchor];
+  far[axis] = cand[axis];
+  return far;
+}
+
+/** The cell a run's far end would be read from: the hovered cell itself where a
+    laser may end on it, else the cell across the hovered face. */
+function candidate(c, e, doc) {
+  if (!c) return e ? landing(null, e) : null;
+  const cell = [c.x, c.y, c.z];
+  const kind = ownSpan(doc)?.kind ?? brush.kind;
+  if (kind === LASER_KIND) {
+    const b = blockAt(doc, cell);
+    if (b && ((b.kind === 0 && !facesOf(b).length) || b.kind === LASER_KIND)) return cell;
+  }
+  return c.face == null ? null : across(c, c.face);
+}
+
+/** The span the pending run re-lays, as the document holds it now; null where it lays a new one. */
+function ownSpan(doc) {
+  const own = pending?.respan ? blockAt(doc, pending.anchor) : null;
+  return own && SPAN_KINDS.has(own.kind) ? own : null;
+}
+
+/** Why the pending run can no longer be laid from its anchor, or null. */
+function anchorRefusal(doc) {
+  if (pending.respan) return ownSpan(doc) ? null : CHANGED;
+  return blockAt(doc, pending.anchor) ? HELD : null;
+}
+
+/** The span the pending run would lay toward `far`: its own, re-laid, or the brush's. */
+function spanToward(doc, far) {
+  const own = ownSpan(doc);
+  if (own) return { ...own, far };
+  if (brush.kind === PLATFORM_KIND)
+    return { kind: PLATFORM_KIND, far, length: DEFAULT_LENGTH, speed: DEFAULT_SPEED };
+  return { kind: LASER_KIND, far, colour: brush.colour ?? 0 };
+}
+
+function startRun(c, e, d) {
+  const own = c && blockAt(d.doc, [c.x, c.y, c.z]);
+  if (own && SPAN_KINDS.has(own.kind)) {
+    pending = { anchor: [...own.cell], respan: true };
+  } else {
+    const target = landing(c, e);
+    if (!target) return false;
+    if (!target.every(inner)) return refuse(EDGE);
+    if (blockAt(d.doc, target)) return refuse(HELD);
+    const grew = newErrors(d.doc, setBlock(d.doc, target, { kind: 0 }));
+    if (grew.length) return refuse(sentence(grew[0].text));
+    pending = { anchor: target, respan: false };
+  }
+  status(WAITING);
+  say(WAITING);
+  drawSoon();
+  return true;
+}
+
+function finishRun(c, e, d) {
+  const cand = candidate(c, e, d.doc);
+  if (!cand) return false;
+  const why = anchorRefusal(d.doc);
+  if (why) {
+    dropRun();
+    drawSoon();
+    return refuse(why);
+  }
+  const far = snap(pending.anchor, cand);
+  if (!far) return refuse(ONE_CELL);
+  const span = spanToward(d.doc, far);
+  const next = setBlock(d.doc, pending.anchor, span);
+  const grew = newErrors(d.doc, next);
+  if (grew.length) return refuse(sentence(grew[0].text));
+  const { anchor, respan } = pending;
+  pending = null;
+  if (Math.min(anchor[2], far[2]) < sliceZ()) setSlice(SIDE - 1 - Math.min(anchor[2], far[2]));
+  commit(
+    d.id,
+    next,
+    respan
+      ? `moved the ${spanWord(span)}'s run to ${place3(far)}`
+      : `laid a ${spanWord(span)} from ${place3(anchor)} to ${place3(far)}`,
+  );
+  select(anchor);
+  return true;
+}
+
+let preview = null;
+
+/** What the pending run would be toward the hovered cell, and whether it can be laid. */
+export function runPreview() {
+  const d = current();
+  if (!pending || !d) return null;
+  const cand = state.hover ? candidate(state.hover, null, d.doc) : null;
+  const far = cand && snap(pending.anchor, cand);
+  if (!far) return { anchor: pending.anchor, far: null, cells: [], verdicts: [], blocked: false };
+  const span = { ...spanToward(d.doc, far), cell: pending.anchor };
+  const key = `${pending.anchor}|${JSON.stringify(span)}`;
+  if (preview?.doc !== d.doc || preview.key !== key) {
+    const cells = runCells(span);
+    const blocked =
+      anchorRefusal(d.doc) !== null ||
+      newErrors(d.doc, setBlock(d.doc, pending.anchor, span)).length > 0;
+    preview = { doc: d.doc, key, cells, verdicts: verdicts(d.doc, span, cells), blocked };
+  }
+  const { cells, verdicts: by, blocked } = preview;
+  return { anchor: pending.anchor, far, cells, verdicts: by, blocked };
+}
+
+/** Each cell of a run by what else lies in it: a block or the edge, which the
+    checks refuse, or another laser's beam or another platform's run, which they
+    do not, a laser's far end on a plain or a laser's block being its to end on. */
+function verdicts(doc, span, cells) {
+  const beams = new Set();
+  const runs = new Set();
+  for (const b of doc.blocks) {
+    if (!SPAN_KINDS.has(b.kind) || !b.far || sameCell(b.cell, span.cell)) continue;
+    const laser = b.kind === LASER_KIND;
+    const taken = laser ? runCells(b).slice(1, -1) : runCells(b);
+    for (const c of taken) (laser ? beams : runs).add(cellKey(...c));
+  }
+  return cells.map((c) => {
+    if (sameCell(c, span.cell)) return "free";
+    if (!c.every(inner)) return "blocked";
+    const other = blockAt(doc, c);
+    if (other) {
+      const end = span.kind === LASER_KIND && sameCell(c, span.far);
+      return end && (other.kind === 0 || other.kind === LASER_KIND) ? "free" : "blocked";
+    }
+    const key = cellKey(...c);
+    return beams.has(key) ? "beam" : runs.has(key) ? "run" : "free";
+  });
+}
+
 /** Put the brush's thing on the clicked face, in place of whatever stood there. */
 function placeThing(c, d) {
   if (!c || c.face == null) return false;
@@ -272,7 +491,8 @@ function placeThing(c, d) {
   if (!b) return false;
   const e = palette.chosen();
   if (PLAIN_ONLY.has(brush.type) && b.kind !== 0) return refuse(plainOnly(e));
-  if (b.kind === CRUMBLING_KIND || b.kind === VANISHING_KIND) return refuse(BRITTLE);
+  if (SPAN_KINDS.has(b.kind) || b.kind === CRUMBLING_KIND || b.kind === VANISHING_KIND)
+    return refuse(BRITTLE);
   if (blockAt(d.doc, across(c, c.face))) return refuse(LOOKS_INTO);
   const o = { type: brush.type };
   if (brush.variant !== undefined) o.variant = brush.variant;
@@ -291,7 +511,13 @@ function erase(c) {
   if (!c || !d) return false;
   const cell = [c.x, c.y, c.z];
   const b = blockAt(d.doc, cell);
-  if (!b) return false;
+  if (!b) {
+    const s = spanAt(d.doc, cell);
+    if (!s) return false;
+    if (d.doc.blocks.length === 1) return refuse(LAST);
+    commit(d.id, removeBlock(d.doc, s.cell), `removed the ${spanWord(s)} at ${place3(s.cell)}`);
+    return true;
+  }
   const face = c.face ?? null;
   if (face !== null && faceAt(d.doc, cell, face)) {
     const m = thingOn(cell, face);
@@ -305,7 +531,7 @@ function erase(c) {
     return true;
   }
   if (d.doc.blocks.length === 1) return refuse(LAST);
-  commit(d.id, removeBlock(d.doc, cell), `removed the ${kindWord(b.kind)} at ${place3(cell)}`);
+  commit(d.id, removeBlock(d.doc, cell), `removed the ${spanWord(b)} at ${place3(cell)}`);
   return true;
 }
 
@@ -321,7 +547,7 @@ function pick(c) {
     if (o.facing) facing = o.facing;
     return palette.choose(palette.idOf(o));
   }
-  return palette.choose(`k${b.kind}`);
+  return palette.choose(palette.kindId(b));
 }
 
 /** Turn the selected thing a quarter turn where its kind faces, else the brush. */
@@ -406,8 +632,35 @@ on("atlas-loaded", () => {
   icon = null;
 });
 
+/** A cell's faces turned to the view, tinted. */
+function tint(ctx, cell, fill) {
+  ctx.fillStyle = fill;
+  for (let face = 0; face < FACE_NORMAL.length; face++) {
+    if (!turnedToView(FACE_NORMAL[face])) continue;
+    ctx.beginPath();
+    facePoints(cell, face).forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawRun(ctx) {
+  const run = runPreview();
+  if (!run) return;
+  outline(ctx, toCell(run.anchor), state.idx, GHOST, [4, 3]);
+  if (!run.far) return;
+  ctx.save();
+  run.cells.forEach((cell, i) => tint(ctx, toCell(cell), VERDICT[run.verdicts[i]][1]));
+  ctx.restore();
+  run.cells.forEach((cell, i) =>
+    outline(ctx, toCell(cell), state.idx, VERDICT[run.verdicts[i]][0], [2, 2]),
+  );
+  outline(ctx, toCell(run.far), state.idx, run.blocked ? BLOCKED : GHOST, [4, 3]);
+}
+
 function drawGhost(ctx) {
   if (!editing() || mode.tool !== "place") return;
+  if (pending) return drawRun(ctx);
   const h = state.hover;
   if (!h || h.face == null) return;
   if (brush.kind === undefined) {

@@ -11,17 +11,19 @@ import {
   objectId,
   paintsFace,
 } from "./data.js";
-import { markerIcon } from "./icons.js";
+import { blockIcon, markerIcon } from "./icons.js";
 import {
+  COLOURS,
   FACING_TYPES,
   FRUIT,
+  LASER_KIND,
   PICKUPS,
   PLAIN_ONLY,
   PLAYED,
   SETTINGS_KIND,
-  SPAN_KINDS,
   STAR,
   STARTS,
+  SWITCH,
   VARIANTS,
 } from "./kwl.js";
 
@@ -52,6 +54,13 @@ export const idOf = ({ type, variant }) => {
   return split(t) ? `t${t}/${variant ?? 0}` : `t${t}`;
 };
 
+/** The key of a block's row: its kind, and for a laser its colour as well. */
+export const kindId = (b) => (b.kind === LASER_KIND ? `k${b.kind}/${b.colour ?? 0}` : `k${b.kind}`);
+
+/** A colour's word, as the annotations name a switch of it. */
+export const colourName = (colour) =>
+  /\(([^)]*)\)/.exec(markerLabel(markerFor(SWITCH, String(colour))))?.[1] ?? String(colour);
+
 // What belongs to the face: its paint, the ball's start, and a thing that only
 // points a way and is neither a device nor a hazard.
 function groupOf(marker) {
@@ -67,10 +76,16 @@ let entries = null;
 function build() {
   const out = [];
   for (let kind = 0; kind < SETTINGS_KIND; kind++) {
-    if (SPAN_KINDS.has(kind)) continue;
-    const label = kindName(kind) ?? `kind ${kind}`;
-    const marker = { id: `k${kind}`, kind, face: null, f: NO_WORDS, variant: null };
-    out.push({ id: marker.id, group: GROUPS[0], kind, label, title: label, marker });
+    const name = kindName(kind) ?? `kind ${kind}`;
+    const colours = kind === LASER_KIND ? [...Array(COLOURS).keys()] : [undefined];
+    for (const colour of colours) {
+      const id = kindId({ kind, colour });
+      const label = colour === undefined ? name : `${name} (${colourName(colour)})`;
+      const marker = { id, kind, face: null, f: NO_WORDS, variant: null };
+      const e = { id, group: GROUPS[0], kind, label, title: label, marker };
+      if (colour !== undefined) e.colour = colour;
+      out.push(e);
+    }
   }
   const types = [...PLAYED]
     .filter((t) => t !== UNTRIED && (!FRUIT.includes(t) || t === FRUIT_SHOWN))
@@ -134,9 +149,12 @@ export function render() {
       const b = el("button", { type: "button", className: "kind", title: e.title });
       b.dataset.id = e.id;
       b.setAttribute("aria-pressed", String(e.id === pressed));
+      const icon =
+        e.colour === undefined
+          ? markerIcon(e.marker, l)
+          : blockIcon(l, e.kind, { size: 22, plate: e.colour });
       b.append(
-        markerIcon(e.marker, l) ??
-          el("span", { className: "dot", style: `background:${markerColour(e.marker)}` }),
+        icon ?? el("span", { className: "dot", style: `background:${markerColour(e.marker)}` }),
         el("span", { textContent: e.label }),
       );
       if (i < 9) {
@@ -178,5 +196,7 @@ export function pickDigit(n) {
 /** The pressed row's icon, for the map to draw. */
 export const brushIcon = (size) => {
   const e = chosen();
-  return e && state.lvl ? markerIcon(e.marker, state.lvl, size) : null;
+  if (!e || !state.lvl) return null;
+  if (e.colour !== undefined) return blockIcon(state.lvl, e.kind, { size, plate: e.colour });
+  return markerIcon(e.marker, state.lvl, size);
 };
