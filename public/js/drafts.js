@@ -2,7 +2,7 @@
 // after each change.
 import { emit } from "./dom.js";
 import { toast } from "./toast.js";
-import { WORLDS } from "./kwl.js";
+import { WORLDS, writeKwl } from "./kwl.js";
 import { readProject } from "./project.js";
 
 export const KEY = "kula.drafts";
@@ -29,6 +29,7 @@ function entryOf(raw) {
   let project;
   try {
     ({ project } = readProject(raw.doc));
+    writeKwl(project);
   } catch {
     return null;
   }
@@ -94,9 +95,10 @@ export const list = () =>
 
 export const get = (id) => store.drafts[id] ?? null;
 
-export function create(project) {
+/** A new draft; one read from a file names the file as `saved`, since the file is the record. */
+export function create(project, { saved = null } = {}) {
   const id = store.next++;
-  store.drafts[id] = { doc: project, updated: Date.now(), saved: null, edits: 0 };
+  store.drafts[id] = { doc: project, updated: Date.now(), saved, edits: 0 };
   touched(id);
   return id;
 }
@@ -107,6 +109,14 @@ export function update(id, project) {
   d.doc = project;
   d.updated = Date.now();
   d.edits += 1;
+  touched(id);
+}
+
+export function markSaved(id) {
+  const d = store.drafts[id];
+  if (!d) return;
+  d.saved = d.updated = Date.now();
+  d.edits = 0;
   touched(id);
 }
 
@@ -147,6 +157,7 @@ function write() {
   refused = false;
   dirty.clear();
   deleted.clear();
+  emit("drafts-written");
 }
 
 /** Write what waits now. */

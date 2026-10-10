@@ -5,11 +5,15 @@ import { state } from "./state.js";
 import { worldName, levelTitle } from "./data.js";
 import { selectLevel, showLevel } from "./navigate.js";
 import { say, describeLevel } from "./a11y.js";
-import { TIME_MAX } from "./kwl.js";
-import { UNTITLED, blank, fromLevel, setMeta, toLevel } from "./project.js";
+import { toast } from "./toast.js";
+import { TIME_MAX, writeKwl } from "./kwl.js";
+import { UNTITLED, blank, fromLevel, setMeta, toLevel, writeProject } from "./project.js";
+import { download, readLevelFile, slug } from "./files.js";
 import * as drafts from "./drafts.js";
 
 const CONFIRM_MS = 4000;
+const NOTE_MS = 2000;
+const GAME_FILE = "application/octet-stream";
 const nameOf = (doc) => doc.title || UNTITLED;
 
 // The disc's level shown last, which deleting the shown draft returns to.
@@ -17,6 +21,8 @@ let lastDisc = 0;
 // The document the level on screen was drawn from, where it is a draft.
 let drawn = null;
 let form = null;
+// What the reader repaired in the file the shown draft was opened from.
+let imported = null;
 
 /** The level a link to a draft names, or null where this browser has none. */
 export function levelFor(slot) {
@@ -35,7 +41,15 @@ export function wireDrafts() {
     if (l.draft !== undefined) open(drafts.duplicate(l.draft), "Copied the level");
     else open(drafts.create(fromLevel(l)), `Copied ${levelTitle(l)}`);
   };
+  $("draftOpen").onclick = () => $("draftFile").click();
+  $("draftFile").onchange = openFile;
+  $("draftExport").onclick = () => {
+    const l = state.lvl;
+    if (l.draft !== undefined) saveAs(l.draft, true);
+    else download(`${slug(levelTitle(l))}.kwl`, writeKwl(fromLevel(l)), GAME_FILE);
+  };
   on("drafts-changed", sync);
+  on("drafts-written", () => form?.wrote());
   on("level-changed", (i) => {
     if (i >= 0) lastDisc = i;
     sync();
@@ -54,6 +68,37 @@ function open(id, verb) {
   say(`${verb}. ${describeLevel(state.lvl)}`);
 }
 
+async function openFile() {
+  const input = $("draftFile");
+  const file = input.files[0];
+  input.value = "";
+  if (!file) return;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let read;
+  try {
+    read = readLevelFile(bytes, file.name, state.lvl.theme);
+  } catch (e) {
+    toast(e.message);
+    return;
+  }
+  const id = drafts.create(read.project, { saved: Date.now() });
+  imported = { id, lines: read.report };
+  open(id, `Opened ${nameOf(read.project)}`);
+  const n = read.report.length;
+  if (n) toast(n === 1 ? read.report[0] : `Read with ${n} repairs.`);
+}
+
+/** Write the draft to a file, as the map's or as the game's, and mark it saved. */
+function saveAs(id, game) {
+  drafts.flush();
+  const d = drafts.get(id);
+  if (!d) return;
+  const name = slug(nameOf(d.doc));
+  if (game) download(`${name}.kwl`, writeKwl(d.doc), GAME_FILE);
+  else download(`${name}.kula.json`, writeProject(d.doc), "application/json");
+  drafts.markSaved(id);
+}
+
 // The shown draft is drawn again whenever the store's copy of it is not the
 // one on screen, whichever tab changed it, and gives way to the disc's level
 // once it is gone.
@@ -68,9 +113,13 @@ function sync() {
     show(id, d.doc, { keepView: true, push: false, keep: state.selected?.key ?? null });
     return;
   }
+  if (state.lvl)
+    $("draftExport").title = `Save ${levelTitle(state.lvl)} as the file the game loads`;
   rows();
   card(id, d);
 }
+
+const unsaved = (d) => d.saved === null || d.edits > 0;
 
 const status = (d) => {
   const base = d.saved === null ? "not saved to a file" : "saved to a file";
@@ -111,10 +160,25 @@ function card(id, d) {
   }
   if (form?.id !== id) {
     form?.drop();
+    if (imported && imported.id !== id) imported = null;
     form = buildForm(id, box);
   }
-  form.sync(d.doc);
+  form.sync(d);
   box.hidden = false;
+}
+
+function reportFold(lines) {
+  const n = lines.length;
+  return el(
+    "details",
+    { className: "report" },
+    el("summary", { textContent: `Read with ${n} repair${n === 1 ? "" : "s"}` }),
+    el(
+      "ul",
+      {},
+      lines.map((line) => el("li", { textContent: line })),
+    ),
+  );
 }
 
 function buildForm(id, box) {
@@ -163,6 +227,27 @@ function buildForm(id, box) {
   const afar = el("input", { id: "draftAfar", type: "checkbox" });
   afar.onchange = () => edit({ invisibleFromAfar: afar.checked });
 
+  const saveJson = el("button", {
+    id: "draftSaveJson",
+    type: "button",
+    textContent: "save to a file",
+    title: "Save this level as the map's own file",
+  });
+  saveJson.onclick = () => saveAs(id, false);
+  const saveKwl = el("button", {
+    id: "draftSaveKwl",
+    type: "button",
+    textContent: "save as the game's level",
+    title: "Save this level as the file the game loads",
+  });
+  saveKwl.onclick = () => saveAs(id, true);
+  const note = el("span", {
+    className: "note",
+    textContent: "Saved in this browser",
+    hidden: true,
+  });
+  let noteTimer = 0;
+
   const duplicate = el("button", {
     type: "button",
     textContent: "duplicate",
@@ -201,12 +286,14 @@ function buildForm(id, box) {
   };
 
   box.append(
+    imported?.id === id && imported.lines.length ? reportFold(imported.lines) : [],
     el("h3", { textContent: "Level" }),
     field("Title", title),
     field("World", world),
     field("Time", time),
     el("label", { className: "check" }, hidden, " Hidden level"),
     el("label", { className: "check" }, afar, " Invisible blocks show from far away"),
+    el("div", { className: "row" }, saveJson, saveKwl, note),
     el("div", { className: "row" }, duplicate, del),
   );
 
@@ -215,13 +302,22 @@ function buildForm(id, box) {
   };
   return {
     id,
-    sync(doc) {
-      set(title, doc.title);
-      set(world, doc.world);
-      set(time, String(doc.time));
-      hidden.checked = !!doc.hidden;
-      afar.checked = !!doc.invisibleFromAfar;
+    sync(d) {
+      set(title, d.doc.title);
+      set(world, d.doc.world);
+      set(time, String(d.doc.time));
+      hidden.checked = !!d.doc.hidden;
+      afar.checked = !!d.doc.invisibleFromAfar;
+      saveJson.classList.toggle("unsaved", unsaved(d));
     },
-    drop: disarm,
+    wrote() {
+      note.hidden = false;
+      clearTimeout(noteTimer);
+      noteTimer = setTimeout(() => (note.hidden = true), NOTE_MS);
+    },
+    drop() {
+      disarm();
+      clearTimeout(noteTimer);
+    },
   };
 }
