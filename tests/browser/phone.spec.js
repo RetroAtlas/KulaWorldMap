@@ -189,3 +189,365 @@ test("the settings fit a phone, over the drawer they open from", async ({ page }
   await expect(page.locator("body")).toHaveClass(/sidebar-open/);
   await expect(page.locator("#settingsBtn")).toBeFocused();
 });
+
+test.describe("editing on a phone", () => {
+  test.use({ viewport: { width: 375, height: 700 }, isMobile: true, hasTouch: true });
+
+  const EDIT = "/?edit#HIRO/0/45,35/fit/33";
+  const START = [17, 17, 17];
+  const at = (page, x, y, z) =>
+    page.evaluate(
+      async ([x, y, z]) => {
+        const { screen } = await import(new URL("js/state.js", location.href).href);
+        const r = document.getElementById("cv").getBoundingClientRect();
+        const [px, py] = screen(x, y, z);
+        return { x: r.left + px, y: r.top + py };
+      },
+      [x, y, z],
+    );
+  const top = (page, c) => at(page, c[0] + 0.5, c[1] + 0.5, c[2]);
+  const plusX = (page, c) => at(page, c[0] + 1, c[1] + 0.5, c[2] + 0.5);
+  const tap = (page, point) => page.touchscreen.tap(point.x, point.y);
+  /** A finger held still on a block, through the browser's own touch input, until the hold has selected it. */
+  const hold = async (page, point) => {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: point.x, y: point.y }],
+    });
+    await expect.poll(async () => (await shown(page)).selected).not.toBe(null);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await cdp.detach();
+  };
+  const shown = (page) =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      const s = state.selected;
+      const h = state.hover;
+      return {
+        selected: s && [s.x, s.y, s.z],
+        hover: h && [h.x, h.y, h.z, h.face],
+        sheet: document.body.classList.contains("sheet-open"),
+      };
+    });
+  const cells = (page) =>
+    page.evaluate(async () => {
+      const [{ state }, { get }] = await Promise.all(
+        ["state.js", "drafts.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+      );
+      return get(state.lvl.draft).doc.blocks.map((b) => b.cell);
+    });
+  const spans = (page) =>
+    page.evaluate(async () => {
+      const [{ state }, { get }] = await Promise.all(
+        ["state.js", "drafts.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+      );
+      return get(state.lvl.draft).doc.blocks.filter((b) => b.kind === 5);
+    });
+  const zoom = (page, z) =>
+    page.evaluate(async (z) => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { invalidatePick, draw } = await import(new URL("js/render.js", location.href).href);
+      state.cam.zoom = z;
+      state.framing = null;
+      invalidatePick();
+      draw();
+    }, z);
+  const heights = (locator) =>
+    locator.evaluateAll((es) => es.map((e) => e.getBoundingClientRect().height));
+  /** Pan the level up the screen, clear of a sheet and the strip above it. */
+  const lift = (page, by) =>
+    page.evaluate(async (by) => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { invalidatePick, draw } = await import(new URL("js/render.js", location.href).href);
+      state.cam.panY += by;
+      state.framing = null;
+      invalidatePick();
+      draw();
+    }, by);
+
+  /** Pan the level so a point of it lies under a point of the screen. */
+  const bring = (page, point, to) =>
+    page.evaluate(
+      async ([point, to]) => {
+        const { state, screen, BLOCK } = await import(new URL("js/state.js", location.href).href);
+        const { invalidatePick, draw } = await import(new URL("js/render.js", location.href).href);
+        const r = document.getElementById("cv").getBoundingClientRect();
+        const [px, py] = screen(...point);
+        const k = state.cam.zoom * BLOCK;
+        state.cam.panX += (px - (to.x - r.left)) / k;
+        state.cam.panY += (py - (to.y - r.top)) / k;
+        state.framing = null;
+        invalidatePick();
+        draw();
+      },
+      [point, to],
+    );
+  const centre = (box) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
+  const tool = (page, name) => page.locator(`#tools .tool[data-tool="${name}"]`);
+
+  /** A new draft, editing, the drawer closed again so the map is under the finger. */
+  async function editFresh(page) {
+    await page.goto(EDIT);
+    await settle(page);
+    await page.keyboard.press("m");
+    await page.locator("#draftNew").click();
+    await page.keyboard.press("m");
+    await page.keyboard.press("w");
+    await expect(page.locator("#tools")).toBeVisible();
+    await expect(page.locator("#palette")).toBeHidden();
+    await still(page);
+  }
+
+  test("a tap marks a face, a second tap on it places, and a tap elsewhere marks that face instead", async ({
+    page,
+  }) => {
+    await editFresh(page);
+    const side = await plusX(page, START);
+    await tap(page, side);
+    await expect(page.locator("#toolStatus")).toHaveText(
+      "Tap again to place a block on the +x side.",
+    );
+    expect((await shown(page)).hover).toEqual([17, 17, 17, 1]);
+    expect(await cells(page)).toEqual([START]);
+    await tap(page, side);
+    expect(await cells(page)).toEqual([START, [18, 17, 17]]);
+    expect((await shown(page)).selected).toEqual([18, 17, 17]);
+    await expect(page.locator("#say")).toHaveText("Placed a block at 18, 17, 17");
+    await expect(page.locator("#toolStatus")).toHaveText("");
+    // the placed block's panel opened as a sheet; put it away to reach the map below
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#detail")).toBeHidden();
+
+    await tap(page, await plusX(page, [18, 17, 17]));
+    expect((await shown(page)).hover).toEqual([18, 17, 17, 1]);
+    await tap(page, await top(page, START));
+    expect((await shown(page)).hover).toEqual([17, 17, 17, 0]);
+    expect(await cells(page)).toHaveLength(2);
+    await tap(page, await top(page, START));
+    expect(await cells(page)).toContainEqual([17, 17, 16]);
+    expect(await cells(page)).toHaveLength(3);
+  });
+
+  test("a run is laid through two confirmed taps", async ({ page }) => {
+    await editFresh(page);
+    await page.keyboard.press("g");
+    await zoom(page, 0.8);
+    await page.locator("#paletteBtn").tap();
+    await expect(page.locator("#palette")).toBeVisible();
+    await page.locator('#palette .rows button[data-id="k5"]').tap();
+    await page.locator("#palette .x").tap();
+    await expect(page.locator("#palette")).toBeHidden();
+    const side = await plusX(page, START);
+    await tap(page, side);
+    await tap(page, side);
+    await expect(page.locator("#toolStatus")).toHaveText(
+      "The run waits for its far end. Click where it ends, or press Esc.",
+    );
+    const far = await at(page, 18.5, 21.5, 18);
+    await tap(page, far);
+    await expect(page.locator("#toolStatus")).toHaveText("Tap again to end the run here.");
+    expect(await spans(page)).toEqual([]);
+    await tap(page, far);
+    expect(await spans(page)).toEqual([
+      { cell: [18, 17, 17], kind: 5, far: [18, 21, 17], length: 2, speed: 30 },
+    ]);
+    await expect(page.locator("#say")).toHaveText(
+      "Laid a moving platform from 18, 17, 17 to 18, 21, 17",
+    );
+  });
+
+  test("a finger on the floor with a thing for a brush is told the grid lays blocks", async ({
+    page,
+  }) => {
+    await editFresh(page);
+    await page.keyboard.press("g");
+    await zoom(page, 0.8);
+    await page.locator("#paletteBtn").tap();
+    await page.locator("#palette .tabs button", { hasText: "Pickups" }).tap();
+    await page.locator('#palette .rows button[data-id="t31"]').tap();
+    await page.locator("#palette .x").tap();
+    await expect(page.locator("#palette")).toBeHidden();
+    await tap(page, await at(page, 18.5, 21.5, 18));
+    await expect(page.locator("#toolStatus")).toHaveText(
+      "The grid lays blocks; a thing goes on a block's face.",
+    );
+    await expect(page.locator("#toastStack .toast")).toHaveText([
+      "The grid lays blocks; a thing goes on a block's face.",
+    ]);
+    expect((await shown(page)).hover).toBe(null);
+    await tap(page, await at(page, 18.5, 21.5, 18));
+    expect(await cells(page)).toEqual([START]);
+    // a block for a brush lays on the floor as before
+    await page.locator("#paletteBtn").tap();
+    await page.locator("#palette .tabs button", { hasText: "Blocks" }).tap();
+    await page.locator('#palette .rows button[data-id="k0"]').tap();
+    await page.locator("#palette .x").tap();
+    await tap(page, await at(page, 18.5, 21.5, 18));
+    await expect(page.locator("#toolStatus")).toHaveText("Tap again to lay a block on the floor.");
+    await tap(page, await at(page, 18.5, 21.5, 18));
+    expect(await cells(page)).toEqual([START, [18, 21, 17]]);
+  });
+
+  test("a long press selects what is under the finger from the Place tool", async ({ page }) => {
+    await editFresh(page);
+    await hold(page, await top(page, START));
+    expect((await shown(page)).selected).toEqual(START);
+    await expect(page.locator("#detail")).toBeVisible();
+    expect(await cells(page)).toEqual([START]);
+    await expect(page.locator("#toolStatus")).toHaveText("");
+  });
+
+  test("a hold of any length selects, and the lift that ends it arms nothing", async ({ page }) => {
+    await editFresh(page);
+    const point = await top(page, START);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: point.x, y: point.y }],
+    });
+    await expect.poll(async () => (await shown(page)).selected).toEqual(START);
+    // held on well past any window the long press might have opened
+    await page.waitForTimeout(1200);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await cdp.detach();
+    await expect(page.locator("#detail")).toBeVisible();
+    await expect(page.locator("#toolStatus")).toHaveText("");
+    expect((await shown(page)).hover).toBe(null);
+    expect(await cells(page)).toEqual([START]);
+    // the next tap is a tap of its own
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#detail")).toBeHidden();
+    await tap(page, await plusX(page, START));
+    await expect(page.locator("#toolStatus")).toHaveText(
+      "Tap again to place a block on the +x side.",
+    );
+  });
+
+  test("a long press whose sheet moves the strip under the finger leaves the tools alone", async ({
+    page,
+  }) => {
+    await editFresh(page);
+    // where the Erase tool stands once the panel is a sheet
+    await page.keyboard.press("i");
+    await tap(page, await top(page, START));
+    await expect(page.locator("#detail")).toBeVisible();
+    const raised = centre(await tool(page, "erase").boundingBox());
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#detail")).toBeHidden();
+    await page.keyboard.press("a");
+    await bring(page, [START[0] + 0.5, START[1] + 0.5, START[2]], raised);
+    await hold(page, raised);
+    expect((await shown(page)).selected).toEqual(START);
+    await expect(page.locator("#detail")).toBeVisible();
+    expect(centre(await tool(page, "erase").boundingBox())).toEqual(raised);
+    await expect(tool(page, "place")).toHaveAttribute("aria-pressed", "true");
+    await expect(tool(page, "erase")).toHaveAttribute("aria-pressed", "false");
+    expect(await cells(page)).toEqual([START]);
+  });
+
+  test("a tap with Select whose sheet moves the strip under the finger leaves the tools alone", async ({
+    page,
+  }) => {
+    await editFresh(page);
+    await page.keyboard.press("i");
+    await tap(page, await top(page, START));
+    await expect(page.locator("#detail")).toBeVisible();
+    const raised = centre(await tool(page, "erase").boundingBox());
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#detail")).toBeHidden();
+    await bring(page, [START[0] + 0.5, START[1] + 0.5, START[2]], raised);
+    await tap(page, raised);
+    expect((await shown(page)).selected).toEqual(START);
+    await expect(page.locator("#detail")).toBeVisible();
+    expect(centre(await tool(page, "erase").boundingBox())).toEqual(raised);
+    await expect(tool(page, "select")).toHaveAttribute("aria-pressed", "true");
+    await expect(tool(page, "erase")).toHaveAttribute("aria-pressed", "false");
+    expect(await cells(page)).toEqual([START]);
+  });
+
+  test("an arming tap's prompt grows the strip without a tool taking the tap's click", async ({
+    page,
+  }) => {
+    await editFresh(page);
+    const strip = page.locator("#tools");
+    const resting = await strip.boundingBox();
+    const grown = await page.evaluate(() => {
+      const status = document.getElementById("toolStatus");
+      status.textContent = "Tap again to place a block on the top.";
+      const h = document.getElementById("tools").getBoundingClientRect().height;
+      status.textContent = "";
+      return h;
+    });
+    expect(grown).toBeGreaterThan(resting.height + 10);
+    // just above the strip, where its buttons stand once the prompt has grown it
+    const point = { x: centre(await tool(page, "erase").boundingBox()).x, y: resting.y - 2 };
+    await bring(page, [START[0] + 0.5, START[1] + 0.5, START[2]], point);
+    await tap(page, point);
+    await expect(tool(page, "place")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#toolStatus")).toHaveText("Tap again to place a block on the top.");
+    const under = await page.evaluate(
+      ([x, y]) => document.elementFromPoint(x, y)?.closest("#tools button")?.textContent.trim(),
+      [point.x, point.y],
+    );
+    expect(under).toBeTruthy();
+    await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#palette")).toBeHidden();
+    expect((await shown(page)).hover).toEqual([17, 17, 17, 0]);
+    expect(await cells(page)).toEqual([START]);
+  });
+
+  test("the palette and the panel are sheets, one at a time, with the strip above and 44 px targets", async ({
+    page,
+  }) => {
+    await editFresh(page);
+    await page.keyboard.press("i");
+    await tap(page, await top(page, START));
+    const panel = page.locator("#detail");
+    await expect(panel).toBeVisible();
+    expect((await shown(page)).sheet).toBe(true);
+    const sheet = await panel.boundingBox();
+    expect(sheet.x).toBe(0);
+    expect(sheet.width).toBe(375);
+    expect(sheet.y + sheet.height).toBeCloseTo(700, 0);
+    const strip = await page.locator("#tools").boundingBox();
+    expect(strip.y + strip.height).toBeLessThanOrEqual(sheet.y + 1);
+    expect(strip.width).toBe(375);
+
+    await page.locator("#paletteBtn").tap();
+    const palette = page.locator("#palette");
+    await expect(palette).toBeVisible();
+    await expect(panel).toBeHidden();
+    const box = await palette.boundingBox();
+    expect(box.width).toBe(375);
+    expect(box.y + box.height).toBeCloseTo(700, 0);
+    const above = await page.locator("#tools").boundingBox();
+    expect(above.y + above.height).toBeLessThanOrEqual(box.y + 1);
+    for (const h of await heights(page.locator("#tools button:visible")))
+      expect(h).toBeGreaterThanOrEqual(44);
+    for (const h of await heights(page.locator("#palette .tabs button, #palette .rows button")))
+      expect(h).toBeGreaterThanOrEqual(44);
+    for (const h of await heights(page.locator("#palette .x")))
+      expect(h).toBeGreaterThanOrEqual(44);
+
+    await lift(page, 1.5);
+    await tap(page, await top(page, START));
+    await expect(palette).toBeHidden();
+    await expect(panel).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+    expect((await shown(page)).sheet).toBe(false);
+    await page.locator("#paletteBtn").tap();
+    await expect(palette).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(palette).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
+  });
+
+  test("a mouse still places on one click", async ({ page }) => {
+    await editFresh(page);
+    const side = await plusX(page, START);
+    await page.mouse.click(side.x, side.y);
+    expect(await cells(page)).toEqual([START, [18, 17, 17]]);
+  });
+});

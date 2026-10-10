@@ -5,10 +5,11 @@ import { state, SIDE, facing as turnedToView, screen, cellKey, sliceZ } from "./
 import { FACE_NORMAL, FACE_NAME } from "./faces.js";
 import { entryName, kindName, levelTitle, markerLabel, skinsTable } from "./data.js";
 import { provideLevels, setSlice } from "./navigate.js";
-import { drawSoon, overlayWith } from "./render.js";
+import { cellAt, drawSoon, overlayWith } from "./render.js";
 import { facePoints, outline, outlineStroke } from "./blocks.js";
 import { onCellClick, hoverFaces, tipWith } from "./interaction.js";
-import { showCell } from "./detail.js";
+import { clearDetail, showCell } from "./detail.js";
+import { sidebarOverlays } from "./sidebar.js";
 import { describeLevel, say } from "./a11y.js";
 import { toast } from "./toast.js";
 import {
@@ -47,6 +48,7 @@ const LAST = "A level keeps its last block.";
 const BRITTLE = "Nothing stands on a platform's, laser's, crumbling or vanishing block's faces.";
 const LOOKS_INTO = "That face looks into another block.";
 const ONE_CELL = "A run needs two cells.";
+const FLOOR_THING = "The grid lays blocks; a thing goes on a block's face.";
 const CHANGED = "The run's own block changed while it waited.";
 const WAITING = "The run waits for its far end. Click where it ends, or press Esc.";
 const TOOL_KEYS = { a: "place", z: "erase", i: "select" };
@@ -66,6 +68,8 @@ const VERDICT = {
 };
 const ICON = 28;
 const TURNS = 4;
+const HOLD_MS = 500;
+const SLIP = 5;
 
 const mode = { on: false, tool: "place" };
 // What Place lays: a kind of block, or a thing for a face, turned as `facing` says.
@@ -73,6 +77,14 @@ let brush = { id: "k0", kind: 0 };
 let facing = 1;
 // A run waiting for its far end: its own cell, and whether it re-lays the span there.
 let pending = null;
+// A finger has no hover, so its first tap arms a face or a floor cell, which a
+// second tap on the same confirms; a long press selects instead, and the lift
+// of the finger that made it is swallowed.
+let armed = null;
+let press = null;
+let swallow = null;
+// A finger's tap while editing consumes its click: a sheet it raised may move the strip under it.
+let consumed = false;
 let paletteOpen = !matchMedia("(max-width: 760px)").matches;
 
 const onDraft = () => state.lvl?.draft !== undefined;
@@ -89,6 +101,8 @@ const kindWord = (kind) => lower(kindName(kind) || "plain block");
 const sentence = (text) => `${capital(text)}.`;
 const place3 = (cell) => cell.join(", ");
 const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
+const phone = () => sidebarOverlays();
+const hovered = () => armed?.c ?? state.hover;
 const brushWord = () => {
   if (brush.kind === LASER_KIND)
     return `${palette.colourName(brush.colour)} ${kindWord(brush.kind)}`;
@@ -123,6 +137,8 @@ function setMode(onNow, said = onNow ? "Editing on" : "Editing off") {
   if (mode.on === onNow) return;
   mode.on = onNow;
   pending = null;
+  armed = null;
+  document.body.classList.toggle("editing", onNow);
   status("");
   strip();
   if (said) say(said);
@@ -132,9 +148,23 @@ function setMode(onNow, said = onNow ? "Editing on" : "Editing off") {
 function setTool(tool) {
   mode.tool = tool;
   dropRun();
+  disarm();
   status("");
   strip();
   drawSoon();
+}
+
+function togglePalette(open) {
+  paletteOpen = open;
+  if (open && phone()) clearDetail();
+  strip();
+}
+
+// On a phone the palette and the panel are sheets, one at a time, and the
+// strip stands above whichever is open.
+function sheets() {
+  const open = phone() && editing() && (paletteOpen || !$("detail").hidden);
+  document.body.classList.toggle("sheet-open", open);
 }
 
 function dropRun() {
@@ -170,6 +200,7 @@ function strip() {
   const shown = editing() && paletteOpen;
   if (shown) palette.sync();
   $("palette").hidden = !shown;
+  sheets();
 }
 
 const status = (text) => {
@@ -187,24 +218,31 @@ function wireTools() {
   for (const b of $("tools").querySelectorAll(".tool")) b.onclick = () => setTool(b.dataset.tool);
   $("undoBtn").onclick = stepBack;
   $("redoBtn").onclick = stepAgain;
-  $("paletteBtn").onclick = () => {
-    paletteOpen = !paletteOpen;
-    strip();
-  };
-  palette.wirePalette((e) => {
-    brush = e.kind !== undefined ? { id: e.id, kind: e.kind } : { id: e.id, type: e.type };
-    if (e.variant !== undefined) brush.variant = e.variant;
-    if (e.colour !== undefined) brush.colour = e.colour;
-    dropRun();
-    say(`Brush: ${e.label}`);
-    drawSoon();
-  });
+  $("paletteBtn").onclick = () => togglePalette(!paletteOpen);
+  palette.wirePalette(
+    (e) => {
+      brush = e.kind !== undefined ? { id: e.id, kind: e.kind } : { id: e.id, type: e.type };
+      if (e.variant !== undefined) brush.variant = e.variant;
+      if (e.colour !== undefined) brush.colour = e.colour;
+      dropRun();
+      disarm();
+      say(`Brush: ${e.label}`);
+      drawSoon();
+    },
+    () => togglePalette(false),
+  );
   on("level-changed", () => {
     // the level chosen has been announced, and leaving with it needs no word of its own
     if (!onDraft() && mode.on) setMode(false, null);
     dropRun();
+    disarm();
     strip();
   });
+  on("selection-changed", () => {
+    if (phone() && state.selected && paletteOpen) togglePalette(false);
+    else sheets();
+  });
+  wireTouch();
   // the palette stands on the strip, however tall its line makes it
   new ResizeObserver(([e]) =>
     $("palette").style.setProperty("--strip-h", `${e.target.offsetHeight}px`),
@@ -213,11 +251,9 @@ function wireTools() {
   on("trail-changed", strip);
   document.addEventListener("keydown", keys, { capture: true });
   onCellClick((c, e) => {
-    if (!editing()) return false;
-    if (e.altKey) return pick(c);
-    if (e.shiftKey || mode.tool === "erase") return erase(c);
-    if (mode.tool === "place") return place(c, e);
-    return false;
+    const taken = take(c, e);
+    consumed = e.pointerType === "touch" && editing();
+    return taken;
   });
   hoverFaces(() => editing() && mode.tool !== "select");
   tipWith((c) => {
@@ -228,11 +264,141 @@ function wireTools() {
   strip();
 }
 
+function take(c, e) {
+  if (!editing()) return false;
+  if (e.pointerId === swallow) {
+    swallow = null;
+    return true;
+  }
+  if (e.altKey) return pick(c);
+  if (e.pointerType === "touch" && !e.shiftKey && mode.tool !== "select") return tap(c, e);
+  if (e.shiftKey || mode.tool === "erase") return erase(c);
+  if (mode.tool === "place") return place(c, e);
+  return false;
+}
+
+// --- a finger on the map ------------------------------------------------------------------
+
+function wireTouch() {
+  const cv = $("cv");
+  cv.addEventListener("pointerdown", (e) => {
+    if (!editing() || e.pointerType !== "touch" || !e.isPrimary) return;
+    clearTimeout(press?.timer);
+    const timer = setTimeout(() => longPress(e), HOLD_MS);
+    press = { id: e.pointerId, x: e.clientX, y: e.clientY, timer };
+  });
+  cv.addEventListener("pointermove", (e) => {
+    if (!press || e.pointerId !== press.id) return;
+    if (Math.abs(e.clientX - press.x) + Math.abs(e.clientY - press.y) < SLIP) return;
+    clearTimeout(press.timer);
+    press = null;
+    disarm();
+  });
+  const release = (e) => {
+    if (press?.id === e.pointerId) {
+      clearTimeout(press.timer);
+      press = null;
+    }
+    if (swallow === e.pointerId) swallow = null;
+  };
+  cv.addEventListener("pointerup", release);
+  cv.addEventListener("pointercancel", (e) => {
+    consumed = false;
+    release(e);
+  });
+  cv.addEventListener(
+    "touchend",
+    (e) => {
+      if (!consumed) return;
+      consumed = false;
+      e.preventDefault();
+    },
+    { passive: false },
+  );
+  cv.addEventListener(
+    "touchstart",
+    (e) => {
+      if (e.touches.length < 2) return;
+      clearTimeout(press?.timer);
+      press = null;
+      disarm();
+    },
+    { passive: true },
+  );
+  // a lifted finger leaves the map, which takes the hover with it
+  cv.addEventListener("pointerleave", (e) => {
+    if (e.pointerType !== "touch" || !armed?.c) return;
+    state.hover = armed.c;
+    drawSoon();
+  });
+}
+
+function longPress(e) {
+  press = null;
+  const r = $("cv").getBoundingClientRect();
+  const c = cellAt(e.clientX - r.left, e.clientY - r.top);
+  swallow = e.pointerId;
+  disarm();
+  if (c) showCell(c);
+  else clearDetail();
+  drawSoon();
+}
+
+/** A tap arms the face or the floor cell under it, or confirms the one armed. */
+function tap(c, e) {
+  const target = c ? faceTarget(c) : floorTarget(e);
+  if (!target) {
+    disarm();
+    return false;
+  }
+  if (target.cell && brush.kind === undefined) {
+    disarm();
+    return refuse(FLOOR_THING);
+  }
+  if (armed && armed.key === target.key && armed.face === target.face) {
+    const at = armed.c;
+    disarm();
+    return mode.tool === "erase" ? erase(at) : place(at, e);
+  }
+  armed = target;
+  if (armed.c) state.hover = armed.c;
+  status(`Tap again to ${tapWord(target)}.`);
+  drawSoon();
+  return true;
+}
+
+function faceTarget(c) {
+  const key = cellKey(c.x, c.y, c.z);
+  return { key, face: c.face ?? null, c: { ...c, key }, cell: null };
+}
+
+function floorTarget(e) {
+  if (mode.tool !== "place" || !state.show.base) return null;
+  const cell = onFloor(e);
+  if (!cell || !cell.every(inner)) return null;
+  return { key: cellKey(...cell), face: null, c: null, cell };
+}
+
+function tapWord(target) {
+  if (mode.tool === "erase") return "erase here";
+  if (pending) return "end the run here";
+  if (!target.c) return `lay a ${brushWord()} on the floor`;
+  return `place a ${brushWord()} on the ${FACE_NAME[target.face]}`;
+}
+
+function disarm() {
+  if (!armed) return;
+  armed = null;
+  status(pending ? WAITING : "");
+  drawSoon();
+}
+
 // A form field keeps the browser's own keys, and an open dialog keeps every key.
 function keys(e) {
   if (!state.lvl || dialogOpen()) return;
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
   if (typing) return;
+  if (e.key === "Escape") disarm();
   const mod = e.metaKey || e.ctrlKey;
   const key = e.key.toLowerCase();
   if (editing() && !e.altKey && mod && key === "z") e.shiftKey ? stepAgain() : stepBack();
@@ -243,7 +409,8 @@ function keys(e) {
   else if (e.key === "Escape" && editing() && pending) {
     dropRun();
     drawSoon();
-  } else if (e.key === "w") toggleEditing();
+  } else if (e.key === "Escape" && editing() && phone() && paletteOpen) togglePalette(false);
+  else if (e.key === "w") toggleEditing();
   else if (editing() && TOOL_KEYS[e.key]) setTool(TOOL_KEYS[e.key]);
   else if (editing() && key === "r") turn(e.shiftKey ? -1 : 1);
   else if (editing() && key === "j") palette.step(1);
@@ -459,7 +626,8 @@ let preview = null;
 export function runPreview() {
   const d = current();
   if (!pending || !d) return null;
-  const cand = state.hover ? candidate(state.hover, null, d.doc) : null;
+  const h = hovered();
+  const cand = h ? candidate(h, null, d.doc) : (armed?.cell ?? null);
   const far = cand && snap(pending.anchor, cand);
   if (!far) return { anchor: pending.anchor, far: null, cells: [], verdicts: [], blocked: false };
   const span = { ...spanToward(d.doc, far), cell: pending.anchor };
@@ -631,7 +799,7 @@ function drawFloor(ctx, l) {
 
 function drawHover(ctx, c, home, key, ghost) {
   if (!editing() || mode.tool === "select" || ghost || c.k) return;
-  const h = state.hover;
+  const h = hovered();
   if (!h || h.key !== key || h.face == null) return;
   ctx.save();
   ctx.beginPath();
@@ -678,7 +846,8 @@ function drawRun(ctx) {
 function drawGhost(ctx) {
   if (!editing() || mode.tool !== "place") return;
   if (pending) return drawRun(ctx);
-  const h = state.hover;
+  if (armed?.cell) return outline(ctx, toCell(armed.cell), state.idx, GHOST, [4, 3]);
+  const h = hovered();
   if (!h || h.face == null) return;
   if (brush.kind === undefined) {
     if (icon?.id !== brush.id || icon.theme !== state.lvl.theme)

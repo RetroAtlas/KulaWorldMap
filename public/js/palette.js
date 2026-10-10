@@ -111,12 +111,14 @@ export const entryOf = (id) => all().find((e) => e.id === id) ?? null;
 let group = GROUPS[0];
 let pressed = "k0";
 let chose = () => {};
+let closed = () => {};
 let builtFor = null;
 
 export const chosen = () => entryOf(pressed);
 
-export function wirePalette(onChoose) {
+export function wirePalette(onChoose, onClose = () => {}) {
   chose = onChoose;
+  closed = onClose;
   on("atlas-loaded", (world) => {
     if (world === state.lvl?.theme && !$("palette").hidden) render();
   });
@@ -132,6 +134,16 @@ export function render() {
   const l = state.lvl;
   if (!l) return;
   box.textContent = "";
+  const grip = el("div", { className: "grip" });
+  grip.setAttribute("aria-hidden", "true");
+  const close = el("button", {
+    className: "x",
+    type: "button",
+    textContent: "×",
+    title: "Close the palette (Esc)",
+  });
+  close.setAttribute("aria-label", "Close the palette");
+  close.onclick = () => closed();
   const tabs = el("div", { className: "tabs" });
   for (const g of GROUPS) {
     const b = el("button", { type: "button", textContent: g, title: g });
@@ -165,7 +177,7 @@ export function render() {
       b.onclick = () => choose(e.id);
       rows.append(b);
     });
-  box.append(tabs, rows);
+  box.append(grip, close, tabs, rows);
   builtFor = l.theme;
 }
 

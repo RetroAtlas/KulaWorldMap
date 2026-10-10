@@ -1309,6 +1309,31 @@ body:not(.sidebar-open) .menu-btn .cross {
 .palette .kind kbd {
   margin-left: auto;
 }
+.palette .grip {
+  display: none;
+  width: 36px;
+  height: 4px;
+  margin: 0 auto 8px;
+  border-radius: 2px;
+  background: var(--line);
+}
+.palette .x {
+  display: none;
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  place-items: center;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--dim);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.palette .x:hover {
+  color: var(--ink);
+}
 
 /* the patch dialog: a draft onto the disc in five steps */
 #patch .box {
@@ -1539,4 +1564,61 @@ body:not(.sidebar-open) .menu-btn .cross {
 #paste .row button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* on a phone the palette and the panel are sheets at the foot of the map, one
+   at a time, and the strip stands above whichever is open */
+@media (max-width: 760px) {
+  .map {
+    --sheet-h: 42vh;
+  }
+  body.editing .tools {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: none;
+    gap: 4px;
+    border-radius: 12px 12px 0 0;
+    padding: 6px 8px;
+  }
+  body.editing.sheet-open .tools {
+    bottom: var(--sheet-h);
+  }
+  body.editing .tools button,
+  .palette .tabs button,
+  .palette .kind,
+  .palette .x,
+  body.editing .detail .x,
+  body.editing .detail .fold,
+  body.editing .detail .press button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .palette,
+  body.editing .detail {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: auto;
+    height: var(--sheet-h);
+    max-height: none;
+    border-radius: 12px 12px 0 0;
+    z-index: 16;
+  }
+  .palette {
+    padding-top: 6px;
+  }
+  .palette .grip {
+    display: block;
+  }
+  .palette .x {
+    display: grid;
+  }
+  body.editing .detail .fold {
+    right: 52px;
+  }
+  body.editing .detail .fold + h3 {
+    padding-right: 100px;
+  }
 }
