@@ -5,7 +5,7 @@ import js from "@eslint/js";
 import globals from "globals";
 
 export default [
-  { ignores: ["node_modules/", ".claude/"] },
+  { ignores: ["node_modules/", ".claude/", "public/js/vendor/"] },
   js.configs.recommended,
   {
     files: ["public/js/**/*.js", "eslint.config.js"],

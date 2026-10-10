@@ -2,3 +2,5 @@
 *.json
 # prose Markdown is never wrapped
 *.md
+# the one vendored library keeps its own formatting
+public/js/vendor/

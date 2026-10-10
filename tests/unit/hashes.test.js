@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const BINARY = new Set([".png", ".ico", ".bin", ".cue"]);
 const GENERATED = new Set(["public/map_data.json", "public/objects.json", "package-lock.json"]);
+const VENDORED = "public/js/vendor/";
 
 // A run of hex with a letter and a digit in it, standing alone: an address
 // keeps its 0x and a colour its #, so neither reads as one.
@@ -18,7 +19,7 @@ test("nothing in the repo cites a commit by its hash", () => {
     .split("\n")
     .filter(Boolean);
   for (const path of tracked) {
-    if (BINARY.has(extname(path)) || GENERATED.has(path)) continue;
+    if (BINARY.has(extname(path)) || GENERATED.has(path) || path.startsWith(VENDORED)) continue;
     const hit = HASH.exec(readFileSync(join(root, path), "utf8"));
     assert.ok(!hit, `${path}: "${hit?.[0]}"`);
   }
