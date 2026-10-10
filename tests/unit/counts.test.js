@@ -17,6 +17,8 @@ import {
 } from "../../public/js/data.js";
 import { levelPoints, tallied, playsBonus } from "../../public/js/points.js";
 import { state } from "../../public/js/state.js";
+import { FORMAT } from "../../public/js/kwl.js";
+import { counts, toLevel } from "../../public/js/project.js";
 
 setAnnotations(annotations);
 setObjects(objects);
@@ -204,6 +206,42 @@ test("a level with no key counts the blocks the game builds, and a key turns the
   assert.equal(playsBonus(keyedLevel), false);
   assert.equal(levelPoints(keyedLevel), 1000);
   assert.equal(playsBonus({ ...at([cell(10, 10, 17)]), pack: skins.copycat }), false);
+});
+
+// The loader stands a plain block at a beam's empty end and reads a laser's own
+// cell as one, so the chip, the checks and the score tool count a laser's
+// level the same way.
+test("a keyless level with a laser counts its blocks the same way everywhere", () => {
+  state.data = mapData;
+  const ring = [
+    [12, 10, 17],
+    [11, 9, 17],
+    [11, 11, 17],
+    [11, 10, 16],
+    [11, 10, 18],
+  ];
+  const p = {
+    format: FORMAT,
+    version: 1,
+    title: "t",
+    author: "",
+    notes: "",
+    world: "HIRO",
+    time: 99,
+    hidden: false,
+    invisibleFromAfar: false,
+    circuits: {},
+    blocks: [
+      { cell: [10, 10, 17], kind: 8, far: [10, 14, 17], colour: 0 },
+      { cell: [11, 10, 17], kind: 0 },
+      ...ring.map((cell) => ({ cell, kind: 0 })),
+    ],
+  };
+  const l = toLevel(p, 1);
+  assert.ok(playsBonus(l));
+  assert.equal(tallied(l), 6);
+  assert.equal(counts(p, objects.skins.hides).blocks, 6);
+  assert.equal(levelPoints(l), 300);
 });
 
 test("a count of one takes the singular", () => {
