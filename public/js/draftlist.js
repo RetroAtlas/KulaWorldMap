@@ -9,6 +9,7 @@ import { toast } from "./toast.js";
 import { TIME_MAX, writeKwl } from "./kwl.js";
 import { UNTITLED, blank, fromLevel, setMeta, toLevel, writeProject } from "./project.js";
 import { download, readLevelFile, slug } from "./files.js";
+import { openPatchDialog } from "./patchdialog.js";
 import * as drafts from "./drafts.js";
 
 const CONFIRM_MS = 4000;
@@ -244,6 +245,13 @@ function buildForm(id, box) {
     title: "Save this level as the file the game loads",
   });
   saveKwl.onclick = () => saveAs(id, true);
+  const patch = el("button", {
+    id: "draftPatch",
+    type: "button",
+    textContent: "put it on the disc…",
+    title: "Make a patch that puts this level on the game's disc",
+  });
+  patch.onclick = () => openPatchDialog(id);
   const note = el("span", {
     className: "note",
     textContent: "Saved in this browser",
@@ -291,7 +299,7 @@ function buildForm(id, box) {
     field("Time", time),
     el("label", { className: "check" }, hidden, " Hidden level"),
     el("label", { className: "check" }, afar, " Invisible blocks show from far away"),
-    el("div", { className: "row" }, saveJson, saveKwl, note),
+    el("div", { className: "row" }, saveJson, saveKwl, patch, note),
     el("div", { className: "row" }, duplicate, del),
   );
 

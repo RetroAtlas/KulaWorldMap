@@ -1266,3 +1266,117 @@ body:not(.sidebar-open) .menu-btn .cross {
 .tools .status:empty {
   display: none;
 }
+
+/* the patch dialog: a draft onto the disc in five steps */
+#patch .box {
+  width: 540px;
+}
+#patch section {
+  margin: 0 0 14px;
+}
+#patch section:last-child {
+  margin-bottom: 0;
+}
+#patch .name {
+  color: var(--ink);
+  font-weight: 600;
+  margin: 0 0 2px;
+}
+#patch p {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+}
+#patch .sub {
+  color: var(--dim);
+  font-size: 12px;
+}
+#patch .sub:empty {
+  display: none;
+}
+#patch ul {
+  margin: 4px 0 6px;
+  padding-left: 18px;
+  color: var(--dim);
+  font-size: 12.5px;
+}
+#patch ul:empty {
+  display: none;
+}
+#patch .errors,
+#patch .errors ul {
+  color: var(--warn);
+}
+#patch details summary {
+  cursor: pointer;
+  color: var(--warn);
+  font-size: 12.5px;
+}
+#patch .slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 12.5px;
+}
+#patch .slot > span {
+  color: var(--dim);
+}
+#patch select {
+  flex: 1;
+  min-width: 0;
+  background: #0e1320;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12.5px;
+}
+#patch select:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: -1px;
+}
+#patch .drop {
+  display: block;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 6px 0;
+  color: var(--dim);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+#patch .drop.over {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+#patch .drop input {
+  display: block;
+  margin-top: 6px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+}
+#patch .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+#patch .row button {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+#patch .row button:hover {
+  border-color: var(--accent-dim);
+}
+#patch .row button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
