@@ -11,6 +11,7 @@ import { deflate } from "./deflate.js";
 import { ERROR, UNTITLED, describe, playsAs, setMeta, validate } from "./project.js";
 import { download, slug } from "./files.js";
 import * as drafts from "./drafts.js";
+import { edit } from "./trail.js";
 import { IN_PLACE, REBUILD, fit } from "./pak.js";
 import { openDisc } from "./iso.js";
 import { PREFIX, cue, patchedImage, placements, plan, ppf, vcdiff, verify } from "./patch.js";
@@ -269,7 +270,7 @@ function choose(into) {
   d.into = into;
   const entry = drafts.get(d.id);
   if (entry) {
-    drafts.update(d.id, setMeta(entry.doc, { into }));
+    edit(d.id, setMeta(entry.doc, { into }), "changed the target slot");
     d.doc = drafts.get(d.id).doc;
     d.errors = checks();
   }

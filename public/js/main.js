@@ -45,6 +45,8 @@ const HELP = [
   ["`m`", "show and hide the sidebar"],
   ["`w`", "edit the level, or make a copy of this one to edit"],
   ["`a` `z` `i`", "while editing: place, erase, select"],
+  ["`Ctrl-Z` `Ctrl-Shift-Z`", "while editing: undo, redo"],
+  ["`Delete`", "while editing: erase what is selected, its object first"],
   ["`Esc`", "close, or clear the selection"],
   ["`?`", "this list"],
 ];

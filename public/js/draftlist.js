@@ -10,6 +10,7 @@ import { TIME_MAX, writeKwl } from "./kwl.js";
 import { UNTITLED, blank, fromLevel, setMeta, toLevel, writeProject } from "./project.js";
 import { download, readLevelFile, slug } from "./files.js";
 import { openPatchDialog } from "./patchdialog.js";
+import { edit as step } from "./trail.js";
 import * as drafts from "./drafts.js";
 
 const CONFIRM_MS = 4000;
@@ -188,9 +189,9 @@ function reportFold(lines) {
 
 function buildForm(id, box) {
   box.textContent = "";
-  const edit = (meta) => {
+  const edit = (meta, label, merge = false) => {
     const d = drafts.get(id);
-    if (d) drafts.update(id, setMeta(d.doc, meta));
+    if (d) step(id, setMeta(d.doc, meta), label, { merge });
   };
   const field = (text, control) => el("label", {}, el("span", { textContent: text }), control);
 
@@ -202,7 +203,7 @@ function buildForm(id, box) {
     spellcheck: false,
     title: "The level's title",
   });
-  title.oninput = () => edit({ title: title.value });
+  title.oninput = () => edit({ title: title.value }, "changed the title", true);
 
   const world = el("select", {
     id: "draftWorld",
@@ -210,7 +211,7 @@ function buildForm(id, box) {
   });
   for (const t of state.data.themes)
     world.append(el("option", { value: t.id, textContent: worldName(t.id) }));
-  world.onchange = () => edit({ world: world.value });
+  world.onchange = () => edit({ world: world.value }, "changed the world");
 
   const time = el("input", {
     id: "draftTime",
@@ -223,14 +224,15 @@ function buildForm(id, box) {
   });
   time.onchange = () => {
     const v = Math.round(Number(time.value));
-    if (time.value !== "" && v >= 1 && v <= TIME_MAX) edit({ time: v });
+    if (time.value !== "" && v >= 1 && v <= TIME_MAX) edit({ time: v }, "changed the time");
     else time.value = drafts.get(id)?.doc.time ?? "";
   };
 
   const hidden = el("input", { id: "draftHidden", type: "checkbox" });
-  hidden.onchange = () => edit({ hidden: hidden.checked });
+  hidden.onchange = () => edit({ hidden: hidden.checked }, "changed the hidden level setting");
   const afar = el("input", { id: "draftAfar", type: "checkbox" });
-  afar.onchange = () => edit({ invisibleFromAfar: afar.checked });
+  afar.onchange = () =>
+    edit({ invisibleFromAfar: afar.checked }, "changed the invisible blocks setting");
 
   const saveJson = el("button", {
     id: "draftSaveJson",

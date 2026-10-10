@@ -197,7 +197,7 @@ test("Erase takes the object off a face, then the block, and keeps the last bloc
   await click(page, await plusX(page, start));
   await page.keyboard.press("z");
   await click(page, await top(page, start));
-  await expect(page.locator("#say")).toHaveText("Removed the Start from the top of 17, 17, 17");
+  await expect(page.locator("#say")).toHaveText("Removed the start from the top of 17, 17, 17");
   let doc = await blocks(page);
   expect(doc.find((b) => b.cell.join() === start.join()).faces).toEqual({});
   expect(doc.length).toBe(2);

@@ -103,12 +103,13 @@ export function create(project, { saved = null } = {}) {
   return id;
 }
 
-export function update(id, project) {
+/** Make `project` the draft's document, counting `step` changes since its save. */
+export function update(id, project, step = 1) {
   const d = store.drafts[id];
   if (!d) return;
   d.doc = project;
   d.updated = Date.now();
-  d.edits += 1;
+  d.edits = Math.max(0, d.edits + step);
   touched(id);
 }
 
@@ -172,6 +173,7 @@ document.addEventListener("visibilitychange", () => document.hidden && flush());
 // changed here since the last write is kept until that write.
 function merge(theirs) {
   const drafts = {};
+  const taken = [];
   for (const [key, d] of Object.entries(theirs.drafts)) {
     const id = Number(key);
     if (deleted.has(id)) continue;
@@ -180,6 +182,7 @@ function merge(theirs) {
     else {
       drafts[id] = d;
       dirty.delete(id);
+      if (mine) taken.push(id);
     }
   }
   for (const [key, d] of Object.entries(store.drafts)) {
@@ -187,6 +190,7 @@ function merge(theirs) {
     if (!(id in drafts) && dirty.has(id)) drafts[id] = d;
   }
   store = { version: VERSION, next: Math.max(store.next, theirs.next), drafts };
+  emit("drafts-merged", taken);
   emit("drafts-changed");
 }
 

@@ -22,7 +22,8 @@ import {
   setFace,
   validate,
 } from "./project.js";
-import { get, load, update } from "./drafts.js";
+import { get, load } from "./drafts.js";
+import { canRedo, canUndo, edit, redo, undo } from "./trail.js";
 import { copyShown, levelFor, wireDrafts } from "./draftlist.js";
 
 const EDGE = "The game builds nothing past the edge.";
@@ -46,9 +47,11 @@ const current = () => {
 };
 const across = (c, face) => [c.x, c.y, c.z].map((v, i) => v + FACE_NORMAL[face][i]);
 const lower = (name) => name.charAt(0).toLowerCase() + name.slice(1);
+const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 const kindWord = (kind) => lower(kindName(kind) || "plain block");
-const sentence = (text) => `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
+const sentence = (text) => `${capital(text)}.`;
 const place3 = (cell) => cell.join(", ");
+const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 
 export function bootEditor() {
   load();
@@ -94,6 +97,10 @@ function strip() {
     b.hidden = !mode.on;
     b.setAttribute("aria-pressed", String(b.dataset.tool === mode.tool));
   }
+  const id = state.lvl?.draft;
+  for (const b of [$("undoBtn"), $("redoBtn")]) b.hidden = !mode.on;
+  $("undoBtn").disabled = !canUndo(id);
+  $("redoBtn").disabled = !canRedo(id);
 }
 
 const status = (text) => {
@@ -109,27 +116,16 @@ function refuse(text) {
 function wireTools() {
   $("editBtn").onclick = toggleEditing;
   for (const b of $("tools").querySelectorAll(".tool")) b.onclick = () => setTool(b.dataset.tool);
+  $("undoBtn").onclick = stepBack;
+  $("redoBtn").onclick = stepAgain;
   on("level-changed", () => {
     // the level chosen has been announced, and leaving with it needs no word of its own
     if (!onDraft() && mode.on) setMode(false, null);
     strip();
   });
   on("level-updated", strip);
-  document.addEventListener(
-    "keydown",
-    (e) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || !state.lvl) return;
-      const typing =
-        /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
-      if (typing) return;
-      if (e.key === "w") toggleEditing();
-      else if (editing() && TOOL_KEYS[e.key]) setTool(TOOL_KEYS[e.key]);
-      else return;
-      e.preventDefault();
-      e.stopPropagation();
-    },
-    { capture: true },
-  );
+  on("trail-changed", strip);
+  document.addEventListener("keydown", keys, { capture: true });
   onCellClick((c, e) => {
     if (!editing()) return false;
     if (e.shiftKey || mode.tool === "erase") return erase(c);
@@ -146,10 +142,48 @@ function wireTools() {
   strip();
 }
 
+// A form field keeps the browser's own keys, and an open dialog keeps every key.
+function keys(e) {
+  if (!state.lvl || dialogOpen()) return;
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
+  if (typing) return;
+  const mod = e.metaKey || e.ctrlKey;
+  const key = e.key.toLowerCase();
+  if (editing() && !e.altKey && mod && key === "z") e.shiftKey ? stepAgain() : stepBack();
+  else if (editing() && !e.altKey && e.ctrlKey && !e.metaKey && key === "y") stepAgain();
+  else if (editing() && !mod && !e.altKey && (e.key === "Delete" || e.key === "Backspace"))
+    eraseSelection();
+  else if (mod || e.altKey) return;
+  else if (e.key === "w") toggleEditing();
+  else if (editing() && TOOL_KEYS[e.key]) setTool(TOOL_KEYS[e.key]);
+  else return;
+  e.preventDefault();
+  e.stopPropagation();
+}
+
+function stepBack() {
+  const d = current();
+  const label = d && undo(d.id);
+  if (label) say(`Undid ${label}`);
+}
+
+function stepAgain() {
+  const d = current();
+  const label = d && redo(d.id);
+  if (label) say(`Redid ${label}`);
+}
+
+function eraseSelection() {
+  const s = state.selected;
+  if (s) erase({ x: s.x, y: s.y, z: s.z, face: s.face ?? null });
+}
+
 // --- the tools -----------------------------------------------------------------------------
 
-function commit(id, next) {
-  update(id, next);
+function commit(id, next, label) {
+  edit(id, next, label);
+  status("");
+  say(capital(label));
 }
 
 function select(cell) {
@@ -183,10 +217,8 @@ function place(c, e) {
   const grew = newErrors(d.doc, next);
   if (grew.length) return refuse(sentence(grew[0].text));
   if (target[2] < sliceZ()) setSlice(SIDE - 1 - target[2]);
-  commit(d.id, next);
+  commit(d.id, next, `placed a ${kindWord(brush.kind)} at ${place3(target)}`);
   select(target);
-  status("");
-  say(`Placed a ${kindWord(brush.kind)} at ${place3(target)}`);
   return true;
 }
 
@@ -199,17 +231,17 @@ function erase(c) {
   const face = c.face ?? null;
   if (face !== null && faceAt(d.doc, cell, face)) {
     const m = (state.idx.markers.get(cellKey(...cell)) || []).find((m) => m.face === face);
-    const name = m ? markerLabel(m) : "object";
-    commit(d.id, setFace(d.doc, cell, face, null));
+    const name = m ? lower(markerLabel(m)) : "object";
+    commit(
+      d.id,
+      setFace(d.doc, cell, face, null),
+      `removed the ${name} from the ${FACE_NAME[face]} of ${place3(cell)}`,
+    );
     select(cell);
-    status("");
-    say(`Removed the ${name} from the ${FACE_NAME[face]} of ${place3(cell)}`);
     return true;
   }
   if (d.doc.blocks.length === 1) return refuse(LAST);
-  commit(d.id, removeBlock(d.doc, cell));
-  status("");
-  say(`Removed the ${kindWord(b.kind)} at ${place3(cell)}`);
+  commit(d.id, removeBlock(d.doc, cell), `removed the ${kindWord(b.kind)} at ${place3(cell)}`);
   return true;
 }
 
