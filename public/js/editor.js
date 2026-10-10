@@ -309,15 +309,32 @@ function place(c, e) {
   if (SPAN_KINDS.has(brush.kind)) return startRun(c, e, d);
   const target = landing(c, e);
   if (!target) return false;
+  return layBlock(d, target, brush.kind);
+}
+
+/** Lay a block of `kind` at `target`, refusing what the game would not load. */
+function layBlock(d, target, kind) {
   if (!target.every(inner)) return refuse(EDGE);
   if (blockAt(d.doc, target)) return refuse(HELD);
-  const next = setBlock(d.doc, target, { kind: brush.kind });
+  const next = setBlock(d.doc, target, { kind });
   const grew = newErrors(d.doc, next);
   if (grew.length) return refuse(sentence(grew[0].text));
   if (target[2] < sliceZ()) setSlice(SIDE - 1 - target[2]);
-  commit(d.id, next, `placed a ${kindWord(brush.kind)} at ${place3(target)}`);
+  commit(d.id, next, `placed a ${kindWord(kind)} at ${place3(target)}`);
   select(target);
   return true;
+}
+
+/** Place the brush against a cell's face as a click there would, for a control without a pointer. */
+export function placeHere(c) {
+  return editing() && c?.face != null ? place(c, null) : false;
+}
+
+/** Lay a plain block across a cell's face, whatever the brush, for a control without a pointer. */
+export function buildAgainst(c) {
+  const d = current();
+  if (!editing() || !d || c?.face == null) return false;
+  return layBlock(d, across(c, c.face), 0);
 }
 
 // --- runs: a platform or a laser laid in two clicks ------------------------------------------
