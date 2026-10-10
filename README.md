@@ -38,6 +38,7 @@ That writes `public/map_data.json` and `public/objects.json`, the levels and the
 - [docs/motion.md](docs/motion.md): what the executable does to each thing every frame.
 - [docs/camera.md](docs/camera.md): how the game frames a level.
 - [docs/annotations.md](docs/annotations.md): what each curated name, point value and note rests on.
+- [docs/editor.md](docs/editor.md): the level editor's file, the level written back to the game's bytes, and the checks that hold the writers to the disc.
 - [docs/tools.md](docs/tools.md): what each tool under `tools/` does.
 - [CLAUDE.md](CLAUDE.md): the rules for changing any of it, and [backlog/](backlog/) the open questions.
 

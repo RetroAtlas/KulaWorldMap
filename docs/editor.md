@@ -1,0 +1,172 @@
+# The level editor
+
+What the editor's files hold and what its writers put on the disc, reading by reading, with what each rests on. The project file is the editor's permanent record of a level and this document is its specification, so that a reader outside this repo can read one; the level file is the game's own bytes, and the rules for writing it from a project and reading a project out of any file the game would load are here, with the words the game never reads named and the checks that hold both writers to the disc. [level-format.md](level-format.md) is where the readings of the game's file come from, and `tools/kula_kwl.py` is the Python writer every figure here was measured with.
+
+## The project file
+
+A project is a JSON document with the extension `.kula.json`. It spells the game's own structure in the game's own numbers: cells are lattice coordinates with `z` counting down, kinds and types are the numbers the game uses, faces are the game's six.
+
+```json
+{
+  "format": "kula-world-level",
+  "version": 1,
+  "title": "Spiral",
+  "author": "",
+  "notes": "",
+  "world": "HIRO",
+  "into": "/HIRO/HIRO.PAK#0",
+  "from": "/HIRO/HIRO.PAK#3",
+  "time": 99,
+  "hidden": false,
+  "invisibleFromAfar": false,
+  "circuits": { "1": "off" },
+  "blocks": [
+    { "cell": [17, 12, 17], "kind": 0, "faces": { "0": { "type": 30, "facing": 3 } } },
+    { "cell": [17, 13, 17], "kind": 0, "faces": { "0": { "type": 37, "variant": 2 }, "5": { "type": 5, "facing": 4, "variant": 1 } } },
+    { "cell": [17, 14, 17], "kind": 2 },
+    { "cell": [20, 12, 17], "kind": 6 },
+    { "cell": [21, 12, 17], "kind": 7, "phase": 1 },
+    { "cell": [10, 12, 17], "kind": 5, "far": [10, 16, 17], "length": 2, "speed": 30 },
+    { "cell": [10, 20, 14], "kind": 8, "far": [14, 20, 14], "colour": 3 }
+  ]
+}
+```
+
+| key | meaning | default on read |
+| --- | --- | --- |
+| `format`, `version` | the marker `kula-world-level` and the integer 1; a reader refuses any other marker | required |
+| `title`, `author`, `notes` | the author's; the game never shows them | `""` |
+| `world` | one of the ten disc ids, `HIRO`, `HILLS`, `INCA`, `ARCTIC`, `COWBOY`, `FIELD`, `ATLANT`, `HAZE`, `MARS`, `HELL`: the artwork, the ball and the music | required |
+| `into` | the target slot on the disc, in the repo's `pack#index` form, a world pack's slot 0 to 19 or a finals pack's 0 or 1; the Simon rooms' pack is refused | none |
+| `from` | where a template came from, the shipped level's `pack#index` | none |
+| `time` | seconds, which the game multiplies by 50 into its clock | 99 |
+| `hidden` | the settings record's type 1: the glass ball and translucent faces | `false` |
+| `invisibleFromAfar` | the settings record's `f2` 1: invisible blocks show from afar and fade near the ball | `false` |
+| `circuits` | per colour `"0"` to `"3"`, yellow, blue, green, red, `"on"` or `"off"`; a colour not named starts on | `{}` |
+| `blocks` | the sparse lattice, one entry per placed cell | required |
+
+A block is `cell`, three coordinates each 1 to 32, and `kind`, 0 to 8: 0 plain, 1 fire, 2 ice, 3 invisible, 4 acid, 5 moving platform, 6 crumbling, 7 vanishing, 8 laser; the settings kind 9 is never a block. A block of kinds 0 to 4 may carry `faces`, keyed by the game's face numbers `"0"` to `"5"`, top, `+x`, `+y`, `-y`, `-x`, underside, each `{ "type", "facing", "variant" }`: `facing` is 1 to 4, a quarter turn at a time about the face's inward normal from its first tangent ([level-format.md](level-format.md)), on the types that turn, the teleporter 5, the arrow 28, the two starts 29 and 30 and the captivators 50 to 53 and 56, since the lift at `0x8003b5dc` gives each captivator its heading from the word and the wandering ball's walk follows it; a wandering ball or a corkscrew with no facing heads as 1 does, which is how the disc leaves most of them; `variant` is what the type's one varying field holds, the colour 0 to 3 of a teleporter 5 or a switch 9, the tier 2, 1, 0 of a coin 37 for bronze, blue, gold, the cut 0, 1, 2 of a gem 36 for blue, green, red, and the phase 0 to 3 of the moving spikes 11 and the corkscrew 56. A vanishing block carries `phase`, 0 to 3 on the disc, 4 and 5 accepted as "dims at once". A platform carries `far`, the other end of its run, `length` in blocks, 2 or 3 on the disc, and `speed`, 30 on the disc, a step the game scales by 50/60 and adds to the position each frame. A laser carries `far` and `colour`. The record's own cell is one end of a span and `far` the other, on one axis, and the span is read from the two whichever is lower.
+
+The writers of this repo write a project the same way, so a diff between two is a diff between levels: blocks in lattice order, ascending `x`, then `y`, then `z`, which is also the game's record order; `facing` only on a type that turns and only where the word is not 0; `variant` on every type that has one, 0 included; `length` and `speed` always on a platform; `circuits` holding only the colours that start off; `from` where there is a source. A template of a shipped level takes its `title` from the number the pause screen shows, or the disc's name where the game shows none.
+
+**The growth rule.** Keys are only ever added; a published key never changes its meaning or its type; every optional key has a default on read; a reader ignores keys it does not know. `version` stays 1 for as long as that holds, which is meant to be forever; it exists so that a reader meeting a higher number can say the file is newer than it, read what it knows and warn rather than misread it.
+
+## What is never stored, and why
+
+Everything the game derives at load or never reads is left out and rebuilt at every write, so that a file cannot carry a stale copy of it: the links between switches, teleporters and lasers (a stale one hangs the game or sends the ball into garbage, [level-format.md](level-format.md)); the pickup numbers (the loader renumbers everything it walks at `0x80035998`); each device's own state word (a colour turns over as one, so the colour's state is what is stored); the header word (unread, [the backlog](../backlog/item-005-the-header-word.md)); the trailer's cell and two numbers (unread); the sixteen never-set words, the extras and the filler words of every slot; record order (lattice order at every write); the beam's cells (the loader writes them at `0x80035a70`); a span's direction, axis and end order (derived from `cell` and `far`); the crumbling block's copy of its own cell; the level type (derived from the key count); names, since names change and numbers do not; and any id local to one browser, since a file is a level and not a slot in someone's browser.
+
+## The level file a project means
+
+A `.kwl` is the inflated level exactly as the game loads it, the one form every community tool shares. `canonical(project)` writes one file for a project and writes it the same way every time, so two writers that agree on the rules below agree to the byte.
+
+**The container.** The lattice of 39,304 little-endian `u16` cells indexed `x*1156 + y*34 + z`, `0xFFFF` where nothing stands, 0 to 4 for a block of that kind with nothing on it, and `5 + i` for the block carrying record `i`; a beam's cells and the rest of a platform's run are left empty, since the loader fills them. Then the header, an `i32` holding the placed-cell count, which the game never reads, and the `u16` record count, which excludes the trailer. Then the records, 256 bytes each: every block of kinds 5 to 8 and every block of kinds 0 to 4 with something on a face, in lattice order, then the settings record where `hidden` or `invisibleFromAfar` is set and otherwise no settings record at all, then the trailer. The file is `78614 + 256 x (count + 1)` bytes long.
+
+**A record** is 128 `i16` words: six slots of sixteen at words 0 to 95, the never-set words 96 to 111 at -1, the extras 112 to 124 at -1, and the cell at 125 to 127. A slot's words are the kind word, the type, the fields `f2` to `f12`, a pad, `f14` and a pad. The six slots are the six faces in the order above.
+
+| kind | slot 0 | slot 1 | slots 2 to 5 | extras |
+| --- | --- | --- | --- | --- |
+| 0 to 4, a bare face | `[K, 0, -1, -1, 0, -1, -1, -1, 0, -1 x7]` | the same with -1 for K | the same | -1 |
+| 0 to 4, an object | `[K, type, facing, variant, state, number, next, link, 0, F9, F10, -1, -1, -1, F14, -1]` | the same with -1 for K | the same | -1 |
+| 5 platform | `[5, dir, axis, 1, lx, ly, lz, ux, uy, uz, -1 x6]` | `[end, length, speed, -1, 5 + k, -1 x11]` | -1 x16 | words 119 to 121 `512 x cell`, 122 to 124 `256` |
+| 6 crumbling | `[6, 1, 512x, 512y, 512z, -1 x11]` | -1 x16 | -1 x16 | -1 |
+| 7 vanishing | `[7, 0, phase, -1 x13]` | -1 x16 | -1 x16 | -1 |
+| 8 laser | `[8, dir, axis, lit, lx, ly, lz, ux, uy, uz, -1 x6]` | `[-1, 1, -1, -1, 5 + k, -1, colour, next, -1 x8]` | -1 x16 | -1 |
+| 9 settings | `[9, hidden, flip, 0 x13]` | 0 x16 | 0 x16 | 0, and the cell `0, 0, 0` |
+| 666 trailer | `[666, sx, sy, sz, 0, 0, time, -1 x9]` | -1 x16 | -1 x16 | -1, and the cell `-1, -1, -1` |
+
+`K` is the block's kind in slot 0 and -1 in slots 1 to 5. A face with nothing on it on a block of kinds 0 to 4 is the bare slot, the form the disc holds on 19,851 of its empty faces, and the game tests only its type 0 and its state 0; the slots a record of kinds 5 to 8 has no use for are -1 throughout, which is what the disc holds on most of them, 32 to 33 of its 37 platforms, 337 to 402 of its 435 crumbling blocks, 40 to 93 of its 98 vanishing blocks and 116 to 117 of its 123 lasers by slot, the rest carrying an editor's leftovers in words the game never reads. `dir` is the game's direction from the record's cell to `far`, 0 `-z`, 1 `+x`, 2 `+y`, 3 `-y`, 4 `-x`, 5 `+z`; `axis` is 1, 2 or 5 for a run along `x`, `y` or `z`; `l` is the lower end and `u` the upper, lower first on all 160 spans of the disc; `end` is 0 when the record stands at the lower end and 1 at the upper, as on 37 of 37; `lit` is 1 where the laser's colour starts on and 0 where it starts off; `5 + k` is the record's own lattice value, which the platform loader at `0x80032908` writes over its whole run; `phase` is the vanishing block's; `hidden` and `flip` are the two settings; `sx, sy, sz` is the cell of the start the game takes, or `0, 0, 0` with no start; `time` is the project's. The trailer's cell words are -1, so every file ends `ff ff ff ff ff ff`.
+
+**The words of an object slot by type.** `facing` is the project's where the type turns and 0 elsewhere; `variant` is the project's where the type has one and 0 elsewhere; `state` is `f4`, the word the draw and contact walks gate on at `0x80039280` and `0x80038580`, so a pickup with 0 there is neither drawn nor collected; `number` is the pickup's, below, and -1 on anything else; `next` and `link` are the links, below, and -1 on anything else; `f8` is 0, the frame the draw command carries; `F9`, `F10` and `F14` are the constants the disc holds for the type, which the loader overwrites or never reads.
+
+| type | what | facing | variant | state | F9, F10, F14 |
+| --- | --- | --- | --- | --- | --- |
+| 1 fire, 2 ice | paint | | | 0 | -1, -1, -1 |
+| 4 acid patch | paint | | | 0 | -1, -1, -1 |
+| 5 teleporter | device | yes | colour | the colour's, 1 on or 2 off | 256, 1, 30 |
+| 7 exit | device | | | 2 | 500, 1, 30 |
+| 8 clock | paint | | | 0 | 256, 0, 0 |
+| 9 switch | device | | colour | the colour's, 1 on or 2 off | 256, 0, 0 |
+| 10 boost button | device | | | 1 | 256, 3, 0 |
+| 11 moving spikes | hazard | | phase | 1 | 256, 0, 0 |
+| 12 spikes | hazard | | | 1 | 256, 0, 0 |
+| 26 hidden exit | device | | | 2 | 500, 1, 30 |
+| 28 arrow | paint | yes | | 1 | 256, 0, 0 |
+| 29 start on a clock | start | yes | | 0 | 386, 1, -100 |
+| 30 start | start | yes | | 0 | 256, 0, 0 |
+| 31 key | pickup | | | 1 | 386, 1, -100 |
+| 32, 33, 34 pills, 35 hourglass | pickup | | | 1 | 386, 2, 100 |
+| 36 gem | pickup | | cut | 1 | 386, 1, -17 |
+| 37 coin | pickup | | tier | 1 | 386, 1, -100 |
+| 38 sunglasses | pickup | | | 1 | 386, 1, -100 |
+| 42 star | pickup | | | 1 | 416, 0, 100 |
+| 43 to 47 fruit | pickup | | | 1 | 386, 1, 100 |
+| 50, 51, 52 captivators | hazard | yes | | 0 | -1, -1, -1 |
+| 53 wandering ball | hazard | yes | | 0 | -1, -1, -1 |
+| 56 corkscrew | hazard | yes | phase | 0 | -1, -1, -1 |
+
+A type not in the table is written with state 0 and the constants -1, which is a slot the game skips.
+
+**The links.** For each colour, the members are its switches and teleporters as `(record, face)` and its lasers as `(record, 6)`, sorted ascending, `M[0]` to `M[n-1]`, and `link(m) = record x 16 + face`. `next(M[0])` is -1 and `next(M[i])` is `link(M[i-1])`, written to `f6` of a device and to word 7 of a laser's second slot, so the list a switch walks runs down the members from the highest; every switch's `f7` is `link(M[n-1])`. The colour's teleporters sorted ascending, `T[0]` to `T[m-1]`, send the ball round one ring, `f7(T[i]) = link(T[(i-1) mod m])`, a lone teleporter naming itself. This is the rule the disc's 104 switches and 147 teleporters follow without exception ([level-format.md](level-format.md)), and `Level.verify` holds every written file to it.
+
+**The pickup numbers.** Walking the records in order and the faces 0 to 5 of each, the fourteen pickup types, 31 to 38 and 42 to 47, take `f5` of 0 to n-1 and every other slot -1. The disc numbers its pickups the same way on 224 of its 228 levels that have any, the four exceptions carrying a repeat on an object the game never walks, and the loader renumbers at load in any case.
+
+**Undefined bytes.** A project whose cells lie outside 0 to 33, that puts two blocks on one cell or whose span runs along no one axis has no level file, and `canonical` raises rather than invent one; `validate` names each of these as an error first.
+
+## Reading a file the game would load
+
+`read_kwl(blob)` reads what the game reads and repairs what the lattice contradicts, and tells the caller what it did in a report, a line per repair. The game walks the lattice by value and the records by the count, so the lattice is the authority for where a block is and which records exist; the community's files break the parser's rules in ways the game shrugs off, so only one thing is fatal.
+
+- Any length that is the lattice, six bytes and whole 256-byte stretches reads; the stretch count comes from the length, and a header count that disagrees is a report line. Any other length raises.
+- The last stretch is the trailer where its kind is 666; otherwise none is there, the time is 99 and the report says so.
+- A settings record anywhere among the records gives the two flags, and several give the flags of all of them.
+- A record whose cell words differ from the cell naming it is moved to that cell; a cell naming a record that is not there, or that another cell names first, or that is not a block, is left empty; a record no cell names, the settings record apart, is dropped. Each is a report line.
+- A span's two ends are read from `f4` to `f9` and sorted lower first; `far` is the end that is not the record's cell, and a record standing at neither end has its lower end moved onto its cell, reported. The direction and axis words are never read.
+- A platform's length and speed are kept, and reported outside 2 to 3 and 30; a vanishing block's phase is kept, and reported at 4 or 5.
+- Kinds 0 to 4 take an object from every face whose type is above 0, with its type whatever it is, its facing where the type turns and the word is not 0, its variant where the type has one; what stands on records of kinds 5 to 9 is counted and left out, since the game never walks it; a record of kinds 0 to 4 with nothing on its faces folds into a plain block of its kind.
+- A colour's state is read from its first device or laser, and a disagreement among them is reported.
+- A file whose records are not in lattice order is written back in lattice order, and the report says so where the order decides play: where the file holds captivators, whose dice follow the walk order, or several starts, of which the game takes the last.
+- The pickup numbers, the links, the filler words and the header word are never read.
+
+## What the game would make of a project
+
+`validate(project, hides)` returns findings, each a level, a text and where it is, a cell and perhaps a face; errors are what the game would mishandle, warnings what an author should know. `counts` gives the figures the caps are read against and `plays_as` the line the editor shows.
+
+**Errors.** A cell outside 1 to 32, since the face builder at `0x800271d8` walks 1 to 32 and builds nothing beyond; two blocks on one cell; a kind that is not 0 to 8; anything on the faces of a block of kinds 5 to 8; a type the game does not play, which is anything but the 32 types the disc places and the acid patch 4; a device, 5, 7, 9 or 26, or the moving spikes 11 on a block that is not plain, since the glow loader at `0x8002977c` and the spikes' init at `0x8002a0b0` take kind 0 alone; a `facing` outside 1 to 4, or none on the teleporter, the arrow, the starts, the two stars and the wheel, which the disc always turns, the wandering ball and the corkscrew heading as 1 does with none; a `variant` outside its range; a `phase` outside 0 to 5; a span whose far end is its own cell, lies along no one axis or lies past the edge; a platform's run, lower end to upper end plus its length, holding any block but its own; a beam crossing a block, or ending on a block that is neither plain nor another laser's, since the loader writes style 0 over both ends and `-2` between unconditionally; no start; a time below 1; a world that is not one of the ten; a target that is not a world or finals slot; and a counter over its cap, below.
+
+**Warnings.** Several starts, naming the one the game takes, the last in record then face order; an object looking into a block, a crumbling or vanishing block or a beam's cell; a beam ending on a plain block that carries something, which keeps working but paints plain; a platform's speed other than 30 or length outside 2 to 3; a time above 99, which the clock has never been seen to show; a phase of 4 or 5; more devices that cast a light than the game lights at once; a colour that starts off with teleporters or lasers and no switch to turn it on; a lone teleporter leading to itself; a switch whose colour has nothing to switch; a key with no exit; the star 42, untested in play; a fruit, since the game shows the player's next whichever is placed; and a counter above the disc's own maximum, below.
+
+| counter | what is counted | cap | most on the disc |
+| --- | --- | --- | --- |
+| records | blocks that carry a record, the settings record included | 123 | 76, LEVEL 126 |
+| cells | placed cells | | 178, HIDDEN 10 |
+| faces | the faces the game builds, below | 768 | 766, HIDDEN 10 |
+| blocks | blocks of kinds 0, 1, 2, 4, 6 and 7 inside 1 to 32 with a face built, the ones a keyless level scores | 256 | 178, HIDDEN 10 |
+| objects | the objects the loader numbers, the types 5 to 47 it knows | 255 | 81, LEVEL 148 |
+| platforms | | 8 | 4, LEVEL 75 |
+| lasers | | | 12, LEVEL 149 |
+| vanishing | | 64 | 14, LEVEL 77 |
+| crumbling | | 64 | 33, BONUS 22 |
+| captivators | types 50 to 56 | 32 | 12, SIMON 6 |
+| keys | | | 4 |
+| lights | teleporters, switches and exits, the three that cast a light when on | 32, a warning | 19, LEVEL 136 |
+
+The caps are the room the game's memory holds, unchecked by the game: the level's record table runs into the frame buffers at `0x80179000` after 123 records, the 160-byte face structs at `0x80191000` run into the per-cell table at `0x801af000` after 768, the 48-byte object entries at `0x800c8c78` run out after 255, and the light list at `0x800df184` holds 32 and refuses the rest. The faces are counted as the loader builds them, replaying `skins.hides` of `public/objects.json` ([tgi.md](tgi.md)) over every block inside 1 to 32, a beam's two ends standing plain blocks first: a face toward a neighbour of a kind the block's kind hides behind is not built, except that a kind outside the table's own list is built unseen toward a crumbling block, a laser's own cell hides like the plain block the loader has made of it, which, with the ends standing plain blocks, is read off the loader at `0x80035a70` and untested in play, since no keyless level of the disc outside the Simon rooms, which score nothing, has a laser, and a platform's blocks take their faces from the loader's tables, six on a lone block and five, four and five along a run. HIDDEN 10 comes to 766 by that count, and one more plain block in the open takes it over 768.
+
+**Plays as.** "Plays as an arcade level." where a key stands on a block of kinds 0 to 4; "Plays as a bonus level: it has no key, so every block scores 50 the first time the ball rolls onto it, the level ends once every block has been rolled, and an exit stands open from the start." where none does, by the loader's count at `0x80027b2c`; "Plays as a hidden level, with the glass ball on half-seen blocks." where `hidden` is set; and both clauses for a hidden level with no key.
+
+## The checks
+
+**The digest fixture.** `tests/fixtures/kwl-digests.json` holds, for each of the 230 shipped levels keyed by `pack#index`, the SHA-256 of its canonical file rebuilt from `public/map_data.json`, the SHA-256 of that file's zlib stream at level 6, the level the disc was packed at, and the stream's length. `python3 tools/kula_kwl.py --digests` writes it, sorted and one key a line so a rebuild diffs line by line, and the Python tests and the viewer's own writer are both held to it, so the two writers cannot drift apart without the fixture saying so. The deflate digests were written with zlib 1.2.12; zlib's output at a level has been stable across its releases, and a Python whose zlib differs would fail the deflate lines alone.
+
+**The disc check.** `python3 tools/kula_kwl.py --check`, with `$KULA_DISC` set, parses every level of the disc, rebuilds it from its fields through `project_of_level` and `canonical`, and holds the rebuild to the disc two ways. In play: the rebuild passes `Level.verify`; the same cells hold the same kinds; the records both have, matched by cell, have the same kind, the same objects by face with the same type, the same facing where the type turns, the same variant where it has one and the same state, and the same spans, colours, lit flags, lengths and speeds; every switch's list reaches the same slots and every teleporter leads to the same place, by cell and face; the time and the two settings are the same. Word for word: every word of every matched record and of the trailer outside an explicit mask of what the game never reads, a link compared as the cell and face it names and a record's own lattice value as itself, so that a record folded or left out does not read as a hundred shifted words. The mask is the header word; words 96 to 118 of every record; words 13 and 15 of every slot; the kind word of slots 2 to 5; the trailer's words 1 to 5 and its slots 1 to 5; every word of a settings record but its two flags; a bare slot's words other than its type and its state; an object's `f9`, `f10` and `f14`, its `f6` and `f7` on anything but a teleporter or a switch, and its `f5` on BONUS 30, whose pickups the disc left unnumbered, and on LEVEL 134, LECEL 94, FINAL 11 and FINAL 13, where a number repeats on an object the game never walks; a platform's second slot but its end, length, speed and lattice value, and its first slot from `f10` on; a crumbling block's first slot from `f5` on and its other slots; a vanishing block's type word, its first slot from `f3` on and its other slots; and a laser's slots 2 to 5. A level whose rebuild has fewer records than the disc, 144 that carry a settings record with neither flag set and 2 that carry a record with nothing on it, is compared on the records both have and the rest is counted.
+
+All 230 levels play as the disc's. Outside the mask the rebuild differs from the disc in these words and no others, each a class the test `tools/tests/test_kula_kwl.py` pins by its count, so a writer change that moves one is a finding and not a filler:
+
+| words | count | what it is |
+| --- | --- | --- |
+| the clock's `f2` | 27 | 4 left by the editor on 27 of 51 clocks; the loader skips the turn for type 8 and never reads it |
+| a platform's slots 2 to 5, the type and one `f4` | 17 | an editor's leftovers in slots the game never reads, on five of the 37 |
+| a laser's `f10` and `f14` | 6 | a deleted object's constants on three lasers, in words nothing reads |
+| the extras 119 to 124 of one ice block and one crumbling block | 12 | a platform's position left on LEVEL 54 and FINAL 11, read for kind 5 alone |
+| the kind word of one object slot | 1 | 0 on LEVEL 71, the scratch word the game writes before it reads |
+| one teleporter's `f6` | 1 | LEVEL 125's two yellow teleporters, the one chain of the disc left unlinked, which nothing walks since the colour has no switch |
