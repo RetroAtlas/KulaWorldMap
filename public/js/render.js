@@ -28,7 +28,7 @@ import { lookOf } from "./skins.js";
 import { drawBeams } from "./beams.js";
 import { atlasFor } from "./atlas.js";
 import { drawBlock, cube, outline, covers, faceAt } from "./blocks.js";
-import { drawRails, drawBase, drawCamera, drawScale, drawMark, drawLink } from "./overlays.js";
+import { drawRails, drawBase, drawCamera, drawScale, drawLink } from "./overlays.js";
 import { drawThing, quietAmongModels, thingDisc } from "./things.js";
 import { drawCompass } from "./compass.js";
 import { deviceLights } from "./lights.js";
@@ -68,6 +68,14 @@ const layer = layerCv.getContext("2d");
 export const invalidatePick = () => {
   pickStale = true;
 };
+
+// What draws over the map from outside it: a cell hook runs after each block
+// is drawn, a frame hook once the see-through layer is laid.
+const overlays = { cell: [], frame: [] };
+export function overlayWith({ cell, frame }) {
+  if (cell) overlays.cell.push(cell);
+  if (frame) overlays.frame.push(frame);
+}
 
 export function resize() {
   const dpr = Math.min(devicePixelRatio || 1, 2);
@@ -243,7 +251,6 @@ export function draw() {
   if (lights?.on) spinning = true;
   const scene = { l, idx, tint, skins, atlas, look, frame, effect, edges, lights: lights?.lit };
   const through = [];
-  const noted = [];
   const chosen = state.selected?.key;
   const put = (...t) => {
     if (drawThing(ctx, ...t)) spinning = true;
@@ -285,11 +292,8 @@ export function draw() {
     if (state.show.objects && !ghost && !c.k) {
       for (const m of idx.markers.get(key) || []) if (!away(m.face)) mark(m, c, home, key);
     }
-    if (state.survey.on && !ghost) {
-      const ms = state.survey.marks.get(key);
-      if (ms) noted.push([ms, c]);
-    }
     if (sel || hov) outline(ctx, c, idx, sel ? "#ffffff" : "#ffffffb0");
+    for (const fn of overlays.cell) fn(ctx, c, home, key, ghost, scene);
   }
 
   if (through.length) {
@@ -305,7 +309,7 @@ export function draw() {
     ctx.drawImage(layerCv, 0, 0, w, h);
     ctx.restore();
   }
-  for (const [ms, c] of noted) drawMark(ctx, ms, c);
+  for (const fn of overlays.frame) fn(ctx, scene);
   for (const m of idx.markers.get(chosen) || []) {
     const to = markerDestination(m, l);
     const from = { ...state.selected, face: m.face };

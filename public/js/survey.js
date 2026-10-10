@@ -1,7 +1,8 @@
 import { $, el, on } from "./dom.js";
-import { state, SIDE, cellKey } from "./state.js";
+import { state, SIDE, cellKey, screen } from "./state.js";
 import { counted, inLattice } from "./data.js";
-import { draw } from "./render.js";
+import { draw, overlayWith } from "./render.js";
+import { label } from "./overlays.js";
 
 // A mark is keyed to a lattice cell and a face, one a face, and never derived
 // from the records, so a decode can be scored against it.
@@ -87,6 +88,38 @@ let brush = NAMES[0];
 let face = "";
 
 export const surveying = () => state.survey.on;
+
+/** A block's marks: one dot, and a line a mark. */
+function drawMark(ctx, ms, c) {
+  const [px, py] = screen(c.x + 0.5, c.y + 0.5, c.z + 1);
+  const r = Math.max(3, 5 * state.cam.zoom);
+  ctx.fillStyle = "#ffd166";
+  ctx.strokeStyle = "rgba(9 13 20 / 0.9)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(px, py, r, 0, 7);
+  ctx.fill();
+  ctx.stroke();
+  if (state.cam.zoom > 0.4) {
+    ms.forEach((m, i) =>
+      label(ctx, m.face ? `${m.name} ${m.face}` : m.name, px + r + 3, py + 4 + 12 * i, "#ffd166"),
+    );
+  }
+}
+
+// The marks are gathered as the blocks are drawn and laid over the map once.
+let noted = [];
+overlayWith({
+  cell(ctx, c, home, key, ghost) {
+    if (!state.survey.on || ghost) return;
+    const ms = state.survey.marks.get(key);
+    if (ms) noted.push([ms, c]);
+  },
+  frame(ctx) {
+    for (const [ms, c] of noted) drawMark(ctx, ms, c);
+    noted = [];
+  },
+});
 
 const levelKey = (l) => `${l.pack}#${l.index}`;
 

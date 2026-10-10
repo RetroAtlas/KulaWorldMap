@@ -3,24 +3,6 @@ import { FACE_NORMAL } from "./faces.js";
 import { startsOf, markerHeading, cross } from "./data.js";
 import { bow, arrow } from "./arrow.js";
 
-/** A block's survey marks: one dot, and a line a mark. */
-export function drawMark(ctx, ms, c) {
-  const [px, py] = screen(c.x + 0.5, c.y + 0.5, c.z + 1);
-  const r = Math.max(3, 5 * state.cam.zoom);
-  ctx.fillStyle = "#ffd166";
-  ctx.strokeStyle = "rgba(9 13 20 / 0.9)";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.arc(px, py, r, 0, 7);
-  ctx.fill();
-  ctx.stroke();
-  if (state.cam.zoom > 0.4) {
-    ms.forEach((m, i) =>
-      label(ctx, m.face ? `${m.name} ${m.face}` : m.name, px + r + 3, py + 4 + 12 * i, "#ffd166"),
-    );
-  }
-}
-
 // A route is drawn a cell at a time, its dashes carried across the cells so it
 // reads as one line, and left out inside the platform's own blocks wherever
 // they have got to.
