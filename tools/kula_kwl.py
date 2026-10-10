@@ -285,11 +285,18 @@ def project_of_level(L, world=None, report=None):
 
 # --- the game's bytes out of a project ---------------------------------------
 
+def _face_number(f):
+    try:
+        return int(f)
+    except (TypeError, ValueError):
+        return f
+
+
 def _faces_of(b):
     """What stands on a block's faces, by face number, for a kind that carries any."""
     if b["kind"] >= BLOCK_KINDS:
         return {}
-    return {int(f): o for f, o in (b.get("faces") or {}).items() if o.get("type", 0) > 0}
+    return {_face_number(f): o for f, o in (b.get("faces") or {}).items() if o.get("type", 0) > 0}
 
 
 def _carries(b):
@@ -301,7 +308,7 @@ def _members(carried):
     """Each colour's switches, teleporters and lasers as (record, face), a laser on face 6."""
     members = {c: [] for c in range(COLOURS)}
     for k, b in enumerate(carried):
-        found = [(b["colour"], OWN)] if b["kind"] == LASER_KIND else \
+        found = [(b.get("colour"), OWN)] if b["kind"] == LASER_KIND else \
             [(o.get("variant", 0), j) for j, o in _faces_of(b).items() if o["type"] in (TELEPORTER, SWITCH)]
         for colour, face in found:
             if colour not in members:
@@ -394,7 +401,10 @@ def _record(b, k, states, links, numbers):
     else:
         raise ValueError(f"a block of kind {kind} cannot be written")
     words = [w for s in slots for w in s] + extras + list(cell)
-    return struct.pack(f"<{WORDS}h", *words)
+    try:
+        return struct.pack(f"<{WORDS}h", *words)
+    except struct.error:
+        raise ValueError(f"a word of the block at {cell} is outside the file's range") from None
 
 
 def _settings(project):
@@ -415,7 +425,10 @@ def start_cell(carried):
 def _trailer(project, carried):
     words = [TRAILER_KIND, *start_cell(carried), 0, 0, project.get("time", DEFAULT_TIME)] + [-1] * 9
     words += [-1] * (WORDS - 3 - len(words))
-    return struct.pack(f"<{WORDS}h", *words, -1, -1, -1)
+    try:
+        return struct.pack(f"<{WORDS}h", *words, -1, -1, -1)
+    except struct.error:
+        raise ValueError(f"a time of {project.get('time')!r} is outside the file's range") from None
 
 
 def canonical(project):
@@ -431,11 +444,19 @@ def canonical(project):
     seen = set()
     for b in blocks:
         cell = tuple(b["cell"])
-        if any(c not in LATTICE for c in cell):
+        kind = b.get("kind")
+        if kind not in range(UNPLACED_KIND):
+            raise ValueError(f"kind {kind} is not a kind of block")
+        if len(cell) != 3 or any(c not in LATTICE for c in cell):
             raise ValueError(f"cell {cell} is outside the lattice")
         if cell in seen:
             raise ValueError(f"two blocks on cell {cell}")
         seen.add(cell)
+        for j in _faces_of(b):
+            if j not in range(FACES):
+                raise ValueError(f"face {j} is not one of the six")
+        if kind in SPAN_KINDS and (not isinstance(b.get("far"), (list, tuple)) or len(b["far"]) != 3):
+            raise ValueError(f"the span at {cell} needs a far end")
     carried = [b for b in blocks if _carries(b)]
     index = {tuple(b["cell"]): k for k, b in enumerate(carried)}
     grid = [EMPTY] * CELLS
@@ -698,6 +719,8 @@ def validate(project, hides):
                 err(f"a phase of {phase}", cell)
         if kind in SPAN_KINDS:
             _validate_span(b, at, kinds, err, warn)
+        if kind == LASER_KIND and b.get("colour") not in range(COLOURS):
+            err(f"a colour of {b.get('colour')}", cell)
         for j, o in sorted(faces.items(), key=lambda kv: (isinstance(kv[0], str), kv[0])):
             t = o["type"]
             if j not in range(FACES):
@@ -845,13 +868,15 @@ def _validate_circuits(project, blocks, warn):
     members = {c: Counter() for c in range(COLOURS)}
     for b in blocks:
         if b["kind"] == LASER_KIND:
-            members[b.get("colour", 0)]["lasers"] += 1
+            if b.get("colour") in members:
+                members[b["colour"]]["lasers"] += 1
         elif b["kind"] < BLOCK_KINDS:
             for o in _faces_of(b).values():
-                if o["type"] == TELEPORTER:
-                    members[o.get("variant", 0)]["teleporters"] += 1
-                elif o["type"] == SWITCH:
-                    members[o.get("variant", 0)]["switches"] += 1
+                colour = o.get("variant", 0)
+                if o["type"] == TELEPORTER and colour in members:
+                    members[colour]["teleporters"] += 1
+                elif o["type"] == SWITCH and colour in members:
+                    members[colour]["switches"] += 1
     for c, m in members.items():
         if circuits.get(str(c)) == "off" and not m["switches"] and (m["lasers"] or m["teleporters"]):
             warn(f"colour {c} starts off and has no switch to turn it on")
@@ -1140,7 +1165,8 @@ def main():
         DIGESTS.write_text(text)
         print(f"{text.count(chr(10))} lines -> {DIGESTS.relative_to(ROOT)}")
     elif args.check:
-        failures, classes = check(open_disc(args.disc))
+        with open_disc(args.disc) as disc:
+            failures, classes = check(disc)
         if failures:
             sys.exit(1)
     else:

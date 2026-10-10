@@ -202,6 +202,30 @@ class RoundTrips(unittest.TestCase):
             canonical(project([plain((5, 5, 5), t0=start()),
                                {"cell": [6, 6, 6], "kind": LASER_KIND, "far": [8, 8, 6], "colour": 0}]))
 
+    def test_the_writer_names_what_it_cannot_write(self):
+        cases = [
+            ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": LASER_KIND, "colour": 0}],
+             "the span at (6, 6, 6) needs a far end"),
+            ([plain((5, 5, 5), t0=start(), t7={"type": COIN, "variant": 0})], "face 7 is not one of the six"),
+            ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": LASER_KIND, "far": [6, 9, 6], "colour": 7}],
+             "colour 7 is not one of the four"),
+            ([plain((5, 5, 5), t0=start(), t1={"type": TELEPORTER, "facing": 1, "variant": 4})],
+             "colour 4 is not one of the four"),
+            ([plain((5, 5, 5), t0=start()), plain((6, 6, 6), kind=9)], "kind 9 is not a kind of block"),
+            ([plain((5, 5, 5), t0=start()), plain((6, 6, 6), kind=-1)], "kind -1 is not a kind of block"),
+            ([plain((5, 5), t0=start())], "cell (5, 5) is outside the lattice"),
+        ]
+        for blocks, text in cases:
+            with self.assertRaises(ValueError) as caught:
+                canonical(project(blocks))
+            self.assertIn(text, str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            canonical(project([plain((5, 5, 5), t0=start())], time=100000))
+        self.assertIn("a time of 100000", str(caught.exception))
+        with self.assertRaises(ValueError) as caught:
+            canonical(project([plain((5, 5, 5), t0=start(), t1={"type": COIN, "variant": 70000})]))
+        self.assertIn("the block at (5, 5, 5)", str(caught.exception))
+
 
 class Links(unittest.TestCase):
     """A colour's members sorted by record and face: each names the one before it
@@ -476,6 +500,18 @@ class Validates(unittest.TestCase):
         self.assertIn("looks into a vanishing block", warnings)
         self.assertIn("looks into a beam", warnings)
 
+    def test_a_bad_colour_or_variant_is_a_finding_and_leaves_the_circuits_pass_alone(self):
+        blocks = [plain((5, 5, 5), t0=start(), t1={"type": TELEPORTER, "facing": 1, "variant": 7},
+                        t2={"type": SWITCH, "variant": -1}, t3={"type": COIN, "variant": "gold"}),
+                  {"cell": [9, 9, 9], "kind": LASER_KIND, "far": [9, 12, 9], "colour": 7},
+                  {"cell": [9, 9, 12], "kind": LASER_KIND, "far": [9, 12, 12]}]
+        findings = validate(project(blocks, circuits={"7": "off"}), HIDES)
+        errors = texts(findings, "error")
+        for text in ("a variant of 7", "a variant of -1", "a variant of gold", "a colour of 7", "a colour of None"):
+            self.assertIn(text, errors)
+        self.assertFalse(any("colour 7" in w or "colour -1" in w for w in texts(findings, "warning")))
+        self.assertEqual(counts(project(blocks), HIDES)["lasers"], 2)
+
     def test_the_circuits_warnings(self):
         blocks = [plain((5, 5, 5), t0=start(), t1={"type": TELEPORTER, "facing": 1, "variant": 0}, t2={"type": SWITCH, "variant": 1}),
                   {"cell": [9, 9, 9], "kind": LASER_KIND, "far": [9, 12, 9], "colour": 2}]
@@ -555,7 +591,8 @@ RESIDUALS = {
 @unittest.skipUnless(os.environ.get("KULA_DISC"), "needs the disc")
 class TheDisc(unittest.TestCase):
     def test_every_level_rebuilt_plays_as_the_disc_and_differs_in_the_words_listed_alone(self):
-        failures, classes = check(open_disc(), out=lambda *_: None)
+        with open_disc() as disc:
+            failures, classes = check(disc, out=lambda *_: None)
         self.assertEqual(failures, [])
         self.assertEqual(dict(classes), RESIDUALS)
 
