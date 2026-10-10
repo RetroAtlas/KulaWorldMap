@@ -810,4 +810,6 @@ test("a draft is drawn as the level the game would load", () => {
   );
   assert.deepEqual(fromLevel(l).blocks, p.blocks);
   assert.equal(levelKey(l), `${DRAFT_PACK}#7`);
+  assert.equal(toLevel({ ...p, title: "" }, 7).name, UNTITLED);
+  assert.equal(toLevel({ ...p, title: "Spiral" }, 7).name, "Spiral");
 });

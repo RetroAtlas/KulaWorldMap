@@ -76,11 +76,14 @@ function showAbout() {
   );
 }
 
+const editing = new URLSearchParams(location.search).has("edit");
+
 Promise.all([
   loadJson("map_data.json"),
   loadJson("annotations.json", {}),
   loadJson("objects.json", {}),
-]).then(([data, ann, objects]) => {
+  editing ? import("./editor.js") : null,
+]).then(([data, ann, objects, editor]) => {
   if (!data) {
     $("chipLine").textContent = "The map's data could not be loaded.";
     return;
@@ -93,6 +96,7 @@ Promise.all([
     `Press <kbd style="margin:0">?</kbd> for the keys.`;
   buildWorlds();
   wireDisplay();
+  editor?.bootEditor();
   onResize(() => {
     if (!state.framing) return;
     state.framing();

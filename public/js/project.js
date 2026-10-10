@@ -608,7 +608,7 @@ export function writeProject(project) {
 /** The level the viewer draws for a draft: what the game would load of it. */
 export const toLevel = (project, id) =>
   levelOf(writeKwl(project), {
-    name: project.title,
+    name: project.title || UNTITLED,
     theme: project.world,
     pack: DRAFT_PACK,
     index: id,

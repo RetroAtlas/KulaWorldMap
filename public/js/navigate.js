@@ -84,11 +84,14 @@ export function centreOn(x, y, z) {
 
 let noted = null;
 
+const escaped = (text) =>
+  text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+
 export function chip() {
   const l = state.lvl;
   if (!l) return;
   const parts = [
-    `<b>${levelTitle(l)}</b>`,
+    `<b>${escaped(levelTitle(l))}</b>${l.draft === undefined ? "" : '<span class="tag">Draft</span>'}`,
     `<span class="sep">·</span>${worldName(l.theme)}`,
     `<span class="sep">·</span>${counted(blockCount(l), "block")}`,
   ];

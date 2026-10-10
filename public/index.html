@@ -126,6 +126,22 @@
         <div id="worlds" class="worlds"></div>
       </section>
 
+      <section id="yours" class="panel yours" hidden>
+        <h2>Your levels</h2>
+        <div class="actions">
+          <button id="draftNew" type="button" title="Make a new level in this world">new</button>
+          <button id="draftCopy" type="button" title="Make a level of your own out of this one">
+            copy this level
+          </button>
+        </div>
+        <div id="draftRows" class="drafts"></div>
+        <p id="draftEmpty" class="sub">
+          Nothing yet. Make a level of your own, or copy this one to start from.
+        </p>
+        <div id="draftCard" class="card" hidden></div>
+        <p class="sub">Your levels stay in this browser until you save them to a file.</p>
+      </section>
+
       <section id="display" class="panel">
         <h2>Display <button id="resetDisplay" class="mini" type="button">reset</button></h2>
         <div class="group">
