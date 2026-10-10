@@ -28,8 +28,11 @@ export const say = (text) => {
   $("say").textContent = text;
 };
 
-on("level-changed", () => {
+function label() {
   const line = describeLevel(state.lvl);
-  say(line);
   $("cv").setAttribute("aria-label", line);
-});
+  return line;
+}
+
+on("level-changed", () => say(label()));
+on("level-updated", label);

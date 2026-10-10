@@ -304,3 +304,8 @@ on("level-changed", () => {
   buildKinds();
   syncSlice();
 });
+
+on("level-updated", () => {
+  buildKinds();
+  syncSlice();
+});

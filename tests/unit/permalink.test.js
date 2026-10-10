@@ -35,6 +35,13 @@ test("a view written into a link reads back as that view", () => {
   });
 });
 
+test("a level from elsewhere keys itself as a pack no disc holds, and its link reads back", () => {
+  const slot = slotOf({ pack: "/DRAFT/DRAFT.PAK", index: 7 });
+  assert.equal(slot, "DRAFT/7");
+  const hash = formatHash({ slot, cam, target: [17, 17, 17], slice: SIDE - 1 });
+  assert.equal(parseHash(hash).slot, slot);
+});
+
 test("a link names its level whatever its case", () => {
   assert.equal(parseHash("#copycat/4/30,20").slot, "COPYCAT/4");
 });

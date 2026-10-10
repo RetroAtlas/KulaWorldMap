@@ -399,8 +399,10 @@ box.addEventListener("keydown", (e) => {
 
 // A list is built anew only where its finds no longer fit its scope; one
 // that still fits stays as it was, so a walk down it is not thrown off.
-on("level-changed", () => {
+function rescope() {
   if (bar.hidden) return;
   if (scope === "level" || (scope === "world" && state.lvl.theme !== builtFor)) render();
   else scopeBar();
-});
+}
+on("level-changed", rescope);
+on("level-updated", rescope);

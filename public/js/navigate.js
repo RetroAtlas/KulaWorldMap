@@ -15,28 +15,47 @@ import { draw, drawSoon, invalidatePick } from "./render.js";
 import { showCell, clearDetail } from "./detail.js";
 import { slotOf, formatHash, parseHash } from "./permalink.js";
 
-export function selectLevel(i, { keepView = false, push = true } = {}) {
-  const l = state.data.levels[i];
-  if (!l) return;
+// The level on screen, by its key: its index among the disc's, or a draft's id.
+let shown = null;
+
+/** Install a level: one of the disc's at index `i`, or one from elsewhere with
+    -1. The same level from elsewhere installed again is an update, which keeps
+    the selection named by `keep` where its cell is still there. */
+function install(l, i, { keepView = false, push = true, keep = null } = {}) {
   settle();
   // Nothing lies behind the first level shown, so arriving there is no entry.
   const left = state.lvl !== null;
-  if (i !== state.li) state.presses = new Map();
+  const key = l.draft ?? i;
+  if (key !== shown) state.presses = new Map();
+  const updated = i < 0 && key === shown;
+  shown = key;
   state.li = i;
   state.lvl = l;
   state.idx = index(l);
-  clearDetail();
+  const kept = updated && keep !== null ? state.idx.cells.get(keep) : undefined;
+  const face = kept && state.selected?.key === keep ? state.selected.face : undefined;
+  if (!kept) clearDetail();
   state.hover = null;
   if (!keepView) {
     state.slice = SIDE - 1;
     fit();
   }
   invalidatePick();
-  emit("level-changed", i);
+  emit(updated ? "level-updated" : "level-changed", i);
+  if (kept) showCell(face == null ? kept : { ...kept, face });
   chip();
   draw();
   writeHash(left && !keepView && push);
 }
+
+export function selectLevel(i, opts = {}) {
+  const l = state.data.levels[i];
+  if (!l) return;
+  install(l, i, opts);
+}
+
+/** Show a level that is not among the disc's. */
+export const showLevel = (l, opts = {}) => install(l, -1, opts);
 
 export function fit() {
   const l = state.lvl;
@@ -124,6 +143,17 @@ const levelAt = (slot) => {
   return slots.get(slot);
 };
 
+// Where a link may find a level beyond the disc's slots.
+const sources = [];
+export const provideLevels = (fn) => sources.push(fn);
+const levelFrom = (slot) => {
+  for (const fn of sources) {
+    const l = fn(slot);
+    if (l) return l;
+  }
+  return null;
+};
+
 /** Write the view to the address bar once it has rested, or at once as a
     history entry. */
 export function writeHash(push = false) {
@@ -186,8 +216,11 @@ export function applyHash() {
   known = location.hash;
   const link = parseHash(known);
   const i = levelAt(link.slot);
-  if (i === undefined) return false;
-  if (i !== state.li) selectLevel(i, { keepView: true });
+  if (i === undefined) {
+    const l = levelFrom(link.slot);
+    if (!l) return false;
+    if (state.lvl?.draft !== l.draft) showLevel(l, { keepView: true });
+  } else if (i !== state.li) selectLevel(i, { keepView: true });
   if (link.turn) [state.cam.yaw, state.cam.pitch] = link.turn;
   if (link.target) state.target = link.target;
   else fit();
@@ -214,7 +247,7 @@ addEventListener("hashchange", () => {
 });
 
 export function stepLevel(delta, push = true) {
-  if (!state.data) return;
+  if (!state.data || state.li < 0) return;
   const order = state.data.themes.flatMap((t) => t.levels);
   const i = order[order.indexOf(state.li) + delta];
   if (i !== undefined) selectLevel(i, { push });
