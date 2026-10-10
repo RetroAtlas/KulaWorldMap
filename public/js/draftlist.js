@@ -8,7 +8,8 @@ import { say, describeLevel } from "./a11y.js";
 import { toast } from "./toast.js";
 import { TIME_MAX, writeKwl } from "./kwl.js";
 import { UNTITLED, blank, fromLevel, setMeta, toLevel, writeProject } from "./project.js";
-import { download, readLevelFile, slug } from "./files.js";
+import { download, readLevelFile, readLevelText, slug } from "./files.js";
+import { pasteLevelLink } from "./importdialog.js";
 import { openPatchDialog } from "./patchdialog.js";
 import { edit as step } from "./trail.js";
 import * as drafts from "./drafts.js";
@@ -41,6 +42,14 @@ export function wireDrafts() {
   $("draftCopy").onclick = copyShown;
   $("draftOpen").onclick = () => $("draftFile").click();
   $("draftFile").onchange = openFile;
+  const paste = el("button", {
+    id: "draftPaste",
+    type: "button",
+    textContent: "paste a link…",
+    title: "Open a shared level by its link",
+  });
+  paste.onclick = async () => openRead(await pasteLevelLink(state.lvl.theme, readLevelText));
+  $("draftExport").before(paste);
   $("draftExport").onclick = () => {
     const l = state.lvl;
     if (l.draft !== undefined) saveAs(l.draft, true);
@@ -86,6 +95,11 @@ async function openFile() {
     toast(e.message);
     return;
   }
+  openRead(read);
+}
+
+/** A level read from elsewhere becomes a draft marked saved, since the file is the record. */
+function openRead(read) {
   if (!read) return;
   const id = drafts.create(read.project, { saved: Date.now() });
   imported = { id, lines: read.report };

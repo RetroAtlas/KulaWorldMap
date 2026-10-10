@@ -216,6 +216,30 @@ test("declining the question opens nothing and says nothing", async ({ page }) =
   expect(errors).toEqual([]);
 });
 
+test("an older box's history entry reached by Forward holds no answer up", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT_MARS);
+  await settle(page);
+  const dialog = page.locator("#import");
+  await page.locator("#draftFile").setInputFiles(file("custom.pak", pak()));
+  await expect(dialog).toBeVisible();
+  await dialog.locator("#importCancel").click();
+  await expect(dialog).toBeHidden();
+  await unstood(page);
+  await page.goForward();
+  expect(await page.evaluate(() => history.state?.dialog)).toBe(1);
+  await expect(dialog).toBeHidden();
+  await page.locator("#draftFile").setInputFiles(file("custom.pak", pak()));
+  await expect(dialog).toBeVisible();
+  await dialog.locator("#importSlot").selectOption({ index: 2 });
+  await dialog.locator("#importOpen").click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  expect((await shown(page)).chip).toContain("LEVEL 3");
+  expect(await toasts(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
 test("a level file of the community's viewer opens as the level it holds, in the world on screen", async ({
   page,
 }) => {
@@ -318,5 +342,184 @@ test("a file that is none of these is still refused with one toast", async ({ pa
     "That file is neither a level of the map's nor one of the game's.",
   );
   await expect(page.locator("#draftRows button")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+const pasting = (page, key, world) =>
+  page.evaluate(
+    async ([key, world]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ pasteLevelLink }, { readLevelText }] = await Promise.all(
+        ["importdialog.js", "files.js"].map(at),
+      );
+      window[key] = pasteLevelLink(world, readLevelText);
+    },
+    [key, world],
+  );
+const outcome = (page, key) => page.evaluate((key) => window[key], key);
+/** Ask for a link with a read that takes a while and then reads it, or throws. */
+const pastingSlowly = (page, key, world, throws) =>
+  page.evaluate(
+    async ([key, world, throws]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ pasteLevelLink }, { readLevelText }] = await Promise.all(
+        ["importdialog.js", "files.js"].map(at),
+      );
+      const read = (text, world) =>
+        new Promise((resolve, reject) =>
+          setTimeout(
+            () =>
+              throws
+                ? reject(new Error("Too late."))
+                : readLevelText(text, world).then(resolve, reject),
+            400,
+          ),
+        );
+      window[key] = pasteLevelLink(world, read);
+    },
+    [key, world, throws],
+  );
+const pending = (page, key) =>
+  page.evaluate(
+    (key) =>
+      Promise.race([
+        window[key].then(() => "settled"),
+        new Promise((r) => setTimeout(() => r("pending"), 100)),
+      ]),
+    key,
+  );
+
+test("a pasted link opens a shared level, a text that is no link is refused in place, and cancel gives nothing", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT_MARS);
+  await settle(page);
+  const [, c] = Object.entries(orbit.levels)[0];
+  const own = projectOf(mapData.levels.find((l) => levelKey(l) === c.level));
+  const dialog = page.locator("#paste");
+  const link = dialog.locator("#pasteLink");
+  const says = dialog.locator("#pasteSays");
+
+  await pasting(page, "first", "MARS");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator("#pasteTitle")).toHaveText("Open a shared level");
+  await expect(link).toBeFocused();
+  await dialog.locator("#pasteOpen").click();
+  await expect(says).toHaveText("Paste the link first.");
+  await link.fill("hello there");
+  await dialog.locator("#pasteOpen").click();
+  await expect(says).toHaveText("That is not a link to a shared level.");
+  await expect(dialog).toBeVisible();
+  await link.fill("https://example.test/?level=42");
+  await link.press("Enter");
+  await expect(says).toHaveText(
+    "That link names one of the viewer's own levels rather than a shared one.",
+  );
+  await link.fill(`https://example.test/?level=${c.link}`);
+  await expect(says).toHaveText("");
+  await link.press("Enter");
+  await expect(dialog).toBeHidden();
+  const read = await outcome(page, "first");
+  expect(read.project).toMatchObject({ title: "Shared level", world: "MARS", time: own.time });
+  expect(read.project.blocks).toEqual(own.blocks);
+  expect(read.report).toEqual([]);
+
+  await pasting(page, "second", "MARS");
+  await expect(dialog).toBeVisible();
+  await expect(link).toHaveValue("");
+  await expect(says).toHaveText("");
+  await link.fill(`level=${c.link}&theme=hell`);
+  await dialog.locator("#pasteOpen").click();
+  await expect(dialog).toBeHidden();
+  expect((await outcome(page, "second")).project.world).toBe("HELL");
+
+  await pasting(page, "third", "MARS");
+  await expect(dialog).toBeVisible();
+  await dialog.locator("#pasteCancel").click();
+  await expect(dialog).toBeHidden();
+  expect(await outcome(page, "third")).toBeNull();
+  await pasting(page, "fourth", "MARS");
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  expect(await outcome(page, "fourth")).toBeNull();
+  await expect(page.locator("#draftRows button")).toHaveCount(0);
+  expect(await toasts(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("a read that finishes after the box was closed and opened again answers neither", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT_MARS);
+  await settle(page);
+  const [, c] = Object.entries(orbit.levels)[0];
+  const dialog = page.locator("#paste");
+  const link = dialog.locator("#pasteLink");
+  const says = dialog.locator("#pasteSays");
+  const open = dialog.locator("#pasteOpen");
+
+  await pastingSlowly(page, "slow", "MARS", false);
+  await expect(dialog).toBeVisible();
+  await link.fill(`https://example.test/?level=${c.link}`);
+  await link.press("Enter");
+  await expect(open).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  expect(await outcome(page, "slow")).toBeNull();
+  await pastingSlowly(page, "next", "MARS", true);
+  await expect(dialog).toBeVisible();
+  await expect(link).toHaveValue("");
+  await page.waitForTimeout(600);
+  await expect(dialog).toBeVisible();
+  await expect(says).toHaveText("");
+  await expect(open).toBeEnabled();
+  expect(await pending(page, "next")).toBe("pending");
+
+  await link.fill("hello");
+  await link.press("Enter");
+  await expect(open).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  expect(await outcome(page, "next")).toBeNull();
+  await pastingSlowly(page, "last", "MARS", false);
+  await expect(dialog).toBeVisible();
+  await page.waitForTimeout(600);
+  await expect(dialog).toBeVisible();
+  await expect(says).toHaveText("");
+  expect(await pending(page, "last")).toBe("pending");
+  await dialog.locator("#pasteCancel").click();
+  await expect(dialog).toBeHidden();
+  expect(await outcome(page, "last")).toBeNull();
+  await expect(page.locator("#draftRows button")).toHaveCount(0);
+  expect(await toasts(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("the sidebar's paste a link… makes a draft of the shared level", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT_MARS);
+  await settle(page);
+  const [, c] = Object.entries(orbit.levels)[0];
+  const own = projectOf(mapData.levels.find((l) => levelKey(l) === c.level));
+  await page.locator("#draftPaste").click();
+  const dialog = page.locator("#paste");
+  await expect(dialog).toBeVisible();
+  await dialog.locator("#pasteLink").fill(`https://example.test/?level=${c.link}`);
+  await dialog.locator("#pasteOpen").click();
+  await expect(dialog).toBeHidden();
+  const rows = page.locator("#draftRows button");
+  await expect(rows).toHaveCount(1);
+  const opened = await shown(page);
+  expect(opened).toMatchObject({ li: -1, theme: "MARS" });
+  expect(opened.chip).toContain("Shared level");
+  const entry = await entryOf(page, opened.draft);
+  expect(entry.doc).toMatchObject({ title: "Shared level", world: "MARS", time: own.time });
+  expect(entry.doc.blocks).toEqual(own.blocks);
+  expect(entry.saved).toBeGreaterThan(0);
+  await expect(rows.locator(".state")).toHaveText("saved to a file");
+  expect(await toasts(page)).toEqual([]);
   expect(errors).toEqual([]);
 });

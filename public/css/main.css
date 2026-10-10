@@ -1476,3 +1476,67 @@ body:not(.sidebar-open) .menu-btn .cross {
 #import .row button:hover {
   border-color: var(--accent-dim);
 }
+
+/* the paste dialog: a shared level's link, opened as a draft */
+#paste .box {
+  width: 460px;
+}
+#paste p {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+}
+#paste .field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 12.5px;
+}
+#paste .field > span {
+  flex: 0 0 44px;
+  color: var(--dim);
+}
+#paste input {
+  flex: 1;
+  min-width: 0;
+  background: #0e1320;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12.5px;
+}
+#paste input:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: -1px;
+}
+#paste .says {
+  color: var(--warn);
+  margin: 0;
+}
+#paste .says:empty {
+  display: none;
+}
+#paste .row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+#paste .row button {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+#paste .row button:hover {
+  border-color: var(--accent-dim);
+}
+#paste .row button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
