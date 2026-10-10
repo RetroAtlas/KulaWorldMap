@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations, objects } from "./fixtures.js";
 import { lookOf } from "../../public/js/skins.js";
-import { setObjects, motionOf, paintsFace, ballFor } from "../../public/js/data.js";
+import { setObjects, motionOf, paintsFace, ballFor, markerModel } from "../../public/js/data.js";
 import { state } from "../../public/js/state.js";
 
 setObjects(objects);
@@ -129,4 +129,24 @@ test("the ball follows the hidden flag and the keys, the slot standing in for th
   assert.equal(ballFor(level([block(COIN)], "/HELL/HELL.PAK", 16)), balls[11]);
   assert.equal(ballFor(level([block(COIN), settings])), balls[13]);
   assert.equal(ballFor(level([block(COIN)], skins.copycat)), balls[9]);
+});
+
+test("the exit starts shut where the level has a key, and open where it has none", () => {
+  state.data = mapData;
+  const { skins, types } = objects;
+  const EXIT = 7;
+  const exit = { face: 0, type: EXIT, f: [], v: 0, variant: null };
+  const level = (...on) => ({
+    theme: "HIRO",
+    pack: "/HIRO/HIRO.PAK",
+    index: 0,
+    records: [{ kind: 0, on: on.map((type, face) => ({ face, type })) }],
+  });
+  assert.equal(markerModel(exit, level(EXIT, skins.keys.type)), types[EXIT][1]);
+  assert.equal(markerModel(exit, level(EXIT)), types[EXIT][0]);
+  for (const l of mapData.levels) {
+    const exits = l.records.flatMap((r) => r.on.filter((o) => o.type === EXIT));
+    for (const o of exits)
+      assert.equal(markerModel({ ...o, variant: null }, l), types[EXIT][1], l.name);
+  }
 });

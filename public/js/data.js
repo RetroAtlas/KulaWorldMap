@@ -1,6 +1,6 @@
 import { state, SIDE, cellKey } from "./state.js";
 import { FACE_NORMAL } from "./faces.js";
-import { platesOf, lookOf } from "./skins.js";
+import { platesOf, lookOf, keyed } from "./skins.js";
 import { glowing } from "./motion.js";
 
 export const WORLD_TINT = {
@@ -232,8 +232,13 @@ export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
 // needs next: the level's number counted round the fruit.
 const FRUIT_FIRST = 43;
 const FRUIT = 5;
-// The variant a level opens on where no field picks one.
-const OPENS_ON = { 7: 1 }; // the exit, red until the keys are found
+// The exit opens on the last key, so it starts shut where the level has one.
+const EXIT = 7;
+const SHUT = 1;
+const shutExit = (l) => {
+  const skins = skinsTable();
+  return !skins || keyed(skins, l);
+};
 // The ball starts on a plain face or on a clock.
 const START = 30;
 const STARTS = new Set([29, START]);
@@ -273,7 +278,8 @@ export function markerModel(m, l, form = null) {
     type = FRUIT_FIRST + ((Number(n[1]) - 1) % FRUIT);
   const models = shapes.types[String(type)];
   if (!models) return null;
-  const variant = form ?? (m.variant !== null ? Number(m.variant) : (OPENS_ON[type] ?? 0));
+  const opens = type === EXIT && shutExit(l) ? SHUT : 0;
+  const variant = form ?? (m.variant !== null ? Number(m.variant) : opens);
   return models[variant] || models[0];
 }
 export const kindNote = (kind) => ann.kinds[String(kind)]?.note || "";
