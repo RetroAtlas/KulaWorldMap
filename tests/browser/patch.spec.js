@@ -424,6 +424,13 @@ test("a file that is not a disc image is said so, and the patches stay back", as
     "notes.bin does not read as a disc image",
   );
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
+  const iso = new Uint8Array(2048 * 17);
+  iso.set(Buffer.from("CD001"), 16 * 2048 + 1);
+  await dialog.locator("#patchDisc").setInputFiles(file("rip.iso", iso));
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "rip.iso is a disc image of 2048-byte sectors; the map reads the raw image of 2352-byte sectors, the .bin a .cue names.",
+  );
+  await expect(dialog.locator("#patchPpf")).toBeDisabled();
   await expect(dialog.locator("#patchFit")).toHaveText(
     "The pack is laid out again to make room, with 1127 bytes to spare.",
   );

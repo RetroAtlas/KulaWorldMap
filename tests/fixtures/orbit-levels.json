@@ -1,0 +1,2046 @@
+{
+ "from": "the level files of the community's Saturn viewer, orbit, in the KulaWorkshop/orbit repository on GitHub at its main branch: json is static/assets/levels/<n>.json as scripts/build-levels.ts writes it from the viewer's levels/ directory, link is the level parameter the viewer's codec (encodeLevelToParam in src/lib/data/codec.ts) makes of that file, which scripts/encode-level.ts <file> --url prints inside a viewer URL, and level is the disc slot the file reads back to, found by reading json through the map's reader and matching the digest of the canonical level file; the five are chosen to cover lasers, a platform, devices and the invisible-from-afar flag",
+ "levels": {
+  "60": {
+   "level": "/HAZE/HAZE.PAK#1",
+   "json": {
+    "time": 99,
+    "hidden": false,
+    "reverse": true,
+    "blocks": [
+     {
+      "type": 3,
+      "pos": [
+       13,
+       16,
+       13
+      ],
+      "items": [
+       {
+        "id": 31,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 3,
+      "pos": [
+       13,
+       16,
+       14
+      ],
+      "items": [
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 37,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 3,
+      "pos": [
+       13,
+       16,
+       15
+      ],
+      "items": []
+     },
+     {
+      "type": 3,
+      "pos": [
+       14,
+       16,
+       13
+      ],
+      "items": [
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 37,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 3,
+      "pos": [
+       14,
+       16,
+       15
+      ],
+      "items": []
+     },
+     {
+      "type": 0,
+      "pos": [
+       15,
+       13,
+       11
+      ],
+      "items": [
+       {
+        "id": 7,
+        "option": 0,
+        "variant": 0,
+        "state": 2
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 3,
+      "pos": [
+       15,
+       16,
+       13
+      ],
+      "items": []
+     },
+     {
+      "type": 3,
+      "pos": [
+       15,
+       16,
+       14
+      ],
+      "items": []
+     },
+     {
+      "type": 3,
+      "pos": [
+       15,
+       18,
+       15
+      ],
+      "items": [
+       {
+        "id": 46,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 3,
+      "pos": [
+       15,
+       17,
+       15
+      ],
+      "items": []
+     },
+     {
+      "type": 3,
+      "pos": [
+       15,
+       16,
+       15
+      ],
+      "items": []
+     },
+     {
+      "type": 3,
+      "pos": [
+       15,
+       15,
+       15
+      ],
+      "items": []
+     },
+     {
+      "type": 3,
+      "pos": [
+       15,
+       14,
+       15
+      ],
+      "items": []
+     },
+     {
+      "type": 3,
+      "pos": [
+       15,
+       16,
+       16
+      ],
+      "items": []
+     },
+     {
+      "type": 3,
+      "pos": [
+       15,
+       16,
+       17
+      ],
+      "items": [
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 36,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       15,
+       18,
+       20
+      ],
+      "items": [
+       {
+        "id": 30,
+        "option": 3,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 3,
+      "pos": [
+       16,
+       16,
+       15
+      ],
+      "items": []
+     },
+     {
+      "type": 3,
+      "pos": [
+       16,
+       16,
+       17
+      ],
+      "items": []
+     },
+     {
+      "type": 3,
+      "pos": [
+       17,
+       16,
+       13
+      ],
+      "items": [
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 35,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 3,
+      "pos": [
+       17,
+       16,
+       15
+      ],
+      "items": [
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 37,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 3,
+      "pos": [
+       17,
+       16,
+       16
+      ],
+      "items": [
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 37,
+        "option": 0,
+        "variant": 2,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 3,
+      "pos": [
+       17,
+       16,
+       17
+      ],
+      "items": [
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 31,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       }
+      ]
+     }
+    ]
+   },
+   "link": "H4sIAJyFy2oAA5VT2w7CIAx99yv6CZQ9mPAzRjMui28m-mAWv90WmymlU5eGsJ1yyuEU_GV2M-4GGCHTuAVHgeDCg8L9moUXjXyNZUZsCwsxweEdhMUqQpONIk1CiG0xR_8jnGBf1_gNJ0pVRCuMsdhhEw08brYsQelOzhv0GIfGosnNBla6duDr49PBVhy7NsEZrmGw8mt9pg1ZghbGWFFYkRbb9e62mcJLq_fpi9tMzAteif5vIluoL6PNk5fzBDO2aTlQAwAA"
+  },
+  "80": {
+   "level": "/MARS/MARS.PAK#4",
+   "json": {
+    "time": 99,
+    "hidden": false,
+    "reverse": false,
+    "blocks": [
+     {
+      "type": 0,
+      "pos": [
+       18,
+       13,
+       19
+      ],
+      "items": [
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 5,
+        "option": 4,
+        "variant": 0,
+        "state": 1,
+        "route": 65535,
+        "to": 114
+       },
+       {
+        "id": 2,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 12,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       19,
+       13,
+       19
+      ],
+      "items": [
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 7,
+        "option": 0,
+        "variant": 0,
+        "state": 2
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       20,
+       13,
+       17
+      ],
+      "items": [
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 30,
+        "option": 1,
+        "variant": 0,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       20,
+       13,
+       18
+      ],
+      "items": []
+     },
+     {
+      "type": 0,
+      "pos": [
+       20,
+       15,
+       19
+      ],
+      "items": [
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 46,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       20,
+       14,
+       19
+      ],
+      "items": [
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       20,
+       13,
+       19
+      ],
+      "items": []
+     },
+     {
+      "type": 0,
+      "pos": [
+       20,
+       12,
+       19
+      ],
+      "items": []
+     },
+     {
+      "type": 0,
+      "pos": [
+       20,
+       11,
+       19
+      ],
+      "items": [
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 36,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 2,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       20,
+       13,
+       20
+      ],
+      "items": [
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 31,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       20,
+       13,
+       21
+      ],
+      "items": []
+     },
+     {
+      "type": 0,
+      "pos": [
+       21,
+       13,
+       19
+      ],
+      "items": []
+     },
+     {
+      "type": 0,
+      "pos": [
+       22,
+       13,
+       19
+      ],
+      "items": [
+       {
+        "id": 10,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 2,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 5,
+        "option": 2,
+        "variant": 0,
+        "state": 1,
+        "route": 65535,
+        "to": 3
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       }
+      ]
+     }
+    ]
+   },
+   "link": "H4sIAJyFy2oAA4WRSQ6DMAxF9z2Fj5CkpZV8mYpRjBskWCHOjmMchjDJUn7k5MnftmkHNaiXggISKEGjsgF8bjTAD6nGEd9fMJKMWTXBpQePFNf643-GuIq4_PG_044MEClcAf81OJdtPCwaziaXTrwOGUwJvHi_5WzTvon4JBfdTFbPl9WgTFcKVE9GoN_zwtWeifrEbMM5NyC31QDtjVd9qC06Aa3Gte41AgAA"
+  },
+  "132": {
+   "level": "/INCA/INCA.PAK#7",
+   "json": {
+    "time": 99,
+    "hidden": false,
+    "reverse": false,
+    "blocks": [
+     {
+      "type": 1,
+      "pos": [
+       15,
+       12,
+       17
+      ],
+      "items": [
+       {
+        "id": 36,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 46,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       }
+      ]
+     },
+     {
+      "type": 1,
+      "pos": [
+       17,
+       15,
+       15
+      ],
+      "items": [
+       {
+        "id": 31,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 37,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       17,
+       16,
+       17
+      ],
+      "items": [
+       {
+        "id": 30,
+        "option": 4,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 7,
+        "option": 0,
+        "variant": 0,
+        "state": 2
+       }
+      ]
+     },
+     {
+      "type": 1,
+      "pos": [
+       17,
+       13,
+       19
+      ],
+      "items": [
+       {
+        "id": 31,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 37,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       21,
+       14,
+       17
+      ],
+      "items": [
+       {
+        "id": 31,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 1,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       }
+      ]
+     }
+    ]
+   },
+   "link": "H4sIAJyFy2oAAzMqqjGoMeAyVEhTSFbIUDA0sAJBQwUIbYCTNkyEKATqzADqTVMoI1ajIVSjAVBjOhCXWpng1QCjzcG0EdjCFIUscizMUUgFaoZphIgDFeCgoQYAAGL_2CQiAQAA"
+  },
+  "170": {
+   "level": "/COWBOY/COWBOY.PAK#11",
+   "json": {
+    "time": 99,
+    "hidden": false,
+    "reverse": false,
+    "blocks": [
+     {
+      "type": 0,
+      "pos": [
+       15,
+       16,
+       17
+      ],
+      "items": [
+       {
+        "id": 30,
+        "option": 4,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 5,
+      "pos": [
+       17,
+       16,
+       17
+      ],
+      "start": [
+       8704,
+       8704,
+       8704
+      ],
+      "from": [
+       17,
+       17,
+       17
+      ],
+      "to": [
+       17,
+       17,
+       22
+      ],
+      "movement": 2,
+      "orientation": 2,
+      "length": 2,
+      "speed": 30,
+      "id": 6
+     },
+     {
+      "type": 6,
+      "pos": [
+       19,
+       16,
+       23
+      ]
+     },
+     {
+      "type": 6,
+      "pos": [
+       20,
+       16,
+       23
+      ]
+     },
+     {
+      "type": 2,
+      "pos": [
+       21,
+       16,
+       23
+      ],
+      "items": [
+       {
+        "id": 31,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 2,
+      "pos": [
+       22,
+       16,
+       23
+      ],
+      "items": [
+       {
+        "id": 37,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 6,
+      "pos": [
+       23,
+       16,
+       23
+      ]
+     },
+     {
+      "type": 6,
+      "pos": [
+       24,
+       16,
+       23
+      ]
+     },
+     {
+      "type": 5,
+      "pos": [
+       26,
+       16,
+       22
+      ],
+      "start": [
+       13312,
+       8704,
+       11264
+      ],
+      "from": [
+       26,
+       17,
+       17
+      ],
+      "to": [
+       26,
+       17,
+       22
+      ],
+      "movement": 3,
+      "orientation": 2,
+      "length": 2,
+      "speed": 30,
+      "id": 13
+     },
+     {
+      "type": 0,
+      "pos": [
+       29,
+       17,
+       17
+      ],
+      "items": [
+       {
+        "id": 36,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       30,
+       17,
+       17
+      ],
+      "items": []
+     },
+     {
+      "type": 0,
+      "pos": [
+       32,
+       18,
+       17
+      ],
+      "items": [
+       {
+        "id": 46,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 7,
+        "option": 0,
+        "variant": 0,
+        "state": 2
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       }
+      ]
+     }
+    ]
+   },
+   "link": "H4sIAJyFy2oAA42QXQrCMBCE33OKOcIm2gp7GRFE608qitWX4tmd3UaFolgG8iVLZnfYdOmllyDYYIsGnc5VVCD6oP4yVPSYb6yM5OpQhxp7_mnJgzPhaMTNJmmcMMtFX3ZfjD-NrjE5uC0BTs4KZzLztKB2NuU-K6HXXMjV63FoMiXlsBGh3YzLj1i7Y2fNVu9mX5Ni4Uyv9xMcBQannQEAAA"
+  },
+  "194": {
+   "level": "/ATLANT/ATLANT.PAK#3",
+   "json": {
+    "time": 99,
+    "hidden": false,
+    "reverse": false,
+    "blocks": [
+     {
+      "type": 0,
+      "pos": [
+       15,
+       18,
+       13
+      ],
+      "items": [
+       {
+        "id": 37,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 37,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       15,
+       17,
+       13
+      ],
+      "items": [
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 37,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       15,
+       16,
+       13
+      ],
+      "items": [
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 46,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       15,
+       18,
+       14
+      ],
+      "items": [
+       {
+        "id": 37,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       15,
+       18,
+       15
+      ],
+      "items": [
+       {
+        "id": 31,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 65535,
+        "variant": 65535,
+        "state": 0
+       }
+      ]
+     },
+     {
+      "type": 8,
+      "pos": [
+       15,
+       16,
+       22
+      ],
+      "from": [
+       15,
+       17,
+       17
+      ],
+      "to": [
+       15,
+       17,
+       22
+      ],
+      "orientation": 2,
+      "length": 1,
+      "speed": 10,
+      "variant": 3,
+      "state": 65535
+     },
+     {
+      "type": 6,
+      "pos": [
+       15,
+       16,
+       25
+      ]
+     },
+     {
+      "type": 6,
+      "pos": [
+       16,
+       16,
+       13
+      ]
+     },
+     {
+      "type": 6,
+      "pos": [
+       16,
+       16,
+       25
+      ]
+     },
+     {
+      "type": 6,
+      "pos": [
+       17,
+       16,
+       13
+      ]
+     },
+     {
+      "type": 2,
+      "pos": [
+       17,
+       16,
+       16
+      ],
+      "items": []
+     },
+     {
+      "type": 5,
+      "pos": [
+       17,
+       16,
+       20
+      ],
+      "start": [
+       8704,
+       8704,
+       10240
+      ],
+      "from": [
+       17,
+       17,
+       18
+      ],
+      "to": [
+       17,
+       17,
+       20
+      ],
+      "movement": 3,
+      "orientation": 2,
+      "length": 2,
+      "speed": 30,
+      "id": 15
+     },
+     {
+      "type": 6,
+      "pos": [
+       17,
+       16,
+       23
+      ]
+     },
+     {
+      "type": 6,
+      "pos": [
+       17,
+       16,
+       24
+      ]
+     },
+     {
+      "type": 0,
+      "pos": [
+       17,
+       16,
+       25
+      ],
+      "items": [
+       {
+        "id": 30,
+        "option": 3,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 36,
+        "option": 0,
+        "variant": 0,
+        "state": 1
+       },
+       {
+        "id": 37,
+        "option": 0,
+        "variant": 2,
+        "state": 1
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 0,
+        "option": 0,
+        "variant": 0,
+        "state": 0
+       },
+       {
+        "id": 7,
+        "option": 0,
+        "variant": 0,
+        "state": 2
+       }
+      ]
+     },
+     {
+      "type": 8,
+      "pos": [
+       19,
+       16,
+       22
+      ],
+      "from": [
+       19,
+       17,
+       17
+      ],
+      "to": [
+       19,
+       17,
+       22
+      ],
+      "orientation": 2,
+      "length": 1,
+      "speed": 19,
+      "variant": 3,
+      "state": 86
+     }
+    ]
+   },
+   "link": "H4sIAJyFy2oAA5WRawqDMBCE_3uKOUIS6QMvU4T6SrGVgv0lnr27kxD7siAL-5kssztZ3X0yk8kManQ4w9rCSFholkh8KcwSWiCpbEX5cZ_4V9hQ-D4pTSy_rCzCDtVq5zVGYY3HRt2RTns-tGXu4WBRIsec7VkdhI2-J1LPLc-ObHBaItvx7sJ-IXfxO5fODiPqqL9G3sS9csBY5GE_YS827MH9-GcH0ol_T_-eMzQH_16nVU9GqTi2AgIAAA"
+  }
+ }
+}

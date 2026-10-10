@@ -9,7 +9,7 @@ import { openDialog } from "./dialog.js";
 import { writeKwl } from "./kwl.js";
 import { deflate } from "./deflate.js";
 import { ERROR, UNTITLED, describe, playsAs, setMeta, validate } from "./project.js";
-import { download, slug } from "./files.js";
+import { RAW_ONLY, download, isIso, slug } from "./files.js";
 import * as drafts from "./drafts.js";
 import { edit } from "./trail.js";
 import { IN_PLACE, REBUILD, fit } from "./pak.js";
@@ -335,10 +335,14 @@ async function take(file) {
   play();
   let disc;
   try {
+    if (await isIso(file)) throw new Error(RAW_ONLY);
     disc = await openDisc(file);
   } catch (e) {
     if (mine !== turn) return;
-    ui.status.textContent = `${file.name} does not read as a disc image: ${e.message}.`;
+    ui.status.textContent =
+      e.message === RAW_ONLY
+        ? `${file.name} ${RAW_ONLY}.`
+        : `${file.name} does not read as a disc image: ${e.message}.`;
     return;
   }
   if (mine !== turn) return;

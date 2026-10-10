@@ -1423,3 +1423,56 @@ body:not(.sidebar-open) .menu-btn .cross {
   opacity: 0.4;
   cursor: default;
 }
+
+/* the import picker: which level of a pack or a disc image to open */
+#import .box {
+  width: 420px;
+}
+#import p {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+}
+#import .field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 12.5px;
+}
+#import .field > span {
+  flex: 0 0 44px;
+  color: var(--dim);
+}
+#import select {
+  flex: 1;
+  min-width: 0;
+  background: #0e1320;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12.5px;
+}
+#import select:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: -1px;
+}
+#import .row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+#import .row button {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+#import .row button:hover {
+  border-color: var(--accent-dim);
+}
