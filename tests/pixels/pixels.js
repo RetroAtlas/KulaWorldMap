@@ -1,9 +1,9 @@
 // Renders the map from the working tree and from a git ref, HEAD unless one
 // is given, over the matrix in cases.js with the page's clock held still,
 // and names every capture that differs: the map canvas, the pick canvas, the
-// hit test over a grid of points, whether the frame goes on redrawing, and
-// whether a world's atlas redraws the map when it lands. A change that is to
-// draw exactly as before passes with nothing named.
+// hit test over a grid of points, the cell and the face it finds, whether the
+// frame goes on redrawing, and whether a world's atlas redraws the map when it
+// lands. A change that is to draw exactly as before passes with nothing named.
 //
 //     npm run pixels -- [<ref>] [--save <dir>] [--all]
 //
@@ -225,18 +225,22 @@ async function capture(page, c, keep) {
         const pk = window.__pick;
         const main = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
         const grid = [];
+        const faces = [];
         for (let y = 2; y < cv.clientHeight; y += 8)
           for (let x = 2; x < cv.clientWidth; x += 8) {
             const at = R.cellAt(x, y);
             grid.push(at ? `${at.x},${at.y},${at.z}` : "");
+            faces.push(at ? String(at.face ?? "") : "");
           }
         // the pick as the hit test found it
         const pick = pk.getContext("2d").getImageData(0, 0, pk.width, pk.height).data;
+        const text = (list) => new TextEncoder().encode(list.join(";"));
         const shot = {
           id: `${c.id}@${t}`,
           main: await hash(main),
           pick: await hash(pick),
-          grid: await hash(new TextEncoder().encode(grid.join(";"))),
+          grid: await hash(text(grid)),
+          face: await hash(text(faces)),
           view: [cv.width, cv.height, state.view.dpr],
         };
         if (keep) shot.png = [cv.toDataURL("image/png"), pk.toDataURL("image/png")];

@@ -27,7 +27,7 @@ import { walkers, probe, advance, place, under, dice } from "./travel.js";
 import { lookOf } from "./skins.js";
 import { drawBeams } from "./beams.js";
 import { atlasFor } from "./atlas.js";
-import { drawBlock, cube, outline, covers } from "./blocks.js";
+import { drawBlock, cube, outline, covers, faceAt } from "./blocks.js";
 import { drawRails, drawBase, drawCamera, drawScale, drawMark, drawLink } from "./overlays.js";
 import { drawThing, quietAmongModels, thingDisc } from "./things.js";
 import { drawCompass } from "./compass.js";
@@ -402,7 +402,7 @@ function pickGoing(going, home, l, area) {
     z: home.z + going.offset[2],
   };
   const [x, y, r] = thingDisc(m, where, l);
-  pickList.push({ home, disc: [x, y, r] });
+  pickList.push({ home, disc: [x, y, r], face: going.w.face });
   if (x + r < area.x0 || x - r > area.x1 || y + r < area.y0 || y - r > area.y1) return;
   pick.fillStyle = pickColour(pickList.length);
   pick.beginPath();
@@ -430,8 +430,9 @@ const TRIES = [
 const shows = (e, x, y) =>
   e.disc ? Math.hypot(x - e.disc[0], y - e.disc[1]) <= e.disc[2] : covers(e.at, x, y);
 
-/** The cell under a point of the canvas. With `near`, the pick is painted
-    about the point alone where it is not painted already. */
+/** The cell under a point of the canvas, with the face the point lies on.
+    With `near`, the pick is painted about the point alone where it is not
+    painted already. */
 export function cellAt(cx, cy, near = false) {
   if (pickStale) draw();
   if (!pickFrom) return null;
@@ -458,8 +459,16 @@ export function cellAt(cx, cy, near = false) {
   const front = [...proposed].sort((a, b) => b - a);
   const dpr = state.view.dpr;
   for (const [dx, dy] of TRIES) {
-    const id = front.find((v) => shows(pickList[v - 1], (px + dx) / dpr, (py + dy) / dpr));
-    if (id) return pickList[id - 1].home;
+    const x = (px + dx) / dpr;
+    const y = (py + dy) / dpr;
+    const id = front.find((v) => shows(pickList[v - 1], x, y));
+    if (id) {
+      const e = pickList[id - 1];
+      // the face is read at the point itself, which the probe may have left
+      // by a fraction of a pixel, and at the probe where the point is off the cube
+      const face = e.disc ? e.face : (faceAt(e.at, cx, cy) ?? faceAt(e.at, x, y));
+      return { ...e.home, face };
+    }
   }
   return null;
 }

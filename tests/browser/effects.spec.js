@@ -902,6 +902,51 @@ test("a point on the edge between two blocks names one drawn there, never one fa
   expect(errors).toEqual([]);
 });
 
+test("the pick names the face under the point, and the point lies on it", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HELL/18/45,35");
+  await settle(page);
+  await expect(page.locator("#chip")).toContainText("HIDDEN 10");
+  const seen = await page.evaluate(async () => {
+    const { screen, facing } = await import(new URL("js/state.js", location.href).href);
+    const { cellAt } = await import(new URL("js/render.js", location.href).href);
+    const { FACES } = await import(new URL("js/blocks.js", location.href).href);
+    const on = (pts, x, y) => {
+      const sides = pts.map(([ax, ay], i) => {
+        const [bx, by] = pts[(i + 1) % pts.length];
+        return Math.sign((bx - ax) * (y - ay) - (by - ay) * (x - ax));
+      });
+      return !sides.includes(1) || !sides.includes(-1);
+    };
+    const cv = document.getElementById("cv");
+    const faces = new Set();
+    const wrong = [];
+    for (let y = 0; y < cv.clientHeight; y += 3)
+      for (let x = 0; x < cv.clientWidth; x += 3) {
+        const c = cellAt(x, y);
+        if (!c) continue;
+        // the faces of the cell turned to the camera that hold the point: one,
+        // two on the edge between them, none where the point is on the cube's rim
+        const under = FACES.filter(
+          (f) =>
+            facing(f.n) &&
+            on(
+              f.c.map(([dx, dy, dz]) => screen(c.x + dx, c.y + dy, c.z + dz)),
+              x,
+              y,
+            ),
+        ).map((f) => f.game);
+        if (under.length && !under.includes(c.face))
+          wrong.push(`${x},${y} on ${c.x},${c.y},${c.z} face ${c.face}, not ${under}`);
+        faces.add(c.face);
+      }
+    return { wrong, faces: [...faces].sort() };
+  });
+  expect(seen.wrong, seen.wrong.slice(0, 3).join("; ")).toEqual([]);
+  expect(seen.faces.length).toBeGreaterThanOrEqual(3);
+  expect(errors).toEqual([]);
+});
+
 test("the map, the legend and the panel follow the screen's density", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);

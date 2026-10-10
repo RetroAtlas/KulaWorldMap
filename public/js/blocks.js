@@ -316,22 +316,31 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
   return live;
 }
 
-export function covers(c, x, y) {
+const inside = (pts, x, y) => {
+  const sides = pts.map(([ax, ay], i) => {
+    const [bx, by] = pts[(i + 1) % pts.length];
+    return Math.sign((bx - ax) * (y - ay) - (by - ay) * (x - ax));
+  });
+  return !sides.includes(1) || !sides.includes(-1);
+};
+
+/** The game's number of the face of the block at `c` that the point lies on,
+    among the faces turned to the camera, or null where none covers it. */
+export function faceAt(c, x, y) {
   const s = state.cam.zoom * BLOCK;
   const [ox, oy] = screen(c.x, c.y, c.z);
-  return FACES.some((f) => {
-    if (!facing(f.n)) return false;
+  for (const f of FACES) {
+    if (!facing(f.n)) continue;
     const pts = f.c.map(([dx, dy, dz]) => {
       const [px, py] = project(dx, dy, dz);
       return [ox + px * s, oy + py * s];
     });
-    const sides = pts.map(([ax, ay], i) => {
-      const [bx, by] = pts[(i + 1) % pts.length];
-      return Math.sign((bx - ax) * (y - ay) - (by - ay) * (x - ax));
-    });
-    return !sides.includes(1) || !sides.includes(-1);
-  });
+    if (inside(pts, x, y)) return f.game;
+  }
+  return null;
 }
+
+export const covers = (c, x, y) => faceAt(c, x, y) !== null;
 
 export function outlineStroke(ctx, colour, dash = []) {
   ctx.strokeStyle = colour;
