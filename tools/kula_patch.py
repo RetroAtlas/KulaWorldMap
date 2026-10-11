@@ -83,7 +83,7 @@ def ppf(original, writes, description):
     with open(original, "rb") as f:
         f.seek(BLOCK_AT)
         block = f.read(BLOCK)
-    text = description.encode("ascii", "replace")[:DESCRIPTION].ljust(DESCRIPTION)
+    text = "".join(c if " " <= c <= "~" else "?" for c in description).encode("ascii")[:DESCRIPTION].ljust(DESCRIPTION)
     out = bytearray(PPF_MAGIC + bytes([PPF_VERSION]) + text + bytes([0, 1, 0, 0]) + block)
     for at, data in changes(original, writes):
         for i in range(0, len(data), RECORD_MOST):

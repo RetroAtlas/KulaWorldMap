@@ -198,6 +198,7 @@ class ThePatches(unittest.TestCase):
         placed, _ = self.cases["in place"]
         self.assertEqual(ppf(self.src, placed.writes, "x" * 80)[6:56], b"x" * 50)
         self.assertEqual(ppf(self.src, placed.writes, "Kula World Map: Épée")[6:56], b"Kula World Map: ?p?e".ljust(50))
+        self.assertEqual(ppf(self.src, placed.writes, "a\tb\nc\x7fd\0")[6:56], b"a?b?c?d?".ljust(50))
 
     def test_a_vcdiff_decodes_to_the_patched_image_and_copies_the_rest_from_the_source(self):
         for name, (placed, patched) in self.cases.items():

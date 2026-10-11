@@ -273,7 +273,7 @@ export async function ppf(original, writes, description) {
   for (const c of description) {
     if (k === DESCRIPTION) break;
     const code = c.codePointAt(0);
-    text[k++] = code < 128 ? code : 0x3f;
+    text[k++] = code >= 0x20 && code < 0x7f ? code : 0x3f;
   }
   const records = [];
   for (const [at, data] of await changes(original, writes))

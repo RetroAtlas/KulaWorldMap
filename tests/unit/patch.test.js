@@ -653,6 +653,7 @@ test("a long description is cut and a short one padded, in ASCII", async () => {
   const description = async (s) => text((await ppf(blob, placed.writes, s)).subarray(6, 56));
   assert.equal(await description("x".repeat(80)), "x".repeat(50));
   assert.equal(await description("Kula World Map: Épée"), "Kula World Map: ?p?e".padEnd(50));
+  assert.equal(await description("a\tb\nc\u007fd\u0000"), "a?b?c?d?".padEnd(50));
 });
 
 test("a VCDIFF decodes to the patched image and copies the rest from the source", async () => {
