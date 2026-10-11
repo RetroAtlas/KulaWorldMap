@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { mapData, annotations, objects, levelKey } from "./fixtures.js";
@@ -27,6 +28,7 @@ import {
   PLATFORM_KIND,
   SETTINGS_KIND,
   inner,
+  writeKwl,
 } from "../../public/js/kwl.js";
 import {
   COUNTERS,
@@ -88,6 +90,14 @@ const warnings = (blocks, more) => texts(validate(project(blocks, more), HIDES),
 const level = (title) => mapData.levels.find((l) => (l.shown || l.name) === title);
 
 const doc = readFileSync(fileURLToPath(new URL("../../docs/editor.md", import.meta.url)), "utf8");
+// The documents written to break a reader, with what the Python reader and writer gave for each.
+const hostile = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL("../fixtures/hostile-projects.json", import.meta.url)),
+    "utf8",
+  ),
+);
+const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 // --- the model ---------------------------------------------------------------------
 
@@ -912,6 +922,32 @@ test("the reader keeps three lines of a shape and counts the rest, where they fa
     'block 5 at 5,9,5 names a face "8", which is not one of the six; it is left out',
     "1 more line like the one above",
   ]);
+});
+
+test("every hostile document reads to the project and the report the Python reader gave, and writes its bytes", () => {
+  assert.ok(hostile.cases.length >= 30);
+  for (const c of hostile.cases) {
+    // the fixture holds the parsed document; a document that is itself text reaches the reader as its JSON
+    const source = typeof c.input === "string" ? JSON.stringify(c.input) : structuredClone(c.input);
+    if ("refusal" in c) {
+      assert.throws(
+        () => readProject(source),
+        (e) => e.message === c.refusal,
+        c.name,
+      );
+      continue;
+    }
+    const { project, report } = readProject(source);
+    assert.deepEqual(project, c.project, c.name);
+    assert.deepEqual(report, c.report, c.name);
+    if ("kwl" in c.level) assert.equal(sha256(writeKwl(project)), c.level.kwl, c.name);
+    else
+      assert.throws(
+        () => writeKwl(project),
+        (e) => e.message === c.level.refusal,
+        c.name,
+      );
+  }
 });
 
 test("a face key is read by its number, and a second spelling of one face is left out", () => {

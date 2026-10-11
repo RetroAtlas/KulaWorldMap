@@ -6,6 +6,7 @@
     python3 tools/kula_kwl.py --from-kwl spiral.kwl --json [--world HIRO]
     python3 tools/kula_kwl.py --digests                              # tests/fixtures/kwl-digests.json
     python3 tools/kula_kwl.py --deflate-vectors                      # tests/fixtures/deflate-vectors.json
+    python3 tools/kula_kwl.py --hostile                              # tests/fixtures/hostile-projects.json
     python3 tools/kula_kwl.py --check                                # every disc level, needs $KULA_DISC
 
 A project is the editor's file: the game's own structure spelled in JSON, a
@@ -64,6 +65,7 @@ DATA = ROOT / "public" / "map_data.json"
 OBJECTS = ROOT / "public" / "objects.json"
 DIGESTS = ROOT / "tests" / "fixtures" / "kwl-digests.json"
 VECTORS = ROOT / "tests" / "fixtures" / "deflate-vectors.json"
+HOSTILE = ROOT / "tests" / "fixtures" / "hostile-projects.json"
 
 FORMAT = "kula-world-level"
 VERSION = 1
@@ -1264,6 +1266,32 @@ def render_vectors(fixture):
     return json.dumps(fixture, indent=1) + "\n"
 
 
+def hostile(fixture):
+    """The fixture's documents with what the reader and the writer give for each:
+    the project and the report, and the digest of the level or the sentence it is
+    refused with; a document of another format carries its refusal alone."""
+    cases = []
+    for case in fixture["cases"]:
+        out = {"name": case["name"], "input": case["input"]}
+        try:
+            project, report = read_project(case["input"])
+        except ValueError as e:
+            out["refusal"] = str(e)
+            cases.append(out)
+            continue
+        out["project"], out["report"] = project, report
+        try:
+            out["level"] = {"kwl": hashlib.sha256(canonical(project)).hexdigest()}
+        except ValueError as e:
+            out["level"] = {"refusal": str(e)}
+        cases.append(out)
+    return {"cases": cases}
+
+
+def render_hostile(fixture):
+    return json.dumps(fixture, indent=1, ensure_ascii=False) + "\n"
+
+
 def template(data, key):
     """The project of a shipped level named by its pack and index, the pack as
     its path or as its stem."""
@@ -1486,6 +1514,8 @@ def main():
     ap.add_argument("--digests", action="store_true", help=f"write {DIGESTS.relative_to(ROOT)}")
     ap.add_argument("--deflate-vectors", action="store_true",
                     help=f"rewrite the streams of {VECTORS.relative_to(ROOT)} from its inputs")
+    ap.add_argument("--hostile", action="store_true",
+                    help=f"rewrite what the readers give for the documents of {HOSTILE.relative_to(ROOT)}")
     ap.add_argument("--check", action="store_true", help="hold the rebuild of every disc level to the disc")
     ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to $KULA_DISC")
     args = ap.parse_args()
@@ -1533,6 +1563,10 @@ def main():
         fixture = deflate_vectors(json.loads(VECTORS.read_text()))
         VECTORS.write_text(render_vectors(fixture))
         print(f"{len(fixture['vectors'])} vectors at zlib {fixture['zlib']} -> {VECTORS.relative_to(ROOT)}")
+    elif args.hostile:
+        fixture = hostile(json.loads(HOSTILE.read_text()))
+        HOSTILE.write_text(render_hostile(fixture))
+        print(f"{len(fixture['cases'])} documents -> {HOSTILE.relative_to(ROOT)}")
     elif args.check:
         with open_disc(args.disc) as disc:
             failures, classes = check(disc)

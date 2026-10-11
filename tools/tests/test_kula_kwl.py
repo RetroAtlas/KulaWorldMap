@@ -21,6 +21,7 @@ from kula_kwl import (  # noqa: E402
     DIGESTS,
     DISC_MAX,
     FORMAT,
+    HOSTILE,
     OBJECTS,
     VECTORS,
     canonical,
@@ -28,12 +29,14 @@ from kula_kwl import (  # noqa: E402
     counts,
     deflate_vectors,
     digests,
+    hostile,
     plays_as,
     project_of,
     project_of_level,
     read_kwl,
     read_project,
     render_digests,
+    render_hostile,
     render_vectors,
     template,
     validate,
@@ -850,6 +853,16 @@ class TheCli(unittest.TestCase):
 
 
 class Digests(unittest.TestCase):
+    def test_the_hostile_documents_read_and_write_as_the_fixture_says(self):
+        fixture = json.loads(HOSTILE.read_text())
+        self.assertGreaterEqual(len(fixture["cases"]), 30)
+        self.assertEqual(len({c["name"] for c in fixture["cases"]}), len(fixture["cases"]))
+        self.assertEqual(render_hostile(hostile(fixture)), HOSTILE.read_text())
+        refused = [c for c in fixture["cases"] if "refusal" in c]
+        self.assertTrue(refused and all(c["refusal"] == f"not a {FORMAT} file" for c in refused))
+        self.assertTrue(any("kwl" in c.get("level", {}) for c in fixture["cases"]))
+        self.assertTrue(any("refusal" in c.get("level", {}) for c in fixture["cases"]))
+
     def test_the_fixture_is_what_the_data_gives(self):
         self.assertEqual(render_digests(digests(json.loads(DATA.read_text()))), DIGESTS.read_text())
 
