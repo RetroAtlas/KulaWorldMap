@@ -1424,7 +1424,7 @@ def template(data, key):
 
 # The words the game never reads, by the research behind docs/editor.md, which
 # the disc's own levels fill with an editor's leftovers.
-F5_LEVELS = frozenset({"BONUS 30", "LEVEL 134", "LECEL 94", "FINAL 11", "FINAL 13"})
+F5_LEVELS = frozenset({"BONUS 30"})
 WORD_NAME = {0: "kind word", 1: "type", 13: "w13", 14: "f14", 15: "w15"}
 
 
@@ -1643,6 +1643,7 @@ def check(disc, out=print):
     disc: in play, and word for word outside the unread mask. Returns (semantic
     failures, residual classes, levels dropping records by what they drop)."""
     classes, examples, failures, dropped = Counter(), {}, [], Counter()
+    constants = {}
     levels = 0
     for theme, path in packs(disc):
         pak = Pak(disc.read_file(path), path)
@@ -1654,6 +1655,10 @@ def check(disc, out=print):
             failures += [f"{L.name}: {m}" for m in compare(L, C)]
             dropped.update(stripped(L)[1].keys())
             diff_words(L, C, classes, examples)
+            for r in L.records:
+                for o in r.objects:
+                    constants.setdefault(o.type, Counter())[(o.f[7], o.f[8], o.v)] += 1
+    failures += trio_failures(constants)
     out(f"{levels} levels rebuilt; every rebuild verifies and plays as the disc's"
         if not failures else f"{levels} levels rebuilt; {len(failures)} differ in play:")
     for f in failures:
@@ -1667,6 +1672,19 @@ def check(disc, out=print):
         for e in examples[what][:3]:
             out(f"        {e}")
     return failures, classes, dropped
+
+
+def trio_failures(constants):
+    """Where the three constants the writer holds for a type are not the ones most
+    of the disc's objects of that type carry."""
+    out = []
+    for t, seen in sorted(constants.items()):
+        mode = seen.most_common(1)[0][0]
+        held = TRIO.get(t, NO_TRIO)
+        if mode != held:
+            out.append(f"type {t} carries {mode} on {seen[mode]} of {sum(seen.values())} objects, "
+                       f"where the writer holds {held}")
+    return out
 
 
 def residuals(classes, dropped):

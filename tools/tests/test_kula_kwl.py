@@ -47,6 +47,7 @@ from kula_kwl import (  # noqa: E402
     stripped,
     render_hostile,
     residuals,
+    trio_failures,
     render_vectors,
     template,
     validate,
@@ -989,6 +990,12 @@ class TheCompare(unittest.TestCase):
         self.assertEqual(residuals(Counter(RESIDUALS), Counter(DROPPED)), [])
         self.assertEqual(residuals(Counter(RESIDUALS) + Counter({"kind 7 slot 0 f3": 2}), Counter(DROPPED)),
                          ["2 x kind 7 slot 0 f3, where the table lists 0"])
+
+    def test_the_per_type_constants_are_held_to_the_mode_of_the_discs_objects(self):
+        self.assertEqual(trio_failures({31: Counter({(386, 1, -100): 70, (0, 0, 0): 2})}), [])
+        self.assertEqual(trio_failures({31: Counter({(386, 1, -100): 2, (0, 0, 0): 3})}),
+                         ["type 31 carries (0, 0, 0) on 3 of 5 objects, where the writer holds (386, 1, -100)"])
+        self.assertEqual(trio_failures({53: Counter({(-1, -1, -1): 4})}), [])
 
     def test_the_stripping_names_what_the_rebuild_leaves_out(self):
         kept, gone = stripped(Level(playground()))
