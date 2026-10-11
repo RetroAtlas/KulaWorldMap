@@ -13,6 +13,7 @@ export const RELOCATE = "relocate";
 export const BUFFER = 32768;
 export const LARGEST = BUFFER - 1;
 export const RECOMPRESS = 9;
+export const SLOTS_MOST = 32;
 
 const ALIGN = 4;
 const NAME_END = 2;
@@ -66,10 +67,18 @@ export function fit(pack, slot, size, title = null) {
 const ascii = (bytes) =>
   Array.from(bytes, (b) => (b < 128 ? String.fromCharCode(b) : "\ufffd")).join("");
 
-/** The names, the records and where each record lies in a container read off the image. */
+/**
+ * The names, the records and where each record lies in a container read off
+ * the image, or a thrown sentence where the count, the table, a record or a
+ * name does not lie within the bytes.
+ */
 export function readPak(bytes) {
+  if (bytes.length < 4) throw new Error("the pack ends before its count");
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const count = view.getUint32(0, true);
+  if (count < 1 || count > SLOTS_MOST) throw new Error(`a count of ${count} is not a pack's`);
+  const table = 4 + count * 12;
+  if (table > bytes.length) throw new Error("the table runs past the pack");
   const names = [];
   const offsets = [];
   const streams = [];
@@ -77,6 +86,9 @@ export function readPak(bytes) {
     const offset = view.getUint32(4 + i * 8, true);
     const size = view.getUint32(8 + i * 8, true);
     const at = view.getUint32(4 + count * 8 + i * 4, true);
+    if (offset < table || size < 1 || offset + size > bytes.length)
+      throw new Error(`the record of slot ${i} lies outside the pack`);
+    if (at < table || at >= offset) throw new Error(`the name of slot ${i} lies outside the names`);
     let end = at;
     while (end < bytes.length && bytes[end] !== 0) end++;
     if (end === bytes.length) throw new Error(`the name of slot ${i} runs past the pack`);

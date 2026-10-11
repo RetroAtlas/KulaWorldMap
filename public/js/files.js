@@ -27,7 +27,6 @@ const NEWER =
 const SHARED = "Shared level";
 const MARK = "CD001";
 const PVD_AT = 16 * SECTOR_RAW + USER_OFF;
-const SLOTS_MOST = 32;
 const ISO_SECTOR = 2048;
 const ISO_PVD_AT = 16 * ISO_SECTOR;
 export const FILE_MOST = 16 << 20;
@@ -67,22 +66,13 @@ function parsed(bytes) {
   }
 }
 
-/** Whether the bytes are a pack: a count of slots whose table and names all lie within them. */
-export function isPak(bytes) {
-  if (bytes.length < 4) return false;
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const count = view.getUint32(0, true);
-  if (count < 1 || count > SLOTS_MOST) return false;
-  const table = 4 + count * 12;
-  if (table > bytes.length) return false;
-  for (let i = 0; i < count; i++) {
-    const offset = view.getUint32(4 + i * 8, true);
-    const size = view.getUint32(8 + i * 8, true);
-    const name = view.getUint32(4 + count * 8 + i * 4, true);
-    if (offset < table || size < 1 || offset + size > bytes.length) return false;
-    if (name < table || name >= offset || bytes.indexOf(0, name) < 0) return false;
+/** The pack the bytes hold, or null where the reader finds them no pack. */
+function asPak(bytes) {
+  try {
+    return readPak(bytes);
+  } catch {
+    return null;
   }
-  return true;
 }
 
 const sizeOf = (source) => (source instanceof Blob ? source.size : source.length);
@@ -133,8 +123,7 @@ function readGame(bytes, world, refusal) {
   return readKwl(bytes, world);
 }
 
-async function readFromPak(bytes, name, world) {
-  const pak = readPak(bytes);
+async function readFromPak(pak, name, world) {
   const slot = await pickFromPack(pak.names, world);
   if (slot === null) return null;
   const read = readGame(await inflate(pak.streams[slot]), world, NOT_A_LEVEL);
@@ -198,6 +187,7 @@ export async function readLevelFile(source, name, world) {
   if (sizeOf(source) > FILE_MOST) throw new Error(TOO_LARGE);
   const bytes = source instanceof Blob ? new Uint8Array(await source.arrayBuffer()) : source;
   const json = parsed(bytes);
+  const pak = json === undefined ? asPak(bytes) : null;
   let read;
   if (json !== undefined) {
     if (!json || typeof json !== "object") throw new Error(NOT_MAP);
@@ -208,8 +198,8 @@ export async function readLevelFile(source, name, world) {
       read = readOrbit(json, world);
       read.project.title = stem(name);
     } else throw new Error(NOT_MAP);
-  } else if (isPak(bytes)) {
-    read = await readFromPak(bytes, name, world);
+  } else if (pak) {
+    read = await readFromPak(pak, name, world);
     if (!read) return null;
   } else if (isCue(bytes)) throw new Error(CUE_SHEET);
   else {

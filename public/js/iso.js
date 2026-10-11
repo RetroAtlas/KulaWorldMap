@@ -11,6 +11,7 @@ export const FLAGS = 25;
 export const NAME_LEN = 32;
 export const NAME = 33;
 export const DIRECTORY = 2;
+export const DIR_MOST = 64;
 const MARK = "CD001";
 
 const ascii = (bytes) =>
@@ -104,6 +105,8 @@ class Disc {
 
   async readDir(lba, size, prefix) {
     if (this.walked.has(lba)) throw new Error(`the directory at sector ${lba} is reached twice`);
+    if (size > DIR_MOST * USER)
+      throw new Error(`the directory at sector ${lba} is longer than any disc's`);
     this.walked.add(lba);
     const data = await this.read(lba, size);
     let pos = 0;

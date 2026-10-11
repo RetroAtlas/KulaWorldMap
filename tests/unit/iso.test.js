@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   DIRECTORY,
+  DIR_MOST,
   EXTENT,
   FLAGS,
   NAME,
@@ -40,13 +41,13 @@ const text = (bytes) => String.fromCharCode(...bytes);
  * An image of so many raw sectors whose volume descriptor puts the root
  * directory at a sector of the caller's choosing, holding what is given.
  */
-function image(sectors, rootAt, directory = new Uint8Array(0)) {
+function image(sectors, rootAt, directory = new Uint8Array(0), rootSize = USER) {
   const raw = new Uint8Array(SECTOR_RAW * sectors);
   const pvd = SECTOR_RAW * 16 + USER_OFF;
   raw.set(bytesOf("CD001"), pvd + 1);
   const view = new DataView(raw.buffer);
   view.setUint32(pvd + 156 + EXTENT, rootAt, true);
-  view.setUint32(pvd + 156 + SIZE, USER, true);
+  view.setUint32(pvd + 156 + SIZE, rootSize, true);
   if (directory.length) raw.set(directory, SECTOR_RAW * rootAt + USER_OFF);
   return raw;
 }
@@ -133,6 +134,16 @@ test("a file without the mark, one that ends before its directory, and a record 
   await assert.rejects(openDisc(new Blob([image(24, 20, spanning)])), /runs past its table/);
   const short = table([...Array(7).fill(255), 240], 1);
   await assert.rejects(openDisc(new Blob([image(24, 20, short)])), /runs past its table/);
+});
+
+test("a directory longer than any disc's is refused before it is read", async () => {
+  const sectors = 20 + DIR_MOST + 2;
+  await assert.rejects(
+    openDisc(new Blob([image(sectors, 20, new Uint8Array(0), DIR_MOST * USER + 1)])),
+    /the directory at sector 20 is longer than any disc's/,
+  );
+  const disc = await openDisc(new Blob([image(sectors, 20, new Uint8Array(0), DIR_MOST * USER)]));
+  assert.equal(disc.files.size, 0);
 });
 
 test("a directory reached twice is refused", async () => {

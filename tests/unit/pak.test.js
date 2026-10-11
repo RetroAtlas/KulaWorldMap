@@ -10,6 +10,7 @@ import {
   LARGEST,
   REBUILD,
   RELOCATE,
+  SLOTS_MOST,
   fit,
   fitPak,
   packName,
@@ -238,8 +239,32 @@ test("the padding is one to four bytes, and a record starts on a four-byte bound
 test("a name is ASCII, and one that runs past the pack is refused", () => {
   assert.throws(() => writePak(["\u00c9p\u00e9e"], [Uint8Array.of(1)]), /ASCII/);
   const blob = writePak(["LEVEL 1"], [Uint8Array.of(1)]);
-  new DataView(blob.buffer).setUint32(4 + 8, blob.length - 1, true);
-  assert.throws(() => readPak(blob), /runs past the pack/);
+  blob.fill(0x41, 16 + 8, 28);
+  assert.throws(() => readPak(blob), /the name of slot 0 runs past the pack/);
+});
+
+test("the reader trusts nothing the bytes say about where a record or a name lies", () => {
+  assert.equal(SLOTS_MOST, 32);
+  const blob = writePak(["LEVEL 1", "LEVEL 2"], [Uint8Array.of(1, 2, 3), Uint8Array.of(4)]);
+  const doctored = (at, value) => {
+    const out = blob.slice();
+    new DataView(out.buffer).setUint32(at, value, true);
+    return out;
+  };
+  assert.throws(() => readPak(blob.subarray(0, 3)), /ends before its count/);
+  assert.throws(() => readPak(doctored(0, 0)), /a count of 0 is not a pack's/);
+  assert.throws(() => readPak(doctored(0, SLOTS_MOST + 1)), /a count of 33 is not a pack's/);
+  assert.throws(() => readPak(doctored(0, 5)), /the table runs past the pack/);
+  assert.throws(() => readPak(doctored(4, 4)), /the record of slot 0 lies outside the pack/);
+  assert.throws(() => readPak(doctored(8, 0)), /the record of slot 0 lies outside the pack/);
+  assert.throws(() => readPak(doctored(8, 5)), /the record of slot 0 lies outside the pack/);
+  assert.throws(
+    () => readPak(doctored(4 + 2 * 8, blob.length - 1)),
+    /the name of slot 0 lies outside the names/,
+  );
+  assert.throws(() => readPak(doctored(4 + 2 * 8, 0)), /the name of slot 0 lies outside the names/);
+  assert.throws(() => readPak(Uint8Array.of(1, 0, 0, 0, 1, 2, 3)), /the table runs past the pack/);
+  assert.deepEqual(readPak(blob).names, ["LEVEL 1", "LEVEL 2"]);
 });
 
 test("the synthetic image's packs read back as the levels they were written from", () => {
