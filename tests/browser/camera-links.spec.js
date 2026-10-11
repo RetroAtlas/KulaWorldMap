@@ -1367,7 +1367,11 @@ test("a write inside the settle window carries the view it is given: a slice, a 
   const before = await wrote();
   await script(["drag", "back"]);
   await expect.poll(() => page.url()).toBe(beneath);
-  await page.evaluate(() => new Promise((r) => setTimeout(r, 500))); // past the settle
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 2");
+  // whatever write still waits is made now rather than after the settle
+  await page.evaluate(() =>
+    import(new URL("js/navigate.js", location.href).href).then((N) => N.settle()),
+  );
   expect(page.url()).toBe(beneath);
   expect(await wrote()).toEqual(before);
   // a hash arriving in the frame of a change of level drops the push, and the hash is read
