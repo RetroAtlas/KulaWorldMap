@@ -397,6 +397,47 @@ test("a pack that does not fit moves to the head of the room", async () => {
   assert.equal(placed.fit.room, LARGEST - placed.fit.size);
 });
 
+test("a pack moves into the first free run of the room, behind one already moved there", async () => {
+  const moving = streamOf(synthetic(CASE.relocate.blocks));
+  const taken = IMAGE.slice();
+  const head = user(IMAGE, ROOM_AT).slice();
+  head[0] = 1;
+  taken.set(sector(ROOM_AT, head, DATA_SUBMODE), ROOM_AT * SECTOR_RAW);
+  const behind = await place(moving, { image: taken });
+  assert.deepEqual([behind.placed.fit.path, behind.placed.lba], [RELOCATE, ROOM_AT + 2]);
+  assert.deepEqual(lbas(behind.placed), [WORLD_AT, ROOM_AT + 2, ROOM_AT + 3]);
+  const first = await place(moving);
+  const second = await place(streamOf(synthetic(100)), {
+    pack: SYNTHETIC_FINALS,
+    slot: 0,
+    image: first.after,
+  });
+  assert.deepEqual([second.placed.fit.path, second.placed.lba], [RELOCATE, ROOM_AT + 3]);
+  assert.deepEqual(lbas(second.placed), [WORLD_AT, ROOM_AT + 3, ROOM_AT + 4]);
+  for (const lba of [ROOM_AT + 2, ROOM_AT + 5]) same(user(second.after, lba), new Uint8Array(USER));
+  for (const lba of [ROOM_AT, ROOM_AT + 1]) same(raw(second.after, lba), raw(first.after, lba));
+  const disc = await openDisc(new Blob([second.after]));
+  assert.deepEqual(disc.files.get(SYNTHETIC_PACK), { lba: ROOM_AT, size: first.placed.fit.size });
+  assert.deepEqual(disc.files.get(SYNTHETIC_FINALS), {
+    lba: ROOM_AT + 3,
+    size: second.placed.fit.size,
+  });
+  const third = await place(streamOf(synthetic(120)), { slot: 0, image: second.after });
+  assert.deepEqual([third.placed.fit.path, third.placed.lba], [RELOCATE, ROOM_AT + 6]);
+  assert.deepEqual(lbas(third.placed), [WORLD_AT, ROOM_AT + 6, ROOM_AT + 7, ROOM_AT + 8]);
+  await assert.rejects(
+    plan(
+      await openDisc(new Blob([third.after])),
+      SYNTHETIC_FINALS,
+      1,
+      streamOf(synthetic(200)),
+      null,
+      inflate,
+    ),
+    /has no run of 4 zero sectors left/,
+  );
+});
+
 test("a directory sector is rewritten under its own subheader, which need not be a file's last", async () => {
   const DIR_AT = SYNTHETIC_SECTORS;
   const root = concat([
@@ -497,13 +538,14 @@ test("what is refused", async () => {
     plan(disc, SYNTHETIC_PACK, SLOT, stored(ROOM_SECTORS * USER - USER), null, inflate),
     /sectors and the pack needs/,
   );
-  const taken = IMAGE.slice();
-  const head = user(IMAGE, ROOM_AT).slice();
-  head[0] = 1;
-  taken.set(sector(ROOM_AT, head, DATA_SUBMODE), ROOM_AT * SECTOR_RAW);
+  const crowded = IMAGE.slice();
+  const mark = user(IMAGE, ROOM_AT).slice();
+  mark[0] = 1;
+  for (let i = 0; i < ROOM_SECTORS; i += 2)
+    crowded.set(sector(ROOM_AT + i, mark, DATA_SUBMODE), (ROOM_AT + i) * SECTOR_RAW);
   await assert.rejects(
-    plan(await openDisc(new Blob([taken])), SYNTHETIC_PACK, SLOT, moving, null, inflate),
-    /is not zero/,
+    plan(await openDisc(new Blob([crowded])), SYNTHETIC_PACK, SLOT, moving, null, inflate),
+    /has no run of 3 zero sectors left/,
   );
   const roomless = IMAGE.slice();
   const root = concat([

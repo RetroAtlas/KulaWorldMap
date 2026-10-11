@@ -180,17 +180,23 @@ def _directory(disc, key, extent, size):
 
 
 def _room(disc, size):
-    """Where a pack of this size can move to: the head of /3.00, with the
-    sector after it clear, since the game reads one sector past a pack."""
+    """Where a pack of this size can move to: the first run of zero sectors in
+    /3.00 that holds it with a clear sector after it, since the game reads one
+    sector past a pack, and one before it where the run is not the head."""
     if ROOM not in disc.files:
         raise ValueError(f"the image has no {ROOM} to move the pack into")
     lba, room = disc.files[ROOM]
     need = len(sectors_of(lba, size)) + 1
-    if need > len(sectors_of(lba, room)):
-        raise ValueError(f"{ROOM} has {len(sectors_of(lba, room))} sectors and the pack needs {need}")
-    if any(any(disc.sector(lba + i)) for i in range(need)):
-        raise ValueError(f"the head of {ROOM} is not zero, so the pack has nowhere to move to")
-    return lba
+    sectors = len(sectors_of(lba, room))
+    if need > sectors:
+        raise ValueError(f"{ROOM} has {sectors} sectors and the pack needs {need}")
+    run = 0
+    for i in range(sectors):
+        run = 0 if any(disc.sector(lba + i)) else run + 1
+        start = lba + i + 1 - need
+        if (run == need and start == lba) or run == need + 1:
+            return start
+    raise ValueError(f"{ROOM} has no run of {need} zero sectors left for the pack")
 
 
 def plan(disc, pack_path, slot, stream, title=None):

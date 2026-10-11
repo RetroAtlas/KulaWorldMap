@@ -319,6 +319,37 @@ class ThePlacer(unittest.TestCase):
         self.assertEqual((lba_le, lba_be), (ROOM_AT, ROOM_AT))
         self.assertEqual(placed.fit.room, LARGEST - placed.fit.size)
 
+    def test_a_pack_moves_into_the_first_free_run_of_the_room_behind_one_already_moved_there(self):
+        moving = stream_of(synthetic(LEVELS[RELOCATE]))
+        taken = bytearray(IMAGE)
+        head = bytearray(user(IMAGE, ROOM_AT))
+        head[0] = 1
+        taken[ROOM_AT * SECTOR_RAW:(ROOM_AT + 1) * SECTOR_RAW] = sector(ROOM_AT, bytes(head), DATA_SUBMODE)
+        self.src.write_bytes(taken)
+        behind = place(self.src, SYNTHETIC_PACK, SLOT, moving, self.out, TITLE)
+        self.assertEqual((behind.fit.path, behind.lba), (RELOCATE, ROOM_AT + 2))
+        self.assertEqual([lba for lba, _ in behind.writes], [WORLD_AT, ROOM_AT + 2, ROOM_AT + 3])
+        self.src.write_bytes(IMAGE)
+        first = place(self.src, SYNTHETIC_PACK, SLOT, moving, self.out, TITLE)
+        again = self.dir / "second.bin"
+        second = place(self.out, SYNTHETIC_FINALS, 0, stream_of(synthetic(100)), again, TITLE)
+        self.assertEqual((second.fit.path, second.lba), (RELOCATE, ROOM_AT + 3))
+        self.assertEqual([lba for lba, _ in second.writes], [WORLD_AT, ROOM_AT + 3, ROOM_AT + 4])
+        after = again.read_bytes()
+        for lba in (ROOM_AT + 2, ROOM_AT + 5):
+            self.assertEqual(user(after, lba), bytes(USER))
+        for lba in (ROOM_AT, ROOM_AT + 1):
+            self.assertEqual(raw(after, lba), raw(self.out.read_bytes(), lba))
+        with Disc(again) as disc:
+            self.assertEqual(disc.files[SYNTHETIC_PACK], (ROOM_AT, first.fit.size))
+            self.assertEqual(disc.files[SYNTHETIC_FINALS], (ROOM_AT + 3, second.fit.size))
+        third = self.dir / "third.bin"
+        full = place(again, SYNTHETIC_PACK, 0, stream_of(synthetic(120)), third, TITLE)
+        self.assertEqual((full.fit.path, full.lba), (RELOCATE, ROOM_AT + 6))
+        self.assertEqual([lba for lba, _ in full.writes], [WORLD_AT, ROOM_AT + 6, ROOM_AT + 7, ROOM_AT + 8])
+        with Disc(third) as disc, self.assertRaisesRegex(ValueError, "has no run of 4 zero sectors left"):
+            plan(disc, SYNTHETIC_FINALS, 1, stream_of(synthetic(200)), TITLE)
+
     def test_a_directory_sector_is_rewritten_under_its_own_subheader(self):
         dir_at = SYNTHETIC_SECTORS
         with Disc(self.src) as disc:
@@ -431,12 +462,13 @@ class ThePlacer(unittest.TestCase):
                 plan(disc, SYNTHETIC_PACK, SLOT, b"not a stream")
             with self.assertRaises(ValueError):
                 plan(disc, SYNTHETIC_PACK, SLOT, stored(ROOM_SECTORS * USER - USER))
-        taken = bytearray(IMAGE)
-        head = bytearray(user(IMAGE, ROOM_AT))
-        head[0] = 1
-        taken[ROOM_AT * SECTOR_RAW:(ROOM_AT + 1) * SECTOR_RAW] = sector(ROOM_AT, bytes(head), DATA_SUBMODE)
-        self.src.write_bytes(taken)
-        with Disc(self.src) as disc, self.assertRaises(ValueError):
+        crowded = bytearray(IMAGE)
+        mark = bytearray(user(IMAGE, ROOM_AT))
+        mark[0] = 1
+        for i in range(0, ROOM_SECTORS, 2):
+            crowded[(ROOM_AT + i) * SECTOR_RAW:(ROOM_AT + i + 1) * SECTOR_RAW] = sector(ROOM_AT + i, bytes(mark), DATA_SUBMODE)
+        self.src.write_bytes(crowded)
+        with Disc(self.src) as disc, self.assertRaisesRegex(ValueError, "has no run of 3 zero sectors left"):
             plan(disc, SYNTHETIC_PACK, SLOT, stream_of(synthetic(LEVELS[RELOCATE])))
         roomless = bytearray(IMAGE)
         root = (record(b"\0", ROOT_AT, USER, 2) + record(b"\1", ROOT_AT, USER, 2)

@@ -42,6 +42,7 @@ export const COPY = 19;
 export const ADD = 1;
 
 export const sectorCount = (size) => Math.ceil(size / USER);
+const SCAN = 64;
 const commas = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 const ascii = (bytes) =>
   Array.from(bytes, (b) => (b < 128 ? String.fromCharCode(b) : "�")).join("");
@@ -112,18 +113,26 @@ async function directory(disc, key, extent, size) {
   return same(raw, have) ? [] : [[at, raw]];
 }
 
-// Where a pack of this size can move to: the head of the free file, with the
-// sector after it clear, since the game reads one sector past a pack.
+// Where a pack of this size can move to: the first run of zero sectors in the
+// free file that holds it with a clear sector after it, since the game reads
+// one sector past a pack, and one before it where the run is not the head.
 async function room(disc, size) {
   if (!disc.files.has(ROOM)) throw new Error(`the image has no ${ROOM} to move the pack into`);
   const { lba, size: have } = disc.files.get(ROOM);
   const need = sectorCount(size) + 1;
-  if (need > sectorCount(have))
-    throw new Error(`${ROOM} has ${sectorCount(have)} sectors and the pack needs ${need}`);
-  const head = await disc.read(lba, need * USER);
-  if (head.some((b) => b !== 0))
-    throw new Error(`the head of ${ROOM} is not zero, so the pack has nowhere to move to`);
-  return lba;
+  const sectors = sectorCount(have);
+  if (need > sectors) throw new Error(`${ROOM} has ${sectors} sectors and the pack needs ${need}`);
+  let run = 0;
+  for (let i = 0; i < sectors; i += SCAN) {
+    const raw = await disc.raw(lba + i, Math.min(SCAN, sectors - i));
+    for (let k = 0; k < raw.length / SECTOR_RAW; k++) {
+      const user = raw.subarray(k * SECTOR_RAW + USER_OFF, k * SECTOR_RAW + USER_OFF + USER);
+      run = user.every((b) => b === 0) ? run + 1 : 0;
+      const start = lba + i + k + 1 - need;
+      if ((run === need && start === lba) || run === need + 1) return start;
+    }
+  }
+  throw new Error(`${ROOM} has no run of ${need} zero sectors left for the pack`);
 }
 
 // Every other record's level, which only a rebuild that recompresses them needs.
