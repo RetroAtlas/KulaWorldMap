@@ -5,6 +5,7 @@
     python3 tools/kula_kwl.py --from-json spiral.kula.json --kwl spiral.kwl
     python3 tools/kula_kwl.py --from-kwl spiral.kwl --json [--world HIRO]
     python3 tools/kula_kwl.py --digests                              # tests/fixtures/kwl-digests.json
+    python3 tools/kula_kwl.py --deflate-vectors                      # tests/fixtures/deflate-vectors.json
     python3 tools/kula_kwl.py --check                                # every disc level, needs $KULA_DISC
 
 A project is the editor's file: the game's own structure spelled in JSON, a
@@ -19,6 +20,7 @@ says what the game would make of a project, and `--check` holds the rebuild to
 the disc word for word outside the words the game never reads.
 """
 import argparse
+import base64
 import hashlib
 import json
 import re
@@ -61,6 +63,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "public" / "map_data.json"
 OBJECTS = ROOT / "public" / "objects.json"
 DIGESTS = ROOT / "tests" / "fixtures" / "kwl-digests.json"
+VECTORS = ROOT / "tests" / "fixtures" / "deflate-vectors.json"
 
 FORMAT = "kula-world-level"
 VERSION = 1
@@ -936,6 +939,25 @@ def render_digests(digests):
     return json.dumps(digests, indent=1, sort_keys=True) + "\n"
 
 
+def _b64(data):
+    return base64.b64encode(data).decode()
+
+
+def deflate_vectors(fixture):
+    """The fixture's inputs with the streams this zlib writes for each at the two
+    levels the page compresses at, under the version that wrote them."""
+    vectors = []
+    for v in fixture["vectors"]:
+        data = base64.b64decode(v["input"])
+        vectors.append({"name": v["name"], "input": v["input"],
+                        "level6": _b64(zlib.compress(data, 6)), "level9": _b64(zlib.compress(data, 9))})
+    return {"zlib": zlib.ZLIB_RUNTIME_VERSION, "vectors": vectors}
+
+
+def render_vectors(fixture):
+    return json.dumps(fixture, indent=1) + "\n"
+
+
 def template(data, key):
     """The project of a shipped level named by its pack and index, the pack as
     its path or as its stem."""
@@ -1156,6 +1178,8 @@ def main():
     ap.add_argument("--json", action="store_true", help="print the project --from-kwl reads")
     ap.add_argument("--world", default=WORLDS[0], help="the world a level file is given")
     ap.add_argument("--digests", action="store_true", help=f"write {DIGESTS.relative_to(ROOT)}")
+    ap.add_argument("--deflate-vectors", action="store_true",
+                    help=f"rewrite the streams of {VECTORS.relative_to(ROOT)} from its inputs")
     ap.add_argument("--check", action="store_true", help="hold the rebuild of every disc level to the disc")
     ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to $KULA_DISC")
     args = ap.parse_args()
@@ -1194,6 +1218,10 @@ def main():
         text = render_digests(digests(json.loads(DATA.read_text())))
         DIGESTS.write_text(text)
         print(f"{text.count(chr(10))} lines -> {DIGESTS.relative_to(ROOT)}")
+    elif args.deflate_vectors:
+        fixture = deflate_vectors(json.loads(VECTORS.read_text()))
+        VECTORS.write_text(render_vectors(fixture))
+        print(f"{len(fixture['vectors'])} vectors at zlib {fixture['zlib']} -> {VECTORS.relative_to(ROOT)}")
     elif args.check:
         with open_disc(args.disc) as disc:
             failures, classes = check(disc)

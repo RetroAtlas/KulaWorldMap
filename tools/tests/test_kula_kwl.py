@@ -22,15 +22,18 @@ from kula_kwl import (  # noqa: E402
     DISC_MAX,
     FORMAT,
     OBJECTS,
+    VECTORS,
     canonical,
     check,
     counts,
+    deflate_vectors,
     digests,
     plays_as,
     project_of,
     project_of_level,
     read_kwl,
     render_digests,
+    render_vectors,
     template,
     validate,
 )
@@ -650,6 +653,11 @@ class TheCli(unittest.TestCase):
 class Digests(unittest.TestCase):
     def test_the_fixture_is_what_the_data_gives(self):
         self.assertEqual(render_digests(digests(json.loads(DATA.read_text()))), DIGESTS.read_text())
+
+    def test_the_deflate_vectors_are_what_zlib_writes_for_their_inputs(self):
+        fixture = json.loads(VECTORS.read_text())
+        self.assertEqual(render_vectors(fixture), VECTORS.read_text())
+        self.assertEqual(deflate_vectors(fixture)["vectors"], fixture["vectors"])
 
 
 # The words the rebuild writes differently outside the unread mask, each one a
