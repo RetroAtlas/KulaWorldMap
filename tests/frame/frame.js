@@ -66,7 +66,7 @@ async function unknownParts(root) {
   const files = (await readdir(dir)).filter((f) => f.endsWith(".js"));
   const source = (await Promise.all(files.map((f) => readFile(join(dir, f), "utf8")))).join("\n");
   const defines = (name) =>
-    new RegExp(`\\b(function\\s+${name}|(const|let)\\s+${name}\\s*=)`).test(source);
+    new RegExp(`\\b(function\\s+${name}\\b|(const|let)\\s+${name}\\s*=)`).test(source);
   return Object.keys(PARTS).filter((name) => !defines(name));
 }
 
