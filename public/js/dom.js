@@ -9,3 +9,7 @@ export function el(tag, props = {}, ...kids) {
   for (const k of kids.flat()) n.append(k);
   return n;
 }
+
+/** Text made safe for the page's markup. */
+export const escaped = (text) =>
+  text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);

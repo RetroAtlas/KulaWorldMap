@@ -1,4 +1,4 @@
-import { $, el, on, emit } from "./dom.js";
+import { $, el, on, emit, escaped } from "./dom.js";
 import { state, cellKey } from "./state.js";
 import { FACE_NAME, DIRECTION_NAME } from "./faces.js";
 import {
@@ -41,9 +41,6 @@ export function onShow(fn) {
 const row = (k, v) => `<tr><td>${k}</td><td class="mono">${v}</td></tr>`;
 const STORED = `<tr><th colspan="2">raw data</th></tr>`;
 const HAZARD = `<span class="tag">Hazard</span>`;
-const escaped = (text) =>
-  text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
-
 const ICON = 26;
 
 const dot = (colour) =>

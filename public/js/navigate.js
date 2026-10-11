@@ -1,4 +1,4 @@
-import { $, emit, on } from "./dom.js";
+import { $, emit, escaped, on } from "./dom.js";
 import { state, SIDE, fitLevel, cellKey, sliceZ } from "./state.js";
 import {
   index,
@@ -83,9 +83,6 @@ export function centreOn(x, y, z) {
 }
 
 let noted = null;
-
-const escaped = (text) =>
-  text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
 
 export function chip() {
   const l = state.lvl;
