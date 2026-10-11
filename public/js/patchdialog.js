@@ -40,7 +40,6 @@ const NO_TABLE =
 const CLEAN = "The checks find nothing to say.";
 const NO_LAYOUT = "The disc's layout could not be loaded, so the fit waits for the image.";
 const CHOOSE = "Choose a slot above.";
-const TOO_BIG = "The level is too big for the game to load from any pack.";
 const LAYOUT = "Worked out from the disc as pressed; the image will confirm it.";
 const FROM_IMAGE = "Read from the image.";
 const NO_IMAGE = "Give the disc image above to make the patches.";
@@ -49,6 +48,7 @@ const NO_BLOB = "This browser cannot put the patched disc together; take a patch
 const LATER = "Once the disc is given, this says where each emulator wants the patch.";
 const INSTEAD = "Mednafen, Beetle and RetroArch apply no patch and play the patched disc instead.";
 const gone = (name) => `Another tab deleted ${name}, so the box closed without a patch.`;
+const tooBig = (pack) => `The level is too big for the game to load from ${pack}.`;
 const unlisted = (key) =>
   keyShaped(key) ? `${key}, which this image has not` : `${key}, which is no slot`;
 
@@ -87,9 +87,9 @@ function fitText(f) {
   if (f.path === IN_PLACE) return `It fits in the slot's own bytes, ${spare}.`;
   if (f.path === REBUILD)
     return f.recompressed
-      ? `The pack is laid out again, with the other levels packed tighter, to make room, ${spare}.`
-      : `The pack is laid out again to make room, ${spare}.`;
-  return `The pack moves into the disc's free sectors, ${spare}.`;
+      ? `The pack is laid out again, with the other levels packed tighter, to make room, ${spare}, so the patch carries them too.`
+      : `The pack is laid out again to make room, ${spare}, so the patch carries its other levels too.`;
+  return `The pack moves into the disc's free sectors, ${spare}, so the patch carries its other levels too.`;
 }
 
 const section = (title, ...kids) => el("section", {}, el("h4", { textContent: title }), ...kids);
@@ -409,7 +409,7 @@ function layoutFit() {
     ui.fit.textContent = fitText(fit(p, index, d.stream.length, d.doc.title));
     ui.from.textContent = LAYOUT;
   } catch {
-    ui.fit.textContent = TOO_BIG;
+    ui.fit.textContent = tooBig(pack);
     ui.from.textContent = LAYOUT;
   }
 }

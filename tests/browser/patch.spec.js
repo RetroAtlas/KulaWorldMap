@@ -5,8 +5,10 @@ import { test, expect } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
 import { writeProject } from "../../public/js/project.js";
 import { SLUG_MOST } from "../../public/js/files.js";
-import { SYNTHETIC_SECTORS, synthetic, syntheticImage } from "../unit/synthetic.js";
+import { SYNTHETIC_SECTORS, streamOf, synthetic, syntheticImage } from "../unit/synthetic.js";
 import { USER, sector } from "../../public/js/sectors.js";
+import { packs } from "../unit/fixtures.js";
+import { REBUILD, RELOCATE, fit } from "../../public/js/pak.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const fixture = JSON.parse(
@@ -107,7 +109,7 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await expect(dialog.locator("#patchReach")).toHaveText("A new game starts here, at LEVEL 1.");
   await expect(dialog.locator("#patchWear")).toHaveText("");
   await expect(dialog.locator("#patchFit")).toHaveText(
-    "The pack is laid out again to make room, with 1127 bytes to spare.",
+    "The pack is laid out again to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
   );
   for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
     await expect(dialog.locator(b)).toBeDisabled();
@@ -461,6 +463,56 @@ test("without the disc's layout the fit waits for the image, whose own packs the
   ]);
 });
 
+test("the fit from the layout says when the pack is recompressed or moved, and names the pack a level is too big for", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const bloated = structuredClone(packs);
+  for (const p of bloated.packs)
+    for (const s of p.slots) {
+      s.size = p.path === "/HIRO/HIRO.PAK" ? 2000 : s.size;
+      s.size9 = p.path === "/HIRO/HIRO.PAK" ? 1990 : s.size9;
+    }
+  await page.route("**/packs.json", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(bloated) }),
+  );
+  await page.goto(EDIT);
+  await settle(page);
+  const id = await opened(page, "big.kula.json", synthetic(120));
+  await openPatch(page, id);
+  const dialog = page.locator("#patch");
+  const slot = dialog.locator("#patchSlot");
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "The level is too big for the game to load from /HIRO/HIRO.PAK.",
+  );
+  await expect(dialog.locator("#patchFrom")).toContainText("Worked out from the disc as pressed");
+  const length = streamOf(synthetic(120)).length;
+  const where = (path, recompressed) => {
+    for (const p of packs.packs)
+      for (let i = 0; i < p.slots.length; i++) {
+        if (p.path.includes("COPYCAT") || p.path === "/HIRO/HIRO.PAK") continue;
+        const f = fit(p, i, length, "Spiral");
+        if (f.path === path && f.recompressed === recompressed) return `${p.path}#${i}`;
+      }
+    throw new Error(`no slot takes ${length} bytes by ${path}`);
+  };
+  await slot.selectOption(where(REBUILD, true));
+  await expect(dialog.locator("#patchFit")).toContainText(
+    "The pack is laid out again, with the other levels packed tighter, to make room, with",
+  );
+  await expect(dialog.locator("#patchFit")).toContainText(
+    "bytes to spare, so the patch carries them too.",
+  );
+  await slot.selectOption(where(RELOCATE, false));
+  await expect(dialog.locator("#patchFit")).toContainText(
+    "The pack moves into the disc's free sectors, with",
+  );
+  await expect(dialog.locator("#patchFit")).toContainText(
+    "bytes to spare, so the patch carries its other levels too.",
+  );
+  expect(errors).toEqual([]);
+});
+
 test("a save that fails is said so, and the button comes back", async ({ page }) => {
   const errors = trackErrors(page);
   await page.addInitScript(() => {
@@ -589,7 +641,7 @@ test("a read that lands late, for an image or a box no longer current, changes n
   await expect(status).toHaveText("");
   await expect(dialog.locator("#patchFrom")).toContainText("Worked out from the disc as pressed");
   await expect(dialog.locator("#patchFit")).toHaveText(
-    "The pack is laid out again to make room, with 1127 bytes to spare.",
+    "The pack is laid out again to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
   );
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
   await expect(dialog.locator("#patchReady")).toHaveText(
@@ -682,7 +734,7 @@ test("a file that is not a disc image is said so, and the patches stay back", as
   );
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
   await expect(dialog.locator("#patchFit")).toHaveText(
-    "The pack is laid out again to make room, with 1127 bytes to spare.",
+    "The pack is laid out again to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
   );
   expect(errors).toEqual([]);
 });
