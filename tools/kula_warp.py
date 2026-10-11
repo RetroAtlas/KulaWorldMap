@@ -36,6 +36,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import THEMES, open_disc, packs
 from kula_pak import Pak
+from kula_place import cue
 from kula_sector import SECTOR_RAW, USER, USER_OFF, rewrite
 
 CATALOGUE = "OBJ LEVEL"
@@ -150,8 +151,7 @@ def main():
     lba, _ = disc.files[target_path.upper()]
 
     shutil.copyfile(src, out)
-    cue = out.with_suffix(".cue")
-    cue.write_text(f'FILE "{out.name}" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n')
+    out.with_suffix(".cue").write_text(cue(out.name))
 
     img = Image(out)
     if donor_path.upper() == target_path.upper():

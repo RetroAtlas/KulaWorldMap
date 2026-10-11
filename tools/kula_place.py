@@ -61,6 +61,11 @@ PACKS = ([f"/{t}/{t}.PAK" for t in THEMES] + [f"/{t}/{t}FI.PAK" for t in THEMES]
 CUE = 'FILE "{}" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n'
 
 
+def cue(name):
+    """The cue sheet naming the image, one Mode 2 track, a quote in the name escaped."""
+    return CUE.format(name.replace('"', '\\"'))
+
+
 class Fit(NamedTuple):
     """The path a stream takes into a pack, every slot's record and name as the
     pack will carry them, the pack's size afterwards, the bytes to spare on
@@ -261,7 +266,7 @@ def write_image(src, out, writes):
     out = Path(out)
     shutil.copyfile(src, out)
     write_sectors(out, writes)
-    out.with_suffix(".cue").write_text(CUE.format(out.name))
+    out.with_suffix(".cue").write_text(cue(out.name))
 
 
 def kept(out, writes, check):

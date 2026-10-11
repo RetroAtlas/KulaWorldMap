@@ -25,6 +25,7 @@ from kula_pak import Pak, pack  # noqa: E402
 from kula_place import (  # noqa: E402
     CUE,
     IN_PLACE,
+    cue,
     LARGEST,
     PACK_AT,
     REBUILD,
@@ -115,6 +116,12 @@ class ThePack(unittest.TestCase):
             first = Pak(blob).entries[0]["offset"]
             self.assertIn(first - (16 + n + 2), range(1, 5), n)
             self.assertEqual(first % 4, 0, n)
+
+
+class TheCueSheet(unittest.TestCase):
+    def test_it_names_the_image_in_one_mode_2_track_and_escapes_a_quote_in_the_name(self):
+        self.assertEqual(cue("spiral.bin"), 'FILE "spiral.bin" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n')
+        self.assertEqual(cue('my "disc".bin').splitlines()[0], 'FILE "my \\"disc\\".bin" BINARY')
 
 
 class TheName(unittest.TestCase):
@@ -254,7 +261,8 @@ class ThePlacer(unittest.TestCase):
             self.assertEqual((lba_le, size_le), (lba_be, size_be))
             self.assertEqual((lba_le, size_le), (placed.lba, placed.fit.size))
             verify(disc, pack_path, slot, stream, placed)
-        self.assertEqual(self.out.with_suffix(".cue").read_text(), CUE.format(self.out.name))
+        self.assertEqual(self.out.with_suffix(".cue").read_text(), cue(self.out.name))
+        self.assertEqual(cue(self.out.name), CUE.format(self.out.name))
 
     def test_in_place_the_record_is_written_over_the_old_bytes_and_nothing_else_moves(self):
         stream, placed, after = self.placed(LEVELS[IN_PLACE])

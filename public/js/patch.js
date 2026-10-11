@@ -232,9 +232,9 @@ export function patchedImage(blob, writes) {
   return new Blob(parts);
 }
 
-/** The cue sheet naming the image, one Mode 2 track. */
+/** The cue sheet naming the image, one Mode 2 track, a quote in the name escaped. */
 export const cue = (name) =>
-  `FILE "${name}" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n`;
+  `FILE "${name.replaceAll('"', '\\"')}" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n`;
 
 /** The stretches where now differs from old, as [offset, length]. */
 export function runs(old, now) {

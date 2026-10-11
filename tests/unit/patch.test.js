@@ -748,6 +748,7 @@ test("the placements name the image for two emulators and the serial for two, an
   );
   for (const name of ["kula $& level.bin", "level$`.bin", "a$$b.bin", "x$'.bin"])
     assert.equal(cue(name).split("\n")[0], `FILE "${name}" BINARY`, name);
+  assert.equal(cue('my "disc".bin').split("\n")[0], 'FILE "my \\"disc\\".bin" BINARY');
 });
 
 test("the image is known by its structure and warned about where it is not the disc", async () => {
