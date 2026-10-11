@@ -50,6 +50,11 @@ export function wireDrafts() {
     if (l.draft !== undefined) saveAs(l.draft, true);
     else download(`${slug(levelTitle(l))}.kwl`, writeKwl(fromLevel(l)), GAME_FILE);
   };
+  on("drafts-moved", (pairs) => {
+    const to = pairs.find(([from]) => from === state.lvl?.draft)?.[1];
+    const d = to === undefined ? null : drafts.get(to);
+    if (d) show(to, d.doc, { keepView: true, push: false, keep: state.selected?.key ?? null });
+  });
   on("drafts-changed", sync);
   on("drafts-written", () => form?.wrote());
   on("level-changed", (i) => {

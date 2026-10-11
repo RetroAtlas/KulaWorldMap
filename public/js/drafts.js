@@ -3,7 +3,7 @@
 import { emit } from "./dom.js";
 import { toast } from "./toast.js";
 import { WORLDS, writeKwl } from "./kwl.js";
-import { readProject } from "./project.js";
+import { UNTITLED, readProject } from "./project.js";
 import { KEY, draftShaped, idOf } from "./held.js";
 
 const VERSION = 1;
@@ -11,6 +11,8 @@ const SETTLE = 300;
 const FULL = "This browser cannot hold more drafts; save them to files and delete some.";
 const FLEETING =
   "This browser cannot keep your levels, so they will live only until the page is closed.";
+const displaced = (name) =>
+  `Another tab's level took the place of ${name}, which stays in the list under a new link.`;
 
 const empty = () => ({ version: VERSION, next: 1, drafts: {} });
 
@@ -20,9 +22,14 @@ let unread = {};
 let memoryOnly = false;
 let timer = 0;
 let refused = false;
-// What changed here since the last write, which another tab's copy may lack.
+// The store's text as last read or written here; another in storage is a tab's copy.
+let known = null;
+// What changed here since the last write, which another tab's copy may lack:
+// the drafts changed, the ids deleted, and the ids handed out, which another
+// tab may hand out too until they reach storage.
 const dirty = new Set();
 const deleted = new Set();
+const handed = new Set();
 
 function entryOf(raw) {
   let project;
@@ -75,6 +82,7 @@ export function load() {
     toast(FLEETING);
     return;
   }
+  known = text;
   const read = parse(text);
   store = read.store;
   unread = read.unread;
@@ -97,6 +105,7 @@ export const get = (id) => store.drafts[id] ?? null;
 export function create(project, { saved = null } = {}) {
   const id = store.next++;
   store.drafts[id] = { doc: project, updated: Date.now(), saved, edits: 0 };
+  handed.add(id);
   touched(id);
   return id;
 }
@@ -123,7 +132,7 @@ export function remove(id) {
   if (!store.drafts[id]) return;
   delete store.drafts[id];
   dirty.delete(id);
-  deleted.add(id);
+  if (!handed.delete(id)) deleted.add(id);
   changed();
 }
 
@@ -146,37 +155,50 @@ function write() {
   clearTimeout(timer);
   timer = 0;
   if (memoryOnly) return;
+  let text = null;
   try {
-    localStorage.setItem(KEY, JSON.stringify({ ...store, drafts: { ...unread, ...store.drafts } }));
+    if (absorb(localStorage.getItem(KEY))) emit("drafts-changed");
+    text = JSON.stringify({ ...store, drafts: { ...unread, ...store.drafts } });
+    localStorage.setItem(KEY, text);
   } catch {
     if (!refused) toast(FULL);
     refused = true;
     return;
   }
+  known = text;
   refused = false;
   dirty.clear();
   deleted.clear();
+  handed.clear();
   emit("drafts-written");
 }
 
-/** Write what waits now. */
+/** Write what waits now, a write the browser refused included. */
 export function flush() {
-  if (timer) write();
+  if (timer || dirty.size || deleted.size) write();
 }
 
 addEventListener("pagehide", flush);
 document.addEventListener("visibilitychange", () => document.hidden && flush());
 
 // Another tab's copy of the store: the draft changed later wins, and what
-// changed here since the last write is kept until that write.
+// changed here since the last write is kept until that write. A level of
+// theirs under an id handed out here, which never reached them, is a level of
+// its own, so the draft of this tab's moves to a fresh id.
 function merge(theirs) {
   const drafts = {};
   const taken = [];
+  const moved = [];
+  let next = Math.max(store.next, theirs.next);
   for (const [key, d] of Object.entries(theirs.drafts)) {
     const id = Number(key);
     if (deleted.has(id)) continue;
     const mine = store.drafts[id];
-    if (mine && mine.updated >= d.updated) drafts[id] = mine;
+    if (mine && handed.has(id)) {
+      drafts[id] = d;
+      drafts[next] = mine;
+      moved.push([id, next++]);
+    } else if (mine && mine.updated >= d.updated) drafts[id] = mine;
     else {
       drafts[id] = d;
       dirty.delete(id);
@@ -187,15 +209,47 @@ function merge(theirs) {
     const id = Number(key);
     if (!(id in drafts) && dirty.has(id)) drafts[id] = d;
   }
-  store = { version: VERSION, next: Math.max(store.next, theirs.next), drafts };
+  for (const [from, to] of moved)
+    for (const set of [dirty, handed]) if (set.delete(from)) set.add(to);
+  store = { version: VERSION, next, drafts };
+  if (moved.length) emit("drafts-moved", moved);
   emit("drafts-merged", taken);
-  emit("drafts-changed");
+  for (const [, to] of moved) toast(displaced(drafts[to].doc.title || UNTITLED));
+}
+
+/** Merge the store's text where it is not the one last read or written here. */
+function absorb(text) {
+  if (text === known) return false;
+  known = text;
+  const read = parse(text);
+  unread = read.unread;
+  merge(read.store);
+  return true;
+}
+
+function take(text) {
+  absorb(text);
+  if (dirty.size || deleted.size) changed();
+  else emit("drafts-changed");
 }
 
 addEventListener("storage", (e) => {
   if (e.key !== KEY && e.key !== null) return;
   if (e.storageArea && e.storageArea !== localStorage) return;
-  const read = parse(e.key === null ? null : e.newValue);
-  unread = read.unread;
-  merge(read.store);
+  take(e.key === null ? null : e.newValue);
 });
+
+// A page back from the cache, or thawed, may have missed another tab's writes.
+function reread() {
+  if (memoryOnly) return;
+  let text = null;
+  try {
+    text = localStorage.getItem(KEY);
+  } catch {
+    return;
+  }
+  take(text);
+}
+
+addEventListener("pageshow", (e) => e.persisted && reread());
+document.addEventListener("resume", reread);

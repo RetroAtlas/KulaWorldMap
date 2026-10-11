@@ -70,8 +70,16 @@ function drop(id) {
 }
 
 // A draft gone from the store, or replaced by another tab's copy, takes its
-// trail with it.
+// trail with it, and one moved to a fresh id takes it along.
 on("drafts-changed", () => {
   for (const id of [...trails.keys()]) if (!drafts.get(id)) drop(id);
 });
 on("drafts-merged", (ids) => ids.forEach(drop));
+on("drafts-moved", (pairs) => {
+  for (const [from, to] of pairs) {
+    const t = trails.get(from);
+    trails.delete(from);
+    if (t) trails.set(to, t);
+    emit("trail-changed", to);
+  }
+});

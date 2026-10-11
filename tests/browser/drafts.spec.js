@@ -32,6 +32,29 @@ const stored = (page) => page.evaluate((key) => JSON.parse(localStorage.getItem(
 const written = (page, pick = (s) => s) => expect.poll(async () => pick(await stored(page)));
 const flush = (page) =>
   page.evaluate(async () => (await import(new URL("js/drafts.js", location.href).href)).flush());
+/** Another tab's copy of the store, written and announced as the browser would. */
+const arrives = (page, copy) =>
+  page.evaluate(
+    ([key, copy]) => {
+      const text = JSON.stringify(copy);
+      localStorage.setItem(key, text);
+      dispatchEvent(
+        new StorageEvent("storage", { key, newValue: text, storageArea: localStorage }),
+      );
+    },
+    [KEY, copy],
+  );
+/** A browser that refuses the store's writes until `window.__room` is set. */
+const refusing = (page) =>
+  page.addInitScript((key) => {
+    const set = Storage.prototype.setItem;
+    window.__room = false;
+    Storage.prototype.setItem = function (k, v) {
+      if (k === key && !window.__room) throw new DOMException("full", "QuotaExceededError");
+      return set.call(this, k, v);
+    };
+  }, KEY);
+const room = (page, yes) => page.evaluate((yes) => void (window.__room = yes), yes);
 const toasts = (page) => page.locator("#toastStack .toast").allTextContents();
 const shown = (page) =>
   page.evaluate(async () => {
@@ -482,6 +505,57 @@ test("another tab's copy of the store reloads the list, the draft changed later 
   expect(errors).toEqual([]);
 });
 
+test("a page back from the cache or thawed, and every write, takes in what another tab stored while it could not hear", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  const id = (await shown(page)).draft;
+  await written(page, (s) => Object.keys(s?.drafts ?? {})).toEqual([String(id)]);
+  const quietly = (copy) =>
+    page.evaluate(([key, copy]) => localStorage.setItem(key, JSON.stringify(copy)), [KEY, copy]);
+  const another = (title, updated) => ({
+    doc: { ...KEPT.drafts[1].doc, title },
+    updated,
+    saved: null,
+    edits: 0,
+  });
+  const names = page.locator("#draftRows button .name");
+
+  const copy = await stored(page);
+  copy.drafts[id].doc.title = "Renamed away";
+  copy.drafts[id].updated += 1;
+  copy.drafts[id + 1] = another("Theirs", 1);
+  copy.next = id + 2;
+  await quietly(copy);
+  await expect(page.locator("#chipLine b")).toHaveText("Untitled level");
+  await page.evaluate(() =>
+    dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })),
+  );
+  await expect(page.locator("#chipLine b")).toHaveText("Renamed away");
+  await expect(names).toHaveText(["Renamed away", "Theirs"]);
+
+  copy.drafts[id + 2] = another("Third", 2);
+  copy.next = id + 3;
+  await quietly(copy);
+  await page.evaluate(() => document.dispatchEvent(new Event("resume")));
+  await expect(names).toHaveText(["Renamed away", "Third", "Theirs"]);
+
+  copy.drafts[id + 1] = another("Theirs II", 3);
+  await quietly(copy);
+  await page.locator("#draftTitle").fill("Mine now");
+  await written(page, (s) => s?.drafts[id]?.doc.title).toBe("Mine now");
+  const out = await stored(page);
+  expect(Object.keys(out.drafts).sort()).toEqual([id, id + 1, id + 2].map(String));
+  expect(out.drafts[id + 1].doc.title).toBe("Theirs II");
+  expect(out.next).toBe(id + 3);
+  await expect(names).toHaveText(["Mine now", "Theirs II", "Third"]);
+  expect(errors).toEqual([]);
+});
+
 const EDITOR_FILES =
   /\/js\/(editor|drafts|draftlist|palette|trail|project|kwl|vendor\/pako_deflate\.min)\.js$/;
 
@@ -786,5 +860,146 @@ test("a draft and a disc level that share a number are two levels, so showing on
     "true",
   );
   await expect(page.locator("#cv")).toHaveAttribute("aria-label", /^LEVEL 2/);
+  expect(errors).toEqual([]);
+});
+
+test("a write the browser refused is tried again at a flush, and when another tab writes", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await refusing(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await expect(page.locator("#toastStack .toast", { hasText: FULL })).toHaveCount(1);
+  const id = (await shown(page)).draft;
+  expect(await stored(page)).toBeNull();
+  // room made: the flush that leaves the page writes what waited
+  await room(page, true);
+  await flush(page);
+  expect((await stored(page)).drafts[id].doc.title).toBe("Untitled level");
+  // refused again, a change waits; the other tab's write is the moment to try once more
+  await room(page, false);
+  await page.locator("#draftTitle").fill("Spiral");
+  await flush(page);
+  expect((await stored(page)).drafts[id].doc.title).toBe("Untitled level");
+  await room(page, true);
+  await arrives(page, await stored(page));
+  await written(page, (s) => s?.drafts[id]?.doc.title).toBe("Spiral");
+  expect(errors).toEqual([]);
+});
+
+test("a draft whose id another tab handed out before this tab's write landed moves to a new id", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await refusing(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await expect(page.locator("#toastStack .toast", { hasText: FULL })).toHaveCount(1);
+  const mine = (await shown(page)).draft;
+  await page.locator("#draftTitle").fill("Mine");
+  await expect(page.locator("#chipLine b")).toHaveText("Mine");
+  // the other tab, with room, makes a level of its own under the same id
+  const theirs = {
+    version: 1,
+    next: mine + 1,
+    drafts: {
+      [mine]: {
+        doc: {
+          format: "kula-world-level",
+          version: 1,
+          title: "Theirs",
+          world: "HELL",
+          time: 99,
+          blocks: [{ cell: [17, 17, 17], kind: 0, faces: { 0: { type: 30, facing: 3 } } }],
+        },
+        updated: Date.now() + 1000,
+        saved: null,
+        edits: 0,
+      },
+    },
+  };
+  await room(page, true);
+  await arrives(page, theirs);
+  await expect(page.locator("#draftRows button .name")).toHaveText(["Theirs", "Mine"]);
+  // the screen follows this tab's draft to its new id
+  expect((await shown(page)).draft).toBe(mine + 1);
+  await expect(page.locator("#chipLine b")).toHaveText("Mine");
+  await expect(page.locator("#draftRows button").nth(1)).toHaveAttribute("aria-current", "true");
+  await expect
+    .poll(() => page.evaluate(() => location.hash))
+    .toMatch(new RegExp(`^#DRAFT/${mine + 1}/`));
+  expect(await docOf(page, mine)).toMatchObject({ title: "Theirs" });
+  expect(await docOf(page, mine + 1)).toMatchObject({ title: "Mine" });
+  const trails = await page.evaluate(
+    async ([a, b]) => {
+      const { steps } = await import(new URL("js/trail.js", location.href).href);
+      return [steps(a).past, steps(b).past];
+    },
+    [mine, mine + 1],
+  );
+  expect(trails).toEqual([0, 1]);
+  expect(await toasts(page)).toContain(
+    "Another tab's level took the place of Mine, which stays in the list under a new link.",
+  );
+  await written(page, (s) => s && [s.next, Object.keys(s.drafts)]).toEqual([
+    mine + 2,
+    [String(mine), String(mine + 1)],
+  ]);
+  expect((await stored(page)).drafts[mine + 1].doc.title).toBe("Mine");
+  expect(errors).toEqual([]);
+});
+
+test("deleting a draft that never reached storage leaves another tab's level under its id alone", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await refusing(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await expect(page.locator("#toastStack .toast", { hasText: FULL })).toHaveCount(1);
+  const id = (await shown(page)).draft;
+  const del = page.locator("#draftCard button", { hasText: /^delete/ });
+  await del.click();
+  await del.click();
+  await expect(page.locator("#draftRows button")).toHaveCount(0);
+  expect(await stored(page)).toBeNull();
+  // the other tab, with room, made a level of its own under the id this tab let go
+  const theirs = {
+    version: 1,
+    next: id + 1,
+    drafts: {
+      [id]: {
+        doc: {
+          format: "kula-world-level",
+          version: 1,
+          title: "Theirs",
+          world: "HELL",
+          time: 99,
+          blocks: [{ cell: [17, 17, 17], kind: 0, faces: { 0: { type: 30, facing: 3 } } }],
+        },
+        updated: Date.now() + 1000,
+        saved: null,
+        edits: 0,
+      },
+    },
+  };
+  await room(page, true);
+  await arrives(page, theirs);
+  await expect(page.locator("#draftRows button .name")).toHaveText(["Theirs"]);
+  expect((await stored(page)).drafts[id].doc.title).toBe("Theirs");
+  // and this tab's next write carries it along
+  await page.locator("#draftNew").click();
+  await written(page, (s) => Object.keys(s?.drafts ?? {}).sort()).toEqual([
+    String(id),
+    String(id + 1),
+  ]);
+  expect((await stored(page)).drafts[id].doc.title).toBe("Theirs");
   expect(errors).toEqual([]);
 });
