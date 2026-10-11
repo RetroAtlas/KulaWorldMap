@@ -747,3 +747,39 @@ test("an editor whose boot throws leaves the map and its controls, which say so 
   await expect(page.locator("#draftRows button")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test("a draft and a disc level that share a number are two levels, so showing one after the other is a change", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.keyboard.press("]");
+  expect((await shown(page)).li).toBe(1);
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { on }] = await Promise.all(["state.js", "dom.js"].map(at));
+    state.hiddenKinds.add("t31");
+    window.counts = { changed: 0, updated: 0 };
+    on("level-changed", () => window.counts.changed++);
+    on("level-updated", () => window.counts.updated++);
+  });
+  // the first draft is number 1, as LEVEL 2 is among the disc's levels
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  const made = await page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    return { draft: state.lvl.draft, hidden: [...state.hiddenKinds], ...window.counts };
+  });
+  expect(made).toEqual({ draft: 1, hidden: [], changed: 1, updated: 0 });
+  await expect(page.locator("#cv")).toHaveAttribute("aria-label", /^Draft, Untitled level/);
+  await expect(page.locator("#worlds .levels button[aria-current='true']")).toHaveCount(0);
+  await page.locator("#worlds .levels button[data-i='1']").click();
+  expect(await page.evaluate(() => window.counts)).toEqual({ changed: 2, updated: 0 });
+  await expect(page.locator("#worlds .levels button[data-i='1']")).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
+  await expect(page.locator("#cv")).toHaveAttribute("aria-label", /^LEVEL 2/);
+  expect(errors).toEqual([]);
+});

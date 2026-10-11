@@ -15,7 +15,7 @@ import { draw, drawSoon, invalidatePick } from "./render.js";
 import { showCell, clearDetail } from "./detail.js";
 import { slotOf, formatHash, parseHash } from "./permalink.js";
 
-// The level on screen, by its key: its index among the disc's, or a draft's id.
+// The level on screen, by its slot.
 let shown = null;
 
 /** Install a level: one of the disc's at index `i`, or one from elsewhere with
@@ -25,7 +25,7 @@ function install(l, i, { keepView = false, push = true, keep = null } = {}) {
   settle();
   // Nothing lies behind the first level shown, so arriving there is no entry.
   const left = state.lvl !== null;
-  const key = l.draft ?? i;
+  const key = slotOf(l);
   if (key !== shown) state.presses = new Map();
   const updated = i < 0 && key === shown;
   shown = key;
