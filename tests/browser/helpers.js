@@ -35,7 +35,11 @@ export const textured = (page) =>
   page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { atlasFor }] = await Promise.all(["state.js", "atlas.js"].map(at));
-    while (!atlasFor(state.lvl.theme)) await new Promise(requestAnimationFrame);
+    const deadline = Date.now() + 10000;
+    while (!atlasFor(state.lvl.theme)) {
+      if (Date.now() > deadline) throw new Error("textured timeout");
+      await new Promise(requestAnimationFrame);
+    }
   });
 
 export const headings = (page) =>
