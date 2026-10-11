@@ -698,6 +698,12 @@ button.kind:hover {
 #cv:active {
   cursor: grabbing;
 }
+body.marquee #cv {
+  cursor: crosshair;
+}
+body.moving #cv {
+  cursor: move;
+}
 #cv:focus-visible {
   outline: 2px solid var(--accent-dim);
   outline-offset: -2px;

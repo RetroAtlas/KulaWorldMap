@@ -1,13 +1,13 @@
 // The editor, loaded only when the page is opened to make levels: the mode,
 // its tools and keys, and what it draws over the map through the frame's hooks.
 import { $, emit, on } from "./dom.js";
-import { state, SIDE, facing as turnedToView, screen, cellKey, sliceZ } from "./state.js";
+import { state, SIDE, BLOCK, facing as turnedToView, screen, cellKey, sliceZ } from "./state.js";
 import { FACE_NORMAL, FACE_NAME } from "./faces.js";
 import { levelTitle, markerLabel } from "./data.js";
 import { provideLevels, setSlice } from "./navigate.js";
 import { cellAt, drawSoon, overlayWith } from "./render.js";
 import { facePoints, outline, outlineStroke } from "./blocks.js";
-import { CLICK, onCellClick, hoverFaces, tipWith } from "./interaction.js";
+import { CLICK, dragWith, onCellClick, hoverFaces, tipWith } from "./interaction.js";
 import { clearDetail, showCell } from "./detail.js";
 import { sidebarOverlays } from "./sidebar.js";
 import { describeLevel, say } from "./a11y.js";
@@ -19,11 +19,12 @@ import {
   PLAIN_ONLY,
   PLATFORM_KIND,
   SPAN_KINDS,
+  cellText,
   facesOf,
   inner,
   sameCell,
 } from "./kwl.js";
-import { blockAt, faceAt, removeBlock, runOf, setBlock, setFace } from "./project.js";
+import { blockAt, faceAt, moveBlocks, removeBlock, runOf, setBlock, setFace } from "./project.js";
 import { load } from "./drafts.js";
 import { canRedo, canUndo, redo, undo } from "./trail.js";
 import { copyShown, levelFor, wireDrafts } from "./draftlist.js";
@@ -41,6 +42,7 @@ import {
   newErrors,
   place3,
   plainOnly,
+  plural,
   refuse,
   sentence,
   spanAt,
@@ -60,6 +62,9 @@ const HEIGHT_HINT =
 const CHANGED = "The run's own block changed while it waited.";
 const WAITING = "The run waits for its far end. Click where it ends, or press Esc.";
 const WAITING_TOUCH = "The run waits for its far end. Tap where it ends, or change the tool.";
+const NOTHING = "Nothing selected";
+const setLine = (n) =>
+  `${plural(n, "block")} selected. Drag ${n === 1 ? "it" : "them"} to move, Shift-drag to lift, Delete to erase, Esc to clear.`;
 const TOOL_KEYS = { a: "place", z: "erase", i: "select" };
 const WASH = "rgba(111 211 255 / 0.28)";
 const RIM = "#6fd3ff";
@@ -101,6 +106,10 @@ let mouse = null;
 let floorKey = null;
 let hinted = false;
 let paletteOpen = !sidebarOverlays();
+// The blocks selected together, by the key of each block's own cell, and the
+// marquee or the move a drag has in hand.
+const set = new Set();
+let gesture = null;
 
 const onDraft = () => state.lvl?.draft !== undefined;
 export const editing = () => mode.on && onDraft();
@@ -132,6 +141,8 @@ function setMode(onNow, said = onNow ? "Editing on" : "Editing off") {
   mode.on = onNow;
   pending = null;
   armed = null;
+  set.clear();
+  dropGesture();
   document.body.classList.toggle("editing", onNow);
   status("");
   strip();
@@ -141,10 +152,14 @@ function setMode(onNow, said = onNow ? "Editing on" : "Editing off") {
 }
 
 function setTool(tool) {
+  if (tool !== mode.tool) {
+    set.clear();
+    dropGesture();
+  }
   mode.tool = tool;
   dropRun();
   disarm();
-  status("");
+  status(set.size ? setLine(set.size) : "");
   strip();
   drawSoon();
 }
@@ -223,6 +238,8 @@ function wireTools() {
     if (!onDraft() && mode.on) setMode(false, null);
     dropRun();
     disarm();
+    dropGesture();
+    clearSet();
     strip();
   });
   on("selection-changed", () => {
@@ -237,6 +254,7 @@ function wireTools() {
     $("palette").style.setProperty("--strip-h", `${e.target.offsetHeight}px`),
   ).observe($("tools"));
   on("level-updated", strip);
+  on("level-updated", prune);
   on("trail-changed", strip);
   // a level made to be edited opens editing, said after what made it has been said
   on("edit-wanted", () => {
@@ -250,6 +268,7 @@ function wireTools() {
     consumed = e.pointerType === "touch" && editing();
     return taken;
   });
+  dragWith(dragStart);
   hoverFaces(() => editing() && mode.tool !== "select");
   tipWith((c) => {
     if (!editing() || mode.tool !== "place" || c?.face == null) return [];
@@ -257,7 +276,7 @@ function wireTools() {
       pending ? "End the run here" : `Place ${aWord(brushWord())} on the ${FACE_NAME[c.face]}`,
     ];
   });
-  overlayWith({ under: drawFloor, cell: drawHover, frame: drawGhost });
+  overlayWith({ under: drawFloor, cell: drawCell, frame: drawGhost });
   strip();
 }
 
@@ -271,6 +290,7 @@ function take(c, e) {
   if (e.pointerType === "touch" && !e.shiftKey && mode.tool !== "select") return tap(c, e);
   if (e.shiftKey || mode.tool === "erase") return erase(c, e);
   if (mode.tool === "place") return place(c, e);
+  clearSet();
   return false;
 }
 
@@ -437,8 +457,11 @@ function keys(e) {
   if (editing() && !e.altKey && mod && key === "z") e.shiftKey ? stepAgain() : stepBack();
   else if (editing() && !e.altKey && e.ctrlKey && !e.metaKey && key === "y") stepAgain();
   else if (editing() && !mod && !e.altKey && (e.key === "Delete" || e.key === "Backspace"))
-    eraseSelection();
+    set.size ? eraseSet() : eraseSelection();
+  else if (editing() && !mod && !e.altKey && e.shiftKey && set.size && NUDGE[e.key])
+    moveSet(NUDGE[e.key]());
   else if (mod || e.altKey) return;
+  else if (e.key === "Escape" && editing() && set.size) clearSet();
   else if (e.key === "Escape" && editing() && pending) {
     dropRun();
     drawSoon();
@@ -457,18 +480,281 @@ function keys(e) {
 function stepBack() {
   const d = current();
   const label = d && undo(d.id);
-  if (label) say(`Undid ${label}`);
+  if (!label) return;
+  clearSet();
+  say(`Undid ${label}`);
 }
 
 function stepAgain() {
   const d = current();
   const label = d && redo(d.id);
-  if (label) say(`Redid ${label}`);
+  if (!label) return;
+  clearSet();
+  say(`Redid ${label}`);
 }
 
 function eraseSelection() {
   const s = state.selected;
   if (s) erase({ x: s.x, y: s.y, z: s.z, face: s.face ?? null });
+}
+
+// --- a set of blocks, chosen with a marquee and moved whole ------------------------------
+
+const GROUND = [
+  [1, 0, 0],
+  [-1, 0, 0],
+  [0, 1, 0],
+  [0, -1, 0],
+];
+const NUDGE = {
+  ArrowRight: () => groundAxes().right,
+  ArrowLeft: () => groundAxes().right.map((v) => -v),
+  ArrowDown: () => groundAxes().down,
+  ArrowUp: () => groundAxes().down.map((v) => -v),
+  PageUp: () => [0, 0, -1],
+  PageDown: () => [0, 0, 1],
+};
+
+/** The ground axis nearest the screen's right, and of the other two the one running down the screen. */
+function groundAxes() {
+  const o = screen(0, 0, 0);
+  const on = (v) => {
+    const [x, y] = screen(...v).map((k, i) => k - o[i]);
+    const n = Math.hypot(x, y) || 1;
+    return [x / n, y / n];
+  };
+  let right = GROUND[0];
+  for (const v of GROUND) if (on(v)[0] > on(right)[0] + 1e-9) right = v;
+  const other = GROUND.filter((v) => !v.some((k, i) => k && right[i]));
+  const down = on(other[0])[1] >= on(other[1])[1] ? other[0] : other[1];
+  return { right, down };
+}
+
+const members = (doc) => doc.blocks.filter((b) => set.has(cellKey(...b.cell)));
+const shifted = (cell, delta) => cell.map((v, i) => v + delta[i]);
+const CELL_IN_TEXT = /(\d+),(\d+),(\d+)/g;
+const cellsNamed = (text) => [...text.matchAll(CELL_IN_TEXT)].map((m) => m.slice(1).map(Number));
+
+function clearSet() {
+  if (!set.size) return;
+  set.clear();
+  status("");
+  drawSoon();
+}
+
+/** Let go of the marquee or the move in hand; the drag that holds it then does nothing until the lift. */
+function dropGesture() {
+  gesture = null;
+  document.body.classList.remove("marquee", "moving");
+}
+
+/** Keep the set to the blocks the draft still has, which another tab's update or an erase from Select can take from under it. */
+function prune() {
+  if (!set.size) return;
+  const d = current();
+  const keys = new Set(d ? d.doc.blocks.map((b) => cellKey(...b.cell)) : []);
+  const was = set.size;
+  for (const key of [...set]) if (!keys.has(key)) set.delete(key);
+  if (set.size !== was) status(set.size ? setLine(set.size) : "");
+}
+
+/** Select the blocks whose middles lie in a rectangle of the canvas, a span whole where any cell of its run does. */
+function selectWithin(x0, y0, x1, y1) {
+  const d = current();
+  if (!d) return;
+  set.clear();
+  const inside = (cell) => {
+    if (cell[2] < sliceZ()) return false;
+    const [px, py] = screen(cell[0] + 0.5, cell[1] + 0.5, cell[2] + 0.5);
+    return px >= x0 && px <= x1 && py >= y0 && py <= y1;
+  };
+  for (const b of d.doc.blocks) {
+    const cells = SPAN_KINDS.has(b.kind) && b.far ? runOf(b) : [b.cell];
+    if (cells.some(inside)) set.add(cellKey(...b.cell));
+  }
+  if (!set.size) clearDetail();
+  const line = set.size ? setLine(set.size) : "";
+  status(line);
+  say(line || NOTHING);
+  drawSoon();
+}
+
+/** Where the set would land moved by `delta`: each block's cell, which of
+    them are blocked, the project moved and the refusal where there is one. */
+function destination(doc, delta) {
+  const blocks = members(doc);
+  const cells = blocks.map((b) => shifted(b.cell, delta));
+  const staying = new Set(
+    doc.blocks.filter((b) => !set.has(cellKey(...b.cell))).map((b) => cellKey(...b.cell)),
+  );
+  const blocked = new Set();
+  let why = null;
+  blocks.forEach((b, i) => {
+    const far = b.far && shifted(b.far, delta);
+    const past = !cells[i].every(inner) || (far && !far.every(inner));
+    if (!past && !staying.has(cellKey(...cells[i]))) return;
+    blocked.add(i);
+    why ??= past ? EDGE : HELD;
+  });
+  let next = null;
+  if (!why) {
+    next = moveBlocks(
+      doc,
+      blocks.map((b) => b.cell),
+      delta,
+    );
+    // an error the draft already had is the same one once the blocks it names have moved with the set
+    const moving = (cell) => (set.has(cellKey(...cell)) ? shifted(cell, delta) : cell);
+    const carried = (f) => ({
+      ...f,
+      text: f.text.replace(CELL_IN_TEXT, (_, ...xyz) =>
+        cellText(moving(xyz.slice(0, 3).map(Number))),
+      ),
+      at: f.at && { ...f.at, cell: moving(f.at.cell) },
+    });
+    const grew = newErrors(doc, next, carried);
+    if (grew.length) {
+      why = sentence(grew[0].text);
+      // a check names the cells it is about where it stands and in its words
+      const named = new Set(grew.filter((f) => f.at).map((f) => cellKey(...f.at.cell)));
+      for (const f of grew) for (const c of cellsNamed(f.text)) named.add(cellKey(...c));
+      const hit = cells.flatMap((c, i) => (named.has(cellKey(...c)) ? [i] : []));
+      for (const i of hit.length ? hit : cells.keys()) blocked.add(i);
+    }
+  }
+  return { cells, blocked, why, next };
+}
+
+/** Where the set in hand would land and which of its blocks the lift would refuse; null with no move in hand. */
+export function movePreview() {
+  if (!gesture?.move) return null;
+  const { delta, cells, blocked } = gesture.move;
+  return { delta, cells, blocked: [...blocked].sort((a, b) => a - b) };
+}
+
+/** Move the set by `delta` as one step, or say why not and move nothing; whether it moved. */
+function moveSet(delta) {
+  const d = current();
+  if (!d || !set.size || !delta.some(Boolean)) return false;
+  const { cells, why, next } = destination(d.doc, delta);
+  if (why) {
+    refuse(why);
+    return false;
+  }
+  const s = state.selected;
+  const follow = s && set.has(s.key) ? shifted([s.x, s.y, s.z], delta) : null;
+  set.clear();
+  for (const c of cells) set.add(cellKey(...c));
+  const top = Math.min(...cells.map((c) => c[2]));
+  if (top < sliceZ()) setSlice(SIDE - 1 - top);
+  commit(d.id, next, `moved ${plural(cells.length, "block")} by ${delta.join(", ")}`);
+  if (follow) select(follow, s.face ?? null);
+  status(setLine(cells.length));
+  return true;
+}
+
+/** Erase every block of the set as one step, a level keeping its last block. */
+function eraseSet() {
+  const d = current();
+  const blocks = d ? members(d.doc) : [];
+  if (!blocks.length) return false;
+  if (blocks.length >= d.doc.blocks.length) return refuse(LAST);
+  set.clear();
+  commit(
+    d.id,
+    blocks.reduce((p, b) => removeBlock(p, b.cell), d.doc),
+    `removed ${plural(blocks.length, "block")}`,
+  );
+  return true;
+}
+
+/** The drag a press begins in Select: a marquee from no cell, a move from a
+    block of the set, and from anywhere else nothing, so the camera has it. */
+function dragStart(c, e) {
+  if (!editing() || mode.tool !== "select" || e.pointerType === "touch") return null;
+  if (e.button !== 0 || e.altKey || !current()) return null;
+  if (c && set.has(cellKey(c.x, c.y, c.z))) return moveDrag(c, e);
+  if (c || e.shiftKey || state.panMode) return null;
+  return marqueeDrag(e);
+}
+
+const canvasPoint = (e) => {
+  const r = $("cv").getBoundingClientRect();
+  return [e.clientX - r.left, e.clientY - r.top];
+};
+
+function marqueeDrag(e) {
+  const from = canvasPoint(e);
+  const own = (gesture = { marquee: [...from, ...from] });
+  document.body.classList.add("marquee");
+  return {
+    move(ev) {
+      if (gesture !== own) return;
+      own.marquee = [...from, ...canvasPoint(ev)];
+      drawSoon();
+    },
+    end(ev) {
+      if (gesture !== own) return;
+      const [x, y] = canvasPoint(ev);
+      dropGesture();
+      selectWithin(
+        Math.min(from[0], x),
+        Math.min(from[1], y),
+        Math.max(from[0], x),
+        Math.max(from[1], y),
+      );
+    },
+    cancel() {
+      if (gesture !== own) return;
+      dropGesture();
+      drawSoon();
+    },
+  };
+}
+
+/** A cell's height on the screen, held to a quarter of its side where the view looks nearly straight down. */
+const cellHeight = () =>
+  Math.max((BLOCK * state.cam.zoom) / 4, screen(0, 0, 1)[1] - screen(0, 0, 0)[1]);
+
+/** The set carried by the pointer: across the plane through the pressed cell
+    at its height, or with Shift up and down, a cell for each cell's height. */
+function moveDrag(c, e) {
+  const z = c.z + 0.5;
+  const lift = e.shiftKey;
+  const start = [e.clientX, e.clientY];
+  const own = (gesture = { move: { delta: [0, 0, 0], cells: [], blocked: new Set() } });
+  document.body.classList.add("moving");
+  const deltaAt = (ev) => {
+    const dx = ev.clientX - start[0];
+    const dy = ev.clientY - start[1];
+    if (lift) return [0, 0, Math.round(dy / cellHeight())];
+    const a = onPlane(0, 0, z);
+    const b = onPlane(dx, dy, z);
+    return a && b ? [Math.round(b[0] - a[0]), Math.round(b[1] - a[1]), 0] : [0, 0, 0];
+  };
+  return {
+    move(ev) {
+      if (gesture !== own) return;
+      const delta = deltaAt(ev);
+      const d = current();
+      if (d && !sameCell(delta, own.move.delta)) {
+        const { cells, blocked } = destination(d.doc, delta);
+        own.move = { delta, cells, blocked };
+      }
+      drawSoon();
+    },
+    end(ev) {
+      if (gesture !== own) return;
+      const delta = deltaAt(ev);
+      dropGesture();
+      if (!moveSet(delta)) drawSoon();
+    },
+    cancel() {
+      if (gesture !== own) return;
+      dropGesture();
+      drawSoon();
+    },
+  };
 }
 
 // --- the tools -----------------------------------------------------------------------------
@@ -783,20 +1069,25 @@ function floorZ(l) {
   return l.cells.length ? l.max[2] + 1 : SIDE - 1;
 }
 
-// The screen is affine in a point of the grid's plane, so three points of the
-// plane give the cell under a point of the canvas.
-function floorAt(px, py) {
-  const z0 = floorZ(state.lvl);
-  const o = screen(0, 0, z0);
-  const [ax, ay] = screen(1, 0, z0).map((v, i) => v - o[i]);
-  const [bx, by] = screen(0, 1, z0).map((v, i) => v - o[i]);
+// The screen is affine in a point of a level plane, so three points of the
+// plane give the point of it under a point of the canvas; null where the
+// plane is seen edge-on.
+function onPlane(px, py, z) {
+  const o = screen(0, 0, z);
+  const [ax, ay] = screen(1, 0, z).map((v, i) => v - o[i]);
+  const [bx, by] = screen(0, 1, z).map((v, i) => v - o[i]);
   const det = ax * by - bx * ay;
   if (Math.abs(det) < 1e-6) return null;
   const dx = px - o[0];
   const dy = py - o[1];
-  const x = (by * dx - bx * dy) / det;
-  const y = (ax * dy - ay * dx) / det;
-  return [Math.floor(x), Math.floor(y), z0 - 1];
+  return [(by * dx - bx * dy) / det, (ax * dy - ay * dx) / det];
+}
+
+/** The grid's cell under a point of the canvas. */
+function floorAt(px, py) {
+  const z0 = floorZ(state.lvl);
+  const p = onPlane(px, py, z0);
+  return p && [Math.floor(p[0]), Math.floor(p[1]), z0 - 1];
 }
 
 function onFloor(e) {
@@ -826,8 +1117,14 @@ function drawFloor(ctx, l) {
   return true;
 }
 
-function drawHover(ctx, c, home, key, ghost) {
-  if (!editing() || mode.tool === "select" || ghost) return;
+function drawCell(ctx, c, home, key, ghost) {
+  if (!editing() || ghost) return;
+  if (set.has(key)) outline(ctx, c, state.idx, RIM);
+  drawHover(ctx, c, home, key);
+}
+
+function drawHover(ctx, c, home, key) {
+  if (mode.tool === "select") return;
   const h = hovered();
   if (!h || h.key !== key || h.face == null || (c.k ?? 0) !== (h.k ?? 0)) return;
   ctx.save();
@@ -872,8 +1169,33 @@ function drawRun(ctx) {
   outline(ctx, toCell(run.far), state.idx, run.blocked ? BLOCKED : GHOST, [4, 3]);
 }
 
+/** The marquee as it is drawn, or the set's ghosts where a move would put it. */
+function drawGesture(ctx) {
+  if (gesture.marquee) {
+    const [x0, y0, x1, y1] = gesture.marquee;
+    ctx.save();
+    ctx.fillStyle = WASH;
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.strokeStyle = RIM;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.restore();
+    return;
+  }
+  const { delta, cells, blocked } = movePreview();
+  if (!delta.some(Boolean)) return;
+  const verdict = (i) => VERDICT[blocked.includes(i) ? "blocked" : "free"];
+  ctx.save();
+  cells.forEach((cell, i) => tint(ctx, toCell(cell), verdict(i)[1]));
+  ctx.restore();
+  cells.forEach((cell, i) => outline(ctx, toCell(cell), state.idx, verdict(i)[0], [4, 3]));
+}
+
 function drawGhost(ctx) {
-  if (!editing() || mode.tool !== "place") return;
+  if (!editing()) return;
+  if (gesture) return drawGesture(ctx);
+  if (mode.tool !== "place") return;
   if (pending) return drawRun(ctx);
   const h = hovered();
   if (brush.kind === undefined && h?.face != null) {

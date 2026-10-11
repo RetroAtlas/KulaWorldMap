@@ -62,8 +62,23 @@ const HELP = [
   ],
   ["`Ctrl-Z` or `Cmd-Z`", "while editing: undo"],
   ["`Ctrl-Shift-Z`, `Cmd-Shift-Z` or `Ctrl-Y`", "while editing: redo"],
-  ["`Delete` `Backspace`", "while editing: erase what is selected, its object first"],
-  ["`Esc`", "close, or clear the selection; while editing, cancel a waiting run first"],
+  [
+    "`Delete` `Backspace`",
+    "while editing: erase what is selected, its object first, or every selected block",
+  ],
+  [
+    "drag from empty space, with Select",
+    "while editing: select the blocks in a rectangle; drag one of them to move them all, Shift-drag to lift",
+  ],
+  ["`Shift-arrows`", "while editing with blocks selected: move them a cell along the ground"],
+  [
+    "`Shift-PageUp` `Shift-PageDown`",
+    "while editing with blocks selected: move them a cell up and down",
+  ],
+  [
+    "`Esc`",
+    "close, or clear the selection; while editing, clear the selected blocks or cancel a waiting run first",
+  ],
   ["`?`", "this list"],
 ];
 
