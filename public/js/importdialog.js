@@ -2,7 +2,7 @@
 // image's levels to open, in one box with the packs where there are several,
 // the levels of the chosen pack and a line on which world the level will
 // wear; and, for a shared level, the link to paste.
-import { el } from "./dom.js";
+import { $, el } from "./dom.js";
 import { state } from "./state.js";
 import { levelTitle, worldName } from "./data.js";
 import { closeDialog, openDialog } from "./dialog.js";
@@ -141,7 +141,7 @@ function pick({ heading, packs }) {
   slots(packs[0]);
   return new Promise((resolve) => {
     pending = resolve;
-    openDialog(ui.overlay);
+    openDialog(ui.overlay, $("draftOpen"));
     stood();
     ui.slot.focus();
   });
@@ -293,7 +293,7 @@ export function pasteLevelLink(world, read) {
   paste.open.disabled = false;
   return new Promise((resolve) => {
     pendingPaste = resolve;
-    openDialog(paste.overlay);
+    openDialog(paste.overlay, $("draftPaste"));
     stood();
     paste.link.focus();
   });

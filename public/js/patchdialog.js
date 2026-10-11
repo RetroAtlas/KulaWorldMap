@@ -2,7 +2,7 @@
 // the fit, the image and the patches, then where each emulator wants them. The
 // fit is worked out from the packs' layout until the image is given and read
 // from the image after, and every byte of the patches is written here.
-import { el, on } from "./dom.js";
+import { $, el, on } from "./dom.js";
 import { state } from "./state.js";
 import { levelTitle, loadJson, skinsTable, worldName } from "./data.js";
 import { closeDialog, openDialog } from "./dialog.js";
@@ -225,7 +225,7 @@ export async function openPatchDialog(id) {
   ui.disc.value = "";
   ui.status.textContent = "";
   refresh();
-  openDialog(ui.overlay);
+  openDialog(ui.overlay, $("draftPatch"));
 }
 
 // The box for the draft as the store holds it now, run again whenever the store replaces it.
