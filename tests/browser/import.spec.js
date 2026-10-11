@@ -21,7 +21,7 @@ import {
   syntheticImage,
 } from "../unit/synthetic.js";
 
-const EDIT_MARS = "/?edit#MARS/0/45,35/fit/33";
+const EDIT_MARS = "/#MARS/0/45,35/fit/33";
 const orbit = JSON.parse(
   readFileSync(fileURLToPath(new URL("../fixtures/orbit-levels.json", import.meta.url)), "utf8"),
 );

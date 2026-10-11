@@ -8,7 +8,7 @@ import { SLUG_MOST } from "../../public/js/files.js";
 import { SYNTHETIC_SECTORS, synthetic, syntheticImage } from "../unit/synthetic.js";
 import { USER, sector } from "../../public/js/sectors.js";
 
-const EDIT = "/?edit#HIRO/0/45,35/fit/33";
+const EDIT = "/#HIRO/0/45,35/fit/33";
 const fixture = JSON.parse(
   readFileSync(fileURLToPath(new URL("../fixtures/patch-digests.json", import.meta.url)), "utf8"),
 );
