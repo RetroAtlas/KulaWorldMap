@@ -474,18 +474,67 @@ class Validates(unittest.TestCase):
         self.assertEqual(counts(p, HIDES)["faces"], 772)
         self.assertIn("772 faces, over the 768 the game has room for", texts(validate(p, HIDES), "error"))
 
-    def test_the_other_counters_and_their_caps(self):
+    def test_the_object_cap_counts_what_the_loader_numbers(self):
+        coin = {"type": COIN, "variant": 0}
+        six = {f"t{j}": coin for j in range(6)}
         blocks = [plain((5, 5, 5), t0=start())]
-        blocks += [{"cell": [1 + i, 20, 5], "kind": 7, "phase": 0} for i in range(32)]
-        blocks += [{"cell": [1 + i, 22, 5], "kind": 7, "phase": 0} for i in range(32)]
-        n = counts(project(blocks), HIDES)
-        self.assertEqual((n["vanishing"], n["records"], n["blocks"]), (64, 65, 65))
+        blocks += [plain((1 + i % 32, 20 + i // 32, 5), **six) for i in range(42)]
+        blocks.append(plain((20, 25, 5), t0=coin, t1=coin, t2=coin))
+        self.assertEqual(counts(project(blocks), HIDES)["objects"], 255)
         self.assertEqual(self.errors(blocks), [])
-        self.assertIn("64 vanishing, more than any level on the disc", self.warnings(blocks))
-        self.assertFalse(any("vanishing, more than" in w for w in self.warnings(blocks[:15])))
-        self.assertIn("15 vanishing, more than any level on the disc", self.warnings(blocks[:16]))
-        blocks.append({"cell": [1, 24, 5], "kind": 7, "phase": 0})
-        self.assertIn("65 vanishing, over the 64 the game has room for", self.errors(blocks))
+        self.assertIn("255 objects, more than any level on the disc", self.warnings(blocks))
+        blocks.append(plain((22, 25, 5), t0=coin))
+        self.assertIn("256 objects, over the 255 the game has room for", self.errors(blocks))
+
+    def test_the_platform_vanishing_crumbling_and_captivator_caps(self):
+        def with_start(more):
+            return [plain((5, 5, 5), t0=start())] + more
+
+        def rail(i):
+            return {"cell": [1 + 2 * i, 10, 5], "kind": PLATFORM_KIND, "far": [1 + 2 * i, 12, 5], "length": 2, "speed": 30}
+
+        rails = [rail(i) for i in range(8)]
+        self.assertEqual(self.errors(with_start(rails)), [])
+        self.assertIn("8 platforms, more than any level on the disc", self.warnings(with_start(rails)))
+        self.assertIn("9 platforms, over the 8 the game has room for", self.errors(with_start(rails + [rail(8)])))
+
+        vanishing = [{"cell": [1 + i % 32, 20 + 2 * (i // 32), 5], "kind": 7, "phase": 0} for i in range(64)]
+        n = counts(project(with_start(vanishing)), HIDES)
+        self.assertEqual((n["vanishing"], n["records"], n["blocks"]), (64, 65, 65))
+        self.assertEqual(self.errors(with_start(vanishing)), [])
+        self.assertIn("64 vanishing, more than any level on the disc", self.warnings(with_start(vanishing)))
+        self.assertFalse(any("vanishing, more" in w for w in self.warnings(with_start(vanishing[:14]))))
+        self.assertIn("15 vanishing, more than any level on the disc", self.warnings(with_start(vanishing[:15])))
+        self.assertIn("65 vanishing, over the 64 the game has room for",
+                      self.errors(with_start(vanishing + [{"cell": [1, 24, 5], "kind": 7, "phase": 0}])))
+
+        crumbling = [{"cell": [1 + i % 32, 20 + 2 * (i // 32), 5], "kind": 6} for i in range(64)]
+        self.assertEqual(self.errors(with_start(crumbling)), [])
+        self.assertFalse(any("crumbling, more" in w for w in self.warnings(with_start(crumbling[:33]))))
+        self.assertIn("34 crumbling, more than any level on the disc", self.warnings(with_start(crumbling[:34])))
+        self.assertIn("65 crumbling, over the 64 the game has room for",
+                      self.errors(with_start(crumbling + [{"cell": [1, 24, 5], "kind": 6}])))
+
+        wandering = {"type": 53}
+        captive = [plain((1 + 2 * i, 20, 5), **{f"t{j}": wandering for j in range(6)}) for i in range(5)]
+        captive.append(plain((12, 20, 5), t0=wandering, t1=wandering))
+        self.assertEqual(counts(project(with_start(captive)), HIDES)["captivators"], 32)
+        self.assertEqual(self.errors(with_start(captive)), [])
+        self.assertIn("32 captivators, more than any level on the disc", self.warnings(with_start(captive)))
+        captive[5]["faces"]["2"] = wandering
+        self.assertIn("33 captivators, over the 32 the game has room for", self.errors(with_start(captive)))
+
+    def test_more_devices_that_cast_a_light_than_the_game_lights_at_once(self):
+        def switch(colour):
+            return {"type": SWITCH, "variant": colour}
+
+        blocks = [plain((5, 5, 5), t0=start())]
+        blocks += [plain((1 + 2 * i, 20, 5), **{f"t{j}": switch(j % 4) for j in range(6)}) for i in range(5)]
+        blocks.append(plain((12, 20, 5), t0=switch(0), t1=switch(1)))
+        self.assertEqual(self.errors(blocks), [])
+        self.assertFalse(any("cast a light, over" in w for w in self.warnings(blocks)))
+        blocks[6]["faces"]["2"] = switch(2)
+        self.assertIn("33 devices that cast a light, over the 32 the game lights at once", self.warnings(blocks))
 
     def test_the_disc_maxima_are_the_most_any_shipped_level_counts(self):
         most = dict.fromkeys(COUNTERS, 0)
