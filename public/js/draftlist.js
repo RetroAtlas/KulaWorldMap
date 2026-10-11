@@ -87,10 +87,9 @@ async function openFile() {
   const file = input.files[0];
   input.value = "";
   if (!file) return;
-  const bytes = new Uint8Array(await file.arrayBuffer());
   let read;
   try {
-    read = await readLevelFile(bytes, file.name, state.lvl.theme);
+    read = await readLevelFile(file, file.name, state.lvl.theme);
   } catch (e) {
     toast(e.message);
     return;

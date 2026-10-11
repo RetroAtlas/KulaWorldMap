@@ -191,6 +191,39 @@ test("a pack under none of the disc's worlds opens in the world on screen, and t
   expect(errors).toEqual([]);
 });
 
+test("a disc image is read a slice at a time, and a file that cannot be read is said so", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.addInitScript(() => {
+    const read = Blob.prototype.arrayBuffer;
+    window.reads = [];
+    Blob.prototype.arrayBuffer = function () {
+      if (this.name === "gone.kwl")
+        return Promise.reject(new DOMException("The file moved.", "NotReadableError"));
+      window.reads.push(this.size);
+      return read.call(this);
+    };
+  });
+  await page.goto(EDIT_MARS);
+  await settle(page);
+  const image = syntheticImage();
+  await page.locator("#draftFile").setInputFiles(file("image.bin", image));
+  const dialog = page.locator("#import");
+  await expect(dialog).toBeVisible();
+  await dialog.locator("#importOpen").click();
+  await expect(dialog).toBeHidden();
+  const rows = page.locator("#draftRows button");
+  await expect(rows).toHaveCount(1);
+  const reads = await page.evaluate(() => window.reads);
+  expect(reads.length).toBeGreaterThan(0);
+  expect(Math.max(...reads)).toBeLessThan(image.length);
+  await page.locator("#draftFile").setInputFiles(file("gone.kwl", new Uint8Array(10)));
+  await expect(page.locator("#toastStack .toast")).toHaveText(["The file moved."]);
+  await expect(rows).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
 test("declining the question opens nothing and says nothing", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto(EDIT_MARS);
