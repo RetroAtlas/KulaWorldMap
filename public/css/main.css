@@ -561,6 +561,15 @@ button.kind:hover {
   flex: 1;
   min-width: 0;
 }
+.yours .card .plays,
+.yours .card .errors {
+  margin: 6px 0 0;
+  color: var(--dim);
+  font-size: 12px;
+}
+.yours .card .errors {
+  color: var(--warn);
+}
 .yours .sub {
   color: var(--dim);
   font-size: 12px;

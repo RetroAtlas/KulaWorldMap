@@ -2,12 +2,22 @@
 // that edits the shown one.
 import { $, el, emit, on } from "./dom.js";
 import { state } from "./state.js";
-import { worldName, levelTitle } from "./data.js";
+import { worldName, levelTitle, skinsTable } from "./data.js";
 import { selectLevel, showLevel } from "./navigate.js";
 import { say, describeLevel } from "./a11y.js";
 import { toast } from "./toast.js";
-import { writeKwl } from "./kwl.js";
-import { UNTITLED, blank, fromLevel, setMeta, toLevel, writeProject } from "./project.js";
+import { KEY, facesOf, writeKwl } from "./kwl.js";
+import {
+  ERROR,
+  UNTITLED,
+  blank,
+  fromLevel,
+  playsAs,
+  setMeta,
+  toLevel,
+  validate,
+  writeProject,
+} from "./project.js";
 import { download, readLevelFile, readLevelText, slug } from "./files.js";
 import { pasteLevelLink } from "./importdialog.js";
 import { openPatchDialog } from "./patchdialog.js";
@@ -20,7 +30,12 @@ const TITLE_LENGTH = 80;
 const TIME_LIMIT = 2 ** 15 - 1;
 const TIME_RANGE = `The time is a whole number of seconds from 1 to ${TIME_LIMIT}.`;
 const GAME_FILE = "application/octet-stream";
+const NO_KEY =
+  "The level has no key, so the game plays it as a bonus level. Place a key to make it an arcade level.";
+const HAS_KEY =
+  "This level has a key, so the game plays it as an arcade level. Take every key away to make it a bonus level.";
 const nameOf = (doc) => doc.title || UNTITLED;
+const keyed = (doc) => doc.blocks.some((b) => facesOf(b).some(([, o]) => o.type === KEY));
 
 // The disc's level shown last, which deleting the shown draft returns to.
 let lastDisc = 0;
@@ -298,11 +313,18 @@ function buildForm(id, box) {
     }
   };
 
+  const bonus = el("input", { id: "draftBonus", type: "checkbox", disabled: true });
+  bonus.setAttribute("aria-describedby", "draftBonusSays");
+  const bonusSays = el("p", { id: "draftBonusSays", hidden: true });
+  const bonusLabel = el("label", { className: "check" }, bonus, " Bonus level");
+  bonusLabel.onclick = () => toast(bonusSays.textContent);
   const hidden = el("input", { id: "draftHidden", type: "checkbox" });
   hidden.onchange = () => edit({ hidden: hidden.checked }, "changed the hidden level setting");
   const afar = el("input", { id: "draftAfar", type: "checkbox" });
   afar.onchange = () =>
     edit({ invisibleFromAfar: afar.checked }, "changed the invisible blocks setting");
+  const plays = el("p", { id: "draftPlays", className: "plays" });
+  const errors = el("p", { id: "draftErrors", className: "errors", hidden: true });
 
   const saveJson = el("button", {
     id: "draftSaveJson",
@@ -353,8 +375,12 @@ function buildForm(id, box) {
     field("Title", title),
     field("World", world),
     field("Time", time),
+    bonusLabel,
+    bonusSays,
     el("label", { className: "check" }, hidden, " Hidden level"),
     el("label", { className: "check" }, afar, " Invisible blocks show from far away"),
+    plays,
+    errors,
     el("div", { className: "row" }, saveJson, saveKwl, patch, note),
     el("div", { className: "row" }, duplicate, del),
   );
@@ -368,8 +394,15 @@ function buildForm(id, box) {
       set(title, d.doc.title);
       set(world, d.doc.world);
       set(time, String(d.doc.time));
+      const key = keyed(d.doc);
+      bonus.checked = !key;
+      bonusLabel.title = bonusSays.textContent = key ? HAS_KEY : NO_KEY;
       hidden.checked = !!d.doc.hidden;
       afar.checked = !!d.doc.invisibleFromAfar;
+      plays.textContent = playsAs(d.doc);
+      const n = validate(d.doc, skinsTable()?.hides).filter((f) => f.level === ERROR).length;
+      errors.hidden = n === 0;
+      errors.textContent = n ? `${n} error${n === 1 ? "" : "s"}, listed on the panel` : "";
       saveJson.classList.toggle("unsaved", unsaved(d));
     },
     wrote() {

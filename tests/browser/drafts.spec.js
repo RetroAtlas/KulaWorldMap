@@ -75,6 +75,19 @@ const docOf = (page, id) =>
     const { get } = await import(new URL("js/drafts.js", location.href).href);
     return get(id)?.doc ?? null;
   }, id);
+/** Put `object` on `face` of the shown draft's first block, or take it off, through the model. */
+const faced = (page, face, object) =>
+  page.evaluate(
+    async ([face, object]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { get, update }, { setFace }] = await Promise.all(
+        ["state.js", "drafts.js", "project.js"].map(at),
+      );
+      const id = state.lvl.draft;
+      update(id, setFace(get(id).doc, [17, 17, 17], face, object));
+    },
+    [face, object],
+  );
 // what stands where on the level on screen, as the game stores it
 const standing = (page) =>
   page.evaluate(async () => {
@@ -295,6 +308,71 @@ test("new asks for editing once its level is open, and copy this level does not"
   const made = (await shown(page)).draft;
   expect(await page.evaluate(() => window.__wanted)).toEqual([made]);
   expect(errors).toEqual([]);
+});
+
+test("the Level card marks a level with no key as a bonus level, says how it plays, and counts the checks' errors", async ({
+  page,
+}) => {
+  const NO_KEY =
+    "The level has no key, so the game plays it as a bonus level. Place a key to make it an arcade level.";
+  const HAS_KEY =
+    "This level has a key, so the game plays it as an arcade level. Take every key away to make it a bonus level.";
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  const bonus = page.locator("#draftBonus");
+  const bonusLabel = page.locator("#draftCard label.check", { hasText: "Bonus level" });
+  const plays = page.locator("#draftPlays");
+  const errorLine = page.locator("#draftErrors");
+  await expect(bonus).toBeChecked();
+  await expect(bonus).toBeDisabled();
+  await expect(bonusLabel).toHaveAttribute("title", NO_KEY);
+  await expect(bonus).toHaveAccessibleDescription(NO_KEY);
+  await expect(plays).toHaveText(/^Plays as a bonus level: /);
+  await expect(errorLine).toBeHidden();
+  // the runner's own check holds a label for a disabled control to be disabled; a pointer does not
+  await bonusLabel.click({ force: true });
+  await expect(page.locator("#toastStack .toast")).toHaveText([NO_KEY]);
+  await expect(bonus).toBeChecked();
+
+  await faced(page, 1, { type: 31 });
+  await expect(bonus).not.toBeChecked();
+  await expect(bonus).toBeDisabled();
+  await expect(bonusLabel).toHaveAttribute("title", HAS_KEY);
+  await expect(bonus).toHaveAccessibleDescription(HAS_KEY);
+  await expect(plays).toHaveText("Plays as an arcade level.");
+  await bonusLabel.click({ force: true });
+  await expect(page.locator("#toastStack .toast", { hasText: HAS_KEY })).toHaveCount(1);
+  await page.locator("#draftHidden").check();
+  await expect(plays).toHaveText(
+    "Plays as a hidden level, with the glass ball on half-seen blocks.",
+  );
+
+  await faced(page, 0, null);
+  await expect(errorLine).toBeVisible();
+  await expect(errorLine).toHaveText("1 error, listed on the panel");
+  await expect(errorLine.locator("a, button")).toHaveCount(0);
+  await faced(page, 0, { type: 30, facing: 3 });
+  await expect(errorLine).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test("the Level card counts the checks' errors without the game's face table", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.route("**/objects.json", (route) => route.fulfill({ status: 404, body: "" }));
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  const errorLine = page.locator("#draftErrors");
+  await expect(errorLine).toBeHidden();
+  await faced(page, 0, null);
+  await expect(errorLine).toHaveText("1 error, listed on the panel");
+  await faced(page, 0, { type: 30, facing: 3 });
+  await expect(errorLine).toBeHidden();
+  expect(errors.filter((e) => !/Failed to load resource/.test(e))).toEqual([]);
 });
 
 test("the card's time field takes the seconds the file can hold and says when it keeps the old value, and the title stops at eighty letters", async ({
