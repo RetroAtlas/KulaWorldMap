@@ -129,6 +129,11 @@ test("the ball follows the hidden flag and the keys, the slot standing in for th
   assert.equal(ballFor(level([block(COIN)], "/HELL/HELL.PAK", 16)), balls[11]);
   assert.equal(ballFor(level([block(COIN), settings])), balls[13]);
   assert.equal(ballFor(level([block(COIN)], skins.copycat)), balls[9]);
+  for (const id of [1, 16, 17])
+    assert.equal(
+      ballFor({ ...level([block(COIN)], "/DRAFT/DRAFT.PAK", id), draft: id }),
+      balls[10],
+    );
 });
 
 test("the exit starts shut where the level has a key, and open where it has none", () => {

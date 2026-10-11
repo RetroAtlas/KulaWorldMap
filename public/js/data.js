@@ -244,11 +244,13 @@ const START = 30;
 const STARTS = new Set([29, START]);
 // The glass ball for a level the hidden flag marks, one of three for a level
 // with no key, turned by a counter the level cannot know, and the world's
-// otherwise. A bonus slot stands in for the counter where the level has one.
+// otherwise. A bonus slot stands in for the counter where the level stands in
+// one of the disc's.
 const BONUS_BALL = 10;
 const BONUS_BALLS = 3;
 const HIDDEN_BALL = 13;
 const WORLD_LEVELS = 15;
+const onDisc = (l) => state.data.levels.some((d) => d.pack === l.pack && d.index === l.index);
 export function ballFor(l) {
   const world = state.data.themes.findIndex((t) => t.id === l.theme);
   const skins = skinsTable();
@@ -256,7 +258,7 @@ export function ballFor(l) {
   let design = world;
   if (look?.glass) design = HIDDEN_BALL;
   else if (look?.bonus) {
-    const slot = l.index - WORLD_LEVELS;
+    const slot = onDisc(l) ? l.index - WORLD_LEVELS : 0;
     design = BONUS_BALL + (slot >= 0 && slot < BONUS_BALLS ? slot : 0);
   }
   return shapes.balls[design] || shapes.balls[0] || null;
