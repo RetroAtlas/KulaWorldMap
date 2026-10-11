@@ -133,6 +133,7 @@ export function render() {
   const box = $("palette");
   const l = state.lvl;
   if (!l) return;
+  const held = box.contains(document.activeElement) ? document.activeElement : null;
   box.textContent = "";
   const grip = el("div", { className: "grip" });
   grip.setAttribute("aria-hidden", "true");
@@ -147,6 +148,7 @@ export function render() {
   const tabs = el("div", { className: "tabs" });
   for (const g of GROUPS) {
     const b = el("button", { type: "button", textContent: g, title: g });
+    b.dataset.group = g;
     b.setAttribute("aria-pressed", String(g === group));
     b.onclick = () => {
       group = g;
@@ -179,6 +181,19 @@ export function render() {
     });
   box.append(grip, close, tabs, rows);
   builtFor = l.theme;
+  if (held) refocus(box, held);
+}
+
+// The control that held the focus takes it again where it stands, or the
+// pressed row does where that control left with its group.
+function refocus(box, held) {
+  const { id, group } = held.dataset;
+  const same = id
+    ? box.querySelector(`.rows [data-id="${id}"]`)
+    : group
+      ? box.querySelector(`.tabs [data-group="${group}"]`)
+      : box.querySelector(".x");
+  (same ?? box.querySelector('.rows [aria-pressed="true"]'))?.focus();
 }
 
 /** Press the row of `id`, showing its group; false where there is none. */

@@ -273,6 +273,34 @@ test("digits press the shown group's rows, and j and k walk every row across the
   expect(errors).toEqual([]);
 });
 
+test("a pressed tab or row keeps the focus, and a key's choice takes it where the focused row is gone", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await tab(page, "Pickups").focus();
+  await page.keyboard.press("Enter");
+  await expect(pressedTab(page)).toHaveText("Pickups");
+  await expect(tab(page, "Pickups")).toBeFocused();
+  await row(page, "t31").focus();
+  await page.keyboard.press("Enter");
+  await expect(row(page, "t31")).toHaveAttribute("aria-pressed", "true");
+  await expect(row(page, "t31")).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(row(page, "t32")).toBeFocused();
+  // k steps the brush back into the group before, which the focused row is not in
+  const order = await page.evaluate(async () => {
+    const { all } = await import(new URL("js/palette.js", location.href).href);
+    return all().map((e) => e.id);
+  });
+  await page.keyboard.press("k");
+  const before = order[order.indexOf("t31") - 1];
+  await expect(pressedRow(page)).toHaveAttribute("data-id", before);
+  await expect(pressedTab(page)).not.toHaveText("Pickups");
+  await expect(pressedRow(page)).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
 test("r turns the selected thing where its kind faces, else what the brush will face", async ({
   page,
 }) => {
