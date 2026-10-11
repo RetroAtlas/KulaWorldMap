@@ -558,18 +558,21 @@ function circuitsCard(d) {
 
 function checks(d) {
   const hides = skinsTable()?.hides;
-  const out = el("div", { className: "checks" });
-  if (!hides) return out;
+  const out = el("div", { className: "checks" }, line(playsAs(d.doc), "plays"));
   const n = counts(d.doc, hides);
-  const parts = Object.entries(CAPS).map(([what, cap]) => {
-    const span = el("span", { textContent: `${n[what]} of ${cap} ${COUNTER_WORDS[what] ?? what}` });
-    if (n[what] > cap) span.className = "over";
-    else if (DISC_MAX[what] !== undefined && n[what] > DISC_MAX[what]) span.className = "high";
-    return span;
-  });
+  const parts = Object.entries(CAPS)
+    .filter(([what]) => n[what] !== null)
+    .map(([what, cap]) => {
+      const span = el("span", {
+        textContent: `${n[what]} of ${cap} ${COUNTER_WORDS[what] ?? what}`,
+      });
+      if (n[what] > cap) span.className = "over";
+      else if (DISC_MAX[what] !== undefined && n[what] > DISC_MAX[what]) span.className = "high";
+      return span;
+    });
   const countsLine = el("p", { className: "counts" });
   parts.forEach((p, i) => countsLine.append(i ? " · " : "", p));
-  out.append(line(playsAs(d.doc), "plays"), countsLine);
+  out.append(countsLine);
   const findings = validate(d.doc, hides);
   if (!findings.length) return out;
   const list = el("ul", { className: "findings" });

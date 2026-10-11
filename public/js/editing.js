@@ -75,7 +75,6 @@ export function commit(id, next, label) {
 /** The errors `next` has that `before` had not. */
 export function newErrors(before, next) {
   const hides = skinsTable()?.hides;
-  if (!hides) return [];
   const errorsOf = (p) => validate(p, hides).filter((f) => f.level === ERROR);
   const seen = new Set(errorsOf(before).map(describe));
   return errorsOf(next).filter((f) => !seen.has(describe(f)));
