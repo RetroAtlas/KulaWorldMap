@@ -309,7 +309,9 @@ test("r turns the selected thing where its kind faces, else what the brush will 
   await page.keyboard.press("i");
   await click(page, await top(page, START));
   expect(await shown(page)).toMatchObject({ selected: START, face: 0 });
-  await page.keyboard.press("r");
+  // the strip's Turn button is the key for a finger
+  await expect(page.locator("#turnBtn")).toHaveAttribute("title", /\(r, Shift-r/);
+  await page.locator("#turnBtn").click();
   expect(await facesAt(page, START)).toEqual({ 0: { type: 30, facing: 4 } });
   await expect(page.locator("#say")).toHaveText("Turned the start on the top of 17, 17, 17");
   await page.keyboard.press("r");

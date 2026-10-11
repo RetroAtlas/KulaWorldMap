@@ -200,7 +200,7 @@ function strip() {
     b.setAttribute("aria-pressed", String(b.dataset.tool === mode.tool));
   }
   const id = state.lvl?.draft;
-  for (const b of [$("undoBtn"), $("redoBtn"), $("paletteBtn")]) b.hidden = !mode.on;
+  for (const b of [$("turnBtn"), $("undoBtn"), $("redoBtn"), $("paletteBtn")]) b.hidden = !mode.on;
   $("undoBtn").disabled = !canUndo(id);
   $("redoBtn").disabled = !canRedo(id);
   $("paletteBtn").setAttribute("aria-pressed", String(paletteOpen));
@@ -223,6 +223,7 @@ function refuse(text) {
 function wireTools() {
   $("editBtn").onclick = toggleEditing;
   for (const b of $("tools").querySelectorAll(".tool")) b.onclick = () => setTool(b.dataset.tool);
+  $("turnBtn").onclick = () => turn(1);
   $("undoBtn").onclick = stepBack;
   $("redoBtn").onclick = stepAgain;
   $("paletteBtn").onclick = () => togglePalette(!paletteOpen);
