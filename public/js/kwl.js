@@ -628,21 +628,17 @@ export function readKwl(bytes, world = WORLDS[0]) {
   });
 
   const kept = [];
-  let hidden = false;
-  let flip = false;
-  let settings = 0;
+  const settings = [];
   records.forEach((r, k) => {
-    if (r.kind === SETTINGS_KIND) {
-      hidden ||= typeOf(r) === 1;
-      flip ||= fOf(r)[0] === 1;
-      settings++;
-    } else if (named.has(k)) kept.push(k);
+    if (r.kind === SETTINGS_KIND) settings.push(k);
+    else if (named.has(k)) kept.push(k);
     else
       report.push(
         `record ${k} of kind ${r.kind} at ${cellText(r.cell)} is named by no cell; it is dropped`,
       );
   });
-  if (settings > 1) report.push(`${settings} settings records; the flags of all of them are taken`);
+  if (settings.length > 1)
+    report.push(`${settings.length} settings records; the flags of all of them are taken`);
 
   for (const k of kept) {
     const r = records[k];
@@ -684,16 +680,13 @@ export function readKwl(bytes, world = WORLDS[0]) {
     if (cells[i] >= FIRST_RECORD) cells[i] = FIRST_RECORD + renumber.get(cells[i] - FIRST_RECORD);
   const level = levelDict(
     cells,
-    kept.map((k) => records[k]),
+    [...kept, ...settings].map((k) => records[k]),
     time,
     world,
     "",
     report,
   );
-  const project = projectOf(level, report);
-  project.hidden = hidden;
-  project.invisibleFromAfar = flip;
-  return { project, report };
+  return { project: projectOf(level, report), report };
 }
 
 /** A link word as the record and face it names, or null for none. */

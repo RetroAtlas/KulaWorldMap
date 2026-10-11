@@ -353,6 +353,12 @@ class Reads(unittest.TestCase):
         p, report = read_kwl(blob)
         self.assertEqual(p["blocks"][1], {"cell": [1, 4, 3], "kind": 6})
         self.assertIn("left out 2 objects standing on records the game never walks", report)
+        flagged = level({(1, 2, 3): FIRST_RECORD},
+                        [block((1, 2, 3), faces={0: obj(START, 3, 0, 0)}),
+                         block((0, 0, 0), kind=UNPLACED_KIND, faces={0: slot(1), 2: obj(COIN, 0, 1)})])
+        p, report = read_kwl(flagged)
+        self.assertEqual((p["hidden"], p["invisibleFromAfar"]), (True, False))
+        self.assertIn("left out 1 objects standing on records the game never walks", report)
 
     def test_only_a_length_that_is_not_a_level_is_refused(self):
         with self.assertRaises(ValueError):

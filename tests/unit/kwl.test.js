@@ -693,6 +693,16 @@ test("what stands on the kinds the game never walks is counted and left out", ()
   assert.deepEqual(p.blocks[1], { cell: [1, 4, 3], kind: 6 });
   assert.ok(report.includes("left out 2 objects standing on records the game never walks"), report);
   assert.deepEqual(levelOf(blob).records[1].on, []);
+  const flagged = level(cells([[[1, 2, 3], FIRST_RECORD]]), [
+    block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0) } }),
+    block([0, 0, 0], { kind: SETTINGS_KIND, faces: { 0: slot(1), 2: obj(COIN, 0, 1) } }),
+  ]);
+  const read = readKwl(flagged);
+  assert.deepEqual([read.project.hidden, read.project.invisibleFromAfar], [true, false]);
+  assert.ok(
+    read.report.includes("left out 1 objects standing on records the game never walks"),
+    read.report,
+  );
 });
 
 test("a colour whose devices disagree takes its first device's state, and says so", () => {

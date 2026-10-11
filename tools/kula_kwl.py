@@ -524,18 +524,16 @@ def read_kwl(blob, world=WORLDS[0]):
             report.append(f"record {k} says it stands at {r.cell}; the lattice puts it at {cell}")
             r.x, r.y, r.z = cell
 
-    kept, hidden, flip, settings = [], False, False, 0
+    kept, settings = [], []
     for k, r in enumerate(records):
         if r.kind == UNPLACED_KIND:
-            hidden |= r.type == 1
-            flip |= r.f[0] == 1
-            settings += 1
+            settings.append(k)
         elif k in named:
             kept.append(k)
         else:
             report.append(f"record {k} of kind {r.kind} at {r.cell} is named by no cell; it is dropped")
-    if settings > 1:
-        report.append(f"{settings} settings records; the flags of all of them are taken")
+    if len(settings) > 1:
+        report.append(f"{len(settings)} settings records; the flags of all of them are taken")
 
     for k in kept:
         r = records[k]
@@ -566,10 +564,8 @@ def read_kwl(blob, world=WORLDS[0]):
     renumber = {k: n for n, k in enumerate(kept)}
     cells = [(x, y, z, v if v < FIRST_RECORD else FIRST_RECORD + renumber[v - FIRST_RECORD])
              for x, y, z, v in cells]
-    level = _level_dict(cells, [records[k] for k in kept], time, world, "", report)
-    project = project_of(level, report)
-    project["hidden"], project["invisibleFromAfar"] = hidden, flip
-    return project, report
+    level = _level_dict(cells, [records[k] for k in kept + settings], time, world, "", report)
+    return project_of(level, report), report
 
 
 # --- what the game would make of a project ------------------------------------
