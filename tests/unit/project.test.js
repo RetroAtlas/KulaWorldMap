@@ -886,6 +886,34 @@ test("the reader reports every default it takes, and repairs what the writer wou
   assert.deepEqual(readProject(writeProject(p)).report, []);
 });
 
+test("the reader keeps three lines of a shape and counts the rest, where they fall", () => {
+  const { project: p, report } = readProject({
+    format: FORMAT,
+    world: WORLD,
+    time: "x",
+    blocks: [
+      ...Array.from({ length: 5 }, (_, i) => ({ cell: [5 + i, 5, 5], kind: 7, phase: "x" })),
+      {
+        cell: [5, 9, 5],
+        kind: 0,
+        faces: { 0: start(), 6: coin, 7: coin, 8: coin, 9: coin },
+      },
+    ],
+  });
+  assert.equal(p.blocks.length, 6);
+  assert.deepEqual(report, [
+    'a time of "x" is not a whole number; it is 99',
+    'block 0 at 5,5,5 has a phase of "x", which is not a whole number; it is 0',
+    'block 1 at 6,5,5 has a phase of "x", which is not a whole number; it is 0',
+    'block 2 at 7,5,5 has a phase of "x", which is not a whole number; it is 0',
+    "2 more lines like the one above",
+    'block 5 at 5,9,5 names a face "6", which is not one of the six; it is left out',
+    'block 5 at 5,9,5 names a face "7", which is not one of the six; it is left out',
+    'block 5 at 5,9,5 names a face "8", which is not one of the six; it is left out',
+    "1 more line like the one above",
+  ]);
+});
+
 test("a face key is read by its number, and a second spelling of one face is left out", () => {
   const { project: p, report } = readProject({
     format: FORMAT,

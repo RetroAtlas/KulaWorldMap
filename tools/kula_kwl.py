@@ -218,6 +218,29 @@ def level_key(pack, index):
 
 # --- a project out of a level -------------------------------------------------
 
+KEEP = 3
+
+
+def _shape_of(line):
+    return re.sub(r"-?[0-9]+", "#", line)
+
+
+def collapse(lines):
+    """A report with lines of one shape, the same words with other numbers, kept to
+    the first few and the rest counted in one line after them."""
+    shapes = [_shape_of(line) for line in lines]
+    total = Counter(shapes)
+    seen = Counter()
+    out = []
+    for line, shape in zip(lines, shapes):
+        seen[shape] += 1
+        if seen[shape] <= KEEP:
+            out.append(line)
+        rest = total[shape] - KEEP
+        if seen[shape] == KEEP and rest > 0:
+            out.append(f"{rest} more line{'' if rest == 1 else 's'} like the one above")
+    return out
+
 # The line both readers give a facing of 0 on a type that needs one: the game heads as 1.
 HEADS_AS_ONE = "which the game heads as 1; it is 1"
 
@@ -681,7 +704,8 @@ def read_kwl(blob, world=WORLDS[0]):
     cells = [(x, y, z, v if v < FIRST_RECORD else FIRST_RECORD + renumber[v - FIRST_RECORD])
              for x, y, z, v in cells]
     level = _level_dict(cells, [records[k] for k in kept + settings], time, world, "", report)
-    return project_of(level, report), report
+    project = project_of(level, report)
+    return project, collapse(report)
 
 
 # --- a project out of a project file -------------------------------------------
@@ -853,7 +877,7 @@ def read_project(raw):
     else:
         blocks = [_read_block(b, i, report) for i, b in enumerate(raw["blocks"])]
         project["blocks"] = sorted((b for b in blocks if b is not None), key=lambda b: tuple(b["cell"]))
-    return project, report
+    return project, collapse(report)
 
 
 # --- what the game would make of a project ------------------------------------

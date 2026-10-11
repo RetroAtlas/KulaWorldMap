@@ -231,6 +231,28 @@ export const carries = (b) => b.kind >= BLOCK_KINDS || facesOf(b).length > 0;
 
 // --- a project out of a level ------------------------------------------------
 
+const KEEP = 3;
+const shapeOf = (line) => line.replace(/-?\d+/g, "#");
+
+/** A report with lines of one shape, the same words with other numbers, kept to
+    the first few and the rest counted in one line after them. */
+export function collapse(lines) {
+  const shapes = lines.map(shapeOf);
+  const total = new Map();
+  for (const s of shapes) total.set(s, (total.get(s) ?? 0) + 1);
+  const seen = new Map();
+  const out = [];
+  lines.forEach((line, i) => {
+    const n = (seen.get(shapes[i]) ?? 0) + 1;
+    seen.set(shapes[i], n);
+    if (n <= KEEP) out.push(line);
+    const rest = total.get(shapes[i]) - KEEP;
+    if (n === KEEP && rest > 0)
+      out.push(`${rest} more line${rest === 1 ? "" : "s"} like the one above`);
+  });
+  return out;
+}
+
 /** The line both readers give a facing of 0 on a type that needs one: the game heads as 1. */
 export const HEADS_AS_ONE = "which the game heads as 1; it is 1";
 
@@ -776,7 +798,8 @@ export function readKwl(bytes, world = WORLDS[0]) {
     "",
     report,
   );
-  return { project: projectOf(level, report), report };
+  const project = projectOf(level, report);
+  return { project, report: collapse(report) };
 }
 
 /** A link word as the record and face it names, or null for none. */

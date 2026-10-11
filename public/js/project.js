@@ -49,6 +49,7 @@ import {
   byCell,
   carries,
   cellText,
+  collapse,
   direction,
   faceNamedTwice,
   facesOf,
@@ -638,7 +639,7 @@ export function readProject(source) {
       .map((b, i) => readBlock(b, i, report))
       .filter(Boolean)
       .sort(byCell);
-  return { project, report };
+  return { project, report: collapse(report) };
 }
 
 function writeFace(o) {

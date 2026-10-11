@@ -865,8 +865,30 @@ test("only a length that is not a level is refused", () => {
     [2, 3],
   );
   assert.equal(p.time, 99);
-  assert.equal(report.filter((l) => l.includes("is not a block")).length, 7);
+  assert.equal(report.filter((l) => l.includes("is not a block")).length, 3);
+  assert.ok(report.includes("4 more lines like the one above"), report);
   assert.throws(() => levelOf(new Uint8Array(100)), /too short/);
+});
+
+test("lines of one shape are kept to three and the rest counted, in place", () => {
+  const at = new Map();
+  for (let x = 1; x < 33; x++)
+    for (let y = 1; y < 33; y++) at.set([x, y, 17].join(), FIRST_RECORD + 1);
+  at.set("5,5,5", FIRST_RECORD);
+  at.set("1,1,1", FIRST_RECORD + 1);
+  const { project: p, report } = readKwl(
+    level(at, [block([5, 5, 5], { faces: { 0: obj(START, 3, 0, 0) } })]),
+  );
+  assert.deepEqual(
+    p.blocks.map((b) => b.cell),
+    [[5, 5, 5]],
+  );
+  assert.deepEqual(report, [
+    "cell 1,1,1 names record 1, which is not a block; the cell is left empty",
+    "cell 1,1,17 names record 1, which is not a block; the cell is left empty",
+    "cell 1,2,17 names record 1, which is not a block; the cell is left empty",
+    "1022 more lines like the one above",
+  ]);
 });
 
 test("a level file's name, world, pack and index come from the caller alone", () => {

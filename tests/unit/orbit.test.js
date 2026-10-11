@@ -260,13 +260,20 @@ test("a value that is no word of the file is said so and left empty, while null 
   assert.deepEqual(nulls.report, []);
 });
 
-test("the report keeps a dozen lines and counts the rest", () => {
+test("lines of one shape are kept to three and the rest counted, as the level reader's are", () => {
   const blocks = [starting([3, 16, 4])];
   for (let i = 0; i < 20; i++) blocks.push(plain([40 + i, 16, 4]));
+  for (let i = 0; i < 5; i++) blocks.push({ type: 12, pos: [6 + i, 16, 4] });
   const { report } = readOrbit(level(blocks));
-  assert.equal(report.length, 13);
-  assert.equal(report[12], "and 8 more repairs");
-  assert.ok(report.slice(0, 12).every((line) => line.endsWith("and was left out")));
+  assert.equal(report.length, 8);
+  assert.ok(
+    report.slice(0, 3).every((line) => line.endsWith("lies outside the lattice and was left out")),
+  );
+  assert.equal(report[3], "17 more lines like the one above");
+  assert.ok(
+    report.slice(4, 7).every((line) => line.includes("is not one the game has and was left out")),
+  );
+  assert.equal(report[7], "2 more lines like the one above");
 });
 
 test("what the lattice refuses is left out and said: a block past the edge, a second block on a cell, a kind the game has not", () => {

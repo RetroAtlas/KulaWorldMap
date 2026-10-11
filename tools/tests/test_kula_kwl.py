@@ -427,7 +427,21 @@ class Reads(unittest.TestCase):
         p, report = read_kwl(playground()[:GRID_BYTES + 6])
         self.assertEqual([b["kind"] for b in p["blocks"]], [2, 3])
         self.assertEqual(p["time"], 99)
-        self.assertEqual(sum("is not a block" in line for line in report), 7)
+        self.assertEqual(sum("is not a block" in line for line in report), 3)
+        self.assertIn("4 more lines like the one above", report)
+
+    def test_lines_of_one_shape_are_kept_to_three_and_the_rest_counted_in_place(self):
+        cells = {(x, y, 17): FIRST_RECORD + 1 for x in range(1, 33) for y in range(1, 33)}
+        cells[(5, 5, 5)] = FIRST_RECORD
+        cells[(1, 1, 1)] = FIRST_RECORD + 1
+        p, report = read_kwl(level(cells, [block((5, 5, 5), faces={0: obj(START, 3, 0, 0)})]))
+        self.assertEqual([b["cell"] for b in p["blocks"]], [[5, 5, 5]])
+        self.assertEqual(report, [
+            "cell 1,1,1 names record 1, which is not a block; the cell is left empty",
+            "cell 1,1,17 names record 1, which is not a block; the cell is left empty",
+            "cell 1,2,17 names record 1, which is not a block; the cell is left empty",
+            "1022 more lines like the one above",
+        ])
 
 
 class ReadsProjects(unittest.TestCase):
@@ -501,6 +515,26 @@ class ReadsProjects(unittest.TestCase):
         with self.assertRaises(ValueError) as caught:
             canonical(p)
         self.assertIn("outside the file's range", str(caught.exception))
+
+    def test_the_reader_keeps_three_lines_of_a_shape_and_counts_the_rest_where_they_fall(self):
+        coin = {"type": COIN, "variant": 0}
+        p, report = read_project({
+            "format": FORMAT, "world": WORLD, "time": "x",
+            "blocks": [{"cell": [5 + i, 5, 5], "kind": 7, "phase": "x"} for i in range(5)]
+            + [{"cell": [5, 9, 5], "kind": 0, "faces": {"0": start(), "6": coin, "7": coin, "8": coin, "9": coin}}],
+        })
+        self.assertEqual(len(p["blocks"]), 6)
+        self.assertEqual(report, [
+            'a time of "x" is not a whole number; it is 99',
+            'block 0 at 5,5,5 has a phase of "x", which is not a whole number; it is 0',
+            'block 1 at 6,5,5 has a phase of "x", which is not a whole number; it is 0',
+            'block 2 at 7,5,5 has a phase of "x", which is not a whole number; it is 0',
+            "2 more lines like the one above",
+            'block 5 at 5,9,5 names a face "6", which is not one of the six; it is left out',
+            'block 5 at 5,9,5 names a face "7", which is not one of the six; it is left out',
+            'block 5 at 5,9,5 names a face "8", which is not one of the six; it is left out',
+            "1 more line like the one above",
+        ])
 
     def test_a_face_key_is_read_by_its_number_and_a_second_spelling_of_one_face_is_left_out(self):
         coin = {"type": COIN, "variant": 0}

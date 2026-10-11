@@ -16,6 +16,7 @@ import {
   TRAILER_KIND,
   WORDS,
   WORLDS,
+  collapse,
   readKwl,
 } from "./kwl.js";
 
@@ -30,7 +31,6 @@ const VANISHING = 7;
 const LASER = 8;
 const LEVEL_PARAM = "level";
 const THEME_PARAM = "theme";
-const LINES_MOST = 12;
 export const NOT_LINK = "That is not a link to a shared level.";
 export const OWN_LEVEL = "That link names one of the viewer's own levels rather than a shared one.";
 
@@ -190,8 +190,6 @@ export function kwlOfOrbit(json) {
       `the time is ${JSON.stringify(json.time)}, not a whole number from 0 to ${EMPTY}; it is ${DEFAULT_TIME}`,
     );
   trailer.set([0, 0, 0, 0, 0, time], 1);
-  if (report.length > LINES_MOST)
-    report.splice(LINES_MOST, Infinity, `and ${report.length - LINES_MOST} more repairs`);
   const placed = lattice.reduce((n, v) => n + (v !== EMPTY ? 1 : 0), 0);
   const out = new Uint8Array(GRID_BYTES + HEAD + RECORD * (records.length + 1));
   const view = new DataView(out.buffer);
@@ -201,7 +199,7 @@ export function kwlOfOrbit(json) {
   [...records, trailer].forEach((w, k) =>
     w.forEach((v, i) => view.setUint16(GRID_BYTES + HEAD + RECORD * k + 2 * i, v, true)),
   );
-  return { bytes: out, report };
+  return { bytes: out, report: collapse(report) };
 }
 
 /** { project, report } for a level of the viewer's, read in the world given. */
