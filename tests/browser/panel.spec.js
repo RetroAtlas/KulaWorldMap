@@ -18,6 +18,29 @@ test("clicking the start's block opens the object standing on it", async ({ page
   await expect(detail.locator(".tag", { hasText: "Hazard" })).toHaveCount(0);
 });
 
+test("a level's title reads in the panel as written, markup and all", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const title = '<b onmouseover="1">x</b>';
+  const cell = await page.evaluate(async (title) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { showLevel }, { showCell }, { blank, setMeta, toLevel }] = await Promise.all(
+      ["state.js", "navigate.js", "detail.js", "project.js"].map(at),
+    );
+    showLevel(toLevel(setMeta(blank("HIRO"), { title }), 7));
+    const c = [...state.idx.cells.values()][0];
+    showCell(c);
+    return [c.x, c.y, c.z];
+  }, title);
+  const panel = page.locator("#detail");
+  await expect(panel).toBeVisible();
+  await expect(panel.locator(".sub").first()).toHaveText(`${title} · cell ${cell.join(",")}`);
+  await expect(panel.locator("b")).toHaveCount(0);
+  await expect(page.locator("#chip b")).toHaveText(title);
+  expect(errors).toEqual([]);
+});
+
 test("a hazard says so in its heading", async ({ page }) => {
   await page.goto("/#HIRO/3");
   await settle(page);

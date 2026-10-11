@@ -41,6 +41,8 @@ export function onShow(fn) {
 const row = (k, v) => `<tr><td>${k}</td><td class="mono">${v}</td></tr>`;
 const STORED = `<tr><th colspan="2">raw data</th></tr>`;
 const HAZARD = `<span class="tag">Hazard</span>`;
+const escaped = (text) =>
+  text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
 
 const ICON = 26;
 
@@ -145,7 +147,7 @@ export function showCell(c) {
   // A laser's end the lattice leaves empty is a plain block the game stands there.
   const block = () => blockIcon(l, kind ?? 0, { size: ICON, r: records[0] ?? null, plate });
   html += `<h3>${iconAt(block)}${what}${blockHazard(kind, end) ? HAZARD : ""}</h3>`;
-  html += `<p class="sub">${levelTitle(l)} · cell ${c.x},${c.y},${c.z}</p><div id="detailBody">`;
+  html += `<p class="sub">${escaped(levelTitle(l))} · cell ${c.x},${c.y},${c.z}</p><div id="detailBody">`;
   if (off)
     html += `<p class="sub">The level leaves this cell empty, and the game puts a block here as
       the level loads, as one end of a laser.</p>`;
