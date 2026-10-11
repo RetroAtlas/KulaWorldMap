@@ -170,3 +170,95 @@ test("an update refreshes the map's name and the search's scope without announci
   await expect(page.locator("#say")).toHaveText(/^Draft, Spiral, /);
   expect(errors).toEqual([]);
 });
+
+test("the same level installed again keeps its clock and its presses, and another starts afresh", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0/45,35/fit/33");
+  await settle(page);
+  const out = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { showLevel, selectLevel }, { draw, clock }, { motionTable, flip }] =
+      await Promise.all(["state.js", "navigate.js", "render.js", "data.js"].map(at));
+    while (!motionTable()) await new Promise(requestAnimationFrame);
+    state.show.motion = true;
+    const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
+    showLevel(copy);
+    await new Promise((r) => setTimeout(r, 400));
+    draw();
+    const before = clock();
+    flip(0, before);
+    const pressed = [...state.presses];
+    showLevel({ ...copy, cells: [...copy.cells] }, { keepView: true, push: false });
+    const after = clock();
+    const kept = [...state.presses];
+    selectLevel(1);
+    return { before, after, pressed, kept, fresh: clock() };
+  });
+  expect(out.before).toBeGreaterThan(0);
+  expect(out.after).toBeGreaterThanOrEqual(out.before);
+  expect(out.kept).toEqual(out.pressed);
+  expect(out.fresh).toBeLessThan(out.before);
+  expect(errors).toEqual([]);
+});
+
+test("the same level installed again keeps what travels while its records are unchanged", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0/45,35/fit/33");
+  await settle(page);
+  const out = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { showLevel, selectLevel }, { draw }, { motionTable }] = await Promise.all(
+      ["state.js", "navigate.js", "render.js", "data.js"].map(at),
+    );
+    while (!motionTable()) await new Promise(requestAnimationFrame);
+    state.show.motion = true;
+    // what travels is laid out anew only where the dice are read again
+    const table = motionTable();
+    const dice = table.dice;
+    let rolled = 0;
+    Object.defineProperty(table, "dice", {
+      get() {
+        rolled++;
+        return dice;
+      },
+    });
+    const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
+    showLevel(copy);
+    draw();
+    const laid = rolled;
+    showLevel({ ...copy, cells: [...copy.cells] }, { keepView: true, push: false });
+    draw();
+    const sameCells = rolled;
+    showLevel(
+      { ...copy, records: copy.records.map((r) => ({ ...r, on: r.on.map((o) => ({ ...o })) })) },
+      { keepView: true, push: false },
+    );
+    draw();
+    const sameRecords = rolled;
+    showLevel({ ...copy, cells: [...copy.cells, 2, 2, 2, 0] }, { keepView: true, push: false });
+    draw();
+    const otherCells = rolled;
+    // a word of a record, with everything the level draws as it was
+    const bump = (o, k) => (k ? o : { ...o, f: o.f.map((v, j) => (j === 7 ? v + 1 : v)) });
+    const records = copy.records.map((r, i) => (i ? r : { ...r, on: r.on.map(bump) }));
+    showLevel({ ...copy, records }, { keepView: true, push: false });
+    draw();
+    const otherRecords = rolled;
+    selectLevel(1);
+    draw();
+    return { laid, sameCells, sameRecords, otherCells, otherRecords, another: rolled };
+  });
+  expect(out).toEqual({
+    laid: 1,
+    sameCells: 1,
+    sameRecords: 1,
+    otherCells: 1,
+    otherRecords: 2,
+    another: 3,
+  });
+  expect(errors).toEqual([]);
+});

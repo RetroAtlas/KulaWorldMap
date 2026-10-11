@@ -23,6 +23,7 @@ import {
   markerNow,
 } from "./data.js";
 import { frameAt } from "./motion.js";
+import { slotOf } from "./permalink.js";
 import { walkers, probe, advance, place, under, dice } from "./travel.js";
 import { lookOf } from "./skins.js";
 import { drawBeams } from "./beams.js";
@@ -184,6 +185,8 @@ function visible(idx, moving) {
 // The level's clock starts at its first frame as the level opens or motion is
 // turned on, as play's does, and stands there while motion is off, and while
 // the page is hidden, when the run moves on by the time it was hidden instead.
+// The same level installed again keeps its clock, and what travels is laid
+// out again from the level as it stands.
 let run = null;
 let hiddenAt = document.hidden ? performance.now() : null;
 const now = () => hiddenAt ?? performance.now();
@@ -191,9 +194,30 @@ function syncRun() {
   const table = motionTable();
   if (!table || !state.show.motion) run = null;
   else if (run?.level !== state.lvl) {
-    run = { level: state.lvl, at: frameAt(table, now()), travel: null };
-    settleCircuits();
+    const slot = slotOf(state.lvl);
+    if (run?.slot === slot) run = { ...run, level: state.lvl, travel: carried(run, state.lvl) };
+    else {
+      run = { slot, level: state.lvl, at: frameAt(table, now()), travel: null };
+      settleCircuits();
+    }
   }
+}
+
+/** What travels, kept where the records it was lifted from are unchanged,
+    probing the blocks as they now stand; null where it is to be laid out anew. */
+function carried(run, l) {
+  const t = run.travel;
+  if (!t || !same(run.level.records, l.records)) return null;
+  return same(run.level.cells, l.cells) ? t : { ...t, probe: probe(l, litNow) };
+}
+
+function same(a, b) {
+  if (a === b) return true;
+  if (Array.isArray(a))
+    return Array.isArray(b) && a.length === b.length && a.every((v, i) => same(v, b[i]));
+  if (a === null || b === null || typeof a !== "object" || typeof b !== "object") return false;
+  const keys = Object.keys(a);
+  return same(keys, Object.keys(b)) && keys.every((k) => same(a[k], b[k]));
 }
 
 export const clock = () =>
