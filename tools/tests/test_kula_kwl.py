@@ -218,6 +218,10 @@ class RoundTrips(unittest.TestCase):
              "the span at 6,6,6 needs a far end"),
             ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": LASER_KIND, "far": [6, 9], "colour": 0}],
              "the span at 6,6,6 needs a far end"),
+            ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": LASER_KIND, "far": [6, 6, 34], "colour": 0}],
+             "the far end 6,6,34 of the span at 6,6,6 is outside the lattice"),
+            ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": PLATFORM_KIND, "far": [6, -1, 6]}],
+             "the far end 6,-1,6 of the span at 6,6,6 is outside the lattice"),
             ([plain((5, 5, 5), t0=start(), t7={"type": COIN, "variant": 0})], "face 7 is not one of the six"),
             ([plain((5, 5, 5), t0=start(), t5={"type": COIN, "variant": 0}, t05={"type": KEY})],
              "face 5 of the block at 5,5,5 is named twice"),
@@ -322,6 +326,23 @@ class Reads(unittest.TestCase):
         p, report = read_kwl(blob)
         self.assertEqual(p["blocks"][0]["far"], [24, 10, 17])
         self.assertTrue(any("lower end is now its cell" in line for line in report), report)
+
+    def test_a_span_to_nowhere_or_to_its_own_cell_is_dropped(self):
+        def laser(far):
+            return block((16, 10, 17), kind=LASER_KIND, faces={0: slot(1, 1, 1, 16, 10, 17, *far)},
+                         second=slot(1, -1, -1, 5, -1, 0, -1))
+
+        for far, text in (((16, 10, 17), "record 1 spans nothing: both of its ends are its own cell 16,10,17"),
+                          ((16, 10, 34), "record 1 spans to 16,10,34, outside the lattice"),
+                          ((16, 10, -5), "record 1 spans to 16,10,-5, outside the lattice"),
+                          ((16, 10, 32767), "record 1 spans to 16,10,32767, outside the lattice")):
+            blob = level({(5, 5, 5): FIRST_RECORD, (16, 10, 17): FIRST_RECORD + 1},
+                         [block((5, 5, 5), faces={0: obj(START, 3, 0, 0)}), laser(far)])
+            p, report = read_kwl(blob)
+            self.assertEqual([b["cell"] for b in p["blocks"]], [[5, 5, 5]], far)
+            self.assertTrue(any(line.startswith(text) and line.endswith("it is dropped and its cell left empty")
+                                for line in report), report)
+            self.assertEqual(Level(canonical(p)).verify(), [])
 
     def test_the_lattice_decides_where_a_record_stands(self):
         blob = level({(1, 2, 3): FIRST_RECORD}, [block((4, 5, 6), faces={0: obj(START, 3, 0, 0)})])
@@ -450,9 +471,17 @@ class Validates(unittest.TestCase):
     def test_a_span_lies_along_one_axis_inside_the_edge(self):
         for far, text in (([10, 10, 17], "the far end is the block's own cell"),
                           ([12, 12, 17], "the far end is not along one axis from the block"),
-                          ([10, 33, 17], "the far end is past the edge")):
+                          ([10, 33, 17], "the far end is past the edge"),
+                          ([10, 32767, 17], "the far end is past the edge")):
             beam = {"cell": [10, 10, 17], "kind": LASER_KIND, "far": far, "colour": 0}
             self.assertIn(text, self.errors([plain((5, 5, 5), t0=start()), beam]))
+        # the walk over a span's cells never leaves the lattice, however far the end lies
+        far = [{"cell": [1 + i % 32, 1 + i // 32, 5], "kind": LASER_KIND, "far": [1 + i % 32, 1 + i // 32, 32767],
+                "colour": 0} for i in range(200)]
+        errors = self.errors([plain((5, 5, 5), t0=start())] + far)
+        self.assertEqual(errors.count("the far end is past the edge"), 200)
+        long = {"cell": [10, 10, 17], "kind": PLATFORM_KIND, "far": [10, 12, 17], "length": 32000, "speed": 30}
+        self.assertIn("the platform's run reaches past the edge", self.errors([plain((5, 5, 5), t0=start()), long]))
 
     def test_a_keyless_level_with_a_laser_counts_the_blocks_the_loader_makes(self):
         ring = [(12, 10, 17), (11, 9, 17), (11, 11, 17), (11, 10, 16), (11, 10, 18)]

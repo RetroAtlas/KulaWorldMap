@@ -381,10 +381,32 @@ test("a span lies along one axis inside the edge", () => {
     [[10, 10, 17], "the far end is the block's own cell"],
     [[12, 12, 17], "the far end is not along one axis from the block"],
     [[10, 33, 17], "the far end is past the edge"],
+    [[10, 32767, 17], "the far end is past the edge"],
   ]) {
     const beam = { cell: [10, 10, 17], kind: LASER_KIND, far, colour: 0 };
     assert.ok(errors([plain([5, 5, 5], 0, { 0: start() }), beam]).includes(text), text);
   }
+  // the walk over a span's cells never leaves the lattice, however far the end lies
+  const far = Array.from({ length: 1000 }, (_, i) => ({
+    cell: [1 + (i % 32), 1 + Math.floor(i / 32), 5],
+    kind: LASER_KIND,
+    far: [1 + (i % 32), 1 + Math.floor(i / 32), 32767],
+    colour: 0,
+  }));
+  const found = errors([plain([5, 5, 5], 0, { 0: start() }), ...far]);
+  assert.equal(found.filter((e) => e === "the far end is past the edge").length, 1000);
+  const long = {
+    cell: [10, 10, 17],
+    kind: PLATFORM_KIND,
+    far: [10, 12, 17],
+    length: 32000,
+    speed: 30,
+  };
+  assert.ok(
+    errors([plain([5, 5, 5], 0, { 0: start() }), long]).includes(
+      "the platform's run reaches past the edge",
+    ),
+  );
   assert.ok(
     errors([
       plain([5, 5, 5], 0, { 0: start() }),

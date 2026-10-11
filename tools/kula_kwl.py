@@ -504,8 +504,12 @@ def canonical(project):
         twice = _named_twice(b)
         if twice is not None:
             raise ValueError(f"face {twice} of the block at {cell_text(cell)} is named twice")
-        if kind in SPAN_KINDS and not is_cell(b.get("far")):
-            raise ValueError(f"the span at {cell_text(cell)} needs a far end")
+        if kind in SPAN_KINDS:
+            if not is_cell(b.get("far")):
+                raise ValueError(f"the span at {cell_text(cell)} needs a far end")
+            if any(c not in LATTICE for c in b["far"]):
+                raise ValueError(f"the far end {cell_text(b['far'])} of the span at {cell_text(cell)} "
+                                 f"is outside the lattice")
     carried = [b for b in blocks if _carries(b)]
     index = {tuple(b["cell"]): k for k, b in enumerate(carried)}
     grid = [EMPTY] * CELLS
@@ -585,6 +589,7 @@ def read_kwl(blob, world=WORLDS[0]):
     if len(settings) > 1:
         report.append(f"{len(settings)} settings records; the flags of all of them are taken")
 
+    dropped = set()
     for k in kept:
         r = records[k]
         if r.kind in SPAN_KINDS:
@@ -593,6 +598,17 @@ def read_kwl(blob, world=WORLDS[0]):
                 report.append(f"record {k} spans {cell_text(a)} to {cell_text(b)} and stands at {cell_text(r.cell)}; "
                               f"its lower end is now its cell")
                 a = r.cell
+            far = b if a == r.cell else a
+            if far == r.cell:
+                report.append(f"record {k} spans nothing: both of its ends are its own cell {cell_text(r.cell)}; "
+                              f"it is dropped and its cell left empty")
+                dropped.add(k)
+                continue
+            if any(c not in LATTICE for c in far):
+                report.append(f"record {k} spans to {cell_text(far)}, outside the lattice; "
+                              f"it is dropped and its cell left empty")
+                dropped.add(k)
+                continue
             r.slots[0][4:10] = [*a, *b]
         if r.kind == PLATFORM_KIND:
             if r.length not in LENGTHS:
@@ -602,6 +618,9 @@ def read_kwl(blob, world=WORLDS[0]):
         if r.kind == VANISHING_KIND and r.f[0] in DIM_AT_ONCE:
             report.append(f"the vanishing block at {cell_text(r.cell)} has phase {r.f[0]}, which dims at once")
 
+    if dropped:
+        kept = [k for k in kept if k not in dropped]
+        cells = [c for c in cells if c[3] < FIRST_RECORD or c[3] - FIRST_RECORD not in dropped]
     order = [records[k].cell for k in kept]
     if order != sorted(order):
         starts = sum(1 for k in kept if records[k].kind < BLOCK_KINDS
@@ -861,7 +880,7 @@ def _run(b):
     lower, upper = sorted((cell, far))
     extra = b.get("length", DEFAULT_LENGTH) - 1 if b["kind"] == PLATFORM_KIND else 0
     cells = []
-    for t in range(lower[axis], upper[axis] + extra + 1):
+    for t in range(max(lower[axis], 0), min(upper[axis] + extra, SIDE - 1) + 1):
         c = list(lower)
         c[axis] = t
         cells.append(tuple(c))

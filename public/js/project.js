@@ -1,4 +1,5 @@
 // The editor's document: a level as blocks, faces and circuits, edited copy on write.
+import { SIDE } from "./state.js";
 import { FACE_NORMAL } from "./faces.js";
 import {
   BLOCK_KINDS,
@@ -253,7 +254,7 @@ function runOf(b) {
   const [lower, upper] = b.cell[axis] < b.far[axis] ? [b.cell, b.far] : [b.far, b.cell];
   const extra = b.kind === PLATFORM_KIND ? (b.length ?? DEFAULT_LENGTH) - 1 : 0;
   const cells = [];
-  for (let t = lower[axis]; t <= upper[axis] + extra; t++) {
+  for (let t = Math.max(lower[axis], 0); t <= Math.min(upper[axis] + extra, SIDE - 1); t++) {
     const c = [...lower];
     c[axis] = t;
     cells.push(c);

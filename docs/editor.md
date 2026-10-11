@@ -110,7 +110,7 @@ A type not in the table is written with state 0 and the constants -1, which is a
 
 **The pickup numbers.** Walking the records in order and the faces 0 to 5 of each, the fourteen pickup types, 31 to 38 and 42 to 47, take `f5` of 0 to n-1 and every other slot -1. The disc numbers its pickups the same way on 224 of its 228 levels that have any, the four exceptions carrying a repeat on an object the game never walks, and the loader renumbers at load in any case.
 
-**Undefined bytes.** A project whose cells lie outside 0 to 33, that puts two blocks on one cell, that names one face of a block twice, as `"5"` and `"05"` do, whose span runs along no one axis, or that asks of any word more than -32768 to 32767, the file's range, as a time or a platform's length or speed can, has no level file, and `canonical` raises rather than invent one; `validate` names each of these as an error first.
+**Undefined bytes.** A project whose cells lie outside 0 to 33, that puts two blocks on one cell, that names one face of a block twice, as `"5"` and `"05"` do, whose span runs along no one axis or has no far end or one outside 0 to 33, or that asks of any word more than -32768 to 32767, the file's range, as a time or a platform's length or speed can, has no level file, and `canonical` raises rather than invent one; `validate` names each of these as an error first.
 
 ## Reading a file the game would load
 
@@ -120,7 +120,7 @@ A type not in the table is written with state 0 and the constants -1, which is a
 - The last stretch is the trailer where its kind is 666; otherwise none is there, the time is 99 and the report says so.
 - A settings record anywhere among the records gives the two flags, and several give the flags of all of them.
 - A record whose cell words differ from the cell naming it is moved to that cell; a cell naming a record that is not there, or that another cell names first, or that is not a block, is left empty; a record no cell names, the settings record apart, is dropped. Each is a report line.
-- A span's two ends are read from `f4` to `f9` and sorted lower first; `far` is the end that is not the record's cell, and a record standing at neither end has its lower end moved onto its cell, reported. The direction and axis words are never read.
+- A span's two ends are read from `f4` to `f9` and sorted lower first; `far` is the end that is not the record's cell, and a record standing at neither end has its lower end moved onto its cell, reported. A span whose two ends are both its own cell, or whose far end lies outside the lattice, is dropped and its cell left empty, reported, since the loader would write past the lattice for it. The direction and axis words are never read.
 - A platform's length and speed are kept, and reported outside 2 to 3 and 30; a vanishing block's phase is kept, and reported at 4 or 5.
 - Kinds 0 to 4 take an object from every face whose type is above 0, with its type whatever it is, its facing where the type turns and the word is not 0, its variant where the type has one; what stands on records of kinds 5 to 9 is counted and left out, since the game never walks it; a record of kinds 0 to 4 with nothing on its faces folds into a plain block of its kind.
 - A colour's state is read from its first device or laser, and a disagreement among them is reported.

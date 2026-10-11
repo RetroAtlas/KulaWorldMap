@@ -495,8 +495,13 @@ export function writeKwl(project) {
     const twice = faceNamedTwice(b);
     if (twice !== null)
       throw new Error(`face ${twice} of the block at ${cellText(cell)} is named twice`);
-    if (SPAN_KINDS.has(kind) && !isCell(b.far))
-      throw new Error(`the span at ${cellText(cell)} needs a far end`);
+    if (SPAN_KINDS.has(kind)) {
+      if (!isCell(b.far)) throw new Error(`the span at ${cellText(cell)} needs a far end`);
+      if (!b.far.every(onLattice))
+        throw new Error(
+          `the far end ${cellText(b.far)} of the span at ${cellText(cell)} is outside the lattice`,
+        );
+    }
   }
   const carried = blocks.filter(carries);
   const at = new Map(carried.map((b, k) => [cellKey(...b.cell), k]));
@@ -680,7 +685,7 @@ export function readKwl(bytes, world = WORLDS[0]) {
     return v;
   });
 
-  const kept = [];
+  let kept = [];
   const settings = [];
   records.forEach((r, k) => {
     if (r.kind === SETTINGS_KIND) settings.push(k);
@@ -693,6 +698,7 @@ export function readKwl(bytes, world = WORLDS[0]) {
   if (settings.length > 1)
     report.push(`${settings.length} settings records; the flags of all of them are taken`);
 
+  const dropped = new Set();
   for (const k of kept) {
     const r = records[k];
     if (SPAN_KINDS.has(r.kind)) {
@@ -702,6 +708,21 @@ export function readKwl(bytes, world = WORLDS[0]) {
           `record ${k} spans ${cellText(a)} to ${cellText(b)} and stands at ${cellText(r.cell)}; its lower end is now its cell`,
         );
         a = r.cell;
+      }
+      const far = sameCell(a, r.cell) ? b : a;
+      if (sameCell(far, r.cell)) {
+        report.push(
+          `record ${k} spans nothing: both of its ends are its own cell ${cellText(r.cell)}; it is dropped and its cell left empty`,
+        );
+        dropped.add(k);
+        continue;
+      }
+      if (!far.every(onLattice)) {
+        report.push(
+          `record ${k} spans to ${cellText(far)}, outside the lattice; it is dropped and its cell left empty`,
+        );
+        dropped.add(k);
+        continue;
       }
       r.slots[0].splice(4, 6, ...a, ...b);
     }
@@ -718,6 +739,12 @@ export function readKwl(bytes, world = WORLDS[0]) {
       );
   }
 
+  if (dropped.size) {
+    kept = kept.filter((k) => !dropped.has(k));
+    for (let i = cells.length - 4; i >= 0; i -= 4)
+      if (cells[i + 3] >= FIRST_RECORD && dropped.has(cells[i + 3] - FIRST_RECORD))
+        cells.splice(i, 4);
+  }
   const order = kept.map((k) => records[k].cell);
   if (order.some((c, i) => i > 0 && compareCells(order[i - 1], c) > 0)) {
     const objects = kept.flatMap((k) => objectsOf(records[k]));

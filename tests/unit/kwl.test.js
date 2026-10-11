@@ -482,6 +482,26 @@ test("the bytes are undefined for what the lattice cannot hold", () => {
         ),
       /the span at 6,6,6 needs a far end/,
     );
+  assert.throws(
+    () =>
+      writeKwl(
+        project([
+          plain([5, 5, 5], 0, { 0: start() }),
+          { cell: [6, 6, 6], kind: LASER_KIND, far: [6, 6, 34], colour: 0 },
+        ]),
+      ),
+    /the far end 6,6,34 of the span at 6,6,6 is outside the lattice/,
+  );
+  assert.throws(
+    () =>
+      writeKwl(
+        project([
+          plain([5, 5, 5], 0, { 0: start() }),
+          { cell: [6, 6, 6], kind: PLATFORM_KIND, far: [6, -1, 6] },
+        ]),
+      ),
+    /the far end 6,-1,6 of the span at 6,6,6 is outside the lattice/,
+  );
   // a key that stands nothing is no face at all, whatever it is called
   assert.deepEqual(
     writeKwl(
@@ -631,6 +651,42 @@ test("a span whose block is at neither end is moved onto its cell", () => {
     report.some((line) => line.includes("lower end is now its cell")),
     report,
   );
+});
+
+test("a span to nowhere or to its own cell is dropped", () => {
+  const laser = (far) =>
+    block([16, 10, 17], {
+      kind: LASER_KIND,
+      faces: { 0: slot(1, [1, 1, 16, 10, 17, ...far]) },
+      second: slot(1, [-1, -1, 5, -1, 0, -1]),
+    });
+  for (const [far, text] of [
+    [[16, 10, 17], "record 1 spans nothing: both of its ends are its own cell 16,10,17"],
+    [[16, 10, 34], "record 1 spans to 16,10,34, outside the lattice"],
+    [[16, 10, -5], "record 1 spans to 16,10,-5, outside the lattice"],
+    [[16, 10, 32767], "record 1 spans to 16,10,32767, outside the lattice"],
+  ]) {
+    const blob = level(
+      cells([
+        [[5, 5, 5], FIRST_RECORD],
+        [[16, 10, 17], FIRST_RECORD + 1],
+      ]),
+      [block([5, 5, 5], { faces: { 0: obj(START, 3, 0, 0) } }), laser(far)],
+    );
+    const { project: p, report } = readKwl(blob);
+    assert.deepEqual(
+      p.blocks.map((b) => b.cell),
+      [[5, 5, 5]],
+      String(far),
+    );
+    assert.ok(
+      report.some(
+        (line) => line.startsWith(text) && line.endsWith("it is dropped and its cell left empty"),
+      ),
+      report,
+    );
+    assert.deepEqual(verify(writeKwl(p)), []);
+  }
 });
 
 test("the lattice decides where a record stands", () => {
