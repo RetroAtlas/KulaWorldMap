@@ -27,7 +27,6 @@ disc has them.
 """
 import argparse
 import os
-import shutil
 import struct
 import sys
 import zlib
@@ -36,8 +35,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import THEMES, open_disc, packs
 from kula_pak import Pak
-from kula_place import cue
-from kula_sector import SECTOR_RAW, USER, USER_OFF, rewrite
+from kula_place import written
+from kula_sector import USER, USER_OFF, raw_sector, rewrite, sectors_of
 
 CATALOGUE = "OBJ LEVEL"
 WORLD_WORDS = (0x800A340C, 0x800A3410)
@@ -64,28 +63,16 @@ def slot_named(pak, name):
     return None
 
 
-class Image:
-    """The raw image, addressed through a file's own extent."""
-
-    def __init__(self, path):
-        self.f = open(path, "r+b")
-
-    def write(self, lba, offset, data):
-        while data:
-            sec, within = divmod(offset, USER)
-            n = min(len(data), USER - within)
-            at = (lba + sec) * SECTOR_RAW
-            self.f.seek(at)
-            raw = self.f.read(SECTOR_RAW)
-            user = bytearray(raw[USER_OFF:USER_OFF + USER])
-            user[within:within + n] = data[:n]
-            self.f.seek(at)
-            self.f.write(rewrite(raw, user))
-            data = data[n:]
-            offset += n
-
-    def close(self):
-        self.f.close()
+def changed(f, lba, user):
+    """The sectors of a file's run whose user data differs from what it is to hold,
+    each rewritten whole under its own sync, header and subheader."""
+    out = []
+    for i in range(len(user) // USER):
+        raw = raw_sector(f, lba + i)
+        piece = bytes(user[i * USER:(i + 1) * USER])
+        if raw[USER_OFF:USER_OFF + USER] != piece:
+            out.append((lba + i, rewrite(raw, piece)))
+    return out
 
 
 def main():
@@ -104,7 +91,11 @@ def main():
     if not src:
         sys.exit("no disc image: pass --disc or set $KULA_DISC")
     src = Path(src)
-    disc = open_disc(str(src))
+    with open_disc(str(src)) as disc:
+        warp(args, src, disc)
+
+
+def warp(args, src, disc):
     target_path, _, slot = args.into.rpartition("#")
     if not target_path or not slot.isdigit():
         sys.exit(f"--into wants a pack path and a slot, like /HIRO/HIRO.PAK#0, not {args.into!r}")
@@ -144,18 +135,19 @@ def main():
         print(f"{CAMERA_WORD:08X} 0001")
         return
     out = Path(args.out) if args.out else src.with_name(f"{src.stem} ({what.lower()}).bin")
+    for path in (out, out.with_suffix(".cue")):
+        if path.exists():
+            why = "is the image itself" if path.samefile(src) else "exists already"
+            sys.exit(f"{path} {why}; say another --out")
 
     target = Pak(disc.read_file(target_path), target_path)
     if slot >= len(target):
         sys.exit(f"{target_path} has {len(target)} slots, so #{slot} is not one of them")
-    lba, _ = disc.files[target_path.upper()]
+    lba, size = disc.files[target_path.upper()]
+    user = bytearray(disc.read(lba, len(sectors_of(lba, size)) * USER))
 
-    shutil.copyfile(src, out)
-    out.with_suffix(".cue").write_text(cue(out.name))
-
-    img = Image(out)
     if donor_path.upper() == target_path.upper():
-        at, size = donor_pak.entries[donor_slot]["offset"], len(record)
+        at = donor_pak.entries[donor_slot]["offset"]
         laid = None
     else:
         # The record has to live inside the pack that names it, so it goes over a
@@ -165,18 +157,21 @@ def main():
         room = target.entries[laid]
         if room["size"] < len(record):
             sys.exit(f"{target_path} has no slot roomy enough for {len(record)} bytes")
-        at, size = room["offset"], len(record)
-        img.write(lba, at, record)
-
-    entry = struct.pack("<II", at, size)
+        at = room["offset"]
+        user[at:at + len(record)] = record
+    entry = struct.pack("<II", at, len(record))
     for i in {slot, laid} - {None}:
-        img.write(lba, 4 + i * 8, entry)
-    img.close()
+        user[4 + i * 8:4 + i * 8 + 8] = entry
 
-    with open_disc(str(out)) as written:
-        check = Pak(written.read_file(target_path), target_path)
-    if zlib.decompress(check.entries[slot]["blob"]) != zlib.decompress(record):
-        sys.exit(f"wrote {out}, but {target_path}#{slot} does not read back as {what}")
+    def loads(copy):
+        again = Pak(copy.read_file(target_path), target_path)
+        if zlib.decompress(again.entries[slot]["blob"]) != zlib.decompress(record):
+            raise ValueError(f"{target_path}#{slot} does not read back as {what}")
+
+    try:
+        written(src, out, changed(disc.f, lba, user), loads)
+    except ValueError as e:
+        sys.exit(str(e))
 
     print(f"{out}")
     print(f"  {what} taken from {donor_path}#{donor_slot}, {len(record)} bytes")
