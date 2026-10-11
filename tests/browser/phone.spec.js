@@ -342,7 +342,7 @@ test.describe("editing on a phone", () => {
     await tap(page, side);
     await tap(page, side);
     await expect(page.locator("#toolStatus")).toHaveText(
-      "The run waits for its far end. Click where it ends, or press Esc.",
+      "The run waits for its far end. Tap where it ends, or change the tool.",
     );
     const far = await at(page, 18.5, 21.5, 18);
     await tap(page, far);

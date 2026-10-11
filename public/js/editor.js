@@ -52,6 +52,7 @@ const ONE_CELL = "A run needs two cells.";
 const FLOOR_THING = "The grid lays blocks; a thing goes on a block's face.";
 const CHANGED = "The run's own block changed while it waited.";
 const WAITING = "The run waits for its far end. Click where it ends, or press Esc.";
+const WAITING_TOUCH = "The run waits for its far end. Tap where it ends, or change the tool.";
 const TOOL_KEYS = { a: "place", z: "erase", i: "select" };
 const WASH = "rgba(111 211 255 / 0.28)";
 const RIM = "#6fd3ff";
@@ -76,7 +77,8 @@ const mode = { on: false, tool: "place" };
 // What Place lays: a kind of block, or a thing for a face, turned as `facing` says.
 let brush = { id: "k0", kind: 0 };
 let facing = 1;
-// A run waiting for its far end: its own cell, and whether it re-lays the span there.
+// A run waiting for its far end: its own cell, whether it re-lays the span
+// there, and whether a finger began it.
 let pending = null;
 // A finger has no hover, so its first tap arms a face or a floor cell, which a
 // second tap on the same confirms; a long press selects instead, and the lift
@@ -104,6 +106,7 @@ const place3 = (cell) => cell.join(", ");
 const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 const phone = () => sidebarOverlays();
 const hovered = () => armed?.c ?? state.hover;
+const waiting = () => (pending.touch ? WAITING_TOUCH : WAITING);
 const brushWord = () => {
   if (brush.kind === LASER_KIND)
     return `${palette.colourName(brush.colour)} ${kindWord(brush.kind)}`;
@@ -392,7 +395,7 @@ function tapWord(target) {
 function disarm() {
   if (!armed) return;
   armed = null;
-  status(pending ? WAITING : "");
+  status(pending ? waiting() : "");
   drawSoon();
 }
 
@@ -576,9 +579,10 @@ function spanToward(doc, far) {
 }
 
 function startRun(c, e, d) {
+  const touch = e?.pointerType === "touch";
   const own = c && blockAt(d.doc, [c.x, c.y, c.z]);
   if (own && SPAN_KINDS.has(own.kind)) {
-    pending = { anchor: [...own.cell], respan: true };
+    pending = { anchor: [...own.cell], respan: true, touch };
   } else {
     const target = landing(c, e);
     if (!target) return false;
@@ -586,10 +590,10 @@ function startRun(c, e, d) {
     if (blockAt(d.doc, target)) return refuse(HELD);
     const grew = newErrors(d.doc, setBlock(d.doc, target, { kind: 0 }));
     if (grew.length) return refuse(sentence(grew[0].text));
-    pending = { anchor: target, respan: false };
+    pending = { anchor: target, respan: false, touch };
   }
-  status(WAITING);
-  say(WAITING);
+  status(waiting());
+  say(waiting());
   drawSoon();
   return true;
 }

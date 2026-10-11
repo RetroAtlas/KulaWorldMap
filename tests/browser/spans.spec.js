@@ -4,6 +4,7 @@ import { settle, trackErrors } from "./helpers.js";
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const START = [17, 17, 17];
 const WAITING = "The run waits for its far end. Click where it ends, or press Esc.";
+const WAITING_TOUCH = "The run waits for its far end. Tap where it ends, or change the tool.";
 
 const shown = (page) =>
   page.evaluate(async () => {
@@ -392,4 +393,30 @@ test("Erase on a laser's far end keeps the level's last block as it keeps any ot
   await expect(page.locator("#say")).toHaveText("Removed the green laser at 17, 18, 17");
   expect((await doc(page)).blocks.map((b) => b.cell)).toEqual([[20, 25, 17]]);
   expect(errors).toEqual([]);
+});
+
+test.describe("with a finger", () => {
+  test.use({ hasTouch: true });
+  const tap = (page, point) => page.touchscreen.tap(point.x, point.y);
+
+  test("the waiting run tells a finger to tap, and two taps end it", async ({ page }) => {
+    const errors = trackErrors(page);
+    await fresh(page);
+    await pick(page, "Blocks", "k5");
+    const side = await plusX(page, START);
+    await tap(page, side);
+    await expect(page.locator("#toolStatus")).toHaveText(
+      "Tap again to place a moving platform on the +x side.",
+    );
+    await tap(page, side);
+    await expect(page.locator("#toolStatus")).toHaveText(WAITING_TOUCH);
+    await expect(page.locator("#say")).toHaveText(WAITING_TOUCH);
+    const far = await floor(page, 18, 21);
+    await tap(page, far);
+    await expect(page.locator("#toolStatus")).toHaveText("Tap again to end the run here.");
+    await tap(page, far);
+    expect(await spans(page)).toEqual([PLATFORM]);
+    await expect(page.locator("#toolStatus")).toHaveText("");
+    expect(errors).toEqual([]);
+  });
 });
