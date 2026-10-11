@@ -368,6 +368,6 @@ export function placements(image, out) {
   return [
     `DuckStation, with Apply Image Patches on, and PCSX-Redux read the PPF beside the image as ${stem(imageName)}.ppf`,
     `ePSXe and PCSX-ReARMed read it from their patches folder as ${SERIAL}, with no extension`,
-    `the xdelta applies with: xdelta3 -d -s "${imageName}" ${outName}.xdelta ${outName}.bin`,
+    `the xdelta applies with: xdelta3 -d -s "${imageName}" "${outName}.xdelta" "${outName}.bin"`,
   ];
 }

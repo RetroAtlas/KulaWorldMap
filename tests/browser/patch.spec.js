@@ -119,7 +119,9 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await expect(play).toHaveCount(3);
   await expect(play.nth(0)).toContainText("synthetic.ppf");
   await expect(play.nth(1)).toContainText("SLUS_007.24");
-  await expect(play.nth(2)).toContainText('xdelta3 -d -s "synthetic.bin" spiral.xdelta spiral.bin');
+  await expect(play.nth(2)).toContainText(
+    'xdelta3 -d -s "synthetic.bin" "spiral.xdelta" "spiral.bin"',
+  );
 
   const patch = await saved(page, dialog.locator("#patchPpf"));
   expect(patch.name).toBe("spiral.ppf");

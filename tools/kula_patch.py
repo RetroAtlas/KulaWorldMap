@@ -158,7 +158,7 @@ def placements(image, out):
     image, out = Path(image), Path(out)
     return [f"DuckStation, with Apply Image Patches on, and PCSX-Redux read the PPF beside the image as {image.stem}.ppf",
             f"ePSXe and PCSX-ReARMed read it from their patches folder as {SERIAL}, with no extension",
-            f'the xdelta applies with: xdelta3 -d -s "{image.name}" {out.name}.xdelta {out.name}.bin']
+            f'the xdelta applies with: xdelta3 -d -s "{image.name}" "{out.name}.xdelta" "{out.name}.bin"']
 
 
 # --- the fixture: the synthetic image patched by every path -----------------------

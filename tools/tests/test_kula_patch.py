@@ -240,7 +240,9 @@ class ThePatches(unittest.TestCase):
         self.assertIn("PCSX-Redux", lines[0])
         self.assertIn(SERIAL, lines[1])
         self.assertIn("ePSXe", lines[1])
-        self.assertIn('xdelta3 -d -s "Roll Away.bin" spiral.xdelta spiral.bin', lines[2])
+        self.assertIn('xdelta3 -d -s "Roll Away.bin" "spiral.xdelta" "spiral.bin"', lines[2])
+        spaced = placements("/discs/Roll Away.bin", "out/level 4")[2]
+        self.assertTrue(spaced.endswith('xdelta3 -d -s "Roll Away.bin" "level 4.xdelta" "level 4.bin"'), spaced)
 
     @unittest.skipUnless(shutil.which("xdelta3"), "needs xdelta3 on PATH")
     def test_xdelta3_decodes_them(self):

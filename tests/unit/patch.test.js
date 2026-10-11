@@ -610,7 +610,15 @@ test("the placements name the image for two emulators and the serial for two, an
   assert.ok(lines[0].includes("Roll Away.ppf") && lines[0].includes("DuckStation"), lines[0]);
   assert.ok(lines[0].includes("PCSX-Redux"), lines[0]);
   assert.ok(lines[1].includes(SERIAL) && lines[1].includes("ePSXe"), lines[1]);
-  assert.ok(lines[2].includes('xdelta3 -d -s "Roll Away.bin" spiral.xdelta spiral.bin'), lines[2]);
+  assert.ok(
+    lines[2].includes('xdelta3 -d -s "Roll Away.bin" "spiral.xdelta" "spiral.bin"'),
+    lines[2],
+  );
+  assert.ok(
+    placements("/discs/Roll Away.bin", "out/level 4")[2].endsWith(
+      'xdelta3 -d -s "Roll Away.bin" "level 4.xdelta" "level 4.bin"',
+    ),
+  );
   assert.equal(
     cue("spiral.bin"),
     'FILE "spiral.bin" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n',
