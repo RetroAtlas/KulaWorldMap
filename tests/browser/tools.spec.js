@@ -179,7 +179,9 @@ test("a block laid above the slice raises it, and the grid lays a first floor", 
   await page.keyboard.press("g");
   await expect(page.locator("#showBase")).toBeChecked();
   await zoom(page, 0.8);
-  // the floor lies one layer under the lowest block
+  // with the slice put back, the floor lies one layer under the lowest block
+  await page.keyboard.press("\\");
+  expect((await shown(page)).slice).toBe(33);
   await click(page, await at(page, 22.5, 24.5, 18));
   expect((await shown(page)).selected).toEqual([22, 24, 17]);
   expect((await blocks(page)).map((b) => b.cell)).toContainEqual([22, 24, 17]);
@@ -187,6 +189,59 @@ test("a block laid above the slice raises it, and the grid lays a first floor", 
   await click(page, await at(page, -2.5, 17.5, 18));
   expect((await shown(page)).selected).toBe(null);
   expect((await blocks(page)).length).toBe(3);
+
+  // with the slice lowered the grid stands at the slice, and lays a floor in the layer it shows
+  const ghost = () =>
+    page.evaluate(async () => {
+      const { ghostPreview } = await import(new URL("js/editor.js", location.href).href);
+      return ghostPreview();
+    });
+  await page.evaluate(async () => {
+    const { SIDE } = await import(new URL("js/state.js", location.href).href);
+    const { setSlice } = await import(new URL("js/navigate.js", location.href).href);
+    setSlice(SIDE - 1 - 15);
+  });
+  const over = await at(page, 20.5, 22.5, 16);
+  await page.mouse.move(over.x, over.y);
+  expect(await ghost()).toEqual({ cell: [20, 22, 15], blocked: false });
+  await expect(page.locator("#toolStatus")).toHaveText(
+    "The grid stands at the slice while it is lowered: , lowers the floor it lays and . raises it.",
+  );
+  await click(page, over);
+  expect((await shown(page)).selected).toEqual([20, 22, 15]);
+  expect((await shown(page)).slice).toBe(18);
+  await expect(page.locator("#toolStatus")).toHaveText("");
+  const beside = await at(page, 21.5, 22.5, 16);
+  await page.mouse.move(beside.x, beside.y);
+  expect(await ghost()).toEqual({ cell: [21, 22, 15], blocked: false });
+  await expect(page.locator("#toolStatus")).toHaveText("");
+  // a thing has no floor to stand on
+  await page.locator("#palette .tabs button", { hasText: "Pickups" }).click();
+  await page.locator('#palette .rows button[data-id="t31"]').click();
+  await page.mouse.move(beside.x, beside.y);
+  expect(await ghost()).toEqual({ cell: [21, 22, 15], blocked: true });
+  await click(page, beside);
+  expect(await toasts(page)).toContain("The grid lays blocks; a thing goes on a block's face.");
+  expect((await blocks(page)).length).toBe(4);
+
+  // a level with no blocks has its grid at the lattice's foot
+  await page.locator("#palette .tabs button", { hasText: "Blocks" }).click();
+  await page.locator('#palette .rows button[data-id="k0"]').click();
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state, SIDE }, { get, update }, { setSlice }] = await Promise.all(
+      ["state.js", "drafts.js", "navigate.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    update(id, { ...get(id).doc, blocks: [] });
+    setSlice(SIDE - 1);
+  });
+  await zoom(page, 0.5);
+  const foot = await at(page, 16.5, 16.5, 33);
+  await page.mouse.move(foot.x, foot.y);
+  expect(await ghost()).toEqual({ cell: [16, 16, 32], blocked: false });
+  await click(page, foot);
+  expect((await blocks(page)).map((b) => b.cell)).toEqual([[16, 16, 32]]);
   expect(errors).toEqual([]);
 });
 

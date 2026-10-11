@@ -264,6 +264,101 @@ test("the preview follows the axis the pointer favours, and Esc cancels the run 
   expect(errors).toEqual([]);
 });
 
+test("the preview tints each cell of the run by what lies in it", async ({ page }) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setBlock }] = await Promise.all(
+      ["state.js", "drafts.js", "project.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    let doc = setBlock(get(id).doc, [18, 19, 17], { kind: 0 });
+    doc = setBlock(doc, [15, 21, 17], { kind: 8, far: [21, 21, 17], colour: 1 });
+    doc = setBlock(doc, [18, 24, 17], { kind: 5, far: [18, 26, 17], length: 2, speed: 30 });
+    doc = setBlock(doc, [17, 20, 17], { kind: 0 });
+    update(id, doc);
+  });
+  await pick(page, "Blocks", "k5");
+  await click(page, await plusX(page, START));
+  await hover(page, await floor(page, 18, 27));
+  const run = await preview(page);
+  expect(run.far).toEqual([18, 27, 17]);
+  expect(run.cells.map((c) => c[1])).toEqual([17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]);
+  // a block and another platform's own block bar the run, a beam and that platform's run cross it
+  expect(run.verdicts).toEqual([
+    "free",
+    "free",
+    "blocked",
+    "free",
+    "beam",
+    "free",
+    "free",
+    "blocked",
+    "run",
+    "run",
+    "run",
+    "free",
+  ]);
+  expect(run.blocked).toBe(true);
+  // a laser ends on a plain block, and that end is its own
+  await page.keyboard.press("Escape");
+  await pick(page, "Blocks", "k8/0");
+  await click(page, await plusY(page, START));
+  await hover(page, await top(page, [17, 20, 17]));
+  const beam = await preview(page);
+  expect(beam.far).toEqual([17, 20, 17]);
+  expect(beam.verdicts).toEqual(["free", "free", "free"]);
+  expect(beam.blocked).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test("the grid's height hint waits while a run does", async ({ page }) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await page.evaluate(async () => {
+    const { SIDE } = await import(new URL("js/state.js", location.href).href);
+    const { setSlice } = await import(new URL("js/navigate.js", location.href).href);
+    setSlice(SIDE - 1 - 17);
+  });
+  await pick(page, "Blocks", "k5");
+  await click(page, await plusX(page, START));
+  await expect(page.locator("#toolStatus")).toHaveText(WAITING);
+  await hover(page, await floor(page, 18, 21));
+  expect(await preview(page)).toMatchObject({ far: [18, 21, 17], blocked: false });
+  await expect(page.locator("#toolStatus")).toHaveText(WAITING);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#toolStatus")).toHaveText("");
+  await hover(page, await floor(page, 18, 22));
+  await expect(page.locator("#toolStatus")).toHaveText(
+    "The grid stands at the slice while it is lowered: , lowers the floor it lays and . raises it.",
+  );
+  expect(errors).toEqual([]);
+});
+
+test("the preview follows the grid's cell under the pointer where no block is", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await pick(page, "Blocks", "k5");
+  await click(page, await plusX(page, START));
+  await hover(page, await floor(page, 18, 21));
+  expect(await preview(page)).toMatchObject({
+    anchor: [18, 17, 17],
+    far: [18, 21, 17],
+    blocked: false,
+  });
+  expect((await preview(page)).cells).toHaveLength(6);
+  // past the grid's edge there is nothing to run to
+  await hover(page, await floor(page, 18, 35));
+  expect(await preview(page)).toMatchObject({ far: null, cells: [] });
+  await hover(page, await floor(page, 18, 21));
+  await click(page, await floor(page, 18, 21));
+  expect(await spans(page)).toEqual([PLATFORM]);
+  expect(errors).toEqual([]);
+});
+
 test("Erase takes a run whole, nothing stands on its faces, and a brush on its block re-lays it", async ({
   page,
 }) => {

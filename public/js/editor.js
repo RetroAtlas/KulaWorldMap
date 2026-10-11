@@ -50,6 +50,8 @@ const BRITTLE = "Nothing stands on a platform's, laser's, crumbling or vanishing
 const LOOKS_INTO = "That face looks into another block.";
 const ONE_CELL = "A run needs two cells.";
 const FLOOR_THING = "The grid lays blocks; a thing goes on a block's face.";
+const HEIGHT_HINT =
+  "The grid stands at the slice while it is lowered: , lowers the floor it lays and . raises it.";
 const CHANGED = "The run's own block changed while it waited.";
 const WAITING = "The run waits for its far end. Click where it ends, or press Esc.";
 const WAITING_TOUCH = "The run waits for its far end. Tap where it ends, or change the tool.";
@@ -90,6 +92,10 @@ let swallow = null;
 let consumed = false;
 // A selection being made without the panel, which the sheets leave alone.
 let quiet = false;
+// Where the mouse is over the map, for the grid's ghost where no cell is under it.
+let mouse = null;
+let floorKey = null;
+let hinted = false;
 let paletteOpen = !matchMedia("(max-width: 760px)").matches;
 
 const onDraft = () => state.lvl?.draft !== undefined;
@@ -255,6 +261,7 @@ function wireTools() {
     else sheets();
   });
   wireTouch();
+  wireMouse();
   // the palette stands on the strip, however tall its line makes it
   new ResizeObserver(([e]) =>
     $("palette").style.setProperty("--strip-h", `${e.target.offsetHeight}px`),
@@ -289,6 +296,42 @@ function take(c, e) {
   if (e.shiftKey || mode.tool === "erase") return erase(c, e);
   if (mode.tool === "place") return place(c, e);
   return false;
+}
+
+// --- a mouse over the grid ----------------------------------------------------------------
+
+// A pointer over no cell hovers nothing, so the grid's cell under it is read here.
+function wireMouse() {
+  const cv = $("cv");
+  cv.addEventListener("pointermove", (e) => {
+    if (e.pointerType === "touch") return;
+    mouse = { x: e.clientX, y: e.clientY };
+    if (e.buttons) return;
+    const cell = floorCell();
+    const key = cell ? cellKey(...cell) : null;
+    if (key === floorKey) return;
+    floorKey = key;
+    if (cell && sliceZ() > 0 && !hinted && !pending) {
+      hinted = true;
+      status(HEIGHT_HINT);
+    }
+    drawSoon();
+  });
+  cv.addEventListener("pointerleave", (e) => {
+    if (e.pointerType === "touch") return;
+    mouse = null;
+    if (floorKey === null) return;
+    floorKey = null;
+    drawSoon();
+  });
+}
+
+/** The grid's cell under the mouse, where the grid is on, Place is the tool and no cell is hovered. */
+function floorCell() {
+  if (!mouse || !editing() || mode.tool !== "place" || !state.show.base || state.hover) return null;
+  const r = $("cv").getBoundingClientRect();
+  const cell = floorAt(mouse.x - r.left, mouse.y - r.top);
+  return cell?.every(inner) ? cell : null;
 }
 
 // --- a finger on the map ------------------------------------------------------------------
@@ -496,7 +539,10 @@ function place(c, e) {
   const d = current();
   if (!d) return false;
   if (pending) return finishRun(c, e, d);
-  if (brush.kind === undefined) return placeThing(c, d, e);
+  if (brush.kind === undefined) {
+    if (c) return placeThing(c, d, e);
+    return e && landing(null, e) ? refuse(FLOOR_THING) : false;
+  }
   if (SPAN_KINDS.has(brush.kind)) return startRun(c, e, d);
   const target = landing(c, e);
   if (!target) return false;
@@ -656,7 +702,7 @@ export function runPreview() {
   const d = current();
   if (!pending || !d) return null;
   const h = hovered();
-  const cand = h ? candidate(h, null, d.doc) : (armed?.cell ?? null);
+  const cand = h ? candidate(h, null, d.doc) : (armed?.cell ?? floorCell());
   const far = cand && snap(pending.anchor, cand);
   if (!far) return { anchor: pending.anchor, far: null, cells: [], verdicts: [], blocked: false };
   const span = { ...spanToward(d.doc, far), cell: pending.anchor };
@@ -790,29 +836,40 @@ function turn(delta) {
   say(`Brush facing ${facing} of ${TURNS}`);
 }
 
-// The floor the ground grid draws lies one layer under the lowest block, and
-// the screen is affine in a point of it, so three points of the plane give the
-// cell under a click.
-function onFloor(e) {
-  const r = $("cv").getBoundingClientRect();
-  const z0 = state.lvl.max[2] + 1;
+/** The plane the grid stands on: under the topmost layer the slice shows while
+    it is lowered, else under the lowest block, or at the lattice's foot where
+    the level has none. */
+function floorZ(l) {
+  if (sliceZ() > 0) return sliceZ() + 1;
+  return l.cells.length ? l.max[2] + 1 : SIDE - 1;
+}
+
+// The screen is affine in a point of the grid's plane, so three points of the
+// plane give the cell under a point of the canvas.
+function floorAt(px, py) {
+  const z0 = floorZ(state.lvl);
   const o = screen(0, 0, z0);
   const [ax, ay] = screen(1, 0, z0).map((v, i) => v - o[i]);
   const [bx, by] = screen(0, 1, z0).map((v, i) => v - o[i]);
   const det = ax * by - bx * ay;
   if (Math.abs(det) < 1e-6) return null;
-  const dx = e.clientX - r.left - o[0];
-  const dy = e.clientY - r.top - o[1];
+  const dx = px - o[0];
+  const dy = py - o[1];
   const x = (by * dx - bx * dy) / det;
   const y = (ax * dy - ay * dx) / det;
   return [Math.floor(x), Math.floor(y), z0 - 1];
+}
+
+function onFloor(e) {
+  const r = $("cv").getBoundingClientRect();
+  return floorAt(e.clientX - r.left, e.clientY - r.top);
 }
 
 // --- what the editor draws ---------------------------------------------------------------
 
 function drawFloor(ctx, l) {
   if (!editing() || !state.show.base) return false;
-  const z0 = l.max[2] + 1;
+  const z0 = floorZ(l);
   ctx.save();
   ctx.strokeStyle = "#ffffff20";
   ctx.lineWidth = 1;
@@ -879,10 +936,8 @@ function drawRun(ctx) {
 function drawGhost(ctx) {
   if (!editing() || mode.tool !== "place") return;
   if (pending) return drawRun(ctx);
-  if (armed?.cell) return outline(ctx, toCell(armed.cell), state.idx, GHOST, [4, 3]);
   const h = hovered();
-  if (!h || h.face == null) return;
-  if (brush.kind === undefined) {
+  if (brush.kind === undefined && h?.face != null) {
     if (icon?.id !== brush.id || icon.theme !== state.lvl.theme)
       icon = { id: brush.id, theme: state.lvl.theme, cv: palette.brushIcon(ICON) };
     if (!icon.cv) return;
@@ -897,15 +952,19 @@ function drawGhost(ctx) {
 
 let ghost = null;
 
-/** The cell Place would fill from the hovered face, and whether the click would be refused. */
+/** The cell Place would fill, from the hovered face or on the grid, and whether the click would be refused. */
 export function ghostPreview() {
-  const h = hovered();
   const d = current();
-  if (!d || !h || h.face == null) return null;
-  const cell = across(h, h.face);
+  if (!d) return null;
+  const floor = armed?.cell ?? floorCell();
+  const h = floor ? null : hovered();
+  if (!floor && h?.face == null) return null;
+  const cell = floor ?? across(h, h.face);
   const kind = SPAN_KINDS.has(brush.kind) ? 0 : brush.kind;
   const key = `${cell}|${kind}`;
-  if (ghost?.doc !== d.doc || ghost.key !== key)
-    ghost = { doc: d.doc, key, blocked: blockRefusal(d.doc, cell, kind) !== null };
+  if (ghost?.doc !== d.doc || ghost.key !== key) {
+    const blocked = kind === undefined ? !!floor : blockRefusal(d.doc, cell, kind) !== null;
+    ghost = { doc: d.doc, key, blocked };
+  }
   return { cell, blocked: ghost.blocked };
 }
