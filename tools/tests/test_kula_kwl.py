@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -22,14 +23,17 @@ from kula_kwl import (  # noqa: E402
     DATA,
     DIGESTS,
     DISC_MAX,
+    DROPPED,
     FORMAT,
     HOSTILE,
     OBJECTS,
     PLAYED,
+    RESIDUALS,
     REWIRED,
     VECTORS,
     canonical,
     check,
+    compare,
     counts,
     deflate_vectors,
     digests,
@@ -40,7 +44,9 @@ from kula_kwl import (  # noqa: E402
     read_kwl,
     read_project,
     render_digests,
+    stripped,
     render_hostile,
+    residuals,
     render_vectors,
     template,
     validate,
@@ -969,37 +975,41 @@ class Digests(unittest.TestCase):
         self.assertEqual(deflate_vectors(fixture)["vectors"], fixture["vectors"])
 
 
-# The words the rebuild writes differently outside the unread mask, each one a
-# leftover the game never reads or a heading the format does not carry.
-RESIDUALS = {
-    # the clock's f2, which the loader never turns
-    "kind 0..4 object type 8 f2": 27,
-    # an editor's leftovers in the unused slots of five platforms
-    "kind 5 slot 2 type": 4,
-    "kind 5 slot 3 type": 4,
-    "kind 5 slot 4 type": 4,
-    "kind 5 slot 5 type": 4,
-    "kind 5 slot 2 f4": 1,
-    # a deleted object's constants on three lasers
-    "kind 8 slot 0 f10": 3,
-    "kind 8 slot 0 f14": 3,
-    # a platform's position words on two blocks that were once platforms
-    **{f"kind 2 record word {w}": 1 for w in range(119, 125)},
-    **{f"kind 6 record word {w}": 1 for w in range(119, 125)},
-    # a slot's kind word, the scratch the game writes before it reads
-    "kind 0..4 object type 35 kind word": 1,
-    # LEVEL 125's two yellow teleporters, the one chain the disc left unlinked
-    "kind 0..4 object type 5 f6": 1,
-}
+class TheCompare(unittest.TestCase):
+    def test_a_record_dropped_whole_is_a_failure_and_not_a_count(self):
+        L = Level(canonical(project_of_level(Level(playground()), world=WORLD)))
+        p = project_of_level(L, world=WORLD)
+        self.assertEqual(compare(L, Level(canonical(p))), [])
+        gone = dict(p, blocks=[b for b in p["blocks"] if b["cell"] != [12, 14, 17]] + [{"cell": [12, 14, 17], "kind": 0}])
+        self.assertIn("the records differ by cell and kind", compare(L, Level(canonical(gone))))
+        self.assertIn("the blocks differ", compare(L, Level(canonical(dict(p, blocks=p["blocks"][1:])))))
+        phased = json.loads(json.dumps(p))
+        next(b for b in phased["blocks"] if b["kind"] == 7)["phase"] = 3
+        self.assertIn("the phase at (10, 14, 17) differs", compare(L, Level(canonical(phased))))
+        self.assertEqual(residuals(Counter(RESIDUALS), Counter(DROPPED)), [])
+        self.assertEqual(residuals(Counter(RESIDUALS) + Counter({"kind 7 slot 0 f3": 2}), Counter(DROPPED)),
+                         ["2 x kind 7 slot 0 f3, where the table lists 0"])
+
+    def test_the_stripping_names_what_the_rebuild_leaves_out(self):
+        kept, gone = stripped(Level(playground()))
+        self.assertEqual((len(kept), dict(gone)), (8, {}))
+        flagless = level({(5, 5, 5): FIRST_RECORD, (6, 5, 5): FIRST_RECORD + 1},
+                         [block((5, 5, 5), faces={0: obj(START, 3, 0, 0)}), block((6, 5, 5)),
+                          block((0, 0, 0), kind=UNPLACED_KIND)])
+        kept, gone = stripped(Level(flagless))
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(dict(gone), {"settings records with no flag set": 1, "records carrying nothing": 1})
 
 
 @unittest.skipUnless(os.environ.get("KULA_DISC"), "needs the disc")
 class TheDisc(unittest.TestCase):
     def test_every_level_rebuilt_plays_as_the_disc_and_differs_in_the_words_listed_alone(self):
         with open_disc() as disc:
-            failures, classes = check(disc, out=lambda *_: None)
+            failures, classes, dropped = check(disc, out=lambda *_: None)
         self.assertEqual(failures, [])
         self.assertEqual(dict(classes), RESIDUALS)
+        self.assertEqual(dict(dropped), DROPPED)
+        self.assertEqual(residuals(classes, dropped), [])
 
 
 if __name__ == "__main__":

@@ -1514,13 +1514,36 @@ def _circuits(L):
     return lists, leads
 
 
+UNFLAGGED = "settings records with no flag set"
+BARE_RECORDS = "records carrying nothing"
+
+
+def stripped(L):
+    """The records of a level the rebuild keeps, and a count of the rest by what
+    they are: a settings record with no flag set, which the writer leaves out,
+    and a record of kinds 0 to 4 with nothing on it, which folds into the lattice."""
+    kept, gone = [], Counter()
+    for r in L.records:
+        if r.kind == UNPLACED_KIND and not (r.type == 1 or r.f[0] == 1):
+            gone[UNFLAGGED] += 1
+        elif r.kind < BLOCK_KINDS and not r.objects:
+            gone[BARE_RECORDS] += 1
+        else:
+            kept.append(r)
+    return kept, gone
+
+
 def compare(L, C):
     """What differs in play between a disc level and its canonical rebuild: the
-    blocks, the records both have, their objects as the format reads them, the
-    spans, the circuits, the time and the settings."""
+    blocks, every record kept by cell and kind, the records both have, their
+    objects as the format reads them, the spans, the circuits, the time and
+    the settings."""
     bad = []
     if _kind_at(L) != _kind_at(C):
         bad.append("the blocks differ")
+    placed = Counter((r.cell, r.kind) for r in stripped(L)[0] if r.kind != UNPLACED_KIND)
+    if placed != Counter((r.cell, r.kind) for r in C.records if r.kind != UNPLACED_KIND):
+        bad.append("the records differ by cell and kind")
     disc = {r.cell: k for k, r in enumerate(L.records) if r.kind != UNPLACED_KIND}
     canon = {r.cell: k for k, r in enumerate(C.records) if r.kind != UNPLACED_KIND}
     for cell in disc.keys() & canon.keys():
@@ -1529,9 +1552,13 @@ def compare(L, C):
             bad.append(f"record at {cell} is kind {a.kind} on the disc and {b.kind} rebuilt")
         elif a.kind < BLOCK_KINDS and _objects(L, disc[cell]) != _objects(C, canon[cell]):
             bad.append(f"the objects at {cell} differ")
-        elif a.kind in SPAN_KINDS and (sorted(a.span), a.colour, a.f[1], a.length, a.speed) != \
-                (sorted(b.span), b.colour, b.f[1], b.length, b.speed):
+        elif a.kind in SPAN_KINDS and (sorted(a.span), a.colour, a.f[1], a.length, a.speed, a.slots[1][0]) != \
+                (sorted(b.span), b.colour, b.f[1], b.length, b.speed, b.slots[1][0]):
             bad.append(f"the span at {cell} differs")
+        elif a.kind == VANISHING_KIND and a.f[0] != b.f[0]:
+            bad.append(f"the phase at {cell} differs")
+        elif a.kind == CRUMBLING_KIND and a.f[:3] != b.f[:3]:
+            bad.append(f"the crumbling block's cell words at {cell} differ")
     if _circuits(L) != _circuits(C):
         bad.append("the circuits differ")
     if L.trailer.f[4] != C.trailer.f[4]:
@@ -1586,40 +1613,72 @@ def diff_words(L, C, classes, examples):
             examples.setdefault(what, []).append(f"{L.name} record {kd} at {a.cell} slot {slot} word {sw}: {da[w]} on the disc, {db[w]} rebuilt")
 
 
+# The words the rebuild writes differently outside the unread mask, each a leftover the game never reads, by its count on the disc.
+RESIDUALS = {
+    # the clock's f2, which the loader never turns
+    "kind 0..4 object type 8 f2": 27,
+    # an editor's leftovers in the unused slots of five platforms
+    "kind 5 slot 2 type": 4,
+    "kind 5 slot 3 type": 4,
+    "kind 5 slot 4 type": 4,
+    "kind 5 slot 5 type": 4,
+    "kind 5 slot 2 f4": 1,
+    # a deleted object's constants on three lasers
+    "kind 8 slot 0 f10": 3,
+    "kind 8 slot 0 f14": 3,
+    # a platform's position words on two blocks that were once platforms
+    **{f"kind 2 record word {w}": 1 for w in range(119, 125)},
+    **{f"kind 6 record word {w}": 1 for w in range(119, 125)},
+    # a slot's kind word, the scratch the game writes before it reads
+    "kind 0..4 object type 35 kind word": 1,
+    # LEVEL 125's two yellow teleporters, the one chain the disc left unlinked
+    "kind 0..4 object type 5 f6": 1,
+}
+# The levels whose rebuild keeps fewer records than the disc, by what it leaves out.
+DROPPED = {UNFLAGGED: 144, BARE_RECORDS: 2}
+
+
 def check(disc, out=print):
     """Rebuild every level of the disc from its fields and hold the result to the
     disc: in play, and word for word outside the unread mask. Returns (semantic
-    failures, residual classes)."""
-    classes, examples, failures = Counter(), {}, []
-    levels = left_out = folded_levels = 0
+    failures, residual classes, levels dropping records by what they drop)."""
+    classes, examples, failures, dropped = Counter(), {}, [], Counter()
+    levels = 0
     for theme, path in packs(disc):
         pak = Pak(disc.read_file(path), path)
         for i in range(len(pak)):
             L = Level(pak.level(i), pak.name(i), theme)
-            report = []
-            blob = canonical(project_of_level(L, report=report))
-            C = Level(blob, L.name, theme)
+            C = Level(canonical(project_of_level(L)), L.name, theme)
             levels += 1
             failures += [f"{L.name}: {m}" for m in C.verify()]
             failures += [f"{L.name}: {m}" for m in compare(L, C)]
-            settings = [r for r in L.records if r.kind == UNPLACED_KIND]
-            if settings and not any(r.type == 1 or r.f[0] == 1 for r in settings):
-                left_out += 1
-            folded_levels += any(m.startswith("folded") for m in report)
+            dropped.update(stripped(L)[1].keys())
             diff_words(L, C, classes, examples)
     out(f"{levels} levels rebuilt; every rebuild verifies and plays as the disc's"
         if not failures else f"{levels} levels rebuilt; {len(failures)} differ in play:")
     for f in failures:
         out(f"  {f}")
-    out(f"{left_out} levels leave out a settings record with no flag set, "
-        f"{folded_levels} fold a record carrying nothing into a plain block")
+    out(f"{dropped[UNFLAGGED]} levels leave out a settings record with no flag set, "
+        f"{dropped[BARE_RECORDS]} fold a record carrying nothing into a plain block")
     if not classes:
         out("no word differs outside the unread mask")
     for what, n in sorted(classes.items(), key=lambda kv: -kv[1]):
         out(f"{n:5} x {what}")
         for e in examples[what][:3]:
             out(f"        {e}")
-    return failures, classes
+    return failures, classes, dropped
+
+
+def residuals(classes, dropped):
+    """What the check found that its tables do not list, a line each."""
+    out = []
+    for what in sorted(set(classes) | set(RESIDUALS)):
+        if classes.get(what, 0) != RESIDUALS.get(what, 0):
+            out.append(f"{classes.get(what, 0)} x {what}, where the table lists {RESIDUALS.get(what, 0)}")
+    for what in sorted(set(dropped) | set(DROPPED)):
+        if dropped.get(what, 0) != DROPPED.get(what, 0):
+            out.append(f"{dropped.get(what, 0)} levels with {what}, where the table lists {DROPPED.get(what, 0)}")
+    return out
 
 
 def main():
@@ -1688,8 +1747,11 @@ def main():
         print(f"{len(fixture['cases'])} documents -> {HOSTILE.relative_to(ROOT)}")
     elif args.check:
         with open_disc(args.disc) as disc:
-            failures, classes = check(disc)
-        if failures:
+            failures, classes, dropped = check(disc)
+        unlisted = residuals(classes, dropped)
+        for line in unlisted:
+            print(f"not in the table: {line}", file=sys.stderr)
+        if failures or unlisted:
             sys.exit(1)
     else:
         ap.print_help()
