@@ -2,7 +2,16 @@
 // the result: the sectors a placement writes, each built whole, and the
 // patches made of them. tools/kula_place.py and tools/kula_patch.py are the
 // same arithmetic, and the fixture holds the two to the same bytes.
-import { DATA_SUBMODE, EOF_SUBMODE, SECTOR_RAW, USER, USER_OFF, check, sector } from "./sectors.js";
+import {
+  DATA_SUBMODE,
+  EOF_SUBMODE,
+  SECTOR_RAW,
+  USER,
+  USER_OFF,
+  check,
+  rewrite,
+  sector,
+} from "./sectors.js";
 import { IN_PLACE, REBUILD, fitPak, readPak, writePak } from "./pak.js";
 import { PVD, setRecord } from "./iso.js";
 import { WORLDS } from "./kwl.js";
@@ -93,11 +102,15 @@ async function differing(disc, lba, user, size) {
   return out;
 }
 
+// The directory sector with the file's record naming a new extent and size,
+// its own subheader kept.
 async function directory(disc, key, extent, size) {
   const { sector: at, offset } = disc.records.get(key);
-  const user = (await disc.rawSector(at)).slice(USER_OFF, USER_OFF + USER);
+  const have = await disc.rawSector(at);
+  const user = have.slice(USER_OFF, USER_OFF + USER);
   setRecord(user, offset, extent, size);
-  return differing(disc, at, user, USER);
+  const raw = rewrite(have, user);
+  return same(raw, have) ? [] : [[at, raw]];
 }
 
 // Where a pack of this size can move to: the head of the free file, with the

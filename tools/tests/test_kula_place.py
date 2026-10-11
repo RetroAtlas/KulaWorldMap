@@ -33,6 +33,7 @@ from kula_place import (  # noqa: E402
     ROOM_AT,
     ROOM_SECTORS,
     ROOT_AT,
+    SYNTHETIC_FINALS,
     SYNTHETIC_PACK,
     SYNTHETIC_SECTORS,
     WORLD_AT,
@@ -60,6 +61,7 @@ from kula_sector import (  # noqa: E402
     noise,
     raw_sector,
     rebuilt,
+    rewrite,
     sector,
 )
 
@@ -305,6 +307,30 @@ class ThePlacer(unittest.TestCase):
         (lba_le, lba_be), _ = both_ways(user(after, WORLD_AT), self.record[1])
         self.assertEqual((lba_le, lba_be), (ROOM_AT, ROOM_AT))
         self.assertEqual(placed.fit.room, LARGEST - placed.fit.size)
+
+    def test_a_directory_sector_is_rewritten_under_its_own_subheader(self):
+        dir_at = SYNTHETIC_SECTORS
+        with Disc(self.src) as disc:
+            cnf_at, cnf_size = disc.files["/SYSTEM.CNF"]
+            packs_ = [(path, disc.files[path]) for path in (SYNTHETIC_PACK, SYNTHETIC_FINALS)]
+        root = (record(b"\0", ROOT_AT, USER, 2) + record(b"\1", ROOT_AT, USER, 2)
+                + record("3.00;1", ROOM_AT, ROOM_SECTORS * USER) + record("HIRO", dir_at, 2 * USER, 2)
+                + record("SYSTEM.CNF;1", cnf_at, cnf_size))
+        world = record(b"\0", dir_at, 2 * USER, 2) + record(b"\1", ROOT_AT, USER, 2)
+        for path, (at, size) in packs_:
+            world += record(path.rsplit("/", 1)[1] + ";1", at, size)
+        image = bytearray(IMAGE)
+        image[ROOT_AT * SECTOR_RAW:(ROOT_AT + 1) * SECTOR_RAW] = sector(ROOT_AT, root.ljust(USER, b"\0"), EOF_SUBMODE)
+        image += sector(dir_at, world.ljust(USER, b"\0"), DATA_SUBMODE) + sector(dir_at + 1, bytes(USER), EOF_SUBMODE)
+        self.src.write_bytes(image)
+        placed = place(self.src, SYNTHETIC_PACK, SLOT, stream_of(synthetic(LEVELS[REBUILD])), self.out, TITLE)
+        self.assertEqual([lba for lba, _ in placed.writes], [PACK_AT, dir_at])
+        was = raw(bytes(image), dir_at)
+        written = dict(placed.writes)[dir_at]
+        self.assertEqual(written[:USER_OFF], was[:USER_OFF])
+        self.assertEqual(written[SUBHEADER_OFF + 2], DATA_SUBMODE)
+        self.assertEqual(written, rewrite(was, written[USER_OFF:EDC_OFF]))
+        self.assertTrue(check(written))
 
     def test_the_finals_pack_takes_a_level_too(self):
         stream, placed, after = self.placed(1, slot=0, title="Tiny", pack_path="/HIRO/HIROFI.PAK")

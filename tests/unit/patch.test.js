@@ -16,6 +16,7 @@ import {
   USER,
   USER_OFF,
   check,
+  rewrite,
   sector,
 } from "../../public/js/sectors.js";
 import {
@@ -47,6 +48,7 @@ import {
   verify,
 } from "../../public/js/patch.js";
 import {
+  CNF,
   CNF_AT,
   PACK_AT,
   ROOM_AT,
@@ -383,6 +385,39 @@ test("a pack that does not fit moves to the head of the room", async () => {
   const { offset } = disc.records.get(SYNTHETIC_PACK);
   assert.deepEqual(bothWaysAt(user(after, WORLD_AT), offset)[0], [ROOM_AT, ROOM_AT]);
   assert.equal(placed.fit.room, LARGEST - placed.fit.size);
+});
+
+test("a directory sector is rewritten under its own subheader, which need not be a file's last", async () => {
+  const DIR_AT = SYNTHETIC_SECTORS;
+  const root = concat([
+    record("\0", ROOT_AT, USER, 2),
+    record("\x01", ROOT_AT, USER, 2),
+    record("3.00;1", ROOM_AT, ROOM_SECTORS * USER),
+    record("HIRO", DIR_AT, 2 * USER, 2),
+    record("SYSTEM.CNF;1", CNF_AT, CNF.length),
+  ]);
+  const world = concat([
+    record("\0", DIR_AT, 2 * USER, 2),
+    record("\x01", ROOT_AT, USER, 2),
+    ...syntheticPacks().map(([path, at, blob]) =>
+      record(`${path.split("/").pop()};1`, at, blob.length),
+    ),
+  ]);
+  const image = concat([
+    IMAGE,
+    sector(DIR_AT, padded(world, USER), DATA_SUBMODE),
+    sector(DIR_AT + 1, new Uint8Array(USER), EOF_SUBMODE),
+  ]);
+  image.set(sector(ROOT_AT, padded(root, USER), EOF_SUBMODE), ROOT_AT * SECTOR_RAW);
+  const { disc, placed } = await place(streamOf(synthetic(CASE.rebuild.blocks)), { image });
+  assert.equal(disc.records.get(SYNTHETIC_PACK).sector, DIR_AT);
+  assert.deepEqual(lbas(placed), [PACK_AT, DIR_AT]);
+  const written = placed.writes.find(([lba]) => lba === DIR_AT)[1];
+  const was = raw(image, DIR_AT);
+  same(written.subarray(0, USER_OFF), was.subarray(0, USER_OFF));
+  assert.equal(written[SUBMODE_AT], DATA_SUBMODE);
+  same(written, rewrite(was, written.subarray(USER_OFF, USER_OFF + USER)));
+  assert.ok(check(written));
 });
 
 test("the finals pack takes a level too", async () => {

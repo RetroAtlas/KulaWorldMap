@@ -42,6 +42,7 @@ from kula_sector import (
     USER_OFF,
     check,
     raw_sector,
+    rewrite,
     sector,
     sectors_of,
 )
@@ -149,12 +150,14 @@ def _sectors(disc, lba, user, size):
 
 
 def _directory(disc, key, extent, size):
-    """The directory sector with the file's record naming a new extent and size."""
+    """The directory sector with the file's record naming a new extent and size,
+    its own subheader kept."""
     at, pos = disc.records[key]
     raw = raw_sector(disc.f, at)
     user = bytearray(raw[USER_OFF:USER_OFF + USER])
     set_record(user, pos, extent, size)
-    return _sectors(disc, at, user, USER)
+    new = rewrite(raw, user)
+    return [] if new == raw else [(at, new)]
 
 
 def _room(disc, size):
