@@ -51,6 +51,22 @@ async function opened(page, name, project) {
   return shownDraft(page);
 }
 
+/** The store as another tab would write it, once this tab's write of the draft has landed. */
+async function stored(page, id) {
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("kula.drafts")))
+    .toContain(`"${id}":`);
+  return page.evaluate(() => JSON.parse(localStorage.getItem("kula.drafts")));
+}
+
+/** Write the store from a second tab of the same browser, which reaches the first as a storage event. */
+async function elsewhere(page, store) {
+  const other = await page.context().newPage();
+  await other.goto("/");
+  await other.evaluate((s) => localStorage.setItem("kula.drafts", JSON.stringify(s)), store);
+  await other.close();
+}
+
 test("the draft goes onto the disc as the fixture's bytes, the slot kept on the draft", async ({
   page,
 }) => {
@@ -270,6 +286,112 @@ test("an image dropped beside the box is taken rather than opened in the tab", a
   expect(prevented).toEqual([true, true]);
   await expect(dialog.locator("#patchStatus")).toHaveText("dropped.bin is read.");
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  expect(errors).toEqual([]);
+});
+
+test("a draft whose id another tab takes while the box is opening is still the one the box shows", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  const shown = await opened(page, "spiral.kula.json", synthetic(6));
+  const store = await stored(page, shown);
+  let held = null;
+  await page.route("**/packs.json", (route) => {
+    held = route;
+  });
+  const id = await page.evaluate(
+    async ([project, store]) => {
+      const drafts = await import(new URL("js/drafts.js", location.href).href);
+      const { openPatchDialog } = await import(new URL("js/patchdialog.js", location.href).href);
+      const id = drafts.create(project);
+      openPatchDialog(id);
+      store.drafts[id] = {
+        doc: { ...project, title: "Theirs" },
+        updated: Date.now(),
+        saved: null,
+        edits: 0,
+      };
+      store.next = id + 1;
+      const text = JSON.stringify(store);
+      localStorage.setItem("kula.drafts", text);
+      dispatchEvent(
+        new StorageEvent("storage", {
+          key: "kula.drafts",
+          newValue: text,
+          storageArea: localStorage,
+        }),
+      );
+      return id;
+    },
+    [synthetic(6, "Second"), store],
+  );
+  await expect.poll(() => held !== null).toBe(true);
+  await held.continue();
+  const dialog = page.locator("#patch");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator(".name")).toHaveText("Second");
+  await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
+  expect((await docOf(page, id + 1)).into).toBe("/HIRO/HIRO.PAK#1");
+  expect((await docOf(page, id)).title).toBe("Theirs");
+  expect(errors).toEqual([]);
+});
+
+test("a draft another tab repairs under the open box is written as it is now, not as it was", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  const broken = { ...synthetic(6), hidden: true };
+  delete broken.blocks[0].faces;
+  const id = await opened(page, "spiral.kula.json", broken);
+  const store = await stored(page, id);
+  await openPatch(page, id);
+  const dialog = page.locator("#patch");
+  await expect(dialog.locator("#patchChecks .errors li")).toHaveText(["error: no start"]);
+  await expect(dialog.locator("#patchPlays")).toHaveText(
+    "Plays as a hidden level, with the glass ball on half-seen blocks.",
+  );
+  await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
+  await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
+  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchPpf")).toBeDisabled();
+
+  const repaired = await stored(page, id);
+  repaired.drafts[id].doc = { ...synthetic(6), into: "/HIRO/HIRO.PAK#1" };
+  repaired.drafts[id].updated = store.drafts[id].updated + 60000;
+  await elsewhere(page, repaired);
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator("#patchChecks .errors")).toHaveCount(0);
+  await expect(dialog.locator("#patchChecks details summary")).toHaveText("1 warning");
+  await expect(dialog.locator("#patchPlays")).toHaveText("Plays as an arcade level.");
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 179 bytes to spare.",
+  );
+  await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  const patch = await saved(page, dialog.locator("#patchPpf"));
+  expect(sha256(patch.bytes)).toBe(CASE.ppf);
+
+  const renamed = await stored(page, id);
+  renamed.drafts[id].doc = { ...renamed.drafts[id].doc, title: "Helix" };
+  renamed.drafts[id].updated += 60000;
+  await elsewhere(page, renamed);
+  await expect(dialog.locator(".name")).toHaveText("Helix");
+  await expect(dialog.locator("#patchPlay li").nth(2)).toContainText('"helix.xdelta" "helix.bin"');
+  const again = await saved(page, dialog.locator("#patchPpf"));
+  expect(again.name).toBe("helix.ppf");
+  expect(sha256(again.bytes)).not.toBe(CASE.ppf);
+  expect(again.bytes.subarray(6, 56).toString("latin1").trimEnd()).toBe("Kula World Map: Helix");
+
+  const deleted = await stored(page, id);
+  delete deleted.drafts[id];
+  await elsewhere(page, deleted);
+  await expect(dialog).toBeHidden();
+  await expect(page.locator("#toastStack .toast")).toHaveText([
+    "Another tab deleted Helix, so the box closed without a patch.",
+  ]);
   expect(errors).toEqual([]);
 });
 

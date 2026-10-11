@@ -2,10 +2,11 @@
 // the fit, the image and the patches, then where each emulator wants them. The
 // fit is worked out from the packs' layout until the image is given and read
 // from the image after, and every byte of the patches is written here.
-import { el } from "./dom.js";
+import { el, on } from "./dom.js";
 import { state } from "./state.js";
 import { levelTitle, loadJson, skinsTable, worldName } from "./data.js";
-import { openDialog } from "./dialog.js";
+import { closeDialog, openDialog } from "./dialog.js";
+import { toast } from "./toast.js";
 import { writeKwl } from "./kwl.js";
 import { deflate } from "./deflate.js";
 import { ERROR, UNTITLED, describe, playsAs, setMeta, validate } from "./project.js";
@@ -34,6 +35,7 @@ const READY = "Save what your emulator wants.";
 const NO_BLOB = "This browser cannot put the patched disc together; take a patch instead.";
 const LATER = "Once the disc is given, this says where each emulator wants the patch.";
 const INSTEAD = "Mednafen, Beetle and RetroArch apply no patch and play the patched disc instead.";
+const gone = (name) => `Another tab deleted ${name}, so the box closed without a patch.`;
 
 let layout = null;
 let ui = null;
@@ -50,6 +52,7 @@ const themeOf = (pack) => pack.split("/")[1];
 const nameOf = () => d.doc.title || UNTITLED;
 const base = () => slug(nameOf());
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const showing = () => d !== null && !ui.overlay.hidden;
 
 function fitText(f) {
   const spare = `with ${plural(f.room, "byte")} to spare`;
@@ -168,20 +171,52 @@ function build() {
   u.overlay.setAttribute("aria-modal", "true");
   u.overlay.setAttribute("aria-labelledby", "patchTitle");
   document.body.append(u.overlay);
+  on("drafts-moved", (pairs) => {
+    const to = pairs.find(([from]) => from === d?.id)?.[1];
+    if (to !== undefined) d.id = to;
+  });
+  on("drafts-merged", (ids) => {
+    if (showing() && ids.includes(d.id)) refresh();
+  });
+  on("drafts-changed", () => {
+    if (showing() && drafts.get(d.id)?.doc !== d.doc) refresh();
+  });
   return u;
 }
 
 /** Open the dialog for the draft with this id. */
 export async function openPatchDialog(id) {
-  const entry = drafts.get(id);
-  if (!entry) return;
+  if (!drafts.get(id)) return;
   turn++;
   ui ??= build();
+  // Only the id while the layout loads, so the drafts-moved handler can keep it current.
+  d = { id };
   layout ??= await loadJson("packs.json");
-  d = { id, doc: entry.doc, stream: null, file: null, disc: null, placed: null, image: null };
+  id = d.id;
+  if (!drafts.get(id)) return;
+  d = { id, file: null, disc: null, placed: null, image: null, imageName: null };
+  ui.disc.value = "";
+  ui.status.textContent = "";
+  refresh();
+  openDialog(ui.overlay);
+}
+
+// The box for the draft as the store holds it now, run again whenever the store replaces it.
+function refresh() {
+  const entry = drafts.get(d.id);
+  if (!entry) {
+    const name = nameOf();
+    turn++;
+    d = null;
+    closeDialog();
+    toast(gone(name));
+    return;
+  }
+  d.doc = entry.doc;
   ui.name.textContent = nameOf();
   ui.plays.textContent = playsAs(d.doc);
   d.errors = checks();
+  d.stream = null;
   try {
     d.stream = deflate(writeKwl(d.doc), LEVEL);
   } catch (e) {
@@ -193,12 +228,12 @@ export async function openPatchDialog(id) {
   slots();
   d.into = pick();
   ui.slot.value = d.into;
-  ui.disc.value = "";
-  ui.status.textContent = "";
   target();
-  downloads();
-  play();
-  openDialog(ui.overlay);
+  if (d.disc) placed();
+  else {
+    downloads();
+    play();
+  }
 }
 
 function checks() {
@@ -263,19 +298,12 @@ function pick() {
 }
 
 function choose(into) {
-  d.into = into;
   const entry = drafts.get(d.id);
   if (entry) {
-    edit(d.id, setMeta(entry.doc, { into }), "changed the target slot");
-    d.doc = drafts.get(d.id).doc;
-    d.errors = checks();
+    d.doc = setMeta(entry.doc, { into });
+    edit(d.id, d.doc, "changed the target slot");
   }
-  target();
-  if (d.disc) placed();
-  else {
-    downloads();
-    play();
-  }
+  refresh();
 }
 
 function target() {
