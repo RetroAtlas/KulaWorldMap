@@ -154,7 +154,8 @@ function rows() {
   const focused = box.contains(document.activeElement) ? document.activeElement.dataset.id : null;
   box.textContent = "";
   const all = drafts.list();
-  $("draftEmpty").hidden = all.length > 0;
+  const unread = drafts.unreadCount();
+  $("draftEmpty").hidden = all.length > 0 || unread > 0;
   for (const d of all) {
     const name = nameOf(d.doc);
     const b = el("button", { type: "button", title: `Show ${name}` });
@@ -169,6 +170,52 @@ function rows() {
     box.append(b);
   }
   if (focused) box.querySelector(`[data-id="${focused}"]`)?.focus();
+  $("draftUnread")?.remove();
+  if (unread) box.after(unreadRow(unread));
+}
+
+/** Make `button` ask to be pressed again within a moment before it does `act`; returns what disarms it. */
+function twice(button, label, title, act) {
+  let armed = 0;
+  const disarm = () => {
+    clearTimeout(armed);
+    armed = 0;
+    button.textContent = label;
+    button.title = title;
+    button.classList.remove("warn");
+  };
+  button.textContent = label;
+  button.title = title;
+  button.onclick = () => {
+    if (!armed) {
+      button.textContent = `${label}?`;
+      button.title = `Press again to ${title.charAt(0).toLowerCase()}${title.slice(1)}`;
+      button.classList.add("warn");
+      armed = setTimeout(disarm, CONFIRM_MS);
+      return;
+    }
+    disarm();
+    act();
+  };
+  return disarm;
+}
+
+function unreadRow(n) {
+  const plural = n === 1 ? "" : "s";
+  const remove = el("button", { type: "button" });
+  twice(remove, "remove", "Remove what could not be read from this browser", () => {
+    drafts.removeUnread();
+    say(`Removed ${n} draft${plural} that could not be read.`);
+  });
+  return el(
+    "div",
+    { id: "draftUnread", className: "unread" },
+    el("span", {
+      className: "state",
+      textContent: `${n} draft${plural} in this browser could not be read`,
+    }),
+    remove,
+  );
 }
 
 function card(id, d) {
@@ -285,30 +332,13 @@ function buildForm(id, box) {
   });
   duplicate.onclick = () => open(drafts.duplicate(id), "Copied the level");
 
-  const DELETE = "Delete this level from this browser";
-  const del = el("button", { type: "button", textContent: "delete", title: DELETE });
-  let armed = 0;
-  const disarm = () => {
-    clearTimeout(armed);
-    armed = 0;
-    del.textContent = "delete";
-    del.title = DELETE;
-    del.classList.remove("warn");
-  };
-  del.onclick = () => {
-    if (!armed) {
-      del.textContent = "delete?";
-      del.title = "Press again to delete this level from this browser";
-      del.classList.add("warn");
-      armed = setTimeout(disarm, CONFIRM_MS);
-      return;
-    }
-    disarm();
+  const del = el("button", { type: "button" });
+  const disarm = twice(del, "delete", "Delete this level from this browser", () => {
     const name = nameOf(drafts.get(id).doc);
     $("draftNew").focus();
     drafts.remove(id);
     say(`Deleted ${name}. ${describeLevel(state.lvl)}`);
-  };
+  });
 
   box.append(
     imported?.id === id && imported.lines.length ? reportFold(imported.lines) : [],

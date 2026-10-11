@@ -6,6 +6,7 @@ import { WORLDS, writeKwl } from "./kwl.js";
 import { UNTITLED, readProject } from "./project.js";
 import { KEY, draftShaped, idOf } from "./held.js";
 
+const SAID = "kula.drafts.said";
 const VERSION = 1;
 const SETTLE = 300;
 const FULL = "This browser cannot hold more drafts; save them to files and delete some.";
@@ -17,8 +18,9 @@ const displaced = (name) =>
 const empty = () => ({ version: VERSION, next: 1, drafts: {} });
 
 let store = empty();
-// Entries that could not be read, written back as they are.
-let unread = {};
+// Entries that could not be read, written back as they are until removed here.
+let unread = Object.create(null);
+let forgotten = false;
 let memoryOnly = false;
 let timer = 0;
 let refused = false;
@@ -51,7 +53,7 @@ function entryOf(raw) {
 /** The store `text` holds, and the entries of it that could not be read. */
 function parse(text) {
   const out = empty();
-  const left = {};
+  const left = Object.create(null);
   let raw = null;
   try {
     raw = JSON.parse(text ?? "null");
@@ -86,11 +88,32 @@ export function load() {
   const read = parse(text);
   store = read.store;
   unread = read.unread;
-  const n = Object.keys(unread).length;
-  if (n)
+  const n = unreadCount();
+  if (n && !saidBefore())
     toast(
       `${n} draft${n === 1 ? "" : "s"} in this browser could not be read and ${n === 1 ? "is" : "are"} kept as ${n === 1 ? "it is" : "they are"}.`,
     );
+}
+
+/** Whether this session has been told of the entries that could not be read. */
+function saidBefore() {
+  try {
+    if (sessionStorage.getItem(SAID)) return true;
+    sessionStorage.setItem(SAID, "1");
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+export const unreadCount = () => Object.keys(unread).length;
+
+/** Let the entries that could not be read go. */
+export function removeUnread() {
+  if (!unreadCount()) return;
+  unread = Object.create(null);
+  forgotten = true;
+  changed();
 }
 
 /** Every draft, the one changed last first. */
@@ -170,12 +193,15 @@ function write() {
   dirty.clear();
   deleted.clear();
   handed.clear();
+  forgotten = false;
   emit("drafts-written");
 }
 
+const waiting = () => dirty.size > 0 || deleted.size > 0 || forgotten;
+
 /** Write what waits now, a write the browser refused included. */
 export function flush() {
-  if (timer || dirty.size || deleted.size) write();
+  if (timer || waiting()) write();
 }
 
 addEventListener("pagehide", flush);
@@ -222,14 +248,14 @@ function absorb(text) {
   if (text === known) return false;
   known = text;
   const read = parse(text);
-  unread = read.unread;
+  if (!forgotten) unread = read.unread;
   merge(read.store);
   return true;
 }
 
 function take(text) {
   absorb(text);
-  if (dirty.size || deleted.size) changed();
+  if (waiting()) changed();
   else emit("drafts-changed");
 }
 

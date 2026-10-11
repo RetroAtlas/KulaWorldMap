@@ -370,6 +370,8 @@ test("a draft in the store that cannot be read is kept as it is, with one toast,
   expect((await toasts(page)).filter((t) => t.includes("could not be read"))).toEqual([
     "3 drafts in this browser could not be read and are kept as they are.",
   ]);
+  const row = page.locator("#draftUnread");
+  await expect(row.locator(".state")).toHaveText("3 drafts in this browser could not be read");
   // a change here writes the store with those entries as they were
   await page.locator("#draftTitle").fill("Good II");
   await written(page, (s) => s?.drafts[1]?.doc.title).toBe("Good II");
@@ -381,13 +383,80 @@ test("a draft in the store that cannot be read is kept as it is, with one toast,
     unread[4],
   ]);
 
-  // a link to one that was left out gives way to the first level
+  // a link to one that was left out gives way to the first level, and the session is told once
   await page.goto("about:blank");
   await page.goto("/#DRAFT/2/45,35/fit/33");
   await settle(page);
   expect((await shown(page)).li).toBe(0);
   await expect(page.locator("#draftRows button")).toHaveCount(1);
   await expect(page.locator("#draftRows button")).toHaveAttribute("aria-current", "false");
+  await expect(row).toHaveCount(1);
+  expect(await toasts(page)).toEqual([]);
+
+  // the row's remove asks to be pressed again, then lets them go, the readable draft kept
+  const remove = row.locator("button");
+  await expect(remove).toHaveText("remove");
+  await remove.click();
+  await expect(remove).toHaveText("remove?");
+  await expect(remove).toHaveClass(/warn/);
+  await expect(remove).toHaveAttribute(
+    "title",
+    "Press again to remove what could not be read from this browser",
+  );
+  await remove.click();
+  await expect(row).toHaveCount(0);
+  await expect(page.locator("#draftRows button .name")).toHaveText(["Good"]);
+  await expect(page.locator("#say")).toHaveText("Removed 3 drafts that could not be read.");
+  await written(page, (s) => Object.keys(s?.drafts ?? {})).toEqual(["1"]);
+  expect((await stored(page)).next).toBe(5);
+  expect(errors).toEqual([]);
+});
+
+test("entries that cannot be read do not load the editor by themselves, and a key the language reserves is kept like any other", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const requested = [];
+  page.on("request", (r) => requested.push(new URL(r.url()).pathname));
+  const fetched = () => requested.filter((p) => EDITOR_FILES.test(p));
+  const text = '{"version":1,"next":1,"drafts":{"__proto__":{"doc":1},"9":null}}';
+  await page.addInitScript(
+    ([key, text]) => {
+      try {
+        localStorage.setItem(key, text);
+      } catch {
+        /* the blank page has no storage */
+      }
+    },
+    [KEY, text],
+  );
+  await page.goto(EDIT);
+  await settle(page);
+  expect(fetched()).toEqual([]);
+  expect(await toasts(page)).toEqual([]);
+  await expect(page.locator("#draftEmpty")).toBeVisible();
+
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  expect(fetched()).toContain("/js/editor.js");
+  expect((await shown(page)).draft).toBe(10);
+  await expect(page.locator("#toastStack .toast")).toHaveText([
+    "2 drafts in this browser could not be read and are kept as they are.",
+  ]);
+  await expect(page.locator("#draftUnread .state")).toHaveText(
+    "2 drafts in this browser could not be read",
+  );
+  await expect(page.locator("#draftEmpty")).toBeHidden();
+  // read inside the page, since a key named __proto__ does not survive the trip out of it
+  const keys = () =>
+    page.evaluate((key) => {
+      const drafts = JSON.parse(localStorage.getItem(key) ?? "{}").drafts ?? {};
+      return Object.keys(drafts)
+        .sort()
+        .map((k) => `${k}=${JSON.stringify(drafts[k])}`);
+    }, KEY);
+  await expect.poll(keys).toHaveLength(3);
+  expect((await keys()).slice(1)).toEqual(["9=null", '__proto__={"doc":1}']);
   expect(errors).toEqual([]);
 });
 
