@@ -5,7 +5,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { mapData, levelKey } from "./fixtures.js";
-import { REWIRED, projectOf, writeKwl } from "../../public/js/kwl.js";
+import { REWIRED, projectOf, readKwl, writeKwl } from "../../public/js/kwl.js";
+import { community } from "./synthetic.js";
 import {
   NOT_LINK,
   OWN_LEVEL,
@@ -32,6 +33,7 @@ const link = (text) =>
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 
+const COMMUNITY_DIGEST = "ae92811f550d5fde6e4c0a646b813d88108f9cd247efb2099fe5ce59c4022314";
 const START = { id: 30, option: 1, variant: 0, state: 0 };
 const BARE = { id: 0, option: 65535, variant: 65535, state: 0 };
 const level = (blocks, more = {}) => ({ time: 99, hidden: false, reverse: false, blocks, ...more });
@@ -74,6 +76,23 @@ test("the share link of each reads to the same level, in the disc's world the li
       n,
     );
   }
+});
+
+test("a level file as the community leaves one, with no trailer and its own wiring, reads the same on both sides", () => {
+  const bytes = community();
+  assert.equal(sha256(bytes), COMMUNITY_DIGEST);
+  assert.equal(bytes.length, 78614 + 256 * 3);
+  const { project, report } = readKwl(bytes, "HIRO");
+  assert.deepEqual(report, ["no trailer, so the time is 99", REWIRED]);
+  assert.deepEqual(project.blocks, [
+    { cell: [10, 10, 10], kind: 0, faces: { 0: { type: 9, variant: 1 } } },
+    { cell: [11, 10, 10], kind: 0, faces: { 0: { type: 30, facing: 1 } } },
+    { cell: [12, 10, 10], kind: 0, faces: { 0: { type: 5, facing: 1, variant: 1 } } },
+  ]);
+  assert.deepEqual([project.time, project.hidden, project.circuits], [99, false, {}]);
+  const again = writeKwl(project);
+  assert.notDeepEqual(Buffer.from(again), Buffer.from(bytes));
+  assert.deepEqual(readKwl(again, "HIRO").project.blocks, project.blocks);
 });
 
 test("a level is told by its blocks at positions and its time", () => {

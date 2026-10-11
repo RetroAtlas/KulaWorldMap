@@ -3,7 +3,18 @@
 // one-sector packs of small levels, the world pack's at level 1 so that
 // recompression wins room, a /3.00 of zero sectors and a postgap. The fixture
 // holds its digest, so the two builders cannot drift apart.
-import { FORMAT, VERSION, writeKwl } from "../../public/js/kwl.js";
+import {
+  CELLS,
+  FORMAT,
+  GRID_BYTES,
+  HEAD,
+  RECORD,
+  SLOT,
+  VERSION,
+  WORDS,
+  writeKwl,
+} from "../../public/js/kwl.js";
+import { SIDE } from "../../public/js/state.js";
 import { deflate } from "../../public/js/deflate.js";
 import { writePak } from "../../public/js/pak.js";
 import { record } from "../../public/js/iso.js";
@@ -60,6 +71,44 @@ export function synthetic(n, title = "Spiral") {
 }
 
 export const streamOf = (project, level = 6) => deflate(writeKwl(project), level);
+
+const BARE = [-1, 0, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
+// A switch of colour 1 whose list head is record 0, its own; a start; a
+// teleporter of colour 1 wired to nothing.
+const COMMUNITY = [
+  [
+    [10, 10, 10],
+    [0, 9, 0, 1, 1, -1, -1, 0, 0, 256, 0, -1, -1, -1, 0, -1],
+  ],
+  [
+    [11, 10, 10],
+    [0, 30, 1, 0, 0, -1, -1, -1, 0, 256, 0, -1, -1, -1, 0, -1],
+  ],
+  [
+    [12, 10, 10],
+    [0, 5, 1, 1, 1, -1, -1, -1, 0, 256, 1, -1, -1, -1, 30, -1],
+  ],
+];
+
+/** A level file as the community's tools leave one: no trailer, the links as they stand. */
+export function community() {
+  const out = new Uint8Array(GRID_BYTES + HEAD + RECORD * COMMUNITY.length);
+  const view = new DataView(out.buffer);
+  for (let i = 0; i < CELLS; i++) view.setUint16(2 * i, 0xffff, true);
+  COMMUNITY.forEach(([cell, top], k) => {
+    view.setUint16(2 * ((cell[0] * SIDE + cell[1]) * SIDE + cell[2]), 5 + k, true);
+    const words = [
+      ...top,
+      ...Array(5).fill(BARE).flat(),
+      ...Array(WORDS - 6 * SLOT - 3).fill(-1),
+      ...cell,
+    ];
+    words.forEach((w, i) => view.setInt16(GRID_BYTES + HEAD + RECORD * k + 2 * i, w, true));
+  });
+  view.setInt32(GRID_BYTES, COMMUNITY.length, true);
+  view.setUint16(GRID_BYTES + 4, COMMUNITY.length, true);
+  return out;
+}
 
 /** So many bytes from a seed, the same in every run and every language. */
 export function noise(seed, n = USER) {

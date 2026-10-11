@@ -5,6 +5,7 @@ disc's structure. The last class holds the placer to the disc under
 $KULA_DISC, on one copy of it, and is skipped without it.
 """
 
+import hashlib
 import os
 import shutil
 import struct
@@ -19,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from disc import EXTENT, SIZE, Disc, record  # noqa: E402
 from kula_disc import open_disc, packs  # noqa: E402
-from kula_kwl import canonical, project_of_level  # noqa: E402
+from kula_kwl import REWIRED, canonical, project_of_level, read_kwl  # noqa: E402
 from kula_level import Level  # noqa: E402
 from kula_pak import Pak, pack  # noqa: E402
 from kula_place import (  # noqa: E402
@@ -92,6 +93,43 @@ def both_ways(data, pos):
     """A directory record's extent and size, each as (little-endian, big-endian)."""
     return ((struct.unpack_from("<I", data, pos + EXTENT)[0], struct.unpack_from(">I", data, pos + EXTENT + 4)[0]),
             (struct.unpack_from("<I", data, pos + SIZE)[0], struct.unpack_from(">I", data, pos + SIZE + 4)[0]))
+
+
+BARE = [-1, 0, -1, -1, 0] + [-1] * 11
+COMMUNITY = [
+    ((10, 10, 10), [0, 9, 0, 1, 1, -1, -1, 0, 0, 256, 0, -1, -1, -1, 0, -1]),
+    ((11, 10, 10), [0, 30, 1, 0, 0, -1, -1, -1, 0, 256, 0, -1, -1, -1, 0, -1]),
+    ((12, 10, 10), [0, 5, 1, 1, 1, -1, -1, -1, 0, 256, 1, -1, -1, -1, 30, -1]),
+]
+
+
+def community():
+    """A level file as the community's tools leave one: no trailer, the links as they stand."""
+    lattice = [0xFFFF] * (34 ** 3)
+    records = []
+    for k, (cell, top) in enumerate(COMMUNITY):
+        lattice[(cell[0] * 34 + cell[1]) * 34 + cell[2]] = 5 + k
+        words = top + BARE * 5 + [-1] * (128 - 96 - 3) + list(cell)
+        records.append(struct.pack("<128h", *words))
+    return struct.pack(f"<{34 ** 3}H", *lattice) + struct.pack("<iH", len(COMMUNITY), len(COMMUNITY)) + b"".join(records)
+
+
+class TheCommunityFile(unittest.TestCase):
+    def test_a_level_file_with_no_trailer_and_its_own_wiring_reads_the_same_on_both_sides(self):
+        blob = community()
+        self.assertEqual(len(blob), 78614 + 256 * 3)
+        self.assertEqual(hashlib.sha256(blob).hexdigest(), "ae92811f550d5fde6e4c0a646b813d88108f9cd247efb2099fe5ce59c4022314")
+        project, report = read_kwl(blob, "HIRO")
+        self.assertEqual(report, ["no trailer, so the time is 99", REWIRED])
+        self.assertEqual(project["blocks"], [
+            {"cell": [10, 10, 10], "kind": 0, "faces": {"0": {"type": 9, "variant": 1}}},
+            {"cell": [11, 10, 10], "kind": 0, "faces": {"0": {"type": 30, "facing": 1}}},
+            {"cell": [12, 10, 10], "kind": 0, "faces": {"0": {"type": 5, "facing": 1, "variant": 1}}},
+        ])
+        self.assertEqual((project["time"], project["hidden"], project["circuits"]), (99, False, {}))
+        again = canonical(project)
+        self.assertNotEqual(again, blob)
+        self.assertEqual(read_kwl(again, "HIRO")[0]["blocks"], project["blocks"])
 
 
 class ThePack(unittest.TestCase):
