@@ -32,6 +32,7 @@ from kula_kwl import (  # noqa: E402
     project_of,
     project_of_level,
     read_kwl,
+    read_project,
     render_digests,
     render_vectors,
     template,
@@ -429,6 +430,87 @@ class Reads(unittest.TestCase):
         self.assertEqual(sum("is not a block" in line for line in report), 7)
 
 
+class ReadsProjects(unittest.TestCase):
+    def test_the_reader_refuses_another_formats_file_and_nothing_else(self):
+        for raw in ({"format": "orbit", "blocks": []}, {"version": 1, "blocks": []}, [], "text", None):
+            with self.assertRaises(ValueError):
+                read_project(raw)
+        p, report = read_project({"format": FORMAT})
+        self.assertEqual(report, ["no blocks"])
+        self.assertEqual(p, {"format": FORMAT, "version": 1, "title": "", "author": "", "notes": "", "world": "",
+                             "time": 99, "hidden": False, "invisibleFromAfar": False, "circuits": {}, "blocks": []})
+
+    def test_the_reader_takes_what_it_knows_of_a_newer_file_fills_the_defaults_and_drops_what_cannot_be_a_block(self):
+        coin = {"type": COIN, "variant": 0}
+        p, report = read_project({
+            "format": FORMAT, "version": 7, "world": "HAZE", "weather": "rain", "time": "soon", "hidden": "yes",
+            "circuits": {"1": "off", "2": "on", "7": "off", "3": "maybe"},
+            "blocks": [
+                {"cell": [5, 5, 5], "kind": 0, "faces": {"0": {"type": START, "facing": 3, "colour": 9}, "top": coin,
+                                                          "2": {"kind": 1}}, "mood": 2},
+                {"cell": [5, 5], "kind": 0},
+                {"cell": [6, 5, 5]},
+                "a block",
+                {"cell": [7, 5, 5], "kind": PLATFORM_KIND, "far": [7, 9, 5]},
+                {"cell": [9, 5, 5], "kind": LASER_KIND, "far": [9, 9, 5]},
+                {"cell": [11, 5, 5], "kind": 7},
+                {"cell": [5, 5, 5], "kind": 2},
+                {"cell": [40, 5, 5], "kind": 0},
+            ],
+        })
+        self.assertEqual(p["version"], 1)
+        self.assertNotIn("weather", p)
+        self.assertEqual([p["title"], p["author"], p["notes"], p["world"], p["time"], p["hidden"], p["invisibleFromAfar"]],
+                         ["", "", "", "HAZE", 99, False, False])
+        self.assertEqual(p["circuits"], {"1": "off"})
+        self.assertEqual(p["blocks"], [
+            {"cell": [5, 5, 5], "kind": 0, "faces": {"0": {"type": START, "facing": 3}}},
+            {"cell": [5, 5, 5], "kind": 2},
+            {"cell": [7, 5, 5], "kind": PLATFORM_KIND, "far": [7, 9, 5], "length": 2, "speed": 30},
+            {"cell": [9, 5, 5], "kind": LASER_KIND, "far": [9, 9, 5], "colour": 0},
+            {"cell": [11, 5, 5], "kind": 7, "phase": 0},
+            {"cell": [40, 5, 5], "kind": 0},
+        ])
+        self.assertEqual(report, [
+            "written as version 7 of the format, newer than this reader's 1; what it knows is read",
+            'a time of "soon" is not a whole number; it is 99',
+            "hidden is neither true nor false; it is taken as false",
+            "colour 3 is neither on nor off; it starts on",
+            "colour 7 is not one of the four; it is left out",
+            "block 0 at 5,5,5 face 2 holds nothing that could stand on a face; it is left out",
+            'block 0 at 5,5,5 names a face "top", which is not one of the six; it is left out',
+            "block 1 has no cell of three whole numbers and a kind; it is left out",
+            "block 2 has no cell of three whole numbers and a kind; it is left out",
+            "block 3 has no cell of three whole numbers and a kind; it is left out",
+        ])
+        errors = texts(validate(p, HIDES), "error")
+        self.assertIn("two blocks on one cell", errors)
+        self.assertIn("the game builds nothing past the edge", errors)
+
+    def test_a_whole_number_is_whole_however_json_spells_it(self):
+        p, report = read_project({"format": FORMAT, "world": WORLD, "time": 45.0,
+                                  "blocks": [{"cell": [5.0, 5, 5], "kind": 0.0, "faces": {"0": {"type": 30.0, "facing": 3.0}}}]})
+        self.assertEqual(report, [])
+        self.assertEqual(p["time"], 45)
+        self.assertEqual(p["blocks"], [{"cell": [5, 5, 5], "kind": 0, "faces": {"0": {"type": START, "facing": 3}}}])
+        self.assertTrue(all(isinstance(v, int) for v in (p["time"], *p["blocks"][0]["cell"], p["blocks"][0]["kind"])))
+        p, report = read_project({"format": FORMAT, "world": WORLD,
+                                  "blocks": [{"cell": [5, 5, 5], "kind": 0, "faces": {"0": start(), "1": {"type": 1e308}}}]})
+        self.assertEqual(report, [])
+        self.assertIn("type 1e+308 is nothing the game plays", texts(validate(p, HIDES), "error"))
+        with self.assertRaises(ValueError) as caught:
+            canonical(p)
+        self.assertIn("outside the file's range", str(caught.exception))
+
+    def test_a_face_key_is_read_by_its_number_and_a_second_spelling_of_one_face_is_left_out(self):
+        coin = {"type": COIN, "variant": 0}
+        p, report = read_project({"format": FORMAT, "world": WORLD,
+                                  "blocks": [{"cell": [5, 5, 5], "kind": 0, "faces": {"05": coin, "5": {"type": KEY}, "00": start()}}]})
+        self.assertEqual(p["blocks"][0]["faces"], {"0": start(), "5": {"type": KEY}})
+        self.assertEqual(report, ['block 0 at 5,5,5 names face 5 again as "05"; it is left out'])
+        self.assertEqual(texts(validate(p, HIDES), "error"), [])
+
+
 class Validates(unittest.TestCase):
     def errors(self, blocks, **more):
         return texts(validate(project(blocks, **more), HIDES), "error")
@@ -686,6 +768,24 @@ class TheCli(unittest.TestCase):
     def run_tool(self, *args):
         return subprocess.run([sys.executable, TOOL, *map(str, args)], capture_output=True, text=True)
 
+    def test_a_project_file_is_read_as_the_page_reads_one_and_its_report_printed(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            raw = project([{"cell": [5, 5, 5], "kind": 0, "faces": {"0": start(), "1": {"type": 0}}},
+                           {"cell": [7, 5, 5], "kind": LASER_KIND, "far": [7, 9, 5], "colour": 7},
+                           {"cell": [9, 5, 5], "kind": LASER_KIND, "far": [9, 5, 5], "colour": 0}], time="99")
+            (scratch / "odd.kula.json").write_text(json.dumps(raw))
+            done = self.run_tool("--from-json", scratch / "odd.kula.json", "--kwl", scratch / "odd.kwl")
+            self.assertEqual(done.returncode, 0, done.stderr)
+            self.assertEqual(done.stderr.splitlines()[:4], [
+                'a time of "99" is not a whole number; it is 99',
+                "block 0 at 5,5,5 face 1 has a type of 0, which is nothing standing there; it is left out",
+                "block 1 at 7,5,5 has a colour of 7, which is not one of the 4; it is 0",
+                "block 2 at 9,5,5 has its far end on its own cell; it is left out",
+            ])
+            p, _ = read_project(raw)
+            self.assertEqual((scratch / "odd.kwl").read_bytes(), canonical(p))
+
     def test_what_the_writer_and_the_reader_refuse_is_a_sentence_and_not_a_traceback(self):
         with tempfile.TemporaryDirectory() as scratch:
             scratch = Path(scratch)
@@ -695,6 +795,15 @@ class TheCli(unittest.TestCase):
             self.assertIn("two blocks on cell", done.stderr)
             self.assertNotIn("Traceback", done.stderr)
             self.assertFalse((scratch / "bad.kwl").exists())
+            (scratch / "other.json").write_text('{"format": "orbit"}')
+            done = self.run_tool("--from-json", scratch / "other.json", "--kwl", scratch / "other.kwl")
+            self.assertEqual(done.returncode, 1, done.stderr)
+            self.assertIn(f"is not a {FORMAT} file", done.stderr)
+            (scratch / "broken.json").write_text("{")
+            done = self.run_tool("--from-json", scratch / "broken.json", "--kwl", scratch / "broken.kwl")
+            self.assertEqual(done.returncode, 1, done.stderr)
+            self.assertIn("is not JSON", done.stderr)
+            self.assertNotIn("Traceback", done.stderr)
             (scratch / "short.kwl").write_bytes(playground()[:-1])
             done = self.run_tool("--from-kwl", scratch / "short.kwl", "--json")
             self.assertEqual(done.returncode, 1, done.stderr)

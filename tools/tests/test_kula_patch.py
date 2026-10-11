@@ -308,6 +308,31 @@ class TheTool(unittest.TestCase):
             self.assertIn("helix (305 bytes) into", done.stdout)
             self.assertEqual((scratch / "helix.ppf").read_bytes()[6:56], b"Kula World Map: helix".ljust(50))
 
+    def test_a_project_file_is_read_by_the_project_reader_and_its_repairs_said(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            project = synthetic(CASE["in place"])
+            project["title"] = 5
+            (scratch / "odd.kula.json").write_text(json.dumps(project))
+            run = lambda name: subprocess.run(  # noqa: E731
+                [sys.executable, TOOL, "--level", scratch / name, "--into", f"{SYNTHETIC_PACK}#{SLOT}",
+                 "--out", scratch / name.split(".")[0], "--disc", scratch / "image.bin", "--ppf"],
+                capture_output=True, text=True)
+            done = run("odd.kula.json")
+            self.assertEqual(done.returncode, 0, done.stderr)
+            self.assertIn("title is not text; it is left empty", done.stderr)
+            self.assertIn("odd (305 bytes) into", done.stdout)
+            self.assertEqual((scratch / "odd.ppf").read_bytes()[6:56], b"Kula World Map: odd".ljust(50))
+            (scratch / "other.json").write_text(json.dumps({"format": "something-else", "blocks": []}))
+            other = run("other.json")
+            self.assertNotEqual(other.returncode, 0)
+            self.assertIn("other.json is not a kula-world-level file", other.stderr)
+            (scratch / "broken.json").write_text("{not json")
+            broken = run("broken.json")
+            self.assertNotEqual(broken.returncode, 0)
+            self.assertIn("broken.json is not JSON:", broken.stderr)
+
     def test_a_target_that_is_not_a_slot_of_a_world_or_a_finals_pack_is_refused(self):
         with tempfile.TemporaryDirectory() as scratch:
             scratch = Path(scratch)

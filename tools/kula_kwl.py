@@ -150,11 +150,50 @@ def cell_text(cell):
 
 
 def is_cell(v):
-    return isinstance(v, (list, tuple)) and len(v) == 3 and all(_is_int(c) for c in v)
+    return isinstance(v, (list, tuple)) and len(v) == 3 and all(_whole(c) for c in v)
 
 
 def _is_int(v):
     return isinstance(v, int) and not isinstance(v, bool)
+
+
+def _whole(v):
+    """Whether a JSON value is a whole number as the page reads one: a float with nothing after the point is."""
+    return _is_int(v) or (isinstance(v, float) and v.is_integer())
+
+
+# The page prints a whole number's digits below this and a power of ten from it on.
+DIGITS_BELOW = 1e21
+
+
+def _int(v):
+    return int(v) if isinstance(v, float) and abs(v) < DIGITS_BELOW else v
+
+
+def _whole_cells(b):
+    """A block with its cell and far end as ints where JSON spelled a whole number with a point."""
+    out = dict(b)
+    for key in ("cell", "far"):
+        if is_cell(b.get(key)):
+            out[key] = [_int(c) for c in b[key]]
+    return out
+
+
+def _show(v):
+    return json.dumps(v, ensure_ascii=False, separators=(",", ":"))
+
+
+INDEX_KEY = re.compile(r"0|[1-9][0-9]*")
+
+
+def _entries(d):
+    """A JSON object's entries in the order the page walks them: keys that spell
+    an array index ascending, then the rest as written."""
+    keys = [str(k) for k in d]
+    index = sorted((k for k in keys if INDEX_KEY.fullmatch(k) and int(k) < 2 ** 32 - 1), key=int)
+    rest = [k for k in keys if not (INDEX_KEY.fullmatch(k) and int(k) < 2 ** 32 - 1)]
+    at = {str(k): v for k, v in d.items()}
+    return [(k, at[k]) for k in index + rest]
 
 
 def direction(a, b):
@@ -491,7 +530,7 @@ def canonical(project):
     are undefined: a cell outside the lattice, two blocks on one cell, a span
     along no one axis.
     """
-    blocks = sorted(project["blocks"], key=lambda b: tuple(b["cell"]))
+    blocks = sorted((_whole_cells(b) for b in project["blocks"]), key=lambda b: tuple(b["cell"]))
     seen = set()
     for b in blocks:
         cell = tuple(b["cell"])
@@ -643,6 +682,178 @@ def read_kwl(blob, world=WORLDS[0]):
              for x, y, z, v in cells]
     level = _level_dict(cells, [records[k] for k in kept + settings], time, world, "", report)
     return project_of(level, report), report
+
+
+# --- a project out of a project file -------------------------------------------
+
+def _taken(raw, key, fallback, where, report):
+    """The whole number under `key`, or `fallback` where it is missing or not one, reported."""
+    if key not in raw:
+        return fallback
+    v = raw[key]
+    if _whole(v):
+        return _int(v)
+    report.append(f"{where} has a {key} of {_show(v)}, which is not a whole number; it is {_show(fallback)}")
+    return fallback
+
+
+def _one_of(raw, key, n, where, report):
+    """The number under `key` where it is one of `n`, else 0 with a line; missing is 0."""
+    if key not in raw:
+        return 0
+    v = raw[key]
+    if _whole(v) and 0 <= v < n:
+        return _int(v)
+    report.append(f"{where} has a {key} of {_show(v)}, which is not one of the {n}; it is 0")
+    return 0
+
+
+def _read_faces(faces, where, report):
+    out = {}
+    for key, o in _entries(faces):
+        if not re.fullmatch(r"[0-9]+", key) or int(key) >= FACES:
+            report.append(f'{where} names a face "{key}", which is not one of the six; it is left out')
+            continue
+        face = str(int(key))
+        if face in out:
+            report.append(f'{where} names face {face} again as "{key}"; it is left out')
+            continue
+        if not isinstance(o, dict) or not _whole(o.get("type")):
+            report.append(f"{where} face {key} holds nothing that could stand on a face; it is left out")
+            continue
+        t = _int(o["type"])
+        if t <= 0:
+            report.append(f"{where} face {key} has a type of {t}, which is nothing standing there; it is left out")
+            continue
+        at = f"{where} face {key}"
+        obj = {"type": t}
+        if "facing" in o:
+            if _whole(o["facing"]):
+                obj["facing"] = _int(o["facing"])
+            else:
+                report.append(f"{at} has a facing of {_show(o['facing'])}, which is not a whole number; it is left out")
+        if t in FACING_NEEDED and not obj.get("facing"):
+            report.append(f"{at} has {'no facing' if 'facing' not in obj else 'a facing of 0'}, {HEADS_AS_ONE}")
+            obj["facing"] = 1
+        if "variant" in o:
+            if t in VARIANT_TYPES:
+                obj["variant"] = _one_of(o, "variant", len(VARIANTS[t]), at, report)
+            elif _whole(o["variant"]):
+                obj["variant"] = _int(o["variant"])
+            else:
+                report.append(f"{at} has a variant of {_show(o['variant'])}, which is not a whole number; it is left out")
+        out[face] = obj
+    return out
+
+
+def _read_block(raw, i, report):
+    where = f"block {i}"
+    if not isinstance(raw, dict) or not is_cell(raw.get("cell")) or not _whole(raw.get("kind")):
+        report.append(f"{where} has no cell of three whole numbers and a kind; it is left out")
+        return None
+    b = {"cell": [_int(c) for c in raw["cell"]], "kind": _int(raw["kind"])}
+    at = f"{where} at {cell_text(b['cell'])}"
+    if "faces" in raw:
+        if not isinstance(raw["faces"], dict):
+            report.append(f"{at} has faces that are not a table of the six; they are left out")
+        else:
+            faces = _read_faces(raw["faces"], at, report)
+            if faces:
+                b["faces"] = faces
+    if b["kind"] in SPAN_KINDS:
+        far = raw.get("far")
+        if "far" not in raw:
+            report.append(f"{at} is a span with no far end; it is left out")
+            return None
+        if not is_cell(far):
+            report.append(f"{at} has a far end that is not a cell of three whole numbers; it is left out")
+            return None
+        far = [_int(c) for c in far]
+        if far == b["cell"]:
+            report.append(f"{at} has its far end on its own cell; it is left out")
+            return None
+        if any(c not in LATTICE for c in far):
+            report.append(f"{at} has its far end at {cell_text(far)}, outside the lattice; it is left out")
+            return None
+        b["far"] = far
+    if b["kind"] == PLATFORM_KIND:
+        b["length"] = _taken(raw, "length", DEFAULT_LENGTH, at, report)
+        b["speed"] = _taken(raw, "speed", DEFAULT_SPEED, at, report)
+    if b["kind"] == LASER_KIND:
+        b["colour"] = _one_of(raw, "colour", COLOURS, at, report)
+    if b["kind"] == VANISHING_KIND:
+        b["phase"] = _taken(raw, "phase", 0, at, report)
+    return b
+
+
+def read_project(raw):
+    """(project, report) for a parsed project document, rule for rule as the page
+    reads one; raises ValueError on another format's document."""
+    if not isinstance(raw, dict) or raw.get("format") != FORMAT:
+        raise ValueError(f"not a {FORMAT} file")
+    report = []
+    if "version" in raw and not _whole(raw["version"]):
+        report.append(f"a version of {_show(raw['version'])} is not a whole number; "
+                      f"the file is read as version {VERSION}")
+    elif "version" in raw and raw["version"] > VERSION:
+        report.append(f"written as version {_int(raw['version'])} of the format, newer than this reader's {VERSION}; "
+                      f"what it knows is read")
+
+    def text(key):
+        if key not in raw:
+            return ""
+        if isinstance(raw[key], str):
+            return raw[key]
+        report.append(f"{key} is not text; it is left empty")
+        return ""
+
+    def optional(key):
+        if key not in raw or isinstance(raw[key], str):
+            return raw.get(key)
+        report.append(f"{key} is not text; it is left out")
+        return None
+
+    def flag(key):
+        if key not in raw:
+            return False
+        if isinstance(raw[key], bool):
+            return raw[key]
+        report.append(f"{key} is neither true nor false; it is taken as false")
+        return False
+
+    project = {"format": FORMAT, "version": VERSION, "title": text("title"), "author": text("author"),
+               "notes": text("notes"), "world": text("world")}
+    into = optional("into")
+    if into is not None:
+        project["into"] = into
+    source = optional("from")
+    if source is not None:
+        project["from"] = source
+    if "time" not in raw or _whole(raw["time"]):
+        project["time"] = _int(raw["time"]) if "time" in raw else DEFAULT_TIME
+    else:
+        report.append(f"a time of {_show(raw['time'])} is not a whole number; it is {DEFAULT_TIME}")
+        project["time"] = DEFAULT_TIME
+    project["hidden"] = flag("hidden")
+    project["invisibleFromAfar"] = flag("invisibleFromAfar")
+    project["circuits"] = {}
+    if "circuits" in raw and not isinstance(raw["circuits"], dict):
+        report.append("circuits is not a table of colours; every colour starts on")
+    else:
+        for colour, state in _entries(raw.get("circuits") or {}):
+            if not re.fullmatch(r"[0-3]", colour):
+                report.append(f"colour {colour} is not one of the four; it is left out")
+            elif state == "off":
+                project["circuits"][colour] = "off"
+            elif state != "on":
+                report.append(f"colour {colour} is neither on nor off; it starts on")
+    if not isinstance(raw.get("blocks"), list):
+        report.append("no blocks")
+        project["blocks"] = []
+    else:
+        blocks = [_read_block(b, i, report) for i, b in enumerate(raw["blocks"])]
+        project["blocks"] = sorted((b for b in blocks if b is not None), key=lambda b: tuple(b["cell"]))
+    return project, report
 
 
 # --- what the game would make of a project ------------------------------------
@@ -1263,9 +1474,14 @@ def main():
     elif args.from_json:
         if not args.kwl:
             sys.exit("--from-json needs --kwl OUT")
-        project = json.loads(Path(args.from_json).read_text())
-        if project.get("format") != FORMAT:
-            sys.exit(f"{args.from_json} is not a {FORMAT} file")
+        try:
+            project, report = read_project(json.loads(Path(args.from_json).read_text()))
+        except json.JSONDecodeError as e:
+            sys.exit(f"{args.from_json} is not JSON: {e}")
+        except ValueError as e:
+            sys.exit(f"{args.from_json} is {e}")
+        for line in report:
+            print(line, file=sys.stderr)
         hides = json.loads(OBJECTS.read_text())["skins"]["hides"]
         for finding in validate(project, hides):
             print(describe(finding), file=sys.stderr)

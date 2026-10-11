@@ -30,7 +30,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from disc import Disc
 from kula_disc import open_disc
-from kula_kwl import DATA, FORMAT, OBJECTS, canonical, describe, read_kwl, template, validate
+from kula_kwl import DATA, OBJECTS, canonical, describe, read_kwl, read_project, template, validate
 from kula_place import (
     SYNTHETIC_PACK,
     Patched,
@@ -208,10 +208,12 @@ def load_level(arg, world):
     """A project from a .kula.json, a .kwl, or a shipped level named PACK#slot."""
     path = Path(arg)
     if path.is_file() and path.suffix == ".json":
-        project = json.loads(path.read_text())
-        if project.get("format") != FORMAT:
-            sys.exit(f"{arg} is not a {FORMAT} file")
-        return project, []
+        try:
+            return read_project(json.loads(path.read_text()))
+        except json.JSONDecodeError as e:
+            sys.exit(f"{arg} is not JSON: {e}")
+        except ValueError as e:
+            sys.exit(f"{arg} is {e}")
     if path.is_file():
         project, report = read_kwl(path.read_bytes(), world)
         project["title"] = path.stem
