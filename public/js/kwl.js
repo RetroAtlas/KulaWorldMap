@@ -183,6 +183,13 @@ export function facesOf(b) {
     .sort((p, q) => p[0] - q[0]);
 }
 
+/** The face two keys of a block's faces spell between them, or null. */
+export function faceNamedTwice(b) {
+  const faces = facesOf(b);
+  const again = faces.find(([f], i) => i > 0 && faces[i - 1][0] === f);
+  return again ? again[0] : null;
+}
+
 /** Whether a block needs a record: a span, a payload kind, or something on a face. */
 export const carries = (b) => b.kind >= BLOCK_KINDS || facesOf(b).length > 0;
 
@@ -307,7 +314,7 @@ function members(carried) {
 }
 
 const typeAt = (carried, [k, face]) =>
-  face === OWN ? LASER_KIND : carried[k].faces[String(face)].type;
+  face === OWN ? LASER_KIND : facesOf(carried[k]).find(([j]) => j === face)[1].type;
 
 /** record * 16 + face -> [next, link] for every switch, teleporter and laser. */
 function links(carried) {
@@ -444,6 +451,9 @@ export function writeKwl(project) {
     seen.add(cellKey(...cell));
     if (!Number.isInteger(kind) || kind < 0 || kind >= SETTINGS_KIND)
       throw new Error(`a block of kind ${kind} cannot be written`);
+    const twice = faceNamedTwice(b);
+    if (twice !== null)
+      throw new Error(`face ${twice} of the block at ${cellText(cell)} is named twice`);
   }
   const carried = blocks.filter(carries);
   const at = new Map(carried.map((b, k) => [cellKey(...b.cell), k]));

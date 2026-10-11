@@ -700,6 +700,22 @@ test("the reader takes what it knows of a newer file, fills the defaults and dro
   assert.ok(found.includes("the game builds nothing past the edge"));
 });
 
+test("a face key is read by its number, and a second spelling of one face is left out", () => {
+  const { project: p, report } = readProject({
+    format: FORMAT,
+    world: WORLD,
+    blocks: [{ cell: [5, 5, 5], kind: 0, faces: { "05": coin, 5: { type: KEY }, "00": start() } }],
+  });
+  assert.deepEqual(p.blocks[0].faces, { 0: start(), 5: { type: KEY } });
+  assert.deepEqual(report, ['block 0 at 5,5,5 names face 5 again as "05"; it is left out']);
+  assert.deepEqual(texts(validate(p, HIDES), "error"), []);
+  assert.ok(
+    errors([plain([5, 5, 5], 0, { 0: start(), 5: coin, "05": coin })]).includes(
+      "face 5 is named twice",
+    ),
+  );
+});
+
 test("the writer writes the document's keys in its order, one block a line, the same way every time", () => {
   const p = fromLevel(level("LEVEL 42"));
   const text = writeProject(setMeta(p, { into: "/INCA/INCA.PAK#4", author: "me", notes: "n" }));

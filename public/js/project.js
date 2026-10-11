@@ -47,6 +47,7 @@ import {
   carries,
   cellText,
   direction,
+  faceNamedTwice,
   facesOf,
   inner,
   levelOf,
@@ -377,6 +378,8 @@ export function validate(project, hides) {
     }
     if (kind >= BLOCK_KINDS && b.faces && Object.keys(b.faces).length)
       err("nothing stands on a platform's, laser's, crumbling or vanishing block's faces", cell);
+    const twice = faceNamedTwice(b);
+    if (twice !== null) err(`face ${twice} is named twice`, cell);
     if (kind === VANISHING_KIND) {
       const phase = b.phase ?? 0;
       if (DIM_AT_ONCE.includes(phase)) warn(`a phase of ${phase} dims at once`, cell);
@@ -452,14 +455,19 @@ function readFaces(faces, where, report) {
       report.push(`${where} names a face "${key}", which is not one of the six; it is left out`);
       continue;
     }
+    const face = String(Number(key));
+    if (face in out) {
+      report.push(`${where} names face ${face} again as "${key}"; it is left out`);
+      continue;
+    }
     if (!isObject(o) || !Number.isInteger(o.type)) {
       report.push(`${where} face ${key} holds nothing that could stand on a face; it is left out`);
       continue;
     }
-    const face = { type: o.type };
-    if (Number.isInteger(o.facing)) face.facing = o.facing;
-    if (Number.isInteger(o.variant)) face.variant = o.variant;
-    out[key] = face;
+    const object = { type: o.type };
+    if (Number.isInteger(o.facing)) object.facing = o.facing;
+    if (Number.isInteger(o.variant)) object.variant = o.variant;
+    out[face] = object;
   }
   return out;
 }

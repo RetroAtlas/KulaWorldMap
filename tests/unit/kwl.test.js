@@ -458,7 +458,21 @@ test("the bytes are undefined for what the lattice cannot hold", () => {
     /not one of the four/,
   );
   assert.throws(() => writeKwl(project([plain([5, 5, 5], 12)])), /kind 12/);
+  assert.throws(
+    () =>
+      writeKwl(
+        project([plain([5, 5, 5], 0, { 0: start(), 5: { type: COIN }, "05": { type: KEY } })]),
+      ),
+    /face 5 of the block at 5,5,5 is named twice/,
+  );
   assert.doesNotThrow(() => writeKwl(project([plain([0, 0, 0]), plain([33, 33, 33])])));
+});
+
+test("a face key names its face by number, however it is spelled", () => {
+  const teleporter = { type: TELEPORTER, facing: 1, variant: 0 };
+  const spelled = project([plain([5, 5, 5], 0, { "00": start(), "05": teleporter })]);
+  const plainly = project([plain([5, 5, 5], 0, { 0: start(), 5: teleporter })]);
+  assert.deepEqual(writeKwl(spelled), writeKwl(plainly));
 });
 
 // --- links and numbers -----------------------------------------------------------

@@ -175,6 +175,11 @@ class RoundTrips(unittest.TestCase):
             if "faces" in b:
                 b["faces"] = {int(f): o for f, o in b["faces"].items()}
         self.assertEqual(canonical(numbered), canonical(p))
+        spelled = json.loads(json.dumps(p))
+        for b in spelled["blocks"]:
+            if "faces" in b:
+                b["faces"] = {f"0{f}": o for f, o in b["faces"].items()}
+        self.assertEqual(canonical(spelled), canonical(p))
 
     def test_every_shipped_level_is_a_fixed_point_and_verifies(self):
         for l in json.loads(DATA.read_text())["levels"]:
@@ -207,6 +212,8 @@ class RoundTrips(unittest.TestCase):
             ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": LASER_KIND, "colour": 0}],
              "the span at (6, 6, 6) needs a far end"),
             ([plain((5, 5, 5), t0=start(), t7={"type": COIN, "variant": 0})], "face 7 is not one of the six"),
+            ([plain((5, 5, 5), t0=start(), t5={"type": COIN, "variant": 0}, t05={"type": KEY})],
+             "face 5 of the block at (5, 5, 5) is named twice"),
             ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": LASER_KIND, "far": [6, 9, 6], "colour": 7}],
              "colour 7 is not one of the four"),
             ([plain((5, 5, 5), t0=start(), t1={"type": TELEPORTER, "facing": 1, "variant": 4})],
@@ -492,6 +499,8 @@ class Validates(unittest.TestCase):
                              not ok, into)
         self.assertIn("nothing stands on a platform's, laser's, crumbling or vanishing block's faces",
                       self.errors([plain((5, 5, 5), t0=start()), {"cell": [7, 5, 5], "kind": 6, "faces": {"0": {"type": COIN}}}]))
+        self.assertIn("face 5 is named twice",
+                      self.errors([plain((5, 5, 5), t0=start(), t5={"type": COIN, "variant": 0}, t05={"type": KEY})]))
         self.assertIn("a phase of 4 dims at once", self.warnings([plain((5, 5, 5), t0=start()), {"cell": [7, 5, 5], "kind": 7, "phase": 4}]))
         self.assertIn("a phase of 9", self.errors([plain((5, 5, 5), t0=start()), {"cell": [7, 5, 5], "kind": 7, "phase": 9}]))
 

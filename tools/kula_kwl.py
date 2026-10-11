@@ -299,6 +299,21 @@ def _faces_of(b):
     return {_face_number(f): o for f, o in (b.get("faces") or {}).items() if o.get("type", 0) > 0}
 
 
+def _named_twice(b):
+    """The face two keys of a block's faces spell between them, or None."""
+    if b["kind"] >= BLOCK_KINDS:
+        return None
+    seen = set()
+    for f, o in (b.get("faces") or {}).items():
+        if o.get("type", 0) <= 0:
+            continue
+        j = _face_number(f)
+        if j in seen:
+            return j
+        seen.add(j)
+    return None
+
+
 def _carries(b):
     """Whether a block needs a record: a span, a payload kind, or a face with something on it."""
     return b["kind"] >= BLOCK_KINDS or bool(_faces_of(b))
@@ -455,6 +470,9 @@ def canonical(project):
         for j in _faces_of(b):
             if j not in range(FACES):
                 raise ValueError(f"face {j} is not one of the six")
+        twice = _named_twice(b)
+        if twice is not None:
+            raise ValueError(f"face {twice} of the block at {cell} is named twice")
         if kind in SPAN_KINDS and (not isinstance(b.get("far"), (list, tuple)) or len(b["far"]) != 3):
             raise ValueError(f"the span at {cell} needs a far end")
     carried = [b for b in blocks if _carries(b)]
@@ -707,6 +725,9 @@ def validate(project, hides):
         faces = _faces_of(b)
         if kind >= BLOCK_KINDS and b.get("faces"):
             err("nothing stands on a platform's, laser's, crumbling or vanishing block's faces", cell)
+        twice = _named_twice(b)
+        if twice is not None:
+            err(f"face {twice} is named twice", cell)
         if kind == VANISHING_KIND:
             phase = b.get("phase", 0)
             if phase in DIM_AT_ONCE:
