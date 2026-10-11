@@ -259,6 +259,12 @@ def main():
     disc = open_disc(src)
     out = Path(args.out)
     named = lambda ext: out.with_name(out.name + ext)  # noqa: E731
+    asked = [ext for ext, want in ((".bin", wanted["image"]), (".cue", wanted["image"]),
+                                   (".ppf", wanted["ppf"]), (".xdelta", wanted["xdelta"])) if want]
+    for path in (named(ext) for ext in asked):
+        if path.exists():
+            why = "is the image itself" if path.samefile(src) else "exists already"
+            sys.exit(f"{path} {why}; say another --out")
     try:
         with disc:
             placed = plan(disc, pack_path, int(slot), stream, title)

@@ -332,6 +332,26 @@ class TheTool(unittest.TestCase):
             broken = run("broken.json")
             self.assertNotEqual(broken.returncode, 0)
             self.assertIn("broken.json is not JSON:", broken.stderr)
+    def test_an_output_that_exists_or_is_the_image_itself_is_refused_before_anything_is_written(self):
+        held = json.loads(FIXTURE.read_text())["cases"][0]
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            run = lambda out, *more: subprocess.run(  # noqa: E731
+                [sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into", f"{SYNTHETIC_PACK}#{SLOT}",
+                 "--out", out, "--disc", scratch / "image.bin", *more], capture_output=True, text=True)
+            self.assertEqual(run(scratch / "spiral").returncode, 0)
+            before = {p.name: p.read_bytes() for p in scratch.iterdir()}
+            again = run(scratch / "spiral", "--ppf")
+            self.assertNotEqual(again.returncode, 0)
+            self.assertIn("spiral.ppf exists already; say another --out", again.stderr)
+            self.assertEqual({p.name: p.read_bytes() for p in scratch.iterdir()}, before)
+            same = run(scratch / "image", "--image")
+            self.assertNotEqual(same.returncode, 0)
+            self.assertIn("image.bin is the image itself; say another --out", same.stderr)
+            self.assertEqual((scratch / "image.bin").read_bytes(), IMAGE)
+            self.assertEqual(digest((scratch / "spiral.bin").read_bytes()), held["patched"])
 
     def test_a_missing_disc_is_said_in_a_sentence_whatever_is_asked_for(self):
         with tempfile.TemporaryDirectory() as scratch:
