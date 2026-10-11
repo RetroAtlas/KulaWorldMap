@@ -2,12 +2,11 @@
 // after each change.
 import { emit } from "./dom.js";
 import { toast } from "./toast.js";
-import { WORLDS, writeKwl } from "./kwl.js";
-import { UNTITLED, readProject } from "./project.js";
-import { KEY, draftShaped, idOf } from "./held.js";
+import { UNTITLED } from "./project.js";
+import { KEY } from "./held.js";
+import { empty, merge, parse, serialize } from "./store.js";
 
 const SAID = "kula.drafts.said";
-const VERSION = 1;
 const SETTLE = 300;
 const FULL = "This browser cannot hold more drafts; save them to files and delete some.";
 const NO_ROOM =
@@ -16,8 +15,6 @@ const FLEETING =
   "This browser cannot keep your levels, so they will live only until the page is closed.";
 const displaced = (name) =>
   `Another tab's level took the place of ${name}, which stays in the list under a new link.`;
-
-const empty = () => ({ version: VERSION, next: 1, drafts: {} });
 
 let store = empty();
 // Entries that could not be read, written back as they are until removed here.
@@ -34,48 +31,6 @@ let known = null;
 const dirty = new Set();
 const deleted = new Set();
 const handed = new Set();
-
-function entryOf(raw) {
-  let project;
-  try {
-    ({ project } = readProject(raw.doc));
-    writeKwl(project);
-  } catch {
-    return null;
-  }
-  if (!WORLDS.includes(project.world)) return null;
-  return {
-    doc: project,
-    updated: Number.isFinite(raw.updated) ? raw.updated : 0,
-    saved: Number.isFinite(raw.saved) ? raw.saved : null,
-    edits: Number.isInteger(raw.edits) && raw.edits >= 0 ? raw.edits : 0,
-  };
-}
-
-/** The store `text` holds, and the entries of it that could not be read. */
-function parse(text) {
-  const out = empty();
-  const left = Object.create(null);
-  let raw = null;
-  try {
-    raw = JSON.parse(text ?? "null");
-  } catch {
-    raw = null;
-  }
-  if (!raw || typeof raw !== "object") return { store: out, unread: left };
-  if (Number.isInteger(raw.version) && raw.version > VERSION) out.version = raw.version;
-  const drafts = raw.drafts && typeof raw.drafts === "object" ? raw.drafts : {};
-  const ids = [];
-  for (const [key, d] of Object.entries(drafts)) {
-    const id = idOf(key);
-    if (id !== null) ids.push(id);
-    const entry = id !== null && draftShaped(d) ? entryOf(d) : null;
-    if (entry) out.drafts[id] = entry;
-    else left[key] = d;
-  }
-  out.next = Math.max(Number.isInteger(raw.next) ? raw.next : 1, 1, ...ids.map((id) => id + 1));
-  return { store: out, unread: left };
-}
 
 /** Read the store once, saying what could not be kept. */
 export function load() {
@@ -184,7 +139,7 @@ function write() {
   let text = null;
   try {
     if (absorb(localStorage.getItem(KEY))) emit("drafts-changed");
-    text = JSON.stringify({ ...store, drafts: { ...unread, ...store.drafts } });
+    text = serialize(store, unread);
     localStorage.setItem(KEY, text);
   } catch {
     if (!refused) toast(known === null ? NO_ROOM : FULL);
@@ -210,49 +165,17 @@ export function flush() {
 addEventListener("pagehide", flush);
 document.addEventListener("visibilitychange", () => document.hidden && flush());
 
-// Another tab's copy of the store: the draft changed later wins, and what
-// changed here since the last write is kept until that write. A level of
-// theirs under an id handed out here, which never reached them, is a level of
-// its own, so the draft of this tab's moves to a fresh id.
-function merge(theirs) {
-  const drafts = {};
-  const taken = [];
-  const moved = [];
-  let next = Math.max(store.next, theirs.next);
-  for (const [key, d] of Object.entries(theirs.drafts)) {
-    const id = Number(key);
-    if (deleted.has(id)) continue;
-    const mine = store.drafts[id];
-    if (mine && handed.has(id)) {
-      drafts[id] = d;
-      drafts[next] = mine;
-      moved.push([id, next++]);
-    } else if (mine && mine.updated >= d.updated) drafts[id] = mine;
-    else {
-      drafts[id] = d;
-      dirty.delete(id);
-      if (mine) taken.push(id);
-    }
-  }
-  for (const [key, d] of Object.entries(store.drafts)) {
-    const id = Number(key);
-    if (!(id in drafts) && dirty.has(id)) drafts[id] = d;
-  }
-  for (const [from, to] of moved)
-    for (const set of [dirty, handed]) if (set.delete(from)) set.add(to);
-  store = { version: Math.max(store.version, theirs.version), next, drafts };
-  if (moved.length) emit("drafts-moved", moved);
-  emit("drafts-merged", taken);
-  for (const [, to] of moved) toast(displaced(drafts[to].doc.title || UNTITLED));
-}
-
-/** Merge the store's text where it is not the one last read or written here. */
+/** Merge the store's text, another tab's copy, where it is not the one last read or written here. */
 function absorb(text) {
   if (text === known) return false;
   known = text;
   const read = parse(text);
   if (!forgotten) unread = read.unread;
-  merge(read.store);
+  const out = merge(store, read.store, { dirty, deleted, handed });
+  store = out.store;
+  if (out.moved.length) emit("drafts-moved", out.moved);
+  emit("drafts-merged", out.taken);
+  for (const [, to] of out.moved) toast(displaced(store.drafts[to].doc.title || UNTITLED));
   return true;
 }
 

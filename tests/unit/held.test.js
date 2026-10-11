@@ -5,8 +5,6 @@ import { blank } from "../../public/js/project.js";
 
 const entry = (doc, more = {}) => ({ doc, updated: 1, saved: null, edits: 0, ...more });
 
-// --- what the page reads off the store's text without the editor -----------------
-
 test("the store's key is the one the page reads at the start", () => {
   assert.equal(KEY, "kula.drafts");
 });
