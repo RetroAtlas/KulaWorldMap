@@ -15,6 +15,7 @@ import { edit } from "./trail.js";
 import { IN_PLACE, REBUILD, fit } from "./pak.js";
 import { openDisc } from "./iso.js";
 import { PREFIX, cue, patchedImage, placements, plan, ppf, vcdiff, verify } from "./patch.js";
+import { inflate } from "./inflate.js";
 
 const FIRST = "/HIRO/HIRO.PAK#0";
 const COPYCAT = "/HIRO/COPYCAT.PAK";
@@ -49,11 +50,6 @@ const themeOf = (pack) => pack.split("/")[1];
 const nameOf = () => d.doc.title || UNTITLED;
 const base = () => slug(nameOf());
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-
-async function inflate(bytes) {
-  const unpacked = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate"));
-  return new Uint8Array(await new Response(unpacked).arrayBuffer());
-}
 
 function fitText(f) {
   const spare = `with ${plural(f.room, "byte")} to spare`;

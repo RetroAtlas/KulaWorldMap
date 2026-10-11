@@ -19,6 +19,7 @@ import {
   collapse,
   readKwl,
 } from "./kwl.js";
+import { inflate } from "./inflate.js";
 
 const EMPTY = 0xffff;
 const SENTINEL = "~";
@@ -300,11 +301,10 @@ export function linkParts(text) {
   return null;
 }
 
-async function gunzip(bytes) {
+function gunzip(bytes) {
   if (typeof DecompressionStream !== "function")
     throw new Error("Reading a shared level needs a newer browser, one that can unpack it.");
-  const unpacked = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
-  return new Uint8Array(await new Response(unpacked).arrayBuffer());
+  return inflate(bytes, "gzip");
 }
 
 function unbase64(param) {

@@ -8,6 +8,7 @@ import { openDisc } from "./iso.js";
 import { PACKS } from "./patch.js";
 import { SECTOR_RAW, USER_OFF } from "./sectors.js";
 import { isOrbit, readOrbit, readOrbitLink } from "./orbit.js";
+import { inflate as unpack } from "./inflate.js";
 import { pickFromDisc, pickFromPack, slotTitle, worldOf } from "./importdialog.js";
 
 const NOT_MAP = "That file is not a level file of the map's.";
@@ -115,8 +116,7 @@ function isCue(bytes) {
 async function inflate(bytes) {
   if (typeof DecompressionStream !== "function") throw new Error(NEWER);
   try {
-    const unpacked = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate"));
-    return new Uint8Array(await new Response(unpacked).arrayBuffer());
+    return await unpack(bytes);
   } catch {
     throw new Error(NOT_PACKED);
   }
