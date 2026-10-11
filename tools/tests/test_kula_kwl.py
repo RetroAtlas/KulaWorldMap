@@ -967,6 +967,20 @@ class TheCli(unittest.TestCase):
 
 
 class Digests(unittest.TestCase):
+    def test_every_level_has_the_fixtures_digests_and_the_flag_reproduces_it(self):
+        want = json.loads(DIGESTS.read_text())
+        recorded = want.pop("zlib")
+        got = digests(json.loads(DATA.read_text()))
+        running = got.pop("zlib")
+        self.assertEqual(set(got), set(want))
+        for key, entry in want.items():
+            self.assertEqual(got[key]["kwl"], entry["kwl"], f"{key}: the level file differs from the fixture's")
+            for what in ("deflate", "deflate9", "size"):
+                self.assertEqual(got[key][what], entry[what],
+                                 f"{key}: {what} differs; the fixture was written with zlib {recorded} and this is zlib {running}")
+        if recorded == running:
+            self.assertEqual(render_digests(digests(json.loads(DATA.read_text()))), DIGESTS.read_text())
+
     def test_the_hostile_documents_read_and_write_as_the_fixture_says(self):
         fixture = json.loads(HOSTILE.read_text())
         self.assertGreaterEqual(len(fixture["cases"]), 30)
@@ -976,9 +990,6 @@ class Digests(unittest.TestCase):
         self.assertTrue(refused and all(c["refusal"] == f"not a {FORMAT} file" for c in refused))
         self.assertTrue(any("kwl" in c.get("level", {}) for c in fixture["cases"]))
         self.assertTrue(any("refusal" in c.get("level", {}) for c in fixture["cases"]))
-
-    def test_the_fixture_is_what_the_data_gives(self):
-        self.assertEqual(render_digests(digests(json.loads(DATA.read_text()))), DIGESTS.read_text())
 
     def test_the_deflate_vectors_are_what_zlib_writes_for_their_inputs(self):
         fixture = json.loads(VECTORS.read_text())

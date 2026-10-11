@@ -1349,13 +1349,15 @@ def _validate_circuits(project, blocks, warn):
 # --- the checks that hold the writer to the data and the disc -----------------
 
 def digests(data):
-    """Per shipped level, the digest of its canonical file and of that file's deflate."""
-    out = {}
+    """Per shipped level, the digest of its canonical file and of that file's deflate
+    at the two levels the page compresses at, under the version of the zlib that wrote them."""
+    out = {"zlib": zlib.ZLIB_RUNTIME_VERSION}
     for level in data["levels"]:
         blob = canonical(project_of(level))
         z = zlib.compress(blob, 6)
         out[level_key(level["pack"], level["index"])] = {
             "deflate": hashlib.sha256(z).hexdigest(),
+            "deflate9": hashlib.sha256(zlib.compress(blob, 9)).hexdigest(),
             "kwl": hashlib.sha256(blob).hexdigest(),
             "size": len(z),
         }

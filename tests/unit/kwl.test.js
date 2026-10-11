@@ -36,7 +36,7 @@ import {
 
 // The digests the Python writer wrote from the same data, so the two writers
 // cannot drift apart without this file saying so.
-const digests = JSON.parse(
+const { zlib: ZLIB, ...digests } = JSON.parse(
   readFileSync(fileURLToPath(new URL("../fixtures/kwl-digests.json", import.meta.url)), "utf8"),
 );
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -331,14 +331,18 @@ function inPlay(l) {
 test("the writer's bytes and their deflate are the Python writer's, on every shipped level", () => {
   assert.equal(Object.keys(digests).length, mapData.levels.length);
   assert.equal(mapData.levels.length, 230);
+  assert.match(ZLIB, /^\d+\.\d+/);
   for (const l of mapData.levels) {
     const want = digests[levelKey(l)];
     assert.ok(want, levelKey(l));
     const bytes = writeKwl(projectOf(l));
     assert.equal(sha256(bytes), want.kwl, l.name);
     const z = deflate(bytes, 6);
-    assert.equal(sha256(z), want.deflate, l.name);
-    assert.equal(z.length, want.size, l.name);
+    const differs = (level) =>
+      `${l.name}: the page's deflate at level ${level} differs from the fixture's, written with zlib ${ZLIB}`;
+    assert.equal(sha256(z), want.deflate, differs(6));
+    assert.equal(z.length, want.size, differs(6));
+    assert.equal(sha256(deflate(bytes, 9)), want.deflate9, differs(9));
   }
 });
 
