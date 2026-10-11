@@ -1030,7 +1030,8 @@ def validate(project, hides):
         if any(c not in INNER for c in cell):
             err("the game builds nothing past the edge", cell)
     kinds = _kinds_at(blocks)
-    beams = _beam_cells(blocks)
+    loader = _filled(blocks)
+    beams = set(loader[0])
     starts = []
     for b in blocks:
         cell, kind = tuple(b["cell"]), b["kind"]
@@ -1050,7 +1051,7 @@ def validate(project, hides):
             elif phase not in PHASES:
                 err(f"a phase of {phase}", cell)
         if kind in SPAN_KINDS:
-            _validate_span(b, at, kinds, err, warn)
+            _validate_span(b, at, loader, err, warn)
         if kind == LASER_KIND and b.get("colour") not in range(COLOURS):
             err(f"a colour of {b.get('colour')}", cell)
         for j, o in sorted(faces.items()):
@@ -1134,7 +1135,25 @@ def _run(b):
     return cells
 
 
-def _validate_span(b, at, kinds, err, warn):
+def _spans(blocks, kind):
+    return [b for b in blocks if b["kind"] == kind and "far" in b and direction(tuple(b["cell"]), tuple(b["far"])) is not None]
+
+
+def _filled(blocks):
+    """The cells the loaders fill for the spans: a beam's cells between its ends,
+    its far end, and a platform's whole run, each naming the span that fills it."""
+    beams, ends, runs = {}, {}, {}
+    for b in _spans(blocks, LASER_KIND):
+        for c in _run(b)[1:-1]:
+            beams.setdefault(c, []).append(b)
+        ends[tuple(b["far"])] = b
+    for b in _spans(blocks, PLATFORM_KIND):
+        for c in _run(b):
+            runs[c] = b
+    return beams, ends, runs
+
+
+def _validate_span(b, at, loader, err, warn):
     cell = tuple(b["cell"])
     if "far" not in b:
         err("a span needs a far end", cell)
@@ -1149,6 +1168,7 @@ def _validate_span(b, at, kinds, err, warn):
     if any(c not in INNER for c in far):
         err("the far end is past the edge", cell)
         return
+    beams, ends, runs = loader
     if b["kind"] == PLATFORM_KIND:
         length = b.get("length", DEFAULT_LENGTH)
         speed = b.get("speed", DEFAULT_SPEED)
@@ -1170,27 +1190,32 @@ def _validate_span(b, at, kinds, err, warn):
         for c in _run(b):
             if c != cell and c in at:
                 err(f"the platform's run crosses the block at {cell_text(c)}", cell)
+            for laser in beams.get(c, ()):
+                err(f"the platform's run crosses the beam from {cell_text(laser['cell'])}", cell)
+            if c in ends:
+                err(f"the platform's run crosses the end of the beam from {cell_text(ends[c]['cell'])}", cell)
         return
     for c in _run(b):
         other = at.get(c)
-        if other is None or c == cell:
+        if c == cell:
             continue
         if c == far:
-            if other["kind"] == 0 and _faces_of(other):
+            if other is not None and other["kind"] == 0 and _faces_of(other):
                 warn("the beam's end makes a bare plain block of the block there; what stands on it "
                      "still works but its faces paint plain", cell)
-            elif other["kind"] not in (0, LASER_KIND):
+            elif other is not None and other["kind"] not in (0, LASER_KIND):
                 err("a beam ends on an empty cell, a plain block or another laser's block", cell)
-        else:
+            for laser in beams.get(c, ()):
+                err(f"the beam ends in the beam from {cell_text(laser['cell'])}", cell)
+            continue
+        if other is not None:
             err(f"the beam crosses the block at {cell_text(c)}", cell)
-
-
-def _beam_cells(blocks):
-    cells = set()
-    for b in blocks:
-        if b["kind"] == LASER_KIND and "far" in b and direction(tuple(b["cell"]), tuple(b["far"])) is not None:
-            cells.update(_run(b)[1:-1])
-    return cells
+        if c in runs:
+            err(f"the beam crosses the platform's run from {cell_text(runs[c]['cell'])}", cell)
+        for laser in beams.get(c, ()):
+            if laser is not b:
+                warn(f"the beam crosses the beam from {cell_text(laser['cell'])}; where two cross, the lit one fills the cell",
+                     cell)
 
 
 def _validate_outlook(cell, j, kinds, beams, warn):

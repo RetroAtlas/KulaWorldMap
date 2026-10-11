@@ -269,15 +269,24 @@ function runOf(b) {
   return cells;
 }
 
-function beamCells(blocks) {
-  const cells = new Set();
-  for (const b of blocks)
-    if (b.kind === LASER_KIND && b.far && direction(b.cell, b.far) !== null)
-      for (const c of runOf(b).slice(1, -1)) cells.add(keyOf(c));
-  return cells;
+const spans = (blocks, kind) =>
+  blocks.filter((b) => b.kind === kind && b.far && direction(b.cell, b.far) !== null);
+
+/** The cells the loaders fill for the spans: a beam's cells between its ends,
+    its far end, and a platform's whole run, each naming the span that fills it. */
+function filled(blocks) {
+  const beams = new Map();
+  const ends = new Map();
+  const runs = new Map();
+  for (const b of spans(blocks, LASER_KIND)) {
+    for (const c of runOf(b).slice(1, -1)) beams.set(keyOf(c), [...(beams.get(keyOf(c)) ?? []), b]);
+    ends.set(keyOf(b.far), b);
+  }
+  for (const b of spans(blocks, PLATFORM_KIND)) for (const c of runOf(b)) runs.set(keyOf(c), b);
+  return { beams, ends, runs };
 }
 
-function validateSpan(b, blocksAt, err, warn) {
+function validateSpan(b, blocksAt, loader, err, warn) {
   const { cell } = b;
   if (!b.far) return err("a span needs a far end", cell);
   const { far } = b;
@@ -285,6 +294,7 @@ function validateSpan(b, blocksAt, err, warn) {
   if (direction(cell, far) === null)
     return err("the far end is not along one axis from the block", cell);
   if (!far.every(inner)) return err("the far end is past the edge", cell);
+  const { beams, ends, runs } = loader;
   if (b.kind === PLATFORM_KIND) {
     const length = b.length ?? DEFAULT_LENGTH;
     const speed = b.speed ?? DEFAULT_SPEED;
@@ -300,22 +310,45 @@ function validateSpan(b, blocksAt, err, warn) {
     else if (!LENGTHS.includes(length)) warn(`a platform ${length} blocks long`, cell);
     if (!inWord(speed)) err(`a speed of ${speed}, outside the file's range`, cell);
     else if (speed !== DEFAULT_SPEED) warn(`a platform running at ${speed}`, cell);
-    for (const c of runOf(b))
-      if (!sameCell(c, cell) && blocksAt.has(keyOf(c)))
+    for (const c of runOf(b)) {
+      const key = keyOf(c);
+      if (!sameCell(c, cell) && blocksAt.has(key))
         err(`the platform's run crosses the block at ${cellText(c)}`, cell);
+      for (const laser of beams.get(key) ?? [])
+        err(`the platform's run crosses the beam from ${cellText(laser.cell)}`, cell);
+      if (ends.has(key))
+        err(
+          `the platform's run crosses the end of the beam from ${cellText(ends.get(key).cell)}`,
+          cell,
+        );
+    }
     return;
   }
   for (const c of runOf(b)) {
-    const other = blocksAt.get(keyOf(c));
-    if (!other || sameCell(c, cell)) continue;
-    if (!sameCell(c, far)) err(`the beam crosses the block at ${cellText(c)}`, cell);
-    else if (other.kind === 0 && facesOf(other).length)
-      warn(
-        "the beam's end makes a bare plain block of the block there; what stands on it still works but its faces paint plain",
-        cell,
-      );
-    else if (other.kind !== 0 && other.kind !== LASER_KIND)
-      err("a beam ends on an empty cell, a plain block or another laser's block", cell);
+    const key = keyOf(c);
+    const other = blocksAt.get(key);
+    if (sameCell(c, cell)) continue;
+    if (sameCell(c, far)) {
+      if (other && other.kind === 0 && facesOf(other).length)
+        warn(
+          "the beam's end makes a bare plain block of the block there; what stands on it still works but its faces paint plain",
+          cell,
+        );
+      else if (other && other.kind !== 0 && other.kind !== LASER_KIND)
+        err("a beam ends on an empty cell, a plain block or another laser's block", cell);
+      for (const laser of beams.get(key) ?? [])
+        err(`the beam ends in the beam from ${cellText(laser.cell)}`, cell);
+      continue;
+    }
+    if (other) err(`the beam crosses the block at ${cellText(c)}`, cell);
+    if (runs.has(key))
+      err(`the beam crosses the platform's run from ${cellText(runs.get(key).cell)}`, cell);
+    for (const laser of beams.get(key) ?? [])
+      if (laser !== b)
+        warn(
+          `the beam crosses the beam from ${cellText(laser.cell)}; where two cross, the lit one fills the cell`,
+          cell,
+        );
   }
 }
 
@@ -390,7 +423,8 @@ export function validate(project, hides) {
     if (!b.cell.every(inner)) err("the game builds nothing past the edge", b.cell);
   }
   const kinds = kindsAt(blocks);
-  const beams = beamCells(blocks);
+  const loader = filled(blocks);
+  const beams = new Set(loader.beams.keys());
   const starts = [];
   for (const b of blocks) {
     const { cell, kind } = b;
@@ -410,7 +444,7 @@ export function validate(project, hides) {
     }
     if (kind === LASER_KIND && !(Number.isInteger(b.colour) && b.colour >= 0 && b.colour < COLOURS))
       err(`a colour of ${b.colour}`, cell);
-    if (isSpan(b)) validateSpan(b, blocksAt, err, warn);
+    if (isSpan(b)) validateSpan(b, blocksAt, loader, err, warn);
     for (const [j, o] of facesOf(b)) {
       const t = o.type;
       if (j < 0 || j >= FACES) {

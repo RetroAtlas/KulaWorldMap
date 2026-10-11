@@ -605,6 +605,24 @@ class Validates(unittest.TestCase):
         self.assertTrue(any(w.startswith("the beam's end makes a bare plain block")
                             for w in self.warnings(base + [plain((14, 10, 17), t0={"type": COIN, "variant": 0})])))
 
+    def test_the_cells_the_loaders_fill_are_checked_against_each_other(self):
+        base = plain((5, 5, 5), t0=start())
+        beam = {"cell": [10, 10, 17], "kind": LASER_KIND, "far": [10, 16, 17], "colour": 0}
+        across = {"cell": [8, 13, 17], "kind": LASER_KIND, "far": [12, 13, 17], "colour": 1}
+        self.assertEqual(self.errors([base, beam, across]), [])
+        self.assertEqual([w for w in self.warnings([base, beam, across]) if "crosses the beam" in w],
+                         ["the beam crosses the beam from 10,10,17; where two cross, the lit one fills the cell",
+                          "the beam crosses the beam from 8,13,17; where two cross, the lit one fills the cell"])
+        into = {"cell": [8, 13, 17], "kind": LASER_KIND, "far": [10, 13, 17], "colour": 1}
+        self.assertEqual(self.errors([base, beam, into]), ["the beam ends in the beam from 10,10,17"])
+        rail = {"cell": [8, 13, 17], "kind": PLATFORM_KIND, "far": [12, 13, 17], "length": 2, "speed": 30}
+        self.assertEqual(self.errors([base, beam, rail]),
+                         ["the platform's run crosses the beam from 10,10,17", "the beam crosses the platform's run from 8,13,17"])
+        over_end = {"cell": [8, 16, 17], "kind": PLATFORM_KIND, "far": [12, 16, 17], "length": 2, "speed": 30}
+        self.assertEqual(self.errors([base, beam, over_end]), ["the platform's run crosses the end of the beam from 10,10,17"])
+        clear = {"cell": [8, 18, 17], "kind": PLATFORM_KIND, "far": [12, 18, 17], "length": 2, "speed": 30}
+        self.assertEqual(self.errors([base, beam, clear]), [])
+
     def test_a_span_lies_along_one_axis_inside_the_edge(self):
         for far, text in (([10, 10, 17], "the far end is the block's own cell"),
                           ([12, 12, 17], "the far end is not along one axis from the block"),

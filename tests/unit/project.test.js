@@ -392,6 +392,39 @@ test("a beam ends on nothing, a plain block or another laser, and crosses nothin
   );
 });
 
+test("the cells the loaders fill are checked against each other", () => {
+  const base = plain([5, 5, 5], 0, { 0: start() });
+  const beam = { cell: [10, 10, 17], kind: LASER_KIND, far: [10, 16, 17], colour: 0 };
+  const across = { cell: [8, 13, 17], kind: LASER_KIND, far: [12, 13, 17], colour: 1 };
+  assert.deepEqual(errors([base, beam, across]), []);
+  assert.deepEqual(
+    warnings([base, beam, across]).filter((w) => w.includes("crosses the beam")),
+    [
+      "the beam crosses the beam from 10,10,17; where two cross, the lit one fills the cell",
+      "the beam crosses the beam from 8,13,17; where two cross, the lit one fills the cell",
+    ],
+  );
+  const into = { cell: [8, 13, 17], kind: LASER_KIND, far: [10, 13, 17], colour: 1 };
+  assert.deepEqual(errors([base, beam, into]), ["the beam ends in the beam from 10,10,17"]);
+  const rail = { cell: [8, 13, 17], kind: PLATFORM_KIND, far: [12, 13, 17], length: 2, speed: 30 };
+  assert.deepEqual(errors([base, beam, rail]), [
+    "the platform's run crosses the beam from 10,10,17",
+    "the beam crosses the platform's run from 8,13,17",
+  ]);
+  const overEnd = {
+    cell: [8, 16, 17],
+    kind: PLATFORM_KIND,
+    far: [12, 16, 17],
+    length: 2,
+    speed: 30,
+  };
+  assert.deepEqual(errors([base, beam, overEnd]), [
+    "the platform's run crosses the end of the beam from 10,10,17",
+  ]);
+  const clear = { cell: [8, 18, 17], kind: PLATFORM_KIND, far: [12, 18, 17], length: 2, speed: 30 };
+  assert.deepEqual(errors([base, beam, clear]), []);
+});
+
 test("a span lies along one axis inside the edge", () => {
   for (const [far, text] of [
     [[10, 10, 17], "the far end is the block's own cell"],
