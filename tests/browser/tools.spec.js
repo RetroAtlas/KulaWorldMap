@@ -230,6 +230,10 @@ test("the hover names what Place would do, and Esc clears the selection without 
 }) => {
   const errors = trackErrors(page);
   await fresh(page);
+  await expect(tool(page, "place")).toHaveAttribute(
+    "title",
+    "Place the brush against the face you click (a)",
+  );
   const side = await plusX(page, [17, 17, 17]);
   await page.mouse.move(side.x, side.y);
   await expect(page.locator("#tip")).toContainText("Place a block on the +x side");
