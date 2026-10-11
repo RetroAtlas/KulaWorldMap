@@ -1,7 +1,6 @@
 // A level's stream put into a slot of a pack on the image, and what carries
 // the result: the sectors a placement writes, each built whole, and the
-// patches made of them. tools/kula_place.py and tools/kula_patch.py are the
-// same arithmetic, and the fixture holds the two to the same bytes.
+// patches made of them.
 import {
   DATA_SUBMODE,
   EOF_SUBMODE,

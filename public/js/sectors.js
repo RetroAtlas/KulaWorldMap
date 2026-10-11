@@ -4,8 +4,7 @@
 // header, subheader, data and EDC with the header read as zero. The ECC reads
 // the bytes it covers as two planes, the even bytes and the odd; P closes each
 // column of a plane laid out as 24 rows of 43, and Q each diagonal of the
-// plane and its P parity laid out as 26 rows of 43. tools/kula_sector.py is
-// the same arithmetic, and the fixture holds the two to each other.
+// plane and its P parity laid out as 26 rows of 43.
 
 export const SECTOR_RAW = 2352;
 export const USER = 2048;

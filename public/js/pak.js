@@ -4,7 +4,7 @@
 // back to back in slot order. The game reads a pack by its directory record's
 // size into a fixed buffer and never reads a name, so a level goes into a slot
 // by one of three paths, decided here from a pack read off the image or from
-// the packs' layout alone, as tools/kula_place.py decides it from the pack.
+// the packs' layout alone.
 import { deflate } from "./deflate.js";
 
 export const IN_PLACE = "in place";
