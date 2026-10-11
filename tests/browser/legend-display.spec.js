@@ -358,8 +358,8 @@ test("a legend row's icon shows the row's pointer, and the map the hand that tur
   await settle(page);
   const cursor = (at) => at.evaluate((e) => getComputedStyle(e).cursor);
   const row = page.getByRole("list", { name: "Objects" }).getByRole("button").first();
-  expect(await cursor(row)).toBe("pointer");
-  expect(await cursor(row.locator(".icon"))).toBe("pointer");
+  await expect.poll(() => cursor(row)).toBe("pointer");
+  await expect.poll(() => cursor(row.locator(".icon"))).toBe("pointer");
   const map = page.locator("#cv");
   expect(await cursor(map)).toBe("grab");
   const box = await map.boundingBox();
