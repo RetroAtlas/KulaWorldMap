@@ -130,6 +130,25 @@ export function setFace(project, cell, face, object) {
   return { ...project, blocks: project.blocks.with(i, block) };
 }
 
+/** The blocks at `cells` lifted and laid again at their cells plus `delta`, a
+    span's far end with it; null where one would land past the edge or on a
+    block that is not moving. */
+export function moveBlocks(project, cells, delta) {
+  const moving = new Set(cells.map(keyOf));
+  const rest = project.blocks.filter((b) => !moving.has(keyOf(b.cell)));
+  const held = new Set(rest.map((b) => keyOf(b.cell)));
+  const shift = (c) => c.map((v, i) => v + delta[i]);
+  const moved = [];
+  for (const b of project.blocks) {
+    if (!moving.has(keyOf(b.cell))) continue;
+    const cell = shift(b.cell);
+    const far = b.far ? shift(b.far) : null;
+    if (!cell.every(inner) || held.has(keyOf(cell)) || (far && !far.every(inner))) return null;
+    moved.push(far ? { ...b, cell, far } : { ...b, cell });
+  }
+  return { ...project, blocks: [...rest, ...moved].sort(byCell) };
+}
+
 export function setCircuit(project, colour, state) {
   const circuits = { ...project.circuits };
   if (state === "off") circuits[String(colour)] = "off";

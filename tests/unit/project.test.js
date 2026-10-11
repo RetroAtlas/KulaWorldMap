@@ -42,6 +42,7 @@ import {
   describe,
   faceAt,
   fromLevel,
+  moveBlocks,
   playsAs,
   readProject,
   removeBlock,
@@ -169,6 +170,75 @@ test("the edits place, replace, remove and read blocks and faces, in lattice ord
   );
   p = setMeta(p, { into: null });
   assert.ok(!("into" in p));
+});
+
+test("a move lays the blocks named at their cells plus the delta, a span's far end and the faces along", () => {
+  let p = blank(WORLD);
+  p = setBlock(p, [19, 17, 17], { kind: 2, faces: { 0: coin } });
+  p = setBlock(p, [20, 17, 17], { kind: 0 });
+  p = setBlock(p, [19, 20, 17], { kind: PLATFORM_KIND, far: [21, 20, 17], length: 2, speed: 30 });
+  p = setBlock(p, [25, 17, 17], { kind: 0 });
+  const before = structuredClone(p);
+  const cells = (q) => q.blocks.map((b) => b.cell);
+  const q = moveBlocks(
+    p,
+    [
+      [19, 17, 17],
+      [20, 17, 17],
+      [19, 20, 17],
+    ],
+    [1, 0, -1],
+  );
+  assert.notEqual(q, p);
+  assert.deepEqual(p, before);
+  assert.deepEqual(cells(q), [
+    [17, 17, 17],
+    [20, 17, 16],
+    [20, 20, 16],
+    [21, 17, 16],
+    [25, 17, 17],
+  ]);
+  assert.deepEqual(blockAt(q, [20, 17, 16]), { cell: [20, 17, 16], kind: 2, faces: { 0: coin } });
+  assert.deepEqual(blockAt(q, [20, 20, 16]), {
+    cell: [20, 20, 16],
+    kind: PLATFORM_KIND,
+    far: [22, 20, 16],
+    length: 2,
+    speed: 30,
+  });
+  // a cell a moving block leaves is free for another; one that stays holds its cell
+  assert.deepEqual(
+    cells(
+      moveBlocks(
+        p,
+        [
+          [19, 17, 17],
+          [20, 17, 17],
+        ],
+        [1, 0, 0],
+      ),
+    ),
+    [
+      [17, 17, 17],
+      [19, 20, 17],
+      [20, 17, 17],
+      [21, 17, 17],
+      [25, 17, 17],
+    ],
+  );
+  assert.equal(moveBlocks(p, [[19, 17, 17]], [1, 0, 0]), null);
+  // nothing lands past the edge, a span's far end included; where its run would, the checks say so
+  assert.notEqual(moveBlocks(p, [[25, 17, 17]], [7, 0, 0]), null);
+  assert.equal(moveBlocks(p, [[25, 17, 17]], [8, 0, 0]), null);
+  assert.equal(moveBlocks(p, [[25, 17, 17]], [0, 0, -17]), null);
+  assert.equal(moveBlocks(p, [[19, 20, 17]], [12, 0, 0]), null);
+  const run = moveBlocks(p, [[19, 20, 17]], [11, 0, 0]);
+  assert.deepEqual(blockAt(run, [30, 20, 17]).far, [32, 20, 17]);
+  assert.ok(
+    texts(validate(run, HIDES), "error").includes("the platform's run reaches past the edge"),
+  );
+  // a cell with no block names nothing to move
+  assert.deepEqual(moveBlocks(p, [[6, 6, 6]], [1, 1, 1]), p);
 });
 
 // --- the shipped levels --------------------------------------------------------------
