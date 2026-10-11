@@ -311,6 +311,53 @@ test("Erase takes the object off a face, then the block, and keeps the last bloc
   expect(errors).toEqual([]);
 });
 
+test("a platform's body builds against the cell it stands in, not its record's", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await page.keyboard.press("v");
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setBlock }] = await Promise.all(
+      ["state.js", "drafts.js", "project.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    update(
+      id,
+      setBlock(get(id).doc, [18, 17, 17], {
+        kind: 5,
+        far: [18, 21, 17],
+        length: 2,
+        speed: 30,
+      }),
+    );
+  });
+  await zoom(page, 0.8);
+  const ghost = () =>
+    page.evaluate(async () => {
+      const { ghostPreview } = await import(new URL("js/editor.js", location.href).href);
+      return ghostPreview();
+    });
+  const body = await top(page, [18, 18, 17]);
+  await page.mouse.move(body.x, body.y);
+  expect(await ghost()).toEqual({ cell: [18, 18, 16], blocked: false });
+  await click(page, body);
+  expect((await shown(page)).selected).toEqual([18, 18, 16]);
+  expect((await blocks(page)).map((b) => b.cell)).toContainEqual([18, 18, 16]);
+  // beside the body lies the run, which takes no block
+  const side = await at(page, 18.5, 19, 17.5);
+  await page.mouse.move(side.x, side.y);
+  expect(await ghost()).toEqual({ cell: [18, 19, 17], blocked: true });
+  await click(page, side);
+  expect(await toasts(page)).toContain("The platform's run crosses the block at 18,19,17.");
+  // a click on the body is a click on the platform for every other tool
+  await page.keyboard.press("i");
+  await click(page, side);
+  expect((await shown(page)).selected).toEqual([18, 17, 17]);
+  expect(errors).toEqual([]);
+});
+
 test("the ghost is red for whatever the click would refuse, a beam's cell among them", async ({
   page,
 }) => {

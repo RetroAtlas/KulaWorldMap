@@ -171,6 +171,36 @@ test("an update refreshes the map's name and the search's scope without announci
   expect(errors).toEqual([]);
 });
 
+test("the hit test answers for a travelling thing where it is drawn", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0/45,35/fit/33");
+  await settle(page);
+  const out = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { selectLevel }, R, { motionTable, index }, { walkers }, { thingDisc }] =
+      await Promise.all(
+        ["state.js", "navigate.js", "render.js", "data.js", "travel.js", "things.js"].map(at),
+      );
+    while (!motionTable()) await new Promise(requestAnimationFrame);
+    state.show.motion = true;
+    const moves = (l) =>
+      [...walkers(l, index(l), motionTable()).values()].some((w) => w.face !== undefined);
+    const li = state.data.levels.findIndex(moves);
+    selectLevel(li);
+    R.invalidatePick();
+    R.draw();
+    const w = [...walkers(state.lvl, state.idx, motionTable()).values()].find(
+      (w) => w.face !== undefined,
+    );
+    const [x, y] = thingDisc(w.m, { x: w.c.x, y: w.c.y, z: w.c.z }, state.lvl);
+    const hit = R.cellAt(x, y);
+    return { li, hit: hit && [hit.x, hit.y, hit.z], home: [w.c.x, w.c.y, w.c.z] };
+  });
+  expect(out.li).toBeGreaterThanOrEqual(0);
+  expect(out.hit).toEqual(out.home);
+  expect(errors).toEqual([]);
+});
+
 test("a dialog opened for a control gives the focus back to that control", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#HIRO/0/45,35/fit/33");

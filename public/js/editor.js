@@ -105,7 +105,9 @@ const current = () => {
   const d = id === undefined ? null : get(id);
   return d && { id, doc: d.doc };
 };
-const across = (c, face) => [c.x, c.y, c.z].map((v, i) => v + FACE_NORMAL[face][i]);
+// a platform's block builds against the cell it stands in, which its record names only for the first
+const cellOf = (c) => c.body ?? [c.x, c.y, c.z];
+const across = (c, face) => cellOf(c).map((v, i) => v + FACE_NORMAL[face][i]);
 const lower = (name) => name.charAt(0).toLowerCase() + name.slice(1);
 const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 const article = (word) => (/^([aeiou]|hour)/i.test(word) ? "an" : "a");
@@ -418,7 +420,7 @@ function tap(c, e) {
     disarm();
     return refuse(FLOOR_THING);
   }
-  if (armed && armed.key === target.key && armed.face === target.face) {
+  if (armed && armed.key === target.key && armed.face === target.face && armed.k === target.k) {
     const at = armed.c;
     disarm();
     return mode.tool === "erase" ? erase(at, e) : place(at, e);
@@ -432,7 +434,7 @@ function tap(c, e) {
 
 function faceTarget(c) {
   const key = cellKey(c.x, c.y, c.z);
-  return { key, face: c.face ?? null, c: { ...c, key }, cell: null };
+  return { key, face: c.face ?? null, k: c.k ?? 0, c: { ...c, key }, cell: null };
 }
 
 function floorTarget(e) {
@@ -894,9 +896,9 @@ function drawFloor(ctx, l) {
 }
 
 function drawHover(ctx, c, home, key, ghost) {
-  if (!editing() || mode.tool === "select" || ghost || c.k) return;
+  if (!editing() || mode.tool === "select" || ghost) return;
   const h = hovered();
-  if (!h || h.key !== key || h.face == null) return;
+  if (!h || h.key !== key || h.face == null || (c.k ?? 0) !== (h.k ?? 0)) return;
   ctx.save();
   ctx.beginPath();
   facePoints(c, h.face).forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));

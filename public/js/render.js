@@ -154,7 +154,15 @@ function visible(idx, moving) {
       }
       const offset = moving?.get(`${key}/null`)?.offset || [0, 0, 0];
       platformCells(r).forEach(([x, y, z], k) =>
-        out.push({ ...c, x: x + offset[0], y: y + offset[1], z: z + offset[2], home: c, k }),
+        out.push({
+          ...c,
+          x: x + offset[0],
+          y: y + offset[1],
+          z: z + offset[2],
+          home: c,
+          k,
+          body: [x, y, z],
+        }),
       );
     }
   }
@@ -463,9 +471,10 @@ const TRIES = [
 const shows = (e, x, y) =>
   e.disc ? Math.hypot(x - e.disc[0], y - e.disc[1]) <= e.disc[2] : covers(e.at, x, y);
 
-/** The cell under a point of the canvas, with the face the point lies on.
-    With `near`, the pick is painted about the point alone where it is not
-    painted already. */
+/** The cell under a point of the canvas, with the face the point lies on,
+    and for a platform's block the cell it stands in at rest, as `body`, with
+    its place along the run. With `near`, the pick is painted about the point
+    alone where it is not painted already. */
 export function cellAt(cx, cy, near = false) {
   if (pickStale) draw();
   if (!pickFrom) return null;
@@ -500,7 +509,7 @@ export function cellAt(cx, cy, near = false) {
       // the face is read at the point itself, which the probe may have left
       // by a fraction of a pixel, and at the probe where the point is off the cube
       const face = e.disc ? e.face : (faceAt(e.at, cx, cy) ?? faceAt(e.at, x, y));
-      return { ...e.home, face };
+      return e.at?.body ? { ...e.home, face, body: e.at.body, k: e.at.k } : { ...e.home, face };
     }
   }
   return null;
