@@ -10,6 +10,8 @@ const SAID = "kula.drafts.said";
 const VERSION = 1;
 const SETTLE = 300;
 const FULL = "This browser cannot hold more drafts; save them to files and delete some.";
+const NO_ROOM =
+  "This browser gives the map no room to keep levels, so they will live only until the page is closed.";
 const FLEETING =
   "This browser cannot keep your levels, so they will live only until the page is closed.";
 const displaced = (name) =>
@@ -61,6 +63,7 @@ function parse(text) {
     raw = null;
   }
   if (!raw || typeof raw !== "object") return { store: out, unread: left };
+  if (Number.isInteger(raw.version) && raw.version > VERSION) out.version = raw.version;
   const drafts = raw.drafts && typeof raw.drafts === "object" ? raw.drafts : {};
   const ids = [];
   for (const [key, d] of Object.entries(drafts)) {
@@ -184,7 +187,7 @@ function write() {
     text = JSON.stringify({ ...store, drafts: { ...unread, ...store.drafts } });
     localStorage.setItem(KEY, text);
   } catch {
-    if (!refused) toast(FULL);
+    if (!refused) toast(known === null ? NO_ROOM : FULL);
     refused = true;
     return;
   }
@@ -237,7 +240,7 @@ function merge(theirs) {
   }
   for (const [from, to] of moved)
     for (const set of [dirty, handed]) if (set.delete(from)) set.add(to);
-  store = { version: VERSION, next, drafts };
+  store = { version: Math.max(store.version, theirs.version), next, drafts };
   if (moved.length) emit("drafts-moved", moved);
   emit("drafts-merged", taken);
   for (const [, to] of moved) toast(displaced(drafts[to].doc.title || UNTITLED));

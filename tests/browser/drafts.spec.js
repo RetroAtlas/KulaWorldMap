@@ -4,6 +4,8 @@ import { settle, textured, trackErrors } from "./helpers.js";
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const KEY = "kula.drafts";
 const FULL = "This browser cannot hold more drafts; save them to files and delete some.";
+const NO_ROOM =
+  "This browser gives the map no room to keep levels, so they will live only until the page is closed.";
 const ELSEWHERE =
   "That link names a level kept in another browser. Open it there, or ask for the level file.";
 /** A store holding one draft, as another tab or an earlier visit would have left it. */
@@ -460,7 +462,7 @@ test("entries that cannot be read do not load the editor by themselves, and a ke
   expect(errors).toEqual([]);
 });
 
-test("a browser that refuses the write keeps the draft on screen and says so once", async ({
+test("a browser with no room at all keeps the draft on screen and says so once", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -475,7 +477,7 @@ test("a browser that refuses the write keeps the draft on screen and says so onc
   await settle(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(1);
-  await expect(page.locator("#toastStack .toast", { hasText: FULL })).toHaveCount(1);
+  await expect(page.locator("#toastStack .toast")).toHaveText([NO_ROOM]);
   expect((await shown(page)).li).toBe(-1);
   await expect(page.locator("#draftRows button")).toHaveCount(1);
   expect(await stored(page)).toBeNull();
@@ -486,6 +488,63 @@ test("a browser that refuses the write keeps the draft on screen and says so onc
   await flush(page);
   expect(await toasts(page)).toEqual([]);
   expect(await stored(page)).toBeNull();
+  expect(errors).toEqual([]);
+});
+
+test("a browser with levels kept and no room for more says so, and keeps what it holds", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.addInitScript(
+    ([key, store]) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(store));
+      } catch {
+        /* the blank page has no storage */
+      }
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) {
+        if (k === key) throw new DOMException("full", "QuotaExceededError");
+        return set.call(this, k, v);
+      };
+    },
+    [KEY, KEPT],
+  );
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button .name")).toHaveText(["Untitled level", "Kept"]);
+  await expect(page.locator("#toastStack .toast")).toHaveText([FULL]);
+  expect(Object.keys((await stored(page)).drafts)).toEqual(["1"]);
+  expect(errors).toEqual([]);
+});
+
+test("a store a newer version wrote is read for what this one knows and written back under its version", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const newer = { ...KEPT, version: 7, drafts: { ...KEPT.drafts, 3: { later: true } }, next: 4 };
+  await page.addInitScript(
+    ([key, store]) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(store));
+      } catch {
+        /* the blank page has no storage */
+      }
+    },
+    [KEY, newer],
+  );
+  await page.goto("/#DRAFT/1/45,35/fit/33");
+  await settle(page);
+  expect((await shown(page)).draft).toBe(1);
+  await expect(page.locator("#draftRows button .name")).toHaveText(["Kept"]);
+  await expect(page.locator("#draftUnread .state")).toHaveText(
+    "1 draft in this browser could not be read",
+  );
+  await page.locator("#draftTitle").fill("Kept II");
+  await written(page, (s) => s?.drafts[1]?.doc.title).toBe("Kept II");
+  const out = await stored(page);
+  expect([out.version, out.next, out.drafts[3]]).toEqual([7, 4, { later: true }]);
   expect(errors).toEqual([]);
 });
 
@@ -965,7 +1024,7 @@ test("a write the browser refused is tried again at a flush, and when another ta
   await settle(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(1);
-  await expect(page.locator("#toastStack .toast", { hasText: FULL })).toHaveCount(1);
+  await expect(page.locator("#toastStack .toast", { hasText: NO_ROOM })).toHaveCount(1);
   const id = (await shown(page)).draft;
   expect(await stored(page)).toBeNull();
   // room made: the flush that leaves the page writes what waited
@@ -992,7 +1051,7 @@ test("a draft whose id another tab handed out before this tab's write landed mov
   await settle(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(1);
-  await expect(page.locator("#toastStack .toast", { hasText: FULL })).toHaveCount(1);
+  await expect(page.locator("#toastStack .toast", { hasText: NO_ROOM })).toHaveCount(1);
   const mine = (await shown(page)).draft;
   await page.locator("#draftTitle").fill("Mine");
   await expect(page.locator("#chipLine b")).toHaveText("Mine");
@@ -1056,7 +1115,7 @@ test("deleting a draft that never reached storage leaves another tab's level und
   await settle(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(1);
-  await expect(page.locator("#toastStack .toast", { hasText: FULL })).toHaveCount(1);
+  await expect(page.locator("#toastStack .toast", { hasText: NO_ROOM })).toHaveCount(1);
   const id = (await shown(page)).draft;
   const del = page.locator("#draftCard button", { hasText: /^delete/ });
   await del.click();
