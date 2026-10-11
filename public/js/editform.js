@@ -1,11 +1,10 @@
 // The panel's form while editing: the block, the chosen face and what stands
 // on it, the circuits, and what the checks say, every change one step of the
 // trail. It rides the panel's onShow seam and draws nothing on the map.
-import { $, el, on } from "./dom.js";
+import { el, on } from "./dom.js";
 import { state, cellKey } from "./state.js";
-import { DIRECTION_NAME, FACE_NAME, FACE_NORMAL } from "./faces.js";
+import { DIRECTION_NAME, FACE_NAME } from "./faces.js";
 import {
-  entryName,
   kindName,
   markerColour,
   markerDestination,
@@ -15,14 +14,8 @@ import {
   skinsTable,
 } from "./data.js";
 import { onShow, showCell } from "./detail.js";
-import { say } from "./a11y.js";
-import { toast } from "./toast.js";
-import { buildAgainst, editing, placeHere } from "./editor.js";
 import * as palette from "./palette.js";
-import * as drafts from "./drafts.js";
-import { edit } from "./trail.js";
 import {
-  ERROR,
   blockAt,
   counts,
   describe,
@@ -37,7 +30,6 @@ import {
   CAPS,
   COLOURS,
   COUNTER_WORDS,
-  CRUMBLING_KIND,
   DEFAULT_LENGTH,
   DEFAULT_SPEED,
   DISC_MAX,
@@ -52,12 +44,30 @@ import {
   VANISHING_KIND,
   VARIANTS,
   VARIANT_TYPES,
-  sameCell,
   spanAxis,
 } from "./kwl.js";
+import {
+  BRITTLE,
+  LOOKS_INTO,
+  aWord,
+  across,
+  brittle,
+  brushWord,
+  capital,
+  commit,
+  current,
+  kindWord,
+  lower,
+  newErrors,
+  place3,
+  plainOnly,
+  plural,
+  refuse,
+  sentence,
+  spanAt,
+  thingOn,
+} from "./editing.js";
 
-const BRITTLE = "Nothing stands on a platform's, laser's, crumbling or vanishing block's faces.";
-const LOOKS_INTO = "That face looks into another block.";
 const RUN_ON_MAP = "A run is laid on the map, in two clicks.";
 const NOTHING = "nothing";
 const FACE_SHORT = ["top", "+x", "+y", "-y", "-x", "under"];
@@ -71,41 +81,16 @@ const FACE_SPOKEN = [
   "underside",
 ];
 const TURNS = 4;
+// the types whose one varying field is a phase
+const PHASED = new Set([11, 56]);
 const NO_WORDS = Array(16).fill(0);
 let wired = false;
 let focused = null;
-let wasOn = null;
+// What the editor hands the form: whether editing is on, and its two placements.
+let editing = () => false;
+let placeHere = () => false;
+let buildAgainst = () => false;
 
-const lower = (text) => text.charAt(0).toLowerCase() + text.slice(1);
-const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
-const sentence = (text) => `${capital(text)}.`;
-const place3 = (cell) => cell.join(", ");
-const kindWord = (kind) => lower(kindName(kind) || "plain block");
-const article = (word) => (/^([aeiou]|hour)/i.test(word) ? "an" : "a");
-const aWord = (word) => `${article(word)} ${word}`;
-const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-const across = (cell, face) => cell.map((v, i) => v + FACE_NORMAL[face][i]);
-const current = () => {
-  const id = state.lvl?.draft;
-  const d = id === undefined ? null : drafts.get(id);
-  return d && { id, doc: d.doc };
-};
-const thingOn = (cell, face) =>
-  (state.idx.markers.get(cellKey(...cell)) || []).find((m) => m.face === face) ?? null;
-const plainOnly = (e) => {
-  const name = lower(entryName(e.marker) ?? e.label);
-  return name.endsWith("s")
-    ? `${capital(name)} work on a plain block only.`
-    : `${capital(aWord(name))} works on a plain block only.`;
-};
-const brittle = (b) =>
-  SPAN_KINDS.has(b.kind) || b.kind === CRUMBLING_KIND || b.kind === VANISHING_KIND;
-const brushWord = () => {
-  const e = palette.chosen();
-  if (!e) return "thing";
-  if (e.kind === LASER_KIND) return `${palette.colourName(e.colour)} ${kindWord(e.kind)}`;
-  return e.kind !== undefined ? kindWord(e.kind) : lower(e.label);
-};
 const markerOf = (type, variant) => ({
   type,
   face: 0,
@@ -118,47 +103,6 @@ const directionOf = (type, face, facing) => {
   const d = markerFacing({ type, face, f: NO_WORDS.map(() => facing), v: 0, variant: null });
   return d === null ? `facing ${facing}` : DIRECTION_NAME[d];
 };
-
-function refuse(text) {
-  toast(text);
-  $("toolStatus").textContent = text;
-}
-
-function commit(id, next, label) {
-  edit(id, next, label);
-  $("toolStatus").textContent = "";
-  say(capital(label));
-}
-
-/** The errors `next` has that `before` had not. */
-function newErrors(before, next) {
-  const hides = skinsTable()?.hides;
-  if (!hides) return [];
-  const errorsOf = (p) => validate(p, hides).filter((f) => f.level === ERROR);
-  const seen = new Set(errorsOf(before).map(describe));
-  return errorsOf(next).filter((f) => !seen.has(describe(f)));
-}
-
-/** Every cell a span takes: its run, and for a platform the blocks beyond the far end. */
-function runCells(b) {
-  const axis = spanAxis(b.cell, b.far);
-  if (axis === null) return [b.cell];
-  const lo = Math.min(b.cell[axis], b.far[axis]);
-  const extra = b.kind === PLATFORM_KIND ? (b.length ?? DEFAULT_LENGTH) - 1 : 0;
-  const hi = Math.max(b.cell[axis], b.far[axis]) + extra;
-  const cells = [];
-  for (let t = lo; t <= hi; t++) {
-    const c = [...b.cell];
-    c[axis] = t;
-    cells.push(c);
-  }
-  return cells;
-}
-
-const spanOf = (doc, cell) =>
-  doc.blocks.find(
-    (b) => SPAN_KINDS.has(b.kind) && b.far && runCells(b).some((c) => sameCell(c, cell)),
-  ) ?? null;
 
 const field = (text, control) =>
   el("label", { className: "field" }, el("span", { textContent: text }), control);
@@ -179,18 +123,15 @@ const button = (dataField, text, title) => {
 };
 const option = (value, text) => el("option", { value, textContent: text });
 
-/** Register the form with the panel; once. */
-export function wireForm() {
+/** Register the form with the panel, once, with what the editor hands it. */
+export function wireForm(handed) {
+  ({ editing, placeHere, buildAgainst } = handed);
   if (wired) return;
   wired = true;
   onShow(render);
-  const edit = $("editBtn");
-  new MutationObserver(() => {
-    const now = edit.getAttribute("aria-pressed");
-    if (now === wasOn) return;
-    wasOn = now;
+  on("editing-changed", () => {
     if (state.selected) showCell(state.selected);
-  }).observe(edit, { attributes: true, attributeFilter: ["aria-pressed"] });
+  });
   on("brush-changed", () => {
     if (editing() && state.selected) showCell(state.selected);
   });
@@ -203,7 +144,7 @@ function render(box, c) {
   const cell = [c.x, c.y, c.z];
   let face = c.face ?? null;
   const own = blockAt(d.doc, cell);
-  const span = own ? null : spanOf(d.doc, cell);
+  const span = own ? null : spanAt(d.doc, cell);
   if (!own && !span) return;
   const body = box.querySelector("#detailBody");
   const raw = el(
@@ -456,7 +397,7 @@ function faceCard(d, own, c, face) {
     if (VARIANT_TYPES.has(o.type)) {
       const n = VARIANTS[o.type];
       const labelOf = (v) => palette.entryOf(`t${o.type}/${v}`)?.label ?? `${capital(name)} ${v}`;
-      const phases = o.type !== TELEPORTER && o.type !== SWITCH && n === PHASES;
+      const phases = PHASED.has(o.type);
       const coloured = swatchOf(o.type, 0) !== swatchOf(o.type, null);
       const worthOf = (v) => String(markerPoints(markerOf(o.type, v)));
       const row = phases

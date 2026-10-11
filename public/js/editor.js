@@ -3,17 +3,15 @@
 import { $, emit, on } from "./dom.js";
 import { state, SIDE, facing as turnedToView, screen, cellKey, sliceZ } from "./state.js";
 import { FACE_NORMAL, FACE_NAME } from "./faces.js";
-import { entryName, kindName, levelTitle, markerLabel, skinsTable } from "./data.js";
+import { levelTitle, markerLabel } from "./data.js";
 import { provideLevels, setSlice } from "./navigate.js";
 import { cellAt, drawSoon, overlayWith } from "./render.js";
 import { facePoints, outline, outlineStroke } from "./blocks.js";
-import { onCellClick, hoverFaces, tipWith } from "./interaction.js";
+import { CLICK, onCellClick, hoverFaces, tipWith } from "./interaction.js";
 import { clearDetail, showCell } from "./detail.js";
 import { sidebarOverlays } from "./sidebar.js";
 import { describeLevel, say } from "./a11y.js";
-import { toast } from "./toast.js";
 import {
-  CRUMBLING_KIND,
   DEFAULT_LENGTH,
   DEFAULT_SPEED,
   FACING_TYPES,
@@ -21,33 +19,40 @@ import {
   PLAIN_ONLY,
   PLATFORM_KIND,
   SPAN_KINDS,
-  VANISHING_KIND,
   facesOf,
   inner,
   sameCell,
-  spanAxis,
 } from "./kwl.js";
-import {
-  ERROR,
-  blockAt,
-  describe,
-  faceAt,
-  removeBlock,
-  setBlock,
-  setFace,
-  validate,
-} from "./project.js";
-import { get, load } from "./drafts.js";
-import { canRedo, canUndo, edit, redo, undo } from "./trail.js";
+import { blockAt, faceAt, removeBlock, runOf, setBlock, setFace } from "./project.js";
+import { load } from "./drafts.js";
+import { canRedo, canUndo, redo, undo } from "./trail.js";
 import { copyShown, levelFor, wireDrafts } from "./draftlist.js";
+import {
+  BRITTLE,
+  LOOKS_INTO,
+  aWord,
+  across as beside,
+  brittle,
+  brushWord,
+  commit,
+  current,
+  kindWord,
+  lower,
+  newErrors,
+  place3,
+  plainOnly,
+  refuse,
+  sentence,
+  spanAt,
+  status,
+  thingOn,
+} from "./editing.js";
 import { wireForm } from "./editform.js";
 import * as palette from "./palette.js";
 
 const EDGE = "The game builds nothing past the edge.";
 const HELD = "That cell holds a block already.";
 const LAST = "A level keeps its last block.";
-const BRITTLE = "Nothing stands on a platform's, laser's, crumbling or vanishing block's faces.";
-const LOOKS_INTO = "That face looks into another block.";
 const ONE_CELL = "A run needs two cells.";
 const FLOOR_THING = "The grid lays blocks; a thing goes on a block's face.";
 const HEIGHT_HINT =
@@ -73,7 +78,6 @@ const VERDICT = {
 const ICON = 28;
 const TURNS = 4;
 const HOLD_MS = 500;
-const SLIP = 5;
 
 const mode = { on: false, tool: "place" };
 // What Place lays: a kind of block, or a thing for a face, turned as `facing` says.
@@ -96,56 +100,29 @@ let quiet = false;
 let mouse = null;
 let floorKey = null;
 let hinted = false;
-let paletteOpen = !matchMedia("(max-width: 760px)").matches;
+let paletteOpen = !sidebarOverlays();
 
 const onDraft = () => state.lvl?.draft !== undefined;
 export const editing = () => mode.on && onDraft();
-const current = () => {
-  const id = state.lvl?.draft;
-  const d = id === undefined ? null : get(id);
-  return d && { id, doc: d.doc };
-};
 // a platform's block builds against the cell it stands in, which its record names only for the first
 const cellOf = (c) => c.body ?? [c.x, c.y, c.z];
-const across = (c, face) => cellOf(c).map((v, i) => v + FACE_NORMAL[face][i]);
-const lower = (name) => name.charAt(0).toLowerCase() + name.slice(1);
-const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
-const article = (word) => (/^([aeiou]|hour)/i.test(word) ? "an" : "a");
-const aWord = (word) => `${article(word)} ${word}`;
-const kindWord = (kind) => lower(kindName(kind) || "plain block");
-const sentence = (text) => `${capital(text)}.`;
-const place3 = (cell) => cell.join(", ");
+const across = (c, face) => beside(cellOf(c), face);
 const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 const phone = () => sidebarOverlays();
 const hovered = () => armed?.c ?? state.hover;
 const waiting = () => (pending.touch ? WAITING_TOUCH : WAITING);
-const brushWord = () => {
-  if (brush.kind === LASER_KIND)
-    return `${palette.colourName(brush.colour)} ${kindWord(brush.kind)}`;
-  return brush.kind !== undefined
-    ? kindWord(brush.kind)
-    : lower(palette.chosen()?.label ?? "thing");
-};
 const spanWord = (b) =>
   b.kind === LASER_KIND
     ? `${palette.colourName(b.colour ?? 0)} ${kindWord(b.kind)}`
     : kindWord(b.kind);
 const toCell = ([x, y, z]) => ({ x, y, z });
-const thingOn = (cell, face) =>
-  (state.idx.markers.get(cellKey(...cell)) || []).find((m) => m.face === face) ?? null;
-const plainOnly = (e) => {
-  const name = lower(entryName(e.marker) ?? e.label);
-  return name.endsWith("s")
-    ? `${capital(name)} work on a plain block only.`
-    : `${capital(aWord(name))} works on a plain block only.`;
-};
 
 export function bootEditor() {
   load();
   provideLevels(levelFor);
   wireDrafts();
   wireTools();
-  wireForm();
+  wireForm({ editing, placeHere, buildAgainst });
 }
 
 // --- the mode and the strip ---------------------------------------------------------
@@ -158,6 +135,7 @@ function setMode(onNow, said = onNow ? "Editing on" : "Editing off") {
   document.body.classList.toggle("editing", onNow);
   status("");
   strip();
+  emit("editing-changed", onNow);
   if (said) say(said);
   drawSoon();
 }
@@ -218,16 +196,6 @@ function strip() {
   if (shown) palette.sync();
   $("palette").hidden = !shown;
   sheets();
-}
-
-const status = (text) => {
-  $("toolStatus").textContent = text;
-};
-
-function refuse(text) {
-  toast(text);
-  status(text);
-  return true;
 }
 
 function wireTools() {
@@ -354,7 +322,7 @@ function wireTouch() {
   });
   cv.addEventListener("pointermove", (e) => {
     if (!press || e.pointerId !== press.id) return;
-    if (Math.abs(e.clientX - press.x) + Math.abs(e.clientY - press.y) < SLIP) return;
+    if (Math.abs(e.clientX - press.x) + Math.abs(e.clientY - press.y) < CLICK) return;
     clearTimeout(press.timer);
     press = null;
     disarm();
@@ -505,12 +473,6 @@ function eraseSelection() {
 
 // --- the tools -----------------------------------------------------------------------------
 
-function commit(id, next, label) {
-  edit(id, next, label);
-  status("");
-  say(capital(label));
-}
-
 /** Select what a tool placed or cleared; on a phone a finger's leaves the panel's sheet down. */
 function select(cell, face = null, e = null) {
   const at = state.idx.cells.get(cellKey(...cell));
@@ -524,15 +486,6 @@ function select(cell, face = null, e = null) {
   if (box.contains(document.activeElement)) $("cv").focus();
   box.hidden = true;
   sheets();
-}
-
-/** The errors `next` has that `before` had not. */
-function newErrors(before, next) {
-  const hides = skinsTable()?.hides;
-  if (!hides) return [];
-  const errorsOf = (p) => validate(p, hides).filter((f) => f.level === ERROR);
-  const seen = new Set(errorsOf(before).map(describe));
-  return errorsOf(next).filter((f) => !seen.has(describe(f)));
 }
 
 /** The cell a block would be laid in: across the clicked face, or on the floor
@@ -589,27 +542,6 @@ export function buildAgainst(c) {
 }
 
 // --- runs: a platform or a laser laid in two clicks ------------------------------------------
-
-/** Every cell a span takes: its run, and for a platform the blocks beyond the far end. */
-function runCells(b) {
-  const axis = spanAxis(b.cell, b.far);
-  if (axis === null) return [b.cell];
-  const lo = Math.min(b.cell[axis], b.far[axis]);
-  const extra = b.kind === PLATFORM_KIND ? (b.length ?? DEFAULT_LENGTH) - 1 : 0;
-  const hi = Math.max(b.cell[axis], b.far[axis]) + extra;
-  const cells = [];
-  for (let t = lo; t <= hi; t++) {
-    const c = [...b.cell];
-    c[axis] = t;
-    cells.push(c);
-  }
-  return cells;
-}
-
-const spanAt = (doc, cell) =>
-  doc.blocks.find(
-    (b) => SPAN_KINDS.has(b.kind) && b.far && runCells(b).some((c) => sameCell(c, cell)),
-  ) ?? null;
 
 /** The far end a run would take toward `cand`: along the axis it leaves the
     anchor by most, or null where it leaves it by nothing. */
@@ -716,7 +648,7 @@ export function runPreview() {
   const span = { ...spanToward(d.doc, far), cell: pending.anchor };
   const key = `${pending.anchor}|${JSON.stringify(span)}`;
   if (preview?.doc !== d.doc || preview.key !== key) {
-    const cells = runCells(span);
+    const cells = runOf(span);
     const blocked =
       anchorRefusal(d.doc) !== null ||
       newErrors(d.doc, setBlock(d.doc, pending.anchor, span)).length > 0;
@@ -735,7 +667,7 @@ function verdicts(doc, span, cells) {
   for (const b of doc.blocks) {
     if (!SPAN_KINDS.has(b.kind) || !b.far || sameCell(b.cell, span.cell)) continue;
     const laser = b.kind === LASER_KIND;
-    const taken = laser ? runCells(b).slice(1, -1) : runCells(b);
+    const taken = laser ? runOf(b).slice(1, -1) : runOf(b);
     for (const c of taken) (laser ? beams : runs).add(cellKey(...c));
   }
   return cells.map((c) => {
@@ -759,8 +691,7 @@ function placeThing(c, d, e) {
   if (!b) return false;
   const entry = palette.chosen();
   if (PLAIN_ONLY.has(brush.type) && b.kind !== 0) return refuse(plainOnly(entry));
-  if (SPAN_KINDS.has(b.kind) || b.kind === CRUMBLING_KIND || b.kind === VANISHING_KIND)
-    return refuse(BRITTLE);
+  if (brittle(b)) return refuse(BRITTLE);
   if (blockAt(d.doc, across(c, c.face))) return refuse(LOOKS_INTO);
   const o = { type: brush.type };
   if (brush.variant !== undefined) o.variant = brush.variant;

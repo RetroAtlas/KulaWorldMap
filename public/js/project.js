@@ -266,7 +266,7 @@ const facingOk = (v) => Number.isInteger(v) && v >= 1 && v <= 4;
 
 /** The cells a span covers: a platform's from its lower end to its upper end
     plus its length, a laser's from end to end. */
-function runOf(b) {
+export function runOf(b) {
   const axis = spanAxis(b.cell, b.far);
   const [lower, upper] = b.cell[axis] < b.far[axis] ? [b.cell, b.far] : [b.far, b.cell];
   const extra = b.kind === PLATFORM_KIND ? (b.length ?? DEFAULT_LENGTH) - 1 : 0;

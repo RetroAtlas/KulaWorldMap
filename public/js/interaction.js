@@ -27,7 +27,7 @@ const redraw = () => {
 };
 
 const ORBIT = 0.42;
-const CLICK = 5;
+export const CLICK = 5;
 
 let drag = null;
 let moved = 0;
