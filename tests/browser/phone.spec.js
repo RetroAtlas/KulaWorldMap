@@ -513,6 +513,10 @@ test.describe("editing on a phone", () => {
     const strip = await page.locator("#tools").boundingBox();
     expect(strip.y + strip.height).toBeLessThanOrEqual(sheet.y + 1);
     expect(strip.width).toBe(375);
+    for (const h of await heights(
+      page.locator("#detail .form button:not(.there), #detail .form select"),
+    ))
+      expect(h).toBeGreaterThanOrEqual(44);
 
     await page.locator("#paletteBtn").tap();
     const palette = page.locator("#palette");

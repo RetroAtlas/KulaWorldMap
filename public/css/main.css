@@ -1607,7 +1607,13 @@ body:not(.sidebar-open) .menu-btn .cross {
   .palette .x,
   body.editing .detail .x,
   body.editing .detail .fold,
-  body.editing .detail .press button {
+  body.editing .detail .press button,
+  body.editing .detail .form .faces button,
+  body.editing .detail .form .swatches button,
+  body.editing .detail .form .row button,
+  body.editing .detail .form .circuit button,
+  body.editing .detail .form select,
+  body.editing .detail .form input[type="number"] {
     min-height: 44px;
     min-width: 44px;
   }
