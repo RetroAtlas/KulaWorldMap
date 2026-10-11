@@ -21,6 +21,7 @@ import {
   FINAL_SLOTS,
   FORMAT,
   FRUIT,
+  HEADS_AS_ONE,
   KEY,
   LASER_KIND,
   LENGTHS,
@@ -514,6 +515,12 @@ function readFaces(faces, where, report) {
         report.push(
           `${at} has a facing of ${show(o.facing)}, which is not a whole number; it is left out`,
         );
+    }
+    if (FACING_NEEDED.has(o.type) && !object.facing) {
+      report.push(
+        `${at} has ${object.facing === undefined ? "no facing" : "a facing of 0"}, ${HEADS_AS_ONE}`,
+      );
+      object.facing = 1;
     }
     if (o.variant !== undefined) {
       if (VARIANT_TYPES.has(o.type))

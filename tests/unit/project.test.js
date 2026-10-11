@@ -850,7 +850,7 @@ test("the reader reports every default it takes, and repairs what the writer wou
       faces: {
         0: start(),
         2: { type: COIN, variant: 0 },
-        3: { type: TELEPORTER, variant: 0 },
+        3: { type: TELEPORTER, facing: 1, variant: 0 },
         4: { type: KEY },
         5: { type: GEM, variant: 1 },
       },
@@ -867,6 +867,7 @@ test("the reader reports every default it takes, and repairs what the writer wou
     "block 0 at 5,5,5 face 1 has a type of 0, which is nothing standing there; it is left out",
     "block 0 at 5,5,5 face 2 has a variant of 9, which is not one of the 3; it is 0",
     'block 0 at 5,5,5 face 3 has a facing of "north", which is not a whole number; it is left out',
+    "block 0 at 5,5,5 face 3 has no facing, which the game heads as 1; it is 1",
     'block 0 at 5,5,5 face 3 has a variant of "red", which is not one of the 4; it is 0',
     "block 0 at 5,5,5 face 4 has a variant of 2.5, which is not a whole number; it is left out",
     'block 0 at 5,5,5 names a face "9", which is not one of the six; it is left out',
@@ -977,12 +978,33 @@ test("the writer keeps only what the game reads of a face, and only the colours 
     { circuits: { 2: "on", 1: "off", 0: "off" } },
   );
   const { project: q, report } = readProject(writeProject(p));
-  assert.deepEqual(report, []);
+  assert.deepEqual(report, [
+    "block 0 at 5,5,5 face 0 has no facing, which the game heads as 1; it is 1",
+  ]);
   assert.deepEqual(q.blocks[0].faces, {
-    0: { type: START },
+    0: { type: START, facing: 1 },
     1: { type: COIN, variant: 1 },
     2: { type: TELEPORTER, facing: 1, variant: 0 },
   });
+  const zero = readProject({
+    format: FORMAT,
+    world: WORLD,
+    blocks: [
+      {
+        cell: [5, 5, 5],
+        kind: 0,
+        faces: { 0: { type: START, facing: 0 }, 1: { type: WANDERING } },
+      },
+    ],
+  });
+  assert.deepEqual(zero.project.blocks[0].faces, {
+    0: { type: START, facing: 1 },
+    1: { type: WANDERING },
+  });
+  assert.deepEqual(zero.report, [
+    "block 0 at 5,5,5 face 0 has a facing of 0, which the game heads as 1; it is 1",
+  ]);
+  assert.deepEqual(texts(validate(zero.project, HIDES), "error"), []);
   assert.deepEqual(q.blocks[1], { cell: [7, 5, 5], kind: 7, phase: 0 });
   assert.deepEqual(q.blocks[2], {
     cell: [9, 5, 5],

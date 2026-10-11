@@ -231,9 +231,18 @@ export const carries = (b) => b.kind >= BLOCK_KINDS || facesOf(b).length > 0;
 
 // --- a project out of a level ------------------------------------------------
 
-function faceOf(o) {
+/** The line both readers give a facing of 0 on a type that needs one: the game heads as 1. */
+export const HEADS_AS_ONE = "which the game heads as 1; it is 1";
+
+function faceOf(o, cell, report) {
   const out = { type: o.type };
   if (FACING_TYPES.has(o.type) && o.f[0] !== 0) out.facing = o.f[0];
+  else if (FACING_NEEDED.has(o.type)) {
+    report.push(
+      `type ${o.type} on face ${o.face} of the block at ${cellText(cell)} has a facing of 0, ${HEADS_AS_ONE}`,
+    );
+    out.facing = 1;
+  }
   if (VARIANT_TYPES.has(o.type)) out.variant = o.f[1];
   return out;
 }
@@ -261,7 +270,8 @@ export function projectOf(level, report = []) {
     const b = { cell, kind: r.kind };
     if (r.kind < BLOCK_KINDS) {
       const faces = {};
-      for (const o of [...r.on].sort((p, q) => p.face - q.face)) faces[String(o.face)] = faceOf(o);
+      for (const o of [...r.on].sort((p, q) => p.face - q.face))
+        faces[String(o.face)] = faceOf(o, cell, report);
       if (r.on.length) b.faces = faces;
       else folded++;
     } else if (r.kind === PLATFORM_KIND) {

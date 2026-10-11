@@ -344,6 +344,19 @@ class Reads(unittest.TestCase):
                                 for line in report), report)
             self.assertEqual(Level(canonical(p)).verify(), [])
 
+    def test_a_facing_of_0_on_a_type_that_needs_one_is_read_as_1_the_way_the_game_heads(self):
+        blob = level({(1, 2, 3): FIRST_RECORD},
+                     [block((1, 2, 3), faces={0: obj(START, 0, 0, 0), 2: obj(TELEPORTER, 0, 1, 1), 3: obj(53, 0, 0, 0)})])
+        p, report = read_kwl(blob)
+        self.assertEqual(p["blocks"][0]["faces"], {"0": {"type": START, "facing": 1},
+                                                   "2": {"type": TELEPORTER, "facing": 1, "variant": 1},
+                                                   "3": {"type": 53}})
+        self.assertEqual(report, [
+            "type 30 on face 0 of the block at 1,2,3 has a facing of 0, which the game heads as 1; it is 1",
+            "type 5 on face 2 of the block at 1,2,3 has a facing of 0, which the game heads as 1; it is 1",
+        ])
+        self.assertEqual(Level(canonical(p)).verify(), [])
+
     def test_the_lattice_decides_where_a_record_stands(self):
         blob = level({(1, 2, 3): FIRST_RECORD}, [block((4, 5, 6), faces={0: obj(START, 3, 0, 0)})])
         p, report = read_kwl(blob)

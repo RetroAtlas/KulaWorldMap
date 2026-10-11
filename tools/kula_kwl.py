@@ -179,13 +179,20 @@ def level_key(pack, index):
 
 # --- a project out of a level -------------------------------------------------
 
-def _face_of(o):
+# The line both readers give a facing of 0 on a type that needs one: the game heads as 1.
+HEADS_AS_ONE = "which the game heads as 1; it is 1"
+
+
+def _face_of(o, cell, report):
     """One object of a map_data record as the project writes it."""
     t = o["type"]
     f2, f3 = o["f"][0], o["f"][1]
     out = {"type": t}
     if t in FACING_TYPES and f2 != 0:
         out["facing"] = f2
+    elif t in FACING_NEEDED:
+        report.append(f"type {t} on face {o['face']} of the block at {cell_text(cell)} has a facing of 0, {HEADS_AS_ONE}")
+        out["facing"] = 1
     if t in VARIANT_TYPES:
         out["variant"] = f3
     return out
@@ -212,7 +219,7 @@ def project_of(level, report=None):
         r = records[v - FIRST_RECORD]
         b = {"cell": list(cell), "kind": r["kind"]}
         if r["kind"] < BLOCK_KINDS:
-            faces = {str(o["face"]): _face_of(o) for o in sorted(r["on"], key=lambda o: o["face"])}
+            faces = {str(o["face"]): _face_of(o, cell, report) for o in sorted(r["on"], key=lambda o: o["face"])}
             if faces:
                 b["faces"] = faces
             else:
