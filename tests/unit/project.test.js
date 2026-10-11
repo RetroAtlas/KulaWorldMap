@@ -18,8 +18,18 @@ import {
 import { hasFace } from "../../public/js/blocks.js";
 import { FACE_NORMAL } from "../../public/js/faces.js";
 import { state, cellKey } from "../../public/js/state.js";
-import { FORMAT, LASER_KIND, PLATFORM_KIND, SETTINGS_KIND, inner } from "../../public/js/kwl.js";
 import {
+  CAPS,
+  DISC_MAX,
+  FORMAT,
+  LASER_KIND,
+  LIGHT_LIST,
+  PLATFORM_KIND,
+  SETTINGS_KIND,
+  inner,
+} from "../../public/js/kwl.js";
+import {
+  COUNTERS,
   DRAFT_PACK,
   UNTITLED,
   blank,
@@ -192,6 +202,33 @@ test("the face count is the renderer's rule, replayed over every shipped level",
       faces += FACE_NORMAL.filter((_, g) => hasFace(idx, c, g)).length;
     }
     assert.equal(counts(p, HIDES).faces, faces, l.name);
+  }
+});
+
+test("the disc's maxima are the most any shipped level counts, counter by counter", () => {
+  const most = Object.fromEntries(COUNTERS.map((what) => [what, 0]));
+  for (const l of mapData.levels) {
+    const n = counts(fromLevel(l), HIDES);
+    for (const what of COUNTERS) most[what] = Math.max(most[what], n[what]);
+  }
+  assert.deepEqual(DISC_MAX, most);
+});
+
+test("the document's counter table gives the caps, the disc's maxima and a level that counts each", () => {
+  const rows = [...doc.matchAll(/^\| (\w+) \|[^|]*\|([^|]*)\| (\d+)(?:, ([^|]+?))? \|$/gm)];
+  assert.deepEqual(
+    rows.map((m) => m[1]),
+    COUNTERS,
+  );
+  for (const [, what, cap, most, title] of rows) {
+    const expected =
+      what in CAPS ? String(CAPS[what]) : what === "lights" ? `${LIGHT_LIST}, a warning` : "";
+    assert.equal(cap.trim(), expected, what);
+    assert.equal(Number(most), DISC_MAX[what], what);
+    if (!title) continue;
+    const named = level(title);
+    assert.ok(named, title);
+    assert.equal(counts(fromLevel(named), HIDES)[what], DISC_MAX[what], title);
   }
 });
 
@@ -448,6 +485,17 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
   assert.deepEqual([n.vanishing, n.records, n.blocks], [64, 65, 65]);
   assert.deepEqual(errors(withStart(vanishing)), []);
   assert.ok(
+    warnings(withStart(vanishing)).includes("64 vanishing, more than any level on the disc"),
+  );
+  assert.ok(
+    !warnings(withStart(vanishing.slice(0, 14))).some((w) => w.includes("vanishing, more")),
+  );
+  assert.ok(
+    warnings(withStart(vanishing.slice(0, 15))).includes(
+      "15 vanishing, more than any level on the disc",
+    ),
+  );
+  assert.ok(
     errors(withStart([...vanishing, { cell: [1, 24, 5], kind: 7, phase: 0 }])).includes(
       "65 vanishing, over the 64 the game has room for",
     ),
@@ -458,6 +506,14 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
     kind: 6,
   }));
   assert.deepEqual(errors(withStart(crumbling)), []);
+  assert.ok(
+    !warnings(withStart(crumbling.slice(0, 33))).some((w) => w.includes("crumbling, more")),
+  );
+  assert.ok(
+    warnings(withStart(crumbling.slice(0, 34))).includes(
+      "34 crumbling, more than any level on the disc",
+    ),
+  );
   assert.ok(
     errors(withStart([...crumbling, { cell: [1, 24, 5], kind: 6 }])).includes(
       "65 crumbling, over the 64 the game has room for",

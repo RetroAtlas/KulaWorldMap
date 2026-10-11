@@ -140,11 +140,15 @@ export const CAPS = {
 };
 export const LIGHT_LIST = 32;
 export const DISC_MAX = {
-  records: 76,
+  records: 75,
   cells: 178,
+  faces: 766,
+  blocks: 178,
   objects: 81,
   platforms: 4,
   lasers: 12,
+  vanishing: 14,
+  crumbling: 33,
   captivators: 12,
   keys: 4,
   lights: 19,

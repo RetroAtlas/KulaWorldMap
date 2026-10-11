@@ -137,7 +137,7 @@ A type not in the table is written with state 0 and the constants -1, which is a
 
 | counter | what is counted | cap | most on the disc |
 | --- | --- | --- | --- |
-| records | blocks that carry a record, the settings record included | 123 | 76, LEVEL 126 |
+| records | blocks that carry a record, the settings record included | 123 | 75, LEVEL 126 |
 | cells | placed cells | | 178, HIDDEN 10 |
 | faces | the faces the game builds, below | 768 | 766, HIDDEN 10 |
 | blocks | blocks of kinds 0, 1, 2, 4, 6 and 7 inside 1 to 32 with a face built, the ones a keyless level scores | 256 | 178, HIDDEN 10 |

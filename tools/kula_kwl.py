@@ -129,8 +129,8 @@ SETTINGS_CELL = (0, 0, 0)
 CAPS = {"records": 123, "faces": 768, "blocks": 256, "objects": 255, "platforms": 8,
         "vanishing": 64, "crumbling": 64, "captivators": 32}
 LIGHT_LIST = 32
-DISC_MAX = {"records": 76, "cells": 178, "objects": 81, "platforms": 4, "lasers": 12,
-            "captivators": 12, "keys": 4, "lights": 19}
+DISC_MAX = {"records": 75, "cells": 178, "faces": 766, "blocks": 178, "objects": 81, "platforms": 4,
+            "lasers": 12, "vanishing": 14, "crumbling": 33, "captivators": 12, "keys": 4, "lights": 19}
 COUNTED_KINDS = frozenset({0, 1, 2, 4, CRUMBLING_KIND, VANISHING_KIND})
 
 ERROR, WARNING = "error", "warning"

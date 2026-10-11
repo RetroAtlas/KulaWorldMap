@@ -16,8 +16,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import open_disc  # noqa: E402
 from kula_kwl import (  # noqa: E402
+    COUNTERS,
     DATA,
     DIGESTS,
+    DISC_MAX,
     FORMAT,
     OBJECTS,
     canonical,
@@ -479,8 +481,19 @@ class Validates(unittest.TestCase):
         n = counts(project(blocks), HIDES)
         self.assertEqual((n["vanishing"], n["records"], n["blocks"]), (64, 65, 65))
         self.assertEqual(self.errors(blocks), [])
+        self.assertIn("64 vanishing, more than any level on the disc", self.warnings(blocks))
+        self.assertFalse(any("vanishing, more than" in w for w in self.warnings(blocks[:15])))
+        self.assertIn("15 vanishing, more than any level on the disc", self.warnings(blocks[:16]))
         blocks.append({"cell": [1, 24, 5], "kind": 7, "phase": 0})
         self.assertIn("65 vanishing, over the 64 the game has room for", self.errors(blocks))
+
+    def test_the_disc_maxima_are_the_most_any_shipped_level_counts(self):
+        most = dict.fromkeys(COUNTERS, 0)
+        for l in json.loads(DATA.read_text())["levels"]:
+            n = counts(project_of(l), HIDES)
+            for what in COUNTERS:
+                most[what] = max(most[what], n[what])
+        self.assertEqual(DISC_MAX, most)
 
     def test_what_the_format_takes_and_what_it_warns_about(self):
         blocks = [plain((5, 5, 5), t0=start(), t1={"type": 3}, t2={"type": COIN, "variant": 7},
