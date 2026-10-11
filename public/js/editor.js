@@ -503,13 +503,19 @@ function place(c, e) {
   return layBlock(d, target, brush.kind, e);
 }
 
+/** Why a block of `kind` cannot be laid at `target`, or null where it can. */
+function blockRefusal(doc, target, kind) {
+  if (!target.every(inner)) return EDGE;
+  if (blockAt(doc, target)) return HELD;
+  const grew = newErrors(doc, setBlock(doc, target, { kind }));
+  return grew.length ? sentence(grew[0].text) : null;
+}
+
 /** Lay a block of `kind` at `target`, refusing what the game would not load. */
 function layBlock(d, target, kind, e = null) {
-  if (!target.every(inner)) return refuse(EDGE);
-  if (blockAt(d.doc, target)) return refuse(HELD);
+  const why = blockRefusal(d.doc, target, kind);
+  if (why) return refuse(why);
   const next = setBlock(d.doc, target, { kind });
-  const grew = newErrors(d.doc, next);
-  if (grew.length) return refuse(sentence(grew[0].text));
   if (target[2] < sliceZ()) setSlice(SIDE - 1 - target[2]);
   commit(d.id, next, `placed ${aWord(kindWord(kind))} at ${place3(target)}`);
   select(target, null, e);
@@ -604,10 +610,8 @@ function startRun(c, e, d) {
   } else {
     const target = landing(c, e);
     if (!target) return false;
-    if (!target.every(inner)) return refuse(EDGE);
-    if (blockAt(d.doc, target)) return refuse(HELD);
-    const grew = newErrors(d.doc, setBlock(d.doc, target, { kind: 0 }));
-    if (grew.length) return refuse(sentence(grew[0].text));
+    const why = blockRefusal(d.doc, target, 0);
+    if (why) return refuse(why);
     pending = { anchor: target, respan: false, touch };
   }
   status(waiting());
@@ -887,9 +891,21 @@ function drawGhost(ctx) {
     ctx.drawImage(icon.cv, x - ICON / 2, y - ICON / 2, ICON, ICON);
     return;
   }
-  const target = across(h, h.face);
+  const g = ghostPreview();
+  if (g) outline(ctx, toCell(g.cell), state.idx, g.blocked ? BLOCKED : GHOST, [4, 3]);
+}
+
+let ghost = null;
+
+/** The cell Place would fill from the hovered face, and whether the click would be refused. */
+export function ghostPreview() {
+  const h = hovered();
   const d = current();
-  const blocked = !target.every(inner) || (d && blockAt(d.doc, target) !== null);
-  const at = { x: target[0], y: target[1], z: target[2] };
-  outline(ctx, at, state.idx, blocked ? BLOCKED : GHOST, [4, 3]);
+  if (!d || !h || h.face == null) return null;
+  const cell = across(h, h.face);
+  const kind = SPAN_KINDS.has(brush.kind) ? 0 : brush.kind;
+  const key = `${cell}|${kind}`;
+  if (ghost?.doc !== d.doc || ghost.key !== key)
+    ghost = { doc: d.doc, key, blocked: blockRefusal(d.doc, cell, kind) !== null };
+  return { cell, blocked: ghost.blocked };
 }

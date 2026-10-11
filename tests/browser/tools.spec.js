@@ -225,6 +225,40 @@ test("Erase takes the object off a face, then the block, and keeps the last bloc
   expect(errors).toEqual([]);
 });
 
+test("the ghost is red for whatever the click would refuse, a beam's cell among them", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setBlock }] = await Promise.all(
+      ["state.js", "drafts.js", "project.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    let doc = setBlock(get(id).doc, [17, 18, 17], { kind: 8, far: [22, 18, 17], colour: 0 });
+    doc = setBlock(doc, [19, 17, 17], { kind: 0 });
+    update(id, doc);
+  });
+  await zoom(page, 0.8);
+  const ghost = () =>
+    page.evaluate(async () => {
+      const { ghostPreview } = await import(new URL("js/editor.js", location.href).href);
+      return ghostPreview();
+    });
+  const free = await plusX(page, [19, 17, 17]);
+  await page.mouse.move(free.x, free.y);
+  expect(await ghost()).toEqual({ cell: [20, 17, 17], blocked: false });
+  // across the +y side lies the beam, which the checks refuse a block on
+  const beam = await at(page, 19.5, 18, 17.5);
+  await page.mouse.move(beam.x, beam.y);
+  expect(await ghost()).toEqual({ cell: [19, 18, 17], blocked: true });
+  await click(page, beam);
+  expect(await toasts(page)).toContain("The beam crosses the block at 19,18,17.");
+  expect((await blocks(page)).length).toBe(3);
+  expect(errors).toEqual([]);
+});
+
 test("the hover names what Place would do, and Esc clears the selection without leaving", async ({
   page,
 }) => {
