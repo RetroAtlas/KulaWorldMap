@@ -145,6 +145,18 @@ def lattice_index(cell):
     return (x * SIDE + y) * SIDE + z
 
 
+def cell_text(cell):
+    return ",".join(map(str, cell)) if isinstance(cell, (list, tuple)) else str(cell)
+
+
+def is_cell(v):
+    return isinstance(v, (list, tuple)) and len(v) == 3 and all(_is_int(c) for c in v)
+
+
+def _is_int(v):
+    return isinstance(v, int) and not isinstance(v, bool)
+
+
 def direction(a, b):
     """The game's direction from a to b where they differ on one axis, else None."""
     diff = [(i, b[i] - a[i]) for i in range(3) if b[i] != a[i]]
@@ -289,28 +301,43 @@ def project_of_level(L, world=None, report=None):
 
 # --- the game's bytes out of a project ---------------------------------------
 
+FACE_KEY = re.compile(r"-?[0-9]+")
+
+
 def _face_number(f):
-    try:
-        return int(f)
-    except (TypeError, ValueError):
+    """A face key as the face it names: a number, or an ASCII integer string."""
+    if _is_int(f):
         return f
+    return int(f) if isinstance(f, str) and FACE_KEY.fullmatch(f) else f
+
+
+def _standing(o):
+    t = o.get("type", 0) if isinstance(o, dict) else 0
+    return isinstance(t, (int, float)) and not isinstance(t, bool) and t > 0
+
+
+def _occupied(b):
+    """The entries of a block's faces with something standing on them, on a kind
+    that carries any."""
+    if b["kind"] >= BLOCK_KINDS:
+        return []
+    return [(f, o) for f, o in (b.get("faces") or {}).items() if _standing(o)]
 
 
 def _faces_of(b):
     """What stands on a block's faces, by face number, for a kind that carries any."""
-    if b["kind"] >= BLOCK_KINDS:
-        return {}
-    return {_face_number(f): o for f, o in (b.get("faces") or {}).items() if o.get("type", 0) > 0}
+    return {_face_number(f): o for f, o in _occupied(b) if _is_int(_face_number(f))}
+
+
+def _stray_face_keys(b):
+    """The keys of a block's faces that name no face by number, with something standing on them."""
+    return [f for f, _ in _occupied(b) if not _is_int(_face_number(f))]
 
 
 def _named_twice(b):
     """The face two keys of a block's faces spell between them, or None."""
-    if b["kind"] >= BLOCK_KINDS:
-        return None
     seen = set()
-    for f, o in (b.get("faces") or {}).items():
-        if o.get("type", 0) <= 0:
-            continue
+    for f, _ in _occupied(b):
         j = _face_number(f)
         if j in seen:
             return j
@@ -384,7 +411,7 @@ def _span_words(cell, far):
     lower, upper = sorted((cell, far))
     d = direction(cell, far)
     if d is None:
-        raise ValueError(f"the span from {cell} to {far} runs along no one axis")
+        raise ValueError(f"the span from {cell_text(cell)} to {cell_text(far)} runs along no one axis")
     return d, AXIS_WORD[span_axis(cell, far)], lower, upper
 
 
@@ -417,13 +444,11 @@ def _record(b, k, states, links, numbers):
         colour = b["colour"]
         slots[0] = [kind, d, axis, 1 if states[colour] == STATE_ON else 0, *lower, *upper] + [-1] * 6
         slots[1] = [-1, 1, -1, -1, FIRST_RECORD + k, -1, colour, links[(k, OWN)][0]] + [-1] * 8
-    else:
-        raise ValueError(f"a block of kind {kind} cannot be written")
     words = [w for s in slots for w in s] + extras + list(cell)
     try:
         return struct.pack(f"<{WORDS}h", *words)
     except struct.error:
-        raise ValueError(f"a word of the block at {cell} is outside the file's range") from None
+        raise ValueError(f"a word of the block at {cell_text(cell)} is outside the file's range") from None
 
 
 def _settings(project):
@@ -464,21 +489,23 @@ def canonical(project):
     for b in blocks:
         cell = tuple(b["cell"])
         kind = b.get("kind")
-        if kind not in range(UNPLACED_KIND):
-            raise ValueError(f"kind {kind} is not a kind of block")
-        if len(cell) != 3 or any(c not in LATTICE for c in cell):
-            raise ValueError(f"cell {cell} is outside the lattice")
+        if not is_cell(cell) or any(c not in LATTICE for c in cell):
+            raise ValueError(f"cell {cell_text(cell)} is outside the lattice")
         if cell in seen:
-            raise ValueError(f"two blocks on cell {cell}")
+            raise ValueError(f"two blocks on cell {cell_text(cell)}")
         seen.add(cell)
+        if not _is_int(kind) or kind not in range(UNPLACED_KIND):
+            raise ValueError(f"kind {kind} is not a kind of block")
+        for key in _stray_face_keys(b):
+            raise ValueError(f"face {json.dumps(key, ensure_ascii=False)} is not one of the six")
         for j in _faces_of(b):
             if j not in range(FACES):
                 raise ValueError(f"face {j} is not one of the six")
         twice = _named_twice(b)
         if twice is not None:
-            raise ValueError(f"face {twice} of the block at {cell} is named twice")
-        if kind in SPAN_KINDS and (not isinstance(b.get("far"), (list, tuple)) or len(b["far"]) != 3):
-            raise ValueError(f"the span at {cell} needs a far end")
+            raise ValueError(f"face {twice} of the block at {cell_text(cell)} is named twice")
+        if kind in SPAN_KINDS and not is_cell(b.get("far")):
+            raise ValueError(f"the span at {cell_text(cell)} needs a far end")
     carried = [b for b in blocks if _carries(b)]
     index = {tuple(b["cell"]): k for k, b in enumerate(carried)}
     grid = [EMPTY] * CELLS
@@ -534,16 +561,17 @@ def read_kwl(blob, world=WORLDS[0]):
             continue
         k = v - FIRST_RECORD
         if k >= len(records) or records[k].kind not in range(UNPLACED_KIND):
-            report.append(f"cell {cell} names record {k}, which is not a block; the cell is left empty")
+            report.append(f"cell {cell_text(cell)} names record {k}, which is not a block; the cell is left empty")
             continue
         if k in named:
-            report.append(f"cell {cell} names record {k}, which cell {named[k]} already names; the cell is left empty")
+            report.append(f"cell {cell_text(cell)} names record {k}, which cell {cell_text(named[k])} already names; "
+                          f"the cell is left empty")
             continue
         named[k] = cell
         cells.append((*cell, v))
         r = records[k]
         if r.cell != cell:
-            report.append(f"record {k} says it stands at {r.cell}; the lattice puts it at {cell}")
+            report.append(f"record {k} says it stands at {cell_text(r.cell)}; the lattice puts it at {cell_text(cell)}")
             r.x, r.y, r.z = cell
 
     kept, settings = [], []
@@ -553,7 +581,7 @@ def read_kwl(blob, world=WORLDS[0]):
         elif k in named:
             kept.append(k)
         else:
-            report.append(f"record {k} of kind {r.kind} at {r.cell} is named by no cell; it is dropped")
+            report.append(f"record {k} of kind {r.kind} at {cell_text(r.cell)} is named by no cell; it is dropped")
     if len(settings) > 1:
         report.append(f"{len(settings)} settings records; the flags of all of them are taken")
 
@@ -562,16 +590,17 @@ def read_kwl(blob, world=WORLDS[0]):
         if r.kind in SPAN_KINDS:
             a, b = sorted(r.span)
             if r.cell not in (a, b):
-                report.append(f"record {k} spans {a} to {b} and stands at {r.cell}; its lower end is now its cell")
+                report.append(f"record {k} spans {cell_text(a)} to {cell_text(b)} and stands at {cell_text(r.cell)}; "
+                              f"its lower end is now its cell")
                 a = r.cell
             r.slots[0][4:10] = [*a, *b]
         if r.kind == PLATFORM_KIND:
             if r.length not in LENGTHS:
-                report.append(f"the platform at {r.cell} is {r.length} blocks long")
+                report.append(f"the platform at {cell_text(r.cell)} is {r.length} blocks long")
             if r.speed != DEFAULT_SPEED:
-                report.append(f"the platform at {r.cell} runs at {r.speed}")
+                report.append(f"the platform at {cell_text(r.cell)} runs at {r.speed}")
         if r.kind == VANISHING_KIND and r.f[0] in DIM_AT_ONCE:
-            report.append(f"the vanishing block at {r.cell} has phase {r.f[0]}, which dims at once")
+            report.append(f"the vanishing block at {cell_text(r.cell)} has phase {r.f[0]}, which dims at once")
 
     order = [records[k].cell for k in kept]
     if order != sorted(order):
@@ -758,7 +787,7 @@ def validate(project, hides):
             _validate_span(b, at, kinds, err, warn)
         if kind == LASER_KIND and b.get("colour") not in range(COLOURS):
             err(f"a colour of {b.get('colour')}", cell)
-        for j, o in sorted(faces.items(), key=lambda kv: (isinstance(kv[0], str), kv[0])):
+        for j, o in sorted(faces.items()):
             t = o["type"]
             if j not in range(FACES):
                 err(f"face {j} is not one of the six", cell)
@@ -780,11 +809,13 @@ def validate(project, hides):
             if t in FRUIT:
                 warn("the game shows the player's next fruit, whichever is placed", cell, j)
             _validate_outlook(cell, j, kinds, beams, warn)
+        for key in _stray_face_keys(b):
+            err(f"face {json.dumps(key, ensure_ascii=False)} is not one of the six", cell)
     if not starts:
         err("no start")
     elif len(starts) > 1:
         cell, j = starts[-1]
-        warn(f"{len(starts)} starts; the game takes the one on face {j} of the block at {cell[0]},{cell[1]},{cell[2]}")
+        warn(f"{len(starts)} starts; the game takes the one on face {j} of the block at {cell_text(cell)}")
 
     _validate_circuits(project, blocks, warn)
     n = counts(project, hides)
@@ -807,7 +838,7 @@ def describe(finding):
     level, text, at = finding
     where = ""
     if at:
-        where = " at " + ",".join(map(str, at["cell"]))
+        where = f" at {cell_text(at['cell'])}"
         if "face" in at:
             where += f" face {at['face']}"
     return f"{level}{where}: {text}"
@@ -870,7 +901,7 @@ def _validate_span(b, at, kinds, err, warn):
             warn(f"a platform running at {speed}", cell)
         for c in _run(b):
             if c != cell and c in at:
-                err(f"the platform's run crosses the block at {c[0]},{c[1]},{c[2]}", cell)
+                err(f"the platform's run crosses the block at {cell_text(c)}", cell)
         return
     for c in _run(b):
         other = at.get(c)
@@ -883,7 +914,7 @@ def _validate_span(b, at, kinds, err, warn):
             elif other["kind"] not in (0, LASER_KIND):
                 err("a beam ends on an empty cell, a plain block or another laser's block", cell)
         else:
-            err(f"the beam crosses the block at {c[0]},{c[1]},{c[2]}", cell)
+            err(f"the beam crosses the block at {cell_text(c)}", cell)
 
 
 def _beam_cells(blocks):
@@ -907,7 +938,7 @@ def _validate_outlook(cell, j, kinds, beams, warn):
     elif theirs == VANISHING_KIND:
         warn("looks into a vanishing block", cell, j)
     else:
-        warn(f"looks into the block at {beyond[0]},{beyond[1]},{beyond[2]}", cell, j)
+        warn(f"looks into the block at {cell_text(beyond)}", cell, j)
 
 
 def _validate_circuits(project, blocks, warn):

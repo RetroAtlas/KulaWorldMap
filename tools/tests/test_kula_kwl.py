@@ -215,17 +215,26 @@ class RoundTrips(unittest.TestCase):
     def test_the_writer_names_what_it_cannot_write(self):
         cases = [
             ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": LASER_KIND, "colour": 0}],
-             "the span at (6, 6, 6) needs a far end"),
+             "the span at 6,6,6 needs a far end"),
+            ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": LASER_KIND, "far": [6, 9], "colour": 0}],
+             "the span at 6,6,6 needs a far end"),
             ([plain((5, 5, 5), t0=start(), t7={"type": COIN, "variant": 0})], "face 7 is not one of the six"),
             ([plain((5, 5, 5), t0=start(), t5={"type": COIN, "variant": 0}, t05={"type": KEY})],
-             "face 5 of the block at (5, 5, 5) is named twice"),
+             "face 5 of the block at 5,5,5 is named twice"),
             ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": LASER_KIND, "far": [6, 9, 6], "colour": 7}],
              "colour 7 is not one of the four"),
             ([plain((5, 5, 5), t0=start(), t1={"type": TELEPORTER, "facing": 1, "variant": 4})],
              "colour 4 is not one of the four"),
             ([plain((5, 5, 5), t0=start()), plain((6, 6, 6), kind=9)], "kind 9 is not a kind of block"),
             ([plain((5, 5, 5), t0=start()), plain((6, 6, 6), kind=-1)], "kind -1 is not a kind of block"),
-            ([plain((5, 5), t0=start())], "cell (5, 5) is outside the lattice"),
+            ([plain((5, 5, 5), t0=start()), plain((6, 6, 6), kind=True)], "kind True is not a kind of block"),
+            ([plain((5, 5), t0=start())], "cell 5,5 is outside the lattice"),
+            ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": 0, "faces": {"top": {"type": COIN, "variant": 0}}}],
+             'face "top" is not one of the six'),
+            ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": 0, "faces": {" 5": {"type": COIN, "variant": 0}}}],
+             'face " 5" is not one of the six'),
+            ([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": 0, "faces": {"+5": {"type": COIN, "variant": 0}}}],
+             'face "+5" is not one of the six'),
         ]
         for blocks, text in cases:
             with self.assertRaises(ValueError) as caught:
@@ -236,7 +245,10 @@ class RoundTrips(unittest.TestCase):
         self.assertIn("a time of 100000", str(caught.exception))
         with self.assertRaises(ValueError) as caught:
             canonical(project([plain((5, 5, 5), t0=start(), t1={"type": COIN, "variant": 70000})]))
-        self.assertIn("the block at (5, 5, 5)", str(caught.exception))
+        self.assertIn("the block at 5,5,5", str(caught.exception))
+        # a key that stands nothing is no face at all, whatever it is called
+        bare = project([plain((5, 5, 5), t0=start()), {"cell": [6, 6, 6], "kind": 0, "faces": {"top": {"type": 0}, "x": None}}])
+        self.assertEqual(canonical(bare), canonical(project([plain((5, 5, 5), t0=start()), plain((6, 6, 6))])))
 
 
 class Links(unittest.TestCase):
@@ -315,7 +327,7 @@ class Reads(unittest.TestCase):
         blob = level({(1, 2, 3): FIRST_RECORD}, [block((4, 5, 6), faces={0: obj(START, 3, 0, 0)})])
         p, report = read_kwl(blob)
         self.assertEqual(p["blocks"][0]["cell"], [1, 2, 3])
-        self.assertTrue(any("the lattice puts it at (1, 2, 3)" in line for line in report), report)
+        self.assertTrue(any("the lattice puts it at 1,2,3" in line for line in report), report)
         self.assertEqual(Level(canonical(p)).verify(), [])
 
     def test_a_record_no_cell_names_is_dropped_and_a_cell_naming_nothing_is_emptied(self):
@@ -323,8 +335,8 @@ class Reads(unittest.TestCase):
                      [block((1, 2, 3), faces={0: obj(START, 3, 0, 0)}), block((4, 5, 6), faces={0: obj(COIN, 0, 1)})])
         p, report = read_kwl(blob)
         self.assertEqual([b["cell"] for b in p["blocks"]], [[1, 2, 3]])
-        self.assertTrue(any("record 1 of kind 0 at (4, 5, 6) is named by no cell" in line for line in report), report)
-        self.assertTrue(any("cell (7, 7, 7) names record 5, which is not a block" in line for line in report), report)
+        self.assertTrue(any("record 1 of kind 0 at 4,5,6 is named by no cell" in line for line in report), report)
+        self.assertTrue(any("cell 7,7,7 names record 5, which is not a block" in line for line in report), report)
 
     def test_an_unwired_teleporter_is_wired_on_the_way_out(self):
         blob = level({(1, 2, 3): FIRST_RECORD, (1, 4, 3): FIRST_RECORD + 1},
@@ -579,6 +591,8 @@ class Validates(unittest.TestCase):
                       self.errors([plain((5, 5, 5), t0=start(), t5={"type": COIN, "variant": 0}, t05={"type": KEY})]))
         self.assertIn("a phase of 4 dims at once", self.warnings([plain((5, 5, 5), t0=start()), {"cell": [7, 5, 5], "kind": 7, "phase": 4}]))
         self.assertIn("a phase of 9", self.errors([plain((5, 5, 5), t0=start()), {"cell": [7, 5, 5], "kind": 7, "phase": 9}]))
+        stray = [plain((5, 5, 5), t0=start()), {"cell": [7, 5, 5], "kind": 0, "faces": {"top": {"type": COIN, "variant": 0}}}]
+        self.assertIn('face "top" is not one of the six', self.errors(stray))
 
     def test_an_object_looks_into_an_empty_cell(self):
         blocks = [plain((5, 5, 5), t0=start(), t1={"type": COIN, "variant": 0}, t2={"type": KEY}, t3={"type": GEM, "variant": 0}),

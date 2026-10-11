@@ -457,7 +457,41 @@ test("the bytes are undefined for what the lattice cannot hold", () => {
       ),
     /not one of the four/,
   );
-  assert.throws(() => writeKwl(project([plain([5, 5, 5], 12)])), /kind 12/);
+  assert.throws(() => writeKwl(project([plain([5, 5, 5], 12)])), /kind 12 is not a kind of block/);
+  assert.throws(
+    () => writeKwl(project([plain([5, 5], 0, { 0: start() })])),
+    /cell 5,5 is outside the lattice/,
+  );
+  for (const key of ["top", " 5", "+5"])
+    assert.throws(
+      () => writeKwl(project([plain([5, 5, 5], 0, { 0: start(), [key]: { type: COIN } })])),
+      new RegExp(`face "${key.replace("+", "\\+")}" is not one of the six`),
+    );
+  assert.throws(
+    () => writeKwl(project([plain([5, 5, 5], 0, { 0: start(), 7: { type: COIN } })])),
+    /face 7 is not one of the six/,
+  );
+  for (const far of [undefined, [6, 9]])
+    assert.throws(
+      () =>
+        writeKwl(
+          project([
+            plain([5, 5, 5], 0, { 0: start() }),
+            { cell: [6, 6, 6], kind: LASER_KIND, far, colour: 0 },
+          ]),
+        ),
+      /the span at 6,6,6 needs a far end/,
+    );
+  // a key that stands nothing is no face at all, whatever it is called
+  assert.deepEqual(
+    writeKwl(
+      project([
+        plain([5, 5, 5], 0, { 0: start() }),
+        plain([6, 6, 6], 0, { top: { type: 0 }, x: null }),
+      ]),
+    ),
+    writeKwl(project([plain([5, 5, 5], 0, { 0: start() }), plain([6, 6, 6])])),
+  );
   assert.throws(
     () =>
       writeKwl(

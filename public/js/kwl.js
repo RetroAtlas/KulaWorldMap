@@ -177,7 +177,8 @@ export const inWord = (v) => Number.isInteger(v) && v >= -(2 ** 15) && v < 2 ** 
 export const sameCell = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 export const compareCells = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
 export const byCell = (a, b) => compareCells(a.cell, b.cell);
-export const cellText = (c) => c.join(",");
+export const cellText = (c) => (Array.isArray(c) ? c.join(",") : String(c));
+export const isCell = (v) => Array.isArray(v) && v.length === 3 && v.every(Number.isInteger);
 export const levelKey = (pack, index) => `${pack}#${index}`;
 
 /** The game's direction from a to b where they differ on one axis, else null. */
@@ -194,15 +195,29 @@ export function spanAxis(a, b) {
   return d === null ? null : FACE_NORMAL[d].findIndex((v) => v !== 0);
 }
 
+const FACE_KEY = /^-?\d+$/;
+const standing = (o) =>
+  o !== null && typeof o === "object" && typeof o.type === "number" && o.type > 0;
+
+/** The entries of a block's faces with something standing on them, on a kind
+    that carries any. */
+const occupied = (b) =>
+  b.kind >= BLOCK_KINDS || !b.faces ? [] : Object.entries(b.faces).filter(([, o]) => standing(o));
+
 /** What stands on a block's faces, as [face, object] pairs in face order, on a
     kind that carries any. */
 export function facesOf(b) {
-  if (b.kind >= BLOCK_KINDS || !b.faces) return [];
-  return Object.entries(b.faces)
-    .filter(([f, o]) => /^-?\d+$/.test(f) && (o?.type ?? 0) > 0)
+  return occupied(b)
+    .filter(([f]) => FACE_KEY.test(f))
     .map(([f, o]) => [Number(f), o])
     .sort((p, q) => p[0] - q[0]);
 }
+
+/** The keys of a block's faces that name no face by number, with something standing on them. */
+export const strayFaceKeys = (b) =>
+  occupied(b)
+    .filter(([f]) => !FACE_KEY.test(f))
+    .map(([f]) => f);
 
 /** The face two keys of a block's faces spell between them, or null. */
 export function faceNamedTwice(b) {
@@ -373,7 +388,6 @@ function objectSlot(kindWord, o, state, number, [next, link]) {
 }
 
 function spanWords(cell, far) {
-  if (!far) throw new Error(`the span from ${cellText(cell)} has no far end`);
   const d = direction(cell, far);
   if (d === null)
     throw new Error(`the span from ${cellText(cell)} to ${cellText(far)} runs along no one axis`);
@@ -390,7 +404,6 @@ function recordWords(b, k, states, linkTable, numberTable) {
   const extras = fill(NEVER_SET);
   if (kind < BLOCK_KINDS) {
     for (const [j, o] of facesOf(b)) {
-      if (j < 0 || j >= FACES) throw new Error(`face ${j} is not one of the six`);
       const t = o.type;
       const state = t === TELEPORTER || t === SWITCH ? states[o.variant ?? 0] : (STATE.get(t) ?? 0);
       slots[j] = objectSlot(
@@ -430,8 +443,6 @@ function recordWords(b, k, states, linkTable, numberTable) {
     slots[0] = [kind, d, axis, lit, ...lower, ...upper, ...fill(6)];
     const next = linkTable.get(k * 16 + OWN)[0];
     slots[1] = [-1, 1, -1, -1, FIRST_RECORD + k, -1, b.colour, next, ...fill(8)];
-  } else {
-    throw new Error(`a block of kind ${kind} cannot be written`);
   }
   const words = [...slots.flat(), ...extras, ...cell];
   if (!words.every(inWord))
@@ -471,14 +482,21 @@ export function writeKwl(project) {
   const seen = new Set();
   for (const b of blocks) {
     const { cell, kind } = b;
-    if (!cell.every(onLattice)) throw new Error(`cell ${cellText(cell)} is outside the lattice`);
+    if (!isCell(cell) || !cell.every(onLattice))
+      throw new Error(`cell ${cellText(cell)} is outside the lattice`);
     if (seen.has(cellKey(...cell))) throw new Error(`two blocks on cell ${cellText(cell)}`);
     seen.add(cellKey(...cell));
     if (!Number.isInteger(kind) || kind < 0 || kind >= SETTINGS_KIND)
-      throw new Error(`a block of kind ${kind} cannot be written`);
+      throw new Error(`kind ${kind} is not a kind of block`);
+    for (const key of strayFaceKeys(b))
+      throw new Error(`face ${JSON.stringify(key)} is not one of the six`);
+    for (const [j] of facesOf(b))
+      if (j < 0 || j >= FACES) throw new Error(`face ${j} is not one of the six`);
     const twice = faceNamedTwice(b);
     if (twice !== null)
       throw new Error(`face ${twice} of the block at ${cellText(cell)} is named twice`);
+    if (SPAN_KINDS.has(kind) && !isCell(b.far))
+      throw new Error(`the span at ${cellText(cell)} needs a far end`);
   }
   const carried = blocks.filter(carries);
   const at = new Map(carried.map((b, k) => [cellKey(...b.cell), k]));

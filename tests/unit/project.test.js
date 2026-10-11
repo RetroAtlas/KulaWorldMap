@@ -629,6 +629,11 @@ test("what the format takes, and what it warns about", () => {
   assert.ok(
     errors([...one, plain([7, 5, 5], 0, { 9: coin })]).includes("face 9 is not one of the six"),
   );
+  assert.ok(
+    errors([...one, plain([7, 5, 5], 0, { top: coin })]).includes(
+      'face "top" is not one of the six',
+    ),
+  );
   assert.ok(errors([...one, plain([5, 5, 5])]).includes("two blocks on one cell"));
   const rail = { cell: [10, 10, 17], kind: PLATFORM_KIND, far: [10, 14, 17], length: 5, speed: 20 };
   assert.deepEqual(errors([...one, rail]), []);

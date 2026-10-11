@@ -52,10 +52,12 @@ import {
   facesOf,
   inWord,
   inner,
+  isCell,
   levelOf,
   projectOf,
   sameCell,
   spanAxis,
+  strayFaceKeys,
   writeKwl,
 } from "./kwl.js";
 
@@ -418,6 +420,8 @@ export function validate(project, hides) {
         warn("the game shows the player's next fruit, whichever is placed", cell, j);
       validateOutlook(cell, j, kinds, beams, warn);
     }
+    for (const key of strayFaceKeys(b))
+      err(`face ${JSON.stringify(key)} is not one of the six`, cell);
   }
   if (!starts.length) err("no start");
   else if (starts.length > 1) {
@@ -453,7 +457,6 @@ export function describe({ level, text, at }) {
 
 // --- the project file ------------------------------------------------------------
 
-const isCell = (v) => Array.isArray(v) && v.length === 3 && v.every(Number.isInteger);
 const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 
 function readFaces(faces, where, report) {
