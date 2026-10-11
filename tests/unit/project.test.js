@@ -524,9 +524,13 @@ test("the object cap counts what the loader numbers", () => {
   blocks.push(plain([20, 25, 5], 0, { 0: coin, 1: coin, 2: coin }));
   assert.equal(counts(project(blocks), HIDES).objects, 255);
   assert.deepEqual(errors(blocks), []);
-  assert.ok(warnings(blocks).includes("255 objects, more than any level on the disc"));
+  assert.ok(
+    warnings(blocks).includes("255 objects the loader numbers, more than any level on the disc"),
+  );
   blocks.push(plain([22, 25, 5], 0, { 0: coin }));
-  assert.ok(errors(blocks).includes("256 objects, over the 255 the game has room for"));
+  assert.ok(
+    errors(blocks).includes("256 objects the loader numbers, over the 255 the game has room for"),
+  );
 });
 
 test("the platform, vanishing, crumbling and captivator caps", () => {
@@ -789,6 +793,11 @@ test("the circuits' warnings", () => {
   );
   assert.ok(
     !warnings([plain([5, 5, 5], 0, { 0: start(), 1: { type: KEY }, 2: { type: EXIT } })]).includes(
+      "a key and no exit",
+    ),
+  );
+  assert.ok(
+    !warnings([plain([5, 5, 5], 0, { 0: start(), 1: { type: KEY }, 2: { type: 26 } })]).includes(
       "a key and no exit",
     ),
   );

@@ -681,9 +681,9 @@ class Validates(unittest.TestCase):
         blocks.append(plain((20, 25, 5), t0=coin, t1=coin, t2=coin))
         self.assertEqual(counts(project(blocks), HIDES)["objects"], 255)
         self.assertEqual(self.errors(blocks), [])
-        self.assertIn("255 objects, more than any level on the disc", self.warnings(blocks))
+        self.assertIn("255 objects the loader numbers, more than any level on the disc", self.warnings(blocks))
         blocks.append(plain((22, 25, 5), t0=coin))
-        self.assertIn("256 objects, over the 255 the game has room for", self.errors(blocks))
+        self.assertIn("256 objects the loader numbers, over the 255 the game has room for", self.errors(blocks))
 
     def test_the_platform_vanishing_crumbling_and_captivator_caps(self):
         def with_start(more):
@@ -832,6 +832,8 @@ class Validates(unittest.TestCase):
         self.assertIn("the one teleporter of colour 0 leads to itself", warnings)
         self.assertIn("the switches of colour 1 have nothing to switch", warnings)
         self.assertIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY})]))
+        self.assertNotIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY}, t2={"type": EXIT})]))
+        self.assertNotIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY}, t2={"type": 26})]))
 
     def test_how_a_level_plays(self):
         keyed = project([plain((5, 5, 5), t0=start(), t1={"type": KEY})])

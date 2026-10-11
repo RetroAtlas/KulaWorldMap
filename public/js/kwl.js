@@ -149,7 +149,7 @@ export const COUNTER_WORDS = {
   cells: "cells",
   faces: "faces",
   blocks: "blocks",
-  objects: "objects",
+  objects: "objects the loader numbers",
   platforms: "platforms",
   lasers: "lasers",
   vanishing: "vanishing blocks",

@@ -486,7 +486,10 @@ export function validate(project, hides) {
 
   validateCircuits(project, blocks, warn);
   const n = counts(project, hides);
-  if (n.keys && !blocks.some((b) => facesOf(b).some(([, o]) => o.type === EXIT)))
+  if (
+    n.keys &&
+    !blocks.some((b) => facesOf(b).some(([, o]) => o.type === EXIT || o.type === HIDDEN_EXIT))
+  )
     warn("a key and no exit");
   for (const [what, cap] of Object.entries(CAPS))
     if (n[what] > cap)

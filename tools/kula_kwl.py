@@ -919,7 +919,7 @@ COUNTER_WORDS = {
     "cells": "cells",
     "faces": "faces",
     "blocks": "blocks",
-    "objects": "objects",
+    "objects": "objects the loader numbers",
     "platforms": "platforms",
     "lasers": "lasers",
     "vanishing": "vanishing blocks",
@@ -1088,7 +1088,7 @@ def validate(project, hides):
 
     _validate_circuits(project, blocks, warn)
     n = counts(project, hides)
-    if n["keys"] and not any(o["type"] == EXIT for b in blocks for o in _faces_of(b).values()):
+    if n["keys"] and not any(o["type"] in (EXIT, HIDDEN_EXIT) for b in blocks for o in _faces_of(b).values()):
         warn("a key and no exit")
     for what, cap in CAPS.items():
         if n[what] > cap:
