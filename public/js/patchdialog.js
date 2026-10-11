@@ -27,6 +27,7 @@ const OLDER = "Making the patch needs a newer browser, one that can unpack the g
 const ERRORS = "A level with errors cannot go on the disc until they are fixed.";
 const CLEAN = "The checks find nothing to say.";
 const NO_LAYOUT = "The disc's layout could not be loaded, so the fit waits for the image.";
+const CHOOSE = "Choose a slot above.";
 const TOO_BIG = "The level is too big for the game to load from any pack.";
 const LAYOUT = "Worked out from the disc as pressed; the image will confirm it.";
 const FROM_IMAGE = "Read from the image.";
@@ -36,6 +37,7 @@ const NO_BLOB = "This browser cannot put the patched disc together; take a patch
 const LATER = "Once the disc is given, this says where each emulator wants the patch.";
 const INSTEAD = "Mednafen, Beetle and RetroArch apply no patch and play the patched disc instead.";
 const gone = (name) => `Another tab deleted ${name}, so the box closed without a patch.`;
+const noSlot = (key) => `${key}, which is no slot`;
 
 let layout = null;
 let ui = null;
@@ -227,7 +229,7 @@ function refresh() {
   }
   slots();
   d.into = pick();
-  ui.slot.value = d.into;
+  ui.slot.value = d.into ?? "";
   target();
   if (d.disc) placed();
   else {
@@ -288,25 +290,35 @@ function slots() {
         .append(el("option", { value: key, textContent: titles.get(key) ?? s.name }));
     });
   }
+  const into = d.doc.into;
+  if (into != null && ![...ui.slot.options].some((o) => o.value === String(into)))
+    ui.slot.prepend(el("option", { value: "", textContent: noSlot(into), disabled: true }));
 }
 
+/** The slot the box opens on: the file's own target, or none where that is no slot, else where a template came from, else the first. */
 function pick() {
-  const options = new Set([...ui.slot.options].map((o) => o.value));
-  for (const key of [d.doc.into, d.doc.from])
-    if (key != null && options.has(String(key))) return String(key);
-  return options.has(FIRST) || !options.size ? FIRST : ui.slot.options[0].value;
+  const options = new Set([...ui.slot.options].map((o) => o.value).filter(Boolean));
+  if (d.doc.into != null) return options.has(String(d.doc.into)) ? String(d.doc.into) : null;
+  if (d.doc.from != null && options.has(String(d.doc.from))) return String(d.doc.from);
+  return options.has(FIRST) || !options.size ? FIRST : [...options][0];
 }
 
 function choose(into) {
+  if (!into) return;
   const entry = drafts.get(d.id);
-  if (entry) {
+  if (entry && entry.doc.into !== into) {
     d.doc = setMeta(entry.doc, { into });
-    edit(d.id, d.doc, "changed the target slot");
+    edit(d.id, d.doc, "changed the target slot", { merge: true });
   }
   refresh();
 }
 
 function target() {
+  if (d.into === null) {
+    ui.reach.textContent = CHOOSE;
+    for (const line of [ui.wear, ui.fit, ui.from, ui.warnings]) line.textContent = "";
+    return;
+  }
   const [pack, index] = split(d.into);
   const theme = themeOf(pack);
   const title = d.titles?.get(d.into) ?? `slot ${index + 1}`;
@@ -378,13 +390,14 @@ async function take(file) {
 // The plan for the chosen slot on the image, read back through the verifier
 // over the patched image before the downloads are offered.
 async function placed(mine = ++turn) {
-  const { file, disc, stream, doc } = d;
+  const { file, disc, stream, doc, into } = d;
   d.placed = null;
   d.image = null;
   ui.warnings.textContent = "";
   downloads();
   play();
-  const [pack, index] = split(d.into);
+  if (into === null) return;
+  const [pack, index] = split(into);
   let planned;
   let image;
   try {
@@ -419,7 +432,7 @@ function downloads() {
 }
 
 function readiness(whole) {
-  if (!d.placed) return d.file ? "" : NO_IMAGE;
+  if (!d.placed) return d.file ? (d.into === null ? CHOOSE : "") : NO_IMAGE;
   if (d.errors) return ERRORS;
   return whole ? READY : NO_BLOB;
 }
