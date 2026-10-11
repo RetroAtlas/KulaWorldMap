@@ -17,7 +17,7 @@ restore();
 wireSettings();
 
 on("help", showHelp);
-$("aboutBtn").onclick = showAbout;
+$("aboutBtn").onclick = () => showAbout($("aboutBtn"));
 
 const HELP = [
   ["drag", "turn the level"],
@@ -75,7 +75,7 @@ function showHelp() {
   );
 }
 
-function showAbout() {
+function showAbout(opener) {
   const d = state.data;
   if (!d) return;
   openModal(
@@ -97,6 +97,7 @@ function showAbout() {
     <p><a href="https://github.com/RetroAtlas/KulaWorldMap">Source and tooling</a> &middot;
     <a href="https://retroatlas.org/">RetroAtlas</a> &middot;
     <a href="mailto:${["hello", "retroatlas.org"].join("@")}">Get in touch</a></p>`,
+    opener,
   );
 }
 

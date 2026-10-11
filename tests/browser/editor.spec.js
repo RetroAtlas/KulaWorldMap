@@ -171,6 +171,57 @@ test("an update refreshes the map's name and the search's scope without announci
   expect(errors).toEqual([]);
 });
 
+test("a dialog opened for a control gives the focus back to that control", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0/45,35/fit/33");
+  await settle(page);
+  const out = await page.evaluate(async () => {
+    const { openDialog, closeDialog } = await import(new URL("js/dialog.js", location.href).href);
+    const settings = document.getElementById("settings");
+    // the focus is elsewhere, as it is in an engine that does not focus a clicked button
+    document.getElementById("cv").focus();
+    openDialog(settings, document.getElementById("aboutBtn"));
+    const inside = settings.contains(document.activeElement);
+    closeDialog();
+    const named = document.activeElement.id;
+    document.getElementById("menuBtn").focus();
+    openDialog(settings);
+    closeDialog();
+    return { inside, named, held: document.activeElement.id };
+  });
+  expect(out).toEqual({ inside: true, named: "aboutBtn", held: "menuBtn" });
+  expect(errors).toEqual([]);
+});
+
+test("Settings and the About name their buttons, and the keys name none", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0/45,35/fit/33");
+  await settle(page);
+  const focused = () => page.evaluate(() => document.activeElement.id);
+  // the click reaches the button without focusing it, as in an engine that does not focus a clicked button
+  const opened = async (button, dialog) => {
+    await page.evaluate(() => document.getElementById("cv").focus());
+    await page.locator(button).dispatchEvent("click");
+    await expect(page.locator(dialog)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(dialog)).toBeHidden();
+    return focused();
+  };
+  expect(await opened("#settingsBtn", "#settings")).toBe("settingsBtn");
+  expect(await opened("#aboutBtn", "#help")).toBe("aboutBtn");
+  const keyed = async (key, dialog) => {
+    await page.evaluate(() => document.getElementById("menuBtn").focus());
+    await page.keyboard.press(key);
+    await expect(page.locator(dialog)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(dialog)).toBeHidden();
+    return focused();
+  };
+  expect(await keyed("s", "#settings")).toBe("menuBtn");
+  expect(await keyed("?", "#help")).toBe("menuBtn");
+  expect(errors).toEqual([]);
+});
+
 test("the same level installed again keeps its clock and its presses, and another starts afresh", async ({
   page,
 }) => {

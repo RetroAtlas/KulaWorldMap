@@ -4,15 +4,15 @@ import { openDialog } from "./dialog.js";
 // The panel only shows its switches; each is wired, saved and keyed as any
 // other, and its key works inside the panel as well.
 
-export function openSettings() {
+export function openSettings(opener) {
   const panel = $("settings");
   for (const box of panel.querySelectorAll("input[type=checkbox]")) mark(box);
-  openDialog(panel);
+  openDialog(panel, opener);
 }
 
 export function wireSettings() {
   const panel = $("settings");
-  $("settingsBtn").onclick = openSettings;
+  $("settingsBtn").onclick = () => openSettings($("settingsBtn"));
   panel.addEventListener("change", (e) => mark(e.target));
   document.addEventListener(
     "keydown",

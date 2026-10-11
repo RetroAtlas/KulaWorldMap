@@ -11,7 +11,8 @@ let entries = 0;
 // moment later, and a dialog opened before then takes its entry once it has.
 let returning = false;
 
-export function openDialog(overlay) {
+/** Open `overlay` as the dialog; closing it gives the focus back to `opener`, or to whatever held it. */
+export function openDialog(overlay, opener = document.activeElement) {
   if (!entries) {
     document.addEventListener("keydown", keys);
     addEventListener("popstate", backed);
@@ -22,7 +23,7 @@ export function openDialog(overlay) {
     open.overlay = overlay;
   } else {
     emit("dialog-opened");
-    open = { overlay, back: document.activeElement, entry: ++entries };
+    open = { overlay, back: opener, entry: ++entries };
     if (!returning) stand();
   }
   overlay.hidden = false;
