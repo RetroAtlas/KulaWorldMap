@@ -311,7 +311,7 @@ function layoutFit() {
     return;
   }
   try {
-    ui.fit.textContent = fitText(fit(p, index, d.stream.length));
+    ui.fit.textContent = fitText(fit(p, index, d.stream.length, d.doc.title));
     ui.from.textContent = LAYOUT;
   } catch {
     ui.fit.textContent = TOO_BIG;

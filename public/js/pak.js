@@ -30,9 +30,10 @@ export function packSize(names, sizes) {
  * in place when it is no longer than the record it replaces; else the pack
  * rebuilt within its sectors, first with the other records as they are and
  * then with them recompressed; else moved into the free sectors. The size is
- * the pack's afterwards and the room the bytes to spare on that path.
+ * the pack's afterwards and the room the bytes to spare on that path. A title
+ * names the slot of a rebuilt or moved pack, as writing it will.
  */
-export function fit(pack, slot, size) {
+export function fit(pack, slot, size, title = null) {
   const { slots } = pack;
   if (!Number.isInteger(slot) || slot < 0 || slot >= slots.length)
     throw new Error(`the pack has ${slots.length} slots, so #${slot} is not one of them`);
@@ -40,6 +41,7 @@ export function fit(pack, slot, size) {
   if (size <= old)
     return { path: IN_PLACE, recompressed: false, size: pack.size, room: old - size };
   const names = slots.map((s) => s.name);
+  if (title != null) names[slot] = packName(title, names[slot]);
   const limit = Math.min(pack.capacity, LARGEST);
   const asIs = packSize(
     names,

@@ -8,7 +8,17 @@ import { mapData, packs } from "./fixtures.js";
 import { projectOf, writeKwl } from "../../public/js/kwl.js";
 import { deflate } from "../../public/js/deflate.js";
 import { EXTENT, SIZE, openDisc, record } from "../../public/js/iso.js";
-import { IN_PLACE, LARGEST, REBUILD, RELOCATE, readPak, writePak } from "../../public/js/pak.js";
+import {
+  IN_PLACE,
+  LARGEST,
+  REBUILD,
+  RELOCATE,
+  fit,
+  fitPak,
+  packSize,
+  readPak,
+  writePak,
+} from "../../public/js/pak.js";
 import {
   DATA_SUBMODE,
   EOF_SUBMODE,
@@ -418,6 +428,50 @@ test("a directory sector is rewritten under its own subheader, which need not be
   assert.equal(written[SUBMODE_AT], DATA_SUBMODE);
   same(written, rewrite(was, written.subarray(USER_OFF, USER_OFF + USER)));
   assert.ok(check(written));
+});
+
+test("the fit from the layout is the fit from the image, the slot named after the title in both", async () => {
+  const pak = readPak(syntheticPacks()[0][2]);
+  const levels = await Promise.all(pak.streams.map(inflate));
+  const sizes = pak.streams.map((s) => s.length);
+  const size9 = levels.map((l) => deflate(l, 9).length);
+  const layout = {
+    size: pak.size,
+    capacity: USER,
+    slots: pak.names.map((name, i) => ({ name, size: sizes[i], size9: size9[i] })),
+  };
+  const key = (f) => [f.path, f.recompressed, f.size, f.room];
+  const others = (ss) =>
+    packSize(
+      pak.names,
+      ss.map((s, i) => (i === SLOT ? 0 : s)),
+    );
+  const edges = [
+    sizes[SLOT],
+    USER - others(sizes),
+    USER - others(size9),
+    LARGEST - others(sizes),
+    LARGEST - others(size9),
+  ];
+  const outcome = (f) => {
+    try {
+      return key(f());
+    } catch (e) {
+      return e.message;
+    }
+  };
+  for (const title of [null, TITLE, "X", "A much longer title than the slot's name"])
+    for (const edge of edges)
+      for (let n = edge - 8; n <= edge + 8; n++)
+        assert.deepEqual(
+          outcome(() => fit(layout, SLOT, n, title)),
+          outcome(() => fitPak(pak, USER, SLOT, stored(n), title, levels)),
+          `${title} ${n}`,
+        );
+  assert.notDeepEqual(
+    key(fit(layout, SLOT, edges[1] + 1, "X")),
+    key(fit(layout, SLOT, edges[1] + 1)),
+  );
 });
 
 test("the finals pack takes a level too", async () => {
