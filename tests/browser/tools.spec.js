@@ -251,3 +251,19 @@ test("the hover names what Place would do, and Esc clears the selection without 
   await expect(tool(page, "select")).toHaveAttribute("aria-pressed", "true");
   expect(errors).toEqual([]);
 });
+
+test("the Keyboard list names every key and gesture the editor binds", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.keyboard.press("?");
+  await expect(page.locator("#help")).toBeVisible();
+  const keys = (await page.locator("#help dt").allTextContents()).join("\n");
+  const bound = ["w", "a z i", "j k", "1 to 9", "r Shift-r", "Ctrl-Z or Cmd-Z"]
+    .concat(["Ctrl-Shift-Z, Cmd-Shift-Z or Ctrl-Y", "Delete Backspace", "Esc"])
+    .concat(["shift-click", "right-click, long press", "alt-click", "tap, then tap"]);
+  for (const key of bound) expect(keys, key).toContain(key);
+  const does = (await page.locator("#help dd").allTextContents()).join("\n");
+  expect(does).toContain("cancel a waiting run");
+  expect(errors).toEqual([]);
+});
