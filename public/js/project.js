@@ -55,6 +55,7 @@ import {
   inner,
   isCell,
   levelOf,
+  onLattice,
   projectOf,
   sameCell,
   spanAxis,
@@ -460,10 +461,33 @@ export function describe({ level, text, at }) {
 
 const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 
+const show = (v) => JSON.stringify(v);
+const onLatticeCell = (c) => isCell(c) && c.every(onLattice);
+
+/** The value under `key`, or `fallback` where it is missing; a value that is not a whole
+    number is reported and takes the fallback too. */
+function whole(raw, key, fallback, where, report) {
+  const v = raw[key];
+  if (v === undefined || Number.isInteger(v)) return v ?? fallback;
+  report.push(
+    `${where} has a ${key} of ${show(v)}, which is not a whole number; it is ${show(fallback)}`,
+  );
+  return fallback;
+}
+
+/** The value under `key` where it is one of `n`, else 0 with a line; missing is 0. */
+function oneOf(raw, key, n, where, report) {
+  const v = raw[key];
+  if (v === undefined) return 0;
+  if (Number.isInteger(v) && v >= 0 && v < n) return v;
+  report.push(`${where} has a ${key} of ${show(v)}, which is not one of the ${n}; it is 0`);
+  return 0;
+}
+
 function readFaces(faces, where, report) {
   const out = {};
   for (const [key, o] of Object.entries(faces)) {
-    if (!/^\d+$/.test(key)) {
+    if (!/^\d+$/.test(key) || Number(key) >= FACES) {
       report.push(`${where} names a face "${key}", which is not one of the six; it is left out`);
       continue;
     }
@@ -476,9 +500,30 @@ function readFaces(faces, where, report) {
       report.push(`${where} face ${key} holds nothing that could stand on a face; it is left out`);
       continue;
     }
+    if (o.type <= 0) {
+      report.push(
+        `${where} face ${key} has a type of ${o.type}, which is nothing standing there; it is left out`,
+      );
+      continue;
+    }
+    const at = `${where} face ${key}`;
     const object = { type: o.type };
-    if (Number.isInteger(o.facing)) object.facing = o.facing;
-    if (Number.isInteger(o.variant)) object.variant = o.variant;
+    if (o.facing !== undefined) {
+      if (Number.isInteger(o.facing)) object.facing = o.facing;
+      else
+        report.push(
+          `${at} has a facing of ${show(o.facing)}, which is not a whole number; it is left out`,
+        );
+    }
+    if (o.variant !== undefined) {
+      if (VARIANT_TYPES.has(o.type))
+        object.variant = oneOf(o, "variant", VARIANTS[o.type], at, report);
+      else if (Number.isInteger(o.variant)) object.variant = o.variant;
+      else
+        report.push(
+          `${at} has a variant of ${show(o.variant)}, which is not a whole number; it is left out`,
+        );
+    }
     out[face] = object;
   }
   return out;
@@ -491,17 +536,31 @@ function readBlock(raw, i, report) {
     return null;
   }
   const b = { cell: [...raw.cell], kind: raw.kind };
-  if (isObject(raw.faces)) {
-    const faces = readFaces(raw.faces, `${where} at ${cellText(b.cell)}`, report);
-    if (Object.keys(faces).length) b.faces = faces;
+  const at = `${where} at ${cellText(b.cell)}`;
+  if (raw.faces !== undefined) {
+    if (!isObject(raw.faces))
+      report.push(`${at} has faces that are not a table of the six; they are left out`);
+    else {
+      const faces = readFaces(raw.faces, at, report);
+      if (Object.keys(faces).length) b.faces = faces;
+    }
   }
-  if (isSpan(b) && isCell(raw.far)) b.far = [...raw.far];
+  if (isSpan(b)) {
+    const { far } = raw;
+    const left = (why) => report.push(`${at} ${why}; it is left out`);
+    if (far === undefined) left("is a span with no far end");
+    else if (!isCell(far)) left("has a far end that is not a cell of three whole numbers");
+    else if (sameCell(far, b.cell)) left("has its far end on its own cell");
+    else if (!onLatticeCell(far)) left(`has its far end at ${cellText(far)}, outside the lattice`);
+    if (!onLatticeCell(far) || sameCell(far, b.cell)) return null;
+    b.far = [...far];
+  }
   if (b.kind === PLATFORM_KIND) {
-    b.length = Number.isInteger(raw.length) ? raw.length : DEFAULT_LENGTH;
-    b.speed = Number.isInteger(raw.speed) ? raw.speed : DEFAULT_SPEED;
+    b.length = whole(raw, "length", DEFAULT_LENGTH, at, report);
+    b.speed = whole(raw, "speed", DEFAULT_SPEED, at, report);
   }
-  if (b.kind === LASER_KIND) b.colour = Number.isInteger(raw.colour) ? raw.colour : 0;
-  if (b.kind === VANISHING_KIND) b.phase = Number.isInteger(raw.phase) ? raw.phase : 0;
+  if (b.kind === LASER_KIND) b.colour = oneOf(raw, "colour", COLOURS, at, report);
+  if (b.kind === VANISHING_KIND) b.phase = whole(raw, "phase", 0, at, report);
   return b;
 }
 
@@ -510,7 +569,11 @@ export function readProject(source) {
   const raw = typeof source === "string" ? JSON.parse(source) : source;
   if (!isObject(raw) || raw.format !== FORMAT) throw new Error(`not a ${FORMAT} file`);
   const report = [];
-  if (Number.isInteger(raw.version) && raw.version > VERSION)
+  if (raw.version !== undefined && !Number.isInteger(raw.version))
+    report.push(
+      `a version of ${show(raw.version)} is not a whole number; the file is read as version ${VERSION}`,
+    );
+  else if (Number.isInteger(raw.version) && raw.version > VERSION)
     report.push(
       `written as version ${raw.version} of the format, newer than this reader's ${VERSION}; what it knows is read`,
     );
@@ -519,6 +582,11 @@ export function readProject(source) {
     if (typeof raw[key] === "string") return raw[key];
     report.push(`${key} is not text; it is left empty`);
     return "";
+  };
+  const optional = (key) => {
+    if (raw[key] === undefined || typeof raw[key] === "string") return raw[key];
+    report.push(`${key} is not text; it is left out`);
+    return undefined;
   };
   const flag = (key) => {
     if (raw[key] === undefined) return false;
@@ -534,13 +602,13 @@ export function readProject(source) {
     notes: text("notes"),
     world: text("world"),
   };
-  if (typeof raw.into === "string") project.into = raw.into;
-  if (typeof raw.from === "string") project.from = raw.from;
+  const into = optional("into");
+  if (into !== undefined) project.into = into;
+  const from = optional("from");
+  if (from !== undefined) project.from = from;
   if (raw.time === undefined || Number.isInteger(raw.time)) project.time = raw.time ?? DEFAULT_TIME;
   else {
-    report.push(
-      `a time of ${JSON.stringify(raw.time)} is not a whole number; it is ${DEFAULT_TIME}`,
-    );
+    report.push(`a time of ${show(raw.time)} is not a whole number; it is ${DEFAULT_TIME}`);
     project.time = DEFAULT_TIME;
   }
   project.hidden = flag("hidden");

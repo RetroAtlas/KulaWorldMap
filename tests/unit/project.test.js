@@ -811,6 +811,80 @@ test("the reader takes what it knows of a newer file, fills the defaults and dro
   assert.ok(found.includes("the game builds nothing past the edge"));
 });
 
+test("the reader reports every default it takes, and repairs what the writer would refuse", () => {
+  const { project: p, report } = readProject({
+    format: FORMAT,
+    version: "2",
+    world: WORLD,
+    into: 5,
+    blocks: [
+      {
+        cell: [5, 5, 5],
+        kind: 0,
+        faces: {
+          0: start(),
+          1: { type: 0 },
+          2: { type: COIN, variant: 9 },
+          3: { type: TELEPORTER, facing: "north", variant: "red" },
+          4: { type: KEY, variant: 2.5 },
+          5: { type: GEM, variant: 1 },
+          9: coin,
+        },
+      },
+      { cell: [6, 5, 5], kind: 0, faces: "none" },
+      { cell: [7, 5, 5], kind: PLATFORM_KIND, far: [7, 9, 5], length: "3", speed: 2.5 },
+      { cell: [9, 5, 5], kind: LASER_KIND, far: [9, 9, 5], colour: 7 },
+      { cell: [10, 5, 5], kind: LASER_KIND, far: [10, 9, 5], colour: "red" },
+      { cell: [11, 5, 5], kind: 7, phase: "x" },
+      { cell: [12, 5, 5], kind: LASER_KIND, far: [12, 5, 5], colour: 0 },
+      { cell: [13, 5, 5], kind: LASER_KIND, far: [13, 5, 40], colour: 0 },
+      { cell: [14, 5, 5], kind: LASER_KIND, colour: 0 },
+      { cell: [15, 5, 5], kind: PLATFORM_KIND, far: [15, 5] },
+    ],
+  });
+  assert.ok(!("into" in p));
+  assert.deepEqual(p.blocks, [
+    {
+      cell: [5, 5, 5],
+      kind: 0,
+      faces: {
+        0: start(),
+        2: { type: COIN, variant: 0 },
+        3: { type: TELEPORTER, variant: 0 },
+        4: { type: KEY },
+        5: { type: GEM, variant: 1 },
+      },
+    },
+    { cell: [6, 5, 5], kind: 0 },
+    { cell: [7, 5, 5], kind: PLATFORM_KIND, far: [7, 9, 5], length: 2, speed: 30 },
+    { cell: [9, 5, 5], kind: LASER_KIND, far: [9, 9, 5], colour: 0 },
+    { cell: [10, 5, 5], kind: LASER_KIND, far: [10, 9, 5], colour: 0 },
+    { cell: [11, 5, 5], kind: 7, phase: 0 },
+  ]);
+  assert.deepEqual(report, [
+    'a version of "2" is not a whole number; the file is read as version 1',
+    "into is not text; it is left out",
+    "block 0 at 5,5,5 face 1 has a type of 0, which is nothing standing there; it is left out",
+    "block 0 at 5,5,5 face 2 has a variant of 9, which is not one of the 3; it is 0",
+    'block 0 at 5,5,5 face 3 has a facing of "north", which is not a whole number; it is left out',
+    'block 0 at 5,5,5 face 3 has a variant of "red", which is not one of the 4; it is 0',
+    "block 0 at 5,5,5 face 4 has a variant of 2.5, which is not a whole number; it is left out",
+    'block 0 at 5,5,5 names a face "9", which is not one of the six; it is left out',
+    "block 1 at 6,5,5 has faces that are not a table of the six; they are left out",
+    'block 2 at 7,5,5 has a length of "3", which is not a whole number; it is 2',
+    "block 2 at 7,5,5 has a speed of 2.5, which is not a whole number; it is 30",
+    "block 3 at 9,5,5 has a colour of 7, which is not one of the 4; it is 0",
+    'block 4 at 10,5,5 has a colour of "red", which is not one of the 4; it is 0',
+    'block 5 at 11,5,5 has a phase of "x", which is not a whole number; it is 0',
+    "block 6 at 12,5,5 has its far end on its own cell; it is left out",
+    "block 7 at 13,5,5 has its far end at 13,5,40, outside the lattice; it is left out",
+    "block 8 at 14,5,5 is a span with no far end; it is left out",
+    "block 9 at 15,5,5 has a far end that is not a cell of three whole numbers; it is left out",
+  ]);
+  assert.doesNotThrow(() => toLevel(p, 1));
+  assert.deepEqual(readProject(writeProject(p)).report, []);
+});
+
 test("a face key is read by its number, and a second spelling of one face is left out", () => {
   const { project: p, report } = readProject({
     format: FORMAT,
@@ -902,7 +976,8 @@ test("the writer keeps only what the game reads of a face, and only the colours 
     ],
     { circuits: { 2: "on", 1: "off", 0: "off" } },
   );
-  const { project: q } = readProject(writeProject(p));
+  const { project: q, report } = readProject(writeProject(p));
+  assert.deepEqual(report, []);
   assert.deepEqual(q.blocks[0].faces, {
     0: { type: START },
     1: { type: COIN, variant: 1 },
