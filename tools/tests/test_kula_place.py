@@ -50,6 +50,7 @@ from kula_place import (  # noqa: E402
     verify,
     write_image,
     write_sectors,
+    written,
 )
 from kula_sector import (  # noqa: E402
     DATA_SUBMODE,
@@ -357,10 +358,26 @@ class ThePlacer(unittest.TestCase):
         proven(self.out, SYNTHETIC_PACK, SLOT, stream, placed)
         self.assertTrue(self.out.exists() and cue.exists())
         wrong = placed._replace(fit=placed.fit._replace(size=placed.fit.size + 1))
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "does not read back as planned, so it and its cue sheet were removed: the directory puts"):
             proven(self.out, SYNTHETIC_PACK, SLOT, stream, wrong)
         self.assertFalse(self.out.exists() or cue.exists())
         self.assertEqual(self.src.read_bytes(), IMAGE)
+
+    def test_a_copy_written_for_any_check_is_kept_only_where_the_check_passes(self):
+        stream = stream_of(synthetic(LEVELS[REBUILD]))
+        with Disc(self.src) as disc:
+            placed = plan(disc, SYNTHETIC_PACK, SLOT, stream, TITLE)
+        cue = self.out.with_suffix(".cue")
+
+        def refuse(disc):
+            raise ValueError("no")
+
+        with self.assertRaisesRegex(ValueError, "does not read back as planned, so it and its cue sheet were removed: no"):
+            written(self.src, self.out, placed.writes, refuse)
+        self.assertFalse(self.out.exists() or cue.exists())
+        written(self.src, self.out, placed.writes, lambda disc: None)
+        self.assertTrue(self.out.exists() and cue.exists())
+        self.hold(stream, placed, self.out.read_bytes(), SLOT, SYNTHETIC_PACK)
 
     def test_a_record_that_does_not_inflate_stops_only_a_rebuild_that_would_recompress_it(self):
         damaged = bytearray(IMAGE)

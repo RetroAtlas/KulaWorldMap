@@ -333,6 +333,35 @@ class TheTool(unittest.TestCase):
             self.assertNotEqual(broken.returncode, 0)
             self.assertIn("broken.json is not JSON:", broken.stderr)
 
+    def test_a_missing_disc_is_said_in_a_sentence_whatever_is_asked_for(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            for more in ((), ("--image",), ("--ppf",)):
+                with self.subTest(more):
+                    done = subprocess.run([sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into",
+                                           f"{SYNTHETIC_PACK}#{SLOT}", "--out", scratch / "spiral", "--disc", scratch / "missing.bin", *more],
+                                          capture_output=True, text=True)
+                    self.assertNotEqual(done.returncode, 0)
+                    self.assertIn(f"no disc image at {scratch / 'missing.bin'}", done.stderr)
+                    self.assertNotIn("Traceback", done.stderr)
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["spiral.kula.json"])
+
+    def test_a_file_that_is_no_disc_image_is_said_in_one_sentence_whatever_is_asked_for(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            (scratch / "notes.bin").write_bytes(bytes(len(IMAGE)))
+            for more in ((), ("--image",), ("--ppf",)):
+                with self.subTest(more):
+                    done = subprocess.run([sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into",
+                                           f"{SYNTHETIC_PACK}#{SLOT}", "--out", scratch / "spiral", "--disc", scratch / "notes.bin", *more],
+                                          capture_output=True, text=True)
+                    self.assertNotEqual(done.returncode, 0)
+                    self.assertIn(f"{scratch / 'notes.bin'} does not read as a disc image: not a raw ISO9660 image", done.stderr)
+                    self.assertNotIn("Traceback", done.stderr)
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["notes.bin", "spiral.kula.json"])
+
     def test_a_target_that_is_not_a_slot_of_a_world_or_a_finals_pack_is_refused(self):
         with tempfile.TemporaryDirectory() as scratch:
             scratch = Path(scratch)
@@ -375,6 +404,7 @@ class TheTool(unittest.TestCase):
                                   capture_output=True, text=True)
             self.assertEqual(done.returncode, 0, done.stderr)
             self.assertIn("rebuild,", done.stdout)
+            self.assertNotIn("sectors written", done.stdout)
             self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["bad.kula.json", "image.bin", "ok.kwl", "ok.ppf"])
             patch = (scratch / "ok.ppf").read_bytes()
             self.assertEqual(patch[6:56], b"Kula World Map: ok".ljust(50))

@@ -28,19 +28,9 @@ import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from disc import Disc
 from kula_disc import open_disc
 from kula_kwl import DATA, OBJECTS, canonical, describe, read_kwl, read_project, template, validate
-from kula_place import (
-    SYNTHETIC_PACK,
-    Patched,
-    plan,
-    proven,
-    synthetic,
-    synthetic_image,
-    verify,
-    write_image,
-)
+from kula_place import SYNTHETIC_PACK, Patched, place, plan, synthetic, synthetic_image, verify, written
 from kula_sector import HEX_RUN, SECTOR_RAW, raw_sector
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -181,12 +171,8 @@ def fixture(scratch):
     out = {"image": digest(image.read_bytes()), "pack": SYNTHETIC_PACK, "slot": SLOT, "title": TITLE, "cases": []}
     for name, n in CASES:
         stream = zlib.compress(canonical(synthetic(n)), 6)
-        with Disc(image) as disc:
-            placed = plan(disc, SYNTHETIC_PACK, SLOT, stream, TITLE)
         patched = Path(scratch) / "patched.bin"
-        write_image(image, patched, placed.writes)
-        with Disc(patched) as disc:
-            verify(disc, SYNTHETIC_PACK, SLOT, stream, placed)
+        placed = place(image, SYNTHETIC_PACK, SLOT, stream, patched, TITLE)
         out["cases"].append({
             "name": name, "blocks": n, "stream": len(stream), "path": placed.fit.path,
             "recompressed": placed.fit.recompressed, "size": placed.fit.size, "room": placed.fit.room,
@@ -270,30 +256,27 @@ def main():
     title = project.get("title") or stem.removesuffix(".kula")
 
     src = args.disc or os.environ.get("KULA_DISC")
-    if not src:
-        sys.exit("no disc image: pass --disc or set $KULA_DISC")
+    disc = open_disc(src)
+    out = Path(args.out)
+    named = lambda ext: out.with_name(out.name + ext)  # noqa: E731
     try:
-        with open_disc(src) as disc:
+        with disc:
             placed = plan(disc, pack_path, int(slot), stream, title)
+        if wanted["image"]:
+            written(src, named(".bin"), placed.writes, lambda copy: verify(copy, pack_path, int(slot), stream, placed))
+        else:
+            with Patched(src, placed.writes) as view:
+                verify(view, pack_path, int(slot), stream, placed)
     except ValueError as e:
         sys.exit(str(e))
     for warning in placed.warnings:
         print(f"warning: {warning}", file=sys.stderr)
-    with Patched(src, placed.writes) as view:
-        verify(view, pack_path, int(slot), stream, placed)
 
     recompressed = ", the other levels recompressed" if placed.fit.recompressed else ""
     print(f"{title} ({len(stream)} bytes) into {pack_path}#{slot}: {placed.fit.path}{recompressed}, "
           f"{placed.fit.room} bytes of room, the pack {placed.fit.size} bytes at sector {placed.lba}")
-    print(f"{len(placed.writes)} sectors written: {', '.join(str(lba) for lba, _ in placed.writes)}")
-    out = Path(args.out)
-    named = lambda ext: out.with_name(out.name + ext)  # noqa: E731
     if wanted["image"]:
-        write_image(src, named(".bin"), placed.writes)
-        try:
-            proven(named(".bin"), pack_path, int(slot), stream, placed)
-        except ValueError as e:
-            sys.exit(f"{named('.bin')} does not read back as planned, so it and its cue sheet were removed: {e}")
+        print(f"{len(placed.writes)} sectors written: {', '.join(str(lba) for lba, _ in placed.writes)}")
         print(f"{named('.bin')} and {named('.cue')}")
     if wanted["ppf"]:
         blob = ppf(src, placed.writes, PREFIX + title)

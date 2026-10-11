@@ -264,27 +264,39 @@ def write_image(src, out, writes):
     out.with_suffix(".cue").write_text(CUE.format(out.name))
 
 
-def proven(out, pack_path, slot, stream, placed):
-    """Read the copy back and hold it to the plan, removing it and its cue sheet where it fails."""
+def kept(out, writes, check):
+    """Read the copy back, holding it to check(disc) and to every sector written, and remove it with its cue sheet where it fails."""
     out = Path(out)
     try:
         with Disc(out) as disc:
-            verify(disc, pack_path, slot, stream, placed)
-            for lba, raw in placed.writes:
+            check(disc)
+            for lba, raw in writes:
                 if raw_sector(disc.f, lba) != raw:
                     raise ValueError(f"sector {lba} of {out} is not what was written")
-    except Exception:
+    except Exception as e:
         for path in (out, out.with_suffix(".cue")):
             path.unlink(missing_ok=True)
+        if isinstance(e, ValueError):
+            raise ValueError(f"{out} does not read back as planned, so it and its cue sheet were removed: {e}") from None
         raise
+
+
+def proven(out, pack_path, slot, stream, placed):
+    """Read the copy back and hold it to the plan, removing it and its cue sheet where it fails."""
+    kept(out, placed.writes, lambda disc: verify(disc, pack_path, slot, stream, placed))
+
+
+def written(src, out, writes, check):
+    """A copy of the image with the sectors written and a cue sheet beside it, kept only where it reads back."""
+    write_image(src, out, writes)
+    kept(out, writes, check)
 
 
 def place(image, pack_path, slot, stream, out, title=None):
     """Copy the image to out with the stream placed, prove the copy, and say what was done."""
     with Disc(image) as disc:
         placed = plan(disc, pack_path, slot, stream, title)
-    write_image(image, out, placed.writes)
-    proven(out, pack_path, slot, stream, placed)
+    written(image, out, placed.writes, lambda disc: verify(disc, pack_path, slot, stream, placed))
     return placed
 
 
