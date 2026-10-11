@@ -1,6 +1,6 @@
 // The sidebar's "Your levels": the drafts this browser holds, and the card
 // that edits the shown one.
-import { $, el, on } from "./dom.js";
+import { $, el, emit, on } from "./dom.js";
 import { state } from "./state.js";
 import { worldName, levelTitle } from "./data.js";
 import { selectLevel, showLevel } from "./navigate.js";
@@ -39,7 +39,10 @@ export function levelFor(slot) {
 export function wireDrafts() {
   $("yours").hidden = false;
   if (state.li >= 0) lastDisc = state.li;
-  $("draftNew").onclick = () => open(drafts.create(blank(state.lvl.theme)), "Made a new level");
+  $("draftNew").onclick = () => {
+    open(drafts.create(blank(state.lvl.theme)), "Made a new level");
+    emit("edit-wanted");
+  };
   $("draftCopy").onclick = copyShown;
   $("draftOpen").onclick = () => $("draftFile").click();
   $("draftFile").onchange = openFile;

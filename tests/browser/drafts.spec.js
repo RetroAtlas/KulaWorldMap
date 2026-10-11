@@ -271,6 +271,30 @@ test("the Level card edits the draft as the game would load it, keeping the view
   expect(errors).toEqual([]);
 });
 
+test("new asks for editing once its level is open, and copy this level does not", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftCopy").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ on }, { state }] = await Promise.all(["dom.js", "state.js"].map(at));
+    window.__wanted = [];
+    on("edit-wanted", () => window.__wanted.push(state.lvl.draft));
+  });
+  await page.locator("#draftCopy").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(2);
+  expect(await page.evaluate(() => window.__wanted)).toEqual([]);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(3);
+  const made = (await shown(page)).draft;
+  expect(await page.evaluate(() => window.__wanted)).toEqual([made]);
+  expect(errors).toEqual([]);
+});
+
 test("delete asks twice, and deleting the shown draft returns to the disc's level", async ({
   page,
 }) => {

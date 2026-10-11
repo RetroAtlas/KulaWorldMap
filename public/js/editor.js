@@ -268,6 +268,12 @@ function wireTools() {
   ).observe($("tools"));
   on("level-updated", strip);
   on("trail-changed", strip);
+  // a level made to be edited opens editing, said after what made it has been said
+  on("edit-wanted", () => {
+    if (!onDraft() || mode.on) return;
+    const said = $("say").textContent;
+    setMode(true, said ? `${said} Editing on.` : undefined);
+  });
   document.addEventListener("keydown", keys, { capture: true });
   onCellClick((c, e) => {
     const taken = take(c, e);

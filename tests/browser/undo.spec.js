@@ -52,7 +52,9 @@ async function fresh(page) {
   await page.goto(EDIT);
   await settle(page);
   await page.locator("#draftNew").click();
-  await page.keyboard.press("w");
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  if ((await page.locator("#editBtn").getAttribute("aria-pressed")) !== "true")
+    await page.keyboard.press("w");
   await expect(tool(page, "place")).toHaveAttribute("aria-pressed", "true");
 }
 

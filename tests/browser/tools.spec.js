@@ -57,7 +57,9 @@ async function fresh(page) {
   await page.goto(EDIT);
   await settle(page);
   await page.locator("#draftNew").click();
-  await page.keyboard.press("w");
+  await expect(page.locator("#tools")).toBeVisible();
+  if ((await page.locator("#editBtn").getAttribute("aria-pressed")) !== "true")
+    await page.keyboard.press("w");
   await expect(tool(page, "place")).toHaveAttribute("aria-pressed", "true");
 }
 
@@ -107,6 +109,35 @@ test("w makes a copy of a shipped level and edits it, toggles on a draft, and le
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
   // the level chosen is the whole announcement
   await expect(page.locator("#say")).toHaveText(/^LEVEL 1, /);
+  expect(errors).toEqual([]);
+});
+
+test("a level made to be edited asks for editing, which is said after the level is", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await page.keyboard.press("w");
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+  await page.evaluate(async () => {
+    const { say } = await import(new URL("js/a11y.js", location.href).href);
+    const { emit } = await import(new URL("js/dom.js", location.href).href);
+    say("Made a new level. Draft, Untitled level.");
+    emit("edit-wanted");
+  });
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#say")).toHaveText(
+    "Made a new level. Draft, Untitled level. Editing on.",
+  );
+  // asked again while editing, it changes nothing
+  await page.evaluate(async () => {
+    const { emit } = await import(new URL("js/dom.js", location.href).href);
+    emit("edit-wanted");
+  });
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#say")).toHaveText(
+    "Made a new level. Draft, Untitled level. Editing on.",
+  );
   expect(errors).toEqual([]);
 });
 

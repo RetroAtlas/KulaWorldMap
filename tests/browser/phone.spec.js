@@ -292,9 +292,11 @@ test.describe("editing on a phone", () => {
     await settle(page);
     await page.keyboard.press("m");
     await page.locator("#draftNew").click();
-    await page.keyboard.press("m");
-    await page.keyboard.press("w");
     await expect(page.locator("#tools")).toBeVisible();
+    await page.keyboard.press("m");
+    if ((await page.locator("#editBtn").getAttribute("aria-pressed")) !== "true")
+      await page.keyboard.press("w");
+    await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator("#palette")).toBeHidden();
     await still(page);
   }

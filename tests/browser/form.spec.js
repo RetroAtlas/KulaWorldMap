@@ -75,7 +75,9 @@ async function fresh(page) {
   await page.goto(EDIT);
   await settle(page);
   await page.locator("#draftNew").click();
-  await page.keyboard.press("w");
+  await expect(page.locator("#tools")).toBeVisible();
+  if ((await page.locator("#editBtn").getAttribute("aria-pressed")) !== "true")
+    await page.keyboard.press("w");
   await expect(page.locator('#tools .tool[data-tool="place"]')).toHaveAttribute(
     "aria-pressed",
     "true",
