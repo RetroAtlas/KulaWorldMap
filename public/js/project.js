@@ -49,6 +49,7 @@ import {
   direction,
   faceNamedTwice,
   facesOf,
+  inWord,
   inner,
   levelOf,
   projectOf,
@@ -273,18 +274,19 @@ function validateSpan(b, blocksAt, err, warn) {
   if (direction(cell, far) === null)
     return err("the far end is not along one axis from the block", cell);
   if (!far.every(inner)) return err("the far end is past the edge", cell);
-  const run = runOf(b);
   if (b.kind === PLATFORM_KIND) {
-    if (!LENGTHS.includes(b.length ?? DEFAULT_LENGTH))
-      warn(`a platform ${b.length} blocks long`, cell);
-    if ((b.speed ?? DEFAULT_SPEED) !== DEFAULT_SPEED)
-      warn(`a platform running at ${b.speed}`, cell);
-    for (const c of run)
+    const length = b.length ?? DEFAULT_LENGTH;
+    const speed = b.speed ?? DEFAULT_SPEED;
+    if (!inWord(length)) return err(`a length of ${length}, outside the file's range`, cell);
+    if (!LENGTHS.includes(length)) warn(`a platform ${length} blocks long`, cell);
+    if (!inWord(speed)) err(`a speed of ${speed}, outside the file's range`, cell);
+    else if (speed !== DEFAULT_SPEED) warn(`a platform running at ${speed}`, cell);
+    for (const c of runOf(b))
       if (!sameCell(c, cell) && blocksAt.has(keyOf(c)))
         err(`the platform's run crosses the block at ${cellText(c)}`, cell);
     return;
   }
-  for (const c of run) {
+  for (const c of runOf(b)) {
     const other = blocksAt.get(keyOf(c));
     if (!other || sameCell(c, cell)) continue;
     if (!sameCell(c, far)) err(`the beam crosses the block at ${cellText(c)}`, cell);
@@ -356,6 +358,7 @@ export function validate(project, hides) {
   }
   const time = project.time ?? DEFAULT_TIME;
   if (time < 1) err(`a time of ${time} seconds`);
+  else if (!inWord(time)) err(`a time of ${time} seconds, outside the file's range`);
   else if (time > TIME_MAX)
     warn(`a time of ${time} seconds, above the ${TIME_MAX} the game's levels keep to`);
 

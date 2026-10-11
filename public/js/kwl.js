@@ -153,6 +153,7 @@ export const COUNTED_KINDS = new Set([0, 1, 2, 4, CRUMBLING_KIND, VANISHING_KIND
 
 export const onLattice = (v) => Number.isInteger(v) && v >= 0 && v < SIDE;
 export const inner = (v) => Number.isInteger(v) && v >= 1 && v <= SIDE - 2;
+export const inWord = (v) => Number.isInteger(v) && v >= -(2 ** 15) && v < 2 ** 15;
 export const sameCell = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 export const compareCells = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
 export const byCell = (a, b) => compareCells(a.cell, b.cell);
@@ -412,7 +413,10 @@ function recordWords(b, k, states, linkTable, numberTable) {
   } else {
     throw new Error(`a block of kind ${kind} cannot be written`);
   }
-  return [...slots.flat(), ...extras, ...cell];
+  const words = [...slots.flat(), ...extras, ...cell];
+  if (!words.every(inWord))
+    throw new Error(`a word of the block at ${cellText(cell)} is outside the file's range`);
+  return words;
 }
 
 function settingsWords(project) {
@@ -437,6 +441,7 @@ function trailerWords(project, carried) {
   words[4] = 0;
   words[5] = 0;
   words[6] = project.time ?? DEFAULT_TIME;
+  if (!inWord(words[6])) throw new Error(`a time of ${words[6]} is outside the file's range`);
   return words;
 }
 

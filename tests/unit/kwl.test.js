@@ -465,6 +465,15 @@ test("the bytes are undefined for what the lattice cannot hold", () => {
       ),
     /face 5 of the block at 5,5,5 is named twice/,
   );
+  assert.throws(
+    () => writeKwl(project([plain([5, 5, 5], 0, { 0: start() })], { time: 100000 })),
+    /a time of 100000 is outside the file's range/,
+  );
+  assert.throws(
+    () =>
+      writeKwl(project([plain([5, 5, 5], 0, { 0: start(), 1: { type: COIN, variant: 70000 } })])),
+    /a word of the block at 5,5,5 is outside the file's range/,
+  );
   assert.doesNotThrow(() => writeKwl(project([plain([0, 0, 0]), plain([33, 33, 33])])));
 });
 

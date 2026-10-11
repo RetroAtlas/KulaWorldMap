@@ -82,6 +82,7 @@ FIXED = 512          # the fixed-point unit a cell is scaled by in a record
 PLATFORM_UNIT = 256  # the three words after a platform's position
 INNER = range(1, SIDE - 1)
 LATTICE = range(SIDE)
+WORD = range(-(2 ** 15), 2 ** 15)
 
 # The six directions as the game numbers them, which is also the face order.
 DIRECTIONS = ((0, 0, -1), (1, 0, 0), (0, 1, 0), (0, -1, 0), (-1, 0, 0), (0, 0, 1))
@@ -702,6 +703,8 @@ def validate(project, hides):
     time = project.get("time", DEFAULT_TIME)
     if time < 1:
         err(f"a time of {time} seconds")
+    elif time not in WORD:
+        err(f"a time of {time} seconds, outside the file's range")
     elif time > TIME_MAX:
         warn(f"a time of {time} seconds, above the {TIME_MAX} the game's levels keep to")
 
@@ -832,17 +835,23 @@ def _validate_span(b, at, kinds, err, warn):
     if any(c not in INNER for c in far):
         err("the far end is past the edge", cell)
         return
-    run = _run(b)
     if b["kind"] == PLATFORM_KIND:
-        if b.get("length", DEFAULT_LENGTH) not in LENGTHS:
-            warn(f"a platform {b.get('length')} blocks long", cell)
-        if b.get("speed", DEFAULT_SPEED) != DEFAULT_SPEED:
-            warn(f"a platform running at {b.get('speed')}", cell)
-        for c in run:
+        length = b.get("length", DEFAULT_LENGTH)
+        speed = b.get("speed", DEFAULT_SPEED)
+        if length not in WORD:
+            err(f"a length of {length}, outside the file's range", cell)
+            return
+        if length not in LENGTHS:
+            warn(f"a platform {length} blocks long", cell)
+        if speed not in WORD:
+            err(f"a speed of {speed}, outside the file's range", cell)
+        elif speed != DEFAULT_SPEED:
+            warn(f"a platform running at {speed}", cell)
+        for c in _run(b):
             if c != cell and c in at:
                 err(f"the platform's run crosses the block at {c[0]},{c[1]},{c[2]}", cell)
         return
-    for c in run:
+    for c in _run(b):
         other = at.get(c)
         if other is None or c == cell:
             continue

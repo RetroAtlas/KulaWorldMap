@@ -514,6 +514,22 @@ test("what the format takes, and what it warns about", () => {
     ),
   );
   assert.ok(
+    errors(one, { time: 40000 }).includes("a time of 40000 seconds, outside the file's range"),
+  );
+  const wide = {
+    cell: [10, 10, 17],
+    kind: PLATFORM_KIND,
+    far: [10, 14, 17],
+    length: 2,
+    speed: 65566,
+  };
+  assert.ok(errors([...one, wide]).includes("a speed of 65566, outside the file's range"));
+  assert.ok(
+    errors([...one, { ...wide, length: 40000, speed: 30 }]).includes(
+      "a length of 40000, outside the file's range",
+    ),
+  );
+  assert.ok(
     errors(one, { world: "MOON" }).includes("the world 'MOON' is not one of the disc's ten"),
   );
   for (const [into, ok] of [

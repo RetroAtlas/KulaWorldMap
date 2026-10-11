@@ -492,6 +492,12 @@ class Validates(unittest.TestCase):
         self.assertIn("a time of 0 seconds", self.errors([plain((5, 5, 5), t0=start())], time=0))
         self.assertIn("a time of 120 seconds, above the 99 the game's levels keep to",
                       self.warnings([plain((5, 5, 5), t0=start())], time=120))
+        self.assertIn("a time of 40000 seconds, outside the file's range",
+                      self.errors([plain((5, 5, 5), t0=start())], time=40000))
+        wide = {"cell": [10, 10, 17], "kind": PLATFORM_KIND, "far": [10, 14, 17], "length": 2, "speed": 65566}
+        self.assertIn("a speed of 65566, outside the file's range", self.errors([plain((5, 5, 5), t0=start()), wide]))
+        self.assertIn("a length of 40000, outside the file's range",
+                      self.errors([plain((5, 5, 5), t0=start()), dict(wide, length=40000, speed=30)]))
         self.assertIn("the world 'MOON' is not one of the disc's ten", self.errors([plain((5, 5, 5), t0=start())], world="MOON"))
         for into, ok in (("/HIRO/HIRO.PAK#0", True), ("/HELL/HELLFI.PAK#1", True), ("/HELL/HELLFI.PAK#2", False),
                          ("/HIRO/COPYCAT.PAK#0", False), ("HIRO#0", False)):
