@@ -43,11 +43,17 @@ function hold() {
 const panning = (e) => e.shiftKey || e.button === 1 || e.button === 2 || state.panMode;
 
 // What hooks into the pointer from outside: a click handler that takes a click
-// by returning true, a test for whether the face under the pointer matters to
-// the hover, and lines for the tip.
+// by returning true, a drag handler asked at every press, which takes the drag
+// from the camera by returning { move, end, cancel }, a test for whether the
+// face under the pointer matters to the hover, and lines for the tip. A press
+// that never wanders past a click is a click whoever holds the drag.
 let clicked = null;
 export const onCellClick = (fn) => {
   clicked = fn;
+};
+let dragged = null;
+export const dragWith = (fn) => {
+  dragged = fn;
 };
 let faceMatters = () => false;
 export const hoverFaces = (fn) => {
@@ -63,7 +69,9 @@ cv.addEventListener("contextmenu", (e) => e.preventDefault());
 cv.addEventListener("pointerdown", (e) => {
   pointing(true);
   cv.setPointerCapture(e.pointerId);
-  drag = { x: e.clientX, y: e.clientY, pan: panning(e) };
+  const r = cv.getBoundingClientRect();
+  const handler = dragged?.(cellAt(e.clientX - r.left, e.clientY - r.top), e) ?? null;
+  drag = { x: e.clientX, y: e.clientY, pan: panning(e), handler };
   moved = 0;
 });
 
@@ -74,7 +82,8 @@ cv.addEventListener("pointermove", (e) => {
     const dx = e.clientX - drag.x,
       dy = e.clientY - drag.y;
     moved += Math.abs(dx) + Math.abs(dy);
-    if (drag.pan) pan(dx, dy);
+    if (drag.handler) drag.handler.move(e);
+    else if (drag.pan) pan(dx, dy);
     else orbit(dx, dy);
     drag.x = e.clientX;
     drag.y = e.clientY;
@@ -85,7 +94,9 @@ cv.addEventListener("pointermove", (e) => {
 
 cv.addEventListener("pointerup", (e) => {
   const r = cv.getBoundingClientRect();
-  if (drag && moved < CLICK) {
+  if (drag?.handler && moved >= CLICK) drag.handler.end(e);
+  else if (drag && moved < CLICK) {
+    drag.handler?.cancel();
     const c = cellAt(e.clientX - r.left, e.clientY - r.top);
     // a right click selects whatever the tool
     const taken = e.button !== 2 && clicked?.(c, e);
@@ -97,6 +108,7 @@ cv.addEventListener("pointerup", (e) => {
   repickSoon();
 });
 cv.addEventListener("pointercancel", () => {
+  drag?.handler?.cancel();
   drag = null;
 });
 cv.addEventListener("pointerleave", () => {
@@ -269,6 +281,7 @@ cv.addEventListener(
   "touchstart",
   (e) => {
     if (e.touches.length === 2) {
+      drag?.handler?.cancel();
       drag = null;
       touch = { d: spread(e.touches), m: middle(e.touches) };
     }
