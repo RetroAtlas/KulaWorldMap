@@ -513,6 +513,69 @@ test("the fit from the layout says when the pack is recompressed or moved, and n
   expect(errors).toEqual([]);
 });
 
+test("a write that fails once the file is chosen says so and shuts the writable, and the buttons follow the plan", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.addInitScript(() => {
+    window.picks = [];
+    window.showSaveFilePicker = async ({ suggestedName }) => ({
+      name: suggestedName.replace(".bin", "-copy.bin"),
+      createWritable: async () => ({
+        write: () =>
+          new Promise((resolve, reject) => {
+            window.picks.push({ resolve, reject, aborted: false });
+          }),
+        close: async () => {},
+        abort: async () => {
+          window.picks.at(-1).aborted = true;
+        },
+      }),
+    });
+  });
+  await page.goto(EDIT);
+  await settle(page);
+  const id = await opened(page, "spiral.kula.json", synthetic(6));
+  await openPatch(page, id);
+  const dialog = page.locator("#patch");
+  await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
+  await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
+  await expect(dialog.locator("#patchImage")).toBeEnabled();
+
+  let downloads = 0;
+  page.on("download", () => downloads++);
+  await dialog.locator("#patchImage").click();
+  await expect(dialog.locator("#patchImage")).toHaveText("writing…");
+  await expect.poll(() => page.evaluate(() => window.picks.length)).toBe(1);
+  await page.evaluate(() =>
+    window.picks[0].reject(new DOMException("Disk full", "QuotaExceededError")),
+  );
+  await expect(dialog.locator("#patchReady")).toHaveText(
+    "Saving the patched disc failed: spiral-copy.bin could not be written: Disk full.",
+  );
+  await expect(dialog.locator("#patchImage")).toHaveText("the patched disc");
+  await expect(dialog.locator("#patchImage")).toBeEnabled();
+  expect(await page.evaluate(() => window.picks[0].aborted)).toBe(true);
+  expect(downloads).toBe(0);
+  const sheet = await saved(page, dialog.locator("#patchCue"));
+  expect(sheet.bytes.toString("utf8").split("\n")[0]).toBe('FILE "spiral.bin" BINARY');
+
+  await dialog.locator("#patchImage").click();
+  await expect.poll(() => page.evaluate(() => window.picks.length)).toBe(2);
+  await dialog.locator("#patchSlot").selectOption("/HELL/HELL.PAK#0");
+  await expect(dialog.locator("#patchFit")).toContainText("no such pack on the disc");
+  await page.evaluate(() => window.picks[1].resolve());
+  await expect(dialog.locator("#patchImage")).toHaveText("the patched disc");
+  for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
+    await expect(dialog.locator(b)).toBeDisabled();
+  await expect(dialog.locator("#patchReady")).toHaveText("");
+  await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
+  await expect(dialog.locator("#patchImage")).toBeEnabled();
+  const named = await saved(page, dialog.locator("#patchCue"));
+  expect(named.bytes.toString("utf8").split("\n")[0]).toBe('FILE "spiral-copy.bin" BINARY');
+  expect(errors).toEqual([]);
+});
+
 test("a save that fails is said so, and the button comes back", async ({ page }) => {
   const errors = trackErrors(page);
   await page.addInitScript(() => {

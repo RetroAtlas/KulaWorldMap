@@ -44,7 +44,6 @@ const LAYOUT = "Worked out from the disc as pressed; the image will confirm it."
 const FROM_IMAGE = "Read from the image.";
 const NO_IMAGE = "Give the disc image above to make the patches.";
 const READY = "Save what your emulator wants.";
-const NO_BLOB = "This browser cannot put the patched disc together; take a patch instead.";
 const LATER = "Once the disc is given, this says where each emulator wants the patch.";
 const INSTEAD = "Mednafen, Beetle and RetroArch apply no patch and play the patched disc instead.";
 const gone = (name) => `Another tab deleted ${name}, so the box closed without a patch.`;
@@ -487,17 +486,13 @@ async function placed(mine = ++turn) {
 
 function downloads() {
   const ready = !!d.placed && !d.blocked;
-  ui.ppf.disabled = !ready;
-  ui.xdelta.disabled = !ready;
-  const whole = ready && d.image?.size === d.file.size;
-  ui.image.disabled = !whole;
-  ui.cue.disabled = !whole;
-  ui.ready.textContent = readiness(whole);
+  for (const control of [ui.ppf, ui.xdelta, ui.image, ui.cue]) control.disabled = !ready;
+  ui.ready.textContent = readiness();
 }
 
-function readiness(whole) {
+function readiness() {
   if (!d.placed) return d.file ? (d.into === null ? CHOOSE : "") : NO_IMAGE;
-  return d.blocked ?? (whole ? READY : NO_BLOB);
+  return d.blocked ?? READY;
 }
 
 function play() {
@@ -513,33 +508,46 @@ async function save(control, write) {
   const text = control.textContent;
   control.disabled = true;
   control.textContent = "writing…";
+  let failed = null;
   try {
     await write();
   } catch (e) {
-    ui.ready.textContent = `Saving ${text} failed: ${e.message}.`;
-  } finally {
-    control.textContent = text;
-    control.disabled = false;
+    failed = `Saving ${text} failed: ${e.message}.`;
   }
+  control.textContent = text;
+  if (!showing()) return;
+  downloads();
+  if (failed) ui.ready.textContent = failed;
 }
 
+// The patched disc through the browser's own picker where it has one, else as
+// a download; a write that fails once the file is chosen says so.
 async function saveImage() {
   const name = `${base()}.bin`;
-  if (typeof showSaveFilePicker === "function") {
-    try {
-      const handle = await showSaveFilePicker({
-        suggestedName: name,
-        types: [{ description: "Disc image", accept: { [BINARY]: [".bin"] } }],
-      });
-      const out = await handle.createWritable();
-      await out.write(d.image);
-      await out.close();
-      d.imageName = handle.name;
-      return;
-    } catch (e) {
-      if (e.name === "AbortError") return;
-    }
+  const image = d.image;
+  const fallback = () => {
+    download(name, image, BINARY);
+    d.imageName = name;
+  };
+  if (typeof showSaveFilePicker !== "function") return fallback();
+  let handle;
+  try {
+    handle = await showSaveFilePicker({
+      suggestedName: name,
+      types: [{ description: "Disc image", accept: { [BINARY]: [".bin"] } }],
+    });
+  } catch (e) {
+    if (e.name !== "AbortError") fallback();
+    return;
   }
-  download(name, d.image, BINARY);
-  d.imageName = name;
+  let out = null;
+  try {
+    out = await handle.createWritable();
+    await out.write(image);
+    await out.close();
+  } catch (e) {
+    await out?.abort().catch(() => {});
+    throw new Error(`${handle.name} could not be written: ${e.message}`);
+  }
+  d.imageName = handle.name;
 }
