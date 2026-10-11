@@ -15,16 +15,24 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_disc import open_disc  # noqa: E402
+from kula_disc import EXE, open_disc  # noqa: E402
 from kula_kwl import (  # noqa: E402
     BONUS_UNDRAWN_KINDS,
     BONUS_UNDRAWN_TYPES,
     COUNTERS,
     DATA,
+    CAPS,
+    CAPTIVATORS,
     DIGESTS,
     DISC_MAX,
     DROPPED,
     FORMAT,
+    INNER,
+    LENGTH_CAP,
+    MOVING_SPIKES,
+    NUMBERED,
+    PLAIN_ONLY,
+    UNTRACED,
     HOSTILE,
     OBJECTS,
     PLAYED,
@@ -35,6 +43,7 @@ from kula_kwl import (  # noqa: E402
     check,
     compare,
     counts,
+    executable,
     deflate_vectors,
     digests,
     hostile,
@@ -53,6 +62,7 @@ from kula_kwl import (  # noqa: E402
     validate,
 )
 from kula_level import (  # noqa: E402
+    BLOCK_KINDS,
     FIRST_RECORD,
     GRID_BYTES,
     LASER_KIND,
@@ -1010,6 +1020,21 @@ class TheCompare(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("KULA_DISC"), "needs the disc")
 class TheDisc(unittest.TestCase):
+    def test_the_caps_and_the_loader_figures_are_the_executables_own(self):
+        from kula_motion import Code
+        with open_disc() as disc:
+            r = executable(Code(disc.read_file(EXE)))
+        for what in ("records", "faces", "lights", "spikes", "captivators", "crumbling", "vanishing", "objects"):
+            self.assertEqual(CAPS[what], r[what], what)
+        self.assertEqual(set(CAPS) - set(r), set(UNTRACED))
+        self.assertEqual(LENGTH_CAP, r["platform.length"])
+        self.assertEqual(MOVING_SPIKES, r["spikes.type"])
+        self.assertEqual(PLAIN_ONLY - {MOVING_SPIKES}, r["glow.types"])
+        self.assertEqual((KEY, BLOCK_KINDS), (r["key.type"], r["block.kinds"]))
+        self.assertEqual((r["numbered.from"], r["numbered.from"] + r["numbered.count"]), (min(NUMBERED), max(NUMBERED) + 1))
+        self.assertEqual(INNER, range(r["inner.from"], r["inner.below"]))
+        self.assertEqual(min(CAPTIVATORS), r["captivators.from"])
+
     def test_every_level_rebuilt_plays_as_the_disc_and_differs_in_the_words_listed_alone(self):
         with open_disc() as disc:
             failures, classes, dropped = check(disc, out=lambda *_: None)

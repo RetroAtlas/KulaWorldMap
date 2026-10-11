@@ -1613,6 +1613,106 @@ def diff_words(L, C, classes, examples):
             examples.setdefault(what, []).append(f"{L.name} record {kd} at {a.cell} slot {slot} word {sw}: {da[w]} on the disc, {db[w]} rebuilt")
 
 
+# The executable's words behind the caps and the loader figures: an address, the instruction there and what it says.
+EXECUTABLE = [
+    (0x8002e418, "lw $v0, 0($a0)", "the light maker reads an entry of the light list"),
+    (0x8002e42c, "slti $v0, $s5, 32", "searching its 32 entries for a free one"),
+    (0x8002e434, "addiu $a0, $a0, 32", "32 bytes apart"),
+    (0x8002e438, "sll $v0, $s5, 5", "and, finding none, takes the entry past the list"),
+    (0x8002a0a8, "lh $v0, 0($t0)", "the moving spikes' init reads a record's kind"),
+    (0x8002a0b0, "bne $v0, $zero, 0x8002a194", "and takes kind 0 alone"),
+    (0x8002a0dc, "addiu $v0, $zero, 11", "for the faces of type 11"),
+    (0x8002a0f0, "sll $v1, $a0, 3", "into entries of 8 bytes"),
+    (0x80029774, "lh $v0, 0($t1)", "the glow loader reads a record's kind"),
+    (0x8002977c, "bne $v0, $zero, 0x800297dc", "and takes kind 0 alone"),
+    (0x80029758, "addiu $t6, $zero, 7", "for the exit"),
+    (0x8002975c, "addiu $t5, $zero, 5", "the teleporter"),
+    (0x80029760, "addiu $t4, $zero, 9", "and the switch"),
+    (0x80027b4c, "addiu $t0, $zero, 31", "the mode routine counts the keys"),
+    (0x80027b64, "sltiu $v0, $v0, 5", "on records of kinds below 5"),
+    (0x800355e8, "slti $v0, $v0, 5", "the object loader walks records of kinds below 5"),
+    (0x80035620, "sw $zero, -29572($at)", "zeroing the next entry's word before it reads a face"),
+    (0x80035630, "addiu $v0, $v0, -5", "and takes the types from 5"),
+    (0x8003563c, "sltiu $v0, $v1, 43", "for 43 types"),
+    (0x800359e8, "addiu $s1, $s1, 48", "48 bytes an entry"),
+    (0x800271e4, "addiu $t0, $zero, 1", "the face builder walks from 1"),
+    (0x800279b4, "slti $v0, $t0, 33", "to 32 on one axis"),
+    (0x800279e0, "slti $v0, $t1, 33", "on the next"),
+    (0x800279f8, "slti $v0, $t0, 33", "and on the third"),
+    (0x8003b644, "slti $v0, $v0, 5", "the captivators are lifted from records of kinds below 5"),
+    (0x8003b678, "addiu $v0, $v1, -50", "from type 50 on"),
+    (0x80028aac, "addiu $t1, $zero, 6", "the crumbling builder takes kind 6"),
+    (0x80028ae4, "sll $v0, $v0, 1", "into a list of two-byte indices"),
+    (0x80028b44, "addiu $v0, $zero, 7", "the vanishing builder takes kind 7"),
+    (0x80028b58, "sll $v0, $a2, 1", "into a list of two-byte indices"),
+    (0x800327ac, "sll $v0, $v0, 7", "the ride's grid has rows of 128 bytes"),
+    (0x800327dc, "slti $v1, $v1, 8", "8 to a side"),
+    (0x8003389c, "lh $v0, 34($v0)", "and a ridden platform marks its run by its length word"),
+    (0x8003387c, "sll $v0, $v1, 7", "a row a block"),
+]
+# A table's start and the next address the code builds, each a lui and the instruction after it, and the bytes an entry takes.
+TABLES = {
+    "spikes": ((0x8002a08c, 0x8002a090), (0x800270a8, 0x800270ac), 8),
+    "captivators": ((0x8003b620, 0x8003b624), (0x8003ff98, 0x8003ff9c), 180),
+    "crumbling": ((0x80028ab0, 0x80028ab4), (0x80015810, 0x80015814), 2),
+    "vanishing": ((0x80028b5c, 0x80028b64), (0x8002a554, 0x8002a558), 2),
+    "objects": ((0x80035670, 0x80035678), (0x8003fdb8, 0x8003fdbc), 48),
+    "grid": ((0x80032790, 0x80032794), (0x80040920, 0x80040924), 2),
+    "faces": ((0x80028de8, 0x80028dec), (0x80025c40, 0x80025c44), 160),
+}
+FIRST_RECORD_AT = (0x80025bf0, 0x80025bfc)   # where the level's first record lies
+FRAMES_AT = (0x80040c74, 0x80040c78)          # the frame buffers the record table runs into
+UNTRACED = ("platforms", "blocks")   # the caps that rest on no table in the executable
+
+
+def _built_address(code, lui, at):
+    """The address a lui and any load or store after it build."""
+    hi = code.immediate(lui, f"lui ${code.text(lui).split('$')[1].split(',')[0]}, {{}}")
+    text = code.text(at)
+    lo = re.search(r"(-?\d+)(?:\(\$\w+\))?$", text)
+    if not lo:
+        sys.exit(f"0x{at:08x} reads `{text}`, not a load, store or add")
+    return (0x80000000 | (hi << 16)) + int(lo.group(1))
+
+
+def executable(code):
+    """The caps and loader figures as the executable holds them, after the checks have passed."""
+    for addr, pattern, _ in EXECUTABLE:
+        code.immediate(addr, pattern)
+    room = {}
+    for what, (start, end, entry) in TABLES.items():
+        size = _built_address(code, *end) - _built_address(code, *start)
+        if size % entry:
+            sys.exit(f"the {what} table's {size} bytes are not whole entries of {entry}")
+        room[what] = size // entry
+    side = code.immediate(0x800327dc, "slti $v1, $v1, {}")
+    if room["grid"] != side ** 3:
+        sys.exit(f"the ride's grid holds {room['grid']} cells, not {side} cubed")
+    stretches = (_built_address(code, *FRAMES_AT) - _built_address(code, *FIRST_RECORD_AT)) // RECORD
+    return {
+        "records": stretches - 1,
+        "faces": room["faces"],
+        "lights": code.immediate(0x8002e42c, "slti $v0, $s5, {}"),
+        "spikes": room["spikes"],
+        "captivators": room["captivators"],
+        "crumbling": room["crumbling"],
+        "vanishing": room["vanishing"],
+        "objects": room["objects"] - 1,
+        "platform.length": side - 1,
+        "spikes.type": code.immediate(0x8002a0dc, "addiu $v0, $zero, {}"),
+        "glow.types": frozenset(code.immediate(a, p) for a, p in ((0x80029758, "addiu $t6, $zero, {}"),
+                                                                   (0x8002975c, "addiu $t5, $zero, {}"),
+                                                                   (0x80029760, "addiu $t4, $zero, {}"))),
+        "key.type": code.immediate(0x80027b4c, "addiu $t0, $zero, {}"),
+        "block.kinds": code.immediate(0x80027b64, "sltiu $v0, $v0, {}"),
+        "numbered.from": -code.immediate(0x80035630, "addiu $v0, $v0, {}"),
+        "numbered.count": code.immediate(0x8003563c, "sltiu $v0, $v1, {}"),
+        "inner.from": code.immediate(0x800271e4, "addiu $t0, $zero, {}"),
+        "inner.below": code.immediate(0x800279b4, "slti $v0, $t0, {}"),
+        "captivators.from": -code.immediate(0x8003b678, "addiu $v0, $v1, {}"),
+    }
+
+
 # The words the rebuild writes differently outside the unread mask, each a leftover the game never reads, by its count on the disc.
 RESIDUALS = {
     # the clock's f2, which the loader never turns
