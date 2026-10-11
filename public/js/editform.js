@@ -82,7 +82,7 @@ const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 const sentence = (text) => `${capital(text)}.`;
 const place3 = (cell) => cell.join(", ");
 const kindWord = (kind) => lower(kindName(kind) || "plain block");
-const article = (word) => (/^[aeiou]/i.test(word) ? "an" : "a");
+const article = (word) => (/^([aeiou]|hour)/i.test(word) ? "an" : "a");
 const aWord = (word) => `${article(word)} ${word}`;
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const across = (cell, face) => cell.map((v, i) => v + FACE_NORMAL[face][i]);

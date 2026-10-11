@@ -406,3 +406,21 @@ test("placing a thing of a hidden kind brings the kind back, and the palette com
   await expect(toggle).toBeHidden();
   expect(errors).toEqual([]);
 });
+
+test("a name that begins with a vowel, or sounds as if it did, takes an", async ({ page }) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await pick(page, "Blocks", "k2");
+  const side = await plusX(page, START);
+  await page.mouse.move(side.x, side.y);
+  await expect(page.locator("#tip")).toContainText("Place an ice block on the +x side");
+  await click(page, side);
+  await expect(page.locator("#say")).toHaveText("Placed an ice block at 18, 17, 17");
+  await pick(page, "Devices", "t7");
+  await click(page, await top(page, [18, 17, 17]));
+  expect(await toasts(page)).toContain("An exit works on a plain block only.");
+  await pick(page, "Pickups", "t35");
+  await click(page, await plusY(page, START));
+  await expect(page.locator("#say")).toHaveText("Placed an hourglass on the +y side of 17, 17, 17");
+  expect(errors).toEqual([]);
+});

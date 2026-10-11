@@ -100,6 +100,8 @@ const current = () => {
 const across = (c, face) => [c.x, c.y, c.z].map((v, i) => v + FACE_NORMAL[face][i]);
 const lower = (name) => name.charAt(0).toLowerCase() + name.slice(1);
 const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+const article = (word) => (/^([aeiou]|hour)/i.test(word) ? "an" : "a");
+const aWord = (word) => `${article(word)} ${word}`;
 const kindWord = (kind) => lower(kindName(kind) || "plain block");
 const sentence = (text) => `${capital(text)}.`;
 const place3 = (cell) => cell.join(", ");
@@ -125,7 +127,7 @@ const plainOnly = (e) => {
   const name = lower(entryName(e.marker) ?? e.label);
   return name.endsWith("s")
     ? `${capital(name)} work on a plain block only.`
-    : `A ${name} works on a plain block only.`;
+    : `${capital(aWord(name))} works on a plain block only.`;
 };
 
 export function bootEditor() {
@@ -264,7 +266,9 @@ function wireTools() {
   hoverFaces(() => editing() && mode.tool !== "select");
   tipWith((c) => {
     if (!editing() || mode.tool !== "place" || c?.face == null) return [];
-    return [pending ? "End the run here" : `Place a ${brushWord()} on the ${FACE_NAME[c.face]}`];
+    return [
+      pending ? "End the run here" : `Place ${aWord(brushWord())} on the ${FACE_NAME[c.face]}`,
+    ];
   });
   overlayWith({ under: drawFloor, cell: drawHover, frame: drawGhost });
   strip();
@@ -388,8 +392,8 @@ function floorTarget(e) {
 function tapWord(target) {
   if (mode.tool === "erase") return "erase here";
   if (pending) return "end the run here";
-  if (!target.c) return `lay a ${brushWord()} on the floor`;
-  return `place a ${brushWord()} on the ${FACE_NAME[target.face]}`;
+  if (!target.c) return `lay ${aWord(brushWord())} on the floor`;
+  return `place ${aWord(brushWord())} on the ${FACE_NAME[target.face]}`;
 }
 
 function disarm() {
@@ -493,7 +497,7 @@ function layBlock(d, target, kind) {
   const grew = newErrors(d.doc, next);
   if (grew.length) return refuse(sentence(grew[0].text));
   if (target[2] < sliceZ()) setSlice(SIDE - 1 - target[2]);
-  commit(d.id, next, `placed a ${kindWord(kind)} at ${place3(target)}`);
+  commit(d.id, next, `placed ${aWord(kindWord(kind))} at ${place3(target)}`);
   select(target);
   return true;
 }
@@ -621,7 +625,7 @@ function finishRun(c, e, d) {
     next,
     respan
       ? `moved the ${spanWord(span)}'s run to ${place3(far)}`
-      : `laid a ${spanWord(span)} from ${place3(anchor)} to ${place3(far)}`,
+      : `laid ${aWord(spanWord(span))} from ${place3(anchor)} to ${place3(far)}`,
   );
   select(anchor);
   return true;
@@ -693,7 +697,11 @@ function placeThing(c, d) {
   const grew = newErrors(d.doc, next);
   if (grew.length) return refuse(sentence(grew[0].text));
   state.hiddenKinds.delete(brush.id);
-  commit(d.id, next, `placed a ${lower(e.label)} on the ${FACE_NAME[c.face]} of ${place3(cell)}`);
+  commit(
+    d.id,
+    next,
+    `placed ${aWord(lower(e.label))} on the ${FACE_NAME[c.face]} of ${place3(cell)}`,
+  );
   select(cell, c.face);
   return true;
 }
