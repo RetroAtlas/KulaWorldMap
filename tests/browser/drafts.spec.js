@@ -297,6 +297,41 @@ test("new asks for editing once its level is open, and copy this level does not"
   expect(errors).toEqual([]);
 });
 
+test("the card's time field takes the seconds the file can hold and says when it keeps the old value, and the title stops at eighty letters", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  const time = page.locator("#draftTime");
+  await expect(time).toHaveAttribute("min", "1");
+  await expect(time).toHaveAttribute("max", "32767");
+  for (const bad of ["0", "", "32768", "-5"]) {
+    await time.fill(bad);
+    await time.blur();
+    await expect(time).toHaveValue("99");
+    await expect(page.locator("#toastStack .toast")).toHaveText([
+      "The time is a whole number of seconds from 1 to 32767.",
+    ]);
+  }
+  expect((await shown(page)).time).toBe(99);
+  await time.fill("200");
+  await time.blur();
+  await expect(time).toHaveValue("200");
+  expect((await shown(page)).time).toBe(200);
+  await expect(page.locator("#chipLine")).toContainText("time 200");
+
+  const title = page.locator("#draftTitle");
+  await expect(title).toHaveAttribute("maxlength", "80");
+  await title.selectText();
+  await title.pressSequentially("x".repeat(85));
+  await expect(title).toHaveValue("x".repeat(80));
+  await expect(page.locator("#draftRows button .name")).toHaveText("x".repeat(80));
+  expect(errors).toEqual([]);
+});
+
 test("delete asks twice, and deleting the shown draft returns to the disc's level", async ({
   page,
 }) => {

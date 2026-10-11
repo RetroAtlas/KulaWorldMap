@@ -6,7 +6,7 @@ import { worldName, levelTitle } from "./data.js";
 import { selectLevel, showLevel } from "./navigate.js";
 import { say, describeLevel } from "./a11y.js";
 import { toast } from "./toast.js";
-import { TIME_MAX, writeKwl } from "./kwl.js";
+import { writeKwl } from "./kwl.js";
 import { UNTITLED, blank, fromLevel, setMeta, toLevel, writeProject } from "./project.js";
 import { download, readLevelFile, readLevelText, slug } from "./files.js";
 import { pasteLevelLink } from "./importdialog.js";
@@ -16,6 +16,9 @@ import * as drafts from "./drafts.js";
 
 const CONFIRM_MS = 4000;
 const NOTE_MS = 2000;
+const TITLE_LENGTH = 80;
+const TIME_LIMIT = 2 ** 15 - 1;
+const TIME_RANGE = `The time is a whole number of seconds from 1 to ${TIME_LIMIT}.`;
 const GAME_FILE = "application/octet-stream";
 const nameOf = (doc) => doc.title || UNTITLED;
 
@@ -262,6 +265,7 @@ function buildForm(id, box) {
     id: "draftTitle",
     type: "text",
     placeholder: UNTITLED,
+    maxLength: TITLE_LENGTH,
     autocomplete: "off",
     spellcheck: false,
     title: "The level's title",
@@ -280,15 +284,18 @@ function buildForm(id, box) {
     id: "draftTime",
     type: "number",
     min: 1,
-    max: TIME_MAX,
+    max: TIME_LIMIT,
     step: 1,
     inputMode: "numeric",
     title: "The seconds the clock starts at",
   });
   time.onchange = () => {
     const v = Math.round(Number(time.value));
-    if (time.value !== "" && v >= 1 && v <= TIME_MAX) edit({ time: v }, "changed the time");
-    else time.value = drafts.get(id)?.doc.time ?? "";
+    if (time.value !== "" && v >= 1 && v <= TIME_LIMIT) edit({ time: v }, "changed the time");
+    else {
+      time.value = drafts.get(id)?.doc.time ?? "";
+      toast(TIME_RANGE);
+    }
   };
 
   const hidden = el("input", { id: "draftHidden", type: "checkbox" });
