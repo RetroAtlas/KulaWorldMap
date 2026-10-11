@@ -330,7 +330,7 @@ test("then with the others recompressed at level 9, from their levels", () => {
     assert.ok(f.streams[i].length < world.streams[i].length);
   }
   assert.ok(writePak(f.names, withStream(stream)).length > USER);
-  assert.throws(() => fitted(stream, { known: false }), /levels/);
+  assert.equal(fitted(stream, { known: false }), null);
 });
 
 test("and moves the pack when even that does not fit", () => {

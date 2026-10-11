@@ -138,7 +138,8 @@ export function packName(title, old) {
  * How the stream goes into the slot of a pack read off the image, with so many
  * bytes of sectors: the three paths of fit, with every slot's record and name
  * as the pack will carry them. Recompressing the other records needs their
- * levels, inflated, in slot order.
+ * levels, inflated, in slot order, and a fit that would have to is null until
+ * they are given.
  */
 export function fitPak(pak, capacity, slot, stream, title = null, levels = null) {
   const count = pak.streams.length;
@@ -163,7 +164,7 @@ export function fitPak(pak, capacity, slot, stream, title = null, levels = null)
   const size = packSize(names, sizes(streams));
   if (size <= limit)
     return { path: REBUILD, streams, names, size, room: limit - size, recompressed: false };
-  if (!levels) throw new Error("the other records can only be recompressed from their levels");
+  if (!levels) return null;
   const again = streams.map((s, i) => (i === slot ? s : deflate(levels[i], RECOMPRESS)));
   const size9 = packSize(names, sizes(again));
   if (size9 <= limit)

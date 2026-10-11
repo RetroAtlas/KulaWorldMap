@@ -362,6 +362,32 @@ class ThePlacer(unittest.TestCase):
         self.assertFalse(self.out.exists() or cue.exists())
         self.assertEqual(self.src.read_bytes(), IMAGE)
 
+    def test_a_record_that_does_not_inflate_stops_only_a_rebuild_that_would_recompress_it(self):
+        damaged = bytearray(IMAGE)
+        data = bytearray(user(IMAGE, PACK_AT))
+        data[self.pak.entries[0]["offset"] + 3] ^= 0xFF
+        damaged[PACK_AT * SECTOR_RAW:(PACK_AT + 1) * SECTOR_RAW] = sector(PACK_AT, bytes(data), EOF_SUBMODE)
+        self.src.write_bytes(damaged)
+        with Disc(self.src) as disc:
+            fitted = lambda n: plan(disc, SYNTHETIC_PACK, SLOT, stream_of(synthetic(n)), TITLE).fit  # noqa: E731
+            self.assertEqual(fitted(LEVELS[IN_PLACE]).path, IN_PLACE)
+            self.assertEqual((fitted(LEVELS[REBUILD]).path, fitted(LEVELS[REBUILD]).recompressed), (REBUILD, False))
+            with self.assertRaisesRegex(ValueError, "^the record of LEVEL 1 is not one the game inflates: "):
+                fitted(LEVELS["recompressed"])
+
+    def test_the_record_of_the_slot_being_replaced_is_never_inflated_so_a_damaged_one_does_not_stop_the_rebuild(self):
+        damaged = bytearray(IMAGE)
+        data = bytearray(user(IMAGE, PACK_AT))
+        at = self.pak.entries[SLOT]["offset"]
+        data[at + 3] ^= 0xFF
+        with self.assertRaises(zlib.error):
+            zlib.decompress(bytes(data[at:at + self.pak.entries[SLOT]["size"]]))
+        damaged[PACK_AT * SECTOR_RAW:(PACK_AT + 1) * SECTOR_RAW] = sector(PACK_AT, bytes(data), EOF_SUBMODE)
+        self.src.write_bytes(damaged)
+        with Disc(self.src) as disc:
+            fitted = plan(disc, SYNTHETIC_PACK, SLOT, stream_of(synthetic(LEVELS["recompressed"])), TITLE).fit
+        self.assertEqual((fitted.path, fitted.recompressed), (REBUILD, True))
+
     def test_the_image_is_known_by_its_structure_and_warned_about_where_it_is_not_the_disc(self):
         with Disc(self.src) as disc:
             self.assertEqual(identify(disc), [f"the image has {SYNTHETIC_SECTORS} sectors, not the 109,607 of the disc",

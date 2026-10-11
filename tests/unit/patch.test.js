@@ -526,6 +526,40 @@ test("what is refused", async () => {
   assert.equal(rebuilt.fit.path, REBUILD);
 });
 
+test("a record that does not inflate stops only a rebuild that would recompress it", async () => {
+  const damaged = IMAGE.slice();
+  const data = user(IMAGE, PACK_AT).slice();
+  data[ORIGINAL.offsets[0] + 3] ^= 0xff;
+  damaged.set(sector(PACK_AT, data, EOF_SUBMODE), PACK_AT * SECTOR_RAW);
+  const disc = await openDisc(new Blob([damaged]));
+  const fitted = async (c) =>
+    (await plan(disc, SYNTHETIC_PACK, SLOT, streamOf(synthetic(c.blocks)), TITLE, inflate)).fit;
+  assert.equal((await fitted(CASE["in place"])).path, IN_PLACE);
+  assert.deepEqual(
+    [(await fitted(CASE.rebuild)).path, (await fitted(CASE.rebuild)).recompressed],
+    [REBUILD, false],
+  );
+  await assert.rejects(
+    fitted(CASE["rebuild, recompressed"]),
+    /^Error: the record of LEVEL 1 is not one the game inflates: /,
+  );
+});
+
+test("the record of the slot being replaced is never inflated, so a damaged one does not stop the rebuild", async () => {
+  const damaged = IMAGE.slice();
+  const data = user(IMAGE, PACK_AT).slice();
+  const at = ORIGINAL.offsets[SLOT];
+  data[at + 3] ^= 0xff;
+  await assert.rejects(inflate(data.subarray(at, at + ORIGINAL.streams[SLOT].length)));
+  damaged.set(sector(PACK_AT, data, EOF_SUBMODE), PACK_AT * SECTOR_RAW);
+  const c = CASE["rebuild, recompressed"];
+  const { placed } = await place(streamOf(synthetic(c.blocks)), { image: damaged });
+  assert.deepEqual(
+    [placed.fit.path, placed.fit.recompressed, placed.fit.size, placed.fit.room, placed.lba],
+    [c.path, c.recompressed, c.size, c.room, c.lba],
+  );
+});
+
 test("the verifier refuses an image that is not the plan's", async () => {
   const stream = streamOf(synthetic(CASE.rebuild.blocks));
   const { disc, placed, after } = await place(stream);

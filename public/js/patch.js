@@ -127,6 +127,22 @@ async function room(disc, size) {
   return lba;
 }
 
+// Every other record's level, which only a rebuild that recompresses them needs.
+function levelsOf(pak, slot, inflate) {
+  return Promise.all(
+    pak.streams.map(async (s, i) => {
+      if (i === slot) return null;
+      try {
+        return await inflate(s);
+      } catch (e) {
+        throw new Error(
+          `the record of ${pak.names[i]} is not one the game inflates: ${e.message ?? e}`,
+        );
+      }
+    }),
+  );
+}
+
 /**
  * The sectors that put the stream into the slot, read off the image: the fit,
  * where the pack lies afterwards, the sectors to write as [lba, raw] in
@@ -144,8 +160,9 @@ export async function plan(disc, packPath, slot, stream, title, inflate) {
   const { lba, size } = disc.files.get(key);
   const capacity = sectorCount(size) * USER;
   const pak = readPak(await disc.readFile(key));
-  const levels = await Promise.all(pak.streams.map((s) => inflate(s)));
-  const fit = fitPak(pak, capacity, slot, stream, title, levels);
+  const fit =
+    fitPak(pak, capacity, slot, stream, title) ??
+    fitPak(pak, capacity, slot, stream, title, await levelsOf(pak, slot, inflate));
   let writes;
   let where = lba;
   if (fit.path === IN_PLACE) {

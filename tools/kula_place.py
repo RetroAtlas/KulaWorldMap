@@ -89,6 +89,21 @@ def pack_name(title, old):
     return text or old
 
 
+def _recompressed(names, streams, slot):
+    """The other records at level 9, each from its level."""
+    out = []
+    for i, s in enumerate(streams):
+        if i == slot:
+            out.append(s)
+            continue
+        try:
+            level = zlib.decompress(s)
+        except zlib.error as e:
+            raise ValueError(f"the record of {names[i]} is not one the game inflates: {e}") from None
+        out.append(zlib.compress(level, RECOMPRESS))
+    return out
+
+
 def fit(pak, capacity, slot, stream, title=None):
     """How the stream goes into the slot of a pack with so many bytes of sectors."""
     if not 0 <= slot < len(pak):
@@ -104,8 +119,7 @@ def fit(pak, capacity, slot, stream, title=None):
     size = len(pack(names, streams))
     if size <= limit:
         return Fit(REBUILD, streams, names, size, limit - size, False)
-    again = [s if i == slot else zlib.compress(zlib.decompress(s), RECOMPRESS)
-             for i, s in enumerate(streams)]
+    again = _recompressed(names, streams, slot)
     size9 = len(pack(names, again))
     if size9 <= limit:
         return Fit(REBUILD, again, names, size9, limit - size9, True)
