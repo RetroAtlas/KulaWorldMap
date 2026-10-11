@@ -315,9 +315,9 @@ test.describe("editing on a phone", () => {
     expect((await shown(page)).selected).toEqual([18, 17, 17]);
     await expect(page.locator("#say")).toHaveText("Placed a block at 18, 17, 17");
     await expect(page.locator("#toolStatus")).toHaveText("");
-    // the placed block's panel opened as a sheet; put it away to reach the map below
-    await page.keyboard.press("Escape");
+    // what was placed is selected, with the panel's sheet left down
     await expect(page.locator("#detail")).toBeHidden();
+    expect((await shown(page)).sheet).toBe(false);
 
     await tap(page, await plusX(page, [18, 17, 17]));
     expect((await shown(page)).hover).toEqual([18, 17, 17, 1]);
@@ -355,6 +355,36 @@ test.describe("editing on a phone", () => {
     await expect(page.locator("#say")).toHaveText(
       "Laid a moving platform from 18, 17, 17 to 18, 21, 17",
     );
+    expect((await shown(page)).selected).toEqual([18, 17, 17]);
+    await expect(page.locator("#detail")).toBeHidden();
+  });
+
+  test("a placement leaves the palette's sheet open, and a long press raises the panel over it", async ({
+    page,
+  }) => {
+    await editFresh(page);
+    await page.locator("#paletteBtn").tap();
+    const palette = page.locator("#palette");
+    await expect(palette).toBeVisible();
+    await lift(page, 1.5);
+    const side = await plusX(page, START);
+    await tap(page, side);
+    await tap(page, side);
+    expect(await cells(page)).toEqual([START, [18, 17, 17]]);
+    expect((await shown(page)).selected).toEqual([18, 17, 17]);
+    await expect(palette).toBeVisible();
+    await expect(page.locator("#detail")).toBeHidden();
+    expect((await shown(page)).sheet).toBe(true);
+    await page.keyboard.press("z");
+    const top18 = await top(page, [18, 17, 17]);
+    await tap(page, top18);
+    await tap(page, top18);
+    expect(await cells(page)).toEqual([START]);
+    await expect(palette).toBeVisible();
+    await page.keyboard.press("a");
+    await hold(page, await top(page, START));
+    await expect(page.locator("#detail")).toBeVisible();
+    await expect(palette).toBeHidden();
   });
 
   test("a finger on the floor with a thing for a brush is told the grid lays blocks", async ({

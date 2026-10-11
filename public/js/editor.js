@@ -88,6 +88,8 @@ let press = null;
 let swallow = null;
 // A finger's tap while editing consumes its click: a sheet it raised may move the strip under it.
 let consumed = false;
+// A selection being made without the panel, which the sheets leave alone.
+let quiet = false;
 let paletteOpen = !matchMedia("(max-width: 760px)").matches;
 
 const onDraft = () => state.lvl?.draft !== undefined;
@@ -248,7 +250,8 @@ function wireTools() {
     strip();
   });
   on("selection-changed", () => {
-    if (phone() && state.selected && paletteOpen) togglePalette(false);
+    if (quiet) return;
+    if (phone() && !$("detail").hidden && paletteOpen) togglePalette(false);
     else sheets();
   });
   wireTouch();
@@ -283,7 +286,7 @@ function take(c, e) {
   }
   if (e.altKey) return pick(c);
   if (e.pointerType === "touch" && !e.shiftKey && mode.tool !== "select") return tap(c, e);
-  if (e.shiftKey || mode.tool === "erase") return erase(c);
+  if (e.shiftKey || mode.tool === "erase") return erase(c, e);
   if (mode.tool === "place") return place(c, e);
   return false;
 }
@@ -369,7 +372,7 @@ function tap(c, e) {
   if (armed && armed.key === target.key && armed.face === target.face) {
     const at = armed.c;
     disarm();
-    return mode.tool === "erase" ? erase(at) : place(at, e);
+    return mode.tool === "erase" ? erase(at, e) : place(at, e);
   }
   armed = target;
   if (armed.c) state.hover = armed.c;
@@ -457,9 +460,19 @@ function commit(id, next, label) {
   say(capital(label));
 }
 
-function select(cell, face = null) {
+/** Select what a tool placed or cleared; on a phone a finger's leaves the panel's sheet down. */
+function select(cell, face = null, e = null) {
   const at = state.idx.cells.get(cellKey(...cell));
-  if (at) showCell(face === null ? at : { ...at, face });
+  if (!at) return;
+  const quietly = e?.pointerType === "touch" && phone();
+  quiet = quietly;
+  showCell(face === null ? at : { ...at, face });
+  quiet = false;
+  if (!quietly) return;
+  const box = $("detail");
+  if (box.contains(document.activeElement)) $("cv").focus();
+  box.hidden = true;
+  sheets();
 }
 
 /** The errors `next` has that `before` had not. */
@@ -483,15 +496,15 @@ function place(c, e) {
   const d = current();
   if (!d) return false;
   if (pending) return finishRun(c, e, d);
-  if (brush.kind === undefined) return placeThing(c, d);
+  if (brush.kind === undefined) return placeThing(c, d, e);
   if (SPAN_KINDS.has(brush.kind)) return startRun(c, e, d);
   const target = landing(c, e);
   if (!target) return false;
-  return layBlock(d, target, brush.kind);
+  return layBlock(d, target, brush.kind, e);
 }
 
 /** Lay a block of `kind` at `target`, refusing what the game would not load. */
-function layBlock(d, target, kind) {
+function layBlock(d, target, kind, e = null) {
   if (!target.every(inner)) return refuse(EDGE);
   if (blockAt(d.doc, target)) return refuse(HELD);
   const next = setBlock(d.doc, target, { kind });
@@ -499,7 +512,7 @@ function layBlock(d, target, kind) {
   if (grew.length) return refuse(sentence(grew[0].text));
   if (target[2] < sliceZ()) setSlice(SIDE - 1 - target[2]);
   commit(d.id, next, `placed ${aWord(kindWord(kind))} at ${place3(target)}`);
-  select(target);
+  select(target, null, e);
   return true;
 }
 
@@ -628,7 +641,7 @@ function finishRun(c, e, d) {
       ? `moved the ${spanWord(span)}'s run to ${place3(far)}`
       : `laid ${aWord(spanWord(span))} from ${place3(anchor)} to ${place3(far)}`,
   );
-  select(anchor);
+  select(anchor, null, e);
   return true;
 }
 
@@ -681,13 +694,13 @@ function verdicts(doc, span, cells) {
 }
 
 /** Put the brush's thing on the clicked face, in place of whatever stood there. */
-function placeThing(c, d) {
+function placeThing(c, d, e) {
   if (!c || c.face == null) return false;
   const cell = [c.x, c.y, c.z];
   const b = blockAt(d.doc, cell);
   if (!b) return false;
-  const e = palette.chosen();
-  if (PLAIN_ONLY.has(brush.type) && b.kind !== 0) return refuse(plainOnly(e));
+  const entry = palette.chosen();
+  if (PLAIN_ONLY.has(brush.type) && b.kind !== 0) return refuse(plainOnly(entry));
   if (SPAN_KINDS.has(b.kind) || b.kind === CRUMBLING_KIND || b.kind === VANISHING_KIND)
     return refuse(BRITTLE);
   if (blockAt(d.doc, across(c, c.face))) return refuse(LOOKS_INTO);
@@ -701,13 +714,13 @@ function placeThing(c, d) {
   commit(
     d.id,
     next,
-    `placed ${aWord(lower(e.label))} on the ${FACE_NAME[c.face]} of ${place3(cell)}`,
+    `placed ${aWord(lower(entry.label))} on the ${FACE_NAME[c.face]} of ${place3(cell)}`,
   );
-  select(cell, c.face);
+  select(cell, c.face, e);
   return true;
 }
 
-function erase(c) {
+function erase(c, e = null) {
   const d = current();
   if (!c || !d) return false;
   const cell = [c.x, c.y, c.z];
@@ -728,7 +741,7 @@ function erase(c) {
       setFace(d.doc, cell, face, null),
       `removed the ${name} from the ${FACE_NAME[face]} of ${place3(cell)}`,
     );
-    select(cell, face);
+    select(cell, face, e);
     return true;
   }
   if (d.doc.blocks.length === 1) return refuse(LAST);
