@@ -20,9 +20,12 @@ import { hasFace } from "../../public/js/blocks.js";
 import { FACE_NORMAL } from "../../public/js/faces.js";
 import { state, cellKey } from "../../public/js/state.js";
 import {
+  BONUS_UNDRAWN_KINDS,
+  BONUS_UNDRAWN_TYPES,
   CAPS,
   DISC_MAX,
   FORMAT,
+  PLAYED,
   LASER_KIND,
   PLATFORM_KIND,
   SETTINGS_KIND,
@@ -817,6 +820,60 @@ test("the circuits' warnings", () => {
       "a key and no exit",
     ),
   );
+});
+
+// The bonus artwork is the second model set, whose only picture for several kinds
+// and types is the placeholder texture; the two lists are what the shipped table says.
+test("a keyless level is warned of what the bonus artwork has no picture for", () => {
+  const { bonus } = objects.skins.sets;
+  const placeholder = (models) => models.every((m) => m.length === 1 && m[0] === 8);
+  assert.deepEqual(BONUS_UNDRAWN_KINDS, [
+    ...Object.keys(bonus.kinds)
+      .filter((k) => placeholder([bonus.kinds[k]]))
+      .map(Number),
+    ...(placeholder(bonus.platform) ? [5] : []),
+  ]);
+  assert.deepEqual(
+    BONUS_UNDRAWN_TYPES,
+    Object.keys(bonus.types)
+      .map(Number)
+      .filter((t) => PLAYED.has(t) && placeholder([bonus.types[t]])),
+  );
+  const blocks = [
+    plain([5, 5, 5], 0, {
+      0: start(),
+      1: { type: 8 },
+      2: { type: 46 },
+      3: { type: 43 },
+      4: { type: EXIT },
+    }),
+    plain([7, 5, 5], 1),
+    plain([9, 5, 5], 2),
+    { cell: [11, 5, 5], kind: PLATFORM_KIND, far: [11, 8, 5], length: 2, speed: 30 },
+  ];
+  assert.ok(
+    warnings(blocks).includes(
+      "with no key the game draws the bonus artwork, which has no picture for the clock, the fruit, the exit, the fire block, the ice block or the moving platform",
+    ),
+  );
+  assert.ok(
+    warnings([plain([5, 5, 5], 0, { 0: start(), 1: { type: 1 } })]).includes(
+      "with no key the game draws the bonus artwork, which has no picture for the fire",
+    ),
+  );
+  assert.ok(!warnings(blocks, { hidden: true }).some((w) => w.includes("bonus artwork")));
+  blocks[0].faces[5] = { type: KEY };
+  assert.ok(!warnings(blocks).some((w) => w.includes("bonus artwork")));
+  assert.ok(
+    !warnings([plain([5, 5, 5], 0, { 0: start(), 1: coin })]).some((w) =>
+      w.includes("bonus artwork"),
+    ),
+  );
+  for (const l of mapData.levels)
+    assert.ok(
+      !texts(validate(fromLevel(l), HIDES), "warning").some((w) => w.includes("bonus artwork")),
+      l.name,
+    );
 });
 
 test("how a level plays", () => {

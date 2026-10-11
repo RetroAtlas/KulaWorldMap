@@ -64,6 +64,9 @@ export const STAR = 42;
 export const FRUIT = [43, 44, 45, 46, 47];
 export const CAPTIVATORS = [50, 51, 52, 53, 54, 55, 56];
 export const STARTS = new Set([START, START_ON_CLOCK]);
+// What the bonus artwork, drawn for a level with no key, has no picture for.
+export const BONUS_UNDRAWN_KINDS = [1, 2, 4, PLATFORM_KIND];
+export const BONUS_UNDRAWN_TYPES = [1, 2, 4, EXIT, 8, START_ON_CLOCK, ...FRUIT];
 export const FACING_TYPES = new Set([TELEPORTER, 28, START_ON_CLOCK, START, 50, 51, 52, 53, 56]);
 export const FACING_NEEDED = new Set([TELEPORTER, 28, START_ON_CLOCK, START, 50, 51, 52]);
 export const VARIANTS = {

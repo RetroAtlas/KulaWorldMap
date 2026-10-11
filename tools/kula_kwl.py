@@ -29,6 +29,7 @@ import struct
 import sys
 import zlib
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -63,6 +64,7 @@ from kula_pak import Pak
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "public" / "map_data.json"
 OBJECTS = ROOT / "public" / "objects.json"
+NAMES = ROOT / "public" / "annotations.json"
 DIGESTS = ROOT / "tests" / "fixtures" / "kwl-digests.json"
 VECTORS = ROOT / "tests" / "fixtures" / "deflate-vectors.json"
 HOSTILE = ROOT / "tests" / "fixtures" / "hostile-projects.json"
@@ -103,6 +105,9 @@ STAR = 42
 FRUIT = range(43, 48)
 CAPTIVATORS = range(50, 57)
 # f2 is a heading on these; a wandering ball or a corkscrew with 0 there heads as 1.
+# What the bonus artwork, drawn for a level with no key, has no picture for.
+BONUS_UNDRAWN_KINDS = (1, 2, 4, PLATFORM_KIND)
+BONUS_UNDRAWN_TYPES = (1, 2, 4, EXIT, 8, START_ON_CLOCK, *FRUIT)
 FACING_TYPES = frozenset({TELEPORTER, 28, START_ON_CLOCK, START, 50, 51, 52, 53, 56})
 FACING_NEEDED = frozenset({TELEPORTER, 28, START_ON_CLOCK, START, 50, 51, 52})
 VARIANT_TYPES = frozenset({TELEPORTER, SWITCH, 11, 36, 37, 56})
@@ -1095,6 +1100,9 @@ def validate(project, hides):
 
     _validate_circuits(project, blocks, warn)
     n = counts(project, hides)
+    undrawn = [] if n["keys"] or project.get("hidden") else _undrawn_in_bonus(blocks)
+    if undrawn:
+        warn(f"with no key the game draws the bonus artwork, which has no picture for {_listed(undrawn)}")
     if not hides:
         warn("the face count could not be read, so the faces and the blocks are not counted")
     if n["keys"] and not any(o["type"] in (EXIT, HIDDEN_EXIT) for b in blocks for o in _faces_of(b).values()):
@@ -1241,6 +1249,39 @@ def _validate_outlook(cell, j, kinds, beams, warn):
         warn("looks into a vanishing block", cell, j)
     else:
         warn(f"looks into the block at {cell_text(beyond)}", cell, j)
+
+
+@lru_cache(maxsize=None)
+def _names():
+    return json.loads(NAMES.read_text())
+
+
+def _lower(name):
+    return name[0].lower() + name[1:]
+
+
+def _listed(items):
+    return f"{', '.join(items[:-1])} or {items[-1]}" if len(items) > 1 else items[0]
+
+
+def _undrawn_in_bonus(blocks):
+    """The things a keyless level places that the bonus artwork has no picture for, by name."""
+    names = []
+
+    def add(name):
+        if name not in names:
+            names.append(name)
+
+    ann = _names()
+    for b in blocks:
+        if b["kind"] in BONUS_UNDRAWN_KINDS:
+            name = ann["kinds"].get(str(b["kind"]), {}).get("name")
+            add(f"the {_lower(name)}" if name else f"kind {b['kind']}")
+        for o in _faces_of(b).values():
+            if o["type"] in BONUS_UNDRAWN_TYPES:
+                name = ann["types"].get(str(o["type"]), {}).get("name")
+                add(f"the {_lower(name)}" if name else f"type {o['type']}")
+    return names
 
 
 def _validate_circuits(project, blocks, warn):

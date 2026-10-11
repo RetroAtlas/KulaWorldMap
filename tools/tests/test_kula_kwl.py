@@ -16,6 +16,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import open_disc  # noqa: E402
 from kula_kwl import (  # noqa: E402
+    BONUS_UNDRAWN_KINDS,
+    BONUS_UNDRAWN_TYPES,
     COUNTERS,
     DATA,
     DIGESTS,
@@ -23,6 +25,7 @@ from kula_kwl import (  # noqa: E402
     FORMAT,
     HOSTILE,
     OBJECTS,
+    PLAYED,
     VECTORS,
     canonical,
     check,
@@ -845,6 +848,30 @@ class Validates(unittest.TestCase):
         self.assertIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY})]))
         self.assertNotIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY}, t2={"type": EXIT})]))
         self.assertNotIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY}, t2={"type": 26})]))
+
+    def test_a_keyless_level_is_warned_of_what_the_bonus_artwork_has_no_picture_for(self):
+        bonus = json.loads(OBJECTS.read_text())["skins"]["sets"]["bonus"]
+
+        def placeholder(models):
+            return all(m == [8] for m in models)
+
+        self.assertEqual(list(BONUS_UNDRAWN_KINDS),
+                         [int(k) for k, m in bonus["kinds"].items() if placeholder([m])] + ([5] if placeholder(bonus["platform"]) else []))
+        self.assertEqual(list(BONUS_UNDRAWN_TYPES),
+                         [int(t) for t, m in bonus["types"].items() if int(t) in PLAYED and placeholder([m])])
+        blocks = [plain((5, 5, 5), t0=start(), t1={"type": 8}, t2={"type": 46}, t3={"type": 43}, t4={"type": EXIT}),
+                  plain((7, 5, 5), kind=1), plain((9, 5, 5), kind=2),
+                  {"cell": [11, 5, 5], "kind": PLATFORM_KIND, "far": [11, 8, 5], "length": 2, "speed": 30}]
+        self.assertIn("with no key the game draws the bonus artwork, which has no picture for the clock, the fruit, the exit, "
+                      "the fire block, the ice block or the moving platform", self.warnings(blocks))
+        self.assertIn("with no key the game draws the bonus artwork, which has no picture for the fire",
+                      self.warnings([plain((5, 5, 5), t0=start(), t1={"type": 1})]))
+        self.assertFalse(any("bonus artwork" in w for w in self.warnings(blocks, hidden=True)))
+        blocks[0]["faces"]["5"] = {"type": KEY}
+        self.assertFalse(any("bonus artwork" in w for w in self.warnings(blocks)))
+        self.assertFalse(any("bonus artwork" in w for w in self.warnings([plain((5, 5, 5), t0=start(), t1={"type": COIN, "variant": 0})])))
+        for l in json.loads(DATA.read_text())["levels"]:
+            self.assertFalse(any("bonus artwork" in w for w in texts(validate(project_of(l), HIDES), "warning")), l["name"])
 
     def test_how_a_level_plays(self):
         keyed = project([plain((5, 5, 5), t0=start(), t1={"type": KEY})])

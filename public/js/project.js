@@ -1,8 +1,11 @@
 // The editor's document: a level as blocks, faces and circuits, edited copy on write.
 import { SIDE } from "./state.js";
 import { FACE_NORMAL } from "./faces.js";
+import { entryName, kindName } from "./data.js";
 import {
   BLOCK_KINDS,
+  BONUS_UNDRAWN_KINDS,
+  BONUS_UNDRAWN_TYPES,
   CAPS,
   CAPTIVATORS,
   COLOURS,
@@ -73,6 +76,8 @@ export const ERROR = "error";
 export const WARNING = "warning";
 const FRUIT_SET = new Set(FRUIT);
 const CAPTIVATOR_SET = new Set(CAPTIVATORS);
+const UNDRAWN_KINDS = new Set(BONUS_UNDRAWN_KINDS);
+const UNDRAWN_TYPES = new Set(BONUS_UNDRAWN_TYPES);
 const CENTRE = [17, 17, 17];
 const META = ["title", "author", "notes", "world", "into", "time", "hidden", "invisibleFromAfar"];
 
@@ -367,6 +372,28 @@ function validateOutlook(cell, j, kinds, beams, warn) {
   else warn(`looks into the block at ${cellText(next)}`, cell, j);
 }
 
+const lower = (name) => name[0].toLowerCase() + name.slice(1);
+const listed = (items) =>
+  items.length > 1 ? `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}` : items[0];
+
+/** The things a keyless level places that the bonus artwork has no picture for, by name. */
+function undrawnInBonus(blocks) {
+  const names = [];
+  const add = (name) => {
+    if (!names.includes(name)) names.push(name);
+  };
+  for (const b of blocks) {
+    if (UNDRAWN_KINDS.has(b.kind))
+      add(kindName(b.kind) ? `the ${lower(kindName(b.kind))}` : `kind ${b.kind}`);
+    for (const [, o] of facesOf(b))
+      if (UNDRAWN_TYPES.has(o.type)) {
+        const name = entryName({ face: 0, type: o.type });
+        add(name ? `the ${lower(name)}` : `type ${o.type}`);
+      }
+  }
+  return names;
+}
+
 function validateCircuits(project, blocks, warn) {
   const circuits = project.circuits ?? {};
   const members = Array.from({ length: COLOURS }, () => ({
@@ -491,6 +518,11 @@ export function validate(project, hides) {
 
   validateCircuits(project, blocks, warn);
   const n = counts(project, hides);
+  const undrawn = n.keys || project.hidden ? [] : undrawnInBonus(blocks);
+  if (undrawn.length)
+    warn(
+      `with no key the game draws the bonus artwork, which has no picture for ${listed(undrawn)}`,
+    );
   if (!hides) warn("the face count could not be read, so the faces and the blocks are not counted");
   if (
     n.keys &&
