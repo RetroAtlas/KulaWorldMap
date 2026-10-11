@@ -220,8 +220,7 @@ class RoundTrips(unittest.TestCase):
             p = project_of(l)
             C = Level(canonical(p), l["name"])
             self.assertEqual(C.verify(), [], l["name"])
-            again = project_of_level(C, world=l["theme"])
-            again["from"], again["title"] = p["from"], p["title"]
+            again = project_of_level(C, world=l["theme"], shown=l.get("shown"), pack=l["pack"], index=l["index"])
             self.assertEqual(again, p, l["name"])
 
     def test_a_template_is_named_by_its_pack_and_index(self):
@@ -429,6 +428,53 @@ class Reads(unittest.TestCase):
         p, report = read_kwl(bytes(blob), world=WORLD)
         self.assertEqual(p, PLAYGROUND)
         self.assertIn("the header counts 9 records and the file holds 8", report)
+
+    def test_several_settings_records_give_the_flags_of_all_of_them_wherever_they_stand(self):
+        blob = level({(1, 2, 3): FIRST_RECORD, (1, 4, 3): FIRST_RECORD + 2},
+                     [block((1, 2, 3), faces={0: obj(START, 3, 0, 0)}),
+                      block((0, 0, 0), kind=UNPLACED_KIND, faces={0: slot(1)}),
+                      block((1, 4, 3), faces={0: obj(COIN, 0, 1)}),
+                      block((0, 0, 0), kind=UNPLACED_KIND, faces={0: slot(0, 1)})])
+        p, report = read_kwl(blob)
+        self.assertEqual((p["hidden"], p["invisibleFromAfar"]), (True, True))
+        self.assertIn("2 settings records; the flags of all of them are taken", report)
+        C = Level(canonical(p))
+        self.assertEqual([r.kind for r in C.records].count(UNPLACED_KIND), 1)
+        self.assertEqual(C.records[-1].kind, UNPLACED_KIND)
+
+    def test_a_cell_naming_a_record_another_cell_already_names_is_left_empty_and_a_bare_record_folds(self):
+        blob = level({(1, 2, 3): FIRST_RECORD, (1, 4, 3): FIRST_RECORD, (1, 6, 3): FIRST_RECORD + 1},
+                     [block((1, 2, 3), faces={0: obj(START, 3, 0, 0)}), block((1, 6, 3), kind=2)])
+        p, report = read_kwl(blob)
+        self.assertEqual(p["blocks"], [{"cell": [1, 2, 3], "kind": 0, "faces": {"0": start()}}, {"cell": [1, 6, 3], "kind": 2}])
+        self.assertIn("cell 1,4,3 names record 0, which cell 1,2,3 already names; the cell is left empty", report)
+        self.assertIn("folded 1 records carrying nothing into plain blocks", report)
+
+    def test_a_platforms_length_and_speed_and_a_vanishing_blocks_phase_are_kept_and_reported(self):
+        blob = level({(1, 2, 3): FIRST_RECORD, (5, 2, 3): FIRST_RECORD + 1, (9, 2, 3): FIRST_RECORD + 2},
+                     [block((1, 2, 3), faces={0: obj(START, 3, 0, 0)}),
+                      block((5, 2, 3), kind=PLATFORM_KIND, faces={0: slot(2, 2, 1, 5, 2, 3, 5, 6, 3)},
+                            second=slot(4, 20, -1, FIRST_RECORD + 1, kind=0)),
+                      block((9, 2, 3), kind=7, faces={0: slot(0, 4)})])
+        p, report = read_kwl(blob)
+        self.assertEqual(p["blocks"][1], {"cell": [5, 2, 3], "kind": PLATFORM_KIND, "far": [5, 6, 3], "length": 4, "speed": 20})
+        self.assertEqual(p["blocks"][2], {"cell": [9, 2, 3], "kind": 7, "phase": 4})
+        self.assertIn("the platform at 5,2,3 is 4 blocks long", report)
+        self.assertIn("the platform at 5,2,3 runs at 20", report)
+        self.assertIn("the vanishing block at 9,2,3 has phase 4, which dims at once", report)
+
+    def test_a_switch_whose_list_loops_back_on_itself_reads_and_is_rewired_on_the_way_out(self):
+        cycle = (1, 2, 3)
+        blob = level({cycle: FIRST_RECORD},
+                     [block(cycle, faces={0: obj(START, 3, 0, 0), 2: slot(SWITCH, 0, 1, 1, -1, 2, 2, 0),
+                                          3: slot(TELEPORTER, 1, 1, 1, -1, 3, 3, 0)})])
+        self.assertEqual(Level(blob).circuit(0, 2), [(0, 2)])
+        p, report = read_kwl(blob)
+        self.assertEqual(sorted(p["blocks"][0]["faces"]), ["0", "2", "3"])
+        self.assertIn(REWIRED, report)
+        C = Level(canonical(p))
+        self.assertEqual(C.verify(), [])
+        self.assertEqual(C.circuit(0, 2), [(0, 3), (0, 2)])
 
     def test_records_out_of_lattice_order_are_reported_where_the_order_decides_play(self):
         cells = {(5, 5, 5): FIRST_RECORD, (3, 3, 3): FIRST_RECORD + 1}
@@ -697,6 +743,15 @@ class Validates(unittest.TestCase):
         blocks.append(plain((1, 10, 5), t0={"type": COIN, "variant": 0}))
         self.assertIn("124 records, over the 123 the game has room for", self.errors(blocks))
 
+    def test_the_block_cap(self):
+        blocks = [plain((x, y, 17)) for x in range(1, 17) for y in range(1, 17)]
+        blocks[0]["faces"] = {"0": start()}
+        n = counts(project(blocks), HIDES)
+        self.assertEqual((n["blocks"], n["faces"]), (256, 576))
+        self.assertEqual(self.errors(blocks), [])
+        self.assertIn("256 blocks, more than any level on the disc", self.warnings(blocks))
+        blocks.append(plain((17, 1, 17)))
+        self.assertIn("257 blocks, over the 256 the game has room for", self.errors(blocks))
     def test_the_targets_slot_is_a_run_of_ascii_digits_and_the_world_and_the_target_are_quoted_as_written(self):
         def into(text):
             return self.errors([plain((5, 5, 5), t0=start())], into=text)
@@ -865,7 +920,7 @@ class Validates(unittest.TestCase):
                   {"cell": [9, 9, 12], "kind": LASER_KIND, "far": [9, 12, 12]}]
         findings = validate(project(blocks, circuits={"7": "off"}), HIDES)
         errors = texts(findings, "error")
-        for text in ("a variant of 7", "a variant of -1", "a variant of gold", "a colour of 7", "a colour of None"):
+        for text in ("a variant of 7", "a variant of -1", "a variant of gold", "a colour of 7", "a colour of none"):
             self.assertIn(text, errors)
         self.assertFalse(any("colour 7" in w or "colour -1" in w for w in texts(findings, "warning")))
         self.assertEqual(counts(project(blocks), HIDES)["lasers"], 2)

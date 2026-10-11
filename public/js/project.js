@@ -475,7 +475,7 @@ export function validate(project, hides) {
         err(`a phase of ${phase}`, cell);
     }
     if (kind === LASER_KIND && !(Number.isInteger(b.colour) && b.colour >= 0 && b.colour < COLOURS))
-      err(`a colour of ${b.colour}`, cell);
+      err(`a colour of ${b.colour ?? "none"}`, cell);
     if (isSpan(b)) validateSpan(b, blocksAt, loader, err, warn);
     for (const [j, o] of facesOf(b)) {
       const t = o.type;

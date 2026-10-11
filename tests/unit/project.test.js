@@ -509,6 +509,45 @@ test("the record cap", () => {
   assert.ok(errors(blocks).includes("124 records, over the 123 the game has room for"));
 });
 
+test("the block cap", () => {
+  const blocks = [];
+  for (let x = 1; x <= 16; x++) for (let y = 1; y <= 16; y++) blocks.push(plain([x, y, 17]));
+  blocks[0].faces = { 0: start() };
+  const n = counts(project(blocks), HIDES);
+  assert.deepEqual([n.blocks, n.faces], [256, 576]);
+  assert.deepEqual(errors(blocks), []);
+  assert.ok(warnings(blocks).includes("256 blocks, more than any level on the disc"));
+  blocks.push(plain([17, 1, 17]));
+  assert.ok(errors(blocks).includes("257 blocks, over the 256 the game has room for"));
+});
+
+test("a bad colour or variant is a finding and leaves the circuits pass alone", () => {
+  const blocks = [
+    plain([5, 5, 5], 0, {
+      0: start(),
+      1: { type: TELEPORTER, facing: 1, variant: 7 },
+      2: { type: SWITCH, variant: -1 },
+      3: { type: COIN, variant: "gold" },
+    }),
+    { cell: [9, 9, 9], kind: LASER_KIND, far: [9, 12, 9], colour: 7 },
+    { cell: [9, 9, 12], kind: LASER_KIND, far: [9, 12, 12] },
+  ];
+  const findings = validate(project(blocks, { circuits: { 7: "off" } }), HIDES);
+  const found = texts(findings, "error");
+  for (const text of [
+    "a variant of 7",
+    "a variant of -1",
+    "a variant of gold",
+    "a colour of 7",
+    "a colour of none",
+  ])
+    assert.ok(found.includes(text), text);
+  assert.ok(
+    !texts(findings, "warning").some((w) => w.includes("colour 7") || w.includes("colour -1")),
+  );
+  assert.equal(counts(project(blocks), HIDES).lasers, 2);
+});
+
 test("the target's slot is a run of ASCII digits, and the world and the target are quoted as written", () => {
   const into = (text) => errors([plain([5, 5, 5], 0, { 0: start() })], { into: text });
   assert.deepEqual(into("/HIRO/HIRO.PAK#3"), []);

@@ -349,10 +349,8 @@ test("the writer's bytes and their deflate are the Python writer's, on every shi
 test("a shipped level's project is a fixed point of writing and reading it back", () => {
   for (const l of mapData.levels) {
     const p = projectOf(l);
-    const meta = { name: l.name, theme: l.theme, pack: l.pack, index: l.index };
-    const again = projectOf(levelOf(writeKwl(p), meta));
-    again.title = p.title;
-    assert.deepEqual(again, p, l.name);
+    const meta = { name: l.name, shown: l.shown, theme: l.theme, pack: l.pack, index: l.index };
+    assert.deepEqual(projectOf(levelOf(writeKwl(p), meta)), p, l.name);
   }
 });
 
@@ -787,6 +785,107 @@ test("a count one too high is read from the length", () => {
   const { project: p, report } = readKwl(blob, WORLD);
   assert.deepEqual(p, PLAYGROUND);
   assert.ok(report.includes("the header counts 9 records and the file holds 8"), report);
+});
+
+test("several settings records give the flags of all of them, wherever they stand", () => {
+  const blob = level(
+    cells([
+      [[1, 2, 3], FIRST_RECORD],
+      [[1, 4, 3], FIRST_RECORD + 2],
+    ]),
+    [
+      block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0) } }),
+      block([0, 0, 0], { kind: SETTINGS_KIND, faces: { 0: slot(1) } }),
+      block([1, 4, 3], { faces: { 0: obj(COIN, 0, 1) } }),
+      block([0, 0, 0], { kind: SETTINGS_KIND, faces: { 0: slot(0, [1]) } }),
+    ],
+  );
+  const { project: p, report } = readKwl(blob);
+  assert.deepEqual([p.hidden, p.invisibleFromAfar], [true, true]);
+  assert.ok(report.includes("2 settings records; the flags of all of them are taken"), report);
+  const out = levelOf(writeKwl(p));
+  assert.equal(out.records.filter((r) => r.kind === SETTINGS_KIND).length, 1);
+  assert.equal(out.records[out.records.length - 1].kind, SETTINGS_KIND);
+});
+
+test("a cell naming a record another cell already names is left empty, and a bare record folds", () => {
+  const blob = level(
+    cells([
+      [[1, 2, 3], FIRST_RECORD],
+      [[1, 4, 3], FIRST_RECORD],
+      [[1, 6, 3], FIRST_RECORD + 1],
+    ]),
+    [block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0) } }), block([1, 6, 3], { kind: 2 })],
+  );
+  const { project: p, report } = readKwl(blob);
+  assert.deepEqual(p.blocks, [
+    { cell: [1, 2, 3], kind: 0, faces: { 0: start() } },
+    { cell: [1, 6, 3], kind: 2 },
+  ]);
+  assert.ok(
+    report.includes(
+      "cell 1,4,3 names record 0, which cell 1,2,3 already names; the cell is left empty",
+    ),
+    report,
+  );
+  assert.ok(report.includes("folded 1 records carrying nothing into plain blocks"), report);
+});
+
+test("a platform's length and speed and a vanishing block's phase are kept and reported", () => {
+  const blob = level(
+    cells([
+      [[1, 2, 3], FIRST_RECORD],
+      [[5, 2, 3], FIRST_RECORD + 1],
+      [[9, 2, 3], FIRST_RECORD + 2],
+    ]),
+    [
+      block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0) } }),
+      block([5, 2, 3], {
+        kind: PLATFORM_KIND,
+        faces: { 0: slot(2, [2, 1, 5, 2, 3, 5, 6, 3]) },
+        second: slot(4, [20, -1, FIRST_RECORD + 1], { kind: 0 }),
+      }),
+      block([9, 2, 3], { kind: 7, faces: { 0: slot(0, [4]) } }),
+    ],
+  );
+  const { project: p, report } = readKwl(blob);
+  assert.deepEqual(p.blocks[1], {
+    cell: [5, 2, 3],
+    kind: PLATFORM_KIND,
+    far: [5, 6, 3],
+    length: 4,
+    speed: 20,
+  });
+  assert.deepEqual(p.blocks[2], { cell: [9, 2, 3], kind: 7, phase: 4 });
+  assert.ok(report.includes("the platform at 5,2,3 is 4 blocks long"), report);
+  assert.ok(report.includes("the platform at 5,2,3 runs at 20"), report);
+  assert.ok(
+    report.includes("the vanishing block at 9,2,3 has phase 4, which dims at once"),
+    report,
+  );
+});
+
+test("a switch whose list loops back on itself reads, and is rewired on the way out", () => {
+  const cycle = [1, 2, 3];
+  const blob = level(cells([[cycle, FIRST_RECORD]]), [
+    block(cycle, {
+      faces: {
+        0: obj(START, 3, 0, 0),
+        2: slot(SWITCH, [0, 1, 1, -1, 2, 2, 0]),
+        3: slot(TELEPORTER, [1, 1, 1, -1, 3, 3, 0]),
+      },
+    }),
+  ]);
+  assert.deepEqual(circuit(blob, 0, 2), [[0, 2]]);
+  const { project: p, report } = readKwl(blob);
+  assert.deepEqual(Object.keys(p.blocks[0].faces), ["0", "2", "3"]);
+  assert.ok(report.includes(REWIRED), report);
+  const out = writeKwl(p);
+  assert.deepEqual(verify(out), []);
+  assert.deepEqual(circuit(out, 0, 2), [
+    [0, 3],
+    [0, 2],
+  ]);
 });
 
 test("records out of lattice order are reported where the order decides play", () => {

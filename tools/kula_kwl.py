@@ -370,10 +370,12 @@ def _level_dict(cells, records, time, world, name, report):
     return {"name": name, "theme": world, "cells": flat, "records": out, "time": time}
 
 
-def project_of_level(L, world=None, report=None):
-    """The project a parsed level means, every word of the file in hand."""
+def project_of_level(L, world=None, report=None, **meta):
+    """The project a parsed level means, every word of the file in hand; `meta`
+    lays a shipped level's `shown`, `pack` and `index` over it."""
     report = [] if report is None else report
     level = _level_dict(L.cells, L.records, L.trailer.f[4], world or L.theme or WORLDS[0], L.name, report)
+    level.update({k: v for k, v in meta.items() if v is not None})
     return project_of(level, report)
 
 
@@ -1105,7 +1107,7 @@ def validate(project, hides):
         if kind in SPAN_KINDS:
             _validate_span(b, at, loader, err, warn)
         if kind == LASER_KIND and b.get("colour") not in range(COLOURS):
-            err(f"a colour of {b.get('colour')}", cell)
+            err(f"a colour of {'none' if b.get('colour') is None else b['colour']}", cell)
         for j, o in sorted(faces.items()):
             t = o["type"]
             if j not in range(FACES):
