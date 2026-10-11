@@ -1,5 +1,6 @@
 // Renders the map from the working tree and from a git ref, HEAD unless one
 // is given, over the matrix in cases.js with the page's clock held still,
+// with the editor absent and again with it loaded by a draft kept in storage,
 // and names every capture that differs: the map canvas, the pick canvas, the
 // hit test over a grid of points, the cell and the face it finds, whether the
 // frame goes on redrawing, and whether a world's atlas redraws the map when it
@@ -16,6 +17,8 @@ import { join, resolve } from "node:path";
 import { chromium } from "@playwright/test";
 import { ROOT, serve, checkout } from "../public.js";
 import { cases, live } from "./cases.js";
+import { WORLDS } from "../../public/js/kwl.js";
+import { blank } from "../../public/js/project.js";
 
 const args = process.argv.slice(2);
 const option = (name) => {
@@ -34,6 +37,17 @@ const flag = (name) => {
 const all = flag("--all");
 const LISTED = 20;
 const ref = args[0] || "HEAD";
+
+// A store holding one draft loads the editor at boot, with editing off, and
+// the captures taken with it loaded carry this prefix.
+const DRAFTS = "kula.drafts";
+const seeded = JSON.stringify({ drafts: { 1: { doc: blank(WORLDS[0]) } } });
+const EDITOR = "editor/";
+const SIDES = [
+  ["", null],
+  [EDITOR, seeded],
+];
+const caseOf = (id) => (id.startsWith(EDITOR) ? id.slice(EDITOR.length) : id).split("@")[0];
 
 /** The clock held at a time the runner sets, animation frames asked for and
     never run, and the atlases and the pick canvas where the runner finds them. */
@@ -71,10 +85,12 @@ function instrument() {
   };
 }
 
-async function open(page, base) {
+async function open(page, base, store) {
   page.on("pageerror", (e) => console.error("pageerror:", e.message));
   page.on("console", (m) => m.type() === "error" && console.error("console:", m.text()));
   await page.addInitScript(instrument);
+  if (store)
+    await page.addInitScript(([key, text]) => localStorage.setItem(key, text), [DRAFTS, store]);
   // a world none of the arrive captures take, so each starts before its atlas lands
   await page.goto(`${base}/#FIELD/0`);
   await page.evaluate(async () => {
@@ -276,24 +292,30 @@ async function liveness(page, c) {
   }, c);
 }
 
-/** Every capture of the public/ at `root`, or of the cases in `only`. */
+/** Every capture of the public/ at `root`, or of the cases in `only`, with
+    the editor absent and with it loaded. */
 async function render(browser, root, { only = null, keep = null } = {}) {
   const server = await serve(root);
   const base = `http://127.0.0.1:${server.address().port}`;
   const out = [];
   try {
-    for (const dpr of [1, 2]) {
-      const todo = cases.filter((c) => (c.dpr || 1) === dpr && (!only || only.has(c.id)));
-      if (!todo.length) continue;
-      const page = await browser.newPage({
-        viewport: { width: 1280, height: 720 },
-        deviceScaleFactor: dpr,
-      });
-      await open(page, base);
-      if (dpr === 1 && !only) out.push(...(await arrival(page)));
-      await preload(page);
-      for (const c of todo) {
-        for (const shot of await capture(page, c, !!keep)) {
+    for (const [side, store] of SIDES) {
+      for (const dpr of [1, 2]) {
+        const todo = cases.filter((c) => (c.dpr || 1) === dpr && (!only || only.has(c.id)));
+        if (!todo.length) continue;
+        const page = await browser.newPage({
+          viewport: { width: 1280, height: 720 },
+          deviceScaleFactor: dpr,
+        });
+        await open(page, base, store);
+        const shots = [];
+        if (dpr === 1 && !only) shots.push(...(await arrival(page)));
+        await preload(page);
+        for (const c of todo) shots.push(...(await capture(page, c, !!keep)));
+        if (dpr === 1 && !only) for (const c of live) shots.push(await liveness(page, c));
+        await page.close();
+        for (const shot of shots) {
+          shot.id = side + shot.id;
           if (shot.png) {
             shot.png.forEach((url, i) => {
               const name = `${shot.id}.${i ? "pick" : "map"}.${keep.side}.png`;
@@ -309,8 +331,6 @@ async function render(browser, root, { only = null, keep = null } = {}) {
           out.push(shot);
         }
       }
-      if (dpr === 1 && !only) for (const c of live) out.push(await liveness(page, c));
-      await page.close();
     }
   } finally {
     server.close();
@@ -360,7 +380,7 @@ try {
       : `all ${after.length} captures match ${ref} (${took}s)`,
   );
   const shown = new Set(
-    found.map((f) => f.id.split("@")[0]).filter((id) => cases.some((c) => c.id === id)),
+    found.map((f) => caseOf(f.id)).filter((id) => cases.some((c) => c.id === id)),
   );
   if (save && shown.size) {
     const dir = resolve(save);
