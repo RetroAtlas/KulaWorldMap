@@ -312,6 +312,15 @@ test("a device works on a plain block only", () => {
   assert.ok(errors(blocks).includes("a device works on a plain block only"));
   blocks[1].kind = 0;
   assert.deepEqual(errors(blocks), []);
+  const hidden = [plain([5, 5, 5], 0, { 0: start() }), plain([7, 5, 5], 2, { 0: { type: 26 } })];
+  assert.deepEqual(errors(hidden), []);
+  assert.ok(
+    warnings(hidden).includes(
+      "the game has not been seen to take a hidden exit on a block that is not plain",
+    ),
+  );
+  hidden[1].kind = 0;
+  assert.ok(!warnings(hidden).some((w) => w.includes("hidden exit")));
 });
 
 test("the game builds nothing past the edge", () => {

@@ -22,6 +22,7 @@ import {
   FORMAT,
   FRUIT,
   HEADS_AS_ONE,
+  HIDDEN_EXIT,
   KEY,
   LASER_KIND,
   LENGTHS,
@@ -418,6 +419,12 @@ export function validate(project, hides) {
       }
       if (!PLAYED.has(t)) err(`type ${t} is nothing the game plays`, cell, j);
       if (PLAIN_ONLY.has(t) && kind !== 0) err("a device works on a plain block only", cell, j);
+      if (t === HIDDEN_EXIT && kind !== 0)
+        warn(
+          "the game has not been seen to take a hidden exit on a block that is not plain",
+          cell,
+          j,
+        );
       if (FACING_NEEDED.has(t) && !facingOk(o.facing)) err("a facing of 1 to 4 is needed", cell, j);
       else if (FACING_TYPES.has(t) && o.facing !== undefined && !facingOk(o.facing))
         err("a facing of 1 to 4, or none", cell, j);

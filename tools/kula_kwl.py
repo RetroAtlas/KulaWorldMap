@@ -108,7 +108,7 @@ FACING_NEEDED = frozenset({TELEPORTER, 28, START_ON_CLOCK, START, 50, 51, 52})
 VARIANT_TYPES = frozenset({TELEPORTER, SWITCH, 11, 36, 37, 56})
 VARIANTS = {TELEPORTER: range(COLOURS), SWITCH: range(COLOURS), 11: PHASES, 36: range(3), 37: range(3), 56: PHASES}
 PICKUPS = (31, 32, 33, 34, 35, 36, 37, 38, 42, 43, 44, 45, 46, 47)
-PLAIN_ONLY = frozenset({TELEPORTER, EXIT, SWITCH, HIDDEN_EXIT, MOVING_SPIKES})   # initialised on kind 0 alone
+PLAIN_ONLY = frozenset({TELEPORTER, EXIT, SWITCH, MOVING_SPIKES})   # initialised on kind 0 alone
 LIGHTS = frozenset({TELEPORTER, EXIT, SWITCH})                         # what casts a light when on
 NUMBERED = frozenset({5, 7, 9, 10, 11, 12, 26, 28} | set(PICKUPS))      # what the loader numbers
 PLAYED = frozenset({1, 2, 4, 5, 7, 8, 9, 10, 11, 12, 26, 28, 29, 30, 50, 51, 52, 53, 56} | set(PICKUPS))
@@ -1062,6 +1062,8 @@ def validate(project, hides):
                 err(f"type {t} is nothing the game plays", cell, j)
             if t in PLAIN_ONLY and kind != 0:
                 err("a device works on a plain block only", cell, j)
+            if t == HIDDEN_EXIT and kind != 0:
+                warn("the game has not been seen to take a hidden exit on a block that is not plain", cell, j)
             if t in FACING_NEEDED and o.get("facing") not in range(1, 5):
                 err("a facing of 1 to 4 is needed", cell, j)
             elif t in FACING_TYPES and "facing" in o and o["facing"] not in range(1, 5):

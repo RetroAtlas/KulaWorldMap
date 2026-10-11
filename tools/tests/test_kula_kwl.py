@@ -568,6 +568,11 @@ class Validates(unittest.TestCase):
         self.assertIn("a device works on a plain block only", self.errors(blocks))
         blocks[1]["kind"] = 0
         self.assertEqual(self.errors(blocks), [])
+        hidden = [plain((5, 5, 5), t0=start()), plain((7, 5, 5), kind=2, t0={"type": 26})]
+        self.assertEqual(self.errors(hidden), [])
+        self.assertIn("the game has not been seen to take a hidden exit on a block that is not plain", self.warnings(hidden))
+        hidden[1]["kind"] = 0
+        self.assertFalse(any("hidden exit" in w for w in self.warnings(hidden)))
 
     def test_the_game_builds_nothing_past_the_edge(self):
         for cell in ((0, 5, 5), (5, 33, 5)):
