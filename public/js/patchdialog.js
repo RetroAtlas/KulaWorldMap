@@ -7,15 +7,25 @@ import { state } from "./state.js";
 import { levelTitle, loadJson, skinsTable, worldName } from "./data.js";
 import { closeDialog, openDialog } from "./dialog.js";
 import { toast } from "./toast.js";
-import { writeKwl } from "./kwl.js";
+import { FINAL_SLOTS, WORLDS, WORLD_SLOTS, writeKwl } from "./kwl.js";
 import { deflate } from "./deflate.js";
 import { ERROR, UNTITLED, describe, playsAs, setMeta, validate } from "./project.js";
 import { RAW_ONLY, download, isIso, slug } from "./files.js";
 import * as drafts from "./drafts.js";
 import { edit } from "./trail.js";
-import { IN_PLACE, REBUILD, fit } from "./pak.js";
+import { IN_PLACE, REBUILD, fit, readPak } from "./pak.js";
 import { openDisc } from "./iso.js";
-import { PREFIX, cue, patchedImage, placements, plan, ppf, vcdiff, verify } from "./patch.js";
+import {
+  PACKS,
+  PREFIX,
+  cue,
+  patchedImage,
+  placements,
+  plan,
+  ppf,
+  vcdiff,
+  verify,
+} from "./patch.js";
 import { inflate } from "./inflate.js";
 
 const FIRST = "/HIRO/HIRO.PAK#0";
@@ -25,6 +35,8 @@ const BINARY = "application/octet-stream";
 const PRIVATE = "The image is read here in your browser and goes nowhere else.";
 const OLDER = "Making the patch needs a newer browser, one that can unpack the game's files.";
 const ERRORS = "A level with errors cannot go on the disc until they are fixed.";
+const NO_TABLE =
+  "The game's face table could not be loaded, so the checks cannot run in full and the level cannot go on the disc from here.";
 const CLEAN = "The checks find nothing to say.";
 const NO_LAYOUT = "The disc's layout could not be loaded, so the fit waits for the image.";
 const CHOOSE = "Choose a slot above.";
@@ -37,7 +49,8 @@ const NO_BLOB = "This browser cannot put the patched disc together; take a patch
 const LATER = "Once the disc is given, this says where each emulator wants the patch.";
 const INSTEAD = "Mednafen, Beetle and RetroArch apply no patch and play the patched disc instead.";
 const gone = (name) => `Another tab deleted ${name}, so the box closed without a patch.`;
-const noSlot = (key) => `${key}, which is no slot`;
+const unlisted = (key) =>
+  keyShaped(key) ? `${key}, which this image has not` : `${key}, which is no slot`;
 
 let layout = null;
 let ui = null;
@@ -48,9 +61,22 @@ let turn = 0;
 
 const split = (key) => {
   const hash = key.lastIndexOf("#");
-  return [key.slice(0, hash), Number(key.slice(hash + 1))];
+  const index = key.slice(hash + 1);
+  return [key.slice(0, hash), /^\d+$/.test(index) ? Number(index) : NaN];
 };
 const themeOf = (pack) => pack.split("/")[1];
+const keyShaped = (key) => {
+  if (typeof key !== "string") return false;
+  const [pack, index] = split(key);
+  const theme = themeOf(pack);
+  const finals = pack === `/${theme}/${theme}FI.PAK`;
+  return (
+    WORLDS.includes(theme) &&
+    (finals || pack === `/${theme}/${theme}.PAK`) &&
+    index >= 0 &&
+    index < (finals ? FINAL_SLOTS : WORLD_SLOTS)
+  );
+};
 const nameOf = () => d.doc.title || UNTITLED;
 const base = () => slug(nameOf());
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -196,7 +222,7 @@ export async function openPatchDialog(id) {
   layout ??= await loadJson("packs.json");
   id = d.id;
   if (!drafts.get(id)) return;
-  d = { id, file: null, disc: null, placed: null, image: null, imageName: null };
+  d = { id, file: null, disc: null, packs: null, placed: null, image: null, imageName: null };
   ui.disc.value = "";
   ui.status.textContent = "";
   refresh();
@@ -217,20 +243,17 @@ function refresh() {
   d.doc = entry.doc;
   ui.name.textContent = nameOf();
   ui.plays.textContent = playsAs(d.doc);
-  d.errors = checks();
+  d.blocked = checks();
   d.stream = null;
   try {
     d.stream = deflate(writeKwl(d.doc), LEVEL);
   } catch (e) {
-    d.errors = true;
+    d.blocked = ERRORS;
     ui.checks.append(
       el("p", { className: "errors", textContent: `The level cannot be written: ${e.message}.` }),
     );
   }
-  slots();
-  d.into = pick();
-  ui.slot.value = d.into ?? "";
-  target();
+  retarget();
   if (d.disc) placed();
   else {
     downloads();
@@ -238,6 +261,15 @@ function refresh() {
   }
 }
 
+function retarget() {
+  slots();
+  placeholder();
+  d.into = pick();
+  ui.slot.value = d.into ?? "";
+  target();
+}
+
+/** The checks' findings in the box, and the sentence that keeps the patches back, or null. */
 function checks() {
   const box = ui.checks;
   box.textContent = "";
@@ -251,6 +283,7 @@ function checks() {
       {},
       fs.map((f) => el("li", { textContent: describe(f) })),
     );
+  if (!hides) box.append(el("p", { className: "errors", textContent: NO_TABLE }));
   if (errors.length)
     box.append(
       el("div", { className: "errors" }, items(errors)),
@@ -265,18 +298,39 @@ function checks() {
         items(warnings),
       ),
     );
-  if (!findings.length) box.append(el("p", { className: "sub", textContent: CLEAN }));
-  return errors.length > 0;
+  if (!findings.length && hides) box.append(el("p", { className: "sub", textContent: CLEAN }));
+  if (errors.length) return ERRORS;
+  return hides ? null : NO_TABLE;
+}
+
+// The packs of the image's own directory, which stand in for the layout where it could not be loaded.
+async function packsOf(disc) {
+  const out = [];
+  for (const path of PACKS) {
+    if (!keyShaped(`${path}#0`) || !disc.files.has(path)) continue;
+    try {
+      const pak = readPak(await disc.readFile(path));
+      out.push({ path, slots: pak.names.map((name) => ({ name })) });
+    } catch {
+      continue;
+    }
+  }
+  return out;
 }
 
 function slots() {
   ui.slot.textContent = "";
-  if (!layout) return;
   const titles = new Map(state.data.levels.map((l) => [`${l.pack}#${l.index}`, levelTitle(l)]));
   d.titles = titles;
+  const packs = layout?.packs ?? d.packs;
+  if (!packs) {
+    const own = [d.doc.into, d.doc.from].find(keyShaped) ?? FIRST;
+    ui.slot.append(el("option", { value: own, textContent: titles.get(own) ?? own }));
+    return;
+  }
   const copycat = skinsTable()?.copycat ?? COPYCAT;
   const groups = new Map();
-  for (const p of layout.packs) {
+  for (const p of packs) {
     if (p.path === copycat) continue;
     const theme = themeOf(p.path);
     if (!groups.has(theme)) {
@@ -290,9 +344,14 @@ function slots() {
         .append(el("option", { value: key, textContent: titles.get(key) ?? s.name }));
     });
   }
+}
+
+function placeholder() {
   const into = d.doc.into;
   if (into != null && ![...ui.slot.options].some((o) => o.value === String(into)))
-    ui.slot.prepend(el("option", { value: "", textContent: noSlot(into), disabled: true }));
+    ui.slot.prepend(
+      el("option", { value: "", textContent: unlisted(String(into)), disabled: true }),
+    );
 }
 
 /** The slot the box opens on: the file's own target, or none where that is no slot, else where a template came from, else the first. */
@@ -363,6 +422,7 @@ async function take(file) {
   const mine = ++turn;
   d.file = file;
   d.disc = null;
+  d.packs = null;
   d.placed = null;
   d.image = null;
   d.imageName = null;
@@ -370,9 +430,11 @@ async function take(file) {
   downloads();
   play();
   let disc;
+  let packs = null;
   try {
     if (await isIso(file)) throw new Error(RAW_ONLY);
     disc = await openDisc(file);
+    if (!layout) packs = await packsOf(disc);
   } catch (e) {
     if (mine !== turn) return;
     ui.status.textContent =
@@ -383,7 +445,9 @@ async function take(file) {
   }
   if (mine !== turn) return;
   d.disc = disc;
+  d.packs = packs;
   ui.status.textContent = `${file.name} is read.`;
+  if (packs) retarget();
   await placed(mine);
 }
 
@@ -422,7 +486,7 @@ async function placed(mine = ++turn) {
 }
 
 function downloads() {
-  const ready = !!d.placed && !d.errors;
+  const ready = !!d.placed && !d.blocked;
   ui.ppf.disabled = !ready;
   ui.xdelta.disabled = !ready;
   const whole = ready && d.image?.size === d.file.size;
@@ -433,8 +497,7 @@ function downloads() {
 
 function readiness(whole) {
   if (!d.placed) return d.file ? (d.into === null ? CHOOSE : "") : NO_IMAGE;
-  if (d.errors) return ERRORS;
-  return whole ? READY : NO_BLOB;
+  return d.blocked ?? (whole ? READY : NO_BLOB);
 }
 
 function play() {

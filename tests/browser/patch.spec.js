@@ -404,6 +404,63 @@ test("a draft another tab repairs under the open box is written as it is now, no
   expect(errors).toEqual([]);
 });
 
+test("without the disc's layout the fit waits for the image, whose own packs then fill the slot list", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.route("**/packs.json", (route) => route.fulfill({ status: 404, body: "" }));
+  await page.goto(EDIT);
+  await settle(page);
+  const id = await opened(page, "hell.kula.json", {
+    ...synthetic(6),
+    into: "/HELL/HELL.PAK#3",
+  });
+  await openPatch(page, id);
+  const dialog = page.locator("#patch");
+  const slot = dialog.locator("#patchSlot");
+  await expect(slot.locator("option")).toHaveCount(1);
+  await expect(slot).toHaveValue("/HELL/HELL.PAK#3");
+  await expect(dialog.locator("#patchReach")).toContainText("with a save that has got that far in");
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "The disc's layout could not be loaded, so the fit waits for the image.",
+  );
+  await expect(dialog.locator("#patchChecks .errors")).toHaveCount(0);
+  await expect(dialog.locator("#patchPpf")).toBeDisabled();
+  await expect(dialog.locator("#patchReady")).toHaveText(
+    "Give the disc image above to make the patches.",
+  );
+  expect((await docOf(page, id)).into).toBe("/HELL/HELL.PAK#3");
+
+  await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
+  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(slot.locator("option")).toHaveText([
+    "/HELL/HELL.PAK#3, which this image has not",
+    "LEVEL 1",
+    "LEVEL 2",
+    "LEVEL 3",
+    "FINAL 1",
+    "FINAL 2",
+  ]);
+  await expect(slot).toHaveValue("");
+  await expect(dialog.locator("#patchReach")).toHaveText("Choose a slot above.");
+  await expect(dialog.locator("#patchPpf")).toBeDisabled();
+  expect((await docOf(page, id)).into).toBe("/HELL/HELL.PAK#3");
+  await slot.selectOption("/HIRO/HIRO.PAK#1");
+  await expect(slot.locator("option")).toHaveCount(5);
+  await expect(slot.locator("optgroup")).toHaveCount(1);
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 179 bytes to spare.",
+  );
+  await expect(dialog.locator("#patchFrom")).toHaveText("Read from the image.");
+  await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  expect((await docOf(page, id)).into).toBe("/HIRO/HIRO.PAK#1");
+  const patch = await saved(page, dialog.locator("#patchPpf"));
+  expect(sha256(patch.bytes)).toBe(CASE.ppf);
+  expect(errors).toEqual([
+    "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
+  ]);
+});
+
 test("a save that fails is said so, and the button comes back", async ({ page }) => {
   const errors = trackErrors(page);
   await page.addInitScript(() => {
