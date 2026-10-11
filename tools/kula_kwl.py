@@ -610,6 +610,39 @@ def canonical(project):
 
 # --- a project out of any file the game would load ----------------------------
 
+# The line both readers add where a level's own wiring is not what the colour rule writes.
+REWIRED = ("the level's switches, teleporters and lasers are wired otherwise than the colour rule wires them; "
+           "the level written back follows the colours")
+
+
+def _wiring(records, devices=None):
+    """A level's wiring in play: the slots each switch's list reaches and where each
+    teleporter leads, as the cells and faces they name, in one order, so two levels
+    wired alike compare equal whatever their record order. `devices` says which of
+    `records` to read the switches and teleporters from."""
+    def target(at):
+        return f"{cell_text(records[at[0]].cell)}/{at[1]}" if at[0] < len(records) else "past"
+
+    def lst(word):
+        seen, at = [], link(word)
+        while at is not None and at[0] < len(records) and at[1] <= OWN and target(at) not in seen:
+            seen.append(target(at))
+            r = records[at[0]]
+            at = link(r.slots[1][LINK_WORD] if at[1] == OWN else r.slots[at[1]][NEXT_WORD])
+        return " ".join(sorted(seen))
+
+    out = []
+    for r in records if devices is None else devices:
+        if r.kind >= BLOCK_KINDS:
+            continue
+        for j, s in enumerate(r.slots):
+            if s[1] == SWITCH:
+                out.append(f"{cell_text(r.cell)}/{j} flips {lst(s[LINK_WORD])}")
+            elif s[1] == TELEPORTER:
+                at = link(s[LINK_WORD])
+                out.append(f"{cell_text(r.cell)}/{j} leads to {'none' if at is None else target(at)}")
+    return sorted(out)
+
 def read_kwl(blob, world=WORLDS[0]):
     """(project, report) for a level file by what the game accepts: the lattice
     decides where a record stands and which records exist, the file's length
@@ -713,6 +746,12 @@ def read_kwl(blob, world=WORLDS[0]):
              for x, y, z, v in cells]
     level = _level_dict(cells, [records[k] for k in kept + settings], time, world, "", report)
     project = project_of(level, report)
+    try:
+        rebuilt = Level(canonical(project))
+    except ValueError:
+        rebuilt = None
+    if rebuilt is not None and _wiring(records, [records[k] for k in kept]) != _wiring(rebuilt.records):
+        report.append(REWIRED)
     return project, collapse(report)
 
 

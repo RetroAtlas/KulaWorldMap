@@ -19,6 +19,7 @@ import {
   OWN,
   PLATFORM_KIND,
   RECORD,
+  REWIRED,
   SETTINGS_KIND,
   SLOT,
   SWITCH,
@@ -704,6 +705,7 @@ test("a facing of 0 on a type that needs one is read as 1, the way the game head
   assert.deepEqual(report, [
     "type 30 on face 0 of the block at 1,2,3 has a facing of 0, which the game heads as 1; it is 1",
     "type 5 on face 2 of the block at 1,2,3 has a facing of 0, which the game heads as 1; it is 1",
+    REWIRED,
   ]);
   assert.deepEqual(verify(writeKwl(p)), []);
 });
@@ -759,10 +761,19 @@ test("an unwired teleporter is wired on the way out", () => {
     ],
   );
   assert.ok(verify(blob).length > 0);
-  const { project: p } = readKwl(blob);
+  const { project: p, report } = readKwl(blob);
+  assert.deepEqual(report, [REWIRED]);
   const out = writeKwl(p);
   assert.deepEqual(verify(out), []);
   assert.deepEqual([slotOf(out, 0, 2)[LINK_WORD], slotOf(out, 1, 0)[LINK_WORD]], [16, 2]);
+  assert.deepEqual(readKwl(out).report, []);
+  for (const l of mapData.levels.filter((l) => l.theme === "HIRO"))
+    assert.deepEqual(readKwl(writeKwl(projectOf(l))).report, [], l.name);
+  // a next word nothing walks, on a colour with no switch, is no difference in play
+  const unwalked = new Uint8Array(out);
+  const view = new DataView(unwalked.buffer);
+  view.setInt16(GRID_BYTES + HEAD + RECORD + 2 * NEXT_WORD, -1, true);
+  assert.deepEqual(readKwl(unwalked).report, []);
 });
 
 test("a count one too high is read from the length", () => {

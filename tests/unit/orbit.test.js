@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { mapData, levelKey } from "./fixtures.js";
-import { projectOf, writeKwl } from "../../public/js/kwl.js";
+import { REWIRED, projectOf, writeKwl } from "../../public/js/kwl.js";
 import {
   NOT_LINK,
   OWN_LEVEL,
@@ -139,7 +139,7 @@ test("items are the slot's words under other names, an empty one a bare face, an
     },
   ]);
   assert.deepEqual(project.circuits, { 1: "off" });
-  assert.deepEqual(report, []);
+  assert.deepEqual(report, [REWIRED]);
   const bytes = kwlOfOrbit(level([plain([3, 16, 4], 0, items)])).bytes;
   const view = new DataView(bytes.buffer);
   const word = (slot, i) => view.getInt16(2 * 39307 + 2 * (16 * slot + i), true);
@@ -257,7 +257,7 @@ test("a value that is no word of the file is said so and left empty, while null 
       plain([4, 16, 4], 0, [{ id: 9, option: 0, variant: 1, state: 1, route: null, to: null }]),
     ]),
   );
-  assert.deepEqual(nulls.report, []);
+  assert.deepEqual(nulls.report, [REWIRED]);
 });
 
 test("lines of one shape are kept to three and the rest counted, as the level reader's are", () => {

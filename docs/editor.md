@@ -127,7 +127,7 @@ A type not in the table is written with state 0 and the constants -1, which is a
 - Kinds 0 to 4 take an object from every face whose type is above 0, with its type whatever it is, its facing where the type turns and the word is not 0, read as 1 with a line where the type needs one and the word is 0, its variant where the type has one; what stands on records of kinds 5 to 9 is counted and left out, since the game never walks it; a record of kinds 0 to 4 with nothing on its faces folds into a plain block of its kind.
 - A colour's state is read from its first device or laser, and a disagreement among them is reported.
 - A file whose records are not in lattice order is written back in lattice order, and the report says so where the order decides play: where the file holds captivators, whose dice follow the walk order, or several starts, of which the game takes the last.
-- The pickup numbers, the links, the filler words and the header word are never read.
+- The pickup numbers, the links, the filler words and the header word are never read; where the file's wiring in play, the slots each switch's list reaches and the place each teleporter leads to, read as the cells and faces they name, is not what the colour rule's wiring gives, as a community file left unwired or wired by hand is, the report says the level written back follows the colours; a link word nothing walks, a teleporter's next on a colour with no switch, is not compared, since the community's viewer does not carry it.
 
 ## What the game would make of a project
 

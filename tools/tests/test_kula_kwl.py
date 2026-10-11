@@ -26,6 +26,7 @@ from kula_kwl import (  # noqa: E402
     HOSTILE,
     OBJECTS,
     PLAYED,
+    REWIRED,
     VECTORS,
     canonical,
     check,
@@ -361,6 +362,7 @@ class Reads(unittest.TestCase):
         self.assertEqual(report, [
             "type 30 on face 0 of the block at 1,2,3 has a facing of 0, which the game heads as 1; it is 1",
             "type 5 on face 2 of the block at 1,2,3 has a facing of 0, which the game heads as 1; it is 1",
+            REWIRED,
         ])
         self.assertEqual(Level(canonical(p)).verify(), [])
 
@@ -384,10 +386,19 @@ class Reads(unittest.TestCase):
                      [block((1, 2, 3), faces={0: obj(START, 3, 0, 0), 2: obj(TELEPORTER, 1, 3, 1)}),
                       block((1, 4, 3), faces={0: obj(TELEPORTER, 1, 3, 1)})])
         self.assertTrue(Level(blob).verify())
-        p, _ = read_kwl(blob)
+        p, report = read_kwl(blob)
+        self.assertEqual(report, [REWIRED])
         C = Level(canonical(p))
         self.assertEqual(C.verify(), [])
         self.assertEqual((C.records[0].slots[2][7], C.records[1].slots[0][7]), (16, 2))
+        self.assertEqual(read_kwl(canonical(p))[1], [])
+        for l in json.loads(DATA.read_text())["levels"]:
+            if l["theme"] == "HIRO":
+                self.assertEqual(read_kwl(canonical(project_of(l)))[1], [], l["name"])
+        # a next word nothing walks, on a colour with no switch, is no difference in play
+        unwalked = bytearray(canonical(p))
+        struct.pack_into("<h", unwalked, GRID_BYTES + 6 + 256 + 2 * 6, -1)
+        self.assertEqual(read_kwl(bytes(unwalked))[1], [])
 
     def test_a_count_one_too_high_is_read_from_the_length(self):
         blob = bytearray(playground())

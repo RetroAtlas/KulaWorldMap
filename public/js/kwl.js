@@ -679,6 +679,41 @@ function levelDict(cells, records, time, world, name, report) {
   return { name, theme: world, cells, records: out, time };
 }
 
+/** A level's wiring in play: the slots each switch's list reaches and where each
+    teleporter leads, as the cells and faces they name, in one order, so two levels
+    wired alike compare equal whatever their record order. `devices` says which of
+    `records` to read the switches and teleporters from. */
+function wiring(records, devices = records) {
+  const target = (at) =>
+    at[0] < records.length ? `${cellText(records[at[0]].cell)}/${at[1]}` : "past";
+  const list = (word) => {
+    const seen = [];
+    let at = linkTarget(word);
+    while (at !== null && at[0] < records.length && at[1] <= OWN && !seen.includes(target(at))) {
+      seen.push(target(at));
+      const r = records[at[0]];
+      at = linkTarget(at[1] === OWN ? r.slots[1][LINK_WORD] : r.slots[at[1]][NEXT_WORD]);
+    }
+    return seen.sort().join(" ");
+  };
+  const out = [];
+  for (const r of devices) {
+    if (r.kind >= BLOCK_KINDS) continue;
+    r.slots.forEach((s, j) => {
+      if (s[1] === SWITCH) out.push(`${cellText(r.cell)}/${j} flips ${list(s[LINK_WORD])}`);
+      else if (s[1] === TELEPORTER) {
+        const at = linkTarget(s[LINK_WORD]);
+        out.push(`${cellText(r.cell)}/${j} leads to ${at === null ? "none" : target(at)}`);
+      }
+    });
+  }
+  return out.sort();
+}
+
+/** The line both readers add where a level's own wiring is not what the colour rule writes. */
+export const REWIRED =
+  "the level's switches, teleporters and lasers are wired otherwise than the colour rule wires them; the level written back follows the colours";
+
 /** { project, report } for any file the game would load; only a length that is not a level's throws. */
 export function readKwl(bytes, world = WORLDS[0]) {
   const report = [];
@@ -808,6 +843,23 @@ export function readKwl(bytes, world = WORLDS[0]) {
     report,
   );
   const project = projectOf(level, report);
+  let rebuilt = null;
+  try {
+    rebuilt = writeKwl(project);
+  } catch {
+    rebuilt = null;
+  }
+  if (rebuilt) {
+    const view = viewOf(rebuilt);
+    const again = Array.from({ length: view.getUint16(GRID_BYTES + 4, true) }, (_, k) =>
+      recordAt(view, GRID_BYTES + HEAD + RECORD * k),
+    );
+    const theirs = wiring(
+      records,
+      kept.map((k) => records[k]),
+    );
+    if (theirs.join("\n") !== wiring(again).join("\n")) report.push(REWIRED);
+  }
   return { project, report: collapse(report) };
 }
 
