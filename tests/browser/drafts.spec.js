@@ -498,6 +498,11 @@ test("a plain visit shows the section and fetches none of the editor, which Make
   await expect(page.locator("#draftEmpty")).toBeVisible();
   await expect(page.locator("#draftRows button")).toHaveCount(0);
   await expect(page.locator("#makeBtn")).toBeVisible();
+  // the picker offers every kind of file the reader takes
+  await expect(page.locator("#draftFile")).toHaveAttribute(
+    "accept",
+    ".json,.kwl,.pak,.bin,.img,.iso",
+  );
   expect(requested).toContain("/js/main.js");
   expect(fetched()).toEqual([]);
 
