@@ -485,19 +485,19 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
   assert.deepEqual([n.vanishing, n.records, n.blocks], [64, 65, 65]);
   assert.deepEqual(errors(withStart(vanishing)), []);
   assert.ok(
-    warnings(withStart(vanishing)).includes("64 vanishing, more than any level on the disc"),
+    warnings(withStart(vanishing)).includes("64 vanishing blocks, more than any level on the disc"),
   );
   assert.ok(
     !warnings(withStart(vanishing.slice(0, 14))).some((w) => w.includes("vanishing, more")),
   );
   assert.ok(
     warnings(withStart(vanishing.slice(0, 15))).includes(
-      "15 vanishing, more than any level on the disc",
+      "15 vanishing blocks, more than any level on the disc",
     ),
   );
   assert.ok(
     errors(withStart([...vanishing, { cell: [1, 24, 5], kind: 7, phase: 0 }])).includes(
-      "65 vanishing, over the 64 the game has room for",
+      "65 vanishing blocks, over the 64 the game has room for",
     ),
   );
 
@@ -511,12 +511,12 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
   );
   assert.ok(
     warnings(withStart(crumbling.slice(0, 34))).includes(
-      "34 crumbling, more than any level on the disc",
+      "34 crumbling blocks, more than any level on the disc",
     ),
   );
   assert.ok(
     errors(withStart([...crumbling, { cell: [1, 24, 5], kind: 6 }])).includes(
-      "65 crumbling, over the 64 the game has room for",
+      "65 crumbling blocks, over the 64 the game has room for",
     ),
   );
 

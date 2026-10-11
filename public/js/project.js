@@ -6,6 +6,7 @@ import {
   CAPTIVATORS,
   COLOURS,
   COUNTED_KINDS,
+  COUNTER_WORDS,
   CRUMBLING_KIND,
   DEFAULT_LENGTH,
   DEFAULT_SPEED,
@@ -431,11 +432,12 @@ export function validate(project, hides) {
   if (n.keys && !blocks.some((b) => facesOf(b).some(([, o]) => o.type === EXIT)))
     warn("a key and no exit");
   for (const [what, cap] of Object.entries(CAPS))
-    if (n[what] > cap) err(`${n[what]} ${what}, over the ${cap} the game has room for`);
+    if (n[what] > cap)
+      err(`${n[what]} ${COUNTER_WORDS[what]}, over the ${cap} the game has room for`);
   if (n.lights > LIGHT_LIST)
     warn(`${n.lights} devices that cast a light, over the ${LIGHT_LIST} the game lights at once`);
   for (const [what, most] of Object.entries(DISC_MAX))
-    if (n[what] > most) warn(`${n[what]} ${what}, more than any level on the disc`);
+    if (n[what] > most) warn(`${n[what]} ${COUNTER_WORDS[what]}, more than any level on the disc`);
   return [...out.filter((f) => f.level === ERROR), ...out.filter((f) => f.level !== ERROR)];
 }
 

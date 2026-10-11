@@ -139,6 +139,22 @@ export const CAPS = {
   captivators: 32,
 };
 export const LIGHT_LIST = 32;
+/** A counter's name as a visitor reads it. */
+export const COUNTER_WORDS = {
+  records: "records",
+  cells: "cells",
+  faces: "faces",
+  blocks: "blocks",
+  objects: "objects",
+  platforms: "platforms",
+  lasers: "lasers",
+  vanishing: "vanishing blocks",
+  crumbling: "crumbling blocks",
+  captivators: "captivators",
+  keys: "keys",
+  lights: "devices that cast a light",
+};
+
 export const DISC_MAX = {
   records: 75,
   cells: 178,

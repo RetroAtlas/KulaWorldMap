@@ -505,17 +505,17 @@ class Validates(unittest.TestCase):
         n = counts(project(with_start(vanishing)), HIDES)
         self.assertEqual((n["vanishing"], n["records"], n["blocks"]), (64, 65, 65))
         self.assertEqual(self.errors(with_start(vanishing)), [])
-        self.assertIn("64 vanishing, more than any level on the disc", self.warnings(with_start(vanishing)))
+        self.assertIn("64 vanishing blocks, more than any level on the disc", self.warnings(with_start(vanishing)))
         self.assertFalse(any("vanishing, more" in w for w in self.warnings(with_start(vanishing[:14]))))
-        self.assertIn("15 vanishing, more than any level on the disc", self.warnings(with_start(vanishing[:15])))
-        self.assertIn("65 vanishing, over the 64 the game has room for",
+        self.assertIn("15 vanishing blocks, more than any level on the disc", self.warnings(with_start(vanishing[:15])))
+        self.assertIn("65 vanishing blocks, over the 64 the game has room for",
                       self.errors(with_start(vanishing + [{"cell": [1, 24, 5], "kind": 7, "phase": 0}])))
 
         crumbling = [{"cell": [1 + i % 32, 20 + 2 * (i // 32), 5], "kind": 6} for i in range(64)]
         self.assertEqual(self.errors(with_start(crumbling)), [])
         self.assertFalse(any("crumbling, more" in w for w in self.warnings(with_start(crumbling[:33]))))
-        self.assertIn("34 crumbling, more than any level on the disc", self.warnings(with_start(crumbling[:34])))
-        self.assertIn("65 crumbling, over the 64 the game has room for",
+        self.assertIn("34 crumbling blocks, more than any level on the disc", self.warnings(with_start(crumbling[:34])))
+        self.assertIn("65 crumbling blocks, over the 64 the game has room for",
                       self.errors(with_start(crumbling + [{"cell": [1, 24, 5], "kind": 6}])))
 
         wandering = {"type": 53}

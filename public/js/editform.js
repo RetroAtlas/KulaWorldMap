@@ -36,6 +36,7 @@ import {
   BLOCK_KINDS,
   CAPS,
   COLOURS,
+  COUNTER_WORDS,
   CRUMBLING_KIND,
   DEFAULT_LENGTH,
   DEFAULT_SPEED,
@@ -72,18 +73,6 @@ const FACE_SPOKEN = [
 ];
 const TURNS = 4;
 const NO_WORDS = Array(16).fill(0);
-const COUNTED = {
-  records: "records",
-  faces: "faces",
-  blocks: "blocks",
-  objects: "objects",
-  platforms: "platforms",
-  vanishing: "vanishing blocks",
-  crumbling: "crumbling blocks",
-  captivators: "captivators",
-  lights: "devices that cast a light",
-};
-
 let wired = false;
 let focused = null;
 let wasOn = null;
@@ -633,7 +622,7 @@ function checks(d) {
   if (!hides) return out;
   const n = counts(d.doc, hides);
   const parts = [...Object.entries(CAPS), ["lights", LIGHT_LIST]].map(([what, cap]) => {
-    const span = el("span", { textContent: `${n[what]} of ${cap} ${COUNTED[what] ?? what}` });
+    const span = el("span", { textContent: `${n[what]} of ${cap} ${COUNTER_WORDS[what] ?? what}` });
     if (n[what] > cap) span.className = "over";
     else if (DISC_MAX[what] !== undefined && n[what] > DISC_MAX[what]) span.className = "high";
     return span;

@@ -621,6 +621,20 @@ def _built(hides, kinds, cell, kind):
 
 COUNTERS = ("records", "cells", "faces", "blocks", "objects", "platforms", "lasers",
             "vanishing", "crumbling", "captivators", "keys", "lights")
+COUNTER_WORDS = {
+    "records": "records",
+    "cells": "cells",
+    "faces": "faces",
+    "blocks": "blocks",
+    "objects": "objects",
+    "platforms": "platforms",
+    "lasers": "lasers",
+    "vanishing": "vanishing blocks",
+    "crumbling": "crumbling blocks",
+    "captivators": "captivators",
+    "keys": "keys",
+    "lights": "devices that cast a light",
+}
 
 
 def counts(project, hides):
@@ -778,12 +792,12 @@ def validate(project, hides):
         warn("a key and no exit")
     for what, cap in CAPS.items():
         if n[what] > cap:
-            err(f"{n[what]} {what}, over the {cap} the game has room for")
+            err(f"{n[what]} {COUNTER_WORDS[what]}, over the {cap} the game has room for")
     if n["lights"] > LIGHT_LIST:
         warn(f"{n['lights']} devices that cast a light, over the {LIGHT_LIST} the game lights at once")
     for what, most in DISC_MAX.items():
         if n[what] > most:
-            warn(f"{n[what]} {what}, more than any level on the disc")
+            warn(f"{n[what]} {COUNTER_WORDS[what]}, more than any level on the disc")
     out.sort(key=lambda f: f[0] != ERROR)
     return out
 
