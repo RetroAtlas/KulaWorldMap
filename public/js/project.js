@@ -186,14 +186,19 @@ export const COUNTERS = [
   "spikes",
 ];
 
-/** The counters the caps and the disc's maxima are read against. */
+/** The counters that need the skins table, null when the table is missing. */
+export const TABLE_COUNTERS = ["faces", "blocks"];
+
+/** The counters the caps and the disc's maxima are read against; without the
+    skins table the faces and the blocks are null. */
 export function counts(project, hides) {
   const { blocks } = project;
   const at = new Map(blocks.map((b) => [keyOf(b.cell), b]));
   const kinds = kindsAt(blocks);
   const n = Object.fromEntries(COUNTERS.map((what) => [what, 0]));
   n.cells = blocks.length;
-  for (const [key, kind] of kinds) {
+  if (!hides) for (const what of TABLE_COUNTERS) n[what] = null;
+  for (const [key, kind] of hides ? kinds : []) {
     const cell = key.split(",").map(Number);
     if (!cell.every(inner)) continue;
     if (kind === PLATFORM_KIND) {
@@ -486,16 +491,18 @@ export function validate(project, hides) {
 
   validateCircuits(project, blocks, warn);
   const n = counts(project, hides);
+  if (!hides) warn("the face count could not be read, so the faces and the blocks are not counted");
   if (
     n.keys &&
     !blocks.some((b) => facesOf(b).some(([, o]) => o.type === EXIT || o.type === HIDDEN_EXIT))
   )
     warn("a key and no exit");
   for (const [what, cap] of Object.entries(CAPS))
-    if (n[what] > cap)
+    if (n[what] !== null && n[what] > cap)
       err(`${n[what]} ${COUNTER_WORDS[what]}, over the ${cap} the game has room for`);
   for (const [what, most] of Object.entries(DISC_MAX))
-    if (n[what] > most) warn(`${n[what]} ${COUNTER_WORDS[what]}, more than any level on the disc`);
+    if (n[what] !== null && n[what] > most)
+      warn(`${n[what]} ${COUNTER_WORDS[what]}, more than any level on the disc`);
   return [...out.filter((f) => f.level === ERROR), ...out.filter((f) => f.level !== ERROR)];
 }
 

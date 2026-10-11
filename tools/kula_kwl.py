@@ -931,14 +931,18 @@ COUNTER_WORDS = {
 }
 
 
+TABLE_COUNTERS = ("faces", "blocks")   # the counters that need the skins table
+
+
 def counts(project, hides):
-    """The counters the caps and the disc's maxima are read against."""
+    """The counters the caps and the disc's maxima are read against; without the
+    skins table the faces and the blocks are None."""
     blocks = project["blocks"]
     at = {tuple(b["cell"]): b for b in blocks}
     kinds = _kinds_at(blocks)
     n = Counter({what: 0 for what in COUNTERS})
     n["cells"] = len(blocks)
-    for cell, kind in kinds.items():
+    for cell, kind in kinds.items() if hides else ():
         if not all(c in INNER for c in cell):
             continue
         if kind == PLATFORM_KIND:
@@ -969,7 +973,10 @@ def counts(project, hides):
             n["lights"] += t in LIGHTS
             n["spikes"] += t == MOVING_SPIKES
     n["records"] += bool(project.get("hidden") or project.get("invisibleFromAfar"))
-    return dict(n)
+    out = dict(n)
+    if not hides:
+        out.update(dict.fromkeys(TABLE_COUNTERS))
+    return out
 
 
 def plays_as(project):
@@ -1088,13 +1095,15 @@ def validate(project, hides):
 
     _validate_circuits(project, blocks, warn)
     n = counts(project, hides)
+    if not hides:
+        warn("the face count could not be read, so the faces and the blocks are not counted")
     if n["keys"] and not any(o["type"] in (EXIT, HIDDEN_EXIT) for b in blocks for o in _faces_of(b).values()):
         warn("a key and no exit")
     for what, cap in CAPS.items():
-        if n[what] > cap:
+        if n[what] is not None and n[what] > cap:
             err(f"{n[what]} {COUNTER_WORDS[what]}, over the {cap} the game has room for")
     for what, most in DISC_MAX.items():
-        if n[what] > most:
+        if n[what] is not None and n[what] > most:
             warn(f"{n[what]} {COUNTER_WORDS[what]}, more than any level on the disc")
     out.sort(key=lambda f: f[0] != ERROR)
     return out

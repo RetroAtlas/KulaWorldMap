@@ -555,6 +555,17 @@ class Validates(unittest.TestCase):
     def warnings(self, blocks, **more):
         return texts(validate(project(blocks, **more), HIDES), "warning")
 
+    def test_without_the_skins_table_the_checks_run_every_rule_but_the_face_count_and_say_so(self):
+        blocks = [plain((5, 5, 5), t0={"type": COIN, "variant": 0}), plain((40, 5, 5))]
+        n = counts(project(blocks), None)
+        self.assertEqual((n["faces"], n["blocks"], n["cells"], n["objects"]), (None, None, 2, 1))
+        found = validate(project(blocks), None)
+        self.assertEqual(texts(found, "error"), ["the game builds nothing past the edge", "no start"])
+        self.assertIn("the face count could not be read, so the faces and the blocks are not counted", texts(found, "warning"))
+        h10 = next(l for l in json.loads(DATA.read_text())["levels"] if l["name"] == "HIDDEN 10")
+        self.assertEqual(texts(validate(project_of(h10), None), "error"), [])
+        self.assertFalse(any("could not be read" in w for w in texts(validate(project_of(h10), HIDES), "warning")))
+
     def test_a_level_needs_one_start_and_says_which_of_several_the_game_takes(self):
         self.assertIn("no start", self.errors([plain((5, 5, 5), t0={"type": COIN, "variant": 0})]))
         several = [plain((5, 5, 5), t0=start()), plain((7, 5, 5), t2=start(1), t5=start(2))]

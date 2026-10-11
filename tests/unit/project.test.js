@@ -292,6 +292,22 @@ test("a template drawn as the game would load it shows the shipped level's marke
 
 // --- the rules, one case each ------------------------------------------------------------
 
+test("without the skins table the checks run every rule but the face count, and say so", () => {
+  const blocks = [plain([5, 5, 5], 0, { 0: coin }), plain([40, 5, 5])];
+  const n = counts(project(blocks), undefined);
+  assert.deepEqual([n.faces, n.blocks, n.cells, n.objects], [null, null, 2, 1]);
+  const found = validate(project(blocks), undefined);
+  assert.deepEqual(texts(found, "error"), ["the game builds nothing past the edge", "no start"]);
+  assert.ok(
+    texts(found, "warning").includes(
+      "the face count could not be read, so the faces and the blocks are not counted",
+    ),
+  );
+  const h10 = fromLevel(level("HIDDEN 10"));
+  assert.deepEqual(texts(validate(h10, undefined), "error"), []);
+  assert.ok(!texts(validate(h10, HIDES), "warning").some((w) => w.includes("could not be read")));
+});
+
 test("a level needs one start, and says which of several the game takes", () => {
   assert.ok(errors([plain([5, 5, 5], 0, { 0: coin })]).includes("no start"));
   const several = [

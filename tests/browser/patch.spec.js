@@ -181,6 +181,52 @@ test("a level with an error shows it and keeps the patches back, image or no ima
   expect(errors).toEqual([]);
 });
 
+test("without the game's face table the checks still run, the table is said to be missing and the patches stay back", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.route("**/objects.json", (route) => route.fulfill({ status: 404, body: "" }));
+  await page.goto(EDIT);
+  await settle(page);
+  const missing =
+    "The game's face table could not be loaded, so the checks cannot run in full and the level cannot go on the disc from here.";
+  const broken = synthetic(6, "No start");
+  delete broken.blocks[0].faces;
+  const id = await opened(page, "no-start.kula.json", broken);
+  await openPatch(page, id);
+  const dialog = page.locator("#patch");
+  await expect(dialog.locator("#patchChecks .errors li")).toHaveText(["error: no start"]);
+  await expect(dialog.locator("#patchChecks")).toContainText(missing);
+  await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
+  await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
+  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
+    await expect(dialog.locator(b)).toBeDisabled();
+  await expect(dialog.locator("#patchReady")).toHaveText(
+    "A level with errors cannot go on the disc until they are fixed.",
+  );
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  const clean = await opened(page, "spiral.kula.json", synthetic(6));
+  await openPatch(page, clean);
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator("#patchChecks .errors li")).toHaveCount(0);
+  await expect(dialog.locator("#patchChecks")).toContainText(missing);
+  await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
+  await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
+  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 179 bytes to spare.",
+  );
+  for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
+    await expect(dialog.locator(b)).toBeDisabled();
+  await expect(dialog.locator("#patchReady")).toHaveText(missing);
+  expect(errors).toEqual([
+    "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
+  ]);
+});
+
 test("a download is named by the title's slug, composed, lower-cased and cut to a length", async ({
   page,
 }) => {

@@ -209,7 +209,7 @@ function checks() {
   const box = ui.checks;
   box.textContent = "";
   const hides = skinsTable()?.hides;
-  const findings = hides ? validate(d.doc, hides) : [];
+  const findings = validate(d.doc, hides);
   const errors = findings.filter((f) => f.level === ERROR);
   const warnings = findings.filter((f) => f.level !== ERROR);
   const items = (fs) =>
