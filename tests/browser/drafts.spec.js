@@ -3,6 +3,7 @@ import { settle, textured, trackErrors } from "./helpers.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const KEY = "kula.drafts";
+const SETTLE = 300;
 const FULL = "This browser cannot hold more drafts; save them to files and delete some.";
 const NO_ROOM =
   "This browser gives the map no room to keep levels, so they will live only until the page is closed.";
@@ -572,6 +573,98 @@ test("entries that cannot be read do not load the editor by themselves, and a ke
     }, KEY);
   await expect.poll(keys).toHaveLength(3);
   expect((await keys()).slice(1)).toEqual(["9=null", '__proto__={"doc":1}']);
+  expect(errors).toEqual([]);
+});
+
+test("a change waits a moment before it is written, the moment's changes landing as one write, and none waits past the page being hidden or left", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.addInitScript((key) => {
+    window.__writes = 0;
+    const set = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) {
+      if (k === key) window.__writes++;
+      return set.call(this, k, v);
+    };
+  }, KEY);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await written(page, (s) => Object.keys(s?.drafts ?? {}).length).toBe(1);
+  const writes = () => page.evaluate(() => window.__writes);
+  expect(await writes()).toBe(1);
+  // a run of changes in one breath, then the store as it stands before the moment has passed
+  const retitle = (titles, then) =>
+    page.evaluate(
+      async ([key, titles, then]) => {
+        const at = (p) => import(new URL(`js/${p}`, location.href).href);
+        const [{ state }, { get, update }] = await Promise.all(["state.js", "drafts.js"].map(at));
+        const id = state.lvl.draft;
+        for (const title of titles) update(id, { ...get(id).doc, title });
+        if (then === "hidden") {
+          Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+          document.dispatchEvent(new Event("visibilitychange"));
+          delete document.hidden;
+        } else if (then === "left")
+          dispatchEvent(new PageTransitionEvent("pagehide", { persisted: false }));
+        return JSON.parse(localStorage.getItem(key)).drafts[id].doc.title;
+      },
+      [KEY, titles, then],
+    );
+  expect(await retitle(["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"])).toBe("Untitled level");
+  await written(page, (s) => Object.values(s?.drafts ?? {})[0]?.doc.title).toBe("Step 5");
+  expect(await writes()).toBe(2);
+  expect(await retitle(["Hidden"], "hidden")).toBe("Hidden");
+  expect(await writes()).toBe(3);
+  expect(await retitle(["Left"], "left")).toBe("Left");
+  expect(await writes()).toBe(4);
+  // a timer set after the flush and as long as the settle fires after any the flush left behind
+  expect(
+    await page.evaluate(
+      (ms) => new Promise((r) => setTimeout(() => r(window.__writes), ms)),
+      SETTLE,
+    ),
+  ).toBe(4);
+  expect(errors).toEqual([]);
+});
+
+test("a browser whose storage cannot be read keeps the levels in memory alone, and says so", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.addInitScript((key) => {
+    window.__writes = 0;
+    const get = Storage.prototype.getItem;
+    const set = Storage.prototype.setItem;
+    Storage.prototype.getItem = function (k) {
+      if (k === key) throw new DOMException("denied", "SecurityError");
+      return get.call(this, k);
+    };
+    Storage.prototype.setItem = function (k, v) {
+      if (k === key) window.__writes++;
+      return set.call(this, k, v);
+    };
+  }, KEY);
+  await page.goto(EDIT);
+  await settle(page);
+  expect(await toasts(page)).toEqual([]);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await expect(page.locator("#toastStack .toast")).toHaveText([
+    "This browser cannot keep your levels, so they will live only until the page is closed.",
+  ]);
+  expect((await shown(page)).li).toBe(-1);
+  await page.locator("#draftTitle").fill("Fleeting");
+  await expect(page.locator("#draftRows button .name")).toHaveText(["Fleeting"]);
+  await flush(page);
+  expect(await page.evaluate(() => window.__writes)).toBe(0);
+  await page.reload();
+  await settle(page);
+  expect((await shown(page)).li).toBe(0);
+  await expect(page.locator("#draftRows button")).toHaveCount(0);
+  await expect(page.locator("#draftEmpty")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
