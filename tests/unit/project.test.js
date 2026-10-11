@@ -24,7 +24,6 @@ import {
   DISC_MAX,
   FORMAT,
   LASER_KIND,
-  LIGHT_LIST,
   PLATFORM_KIND,
   SETTINGS_KIND,
   inner,
@@ -231,9 +230,7 @@ test("the document's counter table gives the caps, the disc's maxima and a level
     COUNTERS,
   );
   for (const [, what, cap, most, title] of rows) {
-    const expected =
-      what in CAPS ? String(CAPS[what]) : what === "lights" ? `${LIGHT_LIST}, a warning` : "";
-    assert.equal(cap.trim(), expected, what);
+    assert.equal(cap.trim(), what in CAPS ? String(CAPS[what]) : "", what);
     assert.equal(Number(most), DISC_MAX[what], what);
     if (!title) continue;
     const named = level(title);
@@ -567,7 +564,7 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
   );
 });
 
-test("more devices that cast a light than the game lights at once", () => {
+test("the light and the moving spikes caps", () => {
   const blocks = [plain([5, 5, 5], 0, { 0: start() })];
   const six = Object.fromEntries(
     [0, 1, 2, 3, 4, 5].map((j) => [j, { type: SWITCH, variant: j % 4 }]),
@@ -576,12 +573,49 @@ test("more devices that cast a light than the game lights at once", () => {
   blocks.push(
     plain([12, 20, 5], 0, { 0: { type: SWITCH, variant: 0 }, 1: { type: SWITCH, variant: 1 } }),
   );
+  assert.equal(counts(project(blocks), HIDES).lights, 32);
   assert.deepEqual(errors(blocks), []);
-  assert.ok(!warnings(blocks).some((w) => w.includes("cast a light, over")));
+  assert.ok(
+    warnings(blocks).includes("32 devices that cast a light, more than any level on the disc"),
+  );
   blocks[6].faces[2] = { type: SWITCH, variant: 2 };
   assert.ok(
-    warnings(blocks).includes("33 devices that cast a light, over the 32 the game lights at once"),
+    errors(blocks).includes("33 devices that cast a light, over the 32 the game has room for"),
   );
+
+  const spiked = Object.fromEntries([0, 1, 2, 3, 4, 5].map((j) => [j, { type: 11, variant: 0 }]));
+  const spikes = [plain([5, 5, 5], 0, { 0: start() })];
+  for (let i = 0; i < 10; i++) spikes.push(plain([1 + 2 * i, 20, 5], 0, spiked));
+  spikes.push(
+    plain([22, 20, 5], 0, {
+      0: { type: 11, variant: 0 },
+      1: { type: 11, variant: 0 },
+      2: { type: 11, variant: 0 },
+      3: { type: 11, variant: 0 },
+    }),
+  );
+  assert.equal(counts(project(spikes), HIDES).spikes, 64);
+  assert.deepEqual(errors(spikes), []);
+  assert.ok(warnings(spikes).includes("64 moving spikes, more than any level on the disc"));
+  assert.ok(!warnings(spikes.slice(0, 4)).some((w) => w.includes("moving spikes, more")));
+  assert.ok(
+    warnings(spikes.slice(0, 5)).includes("24 moving spikes, more than any level on the disc"),
+  );
+  spikes[11].faces[4] = { type: 11, variant: 0 };
+  assert.ok(errors(spikes).includes("65 moving spikes, over the 64 the game has room for"));
+});
+
+test("a platform longer than the ride's grid", () => {
+  const rail = (length) => [
+    plain([5, 5, 5], 0, { 0: start() }),
+    { cell: [10, 10, 17], kind: PLATFORM_KIND, far: [10, 14, 17], length, speed: 30 },
+  ];
+  assert.deepEqual(errors(rail(7)), []);
+  assert.ok(warnings(rail(7)).includes("a platform 7 blocks long"));
+  assert.deepEqual(errors(rail(8)), [
+    "a platform 8 blocks long, more than the 7 the game's grid holds",
+  ]);
+  assert.ok(!warnings(rail(8)).some((w) => w.includes("blocks long")));
 });
 
 test("what the format takes, and what it warns about", () => {

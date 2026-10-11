@@ -506,7 +506,7 @@ test("the plays-as line, the counts line and the findings show, and a finding's 
   expect(blockAt(await doc(page), HOME).faces).toBeUndefined();
   await expect(page.locator("#detail .findings li.error")).toHaveText(["error: no start"]);
   await expect(page.locator("#detail .counts")).toHaveText(
-    "0 of 123 records · 6 of 768 faces · 1 of 256 blocks · 0 of 255 objects · 0 of 8 platforms · 0 of 64 vanishing blocks · 0 of 64 crumbling blocks · 0 of 32 captivators · 0 of 32 devices that cast a light",
+    "0 of 123 records · 6 of 768 faces · 1 of 256 blocks · 0 of 255 objects · 0 of 8 platforms · 0 of 64 vanishing blocks · 0 of 64 crumbling blocks · 0 of 32 captivators · 0 of 32 devices that cast a light · 0 of 64 moving spikes",
   );
   expect(await toasts(page)).toEqual([]);
   expect(errors).toEqual([]);

@@ -43,7 +43,6 @@ import {
   DISC_MAX,
   FACING_TYPES,
   LASER_KIND,
-  LIGHT_LIST,
   PHASES,
   PLAIN_ONLY,
   PLATFORM_KIND,
@@ -621,7 +620,7 @@ function checks(d) {
   const out = el("div", { className: "checks" });
   if (!hides) return out;
   const n = counts(d.doc, hides);
-  const parts = [...Object.entries(CAPS), ["lights", LIGHT_LIST]].map(([what, cap]) => {
+  const parts = Object.entries(CAPS).map(([what, cap]) => {
     const span = el("span", { textContent: `${n[what]} of ${cap} ${COUNTER_WORDS[what] ?? what}` });
     if (n[what] > cap) span.className = "over";
     else if (DISC_MAX[what] !== undefined && n[what] > DISC_MAX[what]) span.className = "high";

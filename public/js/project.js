@@ -25,8 +25,9 @@ import {
   KEY,
   LASER_KIND,
   LENGTHS,
+  LENGTH_CAP,
   LIGHTS,
-  LIGHT_LIST,
+  MOVING_SPIKES,
   NUMBERED,
   PHASES,
   PLAIN_ONLY,
@@ -181,6 +182,7 @@ export const COUNTERS = [
   "captivators",
   "keys",
   "lights",
+  "spikes",
 ];
 
 /** The counters the caps and the disc's maxima are read against. */
@@ -213,6 +215,7 @@ export function counts(project, hides) {
       if (CAPTIVATOR_SET.has(o.type)) n.captivators++;
       if (o.type === KEY) n.keys++;
       if (LIGHTS.has(o.type)) n.lights++;
+      if (o.type === MOVING_SPIKES) n.spikes++;
     }
   }
   if (project.hidden || project.invisibleFromAfar) n.records++;
@@ -288,7 +291,12 @@ function validateSpan(b, blocksAt, err, warn) {
     const axis = spanAxis(cell, far);
     if (!inner(Math.max(cell[axis], far[axis]) + length - 1))
       return err("the platform's run reaches past the edge", cell);
-    if (!LENGTHS.includes(length)) warn(`a platform ${length} blocks long`, cell);
+    if (length > LENGTH_CAP)
+      err(
+        `a platform ${length} blocks long, more than the ${LENGTH_CAP} the game's grid holds`,
+        cell,
+      );
+    else if (!LENGTHS.includes(length)) warn(`a platform ${length} blocks long`, cell);
     if (!inWord(speed)) err(`a speed of ${speed}, outside the file's range`, cell);
     else if (speed !== DEFAULT_SPEED) warn(`a platform running at ${speed}`, cell);
     for (const c of runOf(b))
@@ -442,8 +450,6 @@ export function validate(project, hides) {
   for (const [what, cap] of Object.entries(CAPS))
     if (n[what] > cap)
       err(`${n[what]} ${COUNTER_WORDS[what]}, over the ${cap} the game has room for`);
-  if (n.lights > LIGHT_LIST)
-    warn(`${n.lights} devices that cast a light, over the ${LIGHT_LIST} the game lights at once`);
   for (const [what, most] of Object.entries(DISC_MAX))
     if (n[what] > most) warn(`${n[what]} ${COUNTER_WORDS[what]}, more than any level on the disc`);
   return [...out.filter((f) => f.level === ERROR), ...out.filter((f) => f.level !== ERROR)];

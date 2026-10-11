@@ -96,6 +96,7 @@ AXIS_WORD = (1, 2, 5)    # a span's axis, named by the direction of its positive
 START = 30
 START_ON_CLOCK = 29
 EXIT = 7
+MOVING_SPIKES = 11
 HIDDEN_EXIT = 26
 KEY = 31
 STAR = 42
@@ -107,7 +108,7 @@ FACING_NEEDED = frozenset({TELEPORTER, 28, START_ON_CLOCK, START, 50, 51, 52})
 VARIANT_TYPES = frozenset({TELEPORTER, SWITCH, 11, 36, 37, 56})
 VARIANTS = {TELEPORTER: range(COLOURS), SWITCH: range(COLOURS), 11: PHASES, 36: range(3), 37: range(3), 56: PHASES}
 PICKUPS = (31, 32, 33, 34, 35, 36, 37, 38, 42, 43, 44, 45, 46, 47)
-PLAIN_ONLY = frozenset({TELEPORTER, EXIT, SWITCH, HIDDEN_EXIT, 11})   # initialised on kind 0 alone
+PLAIN_ONLY = frozenset({TELEPORTER, EXIT, SWITCH, HIDDEN_EXIT, MOVING_SPIKES})   # initialised on kind 0 alone
 LIGHTS = frozenset({TELEPORTER, EXIT, SWITCH})                         # what casts a light when on
 NUMBERED = frozenset({5, 7, 9, 10, 11, 12, 26, 28} | set(PICKUPS))      # what the loader numbers
 PLAYED = frozenset({1, 2, 4, 5, 7, 8, 9, 10, 11, 12, 26, 28, 29, 30, 50, 51, 52, 53, 56} | set(PICKUPS))
@@ -132,10 +133,10 @@ SETTINGS_CELL = (0, 0, 0)
 
 # What the game's memory holds room for, and the most the disc asks of it.
 CAPS = {"records": 123, "faces": 768, "blocks": 256, "objects": 255, "platforms": 8,
-        "vanishing": 64, "crumbling": 64, "captivators": 32}
-LIGHT_LIST = 32
+        "vanishing": 64, "crumbling": 64, "captivators": 32, "lights": 32, "spikes": 64}
+LENGTH_CAP = 7       # the longest run the ride's grid holds a platform of
 DISC_MAX = {"records": 75, "cells": 178, "faces": 766, "blocks": 178, "objects": 81, "platforms": 4,
-            "lasers": 12, "vanishing": 14, "crumbling": 33, "captivators": 12, "keys": 4, "lights": 19}
+            "lasers": 12, "vanishing": 14, "crumbling": 33, "captivators": 12, "keys": 4, "lights": 19, "spikes": 19}
 COUNTED_KINDS = frozenset({0, 1, 2, 4, CRUMBLING_KIND, VANISHING_KIND})
 
 ERROR, WARNING = "error", "warning"
@@ -912,7 +913,7 @@ def _built(hides, kinds, cell, kind):
 
 
 COUNTERS = ("records", "cells", "faces", "blocks", "objects", "platforms", "lasers",
-            "vanishing", "crumbling", "captivators", "keys", "lights")
+            "vanishing", "crumbling", "captivators", "keys", "lights", "spikes")
 COUNTER_WORDS = {
     "records": "records",
     "cells": "cells",
@@ -926,6 +927,7 @@ COUNTER_WORDS = {
     "captivators": "captivators",
     "keys": "keys",
     "lights": "devices that cast a light",
+    "spikes": "moving spikes",
 }
 
 
@@ -965,6 +967,7 @@ def counts(project, hides):
             n["captivators"] += t in CAPTIVATORS
             n["keys"] += t == KEY
             n["lights"] += t in LIGHTS
+            n["spikes"] += t == MOVING_SPIKES
     n["records"] += bool(project.get("hidden") or project.get("invisibleFromAfar"))
     return dict(n)
 
@@ -1087,8 +1090,6 @@ def validate(project, hides):
     for what, cap in CAPS.items():
         if n[what] > cap:
             err(f"{n[what]} {COUNTER_WORDS[what]}, over the {cap} the game has room for")
-    if n["lights"] > LIGHT_LIST:
-        warn(f"{n['lights']} devices that cast a light, over the {LIGHT_LIST} the game lights at once")
     for what, most in DISC_MAX.items():
         if n[what] > most:
             warn(f"{n[what]} {COUNTER_WORDS[what]}, more than any level on the disc")
@@ -1156,7 +1157,9 @@ def _validate_span(b, at, kinds, err, warn):
         if max(cell[axis], far[axis]) + length - 1 not in INNER:
             err("the platform's run reaches past the edge", cell)
             return
-        if length not in LENGTHS:
+        if length > LENGTH_CAP:
+            err(f"a platform {length} blocks long, more than the {LENGTH_CAP} the game's grid holds", cell)
+        elif length not in LENGTHS:
             warn(f"a platform {length} blocks long", cell)
         if speed not in WORD:
             err(f"a speed of {speed}, outside the file's range", cell)

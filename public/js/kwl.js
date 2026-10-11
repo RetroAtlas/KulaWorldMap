@@ -55,6 +55,7 @@ const AXIS_WORD = [1, 2, 5];
 export const TELEPORTER = 5;
 export const EXIT = 7;
 export const SWITCH = 9;
+export const MOVING_SPIKES = 11;
 export const HIDDEN_EXIT = 26;
 export const START_ON_CLOCK = 29;
 export const START = 30;
@@ -77,7 +78,7 @@ export const VARIANT_TYPES = new Set(Object.keys(VARIANTS).map(Number));
 export const PICKUPS = [31, 32, 33, 34, 35, 36, 37, 38, 42, 43, 44, 45, 46, 47];
 const PICKUP_SET = new Set(PICKUPS);
 const CAPTIVATOR_SET = new Set(CAPTIVATORS);
-export const PLAIN_ONLY = new Set([TELEPORTER, EXIT, SWITCH, HIDDEN_EXIT, 11]);
+export const PLAIN_ONLY = new Set([TELEPORTER, EXIT, SWITCH, HIDDEN_EXIT, MOVING_SPIKES]);
 export const LIGHTS = new Set([TELEPORTER, EXIT, SWITCH]);
 export const NUMBERED = new Set([5, 7, 9, 10, 11, 12, 26, 28, ...PICKUPS]);
 export const PLAYED = new Set([
@@ -137,8 +138,11 @@ export const CAPS = {
   vanishing: 64,
   crumbling: 64,
   captivators: 32,
+  lights: 32,
+  spikes: 64,
 };
-export const LIGHT_LIST = 32;
+/** The longest run the ride's grid holds a platform of. */
+export const LENGTH_CAP = 7;
 /** A counter's name as a visitor reads it. */
 export const COUNTER_WORDS = {
   records: "records",
@@ -153,6 +157,7 @@ export const COUNTER_WORDS = {
   captivators: "captivators",
   keys: "keys",
   lights: "devices that cast a light",
+  spikes: "moving spikes",
 };
 
 export const DISC_MAX = {
@@ -168,6 +173,7 @@ export const DISC_MAX = {
   captivators: 12,
   keys: 4,
   lights: 19,
+  spikes: 19,
 };
 export const COUNTED_KINDS = new Set([0, 1, 2, 4, CRUMBLING_KIND, VANISHING_KIND]);
 

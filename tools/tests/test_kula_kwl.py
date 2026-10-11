@@ -700,17 +700,40 @@ class Validates(unittest.TestCase):
         captive[5]["faces"]["2"] = wandering
         self.assertIn("33 captivators, over the 32 the game has room for", self.errors(with_start(captive)))
 
-    def test_more_devices_that_cast_a_light_than_the_game_lights_at_once(self):
+    def test_the_light_and_the_moving_spikes_caps(self):
         def switch(colour):
             return {"type": SWITCH, "variant": colour}
 
         blocks = [plain((5, 5, 5), t0=start())]
         blocks += [plain((1 + 2 * i, 20, 5), **{f"t{j}": switch(j % 4) for j in range(6)}) for i in range(5)]
         blocks.append(plain((12, 20, 5), t0=switch(0), t1=switch(1)))
+        self.assertEqual(counts(project(blocks), HIDES)["lights"], 32)
         self.assertEqual(self.errors(blocks), [])
-        self.assertFalse(any("cast a light, over" in w for w in self.warnings(blocks)))
+        self.assertIn("32 devices that cast a light, more than any level on the disc", self.warnings(blocks))
         blocks[6]["faces"]["2"] = switch(2)
-        self.assertIn("33 devices that cast a light, over the 32 the game lights at once", self.warnings(blocks))
+        self.assertIn("33 devices that cast a light, over the 32 the game has room for", self.errors(blocks))
+
+        spiked = {f"t{j}": {"type": 11, "variant": 0} for j in range(6)}
+        spikes = [plain((5, 5, 5), t0=start())]
+        spikes += [plain((1 + 2 * i, 20, 5), **spiked) for i in range(10)]
+        spikes.append(plain((22, 20, 5), **{f"t{j}": {"type": 11, "variant": 0} for j in range(4)}))
+        self.assertEqual(counts(project(spikes), HIDES)["spikes"], 64)
+        self.assertEqual(self.errors(spikes), [])
+        self.assertIn("64 moving spikes, more than any level on the disc", self.warnings(spikes))
+        self.assertFalse(any("moving spikes, more" in w for w in self.warnings(spikes[:4])))
+        self.assertIn("24 moving spikes, more than any level on the disc", self.warnings(spikes[:5]))
+        spikes[11]["faces"]["4"] = {"type": 11, "variant": 0}
+        self.assertIn("65 moving spikes, over the 64 the game has room for", self.errors(spikes))
+
+    def test_a_platform_longer_than_the_rides_grid(self):
+        def rail(length):
+            return [plain((5, 5, 5), t0=start()),
+                    {"cell": [10, 10, 17], "kind": PLATFORM_KIND, "far": [10, 14, 17], "length": length, "speed": 30}]
+
+        self.assertEqual(self.errors(rail(7)), [])
+        self.assertIn("a platform 7 blocks long", self.warnings(rail(7)))
+        self.assertEqual(self.errors(rail(8)), ["a platform 8 blocks long, more than the 7 the game's grid holds"])
+        self.assertFalse(any("blocks long" in w for w in self.warnings(rail(8))))
 
     def test_the_disc_maxima_are_the_most_any_shipped_level_counts(self):
         most = dict.fromkeys(COUNTERS, 0)
