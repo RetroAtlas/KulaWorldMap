@@ -296,6 +296,18 @@ test("a platform runs over empty cells", () => {
       `the platform's run crosses the block at ${cell.join(",")}`,
     ]);
   assert.deepEqual(errors([...base, plain([10, 17, 17])]), []);
+  const edge = { cell: [30, 10, 17], kind: PLATFORM_KIND, far: [31, 10, 17], length: 2, speed: 30 };
+  assert.deepEqual(errors([base[0], edge]), []);
+  for (const over of [
+    { ...edge, far: [32, 10, 17] },
+    { ...edge, length: 3 },
+  ])
+    assert.deepEqual(errors([base[0], over]), ["the platform's run reaches past the edge"]);
+  assert.ok(
+    errors([base[0], { ...edge, length: 30000 }]).includes(
+      "the platform's run reaches past the edge",
+    ),
+  );
 });
 
 test("a beam ends on nothing, a plain block or another laser, and crosses nothing", () => {

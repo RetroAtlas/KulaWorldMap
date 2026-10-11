@@ -841,6 +841,10 @@ def _validate_span(b, at, kinds, err, warn):
         if length not in WORD:
             err(f"a length of {length}, outside the file's range", cell)
             return
+        axis = span_axis(cell, far)
+        if max(cell[axis], far[axis]) + length - 1 not in INNER:
+            err("the platform's run reaches past the edge", cell)
+            return
         if length not in LENGTHS:
             warn(f"a platform {length} blocks long", cell)
         if speed not in WORD:

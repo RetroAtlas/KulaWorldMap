@@ -278,6 +278,9 @@ function validateSpan(b, blocksAt, err, warn) {
     const length = b.length ?? DEFAULT_LENGTH;
     const speed = b.speed ?? DEFAULT_SPEED;
     if (!inWord(length)) return err(`a length of ${length}, outside the file's range`, cell);
+    const axis = spanAxis(cell, far);
+    if (!inner(Math.max(cell[axis], far[axis]) + length - 1))
+      return err("the platform's run reaches past the edge", cell);
     if (!LENGTHS.includes(length)) warn(`a platform ${length} blocks long`, cell);
     if (!inWord(speed)) err(`a speed of ${speed}, outside the file's range`, cell);
     else if (speed !== DEFAULT_SPEED) warn(`a platform running at ${speed}`, cell);

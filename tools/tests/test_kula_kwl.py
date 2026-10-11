@@ -411,6 +411,11 @@ class Validates(unittest.TestCase):
             self.assertEqual(self.errors([plain((5, 5, 5), t0=start()), rail, plain(cell)]),
                              [f"the platform's run crosses the block at {cell[0]},{cell[1]},{cell[2]}"])
         self.assertEqual(self.errors([plain((5, 5, 5), t0=start()), rail, plain((10, 17, 17))]), [])
+        edge = {"cell": [30, 10, 17], "kind": PLATFORM_KIND, "far": [31, 10, 17], "length": 2, "speed": 30}
+        self.assertEqual(self.errors([plain((5, 5, 5), t0=start()), edge]), [])
+        for over in (dict(edge, far=[32, 10, 17]), dict(edge, length=3)):
+            self.assertEqual(self.errors([plain((5, 5, 5), t0=start()), over]), ["the platform's run reaches past the edge"])
+        self.assertIn("the platform's run reaches past the edge", self.errors([plain((5, 5, 5), t0=start()), dict(edge, length=30000)]))
 
     def test_a_beam_ends_on_nothing_a_plain_block_or_another_laser_and_crosses_nothing(self):
         beam = {"cell": [10, 10, 17], "kind": LASER_KIND, "far": [14, 10, 17], "colour": 0}
