@@ -219,7 +219,8 @@ def plan(disc, pack_path, slot, stream, title=None):
         struct.pack_into("<I", user, 4 + slot * 8 + 4, len(stream))
         writes, where = _sectors(disc, lba, user, size), lba
     elif f.path == REBUILD:
-        writes, where = _sectors(disc, lba, pack(f.names, f.streams).ljust(capacity, b"\0"), f.size), lba
+        user = pack(f.names, f.streams).ljust(len(sectors_of(lba, f.size)) * USER, b"\0")
+        writes, where = _sectors(disc, lba, user, f.size), lba
         if f.size != size:
             writes += _directory(disc, key, lba, f.size)
     else:

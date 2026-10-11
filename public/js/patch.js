@@ -182,7 +182,7 @@ export async function plan(disc, packPath, slot, stream, title, inflate) {
     writes = await differing(
       disc,
       lba,
-      padded(writePak(fit.names, fit.streams), capacity),
+      padded(writePak(fit.names, fit.streams), sectorCount(fit.size) * USER),
       fit.size,
     );
     if (fit.size !== size) writes.push(...(await directory(disc, key, lba, fit.size)));

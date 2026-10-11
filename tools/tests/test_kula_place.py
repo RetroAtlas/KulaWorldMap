@@ -350,6 +350,29 @@ class ThePlacer(unittest.TestCase):
         with Disc(third) as disc, self.assertRaisesRegex(ValueError, "has no run of 4 zero sectors left"):
             plan(disc, SYNTHETIC_FINALS, 1, stream_of(synthetic(200)), TITLE)
 
+    def test_a_rebuilt_pack_that_comes_to_fewer_sectors_is_written_over_the_sectors_it_then_occupies(self):
+        at = SYNTHETIC_SECTORS
+        two = pack(["LEVEL 1", "LEVEL 2", "LEVEL 3"], [stored(500), stored(1000), stored(481)])
+        self.assertEqual(len(two), USER + 1)
+        with Disc(self.src) as disc:
+            finals_at, finals_size = disc.files[SYNTHETIC_FINALS]
+        world = (record(b"\0", WORLD_AT, USER, 2) + record(b"\1", ROOT_AT, USER, 2)
+                 + record("HIRO.PAK;1", at, len(two)) + record("HIROFI.PAK;1", finals_at, finals_size))
+        image = bytearray(IMAGE)
+        image[WORLD_AT * SECTOR_RAW:(WORLD_AT + 1) * SECTOR_RAW] = sector(WORLD_AT, world.ljust(USER, b"\0"), EOF_SUBMODE)
+        image += sector(at, two[:USER], DATA_SUBMODE) + sector(at + 1, two[USER:].ljust(USER, b"\0"), EOF_SUBMODE)
+        self.src.write_bytes(image)
+        placed = place(self.src, SYNTHETIC_PACK, SLOT, stored(1001), self.out, "A")
+        self.assertEqual((placed.fit.path, placed.fit.recompressed, placed.fit.size, placed.fit.names),
+                         (REBUILD, False, USER - 2, ["LEVEL 1", "A", "LEVEL 3"]))
+        self.assertEqual([lba for lba, _ in placed.writes], [WORLD_AT, at])
+        after = self.out.read_bytes()
+        self.assertEqual(raw(after, at)[SUBHEADER_OFF + 2], EOF_SUBMODE)
+        self.assertEqual(raw(after, at + 1), raw(bytes(image), at + 1))
+        with Disc(self.out) as disc:
+            self.assertEqual(disc.files[SYNTHETIC_PACK], (at, USER - 2))
+            self.assertEqual(Pak(disc.read_file(SYNTHETIC_PACK)).names(), ["LEVEL 1", "A", "LEVEL 3"])
+
     def test_a_directory_sector_is_rewritten_under_its_own_subheader(self):
         dir_at = SYNTHETIC_SECTORS
         with Disc(self.src) as disc:

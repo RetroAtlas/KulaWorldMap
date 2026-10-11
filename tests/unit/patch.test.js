@@ -438,6 +438,37 @@ test("a pack moves into the first free run of the room, behind one already moved
   );
 });
 
+test("a rebuilt pack that comes to fewer sectors is written over the sectors it then occupies", async () => {
+  const AT = SYNTHETIC_SECTORS;
+  const two = writePak(["LEVEL 1", "LEVEL 2", "LEVEL 3"], [stored(500), stored(1000), stored(481)]);
+  assert.equal(two.length, USER + 1);
+  const [, [finals, finalsAt, finalsBlob]] = syntheticPacks();
+  const world = concat([
+    record("\0", WORLD_AT, USER, 2),
+    record("\x01", ROOT_AT, USER, 2),
+    record("HIRO.PAK;1", AT, two.length),
+    record(`${finals.split("/").pop()};1`, finalsAt, finalsBlob.length),
+  ]);
+  const image = concat([
+    IMAGE,
+    sector(AT, two.subarray(0, USER), DATA_SUBMODE),
+    sector(AT + 1, padded(two.subarray(USER), USER), EOF_SUBMODE),
+  ]);
+  image.set(sector(WORLD_AT, padded(world, USER), EOF_SUBMODE), WORLD_AT * SECTOR_RAW);
+  const { disc, placed, after } = await place(stored(1001), { title: "A", image });
+  assert.deepEqual(
+    [placed.fit.path, placed.fit.recompressed, placed.fit.size, placed.fit.names],
+    [REBUILD, false, USER - 2, ["LEVEL 1", "A", "LEVEL 3"]],
+  );
+  assert.deepEqual(lbas(placed), [WORLD_AT, AT]);
+  assert.equal(raw(after, AT)[SUBMODE_AT], EOF_SUBMODE);
+  same(raw(after, AT + 1), raw(image, AT + 1));
+  assert.deepEqual(disc.files.get(SYNTHETIC_PACK), { lba: AT, size: two.length });
+  const read = await openDisc(new Blob([after]));
+  assert.deepEqual(read.files.get(SYNTHETIC_PACK), { lba: AT, size: USER - 2 });
+  assert.deepEqual(readPak(await read.readFile(SYNTHETIC_PACK)).names, ["LEVEL 1", "A", "LEVEL 3"]);
+});
+
 test("a directory sector is rewritten under its own subheader, which need not be a file's last", async () => {
   const DIR_AT = SYNTHETIC_SECTORS;
   const root = concat([
