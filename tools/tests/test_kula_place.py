@@ -43,10 +43,12 @@ from kula_place import (  # noqa: E402
     pack_name,
     place,
     plan,
+    proven,
     stream_of,
     synthetic,
     synthetic_image,
     verify,
+    write_image,
     write_sectors,
 )
 from kula_sector import (  # noqa: E402
@@ -343,6 +345,21 @@ class ThePlacer(unittest.TestCase):
         with Patched(self.src, placed.writes) as view:
             self.assertEqual(view.files[SYNTHETIC_PACK], (ROOM_AT, placed.fit.size))
             verify(view, SYNTHETIC_PACK, SLOT, stream, placed)
+        self.assertEqual(self.src.read_bytes(), IMAGE)
+
+    def test_a_copy_that_fails_its_check_is_removed_with_its_cue_sheet(self):
+        stream = stream_of(synthetic(LEVELS[REBUILD]))
+        with Disc(self.src) as disc:
+            placed = plan(disc, SYNTHETIC_PACK, SLOT, stream, TITLE)
+        write_image(self.src, self.out, placed.writes)
+        cue = self.out.with_suffix(".cue")
+        self.assertTrue(self.out.exists() and cue.exists())
+        proven(self.out, SYNTHETIC_PACK, SLOT, stream, placed)
+        self.assertTrue(self.out.exists() and cue.exists())
+        wrong = placed._replace(fit=placed.fit._replace(size=placed.fit.size + 1))
+        with self.assertRaises(ValueError):
+            proven(self.out, SYNTHETIC_PACK, SLOT, stream, wrong)
+        self.assertFalse(self.out.exists() or cue.exists())
         self.assertEqual(self.src.read_bytes(), IMAGE)
 
     def test_the_image_is_known_by_its_structure_and_warned_about_where_it_is_not_the_disc(self):

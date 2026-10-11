@@ -35,6 +35,7 @@ from kula_place import (
     SYNTHETIC_PACK,
     Patched,
     plan,
+    proven,
     synthetic,
     synthetic_image,
     verify,
@@ -287,8 +288,10 @@ def main():
     named = lambda ext: out.with_name(out.name + ext)  # noqa: E731
     if wanted["image"]:
         write_image(src, named(".bin"), placed.writes)
-        with Disc(named(".bin")) as written:
-            verify(written, pack_path, int(slot), stream, placed)
+        try:
+            proven(named(".bin"), pack_path, int(slot), stream, placed)
+        except ValueError as e:
+            sys.exit(f"{named('.bin')} does not read back as planned, so it and its cue sheet were removed: {e}")
         print(f"{named('.bin')} and {named('.cue')}")
     if wanted["ppf"]:
         blob = ppf(src, placed.writes, PREFIX + title)

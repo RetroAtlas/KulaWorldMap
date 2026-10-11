@@ -250,16 +250,27 @@ def write_image(src, out, writes):
     out.with_suffix(".cue").write_text(CUE.format(out.name))
 
 
+def proven(out, pack_path, slot, stream, placed):
+    """Read the copy back and hold it to the plan, removing it and its cue sheet where it fails."""
+    out = Path(out)
+    try:
+        with Disc(out) as disc:
+            verify(disc, pack_path, slot, stream, placed)
+            for lba, raw in placed.writes:
+                if raw_sector(disc.f, lba) != raw:
+                    raise ValueError(f"sector {lba} of {out} is not what was written")
+    except Exception:
+        for path in (out, out.with_suffix(".cue")):
+            path.unlink(missing_ok=True)
+        raise
+
+
 def place(image, pack_path, slot, stream, out, title=None):
     """Copy the image to out with the stream placed, prove the copy, and say what was done."""
     with Disc(image) as disc:
         placed = plan(disc, pack_path, slot, stream, title)
     write_image(image, out, placed.writes)
-    with Disc(out) as disc:
-        verify(disc, pack_path, slot, stream, placed)
-        for lba, raw in placed.writes:
-            if raw_sector(disc.f, lba) != raw:
-                raise ValueError(f"sector {lba} of {out} is not what was written")
+    proven(out, pack_path, slot, stream, placed)
     return placed
 
 
