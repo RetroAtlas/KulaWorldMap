@@ -37,6 +37,7 @@ from kula_disc import THEMES, open_disc, packs
 from kula_level import (
     BLOCK_KINDS,
     CELLS,
+    PAYLOAD_KINDS,
     EMPTY,
     FACES,
     FIRST_RECORD,
@@ -1738,6 +1739,40 @@ RESIDUALS = {
 }
 # The levels whose rebuild keeps fewer records than the disc, by what it leaves out.
 DROPPED = {UNFLAGGED: 144, BARE_RECORDS: 2}
+
+
+def slot_figures(disc):
+    """What the disc's slots hold, as docs/editor.md states it: the bare slots on
+    blocks of kinds 0 to 4, the unused slots of the four payload kinds that are
+    -1 throughout, by slot, and how the pickups are numbered."""
+    bare, unset, totals = 0, {k: Counter() for k in PAYLOAD_KINDS}, Counter()
+    numbered = ordered = 0
+    repeats = []
+    for theme, path in packs(disc):
+        pak = Pak(disc.read_file(path), path)
+        for i in range(len(pak)):
+            L = Level(pak.level(i), pak.name(i), theme)
+            walked, every = [], []
+            for r in L.records:
+                for j, s in enumerate(r.slots):
+                    if r.kind < BLOCK_KINDS and list(s[1:]) == BARE[1:] and (j == 0 or s[0] == -1):
+                        bare += 1
+                    if s[1] in PICKUPS and r.kind != UNPLACED_KIND:
+                        every.append(s[5])
+                        if r.kind < BLOCK_KINDS:
+                            walked.append(s[5])
+                if r.kind in PAYLOAD_KINDS:
+                    totals[r.kind] += 1
+                    for j in range(2 if r.kind in SPAN_KINDS else 1, FACES):
+                        unset[r.kind][j] += all(w == -1 for w in r.slots[j])
+            if any(n != -1 for n in walked):
+                numbered += 1
+                ordered += walked == list(range(len(walked)))
+                every = [n for n in every if n != -1]
+                if len(set(every)) != len(every):
+                    repeats.append(L.name)
+    return {"bare": bare, "unset": {k: (min(c.values()), max(c.values()), totals[k]) for k, c in unset.items()},
+            "numbered": numbered, "ordered": ordered, "repeats": sorted(repeats)}
 
 
 def check(disc, out=print):

@@ -5,6 +5,7 @@ Only the last class needs the disc, and it is skipped without $KULA_DISC.
 
 import json
 import os
+import re
 import struct
 import subprocess
 import sys
@@ -56,6 +57,7 @@ from kula_kwl import (  # noqa: E402
     stripped,
     render_hostile,
     residuals,
+    slot_figures,
     trio_failures,
     render_vectors,
     template,
@@ -78,6 +80,8 @@ from kula_level import (  # noqa: E402
 from test_kula_level import block, level, slot  # noqa: E402
 
 TOOL = Path(__file__).resolve().parents[1] / "kula_kwl.py"
+EDITOR_DOC = Path(__file__).resolve().parents[2] / "docs" / "editor.md"
+FORMAT_DOC = Path(__file__).resolve().parents[2] / "docs" / "level-format.md"
 HIDES = json.loads(OBJECTS.read_text())["skins"]["hides"]
 START, EXIT, KEY, COIN, GEM = 30, 7, 31, 37, 36
 WORLD = "HIRO"
@@ -1045,6 +1049,26 @@ class TheDisc(unittest.TestCase):
         self.assertEqual((r["numbered.from"], r["numbered.from"] + r["numbered.count"]), (min(NUMBERED), max(NUMBERED) + 1))
         self.assertEqual(INNER, range(r["inner.from"], r["inner.below"]))
         self.assertEqual(min(CAPTIVATORS), r["captivators.from"])
+
+    def test_the_documents_slot_figures_are_the_discs(self):
+        with open_disc() as disc:
+            f = slot_figures(disc)
+        doc = EDITOR_DOC.read_text()
+        bare = re.search(r"the form the disc holds on ([\d,]+) of its empty faces", doc)
+        self.assertEqual(int(bare.group(1).replace(",", "")), f["bare"])
+        unset = re.search(r"(\d+) to (\d+) of its (\d+) platforms, (\d+) to (\d+) of its (\d+) crumbling blocks, "
+                          r"(\d+) to (\d+) of its (\d+) vanishing blocks and (\d+) to (\d+) of its (\d+) lasers by slot", doc)
+        self.assertEqual([int(g) for g in unset.groups()],
+                         [*f["unset"][PLATFORM_KIND], *f["unset"][6], *f["unset"][7], *f["unset"][LASER_KIND]])
+        numbered = re.search(r"numbers its pickups as the writer does on all (\d+) levels that number them", doc)
+        self.assertEqual((int(numbered.group(1)), f["ordered"]), (f["numbered"], f["numbered"]))
+        self.assertEqual(f["repeats"], ["BONUS 16", "FINAL 11", "FINAL 13", "LECEL 94", "LEVEL 134"])
+        fmt = FORMAT_DOC.read_text()
+        runs = re.search(r"runs 0 to n-1 with no repeats on (\d+) of the (\d+) levels that have any\. "
+                         r"The (\w+) with a repeat are ((?:[A-Z]+ \d+, )*[A-Z]+ \d+ and [A-Z]+ \d+),", fmt)
+        self.assertEqual((int(runs.group(1)), int(runs.group(2))), (f["numbered"] - len(f["repeats"]), f["numbered"]))
+        self.assertEqual(runs.group(3), "five")
+        self.assertEqual(sorted(runs.group(4).replace(" and ", ", ").split(", ")), f["repeats"])
 
     def test_every_level_rebuilt_plays_as_the_disc_and_differs_in_the_words_listed_alone(self):
         with open_disc() as disc:
