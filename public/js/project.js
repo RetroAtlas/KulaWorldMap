@@ -1,7 +1,7 @@
 // The editor's document: a level as blocks, faces and circuits, edited copy on write.
 import { SIDE } from "./state.js";
 import { FACE_NORMAL } from "./faces.js";
-import { entryName, kindName } from "./data.js";
+import { circuitName, entryName, kindName } from "./data.js";
 import {
   BLOCK_KINDS,
   BONUS_UNDRAWN_KINDS,
@@ -449,11 +449,12 @@ function validateCircuits(project, blocks, warn) {
     }
   }
   members.forEach((m, c) => {
+    const name = circuitName(c);
     if (circuits[String(c)] === "off" && !m.switches && (m.lasers || m.teleporters))
-      warn(`colour ${c} starts off and has no switch to turn it on`);
-    if (m.teleporters === 1) warn(`the one teleporter of colour ${c} leads to itself`);
+      warn(`the ${name} circuit starts off and has no switch to turn it on`);
+    if (m.teleporters === 1) warn(`the one ${name} teleporter leads to itself`);
     if (m.switches && !m.teleporters && !m.lasers)
-      warn(`the switches of colour ${c} have nothing to switch`);
+      warn(`the ${name} switches have nothing to switch`);
   });
 }
 

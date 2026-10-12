@@ -13,6 +13,7 @@ import tempfile
 import unittest
 from collections import Counter
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -955,7 +956,7 @@ class Validates(unittest.TestCase):
             "error at 10,10,17: a length of 2, outside the file's range",
             "warning at 5,5,5 face 1: looks into the block at 6,5,5",
             "warning: 2 starts; the game takes the one on face 0 of the block at 12,5,5",
-            "warning: colour 0 starts off and has no switch to turn it on",
+            "warning: the yellow circuit starts off and has no switch to turn it on",
         ])
         self.assertEqual(counts(spelled, HIDES), {"records": 10, "cells": 10, "faces": 75, "blocks": 5, "objects": 1, "platforms": 2, "lasers": 4, "vanishing": 1, "crumbling": 0, "captivators": 0, "keys": 0, "lights": 0, "spikes": 0})
         self.assertEqual(plays_as(spelled), "Plays as a hidden bonus level, with the glass ball on half-seen blocks: it has no key, so every block scores 50 the first time the ball rolls onto it, the level ends once every block has been rolled, and an exit stands open from the start.")
@@ -1139,16 +1140,18 @@ class Validates(unittest.TestCase):
         errors = texts(findings, "error")
         for text in ("a variant of 7", "a variant of -1", "a variant of gold", "a colour of 7", "a colour of none"):
             self.assertIn(text, errors)
-        self.assertFalse(any("colour 7" in w or "colour -1" in w for w in texts(findings, "warning")))
+        self.assertFalse(any(" 7 " in w or " -1 " in w for w in texts(findings, "warning")))
         self.assertEqual(counts(project(blocks), HIDES)["lasers"], 2)
 
     def test_the_circuits_warnings(self):
         blocks = [plain((5, 5, 5), t0=start(), t1={"type": TELEPORTER, "facing": 1, "variant": 0}, t2={"type": SWITCH, "variant": 1}),
                   {"cell": [9, 9, 9], "kind": LASER_KIND, "far": [9, 12, 9], "colour": 2}]
         warnings = self.warnings(blocks, circuits={"2": "off"})
-        self.assertIn("colour 2 starts off and has no switch to turn it on", warnings)
-        self.assertIn("the one teleporter of colour 0 leads to itself", warnings)
-        self.assertIn("the switches of colour 1 have nothing to switch", warnings)
+        self.assertIn("the green circuit starts off and has no switch to turn it on", warnings)
+        self.assertIn("the one yellow teleporter leads to itself", warnings)
+        self.assertIn("the blue switches have nothing to switch", warnings)
+        with mock.patch("kula_kwl._names", return_value={"kinds": {}, "types": {}}):
+            self.assertIn("the 2 circuit starts off and has no switch to turn it on", self.warnings(blocks, circuits={"2": "off"}))
         self.assertIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY})]))
         self.assertNotIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY}, t2={"type": EXIT})]))
         self.assertNotIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY}, t2={"type": 26})]))

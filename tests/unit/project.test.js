@@ -637,9 +637,7 @@ test("a bad colour or variant is a finding and leaves the circuits pass alone", 
     "a colour of none",
   ])
     assert.ok(found.includes(text), text);
-  assert.ok(
-    !texts(findings, "warning").some((w) => w.includes("colour 7") || w.includes("colour -1")),
-  );
+  assert.ok(!texts(findings, "warning").some((w) => w.includes(" 7 ") || w.includes(" -1 ")));
   assert.equal(counts(project(blocks), HIDES).lasers, 2);
 });
 
@@ -707,7 +705,7 @@ test("a document that bypassed the reader is checked alike on both sides", () =>
     "error at 10,10,17: a length of 2, outside the file's range",
     "warning at 5,5,5 face 1: looks into the block at 6,5,5",
     "warning: 2 starts; the game takes the one on face 0 of the block at 12,5,5",
-    "warning: colour 0 starts off and has no switch to turn it on",
+    "warning: the yellow circuit starts off and has no switch to turn it on",
   ]);
   assert.deepEqual(counts(spelled, HIDES), {
     records: 10,
@@ -1035,9 +1033,19 @@ test("the circuits' warnings", () => {
     { cell: [9, 9, 9], kind: LASER_KIND, far: [9, 12, 9], colour: 2 },
   ];
   const warned = warnings(blocks, { circuits: { 2: "off" } });
-  assert.ok(warned.includes("colour 2 starts off and has no switch to turn it on"));
-  assert.ok(warned.includes("the one teleporter of colour 0 leads to itself"));
-  assert.ok(warned.includes("the switches of colour 1 have nothing to switch"));
+  assert.ok(warned.includes("the green circuit starts off and has no switch to turn it on"));
+  assert.ok(warned.includes("the one yellow teleporter leads to itself"));
+  assert.ok(warned.includes("the blue switches have nothing to switch"));
+  setAnnotations({ ...annotations, types: { ...annotations.types, [SWITCH]: { name: "Switch" } } });
+  try {
+    assert.ok(
+      warnings(blocks, { circuits: { 2: "off" } }).includes(
+        "the 2 circuit starts off and has no switch to turn it on",
+      ),
+    );
+  } finally {
+    setAnnotations(annotations);
+  }
   assert.ok(
     warnings([plain([5, 5, 5], 0, { 0: start(), 1: { type: KEY } })]).includes("a key and no exit"),
   );

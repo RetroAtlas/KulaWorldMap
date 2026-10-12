@@ -1515,6 +1515,13 @@ def _undrawn_in_bonus(blocks):
     return names
 
 
+def _circuit_name(c):
+    """A circuit's word, the bracketed part of its switch's name, or its number."""
+    name = _names()["types"].get(str(SWITCH), {}).get("variants", {}).get(str(c), {}).get("name") or ""
+    found = re.search(r"\(([^)]*)\)", name)
+    return found.group(1) if found else str(c)
+
+
 def _validate_circuits(project, blocks, warn):
     circuits = _or(project.get("circuits"), {})
     members = {c: Counter() for c in range(COLOURS)}
@@ -1533,12 +1540,13 @@ def _validate_circuits(project, blocks, warn):
             elif o["type"] == SWITCH:
                 members[colour]["switches"] += 1
     for c, m in members.items():
+        name = _circuit_name(c)
         if _property(circuits, str(c)) == "off" and not m["switches"] and (m["lasers"] or m["teleporters"]):
-            warn(f"colour {c} starts off and has no switch to turn it on")
+            warn(f"the {name} circuit starts off and has no switch to turn it on")
         if m["teleporters"] == 1:
-            warn(f"the one teleporter of colour {c} leads to itself")
+            warn(f"the one {name} teleporter leads to itself")
         if m["switches"] and not m["teleporters"] and not m["lasers"]:
-            warn(f"the switches of colour {c} have nothing to switch")
+            warn(f"the {name} switches have nothing to switch")
 
 
 # --- the checks that hold the writer to the data and the disc -----------------
