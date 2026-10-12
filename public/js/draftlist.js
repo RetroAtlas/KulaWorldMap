@@ -2,23 +2,25 @@
 // that edits the shown one.
 import { $, el, emit, on } from "./dom.js";
 import { state } from "./state.js";
-import { worldName, levelTitle, skinsTable } from "./data.js";
+import { worldName, levelTitle, markerColour, skinsTable } from "./data.js";
 import { selectLevel, showLevel } from "./navigate.js";
 import { say, describeLevel } from "./a11y.js";
 import { toast } from "./toast.js";
-import { KEY, facesOf, writeKwl } from "./kwl.js";
+import { COLOURS, KEY, LASER_KIND, SWITCH, TELEPORTER, facesOf, writeKwl } from "./kwl.js";
 import {
   ERROR,
   UNTITLED,
   blank,
   fromLevel,
   playsAs,
+  setCircuit,
   setMeta,
   toLevel,
   validate,
   writeProject,
 } from "./project.js";
 import { download, readLevelFile, readLevelText, slug } from "./files.js";
+import { colourName } from "./palette.js";
 import { pasteLevelLink } from "./importdialog.js";
 import { openPatchDialog } from "./patchdialog.js";
 import { edit as step } from "./trail.js";
@@ -36,6 +38,9 @@ const HAS_KEY =
   "This level has a key, so the game plays it as an arcade level. Take every key away to make it a bonus level.";
 const nameOf = (doc) => doc.title || UNTITLED;
 const keyed = (doc) => doc.blocks.some((b) => facesOf(b).some(([, o]) => o.type === KEY));
+const NO_MEMBERS = "nothing of this colour";
+const startsOff = (doc, colour) => doc.circuits?.[String(colour)] === "off";
+const some = (n, word, words = `${word}s`) => `${n} ${n === 1 ? word : words}`;
 
 // The disc's level shown last, which deleting the shown draft returns to.
 let lastDisc = 0;
@@ -326,6 +331,7 @@ function buildForm(id, box) {
   const afar = el("input", { id: "draftAfar", type: "checkbox" });
   afar.onchange = () =>
     edit({ invisibleFromAfar: afar.checked }, "changed the invisible blocks setting");
+  const circuits = circuitRows(id);
   const plays = el("p", { id: "draftPlays", className: "plays" });
   const errors = el("p", { id: "draftErrors", className: "errors", hidden: true });
 
@@ -382,6 +388,7 @@ function buildForm(id, box) {
     bonusSays,
     el("label", { className: "check" }, hidden, " Hidden level"),
     el("label", { className: "check" }, afar, " Invisible blocks show from far away"),
+    circuits.box,
     plays,
     errors,
     el("div", { className: "row" }, saveJson, saveKwl, patch, note),
@@ -402,6 +409,7 @@ function buildForm(id, box) {
       bonusLabel.title = bonusSays.textContent = key ? HAS_KEY : NO_KEY;
       hidden.checked = !!d.doc.hidden;
       afar.checked = !!d.doc.invisibleFromAfar;
+      circuits.sync(d.doc);
       plays.textContent = playsAs(d.doc);
       const n = validate(d.doc, skinsTable()?.hides).filter((f) => f.level === ERROR).length;
       errors.hidden = n === 0;
@@ -418,4 +426,80 @@ function buildForm(id, box) {
       clearTimeout(noteTimer);
     },
   };
+}
+
+/** The four circuits: each colour's lamp, whether it starts on, as a toggle, and what it has. */
+function circuitRows(id) {
+  const box = el("div", { className: "circuits" });
+  box.setAttribute("role", "group");
+  box.setAttribute("aria-labelledby", "draftCircuits");
+  box.append(el("span", { id: "draftCircuits", textContent: "Circuits" }));
+  const rows = [];
+  for (let colour = 0; colour < COLOURS; colour++) {
+    const name = colourName(colour);
+    const lamp = el("span", { className: "lamp" });
+    lamp.style.setProperty(
+      "--lamp",
+      markerColour({ type: SWITCH, face: 0, variant: String(colour) }),
+    );
+    lamp.setAttribute("aria-hidden", "true");
+    const toggle = el("button", { id: `draftCircuit${colour}`, type: "button" });
+    toggle.onclick = () => {
+      const d = drafts.get(id);
+      if (!d) return;
+      const off = startsOff(d.doc, colour);
+      step(
+        id,
+        setCircuit(d.doc, colour, off ? "on" : "off"),
+        `turned the ${name} circuit ${off ? "on" : "off"}`,
+      );
+    };
+    const members = el("span", { className: "members" });
+    const row = el("div", { className: "circuit" }, lamp, toggle, members);
+    row.setAttribute("role", "group");
+    row.setAttribute("aria-label", name);
+    box.append(row);
+    rows.push({ colour, name, toggle, members });
+  }
+  return {
+    box,
+    sync(doc) {
+      const tally = membersOf(doc);
+      for (const { colour, name, toggle, members } of rows) {
+        const off = startsOff(doc, colour);
+        toggle.textContent = `starts ${off ? "off" : "on"}`;
+        toggle.title = `Turn the ${name} circuit ${off ? "on" : "off"}`;
+        toggle.setAttribute("aria-pressed", String(!off));
+        members.textContent = tally[colour];
+      }
+    },
+  };
+}
+
+/** What each colour has, as a line: its switches, teleporters and lasers, or that it has none. */
+function membersOf(doc) {
+  const tally = Array.from({ length: COLOURS }, () => ({ switches: 0, teleporters: 0, lasers: 0 }));
+  const of = (colour) => tally[colour ?? 0];
+  for (const b of doc.blocks) {
+    if (b.kind === LASER_KIND) {
+      const m = of(b.colour);
+      if (m) m.lasers++;
+    }
+    for (const [, o] of facesOf(b)) {
+      const m = of(o.variant);
+      if (!m) continue;
+      if (o.type === SWITCH) m.switches++;
+      if (o.type === TELEPORTER) m.teleporters++;
+    }
+  }
+  return tally.map(
+    ({ switches, teleporters, lasers }) =>
+      [
+        switches && some(switches, "switch", "switches"),
+        teleporters && some(teleporters, "teleporter"),
+        lasers && some(lasers, "laser"),
+      ]
+        .filter(Boolean)
+        .join(", ") || NO_MEMBERS,
+  );
 }

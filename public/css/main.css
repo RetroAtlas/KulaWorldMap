@@ -500,6 +500,7 @@ button.kind:hover {
 }
 .yours .actions button,
 .yours .card .row button,
+.yours .card .circuit button,
 .yours .unread button {
   background: var(--panel-2);
   border: 1px solid var(--line);
@@ -512,6 +513,7 @@ button.kind:hover {
 }
 .yours .actions button:hover,
 .yours .card .row button:hover,
+.yours .card .circuit button:hover,
 .yours .unread button:hover {
   border-color: var(--accent-dim);
 }
@@ -664,6 +666,30 @@ button.kind:hover {
 }
 .yours .card .row {
   margin-top: 8px;
+}
+.yours .card .circuits {
+  padding: 3px 0;
+  font-size: 12.5px;
+}
+.yours .card .circuits > span {
+  display: block;
+  color: var(--dim);
+}
+.yours .card .circuit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+.yours .card .circuit button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.yours .card .circuit .members {
+  flex: 1;
+  min-width: 0;
+  color: var(--dim);
+  font-size: 11.5px;
 }
 
 .foot {
@@ -1060,7 +1086,8 @@ body:not(.sidebar-open) .menu-btn .cross {
 .detail .press button:hover {
   border-color: var(--accent-dim);
 }
-.detail .lamp {
+.detail .lamp,
+.yours .card .lamp {
   width: 9px;
   height: 9px;
   box-sizing: border-box;

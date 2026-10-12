@@ -381,6 +381,85 @@ test("the Level card counts the checks' errors without the game's face table", a
   expect(errors.filter((e) => !/Failed to load resource/.test(e))).toEqual([]);
 });
 
+test("the Level card's Circuits rows set a colour's starting state as one step, which the panel's own row shows and undo takes back", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  const id = (await shown(page)).draft;
+  const rows = page.locator("#draftCard .circuit");
+  const toggle = (colour) => page.locator(`#draftCircuit${colour}`);
+  const members = rows.locator(".members");
+  // the lamps are for the eye alone
+  for (let colour = 0; colour < 4; colour++)
+    await expect(rows.nth(colour).locator(".lamp")).toHaveAttribute("aria-hidden", "true");
+  await expect(page.locator("#draftCard .circuits")).toHaveAccessibleName("Circuits");
+  await expect(rows).toHaveCount(4);
+  for (const [i, name] of ["yellow", "blue", "green", "red"].entries())
+    await expect(rows.nth(i)).toHaveAccessibleName(name);
+  await expect(members).toHaveText(Array(4).fill("nothing of this colour"));
+  await expect(toggle(2)).toHaveText("starts on");
+  await expect(toggle(2)).toHaveAttribute("aria-pressed", "true");
+  await expect(toggle(2)).toHaveAttribute("title", "Turn the green circuit off");
+
+  await faced(page, 1, { type: 9, variant: 2 });
+  await expect(members.nth(2)).toHaveText("1 switch");
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setBlock }] = await Promise.all(
+      ["state.js", "drafts.js", "project.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    update(id, setBlock(get(id).doc, [17, 19, 17], { kind: 8, far: [21, 19, 17], colour: 2 }));
+  });
+  await expect(members.nth(2)).toHaveText("1 switch, 1 laser");
+  await expect(members.nth(0)).toHaveText("nothing of this colour");
+
+  // the panel's own row, on the face that holds the switch, says the same
+  await expect(page.locator("#tools")).toBeVisible();
+  if ((await page.locator("#editBtn").getAttribute("aria-pressed")) !== "true")
+    await page.keyboard.press("w");
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state, cellKey }, { showCell }] = await Promise.all(["state.js", "detail.js"].map(at));
+    showCell({ ...state.idx.cells.get(cellKey(17, 17, 17)), face: 1 });
+  });
+  const panelRow = page.locator('#detail [data-field="circuit-2"]');
+  await expect(panelRow).toHaveText("starts on");
+  const steps = () =>
+    page.evaluate(async () => {
+      const [{ state }, { steps }] = await Promise.all(
+        ["state.js", "trail.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+      );
+      return steps(state.lvl.draft);
+    });
+  const before = await steps();
+
+  await toggle(2).click();
+  expect((await docOf(page, id)).circuits).toEqual({ 2: "off" });
+  await expect(toggle(2)).toHaveText("starts off");
+  await expect(toggle(2)).toHaveAttribute("aria-pressed", "false");
+  await expect(toggle(2)).toHaveAttribute("title", "Turn the green circuit on");
+  await expect(toggle(2)).toBeFocused();
+  await expect(toggle(0)).toHaveText("starts on");
+  await expect(panelRow).toHaveText("starts off");
+  expect(await steps()).toEqual({ past: before.past + 1, future: 0 });
+
+  await page.locator("#undoBtn").click();
+  expect((await docOf(page, id)).circuits).toEqual({});
+  await expect(toggle(2)).toHaveText("starts on");
+  await expect(panelRow).toHaveText("starts on");
+  expect(await steps()).toEqual({ past: before.past, future: 1 });
+
+  await panelRow.click();
+  await expect(toggle(2)).toHaveText("starts off");
+  await expect(members.nth(2)).toHaveText("1 switch, 1 laser");
+  expect(errors).toEqual([]);
+});
+
 test("the card's time field takes the seconds the file can hold and says when it keeps the old value, and the title stops at eighty letters", async ({
   page,
 }) => {

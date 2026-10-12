@@ -388,7 +388,7 @@ test("a thing of a hidden kind put on a face brings the kind back as the map and
   expect(errors).toEqual([]);
 });
 
-test("the facing buttons turn the start, and a switch's swatches and the circuits card set its colour and its state", async ({
+test("the facing buttons turn the start, and a switch's swatches and its circuit row set its colour and its state", async ({
   page,
 }) => {
   const errors = trackErrors(page);
