@@ -56,6 +56,7 @@ from kula_kwl import (  # noqa: E402
     project_of_level,
     read_kwl,
     read_project,
+    record_overflow,
     render_digests,
     stripped,
     render_hostile,
@@ -736,6 +737,15 @@ class ReadsProjects(unittest.TestCase):
         q, lines, _ = read_project(project(crowd))
         self.assertEqual(lines, [])
         self.assertIn("2049 records, over the 123 the game has room for", texts(validate(q, HIDES), "error"))
+        self.assertEqual(record_overflow(q), "2049 records, over the 123 the game has room for")
+        self.assertIsNone(record_overflow(p))
+        # the settings record takes no link word, so a flagged crowd of 2048 writes
+        flagged = read_project(project(crowd[:2048], hidden=True))[0]
+        self.assertIn("2049 records, over the 123 the game has room for", texts(validate(flagged, HIDES), "error"))
+        self.assertIsNone(record_overflow(flagged))
+        canonical(flagged)
+        self.assertEqual(record_overflow(read_project(project(crowd, hidden=True))[0]),
+                         "2050 records, over the 123 the game has room for")
         with self.assertRaises(ValueError) as caught:
             canonical(q)
         self.assertEqual(str(caught.exception), "a word of the block at 32,32,2 is outside the file's range")
@@ -1352,8 +1362,8 @@ class TheCli(unittest.TestCase):
             (scratch / "bad.kula.json").write_text(json.dumps(project(crowd)))
             done = self.run_tool("--from-json", scratch / "bad.kula.json", "--kwl", scratch / "bad.kwl")
             self.assertEqual(done.returncode, 1, done.stderr)
-            self.assertIn("a word of the block at 32,32,2 is outside the file's range", done.stderr)
-            self.assertNotIn("Traceback", done.stderr)
+            self.assertEqual(done.stderr.splitlines(),
+                             [f"{scratch / 'bad.kula.json'} has 2049 records, over the 123 the game has room for"])
             self.assertFalse((scratch / "bad.kwl").exists())
             (scratch / "other.json").write_text('{"format": "orbit"}')
             done = self.run_tool("--from-json", scratch / "other.json", "--kwl", scratch / "other.kwl")

@@ -47,6 +47,7 @@ import {
   moveBlocks,
   playsAs,
   readProject,
+  recordOverflow,
   removeBlock,
   setBlock,
   setCircuit,
@@ -1327,6 +1328,21 @@ test("the reader leaves out what the writer has no bytes for, and holds a word t
   const { project: q, report: lines } = readProject(project(crowd));
   assert.deepEqual(lines, []);
   assert.ok(errors(crowd).includes("2049 records, over the 123 the game has room for"));
+  assert.equal(recordOverflow(q), "2049 records, over the 123 the game has room for");
+  assert.equal(recordOverflow(p), null);
+  // the settings record takes no link word, so a flagged crowd of 2048 writes
+  const flagged = readProject(project(crowd.slice(0, 2048), { hidden: true })).project;
+  assert.ok(
+    errors(crowd.slice(0, 2048), { hidden: true }).includes(
+      "2049 records, over the 123 the game has room for",
+    ),
+  );
+  assert.equal(recordOverflow(flagged), null);
+  assert.doesNotThrow(() => writeKwl(flagged));
+  assert.equal(
+    recordOverflow(readProject(project(crowd, { hidden: true })).project),
+    "2050 records, over the 123 the game has room for",
+  );
   assert.throws(
     () => writeKwl(q),
     (e) => e.message === "a word of the block at 32,32,2 is outside the file's range",

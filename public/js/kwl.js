@@ -50,6 +50,8 @@ const PLATFORM_UNIT = 256;
 export const OWN = 6;
 export const NEXT_WORD = 6;
 export const LINK_WORD = 7;
+/** The records a link word can name; the writer has no bytes for a device's links past them. */
+export const LINK_RECORDS = 2 ** 15 / 16;
 const AXIS_WORD = [1, 2, 5];
 
 export const TELEPORTER = 5;

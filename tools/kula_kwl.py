@@ -94,6 +94,7 @@ PLATFORM_UNIT = 256  # the three words after a platform's position
 INNER = range(1, SIDE - 1)
 LATTICE = range(SIDE)
 WORD = range(-(2 ** 15), 2 ** 15)
+LINK_RECORDS = WORD.stop // 16   # the records a link word can name
 SAFE = 2 ** 53 - 1   # the whole numbers a double holds exactly
 
 # The six directions as the game numbers them, which is also the face order.
@@ -1255,6 +1256,17 @@ def _slot_of(pack, index):
     return False
 
 
+def _over_cap(what, n):
+    return f"{n} {COUNTER_WORDS[what]}, over the {CAPS[what]} the game has room for"
+
+
+def record_overflow(project):
+    """The checks' sentence for a project whose blocks carry more records than a link
+    word can name, which the writer has no bytes for; None where it has room."""
+    carried = sum(_carries(b) for b in _as_page(project["blocks"]))
+    return _over_cap("records", counts(project, None)["records"]) if carried > LINK_RECORDS else None
+
+
 def validate(project, hides):
     """What the game would make of the project: (level, text, at) findings, `at`
     naming a cell and perhaps a face, errors first in the order found."""
@@ -1364,7 +1376,7 @@ def validate(project, hides):
         warn("a key and no exit")
     for what, cap in CAPS.items():
         if n[what] is not None and n[what] > cap:
-            err(f"{n[what]} {COUNTER_WORDS[what]}, over the {cap} the game has room for")
+            err(_over_cap(what, n[what]))
     for what, most in DISC_MAX.items():
         if n[what] is not None and n[what] > most:
             warn(f"{n[what]} {COUNTER_WORDS[what]}, more than any level on the disc")
@@ -2131,6 +2143,9 @@ def main():
             sys.exit(f"{args.from_json} is not JSON: {e}")
         except ValueError as e:
             sys.exit(f"{args.from_json} is {e}")
+        crowded = record_overflow(project)
+        if crowded:
+            sys.exit(f"{args.from_json} has {crowded}")
         for line in report:
             print(line, file=sys.stderr)
         hides = json.loads(OBJECTS.read_text())["skins"]["hides"]

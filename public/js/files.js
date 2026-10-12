@@ -2,7 +2,7 @@
 // a file name out of a title, and a level read out of whatever was picked or
 // pasted, by what it holds and never by its name.
 import { FORMAT, GRID_BYTES, HEAD, RECORD, WORLDS, readKwl, writeKwl } from "./kwl.js";
-import { readProject } from "./project.js";
+import { readProject, recordOverflow } from "./project.js";
 import { readPak } from "./pak.js";
 import { openDisc } from "./iso.js";
 import { PACKS } from "./patch.js";
@@ -161,8 +161,11 @@ async function readFromDisc(blob, world) {
   return read;
 }
 
-/** The read, once the writer has agreed it is a level. */
+/** The read, once the writer has agreed it is a level; more records than a link word can name
+    are refused in the checks' words, before the writer names a block. */
 function writable(read) {
+  const crowded = recordOverflow(read.project);
+  if (crowded) throw new Error(`That file cannot be read as a level: ${crowded}.`);
   try {
     writeKwl(read.project);
   } catch (e) {

@@ -31,6 +31,7 @@ import {
   LENGTHS,
   LENGTH_CAP,
   LIGHTS,
+  LINK_RECORDS,
   MOVING_SPIKES,
   NUMBERED,
   PHASES,
@@ -477,6 +478,16 @@ function validateCircuits(project, warn) {
   });
 }
 
+const overCap = (what, n) =>
+  `${n} ${COUNTER_WORDS[what]}, over the ${CAPS[what]} the game has room for`;
+
+/** The checks' sentence for a project whose blocks carry more records than a link word can
+    name, which the writer has no bytes for; null where it has room. */
+export function recordOverflow(project) {
+  const carried = project.blocks.filter(carries).length;
+  return carried > LINK_RECORDS ? overCap("records", counts(project).records) : null;
+}
+
 /** What the game would make of the project, as findings with a level, a text and a place. */
 export function validate(project, hides) {
   const out = [];
@@ -585,8 +596,7 @@ export function validate(project, hides) {
   )
     warn("a key and no exit");
   for (const [what, cap] of Object.entries(CAPS))
-    if (n[what] !== null && n[what] > cap)
-      err(`${n[what]} ${COUNTER_WORDS[what]}, over the ${cap} the game has room for`);
+    if (n[what] !== null && n[what] > cap) err(overCap(what, n[what]));
   for (const [what, most] of Object.entries(DISC_MAX))
     if (n[what] !== null && n[what] > most)
       warn(`${n[what]} ${COUNTER_WORDS[what]}, more than any level on the disc`);
