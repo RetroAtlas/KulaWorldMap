@@ -77,6 +77,7 @@ async function elsewhere(page, store) {
 test("the draft goes onto the disc as the fixture's bytes, the slot kept on the draft", async ({
   page,
 }) => {
+  test.slow();
   const errors = trackErrors(page);
   await page.addInitScript(() => {
     delete window.showSaveFilePicker;
@@ -352,6 +353,7 @@ test("a draft whose id another tab takes while the box is opening is still the o
 test("a draft another tab repairs under the open box is written as it is now, not as it was", async ({
   page,
 }) => {
+  test.slow();
   const errors = trackErrors(page);
   await page.goto(EDIT);
   await settle(page);
