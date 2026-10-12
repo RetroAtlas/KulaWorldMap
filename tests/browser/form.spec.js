@@ -210,15 +210,26 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   );
   await expect(field(page, "length")).toHaveValue("3");
   await expect(field(page, "length")).toBeFocused();
+  // a speed is any word the file holds, which the checks warn of away from the disc's, and an
+  // empty field is put back
+  const slow = page.locator("#chipNote .findings li", { hasText: "a platform running at 0" });
   await field(page, "speed").fill("0");
   await field(page, "speed").press("Enter");
-  await expect(field(page, "speed")).toHaveValue("30");
+  expect(blockAt(await doc(page), [18, 17, 17]).speed).toBe(0);
+  await expect(field(page, "speed")).toHaveValue("0");
+  await expect(slow).toHaveCount(1);
   await field(page, "speed").fill("");
   await field(page, "speed").press("Enter");
-  await expect(field(page, "speed")).toHaveValue("30");
+  await expect(field(page, "speed")).toHaveValue("0");
+  expect(blockAt(await doc(page), [18, 17, 17]).speed).toBe(0);
+  await field(page, "speed").fill("30");
+  await field(page, "speed").press("Enter");
   expect(blockAt(await doc(page), [18, 17, 17]).speed).toBe(30);
-  // a length the lattice or the game's grid cannot hold is refused, said, and the field put back
+  await expect(slow).toHaveCount(0);
+  // a length below one, or one the lattice or the game's grid cannot hold, is refused, said,
+  // and the field put back
   for (const [bad, why] of [
+    ["0", "A platform 0 blocks long, which is less than one block."],
     ["32767", "A platform 32767 blocks long, which the lattice cannot hold."],
     ["8", "A platform 8 blocks long, more than the 7 the game's grid holds."],
   ]) {
@@ -229,7 +240,15 @@ test("a run's own block types a platform's length and speed or picks a laser's c
     await expect(field(page, "length")).toHaveValue("3");
     expect(blockAt(await doc(page), [18, 17, 17]).length).toBe(3);
   }
-  expect(await steps(page)).toEqual({ past: 1, future: 0 });
+  // a speed past the file's word is refused the same way
+  const fast = "A speed of 32768, outside the file's range.";
+  await field(page, "speed").fill("32768");
+  await field(page, "speed").press("Enter");
+  await expect(page.locator("#toastStack .toast").first()).toHaveText(fast);
+  await expect(page.locator("#toolStatus")).toHaveText(fast);
+  await expect(field(page, "speed")).toHaveValue("30");
+  expect(blockAt(await doc(page), [18, 17, 17]).speed).toBe(30);
+  expect(await steps(page)).toEqual({ past: 3, future: 0 });
 
   await lay(page, [17, 18, 17], LASER);
   await click(page, await top(page, [17, 18, 17]));

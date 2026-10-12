@@ -230,21 +230,16 @@ function blockCard(d, b, from) {
   }
   if (b.kind === PLATFORM_KIND) {
     const number = (name, key, fallback, min) => {
-      const input = el("input", {
-        type: "number",
-        min,
-        step: 1,
-        inputMode: "numeric",
-        title: name,
-      });
+      const input = el("input", { type: "number", step: 1, inputMode: "numeric", title: name });
+      if (min !== undefined) input.min = min;
       input.dataset.field = key;
       input.value = String(b[key] ?? fallback);
       input.onchange = () => {
-        const v = Math.round(Number(input.value));
-        if (input.value === "" || !(v >= min)) {
+        if (input.value === "") {
           input.value = String(b[key] ?? fallback);
           return;
         }
+        const v = Math.round(Number(input.value));
         change(
           d,
           setBlock(d.doc, cell, { ...b, [key]: v }),
@@ -257,7 +252,7 @@ function blockCard(d, b, from) {
     };
     out.append(
       number("Length", "length", DEFAULT_LENGTH, 1),
-      number("Speed", "speed", DEFAULT_SPEED, 1),
+      number("Speed", "speed", DEFAULT_SPEED),
     );
   }
   if (b.kind === LASER_KIND) {
