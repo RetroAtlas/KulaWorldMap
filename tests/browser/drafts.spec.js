@@ -47,16 +47,19 @@ const arrives = (page, copy) =>
     },
     [KEY, copy],
   );
-/** A browser that refuses the store's writes until `window.__room` is set. */
-const refusing = (page) =>
-  page.addInitScript((key) => {
-    const set = Storage.prototype.setItem;
-    window.__room = false;
-    Storage.prototype.setItem = function (k, v) {
-      if (k === key && !window.__room) throw new DOMException("full", "QuotaExceededError");
-      return set.call(this, k, v);
-    };
-  }, KEY);
+/** A browser that refuses the store's writes, with the error named, until `window.__room` is set. */
+const refusing = (page, name = "QuotaExceededError") =>
+  page.addInitScript(
+    ([key, name]) => {
+      const set = Storage.prototype.setItem;
+      window.__room = false;
+      Storage.prototype.setItem = function (k, v) {
+        if (k === key && !window.__room) throw new DOMException("refused", name);
+        return set.call(this, k, v);
+      };
+    },
+    [KEY, name],
+  );
 const room = (page, yes) => page.evaluate((yes) => void (window.__room = yes), yes);
 const toasts = (page) => page.locator("#toastStack .toast").allTextContents();
 const shown = (page) =>
@@ -722,6 +725,26 @@ test("a browser with levels kept and no room for more says so, and keeps what it
   await expect(page.locator("#draftRows button .name")).toHaveText(["Untitled level", "Kept"]);
   await expect(page.locator("#toastStack .toast")).toHaveText([FULL]);
   expect(Object.keys((await stored(page)).drafts)).toEqual(["1"]);
+  expect(errors).toEqual([]);
+});
+
+test("a browser that refuses a write for a reason other than room says so plainly, and writes once it can", async ({
+  page,
+}) => {
+  const REFUSED =
+    "This browser could not keep your levels just now. Save them to files to be safe.";
+  const errors = trackErrors(page);
+  await refusing(page, "SecurityError");
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await expect(page.locator("#toastStack .toast")).toHaveText([REFUSED]);
+  expect(await stored(page)).toBeNull();
+  await room(page, true);
+  await page.locator("#draftTitle").fill("Spiral");
+  await written(page, (s) => Object.values(s?.drafts ?? {})[0]?.doc.title).toBe("Spiral");
+  expect(await toasts(page)).toEqual([REFUSED]);
   expect(errors).toEqual([]);
 });
 

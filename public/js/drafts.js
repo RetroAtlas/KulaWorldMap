@@ -13,6 +13,9 @@ const NO_ROOM =
   "This browser gives the map no room to keep levels, so they will live only until the page is closed.";
 const FLEETING =
   "This browser cannot keep your levels, so they will live only until the page is closed.";
+const REFUSED = "This browser could not keep your levels just now. Save them to files to be safe.";
+const QUOTA = ["QuotaExceededError", "NS_ERROR_DOM_QUOTA_REACHED"];
+const noRoom = (e) => QUOTA.includes(e?.name);
 const displaced = (name) =>
   `Another tab's level took the place of ${name}, which stays in the list under a new link.`;
 
@@ -141,8 +144,8 @@ function write() {
     if (absorb(localStorage.getItem(KEY))) emit("drafts-changed");
     text = serialize(store, unread);
     localStorage.setItem(KEY, text);
-  } catch {
-    if (!refused) toast(known === null ? NO_ROOM : FULL);
+  } catch (e) {
+    if (!refused) toast(!noRoom(e) ? REFUSED : known === null ? NO_ROOM : FULL);
     refused = true;
     return;
   }
