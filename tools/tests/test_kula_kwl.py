@@ -520,10 +520,10 @@ class Reads(unittest.TestCase):
         self.assertIn("the vanishing block at 9,2,3 has phase 4, which dims at once", report)
 
     def test_a_platforms_length_that_runs_past_the_edge_is_cut_to_what_fits_and_the_writer_refuses_one_past_the_lattice(self):
-        def platform(length):
+        def platform(length, upper=6):
             return level({(1, 2, 3): FIRST_RECORD, (5, 2, 3): FIRST_RECORD + 1},
                          [block((1, 2, 3), faces={0: obj(START, 3, 0, 0)}),
-                          block((5, 2, 3), kind=PLATFORM_KIND, faces={0: slot(2, 2, 1, 5, 2, 3, 5, 6, 3)},
+                          block((5, 2, 3), kind=PLATFORM_KIND, faces={0: slot(2, 2, 1, 5, 2, 3, 5, upper, 3)},
                                 second=slot(length, 30, -1, FIRST_RECORD + 1, kind=0))])
 
         # the run's upper end is 6, so 27 blocks reach the last cell the game builds and 28 the lattice's last
@@ -543,6 +543,11 @@ class Reads(unittest.TestCase):
                              f"the platform at 5,2,3 is {length} blocks long, which the lattice cannot hold")
         p, report = read_kwl(platform(27))
         self.assertEqual((p["blocks"][1]["length"], report), (27, ["the platform at 5,2,3 is 27 blocks long"]))
+        # an upper end at 33, the lattice's last cell, leaves no room, and the length is 1
+        p, report = read_kwl(platform(2, 33))
+        self.assertEqual((p["blocks"][1]["length"], report),
+                         (1, ["the platform at 5,2,3 is 2 blocks long, which runs past the edge; it is 1"]))
+        self.assertEqual(Level(canonical(p)).verify(), [])
 
     def test_a_switch_whose_list_loops_back_on_itself_reads_and_is_rewired_on_the_way_out(self):
         cycle = (1, 2, 3)

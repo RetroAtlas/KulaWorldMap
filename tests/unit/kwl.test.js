@@ -972,7 +972,7 @@ test("a platform's length and speed and a vanishing block's phase are kept and r
 });
 
 test("a platform's length that runs past the edge is cut to what fits, and the writer refuses one past the lattice", () => {
-  const platform = (length) =>
+  const platform = (length, upper = 6) =>
     level(
       cells([
         [[1, 2, 3], FIRST_RECORD],
@@ -982,7 +982,7 @@ test("a platform's length that runs past the edge is cut to what fits, and the w
         block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0) } }),
         block([5, 2, 3], {
           kind: PLATFORM_KIND,
-          faces: { 0: slot(2, [2, 1, 5, 2, 3, 5, 6, 3]) },
+          faces: { 0: slot(2, [2, 1, 5, 2, 3, 5, upper, 3]) },
           second: slot(length, [30, -1, FIRST_RECORD + 1], { kind: 0 }),
         }),
       ],
@@ -1016,6 +1016,13 @@ test("a platform's length that runs past the edge is cut to what fits, and the w
   const { project: p, report } = readKwl(platform(27));
   assert.equal(p.blocks[1].length, 27);
   assert.deepEqual(report, ["the platform at 5,2,3 is 27 blocks long"]);
+  // an upper end at 33, the lattice's last cell, leaves no room, and the length is 1
+  const none = readKwl(platform(2, 33));
+  assert.equal(none.project.blocks[1].length, 1);
+  assert.deepEqual(none.report, [
+    "the platform at 5,2,3 is 2 blocks long, which runs past the edge; it is 1",
+  ]);
+  assert.deepEqual(verify(writeKwl(none.project)), []);
 });
 
 test("a switch whose list loops back on itself reads, and is rewired on the way out", () => {
