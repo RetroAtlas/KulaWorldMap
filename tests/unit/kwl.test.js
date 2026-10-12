@@ -1150,9 +1150,11 @@ test("lines of one shape are kept to three and the rest counted, in place", () =
     for (let y = 1; y < 33; y++) at.set([x, y, 17].join(), FIRST_RECORD + 1);
   at.set("5,5,5", FIRST_RECORD);
   at.set("1,1,1", FIRST_RECORD + 1);
-  const { project: p, report } = readKwl(
-    level(at, [block([5, 5, 5], { faces: { 0: obj(START, 3, 0, 0) } })]),
-  );
+  const {
+    project: p,
+    report,
+    repairs,
+  } = readKwl(level(at, [block([5, 5, 5], { faces: { 0: obj(START, 3, 0, 0) } })]));
   assert.deepEqual(
     p.blocks.map((b) => b.cell),
     [[5, 5, 5]],
@@ -1163,6 +1165,7 @@ test("lines of one shape are kept to three and the rest counted, in place", () =
     "cell 1,2,17 names record 1, which is not a block; the cell is left empty",
     "1022 more lines like the one above",
   ]);
+  assert.equal(repairs, 1025);
 });
 
 test("a level file's name, world, pack and index come from the caller alone", () => {

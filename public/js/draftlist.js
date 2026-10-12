@@ -131,9 +131,9 @@ function openRead(read) {
   if (!read) return;
   const id = drafts.create(read.project, { saved: Date.now() });
   if (id === null) return;
-  imported = { id, lines: read.report };
+  imported = { id, lines: read.report, repairs: read.repairs };
   open(id, `Opened ${nameOf(read.project)}`);
-  const n = read.report.length;
+  const n = read.repairs;
   if (n) toast(n === 1 ? read.report[0] : `Read with ${n} repairs.`);
 }
 
@@ -263,12 +263,11 @@ function card(id, d) {
   box.hidden = false;
 }
 
-function reportFold(lines) {
-  const n = lines.length;
+function reportFold({ lines, repairs }) {
   return el(
     "details",
     { className: "report" },
-    el("summary", { textContent: `Read with ${n} repair${n === 1 ? "" : "s"}` }),
+    el("summary", { textContent: `Read with ${repairs} repair${repairs === 1 ? "" : "s"}` }),
     el(
       "ul",
       {},
@@ -385,7 +384,7 @@ function buildForm(id, box) {
   });
 
   box.append(
-    imported?.id === id && imported.lines.length ? reportFold(imported.lines) : [],
+    imported?.id === id && imported.repairs ? reportFold(imported) : [],
     el("h3", { textContent: "Level" }),
     field("Title", title),
     field("World", world),

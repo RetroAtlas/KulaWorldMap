@@ -751,7 +751,8 @@ function readBlock(raw, i, report, seen) {
   return b;
 }
 
-/** { project, report } for a project file, as text or parsed; throws on another format's file. */
+/** { project, report, repairs } for a project file, as text or parsed, the report collapsed and
+    the repairs the count of its lines before that; throws on another format's file. */
 export function readProject(source) {
   const raw = typeof source === "string" ? JSON.parse(source) : source;
   if (!isObject(raw) || raw.format !== FORMAT) throw new Error(`not a ${FORMAT} file`);
@@ -838,7 +839,7 @@ export function readProject(source) {
       .filter(Boolean)
       .sort(byCell);
   }
-  return { project, report: collapse(report) };
+  return { project, report: collapse(report), repairs: report.length };
 }
 
 function writeFace(o) {

@@ -11,6 +11,12 @@ const digests = JSON.parse(
   readFileSync(fileURLToPath(new URL("../fixtures/kwl-digests.json", import.meta.url)), "utf8"),
 );
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const hostile = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL("../fixtures/hostile-projects.json", import.meta.url)),
+    "utf8",
+  ),
+);
 
 const shown = (page) =>
   page.evaluate(async () => {
@@ -206,8 +212,17 @@ test("what the reader repaired shows as a toast and in a fold on the card, until
   const line = await fold.locator("li").textContent();
   expect(await toasts(page)).toEqual([line]);
 
-  await page.locator("#draftNew").click();
+  const crowd = hostile.cases.find((c) => c.name === "two hundred platforms of length 32767");
+  await page
+    .locator("#draftFile")
+    .setInputFiles(file("platforms.kula.json", JSON.stringify(crowd.input)));
   await expect(rows).toHaveCount(2);
+  await expect(fold.locator("summary")).toHaveText("Read with 200 repairs");
+  await expect(fold.locator("li")).toHaveCount(4);
+  await expect(page.locator("#toastStack .toast").first()).toHaveText("Read with 200 repairs.");
+
+  await page.locator("#draftNew").click();
+  await expect(rows).toHaveCount(3);
   await expect(page.locator("#draftCard details.report")).toHaveCount(0);
   await rows.filter({ hasText: "cut" }).click();
   expect((await shown(page)).draft).toBe(out.draft);

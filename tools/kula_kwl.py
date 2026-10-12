@@ -775,10 +775,11 @@ def _wiring(records, devices=None):
     return sorted(out)
 
 def read_kwl(blob, world=WORLDS[0]):
-    """(project, report) for a level file by what the game accepts: the lattice
-    decides where a record stands and which records exist, the file's length
-    decides how many stretches it holds, and a trailer is made up where the file
-    has none. Only a length that is not a level's raises."""
+    """(project, report, repairs) for a level file by what the game accepts, the
+    report collapsed and the repairs the count of its lines before that: the
+    lattice decides where a record stands and which records exist, the file's
+    length decides how many stretches it holds, and a trailer is made up where
+    the file has none. Only a length that is not a level's raises."""
     report = []
     body = len(blob) - GRID_BYTES - HEAD
     if body < 0 or body % RECORD:
@@ -909,7 +910,7 @@ def read_kwl(blob, world=WORLDS[0]):
         rebuilt = None
     if rebuilt is not None and _wiring(records, [records[k] for k in kept]) != _wiring(rebuilt.records):
         report.append(REWIRED)
-    return project, collapse(report)
+    return project, collapse(report), len(report)
 
 
 # --- a project out of a project file -------------------------------------------
@@ -1043,8 +1044,9 @@ def _read_block(raw, i, report, seen):
 
 
 def read_project(raw):
-    """(project, report) for a parsed project document, rule for rule as the page
-    reads one; raises ValueError on another format's document."""
+    """(project, report, repairs) for a parsed project document, rule for rule as
+    the page reads one, the report collapsed and the repairs the count of its
+    lines before that; raises ValueError on another format's document."""
     if not isinstance(raw, dict) or raw.get("format") != FORMAT:
         raise ValueError(f"not a {FORMAT} file")
     report = []
@@ -1122,7 +1124,7 @@ def read_project(raw):
         seen = {}
         blocks = [_read_block(b, i, report, seen) for i, b in enumerate(raw["blocks"])]
         project["blocks"] = sorted((b for b in blocks if b is not None), key=lambda b: tuple(b["cell"]))
-    return project, collapse(report)
+    return project, collapse(report), len(report)
 
 
 # --- what the game would make of a project ------------------------------------
@@ -1652,7 +1654,7 @@ def hostile(fixture):
     for case in fixture["cases"]:
         out = {"name": case["name"], "input": case["input"]}
         try:
-            project, report = read_project(case["input"])
+            project, report, _ = read_project(case["input"])
         except ValueError as e:
             out["refusal"] = str(e)
             cases.append(out)
@@ -2118,7 +2120,7 @@ def main():
         if not args.kwl:
             sys.exit("--from-json needs --kwl OUT")
         try:
-            project, report = read_project(json.loads(Path(args.from_json).read_text()))
+            project, report, _ = read_project(json.loads(Path(args.from_json).read_text()))
         except json.JSONDecodeError as e:
             sys.exit(f"{args.from_json} is not JSON: {e}")
         except ValueError as e:
@@ -2136,7 +2138,7 @@ def main():
         print(f"{len(blob)} bytes -> {args.kwl}")
     elif args.from_kwl:
         try:
-            project, report = read_kwl(Path(args.from_kwl).read_bytes(), args.world)
+            project, report, _ = read_kwl(Path(args.from_kwl).read_bytes(), args.world)
         except ValueError as e:
             sys.exit(str(e))
         if args.json:

@@ -759,7 +759,8 @@ function wiring(records, devices = records) {
 export const REWIRED =
   "the level's switches, teleporters and lasers are wired otherwise than the colour rule wires them; the level written back follows the colours";
 
-/** { project, report } for any file the game would load; only a length that is not a level's throws. */
+/** { project, report, repairs } for any file the game would load, the report collapsed and the
+    repairs the count of its lines before that; only a length that is not a level's throws. */
 export function readKwl(bytes, world = WORLDS[0]) {
   const report = [];
   const body = bytes.length - GRID_BYTES - HEAD;
@@ -932,7 +933,7 @@ export function readKwl(bytes, world = WORLDS[0]) {
     );
     if (theirs.join("\n") !== wiring(again).join("\n")) report.push(REWIRED);
   }
-  return { project, report: collapse(report) };
+  return { project, report: collapse(report), repairs: report.length };
 }
 
 /** A link word as the record and face it names, or null for none. */

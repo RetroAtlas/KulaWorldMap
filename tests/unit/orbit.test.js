@@ -71,8 +71,8 @@ test("the share link of each reads to the same level, in the disc's world the li
     assert.equal(sha256(writeKwl(bare.project)), digests[c.level].kwl, n);
     const other = await readOrbitLink(`?level=${c.link}&theme=crimson`, "HELL");
     assert.deepEqual(
-      [other.project.world, other.report],
-      ["HELL", ["the link's theme crimson is not one of the disc's worlds"]],
+      [other.project.world, other.report, other.repairs],
+      ["HELL", ["the link's theme crimson is not one of the disc's worlds"], 1],
       n,
     );
   }
@@ -221,8 +221,8 @@ test("a platform's run, length and speed, a vanishing block's phase and a crumbl
 
 test("the two flags are read as the viewer writes them, true or false, and anything else is said and taken as false", () => {
   const blocks = [starting([3, 16, 4])];
-  const { project, report } = readOrbit(level(blocks, { hidden: 1, reverse: "yes" }));
-  assert.deepEqual([project.hidden, project.invisibleFromAfar], [false, false]);
+  const { project, report, repairs } = readOrbit(level(blocks, { hidden: 1, reverse: "yes" }));
+  assert.deepEqual([project.hidden, project.invisibleFromAfar, repairs], [false, false, 2]);
   assert.deepEqual(report, [
     "hidden is 1, neither true nor false; it is taken as false",
     'reverse is "yes", neither true nor false; it is taken as false',
@@ -276,15 +276,16 @@ test("a value that is no word of the file is said so and left empty, while null 
       plain([4, 16, 4], 0, [{ id: 9, option: 0, variant: 1, state: 1, route: null, to: null }]),
     ]),
   );
-  assert.deepEqual(nulls.report, [REWIRED]);
+  assert.deepEqual([nulls.report, nulls.repairs], [[REWIRED], 1]);
 });
 
 test("lines of one shape are kept to three and the rest counted, as the level reader's are", () => {
   const blocks = [starting([3, 16, 4])];
   for (let i = 0; i < 20; i++) blocks.push(plain([40 + i, 16, 4]));
   for (let i = 0; i < 5; i++) blocks.push({ type: 12, pos: [6 + i, 16, 4] });
-  const { report } = readOrbit(level(blocks));
+  const { report, repairs } = readOrbit(level(blocks));
   assert.equal(report.length, 8);
+  assert.equal(repairs, 25);
   assert.ok(
     report.slice(0, 3).every((line) => line.endsWith("lies outside the lattice and was left out")),
   );

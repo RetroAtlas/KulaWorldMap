@@ -200,14 +200,15 @@ export function kwlOfOrbit(json) {
   [...records, trailer].forEach((w, k) =>
     w.forEach((v, i) => view.setUint16(GRID_BYTES + HEAD + RECORD * k + 2 * i, v, true)),
   );
-  return { bytes: out, report: collapse(report) };
+  return { bytes: out, report: collapse(report), repairs: report.length };
 }
 
-/** { project, report } for a level of the viewer's, read in the world given. */
+/** { project, report, repairs } for a level of the viewer's, read in the world given. */
 export function readOrbit(json, world = WORLDS[0]) {
-  const { bytes, report } = kwlOfOrbit(json);
+  const { bytes, report, repairs } = kwlOfOrbit(json);
   const read = readKwl(bytes, world);
   read.report = [...report, ...read.report];
+  read.repairs += repairs;
   return read;
 }
 
@@ -318,7 +319,7 @@ function unbase64(param) {
   }
 }
 
-/** { project, report } for a shared level's link, or its level parameter, read in the world given unless the link names one of the disc's. */
+/** { project, report, repairs } for a shared level's link, or its level parameter, read in the world given unless the link names one of the disc's. */
 export async function readOrbitLink(text, world = WORLDS[0]) {
   const parts = linkParts(text);
   if (!parts) throw new Error(NOT_LINK);
@@ -339,5 +340,6 @@ export async function readOrbitLink(text, world = WORLDS[0]) {
   }
   const read = readOrbit(json, into);
   read.report = [...report, ...read.report];
+  read.repairs += report.length;
   return read;
 }

@@ -338,7 +338,7 @@ class Numbers(unittest.TestCase):
 
 class Reads(unittest.TestCase):
     def test_a_trailerless_file_gets_the_default_time(self):
-        p, report = read_kwl(playground()[:-256], world=WORLD)
+        p, report, _ = read_kwl(playground()[:-256], world=WORLD)
         self.assertEqual(p["time"], 99)
         self.assertEqual(p["blocks"], PLAYGROUND["blocks"])
         self.assertTrue(any("no trailer" in line for line in report), report)
@@ -347,7 +347,7 @@ class Reads(unittest.TestCase):
         beam = slot(4, 1, 1, 20, 10, 17, 16, 10, 17)
         blob = level({(16, 10, 17): FIRST_RECORD},
                      [block((16, 10, 17), kind=LASER_KIND, faces={0: beam}, second=slot(1, -1, -1, 5, -1, 0, -1))])
-        p, _ = read_kwl(blob)
+        p = read_kwl(blob)[0]
         self.assertEqual(p["blocks"], [{"cell": [16, 10, 17], "kind": LASER_KIND, "far": [20, 10, 17], "colour": 0}])
         self.assertEqual(list(Level(canonical(p)).records[0].slots[0][1:10]), [1, 1, 1, 16, 10, 17, 20, 10, 17])
 
@@ -356,7 +356,7 @@ class Reads(unittest.TestCase):
             blob = level({(16, 10, 17): FIRST_RECORD},
                          [block((16, 10, 17), kind=LASER_KIND, faces={0: slot(1, 1, 1, *a, *b)},
                                 second=slot(1, -1, -1, 5, -1, 0, -1))])
-            p, report = read_kwl(blob)
+            p, report, _ = read_kwl(blob)
             return p["blocks"][0]["far"], report
 
         self.assertEqual(read((20, 10, 17), (24, 10, 17)),
@@ -369,7 +369,7 @@ class Reads(unittest.TestCase):
             blob = level({cell: FIRST_RECORD},
                          [block(cell, kind=LASER_KIND, faces={0: slot(1, 1, 1, *a, *b)},
                                 second=slot(1, -1, -1, 5, -1, 0, -1))])
-            p, report = read_kwl(blob)
+            p, report, _ = read_kwl(blob)
             self.assertEqual(Level(canonical(p)).verify(), [])
             return [x["far"] for x in p["blocks"]], report
 
@@ -403,7 +403,7 @@ class Reads(unittest.TestCase):
                           ((16, 10, 32767), "record 1 spans to 16,10,32767, outside the lattice")):
             blob = level({(5, 5, 5): FIRST_RECORD, (16, 10, 17): FIRST_RECORD + 1},
                          [block((5, 5, 5), faces={0: obj(START, 3, 0, 0)}), laser(far)])
-            p, report = read_kwl(blob)
+            p, report, _ = read_kwl(blob)
             self.assertEqual([b["cell"] for b in p["blocks"]], [[5, 5, 5]], far)
             self.assertTrue(any(line.startswith(text) and line.endswith("it is dropped and its cell left empty")
                                 for line in report), report)
@@ -412,7 +412,7 @@ class Reads(unittest.TestCase):
     def test_a_facing_of_0_on_a_type_that_needs_one_is_read_as_1_the_way_the_game_heads(self):
         blob = level({(1, 2, 3): FIRST_RECORD},
                      [block((1, 2, 3), faces={0: obj(START, 0, 0, 0), 2: obj(TELEPORTER, 0, 1, 1), 3: obj(53, 0, 0, 0)})])
-        p, report = read_kwl(blob)
+        p, report, _ = read_kwl(blob)
         self.assertEqual(p["blocks"][0]["faces"], {"0": {"type": START, "facing": 1},
                                                    "2": {"type": TELEPORTER, "facing": 1, "variant": 1},
                                                    "3": {"type": 53}})
@@ -429,7 +429,7 @@ class Reads(unittest.TestCase):
                                               3: obj(56, 0, -1, 0)}),
                       block((5, 2, 3), kind=LASER_KIND, faces={0: slot(2, 2, 1, 5, 2, 3, 5, 6, 3)},
                             second=slot(1, -1, -1, FIRST_RECORD + 1, -1, 7, -1))])
-        p, report = read_kwl(blob)
+        p, report, _ = read_kwl(blob)
         self.assertEqual(p["blocks"][0]["faces"], {"0": start(), "1": {"type": SWITCH, "variant": 0},
                                                    "2": {"type": COIN, "variant": 0}, "3": {"type": 56, "variant": 0}})
         self.assertEqual(p["blocks"][1], {"cell": [5, 2, 3], "kind": LASER_KIND, "far": [5, 6, 3], "colour": 0})
@@ -444,7 +444,7 @@ class Reads(unittest.TestCase):
 
     def test_the_lattice_decides_where_a_record_stands(self):
         blob = level({(1, 2, 3): FIRST_RECORD}, [block((4, 5, 6), faces={0: obj(START, 3, 0, 0)})])
-        p, report = read_kwl(blob)
+        p, report, _ = read_kwl(blob)
         self.assertEqual(p["blocks"][0]["cell"], [1, 2, 3])
         self.assertTrue(any("the lattice puts it at 1,2,3" in line for line in report), report)
         self.assertEqual(Level(canonical(p)).verify(), [])
@@ -452,7 +452,7 @@ class Reads(unittest.TestCase):
     def test_a_record_no_cell_names_is_dropped_and_a_cell_naming_nothing_is_emptied(self):
         blob = level({(1, 2, 3): FIRST_RECORD, (7, 7, 7): FIRST_RECORD + 5},
                      [block((1, 2, 3), faces={0: obj(START, 3, 0, 0)}), block((4, 5, 6), faces={0: obj(COIN, 0, 1)})])
-        p, report = read_kwl(blob)
+        p, report, _ = read_kwl(blob)
         self.assertEqual([b["cell"] for b in p["blocks"]], [[1, 2, 3]])
         self.assertTrue(any("record 1 of kind 0 at 4,5,6 is named by no cell" in line for line in report), report)
         self.assertTrue(any("cell 7,7,7 names record 5, which is not a block" in line for line in report), report)
@@ -462,7 +462,7 @@ class Reads(unittest.TestCase):
                      [block((1, 2, 3), faces={0: obj(START, 3, 0, 0), 2: obj(TELEPORTER, 1, 3, 1)}),
                       block((1, 4, 3), faces={0: obj(TELEPORTER, 1, 3, 1)})])
         self.assertTrue(Level(blob).verify())
-        p, report = read_kwl(blob)
+        p, report, _ = read_kwl(blob)
         self.assertEqual(report, [REWIRED])
         C = Level(canonical(p))
         self.assertEqual(C.verify(), [])
@@ -481,7 +481,7 @@ class Reads(unittest.TestCase):
         struct.pack_into("<H", blob, GRID_BYTES + 4, 9)
         with self.assertRaises(ValueError):
             Level(bytes(blob))
-        p, report = read_kwl(bytes(blob), world=WORLD)
+        p, report, _ = read_kwl(bytes(blob), world=WORLD)
         self.assertEqual(p, PLAYGROUND)
         self.assertIn("the header counts 9 records and the file holds 8", report)
 
@@ -491,7 +491,7 @@ class Reads(unittest.TestCase):
                       block((0, 0, 0), kind=UNPLACED_KIND, faces={0: slot(1)}),
                       block((1, 4, 3), faces={0: obj(COIN, 0, 1)}),
                       block((0, 0, 0), kind=UNPLACED_KIND, faces={0: slot(0, 1)})])
-        p, report = read_kwl(blob)
+        p, report, _ = read_kwl(blob)
         self.assertEqual((p["hidden"], p["invisibleFromAfar"]), (True, True))
         self.assertIn("2 settings records; the flags of all of them are taken", report)
         C = Level(canonical(p))
@@ -501,7 +501,7 @@ class Reads(unittest.TestCase):
     def test_a_cell_naming_a_record_another_cell_already_names_is_left_empty_and_a_bare_record_folds(self):
         blob = level({(1, 2, 3): FIRST_RECORD, (1, 4, 3): FIRST_RECORD, (1, 6, 3): FIRST_RECORD + 1},
                      [block((1, 2, 3), faces={0: obj(START, 3, 0, 0)}), block((1, 6, 3), kind=2)])
-        p, report = read_kwl(blob)
+        p, report, _ = read_kwl(blob)
         self.assertEqual(p["blocks"], [{"cell": [1, 2, 3], "kind": 0, "faces": {"0": start()}}, {"cell": [1, 6, 3], "kind": 2}])
         self.assertIn("cell 1,4,3 names record 0, which cell 1,2,3 already names; the cell is left empty", report)
         self.assertIn("folded 1 records carrying nothing into plain blocks", report)
@@ -512,7 +512,7 @@ class Reads(unittest.TestCase):
                       block((5, 2, 3), kind=PLATFORM_KIND, faces={0: slot(2, 2, 1, 5, 2, 3, 5, 6, 3)},
                             second=slot(4, 20, -1, FIRST_RECORD + 1, kind=0)),
                       block((9, 2, 3), kind=7, faces={0: slot(0, 4)})])
-        p, report = read_kwl(blob)
+        p, report, _ = read_kwl(blob)
         self.assertEqual(p["blocks"][1], {"cell": [5, 2, 3], "kind": PLATFORM_KIND, "far": [5, 6, 3], "length": 4, "speed": 20})
         self.assertEqual(p["blocks"][2], {"cell": [9, 2, 3], "kind": 7, "phase": 4})
         self.assertIn("the platform at 5,2,3 is 4 blocks long", report)
@@ -528,7 +528,7 @@ class Reads(unittest.TestCase):
 
         # the run's upper end is 6, so 27 blocks reach the last cell the game builds and 28 the lattice's last
         for length, held in ((32767, 27), (29, 27), (28, 27), (0, 1), (-32768, 1)):
-            p, report = read_kwl(platform(length))
+            p, report, _ = read_kwl(platform(length))
             self.assertEqual(p["blocks"][1]["length"], held, length)
             why = "is less than one block" if length < 1 else "runs past the edge"
             self.assertEqual(report, [f"the platform at 5,2,3 is {length} blocks long, which {why}; it is {held}"])
@@ -541,10 +541,10 @@ class Reads(unittest.TestCase):
                 canonical(p)
             self.assertEqual(str(caught.exception),
                              f"the platform at 5,2,3 is {length} blocks long, which the lattice cannot hold")
-        p, report = read_kwl(platform(27))
+        p, report, _ = read_kwl(platform(27))
         self.assertEqual((p["blocks"][1]["length"], report), (27, ["the platform at 5,2,3 is 27 blocks long"]))
         # an upper end at 33, the lattice's last cell, leaves no room, and the length is 1
-        p, report = read_kwl(platform(2, 33))
+        p, report, _ = read_kwl(platform(2, 33))
         self.assertEqual((p["blocks"][1]["length"], report),
                          (1, ["the platform at 5,2,3 is 2 blocks long, which runs past the edge; it is 1"]))
         self.assertEqual(Level(canonical(p)).verify(), [])
@@ -555,7 +555,7 @@ class Reads(unittest.TestCase):
                      [block(cycle, faces={0: obj(START, 3, 0, 0), 2: slot(SWITCH, 0, 1, 1, -1, 2, 2, 0),
                                           3: slot(TELEPORTER, 1, 1, 1, -1, 3, 3, 0)})])
         self.assertEqual(Level(blob).circuit(0, 2), [(0, 2)])
-        p, report = read_kwl(blob)
+        p, report, _ = read_kwl(blob)
         self.assertEqual(sorted(p["blocks"][0]["faces"]), ["0", "2", "3"])
         self.assertIn(REWIRED, report)
         C = Level(canonical(p))
@@ -565,27 +565,27 @@ class Reads(unittest.TestCase):
     def test_records_out_of_lattice_order_are_reported_where_the_order_decides_play(self):
         cells = {(5, 5, 5): FIRST_RECORD, (3, 3, 3): FIRST_RECORD + 1}
         two_starts = [block((5, 5, 5), faces={0: obj(START, 3, 0, 0)}), block((3, 3, 3), faces={0: obj(START, 1, 0, 0)})]
-        p, report = read_kwl(level(cells, two_starts))
+        p, report, _ = read_kwl(level(cells, two_starts))
         self.assertTrue(any("not in lattice order" in line for line in report), report)
         self.assertEqual([b["cell"] for b in p["blocks"]], [[3, 3, 3], [5, 5, 5]])
         one_start = [block((5, 5, 5), faces={0: obj(START, 3, 0, 0)}), block((3, 3, 3), faces={0: obj(COIN, 0, 1)})]
-        _, report = read_kwl(level(cells, one_start))
+        _, report, _ = read_kwl(level(cells, one_start))
         self.assertFalse(any("lattice order" in line for line in report), report)
         captive = [block((5, 5, 5), faces={0: obj(START, 3, 0, 0)}), block((3, 3, 3), faces={0: obj(53, 0, 0, 0)})]
-        _, report = read_kwl(level(cells, captive))
+        _, report, _ = read_kwl(level(cells, captive))
         self.assertTrue(any("not in lattice order" in line for line in report), report)
 
     def test_what_stands_on_the_kinds_the_game_never_walks_is_counted_and_left_out(self):
         blob = level({(1, 2, 3): FIRST_RECORD, (1, 4, 3): FIRST_RECORD + 1},
                      [block((1, 2, 3), faces={0: obj(START, 3, 0, 0)}),
                       block((1, 4, 3), kind=6, faces={0: slot(1, 512, 2048, 1536), 2: obj(COIN, 0, 1), 5: obj(KEY)})])
-        p, report = read_kwl(blob)
+        p, report, _ = read_kwl(blob)
         self.assertEqual(p["blocks"][1], {"cell": [1, 4, 3], "kind": 6})
         self.assertIn("left out 2 objects standing on records the game never walks", report)
         flagged = level({(1, 2, 3): FIRST_RECORD},
                         [block((1, 2, 3), faces={0: obj(START, 3, 0, 0)}),
                          block((0, 0, 0), kind=UNPLACED_KIND, faces={0: slot(1), 2: obj(COIN, 0, 1)})])
-        p, report = read_kwl(flagged)
+        p, report, _ = read_kwl(flagged)
         self.assertEqual((p["hidden"], p["invisibleFromAfar"]), (True, False))
         self.assertIn("left out 1 objects standing on records the game never walks", report)
 
@@ -594,7 +594,7 @@ class Reads(unittest.TestCase):
             read_kwl(playground()[:-1])
         with self.assertRaises(ValueError):
             read_kwl(b"\xff" * 100)
-        p, report = read_kwl(playground()[:GRID_BYTES + 6])
+        p, report, _ = read_kwl(playground()[:GRID_BYTES + 6])
         self.assertEqual([b["kind"] for b in p["blocks"]], [2, 3])
         self.assertEqual(p["time"], 99)
         self.assertEqual(sum("is not a block" in line for line in report), 3)
@@ -604,7 +604,7 @@ class Reads(unittest.TestCase):
         cells = {(x, y, 17): FIRST_RECORD + 1 for x in range(1, 33) for y in range(1, 33)}
         cells[(5, 5, 5)] = FIRST_RECORD
         cells[(1, 1, 1)] = FIRST_RECORD + 1
-        p, report = read_kwl(level(cells, [block((5, 5, 5), faces={0: obj(START, 3, 0, 0)})]))
+        p, report, repairs = read_kwl(level(cells, [block((5, 5, 5), faces={0: obj(START, 3, 0, 0)})]))
         self.assertEqual([b["cell"] for b in p["blocks"]], [[5, 5, 5]])
         self.assertEqual(report, [
             "cell 1,1,1 names record 1, which is not a block; the cell is left empty",
@@ -612,6 +612,7 @@ class Reads(unittest.TestCase):
             "cell 1,2,17 names record 1, which is not a block; the cell is left empty",
             "1022 more lines like the one above",
         ])
+        self.assertEqual(repairs, 1025)
 
 
 class ReadsProjects(unittest.TestCase):
@@ -619,14 +620,14 @@ class ReadsProjects(unittest.TestCase):
         for raw in ({"format": "orbit", "blocks": []}, {"version": 1, "blocks": []}, [], "text", None):
             with self.assertRaises(ValueError):
                 read_project(raw)
-        p, report = read_project({"format": FORMAT})
+        p, report, _ = read_project({"format": FORMAT})
         self.assertEqual(report, ["no blocks"])
         self.assertEqual(p, {"format": FORMAT, "version": 1, "title": "", "author": "", "notes": "", "world": "",
                              "time": 99, "hidden": False, "invisibleFromAfar": False, "circuits": {}, "blocks": []})
 
     def test_the_reader_takes_what_it_knows_of_a_newer_file_fills_the_defaults_and_drops_what_cannot_be_a_block(self):
         coin = {"type": COIN, "variant": 0}
-        p, report = read_project({
+        p, report, _ = read_project({
             "format": FORMAT, "version": 7, "world": "HAZE", "weather": "rain", "time": "soon", "hidden": "yes",
             "circuits": {"1": "off", "2": "on", "7": "off", "3": "maybe"},
             "blocks": [
@@ -671,7 +672,7 @@ class ReadsProjects(unittest.TestCase):
         canonical(p)
 
     def test_a_missing_variant_on_a_type_that_has_one_reads_as_0_as_a_missing_colour_does(self):
-        p, report = read_project({"format": FORMAT, "world": WORLD, "blocks": [
+        p, report, _ = read_project({"format": FORMAT, "world": WORLD, "blocks": [
             {"cell": [5, 5, 5], "kind": 0, "faces": {"0": start(), "1": {"type": COIN}, "2": {"type": GEM},
                                                       "3": {"type": SWITCH}, "4": {"type": KEY}}},
             {"cell": [7, 5, 5], "kind": LASER_KIND, "far": [7, 9, 5]}]})
@@ -682,7 +683,7 @@ class ReadsProjects(unittest.TestCase):
 
     def test_the_reader_leaves_out_what_the_writer_has_no_bytes_for_and_holds_a_word_to_the_files_range(self):
         coin = {"type": COIN, "variant": 0}
-        p, report = read_project({
+        p, report, _ = read_project({
             "format": FORMAT, "world": WORLD, "time": -70000,
             "blocks": [
                 {"cell": [5, 5, 5], "kind": 12},
@@ -732,7 +733,7 @@ class ReadsProjects(unittest.TestCase):
         # the one project the reader hands on that the writer refuses: records enough to outrun a link word
         crowd = [plain((1 + i % 32, 1 + i // 32 % 32, 1 + i // 1024), t0=coin) for i in range(2049)]
         max(crowd, key=lambda b: tuple(b["cell"]))["faces"]["1"] = {"type": SWITCH, "variant": 0}
-        q, lines = read_project(project(crowd))
+        q, lines, _ = read_project(project(crowd))
         self.assertEqual(lines, [])
         self.assertIn("2049 records, over the 123 the game has room for", texts(validate(q, HIDES), "error"))
         with self.assertRaises(ValueError) as caught:
@@ -740,19 +741,19 @@ class ReadsProjects(unittest.TestCase):
         self.assertEqual(str(caught.exception), "a word of the block at 32,32,2 is outside the file's range")
 
     def test_a_whole_number_is_whole_however_json_spells_it(self):
-        p, report = read_project({"format": FORMAT, "world": WORLD, "time": 45.0,
+        p, report, _ = read_project({"format": FORMAT, "world": WORLD, "time": 45.0,
                                   "blocks": [{"cell": [5.0, 5, 5], "kind": 0.0, "faces": {"0": {"type": 30.0, "facing": 3.0}}}]})
         self.assertEqual(report, [])
         self.assertEqual(p["time"], 45)
         self.assertEqual(p["blocks"], [{"cell": [5, 5, 5], "kind": 0, "faces": {"0": {"type": START, "facing": 3}}}])
         self.assertTrue(all(isinstance(v, int) for v in (p["time"], *p["blocks"][0]["cell"], p["blocks"][0]["kind"])))
-        p, report = read_project({"format": FORMAT, "world": WORLD,
+        p, report, _ = read_project({"format": FORMAT, "world": WORLD,
                                   "blocks": [{"cell": [5, 5, 5], "kind": 0, "faces": {"0": start(), "1": {"type": 1e308}}}]})
         self.assertEqual(report, ["block 0 at 5,5,5 face 1 holds nothing that could stand on a face; it is left out"])
         self.assertEqual(p["blocks"], [{"cell": [5, 5, 5], "kind": 0, "faces": {"0": start()}}])
 
     def test_a_platforms_length_that_runs_past_the_edge_is_cut_on_the_way_in_to_a_run_the_checks_hold_inside_it(self):
-        p, report = read_project(project([
+        p, report, _ = read_project(project([
             plain((5, 5, 5), t0=start()),
             {"cell": [10, 28, 17], "kind": PLATFORM_KIND, "far": [10, 30, 17], "length": 32767, "speed": 30},
             {"cell": [12, 10, 17], "kind": PLATFORM_KIND, "far": [12, 14, 17], "length": 0, "speed": 30},
@@ -775,17 +776,18 @@ class ReadsProjects(unittest.TestCase):
         ])
         case = next(c for c in json.loads(HOSTILE.read_text())["cases"]
                     if c["name"] == "two hundred platforms of length 32767")
-        q, lines = read_project(case["input"])
+        q, lines, repairs = read_project(case["input"])
         platforms = [b for b in q["blocks"] if b["kind"] == PLATFORM_KIND]
         self.assertEqual(len(platforms), 200)
         self.assertEqual([b["length"] for b in platforms], [SIDE - 1 - max(b["cell"][1], b["far"][1]) for b in platforms])
         self.assertEqual(len(lines), 4)
+        self.assertEqual(repairs, 200)
         self.assertNotIn("the platform's run reaches past the edge", texts(validate(q, HIDES), "error"))
         self.assertEqual(Level(canonical(q)).verify(), [])
 
     def test_a_title_an_author_notes_a_world_a_target_or_a_source_past_their_most_are_cut_to_it_counted_in_characters(self):
         title = "a" * 78 + "\U0001F600" * 3
-        p, report = read_project(project([plain((5, 5, 5), t0=start())], title=title, author="b" * 2000,
+        p, report, _ = read_project(project([plain((5, 5, 5), t0=start())], title=title, author="b" * 2000,
                                          notes="c" * 2001, world="HIRO" + "w" * 1997, into="/HIRO/HIRO.PAK#1" + "x" * 2000,
                                          **{"from": "/HIRO/HIRO.PAK#3" + "y" * 1984}))
         self.assertEqual(p["title"], "a" * 78 + "\U0001F600" * 2)
@@ -801,7 +803,7 @@ class ReadsProjects(unittest.TestCase):
         ])
 
     def test_a_whole_number_past_2_53_is_no_whole_number_and_is_reported_as_the_page_parsed_it(self):
-        p, report = read_project(json.loads(f'''{{"format": "{FORMAT}", "world": "{WORLD}", "time": 9007199254740993, "blocks": [
+        p, report, _ = read_project(json.loads(f'''{{"format": "{FORMAT}", "world": "{WORLD}", "time": 9007199254740993, "blocks": [
             {{"cell": [5, 5, 5], "kind": 0, "faces": {{"0": {{"type": 30, "facing": 3}}}}}},
             {{"cell": [7, 5, 5], "kind": 5, "far": [7, 9, 5], "length": 1e400, "speed": 1e16}},
             {{"cell": [9, 5, 5], "kind": 7, "phase": 1152921504606846976}}
@@ -820,7 +822,7 @@ class ReadsProjects(unittest.TestCase):
 
     def test_the_reader_keeps_three_lines_of_a_shape_and_counts_the_rest_where_they_fall(self):
         coin = {"type": COIN, "variant": 0}
-        p, report = read_project({
+        p, report, repairs = read_project({
             "format": FORMAT, "world": WORLD, "time": "x",
             "blocks": [{"cell": [5 + i, 5, 5], "kind": 7, "phase": "x"} for i in range(5)]
             + [{"cell": [5, 9, 5], "kind": 0, "faces": {"0": start(), "6": coin, "7": coin, "8": coin, "9": coin}}],
@@ -837,10 +839,11 @@ class ReadsProjects(unittest.TestCase):
             'block 5 at 5,9,5 names a face "8", which is not one of the six; it is left out',
             "1 more line like the one above",
         ])
+        self.assertEqual(repairs, 10)
 
     def test_a_face_key_is_read_by_its_number_and_a_second_spelling_of_one_face_is_left_out(self):
         coin = {"type": COIN, "variant": 0}
-        p, report = read_project({"format": FORMAT, "world": WORLD,
+        p, report, _ = read_project({"format": FORMAT, "world": WORLD,
                                   "blocks": [{"cell": [5, 5, 5], "kind": 0, "faces": {"05": coin, "5": {"type": KEY}, "00": start()}}]})
         self.assertEqual(p["blocks"][0]["faces"], {"0": start(), "5": {"type": KEY}})
         self.assertEqual(report, ['block 0 at 5,5,5 names face 5 again as "05"; it is left out'])
@@ -1328,7 +1331,7 @@ class TheCli(unittest.TestCase):
                 "block 1 at 7,5,5 has a colour of 7, which is not one of the four; it is 0",
                 "block 2 at 9,5,5 has its far end on its own cell; it is left out",
             ])
-            p, _ = read_project(raw)
+            p = read_project(raw)[0]
             self.assertEqual((scratch / "odd.kwl").read_bytes(), canonical(p))
 
     def test_what_the_writer_and_the_reader_refuse_is_a_sentence_and_not_a_traceback(self):

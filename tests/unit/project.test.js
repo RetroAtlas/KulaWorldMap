@@ -1443,7 +1443,7 @@ test("a platform's length that runs past the edge is cut on the way in, to a run
     "the platform's run reaches past the edge",
   ]);
   const c = hostile.cases.find((c) => c.name === "two hundred platforms of length 32767");
-  const { project: q, report: lines } = readProject(structuredClone(c.input));
+  const { project: q, report: lines, repairs } = readProject(structuredClone(c.input));
   const platforms = q.blocks.filter((b) => b.kind === PLATFORM_KIND);
   assert.equal(platforms.length, 200);
   assert.deepEqual(
@@ -1451,6 +1451,7 @@ test("a platform's length that runs past the edge is cut on the way in, to a run
     platforms.map((b) => SIDE - 1 - Math.max(b.cell[1], b.far[1])),
   );
   assert.equal(lines.length, 4);
+  assert.equal(repairs, 200);
   assert.ok(
     !texts(validate(q, HIDES), "error").includes("the platform's run reaches past the edge"),
   );
@@ -1513,7 +1514,11 @@ test("a whole number past 2^53 is no whole number, and is reported as the page p
 });
 
 test("the reader keeps three lines of a shape and counts the rest, where they fall", () => {
-  const { project: p, report } = readProject({
+  const {
+    project: p,
+    report,
+    repairs,
+  } = readProject({
     format: FORMAT,
     world: WORLD,
     time: "x",
@@ -1538,6 +1543,7 @@ test("the reader keeps three lines of a shape and counts the rest, where they fa
     'block 5 at 5,9,5 names a face "8", which is not one of the six; it is left out',
     "1 more line like the one above",
   ]);
+  assert.equal(repairs, 10);
 });
 
 test("every hostile document reads to the project and the report the Python reader gave, and writes its bytes", () => {

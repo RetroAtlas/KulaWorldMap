@@ -119,7 +119,7 @@ class TheCommunityFile(unittest.TestCase):
         blob = community()
         self.assertEqual(len(blob), 78614 + 256 * 3)
         self.assertEqual(hashlib.sha256(blob).hexdigest(), "ae92811f550d5fde6e4c0a646b813d88108f9cd247efb2099fe5ce59c4022314")
-        project, report = read_kwl(blob, "HIRO")
+        project, report, _ = read_kwl(blob, "HIRO")
         self.assertEqual(report, ["no trailer, so the time is 99", REWIRED])
         self.assertEqual(project["blocks"], [
             {"cell": [10, 10, 10], "kind": 0, "faces": {"0": {"type": 9, "variant": 1}}},

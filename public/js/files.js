@@ -172,7 +172,7 @@ function writable(read) {
 }
 
 /**
- * { project, report } for a file, read by what it holds: the map's own file,
+ * { project, report, repairs } for a file, read by what it holds: the map's own file,
  * the game's level, a level of the community's viewer, a pack or a disc image,
  * the last two asking which level to take; null where the visitor declines;
  * and a thrown sentence to show where the file holds no level. A disc image
@@ -209,7 +209,7 @@ export async function readLevelFile(source, name, world) {
   return writable(read);
 }
 
-/** { project, report } for pasted text: a link to a shared level of the community's viewer. */
+/** { project, report, repairs } for pasted text: a link to a shared level of the community's viewer. */
 export async function readLevelText(text, world) {
   const read = await readOrbitLink(text, world);
   read.project.title = SHARED;
