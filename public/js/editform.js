@@ -1,5 +1,5 @@
 // The panel's form while editing, on the panel's onShow seam: the block, its face and its circuit.
-import { el, on } from "./dom.js";
+import { $, el, on } from "./dom.js";
 import { state, cellKey } from "./state.js";
 import { DIRECTION_NAME, FACE_NAME } from "./faces.js";
 import {
@@ -117,11 +117,13 @@ export function wireForm(handed) {
   wired = true;
   wireOverview();
   onShow(render);
+  // a finger's placement selects its block with the panel left down, which neither raises
+  const shown = () => state.selected && !$("detail").hidden;
   on("editing-changed", () => {
-    if (state.selected) showCell(state.selected);
+    if (shown()) showCell(state.selected);
   });
   on("brush-changed", () => {
-    if (editing() && state.selected) showCell(state.selected);
+    if (editing() && shown()) showCell(state.selected);
   });
 }
 

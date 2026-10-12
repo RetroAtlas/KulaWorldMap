@@ -389,6 +389,38 @@ test.describe("editing on a phone", () => {
     await expect(palette).toBeHidden();
   });
 
+  test("a brush chosen after a tap has placed a block leaves the panel down and the palette open", async ({
+    page,
+  }) => {
+    await editFresh(page);
+    await page.locator("#paletteBtn").tap();
+    const palette = page.locator("#palette");
+    await expect(palette).toBeVisible();
+    await lift(page, 1.5);
+    const side = await plusX(page, START);
+    await tap(page, side);
+    await tap(page, side);
+    expect(await cells(page)).toEqual([START, [18, 17, 17]]);
+    expect((await shown(page)).selected).toEqual([18, 17, 17]);
+    await expect(page.locator("#detail")).toBeHidden();
+    const ice = page.locator('#palette .rows button[data-id="k2"]');
+    await ice.tap();
+    await expect(ice).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#say")).toHaveText(/^Brush: /);
+    await expect(palette).toBeVisible();
+    await expect(page.locator("#detail")).toBeHidden();
+    expect((await shown(page)).sheet).toBe(true);
+    // leaving editing and coming back is no reason to raise it either
+    await page.locator("#editBtn").tap();
+    await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("#detail")).toBeHidden();
+    await page.locator("#editBtn").tap();
+    await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+    await expect(palette).toBeVisible();
+    await expect(page.locator("#detail")).toBeHidden();
+    expect((await shown(page)).sheet).toBe(true);
+  });
+
   test("a finger on the floor with a thing for a brush is told the grid lays blocks", async ({
     page,
   }) => {
