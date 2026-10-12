@@ -329,14 +329,19 @@ function validateSpan(b, blocksAt, loader, err, warn) {
   if (sameCell(far, cell)) return err("the far end is the block's own cell", cell);
   if (direction(cell, far) === null)
     return err("the far end is not along one axis from the block", cell);
-  if (!far.every(inner)) return err("the far end is past the edge", cell);
-  const { beams, ends, runs } = loader;
+  if (!far.every(onLattice)) return err("the far end is past the edge", cell);
+  const length = b.kind === PLATFORM_KIND ? (b.length ?? DEFAULT_LENGTH) : 1;
   if (b.kind === PLATFORM_KIND) {
-    const length = b.length ?? DEFAULT_LENGTH;
-    const speed = b.speed ?? DEFAULT_SPEED;
     if (!inWord(length)) return err(`a length of ${length}, outside the file's range`, cell);
     if (length < 1)
       return err(`a platform ${length} blocks long, which is less than one block`, cell);
+    if (length > roomFor(cell, far))
+      return err(`a platform ${length} blocks long, which the lattice cannot hold`, cell);
+  }
+  if (!far.every(inner)) return err("the far end is past the edge", cell);
+  const { beams, ends, runs } = loader;
+  if (b.kind === PLATFORM_KIND) {
+    const speed = b.speed ?? DEFAULT_SPEED;
     const axis = spanAxis(cell, far);
     if (!inner(Math.max(cell[axis], far[axis]) + length - 1))
       return err("the platform's run reaches past the edge", cell);

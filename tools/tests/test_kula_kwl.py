@@ -802,7 +802,36 @@ class Validates(unittest.TestCase):
         self.assertEqual(self.errors([plain((5, 5, 5), t0=start()), edge]), [])
         for over in (dict(edge, far=[32, 10, 17]), dict(edge, length=3)):
             self.assertEqual(self.errors([plain((5, 5, 5), t0=start()), over]), ["the platform's run reaches past the edge"])
-        self.assertIn("the platform's run reaches past the edge", self.errors([plain((5, 5, 5), t0=start()), dict(edge, length=30000)]))
+        self.assertIn("a platform 30000 blocks long, which the lattice cannot hold",
+                      self.errors([plain((5, 5, 5), t0=start()), dict(edge, length=30000)]))
+
+    def test_every_length_the_writer_refuses_is_an_error_of_its_own_text_whatever_else_the_platform_has(self):
+        def rail(upper, length, far=None):
+            return [plain((5, 5, 5), t0=start()),
+                    {"cell": [10, upper - 1, 17], "kind": PLATFORM_KIND, "far": [10, upper if far is None else far, 17],
+                     "length": length, "speed": 30}]
+
+        def held(length):
+            return f"a platform {length} blocks long, which the lattice cannot hold"
+
+        for upper in (30, 31, 32, 33):
+            for length in range(1, 6):
+                blocks = rail(upper, length)
+                refused = length > SIDE - upper
+                self.assertEqual(held(length) in self.errors(blocks), refused, (upper, length))
+                if refused:
+                    with self.assertRaises(ValueError):
+                        canonical(project(blocks))
+                else:
+                    canonical(project(blocks))
+        # a run that ends on cell 33 is past the edge and the writer still has bytes for it
+        self.assertEqual(self.errors(rail(31, 3)), ["the platform's run reaches past the edge"])
+        self.assertEqual(self.errors(rail(31, 4)), [held(4)])
+        # a far end on the lattice's last cell says so, and hides nothing of the length
+        self.assertEqual(self.errors(rail(33, 1)), ["the far end is past the edge"])
+        self.assertEqual(self.errors(rail(33, 2)), [held(2)])
+        # a far end off the lattice is the far end's error, not the length's
+        self.assertEqual(self.errors(rail(31, 2, far=40)), ["the far end is past the edge"])
 
     def test_a_beam_ends_on_nothing_a_plain_block_or_another_laser_and_crosses_nothing(self):
         beam = {"cell": [10, 10, 17], "kind": LASER_KIND, "far": [14, 10, 17], "colour": 0}
@@ -848,7 +877,7 @@ class Validates(unittest.TestCase):
         errors = self.errors([plain((5, 5, 5), t0=start())] + far)
         self.assertEqual(errors.count("the far end is past the edge"), 200)
         long = {"cell": [10, 10, 17], "kind": PLATFORM_KIND, "far": [10, 12, 17], "length": 32000, "speed": 30}
-        self.assertIn("the platform's run reaches past the edge", self.errors([plain((5, 5, 5), t0=start()), long]))
+        self.assertIn("a platform 32000 blocks long, which the lattice cannot hold", self.errors([plain((5, 5, 5), t0=start()), long]))
 
     def test_a_keyless_level_with_a_laser_counts_the_blocks_the_loader_makes(self):
         ring = [(12, 10, 17), (11, 9, 17), (11, 11, 17), (11, 10, 16), (11, 10, 18)]

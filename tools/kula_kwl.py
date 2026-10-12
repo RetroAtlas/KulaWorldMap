@@ -1403,19 +1403,26 @@ def _validate_span(b, at, loader, err, warn):
     if direction(cell, far) is None:
         err("the far end is not along one axis from the block", cell)
         return
-    if any(c not in INNER for c in far):
+    if any(c not in LATTICE for c in far):
         err("the far end is past the edge", cell)
         return
-    beams, ends, runs = loader
+    length = _or(b.get("length"), DEFAULT_LENGTH) if b["kind"] == PLATFORM_KIND else 1
     if b["kind"] == PLATFORM_KIND:
-        length = _or(b.get("length"), DEFAULT_LENGTH)
-        speed = _or(b.get("speed"), DEFAULT_SPEED)
         if not _is_int(length) or length not in WORD:
             err(f"a length of {_js_text(length)}, outside the file's range", cell)
             return
         if length < 1:
             err(f"a platform {length} blocks long, which is less than one block", cell)
             return
+        if length > room_for(cell, far):
+            err(f"a platform {length} blocks long, which the lattice cannot hold", cell)
+            return
+    if any(c not in INNER for c in far):
+        err("the far end is past the edge", cell)
+        return
+    beams, ends, runs = loader
+    if b["kind"] == PLATFORM_KIND:
+        speed = _or(b.get("speed"), DEFAULT_SPEED)
         axis = span_axis(cell, far)
         if max(cell[axis], far[axis]) + length - 1 not in INNER:
             err("the platform's run reaches past the edge", cell)

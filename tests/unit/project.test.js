@@ -448,9 +448,33 @@ test("a platform runs over empty cells", () => {
     assert.deepEqual(errors([base[0], over]), ["the platform's run reaches past the edge"]);
   assert.ok(
     errors([base[0], { ...edge, length: 30000 }]).includes(
-      "the platform's run reaches past the edge",
+      "a platform 30000 blocks long, which the lattice cannot hold",
     ),
   );
+});
+
+test("every length the writer refuses is an error of its own text, whatever else the platform has", () => {
+  const rail = (upper, length, far = upper) => [
+    plain([5, 5, 5], 0, { 0: start() }),
+    { cell: [10, upper - 1, 17], kind: PLATFORM_KIND, far: [10, far, 17], length, speed: 30 },
+  ];
+  const held = (upper, length) => `a platform ${length} blocks long, which the lattice cannot hold`;
+  for (const upper of [30, 31, 32, 33])
+    for (const length of [1, 2, 3, 4, 5]) {
+      const blocks = rail(upper, length);
+      const refused = length > SIDE - upper;
+      assert.equal(errors(blocks).includes(held(upper, length)), refused, `${upper} ${length}`);
+      if (refused) assert.throws(() => writeKwl(project(blocks)), `${upper} ${length}`);
+      else assert.doesNotThrow(() => writeKwl(project(blocks)), `${upper} ${length}`);
+    }
+  // a run that ends on cell 33 is past the edge and the writer still has bytes for it
+  assert.deepEqual(errors(rail(31, 3)), ["the platform's run reaches past the edge"]);
+  assert.deepEqual(errors(rail(31, 4)), [held(31, 4)]);
+  // a far end on the lattice's last cell says so, and hides nothing of the length
+  assert.deepEqual(errors(rail(33, 1)), ["the far end is past the edge"]);
+  assert.deepEqual(errors(rail(33, 2)), [held(33, 2)]);
+  // a far end off the lattice is the far end's error, not the length's
+  assert.deepEqual(errors(rail(31, 2, 40)), ["the far end is past the edge"]);
 });
 
 test("a beam ends on nothing, a plain block or another laser, and crosses nothing", () => {
@@ -543,7 +567,7 @@ test("a span lies along one axis inside the edge", () => {
   };
   assert.ok(
     errors([plain([5, 5, 5], 0, { 0: start() }), long]).includes(
-      "the platform's run reaches past the edge",
+      "a platform 32000 blocks long, which the lattice cannot hold",
     ),
   );
   assert.ok(

@@ -218,6 +218,18 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   await field(page, "speed").press("Enter");
   await expect(field(page, "speed")).toHaveValue("30");
   expect(blockAt(await doc(page), [18, 17, 17]).speed).toBe(30);
+  // a length the lattice or the game's grid cannot hold is refused, said, and the field put back
+  for (const [bad, why] of [
+    ["32767", "A platform 32767 blocks long, which the lattice cannot hold."],
+    ["8", "A platform 8 blocks long, more than the 7 the game's grid holds."],
+  ]) {
+    await field(page, "length").fill(bad);
+    await field(page, "length").press("Enter");
+    await expect(page.locator("#toastStack .toast").first()).toHaveText(why);
+    await expect(page.locator("#toolStatus")).toHaveText(why);
+    await expect(field(page, "length")).toHaveValue("3");
+    expect(blockAt(await doc(page), [18, 17, 17]).length).toBe(3);
+  }
   expect(await steps(page)).toEqual({ past: 1, future: 0 });
 
   await lay(page, [17, 18, 17], LASER);
