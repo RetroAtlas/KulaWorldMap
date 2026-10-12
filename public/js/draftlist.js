@@ -331,13 +331,18 @@ function buildForm(id, box) {
   const bonus = el("input", { id: "draftBonus", type: "checkbox", disabled: true });
   bonus.setAttribute("aria-describedby", "draftBonusSays");
   const bonusSays = el("p", { id: "draftBonusSays", hidden: true });
-  const bonusLabel = el("label", { className: "check", tabIndex: 0 }, bonus, " Bonus level");
+  const bonusLabel = el("label", { className: "check" }, bonus, " Bonus level");
   bonusLabel.onclick = () => toast(bonusSays.textContent);
-  bonusLabel.onkeydown = (e) => {
-    if (e.key !== "Enter" && e.key !== " ") return;
-    e.preventDefault();
-    toast(bonusSays.textContent);
-  };
+  const bonusWhy = el("button", {
+    id: "draftBonusWhy",
+    type: "button",
+    className: "why",
+    textContent: "why",
+    title: "Why the box is greyed",
+  });
+  bonusWhy.setAttribute("aria-label", "Why the box is greyed");
+  bonusWhy.setAttribute("aria-describedby", "draftBonusSays");
+  bonusWhy.onclick = () => toast(bonusSays.textContent);
   const hidden = el("input", { id: "draftHidden", type: "checkbox" });
   hidden.onchange = () => edit({ hidden: hidden.checked }, "changed the hidden level setting");
   const afar = el("input", { id: "draftAfar", type: "checkbox" });
@@ -396,7 +401,7 @@ function buildForm(id, box) {
     field("Title", title),
     field("World", world),
     field("Time", time),
-    bonusLabel,
+    el("div", { className: "bonus" }, bonusLabel, bonusWhy),
     bonusSays,
     el("label", { className: "check" }, hidden, " Hidden level"),
     el("label", { className: "check" }, afar, " Invisible blocks show from far away"),

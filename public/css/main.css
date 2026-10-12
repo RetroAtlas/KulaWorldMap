@@ -667,6 +667,22 @@ button.kind:hover {
 .yours .card .row {
   margin-top: 8px;
 }
+.yours .card .bonus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.yours .card .why {
+  background: none;
+  border: 0;
+  padding: 3px 0;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
 .yours .card .circuits {
   padding: 3px 0;
   font-size: 12.5px;
