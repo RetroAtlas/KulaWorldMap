@@ -513,8 +513,7 @@ function circuitRow(d, colour) {
     );
   const swatch = el("span", { className: "lamp" });
   swatch.style.setProperty("--lamp", swatchOf(SWITCH, colour));
-  swatch.setAttribute("role", "img");
-  swatch.setAttribute("aria-label", palette.colourName(colour));
+  swatch.setAttribute("aria-hidden", "true");
   return group(
     "Circuit",
     el(
