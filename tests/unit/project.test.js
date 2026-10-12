@@ -1196,26 +1196,107 @@ test("the reader takes what it knows of a newer file, fills the defaults and dro
   assert.deepEqual(p.circuits, { 1: "off" });
   assert.deepEqual(p.blocks, [
     { cell: [5, 5, 5], kind: 0, faces: { 0: { type: START, facing: 3 } } },
-    { cell: [5, 5, 5], kind: 2 },
     { cell: [7, 5, 5], kind: PLATFORM_KIND, far: [7, 9, 5], length: 2, speed: 30 },
     { cell: [9, 5, 5], kind: LASER_KIND, far: [9, 9, 5], colour: 0 },
     { cell: [11, 5, 5], kind: 7, phase: 0 },
-    { cell: [40, 5, 5], kind: 0 },
   ]);
   assert.ok(report.some((line) => line.startsWith("written as version 7")));
-  assert.equal(report.filter((line) => line.includes("it is left out")).length, 6);
+  assert.equal(report.filter((line) => line.includes("it is left out")).length, 8);
   assert.ok(report.some((line) => line.includes("block 1 ")));
   assert.ok(report.some((line) => line.includes("block 2 ")));
   assert.ok(report.some((line) => line.includes("block 3 ")));
+  assert.ok(report.includes("block 7 at 5,5,5 stands on the cell of block 0; it is left out"));
+  assert.ok(report.includes("block 8 at 40,5,5 stands outside the lattice; it is left out"));
   assert.ok(report.some((line) => line.includes('a face "top"')));
   assert.ok(report.some((line) => line.includes("face 2 holds nothing")));
   assert.ok(report.some((line) => line.includes("colour 7")));
   assert.ok(report.some((line) => line.includes("colour 3 is neither on nor off")));
   assert.ok(report.some((line) => line.includes("hidden")));
   assert.ok(report.some((line) => line.includes("time")));
+  assert.deepEqual(texts(validate(p, HIDES), "error"), []);
+  assert.doesNotThrow(() => writeKwl(p));
+});
+
+test("the reader leaves out what the writer has no bytes for, and holds a word to the file's range", () => {
+  const { project: p, report } = readProject({
+    format: FORMAT,
+    world: WORLD,
+    time: -70000,
+    blocks: [
+      { cell: [5, 5, 5], kind: 12 },
+      {
+        cell: [5, 5, 5],
+        kind: 0,
+        faces: {
+          0: { type: START, facing: 70000 },
+          1: { type: 70000 },
+          2: { type: KEY, variant: -70000 },
+        },
+      },
+      { cell: [5, 5, 5], kind: 2 },
+      { cell: [6, 5, 5], kind: SETTINGS_KIND },
+      { cell: [7, 5, 5], kind: -1 },
+      { cell: [8, 5, 5], kind: LASER_KIND, far: [10, 7, 5], colour: 0 },
+      { cell: [9, 5, 5], kind: PLATFORM_KIND, far: [9, 9, 5], length: 2, speed: -70000 },
+      { cell: [11, 5, 5], kind: 7, phase: 70000 },
+      { cell: [0, 34, 5], kind: 0 },
+      { cell: [12, 5, 5], kind: 0, faces: { 0: coin } },
+      { cell: [12, 5, 5], kind: 0, faces: { 0: { type: KEY } } },
+    ],
+  });
+  assert.deepEqual(p.blocks, [
+    {
+      cell: [5, 5, 5],
+      kind: 0,
+      faces: {
+        0: { type: START, facing: 32767 },
+        1: { type: 32767 },
+        2: { type: KEY, variant: -32768 },
+      },
+    },
+    { cell: [9, 5, 5], kind: PLATFORM_KIND, far: [9, 9, 5], length: 2, speed: -32768 },
+    { cell: [11, 5, 5], kind: 7, phase: 32767 },
+    { cell: [12, 5, 5], kind: 0, faces: { 0: coin } },
+  ]);
+  assert.equal(p.time, -32768);
+  assert.deepEqual(report, [
+    "a time of -70000 is outside the file's range; it is -32768",
+    "block 0 at 5,5,5 has a kind of 12, which is not a kind of block; it is left out",
+    "block 1 at 5,5,5 face 0 has a facing of 70000, outside the file's range; it is 32767",
+    "block 1 at 5,5,5 face 1 has a type of 70000, outside the file's range; it is 32767",
+    "block 1 at 5,5,5 face 2 has a variant of -70000, outside the file's range; it is -32768",
+    "block 2 at 5,5,5 stands on the cell of block 1; it is left out",
+    "block 3 at 6,5,5 has a kind of 9, which is not a kind of block; it is left out",
+    "block 4 at 7,5,5 has a kind of -1, which is not a kind of block; it is left out",
+    "block 5 at 8,5,5 spans to 10,7,5 along no one axis; it is left out",
+    "block 6 at 9,5,5 has a speed of -70000, outside the file's range; it is -32768",
+    "block 7 at 11,5,5 has a phase of 70000, outside the file's range; it is 32767",
+    "block 8 at 0,34,5 stands outside the lattice; it is left out",
+    "block 10 at 12,5,5 stands on the cell of block 9; it is left out",
+  ]);
+  // what is kept writes, and the checks name what the game would make of it
+  assert.doesNotThrow(() => writeKwl(p));
   const found = texts(validate(p, HIDES), "error");
-  assert.ok(found.includes("two blocks on one cell"));
-  assert.ok(found.includes("the game builds nothing past the edge"));
+  for (const text of [
+    "a facing of 1 to 4 is needed",
+    "type 32767 is nothing the game plays",
+    "a phase of 32767",
+    "a time of -32768 seconds",
+  ])
+    assert.ok(found.includes(text), text);
+  assert.ok(texts(validate(p, HIDES), "warning").includes("a platform running at -32768"));
+  // the one project the reader hands on that the writer refuses: records enough to outrun a link word
+  const crowd = Array.from({ length: 2049 }, (_, i) =>
+    plain([1 + (i % 32), 1 + (Math.floor(i / 32) % 32), 1 + Math.floor(i / 1024)], 0, { 0: coin }),
+  );
+  crowd.find((b) => b.cell.join() === "32,32,2").faces[1] = { type: SWITCH, variant: 0 };
+  const { project: q, report: lines } = readProject(project(crowd));
+  assert.deepEqual(lines, []);
+  assert.ok(errors(crowd).includes("2049 records, over the 123 the game has room for"));
+  assert.throws(
+    () => writeKwl(q),
+    (e) => e.message === "a word of the block at 32,32,2 is outside the file's range",
+  );
 });
 
 test("the reader reports every default it takes, and repairs what the writer would refuse", () => {

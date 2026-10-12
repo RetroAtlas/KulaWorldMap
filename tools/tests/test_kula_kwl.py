@@ -638,11 +638,9 @@ class ReadsProjects(unittest.TestCase):
         self.assertEqual(p["circuits"], {"1": "off"})
         self.assertEqual(p["blocks"], [
             {"cell": [5, 5, 5], "kind": 0, "faces": {"0": {"type": START, "facing": 3}}},
-            {"cell": [5, 5, 5], "kind": 2},
             {"cell": [7, 5, 5], "kind": PLATFORM_KIND, "far": [7, 9, 5], "length": 2, "speed": 30},
             {"cell": [9, 5, 5], "kind": LASER_KIND, "far": [9, 9, 5], "colour": 0},
             {"cell": [11, 5, 5], "kind": 7, "phase": 0},
-            {"cell": [40, 5, 5], "kind": 0},
         ])
         self.assertEqual(report, [
             "written as version 7 of the format, newer than this reader's 1; what it knows is read",
@@ -655,10 +653,70 @@ class ReadsProjects(unittest.TestCase):
             "block 1 has no cell of three whole numbers and a kind; it is left out",
             "block 2 has no cell of three whole numbers and a kind; it is left out",
             "block 3 has no cell of three whole numbers and a kind; it is left out",
+            "block 7 at 5,5,5 stands on the cell of block 0; it is left out",
+            "block 8 at 40,5,5 stands outside the lattice; it is left out",
         ])
+        self.assertEqual(texts(validate(p, HIDES), "error"), [])
+        canonical(p)
+
+    def test_the_reader_leaves_out_what_the_writer_has_no_bytes_for_and_holds_a_word_to_the_files_range(self):
+        coin = {"type": COIN, "variant": 0}
+        p, report = read_project({
+            "format": FORMAT, "world": WORLD, "time": -70000,
+            "blocks": [
+                {"cell": [5, 5, 5], "kind": 12},
+                {"cell": [5, 5, 5], "kind": 0, "faces": {"0": {"type": START, "facing": 70000}, "1": {"type": 70000},
+                                                          "2": {"type": KEY, "variant": -70000}}},
+                {"cell": [5, 5, 5], "kind": 2},
+                {"cell": [6, 5, 5], "kind": UNPLACED_KIND},
+                {"cell": [7, 5, 5], "kind": -1},
+                {"cell": [8, 5, 5], "kind": LASER_KIND, "far": [10, 7, 5], "colour": 0},
+                {"cell": [9, 5, 5], "kind": PLATFORM_KIND, "far": [9, 9, 5], "length": 2, "speed": -70000},
+                {"cell": [11, 5, 5], "kind": 7, "phase": 70000},
+                {"cell": [0, 34, 5], "kind": 0},
+                {"cell": [12, 5, 5], "kind": 0, "faces": {"0": coin}},
+                {"cell": [12, 5, 5], "kind": 0, "faces": {"0": {"type": KEY}}},
+            ],
+        })
+        self.assertEqual(p["blocks"], [
+            {"cell": [5, 5, 5], "kind": 0, "faces": {"0": {"type": START, "facing": 32767}, "1": {"type": 32767},
+                                                      "2": {"type": KEY, "variant": -32768}}},
+            {"cell": [9, 5, 5], "kind": PLATFORM_KIND, "far": [9, 9, 5], "length": 2, "speed": -32768},
+            {"cell": [11, 5, 5], "kind": 7, "phase": 32767},
+            {"cell": [12, 5, 5], "kind": 0, "faces": {"0": coin}},
+        ])
+        self.assertEqual(p["time"], -32768)
+        self.assertEqual(report, [
+            "a time of -70000 is outside the file's range; it is -32768",
+            "block 0 at 5,5,5 has a kind of 12, which is not a kind of block; it is left out",
+            "block 1 at 5,5,5 face 0 has a facing of 70000, outside the file's range; it is 32767",
+            "block 1 at 5,5,5 face 1 has a type of 70000, outside the file's range; it is 32767",
+            "block 1 at 5,5,5 face 2 has a variant of -70000, outside the file's range; it is -32768",
+            "block 2 at 5,5,5 stands on the cell of block 1; it is left out",
+            "block 3 at 6,5,5 has a kind of 9, which is not a kind of block; it is left out",
+            "block 4 at 7,5,5 has a kind of -1, which is not a kind of block; it is left out",
+            "block 5 at 8,5,5 spans to 10,7,5 along no one axis; it is left out",
+            "block 6 at 9,5,5 has a speed of -70000, outside the file's range; it is -32768",
+            "block 7 at 11,5,5 has a phase of 70000, outside the file's range; it is 32767",
+            "block 8 at 0,34,5 stands outside the lattice; it is left out",
+            "block 10 at 12,5,5 stands on the cell of block 9; it is left out",
+        ])
+        # what is kept writes, and the checks name what the game would make of it
+        canonical(p)
         errors = texts(validate(p, HIDES), "error")
-        self.assertIn("two blocks on one cell", errors)
-        self.assertIn("the game builds nothing past the edge", errors)
+        for text in ("a facing of 1 to 4 is needed", "type 32767 is nothing the game plays", "a phase of 32767",
+                     "a time of -32768 seconds"):
+            self.assertIn(text, errors)
+        self.assertIn("a platform running at -32768", texts(validate(p, HIDES), "warning"))
+        # the one project the reader hands on that the writer refuses: records enough to outrun a link word
+        crowd = [plain((1 + i % 32, 1 + i // 32 % 32, 1 + i // 1024), t0=coin) for i in range(2049)]
+        max(crowd, key=lambda b: tuple(b["cell"]))["faces"]["1"] = {"type": SWITCH, "variant": 0}
+        q, lines = read_project(project(crowd))
+        self.assertEqual(lines, [])
+        self.assertIn("2049 records, over the 123 the game has room for", texts(validate(q, HIDES), "error"))
+        with self.assertRaises(ValueError) as caught:
+            canonical(q)
+        self.assertEqual(str(caught.exception), "a word of the block at 32,32,2 is outside the file's range")
 
     def test_a_whole_number_is_whole_however_json_spells_it(self):
         p, report = read_project({"format": FORMAT, "world": WORLD, "time": 45.0,
@@ -1235,10 +1293,12 @@ class TheCli(unittest.TestCase):
     def test_what_the_writer_and_the_reader_refuse_is_a_sentence_and_not_a_traceback(self):
         with tempfile.TemporaryDirectory() as scratch:
             scratch = Path(scratch)
-            (scratch / "bad.kula.json").write_text(json.dumps(project([plain((5, 5, 5), t0=start()), plain((5, 5, 5))])))
+            crowd = [plain((1 + i % 32, 1 + i // 32 % 32, 1 + i // 1024), t0={"type": COIN, "variant": 0}) for i in range(2049)]
+            max(crowd, key=lambda b: tuple(b["cell"]))["faces"]["1"] = {"type": SWITCH, "variant": 0}
+            (scratch / "bad.kula.json").write_text(json.dumps(project(crowd)))
             done = self.run_tool("--from-json", scratch / "bad.kula.json", "--kwl", scratch / "bad.kwl")
             self.assertEqual(done.returncode, 1, done.stderr)
-            self.assertIn("two blocks on cell", done.stderr)
+            self.assertIn("a word of the block at 32,32,2 is outside the file's range", done.stderr)
             self.assertNotIn("Traceback", done.stderr)
             self.assertFalse((scratch / "bad.kwl").exists())
             (scratch / "other.json").write_text('{"format": "orbit"}')
@@ -1283,8 +1343,6 @@ class Digests(unittest.TestCase):
         self.assertEqual(render_hostile(hostile(fixture)), HOSTILE.read_text())
         refused = [c for c in fixture["cases"] if "refusal" in c]
         self.assertTrue(refused and all(c["refusal"] == f"not a {FORMAT} file" for c in refused))
-        self.assertTrue(any("kwl" in c.get("level", {}) for c in fixture["cases"]))
-        self.assertTrue(any("refusal" in c.get("level", {}) for c in fixture["cases"]))
 
     def test_the_deflate_vectors_are_what_zlib_writes_for_their_inputs(self):
         fixture = json.loads(VECTORS.read_text())

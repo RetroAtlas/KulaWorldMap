@@ -10,6 +10,16 @@ const good = (world = "HIRO", more = {}) => ({ ...blank(world), ...more });
 
 const text = (raw) => JSON.stringify(raw);
 
+const crowd = () => {
+  const blocks = Array.from({ length: 2049 }, (_, i) => ({
+    cell: [1 + (i % 32), 1 + (Math.floor(i / 32) % 32), 1 + Math.floor(i / 1024)],
+    kind: 0,
+    faces: { 0: { type: 37, variant: 0 } },
+  }));
+  blocks.find((b) => b.cell.join() === "32,32,2").faces[1] = { type: 9, variant: 0 };
+  return blocks;
+};
+
 const mixed = () => {
   const doc = good();
   return {
@@ -20,7 +30,7 @@ const mixed = () => {
       2: null,
       3: entry({ format: "something-else", blocks: [] }),
       4: entry({ ...doc, world: "NOWHERE" }),
-      5: entry({ ...doc, blocks: [{ cell: [17, 17, 17], kind: 99 }] }),
+      5: entry({ ...doc, blocks: crowd() }),
       6: "text",
       a: entry(doc),
       0: entry(doc),

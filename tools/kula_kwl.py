@@ -918,6 +918,15 @@ def _taken(raw, key, fallback, where, report):
     return fallback
 
 
+def _word(v, key, where, report):
+    """`v` where the file's word holds it, else the nearest word with a line."""
+    if v in WORD:
+        return v
+    held = WORD.start if v < 0 else WORD.stop - 1
+    report.append(f"{where} has a {key} of {v}, outside the file's range; it is {held}")
+    return held
+
+
 def _one_of(raw, key, n, where, report):
     """The number under `key` where it is one of `n`, else 0 with a line; missing is 0."""
     if key not in raw:
@@ -947,10 +956,11 @@ def _read_faces(faces, where, report):
             report.append(f"{where} face {key} has a type of {t}, which is nothing standing there; it is left out")
             continue
         at = f"{where} face {key}"
+        t = _word(t, "type", at, report)
         obj = {"type": t}
         if "facing" in o:
             if _whole(o["facing"]):
-                obj["facing"] = _int(o["facing"])
+                obj["facing"] = _word(_int(o["facing"]), "facing", at, report)
             else:
                 report.append(f"{at} has a facing of {_show(o['facing'])}, which is not a whole number; it is left out")
         if t in FACING_NEEDED and not obj.get("facing"):
@@ -960,20 +970,29 @@ def _read_faces(faces, where, report):
             if t in VARIANT_TYPES:
                 obj["variant"] = _one_of(o, "variant", len(VARIANTS[t]), at, report)
             elif _whole(o["variant"]):
-                obj["variant"] = _int(o["variant"])
+                obj["variant"] = _word(_int(o["variant"]), "variant", at, report)
             else:
                 report.append(f"{at} has a variant of {_show(o['variant'])}, which is not a whole number; it is left out")
         out[face] = obj
     return out
 
 
-def _read_block(raw, i, report):
+def _read_block(raw, i, report, seen):
     where = f"block {i}"
     if not isinstance(raw, dict) or not is_cell(raw.get("cell")) or not _whole(raw.get("kind")):
         report.append(f"{where} has no cell of three whole numbers and a kind; it is left out")
         return None
     b = {"cell": [_int(c) for c in raw["cell"]], "kind": _int(raw["kind"])}
     at = f"{where} at {cell_text(b['cell'])}"
+    if any(c not in LATTICE for c in b["cell"]):
+        report.append(f"{at} stands outside the lattice; it is left out")
+        return None
+    if b["kind"] not in range(UNPLACED_KIND):
+        report.append(f"{at} has a kind of {b['kind']}, which is not a kind of block; it is left out")
+        return None
+    if tuple(b["cell"]) in seen:
+        report.append(f"{at} stands on the cell of block {seen[tuple(b['cell'])]}; it is left out")
+        return None
     if "faces" in raw:
         if not isinstance(raw["faces"], dict):
             report.append(f"{at} has faces that are not a table of the six; they are left out")
@@ -996,20 +1015,23 @@ def _read_block(raw, i, report):
         if any(c not in LATTICE for c in far):
             report.append(f"{at} has its far end at {cell_text(far)}, outside the lattice; it is left out")
             return None
+        if direction(b["cell"], far) is None:
+            report.append(f"{at} spans to {cell_text(far)} along no one axis; it is left out")
+            return None
         b["far"] = far
     if b["kind"] == PLATFORM_KIND:
         b["length"] = _taken(raw, "length", DEFAULT_LENGTH, at, report)
-        room = inner_room_for(b["cell"], b["far"])
-        held = b["length"] if room is None else held_length(b["length"], room)
+        held = held_length(b["length"], inner_room_for(b["cell"], b["far"]))
         if held != b["length"]:
             why = "is less than one block" if b["length"] < 1 else "runs past the edge"
             report.append(f"{at} has a length of {b['length']}, which {why}; it is {held}")
             b["length"] = held
-        b["speed"] = _taken(raw, "speed", DEFAULT_SPEED, at, report)
+        b["speed"] = _word(_taken(raw, "speed", DEFAULT_SPEED, at, report), "speed", at, report)
     if b["kind"] == LASER_KIND:
         b["colour"] = _one_of(raw, "colour", COLOURS, at, report)
     if b["kind"] == VANISHING_KIND:
-        b["phase"] = _taken(raw, "phase", 0, at, report)
+        b["phase"] = _word(_taken(raw, "phase", 0, at, report), "phase", at, report)
+    seen[tuple(b["cell"])] = i
     return b
 
 
@@ -1069,6 +1091,10 @@ def read_project(raw):
     else:
         report.append(f"a time of {_show(raw['time'])} is not a whole number; it is {DEFAULT_TIME}")
         project["time"] = DEFAULT_TIME
+    if project["time"] not in WORD:
+        held = WORD.start if project["time"] < 0 else WORD.stop - 1
+        report.append(f"a time of {project['time']} is outside the file's range; it is {held}")
+        project["time"] = held
     project["hidden"] = flag("hidden")
     project["invisibleFromAfar"] = flag("invisibleFromAfar")
     project["circuits"] = {}
@@ -1086,7 +1112,8 @@ def read_project(raw):
         report.append("no blocks")
         project["blocks"] = []
     else:
-        blocks = [_read_block(b, i, report) for i, b in enumerate(raw["blocks"])]
+        seen = {}
+        blocks = [_read_block(b, i, report, seen) for i, b in enumerate(raw["blocks"])]
         project["blocks"] = sorted((b for b in blocks if b is not None), key=lambda b: tuple(b["cell"]))
     return project, collapse(report)
 

@@ -187,14 +187,6 @@
      },
      {
       "cell": [
-       5,
-       5,
-       5
-      ],
-      "kind": 2
-     },
-     {
-      "cell": [
        7,
        5,
        5
@@ -230,14 +222,6 @@
       ],
       "kind": 7,
       "phase": 0
-     },
-     {
-      "cell": [
-       40,
-       5,
-       5
-      ],
-      "kind": 0
      }
     ]
    },
@@ -251,10 +235,12 @@
     "block 0 at 5,5,5 names a face \"top\", which is not one of the six; it is left out",
     "block 1 has no cell of three whole numbers and a kind; it is left out",
     "block 2 has no cell of three whole numbers and a kind; it is left out",
-    "block 3 has no cell of three whole numbers and a kind; it is left out"
+    "block 3 has no cell of three whole numbers and a kind; it is left out",
+    "block 7 at 5,5,5 stands on the cell of block 0; it is left out",
+    "block 8 at 40,5,5 stands outside the lattice; it is left out"
    ],
    "level": {
-    "refusal": "two blocks on cell 5,5,5"
+    "kwl": "097847cb7a2e991d6e9167901cacfc9c028d020d8249710260a92c0ef15bf972"
    }
   },
   {
@@ -1051,28 +1037,15 @@
         "facing": 3
        }
       }
-     },
-     {
-      "cell": [
-       5,
-       5,
-       5
-      ],
-      "kind": 2
-     },
-     {
-      "cell": [
-       40,
-       5,
-       5
-      ],
-      "kind": 0
      }
     ]
    },
-   "report": [],
+   "report": [
+    "block 1 at 5,5,5 stands on the cell of block 0; it is left out",
+    "block 2 at 40,5,5 stands outside the lattice; it is left out"
+   ],
    "level": {
-    "refusal": "two blocks on cell 5,5,5"
+    "kwl": "108a536c5005d3b261a630f66659b95a6fa85a181c4ae029919e807a810e2b60"
    }
   },
   {
@@ -1138,20 +1111,14 @@
         "facing": 3
        }
       }
-     },
-     {
-      "cell": [
-       40,
-       5,
-       5
-      ],
-      "kind": 0
      }
     ]
    },
-   "report": [],
+   "report": [
+    "block 1 at 40,5,5 stands outside the lattice; it is left out"
+   ],
    "level": {
-    "refusal": "cell 40,5,5 is outside the lattice"
+    "kwl": "108a536c5005d3b261a630f66659b95a6fa85a181c4ae029919e807a810e2b60"
    }
   },
   {
@@ -1223,26 +1190,14 @@
         "facing": 3
        }
       }
-     },
-     {
-      "cell": [
-       6,
-       6,
-       6
-      ],
-      "kind": 8,
-      "far": [
-       8,
-       8,
-       6
-      ],
-      "colour": 0
      }
     ]
    },
-   "report": [],
+   "report": [
+    "block 1 at 6,6,6 spans to 8,8,6 along no one axis; it is left out"
+   ],
    "level": {
-    "refusal": "the span from 6,6,6 to 8,8,6 runs along no one axis"
+    "kwl": "108a536c5005d3b261a630f66659b95a6fa85a181c4ae029919e807a810e2b60"
    }
   },
   {
@@ -1610,20 +1565,14 @@
       ],
       "length": 2,
       "speed": 30
-     },
-     {
-      "cell": [
-       7,
-       6,
-       6
-      ],
-      "kind": 9
      }
     ]
    },
-   "report": [],
+   "report": [
+    "block 2 at 7,6,6 has a kind of 9, which is not a kind of block; it is left out"
+   ],
    "level": {
-    "refusal": "kind 9 is not a kind of block"
+    "kwl": "bcc6c2cea0d79c44a6a671188ce846726c455cc60f443cfb8df3d1978c509ee9"
    }
   },
   {
@@ -1689,20 +1638,14 @@
         "facing": 3
        }
       }
-     },
-     {
-      "cell": [
-       6,
-       6,
-       6
-      ],
-      "kind": 12
      }
     ]
    },
-   "report": [],
+   "report": [
+    "block 1 at 6,6,6 has a kind of 12, which is not a kind of block; it is left out"
+   ],
    "level": {
-    "refusal": "kind 12 is not a kind of block"
+    "kwl": "108a536c5005d3b261a630f66659b95a6fa85a181c4ae029919e807a810e2b60"
    }
   },
   {
@@ -3144,7 +3087,7 @@
        17
       ],
       "kind": 7,
-      "phase": 65536
+      "phase": 32767
      },
      {
       "cell": [
@@ -3162,9 +3105,11 @@
      }
     ]
    },
-   "report": [],
+   "report": [
+    "block 0 at 10,10,17 has a phase of 65536, outside the file's range; it is 32767"
+   ],
    "level": {
-    "refusal": "a word of the block at 10,10,17 is outside the file's range"
+    "kwl": "81d466acaf39d5cd1988c64ef5c17d6264984ab8c460b330b1c599d94763f2aa"
    }
   },
   {
@@ -3237,7 +3182,7 @@
        17
       ],
       "length": 2,
-      "speed": 65566
+      "speed": 32767
      },
      {
       "cell": [
@@ -3255,9 +3200,11 @@
      }
     ]
    },
-   "report": [],
+   "report": [
+    "block 0 at 10,10,17 has a speed of 65566, outside the file's range; it is 32767"
+   ],
    "level": {
-    "refusal": "a word of the block at 10,10,17 is outside the file's range"
+    "kwl": "f287373d77d28771d8154665859dfdbf693208f3069a4c75cf80375076cb9d35"
    }
   },
   {
@@ -3297,7 +3244,7 @@
     "author": "",
     "notes": "",
     "world": "HIRO",
-    "time": 40000,
+    "time": 32767,
     "hidden": false,
     "invisibleFromAfar": false,
     "circuits": {},
@@ -3318,9 +3265,11 @@
      }
     ]
    },
-   "report": [],
+   "report": [
+    "a time of 40000 is outside the file's range; it is 32767"
+   ],
    "level": {
-    "refusal": "a time of 40000 is outside the file's range"
+    "kwl": "490ddd8f41e5627d1d4f4d8c8fd94d4070ca6df513434f00ad615de0625878e6"
    }
   },
   {
@@ -9866,29 +9815,14 @@
         "facing": 3
        }
       }
-     },
-     {
-      "cell": [
-       10,
-       40,
-       17
-      ],
-      "kind": 5,
-      "far": [
-       10,
-       20,
-       17
-      ],
-      "length": 1,
-      "speed": 30
      }
     ]
    },
    "report": [
-    "block 1 at 10,40,17 has a length of 2, which runs past the edge; it is 1"
+    "block 1 at 10,40,17 stands outside the lattice; it is left out"
    ],
    "level": {
-    "refusal": "cell 10,40,17 is outside the lattice"
+    "kwl": "108a536c5005d3b261a630f66659b95a6fa85a181c4ae029919e807a810e2b60"
    }
   },
   {
@@ -9984,6 +9918,220 @@
    ],
    "level": {
     "kwl": "14bd50864b4cf1a36752b51eecd3b743a248d55eaa13a8bc780149cb5c2f971c"
+   }
+  },
+  {
+   "name": "words past the file's range",
+   "input": {
+    "format": "kula-world-level",
+    "version": 1,
+    "title": "t",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": -70000,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 70000
+       },
+       "1": {
+        "type": 70000
+       },
+       "2": {
+        "type": 31,
+        "variant": -70000
+       }
+      }
+     },
+     {
+      "cell": [
+       7,
+       5,
+       5
+      ],
+      "kind": 5,
+      "far": [
+       7,
+       9,
+       5
+      ],
+      "length": 2,
+      "speed": -70000
+     },
+     {
+      "cell": [
+       9,
+       5,
+       5
+      ],
+      "kind": 7,
+      "phase": 70000
+     }
+    ]
+   },
+   "project": {
+    "format": "kula-world-level",
+    "version": 1,
+    "title": "t",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": -32768,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 32767
+       },
+       "1": {
+        "type": 32767
+       },
+       "2": {
+        "type": 31,
+        "variant": -32768
+       }
+      }
+     },
+     {
+      "cell": [
+       7,
+       5,
+       5
+      ],
+      "kind": 5,
+      "far": [
+       7,
+       9,
+       5
+      ],
+      "length": 2,
+      "speed": -32768
+     },
+     {
+      "cell": [
+       9,
+       5,
+       5
+      ],
+      "kind": 7,
+      "phase": 32767
+     }
+    ]
+   },
+   "report": [
+    "a time of -70000 is outside the file's range; it is -32768",
+    "block 0 at 5,5,5 face 0 has a facing of 70000, outside the file's range; it is 32767",
+    "block 0 at 5,5,5 face 1 has a type of 70000, outside the file's range; it is 32767",
+    "block 0 at 5,5,5 face 2 has a variant of -70000, outside the file's range; it is -32768",
+    "block 1 at 7,5,5 has a speed of -70000, outside the file's range; it is -32768",
+    "block 2 at 9,5,5 has a phase of 70000, outside the file's range; it is 32767"
+   ],
+   "level": {
+    "kwl": "ee9b3c7713da5d62079a7f86ec172e7f917775eb8f059f8a45951cba65e9bfe0"
+   }
+  },
+  {
+   "name": "three blocks on one cell, the first of no kind",
+   "input": {
+    "format": "kula-world-level",
+    "version": 1,
+    "title": "t",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": 99,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 12
+     },
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 3
+       }
+      }
+     },
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 2
+     }
+    ]
+   },
+   "project": {
+    "format": "kula-world-level",
+    "version": 1,
+    "title": "t",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": 99,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 3
+       }
+      }
+     }
+    ]
+   },
+   "report": [
+    "block 0 at 5,5,5 has a kind of 12, which is not a kind of block; it is left out",
+    "block 2 at 5,5,5 stands on the cell of block 1; it is left out"
+   ],
+   "level": {
+    "kwl": "108a536c5005d3b261a630f66659b95a6fa85a181c4ae029919e807a810e2b60"
    }
   }
  ]

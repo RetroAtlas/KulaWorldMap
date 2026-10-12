@@ -607,6 +607,14 @@ function whole(raw, key, fallback, where, report) {
   return fallback;
 }
 
+/** `v` where the file's word holds it, else the nearest word with a line. */
+function word(v, key, where, report) {
+  if (inWord(v)) return v;
+  const held = v < 0 ? -(2 ** 15) : 2 ** 15 - 1;
+  report.push(`${where} has a ${key} of ${v}, outside the file's range; it is ${held}`);
+  return held;
+}
+
 /** The value under `key` where it is one of `n`, else 0 with a line; missing is 0. */
 function oneOf(raw, key, n, where, report) {
   const v = raw[key];
@@ -639,24 +647,24 @@ function readFaces(faces, where, report) {
       continue;
     }
     const at = `${where} face ${key}`;
-    const object = { type: o.type };
+    const object = { type: word(o.type, "type", at, report) };
     if (o.facing !== undefined) {
-      if (safe(o.facing)) object.facing = o.facing;
+      if (safe(o.facing)) object.facing = word(o.facing, "facing", at, report);
       else
         report.push(
           `${at} has a facing of ${show(o.facing)}, which is not a whole number; it is left out`,
         );
     }
-    if (FACING_NEEDED.has(o.type) && !object.facing) {
+    if (FACING_NEEDED.has(object.type) && !object.facing) {
       report.push(
         `${at} has ${object.facing === undefined ? "no facing" : "a facing of 0"}, ${HEADS_AS_ONE}`,
       );
       object.facing = 1;
     }
     if (o.variant !== undefined) {
-      if (VARIANT_TYPES.has(o.type))
-        object.variant = oneOf(o, "variant", VARIANTS[o.type], at, report);
-      else if (safe(o.variant)) object.variant = o.variant;
+      if (VARIANT_TYPES.has(object.type))
+        object.variant = oneOf(o, "variant", VARIANTS[object.type], at, report);
+      else if (safe(o.variant)) object.variant = word(o.variant, "variant", at, report);
       else
         report.push(
           `${at} has a variant of ${show(o.variant)}, which is not a whole number; it is left out`,
@@ -667,7 +675,7 @@ function readFaces(faces, where, report) {
   return out;
 }
 
-function readBlock(raw, i, report) {
+function readBlock(raw, i, report, seen) {
   const where = `block ${i}`;
   if (!isObject(raw) || !safeCell(raw.cell) || !safe(raw.kind)) {
     report.push(`${where} has no cell of three whole numbers and a kind; it is left out`);
@@ -675,6 +683,18 @@ function readBlock(raw, i, report) {
   }
   const b = { cell: [...raw.cell], kind: raw.kind };
   const at = `${where} at ${cellText(b.cell)}`;
+  if (!b.cell.every(onLattice)) {
+    report.push(`${at} stands outside the lattice; it is left out`);
+    return null;
+  }
+  if (b.kind < 0 || b.kind >= SETTINGS_KIND) {
+    report.push(`${at} has a kind of ${b.kind}, which is not a kind of block; it is left out`);
+    return null;
+  }
+  if (seen.has(cellText(b.cell))) {
+    report.push(`${at} stands on the cell of block ${seen.get(cellText(b.cell))}; it is left out`);
+    return null;
+  }
   if (raw.faces !== undefined) {
     if (!isObject(raw.faces))
       report.push(`${at} has faces that are not a table of the six; they are left out`);
@@ -690,22 +710,25 @@ function readBlock(raw, i, report) {
     else if (!safeCell(far)) left("has a far end that is not a cell of three whole numbers");
     else if (sameCell(far, b.cell)) left("has its far end on its own cell");
     else if (!onLatticeCell(far)) left(`has its far end at ${cellText(far)}, outside the lattice`);
-    if (!onLatticeCell(far) || sameCell(far, b.cell)) return null;
+    else if (direction(b.cell, far) === null) left(`spans to ${cellText(far)} along no one axis`);
+    if (!onLatticeCell(far) || sameCell(far, b.cell) || direction(b.cell, far) === null)
+      return null;
     b.far = [...far];
   }
   if (b.kind === PLATFORM_KIND) {
     b.length = whole(raw, "length", DEFAULT_LENGTH, at, report);
-    const room = innerRoomFor(b.cell, b.far);
-    const held = room === null ? b.length : heldLength(b.length, room);
+    const held = heldLength(b.length, innerRoomFor(b.cell, b.far));
     if (held !== b.length) {
       const why = b.length < 1 ? "is less than one block" : "runs past the edge";
       report.push(`${at} has a length of ${b.length}, which ${why}; it is ${held}`);
       b.length = held;
     }
-    b.speed = whole(raw, "speed", DEFAULT_SPEED, at, report);
+    b.speed = word(whole(raw, "speed", DEFAULT_SPEED, at, report), "speed", at, report);
   }
   if (b.kind === LASER_KIND) b.colour = oneOf(raw, "colour", COLOURS, at, report);
-  if (b.kind === VANISHING_KIND) b.phase = whole(raw, "phase", 0, at, report);
+  if (b.kind === VANISHING_KIND)
+    b.phase = word(whole(raw, "phase", 0, at, report), "phase", at, report);
+  seen.set(cellText(b.cell), i);
   return b;
 }
 
@@ -769,6 +792,11 @@ export function readProject(source) {
     report.push(`a time of ${show(raw.time)} is not a whole number; it is ${DEFAULT_TIME}`);
     project.time = DEFAULT_TIME;
   }
+  if (!inWord(project.time)) {
+    const held = project.time < 0 ? -(2 ** 15) : 2 ** 15 - 1;
+    report.push(`a time of ${project.time} is outside the file's range; it is ${held}`);
+    project.time = held;
+  }
   project.hidden = flag("hidden");
   project.invisibleFromAfar = flag("invisibleFromAfar");
   project.circuits = {};
@@ -784,11 +812,13 @@ export function readProject(source) {
   if (!Array.isArray(raw.blocks)) {
     report.push("no blocks");
     project.blocks = [];
-  } else
+  } else {
+    const seen = new Map();
     project.blocks = raw.blocks
-      .map((b, i) => readBlock(b, i, report))
+      .map((b, i) => readBlock(b, i, report, seen))
       .filter(Boolean)
       .sort(byCell);
+  }
   return { project, report: collapse(report) };
 }
 
