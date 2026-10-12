@@ -45,6 +45,11 @@ const NO_KEY =
 const HAS_KEY =
   "This level has a key, so the game plays it as an arcade level. Take every key away to make it a bonus level.";
 const nameOf = (doc) => doc.title || UNTITLED;
+/** A step the card takes is not announced, and clears what the panel last said. */
+const quietly = (id, next, label, opts) => {
+  step(id, next, label, opts);
+  say("");
+};
 const keyed = (doc) => doc.blocks.some((b) => facesOf(b).some(([, o]) => o.type === KEY));
 const NO_MEMBERS = "nothing of this colour";
 const startsOff = (doc, colour) => doc.circuits?.[String(colour)] === "off";
@@ -287,7 +292,7 @@ function buildForm(id, box) {
   box.textContent = "";
   const edit = (meta, label, merge = false) => {
     const d = drafts.get(id);
-    if (d) step(id, setMeta(d.doc, meta), label, { merge });
+    if (d) quietly(id, setMeta(d.doc, meta), label, { merge });
   };
   const field = (text, control) => el("label", {}, el("span", { textContent: text }), control);
 
@@ -466,7 +471,7 @@ function circuitRows(id) {
       const d = drafts.get(id);
       if (!d) return;
       const off = startsOff(d.doc, colour);
-      step(
+      quietly(
         id,
         setCircuit(d.doc, colour, off ? "on" : "off"),
         `turned ${theCircuit(colour)} ${off ? "on" : "off"}`,

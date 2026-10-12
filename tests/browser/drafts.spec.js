@@ -487,6 +487,7 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   await toggle(2).click();
   expect((await docOf(page, id)).circuits).toEqual({ 2: "off" });
   await expect(toggle(2)).toHaveText("starts off");
+  await expect(page.locator("#say")).toBeEmpty();
   await expect(toggle(2)).toHaveAttribute("aria-pressed", "false");
   await expect(toggle(2)).toHaveAccessibleName("green circuit");
   await expect(toggle(2)).toHaveAttribute("title", "Turn the green circuit on");
@@ -504,6 +505,19 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   await panelRow.click();
   await expect(toggle(2)).toHaveText("starts off");
   await expect(members.nth(2)).toHaveText("1 switch, 1 laser");
+  // the panel's row speaks and the card's does not, so the card's press takes the sentence down
+  await expect(page.locator("#say")).toHaveText("Turned the green circuit off");
+  await toggle(2).click();
+  await expect(toggle(2)).toHaveText("starts on");
+  await expect(panelRow).toHaveText("starts on");
+  await expect(page.locator("#say")).toBeEmpty();
+  // a field of the card takes the sentence down as its toggles do
+  await panelRow.click();
+  await expect(page.locator("#say")).toHaveText("Turned the green circuit off");
+  await page.locator("#draftTime").fill("45");
+  await page.locator("#draftTime").blur();
+  await expect(page.locator("#chipLine")).toContainText("time 45");
+  await expect(page.locator("#say")).toBeEmpty();
   expect(errors).toEqual([]);
 });
 
