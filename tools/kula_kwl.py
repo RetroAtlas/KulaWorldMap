@@ -1592,10 +1592,10 @@ def _undrawn_in_bonus(blocks):
 
 
 def _circuit_word(c):
-    """A circuit's word, the bracketed part of its switch's name, or None where the annotations have none."""
+    """A circuit's word, the bracketed part of its switch's name trimmed of its spaces, or None where the annotations have none or nothing but spaces."""
     name = _names()["types"].get(str(SWITCH), {}).get("variants", {}).get(str(c), {}).get("name") or ""
     found = re.search(r"\(([^)]*)\)", name)
-    return found.group(1) if found else None
+    return (found.group(1).strip() or None) if found else None
 
 
 def circuit_members(project):

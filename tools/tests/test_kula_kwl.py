@@ -41,6 +41,7 @@ from kula_kwl import (  # noqa: E402
     RESIDUALS,
     REWIRED,
     VECTORS,
+    _circuit_word,
     canonical,
     circuit_members,
     check,
@@ -1312,9 +1313,25 @@ class Validates(unittest.TestCase):
         for text in ("circuit 2 starts off and has no switch to turn it on", "the one teleporter of circuit 0 leads to itself",
                      "the switches of circuit 1 have nothing to switch"):
             self.assertIn(text, unnamed)
+        for name in ("Switch ()", "Switch ( )"):
+            with mock.patch("kula_kwl._names", return_value=self.switches_named(name)):
+                self.assertEqual(self.warnings(blocks, circuits={"2": "off"}), unnamed, name)
         self.assertIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY})]))
         self.assertNotIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY}, t2={"type": EXIT})]))
         self.assertNotIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY}, t2={"type": 26})]))
+
+    @staticmethod
+    def switches_named(name):
+        return {"kinds": {}, "types": {str(SWITCH): {"variants": {str(c): {"name": name} for c in range(4)}}}}
+
+    def test_a_circuits_word_is_the_bracketed_part_of_its_switchs_name_trimmed_or_none(self):
+        self.assertEqual(_circuit_word(2), "green")
+        for name, word in (("Switch (green)", "green"), ("Switch ( green )", "green"),
+                           ("Switch ()", None), ("Switch ( )", None), ("Switch", None)):
+            with mock.patch("kula_kwl._names", return_value=self.switches_named(name)):
+                self.assertEqual(_circuit_word(2), word, name)
+        with mock.patch("kula_kwl._names", return_value={"kinds": {}, "types": {}}):
+            self.assertIsNone(_circuit_word(2))
 
     def test_a_keyless_level_is_warned_of_what_the_bonus_artwork_has_no_picture_for(self):
         bonus = json.loads(OBJECTS.read_text())["skins"]["sets"]["bonus"]
