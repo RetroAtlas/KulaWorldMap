@@ -472,6 +472,30 @@ test("Select's key pressed again keeps the set and its line", async ({ page }) =
   expect(errors).toEqual([]);
 });
 
+test("a brush change clears a refusal and gives the set its line back", async ({ page }) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await marquee(page, [B, C]);
+  await expect(status(page)).toHaveText(selected(2));
+  await page.keyboard.press("j");
+  await expect(said(page)).toHaveText(/^Brush: /);
+  await expect(status(page)).toHaveText(selected(2));
+  await page.keyboard.press("Shift+ArrowRight");
+  await expect(status(page)).toHaveText(HELD);
+  // Alt-click takes the block's kind as the brush, with the set still in hand
+  await page.keyboard.down("Alt");
+  await click(page, await top(page, D));
+  await page.keyboard.up("Alt");
+  await expect(page.locator('#palette .rows [data-id="k0"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(status(page)).toHaveText(selected(2));
+  await page.keyboard.press("Shift+ArrowDown");
+  await expect(said(page)).toHaveText("Moved 2 blocks by 0, 1, 0");
+  expect(errors).toEqual([]);
+});
+
 test("a click, Esc or a rectangle round nothing clears the set, the panel's cell staying until Esc", async ({
   page,
 }) => {

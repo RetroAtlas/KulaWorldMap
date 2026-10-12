@@ -227,6 +227,7 @@ function wireTools() {
       if (e.colour !== undefined) brush.colour = e.colour;
       dropRun();
       disarm();
+      status(set.size ? setLine(set.size) : "");
       say(`Brush: ${e.label}`);
       emit("brush-changed");
       drawSoon();

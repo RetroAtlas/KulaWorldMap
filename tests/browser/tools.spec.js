@@ -191,6 +191,28 @@ test("Place lays a block across the face clicked and selects it, and refuses the
   expect(errors).toEqual([]);
 });
 
+test("a refusal leaves the strip with the brush as it does with the tool", async ({ page }) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  // a block the slice hides still holds its cell
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state, SIDE }, { get, update }, { setBlock }, { setSlice }] = await Promise.all(
+      ["state.js", "drafts.js", "project.js", "navigate.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    update(id, setBlock(get(id).doc, [17, 17, 16], { kind: 0 }));
+    setSlice(SIDE - 1 - 17);
+  });
+  await click(page, await top(page, [17, 17, 17]));
+  expect(await toasts(page)).toEqual(["That cell holds a block already."]);
+  await expect(page.locator("#toolStatus")).toHaveText("That cell holds a block already.");
+  await page.locator('#palette .rows button[data-id="k2"]').click();
+  await expect(page.locator("#say")).toHaveText(/^Brush: /);
+  await expect(page.locator("#toolStatus")).toHaveText("");
+  expect(errors).toEqual([]);
+});
+
 test("a block laid above the slice raises it, and the grid lays a first floor", async ({
   page,
 }) => {
