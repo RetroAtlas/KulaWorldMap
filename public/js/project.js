@@ -762,19 +762,23 @@ function readBlock(raw, i, report, seen) {
 }
 
 /** { project, report, repairs } for a project file, as text or parsed, the report collapsed and
-    the repairs the count of its lines before that; throws on another format's file. */
+    the repairs the count of its lines before that, less the note on a newer file; throws on
+    another format's file. */
 export function readProject(source) {
   const raw = typeof source === "string" ? JSON.parse(source) : source;
   if (!isObject(raw) || raw.format !== FORMAT) throw new Error(`not a ${FORMAT} file`);
   const report = [];
+  let notes = 0;
   if (raw.version !== undefined && !safe(raw.version))
     report.push(
       `a version of ${show(raw.version)} is not a whole number; the file is read as version ${VERSION}`,
     );
-  else if (safe(raw.version) && raw.version > VERSION)
+  else if (safe(raw.version) && raw.version > VERSION) {
     report.push(
       `written as version ${raw.version} of the format, newer than this reader's ${VERSION}; what it knows is read`,
     );
+    notes++;
+  }
   const cut = (key, most) => {
     const chars = [...raw[key]];
     if (chars.length <= most) return raw[key];
@@ -849,7 +853,7 @@ export function readProject(source) {
       .filter(Boolean)
       .sort(byCell);
   }
-  return { project, report: collapse(report), repairs: report.length };
+  return { project, report: collapse(report), repairs: report.length - notes };
 }
 
 function writeFace(o) {

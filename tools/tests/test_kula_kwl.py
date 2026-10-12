@@ -463,8 +463,8 @@ class Reads(unittest.TestCase):
                      [block((1, 2, 3), faces={0: obj(START, 3, 0, 0), 2: obj(TELEPORTER, 1, 3, 1)}),
                       block((1, 4, 3), faces={0: obj(TELEPORTER, 1, 3, 1)})])
         self.assertTrue(Level(blob).verify())
-        p, report, _ = read_kwl(blob)
-        self.assertEqual(report, [REWIRED])
+        p, report, repairs = read_kwl(blob)
+        self.assertEqual((report, repairs), ([REWIRED], 1))
         C = Level(canonical(p))
         self.assertEqual(C.verify(), [])
         self.assertEqual((C.records[0].slots[2][7], C.records[1].slots[0][7]), (16, 2))
@@ -477,14 +477,15 @@ class Reads(unittest.TestCase):
         struct.pack_into("<h", unwalked, GRID_BYTES + 6 + 256 + 2 * 6, -1)
         self.assertEqual(read_kwl(bytes(unwalked))[1], [])
 
-    def test_a_count_one_too_high_is_read_from_the_length(self):
+    def test_a_count_one_too_high_is_read_from_the_length_and_counted_among_the_repairs(self):
         blob = bytearray(playground())
         struct.pack_into("<H", blob, GRID_BYTES + 4, 9)
         with self.assertRaises(ValueError):
             Level(bytes(blob))
-        p, report, _ = read_kwl(bytes(blob), world=WORLD)
+        p, report, repairs = read_kwl(bytes(blob), world=WORLD)
         self.assertEqual(p, PLAYGROUND)
         self.assertIn("the header counts 9 records and the file holds 8", report)
+        self.assertEqual(repairs, read_kwl(playground(), world=WORLD)[2] + 1)
 
     def test_several_settings_records_give_the_flags_of_all_of_them_wherever_they_stand(self):
         blob = level({(1, 2, 3): FIRST_RECORD, (1, 4, 3): FIRST_RECORD + 2},
@@ -513,12 +514,27 @@ class Reads(unittest.TestCase):
                       block((5, 2, 3), kind=PLATFORM_KIND, faces={0: slot(2, 2, 1, 5, 2, 3, 5, 6, 3)},
                             second=slot(4, 20, -1, FIRST_RECORD + 1, kind=0)),
                       block((9, 2, 3), kind=7, faces={0: slot(0, 4)})])
-        p, report, _ = read_kwl(blob)
+        p, report, repairs = read_kwl(blob)
         self.assertEqual(p["blocks"][1], {"cell": [5, 2, 3], "kind": PLATFORM_KIND, "far": [5, 6, 3], "length": 4, "speed": 20})
         self.assertEqual(p["blocks"][2], {"cell": [9, 2, 3], "kind": 7, "phase": 4})
         self.assertIn("the platform at 5,2,3 is 4 blocks long", report)
         self.assertIn("the platform at 5,2,3 runs at 20", report)
         self.assertIn("the vanishing block at 9,2,3 has phase 4, which dims at once", report)
+        self.assertEqual(len(report), 3)
+        self.assertEqual(repairs, 0)
+
+    def test_a_line_on_a_value_kept_is_a_note_which_the_count_of_repairs_leaves_out(self):
+        kept = project([plain((5, 5, 5), t0=start()),
+                        {"cell": [10, 12, 17], "kind": PLATFORM_KIND, "far": [10, 16, 17], "length": 4, "speed": 30},
+                        {"cell": [12, 12, 17], "kind": PLATFORM_KIND, "far": [12, 16, 17], "length": 4, "speed": 30}])
+        blob = canonical(kept)
+        p, report, repairs = read_kwl(blob)
+        self.assertEqual(p["blocks"], kept["blocks"])
+        self.assertEqual(report, ["the platform at 10,12,17 is 4 blocks long", "the platform at 12,12,17 is 4 blocks long"])
+        self.assertEqual(repairs, 0)
+        q, lines, repaired = read_kwl(blob[:-256])
+        self.assertEqual(lines, ["no trailer, so the time is 99", *report])
+        self.assertEqual(repaired, 1)
 
     def test_a_platforms_length_that_runs_past_the_edge_is_cut_to_what_fits_and_the_writer_refuses_one_past_the_lattice(self):
         def platform(length, upper=6):
@@ -628,7 +644,7 @@ class ReadsProjects(unittest.TestCase):
 
     def test_the_reader_takes_what_it_knows_of_a_newer_file_fills_the_defaults_and_drops_what_cannot_be_a_block(self):
         coin = {"type": COIN, "variant": 0}
-        p, report, _ = read_project({
+        p, report, repairs = read_project({
             "format": FORMAT, "version": 7, "world": "HAZE", "weather": "rain", "time": "soon", "hidden": "yes",
             "circuits": {"1": "off", "2": "on", "7": "off", "3": "maybe"},
             "blocks": [
@@ -669,6 +685,7 @@ class ReadsProjects(unittest.TestCase):
             "block 7 at 5,5,5 stands on the cell of block 0; it is left out",
             "block 8 at 40,5,5 stands outside the lattice; it is left out",
         ])
+        self.assertEqual(repairs, 11)
         self.assertEqual(texts(validate(p, HIDES), "error"), [])
         canonical(p)
 

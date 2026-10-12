@@ -144,9 +144,13 @@ function openRead(read) {
   if (id === null) return;
   imported = { id, lines: read.report, repairs: read.repairs };
   open(id, `Opened ${nameOf(read.project)}`);
-  const n = read.repairs;
-  if (n) toast(n === 1 ? read.report[0] : `Read with ${n} repairs.`);
+  const { report, repairs } = read;
+  if (report.length) toast(report.length === 1 ? report[0] : `${readWith(repairs)}.`);
 }
+
+/** "Read with 3 repairs", or "Read with notes" where every line is on a value kept as it was. */
+const readWith = (repairs) =>
+  repairs ? `Read with ${some(repairs, "repair")}` : "Read with notes";
 
 /** Write the draft to a file, as the map's or as the game's, and mark it saved. */
 function saveAs(id, game) {
@@ -278,7 +282,7 @@ function reportFold({ lines, repairs }) {
   return el(
     "details",
     { className: "report" },
-    el("summary", { textContent: `Read with ${repairs} repair${repairs === 1 ? "" : "s"}` }),
+    el("summary", { textContent: readWith(repairs) }),
     el(
       "ul",
       {},
@@ -400,7 +404,7 @@ function buildForm(id, box) {
   });
 
   box.append(
-    imported?.id === id && imported.repairs ? reportFold(imported) : [],
+    imported?.id === id && imported.lines.length ? reportFold(imported) : [],
     el("h3", { textContent: "Level" }),
     field("Title", title),
     field("World", world),

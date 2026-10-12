@@ -783,11 +783,19 @@ def _wiring(records, devices=None):
 
 def read_kwl(blob, world=WORLDS[0]):
     """(project, report, repairs) for a level file by what the game accepts, the
-    report collapsed and the repairs the count of its lines before that: the
-    lattice decides where a record stands and which records exist, the file's
-    length decides how many stretches it holds, and a trailer is made up where
-    the file has none. Only a length that is not a level's raises."""
+    report collapsed and the repairs the count of its lines before that, less the
+    notes, the lines on a value kept as it was: the lattice decides where a record
+    stands and which records exist, the file's length decides how many stretches
+    it holds, and a trailer is made up where the file has none. Only a length that
+    is not a level's raises."""
     report = []
+    notes = 0
+
+    def note(line):
+        nonlocal notes
+        report.append(line)
+        notes += 1
+
     body = len(blob) - GRID_BYTES - HEAD
     if body < 0 or body % RECORD:
         raise ValueError(f"{len(blob)} bytes is not a level: the lattice, six bytes and whole {RECORD}-byte stretches")
@@ -887,11 +895,11 @@ def read_kwl(blob, world=WORLDS[0]):
                     report.append(f"the platform at {cell_text(r.cell)} is {r.length} blocks long, which {why}; it is {held}")
                     r.slots[1][1] = held
                 elif r.length not in LENGTHS:
-                    report.append(f"the platform at {cell_text(r.cell)} is {r.length} blocks long")
+                    note(f"the platform at {cell_text(r.cell)} is {r.length} blocks long")
                 if r.speed != DEFAULT_SPEED:
-                    report.append(f"the platform at {cell_text(r.cell)} runs at {r.speed}")
+                    note(f"the platform at {cell_text(r.cell)} runs at {r.speed}")
         if r.kind == VANISHING_KIND and r.f[0] in DIM_AT_ONCE:
-            report.append(f"the vanishing block at {cell_text(r.cell)} has phase {r.f[0]}, which dims at once")
+            note(f"the vanishing block at {cell_text(r.cell)} has phase {r.f[0]}, which dims at once")
 
     if dropped:
         kept = [k for k in kept if k not in dropped]
@@ -917,7 +925,7 @@ def read_kwl(blob, world=WORLDS[0]):
         rebuilt = None
     if rebuilt is not None and _wiring(records, [records[k] for k in kept]) != _wiring(rebuilt.records):
         report.append(REWIRED)
-    return project, collapse(report), len(report)
+    return project, collapse(report), len(report) - notes
 
 
 # --- a project out of a project file -------------------------------------------
@@ -1053,16 +1061,19 @@ def _read_block(raw, i, report, seen):
 def read_project(raw):
     """(project, report, repairs) for a parsed project document, rule for rule as
     the page reads one, the report collapsed and the repairs the count of its
-    lines before that; raises ValueError on another format's document."""
+    lines before that, less the note on a newer file; raises ValueError on
+    another format's document."""
     if not isinstance(raw, dict) or raw.get("format") != FORMAT:
         raise ValueError(f"not a {FORMAT} file")
     report = []
+    notes = 0
     if "version" in raw and not _whole(raw["version"]):
         report.append(f"a version of {_show(raw['version'])} is not a whole number; "
                       f"the file is read as version {VERSION}")
     elif "version" in raw and raw["version"] > VERSION:
         report.append(f"written as version {_int(raw['version'])} of the format, newer than this reader's {VERSION}; "
                       f"what it knows is read")
+        notes += 1
 
     def cut(key, most):
         if most is None or len(raw[key]) <= most:
@@ -1131,7 +1142,7 @@ def read_project(raw):
         seen = {}
         blocks = [_read_block(b, i, report, seen) for i, b in enumerate(raw["blocks"])]
         project["blocks"] = sorted((b for b in blocks if b is not None), key=lambda b: tuple(b["cell"]))
-    return project, collapse(report), len(report)
+    return project, collapse(report), len(report) - notes
 
 
 # --- what the game would make of a project ------------------------------------

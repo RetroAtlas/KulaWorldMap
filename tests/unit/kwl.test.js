@@ -869,8 +869,8 @@ test("an unwired teleporter is wired on the way out", () => {
     ],
   );
   assert.ok(verify(blob).length > 0);
-  const { project: p, report } = readKwl(blob);
-  assert.deepEqual(report, [REWIRED]);
+  const { project: p, report, repairs } = readKwl(blob);
+  assert.deepEqual([report, repairs], [[REWIRED], 1]);
   const out = writeKwl(p);
   assert.deepEqual(verify(out), []);
   assert.deepEqual([slotOf(out, 0, 2)[LINK_WORD], slotOf(out, 1, 0)[LINK_WORD]], [16, 2]);
@@ -884,13 +884,14 @@ test("an unwired teleporter is wired on the way out", () => {
   assert.deepEqual(readKwl(unwalked).report, []);
 });
 
-test("a count one too high is read from the length", () => {
+test("a count one too high is read from the length and counted among the repairs", () => {
   const blob = new Uint8Array(playground());
   new DataView(blob.buffer).setUint16(GRID_BYTES + 4, 9, true);
   assert.throws(() => levelOf(blob), /expected/);
-  const { project: p, report } = readKwl(blob, WORLD);
+  const { project: p, report, repairs } = readKwl(blob, WORLD);
   assert.deepEqual(p, PLAYGROUND);
   assert.ok(report.includes("the header counts 9 records and the file holds 8"), report);
+  assert.equal(repairs, readKwl(playground(), WORLD).repairs + 1);
 });
 
 test("several settings records give the flags of all of them, wherever they stand", () => {
@@ -954,7 +955,7 @@ test("a platform's length and speed and a vanishing block's phase are kept and r
       block([9, 2, 3], { kind: 7, faces: { 0: slot(0, [4]) } }),
     ],
   );
-  const { project: p, report } = readKwl(blob);
+  const { project: p, report, repairs } = readKwl(blob);
   assert.deepEqual(p.blocks[1], {
     cell: [5, 2, 3],
     kind: PLATFORM_KIND,
@@ -969,6 +970,39 @@ test("a platform's length and speed and a vanishing block's phase are kept and r
     report.includes("the vanishing block at 9,2,3 has phase 4, which dims at once"),
     report,
   );
+  assert.equal(report.length, 3);
+  assert.equal(repairs, 0);
+});
+
+test("a line on a value kept is a note, which the count of repairs leaves out", () => {
+  const kept = {
+    format: FORMAT,
+    version: 1,
+    title: "",
+    author: "",
+    notes: "",
+    world: WORLD,
+    time: 99,
+    hidden: false,
+    invisibleFromAfar: false,
+    circuits: {},
+    blocks: [
+      { cell: [5, 5, 5], kind: 0, faces: { 0: { type: START, facing: 3 } } },
+      { cell: [10, 12, 17], kind: PLATFORM_KIND, far: [10, 16, 17], length: 4, speed: 30 },
+      { cell: [12, 12, 17], kind: PLATFORM_KIND, far: [12, 16, 17], length: 4, speed: 30 },
+    ],
+  };
+  const bytes = writeKwl(kept);
+  const { project: p, report, repairs } = readKwl(bytes);
+  assert.deepEqual(p.blocks, kept.blocks);
+  assert.deepEqual(report, [
+    "the platform at 10,12,17 is 4 blocks long",
+    "the platform at 12,12,17 is 4 blocks long",
+  ]);
+  assert.equal(repairs, 0);
+  const cut = readKwl(bytes.slice(0, -RECORD));
+  assert.deepEqual(cut.report, ["no trailer, so the time is 99", ...report]);
+  assert.equal(cut.repairs, 1);
 });
 
 test("a platform's length that runs past the edge is cut to what fits, and the writer refuses one past the lattice", () => {

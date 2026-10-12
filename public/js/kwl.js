@@ -762,9 +762,15 @@ export const REWIRED =
   "the level's switches, teleporters and lasers are wired otherwise than the colour rule wires them; the level written back follows the colours";
 
 /** { project, report, repairs } for any file the game would load, the report collapsed and the
-    repairs the count of its lines before that; only a length that is not a level's throws. */
+    repairs the count of its lines before that, less the notes, the lines on a value kept as it
+    was; only a length that is not a level's throws. */
 export function readKwl(bytes, world = WORLDS[0]) {
   const report = [];
+  let notes = 0;
+  const note = (line) => {
+    report.push(line);
+    notes++;
+  };
   const body = bytes.length - GRID_BYTES - HEAD;
   if (body < 0 || body % RECORD)
     throw new Error(
@@ -879,15 +885,12 @@ export function readKwl(bytes, world = WORLDS[0]) {
           );
           r.slots[1][1] = held;
         } else if (!LENGTHS.includes(length))
-          report.push(`the platform at ${cellText(r.cell)} is ${length} blocks long`);
-        if (speed !== DEFAULT_SPEED)
-          report.push(`the platform at ${cellText(r.cell)} runs at ${speed}`);
+          note(`the platform at ${cellText(r.cell)} is ${length} blocks long`);
+        if (speed !== DEFAULT_SPEED) note(`the platform at ${cellText(r.cell)} runs at ${speed}`);
       }
     }
     if (r.kind === VANISHING_KIND && DIM_AT_ONCE.includes(fOf(r)[0]))
-      report.push(
-        `the vanishing block at ${cellText(r.cell)} has phase ${fOf(r)[0]}, which dims at once`,
-      );
+      note(`the vanishing block at ${cellText(r.cell)} has phase ${fOf(r)[0]}, which dims at once`);
   }
 
   if (dropped.size) {
@@ -935,7 +938,7 @@ export function readKwl(bytes, world = WORLDS[0]) {
     );
     if (theirs.join("\n") !== wiring(again).join("\n")) report.push(REWIRED);
   }
-  return { project, report: collapse(report), repairs: report.length };
+  return { project, report: collapse(report), repairs: report.length - notes };
 }
 
 /** A link word as the record and face it names, or null for none. */

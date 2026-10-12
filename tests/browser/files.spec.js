@@ -241,3 +241,40 @@ test("what the reader repaired shows as a toast and in a fold on the card, until
   await expect(page.locator("#draftCard details.report")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test("a file read with notes and no repair says so, and one repair beside a note counts one", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  const kept = blank("HIRO");
+  kept.blocks.push(
+    { cell: [10, 12, 17], kind: 5, far: [10, 16, 17], length: 4, speed: 30 },
+    { cell: [12, 12, 17], kind: 5, far: [12, 16, 17], length: 4, speed: 30 },
+  );
+  const input = page.locator("#draftFile");
+  const rows = page.locator("#draftRows button");
+  const fold = page.locator("#draftCard details.report");
+  const toast = page.locator("#toastStack .toast").first();
+  await input.setInputFiles(file("kept.kwl", writeKwl(kept)));
+  await expect(rows).toHaveCount(1);
+  await expect(fold.locator("summary")).toHaveText("Read with notes");
+  await expect(fold.locator("li")).toHaveText([/is 4 blocks long$/, /is 4 blocks long$/]);
+  await expect(toast).toHaveText("Read with notes.");
+
+  await input.setInputFiles(file("cut.kwl", writeKwl(kept).slice(0, -RECORD)));
+  await expect(rows).toHaveCount(2);
+  await expect(fold.locator("summary")).toHaveText("Read with 1 repair");
+  await expect(fold.locator("li")).toHaveCount(3);
+  await expect(toast).toHaveText("Read with 1 repair.");
+
+  await input.setInputFiles(
+    file("newer.kula.json", JSON.stringify({ ...blank("HIRO"), version: 2 })),
+  );
+  await expect(rows).toHaveCount(3);
+  await expect(fold.locator("summary")).toHaveText("Read with notes");
+  await expect(fold.locator("li")).toHaveText([/^written as version 2/]);
+  await expect(toast).toHaveText(/^written as version 2/);
+  expect(errors).toEqual([]);
+});

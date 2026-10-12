@@ -1197,7 +1197,11 @@ test("the reader refuses another format's file and nothing else", () => {
 });
 
 test("the reader takes what it knows of a newer file, fills the defaults and drops what cannot be a block", () => {
-  const { project: p, report } = readProject({
+  const {
+    project: p,
+    report,
+    repairs,
+  } = readProject({
     format: FORMAT,
     version: 7,
     world: "HAZE",
@@ -1236,6 +1240,8 @@ test("the reader takes what it knows of a newer file, fills the defaults and dro
     { cell: [11, 5, 5], kind: 7, phase: 0 },
   ]);
   assert.ok(report.some((line) => line.startsWith("written as version 7")));
+  assert.equal(report.length, 12);
+  assert.equal(repairs, 11);
   assert.equal(report.filter((line) => line.includes("it is left out")).length, 8);
   assert.ok(report.some((line) => line.includes("block 1 ")));
   assert.ok(report.some((line) => line.includes("block 2 ")));
