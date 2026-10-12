@@ -581,6 +581,51 @@ test("entries that cannot be read do not load the editor by themselves, and a ke
   expect(errors).toEqual([]);
 });
 
+test("an entry of a draft's shape loads the editor at the start under a key that is an id, whatever its document holds, and under any other key not", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const requested = [];
+  page.on("request", (r) => requested.push(new URL(r.url()).pathname));
+  const fetched = () => requested.filter((p) => EDITOR_FILES.test(p));
+  const kept = KEPT.drafts[1];
+  const unreadable = { ...kept, doc: { ...kept.doc, world: "NOWHERE" } };
+  await page.addInitScript(
+    ([key, store]) => {
+      try {
+        if (localStorage.getItem(key) === null) localStorage.setItem(key, JSON.stringify(store));
+      } catch {
+        /* the blank page between the loads has no storage */
+      }
+    },
+    [KEY, { version: 1, next: 2, drafts: { "01": kept } }],
+  );
+  await page.goto(EDIT);
+  await settle(page);
+  expect(fetched()).toEqual([]);
+  expect(await toasts(page)).toEqual([]);
+  await expect(page.locator("#draftEmpty")).toBeVisible();
+
+  await page.evaluate(
+    ([key, store]) => localStorage.setItem(key, JSON.stringify(store)),
+    [KEY, { version: 1, next: 2, drafts: { 1: unreadable } }],
+  );
+  requested.length = 0;
+  await page.goto("about:blank");
+  await page.goto(EDIT);
+  await settle(page);
+  expect(fetched()).toContain("/js/editor.js");
+  expect((await shown(page)).li).toBe(0);
+  await expect(page.locator("#draftRows button")).toHaveCount(0);
+  await expect(page.locator("#draftUnread .state")).toHaveText(
+    "1 draft in this browser could not be read",
+  );
+  await expect(page.locator("#toastStack .toast")).toHaveText([
+    "1 draft in this browser could not be read and is kept as it is.",
+  ]);
+  expect(errors).toEqual([]);
+});
+
 test("a change waits a moment before it is written, the moment's changes landing as one write, and none waits past the page being hidden or left", async ({
   page,
 }) => {
