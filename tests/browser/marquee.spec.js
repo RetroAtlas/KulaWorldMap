@@ -547,3 +547,57 @@ test("a drag turns the level from a block outside the set, in any other tool, an
   expect(await cells(page)).toEqual(before);
   expect(errors).toEqual([]);
 });
+
+/** Count, from now on, the pick's read-backs and its paints, the latter as saves on a canvas off the page. */
+const countPick = (page) =>
+  page.evaluate(() => {
+    const proto = CanvasRenderingContext2D.prototype;
+    window.__pick = { reads: 0, paints: 0 };
+    const read = proto.getImageData;
+    proto.getImageData = function (...a) {
+      window.__pick.reads++;
+      return read.apply(this, a);
+    };
+    const save = proto.save;
+    proto.save = function (...a) {
+      if (!this.canvas.isConnected) window.__pick.paints++;
+      return save.apply(this, a);
+    };
+  });
+const picked = (page) => page.evaluate(() => window.__pick);
+
+test("a press reads the pick only when the editor asks for the cell under it", async ({ page }) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await page.keyboard.press("w");
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+  const from = await top(page, B);
+  await page.mouse.move(from.x, from.y);
+  await countPick(page);
+  await page.mouse.down();
+  expect(await picked(page)).toEqual({ reads: 0, paints: 0 });
+  await page.mouse.move(from.x + 60, from.y + 20, { steps: 4 });
+  await page.mouse.up();
+  expect((await shown(page)).yaw).not.toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test.describe("with a finger", () => {
+  test.use({ hasTouch: true });
+
+  test("a finger's press reads the pick for no gesture, since it has none", async ({ page }) => {
+    const errors = trackErrors(page);
+    await fresh(page);
+    const point = await top(page, B);
+    await countPick(page);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: point.x, y: point.y }],
+    });
+    expect(await picked(page)).toEqual({ reads: 0, paints: 0 });
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await cdp.detach();
+    expect(errors).toEqual([]);
+  });
+});

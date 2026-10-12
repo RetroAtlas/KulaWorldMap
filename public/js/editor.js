@@ -670,10 +670,12 @@ function eraseSet() {
 }
 
 /** The drag a press begins in Select: a marquee from no cell, a move from a
-    block of the set, and from anywhere else nothing, so the camera has it. */
-function dragStart(c, e) {
+    block of the set, and from anywhere else nothing, so the camera has it;
+    `at` reads the cell under the press. */
+function dragStart(at, e) {
   if (!editing() || mode.tool !== "select" || e.pointerType === "touch") return null;
   if (e.button !== 0 || e.altKey || !current()) return null;
+  const c = at();
   if (c && set.has(cellKey(c.x, c.y, c.z))) return moveDrag(c, e);
   if (c || e.shiftKey || state.panMode) return null;
   return marqueeDrag(e);

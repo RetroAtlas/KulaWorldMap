@@ -69,9 +69,12 @@ cv.addEventListener("contextmenu", (e) => e.preventDefault());
 cv.addEventListener("pointerdown", (e) => {
   pointing(true);
   cv.setPointerCapture(e.pointerId);
-  const r = cv.getBoundingClientRect();
-  const handler = dragged?.(cellAt(e.clientX - r.left, e.clientY - r.top), e) ?? null;
-  drag = { x: e.clientX, y: e.clientY, pan: panning(e), handler };
+  // the cell under the press is read only where the handler asks for it
+  const at = () => {
+    const r = cv.getBoundingClientRect();
+    return cellAt(e.clientX - r.left, e.clientY - r.top);
+  };
+  drag = { x: e.clientX, y: e.clientY, pan: panning(e), handler: dragged?.(at, e) ?? null };
   moved = 0;
 });
 
