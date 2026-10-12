@@ -328,13 +328,15 @@ export const rails = (l) =>
     });
 
 // A moving platform is as many blocks as its record says, laid from its cell
-// along the axis its first field names.
+// along the axis its first field names and stopping at the lattice's edge.
 const PLATFORM_AXIS = { 1: 0, 2: 1 };
 export const platformAxis = (r) => PLATFORM_AXIS[r.f[0]] ?? 2;
 export function platformCells(r) {
   const axis = platformAxis(r);
-  return Array.from({ length: r.length || 1 }, (_, k) => {
-    const at = [r.x, r.y, r.z];
+  const home = [r.x, r.y, r.z];
+  const n = Math.min(Math.max(r.length || 1, 1), SIDE - home[axis]);
+  return Array.from({ length: n }, (_, k) => {
+    const at = [...home];
     at[axis] += k;
     return at;
   });

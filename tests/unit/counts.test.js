@@ -16,7 +16,7 @@ import {
   blockMarkers,
 } from "../../public/js/data.js";
 import { levelPoints, tallied, playsBonus } from "../../public/js/points.js";
-import { state } from "../../public/js/state.js";
+import { state, SIDE } from "../../public/js/state.js";
 import { FORMAT } from "../../public/js/kwl.js";
 import { counts, toLevel } from "../../public/js/project.js";
 
@@ -248,6 +248,27 @@ test("a count of one takes the singular", () => {
   assert.equal(counted(1, "object"), "1 object");
   assert.equal(counted(0, "object"), "0 objects");
   assert.equal(counted(30, "object"), "30 objects");
+});
+
+test("a platform's blocks stop at the lattice's edge, however long its record says it is", () => {
+  const r = {
+    x: 10,
+    y: 20,
+    z: 17,
+    kind: 5,
+    type: 2,
+    f: [2, 1, 10, 20, 17, 10, 24, 17],
+    length: 32767,
+    on: [],
+  };
+  assert.equal(platformCells(r).length, SIDE - 20);
+  assert.deepEqual(platformCells(r).at(-1), [10, SIDE - 1, 17]);
+  assert.deepEqual(platformCells({ ...r, length: 2 }), [
+    [10, 20, 17],
+    [10, 21, 17],
+  ]);
+  assert.equal(platformCells({ ...r, length: 0 }).length, 1);
+  assert.equal(platformCells({ ...r, length: -5 }).length, 1);
 });
 
 test("a platform's route is laid a cell at a time, from the cell at one end to the other's", () => {
