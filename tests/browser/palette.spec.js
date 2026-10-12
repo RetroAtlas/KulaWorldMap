@@ -455,7 +455,7 @@ test("where the annotations have no word for a circuit, the page names it circui
 
   // the Level card's row and toggle, and the finding the toggle brings
   const toggle = page.locator("#draftCircuit2");
-  await expect(page.locator("#draftCard .circuit").nth(2)).toHaveAccessibleName("circuit 2");
+  await expect(page.locator("#draftCard .circuit").nth(2)).toHaveAccessibleName("Circuit");
   await expect(toggle).toHaveAccessibleName("circuit 2");
   await expect(toggle).toHaveAttribute("title", "Turn circuit 2 off");
   await toggle.click();

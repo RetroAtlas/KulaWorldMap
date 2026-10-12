@@ -428,7 +428,7 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   await expect(rows).toHaveCount(4);
   // a reader hears four switches apart by colour, the state in whether each is pressed
   for (const [i, name] of ["yellow", "blue", "green", "red"].entries()) {
-    await expect(rows.nth(i)).toHaveAccessibleName(name);
+    await expect(rows.nth(i)).toHaveAccessibleName("Circuit");
     await expect(toggle(i)).toHaveAccessibleName(`${name} circuit`);
     await expect(toggle(i)).toHaveText("starts on");
   }

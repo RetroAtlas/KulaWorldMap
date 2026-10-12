@@ -28,7 +28,6 @@ import {
   writeProject,
 } from "./project.js";
 import { download, readLevelFile, readLevelText, slug } from "./files.js";
-import { colourName } from "./palette.js";
 import { pasteLevelLink } from "./importdialog.js";
 import { openPatchDialog } from "./patchdialog.js";
 import { edit as step } from "./trail.js";
@@ -458,7 +457,6 @@ function circuitRows(id) {
   box.append(el("span", { id: "draftCircuits", textContent: "Circuits" }));
   const rows = [];
   for (let colour = 0; colour < COLOURS; colour++) {
-    const name = colourName(colour);
     const lamp = el("span", { className: "lamp" });
     lamp.style.setProperty(
       "--lamp",
@@ -480,7 +478,7 @@ function circuitRows(id) {
     const members = el("span", { className: "members" });
     const row = el("div", { className: "circuit" }, lamp, toggle, members);
     row.setAttribute("role", "group");
-    row.setAttribute("aria-label", name);
+    row.setAttribute("aria-label", "Circuit");
     box.append(row);
     rows.push({ colour, toggle, members });
   }
