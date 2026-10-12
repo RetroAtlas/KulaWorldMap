@@ -841,7 +841,13 @@ body:not(.sidebar-open) .menu-btn .cross {
 .chip .overview p {
   margin: 0;
 }
-.chip .overview .plays + .counts {
+.chip .overview .more {
+  margin-top: 2px;
+}
+.chip .overview .more > summary {
+  cursor: pointer;
+}
+.chip .overview .counts {
   margin-top: 2px;
 }
 .chip .overview .over {

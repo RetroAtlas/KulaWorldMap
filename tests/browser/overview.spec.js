@@ -33,6 +33,12 @@ const fill = (page, blocks) =>
     const id = state.lvl.draft;
     update(id, { ...get(id).doc, blocks });
   }, blocks);
+/** Two errors and four warnings, on a level with no key. */
+const SIX = [
+  { cell: HOME, kind: 0, faces: { 0: { type: 9, variant: 0 }, 2: { type: 9, variant: 1 } } },
+  { cell: [18, 17, 17], kind: 0, faces: { 0: { type: 42 } } },
+  { cell: [20, 17, 17], kind: 3, faces: { 0: { type: 9, variant: 3 } } },
+];
 const vanishing = (n) =>
   Array.from({ length: n }, (_, i) => ({
     cell: [5 + (i % 26), 20 + Math.floor(i / 26), 17],
@@ -144,7 +150,10 @@ test("a draft's note carries how it plays, its counts and the findings, each fin
   const note = page.locator("#chipNote");
   await expect(fold).toBeVisible();
   await expect(fold).toHaveAttribute("aria-expanded", "true");
-  await expect(note.locator(".overview > *")).toHaveClass(["plays", "counts"]);
+  await expect(note.locator(".overview > *")).toHaveClass(["plays", "more"]);
+  const more = note.locator(".more");
+  expect(await more.evaluate((d) => d.open)).toBe(true);
+  await expect(more.locator("summary")).toHaveText("no findings");
   await expect(note.locator(".plays")).toHaveText("Plays as a bonus level.");
   await expect(note.locator(".plays")).toHaveAttribute(
     "title",
@@ -160,6 +169,7 @@ test("a draft's note carries how it plays, its counts and the findings, each fin
   await expect(note.locator(".plays")).toHaveText("Plays as an arcade level.");
   expect(await note.locator(".plays").getAttribute("title")).toBeNull();
   await expect(note.locator(".findings li")).toHaveText(["warning: a key and no exit"]);
+  await expect(more.locator("summary")).toHaveText("1 warning");
   await field(page, "thing").selectOption("t42");
   const findings = note.locator(".findings li");
   await expect(findings).toHaveText([/^warning: the star is untested in play at /]);
@@ -178,7 +188,8 @@ test("a draft's note carries how it plays, its counts and the findings, each fin
   await field(page, "thing").selectOption("");
   await field(page, "face-0").click();
   await field(page, "thing").selectOption("");
-  await expect(note.locator(".overview > *")).toHaveClass(["plays", "counts", "findings"]);
+  await expect(more.locator("> summary, > .counts, > .findings")).toHaveCount(3);
+  await expect(more.locator("summary")).toHaveText("1 error");
   await expect(note.locator(".findings li.error")).toHaveText(["error: no start"]);
   await expect(note.locator(".counts")).toHaveText("6 of 768 faces · 1 of 256 blocks");
 
@@ -256,4 +267,69 @@ test("a finding's link that holds the focus keeps it through an edit", async ({ 
   await expect(findings).toHaveCount(0);
   expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
   expect(errors).toEqual([]);
+});
+
+test.describe("on a phone", () => {
+  test.use({ viewport: { width: 375, height: 700 }, isMobile: true, hasTouch: true });
+
+  test("the counts and the findings fold under their tally until opened, so a draft's note stays short", async ({
+    page,
+  }) => {
+    const errors = trackErrors(page);
+    await page.goto(EDIT);
+    await settle(page);
+    await page.keyboard.press("m");
+    await page.locator("#draftNew").click();
+    await expect(page.locator("#draftRows button")).toHaveCount(1);
+    await page.keyboard.press("m");
+    const note = page.locator("#chipNote");
+    const more = note.locator(".more");
+    const summary = more.locator("summary");
+    const isOpen = () => more.evaluate((d) => d.open);
+    await expect(note.locator(".plays")).toBeVisible();
+    await expect(summary).toHaveText("no findings");
+    expect(await isOpen()).toBe(false);
+    await expect(note.locator(".counts")).toBeHidden();
+
+    await fill(page, SIX);
+    await expect(summary).toHaveText("2 errors and 4 warnings");
+    expect(await isOpen()).toBe(false);
+    await expect(note.locator(".findings")).toBeHidden();
+    await expect(note.locator(".plays")).toBeVisible();
+    const chip = await page.locator("#chip").boundingBox();
+    expect(chip.height).toBeLessThan(700 / 3);
+
+    const fold = page.locator("#chipBtn");
+    await fold.click();
+    await expect(note).toBeHidden();
+    await fold.click();
+    await expect(note.locator(".plays")).toBeVisible();
+    expect(await isOpen()).toBe(false);
+
+    await summary.click();
+    expect(await isOpen()).toBe(true);
+    await expect(note.locator(".findings li")).toHaveCount(6);
+    await expect(note.locator(".findings li.error")).toHaveCount(2);
+    await expect(note.locator(".counts")).toBeVisible();
+    await fill(page, [...SIX, { cell: [21, 17, 17], kind: 0, faces: { 0: { type: 42 } } }]);
+    await expect(summary).toHaveText("2 errors and 5 warnings");
+    expect(await isOpen()).toBe(true);
+    await summary.click();
+    expect(await isOpen()).toBe(false);
+    await fill(page, SIX);
+    await expect(summary).toHaveText("2 errors and 4 warnings");
+    expect(await isOpen()).toBe(false);
+
+    // the fold stays as it was last left from draft to draft
+    await summary.click();
+    expect(await isOpen()).toBe(true);
+    await page.keyboard.press("m");
+    await page.locator("#draftNew").click();
+    await expect(page.locator("#draftRows button")).toHaveCount(2);
+    await page.keyboard.press("m");
+    await expect(summary).toHaveText("no findings");
+    expect(await isOpen()).toBe(true);
+    await expect(note.locator(".counts")).toBeVisible();
+    expect(errors).toEqual([]);
+  });
 });

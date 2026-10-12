@@ -5,12 +5,15 @@ import { FACE_NAME } from "./faces.js";
 import { skinsTable } from "./data.js";
 import { showCell } from "./detail.js";
 import { noteWith } from "./navigate.js";
+import { sidebarOverlays } from "./sidebar.js";
 import { get } from "./drafts.js";
 import { CAPS, COUNTER_WORDS, DISC_MAX } from "./kwl.js";
-import { counts, describe, playsAs, validate } from "./project.js";
-import { place3 } from "./editing.js";
+import { ERROR, counts, describe, playsAs, validate } from "./project.js";
+import { place3, plural } from "./editing.js";
 
 let wired = false;
+// Whether the author has opened or folded the counts and the findings; null until they do.
+let unfolded = null;
 
 /** Register the overview with the level line, once. */
 export function wireOverview() {
@@ -23,14 +26,13 @@ function overview(l) {
   const d = l.draft === undefined ? null : get(l.draft);
   if (!d) return null;
   const hides = skinsTable()?.hides;
+  const findings = validate(d.doc, hides);
   const out = el(
     "div",
     { className: "overview" },
     playsLine(playsAs(d.doc)),
-    countsLine(counts(d.doc, hides)),
+    more(findings, countsLine(counts(d.doc, hides))),
   );
-  const findings = validate(d.doc, hides);
-  if (findings.length) out.append(findingsList(findings));
   keepFocus(out);
   return out;
 }
@@ -51,6 +53,25 @@ function playsLine(sentence) {
   plays.textContent = colon < 0 ? sentence : `${sentence.slice(0, colon)}.`;
   if (colon >= 0) plays.title = sentence;
   return plays;
+}
+
+/** The counts and the findings under one line that tallies them, folded on a phone until opened. */
+function more(findings, counts) {
+  const fold = el("details", { className: "more", open: unfolded ?? !sidebarOverlays() });
+  const summary = el("summary", { textContent: tally(findings) });
+  summary.onclick = () => {
+    unfolded = !fold.open;
+  };
+  fold.append(summary, counts);
+  if (findings.length) fold.append(findingsList(findings));
+  return fold;
+}
+
+function tally(findings) {
+  const errors = findings.filter((f) => f.level === ERROR).length;
+  const warnings = findings.length - errors;
+  const parts = [errors && plural(errors, "error"), warnings && plural(warnings, "warning")];
+  return parts.filter(Boolean).join(" and ") || "no findings";
 }
 
 function countsLine(n) {
