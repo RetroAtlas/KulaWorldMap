@@ -356,6 +356,34 @@ class Reads(unittest.TestCase):
         self.assertEqual(p["blocks"][0]["far"], [24, 10, 17])
         self.assertTrue(any("lower end is now its cell" in line for line in report), report)
 
+    def test_a_span_off_its_blocks_line_is_laid_along_its_axis_through_the_block_or_dropped_where_it_has_none(self):
+        def read(a, b, cell=(16, 10, 17)):
+            blob = level({cell: FIRST_RECORD},
+                         [block(cell, kind=LASER_KIND, faces={0: slot(1, 1, 1, *a, *b)},
+                                second=slot(1, -1, -1, 5, -1, 0, -1))])
+            p, report = read_kwl(blob)
+            self.assertEqual(Level(canonical(p)).verify(), [])
+            return [x["far"] for x in p["blocks"]], report
+
+        self.assertEqual(read((20, 12, 17), (24, 12, 17)), ([[24, 10, 17]], [
+            "record 0 spans 20,12,17 to 24,12,17 and stands at 16,10,17, off their line; it now spans 16,10,17 to 24,10,17"]))
+        self.assertEqual(read((10, 12, 17), (16, 12, 17)), ([[10, 10, 17]], [
+            "record 0 spans 10,12,17 to 16,12,17 and stands at 16,10,17, off their line; it now spans 16,10,17 to 10,10,17"]))
+        self.assertEqual(read((20, 12, 17), (24, 14, 17)), ([], [
+            "record 0 spans 20,12,17 to 24,14,17, along no one axis; it is dropped and its cell left empty"]))
+        self.assertEqual(read((16, 10, 17), (20, 14, 17)), ([], [
+            "record 0 spans 16,10,17 to 20,14,17, along no one axis; it is dropped and its cell left empty"]))
+        self.assertEqual(read((20, 12, 17), (20, 12, 17)), ([], [
+            "record 0 spans nothing: both of its ends are 20,12,17, away from its cell 16,10,17; "
+            "it is dropped and its cell left empty"]))
+        self.assertEqual(read((20, 12, 17), (24, 12, 40)), ([], [
+            "record 0 spans 20,12,17 to 24,12,40, along no one axis; it is dropped and its cell left empty"]))
+        # an end the lattice has no cell for drops the record in one line, off the line or on it
+        self.assertEqual(read((20, 12, 17), (40, 12, 17)), ([], [
+            "record 0 spans to 40,10,17, outside the lattice; it is dropped and its cell left empty"]))
+        self.assertEqual(read((20, 10, 17), (40, 10, 17)), ([], [
+            "record 0 spans to 40,10,17, outside the lattice; it is dropped and its cell left empty"]))
+
     def test_a_span_to_nowhere_or_to_its_own_cell_is_dropped(self):
         def laser(far):
             return block((16, 10, 17), kind=LASER_KIND, faces={0: slot(1, 1, 1, 16, 10, 17, *far)},

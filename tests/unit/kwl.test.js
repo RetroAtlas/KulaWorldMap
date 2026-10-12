@@ -656,6 +656,67 @@ test("a span whose block is at neither end is moved onto its cell", () => {
   );
 });
 
+test("a span off its block's line is laid along its axis through the block, or dropped where it has none", () => {
+  const laser = (a, b, cell = [16, 10, 17]) =>
+    level(cells([[cell, FIRST_RECORD]]), [
+      block(cell, {
+        kind: LASER_KIND,
+        faces: { 0: slot(1, [1, 1, ...a, ...b]) },
+        second: slot(1, [-1, -1, 5, -1, 0, -1]),
+      }),
+    ]);
+  const read = (a, b) => {
+    const { project: p, report } = readKwl(laser(a, b));
+    assert.deepEqual(verify(writeKwl(p)), []);
+    return [p.blocks.map((x) => x.far), report];
+  };
+  assert.deepEqual(read([20, 12, 17], [24, 12, 17]), [
+    [[24, 10, 17]],
+    [
+      "record 0 spans 20,12,17 to 24,12,17 and stands at 16,10,17, off their line; it now spans 16,10,17 to 24,10,17",
+    ],
+  ]);
+  assert.deepEqual(read([10, 12, 17], [16, 12, 17]), [
+    [[10, 10, 17]],
+    [
+      "record 0 spans 10,12,17 to 16,12,17 and stands at 16,10,17, off their line; it now spans 16,10,17 to 10,10,17",
+    ],
+  ]);
+  assert.deepEqual(read([20, 12, 17], [24, 14, 17]), [
+    [],
+    [
+      "record 0 spans 20,12,17 to 24,14,17, along no one axis; it is dropped and its cell left empty",
+    ],
+  ]);
+  assert.deepEqual(read([16, 10, 17], [20, 14, 17]), [
+    [],
+    [
+      "record 0 spans 16,10,17 to 20,14,17, along no one axis; it is dropped and its cell left empty",
+    ],
+  ]);
+  assert.deepEqual(read([20, 12, 17], [20, 12, 17]), [
+    [],
+    [
+      "record 0 spans nothing: both of its ends are 20,12,17, away from its cell 16,10,17; it is dropped and its cell left empty",
+    ],
+  ]);
+  assert.deepEqual(read([20, 12, 17], [24, 12, 40]), [
+    [],
+    [
+      "record 0 spans 20,12,17 to 24,12,40, along no one axis; it is dropped and its cell left empty",
+    ],
+  ]);
+  // an end the lattice has no cell for drops the record in one line, off the line or on it
+  assert.deepEqual(read([20, 12, 17], [40, 12, 17]), [
+    [],
+    ["record 0 spans to 40,10,17, outside the lattice; it is dropped and its cell left empty"],
+  ]);
+  assert.deepEqual(read([20, 10, 17], [40, 10, 17]), [
+    [],
+    ["record 0 spans to 40,10,17, outside the lattice; it is dropped and its cell left empty"],
+  ]);
+});
+
 test("a span to nowhere or to its own cell is dropped", () => {
   const laser = (far) =>
     block([16, 10, 17], {

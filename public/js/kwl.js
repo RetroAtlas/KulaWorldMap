@@ -807,29 +807,49 @@ export function readKwl(bytes, world = WORLDS[0]) {
   for (const k of kept) {
     const r = records[k];
     if (SPAN_KINDS.has(r.kind)) {
-      let [a, b] = spanOf(r).sort(compareCells);
-      if (!sameCell(r.cell, a) && !sameCell(r.cell, b)) {
-        report.push(
-          `record ${k} spans ${cellText(a)} to ${cellText(b)} and stands at ${cellText(r.cell)}; its lower end is now its cell`,
-        );
-        a = r.cell;
-      }
-      const far = sameCell(a, r.cell) ? b : a;
-      if (sameCell(far, r.cell)) {
-        report.push(
-          `record ${k} spans nothing: both of its ends are its own cell ${cellText(r.cell)}; it is dropped and its cell left empty`,
-        );
+      const [a, b] = spanOf(r).sort(compareCells);
+      const ends = `${cellText(a)} to ${cellText(b)}`;
+      const drop = (why) => {
+        report.push(`record ${k} spans ${why}; it is dropped and its cell left empty`);
         dropped.add(k);
-        continue;
+      };
+      let far;
+      if (sameCell(r.cell, a) || sameCell(r.cell, b)) {
+        far = sameCell(a, r.cell) ? b : a;
+        if (sameCell(far, r.cell)) {
+          drop(`nothing: both of its ends are its own cell ${cellText(r.cell)}`);
+          continue;
+        }
+        if (direction(r.cell, far) === null) {
+          drop(`${ends}, along no one axis`);
+          continue;
+        }
+      } else {
+        if (sameCell(a, b)) {
+          drop(
+            `nothing: both of its ends are ${cellText(a)}, away from its cell ${cellText(r.cell)}`,
+          );
+          continue;
+        }
+        const axis = spanAxis(a, b);
+        if (axis === null) {
+          drop(`${ends}, along no one axis`);
+          continue;
+        }
+        far = [...r.cell];
+        far[axis] = b[axis] === r.cell[axis] ? a[axis] : b[axis];
+        if (far.every(onLattice))
+          report.push(
+            sameCell(far, b)
+              ? `record ${k} spans ${ends} and stands at ${cellText(r.cell)}; its lower end is now its cell`
+              : `record ${k} spans ${ends} and stands at ${cellText(r.cell)}, off their line; it now spans ${cellText(r.cell)} to ${cellText(far)}`,
+          );
       }
       if (!far.every(onLattice)) {
-        report.push(
-          `record ${k} spans to ${cellText(far)}, outside the lattice; it is dropped and its cell left empty`,
-        );
-        dropped.add(k);
+        drop(`to ${cellText(far)}, outside the lattice`);
         continue;
       }
-      r.slots[0].splice(4, 6, ...a, ...b);
+      r.slots[0].splice(4, 6, ...[r.cell, far].sort(compareCells).flat());
       if (r.kind === PLATFORM_KIND) {
         const [, length, speed] = r.slots[1];
         const room = roomFor(r.cell, far);

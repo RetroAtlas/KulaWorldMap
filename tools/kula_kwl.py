@@ -732,22 +732,42 @@ def read_kwl(blob, world=WORLDS[0]):
         r = records[k]
         if r.kind in SPAN_KINDS:
             a, b = sorted(r.span)
-            if r.cell not in (a, b):
-                report.append(f"record {k} spans {cell_text(a)} to {cell_text(b)} and stands at {cell_text(r.cell)}; "
-                              f"its lower end is now its cell")
-                a = r.cell
-            far = b if a == r.cell else a
-            if far == r.cell:
-                report.append(f"record {k} spans nothing: both of its ends are its own cell {cell_text(r.cell)}; "
-                              f"it is dropped and its cell left empty")
+            ends = f"{cell_text(a)} to {cell_text(b)}"
+
+            def drop(why):
+                report.append(f"record {k} spans {why}; it is dropped and its cell left empty")
                 dropped.add(k)
-                continue
+
+            if r.cell in (a, b):
+                far = b if a == r.cell else a
+                if far == r.cell:
+                    drop(f"nothing: both of its ends are its own cell {cell_text(r.cell)}")
+                    continue
+                if direction(r.cell, far) is None:
+                    drop(f"{ends}, along no one axis")
+                    continue
+            else:
+                if a == b:
+                    drop(f"nothing: both of its ends are {cell_text(a)}, away from its cell {cell_text(r.cell)}")
+                    continue
+                axis = span_axis(a, b)
+                if axis is None:
+                    drop(f"{ends}, along no one axis")
+                    continue
+                far = list(r.cell)
+                far[axis] = a[axis] if b[axis] == r.cell[axis] else b[axis]
+                far = tuple(far)
+                if all(c in LATTICE for c in far):
+                    if far == b:
+                        report.append(f"record {k} spans {ends} and stands at {cell_text(r.cell)}; its lower end is now its cell")
+                    else:
+                        report.append(f"record {k} spans {ends} and stands at {cell_text(r.cell)}, off their line; "
+                                      f"it now spans {cell_text(r.cell)} to {cell_text(far)}")
             if any(c not in LATTICE for c in far):
-                report.append(f"record {k} spans to {cell_text(far)}, outside the lattice; "
-                              f"it is dropped and its cell left empty")
-                dropped.add(k)
+                drop(f"to {cell_text(far)}, outside the lattice")
                 continue
-            r.slots[0][4:10] = [*a, *b]
+            lower, upper = sorted((r.cell, far))
+            r.slots[0][4:10] = [*lower, *upper]
             if r.kind == PLATFORM_KIND:
                 room = room_for(r.cell, far)
                 if room is not None and (r.length < 1 or r.length > room):
