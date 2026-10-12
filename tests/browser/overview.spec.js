@@ -160,9 +160,23 @@ test("a draft's note carries how it plays, its counts and the findings, each fin
   await expect(more.locator("summary")).toHaveText("no findings");
   await expect(note.locator(".plays")).toHaveText(BONUS);
   expect(await note.locator(".plays").getAttribute("title")).toBeNull();
-  await expect(note.locator(".counts")).toHaveText(
-    "1 of 123 records · 6 of 768 faces · 1 of 256 blocks",
-  );
+  await expect(note.locator(".counts span")).toHaveText([
+    "1 of 123 records",
+    "6 of 768 faces",
+    "1 of 256 blocks",
+    "0 of 255 objects the loader numbers",
+    "0 of 8 platforms",
+    "0 of 64 vanishing blocks",
+    "0 of 64 crumbling blocks",
+    "0 of 32 captivators",
+    "0 of 32 devices that cast a light",
+    "0 of 64 moving spikes",
+  ]);
+  await expect(note.locator(".counts .zero")).toHaveCount(7);
+  // a counter at nought is the chip's own text dimmed, the others at full strength
+  await expect(note.locator(".counts .zero").first()).toHaveCSS("opacity", "0.7");
+  await expect(note.locator(".counts span").first()).toHaveCSS("opacity", "1");
+  await expect(note.locator(".counts span").first()).not.toHaveClass(/zero/);
   await expect(page.locator("#detail .plays, #detail .counts, #detail .findings")).toHaveCount(0);
 
   await field(page, "face-1").click();
@@ -192,7 +206,8 @@ test("a draft's note carries how it plays, its counts and the findings, each fin
   await expect(more.locator("> summary, > .counts, > .findings")).toHaveCount(3);
   await expect(more.locator("summary")).toHaveText("1 error");
   await expect(note.locator(".findings li.error")).toHaveText(["error: no start"]);
-  await expect(note.locator(".counts")).toHaveText("6 of 768 faces · 1 of 256 blocks");
+  await expect(note.locator(".counts .zero").first()).toHaveText("0 of 123 records");
+  await expect(note.locator(".counts span").nth(1)).toHaveText("6 of 768 faces");
 
   await fold.click();
   await expect(fold).toHaveAttribute("aria-expanded", "false");
@@ -235,7 +250,16 @@ test("without the face table the counts line leaves the faces and the blocks out
   await page.route("**/objects.json", (route) => route.fulfill({ status: 404, body: "" }));
   await fresh(page);
   const counts = page.locator("#chipNote .counts");
-  await expect(counts).toHaveText("1 of 123 records");
+  await expect(counts.locator("span")).toHaveText([
+    "1 of 123 records",
+    "0 of 255 objects the loader numbers",
+    "0 of 8 platforms",
+    "0 of 64 vanishing blocks",
+    "0 of 64 crumbling blocks",
+    "0 of 32 captivators",
+    "0 of 32 devices that cast a light",
+    "0 of 64 moving spikes",
+  ]);
   await expect(
     page.locator("#chipNote .findings li", { hasText: "the face count could not be read" }),
   ).toHaveCount(1);

@@ -68,12 +68,13 @@ function tally(findings) {
 function countsLine(n) {
   const line = el("p", { className: "counts" });
   Object.entries(CAPS)
-    .filter(([what]) => n[what])
+    .filter(([what]) => n[what] !== null)
     .forEach(([what, cap], i) => {
       const span = el("span", {
         textContent: `${n[what]} of ${cap} ${COUNTER_WORDS[what] ?? what}`,
       });
-      if (n[what] > cap) span.className = "over";
+      if (!n[what]) span.className = "zero";
+      else if (n[what] > cap) span.className = "over";
       else if (DISC_MAX[what] !== undefined && n[what] > DISC_MAX[what]) span.className = "high";
       line.append(i ? " · " : "", span);
     });

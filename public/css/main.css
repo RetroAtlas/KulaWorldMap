@@ -856,6 +856,9 @@ body:not(.sidebar-open) .menu-btn .cross {
 .chip .overview .counts {
   margin-top: 2px;
 }
+.chip .overview .zero {
+  opacity: 0.7;
+}
 .chip .overview .over {
   color: #ff7b7b;
 }
