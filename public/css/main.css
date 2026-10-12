@@ -838,6 +838,12 @@ body:not(.sidebar-open) .menu-btn .cross {
   padding: 5px 0 6px;
 }
 /* a draft's overview in the note */
+.chip:has(.overview) {
+  max-width: min(calc(100% - 64px), 460px);
+}
+.chip .overview {
+  line-height: 16px;
+}
 .chip .overview p {
   margin: 0;
 }

@@ -30,7 +30,7 @@ function overview(l) {
   const out = el(
     "div",
     { className: "overview" },
-    playsLine(playsAs(d.doc)),
+    el("p", { className: "plays", textContent: playsAs(d.doc) }),
     more(findings, countsLine(counts(d.doc, hides))),
   );
   keepFocus(out);
@@ -44,15 +44,6 @@ function keepFocus(out) {
   queueMicrotask(() =>
     out.querySelector(`[data-field="${CSS.escape(held.dataset.field)}"]`)?.focus(),
   );
-}
-
-/** The sentence's head, with the whole as the tip where a colon starts an explanation. */
-function playsLine(sentence) {
-  const colon = sentence.indexOf(":");
-  const plays = el("p", { className: "plays" });
-  plays.textContent = colon < 0 ? sentence : `${sentence.slice(0, colon)}.`;
-  if (colon >= 0) plays.title = sentence;
-  return plays;
 }
 
 /** The counts and the findings under one line that tallies them, folded on a phone until opened. */

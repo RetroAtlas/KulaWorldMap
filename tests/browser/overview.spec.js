@@ -3,7 +3,10 @@ import { settle, trackErrors } from "./helpers.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const HOME = [17, 17, 17];
+const ABOVE_HOME = [HOME[0], HOME[1], HOME[2] - 1];
 const START = { cell: HOME, kind: 0, faces: { 0: { type: 30, facing: 3 } } };
+const BONUS =
+  "Plays as a bonus level: it has no key, so every block scores 50 the first time the ball rolls onto it, the level ends once every block has been rolled, and an exit stands open from the start.";
 
 const at = (page, x, y, z) =>
   page.evaluate(
@@ -25,6 +28,7 @@ const selected = (page) =>
     return s && { cell: [s.x, s.y, s.z], face: s.face ?? null };
   });
 const toasts = (page) => page.locator("#toastStack .toast").allTextContents();
+const lineHeight = (l) => l.evaluate((e) => parseFloat(getComputedStyle(e).lineHeight));
 /** Make these the draft's blocks in the store directly, as another tab's edit would. */
 const fill = (page, blocks) =>
   page.evaluate(async (blocks) => {
@@ -154,11 +158,8 @@ test("a draft's note carries how it plays, its counts and the findings, each fin
   const more = note.locator(".more");
   expect(await more.evaluate((d) => d.open)).toBe(true);
   await expect(more.locator("summary")).toHaveText("no findings");
-  await expect(note.locator(".plays")).toHaveText("Plays as a bonus level.");
-  await expect(note.locator(".plays")).toHaveAttribute(
-    "title",
-    /^Plays as a bonus level: it has no key, so every block scores 50 /,
-  );
+  await expect(note.locator(".plays")).toHaveText(BONUS);
+  expect(await note.locator(".plays").getAttribute("title")).toBeNull();
   await expect(note.locator(".counts")).toHaveText(
     "1 of 123 records · 6 of 768 faces · 1 of 256 blocks",
   );
@@ -290,14 +291,21 @@ test.describe("on a phone", () => {
     await expect(summary).toHaveText("no findings");
     expect(await isOpen()).toBe(false);
     await expect(note.locator(".counts")).toBeHidden();
+    const fresh = await page.locator("#chip").boundingBox();
 
     await fill(page, SIX);
     await expect(summary).toHaveText("2 errors and 4 warnings");
     expect(await isOpen()).toBe(false);
     await expect(note.locator(".findings")).toBeHidden();
-    await expect(note.locator(".plays")).toBeVisible();
+    await expect(note.locator(".plays")).toHaveText(BONUS);
     const chip = await page.locator("#chip").boundingBox();
+    expect(chip.height).toBe(fresh.height);
     expect(chip.height).toBeLessThan(700 / 3);
+    expect(chip.y + chip.height).toBeLessThan((await top(page, ABOVE_HOME)).y);
+    expect(chip.x + chip.width).toBe(375 - 10);
+    expect(await lineHeight(note.locator(".overview"))).toBeLessThan(
+      await lineHeight(page.locator("#chip")),
+    );
 
     const fold = page.locator("#chipBtn");
     await fold.click();
