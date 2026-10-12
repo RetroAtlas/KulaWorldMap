@@ -222,6 +222,26 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   await field(page, "speed").press("Enter");
   await expect(field(page, "speed")).toHaveValue("0");
   expect(blockAt(await doc(page), [18, 17, 17]).speed).toBe(0);
+  await expect(page.locator("#toastStack .toast")).toHaveCount(0);
+  // what the field cannot read as a number is put back too, and says so
+  const unread = "Speed must be a number.";
+  await field(page, "speed").focus();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.type("e");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#toastStack .toast")).toHaveText([unread]);
+  await expect(page.locator("#toolStatus")).toHaveText(unread);
+  await expect(field(page, "speed")).toHaveValue("0");
+  expect(blockAt(await doc(page), [18, 17, 17]).speed).toBe(0);
+  const unreadLength = "Length must be a number.";
+  await field(page, "length").focus();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.type("e");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#toastStack .toast").first()).toHaveText(unreadLength);
+  await expect(page.locator("#toolStatus")).toHaveText(unreadLength);
+  await expect(field(page, "length")).toHaveValue("3");
+  expect(blockAt(await doc(page), [18, 17, 17]).length).toBe(3);
   await field(page, "speed").fill("30");
   await field(page, "speed").press("Enter");
   expect(blockAt(await doc(page), [18, 17, 17]).speed).toBe(30);

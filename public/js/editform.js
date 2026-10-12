@@ -237,10 +237,12 @@ function blockCard(d, b, from) {
       const input = el("input", { type: "number", step: 1, inputMode: "numeric", title: name });
       if (min !== undefined) input.min = min;
       input.dataset.field = key;
-      input.value = String(b[key] ?? fallback);
+      const kept = () => String(b[key] ?? fallback);
+      input.value = kept();
       input.onchange = () => {
-        if (input.value === "") {
-          input.value = String(b[key] ?? fallback);
+        if (input.validity.badInput) refuse(`${name} must be a number.`);
+        if (input.validity.badInput || input.value === "") {
+          input.value = kept();
           return;
         }
         const v = Math.round(Number(input.value));
@@ -249,7 +251,7 @@ function blockCard(d, b, from) {
           setBlock(d.doc, cell, { ...b, [key]: v }),
           `set the ${name.toLowerCase()} of the moving platform at ${place3(cell)} to ${v}`,
           input,
-          String(b[key] ?? fallback),
+          kept(),
         );
       };
       return field(name, input);
