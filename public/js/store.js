@@ -1,6 +1,6 @@
 // The drafts' store as text and as a table, with nothing of the page or of storage in it.
 import { WORLDS, writeKwl } from "./kwl.js";
-import { readProject } from "./project.js";
+import { readProject, writeProject } from "./project.js";
 import { draftShaped, idOf } from "./held.js";
 
 export const VERSION = 1;
@@ -53,6 +53,23 @@ export function parse(text) {
 export const serialize = (store, unread) =>
   JSON.stringify({ ...store, drafts: { ...unread, ...store.drafts } });
 
+// Of two copies of a draft the later change stands, and at one time the larger
+// text, so that two tabs settle on the same one; copies that are the same are
+// told so without the writer.
+const same = (a, b) =>
+  a === b ||
+  (!!a &&
+    !!b &&
+    typeof a === "object" &&
+    typeof b === "object" &&
+    Array.isArray(a) === Array.isArray(b) &&
+    Object.keys(a).length === Object.keys(b).length &&
+    Object.keys(a).every((k) => Object.hasOwn(b, k) && same(a[k], b[k])));
+const alike = (a, b) => a.saved === b.saved && a.edits === b.edits && same(a.doc, b.doc);
+const textOf = (d) => JSON.stringify([writeProject(d.doc), d.saved, d.edits]);
+const later = (a, b) =>
+  a.updated > b.updated || (a.updated === b.updated && (alike(a, b) || textOf(a) >= textOf(b)));
+
 /** Another tab's copy folded into this one under the marks of what changed here, which follow a moved draft. */
 export function merge(mine, theirs, { dirty, deleted, handed }) {
   const drafts = {};
@@ -67,7 +84,7 @@ export function merge(mine, theirs, { dirty, deleted, handed }) {
       drafts[id] = d;
       drafts[next] = own;
       moved.push([id, next++]);
-    } else if (own && own.updated >= d.updated) drafts[id] = own;
+    } else if (own && later(own, d)) drafts[id] = own;
     else {
       drafts[id] = d;
       dirty.delete(id);

@@ -143,12 +143,42 @@ test("per draft the later change wins, and theirs taking over clears the mark he
   assert.deepEqual([...m.dirty], [2]);
 });
 
-test("a draft changed here is kept at the same time as theirs is taken", () => {
+test("two copies changed at the same time settle on the larger text, whichever side holds it", () => {
   const m = marks({ dirty: [1] });
   const out = merge(table({ 1: at("Mine", 5) }), table({ 1: at("Theirs", 5) }), m);
-  assert.equal(out.store.drafts[1].doc.title, "Mine");
+  assert.equal(out.store.drafts[1].doc.title, "Theirs");
+  assert.deepEqual(out.taken, [1]);
+  assert.deepEqual([...m.dirty], []);
+  const n = marks({ dirty: [1] });
+  const back = merge(table({ 1: at("Theirs", 5) }), table({ 1: at("Mine", 5) }), n);
+  assert.equal(back.store.drafts[1].doc.title, "Theirs");
+  assert.deepEqual(back.taken, []);
+  assert.deepEqual([...n.dirty], [1]);
+});
+
+test("two copies changed at the same time that write the same keep this tab's, whatever order its keys are in", () => {
+  const m = marks({ dirty: [1] });
+  const mine = at("Same", 5);
+  mine.doc = Object.fromEntries(Object.entries(mine.doc).reverse());
+  const out = merge(table({ 1: mine }), table({ 1: at("Same", 5) }), m);
+  assert.equal(out.store.drafts[1], mine);
   assert.deepEqual(out.taken, []);
   assert.deepEqual([...m.dirty], [1]);
+});
+
+test("two copies at one time alike in all but their marks settle on the larger text from both sides", () => {
+  const more = entry(good(), { updated: 5, saved: 4, edits: 9 });
+  const fewer = entry(good(), { updated: 5, saved: 4, edits: 1 });
+  const m = marks({ dirty: [1] });
+  const out = merge(table({ 1: fewer }), table({ 1: more }), m);
+  assert.equal(out.store.drafts[1], more);
+  assert.deepEqual(out.taken, [1]);
+  assert.deepEqual([...m.dirty], []);
+  const n = marks({ dirty: [1] });
+  const back = merge(table({ 1: more }), table({ 1: fewer }), n);
+  assert.equal(back.store.drafts[1], more);
+  assert.deepEqual(back.taken, []);
+  assert.deepEqual([...n.dirty], [1]);
 });
 
 test("a draft deleted here is not taken back, one changed here is kept though theirs lacks it, and one neither goes", () => {
