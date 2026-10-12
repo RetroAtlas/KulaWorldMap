@@ -405,7 +405,7 @@ function buildForm(id, box) {
       plays.textContent = playsAs(d.doc);
       const n = validate(d.doc, skinsTable()?.hides).filter((f) => f.level === ERROR).length;
       errors.hidden = n === 0;
-      errors.textContent = n ? `${n} error${n === 1 ? "" : "s"}, listed on the panel` : "";
+      errors.textContent = n ? `${n} error${n === 1 ? "" : "s"}, listed under the level line` : "";
       saveJson.classList.toggle("unsaved", unsaved(d));
     },
     wrote() {

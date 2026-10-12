@@ -358,7 +358,7 @@ test("the Level card marks a level with no key as a bonus level, says how it pla
 
   await faced(page, 0, null);
   await expect(errorLine).toBeVisible();
-  await expect(errorLine).toHaveText("1 error, listed on the panel");
+  await expect(errorLine).toHaveText("1 error, listed under the level line");
   await expect(errorLine.locator("a, button")).toHaveCount(0);
   await faced(page, 0, { type: 30, facing: 3 });
   await expect(errorLine).toBeHidden();
@@ -375,7 +375,7 @@ test("the Level card counts the checks' errors without the game's face table", a
   const errorLine = page.locator("#draftErrors");
   await expect(errorLine).toBeHidden();
   await faced(page, 0, null);
-  await expect(errorLine).toHaveText("1 error, listed on the panel");
+  await expect(errorLine).toHaveText("1 error, listed under the level line");
   await faced(page, 0, { type: 30, facing: 3 });
   await expect(errorLine).toBeHidden();
   expect(errors.filter((e) => !/Failed to load resource/.test(e))).toEqual([]);

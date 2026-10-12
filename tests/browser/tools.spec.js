@@ -239,7 +239,7 @@ test("a block laid above the slice raises it, and the grid lays a first floor", 
   expect((await shown(page)).selected).toEqual([22, 24, 17]);
   expect((await blocks(page)).map((b) => b.cell)).toContainEqual([22, 24, 17]);
   // a click on the plane past the floor's edge is a click on nothing
-  await click(page, await at(page, -2.5, 17.5, 18));
+  await click(page, await at(page, 34.5, 13.5, 18));
   expect((await shown(page)).selected).toBe(null);
   expect((await blocks(page)).length).toBe(3);
 

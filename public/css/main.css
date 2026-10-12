@@ -811,6 +811,38 @@ body:not(.sidebar-open) .menu-btn .cross {
   border-top: 1px solid var(--line);
   padding: 5px 0 6px;
 }
+/* a draft's overview in the note */
+.chip .overview p {
+  margin: 0;
+}
+.chip .overview .plays + .counts {
+  margin-top: 2px;
+}
+.chip .overview .over {
+  color: #ff7b7b;
+}
+.chip .overview .high {
+  color: var(--warn);
+}
+.chip .overview .findings {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  max-height: 30vh;
+  overflow: auto;
+}
+.chip .overview .findings .error {
+  color: var(--warn);
+}
+.chip .overview .there {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
 
 .readout {
   position: absolute;
@@ -1677,7 +1709,7 @@ body:not(.sidebar-open) .menu-btn .cross {
   }
 }
 
-/* the panel's edit form: the block, the chosen face, the circuits and the checks */
+/* the panel's edit form: the block, the chosen face and the circuits */
 .detail .form {
   margin: 0 0 10px;
 }
@@ -1825,40 +1857,6 @@ body:not(.sidebar-open) .menu-btn .cross {
   min-width: 0;
   color: var(--dim);
   font-size: 11px;
-}
-.detail .form .plays,
-.detail .form .counts {
-  margin: 10px 0 0;
-  color: var(--dim);
-  font-size: 11.5px;
-}
-.detail .form .plays + .counts {
-  margin-top: 2px;
-}
-.detail .form .over {
-  color: #ff7b7b;
-}
-.detail .form .high {
-  color: var(--warn);
-}
-.detail .form .findings {
-  margin: 4px 0 0;
-  padding-left: 16px;
-  color: var(--dim);
-  font-size: 11.5px;
-}
-.detail .form .findings .error {
-  color: var(--warn);
-}
-.detail .form .there {
-  background: none;
-  border: 0;
-  padding: 0;
-  color: var(--accent);
-  font: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
 }
 .detail .raw > summary {
   cursor: pointer;

@@ -1,6 +1,61 @@
 import { test, expect } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
 
+const EDIT = "/#HIRO/0/45,35/fit/33";
+const HOME = [17, 17, 17];
+const START = { cell: HOME, kind: 0, faces: { 0: { type: 30, facing: 3 } } };
+
+const at = (page, x, y, z) =>
+  page.evaluate(
+    async ([x, y, z]) => {
+      const { screen } = await import(new URL("js/state.js", location.href).href);
+      const r = document.getElementById("cv").getBoundingClientRect();
+      const [px, py] = screen(x, y, z);
+      return { x: r.left + px, y: r.top + py };
+    },
+    [x, y, z],
+  );
+const click = async (page, point) => page.mouse.click(point.x, point.y);
+const top = (page, c) => at(page, c[0] + 0.5, c[1] + 0.5, c[2]);
+const field = (page, name) => page.locator(`#detail [data-field="${name}"]`);
+const selected = (page) =>
+  page.evaluate(async () => {
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const s = state.selected;
+    return s && { cell: [s.x, s.y, s.z], face: s.face ?? null };
+  });
+const toasts = (page) => page.locator("#toastStack .toast").allTextContents();
+/** Make these the draft's blocks in the store directly, as another tab's edit would. */
+const fill = (page, blocks) =>
+  page.evaluate(async (blocks) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }] = await Promise.all(["state.js", "drafts.js"].map(at));
+    const id = state.lvl.draft;
+    update(id, { ...get(id).doc, blocks });
+  }, blocks);
+const vanishing = (n) =>
+  Array.from({ length: n }, (_, i) => ({
+    cell: [5 + (i % 26), 20 + Math.floor(i / 26), 17],
+    kind: 7,
+  }));
+
+/** A new draft, editing on with the Select tool, and its block selected on its top. */
+async function fresh(page) {
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#tools")).toBeVisible();
+  if ((await page.locator("#editBtn").getAttribute("aria-pressed")) !== "true")
+    await page.keyboard.press("w");
+  await expect(page.locator('#tools .tool[data-tool="place"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.keyboard.press("i");
+  await click(page, await top(page, HOME));
+  await expect(page.locator("#detail .form")).toBeVisible();
+}
+
 test("a registered note stands in for the level's own where it answers, and leaves it where it does not", async ({
   page,
 }) => {
@@ -48,5 +103,157 @@ test("a registered note stands in for the level's own where it answers, and leav
   await page.keyboard.press("[");
   await expect(page.locator("#chip b")).toHaveText("LEVEL 133");
   await expect(note.locator(".given")).toHaveText(/^Given /);
+  expect(errors).toEqual([]);
+});
+
+test("a shipped level's line and note are as they are with the editor loaded", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/#MARS/12");
+  await settle(page);
+  const chip = page.locator("#chip");
+  const before = await chip.evaluate((e) => e.innerHTML);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#chipNote .overview")).toBeVisible();
+  await page.evaluate(() => {
+    location.hash = "#MARS/12";
+  });
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 133");
+  await expect(page.locator("#chipNote .overview")).toHaveCount(0);
+  expect(await chip.evaluate((e) => e.innerHTML)).toBe(before);
+  await page.reload();
+  await settle(page);
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 133");
+  expect(await chip.evaluate((e) => e.innerHTML)).toBe(before);
+
+  await page.evaluate(() => {
+    location.hash = "#HIRO/0";
+  });
+  await expect(page.locator("#chip b")).toHaveText("LEVEL 1");
+  await expect(chip.getByRole("button")).toHaveCount(0);
+  await expect(page.locator("#chipNote")).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test("a draft's note carries how it plays, its counts and the findings, each finding selecting its cell, is built again at every edit and folds", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  const fold = page.locator("#chipBtn");
+  const note = page.locator("#chipNote");
+  await expect(fold).toBeVisible();
+  await expect(fold).toHaveAttribute("aria-expanded", "true");
+  await expect(note.locator(".overview > *")).toHaveClass(["plays", "counts"]);
+  await expect(note.locator(".plays")).toHaveText("Plays as a bonus level.");
+  await expect(note.locator(".plays")).toHaveAttribute(
+    "title",
+    /^Plays as a bonus level: it has no key, so every block scores 50 /,
+  );
+  await expect(note.locator(".counts")).toHaveText(
+    "1 of 123 records · 6 of 768 faces · 1 of 256 blocks",
+  );
+  await expect(page.locator("#detail .plays, #detail .counts, #detail .findings")).toHaveCount(0);
+
+  await field(page, "face-1").click();
+  await field(page, "thing").selectOption("t31");
+  await expect(note.locator(".plays")).toHaveText("Plays as an arcade level.");
+  expect(await note.locator(".plays").getAttribute("title")).toBeNull();
+  await expect(note.locator(".findings li")).toHaveText(["warning: a key and no exit"]);
+  await field(page, "thing").selectOption("t42");
+  const findings = note.locator(".findings li");
+  await expect(findings).toHaveText([/^warning: the star is untested in play at /]);
+  await expect(findings.first()).toHaveClass("warning");
+  await expect(findings.first().locator(".there")).toHaveText("17, 17, 17");
+  await expect(findings.first().locator(".there")).toHaveAccessibleName(
+    "the star is untested in play at 17, 17, 17, +x side",
+  );
+  await expect(findings.first()).toContainText(", +x side");
+  await field(page, "face-0").click();
+  expect(await selected(page)).toEqual({ cell: HOME, face: 0 });
+  await findings.first().locator(".there").click();
+  expect(await selected(page)).toEqual({ cell: HOME, face: 1 });
+  await expect(field(page, "face-1")).toHaveAttribute("aria-pressed", "true");
+
+  await field(page, "thing").selectOption("");
+  await field(page, "face-0").click();
+  await field(page, "thing").selectOption("");
+  await expect(note.locator(".overview > *")).toHaveClass(["plays", "counts", "findings"]);
+  await expect(note.locator(".findings li.error")).toHaveText(["error: no start"]);
+  await expect(note.locator(".counts")).toHaveText("6 of 768 faces · 1 of 256 blocks");
+
+  await fold.click();
+  await expect(fold).toHaveAttribute("aria-expanded", "false");
+  await expect(note).toBeHidden();
+  await fold.click();
+  await expect(note.locator(".plays")).toBeVisible();
+
+  await page.keyboard.press("w");
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+  await expect(note.locator(".findings li.error")).toHaveText(["error: no start"]);
+  expect(await toasts(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("a counter reads amber past the most any level on the disc has and red past the game's room", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  const counts = page.locator("#chipNote .counts");
+  const findings = page.locator("#chipNote .findings li");
+  await fill(page, [START, ...vanishing(15)]);
+  await expect(counts.locator(".high")).toHaveText(["15 of 64 vanishing blocks"]);
+  await expect(counts.locator(".over")).toHaveCount(0);
+  await expect(
+    findings.filter({ hasText: "warning: 15 vanishing blocks, more than any level on the disc" }),
+  ).toHaveCount(1);
+  await fill(page, [START, ...vanishing(65)]);
+  await expect(counts.locator(".over")).toHaveText(["65 of 64 vanishing blocks"]);
+  await expect(counts.locator(".high")).toHaveCount(0);
+  await expect(findings.locator("..").locator("li.error")).toHaveText([
+    "error: 65 vanishing blocks, over the 64 the game has room for",
+  ]);
+  expect(errors).toEqual([]);
+});
+
+test("without the face table the counts line leaves the faces and the blocks out", async ({
+  page,
+}) => {
+  await page.route("**/objects.json", (route) => route.fulfill({ status: 404, body: "" }));
+  await fresh(page);
+  const counts = page.locator("#chipNote .counts");
+  await expect(counts).toHaveText("1 of 123 records");
+  await expect(
+    page.locator("#chipNote .findings li", { hasText: "the face count could not be read" }),
+  ).toHaveCount(1);
+});
+
+test("a finding's link that holds the focus keeps it through an edit", async ({ page }) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await field(page, "face-1").click();
+  await field(page, "thing").selectOption("t42");
+  await field(page, "face-2").click();
+  await field(page, "thing").selectOption("t31");
+  const findings = page.locator("#chipNote .findings li");
+  await expect(findings).toHaveCount(2);
+  const link = page.locator("#chipNote .there");
+  await expect(link).toHaveCount(1);
+  await link.focus();
+  await page.keyboard.press("Enter");
+  expect(await selected(page)).toEqual({ cell: HOME, face: 1 });
+  await expect(link).toBeFocused();
+  await page.keyboard.press("Control+z");
+  await expect(findings).toHaveText([/^warning: the star is untested in play at /]);
+  await expect(link).toBeFocused();
+  await field(page, "face-0").click();
+  expect(await selected(page)).toEqual({ cell: HOME, face: 0 });
+  await link.focus();
+  await page.keyboard.press("Enter");
+  expect(await selected(page)).toEqual({ cell: HOME, face: 1 });
+  await page.keyboard.press("Delete");
+  await expect(findings).toHaveCount(0);
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
   expect(errors).toEqual([]);
 });

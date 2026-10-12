@@ -37,7 +37,6 @@ const steps = (page) =>
     );
     return steps(state.lvl.draft);
   });
-const toasts = (page) => page.locator("#toastStack .toast").allTextContents();
 const hidden = (page) =>
   page.evaluate(async () => {
     const { state } = await import(new URL("js/state.js", location.href).href);
@@ -102,8 +101,8 @@ test("the form stands on a selected block of the draft while editing, and goes w
   await expect(raw).toHaveCount(1);
   expect(await raw.evaluate((d) => d.open)).toBe(false);
   await expect(raw.locator("table")).toHaveCount(2);
-  await expect(page.locator("#detail .counts")).toContainText("1 of 123 records");
   await expect(page.locator("#detail .circuit")).toHaveCount(4);
+  await expect(page.locator("#detail .plays, #detail .counts, #detail .findings")).toHaveCount(0);
 
   await page.keyboard.press("w");
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
@@ -210,7 +209,6 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   );
   await expect(field(page, "length")).toHaveValue("3");
   await expect(field(page, "length")).toBeFocused();
-  await expect(page.locator("#detail .counts")).toContainText("20 of 768 faces");
   await field(page, "speed").fill("0");
   await field(page, "speed").press("Enter");
   await expect(field(page, "speed")).toHaveValue("30");
@@ -309,7 +307,6 @@ test("what stands here puts a thing on the face, nothing takes it off, and a dev
   await expect(field(page, "thing")).toHaveValue("t31");
   await expect(field(page, "thing")).toBeFocused();
   await expect(field(page, "face-1").locator(".dot")).toHaveCount(1);
-  await expect(page.locator("#detail .findings")).toContainText("a key and no exit");
 
   await field(page, "thing").selectOption("");
   expect(blockAt(await doc(page), HOME).faces[1]).toBeUndefined();
@@ -490,38 +487,5 @@ test("the two buttons place through the editor", async ({ page }) => {
     "A run is laid on the map, in two clicks.",
   );
   await expect(field(page, "build")).toBeEnabled();
-  expect(errors).toEqual([]);
-});
-
-test("the plays-as line, the counts line and the findings show, and a finding's link selects its cell", async ({
-  page,
-}) => {
-  const errors = trackErrors(page);
-  await fresh(page);
-  const plays = page.locator("#detail .plays");
-  await expect(plays).toHaveText(/^Plays as a bonus level: it has no key, /);
-  await expect(page.locator("#detail .checks > p").first()).toHaveClass("plays");
-  await field(page, "face-1").click();
-  await field(page, "thing").selectOption("t31");
-  await expect(plays).toHaveText("Plays as an arcade level.");
-  await field(page, "thing").selectOption("t42");
-  const findings = page.locator("#detail .findings li");
-  await expect(findings).toHaveText([/^warning: the star is untested in play at /]);
-  await expect(findings.first().locator(".there")).toHaveText("17, 17, 17");
-  await expect(findings.first()).toContainText(", +x side");
-  await field(page, "face-0").click();
-  expect(await selected(page)).toEqual({ cell: HOME, face: 0 });
-  await findings.first().locator(".there").click();
-  expect(await selected(page)).toEqual({ cell: HOME, face: 1 });
-
-  await field(page, "thing").selectOption("");
-  await field(page, "face-0").click();
-  await field(page, "thing").selectOption("");
-  expect(blockAt(await doc(page), HOME).faces).toBeUndefined();
-  await expect(page.locator("#detail .findings li.error")).toHaveText(["error: no start"]);
-  await expect(page.locator("#detail .counts")).toHaveText(
-    "0 of 123 records · 6 of 768 faces · 1 of 256 blocks · 0 of 255 objects the loader numbers · 0 of 8 platforms · 0 of 64 vanishing blocks · 0 of 64 crumbling blocks · 0 of 32 captivators · 0 of 32 devices that cast a light · 0 of 64 moving spikes",
-  );
-  expect(await toasts(page)).toEqual([]);
   expect(errors).toEqual([]);
 });

@@ -384,7 +384,7 @@ test.describe("editing on a phone", () => {
     expect(await cells(page)).toEqual([START]);
     await expect(palette).toBeVisible();
     await page.keyboard.press("a");
-    await hold(page, await top(page, START));
+    await hold(page, await plusX(page, START));
     await expect(page.locator("#detail")).toBeVisible();
     await expect(palette).toBeHidden();
   });
@@ -545,9 +545,7 @@ test.describe("editing on a phone", () => {
     const strip = await page.locator("#tools").boundingBox();
     expect(strip.y + strip.height).toBeLessThanOrEqual(sheet.y + 1);
     expect(strip.width).toBe(375);
-    for (const h of await heights(
-      page.locator("#detail .form button:not(.there), #detail .form select"),
-    ))
+    for (const h of await heights(page.locator("#detail .form button, #detail .form select")))
       expect(h).toBeGreaterThanOrEqual(44);
 
     await page.locator("#paletteBtn").tap();
@@ -567,7 +565,7 @@ test.describe("editing on a phone", () => {
       expect(h).toBeGreaterThanOrEqual(44);
 
     await lift(page, 1.5);
-    await tap(page, await top(page, START));
+    await tap(page, await plusX(page, START));
     await expect(palette).toBeHidden();
     await expect(panel).toBeVisible();
     await page.keyboard.press("Escape");

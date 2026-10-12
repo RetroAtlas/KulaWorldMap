@@ -1,6 +1,6 @@
 // The panel's form while editing: the block, the chosen face and what stands
-// on it, the circuits, and what the checks say, every change one step of the
-// trail. It rides the panel's onShow seam and draws nothing on the map.
+// on it, and the circuits, every change one step of the trail. It rides the
+// panel's onShow seam and draws nothing on the map.
 import { el, on } from "./dom.js";
 import { state, cellKey } from "./state.js";
 import { DIRECTION_NAME, FACE_NAME } from "./faces.js";
@@ -11,28 +11,15 @@ import {
   markerFacing,
   markerLabel,
   markerPoints,
-  skinsTable,
 } from "./data.js";
 import { onShow, showCell } from "./detail.js";
 import * as palette from "./palette.js";
-import {
-  blockAt,
-  counts,
-  describe,
-  playsAs,
-  setBlock,
-  setCircuit,
-  setFace,
-  validate,
-} from "./project.js";
+import { blockAt, setBlock, setCircuit, setFace } from "./project.js";
 import {
   BLOCK_KINDS,
-  CAPS,
   COLOURS,
-  COUNTER_WORDS,
   DEFAULT_LENGTH,
   DEFAULT_SPEED,
-  DISC_MAX,
   FACING_TYPES,
   LASER_KIND,
   PHASES,
@@ -67,6 +54,7 @@ import {
   spanAt,
   thingOn,
 } from "./editing.js";
+import { wireOverview } from "./overview.js";
 
 const RUN_ON_MAP = "A run is laid on the map, in two clicks.";
 const NOTHING = "nothing";
@@ -128,6 +116,7 @@ export function wireForm(handed) {
   ({ editing, placeHere, buildAgainst } = handed);
   if (wired) return;
   wired = true;
+  wireOverview();
   onShow(render);
   on("editing-changed", () => {
     if (state.selected) showCell(state.selected);
@@ -158,7 +147,7 @@ function render(box, c) {
   if (own) form.append(facesRow(d, own, c, face));
   form.append(blockCard(d, own ?? span, own ? null : cell));
   if (own && face !== null) form.append(faceCard(d, own, c, face));
-  form.append(circuitsCard(d), checks(d));
+  form.append(circuitsCard(d));
   form.addEventListener("focusin", (e) => {
     const f = e.target.closest("[data-field]");
     if (f) focused = f.dataset.field;
@@ -503,7 +492,7 @@ function changeThing(d, own, face, select, o) {
   if (!done && hidden) state.hiddenKinds.add(e.id);
 }
 
-// --- the circuits and the checks ------------------------------------------------------------
+// --- the circuits --------------------------------------------------------------------------
 
 function circuitsCard(d) {
   const out = card("Circuits");
@@ -553,46 +542,5 @@ function circuitsCard(d) {
       ),
     );
   }
-  return out;
-}
-
-function checks(d) {
-  const hides = skinsTable()?.hides;
-  const out = el("div", { className: "checks" }, line(playsAs(d.doc), "plays"));
-  const n = counts(d.doc, hides);
-  const parts = Object.entries(CAPS)
-    .filter(([what]) => n[what] !== null)
-    .map(([what, cap]) => {
-      const span = el("span", {
-        textContent: `${n[what]} of ${cap} ${COUNTER_WORDS[what] ?? what}`,
-      });
-      if (n[what] > cap) span.className = "over";
-      else if (DISC_MAX[what] !== undefined && n[what] > DISC_MAX[what]) span.className = "high";
-      return span;
-    });
-  const countsLine = el("p", { className: "counts" });
-  parts.forEach((p, i) => countsLine.append(i ? " · " : "", p));
-  out.append(countsLine);
-  const findings = validate(d.doc, hides);
-  if (!findings.length) return out;
-  const list = el("ul", { className: "findings" });
-  for (const f of findings) {
-    const li = el("li", { className: f.level });
-    if (f.at) {
-      const go = el("button", {
-        type: "button",
-        className: "there",
-        textContent: place3(f.at.cell),
-      });
-      go.dataset.field = `finding-${describe(f)}`;
-      go.onclick = () => {
-        const at = state.idx.cells.get(cellKey(...f.at.cell));
-        if (at) showCell("face" in f.at ? { ...at, face: f.at.face } : at);
-      };
-      li.append(`${f.level}: ${f.text} at `, go, "face" in f.at ? `, ${FACE_NAME[f.at.face]}` : "");
-    } else li.textContent = describe(f);
-    list.append(li);
-  }
-  out.append(list);
   return out;
 }
