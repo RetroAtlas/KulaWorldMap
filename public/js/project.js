@@ -1,7 +1,7 @@
 // The editor's document: a level as blocks, faces and circuits, edited copy on write.
 import { SIDE } from "./state.js";
 import { FACE_NORMAL } from "./faces.js";
-import { circuitName, entryName, kindName } from "./data.js";
+import { circuitWord, entryName, kindName } from "./data.js";
 import {
   BLOCK_KINDS,
   BONUS_UNDRAWN_KINDS,
@@ -457,12 +457,23 @@ export function circuitMembers(project) {
 function validateCircuits(project, warn) {
   const circuits = project.circuits ?? {};
   circuitMembers(project).forEach((m, c) => {
-    const name = circuitName(c);
+    const word = circuitWord(c);
     if (circuits[String(c)] === "off" && !m.switches && (m.lasers || m.teleporters))
-      warn(`the ${name} circuit starts off and has no switch to turn it on`);
-    if (m.teleporters === 1) warn(`the one ${name} teleporter leads to itself`);
+      warn(
+        `${word ? `the ${word} circuit` : `circuit ${c}`} starts off and has no switch to turn it on`,
+      );
+    if (m.teleporters === 1)
+      warn(
+        word
+          ? `the one ${word} teleporter leads to itself`
+          : `the one teleporter of circuit ${c} leads to itself`,
+      );
     if (m.switches && !m.teleporters && !m.lasers)
-      warn(`the ${name} switches have nothing to switch`);
+      warn(
+        word
+          ? `the ${word} switches have nothing to switch`
+          : `the switches of circuit ${c} have nothing to switch`,
+      );
   });
 }
 

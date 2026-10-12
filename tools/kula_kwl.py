@@ -1559,11 +1559,11 @@ def _undrawn_in_bonus(blocks):
     return names
 
 
-def _circuit_name(c):
-    """A circuit's word, the bracketed part of its switch's name, or its number."""
+def _circuit_word(c):
+    """A circuit's word, the bracketed part of its switch's name, or None where the annotations have none."""
     name = _names()["types"].get(str(SWITCH), {}).get("variants", {}).get(str(c), {}).get("name") or ""
     found = re.search(r"\(([^)]*)\)", name)
-    return found.group(1) if found else str(c)
+    return found.group(1) if found else None
 
 
 def circuit_members(project):
@@ -1593,13 +1593,13 @@ def circuit_members(project):
 def _validate_circuits(project, warn):
     circuits = _or(project.get("circuits"), {})
     for c, m in enumerate(circuit_members(project)):
-        name = _circuit_name(c)
+        word = _circuit_word(c)
         if _property(circuits, str(c)) == "off" and not m["switches"] and (m["lasers"] or m["teleporters"]):
-            warn(f"the {name} circuit starts off and has no switch to turn it on")
+            warn(f"{f'the {word} circuit' if word else f'circuit {c}'} starts off and has no switch to turn it on")
         if m["teleporters"] == 1:
-            warn(f"the one {name} teleporter leads to itself")
+            warn(f"the one {word} teleporter leads to itself" if word else f"the one teleporter of circuit {c} leads to itself")
         if m["switches"] and not m["teleporters"] and not m["lasers"]:
-            warn(f"the {name} switches have nothing to switch")
+            warn(f"the {word} switches have nothing to switch" if word else f"the switches of circuit {c} have nothing to switch")
 
 
 # --- the checks that hold the writer to the data and the disc -----------------

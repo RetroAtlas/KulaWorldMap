@@ -1070,11 +1070,13 @@ test("the circuits' warnings", () => {
   assert.ok(warned.includes("the blue switches have nothing to switch"));
   setAnnotations({ ...annotations, types: { ...annotations.types, [SWITCH]: { name: "Switch" } } });
   try {
-    assert.ok(
-      warnings(blocks, { circuits: { 2: "off" } }).includes(
-        "the 2 circuit starts off and has no switch to turn it on",
-      ),
-    );
+    const unnamed = warnings(blocks, { circuits: { 2: "off" } });
+    for (const text of [
+      "circuit 2 starts off and has no switch to turn it on",
+      "the one teleporter of circuit 0 leads to itself",
+      "the switches of circuit 1 have nothing to switch",
+    ])
+      assert.ok(unnamed.includes(text), text);
   } finally {
     setAnnotations(annotations);
   }

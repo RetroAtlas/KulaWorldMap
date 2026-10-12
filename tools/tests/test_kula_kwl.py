@@ -1253,7 +1253,10 @@ class Validates(unittest.TestCase):
         self.assertIn("the one yellow teleporter leads to itself", warnings)
         self.assertIn("the blue switches have nothing to switch", warnings)
         with mock.patch("kula_kwl._names", return_value={"kinds": {}, "types": {}}):
-            self.assertIn("the 2 circuit starts off and has no switch to turn it on", self.warnings(blocks, circuits={"2": "off"}))
+            unnamed = self.warnings(blocks, circuits={"2": "off"})
+        for text in ("circuit 2 starts off and has no switch to turn it on", "the one teleporter of circuit 0 leads to itself",
+                     "the switches of circuit 1 have nothing to switch"):
+            self.assertIn(text, unnamed)
         self.assertIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY})]))
         self.assertNotIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY}, t2={"type": EXIT})]))
         self.assertNotIn("a key and no exit", self.warnings([plain((5, 5, 5), t0=start(), t1={"type": KEY}, t2={"type": 26})]))

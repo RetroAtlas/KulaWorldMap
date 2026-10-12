@@ -208,9 +208,11 @@ const SWITCH = 9;
 export const isSwitch = (m) => m.face !== null && m.type === SWITCH;
 const circuitVariant = (circuit) => ann.types[String(SWITCH)]?.variants?.[String(circuit)];
 export const circuitColour = (circuit) => circuitVariant(circuit)?.colour ?? null;
-/** A circuit's word, the bracketed part of its switch's name, or its number. */
-export const circuitName = (circuit) =>
-  /\(([^)]*)\)/.exec(circuitVariant(circuit)?.name ?? "")?.[1] ?? String(circuit);
+/** A circuit's word, the bracketed part of its switch's name, or null where the annotations have none. */
+export const circuitWord = (circuit) =>
+  /\(([^)]*)\)/.exec(circuitVariant(circuit)?.name ?? "")?.[1] ?? null;
+/** A circuit's word, or its number. */
+export const circuitName = (circuit) => circuitWord(circuit) ?? String(circuit);
 // A teleporter names the one it sends the ball to by that one's record, times
 // sixteen, plus its face.
 const TELEPORTER = 5;
