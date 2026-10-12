@@ -358,6 +358,54 @@ test("a platform's body builds against the cell it stands in, not its record's",
   expect(errors).toEqual([]);
 });
 
+test("the hover follows the pointer from one block of a platform's body to the next", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await page.keyboard.press("v");
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setBlock }] = await Promise.all(
+      ["state.js", "drafts.js", "project.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    update(
+      id,
+      setBlock(get(id).doc, [18, 17, 17], {
+        kind: 5,
+        far: [18, 21, 17],
+        length: 2,
+        speed: 30,
+      }),
+    );
+  });
+  await zoom(page, 0.8);
+  const ghost = () =>
+    page.evaluate(async () => {
+      const { ghostPreview } = await import(new URL("js/editor.js", location.href).href);
+      return ghostPreview();
+    });
+  const hovered = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      const h = state.hover;
+      return h && [h.body, h.k, h.face];
+    });
+  // the two blocks of the body share the record's cell, and differ in where they stand
+  const first = await top(page, [18, 17, 17]);
+  await page.mouse.move(first.x, first.y);
+  expect(await hovered()).toEqual([[18, 17, 17], 0, 0]);
+  expect(await ghost()).toEqual({ cell: [18, 17, 16], blocked: false });
+  const second = await top(page, [18, 18, 17]);
+  await page.mouse.move(second.x, second.y);
+  expect(await hovered()).toEqual([[18, 18, 17], 1, 0]);
+  expect(await ghost()).toEqual({ cell: [18, 18, 16], blocked: false });
+  await click(page, second);
+  expect((await shown(page)).selected).toEqual([18, 18, 16]);
+  expect(errors).toEqual([]);
+});
+
 test("the ghost is red for whatever the click would refuse, a beam's cell among them", async ({
   page,
 }) => {

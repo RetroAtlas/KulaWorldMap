@@ -7,7 +7,7 @@ import { levelTitle, markerLabel } from "./data.js";
 import { provideLevels, setSlice } from "./navigate.js";
 import { cellAt, drawSoon, overlayWith } from "./render.js";
 import { facePoints, outline, outlineStroke } from "./blocks.js";
-import { CLICK, dragWith, onCellClick, hoverFaces, tipWith } from "./interaction.js";
+import { CLICK, dragWith, onCellClick, hoverBy, tipWith } from "./interaction.js";
 import { clearDetail, showCell } from "./detail.js";
 import { sidebarOverlays } from "./sidebar.js";
 import { describeLevel, say } from "./a11y.js";
@@ -269,7 +269,8 @@ function wireTools() {
     return taken;
   });
   dragWith(dragStart);
-  hoverFaces(() => editing() && mode.tool !== "select");
+  // the face, and for a platform's block the body block it is on, place the wash and the ghost
+  hoverBy((c) => (editing() && mode.tool !== "select" ? `${c.face ?? ""}/${c.k ?? 0}` : null));
   tipWith((c) => {
     if (!editing() || mode.tool !== "place" || c?.face == null) return [];
     return [

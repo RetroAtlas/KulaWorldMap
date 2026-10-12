@@ -44,8 +44,8 @@ const panning = (e) => e.shiftKey || e.button === 1 || e.button === 2 || state.p
 
 // What hooks into the pointer from outside: a click handler that takes a click
 // by returning true, a drag handler asked at every press, which takes the drag
-// from the camera by returning { move, end, cancel }, a test for whether the
-// face under the pointer matters to the hover, and lines for the tip. A press
+// from the camera by returning { move, end, cancel }, a mark of what about the
+// hovered cell matters beyond the cell itself, and lines for the tip. A press
 // that never wanders past a click is a click whoever holds the drag.
 let clicked = null;
 export const onCellClick = (fn) => {
@@ -55,9 +55,9 @@ let dragged = null;
 export const dragWith = (fn) => {
   dragged = fn;
 };
-let faceMatters = () => false;
-export const hoverFaces = (fn) => {
-  faceMatters = fn;
+let hoverMark = () => null;
+export const hoverBy = (fn) => {
+  hoverMark = fn;
 };
 let tipLines = () => [];
 export const tipWith = (fn) => {
@@ -125,8 +125,7 @@ function hoverAt({ x, y }, near = false) {
   const c = cellAt(x - r.left, y - r.top, near);
   const key = c ? cellKey(c.x, c.y, c.z) : null;
   const was = state.hover;
-  const other =
-    (was?.key ?? null) !== key || (faceMatters() && (was?.face ?? null) !== (c?.face ?? null));
+  const other = (was?.key ?? null) !== key || (c !== null && hoverMark(was) !== hoverMark(c));
   if (other) {
     state.hover = c ? { ...c, key } : null;
     drawSoon();
