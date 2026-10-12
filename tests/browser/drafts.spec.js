@@ -398,10 +398,13 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
     await expect(rows.nth(colour).locator(".lamp")).toHaveAttribute("aria-hidden", "true");
   await expect(page.locator("#draftCard .circuits")).toHaveAccessibleName("Circuits");
   await expect(rows).toHaveCount(4);
-  for (const [i, name] of ["yellow", "blue", "green", "red"].entries())
+  // a reader hears four switches apart by colour, the state in whether each is pressed
+  for (const [i, name] of ["yellow", "blue", "green", "red"].entries()) {
     await expect(rows.nth(i)).toHaveAccessibleName(name);
+    await expect(toggle(i)).toHaveAccessibleName(`${name} circuit`);
+    await expect(toggle(i)).toHaveText("starts on");
+  }
   await expect(members).toHaveText(Array(4).fill("nothing of this colour"));
-  await expect(toggle(2)).toHaveText("starts on");
   await expect(toggle(2)).toHaveAttribute("aria-pressed", "true");
   await expect(toggle(2)).toHaveAttribute("title", "Turn the green circuit off");
 
@@ -457,6 +460,7 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   expect((await docOf(page, id)).circuits).toEqual({ 2: "off" });
   await expect(toggle(2)).toHaveText("starts off");
   await expect(toggle(2)).toHaveAttribute("aria-pressed", "false");
+  await expect(toggle(2)).toHaveAccessibleName("green circuit");
   await expect(toggle(2)).toHaveAttribute("title", "Turn the green circuit on");
   await expect(toggle(2)).toBeFocused();
   await expect(toggle(0)).toHaveText("starts on");

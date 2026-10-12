@@ -507,6 +507,7 @@ function circuitRow(d, colour) {
     `starts ${off ? "off" : "on"}`,
     `Turn the ${name} circuit ${off ? "on" : "off"}`,
   );
+  toggle.setAttribute("aria-label", `${name} circuit`);
   toggle.setAttribute("aria-pressed", String(!off));
   toggle.onclick = () =>
     change(

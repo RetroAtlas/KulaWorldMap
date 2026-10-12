@@ -425,6 +425,7 @@ test("the facing buttons turn the start, and a switch's swatches and its circuit
   await expect(circuit.locator(".members")).toHaveText("1 switch");
   await expect(field(page, "circuit-0")).toHaveText("starts on");
   await expect(field(page, "circuit-0")).toHaveAttribute("aria-pressed", "true");
+  await expect(field(page, "circuit-0")).toHaveAccessibleName("yellow circuit");
   await expect(page.locator('#detail [role="group"][aria-label="Circuit"]')).toHaveCount(1);
   await expect(circuit.locator(".lamp")).toHaveAccessibleName("yellow");
   await field(page, "variant-2").click();
@@ -434,6 +435,7 @@ test("the facing buttons turn the start, and a switch's swatches and its circuit
   );
   await expect(field(page, "circuit-0")).toHaveCount(0);
   await expect(field(page, "circuit-2")).toHaveText("starts on");
+  await expect(field(page, "circuit-2")).toHaveAccessibleName("green circuit");
   await expect(circuit.locator(".members")).toHaveText("1 switch");
   await expect(circuit.locator(".lamp")).toHaveAccessibleName("green");
 
@@ -441,6 +443,7 @@ test("the facing buttons turn the start, and a switch's swatches and its circuit
   expect((await doc(page)).circuits).toEqual({ 2: "off" });
   await expect(field(page, "circuit-2")).toHaveText("starts off");
   await expect(field(page, "circuit-2")).toHaveAttribute("aria-pressed", "false");
+  await expect(field(page, "circuit-2")).toHaveAccessibleName("green circuit");
   await expect(page.locator("#say")).toHaveText("Turned the green circuit off");
   await expect(field(page, "circuit-2")).toBeFocused();
   await field(page, "circuit-2").click();

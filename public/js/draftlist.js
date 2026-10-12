@@ -445,6 +445,7 @@ function circuitRows(id) {
     );
     lamp.setAttribute("aria-hidden", "true");
     const toggle = el("button", { id: `draftCircuit${colour}`, type: "button" });
+    toggle.setAttribute("aria-label", `${name} circuit`);
     toggle.onclick = () => {
       const d = drafts.get(id);
       if (!d) return;
