@@ -7,7 +7,7 @@ const isObject = (v) => !!v && typeof v === "object";
 /** The id a key of the store names, a positive whole number in its own spelling, or null. */
 export function idOf(key) {
   const id = Number(key);
-  return Number.isInteger(id) && id > 0 && String(id) === key ? id : null;
+  return Number.isSafeInteger(id) && id > 0 && String(id) === key ? id : null;
 }
 
 /** Whether an entry, as the store holds it, has a draft's shape. */

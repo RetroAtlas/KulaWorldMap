@@ -14,6 +14,8 @@ const NO_ROOM =
 const FLEETING =
   "This browser cannot keep your levels, so they will live only until the page is closed.";
 const REFUSED = "This browser could not keep your levels just now. Save them to files to be safe.";
+const NUMBERED_OUT =
+  "This browser has run out of numbers for its levels, so no more can be made here.";
 const QUOTA = ["QuotaExceededError", "NS_ERROR_DOM_QUOTA_REACHED"];
 const noRoom = (e) => QUOTA.includes(e?.name);
 const displaced = (name) =>
@@ -85,8 +87,12 @@ export const list = () =>
 
 export const get = (id) => store.drafts[id] ?? null;
 
-/** A new draft; one read from a file names the file as `saved`, since the file is the record. */
+/** A new draft's id, or null where the store has none left to give; one read from a file names the file as `saved`, since the file is the record. */
 export function create(project, { saved = null } = {}) {
+  if (!Number.isSafeInteger(store.next)) {
+    toast(NUMBERED_OUT);
+    return null;
+  }
   const id = store.next++;
   store.drafts[id] = { doc: project, updated: Date.now(), saved, edits: 0 };
   handed.add(id);

@@ -80,7 +80,7 @@ export function merge(mine, theirs, { dirty, deleted, handed }) {
     const id = Number(key);
     if (deleted.has(id)) continue;
     const own = mine.drafts[id];
-    if (own && handed.has(id)) {
+    if (own && handed.has(id) && Number.isSafeInteger(next)) {
       drafts[id] = d;
       drafts[next] = own;
       moved.push([id, next++]);

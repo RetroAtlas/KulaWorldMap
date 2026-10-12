@@ -12,6 +12,8 @@ test("the store's key is the one the page reads at the start", () => {
 test("a key names a draft when it is a positive whole number in its own spelling", () => {
   for (const [key, id] of [
     ["7", 7],
+    [String(Number.MAX_SAFE_INTEGER), Number.MAX_SAFE_INTEGER],
+    [String(Number.MAX_SAFE_INTEGER + 1), null],
     ["07", null],
     ["1e3", null],
     ["1.0", null],

@@ -191,6 +191,7 @@ export function toggleEditing() {
   }
   const title = levelTitle(state.lvl);
   copyShown();
+  if (!onDraft()) return;
   setMode(true, `Copied ${title}. ${describeLevel(state.lvl)} Editing on.`);
 }
 

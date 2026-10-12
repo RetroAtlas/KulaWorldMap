@@ -219,6 +219,18 @@ test("a level of theirs under an id handed out here keeps the id, and this tab's
   assert.deepEqual(out.taken, []);
 });
 
+test("where the store has no id left to give, a clash of ids is settled as any other, by the later change", () => {
+  const m = marks({ dirty: [3], handed: [3] });
+  const spent = Number.MAX_SAFE_INTEGER + 1;
+  const out = merge(table({ 3: at("Mine", 5) }, spent), table({ 3: at("Theirs", 9) }, spent), m);
+  assert.deepEqual(out.moved, []);
+  assert.deepEqual(Object.keys(out.store.drafts), ["3"]);
+  assert.equal(out.store.drafts[3].doc.title, "Theirs");
+  assert.deepEqual(out.taken, [3]);
+  assert.equal(out.store.next, spent);
+  assert.deepEqual([[...m.dirty], [...m.handed]], [[], [3]]);
+});
+
 test("a draft handed out here that theirs has not seen stays where it is", () => {
   const m = marks({ dirty: [3], handed: [3] });
   const out = merge(table({ 3: at("Mine", 5) }, 4), table({}, 3), m);

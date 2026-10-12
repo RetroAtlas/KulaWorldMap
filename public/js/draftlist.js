@@ -58,8 +58,9 @@ export function wireDrafts() {
   $("yours").hidden = false;
   if (state.li >= 0) lastDisc = state.li;
   $("draftNew").onclick = () => {
-    open(drafts.create(blank(state.lvl.theme)), "Made a new level");
-    emit("edit-wanted");
+    const id = drafts.create(blank(state.lvl.theme));
+    open(id, "Made a new level");
+    if (id !== null) emit("edit-wanted");
   };
   $("draftCopy").onclick = copyShown;
   $("draftOpen").onclick = () => $("draftFile").click();
@@ -99,6 +100,7 @@ export function copyShown() {
 }
 
 function open(id, verb) {
+  if (id === null) return;
   show(id, drafts.get(id).doc, { push: true });
   say(`${verb}. ${describeLevel(state.lvl)}`);
 }
@@ -122,6 +124,7 @@ async function openFile() {
 function openRead(read) {
   if (!read) return;
   const id = drafts.create(read.project, { saved: Date.now() });
+  if (id === null) return;
   imported = { id, lines: read.report };
   open(id, `Opened ${nameOf(read.project)}`);
   const n = read.report.length;

@@ -9,6 +9,8 @@ const NO_ROOM =
   "This browser gives the map no room to keep levels, so they will live only until the page is closed.";
 const ELSEWHERE =
   "That link names a level kept in another browser. Open it there, or ask for the level file.";
+const NUMBERED_OUT =
+  "This browser has run out of numbers for its levels, so no more can be made here.";
 /** A store holding one draft, as another tab or an earlier visit would have left it. */
 const KEPT = {
   version: 1,
@@ -745,6 +747,78 @@ test("a browser that refuses a write for a reason other than room says so plainl
   await page.locator("#draftTitle").fill("Spiral");
   await written(page, (s) => Object.values(s?.drafts ?? {})[0]?.doc.title).toBe("Spiral");
   expect(await toasts(page)).toEqual([REFUSED]);
+  expect(errors).toEqual([]);
+});
+
+test("a store that has handed out every number it has makes no more levels, and says so", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const spent = { ...KEPT, next: Number.MAX_SAFE_INTEGER + 1 };
+  await page.addInitScript(
+    ([key, store]) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(store));
+      } catch {
+        /* the blank page has no storage */
+      }
+    },
+    [KEY, spent],
+  );
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#toastStack .toast")).toHaveText([NUMBERED_OUT]);
+  await expect(page.locator("#draftRows button .name")).toHaveText(["Kept"]);
+  expect((await shown(page)).li).toBe(0);
+  await page.locator("#draftCopy").click();
+  await expect(page.locator("#draftRows button .name")).toHaveText(["Kept"]);
+  expect((await stored(page)).next).toBe(Number.MAX_SAFE_INTEGER + 1);
+  expect(errors).toEqual([]);
+});
+
+test("w on a disc level over a spent store makes no copy and leaves editing off", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.addInitScript((key) => {
+    localStorage.setItem(key, JSON.stringify({ version: 1, next: 2 ** 53, drafts: {} }));
+  }, KEY);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.keyboard.press("w");
+  await expect(page.locator("#toastStack .toast")).toHaveText([NUMBERED_OUT]);
+  expect((await shown(page)).li).toBe(0);
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator("body")).not.toHaveClass(/editing/);
+  expect(errors).toEqual([]);
+});
+
+test("new on a store that has handed out every number it has leaves editing off where a draft is on screen", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const spent = { ...KEPT, next: Number.MAX_SAFE_INTEGER + 1 };
+  await page.addInitScript(
+    ([key, store]) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(store));
+      } catch {
+        /* the blank page has no storage */
+      }
+    },
+    [KEY, spent],
+  );
+  await page.goto("/#DRAFT/1/45,35/fit/33");
+  await settle(page);
+  expect((await shown(page)).draft).toBe(1);
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#toastStack .toast")).toHaveText([NUMBERED_OUT]);
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator("body")).not.toHaveClass(/editing/);
+  expect((await shown(page)).draft).toBe(1);
+  await expect(page.locator("#draftRows button .name")).toHaveText(["Kept"]);
   expect(errors).toEqual([]);
 });
 
