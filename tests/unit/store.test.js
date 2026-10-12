@@ -76,6 +76,21 @@ test("what cannot be read stays under its key, and the ids it names stay out of 
   assert.equal(store.next, 7);
 });
 
+test("two spellings of one number are two keys: the number's own is read, the other stays as it is", () => {
+  const raw = {
+    version: 1,
+    next: 2,
+    drafts: { 1: entry(good()), "01": entry(good("MARS"), { updated: 2 }) },
+  };
+  const { store, unread } = parse(text(raw));
+  assert.deepEqual(Object.keys(store.drafts), ["1"]);
+  assert.equal(store.drafts[1].doc.world, "HIRO");
+  assert.deepEqual(Object.keys(unread), ["01"]);
+  const again = JSON.parse(serialize(store, unread));
+  assert.deepEqual(Object.keys(again.drafts).sort(), ["01", "1"]);
+  assert.deepEqual(again.drafts["01"], raw.drafts["01"]);
+});
+
 test("a key the language reserves is kept like any other, through a write", () => {
   const t = `{"version":1,"next":1,"drafts":{"__proto__":{"doc":1},"1":${text(entry(good()))}}}`;
   const { store, unread } = parse(t);

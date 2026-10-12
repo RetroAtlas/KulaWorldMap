@@ -9,11 +9,13 @@ test("the store's key is the one the page reads at the start", () => {
   assert.equal(KEY, "kula.drafts");
 });
 
-test("a key names a draft when it is a positive whole number, however it is written", () => {
+test("a key names a draft when it is a positive whole number in its own spelling", () => {
   for (const [key, id] of [
     ["7", 7],
-    ["07", 7],
-    ["1e3", 1000],
+    ["07", null],
+    ["1e3", null],
+    ["1.0", null],
+    [" 7", null],
     ["0", null],
     ["-1", null],
     ["1.5", null],
@@ -57,7 +59,7 @@ test("the text's ids are told apart: every key that names a draft, and those sha
       "-2": entry(doc),
     },
   });
-  assert.deepEqual(heldIn(text), { named: [1, 2, 3, 1000], shaped: [1, 1000] });
+  assert.deepEqual(heldIn(text), { named: [1, 2, 3], shaped: [1] });
 });
 
 test("text that is not a store holds nothing", () => {
