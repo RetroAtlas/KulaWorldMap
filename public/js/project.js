@@ -72,6 +72,9 @@ import {
 
 export const DRAFT_PACK = "/DRAFT/DRAFT.PAK";
 export const UNTITLED = "Untitled level";
+/** The most characters a reader keeps of a title, and of any other text. */
+export const TITLE_MOST = 80;
+export const TEXT_MOST = 2000;
 export const ERROR = "error";
 export const WARNING = "warning";
 const FRUIT_SET = new Set(FRUIT);
@@ -712,16 +715,29 @@ export function readProject(source) {
     report.push(
       `written as version ${raw.version} of the format, newer than this reader's ${VERSION}; what it knows is read`,
     );
-  const text = (key) => {
-    if (raw[key] === undefined) return "";
-    if (typeof raw[key] === "string") return raw[key];
-    report.push(`${key} is not text; it is left empty`);
-    return "";
+  const cut = (key, most) => {
+    const chars = [...raw[key]];
+    if (chars.length <= most) return raw[key];
+    report.push(
+      `${key} is ${chars.length} characters long, more than the ${most} kept; it is cut to ${most}`,
+    );
+    return chars.slice(0, most).join("");
   };
-  const optional = (key) => {
-    if (raw[key] === undefined || typeof raw[key] === "string") return raw[key];
-    report.push(`${key} is not text; it is left out`);
-    return undefined;
+  const text = (key, most = Infinity) => {
+    if (raw[key] === undefined) return "";
+    if (typeof raw[key] !== "string") {
+      report.push(`${key} is not text; it is left empty`);
+      return "";
+    }
+    return cut(key, most);
+  };
+  const optional = (key, most) => {
+    if (raw[key] === undefined) return undefined;
+    if (typeof raw[key] !== "string") {
+      report.push(`${key} is not text; it is left out`);
+      return undefined;
+    }
+    return cut(key, most);
   };
   const flag = (key) => {
     if (raw[key] === undefined) return false;
@@ -732,14 +748,14 @@ export function readProject(source) {
   const project = {
     format: FORMAT,
     version: VERSION,
-    title: text("title"),
-    author: text("author"),
-    notes: text("notes"),
+    title: text("title", TITLE_MOST),
+    author: text("author", TEXT_MOST),
+    notes: text("notes", TEXT_MOST),
     world: text("world"),
   };
-  const into = optional("into");
+  const into = optional("into", TEXT_MOST);
   if (into !== undefined) project.into = into;
-  const from = optional("from");
+  const from = optional("from", TEXT_MOST);
   if (from !== undefined) project.from = from;
   if (raw.time === undefined || safe(raw.time)) project.time = raw.time ?? DEFAULT_TIME;
   else {

@@ -687,6 +687,21 @@ class ReadsProjects(unittest.TestCase):
         self.assertEqual(len(lines), 4)
         self.assertEqual(Level(canonical(q)).verify(), [])
 
+    def test_a_title_an_author_notes_a_target_or_a_source_past_their_most_are_cut_to_it_counted_in_characters(self):
+        title = "a" * 78 + "\U0001F600" * 3
+        p, report = read_project(project([plain((5, 5, 5), t0=start())], title=title, author="b" * 2000,
+                                         notes="c" * 2001, into="/HIRO/HIRO.PAK#1" + "x" * 2000,
+                                         **{"from": "/HIRO/HIRO.PAK#3" + "y" * 1984}))
+        self.assertEqual(p["title"], "a" * 78 + "\U0001F600" * 2)
+        self.assertEqual((len(p["title"]), len(p["author"]), len(p["notes"])), (80, 2000, 2000))
+        self.assertEqual(p["into"], "/HIRO/HIRO.PAK#1" + "x" * 1984)
+        self.assertEqual(p["from"], "/HIRO/HIRO.PAK#3" + "y" * 1984)
+        self.assertEqual(report, [
+            "title is 81 characters long, more than the 80 kept; it is cut to 80",
+            "notes is 2001 characters long, more than the 2000 kept; it is cut to 2000",
+            "into is 2016 characters long, more than the 2000 kept; it is cut to 2000",
+        ])
+
     def test_a_whole_number_past_2_53_is_no_whole_number_and_is_reported_as_the_page_parsed_it(self):
         p, report = read_project(json.loads(f'''{{"format": "{FORMAT}", "world": "{WORLD}", "time": 9007199254740993, "blocks": [
             {{"cell": [5, 5, 5], "kind": 0, "faces": {{"0": {{"type": 30, "facing": 3}}}}}},

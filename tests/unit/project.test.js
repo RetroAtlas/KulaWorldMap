@@ -1294,6 +1294,31 @@ test("a platform's length the lattice cannot hold is cut on the way in, so a fil
   assert.equal(walked, held);
 });
 
+test("a title, an author, notes, a target or a source past their most are cut to it, counted in characters", () => {
+  const title = `${"a".repeat(78)}\u{1F600}\u{1F600}\u{1F600}`;
+  const { project: p, report } = readProject(
+    project([plain([5, 5, 5], 0, { 0: start() })], {
+      title,
+      author: "b".repeat(2000),
+      notes: "c".repeat(2001),
+      into: `/HIRO/HIRO.PAK#1${"x".repeat(2000)}`,
+      from: `/HIRO/HIRO.PAK#3${"y".repeat(1984)}`,
+    }),
+  );
+  assert.equal(p.title, `${"a".repeat(78)}\u{1F600}\u{1F600}`);
+  assert.equal([...p.title].length, 80);
+  assert.equal(p.author.length, 2000);
+  assert.equal(p.notes.length, 2000);
+  assert.equal(p.into, `/HIRO/HIRO.PAK#1${"x".repeat(1984)}`);
+  assert.equal(p.from, `/HIRO/HIRO.PAK#3${"y".repeat(1984)}`);
+  assert.deepEqual(report, [
+    "title is 81 characters long, more than the 80 kept; it is cut to 80",
+    "notes is 2001 characters long, more than the 2000 kept; it is cut to 2000",
+    "into is 2016 characters long, more than the 2000 kept; it is cut to 2000",
+  ]);
+  assert.deepEqual(readProject(writeProject(p)).report, []);
+});
+
 test("a whole number past 2^53 is no whole number, and is reported as the page parsed it", () => {
   const { project: p, report } = readProject(
     `{"format": "${FORMAT}", "world": "${WORLD}", "time": 9007199254740993, "blocks": [

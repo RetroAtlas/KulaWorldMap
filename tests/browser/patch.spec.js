@@ -260,7 +260,7 @@ test("a download is named by the title's slug, composed, lower-cased and cut to 
   const errors = trackErrors(page);
   await page.goto(EDIT);
   await settle(page);
-  const title = `E\u0301pe\u0301e, a\u0300 la mode!! ${"x".repeat(80)}`;
+  const title = `E\u0301pe\u0301e, a\u0300 la mode!! ${"x".repeat(59)}`;
   const id = await opened(page, "epee.kula.json", synthetic(6, title));
   await openPatch(page, id);
   const dialog = page.locator("#patch");

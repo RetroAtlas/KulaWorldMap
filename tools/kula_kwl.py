@@ -76,6 +76,8 @@ VERSION = 1
 WORLDS = THEMES
 WORLD_SLOTS = 20
 FINAL_SLOTS = 2
+TITLE_MOST = 80      # the most characters a reader keeps of a title
+TEXT_MOST = 2000     # and of any other text
 
 CRUMBLING_KIND = 6
 VANISHING_KIND = 7
@@ -1013,19 +1015,27 @@ def read_project(raw):
         report.append(f"written as version {_int(raw['version'])} of the format, newer than this reader's {VERSION}; "
                       f"what it knows is read")
 
-    def text(key):
+    def cut(key, most):
+        if most is None or len(raw[key]) <= most:
+            return raw[key]
+        report.append(f"{key} is {len(raw[key])} characters long, more than the {most} kept; it is cut to {most}")
+        return raw[key][:most]
+
+    def text(key, most=None):
         if key not in raw:
             return ""
-        if isinstance(raw[key], str):
-            return raw[key]
-        report.append(f"{key} is not text; it is left empty")
-        return ""
+        if not isinstance(raw[key], str):
+            report.append(f"{key} is not text; it is left empty")
+            return ""
+        return cut(key, most)
 
-    def optional(key):
-        if key not in raw or isinstance(raw[key], str):
-            return raw.get(key)
-        report.append(f"{key} is not text; it is left out")
-        return None
+    def optional(key, most):
+        if key not in raw:
+            return None
+        if not isinstance(raw[key], str):
+            report.append(f"{key} is not text; it is left out")
+            return None
+        return cut(key, most)
 
     def flag(key):
         if key not in raw:
@@ -1035,12 +1045,12 @@ def read_project(raw):
         report.append(f"{key} is neither true nor false; it is taken as false")
         return False
 
-    project = {"format": FORMAT, "version": VERSION, "title": text("title"), "author": text("author"),
-               "notes": text("notes"), "world": text("world")}
-    into = optional("into")
+    project = {"format": FORMAT, "version": VERSION, "title": text("title", TITLE_MOST),
+               "author": text("author", TEXT_MOST), "notes": text("notes", TEXT_MOST), "world": text("world")}
+    into = optional("into", TEXT_MOST)
     if into is not None:
         project["into"] = into
-    source = optional("from")
+    source = optional("from", TEXT_MOST)
     if source is not None:
         project["from"] = source
     if "time" not in raw or _whole(raw["time"]):
