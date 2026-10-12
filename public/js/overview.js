@@ -49,7 +49,7 @@ function keepFocus(out) {
 /** The counts and the findings under one line that tallies them, folded on a phone until opened. */
 function more(findings, counts) {
   const fold = el("details", { className: "more", open: unfolded ?? !sidebarOverlays() });
-  const summary = el("summary", { textContent: tally(findings) });
+  const summary = el("summary", { textContent: `${tally(findings)}; the counts are below` });
   summary.onclick = () => {
     unfolded = !fold.open;
   };

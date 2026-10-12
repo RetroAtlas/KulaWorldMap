@@ -157,7 +157,7 @@ test("a draft's note carries how it plays, its counts and the findings, each fin
   await expect(note.locator(".overview > *")).toHaveClass(["plays", "more"]);
   const more = note.locator(".more");
   expect(await more.evaluate((d) => d.open)).toBe(true);
-  await expect(more.locator("summary")).toHaveText("no findings");
+  await expect(more.locator("summary")).toHaveText("no findings; the counts are below");
   await expect(note.locator(".plays")).toHaveText(BONUS);
   expect(await note.locator(".plays").getAttribute("title")).toBeNull();
   await expect(note.locator(".counts span")).toHaveText([
@@ -184,7 +184,7 @@ test("a draft's note carries how it plays, its counts and the findings, each fin
   await expect(note.locator(".plays")).toHaveText("Plays as an arcade level.");
   expect(await note.locator(".plays").getAttribute("title")).toBeNull();
   await expect(note.locator(".findings li")).toHaveText(["warning: a key and no exit"]);
-  await expect(more.locator("summary")).toHaveText("1 warning");
+  await expect(more.locator("summary")).toHaveText("1 warning; the counts are below");
   await field(page, "thing").selectOption("t42");
   const findings = note.locator(".findings li");
   await expect(findings).toHaveText([/^warning: the star is untested in play at /]);
@@ -204,7 +204,7 @@ test("a draft's note carries how it plays, its counts and the findings, each fin
   await field(page, "face-0").click();
   await field(page, "thing").selectOption("");
   await expect(more.locator("> summary, > .counts, > .findings")).toHaveCount(3);
-  await expect(more.locator("summary")).toHaveText("1 error");
+  await expect(more.locator("summary")).toHaveText("1 error; the counts are below");
   await expect(note.locator(".findings li.error")).toHaveText(["error: no start"]);
   await expect(note.locator(".counts .zero").first()).toHaveText("0 of 123 records");
   await expect(note.locator(".counts span").nth(1)).toHaveText("6 of 768 faces");
@@ -312,13 +312,13 @@ test.describe("on a phone", () => {
     const summary = more.locator("summary");
     const isOpen = () => more.evaluate((d) => d.open);
     await expect(note.locator(".plays")).toBeVisible();
-    await expect(summary).toHaveText("no findings");
+    await expect(summary).toHaveText("no findings; the counts are below");
     expect(await isOpen()).toBe(false);
     await expect(note.locator(".counts")).toBeHidden();
     const fresh = await page.locator("#chip").boundingBox();
 
     await fill(page, SIX);
-    await expect(summary).toHaveText("2 errors and 4 warnings");
+    await expect(summary).toHaveText("2 errors and 4 warnings; the counts are below");
     expect(await isOpen()).toBe(false);
     await expect(note.locator(".findings")).toBeHidden();
     await expect(note.locator(".plays")).toHaveText(BONUS);
@@ -344,12 +344,12 @@ test.describe("on a phone", () => {
     await expect(note.locator(".findings li.error")).toHaveCount(2);
     await expect(note.locator(".counts")).toBeVisible();
     await fill(page, [...SIX, { cell: [21, 17, 17], kind: 0, faces: { 0: { type: 42 } } }]);
-    await expect(summary).toHaveText("2 errors and 5 warnings");
+    await expect(summary).toHaveText("2 errors and 5 warnings; the counts are below");
     expect(await isOpen()).toBe(true);
     await summary.click();
     expect(await isOpen()).toBe(false);
     await fill(page, SIX);
-    await expect(summary).toHaveText("2 errors and 4 warnings");
+    await expect(summary).toHaveText("2 errors and 4 warnings; the counts are below");
     expect(await isOpen()).toBe(false);
 
     // the fold stays as it was last left from draft to draft
@@ -359,7 +359,7 @@ test.describe("on a phone", () => {
     await page.locator("#draftNew").click();
     await expect(page.locator("#draftRows button")).toHaveCount(2);
     await page.keyboard.press("m");
-    await expect(summary).toHaveText("no findings");
+    await expect(summary).toHaveText("no findings; the counts are below");
     expect(await isOpen()).toBe(true);
     await expect(note.locator(".counts")).toBeVisible();
     expect(errors).toEqual([]);
