@@ -430,10 +430,10 @@ class Reads(unittest.TestCase):
         self.assertEqual(p["blocks"][1], {"cell": [5, 2, 3], "kind": LASER_KIND, "far": [5, 6, 3], "colour": 0})
         self.assertEqual(p["circuits"], {"0": "off"})
         self.assertEqual(report[:4], [
-            "type 9 on face 1 of the block at 1,2,3 has a variant of 9, which is not one of the 4; it is 0",
-            "type 37 on face 2 of the block at 1,2,3 has a variant of 3, which is not one of the 3; it is 0",
-            "type 56 on face 3 of the block at 1,2,3 has a variant of -1, which is not one of the 4; it is 0",
-            "the laser at 5,2,3 has a colour of 7, which is not one of the 4; it is 0",
+            "type 9 on face 1 of the block at 1,2,3 has a variant of 9, which is not one of the four; it is 0",
+            "type 37 on face 2 of the block at 1,2,3 has a variant of 3, which is not one of the three; it is 0",
+            "type 56 on face 3 of the block at 1,2,3 has a variant of -1, which is not one of the four; it is 0",
+            "the laser at 5,2,3 has a colour of 7, which is not one of the four; it is 0",
         ])
         self.assertEqual(Level(canonical(p)).verify(), [])
 
@@ -1312,7 +1312,7 @@ class TheCli(unittest.TestCase):
             self.assertEqual(done.stderr.splitlines()[:4], [
                 'a time of "99" is not a whole number; it is 99',
                 "block 0 at 5,5,5 face 1 has a type of 0, which is nothing standing there; it is left out",
-                "block 1 at 7,5,5 has a colour of 7, which is not one of the 4; it is 0",
+                "block 1 at 7,5,5 has a colour of 7, which is not one of the four; it is 0",
                 "block 2 at 9,5,5 has its far end on its own cell; it is left out",
             ])
             p, _ = read_project(raw)

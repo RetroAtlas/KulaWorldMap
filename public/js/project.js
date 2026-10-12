@@ -68,6 +68,7 @@ import {
   roomFor,
   sameCell,
   spanAxis,
+  spelled,
   strayFaceKeys,
   writeKwl,
 } from "./kwl.js";
@@ -625,7 +626,9 @@ function oneOf(raw, key, n, where, report) {
   const v = raw[key];
   if (v === undefined) return 0;
   if (safe(v) && v >= 0 && v < n) return v;
-  report.push(`${where} has a ${key} of ${show(v)}, which is not one of the ${n}; it is 0`);
+  report.push(
+    `${where} has a ${key} of ${show(v)}, which is not one of the ${spelled(n)}; it is 0`,
+  );
   return 0;
 }
 

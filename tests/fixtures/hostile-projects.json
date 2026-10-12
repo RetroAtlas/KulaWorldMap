@@ -509,17 +509,17 @@
     "a version of \"2\" is not a whole number; the file is read as version 1",
     "into is not text; it is left out",
     "block 0 at 5,5,5 face 1 has a type of 0, which is nothing standing there; it is left out",
-    "block 0 at 5,5,5 face 2 has a variant of 9, which is not one of the 3; it is 0",
+    "block 0 at 5,5,5 face 2 has a variant of 9, which is not one of the three; it is 0",
     "block 0 at 5,5,5 face 3 has a facing of \"north\", which is not a whole number; it is left out",
     "block 0 at 5,5,5 face 3 has no facing, which the game heads as 1; it is 1",
-    "block 0 at 5,5,5 face 3 has a variant of \"red\", which is not one of the 4; it is 0",
+    "block 0 at 5,5,5 face 3 has a variant of \"red\", which is not one of the four; it is 0",
     "block 0 at 5,5,5 face 4 has a variant of 2.5, which is not a whole number; it is left out",
     "block 0 at 5,5,5 names a face \"9\", which is not one of the six; it is left out",
     "block 1 at 6,5,5 has faces that are not a table of the six; they are left out",
     "block 2 at 7,5,5 has a length of \"3\", which is not a whole number; it is 2",
     "block 2 at 7,5,5 has a speed of 2.5, which is not a whole number; it is 30",
-    "block 3 at 9,5,5 has a colour of 7, which is not one of the 4; it is 0",
-    "block 4 at 10,5,5 has a colour of \"red\", which is not one of the 4; it is 0",
+    "block 3 at 9,5,5 has a colour of 7, which is not one of the four; it is 0",
+    "block 4 at 10,5,5 has a colour of \"red\", which is not one of the four; it is 0",
     "block 5 at 11,5,5 has a phase of \"x\", which is not a whole number; it is 0",
     "block 6 at 12,5,5 has its far end on its own cell; it is left out",
     "block 7 at 13,5,5 has its far end at 13,5,40, outside the lattice; it is left out",
@@ -2389,13 +2389,13 @@
    },
    "report": [
     "colour 7 is not one of the four; it is left out",
-    "block 0 at 5,5,5 face 1 has a variant of 4, which is not one of the 4; it is 0",
-    "block 0 at 5,5,5 face 2 has a variant of -1, which is not one of the 4; it is 0",
-    "block 0 at 5,5,5 face 3 has a variant of 9, which is not one of the 4; it is 0",
-    "1 more line like the one above",
-    "block 0 at 5,5,5 face 5 has a variant of \"x\", which is not one of the 4; it is 0",
-    "block 1 at 9,9,9 has a colour of 4, which is not one of the 4; it is 0",
-    "block 2 at 9,9,12 has a colour of -1, which is not one of the 4; it is 0"
+    "block 0 at 5,5,5 face 1 has a variant of 4, which is not one of the four; it is 0",
+    "block 0 at 5,5,5 face 2 has a variant of -1, which is not one of the four; it is 0",
+    "block 0 at 5,5,5 face 3 has a variant of 9, which is not one of the four; it is 0",
+    "block 0 at 5,5,5 face 4 has a variant of 3, which is not one of the three; it is 0",
+    "block 0 at 5,5,5 face 5 has a variant of \"x\", which is not one of the four; it is 0",
+    "block 1 at 9,9,9 has a colour of 4, which is not one of the four; it is 0",
+    "block 2 at 9,9,12 has a colour of -1, which is not one of the four; it is 0"
    ],
    "level": {
     "kwl": "b3ca45306271799c850f990bed39005e89ba6958041b4ab671654c2c2c5def81"
@@ -9595,7 +9595,7 @@
    "report": [
     "a version of 9007199254740992 is not a whole number; the file is read as version 1",
     "a time of 9007199254740992 is not a whole number; it is 99",
-    "block 0 at 5,5,5 face 1 has a variant of 9007199254740992, which is not one of the 3; it is 0",
+    "block 0 at 5,5,5 face 1 has a variant of 9007199254740992, which is not one of the three; it is 0",
     "block 0 at 5,5,5 face 2 holds nothing that could stand on a face; it is left out",
     "block 0 at 5,5,5 face 3 has a facing of 10000000000000000, which is not a whole number; it is left out",
     "block 1 has no cell of three whole numbers and a kind; it is left out",
@@ -9604,7 +9604,7 @@
     "block 4 at 8,5,5 has a far end that is not a cell of three whole numbers; it is left out",
     "block 5 at 10,5,5 has a length of 1.2345678901234568e+29, which is not a whole number; it is 2",
     "block 5 at 10,5,5 has a speed of -9007199254740992, which is not a whole number; it is 30",
-    "block 6 at 11,5,5 has a colour of 1152921504606847000, which is not one of the 4; it is 0"
+    "block 6 at 11,5,5 has a colour of 1152921504606847000, which is not one of the four; it is 0"
    ],
    "level": {
     "kwl": "95273418cb88fec61320bcc5a8eae86e7de3e30e30e77e2c5cbd43d24cbc3a80"

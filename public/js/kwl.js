@@ -283,6 +283,8 @@ export function collapse(lines) {
 
 /** The line both readers give a facing of 0 on a type that needs one: the game heads as 1. */
 export const HEADS_AS_ONE = "which the game heads as 1; it is 1";
+/** A small count as a word, as the readers' lines spell the size of a range. */
+export const spelled = (n) => ["one", "two", "three", "four", "five", "six"][n - 1] ?? String(n);
 
 function faceOf(o, cell, report) {
   const out = { type: o.type };
@@ -296,7 +298,9 @@ function faceOf(o, cell, report) {
     const n = VARIANTS[o.type];
     if (o.f[1] >= 0 && o.f[1] < n) out.variant = o.f[1];
     else {
-      report.push(`${at} has a variant of ${o.f[1]}, which is not one of the ${n}; it is 0`);
+      report.push(
+        `${at} has a variant of ${o.f[1]}, which is not one of the ${spelled(n)}; it is 0`,
+      );
       out.variant = 0;
     }
   }
@@ -314,7 +318,7 @@ const inColour = (c) => Number.isInteger(c) && c >= 0 && c < COLOURS;
 function colourOf(r, cell, report) {
   if (inColour(r.colour)) return r.colour;
   report.push(
-    `the laser at ${cellText(cell)} has a colour of ${r.colour}, which is not one of the ${COLOURS}; it is 0`,
+    `the laser at ${cellText(cell)} has a colour of ${r.colour}, which is not one of the ${spelled(COLOURS)}; it is 0`,
   );
   return 0;
 }

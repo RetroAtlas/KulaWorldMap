@@ -351,6 +351,12 @@ def collapse(lines):
 
 # The line both readers give a facing of 0 on a type that needs one: the game heads as 1.
 HEADS_AS_ONE = "which the game heads as 1; it is 1"
+SPELLED = ("one", "two", "three", "four", "five", "six")
+
+
+def spelled(n):
+    """A small count as a word, as the readers' lines spell the size of a range."""
+    return SPELLED[n - 1] if 0 < n <= len(SPELLED) else str(n)
 
 
 def _face_of(o, cell, report):
@@ -368,7 +374,7 @@ def _face_of(o, cell, report):
         if f3 in VARIANTS[t]:
             out["variant"] = f3
         else:
-            report.append(f"{at} has a variant of {f3}, which is not one of the {len(VARIANTS[t])}; it is 0")
+            report.append(f"{at} has a variant of {f3}, which is not one of the {spelled(len(VARIANTS[t]))}; it is 0")
             out["variant"] = 0
     return out
 
@@ -380,7 +386,7 @@ def _in_colour(c):
 def _colour_of(r, cell, report):
     if r["colour"] in range(COLOURS):
         return r["colour"]
-    report.append(f"the laser at {cell_text(cell)} has a colour of {r['colour']}, which is not one of the {COLOURS}; it is 0")
+    report.append(f"the laser at {cell_text(cell)} has a colour of {r['colour']}, which is not one of the {spelled(COLOURS)}; it is 0")
     return 0
 
 
@@ -934,7 +940,7 @@ def _one_of(raw, key, n, where, report):
     v = raw[key]
     if _whole(v) and 0 <= v < n:
         return _int(v)
-    report.append(f"{where} has a {key} of {_show(v)}, which is not one of the {n}; it is 0")
+    report.append(f"{where} has a {key} of {_show(v)}, which is not one of the {spelled(n)}; it is 0")
     return 0
 
 
