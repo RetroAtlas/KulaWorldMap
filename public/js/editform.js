@@ -1,6 +1,4 @@
-// The panel's form while editing: the block, the chosen face and what stands
-// on it, and the circuits, every change one step of the trail. It rides the
-// panel's onShow seam and draws nothing on the map.
+// The panel's form while editing, on the panel's onShow seam: the block, its face and its circuit.
 import { el, on } from "./dom.js";
 import { state, cellKey } from "./state.js";
 import { DIRECTION_NAME, FACE_NAME } from "./faces.js";
@@ -56,7 +54,6 @@ import {
 } from "./editing.js";
 import { wireOverview } from "./overview.js";
 
-const RUN_ON_MAP = "A run is laid on the map, in two clicks.";
 const NOTHING = "nothing";
 const FACE_SHORT = ["top", "+x", "+y", "-y", "-x", "under"];
 // the signs spelled out, which a reader at its default verbosity would drop
@@ -147,7 +144,6 @@ function render(box, c) {
   if (own) form.append(facesRow(d, own, c, face));
   form.append(blockCard(d, own ?? span, own ? null : cell));
   if (own && face !== null) form.append(faceCard(d, own, c, face));
-  form.append(circuitsCard(d));
   form.addEventListener("focusin", (e) => {
     const f = e.target.closest("[data-field]");
     if (f) focused = f.dataset.field;
@@ -282,6 +278,7 @@ function blockCard(d, b, from) {
             ),
         ),
       ),
+      circuitRow(d, b.colour ?? 0),
     );
   }
   return out;
@@ -429,24 +426,25 @@ function faceCard(d, own, c, face) {
           : `${place3([to.x, to.y, to.z])}, ${FACE_NAME[to.face]}`;
       out.append(field("Leads to", el("span", { className: "value", textContent: where })));
     }
-    if (o.type === TELEPORTER || o.type === SWITCH) {
-      const starts = d.doc.circuits?.[String(o.variant ?? 0)] === "off" ? "off" : "on";
-      out.append(line(`Its colour starts ${starts} · change under Circuits.`));
-    }
+    if (o.type === TELEPORTER || o.type === SWITCH) out.append(circuitRow(d, o.variant ?? 0));
   }
   const here = { ...state.idx.cells.get(cellKey(...cell)), face };
-  const brush = aWord(brushWord());
-  const run = SPAN_KINDS.has(palette.chosen()?.kind);
-  const place = button(
-    "place",
-    `Place ${brush} here`,
-    run ? RUN_ON_MAP : `Put ${brush} against this face, as a click would`,
-  );
-  place.disabled = run;
-  place.onclick = () => placeHere(here);
+  const row = el("div", { className: "row" });
+  // a run is laid on the map in two clicks, so a span brush has no place here
+  if (!SPAN_KINDS.has(palette.chosen()?.kind)) {
+    const brush = aWord(brushWord());
+    const place = button(
+      "place",
+      `Place ${brush} here`,
+      `Put ${brush} against this face, as a click would`,
+    );
+    place.onclick = () => placeHere(here);
+    row.append(place);
+  }
   const build = button("build", "Build against this face", "Lay a plain block across this face");
   build.onclick = () => buildAgainst(here);
-  out.append(el("div", { className: "row" }, place, build));
+  row.append(build);
+  out.append(row);
   return out;
 }
 
@@ -492,55 +490,51 @@ function changeThing(d, own, face, select, o) {
   if (!done && hidden) state.hiddenKinds.add(e.id);
 }
 
-// --- the circuits --------------------------------------------------------------------------
+// --- the circuit ----------------------------------------------------------------------------
 
-function circuitsCard(d) {
-  const out = card("Circuits");
-  for (let colour = 0; colour < COLOURS; colour++) {
-    const off = d.doc.circuits?.[String(colour)] === "off";
-    let switches = 0;
-    let teleporters = 0;
-    let lasers = 0;
-    for (const b of d.doc.blocks) {
-      if (b.kind === LASER_KIND && (b.colour ?? 0) === colour) lasers++;
-      for (const o of Object.values(b.faces ?? {})) {
-        if (o.type === SWITCH && (o.variant ?? 0) === colour) switches++;
-        if (o.type === TELEPORTER && (o.variant ?? 0) === colour) teleporters++;
-      }
+/** The circuit of one colour: its lamp, whether it starts on, as a toggle, and what it counts. */
+function circuitRow(d, colour) {
+  const off = d.doc.circuits?.[String(colour)] === "off";
+  let switches = 0;
+  let teleporters = 0;
+  let lasers = 0;
+  for (const b of d.doc.blocks) {
+    if (b.kind === LASER_KIND && (b.colour ?? 0) === colour) lasers++;
+    for (const o of Object.values(b.faces ?? {})) {
+      if (o.type === SWITCH && (o.variant ?? 0) === colour) switches++;
+      if (o.type === TELEPORTER && (o.variant ?? 0) === colour) teleporters++;
     }
-    const members = [
-      switches && `${switches} ${switches === 1 ? "switch" : "switches"}`,
-      teleporters && plural(teleporters, "teleporter"),
-      lasers && plural(lasers, "laser"),
-    ].filter(Boolean);
-    const name = palette.colourName(colour);
-    const toggle = button(
-      `circuit-${colour}`,
-      `starts ${off ? "off" : "on"}`,
-      `Turn the ${name} circuit ${off ? "on" : "off"}`,
-    );
-    toggle.setAttribute("aria-pressed", String(!off));
-    toggle.onclick = () =>
-      change(
-        d,
-        setCircuit(d.doc, colour, off ? "on" : "off"),
-        `turned the ${name} circuit ${off ? "on" : "off"}`,
-      );
-    const swatch = el("span", { className: "lamp" });
-    swatch.style.setProperty("--lamp", swatchOf(SWITCH, colour));
-    out.append(
-      el(
-        "div",
-        { className: "circuit" },
-        swatch,
-        el("span", { className: "name", textContent: name }),
-        toggle,
-        el("span", {
-          className: "members",
-          textContent: members.length ? members.join(", ") : "nothing of this colour",
-        }),
-      ),
-    );
   }
-  return out;
+  const members = [
+    switches && `${switches} ${switches === 1 ? "switch" : "switches"}`,
+    teleporters && plural(teleporters, "teleporter"),
+    lasers && plural(lasers, "laser"),
+  ].filter(Boolean);
+  const name = palette.colourName(colour);
+  const toggle = button(
+    `circuit-${colour}`,
+    `starts ${off ? "off" : "on"}`,
+    `Turn the ${name} circuit ${off ? "on" : "off"}`,
+  );
+  toggle.setAttribute("aria-pressed", String(!off));
+  toggle.onclick = () =>
+    change(
+      d,
+      setCircuit(d.doc, colour, off ? "on" : "off"),
+      `turned the ${name} circuit ${off ? "on" : "off"}`,
+    );
+  const swatch = el("span", { className: "lamp" });
+  swatch.style.setProperty("--lamp", swatchOf(SWITCH, colour));
+  swatch.setAttribute("role", "img");
+  swatch.setAttribute("aria-label", name);
+  return group(
+    "Circuit",
+    el(
+      "div",
+      { className: "circuit" },
+      swatch,
+      toggle,
+      el("span", { className: "members", textContent: members.join(", ") }),
+    ),
+  );
 }

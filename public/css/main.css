@@ -1709,7 +1709,7 @@ body:not(.sidebar-open) .menu-btn .cross {
   }
 }
 
-/* the panel's edit form: the block, the chosen face and the circuits */
+/* the panel's edit form: the block, the chosen face and its circuit */
 .detail .form {
   margin: 0 0 10px;
 }
@@ -1841,12 +1841,11 @@ body:not(.sidebar-open) .menu-btn .cross {
 }
 .detail .form .circuit {
   display: flex;
+  flex: 1;
+  min-width: 0;
   align-items: center;
   gap: 6px;
   padding: 2px 0;
-}
-.detail .form .circuit .name {
-  flex: 0 0 44px;
 }
 .detail .form .circuit button {
   flex: 0 0 auto;

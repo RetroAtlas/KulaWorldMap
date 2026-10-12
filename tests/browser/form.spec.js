@@ -101,7 +101,8 @@ test("the form stands on a selected block of the draft while editing, and goes w
   await expect(raw).toHaveCount(1);
   expect(await raw.evaluate((d) => d.open)).toBe(false);
   await expect(raw.locator("table")).toHaveCount(2);
-  await expect(page.locator("#detail .circuit")).toHaveCount(4);
+  await expect(page.locator("#detail .card h4")).toHaveText(["Block", "The top"]);
+  await expect(page.locator("#detail .circuit")).toHaveCount(0);
   await expect(page.locator("#detail .plays, #detail .counts, #detail .findings")).toHaveCount(0);
 
   await page.keyboard.press("w");
@@ -141,7 +142,7 @@ test("the face row chooses a face, and a face that looks into a block is greyed 
     "plus x side, looks into the block at 18, 17, 17",
   );
   // the face stays chosen through the update, and its card says what it looks into
-  await expect(page.locator("#detail .card h4")).toHaveText(["Block", "The +x side", "Circuits"]);
+  await expect(page.locator("#detail .card h4")).toHaveText(["Block", "The +x side"]);
   await expect(page.locator("#detail .card").nth(1)).toContainText(
     "This face looks into the block at 18, 17, 17.",
   );
@@ -237,11 +238,21 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   await expect(page.locator("#detail .field .value")).toHaveText(["x", "22, 18, 17"]);
   await expect(field(page, "laser-2")).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("#detail .card").nth(1)).toContainText("Nothing stands on");
+  // the laser's block shows the circuit of its own colour, and that one alone
+  await expect(page.locator("#detail .circuit")).toHaveCount(1);
+  await expect(field(page, "circuit-2")).toHaveText("starts on");
+  await expect(page.locator("#detail .circuit .members")).toHaveText("1 laser");
   await field(page, "laser-3").click();
   expect(blockAt(await doc(page), [17, 18, 17]).colour).toBe(3);
   await expect(page.locator("#say")).toHaveText("Set the laser at 17, 18, 17 to red");
   await expect(field(page, "laser-3")).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator("#detail .circuit").nth(3)).toContainText("1 laser");
+  await expect(field(page, "circuit-2")).toHaveCount(0);
+  await expect(field(page, "circuit-3")).toHaveText("starts on");
+  await expect(page.locator("#detail .circuit .members")).toHaveText("1 laser");
+  await field(page, "circuit-3").click();
+  expect((await doc(page)).circuits).toEqual({ 3: "off" });
+  await expect(field(page, "circuit-3")).toHaveText("starts off");
+  await expect(page.locator("#say")).toHaveText("Turned the red circuit off");
 
   await select(page, [22, 18, 17]);
   await expect(field(page, "kind")).toBeDisabled();
@@ -290,7 +301,8 @@ test("a vanishing block's phase is set from its select, and a teleporter says wh
   await select(page, [20, 20, 17]);
   await field(page, "face-0").click();
   await expect(leads).toHaveText("17, 17, 17, +x side");
-  await expect(page.locator("#detail .card").nth(1)).toContainText("Its colour starts on");
+  await expect(field(page, "circuit-0")).toHaveText("starts on");
+  await expect(page.locator("#detail .circuit .members")).toHaveText("2 teleporters");
   expect(errors).toEqual([]);
 });
 
@@ -307,6 +319,7 @@ test("what stands here puts a thing on the face, nothing takes it off, and a dev
   await expect(field(page, "thing")).toHaveValue("t31");
   await expect(field(page, "thing")).toBeFocused();
   await expect(field(page, "face-1").locator(".dot")).toHaveCount(1);
+  await expect(page.locator("#detail .circuit")).toHaveCount(0);
 
   await field(page, "thing").selectOption("");
   expect(blockAt(await doc(page), HOME).faces[1]).toBeUndefined();
@@ -394,21 +407,29 @@ test("the facing buttons turn the start, and a switch's swatches and the circuit
   await field(page, "face-1").click();
   await field(page, "thing").selectOption("t9/0");
   expect(blockAt(await doc(page), HOME).faces[1]).toEqual({ type: 9, variant: 0 });
-  await expect(page.locator("#detail .circuit").nth(0)).toContainText("1 switch");
+  const circuit = page.locator("#detail .circuit");
+  await expect(circuit).toHaveCount(1);
+  await expect(circuit.locator(".members")).toHaveText("1 switch");
+  await expect(field(page, "circuit-0")).toHaveText("starts on");
+  await expect(field(page, "circuit-0")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('#detail [role="group"][aria-label="Circuit"]')).toHaveCount(1);
+  await expect(circuit.locator(".lamp")).toHaveAccessibleName("yellow");
   await field(page, "variant-2").click();
   expect(blockAt(await doc(page), HOME).faces[1]).toEqual({ type: 9, variant: 2 });
   await expect(page.locator("#say")).toHaveText(
     "Set the +x side of 17, 17, 17 to a switch (green)",
   );
-  await expect(page.locator("#detail .circuit").nth(2)).toContainText("1 switch");
-  await expect(page.locator("#detail .circuit").nth(0)).toContainText("nothing of this colour");
-  await expect(page.locator("#detail .card").nth(1)).toContainText("Its colour starts on");
+  await expect(field(page, "circuit-0")).toHaveCount(0);
+  await expect(field(page, "circuit-2")).toHaveText("starts on");
+  await expect(circuit.locator(".members")).toHaveText("1 switch");
+  await expect(circuit.locator(".lamp")).toHaveAccessibleName("green");
 
   await field(page, "circuit-2").click();
   expect((await doc(page)).circuits).toEqual({ 2: "off" });
   await expect(field(page, "circuit-2")).toHaveText("starts off");
+  await expect(field(page, "circuit-2")).toHaveAttribute("aria-pressed", "false");
   await expect(page.locator("#say")).toHaveText("Turned the green circuit off");
-  await expect(page.locator("#detail .card").nth(1)).toContainText("Its colour starts off");
+  await expect(field(page, "circuit-2")).toBeFocused();
   await field(page, "circuit-2").click();
   expect((await doc(page)).circuits).toEqual({});
   expect(errors).toEqual([]);
@@ -480,12 +501,12 @@ test("the two buttons place through the editor", async ({ page }) => {
   await expect(field(page, "thing")).toHaveValue("t31");
   await page.locator("#palette .tabs button", { hasText: "Blocks" }).click();
   await page.locator('#palette .rows button[data-id="k8/2"]').click();
-  await expect(field(page, "place")).toHaveText("Place a green laser here");
-  await expect(field(page, "place")).toBeDisabled();
-  await expect(field(page, "place")).toHaveAttribute(
-    "title",
-    "A run is laid on the map, in two clicks.",
-  );
   await expect(field(page, "build")).toBeEnabled();
+  await expect(field(page, "place")).toHaveCount(0);
+  await page.locator('#palette .rows button[data-id="k5"]').click();
+  await expect(field(page, "place")).toHaveCount(0);
+  await expect(field(page, "build")).toBeEnabled();
+  await page.locator('#palette .rows button[data-id="k2"]').click();
+  await expect(field(page, "place")).toHaveText("Place an ice block here");
   expect(errors).toEqual([]);
 });
