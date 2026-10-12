@@ -157,7 +157,7 @@ def lattice_index(cell):
 
 
 def cell_text(cell):
-    return ",".join(map(str, cell)) if isinstance(cell, (list, tuple)) else str(cell)
+    return ",".join(_js_text(c) for c in cell) if isinstance(cell, (list, tuple)) else _js_text(cell)
 
 
 def is_cell(v):
@@ -168,12 +168,15 @@ def _is_int(v):
     return isinstance(v, int) and not isinstance(v, bool)
 
 
+def _integer(v):
+    """Whether a JSON value is a number with no fraction, as the page's Number.isInteger reads one."""
+    return _is_int(v) or (isinstance(v, float) and v.is_integer())
+
+
 def _whole(v):
     """Whether a JSON value is a whole number as the page reads one: within the
     integers a double holds exactly, spelled with or without a point."""
-    if _is_int(v):
-        return abs(v) <= SAFE
-    return isinstance(v, float) and v.is_integer() and abs(v) <= SAFE
+    return _integer(v) and abs(v) <= SAFE
 
 
 def _int(v):
@@ -213,6 +216,41 @@ def _show(v):
     return json.dumps(v, ensure_ascii=False, separators=(",", ":"))
 
 
+def _js_text(v):
+    """A value as the page prints it in a sentence."""
+    if isinstance(v, str):
+        return v
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if v is None:
+        return "null"
+    if isinstance(v, float) and (v != v or v in (float("inf"), float("-inf"))):
+        return "NaN" if v != v else ("Infinity" if v > 0 else "-Infinity")
+    if isinstance(v, (int, float)):
+        return _js_number(v)
+    if isinstance(v, list):
+        return ",".join(_js_text(x) for x in v)
+    return "[object Object]"
+
+
+def _as_page(v):
+    """A parsed document with every whole number an int, as the page's JSON holds one."""
+    if isinstance(v, float) and _whole(v):
+        return int(v)
+    if isinstance(v, dict):
+        return {k: _as_page(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [_as_page(x) for x in v]
+    return v
+
+
+def _truthy(v):
+    """Whether the page's `if` takes a JSON value: anything but null, false, 0, NaN and the empty string."""
+    if v is None or v is False or v == "":
+        return False
+    return not (isinstance(v, (int, float)) and not isinstance(v, bool) and (v == 0 or v != v))
+
+
 INDEX_KEY = re.compile(r"0|[1-9][0-9]*")
 
 
@@ -224,6 +262,26 @@ def _entries(d):
     rest = [k for k in keys if not (INDEX_KEY.fullmatch(k) and int(k) < 2 ** 32 - 1)]
     at = {str(k): v for k, v in d.items()}
     return [(k, at[k]) for k in index + rest]
+
+
+def _entries_of(v):
+    """A JSON value's entries as the page's Object.entries walks them: a table's,
+    a list's or a text's by index, else none."""
+    if isinstance(v, dict):
+        return _entries(v)
+    if isinstance(v, (list, str)):
+        return [(str(i), x) for i, x in enumerate(v)]
+    return []
+
+
+def _property(v, key):
+    """The page's `v[key]` on a JSON value: a table's entry, a list's or a text's
+    element by index, else none."""
+    if isinstance(v, dict):
+        return v.get(key)
+    if isinstance(v, (list, str)) and INDEX_KEY.fullmatch(key) and int(key) < len(v):
+        return v[int(key)]
+    return None
 
 
 def direction(a, b):
@@ -440,12 +498,17 @@ def _standing(o):
     return isinstance(t, (int, float)) and not isinstance(t, bool) and t > 0
 
 
+def _faceless(b):
+    """Whether a block's kind carries nothing on its faces."""
+    return isinstance(b, dict) and _integer(b.get("kind")) and b["kind"] >= BLOCK_KINDS
+
+
 def _occupied(b):
     """The entries of a block's faces with something standing on them, on a kind
     that carries any."""
-    if b["kind"] >= BLOCK_KINDS:
+    if not isinstance(b, dict) or _faceless(b):
         return []
-    return [(f, o) for f, o in (b.get("faces") or {}).items() if _standing(o)]
+    return [(f, o) for f, o in _entries_of(b.get("faces")) if _standing(o)]
 
 
 def _faces_of(b):
@@ -471,7 +534,7 @@ def _named_twice(b):
 
 def _carries(b):
     """Whether a block needs a record: a span, a payload kind, or a face with something on it."""
-    return b["kind"] >= BLOCK_KINDS or bool(_faces_of(b))
+    return _faceless(b) or bool(_faces_of(b))
 
 
 def _members(carried):
@@ -1009,12 +1072,17 @@ def read_project(raw):
 
 # --- what the game would make of a project ------------------------------------
 
+def _is_far(v):
+    """Whether a far end has the shape the span rules read, three coordinates."""
+    return isinstance(v, list) and len(v) == 3
+
+
 def _kinds_at(blocks):
     """The lattice as the loader leaves it before building faces: a beam's far end
     stands a plain block where the file has none."""
     kinds = {tuple(b["cell"]): b["kind"] for b in blocks}
     for b in blocks:
-        if b["kind"] == LASER_KIND and "far" in b:
+        if b["kind"] == LASER_KIND and _is_far(b.get("far")):
             kinds.setdefault(tuple(b["far"]), 0)
     return kinds
 
@@ -1024,14 +1092,14 @@ def _built(hides, kinds, cell, kind):
     block's kind hides behind is not, unless the block's kind is one that is
     built unseen behind it. A laser's own cell hides as the plain block the
     loader has made of it."""
-    own = hides["kinds"].get(str(kind), hides["other"])
-    unseen = hides["unseen"] if str(kind) not in hides["kinds"] else ()
+    own = hides["kinds"].get(_js_text(kind), hides["other"])
+    unseen = hides["unseen"] if _js_text(kind) not in hides["kinds"] else ()
     n = 0
     for d in DIRECTIONS:
         theirs = kinds.get((cell[0] + d[0], cell[1] + d[1], cell[2] + d[2]))
         if theirs == LASER_KIND:
             theirs = 0
-        if theirs is None or theirs not in own or theirs in unseen:
+        if not _is_int(theirs) or theirs not in own or theirs in unseen:
             n += 1
     return n
 
@@ -1061,7 +1129,7 @@ TABLE_COUNTERS = ("faces", "blocks")   # the counters that need the skins table
 def counts(project, hides):
     """The counters the caps and the disc's maxima are read against; without the
     skins table the faces and the blocks are None."""
-    blocks = project["blocks"]
+    blocks = _as_page(project["blocks"])
     at = {tuple(b["cell"]): b for b in blocks}
     kinds = _kinds_at(blocks)
     n = Counter({what: 0 for what in COUNTERS})
@@ -1070,12 +1138,12 @@ def counts(project, hides):
         if not all(c in INNER for c in cell):
             continue
         if kind == PLATFORM_KIND:
-            length = at[cell].get("length", DEFAULT_LENGTH)
+            length = _length_of(at[cell])
             n["faces"] += FACES if length < 2 else 4 * length + 2
             continue
         built = _built(hides, kinds, cell, kind)
         n["faces"] += built
-        if kind in COUNTED_KINDS and built:
+        if _is_int(kind) and kind in COUNTED_KINDS and built:
             n["blocks"] += 1
     for b in blocks:
         kind = b["kind"]
@@ -1096,7 +1164,7 @@ def counts(project, hides):
             n["keys"] += t == KEY
             n["lights"] += t in LIGHTS
             n["spikes"] += t == MOVING_SPIKES
-    n["records"] += bool(project.get("hidden") or project.get("invisibleFromAfar"))
+    n["records"] += _truthy(project.get("hidden")) or _truthy(project.get("invisibleFromAfar"))
     out = dict(n)
     if not hides:
         out.update(dict.fromkeys(TABLE_COUNTERS))
@@ -1107,7 +1175,7 @@ def plays_as(project):
     keyed = any(o["type"] == KEY for b in project["blocks"] for o in _faces_of(b).values())
     bonus = ("it has no key, so every block scores 50 the first time the ball rolls onto it, "
              "the level ends once every block has been rolled, and an exit stands open from the start")
-    if project.get("hidden"):
+    if _truthy(project.get("hidden")):
         if keyed:
             return "Plays as a hidden level, with the glass ball on half-seen blocks."
         return f"Plays as a hidden bonus level, with the glass ball on half-seen blocks: {bonus}."
@@ -1128,6 +1196,7 @@ def validate(project, hides):
     """What the game would make of the project: (level, text, at) findings, `at`
     naming a cell and perhaps a face, errors first in the order found."""
     out = []
+    project = _as_page(project)
 
     def err(text, cell=None, face=None):
         out.append((ERROR, text, _at(cell, face)))
@@ -1135,19 +1204,20 @@ def validate(project, hides):
     def warn(text, cell=None, face=None):
         out.append((WARNING, text, _at(cell, face)))
 
-    if project.get("world") not in WORLDS:
-        err(f"the world '{project.get('world')}' is not one of the disc's ten")
+    world = project.get("world") if isinstance(project.get("world"), str) else ""
+    if world not in WORLDS:
+        err(f"the world '{world}' is not one of the disc's ten")
     into = project.get("into")
     if into is not None:
-        text = str(into)
+        text = into if isinstance(into, str) else _show(into)
         pack, _, index = text.rpartition("#")
         if not (re.fullmatch(r"[0-9]+", index) and _slot_of(pack, int(index))):
             err(f"the target '{text}' is not a slot of a world or a finals pack")
-    time = project.get("time", DEFAULT_TIME)
-    if time < 1:
+    time = _or(project.get("time"), DEFAULT_TIME)
+    if not _is_int(time) or time not in WORD:
+        err(f"a time of {_js_text(time)} seconds, outside the file's range")
+    elif time < 1:
         err(f"a time of {time} seconds")
-    elif time not in WORD:
-        err(f"a time of {time} seconds, outside the file's range")
     elif time > TIME_MAX:
         warn(f"a time of {time} seconds, above the {TIME_MAX} the game's levels keep to")
 
@@ -1166,25 +1236,26 @@ def validate(project, hides):
     starts = []
     for b in blocks:
         cell, kind = tuple(b["cell"]), b["kind"]
-        if kind not in range(UNPLACED_KIND):
-            err(f"kind {kind} is not a kind of block", cell)
+        if not _is_int(kind) or kind not in range(UNPLACED_KIND):
+            err(f"kind {_js_text(kind)} is not a kind of block", cell)
             continue
         faces = _faces_of(b)
-        if kind >= BLOCK_KINDS and b.get("faces"):
+        if kind >= BLOCK_KINDS and _entries_of(b.get("faces")):
             err("nothing stands on a platform's, laser's, crumbling or vanishing block's faces", cell)
         twice = _named_twice(b)
         if twice is not None:
             err(f"face {twice} is named twice", cell)
         if kind == VANISHING_KIND:
-            phase = b.get("phase", 0)
+            phase = _or(b.get("phase"), 0)
             if phase in DIM_AT_ONCE:
                 warn(f"a phase of {phase} dims at once", cell)
-            elif phase not in PHASES:
-                err(f"a phase of {phase}", cell)
+            elif not _is_int(phase) or phase not in PHASES:
+                err(f"a phase of {_js_text(phase)}", cell)
+        colour = b.get("colour")
+        if kind == LASER_KIND and not (_is_int(colour) and colour in range(COLOURS)):
+            err(f"a colour of {'none' if colour is None else _js_text(colour)}", cell)
         if kind in SPAN_KINDS:
             _validate_span(b, at, loader, err, warn)
-        if kind == LASER_KIND and b.get("colour") not in range(COLOURS):
-            err(f"a colour of {'none' if b.get('colour') is None else b['colour']}", cell)
         for j, o in sorted(faces.items()):
             t = o["type"]
             if j not in range(FACES):
@@ -1196,12 +1267,14 @@ def validate(project, hides):
                 err("a device works on a plain block only", cell, j)
             if t == HIDDEN_EXIT and kind != 0:
                 warn("the game has not been seen to take a hidden exit on a block that is not plain", cell, j)
-            if t in FACING_NEEDED and o.get("facing") not in range(1, 5):
+            if t in FACING_NEEDED and not _facing_ok(o.get("facing")):
                 err("a facing of 1 to 4 is needed", cell, j)
-            elif t in FACING_TYPES and "facing" in o and o["facing"] not in range(1, 5):
+            elif t in FACING_TYPES and "facing" in o and not _facing_ok(o["facing"]):
                 err("a facing of 1 to 4, or none", cell, j)
-            if t in VARIANT_TYPES and o.get("variant", 0) not in VARIANTS[t]:
-                err(f"a variant of {o.get('variant')}", cell, j)
+            if t in VARIANT_TYPES:
+                v = _or(o.get("variant"), 0)
+                if not _is_int(v) or v not in VARIANTS[t]:
+                    err(f"a variant of {_js_text(v)}", cell, j)
             if t in (START, START_ON_CLOCK):
                 starts.append((cell, j))
             if t == STAR:
@@ -1219,7 +1292,7 @@ def validate(project, hides):
 
     _validate_circuits(project, blocks, warn)
     n = counts(project, hides)
-    undrawn = [] if n["keys"] or project.get("hidden") else _undrawn_in_bonus(blocks)
+    undrawn = [] if n["keys"] or _truthy(project.get("hidden")) else _undrawn_in_bonus(blocks)
     if undrawn:
         warn(f"with no key the game draws the bonus artwork, which has no picture for {_listed(undrawn)}")
     if not hides:
@@ -1247,6 +1320,15 @@ def describe(finding):
     return f"{level}{where}: {text}"
 
 
+def _or(v, fallback):
+    """A value, or the fallback where it is missing, as the page's ?? reads one."""
+    return fallback if v is None else v
+
+
+def _facing_ok(v):
+    return _is_int(v) and v in range(1, 5)
+
+
 def _at(cell, face):
     if cell is None:
         return None
@@ -1256,13 +1338,19 @@ def _at(cell, face):
     return where
 
 
+def _length_of(b):
+    """A platform's length as the loader walks it: the file's word, or the default where the value is none."""
+    length = b.get("length")
+    return length if _is_int(length) and length in WORD else DEFAULT_LENGTH
+
+
 def _run(b):
     """The cells a span covers: a platform's from its lower end to its upper end
     plus its length, a laser's from end to end."""
     cell, far = tuple(b["cell"]), tuple(b["far"])
     axis = span_axis(cell, far)
     lower, upper = sorted((cell, far))
-    extra = b.get("length", DEFAULT_LENGTH) - 1 if b["kind"] == PLATFORM_KIND else 0
+    extra = _length_of(b) - 1 if b["kind"] == PLATFORM_KIND else 0
     cells = []
     for t in range(max(lower[axis], 0), min(upper[axis] + extra, SIDE - 1) + 1):
         c = list(lower)
@@ -1272,7 +1360,8 @@ def _run(b):
 
 
 def _spans(blocks, kind):
-    return [b for b in blocks if b["kind"] == kind and "far" in b and direction(tuple(b["cell"]), tuple(b["far"])) is not None]
+    return [b for b in blocks
+            if b["kind"] == kind and _is_far(b.get("far")) and direction(tuple(b["cell"]), tuple(b["far"])) is not None]
 
 
 def _filled(blocks):
@@ -1291,8 +1380,11 @@ def _filled(blocks):
 
 def _validate_span(b, at, loader, err, warn):
     cell = tuple(b["cell"])
-    if "far" not in b:
+    if not _truthy(b.get("far")):
         err("a span needs a far end", cell)
+        return
+    if not _is_far(b["far"]):
+        err("the far end is not along one axis from the block", cell)
         return
     far = tuple(b["far"])
     if far == cell:
@@ -1306,10 +1398,10 @@ def _validate_span(b, at, loader, err, warn):
         return
     beams, ends, runs = loader
     if b["kind"] == PLATFORM_KIND:
-        length = b.get("length", DEFAULT_LENGTH)
-        speed = b.get("speed", DEFAULT_SPEED)
-        if length not in WORD:
-            err(f"a length of {length}, outside the file's range", cell)
+        length = _or(b.get("length"), DEFAULT_LENGTH)
+        speed = _or(b.get("speed"), DEFAULT_SPEED)
+        if not _is_int(length) or length not in WORD:
+            err(f"a length of {_js_text(length)}, outside the file's range", cell)
             return
         if length < 1:
             err(f"a platform {length} blocks long, which is less than one block", cell)
@@ -1322,8 +1414,8 @@ def _validate_span(b, at, loader, err, warn):
             err(f"a platform {length} blocks long, more than the {LENGTH_CAP} the game's grid holds", cell)
         elif length not in LENGTHS:
             warn(f"a platform {length} blocks long", cell)
-        if speed not in WORD:
-            err(f"a speed of {speed}, outside the file's range", cell)
+        if not _is_int(speed) or speed not in WORD:
+            err(f"a speed of {_js_text(speed)}, outside the file's range", cell)
         elif speed != DEFAULT_SPEED:
             warn(f"a platform running at {speed}", cell)
         for c in _run(b):
@@ -1360,11 +1452,11 @@ def _validate_span(b, at, loader, err, warn):
 def _validate_outlook(cell, j, kinds, beams, warn):
     d = DIRECTIONS[j]
     beyond = (cell[0] + d[0], cell[1] + d[1], cell[2] + d[2])
-    theirs = kinds.get(beyond)
-    if theirs is None:
+    if beyond not in kinds:
         if beyond in beams:
             warn("looks into a beam", cell, j)
         return
+    theirs = kinds[beyond]
     if theirs == CRUMBLING_KIND:
         warn("looks into a crumbling block", cell, j)
     elif theirs == VANISHING_KIND:
@@ -1396,7 +1488,7 @@ def _undrawn_in_bonus(blocks):
 
     ann = _names()
     for b in blocks:
-        if b["kind"] in BONUS_UNDRAWN_KINDS:
+        if _is_int(b["kind"]) and b["kind"] in BONUS_UNDRAWN_KINDS:
             name = ann["kinds"].get(str(b["kind"]), {}).get("name")
             add(f"the {_lower(name)}" if name else f"kind {b['kind']}")
         for o in _faces_of(b).values():
@@ -1407,21 +1499,24 @@ def _undrawn_in_bonus(blocks):
 
 
 def _validate_circuits(project, blocks, warn):
-    circuits = project.get("circuits") or {}
+    circuits = _or(project.get("circuits"), {})
     members = {c: Counter() for c in range(COLOURS)}
     for b in blocks:
         if b["kind"] == LASER_KIND:
-            if b.get("colour") in members:
-                members[b["colour"]]["lasers"] += 1
-        elif b["kind"] < BLOCK_KINDS:
-            for o in _faces_of(b).values():
-                colour = o.get("variant", 0)
-                if o["type"] == TELEPORTER and colour in members:
-                    members[colour]["teleporters"] += 1
-                elif o["type"] == SWITCH and colour in members:
-                    members[colour]["switches"] += 1
+            colour = _or(b.get("colour"), 0)
+            if _is_int(colour) and colour in members:
+                members[colour]["lasers"] += 1
+            continue
+        for o in _faces_of(b).values():
+            colour = _or(o.get("variant"), 0)
+            if not _is_int(colour) or colour not in members:
+                continue
+            if o["type"] == TELEPORTER:
+                members[colour]["teleporters"] += 1
+            elif o["type"] == SWITCH:
+                members[colour]["switches"] += 1
     for c, m in members.items():
-        if circuits.get(str(c)) == "off" and not m["switches"] and (m["lasers"] or m["teleporters"]):
+        if _property(circuits, str(c)) == "off" and not m["switches"] and (m["lasers"] or m["teleporters"]):
             warn(f"colour {c} starts off and has no switch to turn it on")
         if m["teleporters"] == 1:
             warn(f"the one teleporter of colour {c} leads to itself")

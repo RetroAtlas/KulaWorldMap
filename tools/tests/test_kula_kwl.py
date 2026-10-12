@@ -44,6 +44,7 @@ from kula_kwl import (  # noqa: E402
     check,
     compare,
     counts,
+    describe,
     executable,
     deflate_vectors,
     digests,
@@ -856,6 +857,65 @@ class Validates(unittest.TestCase):
         self.assertIn("256 blocks, more than any level on the disc", self.warnings(blocks))
         blocks.append(plain((17, 1, 17)))
         self.assertIn("257 blocks, over the 256 the game has room for", self.errors(blocks))
+
+    def test_a_document_that_bypassed_the_reader_is_checked_alike_on_both_sides(self):
+        findings = validate({
+            "format": FORMAT, "world": None, "into": {"pack": 1}, "time": True, "circuits": {},
+            "blocks": [
+                {"cell": [5, 5, 5], "kind": 0, "faces": {"0": {"type": START, "facing": True},
+                                                          "1": {"type": COIN, "variant": True}}},
+                {"cell": [6, 5, 5], "kind": True},
+                {"cell": [7, 5, 5], "kind": 7, "phase": True},
+                {"cell": [8, 5, 5], "kind": LASER_KIND, "far": [8, 5, 50], "colour": False},
+                {"cell": [10, 5, 5], "kind": PLATFORM_KIND, "far": [10, 9, 5], "length": False, "speed": True},
+            ],
+        }, HIDES)
+        self.assertEqual([describe(f) for f in findings], [
+            "error: the world '' is not one of the disc's ten",
+            "error: the target '{\"pack\":1}' is not a slot of a world or a finals pack",
+            "error: a time of true seconds, outside the file's range",
+            "error at 5,5,5 face 0: a facing of 1 to 4 is needed",
+            "error at 5,5,5 face 1: a variant of true",
+            "error at 6,5,5: kind true is not a kind of block",
+            "error at 7,5,5: a phase of true",
+            "error at 8,5,5: a colour of false",
+            "error at 8,5,5: the far end is past the edge",
+            "error at 10,5,5: a length of false, outside the file's range",
+            "warning at 5,5,5 face 1: looks into the block at 6,5,5",
+            "warning: with no key the game draws the bonus artwork, which has no picture for the moving platform",
+        ])
+        # JSON spelled otherwise than the readers spell it: whole numbers with a point, null where a
+        # key is missing, a list for a table, a boolean or text for a number
+        spelled = json.loads('''{
+  "format": "kula-world-level", "world": "HIRO", "time": false, "hidden": [], "circuits": ["off"],
+  "blocks": [
+    {"cell": [5.0, 5, 5], "kind": 0.0, "faces": {"0": {"type": 30.0, "facing": 3.0}, "1": {"type": 37.0, "variant": 1.0}}},
+    {"cell": [6, 5, 5], "kind": null},
+    {"cell": [7, 5, 5], "kind": 7, "phase": 0.0},
+    {"cell": [8, 5, 5], "kind": 8, "far": null, "colour": 0},
+    {"cell": [9, 5, 5], "kind": 8, "far": {}, "colour": 0},
+    {"cell": [10, 5, 5], "kind": 8, "far": [10, 9, 5], "colour": null},
+    {"cell": [12, 5, 5], "kind": 0, "faces": [{"type": 30, "facing": 3}]},
+    {"cell": [10, 10, 17], "kind": 5, "far": [10, 12, 17], "length": "2", "speed": 30.0},
+    {"cell": [8, 13, 17], "kind": 8, "far": [12, 13, 17], "colour": 1},
+    {"cell": [14, 5, 5], "kind": 5, "far": [14, 9, 5], "length": 2.0, "speed": 30, "faces": 5}
+  ]
+}''')
+        self.assertEqual([describe(f) for f in validate(spelled, HIDES)], [
+            "error: a time of false seconds, outside the file's range",
+            "error at 6,5,5: kind null is not a kind of block",
+            "error at 8,5,5: a span needs a far end",
+            "error at 8,13,17: the beam crosses the platform's run from 10,10,17",
+            "error at 9,5,5: the far end is not along one axis from the block",
+            "error at 10,5,5: a colour of none",
+            "error at 10,10,17: a length of 2, outside the file's range",
+            "warning at 5,5,5 face 1: looks into the block at 6,5,5",
+            "warning: 2 starts; the game takes the one on face 0 of the block at 12,5,5",
+            "warning: colour 0 starts off and has no switch to turn it on",
+        ])
+        self.assertEqual(counts(spelled, HIDES), {"records": 10, "cells": 10, "faces": 75, "blocks": 5, "objects": 1, "platforms": 2, "lasers": 4, "vanishing": 1, "crumbling": 0, "captivators": 0, "keys": 0, "lights": 0, "spikes": 0})
+        self.assertEqual(plays_as(spelled), "Plays as a hidden bonus level, with the glass ball on half-seen blocks: it has no key, so every block scores 50 the first time the ball rolls onto it, the level ends once every block has been rolled, and an exit stands open from the start.")
+
     def test_the_targets_slot_is_a_run_of_ascii_digits_and_the_world_and_the_target_are_quoted_as_written(self):
         def into(text):
             return self.errors([plain((5, 5, 5), t0=start())], into=text)

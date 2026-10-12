@@ -171,13 +171,14 @@ export function setMeta(project, meta) {
 const keyOf = (cell) => cell.join();
 const beyond = (cell, d) => [cell[0] + d[0], cell[1] + d[1], cell[2] + d[2]];
 const isSpan = (b) => SPAN_KINDS.has(b.kind);
+const hasFar = (b) => Array.isArray(b.far) && b.far.length === 3;
 
 /** The lattice as the loader leaves it before building faces: a beam's far end
     stands a plain block where the file has none. */
 function kindsAt(blocks) {
   const kinds = new Map(blocks.map((b) => [keyOf(b.cell), b.kind]));
   for (const b of blocks)
-    if (b.kind === LASER_KIND && b.far && !kinds.has(keyOf(b.far))) kinds.set(keyOf(b.far), 0);
+    if (b.kind === LASER_KIND && hasFar(b) && !kinds.has(keyOf(b.far))) kinds.set(keyOf(b.far), 0);
   return kinds;
 }
 
@@ -226,7 +227,7 @@ export function counts(project, hides) {
     const cell = key.split(",").map(Number);
     if (!cell.every(inner)) continue;
     if (kind === PLATFORM_KIND) {
-      const length = at.get(key).length ?? DEFAULT_LENGTH;
+      const length = lengthOf(at.get(key));
       n.faces += length < 2 ? FACES : 4 * length + 2;
       continue;
     }
@@ -283,12 +284,15 @@ const at = (cell, face) => {
 
 const facingOk = (v) => Number.isInteger(v) && v >= 1 && v <= 4;
 
+/** A platform's length as the loader walks it: the file's word, or the default where the value is none. */
+const lengthOf = (b) => (inWord(b.length) ? b.length : DEFAULT_LENGTH);
+
 /** The cells a span covers: a platform's from its lower end to its upper end
     plus its length, a laser's from end to end. */
 export function runOf(b) {
   const axis = spanAxis(b.cell, b.far);
   const [lower, upper] = b.cell[axis] < b.far[axis] ? [b.cell, b.far] : [b.far, b.cell];
-  const extra = b.kind === PLATFORM_KIND ? (b.length ?? DEFAULT_LENGTH) - 1 : 0;
+  const extra = b.kind === PLATFORM_KIND ? lengthOf(b) - 1 : 0;
   const cells = [];
   for (let t = Math.max(lower[axis], 0); t <= Math.min(upper[axis] + extra, SIDE - 1); t++) {
     const c = [...lower];
@@ -299,7 +303,7 @@ export function runOf(b) {
 }
 
 const spans = (blocks, kind) =>
-  blocks.filter((b) => b.kind === kind && b.far && direction(b.cell, b.far) !== null);
+  blocks.filter((b) => b.kind === kind && hasFar(b) && direction(b.cell, b.far) !== null);
 
 /** The cells the loaders fill for the spans: a beam's cells between its ends,
     its far end, and a platform's whole run, each naming the span that fills it. */
@@ -316,9 +320,9 @@ function filled(blocks) {
 }
 
 function validateSpan(b, blocksAt, loader, err, warn) {
-  const { cell } = b;
-  if (!b.far) return err("a span needs a far end", cell);
-  const { far } = b;
+  const { cell, far } = b;
+  if (!far) return err("a span needs a far end", cell);
+  if (!hasFar(b)) return err("the far end is not along one axis from the block", cell);
   if (sameCell(far, cell)) return err("the far end is the block's own cell", cell);
   if (direction(cell, far) === null)
     return err("the far end is not along one axis from the block", cell);
@@ -422,13 +426,15 @@ function validateCircuits(project, blocks, warn) {
     teleporters: 0,
     switches: 0,
   }));
+  const memberOf = (colour) => (Number.isInteger(colour) ? members[colour] : undefined);
   for (const b of blocks) {
     if (b.kind === LASER_KIND) {
-      if (members[b.colour ?? 0]) members[b.colour ?? 0].lasers++;
+      const m = memberOf(b.colour ?? 0);
+      if (m) m.lasers++;
       continue;
     }
     for (const [, o] of facesOf(b)) {
-      const m = members[o.variant ?? 0];
+      const m = memberOf(o.variant ?? 0);
       if (!m) continue;
       if (o.type === TELEPORTER) m.teleporters++;
       else if (o.type === SWITCH) m.switches++;
@@ -451,10 +457,10 @@ export function validate(project, hides) {
   const warn = (text, cell = null, face = null) =>
     out.push({ level: WARNING, text, at: at(cell, face) });
 
-  if (!WORLDS.includes(project.world))
-    err(`the world '${project.world}' is not one of the disc's ten`);
+  const world = typeof project.world === "string" ? project.world : "";
+  if (!WORLDS.includes(world)) err(`the world '${world}' is not one of the disc's ten`);
   if (project.into != null) {
-    const text = String(project.into);
+    const text = typeof project.into === "string" ? project.into : JSON.stringify(project.into);
     const hash = text.lastIndexOf("#");
     const pack = hash < 0 ? "" : text.slice(0, hash);
     const index = text.slice(hash + 1);
@@ -462,8 +468,8 @@ export function validate(project, hides) {
       err(`the target '${text}' is not a slot of a world or a finals pack`);
   }
   const time = project.time ?? DEFAULT_TIME;
-  if (time < 1) err(`a time of ${time} seconds`);
-  else if (!inWord(time)) err(`a time of ${time} seconds, outside the file's range`);
+  if (!inWord(time)) err(`a time of ${time} seconds, outside the file's range`);
+  else if (time < 1) err(`a time of ${time} seconds`);
   else if (time > TIME_MAX)
     warn(`a time of ${time} seconds, above the ${TIME_MAX} the game's levels keep to`);
 

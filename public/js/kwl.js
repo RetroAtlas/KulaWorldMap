@@ -215,10 +215,13 @@ const FACE_KEY = /^-?\d+$/;
 const standing = (o) =>
   o !== null && typeof o === "object" && typeof o.type === "number" && o.type > 0;
 
+/** Whether a block's kind carries nothing on its faces. */
+const faceless = (b) => Number.isInteger(b.kind) && b.kind >= BLOCK_KINDS;
+
 /** The entries of a block's faces with something standing on them, on a kind
     that carries any. */
 const occupied = (b) =>
-  b.kind >= BLOCK_KINDS || !b.faces ? [] : Object.entries(b.faces).filter(([, o]) => standing(o));
+  faceless(b) || !b.faces ? [] : Object.entries(b.faces).filter(([, o]) => standing(o));
 
 /** What stands on a block's faces, as [face, object] pairs in face order, on a
     kind that carries any. */
@@ -243,7 +246,7 @@ export function faceNamedTwice(b) {
 }
 
 /** Whether a block needs a record: a span, a payload kind, or something on a face. */
-export const carries = (b) => b.kind >= BLOCK_KINDS || facesOf(b).length > 0;
+export const carries = (b) => faceless(b) || facesOf(b).length > 0;
 
 // --- a project out of a level ------------------------------------------------
 
