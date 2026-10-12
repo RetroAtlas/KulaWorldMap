@@ -274,14 +274,20 @@ export const HEADS_AS_ONE = "which the game heads as 1; it is 1";
 
 function faceOf(o, cell, report) {
   const out = { type: o.type };
+  const at = `type ${o.type} on face ${o.face} of the block at ${cellText(cell)}`;
   if (FACING_TYPES.has(o.type) && o.f[0] !== 0) out.facing = o.f[0];
   else if (FACING_NEEDED.has(o.type)) {
-    report.push(
-      `type ${o.type} on face ${o.face} of the block at ${cellText(cell)} has a facing of 0, ${HEADS_AS_ONE}`,
-    );
+    report.push(`${at} has a facing of 0, ${HEADS_AS_ONE}`);
     out.facing = 1;
   }
-  if (VARIANT_TYPES.has(o.type)) out.variant = o.f[1];
+  if (VARIANT_TYPES.has(o.type)) {
+    const n = VARIANTS[o.type];
+    if (o.f[1] >= 0 && o.f[1] < n) out.variant = o.f[1];
+    else {
+      report.push(`${at} has a variant of ${o.f[1]}, which is not one of the ${n}; it is 0`);
+      out.variant = 0;
+    }
+  }
   return out;
 }
 
@@ -289,6 +295,16 @@ function farOf(r, cell) {
   const a = r.f.slice(2, 5);
   const b = r.f.slice(5, 8);
   return sameCell(a, cell) ? b : a;
+}
+
+const inColour = (c) => Number.isInteger(c) && c >= 0 && c < COLOURS;
+
+function colourOf(r, cell, report) {
+  if (inColour(r.colour)) return r.colour;
+  report.push(
+    `the laser at ${cellText(cell)} has a colour of ${r.colour}, which is not one of the ${COLOURS}; it is 0`,
+  );
+  return 0;
 }
 
 /** The project a level of the map's shape means; `report` takes a line for
@@ -318,7 +334,7 @@ export function projectOf(level, report = []) {
       b.speed = r.speed ?? DEFAULT_SPEED;
     } else if (r.kind === LASER_KIND) {
       b.far = farOf(r, cell);
-      b.colour = r.colour;
+      b.colour = colourOf(r, cell, report);
     } else if (r.kind === VANISHING_KIND) {
       b.phase = r.f[0];
     }
@@ -338,11 +354,12 @@ export function projectOf(level, report = []) {
   const disagree = new Set();
   for (const r of records) {
     let found;
-    if (r.kind === LASER_KIND) found = [[r.colour, r.f[1] === 1 ? STATE_ON : STATE_OFF]];
+    if (r.kind === LASER_KIND)
+      found = [[inColour(r.colour) ? r.colour : 0, r.f[1] === 1 ? STATE_ON : STATE_OFF]];
     else if (r.kind < BLOCK_KINDS)
       found = r.on
         .filter((o) => o.type === TELEPORTER || o.type === SWITCH)
-        .map((o) => [o.f[1], o.f[2] === STATE_OFF ? STATE_OFF : STATE_ON]);
+        .map((o) => [inColour(o.f[1]) ? o.f[1] : 0, o.f[2] === STATE_OFF ? STATE_OFF : STATE_ON]);
     else continue;
     for (const [colour, state] of found) {
       if (!states.has(colour)) states.set(colour, state);

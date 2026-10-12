@@ -265,15 +265,31 @@ def _face_of(o, cell, report):
     """One object of a map_data record as the project writes it."""
     t = o["type"]
     f2, f3 = o["f"][0], o["f"][1]
+    at = f"type {t} on face {o['face']} of the block at {cell_text(cell)}"
     out = {"type": t}
     if t in FACING_TYPES and f2 != 0:
         out["facing"] = f2
     elif t in FACING_NEEDED:
-        report.append(f"type {t} on face {o['face']} of the block at {cell_text(cell)} has a facing of 0, {HEADS_AS_ONE}")
+        report.append(f"{at} has a facing of 0, {HEADS_AS_ONE}")
         out["facing"] = 1
     if t in VARIANT_TYPES:
-        out["variant"] = f3
+        if f3 in VARIANTS[t]:
+            out["variant"] = f3
+        else:
+            report.append(f"{at} has a variant of {f3}, which is not one of the {len(VARIANTS[t])}; it is 0")
+            out["variant"] = 0
     return out
+
+
+def _in_colour(c):
+    return c if c in range(COLOURS) else 0
+
+
+def _colour_of(r, cell, report):
+    if r["colour"] in range(COLOURS):
+        return r["colour"]
+    report.append(f"the laser at {cell_text(cell)} has a colour of {r['colour']}, which is not one of the {COLOURS}; it is 0")
+    return 0
 
 
 def _span(r, cell):
@@ -308,7 +324,7 @@ def project_of(level, report=None):
             b["speed"] = r.get("speed", DEFAULT_SPEED)
         elif r["kind"] == LASER_KIND:
             b["far"] = list(_span(r, cell))
-            b["colour"] = r["colour"]
+            b["colour"] = _colour_of(r, cell, report)
         elif r["kind"] == VANISHING_KIND:
             b["phase"] = r["f"][0]
         blocks.append(b)
@@ -324,9 +340,9 @@ def project_of(level, report=None):
     states, disagree = {}, set()
     for r in records:
         if r["kind"] == LASER_KIND:
-            found = [(r["colour"], STATE_ON if r["f"][1] == 1 else STATE_OFF)]
+            found = [(_in_colour(r["colour"]), STATE_ON if r["f"][1] == 1 else STATE_OFF)]
         elif r["kind"] < BLOCK_KINDS:
-            found = [(o["f"][1], STATE_OFF if o["f"][2] == STATE_OFF else STATE_ON)
+            found = [(_in_colour(o["f"][1]), STATE_OFF if o["f"][2] == STATE_OFF else STATE_ON)
                      for o in r["on"] if o["type"] in (TELEPORTER, SWITCH)]
         else:
             continue

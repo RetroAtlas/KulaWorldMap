@@ -387,6 +387,25 @@ class Reads(unittest.TestCase):
         ])
         self.assertEqual(Level(canonical(p)).verify(), [])
 
+    def test_a_colour_or_a_variant_outside_its_range_is_read_as_0_as_the_project_reader_reads_one(self):
+        blob = level({(1, 2, 3): FIRST_RECORD, (5, 2, 3): FIRST_RECORD + 1},
+                     [block((1, 2, 3), faces={0: obj(START, 3, 0, 0), 1: obj(SWITCH, 0, 9, 2), 2: obj(COIN, 0, 3),
+                                              3: obj(56, 0, -1, 0)}),
+                      block((5, 2, 3), kind=LASER_KIND, faces={0: slot(2, 2, 1, 5, 2, 3, 5, 6, 3)},
+                            second=slot(1, -1, -1, FIRST_RECORD + 1, -1, 7, -1))])
+        p, report = read_kwl(blob)
+        self.assertEqual(p["blocks"][0]["faces"], {"0": start(), "1": {"type": SWITCH, "variant": 0},
+                                                   "2": {"type": COIN, "variant": 0}, "3": {"type": 56, "variant": 0}})
+        self.assertEqual(p["blocks"][1], {"cell": [5, 2, 3], "kind": LASER_KIND, "far": [5, 6, 3], "colour": 0})
+        self.assertEqual(p["circuits"], {"0": "off"})
+        self.assertEqual(report[:4], [
+            "type 9 on face 1 of the block at 1,2,3 has a variant of 9, which is not one of the 4; it is 0",
+            "type 37 on face 2 of the block at 1,2,3 has a variant of 3, which is not one of the 3; it is 0",
+            "type 56 on face 3 of the block at 1,2,3 has a variant of -1, which is not one of the 4; it is 0",
+            "the laser at 5,2,3 has a colour of 7, which is not one of the 4; it is 0",
+        ])
+        self.assertEqual(Level(canonical(p)).verify(), [])
+
     def test_the_lattice_decides_where_a_record_stands(self):
         blob = level({(1, 2, 3): FIRST_RECORD}, [block((4, 5, 6), faces={0: obj(START, 3, 0, 0)})])
         p, report = read_kwl(blob)
