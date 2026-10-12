@@ -1353,6 +1353,11 @@ test("the reader leaves out what the writer has no bytes for, and holds a word t
     () => writeKwl(q),
     (e) => e.message === "a word of the block at 32,32,2 is outside the file's range",
   );
+  // the gate goes by the count alone, so a crowd with no device, which the writer writes, is refused too
+  const { project: r } = readProject(project(crowd.map((b) => ({ ...b, faces: { 0: coin } }))));
+  assert.equal(recordOverflow(r), "2049 records, over the 123 the game has room for");
+  assert.ok(errors(r.blocks).includes("2049 records, over the 123 the game has room for"));
+  assert.doesNotThrow(() => writeKwl(r));
 });
 
 test("the reader reports every default it takes, and repairs what the writer would refuse", () => {

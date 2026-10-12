@@ -766,6 +766,11 @@ class ReadsProjects(unittest.TestCase):
         with self.assertRaises(ValueError) as caught:
             canonical(q)
         self.assertEqual(str(caught.exception), "a word of the block at 32,32,2 is outside the file's range")
+        # the gate goes by the count alone, so a crowd with no device, which the writer writes, is refused too
+        coins = read_project(project([dict(b, faces={"0": coin}) for b in crowd]))[0]
+        self.assertEqual(record_overflow(coins), "2049 records, over the 123 the game has room for")
+        self.assertIn("2049 records, over the 123 the game has room for", texts(validate(coins, HIDES), "error"))
+        canonical(coins)
 
     def test_a_whole_number_is_whole_however_json_spells_it(self):
         p, report, _ = read_project({"format": FORMAT, "world": WORLD, "time": 45.0,
@@ -1371,17 +1376,20 @@ class TheCli(unittest.TestCase):
             p = read_project(raw)[0]
             self.assertEqual((scratch / "odd.kwl").read_bytes(), canonical(p))
 
-    def test_what_the_writer_and_the_reader_refuse_is_a_sentence_and_not_a_traceback(self):
+    def test_what_the_record_gate_and_the_readers_refuse_is_a_sentence_and_not_a_traceback(self):
         with tempfile.TemporaryDirectory() as scratch:
             scratch = Path(scratch)
             crowd = [plain((1 + i % 32, 1 + i // 32 % 32, 1 + i // 1024), t0={"type": COIN, "variant": 0}) for i in range(2049)]
+            (scratch / "coins.kula.json").write_text(json.dumps(project(crowd)))
             max(crowd, key=lambda b: tuple(b["cell"]))["faces"]["1"] = {"type": SWITCH, "variant": 0}
             (scratch / "bad.kula.json").write_text(json.dumps(project(crowd)))
-            done = self.run_tool("--from-json", scratch / "bad.kula.json", "--kwl", scratch / "bad.kwl")
-            self.assertEqual(done.returncode, 1, done.stderr)
-            self.assertEqual(done.stderr.splitlines(),
-                             [f"{scratch / 'bad.kula.json'} has 2049 records, over the 123 the game has room for"])
-            self.assertFalse((scratch / "bad.kwl").exists())
+            # the gate goes by the count alone, so the crowd with no device, which the writer writes, is refused too
+            for name in ("bad", "coins"):
+                src, out = scratch / f"{name}.kula.json", scratch / f"{name}.kwl"
+                done = self.run_tool("--from-json", src, "--kwl", out)
+                self.assertEqual(done.returncode, 1, done.stderr)
+                self.assertEqual(done.stderr.splitlines(), [f"{src} has 2049 records, over the 123 the game has room for"])
+                self.assertFalse(out.exists())
             (scratch / "other.json").write_text('{"format": "orbit"}')
             done = self.run_tool("--from-json", scratch / "other.json", "--kwl", scratch / "other.kwl")
             self.assertEqual(done.returncode, 1, done.stderr)

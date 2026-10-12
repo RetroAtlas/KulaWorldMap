@@ -183,6 +183,18 @@ test("opening a file makes a saved draft out of what it holds, or refuses it wit
     "That file is not a level file of the map's.",
   ]);
   await expect(rows).toHaveCount(3);
+  // the gate goes by the count alone, so a crowd with no device, which the writer writes, is refused as one with a switch is
+  const crowd = Array.from({ length: 2049 }, (_, i) => ({
+    cell: [1 + (i % 32), 1 + (Math.floor(i / 32) % 32), 1 + Math.floor(i / 1024)],
+    kind: 6,
+  }));
+  const crowded =
+    "That file cannot be read as a level: 2049 records, over the 123 the game has room for.";
+  await input.setInputFiles(
+    file("crowd.kula.json", JSON.stringify({ ...project, hidden: false, blocks: crowd })),
+  );
+  await expect(page.locator("#toastStack .toast").first()).toHaveText(crowded);
+  await expect(rows).toHaveCount(3);
   await input.setInputFiles(
     file("nowhere.kula.json", writeProject({ ...project, world: "NOWHERE" })),
   );
@@ -190,17 +202,11 @@ test("opening a file makes a saved draft out of what it holds, or refuses it wit
     "That file names a world the disc has not.",
   );
   await expect(rows).toHaveCount(3);
-  const crowd = Array.from({ length: 2049 }, (_, i) => ({
-    cell: [1 + (i % 32), 1 + (Math.floor(i / 32) % 32), 1 + Math.floor(i / 1024)],
-    kind: 6,
-  }));
   crowd[2047] = { cell: [32, 32, 2], kind: 0, faces: { 0: { type: 9, variant: 0 } } };
   await input.setInputFiles(
-    file("crowd.kula.json", JSON.stringify({ ...project, hidden: false, blocks: crowd })),
+    file("switched.kula.json", JSON.stringify({ ...project, hidden: false, blocks: crowd })),
   );
-  await expect(page.locator("#toastStack .toast").first()).toHaveText(
-    "That file cannot be read as a level: 2049 records, over the 123 the game has room for.",
-  );
+  await expect(page.locator("#toastStack .toast").first()).toHaveText(crowded);
   await expect(rows).toHaveCount(3);
   expect(errors).toEqual([]);
 });
