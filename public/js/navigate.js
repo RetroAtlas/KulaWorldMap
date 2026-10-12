@@ -83,6 +83,20 @@ export function centreOn(x, y, z) {
 }
 
 let noted = null;
+// Registered note makers, each given the level and answering with an element, HTML or nothing.
+const notes = [];
+export function noteWith(fn) {
+  notes.push(fn);
+  noted = null;
+  chip();
+}
+function noteOf(l) {
+  for (const fn of notes) {
+    const note = fn(l);
+    if (note) return note;
+  }
+  return levelNote(l);
+}
 
 export function chip() {
   const l = state.lvl;
@@ -104,8 +118,9 @@ export function chip() {
   $("chipLine").innerHTML = parts.join("");
   if (noted === l) return;
   noted = l;
-  const note = levelNote(l);
-  $("chipNote").innerHTML = note;
+  const note = noteOf(l);
+  if (typeof note === "string") $("chipNote").innerHTML = note;
+  else $("chipNote").replaceChildren(note);
   // The line sits in the button that folds the note only where there is a
   // note, and the focus a hidden button held goes to the map.
   if (!note && document.activeElement === $("chipBtn")) $("cv").focus();
