@@ -394,7 +394,12 @@ test("the facing buttons turn the start, and a switch's swatches and the circuit
   const errors = trackErrors(page);
   await fresh(page);
   await expect(page.locator('#detail .facing button[aria-pressed="true"]')).toHaveCount(1);
-  const caption = page.locator('#detail [role="group"][aria-label="Faces"] > span').first();
+  // the head's row is the block's faces, the thing's four ways its facing
+  await expect(page.locator('#detail [role="group"][aria-label="Faces"]')).toHaveCount(1);
+  await expect(page.locator('#detail [role="group"][aria-label="Faces"] .dot')).toHaveCount(1);
+  await expect(page.locator('#detail [role="group"][aria-label="Facing"]')).toHaveCount(1);
+  const caption = page.locator('#detail [role="group"][aria-label="Facing"] > span').first();
+  await expect(caption).toHaveText("Facing");
   await caption.click();
   expect(blockAt(await doc(page), HOME).faces[0].facing).toBe(3);
   expect(await steps(page)).toEqual({ past: 0, future: 0 });

@@ -378,7 +378,7 @@ function faceCard(d, own, c, face) {
           );
         row.append(b);
       }
-      out.append(group("Faces", row));
+      out.append(group("Facing", row));
     }
     if (VARIANT_TYPES.has(o.type)) {
       const n = VARIANTS[o.type];
