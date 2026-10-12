@@ -221,6 +221,13 @@ def span_axis(a, b):
     return None if d is None else [i for i in range(3) if DIRECTIONS[d][i]][0]
 
 
+def room_for(cell, far):
+    """The blocks the lattice holds from a span's upper end to its edge, or None
+    where the span runs along no one axis."""
+    axis = span_axis(cell, far)
+    return None if axis is None else SIDE - max(cell[axis], far[axis])
+
+
 def level_key(pack, index):
     return f"{pack}#{index}"
 
@@ -510,9 +517,11 @@ def _record(b, k, states, links, numbers):
     elif kind == PLATFORM_KIND:
         far = tuple(b["far"])
         d, axis, lower, upper = _span_words(cell, far)
+        length = b.get("length", DEFAULT_LENGTH)
+        if _is_int(length) and (length < 1 or length > room_for(cell, far)):
+            raise ValueError(f"the platform at {cell_text(cell)} is {length} blocks long, which the lattice cannot hold")
         slots[0] = [kind, d, axis, 1, *lower, *upper] + [-1] * 6
-        slots[1] = [0 if cell == lower else 1, b.get("length", DEFAULT_LENGTH),
-                    b.get("speed", DEFAULT_SPEED), -1, FIRST_RECORD + k] + [-1] * 11
+        slots[1] = [0 if cell == lower else 1, length, b.get("speed", DEFAULT_SPEED), -1, FIRST_RECORD + k] + [-1] * 11
         extras[-6:] = [FIXED * c for c in cell] + [PLATFORM_UNIT] * 3
     elif kind == CRUMBLING_KIND:
         slots[0] = [kind, 1, *(FIXED * c for c in cell)] + [-1] * 11
@@ -723,11 +732,17 @@ def read_kwl(blob, world=WORLDS[0]):
                 dropped.add(k)
                 continue
             r.slots[0][4:10] = [*a, *b]
-        if r.kind == PLATFORM_KIND:
-            if r.length not in LENGTHS:
-                report.append(f"the platform at {cell_text(r.cell)} is {r.length} blocks long")
-            if r.speed != DEFAULT_SPEED:
-                report.append(f"the platform at {cell_text(r.cell)} runs at {r.speed}")
+            if r.kind == PLATFORM_KIND:
+                room = room_for(r.cell, far)
+                if room is not None and (r.length < 1 or r.length > room):
+                    held = 1 if r.length < 1 else room
+                    report.append(f"the platform at {cell_text(r.cell)} is {r.length} blocks long, "
+                                  f"which the lattice cannot hold; it is {held}")
+                    r.slots[1][1] = held
+                elif r.length not in LENGTHS:
+                    report.append(f"the platform at {cell_text(r.cell)} is {r.length} blocks long")
+                if r.speed != DEFAULT_SPEED:
+                    report.append(f"the platform at {cell_text(r.cell)} runs at {r.speed}")
         if r.kind == VANISHING_KIND and r.f[0] in DIM_AT_ONCE:
             report.append(f"the vanishing block at {cell_text(r.cell)} has phase {r.f[0]}, which dims at once")
 
@@ -852,6 +867,11 @@ def _read_block(raw, i, report):
         b["far"] = far
     if b["kind"] == PLATFORM_KIND:
         b["length"] = _taken(raw, "length", DEFAULT_LENGTH, at, report)
+        room = room_for(b["cell"], b["far"])
+        if room is not None and (b["length"] < 1 or b["length"] > room):
+            held = 1 if b["length"] < 1 else room
+            report.append(f"{at} has a length of {b['length']}, which the lattice cannot hold; it is {held}")
+            b["length"] = held
         b["speed"] = _taken(raw, "speed", DEFAULT_SPEED, at, report)
     if b["kind"] == LASER_KIND:
         b["colour"] = _one_of(raw, "colour", COLOURS, at, report)
@@ -1233,6 +1253,9 @@ def _validate_span(b, at, loader, err, warn):
         speed = b.get("speed", DEFAULT_SPEED)
         if length not in WORD:
             err(f"a length of {length}, outside the file's range", cell)
+            return
+        if length < 1:
+            err(f"a platform {length} blocks long, which is less than one block", cell)
             return
         axis = span_axis(cell, far)
         if max(cell[axis], far[axis]) + length - 1 not in INNER:

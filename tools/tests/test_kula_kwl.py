@@ -71,6 +71,7 @@ from kula_level import (  # noqa: E402
     NOWHERE,
     OWN,
     PLATFORM_KIND,
+    SIDE,
     SWITCH,
     TELEPORTER,
     TRAILER_KIND,
@@ -463,6 +464,27 @@ class Reads(unittest.TestCase):
         self.assertIn("the platform at 5,2,3 runs at 20", report)
         self.assertIn("the vanishing block at 9,2,3 has phase 4, which dims at once", report)
 
+    def test_a_platforms_length_the_lattice_cannot_hold_is_cut_to_what_it_holds_and_the_writer_refuses_it(self):
+        def platform(length):
+            return level({(1, 2, 3): FIRST_RECORD, (5, 2, 3): FIRST_RECORD + 1},
+                         [block((1, 2, 3), faces={0: obj(START, 3, 0, 0)}),
+                          block((5, 2, 3), kind=PLATFORM_KIND, faces={0: slot(2, 2, 1, 5, 2, 3, 5, 6, 3)},
+                                second=slot(length, 30, -1, FIRST_RECORD + 1, kind=0))])
+
+        for length, held in ((32767, 28), (29, 28), (0, 1), (-32768, 1)):
+            p, report = read_kwl(platform(length))
+            self.assertEqual(p["blocks"][1]["length"], held, length)
+            self.assertEqual(report, [f"the platform at 5,2,3 is {length} blocks long, which the lattice cannot hold; "
+                                      f"it is {held}"])
+            self.assertEqual(Level(canonical(p)).verify(), [])
+            p["blocks"][1]["length"] = length
+            with self.assertRaises(ValueError) as caught:
+                canonical(p)
+            self.assertEqual(str(caught.exception),
+                             f"the platform at 5,2,3 is {length} blocks long, which the lattice cannot hold")
+        p, report = read_kwl(platform(28))
+        self.assertEqual((p["blocks"][1]["length"], report), (28, ["the platform at 5,2,3 is 28 blocks long"]))
+
     def test_a_switch_whose_list_loops_back_on_itself_reads_and_is_rewired_on_the_way_out(self):
         cycle = (1, 2, 3)
         blob = level({cycle: FIRST_RECORD},
@@ -599,6 +621,26 @@ class ReadsProjects(unittest.TestCase):
         with self.assertRaises(ValueError) as caught:
             canonical(p)
         self.assertIn("outside the file's range", str(caught.exception))
+
+    def test_a_platforms_length_the_lattice_cannot_hold_is_cut_on_the_way_in(self):
+        p, report = read_project(project([
+            plain((5, 5, 5), t0=start()),
+            {"cell": [10, 10, 17], "kind": PLATFORM_KIND, "far": [10, 14, 17], "length": 32767, "speed": 30},
+            {"cell": [12, 10, 17], "kind": PLATFORM_KIND, "far": [12, 14, 17], "length": 0, "speed": 30},
+            {"cell": [14, 10, 17], "kind": PLATFORM_KIND, "far": [14, 14, 17], "length": 20, "speed": 30}]))
+        self.assertEqual([b["length"] for b in p["blocks"] if b["kind"] == PLATFORM_KIND], [20, 1, 20])
+        self.assertEqual(report, [
+            "block 1 at 10,10,17 has a length of 32767, which the lattice cannot hold; it is 20",
+            "block 2 at 12,10,17 has a length of 0, which the lattice cannot hold; it is 1",
+        ])
+        case = next(c for c in json.loads(HOSTILE.read_text())["cases"]
+                    if c["name"] == "two hundred platforms of length 32767")
+        q, lines = read_project(case["input"])
+        platforms = [b for b in q["blocks"] if b["kind"] == PLATFORM_KIND]
+        self.assertEqual(len(platforms), 200)
+        self.assertEqual([b["length"] for b in platforms], [SIDE - max(b["cell"][1], b["far"][1]) for b in platforms])
+        self.assertEqual(len(lines), 4)
+        self.assertEqual(Level(canonical(q)).verify(), [])
 
     def test_the_reader_keeps_three_lines_of_a_shape_and_counts_the_rest_where_they_fall(self):
         coin = {"type": COIN, "variant": 0}
@@ -858,6 +900,15 @@ class Validates(unittest.TestCase):
         self.assertIn("a platform 7 blocks long", self.warnings(rail(7)))
         self.assertEqual(self.errors(rail(8)), ["a platform 8 blocks long, more than the 7 the game's grid holds"])
         self.assertFalse(any("blocks long" in w for w in self.warnings(rail(8))))
+
+    def test_a_platform_shorter_than_one_block(self):
+        def rail(length):
+            return [plain((5, 5, 5), t0=start()),
+                    {"cell": [10, 10, 17], "kind": PLATFORM_KIND, "far": [10, 14, 17], "length": length, "speed": 30}]
+
+        self.assertEqual(self.errors(rail(0)), ["a platform 0 blocks long, which is less than one block"])
+        self.assertEqual(self.errors(rail(-3)), ["a platform -3 blocks long, which is less than one block"])
+        self.assertFalse(any("blocks long" in w for w in self.warnings(rail(0))))
 
     def test_the_disc_maxima_are_the_most_any_shipped_level_counts(self):
         most = dict.fromkeys(COUNTERS, 0)

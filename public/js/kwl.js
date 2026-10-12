@@ -204,6 +204,13 @@ export function spanAxis(a, b) {
   return d === null ? null : FACE_NORMAL[d].findIndex((v) => v !== 0);
 }
 
+/** The blocks the lattice holds from a span's upper end to its edge, or null
+    where the span runs along no one axis. */
+export function roomFor(cell, far) {
+  const axis = spanAxis(cell, far);
+  return axis === null ? null : SIDE - Math.max(cell[axis], far[axis]);
+}
+
 const FACE_KEY = /^-?\d+$/;
 const standing = (o) =>
   o !== null && typeof o === "object" && typeof o.type === "number" && o.type > 0;
@@ -457,10 +464,15 @@ function recordWords(b, k, states, linkTable, numberTable) {
     }
   } else if (kind === PLATFORM_KIND) {
     const { d, axis, lower, upper } = spanWords(cell, b.far);
+    const length = b.length ?? DEFAULT_LENGTH;
+    if (Number.isInteger(length) && (length < 1 || length > roomFor(cell, b.far)))
+      throw new Error(
+        `the platform at ${cellText(cell)} is ${length} blocks long, which the lattice cannot hold`,
+      );
     slots[0] = [kind, d, axis, 1, ...lower, ...upper, ...fill(6)];
     slots[1] = [
       sameCell(cell, lower) ? 0 : 1,
-      b.length ?? DEFAULT_LENGTH,
+      length,
       b.speed ?? DEFAULT_SPEED,
       -1,
       FIRST_RECORD + k,
@@ -801,13 +813,20 @@ export function readKwl(bytes, world = WORLDS[0]) {
         continue;
       }
       r.slots[0].splice(4, 6, ...a, ...b);
-    }
-    if (r.kind === PLATFORM_KIND) {
-      const [, length, speed] = r.slots[1];
-      if (!LENGTHS.includes(length))
-        report.push(`the platform at ${cellText(r.cell)} is ${length} blocks long`);
-      if (speed !== DEFAULT_SPEED)
-        report.push(`the platform at ${cellText(r.cell)} runs at ${speed}`);
+      if (r.kind === PLATFORM_KIND) {
+        const [, length, speed] = r.slots[1];
+        const room = roomFor(r.cell, far);
+        if (room !== null && (length < 1 || length > room)) {
+          const held = length < 1 ? 1 : room;
+          report.push(
+            `the platform at ${cellText(r.cell)} is ${length} blocks long, which the lattice cannot hold; it is ${held}`,
+          );
+          r.slots[1][1] = held;
+        } else if (!LENGTHS.includes(length))
+          report.push(`the platform at ${cellText(r.cell)} is ${length} blocks long`);
+        if (speed !== DEFAULT_SPEED)
+          report.push(`the platform at ${cellText(r.cell)} runs at ${speed}`);
+      }
     }
     if (r.kind === VANISHING_KIND && DIM_AT_ONCE.includes(fOf(r)[0]))
       report.push(

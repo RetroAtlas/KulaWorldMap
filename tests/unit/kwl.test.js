@@ -865,6 +865,47 @@ test("a platform's length and speed and a vanishing block's phase are kept and r
   );
 });
 
+test("a platform's length the lattice cannot hold is cut to what it holds, and the writer refuses it", () => {
+  const platform = (length) =>
+    level(
+      cells([
+        [[1, 2, 3], FIRST_RECORD],
+        [[5, 2, 3], FIRST_RECORD + 1],
+      ]),
+      [
+        block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0) } }),
+        block([5, 2, 3], {
+          kind: PLATFORM_KIND,
+          faces: { 0: slot(2, [2, 1, 5, 2, 3, 5, 6, 3]) },
+          second: slot(length, [30, -1, FIRST_RECORD + 1], { kind: 0 }),
+        }),
+      ],
+    );
+  for (const [length, held] of [
+    [32767, 28],
+    [29, 28],
+    [0, 1],
+    [-32768, 1],
+  ]) {
+    const { project: p, report } = readKwl(platform(length));
+    assert.equal(p.blocks[1].length, held, String(length));
+    assert.deepEqual(report, [
+      `the platform at 5,2,3 is ${length} blocks long, which the lattice cannot hold; it is ${held}`,
+    ]);
+    assert.deepEqual(verify(writeKwl(p)), []);
+    assert.throws(
+      () => writeKwl({ ...p, blocks: p.blocks.with(1, { ...p.blocks[1], length }) }),
+      (e) =>
+        e.message ===
+        `the platform at 5,2,3 is ${length} blocks long, which the lattice cannot hold`,
+      String(length),
+    );
+  }
+  const { project: p, report } = readKwl(platform(28));
+  assert.equal(p.blocks[1].length, 28);
+  assert.deepEqual(report, ["the platform at 5,2,3 is 28 blocks long"]);
+});
+
 test("a switch whose list loops back on itself reads, and is rewired on the way out", () => {
   const cycle = [1, 2, 3];
   const blob = level(cells([[cycle, FIRST_RECORD]]), [

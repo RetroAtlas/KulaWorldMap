@@ -13,12 +13,13 @@ import {
   markerLabel,
   markerNumber,
   markerState,
+  platformCells,
   setAnnotations,
   setObjects,
 } from "../../public/js/data.js";
 import { hasFace } from "../../public/js/blocks.js";
 import { FACE_NORMAL } from "../../public/js/faces.js";
-import { state, cellKey } from "../../public/js/state.js";
+import { state, cellKey, SIDE } from "../../public/js/state.js";
 import {
   BONUS_UNDRAWN_KINDS,
   BONUS_UNDRAWN_TYPES,
@@ -792,6 +793,16 @@ test("a platform longer than the ride's grid", () => {
   assert.ok(!warnings(rail(8)).some((w) => w.includes("blocks long")));
 });
 
+test("a platform shorter than one block", () => {
+  const rail = (length) => [
+    plain([5, 5, 5], 0, { 0: start() }),
+    { cell: [10, 10, 17], kind: PLATFORM_KIND, far: [10, 14, 17], length, speed: 30 },
+  ];
+  assert.deepEqual(errors(rail(0)), ["a platform 0 blocks long, which is less than one block"]);
+  assert.deepEqual(errors(rail(-3)), ["a platform -3 blocks long, which is less than one block"]);
+  assert.ok(!warnings(rail(0)).some((w) => w.includes("blocks long")));
+});
+
 test("what the format takes, and what it warns about", () => {
   const blocks = [
     plain([5, 5, 5], 0, {
@@ -1161,6 +1172,39 @@ test("the reader reports every default it takes, and repairs what the writer wou
   ]);
   assert.doesNotThrow(() => toLevel(p, 1));
   assert.deepEqual(readProject(writeProject(p)).report, []);
+});
+
+test("a platform's length the lattice cannot hold is cut on the way in, so a file of long runs draws small", () => {
+  const { project: p, report } = readProject(
+    project([
+      plain([5, 5, 5], 0, { 0: start() }),
+      { cell: [10, 10, 17], kind: PLATFORM_KIND, far: [10, 14, 17], length: 32767, speed: 30 },
+      { cell: [12, 10, 17], kind: PLATFORM_KIND, far: [12, 14, 17], length: 0, speed: 30 },
+      { cell: [14, 10, 17], kind: PLATFORM_KIND, far: [14, 14, 17], length: 20, speed: 30 },
+    ]),
+  );
+  assert.deepEqual(
+    p.blocks.filter((b) => b.kind === PLATFORM_KIND).map((b) => b.length),
+    [20, 1, 20],
+  );
+  assert.deepEqual(report, [
+    "block 1 at 10,10,17 has a length of 32767, which the lattice cannot hold; it is 20",
+    "block 2 at 12,10,17 has a length of 0, which the lattice cannot hold; it is 1",
+  ]);
+  const c = hostile.cases.find((c) => c.name === "two hundred platforms of length 32767");
+  const { project: q, report: lines } = readProject(structuredClone(c.input));
+  const platforms = q.blocks.filter((b) => b.kind === PLATFORM_KIND);
+  assert.equal(platforms.length, 200);
+  const held = platforms.reduce((n, b) => n + b.length, 0);
+  assert.equal(
+    held,
+    platforms.reduce((n, b) => n + SIDE - Math.max(b.cell[1], b.far[1]), 0),
+  );
+  assert.equal(lines.length, 4);
+  const walked = toLevel(q, 1)
+    .records.filter((r) => r.kind === PLATFORM_KIND)
+    .reduce((n, r) => n + platformCells(r).length, 0);
+  assert.equal(walked, held);
 });
 
 test("the reader keeps three lines of a shape and counts the rest, where they fall", () => {

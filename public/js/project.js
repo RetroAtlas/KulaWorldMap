@@ -64,6 +64,7 @@ import {
   levelOf,
   onLattice,
   projectOf,
+  roomFor,
   sameCell,
   spanAxis,
   strayFaceKeys,
@@ -328,6 +329,8 @@ function validateSpan(b, blocksAt, loader, err, warn) {
     const length = b.length ?? DEFAULT_LENGTH;
     const speed = b.speed ?? DEFAULT_SPEED;
     if (!inWord(length)) return err(`a length of ${length}, outside the file's range`, cell);
+    if (length < 1)
+      return err(`a platform ${length} blocks long, which is less than one block`, cell);
     const axis = spanAxis(cell, far);
     if (!inner(Math.max(cell[axis], far[axis]) + length - 1))
       return err("the platform's run reaches past the edge", cell);
@@ -673,6 +676,14 @@ function readBlock(raw, i, report) {
   }
   if (b.kind === PLATFORM_KIND) {
     b.length = whole(raw, "length", DEFAULT_LENGTH, at, report);
+    const room = roomFor(b.cell, b.far);
+    if (room !== null && (b.length < 1 || b.length > room)) {
+      const held = b.length < 1 ? 1 : room;
+      report.push(
+        `${at} has a length of ${b.length}, which the lattice cannot hold; it is ${held}`,
+      );
+      b.length = held;
+    }
     b.speed = whole(raw, "speed", DEFAULT_SPEED, at, report);
   }
   if (b.kind === LASER_KIND) b.colour = oneOf(raw, "colour", COLOURS, at, report);
