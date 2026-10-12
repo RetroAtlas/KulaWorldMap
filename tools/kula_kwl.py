@@ -254,14 +254,20 @@ def _truthy(v):
 
 
 INDEX_KEY = re.compile(r"0|[1-9][0-9]*")
+INDEX_MOST = 2 ** 32 - 1
+
+
+def _is_index(k):
+    """Whether a key spells an array index, which the page walks before the other keys."""
+    return bool(INDEX_KEY.fullmatch(k)) and len(k) <= len(str(INDEX_MOST)) and int(k) < INDEX_MOST
 
 
 def _entries(d):
     """A JSON object's entries in the order the page walks them: keys that spell
     an array index ascending, then the rest as written."""
     keys = [str(k) for k in d]
-    index = sorted((k for k in keys if INDEX_KEY.fullmatch(k) and int(k) < 2 ** 32 - 1), key=int)
-    rest = [k for k in keys if not (INDEX_KEY.fullmatch(k) and int(k) < 2 ** 32 - 1)]
+    index = sorted((k for k in keys if _is_index(k)), key=int)
+    rest = [k for k in keys if not _is_index(k)]
     at = {str(k): v for k, v in d.items()}
     return [(k, at[k]) for k in index + rest]
 
@@ -281,7 +287,7 @@ def _property(v, key):
     element by index, else none."""
     if isinstance(v, dict):
         return v.get(key)
-    if isinstance(v, (list, str)) and INDEX_KEY.fullmatch(key) and int(key) < len(v):
+    if isinstance(v, (list, str)) and _is_index(key) and int(key) < len(v):
         return v[int(key)]
     return None
 
@@ -949,10 +955,10 @@ def _one_of(raw, key, n, where, report):
 def _read_faces(faces, where, report):
     out = {}
     for key, o in _entries(faces):
-        if not re.fullmatch(r"[0-9]+", key) or int(key) >= FACES:
+        face = key.lstrip("0") or "0"
+        if not re.fullmatch(r"[0-9]+", key) or len(face) > 1 or int(face) >= FACES:
             report.append(f'{where} names a face "{key}", which is not one of the six; it is left out')
             continue
-        face = str(int(key))
         if face in out:
             report.append(f'{where} names face {face} again as "{key}"; it is left out')
             continue

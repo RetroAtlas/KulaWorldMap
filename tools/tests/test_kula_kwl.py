@@ -849,6 +849,16 @@ class ReadsProjects(unittest.TestCase):
         self.assertEqual(report, ['block 0 at 5,5,5 names face 5 again as "05"; it is left out'])
         self.assertEqual(texts(validate(p, HIDES), "error"), [])
 
+    def test_a_key_longer_than_a_number_converts_from_reads_as_the_page_reads_it(self):
+        ones, zeros = "1" * 4301, "0" * 4300 + "5"
+        p, report, _ = read_project({"format": FORMAT, "world": WORLD, "circuits": {ones: "off"},
+                                  "blocks": [{"cell": [5, 5, 5], "kind": 0,
+                                              "faces": {"0": start(), ones: {"type": COIN, "variant": 0}, zeros: {"type": KEY}}}]})
+        self.assertEqual(p["circuits"], {})
+        self.assertEqual(p["blocks"][0]["faces"], {"0": start(), "5": {"type": KEY}})
+        self.assertEqual(report, [f"colour {ones} is not one of the four; it is left out",
+                                  f'block 0 at 5,5,5 names a face "{ones}", which is not one of the six; it is left out'])
+
 
 class Validates(unittest.TestCase):
     def errors(self, blocks, **more):

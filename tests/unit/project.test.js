@@ -1586,6 +1586,22 @@ test("a face key is read by its number, and a second spelling of one face is lef
       "face 5 is named twice",
     ),
   );
+  const ones = "1".repeat(4301);
+  const zeros = `${"0".repeat(4300)}5`;
+  const long = readProject({
+    format: FORMAT,
+    world: WORLD,
+    circuits: { [ones]: "off" },
+    blocks: [
+      { cell: [5, 5, 5], kind: 0, faces: { 0: start(), [ones]: coin, [zeros]: { type: KEY } } },
+    ],
+  });
+  assert.deepEqual(long.project.circuits, {});
+  assert.deepEqual(long.project.blocks[0].faces, { 0: start(), 5: { type: KEY } });
+  assert.deepEqual(long.report, [
+    `colour ${ones} is not one of the four; it is left out`,
+    `block 0 at 5,5,5 names a face "${ones}", which is not one of the six; it is left out`,
+  ]);
 });
 
 test("the writer writes the document's keys in its order, one block a line, the same way every time", () => {
