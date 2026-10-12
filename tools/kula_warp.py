@@ -135,6 +135,8 @@ def warp(args, src, disc):
         print(f"{CAMERA_WORD:08X} 0001")
         return
     out = Path(args.out) if args.out else src.with_name(f"{src.stem} ({what.lower()}).bin")
+    if out.suffix.lower() == ".cue":
+        sys.exit(f"{out} is the name its cue sheet would take; say another --out")
     for path in (out, out.with_suffix(".cue")):
         if path.exists():
             why = "is the image itself" if path.samefile(src) else "exists already"

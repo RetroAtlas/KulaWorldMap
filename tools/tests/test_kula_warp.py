@@ -138,7 +138,7 @@ class TheTool(unittest.TestCase):
         self.assertEqual(zlib.decompress(Pak(Disc(out).read_file(SYNTHETIC_FINALS)).entries[1]["blob"]),
                          self.slot_level(self.src, SYNTHETIC_FINALS, 1))
 
-    def test_an_output_that_exists_or_is_the_image_itself_is_refused_and_a_missing_catalogue_said(self):
+    def test_an_output_that_exists_is_the_image_or_would_be_its_cue_sheet_is_refused_and_a_missing_catalogue_said(self):
         out = self.dir / "warped.bin"
         self.assertEqual(self.run_tool("--level", f"{SYNTHETIC_PACK}#2", "--out", out).returncode, 0)
         before = {p.name: p.read_bytes() for p in self.dir.iterdir()}
@@ -148,9 +148,10 @@ class TheTool(unittest.TestCase):
         same = self.run_tool("--level", f"{SYNTHETIC_PACK}#2", "--out", self.src)
         self.assertNotEqual(same.returncode, 0)
         self.assertIn("image.bin is the image itself; say another --out", same.stderr)
-        sheet = self.run_tool("--level", f"{SYNTHETIC_PACK}#2", "--out", self.dir / "warped.cue")
-        self.assertNotEqual(sheet.returncode, 0)
-        self.assertIn("warped.cue exists already", sheet.stderr)
+        for name in ("warped.cue", "fresh.cue", "fresh.CUE"):
+            sheet = self.run_tool("--level", f"{SYNTHETIC_PACK}#2", "--out", self.dir / name)
+            self.assertNotEqual(sheet.returncode, 0)
+            self.assertIn(f"{name} is the name its cue sheet would take; say another --out", sheet.stderr)
         self.assertEqual({p.name: p.read_bytes() for p in self.dir.iterdir()}, before)
         catalogue = self.run_tool("--out", self.dir / "obj.bin")
         self.assertNotEqual(catalogue.returncode, 0)
