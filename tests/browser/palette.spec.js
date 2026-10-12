@@ -428,3 +428,65 @@ test("a name that begins with a vowel, or sounds as if it did, takes an", async 
   await expect(page.locator("#say")).toHaveText("Placed an hourglass on the +y side of 17, 17, 17");
   expect(errors).toEqual([]);
 });
+
+test("where the annotations have no word for a circuit, the page names it circuit 2 as the checks do", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.route("**/annotations.json", async (route) => {
+    const response = await route.fetch();
+    const ann = await response.json();
+    for (const v of Object.values(ann.types["9"].variants)) v.name = "Switch";
+    await route.fulfill({ response, json: ann });
+  });
+  await fresh(page);
+  await tab(page, "Blocks").click();
+  await expect(row(page, "k8/2")).toHaveAttribute("title", "Laser (circuit 2)");
+  await pick(page, "Blocks", "k8/2");
+  const side = await plusX(page, START);
+  await page.mouse.move(side.x, side.y);
+  await expect(page.locator("#tip")).toContainText("Place a laser of circuit 2 on the +x side");
+  await lay(page, [22, 17, 17], 0);
+  await click(page, side);
+  await click(page, await top(page, [22, 17, 17]));
+  await expect(page.locator("#say")).toHaveText(
+    "Laid a laser of circuit 2 from 18, 17, 17 to 22, 17, 17",
+  );
+
+  // the Level card's row and toggle, and the finding the toggle brings
+  const toggle = page.locator("#draftCircuit2");
+  await expect(page.locator("#draftCard .circuit").nth(2)).toHaveAccessibleName("circuit 2");
+  await expect(toggle).toHaveAccessibleName("circuit 2");
+  await expect(toggle).toHaveAttribute("title", "Turn circuit 2 off");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("title", "Turn circuit 2 on");
+  await expect(page.locator("#chipNote .findings li")).toContainText([
+    "circuit 2 starts off and has no switch to turn it on",
+  ]);
+
+  // the panel's row and the laser's swatches on the laser's block
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state, cellKey }, { showCell }] = await Promise.all(["state.js", "detail.js"].map(at));
+    showCell(state.idx.cells.get(cellKey(18, 17, 17)));
+  });
+  const panelRow = page.locator('#detail [data-field="circuit-2"]');
+  await expect(panelRow).toHaveAccessibleName("circuit 2");
+  await expect(panelRow).toHaveAttribute("title", "Turn circuit 2 on");
+  await expect(page.locator('#detail [data-field="laser-2"]')).toHaveAccessibleName("circuit 2");
+  await panelRow.click();
+  await expect(page.locator("#say")).toHaveText("Turned circuit 2 on");
+  await page.locator('#detail [data-field="laser-1"]').click();
+  await expect(page.locator("#say")).toHaveText("Set the laser at 18, 17, 17 to circuit 1");
+  // a re-lay names the run of the laser, so the number takes no possessive
+  await lay(page, [18, 21, 17], 0);
+  await click(page, await top(page, [18, 17, 17]));
+  await click(page, await top(page, [18, 21, 17]));
+  await expect(page.locator("#say")).toHaveText(
+    "Moved the run of the laser of circuit 1 to 18, 21, 17",
+  );
+  await page.keyboard.press("z");
+  await click(page, await top(page, [18, 17, 17]));
+  await expect(page.locator("#say")).toHaveText("Removed the laser of circuit 1 at 18, 17, 17");
+  expect(errors).toEqual([]);
+});

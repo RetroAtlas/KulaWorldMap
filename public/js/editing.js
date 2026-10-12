@@ -2,7 +2,7 @@
 import { $ } from "./dom.js";
 import { state, cellKey } from "./state.js";
 import { FACE_NORMAL } from "./faces.js";
-import { entryName, kindName, skinsTable } from "./data.js";
+import { circuitPhrase, entryName, kindName, skinsTable } from "./data.js";
 import { say } from "./a11y.js";
 import { toast } from "./toast.js";
 import { get } from "./drafts.js";
@@ -27,7 +27,7 @@ export const kindWord = (kind) => lower(kindName(kind) || "plain block");
 export const brushWord = () => {
   const e = palette.chosen();
   if (!e) return "thing";
-  if (e.kind === LASER_KIND) return `${palette.colourName(e.colour)} ${kindWord(e.kind)}`;
+  if (e.kind === LASER_KIND) return circuitPhrase(e.colour, kindWord(e.kind));
   return e.kind !== undefined ? kindWord(e.kind) : lower(e.label);
 };
 export const across = (cell, face) => cell.map((v, i) => v + FACE_NORMAL[face][i]);

@@ -3,12 +3,14 @@ import { el, on } from "./dom.js";
 import { state, cellKey } from "./state.js";
 import { DIRECTION_NAME, FACE_NAME } from "./faces.js";
 import {
+  circuitPhrase,
   kindName,
   markerColour,
   markerDestination,
   markerFacing,
   markerLabel,
   markerPoints,
+  theCircuit,
 } from "./data.js";
 import { onShow, showCell } from "./detail.js";
 import * as palette from "./palette.js";
@@ -496,24 +498,23 @@ function circuitRow(d, colour) {
     teleporters && plural(teleporters, "teleporter"),
     lasers && plural(lasers, "laser"),
   ].filter(Boolean);
-  const name = palette.colourName(colour);
   const toggle = button(
     `circuit-${colour}`,
     `starts ${off ? "off" : "on"}`,
-    `Turn the ${name} circuit ${off ? "on" : "off"}`,
+    `Turn ${theCircuit(colour)} ${off ? "on" : "off"}`,
   );
-  toggle.setAttribute("aria-label", `${name} circuit`);
+  toggle.setAttribute("aria-label", circuitPhrase(colour));
   toggle.setAttribute("aria-pressed", String(!off));
   toggle.onclick = () =>
     change(
       d,
       setCircuit(d.doc, colour, off ? "on" : "off"),
-      `turned the ${name} circuit ${off ? "on" : "off"}`,
+      `turned ${theCircuit(colour)} ${off ? "on" : "off"}`,
     );
   const swatch = el("span", { className: "lamp" });
   swatch.style.setProperty("--lamp", swatchOf(SWITCH, colour));
   swatch.setAttribute("role", "img");
-  swatch.setAttribute("aria-label", name);
+  swatch.setAttribute("aria-label", palette.colourName(colour));
   return group(
     "Circuit",
     el(

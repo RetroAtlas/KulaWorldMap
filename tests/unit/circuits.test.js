@@ -15,7 +15,12 @@ import {
   markerDestination,
   framesOn,
   movedFor,
+  circuitWord,
+  circuitName,
+  circuitPhrase,
+  theCircuit,
 } from "../../public/js/data.js";
+import { SWITCH } from "../../public/js/kwl.js";
 
 const levelNamed = (name, pack) =>
   mapData.levels.find((l) => l.name === name && (!pack || l.pack === pack));
@@ -95,4 +100,35 @@ test("a teleporter leads to one of its own colour, and nothing else leads anywhe
     }
   }
   assert.equal(led, 147);
+});
+
+test("a circuit's word is the bracketed part of its switch's name, and empty brackets give none", () => {
+  /** The annotations with every switch variant named `name`. */
+  const switchesNamed = (name) => {
+    const sw = annotations.types[String(SWITCH)];
+    const variants = Object.fromEntries(
+      Object.entries(sw.variants).map(([k, v]) => [k, { ...v, name }]),
+    );
+    return { ...annotations, types: { ...annotations.types, [SWITCH]: { ...sw, variants } } };
+  };
+  setAnnotations(annotations);
+  assert.equal(circuitWord(2), "green");
+  assert.equal(circuitName(2), "green");
+  assert.equal(circuitPhrase(2), "green circuit");
+  assert.equal(circuitPhrase(2, "laser"), "green laser");
+  assert.equal(theCircuit(2), "the green circuit");
+  try {
+    for (const name of ["Switch ()", "Switch ( )", "Switch"]) {
+      setAnnotations(switchesNamed(name));
+      assert.equal(circuitWord(2), null, name);
+      assert.equal(circuitName(2), "circuit 2", name);
+      assert.equal(circuitPhrase(2), "circuit 2", name);
+      assert.equal(circuitPhrase(2, "laser"), "laser of circuit 2", name);
+      assert.equal(theCircuit(2), "circuit 2", name);
+    }
+    setAnnotations(switchesNamed("Switch ( green )"));
+    assert.equal(circuitWord(2), "green");
+  } finally {
+    setAnnotations(annotations);
+  }
 });

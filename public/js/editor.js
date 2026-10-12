@@ -3,7 +3,7 @@
 import { $, emit, on } from "./dom.js";
 import { state, SIDE, BLOCK, facing as turnedToView, screen, cellKey, sliceZ } from "./state.js";
 import { FACE_NORMAL, FACE_NAME } from "./faces.js";
-import { levelTitle, markerLabel } from "./data.js";
+import { circuitPhrase, levelTitle, markerLabel } from "./data.js";
 import { provideLevels, setSlice } from "./navigate.js";
 import { cellAt, drawSoon, overlayWith } from "./render.js";
 import { facePoints, outline, outlineStroke } from "./blocks.js";
@@ -121,9 +121,7 @@ const phone = () => sidebarOverlays();
 const hovered = () => armed?.c ?? state.hover;
 const waiting = () => (pending.touch ? WAITING_TOUCH : WAITING);
 const spanWord = (b) =>
-  b.kind === LASER_KIND
-    ? `${palette.colourName(b.colour ?? 0)} ${kindWord(b.kind)}`
-    : kindWord(b.kind);
+  b.kind === LASER_KIND ? circuitPhrase(b.colour ?? 0, kindWord(b.kind)) : kindWord(b.kind);
 const toCell = ([x, y, z]) => ({ x, y, z });
 
 export function bootEditor() {
@@ -919,7 +917,7 @@ function finishRun(c, e, d) {
     d.id,
     next,
     respan
-      ? `moved the ${spanWord(span)}'s run to ${place3(far)}`
+      ? `moved the run of the ${spanWord(span)} to ${place3(far)}`
       : `laid ${aWord(spanWord(span))} from ${place3(anchor)} to ${place3(far)}`,
   );
   select(anchor, null, e);

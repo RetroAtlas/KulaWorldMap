@@ -210,9 +210,19 @@ const circuitVariant = (circuit) => ann.types[String(SWITCH)]?.variants?.[String
 export const circuitColour = (circuit) => circuitVariant(circuit)?.colour ?? null;
 /** A circuit's word, the bracketed part of its switch's name, or null where the annotations have none. */
 export const circuitWord = (circuit) =>
-  /\(([^)]*)\)/.exec(circuitVariant(circuit)?.name ?? "")?.[1] ?? null;
-/** A circuit's word, or its number. */
-export const circuitName = (circuit) => circuitWord(circuit) ?? String(circuit);
+  /\(([^)]*)\)/.exec(circuitVariant(circuit)?.name ?? "")?.[1].trim() || null;
+/** A circuit's word, or "circuit 2" where the annotations have none. */
+export const circuitName = (circuit) => circuitWord(circuit) ?? `circuit ${circuit}`;
+/** A thing of a circuit as a sentence names it, "green laser", or "laser of circuit 2" where the
+    annotations have no word; with no noun, the circuit itself, "green circuit" or "circuit 2". */
+export const circuitPhrase = (circuit, noun = null) => {
+  const word = circuitWord(circuit);
+  if (word) return `${word} ${noun ?? "circuit"}`;
+  return noun ? `${noun} of ${circuitName(circuit)}` : circuitName(circuit);
+};
+/** The circuit as a sentence's object, "the green circuit", or "circuit 2", which takes no article. */
+export const theCircuit = (circuit) =>
+  circuitWord(circuit) ? `the ${circuitPhrase(circuit)}` : circuitPhrase(circuit);
 // A teleporter names the one it sends the ball to by that one's record, times
 // sixteen, plus its face.
 const TELEPORTER = 5;

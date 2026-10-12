@@ -57,7 +57,7 @@ export const idOf = ({ type, variant }) => {
 /** The key of a block's row: its kind, and for a laser its colour as well. */
 export const kindId = (b) => (b.kind === LASER_KIND ? `k${b.kind}/${b.colour ?? 0}` : `k${b.kind}`);
 
-/** A colour's word, as the annotations name a switch of it. */
+/** A colour's word, as the annotations name a switch of it, or the circuit's number as a name. */
 export const colourName = circuitName;
 
 // What belongs to the face: its paint, the ball's start, and a thing that only

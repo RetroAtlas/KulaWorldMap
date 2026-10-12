@@ -2,7 +2,14 @@
 // that edits the shown one.
 import { $, el, emit, on } from "./dom.js";
 import { state } from "./state.js";
-import { worldName, levelTitle, markerColour, skinsTable } from "./data.js";
+import {
+  worldName,
+  levelTitle,
+  markerColour,
+  skinsTable,
+  circuitPhrase,
+  theCircuit,
+} from "./data.js";
 import { selectLevel, showLevel } from "./navigate.js";
 import { say, describeLevel } from "./a11y.js";
 import { toast } from "./toast.js";
@@ -449,7 +456,7 @@ function circuitRows(id) {
     );
     lamp.setAttribute("aria-hidden", "true");
     const toggle = el("button", { id: `draftCircuit${colour}`, type: "button" });
-    toggle.setAttribute("aria-label", `${name} circuit`);
+    toggle.setAttribute("aria-label", circuitPhrase(colour));
     toggle.onclick = () => {
       const d = drafts.get(id);
       if (!d) return;
@@ -457,7 +464,7 @@ function circuitRows(id) {
       step(
         id,
         setCircuit(d.doc, colour, off ? "on" : "off"),
-        `turned the ${name} circuit ${off ? "on" : "off"}`,
+        `turned ${theCircuit(colour)} ${off ? "on" : "off"}`,
       );
     };
     const members = el("span", { className: "members" });
@@ -465,16 +472,16 @@ function circuitRows(id) {
     row.setAttribute("role", "group");
     row.setAttribute("aria-label", name);
     box.append(row);
-    rows.push({ colour, name, toggle, members });
+    rows.push({ colour, toggle, members });
   }
   return {
     box,
     sync(doc) {
       const tally = membersOf(doc);
-      for (const { colour, name, toggle, members } of rows) {
+      for (const { colour, toggle, members } of rows) {
         const off = startsOff(doc, colour);
         toggle.textContent = `starts ${off ? "off" : "on"}`;
-        toggle.title = `Turn the ${name} circuit ${off ? "on" : "off"}`;
+        toggle.title = `Turn ${theCircuit(colour)} ${off ? "on" : "off"}`;
         toggle.setAttribute("aria-pressed", String(!off));
         members.textContent = tally[colour];
       }

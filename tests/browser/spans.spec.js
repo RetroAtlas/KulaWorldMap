@@ -383,7 +383,9 @@ test("Erase takes a run whole, nothing stands on its faces, and a brush on its b
   await expect(page.locator("#toolStatus")).toHaveText(WAITING);
   await click(page, await floor(page, 18, 23));
   expect(await spans(page)).toEqual([{ ...PLATFORM, far: [18, 23, 17] }]);
-  await expect(page.locator("#say")).toHaveText("Moved the moving platform's run to 18, 23, 17");
+  await expect(page.locator("#say")).toHaveText(
+    "Moved the run of the moving platform to 18, 23, 17",
+  );
   expect((await steps(page)).past).toBe(before.past + 1);
 
   await page.keyboard.press("z");
@@ -407,7 +409,9 @@ test("the second click reads the run's own block afresh, so a change made while 
   await amend(page, [18, 17, 17], { length: 3 });
   await click(page, await floor(page, 18, 23));
   expect(await spans(page)).toEqual([{ ...PLATFORM, far: [18, 23, 17], length: 3 }]);
-  await expect(page.locator("#say")).toHaveText("Moved the moving platform's run to 18, 23, 17");
+  await expect(page.locator("#say")).toHaveText(
+    "Moved the run of the moving platform to 18, 23, 17",
+  );
   expect(errors).toEqual([]);
 });
 
