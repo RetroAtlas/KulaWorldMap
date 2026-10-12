@@ -202,7 +202,10 @@ def load_level(arg, world):
             sys.exit(f"{arg} is {e}")
         return project, report
     if path.is_file():
-        project, report, _ = read_kwl(path.read_bytes(), world)
+        try:
+            project, report, _ = read_kwl(path.read_bytes(), world)
+        except ValueError as e:
+            sys.exit(f"in {arg}, {e}")
         project["title"] = path.stem
         return project, report
     if "#" in arg:
@@ -210,7 +213,7 @@ def load_level(arg, world):
             return template(json.loads(DATA.read_text()), arg), []
         except KeyError:
             sys.exit(f"no shipped level is {arg}; name one like /HIRO/HIRO.PAK#0")
-    sys.exit(f"no level at {arg}")
+    sys.exit(f"no file at {arg}")
 
 
 def main():

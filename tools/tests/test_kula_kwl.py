@@ -1402,12 +1402,24 @@ class TheCli(unittest.TestCase):
             (scratch / "short.kwl").write_bytes(playground()[:-1])
             done = self.run_tool("--from-kwl", scratch / "short.kwl", "--json")
             self.assertEqual(done.returncode, 1, done.stderr)
-            self.assertIn("is not a level", done.stderr)
-            self.assertNotIn("Traceback", done.stderr)
+            self.assertEqual(done.stderr.splitlines(), [
+                f"in {scratch / 'short.kwl'}, {len(playground()) - 1} bytes is not a level: "
+                "the lattice, six bytes and whole 256-byte stretches"])
             done = self.run_tool("--template", "/HIRO/HIRO.PAK#²")
             self.assertEqual(done.returncode, 1, done.stderr)
             self.assertIn("no shipped level is", done.stderr)
             self.assertNotIn("Traceback", done.stderr)
+
+    def test_a_missing_path_is_said_in_a_sentence_and_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            for args in (("--from-json", scratch / "missing.kula.json", "--kwl", scratch / "missing.kwl"),
+                         ("--from-kwl", scratch / "missing.kwl", "--json")):
+                with self.subTest(args[0]):
+                    done = self.run_tool(*args)
+                    self.assertEqual(done.returncode, 1, done.stderr)
+                    self.assertEqual(done.stderr.splitlines(), [f"no file at {args[1]}"])
+            self.assertEqual(list(scratch.iterdir()), [])
 
 
 class Digests(unittest.TestCase):

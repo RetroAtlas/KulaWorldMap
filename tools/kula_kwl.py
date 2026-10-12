@@ -2148,6 +2148,8 @@ def main():
     elif args.from_json:
         if not args.kwl:
             sys.exit("--from-json needs --kwl OUT")
+        if not Path(args.from_json).is_file():
+            sys.exit(f"no file at {args.from_json}")
         try:
             project, report, _ = read_project(json.loads(Path(args.from_json).read_text()))
         except json.JSONDecodeError as e:
@@ -2169,10 +2171,12 @@ def main():
         Path(args.kwl).write_bytes(blob)
         print(f"{len(blob)} bytes -> {args.kwl}")
     elif args.from_kwl:
+        if not Path(args.from_kwl).is_file():
+            sys.exit(f"no file at {args.from_kwl}")
         try:
             project, report, _ = read_kwl(Path(args.from_kwl).read_bytes(), args.world)
         except ValueError as e:
-            sys.exit(str(e))
+            sys.exit(f"in {args.from_kwl}, {e}")
         if args.json:
             print(json.dumps(project, indent=1))
         for line in report:

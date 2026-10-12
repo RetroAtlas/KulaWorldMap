@@ -333,6 +333,31 @@ class TheTool(unittest.TestCase):
             broken = run("broken.json")
             self.assertNotEqual(broken.returncode, 0)
             self.assertIn("broken.json is not JSON:", broken.stderr)
+
+    def test_a_level_file_that_is_no_level_is_said_in_a_sentence_and_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "notes.kwl").write_bytes(bytes(100))
+            done = subprocess.run([sys.executable, TOOL, "--level", scratch / "notes.kwl", "--into", f"{SYNTHETIC_PACK}#{SLOT}",
+                                   "--out", scratch / "notes", "--disc", scratch / "image.bin", "--ppf"],
+                                  capture_output=True, text=True)
+            self.assertEqual(done.returncode, 1, done.stderr)
+            self.assertEqual(done.stderr.splitlines(), [
+                f"in {scratch / 'notes.kwl'}, 100 bytes is not a level: the lattice, six bytes and whole 256-byte stretches"])
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "notes.kwl"])
+
+    def test_a_missing_path_is_said_in_a_sentence_and_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            done = subprocess.run([sys.executable, TOOL, "--level", scratch / "missing.kula.json", "--into", f"{SYNTHETIC_PACK}#{SLOT}",
+                                   "--out", scratch / "missing", "--disc", scratch / "image.bin", "--ppf"],
+                                  capture_output=True, text=True)
+            self.assertEqual(done.returncode, 1, done.stderr)
+            self.assertEqual(done.stderr.splitlines(), [f"no file at {scratch / 'missing.kula.json'}"])
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin"])
+
     def test_an_output_that_exists_or_is_the_image_itself_is_refused_before_anything_is_written(self):
         held = json.loads(FIXTURE.read_text())["cases"][0]
         with tempfile.TemporaryDirectory() as scratch:
