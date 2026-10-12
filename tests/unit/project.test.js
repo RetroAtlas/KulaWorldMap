@@ -39,6 +39,7 @@ import {
   UNTITLED,
   blank,
   blockAt,
+  circuitMembers,
   counts,
   describe,
   faceAt,
@@ -1021,6 +1022,37 @@ test("an object looks into an empty cell", () => {
   assert.deepEqual(beam.at, { cell: [6, 8, 5], face: 4 });
   assert.equal(describe(beam), "warning at 6,8,5 face 4: looks into a beam");
   assert.equal(describe(validate(project([plain([5, 5, 5])]), HIDES)[0]), "error: no start");
+});
+
+test("a circuit's members are counted on the faces the game walks, by colour", () => {
+  const blocks = [
+    plain([5, 5, 5], 0, {
+      0: start(),
+      1: { type: SWITCH, variant: 2 },
+      2: { type: TELEPORTER, facing: 1, variant: 2 },
+      3: { type: SWITCH },
+    }),
+    {
+      cell: [7, 5, 5],
+      kind: PLATFORM_KIND,
+      far: [7, 9, 5],
+      length: 2,
+      speed: 30,
+      faces: { 0: { type: SWITCH, variant: 2 } },
+    },
+    { cell: [9, 5, 5], kind: LASER_KIND, far: [9, 9, 5], colour: 2 },
+    { cell: [11, 5, 5], kind: LASER_KIND, far: [11, 9, 5] },
+    plain([13, 5, 5], 0, {
+      0: { type: TELEPORTER, facing: 1, variant: 7 },
+      1: { type: SWITCH, variant: -1 },
+    }),
+  ];
+  assert.deepEqual(circuitMembers(project(blocks)), [
+    { switches: 1, teleporters: 0, lasers: 1 },
+    { switches: 0, teleporters: 0, lasers: 0 },
+    { switches: 1, teleporters: 1, lasers: 1 },
+    { switches: 0, teleporters: 0, lasers: 0 },
+  ]);
 });
 
 test("the circuits' warnings", () => {

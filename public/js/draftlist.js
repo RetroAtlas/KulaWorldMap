@@ -6,11 +6,12 @@ import { worldName, levelTitle, markerColour, skinsTable } from "./data.js";
 import { selectLevel, showLevel } from "./navigate.js";
 import { say, describeLevel } from "./a11y.js";
 import { toast } from "./toast.js";
-import { COLOURS, KEY, LASER_KIND, SWITCH, TELEPORTER, facesOf, writeKwl } from "./kwl.js";
+import { COLOURS, KEY, SWITCH, facesOf, writeKwl } from "./kwl.js";
 import {
   ERROR,
   UNTITLED,
   blank,
+  circuitMembers,
   fromLevel,
   playsAs,
   setCircuit,
@@ -478,21 +479,7 @@ function circuitRows(id) {
 
 /** What each colour has, as a line: its switches, teleporters and lasers, or that it has none. */
 function membersOf(doc) {
-  const tally = Array.from({ length: COLOURS }, () => ({ switches: 0, teleporters: 0, lasers: 0 }));
-  const of = (colour) => tally[colour ?? 0];
-  for (const b of doc.blocks) {
-    if (b.kind === LASER_KIND) {
-      const m = of(b.colour);
-      if (m) m.lasers++;
-    }
-    for (const [, o] of facesOf(b)) {
-      const m = of(o.variant);
-      if (!m) continue;
-      if (o.type === SWITCH) m.switches++;
-      if (o.type === TELEPORTER) m.teleporters++;
-    }
-  }
-  return tally.map(
+  return circuitMembers(doc).map(
     ({ switches, teleporters, lasers }) =>
       [
         switches && some(switches, "switch", "switches"),

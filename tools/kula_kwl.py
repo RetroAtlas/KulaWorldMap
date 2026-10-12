@@ -1338,7 +1338,7 @@ def validate(project, hides):
         cell, j = starts[-1]
         warn(f"{len(starts)} starts; the game takes the one on face {j} of the block at {cell_text(cell)}")
 
-    _validate_circuits(project, blocks, warn)
+    _validate_circuits(project, warn)
     n = counts(project, hides)
     undrawn = [] if n["keys"] or _truthy(project.get("hidden")) else _undrawn_in_bonus(blocks)
     if undrawn:
@@ -1560,24 +1560,33 @@ def _circuit_name(c):
     return found.group(1) if found else str(c)
 
 
-def _validate_circuits(project, blocks, warn):
-    circuits = _or(project.get("circuits"), {})
-    members = {c: Counter() for c in range(COLOURS)}
-    for b in blocks:
+def circuit_members(project):
+    """Each colour's switches, teleporters and lasers, counted on the faces the game walks."""
+    members = [{"switches": 0, "teleporters": 0, "lasers": 0} for _ in range(COLOURS)]
+
+    def member_of(colour):
+        return members[colour] if _is_int(colour) and colour in range(COLOURS) else None
+
+    for b in project["blocks"]:
         if b["kind"] == LASER_KIND:
-            colour = _or(b.get("colour"), 0)
-            if _is_int(colour) and colour in members:
-                members[colour]["lasers"] += 1
+            m = member_of(_or(b.get("colour"), 0))
+            if m is not None:
+                m["lasers"] += 1
             continue
         for o in _faces_of(b).values():
-            colour = _or(o.get("variant"), 0)
-            if not _is_int(colour) or colour not in members:
+            m = member_of(_or(o.get("variant"), 0))
+            if m is None:
                 continue
             if o["type"] == TELEPORTER:
-                members[colour]["teleporters"] += 1
+                m["teleporters"] += 1
             elif o["type"] == SWITCH:
-                members[colour]["switches"] += 1
-    for c, m in members.items():
+                m["switches"] += 1
+    return members
+
+
+def _validate_circuits(project, warn):
+    circuits = _or(project.get("circuits"), {})
+    for c, m in enumerate(circuit_members(project)):
         name = _circuit_name(c)
         if _property(circuits, str(c)) == "off" and not m["switches"] and (m["lasers"] or m["teleporters"]):
             warn(f"the {name} circuit starts off and has no switch to turn it on")

@@ -242,6 +242,14 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   await expect(page.locator("#detail .circuit")).toHaveCount(1);
   await expect(field(page, "circuit-2")).toHaveText("starts on");
   await expect(page.locator("#detail .circuit .members")).toHaveText("1 laser");
+  // a switch under a platform's face stands on nothing, so the circuit does not count it
+  await lay(page, [20, 21, 17], {
+    ...PLATFORM,
+    far: [20, 25, 17],
+    faces: { 0: { type: 9, variant: 2 } },
+  });
+  await select(page, [17, 18, 17]);
+  await expect(page.locator("#detail .circuit .members")).toHaveText("1 laser");
   await field(page, "laser-3").click();
   expect(blockAt(await doc(page), [17, 18, 17]).colour).toBe(3);
   await expect(page.locator("#say")).toHaveText("Set the laser at 17, 18, 17 to red");

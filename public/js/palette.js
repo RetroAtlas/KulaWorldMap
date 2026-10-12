@@ -3,6 +3,7 @@
 import { $, el, on } from "./dom.js";
 import { state } from "./state.js";
 import {
+  circuitName,
   kindName,
   markerColour,
   markerHazard,
@@ -23,7 +24,6 @@ import {
   SETTINGS_KIND,
   STAR,
   STARTS,
-  SWITCH,
   VARIANTS,
 } from "./kwl.js";
 
@@ -58,8 +58,7 @@ export const idOf = ({ type, variant }) => {
 export const kindId = (b) => (b.kind === LASER_KIND ? `k${b.kind}/${b.colour ?? 0}` : `k${b.kind}`);
 
 /** A colour's word, as the annotations name a switch of it. */
-export const colourName = (colour) =>
-  /\(([^)]*)\)/.exec(markerLabel(markerFor(SWITCH, String(colour))))?.[1] ?? String(colour);
+export const colourName = circuitName;
 
 // What belongs to the face: its paint, the ball's start, and a thing that only
 // points a way and is neither a device nor a hazard.

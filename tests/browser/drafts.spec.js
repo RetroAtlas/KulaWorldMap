@@ -417,6 +417,20 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   });
   await expect(members.nth(2)).toHaveText("1 switch, 1 laser");
   await expect(members.nth(0)).toHaveText("nothing of this colour");
+  // a switch under a platform's face stands on nothing, so neither the card nor the panel counts it
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setBlock }] = await Promise.all(
+      ["state.js", "drafts.js", "project.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    const platform = { kind: 5, far: [20, 25, 17], length: 2, speed: 30 };
+    update(
+      id,
+      setBlock(get(id).doc, [20, 21, 17], { ...platform, faces: { 0: { type: 9, variant: 2 } } }),
+    );
+  });
+  await expect(members.nth(2)).toHaveText("1 switch, 1 laser");
 
   // the panel's own row, on the face that holds the switch, says the same
   await expect(page.locator("#tools")).toBeVisible();
@@ -429,6 +443,7 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   });
   const panelRow = page.locator('#detail [data-field="circuit-2"]');
   await expect(panelRow).toHaveText("starts on");
+  await expect(page.locator("#detail .circuit .members")).toHaveText("1 switch, 1 laser");
   const steps = () =>
     page.evaluate(async () => {
       const [{ state }, { steps }] = await Promise.all(

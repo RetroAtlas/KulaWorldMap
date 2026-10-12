@@ -429,15 +429,15 @@ function undrawnInBonus(blocks) {
   return names;
 }
 
-function validateCircuits(project, blocks, warn) {
-  const circuits = project.circuits ?? {};
+/** Each colour's switches, teleporters and lasers, counted on the faces the game walks. */
+export function circuitMembers(project) {
   const members = Array.from({ length: COLOURS }, () => ({
-    lasers: 0,
-    teleporters: 0,
     switches: 0,
+    teleporters: 0,
+    lasers: 0,
   }));
   const memberOf = (colour) => (Number.isInteger(colour) ? members[colour] : undefined);
-  for (const b of blocks) {
+  for (const b of project.blocks) {
     if (b.kind === LASER_KIND) {
       const m = memberOf(b.colour ?? 0);
       if (m) m.lasers++;
@@ -450,7 +450,12 @@ function validateCircuits(project, blocks, warn) {
       else if (o.type === SWITCH) m.switches++;
     }
   }
-  members.forEach((m, c) => {
+  return members;
+}
+
+function validateCircuits(project, warn) {
+  const circuits = project.circuits ?? {};
+  circuitMembers(project).forEach((m, c) => {
     const name = circuitName(c);
     if (circuits[String(c)] === "off" && !m.switches && (m.lasers || m.teleporters))
       warn(`the ${name} circuit starts off and has no switch to turn it on`);
@@ -554,7 +559,7 @@ export function validate(project, hides) {
     );
   }
 
-  validateCircuits(project, blocks, warn);
+  validateCircuits(project, warn);
   const n = counts(project, hides);
   const undrawn = n.keys || project.hidden ? [] : undrawnInBonus(blocks);
   if (undrawn.length)

@@ -42,6 +42,7 @@ from kula_kwl import (  # noqa: E402
     REWIRED,
     VECTORS,
     canonical,
+    circuit_members,
     check,
     compare,
     counts,
@@ -1216,6 +1217,21 @@ class Validates(unittest.TestCase):
             self.assertIn(text, errors)
         self.assertFalse(any(" 7 " in w or " -1 " in w for w in texts(findings, "warning")))
         self.assertEqual(counts(project(blocks), HIDES)["lasers"], 2)
+
+    def test_a_circuits_members_are_counted_on_the_faces_the_game_walks_by_colour(self):
+        blocks = [plain((5, 5, 5), t0=start(), t1={"type": SWITCH, "variant": 2},
+                        t2={"type": TELEPORTER, "facing": 1, "variant": 2}, t3={"type": SWITCH}),
+                  {"cell": [7, 5, 5], "kind": PLATFORM_KIND, "far": [7, 9, 5], "length": 2, "speed": 30,
+                   "faces": {"0": {"type": SWITCH, "variant": 2}}},
+                  {"cell": [9, 5, 5], "kind": LASER_KIND, "far": [9, 9, 5], "colour": 2},
+                  {"cell": [11, 5, 5], "kind": LASER_KIND, "far": [11, 9, 5]},
+                  plain((13, 5, 5), t0={"type": TELEPORTER, "facing": 1, "variant": 7}, t1={"type": SWITCH, "variant": -1})]
+        self.assertEqual(circuit_members(project(blocks)), [
+            {"switches": 1, "teleporters": 0, "lasers": 1},
+            {"switches": 0, "teleporters": 0, "lasers": 0},
+            {"switches": 1, "teleporters": 1, "lasers": 1},
+            {"switches": 0, "teleporters": 0, "lasers": 0},
+        ])
 
     def test_the_circuits_warnings(self):
         blocks = [plain((5, 5, 5), t0=start(), t1={"type": TELEPORTER, "facing": 1, "variant": 0}, t2={"type": SWITCH, "variant": 1}),

@@ -12,7 +12,7 @@ import {
 } from "./data.js";
 import { onShow, showCell } from "./detail.js";
 import * as palette from "./palette.js";
-import { blockAt, setBlock, setCircuit, setFace } from "./project.js";
+import { blockAt, circuitMembers, setBlock, setCircuit, setFace } from "./project.js";
 import {
   BLOCK_KINDS,
   COLOURS,
@@ -495,16 +495,7 @@ function changeThing(d, own, face, select, o) {
 /** The circuit of one colour: its lamp, whether it starts on, as a toggle, and what it counts. */
 function circuitRow(d, colour) {
   const off = d.doc.circuits?.[String(colour)] === "off";
-  let switches = 0;
-  let teleporters = 0;
-  let lasers = 0;
-  for (const b of d.doc.blocks) {
-    if (b.kind === LASER_KIND && (b.colour ?? 0) === colour) lasers++;
-    for (const o of Object.values(b.faces ?? {})) {
-      if (o.type === SWITCH && (o.variant ?? 0) === colour) switches++;
-      if (o.type === TELEPORTER && (o.variant ?? 0) === colour) teleporters++;
-    }
-  }
+  const { switches, teleporters, lasers } = circuitMembers(d.doc)[colour];
   const members = [
     switches && `${switches} ${switches === 1 ? "switch" : "switches"}`,
     teleporters && plural(teleporters, "teleporter"),
