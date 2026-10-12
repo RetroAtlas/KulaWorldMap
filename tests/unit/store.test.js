@@ -5,11 +5,9 @@ import { VERSION, empty, merge, parse, serialize } from "../../public/js/store.j
 import { blank, readProject } from "../../public/js/project.js";
 
 const entry = (doc, more = {}) => ({ doc, updated: 1, saved: null, edits: 0, ...more });
-
 const good = (world = "HIRO", more = {}) => ({ ...blank(world), ...more });
-
 const text = (raw) => JSON.stringify(raw);
-
+// A level the writer refuses: so many pickups that a link word runs past the file's range.
 const crowd = () => {
   const blocks = Array.from({ length: 2049 }, (_, i) => ({
     cell: [1 + (i % 32), 1 + (Math.floor(i / 32) % 32), 1 + Math.floor(i / 1024)],
@@ -19,7 +17,7 @@ const crowd = () => {
   blocks.find((b) => b.cell.join() === "32,32,2").faces[1] = { type: 9, variant: 0 };
   return blocks;
 };
-
+// A store mixing one draft with entries that cannot be read, under keys of every kind.
 const mixed = () => {
   const doc = good();
   return {
@@ -38,15 +36,7 @@ const mixed = () => {
   };
 };
 
-const marks = (m = {}) => ({
-  dirty: new Set(m.dirty),
-  deleted: new Set(m.deleted),
-  handed: new Set(m.handed),
-});
-
-const at = (title, updated) => entry(good("HIRO", { title }), { updated });
-
-const table = (drafts, next = 10) => ({ version: VERSION, next, drafts });
+// --- the store's text -------------------------------------------------------------
 
 test("a store reads back its drafts, each document through the file's reader and the writer", () => {
   const doc = good("HAZE", { title: "Kept", time: 50 });
@@ -151,6 +141,16 @@ test("the page's cheap test and the reader agree: every draft read is counted, e
     seen,
   );
 });
+
+// --- the merge ----------------------------------------------------------------------
+
+const marks = (m = {}) => ({
+  dirty: new Set(m.dirty),
+  deleted: new Set(m.deleted),
+  handed: new Set(m.handed),
+});
+const at = (title, updated) => entry(good("HIRO", { title }), { updated });
+const table = (drafts, next = 10) => ({ version: VERSION, next, drafts });
 
 test("per draft the later change wins, and theirs taking over clears the mark here", () => {
   const m = marks({ dirty: [1, 2] });
