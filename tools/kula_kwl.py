@@ -862,7 +862,8 @@ def read_kwl(blob, world=WORLDS[0]):
                 far = tuple(far)
                 if all(c in LATTICE for c in far):
                     if far == b:
-                        report.append(f"record {k} spans {ends} and stands at {cell_text(r.cell)}; its lower end is now its cell")
+                        end = "lower" if r.cell < b else "upper"
+                        report.append(f"record {k} spans {ends} and stands at {cell_text(r.cell)}; its {end} end is now its cell")
                     else:
                         report.append(f"record {k} spans {ends} and stands at {cell_text(r.cell)}, off their line; "
                                       f"it now spans {cell_text(r.cell)} to {cell_text(far)}")

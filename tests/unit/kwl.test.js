@@ -639,21 +639,26 @@ test("a reversed laser pair reads lower end first", () => {
   assert.deepEqual(slotOf(writeKwl(p), 0, 0).slice(1, 10), [1, 1, 1, 16, 10, 17, 20, 10, 17]);
 });
 
-test("a span whose block is at neither end is moved onto its cell", () => {
-  const beam = slot(1, [1, 1, 20, 10, 17, 24, 10, 17]);
-  const blob = level(cells([[[16, 10, 17], FIRST_RECORD]]), [
-    block([16, 10, 17], {
-      kind: LASER_KIND,
-      faces: { 0: beam },
-      second: slot(1, [-1, -1, 5, -1, 0, -1]),
-    }),
+test("a span whose block is at neither end is laid from its cell to the upper end, which names the end the cell becomes", () => {
+  const read = (a, b) => {
+    const blob = level(cells([[[16, 10, 17], FIRST_RECORD]]), [
+      block([16, 10, 17], {
+        kind: LASER_KIND,
+        faces: { 0: slot(1, [1, 1, ...a, ...b]) },
+        second: slot(1, [-1, -1, 5, -1, 0, -1]),
+      }),
+    ]);
+    const { project: p, report } = readKwl(blob);
+    return [p.blocks[0].far, report];
+  };
+  assert.deepEqual(read([20, 10, 17], [24, 10, 17]), [
+    [24, 10, 17],
+    ["record 0 spans 20,10,17 to 24,10,17 and stands at 16,10,17; its lower end is now its cell"],
   ]);
-  const { project: p, report } = readKwl(blob);
-  assert.deepEqual(p.blocks[0].far, [24, 10, 17]);
-  assert.ok(
-    report.some((line) => line.includes("lower end is now its cell")),
-    report,
-  );
+  assert.deepEqual(read([10, 10, 17], [14, 10, 17]), [
+    [14, 10, 17],
+    ["record 0 spans 10,10,17 to 14,10,17 and stands at 16,10,17; its upper end is now its cell"],
+  ]);
 });
 
 test("a span off its block's line is laid along its axis through the block, or dropped where it has none", () => {

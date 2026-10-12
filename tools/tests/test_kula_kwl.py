@@ -351,13 +351,18 @@ class Reads(unittest.TestCase):
         self.assertEqual(p["blocks"], [{"cell": [16, 10, 17], "kind": LASER_KIND, "far": [20, 10, 17], "colour": 0}])
         self.assertEqual(list(Level(canonical(p)).records[0].slots[0][1:10]), [1, 1, 1, 16, 10, 17, 20, 10, 17])
 
-    def test_a_span_whose_block_is_at_neither_end_is_moved_onto_its_cell(self):
-        beam = slot(1, 1, 1, 20, 10, 17, 24, 10, 17)
-        blob = level({(16, 10, 17): FIRST_RECORD},
-                     [block((16, 10, 17), kind=LASER_KIND, faces={0: beam}, second=slot(1, -1, -1, 5, -1, 0, -1))])
-        p, report = read_kwl(blob)
-        self.assertEqual(p["blocks"][0]["far"], [24, 10, 17])
-        self.assertTrue(any("lower end is now its cell" in line for line in report), report)
+    def test_a_span_whose_block_is_at_neither_end_is_laid_from_its_cell_to_the_upper_end_which_names_the_end_the_cell_becomes(self):
+        def read(a, b):
+            blob = level({(16, 10, 17): FIRST_RECORD},
+                         [block((16, 10, 17), kind=LASER_KIND, faces={0: slot(1, 1, 1, *a, *b)},
+                                second=slot(1, -1, -1, 5, -1, 0, -1))])
+            p, report = read_kwl(blob)
+            return p["blocks"][0]["far"], report
+
+        self.assertEqual(read((20, 10, 17), (24, 10, 17)),
+                         ([24, 10, 17], ["record 0 spans 20,10,17 to 24,10,17 and stands at 16,10,17; its lower end is now its cell"]))
+        self.assertEqual(read((10, 10, 17), (14, 10, 17)),
+                         ([14, 10, 17], ["record 0 spans 10,10,17 to 14,10,17 and stands at 16,10,17; its upper end is now its cell"]))
 
     def test_a_span_off_its_blocks_line_is_laid_along_its_axis_through_the_block_or_dropped_where_it_has_none(self):
         def read(a, b, cell=(16, 10, 17)):

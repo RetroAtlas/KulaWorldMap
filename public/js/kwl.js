@@ -857,7 +857,7 @@ export function readKwl(bytes, world = WORLDS[0]) {
         if (far.every(onLattice))
           report.push(
             sameCell(far, b)
-              ? `record ${k} spans ${ends} and stands at ${cellText(r.cell)}; its lower end is now its cell`
+              ? `record ${k} spans ${ends} and stands at ${cellText(r.cell)}; its ${compareCells(r.cell, b) < 0 ? "lower" : "upper"} end is now its cell`
               : `record ${k} spans ${ends} and stands at ${cellText(r.cell)}, off their line; it now spans ${cellText(r.cell)} to ${cellText(far)}`,
           );
       }
