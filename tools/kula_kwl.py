@@ -1079,7 +1079,7 @@ def read_project(raw):
         return False
 
     project = {"format": FORMAT, "version": VERSION, "title": text("title", TITLE_MOST),
-               "author": text("author", TEXT_MOST), "notes": text("notes", TEXT_MOST), "world": text("world")}
+               "author": text("author", TEXT_MOST), "notes": text("notes", TEXT_MOST), "world": text("world", TEXT_MOST)}
     into = optional("into", TEXT_MOST)
     if into is not None:
         project["into"] = into

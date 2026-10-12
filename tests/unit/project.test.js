@@ -1455,13 +1455,14 @@ test("a platform's length that runs past the edge is cut on the way in, to a run
   );
 });
 
-test("a title, an author, notes, a target or a source past their most are cut to it, counted in characters", () => {
+test("a title, an author, notes, a world, a target or a source past their most are cut to it, counted in characters", () => {
   const title = `${"a".repeat(78)}\u{1F600}\u{1F600}\u{1F600}`;
   const { project: p, report } = readProject(
     project([plain([5, 5, 5], 0, { 0: start() })], {
       title,
       author: "b".repeat(2000),
       notes: "c".repeat(2001),
+      world: `HIRO${"w".repeat(1997)}`,
       into: `/HIRO/HIRO.PAK#1${"x".repeat(2000)}`,
       from: `/HIRO/HIRO.PAK#3${"y".repeat(1984)}`,
     }),
@@ -1470,11 +1471,13 @@ test("a title, an author, notes, a target or a source past their most are cut to
   assert.equal([...p.title].length, 80);
   assert.equal(p.author.length, 2000);
   assert.equal(p.notes.length, 2000);
+  assert.equal(p.world, `HIRO${"w".repeat(1996)}`);
   assert.equal(p.into, `/HIRO/HIRO.PAK#1${"x".repeat(1984)}`);
   assert.equal(p.from, `/HIRO/HIRO.PAK#3${"y".repeat(1984)}`);
   assert.deepEqual(report, [
     "title is 81 characters long, more than the 80 kept; it is cut to 80",
     "notes is 2001 characters long, more than the 2000 kept; it is cut to 2000",
+    "world is 2001 characters long, more than the 2000 kept; it is cut to 2000",
     "into is 2016 characters long, more than the 2000 kept; it is cut to 2000",
   ]);
   assert.deepEqual(readProject(writeProject(p)).report, []);

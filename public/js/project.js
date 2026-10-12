@@ -786,7 +786,7 @@ export function readProject(source) {
     title: text("title", TITLE_MOST),
     author: text("author", TEXT_MOST),
     notes: text("notes", TEXT_MOST),
-    world: text("world"),
+    world: text("world", TEXT_MOST),
   };
   const into = optional("into", TEXT_MOST);
   if (into !== undefined) project.into = into;
