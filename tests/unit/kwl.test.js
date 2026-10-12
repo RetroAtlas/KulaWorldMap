@@ -966,7 +966,7 @@ test("a platform's length and speed and a vanishing block's phase are kept and r
   );
 });
 
-test("a platform's length the lattice cannot hold is cut to what it holds, and the writer refuses it", () => {
+test("a platform's length that runs past the edge is cut to what fits, and the writer refuses one past the lattice", () => {
   const platform = (length) =>
     level(
       cells([
@@ -982,29 +982,35 @@ test("a platform's length the lattice cannot hold is cut to what it holds, and t
         }),
       ],
     );
+  // the run's upper end is 6, so 27 blocks reach the last cell the game builds and 28 the lattice's last
   for (const [length, held] of [
-    [32767, 28],
-    [29, 28],
+    [32767, 27],
+    [29, 27],
+    [28, 27],
     [0, 1],
     [-32768, 1],
   ]) {
     const { project: p, report } = readKwl(platform(length));
     assert.equal(p.blocks[1].length, held, String(length));
+    const why = length < 1 ? "is less than one block" : "runs past the edge";
     assert.deepEqual(report, [
-      `the platform at 5,2,3 is ${length} blocks long, which the lattice cannot hold; it is ${held}`,
+      `the platform at 5,2,3 is ${length} blocks long, which ${why}; it is ${held}`,
     ]);
     assert.deepEqual(verify(writeKwl(p)), []);
-    assert.throws(
-      () => writeKwl({ ...p, blocks: p.blocks.with(1, { ...p.blocks[1], length }) }),
-      (e) =>
-        e.message ===
-        `the platform at 5,2,3 is ${length} blocks long, which the lattice cannot hold`,
-      String(length),
-    );
+    const asRead = { ...p, blocks: p.blocks.with(1, { ...p.blocks[1], length }) };
+    if (length === 28) assert.doesNotThrow(() => writeKwl(asRead));
+    else
+      assert.throws(
+        () => writeKwl(asRead),
+        (e) =>
+          e.message ===
+          `the platform at 5,2,3 is ${length} blocks long, which the lattice cannot hold`,
+        String(length),
+      );
   }
-  const { project: p, report } = readKwl(platform(28));
-  assert.equal(p.blocks[1].length, 28);
-  assert.deepEqual(report, ["the platform at 5,2,3 is 28 blocks long"]);
+  const { project: p, report } = readKwl(platform(27));
+  assert.equal(p.blocks[1].length, 27);
+  assert.deepEqual(report, ["the platform at 5,2,3 is 27 blocks long"]);
 });
 
 test("a switch whose list loops back on itself reads, and is rewired on the way out", () => {

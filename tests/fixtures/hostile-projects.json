@@ -2979,16 +2979,16 @@
        10,
        17
       ],
-      "length": 2,
+      "length": 1,
       "speed": 30
      }
     ]
    },
    "report": [
-    "block 1 at 30,10,17 has a length of 3, which the lattice cannot hold; it is 2"
+    "block 1 at 30,10,17 has a length of 3, which runs past the edge; it is 1"
    ],
    "level": {
-    "kwl": "3144b19b767a936230098f13de4d0cfc221e075715b6075b0a50202177e6b3d1"
+    "kwl": "cb9d13f822a77f7124a4c84154465f671444fcfa646eabb151db0475c3139fda"
    }
   },
   {
@@ -3060,7 +3060,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -3080,10 +3080,10 @@
     ]
    },
    "report": [
-    "block 0 at 10,10,17 has a length of 65538, which the lattice cannot hold; it is 22"
+    "block 0 at 10,10,17 has a length of 65538, which runs past the edge; it is 21"
    ],
    "level": {
-    "kwl": "7bf1d930f80091f8bcdb5e8dde79e1a47744e72a5648369e1a127e3f3715789e"
+    "kwl": "fad2de8e3b6592289506a3e2928aae75dc41b3a59277a442bb3dcc79c9e89364"
    }
   },
   {
@@ -6445,7 +6445,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -6460,7 +6460,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -6475,7 +6475,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -6490,7 +6490,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -6505,7 +6505,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -6520,7 +6520,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -6535,7 +6535,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -6550,7 +6550,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -6565,7 +6565,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -6580,7 +6580,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -6595,7 +6595,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -6610,7 +6610,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -6625,7 +6625,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -6640,7 +6640,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -6655,7 +6655,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -6670,7 +6670,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -6685,7 +6685,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -6700,7 +6700,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -6715,7 +6715,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -6730,7 +6730,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -6745,7 +6745,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -6760,7 +6760,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -6775,7 +6775,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -6790,7 +6790,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -6805,7 +6805,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -6820,7 +6820,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -6835,7 +6835,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -6850,7 +6850,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -6865,7 +6865,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -6880,7 +6880,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -6895,7 +6895,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -6910,7 +6910,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -6925,7 +6925,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -6940,7 +6940,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -6955,7 +6955,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -6970,7 +6970,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -6985,7 +6985,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -7000,7 +7000,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -7015,7 +7015,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -7030,7 +7030,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -7045,7 +7045,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -7060,7 +7060,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -7075,7 +7075,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -7090,7 +7090,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -7105,7 +7105,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -7120,7 +7120,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -7135,7 +7135,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -7150,7 +7150,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -7165,7 +7165,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -7180,7 +7180,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -7195,7 +7195,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -7210,7 +7210,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -7225,7 +7225,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -7240,7 +7240,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -7255,7 +7255,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -7270,7 +7270,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -7285,7 +7285,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -7300,7 +7300,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -7315,7 +7315,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -7330,7 +7330,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -7345,7 +7345,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -7360,7 +7360,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -7375,7 +7375,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -7390,7 +7390,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -7405,7 +7405,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -7420,7 +7420,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -7435,7 +7435,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -7450,7 +7450,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -7465,7 +7465,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -7480,7 +7480,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -7495,7 +7495,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -7510,7 +7510,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -7525,7 +7525,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -7540,7 +7540,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -7555,7 +7555,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -7570,7 +7570,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -7585,7 +7585,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -7600,7 +7600,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -7615,7 +7615,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -7630,7 +7630,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -7645,7 +7645,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -7660,7 +7660,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -7675,7 +7675,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -7690,7 +7690,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -7705,7 +7705,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -7720,7 +7720,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -7735,7 +7735,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -7750,7 +7750,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -7765,7 +7765,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -7780,7 +7780,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -7795,7 +7795,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -7810,7 +7810,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -7825,7 +7825,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -7840,7 +7840,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -7855,7 +7855,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -7870,7 +7870,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -7885,7 +7885,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -7900,7 +7900,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -7915,7 +7915,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -7930,7 +7930,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -7945,7 +7945,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -7960,7 +7960,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -7975,7 +7975,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -7990,7 +7990,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -8005,7 +8005,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -8020,7 +8020,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -8035,7 +8035,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -8050,7 +8050,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -8065,7 +8065,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -8080,7 +8080,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -8095,7 +8095,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -8110,7 +8110,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -8125,7 +8125,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -8140,7 +8140,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -8155,7 +8155,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -8170,7 +8170,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -8185,7 +8185,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -8200,7 +8200,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -8215,7 +8215,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -8230,7 +8230,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -8245,7 +8245,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -8260,7 +8260,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -8275,7 +8275,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -8290,7 +8290,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -8305,7 +8305,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -8320,7 +8320,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -8335,7 +8335,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -8350,7 +8350,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -8365,7 +8365,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -8380,7 +8380,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -8395,7 +8395,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -8410,7 +8410,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -8425,7 +8425,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -8440,7 +8440,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -8455,7 +8455,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -8470,7 +8470,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -8485,7 +8485,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -8500,7 +8500,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -8515,7 +8515,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -8530,7 +8530,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -8545,7 +8545,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -8560,7 +8560,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -8575,7 +8575,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -8590,7 +8590,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -8605,7 +8605,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -8620,7 +8620,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -8635,7 +8635,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -8650,7 +8650,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -8665,7 +8665,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -8680,7 +8680,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -8695,7 +8695,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -8710,7 +8710,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -8725,7 +8725,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -8740,7 +8740,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -8755,7 +8755,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -8770,7 +8770,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -8785,7 +8785,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -8800,7 +8800,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -8815,7 +8815,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -8830,7 +8830,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -8845,7 +8845,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -8860,7 +8860,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -8875,7 +8875,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -8890,7 +8890,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -8905,7 +8905,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -8920,7 +8920,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -8935,7 +8935,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -8950,7 +8950,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -8965,7 +8965,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -8980,7 +8980,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -8995,7 +8995,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -9010,7 +9010,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -9025,7 +9025,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -9040,7 +9040,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -9055,7 +9055,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -9070,7 +9070,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -9085,7 +9085,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -9100,7 +9100,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -9115,7 +9115,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -9130,7 +9130,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -9145,7 +9145,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -9160,7 +9160,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -9175,7 +9175,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -9190,7 +9190,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -9205,7 +9205,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -9220,7 +9220,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -9235,7 +9235,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -9250,7 +9250,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -9265,7 +9265,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -9280,7 +9280,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -9295,7 +9295,7 @@
        3,
        17
       ],
-      "length": 31,
+      "length": 30,
       "speed": 30
      },
      {
@@ -9310,7 +9310,7 @@
        6,
        17
       ],
-      "length": 28,
+      "length": 27,
       "speed": 30
      },
      {
@@ -9325,7 +9325,7 @@
        9,
        17
       ],
-      "length": 25,
+      "length": 24,
       "speed": 30
      },
      {
@@ -9340,7 +9340,7 @@
        12,
        17
       ],
-      "length": 22,
+      "length": 21,
       "speed": 30
      },
      {
@@ -9355,7 +9355,7 @@
        15,
        17
       ],
-      "length": 19,
+      "length": 18,
       "speed": 30
      },
      {
@@ -9370,7 +9370,7 @@
        18,
        17
       ],
-      "length": 16,
+      "length": 15,
       "speed": 30
      },
      {
@@ -9385,7 +9385,7 @@
        21,
        17
       ],
-      "length": 13,
+      "length": 12,
       "speed": 30
      },
      {
@@ -9400,7 +9400,7 @@
        24,
        17
       ],
-      "length": 10,
+      "length": 9,
       "speed": 30
      },
      {
@@ -9415,7 +9415,7 @@
        27,
        17
       ],
-      "length": 7,
+      "length": 6,
       "speed": 30
      },
      {
@@ -9430,7 +9430,7 @@
        30,
        17
       ],
-      "length": 4,
+      "length": 3,
       "speed": 30
      },
      {
@@ -9450,13 +9450,13 @@
     ]
    },
    "report": [
-    "block 1 at 2,2,17 has a length of 32767, which the lattice cannot hold; it is 31",
-    "block 2 at 2,5,17 has a length of 32767, which the lattice cannot hold; it is 28",
-    "block 3 at 2,8,17 has a length of 32767, which the lattice cannot hold; it is 25",
+    "block 1 at 2,2,17 has a length of 32767, which runs past the edge; it is 30",
+    "block 2 at 2,5,17 has a length of 32767, which runs past the edge; it is 27",
+    "block 3 at 2,8,17 has a length of 32767, which runs past the edge; it is 24",
     "197 more lines like the one above"
    ],
    "level": {
-    "kwl": "e11931fd59ae43cfef8baa6f47b7db5fc36bb107c5b7ad37e9ecd6dc23737df2"
+    "kwl": "c868587490f4d34b75f40cc03f4fe6e51be532ea628445c1d4f90ae354368808"
    }
   },
   {
@@ -9794,6 +9794,196 @@
    ],
    "level": {
     "kwl": "116d973fcb3f841d6cbec18ca0e447681192a42d9a93f4ba700e02b081df4508"
+   }
+  },
+  {
+   "name": "a platform whose own cell is off the lattice",
+   "input": {
+    "format": "kula-world-level",
+    "version": 1,
+    "title": "t",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": 99,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 3
+       }
+      }
+     },
+     {
+      "cell": [
+       10,
+       40,
+       17
+      ],
+      "kind": 5,
+      "far": [
+       10,
+       20,
+       17
+      ],
+      "length": 2,
+      "speed": 30
+     }
+    ]
+   },
+   "project": {
+    "format": "kula-world-level",
+    "version": 1,
+    "title": "t",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": 99,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 3
+       }
+      }
+     },
+     {
+      "cell": [
+       10,
+       40,
+       17
+      ],
+      "kind": 5,
+      "far": [
+       10,
+       20,
+       17
+      ],
+      "length": 1,
+      "speed": 30
+     }
+    ]
+   },
+   "report": [
+    "block 1 at 10,40,17 has a length of 2, which runs past the edge; it is 1"
+   ],
+   "level": {
+    "refusal": "cell 10,40,17 is outside the lattice"
+   }
+  },
+  {
+   "name": "a platform whose own cell is past the edge",
+   "input": {
+    "format": "kula-world-level",
+    "version": 1,
+    "title": "t",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": 99,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 3
+       }
+      }
+     },
+     {
+      "cell": [
+       10,
+       33,
+       17
+      ],
+      "kind": 5,
+      "far": [
+       10,
+       20,
+       17
+      ],
+      "length": 2,
+      "speed": 30
+     }
+    ]
+   },
+   "project": {
+    "format": "kula-world-level",
+    "version": 1,
+    "title": "t",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": 99,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 3
+       }
+      }
+     },
+     {
+      "cell": [
+       10,
+       33,
+       17
+      ],
+      "kind": 5,
+      "far": [
+       10,
+       20,
+       17
+      ],
+      "length": 1,
+      "speed": 30
+     }
+    ]
+   },
+   "report": [
+    "block 1 at 10,33,17 has a length of 2, which runs past the edge; it is 1"
+   ],
+   "level": {
+    "kwl": "14bd50864b4cf1a36752b51eecd3b743a248d55eaa13a8bc780149cb5c2f971c"
    }
   }
  ]

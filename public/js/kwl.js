@@ -211,6 +211,15 @@ export function roomFor(cell, far) {
   return axis === null ? null : SIDE - Math.max(cell[axis], far[axis]);
 }
 
+/** The run's room from a span's upper end to the last cell the game builds, null along no one axis. */
+export function innerRoomFor(cell, far) {
+  const axis = spanAxis(cell, far);
+  return axis === null ? null : SIDE - 1 - Math.max(cell[axis], far[axis]);
+}
+
+/** A platform's length held to its run's room: 1 below one block or with no room, else the most it holds. */
+export const heldLength = (length, room) => Math.max(1, Math.min(length, room));
+
 const FACE_KEY = /^-?\d+$/;
 const standing = (o) =>
   o !== null && typeof o === "object" && typeof o.type === "number" && o.type > 0;
@@ -855,11 +864,11 @@ export function readKwl(bytes, world = WORLDS[0]) {
       r.slots[0].splice(4, 6, ...[r.cell, far].sort(compareCells).flat());
       if (r.kind === PLATFORM_KIND) {
         const [, length, speed] = r.slots[1];
-        const room = roomFor(r.cell, far);
-        if (room !== null && (length < 1 || length > room)) {
-          const held = length < 1 ? 1 : room;
+        const held = heldLength(length, innerRoomFor(r.cell, far));
+        if (held !== length) {
+          const why = length < 1 ? "is less than one block" : "runs past the edge";
           report.push(
-            `the platform at ${cellText(r.cell)} is ${length} blocks long, which the lattice cannot hold; it is ${held}`,
+            `the platform at ${cellText(r.cell)} is ${length} blocks long, which ${why}; it is ${held}`,
           );
           r.slots[1][1] = held;
         } else if (!LENGTHS.includes(length))

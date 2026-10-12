@@ -309,6 +309,17 @@ def room_for(cell, far):
     return None if axis is None else SIDE - max(cell[axis], far[axis])
 
 
+def inner_room_for(cell, far):
+    """The run's room from a span's upper end to the last cell the game builds, None along no one axis."""
+    axis = span_axis(cell, far)
+    return None if axis is None else INNER.stop - max(cell[axis], far[axis])
+
+
+def held_length(length, room):
+    """A platform's length held to its run's room: 1 below one block or with no room, else the most it holds."""
+    return max(1, min(length, room))
+
+
 def level_key(pack, index):
     return f"{pack}#{index}"
 
@@ -855,11 +866,10 @@ def read_kwl(blob, world=WORLDS[0]):
             lower, upper = sorted((r.cell, far))
             r.slots[0][4:10] = [*lower, *upper]
             if r.kind == PLATFORM_KIND:
-                room = room_for(r.cell, far)
-                if room is not None and (r.length < 1 or r.length > room):
-                    held = 1 if r.length < 1 else room
-                    report.append(f"the platform at {cell_text(r.cell)} is {r.length} blocks long, "
-                                  f"which the lattice cannot hold; it is {held}")
+                held = held_length(r.length, inner_room_for(r.cell, far))
+                if held != r.length:
+                    why = "is less than one block" if r.length < 1 else "runs past the edge"
+                    report.append(f"the platform at {cell_text(r.cell)} is {r.length} blocks long, which {why}; it is {held}")
                     r.slots[1][1] = held
                 elif r.length not in LENGTHS:
                     report.append(f"the platform at {cell_text(r.cell)} is {r.length} blocks long")
@@ -989,10 +999,11 @@ def _read_block(raw, i, report):
         b["far"] = far
     if b["kind"] == PLATFORM_KIND:
         b["length"] = _taken(raw, "length", DEFAULT_LENGTH, at, report)
-        room = room_for(b["cell"], b["far"])
-        if room is not None and (b["length"] < 1 or b["length"] > room):
-            held = 1 if b["length"] < 1 else room
-            report.append(f"{at} has a length of {b['length']}, which the lattice cannot hold; it is {held}")
+        room = inner_room_for(b["cell"], b["far"])
+        held = b["length"] if room is None else held_length(b["length"], room)
+        if held != b["length"]:
+            why = "is less than one block" if b["length"] < 1 else "runs past the edge"
+            report.append(f"{at} has a length of {b['length']}, which {why}; it is {held}")
             b["length"] = held
         b["speed"] = _taken(raw, "speed", DEFAULT_SPEED, at, report)
     if b["kind"] == LASER_KIND:

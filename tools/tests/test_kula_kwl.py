@@ -513,26 +513,30 @@ class Reads(unittest.TestCase):
         self.assertIn("the platform at 5,2,3 runs at 20", report)
         self.assertIn("the vanishing block at 9,2,3 has phase 4, which dims at once", report)
 
-    def test_a_platforms_length_the_lattice_cannot_hold_is_cut_to_what_it_holds_and_the_writer_refuses_it(self):
+    def test_a_platforms_length_that_runs_past_the_edge_is_cut_to_what_fits_and_the_writer_refuses_one_past_the_lattice(self):
         def platform(length):
             return level({(1, 2, 3): FIRST_RECORD, (5, 2, 3): FIRST_RECORD + 1},
                          [block((1, 2, 3), faces={0: obj(START, 3, 0, 0)}),
                           block((5, 2, 3), kind=PLATFORM_KIND, faces={0: slot(2, 2, 1, 5, 2, 3, 5, 6, 3)},
                                 second=slot(length, 30, -1, FIRST_RECORD + 1, kind=0))])
 
-        for length, held in ((32767, 28), (29, 28), (0, 1), (-32768, 1)):
+        # the run's upper end is 6, so 27 blocks reach the last cell the game builds and 28 the lattice's last
+        for length, held in ((32767, 27), (29, 27), (28, 27), (0, 1), (-32768, 1)):
             p, report = read_kwl(platform(length))
             self.assertEqual(p["blocks"][1]["length"], held, length)
-            self.assertEqual(report, [f"the platform at 5,2,3 is {length} blocks long, which the lattice cannot hold; "
-                                      f"it is {held}"])
+            why = "is less than one block" if length < 1 else "runs past the edge"
+            self.assertEqual(report, [f"the platform at 5,2,3 is {length} blocks long, which {why}; it is {held}"])
             self.assertEqual(Level(canonical(p)).verify(), [])
             p["blocks"][1]["length"] = length
+            if length == 28:
+                canonical(p)
+                continue
             with self.assertRaises(ValueError) as caught:
                 canonical(p)
             self.assertEqual(str(caught.exception),
                              f"the platform at 5,2,3 is {length} blocks long, which the lattice cannot hold")
-        p, report = read_kwl(platform(28))
-        self.assertEqual((p["blocks"][1]["length"], report), (28, ["the platform at 5,2,3 is 28 blocks long"]))
+        p, report = read_kwl(platform(27))
+        self.assertEqual((p["blocks"][1]["length"], report), (27, ["the platform at 5,2,3 is 27 blocks long"]))
 
     def test_a_switch_whose_list_loops_back_on_itself_reads_and_is_rewired_on_the_way_out(self):
         cycle = (1, 2, 3)
@@ -668,24 +672,36 @@ class ReadsProjects(unittest.TestCase):
         self.assertEqual(report, ["block 0 at 5,5,5 face 1 holds nothing that could stand on a face; it is left out"])
         self.assertEqual(p["blocks"], [{"cell": [5, 5, 5], "kind": 0, "faces": {"0": start()}}])
 
-    def test_a_platforms_length_the_lattice_cannot_hold_is_cut_on_the_way_in(self):
+    def test_a_platforms_length_that_runs_past_the_edge_is_cut_on_the_way_in_to_a_run_the_checks_hold_inside_it(self):
         p, report = read_project(project([
             plain((5, 5, 5), t0=start()),
-            {"cell": [10, 10, 17], "kind": PLATFORM_KIND, "far": [10, 14, 17], "length": 32767, "speed": 30},
+            {"cell": [10, 28, 17], "kind": PLATFORM_KIND, "far": [10, 30, 17], "length": 32767, "speed": 30},
             {"cell": [12, 10, 17], "kind": PLATFORM_KIND, "far": [12, 14, 17], "length": 0, "speed": 30},
-            {"cell": [14, 10, 17], "kind": PLATFORM_KIND, "far": [14, 14, 17], "length": 20, "speed": 30}]))
-        self.assertEqual([b["length"] for b in p["blocks"] if b["kind"] == PLATFORM_KIND], [20, 1, 20])
+            {"cell": [14, 10, 17], "kind": PLATFORM_KIND, "far": [14, 14, 17], "length": 19, "speed": 30},
+            {"cell": [16, 31, 17], "kind": PLATFORM_KIND, "far": [16, 33, 17], "length": 2, "speed": 30},
+            {"cell": [18, 33, 17], "kind": PLATFORM_KIND, "far": [18, 20, 17], "length": 2, "speed": 30}]))
+        self.assertEqual([b["length"] for b in p["blocks"] if b["kind"] == PLATFORM_KIND], [3, 1, 19, 1, 1])
         self.assertEqual(report, [
-            "block 1 at 10,10,17 has a length of 32767, which the lattice cannot hold; it is 20",
-            "block 2 at 12,10,17 has a length of 0, which the lattice cannot hold; it is 1",
+            "block 1 at 10,28,17 has a length of 32767, which runs past the edge; it is 3",
+            "block 2 at 12,10,17 has a length of 0, which is less than one block; it is 1",
+            "block 4 at 16,31,17 has a length of 2, which runs past the edge; it is 1",
+            "block 5 at 18,33,17 has a length of 2, which runs past the edge; it is 1",
+        ])
+        # the run's edge error stays only where the cell itself is past the edge
+        self.assertEqual(texts(validate(p, HIDES), "error"), [
+            "the game builds nothing past the edge",
+            "a platform 19 blocks long, more than the 7 the game's grid holds",
+            "the far end is past the edge",
+            "the platform's run reaches past the edge",
         ])
         case = next(c for c in json.loads(HOSTILE.read_text())["cases"]
                     if c["name"] == "two hundred platforms of length 32767")
         q, lines = read_project(case["input"])
         platforms = [b for b in q["blocks"] if b["kind"] == PLATFORM_KIND]
         self.assertEqual(len(platforms), 200)
-        self.assertEqual([b["length"] for b in platforms], [SIDE - max(b["cell"][1], b["far"][1]) for b in platforms])
+        self.assertEqual([b["length"] for b in platforms], [SIDE - 1 - max(b["cell"][1], b["far"][1]) for b in platforms])
         self.assertEqual(len(lines), 4)
+        self.assertNotIn("the platform's run reaches past the edge", texts(validate(q, HIDES), "error"))
         self.assertEqual(Level(canonical(q)).verify(), [])
 
     def test_a_title_an_author_notes_a_target_or_a_source_past_their_most_are_cut_to_it_counted_in_characters(self):

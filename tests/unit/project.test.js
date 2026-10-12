@@ -1293,37 +1293,53 @@ test("the reader reports every default it takes, and repairs what the writer wou
   assert.deepEqual(readProject(writeProject(p)).report, []);
 });
 
-test("a platform's length the lattice cannot hold is cut on the way in, so a file of long runs draws small", () => {
+test("a platform's length that runs past the edge is cut on the way in, to a run the checks hold inside it", () => {
   const { project: p, report } = readProject(
     project([
       plain([5, 5, 5], 0, { 0: start() }),
-      { cell: [10, 10, 17], kind: PLATFORM_KIND, far: [10, 14, 17], length: 32767, speed: 30 },
+      { cell: [10, 28, 17], kind: PLATFORM_KIND, far: [10, 30, 17], length: 32767, speed: 30 },
       { cell: [12, 10, 17], kind: PLATFORM_KIND, far: [12, 14, 17], length: 0, speed: 30 },
-      { cell: [14, 10, 17], kind: PLATFORM_KIND, far: [14, 14, 17], length: 20, speed: 30 },
+      { cell: [14, 10, 17], kind: PLATFORM_KIND, far: [14, 14, 17], length: 19, speed: 30 },
+      { cell: [16, 31, 17], kind: PLATFORM_KIND, far: [16, 33, 17], length: 2, speed: 30 },
+      { cell: [18, 33, 17], kind: PLATFORM_KIND, far: [18, 20, 17], length: 2, speed: 30 },
     ]),
   );
   assert.deepEqual(
     p.blocks.filter((b) => b.kind === PLATFORM_KIND).map((b) => b.length),
-    [20, 1, 20],
+    [3, 1, 19, 1, 1],
   );
   assert.deepEqual(report, [
-    "block 1 at 10,10,17 has a length of 32767, which the lattice cannot hold; it is 20",
-    "block 2 at 12,10,17 has a length of 0, which the lattice cannot hold; it is 1",
+    "block 1 at 10,28,17 has a length of 32767, which runs past the edge; it is 3",
+    "block 2 at 12,10,17 has a length of 0, which is less than one block; it is 1",
+    "block 4 at 16,31,17 has a length of 2, which runs past the edge; it is 1",
+    "block 5 at 18,33,17 has a length of 2, which runs past the edge; it is 1",
+  ]);
+  // the run's edge error stays only where the cell itself is past the edge
+  assert.deepEqual(texts(validate(p, HIDES), "error"), [
+    "the game builds nothing past the edge",
+    "a platform 19 blocks long, more than the 7 the game's grid holds",
+    "the far end is past the edge",
+    "the platform's run reaches past the edge",
   ]);
   const c = hostile.cases.find((c) => c.name === "two hundred platforms of length 32767");
   const { project: q, report: lines } = readProject(structuredClone(c.input));
   const platforms = q.blocks.filter((b) => b.kind === PLATFORM_KIND);
   assert.equal(platforms.length, 200);
-  const held = platforms.reduce((n, b) => n + b.length, 0);
-  assert.equal(
-    held,
-    platforms.reduce((n, b) => n + SIDE - Math.max(b.cell[1], b.far[1]), 0),
+  assert.deepEqual(
+    platforms.map((b) => b.length),
+    platforms.map((b) => SIDE - 1 - Math.max(b.cell[1], b.far[1])),
   );
   assert.equal(lines.length, 4);
+  assert.ok(
+    !texts(validate(q, HIDES), "error").includes("the platform's run reaches past the edge"),
+  );
   const walked = toLevel(q, 1)
     .records.filter((r) => r.kind === PLATFORM_KIND)
     .reduce((n, r) => n + platformCells(r).length, 0);
-  assert.equal(walked, held);
+  assert.equal(
+    walked,
+    platforms.reduce((n, b) => n + b.length, 0),
+  );
 });
 
 test("a title, an author, notes, a target or a source past their most are cut to it, counted in characters", () => {

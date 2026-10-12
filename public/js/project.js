@@ -58,8 +58,10 @@ import {
   direction,
   faceNamedTwice,
   facesOf,
+  heldLength,
   inWord,
   inner,
+  innerRoomFor,
   levelOf,
   onLattice,
   projectOf,
@@ -693,12 +695,11 @@ function readBlock(raw, i, report) {
   }
   if (b.kind === PLATFORM_KIND) {
     b.length = whole(raw, "length", DEFAULT_LENGTH, at, report);
-    const room = roomFor(b.cell, b.far);
-    if (room !== null && (b.length < 1 || b.length > room)) {
-      const held = b.length < 1 ? 1 : room;
-      report.push(
-        `${at} has a length of ${b.length}, which the lattice cannot hold; it is ${held}`,
-      );
+    const room = innerRoomFor(b.cell, b.far);
+    const held = room === null ? b.length : heldLength(b.length, room);
+    if (held !== b.length) {
+      const why = b.length < 1 ? "is less than one block" : "runs past the edge";
+      report.push(`${at} has a length of ${b.length}, which ${why}; it is ${held}`);
       b.length = held;
     }
     b.speed = whole(raw, "speed", DEFAULT_SPEED, at, report);
