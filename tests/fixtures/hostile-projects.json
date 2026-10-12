@@ -2003,7 +2003,8 @@
        },
        "4": {
         "type": 56,
-        "facing": 0
+        "facing": 0,
+        "variant": 0
        },
        "5": {
         "type": 5,
@@ -10197,6 +10198,96 @@
    ],
    "level": {
     "kwl": "108a536c5005d3b261a630f66659b95a6fa85a181c4ae029919e807a810e2b60"
+   }
+  },
+  {
+   "name": "a coin, a gem and a switch with no variant",
+   "input": {
+    "format": "kula-world-level",
+    "version": 1,
+    "title": "t",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": 99,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 3
+       },
+       "1": {
+        "type": 37
+       },
+       "2": {
+        "type": 36
+       },
+       "3": {
+        "type": 9
+       },
+       "4": {
+        "type": 31
+       }
+      }
+     }
+    ]
+   },
+   "project": {
+    "format": "kula-world-level",
+    "version": 1,
+    "title": "t",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": 99,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 3
+       },
+       "1": {
+        "type": 37,
+        "variant": 0
+       },
+       "2": {
+        "type": 36,
+        "variant": 0
+       },
+       "3": {
+        "type": 9,
+        "variant": 0
+       },
+       "4": {
+        "type": 31
+       }
+      }
+     }
+    ]
+   },
+   "report": [],
+   "level": {
+    "kwl": "cef6c5b663af9ce9299a4019e6874340c154b7e71ec1ff5a7c70cbf9b2ad3168"
    }
   }
  ]

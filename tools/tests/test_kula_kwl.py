@@ -660,6 +660,16 @@ class ReadsProjects(unittest.TestCase):
         self.assertEqual(texts(validate(p, HIDES), "error"), [])
         canonical(p)
 
+    def test_a_missing_variant_on_a_type_that_has_one_reads_as_0_as_a_missing_colour_does(self):
+        p, report = read_project({"format": FORMAT, "world": WORLD, "blocks": [
+            {"cell": [5, 5, 5], "kind": 0, "faces": {"0": start(), "1": {"type": COIN}, "2": {"type": GEM},
+                                                      "3": {"type": SWITCH}, "4": {"type": KEY}}},
+            {"cell": [7, 5, 5], "kind": LASER_KIND, "far": [7, 9, 5]}]})
+        self.assertEqual(report, [])
+        self.assertEqual(p["blocks"][0]["faces"], {"0": start(), "1": {"type": COIN, "variant": 0}, "2": {"type": GEM, "variant": 0},
+                                                   "3": {"type": SWITCH, "variant": 0}, "4": {"type": KEY}})
+        self.assertEqual(p["blocks"][1]["colour"], 0)
+
     def test_the_reader_leaves_out_what_the_writer_has_no_bytes_for_and_holds_a_word_to_the_files_range(self):
         coin = {"type": COIN, "variant": 0}
         p, report = read_project({

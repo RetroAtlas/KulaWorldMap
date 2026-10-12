@@ -966,10 +966,10 @@ def _read_faces(faces, where, report):
         if t in FACING_NEEDED and not obj.get("facing"):
             report.append(f"{at} has {'no facing' if 'facing' not in obj else 'a facing of 0'}, {HEADS_AS_ONE}")
             obj["facing"] = 1
-        if "variant" in o:
-            if t in VARIANT_TYPES:
-                obj["variant"] = _one_of(o, "variant", len(VARIANTS[t]), at, report)
-            elif _whole(o["variant"]):
+        if t in VARIANT_TYPES:
+            obj["variant"] = _one_of(o, "variant", len(VARIANTS[t]), at, report)
+        elif "variant" in o:
+            if _whole(o["variant"]):
                 obj["variant"] = _word(_int(o["variant"]), "variant", at, report)
             else:
                 report.append(f"{at} has a variant of {_show(o['variant'])}, which is not a whole number; it is left out")

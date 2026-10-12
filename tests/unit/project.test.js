@@ -1360,6 +1360,7 @@ test("the reader reports every default it takes, and repairs what the writer wou
       { cell: [13, 5, 5], kind: LASER_KIND, far: [13, 5, 40], colour: 0 },
       { cell: [14, 5, 5], kind: LASER_KIND, colour: 0 },
       { cell: [15, 5, 5], kind: PLATFORM_KIND, far: [15, 5] },
+      { cell: [16, 5, 5], kind: 0, faces: { 0: { type: COIN }, 1: { type: SWITCH } } },
     ],
   });
   assert.ok(!("into" in p));
@@ -1380,6 +1381,11 @@ test("the reader reports every default it takes, and repairs what the writer wou
     { cell: [9, 5, 5], kind: LASER_KIND, far: [9, 9, 5], colour: 0 },
     { cell: [10, 5, 5], kind: LASER_KIND, far: [10, 9, 5], colour: 0 },
     { cell: [11, 5, 5], kind: 7, phase: 0 },
+    {
+      cell: [16, 5, 5],
+      kind: 0,
+      faces: { 0: { type: COIN, variant: 0 }, 1: { type: SWITCH, variant: 0 } },
+    },
   ]);
   assert.deepEqual(report, [
     'a version of "2" is not a whole number; the file is read as version 1',

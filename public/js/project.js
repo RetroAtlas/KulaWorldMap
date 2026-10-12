@@ -666,10 +666,10 @@ function readFaces(faces, where, report) {
       );
       object.facing = 1;
     }
-    if (o.variant !== undefined) {
-      if (VARIANT_TYPES.has(object.type))
-        object.variant = oneOf(o, "variant", VARIANTS[object.type], at, report);
-      else if (safe(o.variant)) object.variant = word(o.variant, "variant", at, report);
+    if (VARIANT_TYPES.has(object.type))
+      object.variant = oneOf(o, "variant", VARIANTS[object.type], at, report);
+    else if (o.variant !== undefined) {
+      if (safe(o.variant)) object.variant = word(o.variant, "variant", at, report);
       else
         report.push(
           `${at} has a variant of ${show(o.variant)}, which is not a whole number; it is left out`,
