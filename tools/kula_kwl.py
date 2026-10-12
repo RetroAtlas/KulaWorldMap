@@ -29,6 +29,7 @@ import struct
 import sys
 import zlib
 from collections import Counter
+from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 
@@ -91,6 +92,7 @@ PLATFORM_UNIT = 256  # the three words after a platform's position
 INNER = range(1, SIDE - 1)
 LATTICE = range(SIDE)
 WORD = range(-(2 ** 15), 2 ** 15)
+SAFE = 2 ** 53 - 1   # the whole numbers a double holds exactly
 
 # The six directions as the game numbers them, which is also the face order.
 DIRECTIONS = ((0, 0, -1), (1, 0, 0), (0, 1, 0), (0, -1, 0), (-1, 0, 0), (0, 0, 1))
@@ -167,16 +169,33 @@ def _is_int(v):
 
 
 def _whole(v):
-    """Whether a JSON value is a whole number as the page reads one: a float with nothing after the point is."""
-    return _is_int(v) or (isinstance(v, float) and v.is_integer())
-
-
-# The page prints a whole number's digits below this and a power of ten from it on.
-DIGITS_BELOW = 1e21
+    """Whether a JSON value is a whole number as the page reads one: within the
+    integers a double holds exactly, spelled with or without a point."""
+    if _is_int(v):
+        return abs(v) <= SAFE
+    return isinstance(v, float) and v.is_integer() and abs(v) <= SAFE
 
 
 def _int(v):
-    return int(v) if isinstance(v, float) and abs(v) < DIGITS_BELOW else v
+    return int(v) if isinstance(v, float) else v
+
+
+def _js_number(v):
+    """A number as the page's JSON prints it: digits from 1e-6 below 1e21, a power
+    of ten beyond, and null where a double overflows."""
+    if _is_int(v) and abs(v) <= SAFE:
+        return str(v)
+    try:
+        f = float(v)
+    except OverflowError:
+        return "null"
+    if f != f or f in (float("inf"), float("-inf")):
+        return "null"
+    if f == 0:
+        return "0"
+    if 1e-6 <= abs(f) < 1e21:
+        return format(Decimal(repr(f)).normalize(), "f")
+    return re.sub(r"e([+-])0+(?=[0-9])", r"e\1", repr(f))
 
 
 def _whole_cells(b):
@@ -189,6 +208,8 @@ def _whole_cells(b):
 
 
 def _show(v):
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        return _js_number(v)
     return json.dumps(v, ensure_ascii=False, separators=(",", ":"))
 
 

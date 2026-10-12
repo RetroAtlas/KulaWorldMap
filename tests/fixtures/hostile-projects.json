@@ -3379,17 +3379,16 @@
        "0": {
         "type": 30,
         "facing": 3
-       },
-       "1": {
-        "type": 1e+308
        }
       }
      }
     ]
    },
-   "report": [],
+   "report": [
+    "block 0 at 17,17,17 face 1 holds nothing that could stand on a face; it is left out"
+   ],
    "level": {
-    "refusal": "a word of the block at 17,17,17 is outside the file's range"
+    "kwl": "116d973fcb3f841d6cbec18ca0e447681192a42d9a93f4ba700e02b081df4508"
    }
   },
   {
@@ -9458,6 +9457,207 @@
    ],
    "level": {
     "kwl": "e11931fd59ae43cfef8baa6f47b7db5fc36bb107c5b7ad37e9ecd6dc23737df2"
+   }
+  },
+  {
+   "name": "whole numbers past 2^53",
+   "input": {
+    "format": "kula-world-level",
+    "version": 9007199254740993,
+    "title": "t",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": 9007199254740993,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 3
+       },
+       "1": {
+        "type": 37,
+        "variant": 9007199254740993
+       },
+       "2": {
+        "type": 9007199254740993
+       },
+       "3": {
+        "type": 31,
+        "facing": 1e+16
+       }
+      }
+     },
+     {
+      "cell": [
+       9007199254740993,
+       5,
+       5
+      ],
+      "kind": 0
+     },
+     {
+      "cell": [
+       6,
+       5,
+       5
+      ],
+      "kind": 1e+16
+     },
+     {
+      "cell": [
+       7,
+       5,
+       5
+      ],
+      "kind": 7,
+      "phase": 12345678901234567890
+     },
+     {
+      "cell": [
+       8,
+       5,
+       5
+      ],
+      "kind": 5,
+      "far": [
+       8,
+       9007199254740993,
+       5
+      ],
+      "length": 2,
+      "speed": 30
+     },
+     {
+      "cell": [
+       10,
+       5,
+       5
+      ],
+      "kind": 5,
+      "far": [
+       10,
+       9,
+       5
+      ],
+      "length": 123456789012345678901234567890,
+      "speed": -9007199254740993
+     },
+     {
+      "cell": [
+       11,
+       5,
+       5
+      ],
+      "kind": 8,
+      "far": [
+       11,
+       9,
+       5
+      ],
+      "colour": 1152921504606846976
+     }
+    ]
+   },
+   "project": {
+    "format": "kula-world-level",
+    "version": 1,
+    "title": "t",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": 99,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 3
+       },
+       "1": {
+        "type": 37,
+        "variant": 0
+       },
+       "3": {
+        "type": 31
+       }
+      }
+     },
+     {
+      "cell": [
+       7,
+       5,
+       5
+      ],
+      "kind": 7,
+      "phase": 0
+     },
+     {
+      "cell": [
+       10,
+       5,
+       5
+      ],
+      "kind": 5,
+      "far": [
+       10,
+       9,
+       5
+      ],
+      "length": 2,
+      "speed": 30
+     },
+     {
+      "cell": [
+       11,
+       5,
+       5
+      ],
+      "kind": 8,
+      "far": [
+       11,
+       9,
+       5
+      ],
+      "colour": 0
+     }
+    ]
+   },
+   "report": [
+    "a version of 9007199254740992 is not a whole number; the file is read as version 1",
+    "a time of 9007199254740992 is not a whole number; it is 99",
+    "block 0 at 5,5,5 face 1 has a variant of 9007199254740992, which is not one of the 3; it is 0",
+    "block 0 at 5,5,5 face 2 holds nothing that could stand on a face; it is left out",
+    "block 0 at 5,5,5 face 3 has a facing of 10000000000000000, which is not a whole number; it is left out",
+    "block 1 has no cell of three whole numbers and a kind; it is left out",
+    "block 2 has no cell of three whole numbers and a kind; it is left out",
+    "block 3 at 7,5,5 has a phase of 12345678901234567000, which is not a whole number; it is 0",
+    "block 4 at 8,5,5 has a far end that is not a cell of three whole numbers; it is left out",
+    "block 5 at 10,5,5 has a length of 1.2345678901234568e+29, which is not a whole number; it is 2",
+    "block 5 at 10,5,5 has a speed of -9007199254740992, which is not a whole number; it is 30",
+    "block 6 at 11,5,5 has a colour of 1152921504606847000, which is not one of the 4; it is 0"
+   ],
+   "level": {
+    "kwl": "95273418cb88fec61320bcc5a8eae86e7de3e30e30e77e2c5cbd43d24cbc3a80"
    }
   }
  ]

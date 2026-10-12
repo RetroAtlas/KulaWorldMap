@@ -663,11 +663,8 @@ class ReadsProjects(unittest.TestCase):
         self.assertTrue(all(isinstance(v, int) for v in (p["time"], *p["blocks"][0]["cell"], p["blocks"][0]["kind"])))
         p, report = read_project({"format": FORMAT, "world": WORLD,
                                   "blocks": [{"cell": [5, 5, 5], "kind": 0, "faces": {"0": start(), "1": {"type": 1e308}}}]})
-        self.assertEqual(report, [])
-        self.assertIn("type 1e+308 is nothing the game plays", texts(validate(p, HIDES), "error"))
-        with self.assertRaises(ValueError) as caught:
-            canonical(p)
-        self.assertIn("outside the file's range", str(caught.exception))
+        self.assertEqual(report, ["block 0 at 5,5,5 face 1 holds nothing that could stand on a face; it is left out"])
+        self.assertEqual(p["blocks"], [{"cell": [5, 5, 5], "kind": 0, "faces": {"0": start()}}])
 
     def test_a_platforms_length_the_lattice_cannot_hold_is_cut_on_the_way_in(self):
         p, report = read_project(project([
@@ -688,6 +685,24 @@ class ReadsProjects(unittest.TestCase):
         self.assertEqual([b["length"] for b in platforms], [SIDE - max(b["cell"][1], b["far"][1]) for b in platforms])
         self.assertEqual(len(lines), 4)
         self.assertEqual(Level(canonical(q)).verify(), [])
+
+    def test_a_whole_number_past_2_53_is_no_whole_number_and_is_reported_as_the_page_parsed_it(self):
+        p, report = read_project(json.loads(f'''{{"format": "{FORMAT}", "world": "{WORLD}", "time": 9007199254740993, "blocks": [
+            {{"cell": [5, 5, 5], "kind": 0, "faces": {{"0": {{"type": 30, "facing": 3}}}}}},
+            {{"cell": [7, 5, 5], "kind": 5, "far": [7, 9, 5], "length": 1e400, "speed": 1e16}},
+            {{"cell": [9, 5, 5], "kind": 7, "phase": 1152921504606846976}}
+        ]}}'''))
+        self.assertEqual(p["time"], 99)
+        self.assertEqual(p["blocks"][1:], [
+            {"cell": [7, 5, 5], "kind": PLATFORM_KIND, "far": [7, 9, 5], "length": 2, "speed": 30},
+            {"cell": [9, 5, 5], "kind": 7, "phase": 0},
+        ])
+        self.assertEqual(report, [
+            "a time of 9007199254740992 is not a whole number; it is 99",
+            "block 1 at 7,5,5 has a length of null, which is not a whole number; it is 2",
+            "block 1 at 7,5,5 has a speed of 10000000000000000, which is not a whole number; it is 30",
+            "block 2 at 9,5,5 has a phase of 1152921504606847000, which is not a whole number; it is 0",
+        ])
 
     def test_the_reader_keeps_three_lines_of_a_shape_and_counts_the_rest_where_they_fall(self):
         coin = {"type": COIN, "variant": 0}

@@ -1207,6 +1207,27 @@ test("a platform's length the lattice cannot hold is cut on the way in, so a fil
   assert.equal(walked, held);
 });
 
+test("a whole number past 2^53 is no whole number, and is reported as the page parsed it", () => {
+  const { project: p, report } = readProject(
+    `{"format": "${FORMAT}", "world": "${WORLD}", "time": 9007199254740993, "blocks": [
+      {"cell": [5, 5, 5], "kind": 0, "faces": {"0": {"type": 30, "facing": 3}}},
+      {"cell": [7, 5, 5], "kind": 5, "far": [7, 9, 5], "length": 1e400, "speed": 1e16},
+      {"cell": [9, 5, 5], "kind": 7, "phase": 1152921504606846976}
+    ]}`,
+  );
+  assert.equal(p.time, 99);
+  assert.deepEqual(p.blocks.slice(1), [
+    { cell: [7, 5, 5], kind: PLATFORM_KIND, far: [7, 9, 5], length: 2, speed: 30 },
+    { cell: [9, 5, 5], kind: 7, phase: 0 },
+  ]);
+  assert.deepEqual(report, [
+    "a time of 9007199254740992 is not a whole number; it is 99",
+    "block 1 at 7,5,5 has a length of null, which is not a whole number; it is 2",
+    "block 1 at 7,5,5 has a speed of 10000000000000000, which is not a whole number; it is 30",
+    "block 2 at 9,5,5 has a phase of 1152921504606847000, which is not a whole number; it is 0",
+  ]);
+});
+
 test("the reader keeps three lines of a shape and counts the rest, where they fall", () => {
   const { project: p, report } = readProject({
     format: FORMAT,
