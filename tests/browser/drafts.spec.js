@@ -349,8 +349,17 @@ test("the Level card marks a level with no key as a bonus level, says how it pla
   await expect(bonusLabel).toHaveAttribute("title", HAS_KEY);
   await expect(bonus).toHaveAccessibleDescription(HAS_KEY);
   await expect(plays).toHaveText("Plays as an arcade level.");
-  await bonusLabel.click({ force: true });
-  await expect(page.locator("#toastStack .toast", { hasText: HAS_KEY })).toHaveCount(1);
+  // the label takes the focus, so a keyboard asks it why as a pointer does
+  await bonusLabel.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#toastStack .toast").first()).toHaveText(HAS_KEY);
+  await faced(page, 1, null);
+  await expect(bonus).toBeChecked();
+  await expect(bonusLabel).toBeFocused();
+  await page.keyboard.press(" ");
+  await expect(page.locator("#toastStack .toast").first()).toHaveText(NO_KEY);
+  await faced(page, 1, { type: 31 });
+  await expect(bonus).not.toBeChecked();
   await page.locator("#draftHidden").check();
   await expect(plays).toHaveText(
     "Plays as a hidden level, with the glass ball on half-seen blocks.",
