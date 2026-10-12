@@ -1375,6 +1375,10 @@ class TheCli(unittest.TestCase):
             ])
             p = read_project(raw)[0]
             self.assertEqual((scratch / "odd.kwl").read_bytes(), canonical(p))
+            (scratch / "marked.kula.json").write_text(json.dumps(raw), encoding="utf-8-sig")
+            done = self.run_tool("--from-json", scratch / "marked.kula.json", "--kwl", scratch / "marked.kwl")
+            self.assertEqual(done.returncode, 0, done.stderr)
+            self.assertEqual((scratch / "marked.kwl").read_bytes(), canonical(p))
 
     def test_what_the_record_gate_and_the_readers_refuse_is_a_sentence_and_not_a_traceback(self):
         with tempfile.TemporaryDirectory() as scratch:

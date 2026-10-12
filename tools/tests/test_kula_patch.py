@@ -333,6 +333,10 @@ class TheTool(unittest.TestCase):
             broken = run("broken.json")
             self.assertNotEqual(broken.returncode, 0)
             self.assertIn("broken.json is not JSON:", broken.stderr)
+            (scratch / "marked.kula.json").write_text(json.dumps(project), encoding="utf-8-sig")
+            marked = run("marked.kula.json")
+            self.assertEqual(marked.returncode, 0, marked.stderr)
+            self.assertIn("marked (305 bytes) into", marked.stdout)
 
     def test_a_level_file_that_is_no_level_is_said_in_a_sentence_and_not_a_traceback(self):
         with tempfile.TemporaryDirectory() as scratch:

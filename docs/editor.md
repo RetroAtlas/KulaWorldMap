@@ -4,7 +4,7 @@ What the editor's files hold and what its writers put on the disc, reading by re
 
 ## The project file
 
-A project is a JSON document with the extension `.kula.json`. It spells the game's own structure in the game's own numbers: cells are lattice coordinates with `z` counting down, kinds and types are the numbers the game uses, faces are the game's six.
+A project is a JSON document in UTF-8, a byte-order mark passed over, with the extension `.kula.json`. It spells the game's own structure in the game's own numbers: cells are lattice coordinates with `z` counting down, kinds and types are the numbers the game uses, faces are the game's six.
 
 ```json
 {

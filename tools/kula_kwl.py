@@ -2151,7 +2151,7 @@ def main():
         if not Path(args.from_json).is_file():
             sys.exit(f"no file at {args.from_json}")
         try:
-            project, report, _ = read_project(json.loads(Path(args.from_json).read_text()))
+            project, report, _ = read_project(json.loads(Path(args.from_json).read_text(encoding="utf-8-sig")))
         except json.JSONDecodeError as e:
             sys.exit(f"{args.from_json} is not JSON: {e}")
         except ValueError as e:

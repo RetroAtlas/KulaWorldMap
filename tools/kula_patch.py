@@ -195,7 +195,7 @@ def load_level(arg, world):
     path = Path(arg)
     if path.is_file() and path.suffix == ".json":
         try:
-            project, report, _ = read_project(json.loads(path.read_text()))
+            project, report, _ = read_project(json.loads(path.read_text(encoding="utf-8-sig")))
         except json.JSONDecodeError as e:
             sys.exit(f"{arg} is not JSON: {e}")
         except ValueError as e:
