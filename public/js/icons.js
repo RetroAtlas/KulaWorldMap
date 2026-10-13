@@ -148,8 +148,7 @@ export function blockIcon(
   };
   const place = kind === PLATFORM && r ? platformPlace({ ...r, length: 1 }, 0) : null;
   const beam = plate ?? (kind === BEAM_KIND ? r?.colour : undefined);
-  const style = SKINNED_LOOK[kind] || {};
-  const alpha = style.alpha ?? 1;
+  const alpha = SKINNED_LOOK[kind]?.alpha ?? 1;
   const paints = looks(l);
   const frame = paints && kind === INVISIBLE ? brightest(paints.skins, paints.look) : 0;
   for (const i of SHOWN) {
@@ -168,14 +167,6 @@ export function blockIcon(
       g.fillStyle = flatFace(tintOf(l), kind, i);
       g.fill();
       g.globalAlpha = 1;
-    }
-  }
-  if (style.dash) {
-    g.strokeStyle = "rgba(232 238 251 / 0.7)";
-    g.setLineDash(style.dash.map((d) => d / 2));
-    for (const i of SHOWN) {
-      trace(g, FACES[i].c.map(to));
-      g.stroke();
     }
   }
   return cv;

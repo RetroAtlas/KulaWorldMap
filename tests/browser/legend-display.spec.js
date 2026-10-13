@@ -551,6 +551,32 @@ test("an invisible block's icon shows it at the peak of its pulse", async ({ pag
   expect(Math.abs(median - peak)).toBeLessThan(8);
 });
 
+test("no block's icon is outlined, however faint the block", async ({ page }) => {
+  await page.goto("/#HILLS/19");
+  await settle(page);
+  const { kinds, stroked } = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { atlasFor }, { blockIcon }] = await Promise.all(
+      ["state.js", "atlas.js", "icons.js"].map(at),
+    );
+    while (!atlasFor(state.lvl.theme)) await new Promise(requestAnimationFrame);
+    const kinds = [...new Set(state.lvl.records.map((r) => r.kind))];
+    const stroke = CanvasRenderingContext2D.prototype.stroke;
+    const stroked = [];
+    for (const kind of kinds) {
+      CanvasRenderingContext2D.prototype.stroke = function (...a) {
+        stroked.push(kind);
+        return stroke.apply(this, a);
+      };
+      blockIcon(state.lvl, kind);
+    }
+    CanvasRenderingContext2D.prototype.stroke = stroke;
+    return { kinds, stroked };
+  });
+  expect(kinds).toEqual(expect.arrayContaining([3, 7]));
+  expect(stroked).toEqual([]);
+});
+
 test("where the system asks for reduced motion the map opens still, and a choice to move is kept", async ({
   page,
 }) => {
