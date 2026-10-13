@@ -253,6 +253,8 @@ def main():
     src = args.disc or os.environ.get("KULA_DISC")
     disc = open_disc(src)
     out = Path(args.out)
+    if not out.name or out.name == "..":
+        sys.exit("say a name for --out")
     named = lambda ext: out.with_name(out.name + ext)  # noqa: E731
     asked = [ext for ext, want in ((".bin", wanted["image"]), (".cue", wanted["image"]),
                                    (".ppf", wanted["ppf"]), (".xdelta", wanted["xdelta"])) if want]

@@ -416,6 +416,22 @@ class TheTool(unittest.TestCase):
                         self.assertNotIn("Traceback", done.stderr)
             self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "notes.txt", "spiral.kula.json"])
 
+    def test_an_output_that_names_no_file_is_refused_before_anything_is_written(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            for out in (".", "/", "..", scratch / ".."):
+                with self.subTest(out):
+                    done = subprocess.run([sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into",
+                                           f"{SYNTHETIC_PACK}#{SLOT}", "--out", out, "--disc", scratch / "image.bin", "--ppf"],
+                                          capture_output=True, text=True, cwd=scratch)
+                    self.assertEqual(done.returncode, 1, done.stderr)
+                    self.assertEqual(done.stdout, "")
+                    self.assertEqual(done.stderr.splitlines()[-1], "say a name for --out")
+                    self.assertNotIn("Traceback", done.stderr)
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "spiral.kula.json"])
+
     @unittest.skipIf(os.name != "posix" or os.geteuid() == 0, "a permission bit stops neither Windows nor root")
     def test_an_output_the_system_refuses_is_said_in_a_sentence_and_not_a_traceback(self):
         with tempfile.TemporaryDirectory() as scratch:
