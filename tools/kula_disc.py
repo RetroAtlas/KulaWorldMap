@@ -3,6 +3,7 @@
 `$KULA_DISC` points at a raw .bin image of the NTSC-U release (SLUS-00724).
 """
 import os
+import stat
 import struct
 import sys
 from pathlib import Path
@@ -18,13 +19,24 @@ THEMES = ["HIRO", "HILLS", "INCA", "ARCTIC", "COWBOY",
           "FIELD", "ATLANT", "HAZE", "MARS", "HELL"]
 
 
+def file_at(path):
+    """Whether a file stands at the path, or the tool's exit in one sentence
+    where the system will not say."""
+    try:
+        return stat.S_ISREG(os.stat(path).st_mode)
+    except (FileNotFoundError, NotADirectoryError):
+        return False
+    except OSError as e:
+        sys.exit(f"{path} cannot be read: {e.strerror}")
+
+
 def open_disc(path=None):
     path = path or os.environ.get("KULA_DISC")
     if not path:
         sys.exit("no disc image: pass --disc or set $KULA_DISC")
+    if not file_at(path):
+        sys.exit(f"no disc image at {path}")
     try:
-        if not Path(path).is_file():
-            sys.exit(f"no disc image at {path}")
         return Disc(path)
     except OSError as e:
         sys.exit(f"{path} cannot be read: {e.strerror}")

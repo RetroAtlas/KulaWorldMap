@@ -34,7 +34,7 @@ from functools import lru_cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import THEMES, open_disc, packs
+from kula_disc import THEMES, file_at, open_disc, packs
 from kula_level import (
     BLOCK_KINDS,
     CELLS,
@@ -2119,15 +2119,6 @@ def residuals(classes, dropped):
         if dropped.get(what, 0) != DROPPED.get(what, 0):
             out.append(f"{dropped.get(what, 0)} levels with {what}, where the table lists {DROPPED.get(what, 0)}")
     return out
-
-
-def file_at(path):
-    """Whether a file stands at the path, or the tool's exit in one sentence
-    where the system will not say."""
-    try:
-        return Path(path).is_file()
-    except OSError as e:
-        sys.exit(f"{path} cannot be read: {e.strerror}")
 
 
 def project_at(path):

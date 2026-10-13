@@ -28,8 +28,8 @@ import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import open_disc
-from kula_kwl import DATA, OBJECTS, canonical, describe, file_at, level_at, project_at, template, validate
+from kula_disc import file_at, open_disc
+from kula_kwl import DATA, OBJECTS, canonical, describe, level_at, project_at, template, validate
 from kula_place import SYNTHETIC_PACK, Patched, place, plan, synthetic, synthetic_image, verify, written
 from kula_sector import HEX_RUN, SECTOR_RAW, raw_sector
 
