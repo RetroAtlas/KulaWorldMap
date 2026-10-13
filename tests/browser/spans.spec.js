@@ -269,6 +269,8 @@ test("the preview follows the axis the pointer favours, and Esc cancels the run 
 test("the preview tints each cell of the run by what lies in it", async ({ page }) => {
   const errors = trackErrors(page);
   await fresh(page);
+  // the other platform's body must stand still at its lower end, off the cell the pointer reads
+  await page.keyboard.press("v");
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setBlock }] = await Promise.all(
