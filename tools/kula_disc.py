@@ -31,12 +31,13 @@ def file_at(path):
         sys.exit(f"{path} cannot be read: {e.strerror}")
 
 
-def output_at(arg, flag, exts=("",)):
+def output_at(arg, flag, exts=("",), replaces=True):
     """The path an output is written at, or the tool's exit in one sentence:
     the argument must name a file, its directory must stand, and the process
     must be able to write it, or write into the directory where nothing stands
     yet; `exts` are the endings the outputs take, the first of them naming the
-    file in the sentence."""
+    file in the sentence, and a tool that never writes over a standing file
+    says so with `replaces`, leaving that file to its own refusal."""
     path = Path(arg)
     if not path.name or path.name == ".." or str(arg).endswith(("/", os.sep)):
         sys.exit(f"say a name for {flag}")
@@ -49,9 +50,10 @@ def output_at(arg, flag, exts=("",)):
         sys.exit(f"{first} cannot be written: {e.strerror}")
     if mode is not None and stat.S_ISDIR(mode):
         sys.exit(f"{path} is a directory; say a name for {flag}")
-    # a file that stands is replaced, which asks leave of the file and not of its directory
+    # a file that stands is replaced, which asks leave of the file and not of its directory,
+    # or is the tool's own to refuse where it never writes over one
     if mode is not None and first == path:
-        if not os.access(path, os.W_OK):
+        if replaces and not os.access(path, os.W_OK):
             sys.exit(f"{path} cannot be written: {os.strerror(errno.EACCES)}")
         return path
     try:

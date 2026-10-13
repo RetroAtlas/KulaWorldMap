@@ -33,7 +33,7 @@ import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import THEMES, open_disc, packs
+from kula_disc import THEMES, open_disc, output_at, packs
 from kula_pak import Pak
 from kula_place import written
 from kula_sector import USER, USER_OFF, raw_sector, rewrite, sectors_of
@@ -134,7 +134,7 @@ def warp(args, src, disc):
         print("Type = Gameshark")
         print(f"{CAMERA_WORD:08X} 0001")
         return
-    out = Path(args.out) if args.out else src.with_name(f"{src.stem} ({what.lower()}).bin")
+    out = output_at(args.out if args.out else src.with_name(f"{src.stem} ({what.lower()}).bin"), "--out", replaces=False)
     if out.suffix.lower() == ".cue":
         sys.exit(f"{out} is the name its cue sheet would take; say another --out")
     for path in (out, out.with_suffix(".cue")):
@@ -174,6 +174,8 @@ def warp(args, src, disc):
         written(src, out, changed(disc.f, lba, user), loads)
     except ValueError as e:
         sys.exit(str(e))
+    except OSError as e:
+        sys.exit(f"{e.filename or out} cannot be written: {e.strerror}")
 
     print(f"{out}")
     print(f"  {what} taken from {donor_path}#{donor_slot}, {len(record)} bytes")

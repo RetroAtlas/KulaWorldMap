@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import os
 import unittest
 import zlib
 from pathlib import Path
@@ -138,6 +139,33 @@ class TheTool(unittest.TestCase):
         self.assertEqual(zlib.decompress(Pak(Disc(out).read_file(SYNTHETIC_FINALS)).entries[1]["blob"]),
                          self.slot_level(self.src, SYNTHETIC_FINALS, 1))
 
+    def test_an_output_the_system_refuses_is_said_in_a_sentence_before_anything_is_written(self):
+        refused = [(self.dir / "missing" / "warped.bin", f"no directory at {self.dir / 'missing'}; say another --out"),
+                   (self.dir, f"{self.dir} is a directory; say a name for --out"),
+                   (f"{self.dir}/", "say a name for --out"),
+                   (".", "say a name for --out")]
+        if os.name == "posix" and os.geteuid() != 0:
+            (self.dir / "shut").mkdir()
+            os.chmod(self.dir / "shut", 0o500)
+            refused.append((self.dir / "shut" / "warped.bin", f"{self.dir / 'shut' / 'warped.bin'} cannot be written: Permission denied"))
+        for out, why in refused:
+            with self.subTest(why):
+                done = self.run_tool("--level", f"{SYNTHETIC_PACK}#2", "--out", out)
+                self.assertEqual(done.returncode, 1, done.stderr)
+                self.assertEqual(done.stdout, "")
+                self.assertEqual(done.stderr.splitlines()[-1], why)
+                self.assertNotIn("Traceback", done.stderr)
+        if (self.dir / "shut").exists():
+            os.chmod(self.dir / "shut", 0o700)
+            self.assertEqual(list((self.dir / "shut").iterdir()), [])
+        # a link to nowhere passes the check, since nothing stands there, and the write's own refusal is a sentence
+        os.symlink(self.dir / "gone" / "warped.bin", self.dir / "dangling.bin")
+        done = self.run_tool("--level", f"{SYNTHETIC_PACK}#2", "--out", self.dir / "dangling.bin")
+        self.assertEqual(done.returncode, 1, done.stderr)
+        self.assertEqual(done.stderr.splitlines()[-1], f"{self.dir / 'dangling.bin'} cannot be written: No such file or directory")
+        self.assertNotIn("Traceback", done.stderr)
+        self.assertEqual(sorted(p.name for p in self.dir.iterdir() if p.is_file()), [self.src.name])
+
     def test_an_output_that_exists_is_the_image_or_would_be_its_cue_sheet_is_refused_and_a_missing_catalogue_said(self):
         out = self.dir / "warped.bin"
         self.assertEqual(self.run_tool("--level", f"{SYNTHETIC_PACK}#2", "--out", out).returncode, 0)
@@ -148,6 +176,14 @@ class TheTool(unittest.TestCase):
         same = self.run_tool("--level", f"{SYNTHETIC_PACK}#2", "--out", self.src)
         self.assertNotEqual(same.returncode, 0)
         self.assertIn("image.bin is the image itself; say another --out", same.stderr)
+        # a standing file is never written over, so one the process may not write is standing all the same
+        if os.name == "posix" and os.geteuid() != 0:
+            os.chmod(out, 0o400)
+            os.chmod(self.src, 0o400)
+            self.assertIn("warped.bin exists already; say another --out", self.run_tool("--level", f"{SYNTHETIC_PACK}#2", "--out", out).stderr)
+            self.assertIn("image.bin is the image itself; say another --out", self.run_tool("--level", f"{SYNTHETIC_PACK}#2", "--out", self.src).stderr)
+            os.chmod(out, 0o600)
+            os.chmod(self.src, 0o600)
         for name in ("warped.cue", "fresh.cue", "fresh.CUE"):
             sheet = self.run_tool("--level", f"{SYNTHETIC_PACK}#2", "--out", self.dir / name)
             self.assertNotEqual(sheet.returncode, 0)
@@ -157,6 +193,14 @@ class TheTool(unittest.TestCase):
         self.assertNotEqual(catalogue.returncode, 0)
         self.assertIn("no pack on this disc carries OBJ LEVEL", catalogue.stderr)
         self.assertFalse((self.dir / "obj.bin").exists())
+        # a standing file in a directory the process may not write into is standing before anything else
+        if os.name == "posix" and os.geteuid() != 0:
+            (self.dir / "ro").mkdir()
+            (self.dir / "ro" / "warped.bin").write_bytes(b"")
+            os.chmod(self.dir / "ro", 0o500)
+            self.assertIn("warped.bin exists already; say another --out",
+                          self.run_tool("--level", f"{SYNTHETIC_PACK}#2", "--out", self.dir / "ro" / "warped.bin").stderr)
+            os.chmod(self.dir / "ro", 0o700)
 
 
 if __name__ == "__main__":
