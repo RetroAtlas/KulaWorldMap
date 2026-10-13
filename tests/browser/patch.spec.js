@@ -60,6 +60,10 @@ async function opened(page, name, project) {
 
 /** The store as another tab would write it, once this tab's write of the draft has landed. */
 async function stored(page, id) {
+  await page.evaluate(async () => {
+    const { flush } = await import(new URL("js/drafts.js", location.href).href);
+    flush();
+  });
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem("kula.drafts")))
     .toContain(`"${id}":`);
@@ -392,7 +396,10 @@ test("a draft another tab repairs under the open box is written as it is now, no
   renamed.drafts[id].updated += 60000;
   await elsewhere(page, renamed);
   await expect(dialog.locator(".name")).toHaveText("Helix");
+  await expect(dialog.locator("#patchChecks .errors")).toHaveCount(0);
+  await expect(dialog.locator("#patchPlays")).toHaveText("Plays as an arcade level.");
   await expect(dialog.locator("#patchPlay li").nth(2)).toContainText('"helix.xdelta" "helix.bin"');
+  await expect(dialog.locator("#patchPpf")).toBeEnabled();
   const again = await saved(page, dialog.locator("#patchPpf"));
   expect(again.name).toBe("helix.ppf");
   expect(sha256(again.bytes)).not.toBe(CASE.ppf);
