@@ -145,7 +145,7 @@ def main():
             f"Types placed five or more times in the game that {level['name']} does not "
             "carry, so another level has to name them:\n\n")
         for k in sorted(missing, key=lambda k: -game[k]):
-            lines.append(f"- `{k}` — {game[k]} placed\n")
+            lines.append(f"- `{k}`: {game[k]} placed\n")
 
     path = Path(args.out) if args.out else (
         OUT if catalogue else OUT.with_name("naming-" + level["name"].lower().replace(" ", "-") + ".md"))
