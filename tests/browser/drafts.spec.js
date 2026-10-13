@@ -330,7 +330,6 @@ test("the Level card marks a level with no key as a bonus level, says how it pla
   await expect(page.locator("#draftRows button")).toHaveCount(1);
   const bonus = page.locator("#draftBonus");
   const bonusLabel = page.locator("#draftCard label.check", { hasText: "Bonus level" });
-  const why = page.locator("#draftBonusWhy");
   const plays = page.locator("#draftPlays");
   const errorLine = page.locator("#draftErrors");
   await expect(bonus).toBeChecked();
@@ -343,42 +342,20 @@ test("the Level card marks a level with no key as a bonus level, says how it pla
   await bonusLabel.click({ force: true });
   await expect(page.locator("#toastStack .toast")).toHaveText([NO_KEY]);
   await expect(bonus).toBeChecked();
-  // a button beside the greyed label asks why, outside the row's dimming; the label takes no focus
-  await expect(why).toHaveText("why");
-  await expect(why).toHaveAccessibleName("Why the box is greyed");
-  await expect(why).toHaveAccessibleDescription(NO_KEY);
+  // the greyed row says why when pressed, and takes no focus
   await expect(bonusLabel).toHaveCSS("opacity", "0.4");
-  await expect(why).toHaveCSS("opacity", "1");
   expect(await bonusLabel.getAttribute("tabindex")).toBeNull();
-  // the button is no smaller a target than the card's own buttons
-  const [whyBox, toggleBox] = await Promise.all([
-    why.boundingBox(),
-    page.locator("#draftCircuit0").boundingBox(),
-  ]);
-  expect(whyBox.height).toBeGreaterThanOrEqual(toggleBox.height);
 
   await faced(page, 1, { type: 31 });
   await expect(bonus).not.toBeChecked();
   await expect(bonus).toBeDisabled();
   await expect(bonusLabel).toHaveAttribute("title", HAS_KEY);
   await expect(bonus).toHaveAccessibleDescription(HAS_KEY);
-  await expect(why).toHaveAccessibleDescription(HAS_KEY);
   await expect(plays).toHaveText("Plays as an arcade level.");
-  // the button stands in the card's order after Time, so a keyboard asks why as a pointer does
+  // the greyed box is no stop in the card's order, which runs from Time on to Hidden level
   await page.locator("#draftTime").focus();
   await page.keyboard.press("Tab");
-  await expect(why).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page.locator("#toastStack .toast").first()).toHaveText(HAS_KEY);
-  await faced(page, 1, null);
-  await expect(bonus).toBeChecked();
-  await expect(why).toBeFocused();
-  await page.keyboard.press(" ");
-  await expect(page.locator("#toastStack .toast").first()).toHaveText(NO_KEY);
-  await page.keyboard.press("Tab");
   await expect(page.locator("#draftHidden")).toBeFocused();
-  await faced(page, 1, { type: 31 });
-  await expect(bonus).not.toBeChecked();
   await page.locator("#draftHidden").check();
   await expect(plays).toHaveText(
     "Plays as a hidden level, with the glass ball on half-seen blocks.",
