@@ -1,6 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapData, annotations, packs, levelKey, TRAILER_KIND, UNPLACED_KIND } from "./fixtures.js";
+import {
+  mapData,
+  annotations,
+  objects,
+  packs,
+  levelKey,
+  TRAILER_KIND,
+  UNPLACED_KIND,
+} from "./fixtures.js";
 import { fieldIndex } from "../../public/js/data.js";
 
 const FACES = 6;
@@ -37,6 +45,14 @@ test("every world lists its own levels, and between them all of them", () => {
     seen,
     mapData.levels.map((_, i) => i),
   );
+});
+
+test("a world's list ends with its finals and then the Simon room of its number", () => {
+  mapData.themes.forEach((t, w) => {
+    const [a, b, room] = t.levels.slice(-3).map((i) => mapData.levels[i]);
+    assert.deepEqual([a.pack, b.pack], Array(2).fill(`/${t.id}/${t.id}FI.PAK`), t.id);
+    assert.deepEqual([room.pack, room.index], [objects.skins.copycat, w], t.id);
+  });
 });
 
 test("a record is a block carrying up to six objects, one to a face", () => {
@@ -228,11 +244,11 @@ test("every placed cell lies within 1 to 32 on each axis", () => {
 });
 
 // The packs' layout is read off the same disc as the levels, so it names every
-// pack they come from, in their order, with one slot a level.
-test("packs.json lists every pack the levels come from, in their order, one slot a level", () => {
+// pack they come from, once, with one slot a level.
+test("packs.json lists every pack the levels come from, once, one slot a level", () => {
   assert.deepEqual(
-    packs.packs.map((p) => p.path),
-    [...new Set(mapData.levels.map((l) => l.pack))],
+    packs.packs.map((p) => p.path).sort(),
+    [...new Set(mapData.levels.map((l) => l.pack))].sort(),
   );
   for (const p of packs.packs) {
     const levels = mapData.levels.filter((l) => l.pack === p.path);

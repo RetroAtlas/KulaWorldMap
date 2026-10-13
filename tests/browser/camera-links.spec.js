@@ -226,19 +226,19 @@ test("[ and ] go on from one world into the next, and stop at the first level an
   expect(await entries()).toBe(booted);
 
   await last("HIRO");
-  await expect(title).toHaveText("FINAL 2");
+  await expect(title).toHaveText("SIMON 1");
   await page.keyboard.press("]");
   await expect(title).toHaveText("LEVEL 16");
   await page.keyboard.press("[");
-  await expect(title).toHaveText("FINAL 2");
+  await expect(title).toHaveText("SIMON 1");
 
   await last("HELL");
-  await expect(title).toHaveText("FINAL 20");
+  await expect(title).toHaveText("SIMON10");
   await frame(page);
   const there = await entries();
   await page.keyboard.press("]");
   await frame(page);
-  await expect(title).toHaveText("FINAL 20");
+  await expect(title).toHaveText("SIMON10");
   expect(await entries()).toBe(there);
 });
 

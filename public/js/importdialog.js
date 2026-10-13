@@ -16,29 +16,47 @@ let ui = null;
 let pending = null;
 
 /** The disc's world a pack's path lies under, or null for a pack from elsewhere. */
-export function worldOf(path) {
+function worldOf(path) {
   const world = path.split("/")[1];
   return WORLDS.includes(world) ? world : null;
 }
 
+const shippedAt = (path, index) =>
+  state.data?.levels.find((l) => l.pack === path && l.index === index);
+
 /** What a slot is called: the pause screen's title where a shipped level lies there, else the pack's name for it. */
 export function slotTitle(path, index, name) {
-  const shipped = state.data?.levels.find((l) => l.pack === path && l.index === index);
+  const shipped = shippedAt(path, index);
   if (shipped) return levelTitle(shipped);
   return name || `slot ${index + 1}`;
 }
 
+/** The world a slot opens in: the one the map lists the shipped level there under, else its pack's, else null. */
+export function slotWorld(path, index) {
+  return shippedAt(path, index)?.theme ?? worldOf(path);
+}
+
+function packWorld(path) {
+  const worlds = new Set(state.data?.levels.filter((l) => l.pack === path).map((l) => l.theme));
+  if (worlds.size > 1) return null;
+  return worlds.size ? [...worlds][0] : worldOf(path);
+}
+
 const packLabel = (path) => {
   const file = path.split("/").pop();
-  const world = worldOf(path);
+  const world = packWorld(path);
   return world ? `${file} (${worldName(world)})` : file;
 };
 const onScreen = (world) =>
   `the level opens with ${worldName(world)}'s artwork, the world on screen. The Level card's World changes it.`;
-const packNote = (path, world) =>
-  worldOf(path)
-    ? `A level opens in the world its pack belongs to, ${worldName(worldOf(path))}.`
-    : `This pack lies under none of the disc's worlds, so ${onScreen(world)}`;
+const packNote = (path, world) => {
+  if (!worldOf(path))
+    return `This pack lies under none of the disc's worlds, so ${onScreen(world)}`;
+  const own = packWorld(path);
+  return own
+    ? `A level opens in the world its pack belongs to, ${worldName(own)}.`
+    : "A level opens in the world the game plays it in, the one the map lists it under.";
+};
 
 // A closed dialog gives its history entry back with a Back of its own, which
 // lands a moment later; an answer handed over before then would push a level

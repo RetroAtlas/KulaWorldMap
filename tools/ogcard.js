@@ -9,7 +9,7 @@ import { ROOT, serve } from "../tests/public.js";
 
 const W = 1200;
 const H = 630;
-const LEVEL = 30; // FINAL 1
+const LEVEL = "/HIRO/HIROFI.PAK#0"; // FINAL 1
 
 const server = await serve(join(ROOT, "public"));
 
@@ -38,7 +38,7 @@ try {
     setSidebar(false);
     await new Promise((r) => setTimeout(r, 400));
     render.resize();
-    nav.selectLevel(level);
+    nav.selectLevel(state.data.levels.findIndex((l) => `${l.pack}#${l.index}` === level));
     state.cam.yaw = 38;
     state.cam.pitch = 30;
     nav.fit();

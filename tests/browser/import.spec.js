@@ -19,6 +19,7 @@ import {
   streamOf,
   synthetic,
   syntheticImage,
+  syntheticPacks,
 } from "../unit/synthetic.js";
 
 const EDIT_MARS = "/#MARS/0/45,35/fit/33";
@@ -88,6 +89,26 @@ function imageWithMods() {
     sector(PAK_AT, padded(mods), EOF_SUBMODE),
   ]);
   image.set(sector(ROOT_AT, padded(root), EOF_SUBMODE), ROOT_AT * SECTOR_RAW);
+  return image;
+}
+
+/** The synthetic image with the Simon rooms' pack beside HIRO's, holding two rooms. */
+function imageWithSimon() {
+  const PAK_AT = SYNTHETIC_SECTORS;
+  const simon = writePak(
+    ["SIMON 1", "SIMON 2"],
+    [1, 2].map((n) => streamOf(synthetic(n, `SIMON ${n}`))),
+  );
+  const world = concat([
+    record("\0", WORLD_AT, USER, 2),
+    record("\x01", ROOT_AT, USER, 2),
+    record("COPYCAT.PAK;1", PAK_AT, simon.length),
+    ...syntheticPacks().map(([path, at, blob]) =>
+      record(`${path.split("/").pop()};1`, at, blob.length),
+    ),
+  ]);
+  const image = concat([syntheticImage(), sector(PAK_AT, padded(simon), EOF_SUBMODE)]);
+  image.set(sector(WORLD_AT, padded(world), EOF_SUBMODE), WORLD_AT * SECTOR_RAW);
   return image;
 }
 
@@ -187,6 +208,40 @@ test("a pack under none of the disc's worlds opens in the world on screen, and t
   const entry = await entryOf(page, opened.draft);
   expect(entry.doc).toMatchObject({ title: "MY LEVEL", world: "MARS" });
   expect(entry.doc.blocks).toEqual(blocksOf(synthetic(2, "MY LEVEL"), "MARS"));
+  expect(await toasts(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("a Simon room from a disc image opens in the world the map lists it under, and the note says so", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT_MARS);
+  await settle(page);
+  await page.locator("#draftFile").setInputFiles(file("simon.bin", imageWithSimon()));
+  const dialog = page.locator("#import");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator("#importPack option")).toHaveText([
+    "HIRO.PAK (HIRO)",
+    "HIROFI.PAK (HIRO)",
+    "COPYCAT.PAK",
+  ]);
+  await dialog.locator("#importPack").selectOption({ index: 2 });
+  await expect(dialog.locator("#importSlot option")).toHaveText(["SIMON 1", "SIMON 2"]);
+  await expect(dialog.locator("#importNote")).toHaveText(
+    "A level opens in the world the game plays it in, the one the map lists it under.",
+  );
+  await dialog.locator("#importSlot").selectOption({ index: 1 });
+  await dialog.locator("#importOpen").click();
+  await expect(dialog).toBeHidden();
+  const { theme } = mapData.levels.find((l) => levelKey(l) === "/HIRO/COPYCAT.PAK#1");
+  expect(theme).not.toBe("HIRO");
+  const opened = await shown(page);
+  expect(opened).toMatchObject({ li: -1, theme });
+  expect(opened.chip).toContain("SIMON 2");
+  const entry = await entryOf(page, opened.draft);
+  expect(entry.doc).toMatchObject({ title: "SIMON 2", world: theme });
+  expect(entry.doc.blocks).toEqual(blocksOf(synthetic(2, "SIMON 2"), theme));
   expect(await toasts(page)).toEqual([]);
   expect(errors).toEqual([]);
 });

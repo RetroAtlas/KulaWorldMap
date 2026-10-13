@@ -49,6 +49,12 @@ CHECKS = [
     (0x80027cc4, "sw $zero, 9372($gp)", "which puts one mode back on the first set whatever the keys"),
     (0x8004cd10, "lw $v1, 13232($v1)", "and that mode is the one that names a pack of its own"),
     (0x8004cd70, "lw $v0, 13528($at)", "out of a table of paths indexed past the ten worlds"),
+    (0x80040348, "lw $a0, 1236($gp)", "while the artwork is named by the world word"),
+    (0x80042670, "lw $v1, 1236($gp)", "which that mode reads as it moves on to its next room"),
+    (0x80042678, "addiu $v1, $v1, 1", "and steps on by one"),
+    (0x8004267c, "sw $v1, 1236($gp)", "for that room"),
+    (0x80042680, "addiu $v0, $v0, 1", "as it steps the room's number"),
+    (0x80042684, "sw $v0, 1232($gp)", "the same"),
     (0x80027384, "jal 0x8002dfac", "a face is built knowing its neighbour's kind"),
     (0x80027374, "subu $s1, $zero, $s1", "a kind past the styles selects its own path, negated"),
     (0x800273a4, "beq $s1, $v0, 0x80027590", "and the vanishing block's path asks nothing of the neighbour"),
@@ -89,6 +95,7 @@ IMMEDIATES = [
     ("sets", "copycat.names", "the mode that names its own pack", 0x8004cd14, "addiu $v0, $zero, {}"),
     ("sets", "copycat.pak", "when the file wanted is the extension", 0x8004cd20, "addiu $v0, $zero, {}"),
     ("sets", "copycat.world", "taking the path of this world", 0x8004cd2c, "addiu $a0, $zero, {}"),
+    ("sets", "copycat.steps", "the mode whose rooms step through the worlds", 0x80042620, "addiu $v0, $zero, {}"),
 
     ("hiding", "path.crumbling", "the selector that takes the crumbling block's path", 0x80027390, "addiu $v0, $zero, {}"),
     ("hiding", "path.vanishing", "the vanishing block's", 0x800273a0, "addiu $v0, $zero, {}"),
@@ -164,6 +171,22 @@ def copycat_pack(code, r):
     path = text_at(code, entry(code, code.address(*PATH_TABLE), r["copycat.world"]))
     ext = text_at(code, entry(code, code.address(*EXT_TABLE), r["copycat.pak"]))
     return (path + ext).replace("\\", "/").split(";")[0]
+
+
+def copycat_worlds(code):
+    """The world each room of the copycat pack is played in on the mode's
+    first round, by its number: the mode steps the world word with the room
+    from the first, and the word picks the world's path out of the table,
+    which keeps the worlds' before the pack's own."""
+    r = readings(code)
+    if r["copycat.steps"] != r["copycat.mode"]:
+        sys.exit("the mode whose rooms step through the worlds is not the one that names its own pack")
+    paths = code.address(*PATH_TABLE)
+    worlds = [text_at(code, entry(code, paths, w)).split("\\")[1] for w in range(r["copycat.world"])]
+    unknown = [w for w in worlds if w not in THEMES]
+    if unknown:
+        sys.exit(f"the rooms step through {', '.join(unknown)}, which is no world on the disc")
+    return worlds
 
 
 def halfword(v):
@@ -408,6 +431,7 @@ def show_readings(code, tgis):
         for role, faces in table[axis].items():
             print(f"  {axis} {role:6}: " + "  ".join("-" if f is None else f"{f[0]},{f[1]}" for f in faces))
     print(f"\nthe pack that keeps the first set whatever the keys: {copycat_pack(code, r)}")
+    print(f"its rooms by number, in the worlds its first round plays them in: {' '.join(copycat_worlds(code))}")
     cyc = cycles(code, r)
     print(f"\nfire runs {len(cyc['fire']['frames'])} frames over its quads, the invisible block "
           f"{len(cyc['invisible']['frames'])} with a brightness cycle of {len(cyc['invisible']['level'])}, "

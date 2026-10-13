@@ -23,7 +23,7 @@ from kula_motion import Code, readings, table
 from kula_pak import Pak
 from kula_place import RECOMPRESS, ROOM
 from kula_sector import USER, sectors_of
-from kula_skins import table as skins_table
+from kula_skins import copycat_worlds, table as skins_table
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
 OBJECTS = OUT.parent / "objects.json"
@@ -88,20 +88,30 @@ def main():
     ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to $KULA_DISC")
     args = ap.parse_args()
     disc = open_disc(args.disc)
+    code = Code(disc.read_file(EXE))
+    skins = skins_table(code, {t: disc.read_file(f"/{t}/{t}.TGI") for t in THEMES})
+    rooms = copycat_worlds(code)
 
-    levels, themes, checked, problems, speeds = [], [], 0, [], set()
+    read, checked, problems, speeds = [], 0, [], set()
     for theme, path in packs(disc):
         pak = Pak(disc.read_file(path), path)
-        if not themes or themes[-1]["id"] != theme:
-            themes.append({"id": theme, "levels": []})
+        simon = path == skins["copycat"]
+        if simon and len(pak) > len(rooms):
+            sys.exit(f"{path} holds {len(pak)} rooms, more than the {len(rooms)} worlds they are played in")
         for i in range(len(pak)):
-            L = Level(pak.level(i), pak.name(i), theme)
+            world = rooms[i] if simon else theme
+            L = Level(pak.level(i), pak.name(i), world)
             for msg in L.verify():
                 problems.append(f"{path} {L.name}: {msg}")
             checked += sum(1 for c in L.cells if c[3] >= FIRST_RECORD)
             speeds |= {r.speed for r in L.records if r.kind == PLATFORM_KIND}
-            themes[-1]["levels"].append(len(levels))
-            levels.append(level_json(L, theme, path, i))
+            read.append(((THEMES.index(world), simon), level_json(L, world, path, i)))
+    levels = [l for _, l in sorted(read, key=lambda e: e[0])]
+    themes = []
+    for i, l in enumerate(levels):
+        if not themes or themes[-1]["id"] != l["theme"]:
+            themes.append({"id": l["theme"], "levels": []})
+        themes[-1]["levels"].append(i)
     if len(speeds) != 1:
         problems.append(f"moving platforms run at {sorted(speeds)}, not one speed")
     if problems:
@@ -120,10 +130,8 @@ def main():
         "levels": levels,
     }
     placed = {o["type"] for l in levels for r in l["records"] for o in r["on"]}
-    code = Code(disc.read_file(EXE))
     r = readings(code)
     motion = table(r, speeds.pop())
-    skins = skins_table(code, {t: disc.read_file(f"/{t}/{t}.TGI") for t in THEMES})
     if skins["copycat"] not in {l["pack"] for l in levels}:
         sys.exit(f"the skins name {skins['copycat']}, which is no pack on the disc")
     if ROOM not in disc.files:

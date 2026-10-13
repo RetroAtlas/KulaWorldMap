@@ -99,8 +99,8 @@ test("a shipped level's own stream goes back into its slot in place, but for six
   assert.deepEqual(paths, { [IN_PLACE]: 224, [REBUILD]: 6 });
   assert.deepEqual(longer, [
     ["BONUS 1", 6, false],
-    ["SIMON 4", 2, false],
     ["LEVEL 33", 1, true],
+    ["SIMON 4", 2, false],
     ["LEVEL 86", 2, false],
     ["LEVEL 87", 5, false],
     ["BONUS 30", 82, false],

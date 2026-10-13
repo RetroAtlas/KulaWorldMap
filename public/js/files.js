@@ -9,7 +9,7 @@ import { PACKS } from "./patch.js";
 import { SECTOR_RAW, USER_OFF } from "./sectors.js";
 import { isOrbit, readOrbit, readOrbitLink } from "./orbit.js";
 import { inflate as unpack } from "./inflate.js";
-import { pickFromDisc, pickFromPack, slotTitle, worldOf } from "./importdialog.js";
+import { pickFromDisc, pickFromPack, slotTitle, slotWorld } from "./importdialog.js";
 
 const NOT_MAP = "That file is not a level file of the map's.";
 const NOT_LEVEL = "That file is neither a level of the map's nor one of the game's.";
@@ -154,7 +154,7 @@ async function readFromDisc(blob, world) {
   const pack = packs.find((p) => p.path === choice.path);
   const read = readGame(
     await inflate(pack.streams[choice.slot]),
-    worldOf(pack.path) ?? world,
+    slotWorld(pack.path, choice.slot) ?? world,
     NOT_A_LEVEL,
   );
   read.project.title = slotTitle(pack.path, choice.slot, pack.names[choice.slot]);
