@@ -514,10 +514,21 @@ test("the card's time field takes the seconds the file can hold and says when it
     await time.blur();
     await expect(time).toHaveValue("99");
     await expect(page.locator("#toastStack .toast")).toHaveText([
-      "The time is a whole number of seconds from 1 to 32767.",
+      "The time is from 1 to 32767 seconds.",
     ]);
   }
   expect((await shown(page)).time).toBe(99);
+  // a fraction of a second lands as the nearest whole second, with nothing to say, and the
+  // field shows what landed at once, whether Enter or a blur committed it
+  await time.fill("2.5");
+  await time.press("Enter");
+  await expect(time).toHaveValue("3");
+  expect((await shown(page)).time).toBe(3);
+  await time.fill("4.5");
+  await time.blur();
+  await expect(time).toHaveValue("5");
+  expect((await shown(page)).time).toBe(5);
+  await expect(page.locator("#toastStack .toast")).toHaveCount(0);
   await time.fill("200");
   await time.blur();
   await expect(time).toHaveValue("200");

@@ -37,7 +37,7 @@ const CONFIRM_MS = 4000;
 const NOTE_MS = 2000;
 const TITLE_LENGTH = 80;
 const TIME_LIMIT = 2 ** 15 - 1;
-const TIME_RANGE = `The time is a whole number of seconds from 1 to ${TIME_LIMIT}.`;
+const TIME_RANGE = `The time is from 1 to ${TIME_LIMIT} seconds.`;
 const GAME_FILE = "application/octet-stream";
 const NO_KEY =
   "The level has no key, so the game plays it as a bonus level. Place a key to make it an arcade level.";
@@ -329,8 +329,10 @@ function buildForm(id, box) {
   });
   time.onchange = () => {
     const v = Math.round(Number(time.value));
-    if (time.value !== "" && v >= 1 && v <= TIME_LIMIT) edit({ time: v }, "changed the time");
-    else {
+    if (time.value !== "" && v >= 1 && v <= TIME_LIMIT) {
+      edit({ time: v }, "changed the time");
+      time.value = String(v);
+    } else {
       time.value = drafts.get(id)?.doc.time ?? "";
       toast(TIME_RANGE);
     }
