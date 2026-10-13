@@ -16,6 +16,8 @@ export async function settle(page) {
       if (Date.now() > deadline) throw new Error("settle timeout");
       await new Promise(requestAnimationFrame);
     }
+    // the suite works "Your levels" open; the fold itself has checks of its own
+    document.getElementById("yoursFold").open = true;
   });
 }
 

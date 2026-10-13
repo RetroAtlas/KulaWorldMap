@@ -103,6 +103,57 @@ const standing = (page) =>
       .sort();
   });
 
+test("Your levels folds under its heading: closed at first, open once a level of your own is shown, and kept as left", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const fold = page.locator("#yoursFold");
+  const isOpen = () => fold.evaluate((d) => d.open);
+  // the fold's state reaches the store on the toggle event, a moment after the click
+  const kept = (value) =>
+    expect.poll(() => page.evaluate(() => localStorage.getItem("kula.yours"))).toBe(value);
+  await page.goto(EDIT);
+  await expect(fold.locator("summary h2")).toHaveText("Your levels");
+  await expect(page.locator("#draftNew")).toBeHidden();
+  expect(await isOpen()).toBe(false);
+  await settle(page);
+  await expect(page.locator("#draftNew")).toBeVisible();
+  await fold.locator("summary").click();
+  await expect(page.locator("#draftNew")).toBeHidden();
+  await kept("closed");
+  await page.reload();
+  await expect(fold.locator("summary h2")).toHaveText("Your levels");
+  expect(await isOpen()).toBe(false);
+  // a level of your own coming on screen opens the fold, and shows how many the browser holds
+  await page.locator("#makeBtn").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  expect(await isOpen()).toBe(true);
+  await expect(page.locator("#yoursCount")).toHaveText("1");
+  // closed while editing, it stays closed through the edits
+  await fold.locator("summary").click();
+  await expect(page.locator("#draftRows button")).toBeHidden();
+  await kept("closed");
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setBlock }] = await Promise.all(
+      ["state.js", "drafts.js", "project.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    update(id, setBlock(get(id).doc, [1, 1, 32], { kind: 0 }));
+  });
+  await expect(page.locator("#chipLine")).toContainText("21 blocks");
+  expect(await isOpen()).toBe(false);
+  await page.reload();
+  await expect(page.locator("#yoursCount")).toHaveText("1");
+  expect(await isOpen()).toBe(false);
+  await fold.locator("summary").click();
+  await kept("open");
+  await page.reload();
+  await expect(page.locator("#yoursCount")).toHaveText("1");
+  expect(await isOpen()).toBe(true);
+  expect(errors).toEqual([]);
+});
+
 test("new makes a draft, shown and kept in this browser, which a reload brings back", async ({
   page,
 }) => {

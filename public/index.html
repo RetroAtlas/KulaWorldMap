@@ -130,29 +130,43 @@
       </section>
 
       <section id="yours" class="panel yours">
-        <h2>Your levels</h2>
-        <div class="actions">
-          <button id="draftNew" type="button" title="Make a new level in this world">new</button>
-          <button id="draftCopy" type="button" title="Make a level of your own out of this one">
-            copy this level
-          </button>
-          <button id="draftOpen" type="button" title="Open a level file of the map's or the game's">
-            open a file…
-          </button>
-          <input id="draftFile" type="file" accept=".json,.kwl,.pak,.bin,.img,.iso" hidden />
-          <button id="draftPaste" type="button" title="Open a shared level by its link">
-            paste a link…
-          </button>
-          <button id="draftExport" type="button" title="Save this level as the file the game loads">
-            save as the game's level
-          </button>
-        </div>
-        <div id="draftRows" class="drafts"></div>
-        <p id="draftEmpty" class="sub">
-          Nothing yet. Make a level of your own, or copy this one to start from.
-        </p>
-        <div id="draftCard" class="card" hidden></div>
-        <p class="sub">Your levels stay in this browser until you save them to a file.</p>
+        <details id="yoursFold">
+          <summary>
+            <h2>Your levels</h2>
+            <span id="yoursCount" class="n" aria-hidden="true"></span>
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg>
+          </summary>
+          <div class="actions">
+            <button id="draftNew" type="button" title="Make a new level in this world">new</button>
+            <button id="draftCopy" type="button" title="Make a level of your own out of this one">
+              copy this level
+            </button>
+            <button
+              id="draftOpen"
+              type="button"
+              title="Open a level file of the map's or the game's"
+            >
+              open a file…
+            </button>
+            <input id="draftFile" type="file" accept=".json,.kwl,.pak,.bin,.img,.iso" hidden />
+            <button id="draftPaste" type="button" title="Open a shared level by its link">
+              paste a link…
+            </button>
+            <button
+              id="draftExport"
+              type="button"
+              title="Save this level as the file the game loads"
+            >
+              save as the game's level
+            </button>
+          </div>
+          <div id="draftRows" class="drafts"></div>
+          <p id="draftEmpty" class="sub">
+            Nothing yet. Make a level of your own, or copy this one to start from.
+          </p>
+          <div id="draftCard" class="card" hidden></div>
+          <p class="sub">Your levels stay in this browser until you save them to a file.</p>
+        </details>
       </section>
 
       <section id="display" class="panel">

@@ -198,6 +198,7 @@ function rows() {
   const all = drafts.list();
   const unread = drafts.unreadCount();
   $("draftEmpty").hidden = all.length > 0 || unread > 0;
+  $("yoursCount").textContent = all.length ? String(all.length) : "";
   for (const d of all) {
     const name = nameOf(d.doc);
     const b = el("button", { type: "button", title: `Show ${name}` });
