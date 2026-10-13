@@ -196,7 +196,7 @@ The walkthrough's maximum. The disc holds 3500 more, the twelve coins on the cor
 
 ### /HILLS/HILLS.PAK#18: HIDDEN 2
 
-The walkthrough's figure, which it marks with a question mark: it leaves one of the ten crumbling blocks, and counts the coin under the exit block, which the Japanese release removes as unreachable. The disc holds 50 more.
+The walkthrough's figure, and the best score in play: it leaves one of the ten crumbling blocks, and takes the coin under the exit block, which the Japanese release removes as unreachable. The disc holds 50 more.
 
 ### /HILLS/HILLSFI.PAK#0: FINAL 3
 
