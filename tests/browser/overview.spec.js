@@ -322,7 +322,9 @@ test.describe("on a phone", () => {
     await expect(note.locator(".findings")).toBeHidden();
     await expect(note.locator(".plays")).toHaveText(BONUS);
     const chip = await page.locator("#chip").boundingBox();
-    expect(chip.height).toBe(fresh.height);
+    // the fold adds nothing but its one line, which a wide font may wrap once
+    expect(chip.height - fresh.height).toBeGreaterThanOrEqual(0);
+    expect(chip.height - fresh.height).toBeLessThanOrEqual(await lineHeight(summary));
     expect(chip.height).toBeLessThan(700 / 3);
     expect(chip.y + chip.height).toBeLessThan((await top(page, ABOVE_HOME)).y);
     expect(chip.x + chip.width).toBe(375 - 10);
