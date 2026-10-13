@@ -563,6 +563,30 @@ test("delete asks twice, and deleting the shown draft returns to the disc's leve
   expect(errors).toEqual([]);
 });
 
+test("duplicate opens a copy of the shown draft, saying so and which level is then on screen", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  const first = (await shown(page)).draft;
+  await page.locator("#draftTitle").fill("Spiral");
+  await expect(page.locator("#chipLine b")).toHaveText("Spiral");
+  await page.locator("#draftCard button", { hasText: "duplicate" }).click();
+  await expect(page.locator("#draftRows button")).toHaveCount(2);
+  const copy = await shown(page);
+  expect(copy.li).toBe(-1);
+  expect(copy.draft).not.toBe(first);
+  expect(copy.chip).toContain("Spiral");
+  expect(copy.hash).toMatch(new RegExp(`^#DRAFT/${copy.draft}/`));
+  expect(await docOf(page, copy.draft)).toMatchObject({ title: "Spiral" });
+  await expect(page.locator("#say")).toContainText("Copied the level. Draft, Spiral,");
+  await written(page, (s) => Object.keys(s?.drafts ?? {}).length).toBe(2);
+  expect(errors).toEqual([]);
+});
+
 test("a draft in the store that cannot be read is kept as it is, with one toast, and the rest stay", async ({
   page,
 }) => {
