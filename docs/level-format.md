@@ -52,7 +52,7 @@ The record table is not a skin table: it holds coins, keys and beams, and its la
 
 ## Level numbers and world names
 
-The game numbers its levels straight through the worlds (`LEVEL 1`-`LEVEL 150`) and keeps the bonus, hidden, final, Simon and lesson levels in the same packs under their own names. Those names are in the level records and the game never shows them for a numbered level: the pause screen's number comes from the routine at `0x800478dc`, which computes the world's place times fifteen plus the slot plus one, and times two plus 151 for The Final. So Atlantis's `LECEL 94` plays as LEVEL 94, and Hell, whose records say 135 to 138 and then skip to 140, plays as 136 to 150 like the walkthrough counts it. The build ships that number as `shown` wherever the engine computes one.
+The game numbers its levels straight through the worlds (`LEVEL 1`-`LEVEL 150`) and keeps the bonus and hidden levels and the lesson in the same packs, and the finals and the Simon rooms in packs of their own, all under their own names. Those names are in the level records and the game never shows them for a numbered level: the pause screen's number comes from the routine at `0x800478dc`, which computes the world's place times fifteen plus the slot plus one, and times two plus 151 for The Final. So Atlantis's `LECEL 94` plays as LEVEL 94, and Hell, whose records say 135 to 138 and then skip to 140, plays as 136 to 150 like the walkthrough counts it. The build ships that number as `shown` wherever the engine computes one.
 
 World ids are the disc's directory names (`HIRO`, `ATLANT`, ...), and that is all the game has: the executable's only mention of a world is the path it loads the pack from, so the disc supplies no player-facing world name at all.
 
