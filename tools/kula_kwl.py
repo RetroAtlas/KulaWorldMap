@@ -2121,6 +2121,47 @@ def residuals(classes, dropped):
     return out
 
 
+def file_at(path):
+    """Whether a file stands at the path, or the tool's exit in one sentence
+    where the system will not say."""
+    try:
+        return Path(path).is_file()
+    except OSError as e:
+        sys.exit(f"{path} cannot be read: {e.strerror}")
+
+
+def project_at(path):
+    """(project, report) read from a project file, or the tool's exit in one
+    sentence where the file is missing, cannot be read or is no project."""
+    if not file_at(path):
+        sys.exit(f"no file at {path}")
+    try:
+        project, report, _ = read_project(json.loads(Path(path).read_text(encoding="utf-8-sig")))
+    except OSError as e:
+        sys.exit(f"{path} cannot be read: {e.strerror}")
+    except UnicodeDecodeError:
+        sys.exit(f"{path} is not UTF-8 text")
+    except json.JSONDecodeError as e:
+        sys.exit(f"{path} is not JSON: {e}")
+    except ValueError as e:
+        sys.exit(f"{path} is {e}")
+    return project, report
+
+
+def level_at(path, world):
+    """(project, report) read from a level file, or the tool's exit in one
+    sentence where the file is missing, cannot be read or is no level."""
+    if not file_at(path):
+        sys.exit(f"no file at {path}")
+    try:
+        project, report, _ = read_kwl(Path(path).read_bytes(), world)
+    except OSError as e:
+        sys.exit(f"{path} cannot be read: {e.strerror}")
+    except ValueError as e:
+        sys.exit(f"in {path}, {e}")
+    return project, report
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--template", metavar="PACK#i", help="print the project of a shipped level")
@@ -2146,14 +2187,7 @@ def main():
     elif args.from_json:
         if not args.kwl:
             sys.exit("--from-json needs --kwl OUT")
-        if not Path(args.from_json).is_file():
-            sys.exit(f"no file at {args.from_json}")
-        try:
-            project, report, _ = read_project(json.loads(Path(args.from_json).read_text(encoding="utf-8-sig")))
-        except json.JSONDecodeError as e:
-            sys.exit(f"{args.from_json} is not JSON: {e}")
-        except ValueError as e:
-            sys.exit(f"{args.from_json} is {e}")
+        project, report = project_at(args.from_json)
         crowded = record_overflow(project)
         if crowded:
             sys.exit(f"{args.from_json} has {crowded}")
@@ -2164,17 +2198,14 @@ def main():
             print(describe(finding), file=sys.stderr)
         try:
             blob = canonical(project)
+            Path(args.kwl).write_bytes(blob)
         except ValueError as e:
             sys.exit(str(e))
-        Path(args.kwl).write_bytes(blob)
+        except OSError as e:
+            sys.exit(f"{args.kwl} cannot be written: {e.strerror}")
         print(f"{len(blob)} bytes -> {args.kwl}")
     elif args.from_kwl:
-        if not Path(args.from_kwl).is_file():
-            sys.exit(f"no file at {args.from_kwl}")
-        try:
-            project, report, _ = read_kwl(Path(args.from_kwl).read_bytes(), args.world)
-        except ValueError as e:
-            sys.exit(f"in {args.from_kwl}, {e}")
+        project, report = level_at(args.from_kwl, args.world)
         if args.json:
             print(json.dumps(project, indent=1))
         for line in report:

@@ -22,10 +22,12 @@ def open_disc(path=None):
     path = path or os.environ.get("KULA_DISC")
     if not path:
         sys.exit("no disc image: pass --disc or set $KULA_DISC")
-    if not Path(path).is_file():
-        sys.exit(f"no disc image at {path}")
     try:
+        if not Path(path).is_file():
+            sys.exit(f"no disc image at {path}")
         return Disc(path)
+    except OSError as e:
+        sys.exit(f"{path} cannot be read: {e.strerror}")
     except (ValueError, IndexError, struct.error, RecursionError) as e:
         sys.exit(f"{path} does not read as a disc image: {e}")
 

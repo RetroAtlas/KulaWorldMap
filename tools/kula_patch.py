@@ -29,7 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import open_disc
-from kula_kwl import DATA, OBJECTS, canonical, describe, read_kwl, read_project, template, validate
+from kula_kwl import DATA, OBJECTS, canonical, describe, file_at, level_at, project_at, template, validate
 from kula_place import SYNTHETIC_PACK, Patched, place, plan, synthetic, synthetic_image, verify, written
 from kula_sector import HEX_RUN, SECTOR_RAW, raw_sector
 
@@ -193,19 +193,10 @@ def fixture(scratch):
 def load_level(arg, world):
     """A project from a .kula.json, a .kwl, or a shipped level named PACK#slot."""
     path = Path(arg)
-    if path.is_file() and path.suffix == ".json":
-        try:
-            project, report, _ = read_project(json.loads(path.read_text(encoding="utf-8-sig")))
-        except json.JSONDecodeError as e:
-            sys.exit(f"{arg} is not JSON: {e}")
-        except ValueError as e:
-            sys.exit(f"{arg} is {e}")
-        return project, report
-    if path.is_file():
-        try:
-            project, report, _ = read_kwl(path.read_bytes(), world)
-        except ValueError as e:
-            sys.exit(f"in {arg}, {e}")
+    if file_at(arg):
+        if path.suffix == ".json":
+            return project_at(arg)
+        project, report = level_at(arg, world)
         project["title"] = path.stem
         return project, report
     if "#" in arg:
@@ -265,10 +256,15 @@ def main():
     named = lambda ext: out.with_name(out.name + ext)  # noqa: E731
     asked = [ext for ext, want in ((".bin", wanted["image"]), (".cue", wanted["image"]),
                                    (".ppf", wanted["ppf"]), (".xdelta", wanted["xdelta"])) if want]
-    for path in (named(ext) for ext in asked):
-        if path.exists():
-            why = "is the image itself" if path.samefile(src) else "exists already"
-            sys.exit(f"{path} {why}; say another --out")
+    try:
+        if not out.parent.is_dir():
+            sys.exit(f"no directory at {out.parent}; say another --out")
+        for path in (named(ext) for ext in asked):
+            if path.exists():
+                why = "is the image itself" if path.samefile(src) else "exists already"
+                sys.exit(f"{path} {why}; say another --out")
+    except OSError as e:
+        sys.exit(f"{named(asked[0])} cannot be written: {e.strerror}")
     try:
         with disc:
             placed = plan(disc, pack_path, int(slot), stream, title)
@@ -279,6 +275,8 @@ def main():
                 verify(view, pack_path, int(slot), stream, placed)
     except ValueError as e:
         sys.exit(str(e))
+    except OSError as e:
+        sys.exit(f"{e.filename or named('.bin')} cannot be written: {e.strerror}")
     for warning in placed.warnings:
         print(f"warning: {warning}", file=sys.stderr)
 
@@ -288,14 +286,17 @@ def main():
     if wanted["image"]:
         print(f"{len(placed.writes)} sectors written: {', '.join(str(lba) for lba, _ in placed.writes)}")
         print(f"{named('.bin')} and {named('.cue')}")
+    patches = []
     if wanted["ppf"]:
-        blob = ppf(src, placed.writes, PREFIX + title)
-        named(".ppf").write_bytes(blob)
-        print(f"{named('.ppf')}: {len(blob)} bytes")
+        patches.append((named(".ppf"), ppf(src, placed.writes, PREFIX + title)))
     if wanted["xdelta"]:
-        blob = vcdiff(src, placed.writes)
-        named(".xdelta").write_bytes(blob)
-        print(f"{named('.xdelta')}: {len(blob)} bytes")
+        patches.append((named(".xdelta"), vcdiff(src, placed.writes)))
+    for path, blob in patches:
+        try:
+            path.write_bytes(blob)
+        except OSError as e:
+            sys.exit(f"{path} cannot be written: {e.strerror}")
+        print(f"{path}: {len(blob)} bytes")
     for line in placements(src, out):
         print(f"  {line}")
 

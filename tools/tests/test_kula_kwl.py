@@ -1421,6 +1421,11 @@ class TheCli(unittest.TestCase):
             self.assertEqual(done.returncode, 1, done.stderr)
             self.assertIn("is not JSON", done.stderr)
             self.assertNotIn("Traceback", done.stderr)
+            (scratch / "latin.kula.json").write_bytes(
+                json.dumps(project([], title="caf\u00e9"), ensure_ascii=False).encode("latin-1"))
+            done = self.run_tool("--from-json", scratch / "latin.kula.json", "--kwl", scratch / "latin.kwl")
+            self.assertEqual(done.returncode, 1, done.stderr)
+            self.assertEqual(done.stderr.splitlines(), [f"{scratch / 'latin.kula.json'} is not UTF-8 text"])
             (scratch / "short.kwl").write_bytes(playground()[:-1])
             done = self.run_tool("--from-kwl", scratch / "short.kwl", "--json")
             self.assertEqual(done.returncode, 1, done.stderr)
@@ -1442,6 +1447,46 @@ class TheCli(unittest.TestCase):
                     self.assertEqual(done.returncode, 1, done.stderr)
                     self.assertEqual(done.stderr.splitlines(), [f"no file at {args[1]}"])
             self.assertEqual(list(scratch.iterdir()), [])
+
+    @unittest.skipIf(os.name != "posix" or os.geteuid() == 0, "a permission bit stops neither Windows nor root")
+    def test_a_file_the_process_cannot_read_is_said_in_a_sentence_and_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "shut").mkdir()
+            for where in (scratch, scratch / "shut"):
+                (where / "locked.kula.json").write_text(json.dumps(project([plain((5, 5, 5), t0=start())])))
+                (where / "locked.kwl").write_bytes(playground())
+            os.chmod(scratch / "locked.kula.json", 0)
+            os.chmod(scratch / "locked.kwl", 0)
+            os.chmod(scratch / "shut", 0o600)
+            for by, where in (("the file", scratch), ("its directory", scratch / "shut")):
+                for args in (("--from-json", where / "locked.kula.json", "--kwl", scratch / "out.kwl"),
+                             ("--from-kwl", where / "locked.kwl", "--json")):
+                    with self.subTest((by, args[0])):
+                        done = self.run_tool(*args)
+                        self.assertEqual(done.returncode, 1, done.stderr)
+                        self.assertEqual(done.stderr.splitlines(), [f"{args[1]} cannot be read: Permission denied"])
+            os.chmod(scratch / "shut", 0o700)
+            self.assertFalse((scratch / "out.kwl").exists())
+
+    def test_an_output_the_system_refuses_is_said_in_a_sentence_and_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "ok.kula.json").write_text(json.dumps(project([plain((5, 5, 5), t0=start())])))
+            (scratch / "notes.txt").write_text("")
+            refused = [(scratch / "missing" / "ok.kwl", "No such file or directory"),
+                       (scratch, "Is a directory"),
+                       (scratch / "notes.txt" / "ok.kwl", "Not a directory")]
+            if os.name == "posix" and os.geteuid() != 0:
+                (scratch / "shut").mkdir()
+                os.chmod(scratch / "shut", 0o500)
+                refused.append((scratch / "shut" / "ok.kwl", "Permission denied"))
+            for out, why in refused:
+                with self.subTest(why):
+                    done = self.run_tool("--from-json", scratch / "ok.kula.json", "--kwl", out)
+                    self.assertEqual(done.returncode, 1, done.stderr)
+                    self.assertEqual(done.stderr.splitlines(), [f"{out} cannot be written: {why}"])
+            self.assertEqual(list(scratch.rglob("*.kwl")), [])
 
 
 class Digests(unittest.TestCase):

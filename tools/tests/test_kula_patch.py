@@ -333,6 +333,11 @@ class TheTool(unittest.TestCase):
             broken = run("broken.json")
             self.assertNotEqual(broken.returncode, 0)
             self.assertIn("broken.json is not JSON:", broken.stderr)
+            (scratch / "latin.kula.json").write_bytes(
+                json.dumps(dict(project, title="caf\u00e9"), ensure_ascii=False).encode("latin-1"))
+            latin = run("latin.kula.json")
+            self.assertNotEqual(latin.returncode, 0)
+            self.assertEqual(latin.stderr.splitlines(), [f"{scratch / 'latin.kula.json'} is not UTF-8 text"])
             (scratch / "marked.kula.json").write_text(json.dumps(project), encoding="utf-8-sig")
             marked = run("marked.kula.json")
             self.assertEqual(marked.returncode, 0, marked.stderr)
@@ -361,6 +366,96 @@ class TheTool(unittest.TestCase):
             self.assertEqual(done.returncode, 1, done.stderr)
             self.assertEqual(done.stderr.splitlines(), [f"no file at {scratch / 'missing.kula.json'}"])
             self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin"])
+
+    @unittest.skipIf(os.name != "posix" or os.geteuid() == 0, "a permission bit stops neither Windows nor root")
+    def test_a_file_the_process_cannot_read_is_said_in_a_sentence_and_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            (scratch / "shut").mkdir()
+            for where in (scratch, scratch / "shut"):
+                (where / "locked.bin").write_bytes(IMAGE)
+                (where / "locked.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+                (where / "locked.kwl").write_bytes(canonical(synthetic(CASE["in place"])))
+            for name in ("locked.bin", "locked.kula.json", "locked.kwl"):
+                os.chmod(scratch / name, 0)
+            os.chmod(scratch / "shut", 0o600)
+            run = lambda level, disc: subprocess.run(  # noqa: E731
+                [sys.executable, TOOL, "--level", level, "--into", f"{SYNTHETIC_PACK}#{SLOT}",
+                 "--out", scratch / "out", "--disc", disc, "--ppf"], capture_output=True, text=True)
+            for by, where in (("the file", scratch), ("its directory", scratch / "shut")):
+                for level in ("locked.kula.json", "locked.kwl"):
+                    with self.subTest((by, level)):
+                        done = run(where / level, scratch / "image.bin")
+                        self.assertEqual(done.returncode, 1, done.stderr)
+                        self.assertEqual(done.stderr.splitlines(), [f"{where / level} cannot be read: Permission denied"])
+                with self.subTest((by, "locked.bin")):
+                    done = run(scratch / "spiral.kula.json", where / "locked.bin")
+                    self.assertEqual(done.returncode, 1, done.stderr)
+                    self.assertEqual(done.stderr.splitlines()[-1], f"{where / 'locked.bin'} cannot be read: Permission denied")
+                    self.assertNotIn("Traceback", done.stderr)
+            os.chmod(scratch / "shut", 0o700)
+            self.assertFalse((scratch / "out.ppf").exists())
+
+    def test_an_output_in_no_directory_is_refused_before_anything_is_written(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            (scratch / "notes.txt").write_text("")
+            for parent in (scratch / "missing", scratch / "notes.txt"):
+                for more in ((), ("--image",), ("--ppf",)):
+                    with self.subTest((parent.name, more)):
+                        done = subprocess.run([sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into",
+                                               f"{SYNTHETIC_PACK}#{SLOT}", "--out", parent / "spiral", "--disc", scratch / "image.bin", *more],
+                                              capture_output=True, text=True)
+                        self.assertEqual(done.returncode, 1, done.stderr)
+                        self.assertEqual(done.stdout, "")
+                        self.assertEqual(done.stderr.splitlines()[-1], f"no directory at {parent}; say another --out")
+                        self.assertNotIn("Traceback", done.stderr)
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "notes.txt", "spiral.kula.json"])
+
+    @unittest.skipIf(os.name != "posix" or os.geteuid() == 0, "a permission bit stops neither Windows nor root")
+    def test_an_output_the_system_refuses_is_said_in_a_sentence_and_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            (scratch / "shut").mkdir()
+            os.chmod(scratch / "shut", 0o500)
+            for more, ext in ((("--ppf",), ".ppf"), (("--image",), ".bin")):
+                with self.subTest(ext):
+                    done = subprocess.run([sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into",
+                                           f"{SYNTHETIC_PACK}#{SLOT}", "--out", scratch / "shut" / "spiral", "--disc", scratch / "image.bin", *more],
+                                          capture_output=True, text=True)
+                    self.assertEqual(done.returncode, 1, done.stderr)
+                    self.assertEqual(done.stderr.splitlines()[-1],
+                                     f"{scratch / 'shut' / ('spiral' + ext)} cannot be written: Permission denied")
+                    self.assertNotIn("Traceback", done.stderr)
+            os.chmod(scratch / "shut", 0o700)
+            self.assertEqual(list((scratch / "shut").iterdir()), [])
+
+    @unittest.skipIf(os.name != "posix" or os.geteuid() == 0, "a permission bit stops neither Windows nor root")
+    def test_an_output_the_process_cannot_reach_is_refused_before_anything_is_written(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            (scratch / "sealed").mkdir()
+            os.chmod(scratch / "sealed", 0o600)
+            for out in (scratch / "sealed" / "spiral", scratch / "sealed" / "sub" / "spiral"):
+                for more, ext in ((("--ppf",), ".ppf"), (("--image",), ".bin"), ((), ".bin")):
+                    with self.subTest((out.relative_to(scratch), more)):
+                        done = subprocess.run([sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into",
+                                               f"{SYNTHETIC_PACK}#{SLOT}", "--out", out, "--disc", scratch / "image.bin", *more],
+                                              capture_output=True, text=True)
+                        self.assertEqual(done.returncode, 1, done.stderr)
+                        self.assertEqual(done.stdout, "")
+                        self.assertEqual(done.stderr.splitlines()[-1], f"{out}{ext} cannot be written: Permission denied")
+                        self.assertNotIn("Traceback", done.stderr)
+            os.chmod(scratch / "sealed", 0o700)
+            self.assertEqual(list((scratch / "sealed").iterdir()), [])
 
     def test_an_output_that_exists_or_is_the_image_itself_is_refused_before_anything_is_written(self):
         held = json.loads(FIXTURE.read_text())["cases"][0]
