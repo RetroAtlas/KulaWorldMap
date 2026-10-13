@@ -42,7 +42,7 @@ function install(l, i, { keepView = false, push = true, keep = null } = {}) {
   }
   invalidatePick();
   emit(updated ? "level-updated" : "level-changed", i);
-  if (kept) showCell(face == null ? kept : { ...kept, face });
+  if (kept) showCell(face == null ? kept : { ...kept, face }, { raise: false });
   chip();
   draw();
   writeHash(left && !keepView && push);

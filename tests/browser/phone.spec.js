@@ -389,6 +389,52 @@ test.describe("editing on a phone", () => {
     await expect(palette).toBeHidden();
   });
 
+  test("the palette's sheet stays open through a second placement, an erase, an undo and a card edit", async ({
+    page,
+  }) => {
+    await editFresh(page);
+    await page.locator("#paletteBtn").tap();
+    const palette = page.locator("#palette");
+    const panel = page.locator("#detail");
+    await expect(palette).toBeVisible();
+    await lift(page, 1.5);
+    const side = await plusX(page, START);
+    await tap(page, side);
+    await tap(page, side);
+    expect(await cells(page)).toEqual([START, [18, 17, 17]]);
+    const down = async (selected) => {
+      expect(await shown(page)).toMatchObject({ selected, sheet: true });
+      await expect(palette).toBeVisible();
+      await expect(panel).toBeHidden();
+    };
+    await down([18, 17, 17]);
+    // every change draws the draft again with the selection kept, which must not raise its panel
+    const next = await plusX(page, [18, 17, 17]);
+    await tap(page, next);
+    await tap(page, next);
+    expect(await cells(page)).toEqual([START, [18, 17, 17], [19, 17, 17]]);
+    await down([19, 17, 17]);
+    await page.keyboard.press("z");
+    const top18 = await top(page, [18, 17, 17]);
+    await tap(page, top18);
+    await tap(page, top18);
+    expect(await cells(page)).toEqual([START, [19, 17, 17]]);
+    await down([19, 17, 17]);
+    await page.locator("#undoBtn").tap();
+    expect(await cells(page)).toEqual([START, [18, 17, 17], [19, 17, 17]]);
+    await down([19, 17, 17]);
+    await page.locator("#menuBtn").tap();
+    await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "true");
+    const time = page.locator("#draftTime");
+    await time.fill("45");
+    await time.blur();
+    await expect(page.locator("#chipLine")).toContainText("time 45");
+    await page.locator("#menuBtn").tap();
+    await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "false");
+    await still(page);
+    await down([19, 17, 17]);
+  });
+
   test("a brush chosen after a tap has placed a block leaves the panel down and the palette open", async ({
     page,
   }) => {

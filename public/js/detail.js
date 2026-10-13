@@ -121,8 +121,8 @@ const placed = (m) => {
   return `${html}.</p>`;
 };
 
-/** Select a cell and show it in the panel. */
-export function showCell(c) {
+/** Select a cell and show it in the panel; with `raise` off a hidden panel is rebuilt but left down. */
+export function showCell(c, { raise = true } = {}) {
   const l = state.lvl;
   const key = cellKey(c.x, c.y, c.z);
   state.selected = { ...c, key };
@@ -175,7 +175,7 @@ export function showCell(c) {
   drawIcons(box);
   for (const fn of hooks) fn(box, c);
   fold(box);
-  box.hidden = false;
+  if (raise) box.hidden = false;
   box.querySelector(".fold").onclick = () => {
     folded = !folded;
     fold(box);
