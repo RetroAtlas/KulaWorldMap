@@ -1494,6 +1494,13 @@ class TheCli(unittest.TestCase):
                     self.assertEqual(done.returncode, 1, done.stderr)
                     self.assertEqual(done.stdout, "")
                     self.assertEqual(done.stderr.splitlines(), [why])
+            # the level alone reaches an output that is the standard output; the summary goes with the report
+            if os.name == "posix":
+                piped = subprocess.run([sys.executable, TOOL, "--from-json", scratch / "ok.kula.json", "--kwl", "/dev/stdout"],
+                                       capture_output=True)
+                self.assertEqual(piped.returncode, 0, piped.stderr)
+                self.assertEqual(piped.stdout, canonical(project([plain((5, 5, 5), t0=start())])))
+                self.assertIn(b"bytes -> /dev/stdout", piped.stderr)
             # the output is judged before the project is read, so a missing project hides nothing
             done = self.run_tool("--from-json", scratch / "missing.kula.json", "--kwl", scratch / "missing" / "ok.kwl")
             self.assertEqual(done.returncode, 1, done.stderr)

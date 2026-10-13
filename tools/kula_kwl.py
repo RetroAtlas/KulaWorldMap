@@ -2195,7 +2195,7 @@ def main():
             sys.exit(str(e))
         except OSError as e:
             sys.exit(f"{args.kwl} cannot be written: {e.strerror}")
-        print(f"{len(blob)} bytes -> {args.kwl}")
+        print(f"{len(blob)} bytes -> {args.kwl}", file=sys.stderr)
     elif args.from_kwl:
         project, report = level_at(args.from_kwl, args.world)
         if args.json:
