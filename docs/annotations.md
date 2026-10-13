@@ -2,7 +2,7 @@
 
 [`public/annotations.json`](../public/annotations.json) is what the map says about the things the game leaves numbered: a name, the points a pickup scores, whether a thing is a hazard, what a raw field holds, a level's best score where the disc holds more than can be collected, and a note for whoever is looking at the map. This file is why each of those is believed, one section per entry under the entry's key, and a unit test fails when an entry has no section here or a section names no entry. The note says what a thing is and does; the reasons stay here. A type the file does not name shows on the map as its number, and `python3 tools/kula_kinds.py` writes the per-type contact sheets the naming started from.
 
-Most names rest on Syonyx's Roll Away walkthrough (GameFAQs, 2006), which the repo does not carry, matched against the disc level by level: the level it first mentions a thing on carries the game's first placement of one kind or type, and usually nothing else new. The points rest on its per-level maximum scores, which the disc reproduces exactly on 193 of the 209 levels it rates and exceeds on the other 16, each of which curates the walkthrough's figure as its `score`; [level-format.md](level-format.md) has the arithmetic. Type 42's rest on the executable instead, since no level it rates holds one. The names that rest on play are the coin tiers' colours, which of the two directional captivators is which, the acid block and the invincibility pill. Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page.
+Most names rest on Syonyx's Roll Away walkthrough (GameFAQs, 2006), which the repo does not carry, matched against the disc level by level: the level it first mentions a thing on carries the game's first placement of one kind or type, and usually nothing else new. The points rest on its per-level maximum scores, which the disc reproduces exactly on 193 of the 209 levels it rates and exceeds on the other 16, each of which curates the walkthrough's figure as its `score` but the five where play collects everything the disc holds, LEVEL 128, BONUS 29, BONUS 30, FINAL 12 and FINAL 13; [level-format.md](level-format.md) has the arithmetic. Type 42's rest on the executable instead, since no level it rates holds one. The names that rest on play are the coin tiers' colours, which of the two directional captivators is which, the acid block and the invincibility pill. Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page.
 
 An entry marked `hazard` is one that can cost the ball its life, and its section says what shows it. The things that travel share one routine for it: the loader puts every type 50 to 53 and 56 into one table (`0x8003b678`), and once a frame the ball's routine tests the ball against every entry in it (`0x8003d570`, called at `0x8003679c`) and on a hit sets it dying with the cause the game keeps for them (`0x80036814`), the wandering ball's reach being the shorter. The notes call that capturing the ball, a word taken from the captivators' name, and use it for all of them and for type 42's brown form, since all set the same cause. No hazard harms the ball while the invincibility pill lasts (type 34).
 
@@ -222,10 +222,6 @@ The walkthrough's maximum. The disc holds 4475 more, the gem and two gold coins 
 
 From The Cutting Room Floor's Roll Away page.
 
-### /FIELD/FIELDFI.PAK#1: FINAL 12
-
-The walkthrough's maximum. The disc holds 50 more, a crumbling block the walkthrough says is unattainable.
-
 ### /ATLANT/ATLANT.PAK#3: LEVEL 94
 
 The walkthrough's maximum. The disc holds 50 more, a crumbling block the walkthrough says is out of reach. The hourglass and two gold coins on the crumbling blocks are left out because the game never walks what stands on a crumbling block ([level-format.md](level-format.md)), and the walkthrough never sees the hourglass.
@@ -234,17 +230,9 @@ The walkthrough's maximum. The disc holds 50 more, a crumbling block the walkthr
 
 The walkthrough's maximum. The disc holds 750 more, a gold coin inside one of the rings that the walkthrough says cannot be reached.
 
-### /ATLANT/ATLANTFI.PAK#0: FINAL 13
-
-The walkthrough's maximum. The disc holds 200 more, four of the fifteen crumbling blocks, which the walkthrough calls a necessary evil. The three keys on the undersides of crumbling blocks are left out because the game never walks what stands on one ([level-format.md](level-format.md)).
-
 ### /HAZE/HAZEFI.PAK#1: FINAL 16
 
 R. Agsten's figure in the walkthrough, one gem better than the author's. The disc holds 30500 more: ten of the eleven gems on the ring at y=28, which cannot be left once reached, and a gold coin.
-
-### /MARS/MARS.PAK#7: LEVEL 128
-
-The walkthrough's maximum. The disc holds 100 more, two of the five crumbling blocks, which the walkthrough's route leaves standing without saying so.
 
 ### /MARS/MARS.PAK#10: LEVEL 131
 
@@ -278,13 +266,9 @@ The walkthrough's maximum. The disc holds 50 more, the one crumbling block the w
 
 The walkthrough's maximum. The disc holds 1000 more, the two coins on top of the first platform, a face the walkthrough says cannot be reached.
 
-### /HELL/HELL.PAK#16: BONUS 29
-
-The walkthrough's maximum. The disc holds 750 more, a gold coin's worth that the walkthrough's route does not take and does not name.
-
 ### /HELL/HELL.PAK#17: BONUS 30
 
-The walkthrough's maximum. The disc holds 250 more, a bronze coin's worth that the walkthrough's route does not take and does not name. Its thirty pickups are the only ones in the game without a pickup number.
+From The Cutting Room Floor's Roll Away page. Its thirty pickups are the only ones in the game without a pickup number.
 
 ### /HELL/HELL.PAK#18: HIDDEN 10
 

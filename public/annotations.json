@@ -365,10 +365,6 @@
     "/FIELD/FIELD.PAK#19": {
       "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
-    "/FIELD/FIELDFI.PAK#1": {
-      "score": 21430,
-      "note": "The level holds 50 more points, a crumbling block that cannot be reached."
-    },
     "/ATLANT/ATLANT.PAK#3": {
       "score": 9975,
       "note": "The level holds 50 more points, a crumbling block that is out of reach."
@@ -380,20 +376,12 @@
     "/ATLANT/ATLANT.PAK#19": {
       "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
-    "/ATLANT/ATLANTFI.PAK#0": {
-      "score": 15915,
-      "note": "The level holds 200 more points, four of the fifteen crumbling blocks, which the best score leaves standing."
-    },
     "/HAZE/HAZE.PAK#19": {
       "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in nine of the ten worlds, and nothing in the game leads to it."
     },
     "/HAZE/HAZEFI.PAK#1": {
       "score": 24065,
       "note": "The level holds 30500 more points. That is ten of the eleven gems on the ring at y=28, which cannot be left once reached, and a gold coin."
-    },
-    "/MARS/MARS.PAK#7": {
-      "score": 10315,
-      "note": "The level holds 100 more points, two of the five crumbling blocks, which the best score leaves standing."
     },
     "/MARS/MARS.PAK#10": {
       "note": "The Japanese release un-iced one face of the solid ice block for an arrow that nothing can reach. It also removed the blue coin on the same block, which can be collected here."
@@ -425,13 +413,8 @@
       "score": 21475,
       "note": "The level holds 1000 more points, in the two coins on top of the first platform, a face that cannot be reached. The Japanese release removes them."
     },
-    "/HELL/HELL.PAK#16": {
-      "score": 18675,
-      "note": "The level holds 750 more points, and what the best score leaves out is not known."
-    },
     "/HELL/HELL.PAK#17": {
-      "score": 14125,
-      "note": "The level holds 250 more points, and what the best score leaves out is not known. This is the one arcade level rebuilt between the PAL and the US release."
+      "note": "This is the one arcade level rebuilt between the PAL and the US release."
     },
     "/HELL/HELL.PAK#18": {
       "note": "160 of its 178 blocks are not part of the level. They lie flat far below it, spelling VERY WELL DONE in block letters six blocks tall. The other 18 are an upright frame, and everything on the level stands on the side from which the lettering reads the right way round."
