@@ -1248,13 +1248,11 @@ def counts(project, hides):
 
 def plays_as(project):
     keyed = any(o["type"] == KEY for b in project["blocks"] for o in _faces_of(b).values())
-    bonus = ("it has no key, so every block scores 50 the first time the ball rolls onto it, "
-             "the level ends once every block has been rolled, and an exit stands open from the start")
     if _truthy(project.get("hidden")):
         if keyed:
             return "Plays as a hidden level, with the glass ball on half-seen blocks."
-        return f"Plays as a hidden bonus level, with the glass ball on half-seen blocks: {bonus}."
-    return "Plays as an arcade level." if keyed else f"Plays as a bonus level: {bonus}."
+        return "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks."
+    return "Plays as an arcade level." if keyed else "Plays as a bonus level since it has no key."
 
 
 def _slot_of(pack, index):

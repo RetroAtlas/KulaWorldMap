@@ -336,7 +336,7 @@ test("the Level card marks a level with no key as a bonus level, says how it pla
   await expect(bonus).toBeDisabled();
   await expect(bonusLabel).toHaveAttribute("title", NO_KEY);
   await expect(bonus).toHaveAccessibleDescription(NO_KEY);
-  await expect(plays).toHaveText(/^Plays as a bonus level: /);
+  await expect(plays).toHaveText("Plays as a bonus level since it has no key.");
   await expect(errorLine).toBeHidden();
   // the runner's own check holds a label for a disabled control to be disabled; a pointer does not
   await bonusLabel.click({ force: true });

@@ -260,17 +260,13 @@ export function counts(project, hides) {
   return n;
 }
 
-const BONUS =
-  "it has no key, so every block scores 50 the first time the ball rolls onto it, " +
-  "the level ends once every block has been rolled, and an exit stands open from the start";
-
 export function playsAs(project) {
   const keyed = project.blocks.some((b) => facesOf(b).some(([, o]) => o.type === KEY));
   if (project.hidden)
     return keyed
       ? "Plays as a hidden level, with the glass ball on half-seen blocks."
-      : `Plays as a hidden bonus level, with the glass ball on half-seen blocks: ${BONUS}.`;
-  return keyed ? "Plays as an arcade level." : `Plays as a bonus level: ${BONUS}.`;
+      : "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks.";
+  return keyed ? "Plays as an arcade level." : "Plays as a bonus level since it has no key.";
 }
 
 /** Whether a target names a slot of a world pack or a finals pack. */

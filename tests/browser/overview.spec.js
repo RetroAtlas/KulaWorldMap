@@ -5,8 +5,7 @@ const EDIT = "/#HIRO/0/45,35/fit/33";
 const HOME = [17, 17, 17];
 const ABOVE_HOME = [HOME[0], HOME[1], HOME[2] - 1];
 const START = { cell: HOME, kind: 0, faces: { 0: { type: 30, facing: 3 } } };
-const BONUS =
-  "Plays as a bonus level: it has no key, so every block scores 50 the first time the ball rolls onto it, the level ends once every block has been rolled, and an exit stands open from the start.";
+const BONUS = "Plays as a bonus level since it has no key.";
 
 const at = (page, x, y, z) =>
   page.evaluate(

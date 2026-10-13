@@ -1102,7 +1102,7 @@ class Validates(unittest.TestCase):
             "warning: the yellow circuit starts off and has no switch to turn it on",
         ])
         self.assertEqual(counts(spelled, HIDES), {"records": 10, "cells": 10, "faces": 75, "blocks": 5, "objects": 1, "platforms": 2, "lasers": 4, "vanishing": 1, "crumbling": 0, "captivators": 0, "keys": 0, "lights": 0, "spikes": 0})
-        self.assertEqual(plays_as(spelled), "Plays as a hidden bonus level, with the glass ball on half-seen blocks: it has no key, so every block scores 50 the first time the ball rolls onto it, the level ends once every block has been rolled, and an exit stands open from the start.")
+        self.assertEqual(plays_as(spelled), "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks.")
 
     def test_the_targets_slot_is_a_run_of_ascii_digits_and_the_world_and_the_target_are_quoted_as_written(self):
         def into(text):
@@ -1361,10 +1361,11 @@ class Validates(unittest.TestCase):
         keyed = project([plain((5, 5, 5), t0=start(), t1={"type": KEY})])
         self.assertEqual(plays_as(keyed), "Plays as an arcade level.")
         keyless = project([plain((5, 5, 5), t0=start())])
-        self.assertTrue(plays_as(keyless).startswith("Plays as a bonus level: it has no key, so every block scores 50"))
+        self.assertEqual(plays_as(keyless), "Plays as a bonus level since it has no key.")
         self.assertEqual(plays_as(project(keyed["blocks"], hidden=True)),
                          "Plays as a hidden level, with the glass ball on half-seen blocks.")
-        self.assertTrue(plays_as(project(keyless["blocks"], hidden=True)).startswith("Plays as a hidden bonus level"))
+        self.assertEqual(plays_as(project(keyless["blocks"], hidden=True)),
+                         "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks.")
 
     def test_every_shipped_level_validates_with_no_error(self):
         for l in json.loads(DATA.read_text())["levels"]:

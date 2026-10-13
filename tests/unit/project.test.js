@@ -112,7 +112,7 @@ test("a blank level has a start to build from and nothing the game would mishand
   assert.deepEqual(texts(validate(p, HIDES), "error"), []);
   assert.deepEqual([p.title, p.world, p.time, p.blocks.length], [UNTITLED, "HAZE", 99, 1]);
   assert.deepEqual(faceAt(p, [17, 17, 17], 0), start());
-  assert.ok(playsAs(p).startsWith("Plays as a bonus level:"));
+  assert.equal(playsAs(p), "Plays as a bonus level since it has no key.");
 });
 
 test("every edit returns a new project and leaves the one it was given as it was", () => {
@@ -265,7 +265,7 @@ test("every shipped level validates with no error and plays as the game plays it
         l.name,
       );
     else if (bonus.includes(l))
-      assert.ok(plays.startsWith("Plays as a bonus level: it has no key"), l.name);
+      assert.equal(plays, "Plays as a bonus level since it has no key.", l.name);
     else if (l.pack !== objects.skins.copycat)
       assert.equal(plays, "Plays as an arcade level.", l.name);
   }
@@ -726,7 +726,7 @@ test("a document that bypassed the reader is checked alike on both sides", () =>
   });
   assert.equal(
     playsAs(spelled),
-    "Plays as a hidden bonus level, with the glass ball on half-seen blocks: it has no key, so every block scores 50 the first time the ball rolls onto it, the level ends once every block has been rolled, and an exit stands open from the start.",
+    "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks.",
   );
 });
 
@@ -1154,14 +1154,15 @@ test("how a level plays", () => {
   const keyed = project([plain([5, 5, 5], 0, { 0: start(), 1: { type: KEY } })]);
   assert.equal(playsAs(keyed), "Plays as an arcade level.");
   const keyless = project([plain([5, 5, 5], 0, { 0: start() })]);
-  assert.ok(
-    playsAs(keyless).startsWith("Plays as a bonus level: it has no key, so every block scores 50"),
-  );
+  assert.equal(playsAs(keyless), "Plays as a bonus level since it has no key.");
   assert.equal(
     playsAs({ ...keyed, hidden: true }),
     "Plays as a hidden level, with the glass ball on half-seen blocks.",
   );
-  assert.ok(playsAs({ ...keyless, hidden: true }).startsWith("Plays as a hidden bonus level"));
+  assert.equal(
+    playsAs({ ...keyless, hidden: true }),
+    "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks.",
+  );
   assert.deepEqual(
     validate(keyed, HIDES).map((f) => f.level),
     ["warning"],
