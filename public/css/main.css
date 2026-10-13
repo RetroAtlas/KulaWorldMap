@@ -1743,6 +1743,9 @@ body:not(.sidebar-open) .menu-btn .cross {
   .palette .x {
     display: grid;
   }
+  .palette .tabs {
+    padding-right: 48px;
+  }
   body.editing .detail .fold {
     right: 52px;
   }
