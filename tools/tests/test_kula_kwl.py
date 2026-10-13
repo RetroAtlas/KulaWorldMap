@@ -1474,19 +1474,39 @@ class TheCli(unittest.TestCase):
             scratch = Path(scratch)
             (scratch / "ok.kula.json").write_text(json.dumps(project([plain((5, 5, 5), t0=start())])))
             (scratch / "notes.txt").write_text("")
-            refused = [(scratch / "missing" / "ok.kwl", "No such file or directory"),
-                       (scratch, "Is a directory"),
-                       (scratch / "notes.txt" / "ok.kwl", "Not a directory")]
+            refused = [(scratch / "missing" / "ok.kwl", f"no directory at {scratch / 'missing'}; say another --kwl"),
+                       (scratch / "notes.txt" / "ok.kwl", f"no directory at {scratch / 'notes.txt'}; say another --kwl"),
+                       (scratch, f"{scratch} is a directory; say a name for --kwl"),
+                       (f"{scratch}/", "say a name for --kwl"),
+                       (".", "say a name for --kwl"),
+                       ("..", "say a name for --kwl")]
             if os.name == "posix" and os.geteuid() != 0:
                 (scratch / "shut").mkdir()
+                (scratch / "shut" / "stands.kwl").write_bytes(b"")
+                (scratch / "shut" / "sealed.kwl").write_bytes(b"")
+                os.chmod(scratch / "shut" / "sealed.kwl", 0o400)
                 os.chmod(scratch / "shut", 0o500)
-                refused.append((scratch / "shut" / "ok.kwl", "Permission denied"))
+                refused.append((scratch / "shut" / "ok.kwl", f"{scratch / 'shut' / 'ok.kwl'} cannot be written: Permission denied"))
+                refused.append((scratch / "shut" / "sealed.kwl", f"{scratch / 'shut' / 'sealed.kwl'} cannot be written: Permission denied"))
             for out, why in refused:
                 with self.subTest(why):
                     done = self.run_tool("--from-json", scratch / "ok.kula.json", "--kwl", out)
                     self.assertEqual(done.returncode, 1, done.stderr)
-                    self.assertEqual(done.stderr.splitlines(), [f"{out} cannot be written: {why}"])
-            self.assertEqual(list(scratch.rglob("*.kwl")), [])
+                    self.assertEqual(done.stdout, "")
+                    self.assertEqual(done.stderr.splitlines(), [why])
+            # the output is judged before the project is read, so a missing project hides nothing
+            done = self.run_tool("--from-json", scratch / "missing.kula.json", "--kwl", scratch / "missing" / "ok.kwl")
+            self.assertEqual(done.returncode, 1, done.stderr)
+            self.assertEqual(done.stderr.splitlines(), [f"no directory at {scratch / 'missing'}; say another --kwl"])
+            if os.name == "posix" and os.geteuid() != 0:
+                # a file that stands is replaced on its own leave, whatever its directory allows
+                done = self.run_tool("--from-json", scratch / "ok.kula.json", "--kwl", scratch / "shut" / "stands.kwl")
+                self.assertEqual(done.returncode, 0, done.stderr)
+                self.assertGreater(len((scratch / "shut" / "stands.kwl").read_bytes()), 0)
+                os.chmod(scratch / "shut", 0o700)
+                self.assertEqual(sorted(p.name for p in scratch.rglob("*.kwl")), ["sealed.kwl", "stands.kwl"])
+            else:
+                self.assertEqual(list(scratch.rglob("*.kwl")), [])
 
 
 class Digests(unittest.TestCase):

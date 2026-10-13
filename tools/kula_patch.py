@@ -28,7 +28,7 @@ import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import file_at, open_disc
+from kula_disc import file_at, open_disc, output_at
 from kula_kwl import DATA, OBJECTS, canonical, describe, level_at, project_at, template, validate
 from kula_place import SYNTHETIC_PACK, Patched, place, plan, synthetic, synthetic_image, verify, written
 from kula_sector import HEX_RUN, SECTOR_RAW, raw_sector
@@ -230,6 +230,18 @@ def main():
     wanted = {"ppf": args.ppf, "xdelta": args.xdelta, "image": args.image}
     if not any(wanted.values()):
         wanted = dict.fromkeys(wanted, True)
+    src = args.disc or os.environ.get("KULA_DISC")
+    asked = [ext for ext, want in ((".bin", wanted["image"]), (".cue", wanted["image"]),
+                                   (".ppf", wanted["ppf"]), (".xdelta", wanted["xdelta"])) if want]
+    out = output_at(args.out, "--out", asked)
+    named = lambda ext: out.with_name(out.name + ext)  # noqa: E731
+    try:
+        for path in (named(ext) for ext in asked):
+            if path.exists():
+                why = "is the image itself" if src and file_at(src) and path.samefile(src) else "exists already"
+                sys.exit(f"{path} {why}; say another --out")
+    except OSError as e:
+        sys.exit(f"{named(asked[0])} cannot be written: {e.strerror}")
 
     project, report = load_level(args.level, args.world)
     for line in report:
@@ -250,23 +262,7 @@ def main():
     stem = Path(args.level).stem
     title = project.get("title") or stem.removesuffix(".kula")
 
-    src = args.disc or os.environ.get("KULA_DISC")
     disc = open_disc(src)
-    out = Path(args.out)
-    if not out.name or out.name == "..":
-        sys.exit("say a name for --out")
-    named = lambda ext: out.with_name(out.name + ext)  # noqa: E731
-    asked = [ext for ext, want in ((".bin", wanted["image"]), (".cue", wanted["image"]),
-                                   (".ppf", wanted["ppf"]), (".xdelta", wanted["xdelta"])) if want]
-    try:
-        if not out.parent.is_dir():
-            sys.exit(f"no directory at {out.parent}; say another --out")
-        for path in (named(ext) for ext in asked):
-            if path.exists():
-                why = "is the image itself" if path.samefile(src) else "exists already"
-                sys.exit(f"{path} {why}; say another --out")
-    except OSError as e:
-        sys.exit(f"{named(asked[0])} cannot be written: {e.strerror}")
     try:
         with disc:
             placed = plan(disc, pack_path, int(slot), stream, title)

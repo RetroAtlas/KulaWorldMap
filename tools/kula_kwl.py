@@ -34,7 +34,7 @@ from functools import lru_cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import THEMES, file_at, open_disc, packs
+from kula_disc import THEMES, file_at, open_disc, output_at, packs
 from kula_level import (
     BLOCK_KINDS,
     CELLS,
@@ -2178,6 +2178,7 @@ def main():
     elif args.from_json:
         if not args.kwl:
             sys.exit("--from-json needs --kwl OUT")
+        out = output_at(args.kwl, "--kwl")
         project, report = project_at(args.from_json)
         crowded = record_overflow(project)
         if crowded:
@@ -2189,7 +2190,7 @@ def main():
             print(describe(finding), file=sys.stderr)
         try:
             blob = canonical(project)
-            Path(args.kwl).write_bytes(blob)
+            out.write_bytes(blob)
         except ValueError as e:
             sys.exit(str(e))
         except OSError as e:

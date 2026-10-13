@@ -414,23 +414,63 @@ class TheTool(unittest.TestCase):
                         self.assertEqual(done.stdout, "")
                         self.assertEqual(done.stderr.splitlines()[-1], f"no directory at {parent}; say another --out")
                         self.assertNotIn("Traceback", done.stderr)
-            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "notes.txt", "spiral.kula.json"])
+            # the output is judged before the level is read, so a level that is missing or has errors hides nothing
+            faulty = synthetic(CASE["in place"])
+            faulty["blocks"].append({"cell": [2, 2, 30], "kind": 1, "faces": {"0": {"type": 5, "variant": 0}}})
+            (scratch / "faulty.kula.json").write_text(json.dumps(faulty))
+            run = lambda level, out: subprocess.run(  # noqa: E731
+                [sys.executable, TOOL, "--level", level, "--into", f"{SYNTHETIC_PACK}#{SLOT}", "--out", out,
+                 "--disc", scratch / "image.bin", "--ppf"], capture_output=True, text=True)
+            self.assertIn("fix them first", run(scratch / "faulty.kula.json", scratch / "faulty").stderr)
+            for level in (scratch / "missing.kula.json", scratch / "faulty.kula.json"):
+                done = run(level, scratch / "missing" / "spiral")
+                self.assertEqual(done.returncode, 1, done.stderr)
+                self.assertEqual(done.stderr.splitlines(), [f"no directory at {scratch / 'missing'}; say another --out"])
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["faulty.kula.json", "image.bin", "notes.txt", "spiral.kula.json"])
+
+    def test_a_standing_output_is_refused_as_standing_whether_or_not_the_disc_is_there(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            (scratch / "spiral.ppf").write_bytes(b"")
+            run = lambda disc: subprocess.run(  # noqa: E731
+                [sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into", f"{SYNTHETIC_PACK}#{SLOT}",
+                 "--out", scratch / "spiral", "--disc", disc, "--ppf"], capture_output=True, text=True)
+            for disc in (scratch / "image.bin", scratch / "gone.bin"):
+                with self.subTest(disc.name):
+                    done = run(disc)
+                    self.assertEqual(done.returncode, 1, done.stderr)
+                    self.assertEqual(done.stderr.splitlines(), [f"{scratch / 'spiral.ppf'} exists already; say another --out"])
+            (scratch / "spiral.ppf").unlink()
+            done = run(scratch / "gone.bin")
+            self.assertEqual(done.returncode, 1, done.stderr)
+            self.assertEqual(done.stderr.splitlines()[-1], f"no disc image at {scratch / 'gone.bin'}")
 
     def test_an_output_that_names_no_file_is_refused_before_anything_is_written(self):
         with tempfile.TemporaryDirectory() as scratch:
             scratch = Path(scratch)
             (scratch / "image.bin").write_bytes(IMAGE)
             (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
-            for out in (".", "/", "..", scratch / ".."):
+            (scratch / "patches").mkdir()
+            run = lambda out: subprocess.run(  # noqa: E731
+                [sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into", f"{SYNTHETIC_PACK}#{SLOT}",
+                 "--out", out, "--disc", scratch / "image.bin", "--ppf"], capture_output=True, text=True, cwd=scratch)
+            for out in (".", "/", "..", scratch / "..", "patches/", f"{scratch / 'patches'}/"):
                 with self.subTest(out):
-                    done = subprocess.run([sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into",
-                                           f"{SYNTHETIC_PACK}#{SLOT}", "--out", out, "--disc", scratch / "image.bin", "--ppf"],
-                                          capture_output=True, text=True, cwd=scratch)
+                    done = run(out)
                     self.assertEqual(done.returncode, 1, done.stderr)
                     self.assertEqual(done.stdout, "")
                     self.assertEqual(done.stderr.splitlines()[-1], "say a name for --out")
                     self.assertNotIn("Traceback", done.stderr)
-            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "spiral.kula.json"])
+            for out in ("patches", scratch / "patches"):
+                with self.subTest(out):
+                    done = run(out)
+                    self.assertEqual(done.returncode, 1, done.stderr)
+                    self.assertEqual(done.stdout, "")
+                    self.assertEqual(done.stderr.splitlines()[-1], f"{out} is a directory; say a name for --out")
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "patches", "spiral.kula.json"])
+            self.assertEqual(list((scratch / "patches").iterdir()), [])
 
     @unittest.skipIf(os.name != "posix" or os.geteuid() == 0, "a permission bit stops neither Windows nor root")
     def test_an_output_the_system_refuses_is_said_in_a_sentence_and_not_a_traceback(self):
@@ -446,6 +486,7 @@ class TheTool(unittest.TestCase):
                                            f"{SYNTHETIC_PACK}#{SLOT}", "--out", scratch / "shut" / "spiral", "--disc", scratch / "image.bin", *more],
                                           capture_output=True, text=True)
                     self.assertEqual(done.returncode, 1, done.stderr)
+                    self.assertEqual(done.stdout, "")
                     self.assertEqual(done.stderr.splitlines()[-1],
                                      f"{scratch / 'shut' / ('spiral' + ext)} cannot be written: Permission denied")
                     self.assertNotIn("Traceback", done.stderr)
