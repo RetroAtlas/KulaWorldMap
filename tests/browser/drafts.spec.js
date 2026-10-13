@@ -352,6 +352,14 @@ test("the Level card marks a level with no key as a bonus level, says how it pla
   await expect(bonusLabel).toHaveAttribute("title", HAS_KEY);
   await expect(bonus).toHaveAccessibleDescription(HAS_KEY);
   await expect(plays).toHaveText("Plays as an arcade level.");
+  // the box ticks again when the last key goes, and the row says why once more
+  await faced(page, 1, null);
+  await expect(bonus).toBeChecked();
+  await expect(bonusLabel).toHaveAttribute("title", NO_KEY);
+  await expect(bonus).toHaveAccessibleDescription(NO_KEY);
+  await expect(plays).toHaveText("Plays as a bonus level since it has no key.");
+  await faced(page, 1, { type: 31 });
+  await expect(bonus).not.toBeChecked();
   // the greyed box is no stop in the card's order, which runs from Time on to Hidden level
   await page.locator("#draftTime").focus();
   await page.keyboard.press("Tab");
