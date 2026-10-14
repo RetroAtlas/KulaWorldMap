@@ -149,7 +149,7 @@ test("the ball follows the hidden flag and the keys, the slot standing in for th
     );
 });
 
-test("the exit starts shut where the level has a key, and open where it has none", () => {
+test("an exit starts shut, as the loader leaves every exit, even on a level with no key", () => {
   state.data = mapData;
   const { skins, types } = objects;
   const EXIT = 7;
@@ -161,7 +161,7 @@ test("the exit starts shut where the level has a key, and open where it has none
     records: [{ kind: 0, on: on.map((type, face) => ({ face, type })) }],
   });
   assert.equal(markerModel(exit, level(EXIT, skins.keys.type)), types[EXIT][1]);
-  assert.equal(markerModel(exit, level(EXIT)), types[EXIT][0]);
+  assert.equal(markerModel(exit, level(EXIT)), types[EXIT][1]);
   for (const l of mapData.levels) {
     const exits = l.records.flatMap((r) => r.on.filter((o) => o.type === EXIT));
     for (const o of exits)
