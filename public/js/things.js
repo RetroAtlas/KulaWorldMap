@@ -119,12 +119,12 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
 // A model's y runs along its face's outward normal and its z the way the thing
 // points. Its lowest vertex sits just off the face, but a thing the game keeps
 // an entry of its own for stands where the game draws it, and a thing that
-// bobs stands its bob's reach higher so that it never dips into its face. Both
-// sides of a polygon are drawn, since the meshes wind their faces either way.
+// bobs stands its bob's reach higher so that it never dips into its face.
 const GAP = 0.03;
-const GLASS = 0.55;
 const BLEND = 2;
 const GOURAUD = 16;
+// How a translucent polygon meets what is behind it, by its model's blend.
+const BLENDS = { 0: ["source-over", 0.5], 1: ["lighter", 1], 3: ["lighter", 0.25] };
 // The rolling stone's axle is its model's z, which lies across the way it
 // rolls, so it stands a quarter turn from its facing.
 const STONE = 51;
@@ -193,6 +193,7 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
   // order of its layers rather than letting their tied depths trade places.
   const n = shown.length / 3;
   const polys = polygonsOf(model);
+  const { sorted } = model;
   const { spots, depths, far } = scratch(n, polys.length);
   for (let v = 0; v < n; v++) {
     const i = 3 * v;
@@ -211,21 +212,31 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
       o[1] + x * right[1] + pressed * up[1] + z * fwd[1],
       o[2] + x * right[2] + pressed * up[2] + z * fwd[2],
     );
+    if (!sorted) continue;
     depths[v] = depth(
       o[0] + x * right[0] + y * up[0] + z * fwd[0],
       o[1] + x * right[1] + y * up[1] + z * fwd[1],
       o[2] + x * right[2] + y * up[2] + z * fwd[2],
     );
   }
-  polys.forEach(({ corners }, k) => {
-    let z = 0;
-    for (const i of corners) z += depths[i];
-    far[k] = z / corners.length;
-  });
+  if (sorted) {
+    polys.forEach(({ corners }, k) => {
+      let z = 0;
+      for (const i of corners) z += depths[i];
+      far[k] = z / corners.length;
+    });
+  }
+  // the game draws a model's polygons in its order or, where the model says,
+  // furthest first, and drops one it culls where it faces away
+  const order = sorted ? backToFront(m, model, far) : null;
   let colour = null;
-  for (const k of backToFront(m, model, far)) {
-    const { ring } = polys[k];
+  let op = "source-over";
+  for (let j = 0; j < polys.length; j++) {
+    const k = order ? order[j] : j;
+    const { ring, corners, cull, blend } = polys[k];
+    if (cull && !towardView(spots, corners)) continue;
     const fill = lit?.[k] ?? polys[k].fill;
+    if (blend !== op) ctx.globalCompositeOperation = op = blend;
     if (fill !== colour) ctx.fillStyle = colour = fill;
     ctx.beginPath();
     ring.forEach((i, j) =>
@@ -234,10 +245,18 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
     ctx.closePath();
     ctx.fill();
   }
+  if (op !== "source-over") ctx.globalCompositeOperation = "source-over";
 }
 
+// A polygon faces the view where its first three corners run anticlockwise on
+// the screen, as every model winds its outer faces.
+const towardView = (spots, [a, b, c]) =>
+  (spots[2 * b] - spots[2 * a]) * (spots[2 * c + 1] - spots[2 * a + 1]) -
+    (spots[2 * b + 1] - spots[2 * a + 1]) * (spots[2 * c] - spots[2 * a]) <
+  0;
+
 // A quad's corners come two edges at a time, 0-1 and 2-3, so its outline runs
-// 0, 1, 3, 2.
+// 0, 1, 3, 2. The game culls a polygon whose first corner's red is odd.
 const polygons = new WeakMap();
 function polygonsOf(model) {
   if (!polygons.has(model)) {
@@ -250,10 +269,14 @@ function polygonsOf(model) {
         return Math.round(sum / n);
       });
       const [a, b, c, d] = corners;
+      const [blend, alpha] = model.flags[k] & BLEND ? BLENDS[model.blend] : ["source-over", 1];
       return {
         corners,
         ring: n === 4 ? [a, b, d, c] : corners,
-        fill: fillOf(mean, model.flags[k]),
+        fill: fillOf(mean, alpha),
+        alpha,
+        blend,
+        cull: rgb[0] & 1,
       };
     });
     polygons.set(model, polys);
@@ -261,7 +284,7 @@ function polygonsOf(model) {
   return polygons.get(model);
 }
 
-const fillOf = ([r, g, b], flags) => `rgba(${r} ${g} ${b} / ${flags & BLEND ? GLASS : 1})`;
+const fillOf = ([r, g, b], alpha) => `rgba(${r} ${g} ${b} / ${alpha})`;
 
 // A glint steps a flat polygon's first corner, the colour the game draws it
 // in, and every corner of a Gouraud one, which the map draws in their mean.
@@ -273,7 +296,7 @@ const glintsThrough = (entry, model) =>
     return glintSteps(entry, stepped).map((now) =>
       fillOf(
         [0, 1, 2].map((ch) => Math.round(now.reduce((sum, c) => sum + c[ch], 0) / now.length)),
-        model.flags[k],
+        polygonsOf(model)[k].alpha,
       ),
     );
   });

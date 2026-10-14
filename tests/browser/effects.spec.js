@@ -801,7 +801,7 @@ const gemFills = (page, frames) =>
           const mean = [0, 1, 2].map((ch) =>
             Math.round(rgb.filter((_, i) => i % 3 === ch).reduce((a, b) => a + b, 0) / n),
           );
-          return css(`rgba(${mean.join(" ")} / 0.55)`);
+          return css(`rgba(${mean.join(" ")} / 0.5)`);
         }),
       ),
     );
@@ -822,7 +822,7 @@ const gemFills = (page, frames) =>
       };
       draw();
       g.fill = fill;
-      return seen.filter((s) => s.endsWith(", 0.55)"));
+      return seen.filter((s) => s.endsWith(", 0.5)"));
     });
     state.hiddenKinds = hidden;
     performance.now = now;
@@ -840,7 +840,7 @@ test("a gem's facets glint white and fade, the same ones on every gem of its cut
   await landed(page);
   const frames = [...Array(60).keys()];
   const { frames: seen, own } = await gemFills(page, frames);
-  const white = "rgba(254, 254, 254, 0.55)";
+  const white = "rgba(254, 254, 254, 0.5)";
   let glinting = 0;
   for (const fills of seen) {
     expect(fills).toHaveLength(64);
@@ -858,6 +858,80 @@ test("a gem's facets glint white and fade, the same ones on every gem of its cut
   const held = (await gemFills(page, [10, 40])).frames.map((f) => [...f].sort());
   expect(held[1]).toEqual(held[0]);
   expect(held[0]).toEqual([...seen[0]].sort());
+  expect(errors).toEqual([]);
+});
+
+// One thing drawn by itself onto a grey canvas the map's size, with the fills it made.
+const alone = (page, cell, type) =>
+  page.evaluate(
+    async ([cell, type]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state, cellKey }, { drawThing }] = await Promise.all(
+        ["state.js", "things.js"].map(at),
+      );
+      const key = cellKey(...cell);
+      const m = state.idx.markers.get(key).find((m) => m.type === type);
+      const { w, h, dpr } = state.view;
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(w * dpr);
+      cv.height = Math.round(h * dpr);
+      const g = cv.getContext("2d");
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.fillStyle = "rgb(100 100 100)";
+      g.fillRect(0, 0, w, h);
+      const fills = [];
+      const fill = g.fill;
+      g.fill = function (...a) {
+        fills.push([this.globalCompositeOperation, this.fillStyle]);
+        return fill.apply(this, a);
+      };
+      drawThing(g, m, state.idx.cells.get(key), state.lvl, 0);
+      const d = g.getImageData(0, 0, cv.width, cv.height).data;
+      const changed = [];
+      for (let i = 0; i < d.length; i += 4)
+        if (d[i] !== 100 || d[i + 1] !== 100 || d[i + 2] !== 100)
+          changed.push([d[i], d[i + 1], d[i + 2]]);
+      return { fills, changed };
+    },
+    [cell, type],
+  );
+
+test("the hidden exit adds a quarter of itself to what is behind it, from both sides", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // LEVEL 132's hidden exit stands on the top of this block
+  await page.goto("/#MARS/11/45,35/6/14,19,18/0,0/33");
+  await settle(page);
+  await page.keyboard.press("v");
+  const { fills, changed } = await alone(page, [14, 19, 18], 26);
+  // its 93 polygons are translucent and none is culled
+  expect(fills).toHaveLength(93);
+  expect(fills.every(([op, style]) => op === "lighter" && style.endsWith(", 0.25)"))).toBe(true);
+  expect(changed.length).toBeGreaterThan(1000);
+  // so it lightens the grey behind it, and in green the most
+  expect(changed.every((px) => px.every((v) => v >= 100))).toBe(true);
+  expect(changed.some(([r, g, b]) => g - 100 > 2 * (r - 100) && g > b)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("a polygon the game culls shows only facing the view, in the order its model holds it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // HIDDEN 1 starts on the glass ball: 84 opaque polygons of shards, then 180
+  // of translucent shell, every one culled
+  await page.goto("/#HIRO/18/45,35/fit/33");
+  await settle(page);
+  await page.keyboard.press("v");
+  const { fills } = await alone(page, [19, 21, 17], 30);
+  expect(fills.length).toBeGreaterThan(264 * 0.35);
+  expect(fills.length).toBeLessThan(264 * 0.6);
+  const shell = fills.map(([op, style]) => op === "source-over" && style.endsWith(", 0.5)"));
+  const first = shell.indexOf(true);
+  expect(first).toBeGreaterThan(0);
+  expect(shell.slice(first).every(Boolean)).toBe(true);
+  expect(shell.slice(0, first).some(Boolean)).toBe(false);
   expect(errors).toEqual([]);
 });
 
