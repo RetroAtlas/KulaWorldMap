@@ -930,7 +930,9 @@ test("the hidden exit adds a quarter of itself to what is behind it, from both s
   expect(changed.length).toBeGreaterThan(1000);
   // so it lightens the grey behind it, and in green the most
   expect(changed.every((px) => px.every((v) => v >= 100))).toBe(true);
-  expect(changed.some(([r, g, b]) => g - 100 > 2 * (r - 100) && g > b)).toBe(true);
+  const [r, g, b] = [0, 1, 2].map((ch) => changed.reduce((sum, px) => sum + px[ch] - 100, 0));
+  expect(g).toBeGreaterThan(r);
+  expect(g).toBeGreaterThan(b);
   expect(errors).toEqual([]);
 });
 
