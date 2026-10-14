@@ -353,6 +353,38 @@ test("a vanishing block's phase is set from its select, and a teleporter says wh
   expect(errors).toEqual([]);
 });
 
+test("the block's own rows stay open through a switch's press and from block to block, until closed", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await lay(page, HOME, {
+    kind: 0,
+    faces: { 0: { type: 30, facing: 3 }, 1: { type: 9, variant: 2 } },
+  });
+  await lay(page, [18, 17, 17], { kind: 0, faces: {} });
+  await select(page, HOME);
+  const raw = page.locator("#detail details.raw");
+  const open = () => raw.evaluate((d) => d.open);
+  await raw.locator("summary").click();
+  expect(await open()).toBe(true);
+  const press = raw.locator(".press button");
+  const before = await press.textContent();
+  await press.click();
+  await expect(press).not.toHaveText(before);
+  await expect(press).toBeFocused();
+  expect(await open()).toBe(true);
+  await select(page, [18, 17, 17]);
+  await expect(page.locator("#detail")).toContainText("cell 18,17,17");
+  expect(await open()).toBe(true);
+  await raw.locator("summary").click();
+  expect(await open()).toBe(false);
+  await select(page, HOME);
+  await expect(page.locator("#detail")).toContainText("cell 17,17,17");
+  expect(await open()).toBe(false);
+  expect(errors).toEqual([]);
+});
+
 test("what stands here puts a thing on the face, nothing takes it off, and a device on ice is refused", async ({
   page,
 }) => {

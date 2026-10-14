@@ -73,6 +73,7 @@ const PHASED = new Set([11, 56]);
 const NO_WORDS = Array(16).fill(0);
 let wired = false;
 let focused = null;
+let rawOpen = false;
 // What the editor hands the form: whether editing is on, and its two placements.
 let editing = () => false;
 let placeHere = () => false;
@@ -139,10 +140,11 @@ function render(box, c) {
   const body = box.querySelector("#detailBody");
   const raw = el(
     "details",
-    { className: "raw" },
+    { className: "raw", open: rawOpen },
     el("summary", { textContent: "the game's words" }),
     ...[...body.childNodes],
   );
+  raw.addEventListener("toggle", () => (rawOpen = raw.open));
   const form = el("div", { className: "form" });
   if (!own) face = null;
   if (own) form.append(facesRow(d, own, c, face));
