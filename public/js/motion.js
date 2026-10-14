@@ -255,3 +255,13 @@ export function glints(entry, lengths, frame) {
   }
   return s.cuts;
 }
+
+/** How much of its colour a ball's corner shows, of 256, where its normal
+    meets the light at `square` 4096ths of a whole. */
+export const lightShare = (light, square) =>
+  Math.min(
+    255,
+    Math.floor(
+      (light.base * (light.background + Math.floor((light.colour * square) / 4096))) / 4096,
+    ),
+  );

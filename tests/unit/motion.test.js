@@ -17,6 +17,7 @@ import {
   glowing,
   glintSteps,
   glints,
+  lightShare,
 } from "../../public/js/motion.js";
 
 const table = objects.motion;
@@ -368,4 +369,14 @@ test("the glints are the same whatever frames they are drawn on, and start afres
   const at300 = structuredClone(glints(stepped, cuts, 300));
   assert.deepEqual(glints(fresh(), cuts, 300), at300);
   assert.deepEqual(glints(stepped, cuts, 0), glints(fresh(), cuts, 0));
+});
+
+test("a ball's corner shows 89 of 256 of its colour facing away from the light, and all of it facing it", () => {
+  const light = table.types[30].light;
+  assert.equal(lightShare(light, 0), 89);
+  assert.equal(lightShare(light, 2048), 175);
+  assert.equal(lightShare(light, 4096), 255);
+  // full from nearly square on, past which the channel stands
+  assert.equal(lightShare(light, 3912), 255);
+  assert.equal(lightShare(light, 3911), 254);
 });

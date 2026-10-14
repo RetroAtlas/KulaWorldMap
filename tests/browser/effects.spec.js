@@ -1025,6 +1025,40 @@ test("a teleporter's model flashes with its light, by its circuit's lift", async
   expect(errors).toEqual([]);
 });
 
+test("the ball is lit corner by corner from a light fixed to the view", async ({ page }) => {
+  const errors = trackErrors(page);
+  // LEVEL 1 starts on the top of this block
+  await page.goto("/#HIRO/0/45,35/fit/33");
+  await settle(page);
+  await page.keyboard.press("v");
+  const at = async (yaw) => {
+    await page.evaluate(async (yaw) => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      state.cam.yaw = yaw;
+    }, yaw);
+    return (await alone(page, [17, 18, 17], 30)).fills.map(([, style]) => style);
+  };
+  const own = await page.evaluate(async () => {
+    const { ballFor } = await import(new URL("js/data.js", location.href).href);
+    const { state } = await import(new URL("js/state.js", location.href).href);
+    const g = document.createElement("canvas").getContext("2d");
+    return ballFor(state.lvl).rgb.map((rgb) => {
+      const n = rgb.length / 3;
+      const mean = [0, 1, 2].map((ch) =>
+        Math.round(rgb.filter((_, i) => i % 3 === ch).reduce((a, b) => a + b, 0) / n),
+      );
+      return ((g.fillStyle = `rgb(${mean.join(" ")})`), g.fillStyle);
+    });
+  });
+  const front = await at(45);
+  expect(front.length).toBeGreaterThan(20);
+  expect(front.filter((f) => !own.includes(f)).length).toBeGreaterThan(front.length / 2);
+  const behind = await at(225);
+  expect([...behind].sort()).not.toEqual([...front].sort());
+  expect(await at(45)).toEqual(front);
+  expect(errors).toEqual([]);
+});
+
 test("a travelling thing, and every block of a platform, picks the cell its record is on", async ({
   page,
 }) => {

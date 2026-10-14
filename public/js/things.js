@@ -1,4 +1,14 @@
-import { state, BLOCK, depth, facing, screen, screenTo, cellKey, effectFrame } from "./state.js";
+import {
+  state,
+  BLOCK,
+  camera,
+  depth,
+  facing,
+  screen,
+  screenTo,
+  cellKey,
+  effectFrame,
+} from "./state.js";
 import { FACE_NORMAL, FACE_NAME } from "./faces.js";
 import {
   markerColour,
@@ -29,6 +39,7 @@ import {
   inReach,
   glintSteps,
   glints,
+  lightShare,
 } from "./motion.js";
 import { label } from "./overlays.js";
 import { NEUTRAL } from "./atlas.js";
@@ -238,7 +249,10 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
   // the game draws a model's polygons in its order or, where the model says,
   // furthest first, and drops one it culls where it faces away
   const order = sorted ? backToFront(m, model, far) : null;
-  const under = fillsUnder(model, light);
+  const under =
+    model.normals && motion?.light
+      ? fillsByNormals(m, model, motion.light, [cx, sx, cz, sz], right, up, fwd)
+      : fillsUnder(model, light);
   let colour = null;
   let op = "source-over";
   for (let j = 0; j < polys.length; j++) {
@@ -314,6 +328,45 @@ function fillsUnder(model, light) {
     );
   }
   return fills.get(key);
+}
+
+// The ball lights each corner by its normal, turned as its vertices are, from a
+// light fixed to the view; the light's axes are the view's right, down and in.
+const byNormals = new WeakMap();
+function fillsByNormals(m, model, light, turn, right, up, fwd) {
+  const c = camera();
+  const kept = byNormals.get(m);
+  const basis = [...turn, ...right, ...up, ...fwd];
+  if (kept?.model === model && kept.c === c && kept.basis.every((v, i) => v === basis[i]))
+    return kept.fills;
+  const [vx, vy, vz] = light.view;
+  const l = [0, 1, 2].map((i) => vx * c.right[i] - vy * c.up[i] - vz * c.toward[i]);
+  const len = Math.hypot(...l);
+  const [cx, sx, cz, sz] = turn;
+  const n = model.normals;
+  const share = [];
+  for (let i = 0; i < n.length; i += 3) {
+    const x = n[i] * cz - n[i + 1] * sz,
+      ty = n[i] * sz + n[i + 1] * cz,
+      tz = n[i + 2];
+    const y = ty * cx - tz * sx,
+      z = ty * sx + tz * cx;
+    let dot = 0;
+    for (let k = 0; k < 3; k++) dot += (x * right[k] + y * up[k] + z * fwd[k]) * l[k];
+    share.push(lightShare(light, Math.max(0, Math.floor(dot / len))));
+  }
+  const polys = polygonsOf(model);
+  const fills = model.polys.map((corners, k) => {
+    const rgb = model.rgb[k];
+    const mean = [0, 1, 2].map((ch) => {
+      let sum = 0;
+      corners.forEach((v, i) => (sum += Math.floor((rgb[3 * i + ch] * share[v]) / 256)));
+      return Math.round(sum / corners.length);
+    });
+    return fillOf(mean, polys[k].alpha);
+  });
+  byNormals.set(m, { model, c, basis, fills });
+  return fills;
 }
 
 // A glint steps a flat polygon's first corner, the colour the game draws it
