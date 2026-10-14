@@ -34,6 +34,7 @@ export const motionOf = (m) =>
     ? null
     : (shapes.motion?.types[String(STARTS.has(m.type) ? START : m.type)] ?? null);
 export const kindMotion = (kind) => shapes.motion?.kinds[String(kind)] ?? null;
+export const typeModels = (type) => shapes.types[String(type)] ?? [];
 
 export async function loadJson(url, fallback) {
   try {

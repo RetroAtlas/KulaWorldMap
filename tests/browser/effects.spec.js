@@ -783,6 +783,84 @@ test("a teleporter hidden from the legend casts no light, and casts it again onc
   expect(errors).toEqual([]);
 });
 
+// The fills a frame's gems are drawn in, everything else on the level hidden,
+// and those the gems' own models hold.
+const gemFills = (page, frames) =>
+  page.evaluate(async (frames) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { draw, clock }, { levelMarkers, typeModels }] = await Promise.all(
+      ["state.js", "render.js", "data.js"].map(at),
+    );
+    const g = document.getElementById("cv").getContext("2d");
+    const scratch = document.createElement("canvas").getContext("2d");
+    const css = (style) => ((scratch.fillStyle = style), scratch.fillStyle);
+    const own = new Set(
+      typeModels(36).flatMap((m) =>
+        m.rgb.map((rgb) => {
+          const n = rgb.length / 3;
+          const mean = [0, 1, 2].map((ch) =>
+            Math.round(rgb.filter((_, i) => i % 3 === ch).reduce((a, b) => a + b, 0) / n),
+          );
+          return css(`rgba(${mean.join(" ")} / 0.55)`);
+        }),
+      ),
+    );
+    const hidden = state.hiddenKinds;
+    state.hiddenKinds = new Set(levelMarkers(state.lvl).map((m) => m.id));
+    for (const id of [...state.hiddenKinds])
+      if (id.startsWith("t36/")) state.hiddenKinds.delete(id);
+    const now = performance.now;
+    const t = now.call(performance);
+    const from = clock();
+    const fill = g.fill;
+    const out = frames.map((frame) => {
+      performance.now = () => t + ((frame + 0.5 - from) * 1000) / 60;
+      const seen = [];
+      g.fill = function (...a) {
+        seen.push(this.fillStyle);
+        return fill.apply(this, a);
+      };
+      draw();
+      g.fill = fill;
+      return seen.filter((s) => s.endsWith(", 0.55)"));
+    });
+    state.hiddenKinds = hidden;
+    performance.now = now;
+    draw();
+    return { frames: out, own: [...own] };
+  }, frames);
+
+test("a gem's facets glint white and fade, the same ones on every gem of its cut, until v holds them", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // LEVEL 5 holds two blue gems
+  await page.goto("/#HIRO/4/45,35/fit/33");
+  await settle(page);
+  await landed(page);
+  const frames = [...Array(60).keys()];
+  const { frames: seen, own } = await gemFills(page, frames);
+  const white = "rgba(254, 254, 254, 0.55)";
+  let glinting = 0;
+  for (const fills of seen) {
+    expect(fills).toHaveLength(64);
+    const lit = fills.filter((f) => !own.includes(f));
+    glinting += lit.length;
+    const counts = new Map();
+    for (const f of lit) counts.set(f, (counts.get(f) ?? 0) + 1);
+    for (const n of counts.values()) expect(n % 2).toBe(0);
+  }
+  expect(seen.some((fills) => fills.includes(white))).toBe(true);
+  // about five of each gem's 32 facets at a time
+  expect(glinting / seen.length / 2).toBeGreaterThan(2);
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  const held = (await gemFills(page, [10, 40])).frames.map((f) => [...f].sort());
+  expect(held[1]).toEqual(held[0]);
+  expect(held[0]).toEqual([...seen[0]].sort());
+  expect(errors).toEqual([]);
+});
+
 test("a travelling thing, and every block of a platform, picks the cell its record is on", async ({
   page,
 }) => {

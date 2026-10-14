@@ -16,8 +16,9 @@ import {
   cross,
   startsOf,
   shadowSprites,
+  typeModels,
 } from "./data.js";
-import { phasesOf, phaseField, pose, orbit, press, inReach } from "./motion.js";
+import { phasesOf, phaseField, pose, orbit, press, inReach, glintSteps, glints } from "./motion.js";
 import { label } from "./overlays.js";
 import { NEUTRAL } from "./atlas.js";
 
@@ -91,7 +92,21 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
         pressedAt(motion, m, home, l),
       )
     : null;
-  drawObject(ctx, m, c, model, motion, frame, phase, round, l.time ?? 0, going, pushed?.height);
+  const lit = motion?.glint ? glintFills(motion.glint, m.type, model, effectFrame(frame)) : null;
+  drawObject(
+    ctx,
+    m,
+    c,
+    model,
+    motion,
+    frame,
+    phase,
+    round,
+    l.time ?? 0,
+    going,
+    pushed?.height,
+    lit,
+  );
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(where, m.face, OBJECT_HOVER);
     const dark = switchedOff(m) ? " · off" : "";
@@ -108,12 +123,14 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
 // sides of a polygon are drawn, since the meshes wind their faces either way.
 const GAP = 0.03;
 const GLASS = 0.55;
+const BLEND = 2;
+const GOURAUD = 16;
 // The rolling stone's axle is its model's z, which lies across the way it
 // rolls, so it stands a quarter turn from its facing.
 const STONE = 51;
 const ACROSS = 0.25;
 
-function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, height = 1) {
+function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, height = 1, lit) {
   const up = FACE_NORMAL[m.face];
   const forward = going?.fwd || markerHeading(m) || TANGENT[m.face];
   const unit = modelUnit();
@@ -207,7 +224,8 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
   });
   let colour = null;
   for (const k of backToFront(m, model, far)) {
-    const { ring, fill } = polys[k];
+    const { ring } = polys[k];
+    const fill = lit?.[k] ?? polys[k].fill;
     if (fill !== colour) ctx.fillStyle = colour = fill;
     ctx.beginPath();
     ring.forEach((i, j) =>
@@ -235,12 +253,54 @@ function polygonsOf(model) {
       return {
         corners,
         ring: n === 4 ? [a, b, d, c] : corners,
-        fill: `rgba(${mean[0]} ${mean[1]} ${mean[2]} / ${model.flags[k] & 2 ? GLASS : 1})`,
+        fill: fillOf(mean, model.flags[k]),
       };
     });
     polygons.set(model, polys);
   }
   return polygons.get(model);
+}
+
+const fillOf = ([r, g, b], flags) => `rgba(${r} ${g} ${b} / ${flags & BLEND ? GLASS : 1})`;
+
+// A glint steps a flat polygon's first corner, the colour the game draws it
+// in, and every corner of a Gouraud one, which the map draws in their mean.
+const glintsThrough = (entry, model) =>
+  model.polys.map((corners, k) => {
+    const rgb = model.rgb[k];
+    const own = corners.map((_, i) => rgb.slice(3 * i, 3 * i + 3));
+    const stepped = model.flags[k] & GOURAUD ? own : own.slice(0, 1);
+    return glintSteps(entry, stepped).map((now) =>
+      fillOf(
+        [0, 1, 2].map((ch) => Math.round(now.reduce((sum, c) => sum + c[ch], 0) / now.length)),
+        model.flags[k],
+      ),
+    );
+  });
+
+// A cut's glints are in its model, so every thing of the cut shows the same
+// ones; a frame's fills are kept for every thing drawn on it.
+const glinters = new WeakMap();
+function glintFills(entry, type, model, frame) {
+  let g = glinters.get(entry);
+  if (!g) {
+    const models = typeModels(type);
+    const fills = models.map((cut) => glintsThrough(entry, cut));
+    g = { models, fills, lengths: fills.map((cut) => cut.map((f) => f.length)), at: null };
+    glinters.set(entry, g);
+  }
+  const cut = g.models.indexOf(model);
+  if (cut < 0) return null;
+  const now = Math.floor(frame);
+  if (g.at !== now) {
+    g.at = now;
+    g.lit = glints(entry, g.lengths, now).map((live, c) => {
+      const out = [];
+      for (const { k, at } of live) out[k] = g.fills[c][k][now - at];
+      return out;
+    });
+  }
+  return g.lit[cut];
 }
 
 // Furthest first, ties in the model's order. Each sort starts from the last

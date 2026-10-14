@@ -14,6 +14,8 @@ import {
   glow,
   cornersLit,
   glowing,
+  glintSteps,
+  glints,
 } from "../../public/js/motion.js";
 
 const table = objects.motion;
@@ -267,4 +269,97 @@ test("a device turned off loses its light at once and counts on from there once 
   // from 30, with the 6 frames it counted while lit to go on from
   const lit = (frame) => glowing(every, true, [25, 30], frame);
   assert.deepEqual([25, 26, 30, 42, 43].map(lit), [true, false, false, false, true]);
+});
+
+const glint = table.types[36].glint;
+const cuts = [32, 32, 32].map((n) => Array(n).fill(18));
+// a copy of the gem's entry glints from its generator's first value
+const fresh = () => ({ ...glint });
+
+test("a glinting facet is white on its second frame and back as it was on its 18th", () => {
+  const seen = glintSteps(glint, [[0, 41, 101]]).map(([c]) => c);
+  assert.equal(seen.length, 18);
+  assert.deepEqual(seen.slice(0, 3), [
+    [128, 169, 229],
+    [254, 254, 254],
+    [238, 238, 238],
+  ]);
+  // each channel stops at its own as the grey comes down to it, the strongest first
+  assert.deepEqual(seen[11], [94, 94, 101]);
+  assert.deepEqual(seen[15], [30, 41, 101]);
+  assert.deepEqual(seen[17], [0, 41, 101]);
+  // a channel past the top dips to it, and is its own again at the first fall
+  assert.deepEqual(
+    glintSteps(glint, [[0, 115, 255]]).map(([c]) => c[2]),
+    [254, 254, ...Array(16).fill(255)],
+  );
+});
+
+test("a glint lifts every corner it saves, and they fall only once all are at the top", () => {
+  const seen = glintSteps(glint, [
+    [0, 0, 0],
+    [200, 200, 200],
+  ]);
+  assert.deepEqual(seen[0], [
+    [128, 128, 128],
+    [254, 254, 254],
+  ]);
+  assert.deepEqual(seen[2], [
+    [238, 238, 238],
+    [238, 238, 238],
+  ]);
+  assert.deepEqual(seen.at(-1), [
+    [0, 0, 0],
+    [200, 200, 200],
+  ]);
+  // a facet already white rises nowhere and holds its slot a frame more
+  assert.deepEqual(glintSteps(glint, [[254, 254, 254]]), [[[254, 254, 254]], [[254, 254, 254]]]);
+});
+
+test("from the generator's first value the blue and the red cut start a glint on the first frame", () => {
+  assert.deepEqual(glints(fresh(), cuts, 0), [[{ k: 15, at: 0 }], [], [{ k: 28, at: 0 }]]);
+});
+
+test("a frame draws once for every cut at every level of detail, the first level's three first", () => {
+  const draws = [];
+  let state = glint.dice.seed;
+  for (let i = 0; i < 9 * 60; i++)
+    draws.push((state = (Math.imul(state, glint.dice.times) + glint.dice.plus) >>> 0));
+  const e = fresh();
+  for (let f = 0; f < 60; f++) {
+    const seen = glints(e, cuts, f);
+    for (let c = 0; c < 3; c++) {
+      const draw = draws[9 * f + c];
+      const k = ((draw & 0xffff) * 32) >>> 16;
+      const started = seen[c].find((g) => g.at === f);
+      if (((draw >>> 16) * 3) >>> 16 !== 0) assert.equal(started, undefined);
+      else if (started) assert.equal(started.k, k);
+      else assert.ok(seen[c].some((g) => g.k === k) || seen[c].length === glint.slots);
+    }
+  }
+});
+
+test("a cut holds sixteen glints at most, a facet one at a time, each for its 18 frames", () => {
+  const e = fresh();
+  let shown = 0;
+  const frames = 60 * 600;
+  for (let f = 0; f < frames; f++) {
+    for (const live of glints(e, cuts, f)) {
+      assert.ok(live.length <= glint.slots);
+      assert.equal(new Set(live.map((g) => g.k)).size, live.length);
+      for (const g of live) assert.ok(f - g.at >= 0 && f - g.at < 18);
+      // the 18th frame shows the facet as it was
+      shown += live.filter((g) => f - g.at < 17).length;
+    }
+  }
+  const mean = shown / frames / 3;
+  assert.ok(mean > 4.5 && mean < 5.5, `about five of 32 glint at a time, not ${mean}`);
+});
+
+test("the glints are the same whatever frames they are drawn on, and start afresh when the frame goes back", () => {
+  const stepped = fresh();
+  for (let f = 0; f < 300; f++) glints(stepped, cuts, f);
+  const at300 = structuredClone(glints(stepped, cuts, 300));
+  assert.deepEqual(glints(fresh(), cuts, 300), at300);
+  assert.deepEqual(glints(stepped, cuts, 0), glints(fresh(), cuts, 0));
 });

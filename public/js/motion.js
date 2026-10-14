@@ -205,3 +205,50 @@ export function press(entry, key, frame, pressed) {
   }
   return { height: s.height, moving: pressed ? s.count > 0 : s.height !== 1 || s.count < e.full };
 }
+
+/** A glinting facet's corners on each frame of its glint: up by the rise to
+    the top, then down by the fall to their own, the last frame as they were. */
+export function glintSteps(entry, corners) {
+  const out = [];
+  let now = corners;
+  for (let rising = true; ;) {
+    if (rising) {
+      now = now.map((c) => c.map((v) => Math.min(v + entry.rise, entry.top)));
+      rising = now.some((c) => c.some((v) => v !== entry.top));
+      out.push(now);
+      continue;
+    }
+    now = now.map((c, i) => c.map((v, ch) => Math.max(v - entry.fall, corners[i][ch])));
+    out.push(now);
+    if (now.every((c, i) => c.every((v, ch) => v === corners[i][ch]))) return out;
+  }
+}
+
+// Each frame the game runs the glint over every cut at every level of detail,
+// each run stepping the generator once, and the map draws the first level.
+// `lengths` holds, by cut, the frames a glint of each facet lasts.
+const glinting = new WeakMap();
+export function glints(entry, lengths, frame) {
+  const now = Math.floor(frame);
+  let s = glinting.get(entry);
+  if (!s || s.at > now) {
+    s = { at: -1, state: entry.dice.seed, cuts: lengths.map(() => []) };
+    glinting.set(entry, s);
+  }
+  const { times, plus } = entry.dice;
+  while (s.at < now) {
+    const at = ++s.at;
+    for (let run = 0; run < entry.rows * entry.cuts; run++) {
+      s.state = (Math.imul(s.state, times) + plus) >>> 0;
+      const facets = run < entry.cuts ? lengths[run] : null;
+      if (!facets?.length) continue;
+      const live = s.cuts[run];
+      for (let i = live.length - 1; i >= 0; i--)
+        if (at >= live[i].at + facets[live[i].k]) live.splice(i, 1);
+      if (((s.state >>> 16) * entry.chance) >>> 16 !== 0 || live.length >= entry.slots) continue;
+      const k = ((s.state & 0xffff) * facets.length) >>> 16;
+      if (!live.some((g) => g.k === k)) live.push({ k, at });
+    }
+  }
+  return s.cuts;
+}
