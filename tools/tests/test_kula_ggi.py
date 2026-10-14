@@ -11,7 +11,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_ggi import GROUP, PREFIX, QUAD, TEXTURES, VRAM_H, Model, shadows  # noqa: E402
+from kula_ggi import BLEND, GROUP, PREFIX, QUAD, SORTED, TEXTURES, VRAM_H, Model, as_dict, shadows  # noqa: E402
 
 
 def packed(frames):
@@ -28,16 +28,17 @@ def packed(frames):
 
 
 def records(polys):
-    """A colour record per polygon; polys are (indices, is a quad, a grey level)."""
+    """A colour record per polygon; polys are (indices, is a quad, a grey level,
+    and any more flags)."""
     out = b""
-    for _, quad, grey in polys:
-        flags = (QUAD if quad else 0) | 0x20
+    for _, quad, grey, *more in polys:
+        flags = (QUAD if quad else 0) | 0x20 | sum(more)
         out += bytes((grey, grey, grey, flags)) + bytes((grey, grey, grey, 0)) * 3
     return struct.pack("<II", 1, len(out)) + out
 
 
-def model(polys, frames, normals=None):
-    quads = b"".join(bytes(q) for q, _, _ in polys)
+def model(polys, frames, normals=None, kind=-1, flags=None):
+    quads = b"".join(bytes(q[0]) for q in polys)
     blocks = [quads, packed(frames), records(polys)]
     if normals:
         blocks.append(packed([normals]))
@@ -46,7 +47,8 @@ def model(polys, frames, normals=None):
     for b in blocks:
         offs.append(at)
         at += len(b)
-    return (struct.pack("<hhhHhH", 1, -2, 3, 99, -1, 2 if normals else 0)
+    flags = (2 if normals else 0) if flags is None else flags
+    return (struct.pack("<hhhHhH", 1, -2, 3, 99, kind, flags)
             + struct.pack(f"<{len(blocks)}I", *offs) + b"".join(blocks))
 
 
@@ -83,6 +85,29 @@ class Reads(unittest.TestCase):
     def test_the_packing_is_twenty_bytes_a_three(self):
         self.assertEqual(GROUP, 20)
         self.assertEqual(len(packed([[(0, 0, 0)] * 4])), PREFIX + 2 * GROUP)
+
+
+class Ships(unittest.TestCase):
+    SQUARE = [(0, 0, 0), (10, 0, 0), (10, 0, 10), (0, 0, 10)]
+    OPAQUE = ((0, 1, 2, 3), True, 7)
+    CLEAR = ((0, 1, 2, 0), False, 8, BLEND)
+
+    def shipped(self, polys, **head):
+        blob = model(polys, [self.SQUARE], **head)
+        return as_dict(Model(blob, 0, len(blob)))
+
+    def test_a_model_the_game_draws_by_depth_says_so(self):
+        self.assertIs(self.shipped([self.OPAQUE], flags=SORTED)["sorted"], True)
+        self.assertNotIn("sorted", self.shipped([self.OPAQUE]))
+
+    def test_a_model_with_a_translucent_polygon_ships_the_blend_in_its_headers_low_bits(self):
+        self.assertEqual(self.shipped([self.OPAQUE, self.CLEAR], kind=-1)["blend"], 3)
+        self.assertEqual(self.shipped([self.OPAQUE, self.CLEAR], kind=0)["blend"], 0)
+        self.assertNotIn("blend", self.shipped([self.OPAQUE], kind=0))
+
+    def test_a_blend_that_takes_away_from_what_is_behind_stops_the_build(self):
+        with self.assertRaises(SystemExit):
+            self.shipped([self.CLEAR], kind=2)
 
 
 def sprites(palette, abr=2, y=20, slack=0):

@@ -61,6 +61,19 @@ test("a model's polygons name its vertices and carry a colour per corner", () =>
   }
 });
 
+test("a translucent polygon takes its model's blend, half and half or a quarter added", () => {
+  const halves = [...objects.types[35], ...objects.types[36], objects.balls[13]];
+  const quarters = [...objects.types[7], ...objects.types[26]];
+  for (const m of halves) assert.equal(m.blend, 0);
+  for (const m of quarters) assert.equal(m.blend, 3);
+  for (const m of [...Object.values(objects.types).flat(), ...objects.balls]) {
+    if (halves.includes(m) || quarters.includes(m)) continue;
+    assert.ok(!m.flags.some((f) => f & 2) && !("blend" in m));
+  }
+  assert.equal(objects.types[7][0].sorted, true);
+  assert.equal(objects.types[26][0].sorted, undefined);
+});
+
 test("the motion table is in the game's units and cycles per phase", () => {
   const m = objects.motion;
   assert.equal(m.hz, 60);

@@ -9,9 +9,10 @@ model index is the object type, the row is the level of detail and the slot is
 the colour or tier a type's varying field picks; the first holds the ball
 designs and, at its end, the things that move.
 
-A model is a header of `i16 x, z, y` for its centre, `u16 radius, i16, u16
-flags`, and three or four block offsets, the first of which says how long the
-header is, then the blocks. Polygons of four u8 vertex indices, as many as
+A model is a header of `i16 x, z, y` for its centre, `u16 radius`, an `i16`
+whose two low bits are the blend of its translucent polygons, `u16 flags` that
+say how its polygons are drawn, and three or four block offsets, the first of
+which says how long the header is, then the blocks. Polygons of four u8 vertex indices, as many as
 the colour block has records, and a triangle's fourth byte is whatever it
 is. Then three blocks that each open with `u32 count, u32 bytes per item`:
 vertices, packed three at a time as three (x, z) i16 pairs, three y i16 and
@@ -60,15 +61,19 @@ PREFIX = 8               # the count and length that open a packed block
 GOURAUD = 0x10
 QUAD = 0x08
 BLEND = 0x02
+# The header's flags of a model drawn in the order of its polygons' depths, and
+# the blends of a translucent polygon the viewer draws.
+SORTED = 1
+DRAWN_BLENDS = (0, 1, 3)
 
 
 class Model:
-    __slots__ = ("at", "size", "centre", "radius", "kind", "flags", "blocks",
+    __slots__ = ("at", "size", "centre", "radius", "blend", "flags", "blocks",
                  "quads", "frames", "colours", "normals")
 
     def __init__(self, blob, at, size):
         self.at, self.size = at, size
-        cx, cz, cy, self.radius, self.kind, self.flags, first = struct.unpack_from(
+        cx, cz, cy, self.radius, self.blend, self.flags, first = struct.unpack_from(
             "<hhhHhHI", blob, at)
         self.centre = (cx, cy, cz)
         if first % 4 or first < 24:
@@ -369,7 +374,7 @@ def objects(g, placed=None):
 
 def as_dict(m):
     used = max(max(q) for q in m.polygons()) + 1
-    return {
+    out = {
         "box": list(m.bbox()),
         "frames": [[c for p in f[:used] for c in p] for f in m.frames],
         "polys": [list(q) for q in m.polygons()],
@@ -377,6 +382,14 @@ def as_dict(m):
                 for q, col in zip(m.polygons(), m.colours)],
         "flags": [col["flags"] & (GOURAUD | BLEND) for col in m.colours],
     }
+    if m.flags == SORTED:
+        out["sorted"] = True
+    if any(col["flags"] & BLEND for col in m.colours):
+        out["blend"] = m.blend & 3
+        if out["blend"] not in DRAWN_BLENDS:
+            sys.exit(f"the model at {m.at} blends its translucent polygons in mode {out['blend']}, "
+                     "which takes them away from what is behind")
+    return out
 
 
 def write_objects(g, path, placed=None, motion=None, skins=None, shadows=None):
@@ -453,7 +466,7 @@ def show_tables(g):
     print("\nmodels:")
     for labels, m in g.named():
         lo, hi = m.bbox()
-        print(f"  {m.at:#7x} {m.size:5} B  centre {m.centre} radius {m.radius:3} kind {m.kind:2} "
+        print(f"  {m.at:#7x} {m.size:5} B  centre {m.centre} radius {m.radius:3} blend {m.blend & 3} "
               f"flags {m.flags}  quads {len(m.quads):3}  vertices {len(m.points()):3}  "
               f"frames {len(m.frames):2}  normals {'yes' if m.normals else 'no '}  "
               f"box {lo}..{hi}  {'; '.join(labels)}")
@@ -556,7 +569,7 @@ def sheet(g):
              "distinct model, numbered left to right, and every cell is drawn at the same scale "
              "with the game's y up. A block is 512 units across. Names go in "
              "`public/annotations.json`, not here.", "",
-             "| # | table | centre | radius | kind | flags | quads | vertices | frames | normals | box | bytes |",
+             "| # | table | centre | radius | blend | flags | quads | vertices | frames | normals | box | bytes |",
              "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
     for i, (labels, m) in enumerate(named):
         ox = (i % COLS) * CELL + CELL // 2
@@ -565,7 +578,7 @@ def sheet(g):
         head = labels[0].replace("type ", "t").replace("single ", "s").replace(" lod ", "/")
         label(buf, w, h, f"{i} {head}", (i % COLS) * CELL + 3, (i // COLS) * CELL + 3)
         lo, hi = m.bbox()
-        lines.append(f"| {i} | {'; '.join(labels)} | {m.centre} | {m.radius} | {m.kind} | {m.flags} | "
+        lines.append(f"| {i} | {'; '.join(labels)} | {m.centre} | {m.radius} | {m.blend & 3} | {m.flags} | "
                      f"{len(m.quads)} | {len(m.points())} | {len(m.frames)} | "
                      f"{'yes' if m.normals else 'no'} | {lo} .. {hi} | {m.size} |")
     OUT.mkdir(parents=True, exist_ok=True)
