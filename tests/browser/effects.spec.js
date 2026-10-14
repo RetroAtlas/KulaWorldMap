@@ -789,8 +789,12 @@ test("a teleporter hidden from the legend casts no light, and casts it again onc
 const gemFills = (page, frames) =>
   page.evaluate(async (frames) => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { draw, clock }, { levelMarkers, typeModels, skinsTable }, { byLight }] =
-      await Promise.all(["state.js", "render.js", "data.js", "motion.js"].map(at));
+    const [
+      { state },
+      { draw, clock },
+      { levelMarkers, typeModels, skinsTable, polygonColour },
+      { byLight },
+    ] = await Promise.all(["state.js", "render.js", "data.js", "motion.js"].map(at));
     // both gems stand on faces of the world's middle shade
     const light = skinsTable().light[state.lvl.theme].arcade[1];
     const lit = (rgb) => byLight(rgb, light).map((v) => Math.min(255, v));
@@ -799,13 +803,7 @@ const gemFills = (page, frames) =>
     const css = (style) => ((scratch.fillStyle = style), scratch.fillStyle);
     const own = new Set(
       typeModels(36).flatMap((m) =>
-        m.rgb.map((rgb) => {
-          const n = rgb.length / 3;
-          const mean = [0, 1, 2].map((ch) =>
-            Math.round(rgb.filter((_, i) => i % 3 === ch).reduce((a, b) => a + b, 0) / n),
-          );
-          return css(`rgba(${lit(mean).join(" ")} / 0.5)`);
-        }),
+        m.polys.map((_, k) => css(`rgba(${lit(polygonColour(m, k)).join(" ")} / 0.5)`)),
       ),
     );
     const white = css(`rgba(${lit([254, 254, 254]).join(" ")} / 0.5)`);
@@ -903,21 +901,15 @@ const alone = (page, cell, type, frame = 0) =>
 const fillsOf = (page, type, variant, light) =>
   page.evaluate(
     async ([type, variant, light]) => {
-      const { typeModels } = await import(new URL("js/data.js", location.href).href);
+      const { typeModels, polygonColour } = await import(new URL("js/data.js", location.href).href);
       const { byLight } = await import(new URL("js/motion.js", location.href).href);
       const g = document.createElement("canvas").getContext("2d");
       const css = (rgb) => ((g.fillStyle = `rgb(${rgb.join(" ")})`), g.fillStyle);
-      const means = typeModels(type)[variant].rgb.map((rgb) =>
-        [0, 1, 2].map((ch) => {
-          const n = rgb.length / 3;
-          let sum = 0;
-          for (let i = 0; i < n; i++) sum += rgb[3 * i + ch];
-          return Math.round(sum / n);
-        }),
-      );
+      const model = typeModels(type)[variant];
+      const colours = model.polys.map((_, k) => polygonColour(model, k));
       return {
-        lit: means.map((m) => css(byLight(m, light).map((v) => Math.min(255, v)))),
-        own: means.map(css),
+        lit: colours.map((c) => css(byLight(c, light).map((v) => Math.min(255, v)))),
+        own: colours.map(css),
       };
     },
     [type, variant, light],
@@ -1091,16 +1083,13 @@ test("the ball is lit corner by corner from a light fixed to the view", async ({
     return (await alone(page, [17, 18, 17], 30)).fills.map(([, style]) => style);
   };
   const own = await page.evaluate(async () => {
-    const { ballFor } = await import(new URL("js/data.js", location.href).href);
+    const { ballFor, polygonColour } = await import(new URL("js/data.js", location.href).href);
     const { state } = await import(new URL("js/state.js", location.href).href);
     const g = document.createElement("canvas").getContext("2d");
-    return ballFor(state.lvl).rgb.map((rgb) => {
-      const n = rgb.length / 3;
-      const mean = [0, 1, 2].map((ch) =>
-        Math.round(rgb.filter((_, i) => i % 3 === ch).reduce((a, b) => a + b, 0) / n),
-      );
-      return ((g.fillStyle = `rgb(${mean.join(" ")})`), g.fillStyle);
-    });
+    const ball = ballFor(state.lvl);
+    return ball.polys.map(
+      (_, k) => ((g.fillStyle = `rgb(${polygonColour(ball, k).join(" ")})`), g.fillStyle),
+    );
   });
   const front = await at(45);
   expect(front.length).toBeGreaterThan(20);

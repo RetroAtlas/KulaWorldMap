@@ -35,6 +35,20 @@ export const motionOf = (m) =>
     : (shapes.motion?.types[String(STARTS.has(m.type) ? START : m.type)] ?? null);
 export const kindMotion = (kind) => shapes.motion?.kinds[String(kind)] ?? null;
 export const typeModels = (type) => shapes.types[String(type)] ?? [];
+const GOURAUD = 16;
+/** The colour the map fills a model's polygon with, from its corners' own
+    colours or those given: the first corner's, in which the game draws a flat
+    polygon, or their mean where the game shades between them. */
+export function polygonColour(
+  model,
+  k,
+  corners = model.polys[k].map((_, i) => model.rgb[k].slice(3 * i, 3 * i + 3)),
+) {
+  if (!(model.flags[k] & GOURAUD)) return corners[0];
+  return [0, 1, 2].map((ch) =>
+    Math.round(corners.reduce((sum, c) => sum + c[ch], 0) / corners.length),
+  );
+}
 
 export async function loadJson(url, fallback) {
   try {

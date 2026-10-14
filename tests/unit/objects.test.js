@@ -8,6 +8,7 @@ import {
   paintsFace,
   ballFor,
   markerModel,
+  polygonColour,
   exitForm,
   holdsKey,
   LAST_KEY,
@@ -81,6 +82,14 @@ test("a translucent polygon takes its model's blend, half and half or a quarter 
   }
   assert.equal(objects.types[7][0].sorted, true);
   assert.equal(objects.types[26][0].sorted, undefined);
+});
+
+test("a flat polygon takes its first corner's colour, and a Gouraud one the mean of its corners", () => {
+  // the red pill's polygon 46 is flat, three corners at 127 of red and one at 147
+  assert.deepEqual(polygonColour(objects.types[32][0], 46), [127, 0, 0]);
+  // the yellow teleporter's polygon 74 is shaded from 117 down to 95 of grey
+  assert.deepEqual(polygonColour(objects.types[5][0], 74), [108, 108, 108]);
+  assert.deepEqual(polygonColour(objects.types[32][0], 46, [[1, 2, 3]]), [1, 2, 3]);
 });
 
 test("the motion table is in the game's units and cycles per phase", () => {

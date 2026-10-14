@@ -30,6 +30,7 @@ import {
   shadowSprites,
   typeModels,
   lightOf,
+  polygonColour,
 } from "./data.js";
 import {
   byLight,
@@ -287,23 +288,17 @@ const polygons = new WeakMap();
 function polygonsOf(model) {
   if (!polygons.has(model)) {
     const polys = model.polys.map((corners, k) => {
-      const rgb = model.rgb[k];
-      const n = corners.length;
-      const mean = [0, 1, 2].map((ch) => {
-        let sum = 0;
-        for (let i = 0; i < n; i++) sum += rgb[i * 3 + ch];
-        return Math.round(sum / n);
-      });
+      const colour = polygonColour(model, k);
       const [a, b, c, d] = corners;
       const [blend, alpha] = model.flags[k] & BLEND ? BLENDS[model.blend] : ["source-over", 1];
       return {
         corners,
-        ring: n === 4 ? [a, b, d, c] : corners,
-        mean,
-        fill: fillOf(mean, alpha),
+        ring: corners.length === 4 ? [a, b, d, c] : corners,
+        colour,
+        fill: fillOf(colour, alpha),
         alpha,
         blend,
-        cull: rgb[0] & 1,
+        cull: model.rgb[k][0] & 1,
       };
     });
     polygons.set(model, polys);
@@ -326,7 +321,7 @@ function fillsUnder(model, light) {
     const polys = polygonsOf(model);
     fills.set(
       key,
-      polys.map((p) => (light ? fillOf(shade(p.mean, light), p.alpha) : p.fill)),
+      polys.map((p) => (light ? fillOf(shade(p.colour, light), p.alpha) : p.fill)),
     );
   }
   return fills.get(key);
@@ -360,27 +355,23 @@ function fillsByNormals(m, model, light, turn, right, up, fwd) {
   const polys = polygonsOf(model);
   const fills = model.polys.map((corners, k) => {
     const rgb = model.rgb[k];
-    const mean = [0, 1, 2].map((ch) => {
-      let sum = 0;
-      corners.forEach((v, i) => (sum += Math.floor((rgb[3 * i + ch] * share[v]) / 256)));
-      return Math.round(sum / corners.length);
-    });
-    return fillOf(mean, polys[k].alpha);
+    const lit = corners.map((v, i) =>
+      [0, 1, 2].map((ch) => Math.floor((rgb[3 * i + ch] * share[v]) / 256)),
+    );
+    return fillOf(polygonColour(model, k, lit), polys[k].alpha);
   });
   byNormals.set(m, { model, c, basis, fills });
   return fills;
 }
 
 // A glint steps a flat polygon's first corner, the colour the game draws it
-// in, and every corner of a Gouraud one, which the map draws in their mean.
+// in, and every corner of a Gouraud one.
 const glintsThrough = (entry, model) =>
   model.polys.map((corners, k) => {
     const rgb = model.rgb[k];
     const own = corners.map((_, i) => rgb.slice(3 * i, 3 * i + 3));
     const stepped = model.flags[k] & GOURAUD ? own : own.slice(0, 1);
-    return glintSteps(entry, stepped).map((now) =>
-      [0, 1, 2].map((ch) => Math.round(now.reduce((sum, c) => sum + c[ch], 0) / now.length)),
-    );
+    return glintSteps(entry, stepped).map((now) => polygonColour(model, k, now));
   });
 
 // A cut's glints are in its model, so every thing of the cut shows the same

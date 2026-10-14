@@ -1,5 +1,5 @@
 import { state, SIDE, basisAt } from "./state.js";
-import { WORLD_TINT, skinsTable, markerModel, markerGroup } from "./data.js";
+import { WORLD_TINT, skinsTable, markerModel, markerGroup, polygonColour } from "./data.js";
 import { atlasFor, paint } from "./atlas.js";
 import { lookOf, faceSkin, platformPlace } from "./skins.js";
 import { FACES, SKINNED_LOOK, shadeOf, flatFace } from "./blocks.js";
@@ -61,18 +61,12 @@ function render(model, size) {
   }
   const polys = model.polys.map((poly, k) => {
     const p = poly.map((i) => pts[i]);
-    const rgb = model.rgb[k];
-    const n = poly.length;
-    const mean = [0, 1, 2].map((ch) => {
-      let sum = 0;
-      for (let i = 0; i < n; i++) sum += rgb[i * 3 + ch];
-      return Math.round(sum / n);
-    });
-    return { p, z: p.reduce((s, q) => s + q[2], 0) / n, mean, blend: model.flags[k] & 2 };
+    const z = p.reduce((s, q) => s + q[2], 0) / poly.length;
+    return { p, z, colour: polygonColour(model, k), blend: model.flags[k] & 2 };
   });
   polys.sort((a, b) => a.z - b.z);
-  for (const { p, mean, blend } of polys) {
-    g.fillStyle = `rgba(${mean[0]} ${mean[1]} ${mean[2]} / ${blend ? GLASS : 1})`;
+  for (const { p, colour, blend } of polys) {
+    g.fillStyle = `rgba(${colour.join(" ")} / ${blend ? GLASS : 1})`;
     g.beginPath();
     const ring = p.length === 4 ? [p[0], p[1], p[3], p[2]] : p;
     ring.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
