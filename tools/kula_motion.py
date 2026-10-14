@@ -61,6 +61,18 @@ CHECKS = [
     (0x80051c38, "addiu $t4, $zero, -1", "are written empty"),
     (0x80051c9c, "beq $fp, $zero, 0x80051c6c", "and a lit one's"),
     (0x80051c90, "addiu $t4, $zero, -2", "are written as beam"),
+    # How a thing is laid out and turned.
+    (0x80053480, "mtc2 $s7, vxy0", "a vertex's pair of words is the coprocessor's x and y"),
+    (0x80053468, "mtc2 $gp, vz0", "and its third word its z"),
+    (0x8005359c, "blez $t4, 0x800537ec", "a culled polygon is drawn only where nclip is positive"),
+    (0x80039d7c, "jal 0x800603f8", "a thing on a block is its own matrix times its spin"),
+    (0x8003b980, "jal 0x80061298", "a captivator's first matrix is turned about z"),
+    (0x8003d7e8, "jal 0x800603f8", "the slow star is the camera times its spin, with no face in it"),
+    (0x8003de6c, "jal 0x800603f8", "and the wandering ball"),
+    (0x8003f3b4, "jal 0x800603f8", "and the fast star"),
+    (0x80031100, "subu $v1, $zero, $v1", "the ball rests with its heading turned round"),
+    (0x80031138, "subu $v0, $zero, $v0", "and its normal"),
+    (0x8003e4bc, "subu $v0, $v0, $v1", "the corkscrew takes its spin's step from its angle"),
     # Where a captivator is drawn.
     (0x8003d6d4, "addiu $s5, $s4, -32", "the draw's s5 is an entry's position"),
     (0x8003d81c, "addu $v0, $v0, $s5", "the slow star is drawn at its entry's position"),
@@ -576,6 +588,18 @@ GLOW_LEVELS = 3           # the levels a corner can take
 GLOW_LIFT = (0x8002d4b0, 0x8002d4b8)
 GLOW_DOUBLE = {7: (0x8002d5c8, 0x8002d5cc), 9: (0x8002d694, 0x8002d698)}
 MVMVA_SF = 1 << 19        # the command's bit that shifts its products down by 12
+# The two routines that build a spin from three angles, named by the product
+# each makes, Rx·Ry·Rz or Rz·Ry·Rx, and where each type that turns has its
+# spin built.
+SPINS = {0x80060a38: "xyz", 0x80060cc8: "zyx"}
+SPUN_AT = {
+    **dict.fromkeys((5, 7, 26, 36), 0x80039b38),
+    **dict.fromkeys((31, 32, 33, 34, 35, 37, 38, 42, *range(43, 48)), 0x80039ac0),
+    50: 0x8003d7c8, 51: 0x8003ec88, 52: 0x8003f390, 53: 0x8003de4c, 56: 0x8003e4d0,
+}
+WORLD_AXES = (50, 52, 53)  # turned by their spin alone, with no face in it
+QUARTERED = (51, 56)       # their first matrix turned about z before the spin
+QUARTER = (0x8003b914, "addiu $a0, $zero, {}")
 
 # Where the parser and the frame put the glints' records, and their generator's state.
 GLINT_RECORDS = ((0x80022f4c, 0x80022f50), (0x8002aa2c, 0x8002aa30))
@@ -678,6 +702,19 @@ def readings(code):
     out["shadow.half"] = shadow_half(code)
     out["light.root"] = root_table(code)
     out["glow"], out["glow.colours"] = glow(code, out)
+    out["spin.order"] = spin_orders(code)
+    out["spin.quarter"] = code.immediate(*QUARTER)
+    return out
+
+
+def spin_orders(code):
+    """The product each type's spin is, by the routine its draw calls."""
+    out = {}
+    for t, at in SPUN_AT.items():
+        routine = code.immediate(at, "jal {}")
+        if routine not in SPINS:
+            sys.exit(f"type {t}'s spin is built by 0x{routine:08x}, which this does not know")
+        out[t] = SPINS[routine]
     return out
 
 
@@ -1003,7 +1040,7 @@ def table(r, platform_speed):
              "shake": {"frames": r["ball53.shake"], "reach": r["ball53.lurch.reach"]},
              "dash": r["ball53.dash"], "settle": r["ball53.settle"], "ways": r["ball53.ways"]},
         56: {"bounce": {"rate": r["corkscrew.bounce"], "wrap": r["corkscrew.wrap"],
-                        "rise": r["corkscrew.rise"], "spin": r["corkscrew.spin"]},
+                        "rise": r["corkscrew.rise"], "spin": -r["corkscrew.spin"]},
              "phases": [r["corkscrew.phase0"], r["corkscrew.phase1"], r["corkscrew.phase2"], 0]},
     }
     for t in range(43, 48):
@@ -1026,6 +1063,15 @@ def table(r, platform_speed):
     types[30]["shadow"] = {"sprite": 0, "off": 0, "strength": 1 << r["shadow.ball.shift"],
                            "top": r["shadow.ball.top"], "over": r["shadow.ball.over"],
                            "squash": True}
+    # a spin's angles are about the game's model axes, and `before` is a turn
+    # the model takes ahead of its spin
+    for t, order in r["spin.order"].items():
+        types[t]["order"] = order
+    for t in WORLD_AXES:
+        types[t]["axes"] = "world"
+    for t in QUARTERED:
+        types[t]["before"] = [0, 0, r["spin.quarter"]]
+    types[30]["before"] = [TURN // 2, 0, 0]
     if r["glint.model"] not in types:
         sys.exit(f"the glints are of model {r['glint.model']}, which no type in the table is")
     types[r["glint.model"]]["glint"] = glint(r)

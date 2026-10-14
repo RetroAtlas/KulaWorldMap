@@ -80,15 +80,17 @@ test("the hourglass goes over and back, half a turn either way about a lean", ()
   near(pose(table, h, marker(), 3072 / 26, still).about[2], (-2048 + 30) / 4096, 1e-6);
 });
 
-test("the corkscrew rises a half sine from its phase and spins nearly three turns up", () => {
+test("the corkscrew rises a half sine from its phase and spins nearly three turns up, against its cosine", () => {
   const c = table.types[56];
+  // the game takes the step from its angle
+  assert.equal(c.bounce.spin, -400);
   assert.equal(phaseField(marker(3)), 3);
   const down = pose(table, c, marker(3), 0, still);
   near(down.lift, 0);
   near(down.about[1], 0);
   const top = pose(table, c, marker(3), 1024 / 23, still);
   near(top.lift, 400, 1e-6);
-  near(top.about[1], 400 / (2 * Math.PI * 23), 1e-6);
+  near(top.about[1], -400 / (2 * Math.PI * 23), 1e-6);
   near(pose(table, c, marker(0), 0, still).lift, 400, 1e-6);
   near(
     pose(table, c, marker(3), 2048 / 23 + 1, still).lift,

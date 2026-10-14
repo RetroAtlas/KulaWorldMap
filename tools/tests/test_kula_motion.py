@@ -12,8 +12,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
-    GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, Code, glint,
-    glow_lift, glow_spill, laser, light, root_table, shadow_half, spike_cycle, table, vanish_cycle)
+    GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT,
+    Code, glint, glow_lift, glow_spill, laser, light, root_table, shadow_half, spike_cycle, spin_orders, table,
+    vanish_cycle)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "sp": 29, "ra": 31}
@@ -414,6 +415,24 @@ class Laser(unittest.TestCase):
             laser({**GAME, "laser.mode": 0})
 
 
+class Spins(unittest.TestCase):
+    def code(self, routine):
+        """An executable whose every type's draw builds its spin with `routine`."""
+        end = max(SPUN_AT.values()) + 4
+        blob = bytearray(end - EXE_BASE)
+        for at in SPUN_AT.values():
+            struct.pack_into("<I", blob, at - EXE_BASE, jal(routine))
+        return Code(bytes(blob))
+
+    def test_a_type_turns_in_the_order_the_routine_its_draw_calls_composes(self):
+        for routine, order in SPINS.items():
+            self.assertEqual(set(spin_orders(self.code(routine)).values()), {order})
+
+    def test_a_routine_the_reading_does_not_know_stops_it(self):
+        with self.assertRaises(SystemExit):
+            spin_orders(self.code(0x80060f58))
+
+
 class Table(unittest.TestCase):
     def test_the_table_carries_a_program_per_phase_and_the_platform_scaled(self):
         r = dict(GAME)
@@ -442,6 +461,9 @@ class Table(unittest.TestCase):
         r.update({"dice.seed": 1, "dice.times": 0x41C64E6D, "dice.plus": 12345})
         r["glow"] = {"every": 19, "part": [1792, 4096], "spill": []}
         r["glow.colours"] = {5: [[[25, 25, 0]] * 4], 7: [[[16, 64, 16]]], 9: [[[25, 25, 0]] * 4]}
+        last = (31, 32, 33, 34, 35, 37, 38, 42, 43, 44, 45, 46, 47, 51, 56)
+        r["spin.order"] = {t: "zyx" if t in last else "xyz" for t in SPUN_AT}
+        r["spin.quarter"] = 1024
         t = table(r, 30)
         self.assertEqual(t["hz"], 60)
         self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1})
@@ -454,6 +476,7 @@ class Table(unittest.TestCase):
         self.assertEqual([len(c) for c in t["kinds"]["7"]["cycle"]], [224] * PHASES)
         self.assertEqual([len(c) for c in t["kinds"]["7"]["level"]], [224] * PHASES)
         self.assertEqual(t["types"]["56"]["phases"], [1, 1, 1, 0])
+        self.assertEqual(t["types"]["56"]["bounce"]["spin"], -r["corkscrew.spin"])
         for k in ("50", "51", "52", "53"):
             self.assertEqual(t["types"][k]["entry"], {"stand": 200})
         self.assertEqual(t["types"]["56"]["entry"], {"stand": 50})
@@ -462,6 +485,14 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["36"]["glint"], glint(GAME))
         self.assertEqual(t["types"]["30"]["light"],
                          {"view": [-1, -4, -2], "background": 2048, "colour": 4000, "base": 178})
+        self.assertEqual(t["types"]["43"]["order"], "zyx")
+        self.assertEqual(t["types"]["7"]["order"], "xyz")
+        self.assertEqual(t["types"]["51"]["order"], "zyx")
+        self.assertEqual([t["types"][k].get("axes") for k in ("50", "51", "52", "53")],
+                         ["world", None, "world", "world"])
+        self.assertEqual(t["types"]["51"]["before"], [0, 0, 1024])
+        self.assertEqual(t["types"]["30"]["before"], [2048, 0, 0])
+        self.assertNotIn("before", t["types"]["37"])
         self.assertNotIn("glint", t["types"]["37"])
         with self.assertRaises(SystemExit):
             table({**r, "glint.model": 39}, 30)
