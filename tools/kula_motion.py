@@ -114,6 +114,12 @@ CHECKS = [
     (0x8002d424, "lhu $v0, 30($s2)", "counting in the last pad of its slot"),
     (0x8002d48c, "sh $v0, 32($s2)", "and keeping the light in the kind word of the slot after"),
     (0x8002d6d0, "jal 0x8002f2b4", "and gives the light it holds its colour"),
+    (0x8002d494, "bne $s0, $v0, 0x8002d708", "while a teleporter's light is lit its model is lifted"),
+    (0x8002d49c, "lh $a1, 6($s2)", "by its circuit, its f3"),
+    (0x8002d4c0, "mult $s5, $v1", "its light times the circuit's"),
+    (0x8002d4f8, "sra $s5, $a2, 12", "over 4096"),
+    (0x8002d5c0, "bne $s0, $v0, 0x8002d708", "and an open exit's while its light is lit"),
+    (0x8002d68c, "bne $s0, $v0, 0x8002d708", "and a switch's"),
     (0x8002f2c0, "sw $a1, -3708($at)", "the first word of the light's entry"),
     (0x800297c4, "sh $t2, 30($a0)", "the loader starts the count"),
     (0x800297c8, "sh $t0, 32($a0)", "holding no light"),
@@ -533,6 +539,9 @@ GLOW_TYPES = (0x80010074, 5, 24)  # the draw's table of cases: where, the first 
 GLOW_COLOURS = {5: ((0x8002d514, 0x8002d51c), 4), 7: ((0x8002d5ec, 0x8002d5f4), 1),
                 9: ((0x8002d6c4, 0x8002d6cc), 4)}
 GLOW_LEVELS = 3           # the levels a corner can take
+# Where a lit teleporter's lift is, by circuit, and the shifts that double a lit exit's and switch's.
+GLOW_LIFT = (0x8002d4b0, 0x8002d4b8)
+GLOW_DOUBLE = {7: (0x8002d5c8, 0x8002d5cc), 9: (0x8002d694, 0x8002d698)}
 MVMVA_SF = 1 << 19        # the command's bit that shifts its products down by 12
 
 # Where the parser and the frame put the glints' records, and their generator's state.
@@ -740,7 +749,22 @@ def glow(code, r):
         words = [code.word(base + 4 * i) for i in range(len(THEMES) * each)]
         colours[t] = [[[(w >> s) & 255 for s in (0, 8, 16)] for w in words[i * each:(i + 1) * each]]
                       for i in range(len(THEMES))]
-    return {"every": everies.pop(), "part": [parts.pop(), 1 << 12], "spill": glow_spill(code)}, colours
+    return {"every": everies.pop(), "part": [parts.pop(), 1 << 12], "spill": glow_spill(code),
+            "lift": glow_lift(code)}, colours
+
+
+def glow_lift(code):
+    """What a lit device's model is drawn times, in 4096ths a channel: a
+    teleporter's by its circuit, an exit's and a switch's one for all."""
+    if code.multiplier(0x8002d4a4, 3, "a1", "v0") != 12:
+        sys.exit("a teleporter's lift is not three words to a circuit")
+    base = code.address(*GLOW_LIFT)
+    circuits = GLOW_COLOURS[5][1]
+    lift = {5: [[code.word(base + 12 * c + 4 * ch) for ch in range(3)] for c in range(circuits)]}
+    for t, (up, down) in GLOW_DOUBLE.items():
+        times = 1 << (code.immediate(up, "sll $v0, $s5, {}") - code.immediate(down, "sra $s5, $v0, {}"))
+        lift[t] = [[times << 12] * 3]
+    return {str(t): lift[t] for t in sorted(lift)}
 
 
 def glint(r):

@@ -28,6 +28,8 @@ BLOCK = 512
 STRUCT = 0x80191000  # where the loader builds its first face
 HEADER = {"shade": 300, "turn": 324, "groups": 336}
 GROUPS = 5           # header words counting the model table's groups
+SHADES = 3           # the shades a face can wear, a light for each
+CHANNELS = 3
 
 # What has to be there for the readings to mean what the doc says.
 CHECKS = [
@@ -62,6 +64,13 @@ CHECKS = [
     (0x800277ec, "ori $s0, $s0, 2", "a hidden level's faces carry a flag"),
     (0x80056a0c, "ori $t9, $t9, 44", "that is the semi-transparent bit of a textured quad"),
     (0x8004fa2c, "andi $s7, $t2, 768", "and bits 8 and 9 of the flags are the blend mode"),
+    (0x8002d348, "lw $v1, 21460($v1)", "what stands on a face is lit by the level's mode"),
+    (0x8002d364, "bne $v1, $a0, 0x8002d398", "from the second set in one mode"),
+    (0x8002d37c, "lw $v1, 300($v0)", "by the header word its face's number picks, its shade"),
+    (0x8002d3a8, "lw $v1, 300($v0)", "in either set"),
+    (0x8002d3c4, "lw $s5, 0($v1)", "a light is three words"),
+    (0x8002d3c8, "lw $s6, 4($v1)", "one a channel"),
+    (0x8002d3d0, "lw $s7, 8($v1)", "of the header's"),
 ]
 
 # A number that is the immediate of one instruction.
@@ -96,6 +105,12 @@ IMMEDIATES = [
     ("sets", "copycat.pak", "when the file wanted is the extension", 0x8004cd20, "addiu $v0, $zero, {}"),
     ("sets", "copycat.world", "taking the path of this world", 0x8004cd2c, "addiu $a0, $zero, {}"),
     ("sets", "copycat.steps", "the mode whose rooms step through the worlds", 0x80042620, "addiu $v0, $zero, {}"),
+    ("sets", "bonus.mode", "a level without a key plays in this mode", 0x80027bd8, "addiu $v0, $zero, {}"),
+
+    ("lights", "light.arcade", "a thing's light is this far into the header past its shade's", 0x8002d3bc,
+     "addiu $v0, $v0, {}"),
+    ("lights", "light.bonus", "or this far in this mode", 0x8002d394, "addiu $v0, $v0, {}"),
+    ("lights", "light.mode", "the mode", 0x8002d334, "addiu $a0, $zero, {}"),
 
     ("hiding", "path.crumbling", "the selector that takes the crumbling block's path", 0x80027390, "addiu $v0, $zero, {}"),
     ("hiding", "path.vanishing", "the vanishing block's", 0x800273a0, "addiu $v0, $zero, {}"),
@@ -318,6 +333,11 @@ def readings(code):
         out[key] = code.immediate(addr, pattern)
     if out["laser"] != out["laser.far"]:
         sys.exit("a laser's two ends wear different plates")
+    if out["light.mode"] != out["bonus.mode"]:
+        sys.exit(f"the second set of lights is for mode {out['light.mode']}, not a level without a key's")
+    for at in (0x8002d384, 0x8002d3b0):
+        if code.multiplier(at, 3, "v1", "v0") != 4 * CHANNELS:
+            sys.exit("a light is not three words to a shade")
     quad = (out["shadow.quad"] << 16) >> 24
     if quad != 1:
         sys.exit(f"a shadowed face shows quad {quad}, not the second")
@@ -331,6 +351,14 @@ def header(blob):
     turn = struct.unpack_from("<I", blob, HEADER["turn"])[0]
     groups = struct.unpack_from(f"<{GROUPS}I", blob, HEADER["groups"])
     return {"shade": list(shade), "turn": turn, "groups": list(groups)}
+
+
+def lights(blob, r):
+    """The light a thing on a face takes by the face's shade, in 4096ths a
+    channel: the set every mode lights from but one, and that mode's."""
+    def at(offset):
+        return [list(struct.unpack_from(f"<{CHANNELS}i", blob, offset + 4 * CHANNELS * k)) for k in range(SHADES)]
+    return {"arcade": at(r["light.arcade"]), "bonus": at(r["light.bonus"])}
 
 
 def sets(models, groups, r):
@@ -376,7 +404,9 @@ def table(code, tgis):
             models = m
         elif m != models:
             sys.exit(f"{world} names different textures for its models")
-        worlds[world] = header(blob)
+        worlds[world] = {**header(blob), "light": lights(blob, r)}
+        if any(not 0 <= v < SHADES for v in worlds[world]["shade"]):
+            sys.exit(f"{world} gives a face a shade past its {SHADES} lights")
     groups = next(iter(worlds.values()))["groups"]
     if any(h["groups"] != groups for h in worlds.values()):
         sys.exit("the worlds do not agree on the model table's groups")
@@ -395,6 +425,7 @@ def table(code, tgis):
         "clock": {"alias": r["clock.alias"], "type": r["clock.type"]},
         "hides": hiding(r),
         "hidden": {"kind": r["hidden.kind"], "type": r["hidden.flag"]},
+        "light": {w: h["light"] for w, h in worlds.items()},
         "plainFrom": r["plain.from"],
         "shadow": {"from": shadow_from, "to": shadow_from + r["shadow.span"] - 1,
                    "except": [r["shadow.not.a"], r["shadow.not.b"], r["shadow.not.c"]]},

@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import Code  # noqa: E402
-from kula_skins import (HEADER, header, hiding, sets)  # noqa: E402
+from kula_skins import (HEADER, header, hiding, lights, sets)  # noqa: E402
 
 R = {"zero": 0, "at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7,
      "t0": 8, "t1": 9, "sp": 29, "ra": 31}
@@ -127,6 +127,17 @@ class Sets(unittest.TestCase):
         groups = [7, 4, 49, 1, 50]
         with self.assertRaises(SystemExit):
             sets(fake_models(groups), groups, READINGS)
+
+
+class Lights(unittest.TestCase):
+    def test_a_light_is_three_words_a_shade_from_either_set_the_draw_names(self):
+        blob = bytearray(400)
+        hiro = [[2867, 2457, 2457], [3686, 3276, 3276], [4915, 4505, 4505]]
+        for k, triple in enumerate(hiro):
+            struct.pack_into("<3i", blob, 24 + 12 * k, *triple)
+            struct.pack_into("<3i", blob, 156 + 12 * k, 4096, 4096, 4096)
+        got = lights(bytes(blob), {"light.arcade": 24, "light.bonus": 156})
+        self.assertEqual(got, {"arcade": hiro, "bonus": [[4096] * 3] * 3})
 
 
 class Hiding(unittest.TestCase):

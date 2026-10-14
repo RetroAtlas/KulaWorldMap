@@ -12,10 +12,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
-    GLOW_FACE, GLOW_MAKE, LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, Code, glint, glow_spill, laser, light,
-    root_table, shadow_half, spike_cycle, table, vanish_cycle)
+    GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, Code, glint,
+    glow_lift, glow_spill, laser, light, root_table, shadow_half, spike_cycle, table, vanish_cycle)
 
-R = {"v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "zero": 0, "sp": 29, "ra": 31}
+R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
+     "sp": 29, "ra": 31}
 
 
 def sll(rd, rt, sa):
@@ -303,6 +304,36 @@ class Glint(unittest.TestCase):
     def test_a_glint_that_steps_more_than_a_flat_polygons_first_corner_stops_the_reading(self):
         with self.assertRaises(SystemExit):
             glint({**GAME, "glint.flat": 12})
+
+
+class Lift(unittest.TestCase):
+    TELEPORTER = [[6144, 6144, 5120], [5120, 5120, 6144], [5120, 6144, 5120], [6144, 5120, 5120]]
+
+    def code(self, up=13, down=12):
+        """An executable whose lit devices lift their light as the game's do."""
+        table = 0x800a3308
+        blob = bytearray(table - EXE_BASE + 48)
+        put = lambda at, w: struct.pack_into("<I", blob, at - EXE_BASE, w)
+        for i, w in enumerate((sll("v0", "a1", 1), addu("v0", "v0", "a1"), sll("v0", "v0", 2))):
+            put(0x8002d4a4 + 4 * i, w)
+        lui_at, lw_at = GLOW_LIFT
+        put(lui_at, lui("at", 0x000a))
+        put(lw_at, (0x23 << 26) | (R["at"] << 21) | (R["v1"] << 16) | 0x3308)
+        for c, triple in enumerate(self.TELEPORTER):
+            struct.pack_into("<3I", blob, table - EXE_BASE + 12 * c, *triple)
+        for left, right in GLOW_DOUBLE.values():
+            put(left, sll("v0", "s5", up))
+            put(right, sra("s5", "v0", down))
+        return Code(bytes(blob))
+
+    def test_a_lit_teleporter_takes_its_circuits_triple_and_an_exit_or_a_switch_twice_its_light(self):
+        lift = glow_lift(self.code())
+        self.assertEqual(lift["5"], self.TELEPORTER)
+        self.assertEqual(lift["7"], [[8192] * 3])
+        self.assertEqual(lift["9"], [[8192] * 3])
+
+    def test_the_shifts_say_how_many_times_over(self):
+        self.assertEqual(glow_lift(self.code(up=14))["9"], [[16384] * 3])
 
 
 def rise_at(seq):
