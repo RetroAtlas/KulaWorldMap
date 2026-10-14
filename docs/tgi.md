@@ -44,10 +44,12 @@ A record opens with three CLUT ids, and the same three palettes appear again as 
 
 **A face is drawn from the 4bpp levels, through palettes fogged by depth.** The renderer's texture pass at `0x8004f9e0` reads a face's texture entry at 8, 16 or 24 bytes in, the three mip levels, never the 8bpp level at 0, and takes the CLUT from section 0: 72 records of 99 `u16`, one per palette row of the first block, each a CLUT id per step of depth, half a dozen distinct ones down the run, into the second palette block, whose rows hold 16-colour palettes. The 64x64 textures with their 256-colour palettes are what the mips were cut from, and the map draws those.
 
+**Sections 1 to 4 are fades by depth, 1024 `u16` each in 4096ths.** A thing is faded toward the far colour by the entry for its depth over 64, the step it sorts into (`0x8002d71c`), from section 1, or from section 3 where the word at `0x800a53d4` is 1; the draw queues it with the thing (`0x8002d7dc`), and the renderer puts it in `IR0` for the `dcpl` that lights each polygon (`0x80053608`, `0x80053620`). Section 1 is 0 for the first 20 steps and rises evenly to the world's figure at step 99, 1229 in HIRO, 1638 in HILLS and HAZE, 2048 in INCA, ARCTIC and HELL, 2867 in MARS, 3277 in FIELD and ATLANT and nothing in COWBOY, and section 3 is 0 in every world. Section 2 fades a face whose flags carry 8 the same way (`0x800569b0` to `0x800569d4`), rising to 4096, and is 0 in MARS; section 4, the same rise in every world, is read by nothing. The far colour is mixed each frame from words of the header (`0x8002a7c8` to `0x8002a938`) and set at `0x8002aa18`.
+
 The table holds block faces and nothing else: a type's model is the face under the thing, not the thing, and the objects themselves are solids in the one `.GGI` on the disc ([ggi.md](ggi.md)).
 
 ## Not settled
 
-**Sections 1 to 4 and 7 to 9 are unread.** Section 9 is 225 KB and the largest after the artwork, and the four 2 KB sections at 1 to 4 are suspiciously uniform. The geometry lives somewhere in there.
+**Sections 7 to 9 are unread.** Section 9 is 225 KB and the largest after the artwork, and the geometry may live there.
 
 **What the 8bpp level of each texture is for.** It is uploaded like the rest and the renderer never reads it for a block face; the level select or a near view may.
