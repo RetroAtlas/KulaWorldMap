@@ -382,6 +382,8 @@ def as_dict(m):
                 for q, col in zip(m.polygons(), m.colours)],
         "flags": [col["flags"] & (GOURAUD | BLEND) for col in m.colours],
     }
+    if m.normals:
+        out["normals"] = [c for p in m.normals[0][:used] for c in p]
     if m.flags == SORTED:
         out["sorted"] = True
     if any(col["flags"] & BLEND for col in m.colours):

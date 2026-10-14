@@ -105,6 +105,13 @@ class Ships(unittest.TestCase):
         self.assertEqual(self.shipped([self.OPAQUE, self.CLEAR], kind=0)["blend"], 0)
         self.assertNotIn("blend", self.shipped([self.OPAQUE], kind=0))
 
+    def test_a_model_with_normals_ships_them_beside_its_vertices(self):
+        nrm = [(0, 4096, 0), (4096, 0, 0), (0, 0, 4096), (0, -4096, 0)]
+        blob = model([self.OPAQUE], [self.SQUARE], nrm)
+        shipped = as_dict(Model(blob, 0, len(blob)))
+        self.assertEqual(shipped["normals"], [c for n in nrm for c in n])
+        self.assertNotIn("normals", self.shipped([self.OPAQUE]))
+
     def test_a_blend_that_takes_away_from_what_is_behind_stops_the_build(self):
         with self.assertRaises(SystemExit):
             self.shipped([self.CLEAR], kind=2)

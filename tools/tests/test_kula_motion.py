@@ -434,6 +434,8 @@ class Table(unittest.TestCase):
                     "button.start", "button.full", "button.sink", "button.rise", "button.reach",
                     "ball.breathe.full", "ball.breathe.over", "time.tick"):
             r.setdefault(key, 1)
+        r.update({"ball.light.down": 2, "ball.light.into": 1, "ball.light.background": 2048,
+                  "ball.light.colour": 4000, "ball.light.base": 178})
         r["platform.scale"] = 50
         r["captivator.standoff"] = 456
         r["corkscrew.drop"] = 150
@@ -458,6 +460,8 @@ class Table(unittest.TestCase):
         self.assertNotIn("entry", t["types"]["37"])
         self.assertEqual(t["dice"], {"seed": 1, "times": 1103515245, "plus": 12345})
         self.assertEqual(t["types"]["36"]["glint"], glint(GAME))
+        self.assertEqual(t["types"]["30"]["light"],
+                         {"view": [-1, -4, -2], "background": 2048, "colour": 4000, "base": 178})
         self.assertNotIn("glint", t["types"]["37"])
         with self.assertRaises(SystemExit):
             table({**r, "glint.model": 39}, 30)

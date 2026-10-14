@@ -212,6 +212,31 @@ CHECKS = [
     (0x800516ac, "sw $s3, 16($s4)", "whose colours the four are"),
     (0x80056870, "andi $t9, $t1, 1", "the transform draws a face whose first bit is set"),
     (0x800568d0, "andi $t9, $ra, 16", "and shades one whose fifth is between its corners"),
+    # The ball's light.
+    (0x80035278, "lhu $v1, 22884($at)", "the camera's matrix"),
+    (0x80035280, "sh $v1, 276($s0)", "is copied into the ball's state row by row"),
+    (0x800315e8, "lh $v0, 282($s3)", "the ball's light is the camera's second row"),
+    (0x800315ec, "lh $v1, 288($s3)", "its third"),
+    (0x800315f0, "lhu $a0, 276($s3)", "and its first"),
+    (0x800315f8, "subu $v0, $zero, $v0", "turned round"),
+    (0x80031600, "subu $v0, $v0, $v1", "less the third"),
+    (0x80031604, "subu $v0, $v0, $a0", "less the first"),
+    (0x8003165c, "jal 0x80060218", "made a unit long"),
+    (0x80031fe0, "sh $v0, 6356($gp)", "as the light matrix's first row"),
+    (0x80032004, "jal 0x800603f8", "and carried into the ball's frame"),
+    (0x80032410, "sw $v0, 80($sp)", "the ball's draw hands on a background"),
+    (0x80032418, "sw $v0, 84($sp)", "the light's colour in red"),
+    (0x80032454, "sw $zero, 88($sp)", "none from the other two lights"),
+    (0x800324a4, "sw $zero, 92($sp)", "nor in green"),
+    (0x800324a8, "sw $v0, 96($sp)", "and a base"),
+    (0x8002ce80, "sw $t9, -22648($at)", "which the command carries"),
+    (0x8002ce94, "sw $v0, -22648($at)", "with the light's colour"),
+    (0x8002cee8, "sw $fp, -22648($at)", "and the base"),
+    (0x8005446c, "ncct", "the renderer lights a ball's corners by their normals"),
+    (0x80054444, "andi $t6, $t6, 255", "keeps the red channel"),
+    (0x800545d0, "sll $t4, $t4, 4", "sixteen times over"),
+    (0x8005467c, "gpf", "as the share of its light a corner takes"),
+    (0x80032158, "addiu $v0, $v0, -4096", "and the ball's own light is 4096 untinted"),
     # The gem's glints.
     (0x80022f84, "jal 0x80023258", "the parser builds the glints' records"),
     (0x80022f5c, "addiu $a1, $zero, 1", "of a model of the second table"),
@@ -297,6 +322,14 @@ IMMEDIATES = [
 
     ("the ball", "ball.breathe", "breathes at this angle a frame at least", 0x800326b4, "addiu $v0, $v1, {}"),
     ("the ball", "ball.breathe.full", "and faster by the ticks its time is short of this", 0x80032690, "addiu $v0, $zero, {}"),
+    ("the ball", "ball.light.down", "its light takes the camera's row down the screen shifted up this far", 0x800315f4,
+     "sll $v0, $v0, {}"),
+    ("the ball", "ball.light.into", "and its row into the screen this far", 0x800315fc, "sll $v1, $v1, {}"),
+    ("the ball", "ball.light.background", "a corner's light stands on this background", 0x8003240c,
+     "addiu $v0, $zero, {}"),
+    ("the ball", "ball.light.colour", "with this of 4096 of how squarely the light falls", 0x80032414,
+     "addiu $v0, $zero, {}"),
+    ("the ball", "ball.light.base", "times this base", 0x800324a0, "addiu $v0, $zero, {}"),
 
     ("moving spikes", "spikes.phase.down", "phase: down, if phase times step is under", 0x8002a120, "slti $v0, $v1, {}"),
     ("moving spikes", "spikes.phase.held", "phase: held up, if under", 0x8002a148, "slti $v0, $v1, {}"),
@@ -983,6 +1016,11 @@ def table(r, platform_speed):
     types[56]["entry"] = {"stand": stand - r["corkscrew.drop"]}
     types[56]["shadow"] = {"sprite": 0, "off": stand - r["shadow.corkscrew.drop"],
                            "strength": r["shadow.strength.56"], "fade": r["shadow.corkscrew.fade"]}
+    # the ball's light is the camera's rows turned round, in its axes right, down
+    # and into the screen
+    types[30]["light"] = {"view": [-1, -(1 << r["ball.light.down"]), -(1 << r["ball.light.into"])],
+                          "background": r["ball.light.background"], "colour": r["ball.light.colour"],
+                          "base": r["ball.light.base"]}
     # the ball's lies as far toward the block from its middle as the middle
     # is off the face, so on the face
     types[30]["shadow"] = {"sprite": 0, "off": 0, "strength": 1 << r["shadow.ball.shift"],
