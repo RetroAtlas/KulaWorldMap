@@ -8,6 +8,52 @@ export const frameAt = (table, ms) => (ms / 1000) * table.hz;
 /** A colour or a light times a light, which is in 4096ths a channel. */
 export const byLight = (v, light) => v.map((c, ch) => Math.floor((c * light[ch]) / 4096));
 
+// A right-handed turn of `t` turns about the game's model x, y or z, by rows.
+function turnAbout(axis, t) {
+  const c = Math.cos(t * Math.PI * 2),
+    s = Math.sin(t * Math.PI * 2);
+  if (axis === 0)
+    return [
+      [1, 0, 0],
+      [0, c, -s],
+      [0, s, c],
+    ];
+  if (axis === 1)
+    return [
+      [c, 0, s],
+      [0, 1, 0],
+      [-s, 0, c],
+    ];
+  return [
+    [c, -s, 0],
+    [s, c, 0],
+    [0, 0, 1],
+  ];
+}
+export const times = (a, b) =>
+  a.map((row) => [0, 1, 2].map((j) => row[0] * b[0][j] + row[1] * b[1][j] + row[2] * b[2][j]));
+/** Turns of the model about its x, y and z, as the product the type's routine
+    makes, or null where it is not turned. */
+export function spin(order, angles) {
+  let out = null;
+  for (const axis of order === "zyx" ? [2, 1, 0] : [0, 1, 2]) {
+    if (!angles[axis]) continue;
+    const turn = turnAbout(axis, angles[axis]);
+    out = out ? times(out, turn) : turn;
+  }
+  return out;
+}
+/** Where the game lays its model's x, y and z on a face, by rows: across the
+    way the thing points, the way it points, and out of the face. */
+export function faceAxes(up, forward) {
+  const across = [
+    forward[1] * up[2] - forward[2] * up[1],
+    forward[2] * up[0] - forward[0] * up[2],
+    forward[0] * up[1] - forward[1] * up[0],
+  ];
+  return [0, 1, 2].map((i) => [across[i], forward[i], up[i]]);
+}
+
 const sin = (table, angle) => Math.sin((angle / table.turn) * Math.PI * 2);
 const turns = (table, angle) => angle / table.turn;
 
@@ -41,7 +87,7 @@ export function pose(table, entry, m, frame, phase, time = 0, open = 0) {
     );
   }
   if (entry.flip) about[2] += turns(table, angle(entry.flip, 1));
-  if (entry.roll) about[2] += turns(table, angle(entry.roll, 0));
+  if (entry.roll) about[0] += turns(table, angle(entry.roll, 0));
   // The game names a tumble's three axes x, y and z, and its z is the normal.
   if (entry.tumble)
     [0, 2, 1].forEach((axis, i) => (about[axis] += turns(table, angle(entry.tumble[i], i))));

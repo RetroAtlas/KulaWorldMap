@@ -1,8 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects, mapData } from "./fixtures.js";
+import { FACE_NORMAL } from "../../public/js/faces.js";
+import { TANGENT, layHeading } from "../../public/js/data.js";
 import {
   byLight,
+  spin,
+  faceAxes,
   frameAt,
   phasesOf,
   phaseField,
@@ -28,6 +32,95 @@ const marker = (f3 = 0) => ({ f: [0, f3, 1, 0, -1, -1, -1, 386, 1, -1, -1] });
 test("a light scales each channel by its own in 4096ths, rounding down", () => {
   assert.deepEqual(byLight([100, 201, 255], [4096, 2048, 8192]), [100, 100, 510]);
   assert.deepEqual(byLight([4096, 4096, 4096], [6144, 6144, 5120]), [6144, 6144, 5120]);
+});
+
+test("a thing's axes lie on its face as the game's own matrix lays them, with no mirror in them", () => {
+  // the matrices 0x80039ec0 builds for a thing facing the way the face's first tangent runs
+  const game = [
+    [
+      [-1, 0, 0],
+      [0, 1, 0],
+      [0, 0, -1],
+    ],
+    [
+      [0, 0, 1],
+      [0, 1, 0],
+      [-1, 0, 0],
+    ],
+    [
+      [1, 0, 0],
+      [0, 0, 1],
+      [0, -1, 0],
+    ],
+    [
+      [1, 0, 0],
+      [0, 0, -1],
+      [0, 1, 0],
+    ],
+    [
+      [0, 0, -1],
+      [0, 1, 0],
+      [1, 0, 0],
+    ],
+    [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+    ],
+  ];
+  game.forEach((rows, face) =>
+    assert.deepEqual(
+      faceAxes(FACE_NORMAL[face], TANGENT[face]).map((r) => r.map((v) => v + 0)),
+      rows,
+      `face ${face}`,
+    ),
+  );
+});
+
+test("a facing turns a thing's axes a quarter at a step, from y to y × z, as the game's matrix does", () => {
+  // 0x80039ec0's matrices for a thing on the top whose f2 is 2, 3 and 4
+  const game = {
+    2: [
+      [0, -1, 0],
+      [-1, 0, 0],
+      [0, 0, -1],
+    ],
+    3: [
+      [1, 0, 0],
+      [0, -1, 0],
+      [0, 0, -1],
+    ],
+    4: [
+      [0, 1, 0],
+      [1, 0, 0],
+      [0, 0, -1],
+    ],
+  };
+  // the corkscrew carries no facing for the panel to name, and is turned all the same
+  for (const [f2, rows] of Object.entries(game)) {
+    const corkscrew = { face: 0, type: 56, f: [Number(f2), 0, 0] };
+    const laid = faceAxes(FACE_NORMAL[0], layHeading(corkscrew)).map((r) => r.map((v) => v + 0));
+    assert.deepEqual(laid, rows, `f2 ${f2}`);
+  }
+});
+
+test("a spin is the product the routine for its type makes, about z first or about z last", () => {
+  // what 0x80060a38 and 0x80060cc8 build from the angles 300, 700 and 1100
+  const angles = [300, 700, 1100].map((v) => v / 4096);
+  const routines = {
+    xyz: [
+      [-0.055, -0.474, 0.879],
+      [0.844, -0.492, -0.212],
+      [0.532, 0.731, 0.427],
+    ],
+    zyx: [
+      [-0.055, -0.935, 0.349],
+      [0.473, 0.283, 0.833],
+      [-0.879, 0.212, 0.427],
+    ],
+  };
+  for (const [order, rows] of Object.entries(routines))
+    spin(order, angles).forEach((row, r) => row.forEach((v, c) => near(v, rows[r][c], 0.002)));
 });
 
 test("a frame is a sixtieth of a second", () => {

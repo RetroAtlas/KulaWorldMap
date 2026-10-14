@@ -154,16 +154,23 @@ export const cross = (a, b) => [
   a[2] * b[0] - a[0] * b[2],
   a[0] * b[1] - a[1] * b[0],
 ];
-export const markerHeading = (m) => {
-  const by = entry(m)?.facing;
-  if (!by || m.face === null) return null;
-  const turns = m.f[fieldIndex(by)] - 1;
+const turnedFrom = (face, facing) => {
+  const turns = facing - 1;
   if (turns < 0 || turns > 3) return null;
-  const axis = FACE_NORMAL[m.face].map((v) => -v);
-  let v = TANGENT[m.face];
+  const axis = FACE_NORMAL[face].map((v) => -v);
+  let v = TANGENT[face];
   for (let i = 0; i < turns; i++) v = cross(axis, v);
   return v;
 };
+export const markerHeading = (m) => {
+  const by = entry(m)?.facing;
+  if (!by || m.face === null) return null;
+  return turnedFrom(m.face, m.f[fieldIndex(by)]);
+};
+/** The way the game lays a thing on its face, its `f2` turning it as a
+    facing does whatever the type. */
+export const layHeading = (m) =>
+  m.face === null ? null : turnedFrom(m.face, m.f[fieldIndex("f2")]);
 export const markerFacing = (m) => {
   const v = markerHeading(m);
   if (!v) return null;

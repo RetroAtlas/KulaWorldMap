@@ -57,6 +57,8 @@ function render(model, size) {
   const pts = [];
   for (let i = 0; i < frame.length; i += 3) {
     const p = [0, 1, 2].map((k) => frame[i + k] - centre[k]);
+    // the build names the game's y and z the other way round, so its x runs the other way
+    p[0] = -p[0];
     pts.push([size / 2 + dot(p, RIGHT) * scale, size / 2 - dot(p, UP) * scale, dot(p, TOWARD)]);
   }
   const polys = model.polys.map((poly, k) => {

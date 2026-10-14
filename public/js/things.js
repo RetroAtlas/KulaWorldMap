@@ -15,7 +15,7 @@ import {
   markerLabel,
   markerGroup,
   markerFacing,
-  markerHeading,
+  layHeading,
   markerNow,
   movedFor,
   openFor,
@@ -34,6 +34,9 @@ import {
 } from "./data.js";
 import {
   byLight,
+  spin,
+  times,
+  faceAxes,
   phasesOf,
   phaseField,
   pose,
@@ -139,23 +142,27 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
 }
 
 // A model's y runs along its face's outward normal and its z the way the thing
-// points. Its lowest vertex sits just off the face, but a thing the game keeps
-// an entry of its own for stands where the game draws it, and a thing that
-// bobs stands its bob's reach higher so that it never dips into its face.
+// points, which the game calls its z and y. Its lowest vertex sits just off the
+// face, but a thing the game keeps an entry of its own for stands where the
+// game draws it, and a thing that bobs stands its bob's reach higher so that it
+// never dips into its face.
 const GAP = 0.03;
 const BLEND = 2;
 const GOURAUD = 16;
 // How a translucent polygon meets what is behind it, by its model's blend.
 const BLENDS = { 0: ["source-over", 0.5], 1: ["lighter", 1], 3: ["lighter", 0.25] };
-// The rolling stone's axle is its model's z, which lies across the way it
-// rolls, so it stands a quarter turn from its facing.
 const STONE = 51;
-const ACROSS = 0.25;
+const WORLD = [
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1],
+];
 
 function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
   const { round = null, time = 0, going = null, height = 1, lit = null, light = null } = extras;
   const up = FACE_NORMAL[m.face];
-  const forward = going?.fwd || markerHeading(m) || TANGENT[m.face];
+  const forward = going?.fwd || layHeading(m) || TANGENT[m.face];
+  const face = faceAxes(up, forward);
   const unit = modelUnit();
   const rest = motion?.entry
     ? motion.entry.stand * unit
@@ -168,7 +175,6 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
     tall = 1,
     bounce = 0;
   if (going) for (let i = 0; i < 3; i++) o[i] += going.offset[i];
-  const side = cross(up, forward);
   if (motion) {
     const p = pose(motionTable(), motion, m, movedFor(m, frame), phase, time, openFor(m, frame));
     about = p.about;
@@ -177,17 +183,14 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
     // squashed about its centre, so it is stood lower by as much, and its
     // underside stays on the face while its top comes down
     lift = GAP + (rest - GAP) * tall;
-    if (m.type === STONE) {
-      about[1] += ACROSS;
-      about[2] = -(going ? going.roll / motionTable().turn : about[2]);
-    }
+    if (going && m.type === STONE) about[0] = going.roll / motionTable().turn;
     if (motion.bob) lift += (motion.bob.reach + p.bob) * unit;
     lift += p.lift * unit;
     if (motion.bounce) bounce = p.lift / motion.bounce.rise;
     if (round) {
       // the orbit is in the face's own plane, its x across the way the thing points
       for (let i = 0; i < 3; i++) {
-        o[i] += (forward[i] * round.offset[1] - side[i] * round.offset[0]) * unit;
+        o[i] += (face[i][0] * round.offset[0] + face[i][1] * round.offset[1]) * unit;
       }
       about[1] += round.turn;
     }
@@ -195,52 +198,47 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
     shown = model.frames[held ? Math.max(...motion.cycle[phaseField(m)]) : p.frame] || shown;
   }
   for (let i = 0; i < 3; i++) o[i] += up[i] * lift;
-  const ct = Math.cos(about[1] * Math.PI * 2),
-    st = Math.sin(about[1] * Math.PI * 2);
-  const fwd = forward.map((v, i) => v * ct + side[i] * st);
-  const right = cross(up, fwd);
+  // the game lays its model's x, y and z on the face, or on the world's axes,
+  // and turns it by its spin and by any turn it takes ahead of the spin
+  let laid = motion?.axes === "world" ? WORLD : face;
+  const turned = motion && spin(motion.order, [about[0], about[2], about[1]]);
+  if (turned) laid = times(laid, turned);
+  const before =
+    motion?.before &&
+    spin(
+      "xyz",
+      motion.before.map((v) => v / motionTable().turn),
+    );
+  if (before) laid = times(laid, before);
   const shade = motion?.shadow;
   if (shade) {
     let strength = shade.strength;
     if (shade.fade) strength -= shade.fade * bounce;
     // the ball's middle is as far off its face as the model reaches below it
     if (shade.top) strength = (strength * (shade.top + model.box[0][1])) / shade.over;
-    const along = shade.turns ? fwd : TANGENT[m.face];
+    const along = shade.turns ? laid.map((row) => row[1]) : TANGENT[m.face];
     drawShadow(ctx, m, c, shade, unit, going?.offset, along, strength, shade.squash ? wide : 1);
   }
-  const cx = Math.cos(about[0] * Math.PI * 2),
-    sx = Math.sin(about[0] * Math.PI * 2);
-  const cz = Math.cos(about[2] * Math.PI * 2),
-    sz = Math.sin(about[2] * Math.PI * 2);
   // A polygon sorts by its unpressed depth, so a model pressed flat keeps the
   // order of its layers rather than letting their tied depths trade places.
   const n = shown.length / 3;
   const polys = polygonsOf(model);
   const { sorted } = model;
   const { spots, depths, far } = scratch(n, polys.length);
+  const [[a0, a1, a2], [b0, b1, b2], [d0, d1, d2]] = laid;
   for (let v = 0; v < n; v++) {
     const i = 3 * v;
-    // about its own z, the way it points, then about its own x, across the
-    // face, before it is placed; the turn about its normal is in the basis
-    const x = (shown[i] * cz - shown[i + 1] * sz) * unit * wide,
-      ty = (shown[i] * sz + shown[i + 1] * cz) * unit,
-      tz = shown[i + 2] * unit;
-    const y = (ty * cx - tz * sx) * tall,
-      z = (ty * sx + tz * cx) * wide;
-    const pressed = y * height;
-    screenTo(
-      spots,
-      2 * v,
-      o[0] + x * right[0] + pressed * up[0] + z * fwd[0],
-      o[1] + x * right[1] + pressed * up[1] + z * fwd[1],
-      o[2] + x * right[2] + pressed * up[2] + z * fwd[2],
-    );
+    // the game's x, y and z, squashed in its own axes before it is laid
+    const x = shown[i] * unit * wide,
+      y = shown[i + 2] * unit * wide,
+      z = shown[i + 1] * unit * tall;
+    const wx = o[0] + a0 * x + a1 * y,
+      wy = o[1] + b0 * x + b1 * y,
+      wz = o[2] + d0 * x + d1 * y;
+    const pressed = z * height;
+    screenTo(spots, 2 * v, wx + a2 * pressed, wy + b2 * pressed, wz + d2 * pressed);
     if (!sorted) continue;
-    depths[v] = depth(
-      o[0] + x * right[0] + y * up[0] + z * fwd[0],
-      o[1] + x * right[1] + y * up[1] + z * fwd[1],
-      o[2] + x * right[2] + y * up[2] + z * fwd[2],
-    );
+    depths[v] = depth(wx + a2 * z, wy + b2 * z, wz + d2 * z);
   }
   if (sorted) {
     polys.forEach(({ corners }, k) => {
@@ -254,7 +252,7 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
   const order = sorted ? backToFront(m, model, far) : null;
   const under =
     model.normals && motion?.light
-      ? fillsByNormals(m, model, motion.light, [cx, sx, cz, sz], right, up, fwd)
+      ? fillsByNormals(m, model, motion.light, laid)
       : fillsUnder(model, light);
   let colour = null;
   let op = "source-over";
@@ -275,11 +273,11 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
   if (op !== "source-over") ctx.globalCompositeOperation = "source-over";
 }
 
-// A polygon faces the view where its first three corners run anticlockwise on
-// the screen, as every model winds its outer faces.
+// A polygon faces the view where its first three corners run clockwise on the
+// screen, whose y runs down, as every model winds its outer faces.
 const towardView = (spots, [a, b, c]) =>
   (spots[2 * b] - spots[2 * a]) * (spots[2 * c + 1] - spots[2 * a + 1]) -
-    (spots[2 * b + 1] - spots[2 * a + 1]) * (spots[2 * c] - spots[2 * a]) <
+    (spots[2 * b + 1] - spots[2 * a + 1]) * (spots[2 * c] - spots[2 * a]) >
   0;
 
 // A quad's corners come two edges at a time, 0-1 and 2-3, so its outline runs
@@ -330,26 +328,24 @@ function fillsUnder(model, light) {
 // The ball lights each corner by its normal, turned as its vertices are, from a
 // light fixed to the view; the light's axes are the view's right, down and in.
 const byNormals = new WeakMap();
-function fillsByNormals(m, model, light, turn, right, up, fwd) {
+function fillsByNormals(m, model, light, laid) {
   const c = camera();
   const kept = byNormals.get(m);
-  const basis = [...turn, ...right, ...up, ...fwd];
+  const basis = laid.flat();
   if (kept?.model === model && kept.c === c && kept.basis.every((v, i) => v === basis[i]))
     return kept.fills;
   const [vx, vy, vz] = light.view;
   const l = [0, 1, 2].map((i) => vx * c.right[i] - vy * c.up[i] - vz * c.toward[i]);
   const len = Math.hypot(...l);
-  const [cx, sx, cz, sz] = turn;
   const n = model.normals;
   const share = [];
   for (let i = 0; i < n.length; i += 3) {
-    const x = n[i] * cz - n[i + 1] * sz,
-      ty = n[i] * sz + n[i + 1] * cz,
-      tz = n[i + 2];
-    const y = ty * cx - tz * sx,
-      z = ty * sx + tz * cx;
+    // a normal is shipped as a vertex is
+    const x = n[i],
+      y = n[i + 2],
+      z = n[i + 1];
     let dot = 0;
-    for (let k = 0; k < 3; k++) dot += (x * right[k] + y * up[k] + z * fwd[k]) * l[k];
+    for (let k = 0; k < 3; k++) dot += (laid[k][0] * x + laid[k][1] * y + laid[k][2] * z) * l[k];
     share.push(lightShare(light, Math.max(0, Math.floor(dot / len))));
   }
   const polys = polygonsOf(model);
