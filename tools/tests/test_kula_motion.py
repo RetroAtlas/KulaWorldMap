@@ -12,8 +12,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
-    GLOW_FACE, GLOW_MAKE, LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, Code, glow_spill, laser, light, root_table,
-    shadow_half, spike_cycle, table, vanish_cycle)
+    GLOW_FACE, GLOW_MAKE, LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, Code, glint, glow_spill, laser, light,
+    root_table, shadow_half, spike_cycle, table, vanish_cycle)
 
 R = {"v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "zero": 0, "sp": 29, "ra": 31}
 
@@ -74,6 +74,12 @@ GAME = {
     "light.full.turned": 128, "light.scale": 0x4000, "light.bits": 23, "light.bits.high": 9,
     "light.turned.kind": 9, "light.turned.value": 1, "light.turned.near": 1280, "light.turned.far": 1792,
     "light.root": [[362, 150], [256, 106]],
+    "glint.model": 36, "glint.cuts": 3, "glint.rows": 3, "glint.record": 348, "glint.row": 1044,
+    "glint.head": 28, "glint.slot": 20, "glint.chance": 3, "glint.slots": 16, "glint.flat": 4,
+    "glint.frame.cuts": 3, "glint.frame.rows": 3, "glint.frame.record": 348, "glint.frame.row": 1044,
+    "glint.rise": 128, "glint.top": 254, "glint.fall": 16,
+    "glint.seed": 1, "glint.times": 0x41C64E6D, "glint.plus": 12345,
+    "glint.at": 0x800DE034, "glint.frame.at": 0x800DE034,
 }
 
 
@@ -277,6 +283,28 @@ class Glow(unittest.TestCase):
             glow_spill(self.maker(own=[1, 1, 1, 1]))
 
 
+class Glint(unittest.TestCase):
+    def test_the_glint_ships_its_steps_its_slots_and_a_generator_of_its_own(self):
+        g = glint(GAME)
+        self.assertEqual((g["chance"], g["rise"], g["top"], g["fall"], g["slots"]), (3, 128, 254, 16, 16))
+        self.assertEqual((g["rows"], g["cuts"]), (3, 3))
+        self.assertEqual(g["dice"], {"seed": 1, "times": 1103515245, "plus": 12345})
+
+    def test_a_frame_that_runs_the_glint_over_other_records_stops_the_reading(self):
+        for change in ({"glint.frame.at": 0x800DE038}, {"glint.frame.rows": 2}, {"glint.frame.record": 344}):
+            with self.assertRaises(SystemExit):
+                glint({**GAME, **change})
+
+    def test_a_record_that_does_not_hold_its_slots_or_a_row_its_records_stops_the_reading(self):
+        for change in ({"glint.slots": 15}, {"glint.row": 1040, "glint.frame.row": 1040}):
+            with self.assertRaises(SystemExit):
+                glint({**GAME, **change})
+
+    def test_a_glint_that_steps_more_than_a_flat_polygons_first_corner_stops_the_reading(self):
+        with self.assertRaises(SystemExit):
+            glint({**GAME, "glint.flat": 12})
+
+
 def rise_at(seq):
     """Where the spikes leave the ground: the frame after the last flat one."""
     return next(i for i in range(len(seq)) if seq[i - 1] == 0 and seq[i] == 6)
@@ -398,6 +426,10 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["56"]["entry"], {"stand": 50})
         self.assertNotIn("entry", t["types"]["37"])
         self.assertEqual(t["dice"], {"seed": 1, "times": 1103515245, "plus": 12345})
+        self.assertEqual(t["types"]["36"]["glint"], glint(GAME))
+        self.assertNotIn("glint", t["types"]["37"])
+        with self.assertRaises(SystemExit):
+            table({**r, "glint.model": 39}, 30)
         self.assertEqual(set(t["types"]["10"]["press"]), {"start", "full", "sink", "rise", "reach"})
         self.assertEqual(t["shadow"], {"half": 150})
         for k in ("50", "52", "53"):

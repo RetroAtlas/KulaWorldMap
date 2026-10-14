@@ -206,6 +206,57 @@ CHECKS = [
     (0x800516ac, "sw $s3, 16($s4)", "whose colours the four are"),
     (0x80056870, "andi $t9, $t1, 1", "the transform draws a face whose first bit is set"),
     (0x800568d0, "andi $t9, $ra, 16", "and shades one whose fifth is between its corners"),
+    # The gem's glints.
+    (0x80022f84, "jal 0x80023258", "the parser builds the glints' records"),
+    (0x80022f5c, "addiu $a1, $zero, 1", "of a model of the second table"),
+    (0x80022f74, "addu $a3, $s2, $zero", "a row of it for each pass of the outer loop"),
+    (0x80022f78, "sw $s0, 16($sp)", "and a slot for each pass of the inner"),
+    (0x800232c0, "sll $v0, $a2, 6", "the model is a type"),
+    (0x800232b8, "sll $v1, $a3, 4", "a row a level of detail"),
+    (0x8002327c, "sll $a0, $a0, 2", "and a slot a cut"),
+    (0x800232f0, "lw $v0, 20($v1)", "a record keeps where the model's colours are"),
+    (0x80023310, "addiu $v0, $v1, 8", "past their block's count and length"),
+    (0x8002332c, "sra $v0, $v0, 4", "and how many polygons have one, sixteen bytes each"),
+    (0x80022f68, "sw $v0, 20($sp)", "the parser hands the builder a chance"),
+    (0x80023334, "sw $t2, 8($t0)", "which the record keeps third"),
+    (0x80050d6c, "lw $s7, 8($a0)", "and the glint reads as its chance"),
+    (0x80022f7c, "sw $t0, 24($sp)", "a rise"),
+    (0x80023338, "sw $t3, 12($t0)", "kept fourth"),
+    (0x80050e54, "lw $t3, 12($a0)", "and read as the rise"),
+    (0x80022f70, "sw $a3, 28($sp)", "a top"),
+    (0x8002333c, "sw $t4, 16($t0)", "kept fifth"),
+    (0x80050e58, "lw $s1, 16($a0)", "and read as the top"),
+    (0x80022f80, "sw $v1, 32($sp)", "a fall"),
+    (0x80023340, "sw $t5, 20($t0)", "kept sixth"),
+    (0x80050e5c, "lw $s2, 20($a0)", "and read as the fall"),
+    (0x80022f88, "sw $v0, 36($sp)", "and how many slots"),
+    (0x80023344, "sw $t1, 24($t0)", "kept seventh"),
+    (0x80050d78, "lw $v0, 24($a0)", "and read as the slots"),
+    (0x80050e84, "addi $a0, $a0, 28", "which start past the record's seven words"),
+    (0x80050e94, "addi $a0, $a0, 20", "five words each"),
+    (0x8002a6b8, "jal 0x8002a998", "the frame's draw ends"),
+    (0x8002aa38, "jal 0x80050d04", "by running the glint over every record"),
+    (0x8002aa68, "jal 0x800530b0", "before it draws the models"),
+    (0x80050d50, "lw $s6, 0($s7)", "a run steps the state of the glint's own generator"),
+    (0x80050d5c, "mult $s6, $t8", "by a multiplier"),
+    (0x80050d68, "sw $s6, 0($s7)", "and keeps it"),
+    (0x80050d70, "srl $t8, $s6, 16", "a glint starts where the state's high half"),
+    (0x80050d74, "mult $t8, $s7", "times the chance"),
+    (0x80050d80, "srl $s7, $s7, 16", "over 65536"),
+    (0x80050d84, "bne $s7, $zero, 0x80050e54", "is nothing"),
+    (0x80050db4, "andi $s6, $s6, 65535", "on the polygon that the low half"),
+    (0x80050db8, "mult $s6, $t8", "times the count"),
+    (0x80050dc4, "srl $t8, $t8, 16", "over 65536 names"),
+    (0x80050df0, "bne $s6, $gp, 0x80050ddc", "unless that polygon is glinting already"),
+    (0x80050e18, "beq $t9, $zero, 0x80050e30", "stepping a flat polygon's colour"),
+    (0x80050ec8, "add $t8, $t8, $t3", "a corner rises by the rise"),
+    (0x80050ecc, "slt $at, $t8, $t6", "to no more than the top"),
+    (0x80050f34, "ori $a1, $a1, 32", "until all are there"),
+    (0x80050f60, "sub $t8, $t8, $s2", "then falls by the fall"),
+    (0x80050f68, "slt $at, $t8, $fp", "to no less than its own"),
+    (0x80050fdc, "sw $zero, -20($a0)", "and once all are back its slot is free"),
+    (0x800534f4, "lw $s6, 0($s1)", "the renderer reads a polygon's first corner"),
+    (0x80053604, "mtc2 $s6, rgbc", "and draws a flat one in that colour"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -339,6 +390,25 @@ IMMEDIATES = [
     ("devices' light", "glow.part.y", "in green", 0x80051078, "addiu $t7, $zero, {}"),
     ("devices' light", "glow.part.z", "in blue", 0x80051084, "addiu $t7, $zero, {}"),
 
+    ("gem's glints", "glint.model", "the records are of this model of the second table", 0x80022f60,
+     "addiu $a2, $zero, {}"),
+    ("gem's glints", "glint.cuts", "the parser builds a record for each of this many slots", 0x80022f90, "slti $v0, $s0, {}"),
+    ("gem's glints", "glint.rows", "in each of this many rows", 0x80022fa0, "slti $v0, $s2, {}"),
+    ("gem's glints", "glint.record", "bytes from one slot's record to the next", 0x80022f98, "addiu $s1, $s1, {}"),
+    ("gem's glints", "glint.row", "and from one row's to the next", 0x80022fa8, "addiu $s3, $s3, {}"),
+    ("gem's glints", "glint.head", "a record's slots start this far in", 0x80023348, "addiu $t0, $t0, {}"),
+    ("gem's glints", "glint.slot", "and are this many bytes each", 0x80023364, "addiu $t0, $t0, {}"),
+    ("gem's glints", "glint.chance", "a glint starts where a draw of this many comes up nothing", 0x80022f64,
+     "addiu $v0, $zero, {}"),
+    ("gem's glints", "glint.slots", "glints a record holds at once", 0x80022f6c, "addiu $v0, $zero, {}"),
+    ("gem's glints", "glint.flat", "bytes of a flat polygon's colour stepped", 0x80050e1c, "addiu $gp, $zero, {}"),
+    ("gem's glints", "glint.frame.cuts", "the frame runs the glint over this many records a row", 0x8002aa44,
+     "slti $v0, $s1, {}"),
+    ("gem's glints", "glint.frame.rows", "for this many rows", 0x8002aa54, "slti $v0, $s4, {}"),
+    ("gem's glints", "glint.frame.record", "stepping this far a record", 0x8002aa4c, "addiu $s0, $s0, {}"),
+    ("gem's glints", "glint.frame.row", "and this far a row", 0x8002aa5c, "addiu $s3, $s3, {}"),
+    ("gem's glints", "glint.plus", "a draw adds this after it multiplies", 0x80050d64, "addiu $s6, $s6, {}"),
+
     ("dice", "dice.seed", "seeded with this as a level starts", 0x80025058, "addiu $a0, $zero, {}"),
     ("dice", "dice.plus", "a draw adds this after it multiplies", 0x8004742c, "addiu $v1, $a1, {}"),
 
@@ -406,6 +476,8 @@ BUTTON_REACH = (0x80039bbc, "lui $v1, {}", 0x80039bc0, "ori $v1, $v1, {}")
 
 # What a draw multiplies the dice's state by, held in two halves of a word.
 DICE_TIMES = (0x80047418, "lui $v1, {}", 0x80047420, "ori $v1, $v1, {}")
+# And the glints' generator's.
+GLINT_TIMES = (0x80050d54, "lui $t8, {}", 0x80050d58, "ori $t8, $t8, {}")
 
 # A divisor the compiler turned into a multiply by a reciprocal and a shift:
 # the two halves of the reciprocal and the shift of the high word.
@@ -424,13 +496,17 @@ DIVISORS = [
      "ori $v1, $v1, {}", 0x8002bb04, "sra $v1, $t7, {}"),
 ]
 
-# A brightness the vanishing block's faces take as a state ends, a grey held
-# as a colour word in two halves.
+# A brightness or a step of one, a grey held as a colour word in two halves.
 GREYS = [
     ("vanishing block", "vanish.in.to", "fading in: ends at", 0x8002b8c8, "lui $v1, {}", 0x8002b8cc, "ori $v1, $v1, {}"),
     ("vanishing block", "vanish.settle.to", "settling: ends at", 0x8002b984, "lui $v1, {}", 0x8002b988, "ori $v1, $v1, {}"),
     ("vanishing block", "vanish.dim.at", "dimming: starts at", 0x8002b9e0, "lui $v1, {}", 0x8002b9e4, "ori $v1, $v1, {}"),
     ("vanishing block", "vanish.out.at", "flashing out: starts at", 0x8002ba9c, "lui $v1, {}", 0x8002baa0, "ori $v1, $v1, {}"),
+    ("gem's glints", "glint.rise", "a glinting corner rises by this in each channel", 0x80022f34, "lui $t0, {}",
+     0x80022f38, "ori $t0, $t0, {}"),
+    ("gem's glints", "glint.top", "to no more than this", 0x80022f3c, "lui $a3, {}", 0x80022f40, "ori $a3, $a3, {}"),
+    ("gem's glints", "glint.fall", "and falls by this to no less than its own", 0x80022f44, "lui $v1, {}",
+     0x80022f48, "ori $v1, $v1, {}"),
 ]
 
 # The shadow's four vertices, each x, y, z and a pad, where both draws load
@@ -458,6 +534,11 @@ GLOW_COLOURS = {5: ((0x8002d514, 0x8002d51c), 4), 7: ((0x8002d5ec, 0x8002d5f4), 
                 9: ((0x8002d6c4, 0x8002d6cc), 4)}
 GLOW_LEVELS = 3           # the levels a corner can take
 MVMVA_SF = 1 << 19        # the command's bit that shifts its products down by 12
+
+# Where the parser and the frame put the glints' records, and their generator's state.
+GLINT_RECORDS = ((0x80022f4c, 0x80022f50), (0x8002aa2c, 0x8002aa30))
+GLINT_STATE = (0x80050d48, 0x80050d4c)
+CORNER = 4                # bytes to a corner of a polygon's colour
 
 
 class Code:
@@ -543,6 +624,9 @@ def readings(code):
         out[key] = code.multiplier(addr, count, src, dst)
     out["button.reach"] = round(code.word_of(*BUTTON_REACH) ** 0.5)
     out["dice.times"] = code.word_of(*DICE_TIMES)
+    out["glint.times"] = code.word_of(*GLINT_TIMES)
+    out["glint.seed"] = code.word(code.address(*GLINT_STATE))
+    out["glint.at"], out["glint.frame.at"] = (code.address(*pair) for pair in GLINT_RECORDS)
     for _, key, _, *args in DIVISORS:
         out[key] = code.divisor(*args)
     for _, key, _, *args in GREYS:
@@ -657,6 +741,28 @@ def glow(code, r):
         colours[t] = [[[(w >> s) & 255 for s in (0, 8, 16)] for w in words[i * each:(i + 1) * each]]
                       for i in range(len(THEMES))]
     return {"every": everies.pop(), "part": [parts.pop(), 1 << 12], "spill": glow_spill(code)}, colours
+
+
+def glint(r):
+    """The gem's glints: the chance a run starts one, how a glinting corner
+    rises and falls, how many a record holds at once, the parser's rows and
+    cuts of records, which the frame runs over a row at a time, and the
+    generator a run steps once."""
+    if r["glint.at"] != r["glint.frame.at"]:
+        sys.exit(f"the frame runs the glint over 0x{r['glint.frame.at']:08x}, "
+                 f"not the records the parser builds at 0x{r['glint.at']:08x}")
+    for key in ("rows", "cuts", "record", "row"):
+        if r[f"glint.{key}"] != r[f"glint.frame.{key}"]:
+            sys.exit(f"the frame runs the glint over {r[f'glint.frame.{key}']} where the parser's {key} is "
+                     f"{r[f'glint.{key}']}")
+    if r["glint.record"] != r["glint.head"] + r["glint.slots"] * r["glint.slot"] \
+            or r["glint.row"] != r["glint.cuts"] * r["glint.record"]:
+        sys.exit("a glint's record does not hold its slots, or a row its records")
+    if r["glint.flat"] != CORNER:
+        sys.exit(f"a glint steps {r['glint.flat']} bytes of a flat polygon's colour, not its first corner")
+    return {"chance": r["glint.chance"], "rise": r["glint.rise"], "top": r["glint.top"], "fall": r["glint.fall"],
+            "slots": r["glint.slots"], "rows": r["glint.rows"], "cuts": r["glint.cuts"],
+            "dice": {"seed": r["glint.seed"], "times": r["glint.times"], "plus": r["glint.plus"]}}
 
 
 def laser(r):
@@ -797,9 +903,10 @@ def table(r, platform_speed):
     level data holds, scaled as the loader scales it. A type the loader lifts
     into an entry of its own says how far off its face the game draws the
     model's origin, and a type the game draws a shadow under says which
-    sprite, how far off its face it lies and how strong it is. The devices'
-    light and each device's colours, by world and then by circuit where it
-    has one, sit apart from the types, whose entries are what moves.
+    sprite, how far off its face it lies and how strong it is, and the type
+    whose models glint says how. The devices' light and each device's
+    colours, by world and then by circuit where it has one, sit apart from
+    the types, whose entries are what moves.
     """
     bob = {"rate": r["coin.bob"], "reach": r["coin.bob.reach"]}
     fruit = {"turn": r["fruit.turn"],
@@ -857,6 +964,9 @@ def table(r, platform_speed):
     types[30]["shadow"] = {"sprite": 0, "off": 0, "strength": 1 << r["shadow.ball.shift"],
                            "top": r["shadow.ball.top"], "over": r["shadow.ball.over"],
                            "squash": True}
+    if r["glint.model"] not in types:
+        sys.exit(f"the glints are of model {r['glint.model']}, which no type in the table is")
+    types[r["glint.model"]]["glint"] = glint(r)
     for t, entry in types.items():
         if "shadow" in entry and entry["shadow"]["sprite"] >= r["shadow.sprites"]:
             sys.exit(f"type {t}'s shadow is sprite {entry['shadow']['sprite']} of {r['shadow.sprites']}")
@@ -893,6 +1003,10 @@ def show_readings(code):
                  BUTTON_REACH[0], readings(code)["button.reach"]))
     rows.append(("dice", "a draw multiplies the state by this", DICE_TIMES[0],
                  readings(code)["dice.times"]))
+    rows.append(("gem's glints", "a draw multiplies the generator's state by this", GLINT_TIMES[0],
+                 readings(code)["glint.times"]))
+    rows.append(("gem's glints", "the generator's state as the executable loads it", code.address(*GLINT_STATE),
+                 readings(code)["glint.seed"]))
     for group, key, what, hi, hp, lo, lp, sa, sp in DIVISORS:
         rows.append((group, what, hi, code.divisor(hi, hp, lo, lp, sa, sp)))
     for group, key, what, hi, hp, lo, lp in GREYS:

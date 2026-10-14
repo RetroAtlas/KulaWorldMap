@@ -128,7 +128,7 @@
    "33": {"turn":20,"flip":66},
    "34": {"turn":20,"flip":66},
    "35": {"turn":-16,"swing":{"rate":26,"reach":2048,"lean":30}},
-   "36": {"turn":29},
+   "36": {"turn":29,"glint":{"chance":3,"rise":128,"top":254,"fall":16,"slots":16,"rows":3,"cuts":3,"dice":{"seed":1,"times":1103515245,"plus":12345}}},
    "37": {"turn":-75,"bob":{"rate":-58,"reach":20}},
    "38": {"turn":-75,"bob":{"rate":-58,"reach":20}},
    "42": {"form":{"rate":13,"past":2049},"orbit":{"radius":100,"rate":[83,6]}},
