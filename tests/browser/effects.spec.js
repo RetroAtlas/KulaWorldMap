@@ -788,9 +788,11 @@ test("a teleporter hidden from the legend casts no light, and casts it again onc
 const gemFills = (page, frames) =>
   page.evaluate(async (frames) => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { draw, clock }, { levelMarkers, typeModels }] = await Promise.all(
-      ["state.js", "render.js", "data.js"].map(at),
-    );
+    const [{ state }, { draw, clock }, { levelMarkers, typeModels, skinsTable }, { byLight }] =
+      await Promise.all(["state.js", "render.js", "data.js", "motion.js"].map(at));
+    // both gems stand on faces of the world's middle shade
+    const light = skinsTable().light[state.lvl.theme].arcade[1];
+    const lit = (rgb) => byLight(rgb, light).map((v) => Math.min(255, v));
     const g = document.getElementById("cv").getContext("2d");
     const scratch = document.createElement("canvas").getContext("2d");
     const css = (style) => ((scratch.fillStyle = style), scratch.fillStyle);
@@ -801,10 +803,11 @@ const gemFills = (page, frames) =>
           const mean = [0, 1, 2].map((ch) =>
             Math.round(rgb.filter((_, i) => i % 3 === ch).reduce((a, b) => a + b, 0) / n),
           );
-          return css(`rgba(${mean.join(" ")} / 0.5)`);
+          return css(`rgba(${lit(mean).join(" ")} / 0.5)`);
         }),
       ),
     );
+    const white = css(`rgba(${lit([254, 254, 254]).join(" ")} / 0.5)`);
     const hidden = state.hiddenKinds;
     state.hiddenKinds = new Set(levelMarkers(state.lvl).map((m) => m.id));
     for (const id of [...state.hiddenKinds])
@@ -827,7 +830,7 @@ const gemFills = (page, frames) =>
     state.hiddenKinds = hidden;
     performance.now = now;
     draw();
-    return { frames: out, own: [...own] };
+    return { frames: out, own: [...own], white };
   }, frames);
 
 test("a gem's facets glint white and fade, the same ones on every gem of its cut, until v holds them", async ({
@@ -839,8 +842,7 @@ test("a gem's facets glint white and fade, the same ones on every gem of its cut
   await settle(page);
   await landed(page);
   const frames = [...Array(60).keys()];
-  const { frames: seen, own } = await gemFills(page, frames);
-  const white = "rgba(254, 254, 254, 0.5)";
+  const { frames: seen, own, white } = await gemFills(page, frames);
   let glinting = 0;
   for (const fills of seen) {
     expect(fills).toHaveLength(64);
@@ -862,9 +864,9 @@ test("a gem's facets glint white and fade, the same ones on every gem of its cut
 });
 
 // One thing drawn by itself onto a grey canvas the map's size, with the fills it made.
-const alone = (page, cell, type) =>
+const alone = (page, cell, type, frame = 0) =>
   page.evaluate(
-    async ([cell, type]) => {
+    async ([cell, type, frame]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state, cellKey }, { drawThing }] = await Promise.all(
         ["state.js", "things.js"].map(at),
@@ -885,7 +887,7 @@ const alone = (page, cell, type) =>
         fills.push([this.globalCompositeOperation, this.fillStyle]);
         return fill.apply(this, a);
       };
-      drawThing(g, m, state.idx.cells.get(key), state.lvl, 0);
+      drawThing(g, m, state.idx.cells.get(key), state.lvl, frame);
       const d = g.getImageData(0, 0, cv.width, cv.height).data;
       const changed = [];
       for (let i = 0; i < d.length; i += 4)
@@ -893,7 +895,31 @@ const alone = (page, cell, type) =>
           changed.push([d[i], d[i + 1], d[i + 2]]);
       return { fills, changed };
     },
-    [cell, type],
+    [cell, type, frame],
+  );
+
+// The fills a model is drawn in under a light, and in its own colours.
+const fillsOf = (page, type, variant, light) =>
+  page.evaluate(
+    async ([type, variant, light]) => {
+      const { typeModels } = await import(new URL("js/data.js", location.href).href);
+      const { byLight } = await import(new URL("js/motion.js", location.href).href);
+      const g = document.createElement("canvas").getContext("2d");
+      const css = (rgb) => ((g.fillStyle = `rgb(${rgb.join(" ")})`), g.fillStyle);
+      const means = typeModels(type)[variant].rgb.map((rgb) =>
+        [0, 1, 2].map((ch) => {
+          const n = rgb.length / 3;
+          let sum = 0;
+          for (let i = 0; i < n; i++) sum += rgb[3 * i + ch];
+          return Math.round(sum / n);
+        }),
+      );
+      return {
+        lit: means.map((m) => css(byLight(m, light).map((v) => Math.min(255, v)))),
+        own: means.map(css),
+      };
+    },
+    [type, variant, light],
   );
 
 test("the hidden exit adds a quarter of itself to what is behind it, from both sides", async ({
@@ -932,6 +958,70 @@ test("a polygon the game culls shows only facing the view, in the order its mode
   expect(first).toBeGreaterThan(0);
   expect(shell.slice(first).every(Boolean)).toBe(true);
   expect(shell.slice(0, first).some(Boolean)).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test("a thing is drawn in its world's light for the face it stands on, and a bonus level's in none", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // LEVEL 3's bronze coins stand on Hiro's brightest face, +y, and on tops
+  await page.goto("/#HIRO/2/45,35/fit/33");
+  await settle(page);
+  await page.keyboard.press("v");
+  const light = await page.evaluate(async () => {
+    const { skinsTable } = await import(new URL("js/data.js", location.href).href);
+    const s = skinsTable();
+    return {
+      bright: s.light.HIRO.arcade[s.shade.HIRO[2]],
+      top: s.light.HIRO.arcade[s.shade.HIRO[0]],
+    };
+  });
+  expect(light.bright).toEqual([4915, 4505, 4505]);
+  for (const [cell, face, at] of [
+    [[13, 12, 15], 2, light.bright],
+    [[13, 15, 17], 0, light.top],
+  ]) {
+    const { fills } = await alone(page, cell, 37);
+    const want = await fillsOf(page, 37, 2, at);
+    expect(fills.length, `face ${face}`).toBeGreaterThan(0);
+    for (const [, style] of fills) expect(want.lit).toContain(style);
+  }
+  // BONUS 2 lights its things from the set of a level without a key, 4096 throughout
+  await page.goto("/#HIRO/16/45,35/fit/33");
+  await settle(page);
+  await page.keyboard.press("v");
+  const { fills } = await alone(page, [12, 16, 17], 37);
+  const own = (await fillsOf(page, 37, 1, [4096, 4096, 4096])).own;
+  for (const [, style] of fills) expect(own).toContain(style);
+  expect(errors).toEqual([]);
+});
+
+test("a teleporter's model flashes with its light, by its circuit's lift", async ({ page }) => {
+  const errors = trackErrors(page);
+  // LEVEL 68's blue teleporter is on from the start, its light dark for 19 frames and lit for 19
+  await page.goto("/#COWBOY/7/45,55");
+  await settle(page);
+  const light = await page.evaluate(async () => {
+    const { skinsTable, motionTable } = await import(new URL("js/data.js", location.href).href);
+    const { byLight } = await import(new URL("js/motion.js", location.href).href);
+    const s = skinsTable();
+    const top = s.light.COWBOY.arcade[s.shade.COWBOY[0]];
+    const lift = motionTable().glow.lift["5"][1];
+    return { top, lifted: byLight(top, lift) };
+  });
+  const dark = await fillsOf(page, 5, 1, light.top);
+  const lit = await fillsOf(page, 5, 1, light.lifted);
+  for (const [frame, want] of [
+    [10, dark.lit],
+    [25, lit.lit],
+    [48, dark.lit],
+  ]) {
+    const { fills } = await alone(page, [17, 21, 17], 5, frame);
+    expect(fills.length, `frame ${frame}`).toBeGreaterThan(0);
+    for (const [, style] of fills) expect(want, `frame ${frame}`).toContain(style);
+  }
+  expect(lit.lit).not.toEqual(dark.lit);
   expect(errors).toEqual([]);
 });
 

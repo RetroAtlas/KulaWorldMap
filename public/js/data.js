@@ -1,7 +1,7 @@
 import { state, SIDE, cellKey } from "./state.js";
 import { FACE_NORMAL } from "./faces.js";
 import { platesOf, lookOf, keyed } from "./skins.js";
-import { glowing } from "./motion.js";
+import { glowing, byLight } from "./motion.js";
 
 export const WORLD_TINT = {
   HIRO: "#93a8d4",
@@ -278,6 +278,34 @@ export function ballFor(l) {
     design = BONUS_BALL + (slot >= 0 && slot < BONUS_BALLS ? slot : 0);
   }
   return shapes.balls[design] || shapes.balls[0] || null;
+}
+// What stands on a face is drawn in its world's light for the face's shade,
+// from the set a bonus level lights from on one, and a lit device's in that
+// times its lift; the ball and the captivators carry lights of their own.
+const lightSets = new WeakMap();
+export function lightOf(m, l, frame) {
+  const skins = skinsTable();
+  if (!skins?.light || m.face === null || STARTS.has(m.type) || motionOf(m)?.entry) return null;
+  let lights = lightSets.get(l);
+  if (!lights) {
+    const look = lookOf(
+      skins,
+      l,
+      state.data.themes.findIndex((t) => t.id === l.theme),
+    );
+    const set = skins.light[l.theme]?.[look.bonus ? "bonus" : "arcade"] ?? null;
+    lightSets.set(l, (lights = { set, lifted: new Map() }));
+  }
+  const shade = skins.shade[l.theme]?.[m.face];
+  const light = lights.set?.[shade];
+  const glow = motionTable()?.glow;
+  const lift = glow?.lift?.[String(m.type)];
+  if (!light || !lift || !lightOnAt(m, glow.every, frame)) return light ?? null;
+  const by = lift[markerCircuit(m) ?? 0] ?? lift[0];
+  if (!lights.lifted.has(by)) lights.lifted.set(by, new Map());
+  const lifted = lights.lifted.get(by);
+  if (!lifted.has(shade)) lifted.set(shade, byLight(light, by));
+  return lifted.get(shade);
 }
 export const startsOf = (l) =>
   l.records.flatMap((r) =>

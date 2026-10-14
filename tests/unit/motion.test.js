@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects, mapData } from "./fixtures.js";
 import {
+  byLight,
   frameAt,
   phasesOf,
   phaseField,
@@ -22,6 +23,11 @@ const table = objects.motion;
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
 const still = [0, 0, 0];
 const marker = (f3 = 0) => ({ f: [0, f3, 1, 0, -1, -1, -1, 386, 1, -1, -1] });
+
+test("a light scales each channel by its own in 4096ths, rounding down", () => {
+  assert.deepEqual(byLight([100, 201, 255], [4096, 2048, 8192]), [100, 100, 510]);
+  assert.deepEqual(byLight([4096, 4096, 4096], [6144, 6144, 5120]), [6144, 6144, 5120]);
+});
 
 test("a frame is a sixtieth of a second", () => {
   near(frameAt(table, 1000), 60);

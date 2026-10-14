@@ -17,8 +17,19 @@ import {
   startsOf,
   shadowSprites,
   typeModels,
+  lightOf,
 } from "./data.js";
-import { phasesOf, phaseField, pose, orbit, press, inReach, glintSteps, glints } from "./motion.js";
+import {
+  byLight,
+  phasesOf,
+  phaseField,
+  pose,
+  orbit,
+  press,
+  inReach,
+  glintSteps,
+  glints,
+} from "./motion.js";
 import { label } from "./overlays.js";
 import { NEUTRAL } from "./atlas.js";
 
@@ -92,21 +103,18 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
         pressedAt(motion, m, home, l),
       )
     : null;
-  const lit = motion?.glint ? glintFills(motion.glint, m.type, model, effectFrame(frame)) : null;
-  drawObject(
-    ctx,
-    m,
-    c,
-    model,
-    motion,
-    frame,
-    phase,
+  const light = lightOf(m, l, effectFrame(frame));
+  const lit = motion?.glint
+    ? glintFills(motion.glint, m.type, model, effectFrame(frame), light)
+    : null;
+  drawObject(ctx, m, c, model, motion, frame, phase, {
     round,
-    l.time ?? 0,
+    time: l.time ?? 0,
     going,
-    pushed?.height,
+    height: pushed?.height,
     lit,
-  );
+    light,
+  });
   if (state.show.labels && state.cam.zoom > 0.45) {
     const [px, py] = off(where, m.face, OBJECT_HOVER);
     const dark = switchedOff(m) ? " · off" : "";
@@ -130,7 +138,8 @@ const BLENDS = { 0: ["source-over", 0.5], 1: ["lighter", 1], 3: ["lighter", 0.25
 const STONE = 51;
 const ACROSS = 0.25;
 
-function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, height = 1, lit) {
+function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
+  const { round = null, time = 0, going = null, height = 1, lit = null, light = null } = extras;
   const up = FACE_NORMAL[m.face];
   const forward = going?.fwd || markerHeading(m) || TANGENT[m.face];
   const unit = modelUnit();
@@ -229,13 +238,14 @@ function drawObject(ctx, m, c, model, motion, frame, phase, round, time, going, 
   // the game draws a model's polygons in its order or, where the model says,
   // furthest first, and drops one it culls where it faces away
   const order = sorted ? backToFront(m, model, far) : null;
+  const under = fillsUnder(model, light);
   let colour = null;
   let op = "source-over";
   for (let j = 0; j < polys.length; j++) {
     const k = order ? order[j] : j;
     const { ring, corners, cull, blend } = polys[k];
     if (cull && !towardView(spots, corners)) continue;
-    const fill = lit?.[k] ?? polys[k].fill;
+    const fill = lit?.[k] ?? under[k];
     if (blend !== op) ctx.globalCompositeOperation = op = blend;
     if (fill !== colour) ctx.fillStyle = colour = fill;
     ctx.beginPath();
@@ -273,6 +283,7 @@ function polygonsOf(model) {
       return {
         corners,
         ring: n === 4 ? [a, b, d, c] : corners,
+        mean,
         fill: fillOf(mean, alpha),
         alpha,
         blend,
@@ -285,6 +296,25 @@ function polygonsOf(model) {
 }
 
 const fillOf = ([r, g, b], alpha) => `rgba(${r} ${g} ${b} / ${alpha})`;
+// a channel a light lifts past full stands at 255
+const shade = (rgb, light) => byLight(rgb, light).map((v) => Math.min(255, v));
+
+// what a thing drawn in its own colours is kept under
+const OWN = Symbol("own");
+const underLights = new WeakMap();
+function fillsUnder(model, light) {
+  let fills = underLights.get(model);
+  if (!fills) underLights.set(model, (fills = new Map()));
+  const key = light ?? OWN;
+  if (!fills.has(key)) {
+    const polys = polygonsOf(model);
+    fills.set(
+      key,
+      polys.map((p) => (light ? fillOf(shade(p.mean, light), p.alpha) : p.fill)),
+    );
+  }
+  return fills.get(key);
+}
 
 // A glint steps a flat polygon's first corner, the colour the game draws it
 // in, and every corner of a Gouraud one, which the map draws in their mean.
@@ -294,22 +324,19 @@ const glintsThrough = (entry, model) =>
     const own = corners.map((_, i) => rgb.slice(3 * i, 3 * i + 3));
     const stepped = model.flags[k] & GOURAUD ? own : own.slice(0, 1);
     return glintSteps(entry, stepped).map((now) =>
-      fillOf(
-        [0, 1, 2].map((ch) => Math.round(now.reduce((sum, c) => sum + c[ch], 0) / now.length)),
-        polygonsOf(model)[k].alpha,
-      ),
+      [0, 1, 2].map((ch) => Math.round(now.reduce((sum, c) => sum + c[ch], 0) / now.length)),
     );
   });
 
 // A cut's glints are in its model, so every thing of the cut shows the same
-// ones; a frame's fills are kept for every thing drawn on it.
+// ones; a frame's fills are kept for every thing drawn on it in one light.
 const glinters = new WeakMap();
-function glintFills(entry, type, model, frame) {
+function glintFills(entry, type, model, frame, light) {
   let g = glinters.get(entry);
   if (!g) {
     const models = typeModels(type);
-    const fills = models.map((cut) => glintsThrough(entry, cut));
-    g = { models, fills, lengths: fills.map((cut) => cut.map((f) => f.length)), at: null };
+    const steps = models.map((cut) => glintsThrough(entry, cut));
+    g = { models, steps, lengths: steps.map((cut) => cut.map((s) => s.length)), at: null };
     glinters.set(entry, g);
   }
   const cut = g.models.indexOf(model);
@@ -317,13 +344,22 @@ function glintFills(entry, type, model, frame) {
   const now = Math.floor(frame);
   if (g.at !== now) {
     g.at = now;
-    g.lit = glints(entry, g.lengths, now).map((live, c) => {
-      const out = [];
-      for (const { k, at } of live) out[k] = g.fills[c][k][now - at];
-      return out;
-    });
+    g.live = glints(entry, g.lengths, now);
+    g.lit = new Map();
   }
-  return g.lit[cut];
+  if (!g.lit.has(model)) g.lit.set(model, new Map());
+  const lit = g.lit.get(model);
+  const key = light ?? OWN;
+  if (!lit.has(key)) {
+    const polys = polygonsOf(model);
+    const out = [];
+    for (const { k, at } of g.live[cut]) {
+      const rgb = g.steps[cut][k][now - at];
+      out[k] = fillOf(light ? shade(rgb, light) : rgb, polys[k].alpha);
+    }
+    lit.set(key, out);
+  }
+  return lit.get(key);
 }
 
 // Furthest first, ties in the model's order. Each sort starts from the last

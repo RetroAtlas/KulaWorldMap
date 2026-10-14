@@ -5,6 +5,9 @@ import { hashes } from "./hash.js";
 
 export const frameAt = (table, ms) => (ms / 1000) * table.hz;
 
+/** A colour or a light times a light, which is in 4096ths a channel. */
+export const byLight = (v, light) => v.map((c, ch) => Math.floor((c * light[ch]) / 4096));
+
 const sin = (table, angle) => Math.sin((angle / table.turn) * Math.PI * 2);
 const turns = (table, angle) => angle / table.turn;
 
