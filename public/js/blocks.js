@@ -1,6 +1,6 @@
 import { state, BLOCK, project, facing, screen, cellKey, sliceZ, effectsOn } from "./state.js";
 import { FACE_NORMAL } from "./faces.js";
-import { OFF_LATTICE, skinsTable, kindMotion, modelUnit, objectId } from "./data.js";
+import { OFF_LATTICE, skinsTable, kindMotion, modelUnit, objectId, openFace } from "./data.js";
 import { blockPhase, lightOn, cornersLit } from "./motion.js";
 import { ballsFor } from "./things.js";
 import { platformPlace, faceSkin } from "./skins.js";
@@ -285,7 +285,9 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
     const shown = rec && state.hiddenKinds.size ? { ...rec, on: rec.on.filter(showing) } : rec;
     skin = (i) => {
       const g = FACES[i].game;
-      const sk = faceSkin(skins, look, still, g, kind, shown, effect, place, plates?.get(g));
+      const plate = plates?.get(g);
+      const marked = !!shown && openFace(shown, g);
+      const sk = faceSkin(skins, look, still, g, kind, shown, effect, place, plate, marked);
       if (sk?.live) live = true;
       if (sk && kind === INVISIBLE) {
         if (!effectsOn()) sk.colour = peak(skins);

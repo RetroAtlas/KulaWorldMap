@@ -139,6 +139,14 @@ test("a vanishing block is where its phase's cycle puts it, solid with its brigh
   assert.notEqual(blockPhase(e, record(0), 100).state, blockPhase(e, record(2), 100).state);
 });
 
+test("an exit turns at its open rate for the frames it has stood open, and on from where it was", () => {
+  const exit = table.types[7];
+  const at = (frame, open) => pose(table, exit, marker(), frame, [1000, 0, 0], 0, open).about[1];
+  near(at(300, 0), (1000 - 20 * 300) / 4096);
+  near(at(300, 200), (1000 - 20 * 100 - 45 * 200) / 4096);
+  for (const open of [0, 0.5, 1]) near(at(100 + open, open) - at(100, 0), (-45 * open) / 4096);
+});
+
 test("the ball breathes, wider and shorter by turns, faster the less time the level gives", () => {
   const ball = table.types[30];
   const at = (frame, time) => pose(table, ball, marker(), frame, still, time).squash;

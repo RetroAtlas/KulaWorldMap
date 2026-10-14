@@ -35,7 +35,7 @@ export const state = {
     note: true,
   },
   hiddenKinds: new Set(),
-  // by colour, the clock frames at which a switch turned each circuit over
+  // by colour, and the last key's, the clock frames at which a panel turned each circuit over
   presses: new Map(),
   hover: null,
   selected: null,

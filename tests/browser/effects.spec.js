@@ -648,12 +648,18 @@ test("where a level turns the light round, an invisible block beside the ball is
   expect(errors).toEqual([]);
 });
 
+const CLEAR = [
+  [0.2, 0.2],
+  [0.8, 0.2],
+  [0.2, 0.8],
+  [0.8, 0.8],
+];
 /** The red, green and blue of the top of a block, summed over points clear
-    of its middle, drawn without the objects at each frame of the level's
-    clock asked for. */
-const topAt = (page, [x, y, z], frames) =>
+    of its middle or over the points given, drawn without the objects at each
+    frame of the level's clock asked for. */
+const topAt = (page, [x, y, z], frames, points = CLEAR) =>
   page.evaluate(
-    async ([[x, y, z], frames]) => {
+    async ([[x, y, z], frames, points]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state, screen }, { draw, clock }] = await Promise.all(
         ["state.js", "render.js"].map(at),
@@ -670,12 +676,7 @@ const topAt = (page, [x, y, z], frames) =>
         performance.now = () => t + ((frame + 0.5 - from) * 1000) / 60;
         draw();
         const sum = [0, 0, 0];
-        for (const [dx, dy] of [
-          [0.2, 0.2],
-          [0.8, 0.2],
-          [0.2, 0.8],
-          [0.8, 0.8],
-        ]) {
+        for (const [dx, dy] of points) {
           const [sx, sy] = screen(x + dx, y + dy, z);
           const d = g.getImageData(Math.round(sx * dpr), Math.round(sy * dpr), 1, 1).data;
           for (let ch = 0; ch < 3; ch++) sum[ch] += d[ch];
@@ -687,7 +688,7 @@ const topAt = (page, [x, y, z], frames) =>
       draw();
       return out;
     },
-    [[x, y, z], frames],
+    [[x, y, z], frames, points],
   );
 
 test("a light on a face with a colour of its own adds to that colour and is not scaled by it", async ({
@@ -1022,6 +1023,57 @@ test("a teleporter's model flashes with its light, by its circuit's lift", async
     for (const [, style] of fills) expect(want, `frame ${frame}`).toContain(style);
   }
   expect(lit.lit).not.toEqual(dark.lit);
+  expect(errors).toEqual([]);
+});
+
+test("an exit its panel opens turns green, the cross on its face with it, and lights and flashes 19 frames on", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // LEVEL 1's exit stands on the top of this block, and lights the top beside it once open
+  await page.goto("/#HIRO/0/45,55");
+  await settle(page);
+  await landed(page);
+  const exit = [17, 12, 17];
+  const beside = [18, 12, 17];
+  const middle = [[0.5, 0.5]];
+  const light = await page.evaluate(async () => {
+    const { skinsTable, motionTable } = await import(new URL("js/data.js", location.href).href);
+    const { byLight } = await import(new URL("js/motion.js", location.href).href);
+    const s = skinsTable();
+    const top = s.light.HIRO.arcade[s.shade.HIRO[0]];
+    const lift = motionTable().glow.lift["7"][0];
+    return { top, lifted: byLight(top, lift) };
+  });
+  // a translucent polygon's fill carries its blend's alpha, so the colours are compared without it
+  const rgb = (style) =>
+    style.startsWith("#")
+      ? [1, 3, 5].map((i) => parseInt(style.slice(i, i + 2), 16))
+      : style.match(/\d+/g).slice(0, 3).map(Number);
+  const drawn = async (frame) => (await alone(page, exit, 7, frame)).fills.map(([, s]) => rgb(s));
+  const drawsAs = async (frame, variant, under) => {
+    const want = new Set((await fillsOf(page, 7, variant, under)).lit.map((s) => rgb(s).join()));
+    const got = await drawn(frame);
+    expect(got.length, `frame ${frame}`).toBeGreaterThan(0);
+    for (const c of got) expect(want.has(c.join()), `frame ${frame}`).toBe(true);
+  };
+  const [shutCross] = await topAt(page, exit, [10], middle);
+  const shutBeside = await topAt(page, beside, [10, 25, 40]);
+  await drawsAs(25, 1, light.top);
+
+  await page.evaluate(async () => {
+    const { flip, LAST_KEY } = await import(new URL("js/data.js", location.href).href);
+    flip(LAST_KEY, 0);
+  });
+  const [openCross] = await topAt(page, exit, [10], middle);
+  expect(shutCross[0]).toBeGreaterThan(shutCross[1] * 2);
+  expect(openCross[1]).toBeGreaterThan(openCross[0] * 2);
+  const [dark, lit, again] = await topAt(page, beside, [10, 25, 40]);
+  expect(dark).toEqual(shutBeside[0]);
+  expect(lit[1]).toBeGreaterThan(shutBeside[1][1] + 8);
+  expect(again).toEqual(shutBeside[2]);
+  await drawsAs(10, 0, light.top);
+  await drawsAs(25, 0, light.lifted);
   expect(errors).toEqual([]);
 });
 

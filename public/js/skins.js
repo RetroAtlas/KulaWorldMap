@@ -87,9 +87,10 @@ export const shadowed = (skins, type) =>
  * game leaves undrawn.
  *
  * The game picks a face's skin by its block's kind where that has skins of its
- * own, else by the type of what stands on it, and runs the cycles on the same.
+ * own, else by the type of what stands on it, and runs the cycles on the same;
+ * a face it has `marked` in play shows the second of its model's quads.
  */
-export function faceSkin(skins, look, c, face, kind, r, frame, place, plate) {
+export function faceSkin(skins, look, c, face, kind, r, frame, place, plate, marked = false) {
   const set = look.set;
   const h = seed(c.x, c.y, c.z, face);
   const cyc = skins.cycles;
@@ -132,7 +133,7 @@ export function faceSkin(skins, look, c, face, kind, r, frame, place, plate) {
     } else if (kind === CRUMBLING && look.bonus) out.colour = bonusColour();
   } else if (type) {
     const texs = set.types[String(type)];
-    out.tex = pick(texs, shadowed(skins, type) ? 1 : 0);
+    out.tex = pick(texs, marked || shadowed(skins, type) ? 1 : 0);
     if (look.bonus) {
       out.colour = bonusColour();
       if (type >= skins.shadow.from) {

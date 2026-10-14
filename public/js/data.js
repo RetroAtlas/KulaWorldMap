@@ -1,6 +1,6 @@
 import { state, SIDE, cellKey } from "./state.js";
 import { FACE_NORMAL } from "./faces.js";
-import { platesOf, lookOf } from "./skins.js";
+import { platesOf, lookOf, keyed } from "./skins.js";
 import { glowing, byLight } from "./motion.js";
 
 export const WORLD_TINT = {
@@ -200,13 +200,29 @@ export const movedFor = (m, frame) =>
   markerState(m) === null
     ? frame
     : framesOn(markerState(m) === "on", pressesOf(markerCircuit(m)), frame);
-/** Whether a switched device casts its light at `frame`, turning it over
-    every `every` frames it has been on. */
+// The last key opens the exits, which the level loads shut, and their panels
+// turn them over as a switch turns a circuit, by a circuit of their own.
+export const LAST_KEY = -1;
+export const exitsOpen = () => turned(LAST_KEY);
+/** The frames up to `frame` an exit has stood open. */
+export const openFor = (m, frame) => (isExit(m) ? framesOn(false, pressesOf(LAST_KEY), frame) : 0);
+/** Whether a switched device or the exit casts its light at `frame`, turning
+    it over every `every` frames it has been on. */
 export const lightOnAt = (m, every, frame) =>
-  markerState(m) !== null &&
-  glowing(every, markerState(m) === "on", pressesOf(markerCircuit(m)), frame);
+  m.face !== null && m.type === EXIT
+    ? glowing(every, false, pressesOf(LAST_KEY), frame)
+    : markerState(m) !== null &&
+      glowing(every, markerState(m) === "on", pressesOf(markerCircuit(m)), frame);
 const SWITCH = 9;
+const EXIT = 7;
+const HIDDEN_EXIT = 26;
 export const isSwitch = (m) => m.face !== null && m.type === SWITCH;
+export const isExit = (m) => m.face !== null && (m.type === EXIT || m.type === HIDDEN_EXIT);
+/** Whether the level holds a key, and so a last key to take. */
+export const holdsKey = (l) => {
+  const skins = skinsTable();
+  return !!skins && keyed(skins, l);
+};
 const circuitVariant = (circuit) => ann.types[String(SWITCH)]?.variants?.[String(circuit)];
 export const circuitColour = (circuit) => circuitVariant(circuit)?.colour ?? null;
 /** A circuit's word, the bracketed part of its switch's name, or null where the annotations have none. */
@@ -249,8 +265,13 @@ export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
 const FRUIT_FIRST = 43;
 const FRUIT = 5;
 // The loader shuts every exit, and only the last key opens one.
-const EXIT = 7;
+const OPEN = 0;
 const SHUT = 1;
+/** The form the exit is drawn in while the exits stand open, or null. */
+export const exitForm = (m) => (m.face !== null && m.type === EXIT && exitsOpen() ? OPEN : null);
+/** Whether the record's face shows marked open, as the exit's does while the exits stand open. */
+export const openFace = (r, face) =>
+  exitsOpen() && r.on.some((o) => o.face === face && o.type === EXIT);
 // The ball starts on a plain face or on a clock.
 const START = 30;
 const STARTS = new Set([29, START]);

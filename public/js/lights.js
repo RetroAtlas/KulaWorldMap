@@ -1,7 +1,7 @@
 // A device's light takes its own face all over and, past each edge, the first
 // face there of those the game tries, at the corners on the edge.
 import { state, cellKey } from "./state.js";
-import { motionTable, markerCircuit, markerNow, lightOnAt } from "./data.js";
+import { motionTable, markerCircuit, markerNow, isExit, exitsOpen, lightOnAt } from "./data.js";
 import { hasFace } from "./blocks.js";
 
 const FULL = 2;
@@ -47,7 +47,7 @@ export function deviceLights(l, idx, frame) {
   );
   for (const { m, faces, colours } of takenBy(idx, glow)) {
     if (state.hiddenKinds.has(m.id)) continue;
-    if (markerNow(m) === "on") on = true;
+    if (markerNow(m) === "on" || (isExit(m) && exitsOpen())) on = true;
     if (!lightOnAt(m, glow.every, frame)) continue;
     const colour = colours[world][markerCircuit(m) ?? 0] ?? colours[world][0];
     const [part, of] = glow.part;

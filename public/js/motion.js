@@ -23,13 +23,15 @@ export const phaseField = (m) => m.f[1] & 3;
  * Turns about the thing's own axes, x across the face, y along the normal and
  * z the way it points; a lift and a bob along the normal; a squash, the share
  * of its width it widens by, which it shortens by twice over; and the frame of
- * its model to show. The ball breathes faster the less time the level gives.
+ * its model to show. The ball breathes faster the less time the level gives,
+ * and an exit turns at its open rate for the `open` frames it has stood open.
  */
-export function pose(table, entry, m, frame, phase, time = 0) {
+export function pose(table, entry, m, frame, phase, time = 0, open = 0) {
   const about = [0, 0, 0];
   const angle = (rate, k) => phase[k] + rate * frame;
   const p = { about, lift: 0, bob: 0, squash: 0, frame: 0 };
   if (entry.turn) about[1] += turns(table, angle(entry.turn, 0));
+  if (entry.open) about[1] += turns(table, (entry.open - entry.turn) * open);
   if (entry.tilt)
     about[0] += turns(table, entry.tilt.reach * sin(table, angle(entry.tilt.rate, 1)));
   if (entry.swing) {

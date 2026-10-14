@@ -18,6 +18,8 @@ import {
   markerHeading,
   markerNow,
   movedFor,
+  openFor,
+  exitForm,
   markerModel,
   motionTable,
   motionOf,
@@ -98,7 +100,7 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
   const round = motion?.orbit
     ? orbit(motionTable(), motion, `${cellKey(home.x, home.y, home.z)}/${m.face}`, frame, phase)
     : null;
-  const model = state.show.models ? markerModel(m, l, round?.form ?? null) : null;
+  const model = state.show.models ? markerModel(m, l, round?.form ?? exitForm(m)) : null;
   const where = going
     ? { x: c.x + going.offset[0], y: c.y + going.offset[1], z: c.z + going.offset[2] }
     : c;
@@ -167,7 +169,7 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
   if (going) for (let i = 0; i < 3; i++) o[i] += going.offset[i];
   const side = cross(up, forward);
   if (motion) {
-    const p = pose(motionTable(), motion, m, movedFor(m, frame), phase, time);
+    const p = pose(motionTable(), motion, m, movedFor(m, frame), phase, time, openFor(m, frame));
     about = p.about;
     wide = 1 + p.squash;
     tall = 1 - 2 * p.squash;

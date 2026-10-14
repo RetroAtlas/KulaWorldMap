@@ -219,6 +219,62 @@ test("a switch's panel presses it, turning its colour over until the level is le
   expect(errors).toEqual([]);
 });
 
+test("either exit's panel opens both exits and shuts them again until the level is left, and a level with no key has no button", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // LEVEL 7 holds an exit and a hidden exit
+  await page.goto("/#HIRO/6/45,35/1");
+  await settle(page);
+  const select = (type) =>
+    page.evaluate(async (type) => {
+      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { showCell } = await import(new URL("js/detail.js", location.href).href);
+      const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === type));
+      const { x, y, z } = state.lvl.records[i];
+      showCell({ x, y, z, v: state.data.firstRecord + i });
+    }, type);
+  const open = () =>
+    page.evaluate(async () => {
+      const { exitsOpen } = await import(new URL("js/data.js", location.href).href);
+      return exitsOpen();
+    });
+  const press = page.locator("#detail .press button");
+  await select(7);
+  await expect(press).toHaveText(/Shut · press to open/);
+  const url = page.url();
+  await press.click();
+  await expect(press).toHaveText(/Open · press to shut/);
+  await expect(press).toBeFocused();
+  expect(await open()).toBe(true);
+  expect(page.url()).toBe(url);
+  await select(26);
+  await expect(page.locator("#detail")).toContainText("Hidden exit");
+  await expect(press).toHaveText(/Open · press to shut/);
+  await press.click();
+  await expect(press).toHaveText(/Shut · press to open/);
+  expect(await open()).toBe(false);
+  await press.click();
+  expect(await open()).toBe(true);
+  await page.keyboard.press("]");
+  await expect(page.locator("#chip")).toContainText("LEVEL 8");
+  await page.keyboard.press("[");
+  await expect(page.locator("#chip")).toContainText("LEVEL 7");
+  expect(await open()).toBe(false);
+
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state, cellKey }, { showLevel }, { showCell }, { blank, setBlock, toLevel }] =
+      await Promise.all(["state.js", "navigate.js", "detail.js", "project.js"].map(at));
+    const exit = { kind: 0, faces: { 0: { type: 7 } } };
+    showLevel(toLevel(setBlock(blank("HIRO"), [18, 17, 17], exit), 7));
+    showCell(state.idx.cells.get(cellKey(18, 17, 17)));
+  });
+  await expect(page.locator("#detail")).toContainText("Exit");
+  await expect(page.locator("#detail .press")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test("a teleporter's panel names where it leads, and going there is a find", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#COWBOY/7/45,35/1");

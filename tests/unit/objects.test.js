@@ -2,7 +2,16 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations, objects } from "./fixtures.js";
 import { lookOf } from "../../public/js/skins.js";
-import { setObjects, motionOf, paintsFace, ballFor, markerModel } from "../../public/js/data.js";
+import {
+  setObjects,
+  motionOf,
+  paintsFace,
+  ballFor,
+  markerModel,
+  exitForm,
+  holdsKey,
+  LAST_KEY,
+} from "../../public/js/data.js";
 import { state } from "../../public/js/state.js";
 
 setObjects(objects);
@@ -149,22 +158,44 @@ test("the ball follows the hidden flag and the keys, the slot standing in for th
     );
 });
 
+const EXIT = 7;
+const exit = { face: 0, type: EXIT, f: [], v: 0, variant: null };
+/** A level of one plain block, a thing of each type on its faces in turn. */
+const oneBlock = (...on) => ({
+  theme: "HIRO",
+  pack: "/HIRO/HIRO.PAK",
+  index: 0,
+  records: [{ kind: 0, on: on.map((type, face) => ({ face, type })) }],
+});
+
 test("an exit starts shut, as the loader leaves every exit, even on a level with no key", () => {
   state.data = mapData;
   const { skins, types } = objects;
-  const EXIT = 7;
-  const exit = { face: 0, type: EXIT, f: [], v: 0, variant: null };
-  const level = (...on) => ({
-    theme: "HIRO",
-    pack: "/HIRO/HIRO.PAK",
-    index: 0,
-    records: [{ kind: 0, on: on.map((type, face) => ({ face, type })) }],
-  });
-  assert.equal(markerModel(exit, level(EXIT, skins.keys.type)), types[EXIT][1]);
-  assert.equal(markerModel(exit, level(EXIT)), types[EXIT][1]);
+  assert.equal(markerModel(exit, oneBlock(EXIT, skins.keys.type)), types[EXIT][1]);
+  assert.equal(markerModel(exit, oneBlock(EXIT)), types[EXIT][1]);
   for (const l of mapData.levels) {
     const exits = l.records.flatMap((r) => r.on.filter((o) => o.type === EXIT));
     for (const o of exits)
       assert.equal(markerModel({ ...o, variant: null }, l), types[EXIT][1], l.name);
   }
+});
+
+test("the exit draws open while the exits stand open, and only a level with a key has a last key", () => {
+  state.data = mapData;
+  const { skins, types } = objects;
+  const HIDDEN_EXIT = 26;
+  const keyed = oneBlock(EXIT, skins.keys.type);
+  assert.equal(exitForm(exit), null);
+  state.presses = new Map([[LAST_KEY, [0]]]);
+  assert.equal(markerModel(exit, keyed, exitForm(exit)), types[EXIT][0]);
+  assert.equal(
+    markerModel(exit, keyed),
+    types[EXIT][1],
+    "drawn by its type alone, as the legend draws it, shut",
+  );
+  assert.equal(exitForm({ ...exit, type: HIDDEN_EXIT }), null, "the hidden exit has the one form");
+  state.presses = new Map();
+  assert.equal(holdsKey(keyed), true);
+  assert.equal(holdsKey(oneBlock(EXIT)), false);
+  assert.equal(holdsKey(oneBlock(EXIT, HIDDEN_EXIT)), false);
 });

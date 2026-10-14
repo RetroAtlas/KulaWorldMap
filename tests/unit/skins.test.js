@@ -56,11 +56,23 @@ const FIRE = 1;
 const ICE = 2;
 const INVISIBLE = 3;
 const ARROW = 28;
+const EXIT = 7;
 const at = { x: 17, y: 17, z: 17 };
 const arcade = lookOf(skins, levelOf([block(KEY)]), 0);
 const bonus = lookOf(skins, levelOf([block(COIN)]), 0);
-const face = (kind, types = [], { look = arcade, place = null, plate } = {}) =>
-  faceSkin(skins, look, at, TOP, kind, types.length ? block(...types) : null, 0, place, plate);
+const face = (kind, types = [], { look = arcade, place = null, plate, marked } = {}) =>
+  faceSkin(
+    skins,
+    look,
+    at,
+    TOP,
+    kind,
+    types.length ? block(...types) : null,
+    0,
+    place,
+    plate,
+    marked,
+  );
 const set = skins.sets.arcade;
 
 test("a plain face is one of the world's stones", () => {
@@ -77,6 +89,12 @@ test("a pickup's face carries its shadow on stone and on ice, and a star's does 
   assert.equal(face(ICE, [COIN]).tex, set.kinds[ICE][1]);
   assert.equal(face(ICE, [ARROW]).tex, set.kinds[ICE][0]);
   assert.ok(set.stone.flat().includes(face(0, [SLOW_STAR]).tex));
+});
+
+test("the exit's face is the red cross, and the green one where the game marks it open", () => {
+  assert.equal(face(0, [EXIT]).tex, set.types[EXIT][0]);
+  assert.equal(face(0, [EXIT], { marked: true }).tex, set.types[EXIT][1]);
+  assert.notEqual(set.types[EXIT][1], set.types[EXIT][0]);
 });
 
 test("fire burns through its frames, on a fire block and on a face with fire on it", () => {

@@ -12,6 +12,11 @@ import {
   litNow,
   flip,
   isSwitch,
+  isExit,
+  exitsOpen,
+  openFor,
+  lightOnAt,
+  LAST_KEY,
   markerDestination,
   framesOn,
   movedFor,
@@ -52,6 +57,36 @@ test("a switch turns its colour over, and a second press turns it back", () => {
   assert.equal(movedFor(teleporter, 300), 150, "it turned only while it was on");
   const coin = marks.find((m) => m.face !== null && m.type === 37);
   assert.equal(movedFor(coin, 300), 300, "and what no switch toggles moves all along");
+  state.presses = new Map();
+});
+
+test("either exit's panel opens both exits as the last key does, and shuts them again", () => {
+  setAnnotations(annotations);
+  state.data = mapData;
+  state.presses = new Map();
+  // LEVEL 7 holds an exit and a hidden exit
+  const marks = levelMarkers(levelNamed("LEVEL 7"));
+  const exit = marks.find((m) => m.face !== null && m.type === 7);
+  const hidden = marks.find((m) => m.face !== null && m.type === 26);
+  assert.ok(isExit(exit) && isExit(hidden));
+  assert.equal(marks.filter(isExit).length, 2);
+  assert.equal(exitsOpen(), false, "the level loads them shut");
+  assert.equal(lightOnAt(exit, 19, 300), false);
+
+  flip(LAST_KEY, 100);
+  assert.equal(exitsOpen(), true);
+  assert.equal(openFor(exit, 300), 200);
+  assert.equal(openFor(hidden, 300), 200, "the hidden exit opens with it");
+  assert.equal(lightOnAt(exit, 19, 110), false, "dark for its first 19 frames open");
+  assert.equal(lightOnAt(exit, 19, 125), true);
+  assert.equal(lightOnAt(hidden, 19, 125), false, "and the hidden exit casts no light");
+  assert.equal(markerNow(exit), null, "an exit is on no colour's circuit");
+  assert.equal(movedFor(exit, 300), 300, "and turns all along");
+
+  flip(LAST_KEY, 250);
+  assert.equal(exitsOpen(), false, "a second press shuts them");
+  assert.equal(openFor(hidden, 300), 150);
+  assert.equal(lightOnAt(exit, 19, 260), false);
   state.presses = new Map();
 });
 
