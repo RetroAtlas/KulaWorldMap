@@ -99,6 +99,7 @@ test("the form stands on a selected block of the draft while editing, and goes w
   await expect(field(page, "thing")).toHaveValue("t30");
   const raw = page.locator("#detail details.raw");
   await expect(raw).toHaveCount(1);
+  await expect(raw.locator("summary")).toHaveText("Block information");
   expect(await raw.evaluate((d) => d.open)).toBe(false);
   await expect(raw.locator("table")).toHaveCount(2);
   await expect(page.locator("#detail .card h4")).toHaveText(["Block", "The top"]);

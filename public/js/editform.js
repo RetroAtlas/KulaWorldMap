@@ -141,7 +141,7 @@ function render(box, c) {
   const raw = el(
     "details",
     { className: "raw", open: rawOpen },
-    el("summary", { textContent: "the game's words" }),
+    el("summary", { textContent: "Block information" }),
     ...[...body.childNodes],
   );
   raw.addEventListener("toggle", () => (rawOpen = raw.open));
