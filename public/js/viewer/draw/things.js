@@ -159,6 +159,10 @@ const WORLD = [
   [0, 1, 0],
   [0, 0, 1],
 ];
+/** The axes `laid` with a breath on them: wider across the face and along it,
+    shorter out of it. */
+export const squashed = (laid, wide, tall) =>
+  laid.map(([x, y, z]) => [x * wide, y * wide, z * tall]);
 
 function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
   const { round = null, time = 0, going = null, height = 1, lit = null, light = null } = extras;
@@ -184,6 +188,7 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
     // underside stays on the face while its top comes down
     lift = GAP + (rest - GAP) * tall;
     if (going && m.type === STONE) about[0] = going.roll / motionTable().turn;
+    if (going?.about) for (let i = 0; i < 3; i++) about[i] += going.about[i];
     if (motion.bob) lift += (motion.bob.reach + p.bob) * unit;
     lift += p.lift * unit;
     if (motion.bounce) bounce = p.lift / motion.bounce.rise;
@@ -199,24 +204,29 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
   }
   for (let i = 0; i < 3; i++) o[i] += up[i] * lift;
   // the game lays its model's x, y and z on the face, or on the world's axes,
-  // and turns it by its spin and by any turn it takes ahead of the spin
+  // and turns it by its spin and by any turn it takes ahead of the spin; its
+  // squash is along the face, so it is laid between the face and the turns
   let laid = motion?.axes === "world" ? WORLD : face;
+  let axes = wide === 1 && tall === 1 ? null : squashed(laid, wide, tall);
   const turned = motion && spin(motion.order, [about[0], about[2], about[1]]);
-  if (turned) laid = times(laid, turned);
   const before =
     motion?.before &&
     spin(
       "xyz",
       motion.before.map((v) => v / motionTable().turn),
     );
-  if (before) laid = times(laid, before);
+  for (const turn of [turned, before]) {
+    if (!turn) continue;
+    laid = times(laid, turn);
+    if (axes) axes = times(axes, turn);
+  }
   const shade = motion?.shadow;
   if (shade) {
-    let strength = shade.strength;
-    if (shade.fade) strength -= shade.fade * bounce;
-    // the ball's middle is as far off its face as the model reaches below it
-    if (shade.top) strength = (strength * (shade.top + model.box[0][1])) / shade.over;
+    // a thing's middle is as far off its face as its model reaches below it,
+    // or as high as it travels
+    const h = going?.height ?? -model.box[0][1];
     const along = shade.turns ? laid.map((row) => row[1]) : TANGENT[m.face];
+    const strength = shadowStrength(shade, bounce, h);
     drawShadow(ctx, m, c, shade, unit, going?.offset, along, strength, shade.squash ? wide : 1);
   }
   // A polygon sorts by its unpressed depth, so a model pressed flat keeps the
@@ -225,13 +235,13 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
   const polys = polygonsOf(model);
   const { sorted } = model;
   const { spots, depths, far } = scratch(n, polys.length);
-  const [[a0, a1, a2], [b0, b1, b2], [d0, d1, d2]] = laid;
+  const [[a0, a1, a2], [b0, b1, b2], [d0, d1, d2]] = axes ?? laid;
   for (let v = 0; v < n; v++) {
     const i = 3 * v;
-    // the game's x, y and z, squashed in its own axes before it is laid
-    const x = shown[i] * unit * wide,
-      y = shown[i + 2] * unit * wide,
-      z = shown[i + 1] * unit * tall;
+    // the game's x, y and z
+    const x = shown[i] * unit,
+      y = shown[i + 2] * unit,
+      z = shown[i + 1] * unit;
     const wx = o[0] + a0 * x + a1 * y,
       wy = o[1] + b0 * x + b1 * y,
       wz = o[2] + d0 * x + d1 * y;
@@ -544,6 +554,16 @@ function spriteOf(k) {
     sprites[k] = cv;
   }
   return sprites[k];
+}
+
+/** How strong a shadow is: less by `fade` times the bounce's share of its
+    rise, and where a block up puts it out, less the higher the thing's middle,
+    `h` off its face, stands. */
+export function shadowStrength(shade, bounce, h) {
+  let strength = shade.strength;
+  if (shade.fade) strength -= shade.fade * bounce;
+  if (shade.top) strength = (strength * (shade.top - h)) / shade.over;
+  return strength;
 }
 
 function drawShadow(ctx, m, c, shade, unit, offset, along, strength, scale) {
