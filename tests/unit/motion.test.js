@@ -526,6 +526,7 @@ test("the fall, the landing's squash and the view's extra pitch ship their steps
     short: 180,
     wall: 409,
     behind: 103,
+    hold: [411, 102],
     lost: [-2, 36],
   });
   // the squash rises for four frames and comes off by 90, 80 and on down to 20

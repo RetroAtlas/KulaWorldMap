@@ -518,6 +518,7 @@ class Roll(unittest.TestCase):
         self.assertEqual(sum(h for _, h in r["wrap"]["arc"]), r["rolling"]["resume"] + 1)
         self.assertEqual((r["quarter"], r["climb"]), ({"frames": 19, "step": 53, "clamp": 10}, {"frames": 16, "step": -64}))
         self.assertEqual(r["fall"]["lost"], [-2, 36])
+        self.assertEqual((r["fall"]["wall"], r["fall"]["behind"], r["fall"]["hold"]), (409, 103, [411, 102]))
         self.assertEqual((r["spin"], r["squash"]["least"], r["look"]["far"]), (-5, 20, 650))
 
     def test_a_top_speed_taken_otherwise_at_a_landing_stops_the_reading(self):
@@ -623,6 +624,7 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["30"]["rolling"]["top"], 33)
         self.assertEqual(t["types"]["30"]["wrap"], {"frames": 13, "step": 78, "arc": [[38, 8], [32, 22], [22, 32], [8, 39]]})
         self.assertEqual(t["types"]["30"]["fall"]["short"], 180)
+        self.assertEqual(t["types"]["30"]["fall"]["hold"], [411, 102])
         self.assertEqual(t["types"]["30"]["spin"], -5)
         self.assertEqual(t["types"]["30"]["jump"]["far"], 1536)
         self.assertEqual(set(t["types"]["30"]), {"breathe", "light", "shadow", "before", "rolling", "quarter", "wrap", "climb",

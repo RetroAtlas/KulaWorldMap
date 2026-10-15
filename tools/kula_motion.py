@@ -1394,7 +1394,7 @@ def roll(r):
         "climb": {"frames": r["climb.frames"], "step": r["climb.step"]},
         "fall": {"start": r["roll.fall"], "hop": r["fall.hop"], "gain": r["fall.gain"], "top": r["fall.top"],
                  "short": r["land.short"], "wall": r["fall.wall"], "behind": r["fall.behind"],
-                 "lost": [-2, cell]},
+                 "hold": [r["fall.wall.gate"], r["fall.behind.gate"]], "lost": [-2, cell]},
         "spin": r["spin"],
         "squash": {"frames": r["squash.frames"], "rise": r["squash.rise"], "fall": r["squash.fall"],
                    "ease": -r["squash.ease"], "least": r["squash.least"]},
