@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { settle, trackErrors } from "./helpers.js";
+import { settle, steps, trackErrors } from "./helpers.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 
@@ -22,13 +22,6 @@ const doc = (page) =>
     return get(state.lvl.draft).doc;
   });
 const cells = async (page) => (await doc(page)).blocks.map((b) => b.cell);
-const steps = (page) =>
-  page.evaluate(async () => {
-    const [{ state }, { steps }] = await Promise.all(
-      ["state.js", "trail.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
-    );
-    return steps(state.lvl.draft);
-  });
 const at = (page, x, y, z) =>
   page.evaluate(
     async ([x, y, z]) => {

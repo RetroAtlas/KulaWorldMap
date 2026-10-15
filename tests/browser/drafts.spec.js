@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { settle, textured, trackErrors } from "./helpers.js";
+import { settle, steps, textured, trackErrors } from "./helpers.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const KEY = "kula.drafts";
@@ -511,14 +511,7 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   const panelRow = page.locator('#detail [data-field="circuit-2"]');
   await expect(panelRow).toHaveText("starts on");
   await expect(page.locator("#detail .circuit .members")).toHaveText("1 switch, 1 laser");
-  const steps = () =>
-    page.evaluate(async () => {
-      const [{ state }, { steps }] = await Promise.all(
-        ["state.js", "trail.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
-      );
-      return steps(state.lvl.draft);
-    });
-  const before = await steps();
+  const before = await steps(page);
 
   await toggle(2).click();
   expect((await docOf(page, id)).circuits).toEqual({ 2: "off" });
@@ -530,13 +523,13 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   await expect(toggle(2)).toBeFocused();
   await expect(toggle(0)).toHaveText("starts on");
   await expect(panelRow).toHaveText("starts off");
-  expect(await steps()).toEqual({ past: before.past + 1, future: 0 });
+  expect(await steps(page)).toEqual({ past: before.past + 1, future: 0 });
 
   await page.locator("#undoBtn").click();
   expect((await docOf(page, id)).circuits).toEqual({});
   await expect(toggle(2)).toHaveText("starts on");
   await expect(panelRow).toHaveText("starts on");
-  expect(await steps()).toEqual({ past: before.past, future: 1 });
+  expect(await steps(page)).toEqual({ past: before.past, future: 1 });
 
   await panelRow.click();
   await expect(toggle(2)).toHaveText("starts off");

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { settle, frame, still } from "./helpers.js";
+import { settle, frame, steps, still } from "./helpers.js";
 
 /** Tap as a finger does, with no mouse left elsewhere to take the hover away. */
 const fingerTap = async (page, target, position) => {
@@ -516,13 +516,7 @@ test.describe("editing on a phone", () => {
     await expect(page.locator("#toolStatus")).toHaveText("That face holds a key already.");
     await expect(page.locator("#toastStack .toast")).toHaveText(["That face holds a key already."]);
     await expect(page.locator("#say")).toHaveText("Placed a key on the +x side of 17, 17, 17");
-    const past = await page.evaluate(async () => {
-      const [{ state }, { steps }] = await Promise.all(
-        ["state.js", "trail.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
-      );
-      return steps(state.lvl.draft).past;
-    });
-    expect(past).toBe(1);
+    expect(await steps(page)).toEqual({ past: 1, future: 0 });
   });
 
   test("a long press selects what is under the finger from the Place tool", async ({ page }) => {

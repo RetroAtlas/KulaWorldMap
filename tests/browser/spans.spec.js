@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { settle, trackErrors } from "./helpers.js";
+import { settle, steps, trackErrors } from "./helpers.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const START = [17, 17, 17];
@@ -25,13 +25,6 @@ const doc = (page) =>
     return get(state.lvl.draft).doc;
   });
 const spans = async (page) => (await doc(page)).blocks.filter((b) => b.kind === 5 || b.kind === 8);
-const steps = (page) =>
-  page.evaluate(async () => {
-    const [{ state }, { steps }] = await Promise.all(
-      ["state.js", "trail.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
-    );
-    return steps(state.lvl.draft);
-  });
 const preview = (page) =>
   page.evaluate(async () => {
     const { runPreview } = await import(new URL("js/editor.js", location.href).href);

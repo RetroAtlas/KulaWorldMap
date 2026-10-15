@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { test, expect } from "@playwright/test";
-import { settle, trackErrors } from "./helpers.js";
+import { settle, steps, trackErrors } from "./helpers.js";
 import { writeProject } from "../../public/js/project.js";
 import { SLUG_MOST } from "../../public/js/files.js";
 import { SYNTHETIC_SECTORS, streamOf, synthetic, syntheticImage } from "../unit/synthetic.js";
@@ -35,11 +35,6 @@ const docOf = (page, id) =>
   page.evaluate(async (id) => {
     const { get } = await import(new URL("js/drafts.js", location.href).href);
     return get(id)?.doc ?? null;
-  }, id);
-const steps = (page, id) =>
-  page.evaluate(async (id) => {
-    const { steps } = await import(new URL("js/trail.js", location.href).href);
-    return steps(id).past;
   }, id);
 const openPatch = (page, id) =>
   page.evaluate(async (id) => {
@@ -120,7 +115,7 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
     await expect(dialog.locator(b)).toBeDisabled();
   await expect(dialog.locator("#patchPlay li")).toHaveCount(1);
   expect((await docOf(page, id)).into).toBeUndefined();
-  expect(await steps(page, id)).toBe(0);
+  expect((await steps(page, id)).past).toBe(0);
 
   await slot.selectOption("/HIRO/HIRO.PAK#1");
   await expect(dialog.locator("#patchFit")).toHaveText(
@@ -136,7 +131,7 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await slot.selectOption("/HIRO/HIRO.PAK#1");
   await expect(dialog.locator("#patchWear")).toHaveText("");
   expect((await docOf(page, id)).into).toBe("/HIRO/HIRO.PAK#1");
-  expect(await steps(page, id)).toBe(1);
+  expect((await steps(page, id)).past).toBe(1);
 
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
   await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
@@ -646,7 +641,7 @@ test("a target the file names that is no slot is an error until a slot is chosen
   await slot.selectOption("/HIRO/HIRO.PAK#0");
   await expect(dialog.locator("#patchChecks .errors")).toHaveCount(0);
   expect((await docOf(page, id)).into).toBe("/HIRO/HIRO.PAK#0");
-  expect(await steps(page, id)).toBe(1);
+  expect((await steps(page, id)).past).toBe(1);
   await expect(slot.locator("option")).toHaveCount(220);
   await expect(dialog.locator("#patchReach")).toHaveText("A new game starts here, at LEVEL 1.");
   await expect(dialog.locator("#patchFit")).toHaveText(

@@ -21,6 +21,15 @@ export async function settle(page) {
   });
 }
 
+/** The steps a draft can take back and take again, the shown draft's where no id is given. */
+export const steps = (page, id = null) =>
+  page.evaluate(async (id) => {
+    const [{ state }, { steps }] = await Promise.all(
+      ["state.js", "trail.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+    );
+    return steps(id ?? state.lvl.draft);
+  }, id);
+
 export const frame = (page) =>
   page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 
