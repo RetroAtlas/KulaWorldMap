@@ -1,7 +1,7 @@
 // A draft's overview for the level line's note: how it plays, its counts and the findings.
 import { el } from "../viewer/ui/dom.js";
-import { state, cellKey } from "../viewer/state.js";
-import { FACE_NAME } from "../viewer/faces.js";
+import { state } from "../viewer/state.js";
+import { cellKey, FACE_NAME } from "../format/lattice.js";
 import { NAMES, skinsTable } from "../viewer/data.js";
 import { showCell } from "../viewer/chrome/detail.js";
 import { noteWith } from "../viewer/chrome/navigate.js";

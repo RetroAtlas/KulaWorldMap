@@ -1,6 +1,5 @@
 // The editor's document: a level as blocks, faces and circuits, edited copy on write.
-import { SIDE } from "../viewer/state.js";
-import { FACE_NORMAL } from "../viewer/faces.js";
+import { SIDE, FACE_NORMAL } from "./lattice.js";
 import {
   BLOCK_KINDS,
   BONUS_UNDRAWN_KINDS,

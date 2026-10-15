@@ -56,8 +56,8 @@ const lay = (page, cell, block) =>
 /** Select a cell as the hit test would, through the panel's own entry. */
 const select = (page, cell) =>
   page.evaluate(async (cell) => {
-    const [{ state, cellKey }, { showCell }] = await Promise.all(
-      ["viewer/state.js", "viewer/chrome/detail.js"].map(
+    const [{ state }, { showCell }, { cellKey }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/detail.js", "format/lattice.js"].map(
         (p) => import(new URL(`js/${p}`, location.href).href),
       ),
     );

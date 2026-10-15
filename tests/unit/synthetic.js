@@ -14,7 +14,7 @@ import {
   WORDS,
   writeKwl,
 } from "../../public/js/format/kwl.js";
-import { SIDE } from "../../public/js/viewer/state.js";
+import { SIDE } from "../../public/js/format/lattice.js";
 import { deflate } from "../../public/js/format/deflate.js";
 import { writePak } from "../../public/js/format/pak.js";
 import { record } from "../../public/js/format/iso.js";

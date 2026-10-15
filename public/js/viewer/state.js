@@ -1,4 +1,5 @@
-export const SIDE = 34;
+import { SIDE } from "../format/lattice.js";
+
 export const BLOCK = 34;
 
 const DEG = Math.PI / 180;
@@ -168,5 +169,3 @@ export const effectFrame = (frame) => (effectsOn() ? frame : 0);
 
 /** The smallest z the slice still draws. */
 export const sliceZ = () => SIDE - 1 - state.slice;
-
-export const cellKey = (x, y, z) => (x * SIDE + y) * SIDE + z;

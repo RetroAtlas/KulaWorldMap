@@ -1,5 +1,6 @@
 import { $, emit, escaped, on } from "../ui/dom.js";
-import { state, SIDE, fitLevel, cellKey, sliceZ } from "../state.js";
+import { state, fitLevel, sliceZ } from "../state.js";
+import { SIDE, cellKey } from "../../format/lattice.js";
 import {
   index,
   worldName,

@@ -1,3 +1,6 @@
+export const SIDE = 34;
+export const cellKey = (x, y, z) => (x * SIDE + y) * SIDE + z;
+
 // The six faces of a block, in the order the game numbers them.
 export const FACE_NORMAL = [
   [0, 0, -1],

@@ -2,7 +2,6 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData } from "./fixtures.js";
 import {
-  SIDE,
   ZOOM_MIN,
   FIT_MARGIN,
   FIT_ZOOM_MAX,
@@ -16,8 +15,8 @@ import {
   pivot,
   fitLevel,
   levelCentre,
-  cellKey,
 } from "../../public/js/viewer/state.js";
+import { SIDE, cellKey } from "../../public/js/format/lattice.js";
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
 

@@ -1,14 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData } from "./fixtures.js";
-import {
-  SIDE,
-  PITCH_MAX,
-  ZOOM_MIN,
-  ZOOM_MAX,
-  state,
-  screen,
-} from "../../public/js/viewer/state.js";
+import { PITCH_MAX, ZOOM_MIN, ZOOM_MAX, state, screen } from "../../public/js/viewer/state.js";
+import { SIDE } from "../../public/js/format/lattice.js";
 import { slotOf, formatHash, parseHash } from "../../public/js/viewer/permalink.js";
 
 const cam = { yaw: 45, pitch: 35, zoom: 0.9, panX: 0, panY: 0 };

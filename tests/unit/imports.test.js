@@ -76,14 +76,16 @@ test("no module imports itself through its imports", () => {
 
 // The folders are layers: what each may import is its own and those beneath
 // it, so nothing of the screen reaches the model, the readers and writers
-// reach only the model, and nothing of the editor reaches the viewer. The
-// boot at the root reaches the editor through a dynamic import alone.
+// reach nothing of the viewer, and nothing of the editor reaches the viewer.
+// The lattice every layer lays a level in is the one file all may import,
+// and the boot at the root reaches the editor through a dynamic import alone.
+const LATTICE = "format/lattice.js";
 const LAYERS = {
-  viewer: ["viewer"],
+  viewer: ["viewer", LATTICE],
   "viewer/ui": ["viewer/ui"],
-  "viewer/draw": ["viewer", "viewer/ui", "viewer/draw"],
-  "viewer/chrome": ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome"],
-  format: ["viewer", "format", "vendor"],
+  "viewer/draw": ["viewer", "viewer/ui", "viewer/draw", LATTICE],
+  "viewer/chrome": ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", LATTICE],
+  format: ["format", "vendor"],
   editor: ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", "format", "editor"],
   ".": ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", "format"],
 };
@@ -93,6 +95,9 @@ test("a module imports only its own layer and those beneath it", () => {
     const allowed = LAYERS[posix.dirname(name)];
     assert.ok(allowed, `${name}: not in a layer the table knows`);
     for (const target of imports)
-      assert.ok(allowed.includes(posix.dirname(target)), `${name} imports ${target}`);
+      assert.ok(
+        allowed.includes(posix.dirname(target)) || allowed.includes(target),
+        `${name} imports ${target}`,
+      );
   }
 });

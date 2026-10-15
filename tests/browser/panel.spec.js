@@ -80,7 +80,8 @@ test("a hazard says so in its heading", async ({ page }) => {
     await page.goto(hash);
     await settle(page);
     await page.evaluate(async () => {
-      const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { cellKey } = await import(new URL("js/format/lattice.js", location.href).href);
       const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
       const r = state.lvl.records.find((r) => r.kind === 8);
       const own = [r.x, r.y, r.z].join();
@@ -271,13 +272,14 @@ test("either exit's panel opens both exits and shuts them again until the level 
 
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state, cellKey }, { showLevel }, { showCell }, { blank, setBlock, toLevel }] =
+    const [{ state }, { showLevel }, { showCell }, { blank, setBlock, toLevel }, { cellKey }] =
       await Promise.all(
         [
           "viewer/state.js",
           "viewer/chrome/navigate.js",
           "viewer/chrome/detail.js",
           "format/project.js",
+          "format/lattice.js",
         ].map(at),
       );
     const exit = { kind: 0, faces: { 0: { type: 7 } } };
@@ -294,7 +296,8 @@ test("a teleporter's panel names where it leads, and going there is a find", asy
   await page.goto("/#COWBOY/7/45,35/1");
   await settle(page);
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { cellKey } = await import(new URL("js/format/lattice.js", location.href).href);
     const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get(cellKey(17, 7, 17)));
   });
@@ -339,7 +342,8 @@ test("the panel keeps the focus when the button it was on goes", async ({ page }
   await page.goto("/#COWBOY/7/45,35/1");
   await settle(page);
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { cellKey } = await import(new URL("js/format/lattice.js", location.href).href);
     const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get(cellKey(17, 7, 17)));
   });
@@ -358,7 +362,8 @@ test("the panel folds to its title, and stays folded from block to block", async
   await settle(page);
   const show = (cell) =>
     page.evaluate(async (cell) => {
-      const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { cellKey } = await import(new URL("js/format/lattice.js", location.href).href);
       const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
       showCell(state.idx.cells.get(cellKey(...cell)));
     }, cell);
@@ -500,7 +505,8 @@ test("the panel hands the focus to the map however it closes", async ({ page }) 
   await page.goto("/#COWBOY/7/45,35/1");
   await settle(page);
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { cellKey } = await import(new URL("js/format/lattice.js", location.href).href);
     const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get(cellKey(17, 7, 17)));
   });
@@ -510,7 +516,8 @@ test("the panel hands the focus to the map however it closes", async ({ page }) 
   await expect(panel).toBeHidden();
   await expect(page.locator("#cv")).toBeFocused();
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { cellKey } = await import(new URL("js/format/lattice.js", location.href).href);
     const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get(cellKey(17, 7, 17)));
   });
@@ -522,7 +529,8 @@ test("the panel hands the focus to the map however it closes", async ({ page }) 
   await page.keyboard.press("[");
   await expect(page.locator("#chip b")).toHaveText("LEVEL 68");
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { cellKey } = await import(new URL("js/format/lattice.js", location.href).href);
     const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get(cellKey(17, 7, 17)));
   });

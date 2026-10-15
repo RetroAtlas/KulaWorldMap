@@ -1,6 +1,7 @@
 // A device's light takes its own face all over and, past each edge, the first
 // face there of those the game tries, at the corners on the edge.
-import { state, cellKey } from "../state.js";
+import { state } from "../state.js";
+import { cellKey } from "../../format/lattice.js";
 import { motionTable, markerCircuit, markerNow, isExit, exitsOpen, lightOnAt } from "../data.js";
 import { hasFace } from "./blocks.js";
 

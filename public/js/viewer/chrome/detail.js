@@ -1,6 +1,6 @@
 import { $, el, on, emit, escaped } from "../ui/dom.js";
-import { state, cellKey } from "../state.js";
-import { FACE_NAME, DIRECTION_NAME } from "../faces.js";
+import { state } from "../state.js";
+import { cellKey, FACE_NAME, DIRECTION_NAME } from "../../format/lattice.js";
 import {
   OFF_LATTICE,
   levelTitle,

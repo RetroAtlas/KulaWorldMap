@@ -1,5 +1,5 @@
-import { state, BLOCK, project, facing, screen, cellKey, sliceZ, effectsOn } from "../state.js";
-import { FACE_NORMAL } from "../faces.js";
+import { state, BLOCK, project, facing, screen, sliceZ, effectsOn } from "../state.js";
+import { cellKey, FACE_NORMAL } from "../../format/lattice.js";
 import { OFF_LATTICE, skinsTable, kindMotion, modelUnit, objectId, openFace } from "../data.js";
 import { blockPhase, lightOn, cornersLit } from "../motion.js";
 import { ballsFor } from "./things.js";

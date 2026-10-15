@@ -1,5 +1,6 @@
 // No DOM, so it stays importable in bare Node.
-import { SIDE, PITCH_MIN, PITCH_MAX, ZOOM_MIN, ZOOM_MAX } from "./state.js";
+import { PITCH_MIN, PITCH_MAX, ZOOM_MIN, ZOOM_MAX } from "./state.js";
+import { SIDE } from "../format/lattice.js";
 
 export const slotOf = (l) => `${/([^/]+)\.PAK$/.exec(l.pack)[1]}/${l.index}`;
 

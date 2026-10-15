@@ -1,5 +1,5 @@
-import { state, SIDE, cellKey } from "./state.js";
-import { FACE_NORMAL } from "./faces.js";
+import { state } from "./state.js";
+import { SIDE, cellKey, FACE_NORMAL } from "../format/lattice.js";
 import { platesOf, lookOf, keyed } from "./skins.js";
 import { glowing, byLight } from "./motion.js";
 

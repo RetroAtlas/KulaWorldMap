@@ -1,6 +1,6 @@
 import { $ } from "../ui/dom.js";
 import { state, camera } from "../state.js";
-import { FACE_NAME, DIRECTION_NAME } from "../faces.js";
+import { FACE_NAME, DIRECTION_NAME } from "../../format/lattice.js";
 import { skinsTable } from "../data.js";
 import { FACES, shadeOf, litFace } from "./blocks.js";
 

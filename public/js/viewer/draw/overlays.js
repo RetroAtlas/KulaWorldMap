@@ -1,5 +1,5 @@
-import { state, BLOCK, screen, cellKey } from "../state.js";
-import { FACE_NORMAL } from "../faces.js";
+import { state, BLOCK, screen } from "../state.js";
+import { cellKey, FACE_NORMAL } from "../../format/lattice.js";
 import { startsOf, markerHeading, cross } from "../data.js";
 import { bow, arrow } from "./arrow.js";
 

@@ -310,7 +310,7 @@ test("a device wants a plain block, a brittle block takes nothing, and a face in
 
   await lay(page, [17, 17, 16], 0);
   await page.evaluate(async () => {
-    const { SIDE } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { SIDE } = await import(new URL("js/format/lattice.js", location.href).href);
     const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 1 - 17);
   });
@@ -553,8 +553,8 @@ test("where the annotations have no word for a circuit, the page names it circui
   // the panel's row and the laser's swatches on the laser's block
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state, cellKey }, { showCell }] = await Promise.all(
-      ["viewer/state.js", "viewer/chrome/detail.js"].map(at),
+    const [{ state }, { showCell }, { cellKey }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/detail.js", "format/lattice.js"].map(at),
     );
     showCell(state.idx.cells.get(cellKey(18, 17, 17)));
   });

@@ -1,5 +1,6 @@
 import { $, el, on } from "../ui/dom.js";
-import { state, SIDE, cellKey, sliceZ } from "../state.js";
+import { state, sliceZ } from "../state.js";
+import { SIDE, cellKey } from "../../format/lattice.js";
 import {
   worldName,
   levelTitle,

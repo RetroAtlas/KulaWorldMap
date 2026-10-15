@@ -1,7 +1,7 @@
 // The panel's form while editing, on the panel's onShow seam: the block, its face and its circuit.
 import { $, el, on } from "../viewer/ui/dom.js";
-import { state, cellKey } from "../viewer/state.js";
-import { DIRECTION_NAME, FACE_NAME } from "../viewer/faces.js";
+import { state } from "../viewer/state.js";
+import { cellKey, FACE_NAME, DIRECTION_NAME } from "../format/lattice.js";
 import {
   circuitPhrase,
   kindName,

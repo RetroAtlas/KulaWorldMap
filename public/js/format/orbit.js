@@ -3,7 +3,7 @@
 // share link of the same written as lines of base36, gzipped and base64url.
 // Both are read by laying the words back into the game's file and reading
 // that, so one reader decides what a level means and what to repair.
-import { SIDE } from "../viewer/state.js";
+import { SIDE } from "./lattice.js";
 import {
   CELLS,
   DEFAULT_TIME,

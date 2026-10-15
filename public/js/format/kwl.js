@@ -1,6 +1,5 @@
 // The game's level file: a project's bytes, and a project out of any file the game loads.
-import { SIDE, cellKey } from "../viewer/state.js";
-import { FACE_NORMAL } from "../viewer/faces.js";
+import { SIDE, cellKey, FACE_NORMAL } from "./lattice.js";
 
 export const FORMAT = "kula-world-level";
 export const VERSION = 1;

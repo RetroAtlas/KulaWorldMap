@@ -16,7 +16,8 @@ import {
   blockMarkers,
 } from "../../public/js/viewer/data.js";
 import { levelPoints, tallied, playsBonus } from "../../public/js/viewer/draw/points.js";
-import { state, SIDE } from "../../public/js/viewer/state.js";
+import { state } from "../../public/js/viewer/state.js";
+import { SIDE } from "../../public/js/format/lattice.js";
 import { FORMAT } from "../../public/js/format/kwl.js";
 import { counts, toLevel } from "../../public/js/format/project.js";
 

@@ -1,4 +1,5 @@
-import { state, SIDE, basisAt } from "../state.js";
+import { state, basisAt } from "../state.js";
+import { SIDE } from "../../format/lattice.js";
 import { worldTint, skinsTable, markerModel, markerGroup, polygonColour } from "../data.js";
 import { atlasFor, paint } from "./atlas.js";
 import { lookOf, faceSkin, platformPlace } from "../skins.js";

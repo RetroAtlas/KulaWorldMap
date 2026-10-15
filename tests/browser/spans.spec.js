@@ -318,7 +318,7 @@ test("the grid's height hint waits while a run does", async ({ page }) => {
   const errors = trackErrors(page);
   await fresh(page);
   await page.evaluate(async () => {
-    const { SIDE } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { SIDE } = await import(new URL("js/format/lattice.js", location.href).href);
     const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 1 - 17);
   });

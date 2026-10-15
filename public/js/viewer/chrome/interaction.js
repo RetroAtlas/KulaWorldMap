@@ -1,19 +1,9 @@
 import { $, emit, on } from "../ui/dom.js";
-import {
-  state,
-  SIDE,
-  BLOCK,
-  PITCH_MIN,
-  PITCH_MAX,
-  ZOOM_MIN,
-  ZOOM_MAX,
-  cellKey,
-  pivot,
-} from "../state.js";
+import { state, BLOCK, PITCH_MIN, PITCH_MAX, ZOOM_MIN, ZOOM_MAX, pivot } from "../state.js";
 import { drawSoon, cellAt, invalidatePick, pointing, onResize } from "../draw/render.js";
 import { chip, writeHash, stepLevel, fit, setSlice } from "./navigate.js";
 import { showCell, clearDetail } from "./detail.js";
-import { FACE_NAME } from "../faces.js";
+import { SIDE, cellKey, FACE_NAME } from "../../format/lattice.js";
 import { OFF_LATTICE, kindName, ownMarker, markerLabel, markerNow } from "../data.js";
 import { setSidebar, sidebarOverlays, held } from "./sidebar.js";
 import { toast } from "../ui/toast.js";

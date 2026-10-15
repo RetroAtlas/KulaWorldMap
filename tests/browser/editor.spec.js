@@ -38,14 +38,16 @@ test("a link names a level a source provides, and installing it again keeps the 
 
   const second = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state, cellKey }, { showLevel, setSlice }, { showCell }, { on }] = await Promise.all(
-      [
-        "viewer/state.js",
-        "viewer/chrome/navigate.js",
-        "viewer/chrome/detail.js",
-        "viewer/ui/dom.js",
-      ].map(at),
-    );
+    const [{ state }, { showLevel, setSlice }, { showCell }, { on }, { cellKey }] =
+      await Promise.all(
+        [
+          "viewer/state.js",
+          "viewer/chrome/navigate.js",
+          "viewer/chrome/detail.js",
+          "viewer/ui/dom.js",
+          "format/lattice.js",
+        ].map(at),
+      );
     state.hiddenKinds.add("t37/2");
     setSlice(20);
     showCell(state.idx.cells.get(cellKey(17, 12, 17)));
@@ -96,8 +98,13 @@ test("an update that keeps the selected cell keeps its face too", async ({ page 
   await settle(page);
   const out = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state, cellKey }, { showLevel }, { showCell }] = await Promise.all(
-      ["viewer/state.js", "viewer/chrome/navigate.js", "viewer/chrome/detail.js"].map(at),
+    const [{ state }, { showLevel }, { showCell }, { cellKey }] = await Promise.all(
+      [
+        "viewer/state.js",
+        "viewer/chrome/navigate.js",
+        "viewer/chrome/detail.js",
+        "format/lattice.js",
+      ].map(at),
     );
     const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
     showLevel(copy);

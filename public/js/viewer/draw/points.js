@@ -1,5 +1,5 @@
-import { state, SIDE } from "../state.js";
-import { FACE_NORMAL } from "../faces.js";
+import { state } from "../state.js";
+import { SIDE, FACE_NORMAL } from "../../format/lattice.js";
 import { OFF_LATTICE, index, levelMarkers, markerPoints, skinsTable } from "../data.js";
 import { keyed } from "../skins.js";
 import { hasFace } from "./blocks.js";

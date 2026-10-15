@@ -1,5 +1,6 @@
 import { $, el, on } from "../ui/dom.js";
-import { state, SIDE, sliceZ } from "../state.js";
+import { state, sliceZ } from "../state.js";
+import { SIDE } from "../../format/lattice.js";
 import {
   worldTint,
   worldName,

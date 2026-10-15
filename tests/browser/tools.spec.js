@@ -178,10 +178,14 @@ test("Place lays a block across the face clicked and selects it, and refuses the
   // a block the slice hides still holds its cell
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state, SIDE }, { get, update }, { setBlock }, { setSlice }] = await Promise.all(
-      ["viewer/state.js", "editor/drafts.js", "format/project.js", "viewer/chrome/navigate.js"].map(
-        at,
-      ),
+    const [{ state }, { get, update }, { setBlock }, { setSlice }, { SIDE }] = await Promise.all(
+      [
+        "viewer/state.js",
+        "editor/drafts.js",
+        "format/project.js",
+        "viewer/chrome/navigate.js",
+        "format/lattice.js",
+      ].map(at),
     );
     const id = state.lvl.draft;
     update(id, setBlock(get(id).doc, [17, 17, 16], { kind: 0 }));
@@ -203,10 +207,14 @@ test("a refusal leaves the strip with the brush as it does with the tool", async
   // a block the slice hides still holds its cell
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state, SIDE }, { get, update }, { setBlock }, { setSlice }] = await Promise.all(
-      ["viewer/state.js", "editor/drafts.js", "format/project.js", "viewer/chrome/navigate.js"].map(
-        at,
-      ),
+    const [{ state }, { get, update }, { setBlock }, { setSlice }, { SIDE }] = await Promise.all(
+      [
+        "viewer/state.js",
+        "editor/drafts.js",
+        "format/project.js",
+        "viewer/chrome/navigate.js",
+        "format/lattice.js",
+      ].map(at),
     );
     const id = state.lvl.draft;
     update(id, setBlock(get(id).doc, [17, 17, 16], { kind: 0 }));
@@ -227,7 +235,7 @@ test("a block laid above the slice raises it, and the grid lays a first floor", 
   const errors = trackErrors(page);
   await fresh(page);
   await page.evaluate(async () => {
-    const { SIDE } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { SIDE } = await import(new URL("js/format/lattice.js", location.href).href);
     const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 1 - 17);
   });
@@ -258,7 +266,7 @@ test("a block laid above the slice raises it, and the grid lays a first floor", 
       return ghostPreview();
     });
   await page.evaluate(async () => {
-    const { SIDE } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { SIDE } = await import(new URL("js/format/lattice.js", location.href).href);
     const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 1 - 15);
   });
@@ -290,8 +298,10 @@ test("a block laid above the slice raises it, and the grid lays a first floor", 
   await page.locator('#palette .rows button[data-id="k0"]').click();
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state, SIDE }, { get, update }, { setSlice }] = await Promise.all(
-      ["viewer/state.js", "editor/drafts.js", "viewer/chrome/navigate.js"].map(at),
+    const [{ state }, { get, update }, { setSlice }, { SIDE }] = await Promise.all(
+      ["viewer/state.js", "editor/drafts.js", "viewer/chrome/navigate.js", "format/lattice.js"].map(
+        at,
+      ),
     );
     const id = state.lvl.draft;
     update(id, { ...get(id).doc, blocks: [] });

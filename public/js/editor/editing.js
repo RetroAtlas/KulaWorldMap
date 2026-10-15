@@ -1,7 +1,7 @@
 // What the tools and the form share: the sentences, the words, the draft on screen and the checks.
 import { $ } from "../viewer/ui/dom.js";
-import { state, cellKey } from "../viewer/state.js";
-import { FACE_NORMAL } from "../viewer/faces.js";
+import { state } from "../viewer/state.js";
+import { cellKey, FACE_NORMAL } from "../format/lattice.js";
 import { NAMES, circuitPhrase, entryName, kindName, skinsTable } from "../viewer/data.js";
 import { say } from "../viewer/chrome/a11y.js";
 import { toast } from "../viewer/ui/toast.js";

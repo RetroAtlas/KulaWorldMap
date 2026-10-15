@@ -1,7 +1,6 @@
 // A copy of the game's rule for what it paints on a face; a level stores only
 // what a block is and what stands on it.
-import { cellKey } from "./state.js";
-import { FACE_NORMAL } from "./faces.js";
+import { cellKey, FACE_NORMAL } from "../format/lattice.js";
 import { seed } from "./hash.js";
 
 const BLOCK = 512; // the game's units to a block

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects, mapData } from "./fixtures.js";
-import { FACE_NORMAL } from "../../public/js/viewer/faces.js";
+import { FACE_NORMAL } from "../../public/js/format/lattice.js";
 import { TANGENT, layHeading } from "../../public/js/viewer/data.js";
 import {
   byLight,

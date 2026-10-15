@@ -512,8 +512,8 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
     await page.keyboard.press("w");
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state, cellKey }, { showCell }] = await Promise.all(
-      ["viewer/state.js", "viewer/chrome/detail.js"].map(at),
+    const [{ state }, { showCell }, { cellKey }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/detail.js", "format/lattice.js"].map(at),
     );
     showCell({ ...state.idx.cells.get(cellKey(17, 17, 17)), face: 1 });
   });

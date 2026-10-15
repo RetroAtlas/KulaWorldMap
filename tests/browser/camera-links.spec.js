@@ -532,7 +532,8 @@ test("a fitted view's link opens fitted to the window it is opened in", async ({
   await settle(page);
   await still(page);
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { cellKey } = await import(new URL("js/format/lattice.js", location.href).href);
     const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get(cellKey(21, 13, 18)));
   });
@@ -938,7 +939,7 @@ test("the compass names every face and way as the panel does, each where it lies
     const said = await page.evaluate(async () => {
       const { camera } = await import(new URL("js/viewer/state.js", location.href).href);
       const { FACE_NORMAL, DIRECTION_NAME } = await import(
-        new URL("js/viewer/faces.js", location.href).href
+        new URL("js/format/lattice.js", location.href).href
       );
       const cv = document.getElementById("compass");
       const mid = [cv.clientWidth / 2, cv.clientHeight / 2];
@@ -981,7 +982,7 @@ test("the compass names every face and way as the panel does, each where it lies
 const compassLight = (page) =>
   page.evaluate(async () => {
     const { camera } = await import(new URL("js/viewer/state.js", location.href).href);
-    const { FACE_NORMAL } = await import(new URL("js/viewer/faces.js", location.href).href);
+    const { FACE_NORMAL } = await import(new URL("js/format/lattice.js", location.href).href);
     const cv = document.getElementById("compass");
     const k = cv.width / cv.clientWidth;
     const c = camera();

@@ -1,15 +1,5 @@
-import {
-  state,
-  BLOCK,
-  camera,
-  depth,
-  facing,
-  screen,
-  screenTo,
-  cellKey,
-  effectFrame,
-} from "../state.js";
-import { FACE_NORMAL, FACE_NAME } from "../faces.js";
+import { state, BLOCK, camera, depth, facing, screen, screenTo, effectFrame } from "../state.js";
+import { cellKey, FACE_NORMAL, FACE_NAME } from "../../format/lattice.js";
 import {
   markerColour,
   markerLabel,

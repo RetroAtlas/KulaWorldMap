@@ -1,16 +1,6 @@
 import { $, on, emit } from "../ui/dom.js";
-import {
-  state,
-  BLOCK,
-  depth,
-  facing,
-  screen,
-  cellKey,
-  sliceZ,
-  effectsOn,
-  effectFrame,
-} from "../state.js";
-import { FACE_NORMAL } from "../faces.js";
+import { state, BLOCK, depth, facing, screen, sliceZ, effectsOn, effectFrame } from "../state.js";
+import { cellKey, FACE_NORMAL } from "../../format/lattice.js";
 import {
   worldTint,
   motionTable,

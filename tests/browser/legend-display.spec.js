@@ -764,7 +764,8 @@ test("a switch that does something only under another is greyed while it is off,
   await page.keyboard.press("h");
   await expect(said).toHaveText("“Dim what the slice hides” needs the slice lowered.");
   await page.evaluate(async () => {
-    const { state, SIDE } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { SIDE } = await import(new URL("js/format/lattice.js", location.href).href);
     const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 2 - state.lvl.min[2]);
   });
@@ -800,7 +801,8 @@ test("every switch's key is the one its row shows and the key list names", async
   // every switch free to be set: the labels on, and the slice cutting into the level
   await page.keyboard.press("l");
   await page.evaluate(async () => {
-    const { state, SIDE } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { SIDE } = await import(new URL("js/format/lattice.js", location.href).href);
     const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 2 - state.lvl.min[2]);
   });

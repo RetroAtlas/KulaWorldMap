@@ -89,7 +89,8 @@ test("the settings have no model, so among the models they show only while selec
   });
   expect(picked).toBeNull();
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { cellKey } = await import(new URL("js/format/lattice.js", location.href).href);
     const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     const r = state.lvl.records.find((r) => r.kind === 9);
     showCell(state.idx.cells.get(cellKey(r.x, r.y, r.z)));
@@ -113,8 +114,10 @@ test("where a teleporter leads is an arrow in its colour, broken while it is off
     page.evaluate(
       async ([dark, yaw, pitch]) => {
         const at = (p) => import(new URL(`js/${p}`, location.href).href);
-        const [{ state, screen, cellKey }, { drawLink }, data] = await Promise.all(
-          ["viewer/state.js", "viewer/draw/overlays.js", "viewer/data.js"].map(at),
+        const [{ state, screen }, { drawLink }, data, { cellKey }] = await Promise.all(
+          ["viewer/state.js", "viewer/draw/overlays.js", "viewer/data.js", "format/lattice.js"].map(
+            at,
+          ),
         );
         state.cam.yaw = yaw;
         state.cam.pitch = pitch;
@@ -522,10 +525,21 @@ const litBeside = (page, sel, top, bright = false) =>
   page.evaluate(
     async ([sel, [x, y, z], bright]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
-      const [{ state, screen, cellKey }, { draw, clock }, { skinsTable }, { lookOf, faceSkin }] =
-        await Promise.all(
-          ["viewer/state.js", "viewer/draw/render.js", "viewer/data.js", "viewer/skins.js"].map(at),
-        );
+      const [
+        { state, screen },
+        { draw, clock },
+        { skinsTable },
+        { lookOf, faceSkin },
+        { cellKey },
+      ] = await Promise.all(
+        [
+          "viewer/state.js",
+          "viewer/draw/render.js",
+          "viewer/data.js",
+          "viewer/skins.js",
+          "format/lattice.js",
+        ].map(at),
+      );
       const l = state.lvl;
       const skins = skinsTable();
       const look = lookOf(
@@ -883,8 +897,8 @@ const alone = (page, cell, type, frame = 0) =>
   page.evaluate(
     async ([cell, type, frame]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
-      const [{ state, cellKey }, { drawThing }] = await Promise.all(
-        ["viewer/state.js", "viewer/draw/things.js"].map(at),
+      const [{ state }, { drawThing }, { cellKey }] = await Promise.all(
+        ["viewer/state.js", "viewer/draw/things.js", "format/lattice.js"].map(at),
       );
       const key = cellKey(...cell);
       const m = state.idx.markers.get(key).find((m) => m.type === type);

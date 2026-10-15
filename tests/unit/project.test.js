@@ -19,8 +19,8 @@ import {
   setObjects,
 } from "../../public/js/viewer/data.js";
 import { hasFace } from "../../public/js/viewer/draw/blocks.js";
-import { FACE_NORMAL } from "../../public/js/viewer/faces.js";
-import { state, cellKey, SIDE } from "../../public/js/viewer/state.js";
+import { SIDE, cellKey, FACE_NORMAL } from "../../public/js/format/lattice.js";
+import { state } from "../../public/js/viewer/state.js";
 import {
   BONUS_UNDRAWN_KINDS,
   BONUS_UNDRAWN_TYPES,

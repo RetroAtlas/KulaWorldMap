@@ -1,16 +1,8 @@
 // The editor, loaded only when the page is opened to make levels: the mode,
 // its tools and keys, and what it draws over the map through the frame's hooks.
 import { $, emit, on } from "../viewer/ui/dom.js";
-import {
-  state,
-  SIDE,
-  BLOCK,
-  facing as turnedToView,
-  screen,
-  cellKey,
-  sliceZ,
-} from "../viewer/state.js";
-import { FACE_NORMAL, FACE_NAME } from "../viewer/faces.js";
+import { state, BLOCK, facing as turnedToView, screen, sliceZ } from "../viewer/state.js";
+import { SIDE, cellKey, FACE_NORMAL, FACE_NAME } from "../format/lattice.js";
 import { circuitPhrase, levelTitle, markerLabel } from "../viewer/data.js";
 import { provideLevels, setSlice } from "../viewer/chrome/navigate.js";
 import { cellAt, drawSoon, overlayWith } from "../viewer/draw/render.js";

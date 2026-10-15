@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { mapData, levelKey } from "./fixtures.js";
 import { deflate } from "../../public/js/format/deflate.js";
-import { SIDE } from "../../public/js/viewer/state.js";
+import { SIDE } from "../../public/js/format/lattice.js";
 import {
   CELLS,
   FACES,
