@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import EXE, EXE_BASE, THEMES, open_disc
-from kula_level import FACES
+from kula_level import FACES, SIDE
 from mips import Machine, decode
 
 TURN = 4096          # the angle that is one full turn
@@ -104,7 +104,11 @@ CHECKS = [
     (0x8003cf34, "addiu $v0, $v0, 1", "and the move visits in that order"),
     (0x8003c72c, "jal 0x80047418", "and the wandering ball draws its way from the dice"),
     # The boost button.
-    (0x80039bd0, "slt $v1, $v1, $v0", "the boost button sinks while the ball is in reach"),
+    (0x80039294, "lh $v0, 250($v1)", "the walk over the things on the blocks takes each one's block's cell"),
+    (0x8003929c, "sll $v0, $v0, 9", "times 512"),
+    (0x800392a0, "sh $v0, 7304($gp)", "as the point its case measures from"),
+    (0x80039b6c, "lh $v0, 7304($gp)", "which the boost button's case reads"),
+    (0x80039bd0, "slt $v1, $v1, $v0", "and sinks while the ball is in reach of it"),
     (0x80039c08, "blez $v0, 0x80039c18", "and no lower than flat"),
     (0x80039c78, "beq $v0, $zero, 0x80039cac", "and back at full it is drawn as it is"),
     (0x80039ca4, "sra $v0, $v0, 4", "else its height scaled by its count over 16"),
@@ -115,6 +119,128 @@ CHECKS = [
     (0x800361cc, "sll $v1, $v1, 8", "half a block, where it touches the face"),
     (0x80039b74, "lh $v1, -24240($v1)", "a boost button measures its reach from that position"),
     (0x800368f0, "lh $v0, -24240($v0)", "and the light from it and a platform's travel"),
+    # The ball's moves.
+    (0x8003688c, "addiu $s0, $s0, -24300", "the ball's routine hands its record at 0x800ba114"),
+    (0x80036540, "jal 0x80036af8", "first to the input routine"),
+    (0x80036838, "jal 0x8002f86c", "then to the ball's state"),
+    (0x80036840, "jal 0x80037430", "to the reading of the cells about it"),
+    (0x80036848, "jal 0x80037a98", "to the measure of where it is within its cell"),
+    (0x80036890, "jal 0x8003023c", "to the move step"),
+    (0x800368dc, "jal 0x8003431c", "and to the camera"),
+    (0x80034380, "jal 0x80034a50", "which runs the view routine"),
+    (0x80036260, "jal 0x80034a50", "as the start does once"),
+    (0x80038288, "swr $v0, 12($a2)", "the frame layer writes the heading at 12 of the record"),
+    (0x80038260, "swr $v0, 20($a2)", "the side at 20"),
+    (0x800382b0, "swr $v0, 28($a2)", "and the normal at 28"),
+    (0x80038400, "sh $v0, 212($a0)", "the frame matrix at 212 takes the side as its first column"),
+    (0x80038440, "subu $v1, $zero, $v1", "the heading turned round"),
+    (0x80038454, "sh $v1, 214($a0)", "as its second"),
+    (0x80038438, "sh $v0, 216($a0)", "and the normal as its third"),
+    (0x80037464, "lh $v1, 60($s0)", "the position is at 60"),
+    (0x8003746c, "addiu $v1, $v1, 256", "and lies in the cell"),
+    (0x80037470, "sra $v1, $v1, 9", "whose 512 units hold it"),
+    (0x8002f8e8, "jal 0x80037e70", "at rest the ball's state lays its centre"),
+    (0x80037e94, "addu $v0, $v0, $a1", "off the face along the normal"),
+    (0x80037bc4, "sh $v0, 334($a2)", "and how far off it is is kept at 334"),
+    (0x8002f8bc, "addiu $v1, $v0, 1", "the states dispatch by the state plus one"),
+    (0x8002f8d4, "lw $v0, 308($at)", "through the table at 0x80010134"),
+    (0x8002f9d8, "mult $v1, $v0", "rolling, the state multiplies the speed by the heading"),
+    (0x8002fa0c, "addu $v0, $v0, $t0", "and adds that to the position"),
+    (0x8002fa10, "sh $v0, 60($s0)", "so the heading is the way the ball travels"),
+    (0x80037aa8, "andi $v0, $v0, 511", "how far the centre is into its cell"),
+    (0x80037b10, "sh $v0, 336($a2)", "along the heading is the progress at 336"),
+    (0x80037b2c, "subu $v0, $v0, $v1", "taken from the far side for a heading the other way"),
+    (0x80037af4, "swr $v1, 344($a2)", "with the last frame's kept at 344"),
+    (0x80037d6c, "addu $v0, $v0, $a1", "and a progress is laid by moving the centre along the heading"),
+    (0x80037d74, "sh $v0, 60($a0)", "from the edge behind it"),
+    (0x80030264, "bne $v1, $v0, 0x8003060c", "the move step runs in the rolling state alone"),
+    (0x8003026c, "jal 0x80030e44", "and asks whether the ball has come to the middle of its cell"),
+    (0x80030e58, "lh $v0, 344($a0)", "since the last frame"),
+    (0x80030284, "beq $v0, $zero, 0x8003029c", "stopping there where the forward request is gone"),
+    (0x80030294, "beq $v0, $zero, 0x800302bc", "or a turn is asked"),
+    (0x800302ac, "jal 0x80037d48", "with the centre laid at the middle"),
+    (0x800302a0, "addiu $v0, $zero, -1", "at rest"),
+    (0x800302b0, "sw $v0, 408($a0)", "by its state"),
+    (0x800302bc, "jal 0x80030dfc", "else it asks whether the ball may roll on"),
+    (0x80030dfc, "lw $v0, 132($a0)", "which it may where the floor ahead, at 132"),
+    (0x80030e04, "bgez $v0, 0x80030e3c", "is there"),
+    (0x80030e0c, "lw $v0, 116($a0)", "or where the cell beside the block under at 116"),
+    (0x80030e14, "bgez $v0, 0x80030e2c", "is empty"),
+    (0x80030e1c, "lw $v0, 124($a0)", "and the one at 124"),
+    (0x80030e24, "bltz $v0, 0x80030e3c", "is too"),
+    (0x80030e2c, "lw $v0, 356($a0)", "or where what it stands on"),
+    (0x80030e38, "sltiu $v0, $v0, 1", "is ice"),
+    (0x800302c4, "bne $v0, $zero, 0x80030388", "where it may, the step goes on to the two face changes"),
+    (0x800302e8, "beq $v1, $v0, 0x8003060c", "where it may not, a ball on ice slides on"),
+    (0x800302f0, "jal 0x80030e44", "one at the middle stops there"),
+    (0x80030350, "subu $v0, $v0, $t1", "and one past it has the frame's advance taken off the position"),
+    (0x80030354, "sh $v0, 60($s0)", "again"),
+    (0x8003037c, "sh $zero, 312($s0)", "and stops"),
+    (0x80030388, "lw $v0, 168($s0)", "a block in the cell ahead at the ball's own level, at 168"),
+    (0x80030390, "bltz $v0, 0x800304c4", "is a wall"),
+    (0x800303a4, "bne $v0, $zero, 0x800304c4", "which takes the ball once its progress reaches it"),
+    (0x800304b4, "jal 0x80037d48", "laying the centre touching the wall"),
+    (0x800304a0, "addiu $v0, $zero, -1", "and telling the view routine"),
+    (0x800304a4, "sw $v0, 428($s0)", "at 428"),
+    (0x80034cdc, "bne $v1, $v0, 0x80034d74", "which finds the word that frame"),
+    (0x80034d00, "lwr $v0, 52($s0)", "takes the normal it saved at 52"),
+    (0x80034d24, "subu $v0, $zero, $v0", "turns the heading round"),
+    (0x80034d28, "sh $v0, 28($s0)", "into the normal"),
+    (0x80034d5c, "swr $v0, 12($s0)", "and puts the saved normal into the heading"),
+    (0x80034de0, "bne $v0, $zero, 0x80034e44", "the normal being saved as a ramp ends"),
+    (0x80034e14, "swr $v0, 52($s0)", "from 28"),
+    (0x80030500, "lw $v0, 120($s0)", "with no block under the ball's cell, at 120"),
+    (0x80030508, "bgez $v0, 0x8003060c", "once the centre is past the edge"),
+    (0x80030510, "lw $v0, 104($s0)", "and none beside the block it leaves, at 104"),
+    (0x80030518, "bgez $v0, 0x8003060c", "nor"),
+    (0x80030520, "lw $v0, 112($s0)", "at 112"),
+    (0x80030528, "bgez $v0, 0x8003060c", "the edge takes the ball round"),
+    (0x80030530, "lh $v0, 344($s0)", "where the last frame's progress"),
+    (0x8003053c, "addu $v0, $v0, $v1", "plus the speed"),
+    (0x80030544, "bne $v0, $zero, 0x8003060c", "reaches the cell's far edge"),
+    (0x80030560, "addiu $v0, $zero, 7", "in a state of its own"),
+    (0x80030564, "sw $v0, 408($s0)", "that runs the ball round the edge"),
+    (0x8002fc44, "sw $a2, 408($a0)", "and puts it back rolling"),
+    (0x8003055c, "addu $a1, $zero, $zero", "the progress laid at nothing"),
+    (0x8003058c, "jal 0x80037d48", "along the heading"),
+    (0x8003059c, "subu $v0, $zero, $v0", "the normal turned round"),
+    (0x800305a0, "sh $v0, 6428($gp)", "kept at 0x800a4854"),
+    (0x800305d8, "swr $v0, 28($s0)", "the heading put into the normal"),
+    (0x800305e8, "addiu $a1, $a1, 18516", "and the turned normal"),
+    (0x80030600, "swr $v0, 12($s0)", "into the heading"),
+    (0x80037444, "lh $v0, 486($s0)", "the cells about a ball on a platform"),
+    (0x80037454, "jal 0x80033930", "are read otherwise"),
+    (0x800374a8, "subu $v1, $v1, $v0", "the others are read from the cell under the ball's own"),
+    (0x800374b4, "addu $v0, $v0, $v1", "one over to the side"),
+    (0x800374bc, "subu $v0, $v0, $a2", "and one back"),
+    (0x80037590, "addu $a0, $a0, $t7", "a cell up for each along the normal"),
+    (0x80037594, "addu $a0, $a0, $v1", "a cell on for each along the heading"),
+    (0x800375a8, "subu $a0, $a0, $t4", "and a cell over for each the side is taken off"),
+    (0x80037798, "slti $v0, $v0, 3", "three each way"),
+    (0x8003762c, "addiu $v1, $v1, 104", "into words from 104 of the record"),
+    (0x8003764c, "sra $a1, $a1, 14", "a word a cell"),
+    (0x800375e0, "blez $t0, 0x800376f4", "a cell at the lattice's edge or past it"),
+    (0x80037450, "addiu $s1, $zero, -1", "reads empty"),
+    (0x80037730, "sw $s1, 0($v1)", "as a cell with nothing in it does"),
+    (0x80037688, "lh $v0, 0($v1)", "and any other reads what the lattice holds"),
+    (0x80037694, "sw $v0, 0($a0)", "as it is"),
+    (0x800376c0, "bne $v1, $v0, 0x80037738", "unless it holds a moving platform"),
+    (0x800377a4, "lw $a0, 120($s0)", "the word at 120 being the block under"),
+    (0x8003700c, "lw $v1, 96($s0)", "the input routine reads the forward request at 96"),
+    (0x80037014, "bne $v1, $v0, 0x80037060", "where it is made"),
+    (0x8003701c, "lw $v0, 100($s0)", "with no jump"),
+    (0x80037024, "bne $v0, $zero, 0x80037060", "asked"),
+    (0x8003702c, "lw $v0, 132($s0)", "and lets it stand where the floor ahead"),
+    (0x80037034, "bgez $v0, 0x80037060", "is there"),
+    (0x8003703c, "lw $v0, 116($s0)", "else drops it where a block stands beside the block under"),
+    (0x80037044, "bgez $v0, 0x8003705c", "on one side"),
+    (0x8003704c, "lw $v0, 124($s0)", "or the other"),
+    (0x80037054, "bltz $v0, 0x80037060", "and lets it stand where neither does"),
+    (0x8003705c, "sw $zero, 96($s0)", "dropped"),
+    (0x8002f560, "jal 0x8002f688", "at rest the request starts the roll"),
+    (0x8002f698, "lw $v0, 120($s0)", "where a block is under the ball"),
+    (0x8002f6a8, "jal 0x80030dfc", "and it may roll on"),
+    (0x8002f6d0, "sw $v0, 408($s0)", "into the rolling state"),
     # A device's light.
     (0x8002d3d4, "addiu $v0, $v0, -5", "the draw of a thing on a block sends it on by its type"),
     (0x8002d3f8, "lw $v0, 116($at)", "through a table of cases"),
@@ -342,6 +468,20 @@ IMMEDIATES = [
     ("the ball", "ball.light.colour", "with this of 4096 of how squarely the light falls", 0x80032414,
      "addiu $v0, $zero, {}"),
     ("the ball", "ball.light.base", "times this base", 0x800324a0, "addiu $v0, $zero, {}"),
+    ("the ball", "ball.rest", "rests with its centre this far off its face, units", 0x8002f8ec, "addiu $a1, $zero, {}"),
+    ("the ball", "move.middle", "has come to the middle of its cell at this progress, units from the edge behind",
+     0x80030e4c, "slti $v1, $v1, {}"),
+    ("the ball", "move.middle.last", "where the last frame's progress was short of this", 0x80030e60, "slti $v0, $v0, {}"),
+    ("the ball", "move.middle.past", "and a roll that may not go on is past the middle from this", 0x800302d4,
+     "slti $v0, $v0, {}"),
+    ("the ball", "move.stop", "a stop at the middle lays the centre at this", 0x8003029c, "addiu $a1, $zero, {}"),
+    ("the ball", "move.stop.refused", "as does a refused roll's", 0x80030304, "addiu $a1, $zero, {}"),
+    ("the ball", "move.ice", "may roll over an edge beside a neighbour on this kind alone", 0x80030e34, "xori $v0, $v0, {}"),
+    ("the ball", "move.ice.slide", "and slides on past the middle on it", 0x800302dc, "addiu $v0, $zero, {}"),
+    ("the ball", "move.climb", "a wall ahead takes the ball up it at this progress", 0x800303a0, "slti $v0, $v0, {}"),
+    ("the ball", "move.touch", "laying its centre at this, touching the wall", 0x8003049c, "addiu $a1, $zero, {}"),
+    ("the ball", "move.wrap", "an edge takes it round at this progress", 0x80030540, "slti $v0, $v0, {}"),
+    ("the ball", "move.lattice", "a cell at this or past it on an axis reads empty", 0x800375fc, "slti $v0, $t0, {}"),
 
     ("moving spikes", "spikes.phase.down", "phase: down, if phase times step is under", 0x8002a120, "slti $v0, $v1, {}"),
     ("moving spikes", "spikes.phase.held", "phase: held up, if under", 0x8002a148, "slti $v0, $v1, {}"),
@@ -502,6 +642,9 @@ MULTIPLIERS = [
     ("on a block", "star42.orbit.radius", "type 42: orbit's radius, units", 0x800394f0, 5, "v0", "v1"),
     ("the ball", "ball.breathe.reach", "breathes this much of 4096 wider and twice as much shorter", 0x800326e0, 5, "v0", "v0"),
     ("the ball", "time.tick", "the level's time is this many ticks a second", 0x80035f90, 6, "v1", "v0"),
+    ("the ball", "move.cells.up", "the cells about the ball: bytes from a layer's words to the layer above", 0x8003761c, 3,
+     "t2", "v1"),
+    ("the ball", "move.cells.on", "and from a row's to the row ahead", 0x80037638, 3, "t1", "a0"),
     ("moving spikes", "spikes.phase.step", "phase: frames per step", 0x8002a110, 4, "v1", "v1"),
     ("vanishing block", "vanish.phase.step", "phase: frames per step", 0x80028c10, 3, "a1", "v1"),
     ("vanishing block", "vanish.in.scale", "fading in: the count's rise times this", 0x8002b860, 2, "v0", "v1"),
@@ -572,6 +715,13 @@ SHADOW_SQUARE = (0x8002c8d0, 0x8002c8d4)
 LIGHT_ROOT = (0x800513f8, 0x800513fc)
 ROOT_ROWS = 24
 INVISIBLE = 3
+
+# The ball's states, dispatched through a table by the state plus one, and
+# the three the moves run in: at rest, rolling and round an edge.
+STATES = (0x80010134, -1, 9)
+STATE_AT = {-1: 0x8002f8e4, 2: 0x8002f930, 7: 0x8002fa38}
+ICE = 2
+ABOUT = 3                 # cells each way about the ball
 
 # A device's light: the routine that makes it from a cell and a face, the one
 # that adds a face to it where the face is there, and the three cases of the
@@ -704,6 +854,7 @@ def readings(code):
     out["glow"], out["glow.colours"] = glow(code, out)
     out["spin.order"] = spin_orders(code)
     out["spin.quarter"] = code.immediate(*QUARTER)
+    moves(code, out)
     return out
 
 
@@ -758,6 +909,31 @@ def light(r):
             "bits": r["light.bits"], "root": r["light.root"],
             "turned": {"kind": r["light.turned.kind"], "value": r["light.turned.value"],
                        "near": r["light.turned.near"], "far": r["light.turned.far"]}}
+
+
+def moves(code, r):
+    """What the move step holds the ball's moves to, each against the others:
+    the middle of a cell is half a block in, a wall takes the ball where its
+    side touches the wall, an edge where its centre reaches the cell's far
+    side, and the states the moves run in are the ones the table names."""
+    at, first, count = STATES
+    for state in range(first, first + count):
+        case = 0x80000000 | code.word(at + 4 * (state - first))
+        if STATE_AT.get(state, case) != case:
+            sys.exit(f"the ball's state {state} runs at 0x{case:08x}")
+    middles = {r[k] for k in ("move.middle", "move.middle.past", "move.stop", "move.stop.refused")}
+    if middles != {BLOCK // 2} or r["move.middle.last"] != BLOCK // 2 + 1:
+        sys.exit(f"the move step's middle of a cell is {sorted(middles)}, not half a block in")
+    if r["move.wrap"] != BLOCK:
+        sys.exit(f"an edge takes the ball round at {r['move.wrap']}, not at the cell's far side")
+    if r["move.touch"] != BLOCK - r["ball.rest"] or r["move.climb"] != r["move.touch"] + 1:
+        sys.exit(f"a wall takes the ball at {r['move.climb']} and lays it at {r['move.touch']}, not touching it")
+    if r["move.ice"] != ICE or r["move.ice.slide"] != ICE:
+        sys.exit("the ball slides over an edge on another kind than ice")
+    if r["move.lattice"] != SIDE - 1:
+        sys.exit(f"a cell reads empty from {r['move.lattice']}, not from the lattice's edge")
+    if r["move.cells.on"] != ABOUT * 4 or r["move.cells.up"] != ABOUT * r["move.cells.on"]:
+        sys.exit("the cells about the ball are not three by three by three words")
 
 
 def glow_spill(code):

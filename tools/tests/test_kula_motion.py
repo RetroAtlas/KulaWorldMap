@@ -13,8 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
     GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT,
-    Code, glint, glow_lift, glow_spill, laser, light, root_table, shadow_half, spike_cycle, spin_orders, table,
-    vanish_cycle)
+    STATES, Code, glint, glow_lift, glow_spill, laser, light, moves, root_table, shadow_half, spike_cycle,
+    spin_orders, table, vanish_cycle)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "sp": 29, "ra": 31}
@@ -82,6 +82,10 @@ GAME = {
     "glint.rise": 128, "glint.top": 254, "glint.fall": 16,
     "glint.seed": 1, "glint.times": 0x41C64E6D, "glint.plus": 12345,
     "glint.at": 0x800DE034, "glint.frame.at": 0x800DE034,
+    "ball.rest": 100, "move.middle": 256, "move.middle.last": 257, "move.middle.past": 256,
+    "move.stop": 256, "move.stop.refused": 256, "move.ice": 2, "move.ice.slide": 2,
+    "move.climb": 413, "move.touch": 412, "move.wrap": 512, "move.lattice": 33,
+    "move.cells.up": 36, "move.cells.on": 12,
 }
 
 
@@ -109,6 +113,10 @@ def ori(rt, rs, imm):
     return (0x0D << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
 
 
+def xori(rt, rs, imm):
+    return (0x0E << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
 def sra(rd, rt, sa):
     return (R[rt] << 16) | (R[rd] << 11) | (sa << 6) | 3
 
@@ -134,6 +142,11 @@ class Reads(unittest.TestCase):
     def test_an_immediate_is_read_from_the_instruction_it_lives_in(self):
         c = code(addiu("a0", "v1", -75))
         self.assertEqual(c.immediate(AT, "addiu $a0, $v1, {}"), -75)
+
+    def test_a_logic_immediate_is_read_unsigned_as_the_processor_takes_it(self):
+        c = code(xori("v0", "v0", 2), xori("v0", "v0", 0x8000))
+        self.assertEqual(c.immediate(AT, "xori $v0, $v0, {}"), 2)
+        self.assertEqual(c.immediate(AT + 4, "xori $v0, $v0, {}"), 32768)
 
     def test_another_instruction_there_stops_the_reading(self):
         c = code(addiu("a0", "v0", -75))
@@ -431,6 +444,43 @@ class Spins(unittest.TestCase):
     def test_a_routine_the_reading_does_not_know_stops_it(self):
         with self.assertRaises(SystemExit):
             spin_orders(self.code(0x80060f58))
+
+
+class Moves(unittest.TestCase):
+    STATES = [0x8002f8e4, 0x8003007c, 0x8002fce0, 0x8002f930, 0x80030228, 0x80030228, 0x80030228, 0x8002ff18,
+              0x8002fa38]
+
+    def states(self, words=STATES):
+        """An executable whose ball dispatches its states through these words."""
+        at, _, count = STATES
+        blob = bytearray(at - EXE_BASE + 4 * count)
+        for i, w in enumerate(words):
+            struct.pack_into("<I", blob, at - EXE_BASE + 4 * i, w & 0x0FFFFFFF)
+        return Code(bytes(blob))
+
+    def test_the_moves_hold_together_at_the_middle_the_wall_and_the_edge(self):
+        moves(self.states(), GAME)
+
+    def test_a_state_sent_elsewhere_stops_the_reading(self):
+        words = list(self.STATES)
+        words[3], words[8] = words[8], words[3]
+        with self.assertRaises(SystemExit):
+            moves(self.states(words), GAME)
+
+    def test_a_wall_that_does_not_take_the_ball_touching_it_stops_the_reading(self):
+        for change in ({"move.touch": 400}, {"move.climb": 412}, {"ball.rest": 90}):
+            with self.assertRaises(SystemExit):
+                moves(self.states(), {**GAME, **change})
+
+    def test_a_middle_not_half_a_block_in_or_an_edge_not_at_the_far_side_stops_the_reading(self):
+        for change in ({"move.stop": 255}, {"move.middle.last": 256}, {"move.middle.past": 257}, {"move.wrap": 500}):
+            with self.assertRaises(SystemExit):
+                moves(self.states(), {**GAME, **change})
+
+    def test_another_kind_than_ice_another_edge_or_other_strides_stop_the_reading(self):
+        for change in ({"move.ice.slide": 1}, {"move.lattice": 34}, {"move.cells.up": 24}, {"move.cells.on": 8}):
+            with self.assertRaises(SystemExit):
+                moves(self.states(), {**GAME, **change})
 
 
 class Table(unittest.TestCase):
