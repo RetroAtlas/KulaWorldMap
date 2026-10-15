@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import kula_tgi as tgi  # noqa: E402
-from kula_tex import SHADES, SIZE, atlas  # noqa: E402
+from kula_tex import SHADES, SIZE, atlas, mean  # noqa: E402
 
 TEX_AT = (64, 0)
 ROWS = (5, 6, 7)
@@ -56,6 +56,12 @@ class TheAtlas(unittest.TestCase):
                 y, x = divmod(PIXELS.index(v), SIZE)
                 o = ((k * SIZE + y) * W + x) * 4
                 self.assertEqual(tuple(px[o:o + 4]), (*tgi.rgb(PALETTES[row][v]), 255))
+
+    def test_a_mean_is_taken_through_the_palette_row_its_shade_names(self):
+        for k, row in enumerate(ROWS):
+            colours = [tgi.rgb(PALETTES[row][v]) for v in PIXELS]
+            want = [round(sum(c[ch] for c in colours) / len(colours)) for ch in range(3)]
+            self.assertEqual(mean(tgi_blob(), [0], k), want)
 
     def test_a_palette_the_heuristic_scan_refuses_is_read_all_the_same(self):
         page = tgi.vram(tgi_blob())

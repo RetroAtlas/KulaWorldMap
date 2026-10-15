@@ -6,6 +6,7 @@ ships a texture pre-lit in and, along the row, every texture in order.
 """
 import argparse
 import sys
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -18,21 +19,31 @@ SHADES = 3
 SIZE = 64
 
 
-def atlas(blob):
+def shades(blob):
+    """The textures, and for the texture and shade given the palette it is drawn through."""
     page = tgi.vram(blob)
     pmap = tgi.palette_map(blob)
     tex = tgi.textures(blob)
-    W, H = len(tex) * SIZE, SHADES * SIZE
-    px = bytearray(W * H * 4)
     pals = {}
-    for i, t in enumerate(tex):
+
+    def palette(i, k):
         rows = pmap.get(i)
         if rows is None:
-            sys.exit(f"texture {i} at ({t['x']}, {t['y']}) has no record naming its palettes")
+            sys.exit(f"texture {i} at ({tex[i]['x']}, {tex[i]['y']}) has no record naming its palettes")
+        if rows[k] not in pals:
+            pals[rows[k]] = tgi.palette(page, rows[k])
+        return pals[rows[k]]
+
+    return tex, palette
+
+
+def atlas(blob):
+    tex, palette = shades(blob)
+    W, H = len(tex) * SIZE, SHADES * SIZE
+    px = bytearray(W * H * 4)
+    for i, t in enumerate(tex):
         for k in range(SHADES):
-            if rows[k] not in pals:
-                pals[rows[k]] = tgi.palette(page, rows[k])
-            pal = pals[rows[k]]
+            pal = palette(i, k)
             for y in range(SIZE):
                 src = t["at"] + y * SIZE
                 o = ((k * SIZE + y) * W + i * SIZE) * 4
@@ -41,6 +52,21 @@ def atlas(blob):
                     px[o:o + 4] = bytes((r, g, b, 255))
                     o += 4
     return W, H, bytes(px), len(tex)
+
+
+def mean(blob, texs, shade):
+    """The mean colour of the textures numbered, drawn in a shade."""
+    tex, palette = shades(blob)
+    sums, n = [0, 0, 0], 0
+    for i in texs:
+        pal = palette(i, shade)
+        at = tex[i]["at"]
+        counts = Counter(blob[at:at + SIZE * SIZE])
+        for v, c in counts.items():
+            for ch in range(3):
+                sums[ch] += pal[v][ch] * c
+        n += SIZE * SIZE
+    return [round(s / n) for s in sums]
 
 
 def main():

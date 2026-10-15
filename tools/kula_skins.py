@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kula_tgi as tgi
 from kula_disc import EXE, EXE_BASE, THEMES, open_disc
 from kula_level import FACE, FACES
+from kula_tex import mean
 from kula_motion import Code
 from mips import Machine
 
@@ -413,19 +414,23 @@ def table(code, tgis):
     shadow_from = -r["shadow.from"]
     if shadow_from != r["shadow.plain"]:
         sys.exit("plain and ice faces shadow different types")
+    faces = sets(models, groups, r)
+    stones = [stone[0] for stone in faces["arcade"]["stone"]]
+    top = FACE.index("-z")
     return {
         "textures": len(tgi.textures(next(iter(tgis.values())))),
         "shade": {w: h["shade"] for w, h in worlds.items()},
         "turn": {w: h["turn"] for w, h in worlds.items()},
         "turns": {"half": {"of": r["turn.half.of"], "quarters": r["turn.half"]}, "quarters": r["turn.quarters"]},
         "corners": face_corners(code),
-        "sets": sets(models, groups, r),
+        "sets": faces,
         "keys": {"type": r["key.type"], "kinds": r["keys.below"]},
         "copycat": copycat_pack(code, r),
         "clock": {"alias": r["clock.alias"], "type": r["clock.type"]},
         "hides": hiding(r),
         "hidden": {"kind": r["hidden.kind"], "type": r["hidden.flag"]},
         "light": {w: h["light"] for w, h in worlds.items()},
+        "tint": {w: mean(tgis[w], stones, h["shade"][top]) for w, h in worlds.items()},
         "plainFrom": r["plain.from"],
         "shadow": {"from": shadow_from, "to": shadow_from + r["shadow.span"] - 1,
                    "except": [r["shadow.not.a"], r["shadow.not.b"], r["shadow.not.c"]]},
