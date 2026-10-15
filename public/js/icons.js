@@ -1,5 +1,5 @@
 import { state, SIDE, basisAt } from "./state.js";
-import { WORLD_TINT, skinsTable, markerModel, markerGroup, polygonColour } from "./data.js";
+import { worldTint, skinsTable, markerModel, markerGroup, polygonColour } from "./data.js";
 import { atlasFor, paint } from "./atlas.js";
 import { lookOf, faceSkin, platformPlace } from "./skins.js";
 import { FACES, SKINNED_LOOK, shadeOf, flatFace } from "./blocks.js";
@@ -105,7 +105,7 @@ function canvasOf(size) {
   return { cv, g };
 }
 
-const tintOf = (l) => WORLD_TINT[l.theme] || "#93a8d4";
+const tintOf = (l) => worldTint(l.theme) ?? "#93a8d4";
 
 function looks(l) {
   const skins = skinsTable();

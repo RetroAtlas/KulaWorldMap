@@ -12,7 +12,7 @@ import {
 } from "./state.js";
 import { FACE_NORMAL } from "./faces.js";
 import {
-  WORLD_TINT,
+  worldTint,
   motionTable,
   skinsTable,
   platformCells,
@@ -257,7 +257,7 @@ export function draw() {
   const l = state.lvl;
   if (!l) return;
   const idx = state.idx;
-  const tint = WORLD_TINT[l.theme] || "#93a8d4";
+  const tint = worldTint(l.theme) ?? "#93a8d4";
   const skins = skinsTable();
   const atlas = state.show.skins && skins ? atlasFor(l.theme) : null;
   const look = atlas

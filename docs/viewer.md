@@ -14,7 +14,7 @@ What the map under `public/` does for whoever is looking at it, control by contr
 
 **Slice** the level with `,` and `.`, which lower and raise a ceiling so you can see inside a stack. `\` puts the whole level back, and `h` leaves what the slice takes off on the map, faint.
 
-`t` puts the game's own block textures on and off; with them off the lattice draws in a flat tint per world. `b` puts on the lines the map draws over the blocks, none of which the game draws: their edges, the broken outline of a block that is not solidly there, the route a moving platform runs, and a laser's beam while it is switched off. `g` lays a faint grid under the level's lowest layer.
+`t` puts the game's own block textures on and off; with them off, and until a world's textures arrive, the lattice draws in the world's own colour, the mean of the textures its plain blocks wear, which the swatch beside the world in the sidebar shows too. `b` puts on the lines the map draws over the blocks, none of which the game draws: their edges, the broken outline of a block that is not solidly there, the route a moving platform runs, and a laser's beam while it is switched off. `g` lays a faint grid under the level's lowest layer.
 
 ## The panel
 

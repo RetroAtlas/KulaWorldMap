@@ -3,19 +3,6 @@ import { FACE_NORMAL } from "./faces.js";
 import { platesOf, lookOf, keyed } from "./skins.js";
 import { glowing, byLight } from "./motion.js";
 
-export const WORLD_TINT = {
-  HIRO: "#93a8d4",
-  HILLS: "#7fc96b",
-  INCA: "#d8ad62",
-  ARCTIC: "#96dcf2",
-  COWBOY: "#e59a5c",
-  FIELD: "#a8d963",
-  ATLANT: "#5ad2c3",
-  HAZE: "#b799e2",
-  MARS: "#e5744c",
-  HELL: "#d65a52",
-};
-
 let ann = { worlds: {}, kinds: {}, types: {}, levels: {} };
 export const setAnnotations = (a) => {
   ann = { worlds: {}, kinds: {}, types: {}, levels: {}, ...a };
@@ -28,6 +15,10 @@ export const setObjects = (o) => {
 export const modelUnit = () => 1 / shapes.block;
 export const motionTable = () => shapes.motion;
 export const skinsTable = () => shapes.skins;
+export const worldTint = (world) => {
+  const c = shapes.skins?.tint?.[world];
+  return c ? "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("") : null;
+};
 export const shadowSprites = () => shapes.shadows;
 export const motionOf = (m) =>
   m.face === null

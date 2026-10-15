@@ -1,7 +1,7 @@
 import { $, el, on } from "./dom.js";
 import { state, SIDE, sliceZ } from "./state.js";
 import {
-  WORLD_TINT,
+  worldTint,
   worldName,
   levelTitle,
   levelMarkers,
@@ -53,7 +53,7 @@ export function buildWorlds() {
       el(
         "summary",
         {},
-        el("span", { className: "swatch", style: `background:${WORLD_TINT[w.id] || "#889"}` }),
+        el("span", { className: "swatch", style: `background:${worldTint(w.id) ?? "#889"}` }),
         el("span", {}, worldName(w.id)),
         el("span", { className: "n" }, String(w.levels.length)),
       ),
