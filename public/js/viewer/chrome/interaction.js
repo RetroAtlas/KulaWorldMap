@@ -432,6 +432,9 @@ addEventListener("keydown", (e) => {
     case "p":
       toggle("panMode");
       break;
+    case "u":
+      toggle("showCourse");
+      break;
     case "s":
       openSettings();
       break;

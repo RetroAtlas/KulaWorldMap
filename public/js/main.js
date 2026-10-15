@@ -10,6 +10,7 @@ import {
   setSidebar,
 } from "./viewer/chrome/sidebar.js";
 import { applyHash, selectLevel, writeHash } from "./viewer/chrome/navigate.js";
+import { wireCourse } from "./viewer/chrome/course.js";
 import { openModal } from "./viewer/ui/modal.js";
 import { wireSettings } from "./viewer/ui/settings.js";
 import { toast } from "./viewer/ui/toast.js";
@@ -51,6 +52,8 @@ const HELP = [
   ],
   ["`g`", "ground grid; while editing, a floor to lay blocks on, at the slice where it is lowered"],
   ["`p`", "drag pans instead of turning"],
+  ["`u`", "route planner: click the faces the ball should visit, in order"],
+  ["`Backspace`", "with the route planner on and nothing selected: take the last stop back"],
   ["`s`", "settings"],
   ["`c`", "start camera"],
   ["`/`", "search"],
@@ -252,6 +255,7 @@ Promise.all([
     `Press <kbd style="margin:0">?</kbd> for the keys.`;
   buildWorlds();
   wireDisplay();
+  wireCourse();
   const up = module && ready(module);
   if (up) loading = Promise.resolve(up);
   else if (awaited && !module) toast(UNLOADED);

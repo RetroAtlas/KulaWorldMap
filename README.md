@@ -4,7 +4,7 @@ An interactive map of every level in **Kula World** (PlayStation), read straight
 
 ![The map on Arctic's copy of the object catalogue, with one of nearly every object in the game laid out on one floor](screenshot.png)
 
-All 230 levels are here, which is more than the game ever shows you in one place: 150 numbered levels across ten worlds, 30 bonus and 10 hidden levels, the 20 finals, the 10 Simon rooms, the lesson and the nine copies of the object catalogue that no menu reaches. A level is titled by the number the game's pause screen gives it, which the engine counts through the worlds rather than reading from the level record; where the record calls it something else, the level's note says so.
+All 230 levels are here, which is more than the game ever shows you in one place: 150 numbered levels across ten worlds, 30 bonus and 10 hidden levels, the 20 finals, the 10 Simon rooms, the lesson and the nine copies of the object catalogue that no menu reaches. A level is titled by the number the game's pause screen gives it, which the engine counts through the worlds rather than reading from the level record; where the record calls it something else, the level's note says so. A route can be planned over a level's blocks, stop by stop, drawn the way the ball would roll between them by the game's own rules for a step.
 
 The data is read from the NTSC-U release, sold as **Roll Away** (SLUS-00724). The same game shipped as Kula World in PAL territories and Kula Quest in Japan; the level data is the game's own and applies to all three.
 

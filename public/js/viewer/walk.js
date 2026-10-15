@@ -14,7 +14,6 @@ const LEAP = 12;
 const STOP = 13;
 const PAD = 15;
 const LIFT = 0.02;
-const LEAP_LIFT = 0.3;
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 export const LETTER = "r";
@@ -26,7 +25,8 @@ const same = (a, b) => a.every((v, i) => v === b[i]);
 
 export const tangent = (face, k) => heading(face, k + 1).d;
 export const faceOf = (normal) => FACE_NORMAL.findIndex((n) => same(n, normal));
-const headingOn = (face, d) => [0, 1, 2, 3].find((k) => same(tangent(face, k), d));
+export const headingOn = (face, d) =>
+  d ? ([0, 1, 2, 3].find((k) => same(tangent(face, k), d)) ?? null) : null;
 
 export function probeOf(idx) {
   const bodies = new Set();
@@ -221,12 +221,15 @@ export function validate(probe, { stations, steps }) {
   return { hollow, broken };
 }
 
-const centre = ({ cell, face }, lift) =>
-  cell.map((c, i) => c + 0.5 + FACE_NORMAL[face][i] * (0.5 + lift));
+/** A station's face centre, lifted clear of the face as the ribbon lies. */
+export const lifted = ({ cell, face }) =>
+  cell.map((c, i) => c + 0.5 + FACE_NORMAL[face][i] * (0.5 + LIFT));
 
 export function pieces({ stations, steps, marks }) {
   const byKey = new Map();
   const leaps = [];
+  const laid = new Set();
+  const span = (p, q) => [...p, ...q].map((v) => v.toFixed(3)).join();
   const put = ({ cell, face }, from, to, chevron, i, stop) => {
     const key = cellKey(...cell);
     if (!byKey.has(key)) byKey.set(key, []);
@@ -236,7 +239,7 @@ export function pieces({ stations, steps, marks }) {
     const a = stations[i];
     const b = stations[i + 1];
     if (!step) {
-      leaps.push({ from: centre(a, LEAP_LIFT), to: centre(b, LEAP_LIFT), i });
+      leaps.push({ from: lifted(a), to: lifted(b), i });
       return;
     }
     const t = tangent(a.face, step.k);
@@ -244,12 +247,17 @@ export function pieces({ stations, steps, marks }) {
     const m = FACE_NORMAL[b.face];
     const lift = same(n, m) ? n : add(n, m);
     const edge = a.cell.map((c, j) => c + 0.5 + 0.5 * n[j] + 0.5 * t[j] + LIFT * lift[j]);
-    put(a, centre(a, LIFT), edge, t, i, false);
-    put(b, edge, centre(b, LIFT), null, i, false);
+    const out = lifted(a);
+    const into = lifted(b);
+    // a half laid back over one already laid carries no chevron against it
+    put(a, out, edge, laid.has(span(edge, out)) ? null : t, i, false);
+    put(b, edge, into, null, i, false);
+    laid.add(span(out, edge));
+    laid.add(span(edge, into));
   });
   for (const i of marks) {
     const s = stations[i];
-    if (s) put(s, centre(s, LIFT), centre(s, LIFT), null, i, true);
+    if (s) put(s, lifted(s), lifted(s), null, i, true);
   }
   return { byKey, leaps };
 }

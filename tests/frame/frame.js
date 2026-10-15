@@ -56,15 +56,21 @@ const PARTS = {
   drawFloor: "editor",
   drawCell: "editor",
   drawGhost: "editor",
+  drawPieces: "course",
+  drawLeaps: "course",
+  drawRings: "course",
 };
 const OUTSIDE = { "(idle)": "idle", "(program)": "native", "(garbage collector)": "gc" };
 
 /** The parts whose function the viewer at `root` does not define, where a
     rename would count their time to the draw's own without a word. */
 async function unknownParts(root) {
-  const dir = join(root, "js");
-  const files = (await readdir(dir)).filter((f) => f.endsWith(".js"));
-  const source = (await Promise.all(files.map((f) => readFile(join(dir, f), "utf8")))).join("\n");
+  const files = (await readdir(join(root, "js"), { recursive: true })).filter(
+    (f) => f.endsWith(".js") && !f.startsWith("vendor/"),
+  );
+  const source = (await Promise.all(files.map((f) => readFile(join(root, "js", f), "utf8")))).join(
+    "\n",
+  );
   const defines = (name) =>
     new RegExp(`\\b(function\\s+${name}\\b|(const|let)\\s+${name}\\s*=)`).test(source);
   return Object.keys(PARTS).filter((name) => !defines(name));

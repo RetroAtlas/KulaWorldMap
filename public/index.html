@@ -54,6 +54,7 @@
   <link rel="modulepreload" href="js/format/held.js" />
   <link rel="modulepreload" href="js/format/lattice.js" />
   <link rel="modulepreload" href="js/viewer/chrome/a11y.js" />
+  <link rel="modulepreload" href="js/viewer/chrome/course.js" />
   <link rel="modulepreload" href="js/viewer/chrome/detail.js" />
   <link rel="modulepreload" href="js/viewer/chrome/interaction.js" />
   <link rel="modulepreload" href="js/viewer/chrome/navigate.js" />
@@ -74,6 +75,7 @@
   <link rel="modulepreload" href="js/viewer/draw/overlays.js" />
   <link rel="modulepreload" href="js/viewer/draw/points.js" />
   <link rel="modulepreload" href="js/viewer/draw/render.js" />
+  <link rel="modulepreload" href="js/viewer/draw/ribbon.js" />
   <link rel="modulepreload" href="js/viewer/draw/things.js" />
   <link rel="modulepreload" href="js/viewer/hash.js" />
   <link rel="modulepreload" href="js/viewer/motion.js" />
@@ -86,6 +88,7 @@
   <link rel="modulepreload" href="js/viewer/ui/modal.js" />
   <link rel="modulepreload" href="js/viewer/ui/settings.js" />
   <link rel="modulepreload" href="js/viewer/ui/toast.js" />
+  <link rel="modulepreload" href="js/viewer/walk.js" />
   <!-- the world's textures start with the page: the link's pack names the
        world, and the first world opens without a link -->
   <script>
@@ -288,6 +291,9 @@
             ><input type="checkbox" id="showHidden" data-needs="slice" /> Dim what the slice hides
             <kbd>h</kbd></label
           >
+          <label class="check"
+            ><input type="checkbox" id="showCourse" /> Route planner <kbd>u</kbd></label
+          >
         </div>
       </section>
 
@@ -407,6 +413,17 @@
           Palette
         </button>
         <span id="toolStatus" class="status" role="status"></span>
+      </div>
+      <div id="course" class="tools" role="group" aria-label="Route planner" hidden>
+        <span id="courseLine" class="line"></span>
+        <button id="courseUndo" type="button" title="Take the last stop back (Backspace)">
+          Undo
+        </button>
+        <button id="courseClear" type="button" title="Clear the route">Clear</button>
+        <button id="courseCopy" type="button" title="Copy a link that carries the route">
+          Copy link
+        </button>
+        <span id="courseStatus" class="status" role="status"></span>
       </div>
       <div id="palette" class="palette" role="group" aria-label="Palette" hidden></div>
       <div id="toastStack" class="toasts" aria-live="polite"></div>

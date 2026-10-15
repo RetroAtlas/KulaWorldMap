@@ -30,7 +30,10 @@ const SHOWN = [
   ["showHidden", "hidden"],
   ["showCamera", "camera"],
   ["showCompass", "compass"],
+  ["showCourse", "course"],
 ];
+// Switches that are never kept from one visit to the next.
+const UNKEPT = new Set(["course"]);
 const REDUCED = "(prefers-reduced-motion: reduce)";
 const DEFAULTS = { ...state.show, motion: !matchMedia(REDUCED).matches };
 
@@ -182,7 +185,7 @@ export function wireDisplay() {
     box.checked = state.show[key];
     box.addEventListener("change", () => {
       state.show[key] = box.checked;
-      choose(key, box.checked, DEFAULTS[key]);
+      if (!UNKEPT.has(key)) choose(key, box.checked, DEFAULTS[key]);
       syncNeeds();
       invalidatePick();
       draw();
@@ -249,7 +252,7 @@ export function restore() {
     const v = JSON.parse(localStorage.getItem(KEY) || "null");
     if (v && typeof v === "object") {
       for (const k of Object.keys(DEFAULTS))
-        if (typeof v[k] === typeof DEFAULTS[k]) state.show[k] = chosen[k] = v[k];
+        if (!UNKEPT.has(k) && typeof v[k] === typeof DEFAULTS[k]) state.show[k] = chosen[k] = v[k];
       if (typeof v.panMode === "boolean") state.panMode = chosen.panMode = v.panMode;
     }
   } catch {
@@ -257,7 +260,9 @@ export function restore() {
   }
 }
 
-on("show-changed", (key) => choose(key, state.show[key], DEFAULTS[key]));
+on("show-changed", (key) => {
+  if (!UNKEPT.has(key)) choose(key, state.show[key], DEFAULTS[key]);
+});
 
 const slicing = () => sliceZ() > (state.lvl?.min[2] ?? 0);
 const isOn = (el) => (el.type === "range" ? slicing() : el.checked);

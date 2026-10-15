@@ -12,11 +12,13 @@ import {
   outcomeAt,
   step,
   headingAfter,
+  headingOn,
   shortestWalk,
   encode,
   decode,
   validate,
   pieces,
+  lifted,
 } from "../../public/js/viewer/walk.js";
 
 /** A level of plain blocks, some carrying a record, laid out to order. */
@@ -370,6 +372,71 @@ test("a station whose face is gone is hollow, and a step the lattice no longer a
   assert.deepEqual(validate(whole, leap), { hollow: new Set(), broken: new Set() });
 });
 
+test("a heading is named by the way it goes on a face, and by nothing else", () => {
+  assert.equal(headingOn(0, X), toward(0, X));
+  assert.equal(headingOn(0, neg(Y)), toward(0, neg(Y)));
+  assert.equal(headingOn(1, Z), toward(1, Z));
+  assert.equal(headingOn(0, neg(Z)), null, "the face's own normal");
+  assert.equal(headingOn(0, null), null);
+});
+
+test("a half laid back over one already laid carries no chevron against it", () => {
+  const out = toward(0, X);
+  const back = toward(0, neg(X));
+  const there = { stations: [top(10, 10, 17), top(11, 10, 17)], steps: [{ k: out, o: 0 }] };
+  const andBack = {
+    stations: [...there.stations, top(10, 10, 17)],
+    steps: [...there.steps, { k: back, o: 0 }],
+    marks: new Set([0, 1, 2]),
+  };
+  const { byKey } = pieces(andBack);
+  const halves = (x) => byKey.get(cellKey(x, 10, 17)).filter((p) => !p.stop);
+  assert.deepEqual(
+    halves(10).map((p) => [p.i, p.chevron]),
+    [
+      [0, X],
+      [1, null],
+    ],
+    "out with its chevron, back with none",
+  );
+  assert.deepEqual(
+    halves(11).map((p) => [p.i, p.chevron]),
+    [
+      [0, null],
+      [1, null],
+    ],
+    "the return's first half runs back over the roll's second",
+  );
+  const onward = {
+    stations: [...there.stations, top(12, 10, 17)],
+    steps: [...there.steps, { k: out, o: 0 }],
+    marks: new Set([0, 2]),
+  };
+  assert.deepEqual(
+    pieces(onward)
+      .byKey.get(cellKey(11, 10, 17))
+      .map((p) => p.chevron),
+    [null, X],
+    "a roll on keeps its chevron",
+  );
+  const wrap = {
+    stations: [top(10, 10, 17), { cell: [10, 10, 17], face: 1 }, top(10, 10, 17)],
+    steps: [
+      { k: out, o: 2 },
+      { k: toward(1, neg(Z)), o: 2 },
+    ],
+    marks: new Set([0, 1, 2]),
+  };
+  assert.deepEqual(
+    pieces(wrap)
+      .byKey.get(cellKey(10, 10, 17))
+      .filter((p) => !p.stop)
+      .map((p) => p.chevron),
+    [X, null, null, null],
+    "a wrap back over a wrap meets the same edge point",
+  );
+});
+
 test("a step is two half-pieces on the faces it crosses, a chevron on the first, a dot at each stop", () => {
   const k = toward(0, X);
   const course = {
@@ -436,8 +503,10 @@ test("a step is two half-pieces on the faces it crosses, a chevron on the first,
   assert.deepEqual([dot3.i, dot3.face, dot4.i, dot4.face], [3, 0, 4, 1]);
   assert.equal(leaps.length, 1);
   assert.equal(leaps[0].i, 2);
-  near(leaps[0].from, [11.7, 10.5, 16.5], "a leap leaves from the face's centre lifted 0.3");
-  near(leaps[0].to, [20.5, 20.5, 16.7], "and lands on the next");
+  near(leaps[0].from, [11.98, 10.5, 16.5], "a leap leaves from the face's centre, lifted");
+  near(leaps[0].to, [20.5, 20.5, 16.98], "and lands on the next");
+  assert.deepEqual(leaps[0].from, lifted(course.stations[2]));
+  assert.deepEqual(dot0.from, lifted(course.stations[0]), "where the dot is");
   for (const list of byKey.values())
     for (const piece of list) {
       const n = FACE_NORMAL[piece.face];

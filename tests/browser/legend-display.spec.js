@@ -790,7 +790,7 @@ test("every switch's key is the one its row shows and the key list names", async
     [
       ...["showSkins", "showObjects", "showModels", "showMotion", "showThrough", "showLabels"],
       ...["showOutlines", "showBase", "panMode", "showFaces", "showHidden", "showCamera"],
-      "showCompass",
+      ...["showCompass", "showCourse"],
     ].sort(),
   );
   // the compass alone has no key, every letter that reads as it being taken
@@ -836,7 +836,7 @@ test("Display puts the game's own look first, then what the map adds, then the c
   expect(groups).toEqual([
     ["showSkins on", "showObjects on", "showModels on", "showMotion on"],
     ["showThrough", "showLabels", "showFaces", "showOutlines", "showBase"],
-    ["panMode", "slice", "showHidden"],
+    ["panMode", "slice", "showHidden", "showCourse"],
   ]);
 });
 

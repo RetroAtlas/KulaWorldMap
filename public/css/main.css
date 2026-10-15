@@ -1424,19 +1424,44 @@ body:not(.sidebar-open) .menu-btn .cross {
   flex-basis: 100%;
   color: var(--warn);
   font-size: 11.5px;
+  contain: inline-size;
 }
 .tools .status:empty {
   display: none;
+}
+
+/* the planner's strip stands above the editor's wherever both show, and
+   while editing keeps only the line that says so */
+#course {
+  bottom: calc(var(--corner-foot) + var(--under-h, 0px));
+}
+#course .line {
+  flex: 1 1 0;
+  min-width: 0;
+}
+#course .status.hint {
+  color: var(--dim);
+}
+body.editing #course > :not(.status) {
+  display: none;
+}
+body.editing #course .status {
+  flex-basis: auto;
+  contain: none;
+}
+.tools .warn {
+  color: var(--warn);
+  border-color: var(--warn);
 }
 
 /* on the strip, where the editor's tools are, whatever its height */
 .palette {
   position: absolute;
   left: 12px;
-  bottom: calc(var(--corner-foot) + var(--strip-h, 44px) + 6px);
+  bottom: calc(var(--corner-foot) + var(--strip-h, 44px) + var(--course-h, 0px) + 6px);
   z-index: 15;
   width: 250px;
-  max-height: calc(100% - var(--corner-foot) - var(--strip-h, 44px) - 26px);
+  max-height: calc(100% - var(--corner-foot) - var(--strip-h, 44px) - var(--course-h, 0px) - 26px);
   overflow-y: auto;
   background: var(--surface-float);
   border: 1px solid var(--line);
@@ -1785,6 +1810,26 @@ body:not(.sidebar-open) .menu-btn .cross {
   }
   body.editing .detail .fold + h3 {
     padding-right: 100px;
+  }
+  #course button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  body.editing #course {
+    display: none;
+  }
+  /* the strips can span the width, so the corner's widgets and the panel stand above them */
+  #corner {
+    bottom: calc(var(--corner-foot) + var(--under-h, 0px) + var(--course-h, 0px));
+  }
+  body.editing #corner {
+    bottom: calc(var(--under-h, 0px) + var(--course-h, 0px));
+  }
+  .detail {
+    max-height: calc(
+      100% - 20px - var(--corner-foot) - var(--corner-h) - var(--under-h, 0px) -
+        var(--course-h, 0px)
+    );
   }
 }
 

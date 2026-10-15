@@ -33,6 +33,7 @@ export const state = {
     skins: true,
     outlines: false,
     note: true,
+    course: false,
   },
   hiddenKinds: new Set(),
   // by colour, and the last key's, the clock frames at which a panel turned each circuit over
