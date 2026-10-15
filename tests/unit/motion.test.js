@@ -701,3 +701,51 @@ test("the clock ticks once a frame, fifty to a shown second, and a level ends in
   assert.deepEqual(play.bonus, { block: 50, skips: 3 });
   assert.equal((99 * play.clock.second) / play.clock.tick / table.hz, 82.5);
 });
+
+test("a level opens with the pad dead for 19 frames and the hazards off for 18", () => {
+  const { start } = table.play;
+  let countdown = start.wait;
+  let guard = 1;
+  let padFrom = null;
+  let hazardsFrom = null;
+  for (let frame = 1; frame <= 40; frame++) {
+    if (guard) guard += 1;
+    if (guard === start.guard) guard = 0;
+    if (countdown) countdown -= 1;
+    if (padFrom === null && countdown === 0) padFrom = frame;
+    if (hazardsFrom === null && guard === 0) hazardsFrom = frame;
+  }
+  assert.deepEqual([padFrom, hazardsFrom], [20, 19]);
+});
+
+test("a death costs 50 times the level's number, at most 5000", () => {
+  const { points } = table.play;
+  assert.deepEqual(points, { each: 50, most: 5000, levels: 15 });
+  const penalty = (level) => Math.min(points.each * level, points.most);
+  assert.equal(penalty(1), 50);
+  assert.equal(penalty(99), 4950);
+  assert.equal(penalty(100), 5000);
+  assert.equal(penalty(150), 5000);
+});
+
+test("fire kills a standing ball on its 51st frame, and the captivators reach 212 and 127 units", () => {
+  const { heat } = table.kinds[1];
+  let frames = 0;
+  for (let h = 0; h <= heat.limit; frames++) h += heat.burn;
+  assert.equal(frames, 51);
+  assert.equal(heat.land, 600);
+  assert.equal(heat.cool, 15);
+  assert.equal(table.kinds[4].melt.top, heat.limit);
+  assert.equal(table.kinds[8].harm.heat, 1900);
+  const reach = (t) => Math.floor(Math.sqrt(table.types[t].catch.square));
+  assert.deepEqual([50, 51, 52, 53, 56].map(reach), [212, 212, 212, 127, 212]);
+  assert.equal(table.types[11].harm.standing, table.play.wait.spikes - 1);
+});
+
+test("the ending's view swings every 341 frames, and the dying ball flashes every four", () => {
+  const { view } = table.play;
+  assert.equal(Math.floor(table.turn / view.swing), 341);
+  assert.equal(Math.floor(table.turn / view.bonus.swing), 70);
+  assert.deepEqual(view.angles, [-8, 3, 10]);
+  assert.equal(table.turn / table.types[30].dying.flash, 4);
+});

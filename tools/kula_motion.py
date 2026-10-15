@@ -266,8 +266,7 @@ CHECKS = [
     (0x800369e0, "sra $a0, $a0, 9", "on each axis"),
     (0x800369ec, "addiu $a0, $a0, 1", "plus one"),
     (0x80036a34, "beq $a0, $zero, 0x80036a5c", "and where that is out of range"),
-    (0x80036a5c, "addiu $v0, $zero, -3", "the ball is lost"),
-    (0x80036a64, "sw $v0, 24064($at)", "in the level's outcome word"),
+    (0x80036a64, "sw $v0, 24064($at)", "the ball is lost in the level's outcome word"),
     (0x80036af8, "lh $v0, 1148($gp)", "the input routine reads an option"),
     (0x80036b14, "sh $v0, 7080($gp)", "that sets the repeat's wait"),
     (0x80036b20, "sh $zero, 7080($gp)", "or none"),
@@ -849,16 +848,24 @@ CHECKS = [
     (0x8003af30, "sw $v0, 540($s0)", "takes the ending at 540"),
     (0x8003af38, "sh $v0, 370($s0)", "with a wait at 370"),
     (0x8003af44, "bne $v1, $v0, 0x8003afb0", "and the hidden exit"),
-    (0x8003afa4, "sw $v0, 540($s0)", "the same with its own ending"),
+    (0x8003af88, "sw $v1, 19612($at)", "leaves at once from a landing"),
+    (0x8003afa4, "sw $v0, 540($s0)", "or takes its own ending"),
+    (0x8003afac, "sh $v0, 370($s0)", "with the wait"),
     (0x800363f8, "beq $v0, $zero, 0x800364cc", "the ball's routine counts a wait"),
     (0x80036404, "sh $v1, 0($a0)", "down"),
     (0x800364a8, "bne $v0, $zero, 0x800364cc", "and as it runs out"),
+    (0x800364b4, "lw $v0, 13264($v0)", "at the view word's index"),
     (0x800364c8, "sw $v1, 19612($at)", "copies the ending to 0x800a4c9c"),
+    (0x800365e4, "lw $v1, 19612($at)", "which the routine reads back"),
     (0x800365ec, "bne $v1, $v0, 0x80036630", "from where an exit's"),
     (0x80036600, "beq $v0, $v1, 0x80036638", "with one player"),
+    (0x80036610, "bne $v0, $v1, 0x80036640", "or with both results"),
+    (0x80036620, "beq $v0, $v1, 0x80036638", "at 1"),
     (0x80036630, "beq $v1, $zero, 0x80036640", "or any other"),
     (0x8003663c, "sw $v1, 24064($at)", "becomes the outcome"),
-    (0x8003646c, "sw $a0, 24064($at)", "the spikes' a frame before the wait ends"),
+    (0x80036450, "bne $a0, $v0, 0x80036470", "the spikes'"),
+    (0x80036460, "bne $v0, $v1, 0x80036470", "with the wait at 1"),
+    (0x8003646c, "sw $a0, 24064($at)", "is written into the outcome directly"),
     (0x8003b058, "bne $s1, $v0, 0x8003b0d0", "the spikes' ending is the invincibility word"),
     (0x8003b0c4, "sw $s1, -23760($at)", "as tested"),
     (0x80035fe0, "sw $v1, 12088($gp)", "the start sets the bonus flag"),
@@ -875,12 +882,182 @@ CHECKS = [
     (0x8003ae88, "bne $v0, $zero, 0x8003afb0", "ends the level"),
     (0x8003ae98, "beq $v0, $zero, 0x8003aeb0", "at once where the ball has just landed"),
     (0x8003aea4, "sw $v0, 24064($at)", "in the outcome word"),
-    (0x8003aec4, "sw $v0, 540($s0)", "else as an ending"),
+    (0x8003aeb8, "bne $v0, $zero, 0x8003afb0", "else with no wait running"),
+    (0x8003aec4, "sw $v0, 540($s0)", "as an ending"),
     (0x8003aec0, "j 0x8003afa8", "with the hidden exit's wait"),
     (0x80041b18, "bgez $a0, 0x80041b90", "a level that ends badly"),
     (0x80041b24, "lw $v0, 21460($v0)", "in a mode"),
     (0x80041b2c, "blez $v0, 0x80041b38", "past the arcade's"),
     (0x80041b34, "sw $zero, 9360($gp)", "scores nothing"),
+    # What harms the ball.
+    (0x80035e74, "sh $v0, -23930($at)", "a level's start sets the countdown at 370"),
+    (0x80036300, "lh $v0, 12192($gp)", "the ball's routine counts the guard at 0x800a5ed8"),
+    (0x80036314, "sh $v0, 12192($gp)", "up by one while it stands"),
+    (0x80036328, "sh $zero, 12192($gp)", "and clears it at its limit"),
+    (0x80040fdc, "lw $v0, 11976($gp)", "the loop reads the level's outcome word"),
+    (0x80040fe4, "bne $v0, $zero, 0x8004100c", "and while it is set"),
+    (0x80040fcc, "lw $v0, 14500($v0)", "or the word at 0x800a38a4 that reads as the pause"),
+    (0x80040fd4, "bne $v0, $zero, 0x8004100c", "is set"),
+    (0x80040fec, "lw $v0, 10432($gp)", "or a third word at 0x800a57f8"),
+    (0x80040ff4, "bne $v0, $zero, 0x8004100c", "is set, runs"),
+    (0x8004100c, "jal 0x80036aa8", "another routine instead of the ball's"),
+    (0x80036aac, "addiu $v0, $zero, 1", "which sets the guard"),
+    (0x80036abc, "sh $v0, 12192($gp)", "to one"),
+    (0x80036ac0, "jal 0x800347b8", "and runs the ending's view"),
+    (0x80036a8c, "sh $zero, 9364($gp)", "the ball's routine takes a request at 0x800a53cc"),
+    (0x80036a94, "sw $v1, 14500($at)", "and sets the pause word from it"),
+    (0x800408a4, "sw $v0, 10432($gp)", "the third word is set here"),
+    (0x80041378, "sw $v0, 10432($gp)", "and here"),
+    (0x80040744, "sw $zero, 10432($gp)", "cleared here"),
+    (0x80040f40, "sw $zero, 10432($gp)", "and here"),
+    (0x80036980, "lw $v0, 24064($v0)", "the draw reads the outcome word"),
+    (0x80036988, "bne $v0, $zero, 0x800369b4", "and draws no ball while it is set"),
+    (0x80036994, "lw $v0, 22520($v0)", "nor while the third word is"),
+    (0x800414c8, "lw $v0, 23204($v0)", "the loop leaves an ending once a flag at 0x800a5aa4 is set"),
+    (0x800320b4, "lw $v0, 516($s3)", "the ball's draw reads the heat"),
+    (0x800321fc, "sw $v1, 6064($gp)", "into the light's channels"),
+    (0x800363e0, "sh $v0, -23930($at)", "the Simon rooms' wrong move sets the countdown"),
+    (0x80036bd4, "lh $v0, 12192($gp)", "the input routine, with Cross held"),
+    (0x80036bdc, "bne $v0, $zero, 0x8003741c", "reads nothing while the guard stands"),
+    (0x80036bec, "sh $zero, 12192($gp)", "and otherwise clears it"),
+    (0x800366fc, "lh $v0, 12192($gp)", "the hazards are skipped"),
+    (0x80036704, "bne $v0, $zero, 0x80036714", "while it stands"),
+    (0x800368bc, "lh $v0, 12192($gp)", "as is the contact"),
+    (0x800368c4, "bne $v0, $zero, 0x800368d4", "with what the ball stands on"),
+    (0x8003a940, "lw $v0, 156($s0)", "the hazards read the ball's own cell, the word at 156"),
+    (0x8003a954, "bne $v0, $v1, 0x8003a99c", "and where it holds a lit beam"),
+    (0x8003a968, "bne $v1, $v0, 0x8003a99c", "with no invincibility"),
+    (0x8003a978, "bne $v0, $zero, 0x8003a99c", "and no countdown running"),
+    (0x8003a980, "sw $v0, 540($s0)", "set the ending at 540"),
+    (0x8003a988, "sh $v0, 370($s0)", "the countdown"),
+    (0x8003a990, "sh $zero, 312($s0)", "drop the speed"),
+    (0x8003a994, "sh $zero, 320($s0)", "and the spin's"),
+    (0x8003a998, "sw $v0, 516($s0)", "and set the heat at 516"),
+    (0x8003ab48, "bne $v1, $v0, 0x8003ac2c", "on fire"),
+    (0x8003ab50, "jal 0x8003b514", "the air is asked after"),
+    (0x8003ab58, "bne $v0, $zero, 0x8003abb4", "and on the ground"),
+    (0x8003ab6c, "bne $v1, $v0, 0x8003ab84", "with no invincibility"),
+    (0x8003ab80, "sw $v0, 516($s0)", "the heat grows"),
+    (0x8003abb4, "lh $v1, 494($s0)", "and on the frame after a landing, marked at 494"),
+    (0x8003abbc, "bne $v1, $v0, 0x8003abe8", "with no invincibility"),
+    (0x8003abe4, "sw $v0, 516($s0)", "grows by more"),
+    (0x8003abf4, "bne $v0, $zero, 0x8003ac70", "past its limit"),
+    (0x8003ac04, "bne $v0, $zero, 0x8003ac70", "with no countdown running"),
+    (0x8003ac0c, "sh $v0, 706($s0)", "the ball is frozen at 706"),
+    (0x8003ac14, "sw $v0, 540($s0)", "the ending set"),
+    (0x8003ac28, "sh $v0, 370($s0)", "and the countdown"),
+    (0x8003ac68, "sw $v0, 516($s0)", "off fire the heat cools"),
+    (0x8003ac6c, "sw $zero, 516($s0)", "to no less than nothing"),
+    (0x8003ad38, "sw $v0, 516($s0)", "and on ice by more"),
+    (0x8003642c, "bne $a0, $v0, 0x80036450", "while the fire's countdown runs"),
+    (0x80036448, "sh $v0, -23596($at)", "the ball's routine swells the word at 704"),
+    (0x80031390, "lh $v1, 704($s3)", "which the draw widens the ball by"),
+    (0x80036718, "lw $v1, -23784($v1)", "and the heat"),
+    (0x80036754, "jal 0x8004f108", "shakes the pad"),
+    (0x8003ac70, "jal 0x8003b514", "the kinds and types under the ball act"),
+    (0x8003ac78, "bne $v0, $zero, 0x8003b2c0", "on the ground alone"),
+    (0x8003ac8c, "bne $v0, $zero, 0x8003ac98", "the melt at 524 is held"),
+    (0x8003ac94, "sw $v0, 524($s0)", "at its top"),
+    (0x8003aca0, "bne $v1, $v0, 0x8003acec", "on acid"),
+    (0x8003acb0, "bne $v0, $zero, 0x8003acec", "with no countdown running"),
+    (0x8003acc4, "bne $v1, $v0, 0x8003ace4", "and no invincibility"),
+    (0x8003accc, "sw $v0, 540($s0)", "the ending is set"),
+    (0x8003acd8, "sh $v1, 370($s0)", "with the countdown"),
+    (0x8003ace0, "sw $v0, 524($s0)", "and the melt grows"),
+    (0x8003647c, "bne $v1, $v0, 0x8003649c", "as it does, while the acid's countdown runs"),
+    (0x80036498, "sw $v0, -23776($at)", "in the ball's routine"),
+    (0x8003b034, "bne $v1, $v0, 0x8003b0d0", "on spikes"),
+    (0x8003b044, "bne $v0, $zero, 0x8003b0d0", "with no countdown running"),
+    (0x8003b09c, "sh $v0, -23594($at)", "the ball is frozen"),
+    (0x8003b0a8, "sh $v0, -23930($at)", "the countdown set"),
+    (0x8003b0cc, "sw $v0, -23788($at)", "and the ball marked dying at 512"),
+    (0x8003b0d8, "bne $v1, $v0, 0x8003b22c", "on moving spikes"),
+    (0x8003b0f4, "lh $s1, 8($v0)", "whose slot's f4"),
+    (0x8003b0fc, "bne $s1, $v0, 0x8003b224", "is the deadly value"),
+    (0x8003b110, "bne $s2, $v0, 0x8003b224", "with no invincibility"),
+    (0x8003b120, "bne $v0, $s1, 0x8003b19c", "on the frame after a landing"),
+    (0x8003b180, "sw $s2, -23760($at)", "the ending is the invincibility word's value"),
+    (0x8003b188, "sh $v0, -23930($at)", "with the countdown"),
+    (0x8003b1a4, "bne $v0, $zero, 0x8003b224", "and standing, with no countdown running"),
+    (0x8003b208, "sw $s2, -23760($at)", "the same ending"),
+    (0x8003b220, "sh $v0, 370($s0)", "with a countdown of its own"),
+    (0x80036760, "lw $v1, -23744($v1)", "the ball's routine reads the invincibility"),
+    (0x80036768, "bne $v1, $v0, 0x80036820", "and with none"),
+    (0x800367a4, "beq $v0, $zero, 0x80036820", "where the hit test finds a captivator in reach"),
+    (0x800367b8, "beq $v0, $s0, 0x80036820", "and the ball is not captured already"),
+    (0x800367cc, "jal 0x8004ddbc", "plays a sound"),
+    (0x800367ec, "sh $v0, -23594($at)", "freezes the ball"),
+    (0x800367f8, "sh $v0, -23930($at)", "sets the countdown"),
+    (0x80036804, "sh $zero, -23988($at)", "drops the speed"),
+    (0x8003680c, "sh $zero, -23980($at)", "and the spin's"),
+    (0x80036814, "sw $s0, -23760($at)", "sets the ending"),
+    (0x8003681c, "sw $v0, -23788($at)", "and marks the ball dying"),
+    (0x800366d0, "beq $v1, $v0, 0x800366fc", "the captivators stand still once the ball is captured"),
+    (0x8003d570, "lw $v0, 7880($gp)", "the hit test runs over the entries"),
+    (0x8003d5c8, "mult $v0, $v0", "squaring the ball's distance from each"),
+    (0x8003d628, "bne $v1, $t1, 0x8003d644", "a wandering ball"),
+    (0x8003d634, "beq $v0, $zero, 0x8003d650", "catches the ball within the shorter reach"),
+    (0x8003d644, "slt $v0, $t0, $v0", "and the others"),
+    (0x8003d648, "beq $v0, $zero, 0x8003d670", "within the longer"),
+    (0x800386e0, "bne $v1, $v0, 0x80038730", "type 42's brown form asks no invincibility"),
+    (0x800386f4, "bne $v0, $zero, 0x80038730", "and no countdown running"),
+    (0x80038724, "sh $v0, -23930($at)", "and sets the countdown"),
+    (0x8002f8a4, "lh $v0, 706($s0)", "frozen, the ball's state"),
+    (0x8002f8ac, "bne $v0, $zero, 0x80030228", "does nothing"),
+    (0x8002fd08, "lh $v0, 706($s0)", "nor a jump's rows"),
+    (0x8002fd10, "bne $v0, $zero, 0x80030228", "anything"),
+    (0x8003024c, "lh $v0, 706($s0)", "nor the move step"),
+    (0x80030254, "bne $v0, $zero, 0x8003060c", "anything"),
+    (0x80030630, "lh $v0, 706($s0)", "nor the landings"),
+    (0x80030638, "bne $v0, $zero, 0x800307c8", "anything"),
+    (0x80032318, "lw $v0, 512($s3)", "the draw reads the dying mark"),
+    (0x80032320, "beq $v0, $zero, 0x8003236c", "and while it stands"),
+    (0x80032350, "sh $v0, 6080($gp)", "steps an angle"),
+    (0x80032360, "sw $v0, 6064($gp)", "and puts its sine over full into the light's blue"),
+    (0x80032364, "sw $v0, 6060($gp)", "green"),
+    (0x80032368, "sw $v0, 6056($gp)", "and red"),
+    (0x800363f0, "lh $v0, 0($a0)", "the ball's routine counts the countdown"),
+    (0x80036418, "sw $zero, -24204($at)", "with the forward request cleared"),
+    (0x80036420, "sw $zero, -24208($at)", "the turn's"),
+    (0x80036428, "sw $zero, -24200($at)", "and the jump's"),
+    (0x80036334, "bne $a0, $v0, 0x80036398", "the Simon rooms' verdict at 0x800a4cb4, done"),
+    (0x8003636c, "sw $a0, -23760($at)", "is the exit's ending"),
+    (0x800363a0, "bne $v1, $v0, 0x800363e8", "and wrong"),
+    (0x800363d4, "sw $v0, -23760($at)", "an ending of its own"),
+    (0x80037164, "sh $v0, 7548($gp)", "which the input routine gives"),
+    (0x800347c4, "sh $zero, 460($a0)", "the ending's routine marks the ball not live"),
+    (0x800348c8, "jal 0x80060a38", "turns the view by three angles"),
+    (0x800348e4, "lw $v0, 7020($gp)", "about the lattice's middle"),
+    (0x8003490c, "jal 0x80060508", "turned into the view"),
+    (0x80034920, "lw $v1, 7048($gp)", "and puts the eye the free camera's distance"),
+    (0x80034840, "bne $v1, $zero, 0x80034870", "and, on a level with keys"),
+    (0x80034974, "jal 0x8005fb58", "the sine of a fourth angle"),
+    (0x800349c4, "sw $v0, 22912($at)", "and more away"),
+    (0x8003487c, "bne $v1, $v0, 0x800348ac", "and on one with none"),
+    (0x80034a38, "sw $v0, 22912($at)", "further still"),
+    (0x80041b08, "lw $v0, 10252($gp)", "on the first frame of an ending"),
+    (0x80041b10, "bne $v0, $zero, 0x80041bc8", "alone"),
+    (0x80041b90, "jal 0x80041f30", "the loop settles the points"),
+    (0x80041f6c, "bgez $v0, 0x80042024", "after a death"),
+    (0x80041f80, "bne $v0, $zero, 0x80042024", "in the arcade mode"),
+    (0x80041f90, "bne $v0, $zero, 0x80041fc8", "outside the finals"),
+    (0x80041fd0, "sll $v0, $v0, 1", "where a world is two levels"),
+    (0x80041ff4, "bne $v0, $zero, 0x80042000", "the penalty is held at its most"),
+    (0x80042000, "lw $v0, 9360($gp)", "and with the level's score at 0x800a53c8"),
+    (0x80042008, "addu $v0, $v0, $v1", "added"),
+    (0x80042014, "subu $v1, $v1, $v0", "comes off the total at 0x800a5e84"),
+    (0x80042018, "sw $v1, 12108($gp)", "kept there"),
+    (0x80042054, "addu $v0, $v0, $v1", "which a level completed adds its score to"),
+    (0x80042058, "sw $v0, 12108($gp)", "instead"),
+    (0x80041ca8, "lw $v0, 12108($gp)", "and as the level is left"),
+    (0x80041cb0, "bltz $v0, 0x80041ccc", "a total below nothing"),
+    (0x80041e54, "bgez $v0, 0x80041ee0", "is the game's end"),
+    (0x80041ec4, "sw $v0, 1280($gp)", "told to the game's loop"),
+    (0x800406c4, "bne $v1, $v0, 0x80040210", "which goes back to its start"),
+    (0x800401b4, "sw $zero, 12108($gp)", "where the total starts at nothing"),
+    (0x80041ecc, "sw $zero, 12108($gp)", "as it does at the game's end"),
+    (0x800405bc, "jal 0x80025be4", "and otherwise loads the level again"),
+    (0x800405c4, "jal 0x80035d18", "and sets the ball's words afresh"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -1301,6 +1478,75 @@ IMMEDIATES = [
      0x8002dd48, "addiu $v0, $v0, {}"),
     ("the level's clock and its end", "mark.skips", "a block of this kind not counted", 0x8002dcec,
      "addiu $v0, $zero, {}"),
+
+    ("what harms the ball", "laser.cell", "the ball's own cell holding this, a lit beam, is the laser's death", 0x8003a944,
+     "addiu $v1, $zero, {}"),
+    ("what harms the ball", "laser.heat", "which sets the heat to this", 0x8003a98c, "addiu $v0, $zero, {}"),
+    ("what harms the ball", "fire.kind", "fire is this kind under the ball", 0x8003ab44, "addiu $v0, $zero, {}"),
+    ("what harms the ball", "fire.burn", "and heats it by this a frame on the ground", 0x8003ab7c, "addiu $v0, $v0, {}"),
+    ("what harms the ball", "fire.landed", "the landing's mark at 494 being this on the frame after one", 0x8003abb8,
+     "addiu $v0, $zero, {}"),
+    ("what harms the ball", "fire.land", "when it heats by this besides", 0x8003abe0, "addiu $v0, $v0, {}"),
+    ("what harms the ball", "fire.limit.gate", "past this, less one", 0x8003abf0, "slti $v0, $v0, {}"),
+    ("what harms the ball", "fire.cool", "off fire the heat cools by this a frame", 0x8003ac60, "addiu $v0, $v0, {}"),
+    ("what harms the ball", "heat.chill", "and on ice by this more", 0x8003ad30, "addiu $v0, $v0, {}"),
+    ("what harms the ball", "end.fire.swell", "while the fire's countdown runs, the ending being this", 0x80036410,
+     "addiu $v0, $zero, {}"),
+    ("what harms the ball", "fire.swell", "the ball swells by this of 4096 a frame", 0x80036440, "addiu $v0, $v0, {}"),
+    ("what harms the ball", "heat.shake", "the heat shakes the pad by this", 0x80036740, "addiu $a1, $v0, {}"),
+    ("what harms the ball", "heat.shake.big", "and from this with the big motor", 0x80036744, "slti $v0, $a1, {}"),
+    ("what harms the ball", "acid.top.gate", "the melt at 524 is held under this", 0x8003ac88, "slti $v0, $v0, {}"),
+    ("what harms the ball", "acid.top", "at this", 0x8003ac90, "addiu $v0, $zero, {}"),
+    ("what harms the ball", "acid.kind", "acid is this kind under the ball", 0x8003ac9c, "addiu $v0, $zero, {}"),
+    ("what harms the ball", "acid.gain", "and the melt grows by this", 0x8003acdc, "addiu $v0, $v0, {}"),
+    ("what harms the ball", "end.acid.wait", "and while the countdown runs with the ending at this", 0x80036478,
+     "addiu $v0, $zero, {}"),
+    ("what harms the ball", "acid.gain.wait", "by this a frame", 0x80036490, "addiu $v0, $v0, {}"),
+    ("what harms the ball", "spikes12.type", "spikes are this type under the ball", 0x8003b030, "addiu $v0, $zero, {}"),
+    ("what harms the ball", "spikes11.type", "moving spikes are this type", 0x8003b0d4, "addiu $v0, $zero, {}"),
+    ("what harms the ball", "spikes11.deadly", "deadly while their f4 is this", 0x8003b0f8, "addiu $v0, $zero, {}"),
+    ("what harms the ball", "wait.spikes.landing", "with a countdown of this many frames after a landing", 0x8003b168,
+     "addiu $v0, $zero, {}"),
+    ("what harms the ball", "wait.spikes.standing", "and this many standing", 0x8003b21c, "addiu $v0, $zero, {}"),
+    ("what harms the ball", "end.captivator.still", "the captivators stand while the ending is this", 0x800366cc,
+     "addiu $v0, $zero, {}"),
+    ("what harms the ball", "catch.type53", "the hit test gives this type", 0x8003d588, "addiu $t1, $zero, {}"),
+    ("what harms the ball", "catch.near.gate", "a reach of a squared distance under this", 0x8003d630, "slti $v0, $v0, {}"),
+    ("what harms the ball", "catch.square", "and the others one of at most this", 0x8003d58c, "ori $t0, $zero, {}"),
+    ("what harms the ball", "dying.flash", "the dying ball's light flashes by an angle stepping this", 0x80032330,
+     "addiu $v1, $a0, {}"),
+    ("what harms the ball", "dying.flash.full", "its sine over this", 0x8003235c, "addiu $v0, $v0, {}"),
+    ("what harms the ball", "tint.full", "the ball's light is this untinted", 0x80032158, "addiu $v0, $v0, {}"),
+
+    ("the level's clock and its end", "start.wait", "a level starts with the countdown at 370 at this", 0x80035e04,
+     "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "start.guard", "and the guard clears itself at this", 0x8003631c,
+     "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "end.exit.landing", "the exit's result written at once after a landing", 0x8003aef8,
+     "addiu $v1, $zero, {}"),
+    ("the level's clock and its end", "end.hidden.landing", "and the hidden exit's", 0x8003af6c, "addiu $v1, $zero, {}"),
+    ("the level's clock and its end", "end.bonus.landing", "and a bonus level's outcome", 0x8003ae9c,
+     "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "simon.done", "the Simon rooms' verdict at this is the sequence done", 0x80036330,
+     "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "simon.wrong", "and at this a wrong move", 0x8003639c, "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "end.view.x", "the ending's view steps its first angle by this a frame", 0x800347d0,
+     "addiu $v1, $a0, {}"),
+    ("the level's clock and its end", "end.view.y", "its second by this", 0x800347f4, "addiu $v1, $a0, {}"),
+    ("the level's clock and its end", "end.view.z", "its third by this", 0x80034818, "addiu $a0, $a1, {}"),
+    ("the level's clock and its end", "end.view.swing", "and its fourth, the swing's, by this", 0x80034850,
+     "addiu $v1, $a0, {}"),
+    ("the level's clock and its end", "end.view.swing.bonus", "or on a level with no key by this", 0x8003488c,
+     "addiu $v1, $a0, {}"),
+    ("the level's clock and its end", "end.view.off", "the eye stands this further than the free camera's", 0x800349b4,
+     "addiu $v0, $v0, {}"),
+    ("the level's clock and its end", "end.view.off.bonus", "or on a level with no key this", 0x80034a28,
+     "addiu $v0, $v0, {}"),
+    ("the level's clock and its end", "death.most.gate", "a death's penalty is held under this", 0x80041ff0,
+     "slti $v0, $v1, {}"),
+    ("the level's clock and its end", "death.most", "at this", 0x80041ffc, "addiu $v1, $zero, {}"),
+    ("the level's clock and its end", "death.over", "and a total below nothing tells the game's loop this", 0x80041ec0,
+     "addiu $v0, $zero, {}"),
 ]
 
 # The table of brightness a beam's lines step through, from its first byte to
@@ -1369,6 +1615,14 @@ MULTIPLIERS = [
      "v1", "v0"),
     ("the level's clock and its end", "mark.under", "the block marked lies this far under the ball's centre, units",
      0x8003ad94, 7, "v1", "v0"),
+    ("the level's clock and its end", "end.view.reach", "the ending's eye swings this far either way, units", 0x8003497c, 5,
+     "v0", "a1"),
+    ("the level's clock and its end", "end.view.reach.bonus", "or on a level with no key this far", 0x800349e8, 7, "v0",
+     "a1"),
+    ("the level's clock and its end", "death.levels", "a death's penalty counts this many levels a world", 0x80041fa0, 2,
+     "v0", "v1"),
+    ("the level's clock and its end", "death.each", "times this a level", 0x80041fb0, 6, "v1", "v1"),
+    ("the level's clock and its end", "death.each.final", "as in the finals", 0x80041fdc, 5, "v0", "v1"),
 ]
 
 # The one reach that is a square held in two halves of a word.
@@ -1396,6 +1650,12 @@ DIVISORS = [
      "ori $v1, $v1, {}", 0x8002bb04, "sra $v1, $t7, {}"),
     ("what the ball takes", "hourglass.second", "the hourglass counts the clock it leaves in seconds of this many ticks",
      0x80039060, "lui $a0, {}", 0x80039064, "ori $a0, $a0, {}", 0x800390a0, "sra $v1, $t3, {}"),
+    ("what harms the ball", "heat.shake.over", "the heat shakes the pad by more by the heat over this", 0x80036724,
+     "lui $v0, {}", 0x80036728, "ori $v0, $v0, {}", 0x80036738, "sra $v0, $t2, {}"),
+    ("what harms the ball", "tint.own", "the heat, the melt and the cold each tint the ball's light by their share of this",
+     0x80032048, "lui $t3, {}", 0x800320b8, "ori $t3, $t3, {}", 0x80032130, "sra $v1, $v1, {}"),
+    ("what harms the ball", "tint.other", "into their own channel and take their share of this off the other two",
+     0x800320c4, "lui $t2, {}", 0x800320d0, "ori $t2, $t2, {}", 0x80032138, "sra $v0, $t0, {}"),
 ]
 
 # A brightness or a step of one, a grey held as a colour word in two halves.
@@ -1434,6 +1694,12 @@ BUTTON = 10               # the boost button's type
 LONG = [3, 2]             # the long jump takes each row times the first over the second
 ICE = 2
 ABOUT = 3                 # cells each way about the ball
+FIRE, ACID = 1, 4         # the kinds that harm by standing on them
+LIT = -2                  # a lit beam's cell in the lattice
+EXIT, HIDDEN_EXIT, MOVING_SPIKES, SPIKES, WANDERER = 7, 26, 11, 12, 53
+BROWN = 0                 # type 42's form that stays and harms
+UNHARMED = -1             # the invincibility word while no pill lasts
+LEVELS = 15               # levels a world the penalty counts
 
 # A device's light: the routine that makes it from a cell and a face, the one
 # that adds a face to it where the face is there, and the three cases of the
@@ -2092,8 +2358,12 @@ def devices(r):
 
 
 def play(r):
-    """The level's own words: the clock's ticks, the outcomes a level ends
-    with and the frames each ending waits, and a bonus level's marking."""
+    """The level's own words: the start's two counts, the clock's ticks, the
+    outcomes a level ends with and the frames each ending waits, a bonus
+    level's marking, the deaths' penalty and the ending's view, each held
+    against the others: one code and one countdown for a cause wherever it
+    is read twice, the codes distinct, the spikes' ending the invincibility
+    word's own rest, and the penalty's gates one past their values."""
     if r["exit.type"] != 7 or r["exit.hidden.type"] != 26:
         sys.exit("the exits are tested as other types than the exit's and the hidden exit's")
     if r["clock.mode"] != 1 or r["clock.face"] != 8:
@@ -2102,19 +2372,66 @@ def play(r):
         sys.exit(f"a bonus level marks the block {r['mark.under']} under the ball's centre, not the one it stands on")
     if r["mark.skips"] != INVISIBLE:
         sys.exit(f"a bonus level skips blocks of kind {r['mark.skips']}, not the invisible ones")
+    for keys in (("end.exit", "end.exit.landing", "simon.done"), ("end.bonus", "end.bonus.landing"),
+                 ("end.hidden", "end.hidden.landing"), ("end.acid", "end.acid.wait"), ("end.fire", "end.fire.swell"),
+                 ("end.captivator", "end.captivator.still", "end.star"), ("wait.exit", "wait.hidden"),
+                 ("wait.simon", "wait.simon.done"), ("wait.spikes", "wait.spikes.landing", "wait.captivator", "wait.star"),
+                 ("acid.gain", "acid.gain.wait"), ("death.each", "death.each.final")):
+        if len({r[k] for k in keys}) != 1:
+            sys.exit(f"{', '.join(keys)} are not one value")
     ending = {name: r[f"end.{name}"] for name in ENDINGS}
-    if sorted(ending.values()) != [v for v in range(-8, 4) if v]:
-        sys.exit(f"the endings are {ending}, not one code each from -8 to 3")
-    if r["end.star"] != r["end.captivator"] or r["wait.star"] != r["wait.captivator"]:
-        sys.exit("type 42's brown form does not end the level as a captivator does")
-    if r["wait.simon.done"] != r["wait.simon"] or r["wait.hidden"] != r["wait.exit"]:
-        sys.exit("a Simon room's two endings or the two exits do not wait alike")
+    if sorted(ending.values()) != [v for v in range(-8, 4) if v] or r["end.spikes"] != UNHARMED:
+        sys.exit(f"the endings are {ending}, not one code each from -8 to 3 with the spikes' the invincibility word's rest")
+    if r["simon.wrong"] != r["simon.done"] + 1:
+        sys.exit("the Simon rooms' verdicts are not one and two")
+    if r["death.most.gate"] != r["death.most"] + 1 or r["death.levels"] != LEVELS:
+        sys.exit("a death's penalty is not gated at its most, or does not count a world's levels")
     wait = {name: r[f"wait.{name}"] for name in ENDINGS if f"wait.{name}" in r}
     wait["bonus"] = r["wait.hidden"]
-    return {"clock": {"tick": r["clock.tick"], "second": r["time.tick"], "face": r["clock.face"],
+    return {"start": {"wait": r["start.wait"], "guard": r["start.guard"]},
+            "clock": {"tick": r["clock.tick"], "second": r["time.tick"], "face": r["clock.face"],
                       "out": r["end.time"]},
             "ending": ending, "wait": wait,
-            "bonus": {"block": r["mark.points"], "skips": r["mark.skips"]}}
+            "bonus": {"block": r["mark.points"], "skips": r["mark.skips"]},
+            "points": {"each": r["death.each"], "most": r["death.most"], "levels": r["death.levels"]},
+            "view": {"angles": [r["end.view.x"], r["end.view.y"], r["end.view.z"]], "swing": r["end.view.swing"],
+                     "off": r["end.view.off"], "reach": r["end.view.reach"],
+                     "bonus": {"swing": r["end.view.swing.bonus"], "off": r["end.view.off.bonus"],
+                               "reach": r["end.view.reach.bonus"]}}}
+
+
+def harms(r):
+    """What each kind and type that can hurt the ball does to it, by kind and
+    by type: fire's heat and acid's melt with their limits, the laser's cell
+    and the heat it leaves, the moving spikes' deadly value and their own
+    countdown, the captivators' reach as the squared distance each catches
+    the ball within, and the dying ball's flash and tint."""
+    if r["fire.kind"] != FIRE or r["acid.kind"] != ACID or r["laser.cell"] != LIT:
+        sys.exit("fire, acid or the laser is not read from its own kind or the lit beam's cell")
+    if r["fire.limit.gate"] != r["acid.top"] + 1 or r["acid.top.gate"] != r["acid.top"] + 1:
+        sys.exit("the heat's limit and the melt's top are not one value, gated one past it")
+    if {r["exit.type"], r["exit.hidden.type"], r["spikes12.type"], r["spikes11.type"], r["catch.type53"]} \
+            != {EXIT, HIDDEN_EXIT, SPIKES, MOVING_SPIKES, WANDERER}:
+        sys.exit("the exits, the spikes or the wandering ball are not read by their types")
+    if r["tint.full"] != -TURN or r["dying.flash.full"] != TURN or r["fire.landed"] != 1:
+        sys.exit("the ball's light is not full at a turn, or a landing is not marked by one")
+    catch = {"square": r["catch.square"]}
+    return {
+        "kinds": {
+            FIRE: {"heat": {"burn": r["fire.burn"], "land": r["fire.land"], "limit": r["acid.top"],
+                            "cool": -r["fire.cool"], "swell": r["fire.swell"],
+                            "shake": {"base": r["heat.shake"], "over": r["heat.shake.over"], "big": r["heat.shake.big"]}}},
+            ACID: {"melt": {"gain": r["acid.gain"], "top": r["acid.top"]}},
+            8: {"harm": {"cell": r["laser.cell"], "heat": r["laser.heat"]}},
+        },
+        "types": {
+            MOVING_SPIKES: {"harm": {"flag": r["spikes11.deadly"], "standing": r["wait.spikes.standing"]}},
+            42: {"harm": {"form": BROWN}},
+            50: {"catch": catch}, 51: {"catch": catch}, 52: {"catch": catch}, 56: {"catch": catch},
+            WANDERER: {"catch": {"square": r["catch.near.gate"] - 1}},
+            int(BALL): {"dying": {"flash": r["dying.flash"]}, "tint": {"own": r["tint.own"], "other": r["tint.other"]}},
+        },
+    }
 
 
 def table(r, platform_speed):
@@ -2127,8 +2444,9 @@ def table(r, platform_speed):
     sprite, how far off its face it lies and how strong it is, and the type
     whose models glint says how. A pickup says what it takes for the ball
     to take it and what that scores, a device under the ball what it does
-    there, and the level's own words, the clock's, the endings' and a bonus
-    level's, sit under `play`. The devices' light and each device's
+    there, a kind or a type that can hurt the ball what it does, and the
+    level's own words, the clock's, the endings', a bonus level's and an
+    ending's, sit under `play`. The devices' light and each device's
     colours, by world and then by circuit where it has one, sit apart from
     the types, whose entries are what moves.
     """
@@ -2227,6 +2545,11 @@ def table(r, platform_speed):
         8: laser(r),
         CRUMBLING: {"points": r["crumble.points"]},
     }
+    harm = harms(r)
+    for k, entry in harm["kinds"].items():
+        kinds.setdefault(k, {}).update(entry)
+    for t, entry in harm["types"].items():
+        types[t].update(entry)
     colours = {str(t): r["glow.colours"][t] for t in sorted(r["glow.colours"])}
     return {"hz": HZ, "turn": TURN, "standoff": r["captivator.standoff"],
             "dice": {"seed": r["dice.seed"], "times": r["dice.times"], "plus": r["dice.plus"]},

@@ -17,3 +17,7 @@ As a level opens, and again on a restart, `0x80033e94` lays a cubic curve (evalu
 ## The free camera
 
 The same routine measures the lattice: the box round every cell it fills, the box's middle, and the distance from the middle to the furthest of them, plus 1200. While the ball's word at `0x800ba296` is set, which the Japanese release's Select button does and the cheat in [level-format.md](level-format.md) does on this one, `0x80034684` holds the eye that far from the box's middle and turns it with the pad. The level feeds this camera nothing either.
+
+## The view at an ending
+
+While the level's outcome word at `0x800a5e00` is set, by a death, the exit or the clock, or either of two more words the loop asks ([motion.md](motion.md) has the three), the loop runs `0x80036aa8` each frame instead of the ball's routine (`0x80040fcc` to `0x8004100c`), and the view it builds (`0x800347b8`) marks the ball not live, turns by three angles of its own that step −8, 3 and 10 a frame about the lattice's middle, the free camera's rotation and target (`0x800348c8`, `0x800348e4`, `0x8003490c`), and puts the eye the free camera's distance plus 1400 from it, 1000 further and nearer by turns as a fourth angle steps 12 a frame, a swing every 341 frames, 5.7 s (`0x80034920` to `0x800349c4`); on a level with no key the fourth steps 58 and the eye swings 3000 about 3400 further (`0x8003487c`, `0x80034a38`). The ball is not drawn while the outcome stands (`0x80036980`, `0x80036988`), and the level that follows, the same after a death, opens with the fly-in.

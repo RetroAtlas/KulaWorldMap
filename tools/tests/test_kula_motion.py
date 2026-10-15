@@ -14,7 +14,7 @@ from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
     GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, PHASES,
     ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, Code, devices, dispatch,
-    exits, glint, glow_lift, glow_spill, jump, laser, light, moves, play, roll, root_table, shadow_half,
+    exits, glint, glow_lift, glow_spill, harms, jump, laser, light, moves, play, roll, root_table, shadow_half,
     spike_cycle, spin_orders, table, take, vanish_cycle)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
@@ -132,6 +132,18 @@ GAME = {
     "wait.fire": 25, "end.captivator": -5, "wait.captivator": 10, "end.star": -5, "wait.star": 10, "end.acid": -6,
     "wait.acid": 6, "end.laser": -7, "wait.laser": 4, "end.simon": -8, "wait.simon": 25, "wait.simon.done": 25,
     "mark.points": 50, "mark.skips": 3, "mark.under": 356,
+    "start.wait": 20, "start.guard": 20, "laser.cell": -2, "laser.heat": 1900, "fire.kind": 1, "fire.burn": 40,
+    "fire.landed": 1, "fire.land": 600, "fire.limit.gate": 2001, "fire.cool": -15, "heat.chill": -150,
+    "end.fire.swell": -4, "fire.swell": 210, "heat.shake": 40, "heat.shake.big": 126, "heat.shake.over": 25,
+    "acid.top.gate": 2001, "acid.top": 2000, "acid.kind": 4, "acid.gain": 300, "end.acid.wait": -6,
+    "acid.gain.wait": 300, "end.exit.landing": 1, "end.hidden.landing": 3, "end.bonus.landing": 2,
+    "spikes12.type": 12, "spikes11.type": 11, "spikes11.deadly": 1, "wait.spikes.landing": 10,
+    "wait.spikes.standing": 9, "end.captivator.still": -5, "catch.type53": 53, "catch.near.gate": 16200,
+    "catch.square": 44999, "dying.flash": 1024, "dying.flash.full": 4096, "tint.full": -4096, "tint.own": 400,
+    "tint.other": 2000, "simon.done": 1, "simon.wrong": 2, "end.view.x": -8, "end.view.y": 3, "end.view.z": 10,
+    "end.view.swing": 12, "end.view.swing.bonus": 58, "end.view.off": 1400, "end.view.off.bonus": 3400,
+    "end.view.reach": 1000, "end.view.reach.bonus": 3000, "death.most.gate": 5001, "death.most": 5000,
+    "death.over": 4, "death.levels": 15, "death.each": 50, "death.each.final": 50,
 }
 
 
@@ -676,19 +688,46 @@ class Devices(unittest.TestCase):
 class Play(unittest.TestCase):
     def test_the_level_ships_its_clock_its_endings_and_their_waits(self):
         p = play(GAME)
+        self.assertEqual(p["start"], {"wait": 20, "guard": 20})
         self.assertEqual(p["clock"], {"tick": 1, "second": 50, "face": 8, "out": -2})
         self.assertEqual(p["ending"], {"exit": 1, "bonus": 2, "hidden": 3, "spikes": -1, "time": -2, "lost": -3,
                                        "fire": -4, "captivator": -5, "acid": -6, "laser": -7, "simon": -8})
         self.assertEqual(p["wait"], {"exit": 5, "hidden": 5, "bonus": 5, "spikes": 10, "fire": 25, "captivator": 10,
                                      "acid": 6, "laser": 4, "simon": 25})
         self.assertEqual(p["bonus"], {"block": 50, "skips": 3})
+        self.assertEqual(p["points"], {"each": 50, "most": 5000, "levels": 15})
+        self.assertEqual(p["view"], {"angles": [-8, 3, 10], "swing": 12, "off": 1400, "reach": 1000,
+                                     "bonus": {"swing": 58, "off": 3400, "reach": 3000}})
 
     def test_an_ending_shared_or_waited_otherwise_stops_the_reading(self):
         for change in ({"end.acid": -4}, {"end.exit": 4}, {"end.star": -4}, {"wait.star": 9}, {"wait.hidden": 4},
                        {"wait.simon.done": 24}, {"mark.under": 300}, {"mark.skips": 2}, {"clock.face": 9},
-                       {"exit.type": 8}):
+                       {"exit.type": 8}, {"end.exit.landing": 2}, {"simon.done": 3}, {"end.captivator.still": -4},
+                       {"acid.gain.wait": 200}, {"death.each.final": 25}, {"end.time": -3}, {"end.spikes": -2},
+                       {"death.most.gate": 5000}, {"death.levels": 14}, {"simon.wrong": 3}):
             with self.assertRaises(SystemExit):
                 play({**GAME, **change})
+
+
+class Harms(unittest.TestCase):
+    def test_the_harms_ship_by_kind_and_by_type_with_the_captivators_squared_reach(self):
+        h = harms(GAME)
+        self.assertEqual(h["kinds"][1]["heat"], {"burn": 40, "land": 600, "limit": 2000, "cool": 15,
+                                                 "swell": 210, "shake": {"base": 40, "over": 25, "big": 126}})
+        self.assertEqual(h["kinds"][4], {"melt": {"gain": 300, "top": 2000}})
+        self.assertEqual(h["kinds"][8], {"harm": {"cell": -2, "heat": 1900}})
+        self.assertEqual(h["types"][11], {"harm": {"flag": 1, "standing": 9}})
+        self.assertEqual(h["types"][42], {"harm": {"form": 0}})
+        for t in (50, 51, 52, 56):
+            self.assertEqual(h["types"][t], {"catch": {"square": 44999}})
+        self.assertEqual(h["types"][53], {"catch": {"square": 16199}})
+        self.assertEqual(h["types"][30], {"dying": {"flash": 1024}, "tint": {"own": 400, "other": 2000}})
+
+    def test_a_harm_read_from_another_kind_type_or_limit_stops_the_reading(self):
+        for change in ({"fire.kind": 2}, {"laser.cell": -1}, {"fire.limit.gate": 2000}, {"acid.top.gate": 2000},
+                       {"spikes12.type": 11}, {"catch.type53": 52}, {"tint.full": -2048}, {"fire.landed": 2}):
+            with self.assertRaises(SystemExit):
+                harms({**GAME, **change})
 
 
 class Table(unittest.TestCase):
@@ -750,7 +789,7 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["30"]["spin"], -5)
         self.assertEqual(t["types"]["30"]["jump"]["far"], 1536)
         self.assertEqual(set(t["types"]["30"]), {"breathe", "light", "shadow", "before", "rolling", "quarter", "wrap", "climb",
-                                                 "fall", "spin", "squash", "look", "jump"})
+                                                 "fall", "spin", "squash", "look", "jump", "dying", "tint"})
         self.assertEqual(t["types"]["43"]["order"], "zyx")
         self.assertEqual(t["types"]["7"]["order"], "xyz")
         self.assertEqual(t["types"]["51"]["order"], "zyx")
@@ -793,7 +832,15 @@ class Table(unittest.TestCase):
         self.assertEqual(t["kinds"]["6"], {"points": 50})
         self.assertEqual(t["play"]["clock"]["second"], 50)
         self.assertEqual(t["play"]["ending"]["lost"], -3)
-        self.assertEqual(set(t["play"]), {"clock", "ending", "wait", "bonus"})
+        self.assertEqual(set(t["play"]), {"start", "clock", "ending", "wait", "bonus", "points", "view"})
+        self.assertEqual(t["play"], play(GAME))
+        self.assertEqual(t["kinds"]["1"], harms(GAME)["kinds"][1])
+        self.assertEqual(t["kinds"]["4"], harms(GAME)["kinds"][4])
+        self.assertEqual(t["kinds"]["8"]["harm"], {"cell": -2, "heat": 1900})
+        self.assertEqual(t["kinds"]["8"]["reach"], 256)
+        self.assertEqual(t["types"]["53"]["catch"], {"square": 16199})
+        self.assertEqual(t["types"]["11"]["harm"], {"flag": 1, "standing": 9})
+        self.assertEqual(set(t["kinds"]), {"1", "3", "4", "5", "6", "7", "8"})
 
 
 if __name__ == "__main__":
