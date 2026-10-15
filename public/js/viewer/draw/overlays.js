@@ -98,7 +98,7 @@ const along = (p, ...terms) => terms.reduce((q, [k, v]) => q.map((c, i) => c + k
 /** Where the game's camera stands as the level opens, and the corners of what
     it sees at the depth of the face under the ball. */
 export function startCamera(l) {
-  const [start] = startsOf(l);
+  const start = startsOf(l).at(-1);
   const heading = start && markerHeading(start);
   if (!heading) return null;
   const up = FACE_NORMAL[start.face];

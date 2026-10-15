@@ -42,3 +42,18 @@ test("at the ball the start camera sees a block's width three times over, the ba
   assert.ok(Math.abs(drop - 50 / 120) < 1e-9, `${drop}`);
   assert.ok(Math.abs(length(minus(middle, eye)) - 800 / 512) < 1e-9);
 });
+
+// The loader takes the last start it meets, so a level with several starts
+// opens behind that one.
+test("the start camera stands behind the last start, where the game puts the ball", () => {
+  const start = (x, y, z, facing) => ({
+    x,
+    y,
+    z,
+    kind: 0,
+    on: [{ face: 0, type: 30, f: [facing, 0, 1, 0, -1, -1, -1, 386, 1, -1, -1], v: 0 }],
+  });
+  const l = { records: [start(3, 3, 3, 1), start(8, 8, 8, 3)] };
+  const { eye } = startCamera(l);
+  near(minus(eye, [8.5, 8.5, 8]), [0, 648 / 512, -531 / 512], "the last start, facing -y");
+});
