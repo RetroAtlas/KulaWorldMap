@@ -30,7 +30,8 @@ const SHOWN = [
   ["showCamera", "camera"],
   ["showCompass", "compass"],
 ];
-const DEFAULTS = { ...state.show };
+const REDUCED = "(prefers-reduced-motion: reduce)";
+const DEFAULTS = { ...state.show, motion: !matchMedia(REDUCED).matches };
 
 export const sidebarOverlays = () => matchMedia("(max-width: 760px)").matches;
 
@@ -241,6 +242,7 @@ function save() {
 }
 
 export function restore() {
+  Object.assign(state.show, DEFAULTS);
   restoreYours();
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || "null");

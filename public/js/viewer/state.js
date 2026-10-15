@@ -2,7 +2,6 @@ export const SIDE = 34;
 export const BLOCK = 34;
 
 const DEG = Math.PI / 180;
-const REDUCED = "(prefers-reduced-motion: reduce)";
 export const PITCH_MIN = -84;
 export const PITCH_MAX = 84;
 export const ZOOM_MIN = 0.08;
@@ -22,7 +21,7 @@ export const state = {
   show: {
     objects: true,
     models: true,
-    motion: !globalThis.matchMedia?.(REDUCED).matches,
+    motion: true,
     through: false,
     labels: false,
     faces: false,
