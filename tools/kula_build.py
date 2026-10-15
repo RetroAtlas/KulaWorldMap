@@ -17,9 +17,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import EXE, THEMES, open_disc, packs
-from kula_ggi import FILE as GGI, Ggi, shadows, write_objects
+from kula_ggi import FILE as GGI, Ggi, jump, shadows, write_objects
 from kula_level import Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
-from kula_motion import Code, readings, table
+from kula_motion import BALL, Code, readings, table
 from kula_pak import Pak
 from kula_place import RECOMPRESS, ROOM
 from kula_sector import USER, sectors_of
@@ -139,9 +139,10 @@ def main():
     layout = packs_json(disc)
     g = Ggi(disc.read_file(GGI))
     cast = shadows(g, r["shadow.sprite"], r["shadow.sprites"])
+    arc = jump(g, motion["types"][BALL]["jump"]["skip"])
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    shapes = write_objects(g, OBJECTS, placed, motion, skins, cast)
+    shapes = write_objects(g, OBJECTS, placed, motion, skins, cast, arc)
     OUT.write_text(json.dumps(data, indent=1))
     PACKS.write_text(json.dumps(layout, indent=1))
     cells = sum(len(l["cells"]) // 4 for l in levels)
@@ -153,7 +154,8 @@ def main():
     models = sum(len(v) for v in shapes["types"].values()) + len(shapes["balls"])
     print(f"{len(shapes['types'])} object types and the ball drawn by {models} models, "
           f"{len(motion['types'])} types and {len(motion['kinds'])} kinds of block in motion, "
-          f"the skins of {len(skins['sets'])} sets of faces, {len(shapes['shadows'])} shadows "
+          f"the skins of {len(skins['sets'])} sets of faces, {len(shapes['shadows'])} shadows and the jump's "
+          f"{len(arc['rows'])} rows "
           f"-> {OBJECTS.relative_to(OUT.parent.parent.parent)} ({OBJECTS.stat().st_size/1024:.0f} KB)")
     held = sum(p["size"] for p in layout["packs"])
     capacity = sum(p["capacity"] for p in layout["packs"])

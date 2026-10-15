@@ -350,6 +350,28 @@ def texture_sheet(g):
     print(f"{len(tex)} sprites -> {OUT / 'textures.png'} and textures.md")
 
 
+# The fifth section is the jump's arc: a count, three pads, then rows of i16 height, right and back.
+ARC = 5
+ARC_HEAD = 8
+ROW = 6
+
+
+def jump(g, skip):
+    """The jump's count and rows. The game runs the count down by one a
+    frame and from one past `skip` straight to nothing, taking a row a frame
+    while it stands and the hop a row and the next, so the rows must reach as
+    far as the count takes them; what is left at the section's end is less
+    than a row."""
+    blob, a, b = g.blob, g.bounds[ARC], g.bounds[ARC + 1]
+    count, *pads = struct.unpack_from("<4h", blob, a)
+    if count <= 0 or any(pads):
+        sys.exit(f"the jump's section opens with {count} and {pads}, not a count and three pads")
+    rows = [list(struct.unpack_from("<3h", blob, a + ARC_HEAD + ROW * i)) for i in range((b - a - ARC_HEAD) // ROW)]
+    if len(rows) < count - skip:
+        sys.exit(f"the jump's section holds {len(rows)} rows for a count of {count}")
+    return {"count": count, "rows": rows}
+
+
 # The first table's entries for the things that move, by their type.
 MOVING = {50: 20, 51: 21, 52: 22, 53: 23, 56: 24}
 # The ball designs, one an entry from the first table's start.
@@ -394,9 +416,9 @@ def as_dict(m):
     return out
 
 
-def write_objects(g, path, placed=None, motion=None, skins=None, shadows=None):
-    """A model, a shadow, a motion entry or a skins reading to a line, so a
-    rebuild diffs by line."""
+def write_objects(g, path, placed=None, motion=None, skins=None, shadows=None, arc=None):
+    """A model, a shadow, the jump's arc, a motion entry or a skins reading
+    to a line, so a rebuild diffs by line."""
     data = objects(g, placed)
     lines = ["{", f' "block": {data["block"]},', ' "types": {']
     types = list(data["types"].items())
@@ -405,12 +427,15 @@ def write_objects(g, path, placed=None, motion=None, skins=None, shadows=None):
         lines.append(f'  "{t}": [\n{body}\n  ]' + ("," if i < len(types) - 1 else ""))
     lines += [" },", ' "balls": [']
     lines.append(",\n".join("  " + json.dumps(m, separators=(",", ":")) for m in data["balls"]))
-    lines += [" ]" + ("," if shadows or motion or skins else "")]
+    lines += [" ]" + ("," if shadows or arc or motion or skins else "")]
     if shadows:
         data["shadows"] = shadows
         lines.append(' "shadows": [')
         lines.append(",\n".join("  " + json.dumps(s, separators=(",", ":")) for s in shadows))
-        lines.append(" ]" + ("," if motion or skins else ""))
+        lines.append(" ]" + ("," if arc or motion or skins else ""))
+    if arc:
+        data["jump"] = arc
+        lines.append(' "jump": ' + json.dumps(arc, separators=(",", ":")) + ("," if motion or skins else ""))
     if motion:
         data["motion"] = motion
         head = {k: v for k, v in motion.items() if k not in ("types", "kinds")}

@@ -554,6 +554,25 @@ test("the fall, the landing's squash and the view's extra pitch ship their steps
   assert.equal(spin, -5);
 });
 
+test("the jump's table holds a count of 33 and 32 rows that rise to 458 and reach 1023 along, 30 of them run", () => {
+  const { jump } = objects;
+  const rule = table.types[30].jump;
+  assert.equal(jump.count, 33);
+  assert.equal(jump.rows.length, 32);
+  assert.deepEqual(jump.rows[0], [0, 0, -47]);
+  assert.deepEqual(jump.rows.at(-1), [-24, 0, -1023]);
+  const heights = jump.rows.map((r) => r[0]);
+  assert.equal(Math.max(...heights), 458);
+  assert.deepEqual([heights.indexOf(458), heights.lastIndexOf(458)], [14, 15]);
+  assert.ok(jump.rows.every((r) => r[1] === 0 && r[2] < 0));
+  // the count falls by one a frame and from one past the skip to nothing
+  assert.equal(jump.count - rule.skip - 1, 30);
+  assert.deepEqual(
+    [rule.speed, rule.snap, rule.far, rule.long, rule.scale, rule.catch, rule.wall],
+    [33, 1024, 1536, 3, [3, 2], 12, 412],
+  );
+});
+
 test("a ball's corner shows 89 of 256 of its colour facing away from the light, and all of it facing it", () => {
   const light = table.types[30].light;
   assert.equal(lightShare(light, 0), 89);

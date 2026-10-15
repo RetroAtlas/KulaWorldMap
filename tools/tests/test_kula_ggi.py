@@ -11,7 +11,8 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_ggi import BLEND, GROUP, PREFIX, QUAD, SORTED, TEXTURES, VRAM_H, Model, as_dict, shadows  # noqa: E402
+from kula_ggi import (  # noqa: E402
+    ARC, BLEND, GROUP, PREFIX, QUAD, SORTED, TEXTURES, VRAM_H, Model, as_dict, jump, shadows)
 
 
 def packed(frames):
@@ -147,6 +148,26 @@ class Shadows(unittest.TestCase):
                   sprites([0, STP | 3 * GREY, STP | 10 * GREY], abr=1)):
             with self.assertRaises(SystemExit):
                 shadows(g, 0, 1)
+
+
+def arc(count, rows, pads=(0, 0, 0), slack=4):
+    """A .GGI whose fifth section holds a jump's count, its pads and these
+    rows, with `slack` bytes left past them."""
+    section = struct.pack("<4h", count, *pads) + b"".join(struct.pack("<3h", *r) for r in rows) + bytes(slack)
+    return SimpleNamespace(blob=section, bounds=[0] * ARC + [0, len(section)])
+
+
+class Jump(unittest.TestCase):
+    ROWS = [[0, 0, -47], [68, 0, -92], [129, 0, -135], [184, 0, -175]]
+
+    def test_the_arc_ships_its_count_and_its_rows(self):
+        self.assertEqual(jump(arc(5, self.ROWS), 2), {"count": 5, "rows": self.ROWS})
+        self.assertEqual(len(jump(arc(5, self.ROWS, slack=0), 2)["rows"]), 4)
+
+    def test_a_pad_that_is_not_nothing_or_too_few_rows_for_the_count_stop_the_build(self):
+        for g in (arc(5, self.ROWS, pads=(1, 0, 0)), arc(7, self.ROWS), arc(0, self.ROWS)):
+            with self.assertRaises(SystemExit):
+                jump(g, 2)
 
 
 if __name__ == "__main__":

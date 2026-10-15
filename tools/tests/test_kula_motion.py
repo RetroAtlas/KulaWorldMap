@@ -13,8 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
     GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT,
-    STATES, Code, glint, glow_lift, glow_spill, laser, light, moves, roll, root_table, shadow_half, spike_cycle,
-    spin_orders, table, vanish_cycle)
+    STATES, Code, glint, glow_lift, glow_spill, jump, laser, light, moves, roll, root_table, shadow_half,
+    spike_cycle, spin_orders, table, vanish_cycle)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "sp": 29, "ra": 31}
@@ -107,6 +107,10 @@ GAME = {
     "look.least.gate": 10, "look.least": 10, "look.far.gate": 651, "look.far": 650, "look.back": -18,
     "look.back.up": 18, "look.held": 21, "look.held.gate": 651, "look.held.far": 650, "look.up": 21,
     "look.up.back": -18, "look.pitch": 250,
+    "jump.speed": 33, "jump.rows": 8, "jump.step": -1, "jump.skip": 2, "jump.row": 2, "jump.recentre": 8,
+    "jump.long": 3, "jump.catch": 12, "jump.wall": 412, "jump.wall.high": 412, "jump.wall.low": 100,
+    "jump.bounce": -10, "jump.ceiling": 412, "jump.ceiling.ahead": 412, "jump.ceiling.behind": 101,
+    "jump.snap": 1024, "jump.far": 1536, "boost.type": 10, "boost.roll": 151, "boost.frames": 10, "boost.fire": 231,
 }
 
 
@@ -544,6 +548,26 @@ class Roll(unittest.TestCase):
                 roll({**GAME, **change})
 
 
+class Jump(unittest.TestCase):
+    def test_the_jump_ships_its_speed_its_count_rule_and_its_landings(self):
+        j = jump(GAME)
+        self.assertEqual((j["speed"], j["skip"], j["snap"], j["far"], j["long"], j["scale"]), (33, 2, 1024, 1536, 3, [3, 2]))
+        self.assertEqual((j["catch"], j["wall"], j["low"], j["bounce"], j["recentre"]), (12, 412, 100, -10, 8))
+        self.assertEqual(j["boost"], {"roll": 151, "frames": 10, "fire": 231})
+
+    def test_a_jump_at_another_speed_or_landing_elsewhere_stops_the_reading(self):
+        for change in ({"jump.speed": 30}, {"jump.snap": 512}, {"jump.far": 1024}, {"jump.rows": 6},
+                       {"jump.step": -2}):
+            with self.assertRaises(SystemExit):
+                jump({**GAME, **change})
+
+    def test_a_wall_met_elsewhere_than_a_roll_meets_it_stops_the_reading(self):
+        for change in ({"jump.wall": 400}, {"jump.ceiling.ahead": 400}, {"jump.wall.low": 90},
+                       {"jump.ceiling.behind": 100}, {"jump.recentre": 4}, {"jump.bounce": -5}, {"boost.type": 9}):
+            with self.assertRaises(SystemExit):
+                jump({**GAME, **change})
+
+
 class Table(unittest.TestCase):
     def test_the_table_carries_a_program_per_phase_and_the_platform_scaled(self):
         r = dict(GAME)
@@ -600,8 +624,9 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["30"]["wrap"], {"frames": 13, "step": 78, "arc": [[38, 8], [32, 22], [22, 32], [8, 39]]})
         self.assertEqual(t["types"]["30"]["fall"]["short"], 180)
         self.assertEqual(t["types"]["30"]["spin"], -5)
+        self.assertEqual(t["types"]["30"]["jump"]["far"], 1536)
         self.assertEqual(set(t["types"]["30"]), {"breathe", "light", "shadow", "before", "rolling", "quarter", "wrap", "climb",
-                                                 "fall", "spin", "squash", "look"})
+                                                 "fall", "spin", "squash", "look", "jump"})
         self.assertEqual(t["types"]["43"]["order"], "zyx")
         self.assertEqual(t["types"]["7"]["order"], "xyz")
         self.assertEqual(t["types"]["51"]["order"], "zyx")

@@ -438,6 +438,71 @@ CHECKS = [
     (0x8003512c, "sw $v0, 7000($gp)", "over a block the rate is reset"),
     (0x80035184, "sh $v0, 504($s0)", "and the pitch comes back"),
     (0x800354d4, "jal 0x80060f58", "the extra pitch and the view's own pitch the camera down"),
+    # The jump, the hop and the boost button's launch.
+    (0x80022e44, "lw $t2, 24($a3)", "the parser of the .GGI takes the header's section sizes"),
+    (0x80022e60, "sll $t2, $t2, 1", "in halfwords"),
+    (0x80022e8c, "addu $v0, $v1, $v0", "summed from the first section's start"),
+    (0x80022ea0, "sw $v0, 11296($gp)", "and keeps where the fifth begins"),
+    (0x8002f2ec, "lw $v1, 23384($v1)", "which the ball's init takes"),
+    (0x8002f368, "sw $v1, 6452($gp)", "as the jump's table"),
+    (0x8002f5f0, "lw $v0, 120($s0)", "the forward jump needs a block under the ball"),
+    (0x8002f5f8, "bltz $v0, 0x8002f674", "and does nothing otherwise"),
+    (0x8002f630, "swr $v0, 68($s0)", "it saves the centre at 68"),
+    (0x8002f638, "swr $v1, 72($s0)", "and 72"),
+    (0x8002f63c, "lw $v0, 6452($gp)", "takes the table"),
+    (0x8002f648, "lh $a1, 0($v0)", "its count"),
+    (0x8002f668, "sw $a1, 404($a0)", "as the count at 404"),
+    (0x8002f670, "sw $v1, 416($a0)", "and its first row at 416"),
+    (0x8002f60c, "sw $v0, 408($s0)", "in the jumping state"),
+    (0x8002f6fc, "lh $v0, 486($s0)", "the hop"),
+    (0x8002f708, "sw $zero, 408($s0)", "is a state of its own"),
+    (0x8002f760, "sw $a0, 404($s0)", "with the same count"),
+    (0x8002f764, "sw $v1, 416($s0)", "and the same first row"),
+    (0x8002fcf0, "sw $v0, 404($s0)", "jumping, the count falls by one a frame"),
+    (0x8002fcf4, "sw $zero, 404($s0)", "and from one past the skip to nothing"),
+    (0x8002fd00, "blez $v0, 0x8002fe14", "where it is nothing the jump ends"),
+    (0x8002fd30, "sh $v1, 80($s0)", "else a row's height"),
+    (0x8002fd44, "sh $v1, 76($s0)", "its right"),
+    (0x8002fd5c, "sh $a0, 78($s0)", "and its back are taken"),
+    (0x8002fd58, "beq $v1, $zero, 0x8002fdc4", "and where the long jump's word at 412 is set"),
+    (0x8002fd68, "sll $v0, $v1, 1", "each is taken three"),
+    (0x8002fd6c, "addu $v0, $v0, $v1", "times"),
+    (0x8002fd7c, "sra $v0, $v0, 1", "over two"),
+    (0x8002fdc0, "sw $v1, 412($s0)", "and the word counts the row"),
+    (0x8002fdcc, "jal 0x800606b8", "the frame matrix turns the row"),
+    (0x8002fdd8, "jal 0x80030f48", "the saved centre is drawn across toward the middle"),
+    (0x8002fdf4, "sh $v0, 60($s0)", "and the centre is the saved one plus the turned row"),
+    (0x8002fe20, "bne $v0, $zero, 0x8002fe78", "as the jump ends, with the word short of the long jump"),
+    (0x8002fe8c, "sh $v1, 60($s0)", "the centre is the saved one moved two blocks along the heading"),
+    (0x8002fe50, "sh $v0, 60($s0)", "or three"),
+    (0x8002feb4, "jal 0x80030b48", "and the landing is tried"),
+    (0x8002febc, "beq $v0, $zero, 0x8002fecc", "which failing"),
+    (0x8002fecc, "sw $v0, 408($s0)", "the ball falls"),
+    (0x8002ff0c, "sh $v0, 310($s0)", "at the speed the last row came down at"),
+    (0x800300c4, "subu $v1, $v1, $t0", "hopping, a row's height less the last"),
+    (0x800300f8, "sh $zero, 76($s0)", "and nothing across"),
+    (0x80030110, "sh $zero, 78($s0)", "or along"),
+    (0x80030124, "addu $v0, $v0, $a0", "moves the centre"),
+    (0x800301cc, "sw $v0, 408($s0)", "and as the count runs out the ball is at rest"),
+    (0x80030648, "beq $v1, $v0, 0x8003067c", "the landings, jumping"),
+    (0x80030690, "jal 0x80033078", "try a platform in the arc's last rows"),
+    (0x800306a0, "jal 0x80030b48", "then a block"),
+    (0x800306c0, "jal 0x800307dc", "then a wall"),
+    (0x80030810, "lw $v0, 168($s0)", "which is a block ahead at the ball's level"),
+    (0x8003083c, "bgez $v0, 0x80030908", "or ahead and above, high in the cell"),
+    (0x80030858, "bgez $v0, 0x80030908", "or the floor ahead, low in it"),
+    (0x80030934, "sll $v0, $v0, 1", "and bounces the ball back twice the frame's advance"),
+    (0x80030968, "sw $a0, 408($s0)", "into a fall"),
+    (0x800309c4, "sh $v1, 312($s0)", "at that advance reversed"),
+    (0x800307c0, "jal 0x800309e8", "or a block above"),
+    (0x80030a2c, "lw $v0, 192($s0)", "over the ball"),
+    (0x80030ad4, "sw $v1, 408($s0)", "which drops it"),
+    (0x80030b04, "sh $v1, 310($s0)", "at its rise reversed"),
+    (0x8003b22c, "bne $v1, $v0, 0x8003b2c0", "a boost button under the ball"),
+    (0x8003b248, "sh $v0, 372($s0)", "rolls it on to the middle"),
+    (0x8003b2b0, "sw $v1, 100($s0)", "and asks the jump"),
+    (0x8003b2b4, "sw $v1, 412($s0)", "as the long jump"),
+    (0x8003b2b8, "sw $v1, 96($s0)", "forward"),
     # A device's light.
     (0x8002d3d4, "addiu $v0, $v0, -5", "the draw of a thing on a block sends it on by its type"),
     (0x8002d3f8, "lw $v0, 116($at)", "through a table of cases"),
@@ -772,6 +837,30 @@ IMMEDIATES = [
     ("the ball's roll", "look.up.back", "which comes back by this", 0x8003514c, "addiu $v0, $v0, {}"),
     ("the ball's roll", "look.pitch", "over the view's own pitch down of this", 0x800354cc, "addiu $a0, $a0, {}"),
 
+    ("the ball's jump", "jump.speed", "the jump starts at this speed, units a frame", 0x8002f658, "addiu $v0, $zero, {}"),
+    ("the ball's jump", "jump.rows", "the table's rows start this many bytes in", 0x8002f664, "addiu $v1, $v1, {}"),
+    ("the ball's jump", "jump.step", "the count falls by this a frame", 0x8002fce8, "addiu $v0, $v0, {}"),
+    ("the ball's jump", "jump.skip", "and from one past this to nothing", 0x8002fce4, "addiu $v1, $zero, {}"),
+    ("the ball's jump", "jump.row", "a row is read this many bytes a step", 0x8002fd24, "addiu $v0, $a1, {}"),
+    ("the ball's jump", "jump.recentre", "the saved centre moves across toward the middle by this a frame", 0x8002fddc,
+     "addiu $a1, $zero, {}"),
+    ("the ball's jump", "jump.long", "the long jump lands three blocks on from this count of rows", 0x8002fe1c,
+     "slti $v0, $v0, {}"),
+    ("the ball's jump", "jump.catch", "the landing is tried while the count is under this", 0x80030684, "slti $v0, $v0, {}"),
+    ("the ball's jump", "jump.wall", "a wall is met from this progress", 0x800307f4, "slti $v0, $v0, {}"),
+    ("the ball's jump", "jump.wall.high", "a block ahead and above from this height off the floor", 0x80030828,
+     "slti $v0, $v1, {}"),
+    ("the ball's jump", "jump.wall.low", "and the floor ahead under this", 0x80030830, "slti $v0, $v1, {}"),
+    ("the ball's jump", "jump.bounce", "a bounce while rising starts down at this", 0x800309a4, "addiu $v0, $zero, {}"),
+    ("the ball's jump", "jump.ceiling", "a block above is met from this height off the floor", 0x80030a00,
+     "slti $v0, $v0, {}"),
+    ("the ball's jump", "jump.ceiling.ahead", "ahead and above from this progress", 0x80030a44, "slti $v0, $v1, {}"),
+    ("the ball's jump", "jump.ceiling.behind", "and behind and above under this", 0x80030a4c, "slti $v0, $v1, {}"),
+    ("the ball's jump", "boost.type", "a boost button is this type", 0x8003b228, "addiu $v0, $zero, {}"),
+    ("the ball's jump", "boost.roll", "a ball on it from this progress is rolled on by the game", 0x8003b23c, "slti $v0, $v0, {}"),
+    ("the ball's jump", "boost.frames", "for this many frames", 0x8003b244, "addiu $v0, $zero, {}"),
+    ("the ball's jump", "boost.fire", "and launched from this progress", 0x8003b264, "slti $v0, $v0, {}"),
+
     ("moving spikes", "spikes.phase.down", "phase: down, if phase times step is under", 0x8002a120, "slti $v0, $v1, {}"),
     ("moving spikes", "spikes.phase.held", "phase: held up, if under", 0x8002a148, "slti $v0, $v1, {}"),
     ("moving spikes", "spikes.phase.retracting", "phase: retracting, if under", 0x8002a160, "slti $v0, $v1, {}"),
@@ -948,6 +1037,9 @@ MULTIPLIERS = [
     ("the ball's roll", "land.lift", "and lifts the centre this far before laying it", 0x80030cc4, 6, "v1", "v0"),
     ("the ball's roll", "spin", "the body spins by this times the speed a frame, angle", 0x80032510, 4, "v0", "a0"),
     ("the ball's roll", "spin.rest", "as it does at rest", 0x800325d8, 4, "v0", "a0"),
+    ("the ball's jump", "jump.snap", "as the jump ends the centre is the saved one moved this far along the heading",
+     0x8002fe80, 1, "v0", "v0"),
+    ("the ball's jump", "jump.far", "or this far after the long jump", 0x8002fe30, 4, "v0", "v1"),
     ("moving spikes", "spikes.phase.step", "phase: frames per step", 0x8002a110, 4, "v1", "v1"),
     ("vanishing block", "vanish.phase.step", "phase: frames per step", 0x80028c10, 3, "a1", "v1"),
     ("vanishing block", "vanish.in.scale", "fading in: the count's rise times this", 0x8002b860, 2, "v0", "v1"),
@@ -1022,8 +1114,11 @@ INVISIBLE = 3
 # The ball's states, dispatched through a table by the state plus one, and
 # the three the moves run in: at rest, rolling and round an edge.
 STATES = (0x80010134, -1, 9)
-STATE_AT = {-1: 0x8002f8e4, 2: 0x8002f930, 6: 0x8002ff18, 7: 0x8002fa38}
+STATE_AT = {-1: 0x8002f8e4, 0: 0x8003007c, 1: 0x8002fce0, 2: 0x8002f930, 6: 0x8002ff18, 7: 0x8002fa38}
 ARC_STEPS = 4             # frames the ball takes round an edge
+BALL = "30"               # the ball's type in the table
+BUTTON = 10               # the boost button's type
+LONG = [3, 2]             # the long jump takes each row times the first over the second
 ICE = 2
 ABOUT = 3                 # cells each way about the ball
 
@@ -1307,6 +1402,31 @@ def roll(r):
                  "least": r["look.least"], "back": -r["look.back"], "held": r["look.held"], "pitch": r["look.pitch"],
                  "rows": r["look.rows"]},
     }
+
+
+def jump(r):
+    """The jump, the hop and the boost button's launch, each number against
+    the others: the jump at the roll's top speed, the rows past a count and
+    three pads, the landings two and three blocks on, a wall met in the air
+    where one takes a roll, and the centre drawn across as a roll's is."""
+    if r["jump.speed"] != r["roll.top"]:
+        sys.exit("the jump does not start at the roll's top speed")
+    if r["jump.rows"] != 4 * r["jump.row"] or r["jump.step"] != -1:
+        sys.exit("the jump's rows do not start past a count and three pads, or the count does not fall by one")
+    if r["jump.snap"] != 2 * BLOCK or r["jump.far"] != 3 * BLOCK:
+        sys.exit("the jump does not land two blocks on, or the long jump three")
+    if len({r[k] for k in ("jump.wall", "jump.wall.high", "jump.ceiling", "jump.ceiling.ahead", "move.touch")}) != 1:
+        sys.exit("a wall is not met in the air where one takes a roll")
+    if r["jump.wall.low"] != r["ball.rest"] or r["jump.ceiling.behind"] != r["ball.rest"] + 1:
+        sys.exit("the floor ahead or a block behind is not met at the ball's radius")
+    if r["jump.recentre"] != r["roll.recentre"] or r["jump.bounce"] != r["roll.fall"]:
+        sys.exit("a jump's centre is not drawn across, or a bounce does not start down, as a roll's are")
+    if r["boost.type"] != BUTTON:
+        sys.exit(f"the launch is a type {r['boost.type']}'s, not the boost button's")
+    return {"speed": r["jump.speed"], "skip": r["jump.skip"], "snap": r["jump.snap"], "far": r["jump.far"],
+            "long": r["jump.long"], "scale": LONG, "recentre": r["jump.recentre"], "catch": r["jump.catch"],
+            "wall": r["jump.wall"], "low": r["jump.wall.low"], "bounce": r["jump.bounce"],
+            "boost": {"roll": r["boost.roll"], "frames": r["boost.frames"], "fire": r["boost.fire"]}}
 
 
 def glow_spill(code):
@@ -1595,6 +1715,7 @@ def table(r, platform_speed):
     for t in range(43, 48):
         types[t] = fruit
     types[30].update(roll(r))
+    types[30]["jump"] = jump(r)
     for t in (50, 51, 52, 53):
         types[t]["entry"] = {"stand": stand}
         types[t]["shadow"] = {"sprite": 0, "off": stand + r[f"shadow.drop.{t}"],
