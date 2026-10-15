@@ -10,7 +10,7 @@ const BONUS = "Plays as a bonus level since it has no key.";
 const at = (page, x, y, z) =>
   page.evaluate(
     async ([x, y, z]) => {
-      const { screen } = await import(new URL("js/state.js", location.href).href);
+      const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
       const r = document.getElementById("cv").getBoundingClientRect();
       const [px, py] = screen(x, y, z);
       return { x: r.left + px, y: r.top + py };
@@ -22,7 +22,7 @@ const top = (page, c) => at(page, c[0] + 0.5, c[1] + 0.5, c[2]);
 const field = (page, name) => page.locator(`#detail [data-field="${name}"]`);
 const selected = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const s = state.selected;
     return s && { cell: [s.x, s.y, s.z], face: s.face ?? null };
   });
@@ -32,7 +32,9 @@ const lineHeight = (l) => l.evaluate((e) => parseFloat(getComputedStyle(e).lineH
 const fill = (page, blocks) =>
   page.evaluate(async (blocks) => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { get, update }] = await Promise.all(["state.js", "drafts.js"].map(at));
+    const [{ state }, { get, update }] = await Promise.all(
+      ["viewer/state.js", "editor/drafts.js"].map(at),
+    );
     const id = state.lvl.draft;
     update(id, { ...get(id).doc, blocks });
   }, blocks);
@@ -77,13 +79,13 @@ test("a registered note stands in for the level's own where it answers, and leav
   await expect(note).toContainText("Japanese release");
   const before = await chip.evaluate((e) => e.innerHTML);
   await page.evaluate(async () => {
-    const { noteWith } = await import(new URL("js/navigate.js", location.href).href);
+    const { noteWith } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     noteWith(() => null);
   });
   expect(await chip.evaluate((e) => e.innerHTML)).toBe(before);
 
   await page.evaluate(async () => {
-    const { noteWith } = await import(new URL("js/navigate.js", location.href).href);
+    const { noteWith } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     noteWith((l) => {
       if (l.index !== 12) return null;
       const p = document.createElement("p");

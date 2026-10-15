@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations } from "./fixtures.js";
-import { setAnnotations } from "../../public/js/data.js";
-import { parseQuery, queryTerms } from "../../public/js/searchquery.js";
-import { matchPlaces, placeCandidates } from "../../public/js/placesearch.js";
+import { setAnnotations } from "../../public/js/viewer/data.js";
+import { parseQuery, queryTerms } from "../../public/js/viewer/chrome/searchquery.js";
+import { matchPlaces, placeCandidates } from "../../public/js/viewer/chrome/placesearch.js";
 
 setAnnotations(annotations);
 

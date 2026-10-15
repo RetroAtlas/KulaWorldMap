@@ -6,7 +6,7 @@ import {
   matchesBy,
   matchesQuery,
   rankFor,
-} from "../../public/js/searchquery.js";
+} from "../../public/js/viewer/chrome/searchquery.js";
 
 // A stand-in for the lowercased "name + fields" blob an object is searched by.
 const TELEPORTER = "blue teleporter type 5 top facing=+x starts=off f3=1 f4=2";

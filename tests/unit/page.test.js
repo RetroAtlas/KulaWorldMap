@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import { mapData } from "./fixtures.js";
-import { slotOf } from "../../public/js/permalink.js";
+import { slotOf } from "../../public/js/viewer/permalink.js";
 
 const text = (path) =>
   readFileSync(fileURLToPath(new URL(`../../public/${path}`, import.meta.url)), "utf8");

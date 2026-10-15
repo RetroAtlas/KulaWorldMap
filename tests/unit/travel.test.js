@@ -1,9 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects, mapData } from "./fixtures.js";
-import { state } from "../../public/js/state.js";
-import { setObjects, index, markersOf } from "../../public/js/data.js";
-import { heading, probe, walkers, advance, place, dice, under } from "../../public/js/travel.js";
+import { state } from "../../public/js/viewer/state.js";
+import { setObjects, index, markersOf } from "../../public/js/viewer/data.js";
+import {
+  heading,
+  probe,
+  walkers,
+  advance,
+  place,
+  dice,
+  under,
+} from "../../public/js/viewer/travel.js";
 
 setObjects(objects);
 state.data = mapData;

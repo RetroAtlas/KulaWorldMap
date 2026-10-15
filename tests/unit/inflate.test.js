@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { deflateSync, gzipSync } from "node:zlib";
-import { MOST, inflate } from "../../public/js/inflate.js";
-import { GRID_BYTES, HEAD, RECORD } from "../../public/js/kwl.js";
+import { MOST, inflate } from "../../public/js/format/inflate.js";
+import { GRID_BYTES, HEAD, RECORD } from "../../public/js/format/kwl.js";
 
 const same = (a, b) => assert.deepEqual(Buffer.from(a), Buffer.from(b));
 const noise = (n) => Uint8Array.from({ length: n }, (_, i) => (i * 7919) & 0xff);

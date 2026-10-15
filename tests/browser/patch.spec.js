@@ -3,12 +3,12 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { test, expect } from "@playwright/test";
 import { settle, steps, trackErrors } from "./helpers.js";
-import { writeProject } from "../../public/js/project.js";
-import { SLUG_MOST } from "../../public/js/files.js";
+import { writeProject } from "../../public/js/format/project.js";
+import { SLUG_MOST } from "../../public/js/editor/files.js";
 import { SYNTHETIC_SECTORS, streamOf, synthetic, syntheticImage } from "../unit/synthetic.js";
-import { USER, sector } from "../../public/js/sectors.js";
+import { USER, sector } from "../../public/js/format/sectors.js";
 import { packs } from "../unit/fixtures.js";
-import { REBUILD, RELOCATE, fit } from "../../public/js/pak.js";
+import { REBUILD, RELOCATE, fit } from "../../public/js/format/pak.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const fixture = JSON.parse(
@@ -28,17 +28,19 @@ const file = (name, data) => ({
 });
 const shownDraft = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return state.lvl.draft;
   });
 const docOf = (page, id) =>
   page.evaluate(async (id) => {
-    const { get } = await import(new URL("js/drafts.js", location.href).href);
+    const { get } = await import(new URL("js/editor/drafts.js", location.href).href);
     return get(id)?.doc ?? null;
   }, id);
 const openPatch = (page, id) =>
   page.evaluate(async (id) => {
-    const { openPatchDialog } = await import(new URL("js/patchdialog.js", location.href).href);
+    const { openPatchDialog } = await import(
+      new URL("js/editor/patchdialog.js", location.href).href
+    );
     await openPatchDialog(id);
   }, id);
 const saved = async (page, locator) => {
@@ -56,7 +58,7 @@ async function opened(page, name, project) {
 /** The store as another tab would write it, once this tab's write of the draft has landed. */
 async function stored(page, id) {
   await page.evaluate(async () => {
-    const { flush } = await import(new URL("js/drafts.js", location.href).href);
+    const { flush } = await import(new URL("js/editor/drafts.js", location.href).href);
     flush();
   });
   await expect
@@ -314,8 +316,10 @@ test("a draft whose id another tab takes while the box is opening is still the o
   });
   const id = await page.evaluate(
     async ([project, store]) => {
-      const drafts = await import(new URL("js/drafts.js", location.href).href);
-      const { openPatchDialog } = await import(new URL("js/patchdialog.js", location.href).href);
+      const drafts = await import(new URL("js/editor/drafts.js", location.href).href);
+      const { openPatchDialog } = await import(
+        new URL("js/editor/patchdialog.js", location.href).href
+      );
       const id = drafts.create(project);
       openPatchDialog(id);
       store.drafts[id] = {

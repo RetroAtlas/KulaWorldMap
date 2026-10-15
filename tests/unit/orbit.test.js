@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { mapData, levelKey } from "./fixtures.js";
-import { REWIRED, projectOf, readKwl, writeKwl } from "../../public/js/kwl.js";
+import { REWIRED, projectOf, readKwl, writeKwl } from "../../public/js/format/kwl.js";
 import { community } from "./synthetic.js";
 import {
   NOT_LINK,
@@ -16,7 +16,7 @@ import {
   parseOrbitText,
   readOrbit,
   readOrbitLink,
-} from "../../public/js/orbit.js";
+} from "../../public/js/format/orbit.js";
 
 // Five level files of the community's viewer, each a shipped level, and the
 // share link its encoder makes of each; the fixture's own key says where they

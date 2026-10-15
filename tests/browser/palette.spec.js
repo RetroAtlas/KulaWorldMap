@@ -6,7 +6,7 @@ const START = [17, 17, 17];
 
 const shown = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const s = state.selected;
     return {
       selected: s && [s.x, s.y, s.z],
@@ -17,7 +17,9 @@ const shown = (page) =>
 const doc = (page) =>
   page.evaluate(async () => {
     const [{ state }, { get }] = await Promise.all(
-      ["state.js", "drafts.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+      ["viewer/state.js", "editor/drafts.js"].map(
+        (p) => import(new URL(`js/${p}`, location.href).href),
+      ),
     );
     return get(state.lvl.draft).doc;
   });
@@ -26,7 +28,7 @@ const facesAt = async (page, cell) =>
 const at = (page, x, y, z) =>
   page.evaluate(
     async ([x, y, z]) => {
-      const { screen } = await import(new URL("js/state.js", location.href).href);
+      const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
       const r = document.getElementById("cv").getBoundingClientRect();
       const [px, py] = screen(x, y, z);
       return { x: r.left + px, y: r.top + py };
@@ -55,7 +57,7 @@ const lay = (page, cell, kind) =>
     async ([cell, kind]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-        ["state.js", "drafts.js", "project.js"].map(at),
+        ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
       );
       const id = state.lvl.draft;
       update(id, setBlock(get(id).doc, cell, { kind }));
@@ -100,7 +102,9 @@ test("the palette's groups and rows come from the data, named as the legend name
   const rows = Object.values(groups).flat();
   const expected = await page.evaluate(
     async (ids) => {
-      const { kindName, markerLabel } = await import(new URL("js/data.js", location.href).href);
+      const { kindName, markerLabel } = await import(
+        new URL("js/viewer/data.js", location.href).href
+      );
       const colour = (c) =>
         /\(([^)]*)\)/.exec(
           markerLabel({ type: 9, face: 0, f: Array(16).fill(0), variant: String(c) }),
@@ -223,7 +227,7 @@ test("a thing the face holds already is refused and takes no step, its keys in a
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setFace }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     update(id, setFace(get(id).doc, [17, 17, 17], 1, { type: 5, facing: 1, variant: 0 }));
@@ -252,7 +256,7 @@ test("the face holds the brush's thing whether its phase and its facing are spel
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setFace }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     const doc = setFace(get(id).doc, [17, 17, 17], 1, { type: 11, variant: 0 });
@@ -306,8 +310,8 @@ test("a device wants a plain block, a brittle block takes nothing, and a face in
 
   await lay(page, [17, 17, 16], 0);
   await page.evaluate(async () => {
-    const { SIDE } = await import(new URL("js/state.js", location.href).href);
-    const { setSlice } = await import(new URL("js/navigate.js", location.href).href);
+    const { SIDE } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 1 - 17);
   });
   await click(page, await top(page, START));
@@ -322,7 +326,7 @@ test("digits press the shown group's rows, and j and k walk every row across the
   const errors = trackErrors(page);
   await fresh(page);
   const order = await page.evaluate(async () => {
-    const { all } = await import(new URL("js/palette.js", location.href).href);
+    const { all } = await import(new URL("js/editor/palette.js", location.href).href);
     return all().map((e) => [e.id, e.group]);
   });
   await tab(page, "Pickups").click();
@@ -364,7 +368,7 @@ test("a pressed tab or row keeps the focus, and a key's choice takes it where th
   await expect(row(page, "t32")).toBeFocused();
   // k steps the brush back into the group before, which the focused row is not in
   const order = await page.evaluate(async () => {
-    const { all } = await import(new URL("js/palette.js", location.href).href);
+    const { all } = await import(new URL("js/editor/palette.js", location.href).href);
     return all().map((e) => e.id);
   });
   await page.keyboard.press("k");
@@ -439,7 +443,7 @@ test("Alt-click on a fruit of any type takes the fruit row, which stands for the
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setFace }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     update(id, setFace(get(id).doc, [17, 17, 17], 1, { type: 43 }));
@@ -549,7 +553,9 @@ test("where the annotations have no word for a circuit, the page names it circui
   // the panel's row and the laser's swatches on the laser's block
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state, cellKey }, { showCell }] = await Promise.all(["state.js", "detail.js"].map(at));
+    const [{ state, cellKey }, { showCell }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/detail.js"].map(at),
+    );
     showCell(state.idx.cells.get(cellKey(18, 17, 17)));
   });
   const panelRow = page.locator('#detail [data-field="circuit-2"]');

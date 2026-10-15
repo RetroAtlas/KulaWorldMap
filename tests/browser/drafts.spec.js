@@ -36,7 +36,9 @@ const stored = (page) => page.evaluate((key) => JSON.parse(localStorage.getItem(
 /** What `pick` reads off the store once the write that waits has landed. */
 const written = (page, pick = (s) => s) => expect.poll(async () => pick(await stored(page)));
 const flush = (page) =>
-  page.evaluate(async () => (await import(new URL("js/drafts.js", location.href).href)).flush());
+  page.evaluate(async () =>
+    (await import(new URL("js/editor/drafts.js", location.href).href)).flush(),
+  );
 /** Another tab's copy of the store, written and announced as the browser would. */
 const arrives = (page, copy) =>
   page.evaluate(
@@ -66,7 +68,7 @@ const room = (page, yes) => page.evaluate((yes) => void (window.__room = yes), y
 const toasts = (page) => page.locator("#toastStack .toast").allTextContents();
 const shown = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return {
       li: state.li,
       draft: state.lvl.draft,
@@ -78,7 +80,7 @@ const shown = (page) =>
   });
 const docOf = (page, id) =>
   page.evaluate(async (id) => {
-    const { get } = await import(new URL("js/drafts.js", location.href).href);
+    const { get } = await import(new URL("js/editor/drafts.js", location.href).href);
     return get(id)?.doc ?? null;
   }, id);
 /** Put `object` on `face` of the shown draft's first block, or take it off, through the model. */
@@ -87,7 +89,7 @@ const faced = (page, face, object) =>
     async ([face, object]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state }, { get, update }, { setFace }] = await Promise.all(
-        ["state.js", "drafts.js", "project.js"].map(at),
+        ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
       );
       const id = state.lvl.draft;
       update(id, setFace(get(id).doc, [17, 17, 17], face, object));
@@ -97,7 +99,7 @@ const faced = (page, face, object) =>
 // what stands where on the level on screen, as the game stores it
 const standing = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return state.lvl.records
       .flatMap((r) => r.on.map((o) => [r.x, r.y, r.z, o.face, o.type].join()))
       .sort();
@@ -136,7 +138,7 @@ test("Your levels folds under its heading: closed at first, open once a level of
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     update(id, setBlock(get(id).doc, [1, 1, 32], { kind: 0 }));
@@ -266,7 +268,7 @@ test("the Level card edits the draft as the game would load it, keeping the view
     page.evaluate(async () => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state }, { levelMarkers, blockMarkers }, { markerIcon }] = await Promise.all(
-        ["state.js", "data.js", "icons.js"].map(at),
+        ["viewer/state.js", "viewer/data.js", "viewer/draw/icons.js"].map(at),
       );
       const all = [...levelMarkers(state.lvl), ...blockMarkers(state.lvl)];
       const pixels = (cv) =>
@@ -286,7 +288,12 @@ test("the Level card edits the draft as the game would load it, keeping the view
   const view = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { setSlice }, { showCell }, { on }] = await Promise.all(
-      ["state.js", "navigate.js", "detail.js", "dom.js"].map(at),
+      [
+        "viewer/state.js",
+        "viewer/chrome/navigate.js",
+        "viewer/chrome/detail.js",
+        "viewer/ui/dom.js",
+      ].map(at),
     );
     const c = state.idx.cells.get([...state.idx.cells.keys()][0]);
     state.hiddenKinds.add("t37/2");
@@ -299,7 +306,7 @@ test("the Level card edits the draft as the game would load it, keeping the view
   });
   await page.selectOption("#draftWorld", "INCA");
   const after = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const s = state.selected;
     return {
       theme: state.lvl.theme,
@@ -353,7 +360,7 @@ test("new asks for editing once its level is open, and copy this level does not"
   await expect(page.locator("#draftRows button")).toHaveCount(1);
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ on }, { state }] = await Promise.all(["dom.js", "state.js"].map(at));
+    const [{ on }, { state }] = await Promise.all(["viewer/ui/dom.js", "viewer/state.js"].map(at));
     window.__wanted = [];
     on("edit-wanted", () => window.__wanted.push(state.lvl.draft));
   });
@@ -477,7 +484,7 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     update(id, setBlock(get(id).doc, [17, 19, 17], { kind: 8, far: [21, 19, 17], colour: 2 }));
@@ -488,7 +495,7 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     const platform = { kind: 5, far: [20, 25, 17], length: 2, speed: 30 };
@@ -505,7 +512,9 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
     await page.keyboard.press("w");
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state, cellKey }, { showCell }] = await Promise.all(["state.js", "detail.js"].map(at));
+    const [{ state, cellKey }, { showCell }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/detail.js"].map(at),
+    );
     showCell({ ...state.idx.cells.get(cellKey(17, 17, 17)), face: 1 });
   });
   const panelRow = page.locator('#detail [data-field="circuit-2"]');
@@ -763,7 +772,7 @@ test("entries that cannot be read do not load the editor by themselves, and a ke
 
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(1);
-  expect(fetched()).toContain("/js/editor.js");
+  expect(fetched()).toContain("/js/editor/editor.js");
   expect((await shown(page)).draft).toBe(10);
   await expect(page.locator("#toastStack .toast")).toHaveText([
     "2 drafts in this browser could not be read and are kept as they are.",
@@ -818,7 +827,7 @@ test("an entry of a draft's shape loads the editor at the start under a key that
   await page.goto("about:blank");
   await page.goto(EDIT);
   await settle(page);
-  expect(fetched()).toContain("/js/editor.js");
+  expect(fetched()).toContain("/js/editor/editor.js");
   expect((await shown(page)).li).toBe(0);
   await expect(page.locator("#draftRows button")).toHaveCount(0);
   await expect(page.locator("#draftUnread .state")).toHaveText(
@@ -854,7 +863,9 @@ test("a change waits a moment before it is written, the moment's changes landing
     page.evaluate(
       async ([key, titles, then]) => {
         const at = (p) => import(new URL(`js/${p}`, location.href).href);
-        const [{ state }, { get, update }] = await Promise.all(["state.js", "drafts.js"].map(at));
+        const [{ state }, { get, update }] = await Promise.all(
+          ["viewer/state.js", "editor/drafts.js"].map(at),
+        );
         const id = state.lvl.draft;
         for (const title of titles) update(id, { ...get(id).doc, title });
         if (then === "hidden") {
@@ -1119,7 +1130,9 @@ test("a draft deleted here is not taken back from another tab's copy, and one ch
   // in one breath: a change here, a deletion here, and the other tab's copy arriving
   const out = await page.evaluate(
     async ([key, theirs, kept, gone]) => {
-      const { get, update, remove } = await import(new URL("js/drafts.js", location.href).href);
+      const { get, update, remove } = await import(
+        new URL("js/editor/drafts.js", location.href).href
+      );
       update(kept, { ...get(kept).doc, title: "Kept here" });
       remove(gone);
       const text = JSON.stringify(theirs);
@@ -1261,7 +1274,7 @@ test("a page back from the cache or thawed, and every write, takes in what anoth
 });
 
 const EDITOR_FILES =
-  /\/js\/(editor|drafts|draftlist|palette|trail|project|kwl|vendor\/pako_deflate\.min)\.js$/;
+  /\/js\/(editor\/(editor|drafts|draftlist|palette|trail)|format\/(project|kwl)|vendor\/pako_deflate\.min)\.js$/;
 
 test("a plain visit shows the section and fetches none of the editor, which Make a level then loads", async ({
   page,
@@ -1290,8 +1303,8 @@ test("a plain visit shows the section and fetches none of the editor, which Make
   const out = await shown(page);
   expect(out.li).toBe(-1);
   expect(out.chip).toContain("LEVEL 1");
-  expect(fetched()).toContain("/js/editor.js");
-  expect(fetched()).toContain("/js/project.js");
+  expect(fetched()).toContain("/js/editor/editor.js");
+  expect(fetched()).toContain("/js/format/project.js");
   expect(errors).toEqual([]);
 });
 
@@ -1332,7 +1345,7 @@ test("a link to a draft this browser holds loads the editor before the level sho
   const linked = await shown(page);
   expect(linked).toMatchObject({ li: -1, draft: 1, theme: "INCA", time: 60 });
   expect(linked.chip).toContain("Kept");
-  expect(requested).toContain("/js/editor.js");
+  expect(requested).toContain("/js/editor/editor.js");
   await expect(page.locator("#draftRows button")).toHaveAttribute("aria-current", "true");
 
   requested.length = 0;
@@ -1344,7 +1357,7 @@ test("a link to a draft this browser holds loads the editor before the level sho
   await expect(page.locator("#draftRows button .name")).toHaveText("Kept");
   await expect(page.locator("#draftRows button")).toHaveAttribute("aria-current", "false");
   await expect(page.locator("#draftEmpty")).toBeHidden();
-  expect(requested).toContain("/js/editor.js");
+  expect(requested).toContain("/js/editor/editor.js");
   expect(errors).toEqual([]);
 });
 
@@ -1375,7 +1388,7 @@ test("a link to a draft arriving after a plain visit loads the editor where this
   await go("#DRAFT/1/45,35/fit/33");
   await expect(page.locator("#chipLine b")).toHaveText("Kept");
   expect(await shown(page)).toMatchObject({ li: -1, draft: 1, theme: "INCA", time: 60 });
-  expect(fetched()).toContain("/js/editor.js");
+  expect(fetched()).toContain("/js/editor/editor.js");
   await expect(page.locator("#draftRows button")).toHaveAttribute("aria-current", "true");
   await expect.poll(() => page.evaluate(() => location.hash)).toMatch(/^#DRAFT\/1\//);
   await go("#DRAFT/7/45,35/fit/33");
@@ -1404,7 +1417,7 @@ test("a link to a draft this browser does not hold fetches none of the editor at
 
 test("two presses of w before the editor has loaded end with editing on", async ({ page }) => {
   const errors = trackErrors(page);
-  await page.route("**/js/editor.js", async (route) => {
+  await page.route("**/js/editor/editor.js", async (route) => {
     await new Promise((r) => setTimeout(r, 400));
     await route.continue();
   });
@@ -1450,7 +1463,7 @@ test("a visitor whose editor cannot be loaded still gets the map, and is told", 
       /* the blank page has no storage */
     }
   }, KEY);
-  await page.route("**/js/editor.js", (route) => route.abort());
+  await page.route("**/js/editor/editor.js", (route) => route.abort());
   await page.goto("/#DRAFT/1/45,35/fit/33");
   await settle(page);
   expect((await shown(page)).li).toBe(0);
@@ -1497,7 +1510,7 @@ test("an editor whose boot throws leaves the map and its controls, which say so 
       /* the blank page has no storage */
     }
   }, KEY);
-  await page.route("**/js/editor.js", (route) =>
+  await page.route("**/js/editor/editor.js", (route) =>
     route.fulfill({
       contentType: "text/javascript",
       body: [
@@ -1541,7 +1554,7 @@ test("a draft and a disc level that share a number are two levels, so showing on
   expect((await shown(page)).li).toBe(1);
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { on }] = await Promise.all(["state.js", "dom.js"].map(at));
+    const [{ state }, { on }] = await Promise.all(["viewer/state.js", "viewer/ui/dom.js"].map(at));
     state.hiddenKinds.add("t31");
     window.counts = { changed: 0, updated: 0 };
     on("level-changed", () => window.counts.changed++);
@@ -1551,7 +1564,7 @@ test("a draft and a disc level that share a number are two levels, so showing on
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(1);
   const made = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return { draft: state.lvl.draft, hidden: [...state.hiddenKinds], ...window.counts };
   });
   expect(made).toEqual({ draft: 1, hidden: [], changed: 1, updated: 0 });
@@ -1641,7 +1654,7 @@ test("a draft whose id another tab handed out before this tab's write landed mov
   expect(await docOf(page, mine + 1)).toMatchObject({ title: "Mine" });
   const trails = await page.evaluate(
     async ([a, b]) => {
-      const { steps } = await import(new URL("js/trail.js", location.href).href);
+      const { steps } = await import(new URL("js/editor/trail.js", location.href).href);
       return [steps(a).past, steps(b).past];
     },
     [mine, mine + 1],

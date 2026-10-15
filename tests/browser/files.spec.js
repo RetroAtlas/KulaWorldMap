@@ -3,8 +3,8 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { test, expect } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
-import { blank, readProject, setMeta, writeProject } from "../../public/js/project.js";
-import { RECORD, readKwl, writeKwl } from "../../public/js/kwl.js";
+import { blank, readProject, setMeta, writeProject } from "../../public/js/format/project.js";
+import { RECORD, readKwl, writeKwl } from "../../public/js/format/kwl.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const digests = JSON.parse(
@@ -20,7 +20,7 @@ const hostile = JSON.parse(
 
 const shown = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return {
       li: state.li,
       draft: state.lvl.draft,
@@ -31,7 +31,7 @@ const shown = (page) =>
   });
 const entryOf = (page, id) =>
   page.evaluate(async (id) => {
-    const { get } = await import(new URL("js/drafts.js", location.href).href);
+    const { get } = await import(new URL("js/editor/drafts.js", location.href).href);
     return get(id);
   }, id);
 const toasts = (page) => page.locator("#toastStack .toast").allTextContents();

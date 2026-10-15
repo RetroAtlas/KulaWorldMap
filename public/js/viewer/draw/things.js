@@ -1,0 +1,584 @@
+import {
+  state,
+  BLOCK,
+  camera,
+  depth,
+  facing,
+  screen,
+  screenTo,
+  cellKey,
+  effectFrame,
+} from "../state.js";
+import { FACE_NORMAL, FACE_NAME } from "../faces.js";
+import {
+  markerColour,
+  markerLabel,
+  markerGroup,
+  markerFacing,
+  layHeading,
+  markerNow,
+  movedFor,
+  openFor,
+  exitForm,
+  markerModel,
+  motionTable,
+  motionOf,
+  modelUnit,
+  TANGENT,
+  cross,
+  startsOf,
+  shadowSprites,
+  typeModels,
+  lightOf,
+  polygonColour,
+} from "../data.js";
+import {
+  byLight,
+  spin,
+  times,
+  faceAxes,
+  phasesOf,
+  phaseField,
+  pose,
+  orbit,
+  press,
+  inReach,
+  glintSteps,
+  glints,
+  lightShare,
+} from "../motion.js";
+import { label } from "./overlays.js";
+import { NEUTRAL } from "./atlas.js";
+
+// The paint on a face says what its marker would, as a block's does for a
+// record's own kind.
+export const quietAmongModels = (m, painted, selected) =>
+  markerGroup(m) === "settings" ? !selected : painted && markerGroup(m) !== "object";
+
+export function thingDisc(m, where, l) {
+  const model = state.show.models ? markerModel(m, l) : null;
+  let p, r;
+  if (model) {
+    const [lo, hi] = model.box;
+    p = off(where, m.face, (motionOf(m)?.entry?.stand ?? 0) * modelUnit());
+    r = Math.max(...hi, ...lo.map((v) => -v)) * modelUnit() * state.cam.zoom * BLOCK;
+  } else {
+    p = off(where, m.face, OBJECT_HOVER);
+    r = Math.max(4, 7 * state.cam.zoom);
+  }
+  return [p[0], p[1], r];
+}
+
+const switchedOff = (m) => markerNow(m) === "off";
+
+// A face reacts to the ball at the level's start, and to a ball on the face of
+// the hovered and the selected block that looks the same way. Positions are in
+// the game's units.
+const point = (c, face, off) =>
+  [c.x, c.y, c.z].map((v, i) => (v + 0.5) / modelUnit() + FACE_NORMAL[face][i] * off);
+const starts = new WeakMap();
+export function ballsFor(l, face) {
+  const half = 0.5 / modelUnit();
+  if (!starts.has(l))
+    starts.set(
+      l,
+      startsOf(l).map((s) => point(s, s.face, half)),
+    );
+  const pointed = [state.hover, state.selected].filter(Boolean);
+  return [...starts.get(l), ...pointed.map((c) => point(c, face, half))];
+}
+
+const pressedAt = (motion, m, home, l) =>
+  ballsFor(l, m.face).some((b) => inReach(motion, b, point(home, m.face, 0.5 / modelUnit())));
+
+/** Returns whether the thing moves by the next frame. */
+export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
+  if (state.hiddenKinds.has(m.id)) return false;
+  const motion = state.show.models ? motionOf(m) : null;
+  // the game starts a pickup's angles at random and an entry's at zero
+  const phase = !motion
+    ? null
+    : motion.entry
+      ? [0, 0, 0]
+      : phasesOf(motionTable(), home.x, home.y, home.z, m.face);
+  const round = motion?.orbit
+    ? orbit(motionTable(), motion, `${cellKey(home.x, home.y, home.z)}/${m.face}`, frame, phase)
+    : null;
+  const model = state.show.models ? markerModel(m, l, round?.form ?? exitForm(m)) : null;
+  const where = going
+    ? { x: c.x + going.offset[0], y: c.y + going.offset[1], z: c.z + going.offset[2] }
+    : c;
+  if (!model) {
+    drawMarker(ctx, m, where);
+    return false;
+  }
+  const pushed = motion?.press
+    ? press(
+        motion,
+        `${l.pack}#${l.index}/${cellKey(home.x, home.y, home.z)}/${m.face}`,
+        effectFrame(frame),
+        pressedAt(motion, m, home, l),
+      )
+    : null;
+  const light = lightOf(m, l, effectFrame(frame));
+  const lit = motion?.glint
+    ? glintFills(motion.glint, m.type, model, effectFrame(frame), light)
+    : null;
+  drawObject(ctx, m, c, model, motion, frame, phase, {
+    round,
+    time: l.time ?? 0,
+    going,
+    height: pushed?.height,
+    lit,
+    light,
+  });
+  if (state.show.labels && state.cam.zoom > 0.45) {
+    const [px, py] = off(where, m.face, OBJECT_HOVER);
+    const dark = switchedOff(m) ? " · off" : "";
+    const side = state.show.faces ? ` · ${FACE_NAME[m.face]}` : "";
+    label(ctx, markerLabel(m) + dark + side, px + 8, py + 4, "#e8eefb");
+  }
+  return pushed ? pushed.moving : !!motion;
+}
+
+// A model's y runs along its face's outward normal and its z the way the thing
+// points, which the game calls its z and y. Its lowest vertex sits just off the
+// face, but a thing the game keeps an entry of its own for stands where the
+// game draws it, and a thing that bobs stands its bob's reach higher so that it
+// never dips into its face.
+const GAP = 0.03;
+const BLEND = 2;
+const GOURAUD = 16;
+// How a translucent polygon meets what is behind it, by its model's blend.
+const BLENDS = { 0: ["source-over", 0.5], 1: ["lighter", 1], 3: ["lighter", 0.25] };
+const STONE = 51;
+const WORLD = [
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1],
+];
+
+function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
+  const { round = null, time = 0, going = null, height = 1, lit = null, light = null } = extras;
+  const up = FACE_NORMAL[m.face];
+  const forward = going?.fwd || layHeading(m) || TANGENT[m.face];
+  const face = faceAxes(up, forward);
+  const unit = modelUnit();
+  const rest = motion?.entry
+    ? motion.entry.stand * unit
+    : GAP + Math.max(0, -model.box[0][1]) * unit;
+  let lift = rest;
+  const o = at(c, m.face, 0);
+  let about = [0, 0, 0];
+  let shown = model.frames[0];
+  let wide = 1,
+    tall = 1,
+    bounce = 0;
+  if (going) for (let i = 0; i < 3; i++) o[i] += going.offset[i];
+  if (motion) {
+    const p = pose(motionTable(), motion, m, movedFor(m, frame), phase, time, openFor(m, frame));
+    about = p.about;
+    wide = 1 + p.squash;
+    tall = 1 - 2 * p.squash;
+    // squashed about its centre, so it is stood lower by as much, and its
+    // underside stays on the face while its top comes down
+    lift = GAP + (rest - GAP) * tall;
+    if (going && m.type === STONE) about[0] = going.roll / motionTable().turn;
+    if (motion.bob) lift += (motion.bob.reach + p.bob) * unit;
+    lift += p.lift * unit;
+    if (motion.bounce) bounce = p.lift / motion.bounce.rise;
+    if (round) {
+      // the orbit is in the face's own plane, its x across the way the thing points
+      for (let i = 0; i < 3; i++) {
+        o[i] += (face[i][0] * round.offset[0] + face[i][1] * round.offset[1]) * unit;
+      }
+      about[1] += round.turn;
+    }
+    const held = motion.cycle && !state.show.motion;
+    shown = model.frames[held ? Math.max(...motion.cycle[phaseField(m)]) : p.frame] || shown;
+  }
+  for (let i = 0; i < 3; i++) o[i] += up[i] * lift;
+  // the game lays its model's x, y and z on the face, or on the world's axes,
+  // and turns it by its spin and by any turn it takes ahead of the spin
+  let laid = motion?.axes === "world" ? WORLD : face;
+  const turned = motion && spin(motion.order, [about[0], about[2], about[1]]);
+  if (turned) laid = times(laid, turned);
+  const before =
+    motion?.before &&
+    spin(
+      "xyz",
+      motion.before.map((v) => v / motionTable().turn),
+    );
+  if (before) laid = times(laid, before);
+  const shade = motion?.shadow;
+  if (shade) {
+    let strength = shade.strength;
+    if (shade.fade) strength -= shade.fade * bounce;
+    // the ball's middle is as far off its face as the model reaches below it
+    if (shade.top) strength = (strength * (shade.top + model.box[0][1])) / shade.over;
+    const along = shade.turns ? laid.map((row) => row[1]) : TANGENT[m.face];
+    drawShadow(ctx, m, c, shade, unit, going?.offset, along, strength, shade.squash ? wide : 1);
+  }
+  // A polygon sorts by its unpressed depth, so a model pressed flat keeps the
+  // order of its layers rather than letting their tied depths trade places.
+  const n = shown.length / 3;
+  const polys = polygonsOf(model);
+  const { sorted } = model;
+  const { spots, depths, far } = scratch(n, polys.length);
+  const [[a0, a1, a2], [b0, b1, b2], [d0, d1, d2]] = laid;
+  for (let v = 0; v < n; v++) {
+    const i = 3 * v;
+    // the game's x, y and z, squashed in its own axes before it is laid
+    const x = shown[i] * unit * wide,
+      y = shown[i + 2] * unit * wide,
+      z = shown[i + 1] * unit * tall;
+    const wx = o[0] + a0 * x + a1 * y,
+      wy = o[1] + b0 * x + b1 * y,
+      wz = o[2] + d0 * x + d1 * y;
+    const pressed = z * height;
+    screenTo(spots, 2 * v, wx + a2 * pressed, wy + b2 * pressed, wz + d2 * pressed);
+    if (!sorted) continue;
+    depths[v] = depth(wx + a2 * z, wy + b2 * z, wz + d2 * z);
+  }
+  if (sorted) {
+    polys.forEach(({ corners }, k) => {
+      let z = 0;
+      for (const i of corners) z += depths[i];
+      far[k] = z / corners.length;
+    });
+  }
+  // the game draws a model's polygons in its order or, where the model says,
+  // furthest first, and drops one it culls where it faces away
+  const order = sorted ? backToFront(m, model, far) : null;
+  const under =
+    model.normals && motion?.light
+      ? fillsByNormals(m, model, motion.light, laid)
+      : fillsUnder(model, light);
+  let colour = null;
+  let op = "source-over";
+  for (let j = 0; j < polys.length; j++) {
+    const k = order ? order[j] : j;
+    const { ring, corners, cull, blend } = polys[k];
+    if (cull && !towardView(spots, corners)) continue;
+    const fill = lit?.[k] ?? under[k];
+    if (blend !== op) ctx.globalCompositeOperation = op = blend;
+    if (fill !== colour) ctx.fillStyle = colour = fill;
+    ctx.beginPath();
+    ring.forEach((i, j) =>
+      j ? ctx.lineTo(spots[2 * i], spots[2 * i + 1]) : ctx.moveTo(spots[2 * i], spots[2 * i + 1]),
+    );
+    ctx.closePath();
+    ctx.fill();
+  }
+  if (op !== "source-over") ctx.globalCompositeOperation = "source-over";
+}
+
+// A polygon faces the view where its first three corners run clockwise on the
+// screen, whose y runs down, as every model winds its outer faces.
+const towardView = (spots, [a, b, c]) =>
+  (spots[2 * b] - spots[2 * a]) * (spots[2 * c + 1] - spots[2 * a + 1]) -
+    (spots[2 * b + 1] - spots[2 * a + 1]) * (spots[2 * c] - spots[2 * a]) >
+  0;
+
+// A quad's corners come two edges at a time, 0-1 and 2-3, so its outline runs
+// 0, 1, 3, 2. The game culls a polygon whose first corner's red is odd.
+const polygons = new WeakMap();
+function polygonsOf(model) {
+  if (!polygons.has(model)) {
+    const polys = model.polys.map((corners, k) => {
+      const colour = polygonColour(model, k);
+      const [a, b, c, d] = corners;
+      const [blend, alpha] = model.flags[k] & BLEND ? BLENDS[model.blend] : ["source-over", 1];
+      return {
+        corners,
+        ring: corners.length === 4 ? [a, b, d, c] : corners,
+        colour,
+        fill: fillOf(colour, alpha),
+        alpha,
+        blend,
+        cull: model.rgb[k][0] & 1,
+      };
+    });
+    polygons.set(model, polys);
+  }
+  return polygons.get(model);
+}
+
+const fillOf = ([r, g, b], alpha) => `rgba(${r} ${g} ${b} / ${alpha})`;
+// a channel a light lifts past full stands at 255
+const shade = (rgb, light) => byLight(rgb, light).map((v) => Math.min(255, v));
+
+// what a thing drawn in its own colours is kept under
+const OWN = Symbol("own");
+const underLights = new WeakMap();
+function fillsUnder(model, light) {
+  let fills = underLights.get(model);
+  if (!fills) underLights.set(model, (fills = new Map()));
+  const key = light ?? OWN;
+  if (!fills.has(key)) {
+    const polys = polygonsOf(model);
+    fills.set(
+      key,
+      polys.map((p) => (light ? fillOf(shade(p.colour, light), p.alpha) : p.fill)),
+    );
+  }
+  return fills.get(key);
+}
+
+// The ball lights each corner by its normal, turned as its vertices are, from a
+// light fixed to the view; the light's axes are the view's right, down and in.
+const byNormals = new WeakMap();
+function fillsByNormals(m, model, light, laid) {
+  const c = camera();
+  const kept = byNormals.get(m);
+  const basis = laid.flat();
+  if (kept?.model === model && kept.c === c && kept.basis.every((v, i) => v === basis[i]))
+    return kept.fills;
+  const [vx, vy, vz] = light.view;
+  const l = [0, 1, 2].map((i) => vx * c.right[i] - vy * c.up[i] - vz * c.toward[i]);
+  const len = Math.hypot(...l);
+  const n = model.normals;
+  const share = [];
+  for (let i = 0; i < n.length; i += 3) {
+    // a normal is shipped as a vertex is
+    const x = n[i],
+      y = n[i + 2],
+      z = n[i + 1];
+    let dot = 0;
+    for (let k = 0; k < 3; k++) dot += (laid[k][0] * x + laid[k][1] * y + laid[k][2] * z) * l[k];
+    share.push(lightShare(light, Math.max(0, Math.floor(dot / len))));
+  }
+  const polys = polygonsOf(model);
+  const fills = model.polys.map((corners, k) => {
+    const rgb = model.rgb[k];
+    const lit = corners.map((v, i) =>
+      [0, 1, 2].map((ch) => Math.floor((rgb[3 * i + ch] * share[v]) / 256)),
+    );
+    return fillOf(polygonColour(model, k, lit), polys[k].alpha);
+  });
+  byNormals.set(m, { model, c, basis, fills });
+  return fills;
+}
+
+// A glint steps a flat polygon's first corner, the colour the game draws it
+// in, and every corner of a Gouraud one.
+const glintsThrough = (entry, model) =>
+  model.polys.map((corners, k) => {
+    const rgb = model.rgb[k];
+    const own = corners.map((_, i) => rgb.slice(3 * i, 3 * i + 3));
+    const stepped = model.flags[k] & GOURAUD ? own : own.slice(0, 1);
+    return glintSteps(entry, stepped).map((now) => polygonColour(model, k, now));
+  });
+
+// A cut's glints are in its model, so every thing of the cut shows the same
+// ones; a frame's fills are kept for every thing drawn on it in one light.
+const glinters = new WeakMap();
+function glintFills(entry, type, model, frame, light) {
+  let g = glinters.get(entry);
+  if (!g) {
+    const models = typeModels(type);
+    const steps = models.map((cut) => glintsThrough(entry, cut));
+    g = { models, steps, lengths: steps.map((cut) => cut.map((s) => s.length)), at: null };
+    glinters.set(entry, g);
+  }
+  const cut = g.models.indexOf(model);
+  if (cut < 0) return null;
+  const now = Math.floor(frame);
+  if (g.at !== now) {
+    g.at = now;
+    g.live = glints(entry, g.lengths, now);
+    g.lit = new Map();
+  }
+  if (!g.lit.has(model)) g.lit.set(model, new Map());
+  const lit = g.lit.get(model);
+  const key = light ?? OWN;
+  if (!lit.has(key)) {
+    const polys = polygonsOf(model);
+    const out = [];
+    for (const { k, at } of g.live[cut]) {
+      const rgb = g.steps[cut][k][now - at];
+      out[k] = fillOf(light ? shade(rgb, light) : rgb, polys[k].alpha);
+    }
+    lit.set(key, out);
+  }
+  return lit.get(key);
+}
+
+// Furthest first, ties in the model's order. Each sort starts from the last
+// frame's order, which is all but sorted.
+const orders = new WeakMap();
+function backToFront(m, model, far) {
+  let last = orders.get(m);
+  if (last?.model !== model) {
+    last = { model, order: model.polys.map((_, k) => k) };
+    orders.set(m, last);
+  }
+  const { order } = last;
+  for (let i = 1; i < order.length; i++) {
+    const k = order[i];
+    let j = i - 1;
+    for (; j >= 0 && (far[order[j]] < far[k] || (far[order[j]] === far[k] && order[j] > k)); j--)
+      order[j + 1] = order[j];
+    order[j + 1] = k;
+  }
+  return order;
+}
+
+const buffers = {
+  spots: new Float64Array(0),
+  depths: new Float64Array(0),
+  far: new Float64Array(0),
+};
+function scratch(corners, polys) {
+  if (buffers.depths.length < corners) {
+    buffers.spots = new Float64Array(2 * corners);
+    buffers.depths = new Float64Array(corners);
+  }
+  if (buffers.far.length < polys) buffers.far = new Float64Array(polys);
+  return buffers;
+}
+
+const OBJECT_HOVER = 8 / BLOCK;
+
+function at(c, face, hover = 0) {
+  const n = FACE_NORMAL[face];
+  const d = 0.5 + hover;
+  return [c.x + 0.5 + n[0] * d, c.y + 0.5 + n[1] * d, c.z + 0.5 + n[2] * d];
+}
+const off = (c, face, hover = 0) => screen(...at(c, face, hover));
+
+const FACING_REACH = 0.45;
+function drawFacing(ctx, m, c, face, colour) {
+  const d = markerFacing(m);
+  if (d === null) return;
+  const n = FACE_NORMAL[d];
+  const from = at(c, face, OBJECT_HOVER);
+  const [px, py] = screen(...from);
+  const [qx, qy] = screen(
+    from[0] + n[0] * FACING_REACH,
+    from[1] + n[1] * FACING_REACH,
+    from[2] + n[2] * FACING_REACH,
+  );
+  const r = Math.max(2, 3 * state.cam.zoom);
+  ctx.strokeStyle = colour;
+  ctx.fillStyle = colour;
+  ctx.lineWidth = Math.max(1.5, 2 * state.cam.zoom);
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.lineTo(qx, qy);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(qx, qy, r, 0, 7);
+  ctx.fill();
+}
+
+function drawMarker(ctx, m, c) {
+  if (state.hiddenKinds.has(m.id)) return;
+  const face = m.face ?? 0;
+  const dark = switchedOff(m);
+  const colour = markerColour(m);
+  const ink = "rgba(9 13 20 / 0.9)";
+  const [fx, fy] = off(c, face);
+  const [px, py] = off(c, face, OBJECT_HOVER);
+  const r = Math.max(4, 7 * state.cam.zoom);
+  ctx.save();
+  ctx.strokeStyle = "rgba(232 238 251 / 0.35)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(fx, fy);
+  ctx.lineTo(px, py);
+  ctx.stroke();
+
+  drawFacing(ctx, m, c, face, colour);
+  ctx.fillStyle = dark ? "#111725" : colour;
+  ctx.strokeStyle = dark ? colour : ink;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(px, py - r);
+  ctx.lineTo(px + r, py);
+  ctx.lineTo(px, py + r);
+  ctx.lineTo(px - r, py);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  if (r >= 9) {
+    ctx.font = `${Math.round(r * 0.95)}px ui-monospace, Menlo, monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = dark ? colour : "rgba(9 13 20 / 0.85)";
+    ctx.fillText(String(m.face === null ? m.kind : m.type), px, py + 0.5);
+    ctx.textAlign = "start";
+    ctx.textBaseline = "alphabetic";
+  }
+  if (state.show.labels && state.cam.zoom > 0.45) {
+    const side = m.face !== null && state.show.faces ? ` · ${FACE_NAME[m.face]}` : "";
+    label(ctx, markerLabel(m) + (dark ? " · off" : "") + side, px + r + 4, py + 4, "#e8eefb");
+  }
+  ctx.restore();
+}
+
+// The game's shadow is a sprite taken away from what is behind it. A canvas
+// cannot subtract, so the box is turned over, the sprite added and the box
+// turned back, which is exact where the pixel was opaque: the map's own canvas
+// is, and a shadow is dropped on a face turned away, as the game drops it, so
+// it never reaches the see-through layer.
+const sprites = [];
+function spriteOf(k) {
+  const rows = shadowSprites()?.[k];
+  if (!rows) return null;
+  if (!sprites[k]) {
+    const cv = document.createElement("canvas");
+    cv.width = rows[0].length;
+    cv.height = rows.length;
+    const g = cv.getContext("2d");
+    const img = g.createImageData(cv.width, cv.height);
+    rows.forEach((row, v) =>
+      [...row].forEach((ch, u) => {
+        // a level of 31 is a whole channel, as a texel's is
+        const level = parseInt(ch, 32) << 3;
+        img.data.set([level, level, level, level ? 255 : 0], (v * cv.width + u) * 4);
+      }),
+    );
+    g.putImageData(img, 0, 0);
+    sprites[k] = cv;
+  }
+  return sprites[k];
+}
+
+function drawShadow(ctx, m, c, shade, unit, offset, along, strength, scale) {
+  const up = FACE_NORMAL[m.face];
+  const sprite = spriteOf(shade.sprite);
+  if (!sprite || strength <= 0 || !facing(up)) return;
+  const half = motionTable().shadow.half * unit * scale;
+  const o = at(c, m.face, shade.off * unit);
+  if (offset) for (let i = 0; i < 3; i++) o[i] += offset[i];
+  const across = cross(up, along);
+  const t = ctx.getTransform();
+  const corner = (i, j) => {
+    const [x, y] = screen(...o.map((v, k) => v + (along[k] * i + across[k] * j) * half));
+    return t.transformPoint(new DOMPoint(x, y));
+  };
+  const p = [corner(-1, -1), corner(1, -1), corner(-1, 1), corner(1, 1)];
+  const x0 = Math.max(0, Math.floor(Math.min(...p.map((q) => q.x))));
+  const y0 = Math.max(0, Math.floor(Math.min(...p.map((q) => q.y))));
+  const x1 = Math.min(ctx.canvas.width, Math.ceil(Math.max(...p.map((q) => q.x))));
+  const y1 = Math.min(ctx.canvas.height, Math.ceil(Math.max(...p.map((q) => q.y))));
+  if (x1 <= x0 || y1 <= y0) return;
+  const n = sprite.width;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = "difference";
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = Math.min(1, strength / NEUTRAL);
+  const [a, b, d] = p;
+  ctx.setTransform((b.x - a.x) / n, (b.y - a.y) / n, (d.x - a.x) / n, (d.y - a.y) / n, a.x, a.y);
+  ctx.drawImage(sprite, 0, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "difference";
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.restore();
+}

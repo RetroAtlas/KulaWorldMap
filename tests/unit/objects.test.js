@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations, objects } from "./fixtures.js";
-import { lookOf } from "../../public/js/skins.js";
+import { lookOf } from "../../public/js/viewer/skins.js";
 import {
   setObjects,
   motionOf,
@@ -12,8 +12,8 @@ import {
   exitForm,
   holdsKey,
   LAST_KEY,
-} from "../../public/js/data.js";
-import { state } from "../../public/js/state.js";
+} from "../../public/js/viewer/data.js";
+import { state } from "../../public/js/viewer/state.js";
 
 setObjects(objects);
 // The starts are drawn as the ball.

@@ -2,11 +2,11 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { test, expect } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
-import { FILE_MOST } from "../../public/js/files.js";
-import { writePak } from "../../public/js/pak.js";
-import { record } from "../../public/js/iso.js";
-import { EOF_SUBMODE, SECTOR_RAW, USER, sector } from "../../public/js/sectors.js";
-import { projectOf, readKwl, writeKwl } from "../../public/js/kwl.js";
+import { FILE_MOST } from "../../public/js/editor/files.js";
+import { writePak } from "../../public/js/format/pak.js";
+import { record } from "../../public/js/format/iso.js";
+import { EOF_SUBMODE, SECTOR_RAW, USER, sector } from "../../public/js/format/sectors.js";
+import { projectOf, readKwl, writeKwl } from "../../public/js/format/kwl.js";
 import { mapData, levelKey } from "../unit/fixtures.js";
 import {
   CNF,
@@ -33,7 +33,7 @@ const file = (name, data) => ({
 });
 const shown = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return {
       li: state.li,
       draft: state.lvl.draft,
@@ -43,7 +43,7 @@ const shown = (page) =>
   });
 const entryOf = (page, id) =>
   page.evaluate(async (id) => {
-    const { get } = await import(new URL("js/drafts.js", location.href).href);
+    const { get } = await import(new URL("js/editor/drafts.js", location.href).href);
     return get(id);
   }, id);
 const toasts = (page) => page.locator("#toastStack .toast").allTextContents();
@@ -438,7 +438,7 @@ const pasting = (page, key, world) =>
     async ([key, world]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ pasteLevelLink }, { readLevelText }] = await Promise.all(
-        ["importdialog.js", "files.js"].map(at),
+        ["editor/importdialog.js", "editor/files.js"].map(at),
       );
       window[key] = pasteLevelLink(world, readLevelText);
     },
@@ -451,7 +451,7 @@ const pastingSlowly = (page, key, world, throws) =>
     async ([key, world, throws]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ pasteLevelLink }, { readLevelText }] = await Promise.all(
-        ["importdialog.js", "files.js"].map(at),
+        ["editor/importdialog.js", "editor/files.js"].map(at),
       );
       const read = (text, world) =>
         new Promise((resolve, reject) =>

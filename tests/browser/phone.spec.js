@@ -198,7 +198,7 @@ test.describe("editing on a phone", () => {
   const at = (page, x, y, z) =>
     page.evaluate(
       async ([x, y, z]) => {
-        const { screen } = await import(new URL("js/state.js", location.href).href);
+        const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
         const r = document.getElementById("cv").getBoundingClientRect();
         const [px, py] = screen(x, y, z);
         return { x: r.left + px, y: r.top + py };
@@ -221,7 +221,7 @@ test.describe("editing on a phone", () => {
   };
   const shown = (page) =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       const s = state.selected;
       const h = state.hover;
       return {
@@ -233,21 +233,27 @@ test.describe("editing on a phone", () => {
   const cells = (page) =>
     page.evaluate(async () => {
       const [{ state }, { get }] = await Promise.all(
-        ["state.js", "drafts.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+        ["viewer/state.js", "editor/drafts.js"].map(
+          (p) => import(new URL(`js/${p}`, location.href).href),
+        ),
       );
       return get(state.lvl.draft).doc.blocks.map((b) => b.cell);
     });
   const spans = (page) =>
     page.evaluate(async () => {
       const [{ state }, { get }] = await Promise.all(
-        ["state.js", "drafts.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+        ["viewer/state.js", "editor/drafts.js"].map(
+          (p) => import(new URL(`js/${p}`, location.href).href),
+        ),
       );
       return get(state.lvl.draft).doc.blocks.filter((b) => b.kind === 5);
     });
   const zoom = (page, z) =>
     page.evaluate(async (z) => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
-      const { invalidatePick, draw } = await import(new URL("js/render.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { invalidatePick, draw } = await import(
+        new URL("js/viewer/draw/render.js", location.href).href
+      );
       state.cam.zoom = z;
       state.framing = null;
       invalidatePick();
@@ -258,8 +264,10 @@ test.describe("editing on a phone", () => {
   /** Pan the level up the screen, clear of a sheet and the strip above it. */
   const lift = (page, by) =>
     page.evaluate(async (by) => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
-      const { invalidatePick, draw } = await import(new URL("js/render.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { invalidatePick, draw } = await import(
+        new URL("js/viewer/draw/render.js", location.href).href
+      );
       state.cam.panY += by;
       state.framing = null;
       invalidatePick();
@@ -270,8 +278,12 @@ test.describe("editing on a phone", () => {
   const bring = (page, point, to) =>
     page.evaluate(
       async ([point, to]) => {
-        const { state, screen, BLOCK } = await import(new URL("js/state.js", location.href).href);
-        const { invalidatePick, draw } = await import(new URL("js/render.js", location.href).href);
+        const { state, screen, BLOCK } = await import(
+          new URL("js/viewer/state.js", location.href).href
+        );
+        const { invalidatePick, draw } = await import(
+          new URL("js/viewer/draw/render.js", location.href).href
+        );
         const r = document.getElementById("cv").getBoundingClientRect();
         const [px, py] = screen(...point);
         const k = state.cam.zoom * BLOCK;

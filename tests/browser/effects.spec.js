@@ -7,8 +7,10 @@ test("objects draw as themselves, keep turning, and go back to markers on d", as
   await settle(page);
   const probe = async () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
-      const { markerModel, levelMarkers } = await import(new URL("js/data.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { markerModel, levelMarkers } = await import(
+        new URL("js/viewer/data.js", location.href).href
+      );
       const marks = levelMarkers(state.lvl);
       return {
         models: state.show.models,
@@ -50,8 +52,8 @@ test("a label leaves out the face its thing stands on, and n names it", async ({
   expect((await written(page)).filter((t) => t.endsWith(" · top")).sort()).toEqual(named.sort());
   await page.keyboard.press("n");
   await page.evaluate(async () => {
-    const { state, screen } = await import(new URL("js/state.js", location.href).href);
-    const { markerLabel } = await import(new URL("js/data.js", location.href).href);
+    const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { markerLabel } = await import(new URL("js/viewer/data.js", location.href).href);
     const [key] = [...state.idx.markers].find(([, ms]) => ms.some((m) => markerLabel(m) === "Key"));
     const c = state.idx.cells.get(key);
     const cv = document.getElementById("cv");
@@ -77,16 +79,18 @@ test("the settings have no model, so among the models they show only while selec
   expect(await shown()).toBe(0);
   await expect(page.locator("#kinds button", { hasText: "Level settings" })).toContainText("1");
   const picked = await page.evaluate(async () => {
-    const { state, screen, BLOCK } = await import(new URL("js/state.js", location.href).href);
-    const { cellAt } = await import(new URL("js/render.js", location.href).href);
+    const { state, screen, BLOCK } = await import(
+      new URL("js/viewer/state.js", location.href).href
+    );
+    const { cellAt } = await import(new URL("js/viewer/draw/render.js", location.href).href);
     const r = state.lvl.records.find((r) => r.kind === 9);
     const c = cellAt(...screen(r.x + 0.5, r.y + 0.5, r.z - 8 / BLOCK));
     return c && [c.x, c.y, c.z];
   });
   expect(picked).toBeNull();
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     const r = state.lvl.records.find((r) => r.kind === 9);
     showCell(state.idx.cells.get(cellKey(r.x, r.y, r.z)));
   });
@@ -110,7 +114,7 @@ test("where a teleporter leads is an arrow in its colour, broken while it is off
       async ([dark, yaw, pitch]) => {
         const at = (p) => import(new URL(`js/${p}`, location.href).href);
         const [{ state, screen, cellKey }, { drawLink }, data] = await Promise.all(
-          ["state.js", "overlays.js", "data.js"].map(at),
+          ["viewer/state.js", "viewer/draw/overlays.js", "viewer/data.js"].map(at),
         );
         state.cam.yaw = yaw;
         state.cam.pitch = pitch;
@@ -173,7 +177,7 @@ test("b puts the lines on the blocks", async ({ page }) => {
   await settle(page);
   const strokes = () =>
     page.evaluate(async () => {
-      const { draw } = await import(new URL("js/render.js", location.href).href);
+      const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
       const g = document.getElementById("cv").getContext("2d");
       let n = 0;
       const stroke = g.stroke;
@@ -202,7 +206,7 @@ test("a beam switched off is one of the outlines, and a beam that is on is drawn
     page.evaluate(async () => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state }, { drawBeams }, { litNow }] = await Promise.all(
-        ["state.js", "beams.js", "data.js"].map(at),
+        ["viewer/state.js", "viewer/draw/beams.js", "viewer/data.js"].map(at),
       );
       const g = document.createElement("canvas").getContext("2d");
       let marks = 0;
@@ -232,7 +236,9 @@ test("a beam switched off is one of the outlines, and a beam that is on is drawn
   await page.keyboard.press("b");
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { flip, litNow, beams }] = await Promise.all(["state.js", "data.js"].map(at));
+    const [{ state }, { flip, litNow, beams }] = await Promise.all(
+      ["viewer/state.js", "viewer/data.js"].map(at),
+    );
     const dark = beams(state.lvl).filter((r) => !litNow(r));
     for (const colour of new Set(dark.map((r) => r.colour))) flip(colour, 0);
   });
@@ -252,7 +258,9 @@ test("a beam switched off is one broken line in the colour its switches wear, as
   const { worn, dark, weight } = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { drawBeams }, { outline }, data] = await Promise.all(
-      ["state.js", "beams.js", "blocks.js", "data.js"].map(at),
+      ["viewer/state.js", "viewer/draw/beams.js", "viewer/draw/blocks.js", "viewer/data.js"].map(
+        at,
+      ),
     );
     const worn = {};
     for (const marks of state.idx.markers.values())
@@ -297,9 +305,9 @@ test("a thing on a face turned away shows where no block covers it, and x shows 
       still be settling to its size. */
   const shows = (pitch) =>
     page.evaluate(async (pitch) => {
-      const { state, screen } = await import(new URL("js/state.js", location.href).href);
-      const { draw } = await import(new URL("js/render.js", location.href).href);
-      const { ballFor, modelUnit } = await import(new URL("js/data.js", location.href).href);
+      const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
+      const { ballFor, modelUnit } = await import(new URL("js/viewer/data.js", location.href).href);
       const [key] = [...state.idx.markers].find(([, ms]) => ms.some((m) => m.type === 30));
       const c = state.idx.cells.get(key);
       const [lo, hi] = ballFor(state.lvl).box;
@@ -319,8 +327,8 @@ test("a thing on a face turned away shows where no block covers it, and x shows 
   expect(await shows(-40)).toBe(false);
   // but the selected block's shows through whatever the switch says
   await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     const [key] = [...state.idx.markers].find(([, ms]) => ms.some((m) => m.type === 30));
     showCell(state.idx.cells.get(key));
   });
@@ -342,8 +350,8 @@ test("the ball's shadow takes the same off every channel of the face beside it",
   // what drawing the objects takes off the face a little way from the ball's
   // middle, all round it, in one frame each
   const drops = await page.evaluate(async () => {
-    const { state, screen } = await import(new URL("js/state.js", location.href).href);
-    const { draw } = await import(new URL("js/render.js", location.href).href);
+    const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
     const [key] = [...state.idx.markers].find(([, ms]) => ms.some((m) => m.type === 30));
     const c = state.idx.cells.get(key);
     const g = document.getElementById("cv").getContext("2d");
@@ -383,7 +391,7 @@ test("what travels does so from the start, its label with it, until v holds it",
   await page.keyboard.press("l");
   const at = () =>
     page.evaluate(async () => {
-      const { draw } = await import(new URL("js/render.js", location.href).href);
+      const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
       const g = document.getElementById("cv").getContext("2d");
       const seen = [];
       const fillText = g.fillText;
@@ -411,7 +419,9 @@ test("a level's clock starts at its first frame as the level opens", async ({ pa
   await page.goto("/#HIRO/0");
   await settle(page);
   const clock = () =>
-    page.evaluate(async () => (await import(new URL("js/render.js", location.href).href)).clock());
+    page.evaluate(async () =>
+      (await import(new URL("js/viewer/draw/render.js", location.href).href)).clock(),
+    );
   const opened = await clock();
   await expect.poll(clock).toBeGreaterThan(opened);
   const pressed = await page.evaluate(() => performance.now());
@@ -420,7 +430,7 @@ test("a level's clock starts at its first frame as the level opens", async ({ pa
   const [now, since] = await page.evaluate(async (pressed) => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ clock }, { frameAt }, { motionTable }] = await Promise.all(
-      ["render.js", "motion.js", "data.js"].map(at),
+      ["viewer/draw/render.js", "viewer/motion.js", "viewer/data.js"].map(at),
     );
     return [clock(), frameAt(motionTable(), performance.now() - pressed)];
   }, pressed);
@@ -431,12 +441,14 @@ test("a level's clock stands while the page is hidden", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);
   const clock = () =>
-    page.evaluate(async () => (await import(new URL("js/render.js", location.href).href)).clock());
+    page.evaluate(async () =>
+      (await import(new URL("js/viewer/draw/render.js", location.href).href)).clock(),
+    );
   await expect.poll(clock).toBeGreaterThan(0);
   const [moved, hiddenFor] = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ clock }, { frameAt }, { motionTable }] = await Promise.all(
-      ["render.js", "motion.js", "data.js"].map(at),
+      ["viewer/draw/render.js", "viewer/motion.js", "viewer/data.js"].map(at),
     );
     const hide = (hidden) => {
       Object.defineProperty(document, "hidden", { configurable: true, get: () => hidden });
@@ -511,7 +523,9 @@ const litBeside = (page, sel, top, bright = false) =>
     async ([sel, [x, y, z], bright]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state, screen, cellKey }, { draw, clock }, { skinsTable }, { lookOf, faceSkin }] =
-        await Promise.all(["state.js", "render.js", "data.js", "skins.js"].map(at));
+        await Promise.all(
+          ["viewer/state.js", "viewer/draw/render.js", "viewer/data.js", "viewer/skins.js"].map(at),
+        );
       const l = state.lvl;
       const skins = skinsTable();
       const look = lookOf(
@@ -585,7 +599,7 @@ test("a face in full light is the game's lit face at any pulse, and an unlit one
   const rows = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { atlasFor, paint }, { skinsTable }] = await Promise.all(
-      ["state.js", "atlas.js", "data.js"].map(at),
+      ["viewer/state.js", "viewer/draw/atlas.js", "viewer/data.js"].map(at),
     );
     const tex = skinsTable().sets.arcade.kinds["3"][0];
     const cv = Object.assign(document.createElement("canvas"), { width: 64, height: 64 });
@@ -662,7 +676,7 @@ const topAt = (page, [x, y, z], frames, points = CLEAR) =>
     async ([[x, y, z], frames, points]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state, screen }, { draw, clock }] = await Promise.all(
-        ["state.js", "render.js"].map(at),
+        ["viewer/state.js", "viewer/draw/render.js"].map(at),
       );
       const now = performance.now;
       const t = now.call(performance);
@@ -704,7 +718,7 @@ test("a light on a face with a colour of its own adds to that colour and is not 
   const green = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { atlasFor, paint }, { skinsTable }] = await Promise.all(
-      ["state.js", "atlas.js", "data.js"].map(at),
+      ["viewer/state.js", "viewer/draw/atlas.js", "viewer/data.js"].map(at),
     );
     const tex = skinsTable().sets.bonus.types["5"][0];
     const cv = Object.assign(document.createElement("canvas"), { width: 64, height: 64 });
@@ -794,7 +808,9 @@ const gemFills = (page, frames) =>
       { draw, clock },
       { levelMarkers, typeModels, skinsTable, polygonColour },
       { byLight },
-    ] = await Promise.all(["state.js", "render.js", "data.js", "motion.js"].map(at));
+    ] = await Promise.all(
+      ["viewer/state.js", "viewer/draw/render.js", "viewer/data.js", "viewer/motion.js"].map(at),
+    );
     // both gems stand on faces of the world's middle shade
     const light = skinsTable().light[state.lvl.theme].arcade[1];
     const lit = (rgb) => byLight(rgb, light).map((v) => Math.min(255, v));
@@ -868,7 +884,7 @@ const alone = (page, cell, type, frame = 0) =>
     async ([cell, type, frame]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state, cellKey }, { drawThing }] = await Promise.all(
-        ["state.js", "things.js"].map(at),
+        ["viewer/state.js", "viewer/draw/things.js"].map(at),
       );
       const key = cellKey(...cell);
       const m = state.idx.markers.get(key).find((m) => m.type === type);
@@ -901,8 +917,10 @@ const alone = (page, cell, type, frame = 0) =>
 const fillsOf = (page, type, variant, light) =>
   page.evaluate(
     async ([type, variant, light]) => {
-      const { typeModels, polygonColour } = await import(new URL("js/data.js", location.href).href);
-      const { byLight } = await import(new URL("js/motion.js", location.href).href);
+      const { typeModels, polygonColour } = await import(
+        new URL("js/viewer/data.js", location.href).href
+      );
+      const { byLight } = await import(new URL("js/viewer/motion.js", location.href).href);
       const g = document.createElement("canvas").getContext("2d");
       const css = (rgb) => ((g.fillStyle = `rgb(${rgb.join(" ")})`), g.fillStyle);
       const model = typeModels(type)[variant];
@@ -965,7 +983,7 @@ test("a thing is drawn in its world's light for the face it stands on, and a bon
   await settle(page);
   await page.keyboard.press("v");
   const light = await page.evaluate(async () => {
-    const { skinsTable } = await import(new URL("js/data.js", location.href).href);
+    const { skinsTable } = await import(new URL("js/viewer/data.js", location.href).href);
     const s = skinsTable();
     return {
       bright: s.light.HIRO.arcade[s.shade.HIRO[2]],
@@ -998,8 +1016,10 @@ test("a teleporter's model flashes with its light, by its circuit's lift", async
   await page.goto("/#COWBOY/7/45,55");
   await settle(page);
   const light = await page.evaluate(async () => {
-    const { skinsTable, motionTable } = await import(new URL("js/data.js", location.href).href);
-    const { byLight } = await import(new URL("js/motion.js", location.href).href);
+    const { skinsTable, motionTable } = await import(
+      new URL("js/viewer/data.js", location.href).href
+    );
+    const { byLight } = await import(new URL("js/viewer/motion.js", location.href).href);
     const s = skinsTable();
     const top = s.light.COWBOY.arcade[s.shade.COWBOY[0]];
     const lift = motionTable().glow.lift["5"][1];
@@ -1032,8 +1052,10 @@ test("an exit its panel opens turns green, the cross on its face with it, and li
   const beside = [18, 12, 17];
   const middle = [[0.5, 0.5]];
   const light = await page.evaluate(async () => {
-    const { skinsTable, motionTable } = await import(new URL("js/data.js", location.href).href);
-    const { byLight } = await import(new URL("js/motion.js", location.href).href);
+    const { skinsTable, motionTable } = await import(
+      new URL("js/viewer/data.js", location.href).href
+    );
+    const { byLight } = await import(new URL("js/viewer/motion.js", location.href).href);
     const s = skinsTable();
     const top = s.light.HIRO.arcade[s.shade.HIRO[0]];
     const lift = motionTable().glow.lift["7"][0];
@@ -1056,7 +1078,7 @@ test("an exit its panel opens turns green, the cross on its face with it, and li
   await drawsAs(25, 1, light.top);
 
   await page.evaluate(async () => {
-    const { flip, LAST_KEY } = await import(new URL("js/data.js", location.href).href);
+    const { flip, LAST_KEY } = await import(new URL("js/viewer/data.js", location.href).href);
     flip(LAST_KEY, 0);
   });
   const [openCross] = await topAt(page, exit, [10], middle);
@@ -1079,14 +1101,16 @@ test("the ball is lit corner by corner from a light fixed to the view", async ({
   await page.keyboard.press("v");
   const at = async (yaw) => {
     await page.evaluate(async (yaw) => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       state.cam.yaw = yaw;
     }, yaw);
     return (await alone(page, [17, 18, 17], 30)).fills.map(([, style]) => style);
   };
   const own = await page.evaluate(async () => {
-    const { ballFor, polygonColour } = await import(new URL("js/data.js", location.href).href);
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { ballFor, polygonColour } = await import(
+      new URL("js/viewer/data.js", location.href).href
+    );
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const g = document.createElement("canvas").getContext("2d");
     const ball = ballFor(state.lvl);
     return ball.polys.map(
@@ -1114,9 +1138,11 @@ test("a travelling thing, and every block of a platform, picks the cell its reco
   await page.keyboard.press("n");
   const star = () =>
     page.evaluate(async () => {
-      const { state, screen, BLOCK } = await import(new URL("js/state.js", location.href).href);
+      const { state, screen, BLOCK } = await import(
+        new URL("js/viewer/state.js", location.href).href
+      );
       const { draw, cellAt, invalidatePick } = await import(
-        new URL("js/render.js", location.href).href
+        new URL("js/viewer/draw/render.js", location.href).href
       );
       const g = document.getElementById("cv").getContext("2d");
       const seen = [];
@@ -1156,8 +1182,8 @@ test("a travelling thing, and every block of a platform, picks the cell its reco
   await expect(page.locator("#chip")).toContainText("LEVEL 94");
   await page.keyboard.press("v");
   const picked = await page.evaluate(async () => {
-    const { state, screen } = await import(new URL("js/state.js", location.href).href);
-    const { cellAt } = await import(new URL("js/render.js", location.href).href);
+    const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { cellAt } = await import(new URL("js/viewer/draw/render.js", location.href).href);
     const r = state.lvl.records.find((r) => r.kind === 5);
     const [x, y] = screen(r.x + 0.5, r.y + 1.5, r.z);
     const c = cellAt(x, y);
@@ -1178,8 +1204,8 @@ test("a point on the edge between two blocks names one drawn there, never one fa
   await settle(page);
   await expect(page.locator("#chip")).toContainText("HIDDEN 10");
   const far = await page.evaluate(async () => {
-    const { screen } = await import(new URL("js/state.js", location.href).href);
-    const { cellAt } = await import(new URL("js/render.js", location.href).href);
+    const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { cellAt } = await import(new URL("js/viewer/draw/render.js", location.href).href);
     /** How far a point lies outside a cell's cube as the screen shows it. */
     const away = (c, x, y) => {
       const pts = [];
@@ -1227,9 +1253,9 @@ test("the pick names the face under the point, and the point lies on it", async 
   await settle(page);
   await expect(page.locator("#chip")).toContainText("HIDDEN 10");
   const seen = await page.evaluate(async () => {
-    const { screen, facing } = await import(new URL("js/state.js", location.href).href);
-    const { cellAt } = await import(new URL("js/render.js", location.href).href);
-    const { FACES } = await import(new URL("js/blocks.js", location.href).href);
+    const { screen, facing } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { cellAt } = await import(new URL("js/viewer/draw/render.js", location.href).href);
+    const { FACES } = await import(new URL("js/viewer/draw/blocks.js", location.href).href);
     const on = (pts, x, y) => {
       const sides = pts.map(([ax, ay], i) => {
         const [bx, by] = pts[(i + 1) % pts.length];
@@ -1271,13 +1297,13 @@ test("the map, the legend and the panel follow the screen's density", async ({ p
   await settle(page);
   await textured(page);
   await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get([...state.idx.markers.keys()][0]));
   });
   const density = () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       const cv = document.getElementById("cv");
       const ratio = (c) => c.width / parseInt(c.style.width);
       return [

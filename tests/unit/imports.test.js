@@ -1,20 +1,29 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const dir = fileURLToPath(new URL("../../public/js", import.meta.url));
-const IMPORT = /^import\s(?:[^;]*?\sfrom\s+)?"\.\/([^"]+)"/gm;
+const IMPORT = /^import\s(?:[^;]*?\sfrom\s+)?"(\.\.?\/[^"]+)"/gm;
 
-/** Each module's static imports, by the file they name. */
+/** Every module's path relative to js/, the vendored library left out. */
+function modules(at = ".") {
+  return readdirSync(join(dir, at), { withFileTypes: true }).flatMap((entry) => {
+    const path = posix.join(at, entry.name);
+    if (entry.isDirectory()) return path === "vendor" ? [] : modules(path);
+    return entry.name.endsWith(".js") ? [path] : [];
+  });
+}
+
+/** Each module's static imports, by the file they name, both relative to js/. */
 function graph() {
   const out = new Map();
-  for (const name of readdirSync(dir).filter((n) => n.endsWith(".js"))) {
+  for (const name of modules()) {
     const text = readFileSync(join(dir, name), "utf8");
     out.set(
       name,
-      [...text.matchAll(IMPORT)].map((m) => m[1]),
+      [...text.matchAll(IMPORT)].map((m) => posix.join(posix.dirname(name), m[1])),
     );
   }
   return out;
@@ -63,4 +72,27 @@ test("no module imports itself through its imports", () => {
     seen.set(name, "done");
   };
   for (const name of g.keys()) visit(name);
+});
+
+// The folders are layers: what each may import is its own and those beneath
+// it, so nothing of the screen reaches the model, the readers and writers
+// reach only the model, and nothing of the editor reaches the viewer. The
+// boot at the root reaches the editor through a dynamic import alone.
+const LAYERS = {
+  viewer: ["viewer"],
+  "viewer/ui": ["viewer/ui"],
+  "viewer/draw": ["viewer", "viewer/ui", "viewer/draw"],
+  "viewer/chrome": ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome"],
+  format: ["viewer", "format", "vendor"],
+  editor: ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", "format", "editor"],
+  ".": ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", "format"],
+};
+
+test("a module imports only its own layer and those beneath it", () => {
+  for (const [name, imports] of graph()) {
+    const allowed = LAYERS[posix.dirname(name)];
+    assert.ok(allowed, `${name}: not in a layer the table knows`);
+    for (const target of imports)
+      assert.ok(allowed.includes(posix.dirname(target)), `${name} imports ${target}`);
+  }
 });

@@ -13,7 +13,7 @@ import {
   edc,
   rewrite,
   sector,
-} from "../../public/js/sectors.js";
+} from "../../public/js/format/sectors.js";
 
 // Sectors the Python side built once the disc's own had come out of it bit
 // for bit, so the port is held to the disc through them.

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations } from "./fixtures.js";
-import { state } from "../../public/js/state.js";
+import { state } from "../../public/js/viewer/state.js";
 import {
   setAnnotations,
   levelMarkers,
@@ -24,8 +24,8 @@ import {
   circuitName,
   circuitPhrase,
   theCircuit,
-} from "../../public/js/data.js";
-import { SWITCH } from "../../public/js/kwl.js";
+} from "../../public/js/viewer/data.js";
+import { SWITCH } from "../../public/js/format/kwl.js";
 
 const levelNamed = (name, pack) =>
   mapData.levels.find((l) => l.name === name && (!pack || l.pack === pack));

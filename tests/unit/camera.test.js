@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations } from "./fixtures.js";
-import { state } from "../../public/js/state.js";
-import { setAnnotations } from "../../public/js/data.js";
-import { startCamera } from "../../public/js/overlays.js";
+import { state } from "../../public/js/viewer/state.js";
+import { setAnnotations } from "../../public/js/viewer/data.js";
+import { startCamera } from "../../public/js/viewer/draw/overlays.js";
 
 setAnnotations(annotations);
 state.data = mapData;

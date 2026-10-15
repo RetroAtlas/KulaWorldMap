@@ -14,7 +14,9 @@ test("a link names a level a source provides, and installing it again keeps the 
   await settle(page);
   const first = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { provideLevels }] = await Promise.all(["state.js", "navigate.js"].map(at));
+    const [{ state }, { provideLevels }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/navigate.js"].map(at),
+    );
     const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
     copy.name = "Spiral";
     delete copy.shown;
@@ -37,7 +39,12 @@ test("a link names a level a source provides, and installing it again keeps the 
   const second = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state, cellKey }, { showLevel, setSlice }, { showCell }, { on }] = await Promise.all(
-      ["state.js", "navigate.js", "detail.js", "dom.js"].map(at),
+      [
+        "viewer/state.js",
+        "viewer/chrome/navigate.js",
+        "viewer/chrome/detail.js",
+        "viewer/ui/dom.js",
+      ].map(at),
     );
     state.hiddenKinds.add("t37/2");
     setSlice(20);
@@ -75,7 +82,7 @@ test("a link names a level a source provides, and installing it again keeps the 
   await fell;
   await expect.poll(() => page.evaluate(() => location.hash)).toMatch(/^#DRAFT\/7\//);
   const third = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return { li: state.li, draft: state.lvl.draft, hash: location.hash };
   });
   expect(third).toMatchObject({ li: -1, draft: 7 });
@@ -90,7 +97,7 @@ test("an update that keeps the selected cell keeps its face too", async ({ page 
   const out = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state, cellKey }, { showLevel }, { showCell }] = await Promise.all(
-      ["state.js", "navigate.js", "detail.js"].map(at),
+      ["viewer/state.js", "viewer/chrome/navigate.js", "viewer/chrome/detail.js"].map(at),
     );
     const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
     showLevel(copy);
@@ -126,7 +133,7 @@ test("the keys that step through the levels leave a level from elsewhere alone",
   const out = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { showLevel, stepLevel }] = await Promise.all(
-      ["state.js", "navigate.js"].map(at),
+      ["viewer/state.js", "viewer/chrome/navigate.js"].map(at),
     );
     const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
     showLevel(copy);
@@ -146,7 +153,9 @@ test("an update refreshes the map's name and the search's scope without announci
   await settle(page);
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { showLevel }] = await Promise.all(["state.js", "navigate.js"].map(at));
+    const [{ state }, { showLevel }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/navigate.js"].map(at),
+    );
     const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
     copy.name = "Spiral";
     delete copy.shown;
@@ -161,7 +170,7 @@ test("an update refreshes the map's name and the search's scope without announci
   await expect(level).toHaveText("Spiral");
   await level.click();
   await page.evaluate(async () => {
-    const { showLevel } = await import(new URL("js/navigate.js", location.href).href);
+    const { showLevel } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     showLevel({ ...window.copy, name: "Helix" }, { keepView: true, push: false });
   });
   await expect(page.locator("#cv")).toHaveAttribute("aria-label", /^Draft, Helix, /);
@@ -179,7 +188,14 @@ test("the hit test answers for a travelling thing where it is drawn", async ({ p
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { selectLevel }, R, { motionTable, index }, { walkers }, { thingDisc }] =
       await Promise.all(
-        ["state.js", "navigate.js", "render.js", "data.js", "travel.js", "things.js"].map(at),
+        [
+          "viewer/state.js",
+          "viewer/chrome/navigate.js",
+          "viewer/draw/render.js",
+          "viewer/data.js",
+          "viewer/travel.js",
+          "viewer/draw/things.js",
+        ].map(at),
       );
     while (!motionTable()) await new Promise(requestAnimationFrame);
     state.show.motion = true;
@@ -206,7 +222,9 @@ test("a dialog opened for a control gives the focus back to that control", async
   await page.goto("/#HIRO/0/45,35/fit/33");
   await settle(page);
   const out = await page.evaluate(async () => {
-    const { openDialog, closeDialog } = await import(new URL("js/dialog.js", location.href).href);
+    const { openDialog, closeDialog } = await import(
+      new URL("js/viewer/ui/dialog.js", location.href).href
+    );
     const settings = document.getElementById("settings");
     // the focus is elsewhere, as it is in an engine that does not focus a clicked button
     document.getElementById("cv").focus();
@@ -261,7 +279,14 @@ test("the same level installed again keeps its clock and its presses, and anothe
   const out = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { showLevel, selectLevel }, { draw, clock }, { motionTable, flip }] =
-      await Promise.all(["state.js", "navigate.js", "render.js", "data.js"].map(at));
+      await Promise.all(
+        [
+          "viewer/state.js",
+          "viewer/chrome/navigate.js",
+          "viewer/draw/render.js",
+          "viewer/data.js",
+        ].map(at),
+      );
     while (!motionTable()) await new Promise(requestAnimationFrame);
     state.show.motion = true;
     const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
@@ -293,7 +318,12 @@ test("the same level installed again keeps what travels while its records are un
   const out = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { showLevel, selectLevel }, { draw }, { motionTable }] = await Promise.all(
-      ["state.js", "navigate.js", "render.js", "data.js"].map(at),
+      [
+        "viewer/state.js",
+        "viewer/chrome/navigate.js",
+        "viewer/draw/render.js",
+        "viewer/data.js",
+      ].map(at),
     );
     while (!motionTable()) await new Promise(requestAnimationFrame);
     state.show.motion = true;

@@ -1,17 +1,23 @@
-import { $, on } from "./dom.js";
-import { state } from "./state.js";
-import { resize, onResize } from "./render.js";
-import { loadJson, setAnnotations, setObjects } from "./data.js";
-import { buildWorlds, buildKinds, wireDisplay, restore, setSidebar } from "./sidebar.js";
-import { applyHash, selectLevel, writeHash } from "./navigate.js";
-import { openModal } from "./modal.js";
-import { wireSettings } from "./settings.js";
-import { toast } from "./toast.js";
-import { KEY, heldIn } from "./held.js";
-import { warm } from "./atlas.js";
-import "./a11y.js";
-import "./interaction.js";
-import "./search.js";
+import { $, on } from "./viewer/ui/dom.js";
+import { state } from "./viewer/state.js";
+import { resize, onResize } from "./viewer/draw/render.js";
+import { loadJson, setAnnotations, setObjects } from "./viewer/data.js";
+import {
+  buildWorlds,
+  buildKinds,
+  wireDisplay,
+  restore,
+  setSidebar,
+} from "./viewer/chrome/sidebar.js";
+import { applyHash, selectLevel, writeHash } from "./viewer/chrome/navigate.js";
+import { openModal } from "./viewer/ui/modal.js";
+import { wireSettings } from "./viewer/ui/settings.js";
+import { toast } from "./viewer/ui/toast.js";
+import { KEY, heldIn } from "./format/held.js";
+import { warm } from "./viewer/draw/atlas.js";
+import "./viewer/chrome/a11y.js";
+import "./viewer/chrome/interaction.js";
+import "./viewer/chrome/search.js";
 
 setSidebar(innerWidth > 860);
 restore();
@@ -164,7 +170,9 @@ function unloaded() {
 
 // A fetch that failed is tried again; a boot that threw is not, since it may have half run.
 const bootEditor = () =>
-  broken ? Promise.resolve(unloaded()) : (loading ??= import("./editor.js").then(ready, unloaded));
+  broken
+    ? Promise.resolve(unloaded())
+    : (loading ??= import("./editor/editor.js").then(ready, unloaded));
 
 const typing = (e) =>
   /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
@@ -230,7 +238,7 @@ Promise.all([
   loadJson("map_data.json"),
   loadJson("annotations.json", {}),
   loadJson("objects.json", {}),
-  awaited ? import("./editor.js").catch(() => null) : null,
+  awaited ? import("./editor/editor.js").catch(() => null) : null,
 ]).then(([data, ann, objects, module]) => {
   if (!data) {
     $("chipLine").textContent = "The map's data could not be loaded.";

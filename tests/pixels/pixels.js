@@ -17,8 +17,8 @@ import { join, resolve } from "node:path";
 import { chromium } from "@playwright/test";
 import { ROOT, serve, checkout, locate } from "../public.js";
 import { cases, live } from "./cases.js";
-import { WORLDS } from "../../public/js/kwl.js";
-import { blank } from "../../public/js/project.js";
+import { WORLDS } from "../../public/js/format/kwl.js";
+import { blank } from "../../public/js/format/project.js";
 
 const args = process.argv.slice(2);
 const option = (name) => {

@@ -8,10 +8,14 @@ import {
   levelMarkers,
   blockMarkers,
   kindName,
-} from "../../public/js/data.js";
-import { state } from "../../public/js/state.js";
-import { parseQuery, queryTerms } from "../../public/js/searchquery.js";
-import { matchObjects, objectCandidates, rowOf } from "../../public/js/objectsearch.js";
+} from "../../public/js/viewer/data.js";
+import { state } from "../../public/js/viewer/state.js";
+import { parseQuery, queryTerms } from "../../public/js/viewer/chrome/searchquery.js";
+import {
+  matchObjects,
+  objectCandidates,
+  rowOf,
+} from "../../public/js/viewer/chrome/objectsearch.js";
 
 setAnnotations(annotations);
 

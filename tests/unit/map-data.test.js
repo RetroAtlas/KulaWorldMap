@@ -9,7 +9,7 @@ import {
   TRAILER_KIND,
   UNPLACED_KIND,
 } from "./fixtures.js";
-import { fieldIndex } from "../../public/js/data.js";
+import { fieldIndex } from "../../public/js/viewer/data.js";
 
 const FACES = 6;
 

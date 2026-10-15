@@ -10,7 +10,7 @@ export function trackErrors(page) {
 /** Wait for the data to land and the canvas to have a size to fit against. */
 export async function settle(page) {
   await page.evaluate(async () => {
-    const st = await import(new URL("js/state.js", location.href).href);
+    const st = await import(new URL("js/viewer/state.js", location.href).href);
     const deadline = Date.now() + 10000;
     while (!(st.state.lvl && document.getElementById("cv").clientWidth > 0)) {
       if (Date.now() > deadline) throw new Error("settle timeout");
@@ -25,7 +25,9 @@ export async function settle(page) {
 export const steps = (page, id = null) =>
   page.evaluate(async (id) => {
     const [{ state }, { steps }] = await Promise.all(
-      ["state.js", "trail.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+      ["viewer/state.js", "editor/trail.js"].map(
+        (p) => import(new URL(`js/${p}`, location.href).href),
+      ),
     );
     return steps(id ?? state.lvl.draft);
   }, id);
@@ -45,7 +47,9 @@ export async function still(page) {
 export const textured = (page) =>
   page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { atlasFor }] = await Promise.all(["state.js", "atlas.js"].map(at));
+    const [{ state }, { atlasFor }] = await Promise.all(
+      ["viewer/state.js", "viewer/draw/atlas.js"].map(at),
+    );
     const deadline = Date.now() + 10000;
     while (!atlasFor(state.lvl.theme)) {
       if (Date.now() > deadline) throw new Error("textured timeout");
@@ -70,7 +74,7 @@ export const overlaps = (a, b) =>
 /** The text one frame writes on the canvas. */
 export const written = (page) =>
   page.evaluate(async () => {
-    const { draw } = await import(new URL("js/render.js", location.href).href);
+    const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
     const g = document.getElementById("cv").getContext("2d");
     const seen = [];
     const fillText = g.fillText;

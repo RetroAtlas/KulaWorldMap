@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { indexed, answers, spans } from "../../public/js/searchtext.js";
+import { indexed, answers, spans } from "../../public/js/viewer/chrome/searchtext.js";
 
 const c = indexed(["LEVEL 145", null, "", "HIRO", "f3=20"]);
 

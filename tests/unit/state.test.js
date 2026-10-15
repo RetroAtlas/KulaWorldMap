@@ -17,7 +17,7 @@ import {
   fitLevel,
   levelCentre,
   cellKey,
-} from "../../public/js/state.js";
+} from "../../public/js/viewer/state.js";
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
 

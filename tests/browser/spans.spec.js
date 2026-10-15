@@ -8,7 +8,7 @@ const WAITING_TOUCH = "The run waits for its far end. Tap where it ends, or chan
 
 const shown = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const s = state.selected;
     return {
       selected: s && [s.x, s.y, s.z],
@@ -20,20 +20,22 @@ const shown = (page) =>
 const doc = (page) =>
   page.evaluate(async () => {
     const [{ state }, { get }] = await Promise.all(
-      ["state.js", "drafts.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+      ["viewer/state.js", "editor/drafts.js"].map(
+        (p) => import(new URL(`js/${p}`, location.href).href),
+      ),
     );
     return get(state.lvl.draft).doc;
   });
 const spans = async (page) => (await doc(page)).blocks.filter((b) => b.kind === 5 || b.kind === 8);
 const preview = (page) =>
   page.evaluate(async () => {
-    const { runPreview } = await import(new URL("js/editor.js", location.href).href);
+    const { runPreview } = await import(new URL("js/editor/editor.js", location.href).href);
     return runPreview();
   });
 const at = (page, x, y, z) =>
   page.evaluate(
     async ([x, y, z]) => {
-      const { screen } = await import(new URL("js/state.js", location.href).href);
+      const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
       const r = document.getElementById("cv").getBoundingClientRect();
       const [px, py] = screen(x, y, z);
       return { x: r.left + px, y: r.top + py };
@@ -65,7 +67,7 @@ const lay = (page, cell, kind) =>
     async ([cell, kind]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-        ["state.js", "drafts.js", "project.js"].map(at),
+        ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
       );
       const id = state.lvl.draft;
       update(id, setBlock(get(id).doc, cell, { kind }));
@@ -84,8 +86,10 @@ async function fresh(page) {
   await expect(page.locator("#palette")).toBeVisible();
   await page.keyboard.press("g");
   await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { invalidatePick, draw } = await import(new URL("js/render.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { invalidatePick, draw } = await import(
+      new URL("js/viewer/draw/render.js", location.href).href
+    );
     state.cam.zoom = 0.8;
     state.framing = null;
     invalidatePick();
@@ -99,7 +103,7 @@ const amend = (page, cell, change) =>
     async ([cell, change]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state }, { get, update }, { blockAt, setBlock }] = await Promise.all(
-        ["state.js", "drafts.js", "project.js"].map(at),
+        ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
       );
       const id = state.lvl.draft;
       const doc = get(id).doc;
@@ -132,7 +136,7 @@ test("the palette offers the moving platform and a laser of each colour", async 
       ]),
     );
   const names = await page.evaluate(async () => {
-    const { kindName } = await import(new URL("js/data.js", location.href).href);
+    const { kindName } = await import(new URL("js/viewer/data.js", location.href).href);
     return [kindName(5), kindName(8)];
   });
   expect(rows.find(([id]) => id === "k5")).toEqual(["k5", names[0], true]);
@@ -267,7 +271,7 @@ test("the preview tints each cell of the run by what lies in it", async ({ page 
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     let doc = setBlock(get(id).doc, [18, 19, 17], { kind: 0 });
@@ -314,8 +318,8 @@ test("the grid's height hint waits while a run does", async ({ page }) => {
   const errors = trackErrors(page);
   await fresh(page);
   await page.evaluate(async () => {
-    const { SIDE } = await import(new URL("js/state.js", location.href).href);
-    const { setSlice } = await import(new URL("js/navigate.js", location.href).href);
+    const { SIDE } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 1 - 17);
   });
   await pick(page, "Blocks", "k5");

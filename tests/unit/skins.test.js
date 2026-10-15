@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects } from "./fixtures.js";
-import { faceSkin, lookOf, shadowed } from "../../public/js/skins.js";
+import { faceSkin, lookOf, shadowed } from "../../public/js/viewer/skins.js";
 
 const { skins } = objects;
 const COIN = 37;

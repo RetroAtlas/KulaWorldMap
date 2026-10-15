@@ -17,10 +17,10 @@ import {
   packSize,
   readPak,
   writePak,
-} from "../../public/js/pak.js";
-import { deflate } from "../../public/js/deflate.js";
-import { writeKwl } from "../../public/js/kwl.js";
-import { USER } from "../../public/js/sectors.js";
+} from "../../public/js/format/pak.js";
+import { deflate } from "../../public/js/format/deflate.js";
+import { writeKwl } from "../../public/js/format/kwl.js";
+import { USER } from "../../public/js/format/sectors.js";
 import { stored, streamOf, synthetic, syntheticPacks } from "./synthetic.js";
 
 // The length of every shipped level's canonical stream, as the Python writer

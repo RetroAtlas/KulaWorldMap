@@ -5,7 +5,7 @@ const EDIT = "/#HIRO/0/45,35/fit/33";
 
 const shown = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const s = state.selected;
     return {
       li: state.li,
@@ -18,7 +18,9 @@ const shown = (page) =>
 const blocks = (page) =>
   page.evaluate(async () => {
     const [{ state }, { get }] = await Promise.all(
-      ["state.js", "drafts.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+      ["viewer/state.js", "editor/drafts.js"].map(
+        (p) => import(new URL(`js/${p}`, location.href).href),
+      ),
     );
     return get(state.lvl.draft).doc.blocks.map((b) => ({ cell: b.cell, faces: b.faces ?? {} }));
   });
@@ -26,7 +28,7 @@ const blocks = (page) =>
 const at = (page, x, y, z) =>
   page.evaluate(
     async ([x, y, z]) => {
-      const { screen } = await import(new URL("js/state.js", location.href).href);
+      const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
       const r = document.getElementById("cv").getBoundingClientRect();
       const [px, py] = screen(x, y, z);
       return { x: r.left + px, y: r.top + py };
@@ -43,8 +45,10 @@ const toasts = (page) => page.locator("#toastStack .toast").allTextContents();
 /** Hold the view at a zoom, so that points away from the level stay on the canvas. */
 const zoom = (page, z) =>
   page.evaluate(async (z) => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { invalidatePick, draw } = await import(new URL("js/render.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { invalidatePick, draw } = await import(
+      new URL("js/viewer/draw/render.js", location.href).href
+    );
     state.cam.zoom = z;
     state.framing = null;
     invalidatePick();
@@ -120,8 +124,8 @@ test("a level made to be edited asks for editing, which is said after the level 
   await page.keyboard.press("w");
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
   await page.evaluate(async () => {
-    const { say } = await import(new URL("js/a11y.js", location.href).href);
-    const { emit } = await import(new URL("js/dom.js", location.href).href);
+    const { say } = await import(new URL("js/viewer/chrome/a11y.js", location.href).href);
+    const { emit } = await import(new URL("js/viewer/ui/dom.js", location.href).href);
     say("Made a new level. Draft, Untitled level.");
     emit("edit-wanted");
   });
@@ -131,7 +135,7 @@ test("a level made to be edited asks for editing, which is said after the level 
   );
   // asked again while editing, it changes nothing
   await page.evaluate(async () => {
-    const { emit } = await import(new URL("js/dom.js", location.href).href);
+    const { emit } = await import(new URL("js/viewer/ui/dom.js", location.href).href);
     emit("edit-wanted");
   });
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
@@ -157,7 +161,7 @@ test("Place lays a block across the face clicked and selects it, and refuses the
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     update(id, setBlock(get(id).doc, [32, 17, 17], { kind: 0 }));
@@ -175,7 +179,9 @@ test("Place lays a block across the face clicked and selects it, and refuses the
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state, SIDE }, { get, update }, { setBlock }, { setSlice }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js", "navigate.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js", "viewer/chrome/navigate.js"].map(
+        at,
+      ),
     );
     const id = state.lvl.draft;
     update(id, setBlock(get(id).doc, [17, 17, 16], { kind: 0 }));
@@ -198,7 +204,9 @@ test("a refusal leaves the strip with the brush as it does with the tool", async
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state, SIDE }, { get, update }, { setBlock }, { setSlice }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js", "navigate.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js", "viewer/chrome/navigate.js"].map(
+        at,
+      ),
     );
     const id = state.lvl.draft;
     update(id, setBlock(get(id).doc, [17, 17, 16], { kind: 0 }));
@@ -219,8 +227,8 @@ test("a block laid above the slice raises it, and the grid lays a first floor", 
   const errors = trackErrors(page);
   await fresh(page);
   await page.evaluate(async () => {
-    const { SIDE } = await import(new URL("js/state.js", location.href).href);
-    const { setSlice } = await import(new URL("js/navigate.js", location.href).href);
+    const { SIDE } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 1 - 17);
   });
   expect((await shown(page)).slice).toBe(16);
@@ -246,12 +254,12 @@ test("a block laid above the slice raises it, and the grid lays a first floor", 
   // with the slice lowered the grid stands at the slice, and lays a floor in the layer it shows
   const ghost = () =>
     page.evaluate(async () => {
-      const { ghostPreview } = await import(new URL("js/editor.js", location.href).href);
+      const { ghostPreview } = await import(new URL("js/editor/editor.js", location.href).href);
       return ghostPreview();
     });
   await page.evaluate(async () => {
-    const { SIDE } = await import(new URL("js/state.js", location.href).href);
-    const { setSlice } = await import(new URL("js/navigate.js", location.href).href);
+    const { SIDE } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 1 - 15);
   });
   const over = await at(page, 20.5, 22.5, 16);
@@ -283,7 +291,7 @@ test("a block laid above the slice raises it, and the grid lays a first floor", 
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state, SIDE }, { get, update }, { setSlice }] = await Promise.all(
-      ["state.js", "drafts.js", "navigate.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "viewer/chrome/navigate.js"].map(at),
     );
     const id = state.lvl.draft;
     update(id, { ...get(id).doc, blocks: [] });
@@ -342,7 +350,7 @@ test("a platform's body builds against the cell it stands in, not its record's",
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     update(
@@ -358,7 +366,7 @@ test("a platform's body builds against the cell it stands in, not its record's",
   await zoom(page, 0.8);
   const ghost = () =>
     page.evaluate(async () => {
-      const { ghostPreview } = await import(new URL("js/editor.js", location.href).href);
+      const { ghostPreview } = await import(new URL("js/editor/editor.js", location.href).href);
       return ghostPreview();
     });
   const body = await top(page, [18, 18, 17]);
@@ -389,7 +397,7 @@ test("the hover follows the pointer from one block of a platform's body to the n
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     update(
@@ -405,12 +413,12 @@ test("the hover follows the pointer from one block of a platform's body to the n
   await zoom(page, 0.8);
   const ghost = () =>
     page.evaluate(async () => {
-      const { ghostPreview } = await import(new URL("js/editor.js", location.href).href);
+      const { ghostPreview } = await import(new URL("js/editor/editor.js", location.href).href);
       return ghostPreview();
     });
   const hovered = () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       const h = state.hover;
       return h && [h.body, h.k, h.face];
     });
@@ -436,7 +444,7 @@ test("the ghost is red for whatever the click would refuse, a beam's cell among 
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     let doc = setBlock(get(id).doc, [17, 18, 17], { kind: 8, far: [22, 18, 17], colour: 0 });
@@ -446,7 +454,7 @@ test("the ghost is red for whatever the click would refuse, a beam's cell among 
   await zoom(page, 0.8);
   const ghost = () =>
     page.evaluate(async () => {
-      const { ghostPreview } = await import(new URL("js/editor.js", location.href).href);
+      const { ghostPreview } = await import(new URL("js/editor/editor.js", location.href).href);
       return ghostPreview();
     });
   const free = await plusX(page, [19, 17, 17]);
@@ -475,7 +483,7 @@ test("the hover names what Place would do, and Esc clears the selection without 
   await page.mouse.move(side.x, side.y);
   await expect(page.locator("#tip")).toContainText("Place a block on the +x side");
   const hover = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return state.hover && [state.hover.x, state.hover.y, state.hover.z, state.hover.face];
   });
   expect(hover).toEqual([17, 17, 17, 1]);
@@ -495,7 +503,7 @@ test("the hover says where the face holds what Place would put there", async ({ 
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setFace }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     update(id, setFace(get(id).doc, [17, 17, 17], 1, { type: 31 }));

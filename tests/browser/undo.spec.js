@@ -5,7 +5,7 @@ const EDIT = "/#HIRO/0/45,35/fit/33";
 
 const shown = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const s = state.selected;
     return {
       draft: state.lvl.draft,
@@ -17,7 +17,9 @@ const shown = (page) =>
 const doc = (page) =>
   page.evaluate(async () => {
     const [{ state }, { get }] = await Promise.all(
-      ["state.js", "drafts.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+      ["viewer/state.js", "editor/drafts.js"].map(
+        (p) => import(new URL(`js/${p}`, location.href).href),
+      ),
     );
     return get(state.lvl.draft).doc;
   });
@@ -25,7 +27,7 @@ const cells = async (page) => (await doc(page)).blocks.map((b) => b.cell);
 const at = (page, x, y, z) =>
   page.evaluate(
     async ([x, y, z]) => {
-      const { screen } = await import(new URL("js/state.js", location.href).href);
+      const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
       const r = document.getElementById("cv").getBoundingClientRect();
       const [px, py] = screen(x, y, z);
       return { x: r.left + px, y: r.top + py };
@@ -114,7 +116,7 @@ test("a change that leaves the draft as it stands takes no step and counts no ch
   const took = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get }, { edit }] = await Promise.all(
-      ["state.js", "drafts.js", "trail.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "editor/trail.js"].map(at),
     );
     const id = state.lvl.draft;
     return edit(id, structuredClone(get(id).doc), "changed nothing");
@@ -351,7 +353,7 @@ test("the steps are this visit's alone", async ({ page }) => {
   await click(page, await plusX(page, START));
   expect(await steps(page)).toEqual({ past: 1, future: 0 });
   await page.evaluate(async () =>
-    (await import(new URL("js/drafts.js", location.href).href)).flush(),
+    (await import(new URL("js/editor/drafts.js", location.href).href)).flush(),
   );
   await page.reload();
   await settle(page);
@@ -370,7 +372,7 @@ test("the trail keeps the last two hundred steps and lets the oldest go", async 
   const out = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get }, { edit, steps, undo }, { setMeta }] = await Promise.all(
-      ["state.js", "drafts.js", "trail.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "editor/trail.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     for (let i = 0; i < 205; i++)

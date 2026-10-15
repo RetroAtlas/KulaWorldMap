@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects, mapData } from "./fixtures.js";
-import { FACE_NORMAL } from "../../public/js/faces.js";
-import { TANGENT, layHeading } from "../../public/js/data.js";
+import { FACE_NORMAL } from "../../public/js/viewer/faces.js";
+import { TANGENT, layHeading } from "../../public/js/viewer/data.js";
 import {
   byLight,
   spin,
@@ -22,7 +22,7 @@ import {
   glintSteps,
   glints,
   lightShare,
-} from "../../public/js/motion.js";
+} from "../../public/js/viewer/motion.js";
 
 const table = objects.motion;
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);

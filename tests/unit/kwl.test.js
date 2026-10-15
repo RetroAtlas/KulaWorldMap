@@ -4,8 +4,8 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { mapData, levelKey } from "./fixtures.js";
-import { deflate } from "../../public/js/deflate.js";
-import { SIDE } from "../../public/js/state.js";
+import { deflate } from "../../public/js/format/deflate.js";
+import { SIDE } from "../../public/js/viewer/state.js";
 import {
   CELLS,
   FACES,
@@ -32,7 +32,7 @@ import {
   projectOf,
   readKwl,
   writeKwl,
-} from "../../public/js/kwl.js";
+} from "../../public/js/format/kwl.js";
 
 // The digests the Python writer wrote from the same data, so the two writers
 // cannot drift apart without this file saying so.

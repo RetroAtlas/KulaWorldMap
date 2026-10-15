@@ -213,7 +213,7 @@ test("by level, a search lists the levels that hold the thing, most first, and a
   await expect(page.locator("#chip b")).toHaveText(title);
   expect(
     await page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       return state.selected;
     }),
   ).toBeNull();
@@ -285,7 +285,7 @@ test("a block of a kind of its own is found as often as the legend counts it, an
     const [, x, y, z] = /(\d+),(\d+),(\d+)/.exec(await rows.first().textContent());
     await search.press("Enter");
     const selected = await page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       const { x, y, z } = state.selected;
       return [x, y, z];
     });
@@ -329,7 +329,7 @@ test("an object search lists every one round the level in hand, and a row goes t
   const where = await row.textContent();
   await row.click();
   const at = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const { x, y, z } = state.selected;
     return { name: state.lvl.name, target: state.target, selected: [x, y, z] };
   });
@@ -368,7 +368,7 @@ test("down and Enter walk the finds in order, wherever the view has gone", async
     await page.keyboard.press("Enter");
     walked.push(
       await page.evaluate(async () => {
-        const { state } = await import(new URL("js/state.js", location.href).href);
+        const { state } = await import(new URL("js/viewer/state.js", location.href).href);
         return state.lvl.name;
       }),
     );
@@ -438,7 +438,7 @@ test("a find above the slice's ceiling lifts the ceiling to it", async ({ page }
   await expect(page.locator("#results [role=option]").first()).toContainText("LEVEL 12");
   await search.press("Enter");
   const at = await page.evaluate(async () => {
-    const { state, sliceZ } = await import(new URL("js/state.js", location.href).href);
+    const { state, sliceZ } = await import(new URL("js/viewer/state.js", location.href).href);
     return { z: state.selected.z, ceiling: sliceZ(), slice: state.slice };
   });
   expect(at.z).toBeLessThan(19);
@@ -466,7 +466,9 @@ test("a search held to the world keeps its order as the level moves within the w
   expect(await keys()).toEqual(before);
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { selectLevel }] = await Promise.all(["state.js", "navigate.js"].map(at));
+    const [{ state }, { selectLevel }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/navigate.js"].map(at),
+    );
     selectLevel(state.data.levels.findIndex((l) => l.theme === "INCA"));
   });
   await expect(page.locator("#scope button").nth(1)).toHaveText("INCA");

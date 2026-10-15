@@ -5,8 +5,8 @@ test("clicking the start's block opens the object standing on it", async ({ page
   await page.goto("/#HIRO/0");
   await settle(page);
   await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === 30));
     const { x, y, z } = state.lvl.records[i];
     showCell({ x, y, z, v: state.data.firstRecord + i });
@@ -26,7 +26,12 @@ test("a level's title reads in the panel as written, markup and all", async ({ p
   const cell = await page.evaluate(async (title) => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { showLevel }, { showCell }, { blank, setMeta, toLevel }] = await Promise.all(
-      ["state.js", "navigate.js", "detail.js", "project.js"].map(at),
+      [
+        "viewer/state.js",
+        "viewer/chrome/navigate.js",
+        "viewer/chrome/detail.js",
+        "format/project.js",
+      ].map(at),
     );
     showLevel(toLevel(setMeta(blank("HIRO"), { title }), 7));
     const c = [...state.idx.cells.values()][0];
@@ -45,8 +50,8 @@ test("a hazard says so in its heading", async ({ page }) => {
   await page.goto("/#HIRO/3");
   await settle(page);
   await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === 12));
     const { x, y, z } = state.lvl.records[i];
     showCell({ x, y, z, v: state.data.firstRecord + i });
@@ -61,8 +66,8 @@ test("a hazard says so in its heading", async ({ page }) => {
   await page.goto("/#INCA/4");
   await settle(page);
   await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     const c = state.lvl.cells;
     const i = c.findIndex((v, j) => j % 4 === 3 && v === 1) - 3;
     showCell({ x: c[i], y: c[i + 1], z: c[i + 2], v: 1 });
@@ -75,8 +80,8 @@ test("a hazard says so in its heading", async ({ page }) => {
     await page.goto(hash);
     await settle(page);
     await page.evaluate(async () => {
-      const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
-      const { showCell } = await import(new URL("js/detail.js", location.href).href);
+      const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
       const r = state.lvl.records.find((r) => r.kind === 8);
       const own = [r.x, r.y, r.z].join();
       const end = [r.f.slice(2, 5), r.f.slice(5, 8)].find((e) => e.join() !== own);
@@ -99,8 +104,8 @@ test("a block that is a thing of its own is named once, with what its record hol
   await page.goto("/#ATLANT/3");
   await settle(page);
   await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     const i = state.lvl.records.findIndex(
       (r) =>
         r.kind === 6 &&
@@ -128,8 +133,10 @@ test("a whole block of fire or ice reads apart from one face of it", async ({ pa
     const open = (whole) =>
       page.evaluate(
         async ([kind, whole]) => {
-          const { state } = await import(new URL("js/state.js", location.href).href);
-          const { showCell } = await import(new URL("js/detail.js", location.href).href);
+          const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+          const { showCell } = await import(
+            new URL("js/viewer/chrome/detail.js", location.href).href
+          );
           const records = state.lvl.records;
           const c = [...state.idx.cells.values()].find((c) => {
             const r = records[c.v - state.data.firstRecord];
@@ -156,8 +163,8 @@ test("a raw field reads by its number, then what it holds where that is known", 
   await settle(page);
   const labels = (type) =>
     page.evaluate(async (type) => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
-      const { showCell } = await import(new URL("js/detail.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
       const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === type));
       const { x, y, z } = state.lvl.records[i];
       showCell({ x, y, z, v: state.data.firstRecord + i });
@@ -178,8 +185,8 @@ test("a switch's panel presses it, turning its colour over until the level is le
   await page.keyboard.press("l");
   const select = (type) =>
     page.evaluate(async (type) => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
-      const { showCell } = await import(new URL("js/detail.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
       const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === type));
       const { x, y, z } = state.lvl.records[i];
       showCell({ x, y, z, v: state.data.firstRecord + i });
@@ -201,7 +208,7 @@ test("a switch's panel presses it, turning its colour over until the level is le
   await select(5);
   await expect(page.locator("#detail .press")).toHaveCount(0);
   await page.evaluate(async () => {
-    const { state, screen } = await import(new URL("js/state.js", location.href).href);
+    const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
     const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === 5));
     const c = state.lvl.records[i];
     const cv = document.getElementById("cv");
@@ -228,15 +235,15 @@ test("either exit's panel opens both exits and shuts them again until the level 
   await settle(page);
   const select = (type) =>
     page.evaluate(async (type) => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
-      const { showCell } = await import(new URL("js/detail.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
       const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === type));
       const { x, y, z } = state.lvl.records[i];
       showCell({ x, y, z, v: state.data.firstRecord + i });
     }, type);
   const open = () =>
     page.evaluate(async () => {
-      const { exitsOpen } = await import(new URL("js/data.js", location.href).href);
+      const { exitsOpen } = await import(new URL("js/viewer/data.js", location.href).href);
       return exitsOpen();
     });
   const press = page.locator("#detail .press button");
@@ -265,7 +272,14 @@ test("either exit's panel opens both exits and shuts them again until the level 
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state, cellKey }, { showLevel }, { showCell }, { blank, setBlock, toLevel }] =
-      await Promise.all(["state.js", "navigate.js", "detail.js", "project.js"].map(at));
+      await Promise.all(
+        [
+          "viewer/state.js",
+          "viewer/chrome/navigate.js",
+          "viewer/chrome/detail.js",
+          "format/project.js",
+        ].map(at),
+      );
     const exit = { kind: 0, faces: { 0: { type: 7 } } };
     showLevel(toLevel(setBlock(blank("HIRO"), [18, 17, 17], exit), 7));
     showCell(state.idx.cells.get(cellKey(18, 17, 17)));
@@ -280,8 +294,8 @@ test("a teleporter's panel names where it leads, and going there is a find", asy
   await page.goto("/#COWBOY/7/45,35/1");
   await settle(page);
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get(cellKey(17, 7, 17)));
   });
   // LEVEL 68's blue teleporters send the ball round a ring of three
@@ -292,7 +306,7 @@ test("a teleporter's panel names where it leads, and going there is a find", asy
   await expect(page.locator("#detail")).toContainText("cell 17,25,17");
   await expect(go).toHaveText("17, 21, 17 top");
   const view = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return { target: state.target, pan: [state.cam.panX, state.cam.panY] };
   });
   expect(view).toEqual({ target: [17.5, 25.5, 17.5], pan: [0, 0] });
@@ -307,8 +321,8 @@ test("a teleporter's panel names where it leads, and going there is a find", asy
   await page.goto("/#HILLS/19");
   await settle(page);
   await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     const i = state.lvl.records.findIndex((r) => r.on.some((o) => o.type === 5));
     const { x, y, z } = state.lvl.records[i];
     showCell({ x, y, z, v: state.data.firstRecord + i });
@@ -325,8 +339,8 @@ test("the panel keeps the focus when the button it was on goes", async ({ page }
   await page.goto("/#COWBOY/7/45,35/1");
   await settle(page);
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get(cellKey(17, 7, 17)));
   });
   const panel = page.locator("#detail");
@@ -344,8 +358,8 @@ test("the panel folds to its title, and stays folded from block to block", async
   await settle(page);
   const show = (cell) =>
     page.evaluate(async (cell) => {
-      const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
-      const { showCell } = await import(new URL("js/detail.js", location.href).href);
+      const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
       showCell(state.idx.cells.get(cellKey(...cell)));
     }, cell);
   await show([17, 12, 17]);
@@ -470,7 +484,7 @@ test("the panel's icons are drawn again in the world's textures when they land",
   const same = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { atlasFor }, { blockIcon }] = await Promise.all(
-      ["state.js", "atlas.js", "icons.js"].map(at),
+      ["viewer/state.js", "viewer/draw/atlas.js", "viewer/draw/icons.js"].map(at),
     );
     while (!atlasFor(state.lvl.theme)) await new Promise(requestAnimationFrame);
     const shown = document.querySelector("#detail h3 canvas");
@@ -486,8 +500,8 @@ test("the panel hands the focus to the map however it closes", async ({ page }) 
   await page.goto("/#COWBOY/7/45,35/1");
   await settle(page);
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get(cellKey(17, 7, 17)));
   });
   const panel = page.locator("#detail");
@@ -496,8 +510,8 @@ test("the panel hands the focus to the map however it closes", async ({ page }) 
   await expect(panel).toBeHidden();
   await expect(page.locator("#cv")).toBeFocused();
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get(cellKey(17, 7, 17)));
   });
   await panel.locator(".x").focus();
@@ -508,8 +522,8 @@ test("the panel hands the focus to the map however it closes", async ({ page }) 
   await page.keyboard.press("[");
   await expect(page.locator("#chip b")).toHaveText("LEVEL 68");
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get(cellKey(17, 7, 17)));
   });
   await panel.locator(".x").focus();

@@ -5,9 +5,9 @@ import { openAsBlob, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { inflateSync } from "node:zlib";
 import { mapData, packs } from "./fixtures.js";
-import { projectOf, writeKwl } from "../../public/js/kwl.js";
-import { deflate } from "../../public/js/deflate.js";
-import { EXTENT, SIZE, openDisc, record } from "../../public/js/iso.js";
+import { projectOf, writeKwl } from "../../public/js/format/kwl.js";
+import { deflate } from "../../public/js/format/deflate.js";
+import { EXTENT, SIZE, openDisc, record } from "../../public/js/format/iso.js";
 import {
   IN_PLACE,
   LARGEST,
@@ -18,7 +18,7 @@ import {
   packSize,
   readPak,
   writePak,
-} from "../../public/js/pak.js";
+} from "../../public/js/format/pak.js";
 import {
   DATA_SUBMODE,
   EOF_SUBMODE,
@@ -28,7 +28,7 @@ import {
   check,
   rewrite,
   sector,
-} from "../../public/js/sectors.js";
+} from "../../public/js/format/sectors.js";
 import {
   ADD,
   BLOCK,
@@ -56,7 +56,7 @@ import {
   varint,
   vcdiff,
   verify,
-} from "../../public/js/patch.js";
+} from "../../public/js/format/patch.js";
 import {
   CNF,
   CNF_AT,

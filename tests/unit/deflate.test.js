@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { deflate } from "../../public/js/deflate.js";
+import { deflate } from "../../public/js/format/deflate.js";
 
 // Streams zlib itself wrote, at the two levels the page compresses at.
 const { vectors } = JSON.parse(

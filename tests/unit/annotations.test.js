@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { mapData, annotations, objects, levelKey } from "./fixtures.js";
-import { state } from "../../public/js/state.js";
-import { setAnnotations, setObjects, levelScore, fieldIndex } from "../../public/js/data.js";
-import { levelPoints } from "../../public/js/points.js";
+import { state } from "../../public/js/viewer/state.js";
+import { setAnnotations, setObjects, levelScore, fieldIndex } from "../../public/js/viewer/data.js";
+import { levelPoints } from "../../public/js/viewer/draw/points.js";
 
 const reasons = readFileSync(
   fileURLToPath(new URL("../../docs/annotations.md", import.meta.url)),

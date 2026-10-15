@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { heldIn, idOf } from "../../public/js/held.js";
-import { VERSION, empty, merge, parse, serialize } from "../../public/js/store.js";
-import { blank, readProject } from "../../public/js/project.js";
+import { heldIn, idOf } from "../../public/js/format/held.js";
+import { VERSION, empty, merge, parse, serialize } from "../../public/js/format/store.js";
+import { blank, readProject } from "../../public/js/format/project.js";
 
 const entry = (doc, more = {}) => ({ doc, updated: 1, saved: null, edits: 0, ...more });
 const good = (world = "HIRO", more = {}) => ({ ...blank(world), ...more });

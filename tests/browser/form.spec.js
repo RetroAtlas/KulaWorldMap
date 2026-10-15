@@ -7,7 +7,7 @@ const HOME = [17, 17, 17];
 const at = (page, x, y, z) =>
   page.evaluate(
     async ([x, y, z]) => {
-      const { screen } = await import(new URL("js/state.js", location.href).href);
+      const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
       const r = document.getElementById("cv").getBoundingClientRect();
       const [px, py] = screen(x, y, z);
       return { x: r.left + px, y: r.top + py };
@@ -19,20 +19,22 @@ const top = (page, c) => at(page, c[0] + 0.5, c[1] + 0.5, c[2]);
 const doc = (page) =>
   page.evaluate(async () => {
     const [{ state }, { get }] = await Promise.all(
-      ["state.js", "drafts.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+      ["viewer/state.js", "editor/drafts.js"].map(
+        (p) => import(new URL(`js/${p}`, location.href).href),
+      ),
     );
     return get(state.lvl.draft).doc;
   });
 const blockAt = (d, cell) => d.blocks.find((b) => b.cell.join() === cell.join()) ?? null;
 const selected = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const s = state.selected;
     return s && { cell: [s.x, s.y, s.z], face: s.face ?? null };
   });
 const hidden = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return [...state.hiddenKinds];
   });
 const form = (page) => page.locator("#detail .form");
@@ -43,7 +45,7 @@ const lay = (page, cell, block) =>
     async ([cell, block]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-        ["state.js", "drafts.js", "project.js"].map(at),
+        ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
       );
       const id = state.lvl.draft;
       update(id, setBlock(get(id).doc, cell, block));
@@ -55,7 +57,9 @@ const lay = (page, cell, block) =>
 const select = (page, cell) =>
   page.evaluate(async (cell) => {
     const [{ state, cellKey }, { showCell }] = await Promise.all(
-      ["state.js", "detail.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+      ["viewer/state.js", "viewer/chrome/detail.js"].map(
+        (p) => import(new URL(`js/${p}`, location.href).href),
+      ),
     );
     showCell(state.idx.cells.get(cellKey(...cell)));
   }, cell);

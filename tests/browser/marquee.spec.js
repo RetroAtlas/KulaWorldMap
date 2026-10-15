@@ -18,7 +18,7 @@ const selected = (n) =>
 const at = (page, x, y, z) =>
   page.evaluate(
     async ([x, y, z]) => {
-      const { screen } = await import(new URL("js/state.js", location.href).href);
+      const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
       const r = document.getElementById("cv").getBoundingClientRect();
       const [px, py] = screen(x, y, z);
       return { x: r.left + px, y: r.top + py };
@@ -31,7 +31,7 @@ const top = (page, c) => at(page, c[0] + 0.5, c[1] + 0.5, c[2]);
 const clear = (page, p) =>
   page.evaluate(
     async ([x, y]) => {
-      const { cellAt } = await import(new URL("js/render.js", location.href).href);
+      const { cellAt } = await import(new URL("js/viewer/draw/render.js", location.href).href);
       const cv = document.getElementById("cv");
       const r = cv.getBoundingClientRect();
       return document.elementFromPoint(x, y) === cv && cellAt(x - r.left, y - r.top) === null;
@@ -41,14 +41,16 @@ const clear = (page, p) =>
 const doc = (page) =>
   page.evaluate(async () => {
     const [{ state }, { get }] = await Promise.all(
-      ["state.js", "drafts.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+      ["viewer/state.js", "editor/drafts.js"].map(
+        (p) => import(new URL(`js/${p}`, location.href).href),
+      ),
     );
     return get(state.lvl.draft).doc;
   });
 const cells = async (page) => (await doc(page)).blocks.map((b) => b.cell);
 const shown = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const s = state.selected;
     return {
       selected: s && [s.x, s.y, s.z],
@@ -59,21 +61,23 @@ const shown = (page) =>
 /** Where the set in hand would land, and which of its ghosts are red. */
 const move = (page) =>
   page.evaluate(async () => {
-    const { movePreview } = await import(new URL("js/editor.js", location.href).href);
+    const { movePreview } = await import(new URL("js/editor/editor.js", location.href).href);
     return movePreview();
   });
 /** A cell's height on the screen at the view in hand. */
 const cellHeight = (page) =>
   page.evaluate(async () => {
-    const { screen } = await import(new URL("js/state.js", location.href).href);
+    const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
     return screen(0, 0, 1)[1] - screen(0, 0, 0)[1];
   });
 /** Hold the view at a yaw and a zoom. */
 const view = (page, yaw, zoom) =>
   page.evaluate(
     async ([yaw, zoom]) => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
-      const { invalidatePick, draw } = await import(new URL("js/render.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { invalidatePick, draw } = await import(
+        new URL("js/viewer/draw/render.js", location.href).href
+      );
       state.cam.yaw = yaw;
       state.cam.zoom = zoom;
       state.framing = null;
@@ -151,7 +155,7 @@ async function fresh(page) {
     async ([B, C, D, P, COIN]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
       const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-        ["state.js", "drafts.js", "project.js"].map(at),
+        ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
       );
       const id = state.lvl.draft;
       let doc = get(id).doc;
@@ -343,7 +347,7 @@ test("an error the draft carries moves with the set where it names a block of th
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     update(id, setBlock(get(id).doc, [20, 20, 17], { kind: 0 }));
@@ -373,7 +377,7 @@ test("a refused lift draws the map again, so the set's ghosts go", async ({ page
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get, update }, { setBlock }] = await Promise.all(
-      ["state.js", "drafts.js", "project.js"].map(at),
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
     );
     const id = state.lvl.draft;
     update(id, setBlock(get(id).doc, [20, 18, 17], { kind: 0 }));

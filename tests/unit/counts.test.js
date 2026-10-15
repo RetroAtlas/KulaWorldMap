@@ -14,11 +14,11 @@ import {
   index,
   levelMarkers,
   blockMarkers,
-} from "../../public/js/data.js";
-import { levelPoints, tallied, playsBonus } from "../../public/js/points.js";
-import { state, SIDE } from "../../public/js/state.js";
-import { FORMAT } from "../../public/js/kwl.js";
-import { counts, toLevel } from "../../public/js/project.js";
+} from "../../public/js/viewer/data.js";
+import { levelPoints, tallied, playsBonus } from "../../public/js/viewer/draw/points.js";
+import { state, SIDE } from "../../public/js/viewer/state.js";
+import { FORMAT } from "../../public/js/format/kwl.js";
+import { counts, toLevel } from "../../public/js/format/project.js";
 
 setAnnotations(annotations);
 setObjects(objects);

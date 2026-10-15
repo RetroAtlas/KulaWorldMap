@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { KEY, draftShaped, heldIn, idOf } from "../../public/js/held.js";
-import { blank } from "../../public/js/project.js";
+import { KEY, draftShaped, heldIn, idOf } from "../../public/js/format/held.js";
+import { blank } from "../../public/js/format/project.js";
 
 const entry = (doc, more = {}) => ({ doc, updated: 1, saved: null, edits: 0, ...more });
 

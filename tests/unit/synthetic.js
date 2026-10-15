@@ -13,13 +13,13 @@ import {
   VERSION,
   WORDS,
   writeKwl,
-} from "../../public/js/kwl.js";
-import { SIDE } from "../../public/js/state.js";
-import { deflate } from "../../public/js/deflate.js";
-import { writePak } from "../../public/js/pak.js";
-import { record } from "../../public/js/iso.js";
-import { DATA_SUBMODE, EOF_SUBMODE, USER, sector } from "../../public/js/sectors.js";
-import { BOOT, SYSTEM_ID } from "../../public/js/patch.js";
+} from "../../public/js/format/kwl.js";
+import { SIDE } from "../../public/js/viewer/state.js";
+import { deflate } from "../../public/js/format/deflate.js";
+import { writePak } from "../../public/js/format/pak.js";
+import { record } from "../../public/js/format/iso.js";
+import { DATA_SUBMODE, EOF_SUBMODE, USER, sector } from "../../public/js/format/sectors.js";
+import { BOOT, SYSTEM_ID } from "../../public/js/format/patch.js";
 
 export const ROOT_AT = 22;
 export const CNF_AT = 23;

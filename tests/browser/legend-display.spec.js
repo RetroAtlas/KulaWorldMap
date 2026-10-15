@@ -5,10 +5,12 @@ test("the catalogue's own note reaches the catalogue", async ({ page }) => {
   await page.goto("/");
   await settle(page);
   const note = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { levelNote } = await import(new URL("js/data.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { levelNote } = await import(new URL("js/viewer/data.js", location.href).href);
     const i = state.data.levels.findIndex((l) => l.name === "OBJ LEVEL");
-    const { selectLevel } = await import(new URL("js/navigate.js", location.href).href);
+    const { selectLevel } = await import(
+      new URL("js/viewer/chrome/navigate.js", location.href).href
+    );
     selectLevel(i);
     return levelNote(state.data.levels[i]);
   });
@@ -236,7 +238,7 @@ test("a legend row of objects shows and hides them, and a row of blocks only cou
   await expect(blocks.locator("[aria-pressed]")).toHaveCount(0);
   const hidden = () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       return [...state.hiddenKinds];
     });
   await blocks.getByRole("listitem").first().click();
@@ -272,7 +274,7 @@ test("a type that is paint on a face is listed with the blocks, apart from the k
   await expect(ice.locator("canvas.icon")).toHaveCount(1);
   const hidden = () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       return [...state.hiddenKinds];
     });
   await ice.click();
@@ -306,7 +308,9 @@ test("hiding a row of paint strips the face back to the stone the block wears wi
   const face = (bare) =>
     page.evaluate(async (bare) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
-      const [{ state, screen }, { draw }] = await Promise.all(["state.js", "render.js"].map(at));
+      const [{ state, screen }, { draw }] = await Promise.all(
+        ["viewer/state.js", "viewer/draw/render.js"].map(at),
+      );
       const [key] = [...state.idx.markers].find(
         ([k, ms]) => ms.some((m) => m.type === 2 && m.face === 0) && !state.idx.cells.has(k - 1),
       );
@@ -345,7 +349,9 @@ test("a legend row keeps the focus when the legend is built anew", async ({ page
   await expect(key).toBeFocused();
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ emit }, { state }] = await Promise.all(["dom.js", "state.js"].map(at));
+    const [{ emit }, { state }] = await Promise.all(
+      ["viewer/ui/dom.js", "viewer/state.js"].map(at),
+    );
     emit("atlas-loaded", state.lvl.theme);
   });
   await expect(key).toBeFocused();
@@ -487,7 +493,7 @@ test("a dialog opened as another closes stays open, on an entry of its own", asy
 
 const notice = (page, msg) =>
   page.evaluate(
-    async (msg) => (await import(new URL("js/toast.js", location.href).href)).toast(msg),
+    async (msg) => (await import(new URL("js/viewer/ui/toast.js", location.href).href)).toast(msg),
     msg,
   );
 
@@ -538,7 +544,12 @@ test("an invisible block's icon shows it at the peak of its pulse", async ({ pag
   const { median, peak } = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { atlasFor }, { SKINNED_LOOK }, { blockIcon }] = await Promise.all(
-      ["state.js", "atlas.js", "blocks.js", "icons.js"].map(at),
+      [
+        "viewer/state.js",
+        "viewer/draw/atlas.js",
+        "viewer/draw/blocks.js",
+        "viewer/draw/icons.js",
+      ].map(at),
     );
     while (!atlasFor(state.lvl.theme)) await new Promise(requestAnimationFrame);
     const cv = blockIcon(state.lvl, 3);
@@ -557,7 +568,7 @@ test("no block's icon is outlined, however faint the block", async ({ page }) =>
   const { kinds, stroked } = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { atlasFor }, { blockIcon }] = await Promise.all(
-      ["state.js", "atlas.js", "icons.js"].map(at),
+      ["viewer/state.js", "viewer/draw/atlas.js", "viewer/draw/icons.js"].map(at),
     );
     while (!atlasFor(state.lvl.theme)) await new Promise(requestAnimationFrame);
     const kinds = [...new Set(state.lvl.records.map((r) => r.kind))];
@@ -603,7 +614,7 @@ const atEye = (page) =>
   page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state, screen }, { startCamera }] = await Promise.all(
-      ["state.js", "overlays.js"].map(at),
+      ["viewer/state.js", "viewer/draw/overlays.js"].map(at),
     );
     const [x, y] = screen(...startCamera(state.lvl).eye);
     const cv = document.getElementById("cv");
@@ -682,7 +693,7 @@ test("a switch clicked leaves the keys to the map, and the slider keeps its own"
   await expect(page.locator("#showOutlines")).toBeChecked();
   const view = () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       return { pan: [state.cam.panX, state.cam.panY], slice: state.slice };
     });
   const before = await view();
@@ -753,8 +764,8 @@ test("a switch that does something only under another is greyed while it is off,
   await page.keyboard.press("h");
   await expect(said).toHaveText("“Dim what the slice hides” needs the slice lowered.");
   await page.evaluate(async () => {
-    const { state, SIDE } = await import(new URL("js/state.js", location.href).href);
-    const { setSlice } = await import(new URL("js/navigate.js", location.href).href);
+    const { state, SIDE } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 2 - state.lvl.min[2]);
   });
   await greyed([]);
@@ -789,8 +800,8 @@ test("every switch's key is the one its row shows and the key list names", async
   // every switch free to be set: the labels on, and the slice cutting into the level
   await page.keyboard.press("l");
   await page.evaluate(async () => {
-    const { state, SIDE } = await import(new URL("js/state.js", location.href).href);
-    const { setSlice } = await import(new URL("js/navigate.js", location.href).href);
+    const { state, SIDE } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 2 - state.lvl.min[2]);
   });
   await expect(page.locator("input:disabled")).toHaveCount(0);
@@ -880,7 +891,7 @@ test("a saved switch the display does not have is left behind", async ({ page })
   await settle(page);
   await expect(page.locator("#showLabels")).toBeChecked();
   const show = await page.evaluate(
-    async () => (await import(new URL("js/state.js", location.href).href)).state.show,
+    async () => (await import(new URL("js/viewer/state.js", location.href).href)).state.show,
   );
   expect(show).not.toHaveProperty("gone");
   await page.keyboard.press("b");

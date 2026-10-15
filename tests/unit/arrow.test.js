@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bow, pointAt, fromEnd, cut } from "../../public/js/arrow.js";
+import { bow, pointAt, fromEnd, cut } from "../../public/js/viewer/draw/arrow.js";
 
 const near = (a, b, eps = 1e-6) =>
   assert.ok(

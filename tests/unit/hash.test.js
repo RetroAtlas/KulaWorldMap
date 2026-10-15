@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects } from "./fixtures.js";
-import { hashes, seed } from "../../public/js/hash.js";
-import { phasesOf } from "../../public/js/motion.js";
+import { hashes, seed } from "../../public/js/viewer/hash.js";
+import { phasesOf } from "../../public/js/viewer/motion.js";
 
 const table = objects.motion;
 

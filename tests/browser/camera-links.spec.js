@@ -5,7 +5,7 @@ test("a permalink opens on the level and the camera it names", async ({ page }) 
   await page.goto("/#HIRO/11/30,20/1.25/18,13,17/0,0/25");
   await settle(page);
   const cam = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return { name: state.lvl.name, ...state.cam, slice: state.slice, target: state.target };
   });
   expect(cam.name).toBe("LEVEL 12");
@@ -20,7 +20,7 @@ test("a permalink keeps the parts it can read and drops the rest", async ({ page
   await page.goto("/#HIRO/11/30,20/0/18,13,17/x/3.5");
   await settle(page);
   const cam = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return { ...state.cam, slice: state.slice, target: state.target };
   });
   expect([cam.yaw, cam.pitch]).toEqual([30, 20]);
@@ -36,7 +36,7 @@ test("a permalink that names a zoom and no cell opens at that zoom, centred on t
   await settle(page);
   const cam = await page.evaluate(async () => {
     const { state, levelCentre, fitLevel } = await import(
-      new URL("js/state.js", location.href).href
+      new URL("js/viewer/state.js", location.href).href
     );
     const opened = { zoom: state.cam.zoom, pan: [state.cam.panX, state.cam.panY] };
     fitLevel(state.lvl);
@@ -62,8 +62,8 @@ test("a permalink carries the selected block, and opens with it selected", async
   await page.keyboard.press("Escape");
   await expect.poll(() => page.url()).toMatch(/\/33$/);
   await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell([...state.idx.cells.values()][0]);
   });
   await expect.poll(() => page.url()).toMatch(/\/33\/\d+,\d+,\d+$/);
@@ -95,7 +95,7 @@ test("a hash that arrives while a write of the URL is queued is the one the map 
   await settle(page);
   await still(page);
   await page.evaluate(async () => {
-    const { writeHash } = await import(new URL("js/navigate.js", location.href).href);
+    const { writeHash } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     // the hash changes in the frame the write is queued for, before the write runs
     requestAnimationFrame(() => (location.hash = "#ARCTIC/1"));
     writeHash();
@@ -124,7 +124,7 @@ test("a hash that arrives before the data has loaded is read once it has, and a 
     await route.continue();
   });
   await page.goto("/#HIRO/0", { waitUntil: "commit" });
-  await page.evaluate(() => import(new URL("js/interaction.js", location.href).href));
+  await page.evaluate(() => import(new URL("js/viewer/chrome/interaction.js", location.href).href));
   await page.evaluate(() => (location.hash = "#HIRO/5"));
   await page.keyboard.press("]");
   await page.locator("#search").fill("key");
@@ -143,7 +143,7 @@ test("a change of level or a find is a history entry; a turn is not", async ({ p
   const entries = () => page.evaluate(() => history.length);
   const level = () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       return { li: state.li, target: state.target, selected: !!state.selected };
     });
   const drag = () =>
@@ -215,7 +215,9 @@ test("[ and ] go on from one world into the next, and stop at the first level an
   const last = (world) =>
     page.evaluate(async (world) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
-      const [{ state }, { selectLevel }] = await Promise.all(["state.js", "navigate.js"].map(at));
+      const [{ state }, { selectLevel }] = await Promise.all(
+        ["viewer/state.js", "viewer/chrome/navigate.js"].map(at),
+      );
       selectLevel(state.data.themes.find((t) => t.id === world).levels.at(-1));
     }, world);
 
@@ -302,7 +304,7 @@ test("a pinch that opens from one point leaves the zoom a number", async ({ page
   await settle(page);
   const zoom = () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       return state.cam.zoom;
     });
   const before = await zoom();
@@ -345,14 +347,14 @@ test("going back to another view of the same level keeps the kinds hidden in it"
   await page.locator("#kinds .kind").first().click();
   const hidden = () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       return [...state.hiddenKinds];
     });
   const before = await hidden();
   expect(before).toHaveLength(1);
   const selected = () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       return state.selected && [state.selected.x, state.selected.y, state.selected.z];
     });
   const second = await selected();
@@ -364,7 +366,7 @@ test("going back to another view of the same level keeps the kinds hidden in it"
   const first = await selected();
   expect(first).not.toBeNull();
   const target = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return state.target;
   });
   expect(target).toEqual(first.map((v) => v + 0.5));
@@ -412,7 +414,7 @@ test("the camera writes the URL once it has settled, and not while it moves", as
   expect(await writes()).toBe(1);
   await expect.poll(writes).toBe(2);
   const zoom = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     return state.cam.zoom.toFixed(2);
   });
   await expect.poll(() => page.url()).toContain(`/${zoom}/`);
@@ -425,7 +427,7 @@ test("the view turns about a find only while it stays selected", async ({ page }
   await page.locator("#search").press("Enter");
   const probe = () =>
     page.evaluate(async () => {
-      const { state, screen } = await import(new URL("js/state.js", location.href).href);
+      const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
       const l = state.lvl;
       return {
         target: state.target,
@@ -459,7 +461,9 @@ test("the view turns about a find only while it stays selected", async ({ page }
   expect(cleared.selected).toBe(false);
   // the pivot goes back to the level as the next turn begins, moving nothing
   const moved = await page.evaluate(async () => {
-    const { state, screen, pivot } = await import(new URL("js/state.js", location.href).href);
+    const { state, screen, pivot } = await import(
+      new URL("js/viewer/state.js", location.href).href
+    );
     const before = screen(20, 15, 17);
     pivot();
     const after = screen(20, 15, 17);
@@ -475,8 +479,8 @@ test("the view turns about a find only while it stays selected", async ({ page }
 /** The zoom the view is at, and the one a fit taken now gives it. */
 const fitted = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { fit } = await import(new URL("js/navigate.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { fit } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     const zoom = state.cam.zoom;
     fit();
     const width = document.getElementById("cv").clientWidth;
@@ -528,8 +532,8 @@ test("a fitted view's link opens fitted to the window it is opened in", async ({
   await settle(page);
   await still(page);
   await page.evaluate(async () => {
-    const { state, cellKey } = await import(new URL("js/state.js", location.href).href);
-    const { showCell } = await import(new URL("js/detail.js", location.href).href);
+    const { state, cellKey } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
     showCell(state.idx.cells.get(cellKey(21, 13, 18)));
   });
   await page.keyboard.press(",");
@@ -560,7 +564,7 @@ test("a camera moved on purpose stays where it was put as the canvas resizes, un
   await still(page);
   const camera = () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       return { ...state.cam, target: state.target };
     });
   const sizes = [
@@ -617,7 +621,7 @@ test("a camera moved on purpose stays where it was put as the canvas resizes, un
       "a find",
       async () => {
         const cell = await page.evaluate(async () => {
-          const { state } = await import(new URL("js/state.js", location.href).href);
+          const { state } = await import(new URL("js/viewer/state.js", location.href).href);
           const c = [...state.idx.cells.values()][0];
           return `${c.x},${c.y},${c.z}`;
         });
@@ -646,8 +650,10 @@ test("a camera moved on purpose stays where it was put as the canvas resizes, un
     the scale bar's own box left out, and the room a fit leaves round it. */
 const drawnBox = (page) =>
   page.evaluate(async () => {
-    const { state, FIT_MARGIN } = await import(new URL("js/state.js", location.href).href);
-    const { draw, invalidatePick } = await import(new URL("js/render.js", location.href).href);
+    const { state, FIT_MARGIN } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { draw, invalidatePick } = await import(
+      new URL("js/viewer/draw/render.js", location.href).href
+    );
     const cv = document.getElementById("cv");
     const { width, height } = cv;
     const inked = (skip) => {
@@ -702,8 +708,10 @@ test("f at a turn frames every block inside the canvas, with the margin round th
 /** Bring the start's block under a client point, and close in on it. */
 const startUnder = (page, point) =>
   page.evaluate(async ([px, py]) => {
-    const { state, screen } = await import(new URL("js/state.js", location.href).href);
-    const { pan, zoomAt } = await import(new URL("js/interaction.js", location.href).href);
+    const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { pan, zoomAt } = await import(
+      new URL("js/viewer/chrome/interaction.js", location.href).href
+    );
     const r = document.getElementById("cv").getBoundingClientRect();
     const [start] = state.lvl.records.filter((r) => r.on.some((o) => o.type === 30));
     const [x, y] = screen(start.x + 0.5, start.y + 0.5, start.z);
@@ -782,7 +790,7 @@ test("the button in the corner is dim while the level stays framed, and lights o
   expect(await ink()).toBe(resting);
 
   const cell = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const c = [...state.idx.cells.values()][0];
     return `${c.x},${c.y},${c.z}`;
   });
@@ -793,7 +801,7 @@ test("the button in the corner is dim while the level stays framed, and lights o
   // pressed, it frames the level and rests, and pressed at rest it changes nothing
   const camera = () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       return { ...state.cam, target: state.target };
     });
   for (let i = 0; i < 2; i++) {
@@ -812,8 +820,10 @@ test("the button in the corner is dim while the level stays framed, and lights o
     far off the canvas, which leaves the scale alone on it. */
 const scaleBox = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
-    const { draw, invalidatePick } = await import(new URL("js/render.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { draw, invalidatePick } = await import(
+      new URL("js/viewer/draw/render.js", location.href).href
+    );
     const cv = document.getElementById("cv");
     const was = state.cam.panX;
     state.cam.panX += 1e4;
@@ -858,9 +868,11 @@ test("the corner stands clear of the scale however far it reaches, the chip and 
     await settle(page);
     await still(page);
     await page.evaluate(async () => {
-      const { state, ZOOM_MAX } = await import(new URL("js/state.js", location.href).href);
-      const { zoomAt } = await import(new URL("js/interaction.js", location.href).href);
-      const { showCell } = await import(new URL("js/detail.js", location.href).href);
+      const { state, ZOOM_MAX } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { zoomAt } = await import(
+        new URL("js/viewer/chrome/interaction.js", location.href).href
+      );
+      const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
       zoomAt(0, state.view.h, ZOOM_MAX / state.cam.zoom);
       // the block with the most on it, for the longest panel
       const [key] = [...state.idx.markers].sort((a, b) => b[1].length - a[1].length)[0];
@@ -924,9 +936,9 @@ test("the compass names every face and way as the panel does, each where it lies
     await page.evaluate((link) => (location.hash = link), `#INCA/11/${yaw},${pitch}`);
     await frame(page);
     const said = await page.evaluate(async () => {
-      const { camera } = await import(new URL("js/state.js", location.href).href);
+      const { camera } = await import(new URL("js/viewer/state.js", location.href).href);
       const { FACE_NORMAL, DIRECTION_NAME } = await import(
-        new URL("js/faces.js", location.href).href
+        new URL("js/viewer/faces.js", location.href).href
       );
       const cv = document.getElementById("compass");
       const mid = [cv.clientWidth / 2, cv.clientHeight / 2];
@@ -968,8 +980,8 @@ test("the compass names every face and way as the panel does, each where it lies
     by the game's number for it, read clear of its name. */
 const compassLight = (page) =>
   page.evaluate(async () => {
-    const { camera } = await import(new URL("js/state.js", location.href).href);
-    const { FACE_NORMAL } = await import(new URL("js/faces.js", location.href).href);
+    const { camera } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { FACE_NORMAL } = await import(new URL("js/viewer/faces.js", location.href).href);
     const cv = document.getElementById("compass");
     const k = cv.width / cv.clientWidth;
     const c = camera();
@@ -1039,7 +1051,7 @@ test("a press on the compass reaches no block behind it, and moves nothing", asy
 /** Rest the pointer on the top of the level's start, and give the client point it rests at. */
 const restOnStart = (page) =>
   page.evaluate(async () => {
-    const { state, screen } = await import(new URL("js/state.js", location.href).href);
+    const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
     const [start] = state.lvl.records.filter((r) => r.on.some((o) => o.type === 30));
     const cv = document.getElementById("cv");
     const r = cv.getBoundingClientRect();
@@ -1052,7 +1064,7 @@ const restOnStart = (page) =>
 /** The cell under a client point, as the readout writes it. */
 const cellUnder = (page, point) =>
   page.evaluate(async ([x, y]) => {
-    const { cellAt } = await import(new URL("js/render.js", location.href).href);
+    const { cellAt } = await import(new URL("js/viewer/draw/render.js", location.href).href);
     const r = document.getElementById("cv").getBoundingClientRect();
     const c = cellAt(x - r.left, y - r.top);
     return c && `${c.x}, ${c.y}, ${c.z}`;
@@ -1061,7 +1073,7 @@ const cellUnder = (page, point) =>
 /** The hovered cell, as the readout writes it. */
 const hovered = (page) =>
   page.evaluate(async () => {
-    const { state } = await import(new URL("js/state.js", location.href).href);
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const c = state.hover;
     return c && `${c.x}, ${c.y}, ${c.z}`;
   });
@@ -1094,7 +1106,7 @@ test("the readout follows the camera with the pointer off the map", async ({ pag
   await still(page);
   const zoom = () =>
     page.evaluate(async () => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       return `×${state.cam.zoom.toFixed(2)}`;
     });
   const fitted = await zoom();
@@ -1186,7 +1198,9 @@ test("a zoom under a still pointer paints the pick about the pointer alone", asy
   expect(await hovered(page)).toBe(was);
   const fills = () => page.evaluate(() => window.__fills);
   const whole = await page.evaluate(async ([x, y]) => {
-    const { invalidatePick, cellAt } = await import(new URL("js/render.js", location.href).href);
+    const { invalidatePick, cellAt } = await import(
+      new URL("js/viewer/draw/render.js", location.href).href
+    );
     const r = document.getElementById("cv").getBoundingClientRect();
     window.__fills = 0;
     invalidatePick();
@@ -1209,8 +1223,8 @@ test("a zoom under a still pointer paints the pick about the pointer alone", asy
   expect(await fills()).toBeLessThan(whole / 4);
   // a move elsewhere finds the cell there as a whole pick does
   const other = await page.evaluate(async () => {
-    const { state, screen } = await import(new URL("js/state.js", location.href).href);
-    const { cellAt } = await import(new URL("js/render.js", location.href).href);
+    const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { cellAt } = await import(new URL("js/viewer/draw/render.js", location.href).href);
     const cv = document.getElementById("cv");
     const r = cv.getBoundingClientRect();
     const tops = [...state.idx.cells.values()].sort((a, b) => a.z - b.z);
@@ -1316,7 +1330,7 @@ test("a write inside the settle window carries the view it is given: a slice, a 
   // a script of inputs in one breath, with a drag among them; the turn the drag made comes back
   const script = (steps) =>
     page.evaluate(async (steps) => {
-      const { state } = await import(new URL("js/state.js", location.href).href);
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
       const cv = document.getElementById("cv");
       const at = (type, x) =>
         cv.dispatchEvent(new PointerEvent(type, { clientX: x, clientY: 400, pointerId: 1 }));
@@ -1370,7 +1384,7 @@ test("a write inside the settle window carries the view it is given: a slice, a 
   await expect(page.locator("#chip b")).toHaveText("LEVEL 2");
   // whatever write still waits is made now rather than after the settle
   await page.evaluate(() =>
-    import(new URL("js/navigate.js", location.href).href).then((N) => N.settle()),
+    import(new URL("js/viewer/chrome/navigate.js", location.href).href).then((N) => N.settle()),
   );
   expect(page.url()).toBe(beneath);
   expect(await wrote()).toEqual(before);

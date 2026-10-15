@@ -12,8 +12,8 @@ import {
   openDisc,
   record,
   setRecord,
-} from "../../public/js/iso.js";
-import { SECTOR_RAW, USER, USER_OFF } from "../../public/js/sectors.js";
+} from "../../public/js/format/iso.js";
+import { SECTOR_RAW, USER, USER_OFF } from "../../public/js/format/sectors.js";
 import {
   CNF,
   CNF_AT,

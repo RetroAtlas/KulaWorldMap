@@ -16,10 +16,10 @@ import {
   platformCells,
   setAnnotations,
   setObjects,
-} from "../../public/js/data.js";
-import { hasFace } from "../../public/js/blocks.js";
-import { FACE_NORMAL } from "../../public/js/faces.js";
-import { state, cellKey, SIDE } from "../../public/js/state.js";
+} from "../../public/js/viewer/data.js";
+import { hasFace } from "../../public/js/viewer/draw/blocks.js";
+import { FACE_NORMAL } from "../../public/js/viewer/faces.js";
+import { state, cellKey, SIDE } from "../../public/js/viewer/state.js";
 import {
   BONUS_UNDRAWN_KINDS,
   BONUS_UNDRAWN_TYPES,
@@ -32,7 +32,7 @@ import {
   SETTINGS_KIND,
   inner,
   writeKwl,
-} from "../../public/js/kwl.js";
+} from "../../public/js/format/kwl.js";
 import {
   COUNTERS,
   DRAFT_PACK,
@@ -57,7 +57,7 @@ import {
   toLevel,
   validate,
   writeProject,
-} from "../../public/js/project.js";
+} from "../../public/js/format/project.js";
 
 setAnnotations(annotations);
 setObjects(objects);
