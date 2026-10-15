@@ -242,6 +242,38 @@ test("a thing the face holds already is refused and takes no step, its keys in a
   expect(errors).toEqual([]);
 });
 
+test("the face holds the brush's thing whether its phase and its facing are spelled out or left out", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  // a copy of a shipped level spells out a phase of 0 and leaves a captivator's first way out,
+  // where the palette's brushes do the opposite, and the game reads the two alike
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setFace }] = await Promise.all(
+      ["state.js", "drafts.js", "project.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    const doc = setFace(get(id).doc, [17, 17, 17], 1, { type: 11, variant: 0 });
+    update(id, setFace(doc, [17, 17, 17], 2, { type: 56, variant: 0 }));
+  });
+  const before = await steps(page);
+  await pick(page, "Hazards", "t11");
+  await click(page, await plusX(page, START));
+  await expect(page.locator("#toolStatus")).toContainText("already");
+  await pick(page, "Hazards", "t56");
+  await click(page, await plusY(page, START));
+  expect(await toasts(page)).toContain("That face holds a captivator, bouncing already.");
+  expect(await steps(page)).toEqual(before);
+  expect(await facesAt(page, START)).toEqual({
+    0: { type: 30, facing: 3 },
+    1: { type: 11, variant: 0 },
+    2: { type: 56, variant: 0 },
+  });
+  expect(errors).toEqual([]);
+});
+
 test("a device wants a plain block, a brittle block takes nothing, and a face into a block takes nothing", async ({
   page,
 }) => {

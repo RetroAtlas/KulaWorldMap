@@ -19,6 +19,7 @@ import {
   PLAIN_ONLY,
   PLATFORM_KIND,
   SPAN_KINDS,
+  VARIANT_TYPES,
   cellText,
   facesOf,
   inner,
@@ -996,11 +997,19 @@ function brushThing() {
   return o;
 }
 
-/** Whether the face of `c` holds what Place would put there. */
+/** A thing as the game reads it: its type, and the facing and the variant its type has, at their defaults where left out. */
+const asRead = ({ type, facing, variant }) => ({
+  type,
+  facing: FACING_TYPES.has(type) ? (facing ?? 1) : null,
+  variant: VARIANT_TYPES.has(type) ? (variant ?? 0) : null,
+});
+
+/** Whether the face of `c` holds what Place would put there, as the game reads the two. */
 function holdsBrush(c) {
   const d = current();
   const o = d && c?.face != null ? faceAt(d.doc, [c.x, c.y, c.z], c.face) : null;
-  return o !== null && same(o, brushThing());
+  const t = brushThing();
+  return o !== null && t !== null && same(asRead(o), asRead(t));
 }
 
 /** Put the brush's thing on the clicked face, in place of whatever stood there. */
