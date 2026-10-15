@@ -25,6 +25,27 @@ test("every static import names a file of the page's", () => {
     for (const target of imports) assert.ok(existsSync(join(dir, target)), `${name}: ${target}`);
 });
 
+/** Every module `name` reaches through static imports, itself left out. */
+function closure(g, name) {
+  const seen = new Set();
+  const visit = (n) => {
+    for (const target of g.get(n) ?? []) if (!seen.has(target)) seen.add(target) && visit(target);
+  };
+  visit(name);
+  return [...seen].sort();
+}
+
+// The page preloads the boot's modules so they load in one round rather than
+// as each is found in the last; the list is the graph, nothing more and
+// nothing less, so the editor's modules stay off a plain visit.
+test("the page preloads every module the boot imports, and no other", () => {
+  const page = readFileSync(join(dir, "..", "index.html"), "utf8");
+  const preloaded = [...page.matchAll(/<link rel="modulepreload" href="js\/([^"]+)" \/>/g)]
+    .map((m) => m[1])
+    .sort();
+  assert.deepEqual(preloaded, closure(graph(), "main.js"));
+});
+
 // Modules talk through the event bus rather than importing each other both
 // ways, so a module reached again along its own imports is a cycle.
 test("no module imports itself through its imports", () => {
