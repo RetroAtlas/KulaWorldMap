@@ -73,6 +73,15 @@ export function overlayWith({ under, block, cell, frame }) {
   if (frame) overlays.frame.push(frame);
 }
 
+// What travels besides the walkers the level's records lift: a module may hand
+// the frame travellers of its own, each keyed as a walker is and drawn,
+// sorted and picked as one, standing in for the marker its key names.
+const movers = [];
+export const movingWith = (fn) => {
+  movers.push(fn);
+};
+const merged = (into, more) => (more?.size ? new Map([...(into ?? []), ...more]) : into);
+
 export function resize() {
   const dpr = Math.min(devicePixelRatio || 1, 2);
   const w = cv.clientWidth,
@@ -267,8 +276,9 @@ export function draw() {
   syncRun();
   const frame = clock();
 
-  const moving = travelling(l, idx, frame);
-  if (moving?.size && pointerIn) pickStale = true;
+  const walking = travelling(l, idx, frame);
+  if (walking?.size && pointerIn) pickStale = true;
+  const moving = movers.reduce((out, fn) => merged(out, fn(l, idx, frame)), walking);
   const cells = visible(idx, moving);
   if (pickStale) {
     pickFrom = { cells, l };

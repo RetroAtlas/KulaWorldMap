@@ -50,7 +50,7 @@ export function thingDisc(m, where, l) {
   let p, r;
   if (model) {
     const [lo, hi] = model.box;
-    p = off(where, m.face, (motionOf(m)?.entry?.stand ?? 0) * modelUnit());
+    p = off(where, m.face, restOf(motionOf(m), model, modelUnit()));
     r = Math.max(...hi, ...lo.map((v) => -v)) * modelUnit() * state.cam.zoom * BLOCK;
   } else {
     p = off(where, m.face, OBJECT_HOVER);
@@ -61,21 +61,30 @@ export function thingDisc(m, where, l) {
 
 const switchedOff = (m) => markerNow(m) === "off";
 
-// A face reacts to the ball at the level's start, and to a ball on the face of
-// the hovered and the selected block that looks the same way. Positions are in
-// the game's units.
+// A face reacts to the ball at the level's start, or to the balls a module
+// stands in its place, and to a ball on the face of the hovered and the
+// selected block that looks the same way. Positions are in the game's units.
 const point = (c, face, off) =>
   [c.x, c.y, c.z].map((v, i) => (v + 0.5) / modelUnit() + FACE_NORMAL[face][i] * off);
 const starts = new WeakMap();
-export function ballsFor(l, face) {
-  const half = 0.5 / modelUnit();
+function startPoints(l) {
   if (!starts.has(l))
     starts.set(
       l,
-      startsOf(l).map((s) => point(s, s.face, half)),
+      startsOf(l).map((s) => point(s, s.face, 0.5 / modelUnit())),
     );
+  return starts.get(l);
+}
+let balls = null;
+/** Let `fn(l, face)` give the points the ball stands at in place of the
+    level's starts; null leaves the starts. */
+export const ballsWith = (fn) => {
+  balls = fn;
+};
+export function ballsFor(l, face) {
+  const half = 0.5 / modelUnit();
   const pointed = [state.hover, state.selected].filter(Boolean);
-  return [...starts.get(l), ...pointed.map((c) => point(c, face, half))];
+  return [...(balls?.(l, face) ?? startPoints(l)), ...pointed.map((c) => point(c, face, half))];
 }
 
 const pressedAt = (motion, m, home, l) =>
@@ -85,10 +94,11 @@ const pressedAt = (motion, m, home, l) =>
 export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
   if (state.hiddenKinds.has(m.id)) return false;
   const motion = state.show.models ? motionOf(m) : null;
-  // the game starts a pickup's angles at random and an entry's at zero
+  // the game starts a pickup's angles at random and an entry's at zero, as a
+  // thing that travels does, whatever cell it is drawn from
   const phase = !motion
     ? null
-    : motion.entry
+    : motion.entry || going
       ? [0, 0, 0]
       : phasesOf(motionTable(), home.x, home.y, home.z, m.face);
   const round = motion?.orbit
@@ -137,6 +147,8 @@ export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
 // game draws it, and a thing that bobs stands its bob's reach higher so that it
 // never dips into its face.
 const GAP = 0.03;
+export const restOf = (motion, model, unit) =>
+  motion?.entry ? motion.entry.stand * unit : GAP + Math.max(0, -model.box[0][1]) * unit;
 const BLEND = 2;
 const GOURAUD = 16;
 // How a translucent polygon meets what is behind it, by its model's blend.
@@ -154,9 +166,7 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
   const forward = going?.fwd || layHeading(m) || TANGENT[m.face];
   const face = faceAxes(up, forward);
   const unit = modelUnit();
-  const rest = motion?.entry
-    ? motion.entry.stand * unit
-    : GAP + Math.max(0, -model.box[0][1]) * unit;
+  const rest = restOf(motion, model, unit);
   let lift = rest;
   const o = at(c, m.face, 0);
   let about = [0, 0, 0];
