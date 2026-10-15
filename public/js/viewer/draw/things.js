@@ -221,7 +221,7 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
     if (axes) axes = times(axes, turn);
   }
   const shade = motion?.shadow;
-  if (shade) {
+  if (shade && going?.shadow !== false) {
     // a thing's middle is as far off its face as its model reaches below it,
     // or as high as it travels
     const h = going?.height ?? -model.box[0][1];

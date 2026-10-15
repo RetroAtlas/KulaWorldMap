@@ -75,7 +75,9 @@ export function overlayWith({ under, block, cell, frame }) {
 
 // What travels besides the walkers the level's records lift: a module may hand
 // the frame travellers of its own, each keyed as a walker is and drawn,
-// sorted and picked as one, standing in for the marker its key names.
+// sorted and picked as one, standing in for the marker its key names; one
+// that asks to show through is drawn again on the see-through layer, and one
+// that hands a depth sorts at it.
 const movers = [];
 export const movingWith = (fn) => {
   movers.push(fn);
@@ -171,25 +173,36 @@ function visible(idx, moving) {
   // A travelling thing sorts just in front of the nearest block it stands
   // over, so neither the block it leaves nor the one it rolls onto paints over
   // it. On a face turned away from the view it sorts behind the furthest, so
-  // every block it stands over comes in front.
+  // every block it stands over comes in front. One that hands the frame a
+  // depth of its own sorts at that.
   if (moving) {
     for (const going of moving.values()) {
       const { w, offset } = going;
       if (w.face === undefined) continue;
       const at = [w.c.x, w.c.y, w.c.z].map((v, i) => v + 0.5 + offset[i]);
-      const cells = under(w, offset);
-      const blocks = cells.filter((c) => idx.cells.has(cellKey(...c)));
-      // over no block, it sorts as if one were under its middle
-      const below = (blocks.length ? blocks : cells.slice(0, 1)).map((c) => depth(...c));
-      const d = away(w.face)
-        ? Math.max(...below) + depth(...FACE_NORMAL[w.face]) + 1e-6
-        : Math.min(...below) - 1e-6;
-      out.push({ x: at[0], y: at[1], z: at[2], d, home: w.c, thing: going });
+      out.push({
+        x: at[0],
+        y: at[1],
+        z: at[2],
+        d: going.depth ?? sortDepth(idx, w, offset),
+        home: w.c,
+        thing: going,
+      });
     }
   }
   const far = (e) => e.d ?? depth(e.x, e.y, e.z);
   out.sort((a, b) => far(b) - far(a));
   return out;
+}
+
+function sortDepth(idx, w, offset) {
+  const cells = under(w, offset);
+  const blocks = cells.filter((c) => idx.cells.has(cellKey(...c)));
+  // over no block, it sorts as if one were under its middle
+  const below = (blocks.length ? blocks : cells.slice(0, 1)).map((c) => depth(...c));
+  return away(w.face)
+    ? Math.max(...below) + depth(...FACE_NORMAL[w.face]) + 1e-6
+    : Math.min(...below) - 1e-6;
 }
 
 // The level's clock starts at its first frame as the level opens or motion is
@@ -294,9 +307,11 @@ export function draw() {
   const chosen = state.selected?.key;
   const put = (...t) => {
     if (drawThing(ctx, ...t)) spinning = true;
-    const [m, , , , home] = t;
-    if (away(m.face) && (state.show.through || cellKey(home.x, home.y, home.z) === chosen))
-      through.push(t);
+    const [m, , , , home, going] = t;
+    const covered =
+      away(m.face) && (state.show.through || cellKey(home.x, home.y, home.z) === chosen);
+    if (going?.through) through.push([...t.slice(0, 5), { ...going, shadow: false }]);
+    else if (covered) through.push(t);
   };
   const mark = (m, c, home, key) => {
     if (moving?.has(`${key}/${m.face}`)) return;
