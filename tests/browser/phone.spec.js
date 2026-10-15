@@ -8,6 +8,30 @@ const fingerTap = async (page, target, position) => {
   await page.mouse.move(box.x + at.x, box.y + at.y);
   await target.tap({ position: at });
 };
+/** The page point over a point of the level. */
+const at = (page, x, y, z) =>
+  page.evaluate(
+    async ([x, y, z]) => {
+      const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
+      const r = document.getElementById("cv").getBoundingClientRect();
+      const [px, py] = screen(x, y, z);
+      return { x: r.left + px, y: r.top + py };
+    },
+    [x, y, z],
+  );
+const top = (page, c) => at(page, c[0] + 0.5, c[1] + 0.5, c[2]);
+const plusX = (page, c) => at(page, c[0] + 1, c[1] + 0.5, c[2] + 0.5);
+const shown = (page) =>
+  page.evaluate(async () => {
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const s = state.selected;
+    const h = state.hover;
+    return {
+      selected: s && [s.x, s.y, s.z],
+      hover: h && [h.x, h.y, h.z, h.face],
+      sheet: document.body.classList.contains("sheet-open"),
+    };
+  });
 
 test.describe("on a phone", () => {
   test.use({ viewport: { width: 375, height: 700 }, isMobile: true, hasTouch: true });
@@ -59,6 +83,37 @@ test.describe("on a phone", () => {
     // a touch screen keeps the tapped button under its :hover until the next tap
     expect(await button.evaluate((b) => b.matches(":hover"))).toBe(true);
     expect(await ink()).toBe(resting);
+  });
+
+  test("a finger held still on a block opens its panel when it lifts, as a right click does", async ({
+    page,
+  }) => {
+    await page.goto("/#HIRO/0/45,35/fit/33");
+    await settle(page);
+    await still(page);
+    const point = await top(page, [17, 15, 17]);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: point.x, y: point.y }],
+    });
+    // the hold shows as the hover does under a mouse, and selects nothing until the lift
+    await expect.poll(async () => (await shown(page)).hover).toEqual([17, 15, 17, 0]);
+    await expect(page.locator("#tip")).toBeVisible();
+    expect((await shown(page)).selected).toBe(null);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await cdp.detach();
+    await expect(page.locator("#detail")).toContainText("cell 17,15,17");
+    const after = await shown(page);
+    expect(after.selected).toEqual([17, 15, 17]);
+    expect(after.hover).toBe(null);
+    await expect(page.locator("#tip")).toBeHidden();
+    // a tap is a tap still: the next one selects at once, and a tap on nothing clears
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#detail")).toBeHidden();
+    const other = await top(page, [20, 15, 17]);
+    await page.touchscreen.tap(other.x, other.y);
+    await expect(page.locator("#detail")).toContainText("cell 20,15,17");
   });
 });
 
@@ -195,18 +250,6 @@ test.describe("editing on a phone", () => {
 
   const EDIT = "/#HIRO/0/45,35/fit/33";
   const START = [17, 17, 17];
-  const at = (page, x, y, z) =>
-    page.evaluate(
-      async ([x, y, z]) => {
-        const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
-        const r = document.getElementById("cv").getBoundingClientRect();
-        const [px, py] = screen(x, y, z);
-        return { x: r.left + px, y: r.top + py };
-      },
-      [x, y, z],
-    );
-  const top = (page, c) => at(page, c[0] + 0.5, c[1] + 0.5, c[2]);
-  const plusX = (page, c) => at(page, c[0] + 1, c[1] + 0.5, c[2] + 0.5);
   const tap = (page, point) => page.touchscreen.tap(point.x, point.y);
   /** A finger held still on a block, through the browser's own touch input, until the hold has selected it. */
   const hold = async (page, point) => {
@@ -219,17 +262,6 @@ test.describe("editing on a phone", () => {
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     await cdp.detach();
   };
-  const shown = (page) =>
-    page.evaluate(async () => {
-      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
-      const s = state.selected;
-      const h = state.hover;
-      return {
-        selected: s && [s.x, s.y, s.z],
-        hover: h && [h.x, h.y, h.z, h.face],
-        sheet: document.body.classList.contains("sheet-open"),
-      };
-    });
   const cells = (page) =>
     page.evaluate(async () => {
       const [{ state }, { get }] = await Promise.all(

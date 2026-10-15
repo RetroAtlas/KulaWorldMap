@@ -18,11 +18,18 @@ const redraw = () => {
 
 const ORBIT = 0.42;
 export const CLICK = 5;
+const HOLD = 500;
 
 let drag = null;
 let moved = 0;
 // In client coordinates, since the canvas can move under a still pointer.
 let pointer = null;
+// A finger held still for HOLD without wandering past a click lifts as a
+// right click does: the timer while it waits, then the pointer once it has,
+// and the click the browser would make of the lift is swallowed.
+let pressTimer = 0;
+let longPressed = null;
+let swallowed = false;
 
 // A camera moved on purpose stops being framed; a press that has not wandered
 // past a click moved it by accident.
@@ -38,7 +45,7 @@ const panning = (e) => e.shiftKey || e.button === 1 || e.button === 2 || state.p
 // what about the hovered cell matters beyond the cell itself, and lines for
 // the tip. A click and a press are offered latest registration first until
 // one takes them; a press that never wanders past a click is a click whoever
-// holds the drag.
+// holds the drag, and a right click or a finger held still is offered to none.
 const clicks = [];
 export const onCellClick = (fn) => {
   clicks.unshift(fn);
@@ -75,7 +82,25 @@ cv.addEventListener("pointerdown", (e) => {
   };
   drag = { x: e.clientX, y: e.clientY, pan: panning(e), handler: offer(drags, at, e) };
   moved = 0;
+  endPress();
+  if (e.pointerType === "touch" && e.isPrimary)
+    pressTimer = setTimeout(longPress, HOLD, e.pointerId);
 });
+
+/** Whether a finger is being held still on the map, about to select. */
+export const holding = () => longPressed !== null;
+
+function longPress(id) {
+  pressTimer = 0;
+  longPressed = id;
+  if (drag) hoverAt({ x: drag.x, y: drag.y });
+}
+
+function endPress() {
+  clearTimeout(pressTimer);
+  pressTimer = 0;
+  longPressed = null;
+}
 
 cv.addEventListener("pointermove", (e) => {
   pointing(true);
@@ -84,6 +109,7 @@ cv.addEventListener("pointermove", (e) => {
     const dx = e.clientX - drag.x,
       dy = e.clientY - drag.y;
     moved += Math.abs(dx) + Math.abs(dy);
+    if (moved >= CLICK) endPress();
     if (drag.handler) drag.handler.move(e);
     else if (drag.pan) pan(dx, dy);
     else orbit(dx, dy);
@@ -96,12 +122,15 @@ cv.addEventListener("pointermove", (e) => {
 
 cv.addEventListener("pointerup", (e) => {
   const r = cv.getBoundingClientRect();
+  const pressed = longPressed === e.pointerId;
+  endPress();
+  swallowed = pressed;
   if (drag?.handler && moved >= CLICK) drag.handler.end(e);
   else if (drag && moved < CLICK) {
     drag.handler?.cancel();
     const c = cellAt(e.clientX - r.left, e.clientY - r.top);
-    // a right click selects whatever the tool
-    const taken = e.button !== 2 && offer(clicks, c, e);
+    // a right click, or a finger held still, selects whatever the tool
+    const taken = e.button !== 2 && !pressed && offer(clicks, c, e);
     if (!taken && c) showCell(c);
     else if (!taken) clearDetail();
     drawSoon();
@@ -110,6 +139,7 @@ cv.addEventListener("pointerup", (e) => {
   repickSoon();
 });
 cv.addEventListener("pointercancel", () => {
+  endPress();
   drag?.handler?.cancel();
   drag = null;
 });
@@ -283,6 +313,7 @@ cv.addEventListener(
   "touchstart",
   (e) => {
     if (e.touches.length === 2) {
+      endPress();
       drag?.handler?.cancel();
       drag = null;
       touch = { d: spread(e.touches), m: middle(e.touches) };
@@ -308,10 +339,13 @@ cv.addEventListener(
 
 cv.addEventListener(
   "touchend",
-  () => {
+  (e) => {
     touch = null;
+    if (!swallowed) return;
+    swallowed = false;
+    e.preventDefault();
   },
-  { passive: true },
+  { passive: false },
 );
 
 addEventListener("keydown", (e) => {
