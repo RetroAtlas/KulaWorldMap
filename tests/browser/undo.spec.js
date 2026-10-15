@@ -239,6 +239,42 @@ test("letters typed and taken back within a second leave no step and count no ch
   expect(errors).toEqual([]);
 });
 
+test("a title typed back to its start after an undo lets the step taken back go", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await page.evaluate(() => {
+    const now = performance.now();
+    performance.now = () => now;
+  });
+  const title = page.locator("#draftTitle");
+  await title.focus();
+  await page.keyboard.press("End");
+  await title.pressSequentially("x");
+  await page.locator("#draftHidden").check();
+  await page.locator("#cv").focus();
+  await page.keyboard.press("Control+z");
+  expect((await doc(page)).hidden).toBe(false);
+  expect(await steps(page)).toEqual({ past: 1, future: 1 });
+  await expect(page.locator("#redoBtn")).toBeEnabled();
+
+  // the letter taken back is a change, so the step undone before it goes
+  await title.focus();
+  await page.keyboard.press("End");
+  await page.keyboard.press("Backspace");
+  await expect(title).toHaveValue("Untitled level");
+  expect(await steps(page)).toEqual({ past: 0, future: 0 });
+  await expect(page.locator("#redoBtn")).toBeDisabled();
+  await page.locator("#cv").focus();
+  await page.keyboard.press("Control+Shift+z");
+  expect(await doc(page)).toMatchObject({ title: "Untitled level", hidden: false });
+  await page.evaluate(() => {
+    delete performance.now;
+  });
+  expect(errors).toEqual([]);
+});
+
 test("the row's count of changes follows undo and redo, counts a typed title once and never falls below nothing", async ({
   page,
 }) => {

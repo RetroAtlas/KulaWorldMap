@@ -26,6 +26,7 @@ export function edit(id, next, label, { merge = false } = {}) {
   const joined = merge && last?.label === label && now - last.at < COALESCE_MS;
   if (joined && same(next, last.doc)) {
     t.past.pop();
+    t.future = [];
     drafts.update(id, last.doc, -1);
     emit("trail-changed", id);
     return true;
