@@ -241,6 +241,203 @@ CHECKS = [
     (0x8002f698, "lw $v0, 120($s0)", "where a block is under the ball"),
     (0x8002f6a8, "jal 0x80030dfc", "and it may roll on"),
     (0x8002f6d0, "sw $v0, 408($s0)", "into the rolling state"),
+    # The ball's frame, and the pad.
+    (0x800362f8, "jal 0x8003b468", "the ball's routine runs the clock first"),
+    (0x80036514, "bgtz $v0, 0x80036548", "then, unless a countdown at 370 runs"),
+    (0x80036524, "bgtz $v0, 0x80036548", "or one at 372"),
+    (0x800364e4, "addiu $v0, $v1, -1", "which counts down"),
+    (0x800364f4, "sw $v0, -24204($at)", "asking the roll for the frame"),
+    (0x80036528, "addiu $v0, $zero, 10", "or the ball stands on a boost button"),
+    (0x80036538, "beq $v1, $v0, 0x80036548", "by the word at 356"),
+    (0x800366bc, "jal 0x80032aec", "the input routine, then the platforms"),
+    (0x8003670c, "jal 0x8003a928", "the hazards"),
+    (0x8003679c, "jal 0x8003d570", "the captivators' reach"),
+    (0x80036830, "jal 0x8002f3f4", "the intents"),
+    (0x80036898, "jal 0x80030620", "and after the move step the landings"),
+    (0x800368a0, "jal 0x8002f3c0", "the view's target"),
+    (0x8002f3d4, "sh $v0, 388($a0)", "which is the centre with a platform's travel added"),
+    (0x80034f38, "sw $v0, 6828($gp)", "and which the view routine aims at"),
+    (0x800368cc, "jal 0x80038468", "and the contact"),
+    (0x800368e4, "jal 0x800383ec", "and after the camera the frame matrix"),
+    (0x800369ac, "jal 0x80031024", "the draw draws the ball"),
+    (0x800369b4, "jal 0x80039200", "then the things on the blocks"),
+    (0x800369dc, "addiu $a0, $a0, 256", "and takes the cell the ball is in"),
+    (0x800369e0, "sra $a0, $a0, 9", "on each axis"),
+    (0x800369ec, "addiu $a0, $a0, 1", "plus one"),
+    (0x80036a34, "beq $a0, $zero, 0x80036a5c", "and where that is out of range"),
+    (0x80036a5c, "addiu $v0, $zero, -3", "the ball is lost"),
+    (0x80036a64, "sw $v0, 24064($at)", "in the level's outcome word"),
+    (0x80036af8, "lh $v0, 1148($gp)", "the input routine reads an option"),
+    (0x80036b14, "sh $v0, 7080($gp)", "that sets the repeat's wait"),
+    (0x80036b20, "sh $zero, 7080($gp)", "or none"),
+    (0x80036be4, "lw $v0, 9720($gp)", "keeps the last frame's pad"),
+    (0x80036bf0, "sw $v0, 7504($gp)", "to tell a new press from a held one"),
+    (0x80036bf8, "beq $v1, $v0, 0x80036e4c", "the Simon rooms' mode reads the pad another way"),
+    (0x80036c2c, "beq $v0, $zero, 0x80037178", "and nothing is read until the view has run"),
+    (0x80034a6c, "sh $v0, 460($s0)", "which marks the ball live at 460"),
+    (0x80034348, "sh $zero, 460($s2)", "and the fly-in unmarks"),
+    (0x80036c4c, "addiu $v0, $v0, 1", "a count at 364 runs while no turn does"),
+    (0x80036c5c, "slt $v1, $v1, $v0", "and past the wait"),
+    (0x80036c68, "sw $zero, 7504($gp)", "the last frame's pad is forgotten, so a held turn presses again"),
+    (0x80036cac, "nor $v0, $zero, $v0", "a new press is held and not held before"),
+    (0x80036cc8, "sw $a0, 92($s0)", "Left asks a turn of 1"),
+    (0x80036cf4, "sw $v0, 92($s0)", "Right of -1"),
+    (0x80036d18, "sh $v0, 360($s0)", "a Left pressed while a turn runs waits at 360"),
+    (0x80036d38, "sh $v0, 362($s0)", "a Right at 362"),
+    (0x80036c84, "sw $a0, 92($s0)", "and is asked as the turn ends"),
+    (0x80036d48, "bltz $v0, 0x80036e18", "with no bouncy pill in effect"),
+    (0x80036e2c, "sw $v0, 96($s0)", "Up held asks the roll"),
+    (0x80036e48, "sw $v0, 100($s0)", "and Cross held the jump"),
+    (0x80036bbc, "sw $v0, 100($s0)", "which the bouncy pill asks on every frame"),
+    (0x800371a4, "sh $v0, 496($s0)", "and R2 and R1 set the word at 496"),
+    (0x8002f5c0, "jal 0x8002f5e0", "at rest a jump asked with the roll is the forward jump"),
+    (0x8002f540, "jal 0x8002f6ec", "and alone the hop"),
+    (0x8002f4a0, "jal 0x8002f5e0", "rolling, a jump asked is the forward jump"),
+    (0x8002f4e8, "jal 0x8002f7f4", "at rest a turn of 1 is a turn left"),
+    (0x8002f500, "jal 0x8002f77c", "and one of -1 a turn right"),
+    (0x8002f468, "jal 0x8002f7f4", "as during a hop"),
+    # The roll.
+    (0x8002f8f8, "bgez $v0, 0x8002f928", "at rest, with no block under the ball's cell"),
+    (0x8002f910, "sw $v0, 408($s0)", "the ball falls"),
+    (0x8002f934, "jal 0x80030e6c", "rolling, the state first moves the centre across toward the middle"),
+    (0x80030e78, "slt $v0, $v1, $v0", "where it is further off than the step"),
+    (0x8002f944, "bgez $v0, 0x8002f98c", "then, with no block under the ball's cell"),
+    (0x8002f974, "sw $v0, 408($s0)", "within the window, falls"),
+    (0x8002f9a0, "sh $zero, 708($s0)", "lets the next edge be taken once the progress has passed the mark"),
+    (0x8002f9b0, "sh $v0, 312($s0)", "the speed grows"),
+    (0x8002f9c8, "sh $v0, 312($s0)", "to its top"),
+    (0x8002fa18, "sh $v1, 320($s0)", "and is kept at 320 for the spin"),
+    (0x800302a8, "sh $zero, 312($a0)", "a stop at the middle drops the speed"),
+    # The turn in place.
+    (0x8002f804, "bne $v0, $zero, 0x8002f85c", "a turn is refused while one runs"),
+    (0x8002f814, "bne $v0, $zero, 0x8002f85c", "or a face change's ramp"),
+    (0x8002f820, "sw $v0, 420($a0)", "Left tells the view at 420"),
+    (0x8002f828, "sh $v0, 434($a0)", "sets the view's count"),
+    (0x8002f830, "sh $v0, 442($a0)", "and its step"),
+    (0x8002f7bc, "sw $a0, 420($a1)", "and Right tells the view"),
+    (0x8002f7b0, "sh $v0, 434($a1)", "sets the count"),
+    (0x8002f7c0, "sh $v0, 442($a1)", "and the step the other way"),
+    (0x80034a74, "bne $v1, $v0, 0x80034b20", "the view routine finds a turn right"),
+    (0x80034acc, "subu $v0, $zero, $v0", "turns the heading round"),
+    (0x80034ad0, "sh $v0, 20($s0)", "into the side"),
+    (0x80034b04, "swr $v0, 12($s0)", "and puts the old side into the heading"),
+    (0x80034b28, "bne $v1, $v0, 0x80034bd8", "a turn left"),
+    (0x80034b94, "swr $v0, 20($s0)", "puts the heading into the side"),
+    (0x80034b58, "subu $v0, $zero, $v0", "and the old side turned round"),
+    (0x80034bbc, "swr $v0, 12($s0)", "into the heading"),
+    (0x80034b1c, "sw $v0, 420($s0)", "and marks the turn running"),
+    (0x80034bf8, "addiu $a0, $a0, -1", "each frame of the count"),
+    (0x80034bfc, "addu $v0, $v0, $a1", "the yaw grows by the step"),
+    (0x80034c04, "sh $v0, 450($s0)", "at 450"),
+    (0x80034c14, "sh $v0, 312($s0)", "and the speed is clamped"),
+    (0x80034c20, "bne $v0, $zero, 0x80034cd4", "as the count runs out"),
+    (0x80034c60, "sh $zero, 450($s0)", "the yaw is nothing again"),
+    (0x80034c78, "swr $v0, 44($s0)", "the view takes the side"),
+    (0x80034c98, "swr $v0, 36($s0)", "and the heading"),
+    (0x80034ccc, "sw $zero, 420($s0)", "and the turn is over"),
+    # The camera over a turn and a face change.
+    (0x80034e60, "sh $v0, 22884($at)", "the camera's first row is the side the view holds at 44"),
+    (0x80034e9c, "subu $v0, $zero, $v0", "its second the normal it holds at 52, turned round"),
+    (0x80034efc, "sh $v0, 22896($at)", "and its third the heading it holds at 36"),
+    (0x80035238, "addu $a0, $v0, $a0", "the yaw at 450"),
+    (0x80035240, "jal 0x800610f8", "turns the camera about its down axis"),
+    (0x8006115c, "lh $t2, 0($a1)", "mixing its first row"),
+    (0x80061160, "lh $t5, 12($a1)", "with its third"),
+    (0x80061154, "subu $t1, $zero, $t7", "by the sine turned round, so a positive yaw turns it left"),
+    (0x80035250, "lh $a0, 452($s0)", "and the pitch at 452"),
+    (0x80035258, "jal 0x80060f58", "about its right axis"),
+    (0x80060fbc, "lh $t2, 6($a1)", "mixing its second row"),
+    (0x80060fc0, "lh $t5, 12($a1)", "with its third"),
+    (0x80060fb4, "sra $t1, $t8, 16", "by the sine as it is, so a positive pitch turns it down"),
+    (0x80034d7c, "bne $a0, $v0, 0x80034d9c", "the view finds a wrap at 428"),
+    (0x80034d98, "sw $a0, 456($s0)", "and marks a ramp running at 456"),
+    (0x80034da4, "blez $v0, 0x80034dd8", "while the count at 436 runs"),
+    (0x80034dcc, "addu $v0, $v0, $a0", "the pitch grows by the step at 444"),
+    (0x80034dd0, "sh $v0, 452($s0)", "at 452"),
+    (0x80034dfc, "sh $zero, 452($s0)", "and as the count runs out the pitch is nothing again"),
+    (0x80034e34, "swr $v0, 36($s0)", "the view taking the heading with the normal"),
+    (0x80034e40, "sw $zero, 456($s0)", "and the ramp is over"),
+    (0x80030574, "sw $v0, 428($s0)", "an edge tells the view of a wrap"),
+    (0x8003057c, "sh $v0, 436($s0)", "with a count"),
+    (0x80030590, "sh $v0, 444($s0)", "and a step"),
+    (0x8003054c, "lh $v0, 708($s0)", "and is not taken"),
+    (0x80030554, "bne $v0, $zero, 0x8003060c", "while the last wrap's flag stands"),
+    (0x80030588, "sw $zero, 404($s0)", "the arc's count starts at nothing"),
+    (0x800304ac, "sh $v0, 436($s0)", "a wall tells the view with a count"),
+    (0x800304b8, "sh $v0, 444($s0)", "and a step the other way"),
+    # Round the edge.
+    (0x8002fa40, "sh $v1, 708($s0)", "round an edge the state holds the flag at 708"),
+    (0x8002fa48, "sw $v0, 404($s0)", "counts its frame at 404"),
+    (0x8002fa54, "bne $v1, $v0, 0x8002faf0", "and on the first"),
+    (0x8002faa0, "sh $v1, 60($s0)", "moves the centre along the new normal and heading"),
+    (0x8002faf8, "bne $v0, $a2, 0x8002fb90", "on the second"),
+    (0x8002fb30, "sh $v1, 60($s0)", "again"),
+    (0x8002fb98, "bne $v1, $v0, 0x8002fc3c", "on the third"),
+    (0x8002fbe4, "sh $v1, 60($s0)", "again"),
+    (0x8002fc3c, "bne $v1, $v0, 0x80030228", "and on the fourth"),
+    (0x8002fc74, "sh $v1, 60($a0)", "once more"),
+    (0x8002fcd0, "jal 0x80037e70", "and lays the centre off the new face"),
+    (0x80037e8c, "sra $v0, $v0, 25", "which is the face plane nearest the centre"),
+    (0x80037e98, "addiu $v0, $v0, 256", "along the normal"),
+    # The fall and the landing.
+    (0x8002ff20, "beq $v0, $zero, 0x8002ff54", "falling, the spin's speed grows while the roll is asked"),
+    (0x8002ff34, "sh $v0, 320($s0)", "at 320"),
+    (0x8002ff60, "sh $v0, 320($s0)", "and wanes otherwise"),
+    (0x8002ff84, "sh $zero, 312($s0)", "a roll's speed is dropped"),
+    (0x8002ff9c, "sh $v0, 312($s0)", "and a bounce's decays"),
+    (0x8002ffbc, "sh $v0, 310($s0)", "the speed down at 310 grows"),
+    (0x8002ffd4, "sh $v0, 310($s0)", "to its top"),
+    (0x8002ffe4, "mult $v1, $v0", "and the centre moves by it along the normal"),
+    (0x8002fff8, "mult $v1, $v0", "and by the speed at 312 along the heading"),
+    (0x8003070c, "jal 0x80033078", "the landings try a platform under a falling ball"),
+    (0x8003071c, "jal 0x80030b48", "then a block"),
+    (0x80030b5c, "lh $v1, 28($s0)", "the landing takes the normal"),
+    (0x80030b80, "sh $v1, 6020($gp)", "to the point under the centre"),
+    (0x80030bd8, "jal 0x800379e8", "and looks up the cell it lies in"),
+    (0x80030c0c, "beq $v1, $v0, 0x80030db8", "a moving platform's record lands nothing here"),
+    (0x80030c14, "bgez $a0, 0x80030c24", "nor does an empty cell"),
+    (0x80030d24, "jal 0x80037e70", "else the centre is laid off the face"),
+    (0x80030d30, "sw $v0, 408($s0)", "at rest"),
+    (0x80030d40, "beq $v0, $zero, 0x80030d50", "at the top speed where the roll is asked"),
+    (0x80030d88, "beq $v0, $zero, 0x80030db8", "and where it landed short of the gate"),
+    (0x80030da0, "sw $v0, 96($s0)", "the roll is asked for it"),
+    (0x80030da8, "sh $s1, 372($s0)", "for a frame"),
+    (0x80030748, "bltz $v0, 0x80030758", "a falling ball with a block ahead at its level"),
+    (0x80030750, "jal 0x80037d48", "is held off it"),
+    (0x80030774, "bltz $v0, 0x800307c8", "and with one behind"),
+    (0x8003077c, "jal 0x80037d48", "held off that"),
+    (0x800301c8, "bgez $v1, 0x800301f4", "a hop ends over nothing"),
+    (0x800301d4, "sw $v0, 408($s0)", "in a fall"),
+    # The landing's squash, and the spin.
+    (0x80030d54, "sh $v0, 6468($gp)", "a landing starts the squash's rise"),
+    (0x80030d5c, "sh $v0, 6460($gp)", "by this a frame"),
+    (0x80030d6c, "sh $zero, 6464($gp)", "from nothing"),
+    (0x80030d70, "sh $v0, 6472($gp)", "with its fall to come"),
+    (0x800325f0, "blez $v0, 0x80032620", "the draw counts the rise down"),
+    (0x80032614, "sh $v1, 6464($gp)", "adding the rise"),
+    (0x80032628, "blez $v0, 0x80032680", "then while any squash is left"),
+    (0x8003263c, "sh $v0, 6472($gp)", "eases the fall"),
+    (0x80032664, "sh $v0, 6464($gp)", "and takes it off"),
+    (0x80032718, "sh $v0, 702($s0)", "the squash and the breath drawn as one"),
+    (0x80032508, "lh $v0, 320($s0)", "the body spins by the speed at 320"),
+    (0x80032518, "jal 0x80060f58", "about the model's x"),
+    (0x800325d0, "lh $v0, 320($s0)", "as it does at rest"),
+    (0x800325e0, "jal 0x80060f58", "about the same axis"),
+    # The view's extra pitch.
+    (0x80034f60, "bne $v1, $v0, 0x80034fb8", "R1 held"),
+    (0x80034f94, "sh $v0, 504($s0)", "adds to the extra pitch at 504"),
+    (0x80035050, "beq $v1, $v0, 0x80035074", "falling"),
+    (0x80035058, "bne $v1, $v0, 0x8003512c", "or jumping"),
+    (0x8003506c, "beq $v0, $zero, 0x8003512c", "in the arc's last rows"),
+    (0x80035078, "bne $a0, $v0, 0x80035130", "over nothing"),
+    (0x8003508c, "beq $v0, $zero, 0x800350dc", "short of the near mark"),
+    (0x800350b0, "sw $v0, 7000($gp)", "the rate grows"),
+    (0x800350d8, "sh $v0, 504($s0)", "and the pitch by the rate"),
+    (0x800350e8, "sw $v0, 7000($gp)", "past the mark the rate wanes"),
+    (0x8003510c, "sh $v0, 504($s0)", "and the pitch grows by it"),
+    (0x8003512c, "sw $v0, 7000($gp)", "over a block the rate is reset"),
+    (0x80035184, "sh $v0, 504($s0)", "and the pitch comes back"),
+    (0x800354d4, "jal 0x80060f58", "the extra pitch and the view's own pitch the camera down"),
     # A device's light.
     (0x8002d3d4, "addiu $v0, $v0, -5", "the draw of a thing on a block sends it on by its type"),
     (0x8002d3f8, "lw $v0, 116($at)", "through a table of cases"),
@@ -483,6 +680,98 @@ IMMEDIATES = [
     ("the ball", "move.wrap", "an edge takes it round at this progress", 0x80030540, "slti $v0, $v0, {}"),
     ("the ball", "move.lattice", "a cell at this or past it on an axis reads empty", 0x800375fc, "slti $v0, $t0, {}"),
 
+    ("the ball's roll", "pad.up", "the pad's bit for Up, which asks the roll while held", 0x80036e20, "andi $v0, $v0, {}"),
+    ("the ball's roll", "pad.cross", "and for Cross, which asks the jump while held", 0x80036e38, "andi $v0, $v0, {}"),
+    ("the ball's roll", "pad.left", "and for Left, which asks a turn as it is pressed", 0x80036cb0, "andi $v0, $v0, {}"),
+    ("the ball's roll", "pad.right", "and for Right", 0x80036cd8, "andi $v0, $v0, {}"),
+    ("the ball's roll", "pad.r1", "and for R1, which pitches the view down", 0x80037180, "andi $v0, $v0, {}"),
+    ("the ball's roll", "pad.r2", "and for R2, which pitches it up", 0x80037198, "andi $v0, $v0, {}"),
+    ("the ball's roll", "pad.turn.left", "a turn asked by Left is this", 0x80036c70, "addiu $a0, $zero, {}"),
+    ("the ball's roll", "pad.turn.right", "and by Right this", 0x80036ce4, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "pad.repeat", "a held Left or Right presses again this many frames after a turn", 0x80036b10,
+     "addiu $v0, $zero, {}"),
+    ("the ball's roll", "roll.gain", "rolling, the speed grows by this a frame, units", 0x8002f9ac, "addiu $v0, $v0, {}"),
+    ("the ball's roll", "roll.top.gate", "while under this", 0x8002f9bc, "slti $v0, $v0, {}"),
+    ("the ball's roll", "roll.top", "to this", 0x8002f9c4, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "roll.recentre", "and the centre moves across toward the middle by this a frame", 0x8002f938,
+     "addiu $a1, $zero, {}"),
+    ("the ball's roll", "roll.fall.from", "over nothing the ball falls from this progress", 0x8002f954, "addiu $v0, $v0, {}"),
+    ("the ball's roll", "roll.fall.span", "for this many units of it", 0x8002f958, "sltiu $v0, $v0, {}"),
+    ("the ball's roll", "roll.fall", "starting down at this a frame", 0x8002f980, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "roll.fall.rest", "as from rest", 0x8002f91c, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "roll.resume", "the last wrap's flag stands until this progress", 0x8002f994, "slti $v0, $v0, {}"),
+    ("the ball's roll", "turn.frames", "a turn left runs the view's yaw for this many frames", 0x8002f824,
+     "addiu $v0, $zero, {}"),
+    ("the ball's roll", "turn.step", "by this a frame", 0x8002f82c, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "turn.frames.right", "a turn right for this many", 0x8002f7ac, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "turn.step.right", "by this", 0x8002f7b4, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "turn.left", "the view is told of a turn left by this", 0x8002f818, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "turn.right", "and of a turn right by this", 0x8002f7a4, "addiu $a0, $zero, {}"),
+    ("the ball's roll", "turn.clamp.gate", "while the yaw runs a speed at this or more", 0x80034c00, "slti $v1, $v1, {}"),
+    ("the ball's roll", "turn.clamp", "is clamped to this", 0x80034c10, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "wrap.frames", "an edge runs the view's pitch for this many frames", 0x80030578,
+     "addiu $v0, $zero, {}"),
+    ("the ball's roll", "wrap.step", "by this a frame", 0x80030580, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "wrap.resume", "and the arc ends with the centre this far off the new face, units", 0x8002fca0,
+     "addiu $a1, $zero, {}"),
+    ("the ball's roll", "climb.frames", "a wall runs the view's pitch for this many frames", 0x800304a8,
+     "addiu $v0, $zero, {}"),
+    ("the ball's roll", "climb.step", "by this a frame", 0x800304b0, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "fall.gain", "falling, the speed down grows by this a frame, units", 0x8002ffb8, "addiu $v0, $v0, {}"),
+    ("the ball's roll", "fall.top.gate", "while over this", 0x8002ffc8, "slti $v0, $v0, {}"),
+    ("the ball's roll", "fall.top", "to this", 0x8002ffd0, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "fall.hop", "a hop over nothing starts down at this", 0x800301e0, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "fall.spin.gain", "the spin's speed grows by this a frame while the roll is asked", 0x8002ff30,
+     "addiu $v0, $v0, {}"),
+    ("the ball's roll", "fall.spin.top.gate", "while under this", 0x8002ff40, "slti $v0, $v0, {}"),
+    ("the ball's roll", "fall.spin.top", "to this", 0x8002ff48, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "fall.spin.wane", "and wanes by this otherwise", 0x8002ff5c, "addiu $v0, $v0, {}"),
+    ("the ball's roll", "fall.back", "a bounce's speed back decays by this a frame", 0x8002ff98, "addiu $v0, $v1, {}"),
+    ("the ball's roll", "fall.wall.gate", "a falling ball at this progress or past it, with a block ahead", 0x80030734,
+     "slti $v0, $v0, {}"),
+    ("the ball's roll", "fall.wall", "is held at this", 0x80030754, "addiu $a1, $zero, {}"),
+    ("the ball's roll", "fall.behind.gate", "and short of this, with a block behind", 0x80030760, "slti $v0, $v0, {}"),
+    ("the ball's roll", "fall.behind", "at this", 0x80030780, "addiu $a1, $zero, {}"),
+    ("the ball's roll", "land.speed", "a landing with the roll asked takes this speed at once", 0x80030d48,
+     "addiu $v0, $zero, {}"),
+    ("the ball's roll", "land.off", "lays the centre this far off the face, units", 0x80030cb8, "addiu $a1, $zero, {}"),
+    ("the ball's roll", "land.short", "and short of this progress asks the roll to the middle", 0x80030d84,
+     "slti $v0, $v0, {}"),
+    ("the ball's roll", "land.short.speed", "at this speed", 0x80030da4, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "land.thud", "the ground shakes under a ball that falls at this", 0x80030c88, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "lost", "the ball is lost where its cell plus one is this or more on an axis", 0x80036a18,
+     "sltiu $a0, $a0, {}"),
+    ("the ball's roll", "squash.frames", "a landing squashes the ball over this many frames", 0x80030d50,
+     "addiu $v0, $zero, {}"),
+    ("the ball's roll", "squash.rise", "by this each, of 4096", 0x80030d58, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "squash.fall", "and the squash comes off by this a frame", 0x80030d60, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "squash.ease", "less this each frame", 0x80032638, "addiu $v0, $v0, {}"),
+    ("the ball's roll", "squash.least.gate", "while over this", 0x80032648, "slti $v0, $v0, {}"),
+    ("the ball's roll", "squash.least", "to no less than this", 0x80032650, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "squash.fall.reset", "the fall starting again from this while the rise runs", 0x80032608,
+     "addiu $v0, $zero, {}"),
+    ("the ball's roll", "squash.hop.frames", "a hop's end squashes over this many frames", 0x8003020c, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "squash.hop.rise", "by this", 0x80030214, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "squash.hop.fall", "coming off from this", 0x8003021c, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "look.rate", "over a block the extra pitch's rate stands at this", 0x8003505c, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "look.rate.jump", "as it does in a jump", 0x80035070, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "look.rows", "until the arc's count is under this", 0x80035068, "slti $v0, $v0, {}"),
+    ("the ball's roll", "look.near", "over nothing the pitch grows by the rate up to this", 0x80035088, "slti $v0, $v0, {}"),
+    ("the ball's roll", "look.to.gate", "the rate growing by one a frame while under this", 0x800350b4, "slti $v0, $v0, {}"),
+    ("the ball's roll", "look.to", "to this", 0x800350bc, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "look.least.gate", "and past the near mark waning while over this", 0x800350ec, "slti $v0, $v0, {}"),
+    ("the ball's roll", "look.least", "to this", 0x800350f4, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "look.far.gate", "the pitch going on while under this", 0x80035118, "slti $v0, $v0, {}"),
+    ("the ball's roll", "look.far", "to this", 0x80035120, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "look.back", "and coming back by this a frame", 0x80035180, "addiu $v0, $v1, {}"),
+    ("the ball's roll", "look.back.up", "from either side", 0x800351a8, "addiu $v0, $v1, {}"),
+    ("the ball's roll", "look.held", "R1 held adds this a frame", 0x80034f90, "addiu $v0, $v0, {}"),
+    ("the ball's roll", "look.held.gate", "while under this", 0x80034fa0, "slti $v0, $v0, {}"),
+    ("the ball's roll", "look.held.far", "to this", 0x80034fa8, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "look.up", "and R2 held adds this a frame to a word of its own", 0x80034fd8, "addiu $v0, $v0, {}"),
+    ("the ball's roll", "look.up.back", "which comes back by this", 0x8003514c, "addiu $v0, $v0, {}"),
+    ("the ball's roll", "look.pitch", "over the view's own pitch down of this", 0x800354cc, "addiu $a0, $a0, {}"),
+
     ("moving spikes", "spikes.phase.down", "phase: down, if phase times step is under", 0x8002a120, "slti $v0, $v1, {}"),
     ("moving spikes", "spikes.phase.held", "phase: held up, if under", 0x8002a148, "slti $v0, $v1, {}"),
     ("moving spikes", "spikes.phase.retracting", "phase: retracting, if under", 0x8002a160, "slti $v0, $v1, {}"),
@@ -645,6 +934,20 @@ MULTIPLIERS = [
     ("the ball", "move.cells.up", "the cells about the ball: bytes from a layer's words to the layer above", 0x8003761c, 3,
      "t2", "v1"),
     ("the ball", "move.cells.on", "and from a row's to the row ahead", 0x80037638, 3, "t1", "a0"),
+    ("the ball's roll", "arc.1.normal", "round an edge, the first frame moves the centre this far along the new normal",
+     0x8002fa64, 6, "v1", "v0"),
+    ("the ball's roll", "arc.1.heading", "and this far along the new heading", 0x8002fa7c, 1, "v1", "v1"),
+    ("the ball's roll", "arc.2.normal", "the second this far along the normal", 0x8002fb08, 1, "a0", "a0"),
+    ("the ball's roll", "arc.2.heading", "and this far along the heading", 0x8002fb0c, 5, "v1", "v0"),
+    ("the ball's roll", "arc.3.normal", "the third this far along the normal", 0x8002fba8, 6, "v1", "v0"),
+    ("the ball's roll", "arc.3.heading", "and this far along the heading", 0x8002fbc0, 1, "v1", "v1"),
+    ("the ball's roll", "arc.4.normal", "the fourth this far along the normal", 0x8002fc50, 1, "a2", "a2"),
+    ("the ball's roll", "arc.4.heading", "and this far along the heading", 0x8002fc54, 4, "v1", "v0"),
+    ("the ball's roll", "land.under", "a landing looks this far under the centre along the normal, units",
+     0x80030b64, 6, "v1", "v0"),
+    ("the ball's roll", "land.lift", "and lifts the centre this far before laying it", 0x80030cc4, 6, "v1", "v0"),
+    ("the ball's roll", "spin", "the body spins by this times the speed a frame, angle", 0x80032510, 4, "v0", "a0"),
+    ("the ball's roll", "spin.rest", "as it does at rest", 0x800325d8, 4, "v0", "a0"),
     ("moving spikes", "spikes.phase.step", "phase: frames per step", 0x8002a110, 4, "v1", "v1"),
     ("vanishing block", "vanish.phase.step", "phase: frames per step", 0x80028c10, 3, "a1", "v1"),
     ("vanishing block", "vanish.in.scale", "fading in: the count's rise times this", 0x8002b860, 2, "v0", "v1"),
@@ -719,7 +1022,8 @@ INVISIBLE = 3
 # The ball's states, dispatched through a table by the state plus one, and
 # the three the moves run in: at rest, rolling and round an edge.
 STATES = (0x80010134, -1, 9)
-STATE_AT = {-1: 0x8002f8e4, 2: 0x8002f930, 7: 0x8002fa38}
+STATE_AT = {-1: 0x8002f8e4, 2: 0x8002f930, 6: 0x8002ff18, 7: 0x8002fa38}
+ARC_STEPS = 4             # frames the ball takes round an edge
 ICE = 2
 ABOUT = 3                 # cells each way about the ball
 
@@ -934,6 +1238,75 @@ def moves(code, r):
         sys.exit(f"a cell reads empty from {r['move.lattice']}, not from the lattice's edge")
     if r["move.cells.on"] != ABOUT * 4 or r["move.cells.up"] != ABOUT * r["move.cells.on"]:
         sys.exit("the cells about the ball are not three by three by three words")
+
+
+def roll(r):
+    """How the ball rolls, turns, goes round an edge and up a wall, falls and
+    lands, each number held against the others: the one top speed wherever
+    the roll takes it, the arc ending where the ball rests off a face, the
+    view's ramps each running their count of steps to within a step of a
+    quarter turn, or to it exactly, the last frame snapping the rest, and
+    every gate one past the value it gates."""
+    if len({r["roll.top"], r["roll.top.gate"], r["land.speed"], r["land.short.speed"], r["fall.spin.top"]}) != 1 \
+            or r["fall.spin.top.gate"] != r["roll.top"] + 1:
+        sys.exit("the roll's top speed is not one speed wherever it is taken")
+    if r["roll.gain"] != r["fall.spin.gain"] or r["roll.gain"] != r["fall.back"]:
+        sys.exit("the roll's speed does not grow and decay by one step")
+    if r["roll.fall"] != r["roll.fall.rest"]:
+        sys.exit("a fall from rest does not start as one from a roll")
+    if r["fall.top.gate"] != r["fall.top"] + 1 or r["turn.clamp.gate"] != r["turn.clamp"] + 1:
+        sys.exit("a fall's top speed or a turn's clamp is not gated at itself")
+    if r["fall.wall"] + r["fall.behind"] != BLOCK or r["fall.wall.gate"] != r["fall.wall"] + 2 \
+            or r["fall.behind.gate"] != r["fall.behind"] - 1:
+        sys.exit("a falling ball is not held off the walls by about its radius")
+    arc = [[r[f"arc.{i}.normal"], r[f"arc.{i}.heading"]] for i in range(1, ARC_STEPS + 1)]
+    if sum(n for n, _ in arc) != r["wrap.resume"] or r["wrap.resume"] != r["ball.rest"] or r["land.off"] != r["ball.rest"]:
+        sys.exit(f"the arc {arc} does not end with the ball resting off the new face")
+    if r["land.under"] != r["ball.rest"] or r["land.lift"] != r["ball.rest"]:
+        sys.exit("a landing does not look a radius under the centre")
+    quarter = TURN // 4
+    if r["turn.frames"] != r["turn.frames.right"] or r["turn.step"] != -r["turn.step.right"] \
+            or not 0 < quarter - r["turn.frames"] * r["turn.step"] <= r["turn.step"]:
+        sys.exit("a turn's yaw does not come within a step of a quarter turn")
+    if not 0 < quarter - r["wrap.frames"] * r["wrap.step"] <= r["wrap.step"] \
+            or r["climb.frames"] * r["climb.step"] != -quarter:
+        sys.exit("a face change's pitch does not come to a quarter turn")
+    if r["spin"] != r["spin.rest"]:
+        sys.exit("the body spins otherwise in the air than on a face")
+    for key in ("frames", "rise", "fall"):
+        if r[f"squash.{key}"] != r[f"squash.hop.{key}"]:
+            sys.exit("a hop's end does not squash the ball as a landing does")
+    if r["squash.fall.reset"] != r["squash.fall"] or r["squash.least.gate"] != r["squash.least"]:
+        sys.exit("the squash does not come off from its fall to its least")
+    if r["look.rate"] != r["look.rate.jump"] or r["look.to.gate"] != r["look.to"] + 1 \
+            or r["look.least.gate"] != r["look.least"] or r["look.far.gate"] != r["look.far"] + 1 \
+            or r["look.held.gate"] != r["look.far"] + 1 or r["look.held.far"] != r["look.far"] \
+            or r["look.back"] != -r["look.back.up"] or r["look.up"] != r["look.held"] or r["look.up.back"] != r["look.back"]:
+        sys.exit("the view's extra pitch is not gated at its marks")
+    bits = [r[k] for k in ("pad.up", "pad.right", "pad.left", "pad.cross", "pad.r1", "pad.r2")]
+    if len(set(bits)) != len(bits) or any(b & (b - 1) for b in bits):
+        sys.exit(f"the pad's bits {bits} are not one bit each")
+    if r["pad.turn.left"] != -r["pad.turn.right"]:
+        sys.exit("Left and Right do not ask opposite turns")
+    cell = r["lost"] - 1
+    return {
+        "rolling": {"gain": r["roll.gain"], "top": r["roll.top"], "middle": r["move.middle"], "wrap": r["move.wrap"],
+                 "climb": r["move.climb"], "touch": r["move.touch"], "resume": r["ball.rest"],
+                 "recentre": r["roll.recentre"], "repeat": r["pad.repeat"],
+                 "over": [-r["roll.fall.from"], -r["roll.fall.from"] + r["roll.fall.span"] - 1]},
+        "quarter": {"frames": r["turn.frames"], "step": r["turn.step"], "clamp": r["turn.clamp"]},
+        "wrap": {"frames": r["wrap.frames"], "step": r["wrap.step"], "arc": arc},
+        "climb": {"frames": r["climb.frames"], "step": r["climb.step"]},
+        "fall": {"start": r["roll.fall"], "hop": r["fall.hop"], "gain": r["fall.gain"], "top": r["fall.top"],
+                 "short": r["land.short"], "wall": r["fall.wall"], "behind": r["fall.behind"],
+                 "lost": [-2, cell]},
+        "spin": r["spin"],
+        "squash": {"frames": r["squash.frames"], "rise": r["squash.rise"], "fall": r["squash.fall"],
+                   "ease": -r["squash.ease"], "least": r["squash.least"]},
+        "look": {"from": r["look.rate"], "to": r["look.to"], "near": r["look.near"], "far": r["look.far"],
+                 "least": r["look.least"], "back": -r["look.back"], "held": r["look.held"], "pitch": r["look.pitch"],
+                 "rows": r["look.rows"]},
+    }
 
 
 def glow_spill(code):
@@ -1221,6 +1594,7 @@ def table(r, platform_speed):
     }
     for t in range(43, 48):
         types[t] = fruit
+    types[30].update(roll(r))
     for t in (50, 51, 52, 53):
         types[t]["entry"] = {"stand": stand}
         types[t]["shadow"] = {"sprite": 0, "off": stand + r[f"shadow.drop.{t}"],

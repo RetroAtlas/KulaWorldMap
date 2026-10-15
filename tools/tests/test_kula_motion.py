@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
     GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT,
-    STATES, Code, glint, glow_lift, glow_spill, laser, light, moves, root_table, shadow_half, spike_cycle,
+    STATES, Code, glint, glow_lift, glow_spill, laser, light, moves, roll, root_table, shadow_half, spike_cycle,
     spin_orders, table, vanish_cycle)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
@@ -86,6 +86,27 @@ GAME = {
     "move.stop": 256, "move.stop.refused": 256, "move.ice": 2, "move.ice.slide": 2,
     "move.climb": 413, "move.touch": 412, "move.wrap": 512, "move.lattice": 33,
     "move.cells.up": 36, "move.cells.on": 12,
+    "pad.up": 16, "pad.cross": 16384, "pad.left": 128, "pad.right": 32, "pad.r1": 2048, "pad.r2": 512,
+    "pad.turn.left": 1, "pad.turn.right": -1, "pad.repeat": 6,
+    "roll.gain": 6, "roll.top.gate": 33, "roll.top": 33, "roll.recentre": 8, "roll.fall.from": -101,
+    "roll.fall.span": 327, "roll.fall": -10, "roll.fall.rest": -10, "roll.resume": 101,
+    "turn.frames": 19, "turn.step": 53, "turn.frames.right": 19, "turn.step.right": -53, "turn.left": 2,
+    "turn.right": 1, "turn.clamp.gate": 11, "turn.clamp": 10,
+    "wrap.frames": 13, "wrap.step": 78, "wrap.resume": 100, "climb.frames": 16, "climb.step": -64,
+    "arc.1.normal": 38, "arc.1.heading": 8, "arc.2.normal": 32, "arc.2.heading": 22,
+    "arc.3.normal": 22, "arc.3.heading": 32, "arc.4.normal": 8, "arc.4.heading": 39,
+    "fall.gain": -5, "fall.top.gate": -65, "fall.top": -66, "fall.hop": -30, "fall.spin.gain": 6,
+    "fall.spin.top.gate": 34, "fall.spin.top": 33, "fall.spin.wane": -1, "fall.back": 6,
+    "fall.wall.gate": 411, "fall.wall": 409, "fall.behind.gate": 102, "fall.behind": 103,
+    "land.speed": 33, "land.off": 100, "land.short": 180, "land.short.speed": 33, "land.thud": -66,
+    "land.under": 100, "land.lift": 100, "lost": 37, "spin": -5, "spin.rest": -5,
+    "squash.frames": 4, "squash.rise": 187, "squash.fall": 100, "squash.ease": -10, "squash.least.gate": 20,
+    "squash.least": 20, "squash.fall.reset": 100, "squash.hop.frames": 4, "squash.hop.rise": 187,
+    "squash.hop.fall": 100,
+    "look.rate": 3, "look.rate.jump": 3, "look.rows": 10, "look.near": 550, "look.to.gate": 33, "look.to": 32,
+    "look.least.gate": 10, "look.least": 10, "look.far.gate": 651, "look.far": 650, "look.back": -18,
+    "look.back.up": 18, "look.held": 21, "look.held.gate": 651, "look.held.far": 650, "look.up": 21,
+    "look.up.back": -18, "look.pitch": 250,
 }
 
 
@@ -483,6 +504,46 @@ class Moves(unittest.TestCase):
                 moves(self.states(), {**GAME, **change})
 
 
+class Roll(unittest.TestCase):
+    def test_the_roll_ships_one_top_speed_and_an_arc_that_ends_a_radius_off_the_new_face(self):
+        r = roll(GAME)
+        self.assertEqual(r["rolling"], {"gain": 6, "top": 33, "middle": 256, "wrap": 512, "climb": 413, "touch": 412,
+                                     "resume": 100, "recentre": 8, "repeat": 6, "over": [101, 427]})
+        self.assertEqual(r["wrap"]["arc"], [[38, 8], [32, 22], [22, 32], [8, 39]])
+        self.assertEqual(sum(n for n, _ in r["wrap"]["arc"]), r["rolling"]["resume"])
+        self.assertEqual(sum(h for _, h in r["wrap"]["arc"]), r["rolling"]["resume"] + 1)
+        self.assertEqual((r["quarter"], r["climb"]), ({"frames": 19, "step": 53, "clamp": 10}, {"frames": 16, "step": -64}))
+        self.assertEqual(r["fall"]["lost"], [-2, 36])
+        self.assertEqual((r["spin"], r["squash"]["least"], r["look"]["far"]), (-5, 20, 650))
+
+    def test_a_top_speed_taken_otherwise_at_a_landing_stops_the_reading(self):
+        for change in ({"land.speed": 30}, {"land.short.speed": 30}, {"roll.top.gate": 34}, {"fall.spin.top": 32}):
+            with self.assertRaises(SystemExit):
+                roll({**GAME, **change})
+
+    def test_a_ramp_that_does_not_come_to_a_quarter_turn_stops_the_reading(self):
+        for change in ({"wrap.frames": 12}, {"wrap.step": 79}, {"climb.step": -60}, {"turn.frames": 18},
+                       {"turn.step.right": -52}):
+            with self.assertRaises(SystemExit):
+                roll({**GAME, **change})
+
+    def test_an_arc_that_does_not_end_off_the_new_face_stops_the_reading(self):
+        for change in ({"arc.4.normal": 9}, {"wrap.resume": 90}, {"land.off": 90}, {"land.under": 90}):
+            with self.assertRaises(SystemExit):
+                roll({**GAME, **change})
+
+    def test_a_pad_bit_shared_doubled_or_a_turn_not_opposite_stops_the_reading(self):
+        for change in ({"pad.r1": 16}, {"pad.r2": 3}, {"pad.turn.right": 1}):
+            with self.assertRaises(SystemExit):
+                roll({**GAME, **change})
+
+    def test_a_gate_not_one_past_its_value_stops_the_reading(self):
+        for change in ({"fall.top.gate": -66}, {"turn.clamp.gate": 10}, {"look.to.gate": 32}, {"fall.wall": 408},
+                       {"squash.hop.rise": 180}, {"spin.rest": -4}):
+            with self.assertRaises(SystemExit):
+                roll({**GAME, **change})
+
+
 class Table(unittest.TestCase):
     def test_the_table_carries_a_program_per_phase_and_the_platform_scaled(self):
         r = dict(GAME)
@@ -535,6 +596,12 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["36"]["glint"], glint(GAME))
         self.assertEqual(t["types"]["30"]["light"],
                          {"view": [-1, -4, -2], "background": 2048, "colour": 4000, "base": 178})
+        self.assertEqual(t["types"]["30"]["rolling"]["top"], 33)
+        self.assertEqual(t["types"]["30"]["wrap"], {"frames": 13, "step": 78, "arc": [[38, 8], [32, 22], [22, 32], [8, 39]]})
+        self.assertEqual(t["types"]["30"]["fall"]["short"], 180)
+        self.assertEqual(t["types"]["30"]["spin"], -5)
+        self.assertEqual(set(t["types"]["30"]), {"breathe", "light", "shadow", "before", "rolling", "quarter", "wrap", "climb",
+                                                 "fall", "spin", "squash", "look"})
         self.assertEqual(t["types"]["43"]["order"], "zyx")
         self.assertEqual(t["types"]["7"]["order"], "xyz")
         self.assertEqual(t["types"]["51"]["order"], "zyx")

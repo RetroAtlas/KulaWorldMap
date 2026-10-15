@@ -474,6 +474,86 @@ test("the glints are the same whatever frames they are drawn on, and start afres
   assert.deepEqual(glints(stepped, cuts, 0), glints(fresh(), cuts, 0));
 });
 
+test("the ball rolls a block from rest in 18 frames, at 33 a frame from the sixth", () => {
+  const { rolling: roll } = table.types[30];
+  const speeds = [];
+  let speed = 0;
+  let gone = 0;
+  while (gone < 512) {
+    speed = Math.min(speed + roll.gain, roll.top);
+    speeds.push(speed);
+    gone += speed;
+  }
+  assert.equal(speeds.length, 18);
+  assert.deepEqual(speeds.slice(0, 7), [6, 12, 18, 24, 30, 33, 33]);
+  assert.equal(roll.middle, 256);
+  // rolling on, a block takes 15 or 16 frames by turns
+  assert.ok(512 / roll.top > 15 && 512 / roll.top < 16);
+});
+
+test("round an edge the centre runs a quarter circle of the ball's radius in four frames", () => {
+  const { wrap, rolling: roll } = table.types[30];
+  assert.equal(wrap.arc.length, 4);
+  let along = 0;
+  let down = -roll.resume;
+  for (const [n, h] of wrap.arc) {
+    along += n;
+    down += h;
+    near(Math.hypot(along, down), roll.resume, 1.1);
+  }
+  assert.deepEqual([along, down], [roll.resume, 1]);
+});
+
+test("a turn shows 18 steps of 53 and snaps the 70 left on the 19th frame, and the face changes' ramps end the same way", () => {
+  const { quarter: turn, wrap, climb } = table.types[30];
+  const quarter = table.turn / 4;
+  const shown = (ramp) => (ramp.frames - 1) * ramp.step;
+  assert.equal(shown(turn), 954);
+  assert.equal(quarter - shown(turn), 70);
+  assert.equal(shown(wrap), 936);
+  assert.equal(quarter - shown(wrap), 88);
+  assert.equal(shown(climb), -960);
+  assert.equal(-quarter - shown(climb), -64);
+});
+
+test("the fall, the landing's squash and the view's extra pitch ship their steps and marks", () => {
+  const { fall, squash, look, spin } = table.types[30];
+  assert.deepEqual(fall, {
+    start: -10,
+    hop: -30,
+    gain: -5,
+    top: -66,
+    short: 180,
+    wall: 409,
+    behind: 103,
+    lost: [-2, 36],
+  });
+  // the squash rises for four frames and comes off by 90, 80 and on down to 20
+  let word = 0;
+  let step = squash.fall;
+  const frames = [];
+  for (let f = 0; f < squash.frames; f++) frames.push((word += squash.rise));
+  while (word > 0) {
+    step = Math.max(step - squash.ease, squash.least);
+    frames.push((word = Math.max(word - step, 0)));
+  }
+  assert.equal(frames[3], 748);
+  assert.deepEqual(frames.slice(4, 7), [658, 578, 508]);
+  assert.equal(frames.length, 28);
+  assert.deepEqual(look, {
+    from: 3,
+    to: 32,
+    near: 550,
+    far: 650,
+    least: 10,
+    back: 18,
+    held: 21,
+    pitch: 250,
+    rows: 10,
+  });
+  assert.equal(spin, -5);
+});
+
 test("a ball's corner shows 89 of 256 of its colour facing away from the light, and all of it facing it", () => {
   const light = table.types[30].light;
   assert.equal(lightShare(light, 0), 89);
