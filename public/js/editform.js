@@ -321,7 +321,9 @@ function swatches(name, count, chosen, colourOf, nameOf, pick, textOf = () => ""
     b.style.setProperty("--swatch", colourOf(v));
     b.setAttribute("aria-pressed", String(v === chosen));
     b.setAttribute("aria-label", nameOf(v));
-    b.onclick = () => pick(v);
+    b.onclick = () => {
+      if (v !== chosen) pick(v);
+    };
     row.append(b);
   }
   return row;
@@ -371,13 +373,16 @@ function faceCard(d, own, c, face) {
           directionOf(o.type, face, f),
           `Face it ${directionOf(o.type, face, f)}`,
         );
-        b.setAttribute("aria-pressed", String((o.facing ?? 1) === f));
-        b.onclick = () =>
+        const pressed = (o.facing ?? 1) === f;
+        b.setAttribute("aria-pressed", String(pressed));
+        b.onclick = () => {
+          if (pressed) return;
           change(
             d,
             setFace(d.doc, cell, face, { ...o, facing: f }),
             `turned the ${name} on the ${FACE_NAME[face]} of ${place3(cell)} to ${directionOf(o.type, face, f)}`,
           );
+        };
         row.append(b);
       }
       out.append(group("Facing", row));

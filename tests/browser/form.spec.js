@@ -526,6 +526,15 @@ test("the facing buttons turn the start, and a switch's swatches and its circuit
   await expect(field(page, "circuit-2")).toBeFocused();
   await field(page, "circuit-2").click();
   expect((await doc(page)).circuits).toEqual({});
+
+  // a wandering ball a file left facing no way shows the first, and pressing it writes none
+  await lay(page, HOME, { kind: 0, faces: { 0: { type: 30, facing: 3 }, 1: { type: 53 } } });
+  await field(page, "face-1").click();
+  await expect(field(page, "facing-1")).toHaveAttribute("aria-pressed", "true");
+  const unturned = await steps(page);
+  await field(page, "facing-1").click();
+  expect(await steps(page)).toEqual(unturned);
+  expect(blockAt(await doc(page), HOME).faces[1]).toEqual({ type: 53 });
   expect(errors).toEqual([]);
 });
 
@@ -563,6 +572,13 @@ test("the swatch row is labelled by what it chooses, a coin's worth shown on eac
   await field(page, "thing").selectOption("t11");
   await expect(label).toHaveText("Phase");
   await expect(swatches).toHaveText(["0", "1", "2", "3"]);
+  // the palette's moving spikes have no phase, which reads as the first, and pressing it writes none
+  expect(blockAt(await doc(page), HOME).faces[1]).toEqual({ type: 11 });
+  await expect(field(page, "variant-0")).toHaveAttribute("aria-pressed", "true");
+  const unphased = await steps(page);
+  await field(page, "variant-0").click();
+  expect(await steps(page)).toEqual(unphased);
+  expect(blockAt(await doc(page), HOME).faces[1]).toEqual({ type: 11 });
   expect(errors).toEqual([]);
 });
 
