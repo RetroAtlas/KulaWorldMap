@@ -47,6 +47,37 @@
   <!-- crossorigin matches fetch()'s cors mode, so the preload is used rather
        than fetched twice -->
   <link rel="preload" href="map_data.json" as="fetch" crossorigin />
+  <link rel="preload" href="objects.json" as="fetch" crossorigin />
+  <link rel="preload" href="annotations.json" as="fetch" crossorigin />
+  <!-- the world's textures start with the page: the link's pack names the
+       world, and the first world opens without a link -->
+  <script>
+    (() => {
+      const WORLDS = [
+        "HIRO",
+        "HILLS",
+        "INCA",
+        "ARCTIC",
+        "COWBOY",
+        "FIELD",
+        "ATLANT",
+        "HAZE",
+        "MARS",
+        "HELL",
+      ];
+      const [pack, index] = location.hash.slice(1).toUpperCase().split("/");
+      const id = (pack || WORLDS[0]).replace(/FI$/, "");
+      const world = id === "COPYCAT" ? WORLDS[Number(index)] : WORLDS.includes(id) ? id : null;
+      if (world)
+        document.head.append(
+          Object.assign(document.createElement("link"), {
+            rel: "preload",
+            as: "image",
+            href: `tex/${world}.png`,
+          }),
+        );
+    })();
+  </script>
   <link rel="stylesheet" href="css/main.css" />
 
   <button
