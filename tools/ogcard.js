@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
-import { ROOT, serve } from "../tests/public.js";
+import { ROOT, serve, locate } from "../tests/public.js";
 
 const W = 1200;
 const H = 630;
@@ -35,15 +35,15 @@ try {
     deviceScaleFactor: 1,
     reducedMotion: "reduce",
   });
+  await page.addInitScript(locate);
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   const png = await page.evaluate(
     async ({ W, H, LEVELS, TILE }) => {
-      const url = (m) => new URL("js/" + m, location.href).href;
-      const { state } = await import(url("state.js"));
-      const nav = await import(url("navigate.js"));
-      const render = await import(url("render.js"));
-      const { setSidebar } = await import(url("sidebar.js"));
-      const { atlasFor } = await import(url("atlas.js"));
+      const { state } = await window.__module("state.js");
+      const nav = await window.__module("navigate.js");
+      const render = await window.__module("render.js");
+      const { setSidebar } = await window.__module("sidebar.js");
+      const { atlasFor } = await window.__module("atlas.js");
       const deadline = Date.now() + 30000;
       while (!state.data) {
         if (Date.now() > deadline) throw new Error("map_data.json did not load");
