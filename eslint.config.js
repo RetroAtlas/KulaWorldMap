@@ -26,6 +26,7 @@ export default [
   {
     // Playwright: Node files whose page.evaluate bodies run in the browser
     files: [
+      "tests/public.js",
       "tests/browser/**/*.js",
       "tests/pixels/**/*.js",
       "tests/frame/**/*.js",

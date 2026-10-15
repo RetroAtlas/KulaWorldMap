@@ -26,7 +26,7 @@ import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
-import { ROOT, serve, checkout } from "../public.js";
+import { ROOT, serve, checkout, locate } from "../public.js";
 
 const VIEWS = {
   bonus29: "#HELL/16/-333,-3/fit/33",
@@ -118,11 +118,12 @@ async function open(browser, base, view, dpr) {
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: dpr });
   page.on("pageerror", (e) => console.error("pageerror:", e.message));
   await page.addInitScript(instrument);
+  await page.addInitScript(locate);
   await page.goto(`${base}/${VIEWS[view] || view}`);
   const about = await page.evaluate(async (show) => {
-    const { state } = await import("/js/state.js");
-    const { atlasFor } = await import("/js/atlas.js");
-    const R = await import("/js/render.js");
+    const { state } = await window.__module("state.js");
+    const { atlasFor } = await window.__module("atlas.js");
+    const R = await window.__module("render.js");
     const wait = () => new Promise((r) => setTimeout(r, 20));
     while (!(state.lvl && document.getElementById("cv").clientWidth > 0)) await wait();
     while (!atlasFor(state.lvl.theme)) await wait();
@@ -149,7 +150,7 @@ async function move(page, how) {
   if (how === "zoom") {
     await page.evaluate(
       async ([cx, cy]) => {
-        const { zoomAt } = await import("/js/interaction.js");
+        const { zoomAt } = await window.__module("interaction.js");
         let i = 0;
         const step = () => zoomAt(cx, cy, Math.floor(i++ / 20) % 2 ? 1 / 1.07 : 1.07);
         window.__zooming = setInterval(step, 8);

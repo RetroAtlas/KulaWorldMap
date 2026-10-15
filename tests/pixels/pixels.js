@@ -15,7 +15,7 @@ import { mkdtemp, writeFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { chromium } from "@playwright/test";
-import { ROOT, serve, checkout } from "../public.js";
+import { ROOT, serve, checkout, locate } from "../public.js";
 import { cases, live } from "./cases.js";
 import { WORLDS } from "../../public/js/kwl.js";
 import { blank } from "../../public/js/project.js";
@@ -91,12 +91,13 @@ async function open(page, base, store) {
   page.on("pageerror", (e) => console.error("pageerror:", e.message));
   page.on("console", (m) => m.type() === "error" && console.error("console:", m.text()));
   await page.addInitScript(instrument);
+  await page.addInitScript(locate);
   if (store)
     await page.addInitScript(([key, text]) => localStorage.setItem(key, text), [DRAFTS, store]);
   // a world none of the arrive captures take, so each starts before its atlas lands
   await page.goto(`${base}/#FIELD/0`);
   await page.evaluate(async (seeded) => {
-    const { state } = await import("/js/state.js");
+    const { state } = await window.__module("state.js");
     const deadline = Date.now() + 30000;
     // a held draft boots the editor once the map has drawn, which lists it
     const up = () =>
@@ -116,9 +117,9 @@ async function open(page, base, store) {
     its own paints then. */
 async function arrival(page) {
   return page.evaluate(async () => {
-    const { state } = await import("/js/state.js");
-    const R = await import("/js/render.js");
-    const N = await import("/js/navigate.js");
+    const { state } = await window.__module("state.js");
+    const R = await window.__module("render.js");
+    const N = await window.__module("navigate.js");
     const cv = document.getElementById("cv");
     const shot = async () => {
       const data = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
@@ -145,9 +146,9 @@ async function arrival(page) {
 
 async function preload(page) {
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js");
-    const R = await import("/js/render.js");
-    const N = await import("/js/navigate.js");
+    const { state } = await window.__module("state.js");
+    const R = await window.__module("render.js");
+    const N = await window.__module("navigate.js");
     for (const t of state.data.themes) {
       state.show.skins = true;
       N.selectLevel(state.data.levels.findIndex((l) => l.theme === t.id));
@@ -161,11 +162,11 @@ async function preload(page) {
 async function capture(page, c, keep) {
   return page.evaluate(
     async ({ c, keep }) => {
-      const { state, cellKey, SIDE } = await import("/js/state.js");
-      const R = await import("/js/render.js");
-      const N = await import("/js/navigate.js");
-      const { frameAt } = await import("/js/motion.js");
-      const { motionTable } = await import("/js/data.js");
+      const { state, cellKey, SIDE } = await window.__module("state.js");
+      const R = await window.__module("render.js");
+      const N = await window.__module("navigate.js");
+      const { frameAt } = await window.__module("motion.js");
+      const { motionTable } = await window.__module("data.js");
       const li = state.data.levels.findIndex(
         (l) => l.pack.endsWith("/" + c.level[0]) && l.index === c.level[1],
       );
@@ -271,9 +272,9 @@ async function capture(page, c, keep) {
 /** Whether the map goes on drawing, frame after frame, the clock held still. */
 async function liveness(page, c) {
   return page.evaluate(async (c) => {
-    const { state } = await import("/js/state.js");
-    const R = await import("/js/render.js");
-    const N = await import("/js/navigate.js");
+    const { state } = await window.__module("state.js");
+    const R = await window.__module("render.js");
+    const N = await window.__module("navigate.js");
     const li = state.data.levels.findIndex(
       (l) => l.pack.endsWith("/" + c.level[0]) && l.index === c.level[1],
     );

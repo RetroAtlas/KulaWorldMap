@@ -48,6 +48,20 @@ export function serve(root, { gzip = false } = {}) {
   });
 }
 
+/** Put `__module(name)` on a page before its scripts run: the module of that
+    file name, imported from where the page preloads it. */
+export function locate() {
+  window.__module = (name) =>
+    import(
+      new URL(
+        [...document.querySelectorAll('link[rel="modulepreload"]')]
+          .map((link) => link.getAttribute("href"))
+          .find((href) => href.endsWith(`/${name}`)),
+        location.href,
+      ).href
+    );
+}
+
 /** Take `ref`'s public/ out into `dir`, and say where it is. */
 export function checkout(ref, dir) {
   const archive = join(dir, "ref.tar");
