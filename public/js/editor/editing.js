@@ -2,7 +2,7 @@
 import { $ } from "../viewer/ui/dom.js";
 import { state, cellKey } from "../viewer/state.js";
 import { FACE_NORMAL } from "../viewer/faces.js";
-import { circuitPhrase, entryName, kindName, skinsTable } from "../viewer/data.js";
+import { NAMES, circuitPhrase, entryName, kindName, skinsTable } from "../viewer/data.js";
 import { say } from "../viewer/chrome/a11y.js";
 import { toast } from "../viewer/ui/toast.js";
 import { get } from "./drafts.js";
@@ -78,7 +78,7 @@ export function commit(id, next, label) {
 /** The errors `next` has that `before` had not, `before`'s read through `as` first. */
 export function newErrors(before, next, as = (f) => f) {
   const hides = skinsTable()?.hides;
-  const errorsOf = (p) => validate(p, hides).filter((f) => f.level === ERROR);
+  const errorsOf = (p) => validate(p, hides, NAMES).filter((f) => f.level === ERROR);
   const seen = new Set(errorsOf(before).map(as).map(describe));
   return errorsOf(next).filter((f) => !seen.has(describe(f)));
 }

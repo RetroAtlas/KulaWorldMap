@@ -2,7 +2,7 @@
 import { el } from "../viewer/ui/dom.js";
 import { state, cellKey } from "../viewer/state.js";
 import { FACE_NAME } from "../viewer/faces.js";
-import { skinsTable } from "../viewer/data.js";
+import { NAMES, skinsTable } from "../viewer/data.js";
 import { showCell } from "../viewer/chrome/detail.js";
 import { noteWith } from "../viewer/chrome/navigate.js";
 import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
@@ -26,7 +26,7 @@ function overview(l) {
   const d = l.draft === undefined ? null : get(l.draft);
   if (!d) return null;
   const hides = skinsTable()?.hides;
-  const findings = validate(d.doc, hides);
+  const findings = validate(d.doc, hides, NAMES);
   const out = el(
     "div",
     { className: "overview" },

@@ -3,6 +3,7 @@
 import { $, el, emit, on } from "../viewer/ui/dom.js";
 import { state } from "../viewer/state.js";
 import {
+  NAMES,
   worldName,
   levelTitle,
   markerColour,
@@ -429,7 +430,7 @@ function buildForm(id, box) {
       afar.checked = !!d.doc.invisibleFromAfar;
       circuits.sync(d.doc);
       plays.textContent = playsAs(d.doc);
-      const n = validate(d.doc, skinsTable()?.hides).filter((f) => f.level === ERROR).length;
+      const n = validate(d.doc, skinsTable()?.hides, NAMES).filter((f) => f.level === ERROR).length;
       errors.hidden = n === 0;
       errors.textContent = n ? `${n} error${n === 1 ? "" : "s"}, listed under the level line` : "";
       saveJson.classList.toggle("unsaved", unsaved(d));

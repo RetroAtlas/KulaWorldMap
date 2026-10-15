@@ -1,7 +1,6 @@
 // The editor's document: a level as blocks, faces and circuits, edited copy on write.
 import { SIDE } from "../viewer/state.js";
 import { FACE_NORMAL } from "../viewer/faces.js";
-import { circuitWord, entryName, kindName } from "../viewer/data.js";
 import {
   BLOCK_KINDS,
   BONUS_UNDRAWN_KINDS,
@@ -422,21 +421,23 @@ const listed = (items) =>
   items.length > 1 ? `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}` : items[0];
 
 /** The things a keyless level places that the bonus artwork has no picture for, by name. */
-function undrawnInBonus(blocks) {
-  const names = [];
+function undrawnInBonus(blocks, names) {
+  const found = [];
   const add = (name) => {
-    if (!names.includes(name)) names.push(name);
+    if (!found.includes(name)) found.push(name);
   };
   for (const b of blocks) {
-    if (UNDRAWN_KINDS.has(b.kind))
-      add(kindName(b.kind) ? `the ${lower(kindName(b.kind))}` : `kind ${b.kind}`);
+    if (UNDRAWN_KINDS.has(b.kind)) {
+      const kind = names.kind?.(b.kind);
+      add(kind ? `the ${lower(kind)}` : `kind ${b.kind}`);
+    }
     for (const [, o] of facesOf(b))
       if (UNDRAWN_TYPES.has(o.type)) {
-        const name = entryName({ face: 0, type: o.type });
+        const name = names.entry?.({ face: 0, type: o.type });
         add(name ? `the ${lower(name)}` : `type ${o.type}`);
       }
   }
-  return names;
+  return found;
 }
 
 /** Each colour's switches, teleporters and lasers, counted on the faces the game walks. */
@@ -463,10 +464,10 @@ export function circuitMembers(project) {
   return members;
 }
 
-function validateCircuits(project, warn) {
+function validateCircuits(project, warn, names) {
   const circuits = project.circuits ?? {};
   circuitMembers(project).forEach((m, c) => {
-    const word = circuitWord(c);
+    const word = names.circuit?.(c);
     if (circuits[String(c)] === "off" && !m.switches && (m.lasers || m.teleporters))
       warn(
         `${word ? `the ${word} circuit` : `circuit ${c}`} starts off and has no switch to turn it on`,
@@ -496,8 +497,9 @@ export function recordOverflow(project) {
   return carried > LINK_RECORDS ? overCap("records", counts(project).records) : null;
 }
 
-/** What the game would make of the project, as findings with a level, a text and a place. */
-export function validate(project, hides) {
+/** What the game would make of the project, as findings with a level, a text and a place,
+    naming kinds, things and circuits through `names` and by number where it gives none. */
+export function validate(project, hides, names = {}) {
   const out = [];
   const err = (text, cell = null, face = null) =>
     out.push({ level: ERROR, text, at: at(cell, face) });
@@ -590,9 +592,9 @@ export function validate(project, hides) {
     );
   }
 
-  validateCircuits(project, warn);
+  validateCircuits(project, warn, names);
   const n = counts(project, hides);
-  const undrawn = n.keys || project.hidden ? [] : undrawnInBonus(blocks);
+  const undrawn = n.keys || project.hidden ? [] : undrawnInBonus(blocks, names);
   if (undrawn.length)
     warn(
       `with no key the game draws the bonus artwork, which has no picture for ${listed(undrawn)}`,

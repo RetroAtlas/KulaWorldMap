@@ -4,7 +4,7 @@
 // from the image after, and every byte of the patches is written here.
 import { $, el, on } from "../viewer/ui/dom.js";
 import { state } from "../viewer/state.js";
-import { levelTitle, loadJson, skinsTable, worldName } from "../viewer/data.js";
+import { NAMES, levelTitle, loadJson, skinsTable, worldName } from "../viewer/data.js";
 import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
 import { toast } from "../viewer/ui/toast.js";
 import { FINAL_SLOTS, WORLDS, WORLD_SLOTS, writeKwl } from "../format/kwl.js";
@@ -273,7 +273,7 @@ function checks() {
   const box = ui.checks;
   box.textContent = "";
   const hides = skinsTable()?.hides;
-  const findings = validate(d.doc, hides);
+  const findings = validate(d.doc, hides, NAMES);
   const errors = findings.filter((f) => f.level === ERROR);
   const warnings = findings.filter((f) => f.level !== ERROR);
   const items = (fs) =>

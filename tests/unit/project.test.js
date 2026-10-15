@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { mapData, annotations, objects, levelKey } from "./fixtures.js";
 import {
+  NAMES,
   OFF_LATTICE,
   index,
   markerCircuit,
@@ -92,8 +93,8 @@ const plain = (cell, kind = 0, faces = null) => (faces ? { cell, kind, faces } :
 const start = (facing = 3) => ({ type: START, facing });
 const coin = { type: COIN, variant: 0 };
 const texts = (findings, level) => findings.filter((f) => f.level === level).map((f) => f.text);
-const errors = (blocks, more) => texts(validate(project(blocks, more), HIDES), "error");
-const warnings = (blocks, more) => texts(validate(project(blocks, more), HIDES), "warning");
+const errors = (blocks, more) => texts(validate(project(blocks, more), HIDES, NAMES), "error");
+const warnings = (blocks, more) => texts(validate(project(blocks, more), HIDES, NAMES), "warning");
 const level = (title) => mapData.levels.find((l) => (l.shown || l.name) === title);
 
 const doc = readFileSync(fileURLToPath(new URL("../../docs/editor.md", import.meta.url)), "utf8");
@@ -110,7 +111,7 @@ const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 test("a blank level has a start to build from and nothing the game would mishandle", () => {
   const p = blank("HAZE");
-  assert.deepEqual(texts(validate(p, HIDES), "error"), []);
+  assert.deepEqual(texts(validate(p, HIDES, NAMES), "error"), []);
   assert.deepEqual([p.title, p.world, p.time, p.blocks.length], [UNTITLED, "HAZE", 99, 1]);
   assert.deepEqual(faceAt(p, [17, 17, 17], 0), start());
   assert.equal(playsAs(p), "Plays as a bonus level since it has no key.");
@@ -258,7 +259,9 @@ test("a move lays the blocks named at their cells plus the delta, a span's far e
   const run = moveBlocks(p, [[19, 20, 17]], [11, 0, 0]);
   assert.deepEqual(blockAt(run, [30, 20, 17]).far, [32, 20, 17]);
   assert.ok(
-    texts(validate(run, HIDES), "error").includes("the platform's run reaches past the edge"),
+    texts(validate(run, HIDES, NAMES), "error").includes(
+      "the platform's run reaches past the edge",
+    ),
   );
   // a cell with no block names nothing to move
   assert.deepEqual(moveBlocks(p, [[6, 6, 6]], [1, 1, 1]), p);
@@ -276,7 +279,7 @@ test("every shipped level validates with no error and plays as the game plays it
   assert.deepEqual([bonus.length, hidden.length], [30, 10]);
   for (const l of mapData.levels) {
     const p = fromLevel(l);
-    assert.deepEqual(texts(validate(p, HIDES), "error"), [], l.name);
+    assert.deepEqual(texts(validate(p, HIDES, NAMES), "error"), [], l.name);
     const plays = playsAs(p);
     if (hidden.includes(l))
       assert.equal(
@@ -401,7 +404,9 @@ test("without the skins table the checks run every rule but the face count, and 
   );
   const h10 = fromLevel(level("HIDDEN 10"));
   assert.deepEqual(texts(validate(h10, undefined), "error"), []);
-  assert.ok(!texts(validate(h10, HIDES), "warning").some((w) => w.includes("could not be read")));
+  assert.ok(
+    !texts(validate(h10, HIDES, NAMES), "warning").some((w) => w.includes("could not be read")),
+  );
 });
 
 test("a level needs one start, and says which of several the game takes", () => {
@@ -649,7 +654,7 @@ test("a bad colour or variant is a finding and leaves the circuits pass alone", 
     { cell: [9, 9, 9], kind: LASER_KIND, far: [9, 12, 9], colour: 7 },
     { cell: [9, 9, 12], kind: LASER_KIND, far: [9, 12, 12] },
   ];
-  const findings = validate(project(blocks, { circuits: { 7: "off" } }), HIDES);
+  const findings = validate(project(blocks, { circuits: { 7: "off" } }), HIDES, NAMES);
   const found = texts(findings, "error");
   for (const text of [
     "a variant of 7",
@@ -684,6 +689,7 @@ test("a document that bypassed the reader is checked alike on both sides", () =>
       ],
     },
     HIDES,
+    NAMES,
   ).map(describe);
   assert.deepEqual(findings, [
     "error: the world '' is not one of the disc's ten",
@@ -717,7 +723,7 @@ test("a document that bypassed the reader is checked alike on both sides", () =>
     {"cell": [14, 5, 5], "kind": 5, "far": [14, 9, 5], "length": 2.0, "speed": 30, "faces": 5}
   ]
 }`);
-  assert.deepEqual(validate(spelled, HIDES).map(describe), [
+  assert.deepEqual(validate(spelled, HIDES, NAMES).map(describe), [
     "error: a time of false seconds, outside the file's range",
     "error at 6,5,5: kind null is not a kind of block",
     "error at 8,5,5: a span needs a far end",
@@ -766,13 +772,15 @@ test("the face cap, with the level that sits under it", () => {
   const h10 = level("HIDDEN 10");
   const p = fromLevel(h10);
   assert.equal(counts(p, HIDES).faces, 766);
-  assert.deepEqual(texts(validate(p, HIDES), "error"), []);
+  assert.deepEqual(texts(validate(p, HIDES, NAMES), "error"), []);
   const free = [h10.min[0] - 2, h10.min[1], h10.min[2]];
   assert.ok(free.every(inner));
   const over = setBlock(p, free, { kind: 0 });
   assert.equal(counts(over, HIDES).faces, 772);
   assert.ok(
-    texts(validate(over, HIDES), "error").includes("772 faces, over the 768 the game has room for"),
+    texts(validate(over, HIDES, NAMES), "error").includes(
+      "772 faces, over the 768 the game has room for",
+    ),
   );
 });
 
@@ -1038,11 +1046,11 @@ test("an object looks into an empty cell", () => {
   assert.ok(warned.includes("looks into a crumbling block"));
   assert.ok(warned.includes("looks into a vanishing block"));
   assert.ok(warned.includes("looks into a beam"));
-  const findings = validate(project(blocks), HIDES);
+  const findings = validate(project(blocks), HIDES, NAMES);
   const beam = findings.find((f) => f.text === "looks into a beam");
   assert.deepEqual(beam.at, { cell: [6, 8, 5], face: 4 });
   assert.equal(describe(beam), "warning at 6,8,5 face 4: looks into a beam");
-  assert.equal(describe(validate(project([plain([5, 5, 5])]), HIDES)[0]), "error: no start");
+  assert.equal(describe(validate(project([plain([5, 5, 5])]), HIDES, NAMES)[0]), "error: no start");
 });
 
 test("a circuit's members are counted on the faces the game walks, by colour", () => {
@@ -1165,7 +1173,9 @@ test("a keyless level is warned of what the bonus artwork has no picture for", (
   );
   for (const l of mapData.levels)
     assert.ok(
-      !texts(validate(fromLevel(l), HIDES), "warning").some((w) => w.includes("bonus artwork")),
+      !texts(validate(fromLevel(l), HIDES, NAMES), "warning").some((w) =>
+        w.includes("bonus artwork"),
+      ),
       l.name,
     );
 });
@@ -1184,10 +1194,10 @@ test("how a level plays", () => {
     "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks.",
   );
   assert.deepEqual(
-    validate(keyed, HIDES).map((f) => f.level),
+    validate(keyed, HIDES, NAMES).map((f) => f.level),
     ["warning"],
   );
-  assert.equal(validate(keyed, HIDES)[0].at, null);
+  assert.equal(validate(keyed, HIDES, NAMES)[0].at, null);
 });
 
 // --- the project file ---------------------------------------------------------------------
@@ -1275,7 +1285,7 @@ test("the reader takes what it knows of a newer file, fills the defaults and dro
   assert.ok(report.some((line) => line.includes("colour 3 is neither on nor off")));
   assert.ok(report.some((line) => line.includes("hidden")));
   assert.ok(report.some((line) => line.includes("time")));
-  assert.deepEqual(texts(validate(p, HIDES), "error"), []);
+  assert.deepEqual(texts(validate(p, HIDES, NAMES), "error"), []);
   assert.doesNotThrow(() => writeKwl(p));
 });
 
@@ -1338,7 +1348,7 @@ test("the reader leaves out what the writer has no bytes for, and holds a word t
   ]);
   // what is kept writes, and the checks name what the game would make of it
   assert.doesNotThrow(() => writeKwl(p));
-  const found = texts(validate(p, HIDES), "error");
+  const found = texts(validate(p, HIDES, NAMES), "error");
   for (const text of [
     "a facing of 1 to 4 is needed",
     "type 32767 is nothing the game plays",
@@ -1346,7 +1356,7 @@ test("the reader leaves out what the writer has no bytes for, and holds a word t
     "a time of -32768 seconds",
   ])
     assert.ok(found.includes(text), text);
-  assert.ok(texts(validate(p, HIDES), "warning").includes("a platform running at -32768"));
+  assert.ok(texts(validate(p, HIDES, NAMES), "warning").includes("a platform running at -32768"));
   // the one project the reader hands on that the writer refuses: records enough to outrun a link word
   const crowd = Array.from({ length: 2049 }, (_, i) =>
     plain([1 + (i % 32), 1 + (Math.floor(i / 32) % 32), 1 + Math.floor(i / 1024)], 0, { 0: coin }),
@@ -1484,7 +1494,7 @@ test("a platform's length that runs past the edge is cut on the way in, to a run
     "block 5 at 18,33,17 has a length of 2, which runs past the edge; it is 1",
   ]);
   // the run's edge error stays only where the cell itself is past the edge
-  assert.deepEqual(texts(validate(p, HIDES), "error"), [
+  assert.deepEqual(texts(validate(p, HIDES, NAMES), "error"), [
     "the game builds nothing past the edge",
     "a platform 19 blocks long, more than the 7 the game's grid holds",
     "the far end is past the edge",
@@ -1501,7 +1511,7 @@ test("a platform's length that runs past the edge is cut on the way in, to a run
   assert.equal(lines.length, 4);
   assert.equal(repairs, 200);
   assert.ok(
-    !texts(validate(q, HIDES), "error").includes("the platform's run reaches past the edge"),
+    !texts(validate(q, HIDES, NAMES), "error").includes("the platform's run reaches past the edge"),
   );
   const walked = toLevel(q, 1)
     .records.filter((r) => r.kind === PLATFORM_KIND)
@@ -1628,7 +1638,7 @@ test("a face key is read by its number, and a second spelling of one face is lef
   });
   assert.deepEqual(p.blocks[0].faces, { 0: start(), 5: { type: KEY } });
   assert.deepEqual(report, ['block 0 at 5,5,5 names face 5 again as "05"; it is left out']);
-  assert.deepEqual(texts(validate(p, HIDES), "error"), []);
+  assert.deepEqual(texts(validate(p, HIDES, NAMES), "error"), []);
   assert.ok(
     errors([plain([5, 5, 5], 0, { 0: start(), 5: coin, "05": coin })]).includes(
       "face 5 is named twice",
@@ -1754,7 +1764,7 @@ test("the writer keeps only what the game reads of a face, and only the colours 
   assert.deepEqual(zero.report, [
     "block 0 at 5,5,5 face 0 has a facing of 0, which the game heads as 1; it is 1",
   ]);
-  assert.deepEqual(texts(validate(zero.project, HIDES), "error"), []);
+  assert.deepEqual(texts(validate(zero.project, HIDES, NAMES), "error"), []);
   assert.deepEqual(q.blocks[1], { cell: [7, 5, 5], kind: 7, phase: 0 });
   assert.deepEqual(q.blocks[2], {
     cell: [9, 5, 5],

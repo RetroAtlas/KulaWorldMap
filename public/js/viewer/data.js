@@ -271,6 +271,8 @@ export const fieldName = (m, i) => {
   return entry(m)?.fields?.[f] ?? null;
 };
 export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
+/** The names validate puts in its findings. */
+export const NAMES = { kind: kindName, entry: entryName, circuit: circuitWord };
 
 // Where the game numbers a level, every fruit shows as the one the player
 // needs next: the level's number counted round the fruit.
