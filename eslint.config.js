@@ -29,6 +29,7 @@ export default [
       "tests/browser/**/*.js",
       "tests/pixels/**/*.js",
       "tests/frame/**/*.js",
+      "tests/boot/**/*.js",
       "tools/**/*.js",
     ],
     languageOptions: {

@@ -3,6 +3,7 @@ import http from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
+import { gzipSync } from "node:zlib";
 
 export const ROOT = fileURLToPath(new URL("..", import.meta.url));
 
@@ -15,8 +16,11 @@ const TYPES = {
   ".svg": "image/svg+xml",
 };
 
-/** Serve a directory on a free port, once it is listening. */
-export function serve(root) {
+const TEXT = new Set([".html", ".js", ".json", ".css", ".svg"]);
+
+/** Serve a directory on a free port, once it is listening; with `gzip`, text
+    goes compressed to a browser that takes it, as the host sends it. */
+export function serve(root, { gzip = false } = {}) {
   return new Promise((done) => {
     const server = http.createServer(async (req, res) => {
       let path = decodeURIComponent(new URL(req.url, "http://x").pathname);
@@ -24,8 +28,17 @@ export function serve(root) {
       const file = normalize(join(root, path));
       if (!file.startsWith(root)) return res.writeHead(403).end();
       try {
-        const body = await readFile(file);
-        res.writeHead(200, { "content-type": TYPES[extname(file)] || "application/octet-stream" });
+        let body = await readFile(file);
+        const headers = { "content-type": TYPES[extname(file)] || "application/octet-stream" };
+        if (
+          gzip &&
+          TEXT.has(extname(file)) &&
+          /\bgzip\b/.test(req.headers["accept-encoding"] ?? "")
+        ) {
+          body = gzipSync(body);
+          headers["content-encoding"] = "gzip";
+        }
+        res.writeHead(200, headers);
         res.end(body);
       } catch {
         res.writeHead(404).end();
