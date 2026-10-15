@@ -24,7 +24,16 @@ import {
   inner,
   sameCell,
 } from "./kwl.js";
-import { blockAt, faceAt, moveBlocks, removeBlock, runOf, setBlock, setFace } from "./project.js";
+import {
+  blockAt,
+  faceAt,
+  moveBlocks,
+  removeBlock,
+  runOf,
+  same,
+  setBlock,
+  setFace,
+} from "./project.js";
 import { load } from "./drafts.js";
 import { canRedo, canUndo, redo, undo } from "./trail.js";
 import { copyShown, levelFor, wireDrafts } from "./draftlist.js";
@@ -37,6 +46,7 @@ import {
   brushWord,
   commit,
   current,
+  holding,
   kindWord,
   lower,
   newErrors,
@@ -129,7 +139,7 @@ export function bootEditor() {
   provideLevels(levelFor);
   wireDrafts();
   wireTools();
-  wireForm({ editing, placeHere, buildAgainst });
+  wireForm({ editing, placeHere, buildAgainst, holdsBrush });
 }
 
 // --- the mode and the strip ---------------------------------------------------------
@@ -273,9 +283,10 @@ function wireTools() {
   hoverBy((c) => (editing() && mode.tool !== "select" ? `${c.face ?? ""}/${c.k ?? 0}` : null));
   tipWith((c) => {
     if (!editing() || mode.tool !== "place" || c?.face == null) return [];
-    return [
-      pending ? "End the run here" : `Place ${aWord(brushWord())} on the ${FACE_NAME[c.face]}`,
-    ];
+    if (pending) return ["End the run here"];
+    const side = FACE_NAME[c.face];
+    const what = aWord(brushWord());
+    return [holdsBrush(c) ? `The ${side} holds ${what} already` : `Place ${what} on the ${side}`];
   });
   overlayWith({ under: drawFloor, cell: drawCell, frame: drawGhost });
   strip();
@@ -408,6 +419,10 @@ function tap(c, e) {
   if (target.cell && brush.kind === undefined) {
     disarm();
     return refuse(FLOOR_THING);
+  }
+  if (mode.tool === "place" && target.c && holdsBrush(target.c)) {
+    disarm();
+    return refuse(holding());
   }
   if (armed && armed.key === target.key && armed.face === target.face && armed.k === target.k) {
     const at = armed.c;
@@ -972,6 +987,22 @@ function verdicts(doc, span, cells) {
   });
 }
 
+/** What Place puts on a face: the brush's thing, turned as the next placement faces; null for a block. */
+function brushThing() {
+  if (brush.kind !== undefined) return null;
+  const o = { type: brush.type };
+  if (brush.variant !== undefined) o.variant = brush.variant;
+  if (FACING_TYPES.has(brush.type)) o.facing = facing;
+  return o;
+}
+
+/** Whether the face of `c` holds what Place would put there. */
+function holdsBrush(c) {
+  const d = current();
+  const o = d && c?.face != null ? faceAt(d.doc, [c.x, c.y, c.z], c.face) : null;
+  return o !== null && same(o, brushThing());
+}
+
 /** Put the brush's thing on the clicked face, in place of whatever stood there. */
 function placeThing(c, d, e) {
   if (!c || c.face == null) return false;
@@ -982,10 +1013,8 @@ function placeThing(c, d, e) {
   if (PLAIN_ONLY.has(brush.type) && b.kind !== 0) return refuse(plainOnly(entry));
   if (brittle(b)) return refuse(BRITTLE);
   if (blockAt(d.doc, across(c, c.face))) return refuse(LOOKS_INTO);
-  const o = { type: brush.type };
-  if (brush.variant !== undefined) o.variant = brush.variant;
-  if (FACING_TYPES.has(brush.type)) o.facing = facing;
-  const next = setFace(d.doc, cell, c.face, o);
+  if (holdsBrush(c)) return refuse(holding());
+  const next = setFace(d.doc, cell, c.face, brushThing());
   const grew = newErrors(d.doc, next);
   if (grew.length) return refuse(sentence(grew[0].text));
   state.hiddenKinds.delete(brush.id);

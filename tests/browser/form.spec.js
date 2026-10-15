@@ -582,10 +582,23 @@ test("the two buttons place through the editor", async ({ page }) => {
     "title",
     "Put a key against this face, as a click would",
   );
-  await field(page, "place").click();
+  await field(page, "place").focus();
+  await page.keyboard.press("Enter");
   expect(blockAt(await doc(page), HOME).faces[2]).toEqual({ type: 31 });
   await expect(page.locator("#say")).toHaveText("Placed a key on the +y side of 17, 17, 17");
   await expect(field(page, "thing")).toHaveValue("t31");
+  // the face holds the brush's thing now, so the button is greyed, keeps the focus and says why
+  await expect(field(page, "place")).toHaveAttribute("aria-disabled", "true");
+  await expect(field(page, "place")).toHaveAttribute("title", "That face holds a key already.");
+  await expect(field(page, "place")).toBeFocused();
+  const held = await steps(page);
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#toastStack .toast").first()).toHaveText(
+    "That face holds a key already.",
+  );
+  await expect(page.locator("#say")).toHaveText("Placed a key on the +y side of 17, 17, 17");
+  expect(await steps(page)).toEqual(held);
+  await expect(field(page, "place")).toBeFocused();
   await page.locator("#palette .tabs button", { hasText: "Blocks" }).click();
   await page.locator('#palette .rows button[data-id="k8/2"]').click();
   await expect(field(page, "build")).toBeEnabled();
@@ -595,5 +608,6 @@ test("the two buttons place through the editor", async ({ page }) => {
   await expect(field(page, "build")).toBeEnabled();
   await page.locator('#palette .rows button[data-id="k2"]').click();
   await expect(field(page, "place")).toHaveText("Place an ice block here");
+  await expect(field(page, "place")).toBeEnabled();
   expect(errors).toEqual([]);
 });

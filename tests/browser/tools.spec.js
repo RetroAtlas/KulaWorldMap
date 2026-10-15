@@ -489,6 +489,29 @@ test("the hover names what Place would do, and Esc clears the selection without 
   expect(errors).toEqual([]);
 });
 
+test("the hover says where the face holds what Place would put there", async ({ page }) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setFace }] = await Promise.all(
+      ["state.js", "drafts.js", "project.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    update(id, setFace(get(id).doc, [17, 17, 17], 1, { type: 31 }));
+  });
+  await page.locator("#palette .tabs button", { hasText: "Pickups" }).click();
+  await page.locator('#palette .rows button[data-id="t31"]').click();
+  const side = await plusX(page, [17, 17, 17]);
+  await page.mouse.move(side.x, side.y);
+  await expect(page.locator("#tip")).toContainText("The +x side holds a key already");
+  await expect(page.locator("#tip")).not.toContainText("Place a key");
+  const above = await top(page, [17, 17, 17]);
+  await page.mouse.move(above.x, above.y);
+  await expect(page.locator("#tip")).toContainText("Place a key on the top");
+  expect(errors).toEqual([]);
+});
+
 test("the Keyboard list names every key and gesture the editor binds", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto(EDIT);

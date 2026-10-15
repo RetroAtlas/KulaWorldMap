@@ -49,6 +49,7 @@ import {
   readProject,
   recordOverflow,
   removeBlock,
+  same,
   setBlock,
   setCircuit,
   setFace,
@@ -134,6 +135,25 @@ test("every edit returns a new project and leaves the one it was given as it was
     assert.notEqual(after, p);
     assert.deepEqual(p, before);
   }
+});
+
+test("two documents are the same where they hold the same, whatever order their keys were written in", () => {
+  const p = fromLevel(level("LEVEL 1"));
+  const cell = [17, 12, 17];
+  assert.ok(same(p, structuredClone(p)));
+  assert.ok(same(setMeta(p, { time: p.time }), p));
+  assert.ok(!same(setMeta(p, { time: p.time + 1 }), p));
+  assert.ok(
+    same(
+      setFace(p, cell, 1, { type: TELEPORTER, facing: 2, variant: 1 }),
+      setFace(p, cell, 1, { type: TELEPORTER, variant: 1, facing: 2 }),
+    ),
+  );
+  assert.ok(!same({ type: COIN }, { type: COIN, variant: 0 }));
+  assert.ok(!same([1, 2], [2, 1]));
+  assert.ok(!same([], {}));
+  assert.ok(!same(null, {}));
+  assert.ok(same(null, null));
 });
 
 test("the edits place, replace, remove and read blocks and faces, in lattice order", () => {

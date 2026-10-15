@@ -112,6 +112,18 @@ export const blockAt = (project, cell) =>
 export const faceAt = (project, cell, face) =>
   blockAt(project, cell)?.faces?.[String(face)] ?? null;
 
+/** Whether two documents, or two parts of them, hold the same, whatever order their keys were written in. */
+export function same(a, b) {
+  if (a === b) return true;
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const keys = Object.keys(a);
+  return (
+    keys.length === Object.keys(b).length &&
+    keys.every((k) => Object.hasOwn(b, k) && same(a[k], b[k]))
+  );
+}
+
 export const setBlock = (project, cell, block) => ({
   ...project,
   blocks: [

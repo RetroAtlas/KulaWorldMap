@@ -46,6 +46,7 @@ export const plainOnly = (e) => {
     ? `${capital(name)} work on a plain block only.`
     : `${capital(aWord(name))} works on a plain block only.`;
 };
+export const holding = () => `That face holds ${aWord(brushWord())} already.`;
 export const brittle = (b) =>
   SPAN_KINDS.has(b.kind) || b.kind === CRUMBLING_KIND || b.kind === VANISHING_KIND;
 /** The span whose run takes `cell`, its own block's cell included; null where none does. */

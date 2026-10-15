@@ -499,6 +499,32 @@ test.describe("editing on a phone", () => {
     expect(await cells(page)).toEqual([START, [18, 21, 17]]);
   });
 
+  test("a tap on a face that holds the brush's thing says so at once, and arms nothing", async ({
+    page,
+  }) => {
+    await editFresh(page);
+    await page.locator("#paletteBtn").tap();
+    await page.locator("#palette .tabs button", { hasText: "Pickups" }).tap();
+    await page.locator('#palette .rows button[data-id="t31"]').tap();
+    await page.locator("#palette .x").tap();
+    await expect(page.locator("#palette")).toBeHidden();
+    const side = await plusX(page, START);
+    await tap(page, side);
+    await tap(page, side);
+    await expect(page.locator("#say")).toHaveText("Placed a key on the +x side of 17, 17, 17");
+    await tap(page, side);
+    await expect(page.locator("#toolStatus")).toHaveText("That face holds a key already.");
+    await expect(page.locator("#toastStack .toast")).toHaveText(["That face holds a key already."]);
+    await expect(page.locator("#say")).toHaveText("Placed a key on the +x side of 17, 17, 17");
+    const past = await page.evaluate(async () => {
+      const [{ state }, { steps }] = await Promise.all(
+        ["state.js", "trail.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+      );
+      return steps(state.lvl.draft).past;
+    });
+    expect(past).toBe(1);
+  });
+
   test("a long press selects what is under the finger from the Place tool", async ({ page }) => {
     await editFresh(page);
     await hold(page, await top(page, START));

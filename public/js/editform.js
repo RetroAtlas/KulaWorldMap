@@ -43,6 +43,7 @@ import {
   capital,
   commit,
   current,
+  holding,
   kindWord,
   lower,
   newErrors,
@@ -74,10 +75,11 @@ const NO_WORDS = Array(16).fill(0);
 let wired = false;
 let focused = null;
 let rawOpen = false;
-// What the editor hands the form: whether editing is on, and its two placements.
+// What the editor hands the form.
 let editing = () => false;
 let placeHere = () => false;
 let buildAgainst = () => false;
+let holdsBrush = () => false;
 
 const markerOf = (type, variant) => ({
   type,
@@ -113,7 +115,7 @@ const option = (value, text) => el("option", { value, textContent: text });
 
 /** Register the form with the panel, once, with what the editor hands it. */
 export function wireForm(handed) {
-  ({ editing, placeHere, buildAgainst } = handed);
+  ({ editing, placeHere, buildAgainst, holdsBrush } = handed);
   if (wired) return;
   wired = true;
   wireOverview();
@@ -441,6 +443,11 @@ function faceCard(d, own, c, face) {
       `Place ${brush} here`,
       `Put ${brush} against this face, as a click would`,
     );
+    // greyed yet focusable, so the focus its own press leaves on it stays through the redraw
+    if (holdsBrush(here)) {
+      place.setAttribute("aria-disabled", "true");
+      place.title = holding();
+    }
     place.onclick = () => placeHere(here);
     row.append(place);
   }

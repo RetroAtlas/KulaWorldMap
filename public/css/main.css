@@ -1918,6 +1918,11 @@ body:not(.sidebar-open) .menu-btn .cross {
 .detail .form .circuit button:hover {
   border-color: var(--accent-dim);
 }
+.detail .form .row button[aria-disabled="true"] {
+  opacity: 0.35;
+  cursor: default;
+  border-color: var(--line);
+}
 .detail .form .circuit {
   display: flex;
   flex: 1;

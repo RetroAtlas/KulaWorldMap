@@ -21,6 +21,13 @@ const doc = (page) =>
     );
     return get(state.lvl.draft).doc;
   });
+const steps = (page) =>
+  page.evaluate(async () => {
+    const [{ state }, { steps }] = await Promise.all(
+      ["state.js", "trail.js"].map((p) => import(new URL(`js/${p}`, location.href).href)),
+    );
+    return steps(state.lvl.draft);
+  });
 const facesAt = async (page, cell) =>
   (await doc(page)).blocks.find((b) => b.cell.join() === cell.join())?.faces ?? {};
 const at = (page, x, y, z) =>
@@ -199,6 +206,46 @@ test("a thing goes on the clicked face, is announced, and comes off again with u
   await page.keyboard.press("Control+z");
   expect(await facesAt(page, START)).toEqual({ 0: { type: 30, facing: 3 } });
   await expect(page.locator("#say")).toHaveText("Undid placed a key on the +x side of 17, 17, 17");
+  expect(errors).toEqual([]);
+});
+
+test("a thing the face holds already is refused and takes no step, its keys in any order", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  await pick(page, "Pickups", "t31");
+  await click(page, await plusX(page, START));
+  await expect(page.locator("#say")).toHaveText("Placed a key on the +x side of 17, 17, 17");
+  const placed = await steps(page);
+  await click(page, await plusX(page, START));
+  expect(await toasts(page)).toContain("That face holds a key already.");
+  await expect(page.locator("#toolStatus")).toHaveText("That face holds a key already.");
+  await expect(page.locator("#say")).toHaveText("Placed a key on the +x side of 17, 17, 17");
+  expect(await steps(page)).toEqual(placed);
+  await page.keyboard.press("Control+z");
+  expect(await facesAt(page, START)).toEqual({ 0: { type: 30, facing: 3 } });
+
+  // a file names a teleporter's facing before its colour, and it is the same thing
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setFace }] = await Promise.all(
+      ["state.js", "drafts.js", "project.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    update(id, setFace(get(id).doc, [17, 17, 17], 1, { type: 5, facing: 1, variant: 0 }));
+  });
+  await pick(page, "Devices", "t5/0");
+  const laid = await steps(page);
+  await click(page, await plusX(page, START));
+  expect(await toasts(page)).toContain("That face holds a teleporter (yellow) already.");
+  expect(await steps(page)).toEqual(laid);
+  // turned another way, the brush turns it
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("r");
+  await click(page, await plusX(page, START));
+  expect(await facesAt(page, START)).toMatchObject({ 1: { type: 5, variant: 0, facing: 2 } });
+  expect((await steps(page)).past).toBe(laid.past + 1);
   expect(errors).toEqual([]);
 });
 
