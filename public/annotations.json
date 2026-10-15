@@ -203,7 +203,7 @@
     "35": {
       "name": "Hourglass",
       "points": 1190,
-      "note": "Flips the timer, and scores more the less time is left when you take it. It scores 1200 − 12 × (seconds left), rounded to the nearest 10."
+      "note": "Flips the timer, and scores more the less time is left when you take it. It scores 10 for every whole second the flipped timer shows, so 1190 with under a second left and 200 taken at once with 99 left."
     },
     "36": {
       "name": "Gem",

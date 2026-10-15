@@ -110,7 +110,7 @@ One to six a level on the disc: 61 levels with one, 92 with two, 31 with three, 
 
 ### type 32: Lethargy pill
 
-Named for what it does in play, slowing the ball while the screen rocks. LEVEL 10 carries the game's first four. How long it lasts is the code's: its case sets the word at `0x800ba338` to 360 (`0x800387d4`), and the ball's routine, which the play loop runs once a frame, takes 2 off it a frame (`0x8003b388`) and 4 ticks off the clock with it (`0x8003b390`, through `0x8003b468`), so the pill lasts 180 frames, three seconds, and costs 720 ticks beyond the clock's own, 14.4 of its seconds at fifty ticks to the second ([motion.md](motion.md)), which the note gives as about fifteen.
+Named for what it does in play, slowing the ball while the screen rocks. LEVEL 10 carries the game's first four. How long it lasts is the code's: its case sets the word at `0x800ba338` to 360 (`0x800387d4`), and the ball's routine, which the play loop runs once a frame, takes 2 off it a frame (`0x8003b388`) and 4 ticks off the clock with it (`0x8003b390`, through `0x8003b468`), testing the word before it counts it down, so the pill lasts 181 frames, three seconds, and costs 724 ticks beyond the clock's own, 14.5 of its seconds at fifty ticks to the second ([motion.md](motion.md)), which the note gives as about fifteen.
 
 ### type 33: Bouncy pill
 
@@ -122,7 +122,7 @@ Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the le
 
 ### type 35: Hourglass
 
-LEVEL 6 carries the game's first. In play it scores 1200 less twelve times the seconds left, rounded to the nearest 10, and the map counts each at the most it can score, with a second left, which the rounding makes 1190 and not 1188.
+LEVEL 6 carries the game's first. The code turns the clock round and scores by what it leaves: the ball's contact walk at `0x80038548` sends it to its case at `0x80039048`, which writes 5999 less the clock back as the clock and adds 10 for every whole second of the new clock, 50 ticks each ([motion.md](motion.md)), so taken with s whole seconds left it leaves 119 − s seconds and scores 1190 − 10·s, 1190 with less than a second left, which is the most it can score and what the map counts each at. Play had put the rule at 1200 less twelve a second, rounded to the nearest 10, from a few counts; the code's is what the note gives.
 
 ### type 36: Gem
 

@@ -12,6 +12,7 @@ The game runs its loop once per vertical blank.
 """
 import argparse
 import json
+import math
 import re
 import struct
 import sys
@@ -688,6 +689,98 @@ CHECKS = [
     (0x80050fdc, "sw $zero, -20($a0)", "and once all are back its slot is free"),
     (0x800534f4, "lw $s6, 0($s1)", "the renderer reads a polygon's first corner"),
     (0x80053604, "mtc2 $s6, rgbc", "and draws a flat one in that colour"),
+    # What the ball takes.
+    (0x80035620, "sw $zero, -29572($at)", "the loader marks every slot as not to be taken"),
+    (0x80035690, "sw $s4, -29572($at)", "and then a fruit as to be taken"),
+    (0x800358dc, "sw $s4, -29572($at)", "a key, a pill or the sunglasses"),
+    (0x8003579c, "sw $s4, -29572($at)", "a coin"),
+    (0x800357d0, "sw $s4, -29572($at)", "type 42"),
+    (0x80035804, "sw $s4, -29572($at)", "an hourglass"),
+    (0x80035830, "sw $s4, -29572($at)", "and a gem"),
+    (0x80035838, "lh $v0, 6($v1)", "whose stand is by its cut"),
+    (0x80035840, "bne $v0, $zero, 0x80035854", "the first cut standing lower"),
+    (0x80035640, "beq $v0, $zero, 0x80035924", "a type outside the loader's table"),
+    (0x80035928, "beq $a1, $zero, 0x800359fc", "or sent to its plain case lays no entry and is passed over"),
+    (0x800359f4, "jal 0x80039ec0", "the loader lays each thing's matrix"),
+    (0x80039fa8, "subu $v1, $v1, $a3", "whose translation takes the stand along the top's normal"),
+    (0x80039fac, "sw $v1, 28($t0)", "from the block's centre"),
+    (0x80039d14, "lw $v1, -29548($at)", "the draw walk takes the translation"),
+    (0x80039d24, "addu $v0, $v0, $v1", "adds the offset it turned"),
+    (0x80039d30, "sh $v0, 40($v1)", "and keeps the point as the thing's position"),
+    (0x800384f4, "addiu $a0, $a0, 104", "the contact walks the cells about the ball from the words at 104"),
+    (0x80039198, "slti $v0, $v0, 3", "three over"),
+    (0x800391b4, "slti $v0, $v0, 3", "three on"),
+    (0x800391d0, "slti $v0, $v0, 3", "and three up"),
+    (0x80038548, "slti $v0, $v0, 5", "taking a record of a kind below 5"),
+    (0x80038578, "lh $v0, 8($a3)", "and each slot's f4"),
+    (0x80038580, "beq $v0, $zero, 0x8003916c", "passing over a slot where it is nothing"),
+    (0x80038598, "lw $v0, -29572($at)", "and a thing the loader marked not to be taken"),
+    (0x800385a0, "beq $v0, $zero, 0x8003916c", "too"),
+    (0x800385b4, "lh $v1, -29536($at)", "it measures from the ball's centre to the thing's position"),
+    (0x800385c0, "mult $v0, $v0", "squared"),
+    (0x8003862c, "slt $v0, $v0, $v1", "against the thing's reach squared plus the ball's"),
+    (0x80038630, "beq $v0, $zero, 0x8003916c", "and passes over one out of reach"),
+    (0x80038670, "sw $zero, 7236($gp)", "a thing in reach is to be taken"),
+    (0x80038674, "addiu $v0, $v0, -27", "and its type less the first the walk knows"),
+    (0x80038680, "sltiu $v0, $v1, 21", "one of the types it knows"),
+    (0x80038694, "lw $v0, 568($at)", "picks its case from the table at 0x80010238"),
+    (0x80039110, "bne $v0, $zero, 0x80039168", "unless the case asked to keep the thing"),
+    (0x80039138, "sh $zero, 8($v0)", "the walk's tail writes 0 into its f4"),
+    (0x80039140, "sh $zero, 2($v0)", "and its type"),
+    (0x80039158, "jal 0x8002c184", "and repaints its face"),
+    (0x800386c4, "lh $v0, 6($v0)", "type 42's case reads its form"),
+    (0x800386cc, "bne $v0, $zero, 0x8003873c", "the green scores"),
+    (0x80038730, "sw $s2, 7236($gp)", "and the brown is kept"),
+    (0x80038700, "sw $v0, -23760($at)", "ending the level"),
+    (0x80038b8c, "lh $v0, 6($v1)", "a coin's case reads its tier"),
+    (0x80038b94, "bne $v0, $zero, 0x80038bb8", "the first scoring most"),
+    (0x80038bbc, "bne $v0, $s2, 0x80038bdc", "the second"),
+    (0x80038be4, "bne $v0, $s1, 0x80039108", "and the third least"),
+    (0x80038a24, "addiu $v1, $v1, -1", "a key takes one off the keys left"),
+    (0x80038a30, "sw $v1, 13308($at)", "at 0x800a33fc"),
+    (0x800358bc, "addiu $v1, $v1, 1", "which the loader counted"),
+    (0x800358c4, "sw $v1, 13308($at)", "key by key"),
+    (0x80038a3c, "bne $v1, $zero, 0x80038a90", "and the last"),
+    (0x80038a78, "sh $zero, 6($v0)", "writes 0 into the exit's f3"),
+    (0x80038a7c, "sh $s2, 8($v0)", "1 into its f4"),
+    (0x80038a84, "sh $s2, 8($v1)", "and 1 into the hidden exit's f4"),
+    (0x80035868, "sw $s0, 7516($gp)", "the exit being the last the loader met"),
+    (0x80035874, "sh $s4, 6($v1)", "whose f3 it set"),
+    (0x8003588c, "sw $s0, 7520($gp)", "the hidden exit the last it met"),
+    (0x80035898, "sh $zero, 8($v1)", "whose f4 it cleared"),
+    (0x80035a3c, "sw $v0, 7520($gp)", "or the exit again where it met none"),
+    (0x80039074, "subu $v0, $v0, $v1", "the hourglass takes the clock from a count"),
+    (0x80039094, "sw $v0, 22332($at)", "and writes the difference back as the clock"),
+    (0x800390c4, "sw $v1, 21448($at)", "scoring by the seconds of it"),
+    (0x800387d4, "sw $v0, -23752($at)", "the lethargy pill sets its word"),
+    (0x80038854, "sw $v0, -23744($at)", "the invincibility pill its"),
+    (0x800388b8, "sw $v0, -23748($at)", "the bouncy pill its"),
+    (0x8003892c, "sw $v0, -23756($at)", "and the sunglasses theirs"),
+    (0x80035de0, "addiu $v0, $zero, -1", "which the level's load sets to -1"),
+    (0x80035de8, "sw $v0, -23756($at)", "the sunglasses'"),
+    (0x80035df0, "sw $v0, -23752($at)", "the lethargy pill's"),
+    (0x80035df8, "sw $v0, -23744($at)", "the invincibility pill's"),
+    (0x80035e00, "sw $v0, -23748($at)", "and the bouncy pill's"),
+    (0x8003b2d0, "bne $v0, $zero, 0x8003b2e4", "the hazards routine finds the sunglasses' word at nothing"),
+    (0x8003b2d8, "jal 0x8002bec8", "and starts their blink"),
+    (0x8003b2e8, "bltz $v0, 0x8003b2f4", "counting the word down while it is not negative"),
+    (0x8003b300, "bltz $v0, 0x8003b310", "and the invincibility pill's"),
+    (0x8003b30c, "sw $v0, -23744($at)", "by its step"),
+    (0x8003b31c, "bltz $v0, 0x8003b35c", "and while that runs"),
+    (0x8003b33c, "sw $v0, -23748($at)", "puts the bouncy pill's word back"),
+    (0x8003b358, "sw $zero, -23752($at)", "and the lethargy pill's at nothing"),
+    (0x8003b384, "bltz $v0, 0x8003b398", "the lethargy pill's word not negative"),
+    (0x8003b38c, "sw $v0, 0($s1)", "counts down by its step"),
+    (0x8003b390, "jal 0x8003b468", "and ticks the clock on"),
+    (0x80036bb4, "bltz $v0, 0x80036bc0", "the bouncy pill's word not negative"),
+    (0x8003659c, "bne $v0, $zero, 0x800365cc", "and at its hold or more"),
+    (0x800365b0, "bne $v1, $v0, 0x800365cc", "while the ball rolls"),
+    (0x800365c8, "sw $v0, 0($a1)", "grows by one"),
+    (0x8003b00c, "sw $v0, 21448($at)", "a crumbling block scores"),
+    (0x8003afd4, "lh $v1, 2($v0)", "where its type"),
+    (0x8003afdc, "bne $v1, $v0, 0x8003b010", "is 1"),
+    (0x8003b024, "addiu $v1, $zero, 2", "and the type becomes 2"),
+    (0x8003b028, "sh $v1, 2($v0)", "broken"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -994,7 +1087,59 @@ IMMEDIATES = [
     ("laser", "laser.colour.3", "circuit 3: its level shifted this far", 0x800281bc, "sll $v0, $v0, {}"),
     ("laser", "laser.step", "each line steps this many entries of its table a frame", 0x8005194c, "addi $s5, $s5, {}"),
     ("laser", "laser.mode", "the draw mode's low half, whose bits 5 and 6 are the blend", 0x800518f0, "ori $a2, $a2, {}"),
-]
+
+    ("what the ball takes", "take.live", "the loader marks a thing the walk may take with this", 0x800355c4,
+     "addiu $s4, $zero, {}"),
+    ("what the ball takes", "take.stand", "a pickup's middle stands this far from its block's centre, units",
+     0x800355c8, "addiu $s7, $zero, {}"),
+    ("what the ball takes", "take.stand.coin", "a coin's this far", 0x800357a4, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.stand.star", "type 42's this far", 0x800357d8, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.stand.hourglass", "an hourglass's this far", 0x80035850, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.stand.gem", "and a gem's this far, past the first cut", 0x80035844,
+     "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.reach", "a pickup's reach squared, units", 0x800355cc, "addiu $s6, $zero, {}"),
+    ("what the ball takes", "take.reach.key", "a key's", 0x800358ac, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.reach.fruit", "and a fruit's", 0x8003566c, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.within", "the walk adds this, the ball's radius squared, to it", 0x800384c8,
+     "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.first", "the walk's cases start at this type", 0x80038674, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "take.open", "a case writes this into an exit's f4 and a thing it keeps", 0x800384b0,
+     "addiu $s2, $zero, {}"),
+    ("what the ball takes", "take.third", "and tells a coin's third tier by this", 0x800384bc, "addiu $s1, $zero, {}"),
+    ("what the ball takes", "key.points", "a key scores", 0x80038a28, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "gem.points", "a gem", 0x80038b00, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "coin.points.0", "a coin of the first tier", 0x80038ba8, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "coin.points.1", "of the second", 0x80038bd0, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "coin.points.2", "and of the third", 0x80038bf8, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "star42.points", "type 42 in its green form", 0x80038780, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "sunglasses.points", "the sunglasses", 0x80038930, "addiu $v1, $v1, {}"),
+    ("what the ball takes", "fruit.points.43", "a fruit of type 43", 0x80038c8c, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "fruit.points.44", "44", 0x80038d34, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "fruit.points.45", "45", 0x80038ddc, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "fruit.points.46", "46", 0x80038e84, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "fruit.points.47", "and 47", 0x80038f2c, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "hourglass.from", "the hourglass takes the clock from this many ticks", 0x80039070,
+     "addiu $v0, $zero, {}"),
+    ("what the ball takes", "pill.lethargy", "the lethargy pill sets its word to", 0x800387cc, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "pill.lethargy.step", "which counts down by this a frame", 0x8003b388, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "pill.lethargy.ticks", "ticking the clock this many extra a frame", 0x8003b394,
+     "addiu $a0, $zero, {}"),
+    ("what the ball takes", "pill.invincible", "the invincibility pill sets its word to", 0x8003884c,
+     "addiu $v0, $zero, {}"),
+    ("what the ball takes", "pill.invincible.step", "which counts down by this a frame", 0x8003b304,
+     "addiu $v0, $v0, {}"),
+    ("what the ball takes", "pill.bouncy", "the bouncy pill sets its word to", 0x800388b0, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "pill.bouncy.hold", "which grows while the ball rolls from this", 0x80036598,
+     "slti $v0, $a0, {}"),
+    ("what the ball takes", "pill.bouncy.grow", "by this a frame", 0x800365b4, "addiu $v0, $a0, {}"),
+    ("what the ball takes", "sunglasses.word", "the sunglasses set their word to", 0x80038924, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "sunglasses.step", "which counts down by this a frame", 0x8003b2ec, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "sunglasses.blinks", "and at nothing they blink this many times", 0x8002beec,
+     "addiu $v0, $zero, {}"),
+    ("what the ball takes", "sunglasses.blink", "of this many frames each", 0x8002befc, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "crumble.points", "a crumbling block scores this as it breaks", 0x8003b004,
+     "addiu $v0, $v0, {}"),
+    ("what the ball takes", "crumble.under", "the ball on one standing on this", 0x8003afb4, "addiu $v0, $zero, {}"),]
 
 # The table of brightness a beam's lines step through, from its first byte to
 # the one past its last, each an address built by a lui and an addiu.
@@ -1058,6 +1203,8 @@ MULTIPLIERS = [
     ("captivators", "ball53.dash", "wandering ball: dashes per frame, units", 0x8003cc40, 6, "v1", "v0"),
     ("shadows", "shadow.corkscrew.drop", "corkscrew: lies this far from its home toward the block, units", 0x8003e8e0, 6, "v1", "v0"),
     ("shadows", "shadow.corkscrew.fade", "corkscrew: weaker by this times the sine of its bounce", 0x8003ea10, 3, "v0", "v1"),
+    ("what the ball takes", "hourglass.points", "the hourglass scores this a second of the clock it leaves", 0x800390a8, 5,
+     "v1", "v0"),
 ]
 
 # The one reach that is a square held in two halves of a word.
@@ -1083,6 +1230,8 @@ DIVISORS = [
      "ori $v1, $v1, {}", 0x8002ba48, "sra $v1, $t7, {}"),
     ("vanishing block", "vanish.out.by", "flashing out: over this", 0x8002bae0, "lui $v1, {}", 0x8002bae4,
      "ori $v1, $v1, {}", 0x8002bb04, "sra $v1, $t7, {}"),
+    ("what the ball takes", "hourglass.second", "the hourglass counts the clock it leaves in seconds of this many ticks",
+     0x80039060, "lui $a0, {}", 0x80039064, "ori $a0, $a0, {}", 0x800390a0, "sra $v1, $t3, {}"),
 ]
 
 # A brightness or a step of one, a grey held as a colour word in two halves.
@@ -1154,6 +1303,23 @@ QUARTER = (0x8003b914, "addiu $a0, $zero, {}")
 GLINT_RECORDS = ((0x80022f4c, 0x80022f50), (0x8002aa2c, 0x8002aa30))
 GLINT_STATE = (0x80050d48, 0x80050d4c)
 CORNER = 4                # bytes to a corner of a polygon's colour
+
+# The contact walk's and the loader's cases by type, from the first each
+# knows, and the case every other type goes to.
+TAKE_TYPES = (0x80010238, 27, 21)
+TAKE_TAIL = 0x80039108
+TAKE_CASES = {27: 0x80038f64, 31: 0x8003894c, 32: 0x80038794, 33: 0x80038868, 34: 0x80038804, 35: 0x80039048,
+              36: 0x80038aac, 37: 0x80038b1c, 38: 0x800388cc, 42: 0x800386a4, 43: 0x80038c0c, 44: 0x80038cb4,
+              45: 0x80038d5c, 46: 0x80038e04, 47: 0x80038eac}
+LOADER_TYPES = (0x80010188, 5, 43)
+LOADER_PLAIN = 0x80035924
+LOADER_CASES = {**dict.fromkeys((5, 9, 11, 12, 28), 0x80035908), 7: 0x8003585c, 10: 0x800358ec, 26: 0x80035880,
+                31: 0x800358a4, **dict.fromkeys((32, 33, 34, 38), 0x80035760), 35: 0x800357e4, 36: 0x80035810,
+                37: 0x8003577c, 42: 0x800357b0, **dict.fromkeys(range(43, 48), 0x80035664)}
+CUTS = 3                  # a gem's cuts, by its f3
+TIERS = 3                 # a coin's tiers, by its f3
+CRUMBLING = 6
+CRUMBLING_UNDER = 96      # the ball's word for standing on a crumbling block
 
 
 class Code:
@@ -1254,7 +1420,26 @@ def readings(code):
     out["spin.order"] = spin_orders(code)
     out["spin.quarter"] = code.immediate(*QUARTER)
     moves(code, out)
+    dispatch(code, TAKE_TYPES, TAKE_CASES, TAKE_TAIL, "the contact walk")
+    dispatch(code, LOADER_TYPES, LOADER_CASES, LOADER_PLAIN, "the loader")
     return out
+
+
+def dispatch(code, where, cases, default, what):
+    """A table of cases by type holds the case each type is known to go to."""
+    at, first, count = where
+    for typ in range(first, first + count):
+        case = 0x80000000 | code.word(at + 4 * (typ - first))
+        if cases.get(typ, default) != case:
+            sys.exit(f"{what} sends type {typ} to 0x{case:08x}")
+
+
+def root(v, what):
+    """The root of a reach the code holds squared."""
+    r = math.isqrt(v)
+    if r * r != v:
+        sys.exit(f"{what} is {v}, not a square")
+    return r
 
 
 def spin_orders(code):
@@ -1659,6 +1844,63 @@ def period(seq, at, cycle, what):
     return seq[at:at + cycle]
 
 
+def take(r):
+    """What the ball takes off its face, by type: how far from the thing's
+    middle the ball's centre has to come, the ball's own radius apart, where
+    that middle stands off its block's centre, and what it scores; and for
+    each thing that lasts, the word it sets and how that word runs down."""
+    if r["take.live"] != 1 or r["take.open"] != 1 or r["take.third"] != 2:
+        sys.exit("the loader or the walk marks a thing with something other than 1")
+    if r["take.first"] != -min(TAKE_CASES) or r["take.first"] + max(TAKE_CASES) >= TAKE_TYPES[2]:
+        sys.exit("the walk's cases do not start at the first type its table knows")
+    if root(r["take.within"], "the ball's part of the reach") != r["ball.rest"]:
+        sys.exit("the walk's reach does not add the ball's radius")
+    reach = {k: root(r[k], k) for k in ("take.reach", "take.reach.key", "take.reach.fruit")}
+    stand = r["take.stand"]
+    if r["hourglass.second"] != r["time.tick"]:
+        sys.exit("the hourglass counts seconds otherwise than the clock does")
+    if r["hourglass.from"] + 1 != r["ball.breathe.full"]:
+        sys.exit("the hourglass does not take the clock from a tick short of the cap the breath takes the time against")
+    fruit = {r[f"fruit.points.{t}"] for t in range(43, 48)}
+    if len(fruit) != 1:
+        sys.exit(f"the fruit score {sorted(fruit)}, not one figure")
+    if r["pill.lethargy"] % r["pill.lethargy.step"] or r["pill.lethargy.step"] > -1:
+        sys.exit("the lethargy pill's word does not count down to nothing in whole steps")
+    if r["pill.invincible.step"] != -1 or r["sunglasses.step"] != -1:
+        sys.exit("the invincibility pill's or the sunglasses' word does not count down by one")
+    if r["pill.bouncy.hold"] != r["pill.bouncy"] - 1 or r["pill.bouncy.grow"] != 1:
+        sys.exit("the bouncy pill's word does not grow by one from a step short of its start")
+    if r["crumble.under"] != CRUMBLING_UNDER:
+        sys.exit(f"a crumbling block scores while the ball stands on {r['crumble.under']}")
+    pickup = {"reach": reach["take.reach"], "stand": stand}
+    taken = {
+        31: {"reach": reach["take.reach.key"], "stand": stand, "points": r["key.points"]},
+        32: pickup, 33: pickup, 34: pickup,
+        35: {**pickup, "stand": r["take.stand.hourglass"], "points": r["hourglass.points"],
+             "clock": {"from": r["hourglass.from"], "second": r["hourglass.second"]}},
+        36: {**pickup, "stand": [stand] + [r["take.stand.gem"]] * (CUTS - 1), "points": r["gem.points"]},
+        37: {**pickup, "stand": r["take.stand.coin"], "points": [r[f"coin.points.{t}"] for t in range(TIERS)]},
+        38: {**pickup, "points": r["sunglasses.points"]},
+        42: {**pickup, "stand": r["take.stand.star"], "points": r["star42.points"]},
+    }
+    for t in range(43, 48):
+        taken[t] = {"reach": reach["take.reach.fruit"], "stand": stand, "points": next(iter(fruit))}
+    lasting = {
+        32: {"word": r["pill.lethargy"], "step": -r["pill.lethargy.step"], "ticks": r["pill.lethargy.ticks"]},
+        33: {"word": r["pill.bouncy"], "hold": r["pill.bouncy.hold"]},
+        34: {"word": r["pill.invincible"], "step": -r["pill.invincible.step"]},
+        38: {"word": r["sunglasses.word"], "step": -r["sunglasses.step"],
+             "blink": {"times": r["sunglasses.blinks"], "frames": r["sunglasses.blink"]}},
+    }
+    return taken, lasting
+
+
+def exits(r):
+    """What the loader writes into the exits' slots and what the last key writes."""
+    return {7: {"shut": {"f3": r["take.live"]}, "opened": {"f3": 0, "f4": r["take.open"]}},
+            26: {"shut": {"f4": 0}, "opened": {"f4": r["take.open"]}}}
+
+
 def table(r, platform_speed):
     """The motion table by type and by kind of block, in the game's units.
 
@@ -1667,7 +1909,8 @@ def table(r, platform_speed):
     into an entry of its own says how far off its face the game draws the
     model's origin, and a type the game draws a shadow under says which
     sprite, how far off its face it lies and how strong it is, and the type
-    whose models glint says how. The devices' light and each device's
+    whose models glint says how. A pickup says what it takes for the ball
+    to take it and what that scores. The devices' light and each device's
     colours, by world and then by circuit where it has one, sit apart from
     the types, whose entries are what moves.
     """
@@ -1689,7 +1932,7 @@ def table(r, platform_speed):
         7: {"turn": r["exit.turn"], "open": r["exit.turn.open"]},
         26: {"turn": r["exit.turn"], "open": r["exit.turn.open"]},
         31: {"turn": r["coin.turn"], "bob": bob},
-        32: pill, 33: pill, 34: pill,
+        32: dict(pill), 33: dict(pill), 34: dict(pill),
         35: {"turn": r["hourglass.turn"],
              "swing": {"rate": r["hourglass.swing"], "reach": TURN // 2, "lean": r["hourglass.lean"]}},
         36: {"turn": r["gem.turn"]},
@@ -1716,6 +1959,13 @@ def table(r, platform_speed):
         types[t] = fruit
     types[30].update(roll(r))
     types[30]["jump"] = jump(r)
+    taken, lasting = take(r)
+    for t, entry in taken.items():
+        types[t]["take"] = entry
+    for t, entry in lasting.items():
+        types[t]["lasts"] = entry
+    for t, entry in exits(r).items():
+        types[t].update(entry)
     for t in (50, 51, 52, 53):
         types[t]["entry"] = {"stand": stand}
         types[t]["shadow"] = {"sprite": 0, "off": stand + r[f"shadow.drop.{t}"],
@@ -1755,6 +2005,7 @@ def table(r, platform_speed):
             "level": [[v for _, v in vanish_cycle(r, p)] for p in range(PHASES)]},
         3: {"light": light(r)},
         8: laser(r),
+        CRUMBLING: {"points": r["crumble.points"]},
     }
     colours = {str(t): r["glow.colours"][t] for t in sorted(r["glow.colours"])}
     return {"hz": HZ, "turn": TURN, "standoff": r["captivator.standoff"],

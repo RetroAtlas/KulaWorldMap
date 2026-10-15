@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { objects, mapData } from "./fixtures.js";
+import { objects, mapData, annotations } from "./fixtures.js";
 import { FACE_NORMAL } from "../../public/js/format/lattice.js";
 import { TANGENT, layHeading } from "../../public/js/viewer/data.js";
 import {
@@ -582,4 +582,74 @@ test("a ball's corner shows 89 of 256 of its colour facing away from the light, 
   // full from nearly square on, past which the channel stands
   assert.equal(lightShare(light, 3912), 255);
   assert.equal(lightShare(light, 3911), 254);
+});
+
+// The ball's centre rests a radius off its face, 356 from the block's centre.
+const centre = table.types[30].rolling.resume + 256;
+const within = (take, bob) =>
+  Math.sqrt(
+    take.reach ** 2 + table.types[30].rolling.resume ** 2 - (take.stand + bob - centre) ** 2,
+  );
+
+test("a pickup is taken within its reach of the ball's centre, which stands short of its middle", () => {
+  const take = (t) => table.types[t].take;
+  assert.deepEqual(take(31), { reach: 150, stand: 386, points: 1000 });
+  assert.deepEqual(take(37), { reach: 160, stand: 406, points: [750, 500, 250] });
+  assert.deepEqual(take(36), { reach: 160, stand: [386, 436, 436], points: 2975 });
+  assert.deepEqual(take(42), { reach: 160, stand: 416, points: 1550 });
+  for (const t of [43, 44, 45, 46, 47])
+    assert.deepEqual(take(t), { reach: 180, stand: 386, points: 2500 });
+  for (const t of [32, 33, 34]) assert.deepEqual(take(t), { reach: 160, stand: 386 });
+  assert.equal(centre, 356);
+  assert.ok(within(take(37), 30) > 170 && within(take(37), -10) < 185);
+  assert.ok(within(take(31), 30) >= 170 && within(take(31), -10) < 180);
+  assert.ok(within(take(43), 30) > 196 && within(take(43), -10) < 206);
+  assert.equal(Object.keys(table.types).filter((t) => table.types[t].take).length, 14);
+});
+
+test("the points the site counts are the ones the contact walk adds", () => {
+  const types = annotations.types;
+  for (const t of [31, 36, 38, 42, 43, 44, 45, 46, 47])
+    assert.equal(types[t].points, table.types[t].take.points, `type ${t}`);
+  for (const tier of [0, 1, 2])
+    assert.equal(types[37].variants[tier].points, table.types[37].take.points[tier]);
+  const h = table.types[35].take;
+  assert.equal(types[35].points, h.points * Math.floor(h.clock.from / h.clock.second));
+  assert.equal(annotations.kinds[6].points, table.kinds[6].points);
+  for (const t of [32, 33, 34]) assert.equal(types[t].points, undefined);
+});
+
+test("the hourglass turns the clock round and scores ten a whole second of what it leaves", () => {
+  const h = table.types[35].take;
+  const taken = (ticks) => {
+    const left = h.clock.from - ticks;
+    return { left, points: h.points * Math.floor(left / h.clock.second) };
+  };
+  assert.deepEqual(taken(99 * 50), { left: 1049, points: 200 });
+  assert.deepEqual(taken(50), { left: 5949, points: 1180 });
+  assert.equal(taken(49).points, 1190);
+  assert.equal(taken(1).points, 1190);
+});
+
+test("a pill's word runs down as the game runs it, and the bouncy pill's never", () => {
+  const lasts = (t) => table.types[t].lasts;
+  assert.deepEqual(lasts(32), { word: 360, step: 2, ticks: 4 });
+  // the word is tested before it is counted down, so the frame it reaches nothing counts
+  assert.equal(lasts(32).word / lasts(32).step + 1, 181);
+  assert.equal((lasts(32).word / lasts(32).step + 1) * lasts(32).ticks, 724);
+  assert.deepEqual(lasts(34), { word: 840, step: 1 });
+  assert.deepEqual(lasts(33), { word: 840, hold: 839 });
+  assert.deepEqual(lasts(38), { word: 840, step: 1, blink: { times: 21, frames: 9 } });
+  assert.equal(lasts(38).blink.times * lasts(38).blink.frames, 189);
+  assert.deepEqual(
+    Object.keys(table.types).filter((t) => table.types[t].lasts),
+    ["32", "33", "34", "38"],
+  );
+});
+
+test("the exits are shut by the loader and opened by the last key", () => {
+  assert.deepEqual(table.types[7].shut, { f3: 1 });
+  assert.deepEqual(table.types[7].opened, { f3: 0, f4: 1 });
+  assert.deepEqual(table.types[26].shut, { f4: 0 });
+  assert.deepEqual(table.types[26].opened, { f4: 1 });
 });

@@ -12,9 +12,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
-    GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, PHASES, ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT,
-    STATES, Code, glint, glow_lift, glow_spill, jump, laser, light, moves, roll, root_table, shadow_half,
-    spike_cycle, spin_orders, table, vanish_cycle)
+    GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, PHASES,
+    ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, Code, dispatch,
+    exits, glint, glow_lift, glow_spill, jump, laser, light, moves, roll, root_table, shadow_half,
+    spike_cycle, spin_orders, table, take, vanish_cycle)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "sp": 29, "ra": 31}
@@ -111,6 +112,18 @@ GAME = {
     "jump.long": 3, "jump.catch": 12, "jump.wall": 412, "jump.wall.high": 412, "jump.wall.low": 100,
     "jump.bounce": -10, "jump.ceiling": 412, "jump.ceiling.ahead": 412, "jump.ceiling.behind": 101,
     "jump.snap": 1024, "jump.far": 1536, "boost.type": 10, "boost.roll": 151, "boost.frames": 10, "boost.fire": 231,
+    "time.tick": 50, "ball.breathe.full": 6000,
+    "take.live": 1, "take.stand": 386, "take.stand.coin": 406, "take.stand.star": 416, "take.stand.hourglass": 436,
+    "take.stand.gem": 436, "take.reach": 25600, "take.reach.key": 22500, "take.reach.fruit": 32400,
+    "take.within": 10000, "take.first": -27, "take.open": 1, "take.third": 2,
+    "key.points": 1000, "gem.points": 2975, "coin.points.0": 750, "coin.points.1": 500, "coin.points.2": 250,
+    "star42.points": 1550, "sunglasses.points": 500, "fruit.points.43": 2500, "fruit.points.44": 2500,
+    "fruit.points.45": 2500, "fruit.points.46": 2500, "fruit.points.47": 2500,
+    "hourglass.from": 5999, "hourglass.second": 50, "hourglass.points": 10,
+    "pill.lethargy": 360, "pill.lethargy.step": -2, "pill.lethargy.ticks": 4, "pill.invincible": 840,
+    "pill.invincible.step": -1, "pill.bouncy": 840, "pill.bouncy.hold": 839, "pill.bouncy.grow": 1,
+    "sunglasses.word": 840, "sunglasses.step": -1, "sunglasses.blinks": 21, "sunglasses.blink": 9,
+    "crumble.points": 50, "crumble.under": 96,
 }
 
 
@@ -569,6 +582,72 @@ class Jump(unittest.TestCase):
                 jump({**GAME, **change})
 
 
+class Dispatch(unittest.TestCase):
+    def cases(self, where, cases, default):
+        """An executable whose table at `where` sends each type to its case."""
+        at, first, count = where
+        blob = bytearray(at - EXE_BASE + 4 * count)
+        for i in range(count):
+            struct.pack_into("<I", blob, at - EXE_BASE + 4 * i, cases.get(first + i, default) & 0x0FFFFFFF)
+        return Code(bytes(blob))
+
+    def test_the_walks_and_the_loaders_tables_send_each_type_to_its_case(self):
+        dispatch(self.cases(TAKE_TYPES, TAKE_CASES, TAKE_TAIL), TAKE_TYPES, TAKE_CASES, TAKE_TAIL, "the walk")
+        dispatch(self.cases(LOADER_TYPES, LOADER_CASES, LOADER_PLAIN), LOADER_TYPES, LOADER_CASES, LOADER_PLAIN,
+                 "the loader")
+
+    def test_a_type_sent_elsewhere_stops_the_reading(self):
+        for swap in ({31: TAKE_CASES[37]}, {28: TAKE_CASES[31]}, {36: TAKE_TAIL}):
+            with self.assertRaises(SystemExit):
+                dispatch(self.cases(TAKE_TYPES, {**TAKE_CASES, **swap}, TAKE_TAIL), TAKE_TYPES, TAKE_CASES, TAKE_TAIL,
+                         "the walk")
+        with self.assertRaises(SystemExit):
+            dispatch(self.cases(LOADER_TYPES, {**LOADER_CASES, 7: LOADER_PLAIN}, LOADER_PLAIN), LOADER_TYPES,
+                     LOADER_CASES, LOADER_PLAIN, "the loader")
+
+
+class Take(unittest.TestCase):
+    def test_a_pickup_ships_its_reach_its_stand_and_its_points(self):
+        taken, lasting = take(GAME)
+        self.assertEqual(taken[31], {"reach": 150, "stand": 386, "points": 1000})
+        self.assertEqual(taken[32], {"reach": 160, "stand": 386})
+        self.assertEqual(taken[35], {"reach": 160, "stand": 436, "points": 10, "clock": {"from": 5999, "second": 50}})
+        self.assertEqual(taken[36], {"reach": 160, "stand": [386, 436, 436], "points": 2975})
+        self.assertEqual(taken[37], {"reach": 160, "stand": 406, "points": [750, 500, 250]})
+        self.assertEqual(taken[42], {"reach": 160, "stand": 416, "points": 1550})
+        for t in range(43, 48):
+            self.assertEqual(taken[t], {"reach": 180, "stand": 386, "points": 2500})
+        self.assertEqual(set(taken), {31, 32, 33, 34, 35, 36, 37, 38, 42, 43, 44, 45, 46, 47})
+        self.assertEqual(lasting[32], {"word": 360, "step": 2, "ticks": 4})
+        self.assertEqual(lasting[33], {"word": 840, "hold": 839})
+        self.assertEqual(lasting[34], {"word": 840, "step": 1})
+        self.assertEqual(lasting[38], {"word": 840, "step": 1, "blink": {"times": 21, "frames": 9}})
+
+    def test_a_reach_that_is_not_a_square_stops_the_reading(self):
+        for change in ({"take.reach": 25000}, {"take.within": 10001}, {"take.reach.key": 22500 + 1}):
+            with self.assertRaises(SystemExit):
+                take({**GAME, **change})
+
+    def test_a_reach_not_adding_the_balls_radius_stops_the_reading(self):
+        with self.assertRaises(SystemExit):
+            take({**GAME, "take.within": 8100})
+
+    def test_a_fruit_scoring_otherwise_or_an_hourglass_counting_otherwise_stops_the_reading(self):
+        for change in ({"fruit.points.45": 2000}, {"hourglass.second": 60}, {"hourglass.from": 4999}):
+            with self.assertRaises(SystemExit):
+                take({**GAME, **change})
+
+    def test_a_pills_word_running_otherwise_stops_the_reading(self):
+        for change in ({"pill.lethargy": 361}, {"pill.lethargy.step": 2}, {"pill.invincible.step": -2},
+                       {"pill.bouncy.hold": 840}, {"crumble.under": 95}, {"take.open": 2}):
+            with self.assertRaises(SystemExit):
+                take({**GAME, **change})
+
+    def test_the_exits_ship_what_the_loader_and_the_last_key_write(self):
+        self.assertEqual(exits(GAME), {7: {"shut": {"f3": 1}, "opened": {"f3": 0, "f4": 1}},
+                                       26: {"shut": {"f4": 0}, "opened": {"f4": 1}}})
+
+
 class Table(unittest.TestCase):
     def test_the_table_carries_a_program_per_phase_and_the_platform_scaled(self):
         r = dict(GAME)
@@ -658,6 +737,15 @@ class Table(unittest.TestCase):
         self.assertEqual(set(t["types"]), {str(k) for k in
                                            (5, 7, 10, 11, 26, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42,
                                             43, 44, 45, 46, 47, 50, 51, 52, 53, 56)})
+        self.assertEqual(t["types"]["31"]["take"], {"reach": 150, "stand": 386, "points": 1000})
+        self.assertEqual(t["types"]["37"]["take"]["points"], [750, 500, 250])
+        self.assertEqual([t["types"][k]["lasts"]["word"] for k in ("32", "33", "34", "38")], [360, 840, 840, 840])
+        self.assertEqual(t["types"]["32"]["lasts"]["ticks"], 4)
+        self.assertNotIn("lasts", t["types"]["33"].get("take", {}))
+        self.assertEqual(t["types"]["33"]["turn"], t["types"]["34"]["turn"])
+        self.assertEqual(t["types"]["7"]["opened"], {"f3": 0, "f4": 1})
+        self.assertEqual(t["types"]["26"]["shut"], {"f4": 0})
+        self.assertEqual(t["kinds"]["6"], {"points": 50})
 
 
 if __name__ == "__main__":
