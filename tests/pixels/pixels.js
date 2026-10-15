@@ -49,8 +49,9 @@ const SIDES = [
 ];
 const caseOf = (id) => (id.startsWith(EDITOR) ? id.slice(EDITOR.length) : id).split("@")[0];
 
-/** The clock held at a time the runner sets, animation frames asked for and
-    never run, and the atlases and the pick canvas where the runner finds them. */
+/** The clock held at a time the runner sets, animation frames and idle
+    callbacks asked for and never run, so no atlas is fetched ahead, and the
+    atlases and the pick canvas where the runner finds them. */
 function instrument() {
   let now = 0;
   performance.now = () => now;
@@ -59,6 +60,7 @@ function instrument() {
   };
   window.__realRAF = window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = () => 0;
+  window.requestIdleCallback = () => 0;
   window.__images = [];
   const Img = window.Image;
   window.Image = class extends Img {

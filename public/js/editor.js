@@ -1142,8 +1142,8 @@ function drawHover(ctx, c, home, key) {
 }
 
 let icon = null;
-on("atlas-loaded", () => {
-  icon = null;
+on("atlas-loaded", (world) => {
+  if (world === state.lvl?.theme) icon = null;
 });
 
 /** A cell's faces turned to the view, tinted. */

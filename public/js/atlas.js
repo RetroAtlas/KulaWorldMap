@@ -3,18 +3,38 @@ import { emit } from "./dom.js";
 // A world's atlas is one row per shade the game ships a texture pre-lit in
 // and, along the row, every texture of the world in order.
 const ATLAS = { size: 64, worlds: new Map() };
+function load(world, img) {
+  const a = { img, ready: false };
+  img.onload = () => {
+    a.ready = true;
+    emit("atlas-loaded", world);
+  };
+  img.src = `tex/${world}.png`;
+  ATLAS.worlds.set(world, a);
+  return a;
+}
 export function atlasFor(world) {
-  let a = ATLAS.worlds.get(world);
-  if (!a) {
-    a = { img: new Image(), ready: false };
-    a.img.onload = () => {
-      a.ready = true;
-      emit("atlas-loaded", world);
-    };
-    a.img.src = `tex/${world}.png`;
-    ATLAS.worlds.set(world, a);
-  }
+  const a = ATLAS.worlds.get(world) ?? load(world, new Image());
   return a.ready ? a.img : null;
+}
+
+/** Fetch the atlases of `worlds` ahead of their levels, one at a time and
+    behind whatever the page asks for itself. One that fails is forgotten, so
+    that a level of its world asks again. */
+export async function warm(worlds) {
+  for (const world of worlds) {
+    if (ATLAS.worlds.has(world)) continue;
+    await new Promise((settled) => {
+      const img = new Image();
+      img.fetchPriority = "low";
+      img.addEventListener("load", settled);
+      img.addEventListener("error", () => {
+        if (ATLAS.worlds.get(world)?.img === img) ATLAS.worlds.delete(world);
+        settled();
+      });
+      load(world, img);
+    });
+  }
 }
 
 export const NEUTRAL = 128; // the brightness at which a face is its own colour

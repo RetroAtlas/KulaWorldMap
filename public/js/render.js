@@ -122,7 +122,8 @@ function watchDensity() {
 }
 watchDensity();
 
-on("atlas-loaded", () => {
+on("atlas-loaded", (world) => {
+  if (world !== state.lvl?.theme) return;
   invalidatePick();
   draw();
 });

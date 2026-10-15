@@ -8,6 +8,7 @@ import { openModal } from "./modal.js";
 import { wireSettings } from "./settings.js";
 import { toast } from "./toast.js";
 import { KEY, heldIn } from "./held.js";
+import { warm } from "./atlas.js";
 import "./a11y.js";
 import "./interaction.js";
 import "./search.js";
@@ -259,4 +260,21 @@ Promise.all([
   addEventListener("hashchange", followDraftLink);
   buildKinds();
   if (wanted && !awaited) bootEditor();
+  warmOthers();
 });
+
+// Once the shown world's textures have landed and the page is idle, the other
+// worlds' are fetched ahead, from the next world on, unless the browser is
+// set to save data.
+function warmOthers() {
+  if (navigator.connection?.saveData) return;
+  const idle = globalThis.requestIdleCallback ?? ((fn) => setTimeout(fn, 2000));
+  let started = false;
+  on("atlas-loaded", (world) => {
+    if (started || world !== state.lvl?.theme) return;
+    started = true;
+    const ids = state.data.themes.map((t) => t.id);
+    const from = ids.indexOf(world) + 1;
+    idle(() => warm([...ids.slice(from), ...ids.slice(0, from)]));
+  });
+}
