@@ -653,3 +653,51 @@ test("the exits are shut by the loader and opened by the last key", () => {
   assert.deepEqual(table.types[26].shut, { f4: 0 });
   assert.deepEqual(table.types[26].opened, { f4: 1 });
 });
+
+test("a teleporter sends on the sixteenth frame within 89 of its middle, and a switch throws within 59", () => {
+  const { send } = table.types[5];
+  assert.deepEqual(send, { wait: 15, band: [167, 345], hold: 15, rearm: [156, 356] });
+  let count = -1;
+  let frames = 0;
+  do {
+    if (count < 0) count = send.wait;
+    count -= 1;
+    frames += 1;
+  } while (count >= 0);
+  assert.equal(frames, 16);
+  assert.deepEqual(table.types[9], { throw: { band: [197, 315], rearm: [156, 356] } });
+  for (const [lo, hi] of [send.band, send.rearm, table.types[9].throw.band])
+    assert.equal(lo + hi, 512);
+});
+
+test("the clock ticks once a frame, fifty to a shown second, and a level ends in a code", () => {
+  const { play } = table;
+  assert.deepEqual(play.clock, { tick: 1, second: 50, face: 8, out: -2 });
+  assert.equal(play.clock.second, table.types[30].breathe.tick);
+  assert.deepEqual(play.ending, {
+    exit: 1,
+    bonus: 2,
+    hidden: 3,
+    spikes: -1,
+    time: -2,
+    lost: -3,
+    fire: -4,
+    captivator: -5,
+    acid: -6,
+    laser: -7,
+    simon: -8,
+  });
+  assert.deepEqual(play.wait, {
+    exit: 5,
+    hidden: 5,
+    bonus: 5,
+    spikes: 10,
+    fire: 25,
+    captivator: 10,
+    acid: 6,
+    laser: 4,
+    simon: 25,
+  });
+  assert.deepEqual(play.bonus, { block: 50, skips: 3 });
+  assert.equal((99 * play.clock.second) / play.clock.tick / table.hz, 82.5);
+});

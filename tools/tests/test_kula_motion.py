@@ -13,8 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
     GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, PHASES,
-    ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, Code, dispatch,
-    exits, glint, glow_lift, glow_spill, jump, laser, light, moves, roll, root_table, shadow_half,
+    ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, Code, devices, dispatch,
+    exits, glint, glow_lift, glow_spill, jump, laser, light, moves, play, roll, root_table, shadow_half,
     spike_cycle, spin_orders, table, take, vanish_cycle)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
@@ -124,6 +124,14 @@ GAME = {
     "pill.invincible.step": -1, "pill.bouncy": 840, "pill.bouncy.hold": 839, "pill.bouncy.grow": 1,
     "sunglasses.word": 840, "sunglasses.step": -1, "sunglasses.blinks": 21, "sunglasses.blink": 9,
     "crumble.points": 50, "crumble.under": 96,
+    "send.type": 5, "send.band": -167, "send.band.span": 179, "send.wait": 15, "send.hold": 15,
+    "send.hold.after": 15, "send.mark": 5, "throw.type": 9, "throw.band": -197, "throw.band.span": 119,
+    "throw.laser": 6, "rearm": -156, "rearm.span": 201, "exit.type": 7, "exit.hidden.type": 26,
+    "clock.tick": 1, "clock.face": 8, "clock.mode": 1, "end.time": -2, "end.lost": -3, "end.exit": 1, "wait.exit": 5,
+    "end.hidden": 3, "wait.hidden": 5, "end.bonus": 2, "end.spikes": -1, "wait.spikes": 10, "end.fire": -4,
+    "wait.fire": 25, "end.captivator": -5, "wait.captivator": 10, "end.star": -5, "wait.star": 10, "end.acid": -6,
+    "wait.acid": 6, "end.laser": -7, "wait.laser": 4, "end.simon": -8, "wait.simon": 25, "wait.simon.done": 25,
+    "mark.points": 50, "mark.skips": 3, "mark.under": 356,
 }
 
 
@@ -648,6 +656,41 @@ class Take(unittest.TestCase):
                                        26: {"shut": {"f4": 0}, "opened": {"f4": 1}}})
 
 
+class Devices(unittest.TestCase):
+    def test_the_teleporter_and_the_switch_ship_their_bands_about_the_middle(self):
+        d = devices(GAME)
+        self.assertEqual(d[5]["send"], {"wait": 15, "band": [167, 345], "hold": 15, "rearm": [156, 356]})
+        self.assertEqual(d[9]["throw"], {"band": [197, 315], "rearm": [156, 356]})
+        self.assertEqual(set(d), {5, 9})
+        for key in ("send", "throw"):
+            lo, hi = d[5 if key == "send" else 9][key]["band"]
+            self.assertEqual(lo + hi, 512)
+
+    def test_a_band_off_the_middle_or_another_type_stops_the_reading(self):
+        for change in ({"send.band": -160}, {"throw.band.span": 120}, {"rearm.span": 200}, {"send.type": 9},
+                       {"send.mark": 9}, {"send.hold.after": 14}, {"throw.laser": 5}):
+            with self.assertRaises(SystemExit):
+                devices({**GAME, **change})
+
+
+class Play(unittest.TestCase):
+    def test_the_level_ships_its_clock_its_endings_and_their_waits(self):
+        p = play(GAME)
+        self.assertEqual(p["clock"], {"tick": 1, "second": 50, "face": 8, "out": -2})
+        self.assertEqual(p["ending"], {"exit": 1, "bonus": 2, "hidden": 3, "spikes": -1, "time": -2, "lost": -3,
+                                       "fire": -4, "captivator": -5, "acid": -6, "laser": -7, "simon": -8})
+        self.assertEqual(p["wait"], {"exit": 5, "hidden": 5, "bonus": 5, "spikes": 10, "fire": 25, "captivator": 10,
+                                     "acid": 6, "laser": 4, "simon": 25})
+        self.assertEqual(p["bonus"], {"block": 50, "skips": 3})
+
+    def test_an_ending_shared_or_waited_otherwise_stops_the_reading(self):
+        for change in ({"end.acid": -4}, {"end.exit": 4}, {"end.star": -4}, {"wait.star": 9}, {"wait.hidden": 4},
+                       {"wait.simon.done": 24}, {"mark.under": 300}, {"mark.skips": 2}, {"clock.face": 9},
+                       {"exit.type": 8}):
+            with self.assertRaises(SystemExit):
+                play({**GAME, **change})
+
+
 class Table(unittest.TestCase):
     def test_the_table_carries_a_program_per_phase_and_the_platform_scaled(self):
         r = dict(GAME)
@@ -735,7 +778,7 @@ class Table(unittest.TestCase):
         with self.assertRaises(SystemExit):
             table({**r, "shadow.sprite.51": 2}, 30)
         self.assertEqual(set(t["types"]), {str(k) for k in
-                                           (5, 7, 10, 11, 26, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42,
+                                           (5, 7, 9, 10, 11, 26, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42,
                                             43, 44, 45, 46, 47, 50, 51, 52, 53, 56)})
         self.assertEqual(t["types"]["31"]["take"], {"reach": 150, "stand": 386, "points": 1000})
         self.assertEqual(t["types"]["37"]["take"]["points"], [750, 500, 250])
@@ -745,7 +788,12 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["33"]["turn"], t["types"]["34"]["turn"])
         self.assertEqual(t["types"]["7"]["opened"], {"f3": 0, "f4": 1})
         self.assertEqual(t["types"]["26"]["shut"], {"f4": 0})
+        self.assertEqual(t["types"]["5"]["send"]["band"], [167, 345])
+        self.assertEqual(t["types"]["9"], {"throw": {"band": [197, 315], "rearm": [156, 356]}})
         self.assertEqual(t["kinds"]["6"], {"points": 50})
+        self.assertEqual(t["play"]["clock"]["second"], 50)
+        self.assertEqual(t["play"]["ending"]["lost"], -3)
+        self.assertEqual(set(t["play"]), {"clock", "ending", "wait", "bonus"})
 
 
 if __name__ == "__main__":

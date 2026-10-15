@@ -12,8 +12,6 @@ The arrow, type 28: what it refuses the ball. The hazards routine at `0x8003a928
 
 The crumbling block under a roll: the input routine's tail (`0x8003733c` to `0x80037418`) has a ball rolling forward on a crumbling block, 96 at 356 (motion.md's "The shadows"), with the floor ahead empty and no block beside the block under, lose the forward request and its speed past 301 of progress, and past 401 be pulled back 40 along the heading besides; what that is for is unread.
 
-The teleporter's wait: standing on an on teleporter at a progress of 167 to 345, a count at `0x800a4c68` runs from 15 to −1 with the pad held off (`0x8003a618` to `0x8003a674`), and then the ball is sent (`0x8003a690` onward) and the device marked done at 492 of the ball's record (`0x8003a6b4`) until the ball leaves the band 156 to 356 of the middle (`0x80036850` to `0x80036884`); the far end's placing and facing, and whether a climb right after reads a stale saved normal at 52 (motion.md's Not settled), are unread.
-
 The free camera: the camera The Cutting Room Floor says the Japanese release gives the Select button, which the cheat frees here, takes Up and Down as a pitch of 25 either way, Left and Right as a yaw of 32 and L1 and L2 as a zoom of 4 between 4 and 20 in the input routine's tail (`0x800371ec` to `0x80037338`), and `0x80034684` draws from them; what it shows is unread.
 
 The bouncy pill's pad: while its word is not negative (motion.md's "What the ball takes") the input routine takes Up and Cross through a four-frame latch, Up with Cross marking the long jump (`0x80036d50` to `0x80036e10`); what the latch does to a roll and a jump is unread.
