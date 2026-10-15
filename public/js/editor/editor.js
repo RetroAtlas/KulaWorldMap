@@ -273,6 +273,9 @@ function wireTools() {
     const said = $("say").textContent;
     setMode(true, said ? `${said} Editing on.` : undefined);
   });
+  on("play-changed", (playing) => {
+    if (playing) setMode(false);
+  });
   document.addEventListener("keydown", keys, { capture: true });
   onCellClick((c, e) => {
     const taken = take(c, e);

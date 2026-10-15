@@ -1179,8 +1179,8 @@ test("a press on the compass reaches no block behind it, and moves nothing", asy
   await expect.poll(() => page.url()).not.toBe(opened);
   const link = page.url();
   expect(await cellUnder(page, centre)).toBeTruthy();
-  // off the compass, above the button beside it
-  const beside = [box.x - 10, box.y + 10];
+  // off the compass, above the corner
+  const beside = [box.x - 10, box.y - 10];
   expect(await cellUnder(page, beside)).toBeTruthy();
   await page.mouse.move(...beside);
   await expect.poll(() => hovered(page)).not.toBeNull();

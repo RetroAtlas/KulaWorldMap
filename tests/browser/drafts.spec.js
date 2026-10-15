@@ -1274,7 +1274,7 @@ test("a page back from the cache or thawed, and every write, takes in what anoth
 });
 
 const EDITOR_FILES =
-  /\/js\/(editor\/(editor|drafts|draftlist|palette|trail)|format\/(project|kwl)|vendor\/pako_deflate\.min)\.js$/;
+  /\/js\/(editor\/(editor|drafts|draftlist|palette|trail)|format\/(project|kwl)|vendor\/pako_deflate\.min|play\/(play|ball|dust))\.js$/;
 
 test("a plain visit shows the section and fetches none of the editor, which Make a level then loads", async ({
   page,

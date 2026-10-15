@@ -2,7 +2,7 @@
 
 ## What and why
 
-"The ball's roll" in [docs/motion.md](../docs/motion.md) reads how the ball rolls, turns, goes round an edge and up a wall, jumps, falls and lands, which is enough for a play mode to roll the ball over plain blocks as the game does ([item 32](item-032-a-play-test-in-the-map.md)). Everything else the ball meets is read for what it looks like and not for what it does to the ball, so a play mode that rolls over any of it rolls over plain stone and has to say so until each is read. This item holds what is left, each with where it was last seen in the code, so that the next reading starts where this one stopped; and as [item 25](item-025-play-checks-for-the-editor.md) lists what only an emulator can settle about a written level, it ends with what only an emulator can settle about the ball.
+"The ball's roll" in [docs/motion.md](../docs/motion.md) reads how the ball rolls, turns, goes round an edge and up a wall, jumps, falls and lands, which is enough for a play mode to roll the ball over plain blocks as the game does, which the map's Rolling the ball ([docs/viewer.md](../docs/viewer.md)) now does. Everything else the ball meets is read for what it looks like and not for what it does to the ball, so a play mode that rolls over any of it rolls over plain stone and has to say so until each is read. This item holds what is left, each with where it was last seen in the code, so that the next reading starts where this one stopped; and as [item 25](item-025-play-checks-for-the-editor.md) lists what only an emulator can settle about a written level, it ends with what only an emulator can settle about the ball.
 
 ## Sketch
 

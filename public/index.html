@@ -320,18 +320,28 @@
       </div>
       <div id="readout" class="readout mono"></div>
       <div id="corner" class="corner" hidden>
-        <button
-          id="fitBtn"
-          class="fit"
-          type="button"
-          aria-label="Fit the level"
-          title="Fit the level (f)"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5" />
-            <path d="M12 7.5l4 2.25v4.5L12 16.5l-4-2.25v-4.5zM8 9.75l4 2.25 4-2.25M12 12v4.5" />
-          </svg>
-        </button>
+        <div class="stack">
+          <button
+            id="playBtn"
+            class="fit"
+            type="button"
+            aria-pressed="false"
+            aria-label="Roll the ball through the level"
+            title="Roll the ball through the level (y)"
+          ></button>
+          <button
+            id="fitBtn"
+            class="fit"
+            type="button"
+            aria-label="Fit the level"
+            title="Fit the level (f)"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5" />
+              <path d="M12 7.5l4 2.25v4.5L12 16.5l-4-2.25v-4.5zM8 9.75l4 2.25 4-2.25M12 12v4.5" />
+            </svg>
+          </button>
+        </div>
         <canvas
           id="compass"
           class="compass"
@@ -424,6 +434,34 @@
           Copy link
         </button>
         <span id="courseStatus" class="status" role="status"></span>
+      </div>
+      <div id="play" class="tools" role="group" aria-label="Playing" hidden>
+        <span id="playLine" class="line"></span>
+        <button
+          id="padBtn"
+          type="button"
+          aria-pressed="false"
+          aria-controls="pad"
+          title="Show and hide the pad"
+        >
+          Pad
+        </button>
+        <button id="leaveBtn" type="button" title="Leave play (Esc)">Leave</button>
+        <span id="playStatus" class="status" role="status"></span>
+      </div>
+      <div id="pad" class="pad" role="group" aria-label="Pad" hidden>
+        <button
+          type="button"
+          data-pad="up"
+          aria-label="Roll ahead"
+          title="Roll ahead, for as long as it is held"
+        >
+          ▲
+        </button>
+        <button type="button" data-pad="left" aria-label="Turn left" title="Turn left">◀</button>
+        <span id="padBall" class="ball" aria-hidden="true"></span>
+        <button type="button" data-pad="right" aria-label="Turn right" title="Turn right">▶</button>
+        <button type="button" data-pad="down" aria-label="Turn about" title="Turn about">▼</button>
       </div>
       <div id="palette" class="palette" role="group" aria-label="Palette" hidden></div>
       <div id="toastStack" class="toasts" aria-live="polite"></div>

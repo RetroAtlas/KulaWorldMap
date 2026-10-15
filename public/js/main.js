@@ -1,7 +1,8 @@
-import { $, on } from "./viewer/ui/dom.js";
+import { $, el, on } from "./viewer/ui/dom.js";
 import { state } from "./viewer/state.js";
 import { resize, onResize } from "./viewer/draw/render.js";
-import { loadJson, setAnnotations, setObjects } from "./viewer/data.js";
+import { loadJson, setAnnotations, setObjects, ballFor } from "./viewer/data.js";
+import { iconFor } from "./viewer/draw/icons.js";
 import {
   buildWorlds,
   buildKinds,
@@ -10,6 +11,9 @@ import {
   setSidebar,
 } from "./viewer/chrome/sidebar.js";
 import { applyHash, selectLevel, writeHash } from "./viewer/chrome/navigate.js";
+import { onShow } from "./viewer/chrome/detail.js";
+import { probeOf } from "./viewer/walk.js";
+import { FACE_NAME } from "./format/lattice.js";
 import { wireCourse } from "./viewer/chrome/course.js";
 import { openModal } from "./viewer/ui/modal.js";
 import { wireSettings } from "./viewer/ui/settings.js";
@@ -54,6 +58,11 @@ const HELP = [
   ["`p`", "drag pans instead of turning"],
   ["`u`", "route planner: click the faces the ball should visit, in order"],
   ["`Backspace`", "with the route planner on and nothing selected: take the last stop back"],
+  ["`y`", "roll the ball through the level"],
+  [
+    "arrows",
+    "while playing: roll the ball ahead for as long as held, turn it left and right, turn it about",
+  ],
   ["`s`", "settings"],
   ["`c`", "start camera"],
   ["`/`", "search"],
@@ -87,7 +96,7 @@ const HELP = [
   ],
   [
     "`Esc`",
-    "close, or clear the selection; while editing, clear the selected blocks or cancel a waiting run first",
+    "close, or clear the selection; while editing, clear the selected blocks or cancel a waiting run first; while playing, leave",
   ],
   ["`?`", "this list"],
 ];
@@ -211,6 +220,76 @@ function wireEntry() {
   );
 }
 
+// Play loads only when the ball is asked for, by its key, the corner's button
+// or a block's panel.
+const UNPLAYABLE = "Play could not be loaded; reload the page to try again.";
+let play = null;
+let playLoading = null;
+let playBroken = false;
+let playToggling = false;
+
+function playReady(module) {
+  try {
+    module.bootPlay();
+  } catch {
+    playBroken = true;
+    return unplayable();
+  }
+  play = module;
+  return module;
+}
+
+function unplayable() {
+  playLoading = null;
+  toast(UNPLAYABLE);
+  return null;
+}
+
+const bootPlay = () =>
+  playBroken
+    ? Promise.resolve(unplayable())
+    : (playLoading ??= import("./play/play.js").then(playReady, unplayable));
+
+// Until play is up, its key, its button and the panel's load it and then do what they do.
+function wirePlay() {
+  const btn = $("playBtn");
+  const icon = () => {
+    const model = state.lvl && ballFor(state.lvl);
+    btn.replaceChildren(model ? iconFor(model, 22) : "");
+  };
+  on("level-changed", icon);
+  on("density-changed", icon);
+  on("play-changed", (playing) => btn.setAttribute("aria-pressed", String(playing)));
+  btn.onclick = () => bootPlay().then((m) => m?.togglePlay());
+  onShow((box, c) => {
+    if (c?.face == null || c.k !== undefined) return;
+    if (!probeOf(state.idx).standable([c.x, c.y, c.z], c.face)) return;
+    const put = el("button", {
+      type: "button",
+      textContent: "Put the ball here",
+      title: `Stand the ball on the ${FACE_NAME[c.face]} of this block and roll it from there`,
+    });
+    put.onclick = () => bootPlay().then((m) => m?.playAt({ x: c.x, y: c.y, z: c.z, face: c.face }));
+    $("detailBody").prepend(el("p", { className: "put" }, put));
+  });
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (play || e.key !== "y" || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      if (!state.lvl || typing(e) || document.querySelector(".modal:not([hidden])")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (playToggling) return;
+      playToggling = true;
+      bootPlay().then((m) => {
+        playToggling = false;
+        m?.togglePlay();
+      });
+    },
+    { capture: true },
+  );
+}
+
 // A link to a draft arriving after the boot is shown once the editor is up.
 function followDraftLink() {
   const id = linkedDraft(location.hash);
@@ -260,6 +339,7 @@ Promise.all([
   if (up) loading = Promise.resolve(up);
   else if (awaited && !module) toast(UNLOADED);
   wireEntry();
+  wirePlay();
   onResize(() => {
     if (!state.framing) return;
     state.framing();

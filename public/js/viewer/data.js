@@ -13,6 +13,7 @@ export const setObjects = (o) => {
   shapes = { block: 512, types: {}, balls: [], shadows: [], motion: null, skins: null, ...o };
 };
 export const modelUnit = () => 1 / shapes.block;
+export const blockUnits = () => shapes.block;
 export const motionTable = () => shapes.motion;
 export const skinsTable = () => shapes.skins;
 export const worldTint = (world) => {

@@ -325,14 +325,20 @@ const forget = () => {
   sync();
 };
 
-/** The strips' heights, on the map for whatever stands above them. */
-function measure(strip) {
+/** Keep `variable` on the map at `strip`'s height plus the gap between the strips, for
+    whatever stands above it: measured now and on every resize, and the measure is returned. */
+export function measureStrip(strip, variable) {
   const map = strip.parentElement;
-  const height = (e) => (e.offsetHeight ? `${e.offsetHeight + GAP}px` : "0px");
-  new ResizeObserver(([e]) => map.style.setProperty("--under-h", height(e.target))).observe(
-    $("tools"),
-  );
-  new ResizeObserver(([e]) => map.style.setProperty("--course-h", height(e.target))).observe(strip);
+  const set = () =>
+    map.style.setProperty(variable, strip.offsetHeight ? `${strip.offsetHeight + GAP}px` : "0px");
+  new ResizeObserver(set).observe(strip);
+  set();
+  return set;
+}
+
+function measure(strip) {
+  measureStrip($("tools"), "--under-h");
+  measureStrip(strip, "--course-h");
 }
 
 // --- what the planner draws ----------------------------------------------------------------
