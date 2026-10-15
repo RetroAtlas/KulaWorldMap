@@ -162,7 +162,7 @@ async function preload(page) {
 async function capture(page, c, keep) {
   return page.evaluate(
     async ({ c, keep }) => {
-      const { state, cellKey, SIDE } = await window.__module("state.js");
+      const { state } = await window.__module("state.js");
       const R = await window.__module("render.js");
       const N = await window.__module("navigate.js");
       const { frameAt } = await window.__module("motion.js");
@@ -192,7 +192,11 @@ async function capture(page, c, keep) {
       if (c.zoom || c.pan) state.framing = null;
       const l = state.lvl;
       const idx = state.idx;
-      if (c.slice === "mid") state.slice = SIDE - 1 - Math.round((l.min[2] + l.max[2]) / 2);
+      if (c.slice === "mid")
+        state.slice = state.data.side - 1 - Math.round((l.min[2] + l.max[2]) / 2);
+      // a cell's key as the index keys it
+      const keys = new Map([...idx.cells].map(([k, at]) => [`${at.x},${at.y},${at.z}`, k]));
+      const cellKey = (x, y, z) => keys.get(`${x},${y},${z}`);
       R.invalidatePick();
       R.draw();
 
