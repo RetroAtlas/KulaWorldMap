@@ -32,26 +32,35 @@ function hold() {
 
 const panning = (e) => e.shiftKey || e.button === 1 || e.button === 2 || state.panMode;
 
-// What hooks into the pointer from outside: a click handler that takes a click
-// by returning true, a drag handler asked at every press, which takes the drag
-// from the camera by returning { move, end, cancel }, a mark of what about the
-// hovered cell matters beyond the cell itself, and lines for the tip. A press
-// that never wanders past a click is a click whoever holds the drag.
-let clicked = null;
+// What hooks into the pointer from outside: click handlers, of which one takes
+// a click by returning true, drag handlers asked at every press, of which one
+// takes the drag from the camera by returning { move, end, cancel }, marks of
+// what about the hovered cell matters beyond the cell itself, and lines for
+// the tip. A click and a press are offered latest registration first until
+// one takes them; a press that never wanders past a click is a click whoever
+// holds the drag.
+const clicks = [];
 export const onCellClick = (fn) => {
-  clicked = fn;
+  clicks.unshift(fn);
 };
-let dragged = null;
+const drags = [];
 export const dragWith = (fn) => {
-  dragged = fn;
+  drags.unshift(fn);
 };
-let hoverMark = () => null;
+const hovers = [];
 export const hoverBy = (fn) => {
-  hoverMark = fn;
+  hovers.push(fn);
 };
-let tipLines = () => [];
+const tips = [];
 export const tipWith = (fn) => {
-  tipLines = fn;
+  tips.push(fn);
+};
+const offer = (fns, ...args) => {
+  for (const fn of fns) {
+    const r = fn(...args);
+    if (r) return r;
+  }
+  return null;
 };
 
 cv.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -64,7 +73,7 @@ cv.addEventListener("pointerdown", (e) => {
     const r = cv.getBoundingClientRect();
     return cellAt(e.clientX - r.left, e.clientY - r.top);
   };
-  drag = { x: e.clientX, y: e.clientY, pan: panning(e), handler: dragged?.(at, e) ?? null };
+  drag = { x: e.clientX, y: e.clientY, pan: panning(e), handler: offer(drags, at, e) };
   moved = 0;
 });
 
@@ -92,7 +101,7 @@ cv.addEventListener("pointerup", (e) => {
     drag.handler?.cancel();
     const c = cellAt(e.clientX - r.left, e.clientY - r.top);
     // a right click selects whatever the tool
-    const taken = e.button !== 2 && clicked?.(c, e);
+    const taken = e.button !== 2 && offer(clicks, c, e);
     if (!taken && c) showCell(c);
     else if (!taken) clearDetail();
     drawSoon();
@@ -118,7 +127,8 @@ function hoverAt({ x, y }, near = false) {
   const c = cellAt(x - r.left, y - r.top, near);
   const key = c ? cellKey(c.x, c.y, c.z) : null;
   const was = state.hover;
-  const other = (was?.key ?? null) !== key || (c !== null && hoverMark(was) !== hoverMark(c));
+  const other =
+    (was?.key ?? null) !== key || (c !== null && hovers.some((mark) => mark(was) !== mark(c)));
   if (other) {
     state.hover = c ? { ...c, key } : null;
     drawSoon();
@@ -222,7 +232,7 @@ function hoverTip(c, px, py) {
     const off = markerNow(m) === "off" ? " · off" : "";
     lines.push(markerLabel(m) + off + (m.face !== null ? ` · ${FACE_NAME[m.face]}` : ""));
   }
-  lines.push(...tipLines(c));
+  for (const fn of tips) lines.push(...fn(c));
   const html = lines.join("<br>");
   if (tip.hidden || said.html !== html) {
     tip.innerHTML = html;
