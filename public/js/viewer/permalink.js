@@ -11,14 +11,15 @@ const FIT = "fit";
 // well past any pan that keeps the lattice on a screen at the furthest zoom
 const PAN_MAX = (8 * SIDE) / ZOOM_MIN;
 
-export function formatHash({ slot, cam, target, slice, picked, fitted }) {
+export function formatHash({ slot, cam, target, slice, picked, fitted, tails = [] }) {
   const view = fitted
     ? FIT
     : `${cam.zoom.toFixed(2)}/${target.map(r2).join(",")}/${r2(cam.panX)},${r2(cam.panY)}`;
   const yaw = ((Math.round(cam.yaw) % 360) + 360) % 360;
   return (
     `#${slot}/${yaw},${Math.round(cam.pitch)}/${view}/${slice}` +
-    (picked ? `/${picked.join(",")}` : "")
+    (picked ? `/${picked.join(",")}` : "") +
+    tails.map((segment) => `/${segment}`).join("")
   );
 }
 
@@ -28,6 +29,8 @@ const numbers = (segment, n) => {
 };
 
 const CELL = /^\d+,\d+,\d+$/;
+// a module's own segment, lettered and longer than the fit flag
+const TAIL = /^[a-z][A-Za-z0-9_-]{3,}$/;
 
 // A share sheet or a mail client may escape a link on its way.
 const unescaped = (text) => {
@@ -39,7 +42,8 @@ const unescaped = (text) => {
   }
 };
 
-/** Each part is null where the hash leaves it out or it cannot be read. The
+/** Each part is null where the hash leaves it out or it cannot be read, and
+    `tails` holds the lettered segments modules write, in their order. The
     head is read by position and the rest by shape, in any order, so a segment
     the reader does not know is passed over rather than read as another. */
 export function parseHash(hash) {
@@ -63,5 +67,6 @@ export function parseHash(hash) {
     pan: shift && shift.map((v) => clamp(v, -PAN_MAX, PAN_MAX)),
     slice: Number.isInteger(ceiling) && ceiling >= 0 ? Math.min(SIDE - 1, ceiling) : null,
     picked: cell?.every((v) => v < SIDE) ? cell : null,
+    tails: tail.filter((segment) => TAIL.test(segment)),
   };
 }

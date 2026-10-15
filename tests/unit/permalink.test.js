@@ -33,6 +33,7 @@ test("a view written into a link reads back as that view", () => {
     pan: [1.23, -0.5],
     slice: 20,
     picked: [17, 12, 17],
+    tails: [],
   });
 });
 
@@ -56,10 +57,12 @@ test("a part a link leaves out, or that cannot be read, reads as not named", () 
     pan: null,
     slice: null,
     picked: null,
+    tails: [],
   });
   const odd = parseHash("#HIRO/0/45/-1/1,2/x,y/3.5/1,2");
   for (const part of ["turn", "zoom", "target", "pan", "slice", "picked"])
     assert.equal(odd[part], null, part);
+  assert.deepEqual(odd.tails, []);
 });
 
 test("a slice past the top of the lattice is the whole level", () => {
@@ -73,6 +76,56 @@ test("what follows the slice is read by its shape, and a segment the reader does
     assert.deepEqual(parseHash(head + tail).picked, [21, 13, 18], tail);
   for (const tail of ["", "/on=red", "/21,13", "/21.5,13,18", "/-21,13,18"])
     assert.equal(parseHash(head + tail).picked, null, tail);
+});
+
+test("a lettered segment at the tail is a module's own, read beside the cell in either order", () => {
+  const head = "#HIRO/11/45,35/1/21.5,13.5,18.5/0,0/33";
+  for (const tail of ["/rAbc-_9/21,13,18", "/21,13,18/rAbc-_9"]) {
+    const link = parseHash(head + tail);
+    assert.deepEqual(link.picked, [21, 13, 18], tail);
+    assert.deepEqual(link.tails, ["rAbc-_9"], tail);
+  }
+  assert.deepEqual(parseHash(`${head}/rAbc/21,13,18/p_-9Z`).tails, ["rAbc", "p_-9Z"]);
+  assert.deepEqual(parseHash("#HIRO/11/45,35/fit/33/rAbc-_9").tails, ["rAbc-_9"]);
+  // a cell, the fit flag, a segment too short or of another shape is no module's
+  for (const segment of [
+    "21,13,18",
+    "fit",
+    "FIT",
+    "rab",
+    "Rabc",
+    "1abc",
+    "r=12",
+    "on=red",
+    "r.abc",
+  ])
+    assert.deepEqual(parseHash(`${head}/${segment}`).tails, [], segment);
+});
+
+test("a module's segments are written after the cell, and read back in the written and the fitted form", () => {
+  const tails = ["rAbc-_9", "p0_-"];
+  for (const fitted of [false, true])
+    for (const picked of [null, [17, 12, 17]]) {
+      const hash = formatHash({
+        slot: "INCA/11",
+        cam,
+        target: [17.5, 12, 17],
+        slice: 20,
+        picked,
+        fitted,
+        tails,
+      });
+      const link = parseHash(hash);
+      assert.deepEqual(link.tails, tails, hash);
+      assert.deepEqual(link.picked, picked, hash);
+      assert.equal(link.slice, 20, hash);
+      assert.deepEqual(link.turn, [45, 35], hash);
+      assert.equal(link.zoom, fitted ? null : 0.9, hash);
+    }
+  const written = (picked, fitted) =>
+    formatHash({ slot: "INCA/11", cam, target: [17.5, 12, 17], slice: 20, picked, fitted, tails });
+  assert.equal(written([17, 12, 17], true), "#INCA/11/45,35/fit/20/17,12,17/rAbc-_9/p0_-");
+  assert.equal(written(null, false), "#INCA/11/45,35/0.90/17.5,12,17/0,0/20/rAbc-_9/p0_-");
 });
 
 test("a link escaped on its way reads as the link", () => {

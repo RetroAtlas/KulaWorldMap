@@ -170,6 +170,14 @@ const levelFrom = (slot) => {
   return null;
 };
 
+const tails = [];
+/** Register a segment of the link's tail: `write()` answers it, or null for
+    none, and `read` is given an opened link's segment of that letter, or null
+    where the link carries none. */
+export function tailWith({ letter, write, read }) {
+  tails.push({ letter, write, read });
+}
+
 /** Write the view to the address bar once it has rested, or at once as a
     history entry. */
 export function writeHash(push = false) {
@@ -191,6 +199,7 @@ function currentHash() {
       slice: state.slice,
       picked: s && [s.x, s.y, s.z],
       fitted: state.framing === fit,
+      tails: tails.map((t) => t.write()).filter((segment) => segment != null),
     })
   );
 }
@@ -237,6 +246,7 @@ export function applyHash() {
     if (!l) return false;
     if (state.lvl?.draft !== l.draft) showLevel(l, { keepView: true });
   } else if (i !== state.li) selectLevel(i, { keepView: true });
+  emit("link-opening");
   if (link.turn) [state.cam.yaw, state.cam.pitch] = link.turn;
   if (link.target) state.target = link.target;
   else fit();
@@ -247,6 +257,8 @@ export function applyHash() {
   const cell = link.picked && state.idx.cells.get(cellKey(...link.picked));
   if (cell) showCell(cell);
   else clearDetail();
+  for (const { letter, read } of tails)
+    read(link.tails.find((segment) => segment[0] === letter) ?? null);
   writeHash();
   invalidatePick();
   emit("slice-changed");

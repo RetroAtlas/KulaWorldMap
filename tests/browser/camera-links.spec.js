@@ -70,6 +70,51 @@ test("a permalink carries the selected block, and opens with it selected", async
   expect(await page.evaluate(() => history.length)).toBe(entries);
 });
 
+test("a module's segment rides at the link's tail, and an opened link hands it back before the camera moves", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/11/45,35/fit/33/21,13,18");
+  await settle(page);
+  await still(page);
+  const tail = () => page.evaluate(() => window.__tail);
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { on }, { tailWith, writeHash }] = await Promise.all(
+      ["viewer/state.js", "viewer/ui/dom.js", "viewer/chrome/navigate.js"].map(at),
+    );
+    const own = (window.__tail = { kept: "rAbc-_9", read: [], opened: [] });
+    on("link-opening", () => own.opened.push(state.cam.yaw));
+    tailWith({
+      letter: "r",
+      write: () => own.kept,
+      read: (segment) => {
+        own.read.push(segment);
+        if (segment !== null) own.kept = segment;
+      },
+    });
+    writeHash();
+  });
+  await expect.poll(() => page.url()).toMatch(/#HIRO\/11\/45,35\/fit\/33\/21,13,18\/rAbc-_9$/);
+
+  // the segment is read wherever it lies beside the cell, and written back after it
+  await page.evaluate(() => (location.hash = "#HIRO/11/30,20/fit/33/rXyz_-1/21,13,18"));
+  await expect.poll(() => page.url()).toMatch(/#HIRO\/11\/30,20\/fit\/33\/21,13,18\/rXyz_-1$/);
+  expect(await tail()).toMatchObject({ read: ["rXyz_-1"], opened: [45] });
+  await expect(page.locator("#detail")).toContainText("cell 21,13,18");
+
+  // a link carrying none says nothing, so what the module keeps is written back,
+  // and a module with nothing to say writes nothing
+  await page.evaluate(() => (location.hash = "#HIRO/11/30,20/fit/33/21,13,18"));
+  await expect.poll(async () => (await tail()).read).toEqual(["rXyz_-1", null]);
+  await expect.poll(() => page.url()).toMatch(/\/21,13,18\/rXyz_-1$/);
+  await page.evaluate(async () => {
+    const { writeHash } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
+    window.__tail.kept = null;
+    writeHash();
+  });
+  await expect.poll(() => page.url()).toMatch(/\/33\/21,13,18$/);
+});
+
 test("a link naming a pack and a slot opens that level, whatever its case", async ({ page }) => {
   await page.goto("/#copycat/4/30,20");
   await settle(page);
