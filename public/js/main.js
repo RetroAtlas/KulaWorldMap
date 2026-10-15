@@ -221,12 +221,15 @@ function followDraftLink() {
 const kept = held();
 const linked = linkedDraft(location.hash);
 const wanted = kept.shaped.length > 0;
+// A link to a draft held here has nothing to show before the editor is up, so
+// the boot waits for it; otherwise the editor comes once the map has drawn.
+const awaited = linked !== null && kept.shaped.includes(linked);
 
 Promise.all([
   loadJson("map_data.json"),
   loadJson("annotations.json", {}),
   loadJson("objects.json", {}),
-  wanted ? import("./editor.js").catch(() => null) : null,
+  awaited ? import("./editor.js").catch(() => null) : null,
 ]).then(([data, ann, objects, module]) => {
   if (!data) {
     $("chipLine").textContent = "The map's data could not be loaded.";
@@ -242,7 +245,7 @@ Promise.all([
   wireDisplay();
   const up = module && ready(module);
   if (up) loading = Promise.resolve(up);
-  else if (wanted && !module) toast(UNLOADED);
+  else if (awaited && !module) toast(UNLOADED);
   wireEntry();
   onResize(() => {
     if (!state.framing) return;
@@ -255,4 +258,5 @@ Promise.all([
     toast(ELSEWHERE);
   addEventListener("hashchange", followDraftLink);
   buildKinds();
+  if (wanted && !awaited) bootEditor();
 });

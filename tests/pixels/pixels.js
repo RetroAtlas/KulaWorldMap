@@ -93,16 +93,21 @@ async function open(page, base, store) {
     await page.addInitScript(([key, text]) => localStorage.setItem(key, text), [DRAFTS, store]);
   // a world none of the arrive captures take, so each starts before its atlas lands
   await page.goto(`${base}/#FIELD/0`);
-  await page.evaluate(async () => {
+  await page.evaluate(async (seeded) => {
     const { state } = await import("/js/state.js");
     const deadline = Date.now() + 30000;
-    while (!(state.lvl && document.getElementById("cv").clientWidth > 0)) {
+    // a held draft boots the editor once the map has drawn, which lists it
+    const up = () =>
+      state.lvl &&
+      document.getElementById("cv").clientWidth > 0 &&
+      (!seeded || document.querySelector("#draftRows button"));
+    while (!up()) {
       if (Date.now() > deadline) throw new Error("the map did not load");
       await new Promise((r) => setTimeout(r, 20));
     }
     await new Promise((r) => setTimeout(r, 600));
     window.__defaults = { ...state.show };
-  });
+  }, !!store);
 }
 
 /** What is on the canvas once a world's atlas lands, against what a draw of
