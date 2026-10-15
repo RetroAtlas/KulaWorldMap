@@ -1,5 +1,8 @@
 // Play mode: the ball stood on the level and rolled by the keys, the camera behind it.
 import { $, emit, on } from "../viewer/ui/dom.js";
+import { adoptCourse, current, measureStrip } from "../viewer/chrome/course.js";
+import { drawPieces } from "../viewer/draw/ribbon.js";
+import { ageDust, burstDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
 import { state, BLOCK, basisAt, camera, depth, fitLevel } from "../viewer/state.js";
 import { SIDE, cellKey, FACE_NAME, FACE_NORMAL, DIRECTION_NAME } from "../format/lattice.js";
 import {
@@ -12,19 +15,22 @@ import {
   modelUnit,
   motionTable,
   startsOf,
+  worldTint,
   TANGENT,
 } from "../viewer/data.js";
-import { probeOf, tangent } from "../viewer/walk.js";
+import { headingOn, pieces, probeOf, tangent } from "../viewer/walk.js";
 import { draw, drawSoon, invalidatePick, movingWith, overlayWith } from "../viewer/draw/render.js";
 import { ballsWith } from "../viewer/draw/things.js";
 import { iconFor } from "../viewer/draw/icons.js";
 import { toast } from "../viewer/ui/toast.js";
 import { chip, fit, fitWith, writeHash } from "../viewer/chrome/navigate.js";
-import { measureStrip } from "../viewer/chrome/course.js";
 import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
 import { say } from "../viewer/chrome/a11y.js";
 import {
   PAD,
+  REST,
+  ROLLING,
+  WRAPPING,
   ballAt,
   blockUnder,
   centreOf,
@@ -63,6 +69,10 @@ const NO_START = "The level has no start, so the ball stands on the first face i
 const NOWHERE = "The level has no face the ball could stand on.";
 const OBJECTS_ON = "Objects turned on, for the ball.";
 const LOST = "The ball fell off the level, and is back where it last stood.";
+const KEPT = "The way the ball has come is now the route.";
+const ROUTE_STANDS = "A route already stands; clear it to keep the walk.";
+const AT_SWITCH = 6;
+const TRAIL = 12;
 
 let live = null;
 let held = 0;
@@ -85,13 +95,14 @@ const faceName = (v) => DIRECTION_NAME[faceOf(v)];
 
 // --- the ball as the frame draws it -----------------------------------------------------
 
-/** What the ball shows: its block and face, heading, centre, spin and lift. */
+/** What the ball shows: its block and face, heading, centre and foot, spin and lift. */
 function stateOf(b) {
   return {
     block: blockUnder(b),
     face: faceUnder(b),
     h: b.h,
     centre: centreOf(b),
+    foot: footOf(b),
     point: b.pos.map((v) => v + b.half),
     spin: b.spin,
     height: clearance(b, live.probe),
@@ -117,6 +128,16 @@ function covered(centre) {
   for (let t = COVER.step; t <= COVER.reach; t += COVER.step)
     if (live.probe.solid(centre.map((v, i) => Math.floor(v + toward[i] * t)))) return true;
   return false;
+}
+
+const onFace = (b) => b.state === REST || b.state === ROLLING || b.state === WRAPPING;
+/** Where the ball touches its face, in blocks. */
+const footOf = (b) => centreOf(b).map((v, i) => v - (b.n[i] * b.radius) / b.unit);
+/** The block whose face `foot` lies on, under the normal `n`, or `block` where that cell is
+    empty. */
+function blockAt(foot, n, block) {
+  const c = foot.map((v, i) => Math.floor(v - 0.5 * n[i]));
+  return live.probe.solid(c) ? c : block;
 }
 
 export function station() {
@@ -340,17 +361,29 @@ function stepped(dt) {
       owed -= 1;
       b.pad = held | tapped;
       tapped = 0;
-      for (const event of step(b, live.probe)) happened(event);
+      const was = onFace(b) ? footOf(b) : null;
+      const events = step(b, live.probe);
+      if (!motionOn()) ageDust(1 / motionTable().hz);
+      else if (was && onFace(b)) {
+        const under = blockUnder(b);
+        travelDust(was, footOf(b), b.n, () => under);
+      }
+      for (const event of events) happened(event);
       moved = true;
     }
   } else owed = 0;
+  if (motionOn() && dustAlive()) {
+    ageDust(dt / 1000);
+    moved = true;
+  }
   if (!moving(b) || live.station) live.still = stateOf(b);
   live.station = false;
   if (moved) line();
   return moved;
 }
 
-const again = () => !!(ease || (live && (moving(live.ball) || held || tapped)));
+const again = () =>
+  !!(ease || (live && (moving(live.ball) || held || tapped || (motionOn() && dustAlive()))));
 
 /** The ball's frame pitched further down by the view's word while it falls. */
 const looked = (b) => (b.look.word ? offsetFrame(b.frame, 0, b.look.word, b.rules.turn) : b.frame);
@@ -372,10 +405,90 @@ function happened(event) {
     const block = blockUnder(b);
     say(`${block.join(",")}, ${FACE_NAME[faceUnder(b)]}`);
     status(standsOn(block, faceUnder(b)) ? AS_STONE : null);
+    walked({ cell: block, face: faceUnder(b) });
+    if (!motionOn())
+      travelDust(live.still.foot, footOf(b), b.n, (p) => blockAt(p, b.n, block), true);
   } else if (event.face) {
     live.station = true;
     say(`${FACE_NAME[faceUnder(b)]} of ${blockUnder(b).join(",")}, now underfoot`);
+    burstDust(footOf(b), b.n, blockUnder(b), AT_SWITCH, !motionOn());
   } else if (event.turned) live.station = true;
+}
+
+// --- the trail -------------------------------------------------------------------------------
+
+const sameStation = (a, b) => a.face === b.face && a.cell.every((v, i) => v === b.cell[i]);
+
+/** The walk's step from station `a` to `b`, or null where no roll joins them. */
+function stepBetween(a, b) {
+  const n = FACE_NORMAL[a.face];
+  const unit = (t) => t.reduce((sum, v) => sum + Math.abs(v), 0) === 1;
+  const between = b.cell.map((v, i) => v - a.cell[i]);
+  let t;
+  let o;
+  if (a.face === b.face) [t, o] = [between, 0];
+  else if (!between.some((v) => v)) [t, o] = [FACE_NORMAL[b.face], 2];
+  else {
+    t = between.map((v, i) => v - n[i]);
+    o = FACE_NORMAL[b.face].every((v, i) => v === -t[i]) ? 1 : null;
+  }
+  if (o === null || !unit(t)) return null;
+  const k = headingOn(a.face, t);
+  return k === null ? null : { k, o };
+}
+
+function walked(station) {
+  const w = live.walk;
+  const last = w.stations.at(-1);
+  if (last && sameStation(last, station)) return;
+  if (last) w.steps.push(stepBetween(last, station));
+  w.stations.push(station);
+  const from = Math.max(0, w.stations.length - TRAIL);
+  const { byKey } = pieces({
+    stations: w.stations.slice(from),
+    steps: w.steps.slice(from),
+    marks: new Set(),
+  });
+  const n = w.stations.length - from - 1;
+  for (const list of byKey.values())
+    for (const p of list) {
+      p.alpha = (p.i + 1) / n;
+      p.chevron = null;
+    }
+  live.trail = byKey;
+  keepable();
+}
+
+function drawTrail(ctx, c, home, key, ghost) {
+  if (!live?.trail || ghost || c.k !== undefined) return;
+  const list = live.trail.get(key);
+  if (list) for (const p of list) drawPieces(ctx, [p], { alpha: p.alpha });
+}
+
+function drawDustOver(ctx, c, home, key, ghost) {
+  if (!live || ghost || c.k !== undefined) return;
+  drawDust(ctx, key);
+}
+
+function keepable() {
+  $("keepBtn").disabled = !live || live.walk.stations.length < 2 || current() !== null;
+}
+
+function keep() {
+  if (!live) return;
+  const { stations, steps } = live.walk;
+  const c = {
+    stations: [...stations],
+    steps: [...steps],
+    marks: new Set([0, stations.length - 1]),
+  };
+  if (!adoptCourse(c)) {
+    status(ROUTE_STANDS);
+    return;
+  }
+  say(KEPT);
+  toast(KEPT);
+  keepable();
 }
 
 /** Whether the ball stands on something it does not act on yet: ice, a hazard or a pickup. */
@@ -439,6 +552,7 @@ function wirePad() {
     if (state.framing === fit) fit();
     drawSoon();
   };
+  $("keepBtn").onclick = keep;
   $("leaveBtn").onclick = () => leave();
 }
 
@@ -556,8 +670,12 @@ function enter(at = null) {
     station: false,
     framed: false,
     status: at || start ? null : NO_START,
+    walk: { stations: [{ cell: where.cell, face: where.face }], steps: [] },
+    trail: null,
   };
   live.still = stateOf(ball);
+  resetDust(worldTint(l.theme));
+  keepable();
   held = tapped = owed = 0;
   last = performance.now();
   state.anchored = true;
@@ -595,6 +713,7 @@ function leave({ restore = true } = {}) {
   live = null;
   held = tapped = 0;
   fitWith(null);
+  resetDust(null);
   sync();
   emit("play-changed", false);
   const done = () => {
@@ -650,6 +769,7 @@ export function playAt(c) {
   live.key = keyOf(startOf(live.level, probe), at);
   live.ball = ballAt(live.ball.rules, cell, c.face, at.h);
   live.still = stateOf(live.ball);
+  walked({ cell, face: c.face });
   held = tapped = 0;
   status(null);
   state.frame = live.ball.frame;
@@ -673,7 +793,7 @@ export function bootPlay() {
   });
   wirePad();
   measure = measureStrip($("play"), "--play-h");
-  overlayWith({ under: () => void advance(), frame: again });
+  overlayWith({ under: () => void advance(), block: drawTrail, cell: drawDustOver, frame: again });
   movingWith(travellers);
   ballsWith(() => (live ? [shown().point] : null));
   on("level-changed", () => {
@@ -689,5 +809,6 @@ export function bootPlay() {
   on("link-opening", () => leave({ restore: false }));
   on("go-to", () => leave({ restore: false }));
   on("density-changed", icon);
+  on("course-changed", keepable);
   sync();
 }

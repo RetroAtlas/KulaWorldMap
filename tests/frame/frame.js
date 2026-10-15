@@ -59,6 +59,8 @@ const PARTS = {
   drawPieces: "course",
   drawLeaps: "course",
   drawRings: "course",
+  drawDust: "play",
+  drawTrail: "play",
 };
 const OUTSIDE = { "(idle)": "idle", "(program)": "native", "(garbage collector)": "gc" };
 

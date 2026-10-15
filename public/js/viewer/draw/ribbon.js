@@ -35,13 +35,14 @@ const widths = () => {
 const dotRadius = (core) => clamp(core * 1.6, 3, 7);
 
 /** One block's pieces of the course; `slide` moves the shimmer along it, and
-    null leaves the ribbon still. */
-export function drawPieces(ctx, pieces, { slide = null } = {}) {
+    null leaves the ribbon still; `alpha` fades the whole. */
+export function drawPieces(ctx, pieces, { slide = null, alpha = 1 } = {}) {
   const shown = pieces.filter((p) => facing(FACE_NORMAL[p.face]));
   if (!shown.length) return;
   const { block, core } = widths();
   const lines = shown.filter((p) => !p.stop);
   ctx.save();
+  ctx.globalAlpha = alpha;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   if (lines.length) {
@@ -56,13 +57,13 @@ export function drawPieces(ctx, pieces, { slide = null } = {}) {
     }
     ctx.globalCompositeOperation = "lighter";
     ctx.strokeStyle = GLOW;
-    for (const [extra, alpha] of HALO) {
+    for (const [extra, halo] of HALO) {
       ctx.lineWidth = core + extra;
-      ctx.globalAlpha = alpha;
+      ctx.globalAlpha = halo * alpha;
       ctx.stroke(line);
     }
     ctx.globalCompositeOperation = "source-over";
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = alpha;
     ctx.strokeStyle = RIM;
     ctx.lineWidth = core + RIM_EXTRA;
     ctx.stroke(line);

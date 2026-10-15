@@ -159,7 +159,7 @@ test("y stands the ball on the start and takes its view, the arrows roll it, and
   await startPlay(page);
   await expect
     .poll(() => requested.filter((p) => PLAY_FILES.test(p)).sort())
-    .toEqual(["/js/play/ball.js", "/js/play/play.js"]);
+    .toEqual(["/js/play/ball.js", "/js/play/dust.js", "/js/play/play.js"]);
   await expect(line(page)).toHaveText("Playing · on the top of 17,18,17, facing -y");
   await expect(say(page)).toHaveText(
     "Playing LEVEL 1. The ball stands on the top of 17,18,17, facing -y. The arrows roll and turn it, Esc leaves.",
@@ -338,6 +338,45 @@ test("with Motion off a step snaps and nothing draws once the ball rests", async
   await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 17, 17]);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   expect(await drawn(page)).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test("Keep as the route hands the way the ball has come to the planner, where no route stands", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false });
+  await startPlay(page);
+  const keep = page.locator("#keepBtn");
+  await expect(keep).toBeDisabled();
+  await page.keyboard.press("ArrowUp");
+  await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 17, 17]);
+  await expect(keep).toBeEnabled();
+  await page.keyboard.press("ArrowUp");
+  await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 16, 17]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  await keep.click();
+  await expect(say(page)).toHaveText("The way the ball has come is now the route.");
+  const route = await page.evaluate(async () => {
+    const { current } = await import(new URL("js/viewer/chrome/course.js", location.href).href);
+    const c = current();
+    return { stations: c.stations, steps: c.steps, marks: [...c.marks].sort() };
+  });
+  expect(route.stations).toEqual([
+    { cell: [17, 18, 17], face: 0 },
+    { cell: [17, 17, 17], face: 0 },
+    { cell: [17, 16, 17], face: 0 },
+  ]);
+  expect(route.steps).toEqual([
+    { k: 2, o: 0 },
+    { k: 2, o: 0 },
+  ]);
+  expect(route.marks).toEqual([0, 2]);
+  await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops");
+  await expect(keep).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#play")).toBeHidden();
+  await expect(page.locator("#course")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
