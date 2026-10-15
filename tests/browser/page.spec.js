@@ -38,7 +38,9 @@ test("the page a link lands on says what it is", async ({ page }) => {
   }
 });
 
-test("the icons are Hiro's ball in its own panel colours, on the tile", async ({ page }) => {
+test("the icons are Hiro's ball in its own panel colours, on the tile only on the home screen", async ({
+  page,
+}) => {
   await page.goto("/");
   const icons = await page.evaluate(async () => {
     const { balls } = await (await fetch("objects.json")).json();
@@ -58,9 +60,17 @@ test("the icons are Hiro's ball in its own panel colours, on the tile", async ({
         const key = `${px[i]},${px[i + 1]},${px[i + 2]}`;
         if (px[i + 3] === 255 && seen.has(key)) seen.set(key, seen.get(key) + 1);
       }
+      let outside = 0;
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const off = Math.hypot(x + 0.5 - size / 2, y + 0.5 - size / 2) > (size * 24) / 48;
+          if (off && px[(y * size + x) * 4 + 3]) outside++;
+        }
+      }
       return {
         src,
         natural: [img.naturalWidth, img.naturalHeight],
+        outside,
         corner: at(0, 0),
         tile: at(Math.round(size / 24), Math.round(size / 2)),
         centre: at(size / 2, size / 2),
@@ -75,9 +85,11 @@ test("the icons are Hiro's ball in its own panel colours, on the tile", async ({
   });
   expect(icons[1].natural).toEqual([96, 96]);
   expect(icons[2].natural).toEqual([180, 180]);
+  expect(icons[0].outside).toBe(0);
+  expect(icons[1].outside).toBe(0);
+  expect(icons[2].tile).toEqual([18, 22, 31, 255]);
   for (const icon of icons) {
     expect(icon.corner[3], icon.src).toBe(0);
-    expect(icon.tile, icon.src).toEqual([18, 22, 31, 255]);
     expect(icon.centre, icon.src).toEqual([255, 255, 255, 255]);
     expect(icon.panels.filter((count) => count > 20).length, icon.src).toBe(5);
   }

@@ -8,23 +8,27 @@ import { join } from "node:path";
 import { chromium } from "@playwright/test";
 import { ROOT } from "../tests/public.js";
 
+// A home screen fills a transparent icon with black, so its icon carries the tile.
 const ICONS = [
-  ["favicon-96.png", 96],
-  ["apple-touch-icon.png", 180],
+  ["favicon-96.png", 96, false],
+  ["apple-touch-icon.png", 180, true],
 ];
 
-const svg = readFileSync(join(ROOT, "public", "favicon.svg"), "utf8");
-const src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+const ball = readFileSync(join(ROOT, "public", "favicon.svg"), "utf8");
+const tile = ball
+  .replace(/viewBox="[^"]*"/, 'viewBox="0 0 64 64"')
+  .replace("</defs>", '</defs>\n  <rect width="64" height="64" rx="10" fill="#12161f"/>');
+const src = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
 const browser = await chromium.launch();
 try {
-  for (const [name, size] of ICONS) {
+  for (const [name, size, tiled] of ICONS) {
     const page = await browser.newPage({
       viewport: { width: size, height: size },
       deviceScaleFactor: 1,
     });
     await page.setContent(
-      `<body style="margin:0;background:transparent"><img src="${src}" width="${size}" height="${size}"></body>`,
+      `<body style="margin:0;background:transparent"><img src="${src(tiled ? tile : ball)}" width="${size}" height="${size}"></body>`,
     );
     await page.locator("img").evaluate((img) => img.decode());
     const icon = join(ROOT, "public", name);
