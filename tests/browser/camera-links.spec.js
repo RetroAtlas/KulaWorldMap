@@ -602,6 +602,106 @@ test("a fitted view's link opens fitted to the window it is opened in", async ({
   await expect.poll(() => page.url()).not.toContain("/fit/");
 });
 
+test("a module may frame the view in the fit's place, and f, the button and a resize go through it until it lets go", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/11");
+  await settle(page);
+  await still(page);
+  const button = page.locator("#fitBtn");
+  const ink = () => button.evaluate((b) => getComputedStyle(b).color);
+  const resting = await ink();
+  const probe = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      return { framed: window.__framed, zoom: state.cam.zoom, held: state.framing !== null };
+    });
+  await page.evaluate(async () => {
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { fitWith } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
+    window.__framed = 0;
+    fitWith((l) => {
+      window.__framed++;
+      state.target = [l.min[0] + 0.5, l.min[1] + 0.5, l.min[2] + 0.5];
+      state.cam.zoom = 2.5;
+      state.cam.panX = state.cam.panY = 0;
+    });
+  });
+  await press(page, 40, 20);
+  await expect.poll(() => page.url()).not.toContain("/fit/");
+  await page.keyboard.press("f");
+  expect(await probe()).toEqual({ framed: 1, zoom: 2.5, held: true });
+  await expect(page).toHaveURL(/#HIRO\/11\/\d+,\d+\/fit\/33$/);
+  expect(await ink()).toBe(resting);
+
+  await page.setViewportSize({ width: 1100, height: 640 });
+  await still(page);
+  expect(await probe()).toEqual({ framed: 2, zoom: 2.5, held: true });
+  await press(page, 40, 20);
+  await frame(page);
+  expect((await probe()).held).toBe(false);
+  await expect.poll(ink).not.toBe(resting);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await still(page);
+  expect((await probe()).framed).toBe(2);
+
+  await button.click();
+  await page.mouse.move(0, 0);
+  expect(await probe()).toEqual({ framed: 3, zoom: 2.5, held: true });
+  await page.evaluate(async () => {
+    const { fitWith } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
+    fitWith(null);
+  });
+  await page.keyboard.press("f");
+  const framed = await fitted(page);
+  expect(framed.zoom).toBe(framed.fit);
+  expect(framed.zoom).not.toBe(2.5);
+  expect((await probe()).framed).toBe(3);
+  expect(errors).toEqual([]);
+});
+
+test("a link written while a module holds the camera carries the view it took the camera from", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/11/45,35/fit/33/21,13,18");
+  await settle(page);
+  await still(page);
+  const park = (parked) =>
+    page.evaluate(async (parked) => {
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { writeHash } = await import(
+        new URL("js/viewer/chrome/navigate.js", location.href).href
+      );
+      state.parked = parked;
+      writeHash();
+    }, parked);
+  const taken = {
+    cam: { yaw: 30, pitch: 20, zoom: 1.25, panX: 0.5, panY: -0.25 },
+    target: [18, 13, 17],
+    fitted: false,
+    slice: 25,
+  };
+  await page.evaluate(async () => {
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    Object.assign(state.cam, { yaw: 100, pitch: 10, zoom: 2, panX: 0, panY: 0 });
+    state.target = [10, 10, 10];
+    state.framing = null;
+  });
+  await park(taken);
+  await expect
+    .poll(() => page.url())
+    .toMatch(/#HIRO\/11\/30,20\/1\.25\/18,13,17\/0\.5,-0\.25\/25\/21,13,18$/);
+  await park({ ...taken, fitted: true });
+  await expect.poll(() => page.url()).toMatch(/#HIRO\/11\/30,20\/fit\/25\/21,13,18$/);
+  await park(null);
+  await expect
+    .poll(() => page.url())
+    .toMatch(/#HIRO\/11\/\d+,\d+\/2\.00\/10,10,10\/0,0\/33\/21,13,18$/);
+  expect(errors).toEqual([]);
+});
+
 test("a camera moved on purpose stays where it was put as the canvas resizes, until f", async ({
   page,
 }) => {

@@ -1,12 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapData } from "./fixtures.js";
+import { mapData, PINNED_LINK, PINNED_CELLS } from "./fixtures.js";
 import {
   ZOOM_MIN,
   FIT_MARGIN,
   FIT_ZOOM_MAX,
   state,
+  basisAt,
   camera,
+  frameOf,
   project,
   depth,
   facing,
@@ -16,9 +18,34 @@ import {
   fitLevel,
   levelCentre,
 } from "../../public/js/viewer/state.js";
-import { SIDE, cellKey } from "../../public/js/format/lattice.js";
+import { SIDE, cellKey, FACE_NORMAL } from "../../public/js/format/lattice.js";
+import { heading } from "../../public/js/viewer/travel.js";
+import { parseHash } from "../../public/js/viewer/permalink.js";
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+
+/** The pinned link's view on an 800 by 600 canvas, put back once the test is done. */
+function pinnedView(t) {
+  const was = structuredClone({ cam: state.cam, target: state.target, view: state.view });
+  t.after(() => {
+    Object.assign(state.cam, was.cam);
+    state.target = was.target;
+    state.view = was.view;
+    state.frame = null;
+  });
+  const link = parseHash(PINNED_LINK);
+  [state.cam.yaw, state.cam.pitch] = link.turn;
+  [state.cam.panX, state.cam.panY] = link.pan;
+  state.cam.zoom = link.zoom;
+  state.target = link.target;
+  state.view = { w: 800, h: 600, dpr: 1 };
+}
 
 test("a cell key is the lattice index the game walks", () => {
   assert.equal(cellKey(0, 0, 0), 0);
@@ -157,4 +184,105 @@ test("a fitted level has every corner of every block inside the view, with the m
       near(y0 - m, 600 - m - y1, 1e-6);
     }
   }
+});
+
+test("under no frame the camera is the plain orbit's, and the pinned link's cells stand where they always have", (t) => {
+  pinnedView(t);
+  state.frame = null;
+  const { right, up, toward } = camera();
+  assert.deepEqual({ right, up, toward }, basisAt(state.cam.yaw, state.cam.pitch));
+  for (const [cell, at] of PINNED_CELLS) {
+    const [x, y] = screen(...cell);
+    assert.ok(Math.abs(x - at[0]) < 1e-3 && Math.abs(y - at[1]) < 1e-3, `${cell}: ${x},${y}`);
+  }
+});
+
+test("a traveller's frame is a rotation on every face at every heading, and the world's own on the top face heading -y", () => {
+  for (const [face, n] of FACE_NORMAL.entries())
+    for (let k = 0; k < 4; k++) {
+      const h = heading(face, k + 1).d;
+      const f = frameOf(h, n);
+      const [a, b, c] = [f.slice(0, 3), f.slice(3, 6), f.slice(6, 9)];
+      const where = `face ${face} heading ${h}`;
+      assert.deepEqual([dot(a, a), dot(b, b), dot(c, c)], [1, 1, 1], where);
+      assert.deepEqual([dot(a, b), dot(b, c), dot(c, a)], [0, 0, 0], where);
+      assert.equal(dot(a, cross(b, c)), 1, where);
+    }
+  assert.deepEqual(frameOf([0, -1, 0], FACE_NORMAL[0]), [1, 0, 0, 0, 1, 0, 0, 0, 1]);
+});
+
+test("the world's own frame draws as no frame does", (t) => {
+  pinnedView(t);
+  state.frame = null;
+  const plain = PINNED_CELLS.map(([cell]) => screen(...cell));
+  state.frame = frameOf([0, -1, 0], FACE_NORMAL[0]);
+  PINNED_CELLS.forEach(([cell], i) => {
+    const [x, y] = screen(...cell);
+    near(x, plain[i][0]);
+    near(y, plain[i][1]);
+  });
+});
+
+test("under a frame the camera stands behind the traveller, its face's normal up the screen", (t) => {
+  pinnedView(t);
+  Object.assign(state.cam, { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 });
+  state.target = [17, 17, 17];
+  const h = [0, 1, 0];
+  const n = [1, 0, 0];
+  state.frame = frameOf(h, n);
+  const { up, toward } = camera();
+  for (const i of [0, 1, 2]) {
+    near(up[i], n[i]);
+    near(toward[i], -h[i]);
+  }
+  const [x0, y0] = screen(17, 17, 17);
+  const [x1, y1] = screen(18, 17, 17);
+  near(x1, x0);
+  assert.ok(y1 < y0, "a step along the normal goes up the screen");
+  state.cam.pitch = 22;
+  const pitched = camera().toward;
+  assert.ok(dot(pitched, h) < 0, "the camera stays behind the traveller");
+  assert.ok(dot(pitched, n) > 0, "and looks down over it");
+});
+
+test("the camera follows the frame by its identity", (t) => {
+  pinnedView(t);
+  const f = frameOf([1, 0, 0], FACE_NORMAL[0]);
+  state.frame = f;
+  const first = camera();
+  assert.equal(camera(), first);
+  state.frame = [...f];
+  const second = camera();
+  assert.notEqual(second, first);
+  assert.deepEqual([second.right, second.up, second.toward], [first.right, first.up, first.toward]);
+  state.frame = null;
+  assert.notEqual(camera(), second);
+});
+
+test("moving the orbit target moves nothing on screen under a frame either", (t) => {
+  pinnedView(t);
+  state.frame = frameOf([0, 0, 1], FACE_NORMAL[1]);
+  const before = screen(5, 6, 7);
+  retarget([3.5, 4.5, 5.5]);
+  assert.deepEqual(state.target, [3.5, 4.5, 5.5]);
+  const after = screen(5, 6, 7);
+  near(after[0], before[0]);
+  near(after[1], before[1]);
+});
+
+test("the target holds where it was put while anchored, whatever is selected", (t) => {
+  pinnedView(t);
+  t.after(() => {
+    state.anchored = false;
+    state.lvl = null;
+  });
+  state.lvl = { min: [10, 10, 15], max: [20, 20, 17] };
+  state.selected = null;
+  state.target = [12.5, 13.5, 16.5];
+  state.anchored = true;
+  pivot();
+  assert.deepEqual(state.target, [12.5, 13.5, 16.5]);
+  state.anchored = false;
+  pivot();
+  assert.deepEqual(state.target, levelCentre(state.lvl));
 });

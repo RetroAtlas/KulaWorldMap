@@ -36,7 +36,7 @@ export function drawCompass() {
   const world = state.lvl?.theme;
   const textured = state.show.skins;
   const dpr = Math.min(devicePixelRatio || 1, 3);
-  const key = [c.yaw, c.pitch, world, textured, size, dpr, !!skinsTable()].join("/");
+  const key = [c.yaw, c.pitch, c.frame, world, textured, size, dpr, !!skinsTable()].join("/");
   if (!size || key === painted) return;
   painted = key;
   const px = Math.round(size * dpr);

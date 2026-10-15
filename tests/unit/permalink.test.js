@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapData } from "./fixtures.js";
+import { mapData, PINNED_LINK, PINNED_CELLS } from "./fixtures.js";
 import { PITCH_MAX, ZOOM_MIN, ZOOM_MAX, state, screen } from "../../public/js/viewer/state.js";
 import { SIDE } from "../../public/js/format/lattice.js";
 import { slotOf, formatHash, parseHash } from "../../public/js/viewer/permalink.js";
@@ -171,30 +171,13 @@ test("a link puts the lattice where it always has on the screen", (t) => {
     state.target = was.target;
     state.view = was.view;
   });
-  const link = parseHash("#INCA/11/30,20/1.50/17,12,17/0.5,-0.25/33");
+  const link = parseHash(PINNED_LINK);
   [state.cam.yaw, state.cam.pitch] = link.turn;
   [state.cam.panX, state.cam.panY] = link.pan;
   state.cam.zoom = link.zoom;
   state.target = link.target;
   state.view = { w: 800, h: 600, dpr: 1 };
-  for (const [cell, at] of [
-    [
-      [17, 12, 17],
-      [374.5, 312.75],
-    ],
-    [
-      [18, 12, 17],
-      [418.667, 321.472],
-    ],
-    [
-      [17, 13, 17],
-      [349, 327.856],
-    ],
-    [
-      [17, 12, 18],
-      [374.5, 360.674],
-    ],
-  ]) {
+  for (const [cell, at] of PINNED_CELLS) {
     const [x, y] = screen(...cell);
     assert.ok(Math.abs(x - at[0]) < 1e-3 && Math.abs(y - at[1]) < 1e-3, `${cell}: ${x},${y}`);
   }

@@ -17,6 +17,12 @@ export const state = {
   // what framed the view, run again at every size the canvas takes; null once
   // the camera is moved on purpose
   framing: null,
+  // the frame the camera turns about, a rotation's columns in the world, or null; set as a new array
+  frame: null,
+  // while set, the target holds where it was put as the view turns
+  anchored: false,
+  // what the view was before a module took it, { cam, target, fitted, slice } or null; links carry it
+  parked: null,
   slice: SIDE - 1,
   view: { w: 0, h: 0, dpr: 1 },
   show: {
@@ -57,11 +63,36 @@ export function basisAt(yaw, pitch) {
   };
 }
 
+// A vector given in a frame's coordinates, in the world's.
+const inWorld = (f, v) => [
+  v[0] * f[0] + v[1] * f[3] + v[2] * f[6],
+  v[0] * f[1] + v[1] * f[4] + v[2] * f[7],
+  v[0] * f[2] + v[1] * f[5] + v[2] * f[8],
+];
+
+/** The view's basis: the orbit's at the yaw and pitch, turned about `state.frame` where set. */
 export function camera() {
   const { yaw, pitch } = state.cam;
-  if (basis && basis.yaw === yaw && basis.pitch === pitch) return basis;
-  basis = { yaw, pitch, ...basisAt(yaw, pitch) };
+  const { frame } = state;
+  if (basis && basis.yaw === yaw && basis.pitch === pitch && basis.frame === frame) return basis;
+  const b = basisAt(yaw, pitch);
+  basis = frame
+    ? {
+        yaw,
+        pitch,
+        frame,
+        right: inWorld(frame, b.right),
+        up: inWorld(frame, b.up),
+        toward: inWorld(frame, b.toward),
+      }
+    : { yaw, pitch, frame, ...b };
   return basis;
+}
+
+/** A traveller's frame, heading `h` on a face of normal `n`: the camera behind it, `n` up. */
+export function frameOf(h, n) {
+  const across = [h[1] * n[2] - h[2] * n[1], h[2] * n[0] - h[0] * n[2], h[0] * n[1] - h[1] * n[0]];
+  return [...across, -h[0], -h[1], -h[2], -n[0], -n[1], -n[2]].map((v) => v || 0);
 }
 
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -159,6 +190,7 @@ export function fitLevel(l) {
 // The view turns about the selected cell while it is centred on that cell,
 // and about the level otherwise.
 export function pivot() {
+  if (state.anchored) return;
   const s = state.selected;
   if (!state.lvl || (s && [s.x, s.y, s.z].every((v, i) => v + 0.5 === state.target[i]))) return;
   retarget(levelCentre(state.lvl));

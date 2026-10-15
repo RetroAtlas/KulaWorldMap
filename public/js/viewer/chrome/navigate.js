@@ -58,6 +58,12 @@ export function selectLevel(i, opts = {}) {
 /** Show a level that is not among the disc's. */
 export const showLevel = (l, opts = {}) => install(l, -1, opts);
 
+let framer = null;
+/** Register what frames the view in the fit's place, given the level; null gives the fit back. */
+export function fitWith(fn) {
+  framer = fn;
+}
+
 export function fit() {
   const l = state.lvl;
   if (!l) return;
@@ -65,7 +71,7 @@ export function fit() {
   // Fitting against a view of no size yields the zoom clamp rather than a fit,
   // so the fit waits for the size to arrive.
   if (!state.view.w || !state.view.h) return;
-  fitLevel(l);
+  (framer ?? fitLevel)(l);
 }
 
 export function setSlice(z) {
@@ -190,15 +196,21 @@ export function writeHash(push = false) {
 function currentHash() {
   const l = state.lvl;
   const s = state.selected;
+  const view = state.parked ?? {
+    cam: state.cam,
+    target: state.target,
+    fitted: state.framing === fit,
+    slice: state.slice,
+  };
   return (
     l &&
     formatHash({
       slot: slotOf(l),
-      cam: state.cam,
-      target: state.target,
-      slice: state.slice,
+      cam: view.cam,
+      target: view.target,
+      slice: view.slice,
       picked: s && [s.x, s.y, s.z],
-      fitted: state.framing === fit,
+      fitted: view.fitted,
       tails: tails.map((t) => t.write()).filter((segment) => segment != null),
     })
   );
