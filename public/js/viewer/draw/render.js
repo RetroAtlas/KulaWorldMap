@@ -1,5 +1,5 @@
 import { $, on, emit } from "../ui/dom.js";
-import { state, BLOCK, depth, facing, screen, sliceZ, effectsOn, effectFrame } from "../state.js";
+import { state, BLOCK, depth, facing, screen, sliceZ, effectFrame } from "../state.js";
 import { cellKey, FACE_NORMAL } from "../../format/lattice.js";
 import {
   worldTint,
@@ -62,11 +62,13 @@ export const invalidatePick = () => {
 
 // What draws over the map from outside it: an under hook runs before any
 // block, where the ground grid is drawn, and skips the grid by returning true;
-// a cell hook runs after each block is drawn, a frame hook once the
-// see-through layer is laid.
-const overlays = { under: [], cell: [], frame: [] };
-export function overlayWith({ under, cell, frame }) {
+// a block hook runs once a block is drawn, before the things standing on it;
+// a cell hook runs after each block with what stands on it; a frame hook once
+// the see-through layer is laid, and asks for another frame by returning true.
+const overlays = { under: [], block: [], cell: [], frame: [] };
+export function overlayWith({ under, block, cell, frame }) {
   if (under) overlays.under.push(under);
+  if (block) overlays.block.push(block);
   if (cell) overlays.cell.push(cell);
   if (frame) overlays.frame.push(frame);
 }
@@ -316,6 +318,7 @@ export function draw() {
     const sel = state.selected?.key === key;
     const hov = state.hover?.key === key;
     if (drawBlock(ctx, c, home, key, ghost, sel, hov, scene)) spinning = true;
+    for (const fn of overlays.block) fn(ctx, c, home, key, ghost, scene);
 
     if (state.show.objects && !ghost && !c.k) {
       for (const m of idx.markers.get(key) || []) if (!away(m.face)) mark(m, c, home, key);
@@ -337,7 +340,8 @@ export function draw() {
     ctx.drawImage(layerCv, 0, 0, w, h);
     ctx.restore();
   }
-  for (const fn of overlays.frame) fn(ctx, scene);
+  let again = false;
+  for (const fn of overlays.frame) again = fn(ctx, scene) === true || again;
   for (const m of idx.markers.get(chosen) || []) {
     const to = markerDestination(m, l);
     const from = { ...state.selected, face: m.face };
@@ -347,7 +351,7 @@ export function draw() {
   }
   if (state.show.camera) drawCamera(ctx, l);
   drawScale(ctx);
-  if (spinning && (state.show.motion || effectsOn())) animate();
+  if ((spinning && state.show.motion) || again) animate();
 }
 
 // Set by a draw with anything moving on screen, which then asks for the next
