@@ -483,7 +483,9 @@ test("placing a thing of a hidden kind brings the kind back, and the palette com
   expect(errors).toEqual([]);
 });
 
-test("a name that begins with a vowel, or sounds as if it did, takes an", async ({ page }) => {
+test("a name that begins with a vowel, or sounds as if it did, takes an, and a name of many takes none", async ({
+  page,
+}) => {
   const errors = trackErrors(page);
   await fresh(page);
   await pick(page, "Blocks", "k2");
@@ -498,6 +500,14 @@ test("a name that begins with a vowel, or sounds as if it did, takes an", async 
   await pick(page, "Pickups", "t35");
   await click(page, await plusY(page, START));
   await expect(page.locator("#say")).toHaveText("Placed an hourglass on the +y side of 17, 17, 17");
+  await pick(page, "Hazards", "t12");
+  const ice = await top(page, [18, 17, 17]);
+  await click(page, ice);
+  await expect(page.locator("#say")).toHaveText("Placed spikes on the top of 18, 17, 17");
+  await page.mouse.move(ice.x + 2, ice.y + 2);
+  await expect(page.locator("#tip")).toContainText("The top holds spikes already");
+  await click(page, ice);
+  expect(await toasts(page)).toContain("That face holds spikes already.");
   expect(errors).toEqual([]);
 });
 

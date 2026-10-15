@@ -20,7 +20,8 @@ export const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 export const sentence = (text) => `${capital(text)}.`;
 export const place3 = (cell) => cell.join(", ");
 const article = (word) => (/^([aeiou]|hour)/i.test(word) ? "an" : "a");
-export const aWord = (word) => `${article(word)} ${word}`;
+const many = (word) => /[^s]s$/i.test(word);
+export const aWord = (word) => (many(word) ? word : `${article(word)} ${word}`);
 export const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 export const kindWord = (kind) => lower(kindName(kind) || "plain block");
 /** The brush as a sentence names it, from the palette's pressed row. */
@@ -42,7 +43,7 @@ export const thingOn = (cell, face) =>
   (state.idx.markers.get(cellKey(...cell)) || []).find((m) => m.face === face) ?? null;
 export const plainOnly = (e) => {
   const name = lower(entryName(e.marker) ?? e.label);
-  return name.endsWith("s")
+  return many(name)
     ? `${capital(name)} work on a plain block only.`
     : `${capital(aWord(name))} works on a plain block only.`;
 };
