@@ -3,7 +3,10 @@ import { FACE_NORMAL } from "../format/lattice.js";
 import { frameOf } from "../viewer/state.js";
 
 export const REST = -1;
+export const HOP = 0;
+export const JUMP = 1;
 export const ROLLING = 2;
+export const FALL = 6;
 export const WRAPPING = 7;
 export const LEFT = 1;
 export const RIGHT = -1;
@@ -22,10 +25,12 @@ const axisOf = (v) => v.findIndex((c) => c !== 0);
 const cellOf = (b, p) => p.map((c) => Math.floor((c + b.half) / b.unit));
 export const faceOf = (n) => FACE_NORMAL.findIndex((f) => f.every((c, i) => c === n[i]));
 
+const NO_JUMP = { count: 0, rows: [] };
+
 /** A ball at rest on `face` of the block at `cell`, heading `h`, by `rules`: its type's motion
-    table, the 4096ths of a turn and the units a block has. */
+    table, the 4096ths of a turn, the units a block has and the mesh file's arc for the jump. */
 export function ballAt(rules, cell, face, h) {
-  const { table, unit } = rules;
+  const { table, unit, jump = NO_JUMP } = rules;
   const half = unit / 2;
   // the ball rests its radius off the face, which is where the roll up a wall resumes from
   const radius = table.rolling.resume;
@@ -36,6 +41,7 @@ export function ballAt(rules, cell, face, h) {
     unit,
     half,
     radius,
+    jump,
     h,
     n,
     s: cross(h, n),
@@ -51,7 +57,7 @@ export function ballAt(rules, cell, face, h) {
     progress: half,
     last: half,
     forward: false,
-    jump: false,
+    wantJump: false,
     turn: 0,
     waiting: 0,
     again: 0,
@@ -61,20 +67,40 @@ export function ballAt(rules, cell, face, h) {
     ramp: null,
     arc: 0,
     wrapped: false,
-    held: null,
+    held: [...cell],
+    v: 0,
+    count: 0,
+    row: 0,
+    saved: null,
+    bounced: false,
+    landed: false,
+    rest: { cell: [...cell], face, h },
+    look: { word: 0, rate: table.look.from },
     frame: frameOf(h, n),
   };
 }
 
-/** The block the ball stands on, which it keeps while it goes round its edge. */
-export const blockUnder = (b) => (b.state === WRAPPING ? b.held : add(cellOf(b, b.pos), b.n, -1));
+const aloft = (b) => b.state === JUMP || b.state === HOP || b.state === FALL;
+/** The block the ball stands on, kept while it goes round its edge or is in the air. */
+export const blockUnder = (b) =>
+  b.state === WRAPPING || aloft(b) ? b.held : add(cellOf(b, b.pos), b.n, -1);
 export const faceUnder = (b) => faceOf(b.n);
 /** The centre's distance off the face it stands on, in game units. */
 export const heightOf = (b) => dot(add(b.pos, blockUnder(b), -b.unit), b.n) - b.half;
+/** The centre's distance off the face below it, for the shadow: in the air, the block under
+    the ball's cell, or nothing at all, Infinity, where that cell holds no block. */
+export function clearance(b, probe) {
+  if (!aloft(b)) return heightOf(b);
+  const under = add(cellOf(b, b.pos), b.n, -1);
+  return probe.solid(under) ? dot(add(b.pos, under, -b.unit), b.n) - b.half : Infinity;
+}
 /** The centre in blocks. */
 export const centreOf = (b) => b.pos.map((c) => c / b.unit + 0.5);
-/** Whether the ball has anything to do: it rolls, a ramp runs or a turn waits. */
-export const moving = (b) => b.state !== REST || b.ramp !== null || b.turn !== 0;
+/** Whether the ball has anything to do: it moves, a ramp runs, a turn waits or the view's pitch
+    returns. */
+export const moving = (b) => b.state !== REST || b.ramp !== null || b.turn !== 0 || b.look.word > 0;
+/** The centre's lift off the face the jump or the hop left, in game units. */
+const liftOf = (b) => dot(add(b.pos, b.saved, -1), b.n) + b.radius;
 
 function progressOf(b) {
   const i = axisOf(b.h);
@@ -163,9 +189,9 @@ function input(b, probe, out) {
     press(LEFT);
     b.again = LEFT;
   }
-  b.jump = (b.pad & PAD.cross) !== 0;
+  b.wantJump = (b.pad & PAD.cross) !== 0;
   b.forward = (b.pad & PAD.up) !== 0;
-  if (!b.forward || b.jump) return;
+  if (!b.forward || b.wantJump) return;
   const under = blockUnder(b);
   if (probe.solid(add(under, b.h))) return;
   if (probe.solid(add(under, b.s)) || probe.solid(add(under, neg(b.s)))) {
@@ -174,17 +200,54 @@ function input(b, probe, out) {
   }
 }
 
+function turnNow(b, out) {
+  const dir = b.turn;
+  b.turn = 0;
+  const [h, s] = dir === LEFT ? [neg(b.s), b.h] : [b.s, neg(b.h)];
+  b.h = h;
+  b.s = s;
+  startRamp(b, "quarter", dir * b.table.quarter.step);
+  out.push({ turned: dir });
+}
+
+function startJump(b, probe) {
+  if (!b.jump.count || !probe.solid(blockUnder(b))) return;
+  b.state = JUMP;
+  b.saved = [...b.pos];
+  b.count = b.jump.count;
+  b.row = 0;
+  b.speed = b.table.jump.speed;
+  b.spinSpeed = b.speed;
+  b.v = 0;
+  b.bounced = false;
+}
+
+function startHop(b) {
+  if (!b.jump.count) return;
+  b.state = HOP;
+  b.saved = [...b.pos];
+  b.count = b.jump.count;
+  b.row = 0;
+  b.v = 0;
+}
+
 function intents(b, probe, out) {
+  if (b.state === HOP) {
+    if (b.turn && !b.ramp) turnNow(b, out);
+    return;
+  }
+  if (b.state === ROLLING) {
+    if (b.wantJump) startJump(b, probe);
+    return;
+  }
   if (b.state !== REST) return;
+  if (b.wantJump) {
+    if (b.forward) startJump(b, probe);
+    else startHop(b);
+    return;
+  }
   if (b.turn) {
-    if (b.ramp) return;
-    const dir = b.turn;
-    b.turn = 0;
-    const [h, s] = dir === LEFT ? [neg(b.s), b.h] : [b.s, neg(b.h)];
-    b.h = h;
-    b.s = s;
-    startRamp(b, "quarter", dir * b.table.quarter.step);
-    out.push({ turned: dir });
+    if (!b.ramp) turnNow(b, out);
     return;
   }
   if (!b.forward) return;
@@ -193,17 +256,164 @@ function intents(b, probe, out) {
   if (mayRollOn(b, probe, cell)) b.state = ROLLING;
 }
 
-function roll(b) {
-  const t = b.table.rolling;
+function recentre(p, b, by) {
   const i = axisOf(b.s);
-  const off = b.pos[i] - cellOf(b, b.pos)[i] * b.unit;
-  if (Math.abs(off) > t.recentre) b.pos[i] -= Math.sign(off) * t.recentre;
+  const off = p[i] - cellOf(b, p)[i] * b.unit;
+  if (Math.abs(off) > by) p[i] -= Math.sign(off) * by;
+}
+
+function roll(b, probe) {
+  const t = b.table.rolling;
+  recentre(b.pos, b, t.recentre);
+  if (!probe.solid(blockUnder(b)) && b.progress >= t.over[0] && b.progress <= t.over[1]) {
+    b.state = FALL;
+    b.speed = 0;
+    b.v = b.table.fall.start;
+    return;
+  }
+  if (b.progress >= t.over[0]) b.wrapped = false;
   b.speed = Math.min(b.speed + t.gain, t.top);
   if (turning(b)) b.speed = Math.min(b.speed, b.table.quarter.clamp);
   b.pos = add(b.pos, b.h, b.speed);
   b.spinSpeed = b.speed;
-  if (b.wrapped && b.progress >= t.over[0]) b.wrapped = false;
 }
+
+/** Land where the point the radius under the centre lies in a block: laid the radius off its
+    face, rolling on where Up is held or the landing was short of the middle's third, else at
+    rest. */
+function land(b, probe, out) {
+  const block = cellOf(b, add(b.pos, b.n, -b.radius));
+  if (!probe.solid(block)) return false;
+  const i = axisOf(b.n);
+  b.pos[i] = block[i] * b.unit + b.n[i] * (b.half + b.radius);
+  b.v = 0;
+  b.bounced = false;
+  b.landed = true;
+  b.progress = progressOf(b);
+  if (b.forward || (b.progress < b.table.fall.short && !b.wantJump)) {
+    b.state = ROLLING;
+    b.speed = b.table.rolling.top;
+  } else {
+    b.state = REST;
+    b.speed = 0;
+  }
+  out.push({ at: "landed" });
+  return true;
+}
+
+// Rising into a block over the ball, or ahead and above from the wall's progress, or behind and
+// above short of the ball's radius, drops it at its rise reversed.
+function ceiling(b, probe, rise) {
+  const j = b.table.jump;
+  if (rise <= 0 || liftOf(b) < j.wall) return false;
+  const cell = cellOf(b, b.pos);
+  const p = progressOf(b);
+  const over = add(cell, b.n);
+  const hit =
+    probe.solid(over) ||
+    (p >= j.wall && probe.solid(add(over, b.h))) ||
+    (p <= b.radius && probe.solid(add(over, b.h, -1)));
+  if (!hit) return false;
+  b.state = FALL;
+  b.v = -rise;
+  return true;
+}
+
+function jumping(b, probe, out) {
+  const j = b.table.jump;
+  b.count = b.count === j.skip + 1 ? 0 : b.count - 1;
+  if (b.count <= 0) {
+    b.pos = add(b.saved, b.h, j.snap);
+    if (land(b, probe, out)) return;
+    const rows = b.jump.rows;
+    b.state = FALL;
+    b.v = rows[b.row - 1][0] - rows[b.row - 2][0];
+    return;
+  }
+  recentre(b.saved, b, j.recentre);
+  const was = b.row ? b.jump.rows[b.row - 1] : [0, 0, 0];
+  const [height, right, back] = b.jump.rows[b.row++];
+  b.pos = add(add(add(b.saved, b.n, height), b.s, right), b.h, -back);
+  const rise = height - was[0];
+  const advance = was[2] - back;
+  if (b.count < j.catch && land(b, probe, out)) return;
+  const cell = cellOf(b, b.pos);
+  const p = progressOf(b);
+  const ahead = add(cell, b.h);
+  const lift = liftOf(b);
+  const wall =
+    p >= j.wall &&
+    (probe.solid(ahead) ||
+      (lift >= j.wall && probe.solid(add(ahead, b.n))) ||
+      (lift < j.low && probe.solid(add(ahead, b.n, -1))));
+  if (wall) {
+    b.pos = add(b.pos, b.h, -2 * advance);
+    b.speed = -advance;
+    b.bounced = true;
+    b.state = FALL;
+    b.v = rise > 0 ? j.bounce : rise;
+    return;
+  }
+  ceiling(b, probe, rise);
+}
+
+function hopping(b, probe) {
+  const j = b.table.jump;
+  b.count = b.count === j.skip + 1 ? 0 : b.count - 1;
+  if (b.count <= 0) {
+    if (probe.solid(add(cellOf(b, b.saved), b.n, -1))) {
+      b.state = REST;
+      return;
+    }
+    b.state = FALL;
+    b.v = b.table.fall.hop;
+    return;
+  }
+  const was = b.jump.rows[b.row][0];
+  b.row += 1;
+  const height = b.jump.rows[b.row][0];
+  b.pos = add(b.saved, b.n, height);
+  ceiling(b, probe, height - was);
+}
+
+function falling(b, probe, out) {
+  const f = b.table.fall;
+  const t = b.table.rolling;
+  b.v = Math.max(b.v + f.gain, f.top);
+  if (b.bounced && b.speed < 0) b.speed = Math.min(0, b.speed + t.gain);
+  b.pos = add(add(b.pos, b.n, b.v), b.h, b.speed);
+  b.spinSpeed = b.forward ? Math.min(b.spinSpeed + t.gain, t.top) : Math.max(0, b.spinSpeed - 1);
+  const cell = cellOf(b, b.pos);
+  const p = progressOf(b);
+  const [ahead, behind] = f.hold;
+  if (p >= ahead && probe.solid(add(cell, b.h))) lay(b, f.wall);
+  else if (p < behind && probe.solid(add(cell, b.h, -1))) lay(b, f.behind);
+  land(b, probe, out);
+}
+
+// The view pitches further down over a fall, and over the jump's last rows, where no block is
+// under the ball, by a word that grows faster then slower, and comes back once the ball is over
+// a block or at rest, the rate starting over once the ball is neither falling nor in those rows.
+function looking(b, probe) {
+  const l = b.table.look;
+  const w = b.look;
+  const aloft = b.state === FALL || (b.state === JUMP && b.count < l.rows);
+  if (aloft && !probe.solid(add(cellOf(b, b.pos), b.n, -1))) {
+    if (w.word < l.near) w.rate = Math.min(w.rate + 1, l.to);
+    else w.rate = Math.max(w.rate - 1, l.least);
+    w.word = Math.min(l.far, w.word + w.rate);
+    return;
+  }
+  if (!aloft) w.rate = l.from;
+  w.word = Math.max(0, w.word - l.back);
+}
+
+/** Whether the point past the ball's centre along the normal has left the lattice far enough to
+    be lost. */
+const lost = (b) => {
+  const [low, high] = b.table.fall.lost;
+  return cellOf(b, add(b.pos, b.n, b.half)).some((v) => v <= low || v >= high);
+};
 
 function wrap(b) {
   const { arc } = b.table.wrap;
@@ -273,18 +483,31 @@ function ramping(b) {
 /** One game frame, with `b.pad` the pad as held: what happened, as events. */
 export function step(b, probe) {
   const out = [];
+  b.landed = false;
   input(b, probe, out);
   intents(b, probe, out);
-  if (b.state === ROLLING) roll(b);
+  if (b.state === ROLLING) roll(b, probe);
   else if (b.state === WRAPPING) wrap(b);
+  else if (b.state === JUMP) jumping(b, probe, out);
+  else if (b.state === HOP) hopping(b, probe);
+  else if (b.state === FALL) falling(b, probe, out);
   else if (b.state === REST) {
     settle(b);
     b.spinSpeed = 0;
   }
   b.last = b.progress;
   b.progress = progressOf(b);
-  if (b.state === ROLLING) move(b, probe, out);
+  // the game's move step runs before its landings, so a frame that lands takes no roll of its own
+  if (b.state === ROLLING && !b.landed) move(b, probe, out);
   if (b.ramp) ramping(b);
+  if (b.state === REST || b.state === ROLLING) b.held = add(cellOf(b, b.pos), b.n, -1);
+  looking(b, probe);
   b.spin += b.table.spin * b.spinSpeed;
+  if (b.state === REST) b.rest = { cell: blockUnder(b), face: faceUnder(b), h: b.h };
+  if (lost(b)) {
+    const { cell, face, h } = b.rest;
+    Object.assign(b, ballAt(b.rules, cell, face, h));
+    out.push({ lost: true });
+  }
   return out;
 }

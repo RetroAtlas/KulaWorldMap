@@ -5,6 +5,7 @@ import { SIDE, cellKey, FACE_NAME, FACE_NORMAL, DIRECTION_NAME } from "../format
 import {
   ballFor,
   blockUnits,
+  jumpTable,
   layHeading,
   levelTitle,
   markerModel,
@@ -27,10 +28,11 @@ import {
   ballAt,
   blockUnder,
   centreOf,
+  clearance,
   faceOf,
   faceUnder,
-  heightOf,
   moving,
+  offsetFrame,
   step,
 } from "./ball.js";
 
@@ -46,8 +48,13 @@ const LEAVE_MS = 450;
 const GAP_MS = 250;
 // how far toward the camera a block counts as covering the ball, in blocks, and the sampling step
 const COVER = { reach: 1.5, step: 0.25 };
-const BITS = { ArrowUp: PAD.up, ArrowLeft: PAD.left, ArrowRight: PAD.right, ArrowDown: PAD.down };
-const RESERVED = new Set([" "]);
+const BITS = {
+  ArrowUp: PAD.up,
+  ArrowLeft: PAD.left,
+  ArrowRight: PAD.right,
+  ArrowDown: PAD.down,
+  " ": PAD.cross,
+};
 const PAD_BITS = { up: PAD.up, left: PAD.left, right: PAD.right, down: PAD.down, jump: PAD.cross };
 const PLAIN_KIND = 0;
 const REFUSED = "The ball cannot roll off here: a block stands beside it.";
@@ -55,6 +62,7 @@ const AS_STONE = "The ball rolls over ice, spikes and the rest as over plain sto
 const NO_START = "The level has no start, so the ball stands on the first face it could.";
 const NOWHERE = "The level has no face the ball could stand on.";
 const OBJECTS_ON = "Objects turned on, for the ball.";
+const LOST = "The ball fell off the level, and is back where it last stood.";
 
 let live = null;
 let held = 0;
@@ -86,7 +94,7 @@ function stateOf(b) {
     centre: centreOf(b),
     point: b.pos.map((v) => v + b.half),
     spin: b.spin,
-    height: heightOf(b),
+    height: clearance(b, live.probe),
     frame: b.ramp ? b.ramp.to : b.frame,
   };
 }
@@ -94,12 +102,13 @@ function stateOf(b) {
 /** The ball as drawn: live while Motion is on, else as it last stood. */
 const shown = () => (motionOn() ? stateOf(live.ball) : live.still);
 
-/** The rules the ball rolls by: its type's motion table, the 4096ths of a turn and a block's
-    units. */
+/** The rules the ball rolls by: its type's motion table, the 4096ths of a turn, a block's units
+    and the mesh file's arc. */
 const rulesOf = (motion) => ({
   table: motion.types[String(BALL_TYPE)],
   turn: motion.turn,
   unit: blockUnits(),
+  jump: jumpTable(),
 });
 
 /** Whether a block stands between `centre`, in blocks, and the camera, within the cover's reach. */
@@ -312,7 +321,7 @@ function advance() {
   if (!ease) {
     const k = motionOn() ? 1 - Math.exp(-dt / FOLLOW_MS) : 1;
     state.target = state.target.map((v, i) => v + (s.centre[i] - v) * k);
-    const frame = motionOn() ? live.ball.frame : s.frame;
+    const frame = motionOn() ? looked(live.ball) : s.frame;
     if (state.frame !== frame) {
       state.frame = frame;
       moved = true;
@@ -343,13 +352,22 @@ function stepped(dt) {
 
 const again = () => !!(ease || (live && (moving(live.ball) || held || tapped)));
 
+/** The ball's frame pitched further down by the view's word while it falls. */
+const looked = (b) => (b.look.word ? offsetFrame(b.frame, 0, b.look.word, b.rules.turn) : b.frame);
+
 function happened(event) {
   const b = live.ball;
   if (event.refused) {
     status(REFUSED);
     return;
   }
-  if (event.at === "middle") {
+  if (event.lost) {
+    live.station = true;
+    toast(LOST);
+    say(LOST);
+    return;
+  }
+  if (event.at) {
     live.station = true;
     const block = blockUnder(b);
     say(`${block.join(",")}, ${FACE_NAME[faceUnder(b)]}`);
@@ -452,10 +470,10 @@ function keydown(e) {
     return;
   }
   const bit = BITS[e.key];
-  if ((!bit && !RESERVED.has(e.key)) || e.shiftKey || modified(e)) return;
+  if (!bit || e.shiftKey || modified(e)) return;
   e.preventDefault();
   e.stopPropagation();
-  if (e.repeat || !bit) return;
+  if (e.repeat) return;
   held |= bit;
   tapped |= bit;
   wake();
@@ -551,7 +569,7 @@ function enter(at = null) {
   fit();
   const to = {
     ...viewNow(),
-    rot: () => viewOf(live.ball.frame, state.cam.yaw, state.cam.pitch),
+    rot: () => viewOf(looked(live.ball), state.cam.yaw, state.cam.pitch),
     target: () => shown().centre,
   };
   startEase(from, to, ENTER_MS, () => {

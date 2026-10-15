@@ -443,6 +443,55 @@ test("out of an inner corner the ball climbs the wall ahead, and shows through t
   expect(errors).toEqual([]);
 });
 
+test("Space hops the ball in place, jumps it two blocks on while it rolls, and a jump off the lattice falls and comes back", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false });
+  await startPlay(page);
+  await page.keyboard.press(" ");
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(true);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  expect((await probe(page)).station.block).toEqual([17, 18, 17]);
+  await page.keyboard.down("ArrowUp");
+  await page.waitForTimeout(60);
+  await page.keyboard.press(" ");
+  await page.keyboard.up("ArrowUp");
+  await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 16, 17]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  await expect(say(page)).toHaveText("17,16,17, top");
+  // from the lattice's last column a jump lands past its edge, and the ball comes back to where it stood
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await laid(page, [32, 17, 17], { kind: 0 });
+  await expect(page.locator("#chipLine")).toContainText("2 blocks");
+  await page.keyboard.press("v");
+  await page.evaluate(async () => {
+    const P = await import(new URL("js/play/play.js", location.href).href);
+    P.bootPlay();
+    P.playAt({ x: 32, y: 17, z: 17, face: 0 });
+  });
+  await expect(page.locator("#play")).toBeVisible();
+  await page.keyboard.press("ArrowLeft");
+  await expect(line(page)).toContainText("facing +x");
+  await page.keyboard.down("ArrowUp");
+  await page.keyboard.press(" ");
+  await page.keyboard.up("ArrowUp");
+  await expect(page.locator("#toastStack .toast")).toHaveText([
+    "The ball fell off the level, and is back where it last stood.",
+  ]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  expect((await probe(page)).station).toEqual({
+    block: [32, 17, 17],
+    face: 0,
+    heading: "+x",
+    moving: false,
+  });
+  expect(errors).toEqual([]);
+});
+
 test.describe("with a touch screen", () => {
   test.use({ hasTouch: true });
 

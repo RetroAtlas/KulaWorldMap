@@ -7,7 +7,10 @@ import { heading } from "../../public/js/viewer/travel.js";
 import { probeOf } from "../../public/js/viewer/walk.js";
 import {
   REST,
+  HOP,
+  JUMP,
   ROLLING,
+  FALL,
   WRAPPING,
   LEFT,
   RIGHT,
@@ -21,13 +24,15 @@ import {
   heightOf,
   centreOf,
   moving,
+  clearance,
 } from "../../public/js/play/ball.js";
 
 const table = objects.motion.types[30];
 const UNIT = objects.block;
 const TURN = objects.motion.turn;
 const QUARTER = TURN / 4;
-const RULES = { table, turn: TURN, unit: UNIT };
+const RULES = { table, turn: TURN, unit: UNIT, jump: objects.jump };
+const JUMPS = objects.jump;
 const neg = (v) => v.map((x) => -x || 0);
 const cross = (a, b) => [
   a[1] * b[2] - a[2] * b[1],
@@ -386,4 +391,223 @@ test("a turn pressed during a turn whose ramp a climb replaces fires as the clim
   ]);
   assert.deepEqual(c.h, [0, 0, -1]);
   assert.equal(moving(c), false);
+});
+
+test("Space at rest hops the ball in place over the table's rows, back at rest where it stood", () => {
+  const probe = row(10, 18);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  const heights = [];
+  for (let f = 1; f <= 30; f++) {
+    b.pad = f === 1 ? PAD.cross : 0;
+    step(b, probe);
+    assert.equal(b.state, HOP, `frame ${f}`);
+    heights.push(17 * UNIT - 356 - b.pos[2]);
+  }
+  assert.deepEqual(
+    heights,
+    JUMPS.rows.slice(1, 31).map((r) => r[0]),
+  );
+  assert.equal(Math.max(...heights), 458);
+  run(b, probe, 1, 0);
+  assert.equal(b.state, REST);
+  run(b, probe, 1, 0);
+  assert.deepEqual(b.pos, [17 * UNIT, 18 * UNIT, 17 * UNIT - 356]);
+  assert.deepEqual(blockUnder(b), [17, 18, 17]);
+});
+
+test("Up with Space jumps the ball along the rows, 458 up on the 15th and 16th frames, and lands two blocks on", () => {
+  const probe = row(10, 18);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  const heights = [];
+  const along = [];
+  for (let f = 1; f <= 30; f++) {
+    b.pad = PAD.up | PAD.cross;
+    step(b, probe);
+    assert.equal(b.state, JUMP, `frame ${f}`);
+    heights.push(17 * UNIT - 356 - b.pos[2]);
+    along.push(18 * UNIT - b.pos[1]);
+  }
+  assert.deepEqual([heights[14], heights[15]], [458, 458]);
+  assert.equal(along[29], 986);
+  assert.deepEqual(blockUnder(b), [17, 18, 17]);
+  assert.equal(heightOf(b), 100 + 41);
+  assert.equal(b.spinSpeed, 33);
+  const events = run(b, probe, 1, 0);
+  assert.deepEqual(events, [{ at: "landed" }]);
+  assert.deepEqual(b.pos, [17 * UNIT, 16 * UNIT, 17 * UNIT - 356]);
+  assert.equal(b.state, REST);
+  assert.deepEqual(blockUnder(b), [17, 16, 17]);
+  assert.deepEqual(b.rest.cell, [17, 16, 17]);
+});
+
+test("a jump taken early in a block lands short of the middle's third and rolls on to the middle", () => {
+  const probe = row(8, 18);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 11, PAD.up);
+  assert.deepEqual(blockUnder(b), [17, 17, 17]);
+  assert.ok(b.progress < 180, String(b.progress));
+  run(b, probe, 1, PAD.up | PAD.cross);
+  assert.equal(b.state, JUMP);
+  const frames = rest(b, probe);
+  assert.ok(frames > 30 && frames < 45, String(frames));
+  assert.deepEqual(b.pos, [17 * UNIT, 15 * UNIT, 17 * UNIT - 356]);
+});
+
+test("a jump over nothing falls at the last row's drop, 5 a frame faster to 66, flying on, and is lost past the lattice", () => {
+  const probe = row(15, 18);
+  const b = ballAt(RULES, [17, 16, 17], TOP, UP);
+  run(b, probe, 31, PAD.up | PAD.cross);
+  assert.equal(b.state, FALL);
+  assert.equal(b.v, -56);
+  const drops = [];
+  const y = b.pos[1];
+  for (let f = 0; f < 4; f++) {
+    run(b, probe, 1, 0);
+    drops.push(b.v);
+  }
+  assert.deepEqual(drops, [-61, -66, -66, -66]);
+  assert.equal(y - b.pos[1], 4 * 33);
+  assert.ok(b.look.word > 0);
+  let frames = 0;
+  let events = [];
+  while (!events.some((e) => e.lost) && frames < 400) {
+    events = run(b, probe, 1, 0);
+    frames++;
+  }
+  assert.ok(
+    events.some((e) => e.lost),
+    "lost",
+  );
+  assert.deepEqual(blockUnder(b), [17, 16, 17]);
+  assert.equal(b.state, REST);
+  assert.deepEqual(b.h, UP);
+});
+
+test("a wall met in the air throws the ball back and drops it, and it lands on the floor behind", () => {
+  const probe = row(15, 18, [
+    [17, 14, 17],
+    [17, 14, 16],
+    [17, 14, 15],
+  ]);
+  const b = ballAt(RULES, [17, 16, 17], TOP, UP);
+  let bounced = null;
+  for (let f = 1; f <= 31 && bounced === null; f++) {
+    b.pad = PAD.up | PAD.cross;
+    step(b, probe);
+    if (b.state === FALL) bounced = f;
+  }
+  assert.ok(bounced !== null && bounced < 31, String(bounced));
+  assert.ok(b.speed < 0);
+  assert.ok(b.bounced);
+  rest(b, probe);
+  assert.equal(b.state, REST);
+  assert.ok([15, 16].includes(blockUnder(b)[1]), String(blockUnder(b)));
+  assert.equal(heightOf(b), 100);
+});
+
+test("the view's word grows by a rate rising from 4 a frame over a fall, keeps its rate over a block met in the fall, and comes back by 18 once the ball is down", () => {
+  const probe = row(15, 18);
+  const b = ballAt(RULES, [17, 16, 17], TOP, UP);
+  run(b, probe, 23, PAD.up | PAD.cross);
+  assert.equal(b.look.word, 0);
+  const words = [];
+  for (let f = 0; f < 6; f++) {
+    run(b, probe, 1, 0);
+    words.push(b.look.word);
+  }
+  assert.deepEqual(words, [4, 9, 15, 22, 30, 39]);
+  const c = ballAt(RULES, [17, 16, 17], TOP, UP);
+  c.look.word = 100;
+  run(c, probe, 1, 0);
+  assert.equal(c.look.word, 82);
+  assert.ok(moving(c));
+  rest(c, probe);
+  assert.equal(c.look.word, 0);
+  // a block two below the floor comes under the fall: the word comes back with the rate kept,
+  // until the landing starts it over
+  const lower = row(15, 18, [[17, 13, 19]]);
+  const d = ballAt(RULES, [17, 16, 17], TOP, UP);
+  run(d, lower, 31, PAD.up | PAD.cross);
+  assert.equal(d.state, FALL);
+  const seen = [];
+  for (let f = 0; f < 60 && d.state === FALL; f++) {
+    const before = { word: d.look.word, rate: d.look.rate };
+    run(d, lower, 1, 0);
+    if (d.state === FALL && d.look.word < before.word)
+      seen.push([before.word - d.look.word, d.look.rate === before.rate]);
+  }
+  assert.ok(seen.length > 0);
+  assert.ok(seen.every(([back, kept]) => back === 18 && kept));
+  assert.equal(d.state, REST);
+  assert.deepEqual(blockUnder(d), [17, 13, 19]);
+  assert.equal(d.look.rate, table.look.from);
+});
+
+test("a landing past the middle at an edge the side rule refuses rests where the ball came down", () => {
+  const probe = row(15, 18, [[18, 15, 17]]);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 19, PAD.up);
+  assert.deepEqual(blockUnder(b), [17, 17, 17]);
+  const launched = b.progress;
+  assert.ok(launched > 256, String(launched));
+  run(b, probe, 1, PAD.up | PAD.cross);
+  assert.equal(b.state, JUMP);
+  let landed = null;
+  for (let f = 0; f < 40 && landed === null; f++)
+    if (run(b, probe, 1, PAD.up).some((e) => e.at === "landed")) landed = b.progress;
+  assert.equal(landed, launched);
+  assert.deepEqual(blockUnder(b), [17, 15, 17]);
+  assert.equal(b.state, ROLLING);
+  run(b, probe, 5, PAD.up);
+  assert.equal(b.state, REST);
+  assert.equal(b.progress, launched);
+  assert.deepEqual(blockUnder(b), [17, 15, 17]);
+});
+
+test("a landing at the climb's progress under a wall climbs on the frame after, not the landing's", () => {
+  const probe = row(14, 18, [[17, 14, 16]]);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 23, PAD.up);
+  assert.deepEqual(blockUnder(b), [17, 17, 17]);
+  assert.ok(b.progress >= table.rolling.climb, String(b.progress));
+  run(b, probe, 1, PAD.up | PAD.cross);
+  assert.equal(b.state, JUMP);
+  let events = [];
+  for (let f = 0; f < 40 && !events.some((e) => e.at === "landed"); f++)
+    events = run(b, probe, 1, PAD.up);
+  assert.deepEqual(events, [{ at: "landed" }]);
+  assert.deepEqual(blockUnder(b), [17, 15, 17]);
+  assert.equal(b.ramp, null);
+  assert.deepEqual(run(b, probe, 1, PAD.up), [{ face: true }]);
+  assert.equal(b.ramp.kind, "climb");
+  assert.deepEqual(blockUnder(b), [17, 14, 16]);
+});
+
+test("the shadow's height is the centre's off the block under it, and nothing over nothing", () => {
+  const probe = row(15, 18);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  assert.equal(clearance(b, probe), 100);
+  // over the hop the height is the centre's while the shadow could show, and nothing above a block's
+  const seen = new Set();
+  for (let f = 1; f <= 30; f++) {
+    run(b, probe, 1, f === 1 ? PAD.cross : 0);
+    assert.equal(b.state, HOP);
+    const h = heightOf(b);
+    assert.equal(clearance(b, probe), h <= UNIT ? h : Infinity, `frame ${f}`);
+    seen.add(h <= UNIT);
+  }
+  assert.deepEqual([...seen].sort(), [false, true]);
+  const c = ballAt(RULES, [17, 16, 17], TOP, UP);
+  run(c, probe, 31, PAD.up | PAD.cross);
+  assert.equal(c.state, FALL);
+  assert.equal(clearance(c, probe), Infinity);
+  const lower = row(15, 18, [[17, 13, 19]]);
+  const d = ballAt(RULES, [17, 16, 17], TOP, UP);
+  run(d, lower, 31, PAD.up | PAD.cross);
+  let over = null;
+  for (let f = 0; f < 60 && over === null; f++) {
+    run(d, lower, 1, 0);
+    if (d.state === FALL && clearance(d, lower) !== Infinity) over = clearance(d, lower);
+  }
+  assert.ok(over !== null && over > 0 && over < 2 * UNIT, String(over));
 });

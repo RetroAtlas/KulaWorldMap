@@ -63,6 +63,7 @@ const HELP = [
     "arrows",
     "while playing: roll the ball ahead for as long as held, turn it left and right, turn it about",
   ],
+  ["`Space`", "while playing: jump, or hop in place"],
   ["`s`", "settings"],
   ["`c`", "start camera"],
   ["`/`", "search"],

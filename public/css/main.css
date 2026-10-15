@@ -1533,7 +1533,7 @@ body.editing #course .status {
 .pad [data-pad="left"] {
   grid-area: 2 / 1;
 }
-.pad .ball {
+.pad [data-pad="jump"] {
   grid-area: 2 / 2;
   display: grid;
   place-items: center;

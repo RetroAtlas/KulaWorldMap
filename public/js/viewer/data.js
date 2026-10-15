@@ -15,6 +15,7 @@ export const setObjects = (o) => {
 export const modelUnit = () => 1 / shapes.block;
 export const blockUnits = () => shapes.block;
 export const motionTable = () => shapes.motion;
+export const jumpTable = () => shapes.jump ?? { count: 0, rows: [] };
 export const skinsTable = () => shapes.skins;
 export const worldTint = (world) => {
   const c = shapes.skins?.tint?.[world];
