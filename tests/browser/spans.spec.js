@@ -389,6 +389,13 @@ test("Erase takes a run whole, nothing stands on its faces, and a brush on its b
     "Moved the run of the moving platform to 18, 23, 17",
   );
   expect((await steps(page)).past).toBe(before.past + 1);
+  // re-laid toward the far end it has, the run takes no step and stops waiting
+  await click(page, await top(page, [18, 17, 17]));
+  await expect(page.locator("#toolStatus")).toHaveText(WAITING);
+  await click(page, await floor(page, 19, 23));
+  expect(await spans(page)).toEqual([{ ...PLATFORM, far: [18, 23, 17] }]);
+  expect((await steps(page)).past).toBe(before.past + 1);
+  await expect(page.locator("#toolStatus")).toHaveText("");
 
   await page.keyboard.press("z");
   await click(page, await top(page, [18, 18, 17]));

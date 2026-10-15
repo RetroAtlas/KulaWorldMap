@@ -66,11 +66,12 @@ export function refuse(text) {
   return true;
 }
 
-/** Make `next` the draft's document as one step, announced as its label reads. */
+/** Make `next` the draft's document as one step, announced as its label reads; false where it changes nothing. */
 export function commit(id, next, label) {
-  edit(id, next, label);
+  const took = edit(id, next, label);
   status("");
-  say(capital(label));
+  if (took) say(capital(label));
+  return took;
 }
 
 /** The errors `next` has that `before` had not, `before`'s read through `as` first. */

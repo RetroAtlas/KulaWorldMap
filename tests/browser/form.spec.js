@@ -211,6 +211,13 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   );
   await expect(field(page, "length")).toHaveValue("3");
   await expect(field(page, "length")).toBeFocused();
+  // a length that rounds to the one the block holds takes no step, and the field shows it again
+  await field(page, "length").fill("3.4");
+  await field(page, "length").press("Enter");
+  await expect(field(page, "length")).toHaveValue("3");
+  await expect(page.locator("#say")).toHaveText(
+    "Set the length of the moving platform at 18, 17, 17 to 3",
+  );
   // a speed is any word the file holds, which the checks warn of away from the disc's, and an
   // empty field is put back
   const slow = page.locator("#chipNote .findings li", { hasText: "a platform running at 0" });
@@ -545,6 +552,10 @@ test("the swatch row is labelled by what it chooses, a coin's worth shown on eac
   expect(blockAt(await doc(page), HOME).faces[1]).toEqual({ type: 37, variant: 2 });
   await expect(page.locator("#say")).toHaveText("Set the +x side of 17, 17, 17 to a coin (bronze)");
   await expect(field(page, "variant-2")).toHaveAttribute("aria-pressed", "true");
+  // the pressed swatch pressed again changes nothing
+  const pressed = await steps(page);
+  await field(page, "variant-2").click();
+  expect(await steps(page)).toEqual(pressed);
 
   await field(page, "thing").selectOption("t36/0");
   await expect(label).toHaveText("Colour");

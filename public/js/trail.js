@@ -2,6 +2,7 @@
 // never changed in place, so a step is the document before it.
 import { emit, on } from "./dom.js";
 import * as drafts from "./drafts.js";
+import { same } from "./project.js";
 
 const CAP = 200;
 const COALESCE_MS = 1000;
@@ -15,10 +16,10 @@ function of(id) {
 
 /** Make `next` the draft's document as one step, labelled as its announcement
     reads in lower case; with `merge`, a step like the one just taken within a
-    moment joins it. */
+    moment joins it. False, taking no step, where nothing would change. */
 export function edit(id, next, label, { merge = false } = {}) {
   const d = drafts.get(id);
-  if (!d) return;
+  if (!d || same(next, d.doc)) return false;
   const t = of(id);
   const last = t.past.at(-1);
   const now = performance.now();
@@ -31,6 +32,7 @@ export function edit(id, next, label, { merge = false } = {}) {
   t.future = [];
   drafts.update(id, next, joined ? 0 : 1);
   emit("trail-changed", id);
+  return true;
 }
 
 /** Take the last step back; its label, or null where there is none. */

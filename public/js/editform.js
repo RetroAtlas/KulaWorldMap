@@ -305,16 +305,13 @@ function changeKind(d, b, kind, select) {
   );
 }
 
-/** Make `next` the document as one step, or refuse what the checks newly flag and put the control back. */
+/** Make `next` the document as one step, or put the control back where the checks refuse it or it changes nothing. */
 function change(d, next, label, control = null, back = null, { check = true } = {}) {
   const grew = check ? newErrors(d.doc, next) : [];
-  if (grew.length) {
-    refuse(sentence(grew[0].text));
-    if (control && back !== null) control.value = back;
-    return false;
-  }
-  commit(d.id, next, label);
-  return true;
+  if (grew.length) refuse(sentence(grew[0].text));
+  else if (commit(d.id, next, label)) return true;
+  if (control && back !== null) control.value = back;
+  return false;
 }
 
 function swatches(name, count, chosen, colourOf, nameOf, pick, textOf = () => "") {

@@ -110,6 +110,40 @@ test("two placements undo and redo step by step, and a new step lets the redo go
   expect(errors).toEqual([]);
 });
 
+test("a change that leaves the draft as it stands takes no step and counts no change", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  const row = page.locator("#draftRows button .state");
+  await click(page, await plusX(page, START));
+  await expect(row).toHaveText("not saved to a file · 1 change");
+  const took = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get }, { edit }] = await Promise.all(
+      ["state.js", "drafts.js", "trail.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    return edit(id, structuredClone(get(id).doc), "changed nothing");
+  });
+  expect(took).toBe(false);
+  expect(await steps(page)).toEqual({ past: 1, future: 0 });
+  await expect(row).toHaveText("not saved to a file · 1 change");
+
+  // a time typed as the seconds the clock starts at already lands as nothing
+  const time = page.locator("#draftTime");
+  await time.fill("99.4");
+  await time.blur();
+  await expect(time).toHaveValue("99");
+  expect(await steps(page)).toEqual({ past: 1, future: 0 });
+  await expect(row).toHaveText("not saved to a file · 1 change");
+  await page.locator("#cv").focus();
+  await page.keyboard.press("Control+z");
+  expect(await cells(page)).toEqual([START]);
+  await expect(page.locator("#say")).toHaveText("Undid placed a block at 18, 17, 17");
+  expect(errors).toEqual([]);
+});
+
 test("a typed title is one step, undone from the map and left to the field inside it", async ({
   page,
 }) => {
