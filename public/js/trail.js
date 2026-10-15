@@ -16,7 +16,7 @@ function of(id) {
 
 /** Make `next` the draft's document as one step, labelled as its announcement
     reads in lower case; with `merge`, a step like the one just taken within a
-    moment joins it. False, taking no step, where nothing would change. */
+    moment joins it, and a join back to its start drops it. False where nothing would change. */
 export function edit(id, next, label, { merge = false } = {}) {
   const d = drafts.get(id);
   if (!d || same(next, d.doc)) return false;
@@ -24,6 +24,12 @@ export function edit(id, next, label, { merge = false } = {}) {
   const last = t.past.at(-1);
   const now = performance.now();
   const joined = merge && last?.label === label && now - last.at < COALESCE_MS;
+  if (joined && same(next, last.doc)) {
+    t.past.pop();
+    drafts.update(id, last.doc, -1);
+    emit("trail-changed", id);
+    return true;
+  }
   if (joined) last.at = now;
   else {
     t.past.push({ doc: d.doc, label, at: now });

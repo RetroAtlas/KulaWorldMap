@@ -211,6 +211,41 @@ test("a pause of a second between letters starts a new title step", async ({ pag
   expect(errors).toEqual([]);
 });
 
+test("letters typed and taken back within a second leave no step and count no change", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  const row = page.locator("#draftRows button .state");
+  await click(page, await plusX(page, START));
+  await expect(row).toHaveText("not saved to a file · 1 change");
+  await page.evaluate(() => {
+    const now = performance.now();
+    performance.now = () => now;
+  });
+  const title = page.locator("#draftTitle");
+  await title.focus();
+  await page.keyboard.press("End");
+  await title.pressSequentially("xy");
+  await expect(page.locator("#chipLine b")).toHaveText("Untitled levelxy");
+  expect(await steps(page)).toEqual({ past: 2, future: 0 });
+  await expect(row).toHaveText("not saved to a file · 2 changes");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.press("Backspace");
+  await expect(page.locator("#chipLine b")).toHaveText("Untitled level");
+  expect(await steps(page)).toEqual({ past: 1, future: 0 });
+  await expect(row).toHaveText("not saved to a file · 1 change");
+  await page.evaluate(() => {
+    delete performance.now;
+  });
+  // the step before the letters is the one undo takes back
+  await page.locator("#cv").focus();
+  await page.keyboard.press("Control+z");
+  expect(await cells(page)).toEqual([START]);
+  await expect(page.locator("#say")).toHaveText("Undid placed a block at 18, 17, 17");
+  expect(errors).toEqual([]);
+});
+
 test("the row's count of changes follows undo and redo, counts a typed title once and never falls below nothing", async ({
   page,
 }) => {
