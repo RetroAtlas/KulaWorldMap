@@ -478,7 +478,15 @@
           title="Jump, or hop in place"
         ></button>
         <button type="button" data-pad="right" aria-label="Turn right" title="Turn right">▶</button>
-        <button type="button" data-pad="down" aria-label="Turn about" title="Turn about">▼</button>
+        <button
+          type="button"
+          id="padDown"
+          data-pad="down"
+          aria-label="Turn about"
+          title="Turn about"
+        >
+          ▼
+        </button>
       </div>
       <div id="palette" class="palette" role="group" aria-label="Palette" hidden></div>
       <div id="toastStack" class="toasts" aria-live="polite"></div>
@@ -514,6 +522,17 @@
         <p id="showCompassSays" class="says">
           The block at the map's bottom right, turned as the level is, with its faces and the ways
           they face named.
+        </p>
+      </section>
+      <section>
+        <h4>Play</h4>
+        <label class="check"
+          ><input type="checkbox" id="turnAbout" aria-describedby="turnAboutSays" /> Turn about with
+          the Down key <span class="def"></span
+        ></label>
+        <p id="turnAboutSays" class="says">
+          In the game Down does nothing. With this on, the Down key turns the ball about, two
+          quarter turns in one, and the pad has a down arrow for it.
         </p>
       </section>
     </div>

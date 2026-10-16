@@ -1,4 +1,4 @@
-import { $, el, on } from "../ui/dom.js";
+import { $, el, emit, on } from "../ui/dom.js";
 import { state, sliceZ } from "../state.js";
 import { SIDE } from "../../format/lattice.js";
 import {
@@ -31,6 +31,7 @@ const SHOWN = [
   ["showCamera", "camera"],
   ["showCompass", "compass"],
   ["showCourse", "course"],
+  ["turnAbout", "turnabout"],
 ];
 // Switches that are never kept from one visit to the next.
 const UNKEPT = new Set(["course"]);
@@ -185,7 +186,7 @@ export function wireDisplay() {
     box.checked = state.show[key];
     box.addEventListener("change", () => {
       state.show[key] = box.checked;
-      if (!UNKEPT.has(key)) choose(key, box.checked, DEFAULTS[key]);
+      emit("show-changed", key);
       syncNeeds();
       invalidatePick();
       draw();

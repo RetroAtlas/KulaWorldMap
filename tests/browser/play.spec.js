@@ -484,15 +484,29 @@ test("with Motion on the view eases in and out, and the ball tumbles over the ga
   expect(errors).toEqual([]);
 });
 
-test("the ball turns in place, turns about, and is refused an edge beside a neighbour", async ({
+test("the ball turns in place, turns about by Down only with the setting on, and is refused an edge beside a neighbour", async ({
   page,
 }) => {
   const errors = trackErrors(page);
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
   await opened(page, { motion: false });
   await startPlay(page);
   await expect(line(page)).toContainText("facing -y");
   await page.keyboard.press("ArrowRight");
   await expect(line(page)).toContainText("facing +x");
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  // the game's pad has no Down, so Down is read only once the setting gives it the turn about
+  await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(200);
+  await expect(line(page)).toContainText("facing +x");
+  expect((await probe(page)).station.moving).toBe(false);
+  await page.keyboard.press("s");
+  await expect(page.locator("#settings")).toBeVisible();
+  await page.locator("#turnAbout").click();
+  await expect(page.locator("#settings label:has(#turnAbout) .def")).toHaveText("off by default");
+  expect((await kept()).turnabout).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#settings")).toBeHidden();
   await page.keyboard.press("ArrowDown");
   await expect(line(page)).toContainText("facing -x");
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
@@ -1281,6 +1295,7 @@ test.describe("with a touch screen", () => {
     await startPlay(page);
     await expect(page.locator("#pad")).toBeVisible();
     await expect(page.locator("#padBtn")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#padDown")).toBeHidden();
     const up = await page.locator('#pad [data-pad="up"]').boundingBox();
     expect(Math.min(up.width, up.height)).toBeGreaterThanOrEqual(44);
     const cdp = await page.context().newCDPSession(page);
@@ -1330,6 +1345,23 @@ test.describe("with a touch screen", () => {
       expect(spot.x).toBeLessThan(375 - 40);
       expect(lineBox.width).toBeGreaterThan(strip.width * 0.8);
       expect(lineBox.height).toBeLessThan(45);
+      // the game's pad has no Down, so the pad has no down arrow and is a row shorter until the
+      // setting gives Down the turn about, when the ball is framed above the taller pad
+      await expect(page.locator("#padDown")).toBeHidden();
+      const up = await page.locator('#pad [data-pad="up"]').boundingBox();
+      const jump = await page.locator("#padBall").boundingBox();
+      const row = jump.y - up.y;
+      await page.keyboard.press("s");
+      await expect(page.locator("#settings")).toBeVisible();
+      await page.locator("#turnAbout").click();
+      await page.keyboard.press("Escape");
+      await expect(page.locator("#settings")).toBeHidden();
+      await expect(page.locator("#padDown")).toBeVisible();
+      const taller = await page.locator("#pad").boundingBox();
+      expect(taller.height - pad.height).toBe(row);
+      const higher = await anchor(page);
+      expect(higher.free).toBe(spot.free - row);
+      expect(Math.abs(higher.y - cv.y - higher.free * 0.7)).toBeLessThan(1);
       // put away, the pad gives the ball its room back
       await page.locator("#padBtn").click();
       await expect(page.locator("#pad")).toBeHidden();

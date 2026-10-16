@@ -61,7 +61,7 @@ const HELP = [
   ["`y`", "roll the ball through the level"],
   [
     "arrows",
-    "while playing: roll the ball ahead for as long as held, turn it left and right, turn it about",
+    "while playing: up rolls the ball ahead for as long as it is held, left and right turn it, and down turns it about with the setting on",
   ],
   ["`Space`", "while playing: jump, or hop in place; once the level has ended, start it again"],
   ["`s`", "settings"],

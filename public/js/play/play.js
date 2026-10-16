@@ -836,11 +836,19 @@ function line() {
 function sync() {
   $("play").hidden = !live;
   $("pad").hidden = !live || !padShown;
+  $("padDown").hidden = !state.show.turnabout;
   $("padBtn").setAttribute("aria-pressed", String(padShown));
   if (live) {
     line();
     $("playStatus").textContent = live.status ?? "";
   }
+}
+
+/** The pad has changed shape under the view: frame the ball over what it now leaves free. */
+function reframe() {
+  sync();
+  if (state.framing === fit) fit();
+  drawSoon();
 }
 
 function wirePad() {
@@ -868,9 +876,7 @@ function wirePad() {
   pad.addEventListener("lostpointercapture", release);
   $("padBtn").onclick = () => {
     padShown = !padShown;
-    sync();
-    if (state.framing === fit) fit();
-    drawSoon();
+    reframe();
   };
   $("keepBtn").onclick = keep;
   $("leaveBtn").onclick = () => leave();
@@ -885,6 +891,7 @@ function icon() {
 // --- the keys -----------------------------------------------------------------------------
 
 const modified = (e) => e.metaKey || e.ctrlKey || e.altKey;
+const heard = (bit) => bit !== PAD.down || state.show.turnabout;
 
 function keydown(e) {
   if (!state.lvl || typing(e) || dialogOpen()) return;
@@ -918,7 +925,7 @@ function keydown(e) {
   if (!bit || e.shiftKey || modified(e)) return;
   e.preventDefault();
   e.stopPropagation();
-  if (e.repeat) return;
+  if (e.repeat || !heard(bit)) return;
   held |= bit;
   tapped |= bit;
   wake();
@@ -1167,5 +1174,8 @@ export function bootPlay() {
   on("go-to", () => leave({ restore: false }));
   on("density-changed", icon);
   on("course-changed", keepable);
+  on("show-changed", (key) => {
+    if (key === "turnabout" && live) reframe();
+  });
   sync();
 }
