@@ -204,6 +204,33 @@ test("the moving spikes show the frame their phase's program gives", () => {
   );
 });
 
+test("the moving spikes are deadly from two frames before they rise until eleven frames of the retraction remain", () => {
+  const s = table.types[11];
+  assert.equal(s.harm.flag, 1);
+  for (const f3 of [0, 1, 2, 3]) {
+    const program = s.cycle[f3];
+    const deadly = s.deadly[f3];
+    assert.equal(deadly.length, program.length);
+    const rise = program.length + program.findIndex((f, k) => f === 6 && program[k - 1] === 0);
+    const thrice = [...deadly, ...deadly, ...deadly];
+    assert.deepEqual(thrice.slice(rise - 3, rise + 141), [
+      false,
+      ...Array(68).fill(true),
+      ...Array(75).fill(false),
+    ]);
+    assert.deepEqual([...program, ...program, ...program].slice(rise + 65, rise + 67), [8, 8]);
+  }
+  assert.deepEqual(
+    s.deadly.map((d) => [d.indexOf(true), d.indexOf(false)]),
+    [
+      [62, 0],
+      [27, 0],
+      [0, 58],
+      [0, 23],
+    ],
+  );
+});
+
 test("the catalogue star circles fast in the brown form and slowly in the green", () => {
   const e = table.types[42];
   const key = "test";

@@ -55,7 +55,8 @@ GAME = {
     "spikes.phase.retracting": 140, "spikes.phase.down.from": 63,
     "spikes.phase.held.from": 96, "spikes.phase.retracting.from": 140,
     "spikes.down": 63, "spikes.rise": 5, "spikes.rattle": 14, "spikes.hold": 14,
-    "spikes.retract": 44, "spikes.harmless": 11,
+    "spikes.retract": 44, "spikes.harmless": 11, "spikes.phase.down.flag": 2, "spikes.phase.up.flag": 1,
+    "spikes.rise.flag": 1, "spikes.retract.flag": 2,
     "vanish.phase.step": 56, "vanish.phase.absent": 2, "vanish.phase.absent.from": 91,
     "vanish.phase.solid.from": 196, "vanish.absent": 91, "vanish.in": 9, "vanish.settle": 5,
     "vanish.solid": 91, "vanish.dim": 9, "vanish.out": 19,
@@ -432,7 +433,7 @@ def runs(seq):
 
 class Cycles(unittest.TestCase):
     def test_the_spikes_run_143_frames_from_flat_to_full_and_back(self):
-        seq = spike_cycle(GAME, 0)
+        seq = [f for f, _ in spike_cycle(GAME, 0)]
         self.assertEqual(len(seq), 143)
         self.assertTrue(all(0 <= f <= 31 for f in seq))
         rise = rise_at(seq)
@@ -446,8 +447,22 @@ class Cycles(unittest.TestCase):
         self.assertEqual(runs([f == 0 for f in seq]), [[False, 76], [True, 67]])
 
     def test_the_spikes_phases_are_35_frames_apart_from_the_second_cycle(self):
-        starts = [rise_at(spike_cycle(GAME, p)) for p in range(PHASES)]
+        starts = [rise_at([f for f, _ in spike_cycle(GAME, p)]) for p in range(PHASES)]
         self.assertEqual([(starts[0] - s) % 143 for s in starts], [0, 35, 72, 107])
+
+    def test_the_spikes_are_deadly_from_two_frames_before_they_rise_until_11_of_the_retraction_remain(self):
+        for p in range(PHASES):
+            frames, deadly = map(list, zip(*spike_cycle(GAME, p)))
+            rise = 143 + rise_at(frames)
+            self.assertEqual((deadly * 3)[rise - 3:rise + 141], [False] + [True] * 68 + [False] * 75)
+            self.assertEqual((frames * 3)[rise + 65:rise + 67], [8, 8])
+        self.assertEqual([spike_cycle(GAME, p)[0][1] for p in range(PHASES)], [False, False, True, True])
+
+    def test_a_flag_that_is_not_the_hazards_value_as_the_spikes_rise_stops_the_reading(self):
+        for change in ({"spikes.rise.flag": 2}, {"spikes.retract.flag": 1}, {"spikes.phase.down.flag": 1},
+                       {"spikes.phase.up.flag": 2}):
+            with self.assertRaises(SystemExit):
+                spike_cycle({**GAME, **change}, 0)
 
     def test_the_vanishing_block_runs_224_frames_through_its_six_states(self):
         seq = vanish_cycle(GAME, 0)
@@ -864,6 +879,9 @@ class Table(unittest.TestCase):
         self.assertEqual(t["kinds"]["8"]["reach"], 256)
         self.assertEqual(t["types"]["53"]["catch"], {"square": 16199})
         self.assertEqual(t["types"]["11"]["harm"], {"flag": 1, "standing": 9})
+        self.assertEqual(set(t["types"]["11"]), {"cycle", "deadly", "harm"})
+        self.assertEqual([len(d) for d in t["types"]["11"]["deadly"]], [143] * PHASES)
+        self.assertEqual([sum(d) for d in t["types"]["11"]["deadly"]], [68] * PHASES)
         self.assertEqual(set(t["kinds"]), {"1", "2", "3", "4", "5", "6", "7", "8"})
 
 

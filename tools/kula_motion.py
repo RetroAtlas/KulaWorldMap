@@ -565,6 +565,12 @@ CHECKS = [
     (0x8003ea08, "jal 0x8005fb58", "less a multiple of its sine"),
     (0x80031f3c, "jal 0x800603f8", "the ball's shadow is widened by the landing's squash"),
     (0x80031f54, "jal 0x800603f8", "and by the breath's"),
+    # The moving spikes.
+    (0x8002a128, "sh $zero, 6($a1)", "the loader clears a moving spikes slot's f3"),
+    (0x8002a130, "sh $v0, 8($a1)", "and writes its f4 for a phase that starts down"),
+    (0x8002a178, "sh $t5, 8($a1)", "or held up or retracting"),
+    (0x8002bc84, "sh $v0, 8($s3)", "the routine writes f4 as the spikes start to rise"),
+    (0x8002be64, "sh $v0, 8($s3)", "and once the harmless frames of the retraction remain"),
     # The vanishing block.
     (0x8002b7e8, "sw $zero, 12($v0)", "a vanishing block that returns starts its faces black"),
     (0x8002b9a0, "sb $zero, 1($v0)", "settled, its faces lose the translucent flag"),
@@ -1339,6 +1345,12 @@ IMMEDIATES = [
     ("moving spikes", "spikes.hold", "held up, frames", 0x8002bd58, "addiu $s0, $zero, {}"),
     ("moving spikes", "spikes.retract", "retracting, frames", 0x8002bd70, "addiu $s0, $zero, {}"),
     ("moving spikes", "spikes.harmless", "retracting: harmless once this many remain", 0x8002be54, "addiu $v0, $zero, {}"),
+    ("moving spikes", "spikes.phase.down.flag", "phase: f4 for a phase that starts down", 0x8002a12c, "addiu $v0, $zero, {}"),
+    ("moving spikes", "spikes.phase.up.flag", "phase: f4 for one that starts held up or retracting", 0x8002a098,
+     "addiu $t5, $zero, {}"),
+    ("moving spikes", "spikes.rise.flag", "rising: f4 as it starts", 0x8002bc74, "addiu $v0, $zero, {}"),
+    ("moving spikes", "spikes.retract.flag", "retracting: f4 once the harmless frames remain", 0x8002be5c,
+     "addiu $v0, $zero, {}"),
 
     ("vanishing block", "vanish.phase.absent", "phase: starts absent if under", 0x80028bd0, "slti $v0, $a1, {}"),
     ("vanishing block", "vanish.phase.absent.from", "phase: absent for this many frames less the phase", 0x80028c1c, "addiu $v0, $zero, {}"),
@@ -2310,21 +2322,27 @@ def laser(r):
 
 
 def spike_cycle(r, phase, frames=SPIKE_FRAMES, at=None):
-    """The frame the moving spikes show on each frame of one cycle, for a phase.
+    """The frame the moving spikes show on each frame of one cycle, for a
+    phase, with whether their f4 holds the value the hazards kill on.
 
     The game's routine is run from the state its loader gives that phase,
     past the first cycle, which the loader cuts short or stretches, and one
     steady cycle is taken from the same frame for every phase, so the
     programs keep the game's spacing between them.
     """
+    deadly, harmless = r["spikes.rise.flag"], r["spikes.retract.flag"]
+    if deadly != r["spikes11.deadly"] or harmless == deadly:
+        sys.exit("the moving spikes' f4 is not the hazards' deadly value as they rise and another as they retract")
+    if (r["spikes.phase.down.flag"], r["spikes.phase.up.flag"]) != (harmless, deadly):
+        sys.exit("the loader does not start the moving spikes harmless down and deadly held up or retracting")
     top = frames - 1
     v = phase * r["spikes.phase.step"]
     if v < r["spikes.phase.down"]:
-        state, count, frame = 0, r["spikes.phase.down.from"] - v, 0
+        state, count, frame, flag = 0, r["spikes.phase.down.from"] - v, 0, r["spikes.phase.down.flag"]
     elif v < r["spikes.phase.held"]:
-        state, count, frame = 3, r["spikes.phase.held.from"] - v, top
+        state, count, frame, flag = 3, r["spikes.phase.held.from"] - v, top, r["spikes.phase.up.flag"]
     else:
-        state, count, frame = 4, r["spikes.phase.retracting.from"] - v, top
+        state, count, frame, flag = 4, r["spikes.phase.retracting.from"] - v, top, r["spikes.phase.up.flag"]
     rise, rattle, retract = r["spikes.rise"], r["spikes.rattle"], r["spikes.retract"]
     cycle = r["spikes.down"] + rise + 1 + rattle + 1 + r["spikes.hold"] + retract + 1
     at = cycle * 2 if at is None else at
@@ -2333,7 +2351,7 @@ def spike_cycle(r, phase, frames=SPIKE_FRAMES, at=None):
         count -= 1
         if state == 0:
             if count <= 0:
-                state, count = 1, rise
+                state, count, flag = 1, rise, deadly
         elif state == 1:
             if count >= 0:
                 frame = (rise - 1 - count) * frames // rise
@@ -2352,7 +2370,9 @@ def spike_cycle(r, phase, frames=SPIKE_FRAMES, at=None):
                 state, count, frame = 0, r["spikes.down"], 0
             else:
                 frame = count * frames // retract
-        seq.append(frame)
+                if count == r["spikes.harmless"]:
+                    flag = harmless
+        seq.append((frame, flag == deadly))
     return period(seq, at, cycle, "the moving spikes")
 
 
@@ -2607,7 +2627,8 @@ def blocks(r):
 def table(r, platform_speed):
     """The motion table by type and by kind of block, in the game's units.
 
-    A cycle is a frame program per phase. The platform's speed is the one the
+    A cycle is a frame program per phase, and the moving spikes say beside it
+    on which of its frames they kill. The platform's speed is the one the
     level data holds, scaled as the loader scales it. A type the loader lifts
     into an entry of its own says how far off its face the game draws the
     model's origin, and a type the game draws a shadow under says which
@@ -2648,7 +2669,8 @@ def table(r, platform_speed):
         42: {"form": {"rate": r["star42.form"], "past": r["star42.form.past"]},
              "orbit": {"radius": r["star42.orbit.radius"],
                        "rate": [r["star42.orbit.brown"], r["star42.orbit.green"]]}},
-        11: {"cycle": [spike_cycle(r, p) for p in range(PHASES)]},
+        11: {"cycle": [[f for f, _ in spike_cycle(r, p)] for p in range(PHASES)],
+             "deadly": [[d for _, d in spike_cycle(r, p)] for p in range(PHASES)]},
         50: {"tumble": star50, "travel": r["star50.travel"]},
         51: {"roll": r["wheel.roll"], "travel": r["wheel.travel"],
              "turning": {"frames": r["wheel.turning"], "rate": r["wheel.turn.right"],
