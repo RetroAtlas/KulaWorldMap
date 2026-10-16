@@ -416,8 +416,15 @@ function validateOutlook(cell, j, kinds, beams, warn) {
 }
 
 const lower = (name) => name[0].toLowerCase() + name.slice(1);
-const listed = (items) =>
+export const listed = (items) =>
   items.length > 1 ? `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}` : items[0];
+// Words for the types the annotations leave unnamed.
+const TYPE_WORDS = { [STAR]: "star" };
+/** A type as a finding names it, with the article: by its name, else by its number. */
+export const typeWord = (type, names) => {
+  const name = names.entry?.({ face: 0, type }) ?? TYPE_WORDS[type];
+  return name ? `the ${lower(name)}` : `type ${type}`;
+};
 
 /** The things a keyless level places that the bonus artwork has no picture for, by name. */
 function undrawnInBonus(blocks, names) {
@@ -430,11 +437,7 @@ function undrawnInBonus(blocks, names) {
       const kind = names.kind?.(b.kind);
       add(kind ? `the ${lower(kind)}` : `kind ${b.kind}`);
     }
-    for (const [, o] of facesOf(b))
-      if (UNDRAWN_TYPES.has(o.type)) {
-        const name = names.entry?.({ face: 0, type: o.type });
-        add(name ? `the ${lower(name)}` : `type ${o.type}`);
-      }
+    for (const [, o] of facesOf(b)) if (UNDRAWN_TYPES.has(o.type)) add(typeWord(o.type, names));
   }
   return found;
 }
@@ -575,7 +578,7 @@ export function validate(project, hides, names = {}) {
           err(`a variant of ${o.variant}`, cell, j);
       }
       if (STARTS.has(t)) starts.push([cell, j]);
-      if (t === STAR) warn("the star is untested in play", cell, j);
+      if (t === STAR) warn(`${typeWord(t, names)} is untested in play`, cell, j);
       if (FRUIT_SET.has(t))
         warn("the game shows the player's next fruit, whichever is placed", cell, j);
       validateOutlook(cell, j, kinds, beams, warn);

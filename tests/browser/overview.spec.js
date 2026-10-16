@@ -49,6 +49,14 @@ const vanishing = (n) =>
     cell: [5 + (i % 26), 20 + Math.floor(i / 26), 17],
     kind: 7,
   }));
+/** A block with a coin on its top, a key on its +x side and an exit on its +y side. */
+const island = (cell) => ({
+  cell,
+  kind: 0,
+  faces: { 0: { type: 37, variant: 0 }, 1: { type: 31 }, 2: { type: 7 } },
+});
+const NOT_COUNTED =
+  ", not counting jumps, teleporters, moving platforms, ice or a fall from a crumbling or vanishing block";
 
 /** A new draft, editing on with the Select tool, and its block selected on its top. */
 async function fresh(page) {
@@ -292,6 +300,44 @@ test("a finding's link that holds the focus keeps it through an edit", async ({ 
   await page.keyboard.press("Delete");
   await expect(findings).toHaveCount(0);
   expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("a key no roll from the start reaches is a finding, cleared once its block stands beside the start", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  const findings = page.locator("#chipNote .findings li");
+  const summary = page.locator("#chipNote .more summary");
+  await fill(page, [START, island([20, 17, 17])]);
+  await expect(findings).toHaveText([
+    `warning: no roll from the start reaches the key on the +x side of the block at 20, 17, 17 or the coin on the top of the block at 20, 17, 17${NOT_COUNTED}`,
+  ]);
+  await expect(findings.first()).toHaveClass("warning");
+  await expect(findings.first().locator(".there")).toHaveCount(0);
+  await expect(summary).toHaveText("1 warning; the counts are below");
+  await fill(page, [START, island([18, 17, 17])]);
+  await expect(findings).toHaveCount(0);
+  await expect(summary).toHaveText("no findings; the counts are below");
+  expect(errors).toEqual([]);
+});
+
+test("a face that looks into a block, a pickup's or the start's, is left to the checks", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  const findings = page.locator("#chipNote .findings li");
+  await fill(page, [START, island([20, 17, 17]), { cell: [21, 17, 17], kind: 0 }]);
+  await expect(findings).toHaveText([
+    "warning: looks into the block at 21,17,17 at 20, 17, 17, +x side",
+    `warning: no roll from the start reaches the coin on the top of the block at 20, 17, 17${NOT_COUNTED}`,
+  ]);
+  await fill(page, [START, { cell: ABOVE_HOME, kind: 0 }, island([20, 17, 17])]);
+  await expect(findings).toHaveText([
+    "warning: looks into the block at 17,17,16 at 17, 17, 17, top",
+  ]);
   expect(errors).toEqual([]);
 });
 

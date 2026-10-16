@@ -2,14 +2,24 @@
 import { el } from "../viewer/ui/dom.js";
 import { state } from "../viewer/state.js";
 import { cellKey, FACE_NAME } from "../format/lattice.js";
-import { NAMES, skinsTable } from "../viewer/data.js";
+import { NAMES, index, motionTable, skinsTable, startsOf } from "../viewer/data.js";
+import { probeOf, reachable, stationKey } from "../viewer/walk.js";
 import { showCell } from "../viewer/chrome/detail.js";
 import { noteWith } from "../viewer/chrome/navigate.js";
 import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
 import { get } from "./drafts.js";
-import { CAPS, COUNTER_WORDS, DISC_MAX } from "../format/kwl.js";
-import { ERROR, counts, describe, playsAs, validate } from "../format/project.js";
-import { place3, plural } from "./editing.js";
+import { BLOCK_KINDS, CAPS, COUNTER_WORDS, DISC_MAX, KEY } from "../format/kwl.js";
+import {
+  ERROR,
+  WARNING,
+  counts,
+  describe,
+  listed,
+  playsAs,
+  typeWord,
+  validate,
+} from "../format/project.js";
+import { across, place3, plural } from "./editing.js";
 
 let wired = false;
 // Whether the author has opened or folded the counts and the findings; null until they do.
@@ -27,6 +37,8 @@ function overview(l) {
   if (!d) return null;
   const hides = skinsTable()?.hides;
   const findings = validate(d.doc, hides, NAMES);
+  const missed = unreached(l);
+  if (missed) findings.push(missed);
   const out = el(
     "div",
     { className: "overview" },
@@ -35,6 +47,43 @@ function overview(l) {
   );
   keepFocus(out);
   return out;
+}
+
+/** The things the ball takes that no roll from the start reaches, over the blocks alone, as a
+    finding naming each with where it stands, keys first; null where every one is reached. */
+function unreached(l) {
+  const types = motionTable()?.types;
+  const start = startsOf(l).at(-1);
+  if (!types || !start) return null;
+  const idx = index(l);
+  const probe = probeOf(idx);
+  const from = { cell: [start.x, start.y, start.z], face: start.face };
+  if (!probe.standable(from.cell, from.face)) return null;
+  const reached = reachable(probe, from);
+  const missed = [];
+  for (const [key, marks] of idx.markers) {
+    const c = idx.cells.get(key);
+    if (!c || idx.records.get(key)[0].kind >= BLOCK_KINDS) continue;
+    const cell = [c.x, c.y, c.z];
+    for (const m of marks) {
+      if (m.face === null || !types[String(m.type)]?.take) continue;
+      // A face that looks into another block is the checks' finding.
+      if (idx.cells.has(cellKey(...across(cell, m.face)))) continue;
+      if (!reached.has(stationKey({ cell, face: m.face }))) missed.push({ m, cell });
+    }
+  }
+  if (!missed.length) return null;
+  const named = missed
+    .sort((a, b) => (b.m.type === KEY) - (a.m.type === KEY))
+    .map(
+      ({ m, cell }) =>
+        `${typeWord(m.type, NAMES)} on the ${FACE_NAME[m.face]} of the block at ${place3(cell)}`,
+    );
+  return {
+    level: WARNING,
+    text: `no roll from the start reaches ${listed(named)}, not counting jumps, teleporters, moving platforms, ice or a fall from a crumbling or vanishing block`,
+    at: null,
+  };
 }
 
 /** A finding's link holding the focus hands it to its namesake once the chip has placed the new note. */

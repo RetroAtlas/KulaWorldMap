@@ -14,6 +14,8 @@ import {
   headingAfter,
   headingOn,
   shortestWalk,
+  reachable,
+  stationKey,
   encode,
   decode,
   validate,
@@ -268,6 +270,52 @@ test("the start the game takes stands on a face the ball can stand on, on every 
     const start = startsOf(l).at(-1);
     assert.ok(p.standable([start.x, start.y, start.z], start.face), l.name);
   }
+});
+
+test("a walk from the start reaches the faces the shortest walk reaches, and no island", () => {
+  const blocks = [...row(10, 14, 10, 17), [15, 10, 16], [15, 10, 17], [20, 10, 17], [20, 10, 18]];
+  const p = probe(blocks);
+  const from = top(10, 10, 17);
+  const reached = reachable(p, from);
+  for (const cell of blocks)
+    for (let face = 0; face < 6; face++) {
+      const station = { cell, face };
+      const walk = p.standable(cell, face) ? shortestWalk(p, from, station) : null;
+      assert.equal(reached.has(stationKey(station)), walk !== null, `${cell} face ${face}`);
+    }
+  assert.deepEqual(reached.get(stationKey(from)), from, "the start among them");
+  assert.ok(reached.has(stationKey(top(14, 10, 17))), "along the row");
+  assert.ok(reached.has(stationKey({ cell: [15, 10, 16], face: 4 })), "up the wall at its end");
+  assert.ok(reached.has(stationKey({ cell: [10, 10, 17], face: 4 })), "round the edge");
+  assert.ok(reached.has(stationKey({ cell: [12, 10, 17], face: 5 })), "and under the middle");
+  assert.ok(!reached.has(stationKey(top(20, 10, 17))), "an island no roll reaches");
+  assert.equal([...reached.values()].filter((s) => s.cell[0] === 20).length, 0);
+  for (const s of reached.values())
+    assert.ok(p.standable(s.cell, s.face), `${s.cell} face ${s.face}`);
+});
+
+test("the side rule keeps a walk on a plate's top, where a lone block is reached all round", () => {
+  const plate = probe([
+    [10, 10, 17],
+    [11, 10, 17],
+    [10, 11, 17],
+    [11, 11, 17],
+  ]);
+  const onPlate = reachable(plate, top(10, 10, 17));
+  assert.deepEqual(
+    [...onPlate.values()].map((s) => s.face),
+    [0, 0, 0, 0],
+    "every edge has a block beside it",
+  );
+  assert.ok(onPlate.has(stationKey(top(11, 11, 17))));
+  assert.ok(!onPlate.has(stationKey({ cell: [10, 10, 17], face: 5 })), "a key under the plate");
+  const lone = reachable(probe([[10, 10, 17]]), top(10, 10, 17));
+  assert.deepEqual(
+    [...lone.values()].map((s) => s.face).sort(),
+    [0, 1, 2, 3, 4, 5],
+    "a key round an edge is reached",
+  );
+  assert.equal(stationKey(top(10, 10, 17)), cellKey(10, 10, 17) * 6);
 });
 
 test("a course comes back from its segment whole, leaps and stops with it", () => {

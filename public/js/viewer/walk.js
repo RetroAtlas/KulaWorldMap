@@ -68,7 +68,8 @@ export function headingAfter(face, k, o) {
   return o === INNER_CORNER ? headingOn(faceOf(neg(t)), n) : headingOn(faceOf(t), neg(n));
 }
 
-const stationId = ({ cell, face }, k) => (cellKey(...cell) * 6 + face) * 4 + k;
+export const stationKey = ({ cell, face }) => cellKey(...cell) * 6 + face;
+const stationId = (station, k) => stationKey(station) * 4 + k;
 const sameStation = (a, b) => same(a.cell, b.cell) && a.face === b.face;
 
 function unwind(seen, id) {
@@ -107,6 +108,20 @@ export function shortestWalk(probe, from, to, headings = [0, 1, 2, 3]) {
     if (o !== null) open(step(station, k, o), headingAfter(station.face, k, o), id, { k, o });
   }
   return null;
+}
+
+/** Every station a walk from `from` reaches, by `stationKey`; the ball turns in place at any
+    station, so the heading plays no part. */
+export function reachable(probe, from) {
+  const reached = new Map([[stationKey(from), from]]);
+  for (const station of reached.values())
+    for (let k = 0; k < 4; k++) {
+      const o = outcomeAt(probe, station, k);
+      if (o === null) continue;
+      const next = step(station, k, o);
+      if (!reached.has(stationKey(next))) reached.set(stationKey(next), next);
+    }
+  return reached;
 }
 
 // Five nibbles spell a station; then one a step, a leap spelling five more, a stop mark or a pad.
