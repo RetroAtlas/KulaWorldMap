@@ -3,11 +3,24 @@ import { $, emit, on } from "../viewer/ui/dom.js";
 import { adoptCourse, current, measureStrip } from "../viewer/chrome/course.js";
 import { drawPieces } from "../viewer/draw/ribbon.js";
 import { ageDust, burstDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
-import { state, BLOCK, basisAt, camera, depth, fitLevel } from "../viewer/state.js";
+import {
+  state,
+  BLOCK,
+  FIT_MARGIN,
+  FIT_ZOOM_MAX,
+  ZOOM_MAX,
+  ZOOM_MIN,
+  basisAt,
+  camera,
+  depth,
+  fitLevel,
+  levelCentre,
+} from "../viewer/state.js";
 import { SIDE, cellKey, FACE_NAME, FACE_NORMAL, DIRECTION_NAME } from "../format/lattice.js";
 import {
   ballFor,
   blockUnits,
+  counted,
   flip,
   jumpTable,
   layHeading,
@@ -49,7 +62,7 @@ import {
   moving,
   offsetFrame,
 } from "./ball.js";
-import { frame as gameFrame, heeds, relevel, restart, revive, stand, startRun } from "./rules.js";
+import { frame as gameFrame, heeds, relevel, restart, stand, startRun } from "./rules.js";
 import { probeOf as liveProbe, travelOf } from "./world.js";
 
 const BALL_TYPE = 30;
@@ -78,9 +91,9 @@ const AS_STONE = "The ball rolls over ice, spikes and the rest as over plain sto
 const NO_START = "The level has no start, so the ball stands on the first face it could.";
 const NOWHERE = "The level has no face the ball could stand on.";
 const OBJECTS_ON = "Objects turned on, for the ball.";
-const LOST = "The ball fell off the level, and is back where it last stood.";
-const TIME_UP = "Time is up. Space or a tap on the pad starts the level again.";
-const OVER = "The level has ended. Space or a tap on the pad starts it again.";
+const VERDICT = { time: "Time is up.", lost: "The ball is lost off the level." };
+const ENDED = "The level has ended.";
+const AGAIN = "Space or a tap on the pad starts the level again.";
 const KEPT = "The way the ball has come is now the route.";
 const ROUTE_STANDS = "A route already stands; clear it to keep the walk.";
 const AT_SWITCH = 6;
@@ -92,6 +105,7 @@ let tapped = 0;
 let last = 0;
 let owed = 0;
 let ease = null;
+let redraw = false;
 let measure = () => {};
 let padShown = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 let wired = false;
@@ -139,10 +153,13 @@ const tablesOf = () => ({
     one truth. */
 const circuitsOf = () => ({ on: (m) => markerNow(m) === "on", lit: litNow, flip });
 
-/** What the frame draws at and with while the ball is on the map: play's frame, and the walkers
-    where the rules have stepped them. */
+/** What the frame draws at and with while the ball is on the map: play's frame, the ending's
+    view's frames added once the level has ended, and the walkers where the rules have stepped
+    them. */
 const source = (l) =>
-  live && l === live.level ? { frame: live.run.words.frame, travel: travelOf(live.run) } : null;
+  live && l === live.level
+    ? { frame: live.run.words.frame + (live.ended?.frame ?? 0), travel: travelOf(live.run) }
+    : null;
 
 /** Whether a block stands between `centre`, in blocks, and the camera, within the cover's reach. */
 function covered(centre) {
@@ -269,6 +286,7 @@ function frameBall(l) {
     state.frame = null;
     return fitLevel(l);
   }
+  if (live.ended) return frameEnding(l);
   const s = shown();
   state.target = [...s.centre];
   if (!live.framed) {
@@ -293,6 +311,51 @@ function chrome() {
     if (!el.hidden) top = Math.min(top, el.getBoundingClientRect().top);
   }
   return foot - top;
+}
+
+// --- the ending's view --------------------------------------------------------------------
+
+/** Half the level's box's diagonal, in blocks: no cell of it lies further from its middle. */
+const radiusOf = (l) => Math.hypot(...[0, 1, 2].map((i) => l.max[i] - l.min[i] + 1)) / 2;
+
+/** Frame the ending's view: the level's middle in the middle of what the strip and the pad leave
+    free, zoomed so that the whole level fits with the eye at its mean distance. */
+function frameEnding(l) {
+  const e = live.ended;
+  state.target = levelCentre(l);
+  const { w, h } = state.view;
+  e.free = h - chrome();
+  const fits = (Math.min(w, e.free) - FIT_MARGIN) / (2 * e.radius * BLOCK);
+  e.base = Math.max(ZOOM_MIN, Math.min(FIT_ZOOM_MAX, fits));
+  swung();
+}
+
+// The orbit has no eye, so the zoom stands in for how large the level looks from the game's,
+// which stands the level's radius and an offset off the middle and swings its reach nearer and
+// further by turns.
+function swung() {
+  const e = live.ended;
+  const { turn } = motionTable();
+  const eye = (theta) =>
+    e.radius * blockUnits() + e.view.off + e.view.reach * Math.sin((theta / turn) * 2 * Math.PI);
+  const zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, (e.base * eye(0)) / eye(e.theta)));
+  state.cam.zoom = zoom;
+  state.cam.panX = 0;
+  state.cam.panY = -(e.free / 2 - state.view.h / 2) / (zoom * BLOCK);
+}
+
+/** One frame of the ending's view: the yaw turned by the game's third angle, the pitch by its
+    first, the eye along its swing, and the level started again as the view's length runs out. */
+function turning() {
+  const e = live.ended;
+  const { turn } = motionTable();
+  const [pitch, , yaw] = e.view.angles;
+  state.cam.yaw += (yaw * 360) / turn;
+  state.cam.pitch += (pitch * 360) / turn;
+  e.theta += e.view.swing;
+  e.frame += 1;
+  swung();
+  if (e.frame >= e.length) startOver();
 }
 
 function startEase(from, to, ms, done) {
@@ -360,8 +423,8 @@ function advance() {
     invalidatePick();
   }
   if (!live) return;
-  const s = shown();
-  if (!ease) {
+  if (!ease && !live.ended) {
+    const s = shown();
     const k = motionOn() ? 1 - Math.exp(-dt / FOLLOW_MS) : 1;
     state.target = state.target.map((v, i) => v + (s.centre[i] - v) * k);
     const frame = motionOn() ? looked(live.run.ball) : s.frame;
@@ -374,46 +437,59 @@ function advance() {
 }
 
 /** Step the game frames `dt` ms owe, the level running at rest with Motion on and only while the
-    ball moves or a key is held without it: whether anything moved. */
+    ball moves or a key is held without it, and the ending's view in the level's place once it
+    has ended, with Motion on alone: whether anything moved. */
 function stepped(dt) {
-  const run = live.run;
-  const b = run.ball;
   let moved = false;
-  if (!live.ended && (motionOn() || moving(b) || held || tapped)) {
+  const runs = live.ended ? motionOn() : motionOn() || moving(live.run.ball) || held || tapped;
+  if (runs) {
     owed += (dt * motionTable().hz) / 1000;
-    while (owed >= 1 && !live.ended) {
+    while (owed >= 1 && live) {
       owed -= 1;
-      const pad = held | tapped;
-      // a tap stands until a frame reads the pad, as the level opens with it dead
-      if (heeds(run)) tapped = 0;
-      const was = onFace(b) ? footOf(b) : null;
-      const events = gameFrame(run, pad);
-      if (!motionOn()) ageDust(1 / motionTable().hz);
-      else if (was && onFace(b)) {
-        const under = blockUnder(b);
-        travelDust(was, footOf(b), b.n, () => under);
-      }
-      for (const event of events) happened(event);
+      if (live.ended) turning();
+      else played();
       moved = true;
     }
   } else owed = 0;
+  if (!live) return moved;
   if (motionOn() && dustAlive()) {
     ageDust(dt / 1000);
     moved = true;
   }
+  const b = live.run.ball;
   if (!moving(b) || live.station) live.still = stateOf(b);
   live.station = false;
   if (moved) line();
   return moved;
 }
 
+/** One game frame of the level with the pad as held, its dust, and what happened. */
+function played() {
+  const run = live.run;
+  const b = run.ball;
+  const pad = held | tapped;
+  // a tap stands until a frame reads the pad, as the level opens with it dead
+  if (heeds(run)) tapped = 0;
+  const was = onFace(b) ? footOf(b) : null;
+  const events = gameFrame(run, pad);
+  if (!motionOn()) ageDust(1 / motionTable().hz);
+  else if (was && onFace(b)) {
+    const under = blockUnder(b);
+    travelDust(was, footOf(b), b.n, () => under);
+  }
+  for (const event of events) happened(event);
+}
+
 const again = () =>
-  !!(
-    ease ||
-    (live &&
-      ((!live.ended && (motionOn() || moving(live.run.ball) || held || tapped)) ||
-        (motionOn() && dustAlive())))
-  );
+  !!(ease || (live && (motionOn() || (!live.ended && (moving(live.run.ball) || held || tapped)))));
+
+/** The frame hook: another frame while the view eases, the level runs or something moves, and one
+    more where the view has just cut. */
+function more() {
+  const asked = again() || redraw;
+  redraw = false;
+  return asked;
+}
 
 /** The ball's frame pitched further down by the view's word while it falls. */
 const looked = (b) => (b.look.word ? offsetFrame(b.frame, 0, b.look.word, b.rules.turn) : b.frame);
@@ -443,27 +519,40 @@ function happened(event) {
   } else if (event.turned) live.station = true;
 }
 
-// A ball lost off the lattice is put back where it last rested; any other ending stands, the ball
-// gone and the pad dead, until the level is started again.
+/** The level has ended: the ball is gone and the pad dead, the view lets go of the ball and turns
+    about the level's middle as the game's does, and the strip gives the verdict with the points
+    and the time left, until a key starts the level again or the view has run the length of one
+    swing of an arcade level's eye, whichever figures the level's own eye swings by. */
 function ended(code) {
-  const { ending } = motionTable().play;
-  if (code === ending.lost) {
-    revive(live.run);
-    live.station = true;
-    toast(LOST);
-    say(LOST);
-    return;
-  }
-  live.ended = code;
-  held = tapped = 0;
-  const text = code === ending.time ? TIME_UP : OVER;
+  const { play, turn } = motionTable();
+  const { ending, view, clock } = play;
+  const w = live.run.words;
+  live.ended = {
+    code,
+    frame: 0,
+    length: Math.floor(turn / view.swing),
+    theta: 0,
+    view: w.bonus ? { ...view, ...view.bonus } : view,
+    radius: radiusOf(live.level),
+    free: 0,
+    base: 1,
+  };
+  held = tapped = owed = 0;
+  finishEase();
+  state.frame = null;
+  fit();
+  const name = Object.keys(ending).find((k) => ending[k] === code);
+  const seconds = Math.max(0, Math.floor(w.clock / clock.second));
+  const text = `${VERDICT[name] ?? ENDED} ${counted(w.score, "point")}, ${counted(seconds, "second")} left. ${AGAIN}`;
   status(text);
   say(text);
+  redraw = true;
   invalidatePick();
 }
 
-/** The level again from its start, as the game loads it after an ending; a level with no start
-    stands the ball on the first face it could, as entering does. */
+/** The level again from its start, as the game loads it after an ending, the view coming back
+    behind the ball; a level with no start stands the ball on the first face it could, as
+    entering does. */
 function startOver() {
   if (!live) return;
   const start = startOf(live.level, live.probe);
@@ -473,9 +562,11 @@ function startOver() {
     leave();
     return;
   }
+  const from = viewNow();
   live.run = restart(live.run, where);
   live.probe = liveProbe(live.run);
   live.ended = null;
+  live.framed = false;
   state.presses = new Map();
   const b = live.run.ball;
   const at = { cell: blockUnder(b), face: faceUnder(b) };
@@ -488,10 +579,11 @@ function startOver() {
   status(start ? null : NO_START);
   held = tapped = owed = 0;
   state.frame = b.frame;
-  if (state.framing === fit) fit();
+  fit();
+  arrive(from);
   line();
+  redraw = true;
   invalidatePick();
-  drawSoon();
   say(
     `${levelTitle(live.level)} again. The ball stands on the ${FACE_NAME[at.face]} of ${at.cell.join(",")}, facing ${faceName(b.h)}.`,
   );
@@ -627,6 +719,7 @@ function wirePad() {
     e.preventDefault();
     if (live.ended) {
       startOver();
+      wake();
       return;
     }
     e.target.setPointerCapture(e.pointerId);
@@ -678,7 +771,10 @@ function keydown(e) {
     if (!(starts || BITS[e.key]) || e.shiftKey || modified(e)) return;
     e.preventDefault();
     e.stopPropagation();
-    if (starts && !e.repeat) startOver();
+    if (starts && !e.repeat) {
+      startOver();
+      wake();
+    }
     return;
   }
   const bit = BITS[e.key];
@@ -789,15 +885,7 @@ function enter(at = null) {
   measure();
   fitWith(frameBall);
   fit();
-  const to = {
-    ...viewNow(),
-    rot: () => viewOf(looked(live.run.ball), state.cam.yaw, state.cam.pitch),
-    target: () => shown().centre,
-  };
-  startEase(from, to, ENTER_MS, () => {
-    state.frame = live?.run.ball.frame ?? state.frame;
-  });
-  if (ease) state.frame = mul(from.rot, transpose(basisOf(state.cam.yaw, state.cam.pitch)));
+  arrive(from);
   runWith(source);
   emit("play-changed", true);
   emit("slice-changed");
@@ -809,6 +897,19 @@ function enter(at = null) {
   say(
     `Playing ${levelTitle(l)}. The ball stands on the ${FACE_NAME[s.face]} of ${s.block.join(",")}, facing ${faceName(s.h)}. The arrows roll and turn it, Esc leaves.`,
   );
+}
+
+/** Bring the view round behind the ball from `from`, easing with Motion on and at once without. */
+function arrive(from) {
+  const to = {
+    ...viewNow(),
+    rot: () => viewOf(looked(live.run.ball), state.cam.yaw, state.cam.pitch),
+    target: () => shown().centre,
+  };
+  startEase(from, to, ENTER_MS, () => {
+    state.frame = live?.run.ball.frame ?? state.frame;
+  });
+  if (ease) state.frame = mul(from.rot, transpose(basisOf(state.cam.yaw, state.cam.pitch)));
 }
 
 function leave({ restore = true } = {}) {
@@ -903,7 +1004,7 @@ export function bootPlay() {
   });
   wirePad();
   measure = measureStrip($("play"), "--play-h");
-  overlayWith({ under: () => void advance(), block: drawTrail, cell: drawDustOver, frame: again });
+  overlayWith({ under: () => void advance(), block: drawTrail, cell: drawDustOver, frame: more });
   movingWith(travellers);
   ballsWith(() => (live && !live.ended ? [shown().point] : null));
   on("level-changed", () => {

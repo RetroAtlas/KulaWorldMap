@@ -3,7 +3,10 @@ import { settle, still, trackErrors, drawn } from "./helpers.js";
 
 const LEVEL = "/#HIRO/0/45,35/fit/33";
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive)\.js$/;
-const TIME_UP = "Time is up. Space or a tap on the pad starts the level again.";
+const TIME_UP =
+  "Time is up. 0 points, 0 seconds left. Space or a tap on the pad starts the level again.";
+const LOST =
+  /^The ball is lost off the level\. 0 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
 const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
 /** The page point over a point of the level. */
@@ -92,6 +95,28 @@ const frameAt = (page) =>
   page.evaluate(async () =>
     (await import(new URL("js/viewer/draw/render.js", location.href).href)).clock(),
   );
+/** The zooms the ending's view draws at from the yaw `from`, one a drawn frame, through the
+    frames one swing of the quicker eye takes, counted by the yaw's turn, and whether the view
+    was still the ending's, the camera's frame let go, at their end. */
+const swung = (page, from) =>
+  page.evaluate(async (from) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { motionTable }] = await Promise.all(
+      ["viewer/state.js", "viewer/data.js"].map(at),
+    );
+    const { turn, play } = motionTable();
+    const step = (play.view.angles[2] * 360) / turn;
+    const frames = Math.ceil(turn / play.view.bonus.swing) + 1;
+    const turned = () => (state.cam.yaw - from) / step;
+    const round = (v) => Math.round(v * 1000) / 1000;
+    const zooms = [];
+    const until = performance.now() + 8000;
+    while (state.frame === null && turned() < frames && performance.now() < until) {
+      zooms.push(round(state.cam.zoom));
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    return { zooms, held: state.frame === null && turned() >= frames };
+  }, from);
 /** The panel's presses as the map holds them. */
 const presses = (page) =>
   page.evaluate(async () => {
@@ -432,7 +457,7 @@ test("with Motion on the level runs at rest: the strip counts the clock down and
   expect(errors).toEqual([]);
 });
 
-test("time runs out into the strip's verdict with the pad dead, and Space starts the level again with the clock full, the ball on the start and the circuits as loaded", async ({
+test("time runs out into the strip's verdict with the pad dead and the view let go of the ball, and Space starts the level again with the clock full, the ball on the start and the circuits as loaded", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -452,11 +477,17 @@ test("time runs out into the strip's verdict with the pad dead, and Space starts
   await page.keyboard.up("ArrowUp");
   await expect(say(page)).toHaveText(TIME_UP);
   await expect(clockLine(page)).toHaveText("Time 0");
-  expect((await probe(page)).playing).toBe(true);
-  const stood = (await probe(page)).station;
+  const over = await probe(page);
+  expect(over.playing).toBe(true);
+  // the view stands on the level's middle, the ball's frame let go, and with Motion off it stays
+  expect(over.frame).toBeNull();
+  expect(over.target).toEqual([17.5, 17.5, 17.5]);
+  expect(over.fitted).toBe(true);
   await page.keyboard.press("ArrowLeft");
   await page.waitForTimeout(200);
-  expect((await probe(page)).station).toEqual(stood);
+  const held = await probe(page);
+  expect(held.station).toEqual(over.station);
+  expect(held.cam).toEqual(over.cam);
   // Enter on a focused strip button works the button rather than starting the level again
   const padBtn = page.locator("#padBtn");
   const padWas = await padBtn.getAttribute("aria-pressed");
@@ -475,16 +506,112 @@ test("time runs out into the strip's verdict with the pad dead, and Space starts
   await expect(say(page)).toContainText(
     "again. The ball stands on the top of 17,17,17, facing -y.",
   );
-  expect((await probe(page)).station).toEqual({
-    block: [17, 17, 17],
-    face: 0,
-    heading: "-y",
-    moving: false,
-  });
+  const again = await probe(page);
+  expect(again.station).toEqual({ block: [17, 17, 17], face: 0, heading: "-y", moving: false });
+  expect(again.frame).toEqual(IDENTITY);
+  expect(again.cam.yaw).toBe(20);
+  expect(again.cam.pitch).toBe(30);
   expect(await presses(page)).toEqual([]);
   await page.keyboard.down("ArrowUp");
   await expect.poll(async () => (await probe(page)).station.face).not.toBe(0);
   await page.keyboard.up("ArrowUp");
+  expect(errors).toEqual([]);
+});
+
+test("when the time runs out with Motion on, the view lets go of the ball and turns about the level as the game's does, and Space brings it back behind the ball", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await timed(page, 2);
+  await expect(page.locator("#chipLine")).toContainText("time 2");
+  // a key makes the level an arcade one, whose ending's view swings the slower way
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  await expect(page.locator("#chipLine")).toContainText("2 objects");
+  await startPlay(page);
+  await expect
+    .poll(() => status(page).textContent(), { timeout: 10_000, intervals: [50] })
+    .toBe(TIME_UP);
+  await expect(say(page)).toHaveText(TIME_UP);
+  const over = await probe(page);
+  expect(over.playing).toBe(true);
+  expect(over.frame).toBeNull();
+  expect(over.target).toEqual([17.5, 17.5, 17.5]);
+  expect(over.fitted).toBe(true);
+  // the view turns and the eye swings, frame by frame
+  await expect.poll(async () => (await probe(page)).cam.yaw).not.toBe(over.cam.yaw);
+  const turned = await probe(page);
+  expect(turned.cam.yaw).toBeGreaterThan(over.cam.yaw);
+  expect(turned.cam.pitch).toBeLessThan(over.cam.pitch);
+  expect(turned.cam.zoom).not.toBe(over.cam.zoom);
+  expect(turned.frame).toBeNull();
+  expect(turned.target).toEqual([17.5, 17.5, 17.5]);
+  expect(turned.station).toEqual(over.station);
+  // through one swing of the quicker eye the arcade eye only draws further off than it stood,
+  // and the verdict stands
+  const { zooms, held } = await swung(page, over.cam.yaw);
+  expect(held).toBe(true);
+  expect(zooms.length).toBeGreaterThan(1);
+  expect(Math.max(...zooms)).toBe(zooms[0]);
+  expect(Math.min(...zooms)).toBeLessThan(zooms[0]);
+  expect(await status(page).textContent()).toBe(TIME_UP);
+  await page.keyboard.press(" ");
+  await expect(status(page)).toHaveText("");
+  await expect(say(page)).toContainText(
+    "again. The ball stands on the top of 17,17,17, facing -y.",
+  );
+  await expect.poll(async () => (await probe(page)).frame, { intervals: [50] }).toEqual(IDENTITY);
+  const back = await probe(page);
+  expect(back.cam.yaw).toBe(20);
+  expect(back.cam.pitch).toBe(30);
+  expect(back.station).toEqual({ block: [17, 17, 17], face: 0, heading: "-y", moving: false });
+  expect(errors).toEqual([]);
+});
+
+test("left alone, the ending's view runs the length of the slower swing and the level starts again by itself, and Esc leaves it with the view as it was", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await timed(page, 2);
+  await expect(page.locator("#chipLine")).toContainText("time 2");
+  const before = await probe(page);
+  await startPlay(page);
+  await expect
+    .poll(() => status(page).textContent(), { timeout: 10_000, intervals: [50] })
+    .toBe(TIME_UP);
+  const since = Date.now();
+  const over = await probe(page);
+  expect(over.frame).toBeNull();
+  // a level with no key swings the quicker way: within one swing of its eye the view draws nearer
+  // than it stood, and the verdict stands past that swing
+  const { zooms, held } = await swung(page, over.cam.yaw);
+  expect(held).toBe(true);
+  expect(zooms.length).toBeGreaterThan(1);
+  expect(Math.max(...zooms)).toBeGreaterThan(zooms[0]);
+  expect(await status(page).textContent()).toBe(TIME_UP);
+  // the view runs the length of the slower swing, near six seconds, which the frames cannot run
+  // ahead of the wall clock, and then the level starts again by itself
+  await expect(status(page)).toHaveText("", { timeout: 10_000 });
+  expect(Date.now() - since).toBeGreaterThan(5000);
+  await expect(say(page)).toContainText(
+    "again. The ball stands on the top of 17,17,17, facing -y.",
+  );
+  await expect.poll(async () => (await probe(page)).frame, { intervals: [50] }).toEqual(IDENTITY);
+  await expect(status(page)).toHaveText(TIME_UP, { timeout: 10_000 });
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#play")).toBeHidden();
+  await expect.poll(async () => (await probe(page)).frame).toBeNull();
+  const left = await probe(page);
+  expect(left.playing).toBe(false);
+  expect(left.cam).toEqual(before.cam);
+  expect(left.target).toEqual(before.target);
   expect(errors).toEqual([]);
 });
 
@@ -681,7 +808,7 @@ test("out of an inner corner the ball climbs the wall ahead, and shows through t
   expect(errors).toEqual([]);
 });
 
-test("Space hops the ball in place, jumps it two blocks on while it rolls, and a jump off the lattice falls and comes back", async ({
+test("Space hops the ball in place, jumps it two blocks on while it rolls, and a jump off the lattice is lost, which ends the level", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -698,14 +825,15 @@ test("Space hops the ball in place, jumps it two blocks on while it rolls, and a
   await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 16, 17]);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   await expect(say(page)).toHaveText("17,16,17, top");
-  // from the lattice's last column a jump lands past its edge, and the ball comes back to where it stood
+  // from the lattice's last column a jump lands past its edge, and the ball is lost
   await page.goto(LEVEL);
   await settle(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
   await laid(page, [32, 17, 17], { kind: 0 });
   await expect(page.locator("#chipLine")).toContainText("2 blocks");
-  await page.keyboard.press("v");
+  // Motion is off still, kept from the first half by the display's store
+  await expect(page.locator("#showMotion")).not.toBeChecked();
   await page.evaluate(async () => {
     const P = await import(new URL("js/play/play.js", location.href).href);
     P.bootPlay();
@@ -717,16 +845,18 @@ test("Space hops the ball in place, jumps it two blocks on while it rolls, and a
   await page.keyboard.down("ArrowUp");
   await page.keyboard.press(" ");
   await page.keyboard.up("ArrowUp");
-  await expect(page.locator("#toastStack .toast")).toHaveText([
-    "The ball fell off the level, and is back where it last stood.",
-  ]);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
-  expect((await probe(page)).station).toEqual({
-    block: [32, 17, 17],
-    face: 0,
-    heading: "+x",
-    moving: false,
-  });
+  await expect(status(page)).toHaveText(LOST);
+  await expect(say(page)).toHaveText(LOST);
+  const lost = await probe(page);
+  expect(lost.playing).toBe(true);
+  expect(lost.frame).toBeNull();
+  expect(lost.target).toEqual([25, 17.5, 17.5]);
+  expect(lost.fitted).toBe(true);
+  await page.keyboard.press(" ");
+  await expect(status(page)).toHaveText("");
+  const again = await probe(page);
+  expect(again.station).toEqual({ block: [17, 17, 17], face: 0, heading: "-y", moving: false });
+  expect(again.frame).toEqual(IDENTITY);
   expect(errors).toEqual([]);
 });
 
