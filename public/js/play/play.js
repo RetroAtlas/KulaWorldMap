@@ -561,6 +561,16 @@ function stepped(dt) {
   return moved;
 }
 
+/** A burst of `n0` motes at `point` over `block`, while the dust is on, still with Motion off. */
+function burst(point, n, block, n0) {
+  if (state.show.dust) burstDust(point, n, block, n0, !motionOn());
+}
+
+/** Dust along the footprint's travel from `from` to `to`, while the dust is on. */
+function strewn(from, to, n, blockOf, still = false) {
+  if (state.show.dust) travelDust(from, to, n, blockOf, still);
+}
+
 /** One game frame of the level with the pad as held, its dust, and what happened. */
 function played() {
   const run = live.run;
@@ -573,7 +583,7 @@ function played() {
   if (!motionOn()) ageDust(1 / motionTable().hz);
   else if (was && onFace(b) && !events.some((e) => e.sent)) {
     const under = blockUnder(b);
-    travelDust(was, footOf(b), b.n, () => under);
+    strewn(was, footOf(b), b.n, () => under);
   }
   for (const event of events) happened(event);
   rested(b);
@@ -706,12 +716,11 @@ function happened(event) {
     say(noted(`${block.join(",")}, ${FACE_NAME[faceUnder(b)]}`));
     status(standsOn(block, faceUnder(b)) ? AS_STONE : b.riding ? RIDING : null);
     walked({ cell: block, face: faceUnder(b) });
-    if (!motionOn())
-      travelDust(live.still.foot, footOf(b), b.n, (p) => blockAt(p, b.n, block), true);
+    if (!motionOn()) strewn(live.still.foot, footOf(b), b.n, (p) => blockAt(p, b.n, block), true);
   } else if (event.face) {
     live.station = true;
     say(noted(`${FACE_NAME[faceUnder(b)]} of ${blockUnder(b).join(",")}, now underfoot`));
-    burstDust(footOf(b), b.n, blockUnder(b), AT_SWITCH, !motionOn());
+    burst(footOf(b), b.n, blockUnder(b), AT_SWITCH);
   } else if (event.turned) live.station = true;
 }
 
@@ -721,7 +730,7 @@ function taken({ key, face, points, at }) {
   const c = live.idx.cells.get(key);
   const m = (live.idx.markers.get(key) ?? []).find((m) => m.face === face);
   const point = at.map((v) => v / live.run.ball.unit + 0.5);
-  burstDust(point, FACE_NORMAL[face], [c.x, c.y, c.z], AT_TAKE, !motionOn());
+  burst(point, FACE_NORMAL[face], [c.x, c.y, c.z], AT_TAKE);
   const label = markerLabel(m);
   say(points ? `${label} taken, ${counted(points, "point")}.` : `${label} taken.`);
   refreshPanel();
@@ -740,7 +749,7 @@ const noted = (text) => (live.notes.length ? `${text}. ${live.notes.splice(0).jo
 /** A switch thrown under the ball: dust at its foot, the circuit's turn said, the panel redrawn. */
 function threw({ circuit }) {
   const b = live.run.ball;
-  burstDust(footOf(b), b.n, blockUnder(b), AT_SWITCH, !motionOn());
+  burst(footOf(b), b.n, blockUnder(b), AT_SWITCH);
   const text = `Switch thrown: ${theCircuit(circuit)} turned over.`;
   say(text);
   live.notes.push(text);
@@ -751,7 +760,7 @@ function threw({ circuit }) {
     the break said the first time. */
 function broke({ key }) {
   const b = live.run.ball;
-  burstDust(footOf(b), b.n, blockUnder(b), AT_BREAK, !motionOn());
+  burst(footOf(b), b.n, blockUnder(b), AT_BREAK);
   if (live.broken.has(key)) return;
   live.broken.add(key);
   say(BROKE);
@@ -763,7 +772,7 @@ function broke({ key }) {
 function fell({ key }) {
   const { x, y, z } = live.idx.cells.get(key);
   const over = nearestDrawn([x, y, z]);
-  if (over) burstDust([x + 0.5, y + 0.5, z + 0.5], live.run.ball.n, over, AT_TAKE, !motionOn());
+  if (over) burst([x + 0.5, y + 0.5, z + 0.5], live.run.ball.n, over, AT_TAKE);
   if (state.selected?.key === key) clearDetail();
   say(GONE([x, y, z].join(",")));
   redraw = true;
@@ -789,7 +798,7 @@ function sent({ from, to }) {
   for (const { cell, face } of [from, to]) {
     const n = FACE_NORMAL[face];
     const point = cell.map((v, i) => v + 0.5 + 0.5 * n[i]);
-    burstDust(point, n, cell, AT_TAKE, !motionOn());
+    burst(point, n, cell, AT_TAKE);
   }
   walked({ cell: to.cell, face: to.face }, true);
   state.frame = b.frame;
@@ -943,7 +952,7 @@ function walked(station, leap = false) {
 }
 
 function drawTrail(ctx, c, home, key, ghost) {
-  if (!live?.trail || ghost || c.k !== undefined) return;
+  if (!live?.trail || !state.show.trail || ghost || c.k !== undefined) return;
   const list = live.trail.get(key);
   if (list) for (const p of list) drawPieces(ctx, [p], { alpha: p.alpha });
 }
@@ -1448,6 +1457,7 @@ export function bootPlay() {
   });
   on("show-changed", (key) => {
     if (key === "turnabout" && live) reframe();
+    if (key === "dust" && live && !state.show.dust) resetDust(worldTint(live.level.theme));
   });
   sync();
 }

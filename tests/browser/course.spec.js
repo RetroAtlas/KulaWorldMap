@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { settle, still, trackErrors, drawn, overlaps } from "./helpers.js";
+import { settle, still, trackErrors, drawn, overlaps, topPixels, gold } from "./helpers.js";
 
 const LEVEL = "/#HIRO/0/45,35/fit/33";
 const SEGMENT = /\/r[A-Za-z0-9_-]{3,}$/;
@@ -186,61 +186,11 @@ test("u turns the planner on without keeping it, clicks add stops the strip coun
   expect(errors).toEqual([]);
 });
 
-/** The red, green and blue of every pixel of the top of a block, drawn afresh. */
-const pixels = (page, [x, y, z]) =>
-  page.evaluate(
-    async ([x, y, z]) => {
-      const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
-      const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
-      state.hover = null;
-      draw();
-      const g = document.getElementById("cv").getContext("2d");
-      const k = state.view.dpr;
-      const quad = [
-        [0, 0],
-        [1, 0],
-        [1, 1],
-        [0, 1],
-      ].map(([dx, dy]) => screen(x + dx, y + dy, z).map((v) => v * k));
-      const xs = quad.map((p) => p[0]);
-      const ys = quad.map((p) => p[1]);
-      const x0 = Math.floor(Math.min(...xs));
-      const y0 = Math.floor(Math.min(...ys));
-      const w = Math.ceil(Math.max(...xs)) - x0 + 1;
-      const h = Math.ceil(Math.max(...ys)) - y0 + 1;
-      const d = g.getImageData(x0, y0, w, h).data;
-      const inside = (px, py) => {
-        let turn = 0;
-        for (let i = 0; i < 4; i++) {
-          const [ax, ay] = quad[i];
-          const [bx, by] = quad[(i + 1) % 4];
-          const s = Math.sign((bx - ax) * (py - ay) - (by - ay) * (px - ax));
-          if (s && turn && s !== turn) return false;
-          turn ||= s;
-        }
-        return true;
-      };
-      const out = [];
-      for (let j = 0; j < h; j++)
-        for (let i = 0; i < w; i++) {
-          if (!inside(x0 + i + 0.5, y0 + j + 0.5)) continue;
-          const o = (j * w + i) * 4;
-          out.push([d[o], d[o + 1], d[o + 2]]);
-        }
-      return out;
-    },
-    [x, y, z],
-  );
 /** How many pixels differ between two readings of a face, and how many of the second are the route's gold. */
-const differ = (before, after) => {
-  let changed = 0;
-  let gold = 0;
-  after.forEach((px, i) => {
-    if (px.some((v, ch) => Math.abs(v - before[i][ch]) > 24)) changed++;
-    if (px[0] > 230 && px[1] > 170 && px[2] < 150) gold++;
-  });
-  return { changed, gold };
-};
+const differ = (before, after) => ({
+  changed: after.filter((px, i) => px.some((v, ch) => Math.abs(v - before[i][ch]) > 24)).length,
+  gold: after.filter(gold).length,
+});
 
 test("the route is drawn in gold over the faces it crosses, still while Motion is off", async ({
   page,
@@ -255,15 +205,15 @@ test("the route is drawn in gold over the faces it crosses, still while Motion i
   // the route crosses the top of 17,16,17, and comes nowhere near the top of 18,12,17
   const crossed = [17, 16, 17];
   const beside = [18, 12, 17];
-  const bare = { crossed: await pixels(page, crossed), beside: await pixels(page, beside) };
+  const bare = { crossed: await topPixels(page, crossed), beside: await topPixels(page, beside) };
   expect(bare.crossed.length).toBeGreaterThan(1000);
   await page.keyboard.press("u");
   await click(page, await top(page, [17, 15, 17]));
   await expect(line(page)).toHaveText("Route planner · 2 stops");
-  const drawnOver = differ(bare.crossed, await pixels(page, crossed));
+  const drawnOver = differ(bare.crossed, await topPixels(page, crossed));
   expect(drawnOver.changed).toBeGreaterThan(200);
   expect(drawnOver.gold).toBeGreaterThan(50);
-  expect(differ(bare.beside, await pixels(page, beside)).changed).toBe(0);
+  expect(differ(bare.beside, await topPixels(page, beside)).changed).toBe(0);
   expect(await drawn(page)).toBe(0);
   await page.keyboard.press("v");
   await expect(page.locator("#showMotion")).toBeChecked();

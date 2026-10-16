@@ -111,3 +111,49 @@ export const drawn = (page, frames = 24, ms = 400) =>
     },
     [frames, ms],
   );
+
+/** The red, green and blue of every pixel of the top of the block at `cell`, drawn afresh. */
+export const topPixels = (page, cell) =>
+  page.evaluate(async ([x, y, z]) => {
+    const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
+    state.hover = null;
+    draw();
+    const g = document.getElementById("cv").getContext("2d");
+    const k = state.view.dpr;
+    const quad = [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+    ].map(([dx, dy]) => screen(x + dx, y + dy, z).map((v) => v * k));
+    const xs = quad.map((p) => p[0]);
+    const ys = quad.map((p) => p[1]);
+    const x0 = Math.floor(Math.min(...xs));
+    const y0 = Math.floor(Math.min(...ys));
+    const w = Math.ceil(Math.max(...xs)) - x0 + 1;
+    const h = Math.ceil(Math.max(...ys)) - y0 + 1;
+    const d = g.getImageData(x0, y0, w, h).data;
+    const inside = (px, py) => {
+      let turn = 0;
+      for (let i = 0; i < 4; i++) {
+        const [ax, ay] = quad[i];
+        const [bx, by] = quad[(i + 1) % 4];
+        const s = Math.sign((bx - ax) * (py - ay) - (by - ay) * (px - ax));
+        if (s && turn && s !== turn) return false;
+        turn ||= s;
+      }
+      return true;
+    };
+    const out = [];
+    for (let j = 0; j < h; j++)
+      for (let i = 0; i < w; i++) {
+        if (!inside(x0 + i + 0.5, y0 + j + 0.5)) continue;
+        const o = (j * w + i) * 4;
+        out.push([d[o], d[o + 1], d[o + 2]]);
+      }
+    return out;
+  }, cell);
+
+/** Whether a pixel is the route's gold. */
+export const gold = ([r, g, b]) => r > 230 && g > 170 && b < 150;

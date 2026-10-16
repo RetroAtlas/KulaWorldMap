@@ -32,6 +32,8 @@ const SHOWN = [
   ["showCompass", "compass"],
   ["showCourse", "course"],
   ["turnAbout", "turnabout"],
+  ["showTrail", "trail"],
+  ["showDust", "dust"],
 ];
 // Switches that are never kept from one visit to the next.
 const UNKEPT = new Set(["course"]);

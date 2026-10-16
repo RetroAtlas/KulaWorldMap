@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { settle, still, trackErrors, drawn, textured } from "./helpers.js";
+import { settle, still, trackErrors, drawn, textured, topPixels, gold } from "./helpers.js";
 
 const LEVEL = "/#HIRO/0/45,35/fit/33";
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazards)\.js$/;
@@ -1012,6 +1012,77 @@ test("Keep as the route hands the way the ball has come to the planner, where no
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
   await expect(page.locator("#course")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+/** Open Settings, click the switch `id` and close it, saying what its row says of the default. */
+const toggled = async (page, id, def) => {
+  await page.keyboard.press("s");
+  await expect(page.locator("#settings")).toBeVisible();
+  await page.locator(`#${id}`).click();
+  await expect(page.locator(`#settings label:has(#${id}) .def`)).toHaveText(def);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#settings")).toBeHidden();
+};
+/** Roll the ball a block on and wait for it to rest on `block`. */
+const rolled = async (page, block) => {
+  await page.keyboard.press("ArrowUp");
+  await expect.poll(async () => (await probe(page)).station.block).toEqual(block);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+};
+
+test("the way the ball has come is drawn under it only with its setting on, off by default, and Keep as the route stands either way", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
+  const golden = async (c) => (await topPixels(page, c)).filter(gold).length;
+  await opened(page, { motion: false });
+  await startPlay(page);
+  const keep = page.locator("#keepBtn");
+  // the dust put away, so any gold over the block is the trail's, and two rolls, so the top behind
+  // the ball carries the trail's latest roll, undimmed
+  await toggled(page, "showDust", "on by default");
+  await rolled(page, [17, 17, 17]);
+  await rolled(page, [17, 16, 17]);
+  const crossed = [17, 17, 17];
+  expect(await golden(crossed)).toBe(0);
+  await expect(keep).toBeEnabled();
+  await toggled(page, "showTrail", "off by default");
+  expect((await kept()).trail).toBe(true);
+  expect(await golden(crossed)).toBeGreaterThan(50);
+  await expect(keep).toBeEnabled();
+  expect(await drawn(page)).toBe(0);
+  await toggled(page, "showTrail", "");
+  expect(await golden(crossed)).toBe(0);
+  await keep.click();
+  await expect(say(page)).toHaveText("The way the ball has come is now the route.");
+  await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops");
+  expect(errors).toEqual([]);
+});
+
+test("the dust is born only with its setting on, on by default, and what is alive goes as it is put away", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
+  await opened(page, { motion: false });
+  await startPlay(page);
+  expect(await dustAlive(page)).toBe(false);
+  await rolled(page, [17, 17, 17]);
+  expect(await dustAlive(page)).toBe(true);
+  expect(await drawn(page)).toBe(0);
+  await toggled(page, "showDust", "on by default");
+  expect((await kept()).dust).toBe(false);
+  expect(await dustAlive(page)).toBe(false);
+  // over the coin's block, so its burst is held back as the travel's motes are
+  await rolled(page, [17, 16, 17]);
+  await expect(page.locator("#playPoints")).toHaveText("250 points");
+  expect(await dustAlive(page)).toBe(false);
+  expect(await drawn(page)).toBe(0);
+  await toggled(page, "showDust", "");
+  await rolled(page, [17, 15, 17]);
+  expect(await dustAlive(page)).toBe(true);
   expect(errors).toEqual([]);
 });
 

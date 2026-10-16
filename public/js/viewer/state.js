@@ -41,6 +41,8 @@ export const state = {
     note: true,
     course: false,
     turnabout: false,
+    trail: false,
+    dust: true,
   },
   hiddenKinds: new Set(),
   // by colour, and the last key's, the clock frames at which a panel turned each circuit over
