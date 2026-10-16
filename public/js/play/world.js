@@ -1,7 +1,7 @@
 // The level as play holds it: what stands where, what travels and what has gone, built once from
 // the level and probed as the ball rolls, in the game's units.
 import { SIDE, cellKey, FACE_NORMAL } from "../format/lattice.js";
-import { OFF_LATTICE, beams, platformCells, startsOf } from "../viewer/data.js";
+import { OFF_LATTICE, beams, markersOf, platformCells, startsOf } from "../viewer/data.js";
 import { phasesOf } from "../viewer/motion.js";
 import { probe, walkers, dice } from "../viewer/travel.js";
 import { cellOf, faceUnder } from "./ball.js";
@@ -40,8 +40,9 @@ function built(kinds, hides, cell, kind) {
 /** The level as play holds it, the walkers laid at `frame`: the lattice's words and kinds by
     cell, the faces' types, the word each kind reads as under the ball, the pickups with where
     each stands, the devices, the captivators with where each entry stands and its reach, the
-    crumbling blocks, the platforms, the blocks a level with no key counts, what travels and the
-    dice, the live sets and the index the frame draws. */
+    crumbling blocks, the platforms, the blocks a level with no key counts, the starts with the
+    marker each leaves while the ball is on the level, what travels and the dice, the live sets
+    and the index the frame draws. */
 export function worldOf(l, idx, tables, circuits, frame = 0) {
   const { motion, unit, first, styles, skins } = tables;
   const laid = [];
@@ -81,9 +82,20 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
     for (const o of r.on) faces.set(slot(key, o.face), o.type);
   }
   // the loader stands the ball on a clock where the start it takes asks for one
-  const start = startsOf(l).at(-1);
+  const clock = motion.play.clock.face;
+  const found = startsOf(l);
+  const start = found.at(-1);
+  const starts = found.map((s) => {
+    const key = cellKey(s.x, s.y, s.z);
+    const m = idx.markers.get(key).find((m) => m.face === s.face && m.type === s.type);
+    const left =
+      s === start && s.type === CLOCK_START
+        ? markersOf({ kind: PLAIN, on: [{ ...m, type: clock }] })
+        : [];
+    return { key, m, left };
+  });
   if (start?.type === CLOCK_START)
-    faces.set(slot(cellKey(start.x, start.y, start.z), start.face), motion.play.clock.face);
+    faces.set(slot(cellKey(start.x, start.y, start.z), start.face), clock);
   const pickups = new Map();
   const devices = new Map();
   const captivators = [];
@@ -137,13 +149,14 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
     crumbling,
     platforms,
     counted,
+    starts,
     walkers: walkers(l, idx, motion, frame),
     probe: emptied(probe(l, circuits.lit), gone),
     roll: dice(motion.dice),
     taken: new Set(),
     gone,
     marked: new Set(),
-    view: idx,
+    view: null,
   };
 }
 
@@ -245,29 +258,36 @@ export function fell(world, key) {
 }
 
 /** The index the frame draws from: the level's own less the things taken and the blocks gone,
-    with what stood on them, shaped as the level's, and rebuilt only when either changes. */
+    with what stood on them, and, until the level's outcome stands, less the starts, whose ball
+    the ball on the level is, the start the game takes leaving the clock where it stands on one;
+    shaped as the level's, the level's own where nothing is dropped, and rebuilt only when any of
+    those changes. */
 export function viewOf(live) {
   const world = live.world;
-  if (!world.view) {
-    const { idx } = live;
-    const markers = new Map(idx.markers);
-    for (const taken of world.taken) {
-      const [key, face] = taken.split("/").map(Number);
-      markers.set(
-        key,
-        (markers.get(key) ?? []).filter((m) => m.face !== face),
-      );
-    }
-    const view = { ...idx, markers };
-    if (world.gone.size) {
-      view.cells = new Map(idx.cells);
-      view.records = new Map(idx.records);
-      for (const key of world.gone)
-        for (const part of [view.cells, view.records, markers]) part.delete(key);
-    }
-    world.view = view;
+  const ended = !!live.words.outcome;
+  if (!world.view || world.view.ended !== ended) world.view = { ended, idx: drawn(live, ended) };
+  return world.view.idx;
+}
+
+function drawn({ idx, world }, ended) {
+  const starts = ended ? [] : world.starts;
+  if (!world.taken.size && !world.gone.size && !starts.length) return idx;
+  const markers = new Map(idx.markers);
+  const less = (key, dropped, left = []) =>
+    markers.set(key, [...(markers.get(key) ?? []).filter((m) => !dropped(m)), ...left]);
+  for (const taken of world.taken) {
+    const [key, face] = taken.split("/").map(Number);
+    less(key, (m) => m.face === face);
   }
-  return world.view;
+  for (const s of starts) less(s.key, (m) => m === s.m, s.left);
+  const view = { ...idx, markers };
+  if (world.gone.size) {
+    view.cells = new Map(idx.cells);
+    view.records = new Map(idx.records);
+    for (const key of world.gone)
+      for (const part of [view.cells, view.records, markers]) part.delete(key);
+  }
+  return view;
 }
 
 /** What travels, for the frame to draw where the rules have stepped it. */

@@ -1,5 +1,14 @@
 import { test, expect } from "@playwright/test";
-import { settle, still, trackErrors, drawn, textured, topPixels, gold } from "./helpers.js";
+import {
+  settle,
+  still,
+  trackErrors,
+  drawn,
+  textured,
+  topPixels,
+  gold,
+  written,
+} from "./helpers.js";
 
 const LEVEL = "/#HIRO/0/45,35/fit/33";
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazards)\.js$/;
@@ -1236,6 +1245,93 @@ test("a right click selects while playing, Esc clears the selection before it le
   await expect(page.locator("#detail")).toBeHidden();
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+/** The clock face's type, as the strip of a marker writes it. */
+const clockFace = (page) =>
+  page.evaluate(async () => {
+    const { motionTable } = await import(new URL("js/viewer/data.js", location.href).href);
+    return String(motionTable().play.clock.face);
+  });
+/** How many markers one frame writes `text` into. */
+const marked = async (page, text) => (await written(page)).filter((t) => t === text).length;
+/** Whether the frame is handed a ball. */
+const handed = (page) =>
+  page.evaluate(async () => {
+    const P = await import(new URL("js/play/play.js", location.href).href);
+    return P.handed() !== null;
+  });
+
+test("playing from another block leaves the level one ball, a start on a clock showing the clock alone, and the start's ball is back once the level has ended", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await timed(page, 1);
+  await expect(page.locator("#chipLine")).toContainText("time 1");
+  await laid(page, [18, 17, 17], { kind: 0 });
+  await expect(page.locator("#chipLine")).toContainText("2 blocks");
+  await faced(page, [17, 17, 17], 0, { type: 29, facing: 3 });
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const at = (p) => import(new URL(`js/${p}`, location.href).href);
+        const [{ state }, { startsOf }] = await Promise.all(
+          ["viewer/state.js", "viewer/data.js"].map(at),
+        );
+        return startsOf(state.lvl).map((s) => s.type);
+      }),
+    )
+    .toEqual([29]);
+  // with markers in place of models a ball is its type written once, so the balls can be counted
+  for (const [key, id] of [
+    ["t", "#showSkins"],
+    ["d", "#showModels"],
+    ["v", "#showMotion"],
+  ]) {
+    await page.keyboard.press(key);
+    await expect(page.locator(id)).not.toBeChecked();
+  }
+  const clock = await clockFace(page);
+  const start = [17, 17, 17];
+  expect(await marked(page, "29")).toBe(1);
+  expect(await marked(page, clock)).toBe(0);
+  await page.evaluate(async () => {
+    const P = await import(new URL("js/play/play.js", location.href).href);
+    P.bootPlay();
+    P.playAt({ x: 18, y: 17, z: 17, face: 0 });
+  });
+  await expect(page.locator("#play")).toBeVisible();
+  expect((await probe(page)).station).toEqual(
+    expect.objectContaining({ block: [18, 17, 17], face: 0, moving: false }),
+  );
+  expect(await handed(page)).toBe(true);
+  expect(await marked(page, "29")).toBe(1);
+  expect(await marked(page, clock)).toBe(1);
+  const over = await top(page, start);
+  await page.mouse.click(over.x, over.y, { button: "right" });
+  await expect(page.locator("#detail")).toContainText("Start on a clock");
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#detail")).toBeHidden();
+  await page.mouse.move(2, 2);
+  await page.keyboard.down("ArrowLeft");
+  await expect(status(page)).toHaveText(/^Time is up\./, { timeout: 10_000 });
+  await page.keyboard.up("ArrowLeft");
+  expect(await handed(page)).toBe(false);
+  expect(await marked(page, "29")).toBe(1);
+  expect(await marked(page, clock)).toBe(0);
+  await page.keyboard.press(" ");
+  await expect(status(page)).toHaveText("");
+  expect((await probe(page)).station).toEqual(
+    expect.objectContaining({ block: start, face: 0, moving: false }),
+  );
+  expect(await handed(page)).toBe(true);
+  expect(await marked(page, "29")).toBe(1);
+  expect(await marked(page, clock)).toBe(1);
   expect(errors).toEqual([]);
 });
 

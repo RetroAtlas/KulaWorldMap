@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { objects, mapData, annotations } from "./fixtures.js";
 import { state } from "../../public/js/viewer/state.js";
 import { cellKey, FACE_NORMAL } from "../../public/js/format/lattice.js";
-import { setObjects, setAnnotations, index } from "../../public/js/viewer/data.js";
+import { setObjects, setAnnotations, index, objectId } from "../../public/js/viewer/data.js";
 import { blockPhase, phasesOf } from "../../public/js/viewer/motion.js";
 import { ballAt } from "../../public/js/play/ball.js";
 import {
@@ -110,7 +110,11 @@ test("the world keys every block's kind by its cell, a beam's empty end a plain 
       .map(([k, v]) => [Number(k), v.standing]),
     "the word each kind reads as under the ball is the table's",
   );
-  assert.equal(w.view, idx, "the index is what the frame draws");
+  assert.equal(
+    viewOf({ world: w, idx, words: { outcome: 0 } }),
+    idx,
+    "the index is what the frame draws",
+  );
 });
 
 test("a pickup stands off its block's centre by its type's stand, and a device is one the ball throws or takes", () => {
@@ -357,7 +361,7 @@ test("the index the frame draws is the level's own until something is taken, and
   ]);
   const idx = index(l);
   const w = worldOf(l, idx, TABLES, CIRCUITS);
-  const live = { world: w, idx };
+  const live = { world: w, idx, words: { outcome: 0 } };
   assert.equal(viewOf(live), idx);
   took(w, `${key([10, 10, 17])}/0`);
   assert.ok(w.taken.has(`${key([10, 10, 17])}/0`));
@@ -388,6 +392,90 @@ test("the index the frame draws is the level's own until something is taken, and
   assert.deepEqual(
     again.markers.get(key([10, 10, 17])).map((m) => m.type),
     [31],
+  );
+});
+
+test("the index the frame draws leaves the starts out until the level's outcome stands, the start the game takes leaving the clock on its face where it stands on one, and holds them again after it", () => {
+  const clocked = object(0, 29, 2);
+  const l = level(row(10, 12, 10, 17), [
+    { x: 10, y: 10, z: 17, kind: 0, on: [object(0, 30, 1), object(1, 31), object(2, 29)] },
+    { x: 11, y: 10, z: 17, kind: 0, on: [clocked] },
+    { x: 12, y: 10, z: 17, kind: 0, on: [object(0, 37)] },
+  ]);
+  const idx = index(l);
+  const w = worldOf(l, idx, TABLES, CIRCUITS);
+  const live = { world: w, idx, words: { outcome: 0 } };
+  const clock = motion.play.clock.face;
+  const view = viewOf(live);
+  assert.notEqual(view, idx);
+  assert.deepEqual(
+    view.markers.get(key([10, 10, 17])).map((m) => [m.type, m.face]),
+    [[31, 1]],
+    "the starts gone, the clock start the game does not take bare, the key on the side kept",
+  );
+  assert.deepEqual(
+    view.markers.get(key([11, 10, 17])),
+    [
+      {
+        id: objectId({ type: clock, f: clocked.f }),
+        type: clock,
+        face: 0,
+        f: clocked.f,
+        v: 0,
+        variant: null,
+      },
+    ],
+    "the start the game takes leaves the clock on its face",
+  );
+  const word = (cell, face) => probeOf(live).standing(cell, face);
+  assert.equal(
+    word([11, 10, 17], 0),
+    clock,
+    "the rules read the clock on the start the game takes",
+  );
+  assert.equal(word([10, 10, 17], 2), 29, "and the start's own type on one it does not");
+  assert.equal(
+    view.markers.get(key([12, 10, 17])),
+    idx.markers.get(key([12, 10, 17])),
+    "an untouched cell's list is the level's own",
+  );
+  for (const part of ["cells", "records"]) assert.equal(view[part], idx[part], `${part} untouched`);
+  assert.deepEqual(
+    idx.markers.get(key([10, 10, 17])).map((m) => m.type),
+    [30, 31, 29],
+    "the level as installed keeps the starts",
+  );
+  assert.equal(viewOf(live), view, "kept while nothing changes");
+  took(w, `${key([12, 10, 17])}/0`);
+  const taken = viewOf(live);
+  assert.deepEqual(taken.markers.get(key([12, 10, 17])), []);
+  assert.deepEqual(
+    taken.markers.get(key([10, 10, 17])).map((m) => m.type),
+    [31],
+    "the start still out after a take",
+  );
+  live.words.outcome = motion.play.ending.time;
+  const ended = viewOf(live);
+  assert.notEqual(ended, taken);
+  assert.equal(
+    ended.markers.get(key([10, 10, 17])),
+    idx.markers.get(key([10, 10, 17])),
+    "the start back once the level has ended",
+  );
+  assert.equal(
+    ended.markers.get(key([11, 10, 17])),
+    idx.markers.get(key([11, 10, 17])),
+    "the start on the clock too",
+  );
+  assert.deepEqual(ended.markers.get(key([12, 10, 17])), [], "the coin still taken");
+  assert.equal(viewOf(live), ended, "kept while the outcome stands");
+  live.words.outcome = 0;
+  assert.deepEqual(
+    viewOf(live)
+      .markers.get(key([10, 10, 17]))
+      .map((m) => m.type),
+    [31],
+    "and out again with the ball back on the level",
   );
 });
 

@@ -75,6 +75,8 @@ import { courseDriver } from "./drive.js";
 import { probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
 const BALL_TYPE = 30;
+// the ball's key among the frame's travellers, which no thing of the level's answers to
+const BALL = "ball";
 const AS_STONE_TYPES = new Set([10]);
 // the untinted light, the unit a traveller's tint is in
 const LIGHT = 4096;
@@ -256,7 +258,7 @@ export function station() {
 }
 
 /** What the frame is handed for the ball, or null while no ball is on the level. */
-export const handed = () => (live ? (travellers(live.level)?.get(live.key) ?? null) : null);
+export const handed = () => (live ? (travellers(live.level)?.get(BALL) ?? null) : null);
 
 function travellers(l) {
   if (!live || l !== live.level || live.ended) return null;
@@ -264,8 +266,8 @@ function travellers(l) {
   const m = live.markers[s.face];
   const n = FACE_NORMAL[s.face];
   const model = markerModel(m, l);
-  // the viewer stands a thing a hair off its face; the ball keeps that gap, so it meets the
-  // start's ball
+  // the viewer stands a thing a hair off its face; the ball keeps that gap, so it stands where
+  // the start's ball stood
   const reach = model ? Math.max(0, -model.box[0][1]) * modelUnit() : 0;
   const offset = s.centre.map((v, i) => v - reach * n[i] - (s.block[i] + 0.5 + 0.5 * n[i]));
   const c = live.idx.cells.get(cellKey(...s.block)) ?? {
@@ -288,7 +290,7 @@ function travellers(l) {
     depth:
       live.run.ball.ramp?.kind === "climb" || live.run.ball.riding ? depth(...s.centre) : undefined,
   };
-  return new Map([[live.key, going]]);
+  return new Map([[BALL, going]]);
 }
 
 /** The ball's light: flashing while it is marked dying, else tinted by its heat, melt and cold. */
@@ -882,7 +884,6 @@ function startOver() {
   state.presses = new Map();
   const b = live.run.ball;
   const at = { cell: blockUnder(b), face: faceUnder(b) };
-  live.key = keyOf(start, at);
   live.walk = { stations: [at], steps: [] };
   live.trail = null;
   live.notes = [];
@@ -1219,18 +1220,11 @@ function firstStandable(probe) {
   return null;
 }
 
-/** The traveller's key: the start's own where the ball stands on it, so the start's ball is
-    skipped. */
-function keyOf(start, at) {
-  const onStart = start && at.face === start.face && at.cell.every((v, i) => v === start.cell[i]);
-  return onStart ? `${cellKey(...start.cell)}/${start.face}` : "ball";
-}
-
 function markersFor(start) {
   const base = start?.marker
     ? { type: start.marker.type, f: start.marker.f, v: undefined, variant: null }
     : { type: BALL_TYPE, f: [], v: undefined, variant: null };
-  return FACE_NORMAL.map((_, face) => ({ ...base, id: "ball", face }));
+  return FACE_NORMAL.map((_, face) => ({ ...base, id: BALL, face }));
 }
 
 function enter(at = null) {
@@ -1269,7 +1263,6 @@ function enter(at = null) {
     idx: state.idx,
     run,
     probe: liveProbe(run),
-    key: keyOf(start, where),
     markers: markersFor(start),
     still: null,
     station: false,
@@ -1385,7 +1378,6 @@ export function togglePlay() {
     come taking a stop there. */
 function put(at) {
   retire();
-  live.key = keyOf(startOf(live.level, live.probe), at);
   stand(live.run, at);
   live.still = stateOf(live.run.ball);
   walked({ cell: at.cell, face: at.face });
