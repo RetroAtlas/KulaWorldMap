@@ -47,6 +47,21 @@ const cross = (a, b) => [
 ];
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
 const nearly = (f, g) => f.forEach((v, i) => near(v, g[i], 1e-9));
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const column = (f, k) => f.slice(3 * k, 3 * k + 3);
+/** The frame `f` with its columns turned about the world's unit axis `u` by `t` turns. */
+const aboutAxis = (f, u, t) => {
+  const c = Math.cos(t * 2 * Math.PI);
+  const s = Math.sin(t * 2 * Math.PI);
+  return [0, 1, 2].flatMap((k) => {
+    const v = column(f, k);
+    const w = cross(u, v);
+    const d = dot(v, u) * (1 - c);
+    return v.map((x, i) => x * c + w[i] * s + u[i] * d);
+  });
+};
+/** The body aligned with the ball's frame: the side, the heading and the normal its columns. */
+const aligned = (b) => [...b.s, ...b.h, ...b.n];
 
 /** A lattice of the cells given, probed as the planner probes a level. */
 const lattice = (...cells) =>
@@ -139,15 +154,141 @@ test("Up released stops the ball at the next middle, laid exactly there", () => 
   assert.equal(b.state, ROLLING);
 });
 
-test("the body spins by five times the speed a frame about its across axis, against the roll", () => {
+test("the body spins by five times the speed a frame about its side, against the roll, and stands at rest", () => {
   const probe = row(10, 18);
   const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  const laid = aligned(b);
+  assert.deepEqual(b.body, laid);
   run(b, probe, 3, PAD.up);
-  assert.equal(b.spin, -5 * (6 + 12 + 18));
+  nearly(b.body, turned(laid, 0, (table.spin * (6 + 12 + 18)) / TURN));
   rest(b, probe);
-  const spun = b.spin;
+  const spun = [...b.body];
   run(b, probe, 5, 0);
-  assert.equal(b.spin, spun);
+  assert.deepEqual(b.body, spun);
+});
+
+test("a turn in place leaves the body where it stands in the world while the side changes, and the spin then turns it about the new side", () => {
+  const probe = plate();
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 3, PAD.up);
+  rest(b, probe);
+  const body = [...b.body];
+  const side = [...b.s];
+  assert.deepEqual(run(b, probe, 1, PAD.left), [{ turned: LEFT }]);
+  assert.notDeepEqual(b.s, side);
+  assert.deepEqual(b.body, body);
+  run(b, probe, 19, 0);
+  assert.equal(b.ramp, null);
+  assert.deepEqual(b.body, body);
+  run(b, probe, 3, PAD.up);
+  const by = (table.spin * (6 + 12 + 18)) / TURN;
+  nearly(b.body, aboutAxis(body, b.s, by));
+  assert.ok(aboutAxis(body, side, by).some((v, i) => Math.abs(v - b.body[i]) > 1e-6));
+});
+
+test("round an edge the body takes the arc's four turns about the side a frame behind the arc, with no spin step on those frames, a quarter in all as the frame's own", () => {
+  const probe = row(15, 18);
+  const b = ballAt(RULES, [17, 16, 17], TOP, UP);
+  let before = null;
+  let was = null;
+  let wrapped = false;
+  for (let f = 1; f <= 60 && !wrapped; f++) {
+    before = [...b.body];
+    was = aligned(b);
+    b.pad = PAD.up;
+    wrapped = step(b, probe).some((e) => e.face === "wrap");
+  }
+  assert.ok(wrapped);
+  const side = [...b.s];
+  const spinStep = () => (table.spin * b.spinSpeed) / TURN;
+  // the frame turns a quarter about the side at the edge; the edge's frame and the arc's first
+  // take their spin steps
+  nearly(aligned(b), aboutAxis(was, side, -QUARTER / TURN));
+  nearly(b.body, aboutAxis(before, side, spinStep()));
+  let body = [...b.body];
+  run(b, probe, 1, PAD.up);
+  assert.equal(b.state, WRAPPING);
+  nearly(b.body, aboutAxis(body, side, spinStep()));
+  // the arc's second, third and fourth frames and the frame after each turn the body by the
+  // arc's step, a quarter in all
+  const spun = [...b.body];
+  for (let f = 2; f <= 5; f++) {
+    body = [...b.body];
+    run(b, probe, 1, PAD.up);
+    assert.equal(b.state, f <= 3 ? WRAPPING : ROLLING, `frame ${f}`);
+    assert.deepEqual(b.s, side);
+    nearly(b.body, aboutAxis(body, side, table.wrap.body / TURN));
+  }
+  assert.equal(4 * table.wrap.body, -QUARTER);
+  nearly(b.body, aboutAxis(spun, side, -QUARTER / TURN));
+  // then the spin goes on
+  body = [...b.body];
+  run(b, probe, 1, PAD.up);
+  nearly(b.body, aboutAxis(body, side, spinStep()));
+});
+
+test("up a wall the body stands while the frame turns under it, the draw of the frame after taking no spin step", () => {
+  const probe = row(15, 18, [
+    [17, 14, 17],
+    [17, 14, 16],
+  ]);
+  const b = ballAt(RULES, [17, 16, 17], TOP, UP);
+  let before = null;
+  let climbed = false;
+  for (let f = 1; f <= 60 && !climbed; f++) {
+    before = [...b.body];
+    b.pad = PAD.up;
+    climbed = step(b, probe).some((e) => e.face === "climb");
+  }
+  assert.ok(climbed);
+  const side = [...b.s];
+  const spinStep = () => (table.spin * b.spinSpeed) / TURN;
+  nearly(b.body, aboutAxis(before, side, spinStep()));
+  const stood = [...b.body];
+  run(b, probe, 1, PAD.up);
+  assert.deepEqual(b.s, side);
+  assert.deepEqual(b.body, stood);
+  run(b, probe, 1, PAD.up);
+  nearly(b.body, aboutAxis(stood, side, spinStep()));
+});
+
+test("the body stays a rotation, its columns unit, perpendicular and right-handed, over a long run of rolls, turns, edges and walls", () => {
+  const cells = [[17, 14, 16]];
+  for (let x = 14; x <= 20; x++) for (let y = 10; y <= 18; y++) cells.push([x, y, 17]);
+  const probe = lattice(...cells);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  const seen = new Set();
+  const check = (at) => {
+    const [x, y, z] = [0, 1, 2].map((k) => column(b.body, k));
+    for (const v of [x, y, z]) near(Math.hypot(...v), 1);
+    for (const [u, v] of [
+      [x, y],
+      [y, z],
+      [z, x],
+    ])
+      near(dot(u, v), 0);
+    assert.ok(Math.abs(dot(x, cross(y, z)) - 1) < 1e-9, `frame ${at}`);
+  };
+  for (let f = 1; f <= 1500; f++) {
+    b.pad = f % 140 < 110 ? PAD.up : f % 140 === 110 ? PAD.left : 0;
+    for (const e of step(b, probe)) if (e.face || e.turned) seen.add(e.face ?? "turn");
+    if (f % 100 === 0) check(f);
+  }
+  check(1500);
+  assert.deepEqual([...seen].sort(), ["climb", "turn", "wrap"]);
+});
+
+test("place lays the body aligned with the ball's new frame, whatever it had turned by", () => {
+  const probe = plate();
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 3, PAD.up);
+  assert.notDeepEqual(b.body, aligned(b));
+  const face = 1;
+  const h = [0, 0, 1];
+  place(b, [20, 12, 17], face, h);
+  assert.deepEqual(b.body, [...cross(h, FACE_NORMAL[face]), ...h, ...FACE_NORMAL[face]]);
+  assert.deepEqual(b.body, aligned(b));
+  assert.equal(b.mark, null);
 });
 
 test("the roll is refused off an edge beside a neighbour, and a block ahead at the ball's level takes it up", () => {
@@ -543,13 +684,13 @@ test("the spin's speed is nothing on every frame of a hop after a jump with Cros
   assert.equal(b.state, REST);
   // the landing writes the spin's speed nowhere, so the body turns on the landing frame too
   assert.equal(b.spinSpeed, table.jump.speed);
-  const spun = b.spin;
-  assert.equal(spun, 31 * table.spin * table.jump.speed);
+  const spun = [...b.body];
+  nearly(spun, turned(aligned(b), 0, (31 * table.spin * table.jump.speed) / TURN));
   for (let f = 1; f <= 31 * 2 + 1; f++) {
     run(b, probe, 1, PAD.cross);
     assert.equal(b.state, f % 31 === 0 ? REST : HOP, `frame ${f}`);
     assert.equal(b.spinSpeed, 0, `frame ${f}`);
-    assert.equal(b.spin, spun, `frame ${f}`);
+    assert.deepEqual(b.body, spun, `frame ${f}`);
   }
 });
 
@@ -901,13 +1042,13 @@ test("frozen, the ball's state, its move and its landing stand still while a ram
   const b = ballAt(RULES, [17, 18, 17], TOP, UP);
   run(b, probe, 17, PAD.up);
   assert.equal(b.state, ROLLING);
-  const rolling = { pos: [...b.pos], speed: b.speed, spin: b.spin, spinSpeed: b.spinSpeed };
+  const rolling = { pos: [...b.pos], speed: b.speed, body: [...b.body], spinSpeed: b.spinSpeed };
   b.frozen = true;
   assert.deepEqual(run(b, probe, 5, 0), []);
   assert.deepEqual(b.pos, rolling.pos);
   assert.equal(b.state, ROLLING);
   assert.equal(b.speed, rolling.speed);
-  assert.equal(b.spin, rolling.spin + 5 * table.spin * rolling.spinSpeed);
+  nearly(b.body, turned(rolling.body, 0, (5 * table.spin * rolling.spinSpeed) / TURN));
   b.frozen = false;
   assert.deepEqual(run(b, probe, 1, 0), [{ at: "middle" }]);
   assert.equal(b.state, REST);

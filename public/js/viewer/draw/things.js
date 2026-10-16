@@ -208,7 +208,7 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
   // squash is along the face, so it is laid between the face and the turns
   let laid = motion?.axes === "world" ? WORLD : face;
   let axes = wide === 1 && tall === 1 ? null : squashed(laid, wide, tall);
-  const turned = motion && spin(motion.order, [about[0], about[2], about[1]]);
+  const turned = going?.body ?? (motion && spin(motion.order, [about[0], about[2], about[1]]));
   const before =
     motion?.before &&
     spin(

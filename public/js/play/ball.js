@@ -36,6 +36,7 @@ export function ballAt(rules, cell, face, h) {
   // the ball rests its radius off the face, which is where the roll up a wall resumes from
   const radius = table.rolling.resume;
   const n = FACE_NORMAL[face];
+  const s = cross(h, n);
   return {
     rules,
     table,
@@ -45,7 +46,7 @@ export function ballAt(rules, cell, face, h) {
     jump,
     h,
     n,
-    s: cross(h, n),
+    s,
     pos: add(
       cell.map((c) => c * unit),
       n,
@@ -53,7 +54,9 @@ export function ballAt(rules, cell, face, h) {
     ),
     speed: 0,
     spinSpeed: 0,
-    spin: 0,
+    body: [...s, ...h, ...n],
+    mark: null,
+    marked: null,
     state: REST,
     progress: half,
     last: half,
@@ -170,6 +173,34 @@ export function turned(f, axis, t) {
     offset shows it. */
 export const offsetFrame = (from, axis, offset, turn) => turned(from, axis, -offset / turn);
 
+/** The frame `f` with each column turned about the world's unit axis `u` by `t` turns, the
+    right-handed way. */
+function spun(f, u, t) {
+  const c = Math.cos(t * 2 * Math.PI);
+  const s = Math.sin(t * 2 * Math.PI);
+  const out = [];
+  for (let k = 0; k < 3; k++) {
+    const v = f.slice(3 * k, 3 * k + 3);
+    const w = cross(u, v);
+    const d = dot(u, v) * (1 - c);
+    for (let i = 0; i < 3; i++) out.push(v[i] * c + w[i] * s + u[i] * d);
+  }
+  return out;
+}
+
+/** The frame `f` with its columns made unit and perpendicular again. */
+function straightened(f) {
+  const unit = (v) => {
+    const l = Math.hypot(...v);
+    return v.map((x) => x / l);
+  };
+  const x = unit(f.slice(0, 3));
+  const y = f.slice(3, 6);
+  const d = dot(y, x);
+  const z = unit(y.map((v, i) => v - d * x[i]));
+  return [...x, ...z, ...cross(x, z)];
+}
+
 function startRamp(b, kind, step) {
   const r = b.table[kind];
   b.ramp = {
@@ -228,6 +259,7 @@ function turnNow(b, out) {
   const [h, s] = dir === LEFT ? [neg(b.s), b.h] : [b.s, neg(b.h)];
   b.h = h;
   b.s = s;
+  b.mark = "quarter";
   startRamp(b, "quarter", dir * b.table.quarter.step);
   out.push({ turned: dir });
 }
@@ -439,6 +471,7 @@ const lost = (b) => {
 
 function wrap(b) {
   const { arc } = b.table.wrap;
+  b.marked = "wrap";
   const [dn, dh] = arc[b.arc++];
   b.pos = add(add(b.pos, b.n, dn), b.h, dh);
   if (b.arc < arc.length) return;
@@ -467,6 +500,7 @@ function move(b, probe, out) {
   if (probe.solid(add(cell, b.h)) && b.progress >= t.climb) {
     lay(b, t.touch);
     swap(b, b.n, neg(b.h));
+    b.marked = "climb";
     startRamp(b, "climb", b.table.climb.step);
     out.push({ face: "climb" });
     return;
@@ -511,6 +545,16 @@ function acting(b, probe, out) {
   else if (b.state === REST) resting(b, probe);
 }
 
+/** The body's turn for the draw; a turn marks this frame's, a wall and the arc the next's. */
+function spinning(b) {
+  const mark = b.mark;
+  b.mark = b.marked;
+  b.marked = null;
+  if (mark && mark !== "wrap") return;
+  const by = mark ? b.table.wrap.body : b.table.spin * b.spinSpeed;
+  if (by) b.body = straightened(spun(b.body, b.s, by / b.rules.turn));
+}
+
 /** The frame from the requests on: what happened, as events, added to `out`. The last frame's
     landing is cleared first, so a caller between `read` and `run` still sees it; while the ball
     is `frozen` its state does nothing, nor the move step nor the landings, and a ramp, the look
@@ -529,7 +573,7 @@ export function run(b, probe, out) {
   if (b.ramp) ramping(b);
   if (b.state === REST || b.state === ROLLING) b.held = add(cellOf(b, b.pos), b.n, -1);
   looking(b, probe);
-  b.spin += b.table.spin * b.spinSpeed;
+  spinning(b);
   if (b.state === REST) b.rest = { cell: blockUnder(b), face: faceUnder(b), h: b.h };
   if (lost(b)) out.push({ lost: true });
   return out;

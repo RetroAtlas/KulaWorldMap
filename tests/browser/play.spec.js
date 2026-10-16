@@ -16,6 +16,11 @@ const TAKEN = "Taken: Coin (bronze) on the top";
 const SENDING = "The teleporter is sending the ball.";
 const REFUSED = "The ball cannot roll off here: a block stands beside it.";
 const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+const UNTURNED = [
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1],
+];
 
 /** The page point over a point of the level. */
 const at = (page, x, y, z) =>
@@ -289,6 +294,31 @@ const frameFor = (page, h, n) =>
     },
     [h, n],
   );
+/** The view's frame, the ball's heading and its body, as handed to the frame and in the world, on
+    every animation frame until the view's frame is `until`, or 8 s pass. */
+const turnedThrough = (page, until) =>
+  page.evaluate(async (until) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, P, { faceAxes, times }, { FACE_NORMAL }] = await Promise.all(
+      ["viewer/state.js", "play/play.js", "viewer/motion.js", "format/lattice.js"].map(at),
+    );
+    const round = (v) => Math.round(v * 1000) / 1000 + 0;
+    const out = [];
+    const end = performance.now() + 8000;
+    while (performance.now() < end) {
+      const g = P.handed();
+      const laid = faceAxes(FACE_NORMAL[g.w.face], g.fwd);
+      out.push({
+        frame: state.frame.map(round),
+        heading: P.station().heading,
+        body: g.body.map((row) => row.map(round)),
+        world: times(laid, g.body).map((row) => row.map(round)),
+      });
+      if (out.at(-1).frame.every((v, i) => v === until[i])) return out;
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    return out;
+  }, until);
 /** Keep every sentence the live region says from here on. */
 const listening = (page) =>
   page.evaluate(() => {
@@ -471,6 +501,36 @@ test("the ball turns in place, turns about, and is refused an edge beside a neig
   await expect(status(page)).toHaveText("The ball cannot roll off here: a block stands beside it.");
   await page.keyboard.up("ArrowUp");
   expect((await probe(page)).station.block).toEqual([17, 18, 17]);
+  expect(errors).toEqual([]);
+});
+
+test("a turn in place turns the view round the ball and leaves the body's turn where it stands, as the game does", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page);
+  await startPlay(page);
+  await expect.poll(async () => (await probe(page)).frame).toEqual(IDENTITY);
+  // a block's roll turns the body, so that the turn has a turn to keep
+  await page.keyboard.press("ArrowUp");
+  await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 17, 17]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  const [before] = await turnedThrough(page, IDENTITY);
+  expect(before.heading).toBe("-y");
+  expect(before.body).not.toEqual(UNTURNED);
+  const final = await frameFor(page, [-1, 0, 0], [0, 0, -1]);
+  const sampling = turnedThrough(page, final);
+  await page.keyboard.press("ArrowLeft");
+  const samples = await sampling;
+  const turning = samples.filter((s) => s.heading === "-x");
+  // the view turns over the turn's frames while the body handed to the frame stands, and the body
+  // in the world is as it was before the turn, the frame alone having turned under it
+  expect(turning.length).toBeGreaterThan(1);
+  expect(turning.at(-1).frame).toEqual(final);
+  expect(turning.some((s) => s.frame.some((v, i) => v !== final[i]))).toBe(true);
+  for (const s of turning) expect(s.body).toEqual(turning[0].body);
+  expect(turning[0].body).not.toEqual(before.body);
+  for (const s of samples) expect(s.world).toEqual(before.world);
   expect(errors).toEqual([]);
 });
 

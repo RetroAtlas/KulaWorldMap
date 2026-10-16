@@ -38,6 +38,7 @@ import {
   TANGENT,
 } from "../viewer/data.js";
 import { headingOn, pieces, probeOf, tangent } from "../viewer/walk.js";
+import { faceAxes } from "../viewer/motion.js";
 import {
   draw,
   drawSoon,
@@ -137,7 +138,7 @@ const faceName = (v) => DIRECTION_NAME[faceOf(v)];
 
 // --- the ball as the frame draws it -----------------------------------------------------
 
-/** What the ball shows: its block and face, heading, centre and foot, spin and lift. */
+/** What the ball shows: its block and face, heading, centre and foot, body and lift. */
 function stateOf(b) {
   return {
     block: blockUnder(b),
@@ -146,10 +147,18 @@ function stateOf(b) {
     centre: centreOf(b),
     foot: footOf(b),
     point: b.pos.map((v) => v + b.half),
-    spin: b.spin,
+    body: bodyOf(b),
     height: clearance(b, live.probe),
     frame: b.ramp ? b.ramp.to : b.frame,
   };
+}
+
+/** The body relative to the axes the frame lays the ball on, across, forward and up, by rows. */
+function bodyOf(b) {
+  const f = faceAxes(b.n, b.h);
+  const [x, y, z] = [0, 1, 2].map((j) => b.body.slice(3 * j, 3 * j + 3));
+  const along = (k, v) => f[0][k] * v[0] + f[1][k] * v[1] + f[2][k] * v[2];
+  return [0, 1, 2].map((k) => [along(k, x), along(k, y), along(k, z)]);
 }
 
 /** The ball as drawn: live while Motion is on, else as it last stood. */
@@ -206,6 +215,9 @@ export function station() {
   return { block: s.block, face: s.face, heading: faceName(s.h), moving: moving(live.run.ball) };
 }
 
+/** What the frame is handed for the ball, or null while no ball is on the level. */
+export const handed = () => (live ? (travellers(live.level)?.get(live.key) ?? null) : null);
+
 function travellers(l) {
   if (!live || l !== live.level || live.ended) return null;
   const s = shown();
@@ -226,8 +238,7 @@ function travellers(l) {
     w: { c, m, face: s.face },
     offset,
     fwd: s.h,
-    roll: 0,
-    about: [s.spin / live.run.ball.rules.turn, 0, 0],
+    body: s.body,
     height: s.height,
     through: covered(s.centre),
     // at an inner corner the ball touches the block it leaves as well as the wall, so while the

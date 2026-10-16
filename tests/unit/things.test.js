@@ -11,7 +11,7 @@ import {
   modelUnit,
   TANGENT,
 } from "../../public/js/viewer/data.js";
-import { spin, times, faceAxes } from "../../public/js/viewer/motion.js";
+import { spin, times, faceAxes, pose } from "../../public/js/viewer/motion.js";
 import {
   thingDisc,
   ballsFor,
@@ -19,6 +19,7 @@ import {
   restOf,
   squashed,
   shadowStrength,
+  drawThing,
 } from "../../public/js/viewer/draw/things.js";
 
 setObjects(objects);
@@ -117,4 +118,105 @@ test("a squash lies along the face however the body has rolled, and at rest as t
     const now = rest.map((row) => row[0] * x + row[1] * y + row[2] * z);
     was.forEach((v, i) => near(v, now[i], 1e-15));
   }
+});
+
+/** A canvas context that keeps the points of every polygon filled and the placing of every sprite
+    drawn. */
+function recorder() {
+  const polys = [];
+  const sprites = [];
+  let ring = [];
+  let placed = null;
+  const ctx = {
+    canvas: { width: 800, height: 600 },
+    globalCompositeOperation: "source-over",
+    globalAlpha: 1,
+    fillStyle: null,
+    beginPath: () => {
+      ring = [];
+    },
+    moveTo: (x, y) => ring.push([x, y]),
+    lineTo: (x, y) => ring.push([x, y]),
+    closePath: () => {},
+    fill: () => polys.push(ring),
+    save: () => {},
+    restore: () => {},
+    getTransform: () => ({ transformPoint: (p) => p }),
+    setTransform: (...t) => {
+      placed = t;
+    },
+    fillRect: () => {},
+    drawImage: () => sprites.push(placed),
+  };
+  return { ctx, polys, sprites };
+}
+
+/** LEVEL 1's start drawn as a traveller `going` at `frame`, the page's canvas and point stood in
+    for: the polygons' points and the shadow's placing. */
+function drawnBall(going, frame = 1) {
+  const l = levelNamed("LEVEL 1");
+  const [m] = startsOf(l);
+  const { ctx, polys, sprites } = recorder();
+  const canvas = () => ({
+    getContext: () => ({
+      createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      putImageData: () => {},
+    }),
+  });
+  globalThis.document = { createElement: canvas };
+  globalThis.DOMPoint = class {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+    }
+  };
+  const view = state.view;
+  state.view = { w: 800, h: 600, dpr: 1 };
+  try {
+    const w = { c: m, m, face: m.face };
+    drawThing(ctx, m, m, l, frame, m, {
+      w,
+      offset: [0, 0, 0],
+      fwd: [0, -1, 0],
+      height: 100,
+      ...going,
+    });
+  } finally {
+    state.view = view;
+    delete globalThis.document;
+    delete globalThis.DOMPoint;
+  }
+  return { polys, sprites };
+}
+
+test("a traveller's body is drawn in place of the thing's spin, after the squash, and the shadow is laid as before", () => {
+  const same = (a, b) => {
+    assert.equal(a.length, b.length);
+    a.forEach((ring, k) =>
+      ring.forEach(([x, y], i) => {
+        near(x, b[k][i][0]);
+        near(y, b[k][i][1]);
+      }),
+    );
+  };
+  const l = levelNamed("LEVEL 1");
+  const [m] = startsOf(l);
+  // the ball breathes at this frame, so the squash is in the draw
+  assert.notEqual(pose(objects.motion, motionOf(m), m, 1, [0, 0, 0], l.time).squash, 0);
+  const roll = 0.3;
+  const spun = drawnBall({ about: [roll, 0, 0] });
+  const bodied = drawnBall({ body: spin("xyz", [roll, 0, 0]) });
+  assert.ok(spun.polys.length > 0);
+  assert.equal(spun.sprites.length, 1);
+  same(spun.polys, bodied.polys);
+  assert.deepEqual(bodied.sprites, spun.sprites);
+  // a body handed with a spin is drawn by the body alone
+  const both = drawnBall({ about: [roll, 0, 0], body: spin("xyz", [0.1, 0, 0]) });
+  const alone = drawnBall({ body: spin("xyz", [0.1, 0, 0]) });
+  same(both.polys, alone.polys);
+  // a body turned about the face turns the ball and leaves its shadow where it was
+  const yawed = drawnBall({ body: spin("xyz", [0, 0, 0.25]) });
+  const still = drawnBall({});
+  assert.notDeepEqual(yawed.polys, still.polys);
+  assert.deepEqual(yawed.sprites, still.sprites);
 });
