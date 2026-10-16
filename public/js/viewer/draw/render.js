@@ -243,10 +243,25 @@ function same(a, b) {
   return same(keys, Object.keys(b)) && keys.every((k) => same(a[k], b[k]));
 }
 
-export const clock = () =>
-  run && state.show.motion && run.level === state.lvl ? frameAt(motionTable(), now()) - run.at : 0;
+// What runs the level from outside the frame: a module may hand the frame the
+// clock it draws at, the index it draws from and what travels, given the
+// level, each standing in for the frame's own while it is registered. A handed
+// index is shaped as the level's own, with a marker only on a cell it holds.
+let source = null;
+export const runWith = (fn) => {
+  source = fn;
+  if (run) run.travel = null;
+  invalidatePick();
+};
+const handed = (l = state.lvl) => (l && source?.(l)) || null;
 
-function travelling(l, idx, frame) {
+const own = () =>
+  run && state.show.motion && run.level === state.lvl ? frameAt(motionTable(), now()) - run.at : 0;
+const clockOf = (given) => given?.frame ?? own();
+export const clock = () => clockOf(handed());
+
+/** The frame's own travel, laid where none stands and stepped to `frame`. */
+function stepped(l, idx, frame) {
   if (!run) return null;
   if (!run.travel) {
     run.travel = {
@@ -257,6 +272,12 @@ function travelling(l, idx, frame) {
   }
   const travel = run.travel;
   advance([...travel.walkers.values()], travel.probe, frame, travel.roll);
+  return travel;
+}
+
+function travelling(l, idx, frame, given) {
+  const travel = given ?? stepped(l, idx, frame);
+  if (!travel) return null;
   const out = new Map();
   for (const [key, w] of travel.walkers) out.set(key, { w, ...place(w) });
   if (out.size) spinning = true;
@@ -271,7 +292,6 @@ export function draw() {
   drawCompass();
   const l = state.lvl;
   if (!l) return;
-  const idx = state.idx;
   const tint = worldTint(l.theme) ?? "#93a8d4";
   const skins = skinsTable();
   const atlas = state.show.skins && skins ? atlasFor(l.theme) : null;
@@ -286,10 +306,13 @@ export function draw() {
   let covered = false;
   for (const fn of overlays.under) covered = fn(ctx, l) || covered;
   if (state.show.base && !covered) drawBase(ctx, l);
+  // after the under hooks, which step whatever runs the level
+  const given = handed(l);
+  const idx = given?.idx ?? state.idx;
   syncRun();
-  const frame = clock();
+  const frame = clockOf(given);
 
-  const walking = travelling(l, idx, frame);
+  const walking = travelling(l, idx, frame, given?.travel);
   if (walking?.size && pointerIn) pickStale = true;
   const moving = movers.reduce((out, fn) => merged(out, fn(l, idx, frame)), walking);
   const cells = visible(idx, moving);
