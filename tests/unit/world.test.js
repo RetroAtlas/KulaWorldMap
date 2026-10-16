@@ -4,8 +4,17 @@ import { objects, mapData, annotations } from "./fixtures.js";
 import { state } from "../../public/js/viewer/state.js";
 import { cellKey, FACE_NORMAL } from "../../public/js/format/lattice.js";
 import { setObjects, setAnnotations, index } from "../../public/js/viewer/data.js";
+import { phasesOf } from "../../public/js/viewer/motion.js";
 import { ballAt } from "../../public/js/play/ball.js";
-import { worldOf, standingOf, probeOf, travelOf } from "../../public/js/play/world.js";
+import {
+  worldOf,
+  standingOf,
+  probeOf,
+  travelOf,
+  viewOf,
+  took,
+  keysOf,
+} from "../../public/js/play/world.js";
 
 setObjects(objects);
 setAnnotations(annotations);
@@ -18,6 +27,7 @@ const TABLES = {
   unit: UNIT,
   first: mapData.firstRecord,
   styles: mapData.styles,
+  skins: objects.skins,
 };
 const RULES = { table: motion.types[30], turn: motion.turn, unit: UNIT, jump: objects.jump };
 const CIRCUITS = { on: () => true, lit: (ray) => ray.lit, flip: () => {} };
@@ -114,8 +124,18 @@ test("a pickup stands off its block's centre by its type's stand, and a device i
   assert.equal(coin.take, motion.types["37"].take);
   assert.equal(coin.m.type, 37);
   assert.deepEqual(coin.at, [10 * UNIT, 10 * UNIT, 17 * UNIT - motion.types["37"].take.stand]);
+  assert.equal(coin.points, motion.types["37"].take.points[2], "a coin's points by its tier");
+  assert.equal(coin.key, key([10, 10, 17]));
+  assert.equal(coin.slot, `${key([10, 10, 17])}/0`);
+  assert.deepEqual(
+    coin.phase,
+    phasesOf(motion, 10, 10, 17, 0),
+    "its angles as the draw hashes them",
+  );
   const keyAt = w.pickups.get(`${key([11, 10, 17])}/0`);
   assert.equal(keyAt.take.reach, motion.types["31"].take.reach);
+  assert.equal(keyAt.points, motion.types["31"].take.points);
+  assert.equal(keysOf(w), 1);
   const gem = w.pickups.get(`${key([11, 10, 17])}/2`);
   assert.equal(gem.m.variant, "1");
   assert.deepEqual(gem.at, [11 * UNIT, 10 * UNIT + motion.types["36"].take.stand[1], 17 * UNIT]);
@@ -221,4 +241,107 @@ test("the probe answers the lattice as the planner's did, and names the kind and
   assert.equal(p.standing([12, 10, 17], TOP), 2);
   live.world = world(level(row(10, 11, 10, 17)));
   assert.equal(p.solid([12, 10, 17]), false, "the probe reads the world as it now stands");
+});
+
+test("the world counts the blocks a level with no key marks: the kinds the game builds, inside the lattice, with a face built", () => {
+  const plain = (x, y, z) => [x, y, z];
+  const about = (x, y, z) => FACE_NORMAL.map((n) => [x + n[0], y + n[1], z + n[2]]);
+  const l = level(
+    [
+      [10, 10, 17],
+      [11, 10, 17, 1],
+      [12, 10, 17, 2],
+      [13, 10, 17, 3],
+      [14, 10, 17, 4],
+      [15, 10, 17],
+      [16, 10, 17],
+      [18, 10, 17],
+      [20, 14, 17],
+      plain(25, 25, 25),
+      ...about(25, 25, 25),
+      [0, 20, 17],
+      [1, 20, 17],
+      [33, 20, 17],
+      [28, 10, 20, 1],
+      ...about(28, 10, 20).filter(([x]) => x !== 29),
+      [29, 10, 20, 3],
+      [28, 20, 20],
+      ...about(28, 20, 20).filter(([x]) => x !== 29),
+      [29, 20, 20],
+    ],
+    [
+      own(15, 10, 17, 6),
+      own(16, 10, 17, 7, 0),
+      { x: 18, y: 10, z: 17, kind: 8, type: 1, f: [1, 1, 18, 10, 17, 22, 10, 17, -1, -1, -1] },
+      platform(20, 14, 17),
+      own(29, 20, 20, 6),
+    ],
+  );
+  const w = world(l);
+  const counted = (c) => w.counted.has(key(c));
+  assert.deepEqual(
+    [10, 11, 12, 13, 14, 15, 16, 18, 22].map((x) => counted([x, 10, 17])),
+    [true, true, true, false, true, true, true, false, true],
+    "the plain, fire, ice, acid, crumbling and vanishing kinds, and a beam's end, never the invisible block or a laser's own",
+  );
+  assert.equal(counted([20, 14, 17]), false, "nor a platform");
+  assert.equal(counted([25, 25, 25]), false, "nor a block sealed on every side");
+  assert.ok(about(25, 25, 25).every(counted), "which its neighbours are not");
+  assert.deepEqual(
+    [0, 1, 33].map((x) => counted([x, 20, 17])),
+    [false, true, false],
+    "the rim is never built",
+  );
+  assert.equal(
+    counted([28, 10, 20]),
+    true,
+    "a fire block builds its face toward an invisible block",
+  );
+  assert.equal(
+    counted([28, 20, 20]),
+    true,
+    "and a plain block one toward a crumbling block, unseen",
+  );
+  assert.equal(w.counted.size, 27);
+});
+
+test("the index the frame draws is the level's own until something is taken, and then the same less that marker alone", () => {
+  const l = level(row(10, 12, 10, 17), [
+    { x: 10, y: 10, z: 17, kind: 0, on: [object(0, 37), object(1, 31)] },
+    { x: 11, y: 10, z: 17, kind: 0, on: [object(0, 37)] },
+  ]);
+  const idx = index(l);
+  const w = worldOf(l, idx, TABLES, CIRCUITS);
+  const live = { world: w, idx };
+  assert.equal(viewOf(live), idx);
+  took(w, `${key([10, 10, 17])}/0`);
+  assert.ok(w.taken.has(`${key([10, 10, 17])}/0`));
+  const view = viewOf(live);
+  assert.notEqual(view, idx);
+  assert.deepEqual(
+    view.markers.get(key([10, 10, 17])).map((m) => [m.type, m.face]),
+    [[31, 1]],
+    "the coin gone, the key on the side kept",
+  );
+  assert.equal(
+    view.markers.get(key([11, 10, 17])),
+    idx.markers.get(key([11, 10, 17])),
+    "an untouched cell's list is the level's own",
+  );
+  for (const part of ["cells", "records", "beamCells", "railCells", "beamEnds", "plates"])
+    assert.equal(view[part], idx[part], `${part} untouched`);
+  assert.deepEqual(
+    idx.markers.get(key([10, 10, 17])).map((m) => m.type),
+    [37, 31],
+    "the level as installed keeps the marker",
+  );
+  assert.equal(viewOf(live), view, "kept until the next take");
+  took(w, `${key([11, 10, 17])}/0`);
+  const again = viewOf(live);
+  assert.notEqual(again, view);
+  assert.deepEqual(again.markers.get(key([11, 10, 17])), []);
+  assert.deepEqual(
+    again.markers.get(key([10, 10, 17])).map((m) => m.type),
+    [31],
+  );
 });

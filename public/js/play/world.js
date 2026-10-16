@@ -2,8 +2,9 @@
 // the level and probed as the ball rolls, in the game's units.
 import { SIDE, cellKey, FACE_NORMAL } from "../format/lattice.js";
 import { OFF_LATTICE, beams, platformCells, startsOf } from "../viewer/data.js";
+import { phasesOf } from "../viewer/motion.js";
 import { probe, walkers, dice } from "../viewer/travel.js";
-import { faceUnder } from "./ball.js";
+import { cellOf, faceUnder } from "./ball.js";
 
 const LOW = 1;
 const HIGH = SIDE - 2;
@@ -11,27 +12,55 @@ const PLAIN = 0;
 const ICE = 2;
 const PLATFORM = 5;
 const CRUMBLING = 6;
+const LASER = 8;
 const CLOCK_START = 29;
+export const KEY = 31;
+// The kinds the game's walk over the inner lattice builds and counts.
+const COUNTED = new Set([0, 1, 2, 4, 6, 7]);
 
 const add = (p, v, k = 1) => p.map((c, i) => c + v[i] * k);
 const inside = (cell) => cell.every((v) => v >= LOW && v <= HIGH);
 const slot = (key, face) => `${key}/${face}`;
 const byVariant = (v, m) => (Array.isArray(v) ? (v[Number(m.variant)] ?? v[0]) : v);
-const cellOf = (b, p) => p.map((c) => Math.floor((c + b.half) / b.unit));
+
+/** How many keys the level holds for the ball to take. */
+export const keysOf = (world) => [...world.pickups.values()].filter((p) => p.m.type === KEY).length;
+
+// Built where a face looks at no block its kind hides it behind, or at one built unseen behind.
+function built(kinds, hides, cell, kind) {
+  const hidden = hides.kinds[String(kind)] ?? hides.other;
+  const unseen = String(kind) in hides.kinds ? [] : hides.unseen;
+  return FACE_NORMAL.some((n) => {
+    let theirs = kinds.get(cellKey(...add(cell, n)));
+    if (theirs === LASER) theirs = PLAIN;
+    return theirs === undefined || !hidden.includes(theirs) || unseen.includes(theirs);
+  });
+}
 
 /** The level as play holds it, the walkers laid at `frame`: the lattice's words and kinds by
     cell, the faces' types, the word each kind reads as under the ball, the pickups with where
-    each stands, the devices, the crumbling blocks, the platforms, what travels and the dice, the
-    live sets and the index the frame draws. */
+    each stands, the devices, the crumbling blocks, the platforms, the blocks a level with no key
+    counts, what travels and the dice, the live sets and the index the frame draws. */
 export function worldOf(l, idx, tables, circuits, frame = 0) {
-  const { motion, unit, first, styles } = tables;
-  const cells = new Map();
-  for (let i = 0; i < l.cells.length; i += 4)
-    cells.set(cellKey(l.cells[i], l.cells[i + 1], l.cells[i + 2]), l.cells[i + 3]);
+  const { motion, unit, first, styles, skins } = tables;
+  const laid = [];
+  for (let i = 0; i < l.cells.length; i += 4) laid.push(l.cells.slice(i, i + 4));
+  const cells = new Map(laid.map(([x, y, z, v]) => [cellKey(x, y, z), v]));
   for (const ray of beams(l))
     for (const end of [ray.a, ray.b])
-      if (!cells.has(cellKey(...end))) cells.set(cellKey(...end), PLAIN);
+      if (!cells.has(cellKey(...end))) {
+        cells.set(cellKey(...end), PLAIN);
+        laid.push([...end, PLAIN]);
+      }
   const kinds = new Map([...cells].map(([k, v]) => [k, v < first ? v : l.records[v - first].kind]));
+  const hides = skins?.hides ?? { other: [], unseen: [], kinds: {} };
+  const counted = new Set();
+  for (const [x, y, z] of laid) {
+    const key = cellKey(x, y, z);
+    const kind = kinds.get(key);
+    if (COUNTED.has(kind) && inside([x, y, z]) && built(kinds, hides, [x, y, z], kind))
+      counted.add(key);
+  }
   const standing = new Map();
   for (const [kind, entry] of Object.entries(motion.kinds))
     if (entry.standing !== undefined) standing.set(Number(kind), entry.standing);
@@ -68,7 +97,15 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
           FACE_NORMAL[m.face],
           stand,
         );
-        pickups.set(slot(key, m.face), { m, take: entry.take, at });
+        pickups.set(slot(key, m.face), {
+          m,
+          key,
+          slot: slot(key, m.face),
+          take: entry.take,
+          at,
+          points: byVariant(entry.take.points, m) ?? 0,
+          phase: phasesOf(motion, c.x, c.y, c.z, m.face),
+        });
       }
       if (entry?.send || entry?.throw) devices.set(slot(key, m.face), m);
     }
@@ -84,6 +121,7 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
     devices,
     crumbling,
     platforms,
+    counted,
     walkers: walkers(l, idx, motion, frame),
     probe: probe(l, circuits.lit),
     roll: dice(motion.dice),
@@ -113,9 +151,7 @@ function standingAt(world, cell, face) {
     read on the face under it, and the word as it was where the game writes none. */
 export function standingOf(live) {
   const b = live.ball;
-  return (
-    standingAt(live.world, add(cellOf(b, b.pos), b.n, -1), faceUnder(b)) ?? live.words.standing
-  );
+  return standingAt(live.world, add(cellOf(b), b.n, -1), faceUnder(b)) ?? live.words.standing;
 }
 
 /** The lattice as the ball's rules ask it, over the world as it stands when asked. */
@@ -135,6 +171,31 @@ export function probeOf(live) {
       inside(cell) ? (world().cells.get(cellKey(...cell)) ?? OFF_LATTICE) : OFF_LATTICE,
     standing: (cell, face) => standingAt(world(), cell, face),
   };
+}
+
+/** A pickup taken off its face: gone from the world's live set and from the index the frame
+    draws. */
+export function took(world, slot) {
+  world.taken.add(slot);
+  world.view = null;
+}
+
+/** The index the frame draws from: the level's own less the things taken, shaped as the
+    level's, and rebuilt only when what is taken changes. */
+export function viewOf(live) {
+  const world = live.world;
+  if (!world.view) {
+    const markers = new Map(live.idx.markers);
+    for (const taken of world.taken) {
+      const [key, face] = taken.split("/").map(Number);
+      markers.set(
+        key,
+        (markers.get(key) ?? []).filter((m) => m.face !== face),
+      );
+    }
+    world.view = { ...live.idx, markers };
+  }
+  return world.view;
 }
 
 /** What travels, for the frame to draw where the rules have stepped it. */

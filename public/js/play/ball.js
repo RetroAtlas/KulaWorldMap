@@ -22,7 +22,8 @@ const cross = (a, b) =>
   );
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const axisOf = (v) => v.findIndex((c) => c !== 0);
-const cellOf = (b, p) => p.map((c) => Math.floor((c + b.half) / b.unit));
+/** The cell a point of the ball's lies in, its own where none is given. */
+export const cellOf = (b, p = b.pos) => p.map((c) => Math.floor((c + b.half) / b.unit));
 export const faceOf = (n) => FACE_NORMAL.findIndex((f) => f.every((c, i) => c === n[i]));
 
 const NO_JUMP = { count: 0, rows: [] };
@@ -81,7 +82,8 @@ export function ballAt(rules, cell, face, h) {
   };
 }
 
-const aloft = (b) => b.state === JUMP || b.state === HOP || b.state === FALL;
+/** Whether the ball is in the air, falling or in a jump's or a hop's rows. */
+export const aloft = (b) => b.state === JUMP || b.state === HOP || b.state === FALL;
 /** The block the ball stands on, kept while it goes round its edge or is in the air. */
 export const blockUnder = (b) =>
   b.state === WRAPPING || aloft(b) ? b.held : add(cellOf(b, b.pos), b.n, -1);
@@ -459,7 +461,7 @@ function move(b, probe, out) {
     lay(b, t.touch);
     swap(b, b.n, neg(b.h));
     startRamp(b, "climb", b.table.climb.step);
-    out.push({ face: true });
+    out.push({ face: "climb" });
     return;
   }
   const under = add(cell, b.n, -1);
@@ -473,7 +475,7 @@ function move(b, probe, out) {
   b.arc = 0;
   b.wrapped = true;
   startRamp(b, "wrap", b.table.wrap.step);
-  out.push({ face: true });
+  out.push({ face: "wrap" });
 }
 
 // A turn pressed while a ramp runs waits for its end, whichever ramp is running by then, and
@@ -505,11 +507,14 @@ function acting(b, probe, out) {
 /** The frame from the requests on: what happened, as events, added to `out`. The last frame's
     landing is cleared first, so a caller between `read` and `run` still sees it; while the ball
     is `frozen` its state does nothing, nor the move step nor the landings, and a ramp, the look
-    and the spin go on. A lost ball says so and stays where it is. */
+    and the spin go on. Between the state and the move step the probe's `stood`, where it has
+    one, is told the ball, which is where the game reads the cells about it. A lost ball says so
+    and stays where it is. */
 export function run(b, probe, out) {
   b.landed = false;
   intents(b, probe, out);
   if (!b.frozen) acting(b, probe, out);
+  probe.stood?.(b);
   b.last = b.progress;
   b.progress = progressOf(b);
   // the game's move step runs before its landings, so a frame that lands takes no roll of its own

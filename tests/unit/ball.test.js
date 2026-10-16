@@ -28,6 +28,7 @@ import {
   centreOf,
   moving,
   clearance,
+  cellOf,
 } from "../../public/js/play/ball.js";
 
 const table = objects.motion.types[30];
@@ -232,6 +233,56 @@ test("past the far edge of a ridge the ball goes round it in four frames and rol
   assert.deepEqual(blockUnder(b), [17, 15, 17]);
 });
 
+test("run tells the probe the ball between its state and its move step, before a climb's or a wrap's swap, frozen or not", () => {
+  const seen = [];
+  const telling = (probe) => ({
+    ...probe,
+    stood: (b) => seen.push({ state: b.state, n: [...b.n], cell: cellOf(b) }),
+  });
+  const until = (b, probe, kind) => {
+    let events = [];
+    for (let f = 0; f < 60 && !events.some((e) => e.face); f++) {
+      seen.length = 0;
+      events = run(b, probe, 1, PAD.up);
+    }
+    assert.deepEqual(events, [{ face: kind }]);
+    assert.equal(seen.length, 1, "told once a frame");
+  };
+  const wall = telling(
+    row(15, 18, [
+      [17, 14, 17],
+      [17, 14, 16],
+    ]),
+  );
+  const b = ballAt(RULES, [17, 16, 17], TOP, UP);
+  until(b, wall, "climb");
+  assert.deepEqual(
+    seen[0],
+    { state: ROLLING, n: [0, 0, -1], cell: [17, 15, 16] },
+    "on the floor's cell with the floor's normal, before the swap",
+  );
+  assert.deepEqual(b.n, [0, 1, 0]);
+  const ridge = telling(row(15, 18));
+  const c = ballAt(RULES, [17, 16, 17], TOP, UP);
+  until(c, ridge, "wrap");
+  assert.deepEqual(
+    seen[0],
+    { state: ROLLING, n: [0, 0, -1], cell: [17, 14, 16] },
+    "in the cell beyond the edge, still rolling",
+  );
+  assert.equal(c.state, WRAPPING);
+  const d = ballAt(RULES, [17, 18, 17], TOP, UP);
+  d.frozen = true;
+  seen.length = 0;
+  run(d, ridge, 1, 0);
+  assert.deepEqual(
+    seen,
+    [{ state: REST, n: [0, 0, -1], cell: [17, 18, 16] }],
+    "frozen, told all the same",
+  );
+  assert.deepEqual(run(d, row(15, 18), 1, 0), [], "a probe without stood is asked nothing");
+});
+
 test("the lattice's edge is empty, so a row to its last cell ends in a wrap", () => {
   const cells = [];
   for (let x = 30; x <= 32; x++) cells.push([x, 17, 17]);
@@ -379,7 +430,7 @@ test("a turn pressed during a turn whose ramp a climb replaces fires as the clim
   const { b, events } = played(0);
   assert.deepEqual(events, [
     [1, { turned: LEFT }],
-    [18, { face: true }],
+    [18, { face: "climb" }],
     [24, { at: "middle" }],
     [34, { turned: RIGHT }],
   ]);
@@ -581,7 +632,7 @@ test("a landing at the climb's progress under a wall climbs on the frame after, 
   assert.deepEqual(events, [{ at: "landed" }]);
   assert.deepEqual(blockUnder(b), [17, 15, 17]);
   assert.equal(b.ramp, null);
-  assert.deepEqual(run(b, probe, 1, PAD.up), [{ face: true }]);
+  assert.deepEqual(run(b, probe, 1, PAD.up), [{ face: "climb" }]);
   assert.equal(b.ramp.kind, "climb");
   assert.deepEqual(blockUnder(b), [17, 14, 16]);
 });

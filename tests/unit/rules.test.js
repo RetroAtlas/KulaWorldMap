@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects, mapData, annotations } from "./fixtures.js";
 import { state } from "../../public/js/viewer/state.js";
+import { cellKey } from "../../public/js/format/lattice.js";
 import {
   setObjects,
   setAnnotations,
@@ -30,7 +31,7 @@ import {
   relevel,
   end,
 } from "../../public/js/play/rules.js";
-import { probeOf } from "../../public/js/play/world.js";
+import { probeOf, standingOf, viewOf } from "../../public/js/play/world.js";
 import { recorder, replayDriver } from "../../public/js/play/drive.js";
 
 setObjects(objects);
@@ -45,9 +46,16 @@ const TABLES = {
   unit: UNIT,
   first: mapData.firstRecord,
   styles: mapData.styles,
+  skins: objects.skins,
 };
 const UP = [0, -1, 0];
 const TOP = 0;
+const EXIT = 7;
+const KEY = 31;
+const LETHARGY = "32";
+const BOUNCY = "33";
+const INVINCIBLE = "34";
+const SUNGLASSES = "38";
 
 /** The circuits as a parity map, turned over by each press. */
 function circuits() {
@@ -61,22 +69,27 @@ function circuits() {
   };
 }
 
-/** A level of plain blocks, some carrying a record, laid out to order, with `time` seconds. */
-function level(blocks, records = [], time = 99) {
-  const cells = [];
-  const placed = new Map(records.map((r, i) => [`${r.x},${r.y},${r.z}`, i]));
-  for (const [x, y, z] of blocks) {
-    const i = placed.get(`${x},${y},${z}`);
-    cells.push(x, y, z, i === undefined ? 0 : mapData.firstRecord + i);
-  }
-  return { cells, records: records.map((r) => ({ on: [], ...r })), time };
-}
-const object = (face, type, facing = 0) => ({
+const object = (face, type, facing = 0, f3 = 0) => ({
   face,
   type,
-  f: [facing, 0, 1, 0, -1, -1, -1, 386, 1, -1, -1],
+  f: [facing, f3, 1, 0, -1, -1, -1, 386, 1, -1, -1],
   v: 0,
 });
+// A key far from anything the ball reaches, so a level plays as an arcade one.
+const FAR = [25, 25, 25];
+const FAR_KEY = { x: 25, y: 25, z: 25, kind: 0, on: [object(0, KEY)] };
+/** A level of blocks of the kinds given, some carrying a record, laid out to order, with `time`
+    seconds, and a key far off unless `keyed` is false. */
+function level(blocks, records = [], time = 99, keyed = true) {
+  const all = keyed ? [...records, FAR_KEY] : records;
+  const cells = [];
+  const placed = new Map(all.map((r, i) => [`${r.x},${r.y},${r.z}`, i]));
+  for (const [x, y, z, kind = 0] of keyed ? [...blocks, FAR] : blocks) {
+    const i = placed.get(`${x},${y},${z}`);
+    cells.push(x, y, z, i === undefined ? kind : mapData.firstRecord + i);
+  }
+  return { cells, records: all.map((r) => ({ on: [], ...r })), time };
+}
 /** A row of blocks along y at x 17, z 17. */
 const row = (y0, y1) => Array.from({ length: y1 - y0 + 1 }, (_, i) => [17, y0 + i, 17]);
 /** The start on the top of (17, 18, 17), heading −y as LEVEL 1's does. */
@@ -99,8 +112,9 @@ test("a run opens as the level's start sets the words: the clock full, the pad d
   assert.equal(w.wait, play.start.wait);
   assert.equal(w.guard, 0);
   assert.equal(w.frame, 0);
-  assert.equal(w.keys, 1);
+  assert.equal(w.keys, 2);
   assert.equal(w.bonus, false);
+  assert.equal(w.unmarked, live.world.counted.size);
   assert.equal(w.mode, 0);
   assert.deepEqual([w.score, w.outcome, w.result, w.ending, w.frozen, w.dying], [0, 0, 0, 0, 0, 0]);
   assert.equal(w.send, -1);
@@ -115,7 +129,7 @@ test("a run opens as the level's start sets the words: the clock full, the pad d
   assert.equal(live.level, l);
   assert.equal(live.at, null);
 
-  const bonus = begin(level(row(10, 18), [start()]));
+  const bonus = begin(level(row(10, 18), [start()], 99, false));
   assert.equal(bonus.words.keys, 0);
   assert.equal(bonus.words.bonus, true, "a level with no key plays as a bonus level");
 
@@ -417,7 +431,7 @@ test("stand puts the ball on a station with the words running on, and relevel la
   relevel(live, shorter, index(shorter));
   assert.equal(live.level, shorter);
   assert.equal(probe.solid([17, 12, 17]), false, "the block under the ball is gone");
-  assert.equal(live.words.keys, 0, "and the key with it");
+  assert.equal(live.words.keys, 1, "and the key on it with it");
   assert.equal(live.words.standing, -1);
   assert.equal(live.words.frame, at);
   assert.deepEqual(
@@ -486,4 +500,242 @@ test("a run recorded replays frame for frame from a fresh start", () => {
   assert.ok(new Set(first.map((t) => t.wanderer.join())).size > 3, "the wandering ball wandered");
   const second = trace(begin(l), replayDriver(rec.pads), 260);
   assert.deepEqual(second, first);
+});
+
+test("the word for what the ball stands on is read between its state and its move step: a climb's frame reads under the face being left and a wrap's the cell beyond the edge", () => {
+  const wall = level([...row(16, 18), [17, 15, 17, 2], [17, 14, 17], [17, 14, 16]], [start()]);
+  const live = begin(wall);
+  live.words.wait = 0;
+  let events = [];
+  while (!events.some((e) => e.face) && live.words.frame < 200) events = frame(live, PAD.up);
+  assert.deepEqual(
+    events.filter((e) => e.face),
+    [{ face: "climb" }],
+  );
+  assert.equal(live.words.standing, 2, "the ice the ball is leaving");
+  assert.equal(standingOf(live), -1, "where a read as the frame ends gives the wall's bare face");
+  frame(live, PAD.up);
+  assert.equal(live.words.standing, -1, "which the next frame reads");
+
+  const ridge = level([...row(10, 18), [17, 11, 16, 2]], [start()]);
+  const wrap = begin(ridge, { cell: [17, 10, 17], face: TOP, h: UP });
+  wrap.words.wait = 0;
+  events = [];
+  while (!events.some((e) => e.face) && wrap.words.frame < 200) events = frame(wrap, PAD.up);
+  assert.deepEqual(
+    events.filter((e) => e.face),
+    [{ face: "wrap" }],
+  );
+  assert.equal(wrap.words.standing, -1, "nothing under the cell beyond the edge");
+  assert.equal(standingOf(wrap), 2, "where a read as the frame ends gives the ice behind the edge");
+});
+
+test("the ball leaves by the exit it stands on with no key left, five frames after the hazards find it there, and never while a key is left", () => {
+  const exit = { x: 17, y: 12, z: 17, kind: 0, on: [object(0, EXIT)] };
+  const key = { x: 17, y: 16, z: 17, kind: 0, on: [object(0, KEY)] };
+  const live = begin(level(row(10, 18), [start(), key, exit], 99, false));
+  let onExit = null;
+  let ended = null;
+  for (let f = 1; f <= 400 && !ended; f++) {
+    const out = frame(live, PAD.up);
+    if (onExit === null && live.words.standing === EXIT) onExit = live.words.frame;
+    ended = out.find((e) => e.ended) ?? null;
+  }
+  assert.ok(onExit !== null && ended, "the ball reached the exit and the level ended");
+  assert.equal(ended.ended.code, play.ending.exit);
+  assert.equal(live.words.outcome, play.ending.exit);
+  assert.equal(live.words.keys, 0);
+  assert.equal(live.words.frame, onExit + 1 + play.wait.exit, "the hazards' frame and the wait");
+  assert.equal(live.words.result, play.ending.exit, "by the wait's result");
+
+  const aside = { x: 17, y: 16, z: 17, kind: 0, on: [object(1, KEY)] };
+  const kept = begin(level(row(10, 18), [start(), aside, exit], 99, false));
+  const events = steps(kept, 150, PAD.up);
+  assert.equal(kept.words.keys, 1, "the key on the side is out of reach");
+  assert.ok(!events.some((e) => e.ended));
+  assert.deepEqual([kept.words.ending, kept.words.result], [0, 0]);
+});
+
+test("a landing on the exit writes the result at once, where a roll onto it takes the wait", () => {
+  const key = { x: 17, y: 17, z: 17, kind: 0, on: [object(0, KEY)] };
+  const exit = { x: 17, y: 15, z: 17, kind: 0, on: [object(0, EXIT)] };
+  const live = begin(level(row(10, 18), [start(), key, exit], 99, false));
+  while (live.ball.state !== ROLLING) frame(live, PAD.up);
+  while (!(live.ball.state === REST && blockUnder(live.ball)[1] === 17)) frame(live, 0);
+  assert.equal(live.words.keys, 0, "the key taken on the way");
+  frame(live, PAD.up | PAD.cross);
+  assert.equal(live.ball.state, JUMP);
+  const { landed, ended, code } = flown(live);
+  assert.deepEqual(blockUnder(live.ball), [17, 15, 17]);
+  assert.equal(code, play.ending.exit);
+  assert.equal(ended, landed + 2, "the hazards' frame after the landing, then the result's");
+  assert.equal(live.words.result, play.ending.exit, "written as the result at once");
+});
+
+/** Frames with nothing held until the level ends: the frame counts of the landing and the
+    ending, and the ending's code. */
+function flown(live) {
+  const out = { landed: null, ended: null, code: null };
+  for (let f = 0; f < 60 && out.ended === null; f++)
+    for (const e of frame(live, 0)) {
+      if (e.at === "landed") out.landed = live.words.frame;
+      if (e.ended) Object.assign(out, { ended: live.words.frame, code: e.ended.code });
+    }
+  return out;
+}
+
+test("a level with no key marks the block under the ball once, skips the invisible block and ends with the last marked, the climb marking the block under the wall it takes", () => {
+  const l = level([...row(10, 13), [17, 14, 17, 3], ...row(15, 18)], [start()], 99, false);
+  const live = begin(l);
+  assert.equal(live.words.unmarked, 8, "the invisible block is not counted");
+  const events = steps(live, 400, PAD.up);
+  const marked = events.filter((e) => e.marked);
+  assert.equal(marked[0].at, 1, "the block under the start, on the first frame");
+  assert.deepEqual(
+    marked.map((e) => e.marked.left),
+    [7, 6, 5, 4, 3, 2, 1, 0],
+  );
+  assert.ok(!marked.some((e) => e.marked.key === cellKey(17, 14, 17)));
+  assert.equal(live.words.score, 8 * play.bonus.block);
+  const ended = events.find((e) => e.ended);
+  assert.equal(ended.ended.code, play.ending.bonus);
+  assert.equal(ended.at, marked.at(-1).at + play.wait.bonus, "as an ending with its wait");
+  assert.equal(live.words.result, play.ending.bonus);
+
+  const two = begin(
+    level(
+      [
+        [17, 18, 17],
+        [17, 16, 17],
+      ],
+      [start()],
+      99,
+      false,
+    ),
+  );
+  two.words.wait = 0;
+  frame(two, 0);
+  assert.equal(two.words.unmarked, 1);
+  frame(two, PAD.up | PAD.cross);
+  assert.equal(two.ball.state, JUMP);
+  const flight = flown(two);
+  assert.equal(flight.code, play.ending.bonus);
+  assert.equal(flight.ended, flight.landed + 1, "at once, on the hazards' frame after the landing");
+  assert.equal(two.words.result, 0, "written as the outcome and not the result");
+
+  const wall = level([...row(15, 18), [17, 14, 17], [17, 14, 16]], [start()], 99, false);
+  const climbing = begin(wall);
+  climbing.words.wait = 0;
+  let out = [];
+  while (!out.some((e) => e.face) && climbing.words.frame < 200) out = frame(climbing, PAD.up);
+  assert.ok(out.some((e) => e.face === "climb"));
+  assert.deepEqual(
+    out.filter((e) => e.marked).map((e) => e.marked.key),
+    [cellKey(17, 14, 17)],
+    "the block under the wall marked on the climb's own frame",
+  );
+  out = frame(climbing, PAD.up);
+  assert.deepEqual(
+    out.filter((e) => e.marked).map((e) => e.marked.key),
+    [cellKey(17, 14, 16)],
+    "and the wall on the next, as the ball stands on it",
+  );
+});
+
+test("the pills' words run down in the hazards' order: the lethargy pill hurries the clock, the invincibility pill cuts the bouncy and lethargy pills short, and the bouncy pill asks the jump every frame", () => {
+  const live = begin(level(row(10, 18), [start()]));
+  live.words.wait = 0;
+  const full = 99 * play.clock.second;
+  const lasts = (t) => motion.types[t].lasts;
+  Object.assign(live.words.pills, { [LETHARGY]: 4, [BOUNCY]: lasts(BOUNCY).word, [SUNGLASSES]: 2 });
+  frame(live, 0);
+  assert.equal(live.words.pills[SUNGLASSES], 2 - lasts(SUNGLASSES).step);
+  assert.equal(live.words.pills[LETHARGY], 4 - lasts(LETHARGY).step);
+  assert.equal(live.words.clock, full - play.clock.tick - lasts(LETHARGY).ticks);
+  assert.equal(live.words.pills[BOUNCY], lasts(BOUNCY).word, "nothing counts the bouncy pill down");
+  assert.equal(live.ball.state, HOP, "the jump asked with the ball at rest is a hop");
+  steps(live, 3, 0);
+  assert.equal(
+    live.words.pills[LETHARGY],
+    -2,
+    "tested before it is counted, so it runs one frame at nothing",
+  );
+  assert.equal(live.words.clock, full - 4 * play.clock.tick - 3 * lasts(LETHARGY).ticks);
+  frame(live, 0);
+  assert.equal(live.words.pills[LETHARGY], -2);
+  assert.equal(
+    live.words.clock,
+    full - 5 * play.clock.tick - 3 * lasts(LETHARGY).ticks,
+    "and ticks the clock no more",
+  );
+
+  const guarded = begin(level(row(10, 18), [start()]));
+  guarded.words.wait = 0;
+  Object.assign(guarded.words.pills, { [INVINCIBLE]: 1, [BOUNCY]: 500, [LETHARGY]: 100 });
+  frame(guarded, 0);
+  assert.equal(guarded.words.pills[INVINCIBLE], 0);
+  assert.equal(guarded.words.pills[BOUNCY], -1, "put back while the invincibility stands");
+  assert.equal(
+    guarded.words.pills[LETHARGY],
+    -lasts(LETHARGY).step,
+    "cut to nothing and counted once more",
+  );
+  assert.equal(guarded.words.clock, full - play.clock.tick - lasts(LETHARGY).ticks);
+  frame(guarded, 0);
+  assert.equal(guarded.words.pills[INVINCIBLE], -1);
+  assert.equal(
+    guarded.words.clock,
+    full - 2 * play.clock.tick - lasts(LETHARGY).ticks,
+    "the lethargy pill's word negative, its case is passed",
+  );
+  assert.equal(guarded.ball.state, HOP, "the jump asked before the hazards put the word back");
+
+  const passed = begin(level(row(10, 18), [start()]));
+  passed.words.wait = 0;
+  Object.assign(passed.words.pills, { [INVINCIBLE]: 2, [LETHARGY]: -1 });
+  steps(passed, 2, 0);
+  assert.equal(passed.words.pills[INVINCIBLE], 0);
+  assert.equal(passed.words.pills[LETHARGY], -1, "left negative while the invincibility stands");
+  assert.equal(passed.words.clock, full - 2 * play.clock.tick, "and the clock not hurried");
+});
+
+test("relevel carries what was taken where the level still holds it, and counts the keys and the blocks less what is taken and marked", () => {
+  const coin = { x: 17, y: 16, z: 17, kind: 0, on: [object(0, 37)] };
+  const key = { x: 17, y: 14, z: 17, kind: 0, on: [object(0, KEY)] };
+  const l = level(row(10, 18), [start(), coin, key]);
+  const live = begin(l);
+  const events = steps(live, 120, PAD.up);
+  assert.equal(events.filter((e) => e.took).length, 2);
+  assert.equal(live.words.keys, 1, "the far key alone is left");
+  const slots = [...live.world.taken];
+  relevel(live, l, index(l));
+  assert.deepEqual(
+    [...live.world.taken],
+    slots,
+    "carried where the slots still hold the same things",
+  );
+  assert.equal(live.words.keys, 1);
+  assert.equal(
+    viewOf(live).markers.get(cellKey(17, 16, 17)).length,
+    0,
+    "and still gone from the frame",
+  );
+  const swapped = level(row(10, 18), [start(), { ...coin, on: [object(0, KEY)] }, key]);
+  relevel(live, swapped, index(swapped));
+  assert.deepEqual(
+    [...live.world.taken],
+    [`${cellKey(17, 14, 17)}/0`],
+    "a slot that holds another thing is let go",
+  );
+  assert.equal(live.words.keys, 2, "the new key counted, the taken one not");
+
+  const bonus = begin(level(row(10, 18), [start()], 99, false));
+  steps(bonus, 60, PAD.up);
+  const marked = bonus.world.marked.size;
+  assert.ok(marked >= 2);
+  const shorter = level(row(14, 18), [start()], 99, false);
+  relevel(bonus, shorter, index(shorter));
+  assert.equal(bonus.world.counted.size, 5);
+  assert.equal(bonus.world.marked.size, marked, "the marked blocks still stand");
+  assert.equal(bonus.words.unmarked, 5 - marked);
 });

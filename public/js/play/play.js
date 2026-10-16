@@ -1,5 +1,5 @@
 // Play mode: the ball stood on the level and rolled by the keys, the camera behind it.
-import { $, emit, on } from "../viewer/ui/dom.js";
+import { $, el, emit, on } from "../viewer/ui/dom.js";
 import { adoptCourse, current, measureStrip } from "../viewer/chrome/course.js";
 import { drawPieces } from "../viewer/draw/ribbon.js";
 import { ageDust, burstDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
@@ -26,10 +26,12 @@ import {
   layHeading,
   levelTitle,
   litNow,
+  markerLabel,
   markerModel,
   markerNow,
   modelUnit,
   motionTable,
+  skinsTable,
   startsOf,
   worldTint,
   TANGENT,
@@ -49,6 +51,8 @@ import { toast } from "../viewer/ui/toast.js";
 import { chip, fit, fitWith, writeHash } from "../viewer/chrome/navigate.js";
 import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
 import { say } from "../viewer/chrome/a11y.js";
+import { onShow, showCell } from "../viewer/chrome/detail.js";
+import { tipWith } from "../viewer/chrome/interaction.js";
 import {
   PAD,
   REST,
@@ -63,7 +67,7 @@ import {
   offsetFrame,
 } from "./ball.js";
 import { frame as gameFrame, heeds, relevel, restart, stand, startRun } from "./rules.js";
-import { probeOf as liveProbe, travelOf } from "./world.js";
+import { probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
 const BALL_TYPE = 30;
 const STARTS = new Set([29, BALL_TYPE]);
@@ -91,12 +95,22 @@ const AS_STONE = "The ball rolls over ice, spikes and the rest as over plain sto
 const NO_START = "The level has no start, so the ball stands on the first face it could.";
 const NOWHERE = "The level has no face the ball could stand on.";
 const OBJECTS_ON = "Objects turned on, for the ball.";
-const VERDICT = { time: "Time is up.", lost: "The ball is lost off the level." };
+const VERDICT = {
+  time: "Time is up.",
+  lost: "The ball is lost off the level.",
+  exit: "Out by the exit: the level is done.",
+  hidden: "Out by the hidden exit: the level is done.",
+  bonus: "Every block is marked: the level is done.",
+};
 const ENDED = "The level has ended.";
+const OPENED = "The last key is taken: the exits are open.";
+const KEYS_LEFT = "The keys left to take";
+const BLOCKS_LEFT = "The blocks left to roll onto";
 const AGAIN = "Space or a tap on the pad starts the level again.";
 const KEPT = "The way the ball has come is now the route.";
 const ROUTE_STANDS = "A route already stands; clear it to keep the walk.";
 const AT_SWITCH = 6;
+const AT_TAKE = 10;
 const TRAIL = 12;
 
 let live = null;
@@ -147,6 +161,7 @@ const tablesOf = () => ({
   unit: blockUnits(),
   first: state.data.firstRecord,
   styles: state.data.styles,
+  skins: skinsTable(),
 });
 
 /** The circuits as the map holds them, so a press in the panel and a switch the ball throws are
@@ -154,11 +169,15 @@ const tablesOf = () => ({
 const circuitsOf = () => ({ on: (m) => markerNow(m) === "on", lit: litNow, flip });
 
 /** What the frame draws at and with while the ball is on the map: play's frame, the ending's
-    view's frames added once the level has ended, and the walkers where the rules have stepped
-    them. */
+    view's frames added once the level has ended, the level's index less what the ball has taken,
+    and the walkers where the rules have stepped them. */
 const source = (l) =>
   live && l === live.level
-    ? { frame: live.run.words.frame + (live.ended?.frame ?? 0), travel: travelOf(live.run) }
+    ? {
+        frame: live.run.words.frame + (live.ended?.frame ?? 0),
+        idx: drawnIndex(live.run),
+        travel: travelOf(live.run),
+      }
     : null;
 
 /** Whether a block stands between `centre`, in blocks, and the camera, within the cover's reach. */
@@ -504,6 +523,20 @@ function happened(event) {
     ended(event.ended.code);
     return;
   }
+  if (event.took) {
+    taken(event.took);
+    return;
+  }
+  if (event.opened) {
+    say(OPENED);
+    return;
+  }
+  if (event.clock) {
+    const { second } = motionTable().play.clock;
+    const left = Math.max(0, Math.floor(event.clock.to / second));
+    say(`The hourglass turns the clock round: ${counted(left, "second")} left.`);
+    return;
+  }
   if (event.at) {
     live.station = true;
     const block = blockUnder(b);
@@ -517,6 +550,24 @@ function happened(event) {
     say(`${FACE_NAME[faceUnder(b)]} of ${blockUnder(b).join(",")}, now underfoot`);
     burstDust(footOf(b), b.n, blockUnder(b), AT_SWITCH, !motionOn());
   } else if (event.turned) live.station = true;
+}
+
+/** A thing taken: a burst of dust where it stood, the take said, and the panel brought up to date
+    where it shows the block. */
+function taken({ key, face, points, at }) {
+  const c = live.idx.cells.get(key);
+  const m = (live.idx.markers.get(key) ?? []).find((m) => m.face === face);
+  const point = at.map((v) => v / live.run.ball.unit + 0.5);
+  burstDust(point, FACE_NORMAL[face], [c.x, c.y, c.z], AT_TAKE, !motionOn());
+  const label = markerLabel(m);
+  say(points ? `${label} taken, ${counted(points, "point")}.` : `${label} taken.`);
+  refreshPanel();
+  invalidatePick();
+}
+
+/** The panel drawn again where it shows a block, so what it says of the block's things holds. */
+function refreshPanel() {
+  if (state.selected) showCell(state.selected, { raise: false });
 }
 
 /** The level has ended: the ball is gone and the pad dead, the view lets go of the ball and turns
@@ -582,6 +633,7 @@ function startOver() {
   fit();
   arrive(from);
   line();
+  refreshPanel();
   redraw = true;
   invalidatePick();
   say(
@@ -665,15 +717,27 @@ function keep() {
   keepable();
 }
 
-/** Whether the ball stands on something it does not act on yet: ice, a hazard or a pickup. */
+/** Whether the ball stands on something it does not act on yet: ice, a hazard or a device. */
 function standsOn(block, face) {
   const key = cellKey(...block);
   const c = live.idx.cells.get(key);
   if (!c) return false;
   const kind = c.v < state.data.firstRecord ? c.v : live.idx.records.get(key)?.[0]?.kind;
   if (kind !== PLAIN_KIND) return true;
-  return (live.idx.markers.get(key) ?? []).some((m) => m.face === face && !STARTS.has(m.type));
+  const { types } = motionTable();
+  const acted = (m) =>
+    STARTS.has(m.type) || types[String(m.type)]?.take || types[String(m.type)]?.opened;
+  return (live.idx.markers.get(key) ?? []).some((m) => m.face === face && !acted(m));
 }
+
+/** The things on `key`'s block the ball has taken, as the level as installed still lists them. */
+const takenOn = (key) =>
+  live
+    ? (state.idx.markers.get(key) ?? []).filter(
+        (m) => m.face !== null && live.run.world.taken.has(`${key}/${m.face}`),
+      )
+    : [];
+const TAKEN = (m) => `Taken: ${markerLabel(m)} on the ${FACE_NAME[m.face]}`;
 
 // --- the strip and the pad ----------------------------------------------------------------
 
@@ -684,16 +748,27 @@ function status(text) {
   if (el.textContent !== (text ?? "")) el.textContent = text ?? "";
 }
 
+function figure(id, text, title = null) {
+  const el = $(id);
+  if (el.textContent !== text) el.textContent = text;
+  if (title !== null && el.title !== title) el.title = title;
+}
+
 function line() {
   if (!live) return;
   const s = shown();
   const text = `Playing · on the ${FACE_NAME[s.face]} of ${s.block.join(",")}, facing ${faceName(s.h)}`;
   const el = $("playLine");
   if (el.textContent !== text) el.textContent = text;
+  const w = live.run.words;
   const { clock } = motionTable().play;
-  const left = `Time ${Math.max(0, Math.floor(live.run.words.clock / clock.second))}`;
-  const at = $("playClock");
-  if (at.textContent !== left) at.textContent = left;
+  figure("playClock", `Time ${Math.max(0, Math.floor(w.clock / clock.second))}`);
+  figure(
+    "playKeys",
+    w.bonus ? `Blocks ${w.unmarked}` : `Keys ${w.keys}`,
+    w.bonus ? BLOCKS_LEFT : KEYS_LEFT,
+  );
+  figure("playPoints", counted(w.score, "point"));
 }
 
 function sync() {
@@ -921,6 +996,7 @@ function leave({ restore = true } = {}) {
   held = tapped = 0;
   fitWith(null);
   runWith(null);
+  refreshPanel();
   // the presses as they were, unless another level has been installed meanwhile with its own
   if (parked && state.lvl === level) state.presses = parked.presses;
   resetDust(null);
@@ -1007,6 +1083,12 @@ export function bootPlay() {
   overlayWith({ under: () => void advance(), block: drawTrail, cell: drawDustOver, frame: more });
   movingWith(travellers);
   ballsWith(() => (live && !live.ended ? [shown().point] : null));
+  tipWith((c) => takenOn(cellKey(c.x, c.y, c.z)).map(TAKEN));
+  onShow((box, c) => {
+    const body = box.querySelector("#detailBody");
+    for (const m of takenOn(cellKey(c.x, c.y, c.z)))
+      body.append(el("p", { className: "sub", textContent: `${TAKEN(m)}.` }));
+  });
   on("level-changed", () => {
     leave({ restore: false });
     icon();
