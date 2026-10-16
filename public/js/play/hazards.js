@@ -1,17 +1,24 @@
-// The hazards routine's work under and about the ball, in its order, and the hit test after it.
+// The hazards routine's work under and about the ball, in its order, the hit test after it, and
+// the draw's part of the frame, the crumbling blocks breaking up.
 import { REST, acrossOf, aloft, blockUnder, cellOf, faceUnder, place, progressOf } from "./ball.js";
 import { cellKey } from "../format/lattice.js";
 import { layHeading, markerCircuit, markerDestination, TANGENT } from "../viewer/data.js";
 import { phaseField } from "../viewer/motion.js";
+import { fell } from "./world.js";
 
 const FIRE = 1;
 const ICE = 2;
 const ACID = 4;
+const CRUMBLING = 6;
 const LASER = 8;
 const MOVING_SPIKES = 11;
 const SPIKES = 12;
 const ARROW = 28;
 export const INVINCIBLE = 34;
+// a crumbling block's type word
+const WHOLE = 1;
+const BROKEN = 2;
+const BREAKING = 3;
 
 const add = (p, v, k = 1) => p.map((c, i) => c + v[i] * k);
 const within = (v, [low, high]) => v >= low && v <= high;
@@ -120,6 +127,37 @@ export function counting(live) {
   const { play, kinds } = live.tables.motion;
   if (w.ending === play.ending.fire) w.swell += kinds[String(FIRE)].heat.swell;
   if (w.ending === play.ending.acid) w.melt += kinds[String(ACID)].melt.gain;
+}
+
+/** The crumbling block under the ball on the ground: its points while its word is still whole,
+    and the word written broken on every frame the ball stands there, whatever it held. */
+export function broken(live) {
+  const w = live.words;
+  const b = live.ball;
+  const entry = live.tables.motion.kinds[String(CRUMBLING)];
+  if (w.standing !== entry.standing) return;
+  const block = live.world.crumbling.get(cellKey(...add(cellOf(b), b.n, -1)));
+  if (!block) return;
+  if (block.type === WHOLE) w.score += entry.points;
+  block.type = BROKEN;
+}
+
+/** The draw's part of the frame: a block broken under the ball breaks up, and a breaking block
+    shrinks by the table's step a frame until its size goes negative, when it is gone from the
+    lattice. */
+export function crumble(live, out) {
+  const { shrink } = live.tables.motion.kinds[String(CRUMBLING)];
+  for (const [key, block] of live.world.crumbling) {
+    if (block.type === BROKEN) {
+      block.type = BREAKING;
+      out.push({ broke: { key } });
+    }
+    if (block.type !== BREAKING) continue;
+    block.size -= shrink;
+    if (block.size >= 0) continue;
+    fell(live.world, key);
+    out.push({ fell: { key } });
+  }
 }
 
 /** The spikes under the ball on the ground, the moving ones by the table's flag on the frame

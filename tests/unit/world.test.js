@@ -4,7 +4,7 @@ import { objects, mapData, annotations } from "./fixtures.js";
 import { state } from "../../public/js/viewer/state.js";
 import { cellKey, FACE_NORMAL } from "../../public/js/format/lattice.js";
 import { setObjects, setAnnotations, index } from "../../public/js/viewer/data.js";
-import { phasesOf } from "../../public/js/viewer/motion.js";
+import { blockPhase, phasesOf } from "../../public/js/viewer/motion.js";
 import { ballAt } from "../../public/js/play/ball.js";
 import {
   worldOf,
@@ -13,6 +13,7 @@ import {
   travelOf,
   viewOf,
   took,
+  fell,
   keysOf,
 } from "../../public/js/play/world.js";
 
@@ -378,4 +379,100 @@ test("the index the frame draws is the level's own until something is taken, and
     again.markers.get(key([10, 10, 17])).map((m) => m.type),
     [31],
   );
+});
+
+test("fell empties a block's cell: nothing stands or rolls on it, the walkers' probe reads it empty, the kinds and the crumbling blocks forget it, and the index the frame draws leaves it out with its record and its marker", () => {
+  const l = level(row(10, 12, 10, 17), [
+    own(11, 10, 17, 6),
+    { x: 12, y: 10, z: 17, kind: 0, on: [object(0, 37)] },
+  ]);
+  const idx = index(l);
+  const w = worldOf(l, idx, TABLES, CIRCUITS);
+  const live = { ball: ballAt(RULES, [10, 10, 17], TOP, UP), world: w, idx, words: { frame: 0 } };
+  const p = probeOf(live);
+  const k = key([11, 10, 17]);
+  assert.equal(p.solid([11, 10, 17]), true);
+  assert.equal(p.brittle([11, 10, 17]), true);
+  assert.equal(w.probe.free([11, 10, 17], TOP, 0), true);
+  assert.equal(idx.markers.get(k).length, 1, "the kind's own marker");
+  fell(w, k);
+  assert.ok(w.gone.has(k));
+  assert.equal(w.cells.has(k), false);
+  assert.equal(w.kinds.has(k), false);
+  assert.equal(w.crumbling.has(k), false);
+  assert.equal(p.solid([11, 10, 17]), false);
+  assert.equal(p.value([11, 10, 17]), -1);
+  assert.equal(p.brittle([11, 10, 17]), false);
+  assert.equal(p.standing([11, 10, 17], TOP), -1);
+  assert.equal(p.standable([11, 10, 17], TOP), false);
+  assert.equal(w.probe.value([11, 10, 17], 0), -1, "empty to the walkers too");
+  assert.equal(w.probe.free([11, 10, 17], TOP, 0), false);
+  assert.equal(w.probe.empty([11, 10, 17], 0), true);
+  assert.equal(w.probe.free([10, 10, 17], TOP, 0), true, "its neighbours as before");
+  assert.equal(p.solid([10, 10, 17]), true);
+  const view = viewOf(live);
+  assert.notEqual(view, idx);
+  assert.equal(view.cells.has(k), false);
+  assert.equal(view.records.has(k), false);
+  assert.equal(view.markers.has(k), false);
+  assert.ok(view.cells.has(key([10, 10, 17])) && view.cells.has(key([12, 10, 17])));
+  assert.equal(view.records.get(key([12, 10, 17])), idx.records.get(key([12, 10, 17])));
+  assert.equal(view.markers.get(key([12, 10, 17])), idx.markers.get(key([12, 10, 17])));
+  for (const part of ["beamCells", "railCells", "beamEnds", "plates"])
+    assert.equal(view[part], idx[part], `${part} untouched`);
+  assert.ok(
+    idx.cells.has(k) && idx.records.has(k) && idx.markers.has(k),
+    "the level as installed keeps the block",
+  );
+  assert.equal(viewOf(live), view, "kept until the next change");
+  took(w, `${key([12, 10, 17])}/0`);
+  const again = viewOf(live);
+  assert.notEqual(again, view);
+  assert.equal(again.cells.has(k), false, "still out as a take lays the index anew");
+  assert.deepEqual(again.markers.get(key([12, 10, 17])), []);
+});
+
+test("the probe reads a vanishing block solid on the frames its cycle has it in the lattice and empty while it is absent, the word under the ball nothing meanwhile", () => {
+  const vanishing = { ...own(11, 10, 17, 7, 0), f: [2, ...Array(10).fill(0)] };
+  const l = level(row(10, 12, 10, 17), [vanishing]);
+  const idx = index(l);
+  const w = worldOf(l, idx, TABLES, CIRCUITS);
+  const entry = motion.kinds["7"];
+  const cycle = entry.cycle[2];
+  const absent = cycle.indexOf(0);
+  const back = cycle.findIndex((s, i) => i > absent && s !== 0);
+  const live = { ball: ballAt(RULES, [11, 10, 17], TOP, UP), world: w, idx, words: { frame: 0 } };
+  const p = probeOf(live);
+  const at = (frame) => {
+    live.words.frame = frame;
+    return {
+      solid: p.solid([11, 10, 17]),
+      value: p.value([11, 10, 17]),
+      standing: standingOf(live),
+      standable: p.standable([11, 10, 17], TOP),
+      state: blockPhase(entry, l.records[0], frame).state,
+    };
+  };
+  for (const f of [0, absent - 1, back, cycle.length - 1]) {
+    const seen = at(f);
+    assert.notEqual(seen.state, 0, `frame ${f}: in the lattice`);
+    assert.deepEqual(
+      [seen.solid, seen.value, seen.standing, seen.standable],
+      [true, mapData.firstRecord, entry.standing, true],
+      `frame ${f}`,
+    );
+  }
+  for (const f of [absent, back - 1, cycle.length + absent]) {
+    const seen = at(f);
+    assert.equal(seen.state, 0, `frame ${f}: absent`);
+    assert.deepEqual(
+      [seen.solid, seen.value, seen.standing, seen.standable],
+      [false, -1, -1, false],
+      `frame ${f}`,
+    );
+  }
+  assert.equal(p.solid([10, 10, 17]), true, "a plain block whatever the frame");
+  assert.equal(w.probe.value([11, 10, 17], absent), -1, "and the walkers read the same lattice");
+  delete live.words.frame;
+  assert.equal(p.solid([11, 10, 17]), true, "the level's first frame where the run has none");
 });

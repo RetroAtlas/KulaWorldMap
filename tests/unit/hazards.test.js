@@ -25,6 +25,7 @@ import {
   progressOf,
 } from "../../public/js/play/ball.js";
 import { startRun, frame, heeds, restart, revive, stand } from "../../public/js/play/rules.js";
+import { probeOf } from "../../public/js/play/world.js";
 
 setObjects(objects);
 setAnnotations(annotations);
@@ -50,6 +51,7 @@ const TELEPORTER = 5;
 const MOVING_SPIKES = 11;
 const SPIKES = 12;
 const ICE = 2;
+const CRUMBLING = 6;
 const ARROW = 28;
 const SLOW_STAR = 50;
 const WANDERER = 53;
@@ -64,6 +66,7 @@ const BEAM = motion.kinds["8"].harm;
 const DEADLY = motion.types[String(MOVING_SPIKES)].deadly;
 const CHILL = motion.kinds[String(ICE)];
 const ON_ICE = CHILL.standing;
+const CRUMBLE = motion.kinds[String(CRUMBLING)];
 const ROLL = motion.types["30"].rolling;
 const WALL = motion.types["30"].jump.wall;
 const squared = (a, b) => a.reduce((sum, c, i) => sum + (c - b[i]) ** 2, 0);
@@ -119,6 +122,8 @@ const beam = (z, lit = true) => ({
 const start = () => ({ x: 17, y: 18, z: 17, kind: 0, on: [object(TOP, 30, { facing: 3 })] });
 /** A thing of `type` on the top of the row's block at `y`. */
 const on = (y, type, opts) => ({ x: 17, y, z: 17, kind: 0, on: [object(TOP, type, opts)] });
+/** A crumbling block's record at the row's cell at `y`, whole. */
+const crumbling = (y) => ({ x: 17, y, z: 17, kind: CRUMBLING, type: 1, f: Array(11).fill(0) });
 /** The link word for `face` of the record at `i`. */
 const link = (i, face = TOP) => i * 16 + face;
 const slot = (cell, face = TOP) => `${cellKey(...cell)}/${face}`;
@@ -140,6 +145,8 @@ function trace(live, n, pad, until = () => false) {
       block: blockUnder(live.ball),
       marker: live.words.marker,
       state: live.ball.state,
+      speed: live.ball.speed,
+      forward: live.ball.forward,
       pos: [...live.ball.pos],
       words: { ...live.words },
     });
@@ -1047,4 +1054,136 @@ test("in the air over an arrow the jump's wall test throws the ball back from 41
     "cleared on the row past the wall's progress",
   );
   assert.deepEqual(blockUnder(along.live.ball), [17, 16, 17], "down two blocks on");
+});
+
+test("a crumbling block under the ball scores the table's points once and is written broken on every frame the ball stands on it, breaking up at the frame's end, and is gone on the twentieth frame, the resting ball falling on the frame after onto the block below", () => {
+  const l = level([...row(15, 18), [17, 15, 19]], [start(), crumbling(15)]);
+  const live = standing(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  const key = cellKey(17, 15, 17);
+  const block = live.world.crumbling.get(key);
+  assert.deepEqual(block, { type: 1, size: CRUMBLE.size });
+  assert.equal(live.words.standing, CRUMBLE.standing);
+  const [first] = trace(live, 1, 0);
+  assert.equal(live.words.score, CRUMBLE.points);
+  assert.deepEqual(first.events, [{ broke: { key } }]);
+  assert.equal(block.type, 3, "written broken by the hazards, breaking up by the frame's end");
+  assert.equal(block.size, CRUMBLE.size - CRUMBLE.shrink, "shrunk on the frame it breaks");
+  const stood = trace(live, 18, 0);
+  assert.equal(live.words.score, CRUMBLE.points, "scored once");
+  assert.ok(
+    stood.every((f) => has(f, "broke") && !has(f, "fell")),
+    "broken again on every frame the ball stands there",
+  );
+  assert.ok(stood.every((f) => f.state === REST));
+  assert.equal(block.size, CRUMBLE.size - 19 * CRUMBLE.shrink);
+  assert.ok(block.size >= 0, "still there after nineteen");
+  const [twentieth] = trace(live, 1, 0);
+  assert.deepEqual(twentieth.events, [{ broke: { key } }, { fell: { key } }]);
+  assert.equal(twentieth.state, REST, "the ball at rest still as the frame ends");
+  assert.equal(live.words.frame, 20);
+  assert.ok(live.world.gone.has(key));
+  assert.equal(live.world.crumbling.has(key), false);
+  assert.equal(probeOf(live).solid([17, 15, 17]), false);
+  const [after] = trace(live, 1, 0);
+  assert.equal(after.state, FALL, "dropped on the frame after");
+  assert.equal(live.ball.v, motion.types["30"].fall.start);
+  assert.deepEqual(after.pos, twentieth.pos, "from where it rested");
+  assert.equal(live.words.standing, -1, "nothing under the ball");
+  assert.ok(!has(after, "broke"));
+  trace(live, 60, 0, resting);
+  assert.deepEqual(blockUnder(live.ball), [17, 15, 19]);
+});
+
+test("a ball rolling on crosses a crumbling block before it goes, and one on it as it goes falls from between the roll's bounds on the frame after", () => {
+  const l = level([...row(10, 18), [17, 15, 19]], [start(), crumbling(15)]);
+  const across = standing(l, { cell: [17, 17, 17], face: TOP, h: UP });
+  const frames = trace(across, 200, PAD.up, (l) => blockUnder(l.ball)[1] <= 12);
+  const went = frames.find((f) => has(f, "fell"));
+  assert.ok(went, "the block went");
+  assert.ok(went.block[1] < 15, "with the ball past it");
+  assert.ok(
+    frames.every((f) => f.state === ROLLING),
+    "the roll never broken",
+  );
+  assert.ok(
+    frames.filter((f) => f.before.block[1] === 15).every((f) => f.speed === TOP_SPEED),
+    "at the top speed over the block, the floor ahead there",
+  );
+  assert.equal(across.words.score, CRUMBLE.points);
+  const broke = frames.filter((f) => has(f, "broke"));
+  assert.ok(broke.length > 10, String(broke.length));
+  assert.ok(
+    broke.every((f) => f.before.block[1] === 15),
+    "broken on the frames the ball stood on it as the last frame left it",
+  );
+
+  const on = standing(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  trace(on, 14, 0);
+  const rolled = trace(on, 40, PAD.up, (l) => l.ball.state === FALL);
+  const dropped = rolled.at(-1);
+  assert.equal(dropped.state, FALL);
+  const fell = rolled.findIndex((f) => has(f, "fell"));
+  assert.equal(rolled.length, fell + 2, "the frame after the block went");
+  assert.deepEqual(dropped.before.block, [17, 15, 17]);
+  assert.ok(
+    dropped.before.progress >= ROLL.over[0] && dropped.before.progress <= ROLL.over[1],
+    String(dropped.before.progress),
+  );
+  trace(on, 60, 0, resting);
+  assert.deepEqual(blockUnder(on.ball), [17, 15, 19]);
+});
+
+test("a crumbling block at the end of a row holds the rolling ball short of its free edge, where stone would take it round, the request and the speed dropped from the hold's progress, until the block goes and the ball falls with it", () => {
+  const at = { cell: [17, 16, 17], face: TOP, h: UP };
+  const stone = standing(level(row(15, 18), [start()]), at);
+  const round = trace(stone, 60, PAD.up, (l) => l.ball.state !== ROLLING && l.ball.state !== REST);
+  assert.ok(
+    round.at(-1).events.some((e) => e.face === "wrap"),
+    "stone takes the ball round",
+  );
+
+  const live = standing(level([...row(15, 18), [17, 15, 19]], [start(), crumbling(15)]), at);
+  const frames = trace(live, 80, PAD.up, (l) => l.ball.state === FALL);
+  assert.ok(!frames.some((f) => has(f, "face")), "never round the edge");
+  const on = frames.filter((f) => f.before.block[1] === 15 && f.state === ROLLING);
+  assert.ok(on.every((f) => f.progress < ROLL.wrap));
+  const held = on.filter((f) => f.before.progress >= CRUMBLE.edge.hold);
+  assert.ok(held.length > 5, String(held.length));
+  assert.ok(
+    held.every((f) => !f.forward && f.speed === ROLL.gain),
+    "the request dropped and the speed grown from nothing again",
+  );
+  assert.ok(
+    on
+      .filter((f) => f.before.progress < CRUMBLE.edge.hold && f.before.progress > 101)
+      .every((f) => f.forward && f.speed === TOP_SPEED),
+    "rolling at the top speed short of the hold",
+  );
+  const fell = frames.findIndex((f) => has(f, "fell"));
+  assert.ok(fell >= 0);
+  assert.equal(frames.length, fell + 2, "the ball falls on the frame after the block goes");
+  assert.deepEqual(frames.at(-1).before.block, [17, 15, 17]);
+  trace(live, 60, 0, resting);
+  assert.deepEqual(blockUnder(live.ball), [17, 15, 19]);
+});
+
+test("a hop from a crumbling block comes down over nothing once the block has gone under it, the hazards leaving the block while the ball is in the air, and the ball falls", () => {
+  const l = level([...row(15, 18), [17, 15, 19]], [start(), crumbling(15)]);
+  const live = standing(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  trace(live, 1, 0);
+  assert.equal(live.words.score, CRUMBLE.points);
+  const [hop] = trace(live, 1, PAD.cross);
+  assert.equal(hop.state, HOP);
+  assert.ok(has(hop, "broke"), "read on the ground as the hop was asked");
+  const flight = trace(live, 60, 0, (l) => l.ball.state !== HOP);
+  const fell = flight.findIndex((f) => has(f, "fell"));
+  assert.ok(fell >= 0 && fell < flight.length - 1, "the block went while the ball was in the air");
+  assert.ok(
+    flight.every((f) => !has(f, "broke")),
+    "left alone in the air",
+  );
+  assert.equal(flight.at(-1).state, FALL);
+  assert.equal(live.ball.v, motion.types["30"].fall.hop);
+  trace(live, 60, 0, resting);
+  assert.deepEqual(blockUnder(live.ball), [17, 15, 19]);
 });

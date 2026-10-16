@@ -15,6 +15,10 @@ const DONE =
 const SPIKED =
   /^The ball is killed on the spikes\. 0 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
 const FORGIVEN = "Forgiven: the ball would have been killed on the spikes.";
+const LOST_BROKEN =
+  /^The ball is lost off the level\. 50 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
+const BROKE = "17,16,17, top. The crumbling block breaks under the ball.";
+const GONE = "The crumbling block at 17,16,17 is gone.";
 const TAKEN = "Taken: Coin (bronze) on the top";
 const SENDING = "The teleporter is sending the ball.";
 const REFUSED = "The ball cannot roll off here: a block stands beside it.";
@@ -1511,6 +1515,108 @@ test("on fire the ball reddens: where it stands its pixels are redder on the who
   expect(fire[1], `green: ${fire} against ${plain}`).toBeLessThan(plain[1]);
   expect(fire[2], `blue: ${fire} against ${plain}`).toBeLessThan(plain[2]);
   expect(await drawn(page)).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test("a crumbling block breaks under the ball, scoring, and is gone a third of a second later, out of the frame, the ball falling with it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a key out of reach keeps the level an arcade one; a crumbling block on, with nothing below it
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  await laid(page, [17, 16, 17], { kind: 6 });
+  await expect(page.locator("#chipLine")).toContainText("2 blocks");
+  // a point of the block's top that the ball and its shadow leave clear
+  const corner = [17.15, 16.15, 17];
+  const stood = await pixelAt(page, corner);
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await listening(page);
+  // with Motion on the level runs at rest, so the block goes while the ball stands on it
+  await page.keyboard.press("ArrowUp");
+  await expect
+    .poll(async () => (await probe(page)).station.block, { intervals: [25] })
+    .toEqual([17, 16, 17]);
+  await expect(page.locator("#playPoints")).toHaveText("50 points");
+  expect(await status(page).textContent()).toBe("");
+  await expect.poll(() => pixelAt(page, corner), { intervals: [25] }).not.toEqual(stood);
+  await expect(status(page)).toHaveText(LOST_BROKEN, { timeout: 10_000 });
+  const heard = await said(page);
+  expect(heard).toContain(BROKE);
+  expect(heard).toContain(GONE);
+  expect(errors).toEqual([]);
+});
+
+test("a vanishing block drops the ball as its cycle takes it out of the lattice, and the ball lands on the block below", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a key out of reach keeps the level an arcade one; a vanishing block on that stands as the
+  // level opens, and a block a gap below it
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  await laid(page, [17, 16, 17], { kind: 7, phase: 2 });
+  await laid(page, [17, 16, 19], { kind: 0 });
+  await expect(page.locator("#chipLine")).toContainText("3 blocks");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await page.keyboard.press("ArrowUp");
+  await expect
+    .poll(async () => (await probe(page)).station.block, { intervals: [25] })
+    .toEqual([17, 16, 17]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  expect(await status(page).textContent()).toBe("");
+  // the level runs at rest, and the block goes from under the ball as its cycle has it
+  await expect
+    .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [25] })
+    .toEqual([17, 16, 19]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  expect((await probe(page)).station).toEqual({
+    block: [17, 16, 19],
+    face: 0,
+    heading: "-y",
+    moving: false,
+  });
+  expect(await frameAt(page)).toBeGreaterThan(100);
+  await expect(say(page)).toHaveText("17,16,19, top");
+  expect(errors).toEqual([]);
+});
+
+test("a lone crumbling block, reached by a jump, goes with a burst of dust where it stood, drawn over the nearest block the frame still draws", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a key out of reach keeps the level an arcade one; a crumbling block a jump on, with nothing
+  // beside it or below it
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  await laid(page, [17, 15, 17], { kind: 6 });
+  await expect(page.locator("#chipLine")).toContainText("2 blocks");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await listening(page);
+  await page.keyboard.down("ArrowUp");
+  await page.keyboard.press(" ");
+  await page.keyboard.up("ArrowUp");
+  await expect
+    .poll(async () => (await probe(page)).station.block, { intervals: [25] })
+    .toEqual([17, 15, 17]);
+  await expect(page.locator("#playPoints")).toHaveText("50 points");
+  // the gone block's cell is drawn no longer, so its dust is drawn over the start's block, the
+  // only other one
+  await expect.poll(() => dustOver(page, [17, 17, 17]), { intervals: [25] }).toBeGreaterThan(0);
+  await expect.poll(() => said(page)).toContain("The crumbling block at 17,15,17 is gone.");
+  await expect(status(page)).toHaveText(LOST_BROKEN, { timeout: 10_000 });
   expect(errors).toEqual([]);
 });
 

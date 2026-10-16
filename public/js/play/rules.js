@@ -1,14 +1,25 @@
 // The game's frame over the ball and the level: the clock, the guard, the wait, the pad, what is
 // under the ball and what it takes, in the executable's order, over pad words from any source.
 import { PAD, aloft, ballAt, blockUnder, cellOf, place, read, run } from "./ball.js";
-import { KEY, keysOf, probeOf, standingOf, took, worldOf } from "./world.js";
+import { KEY, fell, keysOf, probeOf, standingOf, took, worldOf } from "./world.js";
 import { contact } from "./contact.js";
-import { INVINCIBLE, catching, counting, devices, harms, rearm, spiked } from "./hazards.js";
+import {
+  INVINCIBLE,
+  broken,
+  catching,
+  counting,
+  crumble,
+  devices,
+  harms,
+  rearm,
+  spiked,
+} from "./hazards.js";
 import { SIDE, cellKey } from "../format/lattice.js";
 import { OFF_LATTICE, layHeading, startsOf, TANGENT } from "../viewer/data.js";
 import { advance } from "../viewer/travel.js";
 
 const BALL = 30;
+const CRUMBLING = 6;
 const SIMON = 1;
 const EXIT = 7;
 const HIDDEN_EXIT = 26;
@@ -24,6 +35,7 @@ const rulesOf = ({ motion, unit, jump }) => ({
   turn: motion.turn,
   unit,
   jump,
+  edge: motion.kinds[String(CRUMBLING)].edge,
 });
 
 /** The start the game takes, as a station, or null. */
@@ -192,6 +204,7 @@ function hazards(live, out) {
   harms(live, out);
   if (!aloft(live.ball)) {
     ground(live, out);
+    broken(live);
     spiked(live, out);
   }
   pills(live, out);
@@ -207,8 +220,8 @@ function readCells(live) {
 }
 
 /** One game frame with `pad` as held: what happened, as events. The frame the clock runs out on
-    runs to its end, as the game's does, and nothing runs once the outcome stands; the ending's
-    view is the mode's. */
+    runs to its end, as the game's does, the crumbling blocks breaking up last as the draw runs
+    them, and nothing runs once the outcome stands; the ending's view is the mode's. */
 export function frame(live, pad) {
   const w = live.words;
   const b = live.ball;
@@ -246,6 +259,7 @@ export function frame(live, pad) {
   if (w.bonus && out.some((e) => e.face === "climb")) mark(live, ahead, out);
   if (!w.guard) contact(live, out);
   if (out.some((e) => e.lost)) end(live, ending.lost, out);
+  crumble(live, out);
   w.frame += 1;
   return out;
 }
@@ -286,8 +300,8 @@ export function stand(live, { cell, face, h }) {
 }
 
 /** The level edited under the run: the world laid anew from it, the walkers at the run's frame,
-    what was taken and marked carried where it still names the same thing, and the keys and
-    the blocks left counted again. */
+    what was taken, marked and gone carried where it still names the same thing, and the keys
+    and the blocks left counted again. */
 export function relevel(live, l, idx) {
   const was = live.world;
   live.level = l;
@@ -296,6 +310,7 @@ export function relevel(live, l, idx) {
   for (const slot of was.taken)
     if (world.pickups.get(slot)?.m.type === was.pickups.get(slot).m.type) took(world, slot);
   for (const key of was.marked) if (world.cells.has(key)) world.marked.add(key);
+  for (const key of was.gone) if (world.crumbling.has(key)) fell(world, key);
   live.world = world;
   const w = live.words;
   const takenKeys = [...world.taken].filter((s) => world.pickups.get(s).m.type === KEY).length;

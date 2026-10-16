@@ -122,6 +122,7 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
         });
     }
   }
+  const gone = new Set();
   return {
     first,
     cells,
@@ -136,24 +137,36 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
     platforms,
     counted,
     walkers: walkers(l, idx, motion, frame),
-    probe: probe(l, circuits.lit),
+    probe: emptied(probe(l, circuits.lit), gone),
     roll: dice(motion.dice),
     taken: new Set(),
-    gone: new Set(),
+    gone,
     marked: new Set(),
     view: idx,
   };
 }
 
-const kindAt = (world, cell) => world.kinds.get(cellKey(...cell));
+/** The lattice's probe with every gone cell reading empty, to the walkers as to the ball. */
+function emptied(lattice, gone) {
+  const stands = (cell) => !gone.has(cellKey(...cell));
+  return {
+    value: (cell, frame) => (stands(cell) ? lattice.value(cell, frame) : OFF_LATTICE),
+    free: (cell, face, frame) => stands(cell) && lattice.free(cell, face, frame),
+    empty: (cell, frame) => !stands(cell) || lattice.empty(cell, frame),
+  };
+}
 
-/** The game's word for what stands at `cell`, read on `face`: a plain block's face the type of
-    the slot there, a bare block or no block the lattice's empty word, each other kind its own
-    word, and undefined where the game writes none. */
-function standingAt(world, cell, face) {
+const kindAt = (world, cell) => world.kinds.get(cellKey(...cell));
+const atFrame = (live) => live.words.frame ?? 0;
+
+/** The game's word for what stands at `cell` at `frame`, read on `face`: a plain block's face
+    the type of the slot there, a bare block, no block or one the lattice does not hold at that
+    frame the lattice's empty word, each other kind its own word, and undefined where the game
+    writes none. */
+function standingAt(world, cell, face, frame) {
   const key = cellKey(...cell);
   const kind = world.kinds.get(key);
-  if (kind === undefined) return OFF_LATTICE;
+  if (kind === undefined || world.probe.value(cell, frame) === OFF_LATTICE) return OFF_LATTICE;
   if (kind !== PLAIN) return world.standing.get(kind);
   return world.cells.get(key) >= world.first
     ? (world.faces.get(slot(key, face)) ?? 0)
@@ -164,25 +177,24 @@ function standingAt(world, cell, face) {
     read on the face under it, and the word as it was where the game writes none. */
 export function standingOf(live) {
   const b = live.ball;
-  return standingAt(live.world, add(cellOf(b), b.n, -1), faceUnder(b)) ?? live.words.standing;
+  const under = add(cellOf(b), b.n, -1);
+  return standingAt(live.world, under, faceUnder(b), atFrame(live)) ?? live.words.standing;
 }
 
-/** The lattice as the ball's rules ask it, over the world as it stands when asked. */
+/** The lattice as the ball's rules ask it, over the world as it stands at the run's frame: a
+    vanishing block is there on the frames its cycle says, and a gone block never. */
 export function probeOf(live) {
   const world = () => live.world;
-  const solid = (cell) => {
-    if (!inside(cell)) return false;
-    const key = cellKey(...cell);
-    return world().cells.has(key) || world().bodies.has(key);
-  };
+  const value = (cell) => world().probe.value(cell, atFrame(live));
+  const solid = (cell) =>
+    value(cell) >= 0 || (inside(cell) && world().bodies.has(cellKey(...cell)));
   return {
     solid,
     standable: (cell, face) => solid(cell) && !solid(add(cell, FACE_NORMAL[face])),
     slick: (cell) => kindAt(world(), cell) === ICE,
     brittle: (cell) => kindAt(world(), cell) === CRUMBLING,
-    value: (cell) =>
-      inside(cell) ? (world().cells.get(cellKey(...cell)) ?? OFF_LATTICE) : OFF_LATTICE,
-    standing: (cell, face) => standingAt(world(), cell, face),
+    value,
+    standing: (cell, face) => standingAt(world(), cell, face, atFrame(live)),
   };
 }
 
@@ -193,12 +205,23 @@ export function took(world, slot) {
   world.view = null;
 }
 
-/** The index the frame draws from: the level's own less the things taken, shaped as the
-    level's, and rebuilt only when what is taken changes. */
+/** A block gone from the lattice: its cell emptied, so that nothing stands or rolls on it, kept
+    among the gone, and left out of the index the frame draws. */
+export function fell(world, key) {
+  world.cells.delete(key);
+  world.kinds.delete(key);
+  world.crumbling.delete(key);
+  world.gone.add(key);
+  world.view = null;
+}
+
+/** The index the frame draws from: the level's own less the things taken and the blocks gone,
+    with what stood on them, shaped as the level's, and rebuilt only when either changes. */
 export function viewOf(live) {
   const world = live.world;
   if (!world.view) {
-    const markers = new Map(live.idx.markers);
+    const { idx } = live;
+    const markers = new Map(idx.markers);
     for (const taken of world.taken) {
       const [key, face] = taken.split("/").map(Number);
       markers.set(
@@ -206,7 +229,14 @@ export function viewOf(live) {
         (markers.get(key) ?? []).filter((m) => m.face !== face),
       );
     }
-    world.view = { ...live.idx, markers };
+    const view = { ...idx, markers };
+    if (world.gone.size) {
+      view.cells = new Map(idx.cells);
+      view.records = new Map(idx.records);
+      for (const key of world.gone)
+        for (const part of [view.cells, view.records, markers]) part.delete(key);
+    }
+    world.view = view;
   }
   return world.view;
 }

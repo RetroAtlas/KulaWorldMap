@@ -53,7 +53,7 @@ import { toast } from "../viewer/ui/toast.js";
 import { chip, fit, fitWith, writeHash } from "../viewer/chrome/navigate.js";
 import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
 import { say } from "../viewer/chrome/a11y.js";
-import { onShow, showCell } from "../viewer/chrome/detail.js";
+import { clearDetail, onShow, showCell } from "../viewer/chrome/detail.js";
 import { tipWith } from "../viewer/chrome/interaction.js";
 import {
   PAD,
@@ -72,7 +72,7 @@ import { frame as gameFrame, heeds, relevel, restart, revive, stand, startRun } 
 import { probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
 const BALL_TYPE = 30;
-const AS_STONE_KINDS = new Set([5, 6, 7]);
+const AS_STONE_KINDS = new Set([5]);
 const AS_STONE_TYPES = new Set([10]);
 // the untinted light, the unit a traveller's tint is in
 const LIGHT = 4096;
@@ -99,8 +99,7 @@ const REFUSED = {
   edge: "The ball cannot roll off here: a block stands beside it.",
   arrow: "The ball cannot roll off here: the arrow points another way.",
 };
-const AS_STONE =
-  "The ball rolls over a boost button, a crumbling or vanishing block and a platform as over plain stone for now.";
+const AS_STONE = "The ball rolls over a boost button and a platform as over plain stone for now.";
 const NO_START = "The level has no start, so the ball stands on the first face it could.";
 const NOWHERE = "The level has no face the ball could stand on.";
 const OBJECTS_ON = "Objects turned on, for the ball.";
@@ -134,6 +133,8 @@ const WOULD = {
 const FORGIVEN = (name) => `Forgiven: the ball would have been ${WOULD[name]}.`;
 const ENDED = "The level has ended.";
 const OPENED = "The last key is taken: the exits are open.";
+const BROKE = "The crumbling block breaks under the ball.";
+const GONE = (cell) => `The crumbling block at ${cell} is gone.`;
 const SENDING = "The teleporter is sending the ball.";
 const KEYS_LEFT = "The keys left to take";
 const BLOCKS_LEFT = "The blocks left to roll onto";
@@ -142,6 +143,7 @@ const KEPT = "The way the ball has come is now the route.";
 const ROUTE_STANDS = "A route already stands; clear it to keep the walk.";
 const AT_SWITCH = 6;
 const AT_TAKE = 10;
+const AT_BREAK = 2;
 const TRAIL = 12;
 
 let live = null;
@@ -650,6 +652,14 @@ function happened(event) {
     threw(event.threw);
     return;
   }
+  if (event.broke) {
+    broke(event.broke);
+    return;
+  }
+  if (event.fell) {
+    fell(event.fell);
+    return;
+  }
   if (event.sent) {
     sent(event.sent);
     return;
@@ -705,6 +715,40 @@ function threw({ circuit }) {
   say(text);
   live.notes.push(text);
   refreshPanel();
+}
+
+/** A crumbling block broken under the ball: dust at its foot each time the game breaks it, and
+    the break said the first time. */
+function broke({ key }) {
+  const b = live.run.ball;
+  burstDust(footOf(b), b.n, blockUnder(b), AT_BREAK, !motionOn());
+  if (live.broken.has(key)) return;
+  live.broken.add(key);
+  say(BROKE);
+  live.notes.push(BROKE);
+}
+
+/** A crumbling block gone: dust where it stood, drawn over the nearest block the frame still
+    draws, the panel cleared where it showed the block, and the fall said. */
+function fell({ key }) {
+  const { x, y, z } = live.idx.cells.get(key);
+  const over = nearestDrawn([x, y, z]);
+  if (over) burstDust([x + 0.5, y + 0.5, z + 0.5], live.run.ball.n, over, AT_TAKE, !motionOn());
+  if (state.selected?.key === key) clearDetail();
+  say(GONE([x, y, z].join(",")));
+  redraw = true;
+  invalidatePick();
+}
+
+/** The cell nearest `cell` among those the frame draws, or null where it draws none. */
+function nearestDrawn(cell) {
+  let best = null;
+  let least = Infinity;
+  for (const c of drawnIndex(live.run).cells.values()) {
+    const d = (c.x - cell[0]) ** 2 + (c.y - cell[1]) ** 2 + (c.z - cell[2]) ** 2;
+    if (d < least) [best, least] = [[c.x, c.y, c.z], d];
+  }
+  return best;
 }
 
 /** The ball sent by a teleporter: dust at both ends, a leap in its way, the view cut to it. */
@@ -800,6 +844,7 @@ function startOver() {
   live.trail = null;
   live.notes = [];
   live.rests = [];
+  live.broken = new Set();
   live.flash = 0;
   live.still = stateOf(b);
   resetDust(worldTint(live.level.theme));
@@ -1139,6 +1184,7 @@ function enter(at = null) {
     trail: null,
     notes: [],
     rests: [],
+    broken: new Set(),
     flash: 0,
     dire: false,
     ended: null,
@@ -1294,7 +1340,8 @@ export function bootPlay() {
     live.level = state.lvl;
     live.idx = state.idx;
     relevel(live.run, state.lvl, state.idx);
-    if (!live.probe.solid(blockUnder(live.run.ball))) leave();
+    const under = cellKey(...blockUnder(live.run.ball));
+    if (!state.idx.cells.has(under) && !live.run.world.bodies.has(under)) leave();
   });
   on("link-opening", () => leave({ restore: false }));
   on("go-to", () => leave({ restore: false }));

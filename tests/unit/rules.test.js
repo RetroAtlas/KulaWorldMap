@@ -33,6 +33,7 @@ import {
 } from "../../public/js/play/rules.js";
 import { probeOf, standingOf, viewOf } from "../../public/js/play/world.js";
 import { recorder, replayDriver } from "../../public/js/play/drive.js";
+import { blockPhase } from "../../public/js/viewer/motion.js";
 
 setObjects(objects);
 setAnnotations(annotations);
@@ -50,8 +51,11 @@ const TABLES = {
 };
 const UP = [0, -1, 0];
 const TOP = 0;
+const CRUMBLING = 6;
+const VANISHING = 7;
 const EXIT = 7;
 const KEY = 31;
+const ROLL = motion.types["30"].rolling;
 const LETHARGY = "32";
 const BOUNCY = "33";
 const INVINCIBLE = "34";
@@ -94,6 +98,17 @@ function level(blocks, records = [], time = 99, keyed = true) {
 const row = (y0, y1) => Array.from({ length: y1 - y0 + 1 }, (_, i) => [17, y0 + i, 17]);
 /** The start on the top of (17, 18, 17), heading −y as LEVEL 1's does. */
 const start = (type = 30) => ({ x: 17, y: 18, z: 17, kind: 0, on: [object(0, type, 3)] });
+/** A crumbling block's record at (17, `y`, 17), whole. */
+const crumbling = (y) => ({ x: 17, y, z: 17, kind: CRUMBLING, type: 1, f: Array(11).fill(0) });
+/** A vanishing block's record at (17, `y`, 17) in `phase`. */
+const vanishing = (y, phase) => ({
+  x: 17,
+  y,
+  z: 17,
+  kind: VANISHING,
+  type: 0,
+  f: [phase, ...Array(10).fill(0)],
+});
 const begin = (l, at = null) => startRun(l, index(l), TABLES, circuits(), at);
 /** Run `n` frames with `pad` held: the events, each with the frame count it left. */
 function steps(live, n, pad = 0) {
@@ -296,12 +311,14 @@ test("a frame runs in the game's order: the pad read, the walkers stepped, then 
   const live = begin(l);
   live.words.wait = 0;
   const log = [];
-  live.world.cells = new (class extends Map {
-    has(key) {
+  const { value } = live.world.probe;
+  live.world.probe = {
+    ...live.world.probe,
+    value(...cell) {
       log.push("ball");
-      return super.has(key);
-    }
-  })(live.world.cells);
+      return value(...cell);
+    },
+  };
   live.world.walkers = new (class extends Map {
     values() {
       log.push("walkers");
@@ -742,4 +759,79 @@ test("relevel carries what was taken where the level still holds it, and counts 
   assert.equal(bonus.world.counted.size, 5);
   assert.equal(bonus.world.marked.size, marked, "the marked blocks still stand");
   assert.equal(bonus.words.unmarked, 5 - marked);
+});
+
+test("a vanishing block drops the ball at rest on it on the first frame its cycle has it absent, which is the frame the map draws it absent, and the word under the ball reads nothing from that frame", () => {
+  const l = level([...row(10, 18), [17, 15, 19]], [start(), vanishing(15, 2)]);
+  const live = begin(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  live.words.wait = 0;
+  const entry = motion.kinds[String(VANISHING)];
+  const r = l.records.find((r) => r.kind === VANISHING);
+  const absent = entry.cycle[2].indexOf(0);
+  assert.ok(absent > 30, "solid as the level opens");
+  assert.equal(live.words.standing, entry.standing);
+  let dropped = null;
+  while (dropped === null && live.words.frame < 400) {
+    frame(live, 0);
+    if (live.ball.state === FALL) dropped = live.words.frame - 1;
+  }
+  assert.equal(dropped, absent, "the frame whose read finds the cell empty");
+  assert.equal(blockPhase(entry, r, dropped).state, 0);
+  assert.notEqual(blockPhase(entry, r, dropped - 1).state, 0);
+  assert.equal(live.ball.v, motion.types["30"].fall.start);
+  assert.equal(live.words.standing, -1, "nothing under the ball from the same read");
+  while (live.ball.state === FALL && live.words.frame < 400) frame(live, 0);
+  assert.equal(live.ball.state, REST);
+  assert.deepEqual(blockUnder(live.ball), [17, 15, 19], "down on the block below");
+  const back = entry.cycle[2].findIndex((s, i) => i > absent && s !== 0);
+  while (live.words.frame < back + 1) frame(live, 0);
+  assert.equal(probeOf(live).solid([17, 15, 17]), true, "in the lattice again as it fades in");
+});
+
+test("nothing refuses a roll onto a vanishing block about to go: the ball rolls onto one flashing out and falls from between the roll's bounds once it is absent", () => {
+  const l = level([...row(10, 18), [17, 14, 19]], [start(), vanishing(14, 2)]);
+  const live = begin(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  live.words.wait = 0;
+  const cycle = motion.kinds[String(VANISHING)].cycle[2];
+  const absent = cycle.indexOf(0);
+  // a roll from rest enters the next cell on its eleventh frame
+  while (live.words.frame < absent - 12) frame(live, 0);
+  let entered = null;
+  const events = [];
+  while (live.ball.state !== FALL && live.words.frame < absent + 40) {
+    events.push(...frame(live, PAD.up));
+    if (entered === null && blockUnder(live.ball)[1] === 14) entered = live.words.frame - 1;
+  }
+  assert.ok(entered !== null, "the ball rolled onto the block");
+  assert.equal(cycle[entered], 5, "flashing out as the ball came onto it");
+  assert.ok(!events.some((e) => e.refused || e.face));
+  assert.equal(live.ball.state, FALL);
+  const dropped = live.words.frame - 1;
+  assert.equal(cycle[dropped], 0, "absent as the roll's drop read it");
+  assert.ok(
+    live.ball.progress >= ROLL.over[0] && live.ball.progress <= ROLL.over[1],
+    String(live.ball.progress),
+  );
+  while (live.ball.state === FALL && live.words.frame < 400) frame(live, 0);
+  assert.deepEqual(blockUnder(live.ball), [17, 14, 19]);
+});
+
+test("relevel carries a gone block where the level still holds a crumbling block there, and lets it go where it does not", () => {
+  const l = level([...row(10, 18), [17, 15, 19]], [start(), crumbling(15)]);
+  const live = begin(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  live.words.wait = 0;
+  const events = steps(live, 20, 0);
+  const key = cellKey(17, 15, 17);
+  assert.ok(events.some((e) => e.fell?.key === key));
+  assert.ok(live.world.gone.has(key));
+  relevel(live, l, index(l));
+  assert.ok(live.world.gone.has(key), "carried");
+  assert.equal(live.world.cells.has(key), false);
+  assert.equal(live.world.crumbling.has(key), false);
+  assert.equal(viewOf(live).cells.has(key), false);
+  assert.equal(probeOf(live).solid([17, 15, 17]), false);
+  const plain = level([...row(10, 18), [17, 15, 19]], [start()]);
+  relevel(live, plain, index(plain));
+  assert.equal(live.world.gone.size, 0, "let go where a plain block stands there");
+  assert.equal(probeOf(live).solid([17, 15, 17]), true);
 });

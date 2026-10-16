@@ -1271,3 +1271,140 @@ test("a way the caller sets throws the jump back as off a wall from the wall's p
   rest(along.b, probe);
   assert.deepEqual(blockUnder(along.b), [17, 16, 17], "down two blocks on");
 });
+
+/** `probe` with the blocks given brittle, as a crumbling block is. */
+const brittle = (probe, ...cells) => {
+  const set = new Set(cells.map((c) => cellKey(...c)));
+  return { ...probe, brittle: (cell) => set.has(cellKey(...cell)) };
+};
+const EDGE = objects.motion.kinds["6"].edge;
+const HELD = { ...RULES, edge: EDGE };
+
+test("on a block the probe says is brittle, with the floor ahead empty and nothing beside, a rolling ball loses the forward request and its speed from the hold's progress and is set back from the push's, so it never goes round the edge it would on stone", () => {
+  const stone = row(15, 18);
+  const probe = brittle(stone, [17, 15, 17]);
+  const rolled = (rules, probe) => {
+    const b = ballAt(rules, [17, 16, 17], TOP, UP);
+    const frames = [];
+    for (let f = 1; f <= 120; f++) {
+      const before = { progress: b.progress, speed: b.speed, block: blockUnder(b) };
+      const events = run(b, probe, 1, PAD.up);
+      frames.push({
+        f,
+        before,
+        events,
+        progress: b.progress,
+        speed: b.speed,
+        forward: b.forward,
+        block: blockUnder(b),
+      });
+    }
+    return { b, frames };
+  };
+  const wrapped = ({ frames }) => frames.some((s) => s.events.some((e) => e.face === "wrap"));
+  assert.ok(wrapped(rolled(RULES, stone)), "stone takes the ball round the far edge");
+  assert.ok(wrapped(rolled(HELD, stone)), "as does a probe that calls nothing brittle");
+  assert.ok(wrapped(rolled(RULES, probe)), "and rules without the edge rule");
+  const { b, frames } = rolled(HELD, probe);
+  assert.ok(!wrapped({ frames }), "held, the ball never goes round");
+  assert.deepEqual(blockUnder(b), [17, 15, 17]);
+  assert.equal(b.state, ROLLING);
+  const onBlock = (s) => s.before.block[1] === 15;
+  const first = frames.find((s) => onBlock(s) && s.before.progress >= EDGE.hold);
+  const i = frames.indexOf(first);
+  assert.ok(frames[i - 1].before.progress < EDGE.hold);
+  assert.ok(frames[i - 1].forward && frames[i - 1].speed === table.rolling.top);
+  assert.equal(first.forward, false, "the request dropped");
+  assert.equal(first.speed, table.rolling.gain, "the speed dropped, and grown by the gain alone");
+  assert.equal(first.progress, first.before.progress + table.rolling.gain);
+  const pushed = frames.find((s) => onBlock(s) && s.before.progress >= EDGE.back);
+  assert.ok(pushed, "the push's progress reached by the creep");
+  assert.equal(
+    pushed.progress,
+    pushed.before.progress - EDGE.push + table.rolling.gain,
+    "set back along the heading, then on by the gain",
+  );
+  const after = frames.slice(i);
+  assert.ok(after.every((s) => !s.forward && s.speed === table.rolling.gain));
+  assert.ok(after.every((s) => s.progress >= EDGE.hold && s.progress < table.rolling.wrap));
+  assert.ok(after.every((s) => s.block[1] === 15));
+  assert.ok(
+    after.filter((s) => s.before.progress >= EDGE.back).length > 1,
+    "pushed back more than once",
+  );
+});
+
+test("the hold asks a rolling ball with no jump asked: from rest past the hold's progress the roll starts and is held on the frame after, Cross with Up jumps off the block, with the floor ahead there the roll goes on at the top speed, and a block beside refuses the edge as on stone", () => {
+  const probe = brittle(row(15, 18), [17, 15, 17]);
+  const b = ballAt(HELD, [17, 15, 17], TOP, UP);
+  b.pos = b.pos.map((v, i) => v + b.h[i] * 100);
+  b.progress = progressOf(b);
+  assert.ok(b.progress > EDGE.hold);
+  assert.deepEqual(run(b, probe, 1, PAD.up), []);
+  assert.equal(b.state, ROLLING);
+  assert.equal(b.forward, true, "not held from rest, the speed being nothing");
+  assert.equal(b.speed, table.rolling.gain);
+  run(b, probe, 1, PAD.up);
+  assert.equal(b.forward, false, "held once rolling");
+  assert.equal(b.speed, table.rolling.gain);
+  run(b, probe, 1, PAD.up | PAD.cross);
+  assert.equal(b.state, JUMP, "the jump asked lets the request stand");
+
+  const floor = brittle(row(14, 18), [17, 15, 17]);
+  const c = ballAt(HELD, [17, 16, 17], TOP, UP);
+  const speeds = new Set();
+  for (let f = 0; f < 60 && blockUnder(c)[1] !== 14; f++) {
+    run(c, floor, 1, PAD.up);
+    if (blockUnder(c)[1] === 15) speeds.add(c.speed);
+  }
+  assert.deepEqual(blockUnder(c), [17, 14, 17]);
+  assert.deepEqual([...speeds], [table.rolling.top]);
+  assert.equal(c.forward, true);
+
+  const beside = brittle(row(15, 18, [[18, 15, 17]]), [17, 15, 17]);
+  const d = ballAt(HELD, [17, 15, 17], TOP, UP);
+  assert.deepEqual(run(d, beside, 1, PAD.up), [{ refused: "edge" }]);
+  assert.equal(d.state, REST);
+});
+
+test("the hold asks nothing of the forward request: with Up released past the middle of a brittle block at a row's end, where stone would take the ball round, it is held from the hold's progress as with Up held", () => {
+  const stone = row(15, 18);
+  const probe = brittle(stone, [17, 15, 17]);
+  // Up held until the ball is past the middle of the row's last block, then released
+  const released = (probe) => {
+    const b = ballAt(HELD, [17, 16, 17], TOP, UP);
+    const frames = [];
+    let up = true;
+    for (let f = 1; f <= 120; f++) {
+      const before = { progress: b.progress, block: blockUnder(b) };
+      if (before.block[1] === 15 && before.progress > table.rolling.middle) up = false;
+      const events = run(b, probe, 1, up ? PAD.up : 0);
+      frames.push({ before, events, up, progress: b.progress, speed: b.speed, forward: b.forward });
+    }
+    return { b, frames };
+  };
+  const wrapped = ({ frames }) => frames.some((s) => s.events.some((e) => e.face === "wrap"));
+  const onStone = released(stone);
+  assert.ok(
+    onStone.frames.some((s) => !s.up),
+    "Up released",
+  );
+  assert.ok(wrapped(onStone), "stone takes the ball round the far edge with Up released");
+  const { b, frames } = released(probe);
+  assert.ok(!wrapped({ frames }), "held, the ball never goes round");
+  assert.deepEqual(blockUnder(b), [17, 15, 17]);
+  assert.equal(b.state, ROLLING);
+  const onBlock = frames.filter((s) => s.before.block[1] === 15 && !s.up);
+  const held = onBlock.filter((s) => s.before.progress >= EDGE.hold);
+  assert.ok(held.length > 5, String(held.length));
+  assert.ok(
+    held.every((s) => !s.forward && s.speed === table.rolling.gain),
+    "the request dropped and the speed grown from nothing again, with Up released",
+  );
+  assert.ok(
+    onBlock
+      .filter((s) => s.before.progress < EDGE.hold)
+      .every((s) => s.speed === table.rolling.top),
+    "rolling on at the top speed to the hold",
+  );
+});
