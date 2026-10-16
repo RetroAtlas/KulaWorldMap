@@ -1058,6 +1058,102 @@ CHECKS = [
     (0x80041ecc, "sw $zero, 12108($gp)", "as it does at the game's end"),
     (0x800405bc, "jal 0x80025be4", "and otherwise loads the level again"),
     (0x800405c4, "jal 0x80035d18", "and sets the ball's words afresh"),
+    # The blocks under the ball.
+    (0x8003b514, "lw $v1, 408($a0)", "the air test reads the ball's state"),
+    (0x8003b51c, "beq $v1, $v0, 0x8003b540", "falling"),
+    (0x8003b520, "sltiu $v0, $v1, 2", "or in a hop or a jump"),
+    (0x8003b534, "slti $v0, $v0, 2", "while its count stands at two or more, the ball is in the air"),
+    (0x8003aab0, "bne $v1, $v0, 0x8003aac4", "on ice, before the air test is asked"),
+    (0x8003aab8, "sw $v0, 96($s0)", "the hazards make the forward request"),
+    (0x8003aac0, "sw $zero, 92($s0)", "and drop the turn's"),
+    (0x8003acec, "bne $v1, $v0, 0x8003ad64", "and on the ground on ice, as the heat cools"),
+    (0x8003ad4c, "sw $v0, 520($s0)", "the cold at 520 grows"),
+    (0x8003ad60, "sw $v0, 520($s0)", "and is set back"),
+    (0x8003ad74, "sw $v0, 520($s0)", "off ice it wanes"),
+    (0x8003ad78, "sw $zero, 520($s0)", "to no less than nothing"),
+    (0x8003a9a4, "bne $v1, $v0, 0x8003aab0", "on an arrow"),
+    (0x8003aa48, "lh $a1, 4($v0)", "the hazards take its facing, the slot's f2"),
+    (0x8003aa54, "jal 0x80038008", "and lay its way"),
+    (0x80038038, "bne $a0, $zero, 0x80038050", "the way routine, on the top"),
+    (0x80038044, "sh $v0, 7164($gp)", "lays a first tangent"),
+    (0x8003804c, "sh $v0, 7174($gp)", "and a second"),
+    (0x800380ac, "addiu $a1, $a1, 19260", "gives the second"),
+    (0x800380d0, "bne $t0, $t1, 0x80038100", "for a facing of 2"),
+    (0x800380dc, "addiu $a1, $a1, 19252", "the first"),
+    (0x80038100, "bne $t0, $a3, 0x80038138", "for 3"),
+    (0x80038110, "subu $v0, $zero, $v0", "the second turned round"),
+    (0x80038138, "bne $t0, $t2, 0x80038170", "and for 4"),
+    (0x80038148, "subu $v0, $zero, $v0", "the first turned round"),
+    (0x8003aa68, "bne $v1, $v0, 0x8003aaa0", "and where the heading differs from the way"),
+    (0x8003aa80, "bne $v1, $v0, 0x8003aaa0", "on any"),
+    (0x8003aa98, "beq $v1, $v0, 0x8003aaa8", "axis"),
+    (0x8003aaa4, "sw $zero, -24204($at)", "the forward request is dropped"),
+    (0x8003b548, "bne $v1, $v0, 0x8003b554", "in the air over an arrow"),
+    (0x8003b550, "sh $v0, 12128($gp)", "the air test sets a flag at 0x800a5e98"),
+    (0x8003b55c, "sh $zero, 12128($gp)", "cleared on the ground"),
+    (0x800308ac, "lh $v1, 24216($v1)", "which the wall test in the air reads"),
+    (0x800308b4, "bne $v1, $v0, 0x800309c8", "and where it stands"),
+    (0x800308cc, "bne $v1, $v0, 0x80030908", "a heading differing from the way"),
+    (0x800308e4, "bne $v1, $v0, 0x80030908", "on any"),
+    (0x800308fc, "beq $v1, $v0, 0x800309c8", "axis"),
+    (0x80030914, "jal 0x8004ddbc", "bounces the ball with a sound"),
+    (0x800309cc, "sh $zero, 24216($at)", "and one along the way clears the flag"),
+    (0x8003afb8, "bne $v1, $v0, 0x8003b034", "on a crumbling block"),
+    (0x8002a40c, "jal 0x8002b3ec", "the frame's draw runs the crumbling blocks"),
+    (0x8002b4b8, "beq $v1, $v0, 0x8002b4d0", "a block marked broken"),
+    (0x8002b4c0, "beq $v1, $t0, 0x8002b5b0", "or breaking"),
+    (0x8002b580, "sh $t0, 2($s4)", "is set breaking"),
+    (0x8002b58c, "jal 0x800227f4", "with the screen shaken"),
+    (0x8002b5bc, "sh $v0, 4($s4)", "and its size at f2 shrinks"),
+    (0x8002b5c4, "bltz $v0, 0x8002b624", "until it goes negative"),
+    (0x8002b64c, "sw $v0, 0($v1)", "when its faces are undrawn"),
+    (0x8002b690, "sh $zero, 2($s4)", "its type cleared"),
+    (0x8002b69c, "sh $v0, 0($v1)", "and its lattice cell emptied"),
+    (0x80037344, "bgez $v0, 0x8003741c", "the input routine's tail, with the floor ahead empty"),
+    (0x80037354, "bgez $v0, 0x8003741c", "and nothing beside the block under"),
+    (0x80037364, "bgez $v0, 0x8003741c", "on either side"),
+    (0x80037374, "bne $v1, $v0, 0x8003741c", "on a crumbling block"),
+    (0x80037384, "bne $v0, $zero, 0x8003741c", "with no jump asked"),
+    (0x80037394, "blez $v0, 0x8003741c", "and rolling"),
+    (0x800373c0, "sw $zero, 96($s0)", "drops the forward request"),
+    (0x800373ec, "sh $v0, 60($s0)", "sets the centre back"),
+    (0x80037418, "sh $zero, 312($s0)", "and drops the speed"),
+    (0x80033098, "bne $v0, $zero, 0x800334d4", "the platform landing does nothing for a ball riding one"),
+    (0x800330a8, "jal 0x800334f0", "and probes"),
+    (0x80033518, "sll $v0, $v0, 9", "a block under the centre"),
+    (0x80033584, "jal 0x800379e8", "for the cell it lies in"),
+    (0x800335b8, "bne $v1, $v0, 0x80033640", "whose record is a platform's"),
+    (0x80033624, "jal 0x80032ec4", "with the ball within its body"),
+    (0x800330dc, "sh $v0, 486($s0)", "marks the ball riding at 486"),
+    (0x800330f0, "sw $s2, 408($s0)", "at rest"),
+    (0x800331cc, "subu $v0, $v0, $a0", "keeps the centre relative to the platform's position"),
+    (0x80033208, "sh $v0, 84($s0)", "with the travel at 84"),
+    (0x80033224, "sw $a1, 528($s0)", "and the record at 528"),
+    (0x80033228, "lui $a1, 0x000a", "a second probe"),
+    (0x80033230, "jal 0x80033654", "lands the ball against a platform's end"),
+    (0x8003314c, "sh $zero, 20052($at)", "the landing lays the platform's blocks along x"),
+    (0x8003316c, "sh $zero, 20276($at)", "or y"),
+    (0x80033188, "sh $zero, 0($v0)", "or z"),
+    (0x80033978, "addiu $t9, $t9, 20016", "into a lattice of its own at 0x800d4e30"),
+    (0x800334b8, "jal 0x80033930", "which the cells about a riding ball are read from"),
+    (0x80033b30, "lh $v0, 0($v0)", "a word a cell"),
+    (0x80033bd0, "jal 0x800379e8", "and then the level's lattice at the ball's true cell"),
+    (0x80033be8, "bne $v1, $v0, 0x80033bf4", "where a lit beam"),
+    (0x80033bf0, "sw $v1, 156($s0)", "is written over the ball's own cell"),
+    (0x80033c30, "jal 0x8004f108", "and the pad shakes while the platform moves"),
+    (0x8002f908, "bne $v0, $zero, 0x8002f928", "a ball riding a platform does not fall at rest"),
+    (0x8002f96c, "bne $v0, $zero, 0x8002f98c", "nor rolling over nothing"),
+    (0x80032c9c, "sh $v0, 238($a1)", "the platform's routine moves its position words"),
+    (0x8003b3e0, "beq $v0, $zero, 0x8003b440", "and the hazards take the travel from them"),
+    (0x8003b408, "addu $v1, $v1, $a0", "each frame"),
+    (0x8003b410, "sh $v0, 84($s0)", "into 84"),
+    (0x800314f0, "lhu $v0, 84($s3)", "which the ball's draw adds to the centre"),
+    (0x8002f610, "jal 0x80033810", "the forward jump leaves the platform"),
+    (0x8002f70c, "jal 0x80033810", "as does the hop"),
+    (0x80033818, "sh $v0, 488($a2)", "marking the leave at 488"),
+    (0x80033828, "sh $zero, 486($a2)", "unmarking the ride"),
+    (0x800338e8, "sh $v1, 60($a2)", "with the centre the level's again"),
+    (0x8003391c, "sh $zero, 84($a2)", "and no travel"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -1547,6 +1643,43 @@ IMMEDIATES = [
     ("the level's clock and its end", "death.most", "at this", 0x80041ffc, "addiu $v1, $zero, {}"),
     ("the level's clock and its end", "death.over", "and a total below nothing tells the game's loop this", 0x80041ec0,
      "addiu $v0, $zero, {}"),
+
+    ("the blocks under the ball", "ice.kind", "ice is this kind under the ball", 0x8003aaac, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "cold.gain", "on which the cold at 520 grows by this a frame", 0x8003ad48,
+     "addiu $v0, $v0, {}"),
+    ("the blocks under the ball", "cold.top.gate", "and is set back once it passes this, less one", 0x8003ad50,
+     "slti $v0, $v0, {}"),
+    ("the blocks under the ball", "cold.back", "to this", 0x8003ad58, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "cold.wane", "and off ice wanes by this a frame", 0x8003ad6c, "addiu $v0, $v0, {}"),
+    ("the blocks under the ball", "arrow.type", "an arrow is this type under the ball", 0x8003a9a0, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "crumble.whole", "a crumbling block's type word is this while it is whole", 0x8003afd8,
+     "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "crumble.broken", "and this once the ball has stood on it", 0x8003b024,
+     "addiu $v1, $zero, {}"),
+    ("the blocks under the ball", "crumble.broken.seen", "which the frame's draw breaks the block at", 0x8002b4a0,
+     "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "crumble.breaking", "setting the word to this while it shrinks", 0x8002b4bc,
+     "addiu $t0, $zero, {}"),
+    ("the blocks under the ball", "crumble.code.input", "the input routine holds a ball rolling on this", 0x80037368,
+     "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "crumble.edge.hold", "short of its free edge, dropping the roll and the speed from this progress",
+     0x800373a4, "slti $v0, $v0, {}"),
+    ("the blocks under the ball", "crumble.edge.back", "and setting the centre back from this", 0x800373b8,
+     "slti $v0, $v0, {}"),
+    ("the blocks under the ball", "ride.kind", "a platform is this kind under the landing's probe", 0x800335b4,
+     "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.land", "which lands the ball under this far off its face", 0x80033614,
+     "slti $v0, $v0, {}"),
+    ("the blocks under the ball", "ride.bias", "its centre kept relative to the platform's position plus this", 0x800331c8,
+     "addiu $v0, $v0, {}"),
+    ("the blocks under the ball", "ride.bias.back", "and the travel that position plus this", 0x80033204,
+     "addiu $v0, $v0, {}"),
+    ("the blocks under the ball", "ride.bias.travel", "as the hazards take it each frame", 0x8003b40c,
+     "addiu $v0, $v0, {}"),
+    ("the blocks under the ball", "ride.beam", "the level's lattice read at the true cell for this alone", 0x80033be4,
+     "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.rumble", "and the pad shaken by this while the platform moves", 0x80033c2c,
+     "addiu $a1, $zero, {}"),
 ]
 
 # The table of brightness a beam's lines step through, from its first byte to
@@ -1623,6 +1756,9 @@ MULTIPLIERS = [
      "v0", "v1"),
     ("the level's clock and its end", "death.each", "times this a level", 0x80041fb0, 6, "v1", "v1"),
     ("the level's clock and its end", "death.each.final", "as in the finals", 0x80041fdc, 5, "v0", "v1"),
+    ("the blocks under the ball", "crumble.edge.push",
+     "the input routine sets a ball at a crumbling block's free edge back this far along its heading, units",
+     0x800373cc, 4, "v0", "v1"),
 ]
 
 # The one reach that is a square held in two halves of a word.
@@ -1693,10 +1829,12 @@ BALL = "30"               # the ball's type in the table
 BUTTON = 10               # the boost button's type
 LONG = [3, 2]             # the long jump takes each row times the first over the second
 ICE = 2
+PLATFORM = 5
 ABOUT = 3                 # cells each way about the ball
 FIRE, ACID = 1, 4         # the kinds that harm by standing on them
 LIT = -2                  # a lit beam's cell in the lattice
 EXIT, HIDDEN_EXIT, MOVING_SPIKES, SPIKES, WANDERER = 7, 26, 11, 12, 53
+ARROW = 28
 BROWN = 0                 # type 42's form that stays and harms
 UNHARMED = -1             # the invincibility word while no pill lasts
 LEVELS = 15               # levels a world the penalty counts
@@ -2434,6 +2572,38 @@ def harms(r):
     }
 
 
+def blocks(r):
+    """What the blocks under the ball do to its roll, by kind: ice's chill of
+    the heat and its cold, the crumbling block's size, its shrink and the
+    edge rule that keeps a ball from going round it, and a platform's landing
+    height, the block its position is biased by and the pad's rumble, each
+    held to the kind or the type it is read from and to the ball's rest."""
+    if r["ice.kind"] != ICE or r["arrow.type"] != ARROW or r["ride.kind"] != PLATFORM \
+            or r["crumble.under"] != CRUMBLING_UNDER or r["crumble.code.input"] != CRUMBLING_UNDER:
+        sys.exit("ice, the arrow, the crumbling block or the platform is not read from its own kind or type")
+    over = r["cold.top.gate"] - 1
+    if not 0 < r["cold.back"] < over or r["cold.gain"] <= 0 or r["cold.wane"] >= 0:
+        sys.exit("the cold does not grow on ice, wane off it and go back below the mark it passes")
+    if r["crumble.size"] != BLOCK or r["crumble.shrink"] >= 0:
+        sys.exit("a crumbling block's size is not a block, or does not shrink")
+    if (r["crumble.whole"], r["crumble.broken"], r["crumble.breaking"]) != (1, 2, 3) \
+            or r["crumble.broken.seen"] != r["crumble.broken"]:
+        sys.exit("a crumbling block's type does not go whole, broken, breaking")
+    if not r["move.middle"] < r["crumble.edge.hold"] < r["crumble.edge.back"] < BLOCK:
+        sys.exit("the crumbling block's edge rule does not hold the ball past the middle and set it back short of the edge")
+    if len({r["ride.bias"], -r["ride.bias.back"], -r["ride.bias.travel"], BLOCK}) != 1:
+        sys.exit("a platform's position is not biased by a block wherever it is taken")
+    if r["ride.land"] != r["ball.rest"] + 1 or r["ride.beam"] != LIT:
+        sys.exit("a platform lands the ball otherwise than at its rest, or reads the level's lattice for more than a lit beam")
+    return {
+        ICE: {"chill": -r["heat.chill"],
+              "cold": {"gain": r["cold.gain"], "over": over, "back": r["cold.back"], "wane": -r["cold.wane"]}},
+        CRUMBLING: {"size": r["crumble.size"], "shrink": -r["crumble.shrink"],
+                    "edge": {"hold": r["crumble.edge.hold"], "back": r["crumble.edge.back"], "push": r["crumble.edge.push"]}},
+        PLATFORM: {"ride": {"land": r["ball.rest"], "bias": r["ride.bias"], "rumble": r["ride.rumble"]}},
+    }
+
+
 def table(r, platform_speed):
     """The motion table by type and by kind of block, in the game's units.
 
@@ -2444,7 +2614,8 @@ def table(r, platform_speed):
     sprite, how far off its face it lies and how strong it is, and the type
     whose models glint says how. A pickup says what it takes for the ball
     to take it and what that scores, a device under the ball what it does
-    there, a kind or a type that can hurt the ball what it does, and the
+    there, a kind or a type that can hurt the ball what it does, a kind the
+    ball slides on, breaks or rides what it does to the roll, and the
     level's own words, the clock's, the endings', a bonus level's and an
     ending's, sit under `play`. The devices' light and each device's
     colours, by world and then by circuit where it has one, sit apart from
@@ -2550,6 +2721,8 @@ def table(r, platform_speed):
         kinds.setdefault(k, {}).update(entry)
     for t, entry in harm["types"].items():
         types[t].update(entry)
+    for k, entry in blocks(r).items():
+        kinds.setdefault(k, {}).update(entry)
     colours = {str(t): r["glow.colours"][t] for t in sorted(r["glow.colours"])}
     return {"hz": HZ, "turn": TURN, "standoff": r["captivator.standoff"],
             "dice": {"seed": r["dice.seed"], "times": r["dice.times"], "plus": r["dice.plus"]},

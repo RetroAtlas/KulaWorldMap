@@ -749,3 +749,45 @@ test("the ending's view swings every 341 frames, and the dying ball flashes ever
   assert.deepEqual(view.angles, [-8, 3, 10]);
   assert.equal(table.turn / table.types[30].dying.flash, 4);
 });
+
+test("ice runs the cold 400, 440, 480 and back, and cools the heat ten times as fast as stone", () => {
+  const ice = table.kinds[2];
+  assert.equal(ice.chill / table.kinds[1].heat.cool, 10);
+  let cold = 0;
+  const seen = [];
+  for (let frame = 0; frame < 30; frame++) {
+    cold += ice.cold.gain;
+    if (cold > ice.cold.over) cold = ice.cold.back;
+    seen.push(cold);
+  }
+  assert.deepEqual(seen.slice(-6), [400, 440, 480, 400, 440, 480]);
+  // off ice it wanes to nothing in 48 frames
+  let frames = 0;
+  while (cold > 0) {
+    cold = Math.max(cold - ice.cold.wane, 0);
+    frames++;
+  }
+  assert.equal(frames, 48);
+});
+
+test("a crumbling block is gone on the twentieth frame after it breaks, and holds a ball off its free edge", () => {
+  const crumble = table.kinds[6];
+  let size = crumble.size;
+  let frames = 0;
+  while (size >= 0) {
+    size -= crumble.shrink;
+    frames++;
+  }
+  assert.equal(frames, 20);
+  // a block takes fewer frames than that at the roll's top speed
+  assert.ok(Math.ceil(crumble.size / table.types[30].rolling.top) < frames);
+  assert.deepEqual(crumble.edge, { hold: 301, back: 401, push: 40 });
+  assert.ok(crumble.edge.hold > table.types[30].rolling.middle);
+});
+
+test("a platform lands the ball at its rest height, keeps it a block off and rumbles the pad", () => {
+  const { ride } = table.kinds[5];
+  assert.equal(ride.land, table.types[30].rolling.resume);
+  assert.equal(ride.bias, 512);
+  assert.equal(ride.rumble, 70);
+});

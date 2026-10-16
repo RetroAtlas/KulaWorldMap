@@ -13,9 +13,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
     GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, PHASES,
-    ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, Code, devices, dispatch,
-    exits, glint, glow_lift, glow_spill, harms, jump, laser, light, moves, play, roll, root_table, shadow_half,
-    spike_cycle, spin_orders, table, take, vanish_cycle)
+    ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, Code, blocks, devices,
+    dispatch, exits, glint, glow_lift, glow_spill, harms, jump, laser, light, moves, play, roll, root_table,
+    shadow_half, spike_cycle, spin_orders, table, take, vanish_cycle)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "sp": 29, "ra": 31}
@@ -144,6 +144,11 @@ GAME = {
     "end.view.swing": 12, "end.view.swing.bonus": 58, "end.view.off": 1400, "end.view.off.bonus": 3400,
     "end.view.reach": 1000, "end.view.reach.bonus": 3000, "death.most.gate": 5001, "death.most": 5000,
     "death.over": 4, "death.levels": 15, "death.each": 50, "death.each.final": 50,
+    "ice.kind": 2, "cold.gain": 40, "cold.top.gate": 501, "cold.back": 400, "cold.wane": -10, "arrow.type": 28,
+    "crumble.size": 512, "crumble.shrink": -26, "crumble.whole": 1, "crumble.broken": 2, "crumble.broken.seen": 2,
+    "crumble.breaking": 3, "crumble.code.input": 96, "crumble.edge.hold": 301, "crumble.edge.back": 401,
+    "crumble.edge.push": 40, "ride.kind": 5, "ride.land": 101, "ride.bias": 512, "ride.bias.back": -512,
+    "ride.bias.travel": -512, "ride.rumble": 70, "ride.beam": -2,
 }
 
 
@@ -730,6 +735,23 @@ class Harms(unittest.TestCase):
                 harms({**GAME, **change})
 
 
+class Blocks(unittest.TestCase):
+    def test_the_blocks_under_the_ball_ship_the_cold_the_edge_rule_and_the_ride_by_kind(self):
+        b = blocks(GAME)
+        self.assertEqual(b[2], {"chill": 150, "cold": {"gain": 40, "over": 500, "back": 400, "wane": 10}})
+        self.assertEqual(b[6], {"size": 512, "shrink": 26, "edge": {"hold": 301, "back": 401, "push": 40}})
+        self.assertEqual(b[5], {"ride": {"land": 100, "bias": 512, "rumble": 70}})
+        self.assertEqual(set(b), {2, 5, 6})
+
+    def test_a_block_read_from_another_kind_or_held_otherwise_stops_the_reading(self):
+        for change in ({"ice.kind": 1}, {"arrow.type": 27}, {"ride.kind": 6}, {"crumble.code.input": 95},
+                       {"cold.back": 500}, {"cold.wane": 10}, {"crumble.size": 256}, {"crumble.breaking": 2},
+                       {"crumble.broken.seen": 3}, {"crumble.edge.hold": 256}, {"crumble.edge.back": 301},
+                       {"ride.bias.travel": 512}, {"ride.land": 100}, {"ride.beam": -1}):
+            with self.assertRaises(SystemExit):
+                blocks({**GAME, **change})
+
+
 class Table(unittest.TestCase):
     def test_the_table_carries_a_program_per_phase_and_the_platform_scaled(self):
         r = dict(GAME)
@@ -763,7 +785,7 @@ class Table(unittest.TestCase):
         r["spin.quarter"] = 1024
         t = table(r, 30)
         self.assertEqual(t["hz"], 60)
-        self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1})
+        self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1, "ride": {"land": 100, "bias": 512, "rumble": 70}})
         self.assertEqual(t["kinds"]["3"]["light"]["far"], 512)
         self.assertEqual(t["glow"]["colours"]["9"], [[[25, 25, 0]] * 4])
         self.assertEqual(t["glow"]["every"], 19)
@@ -829,7 +851,9 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["26"]["shut"], {"f4": 0})
         self.assertEqual(t["types"]["5"]["send"]["band"], [167, 345])
         self.assertEqual(t["types"]["9"], {"throw": {"band": [197, 315], "rearm": [156, 356]}})
-        self.assertEqual(t["kinds"]["6"], {"points": 50})
+        self.assertEqual(t["kinds"]["6"], {"points": 50, "size": 512, "shrink": 26,
+                                           "edge": {"hold": 301, "back": 401, "push": 40}})
+        self.assertEqual(t["kinds"]["2"], blocks(GAME)[2])
         self.assertEqual(t["play"]["clock"]["second"], 50)
         self.assertEqual(t["play"]["ending"]["lost"], -3)
         self.assertEqual(set(t["play"]), {"start", "clock", "ending", "wait", "bonus", "points", "view"})
@@ -840,7 +864,7 @@ class Table(unittest.TestCase):
         self.assertEqual(t["kinds"]["8"]["reach"], 256)
         self.assertEqual(t["types"]["53"]["catch"], {"square": 16199})
         self.assertEqual(t["types"]["11"]["harm"], {"flag": 1, "standing": 9})
-        self.assertEqual(set(t["kinds"]), {"1", "3", "4", "5", "6", "7", "8"})
+        self.assertEqual(set(t["kinds"]), {"1", "2", "3", "4", "5", "6", "7", "8"})
 
 
 if __name__ == "__main__":
