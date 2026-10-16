@@ -832,7 +832,7 @@ test("every switch's key is the one its row shows and the key list names", async
     [
       ...["showSkins", "showObjects", "showModels", "showMotion", "showThrough", "showLabels"],
       ...["showOutlines", "showBase", "panMode", "showFaces", "showHidden", "showCamera"],
-      ...["showCompass", "showCourse", "turnAbout", "showTrail", "showDust"],
+      ...["showCompass", "showCourse", "turnAbout", "showTrail", "showDust", "playFrom"],
     ].sort(),
   );
   // the compass and the Play switches have no key, every letter that reads as the compass being
@@ -842,6 +842,7 @@ test("every switch's key is the one its row shows and the key list names", async
     "turnAbout",
     "showTrail",
     "showDust",
+    "playFrom",
   ]);
   const keyed = rows.filter((r) => r.key);
   const keys = keyed.map((r) => r.key);

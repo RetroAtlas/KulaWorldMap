@@ -11,7 +11,7 @@ import {
   setSidebar,
 } from "./viewer/chrome/sidebar.js";
 import { applyHash, selectLevel, writeHash } from "./viewer/chrome/navigate.js";
-import { onShow } from "./viewer/chrome/detail.js";
+import { onShow, showCell } from "./viewer/chrome/detail.js";
 import { probeOf } from "./viewer/walk.js";
 import { FACE_NAME } from "./format/lattice.js";
 import { wireCourse } from "./viewer/chrome/course.js";
@@ -263,15 +263,18 @@ function wirePlay() {
   on("play-changed", (playing) => btn.setAttribute("aria-pressed", String(playing)));
   btn.onclick = () => bootPlay().then((m) => m?.togglePlay());
   onShow((box, c) => {
-    if (c?.face == null || c.k !== undefined) return;
+    if (!state.show.playfrom || c?.face == null || c.k !== undefined) return;
     if (!probeOf(state.idx).standable([c.x, c.y, c.z], c.face)) return;
     const put = el("button", {
       type: "button",
-      textContent: "Put the ball here",
-      title: `Stand the ball on the ${FACE_NAME[c.face]} of this block and roll it from there`,
+      textContent: "Play from here",
+      title: `Stand the ball on the ${FACE_NAME[c.face]} of this block and play from there`,
     });
     put.onclick = () => bootPlay().then((m) => m?.playAt({ x: c.x, y: c.y, z: c.z, face: c.face }));
     $("detailBody").prepend(el("p", { className: "put" }, put));
+  });
+  on("show-changed", (key) => {
+    if (key === "playfrom" && state.selected) showCell(state.selected, { raise: false });
   });
   document.addEventListener(
     "keydown",

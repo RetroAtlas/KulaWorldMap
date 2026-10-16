@@ -1213,16 +1213,27 @@ test("following a route to its leap stops the ball there and says so, and with t
   expect(errors).toEqual([]);
 });
 
-test("a right click selects while playing, Esc clears the selection before it leaves, and the panel's button moves the ball", async ({
+test("a right click selects while playing, Esc clears the selection before it leaves, and the panel's Play from here, there with its setting on alone, moves the ball", async ({
   page,
 }) => {
   const errors = trackErrors(page);
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
   await opened(page, { motion: false });
   const side = await plusX(page, [17, 13, 17]);
   await page.mouse.click(side.x, side.y, { button: "right" });
   await expect(page.locator("#detail")).toContainText("cell 17,13,17");
-  const put = page.locator("#detail .put button", { hasText: "Put the ball here" });
+  await expect(page.locator("#detail .put")).toHaveCount(0);
+  await page.keyboard.press("s");
+  await expect(page.locator("#settings")).toBeVisible();
+  await page.locator("#playFrom").click();
+  await expect(page.locator("#settings label:has(#playFrom) .def")).toHaveText("off by default");
+  await page.locator("#settings .x").click();
+  await expect(page.locator("#settings")).toBeHidden();
+  expect((await kept()).playfrom).toBe(true);
+  // the panel on screen takes the button as the switch goes on
+  const put = page.locator("#detail .put button", { hasText: "Play from here" });
   await expect(put).toHaveCount(1);
+  await expect(page.locator("#detail")).toContainText("cell 17,13,17");
   await put.click();
   await expect(page.locator("#play")).toBeVisible();
   expect((await probe(page)).station).toEqual({
@@ -1238,7 +1249,7 @@ test("a right click selects while playing, Esc clears the selection before it le
   const ahead = await plusX(page, [17, 14, 17]);
   await page.mouse.click(ahead.x, ahead.y, { button: "right" });
   await expect(page.locator("#detail")).toContainText("cell 17,14,17");
-  await page.locator("#detail .put button", { hasText: "Put the ball here" }).click();
+  await page.locator("#detail .put button", { hasText: "Play from here" }).click();
   await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 14, 17]);
   expect((await probe(page)).playing).toBe(true);
   await page.keyboard.press("Escape");
