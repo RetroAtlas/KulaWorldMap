@@ -523,9 +523,11 @@ test("the ball rolls a block from rest in 18 frames, at 33 a frame from the sixt
   assert.ok(512 / roll.top > 15 && 512 / roll.top < 16);
 });
 
-test("round an edge the centre runs a quarter circle of the ball's radius in four frames", () => {
+test("round an edge the centre runs a quarter circle of the ball's radius in four frames, and the body a quarter turn", () => {
   const { wrap, rolling: roll } = table.types[30];
   assert.equal(wrap.arc.length, 4);
+  assert.equal(wrap.body, -256);
+  assert.equal(wrap.body * wrap.arc.length, -table.turn / 4);
   let along = 0;
   let down = -roll.resume;
   for (const [n, h] of wrap.arc) {
@@ -600,6 +602,8 @@ test("the jump's table holds a count of 33 and 32 rows that rise to 458 and reac
   assert.ok(jump.rows.every((r) => r[1] === 0 && r[2] < 0));
   // the count falls by one a frame and from one past the skip to nothing
   assert.equal(jump.count - rule.skip - 1, 30);
+  // the hop, a row ahead of the jump, stands at the k-th row on its k-th frame and ends 14 below
+  assert.deepEqual([heights[14], heights[15], heights[30]], [458, 458, -14]);
   assert.deepEqual(
     [rule.speed, rule.snap, rule.far, rule.long, rule.scale, rule.catch, rule.wall],
     [33, 1024, 1536, 3, [3, 2], 12, 412],

@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
     GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, PHASES,
-    ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, Code, blocks, devices,
+    ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, Code, blocks, body, devices,
     dispatch, exits, glint, glow_lift, glow_spill, harms, jump, laser, light, moves, play, roll, root_table,
     shadow_half, spike_cycle, spin_orders, standing, table, take, vanish_cycle)
 
@@ -113,6 +113,10 @@ GAME = {
     "jump.long": 3, "jump.catch": 12, "jump.wall": 412, "jump.wall.high": 412, "jump.wall.low": 100,
     "jump.bounce": -10, "jump.ceiling": 412, "jump.ceiling.ahead": 412, "jump.ceiling.behind": 101,
     "jump.snap": 1024, "jump.far": 1536, "boost.type": 10, "boost.roll": 151, "boost.frames": 10, "boost.fire": 231,
+    "hop.rows": 8, "hop.skip": 2, "hop.step": -1, "hop.ahead": 6, "hop.row": 2,
+    "body.one": 4096, "body.one.landing": 4096, "body.mark.wrap": 1, "body.mark.wall": 2, "body.mark.right": 3,
+    "body.mark.left": 4, "body.test.wrap": 1, "body.test.right": 3, "body.test.left": 4, "body.test.wall": 2,
+    "body.wrap": -256, "body.right": -1024, "body.left": 1024, "body.wall": -1024,
     "time.tick": 50, "ball.breathe.full": 6000,
     "take.live": 1, "take.stand": 386, "take.stand.coin": 406, "take.stand.star": 416, "take.stand.hourglass": 436,
     "take.stand.gem": 436, "take.reach": 25600, "take.reach.key": 22500, "take.reach.fruit": 32400,
@@ -626,6 +630,29 @@ class Jump(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 jump({**GAME, **change})
 
+    def test_a_hop_on_other_rows_or_reading_another_row_than_the_next_stops_the_reading(self):
+        for change in ({"hop.rows": 6}, {"hop.skip": 1}, {"hop.step": -2}, {"hop.row": 4}, {"hop.ahead": 4}):
+            with self.assertRaises(SystemExit):
+                jump({**GAME, **change})
+
+
+class Body(unittest.TestCase):
+    def test_the_body_turns_a_quarter_over_the_arc_in_steps_of_a_sixteenth(self):
+        self.assertEqual(body(GAME), -256)
+        self.assertEqual(body(GAME) * 4, -1024)
+
+    def test_a_mark_not_the_one_the_draw_tests_for_or_shared_stops_the_reading(self):
+        for change in ({"body.mark.right": 4}, {"body.test.wall": 3}, {"body.mark.wrap": 0, "body.test.wrap": 0},
+                       {"body.mark.left": 3, "body.test.left": 3}):
+            with self.assertRaises(SystemExit):
+                body({**GAME, **change})
+
+    def test_a_turn_that_is_not_a_quarter_or_another_fixed_point_stops_the_reading(self):
+        for change in ({"body.wrap": -200}, {"body.right": -1000}, {"body.left": -1024}, {"body.wall": 1024},
+                       {"body.one": 4000}, {"body.one.landing": 1}):
+            with self.assertRaises(SystemExit):
+                body({**GAME, **change})
+
 
 class Dispatch(unittest.TestCase):
     def cases(self, where, cases, default):
@@ -838,7 +865,8 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["30"]["light"],
                          {"view": [-1, -4, -2], "background": 2048, "colour": 4000, "base": 178})
         self.assertEqual(t["types"]["30"]["rolling"]["top"], 33)
-        self.assertEqual(t["types"]["30"]["wrap"], {"frames": 13, "step": 78, "arc": [[38, 8], [32, 22], [22, 32], [8, 39]]})
+        self.assertEqual(t["types"]["30"]["wrap"], {"frames": 13, "step": 78, "arc": [[38, 8], [32, 22], [22, 32], [8, 39]],
+                                                 "body": -256})
         self.assertEqual(t["types"]["30"]["fall"]["short"], 180)
         self.assertEqual(t["types"]["30"]["fall"]["hold"], [411, 102])
         self.assertEqual(t["types"]["30"]["spin"], -5)

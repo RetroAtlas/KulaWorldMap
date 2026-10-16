@@ -25,6 +25,7 @@ from mips import Machine, decode
 
 TURN = 4096          # the angle that is one full turn
 BLOCK = 512          # units across a block
+ONE = 4096           # a matrix's unit, 1.0 in the GTE's fixed point
 HZ = 60
 PHASES = 4           # the values a phase field takes
 SPIKE_FRAMES = 32    # frames in the moving spikes' mesh, flat to full
@@ -71,8 +72,6 @@ CHECKS = [
     (0x8003d7e8, "jal 0x800603f8", "the slow star is the camera times its spin, with no face in it"),
     (0x8003de6c, "jal 0x800603f8", "and the wandering ball"),
     (0x8003f3b4, "jal 0x800603f8", "and the fast star"),
-    (0x80031100, "subu $v1, $zero, $v1", "the ball rests with its heading turned round"),
-    (0x80031138, "subu $v0, $zero, $v0", "and its normal"),
     (0x8003e4bc, "subu $v0, $v0, $v1", "the corkscrew takes its spin's step from its angle"),
     # Where a captivator is drawn.
     (0x8003d6d4, "addiu $s5, $s4, -32", "the draw's s5 is an entry's position"),
@@ -290,7 +289,11 @@ CHECKS = [
     (0x80036e48, "sw $v0, 100($s0)", "and Cross held the jump"),
     (0x80036bbc, "sw $v0, 100($s0)", "which the bouncy pill asks on every frame"),
     (0x800371a4, "sh $v0, 496($s0)", "and R2 and R1 set the word at 496"),
-    (0x8002f5c0, "jal 0x8002f5e0", "at rest a jump asked with the roll is the forward jump"),
+    (0x8002f4a8, "lw $s1, 408($s0)", "the intents read the state"),
+    (0x8002f4b0, "bne $s1, $v0, 0x8002f5c8", "and take the requests at rest alone"),
+    (0x8002f4c0, "beq $v0, $v1, 0x8002f530", "where a jump is asked"),
+    (0x8002f538, "beq $v0, $v1, 0x8002f5c0", "with the roll"),
+    (0x8002f5c0, "jal 0x8002f5e0", "it is the forward jump"),
     (0x8002f540, "jal 0x8002f6ec", "and alone the hop"),
     (0x8002f4a0, "jal 0x8002f5e0", "rolling, a jump asked is the forward jump"),
     (0x8002f4e8, "jal 0x8002f7f4", "at rest a turn of 1 is a turn left"),
@@ -307,6 +310,7 @@ CHECKS = [
     (0x8002f9b0, "sh $v0, 312($s0)", "the speed grows"),
     (0x8002f9c8, "sh $v0, 312($s0)", "to its top"),
     (0x8002fa18, "sh $v1, 320($s0)", "and is kept at 320 for the spin"),
+    (0x8002f92c, "sh $zero, 320($s0)", "which the rest state puts at nothing on every frame it runs"),
     (0x800302a8, "sh $zero, 312($a0)", "a stop at the middle drops the speed"),
     # The turn in place.
     (0x8002f804, "bne $v0, $zero, 0x8002f85c", "a turn is refused while one runs"),
@@ -379,12 +383,17 @@ CHECKS = [
     (0x8002fcd0, "jal 0x80037e70", "and lays the centre off the new face"),
     (0x80037e8c, "sra $v0, $v0, 25", "which is the face plane nearest the centre"),
     (0x80037e98, "addiu $v0, $v0, 256", "along the normal"),
+    (0x80037ec4, "subu $v0, $v0, $a1", "or against it, where the normal points the other way"),
     # The fall and the landing.
     (0x8002ff20, "beq $v0, $zero, 0x8002ff54", "falling, the spin's speed grows while the roll is asked"),
     (0x8002ff34, "sh $v0, 320($s0)", "at 320"),
     (0x8002ff60, "sh $v0, 320($s0)", "and wanes otherwise"),
-    (0x8002ff84, "sh $zero, 312($s0)", "a roll's speed is dropped"),
-    (0x8002ff9c, "sh $v0, 312($s0)", "and a bounce's decays"),
+    (0x8002ff74, "lh $v0, 312($s0)", "the speed along the heading"),
+    (0x8002ff7c, "blez $v0, 0x8002ff8c", "where it is forward"),
+    (0x8002ff84, "sh $zero, 312($s0)", "is dropped on every frame of the fall"),
+    (0x8002ff90, "bgez $v0, 0x8002ffb0", "and where it is back, a bounce's"),
+    (0x8002ff9c, "sh $v0, 312($s0)", "decays"),
+    (0x8002ffac, "sh $zero, 312($s0)", "to nothing"),
     (0x8002ffbc, "sh $v0, 310($s0)", "the speed down at 310 grows"),
     (0x8002ffd4, "sh $v0, 310($s0)", "to its top"),
     (0x8002ffe4, "mult $v1, $v0", "and the centre moves by it along the normal"),
@@ -406,8 +415,6 @@ CHECKS = [
     (0x80030750, "jal 0x80037d48", "is held off it"),
     (0x80030774, "bltz $v0, 0x800307c8", "and with one behind"),
     (0x8003077c, "jal 0x80037d48", "held off that"),
-    (0x800301c8, "bgez $v1, 0x800301f4", "a hop ends over nothing"),
-    (0x800301d4, "sw $v0, 408($s0)", "in a fall"),
     # The landing's squash, and the spin.
     (0x80030d54, "sh $v0, 6468($gp)", "a landing starts the squash's rise"),
     (0x80030d5c, "sh $v0, 6460($gp)", "by this a frame"),
@@ -419,10 +426,66 @@ CHECKS = [
     (0x8003263c, "sh $v0, 6472($gp)", "eases the fall"),
     (0x80032664, "sh $v0, 6464($gp)", "and takes it off"),
     (0x80032718, "sh $v0, 702($s0)", "the squash and the breath drawn as one"),
-    (0x80032508, "lh $v0, 320($s0)", "the body spins by the speed at 320"),
-    (0x80032518, "jal 0x80060f58", "about the model's x"),
-    (0x800325d0, "lh $v0, 320($s0)", "as it does at rest"),
+    # The body's orientation.
+    (0x80031044, "lw $v0, 536($s3)", "the ball's draw reads the mark at 536"),
+    (0x8003104c, "bne $v0, $zero, 0x80031160", "and where one stands takes no spin step and no rebuild"),
+    (0x8003105c, "bne $v1, $v0, 0x80031074", "else the spin step is the jump's in the jump's state"),
+    (0x80031064, "jal 0x800324f8", "there"),
+    (0x80031074, "jal 0x800325c0", "and the rest's otherwise"),
+    (0x80032508, "lh $v0, 320($s0)", "the jump's turns by the spin's speed at 320"),
+    (0x8003250c, "addiu $a1, $s0, 596", "the body's matrix at 596"),
+    (0x80032518, "jal 0x80060f58", "about x"),
+    (0x800325d0, "lh $v0, 320($s0)", "and the rest's by the same word"),
+    (0x800325d4, "addiu $a1, $s0, 596", "the same matrix"),
     (0x800325e0, "jal 0x80060f58", "about the same axis"),
+    (0x80060ff8, "sh $t8, 6($a1)", "the turn mixing the matrix's second row"),
+    (0x80061088, "sh $t8, 12($a1)", "and its third, so it is laid on from the left"),
+    (0x80031084, "jal 0x80060308", "the draw straightens the body's matrix on every frame"),
+    (0x800310a4, "addiu $s0, $s3, 564", "and the frame's, at 564"),
+    (0x800310ac, "jal 0x80060308", "the same way"),
+    (0x800310cc, "lw $v0, 456($s3)", "and while no ramp runs"),
+    (0x800310d4, "bne $v0, $zero, 0x80031160", "rebuilds the frame's matrix"),
+    (0x800310e8, "sh $v0, 564($s3)", "from the side"),
+    (0x80031100, "subu $v1, $zero, $v1", "the heading turned round"),
+    (0x80031138, "subu $v0, $zero, $v0", "and the normal turned round"),
+    (0x8003115c, "sh $v0, 580($s3)", "its columns"),
+    (0x800313b4, "addiu $a0, $s3, 564", "the model is drawn through the frame's matrix"),
+    (0x800313f0, "jal 0x800603f8", "times the squash"),
+    (0x8003141c, "addiu $a1, $s3, 596", "times the body's"),
+    (0x80031420, "jal 0x800603f8", "in that order"),
+    (0x800314bc, "jal 0x800603f8", "and the camera's over all"),
+    (0x800314c4, "lh $v1, 702($s3)", "and takes the squash's word for the position"),
+    (0x80036258, "jal 0x8002f2e8", "the level's start lays the ball's matrices"),
+    (0x80034b14, "sw $v0, 536($s0)", "a turn right marks the frame's own draw"),
+    (0x80034bcc, "sw $v0, 536($s0)", "as a turn left does"),
+    (0x800304c0, "sw $v0, 692($s0)", "a wall marks the next frame's draw at 692"),
+    (0x8002fa58, "sw $v0, 692($s0)", "as each frame round an edge does"),
+    (0x800324bc, "lw $v0, 692($s3)", "the draw's end copies 692"),
+    (0x800324c4, "sw $v0, 536($s3)", "into 536"),
+    (0x8002f888, "sw $zero, 692($s0)", "which the states' dispatcher clears on every frame"),
+    (0x80031168, "bne $v1, $v0, 0x800311b4", "the edge's mark"),
+    (0x80031190, "jal 0x80060a38", "builds a turn from three angles"),
+    (0x80031198, "addiu $a0, $s3, 564", "and lays it on the frame's matrix"),
+    (0x800311a4, "jal 0x800603f8", "from the right, the body's untouched"),
+    (0x800311b4, "bne $v1, $v0, 0x80031250", "a turn right's mark"),
+    (0x80031208, "jal 0x800603f8", "lays its turn on the body's matrix from the left"),
+    (0x80031220, "jal 0x800609f8", "and the turn's transpose"),
+    (0x80031234, "jal 0x800603f8", "on the frame's from the right"),
+    (0x80031320, "jal 0x800609f8", "the wall's turn transposed for the frame"),
+    (0x80031258, "bne $v1, $v0, 0x800312d0", "a turn left's mark"),
+    (0x80031294, "jal 0x800603f8", "the same"),
+    (0x800312c0, "jal 0x800603f8", "on both"),
+    (0x800312d0, "bne $v1, $v0, 0x8003133c", "and a wall's"),
+    (0x80031308, "jal 0x800603f8", "the same"),
+    (0x80031334, "jal 0x800603f8", "on both"),
+    (0x8002f358, "sh $v0, 564($a0)", "the start lays the frame's matrix as the identity"),
+    (0x8002f35c, "sh $v0, 596($a0)", "and the body's"),
+    (0x8002f360, "sh $v0, 628($a0)", "and a third at 628"),
+    (0x80030c18, "addiu $s1, $zero, 1", "which a landing from the jump's state"),
+    (0x80030c34, "jal 0x80032730", "takes"),
+    (0x80032740, "addiu $a0, $s0, 628", "from 628"),
+    (0x80032748, "jal 0x800603f8", "times the body's matrix"),
+    (0x80032774, "sh $v0, 628($s0)", "and lays as the identity again"),
     # The view's extra pitch.
     (0x80034f60, "bne $v1, $v0, 0x80034fb8", "R1 held"),
     (0x80034f94, "sh $v0, 504($s0)", "adds to the extra pitch at 504"),
@@ -454,8 +517,11 @@ CHECKS = [
     (0x8002f668, "sw $a1, 404($a0)", "as the count at 404"),
     (0x8002f670, "sw $v1, 416($a0)", "and its first row at 416"),
     (0x8002f60c, "sw $v0, 408($s0)", "in the jumping state"),
+    (0x8002f65c, "sh $v0, 312($a0)", "at its speed"),
+    (0x8002f660, "sh $v0, 320($a0)", "the spin's speed set to the same"),
     (0x8002f6fc, "lh $v0, 486($s0)", "the hop"),
     (0x8002f708, "sw $zero, 408($s0)", "is a state of its own"),
+    (0x8002f730, "swr $v0, 68($s0)", "saving the centre, which its rows never read"),
     (0x8002f760, "sw $a0, 404($s0)", "with the same count"),
     (0x8002f764, "sw $v1, 416($s0)", "and the same first row"),
     (0x8002fcf0, "sw $v0, 404($s0)", "jumping, the count falls by one a frame"),
@@ -478,12 +544,25 @@ CHECKS = [
     (0x8002feb4, "jal 0x80030b48", "and the landing is tried"),
     (0x8002febc, "beq $v0, $zero, 0x8002fecc", "which failing"),
     (0x8002fecc, "sw $v0, 408($s0)", "the ball falls"),
-    (0x8002ff0c, "sh $v0, 310($s0)", "at the speed the last row came down at"),
-    (0x800300c4, "subu $v1, $v1, $t0", "hopping, a row's height less the last"),
+    (0x8002fee0, "sh $zero, 312($s0)", "with its speed along the heading dropped"),
+    (0x8002fed8, "lhu $v0, 326($s0)", "at the last frame's change along the normal"),
+    (0x8002ff00, "subu $v0, $zero, $v0", "turned downward"),
+    (0x8002ff0c, "sh $v0, 310($s0)", "for its speed down"),
+    (0x8002ff14, "sw $zero, 412($s0)", "and the long jump's word cleared"),
+    (0x80037d1c, "lhu $a0, 342($a2)", "the measure routine takes the last frame's measure along the normal"),
+    (0x80037d34, "subu $v0, $v0, $a0", "off this frame's"),
+    (0x80037d3c, "sh $v0, 326($a2)", "and keeps the change at 326"),
+    (0x800300b0, "sh $zero, 320($s0)", "hopping, each row puts the spin's speed at nothing"),
+    (0x800300b8, "lhu $t0, 0($v0)", "and takes this row's height"),
+    (0x800300c4, "subu $v1, $v1, $t0", "off the next's"),
     (0x800300f8, "sh $zero, 76($s0)", "and nothing across"),
     (0x80030110, "sh $zero, 78($s0)", "or along"),
-    (0x80030124, "addu $v0, $v0, $a0", "moves the centre"),
-    (0x800301cc, "sw $v0, 408($s0)", "and as the count runs out the ball is at rest"),
+    (0x80030124, "addu $v0, $v0, $a0", "moves the centre from where it is"),
+    (0x800301b0, "lw $v1, 120($s0)", "and as the count runs out the hop asks after the block under the ball's cell"),
+    (0x800301cc, "sw $v0, 408($s0)", "and is at rest"),
+    (0x800301c8, "bgez $v1, 0x800301f4", "or, over nothing"),
+    (0x800301d4, "sw $v0, 408($s0)", "falls"),
+    (0x800301e8, "sh $zero, 312($s0)", "with no speed along the heading"),
     (0x80030648, "beq $v1, $v0, 0x8003067c", "the landings, jumping"),
     (0x80030690, "jal 0x80033078", "try a platform in the arc's last rows"),
     (0x800306a0, "jal 0x80030b48", "then a block"),
@@ -494,10 +573,15 @@ CHECKS = [
     (0x80030934, "sll $v0, $v0, 1", "and bounces the ball back twice the frame's advance"),
     (0x80030968, "sw $a0, 408($s0)", "into a fall"),
     (0x800309c4, "sh $v1, 312($s0)", "at that advance reversed"),
+    (0x800309b4, "sh $zero, 320($s0)", "with the spin's speed at nothing"),
     (0x800307c0, "jal 0x800309e8", "or a block above"),
     (0x80030a2c, "lw $v0, 192($s0)", "over the ball"),
     (0x80030ad4, "sw $v1, 408($s0)", "which drops it"),
     (0x80030b04, "sh $v1, 310($s0)", "at its rise reversed"),
+    (0x80030aa4, "sll $v0, $v0, 1", "the centre set back by twice that rise"),
+    (0x80030b10, "sh $a0, 60($s0)", "along the normal"),
+    (0x80030ac4, "sh $zero, 312($s0)", "and the speed"),
+    (0x80030ac8, "sh $zero, 320($s0)", "and the spin's speed at nothing"),
     (0x8003b22c, "bne $v1, $v0, 0x8003b2c0", "a boost button under the ball"),
     (0x8003b248, "sh $v0, 372($s0)", "rolls it on to the middle"),
     (0x8003b2b0, "sw $v1, 100($s0)", "and asks the jump"),
@@ -1345,6 +1429,32 @@ IMMEDIATES = [
     ("the ball's jump", "boost.roll", "a ball on it from this progress is rolled on by the game", 0x8003b23c, "slti $v0, $v0, {}"),
     ("the ball's jump", "boost.frames", "for this many frames", 0x8003b244, "addiu $v0, $zero, {}"),
     ("the ball's jump", "boost.fire", "and launched from this progress", 0x8003b264, "slti $v0, $v0, {}"),
+    ("the ball's jump", "hop.rows", "the hop's rows start this many bytes in", 0x8002f75c, "addiu $v1, $v1, {}"),
+    ("the ball's jump", "hop.skip", "its count falls from one past this to nothing", 0x80030080, "addiu $v1, $zero, {}"),
+    ("the ball's jump", "hop.step", "by this a frame", 0x80030084, "addiu $v0, $v0, {}"),
+    ("the ball's jump", "hop.ahead", "and each row moves the centre by the height this many bytes on, the next row's, less this row's",
+     0x800300b4, "lhu $v1, {}($v0)"),
+    ("the ball's jump", "hop.row", "a row read this many bytes a step", 0x800300bc, "addiu $v0, $a3, {}"),
+
+    ("the body's orientation", "body.one", "the matrices' unit, the identity's diagonal", 0x8002f304, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.one.landing", "as a landing lays the third matrix", 0x80032750, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.mark.wrap", "a frame round an edge marks the next frame's draw with this", 0x8002fa50,
+     "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.mark.wall", "a wall with this", 0x800304bc, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.mark.right", "a turn right marks the frame's own draw with this", 0x80034b10,
+     "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.mark.left", "and a turn left with this", 0x80034bc8, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.test.wrap", "the draw takes this mark as the edge's", 0x80031164, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.test.right", "this as a turn right's", 0x8003116c, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.test.left", "this as a turn left's", 0x80031254, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.test.wall", "and this as a wall's", 0x8003125c, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.wrap", "round an edge the frame's matrix turns by this a frame about its x, the side",
+     0x80031180, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.right", "a turn right turns the body's matrix by this about the frame's z, its down",
+     0x800311cc, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.left", "a turn left by this", 0x80031270, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.wall", "and a wall by this about the frame's x, the frame's matrix each time the other way",
+     0x800312d4, "addiu $v0, $zero, {}"),
 
     ("moving spikes", "spikes.phase.down", "phase: down, if phase times step is under", 0x8002a120, "slti $v0, $v1, {}"),
     ("moving spikes", "spikes.phase.held", "phase: held up, if under", 0x8002a148, "slti $v0, $v1, {}"),
@@ -2227,10 +2337,35 @@ def jump(r):
         sys.exit("a jump's centre is not drawn across, or a bounce does not start down, as a roll's are")
     if r["boost.type"] != BUTTON:
         sys.exit(f"the launch is a type {r['boost.type']}'s, not the boost button's")
+    if r["hop.rows"] != r["jump.rows"] or r["hop.skip"] != r["jump.skip"] or r["hop.step"] != r["jump.step"]:
+        sys.exit("the hop does not run the jump's rows by the jump's count")
+    if r["hop.row"] != r["jump.row"] or r["hop.ahead"] != 3 * r["hop.row"]:
+        sys.exit("the hop does not take the next row's height, a row of three halfwords on")
     return {"speed": r["jump.speed"], "skip": r["jump.skip"], "snap": r["jump.snap"], "far": r["jump.far"],
             "long": r["jump.long"], "scale": LONG, "recentre": r["jump.recentre"], "catch": r["jump.catch"],
             "wall": r["jump.wall"], "low": r["jump.wall.low"], "bounce": r["jump.bounce"],
             "boost": {"roll": r["boost.roll"], "frames": r["boost.frames"], "fire": r["boost.fire"]}}
+
+
+def body(r):
+    """The body's orientation, each number against the others: the draw's
+    four marks the ones the routines that set them are tested for, each its
+    own and none the cleared word; a turn in place and a wall turning the
+    body's matrix a quarter turn, which the frame's takes back; the arc's
+    frames turning the frame's matrix a quarter turn in all; and the
+    matrices in the one fixed point. Returns the arc's turn a frame."""
+    marks = {k: r[f"body.mark.{k}"] for k in ("wrap", "wall", "right", "left")}
+    if any(r[f"body.test.{k}"] != m for k, m in marks.items()) or len(set(marks.values())) != len(marks) \
+            or 0 in marks.values():
+        sys.exit(f"the draw's marks {marks} are not the ones the draw tests for, each its own")
+    quarter = TURN // 4
+    if r["body.right"] != -quarter or r["body.left"] != quarter or r["body.wall"] != -quarter:
+        sys.exit("a turn in place or a wall does not turn the body's matrix by a quarter turn")
+    if r["body.wrap"] * ARC_STEPS != -quarter:
+        sys.exit("the arc's frames do not turn the frame's matrix by a quarter turn in all")
+    if r["body.one"] != ONE or r["body.one.landing"] != ONE:
+        sys.exit("the matrices are not laid in the one fixed point")
+    return r["body.wrap"]
 
 
 def glow_spill(code):
@@ -2757,6 +2892,7 @@ def table(r, platform_speed):
         types[t] = fruit
     types[30].update(roll(r))
     types[30]["jump"] = jump(r)
+    types[30]["wrap"]["body"] = body(r)
     taken, lasting = take(r)
     for t, entry in taken.items():
         types[t]["take"] = entry
