@@ -105,11 +105,16 @@ export const moving = (b) => b.state !== REST || b.ramp !== null || b.turn !== 0
 /** The centre's lift off the face the jump or the hop left, in game units. */
 const liftOf = (b) => dot(add(b.pos, b.saved, -1), b.n) + b.radius;
 
-function progressOf(b) {
-  const i = axisOf(b.h);
+/** How far into its cell the centre has come along the unit axis `v`, the middle at half a block. */
+function along(b, v) {
+  const i = axisOf(v);
   const within = (((b.pos[i] + b.half) % b.unit) + b.unit) % b.unit;
-  return b.h[i] > 0 ? within : b.unit - within;
+  return v[i] > 0 ? within : b.unit - within;
 }
+/** The centre's progress into its cell along the heading. */
+export const progressOf = (b) => along(b, b.h);
+/** The centre's measure across its cell, along the ball's side. */
+export const acrossOf = (b) => along(b, b.s);
 
 /** Lay the centre at progress `p` into its cell along the heading. */
 function lay(b, p) {

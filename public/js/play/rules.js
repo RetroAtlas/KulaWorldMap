@@ -3,6 +3,7 @@
 import { PAD, aloft, ballAt, blockUnder, cellOf, place, read, run } from "./ball.js";
 import { KEY, keysOf, probeOf, standingOf, took, worldOf } from "./world.js";
 import { contact } from "./contact.js";
+import { devices, rearm } from "./hazards.js";
 import { SIDE, cellKey } from "../format/lattice.js";
 import { layHeading, startsOf, TANGENT } from "../viewer/data.js";
 import { advance } from "../viewer/travel.js";
@@ -183,6 +184,7 @@ function pills(live, out) {
 function hazards(live, out) {
   if (!aloft(live.ball)) ground(live, out);
   pills(live, out);
+  devices(live, out);
 }
 
 /** One game frame with `pad` as held: what happened, as events. The frame the clock runs out on
@@ -197,6 +199,7 @@ export function frame(live, pad) {
   const probe = probeOf(live);
   probe.stood = () => {
     w.standing = standingOf(live);
+    rearm(live);
   };
   const heard = heeds(live);
   tick(live, out, clock.tick);

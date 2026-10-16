@@ -29,6 +29,8 @@ import {
   moving,
   clearance,
   cellOf,
+  progressOf,
+  acrossOf,
 } from "../../public/js/play/ball.js";
 
 const table = objects.motion.types[30];
@@ -842,4 +844,21 @@ test("a lost ball is left where it fell and says so each frame, and step alone p
   assert.deepEqual(blockUnder(b), [17, 16, 17]);
   assert.deepEqual(b.h, UP);
   assert.equal(moving(b), false);
+});
+
+test("progressOf and acrossOf measure the centre's way into its cell along the heading and along the side, and a quarter turn swaps them", () => {
+  const b = ballAt(RULES, [17, 17, 17], TOP, UP);
+  assert.equal(progressOf(b), UNIT / 2);
+  assert.equal(acrossOf(b), UNIT / 2);
+  b.pos = b.pos.map((v, i) => v + b.h[i] * 50);
+  assert.equal(progressOf(b), UNIT / 2 + 50);
+  assert.equal(acrossOf(b), UNIT / 2);
+  b.pos = b.pos.map((v, i) => v + b.s[i] * 30);
+  assert.equal(acrossOf(b), UNIT / 2 + 30);
+  assert.equal(progressOf(b), UNIT / 2 + 50);
+  b.pad = PAD.left;
+  step(b, row(10, 18));
+  assert.equal(progressOf(b), UNIT / 2 - 30);
+  assert.equal(acrossOf(b), UNIT / 2 + 50);
+  assert.equal(b.progress, progressOf(b), "the word run keeps is the same measure");
 });

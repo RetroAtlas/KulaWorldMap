@@ -33,6 +33,7 @@ import {
   motionTable,
   skinsTable,
   startsOf,
+  theCircuit,
   worldTint,
   TANGENT,
 } from "../viewer/data.js";
@@ -104,6 +105,7 @@ const VERDICT = {
 };
 const ENDED = "The level has ended.";
 const OPENED = "The last key is taken: the exits are open.";
+const SENDING = "The teleporter is sending the ball.";
 const KEYS_LEFT = "The keys left to take";
 const BLOCKS_LEFT = "The blocks left to roll onto";
 const AGAIN = "Space or a tap on the pad starts the level again.";
@@ -492,11 +494,14 @@ function played() {
   const was = onFace(b) ? footOf(b) : null;
   const events = gameFrame(run, pad);
   if (!motionOn()) ageDust(1 / motionTable().hz);
-  else if (was && onFace(b)) {
+  else if (was && onFace(b) && !events.some((e) => e.sent)) {
     const under = blockUnder(b);
     travelDust(was, footOf(b), b.n, () => under);
   }
   for (const event of events) happened(event);
+  if (run.words.send >= 0) status(SENDING);
+  else if (live.status === SENDING) status(null);
+  if (b.state === REST) live.notes.length = 0;
 }
 
 const again = () =>
@@ -531,6 +536,14 @@ function happened(event) {
     say(OPENED);
     return;
   }
+  if (event.threw) {
+    threw(event.threw);
+    return;
+  }
+  if (event.sent) {
+    sent(event.sent);
+    return;
+  }
   if (event.clock) {
     const { second } = motionTable().play.clock;
     const left = Math.max(0, Math.floor(event.clock.to / second));
@@ -540,14 +553,14 @@ function happened(event) {
   if (event.at) {
     live.station = true;
     const block = blockUnder(b);
-    say(`${block.join(",")}, ${FACE_NAME[faceUnder(b)]}`);
+    say(noted(`${block.join(",")}, ${FACE_NAME[faceUnder(b)]}`));
     status(standsOn(block, faceUnder(b)) ? AS_STONE : null);
     walked({ cell: block, face: faceUnder(b) });
     if (!motionOn())
       travelDust(live.still.foot, footOf(b), b.n, (p) => blockAt(p, b.n, block), true);
   } else if (event.face) {
     live.station = true;
-    say(`${FACE_NAME[faceUnder(b)]} of ${blockUnder(b).join(",")}, now underfoot`);
+    say(noted(`${FACE_NAME[faceUnder(b)]} of ${blockUnder(b).join(",")}, now underfoot`));
     burstDust(footOf(b), b.n, blockUnder(b), AT_SWITCH, !motionOn());
   } else if (event.turned) live.station = true;
 }
@@ -568,6 +581,40 @@ function taken({ key, face, points, at }) {
 /** The panel drawn again where it shows a block, so what it says of the block's things holds. */
 function refreshPanel() {
   if (state.selected) showCell(state.selected, { raise: false });
+}
+
+/** A stop's sentence with what happened on the way to it, which a sentence of its own said
+    mid-roll would lose to the stop's within the frame. */
+const noted = (text) => (live.notes.length ? `${text}. ${live.notes.splice(0).join(" ")}` : text);
+
+/** A switch thrown under the ball: dust at its foot, the circuit's turn said, the panel redrawn. */
+function threw({ circuit }) {
+  const b = live.run.ball;
+  burstDust(footOf(b), b.n, blockUnder(b), AT_SWITCH, !motionOn());
+  const text = `Switch thrown: ${theCircuit(circuit)} turned over.`;
+  say(text);
+  live.notes.push(text);
+  refreshPanel();
+}
+
+/** The ball sent by a teleporter: dust at both ends, a leap in its way, the view cut to it. */
+function sent({ from, to }) {
+  const b = live.run.ball;
+  live.station = true;
+  live.still = stateOf(b);
+  for (const { cell, face } of [from, to]) {
+    const n = FACE_NORMAL[face];
+    const point = cell.map((v, i) => v + 0.5 + 0.5 * n[i]);
+    burstDust(point, n, cell, AT_TAKE, !motionOn());
+  }
+  walked({ cell: to.cell, face: to.face }, true);
+  state.frame = b.frame;
+  state.target = [...centreOf(b)];
+  if (state.framing === fit) fit();
+  status(standsOn(to.cell, to.face) ? AS_STONE : null);
+  say(`Sent to the ${FACE_NAME[to.face]} of ${to.cell.join(",")}.`);
+  redraw = true;
+  invalidatePick();
 }
 
 /** The level has ended: the ball is gone and the pad dead, the view lets go of the ball and turns
@@ -624,6 +671,7 @@ function startOver() {
   live.key = keyOf(start, at);
   live.walk = { stations: [at], steps: [] };
   live.trail = null;
+  live.notes = [];
   live.still = stateOf(b);
   resetDust(worldTint(live.level.theme));
   keepable();
@@ -663,11 +711,12 @@ function stepBetween(a, b) {
   return k === null ? null : { k, o };
 }
 
-function walked(station) {
+/** One more stop on the way the ball has come, joined by a roll, or by a leap where it was sent. */
+function walked(station, leap = false) {
   const w = live.walk;
   const last = w.stations.at(-1);
   if (last && sameStation(last, station)) return;
-  if (last) w.steps.push(stepBetween(last, station));
+  if (last) w.steps.push(leap ? null : stepBetween(last, station));
   w.stations.push(station);
   const from = Math.max(0, w.stations.length - TRAIL);
   const { byKey } = pieces({
@@ -717,7 +766,7 @@ function keep() {
   keepable();
 }
 
-/** Whether the ball stands on something it does not act on yet: ice, a hazard or a device. */
+/** Whether the ball stands on something it does not act on yet: ice or a hazard. */
 function standsOn(block, face) {
   const key = cellKey(...block);
   const c = live.idx.cells.get(key);
@@ -725,8 +774,10 @@ function standsOn(block, face) {
   const kind = c.v < state.data.firstRecord ? c.v : live.idx.records.get(key)?.[0]?.kind;
   if (kind !== PLAIN_KIND) return true;
   const { types } = motionTable();
-  const acted = (m) =>
-    STARTS.has(m.type) || types[String(m.type)]?.take || types[String(m.type)]?.opened;
+  const acted = (m) => {
+    const entry = types[String(m.type)];
+    return STARTS.has(m.type) || entry?.take || entry?.opened || entry?.throw || entry?.send;
+  };
   return (live.idx.markers.get(key) ?? []).some((m) => m.face === face && !acted(m));
 }
 
@@ -945,6 +996,7 @@ function enter(at = null) {
     status: at || start ? null : NO_START,
     walk: { stations: [{ cell: where.cell, face: where.face }], steps: [] },
     trail: null,
+    notes: [],
     ended: null,
   };
   const ball = run.ball;

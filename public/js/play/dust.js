@@ -43,6 +43,8 @@ export function resetDust(hex) {
 }
 
 export const dustAlive = () => count > 0;
+/** How many motes are over the block keyed `key`. */
+export const dustOver = (key) => byKey.get(key)?.length ?? 0;
 
 const palette = () =>
   STOPS.map((stop) =>

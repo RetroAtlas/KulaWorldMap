@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { settle, still, trackErrors, drawn } from "./helpers.js";
 
 const LEVEL = "/#HIRO/0/45,35/fit/33";
-const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact)\.js$/;
+const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazards)\.js$/;
 const TIME_UP =
   "Time is up. 0 points, 0 seconds left. Space or a tap on the pad starts the level again.";
 // on a level with no key the block under the ball is marked as the level opens
@@ -13,6 +13,8 @@ const LOST =
 const DONE =
   /^Out by the exit: the level is done\. 1500 points, \d+ seconds left\. Space or a tap on the pad starts the level again\.$/;
 const TAKEN = "Taken: Coin (bronze) on the top";
+const SENDING = "The teleporter is sending the ball.";
+const REFUSED = "The ball cannot roll off here: a block stands beside it.";
 const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
 /** The page point over a point of the level. */
@@ -233,6 +235,72 @@ const starts = (page) =>
     const { startsOf } = await import(new URL("js/viewer/data.js", location.href).href);
     return startsOf(state.lvl).length;
   });
+/** What the panel's presses make of the switch on the draft's block at `c`. */
+const switched = (page, c) =>
+  page.evaluate(async (c) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { markerNow }, { cellKey }] = await Promise.all(
+      ["viewer/state.js", "viewer/data.js", "format/lattice.js"].map(at),
+    );
+    return markerNow(state.idx.markers.get(cellKey(...c)).find((m) => m.type === 9));
+  }, c);
+/** How many motes of dust are over the block at `c`. */
+const dustOver = (page, c) =>
+  page.evaluate(async (c) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ dustOver }, { cellKey }] = await Promise.all(
+      ["play/dust.js", "format/lattice.js"].map(at),
+    );
+    return dustOver(cellKey(...c));
+  }, c);
+/** The view, the ball and the dust over `blocks` on the first drawn frame the ball stands on
+    `block`, read as `probe` reads them, or null where it never comes to stand there. */
+const arrived = (page, block, blocks) =>
+  page.evaluate(
+    async ([block, blocks]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, P, { dustOver }, { cellKey }] = await Promise.all(
+        ["viewer/state.js", "play/play.js", "play/dust.js", "format/lattice.js"].map(at),
+      );
+      const round = (v) => Math.round(v * 1000) / 1000;
+      const until = performance.now() + 8000;
+      while (performance.now() < until) {
+        const station = P.station();
+        if (station && !station.moving && station.block.every((v, i) => v === block[i]))
+          return {
+            station,
+            frame: state.frame.map((v) => round(v) + 0),
+            target: state.target.map(round),
+            fitted: document.getElementById("fitBtn").classList.contains("fitted"),
+            dust: blocks.map((c) => dustOver(cellKey(...c))),
+          };
+        await new Promise((r) => requestAnimationFrame(r));
+      }
+      return null;
+    },
+    [block, blocks],
+  );
+/** The camera's frame for a ball heading `h` on a face of normal `n`, rounded as `probe` rounds. */
+const frameFor = (page, h, n) =>
+  page.evaluate(
+    async ([h, n]) => {
+      const { frameOf } = await import(new URL("js/viewer/state.js", location.href).href);
+      return frameOf(h, n).map((v) => Math.round(v * 1000) / 1000 + 0);
+    },
+    [h, n],
+  );
+/** Keep every sentence the live region says from here on. */
+const listening = (page) =>
+  page.evaluate(() => {
+    window.__said = [];
+    const el = document.getElementById("say");
+    new MutationObserver(() => window.__said.push(el.textContent)).observe(el, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+  });
+const said = (page) => page.evaluate(() => window.__said);
 /** A finger held still on `point` until the hold shows, then lifted. */
 const hold = async (page, point) => {
   const cdp = await page.context().newCDPSession(page);
@@ -301,6 +369,7 @@ test("y stands the ball on the start and takes its view, the arrows roll it, and
       "/js/play/ball.js",
       "/js/play/contact.js",
       "/js/play/dust.js",
+      "/js/play/hazards.js",
       "/js/play/play.js",
       "/js/play/rules.js",
       "/js/play/world.js",
@@ -1038,6 +1107,103 @@ test("with Motion off a hop on a coin's block takes the coin on the first frame,
   await expect(page.locator("#detail")).toContainText(`${TAKEN}.`);
   await page.keyboard.press("Escape");
   await expect(page.locator("#detail")).toBeHidden();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#play")).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test("rolling over a switch throws it, and an on teleporter sends the ball to its far end, the view cutting there, with dust at both ends and a leap in the way it has come", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a key out of reach keeps the level an arcade one; a yellow switch, and two blue teleporters
+  // that lead to each other a block apart, so that a roll could join them, the far one facing
+  // across the row, so that Up is refused there with the near one's block beside
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  for (const cell of [
+    [17, 16, 17],
+    [17, 15, 17],
+    [17, 14, 17],
+  ])
+    await laid(page, cell, { kind: 0 });
+  await faced(page, [17, 16, 17], 0, { type: 9, variant: 0 });
+  await faced(page, [17, 15, 17], 0, { type: 5, variant: 1 });
+  await faced(page, [17, 14, 17], 0, { type: 5, variant: 1, facing: 4 });
+  await expect(page.locator("#chipLine")).toContainText("4 blocks");
+  await expect(page.locator("#chipLine")).toContainText("5 objects");
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await listening(page);
+  expect(await presses(page)).toEqual([]);
+  expect(await switched(page, [17, 16, 17])).toBe("on");
+  const roll = async (block) => {
+    await page.keyboard.press("ArrowUp");
+    await expect
+      .poll(async () => (await probe(page)).station.block, { intervals: [25] })
+      .toEqual(block);
+    await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  };
+  await roll([17, 16, 17]);
+  expect(await switched(page, [17, 16, 17])).toBe("off");
+  const pressed = await presses(page);
+  expect(pressed.length).toBe(1);
+  expect(pressed[0][0]).toBe(0);
+  expect(pressed[0][1].length).toBe(1);
+  // the stop's sentence carries the throw, which would otherwise be lost to it within the frame
+  expect(await said(page)).toContain(
+    "17,16,17, top. Switch thrown: the yellow circuit turned over.",
+  );
+  // onto the teleporter the ball stops at the middle, and with Motion off and no key held the
+  // level stands mid-send
+  await roll([17, 15, 17]);
+  await expect(status(page)).toHaveText(SENDING);
+  expect(await dustOver(page, [17, 14, 17])).toBe(0);
+  const near = await dustOver(page, [17, 15, 17]);
+  // with Motion on the level runs at rest, so the count runs out on its own; the view is read on
+  // the first frame the ball stands at the far end, where a target eased after the ball rather
+  // than cut would still be on its way from the near one
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).toBeChecked();
+  const far = await arrived(
+    page,
+    [17, 14, 17],
+    [
+      [17, 15, 17],
+      [17, 14, 17],
+    ],
+  );
+  expect(far.station).toEqual({ block: [17, 14, 17], face: 0, heading: "+x", moving: false });
+  expect(far.frame).toEqual(await frameFor(page, [1, 0, 0], [0, 0, -1]));
+  expect(far.target).toEqual([17.5, 14.5, 16.805]);
+  expect(far.fitted).toBe(true);
+  expect(far.dust[1]).toBeGreaterThan(0);
+  expect(far.dust[0]).toBeGreaterThan(near);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,14,17, facing +x");
+  expect(await said(page)).toContain("Sent to the top of 17,14,17.");
+  // the pad is dead through the hold, and then Up is refused, the near end's block beside
+  await page.keyboard.press("ArrowUp");
+  await expect(status(page)).toHaveText(REFUSED);
+  await page.locator("#keepBtn").click();
+  await expect(page.locator("#courseLine")).toContainText("1 leap");
+  const route = await page.evaluate(async () => {
+    const { current } = await import(new URL("js/viewer/chrome/course.js", location.href).href);
+    const c = current();
+    return { stations: c.stations, steps: c.steps };
+  });
+  expect(route.stations).toEqual([
+    { cell: [17, 17, 17], face: 0 },
+    { cell: [17, 16, 17], face: 0 },
+    { cell: [17, 15, 17], face: 0 },
+    { cell: [17, 14, 17], face: 0 },
+  ]);
+  // a leap between the two ends, though a roll could join them
+  expect(route.steps).toEqual([{ k: 2, o: 0 }, { k: 2, o: 0 }, null]);
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
   expect(errors).toEqual([]);
