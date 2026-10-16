@@ -238,9 +238,11 @@ export function frame(live, pad) {
   if (!w.guard) hazards(live, out);
   if (w.pills[INVINCIBLE] < 0) catching(live, out);
   b.frozen = w.frozen !== 0;
+  b.way = w.way;
   // the block ahead of the one under the ball, which a climb marks as the block under its wall
   const ahead = add(blockUnder(b), b.h);
   run(b, probe, out);
+  w.way = b.way;
   if (w.bonus && out.some((e) => e.face === "climb")) mark(live, ahead, out);
   if (!w.guard) contact(live, out);
   if (out.some((e) => e.lost)) end(live, ending.lost, out);
@@ -272,6 +274,7 @@ export function revive(live, at = live.ball.rest) {
     heat: 0,
     melt: 0,
     cold: 0,
+    way: null,
   });
   stand(live, at);
 }

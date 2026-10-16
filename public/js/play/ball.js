@@ -78,6 +78,7 @@ export function ballAt(rules, cell, face, h) {
     saved: null,
     landed: false,
     frozen: false,
+    way: null,
     rest: { cell: [...cell], face, h },
     look: { word: 0, rate: table.look.from },
     frame: frameOf(h, n),
@@ -154,7 +155,8 @@ function resting(b, probe) {
 function mayRollOn(b, probe, cell) {
   const under = add(cell, b.n, -1);
   if (probe.solid(add(under, b.h))) return true;
-  return !probe.solid(add(under, b.s)) && !probe.solid(add(under, neg(b.s)));
+  if (!probe.solid(add(under, b.s)) && !probe.solid(add(under, neg(b.s)))) return true;
+  return probe.slick?.(under) === true;
 }
 
 /** The frame `f` turned about its own axis by `t` turns. */
@@ -249,7 +251,7 @@ export function read(b, probe, out) {
   if (probe.solid(add(under, b.h))) return;
   if (probe.solid(add(under, b.s)) || probe.solid(add(under, neg(b.s)))) {
     b.forward = false;
-    if (b.state === REST) out.push({ refused: true });
+    if (b.state === REST) out.push({ refused: "edge" });
   }
 }
 
@@ -394,17 +396,19 @@ function jumping(b, probe, out) {
   const p = progressOf(b);
   const ahead = add(cell, b.h);
   const lift = liftOf(b);
-  const wall =
-    p >= j.wall &&
-    (probe.solid(ahead) ||
+  if (p >= j.wall) {
+    const wall =
+      probe.solid(ahead) ||
       (lift >= j.wall && probe.solid(add(ahead, b.n))) ||
-      (lift < j.low && probe.solid(add(ahead, b.n, -1))));
-  if (wall) {
-    b.pos = add(b.pos, b.h, -2 * advance);
-    b.speed = -advance;
-    b.state = FALL;
-    b.v = rise > 0 ? j.bounce : rise;
-    return;
+      (lift < j.low && probe.solid(add(ahead, b.n, -1)));
+    if (wall || (b.way !== null && b.way.some((c, i) => c !== b.h[i]))) {
+      b.pos = add(b.pos, b.h, -2 * advance);
+      b.speed = -advance;
+      b.state = FALL;
+      b.v = rise > 0 ? j.bounce : rise;
+      return;
+    }
+    b.way = null;
   }
   ceiling(b, probe, rise);
 }
@@ -558,9 +562,10 @@ function spinning(b) {
 /** The frame from the requests on: what happened, as events, added to `out`. The last frame's
     landing is cleared first, so a caller between `read` and `run` still sees it; while the ball
     is `frozen` its state does nothing, nor the move step nor the landings, and a ramp, the look
-    and the spin go on. Between the state and the move step the probe's `stood`, where it has
-    one, is told the ball, which is where the game reads the cells about it. A lost ball says so
-    and stays where it is. */
+    and the spin go on; while `way` holds a direction, the jump's wall test throws the ball back
+    from the wall's progress where its heading differs from it and clears it where it lies along.
+    Between the state and the move step the probe's `stood`, where it has one, is told the ball,
+    which is where the game reads the cells about it. A lost ball says so and stays where it is. */
 export function run(b, probe, out) {
   b.landed = false;
   intents(b, probe, out);

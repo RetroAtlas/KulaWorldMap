@@ -1392,6 +1392,83 @@ test("spikes kill the ball: the strip says so in red while the game's countdown 
   expect(errors).toEqual([]);
 });
 
+test("ice slides the ball on over every block to the first that is not ice, and an arrow holds it from rolling off any way but its own, the strip saying so", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a key out of reach keeps the level an arcade one; three ice blocks on, then a stone block
+  // carrying an arrow that points back the way the ball comes
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  for (const cell of [
+    [17, 16, 17],
+    [17, 15, 17],
+    [17, 14, 17],
+  ])
+    await laid(page, cell, { kind: 2 });
+  await laid(page, [17, 13, 17], { kind: 0 });
+  await faced(page, [17, 13, 17], 0, { type: 28, facing: 1 });
+  await expect(page.locator("#chipLine")).toContainText("5 blocks");
+  await expect(page.locator("#chipLine")).toContainText("3 objects");
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  // one tap of Up, and the slide carries the ball over the ice to the arrow's block
+  await page.keyboard.press("ArrowUp");
+  await expect
+    .poll(async () => (await probe(page)).station.block, { intervals: [25] })
+    .toEqual([17, 13, 17]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  expect(await status(page).textContent()).toBe("");
+  // the way it has come passed over every ice block
+  await page.locator("#keepBtn").click();
+  await expect(page.locator("#courseLine")).toContainText("2 stops");
+  const stations = await page.evaluate(async () => {
+    const { current } = await import(new URL("js/viewer/chrome/course.js", location.href).href);
+    return current().stations;
+  });
+  expect(stations).toEqual(
+    [
+      [17, 17, 17],
+      [17, 16, 17],
+      [17, 15, 17],
+      [17, 14, 17],
+      [17, 13, 17],
+    ].map((cell) => ({ cell, face: 0 })),
+  );
+  // against the arrow Up moves nothing and the strip says why, while turning in place is allowed,
+  // two quarter turns bringing the ball about
+  await page.keyboard.press("ArrowUp");
+  await expect(status(page)).toHaveText(
+    "The ball cannot roll off here: the arrow points another way.",
+  );
+  expect((await probe(page)).station).toEqual({
+    block: [17, 13, 17],
+    face: 0,
+    heading: "-y",
+    moving: false,
+  });
+  await page.keyboard.press("ArrowLeft");
+  await expect.poll(async () => (await probe(page)).station.heading).toBe("-x");
+  await page.keyboard.press("ArrowLeft");
+  await expect.poll(async () => (await probe(page)).station.heading).toBe("+y");
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  // along the arrow's way the ball rolls off, and the ice slides it back to the start's block
+  await page.keyboard.press("ArrowUp");
+  await expect
+    .poll(async () => (await probe(page)).station.block, { intervals: [25] })
+    .toEqual([17, 17, 17]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  expect(await status(page).textContent()).toBe("");
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#play")).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
 test("on fire the ball reddens: where it stands its pixels are redder on the whole than the untinted ball's on plain stone, and with Motion off nothing draws once it rests", async ({
   page,
 }) => {

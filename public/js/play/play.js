@@ -72,8 +72,8 @@ import { frame as gameFrame, heeds, relevel, restart, revive, stand, startRun } 
 import { probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
 const BALL_TYPE = 30;
-const AS_STONE_KINDS = new Set([2, 5, 6, 7]);
-const AS_STONE_TYPES = new Set([10, 28]);
+const AS_STONE_KINDS = new Set([5, 6, 7]);
+const AS_STONE_TYPES = new Set([10]);
 // the untinted light, the unit a traveller's tint is in
 const LIGHT = 4096;
 const YAW = 20;
@@ -95,9 +95,12 @@ const BITS = {
 };
 const PAD_BITS = { up: PAD.up, left: PAD.left, right: PAD.right, down: PAD.down, jump: PAD.cross };
 const PLAIN_KIND = 0;
-const REFUSED = "The ball cannot roll off here: a block stands beside it.";
+const REFUSED = {
+  edge: "The ball cannot roll off here: a block stands beside it.",
+  arrow: "The ball cannot roll off here: the arrow points another way.",
+};
 const AS_STONE =
-  "The ball rolls over ice, an arrow, a boost button, a crumbling or vanishing block and a platform as over plain stone for now.";
+  "The ball rolls over a boost button, a crumbling or vanishing block and a platform as over plain stone for now.";
 const NO_START = "The level has no start, so the ball stands on the first face it could.";
 const NOWHERE = "The level has no face the ball could stand on.";
 const OBJECTS_ON = "Objects turned on, for the ball.";
@@ -621,7 +624,7 @@ const looked = (b) => (b.look.word ? offsetFrame(b.frame, 0, b.look.word, b.rule
 function happened(event) {
   const b = live.run.ball;
   if (event.refused) {
-    status(REFUSED);
+    status(REFUSED[event.refused]);
     return;
   }
   if (event.ended) {

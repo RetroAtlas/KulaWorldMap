@@ -295,7 +295,7 @@ test("the roll is refused off an edge beside a neighbour, and a block ahead at t
   const probe = row(15, 18, [[18, 15, 17]]);
   const b = ballAt(RULES, [17, 15, 17], TOP, UP);
   const events = run(b, probe, 3, PAD.up);
-  assert.deepEqual(events, [{ refused: true }, { refused: true }, { refused: true }]);
+  assert.deepEqual(events, [{ refused: "edge" }, { refused: "edge" }, { refused: "edge" }]);
   assert.equal(b.state, REST);
   assert.deepEqual(blockUnder(b), [17, 15, 17]);
   const c = ballAt(RULES, [17, 18, 17], TOP, UP);
@@ -1183,4 +1183,91 @@ test("progressOf and acrossOf measure the centre's way into its cell along the h
   assert.equal(progressOf(b), UNIT / 2 - 30);
   assert.equal(acrossOf(b), UNIT / 2 + 50);
   assert.equal(b.progress, progressOf(b), "the word run keeps is the same measure");
+});
+
+/** `probe` with the blocks given slick, as ice is. */
+const slippery = (probe, ...cells) => {
+  const ice = new Set(cells.map((c) => cellKey(...c)));
+  return { ...probe, slick: (cell) => ice.has(cellKey(...cell)) };
+};
+
+test("where the probe says the block under is slick the roll goes on over an edge beside a neighbour, into the cell beyond, and falls from the roll's drop", () => {
+  const stone = row(15, 18, [[18, 15, 17]]);
+  const ice = slippery(stone, [17, 15, 17]);
+  const b = ballAt(RULES, [17, 15, 17], TOP, UP);
+  const events = [];
+  // the input routine drops the request at such an edge whatever the block, as the game's does,
+  // and the rules make it again on ice after it, which is what a frame with the request forced is
+  const forced = (probe) => {
+    const out = [];
+    b.pad = PAD.up;
+    read(b, probe, out);
+    b.forward = true;
+    runFrame(b, probe, out);
+    events.push(...out);
+  };
+  forced(stone);
+  assert.equal(b.state, REST, "stone refuses the edge");
+  forced(ice);
+  assert.equal(b.state, ROLLING);
+  let dropped = null;
+  for (let f = 0; f < 40 && dropped === null; f++) {
+    const before = b.progress;
+    forced(ice);
+    if (b.state === FALL) dropped = { before, cell: cellOf(b) };
+  }
+  assert.ok(dropped, "the ball falls");
+  assert.equal(dropped.cell[1], 14, "in the cell beyond the edge");
+  const [from] = table.rolling.over;
+  assert.ok(
+    dropped.before >= from && dropped.before < from + table.rolling.top,
+    String(dropped.before),
+  );
+  assert.ok(!events.some((e) => e.face), "nothing takes it round");
+});
+
+test("a way the caller sets throws the jump back as off a wall from the wall's progress where the heading differs from it, and is cleared where it lies along", () => {
+  const probe = row(10, 18);
+  const rows = JUMPS.rows;
+  // the first row that brings the centre past the wall's progress in its own cell
+  const first = rows.findIndex((r) => UNIT / 2 - r[2] >= table.jump.wall);
+  const jump = (way) => {
+    const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+    const ways = [];
+    for (let f = 0; f <= first; f++) {
+      b.pad = PAD.up | PAD.cross;
+      b.way = way;
+      step(b, probe);
+      ways.push(b.way);
+      if (b.state !== JUMP) break;
+    }
+    return { b, ways };
+  };
+  const against = jump([0, 1, 0]);
+  assert.equal(against.b.state, FALL);
+  assert.equal(
+    against.ways.length,
+    first + 1,
+    "thrown back on the first row past the wall's progress",
+  );
+  assert.equal(against.b.speed, rows[first][2] - rows[first - 1][2], "back at the row's advance");
+  assert.equal(against.b.v, table.jump.bounce, "dropped at the bounce's start while rising");
+  assert.deepEqual(against.b.way, [0, 1, 0], "the way stands through a bounce");
+  rest(against.b, probe);
+  assert.deepEqual(blockUnder(against.b), [17, 18, 17]);
+
+  const along = jump(UP);
+  assert.equal(along.b.state, JUMP, "no wall along the way");
+  assert.deepEqual(
+    along.ways.slice(0, -1),
+    Array(first).fill(UP),
+    "kept short of the wall's progress",
+  );
+  assert.equal(along.ways.at(-1), null, "cleared on the row past it");
+  for (let f = 0; f < 40 && along.b.state === JUMP; f++) {
+    along.b.pad = 0;
+    step(along.b, probe);
+  }
+  rest(along.b, probe);
+  assert.deepEqual(blockUnder(along.b), [17, 16, 17], "down two blocks on");
 });

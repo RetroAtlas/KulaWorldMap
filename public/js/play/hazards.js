@@ -1,18 +1,22 @@
 // The hazards routine's work under and about the ball, in its order, and the hit test after it.
-import { acrossOf, aloft, blockUnder, faceUnder, place, progressOf } from "./ball.js";
+import { REST, acrossOf, aloft, blockUnder, cellOf, faceUnder, place, progressOf } from "./ball.js";
 import { cellKey } from "../format/lattice.js";
 import { layHeading, markerCircuit, markerDestination, TANGENT } from "../viewer/data.js";
 import { phaseField } from "../viewer/motion.js";
 
 const FIRE = 1;
+const ICE = 2;
 const ACID = 4;
 const LASER = 8;
 const MOVING_SPIKES = 11;
 const SPIKES = 12;
+const ARROW = 28;
 export const INVINCIBLE = 34;
 
+const add = (p, v, k = 1) => p.map((c, i) => c + v[i] * k);
 const within = (v, [low, high]) => v >= low && v <= high;
 const squared = (a, b) => a.reduce((sum, c, i) => sum + (c - b[i]) ** 2, 0);
+const differs = (a, b) => a.some((c, i) => c !== b[i]);
 const station = (b) => ({ cell: blockUnder(b), face: faceUnder(b) });
 const standingOf = (motion, kind) => motion.kinds[String(kind)].standing;
 
@@ -39,13 +43,58 @@ export function die(live, out, cause, how = {}) {
   return true;
 }
 
-/** A lit beam in the ball's own cell, fire under it and the cooling off fire, and acid on the ground. */
+// The arrow under the ball, on the ground or in the air, lets the forward request stand along its
+// way alone, said where the ball is at rest and no jump is asked, and ice makes the request,
+// dropping a turn's and the refusal the pad's reading said; the arrow's way, where one is under
+// the ball.
+function steered(live, out) {
+  const w = live.words;
+  const b = live.ball;
+  let way = null;
+  if (w.standing === ARROW) {
+    const under = add(cellOf(b), b.n, -1);
+    const m = (live.idx.markers.get(cellKey(...under)) ?? []).find((o) => o.face === faceUnder(b));
+    if (m?.type === ARROW) {
+      way = (layHeading(m) ?? TANGENT[m.face]).map((c) => c || 0);
+      if (differs(b.h, way)) {
+        if (b.forward && !b.wantJump && b.state === REST) out.push({ refused: "arrow" });
+        b.forward = false;
+      }
+    }
+  }
+  if (w.standing === standingOf(live.tables.motion, ICE)) {
+    b.forward = true;
+    b.turn = 0;
+    b.waiting = 0;
+    b.again = 0;
+    const refused = out.findIndex((e) => e.refused);
+    if (refused >= 0) out.splice(refused, 1);
+  }
+  return way;
+}
+
+// On the ground the cold grows on ice and is set back past its top, the heat cooling by the
+// chill besides, and wanes off ice.
+function chilled(live) {
+  const w = live.words;
+  const ice = live.tables.motion.kinds[String(ICE)];
+  if (w.standing === ice.standing) {
+    w.heat = Math.max(0, w.heat - ice.chill);
+    w.cold += ice.cold.gain;
+    if (w.cold > ice.cold.over) w.cold = ice.cold.back;
+  } else w.cold = Math.max(0, w.cold - ice.cold.wane);
+}
+
+/** A lit beam in the ball's own cell, the arrow's and the ice's word on the requests, fire under
+    the ball and the cooling off fire, the arrow's way kept while the ball is in the air over
+    one, and on the ground acid and the ice's cold, in the routine's order. */
 export function harms(live, out) {
   const w = live.words;
   const b = live.ball;
   const { motion } = live.tables;
   const laser = motion.kinds[String(LASER)].harm;
   if (w.cell === laser.cell && die(live, out, "laser")) w.heat = laser.heat;
+  const way = steered(live, out);
   const fire = motion.kinds[String(FIRE)].heat;
   const guarded = w.pills[INVINCIBLE] >= 0;
   if (w.standing === standingOf(motion, FIRE)) {
@@ -53,11 +102,16 @@ export function harms(live, out) {
     if (b.landed && !guarded) w.heat += fire.land;
     if (w.heat > fire.limit) die(live, out, "fire", { freeze: true });
   } else w.heat = Math.max(0, w.heat - fire.cool);
-  if (aloft(b)) return;
+  if (aloft(b)) {
+    if (way) w.way = way;
+    return;
+  }
+  w.way = null;
   const acid = motion.kinds[String(ACID)].melt;
   w.melt = Math.min(w.melt, acid.top);
   if (w.standing === standingOf(motion, ACID) && die(live, out, "acid", { kept: true }))
     w.melt += acid.gain;
+  chilled(live);
 }
 
 /** What grows while a death's countdown runs: the burning ball's swell and the acid's melt. */
