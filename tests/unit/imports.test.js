@@ -103,3 +103,18 @@ test("a module imports only its own layer and those beneath it", () => {
       );
   }
 });
+
+// The simulation is pure: a module of it reaches the model, the lattice and
+// the simulation's own modules, and nothing that paints or touches the page,
+// so the ball can be stepped without a browser.
+const PURE = ["play/ball.js"];
+
+test("a module of the simulation imports only the model, the lattice and the simulation", () => {
+  const g = graph();
+  for (const name of PURE)
+    for (const target of g.get(name))
+      assert.ok(
+        posix.dirname(target) === "viewer" || target === LATTICE || PURE.includes(target),
+        `${name} imports ${target}`,
+      );
+});

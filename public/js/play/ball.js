@@ -74,6 +74,7 @@ export function ballAt(rules, cell, face, h) {
     saved: null,
     bounced: false,
     landed: false,
+    frozen: false,
     rest: { cell: [...cell], face, h },
     look: { word: 0, rate: table.look.from },
     frame: frameOf(h, n),
@@ -127,6 +128,19 @@ function stop(b, p) {
   b.state = REST;
 }
 
+function drop(b) {
+  b.state = FALL;
+  b.speed = 0;
+  b.v = b.table.fall.start;
+}
+
+/** Laid its radius off its face at rest, and dropped where the block under it has gone. */
+function resting(b, probe) {
+  settle(b);
+  if (!probe.solid(blockUnder(b))) drop(b);
+  b.spinSpeed = 0;
+}
+
 function mayRollOn(b, probe, cell) {
   const under = add(cell, b.n, -1);
   if (probe.solid(add(under, b.h))) return true;
@@ -170,9 +184,10 @@ function swap(b, h, n) {
   b.s = cross(h, n);
 }
 
-// A press is a bit held now and not on the last frame; a held turn presses again once the
-// count passes the repeat.
-function input(b, probe, out) {
+/** The pad as held, `b.pad`, into the ball's requests: the roll, the jump and a turn, held back
+    while a turn's ramp runs. A press is a bit held now and not on the last frame, and a held
+    turn presses again once the count passes the repeat. */
+export function read(b, probe, out) {
   const t = b.table.rolling;
   if (turning(b)) b.since = 0;
   else if (++b.since > t.repeat) b.previous = 0;
@@ -266,9 +281,7 @@ function roll(b, probe) {
   const t = b.table.rolling;
   recentre(b.pos, b, t.recentre);
   if (!probe.solid(blockUnder(b)) && b.progress >= t.over[0] && b.progress <= t.over[1]) {
-    b.state = FALL;
-    b.speed = 0;
-    b.v = b.table.fall.start;
+    drop(b);
     return;
   }
   if (b.progress >= t.over[0]) b.wrapped = false;
@@ -480,34 +493,48 @@ function ramping(b) {
   else b.again = 0;
 }
 
-/** One game frame, with `b.pad` the pad as held: what happened, as events. */
-export function step(b, probe) {
-  const out = [];
-  b.landed = false;
-  input(b, probe, out);
-  intents(b, probe, out);
+function acting(b, probe, out) {
   if (b.state === ROLLING) roll(b, probe);
   else if (b.state === WRAPPING) wrap(b);
   else if (b.state === JUMP) jumping(b, probe, out);
   else if (b.state === HOP) hopping(b, probe);
   else if (b.state === FALL) falling(b, probe, out);
-  else if (b.state === REST) {
-    settle(b);
-    b.spinSpeed = 0;
-  }
+  else if (b.state === REST) resting(b, probe);
+}
+
+/** The frame from the requests on: what happened, as events, added to `out`. The last frame's
+    landing is cleared first, so a caller between `read` and `run` still sees it; while the ball
+    is `frozen` its state does nothing, nor the move step nor the landings, and a ramp, the look
+    and the spin go on. A lost ball says so and stays where it is. */
+export function run(b, probe, out) {
+  b.landed = false;
+  intents(b, probe, out);
+  if (!b.frozen) acting(b, probe, out);
   b.last = b.progress;
   b.progress = progressOf(b);
   // the game's move step runs before its landings, so a frame that lands takes no roll of its own
-  if (b.state === ROLLING && !b.landed) move(b, probe, out);
+  if (b.state === ROLLING && !b.landed && !b.frozen) move(b, probe, out);
   if (b.ramp) ramping(b);
   if (b.state === REST || b.state === ROLLING) b.held = add(cellOf(b, b.pos), b.n, -1);
   looking(b, probe);
   b.spin += b.table.spin * b.spinSpeed;
   if (b.state === REST) b.rest = { cell: blockUnder(b), face: faceUnder(b), h: b.h };
-  if (lost(b)) {
-    const { cell, face, h } = b.rest;
-    Object.assign(b, ballAt(b.rules, cell, face, h));
-    out.push({ lost: true });
-  }
+  if (lost(b)) out.push({ lost: true });
+  return out;
+}
+
+/** Stand the ball at rest on `face` of the block at `cell`, heading `h`, laid as `ballAt` lays
+    it, a ramp or a look it had gone and its frame cut to the new footing. */
+export function place(b, cell, face, h) {
+  Object.assign(b, ballAt(b.rules, cell, face, h));
+}
+
+/** One game frame, with `b.pad` the pad as held, for a caller with no rules over the ball: what
+    happened, as events, a lost ball put back where it last rested. */
+export function step(b, probe) {
+  const out = [];
+  read(b, probe, out);
+  run(b, probe, out);
+  if (out.some((e) => e.lost)) place(b, b.rest.cell, b.rest.face, b.rest.h);
   return out;
 }

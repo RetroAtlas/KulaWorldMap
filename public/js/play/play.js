@@ -39,7 +39,9 @@ import {
   faceUnder,
   moving,
   offsetFrame,
-  step,
+  place,
+  read,
+  run,
 } from "./ball.js";
 
 const BALL_TYPE = 30;
@@ -362,7 +364,9 @@ function stepped(dt) {
       b.pad = held | tapped;
       tapped = 0;
       const was = onFace(b) ? footOf(b) : null;
-      const events = step(b, live.probe);
+      const events = [];
+      read(b, live.probe, events);
+      run(b, live.probe, events);
       if (!motionOn()) ageDust(1 / motionTable().hz);
       else if (was && onFace(b)) {
         const under = blockUnder(b);
@@ -395,6 +399,7 @@ function happened(event) {
     return;
   }
   if (event.lost) {
+    place(b, b.rest.cell, b.rest.face, b.rest.h);
     live.station = true;
     toast(LOST);
     say(LOST);

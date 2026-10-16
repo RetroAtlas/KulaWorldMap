@@ -17,6 +17,9 @@ import {
   PAD,
   ballAt,
   step,
+  read,
+  run as runFrame,
+  place,
   turned,
   offsetFrame,
   blockUnder,
@@ -610,4 +613,182 @@ test("the shadow's height is the centre's off the block under it, and nothing ov
     if (d.state === FALL && clearance(d, lower) !== Infinity) over = clearance(d, lower);
   }
   assert.ok(over !== null && over > 0 && over < 2 * UNIT, String(over));
+});
+
+test("read then run is step, frame for frame, over a roll, two turns, two jumps and a turn about", () => {
+  const probe = plate();
+  const a = ballAt(RULES, [17, 18, 17], TOP, UP);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  const padAt = (f) => {
+    if (f <= 10) return PAD.up;
+    if (f === 11) return PAD.up | PAD.left;
+    if (f <= 18) return PAD.up;
+    if (f === 38) return PAD.right;
+    if (f >= 58 && f <= 90) return PAD.up | PAD.cross;
+    return f === 91 ? PAD.down : 0;
+  };
+  const events = [];
+  for (let f = 1; f <= 200; f++) {
+    a.pad = b.pad = padAt(f);
+    const out = [];
+    read(b, probe, out);
+    assert.equal(runFrame(b, probe, out), out);
+    assert.deepEqual(out, step(a, probe), `frame ${f}`);
+    assert.deepEqual(b, a, `frame ${f}`);
+    events.push(...out);
+  }
+  assert.ok(events.some((e) => e.turned === LEFT));
+  assert.ok(events.some((e) => e.turned === RIGHT));
+  assert.equal(events.filter((e) => e.at === "landed").length, 2);
+  assert.equal(a.state, REST);
+  assert.equal(moving(a), false);
+});
+
+test("a landing stands between read and run, and run clears it as it begins", () => {
+  const probe = row(10, 18);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 30, PAD.up | PAD.cross);
+  assert.equal(b.landed, false);
+  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed" }]);
+  assert.equal(b.landed, true);
+  b.pad = 0;
+  const out = [];
+  read(b, probe, out);
+  assert.equal(b.landed, true);
+  runFrame(b, probe, out);
+  assert.equal(b.landed, false);
+  assert.deepEqual(out, []);
+});
+
+test("frozen, the ball's state, its move and its landing stand still while a ramp, the look and the spin go on", () => {
+  const probe = row(10, 18);
+  // a roll a frame short of the middle: the centre, the state and the speed hold, no stop, the
+  // spin on by the speed's copy, and the middle comes on the frame after the freeze
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 17, PAD.up);
+  assert.equal(b.state, ROLLING);
+  const rolling = { pos: [...b.pos], speed: b.speed, spin: b.spin, spinSpeed: b.spinSpeed };
+  b.frozen = true;
+  assert.deepEqual(run(b, probe, 5, 0), []);
+  assert.deepEqual(b.pos, rolling.pos);
+  assert.equal(b.state, ROLLING);
+  assert.equal(b.speed, rolling.speed);
+  assert.equal(b.spin, rolling.spin + 5 * table.spin * rolling.spinSpeed);
+  b.frozen = false;
+  assert.deepEqual(run(b, probe, 1, 0), [{ at: "middle" }]);
+  assert.equal(b.state, REST);
+  // a turn's ramp runs to its end
+  const c = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(c, probe, 1, PAD.left);
+  c.frozen = true;
+  run(c, probe, 17, 0);
+  assert.equal(c.ramp.count, 18);
+  run(c, probe, 1, 0);
+  assert.equal(c.ramp, null);
+  assert.deepEqual(c.frame, frameOf(c.h, c.n));
+  // a fall hangs in the air while the look's word grows on
+  const edge = row(15, 18);
+  const d = ballAt(RULES, [17, 16, 17], TOP, UP);
+  run(d, edge, 33, PAD.up | PAD.cross);
+  assert.equal(d.state, FALL);
+  const aloft = [...d.pos];
+  const word = d.look.word;
+  d.frozen = true;
+  run(d, edge, 5, 0);
+  assert.deepEqual(d.pos, aloft);
+  assert.equal(d.state, FALL);
+  assert.ok(d.look.word > word);
+  // a landing waits: hung over a block, the ball lands once let go
+  const lower = row(15, 18, [[17, 13, 19]]);
+  const e = ballAt(RULES, [17, 16, 17], TOP, UP);
+  run(e, lower, 31, PAD.up | PAD.cross);
+  for (let f = 0; f < 100 && !(clearance(e, lower) < 2 * table.rolling.resume); f++)
+    run(e, lower, 1, 0);
+  assert.equal(e.state, FALL);
+  const hung = [...e.pos];
+  e.frozen = true;
+  assert.deepEqual(run(e, lower, 20, 0), []);
+  assert.deepEqual(e.pos, hung);
+  assert.equal(e.state, FALL);
+  assert.equal(e.landed, false);
+  e.frozen = false;
+  assert.ok(run(e, lower, 3, 0).some((ev) => ev.at === "landed"));
+  assert.deepEqual(blockUnder(e), [17, 13, 19]);
+});
+
+test("a ball at rest whose block goes falls at the fall's start, and lands on the block below", () => {
+  const gone = new Set();
+  const base = row(15, 18, [[17, 18, 19]]);
+  const probe = { solid: (c) => !gone.has(cellKey(...c)) && base.solid(c) };
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 3, 0);
+  assert.equal(b.state, REST);
+  gone.add(cellKey(17, 18, 17));
+  const at = [...b.pos];
+  assert.deepEqual(run(b, probe, 1, 0), []);
+  assert.equal(b.state, FALL);
+  assert.equal(b.v, table.fall.start);
+  assert.equal(b.speed, 0);
+  assert.deepEqual(b.pos, at);
+  assert.deepEqual(blockUnder(b), [17, 18, 17]);
+  const events = [];
+  for (let f = 0; f < 100 && b.state === FALL; f++) events.push(...run(b, probe, 1, 0));
+  assert.deepEqual(events, [{ at: "landed" }]);
+  assert.equal(b.state, REST);
+  assert.deepEqual(blockUnder(b), [17, 18, 19]);
+  assert.deepEqual(b.pos, [17 * UNIT, 18 * UNIT, 19 * UNIT - 356]);
+  assert.equal(heightOf(b), 100);
+});
+
+test("place stands the ball at rest on a face, the ramp and the look gone and the frame cut", () => {
+  const probe = plate();
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 3, PAD.left);
+  assert.equal(b.ramp.kind, "quarter");
+  b.look.word = 100;
+  const face = 1;
+  const h = [0, 0, 1];
+  place(b, [20, 12, 17], face, h);
+  assert.equal(b.ramp, null);
+  assert.deepEqual(b.look, { word: 0, rate: table.look.from });
+  assert.deepEqual(b.frame, frameOf(h, FACE_NORMAL[face]));
+  assert.equal(b.state, REST);
+  assert.equal(b.speed, 0);
+  assert.deepEqual(blockUnder(b), [20, 12, 17]);
+  assert.equal(faceUnder(b), face);
+  assert.deepEqual(b.h, h);
+  assert.equal(heightOf(b), 100);
+  assert.deepEqual(b.rest, { cell: [20, 12, 17], face, h });
+  assert.equal(moving(b), false);
+  assert.deepEqual(run(b, probe, 1, 0), []);
+  assert.deepEqual(b.pos, [20 * UNIT + 356, 12 * UNIT, 17 * UNIT]);
+});
+
+test("a lost ball is left where it fell and says so each frame, and step alone puts it back where it last rested", () => {
+  const probe = row(15, 18);
+  const b = ballAt(RULES, [17, 16, 17], TOP, UP);
+  run(b, probe, 31, PAD.up | PAD.cross);
+  assert.equal(b.state, FALL);
+  let out = [];
+  for (let f = 0; f < 400 && !out.some((e) => e.lost); f++) {
+    b.pad = 0;
+    out = [];
+    read(b, probe, out);
+    runFrame(b, probe, out);
+  }
+  assert.deepEqual(out, [{ lost: true }]);
+  assert.equal(b.state, FALL);
+  assert.ok(b.pos[2] >= table.fall.lost[1] * UNIT, String(b.pos[2]));
+  assert.deepEqual(b.rest, { cell: [17, 16, 17], face: TOP, h: UP });
+  const fell = [...b.pos];
+  out = [];
+  read(b, probe, out);
+  runFrame(b, probe, out);
+  assert.deepEqual(out, [{ lost: true }]);
+  assert.notDeepEqual(b.pos, fell);
+  assert.deepEqual(step(b, probe), [{ lost: true }]);
+  assert.equal(b.state, REST);
+  assert.deepEqual(blockUnder(b), [17, 16, 17]);
+  assert.deepEqual(b.h, UP);
+  assert.equal(moving(b), false);
 });
