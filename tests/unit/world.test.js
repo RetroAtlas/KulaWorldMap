@@ -15,7 +15,10 @@ import {
   took,
   fell,
   keysOf,
+  shiftOf,
+  platformAt,
 } from "../../public/js/play/world.js";
+import { advance } from "../../public/js/viewer/travel.js";
 
 setObjects(objects);
 setAnnotations(annotations);
@@ -200,7 +203,14 @@ test("the world lays the walkers and the dice and keeps a platform's home and bo
   assert.equal(typeof w.roll, "function");
   assert.equal(w.probe.free([10, 10, 17], 0, 0), true);
   assert.deepEqual(w.platforms.get(key([20, 14, 17])).home, [20 * UNIT, 14 * UNIT, 17 * UNIT]);
-  assert.ok(w.bodies.has(key([20, 15, 17])), "the body's second block at rest");
+  assert.deepEqual(
+    w.platforms.get(key([20, 14, 17])).body,
+    [
+      [20, 14, 17],
+      [20, 15, 17],
+    ],
+    "the body's cells at home",
+  );
   const travel = travelOf({ world: w });
   assert.deepEqual(Object.keys(travel).sort(), ["probe", "roll", "walkers"]);
   assert.equal(travel.walkers, w.walkers);
@@ -475,4 +485,58 @@ test("the probe reads a vanishing block solid on the frames its cycle has it in 
   assert.equal(w.probe.value([11, 10, 17], absent), -1, "and the walkers read the same lattice");
   delete live.words.frame;
   assert.equal(p.solid([11, 10, 17]), true, "the level's first frame where the run has none");
+});
+
+test("the probe follows a platform's body: solid where the body stands now and empty at its home cell while it is away, the platform named with its shift, and to a riding ball the platform's own blocks at home alone, the word under it the platform's", () => {
+  const l = level([...row(10, 13, 10, 17), [20, 14, 17]], [platform(20, 14, 17)]);
+  const live = standing(l, [10, 10, 17]);
+  const p = probeOf(live);
+  const rail = key([20, 14, 17]);
+  const { speed, standing: word } = motion.kinds["5"];
+  assert.equal(p.filled([20, 14, 17]), true);
+  assert.equal(p.filled([20, 15, 17]), true, "the body's second block at home");
+  assert.deepEqual(p.platform([20, 15, 17]), { key: rail, travel: [0, 0, 0] });
+  assert.equal(p.platform([10, 10, 17]), null, "a plain block is no platform's");
+  assert.equal(p.standable([20, 14, 17], TOP), true);
+  const { walkers, probe: lattice, roll } = live.world;
+  advance([...walkers.values()], lattice, 41, roll);
+  const w = walkers.get(`${rail}/null`);
+  assert.deepEqual(
+    w.pos,
+    [20 * UNIT, 14 * UNIT - 41 * speed, 17 * UNIT],
+    "two blocks on toward -y",
+  );
+  assert.deepEqual(shiftOf(live.world, rail), [0, -41 * speed, 0]);
+  assert.equal(p.filled([20, 14, 17]), false, "the home cell empty while the body is away");
+  assert.equal(p.solid([20, 14, 17]), false);
+  assert.equal(
+    p.value([20, 14, 17]),
+    mapData.firstRecord,
+    "though the lattice's word stands there",
+  );
+  assert.equal(p.filled([20, 15, 17]), false);
+  assert.equal(p.filled([20, 12, 17]), true, "the body where it stands now");
+  assert.equal(p.filled([20, 13, 17]), true);
+  assert.equal(p.filled([20, 11, 17]), false);
+  assert.deepEqual(p.platform([20, 12, 17]), { key: rail, travel: [0, -41 * speed, 0] });
+  assert.deepEqual(platformAt(live.world, [20, 13, 17]), {
+    key: rail,
+    travel: [0, -41 * speed, 0],
+  });
+  assert.equal(p.platform([20, 14, 17]), null);
+  assert.equal(p.standable([20, 12, 17], TOP), true);
+  assert.equal(p.standable([20, 14, 17], TOP), false);
+  live.ball.riding = { key: rail };
+  live.ball.travel = [0, -41 * speed, 0];
+  assert.equal(p.solid([20, 14, 17]), true, "riding, the platform's blocks at home are solid");
+  assert.equal(p.solid([20, 15, 17]), true);
+  assert.equal(p.solid([20, 12, 17]), false, "not where the body is drawn");
+  assert.equal(p.solid([10, 10, 17]), false, "nor the level's blocks");
+  assert.equal(p.filled([10, 10, 17]), true, "which stand to everyone else");
+  assert.equal(p.standable([10, 10, 17], TOP), true);
+  assert.equal(standingOf(live), word, "the platform's word under a riding ball");
+  live.ball.riding = null;
+  live.ball.travel = null;
+  assert.equal(p.solid([10, 10, 17]), true);
+  assert.equal(standingOf(live), -1);
 });

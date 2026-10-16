@@ -9,6 +9,7 @@ import { fell } from "./world.js";
 const FIRE = 1;
 const ICE = 2;
 const ACID = 4;
+const PLATFORM = 5;
 const CRUMBLING = 6;
 const LASER = 8;
 const MOVING_SPIKES = 11;
@@ -176,10 +177,21 @@ export function spiked(live, out) {
   die(live, out, "spikes", { freeze: true, mark: true, wait });
 }
 
-/** The first captivator within its reach of the ball's centre, a walker where it has stepped to,
-    catches the ball, over any countdown but a catch's own. */
+/** The ball's position as the game's words hold it: while it rides a platform, relative to the
+    platform's position and biased by the table's block. */
+function wordsOf(live) {
+  const b = live.ball;
+  if (!b.riding) return b.pos;
+  const { home } = live.world.platforms.get(b.riding.key);
+  const { bias } = live.tables.motion.kinds[String(PLATFORM)].ride;
+  return b.pos.map((v, i) => v - home[i] + bias);
+}
+
+/** The first captivator within its reach of the ball's position words as they stand, a walker
+    where it has stepped to, catches the ball, over any countdown but a catch's own; the words of
+    a ball riding a platform are relative to it, which puts it out of every captivator's reach. */
 export function catching(live, out) {
-  const { pos } = live.ball;
+  const pos = wordsOf(live);
   const { walkers, captivators } = live.world;
   for (const c of captivators) {
     const at = walkers.get(c.slot)?.pos ?? c.at;

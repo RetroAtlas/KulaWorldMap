@@ -59,9 +59,11 @@ function take(live, p, at, out) {
 
 /** The walk over the cells about the ball: a pickup still on its face is taken where its place
     lies within its reach of the ball's centre, or, where it shows the form that is a hazard's,
-    catches the ball as a captivator does. */
+    catches the ball as a captivator does; the cells about a ball riding a platform are the
+    platform's own, which hold nothing to take. */
 export function contact(live, out) {
   const b = live.ball;
+  if (b.riding) return;
   const world = live.world;
   const { types } = live.tables.motion;
   const first = add(add(add(cellOf(b), b.n, -1), b.h, -1), b.s);

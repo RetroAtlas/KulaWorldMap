@@ -1,7 +1,7 @@
 // The game's frame over the ball and the level: the clock, the guard, the wait, the pad, what is
 // under the ball and what it takes, in the executable's order, over pad words from any source.
-import { PAD, aloft, ballAt, blockUnder, cellOf, place, read, run } from "./ball.js";
-import { KEY, fell, keysOf, probeOf, standingOf, took, worldOf } from "./world.js";
+import { PAD, alight, aloft, ballAt, blockUnder, cellOf, place, read, run } from "./ball.js";
+import { KEY, fell, keysOf, probeOf, shiftOf, standingOf, took, worldOf } from "./world.js";
 import { contact } from "./contact.js";
 import {
   INVINCIBLE,
@@ -19,6 +19,7 @@ import { OFF_LATTICE, layHeading, startsOf, TANGENT } from "../viewer/data.js";
 import { advance } from "../viewer/travel.js";
 
 const BALL = 30;
+const PLATFORM = 5;
 const CRUMBLING = 6;
 const SIMON = 1;
 const EXIT = 7;
@@ -36,6 +37,7 @@ const rulesOf = ({ motion, unit, jump }) => ({
   unit,
   jump,
   edge: motion.kinds[String(CRUMBLING)].edge,
+  ride: motion.kinds[String(PLATFORM)].ride,
 });
 
 /** The start the game takes, as a station, or null. */
@@ -146,6 +148,13 @@ function movers(live) {
   if (caught) for (const w of all) w.at = to;
 }
 
+// A riding ball's travel is its platform's shift, taken afresh as the hazards end, so the beam is
+// read at the cell the last frame's travel gave.
+function carried(live) {
+  const b = live.ball;
+  if (b.riding) b.travel = shiftOf(live.world, b.riding.key);
+}
+
 // A level with no key marks the block at `cell` once: its points, and one off the blocks left.
 function mark(live, cell, out) {
   const w = live.words;
@@ -168,7 +177,8 @@ function ground(live, out) {
   const b = live.ball;
   const { ending, wait } = live.tables.motion.play;
   if (w.bonus) {
-    mark(live, cellOf(b, add(b.pos, b.n, -(b.half + b.radius))), out);
+    // the cells about a riding ball are its platform's, which hold no block of the level's
+    if (!b.riding) mark(live, cellOf(b, add(b.pos, b.n, -(b.half + b.radius))), out);
     if (w.unmarked !== 0) return;
     if (b.landed) end(live, ending.bonus, out);
     else if (w.wait === 0) Object.assign(w, { ending: ending.bonus, wait: wait.bonus });
@@ -209,6 +219,7 @@ function hazards(live, out) {
   }
   pills(live, out);
   devices(live, out);
+  carried(live);
 }
 
 /** What the game's read of the cells about the ball leaves for the next frame's hazards: the
@@ -312,6 +323,11 @@ export function relevel(live, l, idx) {
   for (const key of was.marked) if (world.cells.has(key)) world.marked.add(key);
   for (const key of was.gone) if (world.crumbling.has(key)) fell(world, key);
   live.world = world;
+  const b = live.ball;
+  if (b.riding) {
+    if (world.platforms.has(b.riding.key)) b.travel = shiftOf(world, b.riding.key);
+    else alight(b);
+  }
   const w = live.words;
   const takenKeys = [...world.taken].filter((s) => world.pickups.get(s).m.type === KEY).length;
   w.keys = keysOf(world) - takenKeys;

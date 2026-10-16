@@ -22,6 +22,7 @@ const GONE = "The crumbling block at 17,16,17 is gone.";
 const TAKEN = "Taken: Coin (bronze) on the top";
 const SENDING = "The teleporter is sending the ball.";
 const REFUSED = "The ball cannot roll off here: a block stands beside it.";
+const RIDING = "The ball rides the platform.";
 const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 const UNTURNED = [
   [1, 0, 0],
@@ -1708,4 +1709,43 @@ test.describe("with a touch screen", () => {
       expect(errors).toEqual([]);
     });
   });
+});
+
+test("a jump onto a moving platform rides it: the strip says so, the ball stands where the platform has carried it, and the station follows the platform to and fro", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a key out of reach keeps the level an arcade one; a platform three blocks long runs a block
+  // along x two blocks before the start, so the cell a jump comes down on is always under it
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  await laid(page, [16, 15, 17], { kind: 5, far: [17, 15, 17], length: 3, speed: 30 });
+  await expect(page.locator("#chipLine")).toContainText("4 blocks");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await page.keyboard.down("ArrowUp");
+  await page.waitForTimeout(60);
+  await page.keyboard.press(" ");
+  await page.keyboard.up("ArrowUp");
+  await expect(status(page)).toHaveText(RIDING, { timeout: 5000 });
+  await expect(say(page)).toHaveText(`17,15,17, top. ${RIDING}`);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  expect((await probe(page)).station.block).toEqual([17, 15, 17]);
+  // the platform goes back to its cell and comes again, the ball standing on it meanwhile
+  await expect
+    .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [25] })
+    .toEqual([16, 15, 17]);
+  await expect(line(page)).toHaveText("Playing · on the top of 16,15,17, facing -y");
+  await expect(status(page)).toHaveText(RIDING);
+  const carried = await probe(page);
+  expect(carried.station.moving).toBe(false);
+  expect(carried.target[1]).toBeCloseTo(15.5, 1);
+  expect(carried.target[0]).toBeLessThan(17.5);
+  await expect
+    .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [25] })
+    .toEqual([17, 15, 17]);
+  expect(errors).toEqual([]);
 });

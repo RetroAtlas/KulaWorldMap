@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects, mapData, annotations } from "./fixtures.js";
 import { state, frameOf } from "../../public/js/viewer/state.js";
-import { cellKey } from "../../public/js/format/lattice.js";
+import { cellKey, FACE_NORMAL } from "../../public/js/format/lattice.js";
 import {
   setObjects,
   setAnnotations,
@@ -23,6 +23,7 @@ import {
   faceUnder,
   acrossOf,
   progressOf,
+  positionOf,
 } from "../../public/js/play/ball.js";
 import { startRun, frame, heeds, restart, revive, stand } from "../../public/js/play/rules.js";
 import { probeOf } from "../../public/js/play/world.js";
@@ -148,6 +149,7 @@ function trace(live, n, pad, until = () => false) {
       speed: live.ball.speed,
       forward: live.ball.forward,
       pos: [...live.ball.pos],
+      cell: cellOf(live.ball),
       words: { ...live.words },
     });
   }
@@ -1186,4 +1188,160 @@ test("a hop from a crumbling block comes down over nothing once the block has go
   assert.equal(live.ball.v, motion.types["30"].fall.hop);
   trace(live, 60, 0, resting);
   assert.deepEqual(blockUnder(live.ball), [17, 15, 19]);
+});
+
+/** A platform's record at (x, y, z), two blocks long, its run from its cell to `far` along one
+    axis, setting off toward `far`. */
+function platform(x, y, z, far) {
+  const cell = [x, y, z];
+  const axis = [0, 1, 2].find((i) => far[i] !== cell[i]);
+  const step = [0, 0, 0];
+  step[axis] = far[axis] > cell[axis] ? 1 : -1;
+  const type = FACE_NORMAL.findIndex((n) => n.every((v, i) => v === step[i]));
+  const [lower, upper] = far[axis] > cell[axis] ? [cell, far] : [far, cell];
+  const f = [[1, 2, 5][axis], lower === cell ? 0 : 1, ...lower, ...upper, -1, -1, -1];
+  return { x, y, z, kind: 5, type, f, length: 2 };
+}
+
+test("a lit beam kills a riding ball in the cell its platform has carried it to, read at the ball's cell in the level, while the cell its own position lies in holds no beam", () => {
+  // a platform running two blocks along +x from (17, 15, 17), and a beam across its far end's
+  // cell a block up, along y
+  const ray = {
+    x: 19,
+    y: 13,
+    z: 16,
+    kind: 8,
+    type: 2,
+    colour: 2,
+    f: [2, 1, 19, 13, 16, 19, 17, 16, -1, -1, -1],
+  };
+  const l = level(
+    [
+      [17, 17, 17],
+      [17, 18, 17],
+      [17, 15, 17],
+    ],
+    [start(), platform(17, 15, 17, [19, 15, 17]), ray],
+  );
+  const live = standing(l, { cell: [17, 17, 17], face: TOP, h: UP });
+  const key = cellKey(17, 15, 17);
+  const w = live.world.walkers.get(`${key}/null`);
+  while (!(w.pos[0] === 17 * UNIT && w.dwell > 0)) frame(live, 0);
+  frame(live, PAD.up | PAD.cross);
+  const landing = trace(live, 40, 0, (l) => l.ball.riding !== null);
+  assert.ok(has(landing.at(-1), "rode"));
+  const b = live.ball;
+  assert.ok(!landing.some((f) => has(f, "dying")));
+  const carried = trace(live, 200, 0, dying);
+  assert.ok(dying(live), "killed on the way");
+  assert.deepEqual(
+    carried.at(-1).events.filter((e) => e.dying),
+    [{ dying: { cause: "laser", wait: play.wait.laser } }],
+  );
+  assert.deepEqual(cellOf(b), [19, 15, 16], "the ball's cell in the level is the beam's");
+  assert.equal(live.world.probe.value(cellOf(b), live.words.frame), BEAM.cell);
+  assert.deepEqual(cellOf(b, b.pos), [17, 15, 16], "while its own position lies clear of it");
+  assert.equal(live.world.probe.value(cellOf(b, b.pos), live.words.frame), -1);
+  assert.deepEqual(b.riding, { key }, "and it rides on through the countdown");
+  assert.equal(live.words.heat, BEAM.heat - HEAT.cool, "the beam's heat, cooled off fire once");
+  assert.ok(
+    carried.slice(0, -1).every((f) => !has(f, "dying")),
+    "and not before the platform carried it there",
+  );
+  assert.ok(carried.length > 40, String(carried.length));
+  const entered = carried.findIndex((f) => f.cell.join() === "19,15,16");
+  assert.equal(
+    carried.length - 1,
+    entered + 1,
+    "on the frame after the platform carried the ball's cell into the beam, the hazards reading the travel the last frame left",
+  );
+});
+
+test("the captivators' hit test takes the ball's position words as they stand, relative to the platform's position and biased by a block while it rides one, so a riding ball carried within a corkscrew's reach by its place in the level, or standing within one's reach by its place at the platform's home, is not caught, where a ball standing in that place is", () => {
+  // a platform running three blocks along +x from (17, 15, 17), and a corkscrew on the +y face
+  // of a block a block up beside the run at either end, each within reach of a ball on the
+  // body's second block as the platform dwells at that end
+  const PLUS_Y = 2;
+  const corkscrew = (x) => ({ x, y: 14, z: 16, kind: 0, on: [object(PLUS_Y, CORKSCREW)] });
+  const l = level(
+    [
+      [17, 17, 17],
+      [17, 18, 17],
+      [17, 15, 17],
+      [18, 14, 16],
+      [21, 14, 16],
+    ],
+    [start(), platform(17, 15, 17, [20, 15, 17]), corkscrew(18), corkscrew(21)],
+  );
+  const live = standing(l, { cell: [17, 17, 17], face: TOP, h: UP });
+  const key = cellKey(17, 15, 17);
+  const w = live.world.walkers.get(`${key}/null`);
+  while (!(w.pos[0] === 17 * UNIT && w.dwell > 0)) frame(live, 0);
+  frame(live, PAD.up | PAD.cross);
+  const landing = trace(live, 40, 0, (l) => l.ball.riding !== null);
+  assert.ok(has(landing.at(-1), "rode"));
+  const b = live.ball;
+  frame(live, PAD.right);
+  trace(live, 40, 0, resting);
+  assert.deepEqual(b.h, [1, 0, 0], "facing along the platform");
+  trace(live, 60, PAD.up, (l) => l.ball.state === ROLLING);
+  trace(live, 60, 0, resting);
+  assert.deepEqual(
+    cellOf(b, b.pos),
+    [18, 15, 16],
+    "over the body's second block, in the platform's coordinates",
+  );
+  const { home } = live.world.platforms.get(key);
+  const { bias } = motion.kinds["5"].ride;
+  const [near, far] = [18, 21].map((x) =>
+    live.world.captivators.find((c) => c.slot === slot([x, 14, 16], PLUS_Y)),
+  );
+  const entry = (c) => live.world.walkers.get(c.slot)?.pos ?? c.at;
+  const seen = [];
+  while (!dying(live) && live.words.frame < 900) {
+    frame(live, 0);
+    const words = b.pos.map((v, i) => v - home[i] + bias);
+    seen.push({
+      dwell: w.dwell > 0 ? (w.pos[0] > home[0] ? "far" : "home") : null,
+      level: [near, far].map((c) => squared(positionOf(b), entry(c))),
+      relative: squared(b.pos, entry(near)),
+      words: [near, far].map((c) => squared(words, entry(c))),
+    });
+  }
+  assert.ok(!dying(live), "not caught while riding");
+  assert.deepEqual(b.riding, { key });
+  assert.ok(
+    seen.some((s) => s.dwell === "far" && s.level[1] <= far.square),
+    "though its place in the level came within the far corkscrew's reach as the platform dwelt at the far end",
+  );
+  assert.ok(
+    seen.some((s) => s.dwell === "home" && s.level[0] <= near.square),
+    "and within the near one's as it dwelt at home",
+  );
+  assert.ok(
+    seen.every((s) => s.relative <= near.square),
+    "and its position relative to the platform's home stood within the near one's reach throughout",
+  );
+  assert.ok(
+    seen.every((s) => s.words.every((d2, i) => d2 > [near, far][i].square)),
+    "while its words, relative to the platform and biased by a block, never came within either's",
+  );
+  const stood = standing(
+    level(
+      [
+        [17, 17, 17],
+        [17, 18, 17],
+        [21, 15, 17],
+        [21, 14, 16],
+      ],
+      [start(), corkscrew(21)],
+    ),
+    { cell: [21, 15, 17], face: TOP, h: UP },
+  );
+  const caught = trace(stood, 120, 0, dying);
+  assert.ok(dying(stood), "a ball standing in that place is caught");
+  assert.deepEqual(
+    caught.at(-1).events.filter((e) => e.dying),
+    [{ dying: { cause: "captivator", wait: play.wait.captivator } }],
+  );
 });

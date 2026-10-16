@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects, mapData, annotations } from "./fixtures.js";
 import { state } from "../../public/js/viewer/state.js";
-import { cellKey } from "../../public/js/format/lattice.js";
+import { cellKey, FACE_NORMAL } from "../../public/js/format/lattice.js";
 import {
   setObjects,
   setAnnotations,
@@ -19,7 +19,9 @@ import {
   ROLLING,
   PAD,
   blockUnder,
+  cellOf,
   faceUnder,
+  positionOf,
 } from "../../public/js/play/ball.js";
 import {
   startRun,
@@ -31,7 +33,7 @@ import {
   relevel,
   end,
 } from "../../public/js/play/rules.js";
-import { probeOf, standingOf, viewOf } from "../../public/js/play/world.js";
+import { probeOf, shiftOf, standingOf, viewOf } from "../../public/js/play/world.js";
 import { recorder, replayDriver } from "../../public/js/play/drive.js";
 import { blockPhase } from "../../public/js/viewer/motion.js";
 
@@ -834,4 +836,184 @@ test("relevel carries a gone block where the level still holds a crumbling block
   relevel(live, plain, index(plain));
   assert.equal(live.world.gone.size, 0, "let go where a plain block stands there");
   assert.equal(probeOf(live).solid([17, 15, 17]), true);
+});
+
+const PLATFORM = motion.kinds["5"];
+const HOURGLASS = 35;
+const squared = (a, b) => a.reduce((sum, c, i) => sum + (c - b[i]) ** 2, 0);
+/** A platform's record at (x, y, z), `length` blocks long, its run from its cell to `far` along
+    one axis, setting off toward `far`. */
+function platform(x, y, z, far, length = 2) {
+  const cell = [x, y, z];
+  const axis = [0, 1, 2].find((i) => far[i] !== cell[i]);
+  const step = [0, 0, 0];
+  step[axis] = far[axis] > cell[axis] ? 1 : -1;
+  const type = FACE_NORMAL.findIndex((n) => n.every((v, i) => v === step[i]));
+  const [lower, upper] = far[axis] > cell[axis] ? [cell, far] : [far, cell];
+  const f = [[1, 2, 5][axis], lower === cell ? 0 : 1, ...lower, ...upper, -1, -1, -1];
+  return { x, y, z, kind: 5, type, f, length };
+}
+/** A level of two blocks before a platform two blocks long that runs two blocks along +x from
+    (17, 15, 17), with `records` on blocks of their own besides, the ball at rest on the top of
+    (17, 17, 17) facing it. */
+function docked(records = [], keyed = true) {
+  const l = level(
+    [[17, 17, 17], [17, 18, 17], [17, 15, 17], ...records.map((r) => [r.x, r.y, r.z])],
+    [start(), platform(17, 15, 17, [19, 15, 17]), ...records],
+    99,
+    keyed,
+  );
+  const live = begin(l, { cell: [17, 17, 17], face: TOP, h: UP });
+  live.words.wait = 0;
+  const key = cellKey(17, 15, 17);
+  return { l, live, key, w: live.world.walkers.get(`${key}/null`), home: 17 * UNIT };
+}
+/** The ball jumped onto the platform as it dwells at its cell again, riding it. */
+function riding(records = [], keyed = true) {
+  const d = docked(records, keyed);
+  const { live, w, home } = d;
+  while (!(w.pos[0] === home && w.dwell > 0)) frame(live, 0);
+  const arrived = live.words.frame;
+  frame(live, PAD.up | PAD.cross);
+  const seen = steps(live, 40, 0);
+  return { ...d, arrived, seen };
+}
+
+test("the landings try a platform before a block: a jump that comes down on a platform's body where it stands rides it at rest, the standing word the platform's, and one that comes down on its home cell while the body is away falls through", () => {
+  const { live, key, w, arrived, seen } = riding();
+  assert.equal(w.dwell <= PLATFORM.dwell && w.dwell > 0, true);
+  const rode = seen.find((e) => e.rode);
+  assert.ok(rode, "the ball rode");
+  assert.equal(rode.at, arrived + 31, "on the frame the jump comes down");
+  assert.deepEqual(rode.rode, { key });
+  assert.ok(seen.some((e) => e.at === "landed"));
+  assert.ok(!seen.some((e) => e.ended || e.dying || e.lost));
+  const b = live.ball;
+  assert.deepEqual(b.riding, { key });
+  assert.equal(b.state, REST);
+  assert.deepEqual(blockUnder(b), [17, 15, 17]);
+  assert.equal(live.words.standing, PLATFORM.standing, "the platform's word under the ball");
+  assert.equal(probeOf(live).solid([17, 15, 17]), true);
+  assert.equal(probeOf(live).solid([17, 17, 17]), false, "the level's blocks are not the rider's");
+
+  const away = docked();
+  while (!(away.w.pos[0] > away.home + UNIT && away.w.dwell > 0)) frame(away.live, 0);
+  const p = probeOf(away.live);
+  assert.equal(
+    p.value([17, 15, 17]),
+    mapData.firstRecord + 1,
+    "the lattice's word at the home cell",
+  );
+  assert.equal(p.solid([17, 15, 17]), false, "with nothing to land on there");
+  assert.equal(p.solid([19, 15, 17]), true, "the body where it stands");
+  assert.equal(p.solid([20, 15, 17]), true);
+  frame(away.live, PAD.up | PAD.cross);
+  assert.equal(away.live.ball.state, JUMP);
+  const fell = steps(away.live, 400, 0);
+  assert.ok(!fell.some((e) => e.rode));
+  assert.ok(
+    fell.some((e) => e.ended?.code === play.ending.lost),
+    "fallen through and lost",
+  );
+  assert.equal(away.live.ball.riding, null);
+});
+
+test("riding, the ball's travel is its platform's position less its home, taken afresh each frame after the walkers step, so the block under it in the level follows the platform, which reverses under it at the run's ends while it rides on at rest where it is", () => {
+  const { live, key, w } = riding();
+  const b = live.ball;
+  const { home } = live.world.platforms.get(key);
+  const rel = [...b.pos];
+  const seen = [];
+  for (let f = 0; f < 180; f++) {
+    frame(live, 0);
+    seen.push({
+      travel: [...b.travel],
+      pos: [...w.pos],
+      block: blockUnder(b).join(","),
+      state: b.state,
+      dir: w.dir[0],
+      centre: positionOf(b),
+    });
+  }
+  assert.ok(
+    seen.every((s) => s.travel.every((v, i) => v === s.pos[i] - home[i])),
+    "the travel is the platform's shift as the walkers left it",
+  );
+  assert.ok(seen.every((s) => s.state === REST));
+  assert.deepEqual(b.riding, { key });
+  assert.deepEqual(b.pos, rel, "the position stands while the platform carries it");
+  assert.ok(
+    seen.every((s) => s.centre.every((v, i) => v === rel[i] + s.travel[i])),
+    "the centre in the level is the position with the travel added",
+  );
+  const runs = seen.map((s) => s.block).filter((v, i, a) => i === 0 || v !== a[i - 1]);
+  assert.deepEqual(runs, ["17,15,17", "18,15,17", "19,15,17", "18,15,17", "17,15,17"]);
+  assert.ok(seen.some((s) => s.dir > 0) && seen.some((s) => s.dir < 0), "reversed under the ball");
+  assert.ok(!seen.some((s) => s.block === "20,15,17"), "the far end is the first block's");
+});
+
+test("the contact walk takes nothing while the ball rides, the cells about it being the platform's: an hourglass beside the body's second block, within reach by the table's measure of the ball rolled onto that block at home, is left", () => {
+  const face = FACE_NORMAL.findIndex((n) => n[1] === 1);
+  const beside = { x: 18, y: 14, z: 16, kind: 0, on: [object(face, HOURGLASS)] };
+  const { live, w, home } = riding([beside]);
+  const b = live.ball;
+  const seen = [];
+  for (let f = 0; f < 400 && !b.travel.some((v) => v !== 0); f++) seen.push(...frame(live, 0));
+  for (let f = 0; f < 400 && !(w.pos[0] === home && w.dwell > 0); f++) seen.push(...frame(live, 0));
+  assert.ok(w.pos[0] === home && w.dwell > 0 && b.riding, "back home from its run, dwelling");
+  seen.push(...frame(live, PAD.right));
+  assert.deepEqual(b.h, [1, 0, 0], "facing along the body");
+  for (let f = 0; f < 60 && !(cellOf(b, b.pos)[0] === 18 && b.state === REST); f++)
+    seen.push(...frame(live, cellOf(b, b.pos)[0] === 18 ? 0 : PAD.up));
+  assert.ok(w.dwell > 0 && b.state === REST && b.riding, "at rest on the second block, still home");
+  assert.deepEqual(cellOf(b, b.pos), [18, 15, 16]);
+  const p = live.world.pickups.get(`${cellKey(18, 14, 16)}/${face}`);
+  assert.ok(p);
+  assert.ok(
+    squared(b.pos, p.at) < p.take.reach ** 2 + b.radius ** 2,
+    "within reach of the centre, as the walk measures it",
+  );
+  for (; w.dwell > 0;) seen.push(...frame(live, 0));
+  assert.ok(!seen.some((e) => e.took || e.clock), "nothing taken");
+  assert.equal(live.world.taken.size, 0);
+});
+
+test("a level with no key marks no block under the riding ball, the cells about it being the platform's, so the count stands and the level does not end while it rides", () => {
+  const { live, key } = riding([], false);
+  const b = live.ball;
+  assert.deepEqual(b.riding, { key });
+  assert.equal(live.words.unmarked, 1, "the launch block marked, the start's never reached");
+  const seen = steps(live, 120, 0);
+  assert.ok(!seen.some((e) => e.marked), "nothing marked while riding");
+  assert.ok(!seen.some((e) => e.ended));
+  assert.equal(live.words.unmarked, 1);
+  assert.deepEqual(b.riding, { key });
+});
+
+test("relevel keeps a riding ball on its platform where the edited level still holds it, its travel the new world's, and sets it down in the level where it does not", () => {
+  const { l, live, key } = riding();
+  const b = live.ball;
+  for (let f = 0; f < 200 && !b.travel.some((v) => v !== 0); f++) frame(live, 0);
+  assert.ok(
+    b.travel.some((v) => v !== 0),
+    "carried off home",
+  );
+  const rel = [...b.pos];
+  relevel(live, l, index(l));
+  assert.deepEqual(b.riding, { key });
+  assert.deepEqual(b.travel, shiftOf(live.world, key), "the travel the new world's shift");
+  assert.deepEqual(b.pos, rel, "the position the platform's still");
+  const here = positionOf(b);
+  const without = level(
+    [
+      [17, 17, 17],
+      [17, 18, 17],
+    ],
+    [start()],
+  );
+  relevel(live, without, index(without));
+  assert.equal(b.riding, null);
+  assert.equal(b.travel, null);
+  assert.deepEqual(b.pos, here, "set down where it was in the level");
+  assert.deepEqual(positionOf(b), here);
 });

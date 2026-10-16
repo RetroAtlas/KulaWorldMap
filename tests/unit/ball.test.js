@@ -31,6 +31,7 @@ import {
   cellOf,
   progressOf,
   acrossOf,
+  positionOf,
 } from "../../public/js/play/ball.js";
 
 const table = objects.motion.types[30];
@@ -1407,4 +1408,194 @@ test("the hold asks nothing of the forward request: with Up released past the mi
       .every((s) => s.speed === table.rolling.top),
     "rolling on at the top speed to the hold",
   );
+});
+
+const RIDE = objects.motion.kinds["5"].ride;
+const RIDDEN = { ...RULES, ride: RIDE };
+/** `lattice` with a platform whose blocks stand on the `body` cells at home and are carried
+    `travel()` units from them: solid where the lattice is or where the body stands now, and to
+    the ball `b` while it rides the body at home alone; `platform` names the body's cells now. */
+function carried(lattice, body, travel, b, key = "rail") {
+  const same = (a, c) => a.every((v, i) => v === c[i]);
+  const now = () => {
+    const by = travel().map((v) => Math.floor((v + UNIT / 2) / UNIT));
+    return body.map((c) => c.map((v, i) => v + by[i]));
+  };
+  const on = (cells, cell) => cells.some((c) => same(c, cell));
+  return {
+    ...lattice,
+    solid: (cell) => (b.riding ? on(body, cell) : lattice.solid(cell) || on(now(), cell)),
+    platform: (cell) => (on(now(), cell) ? { key, travel: travel() } : null),
+  };
+}
+/** A ball jumped from the top of (17, 17, 17) onto a platform three blocks long along x, at home
+    from (17, 15, 17) and carried 300 toward -x, until it rides. */
+function ridden() {
+  const b = ballAt(RIDDEN, [17, 17, 17], TOP, UP);
+  const at = { travel: [-300, 0, 0] };
+  const body = [
+    [17, 15, 17],
+    [18, 15, 17],
+    [19, 15, 17],
+  ];
+  const probe = carried(row(17, 18), body, () => at.travel, b);
+  run(b, probe, 1, PAD.up | PAD.cross);
+  const frames = [];
+  for (let f = 1; f <= 40 && !b.riding; f++) frames.push(run(b, probe, 1, 0));
+  return { b, probe, at, frames };
+}
+
+test("a landing on a platform's body rides it: the position made the platform's, the block under and the centre the level's, the platform's own blocks alone solid to the ball, and the forward jump leaves it with the position the level's again", () => {
+  const { b, probe, at, frames } = ridden();
+  assert.equal(frames.length, 30, "on the frame the jump comes down");
+  assert.deepEqual(frames.at(-1), [{ rode: { key: "rail" } }, { at: "landed" }]);
+  assert.deepEqual(b.riding, { key: "rail" });
+  assert.deepEqual(b.travel, [-300, 0, 0]);
+  assert.equal(b.state, REST);
+  assert.deepEqual(blockUnder(b), [17, 15, 17], "the block under in the level");
+  assert.deepEqual(positionOf(b), [17 * UNIT, 15 * UNIT, 17 * UNIT - 356]);
+  assert.deepEqual(b.pos, [17 * UNIT + 300, 15 * UNIT, 17 * UNIT - 356], "the platform's");
+  assert.deepEqual(cellOf(b, b.pos), [18, 15, 16], "over the body's second block at home");
+  assert.deepEqual(cellOf(b), [17, 15, 16], "over the landing's cell in the level");
+  assert.deepEqual(centreOf(b), [17.5, 15.5, 17.5 - 356 / UNIT]);
+  assert.equal(heightOf(b), 100);
+  assert.equal(clearance(b, probe), 100);
+  assert.equal(probe.solid([18, 15, 17]), true, "the platform's blocks at home are solid");
+  assert.equal(probe.solid([17, 15, 17]), true);
+  assert.equal(probe.solid([17, 17, 17]), false, "the level's are not");
+  run(b, probe, 30, 0);
+  assert.equal(b.state, REST, "at rest over a cell of the level's that holds no block");
+  assert.deepEqual(b.rest, { cell: [17, 15, 17], face: TOP, h: UP });
+  at.travel = [-800, 0, 0];
+  b.travel = at.travel;
+  assert.deepEqual(blockUnder(b), [16, 15, 17], "carried with the platform");
+  assert.deepEqual(positionOf(b), [17 * UNIT - 500, 15 * UNIT, 17 * UNIT - 356]);
+  near(centreOf(b)[0], 17.5 - 500 / UNIT);
+  run(b, probe, 5, 0);
+  assert.equal(b.state, REST, "and never dropped");
+  assert.deepEqual(b.rest.cell, [16, 15, 17]);
+  const left = run(b, probe, 1, PAD.up | PAD.cross);
+  assert.deepEqual(left, [{ alit: { key: "rail" } }]);
+  assert.equal(b.riding, null);
+  assert.equal(b.travel, null);
+  assert.equal(b.state, JUMP);
+  assert.deepEqual(
+    b.saved,
+    [17 * UNIT - 500 - table.jump.recentre, 15 * UNIT, 17 * UNIT - 356],
+    "the jump from where the ball is in the level, drawn toward the middle by the jump's step",
+  );
+  assert.deepEqual(positionOf(b), b.pos);
+});
+
+test("the block landing refuses a platform's cell: a body slid into the arc's way at head height during the landings' rows, the point under the centre lying in it, lands nothing, and the snap over nothing falls on through the body", () => {
+  const b = ballAt(RIDDEN, [17, 17, 17], TOP, UP);
+  const at = { travel: [0, 0, 0] };
+  const body = [
+    [19, 15, 16],
+    [20, 15, 16],
+  ];
+  const probe = carried(row(17, 18), body, () => at.travel, b);
+  run(b, probe, 1, PAD.up | PAD.cross);
+  const before = run(b, probe, 20, 0);
+  assert.equal(b.state, JUMP);
+  assert.ok(!before.some((e) => e.at), "nothing met before the body comes");
+  at.travel = [-2 * UNIT, 0, 0];
+  const under = () =>
+    cellOf(
+      b,
+      b.pos.map((c, i) => c - b.n[i] * b.radius),
+    );
+  const rows = [];
+  for (let f = 21; f <= 29; f++)
+    rows.push({
+      events: run(b, probe, 1, 0),
+      cell: cellOf(b, b.pos),
+      under: probe.platform(under()),
+    });
+  assert.ok(
+    rows.every((r) => r.cell.join() === "17,15,16"),
+    "the rows run inside the body's cell",
+  );
+  assert.ok(
+    rows.every((r) => r.under),
+    "the point under the centre in the body",
+  );
+  assert.ok(!rows.some((r) => r.events.length), "no landing and no bounce");
+  assert.equal(b.state, JUMP);
+  assert.deepEqual(run(b, probe, 1, 0), [], "the snap");
+  assert.equal(b.state, FALL, "nothing under the snapped centre but the body, which is no landing");
+  assert.deepEqual(cellOf(b, b.pos), [17, 15, 16]);
+  assert.equal(b.speed, 0);
+  const fell = run(b, probe, 200, 0);
+  assert.ok(!fell.some((e) => e.at || e.rode), "through the body");
+  assert.ok(
+    fell.some((e) => e.lost),
+    "and lost",
+  );
+});
+
+test("riding, the ball will not roll off the platform's side where a block of its body stands beside, and rolls along it and round its ends and sides as round a free block, never falling", () => {
+  const { b, probe } = ridden();
+  assert.deepEqual(run(b, probe, 1, PAD.up), [{ refused: "edge" }]);
+  assert.equal(b.state, REST);
+  run(b, probe, 1, PAD.right);
+  assert.deepEqual(b.h, [1, 0, 0], "facing along the platform");
+  rest(b, probe);
+  const faces = new Set();
+  const blocks = new Set();
+  let wraps = 0;
+  for (let f = 0; f < 300; f++) {
+    const events = run(b, probe, 1, PAD.up);
+    assert.notEqual(b.state, FALL, `frame ${f}`);
+    assert.ok(!events.some((e) => e.refused || e.lost || e.alit), `frame ${f}`);
+    wraps += events.filter((e) => e.face === "wrap").length;
+    if (b.state === REST || b.state === ROLLING) {
+      faces.add(faceUnder(b));
+      blocks.add(blockUnder(b).join(","));
+    }
+  }
+  assert.ok(wraps >= 4, String(wraps));
+  assert.deepEqual([...faces].sort(), [0, 1, 4, 5], "the top, both ends and the underside");
+  assert.deepEqual(b.riding, { key: "rail" }, "riding throughout");
+  assert.deepEqual([...blocks].sort(), ["16,15,17", "17,15,17", "18,15,17"]);
+});
+
+test("a hop while riding leaves the platform and comes down on its body as on stone, not riding, so the body moving on from under it drops the ball, and where the body has moved on by the hop's end it falls at the hop's drop", () => {
+  const { b, probe, at } = ridden();
+  assert.deepEqual(run(b, probe, 1, PAD.cross), [{ alit: { key: "rail" } }]);
+  assert.equal(b.state, HOP);
+  assert.equal(b.riding, null);
+  assert.deepEqual(
+    b.saved,
+    [17 * UNIT, 15 * UNIT, 17 * UNIT - 356],
+    "the hop from where the ball is in the level",
+  );
+  const events = [];
+  for (let f = 0; f < 30 && b.state === HOP; f++) events.push(...run(b, probe, 1, 0));
+  assert.deepEqual(events, [], "no landing is said");
+  assert.equal(b.state, REST);
+  assert.equal(b.riding, null, "down on the body as on stone");
+  assert.equal(b.travel, null);
+  assert.deepEqual(blockUnder(b), [17, 15, 17]);
+  assert.deepEqual(
+    probe.platform([17, 15, 17]),
+    { key: "rail", travel: [-300, 0, 0] },
+    "the body still under it",
+  );
+  run(b, probe, 1, 0);
+  assert.equal(heightOf(b), 100, "laid at rest again");
+  at.travel = [-700, 0, 0];
+  run(b, probe, 5, 0);
+  assert.equal(b.state, REST, "standing while the body still fills its cell");
+  at.travel = [-1500, 0, 0];
+  run(b, probe, 1, 0);
+  assert.equal(b.state, FALL, "dropped as the body moves on from under it");
+  assert.equal(b.v, table.fall.start);
+  const again = ridden();
+  assert.deepEqual(run(again.b, again.probe, 1, PAD.cross), [{ alit: { key: "rail" } }]);
+  again.at.travel = [-2000, 0, 0];
+  for (let f = 0; f < 30 && again.b.state === HOP; f++) run(again.b, again.probe, 1, 0);
+  assert.equal(again.b.state, FALL);
+  assert.equal(again.b.v, table.fall.hop);
+  assert.equal(again.b.riding, null);
 });

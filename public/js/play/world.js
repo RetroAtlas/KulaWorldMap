@@ -65,16 +65,17 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
   const standing = new Map();
   for (const [kind, entry] of Object.entries(motion.kinds))
     if (entry.standing !== undefined) standing.set(Number(kind), entry.standing);
-  const bodies = new Set();
   const platforms = new Map();
   const crumbling = new Map();
   const faces = new Map();
   for (const r of l.records) {
     const key = cellKey(r.x, r.y, r.z);
-    if (r.kind === PLATFORM) {
-      platforms.set(key, { r, home: [r.x, r.y, r.z].map((v) => v * unit) });
-      for (const c of platformCells(r)) bodies.add(cellKey(...c));
-    }
+    if (r.kind === PLATFORM)
+      platforms.set(key, {
+        r,
+        home: [r.x, r.y, r.z].map((v) => v * unit),
+        body: platformCells(r),
+      });
     if (r.kind === CRUMBLING)
       crumbling.set(key, { type: r.type, size: motion.kinds[String(CRUMBLING)].size });
     for (const o of r.on) faces.set(slot(key, o.face), o.type);
@@ -124,12 +125,12 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
   }
   const gone = new Set();
   return {
+    unit,
     first,
     cells,
     kinds,
     standing,
     faces,
-    bodies,
     pickups,
     devices,
     captivators,
@@ -158,6 +159,25 @@ function emptied(lattice, gone) {
 
 const kindAt = (world, cell) => world.kinds.get(cellKey(...cell));
 const atFrame = (live) => live.words.frame ?? 0;
+const sameCell = (a, b) => a.every((v, i) => v === b[i]);
+
+/** Where the platform at `key` stands less its home, in the game's units. */
+export function shiftOf(world, key) {
+  const { home } = world.platforms.get(key);
+  const w = world.walkers.get(`${key}/null`);
+  return w ? add(w.pos, home, -1) : [0, 0, 0];
+}
+
+/** The platform whose body fills `cell` now, as its key and its shift, or null. */
+export function platformAt(world, cell) {
+  const { unit } = world;
+  for (const [key, { body }] of world.platforms) {
+    const travel = shiftOf(world, key);
+    const by = travel.map((v) => Math.floor((v + unit / 2) / unit));
+    if (body.some((c) => sameCell(add(c, by), cell))) return { key, travel };
+  }
+  return null;
+}
 
 /** The game's word for what stands at `cell` at `frame`, read on `face`: a plain block's face
     the type of the slot there, a bare block, no block or one the lattice does not hold at that
@@ -173,24 +193,33 @@ function standingAt(world, cell, face, frame) {
     : OFF_LATTICE;
 }
 
-/** The game's word for what the ball stands on: the block under the cell its centre lies in,
-    read on the face under it, and the word as it was where the game writes none. */
+/** The game's word for what the ball stands on, the platform's while it rides one. */
 export function standingOf(live) {
   const b = live.ball;
+  if (b.riding) return live.world.standing.get(PLATFORM);
   const under = add(cellOf(b), b.n, -1);
   return standingAt(live.world, under, faceUnder(b), atFrame(live)) ?? live.words.standing;
 }
 
 /** The lattice as the ball's rules ask it, over the world as it stands at the run's frame: a
-    vanishing block is there on the frames its cycle says, and a gone block never. */
+    vanishing block is there on the frames its cycle says, a gone block never, and a platform's
+    body where the platform stands now, its home cell empty while it is away; to a ball riding a
+    platform the platform's own blocks at home are solid and nothing else. */
 export function probeOf(live) {
   const world = () => live.world;
   const value = (cell) => world().probe.value(cell, atFrame(live));
-  const solid = (cell) =>
-    value(cell) >= 0 || (inside(cell) && world().bodies.has(cellKey(...cell)));
+  const filled = (cell) =>
+    (value(cell) >= 0 && kindAt(world(), cell) !== PLATFORM) ||
+    (inside(cell) && platformAt(world(), cell) !== null);
+  const aboard = (cell) =>
+    world()
+      .platforms.get(live.ball.riding.key)
+      .body.some((c) => sameCell(c, cell));
   return {
-    solid,
-    standable: (cell, face) => solid(cell) && !solid(add(cell, FACE_NORMAL[face])),
+    solid: (cell) => (live.ball.riding ? aboard(cell) : filled(cell)),
+    filled,
+    standable: (cell, face) => filled(cell) && !filled(add(cell, FACE_NORMAL[face])),
+    platform: (cell) => (inside(cell) ? platformAt(world(), cell) : null),
     slick: (cell) => kindAt(world(), cell) === ICE,
     brittle: (cell) => kindAt(world(), cell) === CRUMBLING,
     value,

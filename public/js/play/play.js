@@ -67,12 +67,12 @@ import {
   faceUnder,
   moving,
   offsetFrame,
+  positionOf,
 } from "./ball.js";
 import { frame as gameFrame, heeds, relevel, restart, revive, stand, startRun } from "./rules.js";
 import { probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
 const BALL_TYPE = 30;
-const AS_STONE_KINDS = new Set([5]);
 const AS_STONE_TYPES = new Set([10]);
 // the untinted light, the unit a traveller's tint is in
 const LIGHT = 4096;
@@ -99,7 +99,8 @@ const REFUSED = {
   edge: "The ball cannot roll off here: a block stands beside it.",
   arrow: "The ball cannot roll off here: the arrow points another way.",
 };
-const AS_STONE = "The ball rolls over a boost button and a platform as over plain stone for now.";
+const AS_STONE = "The ball rolls over a boost button as over plain stone for now.";
+const RIDING = "The ball rides the platform.";
 const NO_START = "The level has no start, so the ball stands on the first face it could.";
 const NOWHERE = "The level has no face the ball could stand on.";
 const OBJECTS_ON = "Objects turned on, for the ball.";
@@ -177,7 +178,7 @@ function stateOf(b) {
     h: b.h,
     centre: centreOf(b),
     foot: footOf(b),
-    point: b.pos.map((v) => v + b.half),
+    point: positionOf(b).map((v) => v + b.half),
     body: bodyOf(b),
     height: clearance(b, live.probe),
     frame: b.ramp ? b.ramp.to : b.frame,
@@ -226,7 +227,7 @@ const source = (l) =>
 function covered(centre) {
   const { toward } = camera();
   for (let t = COVER.step; t <= COVER.reach; t += COVER.step)
-    if (live.probe.solid(centre.map((v, i) => Math.floor(v + toward[i] * t)))) return true;
+    if (live.probe.filled(centre.map((v, i) => Math.floor(v + toward[i] * t)))) return true;
   return false;
 }
 
@@ -237,7 +238,7 @@ const footOf = (b) => centreOf(b).map((v, i) => v - (b.n[i] * b.radius) / b.unit
     empty. */
 function blockAt(foot, n, block) {
   const c = foot.map((v, i) => Math.floor(v - 0.5 * n[i]));
-  return live.probe.solid(c) ? c : block;
+  return live.probe.filled(c) ? c : block;
 }
 
 export function station() {
@@ -273,9 +274,11 @@ function travellers(l) {
     height: s.height,
     tint: tintOf(live.run.words),
     through: covered(s.centre),
-    // at an inner corner the ball touches the block it leaves as well as the wall, so while the
-    // climb's ramp runs it sorts by its own centre rather than by the block under it
-    depth: live.run.ball.ramp?.kind === "climb" ? depth(...s.centre) : undefined,
+    // at an inner corner the ball touches the block it leaves as well as the wall, and a
+    // platform's blocks are drawn off their cells, so while the climb's ramp runs or the ball
+    // rides it sorts by its own centre rather than by the block under it
+    depth:
+      live.run.ball.ramp?.kind === "climb" || live.run.ball.riding ? depth(...s.centre) : undefined,
   };
   return new Map([[live.key, going]]);
 }
@@ -664,6 +667,14 @@ function happened(event) {
     sent(event.sent);
     return;
   }
+  if (event.rode) {
+    live.notes.push(RIDING);
+    return;
+  }
+  if (event.alit) {
+    if (live.status === RIDING) status(null);
+    return;
+  }
   if (event.clock) {
     const { second } = motionTable().play.clock;
     const left = Math.max(0, Math.floor(event.clock.to / second));
@@ -674,7 +685,7 @@ function happened(event) {
     live.station = true;
     const block = blockUnder(b);
     say(noted(`${block.join(",")}, ${FACE_NAME[faceUnder(b)]}`));
-    status(standsOn(block, faceUnder(b)) ? AS_STONE : null);
+    status(standsOn(block, faceUnder(b)) ? AS_STONE : b.riding ? RIDING : null);
     walked({ cell: block, face: faceUnder(b) });
     if (!motionOn())
       travelDust(live.still.foot, footOf(b), b.n, (p) => blockAt(p, b.n, block), true);
@@ -941,16 +952,10 @@ function keep() {
 }
 
 /** Whether the ball stands on something it does not act on yet. */
-function standsOn(block, face) {
-  const key = cellKey(...block);
-  const c = live.idx.cells.get(key);
-  if (!c) return false;
-  const kind = c.v < state.data.firstRecord ? c.v : live.idx.records.get(key)?.[0]?.kind;
-  if (AS_STONE_KINDS.has(kind)) return true;
-  return (live.idx.markers.get(key) ?? []).some(
+const standsOn = (block, face) =>
+  (live.idx.markers.get(cellKey(...block)) ?? []).some(
     (m) => m.face === face && AS_STONE_TYPES.has(m.type),
   );
-}
 
 /** The things on `key`'s block the ball has taken, as the level as installed still lists them. */
 const takenOn = (key) =>
@@ -1340,8 +1345,9 @@ export function bootPlay() {
     live.level = state.lvl;
     live.idx = state.idx;
     relevel(live.run, state.lvl, state.idx);
-    const under = cellKey(...blockUnder(live.run.ball));
-    if (!state.idx.cells.has(under) && !live.run.world.bodies.has(under)) leave();
+    const b = live.run.ball;
+    const under = blockUnder(b);
+    if (!b.riding && !state.idx.cells.has(cellKey(...under)) && !live.probe.filled(under)) leave();
   });
   on("link-opening", () => leave({ restore: false }));
   on("go-to", () => leave({ restore: false }));

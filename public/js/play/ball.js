@@ -22,8 +22,8 @@ const cross = (a, b) =>
   );
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const axisOf = (v) => v.findIndex((c) => c !== 0);
-/** The cell a point of the ball's lies in, its own where none is given. */
-export const cellOf = (b, p = b.pos) => p.map((c) => Math.floor((c + b.half) / b.unit));
+/** The cell a point of the ball's lies in, its centre's in the level where none is given. */
+export const cellOf = (b, p = positionOf(b)) => p.map((c) => Math.floor((c + b.half) / b.unit));
 export const faceOf = (n) => FACE_NORMAL.findIndex((f) => f.every((c, i) => c === n[i]));
 
 const NO_JUMP = { count: 0, rows: [] };
@@ -82,17 +82,33 @@ export function ballAt(rules, cell, face, h) {
     rest: { cell: [...cell], face, h },
     look: { word: 0, rate: table.look.from },
     frame: frameOf(h, n),
+    riding: null,
+    travel: null,
   };
 }
 
 /** Whether the ball is in the air, falling or in a jump's or a hop's rows. */
 export const aloft = (b) => b.state === JUMP || b.state === HOP || b.state === FALL;
-/** The block the ball stands on, kept while it goes round its edge or is in the air. */
-export const blockUnder = (b) =>
+// The block under the ball in the lattice it rolls in, kept round an edge and in the air.
+const standingOn = (b) =>
   b.state === WRAPPING || aloft(b) ? b.held : add(cellOf(b, b.pos), b.n, -1);
+/** The centre in the level: the position, with the platform's travel added while the ball rides
+    one. */
+export const positionOf = (b) => (b.riding ? add(b.pos, b.travel) : b.pos);
+/** The block the ball stands on, in the level. */
+export const blockUnder = (b) =>
+  b.riding
+    ? cellOf(
+        b,
+        add(
+          standingOn(b).map((c) => c * b.unit),
+          b.travel,
+        ),
+      )
+    : standingOn(b);
 export const faceUnder = (b) => faceOf(b.n);
 /** The centre's distance off the face it stands on, in game units. */
-export const heightOf = (b) => dot(add(b.pos, blockUnder(b), -b.unit), b.n) - b.half;
+export const heightOf = (b) => dot(add(b.pos, standingOn(b), -b.unit), b.n) - b.half;
 /** The centre's distance off the face below it, for the shadow: in the air, the block under
     the ball's cell, or nothing at all, Infinity, where that cell holds no block. */
 export function clearance(b, probe) {
@@ -100,8 +116,8 @@ export function clearance(b, probe) {
   const under = add(cellOf(b, b.pos), b.n, -1);
   return probe.solid(under) ? dot(add(b.pos, under, -b.unit), b.n) - b.half : Infinity;
 }
-/** The centre in blocks. */
-export const centreOf = (b) => b.pos.map((c) => c / b.unit + 0.5);
+/** The centre in blocks, in the level. */
+export const centreOf = (b) => positionOf(b).map((c) => c / b.unit + 0.5);
 /** Whether the ball has anything to do: it moves, a ramp runs, a turn waits or the view's pitch
     returns. */
 export const moving = (b) => b.state !== REST || b.ramp !== null || b.turn !== 0 || b.look.word > 0;
@@ -145,10 +161,11 @@ function drop(b) {
   b.v = b.table.fall.start;
 }
 
-/** Laid its radius off its face at rest, and dropped where the block under it has gone. */
+/** Laid its radius off its face at rest, and dropped where the block under it has gone, unless
+    it rides a platform. */
 function resting(b, probe) {
   settle(b);
-  if (!probe.solid(blockUnder(b))) drop(b);
+  if (!b.riding && !probe.solid(standingOn(b))) drop(b);
   b.spinSpeed = 0;
 }
 
@@ -251,7 +268,7 @@ export function read(b, probe, out) {
   b.wantJump = (b.pad & PAD.cross) !== 0;
   b.forward = (b.pad & PAD.up) !== 0;
   if (b.wantJump) return;
-  const under = blockUnder(b);
+  const under = standingOn(b);
   if (probe.solid(add(under, b.h))) return;
   if (probe.solid(add(under, b.s)) || probe.solid(add(under, neg(b.s)))) {
     if (b.forward && b.state === REST) out.push({ refused: "edge" });
@@ -276,8 +293,24 @@ function turnNow(b, out) {
   out.push({ turned: dir });
 }
 
-function startJump(b, probe) {
-  if (!b.jump.count || !probe.solid(blockUnder(b))) return;
+/** Off the platform the ball rides, where it rides one: its position the level's again and its
+    travel nothing. */
+export function alight(b) {
+  if (!b.riding) return;
+  b.pos = positionOf(b);
+  b.riding = null;
+  b.travel = null;
+}
+
+// The forward jump and the hop alone take the ball off its platform.
+function leaving(b, out) {
+  if (b.riding) out.push({ alit: { key: b.riding.key } });
+  alight(b);
+}
+
+function startJump(b, probe, out) {
+  if (!b.jump.count || !probe.solid(standingOn(b))) return;
+  leaving(b, out);
   b.state = JUMP;
   b.saved = [...b.pos];
   b.count = b.jump.count;
@@ -287,8 +320,9 @@ function startJump(b, probe) {
   b.v = 0;
 }
 
-function startHop(b) {
+function startHop(b, out) {
   if (!b.jump.count) return;
+  leaving(b, out);
   b.state = HOP;
   b.saved = [...b.pos];
   b.count = b.jump.count;
@@ -302,13 +336,13 @@ function intents(b, probe, out) {
     return;
   }
   if (b.state === ROLLING) {
-    if (b.wantJump) startJump(b, probe);
+    if (b.wantJump) startJump(b, probe, out);
     return;
   }
   if (b.state !== REST) return;
   if (b.wantJump) {
-    if (b.forward) startJump(b, probe);
-    else startHop(b);
+    if (b.forward) startJump(b, probe, out);
+    else startHop(b, out);
     return;
   }
   if (b.turn) {
@@ -330,7 +364,8 @@ function recentre(p, b, by) {
 function roll(b, probe) {
   const t = b.table.rolling;
   recentre(b.pos, b, t.recentre);
-  if (!probe.solid(blockUnder(b)) && b.progress >= t.over[0] && b.progress <= t.over[1]) {
+  const over = !b.riding && !probe.solid(standingOn(b));
+  if (over && b.progress >= t.over[0] && b.progress <= t.over[1]) {
     drop(b);
     return;
   }
@@ -341,12 +376,36 @@ function roll(b, probe) {
   b.spinSpeed = b.speed;
 }
 
-/** Land where the point the radius under the centre lies in a block: laid the radius off its
-    face, rolling on where Up is held or the landing was short of the middle's third, else at
-    rest. */
+// Where the cell a block under the centre is a platform's body now and the centre is at most the
+// table's height off its face, the ball rides it at rest: its position relative to the
+// platform's, in which the platform's blocks stand at home and are all the probe calls solid.
+function board(b, probe, out) {
+  const ride = b.rules.ride;
+  if (!ride || !probe.platform) return false;
+  const under = cellOf(b, add(b.pos, b.n, -b.unit));
+  const p = probe.platform(under);
+  if (!p) return false;
+  const rel = add(b.pos, p.travel, -1);
+  const home = add(under, cellOf(b, p.travel), -1);
+  if (dot(add(rel, home, -b.unit), b.n) - b.half > ride.land) return false;
+  b.pos = rel;
+  b.riding = { key: p.key };
+  b.travel = p.travel;
+  b.v = 0;
+  b.speed = 0;
+  b.state = REST;
+  b.progress = progressOf(b);
+  out.push({ rode: { key: p.key } }, { at: "landed" });
+  return true;
+}
+
+/** Land on a platform's body first, riding it, else where the point the radius under the centre
+    lies in a block that is no platform's: laid the radius off its face, rolling on where Up is
+    held or the landing was short of the middle's third, else at rest. */
 function land(b, probe, out) {
+  if (board(b, probe, out)) return true;
   const block = cellOf(b, add(b.pos, b.n, -b.radius));
-  if (!probe.solid(block)) return false;
+  if (!probe.solid(block) || probe.platform?.(block)) return false;
   const i = axisOf(b.n);
   b.pos[i] = block[i] * b.unit + b.n[i] * (b.half + b.radius);
   b.v = 0;
@@ -480,7 +539,7 @@ function looking(b, probe) {
     be lost. */
 const lost = (b) => {
   const [low, high] = b.table.fall.lost;
-  return cellOf(b, add(b.pos, b.n, b.half)).some((v) => v <= low || v >= high);
+  return cellOf(b, add(positionOf(b), b.n, b.half)).some((v) => v <= low || v >= high);
 };
 
 function wrap(b) {
@@ -575,7 +634,9 @@ function spinning(b) {
     and the spin go on; while `way` holds a direction, the jump's wall test throws the ball back
     from the wall's progress where its heading differs from it and clears it where it lies along.
     Between the state and the move step the probe's `stood`, where it has one, is told the ball,
-    which is where the game reads the cells about it. A lost ball says so and stays where it is. */
+    which is where the game reads the cells about it. A landing on a platform's body rides it,
+    said as `rode`, and the jump and the hop leave it, said as `alit`, while a ball that rides
+    never drops. A lost ball says so and stays where it is. */
 export function run(b, probe, out) {
   b.landed = false;
   intents(b, probe, out);
