@@ -15,7 +15,7 @@ from kula_motion import (  # noqa: E402
     GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, PHASES,
     ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, Code, blocks, devices,
     dispatch, exits, glint, glow_lift, glow_spill, harms, jump, laser, light, moves, play, roll, root_table,
-    shadow_half, spike_cycle, spin_orders, table, take, vanish_cycle)
+    shadow_half, spike_cycle, spin_orders, standing, table, take, vanish_cycle)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "sp": 29, "ra": 31}
@@ -150,6 +150,11 @@ GAME = {
     "crumble.breaking": 3, "crumble.code.input": 96, "crumble.edge.hold": 301, "crumble.edge.back": 401,
     "crumble.edge.push": 40, "ride.kind": 5, "ride.land": 101, "ride.bias": 512, "ride.bias.back": -512,
     "ride.bias.travel": -512, "ride.rumble": 70, "ride.beam": -2,
+    "standing.centre": 256, "standing.shift": 9, "standing.first": 5, "standing.kind.1": 1, "standing.kind.2": 2,
+    "standing.kind.3": 3, "standing.kind.4": 4, "standing.kind.5": 5, "standing.kind.6": 6, "standing.kind.7": 7,
+    "standing.word.3": 93, "standing.word.5": 95, "standing.word.6": 96, "standing.word.7": 97, "standing.style.1": 1,
+    "standing.style.2": 2, "standing.style.3": 3, "standing.style.4": 4, "standing.style.word.3": 93,
+    "standing.nothing": -1, "standing.none": -1,
 }
 
 
@@ -767,6 +772,18 @@ class Blocks(unittest.TestCase):
                 blocks({**GAME, **change})
 
 
+class Standing(unittest.TestCase):
+    def test_the_ball_stands_on_each_kind_as_its_own_number_or_one_past_the_types(self):
+        self.assertEqual(standing(GAME), {1: 1, 2: 2, 3: 93, 4: 4, 5: 95, 6: 96, 7: 97})
+
+    def test_a_word_read_from_another_kind_or_style_or_a_cell_taken_otherwise_stops_the_reading(self):
+        for change in ({"standing.kind.5": 6}, {"standing.style.3": 2}, {"standing.style.word.3": 92},
+                       {"standing.word.6": 95}, {"standing.word.5": 50}, {"standing.nothing": 0},
+                       {"standing.none": 0}, {"standing.centre": 255}, {"standing.shift": 8}, {"standing.first": 4}):
+            with self.assertRaises(SystemExit):
+                standing({**GAME, **change})
+
+
 class Table(unittest.TestCase):
     def test_the_table_carries_a_program_per_phase_and_the_platform_scaled(self):
         r = dict(GAME)
@@ -800,7 +817,8 @@ class Table(unittest.TestCase):
         r["spin.quarter"] = 1024
         t = table(r, 30)
         self.assertEqual(t["hz"], 60)
-        self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1, "ride": {"land": 100, "bias": 512, "rumble": 70}})
+        self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1, "ride": {"land": 100, "bias": 512, "rumble": 70},
+                                           "standing": 95})
         self.assertEqual(t["kinds"]["3"]["light"]["far"], 512)
         self.assertEqual(t["glow"]["colours"]["9"], [[[25, 25, 0]] * 4])
         self.assertEqual(t["glow"]["every"], 19)
@@ -867,14 +885,16 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["5"]["send"]["band"], [167, 345])
         self.assertEqual(t["types"]["9"], {"throw": {"band": [197, 315], "rearm": [156, 356]}})
         self.assertEqual(t["kinds"]["6"], {"points": 50, "size": 512, "shrink": 26,
-                                           "edge": {"hold": 301, "back": 401, "push": 40}})
-        self.assertEqual(t["kinds"]["2"], blocks(GAME)[2])
+                                           "edge": {"hold": 301, "back": 401, "push": 40}, "standing": 96})
+        self.assertEqual(t["kinds"]["2"], {**blocks(GAME)[2], "standing": 2})
+        self.assertEqual({k: v.get("standing") for k, v in t["kinds"].items()},
+                         {"1": 1, "2": 2, "3": 93, "4": 4, "5": 95, "6": 96, "7": 97, "8": None})
         self.assertEqual(t["play"]["clock"]["second"], 50)
         self.assertEqual(t["play"]["ending"]["lost"], -3)
         self.assertEqual(set(t["play"]), {"start", "clock", "ending", "wait", "bonus", "points", "view"})
         self.assertEqual(t["play"], play(GAME))
-        self.assertEqual(t["kinds"]["1"], harms(GAME)["kinds"][1])
-        self.assertEqual(t["kinds"]["4"], harms(GAME)["kinds"][4])
+        self.assertEqual(t["kinds"]["1"], {**harms(GAME)["kinds"][1], "standing": 1})
+        self.assertEqual(t["kinds"]["4"], {**harms(GAME)["kinds"][4], "standing": 4})
         self.assertEqual(t["kinds"]["8"]["harm"], {"cell": -2, "heat": 1900})
         self.assertEqual(t["kinds"]["8"]["reach"], 256)
         self.assertEqual(t["types"]["53"]["catch"], {"square": 16199})

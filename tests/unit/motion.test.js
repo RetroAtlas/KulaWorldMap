@@ -123,6 +123,11 @@ test("a spin is the product the routine for its type makes, about z first or abo
     spin(order, angles).forEach((row, r) => row.forEach((v, c) => near(v, rows[r][c], 0.002)));
 });
 
+test("the ball's word for what it stands on is each kind's own number, or one past the types", () => {
+  const standing = Object.fromEntries(Object.entries(table.kinds).map(([k, v]) => [k, v.standing]));
+  assert.deepEqual(standing, { 1: 1, 2: 2, 3: 93, 4: 4, 5: 95, 6: 96, 7: 97, 8: undefined });
+});
+
 test("a frame is a sixtieth of a second", () => {
   near(frameAt(table, 1000), 60);
   near(frameAt(table, 250), 15);

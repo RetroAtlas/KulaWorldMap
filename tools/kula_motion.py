@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import EXE, EXE_BASE, THEMES, open_disc
-from kula_level import FACES, SIDE
+from kula_level import FACES, FIRST_RECORD, SIDE, STYLES
 from mips import Machine, decode
 
 TURN = 4096          # the angle that is one full turn
@@ -1160,6 +1160,19 @@ CHECKS = [
     (0x80033828, "sh $zero, 486($a2)", "unmarking the ride"),
     (0x800338e8, "sh $v1, 60($a2)", "with the centre the level's again"),
     (0x8003391c, "sh $zero, 84($a2)", "and no travel"),
+    # What the ball stands on.
+    (0x800377a4, "lw $a0, 120($s0)", "the ball's word for what it stands on is read from the cell under the one its centre lies in, word 4 of the 27"),
+    (0x800377b4, "sw $a0, 352($s0)", "kept at 352"),
+    (0x80037944, "lh $v0, 2($v0)", "a plain block carrying a record reads as the type of the slot on the ball's face"),
+    (0x8003794c, "sw $v0, 356($s0)", "into 356"),
+    (0x80037894, "sw $v1, 356($s0)", "fire as its own kind"),
+    (0x800378bc, "sw $v1, 356($s0)", "ice too"),
+    (0x8003790c, "sw $v1, 356($s0)", "and acid"),
+    (0x8003795c, "sw $a0, 356($s0)", "a lattice style of fire the same"),
+    (0x80037970, "sw $v1, 356($s0)", "of ice"),
+    (0x80037998, "sw $v1, 356($s0)", "and of acid"),
+    (0x8003792c, "bne $v0, $zero, 0x800379d0", "a kind with no case leaves the word as it was"),
+    (0x800379bc, "bne $v0, $v1, 0x800379c8", "as does a lattice word below the empty one"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -1408,6 +1421,29 @@ IMMEDIATES = [
     ("shadows", "shadow.strength.56", "corkscrew: strength on its face, of 128", 0x8003ea2c, "addiu $v0, $zero, {}"),
     ("shadows", "shadow.ball.top", "ball: fades to nothing this far off its face, units", 0x80031f30, "addiu $v0, $zero, {}"),
     ("shadows", "shadow.ball.shift", "ball: its height short of that, shifted up this far", 0x80032458, "sll $v1, $v1, {}"),
+    ("shadows", "standing.centre", "ball: the cell its centre lies in is taken this far past the centre, units", 0x8003746c,
+     "addiu $v1, $v1, {}"),
+    ("shadows", "standing.shift", "and shifted down this far, a block", 0x80037470, "sra $v1, $v1, {}"),
+    ("shadows", "standing.first", "ball: the block under that cell carries a record from this lattice word", 0x800377ac,
+     "slti $v0, $a0, {}"),
+    ("shadows", "standing.kind.5", "ball: a platform under it is tested as this kind", 0x80037810, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.word.5", "and reads as this", 0x80037818, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.kind.6", "ball: a crumbling block as this kind", 0x80037838, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.word.6", "and reads as this", 0x80037840, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.kind.7", "ball: a vanishing block as this kind", 0x80037860, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.word.7", "and reads as this", 0x80037868, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.kind.1", "ball: fire as this kind, which reads as itself", 0x80037888, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.kind.2", "ball: ice as this kind, which reads as itself", 0x800378b0, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.kind.3", "ball: an invisible block as this kind", 0x800378d8, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.word.3", "and reads as this", 0x800378e0, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.kind.4", "ball: acid as this kind, which reads as itself", 0x80037900, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.style.1", "ball: a lattice style of this reads as fire's kind", 0x80037950, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.style.2", "of this as ice's", 0x80037964, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.style.3", "of this as the invisible block's", 0x8003796c, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.style.word.3", "which reads as this", 0x80037980, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.style.4", "and of this as acid's", 0x8003798c, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.nothing", "ball: a bare plain block reads as this", 0x800379ac, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.none", "as does a cell holding this, no block", 0x800379a8, "addiu $v1, $zero, {}"),
 
     ("invisible block", "light.kind", "the light takes blocks of this kind", 0x80051558, "addiu $s4, $zero, {}"),
     ("invisible block", "light.near", "full within this far of the ball, units", 0x80027c0c, "addiu $v0, $zero, {}"),
@@ -1845,6 +1881,8 @@ PLATFORM = 5
 ABOUT = 3                 # cells each way about the ball
 FIRE, ACID = 1, 4         # the kinds that harm by standing on them
 LIT = -2                  # a lit beam's cell in the lattice
+OFF = -1                  # the lattice's word for no block
+VANISHING = 7
 EXIT, HIDDEN_EXIT, MOVING_SPIKES, SPIKES, WANDERER = 7, 26, 11, 12, 53
 ARROW = 28
 BROWN = 0                 # type 42's form that stays and harms
@@ -2624,6 +2662,37 @@ def blocks(r):
     }
 
 
+def standing(r):
+    """The word the ball keeps for what it stands on, by the kind of the block
+    under the cell its centre lies in: fire, ice and acid their own kind, the
+    invisible, platform, crumbling and vanishing kinds one number each past
+    the types, a lattice style the kind it is, and a bare plain block or no
+    block the lattice's empty word, each held to the kind or the style its
+    case tests."""
+    if r["standing.centre"] != BLOCK // 2 or 1 << r["standing.shift"] != BLOCK:
+        sys.exit("the cell the ball's centre lies in is not the nearest block's")
+    if r["standing.first"] != FIRST_RECORD:
+        sys.exit(f"the block under the ball carries a record from {r['standing.first']}, not from the first record")
+    words = {kind: kind for kind in (FIRE, ICE, ACID)}
+    words.update({kind: r[f"standing.word.{kind}"] for kind in (INVISIBLE, PLATFORM, CRUMBLING, VANISHING)})
+    for kind in words:
+        if r[f"standing.kind.{kind}"] != kind:
+            sys.exit(f"kind {kind} under the ball is tested as {r[f'standing.kind.{kind}']}")
+    for style in range(1, STYLES):
+        if r[f"standing.style.{style}"] != style:
+            sys.exit(f"lattice style {style} under the ball is tested as {r[f'standing.style.{style}']}")
+    if r["standing.style.word.3"] != words[INVISIBLE]:
+        sys.exit("the invisible block reads otherwise as a lattice style than as a record")
+    if r["standing.nothing"] != OFF or r["standing.none"] != OFF:
+        sys.exit("a bare plain block or no block under the ball does not read as the lattice's empty word")
+    if words[CRUMBLING] != r["crumble.under"]:
+        sys.exit("the crumbling block reads otherwise under the ball than the hazards test it")
+    past = {word - kind for kind, word in words.items() if word != kind}
+    if len(past) != 1 or next(iter(past)) <= max(SPUN_AT):
+        sys.exit(f"the kinds that read as a number of their own are not one step past the types: {words}")
+    return words
+
+
 def table(r, platform_speed):
     """The motion table by type and by kind of block, in the game's units.
 
@@ -2636,8 +2705,8 @@ def table(r, platform_speed):
     whose models glint says how. A pickup says what it takes for the ball
     to take it and what that scores, a device under the ball what it does
     there, a kind or a type that can hurt the ball what it does, a kind the
-    ball slides on, breaks or rides what it does to the roll, and the
-    level's own words, the clock's, the endings', a bonus level's and an
+    ball slides on, breaks or rides what it does to the roll, each kind the
+    word the ball keeps for standing on it, and the level's own words, the clock's, the endings', a bonus level's and an
     ending's, sit under `play`. The devices' light and each device's
     colours, by world and then by circuit where it has one, sit apart from
     the types, whose entries are what moves.
@@ -2745,6 +2814,8 @@ def table(r, platform_speed):
         types[t].update(entry)
     for k, entry in blocks(r).items():
         kinds.setdefault(k, {}).update(entry)
+    for k, word in standing(r).items():
+        kinds.setdefault(k, {})["standing"] = word
     colours = {str(t): r["glow.colours"][t] for t in sorted(r["glow.colours"])}
     return {"hz": HZ, "turn": TURN, "standoff": r["captivator.standoff"],
             "dice": {"seed": r["dice.seed"], "times": r["dice.times"], "plus": r["dice.plus"]},
