@@ -3,9 +3,9 @@
 import { PAD, aloft, ballAt, blockUnder, cellOf, place, read, run } from "./ball.js";
 import { KEY, keysOf, probeOf, standingOf, took, worldOf } from "./world.js";
 import { contact } from "./contact.js";
-import { devices, rearm } from "./hazards.js";
+import { INVINCIBLE, catching, counting, devices, harms, rearm, spiked } from "./hazards.js";
 import { SIDE, cellKey } from "../format/lattice.js";
-import { layHeading, startsOf, TANGENT } from "../viewer/data.js";
+import { OFF_LATTICE, layHeading, startsOf, TANGENT } from "../viewer/data.js";
 import { advance } from "../viewer/travel.js";
 
 const BALL = 30;
@@ -14,7 +14,6 @@ const EXIT = 7;
 const HIDDEN_EXIT = 26;
 const LETHARGY = 32;
 const BOUNCY = 33;
-const INVINCIBLE = 34;
 const SUNGLASSES = 38;
 const OUT = { [EXIT]: "exit", [HIDDEN_EXIT]: "hidden" };
 
@@ -60,6 +59,7 @@ export function startRun(l, idx, tables, circuits, at = null) {
       unmarked: world.counted.size,
       fruit: 0,
       standing: 0,
+      cell: OFF_LATTICE,
       wait: play.start.wait,
       rolled: 0,
       marker: 0,
@@ -83,7 +83,7 @@ export function startRun(l, idx, tables, circuits, at = null) {
       way: null,
     },
   };
-  live.words.standing = standingOf(live);
+  readCells(live);
   return live;
 }
 
@@ -118,13 +118,20 @@ function waiting(live, out) {
   b.forward = false;
   b.wantJump = false;
   b.turn = 0;
+  counting(live);
   if (w.wait === 0) w.result = w.ending;
   else if (w.wait === 1 && w.ending === ending.spikes) end(live, w.ending, out);
 }
 
+// The walkers take a frame, the captivators standing while the ball is caught.
 function movers(live) {
   const { walkers, probe, roll } = live.world;
-  advance([...walkers.values()], probe, live.words.frame + 1, roll);
+  const { ending } = live.tables.motion.play;
+  const to = live.words.frame + 1;
+  const all = [...walkers.values()];
+  const caught = live.words.ending === ending.captivator;
+  advance(caught ? all.filter((w) => w.type === null) : all, probe, to, roll);
+  if (caught) for (const w of all) w.at = to;
 }
 
 // A level with no key marks the block at `cell` once: its points, and one off the blocks left.
@@ -180,11 +187,23 @@ function pills(live, out) {
   }
 }
 
-// What is under and about the ball, off while the guard stands.
+// What is under and about the ball, off while the guard stands, in the routine's order.
 function hazards(live, out) {
-  if (!aloft(live.ball)) ground(live, out);
+  harms(live, out);
+  if (!aloft(live.ball)) {
+    ground(live, out);
+    spiked(live, out);
+  }
   pills(live, out);
   devices(live, out);
+}
+
+/** What the game's read of the cells about the ball leaves for the next frame's hazards: the
+    word for what the ball stands on and the word its own cell holds. */
+function readCells(live) {
+  const w = live.words;
+  w.standing = standingOf(live);
+  w.cell = live.world.probe.value(cellOf(live.ball), w.frame);
 }
 
 /** One game frame with `pad` as held: what happened, as events. The frame the clock runs out on
@@ -198,7 +217,7 @@ export function frame(live, pad) {
   const { start, clock, ending } = live.tables.motion.play;
   const probe = probeOf(live);
   probe.stood = () => {
-    w.standing = standingOf(live);
+    readCells(live);
     rearm(live);
   };
   const heard = heeds(live);
@@ -217,6 +236,7 @@ export function frame(live, pad) {
   if (w.result) end(live, w.result, out);
   movers(live);
   if (!w.guard) hazards(live, out);
+  if (w.pills[INVINCIBLE] < 0) catching(live, out);
   b.frozen = w.frozen !== 0;
   // the block ahead of the one under the ball, which a climb marks as the block under its wall
   const ahead = add(blockUnder(b), b.h);
@@ -237,10 +257,10 @@ export function restart(live, at = live.at) {
   return next;
 }
 
-/** The ending undone and the ball placed back on its last rest, the other words kept. */
-export function revive(live) {
+/** The ending undone and the ball placed back at rest, on `at` or its last rest, the other words
+    kept. */
+export function revive(live, at = live.ball.rest) {
   const w = live.words;
-  const b = live.ball;
   Object.assign(w, {
     outcome: 0,
     result: 0,
@@ -253,13 +273,13 @@ export function revive(live) {
     melt: 0,
     cold: 0,
   });
-  stand(live, b.rest);
+  stand(live, at);
 }
 
 /** Stand the ball at rest on `at`, a station of the level, the words running on. */
 export function stand(live, { cell, face, h }) {
   place(live.ball, cell, face, h);
-  live.words.standing = standingOf(live);
+  readCells(live);
 }
 
 /** The level edited under the run: the world laid anew from it, the walkers at the run's frame,
@@ -278,5 +298,5 @@ export function relevel(live, l, idx) {
   const takenKeys = [...world.taken].filter((s) => world.pickups.get(s).m.type === KEY).length;
   w.keys = keysOf(world) - takenKeys;
   w.unmarked = world.counted.size - world.marked.size;
-  w.standing = standingOf(live);
+  readCells(live);
 }

@@ -260,10 +260,11 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
   // the game draws a model's polygons in its order or, where the model says,
   // furthest first, and drops one it culls where it faces away
   const order = sorted ? backToFront(m, model, far) : null;
+  const tint = going?.tint ?? null;
   const under =
     model.normals && motion?.light
-      ? fillsByNormals(m, model, motion.light, laid)
-      : fillsUnder(model, light);
+      ? fillsByNormals(m, model, motion.light, laid, tint)
+      : fillsUnder(model, light, tint);
   let colour = null;
   let op = "source-over";
   for (let j = 0; j < polys.length; j++) {
@@ -317,11 +318,16 @@ function polygonsOf(model) {
 const fillOf = ([r, g, b], alpha) => `rgba(${r} ${g} ${b} / ${alpha})`;
 // a channel a light lifts past full stands at 255
 const shade = (rgb, light) => byLight(rgb, light).map((v) => Math.min(255, v));
+const sameLight = (a, b) => a === b || (!!a && !!b && a.every((v, i) => v === b[i]));
 
 // what a thing drawn in its own colours is kept under
 const OWN = Symbol("own");
 const underLights = new WeakMap();
-function fillsUnder(model, light) {
+function fillsUnder(model, light, tint = null) {
+  if (tint)
+    return polygonsOf(model).map((p) =>
+      fillOf(shade(light ? shade(p.colour, light) : p.colour, tint), p.alpha),
+    );
   let fills = underLights.get(model);
   if (!fills) underLights.set(model, (fills = new Map()));
   const key = light ?? OWN;
@@ -338,11 +344,16 @@ function fillsUnder(model, light) {
 // The ball lights each corner by its normal, turned as its vertices are, from a
 // light fixed to the view; the light's axes are the view's right, down and in.
 const byNormals = new WeakMap();
-function fillsByNormals(m, model, light, laid) {
+function fillsByNormals(m, model, light, laid, tint = null) {
   const c = camera();
   const kept = byNormals.get(m);
   const basis = laid.flat();
-  if (kept?.model === model && kept.c === c && kept.basis.every((v, i) => v === basis[i]))
+  if (
+    kept?.model === model &&
+    kept.c === c &&
+    kept.basis.every((v, i) => v === basis[i]) &&
+    sameLight(kept.tint, tint)
+  )
     return kept.fills;
   const [vx, vy, vz] = light.view;
   const l = [0, 1, 2].map((i) => vx * c.right[i] - vy * c.up[i] - vz * c.toward[i]);
@@ -361,12 +372,13 @@ function fillsByNormals(m, model, light, laid) {
   const polys = polygonsOf(model);
   const fills = model.polys.map((corners, k) => {
     const rgb = model.rgb[k];
-    const lit = corners.map((v, i) =>
-      [0, 1, 2].map((ch) => Math.floor((rgb[3 * i + ch] * share[v]) / 256)),
-    );
+    const lit = corners.map((v, i) => {
+      const own = [0, 1, 2].map((ch) => Math.floor((rgb[3 * i + ch] * share[v]) / 256));
+      return tint ? shade(own, tint) : own;
+    });
     return fillOf(polygonColour(model, k, lit), polys[k].alpha);
   });
-  byNormals.set(m, { model, c, basis, fills });
+  byNormals.set(m, { model, c, basis, tint, fills });
   return fills;
 }
 

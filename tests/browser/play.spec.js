@@ -12,6 +12,9 @@ const LOST =
   /^The ball is lost off the level\. 0 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
 const DONE =
   /^Out by the exit: the level is done\. 1500 points, \d+ seconds left\. Space or a tap on the pad starts the level again\.$/;
+const SPIKED =
+  /^The ball is killed on the spikes\. 0 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
+const FORGIVEN = "Forgiven: the ball would have been killed on the spikes.";
 const TAKEN = "Taken: Coin (bronze) on the top";
 const SENDING = "The teleporter is sending the ball.";
 const REFUSED = "The ball cannot roll off here: a block stands beside it.";
@@ -34,6 +37,15 @@ const at = (page, x, y, z) =>
     [x, y, z],
   );
 const top = (page, c) => at(page, c[0] + 0.5, c[1] + 0.5, c[2]);
+/** The canvas point over a point of the level. */
+const canvasAt = (page, [x, y, z]) =>
+  page.evaluate(
+    async ([x, y, z]) => {
+      const { screen } = await import(new URL("js/viewer/state.js", location.href).href);
+      return screen(x, y, z);
+    },
+    [x, y, z],
+  );
 const plusX = (page, c) => at(page, c[0] + 1, c[1] + 0.5, c[2] + 0.5);
 /** The view and the ball as the page holds them. */
 const probe = (page) =>
@@ -170,6 +182,35 @@ const about = (page, [x, y]) =>
         ...g.getImageData(Math.round(px * k), Math.round(py * k), 1, 1).data.slice(0, 3),
       ];
       return [at(x, y), at(x, y - 3), at(x, y + 3), at(x - 3, y), at(x + 3, y)];
+    },
+    [x, y],
+  );
+/** The mean colour one frame paints within half the ball's radius of a canvas point. */
+const fillAbout = (page, [x, y]) =>
+  page.evaluate(
+    async ([x, y]) => {
+      const { state, BLOCK } = await import(new URL("js/viewer/state.js", location.href).href);
+      const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
+      draw();
+      const k = state.view.dpr;
+      const r = Math.round(((100 / 512) * state.cam.zoom * BLOCK * k) / 2);
+      const g = document.getElementById("cv").getContext("2d");
+      const img = g.getImageData(
+        Math.round(x * k) - r,
+        Math.round(y * k) - r,
+        2 * r + 1,
+        2 * r + 1,
+      );
+      const sum = [0, 0, 0];
+      let n = 0;
+      for (let j = 0; j <= 2 * r; j++)
+        for (let i = 0; i <= 2 * r; i++) {
+          if (Math.hypot(i - r, j - r) > r) continue;
+          const at = 4 * (j * img.width + i);
+          for (let ch = 0; ch < 3; ch++) sum[ch] += img.data[at + ch];
+          n++;
+        }
+      return sum.map((v) => Math.round(v / n));
     },
     [x, y],
   );
@@ -1280,6 +1321,119 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   expect(route.steps).toEqual([{ k: 2, o: 0 }, { k: 2, o: 0 }, null]);
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test("spikes kill the ball: the strip says so in red while the game's countdown runs, the verdict names the cause and Space starts the level again, and with Forgive pressed the ball is put back where it last rested instead", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a key out of reach keeps the level an arcade one; two blocks on, spikes
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  await laid(page, [17, 16, 17], { kind: 0 });
+  await laid(page, [17, 15, 17], { kind: 0 });
+  await faced(page, [17, 15, 17], 0, { type: 12 });
+  await expect(page.locator("#chipLine")).toContainText("3 blocks");
+  await expect(page.locator("#chipLine")).toContainText("3 objects");
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  const forgive = page.locator("#forgiveBtn");
+  await expect(forgive).toHaveAttribute("aria-pressed", "false");
+  await listening(page);
+  // held on, the ball rolls onto the spikes and the countdown runs with the key
+  await page.keyboard.down("ArrowUp");
+  await expect(status(page)).toHaveText("On the spikes", { timeout: 10_000 });
+  await expect(status(page)).toHaveClass(/dying/);
+  await expect(status(page)).toHaveText(SPIKED, { timeout: 10_000 });
+  await page.keyboard.up("ArrowUp");
+  await expect(status(page)).not.toHaveClass(/dying/);
+  expect(await said(page)).toContain("On the spikes");
+  await expect(say(page)).toHaveText(SPIKED);
+  const over = await probe(page);
+  expect(over.playing).toBe(true);
+  expect(over.frame).toBeNull();
+  expect(over.fitted).toBe(true);
+  await page.keyboard.press(" ");
+  await expect(status(page)).toHaveText("");
+  expect((await probe(page)).station).toEqual({
+    block: [17, 17, 17],
+    face: 0,
+    heading: "-y",
+    moving: false,
+  });
+  await forgive.click();
+  await expect(forgive).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("ArrowUp");
+  await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 16, 17]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  await page.keyboard.press("ArrowUp");
+  await expect(status(page)).toHaveText(FORGIVEN, { timeout: 10_000 });
+  await expect(status(page)).not.toHaveClass(/dying/);
+  await expect(say(page)).toHaveText(FORGIVEN);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  expect((await probe(page)).station).toEqual({
+    block: [17, 16, 17],
+    face: 0,
+    heading: "-y",
+    moving: false,
+  });
+  expect((await probe(page)).frame).toEqual(IDENTITY);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#play")).toBeHidden();
+  // the toggle is kept for the visit
+  await startPlay(page);
+  await expect(forgive).toHaveAttribute("aria-pressed", "true");
+  expect(errors).toEqual([]);
+});
+
+test("on fire the ball reddens: where it stands its pixels are redder on the whole than the untinted ball's on plain stone, and with Motion off nothing draws once it rests", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  await laid(page, [17, 16, 17], { kind: 0 });
+  await expect(page.locator("#chipLine")).toContainText("2 blocks");
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  const block = [17, 16, 17];
+  const rolled = async () => {
+    await startPlay(page);
+    await page.keyboard.press("ArrowUp");
+    await expect.poll(async () => (await probe(page)).station.block).toEqual(block);
+    await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+    return fillAbout(page, await canvasAt(page, ballOver(block)));
+  };
+  const plain = await rolled();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#play")).toBeHidden();
+  await laid(page, block, { kind: 1 });
+  await expect
+    .poll(() =>
+      page.evaluate(async (c) => {
+        const at = (p) => import(new URL(`js/${p}`, location.href).href);
+        const [{ state }, { cellKey }] = await Promise.all(
+          ["viewer/state.js", "format/lattice.js"].map(at),
+        );
+        return state.idx.cells.get(cellKey(...c))?.v;
+      }, block),
+    )
+    .toBe(1);
+  const fire = await rolled();
+  expect(await status(page).textContent()).toBe("");
+  expect(fire[0], `red: ${fire} against ${plain}`).toBeGreaterThan(plain[0]);
+  expect(fire[1], `green: ${fire} against ${plain}`).toBeLessThan(plain[1]);
+  expect(fire[2], `blue: ${fire} against ${plain}`).toBeLessThan(plain[2]);
+  expect(await drawn(page)).toBe(0);
   expect(errors).toEqual([]);
 });
 

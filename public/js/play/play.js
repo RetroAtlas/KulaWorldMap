@@ -68,11 +68,14 @@ import {
   moving,
   offsetFrame,
 } from "./ball.js";
-import { frame as gameFrame, heeds, relevel, restart, stand, startRun } from "./rules.js";
+import { frame as gameFrame, heeds, relevel, restart, revive, stand, startRun } from "./rules.js";
 import { probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
 const BALL_TYPE = 30;
-const STARTS = new Set([29, BALL_TYPE]);
+const AS_STONE_KINDS = new Set([2, 5, 6, 7]);
+const AS_STONE_TYPES = new Set([10, 28]);
+// the untinted light, the unit a traveller's tint is in
+const LIGHT = 4096;
 const YAW = 20;
 const PITCH = 30;
 const ZOOM = { blocks: 8, min: 0.8, max: 3 };
@@ -93,7 +96,8 @@ const BITS = {
 const PAD_BITS = { up: PAD.up, left: PAD.left, right: PAD.right, down: PAD.down, jump: PAD.cross };
 const PLAIN_KIND = 0;
 const REFUSED = "The ball cannot roll off here: a block stands beside it.";
-const AS_STONE = "The ball rolls over ice, spikes and the rest as over plain stone for now.";
+const AS_STONE =
+  "The ball rolls over ice, an arrow, a boost button, a crumbling or vanishing block and a platform as over plain stone for now.";
 const NO_START = "The level has no start, so the ball stands on the first face it could.";
 const NOWHERE = "The level has no face the ball could stand on.";
 const OBJECTS_ON = "Objects turned on, for the ball.";
@@ -103,7 +107,28 @@ const VERDICT = {
   exit: "Out by the exit: the level is done.",
   hidden: "Out by the hidden exit: the level is done.",
   bonus: "Every block is marked: the level is done.",
+  spikes: "The ball is killed on the spikes.",
+  fire: "The ball is burnt.",
+  captivator: "The ball is caught.",
+  acid: "The ball is dissolved in the acid.",
+  laser: "The ball is killed in the beam.",
 };
+const DYING = {
+  spikes: "On the spikes",
+  fire: "Burnt",
+  captivator: "Caught",
+  acid: "In the acid",
+  laser: "In the beam",
+};
+const WOULD = {
+  spikes: "killed on the spikes",
+  fire: "burnt",
+  captivator: "caught",
+  acid: "dissolved in the acid",
+  laser: "killed in the beam",
+  lost: "lost off the level",
+};
+const FORGIVEN = (name) => `Forgiven: the ball would have been ${WOULD[name]}.`;
 const ENDED = "The level has ended.";
 const OPENED = "The last key is taken: the exits are open.";
 const SENDING = "The teleporter is sending the ball.";
@@ -125,6 +150,7 @@ let ease = null;
 let redraw = false;
 let measure = () => {};
 let padShown = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+let forgiving = false;
 let wired = false;
 
 export const playing = () => live !== null;
@@ -240,12 +266,34 @@ function travellers(l) {
     fwd: s.h,
     body: s.body,
     height: s.height,
+    tint: tintOf(live.run.words),
     through: covered(s.centre),
     // at an inner corner the ball touches the block it leaves as well as the wall, so while the
     // climb's ramp runs it sorts by its own centre rather than by the block under it
     depth: live.run.ball.ramp?.kind === "climb" ? depth(...s.centre) : undefined,
   };
   return new Map([[live.key, going]]);
+}
+
+/** The ball's light: flashing while it is marked dying, else tinted by its heat, melt and cold. */
+function tintOf(w) {
+  const { types, turn } = motionTable();
+  if (w.dying) {
+    const level = LIGHT + LIGHT * Math.sin((live.flash / turn) * 2 * Math.PI);
+    return [level, level, level];
+  }
+  const words = [w.heat, w.melt, w.cold];
+  if (!words.some(Boolean)) return undefined;
+  const { own, other } = types[String(BALL_TYPE)].tint;
+  return words.map((word, ch) =>
+    Math.max(
+      0,
+      words.reduce(
+        (level, v, k) => (k === ch ? level : level - Math.floor((v * LIGHT) / other)),
+        LIGHT + Math.floor((word * LIGHT) / own),
+      ),
+    ),
+  );
 }
 
 // --- the camera ---------------------------------------------------------------------------
@@ -510,9 +558,50 @@ function played() {
     travelDust(was, footOf(b), b.n, () => under);
   }
   for (const event of events) happened(event);
+  rested(b);
+  flashed(run.words);
   if (run.words.send >= 0) status(SENDING);
   else if (live.status === SENDING) status(null);
+  const death = deathOf(run.words);
+  if (death) status(DYING[death], true);
+  else if (live.dire) status(null);
   if (b.state === REST) live.notes.length = 0;
+}
+
+/** The name of the ending `code` in the table, or null. */
+function endingName(code) {
+  const { ending } = motionTable().play;
+  return Object.keys(ending).find((k) => ending[k] === code) ?? null;
+}
+
+/** The cause of the death whose countdown runs, or null. */
+function deathOf(w) {
+  if (w.outcome || !w.ending) return null;
+  const name = endingName(w.ending);
+  return DYING[name] ? name : null;
+}
+
+// The dying flash's angle steps each frame the mark stands and starts over as it clears.
+function flashed(w) {
+  const { types, turn } = motionTable();
+  live.flash = w.dying ? (live.flash + types[String(BALL_TYPE)].dying.flash) % turn : 0;
+}
+
+// The last two stations the ball rested on, the heading the latest at each.
+function rested(b) {
+  const rests = live.rests;
+  const last = rests.at(-1);
+  if (last && sameStation(last, b.rest)) rests[rests.length - 1] = b.rest;
+  else live.rests = [...rests.slice(-1), b.rest];
+}
+
+/** Where a forgiven ball is put back: its last rest, or the rest before where it died at rest
+    there. */
+function refuge() {
+  const b = live.run.ball;
+  const here = { cell: blockUnder(b), face: faceUnder(b) };
+  const [earlier, last] = live.rests.length > 1 ? live.rests.slice(-2) : [null, b.rest];
+  return earlier && b.state === REST && sameStation(last, here) ? earlier : b.rest;
 }
 
 const again = () =>
@@ -536,7 +625,14 @@ function happened(event) {
     return;
   }
   if (event.ended) {
-    ended(event.ended.code);
+    const name = endingName(event.ended.code);
+    if (forgiving && WOULD[name]) forgive(name);
+    else ended(event.ended.code);
+    return;
+  }
+  if (event.dying) {
+    say(DYING[event.dying.cause]);
+    if (forgiving) forgive(event.dying.cause);
     return;
   }
   if (event.took) {
@@ -634,7 +730,7 @@ function sent({ from, to }) {
     swing of an arcade level's eye, whichever figures the level's own eye swings by. */
 function ended(code) {
   const { play, turn } = motionTable();
-  const { ending, view, clock } = play;
+  const { view, clock } = play;
   const w = live.run.words;
   live.ended = {
     code,
@@ -650,11 +746,28 @@ function ended(code) {
   finishEase();
   state.frame = null;
   fit();
-  const name = Object.keys(ending).find((k) => ending[k] === code);
+  const name = endingName(code);
   const seconds = Math.max(0, Math.floor(w.clock / clock.second));
   const text = `${VERDICT[name] ?? ENDED} ${counted(w.score, "point")}, ${counted(seconds, "second")} left. ${AGAIN}`;
   status(text);
   say(text);
+  redraw = true;
+  invalidatePick();
+}
+
+/** The death forgiven: the ball put back at rest and the status saying what would have been. */
+function forgive(name) {
+  const b = live.run.ball;
+  revive(live.run, refuge());
+  live.flash = 0;
+  live.still = stateOf(b);
+  live.station = true;
+  walked({ cell: blockUnder(b), face: faceUnder(b) }, true);
+  status(FORGIVEN(name));
+  say(FORGIVEN(name));
+  state.frame = b.frame;
+  if (state.framing === fit) fit();
+  refreshPanel();
   redraw = true;
   invalidatePick();
 }
@@ -683,6 +796,8 @@ function startOver() {
   live.walk = { stations: [at], steps: [] };
   live.trail = null;
   live.notes = [];
+  live.rests = [];
+  live.flash = 0;
   live.still = stateOf(b);
   resetDust(worldTint(live.level.theme));
   keepable();
@@ -777,19 +892,16 @@ function keep() {
   keepable();
 }
 
-/** Whether the ball stands on something it does not act on yet: ice or a hazard. */
+/** Whether the ball stands on something it does not act on yet. */
 function standsOn(block, face) {
   const key = cellKey(...block);
   const c = live.idx.cells.get(key);
   if (!c) return false;
   const kind = c.v < state.data.firstRecord ? c.v : live.idx.records.get(key)?.[0]?.kind;
-  if (kind !== PLAIN_KIND) return true;
-  const { types } = motionTable();
-  const acted = (m) => {
-    const entry = types[String(m.type)];
-    return STARTS.has(m.type) || entry?.take || entry?.opened || entry?.throw || entry?.send;
-  };
-  return (live.idx.markers.get(key) ?? []).some((m) => m.face === face && !acted(m));
+  if (AS_STONE_KINDS.has(kind)) return true;
+  return (live.idx.markers.get(key) ?? []).some(
+    (m) => m.face === face && AS_STONE_TYPES.has(m.type),
+  );
 }
 
 /** The things on `key`'s block the ball has taken, as the level as installed still lists them. */
@@ -803,11 +915,13 @@ const TAKEN = (m) => `Taken: ${markerLabel(m)} on the ${FACE_NAME[m.face]}`;
 
 // --- the strip and the pad ----------------------------------------------------------------
 
-function status(text) {
+function status(text, dying = false) {
   if (!live) return;
   live.status = text;
+  live.dire = dying;
   const el = $("playStatus");
   if (el.textContent !== (text ?? "")) el.textContent = text ?? "";
+  el.classList.toggle("dying", dying);
 }
 
 function figure(id, text, title = null) {
@@ -838,9 +952,11 @@ function sync() {
   $("pad").hidden = !live || !padShown;
   $("padDown").hidden = !state.show.turnabout;
   $("padBtn").setAttribute("aria-pressed", String(padShown));
+  $("forgiveBtn").setAttribute("aria-pressed", String(forgiving));
   if (live) {
     line();
     $("playStatus").textContent = live.status ?? "";
+    $("playStatus").classList.toggle("dying", live.dire);
   }
 }
 
@@ -877,6 +993,10 @@ function wirePad() {
   $("padBtn").onclick = () => {
     padShown = !padShown;
     reframe();
+  };
+  $("forgiveBtn").onclick = () => {
+    forgiving = !forgiving;
+    sync();
   };
   $("keepBtn").onclick = keep;
   $("leaveBtn").onclick = () => leave();
@@ -1015,6 +1135,9 @@ function enter(at = null) {
     walk: { stations: [{ cell: where.cell, face: where.face }], steps: [] },
     trail: null,
     notes: [],
+    rests: [],
+    flash: 0,
+    dire: false,
     ended: null,
   };
   const ball = run.ball;

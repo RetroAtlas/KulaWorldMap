@@ -1451,6 +1451,9 @@ body:not(.sidebar-open) .menu-btn .cross {
 .tools .status:empty {
   display: none;
 }
+.tools .status.dying {
+  color: #ff7b7b;
+}
 
 /* the planner's strip stands above the editor's wherever both show, and
    while editing keeps only the line that says so */

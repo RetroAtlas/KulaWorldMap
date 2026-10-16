@@ -14,12 +14,16 @@ import {
   PAD,
   REST,
   HOP,
+  JUMP,
+  ROLLING,
+  aloft,
   blockUnder,
+  cellOf,
   faceUnder,
   acrossOf,
   progressOf,
 } from "../../public/js/play/ball.js";
-import { startRun, frame, heeds, stand } from "../../public/js/play/rules.js";
+import { startRun, frame, heeds, restart, revive, stand } from "../../public/js/play/rules.js";
 
 setObjects(objects);
 setAnnotations(annotations);
@@ -34,14 +38,28 @@ const TABLES = {
   styles: mapData.styles,
   skins: objects.skins,
 };
+const { play } = motion;
 const UP = [0, -1, 0];
 const TOP = 0;
+const FIRE = 1;
+const ACID = 4;
 const KEY = 31;
 const SWITCH = 9;
 const TELEPORTER = 5;
+const MOVING_SPIKES = 11;
+const SPIKES = 12;
+const SLOW_STAR = 50;
+const WANDERER = 53;
+const CORKSCREW = 56;
+const INVINCIBLE = "34";
 const THROW = motion.types[String(SWITCH)].throw;
 const SEND = motion.types[String(TELEPORTER)].send;
 const TOP_SPEED = motion.types["30"].rolling.top;
+const HEAT = motion.kinds[String(FIRE)].heat;
+const MELT = motion.kinds[String(ACID)].melt;
+const BEAM = motion.kinds["8"].harm;
+const DEADLY = motion.types[String(MOVING_SPIKES)].deadly;
+const squared = (a, b) => a.reduce((sum, c, i) => sum + (c - b[i]) ** 2, 0);
 
 /** The circuits as a parity map, turned over by each press. */
 function circuits() {
@@ -65,19 +83,31 @@ const object = (face, type, { facing = 0, colour = 0, on = true, link = -1 } = {
 // A key far from anything the ball reaches, so a level plays as an arcade one.
 const FAR = [25, 25, 25];
 const FAR_KEY = { x: 25, y: 25, z: 25, kind: 0, on: [object(0, KEY)] };
-/** A level of plain blocks, some carrying a record, with a key far off. */
+/** A level of blocks of the kinds given, plain unless one is, some carrying a record, with a key
+    far off. */
 function level(blocks, records = []) {
   const all = [...records, FAR_KEY];
   const cells = [];
   const placed = new Map(all.map((r, i) => [`${r.x},${r.y},${r.z}`, i]));
-  for (const [x, y, z] of [...blocks, FAR]) {
+  for (const [x, y, z, kind = 0] of [...blocks, FAR]) {
     const i = placed.get(`${x},${y},${z}`);
-    cells.push(x, y, z, i === undefined ? 0 : mapData.firstRecord + i);
+    cells.push(x, y, z, i === undefined ? kind : mapData.firstRecord + i);
   }
   return { cells, records: all.map((r) => ({ on: [], ...r })), time: 99 };
 }
-/** A row of blocks along y at x 17, z 17. */
-const row = (y0, y1) => Array.from({ length: y1 - y0 + 1 }, (_, i) => [17, y0 + i, 17]);
+/** A row of blocks along y at x 17, z 17, of `kind` from `y0` to `y1`. */
+const row = (y0, y1, kind = 0) =>
+  Array.from({ length: y1 - y0 + 1 }, (_, i) => [17, y0 + i, 17, kind]);
+/** A laser's record at (15, 15, z) whose beam runs along x to (19, 15, z), crossing the row. */
+const beam = (z, lit = true) => ({
+  x: 15,
+  y: 15,
+  z,
+  kind: 8,
+  type: 1,
+  colour: 2,
+  f: [1, lit ? 1 : 0, 15, 15, z, 19, 15, z, -1, -1, -1],
+});
 /** The start on the top of (17, 18, 17), heading −y as LEVEL 1's does. */
 const start = () => ({ x: 17, y: 18, z: 17, kind: 0, on: [object(TOP, 30, { facing: 3 })] });
 /** A thing of `type` on the top of the row's block at `y`. */
@@ -103,12 +133,22 @@ function trace(live, n, pad, until = () => false) {
       block: blockUnder(live.ball),
       marker: live.words.marker,
       state: live.ball.state,
+      pos: [...live.ball.pos],
+      words: { ...live.words },
     });
   }
   return out;
 }
 const has = (f, name) => f.events.some((e) => e[name]);
+const dying = (l) => l.words.ending !== 0;
+const over = (l) => l.words.outcome !== 0;
 const resting = (l) => l.ball.state === REST && l.ball.turn === 0 && !l.ball.ramp;
+/** The ball at rest on `at`, the opening wait over. */
+function standing(l, at) {
+  const live = begin(l, at);
+  live.words.wait = 0;
+  return live;
+}
 
 test("a switch is thrown as the progress word the hazards read enters the band, its circuit turned over once, not again until the ball has left the middle by more than the band's reach, and again as it rolls back", () => {
   const live = begin(level(row(10, 18), [start(), on(15, SWITCH, { colour: 2 })]));
@@ -340,4 +380,409 @@ test("a count stands where the progress word is off the band with the ball still
   const [back] = trace(live, 1, 0);
   assert.equal(live.words.send, SEND.wait - 5, "and run on");
   assert.ok(!has(back, "sending"), "without starting again");
+});
+
+test("a lit beam in the ball's own cell kills it in four frames, on the ground or in the air, its speeds dropped and its heat set but the ball not frozen, and a dark beam does nothing", () => {
+  const ends = (z) => [
+    [15, 15, z],
+    [19, 15, z],
+  ];
+  const ground = begin(level([...row(10, 18), ...ends(16)], [start(), beam(16)]));
+  const frames = trace(ground, 200, PAD.up, dying);
+  const at = frames.at(-1);
+  assert.deepEqual(
+    at.events.filter((e) => e.dying),
+    [{ dying: { cause: "laser", wait: play.wait.laser } }],
+  );
+  assert.equal(cellOf(ground.ball)[1], 15, "the centre's cell the beam crosses");
+  assert.equal(
+    ground.words.heat,
+    BEAM.heat - HEAT.cool,
+    "the heat set, and cooled by the same frame's cooling off fire",
+  );
+  assert.equal(ground.words.frozen, 0, "stopped but not frozen");
+  assert.equal(ground.words.dying, 0);
+  assert.equal(ground.ball.state, ROLLING);
+  assert.ok(ground.ball.speed < TOP_SPEED, "the speed dropped before the state grew it again");
+  const rest = trace(ground, 10, PAD.up, over);
+  assert.equal(rest.length, play.wait.laser, "four frames");
+  assert.ok(
+    rest.slice(0, -1).every((f) => !f.heard),
+    "the pad unread until the frame the wait runs out on",
+  );
+  assert.deepEqual(
+    rest
+      .at(-1)
+      .events.filter((e) => e.ended)
+      .map((e) => e.ended.code),
+    [play.ending.laser],
+  );
+  assert.equal(ground.words.result, play.ending.laser);
+  assert.ok(squared(rest.at(-1).pos, at.pos) > 0, "rolling on a little");
+
+  const air = standing(level([...row(10, 18), ...ends(15)], [start(), beam(15)]), {
+    cell: [17, 15, 17],
+    face: TOP,
+    h: UP,
+  });
+  const hop = trace(air, 60, PAD.cross, dying);
+  assert.ok(hop.length < 60 && has(hop.at(-1), "dying"), "killed in the air");
+  assert.ok(aloft(air.ball));
+  assert.equal(cellOf(air.ball)[2], 15, "the hop's centre a cell up, in the beam");
+  assert.equal(air.words.heat, BEAM.heat - HEAT.cool);
+
+  const dark = begin(level([...row(10, 18), ...ends(16)], [start(), beam(16, false)]));
+  const through = trace(dark, 200, PAD.up, (l) => blockUnder(l.ball)[1] <= 12);
+  assert.ok(!through.some((f) => has(f, "dying")), "a dark beam reads as empty");
+  const off = begin(level([...row(10, 18), ...ends(16)], [start(), beam(16)]));
+  off.circuits.flip(2, 0);
+  const switched = trace(off, 200, PAD.up, (l) => blockUnder(l.ball)[1] <= 12);
+  assert.ok(!switched.some((f) => has(f, "dying")), "nor a beam switched off");
+});
+
+test("a beam switched on about the ball at rest kills it on the frame after the switch and not on its own, the hazards testing the word the last frame's read of the cells about the ball left", () => {
+  const live = standing(
+    level([...row(10, 18), [15, 15, 16], [19, 15, 16]], [start(), beam(16, false)]),
+    { cell: [17, 15, 17], face: TOP, h: UP },
+  );
+  const dark = trace(live, 3, 0);
+  assert.ok(!dark.some((f) => has(f, "dying")), "nothing while the beam is dark");
+  live.circuits.flip(2, live.words.frame);
+  const lit = trace(live, 5, 0, dying);
+  assert.equal(lit.length, 2, "the switch's frame tests the last read's word, the next the beam");
+  assert.deepEqual(
+    lit.at(-1).events.filter((e) => e.dying),
+    [{ dying: { cause: "laser", wait: play.wait.laser } }],
+  );
+});
+
+test("fire heats the ball by the burn a frame on the ground and kills it on the 51st frame from cold, frozen with the fire's wait and swelling meanwhile, heats it by the landing's measure more on the frame after a landing, not in the air, and the heat cools off fire to nothing", () => {
+  const l = level([...row(15, 18), ...row(10, 14, FIRE)], [start()]);
+  const live = standing(l, { cell: [17, 12, 17], face: TOP, h: UP });
+  assert.equal(live.words.standing, motion.kinds[String(FIRE)].standing);
+  const frames = trace(live, 100, 0, dying);
+  assert.equal(frames.length, 51);
+  assert.deepEqual(
+    frames.slice(0, 50).map((f) => f.words.heat),
+    Array.from({ length: 50 }, (_, i) => (i + 1) * HEAT.burn),
+  );
+  assert.equal(frames[49].words.heat, HEAT.limit, "at the limit and alive");
+  assert.deepEqual(
+    frames.at(-1).events.filter((e) => e.dying),
+    [{ dying: { cause: "fire", wait: play.wait.fire } }],
+  );
+  assert.deepEqual(
+    [live.words.frozen, live.words.dying, live.words.swell],
+    [1, 0, 0],
+    "frozen and not marked dying",
+  );
+  const burning = trace(live, 30, 0, over);
+  assert.equal(burning.length, play.wait.fire);
+  assert.deepEqual(
+    burning.map((f) => f.words.swell),
+    burning.map((_, i) => (i + 1) * HEAT.swell),
+    "the swell grows a frame while the countdown runs",
+  );
+  assert.deepEqual(
+    burning
+      .at(-1)
+      .events.filter((e) => e.ended)
+      .map((e) => e.ended.code),
+    [play.ending.fire],
+  );
+
+  const landing = standing(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  frame(landing, PAD.up | PAD.cross);
+  assert.equal(landing.ball.state, JUMP);
+  const flight = trace(landing, 60, 0, (l) => l.ball.landed);
+  assert.deepEqual(blockUnder(landing.ball), [17, 13, 17], "down on fire two blocks on");
+  assert.ok(
+    flight.every((f) => f.words.heat === 0),
+    "no heat in the air over the fire",
+  );
+  frame(landing, 0);
+  assert.equal(
+    landing.words.heat,
+    HEAT.burn + HEAT.land,
+    "the landing's measure on the frame after",
+  );
+  frame(landing, 0);
+  assert.equal(landing.words.heat, 2 * HEAT.burn + HEAT.land);
+
+  const cooling = standing(l, { cell: [17, 16, 17], face: TOP, h: UP });
+  cooling.words.heat = 100;
+  const cooled = trace(cooling, 8, 0);
+  assert.deepEqual(
+    cooled.map((f) => f.words.heat),
+    [85, 70, 55, 40, 25, 10, 0, 0],
+  );
+});
+
+test("acid on the ground sets its ending and wait and grows the melt by the gain, the ball rolling on with its speed kept, the melt growing a frame while the countdown runs and held at its top, and the level ending as the wait runs out", () => {
+  const l = level([...row(15, 18), ...row(10, 14, ACID)], [start()]);
+  const live = begin(l);
+  const frames = trace(live, 200, PAD.up, dying);
+  const at = frames.at(-1);
+  assert.deepEqual(
+    at.events.filter((e) => e.dying),
+    [{ dying: { cause: "acid", wait: play.wait.acid } }],
+  );
+  assert.deepEqual(at.block, [17, 14, 17], "the first frame the hazards read the acid");
+  assert.equal(live.words.melt, MELT.gain);
+  assert.equal(live.words.frozen, 0);
+  assert.equal(live.words.dying, 0);
+  assert.equal(live.ball.speed, TOP_SPEED, "the speed kept");
+  const melting = trace(live, 20, PAD.up, over);
+  assert.equal(melting.length, play.wait.acid, "six frames");
+  assert.deepEqual(
+    melting.map((f) => f.words.melt),
+    [600, 900, 1200, 1500, 1800, MELT.top],
+    "the melt grows a frame and is held at the top",
+  );
+  assert.ok(melting.slice(0, -1).every((f) => !f.heard));
+  assert.ok(
+    squared(melting.at(-1).pos, at.pos) > TOP_SPEED ** 2,
+    "the ball rolled on through the countdown",
+  );
+  assert.deepEqual(
+    melting
+      .at(-1)
+      .events.filter((e) => e.ended)
+      .map((e) => e.ended.code),
+    [play.ending.acid],
+  );
+  assert.equal(live.words.result, play.ending.acid);
+});
+
+test("spikes under the ball kill it at once, frozen and marked dying for the spikes' wait, and the outcome comes a frame before the wait runs out", () => {
+  const live = begin(level(row(10, 18), [start(), on(15, SPIKES)]));
+  const frames = trace(live, 200, PAD.up, dying);
+  const at = frames.at(-1);
+  assert.deepEqual(
+    at.events.filter((e) => e.dying),
+    [{ dying: { cause: "spikes", wait: play.wait.spikes } }],
+  );
+  assert.deepEqual(at.block, [17, 15, 17]);
+  assert.deepEqual(
+    [live.words.ending, live.words.frozen, live.words.dying],
+    [play.ending.spikes, 1, 1],
+  );
+  assert.equal(live.ball.speed, 0);
+  const frozen = trace(live, 20, PAD.up, over);
+  assert.equal(frozen.length, play.wait.spikes - 1, "the outcome a frame early");
+  assert.ok(
+    frozen.every((f) => f.pos.every((v, i) => v === at.pos[i])),
+    "the ball frozen where it was",
+  );
+  assert.equal(live.words.wait, 1);
+  assert.equal(live.words.result, 0, "the outcome written and not the result");
+  assert.equal(live.words.outcome, play.ending.spikes);
+});
+
+test("the moving spikes kill while the table's list says their flag held the deadly value on the frame before, which the hazards read, with the standing wait, are harmless outside it, and after a landing on them take the spikes' own wait", () => {
+  const { harm } = motion.types[String(MOVING_SPIKES)];
+  for (const phase of [0, 1, 2, 3]) {
+    const deadly = DEADLY[phase];
+    const l = level(row(10, 18), [start(), on(15, MOVING_SPIKES, { colour: phase })]);
+    const live = standing(l, { cell: [17, 15, 17], face: TOP, h: UP });
+    const frames = trace(live, 200, 0, dying);
+    const before = frames.length - 1;
+    assert.equal(
+      before,
+      deadly.at(-1) ? 0 : deadly.indexOf(true) + 1,
+      `phase ${phase}: killed on the frame after the list's first deadly frame`,
+    );
+    assert.ok(deadly[(before + deadly.length - 1) % deadly.length]);
+    assert.ok(
+      frames.slice(0, -1).every((f, k) => !deadly[(k + deadly.length - 1) % deadly.length]),
+      "harmless on every frame before",
+    );
+    assert.deepEqual(
+      frames.at(-1).events.filter((e) => e.dying),
+      [{ dying: { cause: "spikes", wait: harm.standing } }],
+    );
+    assert.deepEqual([live.words.frozen, live.words.dying], [1, 1]);
+    const frozen = trace(live, 20, 0, over);
+    assert.equal(frozen.length, harm.standing - 1);
+  }
+  const deadly = DEADLY[0];
+  const l = level(row(10, 18), [start(), on(15, MOVING_SPIKES)]);
+  const late = standing(l, { cell: [17, 17, 17], face: TOP, h: UP });
+  const retracted = deadly.lastIndexOf(true) + 2;
+  trace(late, retracted, 0);
+  stand(late, { cell: [17, 15, 17], face: TOP, h: UP });
+  const frames = trace(late, 300, 0, dying);
+  assert.equal(
+    late.words.frame - 1,
+    deadly.length + deadly.indexOf(true) + 1,
+    "harmless once retracted until the next cycle's deadly frame",
+  );
+  assert.ok(frames.length > 1);
+
+  const landing = standing(level(row(10, 18), [start(), on(15, MOVING_SPIKES, { colour: 2 })]), {
+    cell: [17, 17, 17],
+    face: TOP,
+    h: UP,
+  });
+  frame(landing, PAD.up | PAD.cross);
+  assert.equal(landing.ball.state, JUMP);
+  const flight = trace(landing, 60, 0, (l) => l.ball.landed);
+  assert.deepEqual(blockUnder(landing.ball), [17, 15, 17]);
+  assert.ok(!has(flight.at(-1), "dying"), "the landing's frame itself reads the air");
+  const [after] = trace(landing, 1, 0);
+  assert.ok(DEADLY[2][landing.words.frame - 2], "while the list says deadly");
+  assert.deepEqual(
+    after.events.filter((e) => e.dying),
+    [{ dying: { cause: "spikes", wait: play.wait.spikes } }],
+  );
+});
+
+test("a captivator catches the ball within its reach of its position as the rules have stepped it, the walkers standing while the ball is caught, over any countdown but a catch's own and under the guard, and the wandering ball within its own shorter reach", () => {
+  const platform = {
+    x: 20,
+    y: 14,
+    z: 17,
+    kind: 5,
+    type: 3,
+    f: [2, 1, 20, 10, 17, 20, 14, 17, -1, -1, -1],
+    length: 2,
+  };
+  const l = level(
+    [...row(10, 18), [20, 14, 17]],
+    [start(), on(10, SLOW_STAR, { facing: 1 }), platform],
+  );
+  const live = standing(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  const star = live.world.walkers.get(slot([17, 10, 17]));
+  const rail = live.world.walkers.get(`${cellKey(20, 14, 17)}/null`);
+  const { square } = motion.types[String(SLOW_STAR)].catch;
+  const seen = [];
+  let out = [];
+  while (!out.some((e) => e.dying) && live.words.frame < 400) {
+    out = frame(live, 0);
+    seen.push({ star: [...star.pos], d2: squared(live.ball.pos, star.pos), rail: [...rail.pos] });
+  }
+  const at = seen.at(-1);
+  assert.deepEqual(
+    out.filter((e) => e.dying),
+    [{ dying: { cause: "captivator", wait: play.wait.captivator } }],
+  );
+  assert.ok(at.d2 <= square, `caught at ${at.d2}`);
+  assert.ok(seen.at(-2).d2 > square, "and not a frame before");
+  assert.deepEqual(
+    [live.words.ending, live.words.frozen, live.words.dying, live.ball.speed],
+    [play.ending.captivator, 1, 1, 0],
+  );
+  const held = trace(live, 20, 0, over);
+  assert.equal(held.length, play.wait.captivator);
+  assert.ok(
+    held.every(() => star.pos.every((v, i) => v === at.star[i])),
+    "the star stands while the ball is caught",
+  );
+  assert.notDeepEqual(rail.pos, at.rail, "the platform runs on");
+  assert.equal(star.at, rail.at, "both at the run's frame");
+
+  const corkscrew = level(row(10, 18), [start(), on(15, CORKSCREW)]);
+  const over2 = standing(corkscrew, { cell: [17, 15, 17], face: TOP, h: UP });
+  Object.assign(over2.words, { ending: play.ending.exit, wait: play.wait.exit });
+  const [caught] = trace(over2, 1, 0);
+  assert.ok(has(caught, "dying"), "a catch overrides the exit's countdown");
+  assert.deepEqual(
+    [over2.words.ending, over2.words.wait],
+    [play.ending.captivator, play.wait.captivator],
+  );
+  const [again] = trace(over2, 1, 0);
+  assert.ok(!has(again, "dying"), "and not its own");
+  assert.equal(over2.words.wait, play.wait.captivator - 1);
+  const guarded = restart(begin(corkscrew, { cell: [17, 15, 17], face: TOP, h: UP }));
+  assert.equal(guarded.words.guard, 1);
+  const [under] = trace(guarded, 1, 0);
+  assert.ok(has(under, "dying"), "the hit test runs under the guard");
+
+  const wandering = standing(level(row(12, 18), [start(), on(14, WANDERER, { facing: 1 })]), {
+    cell: [17, 18, 17],
+    face: TOP,
+    h: UP,
+  });
+  const ball = wandering.world.walkers.get(slot([17, 14, 17]));
+  const own = motion.types[String(WANDERER)].catch.square;
+  const near = [];
+  out = [];
+  while (!out.some((e) => e.dying) && wandering.words.frame < 4000) {
+    out = frame(wandering, 0);
+    near.push(squared(wandering.ball.pos, ball.pos));
+  }
+  assert.ok(
+    out.some((e) => e.dying),
+    "caught in the end",
+  );
+  assert.ok(near.at(-1) <= own, String(near.at(-1)));
+  assert.ok(
+    near.slice(0, -1).some((d2) => d2 > own && d2 <= square),
+    "within the others' reach before and not caught",
+  );
+});
+
+test("the invincibility pill refuses the beam, fire's heat, acid, the spikes, the moving spikes and a catch, and not the clock", () => {
+  const safe = (l, at, pad = 0) => {
+    const live = standing(l, at);
+    live.words.pills[INVINCIBLE] = 400;
+    const frames = trace(live, 60, pad);
+    assert.ok(!frames.some((f) => has(f, "dying")), "no death");
+    assert.equal(live.words.ending, 0);
+    return live;
+  };
+  const at = { cell: [17, 15, 17], face: TOP, h: UP };
+  const beamed = safe(level([...row(10, 18), [15, 15, 16], [19, 15, 16]], [start(), beam(16)]), at);
+  assert.equal(beamed.words.heat, 0);
+  const fired = safe(level([...row(16, 18), ...row(10, 15, FIRE)], [start()]), at);
+  assert.equal(fired.words.heat, 0, "the heat does not grow");
+  const melted = safe(level([...row(16, 18), ...row(10, 15, ACID)], [start()]), at);
+  assert.equal(melted.words.melt, 0);
+  safe(level(row(10, 18), [start(), on(15, SPIKES)]), at);
+  safe(level(row(10, 18), [start(), on(15, MOVING_SPIKES, { colour: 2 })]), at);
+  safe(level(row(10, 18), [start(), on(15, CORKSCREW)]), at);
+  const timed = standing({ ...level(row(10, 18), [start()]), time: 1 }, at);
+  timed.words.pills[INVINCIBLE] = 400;
+  const frames = trace(timed, 60, 0, over);
+  assert.equal(timed.words.outcome, play.clock.out, "the clock still runs out");
+  assert.equal(frames.length, play.clock.second);
+});
+
+test("revive undoes a death and puts the ball back at rest on its last rest, or on the station given, the clock and the score kept", () => {
+  const l = level(row(10, 18), [start(), on(15, SPIKES), on(17, 37)]);
+  const live = begin(l);
+  trace(live, 200, PAD.up, (l) => blockUnder(l.ball)[1] === 16);
+  trace(live, 40, 0, resting);
+  trace(live, 200, PAD.up, dying);
+  assert.equal(live.words.ending, play.ending.spikes);
+  trace(live, 3, 0);
+  const { frame: at, clock, score } = live.words;
+  assert.ok(score > 0, "the coin on the way taken");
+  assert.deepEqual(live.ball.rest.cell, [17, 16, 17], "the last rest before the spikes");
+  revive(live);
+  assert.deepEqual(
+    [live.words.ending, live.words.wait, live.words.frozen, live.words.dying, live.words.outcome],
+    [0, 0, 0, 0, 0],
+  );
+  assert.deepEqual([live.words.frame, live.words.clock, live.words.score], [at, clock, score]);
+  assert.deepEqual(blockUnder(live.ball), [17, 16, 17]);
+  assert.equal(live.ball.state, REST);
+  assert.equal(live.ball.speed, 0);
+  const [next] = trace(live, 1, 0);
+  assert.equal(next.heard, true, "the pad read again");
+  assert.equal(live.ball.frozen, false);
+
+  const burnt = standing(level([...row(16, 18), ...row(10, 15, FIRE)], [start()]), {
+    cell: [17, 15, 17],
+    face: TOP,
+    h: UP,
+  });
+  trace(burnt, 100, 0, dying);
+  trace(burnt, 5, 0);
+  assert.ok(burnt.words.heat > HEAT.limit && burnt.words.swell > 0);
+  revive(burnt, { cell: [17, 17, 17], face: TOP, h: [1, 0, 0] });
+  assert.deepEqual([burnt.words.heat, burnt.words.melt, burnt.words.swell], [0, 0, 0]);
+  assert.deepEqual(blockUnder(burnt.ball), [17, 17, 17]);
+  assert.deepEqual(burnt.ball.h, [1, 0, 0]);
+  assert.equal(burnt.words.standing, -1, "read afresh where it stands");
 });

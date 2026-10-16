@@ -4,6 +4,7 @@ import { FACE_NORMAL, cellKey } from "../format/lattice.js";
 import { LAST_KEY, layHeading, TANGENT } from "../viewer/data.js";
 import { faceAxes, orbit, pose } from "../viewer/motion.js";
 import { cellOf } from "./ball.js";
+import { die } from "./hazards.js";
 import { KEY, took } from "./world.js";
 
 const add = (p, v, k = 1) => p.map((c, i) => c + v[i] * k);
@@ -57,7 +58,8 @@ function take(live, p, at, out) {
 }
 
 /** The walk over the cells about the ball: a pickup still on its face is taken where its place
-    lies within its reach of the ball's centre, unless it shows the form that is a hazard's. */
+    lies within its reach of the ball's centre, or, where it shows the form that is a hazard's,
+    catches the ball as a captivator does. */
 export function contact(live, out) {
   const b = live.ball;
   const world = live.world;
@@ -74,8 +76,9 @@ export function contact(live, out) {
           const { at, form } = placeOf(live, p);
           if (squared(b.pos, at) >= p.take.reach ** 2 + b.radius ** 2) continue;
           const harm = types[String(p.m.type)].harm;
-          if (harm?.form !== undefined && form === harm.form) continue;
-          take(live, p, at, out);
+          if (harm?.form !== undefined && form === harm.form)
+            die(live, out, "captivator", { freeze: true, mark: true });
+          else take(live, p, at, out);
         }
       }
 }

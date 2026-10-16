@@ -39,8 +39,9 @@ function built(kinds, hides, cell, kind) {
 
 /** The level as play holds it, the walkers laid at `frame`: the lattice's words and kinds by
     cell, the faces' types, the word each kind reads as under the ball, the pickups with where
-    each stands, the devices, the crumbling blocks, the platforms, the blocks a level with no key
-    counts, what travels and the dice, the live sets and the index the frame draws. */
+    each stands, the devices, the captivators with where each entry stands and its reach, the
+    crumbling blocks, the platforms, the blocks a level with no key counts, what travels and the
+    dice, the live sets and the index the frame draws. */
 export function worldOf(l, idx, tables, circuits, frame = 0) {
   const { motion, unit, first, styles, skins } = tables;
   const laid = [];
@@ -84,6 +85,7 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
     faces.set(slot(cellKey(start.x, start.y, start.z), start.face), motion.play.clock.face);
   const pickups = new Map();
   const devices = new Map();
+  const captivators = [];
   for (const [key, marks] of idx.markers) {
     const c = idx.cells.get(key);
     if (!c || idx.records.get(key)[0].kind >= styles) continue;
@@ -108,6 +110,16 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
         });
       }
       if (entry?.send || entry?.throw) devices.set(slot(key, m.face), m);
+      if (entry?.catch)
+        captivators.push({
+          slot: slot(key, m.face),
+          at: add(
+            [c.x, c.y, c.z].map((v) => v * unit),
+            FACE_NORMAL[m.face],
+            motion.standoff,
+          ),
+          square: entry.catch.square,
+        });
     }
   }
   return {
@@ -119,6 +131,7 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
     bodies,
     pickups,
     devices,
+    captivators,
     crumbling,
     platforms,
     counted,

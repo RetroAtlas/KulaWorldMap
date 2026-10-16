@@ -240,23 +240,46 @@ test("a pill sets the word its type keeps, which the next frame runs down, and t
   assert.equal(live.words.score, take(SUNGLASSES).points);
 });
 
-test("the catalogue star is taken in its green form alone, where it circles, and left in its brown", () => {
+test("the catalogue star is taken in its green form, where it circles, and in its brown form catches the ball as a captivator does and is kept", () => {
   const l = level(row(10, 18), [start(), on(16, STAR)]);
-  const live = begin(l, { cell: [17, 16, 17], face: TOP, h: UP });
-  const star = live.world.pickups.get(slot(16));
-  star.phase = [0, 0, 0];
   const { form, orbit, take: t, harm } = motion.types[String(STAR)];
   assert.equal(harm.form, 0);
-  const green = Math.ceil(form.past / form.rate);
-  const frames = trace(live, 400, 0, taken);
-  assert.equal(frames.length, green + 1, "left through every frame of the brown form");
+  const green = begin(l, { cell: [17, 16, 17], face: TOP, h: UP });
+  green.world.pickups.get(slot(16)).phase = [form.past, 0, 0];
+  const frames = trace(green, 5, 0, taken);
+  assert.equal(frames.length, 1, "taken on the first frame of the green form");
   const { took } = frames.at(-1).events.find((e) => e.took);
   assert.equal(took.points, t.points);
-  assert.equal(live.words.score, t.points);
+  assert.equal(green.words.score, t.points);
   const off = Math.hypot(took.at[0] - 17 * UNIT, took.at[1] - 16 * UNIT);
   assert.ok(
     Math.abs(off - orbit.radius) < 1e-6,
     "taken where it circles, its radius off the middle",
   );
   assert.equal(took.at[2], 17 * UNIT - t.stand);
+
+  const brown = begin(l, { cell: [17, 16, 17], face: TOP, h: UP });
+  brown.world.pickups.get(slot(16)).phase = [0, 0, 0];
+  brown.words.wait = 0;
+  const [caught] = trace(brown, 1, 0);
+  assert.deepEqual(
+    caught.events.filter((e) => e.dying),
+    [{ dying: { cause: "captivator", wait: play.wait.captivator } }],
+  );
+  assert.equal(taken(brown), 0, "the star is kept");
+  assert.deepEqual(
+    [brown.words.ending, brown.words.wait, brown.words.frozen, brown.words.dying],
+    [play.ending.captivator, play.wait.captivator, 1, 1],
+  );
+  assert.equal(brown.words.score, 0);
+  const guarded = begin(l, { cell: [17, 16, 17], face: TOP, h: UP });
+  guarded.world.pickups.get(slot(16)).phase = [0, 0, 0];
+  guarded.words.wait = 0;
+  guarded.words.pills["34"] = 10;
+  const safe = trace(guarded, 3, 0);
+  assert.ok(
+    !safe.some((f) => f.events.some((e) => e.dying)),
+    "refused while the invincibility pill stands",
+  );
+  assert.equal(taken(guarded), 0);
 });

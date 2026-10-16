@@ -337,11 +337,15 @@ test("a frame leaves the words the game's order implies: the clock ticked, the w
 });
 
 test("restart puts every word back, the ball on the start, the walkers laid anew and the dice reseeded", () => {
-  const l = level(row(10, 18), [
-    start(),
-    { x: 17, y: 10, z: 17, kind: 0, on: [object(0, 50, 4)] },
-    { x: 17, y: 14, z: 17, kind: 0, on: [object(0, 53, 4)] },
-  ]);
+  // the captivators on blocks of their own, out of the ball's way and reach
+  const l = level(
+    [...row(10, 18), [20, 10, 17], [20, 14, 17]],
+    [
+      start(),
+      { x: 20, y: 10, z: 17, kind: 0, on: [object(0, 50, 4)] },
+      { x: 20, y: 14, z: 17, kind: 0, on: [object(0, 53, 4)] },
+    ],
+  );
   const live = begin(l);
   steps(live, 120, PAD.up);
   assert.notDeepEqual(blockUnder(live.ball), [17, 18, 17]);

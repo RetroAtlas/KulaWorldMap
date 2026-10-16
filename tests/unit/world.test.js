@@ -153,6 +153,40 @@ test("a pickup stands off its block's centre by its type's stand, and a device i
   assert.equal(w.taken.size + w.gone.size + w.marked.size, 0);
 });
 
+test("the world keeps each captivator's entry where the loader stands it, with its type's reach", () => {
+  const l = level(row(10, 12, 10, 17), [
+    { x: 10, y: 10, z: 17, kind: 0, on: [object(0, 50, 4), object(1, 56)] },
+    { x: 11, y: 10, z: 17, kind: 0, on: [object(0, 53, 4)] },
+    { x: 12, y: 10, z: 17, kind: 0, on: [object(0, 37)] },
+  ]);
+  const w = world(l);
+  const { standoff, types } = motion;
+  assert.deepEqual(w.captivators, [
+    {
+      slot: `${key([10, 10, 17])}/0`,
+      at: [10 * UNIT, 10 * UNIT, 17 * UNIT - standoff],
+      square: types["50"].catch.square,
+    },
+    {
+      slot: `${key([10, 10, 17])}/1`,
+      at: [10 * UNIT + standoff, 10 * UNIT, 17 * UNIT],
+      square: types["56"].catch.square,
+    },
+    {
+      slot: `${key([11, 10, 17])}/0`,
+      at: [11 * UNIT, 10 * UNIT, 17 * UNIT - standoff],
+      square: types["53"].catch.square,
+    },
+  ]);
+  assert.ok(types["53"].catch.square < types["50"].catch.square, "the wandering ball's is shorter");
+  assert.deepEqual(
+    [...w.walkers.keys()].sort(),
+    [`${key([10, 10, 17])}/0`, `${key([11, 10, 17])}/0`],
+    "the two that walk are walkers too, the corkscrew not",
+  );
+  assert.deepEqual(w.walkers.get(`${key([10, 10, 17])}/0`).pos, w.captivators[0].at);
+});
+
 test("the world lays the walkers and the dice and keeps a platform's home and body", () => {
   const l = level(
     [...row(10, 14, 10, 17), [20, 14, 17]],
