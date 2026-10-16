@@ -9,19 +9,19 @@ const TIME_UP =
 const TIME_UP_MARKED =
   "Time is up. 50 points, 0 seconds left. Space or a tap on the pad starts the level again.";
 const LOST =
-  /^The ball is lost off the level\. 0 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
+  /^The ball fell off the level\. 0 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
 const DONE =
   /^Out by the exit: the level is done\. 1500 points, \d+ seconds left\. Space or a tap on the pad starts the level again\.$/;
 const SPIKED =
   /^The ball is killed on the spikes\. 0 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
 const FORGIVEN = "Forgiven: the ball would have been killed on the spikes.";
+const FORGIVEN_FALL = "Forgiven: the ball would have fallen off the level.";
 const LOST_BROKEN =
-  /^The ball is lost off the level\. 50 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
+  /^The ball fell off the level\. 50 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
 const BROKE = "17,16,17, top. The crumbling block breaks under the ball.";
 const GONE = "The crumbling block at 17,16,17 is gone.";
 const TAKEN = "Taken: Coin (bronze) on the top";
 const SENDING = "The teleporter is sending the ball.";
-const REFUSED = "The ball cannot roll off here: a block stands beside it.";
 const RIDING = "The ball rides the platform.";
 const FOLLOWING = "Following the route; an arrow, Space or the pad takes the ball back.";
 const FOLLOWED = "The route is done: the ball stands at its last stop.";
@@ -145,6 +145,14 @@ const status = (page) => page.locator("#playStatus");
 const clockLine = (page) => page.locator("#playClock");
 /** The seconds the strip's clock shows. */
 const seconds = async (page) => Number((await clockLine(page).textContent()).replace(/\D/g, ""));
+/** Wait for the strip's clock to pass `n` seconds, which proves the level ran frames meanwhile,
+    a whole second of them for each past the first. */
+const ticked = async (page, n = 1) => {
+  for (let i = 0; i < n; i++) {
+    const before = await seconds(page);
+    await expect.poll(() => seconds(page)).not.toBe(before);
+  }
+};
 /** The frame the map draws at. */
 const frameAt = (page) =>
   page.evaluate(async () =>
@@ -558,7 +566,7 @@ test("with Motion on the view eases in and out, and the ball tumbles over the ga
   expect(errors).toEqual([]);
 });
 
-test("the ball turns in place, turns about by Down only with the setting on, and is refused an edge beside a neighbour", async ({
+test("the ball turns in place, turns about by Down only with the setting on, and is refused an edge beside a neighbour, which the strip leaves unsaid", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -584,11 +592,19 @@ test("the ball turns in place, turns about by Down only with the setting on, and
   await page.keyboard.press("ArrowDown");
   await expect(line(page)).toContainText("facing -x");
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
-  // LEVEL 1's ring: off its block to the -x there is nothing, and a block stands beside it
+  // LEVEL 1's ring: off its block to the -x there is nothing, and a block stands beside it, so
+  // Up held until the clock ticks moves nothing, and the strip says nothing of it
   await page.keyboard.down("ArrowUp");
-  await expect(status(page)).toHaveText("The ball cannot roll off here: a block stands beside it.");
+  await ticked(page);
   await page.keyboard.up("ArrowUp");
-  expect((await probe(page)).station.block).toEqual([17, 18, 17]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  expect((await probe(page)).station).toEqual({
+    block: [17, 18, 17],
+    face: 0,
+    heading: "-x",
+    moving: false,
+  });
+  expect(await status(page).textContent()).toBe("");
   expect(errors).toEqual([]);
 });
 
@@ -1478,9 +1494,18 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   expect(far.dust[0]).toBeGreaterThan(near);
   await expect(line(page)).toHaveText("Playing · on the top of 17,14,17, facing +x");
   expect(await said(page)).toContain("Sent to the top of 17,14,17.");
-  // the pad is dead through the hold, and then Up is refused, the near end's block beside
+  // the pad is dead through the hold, and then Up is refused, the near end's block beside, and
+  // the strip says nothing of it: two seconds of the clock, a whole one of frames past the hold,
+  // and the ball has not moved
   await page.keyboard.press("ArrowUp");
-  await expect(status(page)).toHaveText(REFUSED);
+  await ticked(page, 2);
+  expect((await probe(page)).station).toEqual({
+    block: [17, 14, 17],
+    face: 0,
+    heading: "+x",
+    moving: false,
+  });
+  expect(await status(page).textContent()).toBe("");
   await page.locator("#keepBtn").click();
   await expect(page.locator("#courseLine")).toContainText("1 leap");
   const route = await page.evaluate(async () => {
@@ -1501,7 +1526,7 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   expect(errors).toEqual([]);
 });
 
-test("spikes kill the ball: the strip says so in red while the game's countdown runs, the verdict names the cause and Space starts the level again, and with Forgive pressed the ball is put back where it last rested instead", async ({
+test("spikes kill the ball: the strip says so in red while the game's countdown runs, the verdict names the cause and Space starts the level again, and with Forgive pressed the ball is put back where it last rested instead, from the spikes and from a fall alike", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -1561,6 +1586,22 @@ test("spikes kill the ball: the strip says so in red while the game's countdown 
     moving: false,
   });
   expect((await probe(page)).frame).toEqual(IDENTITY);
+  // a jump off the block's free side falls off the level, forgiven the same way: the ball comes
+  // back to the rest it jumped from, facing as it did
+  await page.keyboard.press("ArrowLeft");
+  await expect(line(page)).toContainText("facing -x");
+  await page.keyboard.down("ArrowUp");
+  await page.keyboard.press(" ");
+  await page.keyboard.up("ArrowUp");
+  await expect(status(page)).toHaveText(FORGIVEN_FALL, { timeout: 10_000 });
+  await expect(say(page)).toHaveText(FORGIVEN_FALL);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  expect((await probe(page)).station).toEqual({
+    block: [17, 16, 17],
+    face: 0,
+    heading: "-x",
+    moving: false,
+  });
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
   // the toggle is kept for the visit

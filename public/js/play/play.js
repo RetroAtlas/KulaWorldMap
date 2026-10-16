@@ -98,7 +98,6 @@ const BITS = {
 const PAD_BITS = { up: PAD.up, left: PAD.left, right: PAD.right, down: PAD.down, jump: PAD.cross };
 const PLAIN_KIND = 0;
 const REFUSED = {
-  edge: "The ball cannot roll off here: a block stands beside it.",
   arrow: "The ball cannot roll off here: the arrow points another way.",
 };
 const AS_STONE = "The ball rolls over a boost button as over plain stone for now.";
@@ -108,7 +107,7 @@ const NOWHERE = "The level has no face the ball could stand on.";
 const OBJECTS_ON = "Objects turned on, for the ball.";
 const VERDICT = {
   time: "Time is up.",
-  lost: "The ball is lost off the level.",
+  lost: "The ball fell off the level.",
   exit: "Out by the exit: the level is done.",
   hidden: "Out by the hidden exit: the level is done.",
   bonus: "Every block is marked: the level is done.",
@@ -126,14 +125,14 @@ const DYING = {
   laser: "In the beam",
 };
 const WOULD = {
-  spikes: "killed on the spikes",
-  fire: "burnt",
-  captivator: "caught",
-  acid: "dissolved in the acid",
-  laser: "killed in the beam",
-  lost: "lost off the level",
+  spikes: "been killed on the spikes",
+  fire: "been burnt",
+  captivator: "been caught",
+  acid: "been dissolved in the acid",
+  laser: "been killed in the beam",
+  lost: "fallen off the level",
 };
-const FORGIVEN = (name) => `Forgiven: the ball would have been ${WOULD[name]}.`;
+const FORGIVEN = (name) => `Forgiven: the ball would have ${WOULD[name]}.`;
 const ENDED = "The level has ended.";
 const OPENED = "The last key is taken: the exits are open.";
 const BROKE = "The crumbling block breaks under the ball.";
@@ -649,7 +648,7 @@ const looked = (b) => (b.look.word ? offsetFrame(b.frame, 0, b.look.word, b.rule
 function happened(event) {
   const b = live.run.ball;
   if (event.refused) {
-    status(REFUSED[event.refused]);
+    if (REFUSED[event.refused]) status(REFUSED[event.refused]);
     return;
   }
   if (event.ended) {
