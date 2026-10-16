@@ -73,7 +73,6 @@ export function ballAt(rules, cell, face, h) {
     count: 0,
     row: 0,
     saved: null,
-    bounced: false,
     landed: false,
     frozen: false,
     rest: { cell: [...cell], face, h },
@@ -241,7 +240,6 @@ function startJump(b, probe) {
   b.speed = b.table.jump.speed;
   b.spinSpeed = b.speed;
   b.v = 0;
-  b.bounced = false;
 }
 
 function startHop(b) {
@@ -307,7 +305,6 @@ function land(b, probe, out) {
   const i = axisOf(b.n);
   b.pos[i] = block[i] * b.unit + b.n[i] * (b.half + b.radius);
   b.v = 0;
-  b.bounced = false;
   b.landed = true;
   b.progress = progressOf(b);
   if (b.forward || (b.progress < b.table.fall.short && !b.wantJump)) {
@@ -335,6 +332,8 @@ function ceiling(b, probe, rise) {
     (p <= b.radius && probe.solid(add(over, b.h, -1)));
   if (!hit) return false;
   b.state = FALL;
+  b.speed = 0;
+  b.spinSpeed = 0;
   b.v = -rise;
   return true;
 }
@@ -347,7 +346,8 @@ function jumping(b, probe, out) {
     if (land(b, probe, out)) return;
     const rows = b.jump.rows;
     b.state = FALL;
-    b.v = rows[b.row - 1][0] - rows[b.row - 2][0];
+    b.speed = 0;
+    b.v = -Math.abs(rows[b.row - 1][0] - rows[b.row - 2][0]);
     return;
   }
   recentre(b.saved, b, j.recentre);
@@ -369,7 +369,6 @@ function jumping(b, probe, out) {
   if (wall) {
     b.pos = add(b.pos, b.h, -2 * advance);
     b.speed = -advance;
-    b.bounced = true;
     b.state = FALL;
     b.v = rise > 0 ? j.bounce : rise;
     return;
@@ -400,7 +399,8 @@ function falling(b, probe, out) {
   const f = b.table.fall;
   const t = b.table.rolling;
   b.v = Math.max(b.v + f.gain, f.top);
-  if (b.bounced && b.speed < 0) b.speed = Math.min(0, b.speed + t.gain);
+  if (b.speed > 0) b.speed = 0;
+  else if (b.speed < 0) b.speed = Math.min(0, b.speed + t.gain);
   b.pos = add(add(b.pos, b.n, b.v), b.h, b.speed);
   b.spinSpeed = b.forward ? Math.min(b.spinSpeed + t.gain, t.top) : Math.max(0, b.spinSpeed - 1);
   const cell = cellOf(b, b.pos);
