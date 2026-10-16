@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { settle, still, trackErrors, drawn } from "./helpers.js";
+import { settle, still, trackErrors, drawn, textured } from "./helpers.js";
 
 const LEVEL = "/#HIRO/0/45,35/fit/33";
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazards)\.js$/;
@@ -81,6 +81,27 @@ const pixelAt = (page, [x, y, z]) =>
       const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
       const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
       draw();
+      const [px, py] = screen(x, y, z);
+      const k = state.view.dpr;
+      const g = document.getElementById("cv").getContext("2d");
+      return [...g.getImageData(Math.round(px * k), Math.round(py * k), 1, 1).data.slice(0, 3)];
+    },
+    [x, y, z],
+  );
+/** The red, green and blue the frame paints at a point of a block's top, with everything on
+    that face taken off the record first. */
+const bareTop = (page, [x, y, z]) =>
+  page.evaluate(
+    async ([x, y, z]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state, screen }, { draw }, { cellKey }] = await Promise.all(
+        ["viewer/state.js", "viewer/draw/render.js", "format/lattice.js"].map(at),
+      );
+      const r = state.idx.records.get(cellKey(Math.floor(x), Math.floor(y), z))[0];
+      const on = r.on;
+      r.on = on.filter((o) => o.face !== 0);
+      draw();
+      r.on = on;
       const [px, py] = screen(x, y, z);
       const k = state.view.dpr;
       const g = document.getElementById("cv").getContext("2d");
@@ -1317,6 +1338,32 @@ test("the ball takes the coin it rolls onto, which is gone from the frame, the l
   });
   expect(await exits(page)).toEqual({ open: false, form: null });
   expect(await drawsThing(page, coin, 37)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("the shadow the game paints into a coin's face goes with the coin as the ball takes it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false });
+  // the shadow is the face's texture, so the textures are put back on
+  await page.keyboard.press("t");
+  await expect(page.locator("#showSkins")).toBeChecked();
+  await textured(page);
+  await startPlay(page);
+  const coin = [17, 16, 17];
+  // clear of the face's middle, which the trail would cover
+  const face = [coin[0] + 0.3, coin[1] + 0.5, coin[2]];
+  expect(await pixelAt(page, face)).not.toEqual(await bareTop(page, face));
+  for (const block of [[17, 17, 17], coin, [17, 15, 17]]) {
+    await page.keyboard.press("ArrowUp");
+    await expect
+      .poll(async () => (await probe(page)).station.block, { intervals: [25] })
+      .toEqual(block);
+    await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  }
+  await expect(page.locator("#playPoints")).toHaveText("250 points");
+  expect(await pixelAt(page, face)).toEqual(await bareTop(page, face));
   expect(errors).toEqual([]);
 });
 

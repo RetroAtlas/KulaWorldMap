@@ -338,6 +338,48 @@ test("hiding a row of paint strips the face back to the stone the block wears wi
   expect(await face(false)).toEqual(iced);
 });
 
+test("switching the objects off takes the shadow painted under a pickup off its face, as hiding its row does", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0/30,60");
+  await settle(page);
+  await textured(page);
+  await still(page);
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  const coin = page
+    .getByRole("list", { name: "Objects" })
+    .getByRole("button", { name: /^Coin \(bronze\)/ });
+  /** The colour at the middle of the top face LEVEL 1's first coin stands on, drawn afresh. */
+  const face = () =>
+    page.evaluate(async () => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state, screen }, { draw }] = await Promise.all(
+        ["viewer/state.js", "viewer/draw/render.js"].map(at),
+      );
+      draw();
+      const [x, y] = screen(17.5, 16.5, 17);
+      const cv = document.getElementById("cv");
+      const k = state.view.dpr;
+      return String(
+        cv.getContext("2d").getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data,
+      );
+    });
+  const shown = await face();
+  await page.keyboard.press("o");
+  await expect(page.locator("#showObjects")).not.toBeChecked();
+  const off = await face();
+  expect(off).not.toEqual(shown);
+  await page.keyboard.press("o");
+  await expect(page.locator("#showObjects")).toBeChecked();
+  expect(await face()).toEqual(shown);
+  await coin.click();
+  await expect(coin).toHaveAttribute("aria-pressed", "false");
+  expect(await face()).toEqual(off);
+  await page.locator("#resetKinds").click();
+  expect(await face()).toEqual(shown);
+});
+
 test("a legend row keeps the focus when the legend is built anew", async ({ page }) => {
   await page.goto("/#ATLANT/3");
   await settle(page);

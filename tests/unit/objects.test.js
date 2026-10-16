@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, annotations, objects } from "./fixtures.js";
-import { lookOf } from "../../public/js/viewer/skins.js";
+import { lookOf, shadowed } from "../../public/js/viewer/skins.js";
 import {
   setObjects,
   motionOf,
@@ -12,6 +12,9 @@ import {
   exitForm,
   holdsKey,
   LAST_KEY,
+  shownOn,
+  markersOf,
+  objectId,
 } from "../../public/js/viewer/data.js";
 import { state } from "../../public/js/viewer/state.js";
 
@@ -207,4 +210,39 @@ test("the exit draws open while the exits stand open, and only a level with a ke
   assert.equal(holdsKey(keyed), true);
   assert.equal(holdsKey(oneBlock(EXIT)), false);
   assert.equal(holdsKey(oneBlock(EXIT, HIDDEN_EXIT)), false);
+});
+
+// The game paints a pickup's shadow into the face under it, and the map
+// paints it only while the pickup is drawn.
+test("a face is painted with what is shown on it: a hidden kind never, a shadowed type only with the objects on and its marker standing, a start always", () => {
+  const COIN = 37;
+  const CLOCK = 8;
+  const START_ON_A_CLOCK = 29;
+  const coin = { face: 0, type: COIN, f: [0, 2, 1, 0] };
+  const clock = { face: 1, type: CLOCK, f: [0, 0, 0, 0] };
+  const start = { face: 2, type: START_ON_A_CLOCK, f: [0, 0, 1, 0] };
+  assert.ok(shadowed(objects.skins, START_ON_A_CLOCK), "the loader's range holds the start");
+  const r = { kind: 0, on: [coin, clock, start] };
+  const marks = markersOf(r);
+  assert.equal(shownOn(r, marks), r, "nothing dropped, the record itself");
+  state.hiddenKinds = new Set([objectId(coin)]);
+  assert.deepEqual(shownOn(r, marks).on, [clock, start]);
+  state.hiddenKinds = new Set([objectId(clock)]);
+  assert.deepEqual(shownOn(r, marks).on, [coin, start]);
+  state.hiddenKinds = new Set([objectId(start)]);
+  assert.deepEqual(shownOn(r, marks).on, [coin, clock]);
+  state.hiddenKinds = new Set();
+  state.show.objects = false;
+  assert.deepEqual(shownOn(r, marks).on, [clock, start], "the clock is paint, not a shadow");
+  state.show.objects = true;
+  const without = (o) => marks.filter((m) => m.face !== o.face);
+  assert.deepEqual(shownOn(r, without(coin)).on, [clock, start], "taken, as play's index has it");
+  assert.equal(shownOn(r, without(clock)), r);
+  assert.equal(
+    shownOn(r, without(start)),
+    r,
+    "a start's face is its own whatever stands in the marks",
+  );
+  assert.deepEqual(shownOn(r, []).on, [clock, start]);
+  assert.equal(shownOn(r, marks), r);
 });

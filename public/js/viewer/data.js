@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { SIDE, cellKey, FACE_NORMAL } from "../format/lattice.js";
-import { platesOf, lookOf, keyed } from "./skins.js";
+import { platesOf, lookOf, keyed, shadowed } from "./skins.js";
 import { glowing, byLight } from "./motion.js";
 
 let ann = { worlds: {}, kinds: {}, types: {}, levels: {} };
@@ -102,6 +102,23 @@ export function markersOf(r) {
     out.push({ id: objectId(o), type: o.type, face: o.face, f: o.f, v: o.v, variant });
   }
   return out;
+}
+
+/** The record as the frame paints its faces: its things less those of a
+    hidden kind, and less one whose shadow the game paints into the face where
+    the thing itself is not drawn, the objects switched off or no marker of its
+    face among `marks`, the cell's markers of the index the frame draws from;
+    the record itself where nothing is dropped. A start is kept, its face
+    painting the clock it may stand on and no shadow of it. */
+export function shownOn(r, marks = []) {
+  const skins = skinsTable();
+  const drawn = (o) =>
+    !state.hiddenKinds.has(objectId(o)) &&
+    (!skins ||
+      STARTS.has(o.type) ||
+      !shadowed(skins, o.type) ||
+      (state.show.objects && marks.some((m) => m.face === o.face)));
+  return r.on.every(drawn) ? r : { ...r, on: r.on.filter(drawn) };
 }
 
 /** Whether a type is paint on its face with nothing standing there: it has
