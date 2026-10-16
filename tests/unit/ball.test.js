@@ -466,9 +466,91 @@ test("Space at rest hops the ball in place over the table's rows, back at rest w
   assert.equal(Math.max(...heights), 458);
   run(b, probe, 1, 0);
   assert.equal(b.state, REST);
+  assert.equal(b.pos[2], 17 * UNIT - 356 + 14);
   run(b, probe, 1, 0);
   assert.deepEqual(b.pos, [17 * UNIT, 18 * UNIT, 17 * UNIT - 356]);
   assert.deepEqual(blockUnder(b), [17, 18, 17]);
+});
+
+test("a held Cross starts the next hop on the frame after the end, each hop ending 14 lower, and over a lone block the eighth ends in a fall the landing takes on the next frame, the ninth from the radius", () => {
+  const probe = lattice([17, 18, 17]);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  const rest = 17 * UNIT - 356;
+  const ends = [];
+  const rests = [];
+  let was = b.state;
+  for (let f = 1; f <= 31 * 8; f++) {
+    assert.deepEqual(run(b, probe, 1, PAD.cross), [], `frame ${f}`);
+    if (was === HOP && b.state !== HOP) ends.push([f, b.state, b.pos[2] - rest]);
+    if (b.state === REST) rests.push(f);
+    was = b.state;
+  }
+  assert.deepEqual(
+    ends,
+    [1, 2, 3, 4, 5, 6, 7].map((k) => [31 * k, REST, 14 * k]).concat([[31 * 8, FALL, 112]]),
+  );
+  assert.deepEqual(
+    rests,
+    [1, 2, 3, 4, 5, 6, 7].map((k) => 31 * k),
+  );
+  assert.equal(b.v, table.fall.hop);
+  assert.equal(b.speed, 0);
+  assert.deepEqual(run(b, probe, 1, PAD.cross), [{ at: "landed" }]);
+  assert.equal(b.state, REST);
+  assert.deepEqual(b.pos, [17 * UNIT, 18 * UNIT, rest]);
+  assert.deepEqual(blockUnder(b), [17, 18, 17]);
+  run(b, probe, 1, PAD.cross);
+  assert.equal(b.state, HOP);
+  assert.equal(rest - b.pos[2], JUMPS.rows[1][0]);
+});
+
+test("Cross let go after eight hops leaves the ball at rest at its radius on its own block, over a lone block and over a two-deep floor", () => {
+  const rest = [17 * UNIT, 18 * UNIT, 17 * UNIT - 356];
+  const held = (probe) => {
+    const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+    run(b, probe, 31 * 8, PAD.cross);
+    assert.equal(b.pos[2] - rest[2], 112);
+    return b;
+  };
+  const lone = lattice([17, 18, 17]);
+  const b = held(lone);
+  assert.equal(b.state, FALL);
+  assert.deepEqual(run(b, lone, 1, 0), [{ at: "landed" }]);
+  const deep = lattice([17, 18, 17], [17, 18, 18]);
+  const c = held(deep);
+  assert.equal(c.state, REST);
+  assert.deepEqual(blockUnder(c), [17, 18, 18]);
+  assert.deepEqual(run(c, deep, 1, 0), []);
+  for (const [d, probe] of [
+    [b, lone],
+    [c, deep],
+  ]) {
+    assert.equal(d.state, REST);
+    assert.deepEqual(d.pos, rest);
+    assert.deepEqual(blockUnder(d), [17, 18, 17]);
+    assert.equal(heightOf(d), 100);
+    assert.deepEqual(run(d, probe, 3, 0), []);
+    assert.deepEqual(d.pos, rest);
+    assert.equal(moving(d), false);
+  }
+});
+
+test("the spin's speed is nothing on every frame of a hop after a jump with Cross held on, so the body does not turn in the hop", () => {
+  const probe = row(10, 18);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 30, PAD.up | PAD.cross);
+  assert.deepEqual(run(b, probe, 1, PAD.cross), [{ at: "landed" }]);
+  assert.equal(b.state, REST);
+  // the landing writes the spin's speed nowhere, so the body turns on the landing frame too
+  assert.equal(b.spinSpeed, table.jump.speed);
+  const spun = b.spin;
+  assert.equal(spun, 31 * table.spin * table.jump.speed);
+  for (let f = 1; f <= 31 * 2 + 1; f++) {
+    run(b, probe, 1, PAD.cross);
+    assert.equal(b.state, f % 31 === 0 ? REST : HOP, `frame ${f}`);
+    assert.equal(b.spinSpeed, 0, `frame ${f}`);
+    assert.equal(b.spin, spun, `frame ${f}`);
+  }
 });
 
 test("Up with Space jumps the ball along the rows, 458 up on the 15th and 16th frames, and lands two blocks on", () => {

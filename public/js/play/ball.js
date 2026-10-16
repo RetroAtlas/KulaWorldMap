@@ -122,10 +122,11 @@ function lay(b, p) {
   b.pos[i] = edge + b.h[i] * p;
 }
 
+/** Lay the centre its radius off the face plane nearest it along the normal. */
 function settle(b) {
-  const block = blockUnder(b);
   const i = axisOf(b.n);
-  b.pos[i] = block[i] * b.unit + b.n[i] * (b.half + b.radius);
+  const plane = Math.floor(b.pos[i] / b.unit) * b.unit + b.half;
+  b.pos[i] = plane + b.n[i] * b.radius;
 }
 
 function stop(b, p) {
@@ -380,7 +381,7 @@ function hopping(b, probe) {
   const j = b.table.jump;
   b.count = b.count === j.skip + 1 ? 0 : b.count - 1;
   if (b.count <= 0) {
-    if (probe.solid(add(cellOf(b, b.saved), b.n, -1))) {
+    if (probe.solid(add(cellOf(b, b.pos), b.n, -1))) {
       b.state = REST;
       return;
     }
@@ -388,6 +389,7 @@ function hopping(b, probe) {
     b.v = b.table.fall.hop;
     return;
   }
+  b.spinSpeed = 0;
   const was = b.jump.rows[b.row][0];
   b.row += 1;
   const height = b.jump.rows[b.row][0];
