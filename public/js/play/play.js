@@ -1,4 +1,5 @@
-// Play mode: the ball stood on the level and rolled by the keys, the camera behind it.
+// Play mode: the ball stood on the level and rolled by the keys, or along the planned route, the
+// camera behind it.
 import { $, el, emit, on } from "../viewer/ui/dom.js";
 import { adoptCourse, current, measureStrip } from "../viewer/chrome/course.js";
 import { drawPieces } from "../viewer/draw/ribbon.js";
@@ -70,6 +71,7 @@ import {
   positionOf,
 } from "./ball.js";
 import { frame as gameFrame, heeds, relevel, restart, revive, stand, startRun } from "./rules.js";
+import { courseDriver } from "./drive.js";
 import { probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
 const BALL_TYPE = 30;
@@ -142,6 +144,13 @@ const BLOCKS_LEFT = "The blocks left to roll onto";
 const AGAIN = "Space or a tap on the pad starts the level again.";
 const KEPT = "The way the ball has come is now the route.";
 const ROUTE_STANDS = "A route already stands; clear it to keep the walk.";
+const FOLLOWING = "Following the route; an arrow, Space or the pad takes the ball back.";
+const NO_FIRST_STOP = "The route's first stop has nothing to stand on.";
+const DONE_WHY = {
+  end: "The route is done: the ball stands at its last stop.",
+  leap: "The route leaps from here, which the ball cannot follow.",
+  strayed: "The ball has left the route.",
+};
 const AT_SWITCH = 6;
 const AT_TAKE = 10;
 const AT_BREAK = 2;
@@ -529,7 +538,9 @@ function advance() {
     has ended, with Motion on alone: whether anything moved. */
 function stepped(dt) {
   let moved = false;
-  const runs = live.ended ? motionOn() : motionOn() || moving(live.run.ball) || held || tapped;
+  const runs = live.ended
+    ? motionOn()
+    : motionOn() || moving(live.run.ball) || held || tapped || live.driver !== null;
   if (runs) {
     owed += (dt * motionTable().hz) / 1000;
     while (owed >= 1 && live) {
@@ -555,7 +566,7 @@ function stepped(dt) {
 function played() {
   const run = live.run;
   const b = run.ball;
-  const pad = held | tapped;
+  const pad = held | tapped | (live.driver ? live.driver.pad(run) : 0);
   // a tap stands until a frame reads the pad, as the level opens with it dead
   if (heeds(run)) tapped = 0;
   const was = onFace(b) ? footOf(b) : null;
@@ -570,6 +581,11 @@ function played() {
   flashed(run.words);
   if (run.words.send >= 0) status(SENDING);
   else if (live.status === SENDING) status(null);
+  if (live.driver) {
+    const why = live.driver.done(run);
+    if (why) followed(why);
+    else if (!live.status) status(FOLLOWING);
+  }
   const death = deathOf(run.words);
   if (death) status(DYING[death], true);
   else if (live.dire) status(null);
@@ -613,7 +629,11 @@ function refuge() {
 }
 
 const again = () =>
-  !!(ease || (live && (motionOn() || (!live.ended && (moving(live.run.ball) || held || tapped)))));
+  !!(
+    ease ||
+    (live &&
+      (motionOn() || (!live.ended && (moving(live.run.ball) || held || tapped || live.driver))))
+  );
 
 /** The frame hook: another frame while the view eases, the level runs or something moves, and one
     more where the view has just cut. */
@@ -801,6 +821,8 @@ function ended(code) {
     base: 1,
   };
   held = tapped = owed = 0;
+  retire();
+  routing();
   finishEase();
   state.frame = null;
   fit();
@@ -846,6 +868,8 @@ function startOver() {
   live.run = restart(live.run, where);
   live.probe = liveProbe(live.run);
   live.ended = null;
+  live.driver = null;
+  live.route = null;
   live.framed = false;
   state.presses = new Map();
   const b = live.run.ball;
@@ -859,7 +883,7 @@ function startOver() {
   live.flash = 0;
   live.still = stateOf(b);
   resetDust(worldTint(live.level.theme));
-  keepable();
+  routing();
   status(start ? null : NO_START);
   held = tapped = owed = 0;
   state.frame = b.frame;
@@ -916,7 +940,7 @@ function walked(station, leap = false) {
       p.chevron = null;
     }
   live.trail = byKey;
-  keepable();
+  routing();
 }
 
 function drawTrail(ctx, c, home, key, ghost) {
@@ -930,8 +954,63 @@ function drawDustOver(ctx, c, home, key, ghost) {
   drawDust(ctx, key);
 }
 
-function keepable() {
-  $("keepBtn").disabled = !live || live.walk.stations.length < 2 || current() !== null;
+/** The strip's route buttons: Keep while the walk has a roll in it and no route stands, Follow
+    while a route stands, pressed while the ball follows it and dim once the level has ended. */
+function routing() {
+  const route = current();
+  $("keepBtn").disabled = !live || live.walk.stations.length < 2 || route !== null;
+  const follow = $("followBtn");
+  follow.hidden = !live || route === null;
+  follow.disabled = !live || live.ended !== null;
+  follow.setAttribute("aria-pressed", String(live?.driver != null));
+}
+
+/** Roll the ball along the planned route from the stop it stands on, or from the first stop,
+    where it is put, when it stands on none or on the last; pressed again, let the ball go. */
+function followRoute() {
+  const route = current();
+  if (!live || live.ended || !route) return;
+  if (live.driver) {
+    retire();
+    return;
+  }
+  const b = live.run.ball;
+  const here = { cell: blockUnder(b), face: faceUnder(b) };
+  const last = route.stations.length - 1;
+  let i = route.stations.findIndex((s, j) => j < last && sameStation(s, here));
+  let placed = "";
+  if (i < 0) {
+    const [first] = route.stations;
+    if (!live.probe.standable(first.cell, first.face)) {
+      status(NO_FIRST_STOP);
+      return;
+    }
+    put({ cell: first.cell, face: first.face, h: tangent(first.face, route.steps[0]?.k ?? 0) });
+    placed = `The ball is put on the ${FACE_NAME[first.face]} of ${first.cell.join(",")}. `;
+    i = 0;
+  }
+  live.driver = courseDriver(route, i);
+  live.route = route;
+  routing();
+  status(FOLLOWING);
+  say(placed + FOLLOWING);
+  wake();
+}
+
+/** The driver let go, the keys and the pad having the ball. */
+function retire() {
+  if (!live?.driver) return;
+  live.driver = null;
+  live.route = null;
+  if (live.status === FOLLOWING) status(null);
+  routing();
+}
+
+/** The driver done, and why said. */
+function followed(why) {
+  retire();
+  status(DONE_WHY[why]);
+  say(DONE_WHY[why]);
 }
 
 function keep() {
@@ -948,7 +1027,7 @@ function keep() {
   }
   say(KEPT);
   toast(KEPT);
-  keepable();
+  routing();
 }
 
 /** Whether the ball stands on something it does not act on yet. */
@@ -1036,6 +1115,7 @@ function wirePad() {
       wake();
       return;
     }
+    retire();
     e.target.setPointerCapture(e.pointerId);
     held |= bit;
     tapped |= bit;
@@ -1051,6 +1131,7 @@ function wirePad() {
     forgiving = !forgiving;
     sync();
   };
+  $("followBtn").onclick = followRoute;
   $("keepBtn").onclick = keep;
   $("leaveBtn").onclick = () => leave();
 }
@@ -1099,6 +1180,7 @@ function keydown(e) {
   e.preventDefault();
   e.stopPropagation();
   if (e.repeat || !heard(bit)) return;
+  retire();
   held |= bit;
   tapped |= bit;
   wake();
@@ -1193,11 +1275,13 @@ function enter(at = null) {
     flash: 0,
     dire: false,
     ended: null,
+    driver: null,
+    route: null,
   };
   const ball = run.ball;
   live.still = stateOf(ball);
   resetDust(worldTint(l.theme));
-  keepable();
+  routing();
   held = tapped = owed = 0;
   last = performance.now();
   state.anchored = true;
@@ -1289,6 +1373,23 @@ export function togglePlay() {
   else enter();
 }
 
+/** Stand the live ball at rest on `at`, the keys having it, the view cut to it and the way it has
+    come taking a stop there. */
+function put(at) {
+  retire();
+  live.key = keyOf(startOf(live.level, live.probe), at);
+  stand(live.run, at);
+  live.still = stateOf(live.run.ball);
+  walked({ cell: at.cell, face: at.face });
+  held = tapped = 0;
+  status(null);
+  state.frame = live.run.ball.frame;
+  if (state.framing === fit) fit();
+  line();
+  invalidatePick();
+  drawSoon();
+}
+
 /** Stand the ball on `face` of the block at `c`, starting play if it has not. */
 export function playAt(c) {
   const probe = live?.probe ?? probeOf(state.idx);
@@ -1300,17 +1401,7 @@ export function playAt(c) {
     return;
   }
   if (live.ended) startOver();
-  live.key = keyOf(startOf(live.level, probe), at);
-  stand(live.run, at);
-  live.still = stateOf(live.run.ball);
-  walked({ cell, face: c.face });
-  held = tapped = 0;
-  status(null);
-  state.frame = live.run.ball.frame;
-  if (state.framing === fit) fit();
-  line();
-  invalidatePick();
-  drawSoon();
+  put(at);
   const s = live.still;
   say(
     `The ball stands on the ${FACE_NAME[s.face]} of ${s.block.join(",")}, facing ${faceName(s.h)}.`,
@@ -1352,7 +1443,10 @@ export function bootPlay() {
   on("link-opening", () => leave({ restore: false }));
   on("go-to", () => leave({ restore: false }));
   on("density-changed", icon);
-  on("course-changed", keepable);
+  on("course-changed", () => {
+    if (live?.driver && current() !== live.route) retire();
+    else routing();
+  });
   on("show-changed", (key) => {
     if (key === "turnabout" && live) reframe();
   });

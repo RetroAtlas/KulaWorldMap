@@ -23,6 +23,10 @@ const TAKEN = "Taken: Coin (bronze) on the top";
 const SENDING = "The teleporter is sending the ball.";
 const REFUSED = "The ball cannot roll off here: a block stands beside it.";
 const RIDING = "The ball rides the platform.";
+const FOLLOWING = "Following the route; an arrow, Space or the pad takes the ball back.";
+const FOLLOWED = "The route is done: the ball stands at its last stop.";
+const AT_LEAP = "The route leaps from here, which the ball cannot follow.";
+const NO_FIRST_STOP = "The route's first stop has nothing to stand on.";
 const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 const UNTURNED = [
   [1, 0, 0],
@@ -254,15 +258,17 @@ const timed = (page, time) =>
     );
     update(state.lvl.draft, { ...get(state.lvl.draft).doc, time });
   }, time);
-/** Put `block` into the shown draft at `cell` through the model. */
+/** Put `block` into the shown draft at `cell`, or take the block there out with null, through the
+    model. */
 const laid = (page, cell, block) =>
   page.evaluate(
     async ([cell, block]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
-      const [{ state }, { get, update }, { setBlock }] = await Promise.all(
+      const [{ state }, { get, update }, { setBlock, removeBlock }] = await Promise.all(
         ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
       );
-      update(state.lvl.draft, setBlock(get(state.lvl.draft).doc, cell, block));
+      const id = state.lvl.draft;
+      update(id, block ? setBlock(get(id).doc, cell, block) : removeBlock(get(id).doc, cell));
     },
     [cell, block],
   );
@@ -444,6 +450,7 @@ test("y stands the ball on the start and takes its view, the arrows roll it, and
     .toEqual([
       "/js/play/ball.js",
       "/js/play/contact.js",
+      "/js/play/drive.js",
       "/js/play/dust.js",
       "/js/play/hazards.js",
       "/js/play/play.js",
@@ -968,6 +975,124 @@ test("Keep as the route hands the way the ball has come to the planner, where no
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
   await expect(page.locator("#course")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+/** Click the top of `c`, which with the planner on adds a stop there. */
+const stopOn = async (page, c) => {
+  const p = await top(page, c);
+  await page.mouse.click(p.x, p.y);
+};
+
+test("Follow the route rolls the ball along the planned route to its last stop and says the route is done, from the last stop it starts again at the first, and an arrow takes the ball back", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false });
+  // the planner's two clicks: three rolls along -y to a stop, a turn and three along +x
+  await page.keyboard.press("u");
+  await stopOn(page, [17, 15, 17]);
+  await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops");
+  await stopOn(page, [20, 15, 17]);
+  await expect(page.locator("#courseLine")).toHaveText("Route planner · 3 stops");
+  await startPlay(page);
+  await listening(page);
+  const follow = page.locator("#followBtn");
+  await expect(follow).toBeVisible();
+  await expect(follow).toBeEnabled();
+  await expect(follow).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator("#keepBtn")).toBeDisabled();
+  await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  await expect(status(page)).toHaveText(FOLLOWING);
+  await expect
+    .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [50] })
+    .toEqual([20, 15, 17]);
+  await expect(status(page)).toHaveText(FOLLOWED);
+  await expect(say(page)).toHaveText(FOLLOWED);
+  await expect(follow).toHaveAttribute("aria-pressed", "false");
+  expect(await said(page)).toContain(FOLLOWING);
+  expect(await said(page)).toContain("17,15,17, top");
+  expect((await probe(page)).station).toEqual({
+    block: [20, 15, 17],
+    face: 0,
+    heading: "+x",
+    moving: false,
+  });
+  await expect(page.locator("#courseLine")).toHaveText("Route planner · 3 stops");
+  // from the last stop the ball is put on the first and follows again, until an arrow takes it
+  await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  await expect
+    .poll(() => said(page))
+    .toContain(`The ball is put on the top of 17,18,17. ${FOLLOWING}`);
+  await page.keyboard.press("ArrowLeft");
+  await expect(follow).toHaveAttribute("aria-pressed", "false");
+  await expect(status(page)).toHaveText("");
+  await expect(line(page)).toContainText("facing -x", { timeout: 10_000 });
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  const taken = (await probe(page)).station.block;
+  expect(taken[1]).toBeGreaterThanOrEqual(17);
+  await page.waitForTimeout(400);
+  expect((await probe(page)).station.block).toEqual(taken);
+  expect(errors).toEqual([]);
+});
+
+test("following a route to its leap stops the ball there and says so, and with the ball off the route and the first stop's block gone Follow says there is nothing to stand on", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a block beside the start's and another across a gap no roll crosses
+  await laid(page, [18, 17, 17], { kind: 0 });
+  await laid(page, [20, 17, 17], { kind: 0 });
+  await expect(page.locator("#chipLine")).toContainText("3 blocks");
+  await page.keyboard.press("w");
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+  await still(page);
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await page.keyboard.press("u");
+  await stopOn(page, [18, 17, 17]);
+  await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops");
+  await stopOn(page, [20, 17, 17]);
+  await expect(page.locator("#courseLine")).toHaveText("Route planner · 3 stops · 1 leap");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  const follow = page.locator("#followBtn");
+  await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  await expect
+    .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [50] })
+    .toEqual([18, 17, 17]);
+  await expect(status(page)).toHaveText(AT_LEAP);
+  await expect(say(page)).toHaveText(AT_LEAP);
+  await expect(follow).toHaveAttribute("aria-pressed", "false");
+  expect((await probe(page)).station).toEqual({
+    block: [18, 17, 17],
+    face: 0,
+    heading: "+x",
+    moving: false,
+  });
+  // off the route, round the edge onto the block's +x side, with the first stop's block taken out
+  await page.keyboard.press("ArrowUp");
+  await expect.poll(async () => (await probe(page)).station.face).toBe(1);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  await laid(page, [17, 17, 17], null);
+  await expect(page.locator("#chipLine")).toContainText("2 blocks");
+  await expect(follow).toBeVisible();
+  await follow.click();
+  await expect(status(page)).toHaveText(NO_FIRST_STOP);
+  await expect(follow).toHaveAttribute("aria-pressed", "false");
+  expect((await probe(page)).station).toEqual({
+    block: [18, 17, 17],
+    face: 1,
+    heading: "+z",
+    moving: false,
+  });
   expect(errors).toEqual([]);
 });
 
