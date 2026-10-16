@@ -8,10 +8,13 @@ import { SIDE, cellKey, FACE_NAME, FACE_NORMAL, DIRECTION_NAME } from "../format
 import {
   ballFor,
   blockUnits,
+  flip,
   jumpTable,
   layHeading,
   levelTitle,
+  litNow,
   markerModel,
+  markerNow,
   modelUnit,
   motionTable,
   startsOf,
@@ -19,7 +22,14 @@ import {
   TANGENT,
 } from "../viewer/data.js";
 import { headingOn, pieces, probeOf, tangent } from "../viewer/walk.js";
-import { draw, drawSoon, invalidatePick, movingWith, overlayWith } from "../viewer/draw/render.js";
+import {
+  draw,
+  drawSoon,
+  invalidatePick,
+  movingWith,
+  overlayWith,
+  runWith,
+} from "../viewer/draw/render.js";
 import { ballsWith } from "../viewer/draw/things.js";
 import { iconFor } from "../viewer/draw/icons.js";
 import { toast } from "../viewer/ui/toast.js";
@@ -31,7 +41,6 @@ import {
   REST,
   ROLLING,
   WRAPPING,
-  ballAt,
   blockUnder,
   centreOf,
   clearance,
@@ -39,10 +48,9 @@ import {
   faceUnder,
   moving,
   offsetFrame,
-  place,
-  read,
-  run,
 } from "./ball.js";
+import { frame as gameFrame, heeds, relevel, restart, revive, stand, startRun } from "./rules.js";
+import { probeOf as liveProbe, travelOf } from "./world.js";
 
 const BALL_TYPE = 30;
 const STARTS = new Set([29, BALL_TYPE]);
@@ -71,6 +79,8 @@ const NO_START = "The level has no start, so the ball stands on the first face i
 const NOWHERE = "The level has no face the ball could stand on.";
 const OBJECTS_ON = "Objects turned on, for the ball.";
 const LOST = "The ball fell off the level, and is back where it last stood.";
+const TIME_UP = "Time is up. Space or a tap on the pad starts the level again.";
+const OVER = "The level has ended. Space or a tap on the pad starts it again.";
 const KEPT = "The way the ball has come is now the route.";
 const ROUTE_STANDS = "A route already stands; clear it to keep the walk.";
 const AT_SWITCH = 6;
@@ -113,16 +123,26 @@ function stateOf(b) {
 }
 
 /** The ball as drawn: live while Motion is on, else as it last stood. */
-const shown = () => (motionOn() ? stateOf(live.ball) : live.still);
+const shown = () => (motionOn() ? stateOf(live.run.ball) : live.still);
 
-/** The rules the ball rolls by: its type's motion table, the 4096ths of a turn, a block's units
-    and the mesh file's arc. */
-const rulesOf = (motion) => ({
-  table: motion.types[String(BALL_TYPE)],
-  turn: motion.turn,
-  unit: blockUnits(),
+/** The tables the rules read: the motion table, the mesh file's arc for the jump, a block's units
+    and where the data's records and styles begin. */
+const tablesOf = () => ({
+  motion: motionTable(),
   jump: jumpTable(),
+  unit: blockUnits(),
+  first: state.data.firstRecord,
+  styles: state.data.styles,
 });
+
+/** The circuits as the map holds them, so a press in the panel and a switch the ball throws are
+    one truth. */
+const circuitsOf = () => ({ on: (m) => markerNow(m) === "on", lit: litNow, flip });
+
+/** What the frame draws at and with while the ball is on the map: play's frame, and the walkers
+    where the rules have stepped them. */
+const source = (l) =>
+  live && l === live.level ? { frame: live.run.words.frame, travel: travelOf(live.run) } : null;
 
 /** Whether a block stands between `centre`, in blocks, and the camera, within the cover's reach. */
 function covered(centre) {
@@ -145,11 +165,11 @@ function blockAt(foot, n, block) {
 export function station() {
   if (!live) return null;
   const s = shown();
-  return { block: s.block, face: s.face, heading: faceName(s.h), moving: moving(live.ball) };
+  return { block: s.block, face: s.face, heading: faceName(s.h), moving: moving(live.run.ball) };
 }
 
 function travellers(l) {
-  if (!live || l !== live.level) return null;
+  if (!live || l !== live.level || live.ended) return null;
   const s = shown();
   const m = live.markers[s.face];
   const n = FACE_NORMAL[s.face];
@@ -169,12 +189,12 @@ function travellers(l) {
     offset,
     fwd: s.h,
     roll: 0,
-    about: [s.spin / live.ball.rules.turn, 0, 0],
+    about: [s.spin / live.run.ball.rules.turn, 0, 0],
     height: s.height,
     through: covered(s.centre),
     // at an inner corner the ball touches the block it leaves as well as the wall, so while the
     // climb's ramp runs it sorts by its own centre rather than by the block under it
-    depth: live.ball.ramp?.kind === "climb" ? depth(...s.centre) : undefined,
+    depth: live.run.ball.ramp?.kind === "climb" ? depth(...s.centre) : undefined,
   };
   return new Map([[live.key, going]]);
 }
@@ -344,7 +364,7 @@ function advance() {
   if (!ease) {
     const k = motionOn() ? 1 - Math.exp(-dt / FOLLOW_MS) : 1;
     state.target = state.target.map((v, i) => v + (s.centre[i] - v) * k);
-    const frame = motionOn() ? looked(live.ball) : s.frame;
+    const frame = motionOn() ? looked(live.run.ball) : s.frame;
     if (state.frame !== frame) {
       state.frame = frame;
       moved = true;
@@ -353,20 +373,21 @@ function advance() {
   if (moved) invalidatePick();
 }
 
-/** Step the game frames `dt` ms owe: whether anything moved. */
+/** Step the game frames `dt` ms owe, the level running at rest with Motion on and only while the
+    ball moves or a key is held without it: whether anything moved. */
 function stepped(dt) {
-  const b = live.ball;
+  const run = live.run;
+  const b = run.ball;
   let moved = false;
-  if (moving(b) || held || tapped) {
+  if (!live.ended && (motionOn() || moving(b) || held || tapped)) {
     owed += (dt * motionTable().hz) / 1000;
-    while (owed >= 1) {
+    while (owed >= 1 && !live.ended) {
       owed -= 1;
-      b.pad = held | tapped;
-      tapped = 0;
+      const pad = held | tapped;
+      // a tap stands until a frame reads the pad, as the level opens with it dead
+      if (heeds(run)) tapped = 0;
       const was = onFace(b) ? footOf(b) : null;
-      const events = [];
-      read(b, live.probe, events);
-      run(b, live.probe, events);
+      const events = gameFrame(run, pad);
       if (!motionOn()) ageDust(1 / motionTable().hz);
       else if (was && onFace(b)) {
         const under = blockUnder(b);
@@ -387,22 +408,24 @@ function stepped(dt) {
 }
 
 const again = () =>
-  !!(ease || (live && (moving(live.ball) || held || tapped || (motionOn() && dustAlive()))));
+  !!(
+    ease ||
+    (live &&
+      ((!live.ended && (motionOn() || moving(live.run.ball) || held || tapped)) ||
+        (motionOn() && dustAlive())))
+  );
 
 /** The ball's frame pitched further down by the view's word while it falls. */
 const looked = (b) => (b.look.word ? offsetFrame(b.frame, 0, b.look.word, b.rules.turn) : b.frame);
 
 function happened(event) {
-  const b = live.ball;
+  const b = live.run.ball;
   if (event.refused) {
     status(REFUSED);
     return;
   }
-  if (event.lost) {
-    place(b, b.rest.cell, b.rest.face, b.rest.h);
-    live.station = true;
-    toast(LOST);
-    say(LOST);
+  if (event.ended) {
+    ended(event.ended.code);
     return;
   }
   if (event.at) {
@@ -418,6 +441,60 @@ function happened(event) {
     say(`${FACE_NAME[faceUnder(b)]} of ${blockUnder(b).join(",")}, now underfoot`);
     burstDust(footOf(b), b.n, blockUnder(b), AT_SWITCH, !motionOn());
   } else if (event.turned) live.station = true;
+}
+
+// A ball lost off the lattice is put back where it last rested; any other ending stands, the ball
+// gone and the pad dead, until the level is started again.
+function ended(code) {
+  const { ending } = motionTable().play;
+  if (code === ending.lost) {
+    revive(live.run);
+    live.station = true;
+    toast(LOST);
+    say(LOST);
+    return;
+  }
+  live.ended = code;
+  held = tapped = 0;
+  const text = code === ending.time ? TIME_UP : OVER;
+  status(text);
+  say(text);
+  invalidatePick();
+}
+
+/** The level again from its start, as the game loads it after an ending; a level with no start
+    stands the ball on the first face it could, as entering does. */
+function startOver() {
+  if (!live) return;
+  const start = startOf(live.level, live.probe);
+  const where = start ? null : firstStandable(live.probe);
+  if (!start && !where) {
+    toast(NOWHERE);
+    leave();
+    return;
+  }
+  live.run = restart(live.run, where);
+  live.probe = liveProbe(live.run);
+  live.ended = null;
+  state.presses = new Map();
+  const b = live.run.ball;
+  const at = { cell: blockUnder(b), face: faceUnder(b) };
+  live.key = keyOf(start, at);
+  live.walk = { stations: [at], steps: [] };
+  live.trail = null;
+  live.still = stateOf(b);
+  resetDust(worldTint(live.level.theme));
+  keepable();
+  status(start ? null : NO_START);
+  held = tapped = owed = 0;
+  state.frame = b.frame;
+  if (state.framing === fit) fit();
+  line();
+  invalidatePick();
+  drawSoon();
+  say(
+    `${levelTitle(live.level)} again. The ball stands on the ${FACE_NAME[at.face]} of ${at.cell.join(",")}, facing ${faceName(b.h)}.`,
+  );
 }
 
 // --- the trail -------------------------------------------------------------------------------
@@ -521,6 +598,10 @@ function line() {
   const text = `Playing · on the ${FACE_NAME[s.face]} of ${s.block.join(",")}, facing ${faceName(s.h)}`;
   const el = $("playLine");
   if (el.textContent !== text) el.textContent = text;
+  const { clock } = motionTable().play;
+  const left = `Time ${Math.max(0, Math.floor(live.run.words.clock / clock.second))}`;
+  const at = $("playClock");
+  if (at.textContent !== left) at.textContent = left;
 }
 
 function sync() {
@@ -544,6 +625,10 @@ function wirePad() {
     const bit = bitOf(e);
     if (!bit || !live) return;
     e.preventDefault();
+    if (live.ended) {
+      startOver();
+      return;
+    }
     e.target.setPointerCapture(e.pointerId);
     held |= bit;
     tapped |= bit;
@@ -586,6 +671,14 @@ function keydown(e) {
     e.preventDefault();
     e.stopPropagation();
     leave();
+    return;
+  }
+  if (live.ended) {
+    const starts = e.key === " " || (e.key === "Enter" && e.target.tagName !== "BUTTON");
+    if (!(starts || BITS[e.key]) || e.shiftKey || modified(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (starts && !e.repeat) startOver();
     return;
   }
   const bit = BITS[e.key];
@@ -655,20 +748,24 @@ function enter(at = null) {
     box.dispatchEvent(new Event("change"));
     toast(OBJECTS_ON);
   }
+  // the level's circuits as the game loads them, the panel's presses kept for the return
   state.parked = {
     cam: { ...state.cam },
     target: [...state.target],
     fitted: state.framing === fit,
     slice: state.slice,
+    presses: state.presses,
   };
+  state.presses = new Map();
   const from = viewNow();
   state.slice = SIDE - 1;
-  const ball = ballAt(rulesOf(motion), where.cell, where.face, where.h);
+  const run = startRun(l, state.idx, tablesOf(), circuitsOf(), start ? null : where);
+  if (at && start) stand(run, at);
   live = {
     level: l,
     idx: state.idx,
-    probe,
-    ball,
+    run,
+    probe: liveProbe(run),
     key: keyOf(start, where),
     markers: markersFor(start),
     still: null,
@@ -677,7 +774,9 @@ function enter(at = null) {
     status: at || start ? null : NO_START,
     walk: { stations: [{ cell: where.cell, face: where.face }], steps: [] },
     trail: null,
+    ended: null,
   };
+  const ball = run.ball;
   live.still = stateOf(ball);
   resetDust(worldTint(l.theme));
   keepable();
@@ -692,13 +791,14 @@ function enter(at = null) {
   fit();
   const to = {
     ...viewNow(),
-    rot: () => viewOf(looked(live.ball), state.cam.yaw, state.cam.pitch),
+    rot: () => viewOf(looked(live.run.ball), state.cam.yaw, state.cam.pitch),
     target: () => shown().centre,
   };
   startEase(from, to, ENTER_MS, () => {
-    state.frame = live?.ball.frame ?? state.frame;
+    state.frame = live?.run.ball.frame ?? state.frame;
   });
   if (ease) state.frame = mul(from.rot, transpose(basisOf(state.cam.yaw, state.cam.pitch)));
+  runWith(source);
   emit("play-changed", true);
   emit("slice-changed");
   chip();
@@ -715,9 +815,13 @@ function leave({ restore = true } = {}) {
   if (!live) return;
   finishEase();
   const parked = state.parked;
+  const level = live.level;
   live = null;
   held = tapped = 0;
   fitWith(null);
+  runWith(null);
+  // the presses as they were, unless another level has been installed meanwhile with its own
+  if (parked && state.lvl === level) state.presses = parked.presses;
   resetDust(null);
   sync();
   emit("play-changed", false);
@@ -771,13 +875,14 @@ export function playAt(c) {
     enter(at);
     return;
   }
+  if (live.ended) startOver();
   live.key = keyOf(startOf(live.level, probe), at);
-  live.ball = ballAt(live.ball.rules, cell, c.face, at.h);
-  live.still = stateOf(live.ball);
+  stand(live.run, at);
+  live.still = stateOf(live.run.ball);
   walked({ cell, face: c.face });
   held = tapped = 0;
   status(null);
-  state.frame = live.ball.frame;
+  state.frame = live.run.ball.frame;
   if (state.framing === fit) fit();
   line();
   invalidatePick();
@@ -800,16 +905,17 @@ export function bootPlay() {
   measure = measureStrip($("play"), "--play-h");
   overlayWith({ under: () => void advance(), block: drawTrail, cell: drawDustOver, frame: again });
   movingWith(travellers);
-  ballsWith(() => (live ? [shown().point] : null));
+  ballsWith(() => (live && !live.ended ? [shown().point] : null));
   on("level-changed", () => {
     leave({ restore: false });
     icon();
   });
   on("level-updated", () => {
     if (!live) return;
+    live.level = state.lvl;
     live.idx = state.idx;
-    live.probe = probeOf(state.idx);
-    if (!live.probe.solid(blockUnder(live.ball))) leave();
+    relevel(live.run, state.lvl, state.idx);
+    if (!live.probe.solid(blockUnder(live.run.ball))) leave();
   });
   on("link-opening", () => leave({ restore: false }));
   on("go-to", () => leave({ restore: false }));

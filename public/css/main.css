@@ -1484,6 +1484,10 @@ body.editing #course .status {
   flex: 1 1 0;
   min-width: 0;
 }
+#play .clock {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 @media (max-width: 760px) {
   #play .line {
     flex-basis: 100%;

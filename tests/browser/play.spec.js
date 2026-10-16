@@ -2,7 +2,8 @@ import { test, expect } from "@playwright/test";
 import { settle, still, trackErrors, drawn } from "./helpers.js";
 
 const LEVEL = "/#HIRO/0/45,35/fit/33";
-const PLAY_FILES = /\/js\/play\/(play|ball|dust)\.js$/;
+const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive)\.js$/;
+const TIME_UP = "Time is up. Space or a tap on the pad starts the level again.";
 const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
 /** The page point over a point of the level. */
@@ -83,6 +84,37 @@ const anchor = (page) =>
 const say = (page) => page.locator("#say");
 const line = (page) => page.locator("#playLine");
 const status = (page) => page.locator("#playStatus");
+const clockLine = (page) => page.locator("#playClock");
+/** The seconds the strip's clock shows. */
+const seconds = async (page) => Number((await clockLine(page).textContent()).replace(/\D/g, ""));
+/** The frame the map draws at. */
+const frameAt = (page) =>
+  page.evaluate(async () =>
+    (await import(new URL("js/viewer/draw/render.js", location.href).href)).clock(),
+  );
+/** The panel's presses as the map holds them. */
+const presses = (page) =>
+  page.evaluate(async () => {
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    return [...state.presses];
+  });
+const flipped = (page, circuit, frame) =>
+  page.evaluate(
+    async ([circuit, frame]) => {
+      const { flip } = await import(new URL("js/viewer/data.js", location.href).href);
+      flip(circuit, frame);
+    },
+    [circuit, frame],
+  );
+/** Give the shown draft `time` seconds through the model. */
+const timed = (page, time) =>
+  page.evaluate(async (time) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }] = await Promise.all(
+      ["viewer/state.js", "editor/drafts.js"].map(at),
+    );
+    update(state.lvl.draft, { ...get(state.lvl.draft).doc, time });
+  }, time);
 /** Put `block` into the shown draft at `cell` through the model. */
 const laid = (page, cell, block) =>
   page.evaluate(
@@ -95,6 +127,26 @@ const laid = (page, cell, block) =>
     },
     [cell, block],
   );
+/** Stand `object` on `face` of `cell` in the shown draft through the model, or take what stands
+    there off with null. */
+const faced = (page, cell, face, object) =>
+  page.evaluate(
+    async ([cell, face, object]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { get, update }, { setFace }] = await Promise.all(
+        ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
+      );
+      update(state.lvl.draft, setFace(get(state.lvl.draft).doc, cell, face, object));
+    },
+    [cell, face, object],
+  );
+/** How many starts the shown level has. */
+const starts = (page) =>
+  page.evaluate(async () => {
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { startsOf } = await import(new URL("js/viewer/data.js", location.href).href);
+    return startsOf(state.lvl).length;
+  });
 /** A finger held still on `point` until the hold shows, then lifted. */
 const hold = async (page, point) => {
   const cdp = await page.context().newCDPSession(page);
@@ -159,7 +211,13 @@ test("y stands the ball on the start and takes its view, the arrows roll it, and
   await startPlay(page);
   await expect
     .poll(() => requested.filter((p) => PLAY_FILES.test(p)).sort())
-    .toEqual(["/js/play/ball.js", "/js/play/dust.js", "/js/play/play.js"]);
+    .toEqual([
+      "/js/play/ball.js",
+      "/js/play/dust.js",
+      "/js/play/play.js",
+      "/js/play/rules.js",
+      "/js/play/world.js",
+    ]);
   await expect(line(page)).toHaveText("Playing · on the top of 17,18,17, facing -y");
   await expect(say(page)).toHaveText(
     "Playing LEVEL 1. The ball stands on the top of 17,18,17, facing -y. The arrows roll and turn it, Esc leaves.",
@@ -328,16 +386,157 @@ test("f in play frames the ball again and dims the fit button, after a drag has 
   expect(errors).toEqual([]);
 });
 
-test("with Motion off a step snaps and nothing draws once the ball rests", async ({ page }) => {
+test("with Motion off a step snaps and nothing draws once the ball rests, the level standing between moves at play's frame", async ({
+  page,
+}) => {
   const errors = trackErrors(page);
   await opened(page, { motion: false });
   await startPlay(page);
   expect((await probe(page)).frame).toEqual(IDENTITY);
+  await expect(clockLine(page)).toHaveText("Time 99");
+  expect(await frameAt(page)).toBe(0);
   expect(await drawn(page)).toBe(0);
   await page.keyboard.press("ArrowUp");
   await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 17, 17]);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   expect(await drawn(page)).toBe(0);
+  // the frames the roll took, the level's opening ones among them, and no more while it rests
+  const ran = await frameAt(page);
+  expect(ran).toBeGreaterThan(18);
+  await expect(clockLine(page)).toHaveText(`Time ${Math.floor((99 * 50 - ran) / 50)}`);
+  await page.waitForTimeout(300);
+  expect(await frameAt(page)).toBe(ran);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#play")).toBeHidden();
+  expect(await frameAt(page)).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test("with Motion on the level runs at rest: the strip counts the clock down and the map draws at play's frame", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page);
+  await startPlay(page);
+  await expect(clockLine(page)).toHaveText(/^Time \d+$/);
+  const first = await seconds(page);
+  await expect.poll(() => seconds(page)).toBeLessThan(first);
+  const a = await frameAt(page);
+  await page.waitForTimeout(250);
+  const b = await frameAt(page);
+  expect(b).toBeGreaterThan(a);
+  expect(b - a).toBeLessThan(60);
+  expect((await probe(page)).station.moving).toBe(false);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#play")).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test("time runs out into the strip's verdict with the pad dead, and Space starts the level again with the clock full, the ball on the start and the circuits as loaded", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await timed(page, 2);
+  await expect(page.locator("#chipLine")).toContainText("time 2");
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await expect(clockLine(page)).toHaveText("Time 2");
+  await page.keyboard.down("ArrowUp");
+  await expect(status(page)).toHaveText(TIME_UP, { timeout: 10_000 });
+  await page.keyboard.up("ArrowUp");
+  await expect(say(page)).toHaveText(TIME_UP);
+  await expect(clockLine(page)).toHaveText("Time 0");
+  expect((await probe(page)).playing).toBe(true);
+  const stood = (await probe(page)).station;
+  await page.keyboard.press("ArrowLeft");
+  await page.waitForTimeout(200);
+  expect((await probe(page)).station).toEqual(stood);
+  // Enter on a focused strip button works the button rather than starting the level again
+  const padBtn = page.locator("#padBtn");
+  const padWas = await padBtn.getAttribute("aria-pressed");
+  await padBtn.focus();
+  await page.keyboard.press("Enter");
+  await expect(padBtn).toHaveAttribute("aria-pressed", padWas === "true" ? "false" : "true");
+  await expect(status(page)).toHaveText(TIME_UP);
+  await page.keyboard.press("Enter");
+  await expect(padBtn).toHaveAttribute("aria-pressed", padWas);
+  await padBtn.blur();
+  await flipped(page, 1, 7);
+  expect(await presses(page)).toEqual([[1, [7]]]);
+  await page.keyboard.press(" ");
+  await expect(status(page)).toHaveText("");
+  await expect(clockLine(page)).toHaveText("Time 2");
+  await expect(say(page)).toContainText(
+    "again. The ball stands on the top of 17,17,17, facing -y.",
+  );
+  expect((await probe(page)).station).toEqual({
+    block: [17, 17, 17],
+    face: 0,
+    heading: "-y",
+    moving: false,
+  });
+  expect(await presses(page)).toEqual([]);
+  await page.keyboard.down("ArrowUp");
+  await expect.poll(async () => (await probe(page)).station.face).not.toBe(0);
+  await page.keyboard.up("ArrowUp");
+  expect(errors).toEqual([]);
+});
+
+test("a level whose start was edited away under play starts again on the first face the ball could stand on", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await timed(page, 1);
+  await expect(page.locator("#chipLine")).toContainText("time 1");
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await startPlay(page);
+  await expect(clockLine(page)).toHaveText("Time 1");
+  await page.keyboard.down("ArrowUp");
+  await expect(status(page)).toHaveText(TIME_UP, { timeout: 10_000 });
+  await page.keyboard.up("ArrowUp");
+  expect(await starts(page)).toBe(1);
+  await faced(page, [17, 17, 17], 0, null);
+  await expect.poll(() => starts(page)).toBe(0);
+  expect((await probe(page)).playing).toBe(true);
+  await page.keyboard.press(" ");
+  await expect(status(page)).toHaveText(
+    "The level has no start, so the ball stands on the first face it could.",
+  );
+  await expect(clockLine(page)).toHaveText("Time 1");
+  expect((await probe(page)).station).toEqual(
+    expect.objectContaining({ block: [17, 17, 17], face: 0, moving: false }),
+  );
+  await page.keyboard.down("ArrowUp");
+  await expect.poll(async () => (await probe(page)).station.face).not.toBe(0);
+  await page.keyboard.up("ArrowUp");
+  expect(errors).toEqual([]);
+});
+
+test("entering play gives the level its circuits as the game loads them, and leaving gives the panel's presses back", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false });
+  await flipped(page, 0, 5);
+  expect(await presses(page)).toEqual([[0, [5]]]);
+  await startPlay(page);
+  expect(await presses(page)).toEqual([]);
+  await flipped(page, 1, 7);
+  expect(await presses(page)).toEqual([[1, [7]]]);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#play")).toBeHidden();
+  expect(await presses(page)).toEqual([[0, [5]]]);
   expect(errors).toEqual([]);
 });
 
@@ -550,7 +749,10 @@ test.describe("with a touch screen", () => {
       type: "touchStart",
       touchPoints: [{ x: up.x + up.width / 2, y: up.y + up.height / 2 }],
     });
-    await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 17, 17]);
+    // the level's opening frames first, then a block in a quarter of a second, so the poll is quick
+    await expect
+      .poll(async () => (await probe(page)).station.block, { intervals: [25] })
+      .toEqual([17, 17, 17]);
     // held on, it rolls on past the next block
     await expect.poll(async () => (await probe(page)).station.block[1]).toBeLessThanOrEqual(16);
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });

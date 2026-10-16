@@ -107,7 +107,7 @@ test("a module imports only its own layer and those beneath it", () => {
 // The simulation is pure: a module of it reaches the model, the lattice and
 // the simulation's own modules, and nothing that paints or touches the page,
 // so the ball can be stepped without a browser.
-const PURE = ["play/ball.js"];
+const PURE = ["play/ball.js", "play/world.js", "play/rules.js", "play/drive.js"];
 
 test("a module of the simulation imports only the model, the lattice and the simulation", () => {
   const g = graph();
