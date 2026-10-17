@@ -757,6 +757,47 @@ test("a level opens with the pad dead for 19 frames and the hazards off for 18",
   assert.deepEqual([padFrom, hazardsFrom], [20, 19]);
 });
 
+test("the fly-in flies 68 frames, holds the pad for 69 and the platforms for 67, and ends where play looks", () => {
+  const { flight, start } = table.play;
+  assert.equal(flight.frames, 68);
+  assert.deepEqual(flight.curve, {
+    above: 100,
+    back: [4096, 3072, 2048, 0],
+    left: [4096, 1707, 0, 0],
+  });
+  assert.deepEqual([flight.yaw, flight.bank], [-table.turn / 4, table.turn / 2]);
+  assert.deepEqual([flight.pitch, flight.below, flight.ahead], [250, 250, 800]);
+  assert.equal(flight.pitch, table.types[30].look.pitch);
+  // the parameter at the top of each frame, the wait as the pad's gate reads it after the frame's countdown,
+  // and the live word the view in play marks at a frame's end, which the pad routine asks before it reads
+  let t = 0;
+  let inc = flight.first;
+  let wait = start.wait;
+  let live = true;
+  const flown = [];
+  let standing = 0;
+  let padFrom = null;
+  for (let frame = 1; padFrom === null; frame++) {
+    if (wait) wait -= 1;
+    if (wait === 0 && live) padFrom = frame;
+    if (wait >= flight.gate) standing += 1;
+    if (t <= flight.end) {
+      flown.push(t);
+      live = false;
+      wait = flight.hold;
+      if (t <= flight.slow) t += flight.step;
+      else {
+        t += inc;
+        inc = Math.max(inc - 1, flight.least);
+      }
+      if (t > flight.end) wait = flight.done;
+    } else live = true;
+  }
+  assert.equal(flown.length, flight.frames);
+  assert.deepEqual(flown.slice(58), [928, 944, 957, 969, 980, 990, 999, 1007, 1014, 1020]);
+  assert.deepEqual([padFrom - 1, standing], [69, 67]);
+});
+
 test("a death costs 50 times the level's number, at most 5000", () => {
   const { points } = table.play;
   assert.deepEqual(points, { each: 50, most: 5000, levels: 15 });

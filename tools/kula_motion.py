@@ -512,6 +512,70 @@ CHECKS = [
     (0x8003512c, "sw $v0, 7000($gp)", "over a block the rate is reset"),
     (0x80035184, "sh $v0, 504($s0)", "and the pitch comes back"),
     (0x800354d4, "jal 0x80060f58", "the extra pitch and the view's own pitch the camera down"),
+    # The fly-in.
+    (0x800362bc, "jal 0x80033e94", "the level's start lays the fly-in's curve"),
+    (0x80033ee4, "lh $v0, 12($s0)", "from the ball's heading at 12"),
+    (0x80033f14, "lh $v0, 20($s0)", "its side at 20"),
+    (0x80033eb4, "lh $v0, 28($s0)", "and its normal at 28, each a whole unit"),
+    (0x8002f36c, "sh $a1, 388($a0)", "the start copies the position at 60, laid on the face, into the view's target"),
+    (0x800341b4, "lh $a0, 388($s0)", "and from the view's target at 388"),
+    (0x800341bc, "addu $s1, $a0, $v1", "which the last point stands off along the normal"),
+    (0x800341ec, "subu $v0, $s1, $t9", "the first lies back along the heading from it"),
+    (0x800341f0, "subu $a3, $v0, $t2", "and against the side"),
+    (0x80034258, "addu $v1, $a3, $v1", "the second a share of the way from the first to the last"),
+    (0x80034268, "addu $v1, $v1, $v0", "and a share of the side on"),
+    (0x800342b0, "subu $v0, $s1, $v0", "and the third a share of the heading short of the last"),
+    (0x80033f34, "sw $zero, 6992($gp)", "the start puts the parameter at nothing"),
+    (0x80033f38, "sw $v1, 6996($gp)", "and the slowing step at its first value"),
+    (0x8003431c, "lw $v1, 6992($gp)", "the view routine reads the parameter"),
+    (0x80034344, "beq $v0, $zero, 0x80034360", "and takes the flight while it is within the end"),
+    (0x80034350, "lw $v0, 13232($v0)", "and the mode word at 0x800a33b0"),
+    (0x80034358, "bne $v0, $s4, 0x80034390", "is not the one the flight is skipped in"),
+    (0x800343cc, "jal 0x80033cbc", "it evaluates the curve"),
+    (0x80033cc8, "sll $v0, $t4, 1", "whose unit is one shifted up by two thirds"),
+    (0x80033ce4, "sllv $t3, $t3, $v0", "of the shift it is given"),
+    (0x80033ce8, "subu $t3, $t3, $t1", "the remainder being the unit less the parameter"),
+    (0x80033d14, "lw $v1, 0($a0)", "the first point weighted by the remainder's cube"),
+    (0x80033d50, "lw $v0, 0($a1)", "the second by three times the parameter by the remainder's square"),
+    (0x80033d88, "lw $v0, 0($a2)", "the third by three times the parameter's square by the remainder"),
+    (0x80033db0, "lw $v0, 0($a3)", "and the last by the parameter's cube"),
+    (0x80033dc4, "srav $v1, $v1, $t4", "the sum shifted down by the shift"),
+    (0x80033dc8, "sw $v1, 0($t2)", "into the point"),
+    (0x80034428, "jal 0x800601e8", "the flight's view takes the heading normalised"),
+    (0x80034440, "jal 0x800608fc", "the side as the heading's cross product with the normal"),
+    (0x80034450, "jal 0x800601e8", "normalised"),
+    (0x8003449c, "subu $v0, $zero, $v0", "and the normal turned round"),
+    (0x80034470, "sh $v0, 22884($at)", "as its rows right"),
+    (0x800344a8, "sh $v0, 22890($at)", "down"),
+    (0x800344f0, "sh $v0, 22896($at)", "and ahead"),
+    (0x80034518, "jal 0x800610f8", "turns it about its down axis by the parameter less the end"),
+    (0x80034530, "jal 0x80060f58", "pitches it down"),
+    (0x80034548, "subu $a0, $s0, $a0", "and rolls it about its line of sight by the remainder"),
+    (0x80034554, "jal 0x80061298", "doubled"),
+    (0x80034570, "jal 0x80060508", "turns the curve's point by the view"),
+    (0x8003458c, "subu $v0, $zero, $v0", "and puts it at the middle across"),
+    (0x80034598, "sw $v0, 22904($at)", "in the view's translation"),
+    (0x800345b4, "sw $v0, 22908($at)", "below the middle"),
+    (0x800345a0, "subu $s0, $s0, $a0", "and ahead of the eye by the remainder's share of the distance out"),
+    (0x800345f8, "sw $v0, 22912($at)", "over the depth in play"),
+    (0x80034600, "sh $v0, 370($s2)", "writes the hold into the wait at 370"),
+    (0x8003463c, "sw $v0, 6992($gp)", "steps the parameter by the step while it is within the slow gate"),
+    (0x80034610, "lw $v0, 6996($gp)", "and past it reads the slowing step"),
+    (0x80034620, "sw $v1, 6992($gp)", "stepping it by that"),
+    (0x8003461c, "addiu $v0, $v0, -1", "which falls by one"),
+    (0x80034624, "sw $v0, 6996($gp)", "each frame"),
+    (0x80034628, "bgtz $v0, 0x80034640", "unless it would fall past nothing"),
+    (0x80034630, "sw $s4, 6996($gp)", "when it is the least step"),
+    (0x8003464c, "bne $v0, $zero, 0x80034658", "and as the parameter passes the end"),
+    (0x80034654, "sh $v0, 370($s2)", "writes the last wait"),
+    (0x80034658, "sh $zero, 374($s2)", "and puts the free camera's angles at 374"),
+    (0x8003465c, "sh $zero, 376($s2)", "and 376 at nothing"),
+    (0x80034690, "lh $v1, 374($a0)", "which the free camera turns the eye by"),
+    (0x800346b8, "lh $a0, 376($a0)", "both"),
+    (0x80036648, "lh $v0, 0($s1)", "the ball's routine reads the wait"),
+    (0x80036654, "beq $v0, $zero, 0x80036714", "and skips the platforms, the captivators' moves and the hazards while it is at the gate or past it"),
+    (0x800368ac, "lh $v1, -23840($v1)", "the contact walk's caller asks the live word at 460"),
+    (0x800368b4, "bne $v1, $v0, 0x800368d4", "and skips the walk while it is not set"),
     # The jump, the hop and the boost button's launch.
     (0x80022e44, "lw $t2, 24($a3)", "the parser of the .GGI takes the header's section sizes"),
     (0x80022e60, "sll $t2, $t2, 1", "in halfwords"),
@@ -1453,6 +1517,8 @@ IMMEDIATES = [
     ("the ball's roll", "look.up", "and R2 held adds this a frame to a word of its own", 0x80034fd8, "addiu $v0, $v0, {}"),
     ("the ball's roll", "look.up.back", "which comes back by this", 0x8003514c, "addiu $v0, $v0, {}"),
     ("the ball's roll", "look.pitch", "over the view's own pitch down of this", 0x800354cc, "addiu $a0, $a0, {}"),
+    ("the ball's roll", "look.below", "the view puts its target this below the middle", 0x80035528, "addiu $v0, $v0, {}"),
+    ("the ball's roll", "look.ahead", "and this ahead of the eye", 0x80035544, "addiu $v0, $v0, {}"),
 
     ("the ball's jump", "jump.speed", "the jump starts at this speed, units a frame", 0x8002f658, "addiu $v0, $zero, {}"),
     ("the ball's jump", "jump.rows", "the table's rows start this many bytes in", 0x8002f664, "addiu $v1, $v1, {}"),
@@ -1854,6 +1920,40 @@ IMMEDIATES = [
     ("the level's clock and its end", "death.over", "and a total below nothing tells the game's loop this", 0x80041ec0,
      "addiu $v0, $zero, {}"),
 
+    ("the fly-in", "flight.unit.shift", "the start shifts the ball's frame vectors up by this, a whole unit to eight blocks",
+     0x80033ebc, "sll $v0, $v0, {}"),
+    ("the fly-in", "flight.quarter.shift", "the curve's second point lies the way from the first to the last shifted down by this on",
+     0x80034254, "sra $v1, $a2, {}"),
+    ("the fly-in", "flight.half.shift", "and the third the heading's eight blocks shifted down by this short of the last",
+     0x800342ac, "sra $v0, $v0, {}"),
+    ("the fly-in", "flight.first", "the slowing step starts at this", 0x80033f2c, "addiu $v1, $zero, {}"),
+    ("the fly-in", "flight.end.gate", "the view flies while the parameter is under this", 0x80034340, "slti $v0, $v1, {}"),
+    ("the fly-in", "flight.least", "and the mode word is not this, which is the slowing step's floor too", 0x80034354,
+     "addiu $s4, $zero, {}"),
+    ("the fly-in", "flight.curve.shift", "the curve is evaluated with a shift of this, its unit one shifted up by two thirds of it",
+     0x800343bc, "addiu $v0, $zero, {}"),
+    ("the fly-in", "flight.yaw", "the view is turned about its down axis by the parameter plus this", 0x800344f8,
+     "addiu $a0, $a0, {}"),
+    ("the fly-in", "flight.pitch", "pitched down by this", 0x80034528, "addiu $a0, $zero, {}"),
+    ("the fly-in", "flight.bank.from", "and rolled about its line of sight by this less the parameter", 0x80034538,
+     "addiu $s0, $zero, {}"),
+    ("the fly-in", "flight.bank.shift", "shifted up by this", 0x8003454c, "sll $a0, $a0, {}"),
+    ("the fly-in", "flight.below", "the curve's point is put this below the middle of the view", 0x800345a8,
+     "addiu $v0, $v0, {}"),
+    ("the fly-in", "flight.out.shift", "and ahead of the eye by the remainder's share, shifted down by this, of the distance out",
+     0x800345e4, "sra $v0, $v1, {}"),
+    ("the fly-in", "flight.ahead", "over this, the depth in play", 0x800345e8, "addiu $v0, $v0, {}"),
+    ("the fly-in", "flight.hold", "the flight writes this into the wait at 370 on each of its frames", 0x800345fc,
+     "addiu $v0, $zero, {}"),
+    ("the fly-in", "flight.slow.gate", "and steps the parameter while it is under this", 0x80034604, "slti $v0, $a0, {}"),
+    ("the fly-in", "flight.step", "by this", 0x8003460c, "addiu $v0, $a0, {}"),
+    ("the fly-in", "flight.end.gate.after", "and as the stepped parameter is no longer under this", 0x80034648,
+     "slti $v0, $v0, {}"),
+    ("the fly-in", "flight.done", "writes this into the wait", 0x80034650, "addiu $v0, $zero, {}"),
+    ("the fly-in", "flight.gate",
+     "the ball's routine skips the platforms, the captivators' moves and the hazards while the wait is this or more",
+     0x80036650, "slti $v0, $v0, {}"),
+
     ("the blocks under the ball", "ice.kind", "ice is this kind under the ball", 0x8003aaac, "addiu $v0, $zero, {}"),
     ("the blocks under the ball", "cold.gain", "on which the cold at 520 grows by this a frame", 0x8003ad48,
      "addiu $v0, $v0, {}"),
@@ -1966,6 +2066,10 @@ MULTIPLIERS = [
      "v0", "v1"),
     ("the level's clock and its end", "death.each", "times this a level", 0x80041fb0, 6, "v1", "v1"),
     ("the level's clock and its end", "death.each.final", "as in the finals", 0x80041fdc, 5, "v0", "v1"),
+    ("the fly-in", "flight.above", "the curve ends this far along the normal from the view's target, units", 0x800341a4, 6,
+     "a0", "v1"),
+    ("the fly-in", "flight.out", "the eye starts this much further out along its line of sight, units", 0x800345b8, 8, "s0",
+     "v1"),
     ("the blocks under the ball", "crumble.edge.push",
      "the input routine sets a ball at a crumbling block's free edge back this far along its heading, units",
      0x800373cc, 4, "v0", "v1"),
@@ -1973,6 +2077,10 @@ MULTIPLIERS = [
 
 # The one reach that is a square held in two halves of a word.
 BUTTON_REACH = (0x80039bbc, "lui $v1, {}", 0x80039bc0, "ori $v1, $v1, {}")
+
+# The share of the side the fly-in's second point lies on, a divide by a
+# reciprocal with no shift after it.
+FLIGHT_THIRD = (0x80034240, "lui $t0, {}", 0x80034248, "ori $t0, $t0, {}")
 
 # What a draw multiplies the dice's state by, held in two halves of a word.
 DICE_TIMES = (0x80047418, "lui $v1, {}", 0x80047420, "ori $v1, $v1, {}")
@@ -2185,6 +2293,7 @@ def readings(code):
     for _, key, _, addr, count, src, dst in MULTIPLIERS:
         out[key] = code.multiplier(addr, count, src, dst)
     out["button.reach"] = round(code.word_of(*BUTTON_REACH) ** 0.5)
+    out["flight.third"] = round(2 ** 32 / code.word_of(*FLIGHT_THIRD))
     out["dice.times"] = code.word_of(*DICE_TIMES)
     out["glint.times"] = code.word_of(*GLINT_TIMES)
     out["glint.seed"] = code.word(code.address(*GLINT_STATE))
@@ -2743,13 +2852,59 @@ def devices(r):
             9: {"throw": {"band": band(r, "throw.band"), "rearm": rearm}}}
 
 
+def flight(r):
+    """The fly-in: the wait it holds the ball's words at and the gate the
+    ball's routine skips the platforms, the captivators' moves and the
+    hazards from, the wait it ends with, the parameter's end and steps with
+    the frames flown simulated from them, the yaw and the roll it undoes,
+    the pitch, the depths and the curve's points as shifts along the ball's
+    frame, each held against the others: the end read alike before and
+    after a step, the curve's unit and the depth's share both the end, the
+    turn and the roll undone from it, the mode skipped the one the clock
+    stands in, the pitch and the depths the view in play's, and the hold at
+    the gate or past it where the start's wait and the last wait stay
+    under it."""
+    end = r["flight.end.gate"] - 1
+    unit = 1 << r["flight.unit.shift"]
+    if r["flight.end.gate.after"] != r["flight.end.gate"]:
+        sys.exit("the flight's end is read as two values")
+    if 1 << (2 * r["flight.curve.shift"] // 3) != end or 1 << r["flight.out.shift"] != end:
+        sys.exit("the curve's unit or the depth's share is not the parameter's end")
+    if r["flight.yaw"] != -end or r["flight.bank.from"] != end:
+        sys.exit("the flight's turn and roll are not undone from the parameter's end")
+    if r["flight.least"] != r["clock.mode"]:
+        sys.exit("the 1 the flight tests the mode word against is not the mode the clock stands in")
+    if r["flight.pitch"] != r["look.pitch"] or r["flight.below"] != r["look.below"] or r["flight.ahead"] != r["look.ahead"]:
+        sys.exit("the flight pitches the view or places its point otherwise than the view in play")
+    if not r["start.wait"] < r["flight.gate"] <= r["flight.hold"] or not 0 < r["flight.done"] < r["flight.gate"]:
+        sys.exit("the flight's hold does not reach the gate the start's wait and its last wait stay under")
+    slow, step, least = r["flight.slow.gate"] - 1, r["flight.step"], r["flight.least"]
+    t, inc, frames = 0, r["flight.first"], 0
+    while t <= end:
+        frames += 1
+        if t <= slow:
+            t += step
+        else:
+            t, inc = t + inc, inc - 1
+            if inc <= 0:
+                inc = least
+    quarter, half = unit >> r["flight.quarter.shift"], unit >> r["flight.half.shift"]
+    return {"hold": r["flight.hold"], "gate": r["flight.gate"], "done": r["flight.done"],
+            "end": end, "step": step, "slow": slow, "first": r["flight.first"], "least": least, "frames": frames,
+            "yaw": r["flight.yaw"], "bank": end << r["flight.bank.shift"], "pitch": r["flight.pitch"],
+            "below": r["flight.below"], "ahead": r["flight.ahead"], "out": r["flight.out"],
+            "curve": {"above": r["flight.above"], "back": [unit, unit - quarter, half, 0],
+                      "left": [unit, unit - quarter - unit // r["flight.third"], 0, 0]}}
+
+
 def play(r):
     """The level's own words: the start's two counts, the clock's ticks, the
     outcomes a level ends with and the frames each ending waits, a bonus
-    level's marking, the deaths' penalty and the ending's view, each held
-    against the others: one code and one countdown for a cause wherever it
-    is read twice, the codes distinct, the spikes' ending the invincibility
-    word's own rest, and the penalty's gates one past their values."""
+    level's marking, the deaths' penalty, the ending's view and the fly-in,
+    each held against the others: one code and one countdown for a cause
+    wherever it is read twice, the codes distinct, the spikes' ending the
+    invincibility word's own rest, and the penalty's gates one past their
+    values."""
     if r["exit.type"] != 7 or r["exit.hidden.type"] != 26:
         sys.exit("the exits are tested as other types than the exit's and the hidden exit's")
     if r["clock.mode"] != 1 or r["clock.face"] != 8:
@@ -2783,7 +2938,8 @@ def play(r):
             "view": {"angles": [r["end.view.x"], r["end.view.y"], r["end.view.z"]], "swing": r["end.view.swing"],
                      "off": r["end.view.off"], "reach": r["end.view.reach"],
                      "bonus": {"swing": r["end.view.swing.bonus"], "off": r["end.view.off.bonus"],
-                               "reach": r["end.view.reach.bonus"]}}}
+                               "reach": r["end.view.reach.bonus"]}},
+            "flight": flight(r)}
 
 
 def harms(r):
@@ -2896,8 +3052,8 @@ def table(r, platform_speed):
     to take it and what that scores, a device under the ball what it does
     there, a kind or a type that can hurt the ball what it does, a kind the
     ball slides on, breaks or rides what it does to the roll, each kind the
-    word the ball keeps for standing on it, and the level's own words, the clock's, the endings', a bonus level's and an
-    ending's, sit under `play`. The devices' light and each device's
+    word the ball keeps for standing on it, and the level's own words, the clock's, the endings', a bonus level's, an
+    ending's and the fly-in's, sit under `play`. The devices' light and each device's
     colours, by world and then by circuit where it has one, sit apart from
     the types, whose entries are what moves.
     """
@@ -3032,6 +3188,8 @@ def show_readings(code):
         rows.append((group, what, addr, code.multiplier(addr, count, src, dst)))
     rows.append(("on a block", "boost button: sinks while the ball is within, units",
                  BUTTON_REACH[0], readings(code)["button.reach"]))
+    rows.append(("the fly-in", "the curve's second point lies this share of eight blocks along the side on",
+                 FLIGHT_THIRD[0], readings(code)["flight.third"]))
     rows.append(("dice", "a draw multiplies the state by this", DICE_TIMES[0],
                  readings(code)["dice.times"]))
     rows.append(("gem's glints", "a draw multiplies the generator's state by this", GLINT_TIMES[0],

@@ -14,7 +14,7 @@ from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
     GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, PHASES,
     ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, Code, blocks, body, devices,
-    dispatch, exits, glint, glow_lift, glow_spill, harms, jump, laser, light, moves, play, roll, root_table,
+    dispatch, exits, flight, glint, glow_lift, glow_spill, harms, jump, laser, light, moves, play, roll, root_table,
     shadow_half, spike_cycle, spin_orders, standing, table, take, vanish_cycle)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
@@ -150,6 +150,11 @@ GAME = {
     "end.view.swing": 12, "end.view.swing.bonus": 58, "end.view.off": 1400, "end.view.off.bonus": 3400,
     "end.view.reach": 1000, "end.view.reach.bonus": 3000, "death.most.gate": 5001, "death.most": 5000,
     "death.over": 4, "death.levels": 15, "death.each": 50, "death.each.final": 50,
+    "look.below": 250, "look.ahead": 800, "flight.unit.shift": 12, "flight.above": 100, "flight.quarter.shift": 2,
+    "flight.half.shift": 1, "flight.third": 3, "flight.first": 13, "flight.end.gate": 1025, "flight.least": 1,
+    "flight.curve.shift": 15, "flight.yaw": -1024, "flight.pitch": 250, "flight.bank.from": 1024, "flight.bank.shift": 1,
+    "flight.below": 250, "flight.out.shift": 10, "flight.ahead": 800, "flight.out": 14000, "flight.hold": 2000,
+    "flight.slow.gate": 929, "flight.step": 16, "flight.end.gate.after": 1025, "flight.done": 1, "flight.gate": 1000,
     "ice.kind": 2, "cold.gain": 40, "cold.top.gate": 501, "cold.back": 400, "cold.wane": -10, "arrow.type": 28,
     "crumble.size": 512, "crumble.shrink": -26, "crumble.whole": 1, "crumble.broken": 2, "crumble.broken.seen": 2,
     "crumble.breaking": 3, "crumble.code.input": 96, "crumble.edge.hold": 301, "crumble.edge.back": 401,
@@ -757,13 +762,49 @@ class Play(unittest.TestCase):
         self.assertEqual(p["points"], {"each": 50, "most": 5000, "levels": 15})
         self.assertEqual(p["view"], {"angles": [-8, 3, 10], "swing": 12, "off": 1400, "reach": 1000,
                                      "bonus": {"swing": 58, "off": 3400, "reach": 3000}})
+        self.assertEqual(p["flight"], flight(GAME))
+
+    def test_the_fly_in_ships_its_hold_its_steps_its_turns_and_its_curve(self):
+        self.assertEqual(flight(GAME), {"hold": 2000, "gate": 1000, "done": 1, "end": 1024, "step": 16, "slow": 928,
+                                        "first": 13, "least": 1, "frames": 68, "yaw": -1024, "bank": 2048, "pitch": 250,
+                                        "below": 250, "ahead": 800, "out": 14000,
+                                        "curve": {"above": 100, "back": [4096, 3072, 2048, 0],
+                                                  "left": [4096, 1707, 0, 0]}})
+
+    def test_the_fly_in_flies_68_frames_and_the_pad_is_read_on_the_70th(self):
+        f = flight(GAME)
+        t, inc, steps = 0, f["first"], []
+        while t <= f["end"]:
+            steps.append(f["step"] if t <= f["slow"] else inc)
+            if t > f["slow"]:
+                inc = max(inc - 1, f["least"])
+            t += steps[-1]
+        self.assertEqual(steps, [16] * 59 + [13, 12, 11, 10, 9, 8, 7, 6, 5])
+        self.assertEqual((len(steps), t), (f["frames"], f["end"] + 1))
+        # the pad's gate frame by frame, the hold and the live mark written at a frame's end, where the game writes them
+        wait, live, read, standing = GAME["start.wait"], True, None, 0
+        for frame in range(1, 80):
+            wait = max(wait - 1, 0)
+            if wait == 0 and live:
+                read = frame
+                break
+            standing += wait >= f["gate"]
+            if frame <= f["frames"]:
+                live, wait = False, f["hold"] if frame < f["frames"] else f["done"]
+            else:
+                live = True
+        self.assertEqual((read, standing), (70, 67))
 
     def test_an_ending_shared_or_waited_otherwise_stops_the_reading(self):
         for change in ({"end.acid": -4}, {"end.exit": 4}, {"end.star": -4}, {"wait.star": 9}, {"wait.hidden": 4},
                        {"wait.simon.done": 24}, {"mark.under": 300}, {"mark.skips": 2}, {"clock.face": 9},
                        {"exit.type": 8}, {"end.exit.landing": 2}, {"simon.done": 3}, {"end.captivator.still": -4},
                        {"acid.gain.wait": 200}, {"death.each.final": 25}, {"end.time": -3}, {"end.spikes": -2},
-                       {"death.most.gate": 5000}, {"death.levels": 14}, {"simon.wrong": 3}):
+                       {"death.most.gate": 5000}, {"death.levels": 14}, {"simon.wrong": 3},
+                       {"flight.end.gate.after": 1024}, {"flight.curve.shift": 12}, {"flight.out.shift": 9},
+                       {"flight.yaw": -1000}, {"flight.bank.from": 2048}, {"flight.least": 2}, {"flight.pitch": 200},
+                       {"flight.below": 200}, {"flight.ahead": 700}, {"flight.hold": 900}, {"flight.done": 1000},
+                       {"flight.gate": 20}):
             with self.assertRaises(SystemExit):
                 play({**GAME, **change})
 
@@ -926,7 +967,7 @@ class Table(unittest.TestCase):
                          {"1": 1, "2": 2, "3": 93, "4": 4, "5": 95, "6": 96, "7": 97, "8": None})
         self.assertEqual(t["play"]["clock"]["second"], 50)
         self.assertEqual(t["play"]["ending"]["lost"], -3)
-        self.assertEqual(set(t["play"]), {"start", "clock", "ending", "wait", "bonus", "points", "view"})
+        self.assertEqual(set(t["play"]), {"start", "clock", "ending", "wait", "bonus", "points", "view", "flight"})
         self.assertEqual(t["play"], play(GAME))
         self.assertEqual(t["kinds"]["1"], {**harms(GAME)["kinds"][1], "standing": 1})
         self.assertEqual(t["kinds"]["4"], {**harms(GAME)["kinds"][4], "standing": 4})
