@@ -12,9 +12,11 @@ const ACID = 4;
 const PLATFORM = 5;
 const CRUMBLING = 6;
 const LASER = 8;
+const BUTTON = 10;
 const MOVING_SPIKES = 11;
 const SPIKES = 12;
 const ARROW = 28;
+const BALL = 30;
 export const INVINCIBLE = 34;
 // a crumbling block's type word
 const WHOLE = 1;
@@ -175,6 +177,27 @@ export function spiked(live, out) {
   if (!deadly[(w.frame + deadly.length - 1) % deadly.length]) return;
   const wait = b.landed ? null : entry.harm.standing;
   die(live, out, "spikes", { freeze: true, mark: true, wait });
+}
+
+/** The boost button under the ball on the ground: from the roll's progress the self-roll's count
+    is written on every frame, and from the fire's progress, or on the frame after a landing on
+    the button, the launch: the count put at nothing, the jump and the roll asked, the turn
+    dropped and the long jump's word armed where it is nothing, so the frame's intents start the
+    forward jump as the long one. */
+export function boosting(live, out) {
+  const w = live.words;
+  const b = live.ball;
+  if (w.standing !== BUTTON) return;
+  const { boost, arm } = live.tables.motion.types[String(BALL)].jump;
+  if (b.progress >= boost.roll) w.rolled = boost.frames;
+  if (b.progress < boost.fire && !b.landed) return;
+  w.rolled = 0;
+  b.wantJump = true;
+  b.forward = true;
+  b.turn = 0;
+  if (!b.long) b.long = arm;
+  const { cell, face } = station(b);
+  out.push({ boosted: { key: cellKey(...cell), face } });
 }
 
 /** The ball's position as the game's words hold it: while it rides a platform, relative to the

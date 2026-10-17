@@ -34,6 +34,7 @@ const GONE = "The crumbling block at 17,16,17 is gone.";
 const TAKEN = "Taken: Coin (bronze) on the top";
 const SENDING = "The teleporter is sending the ball.";
 const RIDING = "The ball rides the platform.";
+const LAUNCHED = "Launched by the boost button.";
 const FOLLOWING = "Following the route; an arrow or Space takes the ball back.";
 const FOLLOWING_PAD = "Following the route; an arrow, Space or the pad takes the ball back.";
 const FOLLOWED = "The route is done: the ball stands at its last stop.";
@@ -2315,5 +2316,44 @@ test("a jump onto a moving platform rides it: the strip says so, the ball stands
   await expect
     .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [25] })
     .toEqual([17, 15, 17]);
+  expect(errors).toEqual([]);
+});
+
+test("a boost button launches the ball three blocks on, and a landing on another launches it again on the frame after, the strip and the live region saying so and dust rising at the launch", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a key out of reach keeps the level an arcade one; a row of blocks with a boost button two on
+  // and another three past it, so the first launch comes down on the second
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  for (let y = 16; y >= 9; y--) await laid(page, [17, y, 17], { kind: 0 });
+  await faced(page, [17, 15, 17], 0, { type: 10 });
+  await faced(page, [17, 12, 17], 0, { type: 10 });
+  await expect(page.locator("#chipLine")).toContainText("9 blocks");
+  await expect(page.locator("#chipLine")).toContainText("4 objects");
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await listening(page);
+  // held on until the strip says the ball is launched, which it does through the flight
+  await page.keyboard.down("ArrowUp");
+  await expect(status(page)).toHaveText(LAUNCHED, { timeout: 10_000 });
+  await page.keyboard.up("ArrowUp");
+  expect(await dustOver(page, [17, 15, 17])).toBeGreaterThan(0);
+  await expect
+    .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [25] })
+    .toEqual([17, 9, 17]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  await expect(status(page)).toHaveText("");
+  await expect(line(page)).toHaveText("Playing · on the top of 17,9,17, facing -y");
+  const heard = await said(page);
+  expect(heard.filter((t) => t === LAUNCHED)).toHaveLength(2);
+  expect(heard).toContain(`17,12,17, top. ${LAUNCHED}`);
+  expect(heard).toContain(`17,9,17, top. ${LAUNCHED}`);
   expect(errors).toEqual([]);
 });

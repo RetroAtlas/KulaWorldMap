@@ -77,6 +77,7 @@ export function ballAt(rules, cell, face, h) {
     v: 0,
     count: 0,
     row: 0,
+    long: 0,
     saved: null,
     landed: false,
     frozen: false,
@@ -125,6 +126,14 @@ export const centreOf = (b) => positionOf(b).map((c) => c / b.unit + 0.5);
 export const moving = (b) => b.state !== REST || b.ramp !== null || b.turn !== 0 || b.look.word > 0;
 /** The centre's lift off the face the jump or the hop left, in game units. */
 const liftOf = (b) => dot(add(b.pos, b.saved, -1), b.n) + b.radius;
+/** The jump's row `i`, its three halfwords scaled by the long jump's measure while its word
+    stands, the odd half dropped toward nothing. */
+function rowOf(b, i) {
+  const row = b.jump.rows[i];
+  if (!b.long) return row;
+  const [over, under] = b.table.jump.scale;
+  return row.map((v) => Math.trunc((v * over) / under));
+}
 
 /** How far into its cell the centre has come along the unit axis `v`, the middle at half a block. */
 function along(b, v) {
@@ -244,12 +253,14 @@ function swap(b, h, n) {
 }
 
 /** The pad as held, `b.pad`, into the ball's requests: the roll, the jump and a turn, held back
-    while a turn's ramp runs. A press is a bit held now and not on the last frame, and a held
-    turn presses again once the count passes the repeat. With no jump asked, the floor ahead
-    empty and a block beside the block under, the roll is refused; with nothing beside and the
-    block under one the last frame's read found brittle, a rolling ball is held short of the
-    edge by `rules.edge`: from its hold the forward request and the speed are dropped, and from
-    its further mark the centre is set back along the heading besides. */
+    while a turn's ramp runs. The roll and the jump are the pad's alone, put at nothing before
+    the keys are read, so either asked earlier in the frame stands only where the pad is not
+    read. A press is a bit held now and not on the last frame, and a held turn presses again
+    once the count passes the repeat. With no jump asked, the floor ahead empty and a block
+    beside the block under, the roll is refused; with nothing beside and the block under one
+    the last frame's read found brittle, a rolling ball is held short of the edge by
+    `rules.edge`: from its hold the forward request and the speed are dropped, and from its
+    further mark the centre is set back along the heading besides. */
 export function read(b, probe, out) {
   const t = b.table.rolling;
   if (turning(b)) b.since = 0;
@@ -395,6 +406,7 @@ function board(b, probe, out) {
   b.travel = p.travel;
   b.v = 0;
   b.speed = 0;
+  b.long = 0;
   b.state = REST;
   b.progress = progressOf(b);
   out.push({ rode: { key: p.key } }, { at: "landed" });
@@ -402,8 +414,10 @@ function board(b, probe, out) {
 }
 
 /** Land on a platform's body first, riding it, else where the point the radius under the centre
-    lies in a block that is no platform's: laid the radius off its face, rolling on where Up is
-    held or the landing was short of the middle's third, else at rest. */
+    lies in a block that is no platform's: laid the radius off its face at rest, the speed the
+    top where the roll is asked, which a landing short of the middle's third with no jump asked
+    asks itself, a request the pad's reading replaces on the frame after, and the speed as the
+    air left it otherwise, for the roll asked next; the long jump's word is cleared. */
 function land(b, probe, out) {
   if (board(b, probe, out)) return true;
   const block = cellOf(b, add(b.pos, b.n, -b.radius));
@@ -412,14 +426,11 @@ function land(b, probe, out) {
   b.pos[i] = block[i] * b.unit + b.n[i] * (b.half + b.radius);
   b.v = 0;
   b.landed = true;
+  b.long = 0;
+  b.state = REST;
   b.progress = progressOf(b);
-  if (b.forward || (b.progress < b.table.fall.short && !b.wantJump)) {
-    b.state = ROLLING;
-    b.speed = b.table.rolling.top;
-  } else {
-    b.state = REST;
-    b.speed = 0;
-  }
+  if (b.progress < b.table.fall.short && !b.wantJump) b.forward = true;
+  if (b.forward) b.speed = b.table.rolling.top;
   out.push({ at: "landed" });
   return true;
 }
@@ -441,6 +452,7 @@ function ceiling(b, probe, rise) {
   b.state = FALL;
   b.speed = 0;
   b.spinSpeed = 0;
+  b.long = 0;
   b.v = -rise;
   return true;
 }
@@ -449,17 +461,18 @@ function jumping(b, probe, out) {
   const j = b.table.jump;
   b.count = b.count === j.skip + 1 ? 0 : b.count - 1;
   if (b.count <= 0) {
-    b.pos = add(b.saved, b.h, j.snap);
+    b.pos = add(b.saved, b.h, b.long >= j.long ? j.far : j.snap);
     if (land(b, probe, out)) return;
-    const rows = b.jump.rows;
     b.state = FALL;
     b.speed = 0;
-    b.v = -Math.abs(rows[b.row - 1][0] - rows[b.row - 2][0]);
+    b.v = -Math.abs(rowOf(b, b.row - 1)[0] - rowOf(b, b.row - 2)[0]);
+    b.long = 0;
     return;
   }
   recentre(b.saved, b, j.recentre);
-  const was = b.row ? b.jump.rows[b.row - 1] : [0, 0, 0];
-  const [height, right, back] = b.jump.rows[b.row++];
+  const was = b.row ? rowOf(b, b.row - 1) : [0, 0, 0];
+  const [height, right, back] = rowOf(b, b.row++);
+  if (b.long) b.long += 1;
   b.pos = add(add(add(b.saved, b.n, height), b.s, right), b.h, -back);
   const rise = height - was[0];
   const advance = was[2] - back;
@@ -478,6 +491,7 @@ function jumping(b, probe, out) {
       b.speed = -advance;
       b.spinSpeed = 0;
       b.state = FALL;
+      b.long = 0;
       b.v = rise > 0 ? j.bounce : rise;
       return;
     }
@@ -492,6 +506,7 @@ function hopping(b, probe) {
   if (b.count <= 0) {
     if (probe.solid(add(cellOf(b, b.pos), b.n, -1))) {
       b.state = REST;
+      b.landed = true;
       return;
     }
     b.state = FALL;
@@ -633,10 +648,12 @@ function spinning(b) {
 }
 
 /** The frame from the requests on: what happened, as events, added to `out`. The last frame's
-    landing is cleared first, so a caller between `read` and `run` still sees it; while the ball
-    is `frozen` its state does nothing, nor the move step nor the landings, and a ramp, the look
-    and the spin go on; while `way` holds a direction, the jump's wall test throws the ball back
-    from the wall's progress where its heading differs from it and clears it where it lies along.
+    landing, a block's or a hop's end's, is cleared first, so a caller between `read` and `run`
+    still sees it; the long jump's word is cleared outside the jump's state where it has counted
+    past its arming, as the states' dispatcher clears it; while the ball is `frozen` its state
+    does nothing, nor the move step nor the landings, and a ramp, the look and the spin go on;
+    while `way` holds a direction, the jump's wall test throws the ball back from the wall's
+    progress where its heading differs from it and clears it where it lies along.
     Between the state and the move step the ball's words for the block under its cell are read,
     whether one is there and whether it is brittle, which the rest state, the roll and the pad's
     reading ask on the next frame, and the probe's `stood`, where it has one, is told the ball,
@@ -646,6 +663,7 @@ function spinning(b) {
 export function run(b, probe, out) {
   b.landed = false;
   intents(b, probe, out);
+  if (b.state !== JUMP && b.long >= b.table.jump.keep) b.long = 0;
   if (!b.frozen) acting(b, probe, out);
   const below = add(cellOf(b, b.pos), b.n, -1);
   b.floor = probe.solid(below);

@@ -70,14 +70,22 @@ import {
   offsetFrame,
   positionOf,
 } from "./ball.js";
-import { frame as gameFrame, heeds, relevel, restart, revive, stand, startRun } from "./rules.js";
+import {
+  drives,
+  frame as gameFrame,
+  heeds,
+  relevel,
+  restart,
+  revive,
+  stand,
+  startRun,
+} from "./rules.js";
 import { courseDriver } from "./drive.js";
 import { frameShown, probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
 const BALL_TYPE = 30;
 // the ball's key among the frame's travellers, which no thing of the level's answers to
 const BALL = "ball";
-const AS_STONE_TYPES = new Set([10]);
 // the untinted light, the unit a traveller's tint is in
 const LIGHT = 4096;
 const YAW = 20;
@@ -102,7 +110,7 @@ const PLAIN_KIND = 0;
 const REFUSED = {
   arrow: "The ball cannot roll off here: the arrow points another way.",
 };
-const AS_STONE = "The ball rolls over a boost button as over plain stone for now.";
+const LAUNCHED = "Launched by the boost button.";
 const RIDING = "The ball rides the platform.";
 const NO_START = "The level has no start, so the ball stands on the first face it could.";
 const NOWHERE = "The level has no face the ball could stand on.";
@@ -157,6 +165,7 @@ const DONE_WHY = {
 const AT_SWITCH = 6;
 const AT_TAKE = 10;
 const AT_BREAK = 2;
+const AT_LAUNCH = 10;
 const TRAIL = 12;
 
 let live = null;
@@ -545,7 +554,12 @@ function stepped(dt) {
   let moved = false;
   const runs = live.ended
     ? motionOn()
-    : motionOn() || moving(live.run.ball) || held || tapped || live.driver !== null;
+    : motionOn() ||
+      moving(live.run.ball) ||
+      drives(live.run) ||
+      held ||
+      tapped ||
+      live.driver !== null;
   if (runs) {
     owed += (dt * motionTable().hz) / 1000;
     while (owed >= 1 && live) {
@@ -647,7 +661,9 @@ const again = () =>
   !!(
     ease ||
     (live &&
-      (motionOn() || (!live.ended && (moving(live.run.ball) || held || tapped || live.driver))))
+      (motionOn() ||
+        (!live.ended &&
+          (moving(live.run.ball) || drives(live.run) || held || tapped || live.driver))))
   );
 
 /** The frame hook: another frame while the view eases, the level runs or something moves, and one
@@ -702,6 +718,10 @@ function happened(event) {
     sent(event.sent);
     return;
   }
+  if (event.boosted) {
+    boosted();
+    return;
+  }
   if (event.rode) {
     live.notes.push(RIDING);
     return;
@@ -720,7 +740,7 @@ function happened(event) {
     live.station = true;
     const block = blockUnder(b);
     say(noted(`${block.join(",")}, ${FACE_NAME[faceUnder(b)]}`));
-    status(standsOn(block, faceUnder(b)) ? AS_STONE : b.riding ? RIDING : null);
+    status(b.riding ? RIDING : null);
     walked({ cell: block, face: faceUnder(b) });
     if (!motionOn()) strewn(live.still.foot, footOf(b), b.n, (p) => blockAt(p, b.n, block), true);
   } else if (event.face) {
@@ -763,6 +783,16 @@ function threw({ circuit }) {
   say(text);
   live.notes.push(text);
   refreshPanel();
+}
+
+/** The ball launched off a boost button: dust at its foot, the launch said, and the strip saying
+    so until the ball lands. */
+function boosted() {
+  const b = live.run.ball;
+  burst(footOf(b), b.n, blockUnder(b), AT_LAUNCH);
+  status(LAUNCHED);
+  say(LAUNCHED);
+  live.notes.push(LAUNCHED);
 }
 
 /** A crumbling block broken under the ball: dust at its foot each time the game breaks it, and
@@ -813,7 +843,7 @@ function sent({ from, to }) {
   state.frame = b.frame;
   state.target = [...centreOf(b)];
   if (state.framing === fit) fit();
-  status(standsOn(to.cell, to.face) ? AS_STONE : null);
+  status(null);
   say(`Sent to the ${FACE_NAME[to.face]} of ${to.cell.join(",")}.`);
   redraw = true;
   invalidatePick();
@@ -1053,12 +1083,6 @@ function keep() {
   toast(KEPT);
   routing();
 }
-
-/** Whether the ball stands on something it does not act on yet. */
-const standsOn = (block, face) =>
-  (live.idx.markers.get(cellKey(...block)) ?? []).some(
-    (m) => m.face === face && AS_STONE_TYPES.has(m.type),
-  );
 
 /** The things on `key`'s block the ball has taken, as the level as installed still lists them. */
 const takenOn = (key) =>

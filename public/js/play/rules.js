@@ -15,6 +15,7 @@ import {
 import { contact } from "./contact.js";
 import {
   INVINCIBLE,
+  boosting,
   broken,
   catching,
   counting,
@@ -29,6 +30,7 @@ import { OFF_LATTICE, layHeading, startsOf, TANGENT } from "../viewer/data.js";
 import { advance } from "../viewer/travel.js";
 
 const BALL = 30;
+const BUTTON = 10;
 const PLATFORM = 5;
 const CRUMBLING = 6;
 const SIMON = 1;
@@ -128,9 +130,16 @@ function tick(live, out, ticks) {
   if (w.clock <= 0) end(live, clock.out, out);
 }
 
-/** Whether the coming frame reads the pad: no wait runs, or the one running runs out as the
-    frame begins. */
-export const heeds = (live) => live.words.wait <= 1;
+/** Whether the coming frame reads the pad: no wait and no self-roll runs, or the one running
+    runs out as the frame begins, and the ball does not stand on a boost button. */
+export const heeds = (live) => {
+  const w = live.words;
+  return w.wait <= 1 && w.rolled <= 1 && w.standing !== BUTTON;
+};
+
+/** Whether the game moves the ball of itself on the coming frame, whatever the pad: a self-roll
+    runs, or the ball stands on a boost button. */
+export const drives = (live) => live.words.rolled > 0 || live.words.standing === BUTTON;
 
 // A wait holds the pad off and clears the ball's requests, and as it runs out the ending it was
 // set with becomes the result, the spikes' the outcome a frame before that.
@@ -145,6 +154,17 @@ function waiting(live, out) {
   counting(live);
   if (w.wait === 0) w.result = w.ending;
   else if (w.wait === 1 && w.ending === ending.spikes) end(live, w.ending, out);
+}
+
+// A self-roll asks the roll of the ball for the frames its count holds, the turn and the jump
+// dropped, and the pad is unread until the count has run out.
+function rolled(live) {
+  const w = live.words;
+  const b = live.ball;
+  w.rolled -= 1;
+  b.forward = true;
+  b.wantJump = false;
+  b.turn = 0;
 }
 
 // The walkers take a frame, the captivators standing while the ball is caught.
@@ -226,6 +246,7 @@ function hazards(live, out) {
     ground(live, out);
     broken(live);
     spiked(live, out);
+    boosting(live, out);
   }
   pills(live, out);
   devices(live, out);
@@ -258,6 +279,7 @@ export function frame(live, pad) {
   tick(live, out, clock.tick);
   if (w.guard) w.guard = (w.guard + 1) % start.guard;
   if (w.wait > 0) waiting(live, out);
+  if (w.rolled > 0) rolled(live);
   if (heard) {
     // Cross held under the guard reads nothing, and a read clears the guard
     if (!(w.guard && pad & PAD.cross)) {

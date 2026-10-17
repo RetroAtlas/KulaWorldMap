@@ -17,6 +17,7 @@ import {
   JUMP,
   FALL,
   ROLLING,
+  LEFT,
   PAD,
   blockUnder,
   cellOf,
@@ -27,6 +28,7 @@ import {
   startRun,
   frame,
   heeds,
+  drives,
   restart,
   revive,
   stand,
@@ -62,6 +64,8 @@ const LETHARGY = "32";
 const BOUNCY = "33";
 const INVINCIBLE = "34";
 const SUNGLASSES = "38";
+const BUTTON = 10;
+const LEAP = motion.types["30"].jump;
 
 /** The circuits as a parity map, turned over by each press. */
 function circuits() {
@@ -111,6 +115,8 @@ const vanishing = (y, phase) => ({
   type: 0,
   f: [phase, ...Array(10).fill(0)],
 });
+/** A boost button on the top of the row's block at `y`. */
+const button = (y) => ({ x: 17, y, z: 17, kind: 0, on: [object(0, BUTTON)] });
 const begin = (l, at = null) => startRun(l, index(l), TABLES, circuits(), at);
 /** Run `n` frames with `pad` held: the events, each with the frame count it left. */
 function steps(live, n, pad = 0) {
@@ -1026,4 +1032,165 @@ test("relevel keeps a riding ball on its platform where the edited level still h
   assert.equal(b.travel, null);
   assert.deepEqual(b.pos, here, "set down where it was in the level");
   assert.deepEqual(positionOf(b), here);
+});
+
+test("the pad is dead while a self-roll's count runs, the roll asked and a turn dropped, and read again on the frame the count reaches nothing", () => {
+  const live = begin(level(row(10, 18), [start()]));
+  live.words.wait = 0;
+  live.words.rolled = 3;
+  assert.equal(drives(live), true);
+  const heeded = [];
+  for (let f = 1; f <= 2; f++) {
+    heeded.push(heeds(live));
+    frame(live, PAD.left);
+    assert.deepEqual([live.ball.state, live.ball.turn, live.ball.forward], [ROLLING, 0, true]);
+    assert.equal(live.words.rolled, 3 - f);
+  }
+  assert.deepEqual(heeded, [false, false]);
+  assert.equal(live.ball.speed, 2 * ROLL.gain);
+  assert.equal(heeds(live), true, "the frame the count runs out on reads the pad");
+  frame(live, PAD.left);
+  assert.equal(live.words.rolled, 0);
+  assert.deepEqual(
+    [live.ball.turn, live.ball.forward],
+    [LEFT, false],
+    "the press read, Up not held",
+  );
+  assert.equal(drives(live), false);
+});
+
+test("on a boost button the pad is not read, and the game moves the ball of itself", () => {
+  const live = begin(level(row(10, 18), [start(), button(16)]), {
+    cell: [17, 16, 17],
+    face: TOP,
+    h: UP,
+  });
+  live.words.wait = 0;
+  live.words.guard = 1;
+  assert.equal(live.words.standing, BUTTON);
+  assert.equal(heeds(live), false);
+  assert.equal(drives(live), true);
+  steps(live, 3, PAD.left | PAD.up);
+  assert.deepEqual([live.ball.state, live.ball.turn, live.ball.forward], [REST, 0, false]);
+  assert.deepEqual(blockUnder(live.ball), [17, 16, 17]);
+});
+
+test("rolled onto a boost button the ball is taken from the keys, rolled on by the game from the roll's progress with the count written on every ground frame, and launched as the long jump on the first frame its progress is the fire's or more, landing three blocks on at that progress and resting there with Up released", () => {
+  const live = begin(level(row(5, 18), [start(), button(16)]));
+  live.words.wait = 0;
+  const { boost } = LEAP;
+  let f = 0;
+  while (!(blockUnder(live.ball)[1] === 16 && live.ball.progress > 0) && f < 100) {
+    frame(live, PAD.up);
+    f++;
+  }
+  assert.deepEqual(blockUnder(live.ball), [17, 16, 17]);
+  assert.equal(live.words.standing, BUTTON, "the read of the frame that crossed onto it");
+  assert.equal(heeds(live), false, "and the pad is dead from the frame after");
+  const frames = [];
+  let launched = null;
+  for (let g = 1; g <= 40 && launched === null; g++) {
+    const before = live.ball.progress;
+    const heard = heeds(live);
+    const events = frame(live, 0);
+    frames.push({ before, heard, rolled: live.words.rolled, state: live.ball.state });
+    if (events.some((e) => e.boosted)) launched = { before, events, frame: live.words.frame };
+  }
+  assert.ok(launched, "launched");
+  assert.ok(
+    frames.every((x) => !x.heard),
+    "the pad dead on every frame on the button",
+  );
+  assert.ok(
+    frames.slice(0, -1).every((x) => x.state === ROLLING),
+    "rolled on with Up released",
+  );
+  assert.ok(
+    frames.every((x) => x.before >= boost.roll || x.rolled === 0),
+    "no count short of the roll's progress",
+  );
+  assert.ok(
+    frames.slice(0, -1).every((x) => x.before < boost.roll || x.rolled === boost.frames),
+    "the count written on every ground frame from it",
+  );
+  assert.ok(
+    frames.slice(0, -1).every((x) => x.before < boost.fire),
+    "no launch short of the fire's progress",
+  );
+  assert.ok(launched.before >= boost.fire && launched.before < boost.fire + ROLL.top);
+  assert.deepEqual(
+    launched.events.filter((e) => e.boosted),
+    [{ boosted: { key: cellKey(17, 16, 17), face: TOP } }],
+  );
+  assert.deepEqual(
+    [live.ball.state, live.ball.long, live.words.rolled],
+    [JUMP, LEAP.arm + 1, 0],
+    "the launch's frame runs the first row and counts it",
+  );
+  const landing = [];
+  for (let g = 1; g <= 40 && !landing.length; g++)
+    landing.push(...frame(live, 0).filter((e) => e.at === "landed"));
+  assert.equal(live.words.frame, launched.frame + 30, "29 rows more and the landing's frame");
+  assert.deepEqual(blockUnder(live.ball), [17, 13, 17], "three blocks on");
+  assert.equal(live.ball.progress, launched.before, "at the progress the launch found");
+  assert.equal(live.ball.long, 0);
+  steps(live, 5, 0);
+  assert.deepEqual([live.ball.state, blockUnder(live.ball)], [REST, [17, 13, 17]]);
+  assert.equal(live.ball.progress, launched.before, "at rest where it landed");
+});
+
+test("a landing on a boost button short of the fire's progress launches the ball on the frame after, by the landing's flag, whatever the keys", () => {
+  const live = begin(level(row(5, 18), [start(), button(15)]));
+  live.words.wait = 0;
+  steps(live, 11, PAD.up);
+  assert.deepEqual(blockUnder(live.ball), [17, 17, 17]);
+  const from = live.ball.progress;
+  assert.ok(from < ROLL.middle, String(from));
+  frame(live, PAD.up | PAD.cross);
+  assert.equal(live.ball.state, JUMP);
+  let landed = false;
+  for (let g = 1; g <= 40 && !landed; g++) landed = frame(live, 0).some((e) => e.at === "landed");
+  assert.ok(landed);
+  assert.deepEqual(blockUnder(live.ball), [17, 15, 17]);
+  assert.equal(live.ball.progress, from);
+  assert.ok(from < LEAP.boost.fire);
+  assert.deepEqual([live.ball.state, live.ball.landed, live.words.standing], [REST, true, BUTTON]);
+  const events = frame(live, PAD.left | PAD.cross);
+  assert.deepEqual(
+    events.filter((e) => e.boosted),
+    [{ boosted: { key: cellKey(17, 15, 17), face: TOP } }],
+  );
+  assert.deepEqual([live.ball.state, live.ball.turn, live.ball.long], [JUMP, 0, LEAP.arm + 1]);
+  assert.equal(live.words.rolled, 0);
+});
+
+test("two boost buttons three blocks apart send the ball from one to the next: the first launch comes down on the second button and the frame after launches again", () => {
+  const live = begin(level(row(5, 18), [start(), button(15), button(12)]));
+  live.words.wait = 0;
+  const launches = [];
+  const landings = [];
+  for (let g = 1; g <= 200 && landings.length < 2; g++) {
+    const pad = launches.length ? 0 : PAD.up;
+    for (const e of frame(live, pad)) {
+      if (e.boosted) launches.push({ frame: live.words.frame, key: e.boosted.key });
+      if (e.at === "landed")
+        landings.push({ frame: live.words.frame, block: blockUnder(live.ball) });
+    }
+  }
+  assert.deepEqual(
+    launches.map((x) => x.key),
+    [cellKey(17, 15, 17), cellKey(17, 12, 17)],
+  );
+  assert.deepEqual(
+    landings.map((x) => x.block),
+    [
+      [17, 12, 17],
+      [17, 9, 17],
+    ],
+  );
+  assert.equal(landings[0].frame, launches[0].frame + 30);
+  assert.equal(launches[1].frame, landings[0].frame + 1, "the frame after the landing");
+  assert.equal(landings[1].frame, launches[1].frame + 30);
+  steps(live, 5, 0);
+  assert.deepEqual([live.ball.state, blockUnder(live.ball)], [REST, [17, 9, 17]]);
 });

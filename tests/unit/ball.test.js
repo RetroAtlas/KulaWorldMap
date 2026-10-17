@@ -720,17 +720,215 @@ test("Up with Space jumps the ball along the rows, 458 up on the 15th and 16th f
   assert.deepEqual(b.rest.cell, [17, 16, 17]);
 });
 
-test("a jump taken early in a block lands short of the middle's third and rolls on to the middle", () => {
+test("a jump taken early in a block lands short of the middle's third at rest with the roll asked, which the pad's reading drops, so with Up released the ball rests where it landed and with Up held it rolls on, from the speed the air left it", () => {
   const probe = row(8, 18);
   const b = ballAt(RULES, [17, 18, 17], TOP, UP);
   run(b, probe, 11, PAD.up);
   assert.deepEqual(blockUnder(b), [17, 17, 17]);
-  assert.ok(b.progress < 180, String(b.progress));
+  const from = b.progress;
+  assert.ok(from < table.fall.short, String(from));
   run(b, probe, 1, PAD.up | PAD.cross);
   assert.equal(b.state, JUMP);
-  const frames = rest(b, probe);
-  assert.ok(frames > 30 && frames < 45, String(frames));
-  assert.deepEqual(b.pos, [17 * UNIT, 15 * UNIT, 17 * UNIT - 356]);
+  run(b, probe, 29, PAD.up);
+  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed" }]);
+  assert.deepEqual(blockUnder(b), [17, 15, 17]);
+  assert.equal(b.progress, from);
+  assert.deepEqual([b.state, b.forward, b.speed], [REST, true, table.rolling.top]);
+  assert.deepEqual(run(b, probe, 1, 0), [], "the pad's reading drops the request");
+  assert.deepEqual([b.state, b.forward, b.progress], [REST, false, from]);
+  assert.equal(b.speed, table.rolling.top, "the speed stands as the landing left it");
+  assert.equal(rest(b, probe), 0);
+  run(b, probe, 1, PAD.up);
+  assert.equal(b.state, ROLLING);
+  assert.equal(b.progress, from + table.rolling.top, "off at the top speed from the first frame");
+
+  const c = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(c, probe, 11, PAD.up);
+  run(c, probe, 30, PAD.up | PAD.cross);
+  assert.deepEqual(run(c, probe, 1, PAD.up), [{ at: "landed" }]);
+  assert.deepEqual(
+    [c.state, c.forward, c.speed, c.progress],
+    [REST, true, table.rolling.top, from],
+  );
+  run(c, probe, 1, PAD.up);
+  assert.equal(c.state, ROLLING);
+  assert.equal(c.progress, from + table.rolling.top);
+  rest(c, probe);
+  assert.deepEqual(c.pos, [17 * UNIT, 15 * UNIT, 17 * UNIT - 356], "on to the middle, Up let go");
+});
+
+test("a jump landing leaves the speed at the top for the roll asked next, where a fall's landing leaves it at nothing, so a ball that rests after a jump rolls off at the top speed and one that rests after a fall grows its speed from the roll's gain", () => {
+  const probe = row(10, 18);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 30, PAD.up | PAD.cross);
+  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed" }]);
+  assert.deepEqual([b.state, b.speed], [REST, table.jump.speed]);
+  run(b, probe, 3, 0);
+  assert.deepEqual([b.state, b.speed], [REST, table.jump.speed]);
+  run(b, probe, 1, PAD.up);
+  assert.deepEqual([b.state, b.speed], [ROLLING, table.rolling.top]);
+
+  const fallen = lattice([17, 18, 17], [17, 17, 17], [17, 16, 18]);
+  const c = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(c, fallen, 30, PAD.up | PAD.cross);
+  let landed = null;
+  for (let f = 31; f <= 80 && landed === null; f++)
+    if (run(c, fallen, 1, 0).some((e) => e.at === "landed")) landed = f;
+  assert.ok(landed !== null, "down onto the block below");
+  assert.deepEqual([c.state, c.speed], [REST, 0]);
+  run(c, fallen, 1, PAD.up);
+  assert.deepEqual([c.state, c.speed], [ROLLING, table.rolling.gain]);
+});
+
+test("the long jump's word scales every row's three halfwords three halves over, the odd half dropped toward nothing, counts the rows to 31 and lands three blocks on, 687 up at its apex and 1536 along, the landing clearing the word", () => {
+  const probe = row(10, 18);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  const j = table.jump;
+  b.long = j.arm;
+  const [over, under] = j.scale;
+  const scaled = (v) => Math.trunc((v * over) / under);
+  const heights = [];
+  const along = [];
+  const words = [];
+  for (let f = 1; f <= 30; f++) {
+    b.pad = PAD.up | PAD.cross;
+    step(b, probe);
+    assert.equal(b.state, JUMP, `frame ${f}`);
+    const [height, right, back] = JUMPS.rows[f - 1].map(scaled);
+    assert.deepEqual(
+      b.pos,
+      [17 * UNIT + right, 18 * UNIT + back, 17 * UNIT - 356 - height],
+      `frame ${f}`,
+    );
+    heights.push(17 * UNIT - 356 - b.pos[2]);
+    along.push(18 * UNIT - b.pos[1]);
+    words.push(b.long);
+  }
+  assert.deepEqual([heights[14], heights[15]], [687, 687]);
+  assert.equal(along[29], scaled(986));
+  assert.deepEqual(
+    words,
+    Array.from({ length: 30 }, (_, i) => j.arm + i + 1),
+  );
+  assert.ok(b.long >= j.long);
+  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed" }]);
+  assert.deepEqual(b.pos, [17 * UNIT, 18 * UNIT - j.far, 17 * UNIT - 356]);
+  assert.deepEqual(blockUnder(b), [17, 15, 17]);
+  assert.equal(b.long, 0);
+  assert.equal(b.state, REST);
+  // with the word at nothing the same rows run unscaled and land two blocks on
+  const c = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(c, probe, 30, PAD.up | PAD.cross);
+  assert.equal(c.long, 0);
+  run(c, probe, 1, 0);
+  assert.deepEqual(blockUnder(c), [17, 16, 17]);
+});
+
+test("the long jump's failed landing comes straight down three blocks on at the scaled last drop, with the word cleared", () => {
+  const probe = row(16, 18);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  b.long = table.jump.arm;
+  const [over, under] = table.jump.scale;
+  const scaled = (v) => Math.trunc((v * over) / under);
+  run(b, probe, 31, PAD.up | PAD.cross);
+  assert.equal(b.state, FALL);
+  assert.equal(b.speed, 0);
+  assert.equal(b.v, -(scaled(JUMPS.rows[28][0]) - scaled(JUMPS.rows[29][0])));
+  assert.deepEqual(b.pos, [17 * UNIT, 18 * UNIT - table.jump.far, 17 * UNIT - 356]);
+  assert.equal(b.long, 0);
+});
+
+test("a wall met in the air and a block met above clear the long jump's word with the bounce and the drop, and a landing on a platform clears it as it rides", () => {
+  const j = table.jump;
+  const [over, under] = j.scale;
+  const scaled = (v) => Math.trunc((v * over) / under);
+  const walled = row(15, 18, [
+    [17, 14, 17],
+    [17, 14, 16],
+    [17, 14, 15],
+    [17, 14, 14],
+  ]);
+  const b = ballAt(RULES, [17, 16, 17], TOP, UP);
+  b.long = j.arm;
+  run(b, walled, 1, PAD.up | PAD.cross);
+  for (let f = 2; f <= 31 && b.state === JUMP; f++) run(b, walled, 1, PAD.up | PAD.cross);
+  assert.equal(b.state, FALL);
+  assert.ok(b.speed < 0, "thrown back");
+  assert.equal(b.long, 0);
+
+  const roofed = row(15, 18, [
+    [17, 16, 15],
+    [17, 15, 15],
+  ]);
+  const c = ballAt(RULES, [17, 16, 17], TOP, UP);
+  c.long = j.arm;
+  let hit = null;
+  for (let f = 1; f <= 31 && hit === null; f++) {
+    run(c, roofed, 1, PAD.up | PAD.cross);
+    if (c.state === FALL) hit = f;
+  }
+  assert.equal(hit, 5, "the scaled rows lift the ball past the wall's height sooner");
+  assert.deepEqual([c.speed, c.spinSpeed], [0, 0]);
+  assert.equal(c.v, -(scaled(JUMPS.rows[4][0]) - scaled(JUMPS.rows[3][0])));
+  assert.equal(c.long, 0);
+
+  const d = ballAt(RIDDEN, [17, 17, 17], TOP, UP);
+  d.long = j.arm;
+  const at = { travel: [-300, 0, 0] };
+  const body = [
+    [17, 14, 17],
+    [18, 14, 17],
+    [19, 14, 17],
+  ];
+  const probe = carried(row(17, 18), body, () => at.travel, d);
+  run(d, probe, 1, PAD.up | PAD.cross);
+  for (let f = 1; f <= 40 && !d.riding; f++) run(d, probe, 1, 0);
+  assert.deepEqual(d.riding, { key: "rail" }, "three blocks on, onto the body");
+  assert.deepEqual(blockUnder(d), [17, 14, 17]);
+  assert.equal(d.long, 0);
+});
+
+test("outside the jump's state the frame clears a long word that has counted past its arming and keeps one armed, so a word armed at rest waits for the jump", () => {
+  const probe = row(10, 18);
+  const j = table.jump;
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  b.long = j.keep;
+  run(b, probe, 1, 0);
+  assert.equal(b.long, 0);
+  b.long = j.keep + 5;
+  run(b, probe, 1, PAD.up);
+  assert.deepEqual([b.state, b.long], [ROLLING, 0]);
+  const c = ballAt(RULES, [17, 18, 17], TOP, UP);
+  c.long = j.arm;
+  run(c, probe, 3, 0);
+  assert.equal(c.long, j.arm, "kept at rest");
+  run(c, probe, 1, PAD.cross);
+  assert.deepEqual([c.state, c.long], [HOP, j.arm], "kept through a hop");
+  run(c, probe, 30, 0);
+  assert.equal(c.state, REST);
+  run(c, probe, 1, PAD.up | PAD.cross);
+  assert.deepEqual([c.state, c.long], [JUMP, j.arm + 1], "and counted from the jump's first row");
+});
+
+test("a hop's end over a block sets the landing flag as a landing does, seen between read and run on the frame after, and a hop's end over nothing does not", () => {
+  const probe = row(10, 18);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 1, PAD.cross);
+  run(b, probe, 29, 0);
+  assert.deepEqual([b.state, b.landed], [HOP, false]);
+  assert.deepEqual(run(b, probe, 1, 0), []);
+  assert.deepEqual([b.state, b.landed], [REST, true]);
+  b.pad = 0;
+  const out = [];
+  read(b, probe, out);
+  assert.equal(b.landed, true);
+  runFrame(b, probe, out);
+  assert.equal(b.landed, false);
+
+  const lone = lattice([17, 18, 17]);
+  const c = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(c, lone, 31 * 8, PAD.cross);
+  assert.deepEqual([c.state, c.landed], [FALL, false], "the eighth hop ends over nothing");
 });
 
 test("a jump over nothing falls at the last row's drop, 5 a frame faster to 66, straight down, and is lost past the lattice", () => {
@@ -959,8 +1157,9 @@ test("a landing past the middle at an edge the side rule refuses rests where the
     if (run(b, probe, 1, PAD.up).some((e) => e.at === "landed")) landed = b.progress;
   assert.equal(landed, launched);
   assert.deepEqual(blockUnder(b), [17, 15, 17]);
-  assert.equal(b.state, ROLLING);
-  run(b, probe, 5, PAD.up);
+  assert.deepEqual([b.state, b.speed], [REST, table.rolling.top]);
+  assert.deepEqual(run(b, probe, 1, PAD.up), [{ refused: "edge" }]);
+  run(b, probe, 4, PAD.up);
   assert.equal(b.state, REST);
   assert.equal(b.progress, launched);
   assert.deepEqual(blockUnder(b), [17, 15, 17]);
