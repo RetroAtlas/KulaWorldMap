@@ -2361,18 +2361,20 @@ test("a boost button launches the ball three blocks on, and a landing on another
   expect(errors).toEqual([]);
 });
 
-/** Hold the page's clock still, so the level runs only as `stepped` steps it. */
+/** Hold the page's clock still and draw on it, so the level runs only as `stepped` steps it. */
 const frozen = (page) =>
-  page.evaluate(() => {
+  page.evaluate(async () => {
     const real = performance.now.bind(performance);
     let now = real();
     performance.now = () => now;
+    // a hair over, as on the held clock a frame's milliseconds can come to a hair under a frame
     window.__step = (ms) => {
-      now += ms;
+      now += ms + 1e-6;
     };
     window.__thaw = () => {
       performance.now = real;
     };
+    (await import(new URL("js/viewer/draw/render.js", location.href).href)).draw();
   });
 /** Step the frozen level a game frame at a time through `frames` frames, reading on each the frame
     drawn, whether the frame says every invisible block is seen, the strip's status and a hash of
@@ -2574,3 +2576,34 @@ for (const motion of [false, true])
     expect((await station(page)).heading).toBe("-x");
     expect(errors).toEqual([]);
   });
+
+test("a key pressed while the level runs takes no time from it: every frame the clock owes is run", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page);
+  await startPlay(page);
+  await expect.poll(async () => (await probe(page)).frame).toEqual(IDENTITY);
+  await frozen(page);
+  const ran = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw, clock }, { motionTable }] = await Promise.all(
+      ["viewer/draw/render.js", "viewer/data.js"].map(at),
+    );
+    const frame = 1000 / motionTable().hz;
+    const key = (type) =>
+      document.body.dispatchEvent(new KeyboardEvent(type, { key: "ArrowLeft", bubbles: true }));
+    draw();
+    const from = clock();
+    for (let i = 0; i < 10; i++) {
+      window.__step(frame / 2);
+      key("keydown");
+      key("keyup");
+      window.__step(frame / 2);
+      draw();
+    }
+    return clock() - from;
+  });
+  expect(ran).toBe(10);
+  expect(errors).toEqual([]);
+});

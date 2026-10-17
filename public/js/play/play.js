@@ -174,6 +174,7 @@ let live = null;
 const keys = keyPad();
 let last = 0;
 let owed = 0;
+let idle = true;
 let ease = null;
 let redraw = false;
 let measure = () => {};
@@ -519,7 +520,8 @@ const viewNow = () => ({
 // --- the frame ----------------------------------------------------------------------------
 
 function wake() {
-  last = performance.now();
+  // a level that runs keeps the time it is owed; one at rest counts from the press
+  if (idle) last = performance.now();
   drawSoon();
 }
 
@@ -549,19 +551,21 @@ function advance() {
   if (moved) invalidatePick();
 }
 
-/** Step the game frames `dt` ms owe, the level running at rest with Motion on and only while the
-    ball moves or a key is held without it, and the ending's view in the level's place once it
-    has ended, with Motion on alone: whether anything moved. */
-function stepped(dt) {
-  let moved = false;
-  const runs = live.ended
+const running = () =>
+  live.ended
     ? motionOn()
     : motionOn() ||
       moving(live.run.ball) ||
       drives(live.run) ||
       keys.busy() ||
       live.driver !== null;
-  if (runs) {
+
+/** Step the game frames `dt` ms owe, the level running at rest with Motion on and only while the
+    ball moves or a key is held without it, and the ending's view in the level's place once it
+    has ended, with Motion on alone: whether anything moved. */
+function stepped(dt) {
+  let moved = false;
+  if (running()) {
     owed += (dt * motionTable().hz) / 1000;
     while (owed >= 1 && live) {
       owed -= 1;
@@ -571,6 +575,7 @@ function stepped(dt) {
     }
   } else owed = 0;
   if (!live) return moved;
+  idle = !running();
   if (motionOn() && dustAlive()) {
     ageDust(dt / 1000);
     moved = true;
@@ -940,6 +945,7 @@ function startOver() {
   status(start ? null : NO_START);
   keys.clear();
   owed = 0;
+  last = performance.now();
   state.frame = b.frame;
   fit();
   arrive(from);
