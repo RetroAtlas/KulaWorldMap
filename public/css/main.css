@@ -1432,8 +1432,10 @@ body:not(.sidebar-open) .menu-btn .cross {
   font-size: 12px;
   cursor: pointer;
 }
-.tools button:hover {
-  border-color: var(--accent-dim);
+@media (hover: hover) {
+  .tools button:hover {
+    border-color: var(--accent-dim);
+  }
 }
 .tools button[aria-pressed="true"] {
   background: var(--accent);
@@ -1539,9 +1541,13 @@ body.editing #course .status {
   font-size: 18px;
   cursor: pointer;
 }
-.pad button:hover,
 .pad button:focus-visible {
   border-color: var(--accent-dim);
+}
+@media (hover: hover) {
+  .pad button:hover {
+    border-color: var(--accent-dim);
+  }
 }
 .pad button:active {
   background: var(--accent);

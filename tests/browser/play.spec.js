@@ -2080,8 +2080,12 @@ test.describe("with a touch screen", () => {
     const rested = (await probe(page)).station.block;
     await page.waitForTimeout(400);
     expect((await probe(page)).station.block).toEqual(rested);
-    await page.locator("#padBtn").click();
+    // a touch leaves no hover look behind, on the arrow or on the strip's button
+    const border = (sel) => page.locator(sel).evaluate((el) => getComputedStyle(el).borderTopColor);
+    expect(await border('#pad [data-pad="up"]')).toBe(await border('#pad [data-pad="left"]'));
+    await page.locator("#padBtn").tap();
     await expect(page.locator("#pad")).toBeHidden();
+    expect(await border("#padBtn")).toBe(await border("#forgiveBtn"));
     await hold(page, await top(page, [17, 12, 17]));
     await expect(page.locator("#detail")).toContainText("cell 17,12,17");
     expect((await probe(page)).playing).toBe(true);
