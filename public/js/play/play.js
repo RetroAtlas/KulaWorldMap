@@ -168,6 +168,7 @@ let redraw = false;
 let measure = () => {};
 let padShown = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 let forgiving = false;
+let keyed = false;
 let wired = false;
 
 export const playing = () => live !== null;
@@ -1186,7 +1187,8 @@ function keydown(e) {
     return;
   }
   if (live.ended) {
-    const starts = e.key === " " || (e.key === "Enter" && e.target.tagName !== "BUTTON");
+    const starts =
+      e.key === " " || (e.key === "Enter" && !(keyed && e.target.tagName === "BUTTON"));
     if (!(starts || BITS[e.key]) || e.shiftKey || modified(e)) return;
     e.preventDefault();
     e.stopPropagation();
@@ -1425,6 +1427,10 @@ export function bootPlay() {
   wired = true;
   document.addEventListener("keydown", keydown, { capture: true });
   document.addEventListener("keyup", keyup, { capture: true });
+  // read as the focus lands, since by the keydown a clicked button's focus is visible too
+  document.addEventListener("focusin", (e) => {
+    keyed = e.target.matches(":focus-visible");
+  });
   addEventListener("blur", () => {
     held = 0;
   });

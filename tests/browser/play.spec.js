@@ -783,6 +783,14 @@ test("with Motion on the level runs at rest: the strip counts the clock down and
   expect(errors).toEqual([]);
 });
 
+/** Move the keyboard's focus to `button` as Tab does, stepping off it and back. */
+const tabbedTo = async (page, button) => {
+  await button.focus();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Shift+Tab");
+  await expect(button).toBeFocused();
+};
+
 test("time runs out into the strip's verdict with the pad dead and the view let go of the ball, and Space starts the level again with the clock full, the ball on the start and the circuits as loaded", async ({
   page,
 }) => {
@@ -818,22 +826,23 @@ test("time runs out into the strip's verdict with the pad dead and the view let 
   const held = await probe(page);
   expect(held.station).toEqual(over.station);
   expect(held.cam).toEqual(over.cam);
-  // Enter on a focused strip button works the button rather than starting the level again, and
-  // the verdict names the pad while the pad shows
+  // Enter on a strip button the keyboard has moved to works the button rather than starting the
+  // level again, and the verdict names the pad while the pad shows
   const padBtn = page.locator("#padBtn");
   const padWas = await padBtn.getAttribute("aria-pressed");
-  await padBtn.focus();
+  await tabbedTo(page, padBtn);
   await page.keyboard.press("Enter");
   await expect(padBtn).toHaveAttribute("aria-pressed", padWas === "true" ? "false" : "true");
   await expect(status(page)).toHaveText(padWas === "true" ? TIME_UP : TIME_UP_PAD);
   await page.keyboard.press("Enter");
   await expect(padBtn).toHaveAttribute("aria-pressed", padWas);
   await expect(status(page)).toHaveText(padWas === "true" ? TIME_UP_PAD : TIME_UP);
-  await padBtn.blur();
   await flipped(page, 1, 7);
   expect(await presses(page)).toEqual([[1, [7]]]);
+  // Space starts the level again whatever has the focus
   await page.keyboard.press(" ");
   await expect(status(page)).toHaveText("");
+  await expect(padBtn).toHaveAttribute("aria-pressed", padWas);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await expect(clockLine(page)).toHaveText("Time 2");
   await expect(say(page)).toContainText(
@@ -848,6 +857,72 @@ test("time runs out into the strip's verdict with the pad dead and the view let 
   await page.keyboard.down("ArrowUp");
   await expect.poll(async () => (await probe(page)).station.face).not.toBe(0);
   await page.keyboard.up("ArrowUp");
+  expect(errors).toEqual([]);
+});
+
+test("Enter starts the level again after a button was clicked, the sidebar's or the strip's, and is left to a strip button the keyboard has moved to, which Space is not", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await timed(page, 2);
+  await expect(page.locator("#chipLine")).toContainText("time 2");
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  await expect(page.locator("#chipLine")).toContainText("2 objects");
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await startPlay(page);
+  const ended = async (verdict) => {
+    await page.keyboard.down("ArrowUp");
+    await expect(status(page)).toHaveText(verdict, { timeout: 10_000 });
+    await page.keyboard.up("ArrowUp");
+    await expect(line(page)).toHaveText(ENDED);
+  };
+  const started = async () => {
+    await expect(status(page)).toHaveText("");
+    await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+    await expect(clockLine(page)).toHaveText("Time 2");
+  };
+  // the sidebar's new button keeps the focus its click left it, and Enter starts the level again
+  // rather than making a draft
+  await ended(TIME_UP);
+  await expect(page.locator("#draftNew")).toBeFocused();
+  await page.keyboard.press("Enter");
+  await started();
+  await expect(page.locator("#chipLine")).toContainText("time 2");
+  // so does a strip button clicked with the mouse, which Enter leaves as the click left it
+  await ended(TIME_UP);
+  const padBtn = page.locator("#padBtn");
+  const padWas = await padBtn.getAttribute("aria-pressed");
+  const padNow = padWas === "true" ? "false" : "true";
+  await padBtn.click();
+  await expect(padBtn).toHaveAttribute("aria-pressed", padNow);
+  await expect(status(page)).toHaveText(padNow === "true" ? TIME_UP_PAD : TIME_UP);
+  await expect(padBtn).toBeFocused();
+  await page.keyboard.press("Enter");
+  await started();
+  await expect(padBtn).toHaveAttribute("aria-pressed", padNow);
+  // a strip button Tab has moved to keeps Enter, which presses it, and the level stays ended
+  await ended(padNow === "true" ? TIME_UP_PAD : TIME_UP);
+  await tabbedTo(page, padBtn);
+  await page.keyboard.press("Enter");
+  await expect(padBtn).toHaveAttribute("aria-pressed", padWas);
+  await expect(status(page)).toHaveText(padWas === "true" ? TIME_UP_PAD : TIME_UP);
+  await expect(line(page)).toHaveText(ENDED);
+  const forgive = page.locator("#forgiveBtn");
+  await tabbedTo(page, forgive);
+  await page.keyboard.press("Enter");
+  await expect(forgive).toHaveAttribute("aria-pressed", "true");
+  await expect(line(page)).toHaveText(ENDED);
+  await page.keyboard.press("Enter");
+  await expect(forgive).toHaveAttribute("aria-pressed", "false");
+  await expect(line(page)).toHaveText(ENDED);
+  await page.keyboard.press(" ");
+  await started();
+  await expect(forgive).toHaveAttribute("aria-pressed", "false");
   expect(errors).toEqual([]);
 });
 
