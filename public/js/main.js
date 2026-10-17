@@ -63,7 +63,10 @@ const HELP = [
     "arrows",
     "while playing: up rolls the ball ahead for as long as it is held, left and right turn it, and down turns it about with the setting on",
   ],
-  ["`Space`", "while playing: jump, or hop in place; once the level has ended, start it again"],
+  [
+    "`Space`",
+    "while playing: jump, or hop in place; once the level has ended, start it again, as Enter does",
+  ],
   ["`s`", "settings"],
   ["`c`", "start camera"],
   ["`/`", "search"],
