@@ -1027,11 +1027,13 @@ test("left alone, the ending's view runs the length of the slower swing and the 
   await expect(status(page)).toHaveText(TIME_UP_MARKED, { timeout: 10_000 });
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
-  await expect.poll(async () => (await probe(page)).frame).toBeNull();
-  const left = await probe(page);
-  expect(left.playing).toBe(false);
-  expect(left.cam).toEqual(before.cam);
-  expect(left.target).toEqual(before.target);
+  // the ending has let the frame go already, so the wait is for the view the ease lands on
+  await expect
+    .poll(async () => {
+      const { playing, frame, cam, target } = await probe(page);
+      return { playing, frame, cam, target };
+    })
+    .toEqual({ playing: false, frame: null, cam: before.cam, target: before.target });
   expect(errors).toEqual([]);
 });
 
