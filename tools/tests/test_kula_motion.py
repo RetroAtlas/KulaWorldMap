@@ -113,6 +113,7 @@ GAME = {
     "jump.long": 3, "jump.catch": 12, "jump.wall": 412, "jump.wall.high": 412, "jump.wall.low": 100,
     "jump.bounce": -10, "jump.ceiling": 412, "jump.ceiling.ahead": 412, "jump.ceiling.behind": 101,
     "jump.snap": 1024, "jump.far": 1536, "boost.type": 10, "boost.roll": 151, "boost.frames": 10, "boost.fire": 231,
+    "jump.arm": 1, "jump.keep": 2,
     "hop.rows": 8, "hop.skip": 2, "hop.step": -1, "hop.ahead": 6, "hop.row": 2,
     "body.one": 4096, "body.one.landing": 4096, "body.mark.wrap": 1, "body.mark.wall": 2, "body.mark.right": 3,
     "body.mark.left": 4, "body.test.wrap": 1, "body.test.right": 3, "body.test.left": 4, "body.test.wall": 2,
@@ -617,6 +618,7 @@ class Jump(unittest.TestCase):
         self.assertEqual((j["speed"], j["skip"], j["snap"], j["far"], j["long"], j["scale"]), (33, 2, 1024, 1536, 3, [3, 2]))
         self.assertEqual((j["catch"], j["wall"], j["low"], j["bounce"], j["recentre"]), (12, 412, 100, -10, 8))
         self.assertEqual(j["boost"], {"roll": 151, "frames": 10, "fire": 231})
+        self.assertEqual((j["arm"], j["keep"]), (1, 2))
 
     def test_a_jump_at_another_speed_or_landing_elsewhere_stops_the_reading(self):
         for change in ({"jump.speed": 30}, {"jump.snap": 512}, {"jump.far": 1024}, {"jump.rows": 6},
@@ -627,6 +629,11 @@ class Jump(unittest.TestCase):
     def test_a_wall_met_elsewhere_than_a_roll_meets_it_stops_the_reading(self):
         for change in ({"jump.wall": 400}, {"jump.ceiling.ahead": 400}, {"jump.wall.low": 90},
                        {"jump.ceiling.behind": 100}, {"jump.recentre": 4}, {"jump.bounce": -5}, {"boost.type": 9}):
+            with self.assertRaises(SystemExit):
+                jump({**GAME, **change})
+
+    def test_a_long_jump_word_that_would_not_survive_to_the_jump_or_would_land_it_long_stops_the_reading(self):
+        for change in ({"jump.arm": 2}, {"jump.keep": 1}, {"jump.keep": 4}):
             with self.assertRaises(SystemExit):
                 jump({**GAME, **change})
 

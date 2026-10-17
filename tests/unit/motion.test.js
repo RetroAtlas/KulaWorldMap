@@ -608,6 +608,9 @@ test("the jump's table holds a count of 33 and 32 rows that rise to 458 and reac
     [rule.speed, rule.snap, rule.far, rule.long, rule.scale, rule.catch, rule.wall],
     [33, 1024, 1536, 3, [3, 2], 12, 412],
   );
+  // the long jump's word: armed at 1 by the launch, kept outside the jump while under 2
+  assert.deepEqual([rule.arm, rule.keep], [1, 2]);
+  assert.deepEqual(rule.boost, { roll: 151, frames: 10, fire: 231 });
 });
 
 test("a ball's corner shows 89 of 256 of its colour facing away from the light, and all of it facing it", () => {
