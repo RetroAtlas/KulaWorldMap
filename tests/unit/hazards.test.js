@@ -7,6 +7,7 @@ import {
   setObjects,
   setAnnotations,
   index,
+  framesOn,
   markerState,
   markerCircuit,
 } from "../../public/js/viewer/data.js";
@@ -26,7 +27,8 @@ import {
   positionOf,
 } from "../../public/js/play/ball.js";
 import { startRun, frame, heeds, restart, revive, stand } from "../../public/js/play/rules.js";
-import { probeOf } from "../../public/js/play/world.js";
+import { frameShown, probeOf } from "../../public/js/play/world.js";
+import { glowing } from "../../public/js/viewer/motion.js";
 
 setObjects(objects);
 setAnnotations(annotations);
@@ -209,6 +211,36 @@ test("a switch is thrown as the progress word the hazards read enters the band, 
   assert.equal(back.filter((f) => has(f, "threw")).length, 1, "thrown again on the way back");
   assert.equal(live.circuits.presses.get(2).length, 2);
   assert.equal(live.circuits.on(sw), true);
+});
+
+test("a switch thrown on the run's frame n is stamped n, and the frame the map draws at after that frame is n, so the flip shows as the game's draw of frame n shows it: the device it turns on has moved nothing yet and its light counts from there, dark through the eighteenth frame drawn after and lit on the nineteenth, and the one it turns off keeps its light for that frame alone", () => {
+  const live = begin(level(row(10, 18), [start(), on(15, SWITCH, { colour: 2 })]));
+  const frames = trace(live, 200, PAD.up, (l) => l.circuits.presses.has(2));
+  const [stamp] = live.circuits.presses.get(2);
+  const n = frames.at(-1).frame - 1;
+  assert.equal(stamp, n, "stamped with the frame the hazards ran in");
+  assert.equal(frameShown(live), n, "which is the frame the map draws at after it");
+  const { every } = motion.glow;
+  assert.equal(framesOn(false, [stamp], frameShown(live)), 0, "turned on, moved nothing yet");
+  assert.equal(framesOn(true, [stamp], frameShown(live)), n, "turned off, moved to this frame");
+  assert.equal(
+    glowing(every, true, [stamp], frameShown(live)),
+    glowing(every, true, [], frameShown(live)),
+    "its light unchanged this frame",
+  );
+  const lit = [];
+  for (let k = 0; k <= every; k++) {
+    frame(live, 0);
+    assert.equal(frameShown(live), n + 1 + k, "the drawn frame runs on with the frames run");
+    lit.push(glowing(every, false, [stamp], frameShown(live)));
+  }
+  assert.deepEqual(
+    lit,
+    [...Array(every - 1).fill(false), true, true],
+    "dark for the count, then lit",
+  );
+  assert.equal(framesOn(false, [stamp], frameShown(live)), every + 1, "on since the throw");
+  assert.equal(glowing(every, true, [stamp], frameShown(live)), false, "turned off, dark since");
 });
 
 test("a switch is left while the ball stands more than the band's reach off the middle across, and thrown as it is drawn back within it", () => {
@@ -595,8 +627,8 @@ test("spikes under the ball kill it at once, frozen and marked dying for the spi
   assert.equal(live.words.outcome, play.ending.spikes);
 });
 
-test("the moving spikes kill while the table's list says their flag held the deadly value on the frame before, which the hazards read, with the standing wait, are harmless outside it, and after a landing on them take the spikes' own wait", () => {
-  const { harm } = motion.types[String(MOVING_SPIKES)];
+test("the moving spikes kill while the table's list says their flag held the deadly value on the frame before, which the hazards read, with the standing wait, are harmless outside it, and after a landing on them take the spikes' own wait, and the map's picture has them flat on the frame a phase that opens down kills and off the ground on the frame after", () => {
+  const { harm, cycle } = motion.types[String(MOVING_SPIKES)];
   for (const phase of [0, 1, 2, 3]) {
     const deadly = DEADLY[phase];
     const l = level(row(10, 18), [start(), on(15, MOVING_SPIKES, { colour: phase })]);
@@ -618,6 +650,15 @@ test("the moving spikes kill while the table's list says their flag held the dea
       [{ dying: { cause: "spikes", wait: harm.standing } }],
     );
     assert.deepEqual([live.words.frozen, live.words.dying], [1, 1]);
+    const shown = cycle[phase][frameShown(live) % cycle[phase].length];
+    if (deadly.at(-1)) assert.ok(shown > 0, `phase ${phase}: up on the frame they kill`);
+    else {
+      assert.equal(shown, 0, `phase ${phase}: flat on the frame they kill`);
+      assert.ok(
+        cycle[phase][frameShown(live) + 1] > 0,
+        `phase ${phase}: off the ground on the frame after`,
+      );
+    }
     const frozen = trace(live, 20, 0, over);
     assert.equal(frozen.length, harm.standing - 1);
   }

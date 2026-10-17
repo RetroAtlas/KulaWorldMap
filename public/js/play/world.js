@@ -171,7 +171,9 @@ function emptied(lattice, gone) {
 }
 
 const kindAt = (world, cell) => world.kinds.get(cellKey(...cell));
-const atFrame = (live) => live.words.frame ?? 0;
+/** The frame the level stands at between the game's frames: the last one run, which the frame draws
+    and the next frame's read of the cells about the ball sees, and the first before any has run. */
+export const frameShown = (live) => Math.max(0, (live.words.frame ?? 0) - 1);
 const sameCell = (a, b) => a.every((v, i) => v === b[i]);
 
 /** Where the platform at `key` stands less its home, in the game's units. */
@@ -211,16 +213,18 @@ export function standingOf(live) {
   const b = live.ball;
   if (b.riding) return live.world.standing.get(PLATFORM);
   const under = add(cellOf(b), b.n, -1);
-  return standingAt(live.world, under, faceUnder(b), atFrame(live)) ?? live.words.standing;
+  return standingAt(live.world, under, faceUnder(b), frameShown(live)) ?? live.words.standing;
 }
 
-/** The lattice as the ball's rules ask it, over the world as it stands at the run's frame: a
-    vanishing block is there on the frames its cycle says, a gone block never, and a platform's
-    body where the platform stands now, its home cell empty while it is away; to a ball riding a
-    platform the platform's own blocks at home are solid and nothing else. */
+/** The lattice as the ball's rules ask it, over the world as the last frame's step left it, which
+    is what the game's read of the cells about the ball sees: a vanishing block is there where its
+    cycle's entry for the frame before says so, the entry the frame drawn before showed, a gone
+    block never, and a platform's body where the platform stands now, its home cell empty while it
+    is away; to a ball riding a platform the platform's own blocks at home are solid and nothing
+    else. */
 export function probeOf(live) {
   const world = () => live.world;
-  const value = (cell) => world().probe.value(cell, atFrame(live));
+  const value = (cell) => world().probe.value(cell, frameShown(live));
   const filled = (cell) =>
     (value(cell) >= 0 && kindAt(world(), cell) !== PLATFORM) ||
     (inside(cell) && platformAt(world(), cell) !== null);
@@ -236,7 +240,7 @@ export function probeOf(live) {
     slick: (cell) => kindAt(world(), cell) === ICE,
     brittle: (cell) => kindAt(world(), cell) === CRUMBLING,
     value,
-    standing: (cell, face) => standingAt(world(), cell, face, atFrame(live)),
+    standing: (cell, face) => standingAt(world(), cell, face, frameShown(live)),
   };
 }
 

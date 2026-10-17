@@ -729,10 +729,11 @@ test("with Motion off a step snaps and nothing draws once the ball rests, the le
   await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 17, 17]);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   expect(await drawn(page)).toBe(0);
-  // the frames the roll took, the level's opening ones among them, and no more while it rests
+  // the frame drawn is the last the roll ran, the level's opening ones among them, the clock
+  // having ticked once on each frame run, and no more while it rests
   const ran = await frameAt(page);
   expect(ran).toBeGreaterThan(18);
-  await expect(clockLine(page)).toHaveText(`Time ${Math.floor((99 * 50 - ran) / 50)}`);
+  await expect(clockLine(page)).toHaveText(`Time ${Math.floor((99 * 50 - ran - 1) / 50)}`);
   await page.waitForTimeout(300);
   expect(await frameAt(page)).toBe(ran);
   await page.keyboard.press("Escape");

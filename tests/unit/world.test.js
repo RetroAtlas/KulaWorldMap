@@ -4,7 +4,7 @@ import { objects, mapData, annotations } from "./fixtures.js";
 import { state } from "../../public/js/viewer/state.js";
 import { cellKey, FACE_NORMAL } from "../../public/js/format/lattice.js";
 import { setObjects, setAnnotations, index, objectId } from "../../public/js/viewer/data.js";
-import { blockPhase, phasesOf } from "../../public/js/viewer/motion.js";
+import { phasesOf } from "../../public/js/viewer/motion.js";
 import { ballAt } from "../../public/js/play/ball.js";
 import {
   worldOf,
@@ -14,6 +14,7 @@ import {
   viewOf,
   took,
   fell,
+  frameShown,
   keysOf,
   shiftOf,
   platformAt,
@@ -530,7 +531,7 @@ test("fell empties a block's cell: nothing stands or rolls on it, the walkers' p
   assert.deepEqual(again.markers.get(key([12, 10, 17])), []);
 });
 
-test("the probe reads a vanishing block solid on the frames its cycle has it in the lattice and empty while it is absent, the word under the ball nothing meanwhile", () => {
+test("the probe answers the lattice as the last frame's step left it, the cycle's entry for the frame before the one running, so a vanishing block is solid from the frame after the first it is drawn there to the frame after the last, and empty, the word under the ball nothing, from the frame after the first it is drawn absent, the first frame reading the first entry", () => {
   const vanishing = { ...own(11, 10, 17, 7, 0), f: [2, ...Array(10).fill(0)] };
   const l = level(row(10, 12, 10, 17), [vanishing]);
   const idx = index(l);
@@ -544,25 +545,32 @@ test("the probe reads a vanishing block solid on the frames its cycle has it in 
   const at = (frame) => {
     live.words.frame = frame;
     return {
+      shown: frameShown(live),
       solid: p.solid([11, 10, 17]),
       value: p.value([11, 10, 17]),
       standing: standingOf(live),
       standable: p.standable([11, 10, 17], TOP),
-      state: blockPhase(entry, l.records[0], frame).state,
     };
   };
-  for (const f of [0, absent - 1, back, cycle.length - 1]) {
+  assert.equal(at(0).shown, 0, "before any frame has run, the first frame's own entry");
+  assert.equal(
+    at(1).shown,
+    0,
+    "the first frame's read sees the first entry, which is the loader's lattice",
+  );
+  assert.equal(at(absent + 1).shown, absent, "a frame's read sees the step before it");
+  for (const f of [0, 1, absent, back + 1, cycle.length]) {
     const seen = at(f);
-    assert.notEqual(seen.state, 0, `frame ${f}: in the lattice`);
+    assert.notEqual(cycle[seen.shown], 0, `frame ${f}: in the lattice`);
     assert.deepEqual(
       [seen.solid, seen.value, seen.standing, seen.standable],
       [true, mapData.firstRecord, entry.standing, true],
       `frame ${f}`,
     );
   }
-  for (const f of [absent, back - 1, cycle.length + absent]) {
+  for (const f of [absent + 1, back, cycle.length + absent + 1]) {
     const seen = at(f);
-    assert.equal(seen.state, 0, `frame ${f}: absent`);
+    assert.equal(cycle[seen.shown % cycle.length], 0, `frame ${f}: absent`);
     assert.deepEqual(
       [seen.solid, seen.value, seen.standing, seen.standable],
       [false, -1, -1, false],

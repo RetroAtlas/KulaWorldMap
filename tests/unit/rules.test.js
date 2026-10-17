@@ -763,7 +763,7 @@ test("relevel carries what was taken where the level still holds it, and counts 
   assert.equal(bonus.words.unmarked, 5 - marked);
 });
 
-test("a vanishing block drops the ball at rest on it on the first frame its cycle has it absent, which is the frame the map draws it absent, and the word under the ball reads nothing from that frame", () => {
+test("a vanishing block drops the ball at rest on it on the frame after the first its cycle has it absent, whose read of the cells about the ball finds the cell empty, as the game's read sees the step before, the map having drawn it absent the frame before, and the word under the ball reads nothing from that frame", () => {
   const l = level([...row(10, 18), [17, 15, 19]], [start(), vanishing(15, 2)]);
   const live = begin(l, { cell: [17, 15, 17], face: TOP, h: UP });
   live.words.wait = 0;
@@ -777,16 +777,18 @@ test("a vanishing block drops the ball at rest on it on the first frame its cycl
     frame(live, 0);
     if (live.ball.state === FALL) dropped = live.words.frame - 1;
   }
-  assert.equal(dropped, absent, "the frame whose read finds the cell empty");
-  assert.equal(blockPhase(entry, r, dropped).state, 0);
-  assert.notEqual(blockPhase(entry, r, dropped - 1).state, 0);
+  assert.equal(dropped, absent + 1, "the frame whose read finds the cell empty");
+  assert.equal(blockPhase(entry, r, dropped - 1).state, 0, "the step before it took the block out");
+  assert.notEqual(blockPhase(entry, r, dropped - 2).state, 0);
   assert.equal(live.ball.v, motion.types["30"].fall.start);
   assert.equal(live.words.standing, -1, "nothing under the ball from the same read");
   while (live.ball.state === FALL && live.words.frame < 400) frame(live, 0);
   assert.equal(live.ball.state, REST);
   assert.deepEqual(blockUnder(live.ball), [17, 15, 19], "down on the block below");
   const back = entry.cycle[2].findIndex((s, i) => i > absent && s !== 0);
-  while (live.words.frame < back + 1) frame(live, 0);
+  while (live.words.frame < back) frame(live, 0);
+  assert.equal(probeOf(live).solid([17, 15, 17]), false, "absent to the frame drawn absent last");
+  frame(live, 0);
   assert.equal(probeOf(live).solid([17, 15, 17]), true, "in the lattice again as it fades in");
 });
 
@@ -809,7 +811,7 @@ test("nothing refuses a roll onto a vanishing block about to go: the ball rolls 
   assert.ok(!events.some((e) => e.refused || e.face));
   assert.equal(live.ball.state, FALL);
   const dropped = live.words.frame - 1;
-  assert.equal(cycle[dropped], 0, "absent as the roll's drop read it");
+  assert.equal(cycle[dropped - 1], 0, "absent as the roll's drop read it, by the step before");
   assert.ok(
     live.ball.progress >= ROLL.over[0] && live.ball.progress <= ROLL.over[1],
     String(live.ball.progress),

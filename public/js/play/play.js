@@ -72,7 +72,7 @@ import {
 } from "./ball.js";
 import { frame as gameFrame, heeds, relevel, restart, revive, stand, startRun } from "./rules.js";
 import { courseDriver } from "./drive.js";
-import { probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
+import { frameShown, probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
 const BALL_TYPE = 30;
 // the ball's key among the frame's travellers, which no thing of the level's answers to
@@ -221,13 +221,14 @@ const tablesOf = () => ({
     one truth. */
 const circuitsOf = () => ({ on: (m) => markerNow(m) === "on", lit: litNow, flip });
 
-/** What the frame draws at and with while the ball is on the map: play's frame, the ending's
-    view's frames added once the level has ended, the level's index less what the ball has taken,
-    and the walkers where the rules have stepped them. */
+/** What the frame draws at and with while the ball is on the map: the frame the rules last ran,
+    which is the one the game's draw shows, the ending's view's frames added once the level has
+    ended, the level's index less what the ball has taken, and the walkers where the rules have
+    stepped them. */
 const source = (l) =>
   live && l === live.level
     ? {
-        frame: live.run.words.frame + (live.ended?.frame ?? 0),
+        frame: frameShown(live.run) + (live.ended?.frame ?? 0),
         idx: drawnIndex(live.run),
         travel: travelOf(live.run),
       }

@@ -1,7 +1,17 @@
 // The game's frame over the ball and the level: the clock, the guard, the wait, the pad, what is
 // under the ball and what it takes, in the executable's order, over pad words from any source.
 import { PAD, alight, aloft, ballAt, blockUnder, cellOf, place, read, run } from "./ball.js";
-import { KEY, fell, keysOf, probeOf, shiftOf, standingOf, took, worldOf } from "./world.js";
+import {
+  KEY,
+  fell,
+  frameShown,
+  keysOf,
+  probeOf,
+  shiftOf,
+  standingOf,
+  took,
+  worldOf,
+} from "./world.js";
 import { contact } from "./contact.js";
 import {
   INVINCIBLE,
@@ -227,7 +237,7 @@ function hazards(live, out) {
 function readCells(live) {
   const w = live.words;
   w.standing = standingOf(live);
-  w.cell = live.world.probe.value(cellOf(live.ball), w.frame);
+  w.cell = live.world.probe.value(cellOf(live.ball), frameShown(live));
 }
 
 /** One game frame with `pad` as held: what happened, as events. The frame the clock runs out on
