@@ -1014,6 +1014,23 @@ test("the shadow's height is the centre's off the block under it, and nothing ov
   assert.ok(over !== null && over > 0 && over < 2 * UNIT, String(over));
 });
 
+test("over a block the probe no longer holds a ball at rest has no shadow's height, on the frames before its drop as after", () => {
+  const probe = row(15, 18);
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  rest(b, probe);
+  assert.equal(clearance(b, probe), 100);
+  const gone = row(15, 17);
+  assert.equal(b.state, REST);
+  assert.equal(clearance(b, gone), Infinity);
+  // the rest state drops the ball by the last frame's read, so it stands a frame over the gap
+  run(b, gone, 1, 0);
+  assert.equal(b.state, REST);
+  assert.equal(clearance(b, gone), Infinity);
+  run(b, gone, 1, 0);
+  assert.equal(b.state, FALL);
+  assert.equal(clearance(b, gone), Infinity);
+});
+
 test("read then run is step, frame for frame, over a roll, two turns, two jumps and a turn about", () => {
   const probe = plate();
   const a = ballAt(RULES, [17, 18, 17], TOP, UP);

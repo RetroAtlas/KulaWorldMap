@@ -111,11 +111,11 @@ export const blockUnder = (b) =>
 export const faceUnder = (b) => faceOf(b.n);
 /** The centre's distance off the face it stands on, in game units. */
 export const heightOf = (b) => dot(add(b.pos, standingOn(b), -b.unit), b.n) - b.half;
-/** The centre's distance off the face below it, for the shadow: in the air, the block under
-    the ball's cell, or nothing at all, Infinity, where that cell holds no block. */
+/** The centre's distance off the face below it, for the shadow: the block the ball stands on,
+    or in the air the block under the ball's cell, and nothing at all, Infinity, where the probe
+    holds no block there, as under a ball still at rest over a block that has gone. */
 export function clearance(b, probe) {
-  if (!aloft(b)) return heightOf(b);
-  const under = add(cellOf(b, b.pos), b.n, -1);
+  const under = aloft(b) ? add(cellOf(b, b.pos), b.n, -1) : standingOn(b);
   return probe.solid(under) ? dot(add(b.pos, under, -b.unit), b.n) - b.half : Infinity;
 }
 /** The centre in blocks, in the level. */

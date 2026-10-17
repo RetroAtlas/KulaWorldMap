@@ -411,6 +411,25 @@ const turnedThrough = (page, until) =>
     }
     return out;
   }, until);
+/** The height the ball is handed to the frame with, for its shadow, finite or null, and whether
+    the page has said a block is gone, on every animation frame until no ball is handed, the level
+    having ended, or 8 s pass. */
+const shadowed = (page) =>
+  page.evaluate(async () => {
+    const P = await import(new URL("js/play/play.js", location.href).href);
+    const out = [];
+    const end = performance.now() + 8000;
+    while (performance.now() < end) {
+      const g = P.handed();
+      if (!g) break;
+      out.push({
+        gone: /is gone/.test(document.getElementById("say").textContent),
+        height: Number.isFinite(g.height) ? g.height : null,
+      });
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    return out;
+  });
 /** Keep every sentence the live region says from here on. */
 const listening = (page) =>
   page.evaluate(() => {
@@ -1946,7 +1965,7 @@ test("on fire the ball reddens: where it stands its pixels are redder on the who
   expect(errors).toEqual([]);
 });
 
-test("a crumbling block breaks under the ball, scoring, and is gone a third of a second later, out of the frame, the ball falling with it", async ({
+test("a crumbling block breaks under the ball, scoring, and is gone a third of a second later, out of the frame, the ball falling with it and casting no shadow from the frame the block goes", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -1964,7 +1983,9 @@ test("a crumbling block breaks under the ball, scoring, and is gone a third of a
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await listening(page);
-  // with Motion on the level runs at rest, so the block goes while the ball stands on it
+  // with Motion on the level runs at rest, so the block goes while the ball stands on it, and
+  // the ball stands a frame or two over the gone block before the game drops it
+  const sampled = shadowed(page);
   await page.keyboard.press("ArrowUp");
   await expect
     .poll(async () => (await probe(page)).station.block, { intervals: [25] })
@@ -1976,6 +1997,11 @@ test("a crumbling block breaks under the ball, scoring, and is gone a third of a
   const heard = await said(page);
   expect(heard).toContain(BROKE);
   expect(heard).toContain(GONE);
+  const frames = await sampled;
+  const gone = frames.findIndex((f) => f.gone);
+  expect(gone).toBeGreaterThan(0);
+  expect(frames.slice(0, gone).every((f) => f.height !== null)).toBe(true);
+  expect(frames.slice(gone).every((f) => f.height === null)).toBe(true);
   expect(errors).toEqual([]);
 });
 
