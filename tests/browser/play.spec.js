@@ -34,7 +34,8 @@ const GONE = "The crumbling block at 17,16,17 is gone.";
 const TAKEN = "Taken: Coin (bronze) on the top";
 const SENDING = "The teleporter is sending the ball.";
 const RIDING = "The ball rides the platform.";
-const FOLLOWING = "Following the route; an arrow, Space or the pad takes the ball back.";
+const FOLLOWING = "Following the route; an arrow or Space takes the ball back.";
+const FOLLOWING_PAD = "Following the route; an arrow, Space or the pad takes the ball back.";
 const FOLLOWED = "The route is done: the ball stands at its last stop.";
 const AT_LEAP = "The route leaps from here, which the ball cannot follow.";
 const NO_FIRST_STOP = "The route's first stop has nothing to stand on.";
@@ -1253,6 +1254,41 @@ test("Follow the route rolls the ball along the planned route to its last stop a
   expect(taken[1]).toBeGreaterThanOrEqual(17);
   await page.waitForTimeout(400);
   expect((await probe(page)).station.block).toEqual(taken);
+  expect(errors).toEqual([]);
+});
+
+test("the Follow line names the pad only while it shows, following the Pad button as it is pressed", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false });
+  // a route round the level, long enough to be followed through the checks
+  await page.keyboard.press("u");
+  await stopOn(page, [17, 15, 17]);
+  await stopOn(page, [20, 15, 17]);
+  await stopOn(page, [20, 18, 17]);
+  await stopOn(page, [17, 18, 17]);
+  await expect(page.locator("#courseLine")).toHaveText("Route planner · 5 stops");
+  await startPlay(page);
+  await listening(page);
+  const padBtn = page.locator("#padBtn");
+  await padBtn.click();
+  await expect(page.locator("#pad")).toBeVisible();
+  const follow = page.locator("#followBtn");
+  await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  await expect(status(page)).toHaveText(FOLLOWING_PAD);
+  expect(await said(page)).toContain(FOLLOWING_PAD);
+  await padBtn.click();
+  await expect(page.locator("#pad")).toBeHidden();
+  await expect(status(page)).toHaveText(FOLLOWING);
+  await padBtn.click();
+  await expect(page.locator("#pad")).toBeVisible();
+  await expect(status(page)).toHaveText(FOLLOWING_PAD);
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("ArrowLeft");
+  await expect(follow).toHaveAttribute("aria-pressed", "false");
+  await expect(status(page)).toHaveText("");
   expect(errors).toEqual([]);
 });
 

@@ -146,7 +146,8 @@ const AGAIN = "Space or Enter starts the level again.";
 const AGAIN_PAD = "Space, Enter or a tap on the pad starts the level again.";
 const KEPT = "The way the ball has come is now the route.";
 const ROUTE_STANDS = "A route already stands; clear it to keep the walk.";
-const FOLLOWING = "Following the route; an arrow, Space or the pad takes the ball back.";
+const FOLLOWING = "Following the route; an arrow or Space takes the ball back.";
+const FOLLOWING_PAD = "Following the route; an arrow, Space or the pad takes the ball back.";
 const NO_FIRST_STOP = "The route's first stop has nothing to stand on.";
 const DONE_WHY = {
   end: "The route is done: the ball stands at its last stop.",
@@ -598,7 +599,7 @@ function played() {
   if (live.driver) {
     const why = live.driver.done(run);
     if (why) followed(why);
-    else if (!live.status) status(FOLLOWING);
+    else if (!live.status) status(following());
   }
   const death = deathOf(run.words);
   if (death) status(DYING[death], true);
@@ -984,6 +985,10 @@ function routing() {
   follow.setAttribute("aria-pressed", String(live?.driver != null));
 }
 
+/** The strip's word while the ball follows the route, the pad named while it shows. */
+const following = () => (padShown ? FOLLOWING_PAD : FOLLOWING);
+const isFollowing = (text) => text === FOLLOWING || text === FOLLOWING_PAD;
+
 /** Roll the ball along the planned route from the stop it stands on, or from the first stop,
     where it is put, when it stands on none or on the last; pressed again, let the ball go. */
 function followRoute() {
@@ -1011,8 +1016,8 @@ function followRoute() {
   live.driver = courseDriver(route, i);
   live.route = route;
   routing();
-  status(FOLLOWING);
-  say(placed + FOLLOWING);
+  status(following());
+  say(placed + following());
   wake();
 }
 
@@ -1021,7 +1026,7 @@ function retire() {
   if (!live?.driver) return;
   live.driver = null;
   live.route = null;
-  if (live.status === FOLLOWING) status(null);
+  if (isFollowing(live.status)) status(null);
   routing();
 }
 
@@ -1147,6 +1152,7 @@ function wirePad() {
   $("padBtn").onclick = () => {
     padShown = !padShown;
     if (live?.ended) status(verdict());
+    else if (isFollowing(live?.status)) status(following());
     reframe();
   };
   $("forgiveBtn").onclick = () => {
