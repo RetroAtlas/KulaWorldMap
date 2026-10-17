@@ -2,7 +2,7 @@
 
 ## What and why
 
-Choosing a world is the one texture choice the game offers a level: the ten `.TGI` files are the artwork, one a world, and a level wears the artwork of the world whose pack it lies in ([docs/tgi.md](../docs/tgi.md)). The editor keeps to that, with `world` the project's one word for the look, and the user asked for custom textures as a later slice. A texture of one's own would mean rewriting a world's artwork on the disc and drawing a draft with it in the viewer, and both sides have constraints the artwork's reading settled, so the shape of the feature is known even though none of it is built.
+Choosing a world is the one texture choice the game offers a level: the ten `.TGI` files are the artwork, one a world, and a level wears the artwork of the world whose pack it lies in ([docs/tgi.md](../docs/tgi.md)). The editor keeps to that, with `world` the project's one word for the look, and custom textures are a later slice. A texture of one's own would mean rewriting a world's artwork on the disc and drawing a draft with it in the viewer, and both sides have constraints the artwork's reading settled, so the shape of the feature is known even though none of it is built.
 
 ## Sketch
 
