@@ -1115,7 +1115,7 @@ test("frozen, the ball's state, its move and its landing stand still while a ram
   assert.deepEqual(blockUnder(e), [17, 14, 19]);
 });
 
-test("a ball at rest whose block goes falls at the fall's start, and lands on the block below", () => {
+test("a ball at rest whose block goes falls at the fall's start on the frame after the one whose read finds the block gone, and lands on the block below", () => {
   const gone = new Set();
   const base = row(15, 18, [[17, 18, 19]]);
   const probe = { solid: (c) => !gone.has(cellKey(...c)) && base.solid(c) };
@@ -1124,6 +1124,9 @@ test("a ball at rest whose block goes falls at the fall's start, and lands on th
   assert.equal(b.state, REST);
   gone.add(cellKey(17, 18, 17));
   const at = [...b.pos];
+  assert.deepEqual(run(b, probe, 1, 0), []);
+  assert.equal(b.state, REST, "at rest by the last frame's read, this frame's finding it gone");
+  assert.equal(b.floor, false);
   assert.deepEqual(run(b, probe, 1, 0), []);
   assert.equal(b.state, FALL);
   assert.equal(b.v, table.fall.start);
@@ -1612,7 +1615,9 @@ test("a hop while riding leaves the platform and comes down on its body as on st
   assert.equal(b.state, REST, "standing while the body still fills its cell");
   at.travel = [-1500, 0, 0];
   run(b, probe, 1, 0);
-  assert.equal(b.state, FALL, "dropped as the body moves on from under it");
+  assert.equal(b.state, REST, "standing on the frame whose read finds the body gone from under it");
+  run(b, probe, 1, 0);
+  assert.equal(b.state, FALL, "dropped on the frame after, by that read");
   assert.equal(b.v, table.fall.start);
   const again = ridden();
   assert.deepEqual(run(again.b, again.probe, 1, PAD.cross), [{ alit: { key: "rail" } }]);

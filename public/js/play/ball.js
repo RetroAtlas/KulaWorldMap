@@ -72,6 +72,8 @@ export function ballAt(rules, cell, face, h) {
     arc: 0,
     wrapped: false,
     held: [...cell],
+    floor: true,
+    brittle: false,
     v: 0,
     count: 0,
     row: 0,
@@ -161,11 +163,11 @@ function drop(b) {
   b.v = b.table.fall.start;
 }
 
-/** Laid its radius off its face at rest, and dropped where the block under it has gone, unless
-    it rides a platform. */
-function resting(b, probe) {
+/** Laid its radius off its face at rest, and dropped where the last frame's read found no block
+    under it, unless it rides a platform. */
+function resting(b) {
   settle(b);
-  if (!b.riding && !probe.solid(standingOn(b))) drop(b);
+  if (!b.riding && !b.floor) drop(b);
   b.spinSpeed = 0;
 }
 
@@ -245,9 +247,9 @@ function swap(b, h, n) {
     while a turn's ramp runs. A press is a bit held now and not on the last frame, and a held
     turn presses again once the count passes the repeat. With no jump asked, the floor ahead
     empty and a block beside the block under, the roll is refused; with nothing beside and the
-    block under one the probe calls brittle, a rolling ball is held short of the edge by
-    `rules.edge`: from its hold the forward request and the speed are dropped, and from its
-    further mark the centre is set back along the heading besides. */
+    block under one the last frame's read found brittle, a rolling ball is held short of the
+    edge by `rules.edge`: from its hold the forward request and the speed are dropped, and from
+    its further mark the centre is set back along the heading besides. */
 export function read(b, probe, out) {
   const t = b.table.rolling;
   if (turning(b)) b.since = 0;
@@ -276,7 +278,7 @@ export function read(b, probe, out) {
     return;
   }
   const edge = b.rules.edge;
-  if (!edge || b.speed <= 0 || b.progress < edge.hold || probe.brittle?.(under) !== true) return;
+  if (!edge || b.speed <= 0 || b.progress < edge.hold || !b.brittle) return;
   b.forward = false;
   if (b.progress >= edge.back) b.pos = add(b.pos, b.h, -edge.push);
   b.speed = 0;
@@ -361,10 +363,10 @@ function recentre(p, b, by) {
   if (Math.abs(off) > by) p[i] -= Math.sign(off) * by;
 }
 
-function roll(b, probe) {
+function roll(b) {
   const t = b.table.rolling;
   recentre(b.pos, b, t.recentre);
-  const over = !b.riding && !probe.solid(standingOn(b));
+  const over = !b.riding && !b.floor;
   if (over && b.progress >= t.over[0] && b.progress <= t.over[1]) {
     drop(b);
     return;
@@ -612,12 +614,12 @@ function ramping(b) {
 }
 
 function acting(b, probe, out) {
-  if (b.state === ROLLING) roll(b, probe);
+  if (b.state === ROLLING) roll(b);
   else if (b.state === WRAPPING) wrap(b);
   else if (b.state === JUMP) jumping(b, probe, out);
   else if (b.state === HOP) hopping(b, probe);
   else if (b.state === FALL) falling(b, probe, out);
-  else if (b.state === REST) resting(b, probe);
+  else if (b.state === REST) resting(b);
 }
 
 /** The body's turn for the draw; a turn marks this frame's, a wall and the arc the next's. */
@@ -635,7 +637,9 @@ function spinning(b) {
     is `frozen` its state does nothing, nor the move step nor the landings, and a ramp, the look
     and the spin go on; while `way` holds a direction, the jump's wall test throws the ball back
     from the wall's progress where its heading differs from it and clears it where it lies along.
-    Between the state and the move step the probe's `stood`, where it has one, is told the ball,
+    Between the state and the move step the ball's words for the block under its cell are read,
+    whether one is there and whether it is brittle, which the rest state, the roll and the pad's
+    reading ask on the next frame, and the probe's `stood`, where it has one, is told the ball,
     which is where the game reads the cells about it. A landing on a platform's body rides it,
     said as `rode`, and the jump and the hop leave it, said as `alit`, while a ball that rides
     never drops. A lost ball says so and stays where it is. */
@@ -643,6 +647,9 @@ export function run(b, probe, out) {
   b.landed = false;
   intents(b, probe, out);
   if (!b.frozen) acting(b, probe, out);
+  const below = add(cellOf(b, b.pos), b.n, -1);
+  b.floor = probe.solid(below);
+  b.brittle = probe.brittle?.(below) === true;
   probe.stood?.(b);
   b.last = b.progress;
   b.progress = progressOf(b);
