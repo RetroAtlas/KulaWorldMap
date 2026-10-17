@@ -1973,10 +1973,11 @@ test("spikes kill the ball: the strip says so in red while the game's countdown 
   // back to the rest it jumped from, facing as it did
   await page.keyboard.press("ArrowLeft");
   await expect(line(page)).toContainText("facing -x");
+  // Up held until the fall, so that whichever frame reads Space reads Up with it
   await page.keyboard.down("ArrowUp");
   await page.keyboard.press(" ");
-  await page.keyboard.up("ArrowUp");
   await expect(status(page)).toHaveText(FORGIVEN_FALL, { timeout: 10_000 });
+  await page.keyboard.up("ArrowUp");
   await expect(say(page)).toHaveText(FORGIVEN_FALL);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   expect((await probe(page)).station).toEqual({
