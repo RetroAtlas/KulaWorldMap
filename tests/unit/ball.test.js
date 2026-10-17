@@ -841,7 +841,7 @@ test("a forward speed left in a falling ball's word by whatever dropped it is go
   assert.equal(b.pos[1], y);
 });
 
-test("a block met above drops the ball with no speed forward and no spin, straight down onto the floor beneath", () => {
+test("a block met above sets the ball back by twice its rise and drops it with no speed forward and no spin, straight down onto the floor beneath, from a jump and from a hop", () => {
   const probe = row(15, 18, [[17, 15, 15]]);
   const b = ballAt(RULES, [17, 16, 17], TOP, UP);
   let hit = null;
@@ -853,6 +853,8 @@ test("a block met above drops the ball with no speed forward and no spin, straig
   assert.equal(b.speed, 0);
   assert.equal(b.spinSpeed, 0);
   assert.equal(b.v, -39);
+  // the seventh row, 317 up and 284 on, the centre set back by twice the row's rise of 39
+  assert.deepEqual(b.pos, [17 * UNIT, 16 * UNIT - 284, 17 * UNIT - 356 - 317 + 78]);
   const y = b.pos[1];
   let events = [];
   for (let f = 0; f < 20 && !events.some((e) => e.at === "landed"); f++) {
@@ -861,6 +863,20 @@ test("a block met above drops the ball with no speed forward and no spin, straig
   }
   assert.deepEqual(events, [{ at: "landed" }]);
   assert.deepEqual(blockUnder(b), [17, 15, 17]);
+  // the hop's frames run from the second row, so it meets the block over it a frame sooner
+  const over = row(15, 18, [[17, 16, 15]]);
+  const c = ballAt(RULES, [17, 16, 17], TOP, UP);
+  let hop = null;
+  for (let f = 1; f <= 31 && hop === null; f++) {
+    run(c, over, 1, PAD.cross);
+    if (c.state === FALL) hop = f;
+  }
+  assert.equal(hop, 6);
+  assert.equal(c.v, -39);
+  assert.deepEqual(c.pos, [17 * UNIT, 16 * UNIT, 17 * UNIT - 356 - 317 + 78]);
+  rest(c, over);
+  assert.deepEqual(blockUnder(c), [17, 16, 17]);
+  assert.equal(heightOf(c), 100);
 });
 
 test("a wall met in the air throws the ball back and drops it, and it lands on the floor behind", () => {

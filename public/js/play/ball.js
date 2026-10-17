@@ -435,6 +435,7 @@ function ceiling(b, probe, rise) {
     (p >= j.wall && probe.solid(add(over, b.h))) ||
     (p <= b.radius && probe.solid(add(over, b.h, -1)));
   if (!hit) return false;
+  b.pos = add(b.pos, b.n, -2 * rise);
   b.state = FALL;
   b.speed = 0;
   b.spinSpeed = 0;
