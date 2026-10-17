@@ -1606,7 +1606,8 @@ test("Space hops the ball in place, jumps it two blocks on while it rolls, and a
   await opened(page, { motion: false });
   await startPlay(page);
   await page.keyboard.press(" ");
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(true);
+  // the level's opening frames first, then the hop, so the poll is quick
+  await expect.poll(async () => (await probe(page)).station.moving, { intervals: [25] }).toBe(true);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   expect((await probe(page)).station.block).toEqual([17, 18, 17]);
   await page.keyboard.down("ArrowUp");
@@ -1765,7 +1766,8 @@ test("with Motion off a hop on a coin's block takes the coin on the first frame,
   await expect(page.locator("#playPoints")).toHaveText("250 points");
   await expect(say(page)).toHaveText("Coin (bronze) taken, 250 points.");
   expect(await dustAlive(page)).toBe(true);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(true);
+  // the level's opening frames first, then the hop, so the poll is quick
+  await expect.poll(async () => (await probe(page)).station.moving, { intervals: [25] }).toBe(true);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   expect(await drawn(page)).toBe(0);
   expect(await frameAt(page)).toBeGreaterThan(0);
