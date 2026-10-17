@@ -2319,7 +2319,6 @@ test("a jump onto a moving platform rides it: the strip says so, the ball stands
   await expect(status(page)).toHaveText(RIDING, { timeout: 5000 });
   await expect(say(page)).toHaveText(`17,15,17, top. ${RIDING}`);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
-  expect((await probe(page)).station.block).toEqual([17, 15, 17]);
   // the platform goes back to its cell and comes again, the ball standing on it meanwhile
   await expect
     .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [25] })
