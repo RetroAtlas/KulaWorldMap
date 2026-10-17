@@ -486,6 +486,8 @@ async function opened(page, { motion = true } = {}) {
   await page.keyboard.press("t");
   if (!motion) await page.keyboard.press("v");
   await expect(page.locator("#showMotion")).toBeChecked({ checked: motion });
+  // the frame the map asked for while Motion ran still lands after it is switched off
+  if (!motion) await expect.poll(() => drawn(page, 2, 0)).toBe(0);
 }
 /** Press y, and wait for play to load and the strip to show. */
 async function startPlay(page) {
