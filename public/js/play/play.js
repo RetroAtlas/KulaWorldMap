@@ -135,14 +135,15 @@ const WOULD = {
   lost: "fallen off the level",
 };
 const FORGIVEN = (name) => `Forgiven: the ball would have ${WOULD[name]}.`;
-const ENDED = "The level has ended.";
+const ENDED = "The level has ended";
 const OPENED = "The last key is taken: the exits are open.";
 const BROKE = "The crumbling block breaks under the ball.";
 const GONE = (cell) => `The crumbling block at ${cell} is gone.`;
 const SENDING = "The teleporter is sending the ball.";
 const KEYS_LEFT = "The keys left to take";
 const BLOCKS_LEFT = "The blocks left to roll onto";
-const AGAIN = "Space or a tap on the pad starts the level again.";
+const AGAIN = "Space or Enter starts the level again.";
+const AGAIN_PAD = "Space, Enter or a tap on the pad starts the level again.";
 const KEPT = "The way the ball has come is now the route.";
 const ROUTE_STANDS = "A route already stands; clear it to keep the walk.";
 const FOLLOWING = "Following the route; an arrow, Space or the pad takes the ball back.";
@@ -724,7 +725,10 @@ function happened(event) {
     live.station = true;
     say(noted(`${FACE_NAME[faceUnder(b)]} of ${blockUnder(b).join(",")}, now underfoot`));
     burst(footOf(b), b.n, blockUnder(b), AT_SWITCH);
-  } else if (event.turned) live.station = true;
+  } else if (event.turned) {
+    live.station = true;
+    if (Object.values(REFUSED).includes(live.status)) status(b.riding ? RIDING : null);
+  }
 }
 
 /** A thing taken: a burst of dust where it stood, the take said, and the panel brought up to date
@@ -821,8 +825,11 @@ function ended(code) {
   const { play, turn } = motionTable();
   const { view, clock } = play;
   const w = live.run.words;
+  const name = endingName(code);
+  const seconds = Math.max(0, Math.floor(w.clock / clock.second));
   live.ended = {
     code,
+    how: `${VERDICT[name] ?? `${ENDED}.`} ${counted(w.score, "point")}, ${counted(seconds, "second")} left.`,
     frame: 0,
     length: Math.floor(turn / view.swing),
     theta: 0,
@@ -837,14 +844,15 @@ function ended(code) {
   finishEase();
   state.frame = null;
   fit();
-  const name = endingName(code);
-  const seconds = Math.max(0, Math.floor(w.clock / clock.second));
-  const text = `${VERDICT[name] ?? ENDED} ${counted(w.score, "point")}, ${counted(seconds, "second")} left. ${AGAIN}`;
-  status(text);
-  say(text);
+  status(verdict());
+  say(verdict());
   redraw = true;
   invalidatePick();
 }
+
+/** The strip's verdict: how the level ended and what starts it again, the pad named while it
+    shows. */
+const verdict = () => `${live.ended.how} ${padShown ? AGAIN_PAD : AGAIN}`;
 
 /** The death forgiven: the ball put back at rest and the status saying what would have been. */
 function forgive(name) {
@@ -1075,7 +1083,9 @@ function figure(id, text, title = null) {
 function line() {
   if (!live) return;
   const s = shown();
-  const text = `Playing · on the ${FACE_NAME[s.face]} of ${s.block.join(",")}, facing ${faceName(s.h)}`;
+  const text = live.ended
+    ? ENDED
+    : `Playing · on the ${FACE_NAME[s.face]} of ${s.block.join(",")}, facing ${faceName(s.h)}`;
   const el = $("playLine");
   if (el.textContent !== text) el.textContent = text;
   const w = live.run.words;
@@ -1135,6 +1145,7 @@ function wirePad() {
   pad.addEventListener("lostpointercapture", release);
   $("padBtn").onclick = () => {
     padShown = !padShown;
+    if (live?.ended) status(verdict());
     reframe();
   };
   $("forgiveBtn").onclick = () => {

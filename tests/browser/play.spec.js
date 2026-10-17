@@ -12,21 +12,23 @@ import {
 
 const LEVEL = "/#HIRO/0/45,35/fit/33";
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazards)\.js$/;
-const TIME_UP =
-  "Time is up. 0 points, 0 seconds left. Space or a tap on the pad starts the level again.";
+const TIME_UP = "Time is up. 0 points, 0 seconds left. Space or Enter starts the level again.";
+const TIME_UP_PAD =
+  "Time is up. 0 points, 0 seconds left. Space, Enter or a tap on the pad starts the level again.";
 // on a level with no key the block under the ball is marked as the level opens
 const TIME_UP_MARKED =
-  "Time is up. 50 points, 0 seconds left. Space or a tap on the pad starts the level again.";
+  "Time is up. 50 points, 0 seconds left. Space or Enter starts the level again.";
 const LOST =
-  /^The ball fell off the level\. 0 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
+  /^The ball fell off the level\. 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
 const DONE =
-  /^Out by the exit: the level is done\. 1500 points, \d+ seconds left\. Space or a tap on the pad starts the level again\.$/;
+  /^Out by the exit: the level is done\. 1500 points, \d+ seconds left\. Space or Enter starts the level again\.$/;
 const SPIKED =
-  /^The ball is killed on the spikes\. 0 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
+  /^The ball is killed on the spikes\. 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
+const ENDED = "The level has ended";
 const FORGIVEN = "Forgiven: the ball would have been killed on the spikes.";
 const FORGIVEN_FALL = "Forgiven: the ball would have fallen off the level.";
 const LOST_BROKEN =
-  /^The ball fell off the level\. 50 points, 9\d seconds left\. Space or a tap on the pad starts the level again\.$/;
+  /^The ball fell off the level\. 50 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
 const BROKE = "17,16,17, top. The crumbling block breaks under the ball.";
 const GONE = "The crumbling block at 17,16,17 is gone.";
 const TAKEN = "Taken: Coin (bronze) on the top";
@@ -784,6 +786,7 @@ test("time runs out into the strip's verdict with the pad dead and the view let 
   await expect(status(page)).toHaveText(TIME_UP, { timeout: 10_000 });
   await page.keyboard.up("ArrowUp");
   await expect(say(page)).toHaveText(TIME_UP);
+  await expect(line(page)).toHaveText(ENDED);
   await expect(clockLine(page)).toHaveText("Time 0");
   const over = await probe(page);
   expect(over.playing).toBe(true);
@@ -796,20 +799,23 @@ test("time runs out into the strip's verdict with the pad dead and the view let 
   const held = await probe(page);
   expect(held.station).toEqual(over.station);
   expect(held.cam).toEqual(over.cam);
-  // Enter on a focused strip button works the button rather than starting the level again
+  // Enter on a focused strip button works the button rather than starting the level again, and
+  // the verdict names the pad while the pad shows
   const padBtn = page.locator("#padBtn");
   const padWas = await padBtn.getAttribute("aria-pressed");
   await padBtn.focus();
   await page.keyboard.press("Enter");
   await expect(padBtn).toHaveAttribute("aria-pressed", padWas === "true" ? "false" : "true");
-  await expect(status(page)).toHaveText(TIME_UP);
+  await expect(status(page)).toHaveText(padWas === "true" ? TIME_UP : TIME_UP_PAD);
   await page.keyboard.press("Enter");
   await expect(padBtn).toHaveAttribute("aria-pressed", padWas);
+  await expect(status(page)).toHaveText(padWas === "true" ? TIME_UP_PAD : TIME_UP);
   await padBtn.blur();
   await flipped(page, 1, 7);
   expect(await presses(page)).toEqual([[1, [7]]]);
   await page.keyboard.press(" ");
   await expect(status(page)).toHaveText("");
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await expect(clockLine(page)).toHaveText("Time 2");
   await expect(say(page)).toContainText(
     "again. The ball stands on the top of 17,17,17, facing -y.",
@@ -1879,6 +1885,7 @@ test("ice slides the ball on over every block to the first that is not ice, and 
   });
   await page.keyboard.press("ArrowLeft");
   await expect.poll(async () => (await probe(page)).station.heading).toBe("-x");
+  await expect(status(page)).toHaveText("");
   await page.keyboard.press("ArrowLeft");
   await expect.poll(async () => (await probe(page)).station.heading).toBe("+y");
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
