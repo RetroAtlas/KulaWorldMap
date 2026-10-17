@@ -245,8 +245,9 @@ function same(a, b) {
 
 // What runs the level from outside the frame: a module may hand the frame the
 // clock it draws at, the index it draws from and what travels, given the
-// level, each standing in for the frame's own while it is registered. A handed
-// index is shaped as the level's own, with a marker only on a cell it holds.
+// level, each standing in for the frame's own while it is registered, and may
+// say that every invisible block is seen. A handed index is shaped as the
+// level's own, with a marker only on a cell it holds.
 let source = null;
 export const runWith = (fn) => {
   source = fn;
@@ -325,7 +326,19 @@ export function draw() {
   const effect = effectFrame(frame);
   const lights = atlas ? deviceLights(l, idx, effect) : null;
   if (lights?.on) spinning = true;
-  const scene = { l, idx, tint, skins, atlas, look, frame, effect, edges, lights: lights?.lit };
+  const scene = {
+    l,
+    idx,
+    tint,
+    skins,
+    atlas,
+    look,
+    frame,
+    effect,
+    edges,
+    lights: lights?.lit,
+    seeing: given?.seeing ?? false,
+  };
   const through = [];
   const chosen = state.selected?.key;
   const put = (...t) => {

@@ -31,6 +31,7 @@ import {
   drives,
   restart,
   revive,
+  seeing,
   stand,
   relevel,
   end,
@@ -726,6 +727,65 @@ test("the pills' words run down in the hazards' order: the lethargy pill hurries
   assert.equal(passed.words.pills[INVINCIBLE], 0);
   assert.equal(passed.words.pills[LETHARGY], -1, "left negative while the invincibility stands");
   assert.equal(passed.words.clock, full - 2 * play.clock.tick, "and the clock not hurried");
+});
+
+test("the sunglasses show every invisible block while their word stands, blink it off and on in the table's spells as the word runs out, off first, and hide it after, the invincibility pill leaving them and a restart clearing them", () => {
+  const { word, step, blink } = motion.types[SUNGLASSES].lasts;
+  const live = begin(level(row(10, 18), [start()]));
+  live.words.wait = 0;
+  assert.equal(seeing(live), false);
+  assert.equal(live.words.blink, null);
+  live.words.pills[SUNGLASSES] = word;
+  assert.equal(seeing(live), true, "shown from the frame of the take");
+  // the frames the word is not negative on after the take's own, then the blink's
+  const standing = Math.floor(word / step);
+  const blinking = blink.times * blink.frames;
+  const shown = [];
+  const spell = [];
+  for (let i = 0; i < standing + blinking + 3; i++) {
+    frame(live, 0);
+    shown.push(seeing(live));
+    spell.push(live.words.blink?.spell ?? null);
+  }
+  assert.deepEqual(shown.slice(0, standing), Array(standing).fill(true));
+  const spells = Array.from({ length: blink.times }, (_, s) =>
+    Array(blink.frames).fill(s % 2 === 1),
+  ).flat();
+  assert.deepEqual(shown.slice(standing, standing + blinking), spells, "off first, then by turns");
+  assert.deepEqual(shown.slice(standing + blinking), [false, false, false], "and hidden after");
+  assert.deepEqual(
+    spell,
+    [
+      ...Array(standing).fill(null),
+      ...Array.from({ length: blinking }, (_, i) => Math.floor(i / blink.frames)),
+      null,
+      null,
+      null,
+    ],
+    "each spell running its frames, the last to its end",
+  );
+  assert.equal(live.words.blink, null);
+  assert.equal(live.words.pills[SUNGLASSES], -1);
+
+  const guarded = begin(level(row(10, 18), [start()]));
+  guarded.words.wait = 0;
+  Object.assign(guarded.words.pills, { [INVINCIBLE]: word, [SUNGLASSES]: 0 });
+  assert.equal(seeing(guarded), true);
+  frame(guarded, 0);
+  assert.equal(guarded.words.pills[SUNGLASSES], -step, "counted down under the invincibility pill");
+  assert.deepEqual(guarded.words.blink, { spell: 0, left: blink.frames }, "and the blink started");
+  assert.equal(seeing(guarded), false);
+  frame(guarded, 0);
+  assert.deepEqual(guarded.words.blink, { spell: 0, left: blink.frames - 1 }, "and running");
+  guarded.words.pills[SUNGLASSES] = word;
+  frame(guarded, 0);
+  assert.equal(guarded.words.blink, null, "a second pair drops the blink");
+  assert.equal(seeing(guarded), true, "and shows every block from its own word");
+
+  const again = restart(guarded);
+  assert.equal(again.words.pills[SUNGLASSES], -1);
+  assert.equal(again.words.blink, null);
+  assert.equal(seeing(again), false);
 });
 
 test("relevel carries what was taken where the level still holds it, and counts the keys and the blocks less what is taken and marked", () => {

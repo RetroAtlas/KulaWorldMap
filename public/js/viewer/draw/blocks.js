@@ -238,7 +238,8 @@ const peak = (skins) => Array(3).fill(Math.max(...skins.cycles.invisible.level))
 // Near the ball an invisible face is lit corner by corner as the game lights
 // it, and the map's look fills in what the light leaves dark. Where the level
 // turns the light round, a face the light reaches is drawn as the game draws
-// it there instead.
+// it there instead. While the frame says every invisible block is seen,
+// nothing is lit and every face keeps the look.
 const lights = new WeakMap();
 function lightUp(sk, l, home, face, corners) {
   const entry = kindMotion(INVISIBLE)?.light;
@@ -262,7 +263,7 @@ function kindOf(c, idx, key) {
 
 /** Returns whether the block changes by the next frame. */
 export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
-  const { l, idx, tint, skins, atlas, look, frame, effect, edges, lights } = scene;
+  const { l, idx, tint, skins, atlas, look, frame, effect, edges, lights, seeing } = scene;
   let live = false;
   const kind = kindOf(c, idx, key);
   const rec = c.v >= state.data.firstRecord ? idx.records.get(key)?.[0] : null;
@@ -289,7 +290,7 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
       if (sk?.live) live = true;
       if (sk && kind === INVISIBLE) {
         if (!effectsOn()) sk.colour = peak(skins);
-        else lightUp(sk, l, home, g, skins.corners[g][sk.turn]);
+        else if (!seeing) lightUp(sk, l, home, g, skins.corners[g][sk.turn]);
       }
       const added = !place && lights?.get(`${key}/${g}`);
       if (sk && added && !sk.add) sk.glow = deviceLight(added, sk, g, skins);

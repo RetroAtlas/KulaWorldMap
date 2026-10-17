@@ -220,13 +220,18 @@ function ground(live, out) {
   else if (w.wait === 0) Object.assign(w, { ending: ending[way], wait: wait[way] });
 }
 
-// The pills' words run down in the hazards routine's order, the invincibility pill cutting the
-// bouncy and lethargy pills' short while it stands and the lethargy pill hurrying the clock.
+// The pills' words run down in the hazards routine's order, the sunglasses' word starting their
+// blink as it runs out, the invincibility pill cutting the bouncy and lethargy pills' short while
+// it stands and the lethargy pill hurrying the clock.
 function pills(live, out) {
-  const p = live.words.pills;
+  const w = live.words;
+  const p = w.pills;
   const { types } = live.tables.motion;
   const lasts = (type) => types[String(type)].lasts;
-  if (p[SUNGLASSES] >= 0) p[SUNGLASSES] -= lasts(SUNGLASSES).step;
+  if (p[SUNGLASSES] >= 0) {
+    p[SUNGLASSES] -= lasts(SUNGLASSES).step;
+    w.blink = p[SUNGLASSES] < 0 ? { spell: 0, left: lasts(SUNGLASSES).blink.frames } : null;
+  } else if (w.blink) blinking(w, lasts(SUNGLASSES).blink);
   if (p[INVINCIBLE] >= 0) p[INVINCIBLE] -= lasts(INVINCIBLE).step;
   if (p[INVINCIBLE] >= 0) {
     if (p[BOUNCY] >= 0) p[BOUNCY] = -1;
@@ -238,6 +243,19 @@ function pills(live, out) {
     tick(live, out, lasts(LETHARGY).ticks);
   }
 }
+
+// The blink's spells run on from the word's end, off first, and the flag stays off after the last.
+function blinking(w, { times, frames }) {
+  const b = w.blink;
+  b.left -= 1;
+  if (b.left > 0) return;
+  w.blink = b.spell + 1 < times ? { spell: b.spell + 1, left: frames } : null;
+}
+
+/** Whether every invisible block is seen this frame: the sunglasses' word stands, or their blink
+    is in an on spell. */
+export const seeing = (live) =>
+  live.words.pills[SUNGLASSES] >= 0 || (live.words.blink?.spell ?? 0) % 2 === 1;
 
 // What is under and about the ball, off while the guard stands, in the routine's order.
 function hazards(live, out) {

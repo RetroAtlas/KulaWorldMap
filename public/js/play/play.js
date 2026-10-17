@@ -77,6 +77,7 @@ import {
   relevel,
   restart,
   revive,
+  seeing,
   stand,
   startRun,
 } from "./rules.js";
@@ -148,6 +149,7 @@ const OPENED = "The last key is taken: the exits are open.";
 const BROKE = "The crumbling block breaks under the ball.";
 const GONE = (cell) => `The crumbling block at ${cell} is gone.`;
 const SENDING = "The teleporter is sending the ball.";
+const WEARING_OFF = "The sunglasses are wearing off: the invisible blocks are about to hide again.";
 const KEYS_LEFT = "The keys left to take";
 const BLOCKS_LEFT = "The blocks left to roll onto";
 const AGAIN = "Space or Enter starts the level again.";
@@ -235,14 +237,15 @@ const circuitsOf = () => ({ on: (m) => markerNow(m) === "on", lit: litNow, flip 
 
 /** What the frame draws at and with while the ball is on the map: the frame the rules last ran,
     which is the one the game's draw shows, the ending's view's frames added once the level has
-    ended, the level's index less what the ball has taken, and the walkers where the rules have
-    stepped them. */
+    ended, the level's index less what the ball has taken, the walkers where the rules have
+    stepped them, and whether every invisible block is seen. */
 const source = (l) =>
   live && l === live.level
     ? {
         frame: frameShown(live.run) + (live.ended?.frame ?? 0),
         idx: drawnIndex(live.run),
         travel: travelOf(live.run),
+        seeing: seeing(live.run),
       }
     : null;
 
@@ -599,6 +602,7 @@ function played() {
   // a tap stands until a frame reads the pad, as the level opens with it dead
   if (heeds(run)) tapped = 0;
   const was = onFace(b) ? footOf(b) : null;
+  const blinked = !!run.words.blink;
   const events = gameFrame(run, pad);
   if (!motionOn()) ageDust(1 / motionTable().hz);
   else if (was && onFace(b) && !events.some((e) => e.sent)) {
@@ -609,7 +613,9 @@ function played() {
   rested(b);
   flashed(run.words);
   if (run.words.send >= 0) status(SENDING);
-  else if (live.status === SENDING) status(null);
+  else if (run.words.blink && !blinked) status(WEARING_OFF);
+  else if (live.status === SENDING || (live.status === WEARING_OFF && !run.words.blink))
+    status(null);
   if (live.driver) {
     const why = live.driver.done(run);
     if (why) followed(why);

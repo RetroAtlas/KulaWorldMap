@@ -33,6 +33,7 @@ const BROKE = "17,16,17, top. The crumbling block breaks under the ball.";
 const GONE = "The crumbling block at 17,16,17 is gone.";
 const TAKEN = "Taken: Coin (bronze) on the top";
 const SENDING = "The teleporter is sending the ball.";
+const WEARING_OFF = "The sunglasses are wearing off: the invisible blocks are about to hide again.";
 const RIDING = "The ball rides the platform.";
 const LAUNCHED = "Launched by the boost button.";
 const FOLLOWING = "Following the route; an arrow or Space takes the ball back.";
@@ -2355,5 +2356,185 @@ test("a boost button launches the ball three blocks on, and a landing on another
   expect(heard.filter((t) => t === LAUNCHED)).toHaveLength(2);
   expect(heard).toContain(`17,12,17, top. ${LAUNCHED}`);
   expect(heard).toContain(`17,9,17, top. ${LAUNCHED}`);
+  expect(errors).toEqual([]);
+});
+
+/** Hold the page's clock still, so the level runs only as `stepped` steps it. */
+const frozen = (page) =>
+  page.evaluate(() => {
+    const real = performance.now.bind(performance);
+    let now = real();
+    performance.now = () => now;
+    window.__step = (ms) => {
+      now += ms;
+    };
+    window.__thaw = () => {
+      performance.now = real;
+    };
+  });
+/** Step the frozen level a game frame at a time through `frames` frames, reading on each the frame
+    drawn, whether the frame says every invisible block is seen, the strip's status and a hash of
+    the pixels of the tops of `near` and `far`. */
+const stepped = (page, frames, near, far) =>
+  page.evaluate(
+    async ([frames, near, far]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state, screen }, { draw, clock, overlayWith }, { motionTable }] = await Promise.all(
+        ["viewer/state.js", "viewer/draw/render.js", "viewer/data.js"].map(at),
+      );
+      let seen = null;
+      overlayWith({
+        block: (ctx, c, home, key, ghost, scene) => {
+          seen = scene.seeing;
+        },
+      });
+      const g = document.getElementById("cv").getContext("2d");
+      const k = state.view.dpr;
+      const top = ([x, y, z]) => {
+        const quad = [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [0, 1],
+        ].map(([dx, dy]) => screen(x + dx, y + dy, z).map((v) => v * k));
+        const xs = quad.map((p) => p[0]);
+        const ys = quad.map((p) => p[1]);
+        const x0 = Math.floor(Math.min(...xs));
+        const y0 = Math.floor(Math.min(...ys));
+        const w = Math.ceil(Math.max(...xs)) - x0 + 1;
+        const h = Math.ceil(Math.max(...ys)) - y0 + 1;
+        const d = g.getImageData(x0, y0, w, h).data;
+        const inside = (px, py) => {
+          let turn = 0;
+          for (let i = 0; i < 4; i++) {
+            const [ax, ay] = quad[i];
+            const [bx, by] = quad[(i + 1) % 4];
+            const s = Math.sign((bx - ax) * (py - ay) - (by - ay) * (px - ax));
+            if (s && turn && s !== turn) return false;
+            turn ||= s;
+          }
+          return true;
+        };
+        let hash = 2166136261;
+        for (let j = 0; j < h; j++)
+          for (let i = 0; i < w; i++) {
+            if (!inside(x0 + i + 0.5, y0 + j + 0.5)) continue;
+            const o = (j * w + i) * 4;
+            for (let ch = 0; ch < 3; ch++) hash = Math.imul(hash ^ d[o + ch], 16777619);
+          }
+        return hash >>> 0;
+      };
+      const out = [];
+      const status = document.getElementById("playStatus");
+      for (let i = 0; i < frames; i++) {
+        window.__step(1000 / motionTable().hz);
+        draw();
+        out.push({
+          frame: clock(),
+          seeing: seen,
+          status: status.textContent,
+          near: top(near),
+          far: top(far),
+        });
+      }
+      return out;
+    },
+    [frames, near, far],
+  );
+
+test("the sunglasses show every invisible block as the game does, the ball's light off them while they last, then blink them as they wear off, the strip saying so, and the ball's light alone shows them again", async ({
+  page,
+}) => {
+  test.slow();
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a key out of reach keeps the level an arcade one; the sunglasses on the block ahead, an
+  // invisible block within the ball's light once it stands there and another well out of it,
+  // whose shimmer runs in the same phase, since the game spreads it by the cell's position
+  const near = [18, 15, 17];
+  const far = [20, 13, 17];
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  await laid(page, [17, 16, 17], { kind: 0 });
+  await faced(page, [17, 16, 17], 0, { type: 38 });
+  await laid(page, near, { kind: 3 });
+  await laid(page, far, { kind: 3 });
+  await expect(page.locator("#chipLine")).toContainText("4 blocks");
+  await textured(page);
+  const table = await page.evaluate(async () => {
+    const { motionTable, skinsTable } = await import(
+      new URL("js/viewer/data.js", location.href).href
+    );
+    const { frames, level } = skinsTable().cycles.invisible;
+    return {
+      hz: motionTable().hz,
+      lasts: motionTable().types["38"].lasts,
+      cycle: [frames.length, level.length],
+    };
+  });
+  const { word, step, blink } = table.lasts;
+  const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+  // the shimmer and the pulse come round together once in this many frames
+  const period = (table.cycle[0] * table.cycle[1]) / gcd(...table.cycle);
+  const standing = Math.floor(word / step) + 1;
+  const blinking = blink.times * blink.frames;
+  // the frames the view takes to settle behind the ball once it has stopped
+  const settled = 2 * table.hz;
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await expect.poll(() => frameAt(page)).toBeGreaterThan(settled);
+  await frozen(page);
+  await page.keyboard.press("ArrowUp");
+  const run = await stepped(page, settled + standing + blinking + period, near, far);
+  await page.evaluate(() => window.__thaw());
+  await expect(page.locator("#playPoints")).toHaveText("500 points");
+  expect((await probe(page)).station).toEqual({
+    block: [17, 16, 17],
+    face: 0,
+    heading: "-y",
+    moving: false,
+  });
+  const taken = run.findIndex((r) => r.seeing);
+  expect(taken).toBeGreaterThan(0);
+  expect(taken).toBeLessThan(settled);
+  const after = run.slice(taken);
+  expect(after.slice(0, standing).every((r) => r.seeing)).toBe(true);
+  const spells = Array.from({ length: blink.times }, (_, s) =>
+    Array(blink.frames).fill(s % 2 === 1),
+  ).flat();
+  expect(after.slice(standing, standing + blinking).map((r) => r.seeing)).toEqual(spells);
+  expect(after.slice(standing + blinking).every((r) => !r.seeing)).toBe(true);
+  expect(after.slice(0, standing).every((r) => r.status === "")).toBe(true);
+  expect(after.slice(standing, standing + blinking).every((r) => r.status === WEARING_OFF)).toBe(
+    true,
+  );
+  expect(after.slice(standing + blinking).every((r) => r.status === "")).toBe(true);
+  // once the view has settled, a top's pixels at a phase of the shimmer are the same on every
+  // frame of the same state: the look every face takes while the blocks are seen, read off the
+  // word's frames, and the light's, read off the frames after the blink
+  const phase = (r) => r.frame % period;
+  const look = new Map();
+  const unlit = new Map();
+  for (const r of after.slice(settled, standing)) {
+    look.set(phase(r), r.near);
+    unlit.set(phase(r), r.far);
+  }
+  const lit = new Map();
+  for (const r of after.slice(standing + blinking)) lit.set(phase(r), r.near);
+  expect(look.size).toBe(period);
+  expect(lit.size).toBe(period);
+  const odd = after
+    .slice(settled)
+    .filter(
+      (r) => r.far !== unlit.get(phase(r)) || r.near !== (r.seeing ? look : lit).get(phase(r)),
+    )
+    .map((r) => r.frame);
+  expect(odd).toEqual([]);
+  // and the two states look different, the ball's light reaching the near block's corner
+  expect([...look.keys()].filter((p) => look.get(p) !== lit.get(p)).length).toBeGreaterThan(
+    period / 2,
+  );
   expect(errors).toEqual([]);
 });
