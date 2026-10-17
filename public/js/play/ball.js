@@ -474,6 +474,7 @@ function jumping(b, probe, out) {
     if (wall || (b.way !== null && b.way.some((c, i) => c !== b.h[i]))) {
       b.pos = add(b.pos, b.h, -2 * advance);
       b.speed = -advance;
+      b.spinSpeed = 0;
       b.state = FALL;
       b.v = rise > 0 ? j.bounce : rise;
       return;

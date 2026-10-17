@@ -879,7 +879,7 @@ test("a block met above sets the ball back by twice its rise and drops it with n
   assert.equal(heightOf(c), 100);
 });
 
-test("a wall met in the air throws the ball back and drops it, and it lands on the floor behind", () => {
+test("a wall met in the air throws the ball back and drops it with the spin's speed at nothing, and it lands on the floor behind", () => {
   const probe = row(15, 18, [
     [17, 14, 17],
     [17, 14, 16],
@@ -894,6 +894,13 @@ test("a wall met in the air throws the ball back and drops it, and it lands on t
   }
   assert.ok(bounced !== null && bounced < 31, String(bounced));
   assert.ok(b.speed < 0);
+  // the jump's spin speed goes with the bounce, so the body stands from that frame on
+  assert.equal(b.spinSpeed, 0);
+  const body = [...b.body];
+  run(b, probe, 1, 0);
+  assert.equal(b.state, FALL);
+  assert.equal(b.spinSpeed, 0);
+  assert.deepEqual(b.body, body);
   rest(b, probe);
   assert.equal(b.state, REST);
   assert.ok([15, 16].includes(blockUnder(b)[1]), String(blockUnder(b)));
