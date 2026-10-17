@@ -415,24 +415,37 @@ const turnedThrough = (page, until) =>
     return out;
   }, until);
 /** The height the ball is handed to the frame with, for its shadow, finite or null, and whether
-    the page has said a block is gone, on every animation frame until no ball is handed, the level
-    having ended, or 8 s pass. */
-const shadowed = (page) =>
-  page.evaluate(async () => {
-    const P = await import(new URL("js/play/play.js", location.href).href);
+    the frame last drawn left the block at `cell` out, on every animation frame until no ball is
+    handed, the level having ended, or 8 s pass. */
+const shadowed = (page, cell) =>
+  page.evaluate(async (cell) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [P, { overlayWith }, { cellKey }] = await Promise.all(
+      ["play/play.js", "viewer/draw/render.js", "format/lattice.js"].map(at),
+    );
+    const key = cellKey(...cell);
+    let drew = true;
+    overlayWith({
+      under: () => {
+        drew = false;
+      },
+      block: (ctx, c, home, k) => {
+        if (k === key) drew = true;
+      },
+    });
     const out = [];
     const end = performance.now() + 8000;
     while (performance.now() < end) {
       const g = P.handed();
       if (!g) break;
       out.push({
-        gone: /is gone/.test(document.getElementById("say").textContent),
+        gone: !drew,
         height: Number.isFinite(g.height) ? g.height : null,
       });
       await new Promise((r) => requestAnimationFrame(r));
     }
     return out;
-  });
+  }, cell);
 /** Keep every sentence the live region says from here on. */
 const listening = (page) =>
   page.evaluate(() => {
@@ -1234,8 +1247,8 @@ test("Follow the route rolls the ball along the planned route to its last stop a
   await expect(status(page)).toHaveText(FOLLOWED);
   await expect(say(page)).toHaveText(FOLLOWED);
   await expect(follow).toHaveAttribute("aria-pressed", "false");
-  expect(await said(page)).toContain(FOLLOWING);
-  expect(await said(page)).toContain("17,15,17, top");
+  await expect.poll(() => said(page)).toContain(FOLLOWING);
+  await expect.poll(() => said(page)).toContain("17,15,17, top");
   expect((await probe(page)).station).toEqual({
     block: [20, 15, 17],
     face: 0,
@@ -1246,11 +1259,11 @@ test("Follow the route rolls the ball along the planned route to its last stop a
   // from the last stop the ball is put on the first and follows again, until an arrow takes it
   await follow.click();
   await expect(follow).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("ArrowLeft");
+  await expect(follow).toHaveAttribute("aria-pressed", "false");
   await expect
     .poll(() => said(page))
     .toContain(`The ball is put on the top of 17,18,17. ${FOLLOWING}`);
-  await page.keyboard.press("ArrowLeft");
-  await expect(follow).toHaveAttribute("aria-pressed", "false");
   await expect(status(page)).toHaveText("");
   await expect(line(page)).toContainText("facing -x", { timeout: 10_000 });
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
@@ -1282,7 +1295,7 @@ test("the Follow line names the pad only while it shows, following the Pad butto
   await follow.click();
   await expect(follow).toHaveAttribute("aria-pressed", "true");
   await expect(status(page)).toHaveText(FOLLOWING_PAD);
-  expect(await said(page)).toContain(FOLLOWING_PAD);
+  await expect.poll(() => said(page)).toContain(FOLLOWING_PAD);
   await padBtn.click();
   await expect(page.locator("#pad")).toBeHidden();
   await expect(status(page)).toHaveText(FOLLOWING);
@@ -1811,9 +1824,9 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   expect(pressed[0][0]).toBe(0);
   expect(pressed[0][1].length).toBe(1);
   // the stop's sentence carries the throw, which would otherwise be lost to it within the frame
-  expect(await said(page)).toContain(
-    "17,16,17, top. Switch thrown: the yellow circuit turned over.",
-  );
+  await expect
+    .poll(() => said(page))
+    .toContain("17,16,17, top. Switch thrown: the yellow circuit turned over.");
   // onto the teleporter the ball stops at the middle, and with Motion off and no key held the
   // level stands mid-send
   await roll([17, 15, 17]);
@@ -1840,7 +1853,7 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   expect(far.dust[1]).toBeGreaterThan(0);
   expect(far.dust[0]).toBeGreaterThan(near);
   await expect(line(page)).toHaveText("Playing · on the top of 17,14,17, facing +x");
-  expect(await said(page)).toContain("Sent to the top of 17,14,17.");
+  await expect.poll(() => said(page)).toContain("Sent to the top of 17,14,17.");
   // the pad is dead through the hold, and then Up is refused, the near end's block beside, and
   // the strip says nothing of it: two seconds of the clock, a whole one of frames past the hold,
   // and the ball has not moved
@@ -1902,7 +1915,7 @@ test("spikes kill the ball: the strip says so in red while the game's countdown 
   await expect(status(page)).toHaveText(SPIKED, { timeout: 10_000 });
   await page.keyboard.up("ArrowUp");
   await expect(status(page)).not.toHaveClass(/dying/);
-  expect(await said(page)).toContain("On the spikes");
+  await expect.poll(() => said(page)).toContain("On the spikes");
   await expect(say(page)).toHaveText(SPIKED);
   const over = await probe(page);
   expect(over.playing).toBe(true);
@@ -2100,7 +2113,7 @@ test("a crumbling block breaks under the ball, scoring, and is gone a third of a
   await listening(page);
   // with Motion on the level runs at rest, so the block goes while the ball stands on it, and
   // the ball stands a frame or two over the gone block before the game drops it
-  const sampled = shadowed(page);
+  const sampled = shadowed(page, [17, 16, 17]);
   await page.keyboard.press("ArrowUp");
   await expect
     .poll(async () => (await probe(page)).station.block, { intervals: [25] })
@@ -2109,9 +2122,8 @@ test("a crumbling block breaks under the ball, scoring, and is gone a third of a
   expect(await status(page).textContent()).toBe("");
   await expect.poll(() => pixelAt(page, corner), { intervals: [25] }).not.toEqual(stood);
   await expect(status(page)).toHaveText(LOST_BROKEN, { timeout: 10_000 });
-  const heard = await said(page);
-  expect(heard).toContain(BROKE);
-  expect(heard).toContain(GONE);
+  await expect.poll(() => said(page)).toContain(BROKE);
+  await expect.poll(() => said(page)).toContain(GONE);
   const frames = await sampled;
   const gone = frames.findIndex((f) => f.gone);
   expect(gone).toBeGreaterThan(0);
@@ -2354,10 +2366,9 @@ test("a boost button launches the ball three blocks on, and a landing on another
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   await expect(status(page)).toHaveText("");
   await expect(line(page)).toHaveText("Playing · on the top of 17,9,17, facing -y");
-  const heard = await said(page);
-  expect(heard.filter((t) => t === LAUNCHED)).toHaveLength(2);
-  expect(heard).toContain(`17,12,17, top. ${LAUNCHED}`);
-  expect(heard).toContain(`17,9,17, top. ${LAUNCHED}`);
+  await expect.poll(async () => (await said(page)).filter((t) => t === LAUNCHED)).toHaveLength(2);
+  await expect.poll(() => said(page)).toContain(`17,12,17, top. ${LAUNCHED}`);
+  await expect.poll(() => said(page)).toContain(`17,9,17, top. ${LAUNCHED}`);
   expect(errors).toEqual([]);
 });
 
@@ -2605,5 +2616,67 @@ test("a key pressed while the level runs takes no time from it: every frame the 
     return clock() - from;
   });
   expect(ran).toBe(10);
+  expect(errors).toEqual([]);
+});
+
+test("every sentence the level says has an animation frame of its own, however many game frames one drawn frame runs", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a key out of reach keeps the level an arcade one
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await expect.poll(() => frameAt(page)).toBeGreaterThan(30);
+  await listening(page);
+  await frozen(page);
+  // two taps of Up round an edge to the next face's middle, drawn a frame at a time, then batched
+  const spoken = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw, clock }, { motionTable }] = await Promise.all(
+      ["viewer/draw/render.js", "viewer/data.js"].map(at),
+    );
+    const region = document.getElementById("say");
+    const tap = () => {
+      for (const type of ["keydown", "keyup"])
+        document.body.dispatchEvent(new KeyboardEvent(type, { key: "ArrowUp", bubbles: true }));
+    };
+    const run = async (frames) => {
+      window.__step((frames * 1000) / motionTable().hz);
+      draw();
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    };
+    tap();
+    const start = clock();
+    const frames = [];
+    while (clock() - start < 60) {
+      const before = region.textContent;
+      await run(1);
+      if (region.textContent !== before) frames.push(clock() - start);
+    }
+    tap();
+    const again = clock();
+    while (clock() - again < frames[0] - 1) await run(1);
+    const from = clock() - again;
+    await run(frames[1] - from);
+    const batched = { from, to: clock() - again };
+    for (let f = 0; f < 60; f++) await run(1);
+    return { frames, batched };
+  });
+  expect(spoken.frames).toHaveLength(2);
+  expect(spoken.batched.from).toBeLessThan(spoken.frames[0]);
+  expect(spoken.batched.to).toBeGreaterThanOrEqual(spoken.frames[1]);
+  await expect
+    .poll(() => said(page))
+    .toEqual([
+      "-y side of 17,17,17, now underfoot",
+      "17,17,17, -y side",
+      "underside of 17,17,17, now underfoot",
+      "17,17,17, underside",
+    ]);
   expect(errors).toEqual([]);
 });

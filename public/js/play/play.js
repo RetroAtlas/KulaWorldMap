@@ -53,7 +53,7 @@ import { iconFor } from "../viewer/draw/icons.js";
 import { toast } from "../viewer/ui/toast.js";
 import { chip, fit, fitWith, writeHash } from "../viewer/chrome/navigate.js";
 import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
-import { say } from "../viewer/chrome/a11y.js";
+import { say as announce } from "../viewer/chrome/a11y.js";
 import { clearDetail, onShow, showCell } from "../viewer/chrome/detail.js";
 import { tipWith } from "../viewer/chrome/interaction.js";
 import {
@@ -176,6 +176,10 @@ const keys = keyPad();
 let last = 0;
 let owed = 0;
 let idle = true;
+let framing = false;
+let saying = null;
+const unsaid = [];
+let telling = false;
 let ease = null;
 let redraw = false;
 let measure = () => {};
@@ -555,6 +559,25 @@ function advance() {
   if (moved) invalidatePick();
 }
 
+// a sentence waits for an animation frame of its own, as the live region keeps only its last
+function told(text) {
+  if (telling) {
+    unsaid.push(text);
+    return;
+  }
+  announce(text);
+  telling = true;
+  requestAnimationFrame(() => {
+    telling = false;
+    if (unsaid.length) told(unsaid.shift());
+  });
+}
+
+const say = (text) => {
+  if (framing) saying = text;
+  else told(text);
+};
+
 const running = () =>
   live.ended
     ? motionOn()
@@ -573,8 +596,12 @@ function stepped(dt) {
     owed += (dt * motionTable().hz) / 1000;
     while (owed >= 1 && live) {
       owed -= 1;
+      framing = true;
+      saying = null;
       if (live.ended) turning();
       else played();
+      framing = false;
+      if (saying !== null) told(saying);
       moved = true;
     }
   } else owed = 0;
@@ -1383,6 +1410,7 @@ function leave({ restore = true } = {}) {
   const level = live.level;
   live = null;
   keys.clear();
+  unsaid.length = 0;
   fitWith(null);
   runWith(null);
   refreshPanel();
