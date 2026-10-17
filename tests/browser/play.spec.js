@@ -1214,6 +1214,34 @@ test("following a route to its leap stops the ball there and says so, and with t
   expect(errors).toEqual([]);
 });
 
+test("the play strip ends short of the corner's widgets once Follow the route shows, its buttons wrapping rather than its line's words, so the corner's ball button can still be pressed", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false });
+  await page.keyboard.press("u");
+  await stopOn(page, [17, 15, 17]);
+  await stopOn(page, [20, 15, 17]);
+  await expect(page.locator("#courseLine")).toHaveText("Route planner · 3 stops");
+  await startPlay(page);
+  await expect(page.locator("#followBtn")).toBeVisible();
+  const strip = await page.locator("#play").boundingBox();
+  const corner = await page.locator("#corner").boundingBox();
+  expect(strip.x + strip.width).toBeLessThanOrEqual(corner.x);
+  const lineBox = await page.locator("#playLine").boundingBox();
+  expect(lineBox.height).toBeLessThan(30);
+  expect(
+    await page.evaluate(() => {
+      const button = document.getElementById("playBtn");
+      const r = button.getBoundingClientRect();
+      return button.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+    }),
+  ).toBe(true);
+  await page.locator("#playBtn").click();
+  await expect(page.locator("#play")).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
 test("a right click selects while playing, Esc clears the selection before it leaves, and the panel's Play from here, there with its setting on alone, moves the ball", async ({
   page,
 }) => {

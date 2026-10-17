@@ -748,6 +748,8 @@ button.kind:hover {
   --corner-foot: 44px;
   --corner-h: 96px;
   --compass-h: var(--corner-h);
+  /* the corner's width: its column of buttons, the gap and the compass */
+  --corner-w: calc(44px + 8px + var(--compass-h));
 }
 #cv {
   display: block;
@@ -1479,19 +1481,31 @@ body.editing #course .status {
   border-color: var(--warn);
 }
 
-/* the play strip stands above the planner's and the editor's, and the pad above it */
+/* the play strip stands above the planner's and the editor's, and the pad above it; it ends
+   short of the corner's widgets, by their own margin, and where its line and its controls do not
+   fit one row the controls go below the line as one, wrapping among themselves in their turn */
 #play {
   bottom: calc(var(--corner-foot) + var(--under-h, 0px) + var(--course-h, 0px));
+  max-width: calc(100% - 24px - var(--corner-w) - 12px);
 }
 #play .line {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-width: 0;
+}
+#play .controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
 }
 #play .figure {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 @media (max-width: 760px) {
+  #play {
+    max-width: calc(100% - 24px);
+  }
   #play .line {
     flex-basis: 100%;
   }
