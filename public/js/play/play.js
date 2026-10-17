@@ -468,7 +468,7 @@ function startEase(from, to, ms, done) {
 
 function easing(now) {
   const e = ease;
-  const t = Math.min(1, (now - e.start) / e.ms);
+  const t = Math.max(0, Math.min(1, (now - e.start) / e.ms));
   if (t >= 1) {
     ease = null;
     e.done();
