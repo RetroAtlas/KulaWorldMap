@@ -1,7 +1,7 @@
-// Pad words per frame from a source other than the keys: a planned route followed, a recording
-// replayed, and the recorder that makes one. A driver is { pad(live), done(live) }, asked once a
-// game frame; done answers false while the driver drives, and a driver that can end in more than
-// one way answers why it ended.
+// Pad words per frame: the keys as they are pressed, and the drivers, a planned route followed, a
+// recording replayed and the recorder that makes one. A driver is { pad(live), done(live) }, asked
+// once a game frame; done answers false while the driver drives, and a driver that can end in
+// more than one way answers why it ended.
 import { PAD, REST, ROLLING, WRAPPING, blockUnder, faceUnder } from "./ball.js";
 import { headingOn, outcomeAt } from "../viewer/walk.js";
 import { probeOf } from "./world.js";
@@ -13,6 +13,48 @@ const same = (a, b) => a.face === b.face && a.cell.every((v, i) => v === b.cell[
 /** At rest with no turn asked, waiting or ramping. */
 const settled = (b) => b.state === REST && !b.ramp && !b.turn && !b.waiting && !b.again;
 const rolling = (b) => b.state === ROLLING || b.state === WRAPPING;
+
+/** The keys as frames read them: held keys, and the presses kept for frames that read the pad. */
+export function keyPad() {
+  let held = 0;
+  let last = 0;
+  const waiting = new Map();
+  return {
+    down(bit) {
+      held |= bit;
+      waiting.set(bit, (waiting.get(bit) ?? 0) + 1);
+    },
+    up(bits = -1) {
+      held &= ~bits;
+    },
+    busy: () => held !== 0 || waiting.size > 0,
+    clear() {
+      held = 0;
+      last = 0;
+      waiting.clear();
+    },
+    pad(reads, also = 0) {
+      if (!reads) {
+        for (const [bit, n] of waiting) {
+          if (held & last & bit) waiting.delete(bit);
+          else if (n > 1) waiting.set(bit, 1);
+        }
+        return held | also;
+      }
+      let word = held | also;
+      for (const [bit, n] of waiting) {
+        if (last & bit) word &= ~bit;
+        else {
+          word |= bit;
+          if (n > 1) waiting.set(bit, n - 1);
+          else waiting.delete(bit);
+        }
+      }
+      last = word;
+      return word;
+    },
+  };
+}
 
 /** A driver that rolls the ball along `course` from its station `i`: at rest on a station it
     asks the turn the next step wants, by the shorter way, or the roll, which it holds while the

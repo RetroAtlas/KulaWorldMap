@@ -15,7 +15,14 @@ import {
   step,
 } from "../../public/js/play/ball.js";
 import { probeOf, worldOf } from "../../public/js/play/world.js";
-import { courseDriver, recorder, replayDriver, pack, unpack } from "../../public/js/play/drive.js";
+import {
+  courseDriver,
+  keyPad,
+  recorder,
+  replayDriver,
+  pack,
+  unpack,
+} from "../../public/js/play/drive.js";
 
 setObjects(objects);
 setAnnotations(annotations);
@@ -113,6 +120,13 @@ const runs = (pads) =>
     return out;
   }, []);
 const refused = (frames) => frames.flat().some((e) => e.refused);
+/** A key pressed and let go before a frame reads it. */
+const tap = (keys, bit) => {
+  keys.down(bit);
+  keys.up(bit);
+};
+/** The words the next `n` frames that read the pad take from `keys`. */
+const padsOf = (keys, n) => Array.from({ length: n }, () => keys.pad(true));
 
 test("a course driver turns about, holds the roll to the next station, turns the shorter way and rolls on, and is done at the end", () => {
   const run = runOver(A.cell, B.cell, C.cell);
@@ -311,6 +325,113 @@ test("a course driver may start from a later station, takes the one after as rea
   run.ball = ballAt(RULES, C.cell, TOP, MINUS_Y);
   assert.equal(wrong.pad(run), 0);
   assert.equal(wrong.done(), "strayed");
+});
+
+test("the keys read a tap down on the frame that reads it and up after, and a held key down on every frame until it is let go, another key's tap beside it", () => {
+  const keys = keyPad();
+  assert.equal(keys.busy(), false);
+  tap(keys, PAD.left);
+  assert.equal(keys.busy(), true);
+  assert.deepEqual(padsOf(keys, 2), [PAD.left, 0]);
+  assert.equal(keys.busy(), false);
+  keys.down(PAD.up);
+  assert.deepEqual(padsOf(keys, 2), [PAD.up, PAD.up]);
+  tap(keys, PAD.left);
+  assert.deepEqual(padsOf(keys, 2), [PAD.up | PAD.left, PAD.up]);
+  keys.up(PAD.up);
+  assert.deepEqual(padsOf(keys, 1), [0]);
+  assert.equal(keys.busy(), false);
+});
+
+test("two presses of a key, however close, read up between them: two taps before a frame reads either, a tap before the frame after the one that read the last, and a held key let go and pressed again between two frames", () => {
+  let keys = keyPad();
+  tap(keys, PAD.left);
+  tap(keys, PAD.left);
+  assert.deepEqual(padsOf(keys, 4), [PAD.left, 0, PAD.left, 0]);
+  keys = keyPad();
+  tap(keys, PAD.right);
+  assert.deepEqual(padsOf(keys, 1), [PAD.right]);
+  tap(keys, PAD.right);
+  assert.deepEqual(padsOf(keys, 3), [0, PAD.right, 0]);
+  keys = keyPad();
+  keys.down(PAD.up);
+  assert.deepEqual(padsOf(keys, 1), [PAD.up]);
+  keys.up(PAD.up);
+  keys.down(PAD.up);
+  assert.deepEqual(padsOf(keys, 3), [0, PAD.up, PAD.up]);
+});
+
+test("frames that do not read the pad keep a press for the first frame that does, one a key however many are made over them, and a held key stands in them", () => {
+  const keys = keyPad();
+  tap(keys, PAD.right);
+  assert.deepEqual([keys.pad(false), keys.pad(false)], [0, 0]);
+  assert.equal(keys.busy(), true);
+  assert.deepEqual([keys.pad(true), keys.pad(true)], [PAD.right, 0]);
+  for (let i = 0; i < 3; i++) tap(keys, PAD.left);
+  assert.equal(keys.pad(false), 0);
+  assert.deepEqual(padsOf(keys, 3), [PAD.left, 0, 0]);
+  assert.equal(keys.busy(), false);
+  keys.down(PAD.up);
+  assert.equal(keys.pad(false), PAD.up);
+  assert.deepEqual([keys.pad(true), keys.pad(true)], [PAD.up, PAD.up]);
+});
+
+test("a key down on the last frame that read the pad, let go and pressed again over frames that do not read it, reads as held on, and tapped over them reads as pressed", () => {
+  const keys = keyPad();
+  keys.down(PAD.left);
+  assert.deepEqual(padsOf(keys, 1), [PAD.left]);
+  keys.up(PAD.left);
+  keys.down(PAD.left);
+  assert.equal(keys.pad(false), PAD.left);
+  assert.deepEqual(padsOf(keys, 2), [PAD.left, PAD.left]);
+  keys.up(PAD.left);
+  tap(keys, PAD.left);
+  assert.equal(keys.pad(false), 0);
+  assert.deepEqual(padsOf(keys, 3), [0, PAD.left, 0]);
+  assert.equal(keys.busy(), false);
+});
+
+test("another source's bits join the keys', and a key it gave down reads up before a press of it", () => {
+  const keys = keyPad();
+  assert.equal(keys.pad(true, PAD.left), PAD.left);
+  tap(keys, PAD.left);
+  assert.deepEqual(padsOf(keys, 3), [0, PAD.left, 0]);
+});
+
+test("the keys let every key go where none is named, the presses still waiting, and clear drops both and the frame they were last read on", () => {
+  const keys = keyPad();
+  keys.down(PAD.up);
+  keys.down(PAD.left);
+  keys.up();
+  assert.equal(keys.busy(), true);
+  assert.deepEqual(padsOf(keys, 2), [PAD.up | PAD.left, 0]);
+  keys.down(PAD.up);
+  keys.clear();
+  assert.equal(keys.busy(), false);
+  assert.equal(keys.pad(true), 0);
+  keys.down(PAD.left);
+  assert.deepEqual(padsOf(keys, 1), [PAD.left]);
+  keys.clear();
+  tap(keys, PAD.left);
+  assert.deepEqual(padsOf(keys, 2), [PAD.left, 0]);
+});
+
+test("two taps of Left, the second before the frame after the one that read the first, turn the ball about", () => {
+  const run = runOver(B.cell);
+  run.ball = ballAt(RULES, B.cell, TOP, MINUS_Y);
+  const b = run.ball;
+  const probe = probeOf(run);
+  const keys = keyPad();
+  const frame = () => {
+    b.pad = keys.pad(true);
+    return step(b, probe);
+  };
+  tap(keys, PAD.left);
+  frame();
+  assert.deepEqual(b.h, [-1, 0, 0]);
+  tap(keys, PAD.left);
+  for (let f = 0; f < 2 * QUARTER; f++) frame();
+  assert.deepEqual(b.h, Y);
 });
 
 test("a recorder answers as its driver does and keeps the word it gave each frame", () => {

@@ -81,7 +81,7 @@ import {
   stand,
   startRun,
 } from "./rules.js";
-import { courseDriver } from "./drive.js";
+import { courseDriver, keyPad } from "./drive.js";
 import { frameShown, probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
 const BALL_TYPE = 30;
@@ -171,8 +171,7 @@ const AT_LAUNCH = 10;
 const TRAIL = 12;
 
 let live = null;
-let held = 0;
-let tapped = 0;
+const keys = keyPad();
 let last = 0;
 let owed = 0;
 let ease = null;
@@ -560,8 +559,7 @@ function stepped(dt) {
     : motionOn() ||
       moving(live.run.ball) ||
       drives(live.run) ||
-      held ||
-      tapped ||
+      keys.busy() ||
       live.driver !== null;
   if (runs) {
     owed += (dt * motionTable().hz) / 1000;
@@ -598,9 +596,8 @@ function strewn(from, to, n, blockOf, still = false) {
 function played() {
   const run = live.run;
   const b = run.ball;
-  const pad = held | tapped | (live.driver ? live.driver.pad(run) : 0);
   // a tap stands until a frame reads the pad, as the level opens with it dead
-  if (heeds(run)) tapped = 0;
+  const pad = keys.pad(heeds(run), live.driver ? live.driver.pad(run) : 0);
   const was = onFace(b) ? footOf(b) : null;
   const blinked = !!run.words.blink;
   const events = gameFrame(run, pad);
@@ -668,8 +665,7 @@ const again = () =>
     ease ||
     (live &&
       (motionOn() ||
-        (!live.ended &&
-          (moving(live.run.ball) || drives(live.run) || held || tapped || live.driver))))
+        (!live.ended && (moving(live.run.ball) || drives(live.run) || keys.busy() || live.driver))))
   );
 
 /** The frame hook: another frame while the view eases, the level runs or something moves, and one
@@ -876,7 +872,8 @@ function ended(code) {
     free: 0,
     base: 1,
   };
-  held = tapped = owed = 0;
+  keys.clear();
+  owed = 0;
   retire();
   routing();
   finishEase();
@@ -941,7 +938,8 @@ function startOver() {
   resetDust(worldTint(live.level.theme));
   routing();
   status(start ? null : NO_START);
-  held = tapped = owed = 0;
+  keys.clear();
+  owed = 0;
   state.frame = b.frame;
   fit();
   arrive(from);
@@ -1160,7 +1158,7 @@ function wirePad() {
   const bitOf = (e) => PAD_BITS[e.target.closest("[data-pad]")?.dataset.pad] ?? 0;
   const release = (e) => {
     const bit = bitOf(e);
-    if (bit) held &= ~bit;
+    if (bit) keys.up(bit);
   };
   pad.addEventListener("pointerdown", (e) => {
     const bit = bitOf(e);
@@ -1173,8 +1171,7 @@ function wirePad() {
     }
     retire();
     e.target.setPointerCapture(e.pointerId);
-    held |= bit;
-    tapped |= bit;
+    keys.down(bit);
     wake();
   });
   for (const type of ["pointerup", "pointercancel"]) pad.addEventListener(type, release);
@@ -1240,14 +1237,13 @@ function keydown(e) {
   e.stopPropagation();
   if (e.repeat || !heard(bit)) return;
   retire();
-  held |= bit;
-  tapped |= bit;
+  keys.down(bit);
   wake();
 }
 
 function keyup(e) {
   const bit = BITS[e.key];
-  if (bit) held &= ~bit;
+  if (bit) keys.up(bit);
 }
 
 // --- entering and leaving -----------------------------------------------------------------
@@ -1333,7 +1329,8 @@ function enter(at = null) {
   live.still = stateOf(ball);
   resetDust(worldTint(l.theme));
   routing();
-  held = tapped = owed = 0;
+  keys.clear();
+  owed = 0;
   last = performance.now();
   state.anchored = true;
   state.frame = ball.frame;
@@ -1375,7 +1372,7 @@ function leave({ restore = true } = {}) {
   const parked = state.parked;
   const level = live.level;
   live = null;
-  held = tapped = 0;
+  keys.clear();
   fitWith(null);
   runWith(null);
   refreshPanel();
@@ -1431,7 +1428,7 @@ function put(at) {
   stand(live.run, at);
   live.still = stateOf(live.run.ball);
   walked({ cell: at.cell, face: at.face });
-  held = tapped = 0;
+  keys.clear();
   status(null);
   state.frame = live.run.ball.frame;
   if (state.framing === fit) fit();
@@ -1467,9 +1464,7 @@ export function bootPlay() {
   document.addEventListener("focusin", (e) => {
     keyed = e.target.matches(":focus-visible");
   });
-  addEventListener("blur", () => {
-    held = 0;
-  });
+  addEventListener("blur", () => keys.up());
   wirePad();
   measure = measureStrip($("play"), "--play-h");
   overlayWith({ under: () => void advance(), block: drawTrail, cell: drawDustOver, frame: more });

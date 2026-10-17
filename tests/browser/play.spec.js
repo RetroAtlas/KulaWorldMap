@@ -2538,3 +2538,37 @@ test("the sunglasses show every invisible block as the game does, the ball's lig
   );
   expect(errors).toEqual([]);
 });
+
+/** Run the frozen level `n` game frames on, drawing each. */
+const onward = (page, n) =>
+  page.evaluate(async (n) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw }, { motionTable }] = await Promise.all(
+      ["viewer/draw/render.js", "viewer/data.js"].map(at),
+    );
+    for (let i = 0; i < n; i++) {
+      window.__step(1000 / motionTable().hz);
+      draw();
+    }
+  }, n);
+
+for (const motion of [false, true])
+  test(`two taps of Left turn the ball twice where the second comes before the frame after the one that read the first, with Motion ${motion ? "on" : "off"}`, async ({
+    page,
+  }) => {
+    const errors = trackErrors(page);
+    await opened(page, { motion });
+    await startPlay(page);
+    // past the level's opening, which holds the pad dead
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(async () => (await station(page)).heading).toBe("+x");
+    await expect.poll(async () => (await station(page)).moving).toBe(false);
+    await frozen(page);
+    await page.keyboard.press("ArrowLeft");
+    await onward(page, 1);
+    expect((await station(page)).heading).toBe("-y");
+    await page.keyboard.press("ArrowLeft");
+    await onward(page, 40);
+    expect((await station(page)).heading).toBe("-x");
+    expect(errors).toEqual([]);
+  });
