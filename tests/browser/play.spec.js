@@ -1910,13 +1910,34 @@ test("spikes kill the ball: the strip says so in red while the game's countdown 
   const forgive = page.locator("#forgiveBtn");
   await expect(forgive).toHaveAttribute("aria-pressed", "false");
   await listening(page);
-  // held on, the ball rolls onto the spikes and the countdown runs with the key
+  await frozen(page);
+  // held on, the ball rolls onto the spikes and the countdown runs with the key, the strip read on
+  // every game frame, as the countdown can begin and end within one drawn frame
   await page.keyboard.down("ArrowUp");
-  await expect(status(page)).toHaveText("On the spikes", { timeout: 10_000 });
-  await expect(status(page)).toHaveClass(/dying/);
-  await expect(status(page)).toHaveText(SPIKED, { timeout: 10_000 });
+  const shown = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw }, { motionTable }] = await Promise.all(
+      ["viewer/draw/render.js", "viewer/data.js"].map(at),
+    );
+    const el = document.getElementById("playStatus");
+    const out = [];
+    let dying = false;
+    for (let i = 0; i < 600; i++) {
+      window.__step(1000 / motionTable().hz);
+      draw();
+      const now = [el.textContent, el.classList.contains("dying")];
+      if (now.join() !== out.at(-1)?.join()) out.push(now);
+      if (now[1]) dying = true;
+      else if (dying) break;
+    }
+    return out;
+  });
+  await page.evaluate(() => window.__thaw());
   await page.keyboard.up("ArrowUp");
-  await expect(status(page)).not.toHaveClass(/dying/);
+  expect(shown.slice(-2)).toEqual([
+    ["On the spikes", true],
+    [expect.stringMatching(SPIKED), false],
+  ]);
   await expect.poll(() => said(page)).toContain("On the spikes");
   await expect(say(page)).toHaveText(SPIKED);
   const over = await probe(page);
