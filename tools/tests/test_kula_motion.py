@@ -6,16 +6,18 @@ Nothing here needs the disc.
 import struct
 import sys
 import unittest
+import zlib
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
     GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, PHASES,
-    ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, Code, blocks, body, devices,
-    dispatch, exits, flight, glint, glow_lift, glow_spill, harms, jump, laser, light, moves, play, roll, root_table,
-    shadow_half, spike_cycle, spin_orders, standing, table, take, vanish_cycle)
+    ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, WORDS_COUNT, WORDS_TABLE,
+    Code, blocks, body, devices, dispatch, exits, flight, glint, glow_lift, glow_spill, harms, jump, laser, light, moves,
+    play, roll, root_table, shadow_half, spike_cycle, spin_orders, standing, table, take, vanish_cycle, words)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "sp": 29, "ra": 31}
@@ -39,6 +41,10 @@ def addiu(rt, rs, imm):
 
 def lh(rt, rs, imm):
     return (0x21 << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
+def lw(rt, rs, imm):
+    return (0x23 << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
 
 
 AT = EXE_BASE + 0x800
@@ -138,6 +144,14 @@ GAME = {
     "wait.fire": 25, "end.captivator": -5, "wait.captivator": 10, "end.star": -5, "wait.star": 10, "end.acid": -6,
     "wait.acid": 6, "end.laser": -7, "wait.laser": 4, "end.simon": -8, "wait.simon": 25, "wait.simon.done": 25,
     "mark.points": 50, "mark.skips": 3, "mark.under": 356,
+    "words.win": 20, "words.last": -2, "words.over": 18, "words.over.state": 3, "words.trial": 2, "words.better": 34,
+    "words.slow.gate": 1201, "words.slow": 36, "words.allowance": 60, "words.qualified": 24, "words.failed": 22,
+    "words.copycat": 1, "words.won2": 30, "words.won1": 28, "words.equal": 32, "words.trial.won2": 30,
+    "words.trial.won1": 28, "words.trial.equal": 32, "words.final.world": 10, "words.final": 12,
+    "words": {0: "LOADING!", 2: "SPIKED!", 4: "TIME OUT!", 6: "FELL OFF!", 8: "FIRE!", 10: "CAPTURED!", 12: "ACID!",
+              14: "LASER!", 16: "Wrong Move!", 18: "Game Over!", 20: "Well Done!", 22: "You failed to qualify!",
+              24: "You qualified!", 28: "Player 1 Won!", 30: "Player 2 Won!", 32: "Equal Time!",
+              34: "Very Well Done!", 36: "Level Cleared!"},
     "start.wait": 20, "start.guard": 20, "laser.cell": -2, "laser.heat": 1900, "fire.kind": 1, "fire.burn": 40,
     "fire.landed": 1, "fire.land": 600, "fire.limit.gate": 2001, "fire.cool": -15, "heat.chill": -150,
     "end.fire.swell": -4, "fire.swell": 210, "heat.shake": 40, "heat.shake.big": 126, "heat.shake.over": 25,
@@ -758,6 +772,10 @@ class Play(unittest.TestCase):
                                        "fire": -4, "captivator": -5, "acid": -6, "laser": -7, "simon": -8})
         self.assertEqual(p["wait"], {"exit": 5, "hidden": 5, "bonus": 5, "spikes": 10, "fire": 25, "captivator": 10,
                                      "acid": 6, "laser": 4, "simon": 25})
+        self.assertEqual(p["words"], {"exit": "Well Done!", "bonus": "Well Done!", "hidden": "Well Done!",
+                                      "spikes": "SPIKED!", "time": "TIME OUT!", "lost": "FELL OFF!", "fire": "FIRE!",
+                                      "captivator": "CAPTURED!", "acid": "ACID!", "laser": "LASER!",
+                                      "simon": "Wrong Move!"})
         self.assertEqual(p["bonus"], {"block": 50, "skips": 3})
         self.assertEqual(p["points"], {"each": 50, "most": 5000, "levels": 15})
         self.assertEqual(p["view"], {"angles": [-8, 3, 10], "swing": 12, "off": 1400, "reach": 1000,
@@ -804,9 +822,55 @@ class Play(unittest.TestCase):
                        {"flight.end.gate.after": 1024}, {"flight.curve.shift": 12}, {"flight.out.shift": 9},
                        {"flight.yaw": -1000}, {"flight.bank.from": 2048}, {"flight.least": 2}, {"flight.pitch": 200},
                        {"flight.below": 200}, {"flight.ahead": 700}, {"flight.hold": 900}, {"flight.done": 1000},
-                       {"flight.gate": 20}):
+                       {"flight.gate": 20}, {"words.win": 26}, {"words.final": 14}, {"words.last": -1},
+                       {"words.trial.won1": 30}, {"words.slow.gate": 1200}, {"words.copycat": 2}):
             with self.assertRaises(SystemExit):
                 play({**GAME, **change})
+
+
+class Words(unittest.TestCase):
+    POINTER = AT + 0x80
+    TABLE = AT + 0x100
+
+    def image(self, body, flags=8):
+        return struct.pack("<II", 0x10, flags) + body
+
+    def code(self, streams, count=WORDS_COUNT):
+        """A table of `count` entries, the first of them the streams given and the rest the last stream again."""
+        entries = self.TABLE + 4
+        blobs = entries + 8 * count
+        end = max(blobs + sum(len(s) for s in streams), WORDS_TABLE[1] + 4)
+        blob = bytearray(end - EXE_BASE)
+        put = lambda at, w: struct.pack_into("<I", blob, at - EXE_BASE, w)
+        put(WORDS_TABLE[0], lui("t0", self.POINTER >> 16 & 0x7FFF))
+        put(WORDS_TABLE[1], lw("t0", "t0", self.POINTER & 0xFFFF))
+        put(self.POINTER, self.TABLE & 0x1FFFFFFF)
+        put(self.TABLE, count)
+        at = blobs
+        for i, stream in enumerate(streams):
+            blob[at - EXE_BASE:at - EXE_BASE + len(stream)] = stream
+            put(entries + 8 * i, at - self.TABLE)
+            put(entries + 8 * i + 4, len(stream))
+            at += len(stream)
+        for i in range(len(streams), count):
+            put(entries + 8 * i, at - len(streams[-1]) - self.TABLE)
+            put(entries + 8 * i + 4, len(streams[-1]))
+        return Code(bytes(blob))
+
+    def test_a_pair_reads_as_its_word_where_its_digest_is_the_pinned_one(self):
+        dark, light = self.image(b"the relief"), self.image(b"the highlights")
+        with mock.patch("kula_motion.WORDS", {0: ("HELLO!", zlib.crc32(dark + light))}):
+            self.assertEqual(words(self.code([zlib.compress(dark), zlib.compress(light)])), {0: "HELLO!"})
+
+    def test_another_count_another_pair_not_an_image_or_not_a_stream_stops_the_reading(self):
+        dark, light = self.image(b"the relief"), self.image(b"the highlights")
+        pair = [zlib.compress(dark), zlib.compress(light)]
+        with mock.patch("kula_motion.WORDS", {0: ("HELLO!", zlib.crc32(dark + light))}):
+            for c in (self.code(pair, count=WORDS_COUNT - 1), self.code(pair[::-1]),
+                      self.code([zlib.compress(self.image(b"the relief", flags=9)), pair[1]]),
+                      self.code([pair[0], zlib.compress(b"\x10\0\0")]), self.code([pair[0], b"not deflate"])):
+                with self.assertRaises(SystemExit):
+                    words(c)
 
 
 class Harms(unittest.TestCase):
@@ -967,7 +1031,7 @@ class Table(unittest.TestCase):
                          {"1": 1, "2": 2, "3": 93, "4": 4, "5": 95, "6": 96, "7": 97, "8": None})
         self.assertEqual(t["play"]["clock"]["second"], 50)
         self.assertEqual(t["play"]["ending"]["lost"], -3)
-        self.assertEqual(set(t["play"]), {"start", "clock", "ending", "wait", "bonus", "points", "view", "flight"})
+        self.assertEqual(set(t["play"]), {"start", "clock", "ending", "wait", "words", "bonus", "points", "view", "flight"})
         self.assertEqual(t["play"], play(GAME))
         self.assertEqual(t["kinds"]["1"], {**harms(GAME)["kinds"][1], "standing": 1})
         self.assertEqual(t["kinds"]["4"], {**harms(GAME)["kinds"][4], "standing": 4})

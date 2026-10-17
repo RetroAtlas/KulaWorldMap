@@ -741,6 +741,28 @@ test("the clock ticks once a frame, fifty to a shown second, and a level ends in
   assert.equal((99 * play.clock.second) / play.clock.tick / table.hz, 82.5);
 });
 
+test("the end screen names each outcome in the game's own word, a death's in capitals", () => {
+  const { words, ending } = table.play;
+  assert.deepEqual(words, {
+    exit: "Well Done!",
+    bonus: "Well Done!",
+    hidden: "Well Done!",
+    spikes: "SPIKED!",
+    time: "TIME OUT!",
+    lost: "FELL OFF!",
+    fire: "FIRE!",
+    captivator: "CAPTURED!",
+    acid: "ACID!",
+    laser: "LASER!",
+    simon: "Wrong Move!",
+  });
+  assert.deepEqual(Object.keys(words), Object.keys(ending));
+  for (const [name, code] of Object.entries(ending)) {
+    assert.equal(words[name] === words[name].toUpperCase(), code < 0 && code !== ending.simon);
+    assert.ok(words[name].endsWith("!"));
+  }
+});
+
 test("a level opens with the pad dead for 19 frames and the hazards off for 18", () => {
   const { start } = table.play;
   let countdown = start.wait;

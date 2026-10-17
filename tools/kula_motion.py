@@ -16,6 +16,7 @@ import math
 import re
 import struct
 import sys
+import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -1369,6 +1370,41 @@ CHECKS = [
     (0x80037998, "sw $v1, 356($s0)", "and of acid"),
     (0x8003792c, "bne $v0, $zero, 0x800379d0", "a kind with no case leaves the word as it was"),
     (0x800379bc, "bne $v0, $v1, 0x800379c8", "as does a lattice word below the empty one"),
+    # The level's end screen.
+    (0x80041bf0, "jal 0x80015fe8", "the loop draws the end screen on each pass of an ending"),
+    (0x80015ff8, "jal 0x800156e0", "through the loader of its word"),
+    (0x800156e4, "lw $v1, 24064($v1)", "which reads the outcome at 0x800a5e00"),
+    (0x80015714, "subu $v0, $zero, $v1", "takes its negation"),
+    (0x80015718, "bltz $v1, 0x80015784", "for a death"),
+    (0x8001571c, "sll $s2, $v0, 1", "doubled, as the index of the word"),
+    (0x80015784, "lui $v0, 0x000a", "a death's screen reads the total"),
+    (0x80015788, "lw $v0, 24196($v0)", "at 0x800a5e84 for the game's end"),
+    (0x80015724, "lw $v1, 13232($v1)", "the mode at 0x800a33b0 opens the other modes' words"),
+    (0x80015880, "lw $v0, 13232($v0)", "and the arcade's last final completed, the world counted on"),
+    (0x80015a1c, "addu $s2, $zero, $zero", "and the first word where there is no outcome"),
+    (0x80015a34, "lw $t0, 24536($t0)", "the table's address is the word at 0x80075fd8"),
+    (0x80015a3c, "lw $v0, 0($t0)", "its first word the count of its entries"),
+    (0x80015a48, "slt $v0, $v0, $s2", "past which, less two, nothing is drawn"),
+    (0x80015a4c, "bne $v0, $zero, 0x80015f2c", "the draw skipped there"),
+    (0x80015a88, "sll $v0, $s2, 3", "an entry is eight bytes"),
+    (0x80015a94, "lw $v1, 4($v0)", "an offset from the table"),
+    (0x80015a90, "lw $a3, 8($v0)", "and a length"),
+    (0x80015abc, "jal 0x8005800c", "inflated by the zlib the executable carries"),
+    (0x80015acc, "jal 0x80058060", "in one call"),
+    (0x80015c28, "addiu $s2, $s2, 1", "a word is two entries, the index's and the next"),
+    (0x80015d3c, "addiu $a1, $zero, 2", "the first taken off what is behind it"),
+    (0x80015e28, "addiu $a1, $zero, 1", "and the second added to it"),
+    # The last final's completion.
+    (0x80041c30, "sw $v0, 10252($gp)", "the loop keeps the pass's outcome for the next pass's gate"),
+    (0x80041b98, "jal 0x8004245c", "and on an ending's first pass calls the next-level routine"),
+    (0x800428d0, "slt $v0, $v0, $v1", "which asks the level within the pack against the pack's count"),
+    (0x800428d4, "bne $v0, $zero, 0x8004297c", "and returns while it is below"),
+    (0x8004296c, "addiu $v0, $v0, 1", "else counts the world word on"),
+    (0x80042970, "sw $v0, 1236($gp)", "at 0x800a340c"),
+    (0x80041d48, "sw $zero, 1236($gp)", "which the pass's tail puts back to nothing"),
+    (0x80041d4c, "sw $v0, 12108($gp)", "with the total at 0x800a5e84 below it"),
+    (0x80041e44, "sw $zero, 1236($gp)", "on its other path as well"),
+    (0x80041e48, "sw $v0, 12108($gp)", "the total with it"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -1850,6 +1886,34 @@ IMMEDIATES = [
      0x8002dd48, "addiu $v0, $v0, {}"),
     ("the level's clock and its end", "mark.skips", "a block of this kind not counted", 0x8002dcec,
      "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "words.win", "a way out shows the end screen's word at this index", 0x80015730,
+     "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.last", "an index past the count less this draws nothing", 0x80015a44,
+     "addiu $v0, $v0, {}"),
+    ("the level's clock and its end", "words.over", "a total below nothing shows the word at this", 0x800157e4,
+     "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.over.state", "once the screen's state is this", 0x800157d8,
+     "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "words.trial", "the time trial, this mode", 0x80015728, "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "words.better", "shows this for an exit under a frame of its time", 0x8001576c,
+     "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.slow.gate", "and past this many frames, less one", 0x80015770,
+     "slti $v0, $v0, {}"),
+    ("the level's clock and its end", "words.slow", "this", 0x80015780, "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.qualified", "its qualifying screen this", 0x80015958, "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.failed", "or this", 0x8001595c, "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.copycat", "Copycat, this mode", 0x800157f0, "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "words.won2", "shows this for the second player's win", 0x80015868,
+     "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.won1", "this for the first's", 0x8001586c, "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.equal", "and this for a draw", 0x80015878, "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.trial.won2", "as does the time trial for two players", 0x800159f4,
+     "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.trial.won1", "the first's", 0x800159f8, "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.trial.equal", "and a draw", 0x80015a04, "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.final.world", "the last final completed, the world counted on to this",
+     0x800158b4, "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "words.final", "picks this for a pass", 0x800158cc, "addiu $s2, $zero, {}"),
 
     ("what harms the ball", "laser.cell", "the ball's own cell holding this, a lit beam, is the laser's death", 0x8003a944,
      "addiu $v1, $zero, {}"),
@@ -2066,6 +2130,8 @@ MULTIPLIERS = [
      "v0", "v1"),
     ("the level's clock and its end", "death.each", "times this a level", 0x80041fb0, 6, "v1", "v1"),
     ("the level's clock and its end", "death.each.final", "as in the finals", 0x80041fdc, 5, "v0", "v1"),
+    ("the level's clock and its end", "words.allowance", "the time trial adds this many frames a step of its difficulty",
+     0x80015748, 6, "a0", "v0"),
     ("the fly-in", "flight.above", "the curve ends this far along the normal from the view's target, units", 0x800341a4, 6,
      "a0", "v1"),
     ("the fly-in", "flight.out", "the eye starts this much further out along its line of sight, units", 0x800345b8, 8, "s0",
@@ -2210,6 +2276,19 @@ CRUMBLING = 6
 CRUMBLING_UNDER = 96      # the ball's word for standing on a crumbling block
 ENDINGS = ("exit", "bonus", "hidden", "spikes", "time", "lost", "fire", "captivator", "acid", "laser", "simon")
 
+# The level's end screen: a table of deflated images two to a word, the word each pair letters read off the pictures
+# and held to the disc by a digest of the pair's two images.
+WORDS_TABLE = (0x80015a30, 0x80015a34)
+WORDS_COUNT = 38
+PAIR = 2                  # sprites to a word
+TIM = (0x10, 0x8)         # an image's magic and its flags, four bits a pixel with a palette
+WORDS = {0: ("LOADING!", 0x122f0a86), 2: ("SPIKED!", 0xfbb76945), 4: ("TIME OUT!", 0x7aae5b28),
+         6: ("FELL OFF!", 0x44bd0451), 8: ("FIRE!", 0x9bb30072), 10: ("CAPTURED!", 0x0a0701e3),
+         12: ("ACID!", 0xd8986b6e), 14: ("LASER!", 0x318d30cd), 16: ("Wrong Move!", 0x1a4e42da),
+         18: ("Game Over!", 0x972e699e), 20: ("Well Done!", 0x6a8efed3), 22: ("You failed to qualify!", 0xa0166629),
+         24: ("You qualified!", 0x75eea631), 28: ("Player 1 Won!", 0x4b91b885), 30: ("Player 2 Won!", 0xf2f91628),
+         32: ("Equal Time!", 0x27bcf853), 34: ("Very Well Done!", 0x1a647fd3), 36: ("Level Cleared!", 0x5a073910)}
+
 
 class Code:
     def __init__(self, blob):
@@ -2309,6 +2388,7 @@ def readings(code):
     out["glow"], out["glow.colours"] = glow(code, out)
     out["spin.order"] = spin_orders(code)
     out["spin.quarter"] = code.immediate(*QUARTER)
+    out["words"] = words(code)
     moves(code, out)
     dispatch(code, TAKE_TYPES, TAKE_CASES, TAKE_TAIL, "the contact walk")
     dispatch(code, LOADER_TYPES, LOADER_CASES, LOADER_PLAIN, "the loader")
@@ -2897,14 +2977,43 @@ def flight(r):
                       "left": [unit, unit - quarter - unit // r["flight.third"], 0, 0]}}
 
 
+def words(code):
+    """The word each pair of the end screen's sprites letters, by the index
+    of the pair's first entry. The table the loader reads is the count of
+    its entries and then an offset and a length for each, a deflated image
+    four bits a pixel with a palette; a pair is held to the disc by a digest
+    of its two images, and a pair that letters no word is left out."""
+    sprites = 0x80000000 | code.word(code.address(*WORDS_TABLE))
+    count = code.word(sprites)
+    if count != WORDS_COUNT:
+        sys.exit(f"the end screen's table at 0x{sprites:08x} holds {count} entries, not {WORDS_COUNT}")
+    out = {}
+    for index, (word, digest) in WORDS.items():
+        pair = b""
+        for entry in range(index, index + PAIR):
+            offset, size = code.word(sprites + 4 + 8 * entry), code.word(sprites + 8 + 8 * entry)
+            try:
+                image = zlib.decompress(code.read(sprites + offset, size))
+            except zlib.error as e:
+                sys.exit(f"entry {entry} of the end screen's table does not inflate: {e}")
+            if len(image) < 8 or struct.unpack_from("<II", image) != TIM:
+                sys.exit(f"entry {entry} of the end screen's table is not an image four bits a pixel with a palette")
+            pair += image
+        if zlib.crc32(pair) != digest:
+            sys.exit(f"entries {index} and {index + 1} of the end screen's table are not the pair read as {word!r}")
+        out[index] = word
+    return out
+
+
 def play(r):
     """The level's own words: the start's two counts, the clock's ticks, the
-    outcomes a level ends with and the frames each ending waits, a bonus
-    level's marking, the deaths' penalty, the ending's view and the fly-in,
-    each held against the others: one code and one countdown for a cause
-    wherever it is read twice, the codes distinct, the spikes' ending the
-    invincibility word's own rest, and the penalty's gates one past their
-    values."""
+    outcomes a level ends with, the frames each ending waits and the word
+    the end screen shows for it, a bonus level's marking, the deaths'
+    penalty, the ending's view and the fly-in, each held against the
+    others: one code and one countdown for a cause wherever it is read
+    twice, the codes distinct, the spikes' ending the invincibility word's
+    own rest, every index the end screen picks lettered, and the gates one
+    past their values."""
     if r["exit.type"] != 7 or r["exit.hidden.type"] != 26:
         sys.exit("the exits are tested as other types than the exit's and the hidden exit's")
     if r["clock.mode"] != 1 or r["clock.face"] != 8:
@@ -2917,7 +3026,9 @@ def play(r):
                  ("end.hidden", "end.hidden.landing"), ("end.acid", "end.acid.wait"), ("end.fire", "end.fire.swell"),
                  ("end.captivator", "end.captivator.still", "end.star"), ("wait.exit", "wait.hidden"),
                  ("wait.simon", "wait.simon.done"), ("wait.spikes", "wait.spikes.landing", "wait.captivator", "wait.star"),
-                 ("acid.gain", "acid.gain.wait"), ("death.each", "death.each.final")):
+                 ("acid.gain", "acid.gain.wait"), ("death.each", "death.each.final"),
+                 ("words.won1", "words.trial.won1"), ("words.won2", "words.trial.won2"),
+                 ("words.equal", "words.trial.equal")):
         if len({r[k] for k in keys}) != 1:
             sys.exit(f"{', '.join(keys)} are not one value")
     ending = {name: r[f"end.{name}"] for name in ENDINGS}
@@ -2929,10 +3040,20 @@ def play(r):
         sys.exit("a death's penalty is not gated at its most, or does not count a world's levels")
     wait = {name: r[f"wait.{name}"] for name in ENDINGS if f"wait.{name}" in r}
     wait["bonus"] = r["wait.hidden"]
+    picks = {name: -code * 2 if code < 0 else r["words.win"] for name, code in ending.items()}
+    shown = (*picks.values(), r["words.over"], r["words.better"], r["words.slow"], r["words.qualified"],
+             r["words.failed"], r["words.won1"], r["words.won2"], r["words.equal"])
+    if any(index not in r["words"] for index in shown) or r["words.last"] != -PAIR:
+        sys.exit("the end screen picks an entry that letters no word, or draws past another count than its pairs'")
+    if r["words.final"] != picks["acid"] or r["words.copycat"] != r["clock.mode"] \
+            or r["words.slow.gate"] != 20 * r["words.allowance"] + 1:
+        sys.exit("the final's branch does not pick the acid's word, Copycat is not the clock's standing mode, "
+                 "or the time trial's slow exit is not gated at twenty seconds")
+    named = {name: r["words"][index] for name, index in picks.items()}
     return {"start": {"wait": r["start.wait"], "guard": r["start.guard"]},
             "clock": {"tick": r["clock.tick"], "second": r["time.tick"], "face": r["clock.face"],
                       "out": r["end.time"]},
-            "ending": ending, "wait": wait,
+            "ending": ending, "wait": wait, "words": named,
             "bonus": {"block": r["mark.points"], "skips": r["mark.skips"]},
             "points": {"each": r["death.each"], "most": r["death.most"], "levels": r["death.levels"]},
             "view": {"angles": [r["end.view.x"], r["end.view.y"], r["end.view.z"]], "swing": r["end.view.swing"],
@@ -3052,8 +3173,8 @@ def table(r, platform_speed):
     to take it and what that scores, a device under the ball what it does
     there, a kind or a type that can hurt the ball what it does, a kind the
     ball slides on, breaks or rides what it does to the roll, each kind the
-    word the ball keeps for standing on it, and the level's own words, the clock's, the endings', a bonus level's, an
-    ending's and the fly-in's, sit under `play`. The devices' light and each device's
+    word the ball keeps for standing on it, and the level's own words, the clock's, the endings', the end screen's, a
+    bonus level's, an ending's and the fly-in's, sit under `play`. The devices' light and each device's
     colours, by world and then by circuit where it has one, sit apart from
     the types, whose entries are what moves.
     """
@@ -3207,6 +3328,10 @@ def show_readings(code):
     levels = readings(code)["laser.levels"]
     rows.append(("laser", f"steps in the beam's table, levels {min(levels)} to {max(levels)}",
                  code.address(*LASER_LEVELS[0]), len(levels)))
+    sprites = 0x80000000 | code.word(code.address(*WORDS_TABLE))
+    for index, word in words(code).items():
+        rows.append(("the level's clock and its end", f"the end screen's word at {index}, in two sprites",
+                     sprites + 4 + 8 * index, word))
     order = {g: i for i, g in enumerate(dict.fromkeys(r[0] for r in rows))}
     rows.sort(key=lambda r: (order[r[0]], r[2]))
     last = None
