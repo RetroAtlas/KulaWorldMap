@@ -94,6 +94,7 @@ const PITCH = 30;
 const ZOOM = { blocks: 8, min: 0.8, max: 3 };
 const BELOW = 1 / 5;
 const FOLLOW_MS = 120;
+const LANDS = 1e-4;
 const ENTER_MS = 600;
 const LEAVE_MS = 450;
 const GAP_MS = 250;
@@ -541,7 +542,10 @@ function advance() {
   if (!ease && !live.ended) {
     const s = shown();
     const k = motionOn() ? 1 - Math.exp(-dt / FOLLOW_MS) : 1;
-    state.target = state.target.map((v, i) => v + (s.centre[i] - v) * k);
+    state.target = state.target.map((v, i) => {
+      const off = s.centre[i] - v;
+      return Math.abs(off) < LANDS ? s.centre[i] : v + off * k;
+    });
     const frame = motionOn() ? looked(live.run.ball) : s.frame;
     if (state.frame !== frame) {
       state.frame = frame;
