@@ -602,6 +602,7 @@ function stepped(dt) {
       else played();
       framing = false;
       if (saying !== null) told(saying);
+      if (live) stood();
       moved = true;
     }
   } else owed = 0;
@@ -611,11 +612,17 @@ function stepped(dt) {
     ageDust(dt / 1000);
     moved = true;
   }
+  stood();
+  if (moved) line();
+  return moved;
+}
+
+/** Where the ball last stood, as Motion off draws it, taken on the game frame it stood there: a
+    drawn frame may run several. */
+function stood() {
   const b = live.run.ball;
   if (!moving(b) || live.station) live.still = stateOf(b);
   live.station = false;
-  if (moved) line();
-  return moved;
 }
 
 /** A burst of `n0` motes at `point` over `block`, while the dust is on, still with Motion off. */

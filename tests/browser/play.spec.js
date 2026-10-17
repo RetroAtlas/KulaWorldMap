@@ -2682,3 +2682,57 @@ test("every sentence the level says has an animation frame of its own, however m
     ]);
   expect(errors).toEqual([]);
 });
+
+test("with Motion off the ball stands where a move brought it on the game frame it came, however many game frames one drawn frame runs", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false });
+  await startPlay(page);
+  await frozen(page);
+  // Up held from the level's opening, a frame drawn for each game frame, or with `batch` one drawn
+  // frame for the game frames from its `from` to its `to`
+  const roll = (batch) =>
+    page.evaluate(async (batch) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ draw, clock }, { motionTable }, P] = await Promise.all(
+        ["viewer/draw/render.js", "viewer/data.js", "play/play.js"].map(at),
+      );
+      const key = (type) =>
+        document.body.dispatchEvent(new KeyboardEvent(type, { key: "ArrowUp", bubbles: true }));
+      const run = (frames) => {
+        window.__step((frames * 1000) / motionTable().hz);
+        draw();
+      };
+      const start = clock();
+      const seen = () => ({
+        frame: clock() - start,
+        block: P.station().block,
+        line: document.getElementById("playLine").textContent,
+        offset: P.handed().offset,
+      });
+      key("keydown");
+      const states = [];
+      if (batch) {
+        while (clock() - start < batch.from) run(1);
+        run(batch.to - batch.from);
+        states.push(seen());
+      } else
+        while (clock() - start < 90) {
+          run(1);
+          states.push(seen());
+        }
+      key("keyup");
+      return states;
+    }, batch);
+  const single = await roll(null);
+  const on = (f) => single.find((s) => s.frame === f);
+  const came = single.find((s) => s.block.join() !== single[0].block.join()).frame;
+  const left = single.find((s) => s.frame > came && s.block.join() !== on(came).block.join());
+  await page.keyboard.press("Escape");
+  await startPlay(page);
+  const [batched] = await roll({ from: came - 2, to: came + 10 });
+  expect(left?.frame ?? Infinity).toBeGreaterThan(came + 10);
+  expect(batched).toEqual(on(came + 10));
+  expect(errors).toEqual([]);
+});
