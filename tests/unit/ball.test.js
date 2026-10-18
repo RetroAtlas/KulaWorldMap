@@ -720,6 +720,22 @@ test("Up with Space jumps the ball along the rows, 458 up on the 15th and 16th f
   assert.deepEqual(b.rest.cell, [17, 16, 17]);
 });
 
+test("a forward jump on a face whose normal points the positive way along its axis, +x or the underside, fails the snap's landing, the point the radius under the centre rounding into the cell beyond the block, and lands on the frame after where the snap left it", () => {
+  for (const face of [1, 5]) {
+    const probe = lattice([17, 18, 17], [17, 16, 17]);
+    const b = ballAt(RULES, [17, 18, 17], face, UP);
+    const snapped = [17 * UNIT, 16 * UNIT, 17 * UNIT].map((c, i) => c + FACE_NORMAL[face][i] * 356);
+    run(b, probe, 30, PAD.up | PAD.cross);
+    assert.equal(b.state, JUMP, `face ${face}`);
+    assert.deepEqual(run(b, probe, 1, 0), [], `face ${face}: the snap lands nothing`);
+    assert.deepEqual([b.state, b.pos], [FALL, snapped], `face ${face}`);
+    assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed" }], `face ${face}: the fall lands`);
+    assert.deepEqual([b.state, b.pos], [REST, snapped], `face ${face}`);
+    assert.deepEqual(blockUnder(b), [17, 16, 17], `face ${face}`);
+    assert.equal(heightOf(b), 100, `face ${face}`);
+  }
+});
+
 test("a jump taken early in a block lands short of the middle's third at rest with the roll asked, which the pad's reading drops, so with Up released the ball rests where it landed and with Up held it rolls on, from the speed the air left it", () => {
   const probe = row(8, 18);
   const b = ballAt(RULES, [17, 18, 17], TOP, UP);
