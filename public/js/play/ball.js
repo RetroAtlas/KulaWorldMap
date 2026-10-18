@@ -124,8 +124,6 @@ export const centreOf = (b) => positionOf(b).map((c) => c / b.unit + 0.5);
 /** Whether the ball has anything to do: it moves, a ramp runs, a turn waits or the view's pitch
     returns. */
 export const moving = (b) => b.state !== REST || b.ramp !== null || b.turn !== 0 || b.look.word > 0;
-/** The centre's lift off the face the jump or the hop left, in game units. */
-const liftOf = (b) => dot(add(b.pos, b.saved, -1), b.n) + b.radius;
 /** The jump's row `i`, its three halfwords scaled by the long jump's measure while its word
     stands, the odd half dropped toward nothing. */
 function rowOf(b, i) {
@@ -145,6 +143,8 @@ function along(b, v) {
 export const progressOf = (b) => along(b, b.h);
 /** The centre's measure across its cell, along the ball's side. */
 export const acrossOf = (b) => along(b, b.s);
+/** The centre's measure into its cell along the normal, its radius at rest. */
+const upOf = (b) => along(b, b.n);
 
 /** Lay the centre at progress `p` into its cell along the heading. */
 function lay(b, p) {
@@ -439,7 +439,7 @@ function land(b, probe, out) {
 // above short of the ball's radius, drops it at its rise reversed.
 function ceiling(b, probe, rise) {
   const j = b.table.jump;
-  if (rise <= 0 || liftOf(b) < j.wall) return false;
+  if (rise <= 0 || upOf(b) < j.wall) return false;
   const cell = cellOf(b, b.pos);
   const p = progressOf(b);
   const over = add(cell, b.n);
@@ -480,12 +480,12 @@ function jumping(b, probe, out) {
   const cell = cellOf(b, b.pos);
   const p = progressOf(b);
   const ahead = add(cell, b.h);
-  const lift = liftOf(b);
+  const up = upOf(b);
   if (p >= j.wall) {
     const wall =
       probe.solid(ahead) ||
-      (lift >= j.wall && probe.solid(add(ahead, b.n))) ||
-      (lift < j.low && probe.solid(add(ahead, b.n, -1)));
+      (up >= j.wall && probe.solid(add(ahead, b.n))) ||
+      (up < j.low && probe.solid(add(ahead, b.n, -1)));
     if (wall || (b.way !== null && b.way.some((c, i) => c !== b.h[i]))) {
       b.pos = add(b.pos, b.h, -2 * advance);
       b.speed = -advance;

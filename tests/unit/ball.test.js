@@ -1105,6 +1105,38 @@ test("a wall met in the air throws the ball back and drops it with the spin's sp
   assert.equal(heightOf(b), 100);
 });
 
+test("a block above and the floor ahead are asked about the cell the centre lies in, so a jump under a block three above its floor lands two blocks on, a hop under one rests, and a block two above still drops the ball on the seventh frame", () => {
+  // OBJ LEVEL's floor along y, with the laser's far end three above the second block of the jump's way
+  const floor = [];
+  for (let y = 15; y <= 19; y++) floor.push([15, y, 17]);
+  const high = lattice(...floor, [15, 18, 14]);
+  const b = ballAt(RULES, [15, 17, 17], TOP, [0, 1, 0]);
+  const events = [];
+  for (let f = 1; f <= 31; f++) {
+    events.push(...run(b, high, 1, PAD.up | PAD.cross).map((e) => [f, e]));
+    assert.notEqual(b.state, FALL, `frame ${f}`);
+  }
+  assert.deepEqual(events, [[31, { at: "landed" }]]);
+  assert.deepEqual([b.state, blockUnder(b), b.progress], [REST, [15, 19, 17], 256]);
+  const over = lattice(...floor, [15, 17, 14]);
+  const c = ballAt(RULES, [15, 17, 17], TOP, [0, 1, 0]);
+  for (let f = 1; f <= 31; f++) {
+    run(c, over, 1, PAD.cross);
+    assert.notEqual(c.state, FALL, `frame ${f}`);
+  }
+  assert.equal(c.state, REST, "the hop's end");
+  run(c, over, 1, 0);
+  assert.deepEqual([blockUnder(c), heightOf(c)], [[15, 17, 17], 100]);
+  const low = lattice(...floor, [15, 18, 15]);
+  const d = ballAt(RULES, [15, 17, 17], TOP, [0, 1, 0]);
+  let hit = null;
+  for (let f = 1; f <= 31 && hit === null; f++) {
+    run(d, low, 1, PAD.up | PAD.cross);
+    if (d.state === FALL) hit = f;
+  }
+  assert.equal(hit, 7);
+});
+
 test("the view's word grows by a rate rising from 4 a frame over a fall, keeps its rate over a block met in the fall, and comes back by 18 once the ball is down", () => {
   const probe = row(15, 18);
   const b = ballAt(RULES, [17, 16, 17], TOP, UP);
