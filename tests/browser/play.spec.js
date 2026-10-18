@@ -2321,7 +2321,33 @@ test.describe("with a touch screen", () => {
   });
 });
 
-test("a jump onto a moving platform rides it: the strip says so, the ball stands where the platform has carried it, and the station follows the platform to and fro", async ({
+/** The depth the frame is handed for the ball and the depth of the platform's body cell under the
+    ball's centre, each as the frame last drew them; a cell sorts at its corner. */
+const rideDepths = (page) =>
+  page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ depth }, { draw, overlayWith }, P, { FACE_NORMAL }] = await Promise.all(
+      ["viewer/state.js", "viewer/draw/render.js", "play/play.js", "format/lattice.js"].map(at),
+    );
+    const bodies = [];
+    let drawing = true;
+    overlayWith({
+      block: (ctx, c) => {
+        if (drawing && c.body) bodies.push([c.x, c.y, c.z]);
+      },
+    });
+    draw();
+    drawing = false;
+    const g = P.handed();
+    const n = FACE_NORMAL[g.w.face];
+    const centre = [g.w.c.x, g.w.c.y, g.w.c.z].map((v, i) => v + 0.5 + 0.5 * n[i] + g.offset[i]);
+    const under = bodies.find((b) =>
+      b.every((v, i) => n[i] !== 0 || Math.abs(centre[i] - v - 0.5) < 0.5),
+    );
+    return { ball: g.depth, cell: under ? depth(...under) : null };
+  });
+
+test("a jump onto a moving platform rides it: the strip says so, the ball stands where the platform has carried it, the station follows the platform to and fro, and the ball sorts nearer than the body cell under it", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -2356,6 +2382,17 @@ test("a jump onto a moving platform rides it: the strip says so, the ball stands
   await expect
     .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [25] })
     .toEqual([17, 15, 17]);
+  // facing +y, the camera behind it, the ball must sort nearer than the body cell under it, which
+  // is drawn off its lattice cell, or the cell's top paints over the ball
+  for (const heading of ["+x", "+y"]) {
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(async () => (await station(page)).heading).toBe(heading);
+    await expect.poll(async () => (await station(page)).moving).toBe(false);
+  }
+  await expect(status(page)).toHaveText(RIDING);
+  const depths = await rideDepths(page);
+  expect(depths.cell).not.toBeNull();
+  expect(depths.ball).toBeLessThan(depths.cell);
   expect(errors).toEqual([]);
 });
 

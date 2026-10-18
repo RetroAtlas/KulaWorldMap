@@ -307,9 +307,12 @@ function travellers(l) {
     through: covered(s.centre),
     // at an inner corner the ball touches the block it leaves as well as the wall, and a
     // platform's blocks are drawn off their cells, so while the climb's ramp runs or the ball
-    // rides it sorts by its own centre rather than by the block under it
+    // rides it sorts as the unit cube about its centre would, by that cube's corner as a block
+    // sorts by its cell's, rather than by the block under it
     depth:
-      live.run.ball.ramp?.kind === "climb" || live.run.ball.riding ? depth(...s.centre) : undefined,
+      live.run.ball.ramp?.kind === "climb" || live.run.ball.riding
+        ? depth(...s.centre.map((v) => v - 0.5))
+        : undefined,
   };
   return new Map([[BALL, going]]);
 }
