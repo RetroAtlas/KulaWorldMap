@@ -56,6 +56,7 @@ const object = (face, type, facing = 0, f3 = 0) => ({
   v: 0,
 });
 const own = (x, y, z, kind, type = 1) => ({ x, y, z, kind, type, f: Array(11).fill(0) });
+const patch = (x, y, z, face) => ({ x, y, z, kind: 0, on: [object(face, 2)] });
 const platform = (x, y, z) => ({
   x,
   y,
@@ -281,8 +282,8 @@ test("the word for what the ball stands on is the game's: a face's type on a pla
 
 test("the probe answers the lattice as the planner's did, and names the kind and the word under a cell", () => {
   const l = level(
-    [...row(10, 13, 10, 17), [12, 10, 17, 2], [20, 14, 17]],
-    [own(11, 10, 17, 6), platform(20, 14, 17)],
+    [...row(10, 13, 10, 17), [12, 10, 17, 2], [15, 10, 17], [20, 14, 17]],
+    [own(11, 10, 17, 6), patch(13, 10, 17, TOP), patch(15, 10, 17, 1), platform(20, 14, 17)],
   );
   const live = standing(l, [10, 10, 17]);
   const p = probeOf(live);
@@ -297,11 +298,15 @@ test("the probe answers the lattice as the planner's did, and names the kind and
   assert.equal(p.value([14, 10, 17]), -1);
   assert.equal(p.value([40, 10, 17]), -1);
   assert.equal(p.slick([12, 10, 17]), true);
+  assert.equal(p.slick([13, 10, 17]), true, "an ice patch on the face the ball stands on");
+  assert.equal(p.slick([15, 10, 17]), false, "a patch on another face of the block");
   assert.equal(p.slick([10, 10, 17]), false);
   assert.equal(p.brittle([11, 10, 17]), true);
   assert.equal(p.brittle([12, 10, 17]), false);
   assert.equal(p.standing([11, 10, 17], TOP), 96);
   assert.equal(p.standing([12, 10, 17], TOP), 2);
+  assert.equal(p.standing([13, 10, 17], TOP), 2);
+  assert.equal(p.standing([15, 10, 17], TOP), 0);
   live.world = world(level(row(10, 11, 10, 17)));
   assert.equal(p.solid([12, 10, 17]), false, "the probe reads the world as it now stands");
 });

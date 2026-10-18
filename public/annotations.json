@@ -81,7 +81,7 @@
     },
     "2": {
       "name": "Ice",
-      "note": "Ice on one face of an otherwise normal block."
+      "note": "Ice on one face of an otherwise normal block. The ball slides across it as across an ice block."
     },
     "5": {
       "name": "Teleporter",

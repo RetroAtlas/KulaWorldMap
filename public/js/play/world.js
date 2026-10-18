@@ -245,7 +245,9 @@ export function probeOf(live) {
     filled,
     standable: (cell, face) => filled(cell) && !filled(add(cell, FACE_NORMAL[face])),
     platform: (cell) => (inside(cell) ? platformAt(world(), cell) : null),
-    slick: (cell) => kindAt(world(), cell) === ICE,
+    slick: (cell) =>
+      standingAt(world(), cell, faceUnder(live.ball), frameShown(live)) ===
+      world().standing.get(ICE),
     brittle: (cell) => kindAt(world(), cell) === CRUMBLING,
     value,
     standing: (cell, face) => standingAt(world(), cell, face, frameShown(live)),

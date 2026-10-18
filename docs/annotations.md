@@ -58,7 +58,7 @@ The loader paints the face with the fire block's own texture ([tgi.md](tgi.md)).
 
 ### type 2: Ice
 
-The loader paints the face with the ice block's own texture ([tgi.md](tgi.md)). LEVEL 47 carries seventeen and no ice blocks.
+The loader paints the face with the ice block's own texture ([tgi.md](tgi.md)). LEVEL 47 carries seventeen and no ice blocks. The game reads a patch as ice for the roll as for the chill. The ball's read of the block under it writes one word for what it stands on, 2 for a kind-2 block (`0x800378bc`) and, for a plain block, the type of the slot on the face it stands on (`0x80037944`, `0x8003794c`), so 2 for a patch there, and the roll's predicate (`0x80030e2c` to `0x80030e38`) and the hazards' ice case (`0x8003aab0`) ask that word, not the block's kind ([motion.md](motion.md)).
 
 ### type 5: Teleporter
 

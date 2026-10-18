@@ -891,6 +891,37 @@ test("over an edge beside a neighbour, which holds the ball on stone, ice slides
   assert.ok(!frames.some((f) => has(f, "refused")));
 });
 
+test("an ice patch on a plain block's face is ice to the roll as to the chill: over an edge beside a neighbour it slides the ball into the cell beyond, where it falls from 101 of progress, rolling onto it or from rest on it", () => {
+  const l = level([...row(15, 17), [17, 18, 17], [18, 15, 17]], [start(), on(15, ICE)]);
+  const rolled = standing(l, { cell: [17, 18, 17], face: TOP, h: UP });
+  const frames = trace(rolled, 200, PAD.up, (l) => l.ball.state === FALL);
+  const fell = frames.at(-1);
+  assert.equal(fell.state, FALL);
+  assert.equal(cellOf(rolled.ball)[1], 14, "in the cell beyond the edge");
+  assert.ok(
+    fell.before.progress >= ROLL.over[0] && fell.before.progress < ROLL.over[0] + ROLL.top,
+    String(fell.before.progress),
+  );
+  assert.ok(
+    frames.some((f) => f.words.standing === ON_ICE),
+    "read as ice",
+  );
+  assert.deepEqual(
+    frames.flatMap((f) => f.events.filter((e) => e.at)),
+    Array(3).fill({ at: "middle" }),
+    "through the patch's middle as through the stone blocks' before it",
+  );
+  assert.ok(!frames.some((f) => f.state === REST), "never at rest");
+  assert.ok(!frames.some((f) => has(f, "face")), "nothing takes it round");
+  assert.ok(!frames.some((f) => has(f, "refused")));
+
+  const rested = standing(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  const [went] = trace(rested, 1, PAD.up);
+  assert.equal(went.state, ROLLING, "from rest on the patch Up rolls the ball off");
+  trace(rested, 60, PAD.up, (l) => l.ball.state === FALL);
+  assert.equal(rested.ball.state, FALL);
+});
+
 test("the slide off the last ice block goes round the edge where nothing stands beside, and up a wall ahead, and ends on the first block that is not ice", () => {
   const at = { cell: [17, 18, 17], face: TOP, h: UP };
   const round = standing(level([...row(15, 17, ICE), [17, 18, 17]], [start()]), at);
