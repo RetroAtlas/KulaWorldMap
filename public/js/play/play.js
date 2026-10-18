@@ -118,16 +118,9 @@ const NO_START = "The level has no start, so the ball stands on the first face i
 const NOWHERE = "The level has no face the ball could stand on.";
 const OBJECTS_ON = "Objects turned on, for the ball.";
 const VERDICT = {
-  time: "Time is up.",
-  lost: "The ball fell off the level.",
   exit: "Out by the exit: the level is done.",
   hidden: "Out by the hidden exit: the level is done.",
   bonus: "Every block is marked: the level is done.",
-  spikes: "The ball is killed on the spikes.",
-  fire: "The ball is burnt.",
-  captivator: "The ball is caught.",
-  acid: "The ball is dissolved in the acid.",
-  laser: "The ball is killed in the beam.",
 };
 const DYING = {
   spikes: "On the spikes",
@@ -903,13 +896,13 @@ function sent({ from, to }) {
     swing of an arcade level's eye, whichever figures the level's own eye swings by. */
 function ended(code) {
   const { play, turn } = motionTable();
-  const { view, clock } = play;
+  const { view, clock, words } = play;
   const w = live.run.words;
   const name = endingName(code);
   const seconds = Math.max(0, Math.floor(w.clock / clock.second));
   live.ended = {
     code,
-    how: `${VERDICT[name] ?? `${ENDED}.`} ${counted(w.score, "point")}, ${counted(seconds, "second")} left.`,
+    how: `${VERDICT[name] ?? words[name] ?? `${ENDED}.`} ${counted(w.score, "point")}, ${counted(seconds, "second")} left.`,
     frame: 0,
     length: Math.floor(turn / view.swing),
     theta: 0,

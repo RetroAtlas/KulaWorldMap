@@ -12,23 +12,21 @@ import {
 
 const LEVEL = "/#HIRO/0/45,35/fit/33";
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazards)\.js$/;
-const TIME_UP = "Time is up. 0 points, 0 seconds left. Space or Enter starts the level again.";
+const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 const TIME_UP_PAD =
-  "Time is up. 0 points, 0 seconds left. Space, Enter or a tap on the pad starts the level again.";
+  "TIME OUT! 0 points, 0 seconds left. Space, Enter or a tap on the pad starts the level again.";
 // on a level with no key the block under the ball is marked as the level opens
 const TIME_UP_MARKED =
-  "Time is up. 50 points, 0 seconds left. Space or Enter starts the level again.";
-const LOST =
-  /^The ball fell off the level\. 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
+  "TIME OUT! 50 points, 0 seconds left. Space or Enter starts the level again.";
+const LOST = /^FELL OFF! 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
 const DONE =
   /^Out by the exit: the level is done\. 1500 points, \d+ seconds left\. Space or Enter starts the level again\.$/;
-const SPIKED =
-  /^The ball is killed on the spikes\. 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
+const SPIKED = /^SPIKED! 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
 const ENDED = "The level has ended";
 const FORGIVEN = "Forgiven: the ball would have been killed on the spikes.";
 const FORGIVEN_FALL = "Forgiven: the ball would have fallen off the level.";
 const LOST_BROKEN =
-  /^The ball fell off the level\. 50 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
+  /^FELL OFF! 50 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
 const BROKE = "17,16,17, top. The crumbling block breaks under the ball.";
 const GONE = "The crumbling block at 17,16,17 is gone.";
 const TAKEN = "Taken: Coin (bronze) on the top";
@@ -1514,7 +1512,7 @@ test("playing from another block leaves the level one ball, a start on a clock s
   await expect(page.locator("#detail")).toBeHidden();
   await page.mouse.move(2, 2);
   await page.keyboard.down("ArrowLeft");
-  await expect(status(page)).toHaveText(/^Time is up\./, { timeout: 10_000 });
+  await expect(status(page)).toHaveText(/^TIME OUT!/, { timeout: 10_000 });
   await page.keyboard.up("ArrowLeft");
   expect(await handed(page)).toBe(false);
   expect(await marked(page, "29")).toBe(1);
