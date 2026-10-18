@@ -38,22 +38,25 @@ function built(kinds, hides, cell, kind) {
 }
 
 /** The level as play holds it, the walkers laid at `frame`: the lattice's words and kinds by
-    cell, the faces' types, the word each kind reads as under the ball, the pickups with where
-    each stands, the devices, the captivators with where each entry stands and its reach, the
-    crumbling blocks, the platforms, the blocks a level with no key counts, the starts with the
-    marker each leaves while the ball is on the level, what travels and the dice, the live sets
-    and the index the frame draws. */
+    cell, the faces' types, the word each kind reads as under the ball, the beams' ends and the
+    word a lit beam's cell holds, the pickups with where each stands, the devices, the
+    captivators with where each entry stands and its reach, the crumbling blocks, the platforms,
+    the blocks a level with no key counts, the starts with the marker each leaves while the ball
+    is on the level, what travels and the dice, the live sets and the index the frame draws. */
 export function worldOf(l, idx, tables, circuits, frame = 0) {
   const { motion, unit, first, styles, skins } = tables;
   const laid = [];
   for (let i = 0; i < l.cells.length; i += 4) laid.push(l.cells.slice(i, i + 4));
   const cells = new Map(laid.map(([x, y, z, v]) => [cellKey(x, y, z), v]));
+  const ends = new Set();
   for (const ray of beams(l))
-    for (const end of [ray.a, ray.b])
+    for (const end of [ray.a, ray.b]) {
+      ends.add(cellKey(...end));
       if (!cells.has(cellKey(...end))) {
         cells.set(cellKey(...end), PLAIN);
         laid.push([...end, PLAIN]);
       }
+    }
   const kinds = new Map([...cells].map(([k, v]) => [k, v < first ? v : l.records[v - first].kind]));
   const hides = skins?.hides ?? { other: [], unseen: [], kinds: {} };
   const counted = new Set();
@@ -142,6 +145,8 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
     cells,
     kinds,
     standing,
+    ends,
+    beam: motion.kinds[String(LASER)].harm.cell,
     faces,
     pickups,
     devices,
@@ -196,12 +201,15 @@ export function platformAt(world, cell) {
 
 /** The game's word for what stands at `cell` at `frame`, read on `face`: a plain block's face
     the type of the slot there, a bare block, no block or one the lattice does not hold at that
-    frame the lattice's empty word, each other kind its own word, and undefined where the game
-    writes none. */
+    frame the lattice's empty word, a beam's end the same, since the loader lays a bare block at
+    each, each other kind its own word, and undefined where the game writes none and the word
+    stands as it was, a lit beam's cell among them. */
 function standingAt(world, cell, face, frame) {
   const key = cellKey(...cell);
   const kind = world.kinds.get(key);
-  if (kind === undefined || world.probe.value(cell, frame) === OFF_LATTICE) return OFF_LATTICE;
+  const word = world.probe.value(cell, frame);
+  if (word === world.beam) return undefined;
+  if (kind === undefined || word === OFF_LATTICE || world.ends.has(key)) return OFF_LATTICE;
   if (kind !== PLAIN) return world.standing.get(kind);
   return world.cells.get(key) >= world.first
     ? (world.faces.get(slot(key, face)) ?? 0)

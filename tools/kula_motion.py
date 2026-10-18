@@ -64,6 +64,10 @@ CHECKS = [
     (0x80051c38, "addiu $t4, $zero, -1", "are written empty"),
     (0x80051c9c, "beq $fp, $zero, 0x80051c6c", "and a lit one's"),
     (0x80051c90, "addiu $t4, $zero, -2", "are written as beam"),
+    (0x80035ab4, "bne $v1, $v0, 0x80035cac", "the loader's walk at load takes the records of kind 8 too"),
+    (0x80035b2c, "sh $zero, 0($v0)", "lays a bare block at a beam's end"),
+    (0x80035ca8, "sh $zero, 0($v1)", "and at its far end, the one store the three axes share"),
+    (0x80035b68, "sh $t3, 0($v0)", "and the lit beam's word between"),
     # How a thing is laid out and turned.
     (0x80053480, "mtc2 $s7, vxy0", "a vertex's pair of words is the coprocessor's x and y"),
     (0x80053468, "mtc2 $gp, vz0", "and its third word its z"),
@@ -1800,6 +1804,7 @@ IMMEDIATES = [
     ("laser", "laser.colour.3", "circuit 3: its level shifted this far", 0x800281bc, "sll $v0, $v0, {}"),
     ("laser", "laser.step", "each line steps this many entries of its table a frame", 0x8005194c, "addi $s5, $s5, {}"),
     ("laser", "laser.mode", "the draw mode's low half, whose bits 5 and 6 are the blend", 0x800518f0, "ori $a2, $a2, {}"),
+    ("laser", "laser.lay", "the loader lays this between a beam's ends at load", 0x80035a94, "addiu $t3, $zero, {}"),
 
     ("what the ball takes", "take.live", "the loader marks a thing the walk may take with this", 0x800355c4,
      "addiu $s4, $zero, {}"),
@@ -3107,6 +3112,8 @@ def harms(r):
     the ball within, and the dying ball's flash and tint."""
     if r["fire.kind"] != FIRE or r["acid.kind"] != ACID or r["laser.cell"] != LIT:
         sys.exit("fire, acid or the laser is not read from its own kind or the lit beam's cell")
+    if r["laser.lay"] != r["laser.cell"]:
+        sys.exit("the loader lays another word between a beam's ends than the one the laser's death tests")
     if r["fire.limit.gate"] != r["acid.top"] + 1 or r["acid.top.gate"] != r["acid.top"] + 1:
         sys.exit("the heat's limit and the melt's top are not one value, gated one past it")
     if {r["exit.type"], r["exit.hidden.type"], r["spikes12.type"], r["spikes11.type"], r["catch.type53"]} \

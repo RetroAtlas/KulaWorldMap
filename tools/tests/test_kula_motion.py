@@ -153,8 +153,8 @@ GAME = {
               14: "LASER!", 16: "Wrong Move!", 18: "Game Over!", 20: "Well Done!", 22: "You failed to qualify!",
               24: "You qualified!", 28: "Player 1 Won!", 30: "Player 2 Won!", 32: "Equal Time!",
               34: "Very Well Done!", 36: "Level Cleared!"},
-    "start.wait": 20, "start.guard": 20, "laser.cell": -2, "laser.heat": 1900, "fire.kind": 1, "fire.burn": 40,
-    "fire.landed": 1, "fire.land": 600, "fire.limit.gate": 2001, "fire.cool": -15, "heat.chill": -150,
+    "start.wait": 20, "start.guard": 20, "laser.cell": -2, "laser.lay": -2, "laser.heat": 1900, "fire.kind": 1,
+    "fire.burn": 40, "fire.landed": 1, "fire.land": 600, "fire.limit.gate": 2001, "fire.cool": -15, "heat.chill": -150,
     "end.fire.swell": -4, "fire.swell": 210, "heat.shake": 40, "heat.shake.big": 126, "heat.shake.over": 25,
     "acid.top.gate": 2001, "acid.top": 2000, "acid.kind": 4, "acid.gain": 300, "end.acid.wait": -6,
     "acid.gain.wait": 300, "end.exit.landing": 1, "end.hidden.landing": 3, "end.bonus.landing": 2,
@@ -890,8 +890,9 @@ class Harms(unittest.TestCase):
         self.assertEqual(h["types"][30], {"dying": {"flash": 1024}, "tint": {"own": 400, "other": 2000}})
 
     def test_a_harm_read_from_another_kind_type_or_limit_stops_the_reading(self):
-        for change in ({"fire.kind": 2}, {"laser.cell": -1}, {"fire.limit.gate": 2000}, {"acid.top.gate": 2000},
-                       {"spikes12.type": 11}, {"catch.type53": 52}, {"tint.full": -2048}, {"fire.landed": 2}):
+        for change in ({"fire.kind": 2}, {"laser.cell": -1}, {"laser.lay": -1}, {"fire.limit.gate": 2000},
+                       {"acid.top.gate": 2000}, {"spikes12.type": 11}, {"catch.type53": 52}, {"tint.full": -2048},
+                       {"fire.landed": 2}):
             with self.assertRaises(SystemExit):
                 harms({**GAME, **change})
 

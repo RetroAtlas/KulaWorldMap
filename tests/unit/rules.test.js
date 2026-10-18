@@ -1254,3 +1254,52 @@ test("two boost buttons three blocks apart send the ball from one to the next: t
   steps(live, 5, 0);
   assert.deepEqual([live.ball.state, blockUnder(live.ball)], [REST, [17, 9, 17]]);
 });
+
+test("a jump over a boost button onto a laser's block lands on a bare block, which the loader lays at a beam's end, and is not launched", () => {
+  const laser = {
+    x: 17,
+    y: 14,
+    z: 17,
+    kind: 8,
+    type: 1,
+    f: [1, 1, 17, 14, 17, 21, 14, 17, -1, -1, -1],
+  };
+  const live = begin(level(row(10, 18), [start(), button(15), laser]), {
+    cell: [17, 16, 17],
+    face: TOP,
+    h: UP,
+  });
+  live.words.wait = 0;
+  const seen = [];
+  for (let g = 1; g <= 41; g++) {
+    const events = frame(live, g === 1 ? PAD.up | PAD.cross : 0);
+    seen.push({
+      cell: cellOf(live.ball),
+      under: blockUnder(live.ball),
+      standing: live.words.standing,
+      events,
+    });
+  }
+  const over = (y) => seen.filter((s) => s.cell[1] === y && s.cell[2] === 16);
+  assert.ok(
+    over(15).length && over(15).every((s) => s.standing === BUTTON),
+    "the button's type while the centre's cell lies above the button",
+  );
+  assert.ok(
+    over(14).length && over(14).every((s) => s.standing === -1),
+    "a bare block's word from the first row the centre's cell lies above the laser's block",
+  );
+  const landed = seen.findIndex((s) => s.events.some((e) => e.at === "landed"));
+  assert.equal(landed + 1, 31);
+  assert.deepEqual(seen[landed].under, [17, 14, 17]);
+  const after = seen.slice(landed + 1);
+  assert.equal(after.length, 10);
+  assert.ok(
+    after.every((s) => !s.events.some((e) => e.boosted)),
+    "no launch on the frames after",
+  );
+  assert.deepEqual(
+    [live.ball.state, blockUnder(live.ball), live.words.standing],
+    [REST, [17, 14, 17], -1],
+  );
+});

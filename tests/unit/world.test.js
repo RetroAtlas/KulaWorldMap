@@ -235,6 +235,7 @@ test("the word for what the ball stands on is the game's: a face's type on a pla
     [17, 10, 17],
     [18, 10, 17],
     [19, 10, 17],
+    [23, 10, 17],
   ];
   const l = level(blocks, [
     own(15, 10, 17, 6),
@@ -242,6 +243,7 @@ test("the word for what the ball stands on is the game's: a face's type on a pla
     { x: 17, y: 10, z: 17, kind: 0, on: [object(1, 31)] },
     { x: 18, y: 10, z: 17, kind: 0, on: [object(0, 29, 3)] },
     { x: 19, y: 10, z: 17, kind: 8, type: 1, f: [1, 1, 19, 10, 17, 23, 10, 17, -1, -1, -1] },
+    { x: 23, y: 10, z: 17, kind: 0, on: [object(0, 37)] },
   ]);
   const at = (x, face = TOP) => standingOf(standing(l, [x, 10, 17], face));
   assert.equal(at(10), -1, "a bare plain block");
@@ -262,8 +264,19 @@ test("the word for what the ball stands on is the game's: a face's type on a pla
   assert.equal(standingOf(aloft), -1, "nothing a block above the clock's face");
   const laser = standing(l, [19, 10, 17]);
   laser.words.standing = 37;
-  assert.equal(standingOf(laser), 37, "a laser block leaves the word as it was");
-  assert.equal(probeOf(laser).standing([19, 10, 17], TOP), undefined);
+  assert.equal(
+    standingOf(laser),
+    -1,
+    "a laser block a bare block, which the loader lays at a beam's ends",
+  );
+  assert.equal(probeOf(laser).standing([19, 10, 17], TOP), -1);
+  assert.equal(at(23), -1, "the far end the same, whatever the level stands there");
+  const over = standing(l, [21, 10, 17]);
+  over.words.standing = 37;
+  assert.equal(standingOf(over), 37, "a lit beam's cell under the ball's cell leaves the word");
+  assert.equal(probeOf(over).standing([21, 10, 17], TOP), undefined);
+  over.world = worldOf(l, index(l), TABLES, { ...CIRCUITS, lit: () => false });
+  assert.equal(standingOf(over), -1, "a dark beam's nothing");
 });
 
 test("the probe answers the lattice as the planner's did, and names the kind and the word under a cell", () => {
