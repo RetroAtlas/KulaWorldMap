@@ -112,6 +112,7 @@ export function startRun(l, idx, tables, circuits, at = null) {
       swell: 0,
       frozen: 0,
       guard: 0,
+      pad: 0,
       send: -1,
       latch: { up: 0, cross: 0, count: 0 },
       pills: Object.fromEntries(
@@ -347,12 +348,15 @@ export function frame(live, pad) {
     // and a read clears the guard
     if (!(w.guard && pad & PAD.cross)) {
       w.guard = 0;
+      b.previous = w.pad;
       b.pad = pad;
       const asked = bounding ? latched(w.latch, pad, lastsOf(live, BOUNCY), b) : undefined;
       read(b, probe, out, asked);
       if (asked?.arm) b.long = b.table.jump.arm;
     } else if (bounding) b.wantJump = true;
   }
+  // the frame's word is kept, read or not, as what the next read judges a press against
+  w.pad = pad;
   held(live);
   if (w.result) end(live, w.result, out);
   movers(live);

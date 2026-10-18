@@ -361,7 +361,7 @@ test("two presses of a key, however close, read up between them: two taps before
   assert.deepEqual(padsOf(keys, 3), [0, PAD.up, PAD.up]);
 });
 
-test("frames that do not read the pad keep a press for the first frame that does, one a key however many are made over them, and a held key stands in them", () => {
+test("a key tapped over frames that do not read the pad is kept for the first frame that does, once a key however many taps are made over them", () => {
   const keys = keyPad();
   tap(keys, PAD.right);
   assert.deepEqual([keys.pad(false), keys.pad(false)], [0, 0]);
@@ -371,12 +371,23 @@ test("frames that do not read the pad keep a press for the first frame that does
   assert.equal(keys.pad(false), 0);
   assert.deepEqual(padsOf(keys, 3), [PAD.left, 0, 0]);
   assert.equal(keys.busy(), false);
+});
+
+test("a key down as a frame that does not read the pad runs is sampled by it: it stands in the frame's word, waits no longer, and let go before the pad is read again is nothing", () => {
+  const keys = keyPad();
   keys.down(PAD.up);
   assert.equal(keys.pad(false), PAD.up);
   assert.deepEqual([keys.pad(true), keys.pad(true)], [PAD.up, PAD.up]);
+  keys.up(PAD.up);
+  assert.equal(keys.pad(true), 0);
+  keys.down(PAD.left);
+  assert.equal(keys.pad(false), PAD.left);
+  keys.up(PAD.left);
+  assert.equal(keys.busy(), false, "sampled, the press waits for no frame");
+  assert.deepEqual(padsOf(keys, 2), [0, 0]);
 });
 
-test("a key down on the last frame that read the pad, let go and pressed again over frames that do not read it, reads as held on, and tapped over them reads as pressed", () => {
+test("a key down on the frame before, let go and pressed again over frames that do not read the pad, reads as held on, and tapped over them reads as pressed on the first frame that reads it, those frames having read it up", () => {
   const keys = keyPad();
   keys.down(PAD.left);
   assert.deepEqual(padsOf(keys, 1), [PAD.left]);
@@ -387,7 +398,7 @@ test("a key down on the last frame that read the pad, let go and pressed again o
   keys.up(PAD.left);
   tap(keys, PAD.left);
   assert.equal(keys.pad(false), 0);
-  assert.deepEqual(padsOf(keys, 3), [0, PAD.left, 0]);
+  assert.deepEqual(padsOf(keys, 3), [PAD.left, 0, 0]);
   assert.equal(keys.busy(), false);
 });
 

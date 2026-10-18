@@ -14,7 +14,8 @@ const same = (a, b) => a.face === b.face && a.cell.every((v, i) => v === b.cell[
 const settled = (b) => b.state === REST && !b.ramp && !b.turn && !b.waiting && !b.again;
 const rolling = (b) => b.state === ROLLING || b.state === WRAPPING;
 
-/** The keys as frames read them: held keys, and the presses kept for frames that read the pad. */
+/** The keys as frames read them: held keys, which every frame samples, read or not, and a tap
+    made over frames that do not read the pad, kept for the first that does. */
 export function keyPad() {
   let held = 0;
   let last = 0;
@@ -34,20 +35,20 @@ export function keyPad() {
       waiting.clear();
     },
     pad(reads, also = 0) {
-      if (!reads) {
-        for (const [bit, n] of waiting) {
-          if (held & last & bit) waiting.delete(bit);
-          else if (n > 1) waiting.set(bit, 1);
-        }
-        return held | also;
-      }
       let word = held | also;
-      for (const [bit, n] of waiting) {
-        if (last & bit) word &= ~bit;
-        else {
-          word |= bit;
-          if (n > 1) waiting.set(bit, n - 1);
-          else waiting.delete(bit);
+      if (!reads) {
+        for (const bit of waiting.keys()) {
+          if (held & bit) waiting.delete(bit);
+          else waiting.set(bit, 1);
+        }
+      } else {
+        for (const [bit, n] of waiting) {
+          if (last & bit) word &= ~bit;
+          else {
+            word |= bit;
+            if (n > 1) waiting.set(bit, n - 1);
+            else waiting.delete(bit);
+          }
         }
       }
       last = word;

@@ -2213,8 +2213,10 @@ test("a lone crumbling block, reached by a jump, goes with a burst of dust where
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await listening(page);
+  // Up held past the level's opening, whose frames sample it as the game's frames do, until the jump
   await page.keyboard.down("ArrowUp");
   await page.keyboard.press(" ");
+  await expect.poll(async () => (await probe(page)).station.moving, { intervals: [25] }).toBe(true);
   await page.keyboard.up("ArrowUp");
   await expect
     .poll(async () => (await probe(page)).station.block, { intervals: [25] })
@@ -2363,9 +2365,11 @@ test("a jump onto a moving platform rides it: the strip says so, the ball stands
   await expect(page.locator("#chipLine")).toContainText("4 blocks");
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  // Up held past the level's opening, whose frames sample it as the game's frames do, and the tap of
+  // Space kept for the first frame that reads the pad, which jumps the ball from rest
   await page.keyboard.down("ArrowUp");
-  await page.waitForTimeout(60);
   await page.keyboard.press(" ");
+  await expect.poll(async () => (await probe(page)).station.moving, { intervals: [25] }).toBe(true);
   await page.keyboard.up("ArrowUp");
   await expect(status(page)).toHaveText(RIDING, { timeout: 5000 });
   await expect(say(page)).toHaveText(`17,15,17, top. ${RIDING}`);

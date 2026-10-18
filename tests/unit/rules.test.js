@@ -226,6 +226,52 @@ test("a level opens with the pad dead for 19 frames, read from the 20th", () => 
   assert.equal(live.words.frame, play.start.wait);
 });
 
+test("Left held from a level's first frame turns on the 26th frame, the opening's wait plus the repeat count, the frames before having seen it held", () => {
+  const live = begin(level(row(10, 18), [start()]));
+  const turns = play.start.wait + ROLL.repeat;
+  assert.equal(turns, 26);
+  assert.deepEqual(
+    steps(live, turns - 1, PAD.left).filter((e) => e.turned),
+    [],
+  );
+  assert.equal(live.ball.turn, 0);
+  assert.equal(live.ball.since, ROLL.repeat, "the count stepped on each frame that read");
+  assert.deepEqual(
+    frame(live, PAD.left).filter((e) => e.turned),
+    [{ turned: LEFT }],
+  );
+  assert.equal(live.words.frame, turns);
+});
+
+test("a Left pressed on a frame the pad is not read for, and still held as reading resumes, turns only once the repeat count has passed", () => {
+  const live = begin(level(row(10, 18), [start()]));
+  steps(live, play.start.wait);
+  assert.deepEqual(
+    frame(live, PAD.left).filter((e) => e.turned),
+    [{ turned: LEFT }],
+  );
+  frame(live, 0);
+  // a wait set as a teleporter sets one, from the turn's ramp to past its end
+  live.words.wait = motion.types["30"].quarter.frames + 2;
+  const unread = [];
+  while (!heeds(live)) unread.push(...frame(live, PAD.left));
+  assert.deepEqual(
+    unread.filter((e) => e.turned),
+    [],
+  );
+  assert.equal(live.ball.ramp, null);
+  assert.deepEqual(
+    steps(live, ROLL.repeat, PAD.left).filter((e) => e.turned),
+    [],
+    "held on the frame before, Left is no press",
+  );
+  assert.deepEqual(
+    frame(live, PAD.left).filter((e) => e.turned),
+    [{ turned: LEFT }],
+    "until the count has passed the repeat",
+  );
+});
+
 test("the guard a restart sets holds for 18 frames and clears on the 19th, and Cross held keeps it standing", () => {
   const l = level(row(10, 18), [start()]);
   const live = restart(begin(l));
@@ -243,15 +289,15 @@ test("the guard a restart sets holds for 18 frames and clears on the 19th, and C
 
   const held = restart(begin(l));
   held.words.wait = 0;
-  held.ball.previous = PAD.up;
+  held.words.pad = PAD.up;
   held.ball.since = 3;
   frame(held, PAD.cross);
   assert.equal(held.words.guard, 2, "Cross held reads nothing and leaves the guard counting");
   assert.equal(held.ball.state, REST);
   assert.deepEqual(
-    [held.ball.previous, held.ball.since],
-    [PAD.up, 3],
-    "the last frame's pad and the count untouched",
+    [held.words.pad, held.ball.since],
+    [PAD.cross, 3],
+    "the frame's word kept, read or not, and the count untouched",
   );
   frame(held, 0);
   assert.equal(held.words.guard, 0, "Cross up clears it as the pad is read");
@@ -1115,10 +1161,13 @@ test("the pad is dead while a self-roll's count runs, the roll asked and a turn 
   assert.equal(live.words.rolled, 0);
   assert.deepEqual(
     [live.ball.turn, live.ball.forward],
-    [LEFT, false],
-    "the press read, Up not held",
+    [0, false],
+    "Up not held, and Left held on the frame before no press",
   );
   assert.equal(drives(live), false);
+  frame(live, 0);
+  frame(live, PAD.left);
+  assert.equal(live.ball.turn, LEFT, "pressed afresh, Left is");
 });
 
 test("on a boost button the pad is not read, and the game moves the ball of itself", () => {
