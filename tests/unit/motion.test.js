@@ -677,7 +677,7 @@ test("a pill's word runs down as the game runs it, and the bouncy pill's never",
   assert.equal(lasts(32).word / lasts(32).step + 1, 181);
   assert.equal((lasts(32).word / lasts(32).step + 1) * lasts(32).ticks, 724);
   assert.deepEqual(lasts(34), { word: 840, step: 1 });
-  assert.deepEqual(lasts(33), { word: 840, hold: 839 });
+  assert.deepEqual(lasts(33), { word: 840, hold: 839, latch: 4 });
   assert.deepEqual(lasts(38), { word: 840, step: 1, blink: { times: 21, frames: 9 } });
   assert.equal(lasts(38).blink.times * lasts(38).blink.frames, 189);
   assert.deepEqual(

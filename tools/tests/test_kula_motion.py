@@ -134,6 +134,7 @@ GAME = {
     "hourglass.from": 5999, "hourglass.second": 50, "hourglass.points": 10,
     "pill.lethargy": 360, "pill.lethargy.step": -2, "pill.lethargy.ticks": 4, "pill.invincible": 840,
     "pill.invincible.step": -1, "pill.bouncy": 840, "pill.bouncy.hold": 839, "pill.bouncy.grow": 1,
+    "pill.bouncy.latch": 4, "pill.bouncy.latch.step": 1,
     "sunglasses.word": 840, "sunglasses.step": -1, "sunglasses.blinks": 21, "sunglasses.blink": 9,
     "crumble.points": 50, "crumble.under": 96,
     "send.type": 5, "send.band": -167, "send.band.span": 179, "send.wait": 15, "send.hold": 15,
@@ -717,7 +718,7 @@ class Take(unittest.TestCase):
             self.assertEqual(taken[t], {"reach": 180, "stand": 386, "points": 2500})
         self.assertEqual(set(taken), {31, 32, 33, 34, 35, 36, 37, 38, 42, 43, 44, 45, 46, 47})
         self.assertEqual(lasting[32], {"word": 360, "step": 2, "ticks": 4})
-        self.assertEqual(lasting[33], {"word": 840, "hold": 839})
+        self.assertEqual(lasting[33], {"word": 840, "hold": 839, "latch": 4})
         self.assertEqual(lasting[34], {"word": 840, "step": 1})
         self.assertEqual(lasting[38], {"word": 840, "step": 1, "blink": {"times": 21, "frames": 9}})
 
@@ -737,7 +738,8 @@ class Take(unittest.TestCase):
 
     def test_a_pills_word_running_otherwise_stops_the_reading(self):
         for change in ({"pill.lethargy": 361}, {"pill.lethargy.step": 2}, {"pill.invincible.step": -2},
-                       {"pill.bouncy.hold": 840}, {"crumble.under": 95}, {"take.open": 2}):
+                       {"pill.bouncy.hold": 840}, {"pill.bouncy.latch": 0}, {"pill.bouncy.latch.step": 2},
+                       {"crumble.under": 95}, {"take.open": 2}):
             with self.assertRaises(SystemExit):
                 take({**GAME, **change})
 

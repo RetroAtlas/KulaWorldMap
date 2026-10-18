@@ -299,14 +299,38 @@ CHECKS = [
     (0x80036e2c, "sw $v0, 96($s0)", "Up held asks the roll"),
     (0x80036e48, "sw $v0, 100($s0)", "and Cross held the jump"),
     (0x80036bbc, "sw $v0, 100($s0)", "which the bouncy pill asks on every frame"),
+    (0x80036d50, "lw $v1, 10976($gp)", "under the pill the pad is read again"),
+    (0x80036d58, "andi $v0, $v1, 16", "Up held"),
+    (0x80036d64, "sh $v0, 1152($gp)", "sets a latch at 0x800a33b8"),
+    (0x80036d68, "andi $v0, $v1, 16384", "and Cross held"),
+    (0x80036d74, "sh $v0, 1150($gp)", "one at 0x800a33b6"),
+    (0x80036d80, "beq $v0, $v1, 0x80036d98", "while the Up latch stands"),
+    (0x80036d90, "bne $v0, $v1, 0x80036db0", "or the Cross latch"),
+    (0x80036da4, "sh $v0, 7512($gp)", "a count at 0x800a4c90 steps"),
+    (0x80036db0, "sh $zero, 7512($gp)", "and is put at nothing otherwise"),
+    (0x80036dc0, "bne $v0, $zero, 0x80037178", "under the latch's count nothing more of Up or Cross is read"),
+    (0x80036dd8, "sw $v1, 96($s0)", "from it the roll's request is the Up latch"),
+    (0x80036dd4, "bne $a0, $v0, 0x80036e08", "and where Cross is latched"),
+    (0x80036ddc, "bne $v1, $a0, 0x80036e08", "with Up"),
+    (0x80036dec, "bne $v0, $zero, 0x80036e08", "the long jump's word is nothing"),
+    (0x80036dfc, "beq $v0, $v1, 0x80036e08", "and the state is not the forward jump's, the word is armed"),
+    (0x80036e08, "sh $zero, 1150($gp)", "both latches are cleared"),
+    (0x80036e0c, "sh $zero, 1152($gp)", "either way"),
+    (0x80036e10, "j 0x80037178", "and the count kept"),
+    (0x80035d38, "bne $v1, $v0, 0x80035d80", "the level's start, in the Simon rooms' mode alone"),
+    (0x80035d60, "sh $zero, 7512($gp)", "puts the count at nothing"),
     (0x800371a4, "sh $v0, 496($s0)", "and R2 and R1 set the word at 496"),
     (0x8002f4a8, "lw $s1, 408($s0)", "the intents read the state"),
     (0x8002f4b0, "bne $s1, $v0, 0x8002f5c8", "and take the requests at rest alone"),
     (0x8002f4c0, "beq $v0, $v1, 0x8002f530", "where a jump is asked"),
+    (0x8002f530, "lw $v0, 96($s0)", "reads the roll's request"),
     (0x8002f538, "beq $v0, $v1, 0x8002f5c0", "with the roll"),
     (0x8002f5c0, "jal 0x8002f5e0", "it is the forward jump"),
     (0x8002f540, "jal 0x8002f6ec", "and alone the hop"),
-    (0x8002f4a0, "jal 0x8002f5e0", "rolling, a jump asked is the forward jump"),
+    (0x8002f488, "bne $v1, $v0, 0x8002f4a8", "rolling"),
+    (0x8002f490, "lw $v0, 100($s0)", "a jump"),
+    (0x8002f498, "bne $v0, $a0, 0x8002f4a8", "asked"),
+    (0x8002f4a0, "jal 0x8002f5e0", "is the forward jump at once, whatever the roll's request"),
     (0x8002f4e8, "jal 0x8002f7f4", "at rest a turn of 1 is a turn left"),
     (0x8002f500, "jal 0x8002f77c", "and one of -1 a turn right"),
     (0x8002f468, "jal 0x8002f7f4", "as during a hop"),
@@ -639,7 +663,7 @@ CHECKS = [
     (0x8002f884, "beq $v1, $v0, 0x8002f8a4", "which it passes over"),
     (0x8002f88c, "lw $v0, 412($s0)", "reads the word"),
     (0x8002f8a0, "sw $zero, 412($s0)", "and clears it from the kept value up"),
-    (0x80036e04, "sw $v1, 412($s0)", "the bouncy pill's hold on the pad arms it as the button does"),
+    (0x80036e04, "sw $v1, 412($s0)", "the bouncy pill's latch on the pad arms it as the button does"),
     (0x80037d1c, "lhu $a0, 342($a2)", "the measure routine takes the last frame's measure along the normal"),
     (0x80037d34, "subu $v0, $v0, $a0", "off this frame's"),
     (0x80037d3c, "sh $v0, 326($a2)", "and keeps the change at 326"),
@@ -976,7 +1000,11 @@ CHECKS = [
     (0x8003b390, "jal 0x8003b468", "and ticks the clock on"),
     (0x80036bb4, "bltz $v0, 0x80036bc0", "the bouncy pill's word not negative"),
     (0x8003659c, "bne $v0, $zero, 0x800365cc", "and at its hold or more"),
-    (0x800365b0, "bne $v1, $v0, 0x800365cc", "while the ball rolls"),
+    (0x800365a0, "addiu $v0, $zero, 2", "while the state at 408 is the rolling state's"),
+    (0x800365a8, "lw $v1, -23892($v1)", "and no other"),
+    (0x800365b0, "bne $v1, $v0, 0x800365cc", "the ball's routine"),
+    (0x800365bc, "sw $zero, -24200($at)", "drops the jump"),
+    (0x800365c4, "sw $zero, -24204($at)", "and the roll, and the word"),
     (0x800365c8, "sw $v0, 0($a1)", "grows by one"),
     (0x8003b00c, "sw $v0, 21448($at)", "a crumbling block scores"),
     (0x8003afd4, "lh $v1, 2($v0)", "where its type"),
@@ -1817,6 +1845,11 @@ IMMEDIATES = [
     ("what the ball takes", "pill.bouncy.hold", "which grows while the ball rolls from this", 0x80036598,
      "slti $v0, $a0, {}"),
     ("what the ball takes", "pill.bouncy.grow", "by this a frame", 0x800365b4, "addiu $v0, $a0, {}"),
+    ("what the ball takes", "pill.bouncy.latch", "giving the roll to the Up latch from this count",
+     0x80036dbc, "slti $v0, $v0, {}"),
+    ("what the ball takes", "pill.bouncy.latch.step",
+     "and a count of frames Up or Cross has been latched under it steps by this a frame", 0x80036da0,
+     "addiu $v0, $v0, {}"),
     ("what the ball takes", "sunglasses.word", "the sunglasses set their word to", 0x80038924, "addiu $v0, $zero, {}"),
     ("what the ball takes", "sunglasses.step", "which counts down by this a frame", 0x8003b2ec, "addiu $v0, $v0, {}"),
     ("what the ball takes", "sunglasses.blinks", "and at nothing they blink this many times", 0x8002beec,
@@ -2854,7 +2887,8 @@ def take(r):
     """What the ball takes off its face, by type: how far from the thing's
     middle the ball's centre has to come, the ball's own radius apart, where
     that middle stands off its block's centre, and what it scores; and for
-    each thing that lasts, the word it sets and how that word runs down."""
+    each thing that lasts, the word it sets and how that word runs down, and
+    the bouncy pill's latch."""
     if r["take.live"] != 1 or r["take.open"] != 1 or r["take.third"] != 2:
         sys.exit("the loader or the walk marks a thing with something other than 1")
     if r["take.first"] != -min(TAKE_CASES) or r["take.first"] + max(TAKE_CASES) >= TAKE_TYPES[2]:
@@ -2876,6 +2910,8 @@ def take(r):
         sys.exit("the invincibility pill's or the sunglasses' word does not count down by one")
     if r["pill.bouncy.hold"] != r["pill.bouncy"] - 1 or r["pill.bouncy.grow"] != 1:
         sys.exit("the bouncy pill's word does not grow by one from a step short of its start")
+    if r["pill.bouncy.latch"] < 1 or r["pill.bouncy.latch.step"] != 1:
+        sys.exit("the bouncy pill's latch does not count frames by one")
     if r["crumble.under"] != CRUMBLING_UNDER:
         sys.exit(f"a crumbling block scores while the ball stands on {r['crumble.under']}")
     pickup = {"reach": reach["take.reach"], "stand": stand}
@@ -2893,7 +2929,7 @@ def take(r):
         taken[t] = {"reach": reach["take.reach.fruit"], "stand": stand, "points": next(iter(fruit))}
     lasting = {
         32: {"word": r["pill.lethargy"], "step": -r["pill.lethargy.step"], "ticks": r["pill.lethargy.ticks"]},
-        33: {"word": r["pill.bouncy"], "hold": r["pill.bouncy.hold"]},
+        33: {"word": r["pill.bouncy"], "hold": r["pill.bouncy.hold"], "latch": r["pill.bouncy.latch"]},
         34: {"word": r["pill.invincible"], "step": -r["pill.invincible.step"]},
         38: {"word": r["sunglasses.word"], "step": -r["sunglasses.step"],
              "blink": {"times": r["sunglasses.blinks"], "frames": r["sunglasses.blink"]}},
