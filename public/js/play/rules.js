@@ -1,6 +1,18 @@
 // The game's frame over the ball and the level: the clock, the guard, the wait, the pad, what is
 // under the ball and what it takes, in the executable's order, over pad words from any source.
-import { PAD, alight, aloft, ballAt, blockUnder, cellOf, place, read, run } from "./ball.js";
+import {
+  JUMP,
+  PAD,
+  ROLLING,
+  alight,
+  aloft,
+  ballAt,
+  blockUnder,
+  cellOf,
+  place,
+  read,
+  run,
+} from "./ball.js";
 import {
   KEY,
   fell,
@@ -42,6 +54,7 @@ const SUNGLASSES = 38;
 const OUT = { [EXIT]: "exit", [HIDDEN_EXIT]: "hidden" };
 
 const add = (p, v, k = 1) => p.map((c, i) => c + v[i] * k);
+const lastsOf = (live, type) => live.tables.motion.types[String(type)].lasts;
 
 const rulesOf = ({ motion, unit, jump }) => ({
   table: motion.types[String(BALL)],
@@ -100,6 +113,7 @@ export function startRun(l, idx, tables, circuits, at = null) {
       frozen: 0,
       guard: 0,
       send: -1,
+      latch: { up: 0, cross: 0, count: 0 },
       pills: Object.fromEntries(
         Object.entries(types)
           .filter(([, t]) => t.lasts)
@@ -226,8 +240,7 @@ function ground(live, out) {
 function pills(live, out) {
   const w = live.words;
   const p = w.pills;
-  const { types } = live.tables.motion;
-  const lasts = (type) => types[String(type)].lasts;
+  const lasts = (type) => lastsOf(live, type);
   if (p[SUNGLASSES] >= 0) {
     p[SUNGLASSES] -= lasts(SUNGLASSES).step;
     w.blink = p[SUNGLASSES] < 0 ? { spell: 0, left: lasts(SUNGLASSES).blink.frames } : null;
@@ -279,6 +292,36 @@ function readCells(live) {
   w.cell = live.world.probe.value(cellOf(live.ball), frameShown(live));
 }
 
+/** The bouncy pill's reading of Up and Cross, one frame, over `latch`, the three words it writes,
+    by `lasts`, the pill's entry: Up held sets the Up latch and Cross held the Cross latch, the
+    count steps while either stands and is put at nothing otherwise, and until it reaches the
+    pill's `latch` nothing more is read; from there the roll's request is the Up latch, the long
+    jump is armed where both latches stand with the ball's `long` at nothing and its `state` not
+    the forward jump's, and both latches are cleared with the count kept. The jump is asked
+    whatever the keys. */
+export function latched(latch, pad, lasts, { long, state }) {
+  if (pad & PAD.up) latch.up = 1;
+  if (pad & PAD.cross) latch.cross = 1;
+  latch.count = latch.up || latch.cross ? latch.count + 1 : 0;
+  if (latch.count < lasts.latch) return { forward: false, jump: true, arm: false };
+  const both = latch.up === 1 && latch.cross === 1;
+  const asked = { forward: latch.up === 1, jump: true, arm: both && !long && state !== JUMP };
+  latch.up = 0;
+  latch.cross = 0;
+  return asked;
+}
+
+// The jump the pad asks under the bouncy pill never reaches a rolling ball: while the word is at
+// the hold or more and the ball rolls, both requests are dropped and the word grows by one.
+function held(live) {
+  const w = live.words;
+  const b = live.ball;
+  if (w.pills[BOUNCY] < lastsOf(live, BOUNCY).hold || b.state !== ROLLING) return;
+  b.forward = false;
+  b.wantJump = false;
+  w.pills[BOUNCY] += 1;
+}
+
 /** One game frame with `pad` as held: what happened, as events. The frame the clock runs out on
     runs to its end, as the game's does, the crumbling blocks breaking up last as the draw runs
     them, and nothing runs once the outcome stands; the ending's view is the mode's. */
@@ -299,14 +342,18 @@ export function frame(live, pad) {
   if (w.wait > 0) waiting(live, out);
   if (w.rolled > 0) rolled(live);
   if (heard) {
-    // Cross held under the guard reads nothing, and a read clears the guard
+    const bounding = w.pills[BOUNCY] >= 0;
+    // the pill asks the jump before the guard's test, which with Cross held reads nothing more,
+    // and a read clears the guard
     if (!(w.guard && pad & PAD.cross)) {
       w.guard = 0;
       b.pad = pad;
-      read(b, probe, out);
-    }
-    if (w.pills[BOUNCY] >= 0) b.wantJump = true;
+      const asked = bounding ? latched(w.latch, pad, lastsOf(live, BOUNCY), b) : undefined;
+      read(b, probe, out, asked);
+      if (asked?.arm) b.long = b.table.jump.arm;
+    } else if (bounding) b.wantJump = true;
   }
+  held(live);
   if (w.result) end(live, w.result, out);
   movers(live);
   if (!w.guard) hazards(live, out);

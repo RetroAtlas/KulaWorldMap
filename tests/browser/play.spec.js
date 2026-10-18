@@ -11,6 +11,9 @@ import {
 } from "./helpers.js";
 
 const LEVEL = "/#HIRO/0/45,35/fit/33";
+// LEVEL 86: the start on a ring of blocks, a bouncy pill two blocks on across a gap and blocks two
+// apart beyond it
+const PILL_LEVEL = "/#FIELD/10/45,35/fit/33";
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazards)\.js$/;
 const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 const TIME_UP_PAD =
@@ -2792,5 +2795,110 @@ test("with Motion off the ball stands where a move brought it on the game frame 
   const [batched] = await roll({ from: came - 2, to: came + 10 });
   expect(left?.frame ?? Infinity).toBeGreaterThan(came + 10);
   expect(batched).toEqual(on(came + 10));
+  expect(errors).toEqual([]);
+});
+
+test("the bouncy pill bounds the ball as the game does: taken with the keys released it hops where it came down, up pressed at the landing, leaves the ground two blocks on from the hop's end, bound after bound, and with up released it hops where it is", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(PILL_LEVEL);
+  await settle(page);
+  await still(page);
+  await page.keyboard.press("t");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 19,23,17, facing -y");
+  await listening(page);
+  await frozen(page);
+  // a gap ahead with blocks beside refuses the roll, so up held and Space jump the ball onto the
+  // pill's block, up released as the jump starts, so the pill is taken with the latch clear, and
+  // pressed again on the frame the ball comes down; then released on the frame it comes down two
+  // bounds on
+  const { bounds, hops } = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw }, { motionTable }, P] = await Promise.all(
+      ["viewer/draw/render.js", "viewer/data.js", "play/play.js"].map(at),
+    );
+    const key = (type, k) =>
+      document.body.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+    const run = () => {
+      window.__step(1000 / motionTable().hz);
+      draw();
+    };
+    const seen = () => {
+      const s = P.station();
+      const g = P.handed();
+      return { block: s.block, moving: s.moving, height: g.height, offset: g.offset };
+    };
+    key("keydown", "ArrowUp");
+    key("keydown", " ");
+    key("keyup", " ");
+    const bounds = [];
+    let released = false;
+    let pressed = false;
+    for (let f = 0; f < 400; f++) {
+      run();
+      const s = seen();
+      bounds.push(s);
+      if (!released && s.moving) {
+        key("keyup", "ArrowUp");
+        released = true;
+      } else if (released && !pressed && !s.moving && s.block.join() === "19,21,17") {
+        key("keydown", "ArrowUp");
+        pressed = true;
+      }
+      if (s.block.join() === "19,17,17") break;
+    }
+    key("keyup", "ArrowUp");
+    const hops = [];
+    for (let f = 0; f < 120; f++) {
+      run();
+      hops.push(seen());
+    }
+    return { bounds, hops };
+  });
+  expect(await said(page)).toContain("Bouncy pill taken.");
+  const rest = bounds[0].height;
+  const blocks = bounds.map((s) => s.block.join());
+  expect(blocks.filter((b, i) => i === 0 || b !== blocks[i - 1])).toEqual([
+    "19,23,17",
+    "19,21,17",
+    "19,19,17",
+    "19,17,17",
+  ]);
+  const over = (block) => bounds.filter((s) => s.block.join() === block);
+  const stops = (on) => on.map((s, i) => (s.moving ? -1 : i)).filter((i) => i >= 0);
+  const flat = (s) => s.offset.slice(0, 2).map((v) => Math.round(v * 1000) / 1000 + 0);
+  const aloft = (frames) => frames.filter((s) => s.height > rest).length > frames.length / 2;
+  // down on the pill's block's middle at rest, and the first leave from it a hop, in the air
+  // over the middle until it comes down there again, at rest for the one frame of its end, and
+  // off two blocks on only from the frame after that, the jump's first row along the ground
+  const pill = over("19,21,17");
+  const stopped = stops(pill);
+  expect(stopped.length).toBe(2);
+  expect(stopped[0]).toBe(0);
+  const ended = stopped[1];
+  expect(pill[0].height).toBe(rest);
+  expect(flat(pill[0])).toEqual([0, 0]);
+  const hop = pill.slice(1, ended);
+  expect(hop.length).toBeGreaterThan(1);
+  expect(hop.every((s) => flat(s).every((v) => v === 0))).toBe(true);
+  expect(aloft(hop)).toBe(true);
+  expect(flat(pill[ended])).toEqual([0, 0]);
+  const bound = pill.slice(ended + 1);
+  expect(bound.length).toBeGreaterThan(1);
+  expect(aloft(bound)).toBe(true);
+  // down on the next block's middle at rest, up held past the latch's count by then, and off it
+  // from the frame after with no hop first
+  const next = over("19,19,17");
+  expect(stops(next)).toEqual([0]);
+  expect(next[0].height).toBe(rest);
+  expect(flat(next[0])).toEqual([0, 0]);
+  expect(aloft(next.slice(1))).toBe(true);
+  expect(bounds.at(-1).moving).toBe(false);
+  // hop after hop, each at rest for the one frame of its end, on the block the ball came down on
+  expect(hops.every((s) => s.block.join() === "19,17,17")).toBe(true);
+  expect(hops.filter((s) => !s.moving).length).toBeGreaterThanOrEqual(3);
+  expect(aloft(hops)).toBe(true);
   expect(errors).toEqual([]);
 });

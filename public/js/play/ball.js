@@ -255,13 +255,14 @@ function swap(b, h, n) {
 /** The pad as held, `b.pad`, into the ball's requests: the roll, the jump and a turn, held back
     while a turn's ramp runs. The roll and the jump are the pad's alone, put at nothing before
     the keys are read, so either asked earlier in the frame stands only where the pad is not
-    read. A press is a bit held now and not on the last frame, and a held turn presses again
-    once the count passes the repeat. With no jump asked, the floor ahead empty and a block
-    beside the block under, the roll is refused; with nothing beside and the block under one
-    the last frame's read found brittle, a rolling ball is held short of the edge by
-    `rules.edge`: from its hold the forward request and the speed are dropped, and from its
-    further mark the centre is set back along the heading besides. */
-export function read(b, probe, out) {
+    read; where `asked` is given, its `forward` and `jump` stand in place of Up and Cross, read
+    by a rule of the caller's. A press is a bit held now and not on the last frame, and a held
+    turn presses again once the count passes the repeat. With no jump asked, the floor ahead
+    empty and a block beside the block under, the roll is refused; with nothing beside and the
+    block under one the last frame's read found brittle, a rolling ball is held short of the
+    edge by `rules.edge`: from its hold the forward request and the speed are dropped, and from
+    its further mark the centre is set back along the heading besides. */
+export function read(b, probe, out, asked) {
   const t = b.table.rolling;
   if (turning(b)) b.since = 0;
   else if (++b.since > t.repeat) b.previous = 0;
@@ -278,8 +279,8 @@ export function read(b, probe, out) {
     press(LEFT);
     b.again = LEFT;
   }
-  b.wantJump = (b.pad & PAD.cross) !== 0;
-  b.forward = (b.pad & PAD.up) !== 0;
+  b.wantJump = asked ? asked.jump : (b.pad & PAD.cross) !== 0;
+  b.forward = asked ? asked.forward : (b.pad & PAD.up) !== 0;
   if (b.wantJump) return;
   const under = standingOn(b);
   if (probe.solid(add(under, b.h))) return;

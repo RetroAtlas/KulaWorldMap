@@ -23,6 +23,7 @@ import {
   cellOf,
   faceUnder,
   positionOf,
+  progressOf,
 } from "../../public/js/play/ball.js";
 import {
   startRun,
@@ -35,6 +36,7 @@ import {
   stand,
   relevel,
   end,
+  latched,
 } from "../../public/js/play/rules.js";
 import { probeOf, shiftOf, standingOf, viewOf } from "../../public/js/play/world.js";
 import { recorder, replayDriver } from "../../public/js/play/drive.js";
@@ -1302,4 +1304,208 @@ test("a jump over a boost button onto a laser's block lands on a bare block, whi
     [live.ball.state, blockUnder(live.ball), live.words.standing],
     [REST, [17, 14, 17], -1],
   );
+});
+
+/** A pill of `type` on the top of the row's block at `y`. */
+const pill = (y, type = Number(BOUNCY)) => ({ x: 17, y, z: 17, kind: 0, on: [object(0, type)] });
+const BOUND = motion.types[BOUNCY].lasts;
+const taken = (events, type) => events.some((e) => e.pill?.type === type);
+const landed = (events) => events.some((e) => e.at === "landed");
+/** Frames with `pad` held until `done(live, events)` holds, at most `most`: whether it did. */
+function until(live, pad, done, most = 400) {
+  for (let i = 0; i < most; i++) if (done(live, frame(live, pad))) return true;
+  return false;
+}
+
+test("the bouncy pill taken rolling holds the jump off: the word grows by one on each rolling frame, the ball rolls on to the middle and rests with the requests gone, and the frame after starts a hop in place with Up released", () => {
+  const live = begin(level(row(2, 18), [start(), pill(16)]));
+  live.words.wait = 0;
+  const b = live.ball;
+  const w = live.words;
+  assert.ok(until(live, PAD.up, (_, events) => taken(events, Number(BOUNCY))));
+  assert.equal(b.state, ROLLING);
+  assert.equal(w.pills[BOUNCY], BOUND.word);
+  let rolled = 0;
+  while (b.state === ROLLING) {
+    const events = frame(live, 0);
+    rolled += 1;
+    assert.notEqual(b.state, JUMP, "no jump starts while the ball rolls");
+    assert.ok(!landed(events));
+  }
+  assert.ok(rolled > 1, "the roll runs on past the pill");
+  assert.equal(w.pills[BOUNCY], BOUND.word + rolled, "the word grows by one on each rolling frame");
+  assert.equal(b.state, REST);
+  assert.deepEqual(blockUnder(b), [17, 16, 17]);
+  assert.equal(progressOf(b), ROLL.middle, "rests at the middle");
+  assert.deepEqual([b.forward, b.wantJump], [false, false], "the requests gone");
+  frame(live, 0);
+  assert.equal(b.state, HOP, "the frame after starts a hop in place");
+  assert.deepEqual(blockUnder(b), [17, 16, 17]);
+});
+
+test("Up held from the bouncy pill on bounds the ball forward two blocks at a time, each landing followed on the frame after by the next forward jump, with no roll between", () => {
+  const live = begin(level(row(2, 18), [start(), pill(16)]));
+  live.words.wait = 0;
+  const b = live.ball;
+  assert.ok(until(live, PAD.up, (_, events) => taken(events, Number(BOUNCY))));
+  assert.ok(until(live, PAD.up, () => b.state === REST));
+  assert.deepEqual(blockUnder(b), [17, 16, 17]);
+  const seen = [];
+  while (seen.filter((s) => s.landed).length < 3) {
+    const events = frame(live, PAD.up);
+    seen.push({ state: b.state, block: blockUnder(b), landed: landed(events) });
+  }
+  seen.push({ state: (frame(live, PAD.up), b.state) });
+  assert.equal(seen[0].state, JUMP, "the frame after the rest starts the forward jump");
+  assert.ok(
+    seen.every((s) => s.state !== ROLLING),
+    "no roll between",
+  );
+  const landings = seen.map((s, i) => [s, i]).filter(([s]) => s.landed);
+  assert.deepEqual(
+    landings.map(([s]) => s.block),
+    [
+      [17, 14, 17],
+      [17, 12, 17],
+      [17, 10, 17],
+    ],
+    "two blocks on each",
+  );
+  for (const [s, i] of landings) {
+    assert.equal(s.state, REST, "at rest on the landing's frame");
+    assert.equal(seen[i + 1].state, JUMP, "and in the next forward jump on the frame after");
+  }
+});
+
+test("Up and Cross held under the bouncy pill arm the long jump, which lands three blocks on, armed again after each landing clears it", () => {
+  const live = begin(level(row(2, 18), [start(), pill(16)]));
+  live.words.wait = 0;
+  const b = live.ball;
+  assert.ok(until(live, PAD.up, (_, events) => taken(events, Number(BOUNCY))));
+  assert.ok(until(live, PAD.up | PAD.cross, () => b.state === REST));
+  assert.equal(b.long, LEAP.arm, "armed as the ball rolled on, both latches standing at the count");
+  const seen = [];
+  while (seen.filter((s) => s.landed).length < 3) {
+    const events = frame(live, PAD.up | PAD.cross);
+    seen.push({ state: b.state, long: b.long, block: blockUnder(b), landed: landed(events) });
+  }
+  seen.push({ state: (frame(live, PAD.up | PAD.cross), b.state), long: b.long });
+  const landings = seen.map((s, i) => [s, i]).filter(([s]) => s.landed);
+  assert.deepEqual(
+    landings.map(([s]) => s.block),
+    [
+      [17, 13, 17],
+      [17, 10, 17],
+      [17, 7, 17],
+    ],
+    "three blocks on each",
+  );
+  for (const [s, i] of landings) {
+    assert.equal(s.long, 0, "the landing clears the long jump's word");
+    assert.equal(seen[i + 1].state, JUMP);
+    assert.equal(
+      seen[i + 1].long,
+      LEAP.arm + 1,
+      "armed again on the frame after, and counted by the jump's first row",
+    );
+  }
+});
+
+test("the latch: Up held gives the roll's request from the fourth frame on every frame, a tap gives it once on the fourth frame counting its own and the count starts over on the first frame after that with neither latch set, and both held arm the long jump once per landing", () => {
+  const n = BOUND.latch;
+  const ball = { long: 0, state: REST };
+  const fresh = () => ({ up: 0, cross: 0, count: 0 });
+  const held = fresh();
+  const asked = Array.from({ length: n + 3 }, () => latched(held, PAD.up, BOUND, ball));
+  assert.deepEqual(
+    asked.map((a) => a.forward),
+    asked.map((_, i) => i >= n - 1),
+    "the roll from the fourth frame on",
+  );
+  assert.ok(
+    asked.every((a) => a.jump),
+    "the jump asked whatever the keys",
+  );
+  assert.ok(asked.every((a) => !a.arm));
+  assert.deepEqual(held, { up: 0, cross: 0, count: n + 3 }, "cleared each frame, the count kept");
+
+  const tapped = fresh();
+  const tap = [latched(tapped, PAD.up, BOUND, ball)];
+  for (let i = 1; i < n; i++) {
+    tap.push(latched(tapped, 0, BOUND, ball));
+    assert.equal(tapped.count, i + 1, "the latch stands while the count is under the latch's");
+  }
+  assert.deepEqual(
+    tap.map((a) => a.forward),
+    tap.map((_, i) => i === n - 1),
+    "the roll once, on the fourth frame counting the tap's own",
+  );
+  assert.equal(latched(tapped, 0, BOUND, ball).forward, false);
+  assert.equal(tapped.count, 0, "the count starts over with neither latch set");
+
+  const both = fresh();
+  const long = { long: 0, state: REST };
+  const armed = [];
+  for (let i = 0; i < n + 2; i++) {
+    const a = latched(both, PAD.up | PAD.cross, BOUND, long);
+    if (a.arm) long.long = LEAP.arm;
+    armed.push(a.arm);
+  }
+  assert.deepEqual(
+    armed,
+    armed.map((_, i) => i === n - 1),
+    "armed once, the word standing after",
+  );
+  long.long = 0;
+  long.state = JUMP;
+  assert.equal(latched(both, PAD.up | PAD.cross, BOUND, long).arm, false, "not in the jump");
+  long.state = REST;
+  assert.equal(latched(both, PAD.up | PAD.cross, BOUND, long).arm, true, "armed again cleared");
+  assert.equal(latched(both, PAD.up, BOUND, long).arm, false, "not with Up alone");
+});
+
+test("a landing on the bouncy pill with the latch's count at nothing hops first, Up held from the landing on, and with a count one under the latch's left by an earlier pill Up held jumps the ball forward at once", () => {
+  const l = level(row(2, 18), [start(), pill(16)]);
+  const live = begin(l);
+  live.words.wait = 0;
+  const b = live.ball;
+  frame(live, PAD.up | PAD.cross);
+  assert.equal(b.state, JUMP);
+  // Up released through the jump, so the pill, taken on the way down, steps no latch
+  assert.ok(until(live, 0, (_, events) => landed(events)));
+  assert.deepEqual(blockUnder(b), [17, 16, 17]);
+  assert.ok(live.words.pills[BOUNCY] >= 0, "the pill taken");
+  assert.equal(live.words.latch.count, 0);
+  frame(live, PAD.up);
+  assert.equal(b.state, HOP, "hops first");
+  assert.equal(live.words.latch.count, 1, "Up held steps the count there");
+  assert.ok(until(live, PAD.up, () => b.state === REST));
+  assert.deepEqual(blockUnder(b), [17, 16, 17]);
+  frame(live, PAD.up);
+  assert.equal(b.state, JUMP, "the forward jump follows the hop's end");
+
+  const again = begin(l);
+  again.words.wait = 0;
+  again.words.latch.count = BOUND.latch - 1;
+  frame(again, PAD.up | PAD.cross);
+  assert.ok(until(again, PAD.up, (_, events) => landed(events)));
+  assert.deepEqual(blockUnder(again.ball), [17, 16, 17]);
+  frame(again, PAD.up);
+  assert.equal(again.ball.state, JUMP, "jumps forward at once");
+});
+
+test("an invincibility pill ends the bounding: the bouncy pill's word is put back on the frame after it is taken, and the pad reads plainly again, Up alone rolling the ball", () => {
+  const live = begin(level(row(2, 18), [start(), pill(16), pill(14, Number(INVINCIBLE))]));
+  live.words.wait = 0;
+  const b = live.ball;
+  const w = live.words;
+  assert.ok(until(live, PAD.up, (_, events) => taken(events, Number(INVINCIBLE))));
+  assert.equal(b.state, JUMP, "taken on the bound's way down");
+  assert.ok(w.pills[BOUNCY] >= 0, "the word stands until the hazards run");
+  frame(live, PAD.up);
+  assert.equal(w.pills[BOUNCY], -1, "put back on the frame after");
+  assert.ok(until(live, PAD.up, (_, events) => landed(events)));
+  assert.deepEqual(blockUnder(b), [17, 14, 17]);
+  frame(live, PAD.up);
+  assert.equal(b.state, ROLLING, "Up alone rolls");
 });
