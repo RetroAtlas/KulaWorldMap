@@ -17,7 +17,8 @@ from kula_motion import (  # noqa: E402
     GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, PHASES,
     ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, WORDS_COUNT, WORDS_TABLE,
     Code, blocks, body, devices, dispatch, exits, flight, glint, glow_lift, glow_spill, harms, jump, laser, light, moves,
-    play, roll, root_table, shadow_half, spike_cycle, spin_orders, standing, table, take, vanish_cycle, words)
+    play, roll, root_table, shadow_half, simon, spike_cycle, spin_orders, standing, table, take, vanish_cycle,
+    words)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "gp": 28, "sp": 29, "ra": 31}
@@ -191,6 +192,19 @@ GAME = {
     "next.bonus.2": 17, "next.chain.end": 18, "next.start.bonus": 15, "run.worlds": 10, "next.levels": 15,
     "next.levels.final": 2, "next.round.times": 3, "next.third": 5, "next.round": 3, "next.mode.load": 0,
     "next.mode.clears": [0x800482e4, 0x8004adc4, 0x8004b5dc], "next.mode.writes": [],
+    "simon.mode": 1, "simon.verdict.stands": 2, "simon.rest": -1, "simon.idle.step": 1, "simon.pad.up": 16,
+    "simon.latch.up": 1, "simon.pad.cross": 16384, "simon.latch.cross": 1, "simon.latch.set": 1, "simon.latch.step": 1,
+    "simon.latch": 5, "simon.idle.latch": 3, "simon.rest.flag": -1, "simon.index.half": 1, "simon.flag": 1,
+    "simon.idle.turn": 6, "simon.pad.left": 128, "simon.turn.left": 1, "simon.pad.right": 32, "simon.turn.right": -1,
+    "simon.empty": -1, "simon.empty.again": -1, "simon.bit.right": 1, "simon.request": 1, "simon.bit.left": 2,
+    "simon.bit.forward": 4, "simon.bit.jump": 8, "simon.index.half.store": 1, "simon.verdict.done": 1,
+    "simon.verdict.wrong": 2, "simon.index.step": 1, "simon.pass": 1, "simon.pass.shift": 1, "simon.start.mode": 1,
+    "simon.wait": 10, "simon.round.step": 1, "simon.grow": 2, "simon.fill": -1, "simon.store.last": 1023,
+    "simon.fill.down": -1, "simon.fill.step": -2, "simon.first": 1, "simon.starter.flip": 1, "simon.menu.start": 1,
+    "simon.points.last": 1, "simon.loop.mode": 1, "simon.other": 1, "simon.players.shift": 1, "simon.point": 1,
+    "simon.next.mode": 1, "simon.world.step": 1, "simon.room.step": 1, "simon.next.worlds": 10, "simon.points.gate": 6,
+    "simon.points.gate.other": 6, "simon.menu.cross": 16384, "simon.menu.gate": 6, "simon.menu.gate.other": 6,
+    "simon.menu.over": -1, "simon.next.levels": 15, "simon.store": 0x800d7f84, "simon.fill.from": 0x800d8782,
     "look.below": 250, "look.ahead": 800, "flight.unit.shift": 12, "flight.above": 100, "flight.quarter.shift": 2,
     "flight.half.shift": 1, "flight.third": 3, "flight.first": 13, "flight.end.gate": 1025, "flight.least": 1,
     "flight.curve.shift": 15, "flight.yaw": -1024, "flight.pitch": 250, "flight.bank.from": 1024, "flight.bank.shift": 1,
@@ -857,11 +871,37 @@ class Play(unittest.TestCase):
         self.assertEqual(p["points"], {"each": 50, "most": 5000, "levels": 15, "finals": 2})
         self.assertEqual(p["next"], {"bonus": [15, 16, 17], "hidden": 18, "slots": 15, "third": 5, "fruit": 31,
                                      "worlds": 10})
+        self.assertEqual(p["simon"], simon(GAME))
         self.assertEqual(p["view"], {"angles": [-8, 3, 10], "swing": 12, "off": 1400, "reach": 1000,
                                      "bonus": {"swing": 58, "off": 3400, "reach": 3000}, "hidden": {"off": 400}})
         self.assertEqual(p["flight"], flight(GAME))
         self.assertEqual(p["screen"], {"wide": 320, "high": 240, "distance": 160,
                                        "scale": {"across": 4096, "down": 3840}})
+
+    def test_the_simon_rooms_ship_their_latch_their_gates_their_bits_their_sequence_and_their_points(self):
+        s = simon(GAME)
+        self.assertEqual(s, {"latch": 5, "idle": [3, 6], "bits": {"right": 1, "left": 2, "forward": 4, "jump": 8},
+                             "store": 1024, "grow": 2, "points": 5})
+        # a tap of Up on the third frame at rest fires on the seventh, past the turn's gate
+        self.assertGreaterEqual(s["idle"][0] + s["latch"] - 1, s["idle"][1])
+        # the first round asks two moves and every round two more, so the sequence is full in the 512th
+        self.assertEqual((s["store"] - (GAME["simon.first"] + 1)) // s["grow"] + 1, 512)
+        self.assertEqual(s["points"] + 1, GAME["simon.points.gate"])
+
+    def test_a_simon_word_shared_or_gated_otherwise_stops_the_reading(self):
+        for change in ({"simon.mode": 2}, {"simon.next.mode": 0}, {"simon.menu.start": 2}, {"simon.verdict.wrong": 3},
+                       {"simon.verdict.stands": 1}, {"simon.rest": 0}, {"simon.rest.flag": 2}, {"simon.pad.up": 32},
+                       {"simon.menu.cross": 16}, {"simon.turn.right": 1}, {"simon.empty": 1}, {"simon.latch.set": 2},
+                       {"simon.first": 2}, {"simon.starter.flip": 2}, {"simon.bit.left": 4}, {"simon.bit.jump": 16},
+                       {"simon.index.half": 2, "simon.index.half.store": 2}, {"simon.index.half.store": 2},
+                       {"simon.fill.step": -4}, {"simon.fill.down": -2}, {"simon.fill": 0}, {"simon.empty.again": 0},
+                       {"simon.fill.from": 0x800d8780}, {"simon.store": 0x800d7f80}, {"simon.store.last": 1022},
+                       {"simon.idle.turn": 8}, {"simon.latch": 3}, {"simon.points.gate.other": 5},
+                       {"simon.menu.gate": 7}, {"simon.players.shift": 2}, {"simon.pass.shift": 2},
+                       {"simon.points.last": 2}, {"simon.next.worlds": 9}, {"simon.next.levels": 14},
+                       {"simon.menu.over": 0}, {"simon.wait": 20}, {"gp": 0x800a2f3c}):
+            with self.assertRaises(SystemExit):
+                simon({**GAME, **change})
 
     def test_the_fly_in_ships_its_hold_its_steps_its_turns_and_its_curve(self):
         self.assertEqual(flight(GAME), {"hold": 2000, "gate": 1000, "done": 1, "end": 1024, "step": 16, "slow": 928,
@@ -1132,7 +1172,8 @@ class Table(unittest.TestCase):
         self.assertEqual(t["play"]["view"]["hidden"], {"off": 400})
         self.assertEqual(set(t["play"]),
                          {"start", "clock", "ending", "wait", "words", "bonus", "points", "view", "flight", "screen",
-                          "next"})
+                          "next", "simon"})
+        self.assertEqual(t["play"]["simon"]["store"], 1024)
         self.assertEqual(t["play"], play(GAME))
         self.assertEqual(t["kinds"]["1"], {**harms(GAME)["kinds"][1], "standing": 1})
         self.assertEqual(t["kinds"]["4"], {**harms(GAME)["kinds"][4], "standing": 4})

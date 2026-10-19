@@ -974,6 +974,39 @@ test("an exit leads to the slot after, five fruit to a bonus level by thirds of 
   }
 });
 
+test("a Simon room latches Up and Cross over five frames from the third at rest, turns from the sixth, packs a move in four bits, holds 512 rounds of two more moves and is won past 5 points", () => {
+  const { simon, next } = table.play;
+  assert.deepEqual(simon, {
+    latch: 5,
+    idle: [3, 6],
+    bits: { right: 1, left: 2, forward: 4, jump: 8 },
+    store: 1024,
+    grow: 2,
+    points: 5,
+  });
+  // a tap of Up on the third frame at rest asks the roll on the seventh, past the turn's gate on the sixth
+  assert.equal(simon.idle[0] + simon.latch - 1, 7);
+  assert.ok(simon.idle[0] + simon.latch - 1 >= simon.idle[1]);
+  // the bits are one each, and a forward jump is both of its
+  assert.deepEqual(
+    Object.values(simon.bits).sort((a, b) => a - b),
+    [1, 2, 4, 8],
+  );
+  assert.equal(simon.bits.forward | simon.bits.jump, 12);
+  // the first round asks two moves and each round after two more, so the k-th asks 2k and the 512th fills the sequence
+  const moves = (round) => 2 + simon.grow * (round - 1);
+  assert.deepEqual([1, 2, 3, 10].map(moves), [2, 4, 6, 20]);
+  assert.equal(moves(512), simon.store);
+  // a game is won past 5 points, and the Copycat pack holds one room a world
+  assert.equal(simon.points + 1, 6);
+  const copycat = packs.packs.find((p) => /COPYCAT/.test(p.path));
+  assert.equal(copycat.slots.length, next.worlds);
+  assert.deepEqual(
+    copycat.slots.map((s) => Number(/^SIMON ?(\d+)$/.exec(s.name)[1])),
+    [...Array(next.worlds).keys()].map((i) => i + 1),
+  );
+});
+
 test("fire kills a standing ball on its 51st frame, and the captivators reach 212 and 127 units", () => {
   const { heat } = table.kinds[1];
   let frames = 0;
