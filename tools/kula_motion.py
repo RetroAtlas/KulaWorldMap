@@ -21,7 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import EXE, EXE_BASE, THEMES, open_disc
-from kula_level import FACES, FIRST_RECORD, SIDE, STYLES
+from kula_level import BLOCK_KINDS, FACES, FIRST_RECORD, SIDE, STYLES, UNPLACED_KIND
 from mips import Machine, decode
 
 TURN = 4096          # the angle that is one full turn
@@ -1459,15 +1459,38 @@ CHECKS = [
     (0x800363d4, "sw $v0, -23760($at)", "an ending of its own"),
     (0x80037164, "sh $v0, 7548($gp)", "which the input routine gives"),
     (0x800347c4, "sh $zero, 460($a0)", "the ending's routine marks the ball not live"),
+    (0x8003483c, "sh $v0, 6756($gp)", "steps its three angles"),
     (0x800348c8, "jal 0x80060a38", "turns the view by three angles"),
     (0x800348e4, "lw $v0, 7020($gp)", "about the lattice's middle"),
     (0x8003490c, "jal 0x80060508", "turned into the view"),
     (0x80034920, "lw $v1, 7048($gp)", "and puts the eye the free camera's distance"),
-    (0x80034840, "bne $v1, $zero, 0x80034870", "and, on a level with keys"),
-    (0x80034974, "jal 0x8005fb58", "the sine of a fourth angle"),
-    (0x800349c4, "sw $v0, 22912($at)", "and more away"),
-    (0x8003487c, "bne $v1, $v0, 0x800348ac", "and on one with none"),
-    (0x80034a38, "sw $v0, 22912($at)", "further still"),
+    (0x80034964, "sw $v0, 22912($at)", "and more away, whatever the level's mode"),
+    (0x80034834, "lw $v1, 21460($v1)", "which it reads at 0x800a53d4"),
+    (0x80034840, "bne $v1, $zero, 0x80034870", "in the arcade's steps the fourth angle"),
+    (0x80034874, "lw $v1, 21460($v1)", "reads the mode again"),
+    (0x8003487c, "bne $v1, $v0, 0x800348ac", "on a level with no key steps it faster"),
+    (0x80034954, "lw $v1, 21460($v1)", "and again"),
+    (0x80034968, "bne $v1, $zero, 0x800349c8", "in the arcade's"),
+    (0x80034974, "jal 0x8005fb58", "takes the sine of the fourth angle"),
+    (0x800349c4, "sw $v0, 22912($at)", "and writes the eye's swing over the distance"),
+    (0x800349cc, "lw $v1, 21460($v1)", "and once more"),
+    (0x800349d4, "bne $v1, $v0, 0x80034a3c", "on a level with no key"),
+    (0x80034a38, "sw $v0, 22912($at)", "writes the further swing over it"),
+    # The level's mode word.
+    (0x80027b3c, "sw $zero, 24316($at)", "the loader's mode routine clears the key count at 0x800a5efc"),
+    (0x80027b5c, "lhu $v0, 0($a2)", "reads each record's kind"),
+    (0x80027b88, "bne $v0, $t0, 0x80027ba8", "and counts the slots of the key's type"),
+    (0x80027bd4, "bne $v0, $zero, 0x80027be8", "with none"),
+    (0x80027bdc, "sw $v0, 9372($gp)", "the level's mode word is 1"),
+    (0x80027be8, "sw $zero, 9372($gp)", "and otherwise 0"),
+    (0x80027c54, "lh $v0, 0($v1)", "the kind of each record"),
+    (0x80027c5c, "bne $v0, $t2, 0x80027ca0", "where it is the settings record's"),
+    (0x80027c64, "lh $v0, 2($v1)", "its first slot's type"),
+    (0x80027c6c, "bne $v0, $a0, 0x80027c78", "where it is the hidden flag"),
+    (0x80027c74, "sw $t1, 9372($gp)", "makes the word 2"),
+    (0x80027cb4, "lw $v1, 13232($v1)", "and the game's mode word at 0x800a33b0"),
+    (0x80027cbc, "bne $v1, $v0, 0x80027cc8", "in the Simon rooms"),
+    (0x80027cc4, "sw $zero, 9372($gp)", "puts it back to 0"),
     (0x80041b08, "lw $v0, 10252($gp)", "on the first frame of an ending"),
     (0x80041b10, "bne $v0, $zero, 0x80041bc8", "alone"),
     (0x80041b90, "jal 0x80041f30", "the loop settles the points"),
@@ -2273,6 +2296,24 @@ IMMEDIATES = [
      "addiu $v0, $v0, {}"),
     ("the level's clock and its end", "end.view.off.bonus", "or on a level with no key this", 0x80034a28,
      "addiu $v0, $v0, {}"),
+    ("the level's clock and its end", "end.view.off.hidden",
+     "or, whatever the mode, this first, which the two swings write over", 0x80034958, "addiu $v0, $v0, {}"),
+    ("the level's clock and its end", "end.view.mode.bonus", "the faster step is keyed on the mode word at this",
+     0x80034878, "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "end.view.mode.bonus.eye", "and the further swing on the same", 0x800349d0,
+     "addiu $v0, $zero, {}"),
+    ("the level's mode", "mode.at", "the loader's mode routine reads the level's mode word this far past gp",
+     0x80027b30, "lw $v0, {}($gp)"),
+    ("the level's mode", "mode.key", "counts the slots of this type, the key's", 0x80027b4c, "addiu $t0, $zero, {}"),
+    ("the level's mode", "mode.kinds", "on the records of kinds below this", 0x80027b64, "sltiu $v0, $v0, {}"),
+    ("the level's mode", "mode.slots", "in this many slots of each", 0x80027bac, "slti $v0, $a0, {}"),
+    ("the level's mode", "mode.bonus", "and writes this where there are none", 0x80027bd8, "addiu $v0, $zero, {}"),
+    ("the level's mode", "mode.settings", "the settings record is of this kind", 0x80027c34, "addiu $t2, $zero, {}"),
+    ("the level's mode", "mode.hidden.flag", "and a type of this in its first slot marks a hidden level",
+     0x80027c38, "addiu $a0, $zero, {}"),
+    ("the level's mode", "mode.hidden", "which writes this", 0x80027c3c, "addiu $t1, $zero, {}"),
+    ("the level's mode", "mode.simon", "and the game's mode word at this, the Simon rooms', puts it back to 0",
+     0x80027cb8, "addiu $v0, $zero, {}"),
     ("the level's clock and its end", "death.most.gate", "a death's penalty is held under this", 0x80041ff0,
      "slti $v0, $v1, {}"),
     ("the level's clock and its end", "death.most", "at this", 0x80041ffc, "addiu $v1, $zero, {}"),
@@ -2521,7 +2562,8 @@ FIRE, ACID = 1, 4         # the kinds that harm by standing on them
 LIT = -2                  # a lit beam's cell in the lattice
 OFF = -1                  # the lattice's word for no block
 VANISHING = 7
-EXIT, HIDDEN_EXIT, MOVING_SPIKES, SPIKES, WANDERER, CORKSCREW = 7, 26, 11, 12, 53, 56
+KEY, EXIT, HIDDEN_EXIT, MOVING_SPIKES, SPIKES, WANDERER, CORKSCREW = 31, 7, 26, 11, 12, 53, 56
+SLOTS = 6                 # slots to a record
 ARROW = 28
 BROWN = 0                 # type 42's form that stays and harms
 UNHARMED = -1             # the invincibility word while no pill lasts
@@ -2564,6 +2606,10 @@ GLINT_STATE = (0x80050d48, 0x80050d4c)
 GP_INIT = (0x80069a04, 0x80069a08)
 GP = 0x800a2f38
 MODE_WORD = (0x800a572c, 10228)   # the lethargy effect's mode word, and its offset from gp
+LEVEL_MODE = (0x800a53d4, 9372)   # the level's mode word, and its offset from gp
+LEVEL_MODE_READ = (0x80034830, 0x80034834)   # where the ending's view builds its address
+GAME_MODE = (0x800a33b0, 1144)    # the game's mode word, 1 in the Simon rooms, and its offset from gp
+GAME_MODE_READ = (0x80027cb0, 0x80027cb4)    # where the mode routine builds its address
 SCREEN_WORDS = {"wide": 0x800a33d4, "high": 0x800a33dc, "distance": 0x800a33e4,
                 "across": 0x800a33d8, "down": 0x800a33e0}
 FLAT_TEXTURED = 0x2c      # the GPU's code for a flat textured quad
@@ -2690,6 +2736,8 @@ def readings(code):
     out["glint.seed"] = code.word(code.address(*GLINT_STATE))
     out["glint.at"], out["glint.frame.at"] = (code.address(*pair) for pair in GLINT_RECORDS)
     out["gp"] = code.address(*GP_INIT)
+    out["mode.word"] = code.address(*LEVEL_MODE_READ)
+    out["game.mode.word"] = code.address(*GAME_MODE_READ)
     out["glow.counter.load"] = int.from_bytes(code.read(out["gp"] + out["glow.counter.at"], 2), "little", signed=True)
     out["glow.clear"] = [code.address(*pair) for pair in CLEARED]
     for name, addr in SCREEN_WORDS.items():
@@ -3378,8 +3426,9 @@ def play(r):
     penalty, the ending's view, the fly-in and the screen's words as the
     executable loads them, each held against the others: one code and one countdown for a cause wherever it is read
     twice, the codes distinct, the spikes' ending the invincibility word's
-    own rest, every index the end screen picks lettered, and the gates one
-    past their values."""
+    own rest, every index the end screen picks lettered, the gates one
+    past their values, and the level's mode word one word for the loader
+    that writes it and the ending's view that reads it."""
     if r["exit.type"] != 7 or r["exit.hidden.type"] != 26:
         sys.exit("the exits are tested as other types than the exit's and the hidden exit's")
     if r["clock.mode"] != 1 or r["clock.face"] != 8:
@@ -3404,6 +3453,18 @@ def play(r):
         sys.exit("the Simon rooms' verdicts are not one and two")
     if r["death.most.gate"] != r["death.most"] + 1 or r["death.levels"] != LEVELS:
         sys.exit("a death's penalty is not gated at its most, or does not count a world's levels")
+    if r["gp"] + LEVEL_MODE[1] != r["mode.word"] or r["mode.word"] != LEVEL_MODE[0] or r["mode.at"] != LEVEL_MODE[1]:
+        sys.exit("the level's mode word the loader writes is not the one the ending's view reads")
+    if r["game.mode.word"] != GAME_MODE[0] or GP + GAME_MODE[1] != GAME_MODE[0] or r["mode.simon"] != r["clock.mode"]:
+        sys.exit("the mode routine does not put the level's word back to 0 in the mode the clock stands in")
+    if sorted((0, r["mode.bonus"], r["mode.hidden"])) != [0, 1, 2] or r["mode.hidden.flag"] != 1:
+        sys.exit("the level's modes are not 0, 1 and 2, or the hidden flag is not a type of 1")
+    if r["mode.key"] != KEY or r["mode.kinds"] != BLOCK_KINDS or r["mode.slots"] != SLOTS \
+            or r["mode.settings"] != UNPLACED_KIND:
+        sys.exit("the keys are not counted as the key's type in every slot of the blocks, "
+                 "or the settings record is not the kind the lattice never names")
+    if r["end.view.mode.bonus"] != r["mode.bonus"] or r["end.view.mode.bonus.eye"] != r["mode.bonus"]:
+        sys.exit("the ending's quicker swing is not keyed on the mode a level with no key plays in")
     wait = {name: r[f"wait.{name}"] for name in ENDINGS if f"wait.{name}" in r}
     wait["bonus"] = r["wait.hidden"]
     picks = {name: -code * 2 if code < 0 else r["words.win"] for name, code in ending.items()}
@@ -3425,7 +3486,8 @@ def play(r):
             "view": {"angles": [r["end.view.x"], r["end.view.y"], r["end.view.z"]], "swing": r["end.view.swing"],
                      "off": r["end.view.off"], "reach": r["end.view.reach"],
                      "bonus": {"swing": r["end.view.swing.bonus"], "off": r["end.view.off.bonus"],
-                               "reach": r["end.view.reach.bonus"]}},
+                               "reach": r["end.view.reach.bonus"]},
+                     "hidden": {"off": r["end.view.off.hidden"]}},
             "flight": flight(r),
             "screen": {"wide": r["screen.load.wide"], "high": r["screen.load.high"],
                        "distance": r["screen.load.distance"],
@@ -3708,6 +3770,11 @@ def show_readings(code):
     rows.append(("what harms the ball",
                  f"the start clears this many bytes from 0x{glow['glow.clear'][0]:08x}, the counter at 0x{counter:08x} among them",
                  CLEARED[0][0], glow["glow.clear"][1] - glow["glow.clear"][0]))
+    modes = readings(code)
+    rows.append(("the level's mode", f"the level's mode word the ending's view reads, 0x{modes['mode.word']:08x}, "
+                 "lies this far past gp", LEVEL_MODE_READ[0], modes["mode.word"] - modes["gp"]))
+    rows.append(("the level's mode", f"and the game's, which the mode routine reads, 0x{modes['game.mode.word']:08x}, "
+                 "this far", GAME_MODE_READ[0], modes["game.mode.word"] - modes["gp"]))
     rows.append(("shadows", "the square reaches this far either way of its middle, units",
                  code.address(*SHADOW_SQUARE), readings(code)["shadow.half"]))
     rows.append(("invisible block", "rows of the square root it measures a corner by",

@@ -179,7 +179,10 @@ GAME = {
     "catch.square": 44999, "dying.flash": 1024, "dying.flash.full": 4096, "tint.full": -4096, "tint.own": 400,
     "tint.other": 2000, "simon.done": 1, "simon.wrong": 2, "end.view.x": -8, "end.view.y": 3, "end.view.z": 10,
     "end.view.swing": 12, "end.view.swing.bonus": 58, "end.view.off": 1400, "end.view.off.bonus": 3400,
-    "end.view.reach": 1000, "end.view.reach.bonus": 3000, "death.most.gate": 5001, "death.most": 5000,
+    "end.view.reach": 1000, "end.view.reach.bonus": 3000, "end.view.off.hidden": 400, "end.view.mode.bonus": 1,
+    "end.view.mode.bonus.eye": 1, "mode.at": 9372, "mode.word": 0x800a53d4, "game.mode.word": 0x800a33b0,
+    "mode.key": 31, "mode.kinds": 5, "mode.slots": 6, "mode.bonus": 1, "mode.settings": 9, "mode.hidden.flag": 1,
+    "mode.hidden": 2, "mode.simon": 1, "death.most.gate": 5001, "death.most": 5000,
     "death.over": 4, "death.levels": 15, "death.each": 50, "death.each.final": 50,
     "look.below": 250, "look.ahead": 800, "flight.unit.shift": 12, "flight.above": 100, "flight.quarter.shift": 2,
     "flight.half.shift": 1, "flight.third": 3, "flight.first": 13, "flight.end.gate": 1025, "flight.least": 1,
@@ -252,6 +255,10 @@ class Reads(unittest.TestCase):
     def test_an_immediate_is_read_from_the_instruction_it_lives_in(self):
         c = code(addiu("a0", "v1", -75))
         self.assertEqual(c.immediate(AT, "addiu $a0, $v1, {}"), -75)
+
+    def test_an_offset_from_gp_is_an_immediate_too(self):
+        c = code(lw("v0", "gp", 9372))
+        self.assertEqual(c.immediate(AT, "lw $v0, {}($gp)"), 9372)
 
     def test_a_logic_immediate_is_read_unsigned_as_the_processor_takes_it(self):
         c = code(xori("v0", "v0", 2), xori("v0", "v0", 0x8000))
@@ -832,7 +839,7 @@ class Play(unittest.TestCase):
         self.assertEqual(p["bonus"], {"block": 50, "skips": 3})
         self.assertEqual(p["points"], {"each": 50, "most": 5000, "levels": 15})
         self.assertEqual(p["view"], {"angles": [-8, 3, 10], "swing": 12, "off": 1400, "reach": 1000,
-                                     "bonus": {"swing": 58, "off": 3400, "reach": 3000}})
+                                     "bonus": {"swing": 58, "off": 3400, "reach": 3000}, "hidden": {"off": 400}})
         self.assertEqual(p["flight"], flight(GAME))
         self.assertEqual(p["screen"], {"wide": 320, "high": 240, "distance": 160,
                                        "scale": {"across": 4096, "down": 3840}})
@@ -878,7 +885,11 @@ class Play(unittest.TestCase):
                        {"flight.yaw": -1000}, {"flight.bank.from": 2048}, {"flight.least": 2}, {"flight.pitch": 200},
                        {"flight.below": 200}, {"flight.ahead": 700}, {"flight.hold": 900}, {"flight.done": 1000},
                        {"flight.gate": 20}, {"words.win": 26}, {"words.final": 14}, {"words.last": -1},
-                       {"words.trial.won1": 30}, {"words.slow.gate": 1200}, {"words.copycat": 2}):
+                       {"words.trial.won1": 30}, {"words.slow.gate": 1200}, {"words.copycat": 2},
+                       {"mode.at": 9376}, {"mode.word": 0x800a53d0}, {"game.mode.word": 0x800a33b4},
+                       {"mode.simon": 2}, {"mode.bonus": 2}, {"mode.hidden": 1}, {"mode.hidden.flag": 2},
+                       {"mode.key": 30}, {"mode.kinds": 4}, {"mode.slots": 5}, {"mode.settings": 8},
+                       {"end.view.mode.bonus": 0}, {"end.view.mode.bonus.eye": 2}):
             with self.assertRaises(SystemExit):
                 play({**GAME, **change})
 
@@ -1094,6 +1105,7 @@ class Table(unittest.TestCase):
                          {"1": 1, "2": 2, "3": 93, "4": 4, "5": 95, "6": 96, "7": 97, "8": None})
         self.assertEqual(t["play"]["clock"]["second"], 50)
         self.assertEqual(t["play"]["ending"]["lost"], -3)
+        self.assertEqual(t["play"]["view"]["hidden"], {"off": 400})
         self.assertEqual(set(t["play"]),
                          {"start", "clock", "ending", "wait", "words", "bonus", "points", "view", "flight", "screen"})
         self.assertEqual(t["play"], play(GAME))

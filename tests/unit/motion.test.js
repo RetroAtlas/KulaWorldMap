@@ -1011,11 +1011,16 @@ test("the corkscrew catches a ball under it for 16 or 17 frames about each landi
   assert.deepEqual(runs(rest + long, true), [20, 21]);
 });
 
-test("the ending's view swings every 341 frames, and the dying ball flashes every four", () => {
+test("the ending's view swings every 341 frames, stands on a hidden level where either swing comes nearest, and the dying ball flashes every four", () => {
   const { view } = table.play;
   assert.equal(Math.floor(table.turn / view.swing), 341);
   assert.equal(Math.floor(table.turn / view.bonus.swing), 70);
   assert.deepEqual(view.angles, [-8, 3, 10]);
+  // the eye of a hidden level's ending stands 400 past the free camera's distance and does not swing,
+  // which is where the arcade's swing and the no-key level's both come nearest
+  assert.equal(view.hidden.off, 400);
+  assert.equal(view.off - view.reach, view.hidden.off);
+  assert.equal(view.bonus.off - view.bonus.reach, view.hidden.off);
   assert.equal(table.turn / table.types[30].dying.flash, 4);
 });
 
