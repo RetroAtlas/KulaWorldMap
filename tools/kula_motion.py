@@ -80,6 +80,7 @@ CHECKS = [
     (0x8003e4bc, "subu $v0, $v0, $v1", "the corkscrew takes its spin's step from its angle"),
     # Where a captivator is drawn.
     (0x8003d6d4, "addiu $s5, $s4, -32", "the draw's s5 is an entry's position"),
+    (0x8003d6e8, "addiu $fp, $s4, -24", "and its fp an entry's home"),
     (0x8003d81c, "addu $v0, $v0, $s5", "the slow star is drawn at its entry's position"),
     (0x8003d84c, "jal 0x800606b8", "as it is"),
     (0x8003ed3c, "addu $v0, $v0, $s5", "and the wheel"),
@@ -794,6 +795,7 @@ CHECKS = [
     (0x8003b7c4, "addiu $v0, $s4, 24", "the loader copies an entry's position"),
     (0x8003b7bc, "addiu $v1, $s4, 32", "into its home"),
     (0x8003e87c, "addu $v0, $v0, $fp", "and the corkscrew's shadow lies under its home"),
+    (0x8003e8f8, "subu $v1, $v1, $v0", "less a multiple of its normal"),
     (0x8003e9e4, "lh $v0, -23414($at)", "as strong as the corkscrew's bounce"),
     (0x8003ea08, "jal 0x8005fb58", "less a multiple of its sine"),
     (0x80031f3c, "jal 0x800603f8", "the ball's shadow is widened by the landing's squash"),
@@ -1242,6 +1244,33 @@ CHECKS = [
     (0x8003d634, "beq $v0, $zero, 0x8003d650", "catches the ball within the shorter reach"),
     (0x8003d644, "slt $v0, $t0, $v0", "and the others"),
     (0x8003d648, "beq $v0, $zero, 0x8003d670", "within the longer"),
+    (0x8003c25c, "bne $v1, $v0, 0x8003c538", "the mover's case for the corkscrew"),
+    (0x8003c280, "sh $v0, -23414($at)", "steps its angle"),
+    (0x8003c290, "bne $v0, $zero, 0x8003c2f8", "and where it has reached 2048"),
+    (0x8003c2f0, "jal 0x8004ddbc", "plays the landing's sound"),
+    (0x8003c2f8, "lw $v0, 7552($gp)", "then takes the angle mod 2048 every frame"),
+    (0x8003c344, "sh $v0, -23414($at)", "which wraps it"),
+    (0x8003c36c, "jal 0x8005fb58", "takes its sine"),
+    (0x8003c398, "lh $a0, -23572($at)", "and for each axis of the normal"),
+    (0x8003c440, "lh $a0, -23570($at)", "the second"),
+    (0x8003c4e8, "lh $a0, -23568($at)", "and the third"),
+    (0x8003c3b4, "mult $v0, $v1", "multiplies the rise by the sine"),
+    (0x8003c3c8, "sra $v1, $v1, 12", "over 4096"),
+    (0x8003c3e0, "lhu $v0, -23556($at)", "adds the home"),
+    (0x8003c488, "lhu $v0, -23554($at)", "on the second axis"),
+    (0x8003c520, "lhu $v0, -23552($at)", "and the third"),
+    (0x8003c3f4, "sh $v0, -23564($at)", "and writes the position"),
+    (0x8003c49c, "sh $v0, -23562($at)", "on the second axis"),
+    (0x8003c534, "sh $v0, -23560($at)", "and the third"),
+    (0x8003d5bc, "lh $v1, -23564($at)", "which the hit test reads"),
+    (0x8003d5d8, "lh $v1, -23562($at)", "on the second axis"),
+    (0x8003d5f4, "lh $v1, -23560($at)", "and the third"),
+    (0x80036774, "lhu $v0, -24240($v0)", "the ball's routine passes the hit test the ball's position words"),
+    (0x8003677c, "lhu $a0, -24238($a0)", "the second"),
+    (0x80036784, "lhu $v1, -24236($v1)", "and the third"),
+    (0x8003d5b0, "lh $v0, 0($sp)", "which it takes as they stand"),
+    (0x8003d5cc, "lh $v0, 2($sp)", "the second"),
+    (0x8003d5f8, "lh $v0, 4($sp)", "and the third"),
     (0x800386e0, "bne $v1, $v0, 0x80038730", "type 42's brown form asks no invincibility"),
     (0x800386f4, "bne $v0, $zero, 0x80038730", "and no countdown running"),
     (0x80038724, "sh $v0, -23930($at)", "and sets the countdown"),
@@ -1692,6 +1721,7 @@ IMMEDIATES = [
     ("captivators", "corkscrew.phase0", "corkscrew: phase 0 starts at, angle", 0x8003b904, "addiu $v1, $zero, {}"),
     ("captivators", "corkscrew.bounce", "corkscrew: bounce angle per frame", 0x8003c274, "addiu $v0, $v0, {}"),
     ("captivators", "corkscrew.wrap", "corkscrew: bounce angle wraps at", 0x8003c28c, "slti $v0, $v0, {}"),
+    ("captivators", "corkscrew.type", "corkscrew: the mover's case is this type", 0x8003c258, "addiu $v0, $zero, {}"),
     ("captivators", "star52.sway", "fast star: sway angle per frame", 0x8003c15c, "addiu $a0, $t0, {}"),
     ("captivators", "star52.tumble.x", "fast star: tumble per frame, first axis", 0x8003f2fc, "addiu $v1, $a0, {}"),
     ("captivators", "star52.tumble.y", "fast star: tumble per frame, second axis", 0x8003f330, "addiu $v1, $a0, {}"),
@@ -2158,6 +2188,8 @@ MULTIPLIERS = [
     ("captivators", "wheel.travel", "wheel: rolls per frame, units", 0x8003bf10, 6, "v0", "v1"),
     ("captivators", "star52.sway.reach", "fast star: sways this far either way, units", 0x8003c008, 5, "v1", "v1"),
     ("captivators", "corkscrew.rise", "corkscrew: rises this far, units", 0x8003c3a0, 5, "a0", "v1"),
+    ("captivators", "corkscrew.rise.y", "corkscrew: rises this far along the second axis, units", 0x8003c448, 5, "a0", "v1"),
+    ("captivators", "corkscrew.rise.z", "corkscrew: and its third", 0x8003c4f0, 5, "a0", "v1"),
     ("captivators", "corkscrew.spin", "corkscrew: spins this much times the cosine per frame", 0x8003e474, 5, "v0", "a2"),
     ("captivators", "corkscrew.drop", "corkscrew: drawn this far nearer its face than its entry, units", 0x8003e5d8, 6, "v1", "v1"),
     ("captivators", "ball53.lurch.reach", "wandering ball: lurch's reach, units", 0x8003c98c, 2, "v0", "v1"),
@@ -2265,7 +2297,7 @@ FIRE, ACID = 1, 4         # the kinds that harm by standing on them
 LIT = -2                  # a lit beam's cell in the lattice
 OFF = -1                  # the lattice's word for no block
 VANISHING = 7
-EXIT, HIDDEN_EXIT, MOVING_SPIKES, SPIKES, WANDERER = 7, 26, 11, 12, 53
+EXIT, HIDDEN_EXIT, MOVING_SPIKES, SPIKES, WANDERER, CORKSCREW = 7, 26, 11, 12, 53, 56
 ARROW = 28
 BROWN = 0                 # type 42's form that stays and harms
 UNHARMED = -1             # the invincibility word while no pill lasts
@@ -3117,7 +3149,8 @@ def harms(r):
     by type: fire's heat and acid's melt with their limits, the laser's cell
     and the heat it leaves, the moving spikes' deadly value and their own
     countdown, the captivators' reach as the squared distance each catches
-    the ball within, and the dying ball's flash and tint."""
+    the ball within, the corkscrew's with how far off the face the point its
+    bounce moves stands at a landing, and the dying ball's flash and tint."""
     if r["fire.kind"] != FIRE or r["acid.kind"] != ACID or r["laser.cell"] != LIT:
         sys.exit("fire, acid or the laser is not read from its own kind or the lit beam's cell")
     if r["laser.lay"] != r["laser.cell"]:
@@ -3129,6 +3162,9 @@ def harms(r):
         sys.exit("the exits, the spikes or the wandering ball are not read by their types")
     if r["tint.full"] != -TURN or r["dying.flash.full"] != TURN or r["fire.landed"] != 1:
         sys.exit("the ball's light is not full at a turn, or a landing is not marked by one")
+    if r["corkscrew.type"] != CORKSCREW \
+            or r["corkscrew.rise.y"] != r["corkscrew.rise"] or r["corkscrew.rise.z"] != r["corkscrew.rise"]:
+        sys.exit("the corkscrew is not moved by its type, or its position does not rise alike on its three axes")
     catch = {"square": r["catch.square"]}
     return {
         "kinds": {
@@ -3141,7 +3177,8 @@ def harms(r):
         "types": {
             MOVING_SPIKES: {"harm": {"flag": r["spikes11.deadly"], "standing": r["wait.spikes.standing"]}},
             42: {"harm": {"form": BROWN}},
-            50: {"catch": catch}, 51: {"catch": catch}, 52: {"catch": catch}, 56: {"catch": catch},
+            50: {"catch": catch}, 51: {"catch": catch}, 52: {"catch": catch},
+            CORKSCREW: {"catch": {**catch, "stand": r["captivator.standoff"] - BLOCK // 2}},
             WANDERER: {"catch": {"square": r["catch.near.gate"] - 1}},
             int(BALL): {"dying": {"flash": r["dying.flash"]}, "tint": {"own": r["tint.own"], "other": r["tint.other"]}},
         },

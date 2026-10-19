@@ -844,6 +844,62 @@ test("fire kills a standing ball on its 51st frame, and the captivators reach 21
   assert.equal(table.types[11].harm.standing, table.play.wait.spikes - 1);
 });
 
+test("the corkscrew catches a ball under it for 16 or 17 frames about each landing, a jump over it for 67 or 68 of a bounce and the long jump's apex for 20 or 21 about the top", () => {
+  const c = table.types[56];
+  const rest = table.types[30].rolling.resume;
+  const rule = table.types[30].jump;
+  assert.equal(c.catch.stand, 200);
+  assert.equal(c.entry.stand, 50);
+  // the game's sine is 4096 at a quarter turn, and the rise is its product with 400 over 4096,
+  // rounded toward nothing
+  const rise = (theta) =>
+    Math.floor(
+      (c.bounce.rise * Math.round(table.turn * Math.sin((2 * Math.PI * theta) / table.turn))) /
+        table.turn,
+    );
+  const within = (theta, h) => (c.catch.stand + rise(theta) - h) ** 2 <= c.catch.square;
+  assert.equal(rise(186), 112);
+  assert.ok(within(186, rest) && !within(187, rest));
+  assert.ok(within(1862, rest) && !within(1861, rest));
+  const apex = Math.max(...objects.jump.rows.map((r) => r[0]));
+  assert.equal(apex, 458);
+  assert.equal(rise(244), 146);
+  assert.ok(!within(243, rest + apex) && within(244, rest + apex));
+  assert.ok(within(1804, rest + apex) && !within(1805, rest + apex));
+  // the long jump takes the rows three halves over, the odd half dropped toward nothing
+  const long = Math.trunc((apex * rule.scale[0]) / rule.scale[1]);
+  assert.equal(long, 687);
+  assert.equal(rise(793), 375);
+  assert.ok(!within(792, rest + long) && within(793, rest + long));
+  assert.ok(within(1255, rest + long) && !within(1256, rest + long));
+  // the lengths of the runs of frames within reach, or clear of it, stepping the bounce from each
+  // phase: a run about a landing spans the wrap, and one about the top lies inside a bounce
+  const runs = (h, hit) => {
+    const lengths = new Set();
+    for (const phase of c.phases) {
+      let theta = phase;
+      let run = -1;
+      for (let counted = 0; counted < 40;) {
+        theta = (theta + c.bounce.rate) % c.bounce.wrap;
+        if (within(theta, h) === hit) {
+          if (run >= 0) run++;
+        } else {
+          if (run > 0) {
+            lengths.add(run);
+            counted++;
+          }
+          run = 0;
+        }
+      }
+    }
+    return [...lengths].sort((a, b) => a - b);
+  };
+  assert.deepEqual(runs(rest, true), [16, 17]);
+  assert.deepEqual(runs(rest + apex, true), [67, 68]);
+  assert.deepEqual(runs(rest + apex, false), [21, 22]);
+  assert.deepEqual(runs(rest + long, true), [20, 21]);
+});
+
 test("the ending's view swings every 341 frames, and the dying ball flashes every four", () => {
   const { view } = table.play;
   assert.equal(Math.floor(table.turn / view.swing), 341);

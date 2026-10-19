@@ -178,7 +178,7 @@ LEVEL 84 carries the game's first four, and the way one shakes before it moves t
 
 ### type 56: Captivator, bouncing
 
-LEVEL 45 carries the game's first six, and LEVEL 122's go up in sequence, which is what `f3`, four-valued, reads as: its phase ([motion.md](motion.md)). In play, touching it costs the ball its life. It is a hazard by the routine the things that travel share.
+LEVEL 45 carries the game's first six, and LEVEL 122's go up in sequence, which is what `f3`, four-valued, reads as: its phase ([motion.md](motion.md)). In play, touching it costs the ball its life. It is a hazard by the routine the things that travel share. Its hit test reads the position its bounce writes, so a ball under it is within reach only about each landing and a ball jumping over it only while it is up ([motion.md](motion.md)), which is what the note's advice rests on.
 
 ## Levels
 

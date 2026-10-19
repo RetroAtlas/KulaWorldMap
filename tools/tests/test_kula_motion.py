@@ -160,6 +160,8 @@ GAME = {
     "acid.gain.wait": 300, "end.exit.landing": 1, "end.hidden.landing": 3, "end.bonus.landing": 2,
     "spikes12.type": 12, "spikes11.type": 11, "spikes11.deadly": 1, "wait.spikes.landing": 10,
     "wait.spikes.standing": 9, "end.captivator.still": -5, "catch.type53": 53, "catch.near.gate": 16200,
+    "corkscrew.type": 56, "corkscrew.rise": 400, "corkscrew.rise.y": 400, "corkscrew.rise.z": 400,
+    "captivator.standoff": 456,
     "catch.square": 44999, "dying.flash": 1024, "dying.flash.full": 4096, "tint.full": -4096, "tint.own": 400,
     "tint.other": 2000, "simon.done": 1, "simon.wrong": 2, "end.view.x": -8, "end.view.y": 3, "end.view.z": 10,
     "end.view.swing": 12, "end.view.swing.bonus": 58, "end.view.off": 1400, "end.view.off.bonus": 3400,
@@ -884,15 +886,16 @@ class Harms(unittest.TestCase):
         self.assertEqual(h["kinds"][8], {"harm": {"cell": -2, "heat": 1900}})
         self.assertEqual(h["types"][11], {"harm": {"flag": 1, "standing": 9}})
         self.assertEqual(h["types"][42], {"harm": {"form": 0}})
-        for t in (50, 51, 52, 56):
+        for t in (50, 51, 52):
             self.assertEqual(h["types"][t], {"catch": {"square": 44999}})
+        self.assertEqual(h["types"][56], {"catch": {"square": 44999, "stand": 200}})
         self.assertEqual(h["types"][53], {"catch": {"square": 16199}})
         self.assertEqual(h["types"][30], {"dying": {"flash": 1024}, "tint": {"own": 400, "other": 2000}})
 
     def test_a_harm_read_from_another_kind_type_or_limit_stops_the_reading(self):
         for change in ({"fire.kind": 2}, {"laser.cell": -1}, {"laser.lay": -1}, {"fire.limit.gate": 2000},
                        {"acid.top.gate": 2000}, {"spikes12.type": 11}, {"catch.type53": 52}, {"tint.full": -2048},
-                       {"fire.landed": 2}):
+                       {"fire.landed": 2}, {"corkscrew.type": 52}, {"corkscrew.rise.y": 300}, {"corkscrew.rise.z": 0}):
             with self.assertRaises(SystemExit):
                 harms({**GAME, **change})
 
@@ -1041,6 +1044,7 @@ class Table(unittest.TestCase):
         self.assertEqual(t["kinds"]["8"]["harm"], {"cell": -2, "heat": 1900})
         self.assertEqual(t["kinds"]["8"]["reach"], 256)
         self.assertEqual(t["types"]["53"]["catch"], {"square": 16199})
+        self.assertEqual(t["types"]["56"]["catch"], {"square": 44999, "stand": 200})
         self.assertEqual(t["types"]["11"]["harm"], {"flag": 1, "standing": 9})
         self.assertEqual(set(t["types"]["11"]), {"cycle", "deadly", "harm"})
         self.assertEqual([len(d) for d in t["types"]["11"]["deadly"]], [143] * PHASES)
