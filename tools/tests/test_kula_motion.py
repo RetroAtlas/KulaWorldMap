@@ -14,11 +14,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
-    GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, PHASES,
+    GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, GP, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, PHASES,
     ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, WORDS_COUNT, WORDS_TABLE,
-    Code, blocks, body, devices, dispatch, exits, flight, glint, glow_lift, glow_spill, harms, jump, laser, light, moves,
-    play, roll, root_table, shadow_half, simon, spike_cycle, spin_orders, standing, table, take, vanish_cycle,
-    words)
+    Code, blocks, body, devices, dispatch, effect_init, effect_tables, effects, exits, flight, glint, glow_lift,
+    glow_spill, harms, jump, laser, light, moves, play, roll, root_table, shadow_half, simon, spike_cycle, spin_orders,
+    standing, table, take, vanish_cycle, words)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "gp": 28, "sp": 29, "ra": 31}
@@ -205,6 +205,46 @@ GAME = {
     "simon.next.mode": 1, "simon.world.step": 1, "simon.room.step": 1, "simon.next.worlds": 10, "simon.points.gate": 6,
     "simon.points.gate.other": 6, "simon.menu.cross": 16384, "simon.menu.gate": 6, "simon.menu.gate.other": 6,
     "simon.menu.over": -1, "simon.next.levels": 15, "simon.store": 0x800d7f84, "simon.fill.from": 0x800d8782,
+    "effect.slots.last": 11, "effect.colour.a": 100, "effect.colour.b": 50, "effect.colour.c": 80, "effect.colour.d": 127,
+    "effect.colour.e": 60, "effect.colour.f": 20, "effect.sprites": 7, "effect.full": 128, "effect.quad": 40,
+    "effect.most": 16, "effect.third": 4, "effect.players": 1, "effect.gone": -1, "effect.row.quad": 2,
+    "effect.row.double": 1, "effect.header": 4, "effect.dice": 4096, "effect.hud.shift": 18, "effect.hud.shift.sine": 18,
+    "effect.prims": 160, "effect.depth.shift": 2, "effect.near": 121, "effect.dice.world": 4096, "effect.whole.shift": 16,
+    "effect.whole.one": 1, "effect.whole.shift.sine": 16, "effect.whole.one.sine": 1, "effect.world.shift": 16,
+    "effect.world.shift.sine": 16, "effect.light.shift": 9, "effect.light.shift.g": 9, "effect.light.shift.b": 9,
+    "effect.table.shift": 3, "effect.row.step": 8, "effect.angle.step": 2, "effect.particle": 40, "effect.step": 1,
+    "teleport.flash.on": 1, "teleport.flash.modes": 2, "teleport.flash.from": 268, "teleport.flash.mode.last": 2,
+    "teleport.flash.from.last": 254, "teleport.flash.from.1": 261, "teleport.flash.run.on": 1, "teleport.flash.step": -20,
+    "teleport.flash.step.1": -13, "teleport.flash.step.last": -6, "teleport.flash.level": 1, "teleport.flash.level.mode": 2,
+    "teleport.flash.level.from": 254, "teleport.flash.blend": 1, "teleport.flash.semi": 1, "teleport.flash.wide": 1,
+    "teleport.flash.high": 1, "teleport.flash.len": 5, "teleport.flash.quad": 40, "effect.table.send": 4100,
+    "effect.kind.42": 7, "effect.kind.32": 9, "effect.kind.34": 9, "effect.kind.33": 9, "effect.kind.38": 8,
+    "effect.hud.key.right": 6, "effect.hud.key.down": 11, "effect.hud.z": -1, "effect.kind.31": 6, "effect.kind.36": 7,
+    "effect.kind.37": 2, "effect.kind.43": 4, "effect.kind.44": 4, "effect.kind.45": 4, "effect.kind.46": 4,
+    "effect.kind.47": 4, "effect.kind.27": 4, "effect.kind.35.hud": 1, "effect.kind.35": 10, "effect.kind.5.hud": 3,
+    "teleport.flash.word": 1, "effect.table.words": 1026, "effect.entry": 184, "effect.player": 2944, "effect.buffer": 80,
+    "effect.table.mul": 513,
+    "effect.pointers": [0x800988f8, 0x80098d2c, 0x800999ac, 0x800992f4, 0x80098f90, 0x80098f90, 0x800999ac, 0x800999ac,
+                        0x80099cd0, 0x80099698, 0x80098f90, 0],
+    "effect.colours": [[100, 50, 100], [80, 80, 80], [127, 60, 60], [20, 20, 127], [127, 127, 0], [20, 20, 80],
+                       [127, 127, 127]],
+    "effect.tables": {
+        0x800988f8: {"count": 2, "frames": 2, "rows": [[[6, 0, 1330, 107], [0, 0, 80, 107]],
+                                                        [[6, 83, 1330, 107], [0, 83, 155, 107]]]},
+        0x80098d2c: {"count": 2, "frames": 1, "rows": [[[0, 0, 0, 167], [1, 2558, 3333, 107]]]},
+        0x800999ac: {"count": 2, "frames": 2, "rows": [[[5, 0, 0, 0], [6, 0, 2580, 0]],
+                                                        [[5, 3763, 200, 35], [6, 4013, 2580, 17]]]},
+        0x800992f4: {"count": 2, "frames": 2, "rows": [[[0, 0, 0, 107], [3, 0, 0, 0]],
+                                                        [[4, -1, -3373, 0], [3, 667, 833, 206]]]},
+        0x80098f90: {"count": 2, "frames": 2, "rows": [[[0, 0, 3413, 0], [1, -1, 2580, 0]],
+                                                        [[0, 0, 3413, 23], [1, 127, 2655, 0]]]},
+        0x80099cd0: {"count": 2, "frames": 1, "rows": [[[0, 0, 0, 107], [2, 0, 0, 0]]]},
+        0x80099698: {"count": 2, "frames": 2, "rows": [[[6, -1, 0, 255], [2, 0, 4330, 90]],
+                                                        [[6, 3628, 1353, 248], [2, 0, 4405, 83]]]}},
+    "effect.sine.at": 0x8009c20c, "effect.sine.one": 4096,
+    "effect.hud.at": {"clock": [160, 28, -1], "teleport": [160, 166, -1],
+                      "fruit": [[208, 217, -1], [228, 216, -1], [253, 216, -1], [278, 216, -1], [299, 218, -1]]},
+    "effect.table.at": [0x800d2e20, 0x800d2e20, 0x800d2e20],
     "look.below": 250, "look.ahead": 800, "flight.unit.shift": 12, "flight.above": 100, "flight.quarter.shift": 2,
     "flight.half.shift": 1, "flight.third": 3, "flight.first": 13, "flight.end.gate": 1025, "flight.least": 1,
     "flight.curve.shift": 15, "flight.yaw": -1024, "flight.pitch": 250, "flight.bank.from": 1024, "flight.bank.shift": 1,
@@ -229,6 +269,10 @@ def sw(rt, rs, imm):
 
 def sh(rt, rs, imm):
     return (0x29 << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
+def sb(rt, rs, imm):
+    return (0x28 << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
 
 
 def jal(target):
@@ -1055,6 +1099,80 @@ class Standing(unittest.TestCase):
                 standing({**GAME, **change})
 
 
+class Effects(unittest.TestCase):
+    def test_startups_straight_run_is_followed_for_what_it_stores_through_gp(self):
+        c = code(lui("v0", 0x000a), addiu("v0", "v0", -30472), sw("v0", "gp", 5048), addiu("v1", "zero", 100),
+                 lw("a1", "a1", 23216), sb("v1", "gp", 5104), sb("zero", "gp", 5105))
+        self.assertEqual(effect_init(c, (AT, AT + 28)),
+                         {GP + 5048: ("sw", 0x800988f8), GP + 5104: ("sb", 100), GP + 5105: ("sb", 0)})
+        with self.assertRaises(SystemExit):
+            effect_init(code(lw("a1", "a1", 23216), sw("a1", "gp", 5048)), (AT, AT + 8))
+
+    def test_an_effect_table_is_read_as_its_count_its_frames_and_its_rows(self):
+        def halves(lo, hi):
+            return (lo & 0xFFFF) | ((hi & 0xFFFF) << 16)
+        c = code(halves(2, 1), halves(6, 0), halves(1330, 107), halves(0, -1), halves(80, 107))
+        self.assertEqual(effect_tables(c, [AT, 0, AT]),
+                         {AT: {"count": 2, "frames": 1, "rows": [[[6, 0, 1330, 107], [0, -1, 80, 107]]]}})
+        with self.assertRaises(SystemExit):
+            effect_tables(code(halves(0, 1)), [AT])
+        with self.assertRaises(SystemExit):
+            effect_tables(code(halves(2, 40)), [AT])
+
+    def test_the_effects_ship_their_tables_their_colours_as_shown_their_units_and_the_flash(self):
+        e = effects(GAME)
+        self.assertEqual(e["sprites"], {"count": 7, "colours": [[100, 50, 100], [80, 80, 80], [60, 60, 127], [127, 20, 20],
+                                                                 [0, 127, 127], [80, 20, 20], [127, 127, 127]]})
+        self.assertEqual(e["size"], {"hud": 64, "world": 16})
+        self.assertEqual(e["kinds"], {"0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "4", "6": "2", "7": "2",
+                                      "8": "8", "9": "9", "10": "4"})
+        self.assertEqual(set(e["tables"]), {"0", "1", "2", "3", "4", "8", "9"})
+        self.assertEqual(e["tables"]["2"], {"frames": 2, "rows": GAME["effect.tables"][0x800999ac]["rows"]})
+        self.assertEqual(e["starts"]["31"], {"world": 6, "hud": 0})
+        self.assertEqual(e["starts"]["35"], {"world": 10, "hud": 1})
+        self.assertEqual(e["starts"]["32"], {"world": 9})
+        self.assertEqual({k for k, v in e["starts"].items() if "hud" in v}, {"31", "35", "43", "44", "45", "46", "47"})
+        self.assertEqual(set(e["starts"]), {"31", "32", "33", "34", "35", "36", "37", "38", "42", "43", "44", "45", "46", "47"})
+        self.assertEqual(e["teleport"], {"hud": 3})
+        self.assertEqual(e["hud"], {"clock": [160, 28], "teleport": [160, 166], "key": [6, 11],
+                                    "fruit": [[208, 217], [228, 216], [253, 216], [278, 216], [299, 218]]})
+        self.assertEqual(e["flash"], {"blend": 1, "teleport": {"from": 268, "step": 20, "blanks": 2},
+                                      "bonus": {"from": 254, "step": 6}})
+        # the flash shows on 13 passes, from 248 down to 8, and a level with no key opens from white over 42
+        self.assertEqual(len(range(268 - 20, 0, -20)), 13)
+        self.assertEqual(len(range(254 - 6, 0, -6)), 42)
+        self.assertEqual({k: e[k] for k in ("most", "particles", "near", "light")},
+                         {"most": 16, "particles": 2, "near": 121, "light": {"over": 512}})
+
+    def test_an_effect_word_otherwise_stops_the_reading(self):
+        tables, at = GAME["effect.tables"], GAME["effect.hud.at"]
+        def rows(address, *row):
+            return {"effect.tables": {**tables, address: {"count": 2, "frames": 1, "rows": [list(row)]}}}
+        for change in ({"effect.slots.last": 10}, {"effect.pointers": GAME["effect.pointers"][:-1] + [0x800988f8]},
+                       {"effect.kind.33": 8}, {"effect.kind.44": 2}, {"effect.kind.42": 2}, {"effect.kind.5.hud": 2},
+                       {"effect.kind.35.hud": 9}, {"effect.kind.31": 11},
+                       {"effect.tables": {**tables, 0x80098d2c: {**tables[0x80098d2c], "count": 3}}},
+                       {"effect.tables": {**tables, 0x80098d2c: {**tables[0x80098d2c], "frames": 2}}},
+                       rows(0x80098d2c, [7, 0, 0, 0], [0, 0, 0, 0]), rows(0x80098d2c, [0, -2, 0, 0], [0, 0, 0, 0]),
+                       rows(0x80098d2c, [0, 0, 0, 256], [0, 0, 0, 0]), rows(0x80099698, [6, -1, 10, 255], [2, 0, 0, 0]),
+                       {"effect.colour.a": 101}, {"effect.full": 127}, {"effect.sprites": 6},
+                       {"effect.entry": 180}, {"effect.player": 2940}, {"effect.buffer": 84}, {"effect.prims": 164},
+                       {"effect.particle": 44}, {"effect.row.quad": 3}, {"effect.row.double": 2}, {"effect.header": 8},
+                       {"effect.angle.step": 4}, {"effect.third": 2}, {"effect.players": 2}, {"effect.gone": -2},
+                       {"effect.step": 2}, {"effect.dice": 2048}, {"effect.dice.world": 1024}, {"effect.sine.one": 2048},
+                       {"effect.hud.shift": 17}, {"effect.world.shift": 17}, {"effect.whole.shift": 17},
+                       {"effect.whole.one": 2}, {"effect.light.shift.g": 8},
+                       {"effect.table.at": [0x800d2e20, 0x800d2e24, 0x800d2e20]}, {"effect.table.words": 1025},
+                       {"effect.table.send": 4096}, {"effect.table.shift": 2}, {"effect.hud.z": 0},
+                       {"effect.hud.at": {**at, "clock": [160, 28, 0]}}, {"effect.hud.at": {**at, "fruit": at["fruit"][:4]}},
+                       {"teleport.flash.word": 2}, {"teleport.flash.run.on": 0}, {"teleport.flash.level": 0},
+                       {"teleport.flash.mode.last": 1}, {"teleport.flash.level.from": 268}, {"teleport.flash.step": 20},
+                       {"teleport.flash.from.1": 0}, {"teleport.flash.blend": 2}, {"teleport.flash.semi": 0},
+                       {"teleport.flash.wide": 0}, {"teleport.flash.quad": 44}, {"teleport.flash.len": 9}):
+            with self.assertRaises(SystemExit):
+                effects({**GAME, **change})
+
+
 class Table(unittest.TestCase):
     def test_the_table_carries_a_program_per_phase_and_the_platform_scaled(self):
         r = dict(GAME)
@@ -1174,6 +1292,9 @@ class Table(unittest.TestCase):
                          {"start", "clock", "ending", "wait", "words", "bonus", "points", "view", "flight", "screen",
                           "next", "simon"})
         self.assertEqual(t["play"]["simon"]["store"], 1024)
+        self.assertEqual(t["effects"], effects(GAME))
+        self.assertEqual(t["effects"]["size"], {"hud": 64, "world": 16})
+        self.assertEqual(t["effects"]["kinds"]["7"], "2")
         self.assertEqual(t["play"], play(GAME))
         self.assertEqual(t["kinds"]["1"], {**harms(GAME)["kinds"][1], "standing": 1})
         self.assertEqual(t["kinds"]["4"], {**harms(GAME)["kinds"][4], "standing": 4})

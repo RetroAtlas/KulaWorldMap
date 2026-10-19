@@ -1007,6 +1007,80 @@ test("a Simon room latches Up and Cross over five frames from the third at rest,
   );
 });
 
+test("a taken coin bursts a dark ring growing 12.5 units a frame under a white ring turning once in 49, a pill's ring spins a turn in 9 from the dice, and a teleport flashes 13 passes at half pace", () => {
+  const { effects } = table;
+  assert.equal(effects.most, 16);
+  assert.equal(effects.particles, 2);
+  assert.deepEqual(effects.size, { hud: 64, world: 16 });
+  assert.deepEqual(Object.keys(effects.tables), ["0", "1", "2", "3", "4", "8", "9"]);
+  const tableOf = (kind) => effects.tables[effects.kinds[kind]];
+  // every row holds two particles, a sprite among the seven and a brightness in a byte, and a table runs its frames
+  for (const t of Object.values(effects.tables)) {
+    assert.equal(t.rows.length, t.frames);
+    for (const row of t.rows) {
+      assert.equal(row.length, effects.particles);
+      for (const [sprite, angle, , bright] of row) {
+        assert.ok(
+          sprite >= 0 &&
+            sprite < effects.sprites.count &&
+            bright >= 0 &&
+            bright <= 255 &&
+            angle >= -1,
+        );
+      }
+    }
+  }
+  // the coin, the key, the gem and type 42 share one table of 50 frames
+  assert.deepEqual(
+    [37, 31, 36, 42].map((t) => effects.kinds[effects.starts[t].world]),
+    ["2", "2", "2", "2"],
+  );
+  const ring = tableOf(effects.starts[37].world);
+  assert.equal(ring.frames, 50);
+  // its dark ring, sprite 5, grows 200 a frame, 12.5 units, to 5800 at frame 29, 362.5 units
+  assert.deepEqual(
+    ring.rows.slice(0, 30).map((r) => r[0][2]),
+    [...Array(30).keys()].map((f) => 200 * f),
+  );
+  assert.equal(200 / effects.size.world, 12.5);
+  assert.equal(5800 / effects.size.world, 362.5);
+  // and its white ring, sprite 6, stands 2580 out, 161 units, turning back 83 a frame, a turn in 49 frames
+  assert.ok(ring.rows.every((r) => r[1][0] === 6 && r[1][2] === 2580));
+  assert.equal(ring.rows[1][1][1] - ring.rows[2][1][1], 83);
+  assert.equal(Math.round(table.turn / 83), 49);
+  assert.equal(Math.round(2580 / effects.size.world), 161);
+  // the three pills share one table, whose white ring draws its angle from the dice at frame 20 and spins back 468 a frame, a turn in 9
+  const pill = tableOf(effects.starts[32].world);
+  assert.deepEqual(
+    [33, 34].map((t) => effects.starts[t].world),
+    [effects.starts[32].world, effects.starts[32].world],
+  );
+  assert.deepEqual(pill.rows[20][0], [6, -1, 0, 255]);
+  assert.equal(pill.rows[21][0][1] - pill.rows[22][0][1], 468);
+  assert.equal(Math.round(table.turn / 468), 9);
+  // the key, the fruit and the hourglass start a second effect on the HUD, the teleporter one there alone, of 58 frames
+  assert.deepEqual(effects.starts[31], { world: 6, hud: 0 });
+  assert.deepEqual(effects.starts[35], { world: 10, hud: 1 });
+  assert.deepEqual(effects.starts[43], { world: 4, hud: 0 });
+  assert.deepEqual(effects.teleport, { hud: 3 });
+  assert.equal(tableOf(3).frames, 58);
+  assert.deepEqual(effects.hud.teleport, [160, 166]);
+  // the red disc's light shows blue and the electric blue ball's red, the colour word's first byte lying highest
+  assert.deepEqual(effects.sprites.colours[2], [60, 60, 127]);
+  assert.deepEqual(effects.sprites.colours[3], [127, 20, 20]);
+  assert.equal(effects.light.over, 512);
+  // the flash shows on 13 passes, from 248 down by 20 to 8, each waited two blanks, and a level with no key opens from white over 42
+  const passes = ({ from, step }) => {
+    let n = 0;
+    for (let s = from - step; s > 0; s -= step) n++;
+    return n;
+  };
+  assert.equal(passes(effects.flash.teleport), 13);
+  assert.equal(effects.flash.teleport.blanks, 2);
+  assert.equal(passes(effects.flash.bonus), 42);
+  assert.equal(effects.flash.blend, 1);
+});
+
 test("fire kills a standing ball on its 51st frame, and the captivators reach 212 and 127 units", () => {
   const { heat } = table.kinds[1];
   let frames = 0;
