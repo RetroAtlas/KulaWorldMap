@@ -504,6 +504,9 @@ CHECKS = [
     (0x80031420, "jal 0x800603f8", "in that order"),
     (0x800314bc, "jal 0x800603f8", "and the camera's over all"),
     (0x800314c4, "lh $v1, 702($s3)", "and takes the squash's word for the position"),
+    (0x80031428, "lhu $v0, 6292($gp)", "and copies the product"),
+    (0x80031430, "sh $v0, 660($s3)", "into a fourth matrix at 660"),
+    (0x8003149c, "sh $v0, 676($s3)", "to its last halfword"),
     (0x80036258, "jal 0x8002f2e8", "the level's start lays the ball's matrices"),
     (0x80034b14, "sw $v0, 536($s0)", "a turn right marks the frame's own draw"),
     (0x80034bcc, "sw $v0, 536($s0)", "as a turn left does"),
@@ -1211,6 +1214,20 @@ CHECKS = [
     (0x8003a894, "sh $v1, 68($s0)", "from the far end's cell"),
     (0x8003a8ec, "swr $v0, 60($a0)", "as its position"),
     (0x8003a8f8, "jal 0x80037430", "and reads the cells about it again"),
+    (0x8003a6cc, "sw $zero, 0($s0)", "the send writes 0 into the record's first word, as a landing does"),
+    (0x8003a79c, "lui $v0, 0x000c", "and lays the frame matrix at 212 by the record's address"),
+    (0x8003a7a0, "lhu $v0, -24280($v0)", "from the side at 20"),
+    (0x8003a7c8, "sh $v0, -24088($at)", "its first store, at 212"),
+    (0x8003a83c, "sh $v0, -24072($at)", "the matrix's last halfword, at 228"),
+    (0x8003a860, "sh $v0, -24074($at)", "and its last store, at 226"),
+    (0x8003817c, "sh $zero, 7184($gp)", "the frame routine's first store, to its scratch by gp"),
+    (0x8003825c, "swl $v0, 23($a2)", "its first to the record"),
+    (0x800383e0, "sh $v0, 16($a2)", "and its last"),
+    (0x800383e4, "jr $ra", "and its return"),
+    (0x8003a904, "addiu $v0, $zero, 1", "the send returns 1"),
+    (0x8003b3a8, "beq $v0, $zero, 0x8003b3d8", "on which the hazards' routine"),
+    (0x8003b3b0, "jal 0x80037430", "reads the cells about the ball again"),
+    (0x8003b3b8, "jal 0x80037a98", "and measures where it is within its cell, as the frame does"),
     (0x8003b3cc, "bne $v0, $zero, 0x8003b3d8", "after which a progress past the band"),
     (0x8003b3d4, "sh $zero, 492($s0)", "clears the marker"),
     (0x80036854, "lhu $v0, -23964($v0)", "as does a progress"),
@@ -3370,6 +3387,23 @@ NEXT_ROUND = (0x800425ac, "lui $v1, {}", 0x800425b0, "ori $v1, $v1, {}")   # the
 NEXT_MODE = 0x800a3448    # the word the next-level routine's other starts hang on
 NEXT_MODE_CLEARS = (0x800482e4, 0x8004adc4, 0x8004b5dc)
 STORES = {0x28, 0x29, 0x2a, 0x2b, 0x2e}   # the store opcodes
+WIDTHS = {"sb": 1, "sh": 2, "sw": 4, "swc2": 4}   # bytes a store writes; swl and swr stay within their word
+ARGUMENTS = ("a0", "a1", "a2", "a3")
+CALLER_SAVED = ("at", "v0", "v1", *ARGUMENTS, *(f"t{i}" for i in range(10)), "ra")
+
+# A stretch of code whose every store the scan resolves to an address, none within a span of the
+# ball's record: its first and last instruction, the register handed the record, the span's first
+# and last word, and the calls the record goes on to, each where, the callee and the argument
+# registers holding it with their offsets.
+SCANS = [
+    ("the devices under the ball", "send.stores",
+     "stores in the send, each resolved to its address, none from 564 to 688 of the ball's record",
+     0x8003a6b4, 0x8003a8fc, "s0", (564, 688),
+     ((0x8003a734, 0x80038178, {"a2": 0}), (0x8003a8f8, 0x80037430, {"a0": 0}))),
+    ("the devices under the ball", "frame.stores",
+     "stores in the frame routine the send hands the record to, each resolved, none from 564 to 688, and it calls nothing",
+     0x80038178, 0x800383e8, "a2", (564, 688), ()),
+]
 PLAYERS = 2
 SIMON_STORE = (0x8003710c, 0x80037110)   # the sequence the Simon rooms hold a move to, as the pad builds its address
 SIMON_FILL = (0x80035cdc, 0x80035ce0)    # and the halfword the reset fills it from
@@ -3565,6 +3599,79 @@ class Code:
                 out.append((EXE_BASE + 4 * i, (w >> 16) & 31))
         return out
 
+    def resolved(self, start, end, base, span, calls=(), record=BALL_RECORD):
+        """How many stores the stretch from `start` to `end` makes, each resolved to an address through `base`,
+        which holds `record`, a register derived from it, gp, sp or a lui; none within the record's `span` of
+        words, no pointer made into it, and the record handed on by the `calls` listed alone."""
+        low, high = record + span[0], record + span[1] + 3
+        held = {base: (record, True), "gp": (GP, False)}     # a register's address, and whether it is the record's
+        awaited = {where: (callee, handed) for where, callee, handed in calls}
+        count, pc = 0, start
+        while pc <= end:
+            text = self.text(pc)
+            if text.startswith("jal "):
+                count += self.follow(pc + 4, held, low, high)     # the delay slot runs before the call
+                handed = {r: a - record for r, (a, own) in held.items() if own and r in ARGUMENTS}
+                callee, want = awaited.pop(pc, (0, None))
+                if text != f"jal 0x{callee:08x}" or handed != want:
+                    sys.exit(f"0x{pc:08x} `{text}` is handed the record in {handed}, which the reading does not follow")
+                for r in CALLER_SAVED:
+                    held.pop(r, None)
+                pc += 8
+                continue
+            count += self.follow(pc, held, low, high)
+            pc += 4
+        if awaited:
+            sys.exit(f"0x{start:08x}: the calls at {', '.join(f'0x{a:08x}' for a in awaited)} are not made")
+        return count
+
+    def follow(self, pc, held, low, high):
+        """One instruction of a scanned stretch: a store resolved and counted, a pointer tracked, a register
+        overwritten forgotten."""
+        text = self.text(pc)
+        m = re.match(r"(sb|sh|sw|swl|swr|swc2) \S+, (-?\d+)\(\$(\w+)\)$", text)
+        if m:
+            op, imm, reg = m.group(1), int(m.group(2)), m.group(3)
+            if reg == "sp":
+                return 1                                  # the stack cannot hold the record
+            if reg not in held:
+                sys.exit(f"0x{pc:08x} `{text}` stores through a register the scan cannot resolve")
+            at = held[reg][0] + imm
+            first, last = (at & ~3, (at & ~3) + 3) if op in ("swl", "swr") else (at, at + WIDTHS[op] - 1)
+            if first <= high and last >= low:
+                sys.exit(f"0x{pc:08x} `{text}` stores to 0x{at:08x}, within the span")
+            return 1
+        if text.startswith((".word", "jalr")) or (text.startswith("jr ") and text != "jr $ra"):
+            sys.exit(f"0x{pc:08x} `{text}`, which the scan does not follow")
+        m = re.match(r"(?:b\w+|j) .*0x([0-9a-f]{8})$", text)
+        if m and int(m.group(1), 16) <= pc:
+            sys.exit(f"0x{pc:08x} `{text}` loops back, which the scan does not follow")
+        m = re.match(r"lui \$(\w+), (0x[0-9a-f]+)$", text)
+        if m:
+            held[m.group(1)] = (0x80000000 | (int(m.group(2), 0) << 16), False)
+            return 0
+        m = re.match(r"addiu \$(\w+), \$(\w+), (-?\d+)$", text)
+        if m and m.group(2) in held:
+            at, own = held[m.group(2)]
+            self.point(pc, held, m.group(1), at + int(m.group(3)), own, low, high)
+            return 0
+        m = re.match(r"(?:addu|or) \$(\w+), \$(\w+), \$(\w+)$", text)
+        if m and "zero" in m.groups()[1:]:
+            src = m.group(2) if m.group(3) == "zero" else m.group(3)
+            if src in held:
+                self.point(pc, held, m.group(1), *held[src], low, high)
+                return 0
+        m = re.match(r"(\w+) \$(\w+)", text)
+        if m and m.group(1) not in READS_FIRST:
+            held.pop(m.group(2), None)
+        return 0
+
+    def point(self, pc, held, reg, at, own, low, high):
+        """`reg` comes to hold the address `at`, unless that lies within the span."""
+        if low <= at <= high:
+            sys.exit(f"0x{pc:08x} `{self.text(pc)}` points into the span, at 0x{at:08x}")
+        held[reg] = (at, own)
+
 
 def readings(code):
     """Every number, by its id, after the checks have passed."""
@@ -3575,6 +3682,8 @@ def readings(code):
         out[key] = code.immediate(addr, pattern)
     for _, key, _, addr, count, src, dst in MULTIPLIERS:
         out[key] = code.multiplier(addr, count, src, dst)
+    for _, key, _, start, end, base, span, calls in SCANS:
+        out[key] = code.resolved(start, end, base, span, calls)
     out["button.reach"] = round(code.word_of(*BUTTON_REACH) ** 0.5)
     out["flight.third"] = round(2 ** 32 / code.word_of(*FLIGHT_THIRD))
     out["next.round"] = round(2 ** 32 / code.word_of(*NEXT_ROUND))
@@ -4880,6 +4989,8 @@ def show_readings(code):
         rows.append((group, what, addr, code.immediate(addr, pattern)))
     for group, key, what, addr, count, src, dst in MULTIPLIERS:
         rows.append((group, what, addr, code.multiplier(addr, count, src, dst)))
+    for group, key, what, start, end, base, span, calls in SCANS:
+        rows.append((group, what, start, code.resolved(start, end, base, span, calls)))
     rows.append(("on a block", "boost button: sinks while the ball is within, units",
                  BUTTON_REACH[0], readings(code)["button.reach"]))
     rows.append(("the fly-in", "the curve's second point lies this share of eight blocks along the side on",

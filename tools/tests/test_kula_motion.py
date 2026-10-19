@@ -306,6 +306,14 @@ def sra(rd, rt, sa):
     return (R[rt] << 16) | (R[rd] << 11) | (sa << 6) | 3
 
 
+def swl(rt, rs, imm):
+    return (0x2A << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
+def swr(rt, rs, imm):
+    return (0x2E << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
 class Reads(unittest.TestCase):
     def test_a_divisor_is_read_back_from_its_reciprocal_and_shift(self):
         c = code(lui("a0", 0x6666), ori("a0", "a0", 0x6667), sra("v1", "a2", 4))
@@ -358,6 +366,33 @@ class Reads(unittest.TestCase):
                  sh("a0", "at", 13384), sw("v1", "gp", 1300), sw("zero", "at", 13384), lw("v0", "gp", 1296))
         self.assertEqual(c.stores_to(0x800a3448), [(AT, 2), (AT + 8, 0), (AT + 16, 4)])
         self.assertEqual(c.stores_to(0x800a344c), [(AT + 20, 3)])
+
+    def test_a_stretch_is_scanned_for_its_stores_through_the_record_a_copy_a_pointer_gp_sp_or_a_lui(self):
+        c = code(sh("v0", "s0", 492), lui("at", 0x000c), sh("v0", "at", -24088), sw("v1", "gp", 7464),
+                 addu("a2", "s0", "zero"), jal(0x80038178), sh("v0", "s0", 494), addu("a0", "s0", "zero"),
+                 sw("zero", "a0", 96), addiu("a1", "s0", 60), sh("v1", "a1", 8), swl("v0", "s0", 563),
+                 swr("v0", "s0", 692), beq("v0", "zero", AT + 52, AT + 64), sh("v0", "s0", 562),
+                 sw("ra", "sp", 28), jr("ra"), 0)
+        self.assertEqual(c.resolved(AT, AT + 68, "s0", (564, 688), ((AT + 20, 0x80038178, {"a2": 0}),)), 10)
+
+    def test_a_store_a_pointer_a_call_a_loop_or_a_jump_the_scan_cannot_clear_stops_the_reading(self):
+        span = (564, 688)
+        for stretch in ((sw("v0", "s0", 564),), (sh("v0", "s0", 690),), (sb("v0", "s0", 691),), (swl("v0", "s0", 567),),
+                        (addu("a0", "s0", "zero"), sw("v0", "a0", 600)), (addiu("a1", "s0", 596),),
+                        (addiu("a1", "s0", 560), sw("v0", "a1", 4)), (lui("at", 0x000c), sh("v0", "at", -23736)),
+                        (lw("a1", "gp", 7472), sw("v0", "a1", 0)), (jal(0x80037430), addu("a0", "s0", "zero")),
+                        (beq("v0", "zero", AT, AT), 0), (jr("t0"), 0)):
+            with self.assertRaises(SystemExit):
+                code(*stretch).resolved(AT, AT + 4 * (len(stretch) - 1), "s0", span)
+        c = code(jal(0x80037430), addu("a0", "s0", "zero"))
+        for calls in (((AT, 0x80037430, {"a1": 0}),), ((AT, 0x80038178, {"a0": 0}),)):
+            with self.assertRaises(SystemExit):
+                c.resolved(AT, AT + 4, "s0", span, calls)
+        with self.assertRaises(SystemExit):
+            code(sh("v0", "s0", 492)).resolved(AT, AT, "s0", span, ((AT + 8, 0x80037430, {"a0": 0}),))
+        c = code(addu("a0", "s0", "zero"), jal(0x80038178), 0, sw("v0", "a0", 96))
+        with self.assertRaises(SystemExit):
+            c.resolved(AT, AT + 12, "s0", span, ((AT + 4, 0x80038178, {"a0": 0}),))
 
     def test_an_address_is_its_lui_and_addiu_in_rams_mirror(self):
         c = code(lui("gp", 0x000a), addiu("gp", "gp", 12088), lui("v0", 0x000a), lw("v0", "v0", 13260))
