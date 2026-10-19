@@ -21,7 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import EXE, EXE_BASE, THEMES, open_disc
-from kula_level import BLOCK_KINDS, FACES, FIRST_RECORD, SIDE, STYLES, UNPLACED_KIND
+from kula_level import BLOCK_KINDS, FACE, FACES, FIRST_RECORD, SIDE, STYLES, UNPLACED_KIND
 from mips import Machine, decode
 
 TURN = 4096          # the angle that is one full turn
@@ -1654,6 +1654,84 @@ CHECKS = [
     (0x80033828, "sh $zero, 486($a2)", "unmarking the ride"),
     (0x800338e8, "sh $v1, 60($a2)", "with the centre the level's again"),
     (0x8003391c, "sh $zero, 84($a2)", "and no travel"),
+    # The platform landings' direction and body tests.
+    (0x800335dc, "jal 0x80037f98", "the body landing takes the face of the ball's normal"),
+    (0x80037fa4, "bne $v0, $v1, 0x80037fb4", "which the face routine numbers as the record's slots are numbered"),
+    (0x80037fb0, "addiu $v0, $zero, 1", "+x"),
+    (0x80037fbc, "addiu $v0, $zero, 4", "-x"),
+    (0x80037fd4, "addiu $v0, $zero, 2", "+y"),
+    (0x80037fdc, "addiu $v0, $zero, 3", "-y"),
+    (0x80037ff4, "addiu $v0, $zero, 5", "+z, the underside"),
+    (0x80037ff8, "sltu $v0, $zero, $v0", "-z, the top, 0"),
+    (0x80037ffc, "subu $v0, $zero, $v0", "and -1 for anything else"),
+    (0x800335f8, "lh $a0, 4($v1)", "and the record's first field, the axis of the run"),
+    (0x800335fc, "jal 0x80033c54", "and asks whether the face lies along it"),
+    (0x80033c58, "beq $a0, $v1, 0x80033c68", "an axis word of 1"),
+    (0x80033c60, "bne $a0, $v0, 0x80033c78", "or 4 is x"),
+    (0x80033c68, "beq $a1, $v1, 0x80033cb0", "along which a face of 1"),
+    (0x80033c70, "beq $a1, $v0, 0x80033cb0", "or 4 lies"),
+    (0x80033c7c, "beq $v0, $zero, 0x80033c90", "an axis word of 2 or 3 is y"),
+    (0x80033c88, "bne $v0, $zero, 0x80033cb4", "along which a face of 2 or 3 lies"),
+    (0x80033c90, "beq $a0, $zero, 0x80033ca0", "an axis word of 0"),
+    (0x80033c98, "bne $a0, $v0, 0x80033cb4", "or 5 is z"),
+    (0x80033c9c, "addu $v0, $zero, $zero", "any other axis word answering no"),
+    (0x80033ca0, "beq $a1, $zero, 0x80033cb0", "along which a face of 0"),
+    (0x80033ca8, "bne $a1, $v0, 0x80033cb4", "or 5 lies"),
+    (0x80033cac, "addu $v0, $zero, $zero", "and any other face lies across"),
+    (0x80033604, "bne $v0, $zero, 0x80033640", "the body landing refuses a face along the run"),
+    (0x8003360c, "lh $v0, 334($s0)", "and reads the distance off the face"),
+    (0x8003361c, "addiu $a0, $s0, 60", "the body test takes the centre"),
+    (0x80033620, "lw $a1, 6560($gp)", "the record"),
+    (0x80033628, "addu $a2, $zero, $zero", "and a slack of nothing"),
+    (0x80032ed4, "lh $v0, 34($a1)", "it reads the record's count of blocks"),
+    (0x80032ed8, "lh $v1, 4($a1)", "and its axis"),
+    (0x80032ef4, "slti $v0, $v1, 3", "dispatching on the axis"),
+    (0x80032f08, "j 0x80032fa8", "any other axis word answering as the last call did"),
+    (0x80032f1c, "j 0x80032fa8", "either way"),
+    (0x80032f24, "lh $v0, 0($a0)", "along x it takes the centre"),
+    (0x80032f28, "lh $v1, 238($a1)", "and the platform's position"),
+    (0x80032f3c, "sw $v0, 6508($gp)", "keeping the centre plus the slack plus half a block less the position"),
+    (0x80032f50, "lh $v1, 240($a1)", "along y the position's y"),
+    (0x80032f58, "addiu $v0, $v0, 256", "the same way"),
+    (0x80032f78, "lh $v1, 242($a1)", "and along z its z"),
+    (0x80032f80, "addiu $v0, $v0, 256", "the same way"),
+    (0x80032f98, "subu $v0, $v0, $a2", "then takes the slack off the centre"),
+    (0x80032fa4, "sw $v1, 6512($gp)", "keeping the position plus the run plus half a block less that"),
+    (0x80032fb0, "bltz $v1, 0x80032fc8", "and answers no where the first is negative"),
+    (0x80032fc0, "nor $v0, $zero, $v0", "or the second"),
+    (0x80032fc4, "srl $v0, $v0, 31", "is"),
+    (0x800330bc, "beq $s1, $s2, 0x80033228", "where the first probe finds nothing the second runs"),
+    (0x8003367c, "lwl $v0, 63($s0)", "taking the ball's centre"),
+    (0x800336d4, "jal 0x800379e8", "and the cell it lies in"),
+    (0x80033708, "beq $v1, $v0, 0x80033790", "keeping a platform's record where that cell names one"),
+    (0x80033718, "lh $v0, 28($s0)", "else the cell a block under the centre along the normal"),
+    (0x80033754, "jal 0x800379e8", "is looked up"),
+    (0x80033768, "bltz $v0, 0x800337f0", "and must name a record"),
+    (0x80033788, "bne $v1, $v0, 0x800337fc", "of a platform"),
+    (0x800337ac, "jal 0x80037f98", "the end landing takes the face of the normal"),
+    (0x800337cc, "jal 0x80033c54", "asks whether it lies along the run"),
+    (0x800337d4, "beq $v0, $zero, 0x800337f0", "refusing one across it"),
+    (0x800337e0, "jal 0x80032ec4", "and runs the body test"),
+    (0x8003325c, "sh $v0, 486($s0)", "the end landing marks the ride"),
+    (0x80033270, "sw $s1, 408($s0)", "at rest"),
+    (0x80033370, "sh $v0, 60($s0)", "biases the centre as the body landing does"),
+    (0x80033398, "jal 0x80037f98", "takes the face of the normal again"),
+    (0x800333a4, "sltiu $v0, $v1, 6", "one of the six"),
+    (0x800333bc, "lw $v0, 368($at)", "and lays the centre by it through the table at 0x80010170"),
+    (0x800333d4, "sh $v0, 60($s0)", "along x toward the near end"),
+    (0x800333d8, "lw $v0, 6548($gp)", "or by the count past the far end"),
+    (0x80033404, "addiu $v0, $zero, 156", "along y toward the near end"),
+    (0x80033410, "lw $v0, 6548($gp)", "or by the count"),
+    (0x80033424, "lh $v0, 34($v0)", "of blocks"),
+    (0x80033430, "addiu $v0, $v0, 356", "past the far end"),
+    (0x8003343c, "j 0x80033468", "along z toward the near end"),
+    (0x80033440, "addiu $v0, $zero, 156", "the same way"),
+    (0x80033444, "lw $v0, 6548($gp)", "or by the count"),
+    (0x80033458, "lh $v0, 34($v0)", "of blocks"),
+    (0x80033464, "addiu $v0, $v0, 356", "past the far end"),
+    (0x80033468, "sh $v0, 64($s0)", "into the centre's z"),
+    (0x80033488, "addiu $v0, $v0, -512", "with the travel"),
+    (0x800334a4, "sw $a0, 528($s0)", "and the record kept as the body landing keeps them"),
     # What the ball stands on.
     (0x800377a4, "lw $a0, 120($s0)", "the ball's word for what it stands on is read from the cell under the one its centre lies in, word 4 of the 27"),
     (0x800377b4, "sw $a0, 352($s0)", "kept at 352"),
@@ -2995,6 +3073,49 @@ IMMEDIATES = [
      "addiu $v0, $zero, {}"),
     ("the blocks under the ball", "ride.rumble", "and the pad shaken by this while the platform moves", 0x80033c2c,
      "addiu $a1, $zero, {}"),
+    ("the blocks under the ball", "ride.face.x", "the face of the ball's normal is numbered as the slots are, +x this",
+     0x80037fb0, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.face.x.back", "-x this", 0x80037fbc, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.face.y", "+y this", 0x80037fd4, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.face.y.back", "-y this", 0x80037fdc, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.face.z", "and the underside this, the top being 0", 0x80037ff4,
+     "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.along.x", "the direction test pairs an axis word or a face of this", 0x80033c54,
+     "addiu $v1, $zero, {}"),
+    ("the blocks under the ball", "ride.along.x.back", "with an axis word of this as x", 0x80033c5c,
+     "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.along.face.x.back", "and a face of this", 0x80033c6c, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.along.y.from", "an axis word this far past the y pair's first", 0x80033c64,
+     "addiu $v0, $a0, {}"),
+    ("the blocks under the ball", "ride.along.y.span", "within a pair this wide, as y", 0x80033c78, "sltiu $v0, $v0, {}"),
+    ("the blocks under the ball", "ride.along.face.y.from", "and a face this far past the pair's first", 0x80033c80,
+     "addiu $v0, $a1, {}"),
+    ("the blocks under the ball", "ride.along.face.y.span", "within a pair this wide", 0x80033c84, "sltiu $v0, $v0, {}"),
+    ("the blocks under the ball", "ride.along.z.back", "an axis word of 0 or this as z", 0x80033c94, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.along.face.z.back", "and a face of 0 or this", 0x80033ca4, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.along.yes", "answering this where the two fall in one pair", 0x80033cb0,
+     "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.body.count.less", "the body test takes the record's count of blocks plus this",
+     0x80032edc, "addiu $v0, $v0, {}"),
+    ("the blocks under the ball", "ride.body.axis.y", "dispatches on the axis word, this for y", 0x80032ee4,
+     "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.body.axis.x", "this for x", 0x80032efc, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.body.axis.z", "and this for z", 0x80032f10, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.body.ends", "and reaches this far past the first block's centre toward the near end, units",
+     0x80032f30, "addiu $v0, $v0, {}"),
+    ("the blocks under the ball", "ride.body.ends.back", "and this far past the last block's centre toward the far end", 0x80032f9c,
+     "addiu $v0, $v0, {}"),
+    ("the blocks under the ball", "ride.end.kind", "the end landing takes a record of this kind at the ball's own cell",
+     0x80033704, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.end.kind.under", "or a block under it", 0x80033784, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.end.tolerance", "and runs the body test with a slack of this, units", 0x800337e4,
+     "addiu $a2, $zero, {}"),
+    ("the blocks under the ball", "ride.end.bias", "biases the centre by this, as the body landing does", 0x80033368,
+     "addiu $v0, $v0, {}"),
+    ("the blocks under the ball", "ride.end.low", "and lays it this far along the axis for a face toward the near end, units",
+     0x800333cc, "addiu $v0, $zero, {}"),
+    ("the blocks under the ball", "ride.end.high", "or the count of blocks times a block plus this for one toward the far end",
+     0x800333f8, "addiu $v0, $v0, {}"),
 
     ("the Simon rooms", "simon.mode", "the input routine takes the Simon rooms' case where the game's mode word is this",
      0x80036bf4, "addiu $v0, $zero, {}"),
@@ -3281,6 +3402,10 @@ MULTIPLIERS = [
     ("the blocks under the ball", "crumble.edge.push",
      "the input routine sets a ball at a crumbling block's free edge back this far along its heading, units",
      0x800373cc, 4, "v0", "v1"),
+    ("the blocks under the ball", "ride.body.block", "the body test's run is the count of blocks less one times this, units",
+     0x80032ee0, 1, "v0", "a3"),
+    ("the blocks under the ball", "ride.end.block", "and the end landing's far end lies at the count times this", 0x800333f4, 1,
+     "v0", "v0"),
     ("what harms the ball", "glow.gain", "the invincible ball's light takes the sine times this in red", 0x80032270, 3,
      "v0", "v1"),
     ("what harms the ball", "glow.gain.green", "in green", 0x800322c0, 3, "v0", "v1"),
@@ -3467,6 +3592,12 @@ LOADER_PLAIN = 0x80035924
 LOADER_CASES = {**dict.fromkeys((5, 9, 11, 12, 28), 0x80035908), 7: 0x8003585c, 10: 0x800358ec, 26: 0x80035880,
                 31: 0x800358a4, **dict.fromkeys((32, 33, 34, 38), 0x80035760), 35: 0x800357e4, 36: 0x80035810,
                 37: 0x8003577c, 42: 0x800357b0, **dict.fromkeys(range(43, 48), 0x80035664)}
+# The end landing lays the centre by the face of the ball's normal: a face toward the near end of the run goes to
+# its axis's near case, one toward the far end to the far case.
+END_FACES = (0x80010170, 0, FACES)
+END_NEAR = {"-x": 0x800333cc, "-y": 0x80033404, "-z": 0x8003343c}
+END_FAR = {"+x": 0x800333d8, "+y": 0x80033410, "+z": 0x80033444}
+END_CASES = {FACE.index(f): at for f, at in (*END_NEAR.items(), *END_FAR.items())}
 CUTS = 3                  # a gem's cuts, by its f3
 TIERS = 3                 # a coin's tiers, by its f3
 CRUMBLING = 6
@@ -3724,6 +3855,7 @@ def readings(code):
     moves(code, out)
     dispatch(code, TAKE_TYPES, TAKE_CASES, TAKE_TAIL, "the contact walk")
     dispatch(code, LOADER_TYPES, LOADER_CASES, LOADER_PLAIN, "the loader")
+    dispatch(code, END_FACES, END_CASES, None, "the end landing")
     return out
 
 
@@ -4780,8 +4912,11 @@ def blocks(r):
     """What the blocks under the ball do to its roll, by kind: ice's chill of
     the heat and its cold, the crumbling block's size, its shrink and the
     edge rule that keeps a ball from going round it, and a platform's landing
-    height, the block its position is biased by and the pad's rumble, each
-    held to the kind or the type it is read from and to the ball's rest."""
+    height, the block its position is biased by, the pad's rumble, the body
+    landing's height and reach along the run and the end landing's slack,
+    each held to the kind or the type it is read from and to the ball's
+    rest; the face routine's numbering and the direction test's pairs are
+    held to the record's slot order."""
     if r["ice.kind"] != ICE or r["arrow.type"] != ARROW or r["ride.kind"] != PLATFORM \
             or r["crumble.under"] != CRUMBLING_UNDER or r["crumble.code.input"] != CRUMBLING_UNDER:
         sys.exit("ice, the arrow, the crumbling block or the platform is not read from its own kind or type")
@@ -4799,12 +4934,38 @@ def blocks(r):
         sys.exit("a platform's position is not biased by a block wherever it is taken")
     if r["ride.land"] != r["ball.rest"] + 1 or r["ride.beam"] != LIT:
         sys.exit("a platform lands the ball otherwise than at its rest, or reads the level's lattice for more than a lit beam")
+    faces = {"+x": r["ride.face.x"], "-x": r["ride.face.x.back"], "+y": r["ride.face.y"], "-y": r["ride.face.y.back"],
+             "+z": r["ride.face.z"], "-z": 0}
+    if faces != {f: FACE.index(f) for f in faces}:
+        sys.exit("the face routine does not number the ball's normal as the record's slots are numbered")
+    pairs = {"x": {r["ride.along.x"], r["ride.along.x.back"]},
+             "y": set(range(-r["ride.along.y.from"], -r["ride.along.y.from"] + r["ride.along.y.span"])),
+             "z": {0, r["ride.along.z.back"]}}
+    if pairs != {a: {faces["+" + a], faces["-" + a]} for a in pairs}:
+        sys.exit("the direction test does not pair the axis words by axis")
+    if {r["ride.along.x"], r["ride.along.face.x.back"]} != pairs["x"] \
+            or (r["ride.along.face.y.from"], r["ride.along.face.y.span"]) != (r["ride.along.y.from"], r["ride.along.y.span"]) \
+            or r["ride.along.face.z.back"] != r["ride.along.z.back"] or r["ride.along.yes"] != 1:
+        sys.exit("the direction test does not pair the faces as it pairs the axis words")
+    if (r["ride.body.axis.x"], r["ride.body.axis.y"], r["ride.body.axis.z"]) != (faces["+x"], faces["+y"], faces["+z"]):
+        sys.exit("the body test does not dispatch on the axis word by the positive way's number")
+    if r["ride.body.count.less"] != -1 or r["ride.body.block"] != BLOCK or r["ride.body.ends"] != BLOCK // 2 \
+            or r["ride.body.ends.back"] != -r["ride.body.ends"]:
+        sys.exit("the body test does not reach from the first block's centre to the last's and half a block past each")
+    if r["ride.end.kind"] != PLATFORM or r["ride.end.kind.under"] != PLATFORM or r["ride.end.bias"] != BLOCK \
+            or r["ride.end.block"] != BLOCK:
+        sys.exit("the end landing is not read from a platform's kind, or lays the body otherwise than a block at a time")
+    if r["ride.end.tolerance"] != r["ball.rest"] or r["ride.end.low"] != BLOCK // 2 - r["ball.rest"] \
+            or r["ride.end.high"] != BLOCK // 2 + r["ball.rest"]:
+        sys.exit("the end landing's slack, or where it lays the centre, is not the ball's rest height off the end face")
     return {
         ICE: {"chill": -r["heat.chill"],
               "cold": {"gain": r["cold.gain"], "over": over, "back": r["cold.back"], "wane": -r["cold.wane"]}},
         CRUMBLING: {"size": r["crumble.size"], "shrink": -r["crumble.shrink"],
                     "edge": {"hold": r["crumble.edge.hold"], "back": r["crumble.edge.back"], "push": r["crumble.edge.push"]}},
-        PLATFORM: {"ride": {"land": r["ball.rest"], "bias": r["ride.bias"], "rumble": r["ride.rumble"]}},
+        PLATFORM: {"ride": {"land": r["ball.rest"], "bias": r["ride.bias"], "rumble": r["ride.rumble"],
+                            "body": {"off": r["ball.rest"], "ends": r["ride.body.ends"]},
+                            "end": {"tolerance": r["ride.end.tolerance"]}}},
     }
 
 

@@ -1207,3 +1207,11 @@ test("a platform lands the ball at its rest height, keeps it a block off and rum
   assert.equal(ride.bias, 512);
   assert.equal(ride.rumble, 70);
 });
+
+test("the body landing asks the rest height off the face and the run from end face to end face, and the end landing allows the rest height past an end face", () => {
+  const { ride } = table.kinds[5];
+  assert.equal(ride.body.off, ride.land);
+  // half a block: the run is measured from the end blocks' centres to their faces
+  assert.equal(ride.body.ends, 256);
+  assert.equal(ride.end.tolerance, table.types[30].rolling.resume);
+});

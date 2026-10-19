@@ -14,8 +14,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
-    GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, GP, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, PHASES,
-    ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, WORDS_COUNT, WORDS_TABLE,
+    END_CASES, END_FACES, GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, GP, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN,
+    LOADER_TYPES, PHASES, ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, WORDS_COUNT,
+    WORDS_TABLE,
     Code, blocks, body, devices, dispatch, effect_init, effect_tables, effects, exits, flight, glint, glow_lift,
     glow_spill, harms, jump, laser, light, moves, play, roll, root_table, shadow_half, simon, spike_cycle, spin_orders,
     standing, table, take, vanish_cycle, words)
@@ -258,6 +259,12 @@ GAME = {
     "crumble.breaking": 3, "crumble.code.input": 96, "crumble.edge.hold": 301, "crumble.edge.back": 401,
     "crumble.edge.push": 40, "ride.kind": 5, "ride.land": 101, "ride.bias": 512, "ride.bias.back": -512,
     "ride.bias.travel": -512, "ride.rumble": 70, "ride.beam": -2,
+    "ride.face.x": 1, "ride.face.x.back": 4, "ride.face.y": 2, "ride.face.y.back": 3, "ride.face.z": 5,
+    "ride.along.x": 1, "ride.along.x.back": 4, "ride.along.face.x.back": 4, "ride.along.y.from": -2, "ride.along.y.span": 2,
+    "ride.along.face.y.from": -2, "ride.along.face.y.span": 2, "ride.along.z.back": 5, "ride.along.face.z.back": 5,
+    "ride.along.yes": 1, "ride.body.count.less": -1, "ride.body.block": 512, "ride.body.axis.x": 1, "ride.body.axis.y": 2,
+    "ride.body.axis.z": 5, "ride.body.ends": 256, "ride.body.ends.back": -256, "ride.end.kind": 5, "ride.end.kind.under": 5,
+    "ride.end.tolerance": 100, "ride.end.bias": 512, "ride.end.block": 512, "ride.end.low": 156, "ride.end.high": 356,
     "standing.centre": 256, "standing.shift": 9, "standing.first": 5, "standing.kind.1": 1, "standing.kind.2": 2,
     "standing.kind.3": 3, "standing.kind.4": 4, "standing.kind.5": 5, "standing.kind.6": 6, "standing.kind.7": 7,
     "standing.word.3": 93, "standing.word.5": 95, "standing.word.6": 96, "standing.word.7": 97, "standing.style.1": 1,
@@ -841,6 +848,7 @@ class Dispatch(unittest.TestCase):
         dispatch(self.cases(TAKE_TYPES, TAKE_CASES, TAKE_TAIL), TAKE_TYPES, TAKE_CASES, TAKE_TAIL, "the walk")
         dispatch(self.cases(LOADER_TYPES, LOADER_CASES, LOADER_PLAIN), LOADER_TYPES, LOADER_CASES, LOADER_PLAIN,
                  "the loader")
+        dispatch(self.cases(END_FACES, END_CASES, None), END_FACES, END_CASES, None, "the end landing")
 
     def test_a_type_sent_elsewhere_stops_the_reading(self):
         for swap in ({31: TAKE_CASES[37]}, {28: TAKE_CASES[31]}, {36: TAKE_TAIL}):
@@ -850,6 +858,9 @@ class Dispatch(unittest.TestCase):
         with self.assertRaises(SystemExit):
             dispatch(self.cases(LOADER_TYPES, {**LOADER_CASES, 7: LOADER_PLAIN}, LOADER_PLAIN), LOADER_TYPES,
                      LOADER_CASES, LOADER_PLAIN, "the loader")
+        with self.assertRaises(SystemExit):
+            dispatch(self.cases(END_FACES, {**END_CASES, 0: END_CASES[5]}, None), END_FACES, END_CASES, None,
+                     "the end landing")
 
 
 class Take(unittest.TestCase):
@@ -1121,14 +1132,21 @@ class Blocks(unittest.TestCase):
         b = blocks(GAME)
         self.assertEqual(b[2], {"chill": 150, "cold": {"gain": 40, "over": 500, "back": 400, "wane": 10}})
         self.assertEqual(b[6], {"size": 512, "shrink": 26, "edge": {"hold": 301, "back": 401, "push": 40}})
-        self.assertEqual(b[5], {"ride": {"land": 100, "bias": 512, "rumble": 70}})
+        self.assertEqual(b[5], {"ride": {"land": 100, "bias": 512, "rumble": 70, "body": {"off": 100, "ends": 256},
+                                         "end": {"tolerance": 100}}})
         self.assertEqual(set(b), {2, 5, 6})
 
     def test_a_block_read_from_another_kind_or_held_otherwise_stops_the_reading(self):
         for change in ({"ice.kind": 1}, {"arrow.type": 27}, {"ride.kind": 6}, {"crumble.code.input": 95},
                        {"cold.back": 500}, {"cold.wane": 10}, {"crumble.size": 256}, {"crumble.breaking": 2},
                        {"crumble.broken.seen": 3}, {"crumble.edge.hold": 256}, {"crumble.edge.back": 301},
-                       {"ride.bias.travel": 512}, {"ride.land": 100}, {"ride.beam": -1}):
+                       {"ride.bias.travel": 512}, {"ride.land": 100}, {"ride.beam": -1}, {"ride.face.x.back": 1},
+                       {"ride.face.z": 0}, {"ride.along.x.back": 2}, {"ride.along.y.from": -1}, {"ride.along.z.back": 4},
+                       {"ride.along.face.x.back": 2}, {"ride.along.face.y.span": 3}, {"ride.along.face.z.back": 0},
+                       {"ride.along.yes": 0}, {"ride.body.axis.z": 0}, {"ride.body.count.less": 0},
+                       {"ride.body.block": 256}, {"ride.body.ends": 128}, {"ride.body.ends.back": 256},
+                       {"ride.end.kind": 6}, {"ride.end.kind.under": 8}, {"ride.end.bias": 256}, {"ride.end.block": 1024},
+                       {"ride.end.tolerance": 90}, {"ride.end.low": 256}, {"ride.end.high": 456}):
             with self.assertRaises(SystemExit):
                 blocks({**GAME, **change})
 
@@ -1252,7 +1270,9 @@ class Table(unittest.TestCase):
         r["spin.quarter"] = 1024
         t = table(r, 30)
         self.assertEqual(t["hz"], 60)
-        self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1, "ride": {"land": 100, "bias": 512, "rumble": 70},
+        self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1,
+                                           "ride": {"land": 100, "bias": 512, "rumble": 70,
+                                                    "body": {"off": 100, "ends": 256}, "end": {"tolerance": 100}},
                                            "standing": 95})
         self.assertEqual(t["kinds"]["3"]["light"]["far"], 512)
         self.assertEqual(t["glow"]["colours"]["9"], [[[25, 25, 0]] * 4])
