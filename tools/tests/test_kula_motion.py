@@ -20,7 +20,7 @@ from kula_motion import (  # noqa: E402
     play, roll, root_table, shadow_half, spike_cycle, spin_orders, standing, table, take, vanish_cycle, words)
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
-     "sp": 29, "ra": 31}
+     "gp": 28, "sp": 29, "ra": 31}
 
 
 def sll(rd, rt, sa):
@@ -133,6 +133,14 @@ GAME = {
     "fruit.points.45": 2500, "fruit.points.46": 2500, "fruit.points.47": 2500,
     "hourglass.from": 5999, "hourglass.second": 50, "hourglass.points": 10,
     "pill.lethargy": 360, "pill.lethargy.step": -2, "pill.lethargy.ticks": 4, "pill.invincible": 840,
+    "pill.lethargy.players": 2, "pill.lethargy.blanks": 2, "gp": 0x800a2f38,
+    "rock.scale": 64, "rock.shift": 5, "rock.round": 31,
+    "flash.code": 44, "flash.sprite": 6, "flash.laid": 128, "screen.grey": 128, "screen.phase": 1024,
+    "screen.magnitude": 780, "screen.idle.step": 106, "screen.tint.outer": 96, "screen.tint.green": 112,
+    "screen.page.gate": 257, "screen.sprite.width": 256, "screen.sprite.rest": -256, "screen.wane": -5,
+    "screen.step": 213, "screen.rest.across": 4096, "screen.rest.down": 3840, "screen.reset.across": 4096,
+    "screen.reset.down": 3840, "screen.end": 80, "screen.fade": -8, "screen.load.wide": 320,
+    "screen.load.high": 240, "screen.load.distance": 160, "screen.load.across": 4096, "screen.load.down": 3840,
     "pill.invincible.step": -1, "pill.bouncy": 840, "pill.bouncy.hold": 839, "pill.bouncy.grow": 1,
     "pill.bouncy.latch": 4, "pill.bouncy.latch.step": 1,
     "sunglasses.word": 840, "sunglasses.step": -1, "sunglasses.blinks": 21, "sunglasses.blink": 9,
@@ -255,6 +263,17 @@ class Reads(unittest.TestCase):
         c = code(sll("a0", "v1", 2), addu("a0", "a0", "v1"), sll("v1", "a0", 4),
                  subu("v1", "v1", "a0"), sll("v1", "v1", 3))
         self.assertEqual(c.multiplier(AT, 5, "v1", "v1"), 600)
+
+    def test_a_shift_alone_is_a_multiplier_too(self):
+        c = code(sll("v0", "a0", 6))
+        self.assertEqual(c.multiplier(AT, 1, "a0", "v0"), 64)
+
+    def test_an_address_is_its_lui_and_addiu_in_rams_mirror(self):
+        c = code(lui("gp", 0x000a), addiu("gp", "gp", 12088), lui("v0", 0x000a), lw("v0", "v0", 13260))
+        self.assertEqual(c.address(AT, AT + 4), 0x800a2f38)
+        self.assertEqual(c.address(AT + 8, AT + 12), 0x800a33cc)
+        with self.assertRaises(SystemExit):
+            c.address(AT + 4, AT + 8)
 
     def test_a_register_the_run_never_derived_stops_the_reading(self):
         c = code(sll("v1", "v0", 2), addu("v1", "v1", "a0"), sll("v1", "v1", 1))
@@ -719,7 +738,10 @@ class Take(unittest.TestCase):
         for t in range(43, 48):
             self.assertEqual(taken[t], {"reach": 180, "stand": 386, "points": 2500})
         self.assertEqual(set(taken), {31, 32, 33, 34, 35, 36, 37, 38, 42, 43, 44, 45, 46, 47})
-        self.assertEqual(lasting[32], {"word": 360, "step": 2, "ticks": 4})
+        self.assertEqual(lasting[32], {"word": 360, "step": 2, "ticks": 4, "blanks": 2,
+                                       "rock": {"scale": 64, "shift": 5},
+                                       "screen": {"grey": 128, "tint": [96, 112, 96], "magnitude": 780, "wane": 5,
+                                                  "step": 213, "phase": 1024, "fade": {"from": 80, "by": 8}}})
         self.assertEqual(lasting[33], {"word": 840, "hold": 839, "latch": 4})
         self.assertEqual(lasting[34], {"word": 840, "step": 1})
         self.assertEqual(lasting[38], {"word": 840, "step": 1, "blink": {"times": 21, "frames": 9}})
@@ -742,6 +764,14 @@ class Take(unittest.TestCase):
         for change in ({"pill.lethargy": 361}, {"pill.lethargy.step": 2}, {"pill.invincible.step": -2},
                        {"pill.bouncy.hold": 840}, {"pill.bouncy.latch": 0}, {"pill.bouncy.latch.step": 2},
                        {"crumble.under": 95}, {"take.open": 2}):
+            with self.assertRaises(SystemExit):
+                take({**GAME, **change})
+
+    def test_the_lethargy_pills_screen_read_otherwise_stops_the_reading(self):
+        for change in ({"gp": 0x800a2f3c}, {"pill.lethargy.players": 3}, {"rock.round": 15}, {"rock.shift": 4},
+                       {"flash.code": 40}, {"flash.laid": 127}, {"screen.page.gate": 256}, {"screen.sprite.rest": -255},
+                       {"screen.wane": 5}, {"screen.magnitude": 781}, {"screen.fade": -7}, {"screen.end": 81},
+                       {"screen.rest.down": 4096}, {"screen.reset.across": 3840}, {"screen.load.down": 4096}):
             with self.assertRaises(SystemExit):
                 take({**GAME, **change})
 
@@ -785,6 +815,8 @@ class Play(unittest.TestCase):
         self.assertEqual(p["view"], {"angles": [-8, 3, 10], "swing": 12, "off": 1400, "reach": 1000,
                                      "bonus": {"swing": 58, "off": 3400, "reach": 3000}})
         self.assertEqual(p["flight"], flight(GAME))
+        self.assertEqual(p["screen"], {"wide": 320, "high": 240, "distance": 160,
+                                       "scale": {"across": 4096, "down": 3840}})
 
     def test_the_fly_in_ships_its_hold_its_steps_its_turns_and_its_curve(self):
         self.assertEqual(flight(GAME), {"hold": 2000, "gate": 1000, "done": 1, "end": 1024, "step": 16, "slow": 928,
@@ -1024,6 +1056,11 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["37"]["take"]["points"], [750, 500, 250])
         self.assertEqual([t["types"][k]["lasts"]["word"] for k in ("32", "33", "34", "38")], [360, 840, 840, 840])
         self.assertEqual(t["types"]["32"]["lasts"]["ticks"], 4)
+        self.assertEqual(t["types"]["32"]["lasts"]["blanks"], 2)
+        self.assertEqual(t["types"]["32"]["lasts"]["rock"], {"scale": 64, "shift": 5})
+        self.assertEqual(set(t["types"]["32"]["lasts"]["screen"]),
+                         {"grey", "tint", "magnitude", "wane", "step", "phase", "fade"})
+        self.assertEqual(t["play"]["screen"]["scale"], {"across": 4096, "down": 3840})
         self.assertNotIn("lasts", t["types"]["33"].get("take", {}))
         self.assertEqual(t["types"]["33"]["turn"], t["types"]["34"]["turn"])
         self.assertEqual(t["types"]["7"]["opened"], {"f3": 0, "f4": 1})
@@ -1037,7 +1074,8 @@ class Table(unittest.TestCase):
                          {"1": 1, "2": 2, "3": 93, "4": 4, "5": 95, "6": 96, "7": 97, "8": None})
         self.assertEqual(t["play"]["clock"]["second"], 50)
         self.assertEqual(t["play"]["ending"]["lost"], -3)
-        self.assertEqual(set(t["play"]), {"start", "clock", "ending", "wait", "words", "bonus", "points", "view", "flight"})
+        self.assertEqual(set(t["play"]),
+                         {"start", "clock", "ending", "wait", "words", "bonus", "points", "view", "flight", "screen"})
         self.assertEqual(t["play"], play(GAME))
         self.assertEqual(t["kinds"]["1"], {**harms(GAME)["kinds"][1], "standing": 1})
         self.assertEqual(t["kinds"]["4"], {**harms(GAME)["kinds"][4], "standing": 4})

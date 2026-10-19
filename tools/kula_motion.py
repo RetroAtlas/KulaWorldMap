@@ -1012,6 +1012,121 @@ CHECKS = [
     (0x8003b384, "bltz $v0, 0x8003b398", "the lethargy pill's word not negative"),
     (0x8003b38c, "sw $v0, 0($s1)", "counts down by its step"),
     (0x8003b390, "jal 0x8003b468", "and ticks the clock on"),
+    # The lethargy pill's hold on the pace, the view and the screen.
+    (0x80069a04, "lui $gp, 0x000a", "the start sets gp"),
+    (0x80069a08, "addiu $gp, $gp, 12088", "to 0x800a2f38"),
+    (0x800387d8, "jal 0x800201f0", "the lethargy pill's case starts the screen's effect"),
+    (0x800387dc, "addiu $a0, $zero, 1", "with its start word"),
+    (0x800201f4, "lw $v0, 13260($v0)", "which reads the count of players at 0x800a33cc"),
+    (0x80020208, "bne $a0, $v0, 0x8002021c", "and asked to start"),
+    (0x80020210, "sw $a0, 10228($gp)", "writes the mode word at 0x800a572c"),
+    (0x80020224, "beq $v0, $zero, 0x80020230", "or asked to end while the mode stands"),
+    (0x8002022c, "sw $v0, 10228($gp)", "marks the end"),
+    (0x8003b36c, "bne $v0, $zero, 0x8003b380", "the hazards routine finds the pill's word at nothing"),
+    (0x8003b374, "jal 0x800201f0", "and asks the end"),
+    (0x8003b378, "addu $a0, $zero, $zero", "with nothing"),
+    (0x80040ad8, "bne $v0, $zero, 0x80040af4", "the loop finds the mode word standing"),
+    (0x80040af4, "jal 0x80065b68", "and waits through the library's VSync instead"),
+    (0x8002076c, "sw $a1, 10740($gp)", "the second half-rate word, 0x800a592c, is written here"),
+    (0x80035268, "lw $a0, 548($s0)", "the view routine reads the pill's word at 548 of the record"),
+    (0x8003531c, "blez $a0, 0x80035368", "and while it is positive"),
+    (0x80035334, "sra $a0, $a0, 12", "takes its product"),
+    (0x80035338, "sll $a0, $a0, 12", "modulo"),
+    (0x80035340, "subu $a0, $v0, $a0", "a turn"),
+    (0x8003533c, "jal 0x8005fb58", "its sine"),
+    (0x80035344, "bgez $v0, 0x80035350", "rounded toward nothing"),
+    (0x80035360, "jal 0x80061298", "and rolls the view about its line of sight"),
+    (0x80035364, "addu $a1, $a1, $s1", "the view the frame draws"),
+    (0x8001dcd0, "jal 0x8002025c", "the frame's draw runs the screen's routine each pass"),
+    (0x80020260, "lw $v1, 10228($gp)", "which reads the mode"),
+    (0x80020288, "beq $v1, $v0, 0x800202b4", "the start's pass"),
+    (0x80020274, "beq $v1, $a0, 0x80020398", "the passes the pill works"),
+    (0x8002029c, "beq $v1, $v0, 0x80020518", "the end's pass"),
+    (0x800202a4, "beq $v1, $v0, 0x800205f4", "and the fade's"),
+    (0x80024060, "lw $v1, 10240($gp)", "the flash's quad shows a sprite counted from the group's start"),
+    (0x80024274, "lhu $v0, -23060($at)", "with its page word"),
+    (0x8002428c, "lhu $v0, -23062($at)", "and its palette word"),
+    (0x8002423c, "lbu $a1, -23063($at)", "blending where its descriptor's second byte says"),
+    (0x80024240, "jal 0x8005f8c8", "so"),
+    (0x80023048, "nor $v0, $zero, $s3", "the byte the walker sets where the upload names a blend"),
+    (0x8002304c, "sltu $v0, $zero, $v0", "any blend"),
+    (0x80023054, "sb $v0, 1($s1)", "second in the descriptor"),
+    (0x80023198, "jal 0x8005f808", "and puts the blend in the page word"),
+    (0x8002319c, "addu $a1, $s3, $zero", "as named"),
+    (0x800202e8, "sb $a2, 4($v0)", "on the pill's pass the quad's red is written"),
+    (0x8002032c, "sb $a2, 5($v0)", "its green"),
+    (0x8002034c, "sb $a2, 6($v0)", "and its blue"),
+    (0x800202cc, "lw $a0, 13268($a0)", "the screen's width at 0x800a33d4"),
+    (0x800202e0, "lw $v1, 13276($v1)", "and its height at 0x800a33dc"),
+    (0x800202f4, "addiu $a0, $a0, 1", "each a pixel more"),
+    (0x80020310, "addiu $v1, $v1, 1", "than the screen"),
+    (0x80020300, "sh $a0, 16($v0)", "are the quad's corners across"),
+    (0x80020314, "sh $v1, 26($v0)", "and down"),
+    (0x80020374, "jal 0x8005f868", "added to the frame's table"),
+    (0x800202c4, "sw $a0, 10228($gp)", "and the mode moved on"),
+    (0x80020380, "sw $v0, 5148($gp)", "the idle phase"),
+    (0x80020384, "sw $v0, 5152($gp)", "the stretch's phase"),
+    (0x8002038c, "sw $v0, 5156($gp)", "and the magnitude set"),
+    (0x80020398, "lw $v1, 5148($gp)", "each pass after, the idle phase"),
+    (0x800203c0, "jal 0x8005fb58", "has its sine taken"),
+    (0x800203d4, "sll $v0, $v1, 3", "and thrown away"),
+    (0x800203e8, "sb $s0, 22656($at)", "the ghost's red is written"),
+    (0x8002040c, "sb $s1, 22657($at)", "its green"),
+    (0x80020430, "sb $s0, 22658($at)", "and its blue"),
+    (0x80020460, "jal 0x8005f868", "and the ghost added to the frame's table"),
+    (0x800204a0, "sb $s0, 22684($at)", "the second sprite's red"),
+    (0x800206ac, "jal 0x8005f868", "and that added"),
+    (0x8002429c, "beq $s3, $s5, 0x800242ac", "each buffer's ghost is paged at the other buffer's place"),
+    (0x800242a8, "lw $a2, 13268($a2)", "the screen's width along"),
+    (0x800242b0, "addu $a1, $zero, $zero", "with the blend that takes half of each"),
+    (0x800242b4, "jal 0x8005f808", "in its page word"),
+    (0x800242d8, "jal 0x80025354", "laid before the sprite"),
+    (0x80024308, "sh $s4, 16($s0)", "the sprite is a page wide"),
+    (0x80024318, "sh $v0, 18($s0)", "and the screen high"),
+    (0x800242f0, "addiu $a1, $zero, 1", "semi-transparent"),
+    (0x80024314, "jal 0x8005f8c8", "so"),
+    (0x80024324, "addu $a1, $zero, $zero", "and shaded by its colour"),
+    (0x80024320, "jal 0x8005f8f8", "so"),
+    (0x800243ac, "sh $s4, 8($v0)", "the second sprite starts a page along"),
+    (0x800243c0, "sh $v1, 16($v0)", "and is the rest of the width wide"),
+    (0x800206c8, "beq $v0, $zero, 0x80020748", "while the mode stands the routine's tail runs"),
+    (0x800206dc, "sw $v0, 5156($gp)", "waning the magnitude"),
+    (0x800206e0, "blez $v0, 0x80020748", "and while that is positive"),
+    (0x80020708, "subu $a0, $v0, $a0", "steps the phase modulo a turn"),
+    (0x8002070c, "sw $a0, 5152($gp)", "keeps it"),
+    (0x80020710, "jal 0x8005fb58", "takes its sine"),
+    (0x80020720, "mult $v0, $v1", "times the magnitude"),
+    (0x80020728, "sra $v1, $t0, 12", "over 4096"),
+    (0x80020734, "sw $v0, 13272($at)", "adds it to the scale across at 0x800a33d8"),
+    (0x8002073c, "subu $v0, $v0, $v1", "and takes it off"),
+    (0x80020744, "sw $v0, 13280($at)", "the scale down at 0x800a33e0"),
+    (0x80041ba8, "jal 0x80020238", "which the loop puts back as a level is left"),
+    (0x80020240, "sw $v0, 13272($at)", "across"),
+    (0x80020250, "sw $v0, 13280($at)", "and down"),
+    (0x80020248, "sw $zero, 10228($gp)", "with the mode cleared"),
+    (0x80020530, "sw $v0, 5404($gp)", "the end's pass sets the fade's level"),
+    (0x80020588, "sh $v0, 5340($gp)", "lays the quad's corners again"),
+    (0x800205a8, "jal 0x8005f868", "draws the ghost once more"),
+    (0x80020518, "sw $v0, 10228($gp)", "and moves the mode on"),
+    (0x80020600, "sw $a0, 5404($gp)", "the fade's pass steps the level down"),
+    (0x80020604, "bltz $a0, 0x800206bc", "and below nothing"),
+    (0x800206bc, "sw $zero, 10228($gp)", "clears the mode"),
+    (0x8002062c, "sb $a0, 17416($at)", "else writes the level as the quad's red"),
+    (0x80020658, "sb $v1, 17417($at)", "its green"),
+    (0x80020680, "sb $v1, 17418($at)", "and its blue"),
+    (0x80041034, "jal 0x80014d40", "each pass the loop lays the coprocessor's matrix"),
+    (0x80014d4c, "lw $t3, 13272($t3)", "from the scale across"),
+    (0x80014d54, "lw $t1, 13280($t1)", "and the scale down"),
+    (0x80014e70, "mult $v0, $t3", "the view's first row times the one"),
+    (0x80014e80, "mult $v0, $t1", "the second times the other"),
+    (0x80014e88, "sra $v0, $t4, 12", "over 4096"),
+    (0x80014eb8, "mult $v1, $v0", "the translation across the same"),
+    (0x80014ed0, "mult $v1, $v0", "and down"),
+    (0x80014ee8, "jal 0x80060718", "loaded"),
+    (0x8006072c, "ctc2 $t0, rt11rt12", "as the coprocessor's rotation"),
+    (0x800517a8, "addiu $v0, $v0, 13272", "and the meshes' draws take the scale across"),
+    (0x800517bc, "mult $a2, $v0", "into their own matrices"),
+    (0x8005181c, "ctc2 $a2, rt11rt12", "too"),
     (0x80036bb4, "bltz $v0, 0x80036bc0", "the bouncy pill's word not negative"),
     (0x8003659c, "bne $v0, $zero, 0x800365cc", "and at its hold or more"),
     (0x800365a0, "addiu $v0, $zero, 2", "while the state at 408 is the rolling state's"),
@@ -1880,6 +1995,43 @@ IMMEDIATES = [
     ("what the ball takes", "pill.lethargy.step", "which counts down by this a frame", 0x8003b388, "addiu $v0, $v0, {}"),
     ("what the ball takes", "pill.lethargy.ticks", "ticking the clock this many extra a frame", 0x8003b394,
      "addiu $a0, $zero, {}"),
+    ("what the ball takes", "pill.lethargy.players", "the screen's effect starts where the players are fewer than",
+     0x800201fc, "slti $v0, $v0, {}"),
+    ("what the ball takes", "pill.lethargy.blanks", "and while its mode stands a pass waits this many blanks",
+     0x80040af8, "addiu $a0, $zero, {}"),
+    ("the view in play", "rock.shift", "the view rolls by the sine of the pill's word's product shifted down by this",
+     0x80035358, "sra $a0, $v0, {}"),
+    ("the view in play", "rock.round", "the sine rounded toward nothing by this first", 0x8003534c,
+     "addiu $v0, $v0, {}"),
+    ("the view in play", "flash.code", "the flash is a textured quad coded this", 0x80024058, "addiu $v0, $zero, {}"),
+    ("the view in play", "flash.sprite", "showing the sprite this far past the group the header's sixth bound starts",
+     0x80024068, "addiu $v1, $v1, {}"),
+    ("the view in play", "flash.laid", "its colour laid at this", 0x80024200, "addiu $v0, $zero, {}"),
+    ("the view in play", "screen.grey", "and written at this on the pill's pass", 0x8002028c, "addiu $a2, $zero, {}"),
+    ("the view in play", "screen.phase", "the two phases start at this", 0x8002037c, "addiu $v0, $zero, {}"),
+    ("the view in play", "screen.magnitude", "and the stretch's magnitude at this", 0x80020388,
+     "addiu $v0, $zero, {}"),
+    ("the view in play", "screen.idle.step", "the idle phase steps this a pass, its sine thrown away", 0x800203a0,
+     "addiu $v0, $v1, {}"),
+    ("the view in play", "screen.tint.outer", "the ghost's red and blue", 0x800203c4, "addiu $s0, $zero, {}"),
+    ("the view in play", "screen.tint.green", "and its green", 0x800203f4, "addiu $s1, $zero, {}"),
+    ("the view in play", "screen.page.gate", "a second ghost where the screen is this wide or more", 0x80020474,
+     "slti $v0, $v0, {}"),
+    ("the view in play", "screen.sprite.width", "a ghost is this wide, a texture page", 0x800242fc,
+     "addiu $s4, $zero, {}"),
+    ("the view in play", "screen.sprite.rest", "and the second the width less this", 0x800243bc,
+     "addiu $v1, $v1, {}"),
+    ("the view in play", "screen.wane", "the magnitude wanes by this a pass", 0x800206d8, "addiu $v0, $v0, {}"),
+    ("the view in play", "screen.step", "and the stretch's phase steps this", 0x800206f0, "addiu $v0, $v1, {}"),
+    ("the view in play", "screen.rest.across", "the scale across is this plus the stretch", 0x8002072c,
+     "addiu $v0, $v1, {}"),
+    ("the view in play", "screen.rest.down", "and the scale down this less it", 0x80020738, "addiu $v0, $zero, {}"),
+    ("the view in play", "screen.reset.across", "which a level's leaving puts back to this", 0x80020238,
+     "addiu $v0, $zero, {}"),
+    ("the view in play", "screen.reset.down", "and this", 0x80020244, "addiu $v0, $zero, {}"),
+    ("the view in play", "screen.end", "the end's pass sets the fade's level at this", 0x8002051c,
+     "addiu $v0, $zero, {}"),
+    ("the view in play", "screen.fade", "which steps by this a pass", 0x800205fc, "addiu $a0, $v0, {}"),
     ("what the ball takes", "pill.invincible", "the invincibility pill sets its word to", 0x8003884c,
      "addiu $v0, $zero, {}"),
     ("what the ball takes", "pill.invincible.step", "which counts down by this a frame", 0x8003b304,
@@ -2183,6 +2335,7 @@ MULTIPLIERS = [
     ("vanishing block", "vanish.dim.scale", "dimming: the count times this", 0x8002ba28, 3, "a2", "v0"),
     ("vanishing block", "vanish.out.scale", "flashing out: the count times this", 0x8002bae8, 2, "a2", "v0"),
     ("moving platform", "platform.scale", "speed on the disc is scaled by this over sixty", 0x80032a60, 5, "v1", "v0"),
+    ("the view in play", "rock.scale", "the pill's word is scaled by this before its sine", 0x80035324, 1, "a0", "v0"),
     ("captivators", "captivator.standoff", "stand this far off the block's centre, units", 0x8003b720, 5, "a0", "v0"),
     ("captivators", "star50.travel", "slow star: travels per frame, units", 0x8003bcbc, 4, "v1", "v0"),
     ("captivators", "wheel.travel", "wheel: rolls per frame, units", 0x8003bf10, 6, "v0", "v1"),
@@ -2334,6 +2487,13 @@ QUARTER = (0x8003b914, "addiu $a0, $zero, {}")
 # Where the parser and the frame put the glints' records, and their generator's state.
 GLINT_RECORDS = ((0x80022f4c, 0x80022f50), (0x8002aa2c, 0x8002aa30))
 GLINT_STATE = (0x80050d48, 0x80050d4c)
+GP_INIT = (0x80069a04, 0x80069a08)
+GP = 0x800a2f38
+MODE_WORD = (0x800a572c, 10228)   # the lethargy effect's mode word, and its offset from gp
+SCREEN_WORDS = {"wide": 0x800a33d4, "high": 0x800a33dc, "distance": 0x800a33e4,
+                "across": 0x800a33d8, "down": 0x800a33e0}
+FLAT_TEXTURED = 0x2c      # the GPU's code for a flat textured quad
+ONE_PLAYER = 2            # the gate the screen's effect asks the count of players against
 CORNER = 4                # bytes to a corner of a polygon's colour
 
 # The contact walk's and the loader's cases by type, from the first each
@@ -2455,6 +2615,9 @@ def readings(code):
     out["glint.times"] = code.word_of(*GLINT_TIMES)
     out["glint.seed"] = code.word(code.address(*GLINT_STATE))
     out["glint.at"], out["glint.frame.at"] = (code.address(*pair) for pair in GLINT_RECORDS)
+    out["gp"] = code.address(*GP_INIT)
+    for name, addr in SCREEN_WORDS.items():
+        out[f"screen.load.{name}"] = code.word(addr)
     for _, key, _, *args in DIVISORS:
         out[key] = code.divisor(*args)
     for _, key, _, *args in GREYS:
@@ -2932,8 +3095,10 @@ def take(r):
     """What the ball takes off its face, by type: how far from the thing's
     middle the ball's centre has to come, the ball's own radius apart, where
     that middle stands off its block's centre, and what it scores; and for
-    each thing that lasts, the word it sets and how that word runs down, and
-    the bouncy pill's latch."""
+    each thing that lasts, the word it sets and how that word runs down, the
+    bouncy pill's latch, the lethargy pill's with the blanks a pass waits while
+    its effect stands, the roll of the view and the screen's flash, ghost,
+    stretch and fade."""
     if r["take.live"] != 1 or r["take.open"] != 1 or r["take.third"] != 2:
         sys.exit("the loader or the walk marks a thing with something other than 1")
     if r["take.first"] != -min(TAKE_CASES) or r["take.first"] + max(TAKE_CASES) >= TAKE_TYPES[2]:
@@ -2959,6 +3124,21 @@ def take(r):
         sys.exit("the bouncy pill's latch does not count frames by one")
     if r["crumble.under"] != CRUMBLING_UNDER:
         sys.exit(f"a crumbling block scores while the ball stands on {r['crumble.under']}")
+    if r["gp"] != GP or GP + MODE_WORD[1] != MODE_WORD[0] or r["pill.lethargy.players"] != ONE_PLAYER:
+        sys.exit("the lethargy effect's mode word is not where gp puts it, or its start is not gated at one player")
+    if r["rock.round"] != (1 << r["rock.shift"]) - 1:
+        sys.exit("the view's roll is not rounded toward nothing by its own shift")
+    if r["flash.code"] != FLAT_TEXTURED or r["flash.laid"] != r["screen.grey"]:
+        sys.exit("the flash is not a flat textured quad with its colour laid as the pill's pass writes it")
+    if r["screen.page.gate"] != r["screen.sprite.width"] + 1 or r["screen.sprite.rest"] != -r["screen.sprite.width"]:
+        sys.exit("the ghost's second sprite is not gated at a page's width or does not take the rest of the screen")
+    if r["screen.wane"] > -1 or r["screen.magnitude"] % r["screen.wane"] \
+            or r["screen.fade"] > -1 or r["screen.end"] % r["screen.fade"]:
+        sys.exit("the stretch's magnitude or the fade's level does not run down to nothing in whole steps")
+    rest = (r["screen.rest.across"], r["screen.rest.down"])
+    if rest != (r["screen.reset.across"], r["screen.reset.down"]) \
+            or rest != (r["screen.load.across"], r["screen.load.down"]):
+        sys.exit("the stretch does not rest at the scales the executable loads and a level's leaving puts back")
     pickup = {"reach": reach["take.reach"], "stand": stand}
     taken = {
         31: {"reach": reach["take.reach.key"], "stand": stand, "points": r["key.points"]},
@@ -2973,7 +3153,14 @@ def take(r):
     for t in range(43, 48):
         taken[t] = {"reach": reach["take.reach.fruit"], "stand": stand, "points": next(iter(fruit))}
     lasting = {
-        32: {"word": r["pill.lethargy"], "step": -r["pill.lethargy.step"], "ticks": r["pill.lethargy.ticks"]},
+        32: {"word": r["pill.lethargy"], "step": -r["pill.lethargy.step"], "ticks": r["pill.lethargy.ticks"],
+             "blanks": r["pill.lethargy.blanks"],
+             "rock": {"scale": r["rock.scale"], "shift": r["rock.shift"]},
+             "screen": {"grey": r["screen.grey"],
+                        "tint": [r["screen.tint.outer"], r["screen.tint.green"], r["screen.tint.outer"]],
+                        "magnitude": r["screen.magnitude"], "wane": -r["screen.wane"],
+                        "step": r["screen.step"], "phase": r["screen.phase"],
+                        "fade": {"from": r["screen.end"], "by": -r["screen.fade"]}}},
         33: {"word": r["pill.bouncy"], "hold": r["pill.bouncy.hold"], "latch": r["pill.bouncy.latch"]},
         34: {"word": r["pill.invincible"], "step": -r["pill.invincible.step"]},
         38: {"word": r["sunglasses.word"], "step": -r["sunglasses.step"],
@@ -3090,8 +3277,8 @@ def play(r):
     """The level's own words: the start's two counts, the clock's ticks, the
     outcomes a level ends with, the frames each ending waits and the word
     the end screen shows for it, a bonus level's marking, the deaths'
-    penalty, the ending's view and the fly-in, each held against the
-    others: one code and one countdown for a cause wherever it is read
+    penalty, the ending's view, the fly-in and the screen's words as the
+    executable loads them, each held against the others: one code and one countdown for a cause wherever it is read
     twice, the codes distinct, the spikes' ending the invincibility word's
     own rest, every index the end screen picks lettered, and the gates one
     past their values."""
@@ -3141,7 +3328,10 @@ def play(r):
                      "off": r["end.view.off"], "reach": r["end.view.reach"],
                      "bonus": {"swing": r["end.view.swing.bonus"], "off": r["end.view.off.bonus"],
                                "reach": r["end.view.reach.bonus"]}},
-            "flight": flight(r)}
+            "flight": flight(r),
+            "screen": {"wide": r["screen.load.wide"], "high": r["screen.load.high"],
+                       "distance": r["screen.load.distance"],
+                       "scale": {"across": r["screen.load.across"], "down": r["screen.load.down"]}}}
 
 
 def harms(r):
@@ -3262,7 +3452,7 @@ def table(r, platform_speed):
     there, a kind or a type that can hurt the ball what it does, a kind the
     ball slides on, breaks or rides what it does to the roll, each kind the
     word the ball keeps for standing on it, and the level's own words, the clock's, the endings', the end screen's, a
-    bonus level's, an ending's and the fly-in's, sit under `play`. The devices' light and each device's
+    bonus level's, an ending's, the fly-in's and the screen's, sit under `play`. The devices' light and each device's
     colours, by world and then by circuit where it has one, sit apart from
     the types, whose entries are what moves.
     """
@@ -3405,6 +3595,10 @@ def show_readings(code):
                  readings(code)["glint.times"]))
     rows.append(("gem's glints", "the generator's state as the executable loads it", code.address(*GLINT_STATE),
                  readings(code)["glint.seed"]))
+    for name, what in (("wide", "the screen's width as the executable loads it"), ("high", "and its height"),
+                       ("distance", "the projection's screen distance"), ("across", "the scale across, of 4096"),
+                       ("down", "and the scale down")):
+        rows.append(("the view in play", what, SCREEN_WORDS[name], readings(code)[f"screen.load.{name}"]))
     for group, key, what, hi, hp, lo, lp, sa, sp in DIVISORS:
         rows.append((group, what, hi, code.divisor(hi, hp, lo, lp, sa, sp)))
     for group, key, what, hi, hp, lo, lp in GREYS:

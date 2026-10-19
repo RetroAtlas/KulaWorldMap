@@ -16,7 +16,7 @@ The ball in the air, what the reading passed over: how the ball is laid after th
 
 The ending's view: how long the game holds it before the next level loads, and the sense of each of its three angles against the viewer's axes, are unread (`0x800347b8`, [docs/camera.md](../docs/camera.md)); the map runs it for the length of one swing of an arcade level's eye, whichever level it is, or until a key, turns its yaw and pitch by the game's third and first angles as they stand, and stands the level's radius in for the free camera's distance, whose margin past the furthest cell the table does not ship. The game keys the ending's figures on the word at `0x800a53d4`, in three cases, 0 the arcade swing, 1 the quicker one and any other value standing the eye at the distance plus 400 with no swing (`0x80034840`, `0x8003487c`, `0x80034968`, `0x800349d4`), where the map keys them on the bonus flag, so on the ten hidden levels and in the Simon rooms the map may swing where the game stands, unread.
 
-The view's other words: a second yaw at 506, which decays by 33 a frame toward nothing while the word at 498 is clear and is added to the turn's yaw (`0x800351c0` to `0x8003521c`, `0x80035238`), and a tilt from a word at 548 the view is rolled by (`0x8003531c` to `0x80035364`); what sets either is unread.
+The view's other word: a second yaw at 506, which decays by 33 a frame toward nothing while the word at 498 is clear and is added to the turn's yaw (`0x800351c0` to `0x8003521c`, `0x80035238`); what sets it is unread.
 
 The two boost buttons on LEVEL 119 and SIMON 8 that sink by the game's measure and stand on the map (motion.md's Not settled): to look at in DuckStation as each level opens.
 

@@ -672,7 +672,22 @@ test("the hourglass turns the clock round and scores ten a whole second of what 
 
 test("a pill's word runs down as the game runs it, and the bouncy pill's never", () => {
   const lasts = (t) => table.types[t].lasts;
-  assert.deepEqual(lasts(32), { word: 360, step: 2, ticks: 4 });
+  assert.deepEqual(lasts(32), {
+    word: 360,
+    step: 2,
+    ticks: 4,
+    blanks: 2,
+    rock: { scale: 64, shift: 5 },
+    screen: {
+      grey: 128,
+      tint: [96, 112, 96],
+      magnitude: 780,
+      wane: 5,
+      step: 213,
+      phase: 1024,
+      fade: { from: 80, by: 8 },
+    },
+  });
   // the word is tested before it is counted down, so the frame it reaches nothing counts
   assert.equal(lasts(32).word / lasts(32).step + 1, 181);
   assert.equal((lasts(32).word / lasts(32).step + 1) * lasts(32).ticks, 724);
@@ -684,6 +699,62 @@ test("a pill's word runs down as the game runs it, and the bouncy pill's never",
     Object.keys(table.types).filter((t) => table.types[t].lasts),
     ["32", "33", "34", "38"],
   );
+});
+
+test("the lethargy pill halves the pace for 192 passes, rolls the view 128 either way every 32 and stretches the scene for 155", () => {
+  const pill = table.types[32].lasts;
+  const rsin = (theta) => Math.round(table.turn * Math.sin((2 * Math.PI * theta) / table.turn));
+  // the hazards count the word down before the view reads it, and the view rolls while it is positive
+  const words = [];
+  for (let w = pill.word; w > 0; w -= pill.step) words.push(w);
+  assert.equal(words.length, 180);
+  const roll = (w) => Math.trunc(rsin((pill.rock.scale * w) % table.turn) / 2 ** pill.rock.shift);
+  assert.equal(table.turn / (pill.rock.scale * pill.step), 32);
+  assert.equal(table.turn >> pill.rock.shift, 128);
+  assert.equal(roll(words[0]), -90);
+  assert.equal(Math.max(...words.map(roll)), 128);
+  assert.equal(Math.min(...words.map(roll)), -128);
+  // the mode stands from the pill's pass, through the pass the word reaches nothing and the end's,
+  // to the pass the fade falls below nothing on, and every pass but the first waits double
+  const fade = [];
+  for (let g = pill.screen.fade.from - pill.screen.fade.by; g >= 0; g -= pill.screen.fade.by)
+    fade.push(g);
+  assert.deepEqual(fade, [72, 64, 56, 48, 40, 32, 24, 16, 8, 0]);
+  const standing = pill.word / pill.step + 1 + 1 + fade.length + 1;
+  assert.equal(standing, 193);
+  assert.equal((standing - 1) * pill.blanks, 384);
+  near(((standing - 1) * pill.blanks) / table.hz, 6.4);
+  // five ticks a pass over the 181 passes the word is counted, at two blanks each
+  const ticks = (pill.word / pill.step + 1) * (table.play.clock.tick + pill.ticks);
+  assert.equal(ticks, 905);
+  near(table.hz / table.play.clock.second, 1.2);
+  near(
+    ((table.play.clock.tick + pill.ticks) * table.hz) / pill.blanks / table.play.clock.second,
+    3,
+  );
+  assert.equal(Math.round(ticks / table.play.clock.second), 18);
+  assert.equal(
+    Math.round((ticks - (pill.word / pill.step + 1) * pill.blanks) / table.play.clock.second),
+    11,
+  );
+  // the stretch's magnitude wanes before it is used and stretches while it is positive
+  let magnitude = pill.screen.magnitude;
+  let stretched = 0;
+  while ((magnitude -= pill.screen.wane) > 0) stretched++;
+  assert.equal(stretched, 155);
+  assert.equal(Math.floor(table.turn / pill.screen.step), 19);
+  const { screen, flight } = table.play;
+  assert.deepEqual(screen, {
+    wide: 320,
+    high: 240,
+    distance: 160,
+    scale: { across: 4096, down: 3840 },
+  });
+  const down = screen.scale.down / screen.scale.across;
+  const degrees = (half, distance) => Math.round((2 * Math.atan(half / distance) * 180) / Math.PI);
+  assert.equal(degrees(screen.wide / 2, screen.distance), 90);
+  assert.equal(degrees(screen.high / 2, screen.distance * down), 77);
+  assert.equal(Math.round((screen.distance * flight.below * down) / flight.ahead), 47);
 });
 
 test("the exits are shut by the loader and opened by the last key", () => {

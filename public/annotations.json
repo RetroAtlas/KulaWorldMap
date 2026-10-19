@@ -190,7 +190,7 @@
     },
     "32": {
       "name": "Lethargy pill",
-      "note": "Slows the ball, rocks the screen and runs the timer fast for three seconds. That costs about fifteen extra seconds on the clock."
+      "note": "Slows the ball to half pace and rocks the screen for six seconds, while the timer races. That costs about fifteen extra seconds on the clock."
     },
     "33": {
       "name": "Bouncy pill",

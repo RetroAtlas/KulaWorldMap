@@ -110,7 +110,7 @@ One to six a level on the disc: 61 levels with one, 92 with two, 31 with three, 
 
 ### type 32: Lethargy pill
 
-Named for what it does in play, slowing the ball while the screen rocks. LEVEL 10 carries the game's first four. How long it lasts is the code's: its case sets the word at `0x800ba338` to 360 (`0x800387d4`), and the ball's routine, which the play loop runs once a frame, takes 2 off it a frame (`0x8003b388`) and 4 ticks off the clock with it (`0x8003b390`, through `0x8003b468`), testing the word before it counts it down, so the pill lasts 181 frames, three seconds, and costs 724 ticks beyond the clock's own, 14.5 of its seconds at fifty ticks to the second ([motion.md](motion.md)), which the note gives as about fifteen.
+Named for what it does in play: its mode word makes the play loop wait two blanks a pass, so the ball and everything else run at half pace while the screen rocks ([motion.md](motion.md), [camera.md](camera.md)). LEVEL 10 carries the game's first four. How long it lasts is the code's: its case sets the word at `0x800ba338` to 360 (`0x800387d4`), and the ball's routine, which the play loop runs once a pass, takes 2 off it a pass (`0x8003b388`) and 4 ticks off the clock with it (`0x8003b390`, through `0x8003b468`), testing the word before it counts it down, so the pill lasts 181 passes, six seconds at two blanks each, and costs 724 ticks beyond the clock's own, 14.5 of its seconds at fifty ticks to the second ([motion.md](motion.md)), which the note gives as about fifteen.
 
 ### type 33: Bouncy pill
 
