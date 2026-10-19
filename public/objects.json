@@ -128,7 +128,7 @@
    "31": {"turn":-75,"bob":{"rate":-58,"reach":20},"take":{"reach":150,"stand":386,"points":1000},"order":"zyx"},
    "32": {"turn":20,"flip":66,"take":{"reach":160,"stand":386},"lasts":{"word":360,"step":2,"ticks":4,"blanks":2,"rock":{"scale":64,"shift":5},"screen":{"grey":128,"tint":[96,112,96],"magnitude":780,"wane":5,"step":213,"phase":1024,"fade":{"from":80,"by":8}}},"order":"zyx"},
    "33": {"turn":20,"flip":66,"take":{"reach":160,"stand":386},"lasts":{"word":840,"hold":839,"latch":4},"order":"zyx"},
-   "34": {"turn":20,"flip":66,"take":{"reach":160,"stand":386},"lasts":{"word":840,"step":1},"order":"zyx"},
+   "34": {"turn":20,"flip":66,"take":{"reach":160,"stand":386},"lasts":{"word":840,"step":1,"glow":{"step":100,"round":8192,"gain":3,"from":[0,2048,4096]}},"order":"zyx"},
    "35": {"turn":-16,"swing":{"rate":26,"reach":2048,"lean":30},"take":{"reach":160,"stand":436,"points":10,"clock":{"from":5999,"second":50}},"order":"zyx"},
    "36": {"turn":29,"take":{"reach":160,"stand":[386,436,436],"points":2975},"order":"xyz","glint":{"chance":3,"rise":128,"top":254,"fall":16,"slots":16,"rows":3,"cuts":3,"dice":{"seed":1,"times":1103515245,"plus":12345}}},
    "37": {"turn":-75,"bob":{"rate":-58,"reach":20},"take":{"reach":160,"stand":406,"points":[750,500,250]},"order":"zyx"},

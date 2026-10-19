@@ -691,7 +691,11 @@ test("a pill's word runs down as the game runs it, and the bouncy pill's never",
   // the word is tested before it is counted down, so the frame it reaches nothing counts
   assert.equal(lasts(32).word / lasts(32).step + 1, 181);
   assert.equal((lasts(32).word / lasts(32).step + 1) * lasts(32).ticks, 724);
-  assert.deepEqual(lasts(34), { word: 840, step: 1 });
+  assert.deepEqual(lasts(34), {
+    word: 840,
+    step: 1,
+    glow: { step: 100, round: 8192, gain: 3, from: [0, 2048, 4096] },
+  });
   assert.deepEqual(lasts(33), { word: 840, hold: 839, latch: 4 });
   assert.deepEqual(lasts(38), { word: 840, step: 1, blink: { times: 21, frames: 9 } });
   assert.equal(lasts(38).blink.times * lasts(38).blink.frames, 189);
@@ -699,6 +703,42 @@ test("a pill's word runs down as the game runs it, and the bouncy pill's never",
     Object.keys(table.types).filter((t) => table.types[t].lasts),
     ["32", "33", "34", "38"],
   );
+});
+
+test("the invincible ball's light runs red, green and blue a quarter round apart, each up for 20 frames and down for 20, round again every 82", () => {
+  const { glow } = table.types[34].lasts;
+  const rsin = (theta) => Math.round(table.turn * Math.sin((2 * Math.PI * theta) / table.turn));
+  assert.equal(glow.round, 2 * table.turn);
+  assert.equal(Math.ceil(glow.round / glow.step), 82);
+  assert.deepEqual(
+    glow.from.map((f) => f / (glow.round / 4)),
+    [0, 1, 2],
+  );
+  // a channel takes the gain times the game's sine of the counter less its start, over one turn from that start
+  const lift = (c) =>
+    glow.from.map((f) => (c - f >= 0 && c - f < table.turn ? glow.gain * rsin(c - f) : 0));
+  // the counter steps before the draw reads it, so the pill's first frame draws it at the step
+  const frames = [];
+  for (let c = 0, i = 0; i < 2048; i++) {
+    c = (c + glow.step) % glow.round;
+    frames.push(lift(c));
+  }
+  assert.deepEqual(frames[0], [glow.gain * rsin(glow.step), 0, 0]);
+  const round = frames.slice(0, 81);
+  const signs = (k) => round.map((f) => Math.sign(f[k]));
+  const count = (k, s) => signs(k).filter((v) => v === s).length;
+  assert.deepEqual([count(0, 1), count(0, -1)], [20, 20]);
+  assert.deepEqual([count(1, 1), count(1, -1)], [20, 21]);
+  assert.deepEqual([count(2, 1), count(2, -1)], [21, 20]);
+  // one channel falls as the next rises, and the counter lands 8 further along each round
+  assert.deepEqual([signs(0).indexOf(-1), signs(1).indexOf(1)], [20, 20]);
+  assert.deepEqual([signs(1).indexOf(-1), signs(2).indexOf(1)], [40, 40]);
+  assert.deepEqual(frames[81], [glow.gain * rsin(8), 0, 0]);
+  // over the counter's whole cycle every channel runs to three times the untinted light either way of it
+  for (const k of [0, 1, 2]) {
+    assert.equal(Math.max(...frames.map((f) => f[k])), 3 * table.turn);
+    assert.equal(Math.min(...frames.map((f) => f[k])), -3 * table.turn);
+  }
 });
 
 test("the lethargy pill halves the pace for 192 passes, rolls the view 128 either way every 32 and stretches the scene for 155", () => {

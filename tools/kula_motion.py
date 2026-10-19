@@ -1299,7 +1299,8 @@ CHECKS = [
     (0x8003ab6c, "bne $v1, $v0, 0x8003ab84", "with no invincibility"),
     (0x8003ab80, "sw $v0, 516($s0)", "the heat grows"),
     (0x8003abb4, "lh $v1, 494($s0)", "and on the frame after a landing, marked at 494"),
-    (0x8003abbc, "bne $v1, $v0, 0x8003abe8", "with no invincibility"),
+    (0x8003abbc, "bne $v1, $v0, 0x8003abe8", "set"),
+    (0x8003abd0, "bne $v1, $v0, 0x8003abe8", "with no invincibility"),
     (0x8003abe4, "sw $v0, 516($s0)", "grows by more"),
     (0x8003abf4, "bne $v0, $zero, 0x8003ac70", "past its limit"),
     (0x8003ac04, "bne $v0, $zero, 0x8003ac70", "with no countdown running"),
@@ -1403,6 +1404,51 @@ CHECKS = [
     (0x80032360, "sw $v0, 6064($gp)", "and puts its sine over full into the light's blue"),
     (0x80032364, "sw $v0, 6060($gp)", "green"),
     (0x80032368, "sw $v0, 6056($gp)", "and red"),
+    # The invincible ball's colours.
+    (0x80032200, "lw $v1, 556($s3)", "the draw reads the invincibility pill's word at 556 of the record"),
+    (0x80032208, "beq $v1, $v0, 0x80032318", "and passes the glow over while it is -1"),
+    (0x80032210, "lh $a0, 6076($gp)", "otherwise it reads the glow's counter"),
+    (0x8003221c, "bgez $v1, 0x80032228", "steps it, rounded toward nothing"),
+    (0x8003222c, "sll $v0, $v0, 13", "modulo its round"),
+    (0x80032230, "subu $v0, $v1, $v0", "to the remainder"),
+    (0x80032234, "sh $v0, 6076($gp)", "which it keeps"),
+    (0x80032244, "beq $v0, $zero, 0x80032284", "within the red's turn"),
+    (0x8003224c, "bgez $v1, 0x80032258", "the counter's remainder"),
+    (0x8003225c, "sll $a0, $a0, 12", "modulo a turn"),
+    (0x80032260, "subu $a0, $v1, $a0", "is the angle"),
+    (0x80032268, "jal 0x8005fb58", "whose sine"),
+    (0x80032274, "lw $a0, 6056($gp)", "times the gain"),
+    (0x8003227c, "addu $a0, $a0, $v1", "goes onto the light's red"),
+    (0x80032280, "sw $a0, 6056($gp)", "as the draw has tinted it"),
+    (0x80032284, "lhu $v1, 6076($gp)", "the counter read again"),
+    (0x80032294, "beq $v0, $zero, 0x800322d4", "within the green's turn"),
+    (0x800322a4, "bgez $v1, 0x800322b0", "the remainder of the counter less its phase"),
+    (0x800322b4, "sll $a0, $a0, 12", "modulo a turn"),
+    (0x800322b8, "jal 0x8005fb58", "whose sine"),
+    (0x800322bc, "subu $a0, $v1, $a0", "is the angle"),
+    (0x800322c4, "lw $a0, 6060($gp)", "times the gain"),
+    (0x800322cc, "addu $a0, $a0, $v1", "goes onto the green"),
+    (0x800322d0, "sw $a0, 6060($gp)", "as tinted"),
+    (0x800322d4, "lh $v1, 6076($gp)", "and read again"),
+    (0x800322e0, "bne $v0, $zero, 0x80032318", "from the blue's turn on"),
+    (0x800322e8, "bgez $v0, 0x800322f4", "the remainder of the counter less its phase"),
+    (0x800322f8, "sll $a0, $a0, 12", "modulo a turn"),
+    (0x800322fc, "jal 0x8005fb58", "whose sine"),
+    (0x80032300, "subu $a0, $v0, $a0", "is the angle"),
+    (0x80032308, "lw $a0, 6064($gp)", "times the gain"),
+    (0x80032310, "addu $a0, $a0, $v1", "goes onto the blue"),
+    (0x80032314, "sw $a0, 6064($gp)", "as tinted"),
+    (0x8003241c, "lw $v0, 6056($gp)", "the three channels"),
+    (0x80032420, "lw $t0, 6060($gp)", "as they stand"),
+    (0x80032424, "lw $t1, 6064($gp)", "then"),
+    (0x80032464, "sw $v0, 16($sp)", "go on the stack"),
+    (0x80032468, "sw $t0, 20($sp)", "all three"),
+    (0x8003246c, "sw $t1, 24($sp)", "to the model's draw"),
+    (0x800324b4, "jal 0x8002ca2c", "the call"),
+    (0x80069998, "sw $zero, 0($v0)", "the start clears every word"),
+    (0x8006999c, "addiu $v0, $v0, 4", "one after another"),
+    (0x800699a0, "sltu $at, $v0, $v1", "up to its end"),
+    (0x800699a4, "bne $at, $zero, 0x80069998", "the glow's counter among them"),
     (0x800363f0, "lh $v0, 0($a0)", "the ball's routine counts the countdown"),
     (0x80036418, "sw $zero, -24204($at)", "with the forward request cleared"),
     (0x80036420, "sw $zero, -24208($at)", "the turn's"),
@@ -2181,6 +2227,27 @@ IMMEDIATES = [
      "addiu $v1, $a0, {}"),
     ("what harms the ball", "dying.flash.full", "its sine over this", 0x8003235c, "addiu $v0, $v0, {}"),
     ("what harms the ball", "tint.full", "the ball's light is this untinted", 0x80032158, "addiu $v0, $v0, {}"),
+    ("what harms the ball", "glow.gate.word", "the ball's draw reads the invincibility pill's word at this of the record",
+     0x80032200, "lw $v1, {}($s3)"),
+    ("what harms the ball", "glow.gate", "and glows while it is not this", 0x80032204, "addiu $v0, $zero, {}"),
+    ("what harms the ball", "glow.counter.at", "stepping a counter this far past gp", 0x80032210, "lh $a0, {}($gp)"),
+    ("what harms the ball", "glow.step", "by this a frame", 0x80032218, "addiu $v1, $a0, {}"),
+    ("what harms the ball", "glow.round.rest", "rounded toward nothing from this", 0x80032224, "addiu $v0, $a0, {}"),
+    ("what harms the ball", "glow.round.shift", "modulo one shifted up by this", 0x80032228, "sra $v0, $v0, {}"),
+    ("what harms the ball", "glow.red.under", "and raises the red while the counter is under this", 0x80032240,
+     "slti $v0, $v1, {}"),
+    ("what harms the ball", "glow.red.rest", "by the sine of it, rounded from this", 0x80032254, "addiu $a0, $v1, {}"),
+    ("what harms the ball", "glow.red.shift", "modulo one shifted up by this", 0x80032258, "sra $a0, $a0, {}"),
+    ("what harms the ball", "glow.green.from", "the green while the counter plus this", 0x8003228c, "addiu $v0, $v1, {}"),
+    ("what harms the ball", "glow.green.span", "is under this, taken unsigned", 0x80032290, "sltiu $v0, $v0, {}"),
+    ("what harms the ball", "glow.green.phase", "by the sine of the counter plus this", 0x800322a0, "addiu $v1, $v0, {}"),
+    ("what harms the ball", "glow.green.rest", "rounded from this", 0x800322ac, "addiu $a0, $v0, {}"),
+    ("what harms the ball", "glow.green.shift", "modulo one shifted up by this", 0x800322b0, "sra $a0, $a0, {}"),
+    ("what harms the ball", "glow.blue.gate", "and the blue while the counter is not under this", 0x800322dc,
+     "slti $v0, $v1, {}"),
+    ("what harms the ball", "glow.blue.phase", "by the sine of the counter plus this", 0x800322e4, "addiu $v0, $v1, {}"),
+    ("what harms the ball", "glow.blue.rest", "rounded from this", 0x800322f0, "addiu $a0, $v1, {}"),
+    ("what harms the ball", "glow.blue.shift", "modulo one shifted up by this", 0x800322f4, "sra $a0, $a0, {}"),
 
     ("the level's clock and its end", "start.wait", "a level starts with the countdown at 370 at this", 0x80035e04,
      "addiu $v0, $zero, {}"),
@@ -2370,6 +2437,10 @@ MULTIPLIERS = [
     ("the blocks under the ball", "crumble.edge.push",
      "the input routine sets a ball at a crumbling block's free edge back this far along its heading, units",
      0x800373cc, 4, "v0", "v1"),
+    ("what harms the ball", "glow.gain", "the invincible ball's light takes the sine times this in red", 0x80032270, 3,
+     "v0", "v1"),
+    ("what harms the ball", "glow.gain.green", "in green", 0x800322c0, 3, "v0", "v1"),
+    ("what harms the ball", "glow.gain.blue", "and in blue", 0x80032304, 3, "v0", "v1"),
 ]
 
 # The one reach that is a square held in two halves of a word.
@@ -2454,6 +2525,9 @@ EXIT, HIDDEN_EXIT, MOVING_SPIKES, SPIKES, WANDERER, CORKSCREW = 7, 26, 11, 12, 5
 ARROW = 28
 BROWN = 0                 # type 42's form that stays and harms
 UNHARMED = -1             # the invincibility word while no pill lasts
+BALL_RECORD = 0x800ba114  # the ball's record, which the pills' words lie in
+INVINCIBLE_WORD = 0x800ba340
+CLEARED = ((0x80069988, 0x8006998c), (0x80069990, 0x80069994))  # the range the start zeroes word by word
 LEVELS = 15               # levels a world the penalty counts
 
 # A device's light: the routine that makes it from a cell and a face, the one
@@ -2616,6 +2690,8 @@ def readings(code):
     out["glint.seed"] = code.word(code.address(*GLINT_STATE))
     out["glint.at"], out["glint.frame.at"] = (code.address(*pair) for pair in GLINT_RECORDS)
     out["gp"] = code.address(*GP_INIT)
+    out["glow.counter.load"] = int.from_bytes(code.read(out["gp"] + out["glow.counter.at"], 2), "little", signed=True)
+    out["glow.clear"] = [code.address(*pair) for pair in CLEARED]
     for name, addr in SCREEN_WORDS.items():
         out[f"screen.load.{name}"] = code.word(addr)
     for _, key, _, *args in DIVISORS:
@@ -3098,7 +3174,8 @@ def take(r):
     each thing that lasts, the word it sets and how that word runs down, the
     bouncy pill's latch, the lethargy pill's with the blanks a pass waits while
     its effect stands, the roll of the view and the screen's flash, ghost,
-    stretch and fade."""
+    stretch and fade, and the invincibility pill's with the glow the ball's draw
+    runs off its word."""
     if r["take.live"] != 1 or r["take.open"] != 1 or r["take.third"] != 2:
         sys.exit("the loader or the walk marks a thing with something other than 1")
     if r["take.first"] != -min(TAKE_CASES) or r["take.first"] + max(TAKE_CASES) >= TAKE_TYPES[2]:
@@ -3139,6 +3216,25 @@ def take(r):
     if rest != (r["screen.reset.across"], r["screen.reset.down"]) \
             or rest != (r["screen.load.across"], r["screen.load.down"]):
         sys.exit("the stretch does not rest at the scales the executable loads and a level's leaving puts back")
+    if r["glow.gate"] != UNHARMED or BALL_RECORD + r["glow.gate.word"] != INVINCIBLE_WORD:
+        sys.exit("the ball's draw does not gate its glow on the invincibility pill's word at rest")
+    glow_round = 1 << r["glow.round.shift"]
+    if r["glow.round.rest"] != r["glow.step"] + glow_round - 1 or glow_round != 2 * TURN:
+        sys.exit("the glow's counter does not step modulo a round of two turns, rounded toward nothing")
+    phases = {"red": 0, "green": r["glow.green.phase"], "blue": r["glow.blue.phase"]}
+    for channel, phase in phases.items():
+        if 1 << r[f"glow.{channel}.shift"] != TURN or r[f"glow.{channel}.rest"] != phase + TURN - 1:
+            sys.exit(f"the glow's {channel} does not take its angle modulo a turn, rounded toward nothing")
+    if r["glow.red.under"] != TURN or r["glow.green.from"] != phases["green"] - 1 \
+            or r["glow.green.span"] != TURN - 1 or r["glow.blue.gate"] != 1 - phases["blue"]:
+        sys.exit("a channel of the glow is not raised over the one turn its angle runs")
+    if (-phases["green"], -phases["blue"]) != (TURN // 2, TURN):
+        sys.exit("the glow's channels are not a quarter round apart")
+    if r["glow.gain.green"] != r["glow.gain"] or r["glow.gain.blue"] != r["glow.gain"]:
+        sys.exit("the glow's three channels do not share one gain")
+    counter = r["gp"] + r["glow.counter.at"]
+    if not r["glow.clear"][0] <= counter < r["glow.clear"][1] or r["glow.counter.load"] != 0:
+        sys.exit("the glow's counter does not start at nothing")
     pickup = {"reach": reach["take.reach"], "stand": stand}
     taken = {
         31: {"reach": reach["take.reach.key"], "stand": stand, "points": r["key.points"]},
@@ -3162,7 +3258,9 @@ def take(r):
                         "step": r["screen.step"], "phase": r["screen.phase"],
                         "fade": {"from": r["screen.end"], "by": -r["screen.fade"]}}},
         33: {"word": r["pill.bouncy"], "hold": r["pill.bouncy.hold"], "latch": r["pill.bouncy.latch"]},
-        34: {"word": r["pill.invincible"], "step": -r["pill.invincible.step"]},
+        34: {"word": r["pill.invincible"], "step": -r["pill.invincible.step"],
+             "glow": {"step": r["glow.step"], "round": glow_round, "gain": r["glow.gain"],
+                      "from": [-phase for phase in phases.values()]}},
         38: {"word": r["sunglasses.word"], "step": -r["sunglasses.step"],
              "blink": {"times": r["sunglasses.blinks"], "frames": r["sunglasses.blink"]}},
     }
@@ -3603,6 +3701,13 @@ def show_readings(code):
         rows.append((group, what, hi, code.divisor(hi, hp, lo, lp, sa, sp)))
     for group, key, what, hi, hp, lo, lp in GREYS:
         rows.append((group, what, hi, code.grey(hi, hp, lo, lp)))
+    glow = readings(code)
+    counter = glow["gp"] + glow["glow.counter.at"]
+    rows.append(("what harms the ball", "the glow's counter as the executable loads it", counter,
+                 glow["glow.counter.load"]))
+    rows.append(("what harms the ball",
+                 f"the start clears this many bytes from 0x{glow['glow.clear'][0]:08x}, the counter at 0x{counter:08x} among them",
+                 CLEARED[0][0], glow["glow.clear"][1] - glow["glow.clear"][0]))
     rows.append(("shadows", "the square reaches this far either way of its middle, units",
                  code.address(*SHADOW_SQUARE), readings(code)["shadow.half"]))
     rows.append(("invisible block", "rows of the square root it measures a corner by",

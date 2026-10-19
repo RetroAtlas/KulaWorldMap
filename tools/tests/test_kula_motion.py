@@ -143,6 +143,12 @@ GAME = {
     "screen.load.high": 240, "screen.load.distance": 160, "screen.load.across": 4096, "screen.load.down": 3840,
     "pill.invincible.step": -1, "pill.bouncy": 840, "pill.bouncy.hold": 839, "pill.bouncy.grow": 1,
     "pill.bouncy.latch": 4, "pill.bouncy.latch.step": 1,
+    "glow.gate": -1, "glow.gate.word": 556, "glow.counter.at": 6076, "glow.step": 100, "glow.round.rest": 8291,
+    "glow.round.shift": 13, "glow.red.under": 4096, "glow.red.rest": 4095, "glow.red.shift": 12,
+    "glow.green.from": -2049, "glow.green.span": 4095, "glow.green.phase": -2048, "glow.green.rest": 2047,
+    "glow.green.shift": 12, "glow.blue.gate": 4097, "glow.blue.phase": -4096, "glow.blue.rest": -1,
+    "glow.blue.shift": 12, "glow.gain": 3, "glow.gain.green": 3, "glow.gain.blue": 3, "glow.counter.load": 0,
+    "glow.clear": [0x800a4220, 0x800fb1e8],
     "sunglasses.word": 840, "sunglasses.step": -1, "sunglasses.blinks": 21, "sunglasses.blink": 9,
     "crumble.points": 50, "crumble.under": 96,
     "send.type": 5, "send.band": -167, "send.band.span": 179, "send.wait": 15, "send.hold": 15,
@@ -743,7 +749,8 @@ class Take(unittest.TestCase):
                                        "screen": {"grey": 128, "tint": [96, 112, 96], "magnitude": 780, "wane": 5,
                                                   "step": 213, "phase": 1024, "fade": {"from": 80, "by": 8}}})
         self.assertEqual(lasting[33], {"word": 840, "hold": 839, "latch": 4})
-        self.assertEqual(lasting[34], {"word": 840, "step": 1})
+        self.assertEqual(lasting[34], {"word": 840, "step": 1,
+                                       "glow": {"step": 100, "round": 8192, "gain": 3, "from": [0, 2048, 4096]}})
         self.assertEqual(lasting[38], {"word": 840, "step": 1, "blink": {"times": 21, "frames": 9}})
 
     def test_a_reach_that_is_not_a_square_stops_the_reading(self):
@@ -764,6 +771,18 @@ class Take(unittest.TestCase):
         for change in ({"pill.lethargy": 361}, {"pill.lethargy.step": 2}, {"pill.invincible.step": -2},
                        {"pill.bouncy.hold": 840}, {"pill.bouncy.latch": 0}, {"pill.bouncy.latch.step": 2},
                        {"crumble.under": 95}, {"take.open": 2}):
+            with self.assertRaises(SystemExit):
+                take({**GAME, **change})
+
+    def test_the_invincible_balls_glow_read_otherwise_stops_the_reading(self):
+        for change in ({"glow.gate": 0}, {"glow.gate.word": 552}, {"glow.round.rest": 8292}, {"glow.round.shift": 12},
+                       {"glow.red.shift": 11}, {"glow.red.rest": 4096}, {"glow.green.rest": 2048}, {"glow.blue.rest": 0},
+                       {"glow.red.under": 4095}, {"glow.green.from": -2048}, {"glow.green.span": 4096},
+                       {"glow.blue.gate": 4096}, {"glow.green.phase": -1024, "glow.green.from": -1025,
+                                                  "glow.green.rest": 3071},
+                       {"glow.gain.green": 2}, {"glow.gain.blue": 4}, {"glow.counter.load": 5},
+                       {"glow.counter.at": 0}, {"glow.clear": [0x800a4700, 0x800fb1e8]},
+                       {"glow.clear": [0x800a4220, 0x800a46f4]}):
             with self.assertRaises(SystemExit):
                 take({**GAME, **change})
 
@@ -1058,6 +1077,7 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["32"]["lasts"]["ticks"], 4)
         self.assertEqual(t["types"]["32"]["lasts"]["blanks"], 2)
         self.assertEqual(t["types"]["32"]["lasts"]["rock"], {"scale": 64, "shift": 5})
+        self.assertEqual(t["types"]["34"]["lasts"]["glow"], {"step": 100, "round": 8192, "gain": 3, "from": [0, 2048, 4096]})
         self.assertEqual(set(t["types"]["32"]["lasts"]["screen"]),
                          {"grey", "tint", "magnitude", "wane", "step", "phase", "fade"})
         self.assertEqual(t["play"]["screen"]["scale"], {"across": 4096, "down": 3840})
