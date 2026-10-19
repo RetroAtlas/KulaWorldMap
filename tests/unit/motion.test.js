@@ -670,7 +670,7 @@ test("the hourglass turns the clock round and scores ten a whole second of what 
   assert.equal(taken(1).points, 1190);
 });
 
-test("a pill's word runs down as the game runs it, and the bouncy pill's never", () => {
+test("a pill's word runs down as the game runs it, the bouncy pill's never, and the sunglasses' blink is 21 spells of 9 frames with the first a frame short", () => {
   const lasts = (t) => table.types[t].lasts;
   assert.deepEqual(lasts(32), {
     word: 360,
@@ -697,8 +697,10 @@ test("a pill's word runs down as the game runs it, and the bouncy pill's never",
     glow: { step: 100, round: 8192, gain: 3, from: [0, 2048, 4096] },
   });
   assert.deepEqual(lasts(33), { word: 840, hold: 839, latch: 4 });
-  assert.deepEqual(lasts(38), { word: 840, step: 1, blink: { times: 21, frames: 9 } });
-  assert.equal(lasts(38).blink.times * lasts(38).blink.frames, 189);
+  // the blink takes a frame off the first spell's timer on the frame the word runs out
+  assert.deepEqual(lasts(38), { word: 840, step: 1, blink: { times: 21, frames: 9, first: 8 } });
+  assert.equal(lasts(38).blink.first, lasts(38).blink.frames - 1);
+  assert.equal(lasts(38).blink.first + (lasts(38).blink.times - 1) * lasts(38).blink.frames, 188);
   assert.deepEqual(
     Object.keys(table.types).filter((t) => table.types[t].lasts),
     ["32", "33", "34", "38"],

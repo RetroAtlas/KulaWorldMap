@@ -244,7 +244,8 @@ function pills(live, out) {
   const lasts = (type) => lastsOf(live, type);
   if (p[SUNGLASSES] >= 0) {
     p[SUNGLASSES] -= lasts(SUNGLASSES).step;
-    w.blink = p[SUNGLASSES] < 0 ? { spell: 0, left: lasts(SUNGLASSES).blink.frames } : null;
+    const { frames, first = frames } = lasts(SUNGLASSES).blink;
+    w.blink = p[SUNGLASSES] < 0 ? { spell: 0, left: first } : null;
   } else if (w.blink) blinking(w, lasts(SUNGLASSES).blink);
   if (p[INVINCIBLE] >= 0) p[INVINCIBLE] -= lasts(INVINCIBLE).step;
   if (p[INVINCIBLE] >= 0) {
@@ -258,7 +259,8 @@ function pills(live, out) {
   }
 }
 
-// The blink's spells run on from the word's end, off first, and the flag stays off after the last.
+// The blink's spells run on from the word's end, off first, the first spell at the table's own length,
+// and the flag stays off after the last.
 function blinking(w, { times, frames }) {
   const b = w.blink;
   b.left -= 1;

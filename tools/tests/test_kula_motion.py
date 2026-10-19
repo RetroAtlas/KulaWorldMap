@@ -151,6 +151,9 @@ GAME = {
     "glow.blue.shift": 12, "glow.gain": 3, "glow.gain.green": 3, "glow.gain.blue": 3, "glow.counter.load": 0,
     "glow.clear": [0x800a4220, 0x800fb1e8],
     "sunglasses.word": 840, "sunglasses.step": -1, "sunglasses.blinks": 21, "sunglasses.blink": 9,
+    "sunglasses.flag.on": 1, "sunglasses.flag": 1, "sunglasses.blink.step": -1, "sunglasses.blink.step.on": -1,
+    "sunglasses.blink.count.step": -1, "sunglasses.blink.count.step.on": -1, "sunglasses.blink.on": 9,
+    "sunglasses.blink.off": 9,
     "crumble.points": 50, "crumble.under": 96,
     "send.type": 5, "send.band": -167, "send.band.span": 179, "send.wait": 15, "send.hold": 15,
     "send.hold.after": 15, "send.mark": 5, "throw.type": 9, "throw.band": -197, "throw.band.span": 119,
@@ -833,7 +836,7 @@ class Take(unittest.TestCase):
         self.assertEqual(lasting[33], {"word": 840, "hold": 839, "latch": 4})
         self.assertEqual(lasting[34], {"word": 840, "step": 1,
                                        "glow": {"step": 100, "round": 8192, "gain": 3, "from": [0, 2048, 4096]}})
-        self.assertEqual(lasting[38], {"word": 840, "step": 1, "blink": {"times": 21, "frames": 9}})
+        self.assertEqual(lasting[38], {"word": 840, "step": 1, "blink": {"times": 21, "frames": 9, "first": 8}})
 
     def test_a_reach_that_is_not_a_square_stops_the_reading(self):
         for change in ({"take.reach": 25000}, {"take.within": 10001}, {"take.reach.key": 22500 + 1}):
@@ -853,6 +856,14 @@ class Take(unittest.TestCase):
         for change in ({"pill.lethargy": 361}, {"pill.lethargy.step": 2}, {"pill.invincible.step": -2},
                        {"pill.bouncy.hold": 840}, {"pill.bouncy.latch": 0}, {"pill.bouncy.latch.step": 2},
                        {"crumble.under": 95}, {"take.open": 2}):
+            with self.assertRaises(SystemExit):
+                take({**GAME, **change})
+
+    def test_the_sunglasses_blink_read_otherwise_stops_the_reading(self):
+        for change in ({"sunglasses.flag.on": 0}, {"sunglasses.flag": 0}, {"sunglasses.blink.step": -2},
+                       {"sunglasses.blink.step.on": 0}, {"sunglasses.blink.count.step": 1},
+                       {"sunglasses.blink.count.step.on": -2}, {"sunglasses.blink.on": 8},
+                       {"sunglasses.blink.off": 10}):
             with self.assertRaises(SystemExit):
                 take({**GAME, **change})
 

@@ -2561,7 +2561,8 @@ test("the sunglasses show every invisible block as the game does, the ball's lig
   // the shimmer and the pulse come round together once in this many frames
   const period = (table.cycle[0] * table.cycle[1]) / gcd(...table.cycle);
   const standing = Math.floor(word / step) + 1;
-  const blinking = blink.times * blink.frames;
+  const lengths = [blink.first, ...Array(blink.times - 1).fill(blink.frames)];
+  const blinking = lengths.reduce((a, b) => a + b, 0);
   // the frames the view takes to settle behind the ball once it has stopped
   const settled = 2 * table.hz;
   await startPlay(page);
@@ -2583,9 +2584,7 @@ test("the sunglasses show every invisible block as the game does, the ball's lig
   expect(taken).toBeLessThan(settled);
   const after = run.slice(taken);
   expect(after.slice(0, standing).every((r) => r.seeing)).toBe(true);
-  const spells = Array.from({ length: blink.times }, (_, s) =>
-    Array(blink.frames).fill(s % 2 === 1),
-  ).flat();
+  const spells = lengths.flatMap((n, s) => Array(n).fill(s % 2 === 1));
   expect(after.slice(standing, standing + blinking).map((r) => r.seeing)).toEqual(spells);
   expect(after.slice(standing + blinking).every((r) => !r.seeing)).toBe(true);
   expect(after.slice(0, standing).every((r) => r.status === "")).toBe(true);

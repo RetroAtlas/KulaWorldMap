@@ -826,6 +826,7 @@ CHECKS = [
     (0x800513e0, "lw $a3, 12($a0)", "the light reads the near distance"),
     (0x800513e4, "lw $t0, 16($a0)", "and the far one"),
     (0x8005134c, "lw $t9, 20($a0)", "and the flag"),
+    (0x800513b8, "beq $t9, $zero, 0x800513c4", "which hides every face, or shows it where the flag is set"),
     (0x80051418, "sub $s3, $a0, $t0", "its box starts at the ball less the far distance"),
     (0x8005141c, "addi $s3, $s3, 256", "in the cell that falls in"),
     (0x80051424, "srl $s3, $s3, 9", "a cell to 512 units"),
@@ -1004,6 +1005,32 @@ CHECKS = [
     (0x8003b2d0, "bne $v0, $zero, 0x8003b2e4", "the hazards routine finds the sunglasses' word at nothing"),
     (0x8003b2d8, "jal 0x8002bec8", "and starts their blink"),
     (0x8003b2e8, "bltz $v0, 0x8003b2f4", "counting the word down while it is not negative"),
+    (0x8003b2dc, "addu $a0, $zero, $zero", "the start called with nothing"),
+    (0x8003893c, "jal 0x8002bec8", "the take calls the blink's start"),
+    (0x8002bf38, "sw $zero, 24144($at)", "the take's call clears the blink's state"),
+    (0x8002bf44, "sw $v1, 23192($at)", "and sets the flag"),
+    (0x8002bee8, "sw $v0, 24144($at)", "the start marks the state an off spell's"),
+    (0x8002bef8, "sw $v0, 18076($at)", "lays the count"),
+    (0x8002bf08, "sw $v0, 18080($at)", "and the timer"),
+    (0x8002bf14, "sw $zero, 23192($at)", "and clears the flag"),
+    (0x8002bed4, "lw $v1, 13264($v1)", "the four stores indexed by the word that gates every update"),
+    (0x8002bedc, "sll $v1, $v1, 2", "four bytes a step"),
+    (0x8002bf70, "beq $v1, $a3, 0x8002bf88", "the blink runs an off spell"),
+    (0x8002bf78, "beq $v1, $v0, 0x8002bfec", "or an on spell, and otherwise returns"),
+    (0x8002bfa0, "bgtz $v0, 0x8002c04c", "returning while the timer stays above nothing"),
+    (0x8002c004, "bgtz $v0, 0x8002c04c", "in an on spell too"),
+    (0x8002bfc0, "blez $v0, 0x8002c02c", "the count at nothing ends the blink"),
+    (0x8002c024, "bgtz $v0, 0x8002c034", "from an on spell too"),
+    (0x8002c030, "sw $zero, 0($a2)", "the end clears the state and leaves the flag"),
+    (0x8002bfd4, "sw $v0, 0($a2)", "else the state swaps to an on spell"),
+    (0x8002bfe0, "sw $a3, 23192($at)", "and the flag goes on"),
+    (0x8002c03c, "sw $a3, 0($a2)", "or to an off spell"),
+    (0x8002c048, "sw $zero, 23192($at)", "and the flag goes off"),
+    (0x80051370, "lw $s5, 0($s5)", "the invisible block's light reads the flag"),
+    (0x80051390, "beq $s5, $zero, 0x800513b8", "and draws every face through it"),
+    (0x8002a3e8, "jal 0x8002bf50", "the frame's draw runs the blink before the light"),
+    (0x8002a3c8, "lw $s0, 12096($gp)", "under a gate of its own"),
+    (0x8002a3d8, "bne $s0, $v0, 0x8002a6c8", "which is not read"),
     (0x8003b300, "bltz $v0, 0x8003b310", "and the invincibility pill's"),
     (0x8003b30c, "sw $v0, -23744($at)", "by its step"),
     (0x8003b31c, "bltz $v0, 0x8003b35c", "and while that runs"),
@@ -2623,6 +2650,22 @@ IMMEDIATES = [
     ("what the ball takes", "sunglasses.blinks", "and at nothing they blink this many times", 0x8002beec,
      "addiu $v0, $zero, {}"),
     ("what the ball takes", "sunglasses.blink", "of this many frames each", 0x8002befc, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "sunglasses.flag.on", "the take calls the blink's start with this", 0x80038940,
+     "addiu $a0, $zero, {}"),
+    ("what the ball takes", "sunglasses.flag", "which sets the sunglasses' flag to this", 0x8002becc,
+     "addiu $v1, $zero, {}"),
+    ("what the ball takes", "sunglasses.blink.step", "the blink takes this off an off spell's timer a frame",
+     0x8002bf9c, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "sunglasses.blink.count.step", "and this off its count as the timer runs out", 0x8002bfbc,
+     "addiu $v0, $v0, {}"),
+    ("what the ball takes", "sunglasses.blink.on", "laying the timer at this for the on spell", 0x8002bfc8,
+     "addiu $v0, $zero, {}"),
+    ("what the ball takes", "sunglasses.blink.step.on", "an on spell's timer steps by this", 0x8002c000,
+     "addiu $v0, $v0, {}"),
+    ("what the ball takes", "sunglasses.blink.count.step.on", "and the count by this as it runs out", 0x8002c020,
+     "addiu $v0, $v0, {}"),
+    ("what the ball takes", "sunglasses.blink.off", "the timer laid at this for the off spell", 0x8002c034,
+     "addiu $v0, $zero, {}"),
     ("what the ball takes", "crumble.points", "a crumbling block scores this as it breaks", 0x8003b004,
      "addiu $v0, $v0, {}"),
     ("what the ball takes", "crumble.under", "the ball on one standing on this", 0x8003afb4, "addiu $v0, $zero, {}"),
@@ -4058,6 +4101,15 @@ def take(r):
         sys.exit("the lethargy pill's word does not count down to nothing in whole steps")
     if r["pill.invincible.step"] != -1 or r["sunglasses.step"] != -1:
         sys.exit("the invincibility pill's or the sunglasses' word does not count down by one")
+    if r["sunglasses.flag.on"] != 1:
+        sys.exit("the take does not call the sunglasses' blink's start with 1")
+    if r["sunglasses.flag"] != 1:
+        sys.exit("the blink's start does not set the sunglasses' flag to 1")
+    if {r["sunglasses.blink.step"], r["sunglasses.blink.step.on"], r["sunglasses.blink.count.step"],
+            r["sunglasses.blink.count.step.on"]} != {-1}:
+        sys.exit("the sunglasses' blink does not count its timer and its count down by one")
+    if r["sunglasses.blink.on"] != r["sunglasses.blink"] or r["sunglasses.blink.off"] != r["sunglasses.blink"]:
+        sys.exit("the sunglasses' blink does not lay its timer at the frames the start lays it at")
     if r["pill.bouncy.hold"] != r["pill.bouncy"] - 1 or r["pill.bouncy.grow"] != 1:
         sys.exit("the bouncy pill's word does not grow by one from a step short of its start")
     if r["pill.bouncy.latch"] < 1 or r["pill.bouncy.latch.step"] != 1:
@@ -4125,7 +4177,8 @@ def take(r):
              "glow": {"step": r["glow.step"], "round": glow_round, "gain": r["glow.gain"],
                       "from": [-phase for phase in phases.values()]}},
         38: {"word": r["sunglasses.word"], "step": -r["sunglasses.step"],
-             "blink": {"times": r["sunglasses.blinks"], "frames": r["sunglasses.blink"]}},
+             "blink": {"times": r["sunglasses.blinks"], "frames": r["sunglasses.blink"],
+                       "first": r["sunglasses.blink"] + r["sunglasses.blink.step"]}},
     }
     return taken, lasting
 

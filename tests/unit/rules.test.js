@@ -777,7 +777,7 @@ test("the pills' words run down in the hazards' order: the lethargy pill hurries
   assert.equal(passed.words.clock, full - 2 * play.clock.tick, "and the clock not hurried");
 });
 
-test("the sunglasses show every invisible block while their word stands, blink it off and on in the table's spells as the word runs out, off first, and hide it after, the invincibility pill leaving them and a restart clearing them", () => {
+test("the sunglasses show every invisible block while their word stands, blink it off and on in the table's spells as the word runs out, off first and the first spell the table's shorter one, and hide it after, the invincibility pill leaving them and a restart clearing them", () => {
   const { word, step, blink } = motion.types[SUNGLASSES].lasts;
   const live = begin(level(row(10, 18), [start()]));
   live.words.wait = 0;
@@ -787,7 +787,8 @@ test("the sunglasses show every invisible block while their word stands, blink i
   assert.equal(seeing(live), true, "shown from the frame of the take");
   // the frames the word is not negative on after the take's own, then the blink's
   const standing = Math.floor(word / step);
-  const blinking = blink.times * blink.frames;
+  const lengths = [blink.first, ...Array(blink.times - 1).fill(blink.frames)];
+  const blinking = lengths.reduce((a, b) => a + b, 0);
   const shown = [];
   const spell = [];
   for (let i = 0; i < standing + blinking + 3; i++) {
@@ -796,16 +797,19 @@ test("the sunglasses show every invisible block while their word stands, blink i
     spell.push(live.words.blink?.spell ?? null);
   }
   assert.deepEqual(shown.slice(0, standing), Array(standing).fill(true));
-  const spells = Array.from({ length: blink.times }, (_, s) =>
-    Array(blink.frames).fill(s % 2 === 1),
-  ).flat();
+  const spells = lengths.flatMap((n, s) => Array(n).fill(s % 2 === 1));
   assert.deepEqual(shown.slice(standing, standing + blinking), spells, "off first, then by turns");
+  assert.equal(
+    shown.indexOf(true, standing),
+    standing + blink.first,
+    "the first spell the table's own",
+  );
   assert.deepEqual(shown.slice(standing + blinking), [false, false, false], "and hidden after");
   assert.deepEqual(
     spell,
     [
       ...Array(standing).fill(null),
-      ...Array.from({ length: blinking }, (_, i) => Math.floor(i / blink.frames)),
+      ...lengths.flatMap((n, s) => Array(n).fill(s)),
       null,
       null,
       null,
@@ -821,10 +825,10 @@ test("the sunglasses show every invisible block while their word stands, blink i
   assert.equal(seeing(guarded), true);
   frame(guarded, 0);
   assert.equal(guarded.words.pills[SUNGLASSES], -step, "counted down under the invincibility pill");
-  assert.deepEqual(guarded.words.blink, { spell: 0, left: blink.frames }, "and the blink started");
+  assert.deepEqual(guarded.words.blink, { spell: 0, left: blink.first }, "and the blink started");
   assert.equal(seeing(guarded), false);
   frame(guarded, 0);
-  assert.deepEqual(guarded.words.blink, { spell: 0, left: blink.frames - 1 }, "and running");
+  assert.deepEqual(guarded.words.blink, { spell: 0, left: blink.first - 1 }, "and running");
   guarded.words.pills[SUNGLASSES] = word;
   frame(guarded, 0);
   assert.equal(guarded.words.blink, null, "a second pair drops the blink");

@@ -132,7 +132,7 @@
    "35": {"turn":-16,"swing":{"rate":26,"reach":2048,"lean":30},"take":{"reach":160,"stand":436,"points":10,"clock":{"from":5999,"second":50}},"order":"zyx"},
    "36": {"turn":29,"take":{"reach":160,"stand":[386,436,436],"points":2975},"order":"xyz","glint":{"chance":3,"rise":128,"top":254,"fall":16,"slots":16,"rows":3,"cuts":3,"dice":{"seed":1,"times":1103515245,"plus":12345}}},
    "37": {"turn":-75,"bob":{"rate":-58,"reach":20},"take":{"reach":160,"stand":406,"points":[750,500,250]},"order":"zyx"},
-   "38": {"turn":-75,"bob":{"rate":-58,"reach":20},"take":{"reach":160,"stand":386,"points":500},"lasts":{"word":840,"step":1,"blink":{"times":21,"frames":9}},"order":"zyx"},
+   "38": {"turn":-75,"bob":{"rate":-58,"reach":20},"take":{"reach":160,"stand":386,"points":500},"lasts":{"word":840,"step":1,"blink":{"times":21,"frames":9,"first":8}},"order":"zyx"},
    "42": {"form":{"rate":13,"past":2049},"orbit":{"radius":100,"rate":[83,6]},"take":{"reach":160,"stand":416,"points":1550},"order":"zyx","harm":{"form":0}},
    "43": {"turn":20,"tilt":{"rate":-66,"reach":150},"bob":{"rate":-50,"reach":20},"take":{"reach":180,"stand":386,"points":2500},"order":"zyx"},
    "44": {"turn":20,"tilt":{"rate":-66,"reach":150},"bob":{"rate":-50,"reach":20},"take":{"reach":180,"stand":386,"points":2500},"order":"zyx"},
