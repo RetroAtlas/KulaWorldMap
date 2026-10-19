@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { objects, mapData, annotations } from "./fixtures.js";
+import { objects, mapData, annotations, packs } from "./fixtures.js";
 import { FACE_NORMAL } from "../../public/js/format/lattice.js";
 import { TANGENT, layHeading } from "../../public/js/viewer/data.js";
 import {
@@ -931,14 +931,47 @@ test("the fly-in flies 68 frames, holds the pad for 69 and the platforms for 67,
   assert.deepEqual([padFrom - 1, standing], [69, 67]);
 });
 
-test("a death costs 50 times the level's number, at most 5000", () => {
+test("a death costs 50 times the level's number, at most 5000, the finals numbered two a world", () => {
   const { points } = table.play;
-  assert.deepEqual(points, { each: 50, most: 5000, levels: 15 });
+  assert.deepEqual(points, { each: 50, most: 5000, levels: 15, finals: 2 });
   const penalty = (level) => Math.min(points.each * level, points.most);
   assert.equal(penalty(1), 50);
   assert.equal(penalty(99), 4950);
   assert.equal(penalty(100), 5000);
   assert.equal(penalty(150), 5000);
+  // LEVEL 42 is the third world's twelfth, and FINAL 12 the sixth world's second
+  assert.equal(penalty(2 * points.levels + 11 + 1), 2100);
+  assert.equal(penalty(5 * points.finals + 1 + 1), 600);
+});
+
+test("an exit leads to the slot after, five fruit to a bonus level by thirds of the world, the hidden exit to slot 18 and the fifteenth level to the next world", () => {
+  const { next } = table.play;
+  assert.deepEqual(next, {
+    bonus: [15, 16, 17],
+    hidden: 18,
+    slots: 15,
+    third: 5,
+    fruit: 31,
+    worlds: 10,
+  });
+  const bonusFor = (slot) => next.bonus[Math.floor(slot / next.third) % next.bonus.length];
+  assert.deepEqual([0, 4, 5, 9, 10, 14].map(bonusFor), [15, 15, 16, 16, 17, 17]);
+  assert.equal(next.fruit, 2 ** 5 - 1);
+  assert.equal(next.hidden, next.bonus[0] + next.bonus.length);
+  assert.equal(next.third * next.bonus.length, next.slots);
+  assert.equal(next.worlds * next.slots, 150);
+  const worlds = packs.packs.filter((p) => /^\/(\w+)\/\1\.PAK$/.test(p.path));
+  assert.equal(worlds.length, next.worlds);
+  for (const [w, p] of worlds.entries()) {
+    const names = p.slots.map((s) => s.name);
+    assert.equal(names.length, 20);
+    assert.equal(names[next.slots - 1], `LEVEL ${next.slots * (w + 1)}`);
+    assert.deepEqual(
+      next.bonus.map((i) => names[i]),
+      [1, 2, 3].map((n) => `BONUS ${3 * w + n}`),
+    );
+    assert.equal(names[next.hidden], `HIDDEN ${w + 1}`);
+  }
 });
 
 test("fire kills a standing ball on its 51st frame, and the captivators reach 212 and 127 units", () => {

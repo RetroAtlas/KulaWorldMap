@@ -1658,6 +1658,123 @@ CHECKS = [
     (0x80041d4c, "sw $v0, 12108($gp)", "with the total at 0x800a5e84 below it"),
     (0x80041e44, "sw $zero, 1236($gp)", "on its other path as well"),
     (0x80041e48, "sw $v0, 12108($gp)", "the total with it"),
+    # A run's bank and the next level.
+    (0x80041f34, "lw $v0, 13232($v0)", "the points routine reads the game's mode word"),
+    (0x80041f3c, "bne $v0, $zero, 0x8004211c", "and banks the arcade's way where it is nothing"),
+    (0x80041f44, "lw $v0, 1212($gp)", "unless the word at 0x800a33f4"),
+    (0x80041f4c, "bne $v0, $zero, 0x8004211c", "is set"),
+    (0x80041f54, "lw $v0, 1244($gp)", "or the word at 0x800a3414"),
+    (0x80041f5c, "bne $v0, $zero, 0x800420f0", "is"),
+    (0x80042974, "addiu $v0, $zero, 1", "which the next-level routine sets"),
+    (0x80042978, "sw $v0, 1244($gp)", "as a world ends"),
+    (0x80042004, "lw $a0, 9396($gp)", "a death reads the bank at 0x800a53ec"),
+    (0x80042010, "sw $a0, 10028($gp)", "and puts it back into the pickups' word at 0x800a5664"),
+    (0x80042024, "lw $v0, 9396($gp)", "any other ending reads the bank"),
+    (0x80042028, "lw $a0, 10028($gp)", "and the pickups' word"),
+    (0x80042030, "beq $v0, $a0, 0x80042048", "and where they differ"),
+    (0x80042038, "lhu $v0, 10756($gp)", "counts a fruit at 0x800a593c"),
+    (0x80042040, "addiu $v0, $v0, 1", "one on"),
+    (0x80042044, "sh $v0, 10756($gp)", "kept there"),
+    (0x80042050, "sw $a0, 9396($gp)", "and banks the pickups' word"),
+    (0x80038ca4, "lw $v0, 22116($v0)", "which a fruit's case reads"),
+    (0x80038f58, "sw $v0, 22116($at)", "and writes with its bit set"),
+    (0x80042460, "lw $v0, 21460($v0)", "the next-level routine reads the level's mode word"),
+    (0x80042468, "bne $v0, $zero, 0x800424b4", "and numbers an ordinary level alone"),
+    (0x80042470, "lw $v0, 1308($gp)", "by the finals flag at 0x800a3454"),
+    (0x80042478, "bne $v0, $zero, 0x8004249c", "in two ways"),
+    (0x80042490, "addu $v0, $v0, $v1", "the world's place times fifteen plus the slot"),
+    (0x800424a8, "addu $v0, $v0, $v1", "or twice the place plus the slot"),
+    (0x800424b0, "sw $v0, 1224($gp)", "into the word at 0x800a3400"),
+    (0x800424b4, "lw $v0, 1212($gp)", "and returns while the word at 0x800a33f4"),
+    (0x800424bc, "bne $v0, $zero, 0x8004297c", "is set"),
+    (0x800424c8, "lw $v0, 13232($v0)", "the arcade's branch is the game's mode word's"),
+    (0x800424d0, "bne $v0, $zero, 0x80042618", "at nothing"),
+    (0x800424dc, "lw $v0, 21460($v0)", "on an ordinary level"),
+    (0x800424e4, "bne $v0, $zero, 0x80042618", "alone"),
+    (0x800424ec, "lw $v1, 11976($gp)", "with the outcome"),
+    (0x800424f4, "blez $v1, 0x80042618", "a way out"),
+    (0x800424fc, "bne $v1, $v0, 0x80042544", "the hidden exit's outcome going its own way"),
+    (0x80042504, "lw $v0, 1232($gp)", "which counts the slot at 0x800a3408"),
+    (0x8004250c, "addiu $v0, $v0, 1", "on by one"),
+    (0x80042510, "sw $v0, 1232($gp)", "kept"),
+    (0x80042514, "bne $v0, $v1, 0x8004252c", "and where that is the slot after the last ordinary level"),
+    (0x80042520, "lw $v0, 24576($v0)", "reads the pack's count at 0x80156000"),
+    (0x80042528, "sw $v0, 1232($gp)", "instead"),
+    (0x8004252c, "lw $v1, 1232($gp)", "then takes the slot"),
+    (0x80042534, "sw $v0, 1232($gp)", "makes it the hidden level's"),
+    (0x80042538, "sw $v1, 10716($gp)", "and keeps the slot after at 0x800a5914"),
+    (0x80042544, "lw $v0, 1232($gp)", "the exit's way counts the slot"),
+    (0x80042548, "lw $v1, 9396($gp)", "and reads the bank"),
+    (0x8004254c, "addiu $a0, $v0, 1", "on by one"),
+    (0x80042558, "sw $a0, 1232($gp)", "kept"),
+    (0x8004255c, "bne $v1, $v0, 0x800425f0", "and with every fruit banked"),
+    (0x80042564, "sw $zero, 10028($gp)", "clears the pickups' word"),
+    (0x80042568, "sw $zero, 9396($gp)", "and the bank"),
+    (0x8004256c, "sw $a0, 10716($gp)", "keeps the slot after"),
+    (0x80042570, "bne $a0, $v0, 0x80042598", "the count instead where that is the slot after the last ordinary level"),
+    (0x80042578, "lw $v0, 1296($gp)", "and the word at 0x800a3448"),
+    (0x80042580, "bne $v0, $zero, 0x8004259c", "is clear"),
+    (0x8004258c, "lw $v0, 24576($v0)", "the count"),
+    (0x80042594, "sw $v0, 10716($gp)", "kept"),
+    (0x8004259c, "lw $v0, 1232($gp)", "and takes the slot"),
+    (0x800425a4, "addiu $v0, $v0, -1", "finished"),
+    (0x800425c0, "subu $a0, $a0, $v0", "over five, rounded toward nothing"),
+    (0x800425dc, "subu $a0, $a0, $v0", "less three times its third"),
+    (0x800425e4, "sw $a0, 1232($gp)", "for the bonus slot"),
+    (0x800425f0, "bne $a0, $v0, 0x80042618", "else, where the slot after is the one after the last ordinary level"),
+    (0x800425f8, "lw $v0, 1296($gp)", "and the word at 0x800a3448"),
+    (0x80042600, "bne $v0, $zero, 0x80042618", "is clear"),
+    (0x8004260c, "lw $v0, 24576($v0)", "the pack's count"),
+    (0x80042614, "sw $v0, 1232($gp)", "is the slot"),
+    (0x800427d4, "lw $v0, 21460($v0)", "a bonus or a hidden level"),
+    (0x800427dc, "blez $v0, 0x800428c0", "by the level's mode word"),
+    (0x800427e4, "lw $v0, 1232($gp)", "with its slot"),
+    (0x800427ec, "lw $v1, 24576($v1)", "within the pack's count"),
+    (0x800427f8, "beq $v0, $zero, 0x8004285c", "alone"),
+    (0x80042800, "lw $v0, 1296($gp)", "and the word at 0x800a3448"),
+    (0x80042808, "bne $v0, $zero, 0x8004285c", "clear"),
+    (0x80042810, "lw $v0, 9396($gp)", "reads the bank"),
+    (0x8004281c, "bne $v0, $v1, 0x80042850", "and short of every fruit"),
+    (0x80042850, "lw $v0, 10716($gp)", "goes back to the slot kept"),
+    (0x80042858, "sw $v0, 1232($gp)", "whatever its outcome"),
+    (0x80042824, "lw $v1, 10716($gp)", "else reads the slot kept"),
+    (0x80042828, "sw $zero, 10028($gp)", "clears the pickups' word"),
+    (0x8004282c, "sw $zero, 9396($gp)", "and the bank"),
+    (0x80042834, "bne $v0, $zero, 0x80042854", "and picks the bonus slot by the slot kept"),
+    (0x80042840, "bne $v0, $zero, 0x80042854", "in thirds"),
+    (0x800428c0, "lw $v0, 1232($gp)", "a slot"),
+    (0x800428c8, "lw $v1, 24576($v1)", "at the pack's count or past it"),
+    (0x800428dc, "lw $v1, 1296($gp)", "asks the word at 0x800a3448"),
+    (0x800428e4, "beq $v1, $v0, 0x80042928", "whose 1 would start the next world at its last slot"),
+    (0x800428f8, "beq $v1, $zero, 0x8004291c", "and whose 0"),
+    (0x8004291c, "sw $zero, 1232($gp)", "starts it at its first"),
+    (0x8004290c, "beq $v1, $v0, 0x80042938", "and whose 2"),
+    (0x80042938, "sw $v0, 1232($gp)", "at its first bonus level"),
+    (0x80042934, "addiu $v0, $v0, -1", "the last slot being the count less one"),
+    (0x8004288c, "lw $v1, 1296($gp)", "the same 2"),
+    (0x80042894, "bne $v1, $v0, 0x800428c0", "would run the bonus levels on"),
+    (0x800428ac, "sw $v0, 1232($gp)", "one after another"),
+    (0x800428bc, "sw $a1, 1232($gp)", "and the count past the third, the hidden level passed over"),
+    (0x800482e4, "sw $zero, 13384($at)", "the word at 0x800a3448 is cleared by a routine the loop calls"),
+    (0x8004adc4, "sw $zero, 13384($at)", "and twice by the routine the loop runs on each pass of an ending"),
+    (0x8004b5dc, "sw $zero, 13384($at)", "on another of its paths"),
+    (0x800403b4, "lw $a0, 1236($gp)", "the game's loop takes the world word"),
+    (0x800403c4, "sw $a0, 1240($gp)", "for the world's place at 0x800a3410"),
+    (0x800403c8, "jal 0x8004ccf8", "and loads the world's pack"),
+    (0x800403cc, "ori $a2, $a2, 24576", "at 0x80156000"),
+    (0x80041e84, "sw $zero, 1232($gp)", "the game's end puts the slot back to 0"),
+    (0x80041e88, "bne $v0, $zero, 0x80041eb4", "and past the first world"),
+    (0x80041eb4, "sw $zero, 1236($gp)", "the world word"),
+    (0x80041e70, "lw $v0, 1212($gp)", "unless the word at 0x800a33f4 is set"),
+    (0x80041e78, "bne $v0, $zero, 0x80041ec4", "when both are passed over"),
+    (0x80041ed0, "sw $zero, 10028($gp)", "and clears the pickups' word"),
+    (0x80041ed4, "sw $zero, 9396($gp)", "and the bank"),
+    (0x800401a8, "sw $zero, 10028($gp)", "as the game's start clears them"),
+    (0x800401ac, "sw $zero, 9396($gp)", "both"),
+    (0x800401b0, "sw $zero, 9360($gp)", "with the score"),
+    (0x80042afc, "sw $v0, 1212($gp)", "a routine the loop calls sets the word at 0x800a33f4"),
+    (0x800462c8, "sw $v0, 13396($at)", "a routine writes the finals flag from a table"),
+    (0x8004910c, "sw $s0, 13396($at)", "and another sets it to 1"),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -2319,6 +2436,47 @@ IMMEDIATES = [
     ("the level's clock and its end", "death.most", "at this", 0x80041ffc, "addiu $v1, $zero, {}"),
     ("the level's clock and its end", "death.over", "and a total below nothing tells the game's loop this", 0x80041ec0,
      "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "fruit.bit.43", "a fruit of type 43 sets this bit in the pickups' word",
+     0x80038cb0, "ori $v0, $v0, {}"),
+    ("the level's clock and its end", "fruit.bit.44", "44 this", 0x80038d58, "ori $v0, $v0, {}"),
+    ("the level's clock and its end", "fruit.bit.45", "45 this", 0x80038e00, "ori $v0, $v0, {}"),
+    ("the level's clock and its end", "fruit.bit.46", "46 this", 0x80038ea8, "ori $v0, $v0, {}"),
+    ("the level's clock and its end", "fruit.bit.47", "and 47 this", 0x80038f4c, "ori $v0, $v0, {}"),
+    ("the level's clock and its end", "fruit.bit.all", "and the case for type 27, never reached, all of them",
+     0x8003902c, "ori $v1, $v1, {}"),
+    ("the level's clock and its end", "next.one", "the level's number is the place's levels plus the slot plus this",
+     0x80042498, "addiu $v0, $v0, {}"),
+    ("the level's clock and its end", "next.final", "and in the finals twice the place plus the slot plus this",
+     0x800424ac, "addiu $v0, $v0, {}"),
+    ("the level's clock and its end", "next.hidden.out", "the outcome the next-level routine takes for the hidden exit",
+     0x800424f8, "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "next.slots", "the slot after the last ordinary level, the pack's count instead",
+     0x80042500, "addiu $v1, $zero, {}"),
+    ("the level's clock and its end", "next.hidden", "the hidden exit leads to this slot", 0x80042530,
+     "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "next.fruit.mask", "an exit asks the bank's low bits", 0x80042550,
+     "andi $v1, $v1, {}"),
+    ("the level's clock and its end", "next.fruit", "against every fruit", 0x80042554, "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "next.slots.bonus", "and the slot after against this", 0x80042560,
+     "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "next.bonus.first", "the bonus slot is this plus the finished slot's third",
+     0x800425e0, "addiu $a0, $a0, {}"),
+    ("the level's clock and its end", "next.fruit.back", "a bonus or hidden level asks every fruit", 0x8004280c,
+     "addiu $v1, $zero, {}"),
+    ("the level's clock and its end", "next.fruit.back.mask", "of the bank's low bits", 0x80042818,
+     "andi $v0, $v0, {}"),
+    ("the level's clock and its end", "next.back.gate.0", "and a slot kept under this", 0x80042830,
+     "slti $v0, $v1, {}"),
+    ("the level's clock and its end", "next.bonus.0", "opens this bonus slot", 0x80042838, "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "next.back.gate.1", "under this", 0x8004283c, "slti $v0, $v1, {}"),
+    ("the level's clock and its end", "next.bonus.1", "this", 0x80042844, "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "next.bonus.2", "and else this", 0x8004284c, "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "next.chain.end", "the word at 0x800a3448 at 2 would run the bonus levels on "
+     "while the slot after is under this", 0x800428b0, "slti $v0, $v0, {}"),
+    ("the level's clock and its end", "next.start.bonus", "and start a world at this slot", 0x80042910,
+     "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "run.worlds", "the world word reaching this ends the game", 0x80041cc0,
+     "slti $v0, $v0, {}"),
 
     ("the fly-in", "flight.unit.shift", "the start shifts the ball's frame vectors up by this, a whole unit to eight blocks",
      0x80033ebc, "sll $v0, $v0, {}"),
@@ -2469,6 +2627,13 @@ MULTIPLIERS = [
      "v0", "v1"),
     ("the level's clock and its end", "death.each", "times this a level", 0x80041fb0, 6, "v1", "v1"),
     ("the level's clock and its end", "death.each.final", "as in the finals", 0x80041fdc, 5, "v0", "v1"),
+    ("the level's clock and its end", "death.finals", "the finals count this many levels a world", 0x80041fd0, 1, "v0",
+     "v0"),
+    ("the level's clock and its end", "next.levels", "the next-level routine numbers a level by this many a world",
+     0x80042488, 2, "a0", "v1"),
+    ("the level's clock and its end", "next.levels.final", "and a final by this many", 0x800424a4, 1, "v1", "v1"),
+    ("the level's clock and its end", "next.round.times", "the bonus slots come round every this many", 0x800425d4, 2,
+     "v1", "v0"),
     ("the level's clock and its end", "words.allowance", "the time trial adds this many frames a step of its difficulty",
      0x80015748, 6, "a0", "v0"),
     ("the fly-in", "flight.above", "the curve ends this far along the normal from the view's target, units", 0x800341a4, 6,
@@ -2519,6 +2684,8 @@ DIVISORS = [
      0x80032048, "lui $t3, {}", 0x800320b8, "ori $t3, $t3, {}", 0x80032130, "sra $v1, $v1, {}"),
     ("what harms the ball", "tint.other", "into their own channel and take their share of this off the other two",
      0x800320c4, "lui $t2, {}", 0x800320d0, "ori $t2, $t2, {}", 0x80032138, "sra $v0, $t0, {}"),
+    ("the level's clock and its end", "next.third", "the bonus slot counts the finished slot in thirds of this many",
+     0x80042598, "lui $v1, {}", 0x800425a0, "ori $v1, $v1, {}", 0x800425bc, "sra $a0, $t0, {}"),
 ]
 
 # A brightness or a step of one, a grey held as a colour word in two halves.
@@ -2571,6 +2738,11 @@ BALL_RECORD = 0x800ba114  # the ball's record, which the pills' words lie in
 INVINCIBLE_WORD = 0x800ba340
 CLEARED = ((0x80069988, 0x8006998c), (0x80069990, 0x80069994))  # the range the start zeroes word by word
 LEVELS = 15               # levels a world the penalty counts
+FINALS = 2                # finals a world
+NEXT_ROUND = (0x800425ac, "lui $v1, {}", 0x800425b0, "ori $v1, $v1, {}")   # the bonus slots come round by it
+NEXT_MODE = 0x800a3448    # the word the next-level routine's other starts hang on
+NEXT_MODE_CLEARS = (0x800482e4, 0x8004adc4, 0x8004b5dc)
+STORES = {0x28, 0x29, 0x2a, 0x2b, 0x2e}   # the store opcodes
 
 # A device's light: the routine that makes it from a cell and a face, the one
 # that adds a face to it where the face is there, and the three cases of the
@@ -2719,6 +2891,26 @@ class Code:
             sys.exit(f"0x{addr:08x}: {dst} is not a multiple of {src} after {count} instructions")
         return coef[dst]
 
+    def stores_to(self, addr):
+        """Every store to `addr` through gp, or through $at after a lui, as (address, register stored)."""
+        out = []
+        words = struct.unpack_from(f"<{len(self.blob) // 4}I", self.blob)
+        for i, w in enumerate(words):
+            if w >> 26 not in STORES:
+                continue
+            base, imm = (w >> 21) & 31, w & 0xFFFF
+            if imm >= 0x8000:
+                imm -= 0x10000
+            if base == 28:
+                at = GP + imm
+            elif base == 1 and i and words[i - 1] >> 16 == 0x3C01:
+                at = (0x80000000 | ((words[i - 1] & 0xFFFF) << 16)) + imm
+            else:
+                continue
+            if at == addr:
+                out.append((EXE_BASE + 4 * i, (w >> 16) & 31))
+        return out
+
 
 def readings(code):
     """Every number, by its id, after the checks have passed."""
@@ -2731,6 +2923,11 @@ def readings(code):
         out[key] = code.multiplier(addr, count, src, dst)
     out["button.reach"] = round(code.word_of(*BUTTON_REACH) ** 0.5)
     out["flight.third"] = round(2 ** 32 / code.word_of(*FLIGHT_THIRD))
+    out["next.round"] = round(2 ** 32 / code.word_of(*NEXT_ROUND))
+    out["next.mode.load"] = code.word(NEXT_MODE)
+    stores = code.stores_to(NEXT_MODE)
+    out["next.mode.clears"] = sorted(a for a, rt in stores if rt == 0)
+    out["next.mode.writes"] = sorted(a for a, rt in stores if rt != 0)
     out["dice.times"] = code.word_of(*DICE_TIMES)
     out["glint.times"] = code.word_of(*GLINT_TIMES)
     out["glint.seed"] = code.word(code.address(*GLINT_STATE))
@@ -3423,8 +3620,9 @@ def play(r):
     """The level's own words: the start's two counts, the clock's ticks, the
     outcomes a level ends with, the frames each ending waits and the word
     the end screen shows for it, a bonus level's marking, the deaths'
-    penalty, the ending's view, the fly-in and the screen's words as the
-    executable loads them, each held against the others: one code and one countdown for a cause wherever it is read
+    penalty, the ending's view, the fly-in, the screen's words as the
+    executable loads them and the slots a run goes on to, each held against
+    the others: one code and one countdown for a cause wherever it is read
     twice, the codes distinct, the spikes' ending the invincibility word's
     own rest, every index the end screen picks lettered, the gates one
     past their values, and the level's mode word one word for the loader
@@ -3465,6 +3663,26 @@ def play(r):
                  "or the settings record is not the kind the lattice never names")
     if r["end.view.mode.bonus"] != r["mode.bonus"] or r["end.view.mode.bonus.eye"] != r["mode.bonus"]:
         sys.exit("the ending's quicker swing is not keyed on the mode a level with no key plays in")
+    bits = [r[f"fruit.bit.{t}"] for t in range(43, 48)]
+    if sorted(bits) != [1 << i for i in range(len(bits))] or sum(bits) != r["next.fruit"] \
+            or len({r["next.fruit"], r["next.fruit.mask"], r["next.fruit.back"], r["next.fruit.back.mask"],
+                    r["fruit.bit.all"]}) != 1:
+        sys.exit("the five fruit do not set one bit each of the mask the next-level routine asks for")
+    if len({r["next.slots"], r["next.slots.bonus"], r["next.levels"], r["death.levels"], r["next.bonus.first"],
+            r["next.bonus.0"], r["next.start.bonus"]}) != 1:
+        sys.exit("the slot after the last ordinary level is not the first bonus slot and the levels a world")
+    if r["next.round"] != r["next.round.times"] or r["next.third"] * r["next.round"] != r["next.slots"] \
+            or [r[f"next.bonus.{i}"] for i in range(3)] != [r["next.bonus.first"] + i for i in range(r["next.round"])] \
+            or r["next.back.gate.0"] != r["next.third"] + 1 or r["next.back.gate.1"] != 2 * r["next.third"] + 1:
+        sys.exit("the bonus slots do not come round in thirds of the world's levels")
+    if r["next.hidden"] != r["next.bonus.first"] + r["next.round"] or r["next.chain.end"] != r["next.hidden"] \
+            or r["next.hidden.out"] != r["end.hidden"]:
+        sys.exit("the hidden slot does not follow the bonus slots, or is not the hidden exit's")
+    if r["next.one"] != 1 or r["next.final"] != r["run.worlds"] * r["next.slots"] + 1 \
+            or r["next.levels.final"] != r["death.finals"] or r["death.finals"] != FINALS:
+        sys.exit("the finals are not numbered on from the worlds' levels, or are not two a world")
+    if r["next.mode.load"] != 0 or r["next.mode.writes"] or tuple(r["next.mode.clears"]) != NEXT_MODE_CLEARS:
+        sys.exit(f"the word at 0x{NEXT_MODE:08x} does not load as 0, or something writes it")
     wait = {name: r[f"wait.{name}"] for name in ENDINGS if f"wait.{name}" in r}
     wait["bonus"] = r["wait.hidden"]
     picks = {name: -code * 2 if code < 0 else r["words.win"] for name, code in ending.items()}
@@ -3482,7 +3700,11 @@ def play(r):
                       "out": r["end.time"]},
             "ending": ending, "wait": wait, "words": named,
             "bonus": {"block": r["mark.points"], "skips": r["mark.skips"]},
-            "points": {"each": r["death.each"], "most": r["death.most"], "levels": r["death.levels"]},
+            "points": {"each": r["death.each"], "most": r["death.most"], "levels": r["death.levels"],
+                       "finals": r["death.finals"]},
+            "next": {"bonus": [r[f"next.bonus.{i}"] for i in range(3)], "hidden": r["next.hidden"],
+                     "slots": r["next.slots"], "third": r["next.third"], "fruit": r["next.fruit"],
+                     "worlds": r["run.worlds"]},
             "view": {"angles": [r["end.view.x"], r["end.view.y"], r["end.view.z"]], "swing": r["end.view.swing"],
                      "off": r["end.view.off"], "reach": r["end.view.reach"],
                      "bonus": {"swing": r["end.view.swing.bonus"], "off": r["end.view.off.bonus"],
@@ -3612,7 +3834,7 @@ def table(r, platform_speed):
     there, a kind or a type that can hurt the ball what it does, a kind the
     ball slides on, breaks or rides what it does to the roll, each kind the
     word the ball keeps for standing on it, and the level's own words, the clock's, the endings', the end screen's, a
-    bonus level's, an ending's, the fly-in's and the screen's, sit under `play`. The devices' light and each device's
+    bonus level's, an ending's, a run's, the fly-in's and the screen's, sit under `play`. The devices' light and each device's
     colours, by world and then by circuit where it has one, sit apart from
     the types, whose entries are what moves.
     """
@@ -3749,6 +3971,13 @@ def show_readings(code):
                  BUTTON_REACH[0], readings(code)["button.reach"]))
     rows.append(("the fly-in", "the curve's second point lies this share of eight blocks along the side on",
                  FLIGHT_THIRD[0], readings(code)["flight.third"]))
+    run = readings(code)
+    rows.append(("the level's clock and its end", "the bonus slots come round every this many, by the reciprocal",
+                 NEXT_ROUND[0], run["next.round"]))
+    rows.append(("the level's clock and its end", "the word the next-level routine's other starts hang on, as the "
+                 "executable loads it", NEXT_MODE, run["next.mode.load"]))
+    rows.append(("the level's clock and its end", "stores to that word through gp or $at, every one of nothing",
+                 run["next.mode.clears"][0], len(run["next.mode.clears"])))
     rows.append(("dice", "a draw multiplies the state by this", DICE_TIMES[0],
                  readings(code)["dice.times"]))
     rows.append(("gem's glints", "a draw multiplies the generator's state by this", GLINT_TIMES[0],

@@ -184,6 +184,13 @@ GAME = {
     "mode.key": 31, "mode.kinds": 5, "mode.slots": 6, "mode.bonus": 1, "mode.settings": 9, "mode.hidden.flag": 1,
     "mode.hidden": 2, "mode.simon": 1, "death.most.gate": 5001, "death.most": 5000,
     "death.over": 4, "death.levels": 15, "death.each": 50, "death.each.final": 50,
+    "death.finals": 2, "fruit.bit.43": 1, "fruit.bit.44": 2, "fruit.bit.45": 4, "fruit.bit.46": 8, "fruit.bit.47": 16,
+    "fruit.bit.all": 31, "next.one": 1, "next.final": 151, "next.hidden.out": 3, "next.slots": 15, "next.hidden": 18,
+    "next.fruit.mask": 31, "next.fruit": 31, "next.slots.bonus": 15, "next.bonus.first": 15, "next.fruit.back": 31,
+    "next.fruit.back.mask": 31, "next.back.gate.0": 6, "next.bonus.0": 15, "next.back.gate.1": 11, "next.bonus.1": 16,
+    "next.bonus.2": 17, "next.chain.end": 18, "next.start.bonus": 15, "run.worlds": 10, "next.levels": 15,
+    "next.levels.final": 2, "next.round.times": 3, "next.third": 5, "next.round": 3, "next.mode.load": 0,
+    "next.mode.clears": [0x800482e4, 0x8004adc4, 0x8004b5dc], "next.mode.writes": [],
     "look.below": 250, "look.ahead": 800, "flight.unit.shift": 12, "flight.above": 100, "flight.quarter.shift": 2,
     "flight.half.shift": 1, "flight.third": 3, "flight.first": 13, "flight.end.gate": 1025, "flight.least": 1,
     "flight.curve.shift": 15, "flight.yaw": -1024, "flight.pitch": 250, "flight.bank.from": 1024, "flight.bank.shift": 1,
@@ -204,6 +211,10 @@ GAME = {
 
 def sw(rt, rs, imm):
     return (0x2B << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
+def sh(rt, rs, imm):
+    return (0x29 << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
 
 
 def jal(target):
@@ -280,6 +291,12 @@ class Reads(unittest.TestCase):
     def test_a_shift_alone_is_a_multiplier_too(self):
         c = code(sll("v0", "a0", 6))
         self.assertEqual(c.multiplier(AT, 1, "a0", "v0"), 64)
+
+    def test_a_store_scan_finds_stores_through_gp_and_through_at_after_a_lui(self):
+        c = code(sw("v0", "gp", 1296), lui("at", 0x000a), sw("zero", "at", 13384), lui("at", 0x000a),
+                 sh("a0", "at", 13384), sw("v1", "gp", 1300), sw("zero", "at", 13384), lw("v0", "gp", 1296))
+        self.assertEqual(c.stores_to(0x800a3448), [(AT, 2), (AT + 8, 0), (AT + 16, 4)])
+        self.assertEqual(c.stores_to(0x800a344c), [(AT + 20, 3)])
 
     def test_an_address_is_its_lui_and_addiu_in_rams_mirror(self):
         c = code(lui("gp", 0x000a), addiu("gp", "gp", 12088), lui("v0", 0x000a), lw("v0", "v0", 13260))
@@ -837,7 +854,9 @@ class Play(unittest.TestCase):
                                       "captivator": "CAPTURED!", "acid": "ACID!", "laser": "LASER!",
                                       "simon": "Wrong Move!"})
         self.assertEqual(p["bonus"], {"block": 50, "skips": 3})
-        self.assertEqual(p["points"], {"each": 50, "most": 5000, "levels": 15})
+        self.assertEqual(p["points"], {"each": 50, "most": 5000, "levels": 15, "finals": 2})
+        self.assertEqual(p["next"], {"bonus": [15, 16, 17], "hidden": 18, "slots": 15, "third": 5, "fruit": 31,
+                                     "worlds": 10})
         self.assertEqual(p["view"], {"angles": [-8, 3, 10], "swing": 12, "off": 1400, "reach": 1000,
                                      "bonus": {"swing": 58, "off": 3400, "reach": 3000}, "hidden": {"off": 400}})
         self.assertEqual(p["flight"], flight(GAME))
@@ -889,7 +908,12 @@ class Play(unittest.TestCase):
                        {"mode.at": 9376}, {"mode.word": 0x800a53d0}, {"game.mode.word": 0x800a33b4},
                        {"mode.simon": 2}, {"mode.bonus": 2}, {"mode.hidden": 1}, {"mode.hidden.flag": 2},
                        {"mode.key": 30}, {"mode.kinds": 4}, {"mode.slots": 5}, {"mode.settings": 8},
-                       {"end.view.mode.bonus": 0}, {"end.view.mode.bonus.eye": 2}):
+                       {"end.view.mode.bonus": 0}, {"end.view.mode.bonus.eye": 2}, {"next.hidden.out": 2},
+                       {"next.fruit": 15}, {"fruit.bit.45": 2}, {"fruit.bit.all": 15}, {"next.bonus.2": 18},
+                       {"next.back.gate.1": 10}, {"next.third": 4}, {"next.round": 2}, {"next.hidden": 19},
+                       {"next.chain.end": 17}, {"next.final": 150}, {"next.one": 2}, {"next.mode.load": 1},
+                       {"next.mode.writes": [0x80042000]}, {"next.mode.clears": [0x800482e4]}, {"death.finals": 3},
+                       {"next.levels.final": 3}, {"next.start.bonus": 16}, {"run.worlds": 9}, {"next.slots": 14}):
             with self.assertRaises(SystemExit):
                 play({**GAME, **change})
 
@@ -1107,7 +1131,8 @@ class Table(unittest.TestCase):
         self.assertEqual(t["play"]["ending"]["lost"], -3)
         self.assertEqual(t["play"]["view"]["hidden"], {"off": 400})
         self.assertEqual(set(t["play"]),
-                         {"start", "clock", "ending", "wait", "words", "bonus", "points", "view", "flight", "screen"})
+                         {"start", "clock", "ending", "wait", "words", "bonus", "points", "view", "flight", "screen",
+                          "next"})
         self.assertEqual(t["play"], play(GAME))
         self.assertEqual(t["kinds"]["1"], {**harms(GAME)["kinds"][1], "standing": 1})
         self.assertEqual(t["kinds"]["4"], {**harms(GAME)["kinds"][4], "standing": 4})
