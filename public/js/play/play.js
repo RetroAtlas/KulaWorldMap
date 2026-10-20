@@ -77,6 +77,8 @@ import {
   drawn,
   drives,
   frame as gameFrame,
+  glowOf,
+  glowStep,
   heeds,
   relevel,
   restart,
@@ -91,6 +93,7 @@ import { frameShown, probeOf as liveProbe, travelOf, viewOf as drawnIndex } from
 
 const BALL_TYPE = 30;
 const LETHARGY_TYPE = 32;
+const INVINCIBLE_TYPE = 34;
 // the ball's key among the frame's travellers, which no thing of the level's answers to
 const BALL = "ball";
 // the untinted light, the unit a traveller's tint is in
@@ -187,6 +190,8 @@ let redraw = false;
 let lit = false;
 let passed = false;
 let rolled = null;
+// the invincible ball's glow counter, kept for the page's life as the game keeps it
+let glowCounter = 0;
 // the frame as last displayed while the pill works, tinted, for the ghost
 const lastCv = document.createElement("canvas");
 const lastCtx = lastCv.getContext("2d");
@@ -203,6 +208,7 @@ const typing = (e) =>
 const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 const motionOn = () => state.show.motion;
 const pillTable = () => motionTable().types[String(LETHARGY_TYPE)].lasts;
+const glowTable = () => motionTable().types[String(INVINCIBLE_TYPE)].lasts.glow;
 const smooth = (t) => t * t * (3 - 2 * t);
 const faceName = (v) => DIRECTION_NAME[faceOf(v)];
 
@@ -326,7 +332,8 @@ function travellers(l) {
   return new Map([[BALL, going]]);
 }
 
-/** The ball's light: flashing while it is marked dying, else tinted by its heat, melt and cold. */
+/** The ball's light: flashing while it is marked dying, else tinted by its heat, melt and cold
+    and, while the invincibility pill's word stands, raised by the glow. */
 function tintOf(w) {
   const { types, turn } = motionTable();
   if (w.dying) {
@@ -334,17 +341,19 @@ function tintOf(w) {
     return [level, level, level];
   }
   const words = [w.heat, w.melt, w.cold];
-  if (!words.some(Boolean)) return undefined;
+  const glowing = w.pills[INVINCIBLE_TYPE] >= 0;
+  if (!words.some(Boolean) && !glowing) return undefined;
   const { own, other } = types[String(BALL_TYPE)].tint;
-  return words.map((word, ch) =>
-    Math.max(
-      0,
-      words.reduce(
-        (level, v, k) => (k === ch ? level : level - Math.floor((v * LIGHT) / other)),
-        LIGHT + Math.floor((word * LIGHT) / own),
-      ),
-    ),
-  );
+  const raised = glowing ? glowOf(glowCounter, glowTable(), turn) : null;
+  // the sine's one is the untinted light
+  const lift = (ch) => (raised ? (raised[ch] * LIGHT) / turn : 0);
+  return words.map((word, ch) => {
+    const tinted = words.reduce(
+      (level, v, k) => (k === ch ? level : level - Math.floor((v * LIGHT) / other)),
+      LIGHT + Math.floor((word * LIGHT) / own),
+    );
+    return Math.max(0, tinted + lift(ch));
+  });
 }
 
 // --- the camera ---------------------------------------------------------------------------
@@ -691,6 +700,7 @@ function played() {
   for (const event of events) happened(event);
   rested(b);
   flashed(run.words);
+  glowed(run.words);
   if (run.words.send >= 0) status(SENDING);
   else if (run.words.blink && !blinked) status(WEARING_OFF);
   else if (live.status === SENDING || (live.status === WEARING_OFF && !run.words.blink))
@@ -723,6 +733,13 @@ function deathOf(w) {
 function flashed(w) {
   const { types, turn } = motionTable();
   live.flash = w.dying ? (live.flash + types[String(BALL_TYPE)].dying.flash) % turn : 0;
+}
+
+// The glow's counter steps on each frame the ball is drawn with the pill's word not negative, and
+// is never put back.
+function glowed(w) {
+  if (!live.ended && w.pills[INVINCIBLE_TYPE] >= 0)
+    glowCounter = glowStep(glowCounter, glowTable());
 }
 
 // The last two stations the ball rested on, the heading the latest at each.

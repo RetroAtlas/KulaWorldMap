@@ -3232,3 +3232,111 @@ test("the lethargy pill rolls the view and ghosts the screen as the game does: t
   await expect.poll(() => said(page)).toContain("Lethargy pill taken.");
   expect(errors).toEqual([]);
 });
+
+test("the invincibility pill colours the ball's light as the game does: from the pill's frame each channel is raised by the table's gain times the sine of a counter stepping by its step round its round, red first, through every frame the word stands and no further, and a later pill carries the counter on from where the pill before left it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a key out of reach keeps the level an arcade one; the pill on the block ahead of the start
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  await laid(page, [17, 16, 17], { kind: 0 });
+  await faced(page, [17, 16, 17], 0, { type: 34 });
+  await expect(page.locator("#chipLine")).toContainText("2 blocks");
+  await listening(page);
+  /** The ball rolled onto the pill's block on the held clock, and on each game frame from the
+      pill's, through the word's frames and three after, the light the frame is handed with the
+      raise the table predicts for the counter stepped on from `counter`, null where no light is
+      handed, with the counter as left, the frame the pill was taken on and the ball's block. */
+  const glowing = (counter) =>
+    page.evaluate(async (counter) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ draw }, { motionTable }, { state }, { cellKey }, P] = await Promise.all(
+        [
+          "viewer/draw/render.js",
+          "viewer/data.js",
+          "viewer/state.js",
+          "format/lattice.js",
+          "play/play.js",
+        ].map(at),
+      );
+      const key = (type, k) =>
+        document.body.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+      const { types, hz, turn } = motionTable();
+      const pill = state.idx.markers.get(cellKey(17, 16, 17)).find((m) => m.face === 0);
+      const { word, step, glow } = types[String(pill.type)].lasts;
+      const frames = word / step + 1;
+      const raised = (c) =>
+        glow.from.map((start) => {
+          const angle = c - start;
+          if (angle < 0 || angle >= turn) return 0;
+          return glow.gain * Math.round(turn * Math.sin((angle / turn) * 2 * Math.PI));
+        });
+      const seen = [];
+      let took = -1;
+      let held = true;
+      key("keydown", "ArrowUp");
+      for (let f = 0; f < 1200 && seen.length < frames + 3; f++) {
+        window.__step(1000 / hz);
+        draw();
+        if (held && P.station().block.join() === "17,16,17") {
+          key("keyup", "ArrowUp");
+          held = false;
+        }
+        const tint = P.handed()?.tint ?? null;
+        if (took < 0) {
+          if (!tint) continue;
+          took = f;
+        }
+        if (!tint) {
+          seen.push(null);
+          continue;
+        }
+        counter = (counter + glow.step) % glow.round;
+        seen.push({ tint, lift: raised(counter) });
+      }
+      return { took, seen, counter, frames, block: P.station().block.join() };
+    }, counter);
+  /** Whether every frame's light is the untinted light `base` raised by the predicted lift, a
+      channel below nothing held at nothing. */
+  const predicted = (seen, base) =>
+    seen.every(({ tint, lift }) => tint.every((v, ch) => v === Math.max(0, base + lift[ch])));
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await frozen(page);
+  const first = await glowing(0);
+  await page.evaluate(() => window.__thaw());
+  expect(first.took).toBeGreaterThan(0);
+  expect(first.block).toBe("17,16,17");
+  expect(first.seen).toHaveLength(first.frames + 3);
+  const lit = first.seen.slice(0, first.frames);
+  expect(lit.every((s) => s !== null)).toBe(true);
+  // the pill's own frame raises the red alone, from which the untinted light is read
+  expect(lit[0].lift[0]).toBeGreaterThan(0);
+  expect(lit[0].lift.slice(1)).toEqual([0, 0]);
+  const base = lit[0].tint[0] - lit[0].lift[0];
+  expect(base).toBeGreaterThan(0);
+  expect(predicted(lit, base)).toBe(true);
+  // the three channels each have their turn, and the light is the plain ball's light once the word is out
+  for (const ch of [0, 1, 2]) expect(lit.some((s) => s.lift[ch] > base)).toBe(true);
+  expect(first.seen.slice(first.frames)).toEqual([null, null, null]);
+  await expect.poll(() => said(page)).toContain("Invincibility pill taken.");
+  // out of play and in again on the same page: the pill is back on its face, the counter is not
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#play")).toBeHidden();
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await frozen(page);
+  const again = await glowing(first.counter);
+  await page.evaluate(() => window.__thaw());
+  expect(again.took).toBeGreaterThan(0);
+  const relit = again.seen.slice(0, again.frames);
+  expect(relit.every((s) => s !== null)).toBe(true);
+  expect(relit[0].lift).not.toEqual(lit[0].lift);
+  expect(predicted(relit, base)).toBe(true);
+  expect(again.seen.slice(again.frames)).toEqual([null, null, null]);
+  expect(errors).toEqual([]);
+});

@@ -42,6 +42,8 @@ import {
   drawn,
   blanksOf,
   rockOf,
+  glowOf,
+  glowStep,
 } from "../../public/js/play/rules.js";
 import { probeOf, shiftOf, standingOf, viewOf } from "../../public/js/play/world.js";
 import { recorder, replayDriver } from "../../public/js/play/drive.js";
@@ -1734,4 +1736,75 @@ test("frame by frame the view reads the word the hazards leave: the pill's own p
   }
   assert.deepEqual(seen, [...WAVE, 0, 0, 0, 0]);
   assert.ok(w.pills[LETHARGY] < 0, "the word has run out");
+});
+
+const GLOW = motion.types[INVINCIBLE].lasts.glow;
+/** The glow's three raises the table predicts for a counter, in the sine's units. */
+const glowAt = (counter) => glowOf(counter, GLOW, motion.turn);
+/** A channel's raise a quarter turn on from its start, the gain times the sine's one. */
+const PEAK = GLOW.gain * motion.turn;
+const QUARTER = motion.turn / 4;
+/** The steps a round of the counter takes, and how far along it lands after one. */
+const ROUND = Math.ceil(GLOW.round / GLOW.step);
+const ALONG = ROUND * GLOW.step - GLOW.round;
+
+test("the glow is nothing at the red window's start, the gain times the sine's one a quarter turn on from each channel's start and its negative three quarters on, one channel falling as the next rises", () => {
+  assert.deepEqual(glowAt(GLOW.from[0]), [0, 0, 0]);
+  assert.deepEqual(glowAt(GLOW.from[0] + QUARTER), [PEAK, 0, 0]);
+  assert.deepEqual(glowAt(GLOW.from[1] + QUARTER), [-PEAK, PEAK, 0]);
+  assert.deepEqual(glowAt(GLOW.from[2] + QUARTER), [0, -PEAK, PEAK]);
+  assert.deepEqual(glowAt(GLOW.from[2] + 3 * QUARTER), [0, 0, -PEAK]);
+});
+
+test("the windows are as the listing compares them: red through the turn from the counter's start, green and blue from one past their starts through the turn, where the sine at the start is nothing anyway, and the counter's wrap closes the blue window", () => {
+  const { turn } = motion;
+  const [red, green, blue] = GLOW.from;
+  const inside = (counter, ch) => assert.notEqual(glowAt(counter)[ch], 0, `${counter} in ${ch}`);
+  const outside = (counter, ch) => assert.equal(glowAt(counter)[ch], 0, `${counter} out of ${ch}`);
+  inside(red + 1, 0);
+  inside(red + turn - 1, 0);
+  outside(red + turn, 0);
+  outside(green, 1);
+  inside(green + 1, 1);
+  inside(green + turn - 1, 1);
+  outside(green + turn, 1);
+  outside(blue, 2);
+  inside(blue + 1, 2);
+  inside(GLOW.round - 1, 2);
+  outside(0, 2);
+  GLOW.from.forEach((start, ch) => assert.equal(glowAt(start)[ch], 0, `channel ${ch}`));
+  assert.equal(blue + turn, GLOW.round, "the blue's turn ends with the round");
+});
+
+test("the counter steps by the table's step round its round and lands further along each round, the step not dividing the round", () => {
+  assert.ok(ALONG > 0 && ALONG < GLOW.step);
+  let counter = 0;
+  const seen = [];
+  for (let i = 0; i < 3 * ROUND; i++) {
+    counter = glowStep(counter, GLOW);
+    seen.push(counter);
+  }
+  assert.ok(seen.every((c) => Number.isInteger(c) && c >= 0 && c < GLOW.round));
+  assert.equal(seen[ROUND - 2], (ROUND - 1) * GLOW.step, "the last step before the wrap");
+  assert.deepEqual(
+    [seen[ROUND - 1], seen[2 * ROUND - 1], seen[3 * ROUND - 1]],
+    [ALONG, 2 * ALONG, 3 * ALONG],
+  );
+});
+
+test("stepped on each frame the pill's word is not negative after the frame, as the draw steps it, the counter runs the word's frames, one on the take and one a step of the word, and comes out part of a round along", () => {
+  const live = begin(level(row(2, 18), [start(), pill(16, Number(INVINCIBLE))]));
+  const w = live.words;
+  const { word, step } = motion.types[INVINCIBLE].lasts;
+  assert.ok(until(live, PAD.up, (_, events) => taken(events, Number(INVINCIBLE))));
+  let counter = 0;
+  let frames = 0;
+  while (w.pills[INVINCIBLE] >= 0) {
+    counter = glowStep(counter, GLOW);
+    frames += 1;
+    frame(live, 0);
+  }
+  assert.equal(frames, word / step + 1);
+  assert.equal(counter, (frames * GLOW.step) % GLOW.round);
+  assert.notEqual(counter, 0);
 });

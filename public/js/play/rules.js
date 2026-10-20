@@ -1,7 +1,7 @@
 // The game's frame over the ball and the level: the clock, the guard, the wait, the pad, what is
 // under the ball and what it takes, in the executable's order, over pad words from any source,
-// the draw's step over the screen's words as the pass ends, the blanks a pass waits and the
-// view's roll by the pill's word.
+// the draw's step over the screen's words as the pass ends, the blanks a pass waits, the view's
+// roll by the pill's word and the invincible ball's glow by its counter.
 import {
   JUMP,
   PAD,
@@ -310,6 +310,21 @@ export function rockOf(word, { scale, shift }, turn) {
   const sine = Math.round(turn * Math.sin((((word * scale) % turn) / turn) * 2 * Math.PI));
   return Math.trunc(sine / 2 ** shift);
 }
+
+/** The invincible ball's glow by the counter the ball's draw steps, in the sine's units, the
+    turn's one at a quarter turn: each channel raised by the table's gain times the sine of the
+    counter less the channel's start while that angle lies within a turn, and nothing outside
+    it. */
+export function glowOf(counter, { gain, from }, turn) {
+  return from.map((start) => {
+    const angle = counter - start;
+    if (angle < 0 || angle >= turn) return 0;
+    return gain * Math.round(turn * Math.sin((angle / turn) * 2 * Math.PI));
+  });
+}
+
+/** The glow's counter stepped as the ball's draw steps it: by the table's step, round its round. */
+export const glowStep = (counter, { step, round }) => (counter + step) % round;
 
 // The blink's spells run on from the word's end, off first, the first spell at the table's own length,
 // and the flag stays off after the last.
