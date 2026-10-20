@@ -267,6 +267,11 @@ const tablesOf = () => ({
     one truth. */
 const circuitsOf = () => ({ on: (m) => markerNow(m) === "on", lit: litNow, flip });
 
+/** The game the run plays, where its setting is on and the level is one the game counts: `game`
+    carried on, or a fresh one; else none. */
+const gameFor = (l, tables, game = null) =>
+  state.show.playon && stationOf(l, tables) ? (game ?? startGame()) : null;
+
 /** What the frame draws at and with while the ball is on the map: the frame the rules last ran,
     which is the one the game's draw shows, the ending's view's frames added once the level has
     ended, the level's index less what the ball has taken, the walkers where the rules have
@@ -1024,8 +1029,9 @@ function sent({ from, to }) {
   invalidatePick();
 }
 
-/** The level has ended: the run's points are settled and the level the game loads next picked,
-    as the game's loop does both, the ball is gone and the pad dead, the view lets go of the ball
+/** The level has ended: where a run is on, and its setting still is, the run's points are settled
+    and the level the game loads next picked, as the game's loop does both, and where the setting
+    has gone off the run ends here; the ball is gone and the pad dead, the view lets go of the ball
     and turns about the level's middle as the game's does, the eye standing by the level's mode
     word, and the strip gives the verdict with the points and the time left, what the ending did
     to the run's total and what the key goes on to, until a key goes on or the view has run the
@@ -1034,6 +1040,7 @@ function ended(code) {
   const { play, turn } = motionTable();
   const { view, clock, words } = play;
   const run = live.run;
+  if (!state.show.playon) run.game = null;
   const w = run.words;
   const name = endingName(code);
   const settled = run.game ? settle(run.game, run) : null;
@@ -1113,8 +1120,9 @@ function forgive(name) {
 
 /** The level the game loads after an ending, from its start: the level it picked, another of the
     disc, reached through the viewer's funnel with play kept on, or, where the pick is this level
-    or `onward` is off, this one again; the view comes back behind the ball, and a level with no
-    start stands the ball on the first face it could, as entering does. */
+    or `onward` is off, this one again; the run goes on with the ball, or begins where its setting
+    has come on since the ball was put down, the view comes back behind the ball, and a level with
+    no start stands the ball on the first face it could, as entering does. */
 function startOver({ onward = true } = {}) {
   if (!live) return;
   const from = viewNow();
@@ -1129,6 +1137,7 @@ function startOver({ onward = true } = {}) {
     leave();
     return;
   }
+  live.run.game = gameFor(l, live.run.tables, live.run.game);
   live.run = restart(live.run, where, { level: l, idx });
   live.level = l;
   live.idx = idx;
@@ -1535,7 +1544,7 @@ function enter(at = null) {
   const from = viewNow();
   state.slice = SIDE - 1;
   const tables = tablesOf();
-  const game = stationOf(l, tables) ? startGame() : null;
+  const game = gameFor(l, tables);
   const run = startRun(l, state.idx, tables, circuitsOf(), start ? null : where, game);
   if (at && start) stand(run, at);
   live = {

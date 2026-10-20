@@ -35,6 +35,7 @@ const SHOWN = [
   ["showTrail", "trail"],
   ["showDust", "dust"],
   ["playFrom", "playfrom"],
+  ["playOn", "playon"],
 ];
 // Switches that are never kept from one visit to the next.
 const UNKEPT = new Set(["course"]);
