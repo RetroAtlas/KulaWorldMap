@@ -51,6 +51,9 @@ import {
   settle,
   startGame,
   stationOf,
+  startEffect,
+  particlesOf,
+  effectLights,
 } from "../../public/js/play/rules.js";
 import { probeOf, shiftOf, standingOf, viewOf } from "../../public/js/play/world.js";
 import { recorder, replayDriver } from "../../public/js/play/drive.js";
@@ -2203,4 +2206,199 @@ test("a run places the level's fruit by the game's pickups' word, the take sets 
   const again = restart(live, null, { level: l, idx: index(l) });
   assert.equal(again.world.pickups.get(slot).m.type, third, "the two taken, the third placed");
   assert.equal(again.words.fruit, 3);
+});
+
+const EFFECTS = motion.effects;
+const COIN = 37;
+const FIRST_FRUIT = 43;
+const effectTable = (kind) => EFFECTS.tables[EFFECTS.kinds[String(kind)]];
+/** A pickup of `type` on the top of the row's block at `y`. */
+const pickup = (y, type) => pill(y, type);
+/** Run `live` with Up held to the frame a thing is taken: the take's event. */
+function takes(live) {
+  let took = null;
+  assert.ok(until(live, PAD.up, (_, events) => (took = events.find((e) => e.took)?.took ?? null)));
+  return took;
+}
+/** Each particle of the row as the frame reads it, with the effect at `at` and `icon`. */
+const rowOf = (row, at, icon = null, slots = [0, 0]) =>
+  row.map(([sprite, angle, size, brightness], k) => ({
+    sprite,
+    angle: slots[k] + Math.max(angle, 0),
+    size,
+    brightness,
+    at,
+    icon,
+  }));
+/** The light's colour the reading's arithmetic gives a row: each byte times the brightness over
+    the table's divisor, summed over the particles. */
+const colourOf = (row) =>
+  row.reduce(
+    (sum, [sprite, , , brightness]) =>
+      sum.map(
+        (v, ch) =>
+          v + Math.floor((EFFECTS.sprites.colours[sprite][ch] * brightness) / EFFECTS.light.over),
+      ),
+    [0, 0, 0],
+  );
+
+test("a coin taken starts its kind's table at the thing's place with a light from its cell and face, which draws a row a pass from the take's and is gone from the list the pass after its last, and a run and a restart start the list empty", () => {
+  const live = begin(level(row(2, 18), [start(), pickup(16, COIN)]));
+  const w = live.words;
+  assert.deepEqual(w.effects, []);
+  const took = takes(live);
+  const { world } = EFFECTS.starts[COIN];
+  const { frames, rows } = effectTable(world);
+  assert.equal(w.effects.length, 1);
+  const [e] = w.effects;
+  assert.equal(e.kind, world);
+  assert.deepEqual(e.at, took.at);
+  assert.equal(e.icon, null);
+  assert.deepEqual([e.light.x, e.light.y, e.light.z, e.light.face], [17, 16, 17, TOP]);
+  assert.equal(e.count, 1, "the take's pass drew the first row");
+  assert.deepEqual(particlesOf(live), rowOf(rows[0], took.at));
+  frame(live, 0);
+  assert.deepEqual(particlesOf(live), rowOf(rows[1], took.at));
+  for (let i = 2; i < frames; i++) frame(live, 0);
+  assert.equal(w.effects.length, 1);
+  assert.equal(w.effects[0].count, frames);
+  assert.deepEqual(particlesOf(live), rowOf(rows[frames - 1], took.at));
+  frame(live, 0);
+  assert.deepEqual(w.effects, [], "dropped on the pass after its last");
+  assert.deepEqual(particlesOf(live), []);
+  assert.deepEqual(effectLights(live), []);
+  const again = begin(level(row(2, 18), [start(), pickup(16, COIN)]));
+  takes(again);
+  assert.equal(again.words.effects.length, 1);
+  assert.deepEqual(restart(again).words.effects, []);
+});
+
+test("a key starts two effects, its HUD kind at the key's icon, which the map has no point for, before its world kind, a fruit's second effect at its icon's point and the hourglass's at the clock's point, and the list holds the table's most and refuses the rest, as it does a kind without a table", () => {
+  const live = begin(level(row(2, 18), [start(), pickup(16, KEY)]));
+  const took = takes(live);
+  const { world, hud } = EFFECTS.starts[KEY];
+  assert.deepEqual(
+    live.words.effects.map((e) => [e.kind, e.icon, e.at, e.light === null]),
+    [
+      [hud, "key", null, true],
+      [world, null, took.at, false],
+    ],
+  );
+  assert.deepEqual(effectLights(live), [live.words.effects[1].light]);
+  const fruit = begin(level(row(2, 18), [start(), pickup(16, FIRST_FRUIT)]));
+  takes(fruit);
+  const [icon, burst] = fruit.words.effects;
+  assert.deepEqual(
+    [icon.kind, icon.icon, icon.at, burst.kind],
+    [
+      EFFECTS.starts[FIRST_FRUIT].hud,
+      "fruit",
+      EFFECTS.hud.fruit[0],
+      EFFECTS.starts[FIRST_FRUIT].world,
+    ],
+  );
+  const glass = begin(level(row(2, 18), [start(), pickup(16, HOURGLASS)]));
+  takes(glass);
+  assert.deepEqual(
+    glass.words.effects.map((e) => [e.kind, e.icon, e.at]),
+    [
+      [EFFECTS.starts[HOURGLASS].hud, "clock", EFFECTS.hud.clock],
+      [EFFECTS.starts[HOURGLASS].world, null, glass.words.effects[1].at],
+    ],
+  );
+  // the HUD effects stand in the list and draw no particle the frame places
+  assert.ok(particlesOf(glass).some((p) => p.icon === "clock"));
+  // fifteen standing, a key's take fills the sixteenth slot with its HUD kind and its burst is refused
+  const full = begin(level(row(2, 18), [start(), pickup(16, KEY)]));
+  const at = [17 * UNIT, 10 * UNIT, 17 * UNIT];
+  for (let i = 0; i < EFFECTS.most - 1; i++) assert.ok(startEffect(full, world, at));
+  takes(full);
+  assert.equal(full.words.effects.length, EFFECTS.most);
+  assert.deepEqual(full.words.effects.at(-1).icon, "key");
+  assert.deepEqual(effectLights(full), [], "the burst with the light was refused");
+  assert.equal(startEffect(full, world, at), false);
+  assert.equal(full.words.effects.length, EFFECTS.most);
+  const none = Object.keys(EFFECTS.kinds).length;
+  assert.equal(EFFECTS.kinds[String(none)], undefined);
+  assert.equal(startEffect(live, none, at), false, "a kind with no table");
+});
+
+test("a fruit's first row draws its stripes' angle from the dice the wandering ball draws from, so the dice after its take stand elsewhere than after a coin's, whose rows never draw, and the angle runs on from the draw by the rows' own", () => {
+  const first = dice(motion.dice);
+  const drawn = first(motion.turn);
+  const after = (type) => {
+    const live = begin(level(row(2, 18), [start(), pickup(16, type)]));
+    takes(live);
+    return live;
+  };
+  assert.equal(after(COIN).world.roll(motion.turn), drawn, "the coin's take drew nothing");
+  const live = after(FIRST_FRUIT);
+  assert.equal(live.world.roll(motion.turn), first(motion.turn), "one draw taken by the fruit's");
+  const [, e] = live.words.effects;
+  const { rows } = effectTable(e.kind);
+  assert.equal(rows[0][1][1], -1, "the stripes' first angle is the dice's");
+  assert.deepEqual(e.slots, [0, drawn]);
+  const stripes = () => particlesOf(live).filter((p) => p.icon === null)[1];
+  const glow = () => particlesOf(live).filter((p) => p.icon === null)[0];
+  assert.equal(stripes().angle, drawn);
+  assert.equal(glow().angle, rows[0][0][1]);
+  for (let f = 1; f < 6; f++) {
+    frame(live, 0);
+    assert.equal(stripes().angle, drawn + rows[f][1][1], `frame ${f}`);
+    assert.equal(glow().angle, rows[f][0][1], `the glow's angle is the table's, frame ${f}`);
+  }
+  assert.deepEqual(e.slots, [0, drawn], "the slot keeps the draw alone");
+});
+
+test("a world effect's light is coloured each pass by the sum of its particles' colours, each byte times the brightness over the table's divisor, dark where the row shows nothing, and a HUD effect has none", () => {
+  const live = begin(level(row(2, 18), [start(), pickup(16, COIN)]));
+  takes(live);
+  const [e] = live.words.effects;
+  const { rows } = effectTable(e.kind);
+  assert.deepEqual(e.light.colour, colourOf(rows[0]));
+  assert.deepEqual(e.light.colour, [0, 0, 0]);
+  for (let f = 1; f <= 5; f++) {
+    frame(live, 0);
+    assert.deepEqual(e.light.colour, colourOf(rows[f]), `frame ${f}`);
+  }
+  // frame 5: the dark ring at 140 and the white ring at 68
+  assert.deepEqual(rows[5], [
+    [5, 3430, 1000, 140],
+    [6, 3681, 2580, 68],
+  ]);
+  assert.deepEqual(e.light.colour, [37, 21, 21]);
+  assert.deepEqual(effectLights(live), [e.light]);
+  const key = begin(level(row(2, 18), [start(), pickup(16, KEY)]));
+  takes(key);
+  assert.equal(key.words.effects[0].light, null);
+  assert.equal(effectLights(key).length, 1);
+});
+
+test("a teleporter starts its HUD kind at the screen's teleport point as its count starts, with no light, which runs through the count, the send and on the far face for its table's frames", () => {
+  const port = (x, y, facing, to) => {
+    const o = object(0, TELEPORTER, facing, 1);
+    o.f[fieldIndex("f7")] = to * 16;
+    return { x, y, z: 17, kind: 0, on: [o] };
+  };
+  const l = level(
+    [...row(10, 18), [20, 12, 17], [20, 13, 17], [20, 14, 17]],
+    [start(), port(17, 15, 0, 2), port(20, 12, 1, 1)],
+  );
+  const live = begin(l);
+  const w = live.words;
+  const { send } = motion.types[String(TELEPORTER)];
+  const { frames } = effectTable(EFFECTS.teleport.hud);
+  assert.ok(until(live, PAD.up, (_, events) => events.some((e) => e.sending)));
+  assert.deepEqual(
+    w.effects.map((e) => [e.kind, e.icon, e.at, e.light, e.count]),
+    [[EFFECTS.teleport.hud, "teleport", EFFECTS.hud.teleport, null, 1]],
+  );
+  assert.ok(particlesOf(live).every((p) => p.icon === "teleport" && p.at === EFFECTS.hud.teleport));
+  assert.ok(until(live, 0, (_, events) => events.some((e) => e.sent)));
+  assert.equal(w.effects.length, 1, "no second effect at the send");
+  assert.equal(w.effects[0].count, send.wait + 1);
+  for (let i = 0; i < frames - send.wait - 1; i++) frame(live, 0);
+  assert.equal(w.effects[0].count, frames);
+  frame(live, 0);
+  assert.deepEqual(w.effects, []);
 });

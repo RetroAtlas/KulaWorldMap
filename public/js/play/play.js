@@ -4,6 +4,7 @@ import { $, el, emit, on } from "../viewer/ui/dom.js";
 import { adoptCourse, current, measureStrip } from "../viewer/chrome/course.js";
 import { drawPieces } from "../viewer/draw/ribbon.js";
 import { ageDust, burstDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
+import { drawEffects, effectsWith } from "./effects.js";
 import {
   state,
   BLOCK,
@@ -179,7 +180,7 @@ const DONE_WHY = {
   strayed: "The ball has left the route.",
 };
 const AT_SWITCH = 6;
-const AT_TAKE = 10;
+const AT_GONE = 10;
 const AT_BREAK = 2;
 const AT_LAUNCH = 10;
 const TRAIL = 12;
@@ -793,9 +794,11 @@ const again = () =>
         (!live.ended && (moving(live.run.ball) || drives(live.run) || keys.busy() || live.driver))))
   );
 
-/** The frame hook: the pill's screen over the scene, and another frame while the view eases, the
-    level runs or something moves, and one more where the view has just cut. */
+/** The frame hook: the game's bursts over the scene and the pill's screen over them, and another
+    frame while the view eases, the level runs or something moves, and one more where the view
+    has just cut. */
 function more(ctx) {
+  drawEffects(ctx);
   screened(ctx);
   const asked = again() || redraw;
   redraw = false;
@@ -933,13 +936,9 @@ function happened(event) {
   }
 }
 
-/** A thing taken: a burst of dust where it stood, the take said, and the panel brought up to date
-    where it shows the block. */
-function taken({ key, face, points, at }) {
-  const c = live.idx.cells.get(key);
+/** A thing taken: the take said, and the panel brought up to date where it shows the block. */
+function taken({ key, face, points }) {
   const m = (live.run.world.idx.markers.get(key) ?? []).find((m) => m.face === face);
-  const point = at.map((v) => v / live.run.ball.unit + 0.5);
-  burst(point, FACE_NORMAL[face], [c.x, c.y, c.z], AT_TAKE);
   const label = markerLabel(m);
   say(points ? `${label} taken, ${counted(points, "point")}.` : `${label} taken.`);
   refreshPanel();
@@ -991,7 +990,7 @@ function broke({ key }) {
 function fell({ key }) {
   const { x, y, z } = live.idx.cells.get(key);
   const over = nearestDrawn([x, y, z]);
-  if (over) burst([x + 0.5, y + 0.5, z + 0.5], live.run.ball.n, over, AT_TAKE);
+  if (over) burst([x + 0.5, y + 0.5, z + 0.5], live.run.ball.n, over, AT_GONE);
   if (state.selected?.key === key) clearDetail();
   say(GONE([x, y, z].join(",")));
   redraw = true;
@@ -1009,16 +1008,11 @@ function nearestDrawn(cell) {
   return best;
 }
 
-/** The ball sent by a teleporter: dust at both ends, a leap in its way, the view cut to it. */
-function sent({ from, to }) {
+/** The ball sent by a teleporter: a leap in its way, the view cut to it. */
+function sent({ to }) {
   const b = live.run.ball;
   live.station = true;
   live.still = stateOf(b);
-  for (const { cell, face } of [from, to]) {
-    const n = FACE_NORMAL[face];
-    const point = cell.map((v, i) => v + 0.5 + 0.5 * n[i]);
-    burst(point, n, cell, AT_TAKE);
-  }
   walked({ cell: to.cell, face: to.face }, true);
   state.frame = b.frame;
   state.target = [...centreOf(b)];
@@ -1713,6 +1707,7 @@ export function bootPlay() {
   wirePad();
   measure = measureStrip($("play"), "--play-h");
   overlayWith({ under: () => void advance(), block: drawTrail, cell: drawDustOver, frame: more });
+  effectsWith(() => live?.run ?? null);
   movingWith(travellers);
   ballsWith(() => (live && !live.ended ? [shown().point] : null));
   tipWith((c) => takenOn(cellKey(c.x, c.y, c.z)).map(TAKEN));

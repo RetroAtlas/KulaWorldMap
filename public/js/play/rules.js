@@ -1,8 +1,9 @@
 // The game's frame over the ball and the level: the clock, the guard, the wait, the pad, what is
 // under the ball and what it takes, in the executable's order, over pad words from any source,
-// the draw's step over the screen's words as the pass ends, the blanks a pass waits, the view's
-// roll by the pill's word, the invincible ball's glow by its counter, and the run's points and
-// fruit, settled as a level ends, and the slot the game loads next.
+// the draw's step over the screen's words as the pass ends and the effects' run after it, the
+// bursts a pickup and a teleporter start, the blanks a pass waits, the view's roll by the pill's
+// word, the invincible ball's glow by its counter, and the run's points and fruit, settled as a
+// level ends, and the slot the game loads next.
 import {
   JUMP,
   PAD,
@@ -59,6 +60,8 @@ const OUT = { [EXIT]: "exit", [HIDDEN_EXIT]: "hidden" };
 const add = (p, v, k = 1) => p.map((c, i) => c + v[i] * k);
 const lastsOf = (live, type) => live.tables.motion.types[String(type)].lasts;
 const flashOf = (live) => live.tables.motion.effects.flash.teleport;
+const effectsOf = (live) => live.tables.motion.effects;
+const effectTable = (live, kind) => effectsOf(live).tables[effectsOf(live).kinds[String(kind)]];
 
 /** The screen's mode word under the lethargy pill: the states its routine runs, in their order. */
 export const SCREEN = { off: 0, flash: 1, ghost: 2, end: 3, fade: 4 };
@@ -250,6 +253,7 @@ export function startRun(l, idx, tables, circuits, at = null, game = null) {
       screen: SCREEN.off,
       fade: 0,
       flash: 0,
+      effects: [],
       latch: { up: 0, cross: 0, count: 0 },
       pills: Object.fromEntries(
         Object.entries(types)
@@ -397,11 +401,102 @@ function pills(live, out) {
   }
 }
 
+/** The game's start of an effect of `kind`: in the world at `at`, a place in the game's units,
+    with `light`, the light the contact walk makes from the thing's cell and face, or on the HUD,
+    `icon` naming which of the table's points it stands at and `at` the point, or null where the
+    map has none for it. Refused, and false, where the kind has no table or the list holds the
+    table's most. */
+export function startEffect(live, kind, at, { light = null, icon = null } = {}) {
+  const { most, particles } = effectsOf(live);
+  const list = live.words.effects;
+  if (!effectTable(live, kind) || list.length >= most) return false;
+  list.push({ kind, at, icon, light, count: 0, slots: Array(particles).fill(0) });
+  return true;
+}
+
+// The point of the game's HUD a pickup's second effect stands at: the clock's for the pickup
+// that turns the clock, a fruit's icon by its bit, and the key's icon, which the map has no
+// point for.
+function iconOf({ clock, fruit }, take) {
+  if (take.clock) return { icon: "clock", at: clock };
+  if (take.fruit) return { icon: "fruit", at: fruit[Math.round(Math.log2(take.fruit))] };
+  return { icon: "key", at: null };
+}
+
+// A pickup taken starts the kinds the table gives for its type, the HUD kind first where it has
+// one, then the world kind at the thing's place with a light from its cell and face.
+function burst(live, { key, face, type, at }) {
+  const { starts, hud } = effectsOf(live);
+  const kinds = starts[String(type)];
+  if (!kinds) return;
+  if (kinds.hud !== undefined) {
+    const { icon, at: point } = iconOf(hud, live.tables.motion.types[String(type)].take);
+    startEffect(live, kinds.hud, point, { icon });
+  }
+  const { x, y, z } = live.idx.cells.get(key);
+  startEffect(live, kinds.world, at, { light: { x, y, z, face, colour: [0, 0, 0] } });
+}
+
+// The effects' run: an effect at its table's frames is dropped, its light with it, and each
+// other draws the row of its frame count, a particle's angle below nothing drawn from the dice
+// into its slot and a world effect's light coloured by the sum of its particles' colours, each
+// byte times the brightness over the table's divisor, and counts on.
+function runEffects(live) {
+  const { sprites, light } = effectsOf(live);
+  const { turn } = live.tables.motion;
+  const list = live.words.effects;
+  for (let i = 0; i < list.length;) {
+    const e = list[i];
+    const { frames, rows } = effectTable(live, e.kind);
+    if (e.count >= frames) {
+      list.splice(i, 1);
+      continue;
+    }
+    const row = rows[e.count];
+    row.forEach(([, angle], k) => {
+      if (angle < 0) e.slots[k] = live.world.roll(turn);
+    });
+    if (e.light)
+      e.light.colour = row.reduce(
+        (sum, [sprite, , , brightness]) =>
+          sum.map(
+            (v, ch) => v + Math.floor((sprites.colours[sprite][ch] * brightness) / light.over),
+          ),
+        [0, 0, 0],
+      );
+    e.count += 1;
+    i += 1;
+  }
+}
+
+/** The particles the pass drew, for the frame: each its sprite, its angle, the slot's draw with
+    the row's run on from it, its size and its brightness, and where its effect stands, `at` a
+    place in the game's units for a world effect, or for one on the HUD a point of the game's
+    screen, or null where the map has none, with `icon` naming which of the table's points it
+    is. */
+export function particlesOf(live) {
+  return live.words.effects.flatMap((e) => {
+    const row = effectTable(live, e.kind).rows[e.count - 1] ?? [];
+    return row.map(([sprite, angle, size, brightness], k) => ({
+      sprite,
+      angle: e.slots[k] + Math.max(angle, 0),
+      size,
+      brightness,
+      at: e.at,
+      icon: e.icon,
+    }));
+  });
+}
+
+/** The lights the world's effects cast this pass, each from the pickup's cell and face in the
+    colour its particles summed to. */
+export const effectLights = (live) => live.words.effects.filter((e) => e.light).map((e) => e.light);
+
 /** The draw's step over the screen's words, run as each pass ends, the ending's view's passes
-    included: the pill's own pass moves its mode on to the ghost, the end's pass lays the fade's
-    level from the table and moves on, each pass after takes the table's step off the level, and
-    the level below nothing clears the mode; the teleport's flash wanes by its step while it
-    stands. */
+    included, and the effects' run after it: the pill's own pass moves its mode on to the ghost,
+    the end's pass lays the fade's level from the table and moves on, each pass after takes the
+    table's step off the level, and the level below nothing clears the mode; the teleport's flash
+    wanes by its step while it stands; and every effect draws its row and counts on. */
 export function drawn(live) {
   const w = live.words;
   const { fade } = lastsOf(live, LETHARGY).screen;
@@ -417,6 +512,7 @@ export function drawn(live) {
     }
   }
   if (w.flash > 0) w.flash = Math.max(0, w.flash - flashOf(live).step);
+  runEffects(live);
 }
 
 /** The blanks the frame loop waits before a pass, by the words as the pass before left them: the
@@ -567,6 +663,14 @@ export function frame(live, pad) {
   w.way = b.way;
   if (w.bonus && out.some((e) => e.face === "climb")) mark(live, ahead, out);
   if (!w.guard) contact(live, out);
+  // the bursts, the teleporter's as its count starts and a pickup's as it is taken
+  for (const e of out) {
+    if (e.took) burst(live, e.took);
+    else if (e.sending) {
+      const { teleport, hud } = effectsOf(live);
+      startEffect(live, teleport.hud, hud.teleport, { icon: "teleport" });
+    }
+  }
   if (out.some((e) => e.pill?.type === LETHARGY)) w.screen = SCREEN.flash;
   if (out.some((e) => e.lost)) end(live, ending.lost, out);
   crumble(live, out);

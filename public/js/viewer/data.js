@@ -22,6 +22,7 @@ export const worldTint = (world) => {
   return c ? "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("") : null;
 };
 export const shadowSprites = () => shapes.shadows;
+export const sparksSheet = () => shapes.sparks ?? null;
 export const motionOf = (m) =>
   m.face === null
     ? null

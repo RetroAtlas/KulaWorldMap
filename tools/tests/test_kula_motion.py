@@ -1186,7 +1186,7 @@ class Effects(unittest.TestCase):
     def test_the_effects_ship_their_tables_their_colours_as_shown_their_units_and_the_flash(self):
         e = effects(GAME)
         self.assertEqual(e["sprites"], {"count": 7, "colours": [[100, 50, 100], [80, 80, 80], [60, 60, 127], [127, 20, 20],
-                                                                 [0, 127, 127], [80, 20, 20], [127, 127, 127]]})
+                                                                 [0, 127, 127], [80, 20, 20], [127, 127, 127]], "full": 128})
         self.assertEqual(e["size"], {"hud": 64, "world": 16})
         self.assertEqual(e["kinds"], {"0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "4", "6": "2", "7": "2",
                                       "8": "8", "9": "9", "10": "4"})

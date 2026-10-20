@@ -30,7 +30,7 @@ const SIMON_LEVEL = "/#COPYCAT/0/45,35/fit/33";
 const FRUIT_LEVEL = "/#HIRO/2/45,35/fit/33";
 const FRUIT = [15, 15, 17];
 const FRUIT_TYPE = 46;
-const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazards)\.js$/;
+const PLAY_FILES = /\/js\/play\/(play|ball|dust|effects|rules|world|drive|contact|hazards)\.js$/;
 const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 const TIME_UP_PAD =
   "TIME OUT! 0 points, 0 seconds left. Space, Enter or a tap on the pad starts the level again.";
@@ -546,6 +546,7 @@ test("y stands the ball on the start and takes its view, the arrows roll it, and
       "/js/play/contact.js",
       "/js/play/drive.js",
       "/js/play/dust.js",
+      "/js/play/effects.js",
       "/js/play/hazards.js",
       "/js/play/play.js",
       "/js/play/rules.js",
@@ -1224,7 +1225,7 @@ test("the dust is born only with its setting on, on by default, and what is aliv
   await toggled(page, "showDust", "on by default");
   expect((await kept()).dust).toBe(false);
   expect(await dustAlive(page)).toBe(false);
-  // over the coin's block, so its burst is held back as the travel's motes are
+  // onto the coin's block, whose take bursts the game's sparks and no dust
   await rolled(page, [17, 16, 17]);
   await expect(page.locator("#playPoints")).toHaveText("250 points");
   expect(await dustAlive(page)).toBe(false);
@@ -1971,7 +1972,7 @@ test("the shadow the game paints into a coin's face goes with the coin as the ba
   expect(errors).toEqual([]);
 });
 
-test("with Motion off a hop on a coin's block takes the coin on the first frame, in a burst of dust, nothing draws once the ball rests, and the tip and the panel say the coin is taken", async ({
+test("with Motion off a hop on a coin's block takes the coin on the first frame, nothing draws once the ball rests, and the tip and the panel say the coin is taken", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -1985,12 +1986,10 @@ test("with Motion off a hop on a coin's block takes the coin on the first frame,
   await expect(page.locator("#play")).toBeVisible();
   await expect(line(page)).toHaveText("Playing · on the top of 17,16,17, facing +y");
   await expect(page.locator("#playPoints")).toHaveText("0 points");
-  expect(await dustAlive(page)).toBe(false);
   expect(await drawn(page)).toBe(0);
   await page.keyboard.press(" ");
   await expect(page.locator("#playPoints")).toHaveText("250 points");
   await expect(say(page)).toHaveText("Coin (bronze) taken, 250 points.");
-  expect(await dustAlive(page)).toBe(true);
   // the level's opening frames first, then the hop, so the poll is quick
   await expect.poll(async () => (await probe(page)).station.moving, { intervals: [25] }).toBe(true);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
@@ -2009,7 +2008,110 @@ test("with Motion off a hop on a coin's block takes the coin on the first frame,
   expect(errors).toEqual([]);
 });
 
-test("rolling over a switch throws it, and an on teleporter sends the ball to its far end, the view cutting there, with dust at both ends and a leap in the way it has come", async ({
+// LEVEL 1's key, on the top of 20,15,17, three blocks on from the turn
+const KEY_BLOCK = [20, 15, 17];
+const KEY_TYPE = 31;
+/** Drive the frozen level along `way` to the block before the key's, roll onto the key's and step
+    on through its burst, reading on each frame the mean brightness the frame paints within most of
+    a block of the key's place: the frame the key was taken on, the table's frames and the
+    samples. */
+const burstAbout = (page, way) =>
+  page.evaluate(
+    async ([way, block, type]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state, screen, BLOCK }, { draw }, { motionTable, blockUnits }, P] =
+        await Promise.all(
+          ["viewer/state.js", "viewer/draw/render.js", "viewer/data.js", "play/play.js"].map(at),
+        );
+      const { effects, types, hz } = motionTable();
+      const { frames } = effects.tables[effects.kinds[effects.starts[type].world]];
+      const stand = types[String(type)].take.stand;
+      const place = [block[0] + 0.5, block[1] + 0.5, block[2] + 0.5 - stand / blockUnits()];
+      const g = document.getElementById("cv").getContext("2d");
+      const k = state.view.dpr;
+      const about = () => {
+        const [x, y] = screen(...place);
+        const r = Math.round(state.cam.zoom * BLOCK * k * 0.8);
+        const img = g.getImageData(
+          Math.round(x * k) - r,
+          Math.round(y * k) - r,
+          2 * r + 1,
+          2 * r + 1,
+        );
+        let sum = 0;
+        let n = 0;
+        for (let j = 0; j <= 2 * r; j++)
+          for (let i = 0; i <= 2 * r; i++) {
+            if (Math.hypot(i - r, j - r) > r) continue;
+            const o = 4 * (j * img.width + i);
+            sum += img.data[o] + img.data[o + 1] + img.data[o + 2];
+            n += 3;
+          }
+        return sum / n;
+      };
+      const tap = (key) => {
+        for (const kind of ["keydown", "keyup"])
+          document.body.dispatchEvent(new KeyboardEvent(kind, { key, bubbles: true }));
+      };
+      const run = () => {
+        window.__step(1000 / hz);
+        draw();
+      };
+      for (const [key, to] of way) {
+        tap(key);
+        for (let f = 0; f < 200; f++) {
+          run();
+          const s = P.station();
+          if (!s.moving && (s.block.join() === to || s.heading === to)) break;
+        }
+      }
+      const keys = document.getElementById("playKeys");
+      tap("ArrowUp");
+      const samples = [];
+      let took = null;
+      for (let f = 0; f < 300 && (took === null || f <= took + frames + 6); f++) {
+        run();
+        if (took === null && keys.textContent === "Keys 0") took = f;
+        samples.push(about());
+        // the sheet lands between frames
+        await new Promise((r) => setTimeout(r));
+      }
+      return { took, frames, samples };
+    },
+    [way, KEY_BLOCK, KEY_TYPE],
+  );
+
+test("the key taken bursts as the game's does: the frames after the take are brighter about the key's place than the frame before, the faces about it lit with the sparks, and dark again past the table's frames", async ({
+  page,
+}) => {
+  test.slow();
+  const errors = trackErrors(page);
+  await opened(page);
+  // the burst lights the faces' textures, so they are put back on, and the map's dust is put
+  // away, so nothing of its own fades about the ball
+  await page.keyboard.press("t");
+  await expect(page.locator("#showSkins")).toBeChecked();
+  await textured(page);
+  await toggled(page, "showDust", "on by default");
+  await startPlay(page);
+  await expect(page.locator("#playKeys")).toHaveText("Keys 1");
+  await frozen(page);
+  const { took, frames, samples } = await burstAbout(page, WAY_OUT.slice(0, 6));
+  expect(took).not.toBeNull();
+  expect(took).toBeGreaterThan(0);
+  const before = samples[took - 1];
+  const during = samples.slice(took + 1, took + frames);
+  const after = samples.slice(took + frames + 1);
+  const peak = Math.max(...during);
+  expect(peak).toBeGreaterThan(before + 4);
+  expect(after.length).toBeGreaterThan(3);
+  for (const level of after) expect(level).toBeLessThan(peak - 4);
+  // nothing moves about the key's place once the burst is over
+  expect(Math.max(...after) - Math.min(...after)).toBeLessThan(1.5);
+  expect(errors).toEqual([]);
+});
+
+test("rolling over a switch throws it, and an on teleporter sends the ball to its far end, the view cutting there, with a leap in the way it has come", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -2060,8 +2162,6 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   // level stands mid-send
   await roll([17, 15, 17]);
   await expect(status(page)).toHaveText(SENDING);
-  expect(await dustOver(page, [17, 14, 17])).toBe(0);
-  const near = await dustOver(page, [17, 15, 17]);
   // with Motion on the level runs at rest, so the count runs out on its own; the view is read on
   // the first frame the ball stands at the far end, where a target eased after the ball rather
   // than cut would still be on its way from the near one
@@ -2079,8 +2179,6 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   expect(far.frame).toEqual(await frameFor(page, [1, 0, 0], [0, 0, -1]));
   expect(far.target).toEqual([17.5, 14.5, 16.805]);
   expect(far.fitted).toBe(true);
-  expect(far.dust[1]).toBeGreaterThan(0);
-  expect(far.dust[0]).toBeGreaterThan(near);
   await expect(line(page)).toHaveText("Playing · on the top of 17,14,17, facing +x");
   await expect.poll(() => said(page)).toContain("Sent to the top of 17,14,17.");
   // the pad is dead through the hold, and then Up is refused, the near end's block beside, and
@@ -3448,6 +3546,145 @@ test("the lethargy pill rolls the view and ghosts the screen as the game does: t
   expect(bright(samples[end + Math.ceil(fades / 2)])).toBeGreaterThan(bright(samples[end + fades]));
   expect(Math.abs(bright(samples[end + fades]) - bright(base))).toBeLessThanOrEqual(10);
   await expect.poll(() => said(page)).toContain("Lethargy pill taken.");
+  expect(errors).toEqual([]);
+});
+
+/** Step the frozen level a frame of the clock at a time through `steps` steps, with `hold` held
+    down until the ball stands on the block `until` names, recording every sprite of the sheet the
+    frame lays: its pass, which sprite and the canvas points of its four corners, from the
+    transform at the draw; with the teleport's point, the view, the game's screen, a HUD size's
+    unit, the turn and the teleport's table. */
+const sprited = (page, steps, { hold, until }) =>
+  page.evaluate(
+    async ([steps, hold, until]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { draw, clock }, { motionTable }, P] = await Promise.all(
+        ["viewer/state.js", "viewer/draw/render.js", "viewer/data.js", "play/play.js"].map(at),
+      );
+      const { hz, effects, play, turn } = motionTable();
+      // the sheet in the cache, so that it lands between the frames that first need it
+      await new Promise((r) => {
+        const img = new Image();
+        img.addEventListener("load", r);
+        img.src = "tex/sparks.png";
+      });
+      const g = document.getElementById("cv").getContext("2d");
+      const sprites = [];
+      const drawImage = g.drawImage;
+      g.drawImage = function (img, ...rest) {
+        if (rest.length === 8 && typeof img.src === "string" && img.src.endsWith("sparks.png")) {
+          const [sx, , sw, , dx, dy, dw, dh] = rest;
+          const m = this.getTransform();
+          const point = (x, y) => [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f];
+          sprites.push({
+            pass: clock(),
+            sprite: sx / sw,
+            corners: [
+              point(dx, dy),
+              point(dx + dw, dy),
+              point(dx, dy + dh),
+              point(dx + dw, dy + dh),
+            ],
+          });
+        }
+        return drawImage.call(this, img, ...rest);
+      };
+      const key = (type, k) =>
+        document.body.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+      key("keydown", hold);
+      let held = true;
+      for (let i = 0; i < steps; i++) {
+        window.__step(1000 / hz);
+        draw();
+        if (held && P.station()?.block.join() === until) {
+          key("keyup", hold);
+          held = false;
+        }
+        await new Promise((r) => setTimeout(r));
+      }
+      if (held) key("keyup", hold);
+      g.drawImage = drawImage;
+      return {
+        sprites,
+        point: effects.hud.teleport,
+        view: state.view,
+        screen: play.screen,
+        unit: effects.size.hud,
+        turn,
+        table: effects.tables[effects.kinds[effects.teleport.hud]],
+      };
+    },
+    [steps, hold, until],
+  );
+
+test("a teleport's shell is laid as the game lays it: the sprite's third corner at the teleport's point, its first the size on at the angle, the fourth a quarter on and the second the two summed, the angle running on by the table's step a frame", async ({
+  page,
+}) => {
+  test.slow();
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // the switch test's level: a key out of reach, a yellow switch and two blue teleporters a block
+  // apart, the far one facing across the row
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  for (const cell of [
+    [17, 16, 17],
+    [17, 15, 17],
+    [17, 14, 17],
+  ])
+    await laid(page, cell, { kind: 0 });
+  await faced(page, [17, 16, 17], 0, { type: 9, variant: 0 });
+  await faced(page, [17, 15, 17], 0, { type: 5, variant: 1 });
+  await faced(page, [17, 14, 17], 0, { type: 5, variant: 1, facing: 4 });
+  await expect(page.locator("#chipLine")).toContainText("5 objects");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await frozen(page);
+  const { sprites, point, view, screen, unit, turn, table } = await sprited(page, 200, {
+    hold: "ArrowUp",
+    until: "17,15,17",
+  });
+  await page.evaluate(() => window.__thaw());
+  // the shell is the table's one particle of a size below nothing, the rows it shows on
+  const shell = table.rows.map(
+    (row) => row.find(([, , size, brightness]) => size < 0 && brightness > 0) ?? null,
+  );
+  const rows = shell.map((p, f) => (p ? f : null)).filter((f) => f !== null);
+  expect(rows.length).toBeGreaterThan(1);
+  const [sprite, , size] = shell[rows[0]];
+  expect(new Set(rows.map((f) => shell[f][0])).size).toBe(1);
+  // the shell is laid once a pass on every row it shows on, and nothing else lays its sprite
+  const seen = [];
+  for (const s of sprites) if (s.sprite === sprite && seen.at(-1)?.pass !== s.pass) seen.push(s);
+  expect(seen.length).toBe(rows.length);
+  const k = view.dpr;
+  const across = (view.w / screen.wide) * k;
+  const down = (view.h / screen.high) * k;
+  const at = [point[0] * across, point[1] * down];
+  const side = (-size / unit) * Math.min(across, down);
+  const near = (a, b) => expect(Math.abs(a - b)).toBeLessThan(1e-3);
+  const angles = [];
+  for (const { corners } of seen) {
+    const [first, second, third, fourth] = corners;
+    near(third[0], at[0]);
+    near(third[1], at[1]);
+    const dx = first[0] - at[0];
+    const dy = first[1] - at[1];
+    near(Math.hypot(dx, dy), side);
+    // a quarter on, with y down the page, turns right into down
+    near(fourth[0], at[0] - dy);
+    near(fourth[1], at[1] + dx);
+    near(second[0], first[0] - dy);
+    near(second[1], first[1] + dx);
+    angles.push(Math.atan2(dy, dx));
+  }
+  for (let i = 1; i < seen.length; i++) {
+    const step = ((shell[rows[i]][1] - shell[rows[i - 1]][1]) / turn) * 2 * Math.PI;
+    const d = angles[i] - angles[i - 1];
+    near(d - 2 * Math.PI * Math.round((d - step) / (2 * Math.PI)), step);
+  }
   expect(errors).toEqual([]);
 });
 

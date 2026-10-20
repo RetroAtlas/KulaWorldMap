@@ -2170,6 +2170,10 @@ CHECKS = [
     (0x80012194, "addu $v0, $s3, $s1", "the corners about the middle"),
     (0x800121d4, "sh $v0, 34($v1)", ""),
     (0x800121d8, "lui $t5, 0x000b", "the corners off one at the middle"),
+    (0x80012220, "addu $a0, $s3, $s1", "the first the size on at the angle"),
+    (0x80012238, "sh $v0, 10($v1)", ""),
+    (0x80012248, "sh $s3, 24($v1)", "the third at the middle"),
+    (0x8001224c, "sh $s2, 26($v1)", ""),
     (0x80012254, "sh $a0, 34($v1)", ""),
     (0x800122b0, "addiu $v0, $v0, 23452", "the HUD's table at 0x800a5b9c"),
     (0x800122bc, "lw $a1, 0($a0)", "takes the quad"),
@@ -2211,6 +2215,10 @@ CHECKS = [
     (0x8001287c, "addu $v0, $s3, $s1", "the corners about the middle"),
     (0x800128bc, "sh $v0, 34($v1)", ""),
     (0x800128c0, "lui $t4, 0x000b", "the corners off one at the middle"),
+    (0x80012908, "addu $a0, $s3, $s1", "the first the size on at the angle"),
+    (0x80012920, "sh $v0, 10($v1)", ""),
+    (0x80012930, "sh $s3, 24($v1)", "the third at the middle"),
+    (0x80012934, "sh $s2, 26($v1)", ""),
     (0x8001293c, "sh $a0, 34($v1)", ""),
     (0x80012950, "lui $t1, 0x000d", "the frame's ordering table"),
     (0x80012954, "addiu $t1, $t1, 11808", "at 0x800d2e20"),
@@ -4670,24 +4678,24 @@ def effect_places(code):
 def effects(r):
     """The effects: the list's size, a row's particles, the depth under which
     a particle is skipped, the sprites' light colours as the faces show
-    them, a size's unit on the HUD and in the world, what a colour byte
-    times the brightness is divided by into the light, the tables by the
-    first kind that uses each and every kind's table, what each pickup
-    starts in the world and on the HUD, the teleporter's HUD kind, the
-    HUD's points and the flash, each held against the others: twelve
-    pointers with the last empty and the kinds the pickups start among
-    them, the three pills one kind and the five fruit and type 27's case
-    one, the HUD's kinds apart from the world's, two particles a row,
-    every sprite among the seven and every brightness a byte, the dice's
-    -1 the one angle below nothing and drawn in the world only where
-    nothing shows, a size's shifts one for the cosine and the sine past
-    the sine's one, the entry two buffers of two quads and six words, a
-    row eight bytes of four halfwords, the light's bytes shifted alike,
-    one table for the run, the clear and the send, sent from its last
-    word, every HUD point's third word -1, and the flash marked, tested
-    and given with the one the loop waits two blanks on, a flat quad over
-    the screen in the blend that adds, the level's load starting the last
-    mode's on a level with no key."""
+    them and the brightness a sprite's texture is its own at, a size's
+    unit on the HUD and in the world, what a colour byte times the
+    brightness is divided by into the light, the tables by the first kind
+    that uses each and every kind's table, what each pickup starts in the
+    world and on the HUD, the teleporter's HUD kind, the HUD's points and
+    the flash, each held against the others: twelve pointers with the last
+    empty and the kinds the pickups start among them, the three pills one
+    kind and the five fruit and type 27's case one, the HUD's kinds apart
+    from the world's, two particles a row, every sprite among the seven
+    and every brightness a byte, the dice's -1 the one angle below nothing
+    and drawn in the world only where nothing shows, a size's shifts one
+    for the cosine and the sine past the sine's one, the entry two buffers
+    of two quads and six words, a row eight bytes of four halfwords, the
+    light's bytes shifted alike, one table for the run, the clear and the
+    send, sent from its last word, every HUD point's third word -1, and
+    the flash marked, tested and given with the one the loop waits two
+    blanks on, a flat quad over the screen in the blend that adds, the
+    level's load starting the last mode's on a level with no key."""
     pointers, colours, tables = r["effect.pointers"], r["effect.colours"], r["effect.tables"]
     if len(pointers) != r["effect.slots.last"] + 1 or pointers[-1] != 0 or 0 in pointers[:-1]:
         sys.exit("the effect tables' pointers are not eleven kinds' of twelve")
@@ -4752,7 +4760,7 @@ def effects(r):
     if f["blend"] != ADD or f["semi"] != 1 or f["wide"] != 1 or f["high"] != 1 or f["quad"] != FLAT or f["len"] != FLAT_WORDS:
         sys.exit("the flash is not a flat quad over the screen in the blend that adds")
     return {"most": r["effect.most"], "particles": PARTICLES, "near": r["effect.near"],
-            "sprites": {"count": r["effect.sprites"], "colours": shown},
+            "sprites": {"count": r["effect.sprites"], "colours": shown, "full": r["effect.full"]},
             "size": {"hud": 1 << (r["effect.hud.shift"] - one), "world": 1 << (r["effect.world.shift"] - one)},
             "light": {"over": 1 << r["effect.light.shift"]},
             "tables": {str(k): {"frames": tables[pointers[k]]["frames"], "rows": tables[pointers[k]]["rows"]}
