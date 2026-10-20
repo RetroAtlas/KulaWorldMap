@@ -30,6 +30,8 @@ const SIMON_LEVEL = "/#COPYCAT/0/45,35/fit/33";
 const FRUIT_LEVEL = "/#HIRO/2/45,35/fit/33";
 const FRUIT = [15, 15, 17];
 const FRUIT_TYPE = 46;
+// BONUS 1: a level with no key, which the game opens from white
+const BONUS_LEVEL = "/#HIRO/15/45,35/fit/33";
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|effects|rules|world|drive|contact|hazards)\.js$/;
 const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 const TIME_UP_PAD =
@@ -2776,6 +2778,53 @@ const frozen = (page) =>
     };
     (await import(new URL("js/viewer/draw/render.js", location.href).href)).draw();
   });
+/** Step the frozen level a frame of the clock at a time through `steps` steps, with `hold` held
+    down until the ball stands on the block `until` names, reading before the first and after each
+    the frame count, the ball's block and the mean of the canvas's channels: the readings and the
+    table's flash. */
+const shaded = (page, steps, { hold = null, until = null } = {}) =>
+  page.evaluate(
+    async ([steps, hold, until]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ draw, clock }, { motionTable }, P] = await Promise.all(
+        ["viewer/draw/render.js", "viewer/data.js", "play/play.js"].map(at),
+      );
+      const { hz, effects } = motionTable();
+      const g = document.getElementById("cv").getContext("2d");
+      const key = (type, k) =>
+        document.body.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+      const read = () => {
+        const { width, height } = g.canvas;
+        const d = g.getImageData(0, 0, width, height).data;
+        let sum = 0;
+        let n = 0;
+        for (let o = 0; o < d.length; o += 16) {
+          sum += d[o] + d[o + 1] + d[o + 2];
+          n += 3;
+        }
+        return { pass: clock(), block: P.station()?.block.join() ?? null, mean: sum / n };
+      };
+      const seen = [read()];
+      let held = false;
+      if (hold) {
+        key("keydown", hold);
+        held = true;
+      }
+      for (let i = 0; i < steps; i++) {
+        window.__step(1000 / hz);
+        draw();
+        const r = read();
+        if (held && r.block === until) {
+          key("keyup", hold);
+          held = false;
+        }
+        seen.push(r);
+      }
+      if (held) key("keyup", hold);
+      return { seen, flash: effects.flash };
+    },
+    [steps, hold, until],
+  );
 /** Step the frozen level a game frame at a time through `frames` frames, reading on each the frame
     drawn, whether the frame says every invisible block is seen, the strip's status and a hash of
     the pixels of the tops of `near` and `far`. */
@@ -3549,6 +3598,50 @@ test("the lethargy pill rolls the view and ghosts the screen as the game does: t
   expect(errors).toEqual([]);
 });
 
+test("a teleport flashes the screen as the game does: the frame after the send is white over the whole canvas, the white wanes on each pass after, the last pass still lifting the scene, and past the derived passes the scene is its own again", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // the switch test's level: a key out of reach, a yellow switch and two blue teleporters a block
+  // apart, the far one facing across the row
+  await faced(page, [17, 17, 17], 1, { type: 31 });
+  for (const cell of [
+    [17, 16, 17],
+    [17, 15, 17],
+    [17, 14, 17],
+  ])
+    await laid(page, cell, { kind: 0 });
+  await faced(page, [17, 16, 17], 0, { type: 9, variant: 0 });
+  await faced(page, [17, 15, 17], 0, { type: 5, variant: 1 });
+  await faced(page, [17, 14, 17], 0, { type: 5, variant: 1, facing: 4 });
+  await expect(page.locator("#chipLine")).toContainText("5 objects");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await frozen(page);
+  // Up held rolls the ball over the switch onto the near teleporter, where the send's count runs
+  // out on its own and the far end's block says the ball was sent
+  const { seen, flash } = await shaded(page, 200, { hold: "ArrowUp", until: "17,15,17" });
+  await page.evaluate(() => window.__thaw());
+  const sent = seen.findIndex((r) => r.block === "17,14,17");
+  expect(sent).toBeGreaterThan(0);
+  const passes = Math.ceil(flash.teleport.from / flash.teleport.step) - 1;
+  const atPass = (k) => seen.find((r) => r.pass === seen[sent].pass + k);
+  const shown = Array.from({ length: passes + 2 }, (_, k) => atPass(k));
+  expect(shown.every((r) => r !== undefined)).toBe(true);
+  // the send's own pass leaves the strength less one step, which saturates nearly every pixel
+  expect(shown[0].mean).toBeGreaterThan(250);
+  for (let k = 1; k < passes; k++) expect(shown[k].mean).toBeLessThan(shown[k - 1].mean);
+  // the last pass the flash shows on still lifts the scene by its strength, and the pass after
+  // shows the scene as it is, which stands still from there
+  expect(shown[passes - 1].mean).toBeGreaterThan(shown[passes].mean + 4);
+  expect(Math.abs(shown[passes].mean - shown[passes + 1].mean)).toBeLessThan(2);
+  expect(errors).toEqual([]);
+});
+
 /** Step the frozen level a frame of the clock at a time through `steps` steps, with `hold` held
     down until the ball stands on the block `until` names, recording every sprite of the sheet the
     frame lays: its pass, which sprite and the canvas points of its four corners, from the
@@ -3685,6 +3778,56 @@ test("a teleport's shell is laid as the game lays it: the sprite's third corner 
     const d = angles[i] - angles[i - 1];
     near(d - 2 * Math.PI * Math.round((d - step) / (2 * Math.PI)), step);
   }
+  expect(errors).toEqual([]);
+});
+
+test("a level with no key opens from white as the game's does: the first frame is white over the whole canvas, the white wanes on each pass at full pace, and the frame the derived passes on is the scene's own again", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { hash: BONUS_LEVEL });
+  await frozen(page);
+  await startPlay(page);
+  await expect(line(page)).toHaveText(/^Playing · /);
+  const { seen, flash } = await shaded(page, 60);
+  await page.evaluate(() => window.__thaw());
+  const passes = Math.ceil(flash.bonus.from / flash.bonus.step) - 1;
+  // one pass a step of the clock from the first step on, the frame count the draw is handed
+  // standing at nothing through the run's first pass: the opening's flash slows nothing
+  expect(seen.slice(1).map((r) => r.pass - seen[1].pass)).toEqual(seen.slice(1).map((_, i) => i));
+  expect(seen[0].mean).toBeGreaterThan(250);
+  const midway = Math.ceil(passes / 2);
+  expect(seen[1].mean).toBeGreaterThan(seen[midway].mean);
+  expect(seen[midway].mean).toBeGreaterThan(seen[passes].mean);
+  expect(seen[0].mean).toBeGreaterThan(seen[passes].mean + 100);
+  // the last pass the flash shows on still lifts the scene by its strength, and the pass after
+  // shows the scene as it is, which stands near still from there
+  expect(seen[passes].mean).toBeGreaterThan(seen[passes + 1].mean);
+  expect(Math.abs(seen[passes + 1].mean - seen[passes + 8].mean)).toBeLessThan(3);
+  expect(errors).toEqual([]);
+});
+
+test("a level with no key opens as it is with Motion off: the frames drawn show the scene and not the opening's white, and the first frame with Motion on is white, the words having stood", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false, hash: BONUS_LEVEL });
+  await frozen(page);
+  await startPlay(page);
+  await expect(line(page)).toHaveText(/^Playing · /);
+  const { seen } = await shaded(page, 8);
+  // no pass runs while nothing drives the ball, and every frame shows the scene, far from white
+  expect(seen.map((r) => r.pass)).toEqual(seen.map(() => seen[0].pass));
+  for (const r of seen) expect(r.mean).toBeLessThan(128);
+  for (const r of seen) expect(Math.abs(r.mean - seen[0].mean)).toBeLessThan(2);
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).toBeChecked();
+  // the strength stands at the table's full through the frames with Motion off, so the first
+  // frame with Motion on saturates nearly every pixel
+  const lit = (await shaded(page, 1)).seen;
+  await page.evaluate(() => window.__thaw());
+  expect(lit[1].mean).toBeGreaterThan(250);
+  expect(lit[1].mean).toBeGreaterThan(seen[0].mean + 100);
   expect(errors).toEqual([]);
 });
 

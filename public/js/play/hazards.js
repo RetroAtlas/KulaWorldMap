@@ -247,7 +247,7 @@ function throwing(live, out, m, at) {
 
 // The count runs on the frames the ball stands within the band of an on teleporter, the wait
 // held and the requests cleared, stands while the ball is off the band, and is dropped where the
-// teleporter is off; the send sets the flash's strength from the table.
+// teleporter is off.
 function sending(live, out, m, at) {
   const w = live.words;
   const b = live.ball;
@@ -274,7 +274,6 @@ function sending(live, out, m, at) {
   w.marker = m.type;
   place(b, cell, to.face, (far && layHeading(far)) ?? TANGENT[to.face]);
   if (progressOf(b) > send.rearm[1]) w.marker = 0;
-  w.flash = live.tables.motion.effects.flash.teleport.from;
   out.push({ sent: { from, to: { cell, face: to.face } } });
 }
 

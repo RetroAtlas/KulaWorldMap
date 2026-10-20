@@ -27,6 +27,7 @@ import {
   progressOf,
 } from "../../public/js/play/ball.js";
 import {
+  FLASH,
   FORM,
   SCREEN,
   startRun,
@@ -1937,14 +1938,20 @@ test("an invincibility pill ends the bounding: the bouncy pill's word is put bac
 });
 
 const LETHARGIC = motion.types[LETHARGY].lasts;
-const FLASH = motion.effects.flash.teleport;
+const TELEPORT_FLASH = motion.effects.flash.teleport;
+const OPENING_FLASH = motion.effects.flash.bonus;
 /** The passes the screen's mode stands after the pill's own: the word's, the end's, the fade's
     and the one that clears it. */
 const SLOWED =
   LETHARGIC.word / LETHARGIC.step + 1 + LETHARGIC.screen.fade.from / LETHARGIC.screen.fade.by + 1;
-/** The passes the flash stands after the send's, its strength stepped once a pass and above
-    nothing. */
-const FLASHED = Math.ceil(FLASH.from / FLASH.step) - 1;
+/** The passes a flash shows on after the one that starts it, its strength stepped once a pass
+    and above nothing. */
+const shows = ({ from, step }) => Math.ceil(from / step) - 1;
+const FLASHED = shows(TELEPORT_FLASH);
+const OPENED = shows(OPENING_FLASH);
+/** The strengths a flash shows on those passes, each the one before less the step. */
+const waning = ({ from, step }, passes) =>
+  Array.from({ length: passes }, (_, k) => from - step * (k + 1));
 /** The screen's words as each pass of the fade leaves them, from the end's pass to the one that
     clears the mode. */
 const FADING = [
@@ -2000,7 +2007,7 @@ test("an invincibility pill taken while the mode stands brings the end forward: 
   assert.equal(blanksOf(live), 1);
 });
 
-test("a teleport's send sets the flash's strength from the table, which the draw steps once a pass: the passes after the send wait the flash's blanks while it is above nothing, and one blank from the next", () => {
+test("a teleport's send starts the flash in the teleport's mode at the table's strength, which the draw steps once a pass: the strength shows on the derived passes after the send's, each waiting the flash's blanks, and is gone with one blank from the next", () => {
   const port = (x, y, facing, to) => {
     const o = object(0, TELEPORTER, facing, 1);
     o.f[fieldIndex("f7")] = to * 16;
@@ -2012,29 +2019,65 @@ test("a teleport's send sets the flash's strength from the table, which the draw
   );
   const live = begin(l);
   const w = live.words;
-  assert.equal(w.flash, 0);
+  assert.deepEqual([w.flashing, w.flash], [null, 0]);
   assert.equal(blanksOf(live), 1);
   assert.ok(until(live, PAD.up, (_, events) => events.some((e) => e.sent)));
   assert.deepEqual(blockUnder(live.ball), [20, 12, 17]);
-  assert.equal(w.flash, FLASH.from - FLASH.step, "stepped once by the send's own pass");
+  assert.equal(w.flashing, FLASH.teleport);
+  assert.equal(
+    w.flash,
+    TELEPORT_FLASH.from - TELEPORT_FLASH.step,
+    "stepped once by the send's own pass",
+  );
+  const seen = [];
   for (let i = 0; i < FLASHED; i++) {
-    assert.equal(blanksOf(live), FLASH.blanks, `pass ${i + 1} after the send's`);
+    assert.equal(blanksOf(live), TELEPORT_FLASH.blanks, `pass ${i + 1} after the send's`);
+    seen.push(w.flash);
     frame(live, 0);
   }
-  assert.equal(w.flash, 0);
+  assert.deepEqual(seen, waning(TELEPORT_FLASH, FLASHED));
+  assert.ok(seen.at(-1) > 0, "shown on the last pass");
+  assert.deepEqual([w.flashing, w.flash], [null, 0]);
   assert.equal(blanksOf(live), 1);
   frame(live, 0);
   assert.equal(blanksOf(live), 1);
 });
 
-test("a run and a restart start the screen's mode, its fade and the flash at nothing", () => {
+test("a level with no key opens in the flash in the opening's mode at the table's strength and at full pace: every pass of the derived count waits one blank and shows the strength waning by the step, which is gone after; a level with a key, a hidden level and a Simon room open with none, and a restart opens from white again", () => {
+  const live = begin(level(row(10, 18), [start()], 99, false));
+  const w = live.words;
+  assert.deepEqual([w.flashing, w.flash], [FLASH.bonus, OPENING_FLASH.from]);
+  const seen = [];
+  for (let i = 0; i < OPENED; i++) {
+    assert.equal(blanksOf(live), 1, `pass ${i + 1} of the opening`);
+    frame(live, 0);
+    seen.push(w.flash);
+  }
+  assert.deepEqual(seen, waning(OPENING_FLASH, OPENED));
+  assert.ok(seen.at(-1) > 0, "shown on the last pass");
+  assert.equal(blanksOf(live), 1);
+  frame(live, 0);
+  assert.deepEqual([w.flashing, w.flash], [null, 0]);
+  for (const other of [
+    begin(level(row(10, 18), [start()])),
+    begin(level(row(10, 18), [start(), settings(objects.skins.hidden.type)], 99, false)),
+    begin({ ...level(row(10, 18), [start()], 99, false), pack: objects.skins.copycat }),
+  ])
+    assert.deepEqual([other.words.flashing, other.words.flash], [null, 0]);
+  const again = restart(live);
+  assert.deepEqual([again.words.flashing, again.words.flash], [FLASH.bonus, OPENING_FLASH.from]);
+});
+
+test("a run and a restart of a level with a key start the screen's mode, its fade and the flash at nothing", () => {
   const live = begin(level(row(2, 18), [start(), pill(16, Number(LETHARGY))]));
-  assert.deepEqual([live.words.screen, live.words.fade, live.words.flash], [SCREEN.off, 0, 0]);
+  const w = live.words;
+  assert.deepEqual([w.screen, w.fade, w.flashing, w.flash], [SCREEN.off, 0, null, 0]);
   assert.ok(until(live, PAD.up, (_, events) => taken(events, Number(LETHARGY))));
-  live.words.flash = FLASH.from;
+  Object.assign(w, { flashing: FLASH.teleport, flash: TELEPORT_FLASH.from });
   assert.equal(blanksOf(live), LETHARGIC.blanks);
   const again = restart(live);
-  assert.deepEqual([again.words.screen, again.words.fade, again.words.flash], [SCREEN.off, 0, 0]);
+  const a = again.words;
+  assert.deepEqual([a.screen, a.fade, a.flashing, a.flash], [SCREEN.off, 0, null, 0]);
   assert.equal(blanksOf(again), 1);
 });
 
@@ -2042,10 +2085,10 @@ test("the draw's step alone, as the ending's view runs it, keeps the ghost stand
   const live = begin(level(row(2, 18), [start(), pill(16, Number(LETHARGY))]));
   const w = live.words;
   assert.ok(until(live, PAD.up, (_, events) => taken(events, Number(LETHARGY))));
-  w.flash = FLASH.from;
+  Object.assign(w, { flashing: FLASH.teleport, flash: TELEPORT_FLASH.from });
   for (let i = 0; i < SLOWED; i++) drawn(live);
   assert.equal(w.screen, SCREEN.ghost);
-  assert.equal(w.flash, 0);
+  assert.deepEqual([w.flashing, w.flash], [null, 0]);
   assert.equal(blanksOf(live), LETHARGIC.blanks);
   w.screen = SCREEN.end;
   const seen = [];

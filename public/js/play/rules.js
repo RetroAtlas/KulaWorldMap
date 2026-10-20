@@ -1,9 +1,10 @@
 // The game's frame over the ball and the level: the clock, the guard, the wait, the pad, what is
 // under the ball and what it takes, in the executable's order, over pad words from any source,
 // the draw's step over the screen's words as the pass ends and the effects' run after it, the
-// bursts a pickup and a teleporter start, the blanks a pass waits, the view's roll by the pill's
-// word, the invincible ball's glow by its counter, and the run's points and fruit, settled as a
-// level ends, and the slot the game loads next.
+// bursts a pickup and a teleporter start, the flash a send and a level with no key start, the
+// blanks a pass waits, the view's roll by the pill's word, the invincible ball's glow by its
+// counter, and the run's points and fruit, settled as a level ends, and the slot the game loads
+// next.
 import {
   JUMP,
   PAD,
@@ -59,12 +60,16 @@ const OUT = { [EXIT]: "exit", [HIDDEN_EXIT]: "hidden" };
 
 const add = (p, v, k = 1) => p.map((c, i) => c + v[i] * k);
 const lastsOf = (live, type) => live.tables.motion.types[String(type)].lasts;
-const flashOf = (live) => live.tables.motion.effects.flash.teleport;
+const flashOf = (live, mode) => live.tables.motion.effects.flash[mode];
 const effectsOf = (live) => live.tables.motion.effects;
 const effectTable = (live, kind) => effectsOf(live).tables[effectsOf(live).kinds[String(kind)]];
 
 /** The screen's mode word under the lethargy pill: the states its routine runs, in their order. */
 export const SCREEN = { off: 0, flash: 1, ghost: 2, end: 3, fade: 4 };
+
+/** The flash's mode word, as its routine takes it: a send's, or the opening's on a level with no
+    key, each naming the table's entry the strength and the step come from. */
+export const FLASH = { teleport: "teleport", bonus: "bonus" };
 
 /** The level's mode word, as the loader numbers a level: the arcade's, a level with no key or a
     hidden level. */
@@ -206,7 +211,8 @@ function formOf(l, skins, keys, mode) {
     word as `game` carries it, the ball at the start the game takes or at `at`, and the words the
     game keeps as the level loads: the game's mode word by the level's pack, the level's word by
     its keys, its settings record and that mode, that fruit word, the run's bank where the level
-    is one the game counts, and the rest as the level's start sets them. */
+    is one the game counts, the flash a level with no key opens in, and the rest as the level's
+    start sets them. */
 export function startRun(l, idx, tables, circuits, at = null, game = null) {
   const { play, types } = tables.motion;
   const where = at ?? startOf(l);
@@ -253,6 +259,7 @@ export function startRun(l, idx, tables, circuits, at = null, game = null) {
       screen: SCREEN.off,
       fade: 0,
       flash: 0,
+      flashing: null,
       effects: [],
       latch: { up: 0, cross: 0, count: 0 },
       pills: Object.fromEntries(
@@ -265,6 +272,7 @@ export function startRun(l, idx, tables, circuits, at = null, game = null) {
     },
   };
   readCells(live);
+  if (live.words.form === FORM.bonus) startFlash(live, FLASH.bonus);
   return live;
 }
 
@@ -492,11 +500,20 @@ export function particlesOf(live) {
     colour its particles summed to. */
 export const effectLights = (live) => live.words.effects.filter((e) => e.light).map((e) => e.light);
 
+/** The game's start of the flash in `mode`: the strength its table's entry gives, which the draw
+    steps as each pass ends. */
+function startFlash(live, mode) {
+  const w = live.words;
+  w.flashing = mode;
+  w.flash = flashOf(live, mode).from;
+}
+
 /** The draw's step over the screen's words, run as each pass ends, the ending's view's passes
     included, and the effects' run after it: the pill's own pass moves its mode on to the ghost,
     the end's pass lays the fade's level from the table and moves on, each pass after takes the
-    table's step off the level, and the level below nothing clears the mode; the teleport's flash
-    wanes by its step while it stands; and every effect draws its row and counts on. */
+    table's step off the level, and the level below nothing clears the mode; the flash wanes by
+    its mode's step while it stands and is cleared below nothing; and every effect draws its row
+    and counts on. */
 export function drawn(live) {
   const w = live.words;
   const { fade } = lastsOf(live, LETHARGY).screen;
@@ -511,16 +528,20 @@ export function drawn(live) {
       w.fade = 0;
     }
   }
-  if (w.flash > 0) w.flash = Math.max(0, w.flash - flashOf(live).step);
+  if (w.flash > 0) {
+    w.flash = Math.max(0, w.flash - flashOf(live, w.flashing).step);
+    if (w.flash === 0) w.flashing = null;
+  }
   runEffects(live);
 }
 
 /** The blanks the frame loop waits before a pass, by the words as the pass before left them: the
-    pill's while the screen's mode stands, the teleport's while its flash does, else one. */
+    pill's while the screen's mode stands, the teleport's while its flash does, else one; the
+    opening's flash waits none. */
 export function blanksOf(live) {
   const w = live.words;
   if (w.screen) return lastsOf(live, LETHARGY).blanks;
-  if (w.flash > 0) return flashOf(live).blanks;
+  if (w.flashing === FLASH.teleport) return flashOf(live, w.flashing).blanks;
   return 1;
 }
 
@@ -663,13 +684,14 @@ export function frame(live, pad) {
   w.way = b.way;
   if (w.bonus && out.some((e) => e.face === "climb")) mark(live, ahead, out);
   if (!w.guard) contact(live, out);
-  // the bursts, the teleporter's as its count starts and a pickup's as it is taken
+  // the bursts, the teleporter's as its count starts and a pickup's as it is taken, and the flash
+  // as a send lands the ball
   for (const e of out) {
     if (e.took) burst(live, e.took);
     else if (e.sending) {
       const { teleport, hud } = effectsOf(live);
       startEffect(live, teleport.hud, hud.teleport, { icon: "teleport" });
-    }
+    } else if (e.sent) startFlash(live, FLASH.teleport);
   }
   if (out.some((e) => e.pill?.type === LETHARGY)) w.screen = SCREEN.flash;
   if (out.some((e) => e.lost)) end(live, ending.lost, out);

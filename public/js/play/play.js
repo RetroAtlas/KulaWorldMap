@@ -107,6 +107,8 @@ const BALL = "ball";
 const LIGHT = 4096;
 // the ghost's blend takes half of the last frame and half of the scene
 const HALF = 0.5;
+// a channel's full byte, the unit the flash's strength is in
+const BYTE = 255;
 const YAW = 20;
 const PITCH = 30;
 const ZOOM = { blocks: 8, min: 0.8, max: 3 };
@@ -794,12 +796,13 @@ const again = () =>
         (!live.ended && (moving(live.run.ball) || drives(live.run) || keys.busy() || live.driver))))
   );
 
-/** The frame hook: the game's bursts over the scene and the pill's screen over them, and another
-    frame while the view eases, the level runs or something moves, and one more where the view
-    has just cut. */
+/** The frame hook: the game's bursts over the scene, the pill's screen over them and the flash
+    over everything, and another frame while the view eases, the level runs or something moves,
+    and one more where the view has just cut. */
 function more(ctx) {
   drawEffects(ctx);
   screened(ctx);
+  flashing(ctx);
   const asked = again() || redraw;
   redraw = false;
   return asked;
@@ -830,11 +833,23 @@ function screened(ctx) {
   if (ran && ghost) kept(ctx.canvas, tint, grey);
 }
 
-// A white quad added to the whole screen at `level` over the table's grey, the texel as it is.
-function glow(ctx, level, grey, width, height) {
+/** The flash's quad, as the game's draw lays it over everything: white added to the whole screen
+    at the strength the pass left, a byte a channel, on every frame it is above nothing with
+    Motion on; with it off the words run and nothing is drawn. */
+function flashing(ctx) {
+  const strength = live?.run.words.flash ?? 0;
+  if (strength <= 0 || !motionOn()) return;
+  const { w: width, h: height } = state.view;
+  ctx.save();
+  glow(ctx, strength, BYTE, width, height);
+  ctx.restore();
+}
+
+// A white quad added to the whole screen at `level` over `full`, the texel as it is.
+function glow(ctx, level, full, width, height) {
   if (level <= 0) return;
   ctx.globalCompositeOperation = "lighter";
-  ctx.globalAlpha = level / grey;
+  ctx.globalAlpha = level / full;
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, width, height);
 }
@@ -846,7 +861,7 @@ function kept(cv, tint, grey) {
   lastCtx.globalCompositeOperation = "copy";
   lastCtx.drawImage(cv, 0, 0);
   lastCtx.globalCompositeOperation = "multiply";
-  lastCtx.fillStyle = `rgb(${tint.map((v) => Math.round((v * 255) / grey)).join(" ")})`;
+  lastCtx.fillStyle = `rgb(${tint.map((v) => Math.round((v * BYTE) / grey)).join(" ")})`;
   lastCtx.fillRect(0, 0, lastCv.width, lastCv.height);
 }
 
