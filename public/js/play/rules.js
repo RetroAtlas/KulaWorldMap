@@ -1,7 +1,8 @@
 // The game's frame over the ball and the level: the clock, the guard, the wait, the pad, what is
 // under the ball and what it takes, in the executable's order, over pad words from any source,
 // the draw's step over the screen's words as the pass ends, the blanks a pass waits, the view's
-// roll by the pill's word and the invincible ball's glow by its counter.
+// roll by the pill's word, the invincible ball's glow by its counter, and the run's points and
+// fruit, settled as a level ends.
 import {
   JUMP,
   PAD,
@@ -66,6 +67,59 @@ export const SCREEN = { off: 0, flash: 1, ghost: 2, end: 3, fade: 4 };
     hidden level. */
 export const FORM = { arcade: 0, bonus: 1, hidden: 2 };
 
+/** A game as its loop starts one: the total, the bank, the pickups' fruit word and the fruit
+    counted, all at nothing. */
+export const startGame = () => ({ total: 0, bank: 0, fruit: 0, count: 0 });
+
+/** Where the level stands in the game's count, or null where the game counts no such level, a
+    draft or a Simon room among them: its world's place among the worlds, its slot in its pack and
+    whether the pack is the world's finals. */
+export function stationOf(l, { worlds }) {
+  const place = worlds.indexOf(l.theme);
+  const final = l.pack === `/${l.theme}/${l.theme}FI.PAK`;
+  if (place < 0 || (!final && l.pack !== `/${l.theme}/${l.theme}.PAK`)) return null;
+  return { place, slot: l.index, final };
+}
+
+// The level's count from one: the world's place times the levels a world plus the slot, the
+// finals counted by their own levels a world.
+const countOf = ({ place, slot, final }, { levels, finals }) =>
+  (final ? finals : levels) * place + slot + 1;
+
+/** The level's number as the game counts it: its count, the finals numbered on from the worlds'
+    levels. */
+export const numberOf = (station, { points, next }) =>
+  countOf(station, points) + (station.final ? next.worlds * next.slots : 0);
+
+/** The points settled on the frame an ending stands, in the loop's order, over `game`, the run's
+    words: a bad ending on a level past the arcade's mode scores nothing; then a death on an
+    ordinary level takes the level's score and its penalty, so much a level of its count held at
+    the most, off the total and puts the bank back into the pickups' word, and any other ending
+    counts a fruit where the pickups' word differs from the bank, banks the word and adds the
+    score to the total. What the ending did to the total, the total, and whether a total below
+    nothing has ended the game. */
+export function settle(game, live) {
+  const w = live.words;
+  const { points } = live.tables.motion.play;
+  const died = w.outcome < 0;
+  if (died && w.form !== FORM.arcade) w.score = 0;
+  let penalty = 0;
+  let banked = 0;
+  if (died && w.form === FORM.arcade) {
+    const count = countOf(stationOf(live.level, live.tables), points);
+    penalty = w.score + Math.min(points.most, points.each * count);
+    game.total -= penalty;
+    w.fruit = game.bank;
+  } else {
+    if (w.fruit !== game.bank) game.count += 1;
+    game.bank = w.fruit;
+    banked = w.score;
+    game.total += banked;
+  }
+  game.fruit = w.fruit;
+  return { penalty, banked, total: game.total, over: game.total < 0 };
+}
+
 const rulesOf = ({ motion, unit, jump }) => ({
   table: motion.types[String(BALL)],
   turn: motion.turn,
@@ -93,9 +147,10 @@ function formOf(l, skins, keys, mode) {
 
 /** A run of the level from its first frame: the world, the ball at the start the game takes or at
     `at`, and the words the game keeps as the level loads: the game's mode word by the level's
-    pack, the level's word by its keys, its settings record and that mode, and the rest as the
-    level's start sets them. */
-export function startRun(l, idx, tables, circuits, at = null) {
+    pack, the level's word by its keys, its settings record and that mode, the pickups' fruit word
+    as `game` carries it, the run's bank where the level is one the game counts, and the rest as
+    the level's start sets them. */
+export function startRun(l, idx, tables, circuits, at = null, game = null) {
   const { play, types } = tables.motion;
   const where = at ?? startOf(l);
   if (!where) throw new Error("the level has no start to stand the ball on");
@@ -108,6 +163,7 @@ export function startRun(l, idx, tables, circuits, at = null) {
     tables,
     circuits,
     at,
+    game,
     world,
     ball: ballAt(rulesOf(tables), where.cell, where.face, where.h),
     words: {
@@ -119,7 +175,7 @@ export function startRun(l, idx, tables, circuits, at = null) {
       form: formOf(l, tables.skins, keys, mode),
       bonus: keys === 0 && mode !== SIMON,
       unmarked: world.counted.size,
-      fruit: 0,
+      fruit: game?.fruit ?? 0,
       standing: 0,
       cell: OFF_LATTICE,
       wait: play.start.wait,
@@ -467,9 +523,11 @@ export function frame(live, pad) {
 
 /** The level loaded again after an ending: a fresh run of it with the guard set, so the pad is
     dead and the hazards off as the game opens a level that follows another, the ball on the
-    start or at `at`. */
+    start or at `at`, and the game carried on, or started afresh where its total is below nothing,
+    which is the game's end. */
 export function restart(live, at = live.at) {
-  const next = startRun(live.level, live.idx, live.tables, live.circuits, at);
+  const game = live.game && live.game.total < 0 ? startGame() : live.game;
+  const next = startRun(live.level, live.idx, live.tables, live.circuits, at, game);
   next.words.guard = 1;
   return next;
 }

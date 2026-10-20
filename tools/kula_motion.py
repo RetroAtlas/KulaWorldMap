@@ -4319,8 +4319,8 @@ def period(seq, at, cycle, what):
 def take(r):
     """What the ball takes off its face, by type: how far from the thing's
     middle the ball's centre has to come, the ball's own radius apart, where
-    that middle stands off its block's centre, and what it scores; and for
-    each thing that lasts, the word it sets and how that word runs down, the
+    that middle stands off its block's centre, what it scores and, for a
+    fruit, the bit it sets in the pickups' word; and for each thing that lasts, the word it sets and how that word runs down, the
     bouncy pill's latch, the lethargy pill's with the blanks a pass waits while
     its effect stands, the roll of the view and the screen's flash, ghost,
     stretch and fade, and the invincibility pill's with the glow the ball's draw
@@ -4405,7 +4405,8 @@ def take(r):
         42: {**pickup, "stand": r["take.stand.star"], "points": r["star42.points"]},
     }
     for t in range(43, 48):
-        taken[t] = {"reach": reach["take.reach.fruit"], "stand": stand, "points": next(iter(fruit))}
+        taken[t] = {"reach": reach["take.reach.fruit"], "stand": stand, "points": next(iter(fruit)),
+                    "fruit": r[f"fruit.bit.{t}"]}
     lasting = {
         32: {"word": r["pill.lethargy"], "step": -r["pill.lethargy.step"], "ticks": r["pill.lethargy.ticks"],
              "blanks": r["pill.lethargy.blanks"],
@@ -4771,7 +4772,7 @@ def effects(r):
 def play(r):
     """The level's own words: the start's two counts, the clock's ticks, the
     outcomes a level ends with, the frames each ending waits and the word
-    the end screen shows for it, a bonus level's marking, the deaths'
+    the end screen shows for it and for the game's end, a bonus level's marking, the deaths'
     penalty, the ending's view, the fly-in, the screen's words as the
     executable loads them, the slots a run goes on to and the Simon rooms'
     moves, each held against the others: one code and one countdown for a cause wherever it is read
@@ -4847,6 +4848,7 @@ def play(r):
         sys.exit("the final's branch does not pick the acid's word, Copycat is not the clock's standing mode, "
                  "or the time trial's slow exit is not gated at twenty seconds")
     named = {name: r["words"][index] for name, index in picks.items()}
+    named["over"] = r["words"][r["words.over"]]
     return {"start": {"wait": r["start.wait"], "guard": r["start.guard"]},
             "clock": {"tick": r["clock.tick"], "second": r["time.tick"], "face": r["clock.face"],
                       "out": r["end.time"]},
@@ -5065,7 +5067,7 @@ def table(r, platform_speed):
              "phases": [r["corkscrew.phase0"], r["corkscrew.phase1"], r["corkscrew.phase2"], 0]},
     }
     for t in range(43, 48):
-        types[t] = fruit
+        types[t] = dict(fruit)
     types[30].update(roll(r))
     types[30]["jump"] = jump(r)
     types[30]["wrap"]["body"] = body(r)

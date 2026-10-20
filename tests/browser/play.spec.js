@@ -34,7 +34,7 @@ const TIME_UP_MARKED =
   "TIME OUT! 50 points, 0 seconds left. Space or Enter starts the level again.";
 const LOST = /^FELL OFF! 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
 const DONE =
-  /^Out by the exit: the level is done\. 1500 points, \d+ seconds left\. Space or Enter starts the level again\.$/;
+  /^Out by the exit: the level is done\. 1500 points, \d+ seconds left\. 1500 points banked, 1500 points in all\. Space or Enter starts the level again\.$/;
 const SPIKED = /^SPIKED! 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
 const ENDED = "The level has ended";
 const FORGIVEN = "Forgiven: the ball would have been killed on the spikes.";
@@ -1675,8 +1675,10 @@ test("the ball takes the coin it rolls onto, which is gone from the frame, the l
   const coin = [17, 16, 17];
   const keys = page.locator("#playKeys");
   const points = page.locator("#playPoints");
+  const total = page.locator("#playTotal");
   await expect(keys).toHaveText("Keys 1");
   await expect(points).toHaveText("0 points");
+  await expect(total).toHaveText("Total 0");
   expect(await drawsThing(page, coin, 37)).toBe(true);
   expect(await exits(page)).toEqual({ open: false, form: null });
   const roll = async (block) => {
@@ -1713,6 +1715,7 @@ test("the ball takes the coin it rolls onto, which is gone from the frame, the l
   await page.keyboard.press("ArrowUp");
   await expect(status(page)).toHaveText(DONE);
   await expect(say(page)).toHaveText(DONE);
+  await expect(total).toHaveText("Total 1500");
   const done = await probe(page);
   expect(done.playing).toBe(true);
   expect(done.frame).toBeNull();
@@ -1721,6 +1724,8 @@ test("the ball takes the coin it rolls onto, which is gone from the frame, the l
   await expect(status(page)).toHaveText("");
   await expect(keys).toHaveText("Keys 1");
   await expect(points).toHaveText("0 points");
+  // the run's total is carried through the level's start again
+  await expect(total).toHaveText("Total 1500");
   expect((await probe(page)).station).toEqual({
     block: [17, 18, 17],
     face: 0,
@@ -3440,5 +3445,42 @@ test("in a Simon room the clock stands and the ending's view swings the arcade's
   const rise = zooms.findIndex((z, i) => i > 0 && z > zooms[i - 1]);
   expect(Math.abs(rise - turn / (4 * view.swing))).toBeLessThanOrEqual(1);
   expect(rise).toBeGreaterThan(turn / (4 * view.bonus.swing) + 1);
+  expect(errors).toEqual([]);
+});
+
+test("a death on a level of the disc costs the run the level's points and its number's worth, and a total below nothing is the game's end, the run starting afresh with the level", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page);
+  await startPlay(page);
+  const total = page.locator("#playTotal");
+  await expect(total).toHaveText("Total 0");
+  await expect(line(page)).toHaveText("Playing · on the top of 17,18,17, facing -y");
+  // past the level's opening, which holds the pad dead, and facing the level's edge
+  await page.keyboard.press("ArrowLeft");
+  await expect.poll(async () => (await station(page)).heading).toBe("-x");
+  await expect.poll(async () => (await station(page)).moving).toBe(false);
+  await frozen(page);
+  // a jump two blocks on comes down on nothing, and the ball falls off the level
+  await jumped(page);
+  expect(await stepTo(page, "^FELL OFF!", 400)).not.toBeNull();
+  const { each, most } = await page.evaluate(async () => {
+    const { motionTable } = await import(new URL("js/viewer/data.js", location.href).href);
+    return motionTable().play.points;
+  });
+  const penalty = Math.min(most, each);
+  await expect(status(page)).toHaveText(
+    new RegExp(
+      `^FELL OFF! 0 points, 9\\d seconds left\\. ${penalty} points off the total, -${penalty} points in all\\. Game Over! The run starts afresh\\. Space or Enter starts the level again\\.$`,
+    ),
+  );
+  await expect(total).toHaveText(`Total -${penalty}`);
+  await expect(line(page)).toHaveText(ENDED);
+  await page.keyboard.press(" ");
+  await expect(status(page)).toHaveText("");
+  await expect(total).toHaveText("Total 0");
+  await expect(line(page)).toHaveText("Playing · on the top of 17,18,17, facing -y");
+  await page.evaluate(() => window.__thaw());
   expect(errors).toEqual([]);
 });

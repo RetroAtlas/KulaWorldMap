@@ -151,6 +151,23 @@ test("a coin on the ball's own face is taken as its centre comes within reach, b
   assert.equal(live.words.score, coin.points[0]);
 });
 
+test("a fruit sets its own bit in the pickups' word as it is taken, beside the bits already set, and a coin sets none", () => {
+  const taken = (type, fruit) => {
+    const live = begin(level(row(10, 18), [start(), on(16, type)]));
+    live.words.fruit = fruit;
+    trace(live, 120, PAD.up, (l) => l.world.taken.size > 0);
+    assert.equal(live.world.taken.size, 1, `type ${type} taken`);
+    return live.words.fruit;
+  };
+  for (const [i, type] of [43, 44, 45, 46, 47].entries()) {
+    assert.equal(take(type).fruit, 1 << i);
+    assert.equal(taken(type, 0), take(type).fruit);
+    assert.equal(taken(type, 1 << ((i + 1) % 5)), (1 << ((i + 1) % 5)) | take(type).fruit);
+  }
+  assert.equal(take(COIN).fruit, undefined);
+  assert.equal(taken(COIN, 0), 0);
+});
+
 test("a thing out of reach is left, and one the ball rests over is taken on the first frame", () => {
   const aside = begin(level(row(10, 18), [start(), on(18, COIN, 0, 1), on(17, COIN)]));
   trace(aside, 30, 0);

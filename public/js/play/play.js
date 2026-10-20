@@ -86,8 +86,11 @@ import {
   revive,
   rockOf,
   seeing,
+  settle,
   stand,
+  startGame,
   startRun,
+  stationOf,
 } from "./rules.js";
 import { courseDriver, keyPad } from "./drive.js";
 import { frameShown, probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
@@ -151,6 +154,7 @@ const WOULD = {
 };
 const FORGIVEN = (name) => `Forgiven: the ball would have ${WOULD[name]}.`;
 const ENDED = "The level has ended";
+const AFRESH = "The run starts afresh.";
 const OPENED = "The last key is taken: the exits are open.";
 const BROKE = "The crumbling block breaks under the ball.";
 const GONE = (cell) => `The crumbling block at ${cell} is gone.`;
@@ -241,8 +245,8 @@ function bodyOf(b) {
 /** The ball as drawn: live while Motion is on, else as it last stood. */
 const shown = () => (motionOn() ? stateOf(live.run.ball) : live.still);
 
-/** The tables the rules read: the motion table, the mesh file's arc for the jump, a block's units
-    and where the data's records and styles begin. */
+/** The tables the rules read: the motion table, the mesh file's arc for the jump, a block's units,
+    where the data's records and styles begin, the skins and the worlds in the game's order. */
 const tablesOf = () => ({
   motion: motionTable(),
   jump: jumpTable(),
@@ -250,6 +254,7 @@ const tablesOf = () => ({
   first: state.data.firstRecord,
   styles: state.data.styles,
   skins: skinsTable(),
+  worlds: state.data.themes.map((t) => t.id),
 });
 
 /** The circuits as the map holds them, so a press in the panel and a switch the ball throws are
@@ -1013,20 +1018,24 @@ function sent({ from, to }) {
   invalidatePick();
 }
 
-/** The level has ended: the ball is gone and the pad dead, the view lets go of the ball and turns
-    about the level's middle as the game's does, the eye standing by the level's mode word, and
-    the strip gives the verdict with the points and the time left, until a key starts the level
-    again or the view has run the length of one swing of an arcade level's eye, whichever eye the
-    level's word stands. */
+/** The level has ended: the run's points are settled as the game's loop settles them, the ball
+    is gone and the pad dead, the view lets go of the ball and turns about the level's middle as
+    the game's does, the eye standing by the level's mode word, and the strip gives the verdict
+    with the points and the time left and what the ending did to the run's total, until a key
+    starts the level again or the view has run the length of one swing of an arcade level's eye,
+    whichever eye the level's word stands. */
 function ended(code) {
   const { play, turn } = motionTable();
   const { view, clock, words } = play;
-  const w = live.run.words;
+  const run = live.run;
+  const w = run.words;
   const name = endingName(code);
+  const settled = run.game ? settle(run.game, run) : null;
   const seconds = Math.max(0, Math.floor(w.clock / clock.second));
+  const how = `${VERDICT[name] ?? words[name] ?? `${ENDED}.`} ${counted(w.score, "point")}, ${counted(seconds, "second")} left.`;
   live.ended = {
     code,
-    how: `${VERDICT[name] ?? words[name] ?? `${ENDED}.`} ${counted(w.score, "point")}, ${counted(seconds, "second")} left.`,
+    how: settled ? `${how} ${banked(settled, words)}` : how,
     frame: 0,
     length: Math.floor(turn / view.swing),
     theta: 0,
@@ -1051,6 +1060,16 @@ function ended(code) {
 /** The strip's verdict: how the level ended and what starts it again, the pad named while it
     shows. */
 const verdict = () => `${live.ended.how} ${padShown ? AGAIN_PAD : AGAIN}`;
+
+/** What the ending did to the run's total: the penalty taken or the points banked, the total,
+    and where that is below nothing the game's word for its end. */
+function banked({ penalty, banked: points, total, over }, words) {
+  const did = penalty
+    ? `${counted(penalty, "point")} off the total`
+    : `${counted(points, "point")} banked`;
+  const sum = `${did}, ${counted(total, "point")} in all.`;
+  return over ? `${sum} ${words.over} ${AFRESH}` : sum;
+}
 
 /** The death forgiven: the ball put back at rest and the status saying what would have been. */
 function forgive(name) {
@@ -1295,6 +1314,9 @@ function line() {
     w.bonus ? BLOCKS_LEFT : KEYS_LEFT,
   );
   figure("playPoints", counted(w.score, "point"));
+  const game = live.run.game;
+  $("playTotal").hidden = !game;
+  if (game) figure("playTotal", `Total ${game.total}`);
 }
 
 function sync() {
@@ -1466,7 +1488,9 @@ function enter(at = null) {
   state.presses = new Map();
   const from = viewNow();
   state.slice = SIDE - 1;
-  const run = startRun(l, state.idx, tablesOf(), circuitsOf(), start ? null : where);
+  const tables = tablesOf();
+  const game = stationOf(l, tables) ? startGame() : null;
+  const run = startRun(l, state.idx, tables, circuitsOf(), start ? null : where, game);
   if (at && start) stand(run, at);
   live = {
     level: l,

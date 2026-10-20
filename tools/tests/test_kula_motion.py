@@ -872,8 +872,8 @@ class Take(unittest.TestCase):
         self.assertEqual(taken[36], {"reach": 160, "stand": [386, 436, 436], "points": 2975})
         self.assertEqual(taken[37], {"reach": 160, "stand": 406, "points": [750, 500, 250]})
         self.assertEqual(taken[42], {"reach": 160, "stand": 416, "points": 1550})
-        for t in range(43, 48):
-            self.assertEqual(taken[t], {"reach": 180, "stand": 386, "points": 2500})
+        for i, t in enumerate(range(43, 48)):
+            self.assertEqual(taken[t], {"reach": 180, "stand": 386, "points": 2500, "fruit": 1 << i})
         self.assertEqual(set(taken), {31, 32, 33, 34, 35, 36, 37, 38, 42, 43, 44, 45, 46, 47})
         self.assertEqual(lasting[32], {"word": 360, "step": 2, "ticks": 4, "blanks": 2,
                                        "rock": {"scale": 64, "shift": 5},
@@ -967,7 +967,7 @@ class Play(unittest.TestCase):
         self.assertEqual(p["words"], {"exit": "Well Done!", "bonus": "Well Done!", "hidden": "Well Done!",
                                       "spikes": "SPIKED!", "time": "TIME OUT!", "lost": "FELL OFF!", "fire": "FIRE!",
                                       "captivator": "CAPTURED!", "acid": "ACID!", "laser": "LASER!",
-                                      "simon": "Wrong Move!"})
+                                      "simon": "Wrong Move!", "over": "Game Over!"})
         self.assertEqual(p["bonus"], {"block": 50, "skips": 3})
         self.assertEqual(p["points"], {"each": 50, "most": 5000, "levels": 15, "finals": 2})
         self.assertEqual(p["next"], {"bonus": [15, 16, 17], "hidden": 18, "slots": 15, "third": 5, "fruit": 31,

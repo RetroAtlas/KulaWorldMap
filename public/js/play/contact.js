@@ -41,6 +41,7 @@ function take(live, p, at, out) {
     points = t.points * Math.trunc(w.clock / t.clock.second);
   }
   w.score += points;
+  if (t.fruit) w.fruit |= t.fruit;
   out.push({ took: { key: p.key, face: m.face, type: m.type, variant: m.variant, points, at } });
   if (turned) out.push({ clock: turned });
   if (m.type === KEY) {

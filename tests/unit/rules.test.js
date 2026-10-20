@@ -45,6 +45,10 @@ import {
   rockOf,
   glowOf,
   glowStep,
+  numberOf,
+  settle,
+  startGame,
+  stationOf,
 } from "../../public/js/play/rules.js";
 import { probeOf, shiftOf, standingOf, viewOf } from "../../public/js/play/world.js";
 import { recorder, replayDriver } from "../../public/js/play/drive.js";
@@ -63,6 +67,7 @@ const TABLES = {
   first: mapData.firstRecord,
   styles: mapData.styles,
   skins: objects.skins,
+  worlds: mapData.themes.map((t) => t.id),
 };
 const UP = [0, -1, 0];
 const TOP = 0;
@@ -139,7 +144,12 @@ const settings = (type) => ({
   type,
   f: Array(11).fill(0),
 });
-const begin = (l, at = null) => startRun(l, index(l), TABLES, circuits(), at);
+const begin = (l, at = null, game = null) => startRun(l, index(l), TABLES, circuits(), at, game);
+/** The level as the one at `slot` of the world at `place`, of its finals pack where `final`. */
+const counted = (l, place, slot, final = false) => {
+  const w = TABLES.worlds[place];
+  return { ...l, theme: w, pack: `/${w}/${w}${final ? "FI" : ""}.PAK`, index: slot };
+};
 /** Run `n` frames with `pad` held: the events, each with the frame count it left. */
 function steps(live, n, pad = 0) {
   const out = [];
@@ -256,6 +266,139 @@ test("a run keeps the game's mode word by the level's pack and the level's by it
   const arcade = begin(level(row(10, 18), [start()]));
   steps(arcade, 60, PAD.up);
   assert.equal(arcade.words.clock, full - 60 * play.clock.tick, "the arcade's clock falls");
+});
+
+test("a level's number is its world's place times the levels a world plus its slot plus one, a final's twice the place plus the slot plus 151, as every shipped title has it, and a draft or a Simon room stands nowhere in the count", () => {
+  const station = (place, slot, final = false) => ({ place, slot, final });
+  assert.equal(numberOf(station(1, 1), play), 17);
+  assert.equal(numberOf(station(2, 3), play), 34);
+  assert.equal(numberOf(station(0, 1, true), play), 152);
+  let titled = 0;
+  for (const l of mapData.levels) {
+    const m = /^(LEVEL|FINAL) (\d+)$/.exec(l.shown ?? "");
+    if (!m) continue;
+    const at = stationOf(l, TABLES);
+    assert.ok(at, l.shown);
+    assert.equal(at.final, m[1] === "FINAL", l.shown);
+    // the finals are titled from one and numbered on from the worlds' levels
+    const on = at.final ? play.next.worlds * play.next.slots : 0;
+    assert.equal(numberOf(at, play), Number(m[2]) + on, l.shown);
+    titled += 1;
+  }
+  assert.equal(titled, TABLES.worlds.length * (play.points.levels + play.points.finals));
+  const hidden = mapData.levels.find((l) => l.pack === "/HIRO/HIRO.PAK" && l.index === 18);
+  assert.deepEqual(stationOf(hidden, TABLES), { place: 0, slot: 18, final: false });
+  assert.equal(stationOf({ theme: "HIRO", pack: "/DRAFT/DRAFT.PAK", index: 0 }, TABLES), null);
+  assert.equal(stationOf({ theme: "HIRO", pack: objects.skins.copycat, index: 0 }, TABLES), null);
+});
+
+test("a way out banks the level's score and the pickups' fruit word, counting a fruit where the word has a bit the bank has not, and the word is carried into the level's next run", () => {
+  const game = startGame();
+  assert.deepEqual(game, { total: 0, bank: 0, fruit: 0, count: 0 });
+  const live = begin(counted(level(row(10, 18), [start()]), 0, 0), null, game);
+  live.words.score = 1500;
+  live.words.fruit = 2;
+  end(live, play.ending.exit, []);
+  assert.deepEqual(settle(game, live), { penalty: 0, banked: 1500, total: 1500, over: false });
+  assert.deepEqual(game, { total: 1500, bank: 2, fruit: 2, count: 1 });
+  const again = begin(counted(level(row(10, 18), [start()]), 0, 1), null, game);
+  assert.equal(again.words.fruit, 2, "the pickups' word as the game carries it");
+  again.words.score = 250;
+  end(again, play.ending.hidden, []);
+  assert.deepEqual(settle(game, again), { penalty: 0, banked: 250, total: 1750, over: false });
+  assert.deepEqual(
+    game,
+    { total: 1750, bank: 2, fruit: 2, count: 1 },
+    "no new bit, no fruit counted",
+  );
+  again.words.fruit = 3;
+  end(again, play.ending.exit, []);
+  settle(game, again);
+  assert.deepEqual(game, { total: 2000, bank: 3, fruit: 3, count: 2 });
+});
+
+test("a death on an ordinary level takes the score and the penalty off the total, so much a level of its count held at the most, and puts the bank back into the pickups' word", () => {
+  const { each, most } = play.points;
+  const game = { total: 20000, bank: 1, fruit: 3, count: 1 };
+  const one = begin(counted(level(row(10, 18), [start()]), 0, 0), null, game);
+  assert.equal(one.words.fruit, 3);
+  one.words.score = 250;
+  end(one, play.ending.lost, []);
+  assert.deepEqual(settle(game, one), {
+    penalty: 250 + each,
+    banked: 0,
+    total: 20000 - 250 - each,
+    over: false,
+  });
+  assert.deepEqual(game, { total: 20000 - 250 - each, bank: 1, fruit: 1, count: 1 });
+  assert.equal(one.words.fruit, 1, "the bank is put back into the pickups' word");
+  // LEVEL 100, the first whose count's worth reaches the most
+  const hundred = begin(counted(level(row(10, 18), [start()]), 6, 9), null, game);
+  assert.equal(numberOf(stationOf(hundred.level, TABLES), play), 100);
+  assert.equal(each * 100, most);
+  hundred.words.score = 1000;
+  end(hundred, play.ending.spikes, []);
+  let total = game.total - 1000 - most;
+  assert.deepEqual(settle(game, hundred), { penalty: 1000 + most, banked: 0, total, over: false });
+  // LEVEL 150 costs no more than the most and its score
+  const last = begin(counted(level(row(10, 18), [start()]), 9, 14), null, game);
+  assert.equal(numberOf(stationOf(last.level, TABLES), play), 150);
+  end(last, play.ending.time, []);
+  total -= most;
+  assert.deepEqual(settle(game, last), { penalty: most, banked: 0, total, over: false });
+  // FINAL 2 counts as the second level, not the 152nd
+  const final = begin(counted(level(row(10, 18), [start()]), 0, 1, true), null, game);
+  assert.equal(numberOf(stationOf(final.level, TABLES), play), 152);
+  final.words.score = 500;
+  end(final, play.ending.fire, []);
+  total -= 500 + 2 * each;
+  assert.deepEqual(settle(game, final), { penalty: 500 + 2 * each, banked: 0, total, over: false });
+});
+
+test("a death on a level with no key or on a hidden level scores nothing and takes nothing off the total, banking the fruit word as a way out does", () => {
+  const game = { total: 3000, bank: 0, fruit: 0, count: 0 };
+  const none = begin(counted(level(row(10, 18), [start()], 99, false), 0, 15), null, game);
+  assert.equal(none.words.form, FORM.bonus);
+  none.words.score = 150;
+  none.words.fruit = 4;
+  end(none, play.ending.time, []);
+  assert.deepEqual(settle(game, none), { penalty: 0, banked: 0, total: 3000, over: false });
+  assert.equal(none.words.score, 0, "the level's score is left at nothing");
+  assert.deepEqual(game, { total: 3000, bank: 4, fruit: 4, count: 1 });
+  const hidden = begin(
+    counted(level(row(10, 18), [start(), settings(objects.skins.hidden.type)]), 0, 18),
+    null,
+    game,
+  );
+  assert.equal(hidden.words.form, FORM.hidden);
+  hidden.words.score = 2500;
+  end(hidden, play.ending.lost, []);
+  assert.deepEqual(settle(game, hidden), { penalty: 0, banked: 0, total: 3000, over: false });
+  assert.equal(hidden.words.score, 0);
+  assert.deepEqual(game, { total: 3000, bank: 4, fruit: 4, count: 1 });
+  // a way out on either banks what it scored
+  const out = begin(counted(level(row(10, 18), [start()], 99, false), 0, 16), null, game);
+  out.words.score = 150;
+  end(out, play.ending.bonus, []);
+  assert.deepEqual(settle(game, out), { penalty: 0, banked: 150, total: 3150, over: false });
+});
+
+test("a total below nothing after a death ends the game, which starts afresh at nothing as the level is left, and a total at nothing or above carries on", () => {
+  const { each } = play.points;
+  const game = startGame();
+  const live = begin(counted(level(row(10, 18), [start()]), 0, 0), null, game);
+  live.words.fruit = 1;
+  end(live, play.ending.lost, []);
+  assert.deepEqual(settle(game, live), { penalty: each, banked: 0, total: -each, over: true });
+  const next = restart(live);
+  assert.notEqual(next.game, game);
+  assert.deepEqual(next.game, { total: 0, bank: 0, fruit: 0, count: 0 });
+  assert.equal(next.words.fruit, 0);
+  const kept = { total: 0, bank: 2, fruit: 2, count: 1 };
+  const on = restart(begin(counted(level(row(10, 18), [start()]), 0, 0), null, kept));
+  assert.equal(on.game, kept);
+  assert.equal(on.words.fruit, 2);
+  assert.equal(restart(begin(level(row(10, 18), [start()]))).game, null, "a run with no game");
 });
 
 test("a level opens with the pad dead for 19 frames, read from the 20th", () => {

@@ -636,8 +636,8 @@ test("a pickup is taken within its reach of the ball's centre, which stands shor
   assert.deepEqual(take(37), { reach: 160, stand: 406, points: [750, 500, 250] });
   assert.deepEqual(take(36), { reach: 160, stand: [386, 436, 436], points: 2975 });
   assert.deepEqual(take(42), { reach: 160, stand: 416, points: 1550 });
-  for (const t of [43, 44, 45, 46, 47])
-    assert.deepEqual(take(t), { reach: 180, stand: 386, points: 2500 });
+  for (const [i, t] of [43, 44, 45, 46, 47].entries())
+    assert.deepEqual(take(t), { reach: 180, stand: 386, points: 2500, fruit: 1 << i });
   for (const t of [32, 33, 34]) assert.deepEqual(take(t), { reach: 160, stand: 386 });
   assert.equal(centre, 356);
   assert.ok(within(take(37), 30) > 170 && within(take(37), -10) < 185);
@@ -854,7 +854,7 @@ test("the clock ticks once a frame, fifty to a shown second, and a level ends in
   assert.equal((99 * play.clock.second) / play.clock.tick / table.hz, 82.5);
 });
 
-test("the end screen names each outcome in the game's own word, a death's in capitals", () => {
+test("the end screen names each outcome in the game's own word, a death's in capitals, and the game's end", () => {
   const { words, ending } = table.play;
   assert.deepEqual(words, {
     exit: "Well Done!",
@@ -868,8 +868,9 @@ test("the end screen names each outcome in the game's own word, a death's in cap
     acid: "ACID!",
     laser: "LASER!",
     simon: "Wrong Move!",
+    over: "Game Over!",
   });
-  assert.deepEqual(Object.keys(words), Object.keys(ending));
+  assert.deepEqual(Object.keys(words), [...Object.keys(ending), "over"]);
   for (const [name, code] of Object.entries(ending)) {
     assert.equal(words[name] === words[name].toUpperCase(), code < 0 && code !== ending.simon);
     assert.ok(words[name].endsWith("!"));
