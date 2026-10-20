@@ -977,16 +977,23 @@ test("an exit leads to the slot after, five fruit to a bonus level by thirds of 
   }
 });
 
-test("a Simon room latches Up and Cross over five frames from the third at rest, turns from the sixth, packs a move in four bits, holds 512 rounds of two more moves and is won past 5 points", () => {
+test("a Simon room latches Up and Cross over five frames from the third at rest, turns from the sixth, packs a move in four bits, holds 512 rounds of two more moves from the first's two in a sequence of empty halfwords, tells the sequence done from a wrong move and is won past 5 points", () => {
   const { simon, next } = table.play;
   assert.deepEqual(simon, {
     latch: 5,
     idle: [3, 6],
     bits: { right: 1, left: 2, forward: 4, jump: 8 },
     store: 1024,
+    empty: -1,
+    first: 1,
+    verdict: { done: 1, wrong: 2 },
     grow: 2,
     points: 5,
   });
+  // the empty halfword is no move, and the two verdicts are told from each other and from none
+  assert.ok(simon.empty < 0);
+  assert.ok(simon.verdict.done > 0 && simon.verdict.wrong > 0);
+  assert.notEqual(simon.verdict.done, simon.verdict.wrong);
   // a tap of Up on the third frame at rest asks the roll on the seventh, past the turn's gate on the sixth
   assert.equal(simon.idle[0] + simon.latch - 1, 7);
   assert.ok(simon.idle[0] + simon.latch - 1 >= simon.idle[1]);
@@ -996,8 +1003,9 @@ test("a Simon room latches Up and Cross over five frames from the third at rest,
     [1, 2, 4, 8],
   );
   assert.equal(simon.bits.forward | simon.bits.jump, 12);
-  // the first round asks two moves and each round after two more, so the k-th asks 2k and the 512th fills the sequence
-  const moves = (round) => 2 + simon.grow * (round - 1);
+  // the first round asks the moves at the indices 0 to the first count, two, and each round after
+  // two more, so the k-th asks 2k and the 512th fills the sequence
+  const moves = (round) => simon.first + 1 + simon.grow * (round - 1);
   assert.deepEqual([1, 2, 3, 10].map(moves), [2, 4, 6, 20]);
   assert.equal(moves(512), simon.store);
   // a game is won past 5 points, and the Copycat pack holds one room a world

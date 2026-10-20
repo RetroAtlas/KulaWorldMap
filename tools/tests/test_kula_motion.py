@@ -982,7 +982,8 @@ class Play(unittest.TestCase):
     def test_the_simon_rooms_ship_their_latch_their_gates_their_bits_their_sequence_and_their_points(self):
         s = simon(GAME)
         self.assertEqual(s, {"latch": 5, "idle": [3, 6], "bits": {"right": 1, "left": 2, "forward": 4, "jump": 8},
-                             "store": 1024, "grow": 2, "points": 5})
+                             "store": 1024, "empty": -1, "first": 1, "verdict": {"done": 1, "wrong": 2}, "grow": 2,
+                             "points": 5})
         # a tap of Up on the third frame at rest fires on the seventh, past the turn's gate
         self.assertGreaterEqual(s["idle"][0] + s["latch"] - 1, s["idle"][1])
         # the first round asks two moves and every round two more, so the sequence is full in the 512th

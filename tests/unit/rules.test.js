@@ -51,6 +51,7 @@ import {
   conclude,
   settle,
   startGame,
+  startMatch,
   stationOf,
   startEffect,
   particlesOf,
@@ -150,7 +151,8 @@ const settings = (type) => ({
   type,
   f: Array(11).fill(0),
 });
-const begin = (l, at = null, game = null) => startRun(l, index(l), TABLES, circuits(), at, game);
+const begin = (l, at = null, game = null, match = null) =>
+  startRun(l, index(l), TABLES, circuits(), at, game, match);
 /** The level as the one at `slot` of the world at `place`, of its finals pack where `final`. */
 const counted = (l, place, slot, final = false) => {
   const w = TABLES.worlds[place];
@@ -2455,4 +2457,273 @@ test("a teleporter starts its HUD kind at the screen's teleport point as its cou
   assert.equal(w.effects[0].count, frames);
   frame(live, 0);
   assert.deepEqual(w.effects, []);
+});
+
+// --- the Simon rooms -----------------------------------------------------------------------
+
+const ROOMS = play.simon;
+/** A room of the Copycat pack: the row with the start and no key, so it plays in the game's mode. */
+const room = (blocks = row(10, 18), records = [start()]) => ({
+  ...level(blocks, records, 99, false),
+  pack: objects.skins.copycat,
+});
+/** The frame at rest on which Up held from the first asks the roll: the latch runs from the first
+    gate and asks as its count reaches the latch's. */
+const ASKS = ROOMS.idle[0] + ROOMS.latch - 1;
+/** Run the level through the start's dead frames, so the next frame is the first that reads the
+    pad. */
+const opened = (live, pad = 0) => steps(live, play.start.wait - 1, pad);
+/** Up held from rest through the roll it asks, to the rest on the next block. */
+function rolled(live) {
+  for (let i = 1; i <= ASKS; i++) frame(live, PAD.up);
+  assert.equal(live.ball.state, ROLLING, "the roll asked");
+  assert.ok(
+    until(live, PAD.up, (l) => l.ball.state === REST, 40),
+    "and come to rest",
+  );
+}
+const fresh = () => startMatch(ROOMS);
+
+test("a Simon room opens on a match as the reset leaves it, the sequence filled with the empty halfword and the count of moves at the first, with the idle count, the index and the verdict at nothing, a match handed in has its count counted on by the grow, and a level outside the rooms holds no match", () => {
+  const live = begin(room());
+  const w = live.words;
+  assert.equal(w.mode, SIMON);
+  assert.deepEqual(live.match, {
+    sequence: Array(ROOMS.store).fill(ROOMS.empty),
+    count: ROOMS.first,
+  });
+  assert.equal(live.match.sequence.length, ROOMS.store);
+  assert.deepEqual([w.idle, w.index, w.verdict], [0, 0, 0]);
+  const carried = fresh();
+  const next = begin(room(), null, null, carried);
+  assert.equal(next.match, carried, "the match handed in is the run's");
+  assert.equal(carried.count, ROOMS.first + ROOMS.grow, "its count of moves counted on");
+  assert.equal(begin(level(row(10, 18), [start()])).match, null);
+  assert.equal(begin(level(row(10, 18), [start()]), null, null, fresh()).match, null);
+});
+
+test("in a Simon room Up held from rest asks the roll on the fifth frame of the latch, which runs from the third frame at rest, the ball rolls one block as one move held at the index 0, a second roll is the move at the index 1, the count of moves, which is the verdict done, and the verdict becomes the exit's ending with the rooms' wait as the ball rests, the pad unread from that frame until the wait's last frame, which reads it", () => {
+  const live = begin(room());
+  const w = live.words;
+  const b = live.ball;
+  const { idle, bits, verdict } = ROOMS;
+  opened(live, PAD.up);
+  assert.deepEqual([w.idle, w.latch.count], [0, 0], "nothing read through the start's wait");
+  for (let i = 1; i < ASKS; i++) {
+    frame(live, PAD.up);
+    assert.equal(w.idle, i, `the idle count on frame ${i} at rest`);
+    assert.equal(w.latch.count, Math.max(0, i - idle[0] + 1), `the latch's count on frame ${i}`);
+    assert.equal(w.latch.up, i >= idle[0] ? 1 : 0, `Up's latch on frame ${i}`);
+    assert.equal(b.state, REST);
+    assert.equal(b.forward, false);
+  }
+  frame(live, PAD.up);
+  assert.equal(w.idle, ASKS);
+  assert.equal(b.state, ROLLING, "the roll asked as the latch's count reaches the latch");
+  assert.deepEqual(w.latch, { up: 0, cross: 0, count: 0 }, "the count and both latches cleared");
+  assert.deepEqual([w.index, live.match.sequence[0], w.verdict], [1, bits.forward, 0]);
+  assert.ok(until(live, PAD.up, (l) => l.ball.state === REST, 40));
+  assert.deepEqual(blockUnder(b), [17, 17, 17], "one block");
+  assert.deepEqual(
+    [w.idle, w.index, b.forward],
+    [0, 1, false],
+    "the roll's frames read no request",
+  );
+  for (let i = 1; i < ASKS; i++) {
+    frame(live, PAD.up);
+    assert.equal(b.state, REST);
+  }
+  frame(live, PAD.up);
+  assert.equal(b.state, ROLLING);
+  assert.deepEqual(live.match.sequence.slice(0, 3), [bits.forward, bits.forward, ROOMS.empty]);
+  assert.deepEqual([w.index, w.verdict], [2, verdict.done], "the move at the count of moves");
+  assert.equal(w.index, live.match.count + 1);
+  assert.ok(until(live, PAD.up, (l) => l.ball.state === REST, 40));
+  assert.deepEqual(
+    [w.verdict, w.ending, w.wait],
+    [verdict.done, 0, 0],
+    "standing through the roll",
+  );
+  assert.equal(heeds(live), false, "the frame that judges the verdict reads no pad");
+  assert.deepEqual(frame(live, PAD.up), []);
+  assert.deepEqual(
+    [w.ending, w.wait, w.verdict],
+    [play.ending.exit, play.wait.simon - 1, 0],
+    "the ending set and its wait counted on the same frame, the verdict cleared",
+  );
+  assert.deepEqual(
+    [w.idle, w.latch.count, b.forward],
+    [ASKS, 0, false],
+    "the idle count as the verdict's frame left it, nothing read since",
+  );
+  for (let i = 0; i < play.wait.simon - 2; i++) assert.deepEqual(frame(live, PAD.up), []);
+  assert.equal(w.outcome, 0);
+  assert.deepEqual(frame(live, PAD.up), [
+    { ended: { code: play.ending.exit, score: 0, clock: 99 * play.clock.second } },
+  ]);
+  assert.equal(w.outcome, play.ending.exit);
+  assert.deepEqual(
+    [w.idle, w.latch, w.index],
+    [ASKS + 1, { up: 1, cross: 0, count: 1 }, 2],
+    "the wait's last frame read Up, which set its latch and made no move",
+  );
+});
+
+test("the frame a round's wait runs out reads the pad as any wait's last frame does, the idle count as the verdict's frame left it, so a Left held then is a turn and a move held to the sequence, carried into the next round with the count grown", () => {
+  const live = begin(room());
+  const w = live.words;
+  const { bits, verdict, grow, first, empty } = ROOMS;
+  opened(live);
+  rolled(live);
+  rolled(live);
+  assert.deepEqual([w.index, w.verdict, w.idle], [2, verdict.done, ASKS]);
+  frame(live, PAD.left);
+  assert.deepEqual([w.ending, w.wait, w.verdict], [play.ending.exit, play.wait.simon - 1, 0]);
+  for (let i = 0; i < play.wait.simon - 2; i++) assert.deepEqual(frame(live, PAD.left), []);
+  assert.deepEqual([w.wait, w.idle, w.index], [1, ASKS, 2], "nothing read through the wait");
+  assert.equal(heeds(live), true, "the frame the wait runs out on reads the pad");
+  const events = frame(live, PAD.left);
+  assert.ok(events.some((e) => e.ended?.code === play.ending.exit));
+  assert.equal(w.outcome, play.ending.exit);
+  assert.deepEqual([w.idle, w.index], [0, 3], "the turn asked and held as the third move");
+  assert.deepEqual(live.match.sequence.slice(0, 4), [bits.forward, bits.forward, bits.left, empty]);
+  const next = restart(live);
+  assert.equal(next.match, live.match, "the match carried");
+  assert.equal(next.match.count, first + grow);
+  assert.deepEqual(next.match.sequence.slice(0, 4), [bits.forward, bits.forward, bits.left, empty]);
+});
+
+test("in a Simon room Cross held within the latch's five frames joins Up's roll as the forward jump, one move of the two bits, and Cross alone is the hop, one of the jump's", () => {
+  const live = begin(room());
+  const w = live.words;
+  const { idle, bits } = ROOMS;
+  opened(live);
+  for (let i = 1; i < ASKS; i++) frame(live, i >= idle[0] + 2 ? PAD.up | PAD.cross : PAD.up);
+  assert.deepEqual([w.latch.up, w.latch.cross], [1, 1]);
+  frame(live, PAD.up | PAD.cross);
+  assert.equal(live.ball.state, JUMP, "the forward jump");
+  assert.deepEqual([w.index, live.match.sequence[0]], [1, bits.forward + bits.jump]);
+  const hop = begin(room());
+  opened(hop);
+  for (let i = 1; i <= ASKS; i++) frame(hop, PAD.cross);
+  assert.equal(hop.ball.state, HOP);
+  assert.deepEqual([hop.words.index, hop.match.sequence[0]], [1, bits.jump]);
+});
+
+test("in a Simon room a held Left turns the ball on the sixth frame at rest, putting the idle count back to nothing, and again on the sixth frame after the turn ends, each a move of the left's bit, and Right held with it is the turn right", () => {
+  const live = begin(room());
+  const w = live.words;
+  const b = live.ball;
+  const { idle, bits, verdict } = ROOMS;
+  const { frames } = motion.types["30"].quarter;
+  opened(live);
+  for (let i = 1; i < idle[1]; i++) {
+    frame(live, PAD.left);
+    assert.equal(w.idle, i);
+    assert.equal(b.turn, 0);
+    assert.equal(b.ramp, null);
+  }
+  assert.deepEqual(frame(live, PAD.left), [{ turned: LEFT }]);
+  assert.deepEqual([w.idle, w.index, live.match.sequence[0]], [0, 1, bits.left]);
+  for (let i = 1; i < frames; i++) {
+    assert.ok(b.ramp, `the turn runs on frame ${i} after`);
+    frame(live, PAD.left);
+    assert.equal(w.idle, 0, "no frame at rest while the turn runs");
+  }
+  assert.equal(b.ramp, null, "the turn over");
+  for (let i = 1; i < idle[1]; i++) {
+    frame(live, PAD.left);
+    assert.equal(w.idle, i);
+  }
+  assert.deepEqual(frame(live, PAD.left), [{ turned: LEFT }]);
+  assert.deepEqual(live.match.sequence.slice(0, 2), [bits.left, bits.left]);
+  assert.deepEqual([w.index, w.verdict], [2, verdict.done]);
+  const right = begin(room());
+  opened(right);
+  for (let i = 1; i < idle[1]; i++) frame(right, PAD.left | PAD.right);
+  assert.deepEqual(frame(right, PAD.left | PAD.right), [{ turned: -LEFT }]);
+  assert.equal(right.match.sequence[0], bits.right);
+});
+
+test("a done round carries the match into the room started again with the count of moves grown, so the next round replays the moves stored and adds two, a move unlike the one stored is the verdict wrong and the rooms' own ending, nothing is read while a verdict stands, and the room that follows an ending not above nothing opens on the match reset", () => {
+  const { bits, verdict, grow, first, empty } = ROOMS;
+  const live = begin(room());
+  opened(live);
+  rolled(live);
+  rolled(live);
+  assert.equal(live.words.verdict, verdict.done);
+  assert.ok(until(live, 0, (l) => l.words.outcome !== 0, 60));
+  assert.equal(live.words.outcome, play.ending.exit);
+  const match = live.match;
+  const second = restart(live);
+  assert.equal(second.match, match, "the match carried");
+  assert.equal(match.count, first + grow);
+  assert.deepEqual([second.words.idle, second.words.index, second.words.verdict], [0, 0, 0]);
+  assert.deepEqual(match.sequence.slice(0, 4), [bits.forward, bits.forward, empty, empty]);
+  opened(second);
+  rolled(second);
+  assert.deepEqual([second.words.index, second.words.verdict], [1, 0], "the first move replayed");
+  rolled(second);
+  assert.deepEqual([second.words.index, second.words.verdict], [2, 0], "and the second");
+  rolled(second);
+  assert.deepEqual([second.words.index, second.words.verdict], [3, 0], "a third stored");
+  rolled(second);
+  assert.deepEqual([second.words.index, second.words.verdict], [4, verdict.done]);
+  assert.deepEqual(match.sequence.slice(0, 5), Array(4).fill(bits.forward).concat(empty));
+  assert.ok(until(second, 0, (l) => l.words.outcome !== 0, 60));
+  const third = restart(second);
+  assert.equal(third.match, match);
+  assert.equal(match.count, first + 2 * grow);
+  opened(third);
+  const w = third.words;
+  const b = third.ball;
+  for (let i = 1; i <= ROOMS.idle[1]; i++) frame(third, PAD.left);
+  assert.ok(b.ramp, "the turn asked");
+  assert.deepEqual([w.index, w.verdict], [1, verdict.wrong]);
+  assert.equal(match.sequence[0], bits.forward, "the sequence as it was");
+  // nothing is read while the verdict stands: Up held through the turn sets no latch and the
+  // idle count stays where the turn put it
+  while (b.ramp) {
+    frame(third, PAD.up);
+    assert.deepEqual(
+      [w.idle, w.latch.count, w.latch.up, b.forward],
+      [0, 0, 0, false],
+      "nothing read",
+    );
+  }
+  assert.equal(b.state, REST);
+  assert.equal(heeds(third), false);
+  frame(third, PAD.up);
+  assert.deepEqual([w.ending, w.wait, w.verdict], [play.ending.simon, play.wait.simon - 1, 0]);
+  assert.ok(until(third, PAD.up, (l) => l.words.outcome !== 0, 60));
+  assert.equal(w.outcome, play.ending.simon);
+  assert.equal(w.index, 1);
+  const fourth = restart(third);
+  assert.notEqual(fourth.match, match, "the match reset after the wrong move");
+  assert.deepEqual(fourth.match, fresh());
+  opened(fourth);
+  rolled(fourth);
+  assert.equal(fourth.match.sequence[0], bits.forward);
+  end(fourth, play.ending.lost, []);
+  const fifth = restart(fourth);
+  assert.deepEqual(fifth.match, fresh(), "and after a death");
+});
+
+test("in a Simon room a roll asked without a jump toward an edge beside a neighbour is dropped before the move is packed, so nothing is held and the index stands, while the forward jump asked there is a move", () => {
+  const live = begin(room([...row(10, 18), [18, 10, 17]]), {
+    cell: [17, 10, 17],
+    face: TOP,
+    h: UP,
+  });
+  const w = live.words;
+  const { bits, empty, latch } = ROOMS;
+  opened(live);
+  let events = [];
+  for (let i = 1; i <= ASKS; i++) events = frame(live, PAD.up);
+  assert.deepEqual(events, [{ refused: "edge" }]);
+  assert.equal(live.ball.state, REST);
+  assert.deepEqual([w.index, live.match.sequence[0], w.idle], [0, empty, ASKS]);
+  for (let i = 1; i <= latch; i++) frame(live, PAD.up | PAD.cross);
+  assert.equal(live.ball.state, JUMP);
+  assert.deepEqual([w.index, live.match.sequence[0]], [1, bits.forward + bits.jump]);
 });

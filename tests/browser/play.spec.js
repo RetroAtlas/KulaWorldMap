@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import {
   settle,
   still,
@@ -25,6 +26,18 @@ const LETHARGY_LEVEL = "/#INCA/12/45,35/fit/33";
 const HIDDEN_LEVEL = "/#HIRO/18/45,35/fit/33";
 // SIMON 1: the start on the top row of a ring, facing along it, with nothing two blocks on
 const SIMON_LEVEL = "/#COPYCAT/0/45,35/fit/33";
+const SIMON_PACK = "/HIRO/COPYCAT.PAK";
+// the points are the layout's, a pickup standing on the block the first move rolls onto
+const ROUND_DONE =
+  "^Well Done! The round is done\\. \\d+ points, \\d+ seconds left\\. Space or Enter starts the level again\\.$";
+const AXES = {
+  "+x": [1, 0, 0],
+  "-x": [-1, 0, 0],
+  "+y": [0, 1, 0],
+  "-y": [0, -1, 0],
+  "+z": [0, 0, 1],
+  "-z": [0, 0, -1],
+};
 // LEVEL 3: the fruit on the top of 15,15,17, of the common type, which the map draws as the third
 // of the five by the level's number
 const FRUIT_LEVEL = "/#HIRO/2/45,35/fit/33";
@@ -4119,6 +4132,62 @@ test("in a Simon room the clock stands and the ending's view swings the arcade's
   const rise = zooms.findIndex((z, i) => i > 0 && z > zooms[i - 1]);
   expect(Math.abs(rise - turn / (4 * view.swing))).toBeLessThanOrEqual(1);
   expect(rise).toBeGreaterThan(turn / (4 * view.bonus.swing) + 1);
+  expect(errors).toEqual([]);
+});
+
+test("a Simon room takes the pad one move at a time: Up held rolls the ball one block on the latch's fifth frame at rest and not before, a held Left turns it, and the round's two moves done end the room with the game's word", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const { levels } = JSON.parse(
+    readFileSync(new URL("../../public/map_data.json", import.meta.url), "utf8"),
+  );
+  const room = levels.find((l) => l.pack === SIMON_PACK && l.index === 0);
+  const start = room.records.find((r) => r.on.some((o) => o.type === 30));
+  await opened(page, { hash: SIMON_LEVEL });
+  await startPlay(page);
+  const before = await station(page);
+  expect(before.block).toEqual([start.x, start.y, start.z]);
+  const ahead = before.block.map((v, i) => v + AXES[before.heading][i]);
+  await frozen(page);
+  // past the opening and long at rest, so the latch runs from the first frame Up is read
+  await onward(page, 40);
+  const rolled = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw }, { motionTable }, P] = await Promise.all(
+      ["viewer/draw/render.js", "viewer/data.js", "play/play.js"].map(at),
+    );
+    const { hz, play } = motionTable();
+    const key = (type, k) =>
+      document.body.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+    const run = () => {
+      window.__step(1000 / hz);
+      draw();
+    };
+    const seen = [];
+    key("keydown", "ArrowUp");
+    for (let f = 0; f < play.simon.latch + 2 && !seen.includes(true); f++) {
+      run();
+      seen.push(P.station().moving);
+    }
+    key("keyup", "ArrowUp");
+    for (let f = 0; f < 40; f++) run();
+    return { seen, after: P.station(), latch: play.simon.latch };
+  });
+  expect(rolled.seen).toEqual(
+    Array.from({ length: rolled.latch }, (_, i) => i === rolled.latch - 1),
+  );
+  expect(rolled.after).toEqual({ ...before, block: ahead });
+  // Left held turns the ball at once, the ball long at rest, which is the round's second move,
+  // and the verdict ends the room as the ball comes to rest from the turn
+  await page.evaluate(() =>
+    document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true })),
+  );
+  expect(await stepTo(page, ROUND_DONE, 120)).not.toBeNull();
+  await page.evaluate(() =>
+    document.body.dispatchEvent(new KeyboardEvent("keyup", { key: "ArrowLeft", bubbles: true })),
+  );
+  await expect(status(page)).toHaveText(new RegExp(ROUND_DONE));
   expect(errors).toEqual([]);
 });
 

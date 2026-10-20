@@ -75,6 +75,7 @@ import {
 } from "./ball.js";
 import {
   FORM,
+  MODE,
   SCREEN,
   blanksOf,
   conclude,
@@ -159,6 +160,7 @@ const WOULD = {
 };
 const FORGIVEN = (name) => `Forgiven: the ball would have ${WOULD[name]}.`;
 const ENDED = "The level has ended";
+const ROUND_DONE = "The round is done.";
 const AFRESH = "The run starts afresh.";
 const OPENED = "The last key is taken: the exits are open.";
 const BROKE = "The crumbling block breaks under the ball.";
@@ -715,8 +717,9 @@ function strewn(from, to, n, blockOf, still = false) {
 function played() {
   const run = live.run;
   const b = run.ball;
-  // a tap stands until a frame reads the pad, as the level opens with it dead
-  const pad = keys.pad(heeds(run), live.driver ? live.driver.pad(run) : 0);
+  // a tap stands until a frame reads the pad, as the level opens with it dead, and is dropped
+  // while an ending stands, so its wait's last frame reads only the keys held on it
+  const pad = keys.pad(heeds(run), live.driver ? live.driver.pad(run) : 0, !run.words.ending);
   const was = onFace(b) ? footOf(b) : null;
   const blinked = !!run.words.blink;
   const events = gameFrame(run, pad);
@@ -1055,7 +1058,11 @@ function ended(code) {
   const name = endingName(code);
   const settled = conclude(run);
   const seconds = Math.max(0, Math.floor(w.clock / clock.second));
-  const how = `${VERDICT[name] ?? words[name] ?? `${ENDED}.`} ${counted(w.score, "point")}, ${counted(seconds, "second")} left.`;
+  const told =
+    w.mode === MODE.simon && code === play.ending.exit
+      ? `${words[name]} ${ROUND_DONE}`
+      : (VERDICT[name] ?? words[name] ?? `${ENDED}.`);
+  const how = `${told} ${counted(w.score, "point")}, ${counted(seconds, "second")} left.`;
   const next = run.game ? pickedLevel(nextOf(run.game, run, packCount(live.level.pack))) : null;
   live.ended = {
     code,

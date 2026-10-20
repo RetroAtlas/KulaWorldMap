@@ -373,6 +373,21 @@ test("a key tapped over frames that do not read the pad is kept for the first fr
   assert.equal(keys.busy(), false);
 });
 
+test("a key tapped over frames that do not read the pad is dropped by one told not to keep it, a key held through that frame still sampled and read on, and a tap over frames that keep again kept", () => {
+  const keys = keyPad();
+  tap(keys, PAD.right);
+  assert.equal(keys.pad(false, 0, false), 0);
+  assert.equal(keys.busy(), false, "the tap dropped");
+  assert.deepEqual(padsOf(keys, 2), [0, 0]);
+  keys.down(PAD.left);
+  assert.equal(keys.pad(false, 0, false), PAD.left, "a held key sampled");
+  assert.deepEqual(padsOf(keys, 1), [PAD.left]);
+  keys.up(PAD.left);
+  tap(keys, PAD.up);
+  assert.equal(keys.pad(false), 0);
+  assert.deepEqual(padsOf(keys, 2), [PAD.up, 0], "kept again");
+});
+
 test("a key down as a frame that does not read the pad runs is sampled by it: it stands in the frame's word, waits no longer, and let go before the pad is read again is nothing", () => {
   const keys = keyPad();
   keys.down(PAD.up);

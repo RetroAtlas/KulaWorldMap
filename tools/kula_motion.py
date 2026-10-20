@@ -4545,13 +4545,14 @@ def words(code):
 def simon(r):
     """The Simon rooms' words: the frames Up and Cross are latched over, the
     idle count's gates for the latch and for a turn, the bits a move packs
-    into, the sequence's length, the moves a round adds and the points a game
-    is won past, each held against the others: one mode for the pad's case,
-    the start's branch, the loop's point, the next-level routine's branch
-    and the menu, the pad's verdicts the ending's, the bits one each, the
-    reset's fill the sequence the pad reads from its last halfword down, a
-    latched request past the turn's gate, and one gate for the points
-    wherever they are asked."""
+    into, the sequence's length and the halfword that holds no move, the
+    count of moves the reset leaves, the two verdicts, the moves a round adds
+    and the points a game is won past, each held against the others: one mode
+    for the pad's case, the start's branch, the loop's point, the next-level
+    routine's branch and the menu, the pad's verdicts the ending's, the bits
+    one each, the reset's fill the sequence the pad reads from its last
+    halfword down, a latched request past the turn's gate, and one gate for
+    the points wherever they are asked."""
     if len({r["simon.mode"], r["simon.start.mode"], r["simon.loop.mode"], r["simon.next.mode"], r["simon.menu.start"],
             r["clock.mode"]}) != 1:
         sys.exit("the Simon rooms' case, branch, point and menu are not keyed on the mode the clock stands in")
@@ -4592,7 +4593,9 @@ def simon(r):
     if any(r["gp"] + off != addr for addr, off in SIMON_AT.values()):
         sys.exit("a word of the Simon rooms' does not lie where its offset from gp puts it")
     return {"latch": r["simon.latch"], "idle": [r["simon.idle.latch"], r["simon.idle.turn"]], "bits": bits,
-            "store": r["simon.store.last"] + 1, "grow": r["simon.grow"], "points": r["simon.points.gate"] - 1}
+            "store": r["simon.store.last"] + 1, "empty": r["simon.empty"], "first": r["simon.first"],
+            "verdict": {"done": r["simon.verdict.done"], "wrong": r["simon.verdict.wrong"]}, "grow": r["simon.grow"],
+            "points": r["simon.points.gate"] - 1}
 
 
 def effect_init(code, span=EFFECT_INIT):
