@@ -12,7 +12,7 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_ggi import (  # noqa: E402
-    ARC, BLEND, GROUP, PREFIX, QUAD, SORTED, TEXTURES, VRAM_H, Model, as_dict, jump, shadows)
+    ARC, BLEND, GROUP, PREFIX, QUAD, SORTED, TEXTURES, VRAM_H, Model, as_dict, jump, rgb, shadows, sparks)
 
 
 def packed(frames):
@@ -148,6 +148,61 @@ class Shadows(unittest.TestCase):
                   sprites([0, STP | 3 * GREY, STP | 10 * GREY], abr=1)):
             with self.assertRaises(SystemExit):
                 shadows(g, 0, 1)
+
+
+SIDE = 64
+SPRITES = 7
+# A palette a sprite, entry 0 the transparent black, the rest semi-transparent.
+PALETTES = [[0] + [STP | k | ((k + i) % 32) << 5 | (31 - k) << 10 for k in range(1, 16)] for i in range(SPRITES)]
+
+
+def index(i, u, v):
+    """The palette entry sprite `i` paints at texel (u, v): every entry somewhere."""
+    return (u // 4 + v // 4 + i) % 16
+
+
+def effects(named=SPRITES, sizes=None, abr=1, palettes=PALETTES, first=2):
+    """A .GGI whose header names the sprite `first` and counts `named`, and
+    whose last section holds `first` empty slots and then one 4-bit sprite
+    a palette, `sizes` wide and high where given and a square of SIDE
+    otherwise."""
+    sizes = sizes or [(SIDE, SIDE)] * len(palettes)
+    section = struct.pack("<I", first + len(palettes)) + struct.pack("<hhH", -1, 0, 0) * first
+    for i, (palette, (w, h)) in enumerate(zip(palettes, sizes)):
+        section += struct.pack("<hh", 4, abr) + struct.pack("<HHhH", 0, 500 + i, 0, 0) + struct.pack("<16H", *palette)
+        section += struct.pack("<4H", i * (SIDE // 4), 0, w, h)
+        for v in range(h):
+            section += bytes(index(i, u, v) | index(i, u + 1, v) << 4 for u in range(0, w, 2))
+    return SimpleNamespace(blob=section, bounds=[0] * TEXTURES + [0, len(section)], header=[first, named, 0, 0, 0, 0])
+
+
+class Sparks(unittest.TestCase):
+    def test_each_sprite_is_laid_on_the_sheet_through_its_palette_black_where_it_adds_nothing(self):
+        side, px = sparks(effects(), SPRITES)
+        self.assertEqual(side, SIDE)
+        self.assertEqual(len(px), SPRITES * SIDE * SIDE * 4)
+        for i in range(SPRITES):
+            for u, v in ((0, 0), (5, 9), (31, 2), (63, 63), (4 * ((16 - i) % 16), 0)):
+                word = PALETTES[i][index(i, u, v)]
+                o = ((v * SPRITES + i) * SIDE + u) * 4
+                self.assertEqual(tuple(px[o:o + 4]), rgb(word) if word else (0, 0, 0, 255), (i, u, v))
+
+    def test_a_count_the_header_or_the_section_does_not_bear_out_stops_the_build(self):
+        for g, count in ((effects(named=SPRITES - 1), SPRITES), (effects(), SPRITES - 1),
+                         (effects(named=SPRITES + 1), SPRITES + 1)):
+            with self.assertRaises(SystemExit):
+                sparks(g, count)
+
+    def test_a_sprite_of_another_size_or_not_square_stops_the_build(self):
+        for last in ((SIDE // 2, SIDE // 2), (SIDE, SIDE // 2)):
+            with self.assertRaises(SystemExit):
+                sparks(effects(sizes=[(SIDE, SIDE)] * (SPRITES - 1) + [last]), SPRITES)
+
+    def test_another_blend_or_a_texel_drawn_opaque_stops_the_build(self):
+        opaque = [PALETTES[0][:3] + [PALETTES[0][3] & ~STP] + PALETTES[0][4:]] + PALETTES[1:]
+        for g in (effects(abr=2), effects(palettes=opaque)):
+            with self.assertRaises(SystemExit):
+                sparks(g, SPRITES)
 
 
 def arc(count, rows, pads=(0, 0, 0), slack=4):

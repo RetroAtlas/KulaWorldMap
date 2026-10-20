@@ -17,17 +17,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import EXE, THEMES, open_disc, packs
-from kula_ggi import FILE as GGI, Ggi, jump, shadows, write_objects
+from kula_ggi import FILE as GGI, Ggi, jump, shadows, sparks, write_objects
 from kula_level import Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
 from kula_motion import BALL, Code, readings, table
 from kula_pak import Pak
 from kula_place import RECOMPRESS, ROOM
 from kula_sector import USER, sectors_of
 from kula_skins import copycat_worlds, table as skins_table
+from png import write_png
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
 OBJECTS = OUT.parent / "objects.json"
 PACKS = OUT.parent / "packs.json"
+SPARKS = OUT.parent / "tex" / "sparks.png"
 WORLD_LEVELS = 15
 FINAL_LEVELS = 2
 
@@ -140,9 +142,12 @@ def main():
     g = Ggi(disc.read_file(GGI))
     cast = shadows(g, r["shadow.sprite"], r["shadow.sprites"])
     arc = jump(g, motion["types"][BALL]["jump"]["skip"])
+    side, sheet = sparks(g, r["effect.sprites"])
+    burst = {"side": side, "count": r["effect.sprites"]}
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    shapes = write_objects(g, OBJECTS, placed, motion, skins, cast, arc)
+    SPARKS.parent.mkdir(parents=True, exist_ok=True)
+    write_png(SPARKS, side * burst["count"], side, sheet)
+    shapes = write_objects(g, OBJECTS, placed, motion, skins, cast, arc, burst)
     OUT.write_text(json.dumps(data, indent=1))
     PACKS.write_text(json.dumps(layout, indent=1))
     cells = sum(len(l["cells"]) // 4 for l in levels)
@@ -154,9 +159,11 @@ def main():
     models = sum(len(v) for v in shapes["types"].values()) + len(shapes["balls"])
     print(f"{len(shapes['types'])} object types and the ball drawn by {models} models, "
           f"{len(motion['types'])} types and {len(motion['kinds'])} kinds of block in motion, "
-          f"the skins of {len(skins['sets'])} sets of faces, {len(shapes['shadows'])} shadows and the jump's "
-          f"{len(arc['rows'])} rows "
+          f"the skins of {len(skins['sets'])} sets of faces, {len(shapes['shadows'])} shadows, the jump's "
+          f"{len(arc['rows'])} rows and the effects' {burst['count']} sprites "
           f"-> {OBJECTS.relative_to(OUT.parent.parent.parent)} ({OBJECTS.stat().st_size/1024:.0f} KB)")
+    print(f"{burst['count']} sprites of {side} a side "
+          f"-> {SPARKS.relative_to(OUT.parent.parent.parent)} ({SPARKS.stat().st_size/1024:.0f} KB)")
     held = sum(p["size"] for p in layout["packs"])
     capacity = sum(p["capacity"] for p in layout["packs"])
     print(f"{len(layout['packs'])} packs holding {held:,} bytes in {capacity // USER} sectors of "

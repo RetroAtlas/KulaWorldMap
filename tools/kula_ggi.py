@@ -311,6 +311,45 @@ def shadows(g, past, count):
     return out
 
 
+# The effects' sprites are the ones the header's first word names on, its
+# second counting them, each drawn in the blend that adds its texels to what
+# is behind it. They ship on one sheet, a square a sprite laid in a row, as
+# RGB with black wherever a texel adds nothing.
+ADD = 1
+
+
+def sparks(g, count):
+    """The side of an effect's sprite and the sheet's pixels, `count`
+    squares across and one high, in the header's order."""
+    tex, exact = textures(g)
+    if not exact:
+        sys.exit("the sprites do not fill their section exactly, so they are not being read right")
+    page = vram(g)
+    first, named = g.header[:2]
+    if named != count:
+        sys.exit(f"the .GGI header counts {named} sprites for the effects, not the {count} the game lays quads for")
+    picked = tex[first:first + count]
+    last = first + count - 1
+    if len(picked) < count or any(t is None or t["bpp"] == 16 or t["abr"] != ADD for t in picked):
+        sys.exit(f"sprites {first} to {last} are not all paletted ones drawn in the blend that adds")
+    side = picked[0]["w"]
+    if any(t["w"] != side or t["h"] != side for t in picked):
+        sys.exit(f"sprites {first} to {last} are not all squares of one size: "
+                 + ", ".join(f"{t['w']}x{t['h']}" for t in picked))
+    w = side * count
+    px = bytearray(w * side * 4)
+    for i, t in enumerate(picked):
+        for v in range(side):
+            o = (v * w + i * side) * 4
+            for u in range(side):
+                word = palette_word(page, t, u, v)
+                if word and not word & STP:
+                    sys.exit(f"sprite {first + i} has a texel {word:#06x} that is drawn opaque, not added")
+                px[o:o + 4] = bytes(rgb(word)) if word else b"\0\0\0\xff"
+                o += 4
+    return side, bytes(px)
+
+
 def texture_sheet(g):
     tex, exact = textures(g)
     page = vram(g)
@@ -416,9 +455,9 @@ def as_dict(m):
     return out
 
 
-def write_objects(g, path, placed=None, motion=None, skins=None, shadows=None, arc=None):
-    """A model, a shadow, the jump's arc, a motion entry or a skins reading
-    to a line, so a rebuild diffs by line."""
+def write_objects(g, path, placed=None, motion=None, skins=None, shadows=None, arc=None, sparks=None):
+    """A model, a shadow, the jump's arc, the effects' sheet, a motion entry
+    or a skins reading to a line, so a rebuild diffs by line."""
     data = objects(g, placed)
     lines = ["{", f' "block": {data["block"]},', ' "types": {']
     types = list(data["types"].items())
@@ -427,15 +466,18 @@ def write_objects(g, path, placed=None, motion=None, skins=None, shadows=None, a
         lines.append(f'  "{t}": [\n{body}\n  ]' + ("," if i < len(types) - 1 else ""))
     lines += [" },", ' "balls": [']
     lines.append(",\n".join("  " + json.dumps(m, separators=(",", ":")) for m in data["balls"]))
-    lines += [" ]" + ("," if shadows or arc or motion or skins else "")]
+    lines += [" ]" + ("," if shadows or arc or sparks or motion or skins else "")]
     if shadows:
         data["shadows"] = shadows
         lines.append(' "shadows": [')
         lines.append(",\n".join("  " + json.dumps(s, separators=(",", ":")) for s in shadows))
-        lines.append(" ]" + ("," if arc or motion or skins else ""))
+        lines.append(" ]" + ("," if arc or sparks or motion or skins else ""))
     if arc:
         data["jump"] = arc
-        lines.append(' "jump": ' + json.dumps(arc, separators=(",", ":")) + ("," if motion or skins else ""))
+        lines.append(' "jump": ' + json.dumps(arc, separators=(",", ":")) + ("," if sparks or motion or skins else ""))
+    if sparks:
+        data["sparks"] = sparks
+        lines.append(' "sparks": ' + json.dumps(sparks, separators=(",", ":")) + ("," if motion or skins else ""))
     if motion:
         data["motion"] = motion
         head = {k: v for k, v in motion.items() if k not in ("types", "kinds")}
