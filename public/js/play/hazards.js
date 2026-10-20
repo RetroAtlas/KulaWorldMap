@@ -1,9 +1,9 @@
 // The hazards routine's work under and about the ball, in its order, the hit test after it, and
 // the draw's part of the frame, the crumbling blocks breaking up.
 import { REST, acrossOf, aloft, blockUnder, cellOf, faceUnder, place, progressOf } from "./ball.js";
-import { cellKey } from "../format/lattice.js";
+import { cellKey, FACE_NORMAL } from "../format/lattice.js";
 import { layHeading, markerCircuit, markerDestination, TANGENT } from "../viewer/data.js";
-import { phaseField } from "../viewer/motion.js";
+import { phaseField, pose } from "../viewer/motion.js";
 import { fell } from "./world.js";
 
 const FIRE = 1;
@@ -210,15 +210,24 @@ function wordsOf(live) {
   return b.pos.map((v, i) => v - home[i] + bias);
 }
 
+/** Where the captivator's point is at `frame`: a walker's position where one stands in its slot,
+    else its home lifted along its face's normal as the frame draws it. */
+function pointOf(live, c, frame) {
+  const w = live.world.walkers.get(c.slot);
+  if (w) return w.pos;
+  const { lift } = pose(live.tables.motion, c.entry, c.m, frame, c.phase);
+  return lift ? add(c.at, FACE_NORMAL[c.m.face], lift) : c.at;
+}
+
 /** The first captivator within its reach of the ball's position words as they stand, a walker
-    where it has stepped to, catches the ball, over any countdown but a catch's own; the words of
-    a ball riding a platform are relative to it, which puts it out of every captivator's reach. */
+    where it has stepped to and any other entry where its bounce has lifted it on this frame,
+    catches the ball, over any countdown but a catch's own; the words of a ball riding a platform
+    are relative to it, which puts it out of every captivator's reach. */
 export function catching(live, out) {
   const pos = wordsOf(live);
-  const { walkers, captivators } = live.world;
-  for (const c of captivators) {
-    const at = walkers.get(c.slot)?.pos ?? c.at;
-    if (squared(pos, at) > c.square) continue;
+  const { frame } = live.words;
+  for (const c of live.world.captivators) {
+    if (squared(pos, pointOf(live, c, frame)) > c.square) continue;
     die(live, out, "captivator", { freeze: true, mark: true, overrides: true });
     return;
   }

@@ -163,31 +163,43 @@ test("a pickup stands off its block's centre by its type's stand, and a device i
   assert.equal(w.taken.size + w.gone.size + w.marked.size, 0);
 });
 
-test("the world keeps each captivator's entry where the loader stands it, with its type's reach", () => {
+test("the world keeps each captivator's entry where the loader stands it, with its type's reach, its marker and what its pose needs", () => {
   const l = level(row(10, 12, 10, 17), [
-    { x: 10, y: 10, z: 17, kind: 0, on: [object(0, 50, 4), object(1, 56)] },
+    { x: 10, y: 10, z: 17, kind: 0, on: [object(0, 50, 4), object(1, 56, 0, 3)] },
     { x: 11, y: 10, z: 17, kind: 0, on: [object(0, 53, 4)] },
     { x: 12, y: 10, z: 17, kind: 0, on: [object(0, 37)] },
   ]);
-  const w = world(l);
+  const idx = index(l);
+  const w = worldOf(l, idx, TABLES, CIRCUITS);
   const { standoff, types } = motion;
+  const marker = (cell, face) => idx.markers.get(key(cell)).find((m) => m.face === face);
   assert.deepEqual(w.captivators, [
     {
+      m: marker([10, 10, 17], 0),
       slot: `${key([10, 10, 17])}/0`,
+      entry: types["50"],
       at: [10 * UNIT, 10 * UNIT, 17 * UNIT - standoff],
+      phase: [0, 0, 0],
       square: types["50"].catch.square,
     },
     {
+      m: marker([10, 10, 17], 1),
       slot: `${key([10, 10, 17])}/1`,
+      entry: types["56"],
       at: [10 * UNIT + standoff, 10 * UNIT, 17 * UNIT],
+      phase: [0, 0, 0],
       square: types["56"].catch.square,
     },
     {
+      m: marker([11, 10, 17], 0),
       slot: `${key([11, 10, 17])}/0`,
+      entry: types["53"],
       at: [11 * UNIT, 10 * UNIT, 17 * UNIT - standoff],
+      phase: [0, 0, 0],
       square: types["53"].catch.square,
     },
   ]);
+  assert.equal(w.captivators[1].m.f[1], 3, "the corkscrew's marker carries its phase field");
   assert.ok(types["53"].catch.square < types["50"].catch.square, "the wandering ball's is shorter");
   assert.deepEqual(
     [...w.walkers.keys()].sort(),

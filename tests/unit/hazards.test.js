@@ -59,6 +59,10 @@ const ARROW = 28;
 const SLOW_STAR = 50;
 const WANDERER = 53;
 const CORKSCREW = 56;
+const BOUNCE = motion.types[String(CORKSCREW)];
+/** The f3 that starts a corkscrew at a landing, and the one that starts it at the top. */
+const LANDED = BOUNCE.phases.indexOf(0);
+const RISEN = BOUNCE.phases.indexOf(BOUNCE.bounce.wrap / 2);
 const INVINCIBLE = "34";
 const THROW = motion.types[String(SWITCH)].throw;
 const SEND = motion.types[String(TELEPORTER)].send;
@@ -738,7 +742,7 @@ test("a captivator catches the ball within its reach of its position as the rule
   assert.notDeepEqual(rail.pos, at.rail, "the platform runs on");
   assert.equal(star.at, rail.at, "both at the run's frame");
 
-  const corkscrew = level(row(10, 18), [start(), on(15, CORKSCREW)]);
+  const corkscrew = level(row(10, 18), [start(), on(15, CORKSCREW, { colour: LANDED })]);
   const over2 = standing(corkscrew, { cell: [17, 15, 17], face: TOP, h: UP });
   Object.assign(over2.words, { ending: play.ending.exit, wait: play.wait.exit });
   const [caught] = trace(over2, 1, 0);
@@ -777,6 +781,92 @@ test("a captivator catches the ball within its reach of its position as the rule
     near.slice(0, -1).some((d2) => d2 > own && d2 <= square),
     "within the others' reach before and not caught",
   );
+});
+
+test("the corkscrew catches from where it bounces: a ball under it is caught at a landing on the first frame the hit test runs and under a risen one only from the first frame the rise has come down within reach, and a jump over its block is caught while it is up and clears it about a landing", () => {
+  const { bounce, phases } = BOUNCE;
+  const square = BOUNCE.catch.square;
+  const reach = Math.sqrt(square);
+  const rise = (f3, f) =>
+    bounce.rise *
+    Math.sin((((phases[f3] + bounce.rate * f) % bounce.wrap) / motion.turn) * 2 * Math.PI);
+  const under = (f3, cell) =>
+    standing(level(row(10, 18), [start(), on(15, CORKSCREW, { colour: f3 })]), {
+      cell,
+      face: TOP,
+      h: UP,
+    });
+  const caught = [{ dying: { cause: "captivator", wait: play.wait.captivator } }];
+
+  const landed = under(LANDED, [17, 15, 17]);
+  const [c] = landed.world.captivators;
+  const gap = Math.sqrt(squared(landed.ball.pos, c.at));
+  assert.equal(gap, BOUNCE.catch.stand - landed.ball.radius, "the centre under the point");
+  assert.equal(rise(LANDED, 0), 0);
+  const [first] = trace(landed, 1, 0);
+  assert.deepEqual(
+    first.events.filter((e) => e.dying),
+    caught,
+  );
+  assert.equal(frameShown(landed), 0, "caught on the frame the draw then shows, the first");
+
+  const risen = under(RISEN, [17, 15, 17]);
+  let down = 0;
+  while (gap + rise(RISEN, down) > reach) down++;
+  assert.ok(down > 1 && gap + rise(RISEN, down - 1) > reach, String(down));
+  const stood = trace(risen, down + 10, 0, dying);
+  assert.equal(stood.length, down + 1, "caught on the frame the rise comes within reach");
+  assert.ok(
+    stood.slice(0, -1).every((f) => !has(f, "dying")),
+    "and not before",
+  );
+  assert.ok(
+    stood.every((f) => squared(f.pos, c.at) <= square),
+    "though the ball stood within reach of the home throughout",
+  );
+  assert.deepEqual(
+    stood.at(-1).events.filter((e) => e.dying),
+    caught,
+  );
+  assert.equal(frameShown(risen), down);
+
+  // Up with Space from the block before leaps over the corkscrew's block, the centre at the
+  // jump's apex row over it; the idle frames before the press put the corkscrew at a landing, or
+  // at its top, as the ball reaches that row
+  const rows = TABLES.jump.rows;
+  const apex = Math.max(...rows.map((r) => r[0]));
+  const apexRow = rows.findIndex((r) => r[0] === apex);
+  const needed = landed.ball.radius + apex - BOUNCE.catch.stand - reach;
+  const atLanding = Math.round((bounce.wrap - phases[RISEN]) / bounce.rate) - apexRow;
+  const atTop = atLanding + Math.round(bounce.wrap / 2 / bounce.rate);
+  const leap = (idle) => {
+    const live = under(RISEN, [17, 16, 17]);
+    trace(live, idle, 0);
+    frame(live, PAD.up | PAD.cross);
+    assert.equal(live.ball.state, JUMP);
+    const flight = trace(live, 80, 0, (l) => dying(l) || resting(l));
+    const over = flight.filter((f) => f.cell[0] === 17 && f.cell[1] === 15);
+    assert.ok(over.length > 1, "over the corkscrew's block");
+    return { live, flight, over };
+  };
+  const clear = leap(atLanding);
+  assert.ok(rise(RISEN, atLanding + apexRow) < needed, "near a landing at the apex");
+  assert.ok(!dying(clear.live), "not caught");
+  assert.ok(clear.over.every((f) => rise(RISEN, f.frame - 1) < needed));
+  assert.deepEqual(blockUnder(clear.live.ball), [17, 14, 17], "down two blocks on");
+  const up = leap(atTop);
+  assert.ok(rise(RISEN, atTop + apexRow) >= needed, "risen at the apex");
+  const hit = up.flight.at(-1);
+  assert.deepEqual(
+    hit.events.filter((e) => e.dying),
+    caught,
+  );
+  assert.equal(hit.state, JUMP, "caught in the air");
+  assert.deepEqual(hit.cell.slice(0, 2), [17, 15], "over the corkscrew's block");
+  const lift = rise(RISEN, hit.frame - 1);
+  assert.ok(lift >= needed, String(lift));
+  assert.ok(squared(hit.pos, c.at) > square, "out of reach of the home");
+  assert.ok(squared(hit.pos, [c.at[0], c.at[1], c.at[2] - lift]) <= square, "within the point's");
 });
 
 test("the invincibility pill refuses the beam, fire's heat, acid, the spikes, the moving spikes and a catch, and not the clock", () => {

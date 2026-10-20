@@ -14,6 +14,9 @@ const LEVEL = "/#HIRO/0/45,35/fit/33";
 // LEVEL 86: the start on a ring of blocks, a bouncy pill two blocks on across a gap and blocks two
 // apart beyond it
 const PILL_LEVEL = "/#FIELD/10/45,35/fit/33";
+// HIDDEN 3: the start two blocks before a row of four corkscrews, the first of them at the top of
+// its bounce as the level opens
+const CORKSCREW_LEVEL = "/#INCA/18/45,35/fit/33";
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazards)\.js$/;
 const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 const TIME_UP_PAD =
@@ -2903,5 +2906,96 @@ test("the bouncy pill bounds the ball as the game does: taken with the keys rele
   expect(hops.every((s) => s.block.join() === "19,17,17")).toBe(true);
   expect(hops.filter((s) => !s.moving).length).toBeGreaterThanOrEqual(3);
   expect(aloft(hops)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("a corkscrew catches the ball from where it bounces: rolled under one that is up the ball stands uncaught until the frame the table's rise comes down within reach, when the strip says it is caught", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(CORKSCREW_LEVEL);
+  await settle(page);
+  await still(page);
+  await page.keyboard.press("t");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await listening(page);
+  await frozen(page);
+  // the opening wait and the corkscrew's first landing pass before Up is held, which rolls the
+  // ball two blocks on, released as the ball reaches the corkscrew's block so that it stops under
+  // it, the corkscrew near its top by then; the strip is read on every game frame
+  const { seen, table } = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw, clock }, { motionTable }, { phaseField }, { state }, { cellKey }, P] =
+      await Promise.all(
+        [
+          "viewer/draw/render.js",
+          "viewer/data.js",
+          "viewer/motion.js",
+          "viewer/state.js",
+          "format/lattice.js",
+          "play/play.js",
+        ].map(at),
+      );
+    const key = (type, k) =>
+      document.body.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+    const el = document.getElementById("playStatus");
+    const { types, turn, hz } = motionTable();
+    const corkscrew = state.idx.markers.get(cellKey(17, 15, 17)).find((m) => m.face === 0);
+    const entry = types[String(corkscrew.type)];
+    const table = {
+      turn,
+      ...entry.bounce,
+      phase: entry.phases[phaseField(corkscrew)],
+      square: entry.catch.square,
+      stand: entry.catch.stand,
+      radius: types["30"].rolling.resume,
+    };
+    const seen = [];
+    let held = false;
+    for (let f = 0; f < 400; f++) {
+      if (f === 60) {
+        key("keydown", "ArrowUp");
+        held = true;
+      }
+      window.__step(1000 / hz);
+      draw();
+      const s = P.station();
+      if (held && s.block.join() === "17,15,17") {
+        key("keyup", "ArrowUp");
+        held = false;
+      }
+      seen.push({
+        frame: clock(),
+        block: s.block.join(),
+        moving: s.moving,
+        status: el.textContent,
+        dying: el.classList.contains("dying"),
+      });
+      if (seen.at(-1).dying) break;
+    }
+    return { seen, table };
+  });
+  await page.evaluate(() => window.__thaw());
+  const { turn, rate, wrap, rise, phase, square, stand, radius } = table;
+  const lift = (f) => rise * Math.sin((((phase + rate * f) % wrap) / turn) * 2 * Math.PI);
+  // straight under the point, the ball's centre is the point's height off the face less its
+  // radius short of it, and is within reach while the rise is at most the reach less that
+  const bound = Math.sqrt(square) - (stand - radius);
+  const rested = seen.findIndex((s) => s.block === "17,15,17" && !s.moving);
+  expect(rested).toBeGreaterThan(0);
+  const caught = seen.findIndex((s) => s.dying);
+  expect(caught).toBeGreaterThan(rested + 10);
+  expect(seen[caught].status).toBe("Caught");
+  expect(lift(seen[rested].frame)).toBeGreaterThan(bound);
+  let predicted = seen[rested].frame;
+  while (lift(predicted) > bound) predicted++;
+  expect(seen[caught].frame).toBe(predicted);
+  expect(
+    seen.slice(rested, caught).every((s) => s.block === "17,15,17" && !s.moving && !s.dying),
+  ).toBe(true);
+  expect(seen.slice(rested, caught).every((s) => lift(s.frame) > bound)).toBe(true);
+  expect(seen.slice(0, caught).every((s) => s.status === "")).toBe(true);
+  expect(await said(page)).toContain("Caught");
   expect(errors).toEqual([]);
 });

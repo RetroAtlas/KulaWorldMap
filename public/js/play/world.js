@@ -17,6 +17,8 @@ const CLOCK_START = 29;
 export const KEY = 31;
 // The kinds the game's walk over the inner lattice builds and counts.
 const COUNTED = new Set([0, 1, 2, 4, 6, 7]);
+// The game starts an entry's angles at zero, where a pickup's are random.
+const ENTRY_PHASE = [0, 0, 0];
 
 const add = (p, v, k = 1) => p.map((c, i) => c + v[i] * k);
 const inside = (cell) => cell.every((v) => v >= LOW && v <= HIGH);
@@ -40,9 +42,10 @@ function built(kinds, hides, cell, kind) {
 /** The level as play holds it, the walkers laid at `frame`: the lattice's words and kinds by
     cell, the faces' types, the word each kind reads as under the ball, the beams' ends and the
     word a lit beam's cell holds, the pickups with where each stands, the devices, the
-    captivators with where each entry stands and its reach, the crumbling blocks, the platforms,
-    the blocks a level with no key counts, the starts with the marker each leaves while the ball
-    is on the level, what travels and the dice, the live sets and the index the frame draws. */
+    captivators with where each entry stands at home, its reach and what its pose needs, the
+    crumbling blocks, the platforms, the blocks a level with no key counts, the starts with the
+    marker each leaves while the ball is on the level, what travels and the dice, the live sets
+    and the index the frame draws. */
 export function worldOf(l, idx, tables, circuits, frame = 0) {
   const { motion, unit, first, styles, skins } = tables;
   const laid = [];
@@ -128,12 +131,15 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
       if (entry?.send || entry?.throw) devices.set(slot(key, m.face), m);
       if (entry?.catch)
         captivators.push({
+          m,
           slot: slot(key, m.face),
+          entry,
           at: add(
             [c.x, c.y, c.z].map((v) => v * unit),
             FACE_NORMAL[m.face],
             motion.standoff,
           ),
+          phase: ENTRY_PHASE,
           square: entry.catch.square,
         });
     }
