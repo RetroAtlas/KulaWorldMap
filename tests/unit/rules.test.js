@@ -1048,6 +1048,12 @@ test("a level with no key marks the block under the ball once, skips the invisib
     [7, 6, 5, 4, 3, 2, 1, 0],
   );
   assert.ok(!marked.some((e) => e.marked.key === cellKey(17, 14, 17)));
+  assert.deepEqual(
+    marked.map((e) => live.world.marked.get(e.marked.key)),
+    marked.map((e) => e.at - 1),
+    "each mark stamped with the frame the draw shows after the frame that made it",
+  );
+  assert.deepEqual([...viewOf(live).marked], [...live.world.marked]);
   assert.equal(live.words.score, 8 * play.bonus.block);
   const ended = events.find((e) => e.ended);
   assert.equal(ended.ended.code, play.ending.bonus);
@@ -1246,13 +1252,18 @@ test("relevel carries what was taken where the level still holds it, and counts 
 
   const bonus = begin(level(row(10, 18), [start()], 99, false));
   steps(bonus, 60, PAD.up);
-  const marked = bonus.world.marked.size;
-  assert.ok(marked >= 2);
+  const marked = [...bonus.world.marked];
+  assert.ok(marked.length >= 2);
   const shorter = level(row(14, 18), [start()], 99, false);
   relevel(bonus, shorter, index(shorter));
   assert.equal(bonus.world.counted.size, 5);
-  assert.equal(bonus.world.marked.size, marked, "the marked blocks still stand");
-  assert.equal(bonus.words.unmarked, 5 - marked);
+  assert.deepEqual(
+    [...bonus.world.marked],
+    marked,
+    "the marked blocks still stand, stamped as they were",
+  );
+  assert.deepEqual([...viewOf(bonus).marked], marked);
+  assert.equal(bonus.words.unmarked, 5 - marked.length);
 });
 
 test("a vanishing block drops the ball at rest on it two frames after the first its cycle has it absent: the read of the frame after finds the cell empty, as the game's read sees the step before, the map having drawn it absent the frame before, and the rest state of the frame after that reads that word, the word under the ball reading nothing from the read on", () => {

@@ -247,7 +247,8 @@ function same(a, b) {
 // clock it draws at, the index it draws from and what travels, given the
 // level, each standing in for the frame's own while it is registered, and may
 // say that every invisible block is seen. A handed index is shaped as the
-// level's own, with a marker only on a cell it holds.
+// level's own, with a marker only on a cell it holds, and may carry the
+// blocks it has marked with the frame of each mark.
 let source = null;
 export const runWith = (fn) => {
   source = fn;

@@ -3831,6 +3831,70 @@ test("a level with no key opens as it is with Motion off: the frames drawn show 
   expect(errors).toEqual([]);
 });
 
+// BONUS 1's start, on the top of a corner block of a ring four blocks tall, heading -y, and the
+// block beside it along +x: the camera behind the ball sees both blocks' +y faces
+const BONUS_START = [20, 20, 17];
+const BONUS_BESIDE = [21, 20, 17];
+const PLUS_Y = 2;
+/** The mean of each channel over the pixels about the middle of face `game` of the block at
+    `cell`, as the map draws the frame now. */
+const faceColour = (page, cell, game) =>
+  page.evaluate(
+    async ([cell, game]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { facePoints }, { draw }] = await Promise.all(
+        ["viewer/state.js", "viewer/draw/blocks.js", "viewer/draw/render.js"].map(at),
+      );
+      draw();
+      const pts = facePoints({ x: cell[0], y: cell[1], z: cell[2] }, game);
+      const [x, y] = pts.reduce(([sx, sy], [px, py]) => [sx + px / 4, sy + py / 4], [0, 0]);
+      const k = state.view.dpr;
+      const g = document.getElementById("cv").getContext("2d");
+      const d = g.getImageData(Math.round(x * k) - 2, Math.round(y * k) - 2, 5, 5).data;
+      const sum = [0, 0, 0];
+      for (let o = 0; o < d.length; o += 4) for (let ch = 0; ch < 3; ch++) sum[ch] += d[o + ch];
+      return sum.map((v) => v / (d.length / 4));
+    },
+    [cell, game],
+  );
+/** Step the frozen level `n` frames of the clock, drawing each. */
+const passed = (page, n) =>
+  page.evaluate(async (n) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw }, { motionTable }] = await Promise.all(
+      ["viewer/draw/render.js", "viewer/data.js"].map(at),
+    );
+    for (let i = 0; i < n; i++) {
+      window.__step(1000 / motionTable().hz);
+      draw();
+    }
+  }, n);
+
+test("on a level with no key the block the ball marks is painted as the game paints it: the block under the ball is marked on the level's first frame and its faces take the marked cycle's colour, orange in an even world, greener and less blue than a face as built, the colour itself at once with Motion off", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { hash: BONUS_LEVEL });
+  // the colour is laid over the face's texture, so the textures are put back on
+  await page.keyboard.press("t");
+  await expect(page.locator("#showSkins")).toBeChecked();
+  await textured(page);
+  await frozen(page);
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 20,20,17, facing -y");
+  await expect(page.locator("#playKeys")).toHaveText("Blocks 48");
+  await passed(page, 1);
+  await expect(page.locator("#playKeys")).toHaveText("Blocks 47");
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).toBeChecked({ checked: false });
+  const marked = await faceColour(page, BONUS_START, PLUS_Y);
+  const built = await faceColour(page, BONUS_BESIDE, PLUS_Y);
+  await page.evaluate(() => window.__thaw());
+  expect(marked[1]).toBeGreaterThan(built[1] + 50);
+  expect(marked[2]).toBeLessThan(built[2] - 15);
+  expect(errors).toEqual([]);
+});
+
 test("the invincibility pill colours the ball's light as the game does: from the pill's frame each channel is raised by the table's gain times the sine of a counter stepping by its step round its round, red first, through every frame the word stands and no further, and a later pill carries the counter on from where the pill before left it", async ({
   page,
 }) => {

@@ -14,6 +14,7 @@ import {
   viewOf,
   took,
   fell,
+  marked,
   frameShown,
   keysOf,
   shiftOf,
@@ -424,6 +425,33 @@ test("the index the frame draws is the level's own until something is taken, and
     again.markers.get(key([10, 10, 17])).map((m) => m.type),
     [31],
   );
+});
+
+test("the index the frame draws carries each marked block with the frame it is first drawn marked on, rebuilt as one is marked, and is the level's own while none stands", () => {
+  const l = level(row(10, 12, 10, 17));
+  const idx = index(l);
+  const w = worldOf(l, idx, TABLES, CIRCUITS);
+  const live = { world: w, idx, words: { outcome: 0 } };
+  assert.equal(viewOf(live), idx);
+  assert.equal(idx.marked, undefined, "the level's own index carries no mark");
+  marked(w, key([10, 10, 17]), 4);
+  assert.deepEqual([...w.marked], [[key([10, 10, 17]), 4]]);
+  const view = viewOf(live);
+  assert.notEqual(view, idx);
+  assert.deepEqual([...view.marked], [[key([10, 10, 17]), 4]]);
+  for (const part of ["cells", "records", "plates"]) assert.equal(view[part], idx[part]);
+  assert.equal(viewOf(live), view, "kept until the next mark");
+  marked(w, key([11, 10, 17]), 9);
+  const again = viewOf(live);
+  assert.notEqual(again, view);
+  assert.deepEqual(
+    [...again.marked],
+    [
+      [key([10, 10, 17]), 4],
+      [key([11, 10, 17]), 9],
+    ],
+  );
+  assert.deepEqual([...view.marked], [[key([10, 10, 17]), 4]], "the view before keeps its own");
 });
 
 test("the index the frame draws leaves the starts out until the level's outcome stands, the start the game takes leaving the clock on its face where it stands on one, and holds them again after it", () => {

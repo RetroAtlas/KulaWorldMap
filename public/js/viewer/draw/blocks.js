@@ -282,10 +282,13 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
     const still = place ? { ...home, [place.axis]: home[place.axis] + c.k } : home;
     const plates = idx.plates.get(key);
     const shown = rec && shownOn(rec, idx.markers.get(key));
+    const mark = idx.marked?.get(key);
     skin = (i) => {
       const g = FACES[i].game;
       const plate = plates?.get(g);
-      const marked = !!shown && openFace(shown, g);
+      // a mark's age in frames, past any fade while the effects are off
+      const marked =
+        mark === undefined ? !!shown && openFace(shown, g) : effectsOn() ? frame - mark : Infinity;
       const sk = faceSkin(skins, look, still, g, kind, shown, effect, place, plate, marked);
       if (sk?.live) live = true;
       if (sk && kind === INVISIBLE) {

@@ -134,6 +134,48 @@ test("a bonus level's plain face is the swirl, run through its colour cycle", ()
   assert.ok(f.live && !f.colour.every((v) => v === f.colour[0]));
 });
 
+const CRUMBLING = 6;
+const VANISHING = 7;
+const oddBonus = lookOf(skins, levelOf([block(COIN)], "/HILLS/HILLS.PAK", "HILLS"), 1);
+/** The words of `cycle` at every index where `first` holds `word`. */
+const beside = (first, cycle, word) =>
+  first.flatMap((c, i) => (c.join() === word.join() ? [cycle[i].join()] : []));
+
+test("a face the ball has marked takes the second cycle of its world's pair in the bonus look, grey a pass of the way on its first frame and the cycle's word from the fade's end, its frames unchanged, where the exit's open face keeps its quad", () => {
+  const { marked, colour } = skins.cycles.bonus;
+  const passes = marked.full / marked.step;
+  const built = face(0, [], { look: bonus });
+  const done = face(0, [], { look: bonus, marked: Infinity });
+  assert.ok(beside(colour[0], colour[1], built.colour).includes(done.colour.join()));
+  assert.ok(!colour[0].some((c) => c.join() === done.colour.join()));
+  assert.equal(done.tex, built.tex);
+  const odd = face(0, [], { look: oddBonus, marked: Infinity });
+  assert.ok(
+    beside(colour[2], colour[3], face(0, [], { look: oddBonus }).colour).includes(
+      odd.colour.join(),
+    ),
+  );
+  assert.deepEqual(
+    face(0, [], { look: bonus, marked: 0 }).colour,
+    done.colour.map(
+      (v) => marked.grey + Math.floor(((v - marked.grey) * marked.step) / marked.full),
+    ),
+  );
+  assert.deepEqual(face(0, [], { look: bonus, marked: passes - 1 }).colour, done.colour);
+  assert.notDeepEqual(face(0, [], { look: bonus, marked: passes - 2 }).colour, done.colour);
+  for (const [kind, types] of [
+    [VANISHING, []],
+    [CRUMBLING, []],
+    [0, [COIN]],
+  ]) {
+    const f = face(kind, types, { look: bonus, marked: passes });
+    assert.deepEqual(f.colour, done.colour, `kind ${kind} with ${types}`);
+    assert.equal(f.tex, face(kind, types, { look: bonus }).tex);
+  }
+  assert.deepEqual(face(0, [EXIT], { marked: passes }), face(0, [EXIT]));
+  assert.equal(face(0, [EXIT], { marked: true }).tex, set.types[EXIT][1]);
+});
+
 test("a marked face fades from grey to the second cycle of its world's pair, the four cycles two pairs whose first leaves one magenta, for violet and red in the even worlds and for red and brown in the odd", () => {
   const { marked, colour } = skins.cycles.bonus;
   assert.equal(marked.step * 32, marked.full);

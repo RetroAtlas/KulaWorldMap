@@ -86,8 +86,11 @@ export const shadowed = (skins, type) =>
  * game leaves undrawn.
  *
  * The game picks a face's skin by its block's kind where that has skins of its
- * own, else by the type of what stands on it, and runs the cycles on the same;
- * a face it has `marked` in play shows the second of its model's quads.
+ * own, else by the type of what stands on it, and runs the cycles on the same.
+ * `marked` is `true` for a face the game shows open, the second of its model's
+ * quads, or the frames since the ball marked the block in play, which in the
+ * bonus look send the face to the second colour cycle of its world's pair,
+ * faded in from a grey a pass at a time.
  */
 export function faceSkin(skins, look, c, face, kind, r, frame, place, plate, marked = false) {
   const set = look.set;
@@ -98,7 +101,15 @@ export function faceSkin(skins, look, c, face, kind, r, frame, place, plate, mar
   const at = (texs, frames) => pick(texs, frames[(h + now) % frames.length]);
   const cycled = (colours) =>
     colours[(spread(skins, c, face, colours.length) + now) % colours.length];
-  const bonusColour = () => cycled(cyc.bonus.colour[2 * look.parity]);
+  const age = typeof marked === "number" ? marked : null;
+  const bonusColour = () => {
+    const colour = cycled(cyc.bonus.colour[2 * look.parity + (age === null ? 0 : 1)]);
+    if (age === null) return colour;
+    const { step, full, grey } = cyc.bonus.marked;
+    const count = Math.min(full, (age + 1) * step);
+    if (count === full) return colour;
+    return colour.map((v) => grey + Math.floor(((v - grey) * count) / full));
+  };
 
   if (place) {
     const e = skins.platform[place.axis][place.role][face];
@@ -132,7 +143,7 @@ export function faceSkin(skins, look, c, face, kind, r, frame, place, plate, mar
     } else if (kind === CRUMBLING && look.bonus) out.colour = bonusColour();
   } else if (type) {
     const texs = set.types[String(type)];
-    out.tex = pick(texs, marked || shadowed(skins, type) ? 1 : 0);
+    out.tex = pick(texs, marked === true || shadowed(skins, type) ? 1 : 0);
     if (look.bonus) {
       out.colour = bonusColour();
       if (type >= skins.shadow.from) {

@@ -194,7 +194,7 @@ export function worldOf(l, given, tables, circuits, frame = 0, fruit = null) {
     roll: dice(motion.dice),
     taken: new Set(),
     gone,
-    marked: new Set(),
+    marked: new Map(),
     view: null,
   };
 }
@@ -305,11 +305,19 @@ export function fell(world, key) {
   world.view = null;
 }
 
+/** A block the ball has marked on a level with no key, with `frame`, the first frame it is
+    drawn marked on: kept among the marked, and carried into the index the frame draws. */
+export function marked(world, key, frame) {
+  world.marked.set(key, frame);
+  world.view = null;
+}
+
 /** The index the frame draws from: the one play holds less the things taken and the blocks
-    gone, with what stood on them, and, until the level's outcome stands, less the starts, whose
-    ball the ball on the level is, the start the game takes leaving the clock where it stands on
-    one; shaped as the level's, play's own where nothing is dropped, and rebuilt only when any of
-    those changes. */
+    gone, with what stood on them, with the blocks marked and the frame each was first drawn
+    marked on as `marked`, and, until the level's outcome stands, less the starts, whose ball the
+    ball on the level is, the start the game takes leaving the clock where it stands on one;
+    shaped as the level's, play's own where nothing is dropped or marked, and rebuilt only when
+    any of those changes. */
 export function viewOf(live) {
   const world = live.world;
   const ended = !!live.words.outcome;
@@ -320,7 +328,7 @@ export function viewOf(live) {
 function drawn(world, ended) {
   const { idx } = world;
   const starts = ended ? [] : world.starts;
-  if (!world.taken.size && !world.gone.size && !starts.length) return idx;
+  if (!world.taken.size && !world.gone.size && !world.marked.size && !starts.length) return idx;
   const markers = new Map(idx.markers);
   const less = (key, dropped, left = []) =>
     markers.set(key, [...(markers.get(key) ?? []).filter((m) => !dropped(m)), ...left]);
@@ -329,7 +337,7 @@ function drawn(world, ended) {
     less(key, (m) => m.face === face);
   }
   for (const s of starts) less(s.key, (m) => m === s.m, s.left);
-  const view = { ...idx, markers };
+  const view = { ...idx, markers, marked: new Map(world.marked) };
   if (world.gone.size) {
     view.cells = new Map(idx.cells);
     view.records = new Map(idx.records);

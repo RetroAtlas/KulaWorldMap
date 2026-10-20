@@ -23,6 +23,7 @@ import {
   fell,
   frameShown,
   keysOf,
+  marked,
   probeOf,
   shiftOf,
   standingOf,
@@ -348,7 +349,8 @@ function carried(live) {
   if (b.riding) b.travel = shiftOf(live.world, b.riding.key);
 }
 
-// A level with no key marks the block at `cell` once: its points, and one off the blocks left.
+// A level with no key marks the block at `cell` once: its points, one off the blocks left, and
+// the mark stamped with the frame the draw shows next, the count stepping as the frame ends.
 function mark(live, cell, out) {
   const w = live.words;
   const world = live.world;
@@ -357,7 +359,7 @@ function mark(live, cell, out) {
   const key = cellKey(...cell);
   if (!world.cells.has(key) || world.marked.has(key) || world.kinds.get(key) === bonus.skips)
     return;
-  world.marked.add(key);
+  marked(world, key, w.frame);
   w.unmarked -= 1;
   w.score += bonus.block;
   out.push({ marked: { key, left: w.unmarked } });
@@ -749,7 +751,7 @@ export function relevel(live, l, idx) {
   const world = worldOf(l, idx, live.tables, live.circuits, live.words.frame, fruit);
   for (const slot of was.taken)
     if (world.pickups.get(slot)?.m.type === was.pickups.get(slot).m.type) took(world, slot);
-  for (const key of was.marked) if (world.cells.has(key)) world.marked.add(key);
+  for (const [key, at] of was.marked) if (world.cells.has(key)) marked(world, key, at);
   for (const key of was.gone) if (world.crumbling.has(key)) fell(world, key);
   live.world = world;
   const b = live.ball;
