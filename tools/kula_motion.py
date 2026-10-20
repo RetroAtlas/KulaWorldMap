@@ -3074,7 +3074,7 @@ IMMEDIATES = [
      "slti $v0, $v0, {}"),
     ("the blocks under the ball", "ride.kind", "a platform is this kind under the landing's probe", 0x800335b4,
      "addiu $v0, $zero, {}"),
-    ("the blocks under the ball", "ride.land", "which lands the ball under this far off its face", 0x80033614,
+    ("the blocks under the ball", "ride.body.off", "which lands the ball under this far off its face", 0x80033614,
      "slti $v0, $v0, {}"),
     ("the blocks under the ball", "ride.bias", "its centre kept relative to the platform's position plus this", 0x800331c8,
      "addiu $v0, $v0, {}"),
@@ -4954,7 +4954,7 @@ def blocks(r):
         sys.exit("the crumbling block's edge rule does not hold the ball past the middle and set it back short of the edge")
     if len({r["ride.bias"], -r["ride.bias.back"], -r["ride.bias.travel"], BLOCK}) != 1:
         sys.exit("a platform's position is not biased by a block wherever it is taken")
-    if r["ride.land"] != r["ball.rest"] + 1 or r["ride.beam"] != LIT:
+    if r["ride.body.off"] != r["ball.rest"] + 1 or r["ride.beam"] != LIT:
         sys.exit("a platform lands the ball otherwise than at its rest, or reads the level's lattice for more than a lit beam")
     faces = {"+x": r["ride.face.x"], "-x": r["ride.face.x.back"], "+y": r["ride.face.y"], "-y": r["ride.face.y.back"],
              "+z": r["ride.face.z"], "-z": 0}
@@ -4985,7 +4985,7 @@ def blocks(r):
               "cold": {"gain": r["cold.gain"], "over": over, "back": r["cold.back"], "wane": -r["cold.wane"]}},
         CRUMBLING: {"size": r["crumble.size"], "shrink": -r["crumble.shrink"],
                     "edge": {"hold": r["crumble.edge.hold"], "back": r["crumble.edge.back"], "push": r["crumble.edge.push"]}},
-        PLATFORM: {"ride": {"land": r["ball.rest"], "bias": r["ride.bias"], "rumble": r["ride.rumble"],
+        PLATFORM: {"ride": {"bias": r["ride.bias"], "rumble": r["ride.rumble"],
                             "body": {"off": r["ball.rest"], "ends": r["ride.body.ends"]},
                             "end": {"tolerance": r["ride.end.tolerance"]}}},
     }

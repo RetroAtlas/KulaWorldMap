@@ -1219,16 +1219,15 @@ test("a crumbling block is gone on the twentieth frame after it breaks, and hold
   assert.ok(crumble.edge.hold > table.types[30].rolling.middle);
 });
 
-test("a platform lands the ball at its rest height, keeps it a block off and rumbles the pad", () => {
+test("a platform keeps the ball a block off and rumbles the pad", () => {
   const { ride } = table.kinds[5];
-  assert.equal(ride.land, table.types[30].rolling.resume);
   assert.equal(ride.bias, 512);
   assert.equal(ride.rumble, 70);
 });
 
 test("the body landing asks the rest height off the face and the run from end face to end face, and the end landing allows the rest height past an end face", () => {
   const { ride } = table.kinds[5];
-  assert.equal(ride.body.off, ride.land);
+  assert.equal(ride.body.off, table.types[30].rolling.resume);
   // half a block: the run is measured from the end blocks' centres to their faces
   assert.equal(ride.body.ends, 256);
   assert.equal(ride.end.tolerance, table.types[30].rolling.resume);

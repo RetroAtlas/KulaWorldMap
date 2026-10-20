@@ -257,7 +257,7 @@ GAME = {
     "ice.kind": 2, "cold.gain": 40, "cold.top.gate": 501, "cold.back": 400, "cold.wane": -10, "arrow.type": 28,
     "crumble.size": 512, "crumble.shrink": -26, "crumble.whole": 1, "crumble.broken": 2, "crumble.broken.seen": 2,
     "crumble.breaking": 3, "crumble.code.input": 96, "crumble.edge.hold": 301, "crumble.edge.back": 401,
-    "crumble.edge.push": 40, "ride.kind": 5, "ride.land": 101, "ride.bias": 512, "ride.bias.back": -512,
+    "crumble.edge.push": 40, "ride.kind": 5, "ride.body.off": 101, "ride.bias": 512, "ride.bias.back": -512,
     "ride.bias.travel": -512, "ride.rumble": 70, "ride.beam": -2,
     "ride.face.x": 1, "ride.face.x.back": 4, "ride.face.y": 2, "ride.face.y.back": 3, "ride.face.z": 5,
     "ride.along.x": 1, "ride.along.x.back": 4, "ride.along.face.x.back": 4, "ride.along.y.from": -2, "ride.along.y.span": 2,
@@ -1134,7 +1134,7 @@ class Blocks(unittest.TestCase):
         b = blocks(GAME)
         self.assertEqual(b[2], {"chill": 150, "cold": {"gain": 40, "over": 500, "back": 400, "wane": 10}})
         self.assertEqual(b[6], {"size": 512, "shrink": 26, "edge": {"hold": 301, "back": 401, "push": 40}})
-        self.assertEqual(b[5], {"ride": {"land": 100, "bias": 512, "rumble": 70, "body": {"off": 100, "ends": 256},
+        self.assertEqual(b[5], {"ride": {"bias": 512, "rumble": 70, "body": {"off": 100, "ends": 256},
                                          "end": {"tolerance": 100}}})
         self.assertEqual(set(b), {2, 5, 6})
 
@@ -1142,7 +1142,7 @@ class Blocks(unittest.TestCase):
         for change in ({"ice.kind": 1}, {"arrow.type": 27}, {"ride.kind": 6}, {"crumble.code.input": 95},
                        {"cold.back": 500}, {"cold.wane": 10}, {"crumble.size": 256}, {"crumble.breaking": 2},
                        {"crumble.broken.seen": 3}, {"crumble.edge.hold": 256}, {"crumble.edge.back": 301},
-                       {"ride.bias.travel": 512}, {"ride.land": 100}, {"ride.beam": -1}, {"ride.face.x.back": 1},
+                       {"ride.bias.travel": 512}, {"ride.body.off": 100}, {"ride.beam": -1}, {"ride.face.x.back": 1},
                        {"ride.face.z": 0}, {"ride.along.x.back": 2}, {"ride.along.y.from": -1}, {"ride.along.z.back": 4},
                        {"ride.along.face.x.back": 2}, {"ride.along.face.y.span": 3}, {"ride.along.face.z.back": 0},
                        {"ride.along.yes": 0}, {"ride.body.axis.z": 0}, {"ride.body.count.less": 0},
@@ -1273,7 +1273,7 @@ class Table(unittest.TestCase):
         t = table(r, 30)
         self.assertEqual(t["hz"], 60)
         self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1,
-                                           "ride": {"land": 100, "bias": 512, "rumble": 70,
+                                           "ride": {"bias": 512, "rumble": 70,
                                                     "body": {"off": 100, "ends": 256}, "end": {"tolerance": 100}},
                                            "standing": 95})
         self.assertEqual(t["kinds"]["3"]["light"]["far"], 512)
