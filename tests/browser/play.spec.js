@@ -17,6 +17,9 @@ const PILL_LEVEL = "/#FIELD/10/45,35/fit/33";
 // HIDDEN 3: the start two blocks before a row of four corkscrews, the first of them at the top of
 // its bounce as the level opens
 const CORKSCREW_LEVEL = "/#INCA/18/45,35/fit/33";
+// LEVEL 43: the start at one end of a row of three blocks, a lethargy pill on the block at the
+// other end, to the ball's left as the level opens
+const LETHARGY_LEVEL = "/#INCA/12/45,35/fit/33";
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazards)\.js$/;
 const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 const TIME_UP_PAD =
@@ -2997,5 +3000,79 @@ test("a corkscrew catches the ball from where it bounces: rolled under one that 
   expect(seen.slice(rested, caught).every((s) => lift(s.frame) > bound)).toBe(true);
   expect(seen.slice(0, caught).every((s) => s.status === "")).toBe(true);
   expect(await said(page)).toContain("Caught");
+  expect(errors).toEqual([]);
+});
+
+test("the lethargy pill halves the pace as the game does: from the frame after its take two steps of a sixtieth run one game frame, through the passes the table gives, and one step runs one again from the frame it predicts", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LETHARGY_LEVEL);
+  await settle(page);
+  await still(page);
+  await page.keyboard.press("t");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 19,19,17, facing -y");
+  await listening(page);
+  // a quarter turn toward the pill, past the level's opening, which holds the pad dead
+  await page.keyboard.press("ArrowLeft");
+  await expect.poll(async () => (await station(page)).heading).toBe("-x");
+  await expect.poll(async () => (await station(page)).moving).toBe(false);
+  await frozen(page);
+  // Up held until the ball reaches the pill's block, where it stops; the frame drawn is read after
+  // every step of a sixtieth
+  const { seen, table } = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw, clock }, { motionTable }, { state }, { cellKey }, P] = await Promise.all(
+      [
+        "viewer/draw/render.js",
+        "viewer/data.js",
+        "viewer/state.js",
+        "format/lattice.js",
+        "play/play.js",
+      ].map(at),
+    );
+    const key = (type, k) =>
+      document.body.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+    const { types, hz } = motionTable();
+    const pill = state.idx.markers.get(cellKey(17, 19, 17)).find((m) => m.face === 0);
+    const { word, step, blanks, screen } = types[String(pill.type)].lasts;
+    const seen = [];
+    let held = true;
+    key("keydown", "ArrowUp");
+    for (let f = 0; f < 600; f++) {
+      window.__step(1000 / hz);
+      draw();
+      const s = P.station();
+      if (held && s.block.join() === "17,19,17") {
+        key("keyup", "ArrowUp");
+        held = false;
+      }
+      seen.push({ frame: clock(), block: s.block.join(), moving: s.moving });
+    }
+    return { seen, table: { word, step, blanks, fade: screen.fade } };
+  });
+  await page.evaluate(() => window.__thaw());
+  const { word, step, blanks, fade } = table;
+  const standing = word / step + 1 + fade.from / fade.by + 1;
+  const frames = seen.map((s) => s.frame);
+  // every step to the take's ran a frame, so the first that ran none follows the take's frame
+  const slowed = frames.findIndex((f, i) => i > 0 && f === frames[i - 1]);
+  expect(slowed).toBeGreaterThan(0);
+  const took = slowed - 1;
+  expect(frames.length).toBeGreaterThan(took + standing * blanks + 30);
+  // from the take's frame on, a frame every `blanks` steps for `standing` frames, then one a step
+  const predicted = (i) => {
+    const d = i - took;
+    return d <= standing * blanks
+      ? frames[took] + Math.floor(d / blanks)
+      : frames[took] + standing + d - standing * blanks;
+  };
+  const odd = frames
+    .map((f, i) => (f === (i < took ? frames[0] + i : predicted(i)) ? -1 : i))
+    .filter((i) => i >= 0);
+  expect(odd).toEqual([]);
+  expect(seen.at(-1)).toEqual({ frame: frames.at(-1), block: "17,19,17", moving: false });
+  await expect.poll(() => said(page)).toContain("Lethargy pill taken.");
   expect(errors).toEqual([]);
 });

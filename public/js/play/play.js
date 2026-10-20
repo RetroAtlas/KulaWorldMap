@@ -71,6 +71,8 @@ import {
   positionOf,
 } from "./ball.js";
 import {
+  blanksOf,
+  drawn,
   drives,
   frame as gameFrame,
   heeds,
@@ -459,11 +461,13 @@ function swung() {
   state.cam.panY = -(e.free / 2 - state.view.h / 2) / (zoom * BLOCK);
 }
 
-/** One frame of the ending's view: the yaw turned by the game's third angle, the pitch by its
-    first, the eye along its swing, and the level started again as the view's length runs out. */
+/** One frame of the ending's view: the screen's words stepped as the game's draw steps them, the
+    yaw turned by the game's third angle, the pitch by its first, the eye along its swing, and the
+    level started again as the view's length runs out. */
 function turning() {
   const e = live.ended;
   const { turn } = motionTable();
+  drawn(live.run);
   const [pitch, , yaw] = e.view.angles;
   state.cam.yaw += (yaw * 360) / turn;
   state.cam.pitch += (pitch * 360) / turn;
@@ -583,22 +587,27 @@ const running = () =>
       keys.busy() ||
       live.driver !== null;
 
-/** Step the game frames `dt` ms owe, the level running at rest with Motion on and only while the
-    ball moves or a key is held without it, and the ending's view in the level's place once it
-    has ended, with Motion on alone: whether anything moved. */
+/** Step the game frames `dt` ms owe, each taking the sixtieths the run's words ask, the level
+    running at rest with Motion on and only while the ball moves or a key is held without it, and
+    the ending's view in the level's place once it has ended, with Motion on alone: whether
+    anything moved. */
 function stepped(dt) {
   let moved = false;
   if (running()) {
     owed += (dt * motionTable().hz) / 1000;
-    while (owed >= 1 && live) {
-      owed -= 1;
+    let blanks = blanksOf(live.run);
+    while (owed >= blanks && live) {
+      owed -= blanks;
       framing = true;
       saying = null;
       if (live.ended) turning();
       else played();
       framing = false;
       if (saying !== null) told(saying);
-      if (live) stood();
+      if (live) {
+        stood();
+        blanks = blanksOf(live.run);
+      }
       moved = true;
     }
   } else owed = 0;

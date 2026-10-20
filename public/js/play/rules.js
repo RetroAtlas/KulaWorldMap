@@ -1,5 +1,6 @@
 // The game's frame over the ball and the level: the clock, the guard, the wait, the pad, what is
-// under the ball and what it takes, in the executable's order, over pad words from any source.
+// under the ball and what it takes, in the executable's order, over pad words from any source,
+// the draw's step over the screen's words as the pass ends, and the blanks a pass waits.
 import {
   JUMP,
   PAD,
@@ -55,6 +56,10 @@ const OUT = { [EXIT]: "exit", [HIDDEN_EXIT]: "hidden" };
 
 const add = (p, v, k = 1) => p.map((c, i) => c + v[i] * k);
 const lastsOf = (live, type) => live.tables.motion.types[String(type)].lasts;
+const flashOf = (live) => live.tables.motion.effects.flash.teleport;
+
+/** The screen's mode word under the lethargy pill: the states its routine runs, in their order. */
+export const SCREEN = { off: 0, flash: 1, ghost: 2, end: 3, fade: 4 };
 
 const rulesOf = ({ motion, unit, jump }) => ({
   table: motion.types[String(BALL)],
@@ -114,6 +119,9 @@ export function startRun(l, idx, tables, circuits, at = null) {
       guard: 0,
       pad: 0,
       send: -1,
+      screen: SCREEN.off,
+      fade: 0,
+      flash: 0,
       latch: { up: 0, cross: 0, count: 0 },
       pills: Object.fromEntries(
         Object.entries(types)
@@ -237,7 +245,8 @@ function ground(live, out) {
 
 // The pills' words run down in the hazards routine's order, the sunglasses' word starting their
 // blink as it runs out, the invincibility pill cutting the bouncy and lethargy pills' short while
-// it stands and the lethargy pill hurrying the clock.
+// it stands and the lethargy pill hurrying the clock and, found at nothing, asking its screen's
+// end.
 function pills(live, out) {
   const w = live.words;
   const p = w.pills;
@@ -254,9 +263,41 @@ function pills(live, out) {
     p[LETHARGY] = 0;
   }
   if (p[LETHARGY] >= 0) {
+    if (p[LETHARGY] === 0 && w.screen) w.screen = SCREEN.end;
     p[LETHARGY] -= lasts(LETHARGY).step;
     tick(live, out, lasts(LETHARGY).ticks);
   }
+}
+
+/** The draw's step over the screen's words, run as each pass ends, the ending's view's passes
+    included: the pill's own pass moves its mode on to the ghost, the end's pass lays the fade's
+    level from the table and moves on, each pass after takes the table's step off the level, and
+    the level below nothing clears the mode; the teleport's flash wanes by its step while it
+    stands. */
+export function drawn(live) {
+  const w = live.words;
+  const { fade } = lastsOf(live, LETHARGY).screen;
+  if (w.screen === SCREEN.flash) w.screen = SCREEN.ghost;
+  else if (w.screen === SCREEN.end) {
+    w.screen = SCREEN.fade;
+    w.fade = fade.from;
+  } else if (w.screen === SCREEN.fade) {
+    w.fade -= fade.by;
+    if (w.fade < 0) {
+      w.screen = SCREEN.off;
+      w.fade = 0;
+    }
+  }
+  if (w.flash > 0) w.flash = Math.max(0, w.flash - flashOf(live).step);
+}
+
+/** The blanks the frame loop waits before a pass, by the words as the pass before left them: the
+    pill's while the screen's mode stands, the teleport's while its flash does, else one. */
+export function blanksOf(live) {
+  const w = live.words;
+  if (w.screen) return lastsOf(live, LETHARGY).blanks;
+  if (w.flash > 0) return flashOf(live).blanks;
+  return 1;
 }
 
 // The blink's spells run on from the word's end, off first, the first spell at the table's own length,
@@ -326,8 +367,9 @@ function held(live) {
 }
 
 /** One game frame with `pad` as held: what happened, as events. The frame the clock runs out on
-    runs to its end, as the game's does, the crumbling blocks breaking up last as the draw runs
-    them, and nothing runs once the outcome stands; the ending's view is the mode's. */
+    runs to its end, as the game's does, the crumbling blocks breaking up and the screen's words
+    stepping last as the draw runs them, and nothing runs once the outcome stands; the ending's
+    view is the mode's. */
 export function frame(live, pad) {
   const w = live.words;
   const b = live.ball;
@@ -372,8 +414,10 @@ export function frame(live, pad) {
   w.way = b.way;
   if (w.bonus && out.some((e) => e.face === "climb")) mark(live, ahead, out);
   if (!w.guard) contact(live, out);
+  if (out.some((e) => e.pill?.type === LETHARGY)) w.screen = SCREEN.flash;
   if (out.some((e) => e.lost)) end(live, ending.lost, out);
   crumble(live, out);
+  drawn(live);
   w.frame += 1;
   return out;
 }
