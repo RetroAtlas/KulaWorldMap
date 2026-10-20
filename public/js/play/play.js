@@ -82,6 +82,7 @@ import {
   drawn,
   drives,
   frame as gameFrame,
+  gameOf,
   glowOf,
   glowStep,
   heeds,
@@ -90,11 +91,10 @@ import {
   restart,
   revive,
   rockOf,
+  roundOf,
   seeing,
   stand,
-  startGame,
   startRun,
-  stationOf,
 } from "./rules.js";
 import { courseDriver, keyPad } from "./drive.js";
 import { frameShown, probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
@@ -161,7 +161,11 @@ const WOULD = {
 const FORGIVEN = (name) => `Forgiven: the ball would have ${WOULD[name]}.`;
 const ENDED = "The level has ended";
 const ROUND_DONE = "The round is done.";
+const ROUND_LOST = "The round is lost.";
+const PLAYER = (player) => `Player ${player + 1}`;
+const POINT_TO = (player) => `The round is lost, a point to ${PLAYER(player)}.`;
 const AFRESH = "The run starts afresh.";
+const MATCH_AFRESH = "The match starts afresh.";
 const OPENED = "The last key is taken: the exits are open.";
 const BROKE = "The crumbling block breaks under the ball.";
 const GONE = (cell) => `The crumbling block at ${cell} is gone.`;
@@ -272,10 +276,9 @@ const tablesOf = () => ({
     one truth. */
 const circuitsOf = () => ({ on: (m) => markerNow(m) === "on", lit: litNow, flip });
 
-/** The game the run plays, where its setting is on and the level is one the game counts: `game`
-    carried on, or a fresh one; else none. */
-const gameFor = (l, tables, game = null) =>
-  state.show.playon && stationOf(l, tables) ? (game ?? startGame()) : null;
+/** The game the run plays, where its setting is on and the level is one the game plays a game
+    on: `game` carried on, or a fresh one of the level's mode; else none. */
+const gameFor = (l, tables, game = null) => (state.show.playon ? gameOf(l, tables, game) : null);
 
 /** What the frame draws at and with while the ball is on the map: the frame the rules last ran,
     which is the one the game's draw shows, the ending's view's frames added once the level has
@@ -1042,13 +1045,14 @@ function sent({ to }) {
 }
 
 /** The level has ended: the loop's step runs, a bad ending past the arcade's mode scoring nothing
-    on any level, and where a run is on, and its setting still is, the run's points are settled
-    and the level the game loads next picked, as the game's loop does all three, and where the
-    setting has gone off the run ends here; the ball is gone and the pad dead, the view lets go of
-    the ball and turns about the level's middle as the game's does, the eye standing by the
-    level's mode word, and the strip gives the verdict with the points and the time left, what the
-    ending did to the run's total and what the key goes on to, until a key goes on or the view has
-    run the length of one swing of an arcade level's eye, whichever eye the level's word stands. */
+    on any level, and where a run is on, and its setting still is, the run's points are settled,
+    or in a Simon room the match's point given and its winner named, and the level the game loads
+    next picked, as the game's loop does all three, and where the setting has gone off the run
+    ends here; the ball is gone and the pad dead, the view lets go of the ball and turns about the
+    level's middle as the game's does, the eye standing by the level's mode word, and the strip
+    gives the verdict with the points and the time left, what the ending did to the run's total
+    or to the match and what the key goes on to, until a key goes on or the view has run the
+    length of one swing of an arcade level's eye, whichever eye the level's word stands. */
 function ended(code) {
   const { play, turn } = motionTable();
   const { view, clock, words } = play;
@@ -1058,15 +1062,15 @@ function ended(code) {
   const name = endingName(code);
   const settled = conclude(run);
   const seconds = Math.max(0, Math.floor(w.clock / clock.second));
-  const told =
-    w.mode === MODE.simon && code === play.ending.exit
-      ? `${words[name]} ${ROUND_DONE}`
-      : (VERDICT[name] ?? words[name] ?? `${ENDED}.`);
+  const room = w.mode === MODE.simon;
+  const word = words[name] ?? `${ENDED}.`;
+  const told = room ? roomTold(code, word, settled) : (VERDICT[name] ?? word);
   const how = `${told} ${counted(w.score, "point")}, ${counted(seconds, "second")} left.`;
+  const did = settled && (room ? settled.won && MATCH_AFRESH : banked(settled, words));
   const next = run.game ? pickedLevel(nextOf(run.game, run, packCount(live.level.pack))) : null;
   live.ended = {
     code,
-    how: settled ? `${how} ${banked(settled, words)}` : how,
+    how: did ? `${how} ${did}` : how,
     next,
     frame: 0,
     length: Math.floor(turn / view.swing),
@@ -1087,6 +1091,14 @@ function ended(code) {
   say(verdict());
   redraw = true;
   invalidatePick();
+}
+
+/** A room's word for its ending `code`: the end screen's `word`, or the winner's where the match
+    is won, and whether the round is done or lost, with whose point it is where a match is on. */
+function roomTold(code, word, settled) {
+  const named = settled?.won ?? word;
+  if (code > 0) return `${named} ${ROUND_DONE}`;
+  return settled?.point == null ? `${named} ${ROUND_LOST}` : `${named} ${POINT_TO(settled.point)}`;
 }
 
 /** The strip's verdict: how the level ended and what the key goes on to, the level the game loads
@@ -1386,8 +1398,20 @@ function line() {
   );
   figure("playPoints", counted(w.score, "point"));
   const game = live.run.game;
-  $("playTotal").hidden = !game;
-  if (game) figure("playTotal", `Total ${game.total}`);
+  const room = w.mode === MODE.simon;
+  for (const id of ["playRound", "playMoves"]) $(id).hidden = !room;
+  for (const id of ["playTurn", "playMatch"]) $(id).hidden = !(room && game);
+  if (room) {
+    const { round, moves } = roundOf(live.run.match);
+    figure("playRound", `Round ${round}`);
+    figure("playMoves", counted(moves, "move"));
+    if (game) {
+      figure("playTurn", `${PLAYER(live.run.match.turn)}'s turn`);
+      figure("playMatch", `Match ${game.points.join(" : ")}`);
+    }
+  }
+  $("playTotal").hidden = !game || room;
+  if (game && !room) figure("playTotal", `Total ${game.total}`);
 }
 
 function sync() {

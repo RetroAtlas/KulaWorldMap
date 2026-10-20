@@ -3,8 +3,9 @@
 // takes, in the executable's order, over pad words from any source, the draw's step over the
 // screen's words as the pass ends and the effects' run after it, the bursts a pickup and a
 // teleporter start, the flash a send and a level with no key start, the blanks a pass waits, the
-// view's roll by the pill's word, the invincible ball's glow by its counter, and the run's points
-// and fruit, settled as a level ends, and the slot the game loads next.
+// view's roll by the pill's word, the invincible ball's glow by its counter, the run's points and
+// fruit, settled as a level ends, the slot the game loads next, and the Simon rooms' match, its
+// rounds, its two players' turns and points and the room it goes on to.
 import {
   JUMP,
   LEFT,
@@ -89,12 +90,43 @@ const SIMON = MODE.simon;
     counted and the slot kept, all at nothing. */
 export const startGame = () => ({ total: 0, bank: 0, fruit: 0, count: 0, kept: 0 });
 
+/** The Simon rooms' game as the menu that starts the mode leaves it: the players' points at
+    nothing, the word the loop flips before a reset at the menu's, and the total at nothing, which
+    the game's end puts below it. */
+export const startSimon = ({ players, starter }) => ({
+  total: 0,
+  points: Array(players).fill(0),
+  starter,
+});
+
 /** A match of the Simon rooms as its reset leaves it: the sequence filled with the empty
-    halfword, the table's store long, and the count of moves at the table's first. */
-export const startMatch = ({ store, empty, first }) => ({
+    halfword, the table's store long, the count of moves at the table's first, the round at
+    nothing and the turn the player the reset is given. */
+export const startMatch = ({ store, empty, first }, turn = 0) => ({
   sequence: Array(store).fill(empty),
   count: first,
+  round: 0,
+  turn,
 });
+
+/** The round the match is in and the moves it asks, as the strip counts them from one: the round
+    word counted on, and the moves at the indices up to the count of moves. */
+export const roundOf = ({ round, count }) => ({ round: round + 1, moves: count + 1 });
+
+// The other player than `player`'s, the next taken round the players.
+const other = (player, players) => (player + 1) % players;
+
+/** The game's mode word by the level's pack: the Simon rooms' for a room of the Copycat pack,
+    else the arcade's. */
+export const modeOf = (l, { skins }) => (l.pack === skins.copycat ? SIMON : MODE.arcade);
+
+/** The game the level is played in: `game` carried on where one stands, else a fresh one, the
+    Simon rooms' for a room and the arcade's for a level the game counts, or null for a level it
+    counts nowhere, a draft. */
+export function gameOf(l, tables, game = null) {
+  if (modeOf(l, tables) === SIMON) return game ?? startSimon(tables.motion.play.simon);
+  return stationOf(l, tables) ? (game ?? startGame()) : null;
+}
 
 /** Where the level stands in the game's count, or null where the game counts no such level, a
     draft or a Simon room among them: its world's place among the worlds, its slot in its pack and
@@ -118,11 +150,42 @@ export const numberOf = (station, { points, next }) =>
 
 /** The step the loop runs on the frame an ending stands, with or without a game: a bad ending on
     a level past the arcade's mode scores nothing, and then where a game stands its points are
-    settled, as `settle` has them, or nothing where none does. */
+    settled, as `settle` has them, or in the Simon rooms the match's point given and its end
+    judged, as `scored` has them, or nothing where none does. */
 export function conclude(live) {
   const w = live.words;
   if (w.outcome < 0 && w.form !== FORM.arcade) w.score = 0;
-  return live.game ? settle(live.game, live) : null;
+  if (!live.game) return null;
+  return w.mode === SIMON ? scored(live.game, live) : settle(live.game, live);
+}
+
+/** The Simon rooms' step on the frame an ending stands, over `game`, the mode's words, in the
+    loop's order: a failed round, any outcome below nothing, gives a point to the other player than
+    the turn's, and then, where the room the game loads next is the first and a player's points
+    are past the table's with the outcome below nothing, the end screen names the winner, or the
+    draw where the two are equal, and the game is ended as the menu code ends it, the total put
+    below nothing. The player given the point, or null, and the screen's word, or null. */
+export function scored(game, live) {
+  const w = live.words;
+  const { simon, words } = live.tables.motion.play;
+  const failed = w.outcome < 0;
+  const point = failed ? other(live.match.turn, simon.players) : null;
+  if (failed) game.points[point] += 1;
+  const won = failed && roomAfter(game, live) === 0 && game.points.some((p) => p > simon.points);
+  if (!won) return { point, won: null };
+  game.total = simon.over;
+  const [first, second] = game.points;
+  return { point, won: first > second ? words.won1 : second > first ? words.won2 : words.equal };
+}
+
+// The next-level routine's branch for the rooms, which a failed round alone runs: where the word
+// the loop flips is 1 the slot counts on by one, and back to the first room at the worlds' count,
+// so each room is played twice over.
+function roomAfter(game, live) {
+  const { next } = live.tables.motion.play;
+  const { index } = live.level;
+  if (live.words.outcome >= 0 || game.starter !== 1) return index;
+  return index + 1 >= next.worlds ? 0 : index + 1;
 }
 
 /** The points routine over `game`, the run's words, in its order: a death on an ordinary level
@@ -154,15 +217,18 @@ export function settle(game, live) {
 
 /** The slot the game loads after the level's ending, over `game`, the run's words, as the pack and
     the index of a level, or null where the game ends or the level is one the game does not count,
-    a final, a Simon room or a draft among them. An ordinary level with a way out counts the slot
-    on, and where the bank holds every fruit clears both fruit words, keeps the slot after and
-    opens the bonus level of the finished slot's third, the hidden exit keeping the slot after the
-    same way and opening the hidden level; a level past the arcade's mode, whatever its outcome,
-    goes back to the slot kept, or where the bank has filled meanwhile clears both words and opens
-    the bonus level of the kept slot's third. The slot after the last ordinary level is `count`,
-    the pack's levels, wherever it comes up, and a slot at the count or past it is the next
-    world's first level. */
+    a final or a draft among them. A Simon room goes on to the room its branch has: the same room
+    after a round done, or after a failed round where the word the loop flips is 0, the next room
+    where it is 1, and the first room past the last. An ordinary level with a way out counts the
+    slot on, and where the bank holds every fruit clears both fruit words, keeps the slot after
+    and opens the bonus level of the finished slot's third, the hidden exit keeping the slot after
+    the same way and opening the hidden level; a level past the arcade's mode, whatever its
+    outcome, goes back to the slot kept, or where the bank has filled meanwhile clears both words
+    and opens the bonus level of the kept slot's third. The slot after the last ordinary level is
+    `count`, the pack's levels, wherever it comes up, and a slot at the count or past it is the
+    next world's first level. */
 export function nextOf(game, live, count) {
+  if (live.words.mode === SIMON) return { pack: live.level.pack, index: roomAfter(game, live) };
   const station = stationOf(live.level, live.tables);
   if (!station || station.final || game.total < 0) return null;
   const { ending, next } = live.tables.motion.play;
@@ -230,18 +296,29 @@ function formOf(l, skins, keys, mode) {
     its keys, its settings record and that mode, that fruit word, the run's bank where the level
     is one the game counts, the flash a level with no key opens in, and the rest as the level's
     start sets them. In a Simon room the run holds a match, `match` where one is carried from a
-    round done, its count of moves counted on by the table's grow as the room's start counts it,
-    and else one as the reset leaves it, which the game's loop runs after the start on a load
-    that follows no level or one with no way out. */
+    round done, its round counted on by one and its count of moves by the table's grow as the
+    room's start counts them, and else one as the reset leaves it, which the game's loop runs
+    after the start on a load that follows no level or one with no way out, the word `game` keeps
+    for it flipped first and given as the turn, the first player's where no game stands. */
 export function startRun(l, idx, tables, circuits, at = null, game = null, match = null) {
   const { play, types } = tables.motion;
   const where = at ?? startOf(l);
   if (!where) throw new Error("the level has no start to stand the ball on");
   const world = worldOf(l, idx, tables, circuits, 0, game?.fruit ?? null);
   const keys = keysOf(world);
-  const mode = l.pack === tables.skins.copycat ? SIMON : MODE.arcade;
-  const kept = mode === SIMON ? (match ?? startMatch(play.simon)) : null;
-  if (match && kept) kept.count += play.simon.grow;
+  const mode = modeOf(l, tables);
+  let kept = null;
+  if (mode === SIMON) {
+    const { simon } = play;
+    if (match) {
+      kept = match;
+      kept.round += 1;
+      kept.count += simon.grow;
+    } else {
+      if (game) game.starter = other(game.starter, simon.players);
+      kept = startMatch(simon, game ? game.starter : 0);
+    }
+  }
   const live = {
     level: l,
     idx,
@@ -333,13 +410,16 @@ export const heeds = (live) => {
 };
 
 // The verdict becomes the ending, the exit's code for the sequence done and the rooms' own for
-// a wrong move, with the rooms' wait, and is cleared.
+// a wrong move, with the rooms' wait, and is cleared; the sequence done passes the turn to the
+// other player.
 function judge(live) {
   const w = live.words;
   const { ending, wait, simon } = live.tables.motion.play;
-  w.ending = w.verdict === simon.verdict.done ? ending.exit : ending.simon;
+  const done = w.verdict === simon.verdict.done;
+  w.ending = done ? ending.exit : ending.simon;
   w.wait = wait.simon;
   w.verdict = 0;
+  if (done) live.match.turn = other(live.match.turn, simon.players);
 }
 
 /** Whether the game moves the ball of itself on the coming frame, whatever the pad: a self-roll
@@ -826,7 +906,7 @@ export function frame(live, pad) {
     the level had a way out, or reset where it had not, as the game's loop resets it after the
     start. */
 export function restart(live, at = live.at, { level = live.level, idx = live.idx } = {}) {
-  const game = live.game && live.game.total < 0 ? startGame() : live.game;
+  const game = live.game && live.game.total < 0 ? gameOf(level, live.tables) : live.game;
   const match = live.words.outcome > 0 ? live.match : null;
   const next = startRun(level, idx, live.tables, live.circuits, at, game, match);
   next.words.guard = 1;

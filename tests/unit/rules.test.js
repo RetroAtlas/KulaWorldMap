@@ -52,7 +52,11 @@ import {
   settle,
   startGame,
   startMatch,
+  startSimon,
   stationOf,
+  gameOf,
+  roundOf,
+  scored,
   startEffect,
   particlesOf,
   effectLights,
@@ -545,7 +549,7 @@ test("a bonus level, whatever its outcome, goes back to the slot kept, or where 
   assert.deepEqual(g, { total: 0, bank: 0, fruit: 0, count: 5, kept: 8 }, "both words cleared");
 });
 
-test("the last world's fifteenth ends the game, and a final, a Simon room, a draft and a total below nothing give no level", () => {
+test("the last world's fifteenth ends the game, and a final, a draft and a total below nothing give no level", () => {
   const game = startGame();
   const last = TABLES.worlds.length - 1;
   assert.deepEqual(picked(game, last, 13, play.ending.exit), slotted(last, 14));
@@ -555,18 +559,6 @@ test("the last world's fifteenth ends the game, and a final, a Simon room, a dra
   assert.equal(picked(kept, last, play.next.bonus[2], play.ending.bonus, { keyed: false }), null);
   assert.equal(picked(kept, last, play.next.hidden, play.ending.lost, { hidden: true }), null);
   assert.equal(picked(game, 0, 1, play.ending.exit, { final: true }), null);
-  const room = begin(
-    {
-      ...level(row(10, 18), [start()], 99, false),
-      theme: "HIRO",
-      pack: objects.skins.copycat,
-      index: 0,
-    },
-    null,
-    game,
-  );
-  end(room, play.ending.simon, []);
-  assert.equal(nextOf(game, room, COUNT), null);
   const draft = begin({
     ...level(row(10, 18), [start()]),
     theme: "HIRO",
@@ -2484,13 +2476,15 @@ function rolled(live) {
 }
 const fresh = () => startMatch(ROOMS);
 
-test("a Simon room opens on a match as the reset leaves it, the sequence filled with the empty halfword and the count of moves at the first, with the idle count, the index and the verdict at nothing, a match handed in has its count counted on by the grow, and a level outside the rooms holds no match", () => {
+test("a Simon room opens on a match as the reset leaves it, the sequence filled with the empty halfword, the count of moves at the first, the round at nothing and the turn the first player's, with the idle count, the index and the verdict at nothing, a match handed in has its round counted on and its count by the grow, and a level outside the rooms holds no match", () => {
   const live = begin(room());
   const w = live.words;
   assert.equal(w.mode, SIMON);
   assert.deepEqual(live.match, {
     sequence: Array(ROOMS.store).fill(ROOMS.empty),
     count: ROOMS.first,
+    round: 0,
+    turn: 0,
   });
   assert.equal(live.match.sequence.length, ROOMS.store);
   assert.deepEqual([w.idle, w.index, w.verdict], [0, 0, 0]);
@@ -2498,6 +2492,7 @@ test("a Simon room opens on a match as the reset leaves it, the sequence filled 
   const next = begin(room(), null, null, carried);
   assert.equal(next.match, carried, "the match handed in is the run's");
   assert.equal(carried.count, ROOMS.first + ROOMS.grow, "its count of moves counted on");
+  assert.equal(carried.round, 1, "and its round");
   assert.equal(begin(level(row(10, 18), [start()])).match, null);
   assert.equal(begin(level(row(10, 18), [start()]), null, null, fresh()).match, null);
 });
@@ -2726,4 +2721,190 @@ test("in a Simon room a roll asked without a jump toward an edge beside a neighb
   for (let i = 1; i <= latch; i++) frame(live, PAD.up | PAD.cross);
   assert.equal(live.ball.state, JUMP);
   assert.deepEqual([w.index, live.match.sequence[0]], [1, bits.forward + bits.jump]);
+});
+
+// --- the Simon match ----------------------------------------------------------------------
+
+const COPYCAT = objects.skins.copycat;
+/** The room at `slot` of the Copycat pack, in the world of its place. */
+const roomAt = (slot) => ({ ...room(), theme: TABLES.worlds[slot], index: slot });
+/** Left held from rest through the turn it asks, a move unlike a roll stored before it, to the
+    outcome. */
+function wrong(live) {
+  for (let i = 1; i <= ROOMS.idle[1]; i++) frame(live, PAD.left);
+  assert.ok(live.ball.ramp, "the turn asked");
+  assert.ok(
+    until(live, 0, (l) => l.words.outcome !== 0, 80),
+    "and judged",
+  );
+}
+/** Up held through the two rolls of a first round, to the outcome. */
+function done(live) {
+  rolled(live);
+  rolled(live);
+  assert.equal(live.words.verdict, ROOMS.verdict.done);
+  assert.ok(until(live, 0, (l) => l.words.outcome !== 0, 60));
+  assert.equal(live.words.outcome, play.ending.exit);
+}
+/** The other player than `player`. */
+const other = (player) => (player + 1) % ROOMS.players;
+/** A Simon game in its second match of a room, the word the loop flips left so that the room's
+    load flips it to 1, with `points` the players'. */
+const second = (points = [0, 0]) => ({ ...startSimon(ROOMS), points: [...points], starter: 0 });
+
+test("a room with no game plays alone: a round done carries the match on with the round counted and the count grown, a wrong move resets it to the first round, and nothing is scored or picked", () => {
+  const live = begin(roomAt(3));
+  assert.equal(live.game, null);
+  assert.deepEqual(roundOf(live.match), { round: 1, moves: 2 });
+  opened(live);
+  done(live);
+  assert.equal(conclude(live), null, "nothing to settle");
+  const next = restart(live);
+  assert.equal(next.match, live.match, "the match carried");
+  assert.deepEqual(roundOf(next.match), { round: 2, moves: 4 });
+  assert.equal(next.game, null);
+  opened(next);
+  wrong(next);
+  assert.equal(next.words.outcome, play.ending.simon);
+  assert.equal(conclude(next), null);
+  const again = restart(next);
+  assert.notEqual(again.match, next.match, "the match reset");
+  assert.deepEqual(roundOf(again.match), { round: 1, moves: 2 });
+  assert.equal(again.game, null);
+});
+
+test("with a game the first room from the map's entry opens a match as the menu does: the word the menu set flipped and given as the turn, the first player's, the round the first with two moves to make and the players' points at nothing, and the game a level is played in is the rooms' for a room, the arcade's for a level the game counts, a final among them, and none for a draft", () => {
+  const game = startSimon(ROOMS);
+  assert.deepEqual(game, { total: 0, points: [0, 0], starter: ROOMS.starter });
+  const live = begin(roomAt(0), null, game);
+  assert.equal(live.game, game);
+  assert.equal(game.starter, other(ROOMS.starter), "the word flipped");
+  assert.equal(live.match.turn, game.starter);
+  assert.equal(live.match.turn, 0, "the first player opens");
+  assert.deepEqual(roundOf(live.match), { round: 1, moves: 2 });
+  assert.deepEqual(game.points, [0, 0]);
+  assert.deepEqual(gameOf(roomAt(4), TABLES), startSimon(ROOMS));
+  assert.equal(gameOf(roomAt(4), TABLES, game), game, "a game carried on");
+  const arcade = counted(level(row(10, 18), [start()]), 0, 3);
+  assert.deepEqual(gameOf(arcade, TABLES), startGame());
+  assert.deepEqual(Object.keys(startGame()), ["total", "bank", "fruit", "count", "kept"]);
+  assert.deepEqual(gameOf(counted(level(row(10, 18), [start()]), 0, 1, true), TABLES), startGame());
+  assert.equal(
+    gameOf({ ...level(row(10, 18), [start()]), pack: "/DRAFT/DRAFT.PAK" }, TABLES),
+    null,
+  );
+});
+
+test("a round done passes the turn as the verdict is judged, gives no point, picks the same room and restarts it with the round counted on, the count grown by the table's grow, the index at nothing and the sequence kept, the flipped word standing", () => {
+  const game = startSimon(ROOMS);
+  const live = begin(roomAt(2), null, game);
+  opened(live);
+  done(live);
+  assert.equal(live.match.turn, 1, "the turn passed");
+  assert.deepEqual(conclude(live), { point: null, won: null });
+  assert.deepEqual(game.points, [0, 0]);
+  assert.deepEqual(nextOf(game, live, 10), { pack: COPYCAT, index: 2 });
+  const match = live.match;
+  const next = restart(live);
+  assert.equal(next.match, match);
+  assert.deepEqual(roundOf(match), { round: 2, moves: 4 });
+  assert.equal(match.turn, 1);
+  assert.equal(game.starter, 0, "no flip on a round done");
+  assert.deepEqual([next.words.index, next.words.verdict, next.words.idle], [0, 0, 0]);
+  assert.deepEqual(match.sequence.slice(0, 3), [
+    ROOMS.bits.forward,
+    ROOMS.bits.forward,
+    ROOMS.empty,
+  ]);
+  assert.equal(next.game, game);
+});
+
+test("a failed round gives the other player than the turn's a point and resets the match with the flipped word as the turn: the same room again where the word was 0, the second player opening, and the next room where it was 1, the first player opening, a death a failed round too", () => {
+  const game = startSimon(ROOMS);
+  const first = begin(roomAt(0), null, game);
+  opened(first);
+  done(first);
+  const next = restart(first);
+  assert.equal(next.match.turn, 1, "the second player replays");
+  opened(next);
+  wrong(next);
+  assert.equal(next.words.outcome, play.ending.simon);
+  assert.deepEqual(conclude(next), { point: 0, won: null }, "a point to the first player");
+  assert.deepEqual(game.points, [1, 0]);
+  assert.deepEqual(nextOf(game, next, 10), { pack: COPYCAT, index: 0 }, "the same room");
+  const again = restart(next);
+  assert.notEqual(again.match, next.match);
+  assert.equal(game.starter, 1, "the word flipped");
+  assert.equal(again.match.turn, 1, "the second player opens the second match");
+  assert.deepEqual(roundOf(again.match), { round: 1, moves: 2 });
+  assert.equal(again.game, game, "the game carried, its points standing");
+  // the second match: the opener falls off, which fails the round and gives the first player a point
+  end(again, play.ending.lost, []);
+  assert.deepEqual(conclude(again), { point: 0, won: null });
+  assert.deepEqual(game.points, [2, 0]);
+  const pick = nextOf(game, again, 10);
+  assert.deepEqual(pick, { pack: COPYCAT, index: 1 }, "the next room");
+  const third = restart(again, null, { level: roomAt(pick.index), idx: index(roomAt(pick.index)) });
+  assert.equal(third.level.index, 1);
+  assert.equal(game.starter, 0);
+  assert.equal(third.match.turn, 0, "the first player opens the next room");
+  assert.deepEqual(roundOf(third.match), { round: 1, moves: 2 });
+});
+
+test("the rooms step on from each room's second match alone and wrap to the first after the tenth's", () => {
+  const rooms = play.next.worlds;
+  for (let slot = 0; slot < rooms; slot++) {
+    const firstMatch = begin(roomAt(slot), null, startSimon(ROOMS));
+    end(firstMatch, play.ending.lost, []);
+    assert.deepEqual(nextOf(firstMatch.game, firstMatch, 10), { pack: COPYCAT, index: slot });
+    const secondMatch = begin(roomAt(slot), null, second());
+    assert.equal(secondMatch.game.starter, 1);
+    end(secondMatch, play.ending.lost, []);
+    assert.deepEqual(nextOf(secondMatch.game, secondMatch, 10), {
+      pack: COPYCAT,
+      index: (slot + 1) % rooms,
+    });
+  }
+});
+
+test("the winner is named once the rooms have come round to the first with a player past the table's points and the outcome below nothing, Equal Time! where both are, and the game ends as a total below nothing, so the next load starts the match afresh with the points at nothing; it is not named on a round done, in another room, under the points or past them in a room that is not the last", () => {
+  const last = play.next.worlds - 1;
+  const { words } = play;
+  const won = (points, code = play.ending.lost) => {
+    const live = begin(roomAt(last), null, second(points));
+    end(live, code, []);
+    return { game: live.game, live, settled: conclude(live) };
+  };
+  // the second player opens the second match and fails, so the first player takes the point
+  let { game, live, settled } = won([ROOMS.points, 2]);
+  assert.deepEqual(game.points, [ROOMS.points + 1, 2]);
+  assert.deepEqual(settled, { point: 0, won: words.won1 });
+  assert.equal(game.total, ROOMS.over);
+  assert.ok(game.total < 0, "the game's end");
+  assert.deepEqual(nextOf(game, live, 10), { pack: COPYCAT, index: 0 });
+  const next = restart(live, null, { level: roomAt(0), idx: index(roomAt(0)) });
+  assert.notEqual(next.game, game, "a fresh game");
+  assert.deepEqual(next.game, { total: 0, points: [0, 0], starter: 0 });
+  assert.equal(next.match.turn, 0, "the first player opens");
+  assert.deepEqual(roundOf(next.match), { round: 1, moves: 2 });
+  ({ game, settled } = won([2, ROOMS.points + 2]));
+  assert.deepEqual(settled, { point: 0, won: words.won2 });
+  ({ game, settled } = won([ROOMS.points, ROOMS.points + 1]));
+  assert.deepEqual(game.points, [ROOMS.points + 1, ROOMS.points + 1]);
+  assert.deepEqual(settled, { point: 0, won: words.equal });
+  // a round done names no winner and keeps the game on
+  ({ game, settled } = won([ROOMS.points + 3, 0], play.ending.exit));
+  assert.deepEqual(settled, { point: null, won: null });
+  assert.equal(game.total, 0);
+  // under the points the game goes on
+  ({ game, settled } = won([ROOMS.points - 1, 1]));
+  assert.deepEqual(game.points, [ROOMS.points, 1]);
+  assert.deepEqual(settled, { point: 0, won: null });
+  assert.equal(game.total, 0);
+  // past the points in a room whose branch picks another room than the first
+  const mid = begin(roomAt(4), null, second([ROOMS.points + 3, 0]));
+  end(mid, play.ending.lost, []);
+  assert.deepEqual(scored(mid.game, mid), { point: 0, won: null });
+  assert.equal(mid.game.total, 0);
+  assert.deepEqual(nextOf(mid.game, mid, 10), { pack: COPYCAT, index: 5 });
 });

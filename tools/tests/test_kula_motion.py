@@ -967,7 +967,8 @@ class Play(unittest.TestCase):
         self.assertEqual(p["words"], {"exit": "Well Done!", "bonus": "Well Done!", "hidden": "Well Done!",
                                       "spikes": "SPIKED!", "time": "TIME OUT!", "lost": "FELL OFF!", "fire": "FIRE!",
                                       "captivator": "CAPTURED!", "acid": "ACID!", "laser": "LASER!",
-                                      "simon": "Wrong Move!", "over": "Game Over!"})
+                                      "simon": "Wrong Move!", "over": "Game Over!", "won1": "Player 1 Won!",
+                                      "won2": "Player 2 Won!", "equal": "Equal Time!"})
         self.assertEqual(p["bonus"], {"block": 50, "skips": 3})
         self.assertEqual(p["points"], {"each": 50, "most": 5000, "levels": 15, "finals": 2})
         self.assertEqual(p["next"], {"bonus": [15, 16, 17], "hidden": 18, "slots": 15, "third": 5, "fruit": 31,
@@ -979,11 +980,11 @@ class Play(unittest.TestCase):
         self.assertEqual(p["screen"], {"wide": 320, "high": 240, "distance": 160,
                                        "scale": {"across": 4096, "down": 3840}})
 
-    def test_the_simon_rooms_ship_their_latch_their_gates_their_bits_their_sequence_and_their_points(self):
+    def test_the_simon_rooms_ship_their_latch_their_gates_their_bits_their_sequence_their_points_and_their_players(self):
         s = simon(GAME)
         self.assertEqual(s, {"latch": 5, "idle": [3, 6], "bits": {"right": 1, "left": 2, "forward": 4, "jump": 8},
                              "store": 1024, "empty": -1, "first": 1, "verdict": {"done": 1, "wrong": 2}, "grow": 2,
-                             "points": 5})
+                             "points": 5, "players": 2, "starter": 1, "over": -1})
         # a tap of Up on the third frame at rest fires on the seventh, past the turn's gate
         self.assertGreaterEqual(s["idle"][0] + s["latch"] - 1, s["idle"][1])
         # the first round asks two moves and every round two more, so the sequence is full in the 512th

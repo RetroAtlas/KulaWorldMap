@@ -854,7 +854,7 @@ test("the clock ticks once a frame, fifty to a shown second, and a level ends in
   assert.equal((99 * play.clock.second) / play.clock.tick / table.hz, 82.5);
 });
 
-test("the end screen names each outcome in the game's own word, a death's in capitals, and the game's end", () => {
+test("the end screen names each outcome in the game's own word, a death's in capitals, the game's end and the Simon match's winner or its draw", () => {
   const { words, ending } = table.play;
   assert.deepEqual(words, {
     exit: "Well Done!",
@@ -869,8 +869,11 @@ test("the end screen names each outcome in the game's own word, a death's in cap
     laser: "LASER!",
     simon: "Wrong Move!",
     over: "Game Over!",
+    won1: "Player 1 Won!",
+    won2: "Player 2 Won!",
+    equal: "Equal Time!",
   });
-  assert.deepEqual(Object.keys(words), [...Object.keys(ending), "over"]);
+  assert.deepEqual(Object.keys(words), [...Object.keys(ending), "over", "won1", "won2", "equal"]);
   for (const [name, code] of Object.entries(ending)) {
     assert.equal(words[name] === words[name].toUpperCase(), code < 0 && code !== ending.simon);
     assert.ok(words[name].endsWith("!"));
@@ -977,7 +980,7 @@ test("an exit leads to the slot after, five fruit to a bonus level by thirds of 
   }
 });
 
-test("a Simon room latches Up and Cross over five frames from the third at rest, turns from the sixth, packs a move in four bits, holds 512 rounds of two more moves from the first's two in a sequence of empty halfwords, tells the sequence done from a wrong move and is won past 5 points", () => {
+test("a Simon room latches Up and Cross over five frames from the third at rest, turns from the sixth, packs a move in four bits, holds 512 rounds of two more moves from the first's two in a sequence of empty halfwords, tells the sequence done from a wrong move, goes round two players from the word the menu sets and is won past 5 points, which ends the game as a total below nothing", () => {
   const { simon, next } = table.play;
   assert.deepEqual(simon, {
     latch: 5,
@@ -989,11 +992,17 @@ test("a Simon room latches Up and Cross over five frames from the third at rest,
     verdict: { done: 1, wrong: 2 },
     grow: 2,
     points: 5,
+    players: 2,
+    starter: 1,
+    over: -1,
   });
   // the empty halfword is no move, and the two verdicts are told from each other and from none
   assert.ok(simon.empty < 0);
   assert.ok(simon.verdict.done > 0 && simon.verdict.wrong > 0);
   assert.notEqual(simon.verdict.done, simon.verdict.wrong);
+  // the word the menu sets is a player's once flipped, and the game's end is a total below nothing
+  assert.ok(simon.starter >= 0 && simon.starter < simon.players);
+  assert.ok(simon.over < 0);
   // a tap of Up on the third frame at rest asks the roll on the seventh, past the turn's gate on the sixth
   assert.equal(simon.idle[0] + simon.latch - 1, 7);
   assert.ok(simon.idle[0] + simon.latch - 1 >= simon.idle[1]);

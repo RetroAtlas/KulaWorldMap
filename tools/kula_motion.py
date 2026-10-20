@@ -4546,13 +4546,15 @@ def simon(r):
     """The Simon rooms' words: the frames Up and Cross are latched over, the
     idle count's gates for the latch and for a turn, the bits a move packs
     into, the sequence's length and the halfword that holds no move, the
-    count of moves the reset leaves, the two verdicts, the moves a round adds
-    and the points a game is won past, each held against the others: one mode
-    for the pad's case, the start's branch, the loop's point, the next-level
-    routine's branch and the menu, the pad's verdicts the ending's, the bits
-    one each, the reset's fill the sequence the pad reads from its last
-    halfword down, a latched request past the turn's gate, and one gate for
-    the points wherever they are asked."""
+    count of moves the reset leaves, the two verdicts, the moves a round adds,
+    the points a game is won past, the players the turn and the point go
+    round, the word the menu sets for the loop to flip and the total the menu
+    code puts to end the game, each held against the others: one mode for the
+    pad's case, the start's branch, the loop's point, the next-level routine's
+    branch and the menu, the pad's verdicts the ending's, the bits one each,
+    the reset's fill the sequence the pad reads from its last halfword down,
+    a latched request past the turn's gate, and one gate for the points
+    wherever they are asked."""
     if len({r["simon.mode"], r["simon.start.mode"], r["simon.loop.mode"], r["simon.next.mode"], r["simon.menu.start"],
             r["clock.mode"]}) != 1:
         sys.exit("the Simon rooms' case, branch, point and menu are not keyed on the mode the clock stands in")
@@ -4595,7 +4597,8 @@ def simon(r):
     return {"latch": r["simon.latch"], "idle": [r["simon.idle.latch"], r["simon.idle.turn"]], "bits": bits,
             "store": r["simon.store.last"] + 1, "empty": r["simon.empty"], "first": r["simon.first"],
             "verdict": {"done": r["simon.verdict.done"], "wrong": r["simon.verdict.wrong"]}, "grow": r["simon.grow"],
-            "points": r["simon.points.gate"] - 1}
+            "points": r["simon.points.gate"] - 1, "players": 1 << r["simon.players.shift"],
+            "starter": r["simon.menu.start"], "over": r["simon.menu.over"]}
 
 
 def effect_init(code, span=EFFECT_INIT):
@@ -4862,7 +4865,8 @@ def play(r):
         sys.exit("the final's branch does not pick the acid's word, Copycat is not the clock's standing mode, "
                  "or the time trial's slow exit is not gated at twenty seconds")
     named = {name: r["words"][index] for name, index in picks.items()}
-    named["over"] = r["words"][r["words.over"]]
+    for name in ("over", "won1", "won2", "equal"):
+        named[name] = r["words"][r[f"words.{name}"]]
     return {"start": {"wait": r["start.wait"], "guard": r["start.guard"]},
             "clock": {"tick": r["clock.tick"], "second": r["time.tick"], "face": r["clock.face"],
                       "out": r["end.time"]},
