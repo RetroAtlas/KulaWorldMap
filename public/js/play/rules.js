@@ -2,7 +2,7 @@
 // under the ball and what it takes, in the executable's order, over pad words from any source,
 // the draw's step over the screen's words as the pass ends, the blanks a pass waits, the view's
 // roll by the pill's word, the invincible ball's glow by its counter, and the run's points and
-// fruit, settled as a level ends.
+// fruit, settled as a level ends, and the slot the game loads next.
 import {
   JUMP,
   PAD,
@@ -67,9 +67,9 @@ export const SCREEN = { off: 0, flash: 1, ghost: 2, end: 3, fade: 4 };
     hidden level. */
 export const FORM = { arcade: 0, bonus: 1, hidden: 2 };
 
-/** A game as its loop starts one: the total, the bank, the pickups' fruit word and the fruit
-    counted, all at nothing. */
-export const startGame = () => ({ total: 0, bank: 0, fruit: 0, count: 0 });
+/** A game as its loop starts one: the total, the bank, the pickups' fruit word, the fruit
+    counted and the slot kept, all at nothing. */
+export const startGame = () => ({ total: 0, bank: 0, fruit: 0, count: 0, kept: 0 });
 
 /** Where the level stands in the game's count, or null where the game counts no such level, a
     draft or a Simon room among them: its world's place among the worlds, its slot in its pack and
@@ -118,6 +118,53 @@ export function settle(game, live) {
   }
   game.fruit = w.fruit;
   return { penalty, banked, total: game.total, over: game.total < 0 };
+}
+
+/** The slot the game loads after the level's ending, over `game`, the run's words, as the pack and
+    the index of a level, or null where the game ends or the level is one the game does not count,
+    a final, a Simon room or a draft among them. An ordinary level with a way out counts the slot
+    on, and where the bank holds every fruit clears both fruit words, keeps the slot after and
+    opens the bonus level of the finished slot's third, the hidden exit keeping the slot after the
+    same way and opening the hidden level; a level past the arcade's mode, whatever its outcome,
+    goes back to the slot kept, or where the bank has filled meanwhile clears both words and opens
+    the bonus level of the kept slot's third. The slot after the last ordinary level is `count`,
+    the pack's levels, wherever it comes up, and a slot at the count or past it is the next
+    world's first level. */
+export function nextOf(game, live, count) {
+  const station = stationOf(live.level, live.tables);
+  if (!station || station.final || game.total < 0) return null;
+  const { ending, next } = live.tables.motion.play;
+  const { bonus, hidden, slots, third, fruit } = next;
+  const w = live.words;
+  const full = () => (game.bank & fruit) === fruit;
+  const clear = () => Object.assign(game, { bank: 0, fruit: 0 });
+  const after = (s) => (s + 1 === slots ? count : s + 1);
+  let { slot, place } = station;
+  if (w.form === FORM.arcade) {
+    if (w.outcome === ending.hidden) {
+      game.kept = after(slot);
+      slot = hidden;
+    } else if (w.outcome > 0) {
+      if (full()) {
+        clear();
+        game.kept = after(slot);
+        slot = bonus[Math.trunc(slot / third) % bonus.length];
+      } else slot = after(slot);
+    }
+  } else if (slot < count) {
+    if (full()) {
+      clear();
+      const { kept } = game;
+      slot = kept <= third ? bonus[0] : kept <= 2 * third ? bonus[1] : bonus[2];
+    } else slot = game.kept;
+  }
+  if (slot >= count) {
+    slot = 0;
+    place += 1;
+  }
+  if (place >= next.worlds) return null;
+  const world = live.tables.worlds[place];
+  return { pack: `/${world}/${world}.PAK`, index: slot };
 }
 
 const rulesOf = ({ motion, unit, jump }) => ({
@@ -521,13 +568,13 @@ export function frame(live, pad) {
   return out;
 }
 
-/** The level loaded again after an ending: a fresh run of it with the guard set, so the pad is
-    dead and the hazards off as the game opens a level that follows another, the ball on the
-    start or at `at`, and the game carried on, or started afresh where its total is below nothing,
-    which is the game's end. */
-export function restart(live, at = live.at) {
+/** The level the game loads after an ending, this one again or `level` at `idx`: a fresh run of
+    it with the guard set, so the pad is dead and the hazards off as the game opens a level that
+    follows another, the ball on the start or at `at`, and the game carried on, or started afresh
+    where its total is below nothing, which is the game's end. */
+export function restart(live, at = live.at, { level = live.level, idx = live.idx } = {}) {
   const game = live.game && live.game.total < 0 ? startGame() : live.game;
-  const next = startRun(live.level, live.idx, live.tables, live.circuits, at, game);
+  const next = startRun(level, idx, live.tables, live.circuits, at, game);
   next.words.guard = 1;
   return next;
 }

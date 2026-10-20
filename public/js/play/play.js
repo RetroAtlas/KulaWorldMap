@@ -51,7 +51,8 @@ import {
 import { ballsWith } from "../viewer/draw/things.js";
 import { iconFor } from "../viewer/draw/icons.js";
 import { toast } from "../viewer/ui/toast.js";
-import { chip, fit, fitWith, writeHash } from "../viewer/chrome/navigate.js";
+import { chip, fit, fitWith, selectLevel, writeHash } from "../viewer/chrome/navigate.js";
+import { slotOf } from "../viewer/permalink.js";
 import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
 import { say as announce } from "../viewer/chrome/a11y.js";
 import { clearDetail, onShow, showCell } from "../viewer/chrome/detail.js";
@@ -81,6 +82,7 @@ import {
   glowOf,
   glowStep,
   heeds,
+  nextOf,
   relevel,
   restart,
   revive,
@@ -164,6 +166,8 @@ const KEYS_LEFT = "The keys left to take";
 const BLOCKS_LEFT = "The blocks left to roll onto";
 const AGAIN = "Space or Enter starts the level again.";
 const AGAIN_PAD = "Space, Enter or a tap on the pad starts the level again.";
+const ON = (title) => `Space or Enter goes on to ${title}.`;
+const ON_PAD = (title) => `Space, Enter or a tap on the pad goes on to ${title}.`;
 const KEPT = "The way the ball has come is now the route.";
 const ROUTE_STANDS = "A route already stands; clear it to keep the walk.";
 const FOLLOWING = "Following the route; an arrow or Space takes the ball back.";
@@ -205,6 +209,8 @@ let padShown = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoin
 let forgiving = false;
 let keyed = false;
 let wired = false;
+// whether play itself is changing the level through the funnel
+let changing = false;
 
 export const playing = () => live !== null;
 
@@ -587,7 +593,7 @@ function wake() {
 
 /** Run the game frames the wall clock owes, and move the camera after the ball. */
 function advance() {
-  if (!live && !ease) return;
+  if (changing || (!live && !ease)) return;
   const now = performance.now();
   const dt = Math.min(GAP_MS, now - last);
   last = now;
@@ -1018,12 +1024,12 @@ function sent({ from, to }) {
   invalidatePick();
 }
 
-/** The level has ended: the run's points are settled as the game's loop settles them, the ball
-    is gone and the pad dead, the view lets go of the ball and turns about the level's middle as
-    the game's does, the eye standing by the level's mode word, and the strip gives the verdict
-    with the points and the time left and what the ending did to the run's total, until a key
-    starts the level again or the view has run the length of one swing of an arcade level's eye,
-    whichever eye the level's word stands. */
+/** The level has ended: the run's points are settled and the level the game loads next picked,
+    as the game's loop does both, the ball is gone and the pad dead, the view lets go of the ball
+    and turns about the level's middle as the game's does, the eye standing by the level's mode
+    word, and the strip gives the verdict with the points and the time left, what the ending did
+    to the run's total and what the key goes on to, until a key goes on or the view has run the
+    length of one swing of an arcade level's eye, whichever eye the level's word stands. */
 function ended(code) {
   const { play, turn } = motionTable();
   const { view, clock, words } = play;
@@ -1033,9 +1039,11 @@ function ended(code) {
   const settled = run.game ? settle(run.game, run) : null;
   const seconds = Math.max(0, Math.floor(w.clock / clock.second));
   const how = `${VERDICT[name] ?? words[name] ?? `${ENDED}.`} ${counted(w.score, "point")}, ${counted(seconds, "second")} left.`;
+  const next = run.game ? pickedLevel(nextOf(run.game, run, packCount(live.level.pack))) : null;
   live.ended = {
     code,
     how: settled ? `${how} ${banked(settled, words)}` : how,
+    next,
     frame: 0,
     length: Math.floor(turn / view.swing),
     theta: 0,
@@ -1057,9 +1065,24 @@ function ended(code) {
   invalidatePick();
 }
 
-/** The strip's verdict: how the level ended and what starts it again, the pad named while it
-    shows. */
-const verdict = () => `${live.ended.how} ${padShown ? AGAIN_PAD : AGAIN}`;
+/** The strip's verdict: how the level ended and what the key goes on to, the level the game loads
+    next or this one again, the pad named while it shows. */
+const verdict = () => {
+  const { how, next } = live.ended;
+  const then = next ? (padShown ? ON_PAD : ON)(levelTitle(next)) : padShown ? AGAIN_PAD : AGAIN;
+  return `${how} ${then}`;
+};
+
+/** The levels the pack holds, as the data has them. */
+const packCount = (pack) => state.data.levels.filter((l) => l.pack === pack).length;
+
+/** The level of the disc at `pick`, a pack and an index, where it is another than the one played,
+    else null. */
+function pickedLevel(pick) {
+  if (!pick) return null;
+  const l = state.data.levels.find((x) => x.pack === pick.pack && x.index === pick.index);
+  return l && l !== live.level ? l : null;
+}
 
 /** What the ending did to the run's total: the penalty taken or the points banked, the total,
     and where that is below nothing the game's word for its end. */
@@ -1088,21 +1111,29 @@ function forgive(name) {
   invalidatePick();
 }
 
-/** The level again from its start, as the game loads it after an ending, the view coming back
-    behind the ball; a level with no start stands the ball on the first face it could, as
-    entering does. */
-function startOver() {
+/** The level the game loads after an ending, from its start: the level it picked, another of the
+    disc, reached through the viewer's funnel with play kept on, or, where the pick is this level
+    or `onward` is off, this one again; the view comes back behind the ball, and a level with no
+    start stands the ball on the first face it could, as entering does. */
+function startOver({ onward = true } = {}) {
   if (!live) return;
-  const start = startOf(live.level, live.probe);
-  const where = start ? null : firstStandable(live.probe);
+  const from = viewNow();
+  const went = onward && goOn(live.ended?.next);
+  const l = went ? state.lvl : live.level;
+  const idx = went ? state.idx : live.idx;
+  const probe = went ? probeOf(idx) : live.probe;
+  const start = startOf(l, probe);
+  const where = start ? null : firstStandable(probe);
   if (!start && !where) {
     toast(NOWHERE);
     leave();
     return;
   }
-  const from = viewNow();
-  live.run = restart(live.run, where);
+  live.run = restart(live.run, where, { level: l, idx });
+  live.level = l;
+  live.idx = idx;
   live.probe = liveProbe(live.run);
+  live.markers = markersFor(start);
   live.ended = null;
   live.driver = null;
   live.route = null;
@@ -1117,7 +1148,7 @@ function startOver() {
   live.broken = new Set();
   live.flash = 0;
   live.still = stateOf(b);
-  resetDust(worldTint(live.level.theme));
+  resetDust(worldTint(l.theme));
   routing();
   status(start ? null : NO_START);
   keys.clear();
@@ -1131,8 +1162,22 @@ function startOver() {
   redraw = true;
   invalidatePick();
   say(
-    `${levelTitle(live.level)} again. The ball stands on the ${FACE_NAME[at.face]} of ${at.cell.join(",")}, facing ${faceName(b.h)}.`,
+    `${went ? `On to ${levelTitle(l)}` : `${levelTitle(l)} again`}. The ball stands on the ${FACE_NAME[at.face]} of ${at.cell.join(",")}, facing ${faceName(b.h)}.`,
   );
+}
+
+/** Go on to `next`, a level of the disc, through the viewer's level funnel with play kept on:
+    whether the level changed. */
+function goOn(next) {
+  const i = next ? state.data.levels.indexOf(next) : -1;
+  if (i < 0 || i === state.li) return false;
+  changing = true;
+  try {
+    selectLevel(i);
+  } finally {
+    changing = false;
+  }
+  return true;
 }
 
 // --- the trail -------------------------------------------------------------------------------
@@ -1479,6 +1524,7 @@ function enter(at = null) {
   }
   // the level's circuits as the game loads them, the panel's presses kept for the return
   state.parked = {
+    slot: slotOf(l),
     cam: { ...state.cam },
     target: [...state.target],
     fitted: state.framing === fit,
@@ -1558,15 +1604,15 @@ function leave({ restore = true } = {}) {
   if (!live) return;
   finishEase();
   const parked = state.parked;
-  const level = live.level;
+  // the view and the presses go back only where the level shown is the one they were parked on
+  const back = parked !== null && slotOf(state.lvl) === parked.slot;
   live = null;
   keys.clear();
   unsaid.length = 0;
   fitWith(null);
   runWith(null);
   refreshPanel();
-  // the presses as they were, unless another level has been installed meanwhile with its own
-  if (parked && state.lvl === level) state.presses = parked.presses;
+  if (back) state.presses = parked.presses;
   resetDust(null);
   sync();
   emit("play-changed", false);
@@ -1574,7 +1620,7 @@ function leave({ restore = true } = {}) {
     state.frame = null;
     state.anchored = false;
     state.parked = null;
-    if (restore && parked) {
+    if (restore && back) {
       Object.assign(state.cam, parked.cam);
       state.target = [...parked.target];
       state.slice = parked.slice;
@@ -1587,7 +1633,7 @@ function leave({ restore = true } = {}) {
     invalidatePick();
     draw();
   };
-  if (!restore || !parked) {
+  if (!restore || !back) {
     done();
     say("Left play.");
     return;
@@ -1636,7 +1682,7 @@ export function playAt(c) {
     enter(at);
     return;
   }
-  if (live.ended) startOver();
+  if (live.ended) startOver({ onward: false });
   put(at);
   const s = live.still;
   say(
@@ -1666,7 +1712,7 @@ export function bootPlay() {
       body.append(el("p", { className: "sub", textContent: `${TAKEN(m)}.` }));
   });
   on("level-changed", () => {
-    leave({ restore: false });
+    if (!changing) leave({ restore: false });
     icon();
   });
   on("level-updated", () => {
