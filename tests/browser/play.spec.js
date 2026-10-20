@@ -3076,3 +3076,159 @@ test("the lethargy pill halves the pace as the game does: from the frame after i
   await expect.poll(() => said(page)).toContain("Lethargy pill taken.");
   expect(errors).toEqual([]);
 });
+
+test("the lethargy pill rolls the view and ghosts the screen as the game does: the pill's frame flashes white and rolls the view by the first angle, the roll follows the word frame by frame about the line of sight with the picture trailing greenish behind it, and once the word has run out the view is the ball's frame again and a white glow fades", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LETHARGY_LEVEL);
+  await settle(page);
+  await still(page);
+  await page.keyboard.press("t");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 19,19,17, facing -y");
+  await listening(page);
+  await page.keyboard.press("ArrowLeft");
+  await expect.poll(async () => (await station(page)).heading).toBe("-x");
+  await expect.poll(async () => (await station(page)).moving).toBe(false);
+  await frozen(page);
+  const seen = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw, clock }, { motionTable }, { state, camera, basisAt }, { cellKey }, P] =
+      await Promise.all(
+        [
+          "viewer/draw/render.js",
+          "viewer/data.js",
+          "viewer/state.js",
+          "format/lattice.js",
+          "play/play.js",
+        ].map(at),
+      );
+    const key = (type, k) =>
+      document.body.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+    const { types, hz, turn } = motionTable();
+    const pill = state.idx.markers.get(cellKey(17, 19, 17)).find((m) => m.face === 0);
+    const { word, step, blanks, rock, screen } = types[String(pill.type)].lasts;
+    const g = document.getElementById("cv").getContext("2d");
+    // the mean red, green and blue over a grid of points of the canvas
+    const sampled = () => {
+      const { w, h, dpr } = state.view;
+      const sum = [0, 0, 0];
+      let n = 0;
+      for (let j = 1; j <= 6; j++)
+        for (let i = 1; i <= 8; i++) {
+          const x = Math.round((w * i * dpr) / 9);
+          const y = Math.round((h * j * dpr) / 7);
+          const d = g.getImageData(x, y, 1, 1).data;
+          for (let ch = 0; ch < 3; ch++) sum[ch] += d[ch];
+          n++;
+        }
+      return sum.map((v) => Math.round(v / n));
+    };
+    // the view's right, up and toward in the world for the frame `f` at the orbit's yaw and pitch
+    const viewOf = (f) => {
+      const b = basisAt(state.cam.yaw, state.cam.pitch);
+      const inWorld = (v) => [0, 1, 2].map((i) => v[0] * f[i] + v[1] * f[3 + i] + v[2] * f[6 + i]);
+      return { right: inWorld(b.right), up: inWorld(b.up), toward: inWorld(b.toward) };
+    };
+    // the angle the table predicts for the pill's word
+    const angleOf = (w) => {
+      if (w <= 0) return 0;
+      const sine = Math.round(turn * Math.sin((((w * rock.scale) % turn) / turn) * 2 * Math.PI));
+      return Math.trunc(sine / 2 ** rock.shift);
+    };
+    // the view rolled about its toward by `angle`, its up tipping left for a positive one
+    const rolledView = ({ right, up, toward }, angle) => {
+      const c = Math.cos((angle / turn) * 2 * Math.PI);
+      const s = Math.sin((angle / turn) * 2 * Math.PI);
+      return {
+        right: right.map((v, i) => c * v + s * up[i]),
+        up: up.map((v, i) => c * v - s * right[i]),
+        toward,
+      };
+    };
+    const off = (a, b) =>
+      Math.max(
+        ...["right", "up", "toward"].flatMap((k) => a[k].map((v, i) => Math.abs(v - b[k][i]))),
+      );
+    // the view settles on the ball after the turn
+    for (let f = 0; f < 30; f++) {
+      window.__step(1000 / hz);
+      draw();
+    }
+    const ballFrame = [...state.frame];
+    const rest = viewOf(ballFrame);
+    const differs = () => state.frame.some((v, i) => Math.abs(v - ballFrame[i]) > 1e-9);
+    const before = sampled();
+    // the pass the end is asked on, which draws the ghost once more, and the fade's passes after
+    const end = word / step + 1;
+    const fades = screen.fade.from / screen.fade.by;
+    const wanted = [0, 1, end + 1, end + Math.ceil(fades / 2), end + fades, end + fades + 1];
+    const samples = {};
+    const odd = [];
+    const angles = [];
+    let took = -1;
+    let clockTook = 0;
+    let held = true;
+    key("keydown", "ArrowUp");
+    for (let f = 0; f < 700; f++) {
+      window.__step(1000 / hz);
+      draw();
+      const s = P.station();
+      if (held && s.block.join() === "17,19,17") {
+        key("keyup", "ArrowUp");
+        held = false;
+      }
+      if (took < 0) {
+        if (!differs()) continue;
+        took = f;
+        clockTook = clock();
+      }
+      const pass = clock() - clockTook;
+      const angle = angleOf(word - step * pass);
+      const err = off(camera(), rolledView(rest, angle));
+      if (err > 1e-6) odd.push({ f, pass, angle, err });
+      if (pass < 3 && !angles.includes(angle)) angles.push(angle);
+      if (wanted.includes(pass) && !(pass in samples)) samples[pass] = sampled();
+      if (pass > end + fades + 1) break;
+    }
+    return {
+      took,
+      odd,
+      angles,
+      samples,
+      before,
+      end,
+      fades,
+      blanks,
+      back: took >= 0 && !differs(),
+      block: P.station().block.join(),
+    };
+  });
+  await page.evaluate(() => window.__thaw());
+  const { took, odd, angles, samples, before, end, fades, back } = seen;
+  expect(took).toBeGreaterThan(0);
+  expect(odd).toEqual([]);
+  // three frames apart in the cycle roll three ways, the first to the right
+  expect(angles).toHaveLength(3);
+  expect(angles[0]).toBeLessThan(0);
+  expect(back).toBe(true);
+  expect(seen.block).toBe("17,19,17");
+  const bright = (c) => (c[0] + c[1] + c[2]) / 3;
+  const base = samples[end + fades + 1];
+  // the flash: white everywhere on the pill's frame, over a scene far darker before and after
+  expect(bright(before)).toBeLessThan(160);
+  expect(bright(base)).toBeLessThan(160);
+  expect(samples[0].every((v) => v >= 250)).toBe(true);
+  // the ghost of the flash on the pass after: half the scene and half a greenish white
+  const ghost = samples[1];
+  expect(bright(ghost)).toBeGreaterThan(bright(base) / 2 + 60);
+  expect(bright(ghost)).toBeLessThan(250);
+  expect(ghost[1] - ghost[0] - (base[1] - base[0]) / 2).toBeGreaterThan(8);
+  // the glow fades from the end: brighter first, dimmer midway, the scene's own at its last pass
+  expect(bright(samples[end + 1])).toBeGreaterThan(bright(samples[end + Math.ceil(fades / 2)]));
+  expect(bright(samples[end + Math.ceil(fades / 2)])).toBeGreaterThan(bright(samples[end + fades]));
+  expect(Math.abs(bright(samples[end + fades]) - bright(base))).toBeLessThanOrEqual(10);
+  await expect.poll(() => said(page)).toContain("Lethargy pill taken.");
+  expect(errors).toEqual([]);
+});

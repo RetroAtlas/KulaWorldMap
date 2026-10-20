@@ -1067,6 +1067,8 @@ CHECKS = [
     (0x80035344, "bgez $v0, 0x80035350", "rounded toward nothing"),
     (0x80035360, "jal 0x80061298", "and rolls the view about its line of sight"),
     (0x80035364, "addu $a1, $a1, $s1", "the view the frame draws"),
+    (0x8006132c, "subu $t9, $t8, $t9", "the roll takes the sine times the down row off the right row"),
+    (0x800613bc, "addu $t9, $t8, $t9", "and adds the sine times the right row to the down row"),
     (0x8001dcd0, "jal 0x8002025c", "the frame's draw runs the screen's routine each pass"),
     (0x80020260, "lw $v1, 10228($gp)", "which reads the mode"),
     (0x80020288, "beq $v1, $v0, 0x800202b4", "the start's pass"),

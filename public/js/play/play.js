@@ -69,8 +69,10 @@ import {
   moving,
   offsetFrame,
   positionOf,
+  turned,
 } from "./ball.js";
 import {
+  SCREEN,
   blanksOf,
   drawn,
   drives,
@@ -79,6 +81,7 @@ import {
   relevel,
   restart,
   revive,
+  rockOf,
   seeing,
   stand,
   startRun,
@@ -87,10 +90,13 @@ import { courseDriver, keyPad } from "./drive.js";
 import { frameShown, probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
 const BALL_TYPE = 30;
+const LETHARGY_TYPE = 32;
 // the ball's key among the frame's travellers, which no thing of the level's answers to
 const BALL = "ball";
 // the untinted light, the unit a traveller's tint is in
 const LIGHT = 4096;
+// the ghost's blend takes half of the last frame and half of the scene
+const HALF = 0.5;
 const YAW = 20;
 const PITCH = 30;
 const ZOOM = { blocks: 8, min: 0.8, max: 3 };
@@ -177,6 +183,13 @@ const unsaid = [];
 let telling = false;
 let ease = null;
 let redraw = false;
+// whether the pass last run took the lethargy pill, and whether one ran since the frame hook drew
+let lit = false;
+let passed = false;
+let rolled = null;
+// the frame as last displayed while the pill works, tinted, for the ghost
+const lastCv = document.createElement("canvas");
+const lastCtx = lastCv.getContext("2d");
 let measure = () => {};
 let padShown = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 let forgiving = false;
@@ -189,6 +202,7 @@ const typing = (e) =>
   /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
 const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 const motionOn = () => state.show.motion;
+const pillTable = () => motionTable().types[String(LETHARGY_TYPE)].lasts;
 const smooth = (t) => t * t * (3 - 2 * t);
 const faceName = (v) => DIRECTION_NAME[faceOf(v)];
 
@@ -397,6 +411,23 @@ function slerp(a, b, t) {
 const viewOf = (frame, yaw, pitch) =>
   frame ? mul(frame, basisOf(yaw, pitch)) : basisOf(yaw, pitch);
 
+/** The frame rolled about the view's line of sight by the pill's angle, the orbit's yaw and pitch
+    composed first, or the frame itself while the pill's word is not positive; the array stands
+    while the frame, the angle and the orbit do, since the frame is compared by identity. */
+function rocked(frame) {
+  const { turn } = motionTable();
+  const angle = rockOf(live.run.words.pills[LETHARGY_TYPE], pillTable().rock, turn);
+  if (!angle) return frame;
+  const { yaw, pitch } = state.cam;
+  const r = rolled;
+  if (r && r.frame === frame && r.angle === angle && r.yaw === yaw && r.pitch === pitch)
+    return r.out;
+  const b = basisOf(yaw, pitch);
+  const out = mul(turned(mul(frame, b), 2, angle / turn), transpose(b));
+  rolled = { frame, angle, yaw, pitch, out };
+  return out;
+}
+
 /** Frame the view on the ball: behind it and above, the ball a little below the middle. */
 function frameBall(l) {
   if (!live || l !== live.level) {
@@ -550,7 +581,7 @@ function advance() {
       const off = s.centre[i] - v;
       return Math.abs(off) < LANDS ? s.centre[i] : v + off * k;
     });
-    const frame = motionOn() ? looked(live.run.ball) : s.frame;
+    const frame = rocked(motionOn() ? looked(live.run.ball) : s.frame);
     if (state.frame !== frame) {
       state.frame = frame;
       moved = true;
@@ -600,6 +631,8 @@ function stepped(dt) {
       owed -= blanks;
       framing = true;
       saying = null;
+      lit = false;
+      passed = true;
       if (live.ended) turning();
       else played();
       framing = false;
@@ -649,6 +682,7 @@ function played() {
   const was = onFace(b) ? footOf(b) : null;
   const blinked = !!run.words.blink;
   const events = gameFrame(run, pad);
+  if (events.some((e) => e.pill?.type === LETHARGY_TYPE)) lit = true;
   if (!motionOn()) ageDust(1 / motionTable().hz);
   else if (was && onFace(b) && !events.some((e) => e.sent)) {
     const under = blockUnder(b);
@@ -716,12 +750,65 @@ const again = () =>
         (!live.ended && (moving(live.run.ball) || drives(live.run) || keys.busy() || live.driver))))
   );
 
-/** The frame hook: another frame while the view eases, the level runs or something moves, and one
-    more where the view has just cut. */
-function more() {
+/** The frame hook: the pill's screen over the scene, and another frame while the view eases, the
+    level runs or something moves, and one more where the view has just cut. */
+function more(ctx) {
+  screened(ctx);
   const asked = again() || redraw;
   redraw = false;
   return asked;
+}
+
+/** The pill's screen, as the game's draw of the pass showed it: the flash on the pill's own pass,
+    the last frame as a ghost at half strength over the scene on each pass the pill works and on
+    the end's pass, and the white glow at the fade's level on each pass after; the frame drawn is
+    kept, tinted, for the next pass's ghost. */
+function screened(ctx) {
+  const ran = passed;
+  passed = false;
+  if (!live || live.run.words.screen === SCREEN.off) {
+    sized(lastCv, 0, 0);
+    return;
+  }
+  const w = live.run.words;
+  const { grey, tint, fade } = pillTable().screen;
+  const { w: width, h: height } = state.view;
+  const ghost = w.screen === SCREEN.ghost;
+  ctx.save();
+  if (ghost && lit) glow(ctx, grey, grey, width, height);
+  else if (ghost || w.fade === fade.from) {
+    ctx.globalAlpha = HALF;
+    if (lastCv.width) ctx.drawImage(lastCv, 0, 0, width, height);
+  } else glow(ctx, w.fade, grey, width, height);
+  ctx.restore();
+  if (ran && ghost) kept(ctx.canvas, tint, grey);
+}
+
+// A white quad added to the whole screen at `level` over the table's grey, the texel as it is.
+function glow(ctx, level, grey, width, height) {
+  if (level <= 0) return;
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = level / grey;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, width, height);
+}
+
+// The canvas kept for the ghost, tinted by the table's colour over its grey.
+function kept(cv, tint, grey) {
+  sized(lastCv, cv.width, cv.height);
+  lastCtx.setTransform(1, 0, 0, 1, 0, 0);
+  lastCtx.globalCompositeOperation = "copy";
+  lastCtx.drawImage(cv, 0, 0);
+  lastCtx.globalCompositeOperation = "multiply";
+  lastCtx.fillStyle = `rgb(${tint.map((v) => Math.round((v * 255) / grey)).join(" ")})`;
+  lastCtx.fillRect(0, 0, lastCv.width, lastCv.height);
+}
+
+function sized(cv, w, h) {
+  if (cv.width !== w || cv.height !== h) {
+    cv.width = w;
+    cv.height = h;
+  }
 }
 
 /** The ball's frame pitched further down by the view's word while it falls. */

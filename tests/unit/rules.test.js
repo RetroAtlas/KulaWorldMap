@@ -41,6 +41,7 @@ import {
   latched,
   drawn,
   blanksOf,
+  rockOf,
 } from "../../public/js/play/rules.js";
 import { probeOf, shiftOf, standingOf, viewOf } from "../../public/js/play/world.js";
 import { recorder, replayDriver } from "../../public/js/play/drive.js";
@@ -1687,4 +1688,50 @@ test("the draw's step alone, as the ending's view runs it, keeps the ghost stand
   }
   assert.deepEqual(seen, FADING);
   assert.equal(blanksOf(live), 1);
+});
+
+const ROCK = LETHARGIC.rock;
+/** The roll's angle the table predicts for the pill's word, in the turn's units. */
+const rock = (word) => rockOf(word, ROCK, motion.turn);
+/** The angles over the passes the word is positive, the pill's own first. */
+const WAVE = Array.from({ length: LETHARGIC.word / LETHARGIC.step }, (_, k) =>
+  rock(LETHARGIC.word - LETHARGIC.step * k),
+);
+/** The passes one wave of the roll takes: the word's step times the scale, into a turn. */
+const CYCLE = motion.turn / (ROCK.scale * LETHARGIC.step);
+
+test("the view's roll is nothing while the pill's word is not positive, and over the word's passes never above the sine's one shifted down by the table's shift either way, which it reaches both ways", () => {
+  for (const word of [0, -1, -LETHARGIC.step, -LETHARGIC.word]) assert.equal(rock(word), 0);
+  const most = motion.turn / 2 ** ROCK.shift;
+  assert.ok(WAVE.every((a) => Number.isInteger(a) && Math.abs(a) <= most));
+  assert.equal(Math.max(...WAVE), most);
+  assert.equal(Math.min(...WAVE), -most);
+});
+
+test("the roll's first angle, at the pill's own word, is negative, the sine of five eighths of a turn shifted down and rounded toward nothing rather than down", () => {
+  const sine = Math.round(-motion.turn * Math.SQRT1_2);
+  assert.ok(WAVE[0] < 0);
+  assert.equal(WAVE[0], Math.trunc(sine / 2 ** ROCK.shift));
+  assert.notEqual(WAVE[0], Math.floor(sine / 2 ** ROCK.shift));
+});
+
+test("the roll runs a cycle every 32 passes, one wave through both extremes, as the word comes down by its step", () => {
+  assert.equal(CYCLE, 32);
+  for (let i = CYCLE; i < WAVE.length; i++) assert.equal(WAVE[i], WAVE[i - CYCLE], `pass ${i}`);
+  const first = WAVE.slice(0, CYCLE);
+  assert.ok(first.includes(Math.max(...WAVE)) && first.includes(Math.min(...WAVE)));
+  assert.ok(new Set(first).size > CYCLE / 2);
+});
+
+test("frame by frame the view reads the word the hazards leave: the pill's own pass rolls by the first angle, each pass after by the next, and from the pass the word runs out on the roll is nothing", () => {
+  const live = begin(level(row(2, 18), [start(), pill(16, Number(LETHARGY))]));
+  const w = live.words;
+  assert.ok(until(live, PAD.up, (_, events) => taken(events, Number(LETHARGY))));
+  const seen = [rock(w.pills[LETHARGY])];
+  for (let i = 0; i < WAVE.length + 3; i++) {
+    frame(live, 0);
+    seen.push(rock(w.pills[LETHARGY]));
+  }
+  assert.deepEqual(seen, [...WAVE, 0, 0, 0, 0]);
+  assert.ok(w.pills[LETHARGY] < 0, "the word has run out");
 });

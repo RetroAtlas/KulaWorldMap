@@ -1,6 +1,7 @@
 // The game's frame over the ball and the level: the clock, the guard, the wait, the pad, what is
 // under the ball and what it takes, in the executable's order, over pad words from any source,
-// the draw's step over the screen's words as the pass ends, and the blanks a pass waits.
+// the draw's step over the screen's words as the pass ends, the blanks a pass waits and the
+// view's roll by the pill's word.
 import {
   JUMP,
   PAD,
@@ -298,6 +299,16 @@ export function blanksOf(live) {
   if (w.screen) return lastsOf(live, LETHARGY).blanks;
   if (w.flash > 0) return flashOf(live).blanks;
   return 1;
+}
+
+/** The view's roll under the lethargy pill, in `turn`ths of a turn, by the pill's `word` as the
+    hazards leave it: the sine, in the turn's own units, of the word times the table's scale
+    taken modulo a turn, shifted down by the table's shift and rounded toward nothing; nothing
+    while the word is not positive. */
+export function rockOf(word, { scale, shift }, turn) {
+  if (word <= 0) return 0;
+  const sine = Math.round(turn * Math.sin((((word * scale) % turn) / turn) * 2 * Math.PI));
+  return Math.trunc(sine / 2 ** shift);
 }
 
 // The blink's spells run on from the word's end, off first, the first spell at the table's own length,
