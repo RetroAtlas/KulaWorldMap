@@ -390,19 +390,22 @@ function roll(b) {
   b.spinSpeed = b.speed;
 }
 
-// Where the cell a block under the centre is a platform's body now and the centre is at most the
-// table's height off its face, the ball rides it at rest: its position relative to the
-// platform's, in which the platform's blocks stand at home and are all the probe calls solid.
-function board(b, probe, out) {
-  const ride = b.rules.ride;
-  if (!ride || !probe.platform) return false;
-  const under = cellOf(b, add(b.pos, b.n, -b.unit));
-  const p = probe.platform(under);
-  if (!p) return false;
-  const rel = add(b.pos, p.travel, -1);
-  const home = add(under, cellOf(b, p.travel), -1);
-  if (dot(add(rel, home, -b.unit), b.n) - b.half > ride.land) return false;
-  b.pos = rel;
+/** Whether the ball's face lies along the run of the platform `p`. */
+const alongRun = (b, p) => axisOf(b.n) === p.axis;
+
+/** Whether the centre lies, along the run alone, no further than the table's reach and `slack`
+    past either end block's centre of the platform `p`, where it stands now. */
+function withinRun(b, p, slack) {
+  const i = p.axis;
+  const reach = b.rules.ride.body.ends + slack;
+  const far = p.at[i] + (p.count - 1) * b.unit;
+  return b.pos[i] + reach >= p.at[i] && far + reach >= b.pos[i];
+}
+
+/** Ride the platform `p` at rest: the position made relative to the platform's, in which the
+    platform's blocks stand at home and are all the probe calls solid. */
+function ride(b, p, out) {
+  b.pos = add(b.pos, p.travel, -1);
   b.riding = { key: p.key };
   b.travel = p.travel;
   b.v = 0;
@@ -411,16 +414,44 @@ function board(b, probe, out) {
   b.state = REST;
   b.progress = progressOf(b);
   out.push({ rode: { key: p.key } }, { at: "landed" });
+}
+
+// The body landing: the cell a block under the centre is a platform's body now, the ball's face
+// lies across its run, the centre is at most the table's height off the face and lies within the
+// body along the run.
+function board(b, probe, out) {
+  const under = cellOf(b, add(b.pos, b.n, -b.unit));
+  const p = probe.platform(under);
+  if (!p || alongRun(b, p)) return false;
+  if (dot(add(b.pos, under, -b.unit), b.n) - b.half > b.rules.ride.body.off) return false;
+  if (!withinRun(b, p, 0)) return false;
+  ride(b, p, out);
   return true;
 }
 
-/** Land on a platform's body first, riding it, else where the point the radius under the centre
-    lies in a block that is no platform's: laid the radius off its face at rest, the speed the
-    top where the roll is asked, which a landing short of the middle's third with no jump asked
-    asks itself, a request the pad's reading replaces on the frame after, and the speed as the
-    air left it otherwise, for the roll asked next; the long jump's word is cleared. */
+// The end landing: the platform whose body the ball's own cell lies in, else the one the cell a
+// block under the centre lies in, with the ball's face along its run and the centre within the
+// table's slack past either end face; the centre is laid along the run the rest height off the
+// end face the normal points out of.
+function dock(b, probe, out) {
+  const p = probe.platform(cellOf(b, b.pos)) ?? probe.platform(cellOf(b, add(b.pos, b.n, -b.unit)));
+  if (!p || !alongRun(b, p)) return false;
+  if (!withinRun(b, p, b.rules.ride.end.tolerance)) return false;
+  const i = p.axis;
+  const end = p.at[i] + (b.n[i] > 0 ? (p.count - 1) * b.unit : 0);
+  b.pos[i] = end + b.n[i] * (b.half + b.radius);
+  ride(b, p, out);
+  return true;
+}
+
+/** Land on a platform first, by the body landing and, where it finds nothing, the end landing,
+    riding it, else where the point the radius under the centre lies in a block that is no
+    platform's: laid the radius off its face at rest, the speed the top where the roll is asked,
+    which a landing short of the middle's third with no jump asked asks itself, a request the
+    pad's reading replaces on the frame after, and the speed as the air left it otherwise, for
+    the roll asked next; the long jump's word is cleared. */
 function land(b, probe, out) {
-  if (board(b, probe, out)) return true;
+  if (b.rules.ride && probe.platform && (board(b, probe, out) || dock(b, probe, out))) return true;
   const block = cellOf(b, add(b.pos, b.n, -b.radius));
   if (!probe.solid(block) || probe.platform?.(block)) return false;
   const i = axisOf(b.n);
@@ -658,9 +689,9 @@ function spinning(b) {
     Between the state and the move step the ball's words for the block under its cell are read,
     whether one is there and whether it is brittle, which the rest state, the roll and the pad's
     reading ask on the next frame, and the probe's `stood`, where it has one, is told the ball,
-    which is where the game reads the cells about it. A landing on a platform's body rides it,
-    said as `rode`, and the jump and the hop leave it, said as `alit`, while a ball that rides
-    never drops. A lost ball says so and stays where it is. */
+    which is where the game reads the cells about it. A landing on a platform, on its body or
+    against its end, rides it, said as `rode`, and the jump and the hop leave it, said as `alit`,
+    while a ball that rides never drops. A lost ball says so and stays where it is. */
 export function run(b, probe, out) {
   b.landed = false;
   intents(b, probe, out);

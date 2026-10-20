@@ -1724,20 +1724,30 @@ test("the hold asks nothing of the forward request: with Up released past the mi
 
 const RIDE = objects.motion.kinds["5"].ride;
 const RIDDEN = { ...RULES, ride: RIDE };
-/** `lattice` with a platform whose blocks stand on the `body` cells at home and are carried
-    `travel()` units from them: solid where the lattice is or where the body stands now, and to
-    the ball `b` while it rides the body at home alone; `platform` names the body's cells now. */
+/** `lattice` with a platform whose blocks stand on the `body` cells at home, laid along one axis
+    from the first, and are carried `travel()` units from them: solid where the lattice is or
+    where the body stands now, and to the ball `b` while it rides the body at home alone;
+    `platform` names the body's cells now, with the run's axis, the first block's centre as
+    carried and the count of blocks. */
 function carried(lattice, body, travel, b, key = "rail") {
   const same = (a, c) => a.every((v, i) => v === c[i]);
+  const axis = body.length > 1 ? body[1].findIndex((v, i) => v !== body[0][i]) : 0;
   const now = () => {
     const by = travel().map((v) => Math.floor((v + UNIT / 2) / UNIT));
     return body.map((c) => c.map((v, i) => v + by[i]));
   };
   const on = (cells, cell) => cells.some((c) => same(c, cell));
+  const named = () => ({
+    key,
+    travel: travel(),
+    axis,
+    at: body[0].map((v, i) => v * UNIT + travel()[i]),
+    count: body.length,
+  });
   return {
     ...lattice,
     solid: (cell) => (b.riding ? on(body, cell) : lattice.solid(cell) || on(now(), cell)),
-    platform: (cell) => (on(now(), cell) ? { key, travel: travel() } : null),
+    platform: (cell) => (on(now(), cell) ? named() : null),
   };
 }
 /** A ball jumped from the top of (17, 17, 17) onto a platform three blocks long along x, at home
@@ -1891,7 +1901,13 @@ test("a hop while riding leaves the platform and comes down on its body as on st
   assert.deepEqual(blockUnder(b), [17, 15, 17]);
   assert.deepEqual(
     probe.platform([17, 15, 17]),
-    { key: "rail", travel: [-300, 0, 0] },
+    {
+      key: "rail",
+      travel: [-300, 0, 0],
+      axis: 0,
+      at: [17 * UNIT - 300, 15 * UNIT, 17 * UNIT],
+      count: 3,
+    },
     "the body still under it",
   );
   run(b, probe, 1, 0);
@@ -1912,4 +1928,136 @@ test("a hop while riding leaves the platform and comes down on its body as on st
   assert.equal(again.b.state, FALL);
   assert.equal(again.b.v, table.fall.hop);
   assert.equal(again.b.riding, null);
+});
+
+/** The body of `ridden()`'s platform: three blocks along x at home from (17, 15, 17). */
+const RAIL = [
+  [17, 15, 17],
+  [18, 15, 17],
+  [19, 15, 17],
+];
+/** A ball with its normal out of `face`, heading `h`, let fall from `pos` over `lattice` and the
+    platform whose blocks stand on `body` at home, carried `travel`: the ball, its probe and each
+    frame's events, run while it falls, for at most `n` frames. */
+function fallen(lattice, face, h, body, travel, pos, n = 60) {
+  const b = ballAt(RIDDEN, [17, 17, 17], face, h);
+  const probe = carried(lattice, body, () => travel, b);
+  b.pos = pos;
+  b.state = FALL;
+  b.v = table.fall.start;
+  const frames = [];
+  for (let f = 0; f < n && b.state === FALL; f++) frames.push(run(b, probe, 1, 0));
+  return { b, probe, frames };
+}
+/** A ball let fall from 300 over its rest on the top of `RAIL`, carried `travel`, with its centre
+    at `x` along the run and `y` across it, until it rides, lands or has passed the body. */
+function letFall(x, travel, y = 15 * UNIT) {
+  const bottom = 17 * UNIT + UNIT / 2 + table.rolling.resume;
+  const out = fallen(row(17, 18), TOP, UP, RAIL, travel, [x, y, 17 * UNIT - 356 - 300], 0);
+  for (let f = 0; f < 60 && out.b.state === FALL && out.b.pos[2] < bottom; f++)
+    out.frames.push(run(out.b, out.probe, 1, 0));
+  return out;
+}
+const RODE = [{ rode: { key: "rail" } }, { at: "landed" }];
+
+test("the body landing measures the centre along the run alone, against the platform's position: a ball coming down on the top of a platform's body rides with its centre between the end faces or at either, where it stands, and falls through the body's cell as drawn with its centre a unit past either end face, while a landing on a block is as it was", () => {
+  const { ends } = RIDE.body;
+  // carried 300 toward -x the body's cells are drawn a block before their home, so the first
+  // cell as drawn reaches past the near end face
+  const near = 17 * UNIT - 300 - ends;
+  const onNear = letFall(near, [-300, 0, 0]);
+  assert.deepEqual(onNear.frames.at(-1), RODE);
+  assert.deepEqual(onNear.b.riding, { key: "rail" });
+  assert.equal(positionOf(onNear.b)[0], near, "the centre keeps its place along the run");
+  assert.ok(heightOf(onNear.b) <= RIDE.body.off, "at the height it came within");
+  const pastNear = letFall(near - 1, [-300, 0, 0]);
+  assert.ok(
+    pastNear.probe.platform(cellOf(pastNear.b, [near - 1, 15 * UNIT, 17 * UNIT])),
+    "over the body's cell as drawn",
+  );
+  assert.equal(pastNear.b.riding, null);
+  assert.equal(pastNear.b.state, FALL);
+  assert.ok(!pastNear.frames.flat().some((e) => e.at || e.rode), "no landing of any kind");
+  assert.ok(pastNear.b.pos[2] >= 17 * UNIT + UNIT / 2 + table.rolling.resume, "through the body");
+  // carried 300 toward +x the cells as drawn reach past the far end face
+  const far = 17 * UNIT + 300 + 2 * UNIT + ends;
+  const onFar = letFall(far, [300, 0, 0]);
+  assert.deepEqual(onFar.frames.at(-1), RODE);
+  assert.equal(positionOf(onFar.b)[0], far);
+  const pastFar = letFall(far + 1, [300, 0, 0]);
+  assert.ok(pastFar.probe.platform(cellOf(pastFar.b, [far + 1, 15 * UNIT, 17 * UNIT])));
+  assert.equal(pastFar.b.riding, null);
+  assert.ok(!pastFar.frames.flat().some((e) => e.at || e.rode));
+  const between = letFall(17 * UNIT + 300, [-300, 0, 0]);
+  assert.deepEqual(between.frames.at(-1), RODE);
+  const onStone = letFall(17 * UNIT, [-300, 0, 0], 17 * UNIT);
+  assert.deepEqual(onStone.frames.at(-1), [{ at: "landed" }]);
+  assert.equal(onStone.b.riding, null);
+  assert.equal(onStone.b.state, REST);
+  assert.deepEqual(blockUnder(onStone.b), [17, 17, 17]);
+  assert.equal(heightOf(onStone.b), table.rolling.resume);
+});
+
+test("the end landing takes a ball coming down on the top of a platform that runs up and down, a face along the run the body landing refuses: within the table's slack past the end face it rides, laid the rest height off the face along the run, and a unit beyond the slack it falls on and rides on the frame after", () => {
+  const tower = [
+    [17, 15, 17],
+    [17, 15, 18],
+  ];
+  const travel = [0, 0, -300];
+  const top = 17 * UNIT - 300 - RIDE.body.ends;
+  const rest = table.rolling.resume;
+  const { tolerance } = RIDE.end;
+  const high = fallen(lattice(), TOP, UP, tower, travel, [17 * UNIT, 15 * UNIT, top - 400]);
+  assert.deepEqual(high.frames.at(-1), RODE);
+  assert.deepEqual(high.b.riding, { key: "rail" });
+  assert.deepEqual(high.b.travel, travel);
+  assert.equal(positionOf(high.b)[2], top - rest, "laid the rest height off the top face");
+  assert.equal(heightOf(high.b), rest);
+  assert.deepEqual(
+    positionOf(high.b).slice(0, 2),
+    [17 * UNIT, 15 * UNIT],
+    "and moved on no other axis",
+  );
+  const edge = [17 * UNIT, 15 * UNIT, top - tolerance - 15];
+  const within = fallen(lattice(), TOP, UP, tower, travel, edge, 1);
+  assert.deepEqual(within.frames, [RODE], "at the slack exactly, after the frame's fall");
+  assert.equal(positionOf(within.b)[2], top - rest);
+  const beyond = fallen(lattice(), TOP, UP, tower, travel, [...edge.slice(0, 2), edge[2] - 1], 1);
+  assert.deepEqual(beyond.frames, [[]], "a unit beyond it, nothing");
+  assert.equal(beyond.b.state, FALL);
+  assert.equal(beyond.b.riding, null);
+  assert.deepEqual(run(beyond.b, beyond.probe, 1, 0), RODE);
+  assert.equal(positionOf(beyond.b)[2], top - rest);
+});
+
+test("the end landing lays the centre the rest height off the end face along the run on either end, by the way the normal points: up the axis against the far end and down it against the near end, the cell a block under the centre along the normal naming the platform", () => {
+  const travel = [-300, 0, 0];
+  const at = 17 * UNIT - 300;
+  const rest = table.rolling.resume;
+  const farFace = at + 2 * UNIT + RIDE.body.ends;
+  const up = fallen(lattice(), 1, UP, RAIL, travel, [farFace + 200, 15 * UNIT, 17 * UNIT]);
+  assert.deepEqual(up.frames.at(-1), RODE);
+  assert.equal(faceUnder(up.b), 1);
+  assert.equal(positionOf(up.b)[0], farFace + rest);
+  assert.equal(heightOf(up.b), rest);
+  assert.deepEqual(blockUnder(up.b), [18, 15, 17], "the last block as drawn");
+  const nearFace = at - RIDE.body.ends;
+  const down = fallen(lattice(), 4, UP, RAIL, travel, [nearFace - 200, 15 * UNIT, 17 * UNIT]);
+  assert.deepEqual(down.frames.at(-1), RODE);
+  assert.equal(faceUnder(down.b), 4);
+  assert.equal(positionOf(down.b)[0], nearFace - rest);
+  assert.equal(heightOf(down.b), rest);
+  assert.deepEqual(blockUnder(down.b), [16, 15, 17], "the first block as drawn");
+  const tooFar = fallen(
+    lattice(),
+    1,
+    UP,
+    RAIL,
+    travel,
+    [farFace + rest + 16, 15 * UNIT, 17 * UNIT],
+    1,
+  );
+  assert.deepEqual(tooFar.frames, [[]], "a unit beyond the slack, nothing");
+  assert.deepEqual(run(tooFar.b, tooFar.probe, 1, 0), RODE);
+  assert.equal(positionOf(tooFar.b)[0], farFace + rest);
 });

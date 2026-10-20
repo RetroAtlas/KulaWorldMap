@@ -1,7 +1,14 @@
 // The level as play holds it: what stands where, what travels and what has gone, built once from
 // the level and probed as the ball rolls, in the game's units.
 import { SIDE, cellKey, FACE_NORMAL } from "../format/lattice.js";
-import { OFF_LATTICE, beams, markersOf, platformCells, startsOf } from "../viewer/data.js";
+import {
+  OFF_LATTICE,
+  beams,
+  markersOf,
+  platformAxis,
+  platformCells,
+  startsOf,
+} from "../viewer/data.js";
 import { phasesOf } from "../viewer/motion.js";
 import { probe, walkers, dice } from "../viewer/travel.js";
 import { cellOf, faceUnder } from "./ball.js";
@@ -108,6 +115,7 @@ export function worldOf(l, given, tables, circuits, frame = 0, fruit = null) {
       platforms.set(key, {
         r,
         home: [r.x, r.y, r.z].map((v) => v * unit),
+        axis: platformAxis(r),
         body: platformCells(r),
       });
     if (r.kind === CRUMBLING)
@@ -222,13 +230,15 @@ export function shiftOf(world, key) {
   return w ? add(w.pos, home, -1) : [0, 0, 0];
 }
 
-/** The platform whose body fills `cell` now, as its key and its shift, or null. */
+/** The platform whose body fills `cell` now, as its key, its shift, the axis of its run, its first
+    block's centre where it stands now and its count of blocks, or null. */
 export function platformAt(world, cell) {
   const { unit } = world;
-  for (const [key, { body }] of world.platforms) {
+  for (const [key, { home, axis, body }] of world.platforms) {
     const travel = shiftOf(world, key);
     const by = travel.map((v) => Math.floor((v + unit / 2) / unit));
-    if (body.some((c) => sameCell(add(c, by), cell))) return { key, travel };
+    if (body.some((c) => sameCell(add(c, by), cell)))
+      return { key, travel, axis, at: add(home, travel), count: body.length };
   }
   return null;
 }
@@ -262,8 +272,9 @@ export function standingOf(live) {
     is what the game's read of the cells about the ball sees: a vanishing block is there where its
     cycle's entry for the frame before says so, the entry the frame drawn before showed, a gone
     block never, and a platform's body where the platform stands now, its home cell empty while it
-    is away; to a ball riding a platform the platform's own blocks at home are solid and nothing
-    else. */
+    is away, the platform named with its shift, the axis of its run, its first block's centre and
+    its count of blocks; to a ball riding a platform the platform's own blocks at home are solid
+    and nothing else. */
 export function probeOf(live) {
   const world = () => live.world;
   const value = (cell) => world().probe.value(cell, frameShown(live));

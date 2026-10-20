@@ -641,7 +641,7 @@ test("the probe answers the lattice as the last frame's step left it, the cycle'
   assert.equal(p.solid([11, 10, 17]), true, "the level's first frame where the run has none");
 });
 
-test("the probe follows a platform's body: solid where the body stands now and empty at its home cell while it is away, the platform named with its shift, and to a riding ball the platform's own blocks at home alone, the word under it the platform's", () => {
+test("the probe follows a platform's body: solid where the body stands now and empty at its home cell while it is away, the platform named with its shift, the axis of its run, its first block's centre and its count, and to a riding ball the platform's own blocks at home alone, the word under it the platform's", () => {
   const l = level([...row(10, 13, 10, 17), [20, 14, 17]], [platform(20, 14, 17)]);
   const live = standing(l, [10, 10, 17]);
   const p = probeOf(live);
@@ -649,7 +649,13 @@ test("the probe follows a platform's body: solid where the body stands now and e
   const { speed, standing: word } = motion.kinds["5"];
   assert.equal(p.filled([20, 14, 17]), true);
   assert.equal(p.filled([20, 15, 17]), true, "the body's second block at home");
-  assert.deepEqual(p.platform([20, 15, 17]), { key: rail, travel: [0, 0, 0] });
+  assert.deepEqual(p.platform([20, 15, 17]), {
+    key: rail,
+    travel: [0, 0, 0],
+    axis: 1,
+    at: [20 * UNIT, 14 * UNIT, 17 * UNIT],
+    count: 2,
+  });
   assert.equal(p.platform([10, 10, 17]), null, "a plain block is no platform's");
   assert.equal(p.standable([20, 14, 17], TOP), true);
   const { walkers, probe: lattice, roll } = live.world;
@@ -672,11 +678,15 @@ test("the probe follows a platform's body: solid where the body stands now and e
   assert.equal(p.filled([20, 12, 17]), true, "the body where it stands now");
   assert.equal(p.filled([20, 13, 17]), true);
   assert.equal(p.filled([20, 11, 17]), false);
-  assert.deepEqual(p.platform([20, 12, 17]), { key: rail, travel: [0, -41 * speed, 0] });
-  assert.deepEqual(platformAt(live.world, [20, 13, 17]), {
+  const carried = {
     key: rail,
     travel: [0, -41 * speed, 0],
-  });
+    axis: 1,
+    at: [20 * UNIT, 14 * UNIT - 41 * speed, 17 * UNIT],
+    count: 2,
+  };
+  assert.deepEqual(p.platform([20, 12, 17]), carried);
+  assert.deepEqual(platformAt(live.world, [20, 13, 17]), carried);
   assert.equal(p.platform([20, 14, 17]), null);
   assert.equal(p.standable([20, 12, 17], TOP), true);
   assert.equal(p.standable([20, 14, 17], TOP), false);
