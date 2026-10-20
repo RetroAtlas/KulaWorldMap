@@ -2121,3 +2121,37 @@ test("stepped on each frame the pill's word is not negative after the frame, as 
   assert.equal(counter, (frames * GLOW.step) % GLOW.round);
   assert.notEqual(counter, 0);
 });
+
+// The five fruit by their bits, as the loader checks them.
+const FRUITS = Object.entries(motion.types)
+  .filter(([, entry]) => entry.take?.fruit)
+  .sort(([, a], [, b]) => a.take.fruit - b.take.fruit)
+  .map(([type]) => Number(type));
+
+test("a run places the level's fruit by the game's pickups' word, the take sets the placed type's bit, relevel keeps the placement and the next run places by the word banked, while a level with no game keeps its own", () => {
+  const [, second, third] = FRUITS;
+  const fruit = { x: 17, y: 16, z: 17, kind: 0, on: [object(0, third)] };
+  const l = counted(level(row(10, 18), [start(), fruit]), 0, 2);
+  const slot = `${cellKey(17, 16, 17)}/0`;
+  assert.equal(begin(l).world.pickups.get(slot).m.type, third, "no game, the level's own");
+  const game = { ...startGame(), fruit: 1 };
+  const live = begin(l, null, game);
+  assert.equal(live.world.pickups.get(slot).m.type, second);
+  assert.equal(live.words.fruit, 1);
+  const events = steps(live, 120, PAD.up);
+  assert.deepEqual(
+    events.filter((e) => e.took).map((e) => e.took.type),
+    [second],
+    "the thing taken is the one placed",
+  );
+  assert.equal(live.words.fruit, 3, "and its bit is the placed type's");
+  relevel(live, l, index(l));
+  assert.equal(live.world.pickups.get(slot).m.type, second);
+  assert.deepEqual([...live.world.taken], [slot]);
+  end(live, play.ending.exit, []);
+  settle(game, live);
+  assert.equal(game.fruit, 3);
+  const again = restart(live, null, { level: l, idx: index(l) });
+  assert.equal(again.world.pickups.get(slot).m.type, third, "the two taken, the third placed");
+  assert.equal(again.words.fruit, 3);
+});

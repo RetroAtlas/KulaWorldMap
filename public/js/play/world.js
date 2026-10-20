@@ -28,6 +28,31 @@ const byVariant = (v, m) => (Array.isArray(v) ? (v[Number(m.variant)] ?? v[0]) :
 /** How many keys the level holds for the ball to take. */
 export const keysOf = (world) => [...world.pickups.values()].filter((p) => p.m.type === KEY).length;
 
+/** The index with its fruit placed as the loader places them under a run whose pickups' word is
+    `fruit`: each takes the type of the first of the five whose bit in the word is clear, or keeps
+    its own where every bit is set, in a copy of its marker that says so; the index itself where
+    no run stands. */
+function placed(idx, motion, fruit) {
+  if (fruit === null) return idx;
+  const five = Object.entries(motion.types)
+    .filter(([, entry]) => entry.take?.fruit)
+    .map(([type, entry]) => ({ type: Number(type), bit: entry.take.fruit }))
+    .sort((a, b) => a.bit - b.bit);
+  const types = new Set(five.map((f) => f.type));
+  const next = five.find((f) => !(fruit & f.bit));
+  const markers = new Map();
+  for (const [key, marks] of idx.markers)
+    markers.set(
+      key,
+      marks.map((m) =>
+        m.face !== null && types.has(m.type)
+          ? { ...m, type: next?.type ?? m.type, placed: true }
+          : m,
+      ),
+    );
+  return { ...idx, markers };
+}
+
 // Built where a face looks at no block its kind hides it behind, or at one built unseen behind.
 function built(kinds, hides, cell, kind) {
   const hidden = hides.kinds[String(kind)] ?? hides.other;
@@ -39,15 +64,17 @@ function built(kinds, hides, cell, kind) {
   });
 }
 
-/** The level as play holds it, the walkers laid at `frame`: the lattice's words and kinds by
-    cell, the faces' types, the word each kind reads as under the ball, the beams' ends and the
-    word a lit beam's cell holds, the pickups with where each stands, the devices, the
+/** The level as play holds it, the walkers laid at `frame` and the fruit placed by the run's
+    pickups' word `fruit` where a run stands: the index as play holds it, the lattice's words and
+    kinds by cell, the faces' types, the word each kind reads as under the ball, the beams' ends
+    and the word a lit beam's cell holds, the pickups with where each stands, the devices, the
     captivators with where each entry stands at home, its reach and what its pose needs, the
     crumbling blocks, the platforms, the blocks a level with no key counts, the starts with the
     marker each leaves while the ball is on the level, what travels and the dice, the live sets
     and the index the frame draws. */
-export function worldOf(l, idx, tables, circuits, frame = 0) {
+export function worldOf(l, given, tables, circuits, frame = 0, fruit = null) {
   const { motion, unit, first, styles, skins } = tables;
+  const idx = placed(given, motion, fruit);
   const laid = [];
   for (let i = 0; i < l.cells.length; i += 4) laid.push(l.cells.slice(i, i + 4));
   const cells = new Map(laid.map(([x, y, z, v]) => [cellKey(x, y, z), v]));
@@ -148,6 +175,7 @@ export function worldOf(l, idx, tables, circuits, frame = 0) {
   return {
     unit,
     first,
+    idx,
     cells,
     kinds,
     standing,
@@ -277,19 +305,20 @@ export function fell(world, key) {
   world.view = null;
 }
 
-/** The index the frame draws from: the level's own less the things taken and the blocks gone,
-    with what stood on them, and, until the level's outcome stands, less the starts, whose ball
-    the ball on the level is, the start the game takes leaving the clock where it stands on one;
-    shaped as the level's, the level's own where nothing is dropped, and rebuilt only when any of
+/** The index the frame draws from: the one play holds less the things taken and the blocks
+    gone, with what stood on them, and, until the level's outcome stands, less the starts, whose
+    ball the ball on the level is, the start the game takes leaving the clock where it stands on
+    one; shaped as the level's, play's own where nothing is dropped, and rebuilt only when any of
     those changes. */
 export function viewOf(live) {
   const world = live.world;
   const ended = !!live.words.outcome;
-  if (!world.view || world.view.ended !== ended) world.view = { ended, idx: drawn(live, ended) };
+  if (!world.view || world.view.ended !== ended) world.view = { ended, idx: drawn(world, ended) };
   return world.view.idx;
 }
 
-function drawn({ idx, world }, ended) {
+function drawn(world, ended) {
+  const { idx } = world;
   const starts = ended ? [] : world.starts;
   if (!world.taken.size && !world.gone.size && !starts.length) return idx;
   const markers = new Map(idx.markers);

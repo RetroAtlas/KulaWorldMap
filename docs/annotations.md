@@ -154,7 +154,7 @@ Three in the game, each on a level without the common fruit type, one of them HI
 
 ### type 46: Fruit
 
-The common fruit: one on each of 151 levels, and a second on LEVEL 134 on a crumbling block the game never walks. The fruit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. Its model is the bananas, but in play LEVEL 1 shows an apple and each numbered level after it the next fruit round apple, watermelon, pumpkin, bananas and strawberry, which is how the map draws the numbered levels ([ggi.md](ggi.md)). Which fruit a level shows in play is progress rather than data.
+The common fruit: one on each of 151 levels, and a second on LEVEL 134 on a crumbling block the game never walks. The fruit of LEVEL 1 and LEVEL 2 stands on the cell the map draws this on. Its model is the bananas, but in play LEVEL 1 shows an apple and each numbered level after it the next fruit round apple, watermelon, pumpkin, bananas and strawberry, which is how the map draws the numbered levels ([ggi.md](ggi.md)). Which fruit a level shows in play is progress rather than data. While a run is on, with Play on through the levels, the level holds the first of the five the run has not yet banked instead, as the game places it, so a fruit missed comes round again on the next level.
 
 ### type 47: Fruit
 

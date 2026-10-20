@@ -937,7 +937,7 @@ function happened(event) {
     where it shows the block. */
 function taken({ key, face, points, at }) {
   const c = live.idx.cells.get(key);
-  const m = (live.idx.markers.get(key) ?? []).find((m) => m.face === face);
+  const m = (live.run.world.idx.markers.get(key) ?? []).find((m) => m.face === face);
   const point = at.map((v) => v / live.run.ball.unit + 0.5);
   burst(point, FACE_NORMAL[face], [c.x, c.y, c.z], AT_TAKE);
   const label = markerLabel(m);
@@ -1325,10 +1325,10 @@ function keep() {
   routing();
 }
 
-/** The things on `key`'s block the ball has taken, as the level as installed still lists them. */
+/** The things on `key`'s block the ball has taken, as play's level still lists them. */
 const takenOn = (key) =>
   live
-    ? (state.idx.markers.get(key) ?? []).filter(
+    ? (live.run.world.idx.markers.get(key) ?? []).filter(
         (m) => m.face !== null && live.run.world.taken.has(`${key}/${m.face}`),
       )
     : [];

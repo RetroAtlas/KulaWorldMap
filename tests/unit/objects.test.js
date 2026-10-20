@@ -212,6 +212,17 @@ test("the exit draws open while the exits stand open, and only a level with a ke
   assert.equal(holdsKey(oneBlock(EXIT, HIDDEN_EXIT)), false);
 });
 
+test("a fruit draws as the level's number counted round the five, and a marker whose type is placed as that type stands", () => {
+  state.data = mapData;
+  const { types } = objects;
+  const fruit = { face: 0, type: 46, f: [], v: 0, variant: null };
+  const third = { ...oneBlock(46), shown: "LEVEL 3" };
+  assert.equal(markerModel(fruit, third), types[45][0]);
+  assert.equal(markerModel({ ...fruit, placed: true }, third), types[46][0]);
+  assert.equal(markerModel({ ...fruit, type: 43, placed: true }, third), types[43][0]);
+  assert.equal(markerModel(fruit, oneBlock(46)), types[46][0], "a level the game does not number");
+});
+
 // The game paints a pickup's shadow into the face under it, and the map
 // paints it only while the pickup is drawn.
 test("a face is painted with what is shown on it: a hidden kind never, a shadowed type only with the objects on and its marker standing, a start always", () => {

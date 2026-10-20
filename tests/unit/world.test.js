@@ -666,3 +666,40 @@ test("the probe follows a platform's body: solid where the body stands now and e
   assert.equal(p.solid([10, 10, 17]), true);
   assert.equal(standingOf(live), -1);
 });
+
+// The five fruit by their bits, as the loader checks them.
+const FRUITS = Object.entries(motion.types)
+  .filter(([, entry]) => entry.take?.fruit)
+  .sort(([, a], [, b]) => a.take.fruit - b.take.fruit)
+  .map(([type]) => Number(type));
+
+test("while a run stands a fruit takes the type of the first of the five the run's word has not, its own where the word has every one, in a copy of its marker, and keeps the index's where no run stands", () => {
+  const [first, second, third, , fifth] = FRUITS;
+  const c = [17, 17, 17];
+  const l = level([c], [{ x: 17, y: 17, z: 17, kind: 0, on: [object(TOP, third)] }]);
+  const idx = index(l);
+  const marks = idx.markers.get(key(c));
+  const was = [...marks];
+  const slot = `${key(c)}/${TOP}`;
+  const fruitOf = (word) => worldOf(l, idx, TABLES, CIRCUITS, 0, word).pickups.get(slot).m.type;
+  assert.equal(fruitOf(1), second, "the first taken, the second placed");
+  assert.equal(fruitOf(0), first);
+  assert.equal(fruitOf(15), fifth);
+  assert.equal(fruitOf(31), third, "every fruit taken, the level's own");
+  assert.equal(fruitOf(null), third, "no run, the level's own");
+  const w = worldOf(l, idx, TABLES, CIRCUITS, 0, 1);
+  const m = w.idx.markers.get(key(c)).find((m) => m.face === TOP);
+  assert.equal(m.type, second);
+  assert.equal(m.placed, true);
+  assert.equal(w.pickups.get(slot).m, m, "the pickup is the placed marker");
+  assert.equal(w.pickups.get(slot).take.fruit, motion.types[String(second)].take.fruit);
+  const live = { idx, world: w, words: { outcome: 0 } };
+  assert.equal(viewOf(live).markers.get(key(c))[0], m, "and the frame draws it");
+  assert.equal(idx.markers.get(key(c)), marks, "the viewer's index as it was");
+  assert.deepEqual(marks, was);
+  assert.equal(marks[0].type, third);
+  assert.equal(marks[0].placed, undefined);
+  const alone = worldOf(l, idx, TABLES, CIRCUITS);
+  assert.equal(alone.idx, idx, "no run, the index itself");
+  assert.equal(alone.pickups.get(slot).m, marks[0]);
+});

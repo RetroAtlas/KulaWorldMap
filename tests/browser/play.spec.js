@@ -25,6 +25,11 @@ const LETHARGY_LEVEL = "/#INCA/12/45,35/fit/33";
 const HIDDEN_LEVEL = "/#HIRO/18/45,35/fit/33";
 // SIMON 1: the start on the top row of a ring, facing along it, with nothing two blocks on
 const SIMON_LEVEL = "/#COPYCAT/0/45,35/fit/33";
+// LEVEL 3: the fruit on the top of 15,15,17, of the common type, which the map draws as the third
+// of the five by the level's number
+const FRUIT_LEVEL = "/#HIRO/2/45,35/fit/33";
+const FRUIT = [15, 15, 17];
+const FRUIT_TYPE = 46;
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazards)\.js$/;
 const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 const TIME_UP_PAD =
@@ -1734,6 +1739,59 @@ test("the ball takes the coin it rolls onto, which is gone from the frame, the l
   const on = await probe(page);
   expect(on.playing).toBe(true);
   expect(on.station).toEqual({ block: [17, 18, 17], face: 0, heading: "-y", moving: false });
+  expect(errors).toEqual([]);
+});
+
+/** What one frame paints about the fruit's disc, a cross of five pixels, with the level titled
+    `shown` for that frame where given. */
+const fruitPixels = (page, shown = null) =>
+  page.evaluate(
+    async ([c, type, shown]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { thingDisc }, { cellKey }, { draw }] = await Promise.all(
+        [
+          "viewer/state.js",
+          "viewer/draw/things.js",
+          "format/lattice.js",
+          "viewer/draw/render.js",
+        ].map(at),
+      );
+      const m = state.idx.markers.get(cellKey(...c)).find((m) => m.type === type);
+      const [x, y] = thingDisc(m, { x: c[0], y: c[1], z: c[2] }, state.lvl);
+      const was = state.lvl.shown;
+      if (shown) state.lvl.shown = shown;
+      draw();
+      const k = state.view.dpr;
+      const g = document.getElementById("cv").getContext("2d");
+      const px = (dx, dy) => [
+        ...g
+          .getImageData(Math.round((x + dx) * k), Math.round((y + dy) * k), 1, 1)
+          .data.slice(0, 3),
+      ];
+      const out = [px(0, 0), px(0, -3), px(0, 3), px(-3, 0), px(3, 0)];
+      state.lvl.shown = was;
+      if (shown) draw();
+      return out;
+    },
+    [FRUIT, FRUIT_TYPE, shown],
+  );
+
+test("with Play on through the levels on a level's fruit is the first the run has not banked, drawn as the map draws LEVEL 1's whatever the level's number, and off it is the one the map draws for the level", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false, hash: FRUIT_LEVEL });
+  await startPlay(page);
+  const own = await fruitPixels(page);
+  const first = await fruitPixels(page, "LEVEL 1");
+  expect(first).not.toEqual(own);
+  expect(await fruitPixels(page)).toEqual(own);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#play")).toBeHidden();
+  await toggled(page, "playOn", "off by default");
+  await startPlay(page);
+  expect(await fruitPixels(page)).toEqual(first);
+  expect(await fruitPixels(page, "LEVEL 4")).toEqual(first);
   expect(errors).toEqual([]);
 });
 

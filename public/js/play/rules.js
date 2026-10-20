@@ -192,16 +192,16 @@ function formOf(l, skins, keys, mode) {
   return form;
 }
 
-/** A run of the level from its first frame: the world, the ball at the start the game takes or at
-    `at`, and the words the game keeps as the level loads: the game's mode word by the level's
-    pack, the level's word by its keys, its settings record and that mode, the pickups' fruit word
-    as `game` carries it, the run's bank where the level is one the game counts, and the rest as
-    the level's start sets them. */
+/** A run of the level from its first frame: the world, its fruit placed by the pickups' fruit
+    word as `game` carries it, the ball at the start the game takes or at `at`, and the words the
+    game keeps as the level loads: the game's mode word by the level's pack, the level's word by
+    its keys, its settings record and that mode, that fruit word, the run's bank where the level
+    is one the game counts, and the rest as the level's start sets them. */
 export function startRun(l, idx, tables, circuits, at = null, game = null) {
   const { play, types } = tables.motion;
   const where = at ?? startOf(l);
   if (!where) throw new Error("the level has no start to stand the ball on");
-  const world = worldOf(l, idx, tables, circuits);
+  const world = worldOf(l, idx, tables, circuits, 0, game?.fruit ?? null);
   const keys = keysOf(world);
   const mode = l.pack === tables.skins.copycat ? SIMON : 0;
   const live = {
@@ -612,7 +612,8 @@ export function relevel(live, l, idx) {
   const was = live.world;
   live.level = l;
   live.idx = idx;
-  const world = worldOf(l, idx, live.tables, live.circuits, live.words.frame);
+  const fruit = live.game?.fruit ?? null;
+  const world = worldOf(l, idx, live.tables, live.circuits, live.words.frame, fruit);
   for (const slot of was.taken)
     if (world.pickups.get(slot)?.m.type === was.pickups.get(slot).m.type) took(world, slot);
   for (const key of was.marked) if (world.cells.has(key)) world.marked.add(key);

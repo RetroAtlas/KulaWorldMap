@@ -293,8 +293,9 @@ export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
 /** The names validate puts in its findings. */
 export const NAMES = { kind: kindName, entry: entryName, circuit: circuitWord };
 
-// Where the game numbers a level, every fruit shows as the one the player
-// needs next: the level's number counted round the fruit.
+// Where the game numbers a level, a fruit shows as the one the player needs
+// next, the level's number counted round the fruit, unless its marker says
+// its type is the one placed.
 const FRUIT_FIRST = 43;
 const FRUIT = 5;
 // The loader shuts every exit, and only the last key opens one.
@@ -364,13 +365,14 @@ export const startsOf = (l) =>
       .map((o) => ({ x: r.x, y: r.y, z: r.z, face: o.face, type: o.type, f: o.f })),
   );
 /** Null for a thing the game draws on the face; `form` names the form to draw
-    of a thing that changes in play. */
+    of a thing that changes in play, and a marker whose type is `placed` draws
+    it as it stands. */
 export function markerModel(m, l, form = null) {
   if (m.face === null) return null;
   if (STARTS.has(m.type)) return ballFor(l);
   let type = m.type;
   const n = /^LEVEL (\d+)$/.exec(l.shown || "");
-  if (n && type >= FRUIT_FIRST && type < FRUIT_FIRST + FRUIT)
+  if (n && !m.placed && type >= FRUIT_FIRST && type < FRUIT_FIRST + FRUIT)
     type = FRUIT_FIRST + ((Number(n[1]) - 1) % FRUIT);
   const models = shapes.types[String(type)];
   if (!models) return null;
