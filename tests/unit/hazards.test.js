@@ -28,7 +28,7 @@ import {
 } from "../../public/js/play/ball.js";
 import { startRun, frame, heeds, restart, revive, stand } from "../../public/js/play/rules.js";
 import { frameShown, probeOf } from "../../public/js/play/world.js";
-import { glowing } from "../../public/js/viewer/motion.js";
+import { faceAxes, glowing } from "../../public/js/viewer/motion.js";
 
 setObjects(objects);
 setAnnotations(annotations);
@@ -77,6 +77,18 @@ const CRUMBLE = motion.kinds[String(CRUMBLING)];
 const ROLL = motion.types["30"].rolling;
 const WALL = motion.types["30"].jump.wall;
 const squared = (a, b) => a.reduce((sum, c, i) => sum + (c - b[i]) ** 2, 0);
+const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
+const nearly = (f, g) => f.forEach((v, i) => near(v, g[i]));
+const differs = (f, g) => f.some((v, i) => Math.abs(v - g[i]) > 1e-6);
+/** The body relative to the axes the frame lays the ball on, as the frame is handed it. */
+function bodyWithin(b) {
+  const f = faceAxes(b.n, b.h);
+  const [x, y, z] = [0, 1, 2].map((j) => b.body.slice(3 * j, 3 * j + 3));
+  const along = (k, v) => f[0][k] * v[0] + f[1][k] * v[1] + f[2][k] * v[2];
+  return [0, 1, 2].flatMap((k) => [along(k, x), along(k, y), along(k, z)]);
+}
+/** The body aligned with the ball's frame: the side, the heading and the normal its columns. */
+const aligned = (b) => [...b.s, ...b.h, ...b.n];
 
 /** The circuits as a parity map, turned over by each press. */
 function circuits() {
@@ -432,6 +444,64 @@ test("a count stands where the progress word is off the band with the ball still
   const [back] = trace(live, 1, 0);
   assert.equal(live.words.send, SEND.wait - 5, "and run on");
   assert.ok(!has(back, "sending"), "without starting again");
+});
+
+/** The row with a teleporter at its middle whose far end stands on the +x side of a block off
+    the row, facing along that side, so that the send stands the ball on a wall. */
+function walled() {
+  const near = {
+    x: 17,
+    y: 15,
+    z: 17,
+    kind: 0,
+    on: [object(TOP, TELEPORTER, { colour: 1, link: link(2, 1) })],
+  };
+  const far = {
+    x: 20,
+    y: 12,
+    z: 17,
+    kind: 0,
+    on: [object(1, TELEPORTER, { colour: 1, facing: 1, link: link(1) })],
+  };
+  return level([...row(10, 18), [20, 12, 17]], [start(), near, far]);
+}
+
+test("the send keeps the body's turn within its frame: a ball that has rolled, its body turned by the spin, is laid on a face of another orientation with the same body along its side, its heading and its normal as before, and its body in the world turned with the frame", () => {
+  const live = begin(walled());
+  trace(live, 200, PAD.up, (l) => l.words.send === 0);
+  assert.equal(live.words.send, 0, "the count at its last frame");
+  const b = live.ball;
+  const before = { body: [...b.body], within: bodyWithin(b) };
+  assert.ok(differs(before.body, aligned(b)), "turned by the roll");
+  assert.ok(differs(before.within, [1, 0, 0, 0, 1, 0, 0, 0, 1]));
+  const [sent] = trace(live, 1, PAD.up);
+  assert.ok(has(sent, "sent"));
+  assert.deepEqual([blockUnder(b), faceUnder(b), b.h], [[20, 12, 17], 1, [0, 1, 0]]);
+  nearly(bodyWithin(b), before.within);
+  assert.ok(differs(b.body, before.body), "turned with the frame in the world");
+  const [x, y, z] = [0, 1, 2].map((k) => b.body.slice(3 * k, 3 * k + 3));
+  for (const v of [x, y, z]) near(Math.hypot(...v), 1);
+  near(x[0] * y[0] + x[1] * y[1] + x[2] * y[2], 0);
+  near(y[0] * z[0] + y[1] * z[1] + y[2] * z[2], 0);
+  const idle = trace(live, 10, 0);
+  assert.ok(idle.every((f) => !has(f, "sent")));
+  nearly(bodyWithin(b), before.within);
+});
+
+test("a ball sent without having rolled is laid with its body aligned with its new frame, as the level's start and a restart lay it", () => {
+  const l = walled();
+  const live = standing(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  assert.deepEqual(live.ball.body, aligned(live.ball));
+  trace(live, 40, 0, (l) => l.words.marker === TELEPORTER);
+  assert.equal(live.words.marker, TELEPORTER, "sent");
+  assert.deepEqual([blockUnder(live.ball), faceUnder(live.ball)], [[20, 12, 17], 1]);
+  nearly(live.ball.body, aligned(live.ball));
+  const run = begin(l);
+  assert.deepEqual(run.ball.body, aligned(run.ball), "the start lays it aligned");
+  trace(run, 30, PAD.up);
+  assert.ok(differs(run.ball.body, aligned(run.ball)), "the roll turns it");
+  const again = restart(run);
+  assert.deepEqual(again.ball.body, aligned(again.ball), "and a restart lays it aligned again");
 });
 
 test("a lit beam in the ball's own cell kills it in four frames, on the ground or in the air, its speeds dropped and its heat set but the ball not frozen, and a dark beam does nothing", () => {

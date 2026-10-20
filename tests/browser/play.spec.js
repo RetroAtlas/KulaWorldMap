@@ -433,6 +433,21 @@ const turnedThrough = (page, until) =>
     }
     return out;
   }, until);
+/** The ball's body as handed to the frame and in the world, rounded. */
+const bodyHanded = (page) =>
+  page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [P, { faceAxes, times }, { FACE_NORMAL }] = await Promise.all(
+      ["play/play.js", "viewer/motion.js", "format/lattice.js"].map(at),
+    );
+    const round = (v) => Math.round(v * 1000) / 1000 + 0;
+    const g = P.handed();
+    const laid = faceAxes(FACE_NORMAL[g.w.face], g.fwd);
+    return {
+      body: g.body.map((row) => row.map(round)),
+      world: times(laid, g.body).map((row) => row.map(round)),
+    };
+  });
 /** The height the ball is handed to the frame with, for its shadow, finite or null, and whether
     the frame last drawn left the block at `cell` out, on every animation frame until no ball is
     handed, the level having ended, or 8 s pass. */
@@ -2113,7 +2128,7 @@ test("the key taken bursts as the game's does: the frames after the take are bri
   expect(errors).toEqual([]);
 });
 
-test("rolling over a switch throws it, and an on teleporter sends the ball to its far end, the view cutting there, with a leap in the way it has come", async ({
+test("rolling over a switch throws it, and an on teleporter sends the ball to its far end, the view cutting there and the body keeping its turn, with a leap in the way it has come", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -2164,6 +2179,10 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   // level stands mid-send
   await roll([17, 15, 17]);
   await expect(status(page)).toHaveText(SENDING);
+  // the roll has turned the body, which the send carries onto the far face as it stands within the
+  // frame, the body in the world turning with the frame
+  const held = await bodyHanded(page);
+  expect(held.body).not.toEqual(UNTURNED);
   // with Motion on the level runs at rest, so the count runs out on its own; the view is read on
   // the first frame the ball stands at the far end, where a target eased after the ball rather
   // than cut would still be on its way from the near one
@@ -2181,6 +2200,9 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   expect(far.frame).toEqual(await frameFor(page, [1, 0, 0], [0, 0, -1]));
   expect(far.target).toEqual([17.5, 14.5, 16.805]);
   expect(far.fitted).toBe(true);
+  const landed = await bodyHanded(page);
+  expect(landed.body).toEqual(held.body);
+  expect(landed.world).not.toEqual(held.world);
   await expect(line(page)).toHaveText("Playing · on the top of 17,14,17, facing +x");
   await expect.poll(() => said(page)).toContain("Sent to the top of 17,14,17.");
   // the pad is dead through the hold, and then Up is refused, the near end's block beside, and

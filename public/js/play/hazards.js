@@ -247,7 +247,8 @@ function throwing(live, out, m, at) {
 
 // The count runs on the frames the ball stands within the band of an on teleporter, the wait
 // held and the requests cleared, stands while the ball is off the band, and is dropped where the
-// teleporter is off.
+// teleporter is off; the send lays the ball on the far face with its body as it stood within its
+// frame.
 function sending(live, out, m, at) {
   const w = live.words;
   const b = live.ball;
@@ -272,7 +273,7 @@ function sending(live, out, m, at) {
   const cell = [to.x, to.y, to.z];
   const far = live.world.devices.get(`${cellKey(...cell)}/${to.face}`);
   w.marker = m.type;
-  place(b, cell, to.face, (far && layHeading(far)) ?? TANGENT[to.face]);
+  place(b, cell, to.face, (far && layHeading(far)) ?? TANGENT[to.face], { kept: true });
   if (progressOf(b) > send.rearm[1]) w.marker = 0;
   out.push({ sent: { from, to: { cell, face: to.face } } });
 }

@@ -683,10 +683,35 @@ export function run(b, probe, out) {
   return out;
 }
 
+/** The body as it stands within the ball's frame, each column along the side, the heading and
+    the normal. */
+function bodyWithin(b) {
+  const out = [];
+  for (let k = 0; k < 3; k++) {
+    const v = b.body.slice(3 * k, 3 * k + 3);
+    out.push(dot(b.s, v), dot(b.h, v), dot(b.n, v));
+  }
+  return out;
+}
+
+/** The body in the world that stands within the ball's frame as `within` does. */
+function bodyLaid(b, within) {
+  const out = [];
+  for (let k = 0; k < 3; k++) {
+    const [s, h, n] = within.slice(3 * k, 3 * k + 3);
+    for (let i = 0; i < 3; i++) out.push(s * b.s[i] + h * b.h[i] + n * b.n[i] || 0);
+  }
+  return out;
+}
+
 /** Stand the ball at rest on `face` of the block at `cell`, heading `h`, laid as `ballAt` lays
-    it, a ramp or a look it had gone and its frame cut to the new footing. */
-export function place(b, cell, face, h) {
+    it, a ramp or a look it had gone and its frame cut to the new footing, with the body aligned
+    with the frame, or, where `kept`, carried onto the new footing as it stood within the old
+    frame. */
+export function place(b, cell, face, h, { kept = false } = {}) {
+  const body = kept ? bodyWithin(b) : null;
   Object.assign(b, ballAt(b.rules, cell, face, h));
+  if (body) b.body = bodyLaid(b, body);
 }
 
 /** One game frame, with `b.pad` the pad as held, for a caller with no rules over the ball: what

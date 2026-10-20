@@ -63,6 +63,7 @@ const aboutAxis = (f, u, t) => {
 };
 /** The body aligned with the ball's frame: the side, the heading and the normal its columns. */
 const aligned = (b) => [...b.s, ...b.h, ...b.n];
+const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
 /** A lattice of the cells given, probed as the planner probes a level. */
 const lattice = (...cells) =>
@@ -290,6 +291,27 @@ test("place lays the body aligned with the ball's new frame, whatever it had tur
   assert.deepEqual(b.body, [...cross(h, FACE_NORMAL[face]), ...h, ...FACE_NORMAL[face]]);
   assert.deepEqual(b.body, aligned(b));
   assert.equal(b.mark, null);
+});
+
+test("place with the body kept carries its turn within the frame onto the new footing, the body in the world turned with the frame, and lays an aligned body aligned", () => {
+  const probe = plate();
+  const b = ballAt(RULES, [17, 18, 17], TOP, UP);
+  run(b, probe, 3, PAD.up);
+  /** The body's columns along the side, the heading and the normal. */
+  const within = (b) =>
+    [0, 1, 2].flatMap((k) => {
+      const v = column(b.body, k);
+      return [dot(b.s, v), dot(b.h, v), dot(b.n, v)];
+    });
+  const before = { body: [...b.body], within: within(b) };
+  assert.ok(before.within.some((v, i) => Math.abs(v - IDENTITY[i]) > 1e-6));
+  place(b, [20, 12, 17], 1, [0, 0, 1], { kept: true });
+  nearly(within(b), before.within);
+  assert.ok(b.body.some((v, i) => Math.abs(v - before.body[i]) > 1e-6));
+  assert.equal(b.state, REST);
+  place(b, [17, 18, 17], TOP, UP);
+  place(b, [20, 12, 17], 1, [0, 0, 1], { kept: true });
+  assert.deepEqual(b.body, aligned(b));
 });
 
 test("the roll is refused off an edge beside a neighbour, and a block ahead at the ball's level takes it up", () => {
