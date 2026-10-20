@@ -72,6 +72,86 @@ CHECKS = [
     (0x8002d3c4, "lw $s5, 0($v1)", "a light is three words"),
     (0x8002d3c8, "lw $s6, 4($v1)", "one a channel"),
     (0x8002d3d0, "lw $s7, 8($v1)", "of the header's"),
+    (0x80027880, "lui $v0, 0x0080", "a face is laid with a colour word"),
+    (0x80027884, "ori $v0, $v0, 32896", "of a channel's own brightness"),
+    (0x800278b0, "sw $v0, 36($sp)", "handed to its record"),
+    (0x80027608, "lui $v0, 0x00a0", "the vanishing block's faces a quarter brighter"),
+    (0x8002760c, "ori $v0, $v0, 41120", "in every channel"),
+    (0x80027638, "sw $v0, 36($sp)", "the same way"),
+    (0x80028e64, "lw $v0, 6($s0)", "and the word the record carries"),
+    (0x80028e6c, "sw $v0, 0($s1)", "is laid at 12 of the face"),
+    (0x80027000, "lw $v1, 13324($v1)", "a level with no key runs its faces through colour cycles the world word"),
+    (0x8002701c, "subu $v1, $v1, $v0", "picks by its parity"),
+    (0x80027020, "sll $v0, $a3, 1", "twice a cycle's length"),
+    (0x80027024, "mult $v1, $v0", "times the parity is the first table's"),
+    (0x80027064, "sw $v0, 24($sp)", "handed to the chain first"),
+    (0x8002702c, "sll $v1, $v1, 1", "twice the parity"),
+    (0x80027030, "addiu $v1, $v1, 1", "and one"),
+    (0x80027034, "mult $v1, $a3", "times the length is the second table's"),
+    (0x80027078, "sw $v0, 28($sp)", "handed after it"),
+    (0x80027040, "addu $a2, $zero, $zero", "to a chain of faces with no frames"),
+    (0x8002704c, "sw $zero, 16($sp)", "and no frame table"),
+    (0x800270dc, "subu $a2, $a2, $v0", "and to the swirl's chain, with the count of its frames"),
+    (0x800270e0, "sw $v0, 16($sp)", "and their table"),
+    (0x800270f8, "sw $v0, 24($sp)", "the same first colour table"),
+    (0x8002710c, "sw $v0, 28($sp)", "and the same second"),
+    (0x800274e8, "addiu $a0, $a0, 4444", "the face builder sends the crumbling block's faces to the chain with no frames"),
+    (0x80027704, "slti $v0, $s1, 20", "a face of a type short of 20"),
+    (0x80027708, "bne $v0, $zero, 0x80027788", "the same way"),
+    (0x800277b0, "addiu $a0, $a0, 4444", "to that chain"),
+    (0x8002800c, "addiu $a0, $a0, 4444", "and a platform's faces too"),
+    (0x8002a41c, "jal 0x8004f3b8", "the frame's draw runs the animator over the fire's chain"),
+    (0x8002a42c, "jal 0x8004f3b8", "the invisible block's chain"),
+    (0x8002a450, "jal 0x8004f3b8", "and on a level with no key the chain of the faces with no frames"),
+    (0x8002a460, "jal 0x8004f3b8", "and the swirl's chain"),
+    (0x8002a468, "jal 0x8002deac", "then the marked faces' fade"),
+    (0x8004f460, "lui $at, 0x0001", "the animator picks a face's frame table by bit 16 of its flags"),
+    (0x8004f464, "and $s2, $s1, $at", "read off the face"),
+    (0x8004f468, "bne $s2, $zero, 0x8004f484", "the second where it is set"),
+    (0x8004f478, "lbu $s2, 0($s2)", "the first table's frame"),
+    (0x8004f48c, "lbu $s2, 0($s2)", "or the second table's"),
+    (0x8004f494, "sb $s2, 3($t6)", "written the same way"),
+    (0x8004f498, "lui $at, 0x0006", "and its colour table by bits 17 and 18"),
+    (0x8004f49c, "and $s2, $s1, $at", "of the same"),
+    (0x8004f4a0, "beq $s2, $zero, 0x8004f4c0", "the first where both are clear"),
+    (0x8004f4a4, "lui $s3, 0x0002", "the second"),
+    (0x8004f4a8, "beq $s2, $s3, 0x8004f4d4", "on bit 17 alone"),
+    (0x8004f4ac, "lui $s3, 0x0004", "the third"),
+    (0x8004f4b0, "beq $s2, $s3, 0x8004f4e8", "on bit 18 alone, else the fourth"),
+    (0x8004f4d0, "sw $s2, 12($t6)", "each written as the face's colour"),
+    (0x8004f4e4, "sw $s2, 12($t6)", "the same"),
+    (0x8004f4f8, "sw $s2, 12($t6)", "the same"),
+    (0x8004f50c, "sw $s2, 12($t6)", "the same"),
+    (0x8002de04, "lbu $v0, 48($v1)", "a marked block's face keeps the mark in a byte of its own"),
+    (0x8002de0c, "beq $v0, $a1, 0x8002dea4", "and is left where it holds it"),
+    (0x8002de1c, "sb $a1, 48($v1)", "else takes it"),
+    (0x8002de20, "lw $a2, 0($v0)", "and its quad"),
+    (0x8002de28, "beq $a2, $t0, 0x8002dea4", "and is done where there is none"),
+    (0x8002de2c, "sll $v0, $a1, 1", "twice the mark"),
+    (0x8002de30, "lbu $v1, 2($a2)", "goes into the third byte of the quad's flags"),
+    (0x8002de34, "andi $v0, $v0, 6", "in bits 1 and 2"),
+    (0x8002de38, "andi $v1, $v1, 249", "over what was there"),
+    (0x8002de3c, "or $v1, $v1, $v0", "put together"),
+    (0x8002de48, "sb $v1, 2($a2)", "and written back"),
+    (0x8002de54, "bne $v0, $t0, 0x8002dea4", "a face in the fade's list keeps its entry"),
+    (0x8002de80, "slti $v0, $v1, 32", "else the first free of 32"),
+    (0x8002de78, "sll $v0, $v1, 4", "16 bytes each"),
+    (0x8002de88, "addiu $a0, $a0, 16", "stepped the same"),
+    (0x8002de94, "sw $v0, 0($a1)", "is linked from the face"),
+    (0x8002de98, "sw $a1, 0($v0)", "and back"),
+    (0x8002de9c, "sw $a2, 4($v0)", "with the quad"),
+    (0x8002dea0, "sw $zero, 8($v0)", "and a count of nothing"),
+    (0x8002dec8, "beq $a0, $t3, 0x8002df68", "the fade passes an entry with no link"),
+    (0x8002dee0, "bne $v0, $zero, 0x8002def4", "fades one short of its full count"),
+    (0x8002dee8, "sw $t3, 0($a0)", "and else frees the face's link"),
+    (0x8002def0, "sw $t3, 0($t1)", "and the entry"),
+    (0x8002def8, "sw $v1, 4($t0)", "the count kept"),
+    (0x8002defc, "lw $a2, 12($a0)", "the face's colour taken"),
+    (0x8002df08, "addiu $v0, $a3, -160", "a channel less the grey"),
+    (0x8002df0c, "mult $v0, $v1", "times the count"),
+    (0x8002df38, "sra $v0, $a3, 12", "over the full count"),
+    (0x8002df64, "sw $a2, 12($a0)", "and the word written back"),
+    (0x8002df70, "slti $v0, $t2, 32", "over the 32 entries"),
 ]
 
 # A number that is the immediate of one instruction.
@@ -131,6 +211,10 @@ IMMEDIATES = [
 
     ("platform", "platform.stone", "a face drawn as a stone at random", 0x80027ec8, "addiu $v0, $zero, {}"),
     ("platform", "platform.none", "a face not drawn", 0x80027ec0, "addiu $v0, $zero, {}"),
+
+    ("marked", "marked.step", "a marked face's fade counts up this much a pass", 0x8002ded8, "addiu $v1, $v1, {}"),
+    ("marked", "marked.full", "and is done at this", 0x8002dedc, "slti $v0, $v1, {}"),
+    ("marked", "marked.grey", "from a channel of this", 0x8002df3c, "addiu $a3, $v0, {}"),
 ]
 
 # An address the code builds from a lui and an addiu, and the table there.
@@ -161,7 +245,7 @@ EXT_TABLE = (0x8004cdd0, 0x8004cdd8)
 MIRROR = 0x80000000   # the tables hold addresses without RAM's mirror bit
 
 PHASE_SPREAD = (0x80027a98, 3, "t0", "v0")     # the phase divides the face's position by unit times this
-BONUS_CYCLES = 4     # colour cycles for the bonus stone: a pair per world parity, blocks then platforms
+BONUS_CYCLES = 4     # colour cycles on a level with no key: a pair per world parity, a face as built then one the ball has marked
 FACE_TABLE = (0x80028e90, 0x80028e98)
 
 
@@ -270,9 +354,21 @@ def platform_table(code, r):
     return out
 
 
+def marked(r):
+    """How a face the ball has marked comes to its cycle's colour: the count
+    its fade steps a pass, the count it is done at and the grey it fades from."""
+    if r["marked.full"] % r["marked.step"]:
+        sys.exit("a marked face's fade does not come to its full count in whole passes")
+    if not 0 <= r["marked.grey"] <= 255:
+        sys.exit("a marked face's grey is past a channel's byte")
+    return {"step": r["marked.step"], "full": r["marked.full"], "grey": r["marked.grey"]}
+
+
 def cycles(code, r):
     """The animator's tables: a frame index per game frame and, where a face
-    has one, a colour per frame of a second cycle to draw the texture through."""
+    has one, a colour per frame of a second cycle to draw the texture through,
+    on a level with no key a pair a world parity whose second a marked face
+    takes, fading to it as `marked` says."""
     def span(start, end):
         a, b = code.address(*start), code.address(*end)
         return code.blob[a - EXE_BASE:b - EXE_BASE]
@@ -299,7 +395,8 @@ def cycles(code, r):
         "invisible": {"frames": list(span(*inv["frames"])), "level": grey(colours(span(*inv["level"])))},
         "bonus": {"frames": frames,
                   "shadowed": list(code.blob[shadowed_at - EXE_BASE:shadowed_at - EXE_BASE + len(frames)]),
-                  "colour": [palette[i * length:(i + 1) * length] for i in range(BONUS_CYCLES)]},
+                  "colour": [palette[i * length:(i + 1) * length] for i in range(BONUS_CYCLES)],
+                  "marked": marked(r)},
         "spread": r["phase.unit"] * code.multiplier(*PHASE_SPREAD),
     }
 
@@ -469,10 +566,13 @@ def show_readings(code, tgis):
     print(f"\nthe pack that keeps the first set whatever the keys: {copycat_pack(code, r)}")
     print(f"its rooms by number, in the worlds its first round plays them in: {' '.join(copycat_worlds(code))}")
     cyc = cycles(code, r)
+    fade = cyc["bonus"]["marked"]
     print(f"\nfire runs {len(cyc['fire']['frames'])} frames over its quads, the invisible block "
           f"{len(cyc['invisible']['frames'])} with a brightness cycle of {len(cyc['invisible']['level'])}, "
-          f"the bonus stone {len(cyc['bonus']['frames'])} with {len(cyc['bonus']['colour'])} colour cycles "
-          f"of {len(cyc['bonus']['colour'][0])}; a phase steps every {cyc['spread']} units of position")
+          f"the swirl {len(cyc['bonus']['frames'])}; a level with no key runs every face on its two chains through one of "
+          f"{len(cyc['bonus']['colour'])} colour cycles of {len(cyc['bonus']['colour'][0])}, a pair a world "
+          f"parity, a face as built then one the ball has marked, which fades in from a grey of {fade['grey']} "
+          f"by {fade['step']} a pass to {fade['full']}; a phase steps every {cyc['spread']} units of position")
     for world, blob in tgis.items():
         h = header(blob)
         print(f"  {world:7} shade per face {h['shade']}  turn {h['turn']}  groups {h['groups']}")

@@ -133,3 +133,25 @@ test("a bonus level's plain face is the swirl, run through its colour cycle", ()
   assert.ok(skins.sets.bonus.stone.flat().includes(f.tex));
   assert.ok(f.live && !f.colour.every((v) => v === f.colour[0]));
 });
+
+test("a marked face fades from grey to the second cycle of its world's pair, the four cycles two pairs whose first leaves one magenta, for violet and red in the even worlds and for red and brown in the odd", () => {
+  const { marked, colour } = skins.cycles.bonus;
+  assert.equal(marked.step * 32, marked.full);
+  assert.equal(marked.grey, 160);
+  assert.equal(colour.length, 4);
+  const [evenBuilt, evenMarked, oddBuilt, oddMarked] = colour;
+  const [r, g, b] = evenBuilt[0];
+  assert.ok(r === b && g < r);
+  assert.deepEqual(oddBuilt[0], evenBuilt[0]);
+  const violet = ([r, , b]) => b > r;
+  const red = ([r, g, b]) => r > g && g === b;
+  const brown = ([r, g, b]) => r > g && g > b && b === 0;
+  assert.ok(evenBuilt.some(violet) && evenBuilt.some(red) && !evenBuilt.some(([, g, b]) => b < g));
+  assert.ok(!oddBuilt.some(violet) && oddBuilt.some(red) && oddBuilt.some(brown));
+  const mean = (cycle) =>
+    [0, 1, 2].map((k) => cycle.reduce((sum, c) => sum + c[k], 0) / cycle.length);
+  const orange = mean(evenMarked);
+  const blue = mean(oddMarked);
+  assert.ok(orange[0] > orange[1] && orange[1] > orange[2]);
+  assert.ok(blue[2] > blue[1] && blue[1] > blue[0]);
+});
