@@ -34,9 +34,6 @@ const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazard
 const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 const TIME_UP_PAD =
   "TIME OUT! 0 points, 0 seconds left. Space, Enter or a tap on the pad starts the level again.";
-// on a level with no key the block under the ball is marked as the level opens
-const TIME_UP_MARKED =
-  "TIME OUT! 50 points, 0 seconds left. Space or Enter starts the level again.";
 const LOST = /^FELL OFF! 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
 const DONE =
   /^Out by the exit: the level is done\. 1500 points, \d+ seconds left\. 1500 points banked, 1500 points in all\. Space or Enter goes on to LEVEL 2\.$/;
@@ -1038,9 +1035,11 @@ test("left alone, the ending's view runs the length of the slower swing and the 
   await expect.poll(async () => (await probe(page)).target).toEqual([18, 17.5, 17.5]);
   const before = await probe(page);
   await startPlay(page);
+  // the block under the ball scored as the level opened, and a death on a level with no key
+  // scores nothing, run or no run
   await expect
     .poll(() => status(page).textContent(), { timeout: 10_000, intervals: [50] })
-    .toBe(TIME_UP_MARKED);
+    .toBe(TIME_UP);
   const since = Date.now();
   const over = await probe(page);
   expect(over.frame).toBeNull();
@@ -1050,7 +1049,7 @@ test("left alone, the ending's view runs the length of the slower swing and the 
   expect(held).toBe(true);
   expect(zooms.length).toBeGreaterThan(1);
   expect(Math.max(...zooms)).toBeGreaterThan(zooms[0]);
-  expect(await status(page).textContent()).toBe(TIME_UP_MARKED);
+  expect(await status(page).textContent()).toBe(TIME_UP);
   // the view runs the length of the slower swing, near six seconds, which the frames cannot run
   // ahead of the wall clock, and then the level starts again by itself
   await expect(status(page)).toHaveText("", { timeout: 10_000 });
@@ -1059,7 +1058,7 @@ test("left alone, the ending's view runs the length of the slower swing and the 
     "again. The ball stands on the top of 17,17,17, facing -y.",
   );
   await expect.poll(async () => (await probe(page)).frame, { intervals: [50] }).toEqual(IDENTITY);
-  await expect(status(page)).toHaveText(TIME_UP_MARKED, { timeout: 10_000 });
+  await expect(status(page)).toHaveText(TIME_UP, { timeout: 10_000 });
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
   // the ending has let the frame go already, so the wait is for the view the ease lands on

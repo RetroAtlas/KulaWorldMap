@@ -47,6 +47,7 @@ import {
   glowStep,
   nextOf,
   numberOf,
+  conclude,
   settle,
   startGame,
   stationOf,
@@ -356,14 +357,14 @@ test("a death on an ordinary level takes the score and the penalty off the total
   assert.deepEqual(settle(game, final), { penalty: 500 + 2 * each, banked: 0, total, over: false });
 });
 
-test("a death on a level with no key or on a hidden level scores nothing and takes nothing off the total, banking the fruit word as a way out does", () => {
+test("the ending's step with a game: a death on a level with no key or on a hidden level scores nothing and takes nothing off the total, banking the fruit word as a way out does", () => {
   const game = { total: 3000, bank: 0, fruit: 0, count: 0, kept: 0 };
   const none = begin(counted(level(row(10, 18), [start()], 99, false), 0, 15), null, game);
   assert.equal(none.words.form, FORM.bonus);
   none.words.score = 150;
   none.words.fruit = 4;
   end(none, play.ending.time, []);
-  assert.deepEqual(settle(game, none), { penalty: 0, banked: 0, total: 3000, over: false });
+  assert.deepEqual(conclude(none), { penalty: 0, banked: 0, total: 3000, over: false });
   assert.equal(none.words.score, 0, "the level's score is left at nothing");
   assert.deepEqual(game, { total: 3000, bank: 4, fruit: 4, count: 1, kept: 0 });
   const hidden = begin(
@@ -374,14 +375,62 @@ test("a death on a level with no key or on a hidden level scores nothing and tak
   assert.equal(hidden.words.form, FORM.hidden);
   hidden.words.score = 2500;
   end(hidden, play.ending.lost, []);
-  assert.deepEqual(settle(game, hidden), { penalty: 0, banked: 0, total: 3000, over: false });
+  assert.deepEqual(conclude(hidden), { penalty: 0, banked: 0, total: 3000, over: false });
   assert.equal(hidden.words.score, 0);
   assert.deepEqual(game, { total: 3000, bank: 4, fruit: 4, count: 1, kept: 0 });
   // a way out on either banks what it scored
   const out = begin(counted(level(row(10, 18), [start()], 99, false), 0, 16), null, game);
   out.words.score = 150;
   end(out, play.ending.bonus, []);
-  assert.deepEqual(settle(game, out), { penalty: 0, banked: 150, total: 3150, over: false });
+  assert.deepEqual(conclude(out), { penalty: 0, banked: 150, total: 3150, over: false });
+  assert.equal(out.words.score, 150);
+  // the points routine alone clears nothing: the clear is the step's
+  const alone = begin(counted(level(row(10, 18), [start()], 99, false), 0, 15), null, game);
+  alone.words.score = 150;
+  end(alone, play.ending.time, []);
+  settle(game, alone);
+  assert.equal(alone.words.score, 150);
+});
+
+test("the ending's step with no game: a death on a level with no key ends with the score at nothing, one on a keyed level keeps it, and with a game a keyed level's death takes the penalty through the step", () => {
+  const { each } = play.points;
+  // a level with no key marks the block under the start as it opens, and its clock runs out
+  const none = begin(level(row(10, 18), [start()], 1, false));
+  assert.equal(none.game, null);
+  steps(none, play.clock.second);
+  assert.equal(none.words.outcome, play.clock.out);
+  assert.equal(none.words.score, play.bonus.block);
+  assert.equal(conclude(none), null);
+  assert.equal(none.words.score, 0);
+  const hidden = begin(level(row(10, 18), [start(), settings(objects.skins.hidden.type)]));
+  assert.equal(hidden.words.form, FORM.hidden);
+  hidden.words.score = 2500;
+  end(hidden, play.ending.lost, []);
+  assert.equal(conclude(hidden), null);
+  assert.equal(hidden.words.score, 0);
+  const keyed = begin(level(row(10, 18), [start()]));
+  assert.equal(keyed.words.form, FORM.arcade);
+  keyed.words.score = 250;
+  end(keyed, play.ending.lost, []);
+  assert.equal(conclude(keyed), null);
+  assert.equal(keyed.words.score, 250);
+  // a way out on a level with no key keeps what it scored
+  const out = begin(level(row(10, 18), [start()], 99, false));
+  out.words.score = 150;
+  end(out, play.ending.bonus, []);
+  assert.equal(conclude(out), null);
+  assert.equal(out.words.score, 150);
+  const game = startGame();
+  const run = begin(counted(level(row(10, 18), [start()]), 0, 0), null, game);
+  run.words.score = 250;
+  end(run, play.ending.lost, []);
+  assert.deepEqual(conclude(run), {
+    penalty: 250 + each,
+    banked: 0,
+    total: -(250 + each),
+    over: true,
+  });
+  assert.equal(run.words.score, 250);
 });
 
 test("a total below nothing after a death ends the game, which starts afresh at nothing as the level is left, and a total at nothing or above carries on", () => {

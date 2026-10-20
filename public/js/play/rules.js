@@ -91,18 +91,25 @@ const countOf = ({ place, slot, final }, { levels, finals }) =>
 export const numberOf = (station, { points, next }) =>
   countOf(station, points) + (station.final ? next.worlds * next.slots : 0);
 
-/** The points settled on the frame an ending stands, in the loop's order, over `game`, the run's
-    words: a bad ending on a level past the arcade's mode scores nothing; then a death on an
-    ordinary level takes the level's score and its penalty, so much a level of its count held at
-    the most, off the total and puts the bank back into the pickups' word, and any other ending
-    counts a fruit where the pickups' word differs from the bank, banks the word and adds the
-    score to the total. What the ending did to the total, the total, and whether a total below
-    nothing has ended the game. */
+/** The step the loop runs on the frame an ending stands, with or without a game: a bad ending on
+    a level past the arcade's mode scores nothing, and then where a game stands its points are
+    settled, as `settle` has them, or nothing where none does. */
+export function conclude(live) {
+  const w = live.words;
+  if (w.outcome < 0 && w.form !== FORM.arcade) w.score = 0;
+  return live.game ? settle(live.game, live) : null;
+}
+
+/** The points routine over `game`, the run's words, in its order: a death on an ordinary level
+    takes the level's score and its penalty, so much a level of its count held at the most, off
+    the total and puts the bank back into the pickups' word, and any other ending counts a fruit
+    where the pickups' word differs from the bank, banks the word and adds the score to the
+    total. What the ending did to the total, the total, and whether a total below nothing has
+    ended the game. */
 export function settle(game, live) {
   const w = live.words;
   const { points } = live.tables.motion.play;
   const died = w.outcome < 0;
-  if (died && w.form !== FORM.arcade) w.score = 0;
   let penalty = 0;
   let banked = 0;
   if (died && w.form === FORM.arcade) {
