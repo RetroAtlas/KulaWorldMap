@@ -62,6 +62,10 @@ const flashOf = (live) => live.tables.motion.effects.flash.teleport;
 /** The screen's mode word under the lethargy pill: the states its routine runs, in their order. */
 export const SCREEN = { off: 0, flash: 1, ghost: 2, end: 3, fade: 4 };
 
+/** The level's mode word, as the loader numbers a level: the arcade's, a level with no key or a
+    hidden level. */
+export const FORM = { arcade: 0, bonus: 1, hidden: 2 };
+
 const rulesOf = ({ motion, unit, jump }) => ({
   table: motion.types[String(BALL)],
   turn: motion.turn,
@@ -77,15 +81,27 @@ function startOf(l) {
   return s && { cell: [s.x, s.y, s.z], face: s.face, h: layHeading(s) ?? TANGENT[s.face] };
 }
 
+// The loader's mode routine: a level with no key, the settings record's hidden flag over that,
+// and the Simon rooms over both.
+function formOf(l, skins, keys, mode) {
+  let form = keys === 0 ? FORM.bonus : FORM.arcade;
+  if (l.records.some((r) => r.kind === skins.hidden.kind && r.type === skins.hidden.type))
+    form = FORM.hidden;
+  if (mode === SIMON) form = FORM.arcade;
+  return form;
+}
+
 /** A run of the level from its first frame: the world, the ball at the start the game takes or at
-    `at`, and the words the game keeps, as the level's start sets them. */
+    `at`, and the words the game keeps as the level loads: the game's mode word by the level's
+    pack, the level's word by its keys, its settings record and that mode, and the rest as the
+    level's start sets them. */
 export function startRun(l, idx, tables, circuits, at = null) {
   const { play, types } = tables.motion;
   const where = at ?? startOf(l);
   if (!where) throw new Error("the level has no start to stand the ball on");
   const world = worldOf(l, idx, tables, circuits);
   const keys = keysOf(world);
-  const mode = 0;
+  const mode = l.pack === tables.skins.copycat ? SIMON : 0;
   const live = {
     level: l,
     idx,
@@ -100,6 +116,7 @@ export function startRun(l, idx, tables, circuits, at = null) {
       score: 0,
       keys,
       mode,
+      form: formOf(l, tables.skins, keys, mode),
       bonus: keys === 0 && mode !== SIMON,
       unmarked: world.counted.size,
       fruit: 0,

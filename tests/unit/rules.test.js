@@ -27,6 +27,7 @@ import {
   progressOf,
 } from "../../public/js/play/ball.js";
 import {
+  FORM,
   SCREEN,
   startRun,
   frame,
@@ -76,6 +77,7 @@ const INVINCIBLE = "34";
 const SUNGLASSES = "38";
 const BUTTON = 10;
 const TELEPORTER = 5;
+const SIMON = 1;
 const LEAP = motion.types["30"].jump;
 
 /** The circuits as a parity map, turned over by each press. */
@@ -128,6 +130,15 @@ const vanishing = (y, phase) => ({
 });
 /** A boost button on the top of the row's block at `y`. */
 const button = (y) => ({ x: 17, y, z: 17, kind: 0, on: [object(0, BUTTON)] });
+/** The level's settings record, on no block, with `type` in its first slot. */
+const settings = (type) => ({
+  x: 0,
+  y: 0,
+  z: 0,
+  kind: objects.skins.hidden.kind,
+  type,
+  f: Array(11).fill(0),
+});
 const begin = (l, at = null) => startRun(l, index(l), TABLES, circuits(), at);
 /** Run `n` frames with `pad` held: the events, each with the frame count it left. */
 function steps(live, n, pad = 0) {
@@ -209,6 +220,42 @@ test("the clock stands while the ball is on a clock face and runs again as it ro
   assert.equal(live.words.clock, full - play.clock.tick, "which the next frame's tick reads");
   steps(live, 10, PAD.up);
   assert.equal(live.words.clock, full - 11 * play.clock.tick);
+});
+
+test("a run keeps the game's mode word by the level's pack and the level's by its keys, its settings record and that mode, and the clock stands in the Simon rooms", () => {
+  const full = 99 * play.clock.second;
+  const keyed = begin(level(row(10, 18), [start()]));
+  assert.deepEqual(
+    [keyed.words.mode, keyed.words.form, keyed.words.bonus],
+    [0, FORM.arcade, false],
+  );
+  const none = begin(level(row(10, 18), [start()], 99, false));
+  assert.deepEqual([none.words.mode, none.words.form, none.words.bonus], [0, FORM.bonus, true]);
+  const hidden = begin(level(row(10, 18), [start(), settings(objects.skins.hidden.type)]));
+  assert.equal(hidden.words.keys, 1);
+  assert.deepEqual([hidden.words.form, hidden.words.bonus], [FORM.hidden, false]);
+  const keyless = begin(
+    level(row(10, 18), [start(), settings(objects.skins.hidden.type)], 99, false),
+  );
+  assert.deepEqual(
+    [keyless.words.form, keyless.words.bonus],
+    [FORM.hidden, true],
+    "the flag stands over the key count, which the bonus flag keeps",
+  );
+  const unflagged = begin(level(row(10, 18), [start(), settings(0)], 99, false));
+  assert.equal(unflagged.words.form, FORM.bonus, "a settings record without the flag");
+  const room = begin({ ...level(row(10, 18), [start()], 99, false), pack: objects.skins.copycat });
+  assert.deepEqual(
+    [room.words.mode, room.words.form, room.words.bonus, room.words.keys],
+    [SIMON, FORM.arcade, false, 0],
+  );
+  steps(room, 60, PAD.up);
+  assert.equal(room.words.clock, full, "the clock stands in the Simon rooms");
+  assert.equal(room.world.marked.size, 0, "and no block is marked");
+  assert.equal(room.words.outcome, 0);
+  const arcade = begin(level(row(10, 18), [start()]));
+  steps(arcade, 60, PAD.up);
+  assert.equal(arcade.words.clock, full - 60 * play.clock.tick, "the arcade's clock falls");
 });
 
 test("a level opens with the pad dead for 19 frames, read from the 20th", () => {

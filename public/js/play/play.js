@@ -72,6 +72,7 @@ import {
   turned,
 } from "./ball.js";
 import {
+  FORM,
   SCREEN,
   blanksOf,
   drawn,
@@ -487,9 +488,18 @@ function frameEnding(l) {
   swung();
 }
 
+/** The eye the level's mode word stands at an ending: the arcade's swing, the no-key level's
+    quicker and wider swing, or the hidden level's eye, which does not swing, its fourth angle
+    never stepping. */
+const eyeOf = (view, form) => {
+  if (form === FORM.bonus) return { ...view, ...view.bonus };
+  if (form === FORM.hidden) return { ...view, ...view.hidden, swing: 0, reach: 0 };
+  return view;
+};
+
 // The orbit has no eye, so the zoom stands in for how large the level looks from the game's,
-// which stands the level's radius and an offset off the middle and swings its reach nearer and
-// further by turns.
+// which stands the level's radius and an offset off the middle and swings its reach, where it
+// has one, nearer and further by turns.
 function swung() {
   const e = live.ended;
   const { turn } = motionTable();
@@ -1004,9 +1014,10 @@ function sent({ from, to }) {
 }
 
 /** The level has ended: the ball is gone and the pad dead, the view lets go of the ball and turns
-    about the level's middle as the game's does, and the strip gives the verdict with the points
-    and the time left, until a key starts the level again or the view has run the length of one
-    swing of an arcade level's eye, whichever figures the level's own eye swings by. */
+    about the level's middle as the game's does, the eye standing by the level's mode word, and
+    the strip gives the verdict with the points and the time left, until a key starts the level
+    again or the view has run the length of one swing of an arcade level's eye, whichever eye the
+    level's word stands. */
 function ended(code) {
   const { play, turn } = motionTable();
   const { view, clock, words } = play;
@@ -1019,7 +1030,7 @@ function ended(code) {
     frame: 0,
     length: Math.floor(turn / view.swing),
     theta: 0,
-    view: w.bonus ? { ...view, ...view.bonus } : view,
+    view: eyeOf(view, w.form),
     radius: radiusOf(live.level),
     free: 0,
     base: 1,

@@ -20,6 +20,11 @@ const CORKSCREW_LEVEL = "/#INCA/18/45,35/fit/33";
 // LEVEL 43: the start at one end of a row of three blocks, a lethargy pill on the block at the
 // other end, to the ball's left as the level opens
 const LETHARGY_LEVEL = "/#INCA/12/45,35/fit/33";
+// HIDDEN 1: a field of blocks two apart, the start on the one nearest the player, so a jump to
+// either side comes down on nothing
+const HIDDEN_LEVEL = "/#HIRO/18/45,35/fit/33";
+// SIMON 1: the start on the top row of a ring, facing along it, with nothing two blocks on
+const SIMON_LEVEL = "/#COPYCAT/0/45,35/fit/33";
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|rules|world|drive|contact|hazards)\.js$/;
 const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 const TIME_UP_PAD =
@@ -486,8 +491,8 @@ const hold = async (page, point) => {
 // the ball's centre over the top of a block, where the start's ball is drawn
 const ballOver = (c) => [c[0] + 0.5, c[1] + 0.5, c[2] - 0.03 - 100 / 512];
 
-async function opened(page, { motion = true } = {}) {
-  await page.goto(LEVEL);
+async function opened(page, { motion = true, hash = LEVEL } = {}) {
+  await page.goto(hash);
   await settle(page);
   await still(page);
   await page.keyboard.press("t");
@@ -3338,5 +3343,102 @@ test("the invincibility pill colours the ball's light as the game does: from the
   expect(relit[0].lift).not.toEqual(lit[0].lift);
   expect(predicted(relit, base)).toBe(true);
   expect(again.seen.slice(again.frames)).toEqual([null, null, null]);
+  expect(errors).toEqual([]);
+});
+
+/** Step the frozen level a game frame at a time until the strip's status matches `verdict`, at
+    most `most` frames: the frames stepped, or null where it never matched. */
+const stepTo = (page, verdict, most) =>
+  page.evaluate(
+    async ([verdict, most]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ draw }, { motionTable }] = await Promise.all(
+        ["viewer/draw/render.js", "viewer/data.js"].map(at),
+      );
+      const status = document.getElementById("playStatus");
+      const re = new RegExp(verdict);
+      for (let i = 1; i <= most; i++) {
+        window.__step(1000 / motionTable().hz);
+        draw();
+        if (re.test(status.textContent)) return i;
+      }
+      return null;
+    },
+    [verdict, most],
+  );
+/** The camera's zoom and yaw as the ending's view stands and after each of `frames` frozen frames
+    more. */
+const orbited = (page, frames) =>
+  page.evaluate(async (frames) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { draw }, { motionTable }] = await Promise.all(
+      ["viewer/state.js", "viewer/draw/render.js", "viewer/data.js"].map(at),
+    );
+    const seen = [{ zoom: state.cam.zoom, yaw: state.cam.yaw }];
+    for (let i = 0; i < frames; i++) {
+      window.__step(1000 / motionTable().hz);
+      draw();
+      seen.push({ zoom: state.cam.zoom, yaw: state.cam.yaw });
+    }
+    return seen;
+  }, frames);
+/** Hold Up and tap Space over one frozen frame, which reads both as the forward jump. */
+async function jumped(page) {
+  await page.keyboard.down("ArrowUp");
+  await page.keyboard.press(" ");
+  await onward(page, 1);
+  await page.keyboard.up("ArrowUp");
+}
+
+test("on a hidden level the ending's view turns the level under an eye that does not swing, as the game's does", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { hash: HIDDEN_LEVEL });
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 19,21,17, facing -y");
+  // past the level's opening, which holds the pad dead, and facing the gap beside the start
+  await page.keyboard.press("ArrowLeft");
+  await expect.poll(async () => (await station(page)).heading).toBe("-x");
+  await expect.poll(async () => (await station(page)).moving).toBe(false);
+  await frozen(page);
+  // a jump two blocks on comes down on nothing, and the ball falls off the level
+  await jumped(page);
+  expect(await stepTo(page, "^FELL OFF!", 400)).not.toBeNull();
+  const seen = await orbited(page, 40);
+  await page.evaluate(() => window.__thaw());
+  // the zoom stands from frame to frame while the yaw turns
+  expect(new Set(seen.map((s) => s.zoom)).size).toBe(1);
+  expect(new Set(seen.map((s) => s.yaw)).size).toBe(seen.length);
+  expect(errors).toEqual([]);
+});
+
+test("in a Simon room the clock stands and the ending's view swings the arcade's way, as the game plays the rooms by their own mode's word", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { hash: SIMON_LEVEL });
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 19,10,20, facing +x");
+  await frozen(page);
+  expect(await seconds(page)).toBe(99);
+  await onward(page, 60);
+  expect(await seconds(page)).toBe(99);
+  // a jump along the row comes down past its end, on nothing, and the ball falls off the level
+  await jumped(page);
+  expect(await stepTo(page, "^FELL OFF!", 400)).not.toBeNull();
+  const seen = await orbited(page, 100);
+  await page.evaluate(() => window.__thaw());
+  const { turn, view } = await page.evaluate(async () => {
+    const { motionTable } = await import(new URL("js/viewer/data.js", location.href).href);
+    const { turn, play } = motionTable();
+    return { turn, view: play.view };
+  });
+  // the eye draws further off through a quarter of the arcade's swing, well past a quarter of the
+  // quicker one, before it comes back
+  const zooms = seen.map((s) => s.zoom);
+  const rise = zooms.findIndex((z, i) => i > 0 && z > zooms[i - 1]);
+  expect(Math.abs(rise - turn / (4 * view.swing))).toBeLessThanOrEqual(1);
+  expect(rise).toBeGreaterThan(turn / (4 * view.bonus.swing) + 1);
   expect(errors).toEqual([]);
 });
