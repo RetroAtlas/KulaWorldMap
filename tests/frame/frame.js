@@ -58,6 +58,7 @@ const PARTS = {
   drawGhost: "editor",
   drawPieces: "course",
   drawLeaps: "course",
+  drawJumps: "course",
   drawRings: "course",
   drawDust: "play",
   drawTrail: "play",

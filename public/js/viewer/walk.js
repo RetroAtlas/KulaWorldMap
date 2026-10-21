@@ -10,8 +10,10 @@ const PLATFORM_KIND = 5;
 const ROLL_ON = 0;
 const INNER_CORNER = 1;
 const OUTER_EDGE = 2;
+export const JUMP = 3;
 const LEAP = 12;
 const STOP = 13;
+const FLIGHT = 14;
 const PAD = 15;
 const LIFT = 0.02;
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -19,9 +21,12 @@ const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
 export const LETTER = "r";
 export const CAP = 400;
 
-const add = (a, b) => a.map((v, i) => v + b[i]);
+const add = (a, b, k = 1) => a.map((v, i) => v + b[i] * k);
 const neg = (v) => v.map((x) => -x || 0);
 const same = (a, b) => a.every((v, i) => v === b[i]);
+const dot = (a, b) => a.reduce((sum, v, i) => sum + v * b[i], 0);
+const size = (v) => v.reduce((sum, c) => sum + Math.abs(c), 0);
+const inside = (cell) => cell.every((c) => c >= 0 && c < SIDE);
 
 export const tangent = (face, k) => heading(face, k + 1).d;
 export const faceOf = (normal) => FACE_NORMAL.findIndex((n) => same(n, normal));
@@ -53,19 +58,58 @@ export function outcomeAt(probe, { cell, face }, k) {
   return OUTER_EDGE;
 }
 
-export function step({ cell, face }, k, o) {
+/** How far a jump along `k` falls past the block two on, 0 landing there, null landing nowhere. */
+export function jumpAt(probe, { cell, face }, k) {
+  const n = FACE_NORMAL[face];
+  const t = tangent(face, k);
+  const over = add(cell, n);
+  const high = add(over, n);
+  const path = [add(over, t), add(over, t, 2), high, add(high, t), add(high, t, 2)];
+  if (path.some((c) => probe.solid(c))) return null;
+  for (let d = 0, landing = add(cell, t, 2); inside(landing); d++, landing = add(landing, n, -1))
+    if (probe.solid(landing)) return d;
+  return null;
+}
+
+export function step({ cell, face }, k, o, d = 0) {
   const t = tangent(face, k);
   if (o === ROLL_ON) return { cell: add(cell, t), face };
+  if (o === JUMP) return { cell: add(add(cell, t, 2), FACE_NORMAL[face], -d), face };
   if (o === INNER_CORNER)
     return { cell: add(add(cell, t), FACE_NORMAL[face]), face: faceOf(neg(t)) };
   return { cell, face: faceOf(t) };
 }
 
 export function headingAfter(face, k, o) {
-  if (o === ROLL_ON) return k;
+  if (o === ROLL_ON || o === JUMP) return k;
   const t = tangent(face, k);
   const n = FACE_NORMAL[face];
   return o === INNER_CORNER ? headingOn(faceOf(neg(t)), n) : headingOn(faceOf(t), neg(n));
+}
+
+/** The roll or the jump that joins station `a` to station `b`, or null where none does. */
+export function stepBetween(a, b) {
+  const n = FACE_NORMAL[a.face];
+  const between = b.cell.map((v, i) => v - a.cell[i]);
+  let t;
+  let o;
+  let d = 0;
+  if (a.face === b.face) {
+    d = dot(between, neg(n));
+    const flat = add(between, n, d);
+    if (size(between) === 1) [t, o] = [between, ROLL_ON];
+    else if (d >= 0 && size(flat) === 2 && flat.some((v) => Math.abs(v) === 2))
+      [t, o] = [flat.map((v) => v / 2 || 0), JUMP];
+    else return null;
+  } else if (!between.some((v) => v)) [t, o] = [FACE_NORMAL[b.face], OUTER_EDGE];
+  else {
+    t = add(between, n, -1);
+    o = same(FACE_NORMAL[b.face], neg(t)) ? INNER_CORNER : null;
+  }
+  if (o === null || size(t) !== 1) return null;
+  const k = headingOn(a.face, t);
+  if (k === null) return null;
+  return o === JUMP ? { k, o, d } : { k, o };
 }
 
 export const stationKey = ({ cell, face }) => cellKey(...cell) * 6 + face;
@@ -124,7 +168,8 @@ export function reachable(probe, from) {
   return reached;
 }
 
-// Five nibbles spell a station; then one a step, a leap spelling five more, a stop mark or a pad.
+// Five nibbles spell a station; then one a step, a jump spelling two more, a leap five more, a
+// stop mark or a pad.
 function nibblesOf({ stations, steps, marks }) {
   const out = [];
   const spell = ({ cell, face }) => {
@@ -138,10 +183,11 @@ function nibblesOf({ stations, steps, marks }) {
     if (!step) {
       out.push(LEAP);
       spell(stations[i]);
-    } else {
-      out.push(step.k * 3 + step.o);
-      if (i < n - 1 && marks.has(i)) out.push(STOP);
+      continue;
     }
+    if (step.o === JUMP) out.push(FLIGHT, (step.k << 2) | (step.d >> 4), step.d & 15);
+    else out.push(step.k * 3 + step.o);
+    if (i < n - 1 && marks.has(i)) out.push(STOP);
   }
   return out;
 }
@@ -206,8 +252,17 @@ export function decode(segment) {
       const k = Math.floor(v / 3);
       const o = v % 3;
       const next = step(course.stations.at(-1), k, o);
-      if (!next.cell.every((c) => c >= 0 && c < SIDE)) break;
+      if (!inside(next.cell)) break;
       course.steps.push({ k, o });
+      course.stations.push(next);
+    } else if (v === FLIGHT) {
+      if (i + 2 > nibbles.length) break;
+      const k = nibbles[i] >> 2;
+      const d = ((nibbles[i] & 3) << 4) | nibbles[i + 1];
+      const next = step(course.stations.at(-1), k, JUMP, d);
+      if (!inside(next.cell)) break;
+      i += 2;
+      course.steps.push({ k, o: JUMP, d });
       course.stations.push(next);
     } else if (v === LEAP) {
       const target = spelled(i);
@@ -231,7 +286,12 @@ export function validate(probe, { stations, steps }) {
     if (!probe.standable(s.cell, s.face)) hollow.add(i);
   });
   steps.forEach((step, i) => {
-    if (step && outcomeAt(probe, stations[i], step.k) !== step.o) broken.add(i);
+    if (!step) return;
+    const holds =
+      step.o === JUMP
+        ? jumpAt(probe, stations[i], step.k) === step.d
+        : outcomeAt(probe, stations[i], step.k) === step.o;
+    if (!holds) broken.add(i);
   });
   return { hollow, broken };
 }
@@ -240,9 +300,11 @@ export function validate(probe, { stations, steps }) {
 export const lifted = ({ cell, face }) =>
   cell.map((c, i) => c + 0.5 + FACE_NORMAL[face][i] * (0.5 + LIFT));
 
+/** The half-pieces on each block by its key, the leaps and the jumps, which lie in the air. */
 export function pieces({ stations, steps, marks }) {
   const byKey = new Map();
   const leaps = [];
+  const jumps = [];
   const laid = new Set();
   const span = (p, q) => [...p, ...q].map((v) => v.toFixed(3)).join();
   const put = ({ cell, face }, from, to, chevron, i, stop) => {
@@ -257,8 +319,12 @@ export function pieces({ stations, steps, marks }) {
       leaps.push({ from: lifted(a), to: lifted(b), i });
       return;
     }
-    const t = tangent(a.face, step.k);
     const n = FACE_NORMAL[a.face];
+    if (step.o === JUMP) {
+      jumps.push({ from: lifted(a), to: lifted(b), up: n, i });
+      return;
+    }
+    const t = tangent(a.face, step.k);
     const m = FACE_NORMAL[b.face];
     const lift = same(n, m) ? n : add(n, m);
     const edge = a.cell.map((c, j) => c + 0.5 + 0.5 * n[j] + 0.5 * t[j] + LIFT * lift[j]);
@@ -274,5 +340,5 @@ export function pieces({ stations, steps, marks }) {
     const s = stations[i];
     if (s) put(s, lifted(s), lifted(s), null, i, true);
   }
-  return { byKey, leaps };
+  return { byKey, leaps, jumps };
 }

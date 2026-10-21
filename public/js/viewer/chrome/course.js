@@ -6,6 +6,7 @@ import { counted, markerGroup, markerHeading, startsOf } from "../data.js";
 import { slotOf } from "../permalink.js";
 import {
   CAP,
+  JUMP,
   LETTER,
   decode,
   encode,
@@ -19,7 +20,7 @@ import {
 } from "../walk.js";
 import { drawSoon, overlayWith } from "../draw/render.js";
 import { facePoints, outlineStroke } from "../draw/blocks.js";
-import { drawLeaps, drawPieces, drawRings } from "../draw/ribbon.js";
+import { drawJumps, drawLeaps, drawPieces, drawRings } from "../draw/ribbon.js";
 import { toast } from "../ui/toast.js";
 import { holding, hoverBy, onCellClick, tipWith } from "./interaction.js";
 import { settle, tailWith, writeHash } from "./navigate.js";
@@ -120,7 +121,7 @@ function layOut() {
     return;
   }
   const { hollow, broken } = validate(probeNow(), course);
-  const { byKey, leaps } = pieces(course);
+  const { byKey, leaps, jumps } = pieces(course);
   for (const [key, list] of byKey) {
     const kept = list.filter((p) => (p.stop ? !hollow.has(p.i) : !broken.has(p.i)));
     if (kept.length) byKey.set(key, kept);
@@ -128,12 +129,13 @@ function layOut() {
   }
   for (const i of broken)
     leaps.push({ from: lifted(course.stations[i]), to: lifted(course.stations[i + 1]), i });
-  // a leap's ends keep clear of whatever stands at a stop
-  for (const leap of leaps) {
-    leap.near = stands(course.stations[leap.i]);
-    leap.far = stands(course.stations[leap.i + 1]);
+  const whole = jumps.filter((j) => !broken.has(j.i));
+  // a leap's or a jump's ends keep clear of whatever stands at a stop
+  for (const arc of [...leaps, ...whole]) {
+    arc.near = stands(course.stations[arc.i]);
+    arc.far = stands(course.stations[arc.i + 1]);
   }
-  laid = { byKey, leaps, rings: [...hollow].map((i) => course.stations[i]) };
+  laid = { byKey, leaps, jumps: whole, rings: [...hollow].map((i) => course.stations[i]) };
 }
 
 function adopt(next) {
@@ -289,9 +291,12 @@ function sync() {
   const idle = editing();
   $("course").hidden = !on && (!course || idle);
   const stops = course ? course.marks.size : 0;
+  const jumps = course ? course.steps.filter((s) => s?.o === JUMP).length : 0;
   const leaps = course ? course.steps.filter((s) => !s).length : 0;
-  const line = `Route planner · ${counted(stops, "stop")}`;
-  $("courseLine").textContent = leaps ? `${line} · ${counted(leaps, "leap")}` : line;
+  let line = `Route planner · ${counted(stops, "stop")}`;
+  if (jumps) line += ` · ${counted(jumps, "jump")}`;
+  if (leaps) line += ` · ${counted(leaps, "leap")}`;
+  $("courseLine").textContent = line;
   for (const id of ["courseUndo", "courseClear", "courseCopy"]) $(id).disabled = !course;
   const hinting = on && !idle && !note && !course;
   $("courseStatus").textContent = !on ? "" : idle ? EDITING : hinting ? hint() : (note ?? "");
@@ -383,6 +388,7 @@ function drawWash(ctx, c, home, key, ghost) {
 function drawOver(ctx) {
   if (!laid) return false;
   drawLeaps(ctx, laid.leaps);
+  drawJumps(ctx, laid.jumps);
   drawRings(ctx, laid.rings);
   return effectsOn();
 }

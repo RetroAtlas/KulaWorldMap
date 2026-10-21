@@ -1,8 +1,18 @@
 import { test, expect } from "@playwright/test";
 import { settle, still, trackErrors, drawn, overlaps, topPixels, gold } from "./helpers.js";
+import { JUMP, encode, headingOn } from "../../public/js/viewer/walk.js";
 
 const LEVEL = "/#HIRO/0/45,35/fit/33";
 const SEGMENT = /\/r[A-Za-z0-9_-]{3,}$/;
+// a route of the start and a jump two blocks south from it, over the block between
+const JUMPED = encode({
+  stations: [
+    { cell: [17, 18, 17], face: 0 },
+    { cell: [17, 16, 17], face: 0 },
+  ],
+  steps: [{ k: headingOn(0, [0, -1, 0]), o: JUMP, d: 0 }],
+  marks: new Set([0, 1]),
+});
 
 /** The page point over a point of the level. */
 const at = (page, x, y, z) =>
@@ -93,6 +103,23 @@ const dashed = (page) =>
     draw();
     Object.assign(g, was);
     return out;
+  });
+/** How many curves one frame draws with no dash set, the hover away. */
+const curved = (page) =>
+  page.evaluate(async () => {
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
+    const g = document.getElementById("cv").getContext("2d");
+    let curves = 0;
+    const was = g.bezierCurveTo;
+    g.bezierCurveTo = function (...a) {
+      if (!this.getLineDash().length) curves++;
+      return was.apply(this, a);
+    };
+    state.hover = null;
+    draw();
+    delete g.bezierCurveTo;
+    return curves;
   });
 
 /** A draft of the start's block and a block beside it, and another across a gap, shown without editing. */
@@ -260,6 +287,40 @@ test("a face no roll reaches is joined by a leap, drawn dashed, and a draft's ed
   await laid(page, [18, 17, 17], { kind: 0 });
   await expect(page.locator("#chipLine")).toContainText("3 blocks");
   expect(await dashed(page)).toEqual(leapt);
+  expect(errors).toEqual([]);
+});
+
+test("a link's route with a jump counts it on the strip and draws it as a solid golden arc, a roll joining the next stop", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(`${LEVEL}/${JUMPED}`);
+  await settle(page);
+  await still(page);
+  await page.keyboard.press("v");
+  await page.keyboard.press("u");
+  await expect(line(page)).toHaveText("Route planner · 2 stops · 1 jump");
+  const c = await route(page);
+  expect(c).toEqual({
+    stations: [
+      { cell: [17, 18, 17], face: 0 },
+      { cell: [17, 16, 17], face: 0 },
+    ],
+    steps: [{ k: 2, o: JUMP, d: 0 }],
+    marks: [0, 1],
+  });
+  expect(await linked(page)).toEqual(c);
+  // the arc's rim and core, neither dashed
+  expect(await dashed(page)).toEqual({ strokes: 0, arcs: 0 });
+  expect(await curved(page)).toBe(2);
+  await click(page, await top(page, [17, 15, 17]));
+  await expect(line(page)).toHaveText("Route planner · 3 stops · 1 jump");
+  expect((await route(page)).steps).toEqual([
+    { k: 2, o: JUMP, d: 0 },
+    { k: 2, o: 0 },
+  ]);
+  await expect.poll(() => linked(page)).toEqual(await route(page));
+  expect(await curved(page)).toBe(2);
   expect(errors).toEqual([]);
 });
 

@@ -4,7 +4,14 @@ import { objects, mapData, annotations } from "./fixtures.js";
 import { state } from "../../public/js/viewer/state.js";
 import { cellKey } from "../../public/js/format/lattice.js";
 import { setObjects, setAnnotations, index } from "../../public/js/viewer/data.js";
-import { probeOf as planProbe, shortestWalk, tangent } from "../../public/js/viewer/walk.js";
+import {
+  JUMP,
+  jumpAt,
+  probeOf as planProbe,
+  shortestWalk,
+  step as planStep,
+  tangent,
+} from "../../public/js/viewer/walk.js";
 import {
   PAD,
   REST,
@@ -327,6 +334,60 @@ test("a course driver may start from a later station, takes the one after as rea
   run.ball = ballAt(RULES, C.cell, TOP, MINUS_Y);
   assert.equal(wrong.pad(run), 0);
   assert.equal(wrong.done(), "strayed");
+});
+
+test("the planner's jump is the stepper's: over a plate, with the landing gone and a block one, two or three below or none, and with a block in each of the five cells the arc flies through, jumpAt lands the ball where Up and Cross from rest bring it to rest", () => {
+  const C = A.cell;
+  const at = (up, on, side = 0) => [C[0] + side, C[1] - on, C[2] - up];
+  const plate = [-1, 0, 1].flatMap((side) => [0, 1, 2, 3].map((on) => at(0, on, side)));
+  const landing = at(0, 2);
+  const lessLanding = plate.filter((c) => c.join() !== landing.join());
+  const rested = (run) => {
+    const b = run.ball;
+    const probe = probeOf(run);
+    b.pad = PAD.up | PAD.cross;
+    step(b, probe);
+    b.pad = 0;
+    for (let f = 1; f < 400; f++) {
+      const out = step(b, probe);
+      if (out.some((e) => e.lost)) return null;
+      if (b.state === REST) return stationOf(b);
+    }
+    return assert.fail("the ball never rests");
+  };
+  const dropOf = (rest) => {
+    if (!rest || rest.face !== TOP) return null;
+    const [dx, dy, dz] = rest.cell.map((v, i) => v - landing[i]);
+    return dx === 0 && dy === 0 && dz >= 0 ? dz : null;
+  };
+  const agree = (cells, label) => {
+    const run = runOver(...cells);
+    run.ball = ballAt(RULES, C, TOP, MINUS_Y);
+    const rest = rested(run);
+    const d = jumpAt(run.planned, A, SOUTH);
+    assert.equal(d, dropOf(rest), `${label}: the ball rests on ${rest?.cell}`);
+    if (d !== null) assert.deepEqual(planStep(A, SOUTH, JUMP, d), rest, label);
+    return d;
+  };
+  assert.equal(agree(plate, "the plate"), 0);
+  for (const d of [1, 2, 3])
+    assert.equal(agree([...lessLanding, at(-d, 2)], `a block ${d} below`), d);
+  assert.equal(agree(lessLanding, "nothing below"), null);
+  for (const [label, c] of [
+    ["ahead", at(1, 1)],
+    ["over the landing", at(1, 2)],
+    ["over the ball", at(2, 0)],
+    ["high ahead", at(2, 1)],
+    ["high over the landing", at(2, 2)],
+  ])
+    assert.equal(agree([...plate, c], `a block ${label}`), null);
+  for (const [label, c] of [
+    ["beside the path", at(1, 1, 1)],
+    ["behind", at(1, -1)],
+    ["three up", at(3, 0)],
+    ["three on", at(1, 3)],
+  ])
+    assert.equal(agree([...plate, c], `a block ${label}`), 0);
 });
 
 test("the keys read a tap down on the frame that reads it and up after, and a held key down on every frame until it is let go, another key's tap beside it", () => {

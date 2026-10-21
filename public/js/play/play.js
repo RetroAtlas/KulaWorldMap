@@ -39,7 +39,7 @@ import {
   worldTint,
   TANGENT,
 } from "../viewer/data.js";
-import { headingOn, pieces, probeOf, tangent } from "../viewer/walk.js";
+import { pieces, probeOf, stepBetween, tangent } from "../viewer/walk.js";
 import { faceAxes } from "../viewer/motion.js";
 import {
   draw,
@@ -1218,24 +1218,6 @@ function goOn(next) {
 // --- the trail -------------------------------------------------------------------------------
 
 const sameStation = (a, b) => a.face === b.face && a.cell.every((v, i) => v === b.cell[i]);
-
-/** The walk's step from station `a` to `b`, or null where no roll joins them. */
-function stepBetween(a, b) {
-  const n = FACE_NORMAL[a.face];
-  const unit = (t) => t.reduce((sum, v) => sum + Math.abs(v), 0) === 1;
-  const between = b.cell.map((v, i) => v - a.cell[i]);
-  let t;
-  let o;
-  if (a.face === b.face) [t, o] = [between, 0];
-  else if (!between.some((v) => v)) [t, o] = [FACE_NORMAL[b.face], 2];
-  else {
-    t = between.map((v, i) => v - n[i]);
-    o = FACE_NORMAL[b.face].every((v, i) => v === -t[i]) ? 1 : null;
-  }
-  if (o === null || !unit(t)) return null;
-  const k = headingOn(a.face, t);
-  return k === null ? null : { k, o };
-}
 
 /** One more stop on the way the ball has come, joined by a roll, or by a leap where it was sent. */
 function walked(station, leap = false) {

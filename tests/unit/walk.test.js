@@ -6,11 +6,14 @@ import { heading } from "../../public/js/viewer/travel.js";
 import { index, startsOf } from "../../public/js/viewer/data.js";
 import {
   CAP,
+  JUMP,
   tangent,
   faceOf,
   probeOf,
   outcomeAt,
+  jumpAt,
   step,
+  stepBetween,
   headingAfter,
   headingOn,
   shortestWalk,
@@ -43,6 +46,8 @@ const neg = (v) => v.map((x) => -x || 0);
 const dot = (a, b) => a.reduce((sum, v, i) => sum + v * b[i], 0);
 const toward = (face, d) => [0, 1, 2, 3].find((k) => tangent(face, k).join() === d.join());
 const b64 = (bytes) => Buffer.from(bytes).toString("base64url");
+const nibblesIn = (segment) =>
+  [...Buffer.from(segment.slice(1), "base64url")].flatMap((b) => [b >> 4, b & 15]);
 const near = (a, b, what) =>
   a.forEach((v, i) => assert.ok(Math.abs(v - b[i]) < 1e-9, `${what}: ${a} is not ${b}`));
 
@@ -71,7 +76,7 @@ const dice = (seed) => {
 };
 
 /** A course of n stations drawn at random, its leaps' targets and its ends stops. */
-function randomCourse(roll, n, leaps = false) {
+function randomCourse(roll, n, leaps = false, jumps = false) {
   const station = () => ({ cell: [1 + roll(32), 1 + roll(32), 1 + roll(32)], face: roll(6) });
   const course = { stations: [station()], steps: [], marks: new Set([0]) };
   while (course.stations.length < n) {
@@ -83,10 +88,11 @@ function randomCourse(roll, n, leaps = false) {
       continue;
     }
     const k = roll(4);
-    const o = roll(3);
-    const next = step(course.stations.at(-1), k, o);
+    const o = jumps && roll(4) === 0 ? JUMP : roll(3);
+    const d = o === JUMP ? roll(40) : 0;
+    const next = step(course.stations.at(-1), k, o, d);
     if (!next.cell.every((c) => c >= 0 && c <= 33)) continue;
-    course.steps.push({ k, o });
+    course.steps.push(o === JUMP ? { k, o, d } : { k, o });
     course.stations.push(next);
     if (roll(5) === 0) course.marks.add(i);
   }
@@ -388,7 +394,7 @@ test("a cut segment keeps what was read", () => {
     for (const i of part.marks) assert.ok(course.marks.has(i) || i === part.stations.length - 1);
   }
   const reserved = decode("r" + b64([0x4f, 0x39, 0x06, 0x6e]));
-  assert.equal(reserved.stations.length, 3, "a reserved nibble ends the reading");
+  assert.equal(reserved.stations.length, 3, "a jump's mark with nothing after it ends the reading");
   const short = decode("r" + b64([0x4f, 0x39, 0x06, 0xc4, 0xf3]));
   assert.deepEqual(short.steps, [{ k: 2, o: 0 }], "a leap with too few nibbles ends it");
   assert.equal(short.stations.length, 2);
@@ -566,4 +572,243 @@ test("a step is two half-pieces on the faces it crosses, a chevron on the first,
           "lifted 0.02",
         );
     }
+});
+
+// A jump from the top of C along +x: `up` cells along the top's normal and `on` along the way.
+const C = [10, 10, 17];
+const EAST = toward(0, X);
+const cellAt = (up, on, side = 0) => [C[0] + on, C[1] + side, C[2] - up];
+
+test("a block in any of the five cells a jump's arc flies through refuses it, and no other block about the path does", () => {
+  const base = [C, cellAt(0, 2)];
+  assert.equal(jumpAt(probe(base), top(...C), EAST), 0);
+  for (const [label, c] of [
+    ["ahead", cellAt(1, 1)],
+    ["over the landing", cellAt(1, 2)],
+    ["over the ball", cellAt(2, 0)],
+    ["high ahead", cellAt(2, 1)],
+    ["high over the landing", cellAt(2, 2)],
+  ])
+    assert.equal(jumpAt(probe([...base, c]), top(...C), EAST), null, label);
+  for (const [label, c] of [
+    ["beside the path", cellAt(1, 1, 1)],
+    ["beside it the other way", cellAt(1, 1, -1)],
+    ["beside the landing's column", cellAt(1, 2, 1)],
+    ["behind the ball", cellAt(1, -1)],
+    ["behind it at its height", cellAt(0, -1)],
+    ["three up", cellAt(3, 0)],
+    ["three up ahead", cellAt(3, 1)],
+    ["three up over the landing", cellAt(3, 2)],
+    ["three on", cellAt(0, 3)],
+    ["three on and up", cellAt(1, 3)],
+    ["three on and high", cellAt(2, 3)],
+    ["in the gap", cellAt(0, 1)],
+    ["beside the landing", cellAt(0, 2, 1)],
+    ["under the landing", cellAt(-1, 2)],
+  ])
+    assert.equal(jumpAt(probe([...base, c]), top(...C), EAST), 0, label);
+});
+
+test("a jump comes down on the block two on, or falls onto the first block below it, and stands nowhere over nothing or off the lattice", () => {
+  for (const d of [1, 2, 5]) {
+    assert.equal(jumpAt(probe([C, cellAt(-d, 2)]), top(...C), EAST), d);
+    assert.deepEqual(step(top(...C), EAST, JUMP, d), top(...cellAt(-d, 2)));
+  }
+  assert.equal(jumpAt(probe([C, cellAt(-1, 2), cellAt(-2, 2)]), top(...C), EAST), 1, "the first");
+  assert.equal(jumpAt(probe([C, cellAt(-3, 2), cellAt(-3, 1)]), top(...C), EAST), 3);
+  assert.equal(jumpAt(probe([C]), top(...C), EAST), null, "nothing below");
+  assert.equal(jumpAt(probe([C, cellAt(0, 1)]), top(...C), EAST), null, "nor with the gap filled");
+  const edge = probe([
+    [31, 10, 17],
+    [33, 10, 17],
+    [32, 10, 17],
+  ]);
+  assert.equal(jumpAt(edge, top(31, 10, 17), EAST), null, "two on is outside the inner lattice");
+  assert.equal(jumpAt(edge, top(32, 10, 17), EAST), null, "two on is off the lattice");
+  assert.equal(jumpAt(probe([[10, 10, 32]]), top(10, 10, 32), EAST), null, "no room to fall");
+});
+
+test("a jump step lands two on along the face and down its normal by the drop, the heading kept", () => {
+  for (let face = 0; face < 6; face++)
+    for (let k = 0; k < 4; k++) {
+      const n = FACE_NORMAL[face];
+      const t = tangent(face, k);
+      for (const d of [0, 3])
+        assert.deepEqual(step({ cell: [10, 10, 10], face }, k, JUMP, d), {
+          cell: [10, 10, 10].map((c, i) => c + 2 * t[i] - d * n[i]),
+          face,
+        });
+      assert.equal(headingAfter(face, k, JUMP), k);
+    }
+  assert.deepEqual(step(top(...C), EAST, JUMP), top(12, 10, 17), "no drop given lands level");
+});
+
+test("the step between two stations is the roll on, the corner, the edge or the jump that joins them, and nothing else", () => {
+  const a = top(...C);
+  assert.deepEqual(stepBetween(a, top(11, 10, 17)), { k: EAST, o: 0 });
+  assert.deepEqual(stepBetween(a, { cell: [11, 10, 16], face: 4 }), { k: EAST, o: 1 }, "a wall");
+  assert.deepEqual(stepBetween(a, { cell: C, face: 1 }), { k: EAST, o: 2 }, "round the edge");
+  assert.deepEqual(stepBetween(a, top(12, 10, 17)), { k: EAST, o: JUMP, d: 0 });
+  assert.deepEqual(stepBetween(a, top(12, 10, 19)), { k: EAST, o: JUMP, d: 2 });
+  assert.deepEqual(stepBetween(a, top(8, 10, 17)), { k: toward(0, neg(X)), o: JUMP, d: 0 });
+  assert.deepEqual(stepBetween(a, top(10, 12, 18)), { k: toward(0, Y), o: JUMP, d: 1 });
+  for (const [label, b] of [
+    ["three on", top(13, 10, 17)],
+    ["a diagonal", top(12, 11, 17)],
+    ["a diagonal one on", top(11, 11, 17)],
+    ["another face two on", { cell: [12, 10, 17], face: 1 }],
+    ["two on and up", top(12, 10, 15)],
+    ["straight down", top(10, 10, 18)],
+    ["straight up", top(10, 10, 16)],
+    ["the same station", a],
+  ])
+    assert.equal(stepBetween(a, b), null, label);
+  const wall = { cell: C, face: 1 };
+  assert.deepEqual(stepBetween(wall, { cell: [10, 10, 19], face: 1 }), {
+    k: toward(1, Z),
+    o: JUMP,
+    d: 0,
+  });
+  assert.deepEqual(
+    stepBetween(wall, { cell: [9, 10, 19], face: 1 }),
+    { k: toward(1, Z), o: JUMP, d: 1 },
+    "the drop is down the face's own normal",
+  );
+  assert.equal(stepBetween(wall, { cell: [11, 10, 19], face: 1 }), null, "up it is no jump");
+});
+
+test("a course with jumps comes back from its segment whole, a drop spelt in two nibbles up to 63, and one without jumps spells as it did", () => {
+  const roll = dice(5);
+  let jumps = 0;
+  for (let trial = 0; trial < 60; trial++) {
+    const course = randomCourse(roll, 1 + roll(60), trial % 2 === 1, true);
+    jumps += course.steps.filter((s) => s?.o === JUMP).length;
+    sameCourse(decode(encode(course)), course);
+  }
+  assert.ok(jumps > 100, `${jumps} jumps`);
+  const far = {
+    stations: [top(10, 10, 0), top(12, 10, 17)],
+    steps: [{ k: EAST, o: JUMP, d: 17 }],
+    marks: new Set([0, 1]),
+  };
+  sameCourse(decode(encode(far)), far);
+  assert.deepEqual(nibblesIn(encode(far)).slice(5), [14, (EAST << 2) | 1, 1]);
+  const deepest = {
+    stations: [top(10, 10, 0), top(12, 10, 33)],
+    steps: [{ k: EAST, o: JUMP, d: 33 }],
+    marks: new Set([0, 1]),
+  };
+  sameCourse(decode(encode(deepest)), deepest);
+  const capped = encode({
+    stations: [top(10, 10, 0), top(12, 10, 63)],
+    steps: [{ k: EAST, o: JUMP, d: 63 }],
+    marks: new Set([0, 1]),
+  });
+  assert.deepEqual(nibblesIn(capped).slice(5), [14, (EAST << 2) | 3, 15], "the cap");
+  assert.deepEqual(decode(capped).stations, [top(10, 10, 0)], "whose landing leaves the lattice");
+
+  const cut = randomCourse(dice(13), 40, true, true);
+  const text = encode(cut);
+  for (let n = 5; n < text.length; n++) {
+    const part = decode(text.slice(0, n));
+    assert.deepEqual(part.stations, cut.stations.slice(0, part.stations.length), `${n} chars`);
+    assert.deepEqual(part.steps, cut.steps.slice(0, part.steps.length), `${n} chars`);
+  }
+  assert.deepEqual(decode("r" + b64([0x4f, 0x39, 0x0e])).stations, [top(17, 18, 17)], "the mark");
+  assert.deepEqual(decode("r" + b64([0x4f, 0x39, 0x0e, 0x8f])).steps, [{ k: 2, o: JUMP, d: 15 }]);
+
+  const plain = randomCourse(dice(17), 30, true);
+  const spelled = ({ cell, face }) => {
+    const index = cellKey(...cell);
+    return [(index >> 12) & 15, (index >> 8) & 15, (index >> 4) & 15, index & 15, face];
+  };
+  const expected = spelled(plain.stations[0]);
+  plain.steps.forEach((s, i) => {
+    if (!s) expected.push(12, ...spelled(plain.stations[i + 1]));
+    else {
+      expected.push(s.k * 3 + s.o);
+      if (i + 1 < plain.stations.length - 1 && plain.marks.has(i + 1)) expected.push(13);
+    }
+  });
+  if (expected.length & 1) expected.push(15);
+  assert.deepEqual(nibblesIn(encode(plain)), expected, "a course without jumps spells as before");
+});
+
+test("a jump whose landing has changed is broken, as is one a block has come into the arc of", () => {
+  const course = {
+    stations: [top(...C), top(12, 10, 17)],
+    steps: [{ k: EAST, o: JUMP, d: 0 }],
+    marks: new Set([0, 1]),
+  };
+  const whole = validate(probe([C, [12, 10, 17]]), course);
+  assert.deepEqual(whole, { hollow: new Set(), broken: new Set() });
+  const gone = validate(probe([C, [12, 10, 18]]), course);
+  assert.deepEqual([...gone.hollow], [1], "the landing's block gone");
+  assert.deepEqual([...gone.broken], [0], "the jump falls a block further now");
+  const walled = validate(probe([C, [12, 10, 17], [11, 10, 16]]), course);
+  assert.deepEqual([...walled.hollow], []);
+  assert.deepEqual([...walled.broken], [0], "a block in the arc's way");
+  const lower = {
+    stations: [top(...C), top(12, 10, 19)],
+    steps: [{ k: EAST, o: JUMP, d: 2 }],
+    marks: new Set([0, 1]),
+  };
+  assert.deepEqual(validate(probe([C, [12, 10, 19]]), lower).broken, new Set());
+  const filled = validate(probe([C, [12, 10, 17], [12, 10, 19]]), lower);
+  assert.deepEqual([...filled.broken], [0], "a block has come up where the ball fell through");
+  assert.deepEqual([...filled.hollow], []);
+});
+
+test("a jump is listed with its take-off normal and lays no half-piece on a face, the stops dotted as ever", () => {
+  const course = {
+    stations: [top(...C), top(12, 10, 17), top(13, 10, 17)],
+    steps: [
+      { k: EAST, o: JUMP, d: 0 },
+      { k: EAST, o: 0 },
+    ],
+    marks: new Set([0, 1, 2]),
+  };
+  const { byKey, leaps, jumps } = pieces(course);
+  assert.deepEqual(leaps, []);
+  assert.deepEqual(jumps, [
+    { from: lifted(course.stations[0]), to: lifted(course.stations[1]), up: FACE_NORMAL[0], i: 0 },
+  ]);
+  near(jumps[0].from, [10.5, 10.5, 16.98], "off the take-off face's centre");
+  near(jumps[0].to, [12.5, 10.5, 16.98], "to the landing's");
+  const at = (x) => byKey.get(cellKey(x, 10, 17));
+  assert.deepEqual(
+    at(10).map((p) => p.stop),
+    [true],
+    "the take-off's dot alone",
+  );
+  assert.equal(byKey.has(cellKey(11, 10, 17)), false, "nothing over the gap");
+  assert.deepEqual(
+    at(12).map((p) => [p.i, p.stop]),
+    [
+      [1, false],
+      [1, true],
+    ],
+    "the roll on from the landing, and its dot",
+  );
+  assert.deepEqual(
+    at(13).map((p) => [p.i, p.stop]),
+    [
+      [1, false],
+      [2, true],
+    ],
+  );
+  const dropped = pieces({
+    stations: [
+      { cell: C, face: 1 },
+      { cell: [9, 10, 19], face: 1 },
+    ],
+    steps: [{ k: toward(1, Z), o: JUMP, d: 1 }],
+    marks: new Set([0, 1]),
+  });
+  assert.deepEqual(
+    dropped.jumps[0].up,
+    FACE_NORMAL[1],
+    "a jump off a wall rises along the wall's normal",
+  );
+  assert.equal(dropped.byKey.size, 2, "its two dots");
 });

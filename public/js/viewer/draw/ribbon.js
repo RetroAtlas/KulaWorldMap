@@ -1,9 +1,10 @@
-// Paints a course over the blocks: its ribbon, chevrons, stops, leaps and rings; nothing of the page.
+// Paints a course over the blocks: its ribbon, chevrons, stops, jumps, leaps and rings; nothing of
+// the page.
 import { state, BLOCK, screen, facing } from "../state.js";
 import { FACE_NORMAL } from "../../format/lattice.js";
-import { cross } from "../data.js";
+import { blockUnits, cross, jumpTable } from "../data.js";
 import { lifted } from "../walk.js";
-import { arrow, bow } from "./arrow.js";
+import { arrow, bow, cut, fromEnd } from "./arrow.js";
 
 const CORE = "#f3b640";
 const GLOW = "#ffb347";
@@ -25,6 +26,8 @@ const SHINE_WIDTH = 0.75;
 const LEAP_BOW = { share: 0.3, min: 0.6, max: 1.6 };
 const LEAP_CLEAR = 2;
 const LEAP_THING = 0.25;
+// a cubic's control points lifted by this share of a height put its apex at that height
+const JUMP_LIFT = 4 / 3;
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 const along = (p, v, k) => p.map((c, i) => c + v[i] * k);
@@ -165,6 +168,55 @@ export function drawLeaps(ctx, leaps) {
       ctx.fillStyle = ink;
       ctx.lineWidth = core + extra;
       ctx.setLineDash([2 * core, 3 * core]);
+      arrow(ctx, curve, head);
+      if (extra) ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+const reversed = (c) => [c[6], c[7], c[4], c[5], c[2], c[3], c[0], c[1]];
+
+/** Curve `c` less `c0` off its start and `c1` off its end. */
+function trimmed(c, c0, c1) {
+  const back = reversed(c);
+  const start = reversed(cut(back, fromEnd(back, c0)));
+  return cut(start, fromEnd(start, c1));
+}
+
+/** The jump's height in blocks, its arc's apex row, or none where the table is empty. */
+function jumpHeight() {
+  const units = blockUnits();
+  return units ? Math.max(0, ...jumpTable().rows.map((row) => row[0])) / units : 0;
+}
+
+/** Solid arrows from stop to stop, bowed along the take-off normal by the jump's height. */
+export function drawJumps(ctx, jumps) {
+  if (!jumps.length) return;
+  const { block, core } = widths();
+  const head = clamp(block / 3, 9, 15);
+  const clear = dotRadius(core) + LEAP_CLEAR;
+  const rise = JUMP_LIFT * jumpHeight();
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const { from, to, up, near, far } of jumps) {
+    const [sx, sy] = screen(...from);
+    const [tx, ty] = screen(...to);
+    const c0 = clear + (near ? LEAP_THING * block : 0);
+    const c1 = clear + (far ? LEAP_THING * block : 0);
+    if (Math.hypot(tx - sx, ty - sy) <= c0 + c1) continue;
+    const third = to.map((v, i) => (v - from[i]) / 3);
+    const [ax, ay] = screen(...along(along(from, third, 1), up, rise));
+    const [bx, by] = screen(...along(along(to, third, -1), up, rise));
+    const curve = trimmed([sx, sy, ax, ay, bx, by, tx, ty], c0, c1);
+    for (const [ink, extra] of [
+      [RIM, RIM_EXTRA],
+      [CORE, 0],
+    ]) {
+      ctx.strokeStyle = ink;
+      ctx.fillStyle = ink;
+      ctx.lineWidth = core + extra;
       arrow(ctx, curve, head);
       if (extra) ctx.stroke();
     }
