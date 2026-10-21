@@ -40,7 +40,6 @@ export const state = {
     outlines: false,
     note: true,
     course: false,
-    trail: false,
     dust: true,
     playfrom: false,
     playon: false,

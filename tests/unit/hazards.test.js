@@ -1006,7 +1006,7 @@ test("revive undoes a death and puts the ball back at rest on its last rest, or 
   assert.equal(burnt.words.standing, -1, "read afresh where it stands");
 });
 
-test("on ice the ball slides on through every middle with Up released and stops at the middle of the first block that is not ice, the trail's stations passed on the way", () => {
+test("on ice the ball slides on through every middle with Up released and stops at the middle of the first block that is not ice, a station said on each block passed", () => {
   const l = level([...row(12, 14), ...row(15, 17, ICE), [17, 18, 17]], [start()]);
   const live = standing(l, { cell: [17, 18, 17], face: TOP, h: UP });
   frame(live, PAD.up);

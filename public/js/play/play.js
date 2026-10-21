@@ -2,7 +2,6 @@
 // camera behind it.
 import { $, el, emit, on } from "../viewer/ui/dom.js";
 import { adoptCourse, current, measureStrip } from "../viewer/chrome/course.js";
-import { drawPieces } from "../viewer/draw/ribbon.js";
 import { ageDust, burstDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
 import { drawEffects, effectsWith } from "./effects.js";
 import {
@@ -39,7 +38,7 @@ import {
   worldTint,
   TANGENT,
 } from "../viewer/data.js";
-import { pieces, probeOf, stepBetween, tangent } from "../viewer/walk.js";
+import { probeOf, stepBetween, tangent } from "../viewer/walk.js";
 import { faceAxes } from "../viewer/motion.js";
 import {
   draw,
@@ -192,7 +191,6 @@ const AT_SWITCH = 6;
 const AT_GONE = 10;
 const AT_BREAK = 2;
 const AT_LAUNCH = 10;
-const TRAIL = 12;
 
 let live = null;
 const keys = keyPad();
@@ -1181,7 +1179,6 @@ function startOver({ onward = true } = {}) {
   const b = live.run.ball;
   const at = { cell: blockUnder(b), face: faceUnder(b) };
   live.walk = { stations: [at], steps: [] };
-  live.trail = null;
   live.notes = [];
   live.rests = [];
   live.broken = new Set();
@@ -1219,7 +1216,7 @@ function goOn(next) {
   return true;
 }
 
-// --- the trail -------------------------------------------------------------------------------
+// --- the way the ball has come ------------------------------------------------------------
 
 const sameStation = (a, b) => a.face === b.face && a.cell.every((v, i) => v === b.cell[i]);
 
@@ -1231,26 +1228,7 @@ function walked(station, leap = false) {
   if (last && sameStation(last, station)) return;
   if (last) w.steps.push(leap ? null : stepBetween(last, station));
   w.stations.push(station);
-  const from = Math.max(0, w.stations.length - TRAIL);
-  const { byKey } = pieces({
-    stations: w.stations.slice(from),
-    steps: w.steps.slice(from),
-    marks: new Set(),
-  });
-  const n = w.stations.length - from - 1;
-  for (const list of byKey.values())
-    for (const p of list) {
-      p.alpha = (p.i + 1) / n;
-      p.chevron = null;
-    }
-  live.trail = byKey;
   if (live.keeping) hand();
-}
-
-function drawTrail(ctx, c, home, key, ghost) {
-  if (!live?.trail || !state.show.trail || ghost || c.k !== undefined) return;
-  const list = live.trail.get(key);
-  if (list) for (const p of list) drawPieces(ctx, [p], { alpha: p.alpha });
 }
 
 function drawDustOver(ctx, c, home, key, ghost) {
@@ -1600,7 +1578,6 @@ function enter(at = null) {
     framed: false,
     status: at || start ? null : NO_START,
     walk: { stations: [{ cell: where.cell, face: where.face }], steps: [] },
-    trail: null,
     notes: [],
     rests: [],
     broken: new Set(),
@@ -1755,7 +1732,7 @@ export function bootPlay() {
   addEventListener("blur", () => keys.up());
   wirePad();
   measure = measureStrip($("play"), "--play-h");
-  overlayWith({ under: () => void advance(), block: drawTrail, cell: drawDustOver, frame: more });
+  overlayWith({ under: () => void advance(), cell: drawDustOver, frame: more });
   effectsWith(() => live?.run ?? null);
   movingWith(travellers);
   ballsWith(() => (live && !live.ended ? [shown().point] : null));

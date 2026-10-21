@@ -31,7 +31,6 @@ const SHOWN = [
   ["showCamera", "camera"],
   ["showCompass", "compass"],
   ["showCourse", "course"],
-  ["showTrail", "trail"],
   ["showDust", "dust"],
   ["playFrom", "playfrom"],
   ["playOn", "playon"],

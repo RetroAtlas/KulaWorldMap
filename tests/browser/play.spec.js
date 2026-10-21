@@ -1273,33 +1273,27 @@ const rolled = async (page, block) => {
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
 };
 
-test("the way the ball has come is drawn under it only with its setting on, off by default, and Keep as the route stands either way", async ({
+test("the route kept under the ball shows in gold on the block the ball crossed once Keep is pressed, and not before", async ({
   page,
 }) => {
   const errors = trackErrors(page);
-  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
   const golden = async (c) => (await topPixels(page, c)).filter(gold).length;
   await opened(page, { motion: false });
   await startPlay(page);
   const keep = page.locator("#keepBtn");
-  // the dust put away, so any gold over the block is the trail's, and two rolls, so the top behind
-  // the ball carries the trail's latest roll, undimmed
+  // the dust put away, so any gold over the block is the route's, and two rolls, so the block
+  // behind the ball carries a whole roll of it
   await toggled(page, "showDust", "on by default");
   await rolled(page, [17, 17, 17]);
   await rolled(page, [17, 16, 17]);
   const crossed = [17, 17, 17];
   expect(await golden(crossed)).toBe(0);
-  await expect(keep).toBeEnabled();
-  await toggled(page, "showTrail", "off by default");
-  expect((await kept()).trail).toBe(true);
-  expect(await golden(crossed)).toBeGreaterThan(50);
-  await expect(keep).toBeEnabled();
   expect(await drawn(page)).toBe(0);
-  await toggled(page, "showTrail", "");
-  expect(await golden(crossed)).toBe(0);
   await keep.click();
   await expect(say(page)).toHaveText(KEEPING);
   await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops");
+  expect(await golden(crossed)).toBeGreaterThan(50);
+  expect(await drawn(page)).toBe(0);
   expect(errors).toEqual([]);
 });
 
@@ -2129,7 +2123,7 @@ test("the shadow the game paints into a coin's face goes with the coin as the ba
   await textured(page);
   await startPlay(page);
   const coin = [17, 16, 17];
-  // clear of the face's middle, which the trail would cover
+  // clear of the face's middle, where the dust lies
   const face = [coin[0] + 0.3, coin[1] + 0.5, coin[2]];
   expect(await pixelAt(page, face)).not.toEqual(await bareTop(page, face));
   for (const block of [[17, 17, 17], coin, [17, 15, 17]]) {
