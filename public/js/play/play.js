@@ -128,7 +128,7 @@ const BITS = {
   ArrowDown: PAD.down,
   " ": PAD.cross,
 };
-const PAD_BITS = { up: PAD.up, left: PAD.left, right: PAD.right, down: PAD.down, jump: PAD.cross };
+const PAD_BITS = { up: PAD.up, left: PAD.left, right: PAD.right, jump: PAD.cross };
 const PLAIN_KIND = 0;
 const REFUSED = {
   arrow: "The ball cannot roll off here: the arrow points another way.",
@@ -1417,7 +1417,6 @@ function line() {
 function sync() {
   $("play").hidden = !live;
   $("pad").hidden = !live || !padShown;
-  $("padDown").hidden = !state.show.turnabout;
   $("padBtn").setAttribute("aria-pressed", String(padShown));
   $("forgiveBtn").setAttribute("aria-pressed", String(forgiving));
   if (live) {
@@ -1481,7 +1480,6 @@ function icon() {
 // --- the keys -----------------------------------------------------------------------------
 
 const modified = (e) => e.metaKey || e.ctrlKey || e.altKey;
-const heard = (bit) => bit !== PAD.down || state.show.turnabout;
 
 function keydown(e) {
   if (!state.lvl || typing(e) || dialogOpen()) return;
@@ -1516,7 +1514,7 @@ function keydown(e) {
   if (!bit || e.shiftKey || modified(e)) return;
   e.preventDefault();
   e.stopPropagation();
-  if (e.repeat || !heard(bit)) return;
+  if (e.repeat) return;
   retire();
   keys.down(bit);
   wake();
@@ -1783,7 +1781,6 @@ export function bootPlay() {
     else routing();
   });
   on("show-changed", (key) => {
-    if (key === "turnabout" && live) reframe();
     if (key === "dust" && live && !state.show.dust) resetDust(worldTint(live.level.theme));
   });
   sync();

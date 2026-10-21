@@ -1568,9 +1568,6 @@ body.editing #course .status {
 .pad [data-pad="right"] {
   grid-area: 2 / 3;
 }
-.pad [data-pad="down"] {
-  grid-area: 3 / 2;
-}
 
 /* on the strip, where the editor's tools are, whatever its height */
 .palette {

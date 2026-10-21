@@ -11,7 +11,7 @@ const VERSION = 1;
 const neg = (v) => v.map((x) => -x || 0);
 const same = (a, b) => a.face === b.face && a.cell.every((v, i) => v === b.cell[i]);
 /** At rest with no turn asked, waiting or ramping. */
-const settled = (b) => b.state === REST && !b.ramp && !b.turn && !b.waiting && !b.again;
+const settled = (b) => b.state === REST && !b.ramp && !b.turn && !b.waiting;
 const rolling = (b) => b.state === ROLLING || b.state === WRAPPING;
 
 /** The keys as frames read them: held keys, which every frame samples, read or not, and a tap
@@ -60,11 +60,13 @@ export function keyPad() {
 }
 
 /** A driver that rolls the ball along `course` from its station `i`: at rest on a station it
-    asks the turn the next step wants, by the shorter way, or the roll, which it holds while the
-    ball rolls and the step on from each station it comes to is a roll the way it heads, so the
-    ball comes to rest only where the course turns, leaps or ends; done at the course's end, at a
-    leap, which no roll follows, a roll the lattice as it stands no longer allows counting as one,
-    or where the ball stands on no station of the course's, strayed. */
+    asks the turn the next step wants, by the shorter way, a step behind the ball as Left and,
+    once that quarter has run and the ball has settled, Left again, two quarter turns pressed one
+    after the other as a player turns about, or the roll, which it holds while the ball rolls and
+    the step on from each station it comes to is a roll the way it heads, so the ball comes to
+    rest only where the course turns, leaps or ends; done at the course's end, at a leap, which
+    no roll follows, a roll the lattice as it stands no longer allows counting as one, or where
+    the ball stands on no station of the course's, strayed. */
 export function courseDriver(course, i = 0) {
   const { stations, steps } = course;
   let why = false;
@@ -88,7 +90,7 @@ export function courseDriver(course, i = 0) {
       if (ahead) return PAD.up;
       if (step.k === headingOn(here.face, neg(b.s))) return PAD.left;
       if (step.k === headingOn(here.face, b.s)) return PAD.right;
-      return PAD.down;
+      return PAD.left;
     },
     done: () => why,
   };

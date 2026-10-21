@@ -141,15 +141,17 @@ test("a course driver turns about, holds the roll to the next station, turns the
   assert.deepEqual(stationOf(run.ball), C);
   assert.deepEqual(run.ball.h, X);
   assert.equal(run.ball.state, REST);
-  // Down turns twice; Up is held until the ball is read on B, whose step turns, and let go there
-  // so the ball rests at B's middle; the one quarter that faces +x; Up held until the ball is read
-  // on C, the end
+  // Left, and Left again on the frame the quarter's ramp has run out and the ball has settled; Up
+  // is held until the ball is read on B, whose step turns, and let go there so the ball rests at
+  // B's middle; the one quarter that faces +x; Up held until the ball is read on C, the end
   const up = 2 * QUARTER;
   const right = up + blockFrames;
   const on = right + QUARTER;
   assert.deepEqual(runs(pads), [
-    [PAD.down, 1],
-    [0, up - 1],
+    [PAD.left, 1],
+    [0, QUARTER - 1],
+    [PAD.left, 1],
+    [0, QUARTER - 1],
     [PAD.up, crossing],
     [0, blockFrames - crossing],
     [PAD.right, 1],

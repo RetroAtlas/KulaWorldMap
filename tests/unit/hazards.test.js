@@ -220,8 +220,10 @@ test("a switch is thrown as the progress word the hazards read enters the band, 
   assert.deepEqual(cleared.block, [17, 15, 17], "still on the switch's block");
 
   trace(live, 40, 0, resting);
-  frame(live, PAD.down);
-  trace(live, 80, 0, resting);
+  for (let i = 0; i < 2; i++) {
+    frame(live, PAD.left);
+    trace(live, 80, 0, resting);
+  }
   assert.deepEqual(live.ball.h, [0, 1, 0], "turned about");
   const back = trace(live, 200, PAD.up, (l) => blockUnder(l.ball)[1] >= 17);
   assert.equal(back.filter((f) => has(f, "threw")).length, 1, "thrown again on the way back");
@@ -1109,7 +1111,7 @@ test("the slide off the last ice block goes round the edge where nothing stands 
   assert.equal(progressOf(climb.ball), ROLL.middle);
 });
 
-test("on ice a turn is never asked, Left held or Down pressed, and Cross is the forward jump", () => {
+test("on ice a turn is never asked, Left held, and Cross is the forward jump", () => {
   const l = level([...row(6, 17, ICE), [17, 18, 17]], [start()]);
   const live = standing(l, { cell: [17, 18, 17], face: TOP, h: UP });
   frame(live, PAD.up);
@@ -1117,34 +1119,10 @@ test("on ice a turn is never asked, Left held or Down pressed, and Cross is the 
   const held = trace(live, 30, PAD.left);
   assert.ok(held.every((f) => f.state === ROLLING && !has(f, "turned")));
   assert.deepEqual(live.ball.h, UP);
-  assert.equal(live.ball.turn, 0);
-  const [down] = trace(live, 1, PAD.down);
-  assert.ok(!has(down, "turned"));
-  assert.deepEqual(
-    [live.ball.turn, live.ball.waiting, live.ball.again],
-    [0, 0, 0],
-    "both halves of the turn about dropped",
-  );
+  assert.deepEqual([live.ball.turn, live.ball.waiting], [0, 0]);
   trace(live, 1, PAD.cross);
   assert.equal(live.ball.state, JUMP, "the forward jump, not the hop");
   assert.equal(live.ball.forward, true);
-});
-
-test("Down pressed on ice leaves no half of a turn behind: at rest on the stone block past the ice one Left press turns the ball a quarter and no more", () => {
-  const l = level([...row(12, 14), ...row(15, 17, ICE), [17, 18, 17]], [start()]);
-  const live = standing(l, { cell: [17, 18, 17], face: TOP, h: UP });
-  frame(live, PAD.up);
-  trace(live, 100, 0, (l) => blockUnder(l.ball)[1] === 16 && l.words.standing === ON_ICE);
-  trace(live, 1, PAD.down);
-  trace(live, 300, 0, resting);
-  assert.deepEqual(blockUnder(live.ball), [17, 14, 17]);
-  assert.equal(live.ball.again, 0);
-  const frames = [...trace(live, 1, PAD.left), ...trace(live, 60, 0, resting)];
-  assert.deepEqual(
-    frames.flatMap((f) => f.events.filter((e) => e.turned)),
-    [{ turned: 1 }],
-  );
-  assert.deepEqual(live.ball.h, [-1, 0, 0], "a quarter left, not about");
 });
 
 test("at rest on ice facing an edge beside a neighbour Up rolls the ball off, the request made again after the pad's reading refused it, and nothing is said", () => {

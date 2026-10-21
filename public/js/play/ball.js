@@ -64,7 +64,6 @@ export function ballAt(rules, cell, face, h) {
     wantJump: false,
     turn: 0,
     waiting: 0,
-    again: 0,
     pad: 0,
     previous: 0,
     since: 0,
@@ -279,10 +278,6 @@ export function read(b, probe, out, asked) {
   else {
     if (newly & PAD.left) press(LEFT);
     if (newly & PAD.right) press(RIGHT);
-    if (newly & PAD.down) {
-      press(LEFT);
-      b.again = LEFT;
-    }
   }
   b.wantJump = asked ? asked.jump : (b.pad & PAD.cross) !== 0;
   b.forward = asked ? asked.forward : (b.pad & PAD.up) !== 0;
@@ -660,9 +655,8 @@ function ramping(b) {
   b.frame = r.to;
   b.ramp = null;
   if (b.turn) return;
-  b.turn = b.waiting || b.again;
-  if (b.waiting) b.waiting = 0;
-  else b.again = 0;
+  b.turn = b.waiting;
+  b.waiting = 0;
 }
 
 function acting(b, probe, out) {

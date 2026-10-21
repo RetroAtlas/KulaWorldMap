@@ -76,7 +76,6 @@ function steered(live, out) {
     b.forward = true;
     b.turn = 0;
     b.waiting = 0;
-    b.again = 0;
     const refused = out.findIndex((e) => e.refused);
     if (refused >= 0) out.splice(refused, 1);
   }

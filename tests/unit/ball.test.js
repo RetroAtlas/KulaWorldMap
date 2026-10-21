@@ -489,16 +489,13 @@ test("a turn at rest swaps the frame at once and the view ramps 18 steps of 53, 
   assert.deepEqual(b.frame, from);
 });
 
-test("Down turns the ball about as two lefts, and a turn pressed during a turn waits for its end", () => {
+test("a Down bit is not read as a press, the game's pad having nothing for it, and a turn pressed during a turn waits for its end", () => {
   const probe = row(10, 18);
   const b = ballAt(RULES, [17, 18, 17], TOP, UP);
-  const events = run(b, probe, 1, PAD.down);
-  assert.deepEqual(events, [{ turned: LEFT }]);
-  const more = run(b, probe, 19, 0);
-  assert.deepEqual(more, [{ turned: LEFT }]);
-  assert.deepEqual(b.h, [0, 1, 0]);
-  rest(b, probe);
-  assert.deepEqual(b.frame, frameOf([0, 1, 0], FACE_NORMAL[TOP]));
+  assert.deepEqual(run(b, probe, 1, PAD.down), []);
+  assert.deepEqual(run(b, probe, 40, 0), []);
+  assert.deepEqual([b.h, b.turn, b.waiting, b.frame], [UP, 0, 0, IDENTITY]);
+  assert.equal(moving(b), false);
   const c = ballAt(RULES, [17, 18, 17], TOP, UP);
   run(c, probe, 1, PAD.left);
   run(c, probe, 5, 0);
@@ -1300,7 +1297,7 @@ test("over a block the probe no longer holds a ball at rest has no shadow's heig
   assert.equal(clearance(b, gone), Infinity);
 });
 
-test("read then run is step, frame for frame, over a roll, two turns, two jumps and a turn about", () => {
+test("read then run is step, frame for frame, over a roll, two turns, two jumps and a turn about as two Lefts, the second pressed during the first", () => {
   const probe = plate();
   const a = ballAt(RULES, [17, 18, 17], TOP, UP);
   const b = ballAt(RULES, [17, 18, 17], TOP, UP);
@@ -1310,7 +1307,7 @@ test("read then run is step, frame for frame, over a roll, two turns, two jumps 
     if (f <= 18) return PAD.up;
     if (f === 38) return PAD.right;
     if (f >= 58 && f <= 90) return PAD.up | PAD.cross;
-    return f === 91 ? PAD.down : 0;
+    return f === 91 || f === 95 ? PAD.left : 0;
   };
   const events = [];
   for (let f = 1; f <= 200; f++) {

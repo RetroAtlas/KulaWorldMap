@@ -142,7 +142,10 @@ test("a coin on the ball's own face is taken as its centre comes within reach, b
     "gone from the frame's index",
   );
   trace(live, 40, 0, (l) => l.ball.state === REST);
-  frame(live, PAD.down);
+  for (let i = 0; i < 2; i++) {
+    frame(live, PAD.left);
+    trace(live, 40, 0, (l) => l.ball.state === REST && l.ball.turn === 0 && !l.ball.ramp);
+  }
   const back = trace(live, 200, PAD.up, (l) => blockUnder(l.ball)[1] >= 18);
   assert.ok(
     back.length < 200 && !back.some((f) => f.events.some((e) => e.took)),
