@@ -1340,7 +1340,7 @@ body:not(.sidebar-open) .menu-btn .cross {
 }
 .modal dl {
   display: grid;
-  grid-template-columns: fit-content(50%) 1fr;
+  grid-template-columns: clamp(128px, 42%, 200px) 1fr;
   gap: 3px 12px;
   margin: 0;
 }

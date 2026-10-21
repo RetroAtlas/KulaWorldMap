@@ -1039,6 +1039,52 @@ test("the keys open in a wider box than the settings and the about, which a phon
   expect(dt.width).toBeLessThanOrEqual(dl.width / 2 + 1);
 });
 
+test("the keys stand in one column across the sections, a long key cell wrapping", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.keyboard.press("?");
+  await expect(page.locator("#help")).toBeVisible();
+  const firsts = await page.evaluate(() =>
+    [...document.querySelectorAll("#help section")].map((s) => {
+      const key = s.querySelector("dt").getBoundingClientRect();
+      const said = s.querySelector("dd").getBoundingClientRect();
+      return { x: key.x, width: key.width, saidX: said.x };
+    }),
+  );
+  expect(firsts).toHaveLength(5);
+  for (const f of firsts) {
+    expect(Math.abs(f.x - firsts[0].x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(f.width - firsts[0].width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(f.saidX - firsts[0].saidX)).toBeLessThanOrEqual(1);
+  }
+  const widths = await page
+    .locator("#help dt")
+    .evaluateAll((ds) => ds.map((d) => d.getBoundingClientRect().width));
+  for (const w of widths) expect(w).toBeLessThanOrEqual(200);
+  // a key cell longer than the column wraps onto a second line
+  const rows = page.locator("#help dt");
+  const drag = await rows.first().boundingBox();
+  const pan = await rows.filter({ hasText: "right-drag" }).boundingBox();
+  expect(pan.height).toBeGreaterThan(drag.height);
+  // the narrowest phone keeps the column at the widest chord, so no key cell runs past it
+  await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.keyboard.press("?");
+  await expect(page.locator("#help")).toBeVisible();
+  const cells = await page
+    .locator("#help dt")
+    .evaluateAll((ds) =>
+      ds.map((d) => [d.getBoundingClientRect().width, d.clientWidth, d.scrollWidth]),
+    );
+  for (const [width, inside, needed] of cells) {
+    expect(Math.abs(width - cells[0][0])).toBeLessThanOrEqual(1);
+    expect(needed).toBeLessThanOrEqual(inside);
+  }
+});
+
 test("the display keeps only the switches set away from their defaults", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);
