@@ -448,6 +448,15 @@ test("the keys list wears each key as a cap and leaves a gesture in words", asyn
   await expect(rows.filter({ hasText: "wheel" }).locator("kbd")).toHaveText(["+", "−"]);
   await expect(rows.filter({ hasText: "Esc" }).first().locator("kbd")).toHaveText(["Esc"]);
   await expect(rows.filter({ hasText: "?" }).locator("kbd")).toHaveText(["?"]);
+  // a chord is a cap for each key, and the arrow keys are arrows
+  await expect(rows.filter({ hasText: "Shift+s" }).locator("kbd")).toHaveText(["Shift", "s"]);
+  await expect(rows.filter({ hasText: "right-drag" }).locator("kbd")).toHaveText([
+    "Shift",
+    "←",
+    "↑",
+    "→",
+    "↓",
+  ]);
   // a cap in the list is the hint beside a switch in the settings
   const look = (sel) =>
     page.evaluate((sel) => {
@@ -455,6 +464,10 @@ test("the keys list wears each key as a cap and leaves a gesture in words", asyn
       return [s.font, s.color, s.backgroundColor, s.borderBottomWidth, s.borderRadius].join();
     }, sel);
   expect(await look("#help dt kbd")).toBe(await look("#settings kbd"));
+  // the plus joining a chord wears the caps' grey, so the keys carry the chord
+  const colour = (sel) =>
+    page.evaluate((sel) => getComputedStyle(document.querySelector(sel)).color, sel);
+  expect(await colour("#help dt i")).toBe(await colour("#help dt kbd"));
 });
 
 test("the keys list is sorted into sections by what the keys are for", async ({ page }) => {
@@ -529,7 +542,7 @@ test("the list and the tooltips name Ctrl and Alt as the keyboard in front of yo
     await page.keyboard.press("?");
     await expect(page.locator("#help")).toBeVisible();
     const keys = await page.locator("#help dt").allTextContents();
-    for (const key of [`${ctrl}-Z`, `${ctrl}-Shift-Z`, `${alt}-click`])
+    for (const key of [`${ctrl}+Z`, `${ctrl}+Shift+Z`, `${alt}+click`])
       expect(keys, platform).toContain(key);
     const other = ctrl === "Ctrl" ? /\b(Cmd|Option)\b/ : /\b(Ctrl|Alt)\b/;
     for (const key of keys) expect(key, platform).not.toMatch(other);
@@ -941,7 +954,13 @@ test("every switch's key is the one its row shows and the key list names", async
   await page.keyboard.press("Escape");
   await page.keyboard.press("?");
   const listed = await page.locator("#help dt kbd").allTextContents();
-  for (const key of [...keys, "Shift-s"]) expect(listed).toContain(key);
+  for (const key of keys) expect(listed).toContain(key);
+  // Settings is no switch, so its row is found by its chord and its words
+  const settings = await page.evaluate(() => {
+    const dt = [...document.querySelectorAll("#help dt")].find((d) => d.textContent === "Shift+s");
+    return dt?.nextElementSibling.textContent;
+  });
+  expect(settings).toBe("settings");
 });
 
 test("each of the six controls answers to the letter that names it", async ({ page }) => {

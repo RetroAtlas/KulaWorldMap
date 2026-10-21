@@ -1352,8 +1352,18 @@ body:not(.sidebar-open) .menu-btn .cross {
   gap: 3px;
   color: var(--accent);
 }
+.modal dt span {
+  white-space: nowrap;
+}
+.modal dt i {
+  font-style: normal;
+  color: var(--dim);
+}
 .modal dt kbd {
   margin: 0;
+}
+.modal dt kbd + kbd {
+  margin-left: 3px;
 }
 .modal dd {
   margin: 0;

@@ -125,3 +125,11 @@ test("a module of the simulation imports only the model, the lattice and the sim
         `${name} imports ${target}`,
       );
 });
+
+// A module is parsed whole before any of it runs, so one construct the engine
+// does not know is a blank page rather than one broken feature; older WebKit
+// does not know a regex lookbehind.
+test("no module of the page's uses a regex lookbehind", () => {
+  for (const name of modules())
+    assert.ok(!/\(\?<[=!]/.test(readFileSync(join(dir, name), "utf8")), name);
+});

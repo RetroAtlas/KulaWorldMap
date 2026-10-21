@@ -38,7 +38,7 @@ const HELP = [
     title: "The map",
     rows: [
       ["drag", "turn the level"],
-      ["Shift-drag, right-drag, arrows", "pan"],
+      ["`Shift`+drag, right-drag, `←``↑``→``↓`", "pan"],
       ["wheel, pinch, `+` `−`", "zoom"],
       ["`q` `e`", "snap the turn to 45°"],
       ["`,` `.`", "lower and raise the slice"],
@@ -47,7 +47,7 @@ const HELP = [
       ["`f`", "fit the level to the window"],
       ["`/`", "search"],
       ["`s`", "show and hide the sidebar"],
-      ["`Shift-s`", "settings"],
+      ["`Shift`+`s`", "settings"],
       ["`?`", "this list"],
       ["`Esc`", "close, or clear the selection"],
     ],
@@ -75,17 +75,18 @@ const HELP = [
     title: "Route planner",
     rows: [
       ["`r`", "plan a route: click the faces the ball should visit, in order"],
-      ["Shift-click", "add a jump to the route"],
+      ["`Shift`+click", "add a jump to the route"],
       ["`Backspace`", "take the last stop back, while nothing is selected"],
-      ["`Ctrl-Z`", "undo"],
-      ["`Ctrl-Shift-Z`", "redo"],
+      ["`Ctrl`+`Z`", "undo"],
+      ["`Ctrl`+`Shift`+`Z`", "redo"],
     ],
   },
   {
     title: "Play",
     rows: [
       ["`p`", "roll the ball through the level"],
-      ["arrows", "roll and turn the ball"],
+      ["`↑`", "roll the ball while held"],
+      ["`←` `→`", "turn the ball"],
       ["`Space`", "jump, or hop in place; after an ending, start again"],
       ["`Esc`", "leave"],
     ],
@@ -95,25 +96,25 @@ const HELP = [
     rows: [
       ["`w`", "edit the level, or make a copy of this one to edit"],
       ["`a` `z` `i`", "place, erase, select"],
-      ["Shift-click", "erase, from any tool"],
+      ["`Shift`+click", "erase, from any tool"],
       ["right-click, long press", "select, from any tool"],
-      ["Alt-click", "take what is under the pointer as the brush"],
+      ["`Alt`+click", "take what is under the pointer as the brush"],
       ["tap, then tap the same face again", "on a touch screen: place or erase"],
       ["`j` `k`", "the next and the previous thing in the palette"],
       ["`1` to `9`", "a thing of the palette's shown group"],
       [
-        "`r` `Shift-r`",
+        "`r` `Shift`+`r`",
         "turn what is selected, or what the next placement faces, a quarter turn each way",
       ],
-      ["`Ctrl-Z`", "undo"],
-      ["`Ctrl-Shift-Z`", "redo"],
+      ["`Ctrl`+`Z`", "undo"],
+      ["`Ctrl`+`Shift`+`Z`", "redo"],
       ["`Delete` `Backspace`", "erase what is selected, its object first, or every selected block"],
       [
         "drag from empty space, with Select",
         "select the blocks in a rectangle; drag one of them to move them all, Shift-drag to lift",
       ],
-      ["`Shift-arrows`", "with blocks selected: move them a cell along the ground"],
-      ["`Shift-PageUp` `Shift-PageDown`", "with blocks selected: move them a cell up and down"],
+      ["`Shift`+`←``↑``→``↓`", "with blocks selected: move them a cell along the ground"],
+      ["`Shift`+`PageUp` `Shift`+`PageDown`", "with blocks selected: move them a cell up and down"],
       ["`,` `.`", "with the grid on, the height a floor is laid at"],
       ["`g`", "a floor to lay blocks on, at the slice where it is lowered"],
       ["`Esc`", "clear the selected blocks, or cancel a waiting run first"],
@@ -122,7 +123,9 @@ const HELP = [
 ];
 
 function showHelp() {
-  const caps = (keys) => keys.replace(/`(.+?)`/g, "<kbd>$1</kbd>");
+  const chord = (text) =>
+    text.replace(/`(.+?)`/g, "<kbd>$1</kbd>").replace(/<\/kbd>\+/g, "</kbd><i>+</i>");
+  const caps = (keys) => keys.replace(/\S*`\S*/g, (c) => `<span>${chord(c)}</span>`);
   const list = (rows) => rows.map(([k, v]) => `<dt>${caps(named(k))}</dt><dd>${v}</dd>`).join("");
   openModal(
     "Keyboard",

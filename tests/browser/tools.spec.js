@@ -541,9 +541,9 @@ test("the Keyboard list names every key and gesture the editor binds", async ({ 
   await page.keyboard.press("?");
   await expect(page.locator("#help")).toBeVisible();
   const keys = (await page.locator("#help dt").allTextContents()).join("\n");
-  const bound = ["w", "a z i", "j k", "1 to 9", "r Shift-r", "Ctrl-Z", "Ctrl-Shift-Z"]
-    .concat(["Delete Backspace", "Esc", "Shift-click", "right-click, long press"])
-    .concat(["Alt-click", "tap, then tap"]);
+  const bound = ["w", "a z i", "j k", "1 to 9", "r Shift+r", "Ctrl+Z", "Ctrl+Shift+Z"]
+    .concat(["Delete Backspace", "Esc", "Shift+click", "right-click, long press"])
+    .concat(["Alt+click", "tap, then tap"]);
   for (const key of bound) expect(keys, key).toContain(key);
   const does = (await page.locator("#help dd").allTextContents()).join("\n");
   expect(does).toContain("cancel a waiting run");
