@@ -1909,7 +1909,10 @@ test("the ball takes the coin it rolls onto, which is gone from the frame, the l
 });
 
 /** What one frame paints about the fruit's disc, a cross of five pixels, with the level titled
-    `shown` for that frame where given. */
+    `shown` for that frame where given. The frame is drawn at one zoom and pan, since play frames
+    the ball above the strip, whose height goes with how its words wrap in the reader's font, and
+    the cross is laid about the middle of the first fruit's model, which LEVEL 1 and a run both
+    draw, since the five fruits stand at five heights. */
 const fruitPixels = (page, shown = null) =>
   page.evaluate(
     async ([c, type, shown]) => {
@@ -1923,9 +1926,12 @@ const fruitPixels = (page, shown = null) =>
         ].map(at),
       );
       const m = state.idx.markers.get(cellKey(...c)).find((m) => m.type === type);
-      const [x, y] = thingDisc(m, { x: c[0], y: c[1], z: c[2] }, state.lvl);
+      const cam = { ...state.cam };
+      Object.assign(state.cam, { zoom: 2, panX: 0, panY: 0 });
       const was = state.lvl.shown;
-      if (shown) state.lvl.shown = shown;
+      state.lvl.shown = "LEVEL 1";
+      const [x, y] = thingDisc(m, { x: c[0], y: c[1], z: c[2] }, state.lvl);
+      state.lvl.shown = shown ?? was;
       draw();
       const k = state.view.dpr;
       const g = document.getElementById("cv").getContext("2d");
@@ -1936,7 +1942,8 @@ const fruitPixels = (page, shown = null) =>
       ];
       const out = [px(0, 0), px(0, -3), px(0, 3), px(-3, 0), px(3, 0)];
       state.lvl.shown = was;
-      if (shown) draw();
+      Object.assign(state.cam, cam);
+      draw();
       return out;
     },
     [FRUIT, FRUIT_TYPE, shown],
