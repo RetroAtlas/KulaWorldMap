@@ -172,17 +172,14 @@ const throughDrawn = (page) =>
     g.drawImage = drawImage;
     return n;
   });
-/** Where the ball's centre is on the page, and the top of whatever the strip and the pad take. */
+/** Where the ball's centre is on the page, and the top of what the strip takes. */
 const anchor = (page) =>
   page.evaluate(async () => {
     const { state, screen } = await import(new URL("js/viewer/state.js", location.href).href);
     const cv = document.getElementById("cv").getBoundingClientRect();
     const [x, y] = screen(...state.target);
-    let top = cv.bottom;
-    for (const id of ["play", "pad"]) {
-      const el = document.getElementById(id);
-      if (!el.hidden) top = Math.min(top, el.getBoundingClientRect().top);
-    }
+    const strip = document.getElementById("play");
+    const top = strip.hidden ? cv.bottom : strip.getBoundingClientRect().top;
     return { x: cv.left + x, y: cv.top + y, free: top - cv.top, top, w: cv.width };
   });
 const say = (page) => page.locator("#say");
@@ -2640,7 +2637,7 @@ test.describe("with a touch screen", () => {
   test.describe("at a phone's size", () => {
     test.use({ viewport: { width: 375, height: 700 }, isMobile: true });
 
-    test("the ball is framed above the pad and the strip, whose line has a row of its own", async ({
+    test("the ball is framed above the strip, whose line has a row of its own, and the pad lies over the view without moving it", async ({
       page,
     }) => {
       const errors = trackErrors(page);
@@ -2652,9 +2649,11 @@ test.describe("with a touch screen", () => {
       const strip = await page.locator("#play").boundingBox();
       const lineBox = await page.locator("#playLine").boundingBox();
       const cv = await page.locator("#cv").boundingBox();
-      expect(spot.y).toBeLessThan(Math.min(pad.y, strip.y) - 40);
-      // a fifth below the middle of what the pad and the strip leave free, from the first frame
+      expect(spot.y).toBeLessThan(strip.y - 40);
+      // a fifth below the middle of what the strip leaves free, from the first frame, the pad
+      // taking none of it
       expect(Math.abs(spot.y - cv.y - spot.free * 0.7)).toBeLessThan(1);
+      expect(spot.free).toBe(strip.y - cv.y);
       expect(spot.x).toBeGreaterThan(40);
       expect(spot.x).toBeLessThan(375 - 40);
       expect(lineBox.width).toBeGreaterThan(strip.width * 0.8);
@@ -2664,12 +2663,15 @@ test.describe("with a touch screen", () => {
       const up = await page.locator('#pad [data-pad="up"]').boundingBox();
       const jump = await page.locator("#padBall").boundingBox();
       expect(pad.y + pad.height - (jump.y + jump.height)).toBeCloseTo(up.y - pad.y, 0);
-      // put away, the pad gives the ball its room back
+      // put away and brought back, the pad leaves the ball where it is
       await page.locator("#padBtn").click();
       await expect(page.locator("#pad")).toBeHidden();
-      const roomier = await anchor(page);
-      expect(roomier.y).toBeGreaterThan(spot.y);
-      expect(roomier.y).toBeLessThan(strip.y - 40);
+      const without = await anchor(page);
+      expect([without.x, without.y, without.free]).toEqual([spot.x, spot.y, spot.free]);
+      await page.locator("#padBtn").click();
+      await expect(page.locator("#pad")).toBeVisible();
+      const again = await anchor(page);
+      expect([again.x, again.y, again.free]).toEqual([spot.x, spot.y, spot.free]);
       expect(errors).toEqual([]);
     });
   });

@@ -484,15 +484,12 @@ function frameBall(l) {
   state.cam.panY = -(free * (0.5 + BELOW) - h / 2) / (zoom * BLOCK);
 }
 
-/** How much of the map's height the strip and the pad take, as they stand, from its foot. */
+/** How much of the map's height the strip takes, as it stands, from its foot; the pad lies over
+    the view and takes none. */
 function chrome() {
-  const foot = $("cv").getBoundingClientRect().bottom;
-  let top = foot;
-  for (const id of ["play", "pad"]) {
-    const el = $(id);
-    if (!el.hidden) top = Math.min(top, el.getBoundingClientRect().top);
-  }
-  return foot - top;
+  const strip = $("play");
+  if (strip.hidden) return 0;
+  return $("cv").getBoundingClientRect().bottom - strip.getBoundingClientRect().top;
 }
 
 // --- the ending's view --------------------------------------------------------------------
@@ -500,8 +497,8 @@ function chrome() {
 /** Half the level's box's diagonal, in blocks: no cell of it lies further from its middle. */
 const radiusOf = (l) => Math.hypot(...[0, 1, 2].map((i) => l.max[i] - l.min[i] + 1)) / 2;
 
-/** Frame the ending's view: the level's middle in the middle of what the strip and the pad leave
-    free, zoomed so that the whole level fits with the eye at its mean distance. */
+/** Frame the ending's view: the level's middle in the middle of what the strip leaves free,
+    zoomed so that the whole level fits with the eye at its mean distance. */
 function frameEnding(l) {
   const e = live.ended;
   state.target = levelCentre(l);
@@ -1426,13 +1423,6 @@ function sync() {
   }
 }
 
-/** The pad has changed shape under the view: frame the ball over what it now leaves free. */
-function reframe() {
-  sync();
-  if (state.framing === fit) fit();
-  drawSoon();
-}
-
 function wirePad() {
   const pad = $("pad");
   const bitOf = (e) => PAD_BITS[e.target.closest("[data-pad]")?.dataset.pad] ?? 0;
@@ -1460,7 +1450,7 @@ function wirePad() {
     padShown = !padShown;
     if (live?.ended) status(verdict());
     else if (isFollowing(live?.status)) status(following());
-    reframe();
+    sync();
   };
   $("forgiveBtn").onclick = () => {
     forgiving = !forgiving;
