@@ -32,84 +32,101 @@ on("help", showHelp);
 $("aboutBtn").onclick = () => showAbout($("aboutBtn"));
 
 const HELP = [
-  ["drag", "turn the level"],
-  ["shift-drag, right-drag, arrows", "pan"],
-  ["wheel, pinch, `+` `−`", "zoom"],
-  ["`q` `e`", "snap the turn to 45°"],
-  [
-    "`,` `.`",
-    "lower and raise the slice; while editing with the grid on, the height a floor is laid at",
-  ],
-  ["`\\`", "put the whole level back"],
-  ["`h`", "dim what the slice hides rather than take it off"],
-  ["`[` `]`", "previous and next level"],
-  ["`f`", "fit the level to the window"],
-  ["`t` `o`", "textures, objects"],
-  ["`d`", "objects as models"],
-  ["`v`", "motion"],
-  ["`x`", "see what stands on the far faces through the blocks"],
-  ["`l`", "object labels"],
-  ["`n`", "name in each label the face its object stands on"],
-  [
-    "`b`",
-    "outlines: the blocks' edges, the broken outlines, the platforms' routes and the beams switched off",
-  ],
-  ["`g`", "ground grid; while editing, a floor to lay blocks on, at the slice where it is lowered"],
-  ["`p`", "drag pans instead of turning"],
-  ["`u`", "route planner: click the faces the ball should visit, in order"],
-  ["`Backspace`", "with the route planner on and nothing selected: take the last stop back"],
-  ["`y`", "roll the ball through the level"],
-  ["arrows", "while playing: roll and turn the ball"],
-  ["`Space`", "while playing: jump, or hop in place; after an ending, start again"],
-  ["`s`", "settings"],
-  ["`c`", "start camera"],
-  ["`/`", "search"],
-  ["`m`", "show and hide the sidebar"],
-  ["`w`", "edit the level, or make a copy of this one to edit"],
-  ["`a` `z` `i`", "while editing: place, erase, select"],
-  [
-    "shift-click",
-    "while editing: erase, from any tool; with the route planner on: add a jump to the route",
-  ],
-  ["right-click, long press", "while editing: select, from any tool"],
-  ["alt-click", "while editing: take what is under the pointer as the brush"],
-  ["tap, then tap the same face again", "while editing on a touch screen: place or erase"],
-  ["`j` `k`", "while editing: the next and the previous thing in the palette"],
-  ["`1` to `9`", "while editing: a thing of the palette's shown group"],
-  [
-    "`r` `Shift-r`",
-    "while editing: turn what is selected, or what the next placement faces, a quarter turn each way",
-  ],
-  ["`Ctrl-Z` or `Cmd-Z`", "while editing, or with the route planner on: undo"],
-  [
-    "`Ctrl-Shift-Z`, `Cmd-Shift-Z` or `Ctrl-Y`",
-    "while editing, or with the route planner on: redo",
-  ],
-  [
-    "`Delete` `Backspace`",
-    "while editing: erase what is selected, its object first, or every selected block",
-  ],
-  [
-    "drag from empty space, with Select",
-    "while editing: select the blocks in a rectangle; drag one of them to move them all, Shift-drag to lift",
-  ],
-  ["`Shift-arrows`", "while editing with blocks selected: move them a cell along the ground"],
-  [
-    "`Shift-PageUp` `Shift-PageDown`",
-    "while editing with blocks selected: move them a cell up and down",
-  ],
-  [
-    "`Esc`",
-    "close, or clear the selection; while editing, clear the selected blocks or cancel a waiting run first; while playing, leave",
-  ],
-  ["`?`", "this list"],
+  {
+    title: "The map",
+    rows: [
+      ["drag", "turn the level"],
+      ["shift-drag, right-drag, arrows", "pan"],
+      ["wheel, pinch, `+` `−`", "zoom"],
+      ["`q` `e`", "snap the turn to 45°"],
+      ["`,` `.`", "lower and raise the slice"],
+      ["`\\`", "put the whole level back"],
+      ["`[` `]`", "previous and next level"],
+      ["`f`", "fit the level to the window"],
+      ["`/`", "search"],
+      ["`m`", "show and hide the sidebar"],
+      ["`s`", "settings"],
+      ["`?`", "this list"],
+      ["`Esc`", "close, or clear the selection"],
+    ],
+  },
+  {
+    title: "Display",
+    rows: [
+      ["`t` `o`", "textures, objects"],
+      ["`d`", "objects as models"],
+      ["`v`", "motion"],
+      ["`x`", "see what stands on the far faces through the blocks"],
+      ["`l`", "object labels"],
+      ["`n`", "name in each label the face its object stands on"],
+      [
+        "`b`",
+        "outlines: the blocks' edges, the broken outlines, the platforms' routes and the beams switched off",
+      ],
+      ["`g`", "ground grid"],
+      ["`p`", "drag pans instead of turning"],
+      ["`h`", "dim what the slice hides rather than take it off"],
+      ["`c`", "start camera"],
+    ],
+  },
+  {
+    title: "Route planner",
+    rows: [
+      ["`u`", "plan a route: click the faces the ball should visit, in order"],
+      ["shift-click", "add a jump to the route"],
+      ["`Backspace`", "take the last stop back, while nothing is selected"],
+      ["`Ctrl-Z` or `Cmd-Z`", "undo"],
+      ["`Ctrl-Shift-Z`, `Cmd-Shift-Z` or `Ctrl-Y`", "redo"],
+    ],
+  },
+  {
+    title: "Play",
+    rows: [
+      ["`y`", "roll the ball through the level"],
+      ["arrows", "roll and turn the ball"],
+      ["`Space`", "jump, or hop in place; after an ending, start again"],
+      ["`Esc`", "leave"],
+    ],
+  },
+  {
+    title: "Editor",
+    rows: [
+      ["`w`", "edit the level, or make a copy of this one to edit"],
+      ["`a` `z` `i`", "place, erase, select"],
+      ["shift-click", "erase, from any tool"],
+      ["right-click, long press", "select, from any tool"],
+      ["alt-click", "take what is under the pointer as the brush"],
+      ["tap, then tap the same face again", "on a touch screen: place or erase"],
+      ["`j` `k`", "the next and the previous thing in the palette"],
+      ["`1` to `9`", "a thing of the palette's shown group"],
+      [
+        "`r` `Shift-r`",
+        "turn what is selected, or what the next placement faces, a quarter turn each way",
+      ],
+      ["`Ctrl-Z` or `Cmd-Z`", "undo"],
+      ["`Ctrl-Shift-Z`, `Cmd-Shift-Z` or `Ctrl-Y`", "redo"],
+      ["`Delete` `Backspace`", "erase what is selected, its object first, or every selected block"],
+      [
+        "drag from empty space, with Select",
+        "select the blocks in a rectangle; drag one of them to move them all, Shift-drag to lift",
+      ],
+      ["`Shift-arrows`", "with blocks selected: move them a cell along the ground"],
+      ["`Shift-PageUp` `Shift-PageDown`", "with blocks selected: move them a cell up and down"],
+      ["`,` `.`", "with the grid on, the height a floor is laid at"],
+      ["`g`", "a floor to lay blocks on, at the slice where it is lowered"],
+      ["`Esc`", "clear the selected blocks, or cancel a waiting run first"],
+    ],
+  },
 ];
 
 function showHelp() {
   const caps = (keys) => keys.replace(/`(.+?)`/g, "<kbd>$1</kbd>");
+  const list = (rows) => rows.map(([k, v]) => `<dt>${caps(k)}</dt><dd>${v}</dd>`).join("");
   openModal(
     "Keyboard",
-    `<dl>${HELP.map(([k, v]) => `<dt>${caps(k)}</dt><dd>${v}</dd>`).join("")}</dl>`,
+    HELP.map(
+      ({ title, rows }) => `<section><h4>${title}</h4><dl>${list(rows)}</dl></section>`,
+    ).join(""),
   );
 }
 

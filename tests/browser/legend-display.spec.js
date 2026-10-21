@@ -446,8 +446,8 @@ test("the keys list wears each key as a cap and leaves a gesture in words", asyn
   await expect(rows.first()).toHaveText("drag");
   await expect(rows.first().locator("kbd")).toHaveCount(0);
   await expect(rows.filter({ hasText: "wheel" }).locator("kbd")).toHaveText(["+", "−"]);
-  await expect(rows.filter({ hasText: "Esc" }).locator("kbd")).toHaveText(["Esc"]);
-  await expect(rows.last().locator("kbd")).toHaveText(["?"]);
+  await expect(rows.filter({ hasText: "Esc" }).first().locator("kbd")).toHaveText(["Esc"]);
+  await expect(rows.filter({ hasText: "?" }).locator("kbd")).toHaveText(["?"]);
   // a cap in the list is the hint beside a switch in the settings
   const look = (sel) =>
     page.evaluate((sel) => {
@@ -455,6 +455,45 @@ test("the keys list wears each key as a cap and leaves a gesture in words", asyn
       return [s.font, s.color, s.backgroundColor, s.borderBottomWidth, s.borderRadius].join();
     }, sel);
   expect(await look("#help dt kbd")).toBe(await look("#settings kbd"));
+});
+
+test("the keys list is sorted into sections by what the keys are for", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.keyboard.press("?");
+  await expect(page.locator("#help")).toBeVisible();
+  const sections = await page.evaluate(() =>
+    [...document.querySelectorAll("#help section")].map((s) => ({
+      title: s.querySelector("h4").textContent,
+      keys: [...s.querySelectorAll("dt")].map((d) => d.textContent),
+      said: [...s.querySelectorAll("dd")].map((d) => d.textContent),
+    })),
+  );
+  expect(sections.map((s) => s.title)).toEqual([
+    "The map",
+    "Display",
+    "Route planner",
+    "Play",
+    "Editor",
+  ]);
+  for (const s of sections) expect(s.keys.length, s.title).toBeGreaterThan(0);
+  // the section says the mode, so no row does
+  for (const s of sections)
+    for (const line of s.said)
+      expect(line).not.toMatch(/while editing|while playing|with the route planner on/);
+  // a key that means something in several modes has a row in each
+  expect(sections.filter((s) => s.keys.includes("Esc")).map((s) => s.title)).toEqual([
+    "The map",
+    "Play",
+    "Editor",
+  ]);
+  // a section's heading wears the look of the headings in Settings
+  const look = (sel) =>
+    page.evaluate((sel) => {
+      const s = getComputedStyle(document.querySelector(sel));
+      return [s.font, s.color, s.textTransform, s.letterSpacing].join();
+    }, sel);
+  expect(await look("#help h4")).toBe(await look("#settings h4"));
 });
 
 test("the keys list says what a key does and not what it waits on", async ({ page }) => {
@@ -888,18 +927,22 @@ test("Display puts the game's own look first, then what the map adds, then the c
   ]);
 });
 
-test("the keys and the settings open in a box of one width, which a phone narrows", async ({
+test("the keys open in a wider box than the settings and the about, which a phone narrows", async ({
   page,
 }) => {
   await page.goto("/#HIRO/0");
   await settle(page);
   await page.keyboard.press("?");
   const help = await page.locator("#help .box").boundingBox();
+  expect(help.width).toBe(640);
   await page.keyboard.press("Escape");
   await page.keyboard.press("s");
   const settings = await page.locator("#settings .box").boundingBox();
-  expect(settings.width).toBe(help.width);
-  expect(help.width).toBe(460);
+  expect(settings.width).toBe(460);
+  await page.keyboard.press("Escape");
+  await page.locator("#aboutBtn").click();
+  const about = await page.locator("#help .box").boundingBox();
+  expect(about.width).toBe(460);
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 375, height: 700 });
   await page.keyboard.press("?");
@@ -908,7 +951,7 @@ test("the keys and the settings open in a box of one width, which a phone narrow
   expect(phone.x + phone.width).toBeLessThanOrEqual(375);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
   // the keys take no more than half the row, the gestures wrapping before the words do
-  const dl = await page.locator("#help dl").boundingBox();
+  const dl = await page.locator("#help dl").first().boundingBox();
   const dt = await page.locator("#help dt").first().boundingBox();
   expect(dt.width).toBeLessThanOrEqual(dl.width / 2 + 1);
 });
