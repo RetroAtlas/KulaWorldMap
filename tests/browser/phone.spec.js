@@ -182,13 +182,13 @@ test("the menu button shows a cross while the drawer is open and bars while it i
   const cross = btn.locator(".cross");
   const says = async (label) => {
     await expect(btn).toHaveAttribute("aria-label", label);
-    await expect(btn).toHaveAttribute("title", `${label} (m)`);
+    await expect(btn).toHaveAttribute("title", `${label} (s)`);
   };
   await expect(btn).toHaveAttribute("aria-expanded", "true");
   await says("Hide the sidebar");
   await expect(cross).toBeVisible();
   await expect(bars).toBeHidden();
-  await page.keyboard.press("m");
+  await page.keyboard.press("s");
   await expect(btn).toHaveAttribute("aria-expanded", "false");
   await says("Show the sidebar");
   await expect(bars).toBeVisible();
@@ -334,10 +334,10 @@ test.describe("editing on a phone", () => {
   async function editFresh(page) {
     await page.goto(EDIT);
     await settle(page);
-    await page.keyboard.press("m");
+    await page.keyboard.press("s");
     await page.locator("#draftNew").click();
     await expect(page.locator("#tools")).toBeVisible();
-    await page.keyboard.press("m");
+    await page.keyboard.press("s");
     if ((await page.locator("#editBtn").getAttribute("aria-pressed")) !== "true")
       await page.keyboard.press("w");
     await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");

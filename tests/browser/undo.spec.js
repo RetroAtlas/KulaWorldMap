@@ -390,7 +390,7 @@ test("the editor's keys stand down while a dialog is open", async ({ page }) => 
   const errors = trackErrors(page);
   await fresh(page);
   await click(page, await plusX(page, START));
-  await page.keyboard.press("s");
+  await page.keyboard.press("Shift+s");
   await expect(page.locator("#settings")).toBeVisible();
   await page.keyboard.press("Control+z");
   expect(await cells(page)).toHaveLength(2);

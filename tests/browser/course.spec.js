@@ -142,7 +142,7 @@ async function draft(page) {
   await still(page);
 }
 
-test("u turns the planner on without keeping it, clicks add stops the strip counts, and the link carries them", async ({
+test("r turns the planner on without keeping it, clicks add stops the strip counts, and the link carries them", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -151,7 +151,7 @@ test("u turns the planner on without keeping it, clicks add stops the strip coun
   await still(page);
   await expect(strip(page)).toBeHidden();
   await expect(page.locator("#showCourse")).not.toBeChecked();
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await expect(page.locator("#showCourse")).toBeChecked();
   expect(await display(page)).toBeNull();
   await expect(strip(page)).toBeVisible();
@@ -211,7 +211,7 @@ test("u turns the planner on without keeping it, clicks add stops the strip coun
   await expect(page.locator("#courseClear")).toBeDisabled();
   await expect(status(page)).toHaveClass(/\bhint\b/);
   await expect.poll(() => page.url()).toMatch(/#HIRO\/0\/45,35\/fit\/33$/);
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await expect(strip(page)).toBeHidden();
   expect(await display(page)).toBeNull();
   expect(errors).toEqual([]);
@@ -238,7 +238,7 @@ test("the route is drawn in gold over the faces it crosses, still while Motion i
   const beside = [18, 12, 17];
   const bare = { crossed: await topPixels(page, crossed), beside: await topPixels(page, beside) };
   expect(bare.crossed.length).toBeGreaterThan(1000);
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await click(page, await top(page, [17, 15, 17]));
   await expect(line(page)).toHaveText("Route planner · 2 stops");
   const drawnOver = differ(bare.crossed, await topPixels(page, crossed));
@@ -258,7 +258,7 @@ test("a face no roll reaches is joined by a leap, drawn dashed, and a draft's ed
   const errors = trackErrors(page);
   await draft(page);
   await page.keyboard.press("v");
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await click(page, await top(page, [18, 17, 17]));
   await expect(line(page)).toHaveText("Route planner · 2 stops");
   const plain = await dashed(page);
@@ -302,7 +302,7 @@ test("a link's route with a jump counts it on the strip and draws it as a solid 
   await settle(page);
   await still(page);
   await page.keyboard.press("v");
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await expect(line(page)).toHaveText("Route planner · 2 stops · 1 jump");
   const c = await route(page);
   expect(c).toEqual({
@@ -335,7 +335,7 @@ test("a Shift-click with no route yet opens the route at the start and jumps fro
   await page.goto(LEVEL);
   await settle(page);
   await still(page);
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await shiftClick(page, await top(page, [17, 16, 17]));
   await expect(line(page)).toHaveText("Route planner · 2 stops · 1 jump");
   await expect(page.locator("#say")).toHaveText("Stop 2 added on the top of 17,16,17, by a jump.");
@@ -358,7 +358,7 @@ test("a Shift-click adds a jump from the last stop, over a gap or down onto a lo
   const errors = trackErrors(page);
   await draft(page);
   await page.keyboard.press("v");
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await expect(status(page)).toHaveText("Click a face to add a stop, Shift-click to add a jump.");
   const east = headingOn(0, [1, 0, 0]);
   const refused = "No jump from the last stop comes down on that face.";
@@ -424,7 +424,7 @@ test("Undo and Redo step the route's changes back and forward, from the strip an
   await page.goto(LEVEL);
   await settle(page);
   await still(page);
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   const undoBtn = page.locator("#courseUndo");
   const redoBtn = page.locator("#courseRedo");
   await expect(undoBtn).toBeDisabled();
@@ -510,7 +510,7 @@ test("Undo and Redo step the route's changes back and forward, from the strip an
 test("the planner's undo keys yield to the editor's while editing", async ({ page }) => {
   const errors = trackErrors(page);
   await draft(page);
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await click(page, await top(page, [18, 17, 17]));
   await expect(line(page)).toHaveText("Route planner · 2 stops");
   const c = await route(page);
@@ -539,7 +539,7 @@ test("a stop is refused on a face that looks into a block, and the planner yield
 }) => {
   const errors = trackErrors(page);
   await draft(page);
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   // a block the slice hides still stands over the start's top
   await laid(page, [17, 17, 16], { kind: 0 });
   await page.evaluate(async () => {
@@ -571,6 +571,34 @@ test("a stop is refused on a face that looks into a block, and the planner yield
   expect(errors).toEqual([]);
 });
 
+test("r turns the brush while editing and the planner's switch otherwise", async ({ page }) => {
+  const errors = trackErrors(page);
+  await draft(page);
+  await page.keyboard.press("w");
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("r");
+  await expect(page.locator("#say")).toHaveText("Brush facing 2 of 4");
+  await expect(page.locator("#showCourse")).not.toBeChecked();
+  await expect(strip(page)).toBeHidden();
+  await page.keyboard.press("w");
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+  await page.keyboard.press("r");
+  await expect(page.locator("#showCourse")).toBeChecked();
+  await expect(strip(page)).toBeVisible();
+  // with the planner on, editing still takes the key
+  await page.keyboard.press("w");
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("r");
+  await expect(page.locator("#say")).toHaveText("Brush facing 3 of 4");
+  await expect(page.locator("#showCourse")).toBeChecked();
+  await page.keyboard.press("w");
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+  await page.keyboard.press("r");
+  await expect(page.locator("#showCourse")).not.toBeChecked();
+  await expect(strip(page)).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
 test("the route is kept with its level in this browser, the switch off, and Back to an entry without it keeps it", async ({
   page,
   context,
@@ -583,7 +611,7 @@ test("the route is kept with its level in this browser, the switch off, and Back
   await expect(page.locator("#chip")).toContainText("LEVEL 2");
   await page.keyboard.press("[");
   await expect(page.locator("#chip")).toContainText("LEVEL 1");
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await click(page, await top(page, [17, 15, 17]));
   await expect(line(page)).toHaveText("Route planner · 2 stops");
   const c = await route(page);
@@ -637,7 +665,7 @@ test("a link's segment replaces the kept route, and the store follows a draft mo
   await page.goto(LEVEL);
   await settle(page);
   await still(page);
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await click(page, await top(page, [17, 15, 17]));
   await expect(line(page)).toHaveText("Route planner · 2 stops");
   const first = await route(page);
@@ -711,7 +739,7 @@ test("an entry another tab left malformed is dropped from the store, and the res
     ),
   );
   await still(page);
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await click(page, await top(page, [17, 15, 17]));
   await expect(line(page)).toHaveText("Route planner · 2 stops");
   await expect
@@ -730,7 +758,7 @@ test("the Copy link button writes the link with the route to the clipboard", asy
   await page.goto(LEVEL);
   await settle(page);
   await still(page);
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await click(page, await top(page, [17, 15, 17]));
   await expect(line(page)).toHaveText("Route planner · 2 stops");
   await page.locator("#courseCopy").click();
@@ -752,7 +780,7 @@ test.describe("with a touch screen", () => {
     await page.goto(LEVEL);
     await settle(page);
     await still(page);
-    await page.keyboard.press("u");
+    await page.keyboard.press("r");
     const face = await top(page, [17, 15, 17]);
     await page.touchscreen.tap(face.x, face.y);
     await expect(line(page)).toHaveText("Route planner · 2 stops");
@@ -776,7 +804,7 @@ test.describe("on a phone", () => {
     await page.goto(LEVEL);
     await settle(page);
     await still(page);
-    await page.keyboard.press("u");
+    await page.keyboard.press("r");
     await expect(strip(page)).toBeVisible();
     await expect(status(page)).toHaveText(
       "Tap a face to add a stop; the shortest roll joins it to the last.",

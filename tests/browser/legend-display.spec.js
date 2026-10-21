@@ -102,7 +102,7 @@ test("a switch in the settings puts the compass away, and is remembered", async 
   const compass = page.locator("#compass");
   const box = page.locator("#showCompass");
   await expect(compass).toBeVisible();
-  await page.keyboard.press("s");
+  await page.keyboard.press("Shift+s");
   await expect(page.locator("#settings")).toBeVisible();
   await expect(box).toBeChecked();
   await box.click();
@@ -123,7 +123,7 @@ test("a switch in the settings puts the compass away, and is remembered", async 
   await page.locator("#resetDisplay").click();
   await expect(compass).toBeHidden();
   expect(await kept()).toEqual({ compass: false });
-  await page.keyboard.press("s");
+  await page.keyboard.press("Shift+s");
   await expect(box).not.toBeChecked();
   await box.click();
   await expect(compass).toBeVisible();
@@ -746,7 +746,7 @@ test("a setting's key works inside the settings, once a press", async ({ page })
   await settle(page);
   const panel = page.locator("#settings");
   const box = page.locator("#showCamera");
-  await page.keyboard.press("s");
+  await page.keyboard.press("Shift+s");
   await expect(panel).toBeVisible();
   await expect(box).not.toBeChecked();
   await page.keyboard.press("c");
@@ -902,12 +902,42 @@ test("every switch's key is the one its row shows and the key list names", async
     await page.keyboard.press(key);
     expect(await box.isChecked(), `${key} sets ${id} back`).toBe(was);
   }
-  await page.keyboard.press("s");
+  await page.keyboard.press("Shift+s");
   await expect(page.locator("#settings")).toBeVisible();
   await page.keyboard.press("Escape");
   await page.keyboard.press("?");
   const listed = await page.locator("#help dt kbd").allTextContents();
-  for (const key of [...keys, "s"]) expect(listed).toContain(key);
+  for (const key of [...keys, "Shift-s"]) expect(listed).toContain(key);
+});
+
+test("each of the six controls answers to the letter that names it", async ({ page }) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.keyboard.press("m");
+  await expect(page.locator("#showModels")).not.toBeChecked();
+  await page.keyboard.press("d");
+  await expect(page.locator("#panMode")).toBeChecked();
+  await page.keyboard.press("r");
+  await expect(page.locator("#showCourse")).toBeChecked();
+  await expect(page.locator("#course")).toBeVisible();
+  await page.keyboard.press("r");
+  await expect(page.locator("#showCourse")).not.toBeChecked();
+  // a plain s is the sidebar's, and Settings waits on the shifted key
+  const menu = page.locator("#menuBtn");
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("s");
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator("#settings")).toBeHidden();
+  await page.keyboard.press("s");
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("Shift+s");
+  await expect(page.locator("#settings")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#settings")).toBeHidden();
+  await page.keyboard.press("p");
+  await expect(page.locator("#play")).toBeVisible();
+  await page.keyboard.press("p");
+  await expect(page.locator("#play")).toBeHidden();
 });
 
 test("Display puts the game's own look first, then what the map adds, then the controls", async ({
@@ -936,7 +966,7 @@ test("the keys open in a wider box than the settings and the about, which a phon
   const help = await page.locator("#help .box").boundingBox();
   expect(help.width).toBe(640);
   await page.keyboard.press("Escape");
-  await page.keyboard.press("s");
+  await page.keyboard.press("Shift+s");
   const settings = await page.locator("#settings .box").boundingBox();
   expect(settings.width).toBe(460);
   await page.keyboard.press("Escape");

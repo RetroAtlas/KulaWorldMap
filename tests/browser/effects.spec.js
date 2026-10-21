@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { trackErrors, settle, frame, still, textured, written, landed, drawn } from "./helpers.js";
 
-test("objects draw as themselves, keep turning, and go back to markers on d", async ({ page }) => {
+test("objects draw as themselves, keep turning, and go back to markers on m", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#HIRO/0");
   await settle(page);
@@ -25,7 +25,7 @@ test("objects draw as themselves, keep turning, and go back to markers on d", as
   expect(before.of).toBe(6);
   // the coins turn, so the frame is drawn again without anyone touching the page
   expect(await drawn(page)).toBeGreaterThan(8);
-  await page.keyboard.press("d");
+  await page.keyboard.press("m");
   const after = await probe();
   expect(after.models).toBe(false);
   await expect(page.locator("#showModels")).not.toBeChecked();
@@ -48,7 +48,7 @@ test("a label leaves out the face its thing stands on, and n names it", async ({
   expect(named).toHaveLength(6);
   for (const t of named) expect(plain).toContain(t.slice(0, -" · top".length));
   // a marker's label says the same, and so does the tooltip, whatever the switch
-  await page.keyboard.press("d");
+  await page.keyboard.press("m");
   expect((await written(page)).filter((t) => t.endsWith(" · top")).sort()).toEqual(named.sort());
   await page.keyboard.press("n");
   await page.evaluate(async () => {
@@ -98,7 +98,7 @@ test("the settings have no model, so among the models they show only while selec
   expect(await shown()).toBe(1);
   await page.keyboard.press("Escape");
   expect(await shown()).toBe(0);
-  await page.keyboard.press("d");
+  await page.keyboard.press("m");
   expect(await shown()).toBe(1);
   expect(errors).toEqual([]);
 });
@@ -1147,7 +1147,7 @@ test("a travelling thing, and every block of a platform, picks the cell its reco
   // LEVEL 22's one fast star on a top, as a marker, once it has swayed off its own block
   await page.goto("/#HILLS/6/45,35/1.5");
   await settle(page);
-  await page.keyboard.press("d");
+  await page.keyboard.press("m");
   await page.keyboard.press("l");
   await page.keyboard.press("n");
   const star = () =>

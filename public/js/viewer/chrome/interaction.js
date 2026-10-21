@@ -417,7 +417,7 @@ addEventListener("keydown", (e) => {
     case "o":
       toggle("showObjects");
       break;
-    case "d":
+    case "m":
       toggle("showModels");
       break;
     case "x":
@@ -429,14 +429,15 @@ addEventListener("keydown", (e) => {
     case "h":
       toggle("showHidden");
       break;
-    case "p":
+    case "d":
       toggle("panMode");
       break;
-    case "u":
+    case "r":
       toggle("showCourse");
       break;
     case "s":
-      openSettings();
+    case "S":
+      e.shiftKey ? openSettings() : $("menuBtn").click();
       break;
     case "l":
       toggle("showLabels");
@@ -449,9 +450,6 @@ addEventListener("keydown", (e) => {
       break;
     case "v":
       toggle("showMotion");
-      break;
-    case "m":
-      $("menuBtn").click();
       break;
     case "?":
       emit("help");

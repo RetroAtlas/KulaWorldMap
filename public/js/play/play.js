@@ -1464,7 +1464,7 @@ const modified = (e) => e.metaKey || e.ctrlKey || e.altKey;
 
 function keydown(e) {
   if (!state.lvl || typing(e) || dialogOpen()) return;
-  if (e.key === "y" && !modified(e) && !e.shiftKey) {
+  if (e.key === "p" && !modified(e) && !e.shiftKey) {
     e.preventDefault();
     e.stopPropagation();
     if (!e.repeat) togglePlay();

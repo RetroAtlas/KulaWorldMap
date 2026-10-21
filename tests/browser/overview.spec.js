@@ -350,10 +350,10 @@ test.describe("on a phone", () => {
     const errors = trackErrors(page);
     await page.goto(EDIT);
     await settle(page);
-    await page.keyboard.press("m");
+    await page.keyboard.press("s");
     await page.locator("#draftNew").click();
     await expect(page.locator("#draftRows button")).toHaveCount(1);
-    await page.keyboard.press("m");
+    await page.keyboard.press("s");
     const note = page.locator("#chipNote");
     const more = note.locator(".more");
     const summary = more.locator("summary");
@@ -404,10 +404,10 @@ test.describe("on a phone", () => {
     // the fold stays as it was last left from draft to draft
     await summary.click();
     expect(await isOpen()).toBe(true);
-    await page.keyboard.press("m");
+    await page.keyboard.press("s");
     await page.locator("#draftNew").click();
     await expect(page.locator("#draftRows button")).toHaveCount(2);
-    await page.keyboard.press("m");
+    await page.keyboard.press("s");
     await expect(summary).toHaveText("no findings; the counts are below");
     expect(await isOpen()).toBe(true);
     await expect(note.locator(".counts")).toBeVisible();

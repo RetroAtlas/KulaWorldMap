@@ -49,7 +49,7 @@ export function setSidebar(open) {
   const label = `${open ? "Hide" : "Show"} the sidebar`;
   btn.setAttribute("aria-expanded", String(open));
   btn.setAttribute("aria-label", label);
-  btn.title = `${label} (m)`;
+  btn.title = `${label} (s)`;
 }
 
 export function buildWorlds() {

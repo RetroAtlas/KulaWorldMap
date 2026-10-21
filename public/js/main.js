@@ -44,8 +44,8 @@ const HELP = [
       ["`[` `]`", "previous and next level"],
       ["`f`", "fit the level to the window"],
       ["`/`", "search"],
-      ["`m`", "show and hide the sidebar"],
-      ["`s`", "settings"],
+      ["`s`", "show and hide the sidebar"],
+      ["`Shift-s`", "settings"],
       ["`?`", "this list"],
       ["`Esc`", "close, or clear the selection"],
     ],
@@ -54,7 +54,7 @@ const HELP = [
     title: "Display",
     rows: [
       ["`t` `o`", "textures, objects"],
-      ["`d`", "objects as models"],
+      ["`m`", "objects as models"],
       ["`v`", "motion"],
       ["`x`", "see what stands on the far faces through the blocks"],
       ["`l`", "object labels"],
@@ -64,7 +64,7 @@ const HELP = [
         "outlines: the blocks' edges, the broken outlines, the platforms' routes and the beams switched off",
       ],
       ["`g`", "ground grid"],
-      ["`p`", "drag pans instead of turning"],
+      ["`d`", "drag pans instead of turning"],
       ["`h`", "dim what the slice hides rather than take it off"],
       ["`c`", "start camera"],
     ],
@@ -72,7 +72,7 @@ const HELP = [
   {
     title: "Route planner",
     rows: [
-      ["`u`", "plan a route: click the faces the ball should visit, in order"],
+      ["`r`", "plan a route: click the faces the ball should visit, in order"],
       ["shift-click", "add a jump to the route"],
       ["`Backspace`", "take the last stop back, while nothing is selected"],
       ["`Ctrl-Z` or `Cmd-Z`", "undo"],
@@ -82,7 +82,7 @@ const HELP = [
   {
     title: "Play",
     rows: [
-      ["`y`", "roll the ball through the level"],
+      ["`p`", "roll the ball through the level"],
       ["arrows", "roll and turn the ball"],
       ["`Space`", "jump, or hop in place; after an ending, start again"],
       ["`Esc`", "leave"],
@@ -299,7 +299,7 @@ function wirePlay() {
   document.addEventListener(
     "keydown",
     (e) => {
-      if (play || e.key !== "y" || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      if (play || e.key !== "p" || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
       if (!state.lvl || typing(e) || document.querySelector(".modal:not([hidden])")) return;
       e.preventDefault();
       e.stopPropagation();

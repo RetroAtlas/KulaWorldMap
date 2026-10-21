@@ -534,9 +534,9 @@ async function opened(page, { motion = true, hash = LEVEL } = {}) {
   // the frame the map asked for while Motion ran still lands after it is switched off
   if (!motion) await expect.poll(() => drawn(page, 2, 0)).toBe(0);
 }
-/** Press y, and wait for play to load and the strip to show. */
+/** Press p, and wait for play to load and the strip to show. */
 async function startPlay(page) {
-  await page.keyboard.press("y");
+  await page.keyboard.press("p");
   await expect(page.locator("#play")).toBeVisible();
 }
 const sliced = (page, z) =>
@@ -546,7 +546,7 @@ const sliced = (page, z) =>
     setSlice(SIDE - 1 - z);
   }, z);
 
-test("y stands the ball on the start and takes its view, the arrows roll it, and Esc puts the view, the slice and the start's ball back", async ({
+test("p stands the ball on the start and takes its view, the arrows roll it, and Esc puts the view, the slice and the start's ball back", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -677,7 +677,7 @@ test("the ball turns in place, Down moves nothing and Settings has no switch for
   await expect(line(page)).toContainText("facing +x");
   expect((await probe(page)).station.moving).toBe(false);
   expect((await probe(page)).fitted).toBe(true);
-  await page.keyboard.press("s");
+  await page.keyboard.press("Shift+s");
   await expect(page.locator("#settings")).toBeVisible();
   await expect(page.locator("#turnAbout")).toHaveCount(0);
   await expect(page.locator("#settings")).not.toContainText("Down");
@@ -1243,7 +1243,7 @@ test("Keep as the route hands the way the ball has come to the planner and goes 
   await clear.click();
   await clear.click();
   await expect(count).toHaveText("Route planner · 0 stops");
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await expect(page.locator("#showCourse")).toBeChecked();
   await page.keyboard.press("ArrowRight");
   await expect.poll(async () => (await probe(page)).station.heading).toBe("-y");
@@ -1259,7 +1259,7 @@ test("Keep as the route hands the way the ball has come to the planner and goes 
 
 /** Open Settings, click the switch `id` and close it, saying what its row says of the default. */
 const toggled = async (page, id, def) => {
-  await page.keyboard.press("s");
+  await page.keyboard.press("Shift+s");
   await expect(page.locator("#settings")).toBeVisible();
   await page.locator(`#${id}`).click();
   await expect(page.locator(`#settings label:has(#${id}) .def`)).toHaveText(def);
@@ -1334,7 +1334,7 @@ test("Follow the route rolls the ball along the planned route to its last stop a
   const errors = trackErrors(page);
   await opened(page, { motion: false });
   // the planner's two clicks: three rolls along -y to a stop, a turn and three along +x
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await stopOn(page, [17, 15, 17]);
   await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops");
   await stopOn(page, [20, 15, 17]);
@@ -1388,7 +1388,7 @@ test("the Follow line names the pad only while it shows, following the Pad butto
   const errors = trackErrors(page);
   await opened(page, { motion: false });
   // a route round the level, long enough to be followed through the checks
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await stopOn(page, [17, 15, 17]);
   await stopOn(page, [20, 15, 17]);
   await stopOn(page, [20, 18, 17]);
@@ -1434,7 +1434,7 @@ test("following a route to its leap stops the ball there and says so, and with t
   await still(page);
   await page.keyboard.press("v");
   await expect(page.locator("#showMotion")).not.toBeChecked();
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await stopOn(page, [18, 17, 17]);
   await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops");
   await stopOn(page, [20, 17, 17]);
@@ -1560,7 +1560,7 @@ test("the play strip ends short of the corner's widgets once Follow the route sh
 }) => {
   const errors = trackErrors(page);
   await opened(page, { motion: false });
-  await page.keyboard.press("u");
+  await page.keyboard.press("r");
   await stopOn(page, [17, 15, 17]);
   await stopOn(page, [20, 15, 17]);
   await expect(page.locator("#courseLine")).toHaveText("Route planner · 3 stops");
@@ -1593,7 +1593,7 @@ test("a right click selects while playing, Esc clears the selection before it le
   await page.mouse.click(side.x, side.y, { button: "right" });
   await expect(page.locator("#detail")).toContainText("cell 17,13,17");
   await expect(page.locator("#detail .put")).toHaveCount(0);
-  await page.keyboard.press("s");
+  await page.keyboard.press("Shift+s");
   await expect(page.locator("#settings")).toBeVisible();
   await page.locator("#playFrom").click();
   await expect(page.locator("#settings label:has(#playFrom) .def")).toHaveText("off by default");
@@ -1671,7 +1671,7 @@ test("playing from another block leaves the level one ball, a start on a clock s
   // with markers in place of models a ball is its type written once, so the balls can be counted
   for (const [key, id] of [
     ["t", "#showSkins"],
-    ["d", "#showModels"],
+    ["m", "#showModels"],
     ["v", "#showMotion"],
   ]) {
     await page.keyboard.press(key);
@@ -2105,7 +2105,7 @@ test("by default a way out keeps no total and starts the level again: with Play 
   await toggled(page, "playOn", "off by default");
   expect((await kept()).playon).toBe(true);
   await expect(total).toBeHidden();
-  await page.keyboard.press("y");
+  await page.keyboard.press("p");
   await expect(page.locator("#play")).toBeHidden();
   await startPlay(page);
   await expect(total).toHaveText("Total 0");

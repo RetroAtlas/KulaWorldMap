@@ -272,7 +272,7 @@ test("Settings and the About name their buttons, and the keys name none", async 
     await expect(page.locator(dialog)).toBeHidden();
     return focused();
   };
-  expect(await keyed("s", "#settings")).toBe("menuBtn");
+  expect(await keyed("Shift+s", "#settings")).toBe("menuBtn");
   expect(await keyed("?", "#help")).toBe("menuBtn");
   expect(errors).toEqual([]);
 });
