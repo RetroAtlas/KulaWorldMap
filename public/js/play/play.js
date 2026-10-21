@@ -1219,7 +1219,8 @@ function goOn(next) {
 
 const sameStation = (a, b) => a.face === b.face && a.cell.every((v, i) => v === b.cell[i]);
 
-/** One more stop on the way the ball has come, joined by a roll, or by a leap where it was sent. */
+/** One more stop on the way the ball has come, joined by the roll or the jump that reaches it, or by
+    a leap where it was sent or where no step does. */
 function walked(station, leap = false) {
   const w = live.walk;
   const last = w.stations.at(-1);

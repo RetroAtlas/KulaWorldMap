@@ -1420,6 +1420,90 @@ test("following a route to its leap stops the ball there and says so, and with t
   expect(errors).toEqual([]);
 });
 
+test("Keep as the route keeps a jump the ball made as a jump of the route, and Follow the route jumps where the route jumps, the ball coming to rest where it lands", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // a block beside the start's and another across a gap no roll crosses, which a jump clears,
+  // and a key out of reach, which keeps the level an arcade one that rolling onto every block
+  // does not end
+  await laid(page, [18, 17, 17], { kind: 0 });
+  await laid(page, [20, 17, 17], { kind: 0 });
+  await expect(page.locator("#chipLine")).toContainText("3 blocks");
+  await faced(page, [17, 17, 17], 4, { type: 31 });
+  await expect(page.locator("#chipLine")).toContainText("2 objects");
+  await page.keyboard.press("w");
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+  await still(page);
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await listening(page);
+  await page.keyboard.press("ArrowRight");
+  await expect(line(page)).toContainText("facing +x");
+  await page.keyboard.press("ArrowUp");
+  await expect.poll(async () => (await probe(page)).station.block).toEqual([18, 17, 17]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  // Up held and Space: the forward jump, across the gap onto the far block
+  await page.keyboard.down("ArrowUp");
+  await page.keyboard.press(" ");
+  await page.keyboard.up("ArrowUp");
+  await expect.poll(async () => (await probe(page)).station.block).toEqual([20, 17, 17]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  const keep = page.locator("#keepBtn");
+  await expect(keep).toBeEnabled();
+  await keep.click();
+  await expect(say(page)).toHaveText("The way the ball has come is now the route.");
+  const route = await page.evaluate(async () => {
+    const { current } = await import(new URL("js/viewer/chrome/course.js", location.href).href);
+    const c = current();
+    return { stations: c.stations, steps: c.steps, marks: [...c.marks].sort() };
+  });
+  expect(route.stations).toEqual([
+    { cell: [17, 17, 17], face: 0 },
+    { cell: [18, 17, 17], face: 0 },
+    { cell: [20, 17, 17], face: 0 },
+  ]);
+  // the roll along +x, then the jump along +x, coming down level with its take-off
+  expect(route.steps).toEqual([
+    { k: 3, o: 0 },
+    { k: 3, o: 3, d: 0 },
+  ]);
+  expect(route.marks).toEqual([0, 2]);
+  await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops · 1 jump");
+  await expect(keep).toBeDisabled();
+  // from the last stop the ball is put on the first and follows the route to its end: the roll,
+  // the jump and the rest on the far block
+  const follow = page.locator("#followBtn");
+  await expect(follow).toBeVisible();
+  await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  const put = `The ball is put on the top of 17,17,17. ${FOLLOWING}`;
+  await expect.poll(() => said(page)).toContain(put);
+  await expect(status(page)).toHaveText(FOLLOWED, { timeout: 10_000 });
+  await expect(say(page)).toHaveText(FOLLOWED);
+  await expect(follow).toHaveAttribute("aria-pressed", "false");
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  expect((await probe(page)).station).toEqual({
+    block: [20, 17, 17],
+    face: 0,
+    heading: "+x",
+    moving: false,
+  });
+  // the stops the strip said since the ball was put: the block beside, then the landing, and
+  // nothing between, the block between the two being missing
+  const told = await said(page);
+  const stops = told.slice(told.indexOf(put) + 1).filter((t) => /^\d+,\d+,\d+, top$/.test(t));
+  expect(stops).toEqual(["18,17,17, top", "20,17,17, top"]);
+  await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops · 1 jump");
+  expect(errors).toEqual([]);
+});
+
 test("the play strip ends short of the corner's widgets once Follow the route shows, its buttons wrapping rather than its line's words, so the corner's ball button can still be pressed", async ({
   page,
 }) => {

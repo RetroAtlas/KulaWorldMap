@@ -13,8 +13,10 @@ import {
   tangent,
 } from "../../public/js/viewer/walk.js";
 import {
+  FALL,
   PAD,
   REST,
+  aloft,
   ballAt,
   blockUnder,
   faceUnder,
@@ -66,11 +68,10 @@ const top = (x, y, z) => ({ cell: [x, y, z], face: TOP });
 const toward = (face, d) => [0, 1, 2, 3].find((k) => tangent(face, k).join() === d.join());
 const same = (a, b) => a.face === b.face && a.cell.every((v, i) => v === b.cell[i]);
 const stationOf = (b) => ({ cell: blockUnder(b), face: faceUnder(b) });
-/** The frames a roll from rest takes to carry the centre `units` on, by the table: the speed
-    grows by the gain to the top each frame. */
-function framesTo(units) {
+/** The frames a roll from `speed`, rest unless given, takes to carry the centre `units` on, by
+    the table: the speed grows by the gain to the top each frame. */
+function framesTo(units, speed = 0) {
   let gone = 0;
-  let speed = 0;
   let frames = 0;
   while (gone < units) {
     speed = Math.min(speed + table.rolling.gain, table.rolling.top);
@@ -95,14 +96,15 @@ const X = [1, 0, 0];
 const SOUTH = toward(TOP, MINUS_Y);
 
 /** Drive `run`'s ball by `driver` until it is done or `most` frames have run: the pad words
-    given, the stations the ball rested at in order, each frame's events and why the driver is
-    done. */
+    given, the stations the ball rested at in order, each frame's events and the state it left
+    the ball in, and why the driver is done. */
 function driven(driver, run, most = 400) {
   const b = run.ball;
   const probe = probeOf(run);
   const pads = [];
   const rests = [];
   const frames = [];
+  const states = [];
   const rested = () => {
     const last = rests.at(-1);
     if (b.state === REST && !(last && same(last, stationOf(b)))) rests.push(stationOf(b));
@@ -113,11 +115,17 @@ function driven(driver, run, most = 400) {
     b.pad = driver.pad(run);
     pads.push(b.pad);
     frames.push(step(b, probe));
+    states.push(b.state);
     rested();
     why = driver.done();
   }
-  return { pads, rests, frames, why };
+  return { pads, rests, frames, states, why };
 }
+/** The frame whose events hold a landing, the ball's first since frame `after`. */
+const landing = (frames, after = -1) =>
+  frames.findIndex((out, f) => f > after && out.some((e) => e.at === "landed"));
+/** Whether a ball left in state `s` is in the air. */
+const flying = (s) => aloft({ state: s });
 /** The pad words as runs, each a word and the frames it held for. */
 const runs = (pads) =>
   pads.reduce((out, w) => {
@@ -334,6 +342,113 @@ test("a course driver may start from a later station, takes the one after as rea
   run.ball = ballAt(RULES, C.cell, TOP, MINUS_Y);
   assert.equal(wrong.pad(run), 0);
   assert.equal(wrong.done(), "strayed");
+});
+
+test("a course driver jumps the ball over a gap, or down onto a lower block: Up and Cross together for one frame from rest, nothing while the ball is in the air, and the landing read as the next station, which here is the end, the ball at rest at its middle", () => {
+  for (const d of [0, 1, 3]) {
+    const landed = top(D.cell[0], D.cell[1], D.cell[2] + d);
+    const run = runOver(A.cell, landed.cell);
+    const course = {
+      stations: [A, landed],
+      steps: [{ k: SOUTH, o: JUMP, d }],
+      marks: new Set([0, 1]),
+    };
+    assert.equal(jumpAt(run.planned, A, SOUTH), d);
+    run.ball = ballAt(RULES, A.cell, TOP, MINUS_Y);
+    const driver = courseDriver(course);
+    const { pads, rests, frames, states, why } = driven(driver, run);
+    assert.equal(why, "end", `${d} down`);
+    assert.deepEqual(rests, [A, landed], `${d} down`);
+    assert.deepEqual(stationOf(run.ball), landed);
+    assert.deepEqual(run.ball.h, MINUS_Y);
+    assert.equal(run.ball.state, REST);
+    assert.equal(run.ball.progress, table.rolling.middle, `${d} down: at the middle`);
+    const down = landing(frames);
+    assert.ok(down > 1, `${down}`);
+    assert.ok(states.slice(0, down).every(flying), `${d} down: in the air until the landing`);
+    assert.equal(states.slice(0, down).includes(FALL), d > 0, `${d} down: a fall past the arc`);
+    assert.deepEqual(runs(pads), [
+      [PAD.up | PAD.cross, 1],
+      [0, down + 1],
+    ]);
+    assert.equal(driver.pad(run), 0);
+    assert.equal(driver.done(), "end");
+  }
+});
+
+test("a course driver lets go of Up as the ball is read on the station it jumps from, so the ball rests at the middle before the jump, and rolls on from the landing as from any station", () => {
+  const F = top(17, 14, 17);
+  const run = runOver(A.cell, B.cell, E.cell, F.cell);
+  const course = {
+    stations: [A, B, E, F],
+    steps: [
+      { k: SOUTH, o: 0 },
+      { k: SOUTH, o: JUMP, d: 0 },
+      { k: SOUTH, o: 0 },
+    ],
+    marks: new Set([0, 3]),
+  };
+  run.ball = ballAt(RULES, A.cell, TOP, MINUS_Y);
+  const { pads, rests, frames, states, why } = driven(courseDriver(course), run);
+  assert.equal(why, "end");
+  assert.deepEqual(rests, [A, B, E, F]);
+  assert.deepEqual(stationOf(run.ball), F);
+  assert.ok(!refused(frames));
+  const off = pads.indexOf(PAD.up | PAD.cross);
+  assert.equal(off, blockFrames, "the jump asked on the frame the ball has settled at B");
+  const down = landing(frames, off);
+  assert.ok(states.slice(off, down).every(flying));
+  // Up until the ball is read on B, let go for the roll to B's middle, the jump, nothing in the
+  // air, Up again from the landing until the ball is read on F, and let go for the roll to its
+  // middle, the end; the landing leaves the ball the jump's speed for the roll asked next, so
+  // that roll crosses sooner than one from rest
+  const quick = framesTo(BLOCK / 2, table.jump.speed);
+  assert.deepEqual(runs(pads), [
+    [PAD.up, crossing],
+    [0, blockFrames - crossing],
+    [PAD.up | PAD.cross, 1],
+    [0, down - off],
+    [PAD.up, quick],
+    [0, framesTo(BLOCK, table.jump.speed) - quick + 1],
+  ]);
+});
+
+test("a course driver turns before a jump as before a roll, and jumps on the frame the quarter has run out and the ball has settled", () => {
+  const run = runOver(A.cell, D.cell);
+  const course = { stations: [A, D], steps: [{ k: SOUTH, o: JUMP, d: 0 }], marks: new Set([0, 1]) };
+  run.ball = ballAt(RULES, A.cell, TOP, X);
+  const { pads, rests, frames, why } = driven(courseDriver(course), run);
+  assert.equal(why, "end");
+  assert.deepEqual(rests, [A, D]);
+  assert.deepEqual(run.ball.h, MINUS_Y);
+  const down = landing(frames);
+  assert.deepEqual(runs(pads), [
+    [PAD.left, 1],
+    [0, QUARTER - 1],
+    [PAD.up | PAD.cross, 1],
+    [0, down - QUARTER + 1],
+  ]);
+});
+
+test("a jump the lattice no longer allows is a leap, as the planner draws it: the landing gone, with a block below it or none, or a block come into the arc, the ball still at rest on its station and asked nothing", () => {
+  const course = { stations: [A, D], steps: [{ k: SOUTH, o: JUMP, d: 0 }], marks: new Set([0, 1]) };
+  for (const [label, cells] of [
+    ["the landing a block lower", [A.cell, [17, 16, 18]]],
+    ["nothing to come down on", [A.cell]],
+    ["a block come into the arc", [A.cell, D.cell, [17, 17, 16]]],
+  ]) {
+    const run = runOver(...cells);
+    assert.notEqual(jumpAt(run.planned, A, SOUTH), 0, label);
+    run.ball = ballAt(RULES, A.cell, TOP, MINUS_Y);
+    const driver = courseDriver(course);
+    const out = driven(driver, run);
+    assert.equal(out.why, "leap", label);
+    assert.deepEqual(out.pads, [0], label);
+    assert.deepEqual(out.rests, [A], label);
+    assert.deepEqual(stationOf(run.ball), A, label);
+    assert.equal(run.ball.state, REST, label);
+    assert.equal(driver.pad(run), 0, label);
+  }
 });
 
 test("the planner's jump is the stepper's: over a plate, with the landing gone and a block one, two or three below or none, and with a block in each of the five cells the arc flies through, jumpAt lands the ball where Up and Cross from rest bring it to rest", () => {

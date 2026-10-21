@@ -2,8 +2,8 @@
 // recording replayed and the recorder that makes one. A driver is { pad(live), done(live) }, asked
 // once a game frame; done answers false while the driver drives, and a driver that can end in
 // more than one way answers why it ended.
-import { PAD, REST, ROLLING, WRAPPING, blockUnder, faceUnder } from "./ball.js";
-import { headingOn, outcomeAt } from "../viewer/walk.js";
+import { PAD, REST, ROLLING, WRAPPING, aloft, blockUnder, faceUnder } from "./ball.js";
+import { JUMP, headingOn, jumpAt, outcomeAt } from "../viewer/walk.js";
 import { probeOf } from "./world.js";
 
 const VERSION = 1;
@@ -59,14 +59,18 @@ export function keyPad() {
   };
 }
 
-/** A driver that rolls the ball along `course` from its station `i`: at rest on a station it
+/** A driver that moves the ball along `course` from its station `i`: at rest on a station it
     asks the turn the next step wants, by the shorter way, a step behind the ball as Left and,
     once that quarter has run and the ball has settled, Left again, two quarter turns pressed one
     after the other as a player turns about, or the roll, which it holds while the ball rolls and
     the step on from each station it comes to is a roll the way it heads, so the ball comes to
-    rest only where the course turns, leaps or ends; done at the course's end, at a leap, which
-    no roll follows, a roll the lattice as it stands no longer allows counting as one, or where
-    the ball stands on no station of the course's, strayed. */
+    rest only where the course turns, jumps, leaps or ends, or the jump, Up and Cross together
+    for the one frame that takes the ball off its station from rest, after which it gives nothing
+    and judges nothing while the ball is in the air, the block under a flying ball being no
+    station of the course's, and reads the landing as it reads any station; done at the course's
+    end, at a leap, which no roll or jump follows, a roll or a jump the lattice as it stands no
+    longer allows counting as one, or where the ball stands on no station of the course's,
+    strayed. */
 export function courseDriver(course, i = 0) {
   const { stations, steps } = course;
   let why = false;
@@ -78,16 +82,22 @@ export function courseDriver(course, i = 0) {
     pad(live) {
       if (why) return 0;
       const b = live.ball;
+      if (aloft(b)) return 0;
       const here = { cell: blockUnder(b), face: faceUnder(b) };
       if (i + 1 < stations.length && same(here, stations[i + 1])) i += 1;
       if (!same(here, stations[i])) return over("strayed");
       const step = steps[i];
-      const rolls = step && outcomeAt(probeOf(live), here, step.k) === step.o;
-      const ahead = rolls && step.k === headingOn(here.face, b.h);
-      if (!settled(b)) return ahead && rolling(b) ? PAD.up : 0;
+      const jumps = step?.o === JUMP;
+      const holds =
+        !!step &&
+        (jumps
+          ? jumpAt(probeOf(live), here, step.k) === step.d
+          : outcomeAt(probeOf(live), here, step.k) === step.o);
+      const facing = holds && step.k === headingOn(here.face, b.h);
+      if (!settled(b)) return facing && !jumps && rolling(b) ? PAD.up : 0;
       if (i === stations.length - 1) return over("end");
-      if (!rolls) return over("leap");
-      if (ahead) return PAD.up;
+      if (!holds) return over("leap");
+      if (facing) return jumps ? PAD.up | PAD.cross : PAD.up;
       if (step.k === headingOn(here.face, neg(b.s))) return PAD.left;
       if (step.k === headingOn(here.face, b.s)) return PAD.right;
       return PAD.left;
