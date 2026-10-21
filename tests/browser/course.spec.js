@@ -29,6 +29,12 @@ const at = (page, x, y, z) =>
 const top = (page, c) => at(page, c[0] + 0.5, c[1] + 0.5, c[2]);
 const plusX = (page, c) => at(page, c[0] + 1, c[1] + 0.5, c[2] + 0.5);
 const click = async (page, point) => page.mouse.click(point.x, point.y);
+/** A click on `point` with Shift held. */
+const shiftClick = async (page, point) => {
+  await page.keyboard.down("Shift");
+  await page.mouse.click(point.x, point.y);
+  await page.keyboard.up("Shift");
+};
 const strip = (page) => page.locator("#course");
 const line = (page) => page.locator("#courseLine");
 const status = (page) => page.locator("#courseStatus");
@@ -152,7 +158,7 @@ test("u turns the planner on without keeping it, clicks add stops the strip coun
   await expect(strip(page)).toHaveAttribute("role", "group");
   await expect(line(page)).toHaveText("Route planner · 0 stops");
   await expect(status(page)).toHaveText(
-    /a face to add a stop; the shortest roll joins it to the last\.$/,
+    "Click a face to add a stop, joined to the last by the shortest roll, or by a jump with Shift held.",
   );
   await expect(page.locator("#courseUndo")).toBeDisabled();
   await expect(status(page)).toHaveClass(/\bhint\b/);
@@ -320,6 +326,97 @@ test("a link's route with a jump counts it on the strip and draws it as a solid 
     { k: 2, o: 0 },
   ]);
   await expect.poll(() => linked(page)).toEqual(await route(page));
+  expect(await curved(page)).toBe(2);
+  expect(errors).toEqual([]);
+});
+
+test("a Shift-click with no route yet opens the route at the start and jumps from there", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await still(page);
+  await page.keyboard.press("u");
+  await shiftClick(page, await top(page, [17, 16, 17]));
+  await expect(line(page)).toHaveText("Route planner · 2 stops · 1 jump");
+  await expect(page.locator("#say")).toHaveText("Stop 2 added on the top of 17,16,17, by a jump.");
+  await expect(status(page)).toHaveText("");
+  expect(await route(page)).toEqual({
+    stations: [
+      { cell: [17, 18, 17], face: 0 },
+      { cell: [17, 16, 17], face: 0 },
+    ],
+    steps: [{ k: headingOn(0, [0, -1, 0]), o: JUMP, d: 0 }],
+    marks: [0, 1],
+  });
+  await expect.poll(() => page.url()).toMatch(new RegExp(`/${JUMPED}$`));
+  expect(errors).toEqual([]);
+});
+
+test("a Shift-click adds a jump from the last stop, over a gap or down onto a lower block, and is refused where none comes down", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await draft(page);
+  await page.keyboard.press("v");
+  await page.keyboard.press("u");
+  await expect(status(page)).toHaveText(
+    "Click a face to add a stop, joined to the last by the shortest roll, or by a jump with Shift held.",
+  );
+  const east = headingOn(0, [1, 0, 0]);
+  const refused = "No jump from the last stop comes down on that face.";
+  // from the start a jump across the gap comes down on nothing, the block two on being missing
+  await shiftClick(page, await top(page, [20, 17, 17]));
+  await expect(page.locator("#toastStack .toast")).toHaveText([refused]);
+  await expect(status(page)).toHaveText(refused);
+  await expect(status(page)).not.toHaveClass(/\bhint\b/);
+  expect(await route(page)).toBeNull();
+  await expect(line(page)).toHaveText("Route planner · 0 stops");
+
+  await click(page, await top(page, [18, 17, 17]));
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  await expect(status(page)).toHaveText("");
+  // the block one on is no jump's landing either
+  await shiftClick(page, await top(page, [17, 17, 17]));
+  await expect(status(page)).toHaveText(refused);
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  expect((await route(page)).steps).toEqual([{ k: east, o: 0 }]);
+
+  await shiftClick(page, await top(page, [20, 17, 17]));
+  await expect(line(page)).toHaveText("Route planner · 3 stops · 1 jump");
+  await expect(page.locator("#say")).toHaveText("Stop 3 added on the top of 20,17,17, by a jump.");
+  await expect(status(page)).toHaveText("");
+  let c = await route(page);
+  expect(c.steps).toEqual([
+    { k: east, o: 0 },
+    { k: east, o: JUMP, d: 0 },
+  ]);
+  expect(c.marks).toEqual([0, 1, 2]);
+  await expect.poll(() => linked(page)).toEqual(c);
+  // the arc's rim and core, neither dashed
+  expect(await dashed(page)).toEqual({ strokes: 0, arcs: 0 });
+  expect(await curved(page)).toBe(2);
+
+  // a Shift-click on the last stop takes it back as a plain one does, and a plain click there leaps
+  await shiftClick(page, await top(page, [20, 17, 17]));
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  await expect(page.locator("#say")).toHaveText("Last stop removed.");
+  await click(page, await top(page, [20, 17, 17]));
+  await expect(line(page)).toHaveText("Route planner · 3 stops · 1 leap");
+  await page.keyboard.press("Backspace");
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+
+  // the far block one lower: the jump comes down on it
+  await laid(page, [20, 17, 17], null);
+  await laid(page, [20, 17, 18], { kind: 0 });
+  await expect(page.locator("#chipLine")).toContainText("3 blocks");
+  await shiftClick(page, await top(page, [20, 17, 18]));
+  await expect(line(page)).toHaveText("Route planner · 3 stops · 1 jump");
+  c = await route(page);
+  expect(c.steps[1]).toEqual({ k: east, o: JUMP, d: 1 });
+  expect(c.stations[2]).toEqual({ cell: [20, 17, 18], face: 0 });
+  await expect.poll(() => linked(page)).toEqual(c);
   expect(await curved(page)).toBe(2);
   expect(errors).toEqual([]);
 });
@@ -568,6 +665,9 @@ test.describe("on a phone", () => {
     await still(page);
     await page.keyboard.press("u");
     await expect(strip(page)).toBeVisible();
+    await expect(status(page)).toHaveText(
+      "Tap a face to add a stop; the shortest roll joins it to the last.",
+    );
     const clear = () =>
       expect
         .poll(async () => {

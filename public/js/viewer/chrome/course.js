@@ -1,4 +1,4 @@
-// The route planner: stops clicked on the faces, joined by the shortest walk or a leap.
+// The route planner: stops clicked on the faces, joined by the shortest walk, a jump or a leap.
 import { $, emit, on } from "../ui/dom.js";
 import { state, effectsOn } from "../state.js";
 import { FACE_NAME, cellKey } from "../../format/lattice.js";
@@ -12,10 +12,12 @@ import {
   encode,
   headingAfter,
   headingOn,
+  jumpAt,
   lifted,
   pieces,
   probeOf,
   shortestWalk,
+  step,
   validate,
 } from "../walk.js";
 import { drawSoon, overlayWith } from "../draw/render.js";
@@ -40,11 +42,14 @@ const LOOKS_INTO = "That face looks into another block.";
 const PLATFORM = "A stop cannot stand on a moving platform.";
 const LEAPT = "No roll reaches that face from the last stop, so a leap joins them.";
 const LEAPT_SHORT = "No roll reaches that face; a leap joins them.";
+const NO_JUMP = "No jump from the last stop comes down on that face.";
 const EDITING = "Leave editing to plan a route.";
 const FULL = "The route is as long as a link can carry.";
 const UNCOPIED = "The link could not be copied; copy it from the address bar.";
-const hint = () =>
-  `${matchMedia("(pointer: coarse)").matches ? "Tap" : "Click"} a face to add a stop; the shortest roll joins it to the last.`;
+const HINT =
+  "Click a face to add a stop, joined to the last by the shortest roll, or by a jump with Shift held.";
+const HINT_TAP = "Tap a face to add a stop; the shortest roll joins it to the last.";
+const hint = () => (matchMedia("(pointer: coarse)").matches ? HINT_TAP : HINT);
 const leapNote = () => (sidebarOverlays() ? LEAPT_SHORT : LEAPT);
 
 let course = null;
@@ -170,7 +175,32 @@ function opening(station) {
   };
 }
 
-function add(station) {
+/** The shortest walk from `a` to `b`, setting off along `k`, or a leap where no roll reaches it. */
+function walkTo(a, b, k) {
+  const walk = shortestWalk(probeNow(), a, b, k === null ? undefined : [k]);
+  if (walk)
+    return { stations: walk.stations.slice(1), steps: walk.steps, heading: walk.heading, how: "" };
+  return {
+    stations: [b],
+    steps: [null],
+    heading: null,
+    how: ", joined by a leap",
+    note: leapNote(),
+  };
+}
+
+/** The jump from `a` that comes down on `b`, or null where none does. */
+function flightTo(a, b) {
+  for (let k = 0; k < 4; k++) {
+    const d = jumpAt(probeNow(), a, k);
+    if (d !== null && sameStation(step(a, k, JUMP, d), b))
+      return { stations: [b], steps: [{ k, o: JUMP, d }], heading: k, how: ", by a jump" };
+  }
+  return null;
+}
+
+/** Add a stop on `station`, joined to the last by the shortest roll, or by a jump where `jumping`. */
+function add(station, jumping = false) {
   const from = course ? { course, heading } : opening(station);
   const c = {
     stations: [...from.course.stations],
@@ -178,30 +208,21 @@ function add(station) {
     marks: new Set(from.course.marks),
   };
   const last = c.stations.at(-1);
-  let next = from.heading;
-  let leapt = false;
+  let way = null;
   if (!sameStation(last, station)) {
-    const headings = from.heading === null ? undefined : [from.heading];
-    const walk = shortestWalk(probeNow(), last, station, headings);
-    if (c.stations.length + (walk ? walk.steps.length : 1) > CAP) return refuse(FULL);
-    if (walk) {
-      c.stations.push(...walk.stations.slice(1));
-      c.steps.push(...walk.steps);
-      next = walk.heading;
-    } else {
-      c.stations.push(station);
-      c.steps.push(null);
-      next = null;
-      leapt = true;
-    }
+    way = jumping ? flightTo(last, station) : walkTo(last, station, from.heading);
+    if (!way) return refuse(NO_JUMP);
+    if (c.stations.length + way.steps.length > CAP) return refuse(FULL);
+    c.stations.push(...way.stations);
+    c.steps.push(...way.steps);
     c.marks.add(c.stations.length - 1);
   }
   course = c;
-  heading = next;
-  note = leapt ? leapNote() : null;
+  heading = way ? way.heading : from.heading;
+  note = way?.note ?? null;
   changed();
   const where = `the ${FACE_NAME[station.face]} of ${station.cell.join(",")}`;
-  say(`Stop ${c.marks.size} added on ${where}${leapt ? ", joined by a leap" : ""}.`);
+  say(`Stop ${c.marks.size} added on ${where}${way?.how ?? ""}.`);
   return true;
 }
 
@@ -403,7 +424,7 @@ export function wireCourse() {
   on("editing-changed", forget);
   measure(strip);
 
-  onCellClick((c) => {
+  onCellClick((c, e) => {
     if (!active() || c?.face == null) return false;
     if (c.k !== undefined) return refuse(PLATFORM);
     const station = stationOf(c);
@@ -412,7 +433,7 @@ export function wireCourse() {
       return true;
     }
     if (!probeNow().standable(station.cell, station.face)) return refuse(LOOKS_INTO);
-    return add(station);
+    return add(station, e.shiftKey);
   });
   hoverBy((c) => (active() && !holding() ? c.face : null));
   tipWith((c) => {

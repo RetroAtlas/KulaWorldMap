@@ -73,7 +73,10 @@ const HELP = [
   ["`m`", "show and hide the sidebar"],
   ["`w`", "edit the level, or make a copy of this one to edit"],
   ["`a` `z` `i`", "while editing: place, erase, select"],
-  ["shift-click", "while editing: erase, from any tool"],
+  [
+    "shift-click",
+    "while editing: erase, from any tool; with the route planner on: add a jump to the route",
+  ],
   ["right-click, long press", "while editing: select, from any tool"],
   ["alt-click", "while editing: take what is under the pointer as the brush"],
   ["tap, then tap the same face again", "while editing on a touch screen: place or erase"],
