@@ -421,6 +421,123 @@ test("a Shift-click adds a jump from the last stop, over a gap or down onto a lo
   expect(errors).toEqual([]);
 });
 
+test("Undo and Redo step the route's changes back and forward, from the strip and the keyboard, a new stop letting the redo go", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(LEVEL);
+  await settle(page);
+  await still(page);
+  await page.keyboard.press("u");
+  const undoBtn = page.locator("#courseUndo");
+  const redoBtn = page.locator("#courseRedo");
+  await expect(undoBtn).toBeDisabled();
+  await expect(redoBtn).toBeDisabled();
+  await click(page, await top(page, [17, 15, 17]));
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  const two = await route(page);
+  await click(page, await top(page, [20, 15, 17]));
+  await expect(line(page)).toHaveText("Route planner · 3 stops");
+  const three = await route(page);
+  await expect(undoBtn).toBeEnabled();
+  await expect(redoBtn).toBeDisabled();
+
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  await expect(page.locator("#say")).toHaveText("Undid adding stop 3 on the top of 20,15,17.");
+  expect(await route(page)).toEqual(two);
+  await expect(redoBtn).toBeEnabled();
+  await expect.poll(() => linked(page)).toEqual(two);
+  await page.keyboard.press("Control+Shift+z");
+  await expect(line(page)).toHaveText("Route planner · 3 stops");
+  await expect(page.locator("#say")).toHaveText("Redid adding stop 3 on the top of 20,15,17.");
+  expect(await route(page)).toEqual(three);
+  await expect(redoBtn).toBeDisabled();
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  await page.keyboard.press("Control+y");
+  await expect(line(page)).toHaveText("Route planner · 3 stops");
+  expect(await route(page)).toEqual(three);
+
+  // the buttons: two undos take the route away, and the redos bring it back change by change
+  await undoBtn.click();
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  await undoBtn.click();
+  await expect(line(page)).toHaveText("Route planner · 0 stops");
+  await expect(page.locator("#say")).toHaveText("Undid adding stop 2 on the top of 17,15,17.");
+  expect(await route(page)).toBeNull();
+  await expect(undoBtn).toBeDisabled();
+  await expect(redoBtn).toBeEnabled();
+  await expect.poll(() => page.url()).toMatch(/#HIRO\/0\/45,35\/fit\/33$/);
+  await redoBtn.click();
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  expect(await route(page)).toEqual(two);
+  await redoBtn.click();
+  await expect(line(page)).toHaveText("Route planner · 3 stops");
+  await expect(redoBtn).toBeDisabled();
+
+  // Clear, then Undo puts the route back whole
+  await page.locator("#courseClear").click();
+  await page.locator("#courseClear").click();
+  await expect(line(page)).toHaveText("Route planner · 0 stops");
+  await expect(undoBtn).toBeEnabled();
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(line(page)).toHaveText("Route planner · 3 stops");
+  await expect(page.locator("#say")).toHaveText("Undid clearing the route.");
+  expect(await route(page)).toEqual(three);
+  await expect(redoBtn).toBeEnabled();
+
+  // Backspace and a click on the last stop still take it back, changes Undo takes back in turn
+  await page.keyboard.press("Backspace");
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  await expect(page.locator("#say")).toHaveText("Last stop removed.");
+  await expect(redoBtn).toBeDisabled();
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(page.locator("#say")).toHaveText("Undid taking the last stop back.");
+  expect(await route(page)).toEqual(three);
+  await click(page, await top(page, [20, 15, 17]));
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(line(page)).toHaveText("Route planner · 3 stops");
+
+  // a new stop after an undo lets the redo go
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  await expect(redoBtn).toBeEnabled();
+  await click(page, await top(page, [18, 15, 17]));
+  await expect(line(page)).toHaveText("Route planner · 3 stops");
+  await expect(redoBtn).toBeDisabled();
+  await expect.poll(() => linked(page)).toEqual(await route(page));
+  expect(errors).toEqual([]);
+});
+
+test("the planner's undo keys yield to the editor's while editing", async ({ page }) => {
+  const errors = trackErrors(page);
+  await draft(page);
+  await page.keyboard.press("u");
+  await click(page, await top(page, [18, 17, 17]));
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  const c = await route(page);
+  await page.keyboard.press("w");
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  await click(page, await top(page, [20, 17, 17]));
+  await expect(page.locator("#chipLine")).toContainText("4 blocks");
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(page.locator("#chipLine")).toContainText("3 blocks");
+  await expect(page.locator("#say")).toHaveText("Undid placed a block at 20, 17, 16");
+  expect(await route(page)).toEqual(c);
+  await page.keyboard.press("Control+Shift+z");
+  await expect(page.locator("#chipLine")).toContainText("4 blocks");
+  expect(await route(page)).toEqual(c);
+  await page.keyboard.press("w");
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+  await expect(line(page)).toHaveText("Route planner · 2 stops");
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(line(page)).toHaveText("Route planner · 0 stops");
+  expect(await route(page)).toBeNull();
+  expect(errors).toEqual([]);
+});
+
 test("a stop is refused on a face that looks into a block, and the planner yields while editing", async ({
   page,
 }) => {

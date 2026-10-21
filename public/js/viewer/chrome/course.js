@@ -51,9 +51,16 @@ const HINT =
 const HINT_TAP = "Tap a face to add a stop; the shortest roll joins it to the last.";
 const hint = () => (matchMedia("(pointer: coarse)").matches ? HINT_TAP : HINT);
 const leapNote = () => (sidebarOverlays() ? LEAPT_SHORT : LEAPT);
+const DROPPED = "taking the last stop back";
+const CLEARED = "clearing the route";
+const KEPT = "keeping the route";
+const LINKED = "taking the route from the link";
 
 let course = null;
 let heading = null;
+// the route before each change made on the level shown, and the changes taken back
+let past = [];
+let future = [];
 let laid = null;
 let note = null;
 let probe = null;
@@ -67,6 +74,7 @@ export const current = () => course;
 /** Take `c` as the level's route where none stands; false where one does. */
 export function adoptCourse(c) {
   if (course || !c?.stations?.length) return false;
+  record(KEPT);
   course = {
     stations: c.stations.slice(0, CAP),
     steps: c.steps.slice(0, CAP - 1),
@@ -165,6 +173,32 @@ function refuse(text) {
   return true;
 }
 
+/** Keep the route as it stands for Undo before the change `label` names, which leaves Redo nothing. */
+function record(label) {
+  past.push({ route: course, label });
+  future = [];
+}
+
+function undo() {
+  if (!past.length) return;
+  const { route, label } = past.pop();
+  future.push({ route: course, label });
+  course = route;
+  note = null;
+  changed();
+  say(`Undid ${label}.`);
+}
+
+function redo() {
+  if (!future.length) return;
+  const { route, label } = future.pop();
+  past.push({ route: course, label });
+  course = route;
+  note = null;
+  changed();
+  say(`Redid ${label}.`);
+}
+
 /** The course a first click begins: from the level's start where it has one and the click is elsewhere. */
 function opening(station) {
   const start = startOf();
@@ -217,11 +251,12 @@ function add(station, jumping = false) {
     c.steps.push(...way.steps);
     c.marks.add(c.stations.length - 1);
   }
+  const where = `the ${FACE_NAME[station.face]} of ${station.cell.join(",")}`;
+  record(`adding stop ${c.marks.size} on ${where}`);
   course = c;
   heading = way ? way.heading : from.heading;
   note = way?.note ?? null;
   changed();
-  const where = `the ${FACE_NAME[station.face]} of ${station.cell.join(",")}`;
   say(`Stop ${c.marks.size} added on ${where}${way?.how ?? ""}.`);
   return true;
 }
@@ -231,25 +266,26 @@ function dropLast() {
   if (!course) return;
   const last = course.stations.length - 1;
   const prev = Math.max(-1, ...[...course.marks].filter((i) => i < last));
-  if (prev < 0) {
-    clear("Last stop removed.");
-    return;
-  }
-  course = {
-    stations: course.stations.slice(0, prev + 1),
-    steps: course.steps.slice(0, prev),
-    marks: new Set([...course.marks].filter((i) => i <= prev)),
-  };
+  record(DROPPED);
+  course =
+    prev < 0
+      ? null
+      : {
+          stations: course.stations.slice(0, prev + 1),
+          steps: course.steps.slice(0, prev),
+          marks: new Set([...course.marks].filter((i) => i <= prev)),
+        };
   note = null;
   changed();
   say("Last stop removed.");
 }
 
-function clear(said) {
+function clear() {
+  record(CLEARED);
   course = null;
   note = null;
   changed();
-  say(said);
+  say("Route cleared.");
 }
 
 // --- the store -----------------------------------------------------------------------------
@@ -318,7 +354,9 @@ function sync() {
   if (jumps) line += ` · ${counted(jumps, "jump")}`;
   if (leaps) line += ` · ${counted(leaps, "leap")}`;
   $("courseLine").textContent = line;
-  for (const id of ["courseUndo", "courseClear", "courseCopy"]) $(id).disabled = !course;
+  $("courseUndo").disabled = !past.length;
+  $("courseRedo").disabled = !future.length;
+  for (const id of ["courseClear", "courseCopy"]) $(id).disabled = !course;
   const hinting = on && !idle && !note && !course;
   $("courseStatus").textContent = !on ? "" : idle ? EDITING : hinting ? hint() : (note ?? "");
   $("courseStatus").classList.toggle("hint", hinting);
@@ -416,8 +454,9 @@ function drawOver(ctx) {
 
 export function wireCourse() {
   const strip = $("course");
-  $("courseUndo").onclick = dropLast;
-  disarmClear = twice($("courseClear"), "Clear", "Clear the route", () => clear("Route cleared."));
+  $("courseUndo").onclick = undo;
+  $("courseRedo").onclick = redo;
+  disarmClear = twice($("courseClear"), "Clear", "Clear the route", clear);
   $("courseCopy").onclick = copyLink;
   $("showCourse").addEventListener("change", forget);
   $("resetDisplay").addEventListener("click", forget);
@@ -444,14 +483,21 @@ export function wireCourse() {
   });
   overlayWith({ block: drawRibbon, cell: drawWash, frame: drawOver });
 
+  // Cmd-Y stays the browser's
   document.addEventListener(
     "keydown",
     (e) => {
-      if (e.key !== "Backspace" || !active() || !course || state.selected) return;
-      if (e.metaKey || e.ctrlKey || e.altKey || typing(e) || dialogOpen()) return;
+      if (!active() || e.altKey || typing(e) || dialogOpen()) return;
+      const mod = e.metaKey || e.ctrlKey;
+      const key = e.key.toLowerCase();
+      let act = null;
+      if (e.key === "Backspace" && !mod && course && !state.selected) act = dropLast;
+      else if (key === "z" && mod) act = e.shiftKey ? redo : undo;
+      else if (key === "y" && e.ctrlKey && !e.metaKey) act = redo;
+      if (!act) return;
       e.preventDefault();
       e.stopPropagation();
-      dropLast();
+      act();
     },
     { capture: true },
   );
@@ -462,6 +508,7 @@ export function wireCourse() {
     read: (segment) => {
       const c = segment === null ? null : decode(segment);
       if (!c) return;
+      if (!course || encode(course) !== encode(c)) record(LINKED);
       adopt(c);
       remember();
     },
@@ -471,6 +518,8 @@ export function wireCourse() {
     flush();
     probed = null;
     note = null;
+    past = [];
+    future = [];
     disarmClear();
     adopt(stored(slotOf(state.lvl)));
   });

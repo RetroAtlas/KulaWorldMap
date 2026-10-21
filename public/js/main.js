@@ -86,8 +86,11 @@ const HELP = [
     "`r` `Shift-r`",
     "while editing: turn what is selected, or what the next placement faces, a quarter turn each way",
   ],
-  ["`Ctrl-Z` or `Cmd-Z`", "while editing: undo"],
-  ["`Ctrl-Shift-Z`, `Cmd-Shift-Z` or `Ctrl-Y`", "while editing: redo"],
+  ["`Ctrl-Z` or `Cmd-Z`", "while editing, or with the route planner on: undo"],
+  [
+    "`Ctrl-Shift-Z`, `Cmd-Shift-Z` or `Ctrl-Y`",
+    "while editing, or with the route planner on: redo",
+  ],
   [
     "`Delete` `Backspace`",
     "while editing: erase what is selected, its object first, or every selected block",

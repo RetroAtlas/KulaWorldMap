@@ -426,8 +426,19 @@
       </div>
       <div id="course" class="tools" role="group" aria-label="Route planner" hidden>
         <span id="courseLine" class="line"></span>
-        <button id="courseUndo" type="button" title="Take the last stop back (Backspace)">
+        <button
+          id="courseUndo"
+          type="button"
+          title="Undo the last change to the route (Ctrl-Z or Cmd-Z)"
+        >
           Undo
+        </button>
+        <button
+          id="courseRedo"
+          type="button"
+          title="Redo the change taken back (Ctrl-Shift-Z, Cmd-Shift-Z or Ctrl-Y)"
+        >
+          Redo
         </button>
         <button id="courseClear" type="button" title="Clear the route">Clear</button>
         <button id="courseCopy" type="button" title="Copy a link that carries the route">
