@@ -512,6 +512,40 @@ test("the keys list says what a key does and not what it waits on", async ({ pag
     expect(said).toContain(line);
 });
 
+test("the list and the tooltips name Ctrl and Alt as the keyboard in front of you does", async ({
+  context,
+}) => {
+  for (const [platform, ctrl, alt] of [
+    ["Win32", "Ctrl", "Alt"],
+    ["MacIntel", "Cmd", "Option"],
+  ]) {
+    const page = await context.newPage();
+    await page.addInitScript(
+      (p) => Object.defineProperty(navigator, "platform", { get: () => p, configurable: true }),
+      platform,
+    );
+    await page.goto("/#HIRO/0");
+    await settle(page);
+    await page.keyboard.press("?");
+    await expect(page.locator("#help")).toBeVisible();
+    const keys = await page.locator("#help dt").allTextContents();
+    for (const key of [`${ctrl}-Z`, `${ctrl}-Shift-Z`, `${alt}-click`])
+      expect(keys, platform).toContain(key);
+    const other = ctrl === "Ctrl" ? /\b(Cmd|Option)\b/ : /\b(Ctrl|Alt)\b/;
+    for (const key of keys) expect(key, platform).not.toMatch(other);
+    for (const [id, chord] of [
+      ["undoBtn", `${ctrl}-Z`],
+      ["redoBtn", `${ctrl}-Shift-Z`],
+      ["courseUndo", `${ctrl}-Z`],
+      ["courseRedo", `${ctrl}-Shift-Z`],
+    ])
+      expect(await page.locator(`#${id}`).getAttribute("title"), `${id} on ${platform}`).toMatch(
+        new RegExp(`\\(${chord}\\)$`),
+      );
+    await page.close();
+  }
+});
+
 test("Back closes a dialog and leaves the map where it was", async ({ page }) => {
   await page.goto("/#HIRO/11/30,20/1.25/18,13,17/0,0/25");
   await settle(page);

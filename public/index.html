@@ -85,6 +85,7 @@
   <link rel="modulepreload" href="js/viewer/travel.js" />
   <link rel="modulepreload" href="js/viewer/ui/dialog.js" />
   <link rel="modulepreload" href="js/viewer/ui/dom.js" />
+  <link rel="modulepreload" href="js/viewer/ui/keys.js" />
   <link rel="modulepreload" href="js/viewer/ui/modal.js" />
   <link rel="modulepreload" href="js/viewer/ui/settings.js" />
   <link rel="modulepreload" href="js/viewer/ui/toast.js" />
@@ -394,19 +395,13 @@
         >
           Turn
         </button>
-        <button
-          id="undoBtn"
-          type="button"
-          title="Undo the last step (Ctrl-Z or Cmd-Z)"
-          hidden
-          disabled
-        >
+        <button id="undoBtn" type="button" title="Undo the last step (Ctrl-Z)" hidden disabled>
           Undo
         </button>
         <button
           id="redoBtn"
           type="button"
-          title="Redo the step taken back (Ctrl-Shift-Z, Cmd-Shift-Z or Ctrl-Y)"
+          title="Redo the step taken back (Ctrl-Shift-Z)"
           hidden
           disabled
         >
@@ -426,18 +421,10 @@
       </div>
       <div id="course" class="tools" role="group" aria-label="Route planner" hidden>
         <span id="courseLine" class="line"></span>
-        <button
-          id="courseUndo"
-          type="button"
-          title="Undo the last change to the route (Ctrl-Z or Cmd-Z)"
-        >
+        <button id="courseUndo" type="button" title="Undo the last change to the route (Ctrl-Z)">
           Undo
         </button>
-        <button
-          id="courseRedo"
-          type="button"
-          title="Redo the change taken back (Ctrl-Shift-Z, Cmd-Shift-Z or Ctrl-Y)"
-        >
+        <button id="courseRedo" type="button" title="Redo the change taken back (Ctrl-Shift-Z)">
           Redo
         </button>
         <button id="courseClear" type="button" title="Clear the route">Clear</button>

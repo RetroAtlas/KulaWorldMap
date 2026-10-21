@@ -16,6 +16,7 @@ import { probeOf } from "./viewer/walk.js";
 import { FACE_NAME } from "./format/lattice.js";
 import { wireCourse } from "./viewer/chrome/course.js";
 import { openModal } from "./viewer/ui/modal.js";
+import { named } from "./viewer/ui/keys.js";
 import { wireSettings } from "./viewer/ui/settings.js";
 import { toast } from "./viewer/ui/toast.js";
 import { KEY, heldIn } from "./format/held.js";
@@ -27,6 +28,7 @@ import "./viewer/chrome/search.js";
 setSidebar(innerWidth > 860);
 restore();
 wireSettings();
+for (const node of document.querySelectorAll("[title]")) node.title = named(node.title);
 
 on("help", showHelp);
 $("aboutBtn").onclick = () => showAbout($("aboutBtn"));
@@ -36,7 +38,7 @@ const HELP = [
     title: "The map",
     rows: [
       ["drag", "turn the level"],
-      ["shift-drag, right-drag, arrows", "pan"],
+      ["Shift-drag, right-drag, arrows", "pan"],
       ["wheel, pinch, `+` `−`", "zoom"],
       ["`q` `e`", "snap the turn to 45°"],
       ["`,` `.`", "lower and raise the slice"],
@@ -73,10 +75,10 @@ const HELP = [
     title: "Route planner",
     rows: [
       ["`r`", "plan a route: click the faces the ball should visit, in order"],
-      ["shift-click", "add a jump to the route"],
+      ["Shift-click", "add a jump to the route"],
       ["`Backspace`", "take the last stop back, while nothing is selected"],
-      ["`Ctrl-Z` or `Cmd-Z`", "undo"],
-      ["`Ctrl-Shift-Z`, `Cmd-Shift-Z` or `Ctrl-Y`", "redo"],
+      ["`Ctrl-Z`", "undo"],
+      ["`Ctrl-Shift-Z`", "redo"],
     ],
   },
   {
@@ -93,9 +95,9 @@ const HELP = [
     rows: [
       ["`w`", "edit the level, or make a copy of this one to edit"],
       ["`a` `z` `i`", "place, erase, select"],
-      ["shift-click", "erase, from any tool"],
+      ["Shift-click", "erase, from any tool"],
       ["right-click, long press", "select, from any tool"],
-      ["alt-click", "take what is under the pointer as the brush"],
+      ["Alt-click", "take what is under the pointer as the brush"],
       ["tap, then tap the same face again", "on a touch screen: place or erase"],
       ["`j` `k`", "the next and the previous thing in the palette"],
       ["`1` to `9`", "a thing of the palette's shown group"],
@@ -103,8 +105,8 @@ const HELP = [
         "`r` `Shift-r`",
         "turn what is selected, or what the next placement faces, a quarter turn each way",
       ],
-      ["`Ctrl-Z` or `Cmd-Z`", "undo"],
-      ["`Ctrl-Shift-Z`, `Cmd-Shift-Z` or `Ctrl-Y`", "redo"],
+      ["`Ctrl-Z`", "undo"],
+      ["`Ctrl-Shift-Z`", "redo"],
       ["`Delete` `Backspace`", "erase what is selected, its object first, or every selected block"],
       [
         "drag from empty space, with Select",
@@ -121,7 +123,7 @@ const HELP = [
 
 function showHelp() {
   const caps = (keys) => keys.replace(/`(.+?)`/g, "<kbd>$1</kbd>");
-  const list = (rows) => rows.map(([k, v]) => `<dt>${caps(k)}</dt><dd>${v}</dd>`).join("");
+  const list = (rows) => rows.map(([k, v]) => `<dt>${caps(named(k))}</dt><dd>${v}</dd>`).join("");
   openModal(
     "Keyboard",
     HELP.map(
