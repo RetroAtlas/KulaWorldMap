@@ -157,9 +157,7 @@ test("u turns the planner on without keeping it, clicks add stops the strip coun
   await expect(strip(page)).toBeVisible();
   await expect(strip(page)).toHaveAttribute("role", "group");
   await expect(line(page)).toHaveText("Route planner · 0 stops");
-  await expect(status(page)).toHaveText(
-    "Click a face to add a stop, joined to the last by the shortest roll, or by a jump with Shift held.",
-  );
+  await expect(status(page)).toHaveText("Click a face to add a stop, Shift-click to add a jump.");
   await expect(page.locator("#courseUndo")).toBeDisabled();
   await expect(status(page)).toHaveClass(/\bhint\b/);
 
@@ -361,9 +359,7 @@ test("a Shift-click adds a jump from the last stop, over a gap or down onto a lo
   await draft(page);
   await page.keyboard.press("v");
   await page.keyboard.press("u");
-  await expect(status(page)).toHaveText(
-    "Click a face to add a stop, joined to the last by the shortest roll, or by a jump with Shift held.",
-  );
+  await expect(status(page)).toHaveText("Click a face to add a stop, Shift-click to add a jump.");
   const east = headingOn(0, [1, 0, 0]);
   const refused = "No jump from the last stop comes down on that face.";
   // from the start a jump across the gap comes down on nothing, the block two on being missing

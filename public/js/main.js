@@ -59,14 +59,8 @@ const HELP = [
   ["`u`", "route planner: click the faces the ball should visit, in order"],
   ["`Backspace`", "with the route planner on and nothing selected: take the last stop back"],
   ["`y`", "roll the ball through the level"],
-  [
-    "arrows",
-    "while playing: up rolls the ball ahead for as long as it is held, and left and right turn it",
-  ],
-  [
-    "`Space`",
-    "while playing: jump, or hop in place; once the level has ended, start it again, as Enter does",
-  ],
+  ["arrows", "while playing: roll and turn the ball"],
+  ["`Space`", "while playing: jump, or hop in place; after an ending, start again"],
   ["`s`", "settings"],
   ["`c`", "start camera"],
   ["`/`", "search"],

@@ -46,8 +46,7 @@ const NO_JUMP = "No jump from the last stop comes down on that face.";
 const EDITING = "Leave editing to plan a route.";
 const FULL = "The route is as long as a link can carry.";
 const UNCOPIED = "The link could not be copied; copy it from the address bar.";
-const HINT =
-  "Click a face to add a stop, joined to the last by the shortest roll, or by a jump with Shift held.";
+const HINT = "Click a face to add a stop, Shift-click to add a jump.";
 const HINT_TAP = "Tap a face to add a stop; the shortest roll joins it to the last.";
 const hint = () => (matchMedia("(pointer: coarse)").matches ? HINT_TAP : HINT);
 const leapNote = () => (sidebarOverlays() ? LEAPT_SHORT : LEAPT);
