@@ -61,6 +61,8 @@ let heading = null;
 // the route before each change made on the level shown, and the changes taken back
 let past = [];
 let future = [];
+// the route last handed over, forgotten as any other path changes the route
+let handed = null;
 let laid = null;
 let note = null;
 let probe = null;
@@ -71,16 +73,17 @@ let disarmClear = () => {};
 
 export const current = () => course;
 
-/** Take `c` as the level's route where none stands; false where one does. */
+/** Take `c` as the route where none stands or the last one taken here stands; false otherwise. */
 export function adoptCourse(c) {
-  if (course || !c?.stations?.length) return false;
-  record(KEPT);
+  if (!c?.stations?.length || (course && course !== handed)) return false;
+  if (!course) record(KEPT);
   course = {
     stations: c.stations.slice(0, CAP),
     steps: c.steps.slice(0, CAP - 1),
     marks: new Set([...c.marks].filter((i) => i < CAP)),
   };
   course.marks.add(0).add(course.stations.length - 1);
+  handed = course;
   heading = headingAt(course);
   note = null;
   changed();
@@ -154,6 +157,7 @@ function layOut() {
 function adopt(next) {
   course = next;
   heading = next ? headingAt(next) : null;
+  if (next !== handed) handed = null;
   layOut();
   sync();
   emit("course-changed", course);

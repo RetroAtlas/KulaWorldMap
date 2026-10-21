@@ -178,6 +178,7 @@ const AGAIN_PAD = "Space, Enter or a tap on the pad starts the level again.";
 const ON = (title) => `Space or Enter goes on to ${title}.`;
 const ON_PAD = (title) => `Space, Enter or a tap on the pad goes on to ${title}.`;
 const KEPT = "The way the ball has come is now the route.";
+const KEEPING = "The way the ball has come is now the route, and grows as the ball goes on.";
 const ROUTE_STANDS = "A route already stands; clear it to keep the walk.";
 const FOLLOWING = "Following the route; an arrow or Space takes the ball back.";
 const FOLLOWING_PAD = "Following the route; an arrow, Space or the pad takes the ball back.";
@@ -1080,6 +1081,7 @@ function ended(code) {
   keys.clear();
   owed = 0;
   retire();
+  live.keeping = false;
   routing();
   finishEase();
   state.frame = null;
@@ -1172,6 +1174,8 @@ function startOver({ onward = true } = {}) {
   live.ended = null;
   live.driver = null;
   live.route = null;
+  live.keeping = false;
+  live.kept = null;
   live.framed = false;
   state.presses = new Map();
   const b = live.run.ball;
@@ -1240,7 +1244,7 @@ function walked(station, leap = false) {
       p.chevron = null;
     }
   live.trail = byKey;
-  routing();
+  if (live.keeping) hand();
 }
 
 function drawTrail(ctx, c, home, key, ghost) {
@@ -1254,11 +1258,14 @@ function drawDustOver(ctx, c, home, key, ghost) {
   drawDust(ctx, key);
 }
 
-/** The strip's route buttons: Keep while the walk has a roll in it and no route stands, Follow
-    while a route stands, pressed while the ball follows it and dim once the level has ended. */
+/** The strip's route buttons: Keep while no route stands or the route is the way the ball has
+    come, pressed while that way goes on being handed over, Follow while a route stands, pressed
+    while the ball follows it and dim once the level has ended. */
 function routing() {
   const route = current();
-  $("keepBtn").disabled = !live || live.walk.stations.length < 2 || route !== null;
+  const keep = $("keepBtn");
+  keep.disabled = !live || (route !== null && route !== live.kept);
+  keep.setAttribute("aria-pressed", String(!!live?.keeping));
   const follow = $("followBtn");
   follow.hidden = !live || route === null;
   follow.disabled = !live || live.ended !== null;
@@ -1283,12 +1290,13 @@ function followRoute() {
   const last = route.stations.length - 1;
   let i = route.stations.findIndex((s, j) => j < last && sameStation(s, here));
   let placed = "";
+  const [first] = route.stations;
+  if (i < 0 && !live.probe.standable(first.cell, first.face)) {
+    status(NO_FIRST_STOP);
+    return;
+  }
+  live.keeping = false;
   if (i < 0) {
-    const [first] = route.stations;
-    if (!live.probe.standable(first.cell, first.face)) {
-      status(NO_FIRST_STOP);
-      return;
-    }
     put({ cell: first.cell, face: first.face, h: tangent(first.face, route.steps[0]?.k ?? 0) });
     placed = `The ball is put on the ${FACE_NAME[first.face]} of ${first.cell.join(",")}. `;
     i = 0;
@@ -1317,20 +1325,42 @@ function followed(why) {
   say(DONE_WHY[why]);
 }
 
-function keep() {
-  if (!live) return;
+/** Hand the way the ball has come to the planner as the route: whether it took it, and where
+    another route stands keeping ends. */
+function hand() {
   const { stations, steps } = live.walk;
   const c = {
     stations: [...stations],
     steps: [...steps],
     marks: new Set([0, stations.length - 1]),
   };
-  if (!adoptCourse(c)) {
+  // the hand-over's own course-changed is not a change from the planner's side
+  live.kept = null;
+  const taken = adoptCourse(c);
+  if (taken) live.kept = current();
+  else live.keeping = false;
+  routing();
+  return taken;
+}
+
+/** Keep as the route: pressed, the way the ball has come is the route and grows under the ball
+    as it goes on; pressed again, the route stays as it is; once the level has ended the whole
+    way is handed over once. */
+function keep() {
+  if (!live) return;
+  if (live.keeping) {
+    live.keeping = false;
+    routing();
+    return;
+  }
+  if (!hand()) {
     status(ROUTE_STANDS);
     return;
   }
-  say(KEPT);
-  toast(KEPT);
+  live.keeping = !live.ended;
+  const text = live.keeping ? KEEPING : KEPT;
+  say(text);
+  toast(text);
   routing();
 }
 
@@ -1579,6 +1609,8 @@ function enter(at = null) {
     ended: null,
     driver: null,
     route: null,
+    keeping: false,
+    kept: null,
   };
   const ball = run.ball;
   live.still = stateOf(ball);
@@ -1751,7 +1783,11 @@ export function bootPlay() {
   on("density-changed", icon);
   on("course-changed", () => {
     if (live?.driver && current() !== live.route) retire();
-    else routing();
+    if (live?.kept && current() !== live.kept) {
+      live.kept = null;
+      live.keeping = false;
+    }
+    routing();
   });
   on("show-changed", (key) => {
     if (key === "dust" && live && !state.show.dust) resetDust(worldTint(live.level.theme));

@@ -68,6 +68,7 @@ const SENDING = "The teleporter is sending the ball.";
 const WEARING_OFF = "The sunglasses are wearing off: the invisible blocks are about to hide again.";
 const RIDING = "The ball rides the platform.";
 const LAUNCHED = "Launched by the boost button.";
+const KEEPING = "The way the ball has come is now the route, and grows as the ball goes on.";
 const FOLLOWING = "Following the route; an arrow or Space takes the ball back.";
 const FOLLOWING_PAD = "Following the route; an arrow, Space or the pad takes the ball back.";
 const FOLLOWED = "The route is done: the ball stands at its last stop.";
@@ -1157,42 +1158,102 @@ test("entering play gives the level its circuits as the game loads them, and lea
   expect(errors).toEqual([]);
 });
 
-test("Keep as the route hands the way the ball has come to the planner, where no route stands", async ({
+/** The planner's route as it stands: its stations, steps and sorted marks, or null. */
+const route = (page) =>
+  page.evaluate(async () => {
+    const { current } = await import(new URL("js/viewer/chrome/course.js", location.href).href);
+    const c = current();
+    return c && { stations: c.stations, steps: c.steps, marks: [...c.marks].sort((a, b) => a - b) };
+  });
+
+test("Keep as the route hands the way the ball has come to the planner and goes on handing it over as the ball goes on, until it is pressed again, the route is cleared or followed, and another's route leaves it disabled", async ({
   page,
 }) => {
   const errors = trackErrors(page);
   await opened(page, { motion: false });
   await startPlay(page);
   const keep = page.locator("#keepBtn");
-  await expect(keep).toBeDisabled();
-  await page.keyboard.press("ArrowUp");
-  await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 17, 17]);
+  const count = page.locator("#courseLine");
+  const clear = page.locator("#courseClear");
+  // at the start, one station: a route of the start alone, which grows from there
   await expect(keep).toBeEnabled();
-  await page.keyboard.press("ArrowUp");
-  await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 16, 17]);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  await expect(keep).toHaveAttribute("aria-pressed", "false");
   await keep.click();
-  await expect(say(page)).toHaveText("The way the ball has come is now the route.");
-  const route = await page.evaluate(async () => {
-    const { current } = await import(new URL("js/viewer/chrome/course.js", location.href).href);
-    const c = current();
-    return { stations: c.stations, steps: c.steps, marks: [...c.marks].sort() };
+  await expect(keep).toHaveAttribute("aria-pressed", "true");
+  await expect(say(page)).toHaveText(KEEPING);
+  await expect(count).toHaveText("Route planner · 1 stop");
+  expect(await route(page)).toEqual({
+    stations: [{ cell: [17, 18, 17], face: 0 }],
+    steps: [],
+    marks: [0],
   });
-  expect(route.stations).toEqual([
-    { cell: [17, 18, 17], face: 0 },
-    { cell: [17, 17, 17], face: 0 },
-    { cell: [17, 16, 17], face: 0 },
-  ]);
-  expect(route.steps).toEqual([
-    { k: 2, o: 0 },
-    { k: 2, o: 0 },
-  ]);
-  expect(route.marks).toEqual([0, 2]);
-  await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops");
+  // a roll, and the route grows under the ball without another press
+  await rolled(page, [17, 17, 17]);
+  await expect(count).toHaveText("Route planner · 2 stops");
+  expect(await route(page)).toEqual({
+    stations: [
+      { cell: [17, 18, 17], face: 0 },
+      { cell: [17, 17, 17], face: 0 },
+    ],
+    steps: [{ k: 2, o: 0 }],
+    marks: [0, 1],
+  });
+  // pressed again, the route stays as it is while the ball goes on
+  await keep.click();
+  await expect(keep).toHaveAttribute("aria-pressed", "false");
+  await rolled(page, [17, 16, 17]);
+  await expect(count).toHaveText("Route planner · 2 stops");
+  expect((await route(page)).stations).toHaveLength(2);
+  // pressed once more, the route being the ball's own, the whole way is handed over
+  await expect(keep).toBeEnabled();
+  await keep.click();
+  await expect(keep).toHaveAttribute("aria-pressed", "true");
+  await expect(count).toHaveText("Route planner · 2 stops");
+  expect(await route(page)).toEqual({
+    stations: [
+      { cell: [17, 18, 17], face: 0 },
+      { cell: [17, 17, 17], face: 0 },
+      { cell: [17, 16, 17], face: 0 },
+    ],
+    steps: [
+      { k: 2, o: 0 },
+      { k: 2, o: 0 },
+    ],
+    marks: [0, 2],
+  });
+  // Clear on the planner's strip releases Keep, which takes the way again on the cleared level
+  await clear.click();
+  await clear.click();
+  await expect(count).toHaveText("Route planner · 0 stops");
+  await expect(keep).toHaveAttribute("aria-pressed", "false");
+  await expect(keep).toBeEnabled();
+  await keep.click();
+  await expect(keep).toHaveAttribute("aria-pressed", "true");
+  await expect(count).toHaveText("Route planner · 2 stops");
+  // Follow the route releases Keep, and an arrow takes the ball back from the route
+  const follow = page.locator("#followBtn");
+  await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  await expect(keep).toHaveAttribute("aria-pressed", "false");
+  await page.keyboard.press("ArrowLeft");
+  await expect(follow).toHaveAttribute("aria-pressed", "false");
+  await expect(keep).toBeEnabled();
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  // a route of the planner's own leaves Keep disabled, and stays as play is left
+  await clear.click();
+  await clear.click();
+  await expect(count).toHaveText("Route planner · 0 stops");
+  await page.keyboard.press("u");
+  await expect(page.locator("#showCourse")).toBeChecked();
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(async () => (await probe(page)).station.heading).toBe("-y");
+  await stopOn(page, [17, 15, 17]);
+  await expect(count).toHaveText("Route planner · 2 stops");
   await expect(keep).toBeDisabled();
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
   await expect(page.locator("#course")).toBeVisible();
+  await expect(count).toHaveText("Route planner · 2 stops");
   expect(errors).toEqual([]);
 });
 
@@ -1237,7 +1298,7 @@ test("the way the ball has come is drawn under it only with its setting on, off 
   await toggled(page, "showTrail", "");
   expect(await golden(crossed)).toBe(0);
   await keep.click();
-  await expect(say(page)).toHaveText("The way the ball has come is now the route.");
+  await expect(say(page)).toHaveText(KEEPING);
   await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops");
   expect(errors).toEqual([]);
 });
@@ -1458,25 +1519,21 @@ test("Keep as the route keeps a jump the ball made as a jump of the route, and F
   const keep = page.locator("#keepBtn");
   await expect(keep).toBeEnabled();
   await keep.click();
-  await expect(say(page)).toHaveText("The way the ball has come is now the route.");
-  const route = await page.evaluate(async () => {
-    const { current } = await import(new URL("js/viewer/chrome/course.js", location.href).href);
-    const c = current();
-    return { stations: c.stations, steps: c.steps, marks: [...c.marks].sort() };
-  });
-  expect(route.stations).toEqual([
+  await expect(say(page)).toHaveText(KEEPING);
+  const kept = await route(page);
+  expect(kept.stations).toEqual([
     { cell: [17, 17, 17], face: 0 },
     { cell: [18, 17, 17], face: 0 },
     { cell: [20, 17, 17], face: 0 },
   ]);
   // the roll along +x, then the jump along +x, coming down level with its take-off
-  expect(route.steps).toEqual([
+  expect(kept.steps).toEqual([
     { k: 3, o: 0 },
     { k: 3, o: 3, d: 0 },
   ]);
-  expect(route.marks).toEqual([0, 2]);
+  expect(kept.marks).toEqual([0, 2]);
   await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops · 1 jump");
-  await expect(keep).toBeDisabled();
+  await expect(keep).toHaveAttribute("aria-pressed", "true");
   // from the last stop the ball is put on the first and follows the route to its end: the roll,
   // the jump and the rest on the far block
   const follow = page.locator("#followBtn");
