@@ -1576,11 +1576,38 @@ body.playing .chip {
   display: none;
 }
 @media (max-width: 760px) {
+  /* on a phone the strip is a bar at the foot of the screen, over the scale bar's band: one row of
+     text, the line or a notice while one stands, and the buttons sharing one row beneath, so the
+     bar keeps its height as the text changes and the pad above it stays put under a thumb */
   #play {
-    max-width: calc(100% - 24px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: none;
+    gap: 8px;
+    border-radius: 12px 12px 0 0;
+    padding: 8px 10px 10px;
   }
   #play .line {
     flex-basis: 100%;
+    order: -2;
+    color: var(--dim);
+  }
+  #play .status {
+    order: -1;
+    font-size: 12.5px;
+  }
+  #play:has(.status:not(:empty)) .line {
+    display: none;
+  }
+  #play .controls {
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+  }
+  #play .controls button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 3px 4px;
   }
   .hud {
     left: 54px;
@@ -2093,17 +2120,37 @@ body.padded .detail {
   body.editing #corner {
     bottom: calc(var(--under-h, 0px) + var(--course-h, 0px) + var(--play-h, 0px));
   }
-  /* and above the jump while the pad shows, the strip spanning the width still and the panel
-     ending above the corner, the editor's sheet apart */
+  /* while the ball is on the level the play bar covers the scale bar's band and the readout: the
+     editor's strip stands on the bar and the planner's on that, or the bar on the editor's while
+     editing, and the pad, the jump and the corner's widgets stand above them all */
+  body.playing:not(.editing) #tools {
+    bottom: var(--play-h, 0px);
+  }
+  body.playing #course {
+    bottom: calc(var(--play-h, 0px) + var(--under-h, 0px));
+  }
+  body.playing.editing #play {
+    bottom: var(--under-h, 0px);
+    border-radius: 12px;
+  }
+  body.playing .readout {
+    display: none;
+  }
+  .pad,
+  .jump,
+  body.playing #corner {
+    bottom: calc(var(--under-h, 0px) + var(--course-h, 0px) + var(--play-h, 0px) + 4px);
+  }
+  /* and above the jump while the pad shows, the bar spanning the width still and the panel ending
+     above the corner, the editor's sheet apart */
   body.padded #corner {
     right: 12px;
     bottom: calc(
-      var(--corner-foot) + var(--under-h, 0px) + var(--course-h, 0px) + var(--play-h, 0px) +
-        var(--jump-h) + 8px
+      var(--under-h, 0px) + var(--course-h, 0px) + var(--play-h, 0px) + 4px + var(--jump-h) + 8px
     );
   }
   body.padded #play {
-    max-width: calc(100% - 24px);
+    max-width: none;
   }
   .detail {
     max-height: calc(

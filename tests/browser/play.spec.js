@@ -2864,7 +2864,7 @@ test.describe("with a touch screen", () => {
   test.describe("at a phone's size", () => {
     test.use({ viewport: { width: 375, height: 700 }, isMobile: true });
 
-    test("the ball is framed above the strip, whose line has a row of its own, the pad lies over the view without moving it, and the HUD spans the top in the level line's place", async ({
+    test("the strip is a bar at the foot of the screen, the ball is framed above it, its line has a row of its own, the pad lies over the view without moving it, and the HUD spans the top in the level line's place", async ({
       page,
     }) => {
       const errors = trackErrors(page);
@@ -2876,6 +2876,10 @@ test.describe("with a touch screen", () => {
       const strip = await page.locator("#play").boundingBox();
       const lineBox = await page.locator("#playLine").boundingBox();
       const cv = await page.locator("#cv").boundingBox();
+      // the strip spans the width at the foot, over the band the scale bar is drawn in
+      expect(Math.abs(strip.x)).toBeLessThanOrEqual(1);
+      expect(Math.abs(strip.width - 375)).toBeLessThanOrEqual(1);
+      expect(Math.abs(strip.y + strip.height - 700)).toBeLessThanOrEqual(1);
       // the level line gives its place to the HUD, which spans from the menu button to the edge
       await expect(page.locator("#chip")).toBeHidden();
       const hud = await page.locator("#hud").boundingBox();
@@ -2916,6 +2920,57 @@ test.describe("with a touch screen", () => {
       await expect(page.locator("#jump")).toBeVisible();
       const again = await anchor(page);
       expect([again.x, again.y, again.free]).toEqual([spot.x, spot.y, spot.free]);
+      expect(errors).toEqual([]);
+    });
+
+    test("the bar's five buttons share one row and a notice takes the line's row, the planner's strip stands on the bar with the pad, the jump and the corner clear of both, and the readout lies under it", async ({
+      page,
+    }) => {
+      const errors = trackErrors(page);
+      await opened(page, { motion: false });
+      await expect(page.locator("#readout")).toBeVisible();
+      // a route round the level, laid by taps, so that Follow shows and the planner's strip stands
+      await page.keyboard.press("r");
+      for (const c of [
+        [17, 15, 17],
+        [20, 15, 17],
+        [20, 18, 17],
+        [17, 18, 17],
+      ]) {
+        const face = await top(page, c);
+        await page.touchscreen.tap(face.x, face.y);
+      }
+      await expect(page.locator("#courseLine")).toHaveText("Route planner · 5 stops");
+      await startPlay(page);
+      await expect(page.locator("#pad")).toBeVisible();
+      await expect(page.locator("#followBtn")).toBeVisible();
+      await expect(page.locator("#readout")).toBeHidden();
+      const box = (sel) => page.locator(sel).boundingBox();
+      const [bar, course, corner, pad, jump] = await Promise.all(
+        ["#play", "#course", "#corner", "#pad", "#jump"].map(box),
+      );
+      const buttons = await Promise.all(
+        ["#padBtn", "#followBtn", "#keepBtn", "#forgiveBtn", "#leaveBtn"].map(box),
+      );
+      for (const b of buttons) {
+        expect(Math.abs(b.y - buttons[0].y)).toBeLessThanOrEqual(1);
+        expect(b.x).toBeGreaterThanOrEqual(bar.x);
+        expect(b.x + b.width).toBeLessThanOrEqual(bar.x + bar.width);
+        expect(b.y + b.height).toBeLessThanOrEqual(bar.y + bar.height);
+      }
+      expect(course.y + course.height).toBeLessThanOrEqual(bar.y);
+      for (const other of [corner, pad, jump]) expect(overlaps(course, other)).toBe(false);
+      for (const other of [bar, course, pad, jump]) expect(overlaps(corner, other)).toBe(false);
+      // a notice takes the line's row while it stands, and the line is back as it goes
+      await page.locator("#followBtn").tap();
+      await expect(status(page)).toHaveText(FOLLOWING_PAD);
+      await expect(line(page)).toBeHidden();
+      await page.keyboard.press("ArrowLeft");
+      await expect(status(page)).toHaveText("");
+      await expect(line(page)).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page.locator("#play")).toBeHidden();
+      await expect(page.locator("#readout")).toBeVisible();
       expect(errors).toEqual([]);
     });
   });
