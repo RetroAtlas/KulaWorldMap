@@ -13,6 +13,7 @@ import { FINAL_SLOTS, WORLDS, WORLD_SLOTS, spelled, writeKwl } from "../format/k
 import { deflate } from "../format/deflate.js";
 import { ERROR, UNTITLED, describe, playsAs, setMeta, validate } from "../format/project.js";
 import { RAW_ONLY, download, isIso, slug } from "./files.js";
+import { draftOf, readLevel } from "./intake.js";
 import * as drafts from "./drafts.js";
 import { edit } from "./trail.js";
 import { IN_PLACE, REBUILD, RECOMPRESS, fitAll, readPak } from "../format/pak.js";
@@ -48,6 +49,8 @@ const NO_IMAGE = "Give the disc image above to make the patches.";
 const READY = "Save what your emulator wants.";
 const INSTEAD = "Mednafen, Beetle and RetroArch apply no patch and play the patched disc instead.";
 const ADD = "add a level…";
+const FILE = "a file…";
+const PICKER = "file";
 const UNWRITTEN = "the level cannot be written";
 const gone = (name) => `Another tab deleted ${name}, so the box closed without a patch.`;
 const left = (name) => `Another tab deleted ${name}, so the patch goes on without it.`;
@@ -129,7 +132,16 @@ function build() {
   const u = {
     rows: el("div", { id: "patchRows" }),
     clash: el("div", { id: "patchClash", className: "errors" }),
-    add: el("select", { id: "patchAdd", title: "Add another of your levels to the patch" }),
+    add: el("select", {
+      id: "patchAdd",
+      title: "Add another level to the patch, one of yours or one from a file",
+    }),
+    file: el("input", {
+      id: "patchFile",
+      type: "file",
+      accept: $("draftFile").accept,
+      hidden: true,
+    }),
     disc: el("input", { id: "patchDisc", className: "sr", type: "file", accept: ".bin,.img,.iso" }),
     status: el("p", { id: "patchStatus" }),
     warnings: el("ul", { id: "patchWarnings", className: "warnings" }),
@@ -154,7 +166,15 @@ function build() {
   };
   for (const live of [u.status, u.ready]) live.setAttribute("aria-live", "polite");
   u.add.onchange = () => {
-    if (u.add.value) add(Number(u.add.value));
+    const { value } = u.add;
+    u.add.selectedIndex = 0;
+    if (value === PICKER) u.file.click();
+    else if (value) add(Number(value));
+  };
+  u.file.onchange = () => {
+    const file = u.file.files[0];
+    u.file.value = "";
+    if (file) fromFile(file);
   };
   u.disc.onchange = () => {
     const file = u.disc.files[0];
@@ -191,7 +211,7 @@ function build() {
     { className: "box settings patch" },
     x,
     el("h3", { id: "patchTitle", textContent: "Put it on the disc" }),
-    section("The levels", u.rows, u.clash, el("div", { className: "add" }, u.add)),
+    section("The levels", u.rows, u.clash, el("div", { className: "add" }, u.add, u.file)),
     section(
       "The disc",
       el("p", { id: "patchPrivate", textContent: PRIVATE }),
@@ -318,6 +338,21 @@ function takeOut(row) {
   ui.add.focus();
 }
 
+// A level from a file, read as the sidebar reads one and made a draft; a pack
+// or an image asks its question in the box's place, and the box comes back
+// once it is answered, brought up to date, with the new row where there is one.
+async function fromFile(file) {
+  const box = d;
+  const read = await readLevel(file, state.lvl.theme);
+  const id = read ? draftOf(read) : null;
+  if (d !== box) return;
+  const back = ui.overlay.hidden;
+  if (back) openDialog(ui.overlay, $("draftPatch"));
+  if (id !== null) add(id);
+  else if (back) refresh();
+  ui.add.focus();
+}
+
 // The box for the drafts as the store holds them now, run again whenever the
 // store replaces one; a row whose draft is gone goes with a word, and the box
 // closes when the last goes that way.
@@ -373,7 +408,7 @@ function load(row) {
   }
 }
 
-/** The other drafts this browser holds, for the select that adds a row. */
+/** The other drafts this browser holds, for the select that adds a row, and a file after them. */
 function additions() {
   const taken = new Set(d.rows.map((row) => row.id));
   const others = drafts.list().filter((entry) => !taken.has(entry.id));
@@ -383,9 +418,9 @@ function additions() {
     ...others.map((entry) =>
       el("option", { value: String(entry.id), textContent: entry.doc.title || UNTITLED }),
     ),
+    el("option", { value: PICKER, textContent: FILE }),
   );
   ui.add.selectedIndex = 0;
-  ui.add.disabled = !others.length;
 }
 
 // Every row's slot list and the slot it shows: the draft's own target, or

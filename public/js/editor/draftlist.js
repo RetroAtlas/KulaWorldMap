@@ -28,8 +28,9 @@ import {
   validate,
   writeProject,
 } from "../format/project.js";
-import { download, readLevelFile, readLevelText, slug } from "./files.js";
+import { download, readLevelText, slug } from "./files.js";
 import { pasteLevelLink } from "./importdialog.js";
+import { draftOf, readLevel, readWith } from "./intake.js";
 import { openPatchDialog } from "./patchdialog.js";
 import { edit as step } from "./trail.js";
 import * as drafts from "./drafts.js";
@@ -122,31 +123,17 @@ async function openFile() {
   const input = $("draftFile");
   const file = input.files[0];
   input.value = "";
-  if (!file) return;
-  let read;
-  try {
-    read = await readLevelFile(file, file.name, state.lvl.theme);
-  } catch (e) {
-    toast(e.message);
-    return;
-  }
-  openRead(read);
+  if (file) openRead(await readLevel(file, state.lvl.theme));
 }
 
-/** A level read from elsewhere becomes a draft marked saved, since the file is the record. */
+/** A level read from elsewhere becomes a draft marked saved, since the file is the record, shown with the reader's report on its card. */
 function openRead(read) {
   if (!read) return;
-  const id = drafts.create(read.project, { saved: Date.now() });
+  const id = draftOf(read);
   if (id === null) return;
   imported = { id, lines: read.report, repairs: read.repairs };
   open(id, `Opened ${nameOf(read.project)}`);
-  const { report, repairs } = read;
-  if (report.length) toast(report.length === 1 ? report[0] : `${readWith(repairs)}.`);
 }
-
-/** "Read with 3 repairs", or "Read with notes" where every line is on a value kept as it was. */
-const readWith = (repairs) =>
-  repairs ? `Read with ${some(repairs, "repair")}` : "Read with notes";
 
 /** Write the draft to a file, as the map's or as the game's, and mark it saved. */
 function saveAs(id, game) {

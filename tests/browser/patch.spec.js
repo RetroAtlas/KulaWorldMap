@@ -9,9 +9,9 @@ import { SLUG_MOST } from "../../public/js/editor/files.js";
 import { SYNTHETIC_SECTORS, streamOf, synthetic, syntheticImage } from "../unit/synthetic.js";
 import { USER, sector } from "../../public/js/format/sectors.js";
 import { packs } from "../unit/fixtures.js";
-import { REBUILD, RELOCATE, fit, readPak } from "../../public/js/format/pak.js";
+import { REBUILD, RELOCATE, fit, readPak, writePak } from "../../public/js/format/pak.js";
 import { openDisc } from "../../public/js/format/iso.js";
-import { writeKwl } from "../../public/js/format/kwl.js";
+import { RECORD, writeKwl } from "../../public/js/format/kwl.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const fixture = JSON.parse(
@@ -20,6 +20,7 @@ const fixture = JSON.parse(
 const CASE = fixture.cases[0];
 const [ONE_PACK, ACROSS] = fixture.sets;
 const ADD = "add a level…";
+const FILE = "a file…";
 const WARNINGS = [
   "the image has 43 sectors, not the 109,607 of the disc",
   "19 of the 21 packs are missing",
@@ -41,6 +42,24 @@ const docOf = (page, id) =>
     const { get } = await import(new URL("js/editor/drafts.js", location.href).href);
     return get(id)?.doc ?? null;
   }, id);
+const toasts = (page) => page.locator("#toastStack .toast").allTextContents();
+/** Every draft this browser holds: its id, title, target and save, as the store lists them. */
+const listed = (page) =>
+  page.evaluate(async () => {
+    const { list } = await import(new URL("js/editor/drafts.js", location.href).href);
+    return list().map((d) => ({
+      id: d.id,
+      title: d.doc.title,
+      into: d.doc.into ?? null,
+      saved: d.saved,
+      edits: d.edits,
+    }));
+  });
+const pak = () =>
+  writePak(
+    ["LEVEL 1", "LEVEL 2", "LEVEL 3"],
+    [1, 2, 3].map((n) => streamOf(synthetic(n, `LEVEL ${n}`), 1)),
+  );
 const openPatch = (page, id) =>
   page.evaluate(async (id) => {
     const { openPatchDialog } = await import(
@@ -163,6 +182,8 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   const [chooser] = await Promise.all([page.waitForEvent("filechooser"), drop.click()]);
   expect(await chooser.element().getAttribute("id")).toBe("patchDisc");
   await slot.focus();
+  await page.keyboard.press("Tab");
+  await expect(dialog.locator("#patchAdd")).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(disc).toBeFocused();
   await expect(drop).toHaveCSS("outline-style", "solid");
@@ -866,15 +887,15 @@ test("two drafts go onto the disc as one patch, the second added from the select
   await expect(level.first().locator(".name")).toHaveText("Spiral");
   const add = dialog.locator("#patchAdd");
   await expect(add).toBeEnabled();
-  await expect(add.locator("option")).toHaveText([ADD, "Tower"]);
+  await expect(add.locator("option")).toHaveText([ADD, "Tower", FILE]);
   await expect(add.locator("option").nth(1)).toHaveAttribute("value", String(tower));
   await expect(add).toHaveValue("");
 
   await add.selectOption(String(tower));
   await expect(level).toHaveCount(2);
   await expect(add).toHaveValue("");
-  await expect(add).toBeDisabled();
-  await expect(add.locator("option")).toHaveText([ADD]);
+  await expect(add).toBeEnabled();
+  await expect(add.locator("option")).toHaveText([ADD, FILE]);
   const second = level.nth(1);
   await expect(second.locator(".name")).toHaveText("Tower");
   await expect(second.locator(".plays")).toHaveText("Plays as an arcade level.");
@@ -997,7 +1018,7 @@ test("two drafts go onto the disc as one patch, the second added from the select
   await expect(level).toHaveCount(1);
   await expect(level.first().locator(".name")).toHaveText("Spiral");
   await expect(add).toBeEnabled();
-  await expect(add.locator("option")).toHaveText([ADD, "Tower"]);
+  await expect(add.locator("option")).toHaveText([ADD, "Tower", FILE]);
   await expect(dialog.locator("#patchFit")).toHaveText(
     "It fits in the slot's own bytes, with 179 bytes to spare.",
   );
@@ -1016,7 +1037,7 @@ test("two drafts go onto the disc as one patch, the second added from the select
   await expect(dialog.locator("#patchPlaying")).toBeHidden();
   await expect(add).toBeFocused();
   expect((await add.locator("option").allTextContents()).sort()).toEqual(
-    [ADD, "Spiral", "Tower"].sort(),
+    [ADD, "Spiral", "Tower", FILE].sort(),
   );
   await add.selectOption(String(spiral));
   await expect(level).toHaveCount(1);
@@ -1083,6 +1104,145 @@ test("a level in a world pack and another in its finals pack go on as one patch,
   expect(errors).toEqual([]);
 });
 
+test("a level added from a file is a saved draft of Your levels and a row on the slot its file names, and a file that holds no level is refused with one toast", async ({
+  page,
+}) => {
+  test.slow();
+  const errors = trackErrors(page);
+  await page.addInitScript(() => {
+    delete window.showSaveFilePicker;
+  });
+  await page.goto(EDIT);
+  await settle(page);
+  const spiral = await opened(page, "spiral.kula.json", synthetic(6));
+  await openPatch(page, spiral);
+  const dialog = page.locator("#patch");
+  await expect(dialog).toBeVisible();
+  const level = rows(dialog);
+  const add = dialog.locator("#patchAdd");
+  const picker = dialog.locator("#patchFile");
+  const yours = page.locator("#draftRows button");
+  await expect(add).toBeEnabled();
+  await expect(add.locator("option")).toHaveText([ADD, FILE]);
+  await expect(picker).toBeHidden();
+  await expect(picker).toHaveAttribute(
+    "accept",
+    await page.locator("#draftFile").getAttribute("accept"),
+  );
+
+  // the last entry opens the box's own picker, and the select returns to its prompt
+  const [chooser] = await Promise.all([page.waitForEvent("filechooser"), add.selectOption("file")]);
+  expect(await chooser.element().getAttribute("id")).toBe("patchFile");
+  await expect(add).toHaveValue("");
+  await chooser.setFiles(
+    file("tower.kula.json", writeProject({ ...synthetic(30, "Tower"), into: "/HIRO/HIRO.PAK#2" })),
+  );
+  await expect(level).toHaveCount(2);
+  const second = level.nth(1);
+  await expect(second.locator(".name")).toHaveText("Tower");
+  await expect(second.locator("select")).toHaveValue("/HIRO/HIRO.PAK#2");
+  await expect(second.locator(".reach")).toHaveText(
+    /^It takes LEVEL 3's place, reached with a save that has got that far in .+\.$/,
+  );
+  await expect(dialog.locator("#patchSlot")).toHaveValue("/HIRO/HIRO.PAK#0");
+  await expect(add.locator("option")).toHaveText([ADD, FILE]);
+  await expect(add).toBeFocused();
+  await expect(yours).toHaveCount(2);
+  await expect(yours.filter({ hasText: "Tower" }).locator(".state")).toHaveText("saved to a file");
+  const tower = (await listed(page)).find((d) => d.title === "Tower");
+  expect(tower).toMatchObject({ into: "/HIRO/HIRO.PAK#2", edits: 0 });
+  expect(tower.saved).toBeGreaterThan(0);
+  expect(await shownDraft(page)).toBe(spiral);
+  await expect(page.locator("#chipLine b")).toHaveText("Spiral");
+  expect(await toasts(page)).toEqual([]);
+
+  await picker.setInputFiles(file("other.json", JSON.stringify({ hello: 1, blocks: [] })));
+  await expect(page.locator("#toastStack .toast")).toHaveText([
+    "That file is not a level file of the map's.",
+  ]);
+  await expect(dialog).toBeVisible();
+  await expect(level).toHaveCount(2);
+  await expect(yours).toHaveCount(2);
+  await picker.setInputFiles(file("noise.kwl", new Uint8Array(1000).fill(7)));
+  await expect(page.locator("#toastStack .toast")).toHaveText([
+    "That file is neither a level of the map's nor one of the game's.",
+    "That file is not a level file of the map's.",
+  ]);
+  await expect(level).toHaveCount(2);
+  await expect(yours).toHaveCount(2);
+
+  // the two rows are the fixture's set once the first takes its slot
+  await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
+  await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
+  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  const patch = await saved(page, dialog.locator("#patchPpf"));
+  expect(patch.name).toBe("spiral-and-1-more.ppf");
+  expect(sha256(patch.bytes)).toBe(ONE_PACK.ppf);
+  expect(errors).toEqual([]);
+});
+
+test("a pack added from a file asks which level in the box's place, and the box comes back with the answer", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  const spiral = await opened(page, "spiral.kula.json", synthetic(6));
+  await openPatch(page, spiral);
+  const dialog = page.locator("#patch");
+  await expect(dialog).toBeVisible();
+  const level = rows(dialog);
+  const picker = dialog.locator("#patchFile");
+  const question = page.locator("#import");
+  const yours = page.locator("#draftRows button");
+
+  // declined: nothing opens, and the box is back as it was
+  await picker.setInputFiles(file("custom.pak", pak()));
+  await expect(question).toBeVisible();
+  await expect(dialog).toBeHidden();
+  await expect(question.locator("#importTitle")).toHaveText("Open a level from a pack");
+  await question.locator("#importCancel").click();
+  await expect(question).toBeHidden();
+  await expect(dialog).toBeVisible();
+  await expect(level).toHaveCount(1);
+  await expect(yours).toHaveCount(1);
+  await expect(dialog.locator("#patchAdd")).toBeFocused();
+  expect(await toasts(page)).toEqual([]);
+
+  // answered: the level is a saved draft and a row, read in the world on screen
+  await picker.setInputFiles(file("custom.pak", pak()));
+  await expect(question).toBeVisible();
+  await expect(dialog).toBeHidden();
+  await question.locator("#importSlot").selectOption({ index: 1 });
+  await question.locator("#importOpen").click();
+  await expect(question).toBeHidden();
+  await expect(dialog).toBeVisible();
+  await expect(level).toHaveCount(2);
+  await expect(level.nth(1).locator(".name")).toHaveText("LEVEL 2");
+  await expect(level.nth(1).locator("select")).toHaveValue("/HIRO/HIRO.PAK#1");
+  await expect(level.nth(1).locator(".sub")).toHaveText("");
+  await expect(yours).toHaveCount(2);
+  const second = (await listed(page)).find((d) => d.title === "LEVEL 2");
+  expect(second.saved).toBeGreaterThan(0);
+  expect(await shownDraft(page)).toBe(spiral);
+  expect(await toasts(page)).toEqual([]);
+
+  // what the reader repaired is said once
+  await picker.setInputFiles(file("cut.kwl", writeKwl(synthetic(5, "Cut")).slice(0, -RECORD)));
+  await expect(level).toHaveCount(3);
+  await expect(level.nth(2).locator(".name")).toHaveText("cut");
+  await expect(level.nth(2).locator("select")).toHaveValue("/HIRO/HIRO.PAK#2");
+  await expect(page.locator("#toastStack .toast")).toHaveText([/^no trailer/]);
+  await expect(yours).toHaveCount(3);
+
+  // the box that came back stands on an entry of its own, which closing spends
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect.poll(() => page.evaluate(() => history.state?.dialog ?? null)).toBeNull();
+  expect(errors).toEqual([]);
+});
+
 test("a level another tab deletes leaves its row, and the box closes when the last one goes", async ({
   page,
 }) => {
@@ -1115,7 +1275,7 @@ test("a level another tab deletes leaves its row, and the box closes when the la
   await expect(dialog.locator("#patchPlay li").nth(2)).toContainText(
     '"spiral.xdelta" "spiral.bin"',
   );
-  await expect(dialog.locator("#patchAdd")).toBeDisabled();
+  await expect(dialog.locator("#patchAdd option")).toHaveText([ADD, FILE]);
 
   const none = structuredClone(without);
   delete none.drafts[spiral];
