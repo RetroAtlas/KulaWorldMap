@@ -456,7 +456,7 @@
             id="padBtn"
             type="button"
             aria-pressed="false"
-            aria-controls="pad"
+            aria-controls="pad jump"
             title="Show and hide the pad"
           >
             Pad
@@ -501,6 +501,9 @@
           ▲
         </button>
         <button type="button" data-pad="left" aria-label="Turn left" title="Turn left">◀</button>
+        <button type="button" data-pad="right" aria-label="Turn right" title="Turn right">▶</button>
+      </div>
+      <div id="jump" class="jump" hidden>
         <button
           type="button"
           id="padBall"
@@ -508,7 +511,6 @@
           aria-label="Jump"
           title="Jump, or hop in place"
         ></button>
-        <button type="button" data-pad="right" aria-label="Turn right" title="Turn right">▶</button>
       </div>
       <div id="palette" class="palette" role="group" aria-label="Palette" hidden></div>
       <div id="toastStack" class="toasts" aria-live="polite"></div>

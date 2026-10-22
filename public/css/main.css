@@ -733,6 +733,8 @@ button.kind:hover {
   --compass-h: var(--corner-h);
   /* the corner's width: its column of buttons, the gap and the compass */
   --corner-w: calc(44px + 8px + var(--compass-h));
+  /* the jump button's size, which the corner's widgets stand clear of while the pad shows */
+  --jump-h: 82px;
 }
 #cv {
   display: block;
@@ -1586,61 +1588,96 @@ body.playing .chip {
     transform: none;
   }
 }
-.pad {
+/* the pad's arrows at the bottom left, the roll a bar over the two turns, and the jump on a round
+   button at the bottom right, level with the pad, so one thumb holds the roll while the other taps
+   the jump; both lie over the view */
+.pad,
+.jump {
   position: absolute;
-  left: 12px;
   bottom: calc(
     var(--corner-foot) + var(--under-h, 0px) + var(--course-h, 0px) + var(--play-h, 0px)
   );
   z-index: 15;
-  display: grid;
-  grid-template-columns: repeat(3, 48px);
-  grid-auto-rows: 48px;
-  gap: 4px;
-  padding: 6px;
   background: var(--surface-float);
   border: 1px solid var(--line);
-  border-radius: 12px;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
-.pad button {
+.pad {
+  left: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 58px);
+  grid-auto-rows: 58px;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 14px;
+}
+.jump {
+  right: 12px;
+  width: var(--jump-h);
+  height: var(--jump-h);
+  padding: 7px;
+  border-radius: 50%;
+}
+.pad button,
+.jump button {
   background: var(--panel-2);
   border: 1px solid var(--line);
   color: var(--ink);
-  border-radius: 8px;
   padding: 0;
   font: inherit;
-  font-size: 18px;
   cursor: pointer;
 }
-.pad button:focus-visible {
+.pad button {
+  border-radius: 10px;
+  font-size: 20px;
+}
+.jump button {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+.pad button:focus-visible,
+.jump button:focus-visible {
   border-color: var(--accent-dim);
 }
 @media (hover: hover) {
-  .pad button:hover {
+  .pad button:hover,
+  .jump button:hover {
     border-color: var(--accent-dim);
   }
 }
-.pad button:active {
+.pad button:active,
+.jump button:active {
   background: var(--accent);
   color: #06222f;
   border-color: var(--accent);
 }
 .pad [data-pad="up"] {
-  grid-area: 1 / 2;
+  grid-area: 1 / 1 / 2 / 3;
 }
 .pad [data-pad="left"] {
   grid-area: 2 / 1;
 }
-.pad [data-pad="jump"] {
-  grid-area: 2 / 2;
-  display: grid;
-  place-items: center;
-}
 .pad [data-pad="right"] {
-  grid-area: 2 / 3;
+  grid-area: 2 / 2;
+}
+/* while the pad shows the corner's widgets stand left of the jump, the strip still ends short of
+   them and the panel ends above the jump */
+body.padded #corner {
+  right: calc(12px + var(--jump-h) + 8px);
+}
+body.padded #play {
+  max-width: calc(100% - 24px - var(--corner-w) - 12px - var(--jump-h) - 8px);
+}
+body.padded .detail {
+  max-height: calc(
+    100% - 20px - var(--corner-foot) - var(--under-h, 0px) - var(--course-h, 0px) -
+      var(--play-h, 0px) - var(--jump-h)
+  );
 }
 
 /* on the strip, where the editor's tools are, whatever its height */
@@ -2056,10 +2093,28 @@ body.playing .chip {
   body.editing #corner {
     bottom: calc(var(--under-h, 0px) + var(--course-h, 0px) + var(--play-h, 0px));
   }
+  /* and above the jump while the pad shows, the strip spanning the width still and the panel
+     ending above the corner, the editor's sheet apart */
+  body.padded #corner {
+    right: 12px;
+    bottom: calc(
+      var(--corner-foot) + var(--under-h, 0px) + var(--course-h, 0px) + var(--play-h, 0px) +
+        var(--jump-h) + 8px
+    );
+  }
+  body.padded #play {
+    max-width: calc(100% - 24px);
+  }
   .detail {
     max-height: calc(
       100% - 20px - var(--corner-foot) - var(--corner-h) - var(--under-h, 0px) -
         var(--course-h, 0px) - var(--play-h, 0px)
+    );
+  }
+  body.padded:not(.editing) .detail {
+    max-height: calc(
+      100% - 20px - var(--corner-foot) - var(--corner-h) - var(--under-h, 0px) -
+        var(--course-h, 0px) - var(--play-h, 0px) - var(--jump-h) - 8px
     );
   }
 }

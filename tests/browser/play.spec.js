@@ -9,6 +9,7 @@ import {
   topPixels,
   gold,
   written,
+  overlaps,
 } from "./helpers.js";
 
 const LEVEL = "/#HIRO/0/45,35/fit/33";
@@ -1573,13 +1574,28 @@ test("the play strip ends short of the corner's widgets once Follow shows, its b
   expect(strip.x + strip.width).toBeLessThanOrEqual(corner.x);
   const lineBox = await page.locator("#playLine").boundingBox();
   expect(lineBox.height).toBeLessThan(30);
-  expect(
-    await page.evaluate(() => {
+  const hit = () =>
+    page.evaluate(() => {
       const button = document.getElementById("playBtn");
       const r = button.getBoundingClientRect();
       return button.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
-    }),
-  ).toBe(true);
+    });
+  expect(await hit()).toBe(true);
+  // with the pad shown the corner stands left of the jump, the strip still short of the corner
+  await page.locator("#padBtn").click();
+  await expect(page.locator("#jump")).toBeVisible();
+  const [padded, moved, jump] = await Promise.all(
+    ["#play", "#corner", "#jump"].map((sel) => page.locator(sel).boundingBox()),
+  );
+  expect(padded.x + padded.width).toBeLessThanOrEqual(moved.x);
+  expect(moved.x + moved.width).toBeLessThanOrEqual(jump.x);
+  expect(await hit()).toBe(true);
+  await page.locator("#padBtn").click();
+  await expect(page.locator("#jump")).toBeHidden();
+  const [cv, back] = await Promise.all(
+    ["#cv", "#corner"].map((sel) => page.locator(sel).boundingBox()),
+  );
+  expect(cv.x + cv.width - (back.x + back.width)).toBeLessThanOrEqual(13);
   await page.locator("#playBtn").click();
   await expect(page.locator("#play")).toBeHidden();
   expect(errors).toEqual([]);
@@ -2797,6 +2813,7 @@ test.describe("with a touch screen", () => {
     await expect(page.locator("#pad")).toBeHidden();
     await startPlay(page);
     await expect(page.locator("#pad")).toBeVisible();
+    await expect(page.locator("#jump")).toBeVisible();
     await expect(page.locator("#padBtn")).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator('#pad [data-pad="down"]')).toHaveCount(0);
     const up = await page.locator('#pad [data-pad="up"]').boundingBox();
@@ -2813,16 +2830,30 @@ test.describe("with a touch screen", () => {
     // held on, it rolls on past the next block
     await expect.poll(async () => (await probe(page)).station.block[1]).toBeLessThanOrEqual(16);
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-    await cdp.detach();
     await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
     const rested = (await probe(page)).station.block;
     await page.waitForTimeout(400);
     expect((await probe(page)).station.block).toEqual(rested);
-    // a touch leaves no hover look behind, on the arrow or on the strip's button
+    // the jump, held, hops the ball where it stands
+    const jump = await page.locator("#padBall").boundingBox();
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: jump.x + jump.width / 2, y: jump.y + jump.height / 2 }],
+    });
+    await expect
+      .poll(async () => (await probe(page)).station.moving, { intervals: [25] })
+      .toBe(true);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await cdp.detach();
+    await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+    expect((await probe(page)).station.block).toEqual(rested);
+    // a touch leaves no hover look behind, on the arrow, on the jump or on the strip's button
     const border = (sel) => page.locator(sel).evaluate((el) => getComputedStyle(el).borderTopColor);
     expect(await border('#pad [data-pad="up"]')).toBe(await border('#pad [data-pad="left"]'));
+    expect(await border("#padBall")).toBe(await border('#pad [data-pad="left"]'));
     await page.locator("#padBtn").tap();
     await expect(page.locator("#pad")).toBeHidden();
+    await expect(page.locator("#jump")).toBeHidden();
     expect(await border("#padBtn")).toBe(await border("#forgiveBtn"));
     await hold(page, await top(page, [17, 12, 17]));
     await expect(page.locator("#detail")).toContainText("cell 17,12,17");
@@ -2859,18 +2890,30 @@ test.describe("with a touch screen", () => {
       expect(spot.x).toBeLessThan(375 - 40);
       expect(lineBox.width).toBeGreaterThan(strip.width * 0.8);
       expect(lineBox.height).toBeLessThan(45);
-      // the game's pad has no Down, so the pad has no down arrow and no row under the jump's
+      // the game's pad has no Down, so the pad has no down arrow and no row under the turns
       await expect(page.locator('#pad [data-pad="down"]')).toHaveCount(0);
+      // the roll is a bar over the two turns, and the jump stands at the bottom right, level with
+      // the pad, the corner's widgets clear of the jump, the pad and the strip
       const up = await page.locator('#pad [data-pad="up"]').boundingBox();
-      const jump = await page.locator("#padBall").boundingBox();
-      expect(pad.y + pad.height - (jump.y + jump.height)).toBeCloseTo(up.y - pad.y, 0);
-      // put away and brought back, the pad leaves the ball where it is
+      const left = await page.locator('#pad [data-pad="left"]').boundingBox();
+      expect(up.width).toBeGreaterThanOrEqual(left.width * 2);
+      await expect(page.locator("#jump")).toBeVisible();
+      const jump = await page.locator("#jump").boundingBox();
+      expect(Math.abs(jump.x + jump.width - (cv.x + cv.width - 12))).toBeLessThanOrEqual(1);
+      expect(Math.abs(jump.y + jump.height - (pad.y + pad.height))).toBeLessThanOrEqual(1);
+      const corner = await page.locator("#corner").boundingBox();
+      expect(overlaps(corner, jump) || overlaps(corner, pad) || overlaps(corner, strip)).toBe(
+        false,
+      );
+      // put away and brought back, the pad takes the jump with it and leaves the ball where it is
       await page.locator("#padBtn").click();
       await expect(page.locator("#pad")).toBeHidden();
+      await expect(page.locator("#jump")).toBeHidden();
       const without = await anchor(page);
       expect([without.x, without.y, without.free]).toEqual([spot.x, spot.y, spot.free]);
       await page.locator("#padBtn").click();
       await expect(page.locator("#pad")).toBeVisible();
+      await expect(page.locator("#jump")).toBeVisible();
       const again = await anchor(page);
       expect([again.x, again.y, again.free]).toEqual([spot.x, spot.y, spot.free]);
       expect(errors).toEqual([]);

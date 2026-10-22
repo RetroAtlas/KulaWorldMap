@@ -1438,7 +1438,10 @@ function sync() {
   $("play").hidden = !live;
   $("hud").hidden = !live;
   document.body.classList.toggle("playing", live !== null);
-  $("pad").hidden = !live || !padShown;
+  const padUp = live !== null && padShown;
+  $("pad").hidden = !padUp;
+  $("jump").hidden = !padUp;
+  document.body.classList.toggle("padded", padUp);
   $("padBtn").setAttribute("aria-pressed", String(padShown));
   $("forgiveBtn").setAttribute("aria-pressed", String(forgiving));
   if (live) {
@@ -1449,13 +1452,12 @@ function sync() {
 }
 
 function wirePad() {
-  const pad = $("pad");
   const bitOf = (e) => PAD_BITS[e.target.closest("[data-pad]")?.dataset.pad] ?? 0;
   const release = (e) => {
     const bit = bitOf(e);
     if (bit) keys.up(bit);
   };
-  pad.addEventListener("pointerdown", (e) => {
+  const press = (e) => {
     const bit = bitOf(e);
     if (!bit || !live) return;
     e.preventDefault();
@@ -1468,9 +1470,12 @@ function wirePad() {
     e.target.setPointerCapture(e.pointerId);
     keys.down(bit);
     wake();
-  });
-  for (const type of ["pointerup", "pointercancel"]) pad.addEventListener(type, release);
-  pad.addEventListener("lostpointercapture", release);
+  };
+  for (const group of [$("pad"), $("jump")]) {
+    group.addEventListener("pointerdown", press);
+    for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
+      group.addEventListener(type, release);
+  }
   $("padBtn").onclick = () => {
     padShown = !padShown;
     if (live?.ended) status(verdict());
@@ -1491,7 +1496,7 @@ function wirePad() {
 function icon() {
   const l = state.lvl;
   const model = l && ballFor(l);
-  $("padBall").replaceChildren(model ? iconFor(model, 22) : "");
+  $("padBall").replaceChildren(model ? iconFor(model, 40) : "");
   if (!live) return;
   marked(live.run.words.bonus, true);
   caption();
