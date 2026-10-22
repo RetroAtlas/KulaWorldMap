@@ -1518,6 +1518,7 @@ body.editing #course .status {
   border: 1px solid var(--line);
   border-radius: 9px;
   font-size: 12.5px;
+  min-width: 264px;
 }
 .hud .title {
   max-width: 100%;
@@ -1530,10 +1531,20 @@ body.editing #course .status {
   line-height: 14px;
   letter-spacing: 0.02em;
 }
+/* the row's two sides share its width equally, so the clock keeps the middle as the figures
+   beside it grow */
 .hud .row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 18px;
+  align-self: stretch;
+  column-gap: 18px;
+}
+.hud #playPoints {
+  justify-self: start;
+}
+.hud #playKeys {
+  justify-self: end;
 }
 .hud .figure {
   display: inline-flex;
@@ -1612,6 +1623,7 @@ body.playing .chip {
   .hud {
     left: 54px;
     right: 12px;
+    min-width: 0;
     transform: none;
   }
 }

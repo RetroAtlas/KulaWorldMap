@@ -1632,6 +1632,15 @@ test("the HUD takes the level line's place while the ball is on the level, namin
   expect(box.y + box.height).toBeLessThanOrEqual(cv.y + 80);
   expect(points.x + points.width).toBeLessThanOrEqual(clock.x);
   expect(clock.x + clock.width).toBeLessThanOrEqual(keys.x);
+  // the clock keeps the middle as the figures beside it grow
+  const middle = (b) => b.x + b.width / 2;
+  await page.evaluate(() => {
+    document.querySelector("#playPoints b").textContent = "2500";
+    document.querySelector("#playKeys b").textContent = "12";
+  });
+  const grown = await page.locator("#playClock").boundingBox();
+  expect(Math.abs(middle(grown) - middle(clock))).toBeLessThanOrEqual(1);
+  expect(Math.abs(middle(grown) - (cv.x + cv.width / 2))).toBeLessThanOrEqual(2);
   // the HUD lies over the view, so the ball is framed a fifth below the middle of what the strip
   // alone leaves free
   const spot = await anchor(page);
