@@ -399,7 +399,7 @@ function buildForm(id, box) {
     bonusLabel,
     bonusSays,
     el("label", { className: "check" }, hidden, " Hidden level"),
-    el("label", { className: "check" }, afar, " Invisible blocks show from far away"),
+    el("label", { className: "check" }, afar, " Invisible blocks show from afar"),
     circuits.box,
     plays,
     errors,

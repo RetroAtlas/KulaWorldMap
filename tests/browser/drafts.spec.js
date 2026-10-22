@@ -334,7 +334,11 @@ test("the Level card edits the draft as the game would load it, keeping the view
 
   await page.locator("#draftTime").fill("45");
   await page.locator("#draftHidden").check();
-  await page.locator("#draftAfar").check();
+  const afar = page.locator("#draftAfar");
+  await expect(page.locator("#draftCard label.check", { has: afar })).toHaveText(
+    "Invisible blocks show from afar",
+  );
+  await afar.check();
   expect((await shown(page)).time).toBe(45);
   await expect(page.locator("#chipLine")).toContainText("time 45");
   await expect(page.locator("#draftRows button .state")).toHaveText(
