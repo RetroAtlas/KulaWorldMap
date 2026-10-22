@@ -72,5 +72,80 @@
    "ppf": "5608844bd58ee3b78808130f1e9966d4312259ae8da98f8e5d162fe1214d82b4",
    "xdelta": "70d1497e48948f7ee1ff041387ca4281e84e7858d6a4dec6870a751474a8778f"
   }
+ ],
+ "sets": [
+  {
+   "name": "two in one pack",
+   "items": [
+    {
+     "blocks": 6,
+     "pack": "/HIRO/HIRO.PAK",
+     "slot": 1,
+     "title": "Spiral",
+     "stream": 305,
+     "path": "in place",
+     "recompressed": false,
+     "size": 1503,
+     "room": 179,
+     "lba": 25
+    },
+    {
+     "blocks": 30,
+     "pack": "/HIRO/HIRO.PAK",
+     "slot": 2,
+     "title": "Tower",
+     "stream": 723,
+     "path": "rebuild",
+     "recompressed": false,
+     "size": 1523,
+     "room": 525,
+     "lba": 25
+    }
+   ],
+   "sectors": [
+    24,
+    25
+   ],
+   "patched": "34dacd4c42947c731084ea95feb7e61d44da0bee085ae9212dc39059b6a84ba1",
+   "ppf": "cc335bd7ce2ac5e061c9aa7b658e89571132e34f0ab1459bf74507155363bf0d",
+   "xdelta": "495548a40bea96dbc19b2792019bcb59b97f50e4863fe94822d04f3d79570e15"
+  },
+  {
+   "name": "across packs",
+   "items": [
+    {
+     "blocks": 6,
+     "pack": "/HIRO/HIRO.PAK",
+     "slot": 1,
+     "title": "Spiral",
+     "stream": 305,
+     "path": "in place",
+     "recompressed": false,
+     "size": 1503,
+     "room": 179,
+     "lba": 25
+    },
+    {
+     "blocks": 5,
+     "pack": "/HIRO/HIROFI.PAK",
+     "slot": 0,
+     "title": "Tower",
+     "stream": 273,
+     "path": "rebuild",
+     "recompressed": false,
+     "size": 594,
+     "room": 1454,
+     "lba": 26
+    }
+   ],
+   "sectors": [
+    24,
+    25,
+    26
+   ],
+   "patched": "f3ca47973c984177f00460432a7d752283bbcb108bb15bc79da0e41a3ea3fba1",
+   "ppf": "45df33e96a7e506abe9bc2685a210f774c6ee44548b7e54ff3120453d525a041",
+   "xdelta": "fcc734025674df1239f1e59ca9a952963f4397b6fcdaa3507fe0c36db9574d63"
+  }
  ]
 }

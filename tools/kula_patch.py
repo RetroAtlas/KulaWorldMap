@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
-"""Write a level onto the disc as a patch: a PPF, an xdelta, or a patched image.
+"""Write a level, or several, onto the disc as one patch: a PPF, an xdelta, or a patched image.
 
     export KULA_DISC="/path/to/Roll Away.bin"
     python3 tools/kula_patch.py --level spiral.kula.json --into /HIRO/HIRO.PAK#0 --out spiral
     python3 tools/kula_patch.py --level spiral.kwl --into /HIRO/HIRO.PAK#0 --out spiral --ppf
     python3 tools/kula_patch.py --level /HIRO/HIRO.PAK#3 --into /HIRO/HIRO.PAK#0 --out level4 --image
+    python3 tools/kula_patch.py --level spiral.kwl --into /HIRO/HIRO.PAK#0 \
+                                --level tower.kwl --into /HIRO/HIRO.PAK#1 --out world
     python3 tools/kula_patch.py --fixture               # tests/fixtures/patch-digests.json
 
 The level, a project file, a level file or a shipped level, is written as the
 game's bytes, deflated, and placed in its slot by kula_place; the sectors the
-placement writes are what the patches carry. A PPF 3.0 patch is what the
-PlayStation emulators lay over an untouched image, each reading it from a
-place of its own; an xdelta patch, VCDIFF as xdelta3 writes it, is what a
-player applies with xdelta3 or Rom Patcher to get a patched copy; the image
-is that copy itself, with its cue sheet beside it. Nothing here writes to the
-original image.
+placement writes are what the patches carry. Several levels, each --level
+paired with the --into after it, are placed in the order given, each over the
+image as the earlier ones left it, and the sectors of every placement are one
+patch. A PPF 3.0 patch is what the PlayStation emulators lay over an untouched
+image, each reading it from a place of its own; an xdelta patch, VCDIFF as
+xdelta3 writes it, is what a player applies with xdelta3 or Rom Patcher to get
+a patched copy; the image is that copy itself, with its cue sheet beside it.
+Nothing here writes to the original image.
 """
 import argparse
 import hashlib
@@ -30,7 +34,18 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import file_at, open_disc, output_at
 from kula_kwl import DATA, OBJECTS, canonical, describe, level_at, project_at, template, validate
-from kula_place import SYNTHETIC_PACK, Patched, place, plan, synthetic, synthetic_image, verify, written
+from kula_place import (
+    SYNTHETIC_FINALS,
+    SYNTHETIC_PACK,
+    Patched,
+    place,
+    place_all,
+    plan_all,
+    synthetic,
+    synthetic_image,
+    verify_all,
+    written,
+)
 from kula_sector import HEX_RUN, SECTOR_RAW, raw_sector
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -51,6 +66,7 @@ VCD_ADLER32 = 4
 COPY, ADD = 19, 1       # the default code table's COPY in mode 0 and ADD, each with its size following
 
 PREFIX = "Kula World Map: "
+INTO = "/HIRO/HIRO.PAK#0"
 
 
 def runs(old, new):
@@ -144,6 +160,11 @@ def vcdiff(original, writes, window=WINDOW):
     return bytes(out)
 
 
+def description(titles):
+    """What a PPF says of itself: the prefix and the levels' titles."""
+    return PREFIX + ", ".join(titles)
+
+
 def placements(image, out):
     """Where each emulator wants the PPF, and how the xdelta is applied."""
     image, out = Path(image), Path(out)
@@ -152,26 +173,35 @@ def placements(image, out):
             f'the xdelta applies with: xdelta3 -d -s "{image.name}" "{out.name}.xdelta" "{out.name}.bin"']
 
 
-# --- the fixture: the synthetic image patched by every path -----------------------
+# --- the fixture: the synthetic image patched by every path, and by sets of levels ---
 
 SLOT = 1
 TITLE = "Spiral"
 CASES = [("in place", 6), ("rebuild", 30), ("rebuild, recompressed", 60), ("relocate", 120)]
+SETS = [("two in one pack", [(6, SYNTHETIC_PACK, SLOT, TITLE), (30, SYNTHETIC_PACK, 2, "Tower")]),
+        ("across packs", [(6, SYNTHETIC_PACK, SLOT, TITLE), (5, SYNTHETIC_FINALS, 0, "Tower")])]
 
 
 def digest(blob):
     return hashlib.sha256(blob).hexdigest()
 
 
+def items_of(members):
+    """A set's members, (blocks, pack, slot, title), as the placer takes them."""
+    return [(pack_path, slot, zlib.compress(canonical(synthetic(n, title)), 6), title)
+            for n, pack_path, slot, title in members]
+
+
 def fixture(scratch):
-    """The digests of the synthetic image patched by each path, written beside
-    the image's own digest so a port can hold its image to this one first."""
+    """The digests of the synthetic image patched by each path and by each set
+    of levels placed together, written beside the image's own digest so a port
+    can hold its image to this one first."""
     image = Path(scratch) / "synthetic.bin"
     image.write_bytes(synthetic_image())
-    out = {"image": digest(image.read_bytes()), "pack": SYNTHETIC_PACK, "slot": SLOT, "title": TITLE, "cases": []}
+    out = {"image": digest(image.read_bytes()), "pack": SYNTHETIC_PACK, "slot": SLOT, "title": TITLE, "cases": [], "sets": []}
+    patched = Path(scratch) / "patched.bin"
     for name, n in CASES:
         stream = zlib.compress(canonical(synthetic(n)), 6)
-        patched = Path(scratch) / "patched.bin"
         placed = place(image, SYNTHETIC_PACK, SLOT, stream, patched, TITLE)
         out["cases"].append({
             "name": name, "blocks": n, "stream": len(stream), "path": placed.fit.path,
@@ -180,6 +210,20 @@ def fixture(scratch):
             "patched": digest(patched.read_bytes()),
             "ppf": digest(ppf(image, placed.writes, PREFIX + TITLE)),
             "xdelta": digest(vcdiff(image, placed.writes)),
+        })
+    for name, members in SETS:
+        items = items_of(members)
+        planned = place_all(image, items, patched)
+        out["sets"].append({
+            "name": name,
+            "items": [{"blocks": n, "pack": pack_path, "slot": slot, "title": title, "stream": len(stream),
+                       "path": placed.fit.path, "recompressed": placed.fit.recompressed, "size": placed.fit.size,
+                       "room": placed.fit.room, "lba": placed.lba}
+                      for (n, _, _, _), (pack_path, slot, stream, title), placed in zip(members, items, planned.placed)],
+            "sectors": [lba for lba, _ in planned.writes],
+            "patched": digest(patched.read_bytes()),
+            "ppf": digest(ppf(image, planned.writes, description(title for *_, title in items))),
+            "xdelta": digest(vcdiff(image, planned.writes)),
         })
     text = json.dumps(out, indent=1) + "\n"
     hit = HEX_RUN.search(text)
@@ -209,8 +253,10 @@ def load_level(arg, world):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--level", metavar="FILE", help="a .kula.json project, a .kwl level file, or a shipped level as PACK#slot")
-    ap.add_argument("--into", default="/HIRO/HIRO.PAK#0", help="the slot the level takes, of a world pack or a finals pack")
+    ap.add_argument("--level", action="append", metavar="FILE",
+                    help="a .kula.json project, a .kwl level file, or a shipped level as PACK#slot; repeat for several")
+    ap.add_argument("--into", action="append",
+                    help=f"the slot the level takes, of a world pack or a finals pack, one after each --level; {INTO} for one level without it")
     ap.add_argument("--out", metavar="NAME", help="what the outputs are called, without an extension")
     ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to $KULA_DISC")
     ap.add_argument("--ppf", action="store_true", help="write NAME.ppf")
@@ -227,6 +273,9 @@ def main():
         return
     if not (args.level and args.out):
         ap.error("say --level FILE and --out NAME")
+    intos = args.into or ([INTO] if len(args.level) == 1 else [])
+    if len(intos) != len(args.level):
+        sys.exit(f"{len(args.level)} --level and {len(intos)} --into do not pair up; say one --into after each --level")
     wanted = {"ppf": args.ppf, "xdelta": args.xdelta, "image": args.image}
     if not any(wanted.values()):
         wanted = dict.fromkeys(wanted, True)
@@ -243,52 +292,56 @@ def main():
     except OSError as e:
         sys.exit(f"{named(asked[0])} cannot be written: {e.strerror}")
 
-    project, report = load_level(args.level, args.world)
-    for line in report:
-        print(line, file=sys.stderr)
-    pack_path, _, slot = args.into.rpartition("#")
-    if not pack_path or not re.fullmatch(r"[0-9]+", slot):
-        sys.exit(f"--into wants a pack path and a slot, like /HIRO/HIRO.PAK#0, not {args.into!r}")
-    project["into"] = args.into
-    findings = validate(project, json.loads(OBJECTS.read_text())["skins"]["hides"])
-    for finding in findings:
-        print(describe(finding), file=sys.stderr)
-    if any(level == "error" for level, _, _ in findings):
-        sys.exit("the level has errors the game would not forgive; fix them first")
-    try:
-        stream = zlib.compress(canonical(project), 6)
-    except ValueError as e:
-        sys.exit(str(e))
-    stem = Path(args.level).stem
-    title = project.get("title") or stem.removesuffix(".kula")
+    hides = json.loads(OBJECTS.read_text())["skins"]["hides"]
+    items = []
+    for arg, into in zip(args.level, intos):
+        project, report = load_level(arg, args.world)
+        for line in report:
+            print(line, file=sys.stderr)
+        pack_path, _, slot = into.rpartition("#")
+        if not pack_path or not re.fullmatch(r"[0-9]+", slot):
+            sys.exit(f"--into wants a pack path and a slot, like {INTO}, not {into!r}")
+        project["into"] = into
+        findings = validate(project, hides)
+        for finding in findings:
+            print(describe(finding), file=sys.stderr)
+        title = project.get("title") or Path(arg).stem.removesuffix(".kula")
+        if any(level == "error" for level, _, _ in findings):
+            sys.exit(f"{title} has errors the game would not forgive; fix them first")
+        try:
+            stream = zlib.compress(canonical(project), 6)
+        except ValueError as e:
+            sys.exit(str(e))
+        items.append((pack_path, int(slot), stream, title))
 
     disc = open_disc(src)
     try:
         with disc:
-            placed = plan(disc, pack_path, int(slot), stream, title)
+            planned = plan_all(disc, items)
         if wanted["image"]:
-            written(src, named(".bin"), placed.writes, lambda copy: verify(copy, pack_path, int(slot), stream, placed))
+            written(src, named(".bin"), planned.writes, lambda copy: verify_all(copy, items, planned))
         else:
-            with Patched(src, placed.writes) as view:
-                verify(view, pack_path, int(slot), stream, placed)
+            with Patched(src, planned.writes) as view:
+                verify_all(view, items, planned)
     except ValueError as e:
         sys.exit(str(e))
     except OSError as e:
         sys.exit(f"{e.filename or named('.bin')} cannot be written: {e.strerror}")
-    for warning in placed.warnings:
+    for warning in planned.warnings:
         print(f"warning: {warning}", file=sys.stderr)
 
-    recompressed = ", the other levels recompressed" if placed.fit.recompressed else ""
-    print(f"{title} ({len(stream)} bytes) into {pack_path}#{slot}: {placed.fit.path}{recompressed}, "
-          f"{placed.fit.room} bytes of room, the pack {placed.fit.size} bytes at sector {placed.lba}")
+    for (pack_path, slot, stream, title), placed in zip(items, planned.placed):
+        recompressed = ", the other levels recompressed" if placed.fit.recompressed else ""
+        print(f"{title} ({len(stream)} bytes) into {pack_path}#{slot}: {placed.fit.path}{recompressed}, "
+              f"{placed.fit.room} bytes of room, the pack {placed.fit.size} bytes at sector {placed.lba}")
     if wanted["image"]:
-        print(f"{len(placed.writes)} sectors written: {', '.join(str(lba) for lba, _ in placed.writes)}")
+        print(f"{len(planned.writes)} sectors written: {', '.join(str(lba) for lba, _ in planned.writes)}")
         print(f"{named('.bin')} and {named('.cue')}")
     patches = []
     if wanted["ppf"]:
-        patches.append((named(".ppf"), ppf(src, placed.writes, PREFIX + title)))
+        patches.append((named(".ppf"), ppf(src, planned.writes, description(title for *_, title in items))))
     if wanted["xdelta"]:
-        patches.append((named(".xdelta"), vcdiff(src, placed.writes)))
+        patches.append((named(".xdelta"), vcdiff(src, planned.writes)))
     for path, blob in patches:
         try:
             path.write_bytes(blob)

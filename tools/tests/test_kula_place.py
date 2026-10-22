@@ -35,6 +35,7 @@ from kula_place import (  # noqa: E402
     ROOM_AT,
     ROOM_SECTORS,
     ROOT_AT,
+    FINALS_AT,
     SYNTHETIC_FINALS,
     SYNTHETIC_PACK,
     SYNTHETIC_SECTORS,
@@ -44,12 +45,15 @@ from kula_place import (  # noqa: E402
     identify,
     pack_name,
     place,
+    place_all,
     plan,
+    plan_all,
     proven,
     stream_of,
     synthetic,
     synthetic_image,
     verify,
+    verify_all,
     write_image,
     write_sectors,
     written,
@@ -543,6 +547,148 @@ class ThePlacer(unittest.TestCase):
             self.assertEqual(plan(disc, SYNTHETIC_PACK, SLOT, stream_of(synthetic(LEVELS[REBUILD]))).fit.path, REBUILD)
 
 
+class SeveralLevels(unittest.TestCase):
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.dir)
+        self.src = self.dir / "image.bin"
+        self.src.write_bytes(IMAGE)
+        self.out = self.dir / "patched.bin"
+        with Disc(self.src) as disc:
+            self.pak = Pak(disc.read_file(SYNTHETIC_PACK))
+            self.finals = Pak(disc.read_file(SYNTHETIC_FINALS))
+            self.warnings = identify(disc)
+        self.first = (SYNTHETIC_PACK, SLOT, stream_of(synthetic(LEVELS[IN_PLACE])), TITLE)
+        self.second = (SYNTHETIC_PACK, 2, stream_of(synthetic(LEVELS[REBUILD], "Tower")), "Tower")
+
+    def hold(self, items, planned, after):
+        """What every set has to satisfy: the copy is the image with the merged
+        sectors written and nothing else, every pack lies where its last
+        placement put it, and every slot inflates to its level."""
+        self.assertEqual(len(after), len(IMAGE))
+        touched = {lba for lba, _ in planned.writes}
+        self.assertEqual([lba for lba, _ in planned.writes], sorted(touched))
+        for lba in range(SYNTHETIC_SECTORS):
+            if lba not in touched:
+                self.assertEqual(raw(after, lba), raw(IMAGE, lba), lba)
+        for lba, raw_ in planned.writes:
+            self.assertEqual(raw(after, lba), raw_)
+            self.assertNotEqual(raw_, raw(IMAGE, lba))
+            self.assertTrue(check(raw_) and rebuilt(raw_, lba), lba)
+        with Disc(self.out) as disc:
+            for (pack_path, slot, stream, _), placed in zip(items, planned.placed):
+                pak = Pak(disc.read_file(pack_path))
+                self.assertEqual(pak.level(slot), zlib.decompress(stream))
+                self.assertEqual(Level(pak.level(slot)).verify(), [])
+            for pack_path, placed in {p.upper(): placed for (p, *_), placed in zip(items, planned.placed)}.items():
+                self.assertEqual(disc.files[pack_path], (placed.lba, placed.fit.size))
+                pak = Pak(disc.read_file(pack_path))
+                self.assertEqual((pak.streams(), pak.names()), (placed.fit.streams, placed.fit.names))
+            verify_all(disc, items, planned)
+        self.assertEqual(self.out.with_suffix(".cue").read_text(), cue(self.out.name))
+        self.assertEqual(self.src.read_bytes(), IMAGE)
+
+    def test_one_level_is_planned_as_plan_plans_it(self):
+        with Disc(self.src) as disc:
+            one = plan(disc, *self.first)
+            planned = plan_all(disc, [self.first])
+        self.assertEqual(planned.placed, [one])
+        self.assertEqual((planned.writes, planned.warnings), (one.writes, one.warnings))
+        self.assertEqual(planned.warnings, self.warnings)
+
+    def test_the_second_is_planned_over_the_image_the_first_leaves(self):
+        with Disc(self.src) as disc:
+            one = plan(disc, *self.first)
+            planned = plan_all(disc, [self.first, self.second])
+        with Patched(self.src, one.writes) as view:
+            two = plan(view, *self.second)
+        self.assertEqual(planned.placed, [one, two])
+        self.assertEqual(planned.writes, sorted((dict(one.writes) | dict(two.writes)).items()))
+        self.assertEqual([lba for lba, _ in planned.writes], [WORLD_AT, PACK_AT])
+        self.assertEqual([lba for lba, _ in one.writes], [PACK_AT])
+        self.assertEqual(dict(planned.writes)[PACK_AT], dict(two.writes)[PACK_AT])
+        self.assertNotEqual(dict(one.writes)[PACK_AT], dict(two.writes)[PACK_AT])
+        self.assertEqual((one.fit.path, two.fit.path, two.fit.recompressed), (IN_PLACE, REBUILD, False))
+        self.assertEqual(two.fit.streams, [self.pak.streams()[0], self.first[2], self.second[2]])
+        self.assertEqual(two.fit.names, ["LEVEL 1", "LEVEL 2", "TOWER"])
+        self.assertEqual(planned.warnings, self.warnings)
+
+    def test_a_later_rebuild_that_recompresses_carries_the_earlier_level_at_level_9(self):
+        heavier = (SYNTHETIC_PACK, 2, stream_of(synthetic(65, "Tower")), "Tower")
+        planned = place_all(self.src, [self.first, heavier], self.out)
+        two = planned.placed[1]
+        self.assertEqual((two.fit.path, two.fit.recompressed), (REBUILD, True))
+        self.assertEqual(two.fit.streams[SLOT], zlib.compress(zlib.decompress(self.first[2]), 9))
+        self.assertNotEqual(two.fit.streams[SLOT], self.first[2])
+        self.hold([self.first, heavier], planned, self.out.read_bytes())
+
+    def test_two_packs_sharing_a_directory_sector_both_rebuilt_carry_both_records(self):
+        items = [(SYNTHETIC_PACK, SLOT, stream_of(synthetic(LEVELS[REBUILD])), TITLE),
+                 (SYNTHETIC_FINALS, 0, stream_of(synthetic(5, "Tower")), "Tower")]
+        planned = place_all(self.src, items, self.out)
+        self.assertEqual([(p.fit.path, p.lba) for p in planned.placed], [(REBUILD, PACK_AT), (REBUILD, FINALS_AT)])
+        self.assertEqual([lba for lba, _ in planned.writes], [WORLD_AT, PACK_AT, FINALS_AT])
+        self.assertEqual([[lba for lba, _ in p.writes] for p in planned.placed], [[WORLD_AT, PACK_AT], [WORLD_AT, FINALS_AT]])
+        after = self.out.read_bytes()
+        with Disc(self.out) as disc:
+            self.assertEqual(disc.files[SYNTHETIC_PACK], (PACK_AT, planned.placed[0].fit.size))
+            self.assertEqual(disc.files[SYNTHETIC_FINALS], (FINALS_AT, planned.placed[1].fit.size))
+            self.assertNotEqual(planned.placed[0].fit.size, self.pak.size)
+            self.assertNotEqual(planned.placed[1].fit.size, self.finals.size)
+            self.assertEqual(Pak(disc.read_file(SYNTHETIC_PACK)).names(), ["LEVEL 1", "SPIRAL", "LEVEL 3"])
+            self.assertEqual(Pak(disc.read_file(SYNTHETIC_FINALS)).names(), ["TOWER", "FINAL 2"])
+        self.hold(items, planned, after)
+
+    def test_a_pack_moved_once_is_rebuilt_in_its_new_place_or_moved_again(self):
+        moving = (SYNTHETIC_PACK, SLOT, stream_of(synthetic(LEVELS[RELOCATE])), TITLE)
+        lighter = (SYNTHETIC_PACK, 0, stream_of(synthetic(20, "Tower")), "Tower")
+        heavier = (SYNTHETIC_PACK, 0, stream_of(synthetic(LEVELS[RELOCATE], "Tower")), "Tower")
+        rebuilt_ = place_all(self.src, [moving, lighter], self.out)
+        self.assertEqual([(p.fit.path, p.lba) for p in rebuilt_.placed], [(RELOCATE, ROOM_AT), (REBUILD, ROOM_AT)])
+        self.assertEqual([lba for lba, _ in rebuilt_.writes], [WORLD_AT, ROOM_AT, ROOM_AT + 1])
+        self.assertEqual(rebuilt_.placed[1].fit.names, ["TOWER", "SPIRAL", "LEVEL 3"])
+        self.hold([moving, lighter], rebuilt_, self.out.read_bytes())
+        moved = place_all(self.src, [moving, heavier], self.out)
+        self.assertEqual([(p.fit.path, p.lba) for p in moved.placed], [(RELOCATE, ROOM_AT), (RELOCATE, ROOM_AT + 3)])
+        self.assertEqual([lba for lba, _ in moved.writes], [WORLD_AT, ROOM_AT, ROOM_AT + 1, ROOM_AT + 3, ROOM_AT + 4, ROOM_AT + 5])
+        after = self.out.read_bytes()
+        self.assertEqual(raw(after, ROOM_AT), dict(moved.placed[0].writes)[ROOM_AT])
+        self.assertEqual(user(after, ROOM_AT + 2), bytes(USER))
+        self.assertEqual(raw(after, PACK_AT), raw(IMAGE, PACK_AT))
+        with Disc(self.out) as disc:
+            self.assertEqual(disc.files[SYNTHETIC_PACK], (ROOM_AT + 3, moved.placed[1].fit.size))
+        self.hold([moving, heavier], moved, after)
+
+    def test_a_set_across_packs_is_one_list_of_sectors(self):
+        items = [self.first, (SYNTHETIC_FINALS, 0, stream_of(synthetic(5, "Tower")), "Tower")]
+        planned = place_all(self.src, items, self.out)
+        self.assertEqual([(p.fit.path, p.lba) for p in planned.placed], [(IN_PLACE, PACK_AT), (REBUILD, FINALS_AT)])
+        self.assertEqual([lba for lba, _ in planned.writes], [WORLD_AT, PACK_AT, FINALS_AT])
+        self.hold(items, planned, self.out.read_bytes())
+
+    def test_the_set_is_proven_on_the_copy_as_one_placement_is(self):
+        items = [self.first, self.second]
+        planned = place_all(self.src, items, self.out)
+        self.hold(items, planned, self.out.read_bytes())
+        with Disc(self.out) as disc:
+            with self.assertRaisesRegex(ValueError, f"{SYNTHETIC_PACK}#{SLOT} does not inflate to the level"):
+                verify_all(disc, [(SYNTHETIC_PACK, SLOT, self.second[2], TITLE), self.second], planned)
+            with self.assertRaisesRegex(ValueError, "^the directory puts"):
+                wrong = planned.placed[1]._replace(fit=planned.placed[1].fit._replace(size=planned.placed[1].fit.size + 1))
+                verify_all(disc, items, planned._replace(placed=[planned.placed[0], wrong]))
+        cue_ = self.out.with_suffix(".cue")
+        wrong = planned._replace(placed=[planned.placed[0], wrong])
+        with self.assertRaisesRegex(ValueError, "does not read back as planned, so it and its cue sheet were removed"):
+            written(self.src, self.out, planned.writes, lambda disc: verify_all(disc, items, wrong))
+        self.assertFalse(self.out.exists() or cue_.exists())
+
+    def test_two_levels_naming_one_slot_are_refused(self):
+        with Disc(self.src) as disc:
+            with self.assertRaisesRegex(ValueError, f"^two levels name {SYNTHETIC_PACK.lower()}#{SLOT}, which holds one$"):
+                plan_all(disc, [self.first, (SYNTHETIC_PACK.lower(), SLOT, self.second[2], "Tower")])
+            self.assertEqual(len(plan_all(disc, [self.first, self.second]).placed), 2)
+
+
 @unittest.skipUnless(os.environ.get("KULA_DISC"), "needs the disc under $KULA_DISC")
 class TheDisc(unittest.TestCase):
     PACK = "/HIRO/HIRO.PAK"
@@ -654,6 +800,31 @@ class TheDisc(unittest.TestCase):
         self.assertEqual((placed.fit.path, placed.fit.recompressed, placed.lba), (REBUILD, True, 3609))
         self.assertLess(placed.fit.size, 12288)
         self.assertEqual([lba for lba, _ in placed.writes], [3293] + list(range(3609, 3615)))
+
+    def test_two_levels_go_in_together_each_over_the_image_the_earlier_leaves(self):
+        pak = Pak(self.disc.read_file(self.PACK), self.PACK)
+        items = [(self.PACK, 0, stream_of(synthetic(4)), TITLE), (self.PACK, 1, stream_of(synthetic(30, "Tower")), "Tower")]
+        planned = plan_all(self.disc, items)
+        self.assertEqual(planned.warnings, [])
+        self.assertEqual([(p.fit.path, p.fit.recompressed, p.lba) for p in planned.placed],
+                         [(IN_PLACE, False, 1002), (REBUILD, False, 1002)])
+        self.assertEqual([lba for lba, _ in planned.writes], [322] + list(range(1002, 1008)))
+        self.assertEqual([lba for lba, _ in planned.placed[0].writes], [1002])
+        self.assertEqual(planned.placed[1].fit.names, [pak.name(0), "TOWER"] + pak.names()[2:])
+        self.assertEqual(planned.placed[1].fit.streams[0], items[0][2])
+        kept = [(lba, raw_sector(self.disc.f, lba)) for lba, _ in planned.writes]
+        write_sectors(self.copy, planned.writes)
+        try:
+            with Disc(self.copy) as disc:
+                verify_all(disc, items, planned)
+                after = Pak(disc.read_file(self.PACK))
+                for i in range(len(after)):
+                    self.assertEqual(after.level(i), zlib.decompress(items[i][2]) if i < 2 else pak.level(i))
+                    self.assertEqual(Level(after.level(i)).verify(), [])
+                self.assertEqual(disc.files[self.PACK], (1002, planned.placed[1].fit.size))
+            self.image_is_the_disc_with(planned.writes)
+        finally:
+            write_sectors(self.copy, kept)
 
     def test_the_canonical_rebuild_of_a_level_goes_back_into_its_own_slot_in_place_but_for_six(self):
         paths, longer = Counter(), []

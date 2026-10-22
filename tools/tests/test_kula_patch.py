@@ -35,6 +35,7 @@ from kula_patch import (  # noqa: E402
     PREFIX,
     RECORD_MOST,
     SERIAL,
+    SETS,
     SLOT,
     TITLE,
     VCD_ADLER32,
@@ -42,15 +43,17 @@ from kula_patch import (  # noqa: E402
     VCDIFF_MAGIC,
     WINDOW,
     changes,
+    description,
     digest,
     fixture,
+    items_of,
     placements,
     ppf,
     runs,
     varint,
     vcdiff,
 )
-from kula_place import SYNTHETIC_PACK, place, plan, synthetic, synthetic_image  # noqa: E402
+from kula_place import SYNTHETIC_FINALS, SYNTHETIC_PACK, place, place_all, plan, synthetic, synthetic_image  # noqa: E402
 from kula_sector import SECTOR_RAW  # noqa: E402
 
 IMAGE = synthetic_image()
@@ -277,6 +280,56 @@ class TheFixture(unittest.TestCase):
         self.assertEqual(held["cases"][3]["sectors"], [24, 27, 28])
         self.assertEqual(held["cases"][3]["lba"], 27)
 
+    def test_it_holds_two_sets_whose_first_level_is_the_in_place_case(self):
+        held = json.loads(FIXTURE.read_text())
+        self.assertEqual([s["name"] for s in held["sets"]], [name for name, _ in SETS])
+        self.assertEqual([[pack for _, pack, _, _ in members] for _, members in SETS],
+                         [[SYNTHETIC_PACK, SYNTHETIC_PACK], [SYNTHETIC_PACK, SYNTHETIC_FINALS]])
+        fields = ("blocks", "stream", "path", "recompressed", "size", "room", "lba")
+        for s, (_, members) in zip(held["sets"], SETS):
+            with self.subTest(s["name"]):
+                self.assertEqual([(i["blocks"], i["pack"], i["slot"], i["title"]) for i in s["items"]], members)
+                self.assertEqual([(i["path"], i["recompressed"]) for i in s["items"]], [("in place", False), ("rebuild", False)])
+                self.assertEqual({k: s["items"][0][k] for k in fields}, {k: held["cases"][0][k] for k in fields})
+                for key in ("patched", "ppf", "xdelta"):
+                    self.assertRegex(s[key], r"^[0-9a-f]{64}$")
+                self.assertEqual(s["sectors"], sorted(set(s["sectors"])))
+        self.assertEqual([s["sectors"] for s in held["sets"]], [[24, 25], [24, 25, 26]])
+        self.assertEqual([i["lba"] for i in held["sets"][1]["items"]], [25, 26])
+
+
+class TheSets(unittest.TestCase):
+    def test_each_set_holds_through_place_all_and_the_patch_writers(self):
+        held = {s["name"]: s for s in json.loads(FIXTURE.read_text())["sets"]}
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            src = scratch / "image.bin"
+            src.write_bytes(IMAGE)
+            for name, members in SETS:
+                with self.subTest(name):
+                    items = items_of(members)
+                    out = scratch / f"{name}.bin"
+                    planned = place_all(src, items, out)
+                    s = held[name]
+                    self.assertEqual(
+                        [(len(stream), p.fit.path, p.fit.recompressed, p.fit.size, p.fit.room, p.lba)
+                         for (_, _, stream, _), p in zip(items, planned.placed)],
+                        [(i["stream"], i["path"], i["recompressed"], i["size"], i["room"], i["lba"]) for i in s["items"]])
+                    self.assertEqual([lba for lba, _ in planned.writes], s["sectors"])
+                    patched = out.read_bytes()
+                    self.assertEqual(digest(patched), s["patched"])
+                    patch = ppf(src, planned.writes, description(title for *_, title in items))
+                    self.assertEqual(digest(patch), s["ppf"])
+                    self.assertEqual(patch[6:56], b"Kula World Map: Spiral, Tower".ljust(DESCRIPTION))
+                    self.assertEqual(apply_ppf(IMAGE, patch), patched)
+                    delta = vcdiff(src, planned.writes)
+                    self.assertEqual(digest(delta), s["xdelta"])
+                    self.assertEqual(decode_vcdiff(IMAGE, delta), (patched, 1))
+                    with Disc(out) as disc:
+                        for pack_path, slot, stream, _ in items:
+                            self.assertEqual(Pak(disc.read_file(pack_path)).level(slot), zlib.decompress(stream))
+                    self.assertEqual(src.read_bytes(), IMAGE)
+
 
 class TheTool(unittest.TestCase):
     def test_it_writes_the_image_the_ppf_and_the_xdelta_the_fixture_holds(self):
@@ -296,6 +349,107 @@ class TheTool(unittest.TestCase):
             self.assertEqual(digest((scratch / "out.spiral.ppf").read_bytes()), held["ppf"])
             self.assertEqual(digest((scratch / "out.spiral.xdelta").read_bytes()), held["xdelta"])
             self.assertEqual((scratch / "out.spiral.cue").read_text().splitlines()[0], 'FILE "out.spiral.bin" BINARY')
+
+    def test_two_levels_go_in_as_one_patch_with_a_line_for_each(self):
+        held = json.loads(FIXTURE.read_text())["sets"][0]
+        spiral, tower = held["items"]
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(spiral["blocks"])))
+            (scratch / "tower.kula.json").write_text(json.dumps(synthetic(tower["blocks"], tower["title"])))
+            done = subprocess.run([sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into", f"{SYNTHETIC_PACK}#{spiral['slot']}",
+                                   "--level", scratch / "tower.kula.json", "--into", f"{SYNTHETIC_PACK}#{tower['slot']}",
+                                   "--out", scratch / "world", "--disc", scratch / "image.bin"],
+                                  capture_output=True, text=True)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            self.assertEqual(done.stdout.splitlines()[:3], [
+                f"Spiral ({spiral['stream']} bytes) into {SYNTHETIC_PACK}#{spiral['slot']}: in place, {spiral['room']} bytes of room, "
+                f"the pack {spiral['size']} bytes at sector {spiral['lba']}",
+                f"Tower ({tower['stream']} bytes) into {SYNTHETIC_PACK}#{tower['slot']}: rebuild, {tower['room']} bytes of room, "
+                f"the pack {tower['size']} bytes at sector {tower['lba']}",
+                "2 sectors written: 24, 25"])
+            self.assertEqual(done.stderr.splitlines(), ["warning: a key and no exit"] * 2 + [
+                "warning: the image has 43 sectors, not the 109,607 of the disc", "warning: 19 of the 21 packs are missing"])
+            self.assertEqual(digest((scratch / "world.bin").read_bytes()), held["patched"])
+            self.assertEqual(digest((scratch / "world.ppf").read_bytes()), held["ppf"])
+            self.assertEqual(digest((scratch / "world.xdelta").read_bytes()), held["xdelta"])
+            self.assertEqual((scratch / "world.ppf").read_bytes()[6:56], b"Kula World Map: Spiral, Tower".ljust(DESCRIPTION))
+            with Disc(scratch / "image.bin") as disc:
+                before = Pak(disc.read_file(SYNTHETIC_PACK))
+            with Disc(scratch / "world.bin") as disc:
+                pak = Pak(disc.read_file(SYNTHETIC_PACK))
+            self.assertEqual(pak.names(), ["LEVEL 1", "LEVEL 2", "TOWER"])
+            self.assertEqual([pak.level(i) for i in range(3)],
+                             [before.level(0), canonical(synthetic(spiral["blocks"])), canonical(synthetic(tower["blocks"]))])
+
+    def test_one_level_without_an_into_goes_into_the_first_slot_of_hiro(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            done = subprocess.run([sys.executable, TOOL, "--level", scratch / "spiral.kula.json",
+                                   "--out", scratch / "spiral", "--disc", scratch / "image.bin", "--ppf"],
+                                  capture_output=True, text=True)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            self.assertIn("Spiral (305 bytes) into /HIRO/HIRO.PAK#0: ", done.stdout)
+            self.assertEqual(len(done.stdout.splitlines()), 5)
+
+    def test_levels_and_slots_that_do_not_pair_up_are_refused_before_any_level_is_read(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            spiral, missing = scratch / "spiral.kula.json", scratch / "missing.kula.json"
+            spiral.write_text(json.dumps(synthetic(CASE["in place"])))
+            into = f"{SYNTHETIC_PACK}#{SLOT}"
+            for more, levels, intos in (
+                (("--level", spiral, "--level", missing), 2, 0),
+                (("--level", spiral, "--level", missing, "--into", into), 2, 1),
+                (("--level", spiral, "--into", into, "--into", into), 1, 2),
+            ):
+                with self.subTest((levels, intos)):
+                    done = subprocess.run([sys.executable, TOOL, *more, "--out", scratch / "out", "--disc", scratch / "image.bin", "--ppf"],
+                                          capture_output=True, text=True)
+                    self.assertEqual(done.returncode, 1, done.stderr)
+                    self.assertEqual(done.stdout, "")
+                    self.assertEqual(done.stderr.splitlines(),
+                                     [f"{levels} --level and {intos} --into do not pair up; say one --into after each --level"])
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "spiral.kula.json"])
+
+    def test_two_levels_naming_one_slot_are_refused_in_a_sentence_and_nothing_is_written(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            (scratch / "tower.kula.json").write_text(json.dumps(synthetic(CASE["rebuild"], "Tower")))
+            into = f"{SYNTHETIC_PACK}#{SLOT}"
+            done = subprocess.run([sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into", into,
+                                   "--level", scratch / "tower.kula.json", "--into", into,
+                                   "--out", scratch / "out", "--disc", scratch / "image.bin"],
+                                  capture_output=True, text=True)
+            self.assertEqual(done.returncode, 1, done.stderr)
+            self.assertEqual(done.stdout, "")
+            self.assertEqual(done.stderr.splitlines()[-1], f"two levels name {into}, which holds one")
+            self.assertNotIn("Traceback", done.stderr)
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "spiral.kula.json", "tower.kula.json"])
+
+    def test_a_level_with_errors_among_several_is_named_in_the_refusal(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            bad = synthetic(CASE["rebuild"], "Tower")
+            del bad["blocks"][0]["faces"]
+            (scratch / "tower.kula.json").write_text(json.dumps(bad))
+            done = subprocess.run([sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into", f"{SYNTHETIC_PACK}#{SLOT}",
+                                   "--level", scratch / "tower.kula.json", "--into", f"{SYNTHETIC_PACK}#2",
+                                   "--out", scratch / "out", "--disc", scratch / "image.bin"],
+                                  capture_output=True, text=True)
+            self.assertEqual(done.returncode, 1, done.stderr)
+            self.assertEqual(done.stdout, "")
+            self.assertIn("error: no start", done.stderr)
+            self.assertEqual(done.stderr.splitlines()[-1], "Tower has errors the game would not forgive; fix them first")
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "spiral.kula.json", "tower.kula.json"])
 
     def test_a_project_without_a_title_is_named_after_its_file(self):
         with tempfile.TemporaryDirectory() as scratch:

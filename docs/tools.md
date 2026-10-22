@@ -17,7 +17,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `kula_kwl.py` | a level written back to the game's bytes from its fields, read out of any file the game would load, and held to the disc word for word ([editor.md](editor.md)) |
 | `kula_sector.py` | a Mode 2 Form 1 sector built as the disc has it, EDC and ECC included, and the disc's own sectors rebuilt to prove it ([disc.md](disc.md)) |
 | `kula_place.py` | a level's stream put into a slot of a pack on a copy of the image, in place, in a pack rebuilt within its sectors or in one moved into the free sectors, every written sector built whole ([disc.md](disc.md)) |
-| `kula_patch.py` | a level written onto the disc as a PPF, an xdelta or a patched image, from a project, a level file or a shipped level ([disc.md](disc.md)) |
+| `kula_patch.py` | a level, or several as one patch, written onto the disc as a PPF, an xdelta or a patched image, each from a project, a level file or a shipped level ([disc.md](disc.md)) |
 | `kula_tgi.py` | a world's artwork: sections, VRAM page, textures |
 | `kula_ggi.py` | the objects' geometry: the model tables, every mesh, and a sheet of them drawn |
 | `kula_skins.py` | what the game paints on every face of every block, read off the executable |

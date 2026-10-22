@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Put a level's compressed stream into a slot of a pack on a disc image.
+"""Put a level's compressed stream, or several, into the packs on a disc image.
 
-    from kula_place import place
+    from kula_place import place, place_all
     placed = place(image, "/HIRO/HIRO.PAK", 0, stream, out, title="Spiral")
+    planned = place_all(image, [("/HIRO/HIRO.PAK", 0, stream, "Spiral"),
+                                ("/HIRO/HIRO.PAK", 1, other, "Tower")], out)
 
 The game reads a pack by its directory record's size into a 32,768-byte
 buffer and takes each record by the offset and size the pack's table gives,
@@ -15,6 +17,15 @@ directory record's size. By a move, otherwise, into the zero sectors of
 /3.00, the one room on the disc, with the directory record's extent and size
 rewritten. Every sector written is built whole, EDC and ECC included, and the
 result is read back through the same readers that read the disc.
+
+Several streams go in together, each placed over the image as the earlier
+ones left it, in the order given: two levels in one pack go in place where
+each fits its own slot's bytes, and otherwise the later one rebuilds the pack
+carrying the earlier one's new stream; a level placed in place keeps its
+slot's name even when a later placement renames another slot; and a pack
+moved once may be rebuilt in its new place or moved again. The sectors of
+every placement are merged, a later one replacing an earlier at the same
+address, so the set is one patch.
 
 The image is known by its structure, not by a hash: a raw image of 2352-byte
 sectors with the volume descriptor at sector 16, the system identifier the
@@ -83,6 +94,15 @@ class Placed(NamedTuple):
     sector) in address order, and what says the image is not the disc's."""
     fit: Fit
     lba: int
+    writes: list
+    warnings: list
+
+
+class Planned(NamedTuple):
+    """Several placements: each item's Placed in the order given, the sectors
+    to write merged in address order, a later one replacing an earlier at the
+    same address, and what says the image is not the disc's."""
+    placed: list
     writes: list
     warnings: list
 
@@ -163,7 +183,7 @@ def _sectors(disc, lba, user, size):
     out = []
     for i in range(len(user) // USER):
         raw = sector(lba + i, user[i * USER:(i + 1) * USER], EOF_SUBMODE if i == last else DATA_SUBMODE)
-        if raw != raw_sector(disc.f, lba + i):
+        if raw != disc.raw(lba + i):
             out.append((lba + i, raw))
     return out
 
@@ -172,7 +192,7 @@ def _directory(disc, key, extent, size):
     """The directory sector with the file's record naming a new extent and size,
     its own subheader kept."""
     at, pos = disc.records[key]
-    raw = raw_sector(disc.f, at)
+    raw = disc.raw(at)
     user = bytearray(raw[USER_OFF:USER_OFF + USER])
     set_record(user, pos, extent, size)
     new = rewrite(raw, user)
@@ -199,8 +219,8 @@ def _room(disc, size):
     raise ValueError(f"{ROOM} has no run of {need} zero sectors left for the pack")
 
 
-def plan(disc, pack_path, slot, stream, title=None):
-    """The sectors that put the stream into the slot, read off the image."""
+def _plan(disc, pack_path, slot, stream, title):
+    """The fit, where the pack lies afterwards and the sectors to write, read off the image."""
     key = pack_path.upper()
     if key not in disc.files:
         raise ValueError(f"no such pack on the disc: {pack_path}")
@@ -229,7 +249,12 @@ def plan(disc, pack_path, slot, stream, title=None):
         user = blob.ljust(len(sectors_of(where, len(blob))) * USER, b"\0")
         writes = _sectors(disc, where, user, len(blob)) + _directory(disc, key, where, f.size)
     writes.sort()
-    return Placed(f, where, writes, identify(disc))
+    return f, where, writes
+
+
+def plan(disc, pack_path, slot, stream, title=None):
+    """The sectors that put the stream into the slot, read off the image."""
+    return Placed(*_plan(disc, pack_path, slot, stream, title), identify(disc))
 
 
 class Patched(Disc):
@@ -239,9 +264,30 @@ class Patched(Disc):
         self.writes = dict(writes)
         super().__init__(path)
 
-    def sector(self, lba):
-        raw = self.writes.get(lba)
-        return raw[USER_OFF:USER_OFF + USER] if raw else super().sector(lba)
+    def raw(self, lba):
+        return self.writes.get(lba) or super().raw(lba)
+
+
+def plan_all(disc, items):
+    """The sectors that put each stream into its slot, the items (pack path,
+    slot, stream, title) each planned over the image as the earlier ones left
+    it, in the order given."""
+    named = set()
+    for pack_path, slot, _, _ in items:
+        if (pack_path.upper(), slot) in named:
+            raise ValueError(f"two levels name {pack_path}#{slot}, which holds one")
+        named.add((pack_path.upper(), slot))
+    warnings = identify(disc)
+    placed, merged = [], {}
+    for pack_path, slot, stream, title in items:
+        if not merged:
+            f, where, writes = _plan(disc, pack_path, slot, stream, title)
+        else:
+            with Patched(disc.f.name, merged) as view:
+                f, where, writes = _plan(view, pack_path, slot, stream, title)
+        placed.append(Placed(f, where, writes, warnings))
+        merged.update(writes)
+    return Planned(placed, sorted(merged.items()), warnings)
 
 
 def verify(disc, pack_path, slot, stream, placed):
@@ -257,6 +303,22 @@ def verify(disc, pack_path, slot, stream, placed):
     if pak.streams() != placed.fit.streams or pak.names() != placed.fit.names:
         raise ValueError(f"{pack_path} does not read back as planned")
     for lba, raw in placed.writes:
+        if not check(raw):
+            raise ValueError(f"sector {lba} does not check")
+
+
+def verify_all(disc, items, planned):
+    """Read every pack touched back through the readers and hold it to the
+    plan: the directory places it where the last placement into it put it and
+    it reads back as that placement's records and names, every item's slot
+    inflates to its level, and every merged sector checks."""
+    last = {pack_path.upper(): i for i, (pack_path, *_) in enumerate(items)}
+    for i, ((pack_path, slot, stream, _), placed) in enumerate(zip(items, planned.placed)):
+        if last[pack_path.upper()] == i:
+            verify(disc, pack_path, slot, stream, placed)
+        elif zlib.decompress(Pak(disc.read_file(pack_path)).entries[slot]["blob"]) != zlib.decompress(stream):
+            raise ValueError(f"{pack_path}#{slot} does not inflate to the level")
+    for lba, raw in planned.writes:
         if not check(raw):
             raise ValueError(f"sector {lba} does not check")
 
@@ -310,6 +372,14 @@ def place(image, pack_path, slot, stream, out, title=None):
         placed = plan(disc, pack_path, slot, stream, title)
     written(image, out, placed.writes, lambda disc: verify(disc, pack_path, slot, stream, placed))
     return placed
+
+
+def place_all(image, items, out):
+    """Copy the image to out with every stream placed, prove the copy, and say what was done."""
+    with Disc(image) as disc:
+        planned = plan_all(disc, items)
+    written(image, out, planned.writes, lambda disc: verify_all(disc, items, planned))
+    return planned
 
 
 # --- an image built as the disc is, for the tests and the fixture --------------

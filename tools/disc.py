@@ -65,12 +65,15 @@ class Disc:
     def __exit__(self, *exc):
         self.close()
 
-    def sector(self, lba):
+    def raw(self, lba):
         self.f.seek(lba * SECTOR_RAW)
         raw = self.f.read(SECTOR_RAW)
         if len(raw) < SECTOR_RAW:
             raise ValueError(f"the image ends before sector {lba}")
-        return raw[USER_OFF:USER_OFF + USER]
+        return raw
+
+    def sector(self, lba):
+        return self.raw(lba)[USER_OFF:USER_OFF + USER]
 
     def read(self, lba, size):
         out = bytearray()
