@@ -11,7 +11,7 @@ import { USER, sector } from "../../public/js/format/sectors.js";
 import { mapData, packs } from "../unit/fixtures.js";
 import { REBUILD, RELOCATE, fit, readPak, writePak } from "../../public/js/format/pak.js";
 import { openDisc } from "../../public/js/format/iso.js";
-import { RECORD, writeKwl } from "../../public/js/format/kwl.js";
+import { EXIT, RECORD, writeKwl } from "../../public/js/format/kwl.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const FIFTH = "/#HIRO/4/45,35/fit/33";
@@ -271,6 +271,27 @@ test("a level with an error shows it and keeps the patches back, image or no ima
   );
   await dialog.locator(".x").click();
   await expect(dialog).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test("a level the checks pass says it has no warnings, in no fold and with no error", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  const clean = synthetic(6, "Clean");
+  clean.blocks[0].faces[1] = { type: EXIT };
+  const id = await opened(page, "clean.kula.json", clean);
+  await openPatch(page, id);
+  const dialog = page.locator("#patch");
+  await expect(dialog).toBeVisible();
+  const checks = dialog.locator("#patchChecks");
+  await expect(checks).toHaveText("no warnings");
+  await expect(checks.locator("p")).toHaveClass("sub");
+  await expect(checks.locator("details")).toHaveCount(0);
+  await expect(checks.locator(".errors")).toHaveCount(0);
+  await expect(dialog.locator("#patchFit")).toContainText("bytes to spare");
   expect(errors).toEqual([]);
 });
 

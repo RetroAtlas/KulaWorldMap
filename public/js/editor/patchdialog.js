@@ -41,7 +41,7 @@ const OLDER = "Making the patch needs a newer browser, one that can unpack the g
 const ERRORS = "A level with errors cannot go on the disc until they are fixed.";
 const NO_TABLE =
   "The game's face table could not be loaded, so the checks cannot run in full and the level cannot go on the disc from here.";
-const CLEAN = "The checks find nothing to say.";
+const CLEAN = "no warnings";
 const NO_LAYOUT = "The disc's layout could not be loaded, so the fit waits for the image.";
 const CHOOSE = "Choose a slot above.";
 const CLASHED = "Give each level a slot of its own above.";
