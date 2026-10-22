@@ -492,6 +492,9 @@ test("a pasted link opens a shared level, a text that is no link is refused in p
   await pasting(page, "first", "MARS");
   await expect(dialog).toBeVisible();
   await expect(dialog.locator("#pasteTitle")).toHaveText("Open a shared level");
+  await expect(dialog.locator("#pasteNote")).toHaveText(
+    "Paste a link from the community's level viewer. The level opens as your own, in the world on screen or the one the link names.",
+  );
   await expect(link).toBeFocused();
   await dialog.locator("#pasteOpen").click();
   await expect(says).toHaveText("Paste the link first.");

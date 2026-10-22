@@ -9,7 +9,7 @@ import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
 import { WORLDS } from "../format/kwl.js";
 
 const PASTE_NOTE =
-  "Paste the link to a level shared from the community's level viewer. It opens as a level of your own, in the world on screen or in the world the link names.";
+  "Paste a link from the community's level viewer. The level opens as your own, in the world on screen or the one the link names.";
 const PASTE_FIRST = "Paste the link first.";
 
 let ui = null;
@@ -251,7 +251,7 @@ function buildPaste() {
     { className: "box settings paste" },
     x,
     el("h3", { id: "pasteTitle", textContent: "Open a shared level" }),
-    el("p", { textContent: PASTE_NOTE }),
+    el("p", { id: "pasteNote", textContent: PASTE_NOTE }),
     el("label", { className: "field" }, el("span", { textContent: "Link" }), u.link),
     u.says,
     el("div", { className: "row" }, u.open, u.cancel),
