@@ -350,15 +350,15 @@ function buildForm(id, box) {
   const saveJson = el("button", {
     id: "draftSaveJson",
     type: "button",
-    textContent: "save to a file",
-    title: "Save this level as the map's own file",
+    textContent: "save as .json",
+    title: "Save this level as the map's own .json file",
   });
   saveJson.onclick = () => saveAs(id, false);
   const saveKwl = el("button", {
     id: "draftSaveKwl",
     type: "button",
-    textContent: "save as the game's level",
-    title: "Save this level as the file the game loads",
+    textContent: "save as .kwl",
+    title: "Save this level as the .kwl file the game loads",
   });
   saveKwl.onclick = () => saveAs(id, true);
   const patch = el("button", {

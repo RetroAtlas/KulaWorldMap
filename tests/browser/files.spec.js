@@ -68,6 +68,9 @@ test("a draft saves as the map's file and as the game's, and the row counts the 
   const id = (await shown(page)).draft;
   const row = page.locator("#draftRows button .state");
   const saveJson = page.locator("#draftSaveJson");
+  const saveKwl = page.locator("#draftSaveKwl");
+  await expect(saveJson).toHaveText("save as .json");
+  await expect(saveKwl).toHaveText("save as .kwl");
   await expect(row).toHaveText("not saved to a file · 1 change");
   await expect(saveJson).toHaveClass(/unsaved/);
 
@@ -90,7 +93,7 @@ test("a draft saves as the map's file and as the game's, and the row counts the 
   await expect(note).toHaveText("Saved in this browser");
   await expect(note).toBeHidden({ timeout: 4000 });
 
-  const asGame = await saved(page, page.locator("#draftSaveKwl"));
+  const asGame = await saved(page, saveKwl);
   expect(asGame.name).toBe("spiral-two.kwl");
   const doc = (await entryOf(page, id)).doc;
   expect(doc.time).toBe(45);
