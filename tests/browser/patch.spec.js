@@ -108,7 +108,9 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   expect(await slot.locator("optgroup").count()).toBe(10);
   await expect(slot).toHaveValue("/HIRO/HIRO.PAK#0");
   await expect(options.first()).toHaveText("LEVEL 1");
-  await expect(dialog.locator("#patchReach")).toHaveText("A new game starts here, at LEVEL 1.");
+  await expect(dialog.locator("#patchReach")).toHaveText(
+    "It takes LEVEL 1's place, where a new game starts.",
+  );
   await expect(dialog.locator("#patchWear")).toHaveText("");
   await expect(dialog.locator("#patchFit")).toHaveText(
     "The pack is laid out again to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
@@ -123,12 +125,14 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await expect(dialog.locator("#patchFit")).toHaveText(
     "It fits in the slot's own bytes, with 93 bytes to spare.",
   );
-  await expect(dialog.locator("#patchReach")).toContainText(
-    "where it reaches LEVEL 2, with a save",
+  await expect(dialog.locator("#patchReach")).toHaveText(
+    /^It takes LEVEL 2's place, reached with a save that has got that far in .+\.$/,
   );
   expect((await docOf(page, id)).into).toBe("/HIRO/HIRO.PAK#1");
   await slot.selectOption("/MARS/MARSFI.PAK#1");
-  await expect(dialog.locator("#patchReach")).toContainText("where it reaches FINAL 18, once");
+  await expect(dialog.locator("#patchReach")).toHaveText(
+    /^It takes FINAL 18's place among .+'s finals, reached once the arcade is finished\.$/,
+  );
   await expect(dialog.locator("#patchWear")).toContainText("artwork there.");
   await slot.selectOption("/HIRO/HIRO.PAK#1");
   await expect(dialog.locator("#patchWear")).toHaveText("");
@@ -443,7 +447,9 @@ test("without the disc's layout the fit waits for the image, whose own packs the
   const slot = dialog.locator("#patchSlot");
   await expect(slot.locator("option")).toHaveCount(1);
   await expect(slot).toHaveValue("/HELL/HELL.PAK#3");
-  await expect(dialog.locator("#patchReach")).toContainText("with a save that has got that far in");
+  await expect(dialog.locator("#patchReach")).toHaveText(
+    /^It takes .+'s place, reached with a save that has got that far in .+\.$/,
+  );
   await expect(dialog.locator("#patchFit")).toHaveText(
     "The disc's layout could not be loaded, so the fit waits for the image.",
   );
@@ -660,7 +666,9 @@ test("a target the file names that is no slot is an error until a slot is chosen
   expect((await docOf(page, id)).into).toBe("/HIRO/HIRO.PAK#0");
   expect((await steps(page, id)).past).toBe(1);
   await expect(slot.locator("option")).toHaveCount(220);
-  await expect(dialog.locator("#patchReach")).toHaveText("A new game starts here, at LEVEL 1.");
+  await expect(dialog.locator("#patchReach")).toHaveText(
+    "It takes LEVEL 1's place, where a new game starts.",
+  );
   await expect(dialog.locator("#patchFit")).toHaveText(
     "It fits in the slot's own bytes, with 122 bytes to spare.",
   );

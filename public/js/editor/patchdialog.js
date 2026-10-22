@@ -381,11 +381,12 @@ function target() {
   const theme = themeOf(pack);
   const title = d.titles?.get(d.into) ?? `slot ${index + 1}`;
   const world = worldName(theme);
-  if (d.into === FIRST) ui.reach.textContent = `A new game starts here, at ${title}.`;
+  if (d.into === FIRST)
+    ui.reach.textContent = `It takes ${title}'s place, where a new game starts.`;
   else if (pack.endsWith("FI.PAK"))
-    ui.reach.textContent = `The game reaches it where it reaches ${title}, once ${world} is finished.`;
+    ui.reach.textContent = `It takes ${title}'s place among ${world}'s finals, reached once the arcade is finished.`;
   else
-    ui.reach.textContent = `The game reaches it where it reaches ${title}, with a save that has got that far in ${world}.`;
+    ui.reach.textContent = `It takes ${title}'s place, reached with a save that has got that far in ${world}.`;
   ui.wear.textContent = theme === d.doc.world ? "" : `It will wear ${world}'s artwork there.`;
   if (!d.placed) layoutFit();
 }
