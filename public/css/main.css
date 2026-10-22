@@ -1747,10 +1747,7 @@ body.editing #course .status {
 #patch .level .name {
   padding-right: 72px;
 }
-#patch .level .out {
-  position: absolute;
-  top: 7px;
-  right: 8px;
+#patch .out {
   background: none;
   border: 1px solid var(--line);
   color: var(--dim);
@@ -1760,12 +1757,22 @@ body.editing #course .status {
   font-size: 11.5px;
   cursor: pointer;
 }
-#patch .level .out:hover {
+#patch .out:hover {
   border-color: var(--accent-dim);
   color: var(--ink);
 }
+#patch .out:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+#patch .level .out {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+}
 #patch .add {
   display: flex;
+  gap: 6px;
   margin: 0 0 6px;
 }
 

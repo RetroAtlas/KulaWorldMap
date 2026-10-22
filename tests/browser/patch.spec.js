@@ -191,6 +191,8 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await page.keyboard.press("Tab");
   await expect(dialog.locator("#patchAdd")).toBeFocused();
   await page.keyboard.press("Tab");
+  await expect(dialog.locator("#patchClear")).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(disc).toBeFocused();
   await expect(drop).toHaveCSS("outline-style", "solid");
 
@@ -237,8 +239,8 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await openPatch(page, id);
   await expect(dialog).toBeVisible();
   await expect(slot).toHaveValue("/HIRO/HIRO.PAK#1");
-  await expect(dialog.locator("#patchPpf")).toBeDisabled();
-  await expect(playing).toBeHidden();
+  await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  await expect(playing).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   expect(errors).toEqual([]);
@@ -325,10 +327,13 @@ test("without the game's face table the checks still run, the table is said to b
   const clean = await opened(page, "spiral.kula.json", synthetic(6));
   await openPatch(page, clean);
   await expect(dialog).toBeVisible();
+  await expect(rows(dialog)).toHaveCount(2);
+  await rows(dialog).first().locator(".out").click();
+  await expect(rows(dialog)).toHaveCount(1);
+  await expect(dialog.locator(".name")).toHaveText("Spiral");
   await expect(dialog.locator("#patchChecks .errors li")).toHaveCount(0);
   await expect(dialog.locator("#patchChecks")).toContainText(missing);
   await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
-  await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
   await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
   await expect(dialog.locator("#patchFit")).toHaveText(
     "It fits in the slot's own bytes, with 179 bytes to spare.",
@@ -740,7 +745,7 @@ test("a target the file names that is no slot is an error until a slot is chosen
   expect(errors).toEqual([]);
 });
 
-test("a read that lands late, for an image or a box no longer current, changes nothing", async ({
+test("a read that lands late for an image no longer current changes nothing, and one in flight while the box is closed and opened again lands", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -793,15 +798,11 @@ test("a read that lands late, for an image or a box no longer current, changes n
   await expect(dialog).toBeHidden();
   await openPatch(page, id);
   await expect(dialog).toBeVisible();
-  await page.waitForTimeout(2500);
-  await expect(status).toHaveText("");
-  await expect(dialog.locator("#patchFit")).toHaveText(
-    "The pack is rebuilt to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
-  );
-  await expect(dialog.locator("#patchPpf")).toBeDisabled();
-  await expect(dialog.locator("#patchReady")).toHaveText(
-    "Give the disc image above to make the patches.",
-  );
+  await expect(status).toHaveText("slow.bin is read.");
+  await expect(dialog.locator("#patchWarnings li")).toHaveText(WARNINGS);
+  await expect(dialog.locator("#patchPlay li").first()).toContainText("slow.ppf");
+  await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  await expect(dialog.locator("#patchPlaying")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -1282,13 +1283,15 @@ test("a row opens on the slot its title names, else where its copy came from, an
   const title = page.locator("#draftTitle");
   const chip = page.locator("#chipLine b");
   const hundredAndOne = keyOf("LEVEL 101");
-  /** The box opened for the draft alone shows its row on this slot, and closes again. */
+  /** The box opened for the draft alone shows its row on this slot, and closes again emptied. */
   const opensOn = async (id, key, name) => {
     await openPatch(page, id);
     await expect(dialog).toBeVisible();
     await expect(level).toHaveCount(1);
     await expect(slot).toHaveValue(key);
     await expect(dialog.locator("#patchReach")).toContainText(`It takes ${name}'s place`);
+    await dialog.locator("#patchClear").click();
+    await expect(level).toHaveCount(0);
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
   };
@@ -1386,5 +1389,125 @@ test("a level another tab deletes leaves its row, and the box closes when the la
   await expect(page.locator("#toastStack .toast").first()).toHaveText(
     "Another tab deleted Spiral, so the box closed without a patch.",
   );
+  expect(errors).toEqual([]);
+});
+
+test("the box keeps its levels and the image once closed, a card's opening adds its level, and take all out empties the rows", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  const third = await opened(page, "third.kula.json", synthetic(6, "Third"));
+  const tower = await opened(page, "tower.kula.json", synthetic(30, "Tower"));
+  const spiral = await opened(page, "spiral.kula.json", synthetic(6));
+  const dialog = page.locator("#patch");
+  const level = rows(dialog);
+  const names = level.locator(".name");
+  const add = dialog.locator("#patchAdd");
+  const clear = dialog.locator("#patchClear");
+  const status = dialog.locator("#patchStatus");
+  /** Show the draft and open the box from its card. */
+  const openFrom = async (id) => {
+    await page.locator(`#draftRows button[data-id="${id}"]`).click();
+    await expect.poll(() => shownDraft(page)).toBe(id);
+    await page.locator("#draftPatch").click();
+    await expect(dialog).toBeVisible();
+  };
+
+  await openFrom(spiral);
+  await expect(clear).toHaveText("take all out");
+  await expect(clear).toBeEnabled();
+  await add.selectOption(String(tower));
+  await expect(names).toHaveText(["Spiral", "Tower"]);
+  await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
+  await expect(status).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  // opened again from the same card: the rows, the image and the downloads as they were left
+  await openFrom(spiral);
+  await expect(names).toHaveText(["Spiral", "Tower"]);
+  await expect(status).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchWarnings li")).toHaveText(WARNINGS);
+  for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
+    await expect(dialog.locator(b)).toBeEnabled();
+  await expect(dialog.locator("#patchPlay li").nth(2)).toContainText('"spiral-and-1-more.xdelta"');
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  // opened from another level's card: that level joins the rows
+  await openFrom(third);
+  await expect(names).toHaveText(["Spiral", "Tower", "Third"]);
+  await expect(dialog.locator("#patchPlay li").nth(2)).toContainText('"spiral-and-2-more.xdelta"');
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  // a level deleted while the box was closed is gone from the rows without a word
+  await page.locator(`#draftRows button[data-id="${tower}"]`).click();
+  await expect.poll(() => shownDraft(page)).toBe(tower);
+  const del = page.locator("#draftCard button", { hasText: /^delete/ });
+  await del.click();
+  await expect(del).toHaveText("delete?");
+  await del.click();
+  await expect(page.locator("#draftRows button")).toHaveCount(2);
+  await openFrom(spiral);
+  await expect(names).toHaveText(["Spiral", "Third"]);
+  expect(await toasts(page)).toEqual([]);
+  await expect(status).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchPpf")).toBeEnabled();
+
+  await clear.click();
+  await expect(level).toHaveCount(0);
+  await expect(add).toBeFocused();
+  await expect(clear).toBeDisabled();
+  await expect(dialog.locator("#patchReady")).toHaveText("Add a level above to make the patches.");
+  await expect(dialog.locator("#patchPpf")).toBeDisabled();
+  await expect(dialog.locator("#patchPlaying")).toBeHidden();
+  await expect(status).toHaveText("synthetic.bin is read.");
+  expect((await add.locator("option").allTextContents()).sort()).toEqual(
+    [ADD, "Spiral", "Third", FILE].sort(),
+  );
+  await add.selectOption(String(third));
+  await expect(names).toHaveText(["Third"]);
+  await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  await expect(dialog.locator("#patchPlay li").nth(2)).toContainText('"third.xdelta"');
+  expect(errors).toEqual([]);
+});
+
+test("a draft deleted while the box waits for the layout to open for it leaves without a word, and the box opens for another draft after", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  const tower = await opened(page, "tower.kula.json", synthetic(30, "Tower"));
+  const spiral = await opened(page, "spiral.kula.json", synthetic(6));
+  let held = null;
+  await page.route("**/packs.json", (route) => {
+    held = route;
+  });
+  await page.evaluate(async (id) => {
+    const { openPatchDialog } = await import(
+      new URL("js/editor/patchdialog.js", location.href).href
+    );
+    window.opening = openPatchDialog(id);
+  }, spiral);
+  await expect.poll(() => held !== null).toBe(true);
+  const del = page.locator("#draftCard button", { hasText: /^delete/ });
+  await del.click();
+  await expect(del).toHaveText("delete?");
+  await del.click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await held.continue();
+  await page.evaluate(() => window.opening);
+  const dialog = page.locator("#patch");
+  await expect(dialog).toBeHidden();
+  expect(await toasts(page)).toEqual([]);
+  await openPatch(page, tower);
+  await expect(dialog).toBeVisible();
+  await expect(rows(dialog).locator(".name")).toHaveText(["Tower"]);
+  await expect(dialog.locator("#patchAdd option")).toHaveText([ADD, FILE]);
   expect(errors).toEqual([]);
 });

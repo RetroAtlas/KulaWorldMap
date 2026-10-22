@@ -73,6 +73,8 @@ const IDS = {
 
 let layout = null;
 let ui = null;
+// The rows, the image and its plan, kept while the page lives, so the box
+// opened again holds what it held when it was closed.
 let d = null;
 // Counts what the dialog asks for, so a read or a plan that lands for an
 // earlier ask is dropped.
@@ -96,7 +98,7 @@ const keyShaped = (key) => {
     index < (finals ? FINAL_SLOTS : WORLD_SLOTS)
   );
 };
-const nameOf = (row) => row.doc.title || UNTITLED;
+const nameOf = (row) => row.doc?.title || UNTITLED;
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const showing = () => d !== null && !ui.overlay.hidden;
 const blocked = () => d.rows.map((row) => row.blocked).find(Boolean) ?? null;
@@ -137,6 +139,13 @@ function build() {
       id: "patchAdd",
       title: "Add another level to the patch, one of yours or one from a file",
     }),
+    clear: el("button", {
+      id: "patchClear",
+      className: "out",
+      type: "button",
+      textContent: "take all out",
+      title: "Take every level out of the patch",
+    }),
     file: el("input", {
       id: "patchFile",
       type: "file",
@@ -172,6 +181,7 @@ function build() {
     if (value === PICKER) u.file.click();
     else if (value) add(Number(value));
   };
+  u.clear.onclick = takeAllOut;
   u.file.onchange = () => {
     const file = u.file.files[0];
     u.file.value = "";
@@ -212,7 +222,7 @@ function build() {
     { className: "box settings patch" },
     x,
     el("h3", { id: "patchTitle", textContent: "Put it on the disc" }),
-    section("The levels", u.rows, u.clash, el("div", { className: "add" }, u.add, u.file)),
+    section("The levels", u.rows, u.clash, el("div", { className: "add" }, u.add, u.clear, u.file)),
     section(
       "The disc",
       el("p", { id: "patchPrivate", textContent: PRIVATE }),
@@ -257,7 +267,7 @@ function build() {
   return u;
 }
 
-/** A row for the draft with this id: its parts, and what the box works out for it. */
+/** A row for the draft with this id, put under the others: its parts, and what the box works out for it. */
 function newRow(id) {
   const u = {
     name: el("p", { className: "name" }),
@@ -290,24 +300,17 @@ function newRow(id) {
   const row = { id, doc: null, blocked: null, stream: null, size9: 0, into: null, u };
   u.slot.onchange = () => choose(row, u.slot.value);
   u.out.onclick = () => takeOut(row);
+  d.rows.push(row);
+  ui.rows.append(u.box);
   return row;
 }
 
-/** Open the dialog for the draft with this id. */
+/** Open the dialog for the draft with this id, with a row for it where none holds it. */
 export async function openPatchDialog(id) {
   if (!drafts.get(id)) return;
-  turn++;
   ui ??= build();
-  // Only the id while the layout loads, so the drafts-moved handler can keep it current.
-  d = { rows: [{ id }] };
-  layout ??= await loadJson("packs.json");
-  id = d.rows[0].id;
-  if (!drafts.get(id)) return;
-  const row = newRow(id);
-  ui.rows.textContent = "";
-  ui.rows.append(row.u.box);
-  d = {
-    rows: [row],
+  d ??= {
+    rows: [],
     titles: null,
     clashed: false,
     file: null,
@@ -317,18 +320,16 @@ export async function openPatchDialog(id) {
     image: null,
     imageName: null,
   };
-  ui.disc.value = "";
-  ui.status.textContent = "";
-  ui.warnings.textContent = "";
+  // The row stands before the layout loads, so the drafts-moved handler keeps its id current.
+  const row = d.rows.find((r) => r.id === id) ?? newRow(id);
+  layout ??= await loadJson("packs.json");
   refresh();
-  openDialog(ui.overlay, $("draftPatch"));
+  if (d.rows.includes(row)) openDialog(ui.overlay, $("draftPatch"));
 }
 
 function add(id) {
   if (!drafts.get(id) || d.rows.some((row) => row.id === id)) return;
-  const row = newRow(id);
-  d.rows.push(row);
-  ui.rows.append(row.u.box);
+  newRow(id);
   refresh();
 }
 
@@ -339,14 +340,19 @@ function takeOut(row) {
   ui.add.focus();
 }
 
+function takeAllOut() {
+  d.rows = [];
+  ui.rows.textContent = "";
+  refresh();
+  ui.add.focus();
+}
+
 // A level from a file, read as the sidebar reads one and made a draft; a pack
 // or an image asks its question in the box's place, and the box comes back
 // once it is answered, brought up to date, with the new row where there is one.
 async function fromFile(file) {
-  const box = d;
   const read = await readLevel(file, state.lvl.theme);
   const id = read ? draftOf(read) : null;
-  if (d !== box) return;
   const back = ui.overlay.hidden;
   if (back) openDialog(ui.overlay, $("draftPatch"));
   if (id !== null) add(id);
@@ -355,9 +361,11 @@ async function fromFile(file) {
 }
 
 // The box for the drafts as the store holds them now, run again whenever the
-// store replaces one; a row whose draft is gone goes with a word, and the box
-// closes when the last goes that way.
+// store replaces one and when the box opens. A row whose draft is gone goes:
+// with a word while the box is open, the box closing when the last goes that
+// way, and without one when the draft went while the box was closed.
 function refresh() {
+  const open = showing();
   const kept = [];
   const deleted = [];
   for (const row of d.rows) {
@@ -370,23 +378,21 @@ function refresh() {
       deleted.push(nameOf(row));
     }
   }
-  if (deleted.length && !kept.length) {
-    turn++;
-    d = null;
-    closeDialog();
-    toast(gone(deleted[0]));
-    return;
-  }
-  for (const name of deleted) toast(left(name));
   d.rows = kept;
   for (const row of d.rows) load(row);
   retarget();
   additions();
+  ui.clear.disabled = !d.rows.length;
   if (d.disc) placed();
   else {
     downloads();
     play();
   }
+  if (!open) return;
+  if (deleted.length && !kept.length) {
+    closeDialog();
+    toast(gone(deleted[0]));
+  } else for (const name of deleted) toast(left(name));
 }
 
 // What a row shows of its level and what the placer takes of it: its name, how
