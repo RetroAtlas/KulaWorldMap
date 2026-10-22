@@ -115,6 +115,9 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await expect(dialog.locator("#patchFit")).toHaveText(
     "The pack is rebuilt to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
   );
+  await expect(dialog.locator("#patchPrivate")).toHaveText(
+    "Read in your browser; nothing is uploaded.",
+  );
   for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
     await expect(dialog.locator(b)).toBeDisabled();
   await expect(dialog.locator("#patchPlay li")).toHaveCount(1);

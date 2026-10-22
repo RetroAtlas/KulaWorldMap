@@ -32,7 +32,7 @@ const FIRST = "/HIRO/HIRO.PAK#0";
 const COPYCAT = "/HIRO/COPYCAT.PAK";
 const LEVEL = 6;
 const BINARY = "application/octet-stream";
-const PRIVATE = "The image is read here in your browser and goes nowhere else.";
+const PRIVATE = "Read in your browser; nothing is uploaded.";
 const OLDER = "Making the patch needs a newer browser, one that can unpack the game's files.";
 const ERRORS = "A level with errors cannot go on the disc until they are fixed.";
 const NO_TABLE =
@@ -171,7 +171,7 @@ function build() {
     section("The fit", u.fit, u.warnings),
     section(
       "The disc",
-      el("p", { textContent: PRIVATE }),
+      el("p", { id: "patchPrivate", textContent: PRIVATE }),
       drop,
       u.status,
       u.ready,
