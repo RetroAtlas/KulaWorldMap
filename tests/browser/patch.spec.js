@@ -113,7 +113,7 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   );
   await expect(dialog.locator("#patchWear")).toHaveText("");
   await expect(dialog.locator("#patchFit")).toHaveText(
-    "The pack is laid out again to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
+    "The pack is rebuilt to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
   );
   for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
     await expect(dialog.locator(b)).toBeDisabled();
@@ -521,11 +521,8 @@ test("the fit from the layout says when the pack is recompressed or moved, and n
     throw new Error(`no slot takes ${length} bytes by ${path}`);
   };
   await slot.selectOption(where(REBUILD, true));
-  await expect(dialog.locator("#patchFit")).toContainText(
-    "The pack is laid out again, with the other levels packed tighter, to make room, with",
-  );
-  await expect(dialog.locator("#patchFit")).toContainText(
-    "bytes to spare, so the patch carries them too.",
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    /^The pack is rebuilt with its other levels packed tighter, \d+ bytes to spare, so the patch carries them too\.$/,
   );
   await slot.selectOption(where(RELOCATE, false));
   await expect(dialog.locator("#patchFit")).toContainText(
@@ -728,7 +725,7 @@ test("a read that lands late, for an image or a box no longer current, changes n
   await page.waitForTimeout(2500);
   await expect(status).toHaveText("");
   await expect(dialog.locator("#patchFit")).toHaveText(
-    "The pack is laid out again to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
+    "The pack is rebuilt to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
   );
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
   await expect(dialog.locator("#patchReady")).toHaveText(
@@ -821,7 +818,7 @@ test("a file that is not a disc image is said so, and the patches stay back", as
   );
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
   await expect(dialog.locator("#patchFit")).toHaveText(
-    "The pack is laid out again to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
+    "The pack is rebuilt to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
   );
   expect(errors).toEqual([]);
 });

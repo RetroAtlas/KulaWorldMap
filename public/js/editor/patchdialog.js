@@ -80,13 +80,13 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const showing = () => d !== null && !ui.overlay.hidden;
 
 function fitText(f) {
-  const spare = `with ${plural(f.room, "byte")} to spare`;
-  if (f.path === IN_PLACE) return `It fits in the slot's own bytes, ${spare}.`;
+  const spare = `${plural(f.room, "byte")} to spare`;
+  if (f.path === IN_PLACE) return `It fits in the slot's own bytes, with ${spare}.`;
   if (f.path === REBUILD)
     return f.recompressed
-      ? `The pack is laid out again, with the other levels packed tighter, to make room, ${spare}, so the patch carries them too.`
-      : `The pack is laid out again to make room, ${spare}, so the patch carries its other levels too.`;
-  return `The pack moves into the disc's free sectors, ${spare}, so the patch carries its other levels too.`;
+      ? `The pack is rebuilt with its other levels packed tighter, ${spare}, so the patch carries them too.`
+      : `The pack is rebuilt to make room, with ${spare}, so the patch carries its other levels too.`;
+  return `The pack moves into the disc's free sectors, with ${spare}, so the patch carries its other levels too.`;
 }
 
 const section = (title, ...kids) => el("section", {}, el("h4", { textContent: title }), ...kids);
