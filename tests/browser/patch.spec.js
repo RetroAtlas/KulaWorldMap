@@ -157,7 +157,7 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await expect(dialog.locator("#patchFit")).toHaveText(
     "It fits in the slot's own bytes, with 179 bytes to spare.",
   );
-  await expect(dialog.locator("#patchFrom")).toHaveText("Read from the image.");
+  await expect(dialog.locator("#patchFrom")).toHaveCount(0);
   await expect(dialog.locator("#patchWarnings li")).toHaveText(WARNINGS);
   for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
     await expect(dialog.locator(b)).toBeEnabled();
@@ -191,7 +191,6 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await expect(dialog).toBeVisible();
   await expect(slot).toHaveValue("/HIRO/HIRO.PAK#1");
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
-  await expect(dialog.locator("#patchFrom")).toContainText("Worked out from the disc as pressed");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   expect(errors).toEqual([]);
@@ -480,7 +479,6 @@ test("without the disc's layout the fit waits for the image, whose own packs the
   await expect(dialog.locator("#patchFit")).toHaveText(
     "It fits in the slot's own bytes, with 179 bytes to spare.",
   );
-  await expect(dialog.locator("#patchFrom")).toHaveText("Read from the image.");
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
   expect((await docOf(page, id)).into).toBe("/HIRO/HIRO.PAK#1");
   const patch = await saved(page, dialog.locator("#patchPpf"));
@@ -512,7 +510,6 @@ test("the fit from the layout says when the pack is recompressed or moved, and n
   await expect(dialog.locator("#patchFit")).toHaveText(
     "The level is too big for the game to load from /HIRO/HIRO.PAK.",
   );
-  await expect(dialog.locator("#patchFrom")).toContainText("Worked out from the disc as pressed");
   const length = streamOf(synthetic(120)).length;
   const where = (path, recompressed) => {
     for (const p of packs.packs)
@@ -672,7 +669,6 @@ test("a target the file names that is no slot is an error until a slot is chosen
   await expect(dialog.locator("#patchFit")).toHaveText(
     "It fits in the slot's own bytes, with 122 bytes to spare.",
   );
-  await expect(dialog.locator("#patchFrom")).toHaveText("Read from the image.");
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
   await expect(dialog.locator("#patchReady")).toHaveText("Save what your emulator wants.");
   expect(errors).toEqual([]);
@@ -731,7 +727,6 @@ test("a read that lands late, for an image or a box no longer current, changes n
   await expect(dialog).toBeVisible();
   await page.waitForTimeout(2500);
   await expect(status).toHaveText("");
-  await expect(dialog.locator("#patchFrom")).toContainText("Worked out from the disc as pressed");
   await expect(dialog.locator("#patchFit")).toHaveText(
     "The pack is laid out again to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
   );

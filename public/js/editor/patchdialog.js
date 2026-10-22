@@ -40,8 +40,6 @@ const NO_TABLE =
 const CLEAN = "The checks find nothing to say.";
 const NO_LAYOUT = "The disc's layout could not be loaded, so the fit waits for the image.";
 const CHOOSE = "Choose a slot above.";
-const LAYOUT = "Worked out from the disc as pressed; the image will confirm it.";
-const FROM_IMAGE = "Read from the image.";
 const NO_IMAGE = "Give the disc image above to make the patches.";
 const READY = "Save what your emulator wants.";
 const LATER = "Once the disc is given, this says where each emulator wants the patch.";
@@ -110,7 +108,6 @@ function build() {
     reach: el("p", { id: "patchReach" }),
     wear: el("p", { id: "patchWear", className: "sub" }),
     fit: el("p", { id: "patchFit" }),
-    from: el("p", { id: "patchFrom", className: "sub" }),
     warnings: el("ul", { id: "patchWarnings", className: "warnings" }),
     disc: el("input", { id: "patchDisc", className: "sr", type: "file", accept: ".bin,.img,.iso" }),
     status: el("p", { id: "patchStatus" }),
@@ -171,7 +168,7 @@ function build() {
       u.reach,
       u.wear,
     ),
-    section("The fit", u.fit, u.from, u.warnings),
+    section("The fit", u.fit, u.warnings),
     section(
       "The disc",
       el("p", { textContent: PRIVATE }),
@@ -374,7 +371,7 @@ function choose(into) {
 function target() {
   if (d.into === null) {
     ui.reach.textContent = CHOOSE;
-    for (const line of [ui.wear, ui.fit, ui.from, ui.warnings]) line.textContent = "";
+    for (const line of [ui.wear, ui.fit, ui.warnings]) line.textContent = "";
     return;
   }
   const [pack, index] = split(d.into);
@@ -397,20 +394,16 @@ function layoutFit() {
   const p = layout?.packs.find((q) => q.path === pack);
   if (!layout || !p) {
     ui.fit.textContent = NO_LAYOUT;
-    ui.from.textContent = "";
     return;
   }
   if (!d.stream) {
     ui.fit.textContent = "";
-    ui.from.textContent = "";
     return;
   }
   try {
     ui.fit.textContent = fitText(fit(p, index, d.stream.length, d.doc.title));
-    ui.from.textContent = LAYOUT;
   } catch {
     ui.fit.textContent = tooBig(pack);
-    ui.from.textContent = LAYOUT;
   }
 }
 
@@ -472,7 +465,6 @@ async function placed(mine = ++turn) {
   } catch (e) {
     if (mine !== turn) return;
     ui.fit.textContent = `The level cannot be placed there: ${e.message}.`;
-    ui.from.textContent = FROM_IMAGE;
     return;
   }
   if (mine !== turn) return;
@@ -480,7 +472,6 @@ async function placed(mine = ++turn) {
   d.image = image;
   ui.fit.textContent = fitText(planned.fit);
   for (const w of planned.warnings) ui.warnings.append(el("li", { textContent: w }));
-  ui.from.textContent = FROM_IMAGE;
   downloads();
   play();
 }
