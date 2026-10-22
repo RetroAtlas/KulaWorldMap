@@ -81,7 +81,7 @@ function unreached(l) {
     );
   return {
     level: WARNING,
-    text: `no roll from the start reaches ${listed(named)}, not counting jumps, teleporters, moving platforms, ice or a fall from a crumbling or vanishing block`,
+    text: `no roll from the start reaches ${listed(named)} without a jump, a teleporter, a platform, ice or a fall`,
     at: null,
   };
 }

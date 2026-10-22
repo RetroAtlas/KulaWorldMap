@@ -55,8 +55,7 @@ const island = (cell) => ({
   kind: 0,
   faces: { 0: { type: 37, variant: 0 }, 1: { type: 31 }, 2: { type: 7 } },
 });
-const NOT_COUNTED =
-  ", not counting jumps, teleporters, moving platforms, ice or a fall from a crumbling or vanishing block";
+const NOT_COUNTED = " without a jump, a teleporter, a platform, ice or a fall";
 
 /** A new draft, editing on with the Select tool, and its block selected on its top. */
 async function fresh(page) {
