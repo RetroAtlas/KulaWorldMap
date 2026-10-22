@@ -11,8 +11,9 @@ const GENERATED = new Set(["public/map_data.json", "public/objects.json", "packa
 const VENDORED = "public/js/vendor/";
 
 // A run of hex with a letter and a digit in it, standing alone: an address
-// keeps its 0x and a colour its #, so neither reads as one.
-const HASH = /(?<![\w#./-])(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,40}(?!\w)/;
+// keeps its 0x and a colour its #, or the % that encodes one, so neither
+// reads as one.
+const HASH = /(?<![\w#./%-])(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,40}(?!\w)/;
 
 test("nothing in the repo cites a commit by its hash", () => {
   const tracked = execFileSync("git", ["ls-files"], { cwd: root, encoding: "utf8" })

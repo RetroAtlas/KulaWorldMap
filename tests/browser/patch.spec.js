@@ -298,6 +298,37 @@ test("a level the checks pass says it has no warnings, in no fold and with no er
   expect(errors).toEqual([]);
 });
 
+test("a row's slot select and the add select draw the page's own chevron, the same way", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  const id = await opened(page, "spiral.kula.json", synthetic(6));
+  await openPatch(page, id);
+  const dialog = page.locator("#patch");
+  await expect(dialog).toBeVisible();
+  const slot = dialog.locator("#patchSlot");
+  const add = dialog.locator("#patchAdd");
+  for (const select of [slot, add]) {
+    await expect(select).toHaveCSS("appearance", "none");
+    await expect(select).toHaveCSS("background-image", /^url\("data:image\/svg\+xml/);
+  }
+  const chevron = (select) =>
+    select.evaluate((e) => {
+      const s = getComputedStyle(e);
+      return [
+        s.backgroundImage,
+        s.backgroundPosition,
+        s.backgroundSize,
+        s.backgroundRepeat,
+        s.paddingRight,
+      ];
+    });
+  expect(await chevron(slot)).toEqual(await chevron(add));
+  expect(errors).toEqual([]);
+});
+
 test("without the game's face table the checks still run, the table is said to be missing and the patches stay back", async ({
   page,
 }) => {

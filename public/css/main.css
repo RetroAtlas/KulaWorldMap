@@ -1684,11 +1684,14 @@ body.editing #course .status {
 #patch select {
   flex: 1;
   min-width: 0;
-  background: #0e1320;
+  appearance: none;
+  background: #0e1320
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%23a3b1c6' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    right 7px center / 12px 12px no-repeat;
   color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 3px 6px;
+  padding: 3px 24px 3px 6px;
   font: inherit;
   font-size: 12.5px;
 }
