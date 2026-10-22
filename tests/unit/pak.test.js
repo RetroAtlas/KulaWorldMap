@@ -12,6 +12,7 @@ import {
   RELOCATE,
   SLOTS_MOST,
   fit,
+  fitAll,
   fitPak,
   packName,
   packSize,
@@ -21,12 +22,24 @@ import {
 import { deflate } from "../../public/js/format/deflate.js";
 import { writeKwl } from "../../public/js/format/kwl.js";
 import { USER } from "../../public/js/format/sectors.js";
-import { stored, streamOf, synthetic, syntheticPacks } from "./synthetic.js";
+import { planAll } from "../../public/js/format/patch.js";
+import {
+  SYNTHETIC_PACK,
+  stored,
+  streamOf,
+  synthetic,
+  syntheticImage,
+  syntheticPacks,
+} from "./synthetic.js";
 
 // The length of every shipped level's canonical stream, as the Python writer
 // deflates it, so the fit here is held to the one tools/kula_place.py makes.
 const digests = JSON.parse(
   readFileSync(fileURLToPath(new URL("../fixtures/kwl-digests.json", import.meta.url)), "utf8"),
+);
+// The sets the Python placer put onto the synthetic image, whose fits the layout has to give too.
+const fixture = JSON.parse(
+  readFileSync(fileURLToPath(new URL("../fixtures/patch-digests.json", import.meta.url)), "utf8"),
 );
 
 const names = (p) => p.slots.map((s) => s.name);
@@ -389,4 +402,148 @@ test("a pack with more sectors than the game reads is rebuilt only within what i
 
 test("a slot the pack read off the image does not have is refused", () => {
   for (const slot of [3, -1, 1.5]) assert.throws(() => fitted(Uint8Array.of(1), { slot }), /slots/);
+});
+
+// --- several levels in order, over the layout as over the image -------------------------
+
+const key = (f) => [f.path, f.recompressed, f.size, f.room];
+
+test("fitAll of one level is fit, over a copy that leaves the layout as it was", () => {
+  const p = small();
+  assert.deepEqual(fitAll(p, [{ slot: SLOT, size: 401, size9: 350, title: "Tower" }]), [
+    fit(p, SLOT, 401, "Tower"),
+  ]);
+  assert.deepEqual(fitAll(p, []), []);
+  assert.deepEqual(p, small());
+});
+
+test("each fit is over the pack as the earlier placements leave it", () => {
+  const p = small();
+  const most = p.capacity - HEAD - OTHERS;
+  const most9 = p.capacity - HEAD - OTHERS9;
+  const inPlace = fitAll(p, [
+    { slot: SLOT, size: 100, size9: 90, title: null },
+    { slot: 2, size: 1600, size9: 1500, title: null },
+  ]);
+  assert.deepEqual(inPlace.map(key), [
+    [IN_PLACE, false, p.size, 300],
+    [REBUILD, true, HEAD + 250 + 90 + 1600, p.capacity - (HEAD + 250 + 90 + 1600)],
+  ]);
+  const head = packSize(["LEVEL 1", "LEVEL 2", "TO"], [0, 0, 0]);
+  assert.equal(head, HEAD - 4);
+  const renamed = fitAll(p, [
+    { slot: 2, size: 501, size9: 450, title: "To" },
+    { slot: SLOT, size: 401, size9: 320, title: null },
+  ]);
+  assert.deepEqual(renamed.map(key), [
+    [REBUILD, false, head + 300 + 400 + 501, p.capacity - (head + 300 + 400 + 501)],
+    [REBUILD, false, head + 300 + 401 + 501, p.capacity - (head + 300 + 401 + 501)],
+  ]);
+  const tighter = fitAll(p, [
+    { slot: SLOT, size: most + 1, size9: most, title: null },
+    { slot: 0, size: 251, size9: 240, title: null },
+  ]);
+  assert.deepEqual(tighter.map(key), [
+    [REBUILD, true, HEAD + OTHERS9 + most + 1, OTHERS - OTHERS9 - 1],
+    [REBUILD, false, HEAD + 251 + most + 1 + 410, p.capacity - (HEAD + 251 + most + 1 + 410)],
+  ]);
+  assert.equal(fit(p, 0, 251).path, IN_PLACE);
+  const size = HEAD + OTHERS + most9 + 1;
+  const moved = fitAll(p, [
+    { slot: SLOT, size: most9 + 1, size9: most9, title: null },
+    { slot: 0, size: 301, size9: 240, title: null },
+  ]);
+  assert.deepEqual(moved.map(key), [
+    [RELOCATE, false, size, LARGEST - size],
+    [REBUILD, false, size + 1, 2 * USER - (size + 1)],
+  ]);
+  assert.equal(fit(p, 0, 301).room, p.capacity - (p.size + 1));
+});
+
+const inflate = async (bytes) => new Uint8Array(inflateSync(bytes));
+/** A pack's layout as packs.json gives it, from the pack read off the synthetic image. */
+const layoutOf = (pak) => ({
+  size: pak.size,
+  capacity: USER,
+  slots: pak.names.map((name, i) => ({
+    name,
+    size: pak.streams[i].length,
+    size9: deflate(inflateSync(pak.streams[i]), 9).length,
+  })),
+});
+const LAYOUT = Object.fromEntries(
+  syntheticPacks().map(([path, , blob]) => [path, layoutOf(readPak(blob))]),
+);
+/** A level of a set, as the placer takes it and as fitAll does. */
+function member(pack, slot, blocks, title) {
+  const level = writeKwl(synthetic(blocks, title));
+  const stream = deflate(level, 6);
+  return { pack, slot, title, stream, size: stream.length, size9: deflate(level, 9).length };
+}
+
+test("fitAll over the layout gives the placer's fits over the image, set by set and pack by pack", async () => {
+  const blob = new Blob([syntheticImage()]);
+  const spiral = member(SYNTHETIC_PACK, WORLD_SLOT, LEVELS[IN_PLACE], "Spiral");
+  const moving = member(SYNTHETIC_PACK, WORLD_SLOT, LEVELS[RELOCATE], "Spiral");
+  const sets = [
+    ...fixture.sets.map((s) => [
+      s.name,
+      s.items.map((i) => member(i.pack, i.slot, i.blocks, i.title)),
+      [
+        [IN_PLACE, false],
+        [REBUILD, false],
+      ],
+    ]),
+    [
+      "a rebuild that recompresses the level placed before it",
+      [spiral, member(SYNTHETIC_PACK, 2, 65, "Tower")],
+      [
+        [IN_PLACE, false],
+        [REBUILD, true],
+      ],
+    ],
+    [
+      "a pack moved, then a level in place",
+      [moving, member(SYNTHETIC_PACK, 0, 1, "Tower")],
+      [
+        [RELOCATE, false],
+        [IN_PLACE, false],
+      ],
+    ],
+    [
+      "a pack moved, then rebuilt where it lies",
+      [moving, member(SYNTHETIC_PACK, 0, 20, "Tower")],
+      [
+        [RELOCATE, false],
+        [REBUILD, false],
+      ],
+    ],
+    [
+      "a pack moved twice",
+      [moving, member(SYNTHETIC_PACK, 0, LEVELS[RELOCATE], "Tower")],
+      [
+        [RELOCATE, false],
+        [RELOCATE, false],
+      ],
+    ],
+  ];
+  for (const [name, members, paths] of sets) {
+    const planned = await planAll(blob, members, inflate);
+    assert.deepEqual(
+      planned.placed.map((p) => [p.fit.path, p.fit.recompressed]),
+      paths,
+      name,
+    );
+    for (const pack of new Set(members.map((m) => m.pack))) {
+      const mine = members.flatMap((m, i) => (m.pack === pack ? [i] : []));
+      assert.deepEqual(
+        fitAll(
+          LAYOUT[pack],
+          mine.map((i) => members[i]),
+        ).map(key),
+        mine.map((i) => key(planned.placed[i].fit)),
+        `${name}: ${pack}`,
+      );
+    }
+  }
 });

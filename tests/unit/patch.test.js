@@ -47,19 +47,23 @@ import {
   adler32,
   changes,
   cue,
+  description,
   identify,
   patchedImage,
   placements,
   plan,
+  planAll,
   ppf,
   runs,
   varint,
   vcdiff,
   verify,
+  verifyAll,
 } from "../../public/js/format/patch.js";
 import {
   CNF,
   CNF_AT,
+  FINALS_AT,
   PACK_AT,
   ROOM_AT,
   ROOM_SECTORS,
@@ -84,9 +88,11 @@ const fixture = JSON.parse(
 );
 const IMAGE = syntheticImage();
 const ORIGINAL = readPak(syntheticPacks()[0][2]);
+const FINALS = readPak(syntheticPacks()[1][2]);
 const SLOT = fixture.slot;
 const TITLE = fixture.title;
 const CASE = Object.fromEntries(fixture.cases.map((c) => [c.name, c]));
+const [FIRST, SECOND] = fixture.sets[0].items;
 const SUBMODE_AT = 18;
 const WARNINGS = [
   "the image has 43 sectors, not the 109,607 of the disc",
@@ -101,6 +107,7 @@ const raw = (image, lba) => image.subarray(lba * SECTOR_RAW, (lba + 1) * SECTOR_
 const user = (image, lba) => raw(image, lba).subarray(USER_OFF, USER_OFF + USER);
 const text = (bytes) => String.fromCharCode(...bytes);
 const lbas = (placed) => placed.writes.map(([lba]) => lba);
+const sectorAt = (writes, lba) => writes.find(([at]) => at === lba)[1];
 const differing = (a, b) => [...a].flatMap((v, i) => (v !== b[i] ? [i] : []));
 const sorted = (xs) => [...xs].sort((a, b) => a - b);
 const concat = (parts) => {
@@ -138,6 +145,55 @@ async function place(
   const patched = patchedImage(blob, placed.writes);
   await verify(await openDisc(patched), pack, slot, stream, placed, inflate);
   return { blob, disc, placed, patched, after: await bytes(patched) };
+}
+
+/** The levels of a set as the placer takes them, each member { pack, slot, blocks, title }. */
+const itemsOf = (members) =>
+  members.map(({ pack, slot, blocks, title }) => ({
+    pack,
+    slot,
+    stream: streamOf(synthetic(blocks, title)),
+    title,
+  }));
+
+/** The levels placed together into the synthetic image, proven through the patched image. */
+async function placeAll(items, image = IMAGE) {
+  const blob = new Blob([image]);
+  const planned = await planAll(blob, items, inflate);
+  const patched = patchedImage(blob, planned.writes);
+  await verifyAll(await openDisc(patched), items, planned, inflate);
+  return { blob, planned, patched, after: await bytes(patched) };
+}
+
+/**
+ * What every set has to satisfy: the patched image is the original with the
+ * merged sectors written and nothing else, every pack touched lies where its
+ * last placement put it and reads back as that placement's records and names,
+ * and every slot inflates to its level.
+ */
+async function held(items, planned, after) {
+  assert.equal(after.length, IMAGE.length);
+  const touched = new Set(lbas(planned));
+  assert.deepEqual(lbas(planned), sorted(touched));
+  for (let lba = 0; lba < SYNTHETIC_SECTORS; lba++)
+    if (!touched.has(lba)) same(raw(after, lba), raw(IMAGE, lba), `sector ${lba}`);
+  for (const [lba, written] of planned.writes) {
+    same(raw(after, lba), written, lba);
+    assert.notDeepEqual(Buffer.from(written), Buffer.from(raw(IMAGE, lba)), lba);
+    assert.ok(check(written), lba);
+    same(sector(lba, written.subarray(USER_OFF, USER_OFF + USER), written[SUBMODE_AT]), written);
+  }
+  const disc = await openDisc(new Blob([after]));
+  for (const { pack, slot, stream } of items)
+    same(inflateSync(readPak(await disc.readFile(pack)).streams[slot]), inflateSync(stream));
+  const last = new Map(items.map(({ pack }, i) => [pack, planned.placed[i]]));
+  for (const [pack, placed] of last) {
+    assert.deepEqual(disc.files.get(pack), { lba: placed.lba, size: placed.fit.size }, pack);
+    const pak = readPak(await disc.readFile(pack));
+    assert.deepEqual(pak.names, placed.fit.names, pack);
+    assert.equal(pak.streams.length, placed.fit.streams.length, pack);
+    pak.streams.forEach((s, i) => same(s, placed.fit.streams[i], pack));
+  }
 }
 
 // --- the appliers the patches are proven by ---------------------------------------
@@ -689,6 +745,250 @@ test("the patched image is the original's slices with the written sectors betwee
       ]),
     /written twice/,
   );
+});
+
+// --- several levels as one patch -----------------------------------------------------
+
+test("the fixture's sets are two levels in one pack, and a level in each of the two packs", () => {
+  assert.deepEqual(
+    fixture.sets.map((s) => [s.name, s.items.map((i) => [i.pack, i.slot, i.title])]),
+    [
+      [
+        "two in one pack",
+        [
+          [SYNTHETIC_PACK, SLOT, TITLE],
+          [SYNTHETIC_PACK, 2, "Tower"],
+        ],
+      ],
+      [
+        "across packs",
+        [
+          [SYNTHETIC_PACK, SLOT, TITLE],
+          [SYNTHETIC_FINALS, 0, "Tower"],
+        ],
+      ],
+    ],
+  );
+  const fields = ["blocks", "stream", "path", "recompressed", "size", "room", "lba"];
+  for (const s of fixture.sets) {
+    assert.deepEqual(
+      s.items.map((i) => [i.path, i.recompressed]),
+      [
+        [IN_PLACE, false],
+        [REBUILD, false],
+      ],
+      s.name,
+    );
+    assert.deepEqual(
+      fields.map((k) => s.items[0][k]),
+      fields.map((k) => CASE["in place"][k]),
+      s.name,
+    );
+  }
+});
+
+for (const s of fixture.sets) {
+  test(`${s.name}: the placements, the merged sectors, the patched image, the PPF and the xdelta are the fixture's`, async () => {
+    const items = itemsOf(s.items);
+    assert.deepEqual(
+      items.map((i) => i.stream.length),
+      s.items.map((i) => i.stream),
+    );
+    const { blob, planned, after } = await placeAll(items);
+    assert.deepEqual(
+      planned.placed.map((p) => [p.fit.path, p.fit.recompressed, p.fit.size, p.fit.room, p.lba]),
+      s.items.map((i) => [i.path, i.recompressed, i.size, i.room, i.lba]),
+    );
+    assert.deepEqual(lbas(planned), s.sectors);
+    assert.equal(sha256(after), s.patched);
+    const patch = await ppf(blob, planned.writes, description(items.map((i) => i.title)));
+    assert.equal(sha256(patch), s.ppf);
+    assert.equal(text(patch.subarray(6, 56)), "Kula World Map: Spiral, Tower".padEnd(DESCRIPTION));
+    same(applyPpf(IMAGE, patch), after);
+    const delta = await vcdiff(blob, planned.writes);
+    assert.equal(sha256(delta), s.xdelta);
+    const [target, windows] = decodeVcdiff(IMAGE, delta);
+    same(target, after);
+    assert.equal(windows, 1);
+    assert.deepEqual(planned.warnings, WARNINGS);
+    for (const p of planned.placed) assert.deepEqual(p.warnings, WARNINGS);
+    await held(items, planned, after);
+  });
+}
+
+test("one level is planned as plan plans it", async () => {
+  const blob = new Blob([IMAGE]);
+  const [first] = itemsOf([FIRST]);
+  const one = await plan(await openDisc(blob), SYNTHETIC_PACK, SLOT, first.stream, TITLE, inflate);
+  const planned = await planAll(blob, [first], inflate);
+  assert.deepEqual(planned, { placed: [one], writes: one.writes, warnings: one.warnings });
+  assert.deepEqual(await planAll(blob, [], inflate), {
+    placed: [],
+    writes: [],
+    warnings: WARNINGS,
+  });
+});
+
+test("the second is planned over the image the first leaves, and a later sector replaces an earlier one", async () => {
+  const blob = new Blob([IMAGE]);
+  const [first, second] = itemsOf([FIRST, SECOND]);
+  const one = await plan(await openDisc(blob), SYNTHETIC_PACK, SLOT, first.stream, TITLE, inflate);
+  const two = await plan(
+    await openDisc(patchedImage(blob, one.writes)),
+    SYNTHETIC_PACK,
+    second.slot,
+    second.stream,
+    second.title,
+    inflate,
+  );
+  const planned = await planAll(blob, [first, second], inflate);
+  assert.deepEqual(planned.placed, [one, two]);
+  assert.deepEqual(
+    [lbas(one), lbas(two), lbas(planned)],
+    [[PACK_AT], [WORLD_AT, PACK_AT], [WORLD_AT, PACK_AT]],
+  );
+  same(sectorAt(planned.writes, PACK_AT), sectorAt(two.writes, PACK_AT));
+  same(sectorAt(planned.writes, WORLD_AT), sectorAt(two.writes, WORLD_AT));
+  assert.notDeepEqual(
+    Buffer.from(sectorAt(one.writes, PACK_AT)),
+    Buffer.from(sectorAt(two.writes, PACK_AT)),
+  );
+  assert.deepEqual([one.fit.path, two.fit.path, two.fit.recompressed], [IN_PLACE, REBUILD, false]);
+  assert.equal(two.fit.streams.length, 3);
+  [ORIGINAL.streams[0], first.stream, second.stream].forEach((s, i) => same(two.fit.streams[i], s));
+  assert.deepEqual(two.fit.names, ["LEVEL 1", "LEVEL 2", "TOWER"]);
+  assert.deepEqual(planned.warnings, WARNINGS);
+});
+
+test("a later rebuild that recompresses carries the earlier level at level 9", async () => {
+  const items = itemsOf([FIRST, { ...SECOND, blocks: 65 }]);
+  const { planned, after } = await placeAll(items);
+  const two = planned.placed[1];
+  assert.deepEqual([two.fit.path, two.fit.recompressed], [REBUILD, true]);
+  same(two.fit.streams[SLOT], deflate(inflateSync(items[0].stream), 9));
+  assert.notDeepEqual(Buffer.from(two.fit.streams[SLOT]), Buffer.from(items[0].stream));
+  await held(items, planned, after);
+});
+
+test("two packs sharing a directory sector, both rebuilt, carry both records", async () => {
+  const items = itemsOf([
+    { pack: SYNTHETIC_PACK, slot: SLOT, blocks: CASE.rebuild.blocks, title: TITLE },
+    { pack: SYNTHETIC_FINALS, slot: 0, blocks: 5, title: "Tower" },
+  ]);
+  const { planned, after } = await placeAll(items);
+  assert.deepEqual(
+    planned.placed.map((p) => [p.fit.path, p.lba]),
+    [
+      [REBUILD, PACK_AT],
+      [REBUILD, FINALS_AT],
+    ],
+  );
+  assert.deepEqual(lbas(planned), [WORLD_AT, PACK_AT, FINALS_AT]);
+  assert.deepEqual(planned.placed.map(lbas), [
+    [WORLD_AT, PACK_AT],
+    [WORLD_AT, FINALS_AT],
+  ]);
+  const disc = await openDisc(new Blob([after]));
+  assert.deepEqual(disc.files.get(SYNTHETIC_PACK), {
+    lba: PACK_AT,
+    size: planned.placed[0].fit.size,
+  });
+  assert.deepEqual(disc.files.get(SYNTHETIC_FINALS), {
+    lba: FINALS_AT,
+    size: planned.placed[1].fit.size,
+  });
+  assert.notEqual(planned.placed[0].fit.size, ORIGINAL.size);
+  assert.notEqual(planned.placed[1].fit.size, FINALS.size);
+  assert.deepEqual(readPak(await disc.readFile(SYNTHETIC_PACK)).names, [
+    "LEVEL 1",
+    "SPIRAL",
+    "LEVEL 3",
+  ]);
+  assert.deepEqual(readPak(await disc.readFile(SYNTHETIC_FINALS)).names, ["TOWER", "FINAL 2"]);
+  await held(items, planned, after);
+});
+
+test("a pack moved once is rebuilt in its new place or moved again", async () => {
+  const moving = { pack: SYNTHETIC_PACK, slot: SLOT, blocks: CASE.relocate.blocks, title: TITLE };
+  const lighter = itemsOf([moving, { pack: SYNTHETIC_PACK, slot: 0, blocks: 20, title: "Tower" }]);
+  const rebuilt = await placeAll(lighter);
+  assert.deepEqual(
+    rebuilt.planned.placed.map((p) => [p.fit.path, p.lba]),
+    [
+      [RELOCATE, ROOM_AT],
+      [REBUILD, ROOM_AT],
+    ],
+  );
+  assert.deepEqual(lbas(rebuilt.planned), [WORLD_AT, ROOM_AT, ROOM_AT + 1]);
+  assert.deepEqual(rebuilt.planned.placed[1].fit.names, ["TOWER", "SPIRAL", "LEVEL 3"]);
+  await held(lighter, rebuilt.planned, rebuilt.after);
+  const heavier = itemsOf([
+    moving,
+    { pack: SYNTHETIC_PACK, slot: 0, blocks: CASE.relocate.blocks, title: "Tower" },
+  ]);
+  const moved = await placeAll(heavier);
+  assert.deepEqual(
+    moved.planned.placed.map((p) => [p.fit.path, p.lba]),
+    [
+      [RELOCATE, ROOM_AT],
+      [RELOCATE, ROOM_AT + 3],
+    ],
+  );
+  assert.deepEqual(lbas(moved.planned), [
+    WORLD_AT,
+    ROOM_AT,
+    ROOM_AT + 1,
+    ROOM_AT + 3,
+    ROOM_AT + 4,
+    ROOM_AT + 5,
+  ]);
+  same(raw(moved.after, ROOM_AT), sectorAt(moved.planned.placed[0].writes, ROOM_AT));
+  same(user(moved.after, ROOM_AT + 2), new Uint8Array(USER));
+  same(raw(moved.after, PACK_AT), raw(IMAGE, PACK_AT));
+  const disc = await openDisc(new Blob([moved.after]));
+  assert.deepEqual(disc.files.get(SYNTHETIC_PACK), {
+    lba: ROOM_AT + 3,
+    size: moved.planned.placed[1].fit.size,
+  });
+  await held(heavier, moved.planned, moved.after);
+});
+
+test("the verifier of a set refuses an image that is not the plan's", async () => {
+  const items = itemsOf([FIRST, SECOND]);
+  const { blob, planned, patched } = await placeAll(items);
+  const unplaced = { message: `${SYNTHETIC_PACK}#${SLOT} does not inflate to the level` };
+  await assert.rejects(verifyAll(await openDisc(blob), items, planned, inflate), unplaced);
+  const disc = await openDisc(patched);
+  await assert.rejects(
+    verifyAll(disc, [{ ...items[0], stream: items[1].stream }, items[1]], planned, inflate),
+    unplaced,
+  );
+  const two = planned.placed[1];
+  const wrong = { ...two, fit: { ...two.fit, size: two.fit.size + 1 } };
+  await assert.rejects(
+    verifyAll(disc, items, { ...planned, placed: [planned.placed[0], wrong] }, inflate),
+    /^Error: the directory puts/,
+  );
+  const flipped = planned.writes.map(([lba, written]) => {
+    const out = written.slice();
+    out[USER_OFF + 5] ^= 1;
+    return [lba, out];
+  });
+  await assert.rejects(
+    verifyAll(disc, items, { ...planned, writes: flipped }, inflate),
+    /does not check/,
+  );
+  await verifyAll(disc, items, planned, inflate);
+});
+
+test("two levels naming one slot are refused", async () => {
+  const blob = new Blob([IMAGE]);
+  const [first, second] = itemsOf([FIRST, SECOND]);
+  await assert.rejects(
+    planAll(blob, [first, { ...second, pack: SYNTHETIC_PACK.toLowerCase(), slot: SLOT }], inflate),
+    { message: `two levels name ${SYNTHETIC_PACK.toLowerCase()}#${SLOT}, which holds one` },
+  );
+  assert.equal((await planAll(blob, [first, second], inflate)).placed.length, 2);
 });
 
 // --- the patches ------------------------------------------------------------------------

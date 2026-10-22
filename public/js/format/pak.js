@@ -6,6 +6,7 @@
 // by one of three paths, decided here from a pack read off the image or from
 // the packs' layout alone.
 import { deflate } from "./deflate.js";
+import { USER } from "./sectors.js";
 
 export const IN_PLACE = "in place";
 export const REBUILD = "rebuild";
@@ -62,6 +63,31 @@ export function fit(pack, slot, size, title = null) {
     if (total <= LARGEST)
       return { path: RELOCATE, recompressed, size: total, room: LARGEST - total };
   throw new Error(`a pack of ${again} bytes is more than the game reads`);
+}
+
+/**
+ * How several streams go into the slots of one pack of packs.json, the items
+ * { slot, size, size9, title } fitted in order over a copy of the pack that
+ * each fit leaves as the placement will: the slot's record at its stream's
+ * length, and at size9 once a later rebuild recompresses the others; every
+ * other record at its size9 after a rebuild that recompressed them; the pack's
+ * size and the sectors it takes after a rebuild or a move; and the slot's name
+ * from the title as fit names it. The fits come back in order.
+ */
+export function fitAll(pack, items) {
+  const running = { ...pack, slots: pack.slots.map((s) => ({ ...s })) };
+  return items.map(({ slot, size, size9, title }) => {
+    const f = fit(running, slot, size, title);
+    if (f.path !== IN_PLACE) {
+      if (title != null) running.slots[slot].name = packName(title, running.slots[slot].name);
+      if (f.recompressed) for (const s of running.slots) s.size = s.size9;
+      running.size = f.size;
+      running.capacity = Math.ceil(f.size / USER) * USER;
+    }
+    running.slots[slot].size = size;
+    running.slots[slot].size9 = size9;
+    return f;
+  });
 }
 
 const ascii = (bytes) =>

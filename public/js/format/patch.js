@@ -1,6 +1,6 @@
-// A level's stream put into a slot of a pack on the image, and what carries
-// the result: the sectors a placement writes, each built whole, and the
-// patches made of them.
+// A level's stream put into a slot of a pack on the image, or several each
+// into its own slot, and what carries the result: the sectors a placement
+// writes, each built whole, and the patches made of them.
 import {
   DATA_SUBMODE,
   EOF_SUBMODE,
@@ -12,7 +12,7 @@ import {
   sector,
 } from "./sectors.js";
 import { IN_PLACE, REBUILD, fitPak, readPak, writePak } from "./pak.js";
-import { PVD, setRecord } from "./iso.js";
+import { PVD, openDisc, setRecord } from "./iso.js";
 import { WORLDS } from "./kwl.js";
 
 export const ROOM = "/3.00";
@@ -151,13 +151,8 @@ function levelsOf(pak, slot, inflate) {
   );
 }
 
-/**
- * The sectors that put the stream into the slot, read off the image: the fit,
- * where the pack lies afterwards, the sectors to write as [lba, raw] in
- * address order, and what says the image is not the disc's. inflate turns a
- * zlib stream into its bytes, asynchronously, however the host does that.
- */
-export async function plan(disc, packPath, slot, stream, title, inflate) {
+// The fit, where the pack lies afterwards and the sectors to write, read off the image.
+async function planOn(disc, packPath, slot, stream, title, inflate) {
   const key = packPath.toUpperCase();
   if (!disc.files.has(key)) throw new Error(`no such pack on the disc: ${packPath}`);
   try {
@@ -194,7 +189,45 @@ export async function plan(disc, packPath, slot, stream, title, inflate) {
     writes.push(...(await directory(disc, key, where, fit.size)));
   }
   writes.sort((a, b) => a[0] - b[0]);
-  return { fit, lba: where, writes, warnings: await identify(disc) };
+  return { fit, lba: where, writes };
+}
+
+/**
+ * The sectors that put the stream into the slot, read off the image: the fit,
+ * where the pack lies afterwards, the sectors to write as [lba, raw] in
+ * address order, and what says the image is not the disc's. inflate turns a
+ * zlib stream into its bytes, asynchronously, however the host does that.
+ */
+export async function plan(disc, packPath, slot, stream, title, inflate) {
+  const placed = await planOn(disc, packPath, slot, stream, title, inflate);
+  return { ...placed, warnings: await identify(disc) };
+}
+
+/**
+ * The sectors that put several streams into their slots, the items { pack,
+ * slot, stream, title } each planned over the image as the earlier ones left
+ * it, in the order given: each item's plan in order, the sectors to write
+ * merged in address order, a later one replacing an earlier at the same
+ * address, and what says the image is not the disc's.
+ */
+export async function planAll(blob, items, inflate) {
+  const named = new Set();
+  for (const { pack, slot } of items) {
+    const key = `${pack.toUpperCase()}#${slot}`;
+    if (named.has(key)) throw new Error(`two levels name ${pack}#${slot}, which holds one`);
+    named.add(key);
+  }
+  const disc = await openDisc(blob);
+  const warnings = await identify(disc);
+  const placed = [];
+  const merged = new Map();
+  for (const { pack, slot, stream, title } of items) {
+    const view = merged.size ? await openDisc(patchedImage(blob, [...merged])) : disc;
+    const one = await planOn(view, pack, slot, stream, title, inflate);
+    placed.push({ ...one, warnings });
+    for (const [lba, raw] of one.writes) merged.set(lba, raw);
+  }
+  return { placed, writes: [...merged].sort((a, b) => a[0] - b[0]), warnings };
 }
 
 /**
@@ -221,6 +254,27 @@ export async function verify(disc, packPath, slot, stream, placed, inflate) {
   )
     throw new Error(`${packPath} does not read back as planned`);
   for (const [lba, raw] of placed.writes)
+    if (!check(raw)) throw new Error(`sector ${lba} does not check`);
+}
+
+/**
+ * Read every pack touched back through the readers and hold it to the plan:
+ * the directory places it where the last placement into it put it and it
+ * reads back as that placement's records and names, every item's slot
+ * inflates to its level, and every merged sector checks.
+ */
+export async function verifyAll(disc, items, planned, inflate) {
+  const last = new Map(items.map(({ pack }, i) => [pack.toUpperCase(), i]));
+  for (const [i, { pack, slot, stream }] of items.entries()) {
+    if (last.get(pack.toUpperCase()) === i)
+      await verify(disc, pack, slot, stream, planned.placed[i], inflate);
+    else {
+      const pak = readPak(await disc.readFile(pack));
+      if (!same(await inflate(pak.streams[slot]), await inflate(stream)))
+        throw new Error(`${pack}#${slot} does not inflate to the level`);
+    }
+  }
+  for (const [lba, raw] of planned.writes)
     if (!check(raw)) throw new Error(`sector ${lba} does not check`);
 }
 
@@ -270,6 +324,9 @@ export async function changes(original, writes) {
   }
   return out;
 }
+
+/** What a PPF says of itself: the prefix and the levels' titles. */
+export const description = (titles) => PREFIX + titles.join(", ");
 
 /**
  * A PPF 3.0 patch: the header, a block check of the volume descriptor, and a
