@@ -995,9 +995,7 @@ class Validates(unittest.TestCase):
         beam = {"cell": [10, 10, 17], "kind": LASER_KIND, "far": [10, 16, 17], "colour": 0}
         across = {"cell": [8, 13, 17], "kind": LASER_KIND, "far": [12, 13, 17], "colour": 1}
         self.assertEqual(self.errors([base, beam, across]), [])
-        self.assertEqual([w for w in self.warnings([base, beam, across]) if "crosses the beam" in w],
-                         ["the beam crosses the beam from 10,10,17; where two cross, the lit one fills the cell",
-                          "the beam crosses the beam from 8,13,17; where two cross, the lit one fills the cell"])
+        self.assertEqual([w for w in self.warnings([base, beam, across]) if "crosses the beam" in w], [])
         into = {"cell": [8, 13, 17], "kind": LASER_KIND, "far": [10, 13, 17], "colour": 1}
         self.assertEqual(self.errors([base, beam, into]), ["the beam ends in the beam from 10,10,17"])
         rail = {"cell": [8, 13, 17], "kind": PLATFORM_KIND, "far": [12, 13, 17], "length": 2, "speed": 30}

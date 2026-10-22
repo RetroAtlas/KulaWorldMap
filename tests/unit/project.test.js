@@ -540,10 +540,7 @@ test("the cells the loaders fill are checked against each other", () => {
   assert.deepEqual(errors([base, beam, across]), []);
   assert.deepEqual(
     warnings([base, beam, across]).filter((w) => w.includes("crosses the beam")),
-    [
-      "the beam crosses the beam from 10,10,17; where two cross, the lit one fills the cell",
-      "the beam crosses the beam from 8,13,17; where two cross, the lit one fills the cell",
-    ],
+    [],
   );
   const into = { cell: [8, 13, 17], kind: LASER_KIND, far: [10, 13, 17], colour: 1 };
   assert.deepEqual(errors([base, beam, into]), ["the beam ends in the beam from 10,10,17"]);

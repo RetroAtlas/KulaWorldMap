@@ -396,12 +396,6 @@ function validateSpan(b, blocksAt, loader, err, warn) {
     if (other) err(`the beam crosses the block at ${cellText(c)}`, cell);
     if (runs.has(key))
       err(`the beam crosses the platform's run from ${cellText(runs.get(key).cell)}`, cell);
-    for (const laser of beams.get(key) ?? [])
-      if (laser !== b)
-        warn(
-          `the beam crosses the beam from ${cellText(laser.cell)}; where two cross, the lit one fills the cell`,
-          cell,
-        );
   }
 }
 

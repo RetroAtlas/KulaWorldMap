@@ -1534,10 +1534,6 @@ def _validate_span(b, at, loader, err, warn):
             err(f"the beam crosses the block at {cell_text(c)}", cell)
         if c in runs:
             err(f"the beam crosses the platform's run from {cell_text(runs[c]['cell'])}", cell)
-        for laser in beams.get(c, ()):
-            if laser is not b:
-                warn(f"the beam crosses the beam from {cell_text(laser['cell'])}; where two cross, the lit one fills the cell",
-                     cell)
 
 
 def _validate_outlook(cell, j, kinds, beams, warn):
