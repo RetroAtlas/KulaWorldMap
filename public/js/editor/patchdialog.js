@@ -152,7 +152,7 @@ function build() {
       accept: $("draftFile").accept,
       hidden: true,
     }),
-    disc: el("input", { id: "patchDisc", className: "sr", type: "file", accept: ".bin,.img,.iso" }),
+    disc: el("input", { id: "patchDisc", type: "file", accept: ".bin,.img,.iso" }),
     status: el("p", { id: "patchStatus" }),
     warnings: el("ul", { id: "patchWarnings", className: "warnings" }),
     ready: el("p", { id: "patchReady", className: "sub" }),
@@ -187,9 +187,10 @@ function build() {
     u.file.value = "";
     if (file) fromFile(file);
   };
+  // Cleared before the picker opens, so that choosing the same image again fires change.
+  u.disc.onclick = () => (u.disc.value = "");
   u.disc.onchange = () => {
     const file = u.disc.files[0];
-    u.disc.value = "";
     if (file) take(file);
   };
   u.ppf.onclick = () =>
@@ -244,7 +245,9 @@ function build() {
     e.preventDefault();
     drop.classList.remove("over");
     const file = e.dataTransfer?.files?.[0];
-    if (file) take(file);
+    if (!file) return;
+    u.disc.files = e.dataTransfer.files;
+    take(file);
   };
   u.overlay.setAttribute("role", "dialog");
   u.overlay.setAttribute("aria-modal", "true");

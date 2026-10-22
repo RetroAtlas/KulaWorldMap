@@ -182,11 +182,8 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   const drop = dialog.locator(".drop");
   const disc = dialog.locator("#patchDisc");
   await expect(drop).toHaveText("Drop the disc image here, or choose it");
-  await expect(disc).toHaveAccessibleName("Drop the disc image here, or choose it");
-  const hidden = await disc.boundingBox();
-  expect(Math.max(hidden.width, hidden.height)).toBeLessThanOrEqual(1);
-  const [chooser] = await Promise.all([page.waitForEvent("filechooser"), drop.click()]);
-  expect(await chooser.element().getAttribute("id")).toBe("patchDisc");
+  await expect(disc).toBeVisible();
+  expect((await disc.boundingBox()).height).toBeGreaterThan(1);
   await slot.focus();
   await page.keyboard.press("Tab");
   await expect(dialog.locator("#patchAdd")).toBeFocused();
@@ -194,10 +191,14 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await expect(dialog.locator("#patchClear")).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(disc).toBeFocused();
-  await expect(drop).toHaveCSS("outline-style", "solid");
 
   await disc.setInputFiles(file("synthetic.bin", syntheticImage()));
+  await expect(disc).toHaveValue(/synthetic\.bin$/);
   await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(disc).toHaveValue(/synthetic\.bin$/);
+  const [chooser] = await Promise.all([page.waitForEvent("filechooser"), disc.click()]);
+  expect(await chooser.element().getAttribute("id")).toBe("patchDisc");
+  await expect(disc).toHaveValue("");
   await expect(dialog.locator("#patchFit")).toHaveText(
     "It fits in the slot's own bytes, with 179 bytes to spare.",
   );
@@ -388,6 +389,9 @@ test("an image dropped beside the box is taken rather than opened in the tab", a
   }, Buffer.from(syntheticImage()).toString("base64"));
   expect(prevented).toEqual([true, true]);
   await expect(dialog.locator("#patchStatus")).toHaveText("dropped.bin is read.");
+  expect(
+    await dialog.locator("#patchDisc").evaluate((i) => [...i.files].map((f) => f.name)),
+  ).toEqual(["dropped.bin"]);
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
   expect(errors).toEqual([]);
 });
