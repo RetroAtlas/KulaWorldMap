@@ -332,7 +332,7 @@ test("the grid's height hint waits while a run does", async ({ page }) => {
   await expect(page.locator("#toolStatus")).toHaveText("");
   await hover(page, await floor(page, 18, 22));
   await expect(page.locator("#toolStatus")).toHaveText(
-    "The grid stands at the slice while it is lowered: , lowers the floor it lays and . raises it.",
+    "The grid follows the slice: , lowers it and . raises it.",
   );
   expect(errors).toEqual([]);
 });

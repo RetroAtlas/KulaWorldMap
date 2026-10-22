@@ -259,7 +259,7 @@ test("a block laid above the slice raises it, and the grid lays a first floor", 
   expect((await shown(page)).selected).toBe(null);
   expect((await blocks(page)).length).toBe(3);
 
-  // with the slice lowered the grid stands at the slice, and lays a floor in the layer it shows
+  // with the slice lowered the grid follows the slice, and lays a floor in the layer it shows
   const ghost = () =>
     page.evaluate(async () => {
       const { ghostPreview } = await import(new URL("js/editor/editor.js", location.href).href);
@@ -274,7 +274,7 @@ test("a block laid above the slice raises it, and the grid lays a first floor", 
   await page.mouse.move(over.x, over.y);
   expect(await ghost()).toEqual({ cell: [20, 22, 15], blocked: false });
   await expect(page.locator("#toolStatus")).toHaveText(
-    "The grid stands at the slice while it is lowered: , lowers the floor it lays and . raises it.",
+    "The grid follows the slice: , lowers it and . raises it.",
   );
   await click(page, over);
   expect((await shown(page)).selected).toEqual([20, 22, 15]);

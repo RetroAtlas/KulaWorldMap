@@ -68,8 +68,7 @@ const HELD = "That cell holds a block already.";
 const LAST = "A level keeps its last block.";
 const ONE_CELL = "A run needs two cells.";
 const FLOOR_THING = "The grid lays blocks; a thing goes on a block's face.";
-const HEIGHT_HINT =
-  "The grid stands at the slice while it is lowered: , lowers the floor it lays and . raises it.";
+const HEIGHT_HINT = "The grid follows the slice: , lowers it and . raises it.";
 const CHANGED = "The run's own block changed while it waited.";
 const WAITING = "The run waits for its far end. Click where it ends, or press Esc.";
 const WAITING_TOUCH = "The run waits for its far end. Tap where it ends, or change the tool.";
