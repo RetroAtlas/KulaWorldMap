@@ -85,11 +85,6 @@ export function wireDrafts() {
   $("draftFile").onchange = openFile;
   $("draftPaste").onclick = async () =>
     openRead(await pasteLevelLink(state.lvl.theme, readLevelText));
-  $("draftExport").onclick = () => {
-    const l = state.lvl;
-    if (l.draft !== undefined) saveAs(l.draft, true);
-    else download(`${slug(levelTitle(l))}.kwl`, writeKwl(fromLevel(l)), GAME_FILE);
-  };
   on("drafts-moved", (pairs) => {
     const to = pairs.find(([from]) => from === state.lvl?.draft)?.[1];
     const d = to === undefined ? null : drafts.get(to);
@@ -178,8 +173,6 @@ function sync() {
     show(id, d.doc, { keepView: true, push: false, keep: state.selected?.key ?? null });
     return;
   }
-  if (state.lvl)
-    $("draftExport").title = `Save ${levelTitle(state.lvl)} as the file the game loads`;
   rows();
   card(id, d);
 }

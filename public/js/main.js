@@ -223,8 +223,7 @@ function wireEntry() {
     el[fire] = pre;
   };
   if (!editor) {
-    for (const id of ["draftNew", "draftCopy", "draftOpen", "draftPaste", "draftExport"])
-      entry(id, "onclick");
+    for (const id of ["draftNew", "draftCopy", "draftOpen", "draftPaste"]) entry(id, "onclick");
     entry("draftFile", "onchange");
   }
   document.addEventListener(

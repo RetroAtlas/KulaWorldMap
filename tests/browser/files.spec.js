@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { test, expect } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
@@ -7,10 +6,6 @@ import { blank, readProject, setMeta, writeProject } from "../../public/js/forma
 import { RECORD, readKwl, writeKwl } from "../../public/js/format/kwl.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
-const digests = JSON.parse(
-  readFileSync(fileURLToPath(new URL("../fixtures/kwl-digests.json", import.meta.url)), "utf8"),
-);
-const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const hostile = JSON.parse(
   readFileSync(
     fileURLToPath(new URL("../fixtures/hostile-projects.json", import.meta.url)),
@@ -106,28 +101,16 @@ test("a draft saves as the map's file and as the game's, and the row counts the 
   expect(back.report).toEqual([]);
   await expect(row).toHaveText("saved to a file");
 
-  // the action row's export writes the same bytes for the draft on screen
-  const again = await saved(page, page.locator("#draftExport"));
-  expect(again.name).toBe("spiral-two.kwl");
-  expect(again.bytes.equals(asGame.bytes)).toBe(true);
-  expect(errors).toEqual([]);
-});
-
-test("a shipped level exports its own level file, the bytes the fixture holds", async ({
-  page,
-}) => {
-  const errors = trackErrors(page);
-  await page.goto(EDIT);
-  await settle(page);
-  const out = await saved(page, page.locator("#draftExport"));
-  await expect(page.locator("#draftExport")).toHaveAttribute(
-    "title",
-    "Save LEVEL 1 as the file the game loads",
-  );
-  expect(out.name).toBe("level-1.kwl");
-  expect(sha256(out.bytes)).toBe(digests["/HIRO/HIRO.PAK#0"].kwl);
-  await expect(page.locator("#draftRows button")).toHaveCount(0);
-  expect((await shown(page)).li).toBe(0);
+  // the row above holds the four openers alone, so the saves are the card's
+  const actions = page.locator("#yours .actions button");
+  await expect(actions).toHaveCount(4);
+  expect(await actions.evaluateAll((buttons) => buttons.map((b) => b.id))).toEqual([
+    "draftNew",
+    "draftCopy",
+    "draftOpen",
+    "draftPaste",
+  ]);
+  await expect(page.locator("#draftExport")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
