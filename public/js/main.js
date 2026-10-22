@@ -227,7 +227,6 @@ function wireEntry() {
       entry(id, "onclick");
     entry("draftFile", "onchange");
   }
-  $("makeBtn").onclick = () => bootEditor().then((m) => m?.toggleEditing());
   document.addEventListener(
     "keydown",
     (e) => {

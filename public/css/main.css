@@ -85,25 +85,8 @@ body:not(.sidebar-open) .sidebar {
   letter-spacing: 0.2px;
 }
 
-.make {
-  margin-left: auto;
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  color: var(--ink);
-  border-radius: 6px;
-  padding: 3px 9px;
-  font: inherit;
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.make:hover,
-.make:focus-visible {
-  border-color: var(--accent-dim);
-}
-
 .gear {
-  margin: -4px -6px 0 0;
+  margin: -4px -6px 0 auto;
   padding: 6px;
   display: grid;
   place-items: center;

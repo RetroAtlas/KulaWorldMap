@@ -127,7 +127,8 @@ test("Your levels folds under its heading: closed at first, open once a level of
   await expect(fold.locator("summary h2")).toHaveText("Your levels");
   expect(await isOpen()).toBe(false);
   // a level of your own coming on screen opens the fold, and shows how many the browser holds
-  await page.locator("#makeBtn").click();
+  await expect(page.locator("#chipLine b")).toHaveText("LEVEL 1");
+  await page.keyboard.press("w");
   await expect(page.locator("#draftRows button")).toHaveCount(1);
   expect(await isOpen()).toBe(true);
   await expect(page.locator("#yoursCount")).toHaveText("1");
@@ -1276,7 +1277,7 @@ test("a page back from the cache or thawed, and every write, takes in what anoth
 const EDITOR_FILES =
   /\/js\/(editor\/(editor|drafts|draftlist|palette|trail)|format\/(project|kwl)|vendor\/pako_deflate\.min|play\/(play|ball|dust))\.js$/;
 
-test("a plain visit shows the section and fetches none of the editor, which Make a level then loads", async ({
+test("a plain visit shows the section and fetches none of the editor, which w then loads", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -1288,7 +1289,7 @@ test("a plain visit shows the section and fetches none of the editor, which Make
   await expect(page.locator("#yours")).toBeVisible();
   await expect(page.locator("#draftEmpty")).toBeVisible();
   await expect(page.locator("#draftRows button")).toHaveCount(0);
-  await expect(page.locator("#makeBtn")).toBeVisible();
+  await expect(page.locator("#makeBtn")).toHaveCount(0);
   // the picker offers every kind of file the reader takes
   await expect(page.locator("#draftFile")).toHaveAttribute(
     "accept",
@@ -1297,7 +1298,7 @@ test("a plain visit shows the section and fetches none of the editor, which Make
   expect(requested).toContain("/js/main.js");
   expect(fetched()).toEqual([]);
 
-  await page.locator("#makeBtn").click();
+  await page.keyboard.press("w");
   await expect(page.locator("#draftRows button")).toHaveCount(1);
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
   const out = await shown(page);
@@ -1471,9 +1472,9 @@ test("a visitor whose editor cannot be loaded still gets the map, and is told", 
   await page.keyboard.press("]");
   expect((await shown(page)).li).toBe(1);
   await expect(page.locator("#chipLine b")).toHaveText("LEVEL 2");
-  // the editor's controls still ask for it, and say so again
+  // the editor's key still asks for it, and says so again
   await expect(page.locator("#toastStack .toast")).toHaveCount(0, { timeout: 6000 });
-  await page.locator("#makeBtn").click();
+  await page.keyboard.press("w");
   await expect(page.locator("#toastStack .toast")).toHaveText([UNLOADED]);
   expect((await shown(page)).li).toBe(1);
   expect(errors.filter((e) => !/Failed to load resource/.test(e))).toEqual([]);
@@ -1528,11 +1529,7 @@ test("an editor whose boot throws leaves the map and its controls, which say so 
   expect(await toasts(page)).toEqual([UNLOADED]);
   expect(await page.evaluate(() => window.__boots)).toBe(1);
   // each control says so again, once the last toast has gone, and none runs the boot again or does what it does
-  for (const control of [
-    () => page.locator("#makeBtn").click(),
-    () => page.keyboard.press("w"),
-    () => page.locator("#draftNew").click(),
-  ]) {
+  for (const control of [() => page.keyboard.press("w"), () => page.locator("#draftNew").click()]) {
     await expect(page.locator("#toastStack .toast")).toHaveCount(0, { timeout: 6000 });
     await control();
     await expect(page.locator("#toastStack .toast")).toHaveText([UNLOADED]);
