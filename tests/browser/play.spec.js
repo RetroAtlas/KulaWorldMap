@@ -1585,6 +1585,58 @@ test("the play strip ends short of the corner's widgets once Follow shows, its b
   expect(errors).toEqual([]);
 });
 
+test("the HUD takes the level line's place while the ball is on the level, naming it and showing the clock in the middle with the points at its left and the keys with the key's icon at its right, and gives the line back on Leave", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false });
+  const hud = page.locator("#hud");
+  const chip = page.locator("#chip");
+  await expect(chip).toBeVisible();
+  await expect(hud).toBeHidden();
+  await startPlay(page);
+  await expect(hud).toBeVisible();
+  await expect(chip).toBeHidden();
+  await expect(page.locator("#hudTitle")).toHaveText("LEVEL 1 · HIRO");
+  // the clock reads as a phrase, its word for a reader alone and its digits shown large
+  await expect(clockLine(page)).toHaveText(/^Time \d+$/);
+  const word = await clockLine(page).locator(".sr").boundingBox();
+  expect(word.width).toBeLessThanOrEqual(1);
+  await expect(clockLine(page).locator("b")).toBeVisible();
+  await expect(clockLine(page).locator("b")).toHaveText(/^\d+$/);
+  await expect(page.locator("#playPoints")).toHaveText("0 points");
+  await expect(page.locator("#playKeys")).toHaveText("Keys 1");
+  await expect(page.locator("#playKeys canvas.icon")).toHaveCount(1);
+  const [box, cv, points, clock, keys] = await Promise.all(
+    ["#hud", "#cv", "#playPoints", "#playClock", "#playKeys"].map((sel) =>
+      page.locator(sel).boundingBox(),
+    ),
+  );
+  expect(Math.abs(box.x + box.width / 2 - (cv.x + cv.width / 2))).toBeLessThanOrEqual(2);
+  expect(box.y + box.height).toBeLessThanOrEqual(cv.y + 80);
+  expect(points.x + points.width).toBeLessThanOrEqual(clock.x);
+  expect(clock.x + clock.width).toBeLessThanOrEqual(keys.x);
+  // the HUD lies over the view, so the ball is framed a fifth below the middle of what the strip
+  // alone leaves free
+  const spot = await anchor(page);
+  expect(Math.abs(spot.y - cv.y - spot.free * 0.7)).toBeLessThan(1);
+  await page.keyboard.press("Escape");
+  await expect(hud).toBeHidden();
+  await expect(chip).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("on a level with no key the HUD counts the blocks still to roll onto and draws no key", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false, hash: BONUS_LEVEL });
+  await startPlay(page);
+  await expect(page.locator("#playKeys")).toHaveText(/^\d+ blocks$/);
+  await expect(page.locator("#playKeys canvas")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test("a right click selects while playing, Esc clears the selection before it leaves, and the panel's Play from here, there with its setting on alone, moves the ball", async ({
   page,
 }) => {
@@ -2246,7 +2298,7 @@ const burstAbout = (page, way) =>
       let took = null;
       for (let f = 0; f < 300 && (took === null || f <= took + frames + 6); f++) {
         run();
-        if (took === null && keys.textContent === "Keys 0") took = f;
+        if (took === null && keys.textContent.replace(/\s+/g, " ").trim() === "Keys 0") took = f;
         samples.push(about());
         // the sheet lands between frames
         await new Promise((r) => setTimeout(r));
@@ -2781,7 +2833,7 @@ test.describe("with a touch screen", () => {
   test.describe("at a phone's size", () => {
     test.use({ viewport: { width: 375, height: 700 }, isMobile: true });
 
-    test("the ball is framed above the strip, whose line has a row of its own, and the pad lies over the view without moving it", async ({
+    test("the ball is framed above the strip, whose line has a row of its own, the pad lies over the view without moving it, and the HUD spans the top in the level line's place", async ({
       page,
     }) => {
       const errors = trackErrors(page);
@@ -2793,6 +2845,11 @@ test.describe("with a touch screen", () => {
       const strip = await page.locator("#play").boundingBox();
       const lineBox = await page.locator("#playLine").boundingBox();
       const cv = await page.locator("#cv").boundingBox();
+      // the level line gives its place to the HUD, which spans from the menu button to the edge
+      await expect(page.locator("#chip")).toBeHidden();
+      const hud = await page.locator("#hud").boundingBox();
+      expect(Math.abs(hud.x - 54)).toBeLessThanOrEqual(1);
+      expect(Math.abs(hud.x + hud.width - (cv.x + cv.width - 12))).toBeLessThanOrEqual(1);
       expect(spot.y).toBeLessThan(strip.y - 40);
       // a fifth below the middle of what the strip leaves free, from the first frame, the pad
       // taking none of it
@@ -4055,9 +4112,9 @@ test("on a level with no key the block the ball marks is painted as the game pai
   await frozen(page);
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 20,20,17, facing -y");
-  await expect(page.locator("#playKeys")).toHaveText("Blocks 48");
+  await expect(page.locator("#playKeys")).toHaveText("48 blocks");
   await passed(page, 1);
-  await expect(page.locator("#playKeys")).toHaveText("Blocks 47");
+  await expect(page.locator("#playKeys")).toHaveText("47 blocks");
   await page.keyboard.press("v");
   await expect(page.locator("#showMotion")).toBeChecked({ checked: false });
   const marked = await faceColour(page, BONUS_START, PLUS_Y);

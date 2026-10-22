@@ -1499,9 +1499,79 @@ body.editing #course .status {
   align-items: center;
   gap: 6px;
 }
-#play .figure {
+
+/* the HUD stands at the top of the map in the level line's place while the ball is on the level,
+   and lies over the view as the pad does, so the framing stands clear of the strip alone */
+.hud {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+  padding: 3px 14px 4px;
+  background: var(--surface-float);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 12.5px;
+}
+.hud .title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dim);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 14px;
+  letter-spacing: 0.02em;
+}
+.hud .row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.hud .figure {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+.hud .figure > :empty {
+  display: none;
+}
+.hud .figure b {
+  font-weight: 600;
+  font-size: 15px;
+}
+.hud #playClock b {
+  font-size: 26px;
+  line-height: 30px;
+}
+.hud .figure small {
+  color: var(--dim);
+  font-size: 11px;
+}
+.hud .figure .icon {
+  align-self: center;
+}
+.hud .sub {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  color: var(--dim);
+  font-size: 11.5px;
+  line-height: 16px;
+}
+.hud .sub:not(:has(:not([hidden]))) {
+  display: none;
+}
+body.playing .chip {
+  display: none;
 }
 @media (max-width: 760px) {
   #play {
@@ -1509,6 +1579,11 @@ body.editing #course .status {
   }
   #play .line {
     flex-basis: 100%;
+  }
+  .hud {
+    left: 54px;
+    right: 12px;
+    transform: none;
   }
 }
 .pad {

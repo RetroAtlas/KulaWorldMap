@@ -35,6 +35,7 @@ import {
   skinsTable,
   startsOf,
   theCircuit,
+  worldName,
   worldTint,
   TANGENT,
 } from "../viewer/data.js";
@@ -99,8 +100,10 @@ import { courseDriver, keyPad } from "./drive.js";
 import { frameShown, probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
 const BALL_TYPE = 30;
+const KEY_TYPE = 31;
 const LETHARGY_TYPE = 32;
 const INVINCIBLE_TYPE = 34;
+const KEY_MARKER = { type: KEY_TYPE, face: 0, variant: null, f: [] };
 // the ball's key among the frame's travellers, which no thing of the level's answers to
 const BALL = "ball";
 // the untinted light, the unit a traveller's tint is in
@@ -1368,6 +1371,34 @@ function figure(id, text, title = null) {
   if (title !== null && el.title !== title) el.title = title;
 }
 
+/** Fill a figure of the HUD's row from its phrase: the number in its bold, what stands before
+    the number in the span a reader alone gets and the word after it in its small, each with its
+    own space, so the figure reads as the phrase, written only where it changed. */
+function reading(id, phrase, title = null) {
+  const el = $(id);
+  const [, before, n, after] = /^(.*?)\s*(\d+)\s*(.*)$/.exec(phrase);
+  const parts = [
+    [".sr", before && `${before} `],
+    ["b", n],
+    ["small", after && ` ${after}`],
+  ];
+  for (const [part, text] of parts) {
+    const node = el.querySelector(part);
+    if (node && node.textContent !== text) node.textContent = text;
+  }
+  if (title !== null && el.title !== title) el.title = title;
+}
+
+/** Keep the keys figure's mark to the level: the legend's key where keys are counted and
+    nothing where blocks are, drawn again when `fresh`. */
+function marked(bonus, fresh = false) {
+  const mark = $("playKeys").querySelector(".mark");
+  if (!fresh && mark.hasChildNodes() === !bonus) return;
+  const model = bonus ? null : markerModel(KEY_MARKER, state.lvl);
+  if (model) mark.replaceChildren(iconFor(model, 18));
+  else mark.replaceChildren();
+}
+
 function line() {
   if (!live) return;
   const s = shown();
@@ -1378,13 +1409,14 @@ function line() {
   if (el.textContent !== text) el.textContent = text;
   const w = live.run.words;
   const { clock } = motionTable().play;
-  figure("playClock", `Time ${Math.max(0, Math.floor(w.clock / clock.second))}`);
-  figure(
+  reading("playClock", `Time ${Math.max(0, Math.floor(w.clock / clock.second))}`);
+  reading(
     "playKeys",
-    w.bonus ? `Blocks ${w.unmarked}` : `Keys ${w.keys}`,
+    w.bonus ? counted(w.unmarked, "block") : `Keys ${w.keys}`,
     w.bonus ? BLOCKS_LEFT : KEYS_LEFT,
   );
-  figure("playPoints", counted(w.score, "point"));
+  marked(w.bonus);
+  reading("playPoints", counted(w.score, "point"));
   const game = live.run.game;
   const room = w.mode === MODE.simon;
   for (const id of ["playRound", "playMoves"]) $(id).hidden = !room;
@@ -1404,6 +1436,8 @@ function line() {
 
 function sync() {
   $("play").hidden = !live;
+  $("hud").hidden = !live;
+  document.body.classList.toggle("playing", live !== null);
   $("pad").hidden = !live || !padShown;
   $("padBtn").setAttribute("aria-pressed", String(padShown));
   $("forgiveBtn").setAttribute("aria-pressed", String(forgiving));
@@ -1452,10 +1486,21 @@ function wirePad() {
   $("leaveBtn").onclick = () => leave();
 }
 
+/** Draw the pad's ball for the level shown and, while the ball is on it, the HUD's key and the
+    level's name. */
 function icon() {
   const l = state.lvl;
   const model = l && ballFor(l);
   $("padBall").replaceChildren(model ? iconFor(model, 22) : "");
+  if (!live) return;
+  marked(live.run.words.bonus, true);
+  caption();
+}
+
+/** Name the level in the HUD as the level line names it. */
+function caption() {
+  const l = state.lvl;
+  $("hudTitle").textContent = `${levelTitle(l)} · ${worldName(l.theme)}`;
 }
 
 // --- the keys -----------------------------------------------------------------------------
@@ -1750,6 +1795,7 @@ export function bootPlay() {
     if (!live) return;
     live.level = state.lvl;
     live.idx = state.idx;
+    caption();
     relevel(live.run, state.lvl, state.idx);
     const b = live.run.ball;
     const under = blockUnder(b);

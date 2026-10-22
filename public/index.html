@@ -309,6 +309,32 @@
         </button>
         <div id="chipNote" class="note" hidden></div>
       </div>
+      <div id="hud" class="hud" role="group" aria-label="The clock, the keys and the points" hidden>
+        <div id="hudTitle" class="title"></div>
+        <div class="row">
+          <span id="playPoints" class="figure" title="The points scored on the level"
+            ><b></b><small></small
+          ></span>
+          <span id="playClock" class="figure" title="The time the level has left, in seconds"
+            ><span class="sr"></span><b></b
+          ></span>
+          <span id="playKeys" class="figure" title="The keys left to take"
+            ><span class="mark"></span><span class="sr"></span><b></b><small></small
+          ></span>
+        </div>
+        <div class="sub">
+          <span id="playTotal" class="figure" title="The run's total" hidden></span>
+          <span id="playRound" class="figure" title="The round the room is in" hidden></span>
+          <span id="playMoves" class="figure" title="The moves the round asks" hidden></span>
+          <span id="playTurn" class="figure" title="Whose turn it is" hidden></span>
+          <span
+            id="playMatch"
+            class="figure"
+            title="The match's points, Player 1's then Player 2's"
+            hidden
+          ></span>
+        </div>
+      </div>
       <div id="readout" class="readout mono"></div>
       <div id="corner" class="corner" hidden>
         <div class="stack">
@@ -426,23 +452,6 @@
       <div id="play" class="tools" role="group" aria-label="Playing" hidden>
         <span id="playLine" class="line"></span>
         <span class="controls">
-          <span
-            id="playClock"
-            class="figure"
-            title="The time the level has left, in seconds"
-          ></span>
-          <span id="playKeys" class="figure" title="The keys left to take"></span>
-          <span id="playPoints" class="figure" title="The points scored on the level"></span>
-          <span id="playRound" class="figure" title="The round the room is in" hidden></span>
-          <span id="playMoves" class="figure" title="The moves the round asks" hidden></span>
-          <span id="playTurn" class="figure" title="Whose turn it is" hidden></span>
-          <span
-            id="playMatch"
-            class="figure"
-            title="The match's points, Player 1's then Player 2's"
-            hidden
-          ></span>
-          <span id="playTotal" class="figure" title="The run's total" hidden></span>
           <button
             id="padBtn"
             type="button"
