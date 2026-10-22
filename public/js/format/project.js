@@ -21,7 +21,6 @@ import {
   FACING_TYPES,
   FINAL_SLOTS,
   FORMAT,
-  FRUIT,
   HEADS_AS_ONE,
   HIDDEN_EXIT,
   KEY,
@@ -79,7 +78,6 @@ export const TITLE_MOST = 80;
 export const TEXT_MOST = 2000;
 export const ERROR = "error";
 export const WARNING = "warning";
-const FRUIT_SET = new Set(FRUIT);
 const CAPTIVATOR_SET = new Set(CAPTIVATORS);
 const UNDRAWN_KINDS = new Set(BONUS_UNDRAWN_KINDS);
 const UNDRAWN_TYPES = new Set(BONUS_UNDRAWN_TYPES);
@@ -573,8 +571,6 @@ export function validate(project, hides, names = {}) {
       }
       if (STARTS.has(t)) starts.push([cell, j]);
       if (t === STAR) warn(`${typeWord(t, names)} is untested in play`, cell, j);
-      if (FRUIT_SET.has(t))
-        warn("the game shows the player's next fruit, whichever is placed", cell, j);
       validateOutlook(cell, j, kinds, beams, warn);
     }
     for (const key of strayFaceKeys(b))

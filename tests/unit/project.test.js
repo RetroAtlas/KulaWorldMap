@@ -960,7 +960,10 @@ test("what the format takes, and what it warns about", () => {
   assert.deepEqual(errors(turned), ["a facing of 1 to 4, or none"]);
   const warned = warnings(blocks);
   assert.ok(warned.includes("the star is untested in play"));
-  assert.ok(warned.includes("the game shows the player's next fruit, whichever is placed"));
+  assert.deepEqual(
+    warned.filter((w) => w.includes("next fruit")),
+    [],
+  );
   const one = [plain([5, 5, 5], 0, { 0: start() })];
   assert.ok(errors(one, { time: 0 }).includes("a time of 0 seconds"));
   assert.ok(

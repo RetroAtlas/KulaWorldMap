@@ -1363,8 +1363,6 @@ def validate(project, hides):
                 starts.append((cell, j))
             if t == STAR:
                 warn("the star is untested in play", cell, j)
-            if t in FRUIT:
-                warn("the game shows the player's next fruit, whichever is placed", cell, j)
             _validate_outlook(cell, j, kinds, beams, warn)
         for key in _stray_face_keys(b):
             err(f"face {json.dumps(key, ensure_ascii=False)} is not one of the six", cell)
