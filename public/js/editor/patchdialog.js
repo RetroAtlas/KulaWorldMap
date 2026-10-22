@@ -14,6 +14,7 @@ import { deflate } from "../format/deflate.js";
 import { ERROR, UNTITLED, describe, playsAs, setMeta, validate } from "../format/project.js";
 import { RAW_ONLY, download, isIso, slug } from "./files.js";
 import { draftOf, readLevel } from "./intake.js";
+import { guessSlot } from "./slotguess.js";
 import * as drafts from "./drafts.js";
 import { edit } from "./trail.js";
 import { IN_PLACE, REBUILD, RECOMPRESS, fitAll, readPak } from "../format/pak.js";
@@ -423,9 +424,9 @@ function additions() {
   ui.add.selectedIndex = 0;
 }
 
-// Every row's slot list and the slot it shows: the draft's own target, or
-// none where that is no slot, else where a template came from, else the first
-// slot no other row takes; then what each row says of its slot and the fits.
+// Every row's slot list and the slot it shows, in passes so a guess never takes
+// a slot chosen for another row: its target, or none where that is no slot, else
+// a guess from its title, else its template's slot, else the first free slot.
 function retarget() {
   d.titles = new Map(state.data.levels.map((l) => [`${l.pack}#${l.index}`, levelTitle(l)]));
   const groups = optionGroups();
@@ -435,20 +436,25 @@ function retarget() {
     for (const [part, id] of Object.entries(IDS)) row.u[part].id = i ? `${id}${i + 1}` : id;
     slots(row, groups);
     placeholder(row);
-    const options = optionsOf(row);
-    const { into, from } = row.doc;
-    if (into != null) row.into = options.has(String(into)) ? String(into) : null;
-    else if (from != null && options.has(String(from))) row.into = String(from);
-    else {
-      row.into = null;
-      open.push(row);
-    }
+    const { into } = row.doc;
+    row.into = null;
+    if (into == null) open.push(row);
+    else if (optionsOf(row).has(String(into))) row.into = String(into);
     if (row.into) taken.add(row.into);
   });
-  for (const row of open) {
-    row.into = [...optionsOf(row)].find((key) => !taken.has(key)) ?? null;
-    if (row.into) taken.add(row.into);
-  }
+  const settle = (pick) => {
+    for (const row of open) {
+      if (row.into !== null) continue;
+      row.into = pick(row) ?? null;
+      if (row.into) taken.add(row.into);
+    }
+  };
+  settle((row) => guessSlot(row.doc.title, listedOf(row), taken));
+  settle((row) => {
+    const { from } = row.doc;
+    return from != null && optionsOf(row).has(String(from)) ? String(from) : null;
+  });
+  settle((row) => [...optionsOf(row)].find((key) => !taken.has(key)));
   for (const row of d.rows) {
     row.u.slot.value = row.into ?? "";
     target(row);
@@ -544,7 +550,10 @@ function placeholder(row) {
     );
 }
 
-const optionsOf = (row) => new Set([...row.u.slot.options].map((o) => o.value).filter(Boolean));
+/** The slots a row's select lists, each a key and the title shown for it. */
+const listedOf = (row) =>
+  [...row.u.slot.options].filter((o) => o.value).map((o) => [o.value, o.textContent]);
+const optionsOf = (row) => new Set(listedOf(row).map(([key]) => key));
 
 function choose(row, into) {
   if (!into) return;

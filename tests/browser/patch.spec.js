@@ -8,12 +8,13 @@ import { writeProject } from "../../public/js/format/project.js";
 import { SLUG_MOST } from "../../public/js/editor/files.js";
 import { SYNTHETIC_SECTORS, streamOf, synthetic, syntheticImage } from "../unit/synthetic.js";
 import { USER, sector } from "../../public/js/format/sectors.js";
-import { packs } from "../unit/fixtures.js";
+import { mapData, packs } from "../unit/fixtures.js";
 import { REBUILD, RELOCATE, fit, readPak, writePak } from "../../public/js/format/pak.js";
 import { openDisc } from "../../public/js/format/iso.js";
 import { RECORD, writeKwl } from "../../public/js/format/kwl.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
+const FIFTH = "/#HIRO/4/45,35/fit/33";
 const fixture = JSON.parse(
   readFileSync(fileURLToPath(new URL("../fixtures/patch-digests.json", import.meta.url)), "utf8"),
 );
@@ -76,6 +77,11 @@ const rows = (dialog) => dialog.locator("#patchRows .level");
 const slotOf = async (image, pack, slot) => {
   const pak = readPak(await (await openDisc(new Blob([image]))).readFile(pack));
   return { names: pak.names, level: inflateSync(pak.streams[slot]) };
+};
+/** The key of the slot whose level the pause screen titles so. */
+const keyOf = (title) => {
+  const l = mapData.levels.find((l) => (l.shown || l.name) === title);
+  return `${l.pack}#${l.index}`;
 };
 
 /** Open a project as a draft through the sidebar's file input, and give its id. */
@@ -1240,6 +1246,81 @@ test("a pack added from a file asks which level in the box's place, and the box 
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect.poll(() => page.evaluate(() => history.state?.dialog ?? null)).toBeNull();
+  expect(errors).toEqual([]);
+});
+
+test("a row opens on the slot its title names, else where its copy came from, and never on a slot another row has", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(FIFTH);
+  await settle(page);
+  const dialog = page.locator("#patch");
+  const level = rows(dialog);
+  const slot = dialog.locator("#patchSlot");
+  const title = page.locator("#draftTitle");
+  const chip = page.locator("#chipLine b");
+  const hundredAndOne = keyOf("LEVEL 101");
+  /** The box opened for the draft alone shows its row on this slot, and closes again. */
+  const opensOn = async (id, key, name) => {
+    await openPatch(page, id);
+    await expect(dialog).toBeVisible();
+    await expect(level).toHaveCount(1);
+    await expect(slot).toHaveValue(key);
+    await expect(dialog.locator("#patchReach")).toContainText(`It takes ${name}'s place`);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  };
+
+  // a copy of LEVEL 5 goes where it came from until its title names a slot
+  await page.locator("#draftCopy").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await expect.poll(() => shownDraft(page)).not.toBeUndefined();
+  const copy = await shownDraft(page);
+  expect(await docOf(page, copy)).toMatchObject({ title: "LEVEL 5", from: "/HIRO/HIRO.PAK#4" });
+  await title.fill("Spiral");
+  await expect(chip).toHaveText("Spiral");
+  await opensOn(copy, "/HIRO/HIRO.PAK#4", "LEVEL 5");
+  await title.fill("Bonus 3");
+  await expect(chip).toHaveText("Bonus 3");
+  await opensOn(copy, "/HIRO/HIRO.PAK#17", "BONUS 3");
+  await title.fill("My level 101");
+  await expect(chip).toHaveText("My level 101");
+  await opensOn(copy, hundredAndOne, "LEVEL 101");
+  expect((await docOf(page, copy)).into).toBeUndefined();
+
+  // a level from a file goes by its title, and by its target over its title
+  await page
+    .locator("#draftFile")
+    .setInputFiles(file("remix.kula.json", writeProject(synthetic(6, "My level 101"))));
+  await expect.poll(() => shownDraft(page)).not.toBe(copy);
+  const titled = await shownDraft(page);
+  await opensOn(titled, hundredAndOne, "LEVEL 101");
+  const aimed = await opened(page, "aimed.kula.json", {
+    ...synthetic(6, "Also my level 101"),
+    into: "/HIRO/HIRO.PAK#1",
+  });
+  await opensOn(aimed, "/HIRO/HIRO.PAK#1", "LEVEL 2");
+  const held = await opened(page, "held.kula.json", {
+    ...synthetic(6, "Held"),
+    into: hundredAndOne,
+  });
+  await opensOn(held, hundredAndOne, "LEVEL 101");
+
+  // a slot another row has is not guessed, whichever row is first
+  await openPatch(page, titled);
+  await expect(dialog).toBeVisible();
+  const add = dialog.locator("#patchAdd");
+  await add.selectOption(String(held));
+  await add.selectOption(String(copy));
+  await add.selectOption(String(aimed));
+  await expect(level).toHaveCount(4);
+  await expect(slot).toHaveValue("/HIRO/HIRO.PAK#0");
+  await expect(level.nth(1).locator("select")).toHaveValue(hundredAndOne);
+  await expect(level.nth(2).locator("select")).toHaveValue("/HIRO/HIRO.PAK#4");
+  await expect(level.nth(3).locator("select")).toHaveValue("/HIRO/HIRO.PAK#1");
+  await expect(dialog.locator("#patchClash p")).toHaveCount(0);
+  for (const id of [copy, titled]) expect((await docOf(page, id)).into).toBeUndefined();
   expect(errors).toEqual([]);
 });
 
