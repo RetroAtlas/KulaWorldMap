@@ -120,7 +120,8 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   );
   for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
     await expect(dialog.locator(b)).toBeDisabled();
-  await expect(dialog.locator("#patchPlay li")).toHaveCount(1);
+  const playing = dialog.locator("#patchPlaying");
+  await expect(playing).toBeHidden();
   expect((await docOf(page, id)).into).toBeUndefined();
   expect((await steps(page, id)).past).toBe(0);
 
@@ -164,12 +165,17 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await expect(dialog.locator("#patchWarnings li")).toHaveText(WARNINGS);
   for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
     await expect(dialog.locator(b)).toBeEnabled();
+  await expect(playing).toBeVisible();
+  await expect(playing.locator("h4")).toHaveText("Playing it");
   const play = dialog.locator("#patchPlay li");
   await expect(play).toHaveCount(3);
   await expect(play.nth(0)).toContainText("synthetic.ppf");
   await expect(play.nth(1)).toContainText("SLUS_007.24");
   await expect(play.nth(2)).toContainText(
     'xdelta3 -d -s "synthetic.bin" "spiral.xdelta" "spiral.bin"',
+  );
+  await expect(playing.locator(".sub")).toHaveText(
+    "Mednafen, Beetle and RetroArch apply no patch and play the patched disc instead.",
   );
 
   const patch = await saved(page, dialog.locator("#patchPpf"));
@@ -194,6 +200,7 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await expect(dialog).toBeVisible();
   await expect(slot).toHaveValue("/HIRO/HIRO.PAK#1");
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
+  await expect(playing).toBeHidden();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   expect(errors).toEqual([]);
@@ -717,10 +724,12 @@ test("a read that lands late, for an image or a box no longer current, changes n
   );
   await expect(dialog.locator("#patchPlay li").first()).toContainText("quick.ppf");
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  await expect(dialog.locator("#patchPlaying")).toBeVisible();
 
   await dialog.locator("#patchDisc").setInputFiles(file("slow.bin", slow));
   await expect(status).toHaveText("Reading slow.bin…");
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
+  await expect(dialog.locator("#patchPlaying")).toBeHidden();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await openPatch(page, id);

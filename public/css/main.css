@@ -1634,11 +1634,8 @@ body.editing #course .status {
 #patch .box {
   width: 540px;
 }
-#patch section {
-  margin: 0 0 14px;
-}
-#patch section:last-child {
-  margin-bottom: 0;
+#patch section + section {
+  margin-top: 14px;
 }
 #patch .name {
   color: var(--ink);

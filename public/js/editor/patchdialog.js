@@ -42,7 +42,6 @@ const NO_LAYOUT = "The disc's layout could not be loaded, so the fit waits for t
 const CHOOSE = "Choose a slot above.";
 const NO_IMAGE = "Give the disc image above to make the patches.";
 const READY = "Save what your emulator wants.";
-const LATER = "Once the disc is given, this says where each emulator wants the patch.";
 const INSTEAD = "Mednafen, Beetle and RetroArch apply no patch and play the patched disc instead.";
 const gone = (name) => `Another tab deleted ${name}, so the box closed without a patch.`;
 const tooBig = (pack) => `The level is too big for the game to load from ${pack}.`;
@@ -156,6 +155,8 @@ function build() {
     el("span", { textContent: "Drop the disc image here, or choose it" }),
     u.disc,
   );
+  u.playing = section("Playing it", u.play, el("p", { className: "sub", textContent: INSTEAD }));
+  u.playing.id = "patchPlaying";
   const box = el(
     "div",
     { className: "box settings patch" },
@@ -177,7 +178,7 @@ function build() {
       u.ready,
       el("div", { className: "row" }, u.ppf, u.xdelta, u.image, u.cue),
     ),
-    section("Playing it", u.play, el("p", { className: "sub", textContent: INSTEAD })),
+    u.playing,
   );
   u.overlay = el("div", { id: "patch", className: "modal", hidden: true }, box);
   u.overlay.ondragover = (e) => {
@@ -488,11 +489,10 @@ function readiness() {
 }
 
 function play() {
+  const lines = d.file && d.placed ? placements(d.file.name, base()) : [];
   ui.play.textContent = "";
-  if (d.file && d.placed)
-    for (const line of placements(d.file.name, base()))
-      ui.play.append(el("li", { textContent: line }));
-  else ui.play.append(el("li", { className: "sub", textContent: LATER }));
+  for (const line of lines) ui.play.append(el("li", { textContent: line }));
+  ui.playing.hidden = !lines.length;
 }
 
 async function save(control, write) {
