@@ -1713,12 +1713,9 @@ body.editing #course .status {
   border-color: var(--accent);
   color: var(--ink);
 }
-#patch .drop input {
-  display: block;
-  margin-top: 6px;
-  font: inherit;
-  font-size: 12px;
-  color: var(--ink);
+#patch .drop:focus-within {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: -1px;
 }
 #patch .row {
   display: flex;

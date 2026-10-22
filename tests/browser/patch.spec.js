@@ -135,7 +135,20 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   expect((await docOf(page, id)).into).toBe("/HIRO/HIRO.PAK#1");
   expect((await steps(page, id)).past).toBe(1);
 
-  await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
+  const drop = dialog.locator(".drop");
+  const disc = dialog.locator("#patchDisc");
+  await expect(drop).toHaveText("Drop the disc image here, or choose it");
+  await expect(disc).toHaveAccessibleName("Drop the disc image here, or choose it");
+  const hidden = await disc.boundingBox();
+  expect(Math.max(hidden.width, hidden.height)).toBeLessThanOrEqual(1);
+  const [chooser] = await Promise.all([page.waitForEvent("filechooser"), drop.click()]);
+  expect(await chooser.element().getAttribute("id")).toBe("patchDisc");
+  await slot.focus();
+  await page.keyboard.press("Tab");
+  await expect(disc).toBeFocused();
+  await expect(drop).toHaveCSS("outline-style", "solid");
+
+  await disc.setInputFiles(file("synthetic.bin", syntheticImage()));
   await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
   await expect(dialog.locator("#patchFit")).toHaveText(
     "It fits in the slot's own bytes, with 179 bytes to spare.",

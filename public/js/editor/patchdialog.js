@@ -112,7 +112,7 @@ function build() {
     fit: el("p", { id: "patchFit" }),
     from: el("p", { id: "patchFrom", className: "sub" }),
     warnings: el("ul", { id: "patchWarnings", className: "warnings" }),
-    disc: el("input", { id: "patchDisc", type: "file", accept: ".bin,.img,.iso" }),
+    disc: el("input", { id: "patchDisc", className: "sr", type: "file", accept: ".bin,.img,.iso" }),
     status: el("p", { id: "patchStatus" }),
     ready: el("p", { id: "patchReady", className: "sub" }),
     ppf: button("patchPpf", "the PPF patch", "Save the patch most PlayStation emulators apply"),
