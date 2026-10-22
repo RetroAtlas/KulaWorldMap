@@ -1166,7 +1166,7 @@ const route = (page) =>
     return c && { stations: c.stations, steps: c.steps, marks: [...c.marks].sort((a, b) => a - b) };
   });
 
-test("Keep as the route hands the way the ball has come to the planner and goes on handing it over as the ball goes on, until it is pressed again, the route is cleared or followed, and another's route leaves it disabled", async ({
+test("Keep hands the way the ball has come to the planner and goes on handing it over as the ball goes on, until it is pressed again, the route is cleared or followed, and another's route leaves it disabled", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -1230,7 +1230,7 @@ test("Keep as the route hands the way the ball has come to the planner and goes 
   await keep.click();
   await expect(keep).toHaveAttribute("aria-pressed", "true");
   await expect(count).toHaveText("Route planner · 2 stops");
-  // Follow the route releases Keep, and an arrow takes the ball back from the route
+  // Follow releases Keep, and an arrow takes the ball back from the route
   const follow = page.locator("#followBtn");
   await follow.click();
   await expect(follow).toHaveAttribute("aria-pressed", "true");
@@ -1328,7 +1328,7 @@ const stopOn = async (page, c) => {
   await page.mouse.click(p.x, p.y);
 };
 
-test("Follow the route rolls the ball along the planned route to its last stop and says the route is done, from the last stop it starts again at the first, and an arrow takes the ball back", async ({
+test("Follow rolls the ball along the planned route to its last stop and says the route is done, from the last stop it starts again at the first, and an arrow takes the ball back", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -1475,7 +1475,7 @@ test("following a route to its leap stops the ball there and says so, and with t
   expect(errors).toEqual([]);
 });
 
-test("Keep as the route keeps a jump the ball made as a jump of the route, and Follow the route jumps where the route jumps, the ball coming to rest where it lands", async ({
+test("Keep, pressed, keeps a jump the ball made as a jump of the route, and Follow jumps where the route jumps, the ball coming to rest where it lands", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -1555,7 +1555,7 @@ test("Keep as the route keeps a jump the ball made as a jump of the route, and F
   expect(errors).toEqual([]);
 });
 
-test("the play strip ends short of the corner's widgets once Follow the route shows, its buttons wrapping rather than its line's words, so the corner's ball button can still be pressed", async ({
+test("the play strip ends short of the corner's widgets once Follow shows, its buttons wrapping rather than its line's words, so the corner's ball button can still be pressed", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -1566,6 +1566,8 @@ test("the play strip ends short of the corner's widgets once Follow the route sh
   await expect(page.locator("#courseLine")).toHaveText("Route planner · 3 stops");
   await startPlay(page);
   await expect(page.locator("#followBtn")).toBeVisible();
+  await expect(page.locator("#followBtn")).toHaveText("Follow");
+  await expect(page.locator("#keepBtn")).toHaveText("Keep");
   const strip = await page.locator("#play").boundingBox();
   const corner = await page.locator("#corner").boundingBox();
   expect(strip.x + strip.width).toBeLessThanOrEqual(corner.x);

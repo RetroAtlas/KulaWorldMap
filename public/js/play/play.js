@@ -1321,7 +1321,7 @@ function hand() {
   return taken;
 }
 
-/** Keep as the route: pressed, the way the ball has come is the route and grows under the ball
+/** Keep: pressed, the way the ball has come is the route and grows under the ball
     as it goes on; pressed again, the route stays as it is; once the level has ended the whole
     way is handed over once. */
 function keep() {
