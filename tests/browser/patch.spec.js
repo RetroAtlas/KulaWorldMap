@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { inflateSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { test, expect } from "@playwright/test";
 import { settle, steps, trackErrors } from "./helpers.js";
@@ -8,13 +9,17 @@ import { SLUG_MOST } from "../../public/js/editor/files.js";
 import { SYNTHETIC_SECTORS, streamOf, synthetic, syntheticImage } from "../unit/synthetic.js";
 import { USER, sector } from "../../public/js/format/sectors.js";
 import { packs } from "../unit/fixtures.js";
-import { REBUILD, RELOCATE, fit } from "../../public/js/format/pak.js";
+import { REBUILD, RELOCATE, fit, readPak } from "../../public/js/format/pak.js";
+import { openDisc } from "../../public/js/format/iso.js";
+import { writeKwl } from "../../public/js/format/kwl.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const fixture = JSON.parse(
   readFileSync(fileURLToPath(new URL("../fixtures/patch-digests.json", import.meta.url)), "utf8"),
 );
 const CASE = fixture.cases[0];
+const [ONE_PACK, ACROSS] = fixture.sets;
+const ADD = "add a level…";
 const WARNINGS = [
   "the image has 43 sectors, not the 109,607 of the disc",
   "19 of the 21 packs are missing",
@@ -46,6 +51,12 @@ const openPatch = (page, id) =>
 const saved = async (page, locator) => {
   const [download] = await Promise.all([page.waitForEvent("download"), locator.click()]);
   return { name: download.suggestedFilename(), bytes: readFileSync(await download.path()) };
+};
+const rows = (dialog) => dialog.locator("#patchRows .level");
+/** The level a slot of the patched image holds, read as the game reads it. */
+const slotOf = async (image, pack, slot) => {
+  const pak = readPak(await (await openDisc(new Blob([image]))).readFile(pack));
+  return { names: pak.names, level: inflateSync(pak.streams[slot]) };
 };
 
 /** Open a project as a draft through the sidebar's file input, and give its id. */
@@ -831,6 +842,287 @@ test("a file that is not a disc image is said so, and the patches stay back", as
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
   await expect(dialog.locator("#patchFit")).toHaveText(
     "The pack is rebuilt to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
+  );
+  expect(errors).toEqual([]);
+});
+
+test("two drafts go onto the disc as one patch, the second added from the select, as the fixture's set in one pack", async ({
+  page,
+}) => {
+  test.slow();
+  const errors = trackErrors(page);
+  await page.addInitScript(() => {
+    delete window.showSaveFilePicker;
+  });
+  await page.goto(EDIT);
+  await settle(page);
+  const tower = await opened(page, "tower.kula.json", synthetic(30, "Tower"));
+  const spiral = await opened(page, "spiral.kula.json", synthetic(6));
+  await page.locator("#draftPatch").click();
+  const dialog = page.locator("#patch");
+  await expect(dialog).toBeVisible();
+  const level = rows(dialog);
+  await expect(level).toHaveCount(1);
+  await expect(level.first().locator(".name")).toHaveText("Spiral");
+  const add = dialog.locator("#patchAdd");
+  await expect(add).toBeEnabled();
+  await expect(add.locator("option")).toHaveText([ADD, "Tower"]);
+  await expect(add.locator("option").nth(1)).toHaveAttribute("value", String(tower));
+  await expect(add).toHaveValue("");
+
+  await add.selectOption(String(tower));
+  await expect(level).toHaveCount(2);
+  await expect(add).toHaveValue("");
+  await expect(add).toBeDisabled();
+  await expect(add.locator("option")).toHaveText([ADD]);
+  const second = level.nth(1);
+  await expect(second.locator(".name")).toHaveText("Tower");
+  await expect(second.locator(".plays")).toHaveText("Plays as an arcade level.");
+  await expect(second.locator(".checks .errors")).toHaveCount(0);
+  await expect(second.locator("select")).toHaveAttribute("id", "patchSlot2");
+  await expect(second.locator(".room")).toHaveAttribute("id", "patchFit2");
+  await expect(second.locator(".room")).toHaveAttribute("aria-live", "polite");
+  await expect(second.locator(".out")).toHaveText("take out");
+  await expect(dialog.locator("#patchSlot")).toHaveValue("/HIRO/HIRO.PAK#0");
+  await expect(second.locator("select")).toHaveValue("/HIRO/HIRO.PAK#1");
+  await expect(second.locator(".reach")).toHaveText(
+    /^It takes LEVEL 2's place, reached with a save that has got that far in .+\.$/,
+  );
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "The pack is rebuilt to make room, with 1127 bytes to spare, so the patch carries its other levels too.",
+  );
+  await expect(second.locator(".room")).toHaveText(
+    "The pack is rebuilt to make room, with 806 bytes to spare, so the patch carries its other levels too.",
+  );
+  expect((await docOf(page, spiral)).into).toBeUndefined();
+  expect((await docOf(page, tower)).into).toBeUndefined();
+
+  // the second's slot chosen: the first, still on its default, keeps the first free slot
+  await second.locator("select").selectOption("/HIRO/HIRO.PAK#2");
+  expect((await docOf(page, tower)).into).toBe("/HIRO/HIRO.PAK#2");
+  await expect(dialog.locator("#patchSlot")).toHaveValue("/HIRO/HIRO.PAK#0");
+  await expect(second.locator(".room")).toHaveText(
+    "The pack is rebuilt to make room, with 889 bytes to spare, so the patch carries its other levels too.",
+  );
+  await expect(dialog.locator("#patchClash p")).toHaveCount(0);
+
+  // both on one slot: an error until a slot changes, the patches kept back, the
+  // first row fitted alone from the layout and the later one showing no fit
+  await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#2");
+  await expect(dialog.locator("#patchClash p")).toHaveText([
+    "error: two levels take LEVEL 3's place",
+  ]);
+  expect((await docOf(page, spiral)).into).toBe("/HIRO/HIRO.PAK#2");
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 176 bytes to spare.",
+  );
+  await expect(second.locator(".room")).toHaveText("");
+  await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
+  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchReady")).toHaveText(
+    "Give each level a slot of its own above.",
+  );
+  await expect(dialog.locator("#patchPpf")).toBeDisabled();
+  await expect(dialog.locator("#patchPlaying")).toBeHidden();
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 176 bytes to spare.",
+  );
+  await expect(second.locator(".room")).toHaveText("");
+
+  await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
+  await expect(dialog.locator("#patchClash p")).toHaveCount(0);
+  expect((await docOf(page, spiral)).into).toBe("/HIRO/HIRO.PAK#1");
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 179 bytes to spare.",
+  );
+  await expect(second.locator(".room")).toHaveText(
+    "The pack is rebuilt to make room, with 525 bytes to spare, so the patch carries its other levels too.",
+  );
+  await expect(dialog.locator("#patchWarnings li")).toHaveText(WARNINGS);
+  await expect(dialog.locator("#patchReady")).toHaveText("Save what your emulator wants.");
+  await expect(dialog.locator("#patchPlay li").nth(2)).toContainText(
+    '"spiral-and-1-more.xdelta" "spiral-and-1-more.bin"',
+  );
+
+  // a clash made once the image is placed: the fits are the layout's again, not
+  // the last placing's, and the placing comes back when the clash goes
+  await second.locator("select").selectOption("/HIRO/HIRO.PAK#1");
+  await expect(dialog.locator("#patchClash p")).toHaveText([
+    "error: two levels take LEVEL 2's place",
+  ]);
+  await expect(dialog.locator("#patchReady")).toHaveText(
+    "Give each level a slot of its own above.",
+  );
+  await expect(dialog.locator("#patchPpf")).toBeDisabled();
+  await expect(dialog.locator("#patchPlaying")).toBeHidden();
+  await expect(dialog.locator("#patchWarnings li")).toHaveCount(0);
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 93 bytes to spare.",
+  );
+  await expect(second.locator(".room")).toHaveText("");
+  await second.locator("select").selectOption("/HIRO/HIRO.PAK#2");
+  await expect(dialog.locator("#patchClash p")).toHaveCount(0);
+  expect((await docOf(page, tower)).into).toBe("/HIRO/HIRO.PAK#2");
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 179 bytes to spare.",
+  );
+  await expect(second.locator(".room")).toHaveText(
+    "The pack is rebuilt to make room, with 525 bytes to spare, so the patch carries its other levels too.",
+  );
+  await expect(dialog.locator("#patchWarnings li")).toHaveText(WARNINGS);
+  await expect(dialog.locator("#patchReady")).toHaveText("Save what your emulator wants.");
+  const patch = await saved(page, dialog.locator("#patchPpf"));
+  expect(patch.name).toBe("spiral-and-1-more.ppf");
+  expect(sha256(patch.bytes)).toBe(ONE_PACK.ppf);
+  expect(patch.bytes.subarray(6, 56).toString("latin1").trimEnd()).toBe(
+    "Kula World Map: Spiral, Tower",
+  );
+  const delta = await saved(page, dialog.locator("#patchXdelta"));
+  expect(delta.name).toBe("spiral-and-1-more.xdelta");
+  expect(sha256(delta.bytes)).toBe(ONE_PACK.xdelta);
+  const image = await saved(page, dialog.locator("#patchImage"));
+  expect(image.name).toBe("spiral-and-1-more.bin");
+  expect(sha256(image.bytes)).toBe(ONE_PACK.patched);
+  const one = await slotOf(image.bytes, "/HIRO/HIRO.PAK", 1);
+  expect(one.names).toEqual(["LEVEL 1", "LEVEL 2", "TOWER"]);
+  expect(one.level).toEqual(Buffer.from(writeKwl(synthetic(6))));
+  expect((await slotOf(image.bytes, "/HIRO/HIRO.PAK", 2)).level).toEqual(
+    Buffer.from(writeKwl(synthetic(30, "Tower"))),
+  );
+  const sheet = await saved(page, dialog.locator("#patchCue"));
+  expect(sheet.name).toBe("spiral-and-1-more.cue");
+  expect(sheet.bytes.toString("utf8").split("\n")[0]).toBe('FILE "spiral-and-1-more.bin" BINARY');
+
+  await second.locator(".out").click();
+  await expect(level).toHaveCount(1);
+  await expect(level.first().locator(".name")).toHaveText("Spiral");
+  await expect(add).toBeEnabled();
+  await expect(add.locator("option")).toHaveText([ADD, "Tower"]);
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 179 bytes to spare.",
+  );
+  await expect(dialog.locator("#patchPlay li").nth(2)).toContainText(
+    '"spiral.xdelta" "spiral.bin"',
+  );
+  const alone = await saved(page, dialog.locator("#patchPpf"));
+  expect(alone.name).toBe("spiral.ppf");
+  expect(sha256(alone.bytes)).toBe(CASE.ppf);
+
+  await level.first().locator(".out").click();
+  await expect(level).toHaveCount(0);
+  await expect(dialog.locator("#patchReady")).toHaveText("Add a level above to make the patches.");
+  for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
+    await expect(dialog.locator(b)).toBeDisabled();
+  await expect(dialog.locator("#patchPlaying")).toBeHidden();
+  await expect(add).toBeFocused();
+  expect((await add.locator("option").allTextContents()).sort()).toEqual(
+    [ADD, "Spiral", "Tower"].sort(),
+  );
+  await add.selectOption(String(spiral));
+  await expect(level).toHaveCount(1);
+  await expect(dialog.locator("#patchSlot")).toHaveValue("/HIRO/HIRO.PAK#1");
+  await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  expect(errors).toEqual([]);
+});
+
+test("a level in a world pack and another in its finals pack go on as one patch, as the fixture's set across packs", async ({
+  page,
+}) => {
+  test.slow();
+  const errors = trackErrors(page);
+  await page.addInitScript(() => {
+    delete window.showSaveFilePicker;
+  });
+  await page.goto(EDIT);
+  await settle(page);
+  const tower = await opened(page, "tower.kula.json", synthetic(5, "Tower"));
+  const spiral = await opened(page, "spiral.kula.json", synthetic(6));
+  await openPatch(page, spiral);
+  const dialog = page.locator("#patch");
+  await expect(dialog).toBeVisible();
+  const level = rows(dialog);
+  await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
+  await dialog.locator("#patchAdd").selectOption(String(tower));
+  const second = level.nth(1);
+  await expect(second.locator("select")).toHaveValue("/HIRO/HIRO.PAK#0");
+  await second.locator("select").selectOption("/HIRO/HIROFI.PAK#0");
+  await expect(second.locator(".reach")).toHaveText(
+    /^It takes FINAL 1's place among .+'s finals, reached once the arcade is finished\.$/,
+  );
+  await expect(second.locator(".sub")).toHaveText("");
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 93 bytes to spare.",
+  );
+  await expect(second.locator(".room")).toHaveText(
+    "It fits in the slot's own bytes, with 641 bytes to spare.",
+  );
+  expect((await docOf(page, tower)).into).toBe("/HIRO/HIROFI.PAK#0");
+
+  await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
+  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 179 bytes to spare.",
+  );
+  await expect(second.locator(".room")).toHaveText(
+    "The pack is rebuilt to make room, with 1454 bytes to spare, so the patch carries its other levels too.",
+  );
+  await expect(dialog.locator("#patchWarnings li")).toHaveText(WARNINGS);
+  const patch = await saved(page, dialog.locator("#patchPpf"));
+  expect(patch.name).toBe("spiral-and-1-more.ppf");
+  expect(sha256(patch.bytes)).toBe(ACROSS.ppf);
+  const delta = await saved(page, dialog.locator("#patchXdelta"));
+  expect(sha256(delta.bytes)).toBe(ACROSS.xdelta);
+  const image = await saved(page, dialog.locator("#patchImage"));
+  expect(sha256(image.bytes)).toBe(ACROSS.patched);
+  expect((await slotOf(image.bytes, "/HIRO/HIRO.PAK", 1)).level).toEqual(
+    Buffer.from(writeKwl(synthetic(6))),
+  );
+  const finals = await slotOf(image.bytes, "/HIRO/HIROFI.PAK", 0);
+  expect(finals.names).toEqual(["TOWER", "FINAL 2"]);
+  expect(finals.level).toEqual(Buffer.from(writeKwl(synthetic(5, "Tower"))));
+  expect(errors).toEqual([]);
+});
+
+test("a level another tab deletes leaves its row, and the box closes when the last one goes", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  const tower = await opened(page, "tower.kula.json", synthetic(30, "Tower"));
+  const spiral = await opened(page, "spiral.kula.json", synthetic(6));
+  const store = await stored(page, spiral);
+  await openPatch(page, spiral);
+  const dialog = page.locator("#patch");
+  await dialog.locator("#patchAdd").selectOption(String(tower));
+  const level = rows(dialog);
+  await expect(level).toHaveCount(2);
+  await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
+  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  await expect(dialog.locator("#patchPlay li").nth(2)).toContainText('"spiral-and-1-more.xdelta"');
+
+  const without = structuredClone(store);
+  delete without.drafts[tower];
+  await elsewhere(page, without);
+  await expect(level).toHaveCount(1);
+  await expect(level.first().locator(".name")).toHaveText("Spiral");
+  await expect(page.locator("#toastStack .toast").first()).toHaveText(
+    "Another tab deleted Tower, so the patch goes on without it.",
+  );
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  await expect(dialog.locator("#patchPlay li").nth(2)).toContainText(
+    '"spiral.xdelta" "spiral.bin"',
+  );
+  await expect(dialog.locator("#patchAdd")).toBeDisabled();
+
+  const none = structuredClone(without);
+  delete none.drafts[spiral];
+  await elsewhere(page, none);
+  await expect(dialog).toBeHidden();
+  await expect(page.locator("#toastStack .toast").first()).toHaveText(
+    "Another tab deleted Spiral, so the box closed without a patch.",
   );
   expect(errors).toEqual([]);
 });

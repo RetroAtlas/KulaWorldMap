@@ -1,30 +1,32 @@
-// A draft onto the disc, in one scrolling box: the checks, the slot it takes,
-// the fit, the image and the patches, then where each emulator wants them. The
-// fit is worked out from the packs' layout until the image is given and read
-// from the image after, and every byte of the patches is written here.
+// Your levels onto the disc, in one scrolling box: a row for each level, with
+// its checks, the slot it takes and its fit, then the image and the patches,
+// then where each emulator wants them. The fits are worked out from the packs'
+// layout until the image is given and read from the image after, and from the
+// layout again while the rows cannot be placed as they stand; every byte of the
+// patches is written here.
 import { $, el, on } from "../viewer/ui/dom.js";
 import { state } from "../viewer/state.js";
 import { NAMES, levelTitle, loadJson, skinsTable, worldName } from "../viewer/data.js";
 import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
 import { toast } from "../viewer/ui/toast.js";
-import { FINAL_SLOTS, WORLDS, WORLD_SLOTS, writeKwl } from "../format/kwl.js";
+import { FINAL_SLOTS, WORLDS, WORLD_SLOTS, spelled, writeKwl } from "../format/kwl.js";
 import { deflate } from "../format/deflate.js";
 import { ERROR, UNTITLED, describe, playsAs, setMeta, validate } from "../format/project.js";
 import { RAW_ONLY, download, isIso, slug } from "./files.js";
 import * as drafts from "./drafts.js";
 import { edit } from "./trail.js";
-import { IN_PLACE, REBUILD, fit, readPak } from "../format/pak.js";
+import { IN_PLACE, REBUILD, RECOMPRESS, fitAll, readPak } from "../format/pak.js";
 import { openDisc } from "../format/iso.js";
 import {
   PACKS,
-  PREFIX,
   cue,
+  description,
   patchedImage,
   placements,
-  plan,
+  planAll,
   ppf,
   vcdiff,
-  verify,
+  verifyAll,
 } from "../format/patch.js";
 import { inflate } from "../format/inflate.js";
 
@@ -40,13 +42,30 @@ const NO_TABLE =
 const CLEAN = "The checks find nothing to say.";
 const NO_LAYOUT = "The disc's layout could not be loaded, so the fit waits for the image.";
 const CHOOSE = "Choose a slot above.";
+const CLASHED = "Give each level a slot of its own above.";
+const NO_LEVELS = "Add a level above to make the patches.";
 const NO_IMAGE = "Give the disc image above to make the patches.";
 const READY = "Save what your emulator wants.";
 const INSTEAD = "Mednafen, Beetle and RetroArch apply no patch and play the patched disc instead.";
+const ADD = "add a level…";
+const UNWRITTEN = "the level cannot be written";
 const gone = (name) => `Another tab deleted ${name}, so the box closed without a patch.`;
-const tooBig = (pack) => `The level is too big for the game to load from ${pack}.`;
+const left = (name) => `Another tab deleted ${name}, so the patch goes on without it.`;
+const tooBig = (pack, several) =>
+  `The level${several ? "s together are" : " is"} too big for the game to load from ${pack}.`;
+const cannot = (why) => `The level cannot be placed there: ${why}.`;
+const clash = (n, title) => `error: ${spelled(n)} levels take ${title}'s place`;
 const unlisted = (key) =>
   keyShaped(key) ? `${key}, which this image has not` : `${key}, which is no slot`;
+// The first row's parts carry these ids, the rows after the same ids numbered.
+const IDS = {
+  plays: "patchPlays",
+  checks: "patchChecks",
+  slot: "patchSlot",
+  reach: "patchReach",
+  wear: "patchWear",
+  fit: "patchFit",
+};
 
 let layout = null;
 let ui = null;
@@ -73,10 +92,18 @@ const keyShaped = (key) => {
     index < (finals ? FINAL_SLOTS : WORLD_SLOTS)
   );
 };
-const nameOf = () => d.doc.title || UNTITLED;
-const base = () => slug(nameOf());
+const nameOf = (row) => row.doc.title || UNTITLED;
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const showing = () => d !== null && !ui.overlay.hidden;
+const blocked = () => d.rows.map((row) => row.blocked).find(Boolean) ?? null;
+const slotTitle = (key) => d.titles.get(key) ?? `slot ${split(key)[1] + 1}`;
+
+/** What the downloads are called: the first level's slug, and how many more there are. */
+function base() {
+  const stem = slug(nameOf(d.rows[0]));
+  const more = d.rows.length - 1;
+  return more ? `${stem}-and-${more}-more` : stem;
+}
 
 function fitText(f) {
   const spare = `${plural(f.room, "byte")} to spare`;
@@ -100,16 +127,12 @@ function build() {
   });
   x.setAttribute("aria-label", "Close");
   const u = {
-    name: el("p", { className: "name" }),
-    plays: el("p", { id: "patchPlays" }),
-    checks: el("div", { id: "patchChecks" }),
-    slot: el("select", { id: "patchSlot", title: "The slot the level takes on the disc" }),
-    reach: el("p", { id: "patchReach" }),
-    wear: el("p", { id: "patchWear", className: "sub" }),
-    fit: el("p", { id: "patchFit" }),
-    warnings: el("ul", { id: "patchWarnings", className: "warnings" }),
+    rows: el("div", { id: "patchRows" }),
+    clash: el("div", { id: "patchClash", className: "errors" }),
+    add: el("select", { id: "patchAdd", title: "Add another of your levels to the patch" }),
     disc: el("input", { id: "patchDisc", className: "sr", type: "file", accept: ".bin,.img,.iso" }),
     status: el("p", { id: "patchStatus" }),
+    warnings: el("ul", { id: "patchWarnings", className: "warnings" }),
     ready: el("p", { id: "patchReady", className: "sub" }),
     ppf: button("patchPpf", "the PPF patch", "Save the patch most PlayStation emulators apply"),
     xdelta: button(
@@ -120,7 +143,7 @@ function build() {
     image: button(
       "patchImage",
       "the patched disc",
-      "Save a copy of the image with the level on it",
+      "Save a copy of the image with the levels on it",
     ),
     cue: button(
       "patchCue",
@@ -129,8 +152,10 @@ function build() {
     ),
     play: el("ul", { id: "patchPlay" }),
   };
-  for (const live of [u.fit, u.status, u.ready]) live.setAttribute("aria-live", "polite");
-  u.slot.onchange = () => choose(u.slot.value);
+  for (const live of [u.status, u.ready]) live.setAttribute("aria-live", "polite");
+  u.add.onchange = () => {
+    if (u.add.value) add(Number(u.add.value));
+  };
   u.disc.onchange = () => {
     const file = u.disc.files[0];
     u.disc.value = "";
@@ -138,7 +163,11 @@ function build() {
   };
   u.ppf.onclick = () =>
     save(u.ppf, async () =>
-      download(`${base()}.ppf`, await ppf(d.file, d.placed.writes, PREFIX + nameOf()), BINARY),
+      download(
+        `${base()}.ppf`,
+        await ppf(d.file, d.placed.writes, description(d.rows.map(nameOf))),
+        BINARY,
+      ),
     );
   u.xdelta.onclick = () =>
     save(u.xdelta, async () =>
@@ -162,19 +191,13 @@ function build() {
     { className: "box settings patch" },
     x,
     el("h3", { id: "patchTitle", textContent: "Put it on the disc" }),
-    section("The level", u.name, u.plays, u.checks),
-    section(
-      "Where it goes",
-      el("label", { className: "slot" }, el("span", { textContent: "Slot" }), u.slot),
-      u.reach,
-      u.wear,
-    ),
-    section("The fit", u.fit, u.warnings),
+    section("The levels", u.rows, u.clash, el("div", { className: "add" }, u.add)),
     section(
       "The disc",
       el("p", { id: "patchPrivate", textContent: PRIVATE }),
       drop,
       u.status,
+      u.warnings,
       u.ready,
       el("div", { className: "row" }, u.ppf, u.xdelta, u.image, u.cue),
     ),
@@ -197,16 +220,56 @@ function build() {
   u.overlay.setAttribute("aria-labelledby", "patchTitle");
   document.body.append(u.overlay);
   on("drafts-moved", (pairs) => {
-    const to = pairs.find(([from]) => from === d?.id)?.[1];
-    if (to !== undefined) d.id = to;
+    for (const row of d?.rows ?? []) {
+      const to = pairs.find(([from]) => from === row.id)?.[1];
+      if (to !== undefined) row.id = to;
+    }
   });
   on("drafts-merged", (ids) => {
-    if (showing() && ids.includes(d.id)) refresh();
+    if (showing() && d.rows.some((row) => ids.includes(row.id))) refresh();
   });
   on("drafts-changed", () => {
-    if (showing() && drafts.get(d.id)?.doc !== d.doc) refresh();
+    if (!showing()) return;
+    if (d.rows.some((row) => drafts.get(row.id)?.doc !== row.doc)) refresh();
+    else additions();
   });
   return u;
+}
+
+/** A row for the draft with this id: its parts, and what the box works out for it. */
+function newRow(id) {
+  const u = {
+    name: el("p", { className: "name" }),
+    out: el("button", {
+      className: "out",
+      type: "button",
+      textContent: "take out",
+      title: "Take this level out of the patch",
+    }),
+    plays: el("p", { className: "plays" }),
+    checks: el("div", { className: "checks" }),
+    slot: el("select", { title: "The slot the level takes on the disc" }),
+    reach: el("p", { className: "reach" }),
+    wear: el("p", { className: "sub" }),
+    fit: el("p", { className: "room" }),
+  };
+  u.fit.setAttribute("aria-live", "polite");
+  u.box = el(
+    "div",
+    { className: "level" },
+    u.name,
+    u.out,
+    u.plays,
+    u.checks,
+    el("label", { className: "slot" }, el("span", { textContent: "Slot" }), u.slot),
+    u.reach,
+    u.wear,
+    u.fit,
+  );
+  const row = { id, doc: null, blocked: null, stream: null, size9: 0, into: null, u };
+  u.slot.onchange = () => choose(row, u.slot.value);
+  u.out.onclick = () => takeOut(row);
+  return row;
 }
 
 /** Open the dialog for the draft with this id. */
@@ -215,42 +278,74 @@ export async function openPatchDialog(id) {
   turn++;
   ui ??= build();
   // Only the id while the layout loads, so the drafts-moved handler can keep it current.
-  d = { id };
+  d = { rows: [{ id }] };
   layout ??= await loadJson("packs.json");
-  id = d.id;
+  id = d.rows[0].id;
   if (!drafts.get(id)) return;
-  d = { id, file: null, disc: null, packs: null, placed: null, image: null, imageName: null };
+  const row = newRow(id);
+  ui.rows.textContent = "";
+  ui.rows.append(row.u.box);
+  d = {
+    rows: [row],
+    titles: null,
+    clashed: false,
+    file: null,
+    disc: null,
+    packs: null,
+    placed: null,
+    image: null,
+    imageName: null,
+  };
   ui.disc.value = "";
   ui.status.textContent = "";
+  ui.warnings.textContent = "";
   refresh();
   openDialog(ui.overlay, $("draftPatch"));
 }
 
-// The box for the draft as the store holds it now, run again whenever the store replaces it.
+function add(id) {
+  if (!drafts.get(id) || d.rows.some((row) => row.id === id)) return;
+  const row = newRow(id);
+  d.rows.push(row);
+  ui.rows.append(row.u.box);
+  refresh();
+}
+
+function takeOut(row) {
+  d.rows = d.rows.filter((r) => r !== row);
+  row.u.box.remove();
+  refresh();
+  ui.add.focus();
+}
+
+// The box for the drafts as the store holds them now, run again whenever the
+// store replaces one; a row whose draft is gone goes with a word, and the box
+// closes when the last goes that way.
 function refresh() {
-  const entry = drafts.get(d.id);
-  if (!entry) {
-    const name = nameOf();
+  const kept = [];
+  const deleted = [];
+  for (const row of d.rows) {
+    const entry = drafts.get(row.id);
+    if (entry) {
+      row.doc = entry.doc;
+      kept.push(row);
+    } else {
+      row.u.box.remove();
+      deleted.push(nameOf(row));
+    }
+  }
+  if (deleted.length && !kept.length) {
     turn++;
     d = null;
     closeDialog();
-    toast(gone(name));
+    toast(gone(deleted[0]));
     return;
   }
-  d.doc = entry.doc;
-  ui.name.textContent = nameOf();
-  ui.plays.textContent = playsAs(d.doc);
-  d.blocked = checks();
-  d.stream = null;
-  try {
-    d.stream = deflate(writeKwl(d.doc), LEVEL);
-  } catch (e) {
-    d.blocked = ERRORS;
-    ui.checks.append(
-      el("p", { className: "errors", textContent: `The level cannot be written: ${e.message}.` }),
-    );
-  }
+  for (const name of deleted) toast(left(name));
+  d.rows = kept;
+  for (const row of d.rows) load(row);
   retarget();
+  additions();
   if (d.disc) placed();
   else {
     downloads();
@@ -258,20 +353,81 @@ function refresh() {
   }
 }
 
-function retarget() {
-  slots();
-  placeholder();
-  d.into = pick();
-  ui.slot.value = d.into ?? "";
-  target();
+// What a row shows of its level and what the placer takes of it: its name, how
+// it plays, its checks, and its stream at the disc's level and its length at
+// the recompressing one.
+function load(row) {
+  row.u.name.textContent = nameOf(row);
+  row.u.plays.textContent = playsAs(row.doc);
+  row.blocked = checks(row);
+  row.stream = null;
+  try {
+    const level = writeKwl(row.doc);
+    row.stream = deflate(level, LEVEL);
+    row.size9 = deflate(level, RECOMPRESS).length;
+  } catch (e) {
+    row.blocked = ERRORS;
+    row.u.checks.append(
+      el("p", { className: "errors", textContent: `The level cannot be written: ${e.message}.` }),
+    );
+  }
 }
 
-/** The checks' findings in the box, and the sentence that keeps the patches back, or null. */
-function checks() {
-  const box = ui.checks;
+/** The other drafts this browser holds, for the select that adds a row. */
+function additions() {
+  const taken = new Set(d.rows.map((row) => row.id));
+  const others = drafts.list().filter((entry) => !taken.has(entry.id));
+  ui.add.textContent = "";
+  ui.add.append(
+    el("option", { value: "", textContent: ADD, disabled: true }),
+    ...others.map((entry) =>
+      el("option", { value: String(entry.id), textContent: entry.doc.title || UNTITLED }),
+    ),
+  );
+  ui.add.selectedIndex = 0;
+  ui.add.disabled = !others.length;
+}
+
+// Every row's slot list and the slot it shows: the draft's own target, or
+// none where that is no slot, else where a template came from, else the first
+// slot no other row takes; then what each row says of its slot and the fits.
+function retarget() {
+  d.titles = new Map(state.data.levels.map((l) => [`${l.pack}#${l.index}`, levelTitle(l)]));
+  const groups = optionGroups();
+  const taken = new Set();
+  const open = [];
+  d.rows.forEach((row, i) => {
+    for (const [part, id] of Object.entries(IDS)) row.u[part].id = i ? `${id}${i + 1}` : id;
+    slots(row, groups);
+    placeholder(row);
+    const options = optionsOf(row);
+    const { into, from } = row.doc;
+    if (into != null) row.into = options.has(String(into)) ? String(into) : null;
+    else if (from != null && options.has(String(from))) row.into = String(from);
+    else {
+      row.into = null;
+      open.push(row);
+    }
+    if (row.into) taken.add(row.into);
+  });
+  for (const row of open) {
+    row.into = [...optionsOf(row)].find((key) => !taken.has(key)) ?? null;
+    if (row.into) taken.add(row.into);
+  }
+  for (const row of d.rows) {
+    row.u.slot.value = row.into ?? "";
+    target(row);
+  }
+  clashes();
+  if (!d.disc) layoutFits();
+}
+
+/** The checks' findings in the row, and the sentence that keeps the patches back, or null. */
+function checks(row) {
+  const box = row.u.checks;
   box.textContent = "";
   const hides = skinsTable()?.hides;
-  const findings = validate(d.doc, hides, NAMES);
+  const findings = validate(row.doc, hides, NAMES);
   const errors = findings.filter((f) => f.level === ERROR);
   const warnings = findings.filter((f) => f.level !== ERROR);
   const items = (fs) =>
@@ -315,96 +471,124 @@ async function packsOf(disc) {
   return out;
 }
 
-function slots() {
-  ui.slot.textContent = "";
-  const titles = new Map(state.data.levels.map((l) => [`${l.pack}#${l.index}`, levelTitle(l)]));
-  d.titles = titles;
+/** The slots of every pack but the Simon rooms', grouped by world, or null where neither the layout nor the image is read. */
+function optionGroups() {
   const packs = layout?.packs ?? d.packs;
-  if (!packs) {
-    const own = [d.doc.into, d.doc.from].find(keyShaped) ?? FIRST;
-    ui.slot.append(el("option", { value: own, textContent: titles.get(own) ?? own }));
-    return;
-  }
+  if (!packs) return null;
   const copycat = skinsTable()?.copycat ?? COPYCAT;
   const groups = new Map();
   for (const p of packs) {
     if (p.path === copycat) continue;
     const theme = themeOf(p.path);
-    if (!groups.has(theme)) {
-      groups.set(theme, el("optgroup", { label: worldName(theme) }));
-      ui.slot.append(groups.get(theme));
-    }
+    if (!groups.has(theme)) groups.set(theme, el("optgroup", { label: worldName(theme) }));
     p.slots.forEach((s, i) => {
       const key = `${p.path}#${i}`;
       groups
         .get(theme)
-        .append(el("option", { value: key, textContent: titles.get(key) ?? s.name }));
+        .append(el("option", { value: key, textContent: d.titles.get(key) ?? s.name }));
     });
   }
+  return [...groups.values()];
 }
 
-function placeholder() {
-  const into = d.doc.into;
-  if (into != null && ![...ui.slot.options].some((o) => o.value === String(into)))
-    ui.slot.prepend(
+function slots(row, groups) {
+  row.u.slot.textContent = "";
+  if (groups) {
+    row.u.slot.append(...groups.map((g) => g.cloneNode(true)));
+    return;
+  }
+  const own = [row.doc.into, row.doc.from].find(keyShaped) ?? FIRST;
+  row.u.slot.append(el("option", { value: own, textContent: d.titles.get(own) ?? own }));
+}
+
+function placeholder(row) {
+  const into = row.doc.into;
+  if (into != null && ![...row.u.slot.options].some((o) => o.value === String(into)))
+    row.u.slot.prepend(
       el("option", { value: "", textContent: unlisted(String(into)), disabled: true }),
     );
 }
 
-/** The slot the box opens on: the file's own target, or none where that is no slot, else where a template came from, else the first. */
-function pick() {
-  const options = new Set([...ui.slot.options].map((o) => o.value).filter(Boolean));
-  if (d.doc.into != null) return options.has(String(d.doc.into)) ? String(d.doc.into) : null;
-  if (d.doc.from != null && options.has(String(d.doc.from))) return String(d.doc.from);
-  return options.has(FIRST) || !options.size ? FIRST : [...options][0];
-}
+const optionsOf = (row) => new Set([...row.u.slot.options].map((o) => o.value).filter(Boolean));
 
-function choose(into) {
+function choose(row, into) {
   if (!into) return;
-  const entry = drafts.get(d.id);
+  const entry = drafts.get(row.id);
   if (entry && entry.doc.into !== into) {
-    d.doc = setMeta(entry.doc, { into });
-    edit(d.id, d.doc, "changed the target slot", { merge: true });
+    row.doc = setMeta(entry.doc, { into });
+    edit(row.id, row.doc, "changed the target slot", { merge: true });
   }
   refresh();
 }
 
-function target() {
-  if (d.into === null) {
-    ui.reach.textContent = CHOOSE;
-    for (const line of [ui.wear, ui.fit, ui.warnings]) line.textContent = "";
+function target(row) {
+  const { u, into } = row;
+  if (into === null) {
+    u.reach.textContent = CHOOSE;
+    u.wear.textContent = "";
+    u.fit.textContent = "";
     return;
   }
-  const [pack, index] = split(d.into);
+  const [pack] = split(into);
   const theme = themeOf(pack);
-  const title = d.titles?.get(d.into) ?? `slot ${index + 1}`;
+  const title = slotTitle(into);
   const world = worldName(theme);
-  if (d.into === FIRST)
-    ui.reach.textContent = `It takes ${title}'s place, where a new game starts.`;
+  if (into === FIRST) u.reach.textContent = `It takes ${title}'s place, where a new game starts.`;
   else if (pack.endsWith("FI.PAK"))
-    ui.reach.textContent = `It takes ${title}'s place among ${world}'s finals, reached once the arcade is finished.`;
+    u.reach.textContent = `It takes ${title}'s place among ${world}'s finals, reached once the arcade is finished.`;
   else
-    ui.reach.textContent = `It takes ${title}'s place, reached with a save that has got that far in ${world}.`;
-  ui.wear.textContent = theme === d.doc.world ? "" : `It will wear ${world}'s artwork there.`;
-  if (!d.placed) layoutFit();
+    u.reach.textContent = `It takes ${title}'s place, reached with a save that has got that far in ${world}.`;
+  u.wear.textContent = theme === row.doc.world ? "" : `It will wear ${world}'s artwork there.`;
 }
 
-function layoutFit() {
-  ui.warnings.textContent = "";
-  const [pack, index] = split(d.into);
-  const p = layout?.packs.find((q) => q.path === pack);
-  if (!layout || !p) {
-    ui.fit.textContent = NO_LAYOUT;
-    return;
+// Rows on one slot, each an error line under the rows that keeps the patches back.
+function clashes() {
+  const onSlot = new Map();
+  for (const row of d.rows) if (row.into) onSlot.set(row.into, (onSlot.get(row.into) ?? 0) + 1);
+  ui.clash.textContent = "";
+  d.clashed = false;
+  for (const [into, n] of onSlot) {
+    if (n < 2) continue;
+    d.clashed = true;
+    ui.clash.append(el("p", { textContent: clash(n, slotTitle(into)) }));
   }
-  if (!d.stream) {
-    ui.fit.textContent = "";
-    return;
+}
+
+// The fits from the packs' layout, each pack's rows fitted in order; a row on a
+// slot an earlier row takes is not fitted and shows none.
+function layoutFits() {
+  const byPack = new Map();
+  const taken = new Set();
+  for (const row of d.rows) {
+    if (row.into === null) continue;
+    const later = taken.has(row.into);
+    taken.add(row.into);
+    row.u.fit.textContent = layout || later ? "" : NO_LAYOUT;
+    if (!layout || !row.stream || later) continue;
+    const [pack] = split(row.into);
+    if (!byPack.has(pack)) byPack.set(pack, []);
+    byPack.get(pack).push(row);
   }
-  try {
-    ui.fit.textContent = fitText(fit(p, index, d.stream.length, d.doc.title));
-  } catch {
-    ui.fit.textContent = tooBig(pack);
+  for (const [pack, rows] of byPack) {
+    const p = layout.packs.find((q) => q.path === pack);
+    if (!p) {
+      for (const row of rows) row.u.fit.textContent = NO_LAYOUT;
+      continue;
+    }
+    try {
+      const fits = fitAll(
+        p,
+        rows.map((row) => ({
+          slot: split(row.into)[1],
+          size: row.stream.length,
+          size9: row.size9,
+          title: row.doc.title,
+        })),
+      );
+      rows.forEach((row, i) => (row.u.fit.textContent = fitText(fits[i])));
+    } catch {
+      for (const row of rows) row.u.fit.textContent = tooBig(pack, rows.length > 1);
+    }
   }
 }
 
@@ -445,47 +629,81 @@ async function take(file) {
   await placed(mine);
 }
 
-// The plan for the chosen slot on the image, read back through the verifier
-// over the patched image before the downloads are offered.
+const itemOf = (row) => {
+  const [pack, slot] = split(row.into);
+  return { pack, slot, stream: row.stream, title: row.doc.title };
+};
+
+// The fits of the rows above the first the image refuses, planned in order.
+async function before(file, items) {
+  let fits = [];
+  for (let n = 1; n < items.length; n++) {
+    try {
+      fits = (await planAll(file, items.slice(0, n), inflate)).placed.map((p) => p.fit);
+    } catch {
+      break;
+    }
+  }
+  return fits;
+}
+
+// The plan for the rows on the image, each level placed over it as the rows
+// above leave it, read back through the verifier over the patched image before
+// the downloads are offered; a refusal lands on the row of the first level the
+// image will not take, and while the rows cannot be placed as they stand the
+// fits are the layout's.
 async function placed(mine = ++turn) {
-  const { file, disc, stream, doc, into } = d;
+  const { file, rows } = d;
   d.placed = null;
   d.image = null;
   ui.warnings.textContent = "";
   downloads();
   play();
-  if (into === null) return;
-  const [pack, index] = split(into);
+  if (!rows.length || d.clashed || rows.some((row) => row.into === null || !row.stream)) {
+    layoutFits();
+    for (const row of rows)
+      if (row.into !== null && !row.stream) row.u.fit.textContent = cannot(UNWRITTEN);
+    return;
+  }
+  const items = rows.map(itemOf);
   let planned;
   let image;
   try {
-    if (!stream) throw new Error("the level cannot be written");
-    planned = await plan(disc, pack, index, stream, doc.title, inflate);
+    planned = await planAll(file, items, inflate);
     image = patchedImage(file, planned.writes);
-    await verify(await openDisc(image), pack, index, stream, planned, inflate);
+    await verifyAll(await openDisc(image), items, planned, inflate);
   } catch (e) {
+    const fits = await before(file, items);
     if (mine !== turn) return;
-    ui.fit.textContent = `The level cannot be placed there: ${e.message}.`;
+    rows.forEach((row, i) => {
+      row.u.fit.textContent =
+        i < fits.length ? fitText(fits[i]) : i === fits.length ? cannot(e.message) : "";
+    });
     return;
   }
   if (mine !== turn) return;
   d.placed = planned;
   d.image = image;
-  ui.fit.textContent = fitText(planned.fit);
+  rows.forEach((row, i) => (row.u.fit.textContent = fitText(planned.placed[i].fit)));
   for (const w of planned.warnings) ui.warnings.append(el("li", { textContent: w }));
   downloads();
   play();
 }
 
 function downloads() {
-  const ready = !!d.placed && !d.blocked;
+  const ready = !!d.placed && !blocked();
   for (const control of [ui.ppf, ui.xdelta, ui.image, ui.cue]) control.disabled = !ready;
   ui.ready.textContent = readiness();
 }
 
 function readiness() {
-  if (!d.placed) return d.file ? (d.into === null ? CHOOSE : "") : NO_IMAGE;
-  return d.blocked ?? READY;
+  if (!d.rows.length) return NO_LEVELS;
+  if (!d.placed) {
+    if (!d.file) return NO_IMAGE;
+    if (d.clashed) return CLASHED;
+    return d.rows.some((row) => row.into === null) ? CHOOSE : "";
+  }
+  return blocked() ?? READY;
 }
 
 function play() {

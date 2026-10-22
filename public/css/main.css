@@ -1737,6 +1737,37 @@ body.editing #course .status {
   opacity: 0.4;
   cursor: default;
 }
+#patch .level {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px 2px;
+  margin: 0 0 8px;
+}
+#patch .level .name {
+  padding-right: 72px;
+}
+#patch .level .out {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  border-radius: 5px;
+  padding: 1px 7px;
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+#patch .level .out:hover {
+  border-color: var(--accent-dim);
+  color: var(--ink);
+}
+#patch .add {
+  display: flex;
+  margin: 0 0 6px;
+}
 
 /* the import picker: which level of a pack or a disc image to open */
 #import .box {
