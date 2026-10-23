@@ -156,7 +156,16 @@ function setMode(onNow, said = onNow ? "Editing on" : "Editing off") {
   strip();
   emit("editing-changed", onNow);
   if (said) say(said);
+  if (onNow) showGrid();
   drawSoon();
+}
+
+// blocks are laid against the floor, so editing begins with the grid shown
+function showGrid() {
+  if (state.show.base) return;
+  const box = $("showBase");
+  box.checked = true;
+  box.dispatchEvent(new Event("change"));
 }
 
 function setTool(tool) {

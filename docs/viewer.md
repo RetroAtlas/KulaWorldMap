@@ -185,7 +185,7 @@ Opening it from any level's card adds a row for that level under the others, whe
 
 ## The editor
 
-On a draft, `w` or the strip's Edit button turns editing on and off, and on a shipped level `w` makes a copy and opens it editing in one step; choosing a shipped level turns it off, and editing is never in the link, never stored and not a Display switch.
+On a draft, `w` or the strip's Edit button turns editing on and off, and on a shipped level `w` makes a copy and opens it editing in one step; choosing a shipped level turns it off, and editing is never in the link, never stored and not a Display switch. Turning editing on turns the Ground grid on with it, so the floor that blocks are laid against is shown. The grid can be turned off while editing, and turning editing off leaves it as it stands.
 
 ### The tools
 

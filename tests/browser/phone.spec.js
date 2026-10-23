@@ -377,7 +377,7 @@ test.describe("editing on a phone", () => {
 
   test("a run is laid through two confirmed taps", async ({ page }) => {
     await editFresh(page);
-    await page.keyboard.press("g");
+    await expect(page.locator("#showBase")).toBeChecked();
     await zoom(page, 0.8);
     await page.locator("#paletteBtn").tap();
     await expect(page.locator("#palette")).toBeVisible();
@@ -515,7 +515,7 @@ test.describe("editing on a phone", () => {
     page,
   }) => {
     await editFresh(page);
-    await page.keyboard.press("g");
+    await expect(page.locator("#showBase")).toBeChecked();
     await zoom(page, 0.8);
     await page.locator("#paletteBtn").tap();
     await page.locator("#palette .tabs button", { hasText: "Pickups" }).tap();

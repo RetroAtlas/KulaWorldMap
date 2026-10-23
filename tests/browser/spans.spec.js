@@ -84,7 +84,7 @@ async function fresh(page) {
   if ((await page.locator("#editBtn").getAttribute("aria-pressed")) !== "true")
     await page.keyboard.press("w");
   await expect(page.locator("#palette")).toBeVisible();
-  await page.keyboard.press("g");
+  await expect(page.locator("#showBase")).toBeChecked();
   await page.evaluate(async () => {
     const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const { invalidatePick, draw } = await import(

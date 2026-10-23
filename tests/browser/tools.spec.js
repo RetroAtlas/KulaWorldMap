@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { settle, trackErrors } from "./helpers.js";
+import { settle, topPixels, trackErrors } from "./helpers.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 
@@ -145,6 +145,54 @@ test("a level made to be edited asks for editing, which is said after the level 
   expect(errors).toEqual([]);
 });
 
+test("editing turns the ground grid on with it, which can be turned off while editing and stands as editing ends", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  const kept = () => page.evaluate(() => JSON.parse(localStorage.getItem("kula.display")));
+  const grid = page.locator("#showBase");
+  const edit = page.locator("#editBtn");
+  // how many colours a floor cell beside the level is drawn in: one until the grid's lines cross it
+  const floor = async () => {
+    await zoom(page, 0.8);
+    return new Set((await topPixels(page, [22, 24, 18])).map(String)).size;
+  };
+  await expect(grid).not.toBeChecked();
+  expect(await floor()).toBe(1);
+  await page.keyboard.press("w");
+  await expect(edit).toHaveAttribute("aria-pressed", "true");
+  await expect(grid).toBeChecked();
+  expect(await kept()).toEqual({ base: true });
+  expect(await floor()).toBeGreaterThan(1);
+  // turned off while editing it stays off
+  await page.keyboard.press("g");
+  await expect(grid).not.toBeChecked();
+  expect(await kept()).toEqual({});
+  expect(await floor()).toBe(1);
+  await expect(edit).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("w");
+  await expect(edit).toHaveAttribute("aria-pressed", "false");
+  await expect(grid).not.toBeChecked();
+  // editing on again turns it on again, and editing off leaves it on
+  await edit.click();
+  await expect(edit).toHaveAttribute("aria-pressed", "true");
+  await expect(grid).toBeChecked();
+  await edit.click();
+  await expect(edit).toHaveAttribute("aria-pressed", "false");
+  await expect(grid).toBeChecked();
+  expect(await kept()).toEqual({ base: true });
+  // a level made to be edited turns it on as well
+  await page.keyboard.press("g");
+  await expect(grid).not.toBeChecked();
+  await page.locator("#draftNew").click();
+  await expect(edit).toHaveAttribute("aria-pressed", "true");
+  await expect(grid).toBeChecked();
+  expect(await kept()).toEqual({ base: true });
+  expect(errors).toEqual([]);
+});
+
 test("Place lays a block across the face clicked and selects it, and refuses the edge and a taken cell", async ({
   page,
 }) => {
@@ -245,7 +293,7 @@ test("a block laid above the slice raises it, and the grid lays a first floor", 
   expect(raised.slice).toBe(17);
   expect(raised.selected).toEqual([17, 17, 16]);
 
-  await page.keyboard.press("g");
+  // the grid has been on since editing began
   await expect(page.locator("#showBase")).toBeChecked();
   await zoom(page, 0.8);
   // with the slice put back, the floor lies one layer under the lowest block
