@@ -2,7 +2,9 @@
 
 What the map under `public/` does for whoever is looking at it, control by control, and how it is built.
 
-The readings it draws are in [level-format.md](level-format.md), [tgi.md](tgi.md), [ggi.md](ggi.md) and [motion.md](motion.md), the start camera it can draw in [camera.md](camera.md), and the names it shows in [annotations.md](annotations.md).
+The readings it draws are in [level-format.md](level-format.md), [tgi.md](tgi.md), [ggi.md](ggi.md) and [motion.md](motion.md), the game's camera, at a level's start, in play and at an ending, in [camera.md](camera.md), and the names it shows in [annotations.md](annotations.md).
+
+What Your levels and the editor keep, read and write is specified in [editor.md](editor.md), and what the disc holds for a level written back onto it is set out in [disc.md](disc.md).
 
 ## Turning, panning and zooming
 
