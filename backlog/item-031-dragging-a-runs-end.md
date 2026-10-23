@@ -12,7 +12,7 @@ A drag on the map turns the camera unless a handler registered with the pointer 
 
 So a drag of a run's end is a handler that answers for a press on the far end of a run and declines every other press, nothing new in the seam: the preview is the one the two-click run has, the run toward the hovered cell with every cell tinted, and the release is the second click, so the rules and the refusals are already there.
 
-On a touch screen a finger's drag is the orbit's too, and the two-tap convention would need a hold on the end before the drag.
+On a touch screen a finger's drag turns the camera too, and the two-tap convention would need a hold on the end before the drag.
 
 Open: whether the drag belongs to the run tools alone or to Select on a selected run's end, which would take the orbit away from that cell; whether a platform's length, 2 or 3, is dragged as well; and how the end to take hold of is shown, since the far end of a run at rest is a cell like any other until the handler answers for it.
 
