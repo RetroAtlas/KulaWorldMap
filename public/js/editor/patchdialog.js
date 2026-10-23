@@ -9,9 +9,25 @@ import { state } from "../viewer/state.js";
 import { NAMES, levelTitle, loadJson, skinsTable, worldName } from "../viewer/data.js";
 import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
 import { toast } from "../viewer/ui/toast.js";
-import { FINAL_SLOTS, WORLDS, WORLD_SLOTS, spelled, writeKwl } from "../format/kwl.js";
+import {
+  COPYCAT_PACK,
+  COPYCAT_SLOTS,
+  FINAL_SLOTS,
+  WORLDS,
+  WORLD_SLOTS,
+  spelled,
+  writeKwl,
+} from "../format/kwl.js";
 import { deflate } from "../format/deflate.js";
-import { ERROR, UNTITLED, describe, playsAs, setMeta, validate } from "../format/project.js";
+import {
+  ERROR,
+  UNTITLED,
+  describe,
+  playsAs,
+  playsRoom,
+  setMeta,
+  validate,
+} from "../format/project.js";
 import { RAW_ONLY, download, isIso, slug } from "./files.js";
 import { draftOf, readLevel } from "./intake.js";
 import { guessSlot } from "./slotguess.js";
@@ -33,7 +49,7 @@ import {
 import { inflate } from "../format/inflate.js";
 
 const FIRST = "/HIRO/HIRO.PAK#0";
-const COPYCAT = "/HIRO/COPYCAT.PAK";
+const ROOMS = "Simon rooms";
 const LEVEL = 6;
 const BINARY = "application/octet-stream";
 const PRIVATE = "Read in your browser; nothing is uploaded.";
@@ -49,6 +65,8 @@ const NO_LEVELS = "Add a level above to make the patches.";
 const NO_IMAGE = "Give the disc image above to make the patches.";
 const READY = "Save what your emulator wants.";
 const INSTEAD = "Mednafen, Beetle and RetroArch apply no patch and play the patched disc instead.";
+const IN_SIMON = "The game plays it in Simon mode there.";
+const AS_BONUS = "The game plays it as a bonus level there.";
 const ADD = "add a level…";
 const FILE = "a file…";
 const PICKER = "file";
@@ -67,6 +85,7 @@ const IDS = {
   checks: "patchChecks",
   slot: "patchSlot",
   reach: "patchReach",
+  mode: "patchMode",
   wear: "patchWear",
   fit: "patchFit",
 };
@@ -86,9 +105,11 @@ const split = (key) => {
   return [key.slice(0, hash), /^\d+$/.test(index) ? Number(index) : NaN];
 };
 const themeOf = (pack) => pack.split("/")[1];
+const copycat = () => skinsTable()?.copycat ?? COPYCAT_PACK;
 const keyShaped = (key) => {
   if (typeof key !== "string") return false;
   const [pack, index] = split(key);
+  if (pack === copycat()) return index >= 0 && index < COPYCAT_SLOTS;
   const theme = themeOf(pack);
   const finals = pack === `/${theme}/${theme}FI.PAK`;
   return (
@@ -103,6 +124,7 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const showing = () => d !== null && !ui.overlay.hidden;
 const blocked = () => d.rows.map((row) => row.blocked).find(Boolean) ?? null;
 const slotTitle = (key) => d.titles.get(key) ?? `slot ${split(key)[1] + 1}`;
+const slotTheme = (key) => d.themes.get(key) ?? themeOf(split(key)[0]);
 
 /** What the downloads are called: the first level's slug, and how many more there are. */
 function base() {
@@ -284,6 +306,7 @@ function newRow(id) {
     checks: el("div", { className: "checks" }),
     slot: el("select", { title: "The slot the level takes on the disc" }),
     reach: el("p", { className: "reach" }),
+    mode: el("p", { className: "sub" }),
     wear: el("p", { className: "sub" }),
     fit: el("p", { className: "room" }),
   };
@@ -297,6 +320,7 @@ function newRow(id) {
     u.checks,
     el("label", { className: "slot" }, el("span", { textContent: "Slot" }), u.slot),
     u.reach,
+    u.mode,
     u.wear,
     u.fit,
   );
@@ -315,6 +339,7 @@ export async function openPatchDialog(id) {
   d ??= {
     rows: [],
     titles: null,
+    themes: null,
     clashed: false,
     file: null,
     disc: null,
@@ -435,9 +460,13 @@ function additions() {
 
 // Every row's slot list and the slot it shows, in passes so a guess never takes
 // a slot chosen for another row: its target, or none where that is no slot, else
-// a guess from its title, else its template's slot, else the first free slot.
+// a guess from its title, else its template's slot, else the first free slot of
+// its kind, a room's for a level that plays as a Simon room, else the first free
+// slot.
 function retarget() {
-  d.titles = new Map(state.data.levels.map((l) => [`${l.pack}#${l.index}`, levelTitle(l)]));
+  const keys = state.data.levels.map((l) => [`${l.pack}#${l.index}`, l]);
+  d.titles = new Map(keys.map(([key, l]) => [key, levelTitle(l)]));
+  d.themes = new Map(keys.map(([key, l]) => [key, l.theme]));
   const groups = optionGroups();
   const taken = new Set();
   const open = [];
@@ -462,6 +491,11 @@ function retarget() {
   settle((row) => {
     const { from } = row.doc;
     return from != null && optionsOf(row).has(String(from)) ? String(from) : null;
+  });
+  const rooms = copycat();
+  settle((row) => {
+    const room = playsRoom(row.doc);
+    return [...optionsOf(row)].find((key) => !taken.has(key) && (split(key)[0] === rooms) === room);
   });
   settle((row) => [...optionsOf(row)].find((key) => !taken.has(key)));
   for (const row of d.rows) {
@@ -521,24 +555,23 @@ async function packsOf(disc) {
   return out;
 }
 
-/** The slots of every pack but the Simon rooms', grouped by world, or null where neither the layout nor the image is read. */
+/** The slots of every pack, grouped by world with the Simon rooms last, or null where neither the layout nor the image is read. */
 function optionGroups() {
   const packs = layout?.packs ?? d.packs;
   if (!packs) return null;
-  const copycat = skinsTable()?.copycat ?? COPYCAT;
-  const groups = new Map();
+  const worlds = new Map();
+  const rooms = el("optgroup", { label: ROOMS });
   for (const p of packs) {
-    if (p.path === copycat) continue;
     const theme = themeOf(p.path);
-    if (!groups.has(theme)) groups.set(theme, el("optgroup", { label: worldName(theme) }));
+    const room = p.path === copycat();
+    if (!room && !worlds.has(theme)) worlds.set(theme, el("optgroup", { label: worldName(theme) }));
+    const group = room ? rooms : worlds.get(theme);
     p.slots.forEach((s, i) => {
       const key = `${p.path}#${i}`;
-      groups
-        .get(theme)
-        .append(el("option", { value: key, textContent: d.titles.get(key) ?? s.name }));
+      group.append(el("option", { value: key, textContent: d.titles.get(key) ?? s.name }));
     });
   }
-  return [...groups.values()];
+  return [...worlds.values(), ...(rooms.childElementCount ? [rooms] : [])];
 }
 
 function slots(row, groups) {
@@ -574,23 +607,32 @@ function choose(row, into) {
   refresh();
 }
 
+// Whose place the level takes and how the game reaches it, and under that where
+// the level and the slot disagree on how it plays, and whose artwork it wears.
 function target(row) {
   const { u, into } = row;
   if (into === null) {
     u.reach.textContent = CHOOSE;
+    u.mode.textContent = "";
     u.wear.textContent = "";
     u.fit.textContent = "";
     return;
   }
   const [pack] = split(into);
-  const theme = themeOf(pack);
+  const room = pack === copycat();
+  const theme = slotTheme(into);
   const title = slotTitle(into);
   const world = worldName(theme);
-  if (into === FIRST) u.reach.textContent = `It takes ${title}'s place, where a new game starts.`;
+  if (room)
+    u.reach.textContent = `It takes ${title}'s place, the room Simon mode plays in ${world} on its first round.`;
+  else if (into === FIRST)
+    u.reach.textContent = `It takes ${title}'s place, where a new game starts.`;
   else if (pack.endsWith("FI.PAK"))
     u.reach.textContent = `It takes ${title}'s place among ${world}'s finals, reached once the arcade is finished.`;
   else
     u.reach.textContent = `It takes ${title}'s place, reached with a save that has got that far in ${world}.`;
+  const plays = playsRoom(row.doc);
+  u.mode.textContent = room === plays ? "" : room ? IN_SIMON : AS_BONUS;
   u.wear.textContent = theme === row.doc.world ? "" : `It will wear ${world}'s artwork there.`;
 }
 

@@ -1,12 +1,13 @@
 // A slot guessed from a level's title, over the titles the disc box lists for its slots.
 
 const PLAIN = "LEVEL";
-const KINDS = ["BONUS", "FINAL", "HIDDEN"];
+const KINDS = ["BONUS", "FINAL", "HIDDEN", "SIMON"];
 const WORD = /[\p{L}\p{N}]/u;
 const NUMBER = /\d+/;
 const LAST_WORD = /(\p{L}+)[^\p{L}\p{N}]*$/u;
+const JOINED = /(\p{L})(\d)/gu;
 
-const normal = (text) => text.trim().replace(/\s+/g, " ").toUpperCase();
+const normal = (text) => text.trim().replace(/\s+/g, " ").replace(JOINED, "$1 $2").toUpperCase();
 const edge = (text, at) => at < 0 || at >= text.length || !WORD.test(text[at]);
 
 /** Whether `part` stands in `text` as whole words. */
@@ -24,7 +25,7 @@ function counted(text) {
   return `${KINDS.includes(word) ? word : PLAIN} ${Number(m[0])}`;
 }
 
-/** The key of the slot `title` names among `listed`, pairs of key and title, the keys in `taken` left out: the slot titled as the level is, else the one whose title stands in the level's title as whole words, the longest where several do, else the one its first number counts to, else null. */
+/** The key of the slot `title` names among `listed`, pairs of key and title, the keys in `taken` left out, a word and a number it runs into read as spaced: the slot titled as the level is, else the one whose title stands in the level's title as whole words, the longest where several do, else the one its first number counts to, else null. */
 export function guessSlot(title, listed, taken = new Set()) {
   const wanted = normal(title);
   if (!wanted) return null;

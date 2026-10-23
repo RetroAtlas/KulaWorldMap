@@ -76,6 +76,7 @@ VERSION = 1
 WORLDS = THEMES
 WORLD_SLOTS = 20
 FINAL_SLOTS = 2
+COPYCAT_SLOTS = 10
 COPYCAT_PACK = "/HIRO/COPYCAT.PAK"   # the pack whose levels the game plays as Simon rooms
 TITLE_MOST = 80      # the most characters a reader keeps of a title
 TEXT_MOST = 2000     # and of any other text
@@ -1266,7 +1267,9 @@ def plays_as(project):
 
 
 def _slot_of(pack, index):
-    """Whether a target names a slot of a world pack or a finals pack."""
+    """Whether a target names a slot of a world pack, a finals pack or the Simon rooms' pack."""
+    if pack == COPYCAT_PACK:
+        return index in range(COPYCAT_SLOTS)
     for w in WORLDS:
         if pack == f"/{w}/{w}.PAK" and index in range(WORLD_SLOTS):
             return True
@@ -1306,7 +1309,7 @@ def validate(project, hides):
         text = into if isinstance(into, str) else _show(into)
         pack, _, index = text.rpartition("#")
         if not (re.fullmatch(r"[0-9]+", index) and _slot_of(pack, int(index))):
-            err(f"the target '{text}' is not a slot of a world or a finals pack")
+            err(f"the target '{text}' is not a slot of a world pack, a finals pack or the Simon rooms' pack")
     time = _or(project.get("time"), DEFAULT_TIME)
     if not _is_int(time) or time not in WORD:
         err(f"a time of {_js_text(time)} seconds, outside the file's range")

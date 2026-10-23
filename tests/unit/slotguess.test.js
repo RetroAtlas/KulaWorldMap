@@ -3,10 +3,8 @@ import assert from "node:assert/strict";
 import { mapData } from "./fixtures.js";
 import { guessSlot } from "../../public/js/editor/slotguess.js";
 
-// The titles the box lists: every slot but the Simon rooms', named as the pause screen names it.
-const listed = mapData.levels
-  .filter((l) => !l.pack.includes("COPYCAT"))
-  .map((l) => [`${l.pack}#${l.index}`, l.shown || l.name]);
+// The titles the box lists: every slot, named as the pause screen names it.
+const listed = mapData.levels.map((l) => [`${l.pack}#${l.index}`, l.shown || l.name]);
 const key = (title) => listed.find(([, name]) => name === title)[0];
 
 test("a title that is a listed title names its slot, case and spacing aside", () => {
@@ -37,6 +35,17 @@ test("a number in the title counts to a level, or to a bonus, final or hidden le
   assert.equal(guessSlot("hidden 11", listed), null);
   assert.equal(guessSlot("Spiral", listed), null);
   assert.equal(guessSlot("", listed), null);
+});
+
+test("a Simon room's title names its slot, the tenth with or without the space the disc leaves out", () => {
+  assert.equal(guessSlot("SIMON 3", listed), key("SIMON 3"));
+  assert.equal(guessSlot("simon3", listed), key("SIMON 3"));
+  assert.equal(guessSlot("My Simon 3 remix", listed), key("SIMON 3"));
+  assert.equal(guessSlot("Simon: 3", listed), key("SIMON 3"));
+  assert.equal(guessSlot("SIMON10", listed), key("SIMON10"));
+  assert.equal(guessSlot("Simon 10", listed), key("SIMON10"));
+  assert.equal(guessSlot("simon10 remix", listed), key("SIMON10"));
+  assert.equal(guessSlot("Simon 11", listed), null);
 });
 
 test("a slot another row takes is not guessed", () => {

@@ -47,6 +47,7 @@ import {
   fromLevel,
   moveBlocks,
   playsAs,
+  playsRoom,
   readProject,
   recordOverflow,
   removeBlock,
@@ -697,7 +698,7 @@ test("a document that bypassed the reader is checked alike on both sides", () =>
   ).map(describe);
   assert.deepEqual(findings, [
     "error: the world '' is not one of the disc's ten",
-    "error: the target '{\"pack\":1}' is not a slot of a world or a finals pack",
+    "error: the target '{\"pack\":1}' is not a slot of a world pack, a finals pack or the Simon rooms' pack",
     "error: a time of true seconds, outside the file's range",
     "error at 5,5,5 face 0: a facing of 1 to 4 is needed",
     "error at 5,5,5 face 1: a variant of true",
@@ -765,7 +766,7 @@ test("the target's slot is a run of ASCII digits, and the world and the target a
   assert.deepEqual(into("/HIRO/HIRO.PAK#3"), []);
   for (const text of ["/HIRO/HIRO.PAK#٣", "/HIRO/HIRO.PAK#²", "/HIRO/HIRO.PAK#3 "])
     assert.deepEqual(into(text), [
-      `the target '${text}' is not a slot of a world or a finals pack`,
+      `the target '${text}' is not a slot of a world pack, a finals pack or the Simon rooms' pack`,
     ]);
   assert.deepEqual(errors([plain([5, 5, 5], 0, { 0: start() })], { world: "it's" }), [
     "the world 'it's' is not one of the disc's ten",
@@ -1001,7 +1002,9 @@ test("what the format takes, and what it warns about", () => {
     ["/HIRO/HIRO.PAK#0", true],
     ["/HELL/HELLFI.PAK#1", true],
     ["/HELL/HELLFI.PAK#2", false],
-    ["/HIRO/COPYCAT.PAK#0", false],
+    ["/HIRO/COPYCAT.PAK#0", true],
+    ["/HIRO/COPYCAT.PAK#9", true],
+    ["/HIRO/COPYCAT.PAK#10", false],
     ["HIRO#0", false],
   ])
     assert.equal(
@@ -1211,6 +1214,9 @@ test("how a level plays", () => {
     playsAs({ ...keyed, simon: true, hidden: true }),
     "Plays as a hidden level, with the glass ball on half-seen blocks.",
   );
+  assert.equal(playsRoom({ ...keyless, simon: true }), true);
+  assert.equal(playsRoom(keyless), false);
+  assert.equal(playsRoom({ ...keyed, simon: true }), false);
   assert.deepEqual(
     validate(keyed, HIDES, NAMES).map((f) => f.level),
     ["warning"],

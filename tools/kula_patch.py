@@ -256,7 +256,7 @@ def main():
     ap.add_argument("--level", action="append", metavar="FILE",
                     help="a .kula.json project, a .kwl level file, or a shipped level as PACK#slot; repeat for several")
     ap.add_argument("--into", action="append",
-                    help=f"the slot the level takes, of a world pack or a finals pack, one after each --level; {INTO} for one level without it")
+                    help=f"the slot the level takes, of a world pack, a finals pack or the Simon rooms' pack, one after each --level; {INTO} for one level without it")
     ap.add_argument("--out", metavar="NAME", help="what the outputs are called, without an extension")
     ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to $KULA_DISC")
     ap.add_argument("--ppf", action="store_true", help="write NAME.ppf")

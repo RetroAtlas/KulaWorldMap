@@ -26,9 +26,11 @@ from kula_kwl import (  # noqa: E402
     CAPS,
     CAPTIVATORS,
     COPYCAT_PACK,
+    COPYCAT_SLOTS,
     DIGESTS,
     DISC_MAX,
     DROPPED,
+    FINAL_SLOTS,
     FORMAT,
     INNER,
     LENGTH_CAP,
@@ -42,6 +44,8 @@ from kula_kwl import (  # noqa: E402
     RESIDUALS,
     REWIRED,
     VECTORS,
+    WORLDS,
+    WORLD_SLOTS,
     _circuit_word,
     canonical,
     circuit_members,
@@ -90,6 +94,7 @@ from test_kula_level import block, level, slot  # noqa: E402
 TOOL = Path(__file__).resolve().parents[1] / "kula_kwl.py"
 EDITOR_DOC = Path(__file__).resolve().parents[2] / "docs" / "editor.md"
 FORMAT_DOC = Path(__file__).resolve().parents[2] / "docs" / "level-format.md"
+PACKS = Path(__file__).resolve().parents[2] / "public" / "packs.json"
 HIDES = json.loads(OBJECTS.read_text())["skins"]["hides"]
 START, EXIT, KEY, COIN, GEM = 30, 7, 31, 37, 36
 WORLD = "HIRO"
@@ -241,6 +246,12 @@ class RoundTrips(unittest.TestCase):
         self.assertEqual(template(data, "copycat#0"), room)
         with self.assertRaises(KeyError):
             template(data, "/HIRO/HIRO.PAK#99")
+
+    def test_the_slot_counts_are_the_packs_as_the_layout_lists_them(self):
+        packs = {p["path"]: len(p["slots"]) for p in json.loads(PACKS.read_text())["packs"]}
+        for w in WORLDS:
+            self.assertEqual((packs[f"/{w}/{w}.PAK"], packs[f"/{w}/{w}FI.PAK"]), (WORLD_SLOTS, FINAL_SLOTS), w)
+        self.assertEqual(packs[COPYCAT_PACK], COPYCAT_SLOTS)
 
     def test_a_simon_rooms_project_carries_the_flag_a_world_levels_does_not_and_the_bytes_carry_neither(self):
         self.assertEqual(COPYCAT_PACK, json.loads(OBJECTS.read_text())["skins"]["copycat"])
@@ -1094,7 +1105,7 @@ class Validates(unittest.TestCase):
         }, HIDES)
         self.assertEqual([describe(f) for f in findings], [
             "error: the world '' is not one of the disc's ten",
-            "error: the target '{\"pack\":1}' is not a slot of a world or a finals pack",
+            "error: the target '{\"pack\":1}' is not a slot of a world pack, a finals pack or the Simon rooms' pack",
             "error: a time of true seconds, outside the file's range",
             "error at 5,5,5 face 0: a facing of 1 to 4 is needed",
             "error at 5,5,5 face 1: a variant of true",
@@ -1144,7 +1155,7 @@ class Validates(unittest.TestCase):
 
         self.assertEqual(into("/HIRO/HIRO.PAK#3"), [])
         for text in ("/HIRO/HIRO.PAK#٣", "/HIRO/HIRO.PAK#²", "/HIRO/HIRO.PAK#3 "):
-            self.assertEqual(into(text), [f"the target '{text}' is not a slot of a world or a finals pack"])
+            self.assertEqual(into(text), [f"the target '{text}' is not a slot of a world pack, a finals pack or the Simon rooms' pack"])
         self.assertEqual(self.errors([plain((5, 5, 5), t0=start())], world="it's"),
                          ["the world 'it's' is not one of the disc's ten"])
 
@@ -1285,7 +1296,8 @@ class Validates(unittest.TestCase):
                       self.errors([plain((5, 5, 5), t0=start()), dict(wide, length=40000, speed=30)]))
         self.assertIn("the world 'MOON' is not one of the disc's ten", self.errors([plain((5, 5, 5), t0=start())], world="MOON"))
         for into, ok in (("/HIRO/HIRO.PAK#0", True), ("/HELL/HELLFI.PAK#1", True), ("/HELL/HELLFI.PAK#2", False),
-                         ("/HIRO/COPYCAT.PAK#0", False), ("HIRO#0", False)):
+                         ("/HIRO/COPYCAT.PAK#0", True), ("/HIRO/COPYCAT.PAK#9", True), ("/HIRO/COPYCAT.PAK#10", False),
+                         ("HIRO#0", False)):
             self.assertEqual(any("is not a slot of" in e for e in self.errors([plain((5, 5, 5), t0=start())], into=into)),
                              not ok, into)
         self.assertIn("nothing stands on a platform's, laser's, crumbling or vanishing block's faces",

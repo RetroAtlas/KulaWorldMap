@@ -17,6 +17,7 @@ export const WORLDS = [
 ];
 export const WORLD_SLOTS = 20;
 export const FINAL_SLOTS = 2;
+export const COPYCAT_SLOTS = 10;
 /** The pack whose levels the game plays as Simon rooms. */
 export const COPYCAT_PACK = "/HIRO/COPYCAT.PAK";
 

@@ -3,13 +3,15 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { mapData, objects, levelKey } from "./fixtures.js";
+import { mapData, objects, packs, levelKey } from "./fixtures.js";
 import { deflate } from "../../public/js/format/deflate.js";
 import { SIDE } from "../../public/js/format/lattice.js";
 import {
   CELLS,
   COPYCAT_PACK,
+  COPYCAT_SLOTS,
   FACES,
+  FINAL_SLOTS,
   FIRST_RECORD,
   FORMAT,
   GRID_BYTES,
@@ -27,6 +29,8 @@ import {
   TELEPORTER,
   TRAILER_KIND,
   WORDS,
+  WORLDS,
+  WORLD_SLOTS,
   compareCells,
   levelOf,
   linkTarget,
@@ -355,6 +359,15 @@ test("a shipped level's project is a fixed point of writing and reading it back"
     const meta = { name: l.name, shown: l.shown, theme: l.theme, pack: l.pack, index: l.index };
     assert.deepEqual(projectOf(levelOf(writeKwl(p), meta)), p, l.name);
   }
+});
+
+test("the slot counts are the packs' as the layout lists them", () => {
+  const slotsOf = (path) => packs.packs.find((p) => p.path === path).slots.length;
+  for (const w of WORLDS) {
+    assert.equal(slotsOf(`/${w}/${w}.PAK`), WORLD_SLOTS, w);
+    assert.equal(slotsOf(`/${w}/${w}FI.PAK`), FINAL_SLOTS, w);
+  }
+  assert.equal(slotsOf(COPYCAT_PACK), COPYCAT_SLOTS);
 });
 
 test("a Simon room's project carries the flag, a world level's does not, and the bytes carry neither", () => {

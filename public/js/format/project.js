@@ -7,6 +7,8 @@ import {
   CAPS,
   CAPTIVATORS,
   COLOURS,
+  COPYCAT_PACK,
+  COPYCAT_SLOTS,
   COUNTED_KINDS,
   COUNTER_WORDS,
   CRUMBLING_KIND,
@@ -279,8 +281,14 @@ export function counts(project, hides) {
   return n;
 }
 
+const hasKey = (project) => project.blocks.some((b) => facesOf(b).some(([, o]) => o.type === KEY));
+
+/** Whether the level plays as a Simon room: marked one, with no key, since a key makes an arcade
+    level of it. */
+export const playsRoom = (project) => !!project.simon && !hasKey(project);
+
 export function playsAs(project) {
-  const keyed = project.blocks.some((b) => facesOf(b).some(([, o]) => o.type === KEY));
+  const keyed = hasKey(project);
   const room = !keyed && !!project.simon;
   if (project.hidden) {
     if (keyed) return "Plays as a hidden level, with the glass ball on half-seen blocks.";
@@ -292,8 +300,9 @@ export function playsAs(project) {
   return "Plays as a bonus level since it has no key.";
 }
 
-/** Whether a target names a slot of a world pack or a finals pack. */
+/** Whether a target names a slot of a world pack, a finals pack or the Simon rooms' pack. */
 function slotOf(pack, index) {
+  if (pack === COPYCAT_PACK) return index >= 0 && index < COPYCAT_SLOTS;
   return WORLDS.some(
     (w) =>
       (pack === `/${w}/${w}.PAK` && index >= 0 && index < WORLD_SLOTS) ||
@@ -523,7 +532,9 @@ export function validate(project, hides, names = {}) {
     const pack = hash < 0 ? "" : text.slice(0, hash);
     const index = text.slice(hash + 1);
     if (!/^\d+$/.test(index) || !slotOf(pack, Number(index)))
-      err(`the target '${text}' is not a slot of a world or a finals pack`);
+      err(
+        `the target '${text}' is not a slot of a world pack, a finals pack or the Simon rooms' pack`,
+      );
   }
   const time = project.time ?? DEFAULT_TIME;
   if (!inWord(time)) err(`a time of ${time} seconds, outside the file's range`);

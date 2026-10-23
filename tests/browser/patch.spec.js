@@ -8,7 +8,7 @@ import { writeProject } from "../../public/js/format/project.js";
 import { SLUG_MOST } from "../../public/js/editor/files.js";
 import { SYNTHETIC_SECTORS, streamOf, synthetic, syntheticImage } from "../unit/synthetic.js";
 import { USER, sector } from "../../public/js/format/sectors.js";
-import { mapData, packs } from "../unit/fixtures.js";
+import { annotations, mapData, packs } from "../unit/fixtures.js";
 import { REBUILD, RELOCATE, fit, readPak, writePak } from "../../public/js/format/pak.js";
 import { openDisc } from "../../public/js/format/iso.js";
 import { EXIT, RECORD, writeKwl } from "../../public/js/format/kwl.js";
@@ -137,11 +137,11 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
 
   const slot = dialog.locator("#patchSlot");
   const options = slot.locator("option");
-  await expect(options).toHaveCount(220);
+  await expect(options).toHaveCount(230);
   expect(
     await options.evaluateAll((os) => os.filter((o) => o.value.includes("COPYCAT")).length),
-  ).toBe(0);
-  expect(await slot.locator("optgroup").count()).toBe(10);
+  ).toBe(10);
+  expect(await slot.locator("optgroup").count()).toBe(11);
   await expect(slot).toHaveValue("/HIRO/HIRO.PAK#0");
   await expect(options.first()).toHaveText("LEVEL 1");
   await expect(dialog.locator("#patchReach")).toHaveText(
@@ -744,22 +744,22 @@ test("a target the file names that is no slot is an error until a slot is chosen
   await settle(page);
   const id = await opened(page, "simon.kula.json", {
     ...synthetic(6, "Simon"),
-    into: "/HIRO/COPYCAT.PAK#0",
+    into: "/HIRO/COPYCAT.PAK#10",
   });
   await openPatch(page, id);
   const dialog = page.locator("#patch");
   await expect(dialog).toBeVisible();
   await expect(dialog.locator("#patchChecks .errors li")).toHaveText([
-    "error: the target '/HIRO/COPYCAT.PAK#0' is not a slot of a world or a finals pack",
+    "error: the target '/HIRO/COPYCAT.PAK#10' is not a slot of a world pack, a finals pack or the Simon rooms' pack",
   ]);
   const slot = dialog.locator("#patchSlot");
   await expect(slot).toHaveValue("");
-  await expect(slot.locator("option:checked")).toHaveText("/HIRO/COPYCAT.PAK#0, which is no slot");
+  await expect(slot.locator("option:checked")).toHaveText("/HIRO/COPYCAT.PAK#10, which is no slot");
   await expect(slot.locator("option:checked")).toHaveJSProperty("disabled", true);
-  await expect(slot.locator("option")).toHaveCount(221);
+  await expect(slot.locator("option")).toHaveCount(231);
   await expect(dialog.locator("#patchReach")).toHaveText("Choose a slot above.");
   await expect(dialog.locator("#patchFit")).toHaveText("");
-  expect((await docOf(page, id)).into).toBe("/HIRO/COPYCAT.PAK#0");
+  expect((await docOf(page, id)).into).toBe("/HIRO/COPYCAT.PAK#10");
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
   await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
@@ -768,7 +768,7 @@ test("a target the file names that is no slot is an error until a slot is chosen
   await expect(dialog.locator("#patchChecks .errors")).toHaveCount(0);
   expect((await docOf(page, id)).into).toBe("/HIRO/HIRO.PAK#0");
   expect((await steps(page, id)).past).toBe(1);
-  await expect(slot.locator("option")).toHaveCount(220);
+  await expect(slot.locator("option")).toHaveCount(230);
   await expect(dialog.locator("#patchReach")).toHaveText(
     "It takes LEVEL 1's place, where a new game starts.",
   );
@@ -1133,7 +1133,8 @@ test("a level in a world pack and another in its finals pack go on as one patch,
   await expect(second.locator(".reach")).toHaveText(
     /^It takes FINAL 1's place among .+'s finals, reached once the arcade is finished\.$/,
   );
-  await expect(second.locator(".sub")).toHaveText("");
+  await expect(second.locator("#patchMode2")).toHaveText("");
+  await expect(second.locator("#patchWear2")).toHaveText("");
   await expect(dialog.locator("#patchFit")).toHaveText(
     "It fits in the slot's own bytes, with 93 bytes to spare.",
   );
@@ -1284,7 +1285,8 @@ test("a pack added from a file asks which level in the box's place, and the box 
   await expect(level).toHaveCount(2);
   await expect(level.nth(1).locator(".name")).toHaveText("LEVEL 2");
   await expect(level.nth(1).locator("select")).toHaveValue("/HIRO/HIRO.PAK#1");
-  await expect(level.nth(1).locator(".sub")).toHaveText("");
+  await expect(level.nth(1).locator("#patchMode2")).toHaveText("");
+  await expect(level.nth(1).locator("#patchWear2")).toHaveText("");
   await expect(yours).toHaveCount(2);
   const second = (await listed(page)).find((d) => d.title === "LEVEL 2");
   expect(second.saved).toBeGreaterThan(0);
@@ -1380,6 +1382,109 @@ test("a row opens on the slot its title names, else where its copy came from, an
   await expect(level.nth(3).locator("select")).toHaveValue("/HIRO/HIRO.PAK#1");
   await expect(dialog.locator("#patchClash p")).toHaveCount(0);
   for (const id of [copy, titled]) expect((await docOf(page, id)).into).toBeUndefined();
+  expect(errors).toEqual([]);
+});
+
+test("a Simon room's slot is listed last and names the room's world, a level that plays as a room takes the first free room, and the row says where the level and the slot disagree", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  const rooms = mapData.levels
+    .filter((l) => l.pack === "/HIRO/COPYCAT.PAK")
+    .sort((a, b) => a.index - b.index);
+  const worldOf = (id) => annotations.worlds?.[id]?.name || id;
+  const roomLine = (i) =>
+    `It takes ${rooms[i].shown || rooms[i].name}'s place, the room Simon mode plays in ${worldOf(rooms[i].theme)} on its first round.`;
+  const spiral = await opened(page, "spiral.kula.json", synthetic(6));
+  const marked = await opened(page, "marked.kula.json", {
+    ...synthetic(6, "Marked"),
+    simon: true,
+  });
+  const loop = await opened(page, "loop.kula.json", { ...synthetic(2, "Loop"), simon: true });
+  await openPatch(page, loop);
+  const dialog = page.locator("#patch");
+  await expect(dialog).toBeVisible();
+  const level = rows(dialog);
+  const slot = dialog.locator("#patchSlot");
+  const reach = dialog.locator("#patchReach");
+  const mode = dialog.locator("#patchMode");
+  const wear = dialog.locator("#patchWear");
+  await expect(dialog.locator("#patchPlays")).toHaveText("Plays as a Simon room.");
+  await expect(dialog.locator("#patchChecks .sub")).toHaveText("no warnings");
+  const groups = slot.locator("optgroup");
+  await expect(groups).toHaveCount(11);
+  await expect(groups.last()).toHaveAttribute("label", "Simon rooms");
+  await expect(groups.last().locator("option")).toHaveText(rooms.map((l) => l.shown || l.name));
+  expect(
+    await groups
+      .last()
+      .locator("option")
+      .evaluateAll((os) => os.map((o) => o.value)),
+  ).toEqual(rooms.map((l) => `${l.pack}#${l.index}`));
+
+  // with no target, no title that names a slot and no origin, a room takes the first free room
+  await expect(slot).toHaveValue("/HIRO/COPYCAT.PAK#0");
+  await expect(reach).toHaveText(roomLine(0));
+  await expect(mode).toHaveText("");
+  await expect(wear).toHaveText("");
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 241 bytes to spare.",
+  );
+  expect((await docOf(page, loop)).into).toBeUndefined();
+
+  // another room's slot names the room's own world, whose artwork the level wears there
+  await slot.selectOption("/HIRO/COPYCAT.PAK#1");
+  await expect(reach).toHaveText(roomLine(1));
+  await expect(mode).toHaveText("");
+  await expect(wear).toHaveText(`It will wear ${worldOf(rooms[1].theme)}'s artwork there.`);
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 212 bytes to spare.",
+  );
+  expect((await docOf(page, loop)).into).toBe("/HIRO/COPYCAT.PAK#1");
+
+  // a room in a world pack's slot is played as a bonus level there
+  await slot.selectOption("/HIRO/HIRO.PAK#1");
+  await expect(reach).toHaveText(
+    /^It takes LEVEL 2's place, reached with a save that has got that far in .+\.$/,
+  );
+  await expect(mode).toHaveText("The game plays it as a bonus level there.");
+  await expect(wear).toHaveText("");
+  await expect(dialog.locator("#patchFit")).toHaveText(
+    "It fits in the slot's own bytes, with 207 bytes to spare.",
+  );
+  await slot.selectOption("/HIRO/COPYCAT.PAK#0");
+  await expect(reach).toHaveText(roomLine(0));
+  await expect(mode).toHaveText("");
+
+  // an arcade level takes the first free slot of the worlds, and in a room's slot is played in Simon mode there
+  const add = dialog.locator("#patchAdd");
+  await add.selectOption(String(spiral));
+  const second = level.nth(1);
+  await expect(second.locator(".plays")).toHaveText("Plays as an arcade level.");
+  await expect(second.locator("select")).toHaveValue("/HIRO/HIRO.PAK#0");
+  await expect(second.locator("#patchMode2")).toHaveText("");
+  await second.locator("select").selectOption("/HIRO/COPYCAT.PAK#2");
+  await expect(second.locator("#patchReach2")).toHaveText(roomLine(2));
+  await expect(second.locator("#patchMode2")).toHaveText("The game plays it in Simon mode there.");
+  await expect(second.locator("#patchWear2")).toHaveText(
+    `It will wear ${worldOf(rooms[2].theme)}'s artwork there.`,
+  );
+  await expect(second.locator(".room")).toHaveText(
+    "It fits in the slot's own bytes, with 231 bytes to spare.",
+  );
+
+  // a key on a marked level makes it an arcade level, so its default is a world's slot
+  await add.selectOption(String(marked));
+  const third = level.nth(2);
+  await expect(third.locator(".plays")).toHaveText("Plays as an arcade level.");
+  await expect(third.locator("select")).toHaveValue("/HIRO/HIRO.PAK#0");
+  await expect(third.locator("#patchMode3")).toHaveText("");
+  await expect(dialog.locator("#patchClash p")).toHaveCount(0);
+  expect((await docOf(page, loop)).into).toBe("/HIRO/COPYCAT.PAK#0");
+  expect((await docOf(page, spiral)).into).toBe("/HIRO/COPYCAT.PAK#2");
+  expect((await docOf(page, marked)).into).toBeUndefined();
   expect(errors).toEqual([]);
 });
 

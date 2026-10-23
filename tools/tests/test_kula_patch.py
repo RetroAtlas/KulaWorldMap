@@ -747,18 +747,19 @@ class TheTool(unittest.TestCase):
                     self.assertNotIn("Traceback", done.stderr)
             self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["notes.bin", "spiral.kula.json"])
 
-    def test_a_target_that_is_not_a_slot_of_a_world_or_a_finals_pack_is_refused(self):
+    def test_a_target_that_is_not_a_slot_of_a_world_a_finals_or_the_simon_rooms_pack_is_refused(self):
         with tempfile.TemporaryDirectory() as scratch:
             scratch = Path(scratch)
             (scratch / "image.bin").write_bytes(IMAGE)
             (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
-            for into in ("/HIRO/COPYCAT.PAK#0", "/HIRO/HIRO.PAK#20", "/HIRO/HIROFI.PAK#2"):
+            for into in ("/HIRO/COPYCAT.PAK#10", "/HIRO/HIRO.PAK#20", "/HIRO/HIROFI.PAK#2"):
                 with self.subTest(into):
                     done = subprocess.run([sys.executable, TOOL, "--level", scratch / "spiral.kula.json", "--into", into,
                                            "--out", scratch / "simon", "--disc", scratch / "image.bin"],
                                           capture_output=True, text=True)
                     self.assertNotEqual(done.returncode, 0)
-                    self.assertIn(f"error: the target {into!r} is not a slot of a world or a finals pack", done.stderr)
+                    self.assertIn(f"error: the target {into!r} is not a slot of a world pack, a finals pack or the Simon rooms' pack",
+                                  done.stderr)
             # a slot is a run of ASCII digits, so a digit of another script is refused at the gate
             for into in ("/HIRO/HIRO.PAK#\u00b2", "/HIRO/HIRO.PAK#\u0663", "/HIRO/HIRO.PAK#"):
                 with self.subTest(into):
@@ -769,6 +770,19 @@ class TheTool(unittest.TestCase):
                     self.assertIn("--into wants a pack path and a slot, like /HIRO/HIRO.PAK#0", done.stderr)
                     self.assertNotIn("Traceback", done.stderr)
             self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "spiral.kula.json"])
+
+    def test_a_simon_rooms_slot_is_a_target_the_checks_accept(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "loop.kula.json").write_text(json.dumps(dict(synthetic(2, "Loop"), simon=True)))
+            done = subprocess.run([sys.executable, TOOL, "--level", scratch / "loop.kula.json", "--into", "/HIRO/COPYCAT.PAK#2",
+                                   "--out", scratch / "loop", "--disc", scratch / "image.bin"],
+                                  capture_output=True, text=True)
+            self.assertNotEqual(done.returncode, 0)
+            self.assertNotIn("is not a slot of", done.stderr)
+            self.assertEqual(done.stderr.splitlines()[-1], "no such pack on the disc: /HIRO/COPYCAT.PAK")
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "loop.kula.json"])
 
     def test_a_level_with_errors_is_refused_and_one_output_can_be_chosen(self):
         with tempfile.TemporaryDirectory() as scratch:
@@ -845,6 +859,22 @@ class TheDisc(unittest.TestCase):
         target, _ = decode_vcdiff(self.original, delta)
         self.assertEqual(target, patched)
         self.assertGreater(sum(len(data) for _, data in ppf_records(patch)), pak.size - pak.entries[0]["size"])
+
+    def test_a_level_goes_into_a_simon_rooms_slot(self):
+        pack_path = "/HIRO/COPYCAT.PAK"
+        with Disc(self.src) as disc:
+            pak = Pak(disc.read_file(pack_path), pack_path)
+        stream = stream_of(CASE["in place"])
+        out = self.dir / "simon.bin"
+        placed = place(self.src, pack_path, 2, stream, out, TITLE)
+        self.assertEqual(placed.fit.path, "in place")
+        with Disc(out) as patched:
+            after = Pak(patched.read_file(pack_path), pack_path)
+        self.assertEqual(after.names(), pak.names())
+        self.assertEqual(after.level(2), canonical(synthetic(CASE["in place"])))
+        self.assertEqual([after.level(i) for i in range(len(after)) if i != 2],
+                         [pak.level(i) for i in range(len(pak)) if i != 2])
+        self.assertEqual(apply_ppf(self.original, ppf(self.src, placed.writes, PREFIX + TITLE)), out.read_bytes())
 
     def test_level_4_rebuilt_from_its_fields_into_level_1_s_slot_is_the_documented_patch(self):
         with Disc(self.src) as disc:
