@@ -21,7 +21,7 @@ A points value changes only with the arithmetic in [docs/level-format.md](docs/l
 
 Do not re-derive the lattice from file sizes.
 
-Read [docs/camera.md](docs/camera.md) before touching the start camera the viewer draws, [docs/tgi.md](docs/tgi.md) before touching `tools/kula_tgi.py`, `tools/kula_tex.py` or `tools/kula_skins.py`, or anything in the viewer that picks a texture for a face, and [docs/ggi.md](docs/ggi.md) before touching `tools/kula_ggi.py`.
+Read [docs/camera.md](docs/camera.md) before touching the start camera the viewer draws or the view it takes in play and at an ending, [docs/tgi.md](docs/tgi.md) before touching `tools/kula_tgi.py`, `tools/kula_tex.py` or `tools/kula_skins.py`, or anything in the viewer that picks a texture for a face, and [docs/ggi.md](docs/ggi.md) before touching `tools/kula_ggi.py`.
 
 [docs/viewer.md](docs/viewer.md) says what every control of the viewer does, so a change to one brings it up to date in the same commit.
 
