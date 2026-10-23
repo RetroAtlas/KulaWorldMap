@@ -21,7 +21,11 @@ A points value changes only with the arithmetic in [docs/level-format.md](docs/l
 
 Do not re-derive the lattice from file sizes.
 
-Before a commit:
+Read [docs/camera.md](docs/camera.md) before touching the start camera the viewer draws, [docs/tgi.md](docs/tgi.md) before touching `tools/kula_tgi.py`, `tools/kula_tex.py` or `tools/kula_skins.py`, or anything in the viewer that picks a texture for a face, and [docs/ggi.md](docs/ggi.md) before touching `tools/kula_ggi.py`.
+
+[docs/viewer.md](docs/viewer.md) says what every control of the viewer does, so a change to one brings it up to date in the same commit.
+
+## Before a commit
 
 - `npm test` (the unit tests pin the README's and the docs' figures to the data, so a rebuild that moves a count fails there rather than going stale in silence).
 - `npm run format:check`.
@@ -36,10 +40,6 @@ A change to the viewer that is to draw exactly as before, a move, a re-wiring or
 Where a change is about speed, `npm run frame` says where a frame's main-thread time goes, part by part, at a phone's size with the CPU slowed, and given a ref measures that ref beside the working tree, and `npm run boot` opens the page over a throttled network and says when its first frame and its first textured frame land, given a ref beside that ref's; both are there to reach for, not checks a commit must pass.
 
 No commit message reports what a test found, this one's or any other's: every commit passes them all.
-
-Read [docs/camera.md](docs/camera.md) before touching the start camera the viewer draws, [docs/tgi.md](docs/tgi.md) before touching `tools/kula_tgi.py`, `tools/kula_tex.py` or `tools/kula_skins.py`, or anything in the viewer that picks a texture for a face, and [docs/ggi.md](docs/ggi.md) before touching `tools/kula_ggi.py`.
-
-[docs/viewer.md](docs/viewer.md) says what every control of the viewer does, so a change to one brings it up to date in the same commit.
 
 ## Conventions
 
