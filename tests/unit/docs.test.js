@@ -282,6 +282,15 @@ const claims = [
     levels((l) => l.name === "OBJ LEVEL"),
     /the (\w+) copies of the object catalogue/,
   ],
+  [
+    "README.md",
+    "plain blocks whose records carry nothing",
+    all(
+      records.filter(({ r }) => r.kind < 5 && !r.on.length),
+      ({ r }) => r.kind === 0,
+    ),
+    /and (\w+) plain blocks on the disc carry one with nothing on them/,
+  ],
   ["docs/level-format.md", "lattice side", mapData.side, /\*\*fixed at (\d+) x \d+ x \d+\*\*/],
   [
     "docs/level-format.md",
