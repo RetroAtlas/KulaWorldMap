@@ -335,7 +335,9 @@ In play, touching it costs the ball its life, as the rolling stone does. It is a
 
 ### type 56: Captivator, bouncing
 
-LEVEL 45 carries the game's first six, and LEVEL 122's go up in sequence, which is what `f3`, four-valued, reads as: its phase ([motion.md](motion.md)).
+LEVEL 45 carries the numbered levels' first six, though HIDDEN 3, which comes before it in play, carries nine.
+
+LEVEL 122's corkscrews go up in sequence, which is what `f3`, four-valued, reads as: its phase ([motion.md](motion.md)).
 
 In play, touching it costs the ball its life. It is a hazard by the routine the things that travel share.
 

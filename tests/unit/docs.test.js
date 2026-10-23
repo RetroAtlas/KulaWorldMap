@@ -997,9 +997,9 @@ const reasonClaims = [
   ],
   [
     "type 56",
-    "the first corkscrews",
-    first(on(56)),
-    /^(LEVEL \d+) carries the game's first (\w+), and LEVEL 122's/m,
+    "the numbered levels' first corkscrews, and the level before them in play with some",
+    [...first(on(56)), ...ahead(on(56))],
+    /^(LEVEL \d+) carries the numbered levels' first (\w+), though ([A-Z]+ \d+), which comes before it in play, carries (\w+)\./m,
   ],
   ["type 56", "the corkscrews' phases", values(56, "f3"), /`f3`, (\w+)-valued/],
   [
