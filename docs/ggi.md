@@ -90,7 +90,7 @@ The wheel and the corkscrew are laid out as a thing on a block is and spun by th
 
 The ball is laid out from its face and `facing` turned a half about its `x`, so that its own `z` points into the face (`0x800310dc` to `0x8003115c`), and squashed in its own axes before it is turned (`0x800313f0`). So on the screen, whose `y` runs down, a polygon a thing turns toward the view has its first three corners running clockwise.
 
-The motion table ships each type's spin as `order`, the stars' and the wandering ball's world axes as `axes`, and the turn a model takes ahead of its spin as `before` ([motion.md](motion.md)).
+The motion table ([motion.md](motion.md)) ships these readings, each type's spin as `order`, the stars' and the wandering ball's world axes as `axes`, and the turn a model takes ahead of its spin as `before`.
 
 **How the game lights a model.** The draw puts three words of light in each command (`0x8002d3c4` to `0x8002d3d0`), and the renderer multiplies every colour by them, 4096 a whole channel and 255 where a channel passes it (`dcpl`).
 
