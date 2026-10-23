@@ -1,18 +1,32 @@
 # Kula World Map
 
-An interactive map of every level in **Kula World** (PlayStation), read straight off the disc: the block lattice each level is built from, every object the game places on it, and the level's own name, time and start. It is at **[kulaworld.retroatlas.org](https://kulaworld.retroatlas.org/)**, part of [RetroAtlas](https://retroatlas.org/), a collection of interactive maps of classic games.
+An interactive map of every level in **Kula World** (PlayStation), read straight off the disc: the block lattice each level is built from, every object the game places on it, and the level's own name, time and start.
+
+It is at **[kulaworld.retroatlas.org](https://kulaworld.retroatlas.org/)**, part of [RetroAtlas](https://retroatlas.org/), a collection of interactive maps of classic games.
 
 ![The map on Arctic's copy of the object catalogue, with one of nearly every object in the game laid out on one floor](screenshot.png)
 
-All 230 levels are here, which is more than the game ever shows you in one place: 150 numbered levels across ten worlds, 30 bonus and 10 hidden levels, the 20 finals, the 10 Simon rooms, the lesson and the nine copies of the object catalogue that no menu reaches. A level is titled by the number the game's pause screen gives it, which the engine counts through the worlds rather than reading from the level record; where the record calls it something else, the level's note says so. A route can be planned over a level's blocks, stop by stop, drawn the way the ball would roll between them by the game's own rules for a step, and the ball itself can be rolled over the level by the keys, or along the planned route, as the game rolls it, the level turning with it round an edge or up a wall.
+All 230 levels are here, which is more than the game ever shows you in one place: 150 numbered levels across ten worlds, 30 bonus and 10 hidden levels, the 20 finals, the 10 Simon rooms, the lesson and the nine copies of the object catalogue that no menu reaches.
+
+A level is titled by the number the game's pause screen gives it, which the engine counts through the worlds rather than reading from the level record; where the record calls it something else, the level's note says so.
+
+A route can be planned over a level's blocks, stop by stop, drawn the way the ball would roll between them by the game's own rules for a step, and the ball itself can be rolled over the level by the keys, or along the planned route, as the game rolls it, the level turning with it round an edge or up a wall.
 
 The data is read from the NTSC-U release, sold as **Roll Away** (SLUS-00724). The same game shipped as Kula World in PAL territories and Kula Quest in Japan; the level data is the game's own and applies to all three.
 
-The map is an editor as well. Make a level of your own, or copy a shipped one and change it: lay blocks against faces or across the floor, put the game's objects on them, run platforms and lasers between two cells, and have the game's own rules refuse what it could not load. Drafts stay in the browser until they are saved, as the map's own file or as the level the game loads, and drafts can be written onto the game's disc, one or several as one patch for an emulator. [docs/editor.md](docs/editor.md) is the specification of the file format and says how the writers are held to the disc.
+The map is an editor as well. Make a level of your own, or copy a shipped one and change it: lay blocks against faces or across the floor, put the game's objects on them, run platforms and lasers between two cells, and have the game's own rules refuse what it could not load.
+
+Drafts stay in the browser until they are saved, as the map's own file or as the level the game loads, and drafts can be written onto the game's disc, one or several as one patch for an emulator. [docs/editor.md](docs/editor.md) is the specification of the file format and says how the writers are held to the disc.
 
 ## What the disc stores
 
-Every level is one compressed record inside a pack: a fixed 34 x 34 x 34 lattice of cells, each empty, one of five plain kinds of block, or a block carrying a record, and a table of records that are the blocks with something on them, a record being a kind of block and six slots that are its six faces, with an object standing on any face whose slot is filled. The game numbers its blocks and objects and names none of them; the names on the map are curated from the game's own models and textures and from play, and the points from play. The artwork is the game's own, each world's textures replayed from its own file onto the faces the game's loader paints them on, and the objects are drawn from the one mesh file on the disc, moving at the rates the executable moves them. Nothing in a level says how a block looks or how a thing moves: those are rules in the game's code, read off the executable.
+Every level is one compressed record inside a pack: a fixed 34 x 34 x 34 lattice of cells, each empty, one of five plain kinds of block, or a block carrying a record, and a table of records that are the blocks with something on them, a record being a kind of block and six slots that are its six faces, with an object standing on any face whose slot is filled.
+
+The game numbers its blocks and objects and names none of them; the names on the map are curated from the game's own models and textures and from play, and the points from play.
+
+The artwork is the game's own, each world's textures replayed from its own file onto the faces the game's loader paints them on, and the objects are drawn from the one mesh file on the disc, moving at the rates the executable moves them.
+
+Nothing in a level says how a block looks or how a thing moves: those are rules in the game's code, read off the executable.
 
 ## Running and rebuilding
 
@@ -46,4 +60,6 @@ That writes `public/map_data.json`, `public/objects.json` and `public/packs.json
 
 ## Licensing
 
-Copyright (C) 2026 mariobob, under GPL-2.0 (see [LICENSE](LICENSE)). The licence covers the code here and nothing else: the tooling ships no game code, and the extracted level data is © the rights holders in Kula World, presented for research and preservation. A rights holder who wants something taken down can write to hello@retroatlas.org.
+Copyright (C) 2026 mariobob, under GPL-2.0 (see [LICENSE](LICENSE)). The licence covers the code here and nothing else: the tooling ships no game code, and the extracted level data is © the rights holders in Kula World, presented for research and preservation.
+
+A rights holder who wants something taken down can write to hello@retroatlas.org.
