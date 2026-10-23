@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { mapData, annotations, packs } from "./fixtures.js";
+import { mapData, annotations, packs, levelKey } from "./fixtures.js";
 import { LARGEST, packSize } from "../../public/js/format/pak.js";
 import { FACES, PICKUPS } from "../../public/js/format/kwl.js";
 import { FACE_NORMAL } from "../../public/js/format/lattice.js";
@@ -174,6 +174,17 @@ const sameColours = (a, b) =>
   String([...new Set(a)].sort()) === String([...new Set(b)].sort()) ? new Set(a).size : null;
 const worldPacks = packs.packs.filter((p) => worldPack(p.path));
 const catalogueOnly = [...here].filter((t) => !types.has(t)).sort((a, b) => a - b);
+
+const fixture = (name) => JSON.parse(text(`tests/fixtures/${name}`));
+const digests = fixture("kwl-digests.json");
+const digested = Object.keys(digests).filter((k) => k.includes("#"));
+const lastSlot = (test) =>
+  uniform(packs.packs.filter((p) => test(p.path)).map((p) => p.slots.length - 1));
+const levelsOf = (xs) => new Set(xs.map(({ l }) => l)).size;
+const turnedClocks = ofType(8).filter(({ o }) => field(o, "f2") === 4);
+const level125 = named("LEVEL 125");
+const yellowOn125 = (t) =>
+  ofType(t).filter(({ l, o }) => l === level125 && field(o, "f3") === YELLOW).length;
 
 // Each row is the figure a sentence rests on, so a rebuild that moves it cannot go unnoticed.
 const claims = [
@@ -418,6 +429,106 @@ const claims = [
     "slots a cheat reaches",
     sum(worldPacks, (p) => p.slots.length),
     /reaches any of the (\d+) without touching the disc/,
+  ],
+  ["docs/editor.md", "worlds", mapData.themes.length, /one of the (\w+) disc ids/],
+  [
+    "docs/editor.md",
+    "the last slot of a world pack, a finals pack and the Simon rooms' pack",
+    [
+      lastSlot(worldPack),
+      lastSlot((path) => /FI\.PAK/.test(path)),
+      lastSlot((path) => /COPYCAT/.test(path)),
+    ],
+    /a world pack's slot 0 to (\d+), a finals pack's 0 or (\d+) or the Simon rooms' pack's 0 to (\d+)/,
+  ],
+  [
+    "docs/editor.md",
+    "spans with the lower end first",
+    all([...ofKind(5), ...ofKind(8)], lowerFirst),
+    /lower first on all (\d+) spans of the disc/,
+  ],
+  [
+    "docs/editor.md",
+    "switches and teleporters",
+    [ofType(9).length, ofType(5).length],
+    /the disc's (\d+) switches and (\d+) teleporters follow without exception/,
+  ],
+  [
+    "docs/editor.md",
+    "BONUS 30's unnumbered pickups",
+    unnumberedOn("BONUS 30"),
+    /BONUS 30 having left its (\w+) unnumbered/,
+  ],
+  [
+    "docs/editor.md",
+    "types the disc places",
+    new Set(placements.map(({ o }) => o.type)).size,
+    /anything but the (\d+) types the disc places/,
+  ],
+  [
+    "docs/editor.md",
+    "packs a disc image lists",
+    packs.packs.length,
+    /the (\d+) the disc has and any other `\.PAK` the walk finds/,
+  ],
+  [
+    "docs/editor.md",
+    "levels of the community's viewer in the fixture",
+    Object.keys(fixture("orbit-levels.json").levels).length,
+    /`tests\/fixtures\/orbit-levels\.json` holds (\w+) of the 169/,
+  ],
+  [
+    "docs/editor.md",
+    "links of the community's viewer in the fixture",
+    Object.keys(fixture("orbit-levels.json").levels).length,
+    /makes of each of its (\w+) levels/,
+  ],
+  [
+    "docs/editor.md",
+    "levels the digest fixture holds",
+    String(digested.sort()) === String(mapData.levels.map(levelKey).sort())
+      ? digested.length
+      : null,
+    /for each of the (\d+) shipped levels keyed by/,
+  ],
+  [
+    "docs/editor.md",
+    "templates the digests hold",
+    digested.length,
+    /both digests over all (\d+) templates/,
+  ],
+  [
+    "docs/editor.md",
+    "deflate vectors",
+    fixture("deflate-vectors.json").vectors.length,
+    /`tests\/fixtures\/deflate-vectors\.json` holds (\w+) inputs/,
+  ],
+  [
+    "docs/editor.md",
+    "levels whose rebuild has fewer records",
+    [
+      levelsOf(settings.filter(({ r }) => r.type !== 1 && field(r, "f2") !== 1)),
+      levelsOf(records.filter(({ r }) => r.kind < 5 && !r.on.length)),
+    ],
+    /(\d+) that carry a settings record with neither flag set and (\d+) that carry a record with nothing on it/,
+  ],
+  [
+    "docs/editor.md",
+    "clocks left turned",
+    [turnedClocks.length, ofType(8).length],
+    /4 left by the editor on (\d+) of (\d+) clocks/,
+  ],
+  [
+    "docs/editor.md",
+    "lasers with a deleted object's constants",
+    ofKind(8).filter(({ r }) => field(r, "f10") !== -1).length,
+    /a deleted object's constants on (\w+) lasers/,
+  ],
+  [
+    "docs/editor.md",
+    "LEVEL 125's yellow teleporters",
+    yellowOn125(9) === 0 ? yellowOn125(5) : null,
+    /LEVEL 125's (\w+) yellow teleporters/,
   ],
   [
     "docs/disc.md",

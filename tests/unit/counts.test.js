@@ -20,7 +20,7 @@ import { levelPoints, tallied, playsBonus } from "../../public/js/viewer/draw/po
 import { state } from "../../public/js/viewer/state.js";
 import { SIDE } from "../../public/js/format/lattice.js";
 import { FORMAT } from "../../public/js/format/kwl.js";
-import { blank, counts, toLevel } from "../../public/js/format/project.js";
+import { blank, counts, fromLevel, toLevel } from "../../public/js/format/project.js";
 
 setAnnotations(annotations);
 setObjects(objects);
@@ -31,6 +31,10 @@ const doc = readFileSync(
 );
 const reasons = readFileSync(
   fileURLToPath(new URL("../../docs/annotations.md", import.meta.url)),
+  "utf8",
+);
+const editor = readFileSync(
+  fileURLToPath(new URL("../../docs/editor.md", import.meta.url)),
   "utf8",
 );
 const level = (title) => mapData.levels.find((l) => (l.shown || l.name) === title);
@@ -276,6 +280,12 @@ test("a keyless level with a laser counts its blocks the same way everywhere", (
   assert.equal(tallied(l), 6);
   assert.equal(counts(p, objects.skins.hides).blocks, 6);
   assert.equal(levelPoints(l), 300);
+});
+
+test("editor.md's face count for HIDDEN 10 is the one the checks make", () => {
+  const m = /HIDDEN 10 comes to (\d+) by that count/.exec(editor);
+  assert.ok(m, "editor.md has no sentence giving HIDDEN 10's faces");
+  assert.equal(Number(m[1]), counts(fromLevel(level("HIDDEN 10")), objects.skins.hides).faces);
 });
 
 test("a level of your own marked a Simon room scores by no bonus rule", () => {
