@@ -330,7 +330,7 @@ The arrow keys move the ball, up rolling it onto the next block for as long as i
 
 On a phone the strip is a bar at the foot of the screen, over the scale bar, its one row of text the ball's block, face and heading, or a notice or a verdict while one stands, with the buttons in one row beneath, the planner's strip standing on the bar where it shows and the pad's two parts and the corner's widgets above them.
 
-While the ball is on the level a HUD at the top of the map takes the level line's place, naming the level and showing the time it has left in the middle, the points at its left and the keys still to take at its right, the key drawn as the legend draws it, with the run's total and the Simon rooms' figures in a smaller row under them where they apply; the HUD lies over the view as the pad does, so the ball is framed clear of the strip alone.
+While the ball is on the level a HUD at the top of the map takes the level line's place, naming the level and showing the seconds it has left in the middle, the points at its left and the keys still to take at its right, the key drawn as the legend draws it, with the run's total and the Simon rooms' figures in a smaller row under them where they apply; the HUD lies over the view as the pad does, so the ball is framed clear of the strip alone.
 
 ### The jump, the fall and the dust
 
@@ -356,7 +356,7 @@ The ball rolls at the game's own pace, turns and tumbles over the game's own fra
 
 ### What the ball takes
 
-The ball takes what the game's ball takes: a coin, a gem, a key, the sunglasses, a fruit, the hourglass or a pill is gone from its face, its painted shadow with it, as the ball comes within reach of it, in the game's own burst of sparks, which lights the faces about it for a moment, and the HUD counts the points beside the time and the keys still to take, and the run's total under them while a run is on, as below.
+The ball takes what the game's ball takes: a coin, a gem, a key, the sunglasses, a fruit, the hourglass or a pill is gone from its face, its painted shadow with it, as the ball comes within reach of it, in the game's own burst of sparks, which lights the faces about it for a moment.
 
 The hourglass turns the clock round as it does in the game, leaving two minutes less what it had and scoring for each second it leaves.
 
@@ -436,7 +436,6 @@ A Simon room, one of the game's or a level of your own marked one, is played as 
 - Up rolls the ball a block at a time, a held up rolling on after a short rest on each block.
 - Space held with up jumps the ball two blocks on.
 - Left and right turn the ball a quarter turn each for as long as they are held, a turn every few frames at rest.
-- Down, which the game's pad has not, does nothing there.
 
 The HUD counts the round and the moves it asks: the first round asks two moves, after which the strip says Well Done! and the room starts again asking those two moves as they were made and two more, round after round, while a move unlike the one made in the round before ends the room with the game's Wrong Move!, the round lost, and the moves start afresh from the first round, as they do after a fall.
 
@@ -448,7 +447,7 @@ A wrong move, or a fall, loses the round and scores a point for the other player
 
 ### The clock and the opening
 
-The level's clock runs from the time the level gives, counting down as the game's does while the ball is on the level, and the HUD shows the seconds it has left; the level opens with the view coming to the ball and the keys live after the game's own short hold, with no fly-in, so it takes no key for its first few frames, and a key tapped before then is kept for the opening's end, while a key held through them is read as held, not pressed, once they are over.
+The level's clock runs from the time the level gives, counting down as the game's does while the ball is on the level; the level opens with the view coming to the ball and the keys live after the game's own short hold, with no fly-in, so it takes no key for its first few frames, and a key tapped before then is kept for the opening's end, while a key held through them is read as held, not pressed, once they are over.
 
 The clock stands while the ball is on a clock face, and through the Simon rooms, as it does in the game.
 
@@ -463,7 +462,7 @@ When the time runs out, the ball falls off the level, or the level is done, the 
 
 The ending lasts until Space, Enter or a tap on the pad, or the time one of the slower swings takes, near six seconds on any level, starts a level again, with the clock full and the view coming round behind the ball, as the game loads a level after an ending: the same level from its start, everything the ball took back on its face and the level's switches as it was loaded with, unless a run is on, with Play on through the levels on in Settings, when a way out goes on instead to the level the game picks, the world's next level, or, once the five fruit are banked, one of its three bonus levels, the first opened by the world's first five levels, the second by the next five levels and the third by the last five levels, and by the hidden exit its hidden level, a bonus or a hidden level going back to the level after the one that led to it, or on to the next world's first level where that was the world's last level, as the last level itself does.
 
-The run's total goes with the ball, the HUD, the level line and the sidebar follow the level as choosing it would, and a link copied then opens the level the ball is on.
+The run's total goes with the ball, and the HUD, the level line and the sidebar follow the level as choosing it would.
 
 A level of your own and a final start again from their own start after every ending, run or no run, as do the last world's last level and the bonus or hidden level it leads to, the game having no world to go on to, and a Simon room with no run on, while with a run on a failed round goes on to the room the match picks, as above.
 
