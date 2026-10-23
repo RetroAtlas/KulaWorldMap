@@ -88,16 +88,16 @@ Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/contact.
 
 `play/play.js` reaches the map only through the seams:
 
-- The frame's travellers through `movingWith`, its four hooks and `runWith` in `render.js`, its marks on the blocks reaching `skins.js` through `faceSkin`'s marked argument as the game's own paint for a marked face and not as a branch of play's.
+- The frame's travellers through `movingWith`, its four hooks, `runWith` and its `density-changed` event in `render.js`, its marks on the blocks reaching `skins.js` through `faceSkin`'s marked argument as the game's own paint for a marked face and not as a branch of play's.
 - The camera's `frame`, `anchored` and `parked` in `state.js`.
-- `fitWith` and the `link-opening` event in `navigate.js`.
+- `fitWith` and the `level-changed`, `level-updated` and `link-opening` events in `navigate.js`.
+- The switches' `show-changed` event in `sidebar.js`.
 - `ballsWith` and a traveller's `tint` and `body` in `things.js`.
-- `lightsWith` in `lights.js`.
-- `adoptCourse` and `current` in `course.js`.
+- `adoptCourse`, `current` and the `course-changed` event in `course.js`.
 - `tipWith` in `interaction.js`.
-- The panel's `onShow` and the `play-changed` event the editor listens to.
+- The panel's `onShow` and `go-to` event in `detail.js`, and the `play-changed` event the editor listens to.
 
-So the faithful modules carry no branch of play's either; `play/dust.js` and `play/effects.js` are its own.
+So the faithful modules carry no branch of play's either; `play/dust.js` and `play/effects.js` are its own, and `play/effects.js` casts its light through `lightsWith` in `lights.js`.
 
 "How it is built" in [docs/viewer.md](docs/viewer.md) says what each of play's modules computes and what play hands the map through its seams.
 
