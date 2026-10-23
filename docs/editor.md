@@ -341,8 +341,6 @@ A draft changed here since the last write is kept until that write, one deleted 
 
 `edits` counts the changes since the last save: a step adds one, undo takes one away and redo adds it back, a run of title letters typed within a second of each other counts once, or not at all where it ends where it began, and the count never falls below zero.
 
-The store never reads the `kula.survey` key an earlier notebook left in some browsers.
-
 The steps a draft took, which undo and redo walk, live in the editor's memory alone (`public/js/editor/trail.js`): one step a user action that changes the document, as `same` in `public/js/format/project.js` compares two, so one that leaves it as it was takes none, with a cap of 200, title letters typed within a second of each other coalescing into one step so that a pause starts another, and a run of them that brings the document back to where its step began taking the step away, never stored, never in a file, and dropped when the draft is deleted or another tab's copy of it is taken.
 
 ## Files
