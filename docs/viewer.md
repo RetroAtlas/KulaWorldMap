@@ -486,7 +486,7 @@ The URL is a permalink: `#INCA/11/45,35/0.90/17,17,17/0,0/33` is the level by it
 
 While the level is framed to fit the window, the link says `fit` in place of the zoom, the cell and the pan (`#INCA/11/45,35/fit/33`), so it opens framed to whatever window it is opened in, as one that stops at the turn does; a link that names the zoom, the cell or the pan holds the view there, and one that names the zoom alone opens at that zoom centred on the blocks, as a fit is.
 
-While the ball is being rolled the link keeps the view it was put down from, so a link copied then opens the level as it looked before, and playing itself is never in a link.
+While the ball is being rolled the link keeps the view the ball was first put down from, so a link copied then opens the level as it looked before, or, once a run has gone on to another level, opens that level in the same view, and playing itself is never in a link.
 
 Turning, panning, zooming, slicing and picking bring the entry up to date once the view has rested; choosing a level or a find makes a history entry at once, with what waits written onto the entry beneath it first, so Back returns to where you were; and Back and Forward read the bar rather than write it.
 
