@@ -4,7 +4,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { mapData, annotations, packs } from "./fixtures.js";
 import { LARGEST, packSize } from "../../public/js/format/pak.js";
-import { PICKUPS } from "../../public/js/format/kwl.js";
+import { FACES, PICKUPS } from "../../public/js/format/kwl.js";
+import { FACE_NORMAL } from "../../public/js/format/lattice.js";
 
 const text = (path) =>
   readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
@@ -39,7 +40,8 @@ const number = (s) => {
 // A capture is a figure where it reads as one, and a name otherwise.
 const read = (s) => (Number.isNaN(number(s)) ? s : number(s));
 
-const inWorld = (l) => !/FI\.PAK|COPYCAT/.test(l.pack);
+const worldPack = (path) => !/FI\.PAK|COPYCAT/.test(path);
+const inWorld = (l) => worldPack(l.pack);
 const levels = (test) => mapData.levels.filter(test).length;
 const SECTOR = 2048;
 const sum = (xs, f) => xs.reduce((n, x) => n + f(x), 0);
@@ -86,19 +88,47 @@ const ends = (r) => [r.f.slice(2, 5), r.f.slice(5, 8)];
 const lowerFirst = ({ r }) => ends(r)[0].every((v, i) => v <= ends(r)[1][i]);
 const oneAxis = ({ r }) => ends(r)[0].filter((v, i) => v !== ends(r)[1][i]).length === 1;
 const beamEnds = ofKind(8).flatMap(({ l, r }) => ends(r).map((end) => inLattice(l, end)));
+// A span stands on one end, its type the way to the other in the game's numbering of the six.
+const headed = ({ r }) => {
+  const own = [r.x, r.y, r.z];
+  const others = ends(r).filter((end) => String(end) !== String(own));
+  return (
+    others.length === 1 &&
+    String(FACE_NORMAL[r.type]) === String(others[0].map((v, i) => Math.sign(v - own[i])))
+  );
+};
 
 const settings = ofKind(9);
 const lastRecord = ({ l, r }) => l.records.at(-1) === r;
 const hiddenFlag = settings.filter(({ r }) => r.type === 1);
+const onHiddenSlot = ({ l }) => inWorld(l) && l.index === 18;
 const fromAfar = settings.filter(({ r }) => field(r, "f2") === 1);
 const onEmptyCell = settings.filter(({ l, r }) => !inLattice(l, [r.x, r.y, r.z]));
 
-// Every teleporter with the one its link names, a record's index times sixteen plus a face.
-const teleporters = mapData.levels.flatMap((l) => {
+// Every teleporter with the one its link names, a record's index times sixteen plus a face, and
+// the rings the links send the ball round.
+const teleporters = [];
+const rings = [];
+for (const l of mapData.levels) {
   const at = new Map();
   l.records.forEach((r, k) => r.on.forEach((o) => o.type === 5 && at.set(k * 16 + o.face, o)));
-  return [...at.values()].map((o) => ({ o, to: at.get(field(o, "f7")) }));
-});
+  for (const o of at.values()) teleporters.push({ o, to: at.get(field(o, "f7")) });
+  const seen = new Set();
+  for (const [link, o] of at) {
+    let size = 0;
+    let k = link;
+    while (at.has(k) && !seen.has(k)) {
+      seen.add(k);
+      size++;
+      k = field(at.get(k), "f7");
+    }
+    if (size && k === link) rings.push({ l, colour: field(o, "f3"), size });
+  }
+}
+const toItsColour = ({ o, to }) => to && field(to, "f3") === field(o, "f3");
+const [YELLOW, BLUE, GREEN, RED] = [0, 1, 2, 3];
+const ring = (t, colour) => rings.find((g) => title(g.l) === t && g.colour === colour)?.size;
+const selfRings = (l) => rings.filter((g) => g.l === l && g.size === 1).length;
 
 const bonus = mapData.levels.filter((l) => inWorld(l) && [15, 16, 17].includes(l.index));
 const rooms = mapData.levels.filter((l) => /COPYCAT/.test(l.pack));
@@ -113,15 +143,37 @@ const worth = (t, points) =>
   );
 const withoutCommonFruit = ({ l }) => !on(46)(l);
 const hiddenExits = mapData.levels.filter(on(26));
+const pickups = placements.filter(({ o }) => PICKUPS.includes(o.type));
+const unnumbered = pickups.filter(({ o }) => field(o, "f5") === -1);
 // A level's pickups where they are the only ones in the game whose number is unset, else null.
 const unnumberedOn = (t) => {
-  const pickups = placements.filter(({ o }) => PICKUPS.includes(o.type));
   const its = pickups.filter(({ l }) => title(l) === t);
-  const unset = pickups.filter(({ o }) => field(o, "f5") === -1);
-  return unset.length === its.length && unset.every(({ l }) => title(l) === t) ? its.length : null;
+  return unnumbered.length === its.length && unnumbered.every(({ l }) => title(l) === t)
+    ? its.length
+    : null;
 };
 const depths = cellsOf(named("HIDDEN 10")).map(([, , z]) => z);
 const frame = depths.filter((z) => z !== 32);
+const curated = Object.values(annotations.levels).filter((e) => "score" in e).length;
+
+const extent = (l, axis) => l.max[axis] - l.min[axis];
+const thinnestDown = (l) => extent(l, 2) < extent(l, 0) && extent(l, 2) < extent(l, 1);
+const atDepth = (l, z) => cellsOf(l).filter(([, , depth]) => depth === z).length;
+const high = (l) => l.header >> 16;
+const letterRows = [
+  ...new Set(cellsOf(named("HIDDEN 10")).flatMap(([, y, z]) => (z === 32 ? [y] : []))),
+].sort((a, b) => a - b);
+// The height of each line of the lettering, a line being a run of rows next to one another.
+const lineHeights = letterRows.reduce(
+  (hs, y, i) => (y === letterRows[i - 1] + 1 ? [...hs.slice(0, -1), hs.at(-1) + 1] : [...hs, 1]),
+  [],
+);
+const level98 = named("LEVEL 98");
+// How many colours two lists share where they hold the same ones, else null.
+const sameColours = (a, b) =>
+  String([...new Set(a)].sort()) === String([...new Set(b)].sort()) ? new Set(a).size : null;
+const worldPacks = packs.packs.filter((p) => worldPack(p.path));
+const catalogueOnly = [...here].filter((t) => !types.has(t)).sort((a, b) => a - b);
 
 // Each row is the figure a sentence rests on, so a rebuild that moves it cannot go unnoticed.
 const claims = [
@@ -175,9 +227,9 @@ const claims = [
   ["docs/level-format.md", "distinct types", types.size, /\*\*(\d+) distinct object types\*\*/],
   [
     "docs/level-format.md",
-    "levels at time 99",
-    mapData.levels.filter((l) => l.time === 99).length,
-    /99 on (\d+) of the 230 levels/,
+    "levels at time 99 and below it",
+    [levels((l) => l.time === 99), mapData.levels.length, levels((l) => l.time < 99)],
+    /99 on (\d+) of the (\d+) levels and lower on the other (\w+)/,
   ],
   [
     "docs/level-format.md",
@@ -190,6 +242,182 @@ const claims = [
     "types the catalogue covers",
     [covered.length, types.size],
     /covering \*\*(\d+) of the game's (\d+) object types\*\*/,
+  ],
+  [
+    "docs/level-format.md",
+    "levels thinnest along z",
+    [levels(thinnestDown), mapData.levels.length],
+    /it is the thinnest of the three on (\d+) of the (\d+) levels/,
+  ],
+  [
+    "docs/level-format.md",
+    "the catalogue's block above its floor",
+    [atDepth(catalogue, 14), atDepth(catalogue, 17)],
+    /`OBJ LEVEL` puts (\w+) block at `z=14` against a floor of (\d+) at `z=17`/,
+  ],
+  [
+    "docs/level-format.md",
+    "HIDDEN 10's blocks, its frame and its lettering",
+    [depths.length, frame.length, depths.length - frame.length, 32 - Math.max(...frame)],
+    /carries (\d+) blocks of which only (\d+) are the level; the other (\d+) lie flat on `z=32`, the floor of the lattice, (\d+) blocks below anything the ball can stand on/,
+  ],
+  [
+    "docs/level-format.md",
+    "the height of HIDDEN 10's lettering",
+    uniform(lineHeights),
+    /in block capitals (\w+) blocks tall/,
+  ],
+  [
+    "docs/level-format.md",
+    "headers",
+    [
+      levels((l) => l.header === l.placed),
+      mapData.levels.length,
+      levels((l) => l.header < 0),
+      Math.min(...mapData.levels.map((l) => l.header)),
+    ],
+    /equals the placed-cell count on (\d+) of the (\d+) levels, is negative on (\d+), down to (-\d+)/,
+  ],
+  [
+    "docs/level-format.md",
+    "headers' high halves",
+    [levels((l) => high(l) === -1), levels((l) => high(l) === 0)],
+    /Its high half is `-1` on exactly the (\d+) levels where the word is negative and `0` on the other (\d+)/,
+  ],
+  [
+    "docs/level-format.md",
+    "objects a record carries",
+    [FACES, records.filter(({ r }) => r.on.length === 2).length],
+    /So a block carries up to (\w+) objects, (\d+) carry two/,
+  ],
+  [
+    "docs/level-format.md",
+    "HIDDEN 10's objects",
+    all(
+      placements.filter(({ l }) => title(l) === "HIDDEN 10"),
+      ({ o }) => o.face === 3,
+    ),
+    /`HIDDEN 10` puts all (\w+) of its objects in slot 3/,
+  ],
+  [
+    "docs/level-format.md",
+    "spans whose type is the way to the far end",
+    [all(ofKind(8), headed), all(ofKind(5), headed)],
+    /far end of the beam, on all (\d+) and on the (\d+) kind-5 records with the same layout/,
+  ],
+  [
+    "docs/level-format.md",
+    "levels whose last record is the settings",
+    all(settings, lastRecord),
+    /Kind 9 is the last record on (\d+) levels/,
+  ],
+  [
+    "docs/level-format.md",
+    "hidden levels",
+    all(hiddenFlag, onHiddenSlot),
+    /and it is 1 on exactly the (\w+);/,
+  ],
+  [
+    "docs/level-format.md",
+    "acid blocks",
+    inEachCopy(style(4)),
+    /Style 4 is (\w+) cell in each copy of `OBJ LEVEL` and nowhere else/,
+  ],
+  [
+    "docs/level-format.md",
+    "levels where something cannot be collected",
+    curated,
+    /on the other (\d+) something cannot be collected/,
+  ],
+  [
+    "docs/level-format.md",
+    "curated scores",
+    curated,
+    /so does the best score on each of the (\d+)/,
+  ],
+  [
+    "docs/level-format.md",
+    "lasers on one axis",
+    all(ofKind(8), oneAxis),
+    /on all (\d+) in the game the pair differs on exactly one axis/,
+  ],
+  [
+    "docs/level-format.md",
+    "LEVEL 98's lasers and switches",
+    [
+      kindOn(8)(level98),
+      on(9)(level98),
+      sameColours(
+        ofKind(8)
+          .filter(({ l }) => l === level98)
+          .map(({ r }) => r.colour),
+        ofType(9)
+          .filter(({ l }) => l === level98)
+          .map(({ o }) => field(o, "f3")),
+      ),
+    ],
+    /LEVEL 98's (\w+) lasers and (\w+) switches read the same (\w+) numbers/,
+  ],
+  ["docs/level-format.md", "slots", FACES * records.length, /in all ([\d,]+) slots/],
+  [
+    "docs/level-format.md",
+    "LEVEL 68's arrows on a -y face",
+    all(
+      ofType(28).filter(({ l, o }) => title(l) === "LEVEL 68" && o.face === 3),
+      ({ o }) => field(o, "f2") === 3,
+    ),
+    /LEVEL 68's (\w+) arrows on a `-y` face, reading 3/,
+  ],
+  [
+    "docs/level-format.md",
+    "catalogue-only types",
+    [catalogueOnly.length, ...catalogueOnly],
+    /the (\w+) catalogue-only types (\d+) and (\d+)/,
+  ],
+  [
+    "docs/level-format.md",
+    "pickups whose number is unset",
+    all(
+      unnumbered,
+      ({ l, o }) =>
+        title(l) === "BONUS 30" && field(o, "f9") === -1 && field(o, "f10") === -1 && o.v === -1,
+    ),
+    /The (\d+) pickups whose number is unset, all on BONUS 30 with their `f9`, `f10` and `f14` unset too/,
+  ],
+  ["docs/level-format.md", "switches", ofType(9).length, /(\d+) switches in all/],
+  [
+    "docs/level-format.md",
+    "teleporters and the rings they send the ball round",
+    [
+      all(teleporters, toItsColour),
+      rings.filter((g) => g.size === 2).length,
+      rings.filter((g) => g.size === 1).length,
+      inEachCopy(selfRings),
+      rings.filter((g) => g.size > 2).length,
+      ring("LEVEL 68", BLUE),
+      ring("LEVEL 68", YELLOW),
+      ring("LEVEL 70", GREEN),
+      ring("BONUS 23", RED),
+    ],
+    /All (\d+) name a teleporter of their own colour, which the build checks as well, and a colour's teleporters on a level send the ball round one ring: (\d+) pairs, (\d+) that name themselves, (\w+) in each copy of OBJ LEVEL, and (\w+) longer rings, LEVEL 68's (\w+) blue and (\w+) yellow, LEVEL 70's (\w+) green and BONUS 23's (\w+) red/,
+  ],
+  [
+    "docs/level-format.md",
+    "a world pack's slots",
+    uniform(worldPacks.map((p) => p.slots.length)),
+    /A world's pack holds (\w+) slots/,
+  ],
+  [
+    "docs/level-format.md",
+    "copies of the catalogue among the worlds",
+    [copies.length, mapData.themes.length],
+    /ships in (\w+) of the (\w+) worlds, identical every time/,
+  ],
+  [
+    "docs/level-format.md",
+    "slots a cheat reaches",
+    sum(worldPacks, (p) => p.slots.length),
+    /reaches any of the (\d+) without touching the disc/,
   ],
   [
     "docs/disc.md",
@@ -209,12 +437,7 @@ const claims = [
     [packs.room.size, packs.room.lba, Math.ceil(packs.room.size / SECTOR)],
     /`\/3\.00`, the last file: ([\d,]+) bytes at sector (\d+), ([\d,]+) sectors/,
   ],
-  [
-    "docs/annotations.md",
-    "curated scores",
-    Object.values(annotations.levels).filter((e) => "score" in e).length,
-    /each of the other (\d+) curates its `score`/,
-  ],
+  ["docs/annotations.md", "curated scores", curated, /each of the other (\d+) curates its `score`/],
 ];
 
 for (const [file, what, value, pattern] of claims) {
@@ -298,12 +521,7 @@ const reasonClaims = [
     all(settings, lastRecord),
     /^The last record on (\d+) levels/m,
   ],
-  [
-    "kind 9",
-    "hidden levels",
-    all(hiddenFlag, ({ l }) => inWorld(l) && l.index === 18),
-    /and is 1 on exactly the (\w+)\./,
-  ],
+  ["kind 9", "hidden levels", all(hiddenFlag, onHiddenSlot), /and is 1 on exactly the (\w+)\./],
   [
     "kind 9",
     "settings records on empty cells",
@@ -319,7 +537,7 @@ const reasonClaims = [
   [
     "type 5",
     "teleporters leading to one of their colour",
-    all(teleporters, ({ o, to }) => to && field(to, "f3") === field(o, "f3")),
+    all(teleporters, toItsColour),
     /on all (\d+) one of the same colour/,
   ],
   [
