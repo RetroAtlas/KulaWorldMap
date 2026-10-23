@@ -160,6 +160,13 @@ const worth = (t, points) =>
     ofType(37).filter(({ l }) => title(l) === t),
     ({ o }) => coin.variants[field(o, coin.by)]?.points === points,
   );
+// The colour every coin on a level shows, by its tier's name, or null where they differ.
+const coinColour = (l) =>
+  uniform(
+    ofType(37)
+      .filter((p) => p.l === l)
+      .map(({ o }) => /\((\w+)\)$/.exec(coin.variants[field(o, coin.by)].name)[1]),
+  );
 const withoutCommonFruit = ({ l }) => !on(46)(l);
 const hiddenExits = mapData.levels.filter(on(26));
 const pickups = placements.filter(({ o }) => PICKUPS.includes(o.type));
@@ -1009,9 +1016,9 @@ const reasonClaims = [
       placements.filter(({ l }) => title(l) === "HIDDEN 10"),
       ({ o }) => o.face === 3 && [30, 7, 31, 37, 36].includes(o.type),
     ) && [30, 7].every((t) => on(t)(named("HIDDEN 10")) === 1)
-      ? [31, 37, 36].map((t) => on(t)(named("HIDDEN 10")))
+      ? [on(31), on(37), coinColour, on(36)].map((f) => f(named("HIDDEN 10")))
       : null,
-    /the start, the exit, (\w+) keys, (\w+) (?:\w+ )?coins and (\w+) gems, stands on its `-y` face/,
+    /the start, the exit, (\w+) keys, (\w+) (\w+) coins and (\w+) gems, stands on its `-y` face/,
   ],
 ];
 

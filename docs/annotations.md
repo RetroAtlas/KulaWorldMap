@@ -441,4 +441,4 @@ Its thirty pickups are the only ones in the game without a pickup number.
 
 ### /HELL/HELL.PAK#18: HIDDEN 10
 
-The 160 blocks of lettering lie flat on z=32, the floor of the lattice and 22 blocks below the playable structure. The other 18 are a frame standing in the xz plane, and everything the level places, the start, the exit, four keys, eight bronze coins and four gems, stands on its `-y` face ([level-format.md](level-format.md) has how the lettering fixed the handedness).
+The 160 blocks of lettering lie flat on z=32, the floor of the lattice and 22 blocks below the playable structure. The other 18 are a frame standing in the xz plane, and everything the level places, the start, the exit, four keys, eight gold coins and four gems, stands on its `-y` face ([level-format.md](level-format.md) has how the lettering fixed the handedness).
