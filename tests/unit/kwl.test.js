@@ -1225,12 +1225,12 @@ test("lines of one shape are kept to three and the rest counted, in place", () =
   assert.equal(repairs, 1025);
 });
 
-test("a level file's name, world, pack and index come from the caller alone", () => {
+test("a level file's name, world, pack, index and room mark come from the caller alone", () => {
   const bytes = writeKwl(PLAYGROUND);
   const bare = levelOf(bytes);
   assert.deepEqual(
-    [bare.name, bare.theme, "pack" in bare, "draft" in bare],
-    ["", "", false, false],
+    [bare.name, bare.theme, "pack" in bare, "draft" in bare, "simon" in bare],
+    ["", "", false, false, false],
   );
   const draft = levelOf(bytes, {
     name: "Spiral",
@@ -1238,10 +1238,11 @@ test("a level file's name, world, pack and index come from the caller alone", ()
     pack: "/DRAFT/DRAFT.PAK",
     index: 7,
     draft: 7,
+    simon: true,
   });
   assert.deepEqual(
-    [draft.name, draft.theme, draft.pack, draft.index, draft.draft],
-    ["Spiral", "HAZE", "/DRAFT/DRAFT.PAK", 7, 7],
+    [draft.name, draft.theme, draft.pack, draft.index, draft.draft, draft.simon],
+    ["Spiral", "HAZE", "/DRAFT/DRAFT.PAK", 7, 7, true],
   );
   assert.deepEqual([draft.placed, draft.header, draft.time], [9, 9, 45]);
   assert.deepEqual(

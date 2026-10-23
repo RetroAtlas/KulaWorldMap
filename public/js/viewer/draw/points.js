@@ -1,7 +1,7 @@
 import { state } from "../state.js";
 import { SIDE, FACE_NORMAL } from "../../format/lattice.js";
 import { OFF_LATTICE, index, levelMarkers, markerPoints, skinsTable } from "../data.js";
-import { keyed } from "../skins.js";
+import { keyed, simonRoom } from "../skins.js";
 import { hasFace } from "./blocks.js";
 
 // A level with no key scores every block the ball rolls onto, the first time,
@@ -15,7 +15,7 @@ const inner = (v) => v >= 1 && v <= SIDE - 2;
 /** Whether the level plays by the bonus rules: no key, outside the Simon rooms. */
 export function playsBonus(l) {
   const skins = skinsTable();
-  return !!skins && !keyed(skins, l) && l.pack !== skins.copycat;
+  return !!skins && !keyed(skins, l) && !simonRoom(skins, l);
 }
 
 /** The blocks a level with no key counts. */

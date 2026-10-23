@@ -934,7 +934,8 @@ export function writeProject(project) {
   return `{\n${lines.join("\n")}\n}\n`;
 }
 
-/** The level the viewer draws for a draft: what the game would load of it. */
+/** The level the viewer draws for a draft: what the game would load of it, and whether it is a
+    Simon room. */
 export const toLevel = (project, id) =>
   levelOf(writeKwl(project), {
     name: project.title || UNTITLED,
@@ -942,4 +943,5 @@ export const toLevel = (project, id) =>
     pack: DRAFT_PACK,
     index: id,
     draft: id,
+    simon: !!project.simon,
   });

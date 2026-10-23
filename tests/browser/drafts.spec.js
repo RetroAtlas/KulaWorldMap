@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { settle, steps, textured, trackErrors } from "./helpers.js";
+import { settle, steps, textured, topPixels, trackErrors } from "./helpers.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const KEY = "kula.drafts";
@@ -96,6 +96,47 @@ const faced = (page, face, object) =>
     },
     [face, object],
   );
+/** Put `block` into the shown draft at `cell`, or take the block there out with null, through the
+    model. */
+const laid = (page, cell, block) =>
+  page.evaluate(
+    async ([cell, block]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { get, update }, { setBlock, removeBlock }] = await Promise.all(
+        ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
+      );
+      const id = state.lvl.draft;
+      update(id, block ? setBlock(get(id).doc, cell, block) : removeBlock(get(id).doc, cell));
+    },
+    [cell, block],
+  );
+/** Mark the shown draft a Simon room, or unmark it, through the model. */
+const roomed = (page, simon) =>
+  page.evaluate(async (simon) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setMeta }] = await Promise.all(
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
+    );
+    const id = state.lvl.draft;
+    update(id, setMeta(get(id).doc, { simon }));
+  }, simon);
+/** How the level on screen is drawn: its blocks, its things, its room mark and whether it wears
+    the bonus artwork. */
+const drawnAs = (page) =>
+  page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { objectCount, skinsTable }, { lookOf }] = await Promise.all(
+      ["viewer/state.js", "viewer/data.js", "viewer/skins.js"].map(at),
+    );
+    const l = state.lvl;
+    const world = state.data.themes.findIndex((t) => t.id === l.theme);
+    return {
+      placed: l.placed,
+      objects: objectCount(l),
+      simon: l.simon,
+      bonus: lookOf(skinsTable(), l, world).bonus,
+    };
+  });
 // what stands where on the level on screen, as the game stores it
 const standing = (page) =>
   page.evaluate(async () => {
@@ -376,6 +417,59 @@ test("new asks for editing once its level is open, and copy this level does not"
   await expect(page.locator("#draftRows button")).toHaveCount(3);
   const made = (await shown(page)).draft;
   expect(await page.evaluate(() => window.__wanted)).toEqual([made]);
+  expect(errors).toEqual([]);
+});
+
+test("a level of your own marked a Simon room is drawn with its world's artwork, where one with no key wears the bonus artwork and one with a key its world's", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await page.keyboard.press("v");
+  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await textured(page);
+  // a plain block well away from the start, whose ball stands on the first block
+  const probed = [21, 17, 17];
+  await laid(page, probed, { kind: 0 });
+  await expect
+    .poll(() => drawnAs(page))
+    .toEqual({ placed: 2, objects: 1, simon: false, bonus: true });
+  const bonus = await topPixels(page, probed);
+  expect(bonus.length).toBeGreaterThan(100);
+  await faced(page, 1, { type: 31 });
+  await expect
+    .poll(() => drawnAs(page))
+    .toEqual({ placed: 2, objects: 2, simon: false, bonus: false });
+  const arcade = await topPixels(page, probed);
+  expect(arcade).not.toEqual(bonus);
+  await faced(page, 1, null);
+  await expect
+    .poll(() => drawnAs(page))
+    .toEqual({ placed: 2, objects: 1, simon: false, bonus: true });
+  expect(await topPixels(page, probed)).toEqual(bonus);
+  // marked a room, the keyless level wears its world's artwork, as a level with a key does
+  await roomed(page, true);
+  await expect
+    .poll(() => drawnAs(page))
+    .toEqual({ placed: 2, objects: 1, simon: true, bonus: false });
+  expect(await topPixels(page, probed)).toEqual(arcade);
+  await expect(page.locator("#draftPlays")).toHaveText("Plays as a Simon room.");
+  // a key on the room makes an arcade level of it, drawn the same
+  await faced(page, 1, { type: 31 });
+  await expect
+    .poll(() => drawnAs(page))
+    .toEqual({ placed: 2, objects: 2, simon: true, bonus: false });
+  expect(await topPixels(page, probed)).toEqual(arcade);
+  await expect(page.locator("#draftPlays")).toHaveText("Plays as an arcade level.");
+  await faced(page, 1, null);
+  await roomed(page, false);
+  await expect
+    .poll(() => drawnAs(page))
+    .toEqual({ placed: 2, objects: 1, simon: false, bonus: true });
+  expect(await topPixels(page, probed)).toEqual(bonus);
   expect(errors).toEqual([]);
 });
 

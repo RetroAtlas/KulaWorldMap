@@ -21,11 +21,16 @@ const FACE_ALONG = [
 export const keyed = (skins, l) =>
   l.records.some((r) => r.kind < skins.keys.kinds && r.on.some((o) => o.type === skins.keys.type));
 
+/** Whether the game plays the level as a Simon room: one of the rooms' own
+    pack, or a level marked one with no key, since a key makes an arcade
+    level of it. */
+export const simonRoom = (skins, l) => l.pack === skins.copycat || (!!l.simon && !keyed(skins, l));
+
 /** A level with no key wears the bonus skins, unless it is a hidden level or
-    the pack of the mode that plays one pack of its own. */
+    a Simon room. */
 export function lookOf(skins, l, world) {
   const glass = l.records.some((r) => r.kind === skins.hidden.kind && r.type === skins.hidden.type);
-  const bonus = !keyed(skins, l) && !glass && l.pack !== skins.copycat;
+  const bonus = !keyed(skins, l) && !glass && !simonRoom(skins, l);
   return {
     set: skins.sets[bonus ? "bonus" : "arcade"],
     bonus,

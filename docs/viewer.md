@@ -125,6 +125,8 @@ The editor loads only when it is wanted, when a level of your own is made, opene
 
 `new` makes a level of one plain block and a start in the world on screen and opens it editing, and `copy this level` makes one out of the level on screen, a shipped level as the game loads it or a copy of a draft, and opens it as it is; either is a draft at once, marked "Draft" on the level line and shown on the map as the game would load it.
 
+A level of your own marked a Simon room is shown as the game shows the rooms, with its world's artwork and not the bonus artwork a level with no key wears, and the ball plays it as one, as Rolling the ball below says; a key on it makes it an arcade level all the same, since the game decides that from the keys.
+
 A row shows a draft, with "not saved to a file" and, once there have been changes, how many, undo taking one away and redo giving it back and a typed title counting once; choosing one shows it, as choosing a level does, and a link to it (`#DRAFT/3/...`) opens it on the device that holds it, pasted into the address bar as well as followed at the start, and anywhere else gives way to the view on screen, saying once that the level is kept in another browser.
 
 Where this browser holds levels of its own that could not be read, a row under the drafts counts them and offers to remove them, which asks to be pressed again; they are otherwise kept as they are, and said once, the first time a tab finds them, rather than at every reload.
@@ -427,7 +429,7 @@ The clock stands while the ball is on a clock face, and through the Simon rooms,
 
 ### The Simon rooms
 
-A Simon room is played as the game plays it, one move at a time:
+A Simon room, one of the game's or a level of your own marked one, is played as the game plays it, one move at a time:
 
 - Up rolls the ball a block at a time, a held up rolling on after a short rest on each block.
 - Space held with up jumps the ball two blocks on.

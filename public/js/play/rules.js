@@ -50,6 +50,7 @@ import {
 } from "./hazards.js";
 import { SIDE, cellKey } from "../format/lattice.js";
 import { OFF_LATTICE, layHeading, startsOf, TANGENT } from "../viewer/data.js";
+import { simonRoom } from "../viewer/skins.js";
 import { advance } from "../viewer/travel.js";
 
 const BALL = 30;
@@ -116,9 +117,8 @@ export const roundOf = ({ round, count }) => ({ round: round + 1, moves: count +
 // The other player than `player`'s, the next taken round the players.
 const other = (player, players) => (player + 1) % players;
 
-/** The game's mode word by the level's pack: the Simon rooms' for a room of the Copycat pack,
-    else the arcade's. */
-export const modeOf = (l, { skins }) => (l.pack === skins.copycat ? SIMON : MODE.arcade);
+/** The game's mode word: the Simon rooms' for a room, else the arcade's. */
+export const modeOf = (l, { skins }) => (simonRoom(skins, l) ? SIMON : MODE.arcade);
 
 /** The game the level is played in: `game` carried on where one stands, else a fresh one, the
     Simon rooms' for a room and the arcade's for a level the game counts, or null for a level it
@@ -292,7 +292,7 @@ function formOf(l, skins, keys, mode) {
 
 /** A run of the level from its first frame: the world, its fruit placed by the pickups' fruit
     word as `game` carries it, the ball at the start the game takes or at `at`, and the words the
-    game keeps as the level loads: the game's mode word by the level's pack, the level's word by
+    game keeps as the level loads: the game's mode word for the level, the level's word by
     its keys, its settings record and that mode, that fruit word, the run's bank where the level
     is one the game counts, the flash a level with no key opens in, and the rest as the level's
     start sets them. In a Simon room the run holds a match, `match` where one is carried from a

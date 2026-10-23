@@ -695,7 +695,7 @@ The total starts a game at nothing (`0x800401b4`), so the game keeps no lives bu
 
 The table ships the penalty as `play`'s `points` and the view as its `view`, the no-key level's figures under `bonus` and the hidden level's eye under `hidden`.
 
-The viewer keeps both mode words as a run starts, the game's word by the level's pack and the level's word as the loader numbers it, and stands the eye by the level's word in the three cases: at 0 the arcade's swing, in the Simon rooms too, at 1 the quicker and wider swing and at 2 the still eye, the three angles stepping as before.
+The viewer keeps both mode words as a run starts, the game's word by the level's pack, or by the mark a level of your own carries as a room, and the level's word as the loader numbers it, and stands the eye by the level's word in the three cases: at 0 the arcade's swing, in the Simon rooms too, at 1 the quicker and wider swing and at 2 the still eye, the three angles stepping as before.
 
 The viewer's eye is a zoom: each case starts at the fit, the level whole in the frame, and the two swings draw further and nearer by turns from there, so the still eye stands at the fit, where the arcade's swing starts, and not nearer as the game's eye does.
 

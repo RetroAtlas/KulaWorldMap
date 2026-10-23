@@ -686,7 +686,7 @@ function extent(cells) {
   return cells.length ? { min, max } : { min: [0, 0, 0], max: [0, 0, 0] };
 }
 
-const META = ["name", "shown", "theme", "pack", "index", "draft"];
+const META = ["name", "shown", "theme", "pack", "index", "draft", "simon"];
 
 /** The level of the map's shape the bytes mean, with `meta`'s keys laid over it. */
 export function levelOf(bytes, meta = {}) {

@@ -19,7 +19,7 @@ import { levelPoints, tallied, playsBonus } from "../../public/js/viewer/draw/po
 import { state } from "../../public/js/viewer/state.js";
 import { SIDE } from "../../public/js/format/lattice.js";
 import { FORMAT } from "../../public/js/format/kwl.js";
-import { counts, toLevel } from "../../public/js/format/project.js";
+import { blank, counts, toLevel } from "../../public/js/format/project.js";
 
 setAnnotations(annotations);
 setObjects(objects);
@@ -243,6 +243,17 @@ test("a keyless level with a laser counts its blocks the same way everywhere", (
   assert.equal(tallied(l), 6);
   assert.equal(counts(p, objects.skins.hides).blocks, 6);
   assert.equal(levelPoints(l), 300);
+});
+
+test("a level of your own marked a Simon room scores by no bonus rule", () => {
+  state.data = mapData;
+  const p = blank("HIRO");
+  const bonus = toLevel(p, 1);
+  assert.ok(playsBonus(bonus));
+  assert.equal(levelPoints(bonus), 50 * tallied(bonus));
+  const room = toLevel({ ...p, simon: true }, 1);
+  assert.ok(!playsBonus(room));
+  assert.equal(levelPoints(room), 0);
 });
 
 test("a count of one takes the singular", () => {

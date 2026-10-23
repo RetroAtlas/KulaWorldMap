@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects } from "./fixtures.js";
-import { faceSkin, lookOf, shadowed } from "../../public/js/viewer/skins.js";
+import { faceSkin, lookOf, shadowed, simonRoom } from "../../public/js/viewer/skins.js";
 
 const { skins } = objects;
 const COIN = 37;
@@ -33,6 +33,23 @@ test("a level without a key draws the second set, unless it is hidden or a Simon
   const hidden = lookOf(skins, levelOf([block(COIN), settings(skins.hidden.type)]), 0);
   assert.equal(hidden.bonus, false);
   assert.equal(hidden.glass, true);
+});
+
+test("a level is a Simon room by its pack or by its mark, which a key makes inert, and a room wears its world's set", () => {
+  assert.equal(simonRoom(skins, levelOf([block(COIN)], skins.copycat)), true);
+  assert.equal(simonRoom(skins, levelOf([block(COIN)])), false);
+  assert.equal(simonRoom(skins, { ...levelOf([block(COIN)]), simon: true }), true);
+  assert.equal(simonRoom(skins, { ...levelOf([block(COIN)]), simon: false }), false);
+  assert.equal(simonRoom(skins, { ...levelOf([block(KEY)]), simon: true }), false);
+  const marked = lookOf(skins, { ...levelOf([block(COIN)]), simon: true }, 0);
+  assert.equal(marked.bonus, false);
+  assert.equal(marked.set, skins.sets.arcade);
+  const glass = lookOf(
+    skins,
+    { ...levelOf([block(COIN), settings(skins.hidden.type)]), simon: true },
+    0,
+  );
+  assert.deepEqual([glass.bonus, glass.glass], [false, true]);
 });
 
 const plainTurns = (theme, world) => {

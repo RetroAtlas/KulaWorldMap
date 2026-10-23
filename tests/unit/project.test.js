@@ -1837,3 +1837,14 @@ test("a draft is drawn as the level the game would load", () => {
   assert.equal(toLevel({ ...p, title: "" }, 7).name, UNTITLED);
   assert.equal(toLevel({ ...p, title: "Spiral" }, 7).name, "Spiral");
 });
+
+test("a draft marked a Simon room carries the mark onto the level drawn, and any other carries it false", () => {
+  const p = blank("HIRO");
+  assert.equal(toLevel(p, 7).simon, false);
+  assert.equal(toLevel({ ...p, simon: true }, 7).simon, true);
+  assert.equal(toLevel(setMeta(p, { simon: true }), 7).simon, true);
+  assert.equal(toLevel(setMeta({ ...p, simon: true }, { simon: false }), 7).simon, false);
+  const { simon, ...rest } = p;
+  assert.equal(simon, false);
+  assert.equal(toLevel(rest, 7).simon, false);
+});

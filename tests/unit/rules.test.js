@@ -244,7 +244,7 @@ test("the clock stands while the ball is on a clock face and runs again as it ro
   assert.equal(live.words.clock, full - 11 * play.clock.tick);
 });
 
-test("a run keeps the game's mode word by the level's pack and the level's by its keys, its settings record and that mode, and the clock stands in the Simon rooms", () => {
+test("a run keeps the game's mode word by the level's pack or its mark as a room and the level's by its keys, its settings record and that mode, and the clock stands in the Simon rooms", () => {
   const full = 99 * play.clock.second;
   const keyed = begin(level(row(10, 18), [start()]));
   assert.deepEqual(
@@ -275,6 +275,21 @@ test("a run keeps the game's mode word by the level's pack and the level's by it
   assert.equal(room.words.clock, full, "the clock stands in the Simon rooms");
   assert.equal(room.world.marked.size, 0, "and no block is marked");
   assert.equal(room.words.outcome, 0);
+  const marked = begin({ ...level(row(10, 18), [start()], 99, false), simon: true });
+  assert.deepEqual(
+    [marked.words.mode, marked.words.form, marked.words.bonus, marked.words.keys],
+    [SIMON, FORM.arcade, false, 0],
+    "a level marked a room plays in the rooms' mode",
+  );
+  steps(marked, 60, PAD.up);
+  assert.equal(marked.words.clock, full);
+  assert.equal(marked.world.marked.size, 0);
+  const inert = begin({ ...level(row(10, 18), [start()]), simon: true });
+  assert.deepEqual(
+    [inert.words.mode, inert.words.form, inert.words.bonus],
+    [0, FORM.arcade, false],
+    "which a key makes an arcade level all the same",
+  );
   const arcade = begin(level(row(10, 18), [start()]));
   steps(arcade, 60, PAD.up);
   assert.equal(arcade.words.clock, full - 60 * play.clock.tick, "the arcade's clock falls");
@@ -2793,6 +2808,17 @@ test("with a game the first room from the map's entry opens a match as the menu 
     gameOf({ ...level(row(10, 18), [start()]), pack: "/DRAFT/DRAFT.PAK" }, TABLES),
     null,
   );
+  const marked = {
+    ...level(row(10, 18), [start()], 99, false),
+    pack: "/DRAFT/DRAFT.PAK",
+    simon: true,
+  };
+  assert.deepEqual(
+    gameOf(marked, TABLES),
+    startSimon(ROOMS),
+    "a draft marked a room plays the rooms' game",
+  );
+  assert.equal(stationOf(marked, TABLES), null, "and stands nowhere in the count");
 });
 
 test("a round done passes the turn as the verdict is judged, gives no point, picks the same room and restarts it with the round counted on, the count grown by the table's grow, the index at nothing and the sequence kept, the flipped word standing", () => {

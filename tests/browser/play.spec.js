@@ -359,6 +359,15 @@ const faced = (page, cell, face, object) =>
     },
     [cell, face, object],
   );
+/** Mark the shown draft a Simon room through the model. */
+const roomed = (page, simon) =>
+  page.evaluate(async (simon) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setMeta }] = await Promise.all(
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
+    );
+    update(state.lvl.draft, setMeta(get(state.lvl.draft).doc, { simon }));
+  }, simon);
 /** How many starts the shown level has. */
 const starts = (page) =>
   page.evaluate(async () => {
@@ -4663,6 +4672,72 @@ test("with Play on through the levels on a Simon room plays the game's match: th
     playMatch: "Match 1 : 0",
     playTotal: null,
   });
+  await page.evaluate(() => window.__thaw());
+  expect(errors).toEqual([]);
+});
+
+test("a level of your own marked a Simon room plays as the rooms do: the HUD counts the round and its moves and no blocks, the clock stands, and Up held rolls the ball one block on the latch's fifth frame at rest", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  // two blocks on from the start, which faces -y, so a move has somewhere to roll to
+  await laid(page, [17, 16, 17], { kind: 0 });
+  await laid(page, [17, 15, 17], { kind: 0 });
+  await expect(page.locator("#chipLine")).toContainText("3 blocks");
+  await expect(page.locator("#draftPlays")).toHaveText(
+    "Plays as a bonus level since it has no key.",
+  );
+  await roomed(page, true);
+  await expect(page.locator("#draftPlays")).toHaveText("Plays as a Simon room.");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await expect(page.locator("#playKeys")).toHaveText("Keys 0");
+  await expect
+    .poll(() => roomFigures(page))
+    .toEqual({
+      playRound: "Round 1",
+      playMoves: "2 moves",
+      playTurn: null,
+      playMatch: null,
+      playTotal: null,
+    });
+  const before = await station(page);
+  expect(before).toEqual({ block: [17, 17, 17], face: 0, heading: "-y", moving: false });
+  await frozen(page);
+  expect(await seconds(page)).toBe(99);
+  // past the opening and long at rest, with the clock standing through it all
+  await onward(page, 40);
+  expect(await seconds(page)).toBe(99);
+  const rolled = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw }, { motionTable }, P] = await Promise.all(
+      ["viewer/draw/render.js", "viewer/data.js", "play/play.js"].map(at),
+    );
+    const { hz, play } = motionTable();
+    const key = (type, k) =>
+      document.body.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+    const run = () => {
+      window.__step(1000 / hz);
+      draw();
+    };
+    const seen = [];
+    key("keydown", "ArrowUp");
+    for (let f = 0; f < play.simon.latch + 2 && !seen.includes(true); f++) {
+      run();
+      seen.push(P.station().moving);
+    }
+    key("keyup", "ArrowUp");
+    for (let f = 0; f < 40; f++) run();
+    return { seen, after: P.station(), latch: play.simon.latch };
+  });
+  expect(rolled.seen).toEqual(
+    Array.from({ length: rolled.latch }, (_, i) => i === rolled.latch - 1),
+  );
+  expect(rolled.after).toEqual({ ...before, block: [17, 16, 17] });
+  expect(await seconds(page)).toBe(99);
   await page.evaluate(() => window.__thaw());
   expect(errors).toEqual([]);
 });
