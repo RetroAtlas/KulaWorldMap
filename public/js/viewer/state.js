@@ -21,7 +21,7 @@ export const state = {
   frame: null,
   // while set, the target holds where it was put as the view turns
   anchored: false,
-  // what the view was before a module took it, { cam, target, fitted, slice } or null; links carry it
+  // what a module parked as it took the view, the view as it was among it, or null; links carry that view
   parked: null,
   slice: SIDE - 1,
   view: { w: 0, h: 0, dpr: 1 },
