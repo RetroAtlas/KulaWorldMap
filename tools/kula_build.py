@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Read every level off the disc and write public/map_data.json; every
 object's mesh, with how everything moves and what every face wears, and write
-public/objects.json; and every pack's layout, from which a level is fitted to
-a slot without the image, and write public/packs.json.
+public/objects.json; every pack's layout, from which a level is fitted to a
+slot without the image, and write public/packs.json; and the sprites the
+game's effects draw, and write their sheet to public/tex/sparks.png.
 
     export KULA_DISC="/path/to/Roll Away.bin"
     python3 tools/kula_build.py
