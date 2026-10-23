@@ -82,7 +82,7 @@ The viewer draws a model as the game does, laid out and turned as the game lays 
 
 **How the game lays a model out and turns it.** The renderer takes a vertex's two words as the coprocessor's `x` and `y` and its third as `z` (`0x80053464` to `0x80053480`), so what the build ships as `y`, up off the face, is the game's `z`, and the build's `z`, the way a thing points, is the game's `y`.
 
-A thing on a block is drawn by the camera's matrix times its own times a spin (`0x800603f8`, from `0x80039d7c`): its own, built as the level loads (`0x80039ec0`), lays the model's `z` along the outward normal of its face, its `y` along the face's first tangent turned by its `f2` as a `facing` turns a thing, whatever its type (`0x800359ec`), and its `x` along `y × z`, a turn with no mirror in it.
+A thing on a block is drawn by the camera's matrix times its own times a spin (`0x800603f8`, from `0x80039d7c`): its own, built as the level loads (`0x80039ec0`), lays the model's `z` along the outward normal of its face, its `y` along the face's first tangent turned by its `f2` as a `facing` turns a thing ([level-format.md](level-format.md)), whatever its type (`0x800359ec`), and its `x` along `y × z`, a turn with no mirror in it.
 
 The spin is built from three angles in 4096ths, right-handed turns about the model's own `x`, `y` and `z`, either by `0x80060a38`, which turns it about `z` first and `x` last, for the teleporter, the exits and the gem (`0x80039b38`), or by `0x80060cc8`, which turns it about `x` first and `z` last, for the coins, the key, the fruit, the pills, the hourglass and the catalogue star (`0x80039ac0`); the teleporter, the exits and the gem turn about `z` alone, so the first routine's order tells only on the stars and the wandering ball.
 
@@ -143,5 +143,3 @@ Fire, ice and the clock, having no mesh, are the faces the game paints them as (
 **Sections 1 to 3**, 1,920, 8,192 and 8,192 bytes; the two of 8 KB are the size of sixteen 256-colour palettes and are not needed to draw anything above.
 
 Section 4 is twelve bytes of text, `dummy!!!` and two line breaks.
-
-**Which way a thing is turned**, which is read off LEVEL 62 and LEVEL 106: its `facing` field is quarter turns about the face's inward normal from the world's `+y` laid onto the face, or the world's up where the face runs across `y`, so on a block's top the arrow's tip, the model's `+z`, goes +y, -x, -y, +x for 1 to 4, and on the sides what play shows; the map turns every model the same way, the wheel's axle included.
