@@ -981,9 +981,9 @@ The viewer breaks the block by the same words: the rules keep each crumbling blo
 
 Kind 5's record is read three ways at once. Its `type` is the direction it is travelling, in the game's numbering of the six; `f4` to `f6` and `f7` to `f9` are the two ends of the run; the second slot is `[which end, blocks long, speed, dwell, a number, −1]`, the length 2 or 3 and the speed 30 on every one of the 37; and the extras hold its position, 512 times its cell, with three words of 256 after.
 
-The routine at `0x80032af4` moves the position by the speed along the direction each frame that the dwell is 0, dispatching on the direction through `0x80010158`, and on reaching the far end reverses the direction (1 and 4, 2 and 3, 0 and 5 swap), flips the end word and sets the dwell to 48 frames, 0.8 s; the dwell counts down and sound 107 plays the frame before it leaves. **At load the dwell is zeroed and the speed becomes 30 × 50 / 60 = 25**, 1500 units a second, a block in a third of a second (`0x8003278c`).
+The routine at `0x80032af4` moves the position by the speed along the direction each frame that the dwell is 0, dispatching on the direction through `0x80010158`, and on reaching or passing the far end reverses the direction (1 and 4, 2 and 3, 0 and 5 swap), flips the end word and sets the dwell to 48 frames, 0.8 s; the dwell counts down and sound 107 plays the frame before it leaves. **At load the dwell is zeroed and the speed becomes 30 × 50 / 60 = 25**, 1500 units a second, a block in a third of a second (`0x8003278c`).
 
-The record's faces are drawn at that position, one block after another along `f2`'s axis, by `0x8002b26c`.
+The record's faces are drawn at that position, one block after another the positive way along `f2`'s axis, by `0x8002b26c`, and the map lays the blocks so with the Motion switch on or off.
 
 The viewer runs the platform under the ball by the walker the map draws it by: the ball rides it from a landing on its body or against its end ("The blocks under the ball" above), is carried as the position words move, reverses with it at the run's ends and rides on through the dwell, and leaves it by a jump or a hop alone.
 
@@ -1038,8 +1038,6 @@ The wandering ball settles on the grid after each block, draws one of the four w
 In the loop the balls draw in the order the loader lifted them, record by record and face by face (`0x8003b5dc`), each until it finds a way open, and the sequence runs on from one decision to the next. Three other things draw from it, none while the ball stands still: the screen's shake (`0x80022814`), only while the screen shakes; the effects ("The effects" below), only on a frame whose row asks a draw, which three of the seven tables do once each, and one is started by the ball's contacts (`0x800118c4`, called from `0x80038548` onward); and the pause and game-over menus.
 
 So a level watched without playing walks its balls by their own draws alone, 1, 2, 3, 2, 3, 1, 2, 2, 2, 3, 0 and on from the start, the same on every play, and play on OBJ LEVEL bore that out move for move, 58 moves of the top ball from the start until the time ran out; a pickup collected, a shake or a pause on the way can shift the sequence for everything after, as far as the three routines' gates show.
-
-The moving platform's run is in [level-format.md](level-format.md): from its cell toward the far end at 25 a frame, stopping when it reaches or passes the end, 48 frames still, then back, and its blocks are laid from its cell along the positive way of its axis, as many as its record says, two or three, with the Motion switch on or off.
 
 ## The effects
 
