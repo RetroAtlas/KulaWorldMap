@@ -2,7 +2,13 @@
 
 ## What and why
 
-Four maps sit side by side under the RetroAtlas name, and they are built the same way: dependency-free ES modules under `public/js`, no build step, a canvas with a sidebar beside it, a hash that is a permalink, a search with a scope bar. Counted 2026-09-22 (`wc -l */public/js/*.js`): `OddworldMap` 8958 lines across 48 modules, this map 3930 across 21, `MetalSlugMap` 1068 across 10, `HerculesMap` 931 across 13. The module names line up across all four (`state`, `navigate`, `search`, `sidebar`, `interaction`, `render`, `main`), and two files have already converged exactly: `public/js/viewer/chrome/searchquery.js` and its unit test are byte-identical here and in OddworldMap, copied over when the search was rebuilt. `public/js/viewer/ui/dom.js` here and in HerculesMap are the same file but for `el`'s signature: the `$` and the `on`/`emit` bus are identical, written twice by two sessions who never saw each other's.
+Four maps sit side by side under the RetroAtlas name, and they are built the same way: dependency-free ES modules under `public/js`, no build step, a canvas with a sidebar beside it, a hash that is a permalink, a search with a scope bar.
+
+Counted 2026-09-22 (`wc -l */public/js/*.js`): `OddworldMap` 8958 lines across 48 modules, this map 3930 across 21, `MetalSlugMap` 1068 across 10, `HerculesMap` 931 across 13.
+
+The module names line up across all four (`state`, `navigate`, `search`, `sidebar`, `interaction`, `render`, `main`), and two files have already converged exactly: `public/js/viewer/chrome/searchquery.js` and its unit test are byte-identical here and in OddworldMap, copied over when the search was rebuilt.
+
+`public/js/viewer/ui/dom.js` here and in HerculesMap are the same file but for `el`'s signature: the `$` and the `on`/`emit` bus are identical, written twice by two sessions who never saw each other's.
 
 What this would settle is where that shared code lives, which map is the reference for each piece, and by what mechanics a repo picks it up, so that the next map gets a search, a permalink and a drawer for free and the fifth feature is written once rather than four times.
 
@@ -10,7 +16,9 @@ The cost of leaving it is visible already, in both directions. The same thing is
 
 ## Sketch
 
-OddworldMap is the reference where both have a thing: two months of daily work against a few days here, and it has met the cases this map has not (a dataset still loading, an embedded map, a dialog over a dialog). Where this map's version is the better one it wins on its merits, and the ones named above are those known today. Every extraction is a "best of the two" pass, not a copy of either side.
+OddworldMap is the reference where both have a thing: two months of daily work against a few days here, and it has met the cases this map has not (a dataset still loading, an embedded map, a dialog over a dialog). Where this map's version is the better one it wins on its merits, and the ones named above are those known today.
+
+Every extraction is a "best of the two" pass, not a copy of either side.
 
 The slices, in the order they pay off, each a commit of its own and each leaving both maps green:
 
@@ -19,18 +27,31 @@ The slices, in the order they pay off, each a commit of its own and each leaving
 - **The drawer, the preferences and the filter lists.** `setSidebar`, the scrim, the `matchMedia` breakpoint, the checkbox block saved to and restored from `localStorage`, and the list of kinds with counts, `aria-pressed` and a shift-click that isolates one. HerculesMap has the same three and MetalSlugMap two of them.
 - **The help overlay and the dialog.** A table of `[keys, what they do]` drawn into an overlay, with focus returned on close and the back button closing it, which is OddworldMap's `dialog.js` plus this map's `dialog.js` and `modal.js` plus MetalSlugMap's `dialog.js`, three copies of one thing. This map's `dialog.js` is already the better of its own and OddworldMap's: the history entry, the keys kept inside and Tab going round, from OddworldMap's, and the focus handed back to whatever held it, from this map's, so the slice can start from it. The settings panel rides on it and goes with it: [settings.js](../public/js/viewer/ui/settings.js) opens a dialog of switches from a button and marks each one standing away from its `defaultChecked`, and knows nothing of what the switches do, which the host wires and saves as it does its other switches.
 - **The toast.** A notice that comes and goes at the foot of the map. [toast.js](../public/js/viewer/ui/toast.js) is OddworldMap's, which stacks three and counts the rest, restarts a notice repeated rather than stacking it again, and is a live region of its own; here its timings are its own rather than a config's and it finds its stack in the page when first used, so it moves as it is. MetalSlugMap has a one-notice toast in its `main.js` that it can take over.
-- **The link arrow.** [arrow.js](../public/js/viewer/draw/arrow.js) is OddworldMap's way of drawing a link, lifted into a module that knows nothing of either map and draws in the canvas's own units: `arrowhead` is OddworldMap's as it stands, `bow` gives the curve as a cubic, which at a distance is the quadratic `paintConnections` draws with `quadraticCurveTo` and swells into a loop where the ends meet on the screen, and `arrow` strokes it and puts the head on it with its base on the curve. OddworldMap's `paintConnections` draws with `bow` and `arrow` by passing its bends in world units and no loop, which keeps its curves and lays the head along the curve rather than along its end tangent, or a loop for the stacked pairs that arc apart today. Its `paintWires` draws straight lines and heads only the wire in focus, so it takes `arrowhead` alone. This map's `drawLink` in [overlays.js](../public/js/viewer/draw/overlays.js) is the other caller, and the rim and the dash stay with each caller as its own style.
+- **The link arrow.** [arrow.js](../public/js/viewer/draw/arrow.js) is OddworldMap's way of drawing a link, lifted into a module that knows nothing of either map and draws in the canvas's own units: `arrowhead` is OddworldMap's as it stands, `bow` gives the curve as a cubic, which at a distance is the quadratic `paintConnections` draws with `quadraticCurveTo` and swells into a loop where the ends meet on the screen, and `arrow` strokes it and puts the head on it with its base on the curve.
+
+  OddworldMap's `paintConnections` draws with `bow` and `arrow` by passing its bends in world units and no loop, which keeps its curves and lays the head along the curve rather than along its end tangent, or a loop for the stacked pairs that arc apart today. Its `paintWires` draws straight lines and heads only the wire in focus, so it takes `arrowhead` alone. This map's `drawLink` in [overlays.js](../public/js/viewer/draw/overlays.js) is the other caller, and the rim and the dash stay with each caller as its own style.
+
 - **The corner inset.** A small canvas floated over the map's bottom right, above its readout, asked for by every frame drawn and sized to the device's pixel ratio, which takes the presses that land on it so that the map beneath hears none: OddworldMap's minimap, whose presses scrub the view, and this map's compass in [compass.js](../public/js/viewer/draw/compass.js), whose presses do nothing. Neither knows what the other draws, so what moves is the float's look, the backing store's sizing, rounded before it is compared so that a fractional ratio does not reallocate it every frame, and the corner itself, which here is a row that lets a press between its widgets through to the map and holds the fit button beside the compass.
 - **The bus and the spoken map.** `dom.js` whole, and the a11y pattern: one summary sentence into a live region and into the canvas's own name.
 - **The CSS tokens.** The four maps already share a vocabulary in two spellings, `--panel-2`/`--ink` here and in HerculesMap against `--panel2`/`--text` in OddworldMap and MetalSlugMap. Agreeing one spelling is the whole of the first step, and the rows, the drawer and the dialog can then share a stylesheet. One name this map and OddworldMap already spell alike is `--surface-float`, what a float over the map stands on: the chip and the corner here, the panels there.
 
-Mechanics: a repo of its own under the RetroAtlas org, plain ES modules with no build step of its own, vendored into each map at `public/js/lib/` with a manifest naming the version it came from, a script under `tools/` that copies a sibling checkout in, and a CI job that fails when the copy and the source differ. Vendoring rather than anything cleverer is what keeps the deployed `public/` working from a plain clone and a plain static server, which is the rule the maps are built on, and what lets HerculesMap and MetalSlugMap, which have no `package.json` at all, take the library without taking a toolchain. A git subtree is the upgrade once the library changes often enough for the copying to chafe.
+Mechanics: a repo of its own under the RetroAtlas org, plain ES modules with no build step of its own, vendored into each map at `public/js/lib/` with a manifest naming the version it came from, a script under `tools/` that copies a sibling checkout in, and a CI job that fails when the copy and the source differ.
 
-The proof is that both suites pass unchanged, since none of this is a behaviour change on either side, plus the library's own tests: `node --test` for the DOM-free parts, which is most of the search, and a fixture page under Playwright for the list, the drawer and the dialog. That fixture is also what gives HerculesMap and MetalSlugMap their first checks.
+Vendoring rather than anything cleverer is what keeps the deployed `public/` working from a plain clone and a plain static server, which is the rule the maps are built on, and what lets HerculesMap and MetalSlugMap, which have no `package.json` at all, take the library without taking a toolchain.
 
-What stays in each map: the renderer, `render.js` and the modules it draws with, and the camera half of `interaction.js`, since this map orbits a 34-cube lattice and the others pan and zoom a plane; `data.js` and `model.js`, which are each disc's own shapes; everything under `tools/`, which shares no file with OddworldMap's today. This map's renderer is split between the frame, the blocks and the things that stand on them, and of the slices above only the link arrow touches it, as a module both renderers call.
+A git subtree is the upgrade once the library changes often enough for the copying to chafe.
 
-This file goes when the library exists and its first two slices, the search list and the hash writer, are running in this map and in OddworldMap. A slice on its own is a commit here and a commit there, not a deletion, and the commit that lands one says which map's version won and why.
+The proof is that both suites pass unchanged, since none of this is a behaviour change on either side, plus the library's own tests: `node --test` for the DOM-free parts, which is most of the search, and a fixture page under Playwright for the list, the drawer and the dialog.
+
+That fixture is also what gives HerculesMap and MetalSlugMap their first checks.
+
+What stays in each map: the renderer, `render.js` and the modules it draws with, and the camera half of `interaction.js`, since this map orbits a 34-cube lattice and the others pan and zoom a plane; `data.js` and `model.js`, which are each disc's own shapes; everything under `tools/`, which shares no file with OddworldMap's today.
+
+This map's renderer is split between the frame, the blocks and the things that stand on them, and of the slices above only the link arrow touches it, as a module both renderers call.
+
+This file goes when the library exists and its first two slices, the search list and the hash writer, are running in this map and in OddworldMap.
+
+A slice on its own is a commit here and a commit there, not a deletion, and the commit that lands one says which map's version won and why.
 
 ## Ruled out
 

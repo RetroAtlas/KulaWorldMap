@@ -2,7 +2,14 @@
 
 ## What and why
 
-The editor writes a level as the game's bytes and puts it on the disc, and everything the writers do is held to the disc and to each other: the canonical rebuild of all 230 shipped levels goes back word for word outside the unread mask (`python3 tools/kula_kwl.py --check`, with the disc), the JS writer's bytes are the Python writer's on every level (`tests/fixtures/kwl-digests.json`), every sector a placement writes is rebuilt as the disc has it and checks, and the synthetic image patched by each path gives the same patched image, PPF and VCDIFF from both sides (`tests/fixtures/patch-digests.json`), with the PPF applied and the VCDIFF decoded in the tests and by xdelta3 where it is installed. What none of that can settle is what the game does with a level that no shipped level is like, and whether an emulator takes the patch at all, since nothing on this machine runs the game. Until someone with the disc plays these, the editor's checks say what the disc shows and nothing more, and the dialog's per-emulator sentences rest on the emulators' documentation.
+The editor writes a level as the game's bytes and puts it on the disc, and everything the writers do is held to the disc and to each other:
+
+- The canonical rebuild of all 230 shipped levels goes back word for word outside the unread mask (`python3 tools/kula_kwl.py --check`, with the disc).
+- The JS writer's bytes are the Python writer's on every level (`tests/fixtures/kwl-digests.json`).
+- Every sector a placement writes is rebuilt as the disc has it and checks.
+- The synthetic image patched by each path gives the same patched image, PPF and VCDIFF from both sides (`tests/fixtures/patch-digests.json`), with the PPF applied and the VCDIFF decoded in the tests and by xdelta3 where it is installed.
+
+What none of that can settle is what the game does with a level that no shipped level is like, and whether an emulator takes the patch at all, since nothing on this machine runs the game. Until someone with the disc plays these, the editor's checks say what the disc shows and nothing more, and the dialog's per-emulator sentences rest on the emulators' documentation.
 
 ## Sketch
 
