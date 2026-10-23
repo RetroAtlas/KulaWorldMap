@@ -82,6 +82,7 @@ const inEachCopy = (carried) =>
     ? carried(copies[0])
     : null;
 const style = (v) => (l) => l.cells.filter((c, i) => i % 4 === 3 && c === v).length;
+const iceBlocks = (l) => style(2)(l) + kindOn(2)(l);
 const cellsOf = (l) =>
   Array.from({ length: l.cells.length / 4 }, (_, i) => l.cells.slice(4 * i, 4 * i + 3));
 const lattices = new Map(mapData.levels.map((l) => [l, new Set(cellsOf(l).map(String))]));
@@ -762,6 +763,12 @@ const reasonClaims = [
     "settings records on empty cells",
     [onEmptyCell.length, settings.length],
     /The record stands on an empty cell on (\d+) of the (\d+)\./,
+  ],
+  [
+    "type 2",
+    "the first ice patches, and the ice blocks on their level",
+    [...first(on(2)), iceBlocks(named(first(on(2))[0]))],
+    /^(LEVEL \d+) carries the game's first (\w+), as well as (\w+) ice blocks\./m,
   ],
   [
     "type 5",
