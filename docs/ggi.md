@@ -43,7 +43,7 @@ A row is a level of detail, three of them where the model has any and the fourth
 
 Types 34 and 42, which only the object catalogue places, are a third pill, a flat tablet, and two many-pointed stars.
 
-Types with no model of their own, 1, 2, 8, 29 and 30, are the ones drawn on the block's face or not at all: fire, ice, the clock, the start, which is where the ball is, and for which the viewer draws the world's ball.
+Types with no model of their own, 1, 2, 8, 29 and 30, are the ones drawn on the block's face or not at all: fire, ice, the clock, the start on a clock and the start, the last two where the ball is, for which the viewer draws the world's ball.
 
 Types 39 to 41 and 48 to 49 all point at the arrow, which reads as a placeholder.
 
