@@ -27,6 +27,7 @@ disc has them.
 """
 import argparse
 import os
+import re
 import struct
 import sys
 import zlib
@@ -97,7 +98,7 @@ def main():
 
 def warp(args, src, disc):
     target_path, _, slot = args.into.rpartition("#")
-    if not target_path or not slot.isdigit():
+    if not target_path or not re.fullmatch(r"[0-9]+", slot):
         sys.exit(f"--into wants a pack path and a slot, like /HIRO/HIRO.PAK#0, not {args.into!r}")
     slot = int(slot)
     if target_path.upper() not in disc.files:
@@ -105,7 +106,7 @@ def warp(args, src, disc):
 
     if args.level:
         donor_path, _, ds = args.level.rpartition("#")
-        if donor_path.upper() not in disc.files or not ds.isdigit():
+        if donor_path.upper() not in disc.files or not re.fullmatch(r"[0-9]+", ds):
             sys.exit(f"--level wants a pack path and a slot, not {args.level!r}")
         donor_pak, donor_slot = Pak(disc.read_file(donor_path), donor_path), int(ds)
         if donor_slot >= len(donor_pak):

@@ -139,6 +139,21 @@ class TheTool(unittest.TestCase):
         self.assertEqual(zlib.decompress(Pak(Disc(out).read_file(SYNTHETIC_FINALS)).entries[1]["blob"]),
                          self.slot_level(self.src, SYNTHETIC_FINALS, 1))
 
+    def test_a_slot_with_a_superscript_or_a_digit_of_another_script_is_refused_in_the_tool_s_own_sentence(self):
+        into, level = f"{SYNTHETIC_PACK}#\u00b2", f"{SYNTHETIC_PACK}#\u0663"
+        refused = [(("--level", f"{SYNTHETIC_PACK}#2", "--into", into),
+                    f"--into wants a pack path and a slot, like /HIRO/HIRO.PAK#0, not {into!r}"),
+                   (("--level", level, "--into", f"{SYNTHETIC_PACK}#0"),
+                    f"--level wants a pack path and a slot, not {level!r}")]
+        for args, why in refused:
+            with self.subTest(why):
+                done = self.run_tool(*args, "--out", self.dir / "warped.bin")
+                self.assertEqual(done.returncode, 1, done.stderr)
+                self.assertEqual(done.stdout, "")
+                self.assertEqual(done.stderr.splitlines()[-1], why)
+                self.assertNotIn("Traceback", done.stderr)
+        self.assertEqual(sorted(p.name for p in self.dir.iterdir()), [self.src.name])
+
     def test_an_output_the_system_refuses_is_said_in_a_sentence_before_anything_is_written(self):
         refused = [(self.dir / "missing" / "warped.bin", f"no directory at {self.dir / 'missing'}; say another --out"),
                    (self.dir, f"{self.dir} is a directory; say a name for --out"),
