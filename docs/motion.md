@@ -873,7 +873,7 @@ The map runs the cycle from the record's phase, solid and lit as the game lights
 
 ## The invisible block
 
-Kind 3 is hidden until the ball comes near it, and the routine at `0x80051318` decides that every frame. It reads a struct at `0x800a5a58`: the ball's position, its centre 100 off its face ("The ball's moves" below), with a platform's travel added, which the ball's routine writes there every frame (`0x80036914`), a near and a far distance, and a flag of its own (`0x8005134c`).
+Kind 3 is hidden until the ball comes near it, and the routine at `0x80051318` decides that every frame. It reads a struct at `0x800a5a58`: the ball's position, its centre 100 off its face ("The ball's moves" above), with a platform's travel added, which the ball's routine writes there every frame (`0x80036914`), a near and a far distance, and a flag of its own (`0x8005134c`).
 
 The sunglasses have a second flag, at `0x800a5a98`, which `0x8002bec8` and `0x8002bf50` turn on as they are taken, and off and on as they end (the pickup that scores 500 sets a word the hazards routine counts down, "What the ball takes" above), and the light tests it first (`0x80051370`, `0x80051390`): while it stands every invisible face is drawn and nothing else happens. Otherwise every invisible face is first hidden, or shown where the struct's own flag is set (`0x800513b8`), and then each invisible block near the ball is lit corner by corner: full within the near distance, falling in a straight line to nothing at the far one, and where that flag is set the other way round (`0x80051684`), nothing within the near distance and full from the far one out. A face with any corner lit is drawn, shaded between its corners' brightnesses, and added to what is behind it.
 
