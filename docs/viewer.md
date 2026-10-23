@@ -36,6 +36,8 @@ A switch's panel has a button that presses it, as the ball would: every laser, t
 
 The panel of an exit, or of a hidden exit, has one that opens every exit of the level as taking its last key would, and shuts them again, until you leave the level: open, an exit is green and turns faster, the cross on its face is green, and from 19 frames on it casts its light as a device that is on does, and a hidden exit, which the map draws turning slowly all along where the game keeps it out of sight until the last key, turns faster too. A level with no key has no last key to take, and no button.
 
+Where a level has more than one exit, or more than one hidden exit, the button opens them all, as the last key does while the ball is on the level, where the game opens only the last exit and the last hidden exit it loads and marks only the last exit face it builds, which need not be the face of the exit it opens ([motion.md](motion.md)).
+
 A teleporter's panel names the one it sends the ball to, which the map draws an arrow to while it is selected, looping where one stands in front of the other, broken while it is switched off, and a click on the name goes there as a find does, so where three or more share a colour the names lead round their ring.
 
 A teleporter's facing is the way the ball faces as it comes out of it.
