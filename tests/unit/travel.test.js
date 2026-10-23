@@ -246,7 +246,7 @@ test("a fast star sways six hundred units either way along its heading", () => {
   assert.ok(Math.abs(xs[Math.round(4096 / 53) - 1]) < 20, "and is back near home after a swing");
 });
 
-test("a platform runs its rail at 25 a frame and waits 48 at each end", () => {
+test("a platform runs its rail at 25 a frame, stands at the far end for the 47 frames after it arrives and starts back on the 48th", () => {
   const l = level(
     [[22, 18, 17]],
     [
