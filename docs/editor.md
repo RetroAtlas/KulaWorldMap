@@ -367,7 +367,7 @@ A draft is exported to the disc by `public/js/editor/patchdialog.js`, which take
 
 The rows, the image and its plan live as long as the page: the box opened again holds what it held when it was closed, with a row added for the draft it is opened for where none holds it and the rows whose drafts went meanwhile dropped without a word, and plans again over the image it holds rather than reading it again.
 
-It refuses nothing but errors and a level it cannot check in full: a project with any error from the checks in "What the game would make of a project" above is shown its errors and gets no patch, warnings go in a fold and stop nothing, a project the writer cannot write is refused with the writer's reason, and where `skins.hides` of `public/objects.json` has not loaded, so that the checks leave the faces and the blocks uncounted, every row says the face table could not be loaded and the level cannot go on the disc from here, and the patches are held back.
+It refuses nothing but errors and a level it cannot check in full, and a row it refuses holds back the patches for every row in the box: a project with any error from the checks in "What the game would make of a project" above is shown its errors, warnings go in a fold and stop nothing, a project the writer cannot write is refused with the writer's reason, and where `skins.hides` of `public/objects.json` has not loaded, so that the checks leave the faces and the blocks uncounted, every row says the face table could not be loaded and the level cannot go on the disc from here.
 
 ### A row's slot
 
