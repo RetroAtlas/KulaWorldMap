@@ -20,6 +20,8 @@ A cross-check comes from the level data: a moving platform's speed on the disc i
 
 Angles are in 4096ths of a turn, the unit the sine table at `0x8005fb58` takes; distances are in units of which a block is 512; and one word, `0x800a33d0`, gates every update below with a test against zero. It selects a second view the shipped game never draws: it is a data word that loads as 0 and is never written, so the gates are always open.
 
+The table ships the frames of a second, sixty, as `hz` and the angle of a whole turn, 4096, as `turn`.
+
 ## The things on a block
 
 The routine at `0x80039200` walks every record of kinds 0 to 4, every slot of each, and every object whose `f4` is not zero, and both advances and draws it; the table at `0x80010290` sends each type to its own case.
@@ -1007,6 +1009,8 @@ The map hashes each line's start from its beam's first cell, and draws nothing f
 
 Types 50, 51, 52, 53 and 56 are lifted out of their slots at load into 180-byte entries at `0x800ba3dc` (`0x8003b5dc`), each standing **456 units from its block's centre along the face normal**, 200 off the face, with the normal, a home position, a heading from `f2` and three angles of its own. `0x8003ba88` moves them each frame and `0x8003d680` turns them, and the `f3` of a corkscrew alone survives as a phase.
 
+The table ships the 456, which the lift multiplies the normal by (`0x8003b720` to `0x8003b730`), as `standoff`, and the viewer lays each entry's position there, the point a walker moves and the captivators' hit test measures to ("What harms the ball" above).
+
 **Each is drawn with its model's origin where its entry is**: the draw copies the entry's position and turns it into the view as it is (`0x8003d81c`, `0x8003ed3c`, `0x8003f3e8`, `0x8003dea0`), so the stars, the wheel and the wandering ball all have their middles 200 off the face whatever their size, which leaves the small wandering ball clear of the floor by more than half its height; the corkscrew alone is drawn 150 nearer its face than its entry (`0x8003e5d8`), 50 off, and bounces from there.
 
 The table ships that height with each of the five as its `entry`, and the viewer stands them there rather than on their lowest points.
@@ -1042,6 +1046,8 @@ The wandering ball settles on the grid after each block, draws one of the four w
 In the loop the balls draw in the order the loader lifted them, record by record and face by face (`0x8003b5dc`), each until it finds a way open, and the sequence runs on from one decision to the next. Three other things draw from it, none while the ball stands still: the screen's shake (`0x80022814`), only while the screen shakes; the effects ("The effects" below), only on a frame whose row asks a draw, which three of the seven tables do once each, and one is started by the ball's contacts (`0x800118c4`, called from `0x80038548` onward); and the pause and game-over menus.
 
 So a level watched without playing walks its balls by their own draws alone, 1, 2, 3, 2, 3, 1, 2, 2, 2, 3, 0 and on from the start, the same on every play, and play on OBJ LEVEL bore that out move for move, 58 moves of the top ball from the start until the time ran out; a pickup collected, a shake or a pause on the way can shift the sequence for everything after, as far as the three routines' gates show.
+
+The table ships the seed, the multiplier and the addend as `dice`, from which the viewer draws the wandering balls' ways and a burst's angles where a row asks a draw.
 
 ## The effects
 
