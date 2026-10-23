@@ -80,30 +80,27 @@ So the faithful modules carry no editor branch: `things.js`, `skins.js`, `lights
 
 The route planner, `course.js` and `ribbon.js`, draws and listens only through the same kind of seams, the block hook, the pointer lists and the link's tail, and carries no branch in a faithful module.
 
-Play mode is built the same way:
+Play mode is built the same way.
 
-- `play/ball.js` is the ball's motion over a probe of the lattice, pure, asking the probe whether a cell holds a block, whether the block under is slick or brittle and whether a platform's body fills a cell, which it rides, and never what kind a block is, the pad read into the ball's requests and the frame run from them as two calls a caller may come between, the run telling the probe the ball between its state and its move step, where the game reads the cells about it, and carrying no policy of the mode's, so a lost ball says so and stays where it fell.
-- `play/world.js` is the level as play holds it, the probe the rules ask of it, which answers the lattice as the last frame's step left it and a platform's body where it stands, and the index the frame draws less what is taken and the blocks that have gone and with the blocks marked, each with the frame of its mark.
-- `play/rules.js` is the game's frame over `play/ball.js` and `play/world.js` in the executable's order, the clock, the guard, the wait, the pad, the walkers and a riding ball's travel, what is under the ball, the ball and its contact and the endings, with a run's start and its restart.
-- `play/contact.js` is the walk over the cells about the ball that takes what is within its reach.
-- `play/hazards.js` is what harms the ball, each death a countdown, the ice's and the arrow's hold on the ball's requests and the ice's cold, the crumbling block's score, break and fall, the devices under it, the marker that keeps one from acting twice in a visit and the captivators' hit test.
-- `play/drive.js` is pad words per frame from the keys as they are pressed, a planned route or a recording and the recorder that makes one.
+Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/contact.js`, `play/hazards.js` and `play/drive.js`, is pure, every count and threshold read from `objects.motion` and no wall clock among them, and the unit tests hold the simulation's modules to importing the model, the lattice and each other alone.
 
-All five are pure as the stepper, `play/ball.js`, is, every count and threshold read from `objects.motion` and no wall clock among them, and the unit tests hold the simulation's modules to importing the model, the lattice and each other alone.
+`play/ball.js` never asks its probe what kind a block is and carries no policy of the mode's, so a lost ball says so and stays where it fell.
 
 `play/play.js` reaches the map only through the seams:
 
-- The frame's travellers through `movingWith`, its four hooks and `runWith` in `render.js`, through which it hands the frame play's clock, its index less what is taken and with the blocks it has marked, what travels and whether every invisible block is seen, the marks reaching `skins.js` through `faceSkin`'s marked argument as the game's own paint for a marked face and not as a branch of play's.
-- The camera's `frame`, `anchored` and `parked` in `state.js`, where it parks the panel's presses too and gives the level its circuits as loaded.
+- The frame's travellers through `movingWith`, its four hooks and `runWith` in `render.js`, its marks on the blocks reaching `skins.js` through `faceSkin`'s marked argument as the game's own paint for a marked face and not as a branch of play's.
+- The camera's `frame`, `anchored` and `parked` in `state.js`.
 - `fitWith` and the `link-opening` event in `navigate.js`.
 - `ballsWith` and a traveller's `tint` and `body` in `things.js`.
-- `lightsWith` in `lights.js`, through which a module casts a light from a cell and a face as a device there casts its own.
+- `lightsWith` in `lights.js`.
 - The ribbon's pieces.
 - `adoptCourse` and `current` in `course.js`.
 - `tipWith` in `interaction.js`.
 - The panel's `onShow` and the `play-changed` event the editor listens to.
 
-So the faithful modules carry no branch of play's either; `play/dust.js` and `play/effects.js` are its own, the second drawing the game's bursts in the frame hook and casting their light through `lightsWith`.
+So the faithful modules carry no branch of play's either; `play/dust.js` and `play/effects.js` are its own.
+
+"How it is built" in [docs/viewer.md](docs/viewer.md) says what each of play's modules computes and what play hands the map through its seams.
 
 The project file grows by one rule: keys are only added, a published key never changes its meaning or its type, every optional key has a default on read and a reader ignores keys it does not know, with [docs/editor.md](docs/editor.md) as the specification.
 
