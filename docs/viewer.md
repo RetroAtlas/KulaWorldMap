@@ -525,6 +525,8 @@ Every level reaches the screen through one funnel in `js/viewer/chrome/navigate.
 
 It draws the blocks through `js/viewer/draw/blocks.js`, which lays each world's textures from `js/viewer/draw/atlas.js` and the light a device casts on them from `js/viewer/draw/lights.js`, which casts a light a module hands it as it casts a device's, from a cell and a face in a colour of the module's own, on the faces a device there would light and at the same levels, so that nothing on the blocks changes until a module hands one.
 
+Where the index the frame draws from marks a block, with the frame of its mark, `js/viewer/draw/blocks.js` hands `faceSkin` in `js/viewer/skins.js` the frames since the mark for each of the block's faces, or with Motion off a count past the whole fade, and `faceSkin` paints such a face as the game paints a block the ball has rolled onto, faded in from grey, so play's marks reach the faces with no branch of play's in either module.
+
 It draws what stands on them through `js/viewer/draw/things.js`, a laser's beam through `js/viewer/draw/beams.js`, and what is neither, from a platform's route and the ground grid to the scale bar and the lettering of a label, through `js/viewer/draw/overlays.js`, which draws the arrow to where a teleporter leads with `js/viewer/draw/arrow.js`, a link drawn as OddworldMap draws its links and knowing nothing of either map.
 
 ### The seams
