@@ -526,7 +526,7 @@ It draws what stands on them through `js/viewer/draw/things.js`, a laser's beam 
 
 ### The seams
 
-What draws over the map from outside it registers with the frame's four hooks, one run before any block where the ground grid is drawn, one on each block once it is drawn and before the things standing on it, one after each block with what stands on it, and one once the see-through layer is laid, which may ask for another frame by returning true.
+What draws over the map from outside it registers with the frame's four hooks, one run before any block where the ground grid is drawn, which may skip the grid by returning true, one on each block once it is drawn and before the things standing on it, one after each block with what stands on it, and one once the see-through layer is laid, which may ask for another frame by returning true.
 
 A module may also hand the frame travellers of its own, each keyed as the level's own walkers are, by a cell and a face, or by a name of its own, and drawn, sorted and picked as they are, or sorted at a depth of its own where it hands one, reckoned as a block's is, from the corner of the unit cube about it, standing in for the thing whose cell and face its key names where it names one.
 
