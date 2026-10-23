@@ -20,7 +20,7 @@ Drafts stay in the browser until they are saved, as the map's own file or as the
 
 ## What the disc stores
 
-Every level is one compressed record inside a pack: a fixed 34 x 34 x 34 lattice of cells, each empty, one of five plain kinds of block, or a block carrying a record, and a table of records that are the blocks with something on them, a record being a kind of block and six slots that are its six faces, with an object standing on any face whose slot is filled.
+Every level is one compressed record inside a pack: a fixed 34 x 34 x 34 lattice of cells, each empty, one of five kinds of block, or a block carrying a record, and a table of records that are the blocks with something on them, a record being a kind of block and six slots that are its six faces, with an object standing on any face whose slot is filled.
 
 The game numbers its blocks and objects and names none of them; the names on the map are curated from the game's own models and textures and from play, and the points from play.
 
