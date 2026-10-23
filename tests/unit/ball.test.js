@@ -489,7 +489,7 @@ test("a turn at rest swaps the frame at once and the view ramps 18 steps of 53, 
   assert.deepEqual(b.frame, from);
 });
 
-test("a Down bit is not read as a press, the game's pad having nothing for it, and a turn pressed during a turn waits for its end", () => {
+test("a Down bit is not read as a press, play asking nothing of Down, and a turn pressed during a turn waits for its end", () => {
   const probe = row(10, 18);
   const b = ballAt(RULES, [17, 18, 17], TOP, UP);
   assert.deepEqual(run(b, probe, 1, PAD.down), []);
