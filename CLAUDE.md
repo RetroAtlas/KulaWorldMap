@@ -74,7 +74,7 @@ Read [docs/camera.md](docs/camera.md) before touching the start camera the viewe
 
 The editor draws a draft as the viewer draws a disc level, and nothing else: a draft is a level object of `map_data.json`'s shape, made by the level writer and reader in `public/js/format/kwl.js` from the project in `public/js/format/project.js`, drawn by the same code as a shipped level, and never entered into `state.data`; every level reaches the screen through the one funnel in `public/js/viewer/chrome/navigate.js`.
 
-The editor draws and listens only through registration seams, the frame's hooks in `render.js`, the click and hover registrations in `interaction.js`, the panel's `onShow` in `detail.js` and the level line's `noteWith` in `navigate.js`.
+The editor draws and listens only through registration seams, the frame's hooks in `render.js`, the click, drag and hover registrations and `tipWith` in `interaction.js`, the panel's `onShow` in `detail.js`, and the level line's `noteWith` and the link's `provideLevels` in `navigate.js`.
 
 So the faithful modules carry no editor branch: `things.js`, `skins.js`, `lights.js`, `beams.js`, `atlas.js`, `motion.js`, `travel.js`, `icons.js`, `compass.js`, `search.js`, `objectsearch.js`, `placesearch.js`, `dialog.js`, `modal.js`, `toast.js`, and under `tools/` `kula_build.py` apart from `packs.json` and `kula_level.py`, are the modules the editor leaves untouched, `search.js`, `dialog.js`, `modal.js` and `skins.js` apart, which changed for every caller's sake, the search re-scoping on `level-updated`, a dialog or a modal giving the focus back to the control that opened it, and the skins lending the viewer's points their test for a key, and carry no branch of the editor's.
 
