@@ -6,6 +6,9 @@ decodes them too where it is on PATH. The last class holds the patches to
 the disc under $KULA_DISC and is skipped without it.
 """
 
+import contextlib
+import errno
+import io
 import json
 import os
 import shutil
@@ -16,6 +19,7 @@ import tempfile
 import unittest
 import zlib
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -47,13 +51,14 @@ from kula_patch import (  # noqa: E402
     digest,
     fixture,
     items_of,
+    main,
     placements,
     ppf,
     runs,
     varint,
     vcdiff,
 )
-from kula_place import SYNTHETIC_FINALS, SYNTHETIC_PACK, place, place_all, plan, synthetic, synthetic_image  # noqa: E402
+from kula_place import SYNTHETIC_FINALS, SYNTHETIC_PACK, place, place_all, plan, plan_all, synthetic, synthetic_image  # noqa: E402
 from kula_sector import SECTOR_RAW  # noqa: E402
 
 IMAGE = synthetic_image()
@@ -551,6 +556,30 @@ class TheTool(unittest.TestCase):
                     self.assertNotIn("Traceback", done.stderr)
             os.chmod(scratch / "shut", 0o700)
             self.assertFalse((scratch / "out.ppf").exists())
+
+    def test_a_disc_that_fails_under_the_plan_is_said_as_unread_and_a_copy_that_fails_as_unwritten(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "image.bin").write_bytes(IMAGE)
+            (scratch / "spiral.kula.json").write_text(json.dumps(synthetic(CASE["in place"])))
+            argv = ["kula_patch.py", "--level", str(scratch / "spiral.kula.json"), "--into", f"{SYNTHETIC_PACK}#{SLOT}",
+                    "--out", str(scratch / "spiral"), "--disc", str(scratch / "image.bin"), "--image"]
+            quiet = contextlib.redirect_stderr(io.StringIO())
+
+            def planned_over_failing_reads(disc, items):
+                with mock.patch.object(Disc, "raw", side_effect=OSError(errno.EIO, os.strerror(errno.EIO))):
+                    return plan_all(disc, items)
+
+            with mock.patch.object(sys, "argv", argv), quiet, mock.patch("kula_patch.plan_all", planned_over_failing_reads), \
+                    self.assertRaises(SystemExit) as cm:
+                main()
+            self.assertEqual(cm.exception.code, f"{scratch / 'image.bin'} cannot be read: {os.strerror(errno.EIO)}")
+            full = OSError(errno.ENOSPC, os.strerror(errno.ENOSPC))
+            with mock.patch.object(sys, "argv", argv), quiet, mock.patch("kula_place.write_image", side_effect=full), \
+                    self.assertRaises(SystemExit) as cm:
+                main()
+            self.assertEqual(cm.exception.code, f"{scratch / 'spiral.bin'} cannot be written: {os.strerror(errno.ENOSPC)}")
+            self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "spiral.kula.json"])
 
     def test_an_output_in_no_directory_is_refused_before_anything_is_written(self):
         with tempfile.TemporaryDirectory() as scratch:

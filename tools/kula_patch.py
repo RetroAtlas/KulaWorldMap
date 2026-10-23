@@ -318,6 +318,11 @@ def main():
     try:
         with disc:
             planned = plan_all(disc, items)
+    except ValueError as e:
+        sys.exit(str(e))
+    except OSError as e:
+        sys.exit(f"{src} cannot be read: {e.strerror}")
+    try:
         if wanted["image"]:
             written(src, named(".bin"), planned.writes, lambda copy: verify_all(copy, items, planned))
         else:
