@@ -66,7 +66,7 @@ const all = (xs, ok) => (xs.every(ok) ? xs.length : null);
 const uniform = (xs) => (xs.every((x) => x === xs[0]) ? xs[0] : null);
 const values = (t, name) => new Set(ofType(t).map(({ o }) => field(o, name))).size;
 
-// The game's first of a thing is the first numbered level that carries one.
+// The first numbered level that carries a thing, and how many it carries.
 const numbered = mapData.levels
   .filter((l) => /^LEVEL \d+$/.test(title(l)))
   .sort((a, b) => number(title(a).slice(6)) - number(title(b).slice(6)));
@@ -74,6 +74,21 @@ const first = (carried) => {
   const l = numbered.find((l) => carried(l) > 0);
   return [title(l), carried(l)];
 };
+// The worlds' levels in the order play reaches them, each hidden and bonus level in its place.
+const inPlay = mapData.themes.flatMap(({ id }) => {
+  const slot = (i) => mapData.levels.find((l) => l.pack === `/${id}/${id}.PAK` && l.index === i);
+  return Array.from({ length: 15 }, (_, i) => [
+    slot(i),
+    ...(on(26)(slot(i)) ? [slot(18)] : []),
+    ...(i % 5 === 4 ? [slot(15 + (i - 4) / 5)] : []),
+  ]).flat();
+});
+// Each level that carries a thing and comes in play before the first numbered level that does.
+const ahead = (carried) =>
+  inPlay
+    .slice(0, inPlay.indexOf(named(first(carried)[0])))
+    .filter((l) => carried(l) > 0)
+    .flatMap((l) => [title(l), carried(l)]);
 
 const copies = mapData.levels.filter((l) => l.name === "OBJ LEVEL");
 // What each copy of the catalogue holds, where every copy holds it alike and no other level any.
@@ -729,9 +744,9 @@ const reasonClaims = [
   ],
   [
     "kind 7",
-    "the first vanishing block",
-    first(kindOn(7))[0],
-    /^(LEVEL \d+) carries the game's first kind 7\./m,
+    "the numbered levels' first vanishing block, and the level before it in play with some",
+    [first(kindOn(7))[0], ...ahead(kindOn(7))],
+    /^(LEVEL \d+) carries the numbered levels' first kind 7, though ([A-Z]+ \d+), which comes before it in play, carries (\w+)\./m,
   ],
   [
     "kind 8",
@@ -880,9 +895,9 @@ const reasonClaims = [
   ],
   [
     "type 38",
-    "the first sunglasses",
-    first(on(38)),
-    /^(LEVEL \d+) carries the game's first (\w+), and each/m,
+    "the numbered levels' first sunglasses, and the level before them in play with some",
+    [...first(on(38)), ...ahead(on(38))],
+    /^(LEVEL \d+) carries the numbered levels' first (\w+), though ([A-Z]+ \d+), which comes before it in play, carries (\w+)\./m,
   ],
   [
     "type 42",

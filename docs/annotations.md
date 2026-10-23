@@ -76,7 +76,7 @@ The record keeps its position in `f2` to `f4`, 512 times its own cell on all 435
 
 ### kind 7: Vanishing block
 
-LEVEL 76 carries the game's first kind 7.
+LEVEL 76 carries the numbered levels' first kind 7, though BONUS 15, which comes before it in play, carries thirteen.
 
 The record's `f2`, 0 to 3, is its phase, where in the cycle the block starts, which [motion.md](motion.md) decodes.
 
@@ -253,7 +253,9 @@ LEVEL 1's and LEVEL 2's are the 250 kind and read bronze in play; LEVEL 112's th
 
 ### type 38: Sunglasses
 
-LEVEL 113 carries the game's first three, and each scores 500 in play ([motion.md](motion.md) has the timer it starts).
+LEVEL 113 carries the numbered levels' first three, though HIDDEN 6, which comes before it in play, carries one.
+
+Each scores 500 in play ([motion.md](motion.md) has the timer it starts).
 
 ### type 42
 
