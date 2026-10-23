@@ -640,35 +640,56 @@ test.describe("editing on a phone", () => {
     expect(await cells(page)).toEqual([START]);
   });
 
-  test("an arming tap's prompt grows the strip without a tool taking the tap's click", async ({
+  test("an arming tap's prompt leaves the strip at its height, with no tool under the tap", async ({
     page,
   }) => {
     await editFresh(page);
     const strip = page.locator("#tools");
     const resting = await strip.boundingBox();
-    const grown = await page.evaluate(() => {
+    const written = await page.evaluate(() => {
       const status = document.getElementById("toolStatus");
       status.textContent = "Tap again to place a block on the top.";
       const h = document.getElementById("tools").getBoundingClientRect().height;
       status.textContent = "";
       return h;
     });
-    expect(grown).toBeGreaterThan(resting.height + 10);
-    // just above the strip, where its buttons stand once the prompt has grown it
+    expect(written).toBe(resting.height);
+    // just above the strip's edge, where a tool would stand had the prompt grown the strip
     const point = { x: centre(await tool(page, "erase").boundingBox()).x, y: resting.y - 2 };
     await bring(page, [START[0] + 0.5, START[1] + 0.5, START[2]], point);
     await tap(page, point);
     await expect(tool(page, "place")).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator("#toolStatus")).toHaveText("Tap again to place a block on the top.");
+    expect(await strip.boundingBox()).toEqual(resting);
     const under = await page.evaluate(
-      ([x, y]) => document.elementFromPoint(x, y)?.closest("#tools button")?.textContent.trim(),
+      ([x, y]) => document.elementFromPoint(x, y)?.closest("#tools")?.id,
       [point.x, point.y],
     );
-    expect(under).toBeTruthy();
+    expect(under).toBeUndefined();
     await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator("#palette")).toBeHidden();
     expect((await shown(page)).hover).toEqual([17, 17, 17, 0]);
     expect(await cells(page)).toEqual([START]);
+  });
+
+  test("a face just above the strip takes the second tap where the first found it", async ({
+    page,
+  }) => {
+    await editFresh(page);
+    const resting = await page.locator("#tools").boundingBox();
+    const point = { x: centre(await tool(page, "erase").boundingBox()).x, y: resting.y - 2 };
+    await bring(page, [START[0] + 0.5, START[1] + 0.5, START[2]], point);
+    await tap(page, point);
+    await expect(page.locator("#toolStatus")).toHaveText("Tap again to place a block on the top.");
+    await tap(page, point);
+    expect(await cells(page)).toContainEqual([17, 17, 16]);
+    expect(await cells(page)).toHaveLength(2);
+    await expect(page.locator("#say")).toHaveText("Placed a block at 17, 17, 16");
+    await expect(page.locator("#toolStatus")).toHaveText("");
+    await expect(tool(page, "place")).toHaveAttribute("aria-pressed", "true");
+    await expect(tool(page, "erase")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+    expect(await steps(page)).toEqual({ past: 1, future: 0 });
   });
 
   test("the palette and the panel are sheets, one at a time, with the strip above and 44 px targets", async ({

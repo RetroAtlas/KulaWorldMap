@@ -270,7 +270,7 @@ Every change is one step that undo takes back, a change the game would not forgi
 
 ### Touch screens and phones
 
-On a touch screen there is no hover, so Place and Erase take two taps: the first tap on a face marks it as the hover would, with the wash, the ghost or the brush's icon and a line on the strip saying what a second tap does, and the second tap on the same face does it, though a first tap on a face that holds what the brush would put there says so and marks nothing; a tap elsewhere marks that face instead, and a drag or a pinch, which turn and pan and zoom as ever, marks nothing.
+On a touch screen there is no hover, so Place and Erase take two taps: the first tap on a face marks it as the hover would, with the wash, the ghost or the brush's icon and a line on the strip saying what a second tap does, and the second tap on the same face does it, though a first tap on a face that holds what the brush would put there says so and marks nothing; a tap elsewhere marks that face instead, and a drag or a pinch, which turn and pan and zoom as ever, marks nothing. On a phone the strip keeps a row for that line while editing, so its appearing moves no button under the second tap.
 
 A run takes two such pairs.
 

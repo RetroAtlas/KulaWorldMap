@@ -2068,6 +2068,12 @@ body.padded .detail {
   body.editing.sheet-open .tools {
     bottom: var(--sheet-h);
   }
+  /* the status keeps its row while editing, so the line that arms a face moves no button
+     under the second tap */
+  body.editing #tools .status {
+    display: block;
+    min-height: 1lh;
+  }
   body.editing .tools button,
   .palette .tabs button,
   .palette .kind,
