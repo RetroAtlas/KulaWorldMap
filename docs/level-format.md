@@ -50,7 +50,7 @@ Three things fix the face order, none of them a guess:
 - `HIDDEN 10` puts all eighteen of its objects in slot 3, and in play the ball rolls on the `-y` face of its frame: the lettering below is a wall ahead, VERY is up and it reads left to right, which no other face gives.
 - A laser's `type` is the direction from its own block to the far end of the beam, on all 123 and on the 37 kind-5 records with the same layout, which is where the numbering of the six comes from.
 
-A fourth check runs on the disc alone: an object on a face cannot sit inside the neighbouring block, and under this order 8 of the 5885 objects on blocks of the four plain kinds do, against 94 for the best of the other 719 permutations. `tools/kula_faces.py` reports what every slot in the game holds.
+A fourth check runs on the disc alone: an object on a face cannot sit inside the neighbouring block, and under this order 8 of the 5885 objects on blocks of kinds 0 to 3 do, against 94 for the best of the other 719 permutations. `tools/kula_faces.py` reports what every slot in the game holds.
 
 Four kinds do not carry objects in their first two slots. A laser (8) names its two ends in the first and keeps its circuit in the second, a moving platform (5) names the two ends of its run in the first and keeps which end it is at, its length and its speed in the second, kind 6 keeps a fixed-point copy of its own cell in the first, three words that are 512 times its coordinates on all 435, which is what a block that moves would keep, though the game writes 512 over its first word at load and counts that down once the block breaks, and kind 7 keeps where in its cycle it starts in its first field ([motion.md](motion.md)).
 
