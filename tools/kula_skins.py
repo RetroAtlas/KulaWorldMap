@@ -432,7 +432,7 @@ def readings(code):
     if out["laser"] != out["laser.far"]:
         sys.exit("a laser's two ends wear different plates")
     if out["light.mode"] != out["bonus.mode"]:
-        sys.exit(f"the second set of lights is for mode {out['light.mode']}, not a level without a key's")
+        sys.exit(f"the second set of lights is for mode {out['light.mode']}, not the mode a level without a key plays in")
     for at in (0x8002d384, 0x8002d3b0):
         if code.multiplier(at, 3, "v1", "v0") != 4 * CHANNELS:
             sys.exit("a light is not three words to a shade")
