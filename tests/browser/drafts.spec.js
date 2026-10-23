@@ -575,7 +575,7 @@ test("the card's time field takes the seconds the file can hold and says when it
   const time = page.locator("#draftTime");
   await expect(time).toHaveAttribute("min", "1");
   await expect(time).toHaveAttribute("max", "32767");
-  for (const bad of ["0", "", "32768", "-5"]) {
+  for (const bad of ["0", "", "32768", "-5", "0.5", "32767.4"]) {
     await time.fill(bad);
     await time.blur();
     await expect(time).toHaveValue("99");
@@ -594,6 +594,14 @@ test("the card's time field takes the seconds the file can hold and says when it
   await time.blur();
   await expect(time).toHaveValue("5");
   expect((await shown(page)).time).toBe(5);
+  await time.fill("1.4");
+  await time.blur();
+  await expect(time).toHaveValue("1");
+  expect((await shown(page)).time).toBe(1);
+  await time.fill("99.4");
+  await time.blur();
+  await expect(time).toHaveValue("99");
+  expect((await shown(page)).time).toBe(99);
   await expect(page.locator("#toastStack .toast")).toHaveCount(0);
   await time.fill("200");
   await time.blur();

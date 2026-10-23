@@ -310,8 +310,9 @@ function buildForm(id, box) {
     title: "The seconds the clock starts at",
   });
   time.onchange = () => {
-    const v = Math.round(Number(time.value));
-    if (time.value !== "" && v >= 1 && v <= TIME_LIMIT) {
+    const n = Number(time.value);
+    if (time.value !== "" && n >= 1 && n <= TIME_LIMIT) {
+      const v = Math.round(n);
       edit({ time: v }, "changed the time");
       time.value = String(v);
     } else {
