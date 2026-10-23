@@ -657,7 +657,7 @@ button.kind:hover {
   font-size: 12.5px;
 }
 .yours .card label:not(.check) > span {
-  flex: 0 0 40px;
+  flex: 0 0 52px;
   color: var(--dim);
 }
 .yours .card input[type="text"],
@@ -675,6 +675,9 @@ button.kind:hover {
 }
 .yours .card input[type="number"] {
   flex: 0 0 68px;
+}
+.yours .card select:disabled {
+  opacity: 0.4;
 }
 .yours .card input:focus-visible,
 .yours .card select:focus-visible {

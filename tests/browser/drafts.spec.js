@@ -473,51 +473,75 @@ test("a level of your own marked a Simon room is drawn with its world's artwork,
   expect(errors).toEqual([]);
 });
 
-test("the Level card marks a level with no key as a bonus level, says how it plays, and counts the checks' errors", async ({
+test("the Level card lets a level with no key play as a bonus level or a Simon room, shows a level with a key as an arcade level, says how it plays, and counts the checks' errors", async ({
   page,
 }) => {
-  const NO_KEY =
-    "The level has no key, so the game plays it as a bonus level. Place a key to make it an arcade level.";
+  const NO_KEY = "How the game plays the level while it has no key";
   const HAS_KEY =
-    "This level has a key, so the game plays it as an arcade level. Take every key away to make it a bonus level.";
+    "A level with a key plays as an arcade level. Take every key away to choose how it plays.";
   const errors = trackErrors(page);
   await page.goto(EDIT);
   await settle(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(1);
-  const bonus = page.locator("#draftBonus");
-  const bonusLabel = page.locator("#draftCard label.check", { hasText: "Bonus level" });
+  const id = (await shown(page)).draft;
+  const mode = page.locator("#draftMode");
+  const options = mode.locator("option");
   const plays = page.locator("#draftPlays");
   const errorLine = page.locator("#draftErrors");
-  await expect(bonus).toBeChecked();
-  await expect(bonus).toBeDisabled();
-  await expect(bonusLabel).toHaveAttribute("title", NO_KEY);
-  await expect(bonus).toHaveAccessibleDescription(NO_KEY);
+  await expect(mode).toHaveAccessibleName("Plays as");
+  await expect(mode).toBeEnabled();
+  await expect(mode).toHaveValue("bonus");
+  await expect(options).toHaveText(["Bonus level", "Simon room"]);
+  await expect(mode).toHaveAttribute("title", NO_KEY);
+  await expect(mode).toHaveAccessibleDescription(NO_KEY);
   await expect(plays).toHaveText("Plays as a bonus level since it has no key.");
   await expect(errorLine).toBeHidden();
-  // the runner's own check holds a label for a disabled control to be disabled; a pointer does not
-  await bonusLabel.click({ force: true });
-  await expect(page.locator("#toastStack .toast")).toHaveText([NO_KEY]);
-  await expect(bonus).toBeChecked();
-  // the greyed row says why when pressed, and takes no focus
-  await expect(bonusLabel).toHaveCSS("opacity", "0.4");
-  expect(await bonusLabel.getAttribute("tabindex")).toBeNull();
+  if ((await page.locator("#editBtn").getAttribute("aria-pressed")) !== "true")
+    await page.keyboard.press("w");
+  const before = await steps(page);
 
-  await faced(page, 1, { type: 31 });
-  await expect(bonus).not.toBeChecked();
-  await expect(bonus).toBeDisabled();
-  await expect(bonusLabel).toHaveAttribute("title", HAS_KEY);
-  await expect(bonus).toHaveAccessibleDescription(HAS_KEY);
-  await expect(plays).toHaveText("Plays as an arcade level.");
-  // the box ticks again when the last key goes, and the row says why once more
-  await faced(page, 1, null);
-  await expect(bonus).toBeChecked();
-  await expect(bonusLabel).toHaveAttribute("title", NO_KEY);
-  await expect(bonus).toHaveAccessibleDescription(NO_KEY);
+  // choosing Simon room marks the level as one step, said by nothing but the sentence
+  await mode.selectOption("simon");
+  expect((await docOf(page, id)).simon).toBe(true);
+  await expect(plays).toHaveText("Plays as a Simon room.");
+  await expect(page.locator("#say")).toBeEmpty();
+  expect(await steps(page)).toEqual({ past: before.past + 1, future: 0 });
+  await page.locator("#cv").focus();
+  await page.locator("#undoBtn").click();
+  expect((await docOf(page, id)).simon).toBe(false);
+  await expect(mode).toHaveValue("bonus");
   await expect(plays).toHaveText("Plays as a bonus level since it has no key.");
+  expect(await steps(page)).toEqual({ past: before.past, future: 1 });
+  await page.locator("#redoBtn").click();
+  expect((await docOf(page, id)).simon).toBe(true);
+  await expect(mode).toHaveValue("simon");
+  await expect(plays).toHaveText("Plays as a Simon room.");
+
+  // a key makes an arcade level of it, and the choice closes, its tip saying why
   await faced(page, 1, { type: 31 });
-  await expect(bonus).not.toBeChecked();
-  // the greyed box is no stop in the card's order, which runs from Time on to Hidden level
+  await expect(mode).toBeDisabled();
+  await expect(mode).toHaveValue("arcade");
+  await expect(options).toHaveText(["Arcade level"]);
+  await expect(mode).toHaveAttribute("title", HAS_KEY);
+  await expect(mode).toHaveAccessibleDescription(HAS_KEY);
+  await expect(plays).toHaveText("Plays as an arcade level.");
+  // the choice opens again when the last key goes, the mark kept through the key
+  await faced(page, 1, null);
+  await expect(mode).toBeEnabled();
+  await expect(mode).toHaveValue("simon");
+  await expect(options).toHaveText(["Bonus level", "Simon room"]);
+  await expect(mode).toHaveAttribute("title", NO_KEY);
+  await expect(plays).toHaveText("Plays as a Simon room.");
+  await mode.selectOption("bonus");
+  expect((await docOf(page, id)).simon).toBe(false);
+  await expect(plays).toHaveText("Plays as a bonus level since it has no key.");
+  // the choice is a stop in the card's order after Time while it is open, and none once greyed
+  await page.locator("#draftTime").focus();
+  await page.keyboard.press("Tab");
+  await expect(mode).toBeFocused();
+  await faced(page, 1, { type: 31 });
+  await expect(mode).toBeDisabled();
   await page.locator("#draftTime").focus();
   await page.keyboard.press("Tab");
   await expect(page.locator("#draftHidden")).toBeFocused();

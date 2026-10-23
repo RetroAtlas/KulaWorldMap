@@ -41,10 +41,14 @@ const TITLE_LENGTH = 80;
 const TIME_LIMIT = 2 ** 15 - 1;
 const TIME_RANGE = `The time is from 1 to ${TIME_LIMIT} seconds.`;
 const GAME_FILE = "application/octet-stream";
-const NO_KEY =
-  "The level has no key, so the game plays it as a bonus level. Place a key to make it an arcade level.";
+const NO_KEY = "How the game plays the level while it has no key";
 const HAS_KEY =
-  "This level has a key, so the game plays it as an arcade level. Take every key away to make it a bonus level.";
+  "A level with a key plays as an arcade level. Take every key away to choose how it plays.";
+const ARCADE = [["arcade", "Arcade level"]];
+const KEYLESS = [
+  ["bonus", "Bonus level"],
+  ["simon", "Simon room"],
+];
 const nameOf = (doc) => doc.title || UNTITLED;
 /** A step the card takes is not announced, and clears what the panel last said. */
 const quietly = (id, next, label, opts) => {
@@ -321,11 +325,22 @@ function buildForm(id, box) {
     }
   };
 
-  const bonus = el("input", { id: "draftBonus", type: "checkbox", disabled: true });
-  bonus.setAttribute("aria-describedby", "draftBonusSays");
-  const bonusSays = el("p", { id: "draftBonusSays", hidden: true });
-  const bonusLabel = el("label", { className: "check" }, bonus, " Bonus level");
-  bonusLabel.onclick = () => toast(bonusSays.textContent);
+  const mode = el("select", { id: "draftMode" });
+  mode.onchange = () => edit({ simon: mode.value === "simon" }, "changed how the level plays");
+  let offered = null;
+  const offer = (key, value) => {
+    if (offered === key) {
+      set(mode, value);
+      return;
+    }
+    offered = key;
+    mode.replaceChildren(
+      ...(key ? ARCADE : KEYLESS).map(([v, text]) => el("option", { value: v, textContent: text })),
+    );
+    mode.disabled = key;
+    mode.title = key ? HAS_KEY : NO_KEY;
+    mode.value = value;
+  };
   const hidden = el("input", { id: "draftHidden", type: "checkbox" });
   hidden.onchange = () => edit({ hidden: hidden.checked }, "changed the hidden level setting");
   const afar = el("input", { id: "draftAfar", type: "checkbox" });
@@ -384,8 +399,7 @@ function buildForm(id, box) {
     field("Title", title),
     field("World", world),
     field("Time", time),
-    bonusLabel,
-    bonusSays,
+    field("Plays as", mode),
     el("label", { className: "check" }, hidden, " Hidden level"),
     el("label", { className: "check" }, afar, " Invisible blocks show from afar"),
     circuits.box,
@@ -405,8 +419,7 @@ function buildForm(id, box) {
       set(world, d.doc.world);
       set(time, String(d.doc.time));
       const key = keyed(d.doc);
-      bonus.checked = !key;
-      bonusLabel.title = bonusSays.textContent = key ? HAS_KEY : NO_KEY;
+      offer(key, key ? "arcade" : d.doc.simon ? "simon" : "bonus");
       hidden.checked = !!d.doc.hidden;
       afar.checked = !!d.doc.invisibleFromAfar;
       circuits.sync(d.doc);
