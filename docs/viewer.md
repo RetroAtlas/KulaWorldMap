@@ -502,6 +502,7 @@ The modules lie in layers, and a module imports only its own layer and those ben
 - Under `js/viewer/`, what a plain visit loads, the root is the model, which touches neither the page nor a canvas, `ui/` the page's primitives, which know nothing of the map, `draw/` what paints the canvases and `chrome/` what stands beside the map and speaks for it.
 - `js/format/` reads and writes the level, the project, the pack, the disc image, the patch and the store, touches no DOM and nothing of the viewer, and holds the lattice, its side, the key of a cell and the six faces in the game's order, which every layer imports.
 - `js/editor/` is what loads when a level of your own is wanted.
+- `js/play/` is what loads when the ball is wanted.
 
 ### What the page fetches
 
