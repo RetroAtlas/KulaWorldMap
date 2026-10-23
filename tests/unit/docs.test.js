@@ -813,6 +813,12 @@ const reasonClaims = [
     first(on(10)),
     /^(LEVEL \d+) carries the game's first (\w+)\./m,
   ],
+  [
+    "type 11",
+    "the first moving spikes, and those on LEVEL 41",
+    [...first(on(11)), on(11)(named("LEVEL 41"))],
+    /^(LEVEL \d+) carries the game's first (\w+), and LEVEL 41 (\w+)\./m,
+  ],
   ["type 11", "the moving spikes' phases", values(11, "f3"), /`f3` takes (\w+) values/],
   ["type 12", "the first spikes", first(on(12)), /^(LEVEL \d+) carries the game's first (\w+)\./m],
   [
@@ -931,6 +937,12 @@ const reasonClaims = [
     "the first quick captivators",
     first(on(52)),
     /^The game's first are (LEVEL \d+)'s (\w+)\./m,
+  ],
+  [
+    "type 53",
+    "the first wandering captivators",
+    first(on(53)),
+    /^(LEVEL \d+) carries the game's first (\w+), and the way one shakes/m,
   ],
   [
     "type 56",

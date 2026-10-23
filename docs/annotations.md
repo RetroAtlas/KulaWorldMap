@@ -159,7 +159,7 @@ LEVEL 26 carries the game's first three.
 
 ### type 11: Moving spikes
 
-LEVEL 41 carries the game's first six.
+LEVEL 40 carries the game's first two, and LEVEL 41 six.
 
 `f3` takes four values, which is where in the cycle each one starts, its phase ([motion.md](motion.md)).
 
@@ -325,7 +325,7 @@ In play, touching it costs the ball its life, and the lost life is what restarts
 
 ### type 53: Captivator, wandering
 
-LEVEL 84 carries the game's first four, and the way one shakes before it moves tells which way it will go ([motion.md](motion.md)). It has no direction field.
+LEVEL 81 carries the game's first seven, and the way one shakes before it moves tells which way it will go ([motion.md](motion.md)). It has no direction field.
 
 Its walk is the same on every play of a level, which play on OBJ LEVEL showed and the game's dice explain, seeded as the level starts and drawn from by nothing else while the ball stands still ([motion.md](motion.md)).
 
