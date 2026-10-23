@@ -322,6 +322,8 @@ While the ball is on the level, Follow on the play strip rolls it along the rout
 
 Either way the map takes the ball's view: the camera stands behind the ball and above it, looking the way it faces, with the face it stands on for the floor, and a little to one side so that the blocks keep their depth.
 
+A level with no start stands the ball on the first face it could, and says so.
+
 ### The keys, the pad, the strip and the HUD
 
 The arrow keys move the ball, up rolling it onto the next block for as long as it is held and left and right turning it a quarter turn each way, and on a touch screen a pad does the same, a bar for the roll over the two turns at the map's bottom left and the jump, the ball on a round button, at the bottom right, so one thumb can hold the roll while the other taps the jump, and both lie over the view, which keeps the ball clear of the strip alone and does not move as the pad is shown or put away; the game's own pad has no Down, so down does nothing; the strip at the map's bottom left, under the pad while the pad shows, says which block and face the ball stands on and which way it faces.
@@ -417,17 +419,15 @@ An arrow lets the ball roll off its block the way it points alone: facing any ot
 
 A crumbling block breaks the moment the ball stands on it, scoring as in the game, and is gone a third of a second later, dropping a ball still on it; a rolling ball crosses one before it goes, and one that stops on it has a moment to roll off, onto a block ahead, up a wall or into a jump, but cannot be rolled round a crumbling block's free edge, which holds it short of the edge until the block goes, as in the game.
 
-A vanishing block carries the ball while it is there and drops it as it goes, and the ball rolls onto one about to go as readily as onto stone.
-
 A block that has gone is gone from the map, with a burst of dust where it stood, though the game's debris and its shrinking faces are not drawn.
+
+A vanishing block carries the ball while it is there and drops it as it goes, and the ball rolls onto one about to go as readily as onto stone.
 
 A moving platform carries the ball: a ball that comes down on one from a jump or a fall rides it, the strip saying so, and goes where it goes, to and fro along its run, standing on it or rolling along it and round its ends and sides as round a free block, and never falls off it; the platform's blocks are all it can reach while it rides, so it takes nothing and goes round the platform's end rather than onto a block the platform stands against, though a lit beam it is carried through still kills it, and a jump or a hop is the only way off, onto whatever is under it when it comes down.
 
 Rolling onto a platform's block from a neighbour stands the ball on it as on stone, as a hop in place sets a riding ball down on it, and the platform moving off from under it leaves it to fall.
 
 A boost button launches the ball as the game's does: rolled onto one, the ball is taken from the keys, rolls on by itself past the button's middle and leaps three blocks on, higher than a jump, and one that comes down on a button, from a jump, a fall or a hop, leaps from it on the next frame whatever the keys, so buttons three blocks apart send the ball from one to the next; the strip says so and dust rises at the launch, without the game's sounds or the pad's shudder.
-
-The clock stands while the ball is on a clock face, and through the Simon rooms, as it does in the game.
 
 ### The Simon rooms
 
@@ -449,6 +449,8 @@ A wrong move, or a fall, loses the round and scores a point for the other player
 ### The clock and the opening
 
 The level's clock runs from the time the level gives, counting down as the game's does while the ball is on the level, and the HUD shows the seconds it has left; the level opens with the view coming to the ball and the keys live after the game's own short hold, with no fly-in, so it takes no key for its first few frames, and a key tapped before then is kept for the opening's end, while a key held through them is read as held, not pressed, once they are over.
+
+The clock stands while the ball is on a clock face, and through the Simon rooms, as it does in the game.
 
 ### The ending
 
@@ -474,8 +476,6 @@ A button the keyboard has moved the focus to, as Tab does, keeps Enter and is pr
 Dragging turns the view about the ball, the wheel zooms, and `f` frames the ball again; `Esc` leaves play with the view and the slice as they were before, or with the ball's view where the run has gone on to another level since, choosing another level, opening a link or going to a find leaves play too, keeping the view it goes to, and a link copied while playing opens the level the ball is on with the view the ball was first put down from, since playing is never in the link.
 
 With Motion on the level runs as the game's does while the ball rests, the clock counting down and what moves on the blocks moving; with Motion off the level jumps to its new footing rather than tumbling, the ball from one block's middle to the next, its dust lies still along the way, and the level waits between moves, its clock and what moves on it standing until the ball is driven again.
-
-A level with no start stands the ball on the first face it could, and says so.
 
 ## Permalinks
 
