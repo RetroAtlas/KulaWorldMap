@@ -3,9 +3,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { mapData, annotations, packs, levelKey } from "./fixtures.js";
-import { LARGEST, packSize } from "../../public/js/format/pak.js";
+import { IN_PLACE, LARGEST, REBUILD, fit, packSize } from "../../public/js/format/pak.js";
 import { FACES, PICKUPS } from "../../public/js/format/kwl.js";
 import { FACE_NORMAL } from "../../public/js/format/lattice.js";
+import { PACKS } from "../../public/js/format/patch.js";
+import { USER, USER_OFF } from "../../public/js/format/sectors.js";
+import { FINALS_AT, PACK_AT, ROOM_AT, ROOM_SECTORS, SYNTHETIC_SECTORS } from "./synthetic.js";
 
 const text = (path) =>
   readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
@@ -185,6 +188,26 @@ const turnedClocks = ofType(8).filter(({ o }) => field(o, "f2") === 4);
 const level125 = named("LEVEL 125");
 const yellowOn125 = (t) =>
   ofType(t).filter(({ l, o }) => l === level125 && field(o, "f3") === YELLOW).length;
+
+const packOf = (l) => packs.packs.find((p) => p.path === l.pack);
+const basename = (path) => path.split("/").pop();
+const sectors = fixture("sectors.json");
+const patchSets = fixture("patch-digests.json").sets;
+const full = packs.packs.filter((p) => p.size === p.capacity);
+// Where each shipped level's own stream goes back into its slot, as the page fits it.
+const fits = mapData.levels.map((l) => ({
+  l,
+  over: digests[levelKey(l)].size - packOf(l).slots[l.index].size,
+  ...fit(packOf(l), l.index, digests[levelKey(l)].size, title(l)),
+}));
+const rebuilt = fits.filter((f) => f.path !== IN_PLACE);
+const recompressed = rebuilt.filter((f) => f.recompressed);
+const level1 = fits.find((f) => title(f.l) === "LEVEL 1");
+const laidOut = (p) =>
+  packSize(
+    p.slots.map((s) => s.name),
+    p.slots.map((s) => s.size),
+  );
 
 // Each row is the figure a sentence rests on, so a rebuild that moves it cannot go unnoticed.
 const claims = [
@@ -547,6 +570,100 @@ const claims = [
     "free room",
     [packs.room.size, packs.room.lba, Math.ceil(packs.room.size / SECTOR)],
     /`\/3\.00`, the last file: ([\d,]+) bytes at sector (\d+), ([\d,]+) sectors/,
+  ],
+  [
+    "docs/disc.md",
+    "the Simon rooms' pack's last sector",
+    packs.packs.filter((p) => /COPYCAT/.test(p.path)).map((p) => p.lba + p.capacity / SECTOR - 1),
+    /`COPYCAT\.PAK` ends at (\d+)/,
+  ],
+  [
+    "docs/disc.md",
+    "packs and their sectors",
+    [packs.packs.length, capacity / SECTOR],
+    /on all (\d+), (\d+) sectors in all/,
+  ],
+  ["docs/disc.md", "pack sectors the disc test holds", capacity / SECTOR, /the (\d+) pack sectors/],
+  [
+    "docs/disc.md",
+    "sectors the fixture holds",
+    [sectors.cases.length, all(sectors.broken, ({ at }) => at >= USER_OFF && at < USER_OFF + USER)],
+    /(\w+) synthetic sectors at varied addresses and submodes and (\w+) with a user byte flipped/,
+  ],
+  ["docs/disc.md", "packs in the table", packs.packs.length, /The (\d+) packs and their room/],
+  [
+    "docs/disc.md",
+    "the pack that fills its sectors",
+    full.length === 1 ? basename(full[0].path) : null,
+    /`(\w+\.PAK)` fills its sectors exactly/,
+  ],
+  [
+    "docs/disc.md",
+    "packs the writer reproduces",
+    packs.packs.length,
+    /the unit tests hold it to all (\d+)/,
+  ],
+  [
+    "docs/disc.md",
+    "LEVEL 1's record, its stream and the room in place",
+    [
+      packOf(level1.l).slots[level1.l.index].size,
+      digests[levelKey(level1.l)].size,
+      level1.path === IN_PLACE ? level1.room : null,
+    ],
+    /LEVEL 1, ([\d,]+) bytes on the disc, comes back from its fields at ([\d,]+) and goes in with (\w+) to spare/,
+  ],
+  [
+    "docs/disc.md",
+    "what level 9 wins a world pack",
+    [Math.min(...worldPacks.map(wins)), Math.max(...worldPacks.map(wins))],
+    /(\d+) to (\d+) a world pack/,
+  ],
+  [
+    "docs/disc.md",
+    "shipped levels that go back in place, and the rest",
+    [
+      fits.length - rebuilt.length,
+      fits.length,
+      all(rebuilt, (f) => f.path === REBUILD),
+      fits.find((f) => title(f.l) === "BONUS 30").over,
+      recompressed.length === 1 && recompressed[0].l.pack === "/INCA/INCA.PAK"
+        ? title(recompressed[0].l)
+        : null,
+    ],
+    /Written back from their fields, (\d+) of the disc's (\d+) levels go into their own slot in place; (\w+) come out a few bytes longer than the disc's stream, BONUS 30 by (\d+) since its pickups are renumbered, and rebuild their pack, (LEVEL \d+) recompressing INCA's/,
+  ],
+  [
+    "docs/disc.md",
+    "sets the patch fixture holds",
+    patchSets.length,
+    /The fixture below holds (\w+) sets beside its single placements/,
+  ],
+  [
+    "docs/disc.md",
+    "sets whose digests the patch fixture holds",
+    patchSets.length,
+    /and for the (\w+) sets above/,
+  ],
+  [
+    "docs/disc.md",
+    "packs laid out with no gap",
+    all(packs.packs, (p) => laidOut(p) === p.size),
+    /which is the file's length on all (\d+) packs/,
+  ],
+  [
+    "docs/disc.md",
+    "the synthetic image's sectors, the sectors of its packs and its free room",
+    [SYNTHETIC_SECTORS, uniform([FINALS_AT - PACK_AT, ROOM_AT - FINALS_AT]), ROOM_SECTORS],
+    /built with the disc's structure in (\d+) sectors: .* a world pack and a finals pack of (\w+) sector each .* a `\/3\.00` of (\w+) zero sectors and a postgap/,
+  ],
+  [
+    "docs/disc.md",
+    "packs the image is known by",
+    String([...PACKS].sort()) === String(packs.packs.map((p) => p.path).sort())
+      ? PACKS.length
+      : null,
+    /and the (\d+) packs by path/,
   ],
   ["docs/annotations.md", "curated scores", curated, /each of the other (\d+) curates its `score`/],
 ];
