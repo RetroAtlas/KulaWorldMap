@@ -1,0 +1,2 @@
+# a hunk of a doc's diff names the section it falls in
+*.md diff=markdown
