@@ -476,7 +476,7 @@ A button the keyboard has moved the focus to, as Tab does, keeps Enter and is pr
 
 ### The view, leaving play and Motion
 
-Dragging turns the view about the ball, the wheel zooms, and `f` frames the ball again; `Esc` leaves play with the view and the slice as they were before, or with the ball's view where the run has gone on to another level since, choosing another level, opening a link or going to a find leaves play too, keeping the view it goes to, and a link copied while playing opens the level the ball is on with the view the ball was first put down from, since playing is never in the link.
+Dragging turns the view about the ball, the wheel zooms, and `f` frames the ball again; `Esc` leaves play with the view and the slice as they were before, or with the ball's view where the run has gone on to another level since, choosing another level, opening a link or going to a find leaves play too, keeping the view it goes to.
 
 With Motion on the level runs as the game's does while the ball rests, the clock counting down and what moves on the blocks moving; with Motion off the level jumps to its new footing rather than tumbling, the ball from one block's middle to the next, its dust lies still along the way, and the level waits between moves, its clock and what moves on it standing until the ball is driven again.
 
