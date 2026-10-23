@@ -25,6 +25,7 @@ from kula_kwl import (  # noqa: E402
     DATA,
     CAPS,
     CAPTIVATORS,
+    COPYCAT_PACK,
     DIGESTS,
     DISC_MAX,
     DROPPED,
@@ -128,7 +129,7 @@ def playground():
 
 PLAYGROUND = {
     "format": FORMAT, "version": 1, "title": "", "author": "", "notes": "", "world": WORLD,
-    "time": 45, "hidden": True, "invisibleFromAfar": True, "circuits": {"1": "off"},
+    "time": 45, "hidden": True, "invisibleFromAfar": True, "simon": False, "circuits": {"1": "off"},
     "blocks": [
         {"cell": [10, 10, 17], "kind": 0, "faces": {"0": {"type": START, "facing": 3},
                                                       "1": {"type": COIN, "variant": 2},
@@ -150,7 +151,7 @@ PLAYGROUND = {
 
 def project(blocks, **more):
     out = {"format": FORMAT, "version": 1, "title": "t", "author": "", "notes": "", "world": WORLD,
-           "time": 99, "hidden": False, "invisibleFromAfar": False, "circuits": {}, "blocks": blocks}
+           "time": 99, "hidden": False, "invisibleFromAfar": False, "simon": False, "circuits": {}, "blocks": blocks}
     out.update(more)
     return out
 
@@ -233,10 +234,31 @@ class RoundTrips(unittest.TestCase):
     def test_a_template_is_named_by_its_pack_and_index(self):
         data = json.loads(DATA.read_text())
         p = template(data, "/HIRO/HIRO.PAK#0")
-        self.assertEqual((p["from"], p["title"], p["world"]), ("/HIRO/HIRO.PAK#0", "LEVEL 1", "HIRO"))
+        self.assertEqual((p["from"], p["title"], p["world"], p["simon"]), ("/HIRO/HIRO.PAK#0", "LEVEL 1", "HIRO", False))
         self.assertEqual(template(data, "hiro#0"), p)
+        room = template(data, f"{COPYCAT_PACK}#0")
+        self.assertEqual((room["from"], room["simon"]), (f"{COPYCAT_PACK}#0", True))
+        self.assertEqual(template(data, "copycat#0"), room)
         with self.assertRaises(KeyError):
             template(data, "/HIRO/HIRO.PAK#99")
+
+    def test_a_simon_rooms_project_carries_the_flag_a_world_levels_does_not_and_the_bytes_carry_neither(self):
+        self.assertEqual(COPYCAT_PACK, json.loads(OBJECTS.read_text())["skins"]["copycat"])
+        levels = json.loads(DATA.read_text())["levels"]
+        rooms = [l for l in levels if l["pack"] == COPYCAT_PACK]
+        self.assertTrue(rooms)
+        for l in levels:
+            self.assertEqual(project_of(l)["simon"], l["pack"] == COPYCAT_PACK, l["name"])
+        for room in rooms:
+            p = project_of(room)
+            blob = canonical(p)
+            self.assertEqual(canonical(dict(p, simon=False)), blob, room["name"])
+            C = Level(blob, room["name"])
+            meta = {"shown": room.get("shown"), "index": room["index"]}
+            self.assertTrue(project_of_level(C, world=room["theme"], pack=room["pack"], **meta)["simon"], room["name"])
+            world_pack = f"/{room['theme']}/{room['theme']}.PAK"
+            self.assertFalse(project_of_level(C, world=room["theme"], pack=world_pack, **meta)["simon"], room["name"])
+            self.assertFalse(read_kwl(blob, room["theme"])[0]["simon"], room["name"])
 
     def test_the_bytes_are_undefined_for_what_the_lattice_cannot_hold(self):
         with self.assertRaises(ValueError):
@@ -642,7 +664,20 @@ class ReadsProjects(unittest.TestCase):
         p, report, _ = read_project({"format": FORMAT})
         self.assertEqual(report, ["no blocks"])
         self.assertEqual(p, {"format": FORMAT, "version": 1, "title": "", "author": "", "notes": "", "world": "",
-                             "time": 99, "hidden": False, "invisibleFromAfar": False, "circuits": {}, "blocks": []})
+                             "time": 99, "hidden": False, "invisibleFromAfar": False, "simon": False, "circuits": {},
+                             "blocks": []})
+
+    def test_the_simon_flag_is_read_as_hidden_is_true_or_false_and_anything_else_said_and_taken_as_false(self):
+        self.assertFalse(read_project({"format": FORMAT})[0]["simon"])
+        self.assertTrue(read_project({"format": FORMAT, "simon": True})[0]["simon"])
+        self.assertFalse(read_project({"format": FORMAT, "simon": False})[0]["simon"])
+        for simon in (1, "yes", None, [True]):
+            p, report, repairs = read_project({"format": FORMAT, "world": WORLD, "simon": simon, "blocks": []})
+            self.assertFalse(p["simon"], simon)
+            self.assertEqual(report, ["simon is neither true nor false; it is taken as false"])
+            self.assertEqual(repairs, 1)
+        self.assertEqual(list(p), ["format", "version", "title", "author", "notes", "world", "time", "hidden",
+                                   "invisibleFromAfar", "simon", "circuits", "blocks"])
 
     def test_the_reader_takes_what_it_knows_of_a_newer_file_fills_the_defaults_and_drops_what_cannot_be_a_block(self):
         coin = {"type": COIN, "variant": 0}
@@ -1350,6 +1385,7 @@ class Validates(unittest.TestCase):
         self.assertIn("with no key the game draws the bonus artwork, which has no picture for the fire",
                       self.warnings([plain((5, 5, 5), t0=start(), t1={"type": 1})]))
         self.assertFalse(any("bonus artwork" in w for w in self.warnings(blocks, hidden=True)))
+        self.assertFalse(any("bonus artwork" in w for w in self.warnings(blocks, simon=True)))
         blocks[0]["faces"]["5"] = {"type": KEY}
         self.assertFalse(any("bonus artwork" in w for w in self.warnings(blocks)))
         self.assertFalse(any("bonus artwork" in w for w in self.warnings([plain((5, 5, 5), t0=start(), t1={"type": COIN, "variant": 0})])))
@@ -1365,6 +1401,16 @@ class Validates(unittest.TestCase):
                          "Plays as a hidden level, with the glass ball on half-seen blocks.")
         self.assertEqual(plays_as(project(keyless["blocks"], hidden=True)),
                          "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks.")
+        self.assertEqual(plays_as(project(keyless["blocks"], simon=True)), "Plays as a Simon room.")
+        self.assertEqual(plays_as(project(keyed["blocks"], simon=True)), "Plays as an arcade level.")
+        self.assertEqual(plays_as(project(keyless["blocks"], simon=True, hidden=True)),
+                         "Plays as a hidden Simon room, with the glass ball on half-seen blocks.")
+        self.assertEqual(plays_as(project(keyed["blocks"], simon=True, hidden=True)),
+                         "Plays as a hidden level, with the glass ball on half-seen blocks.")
+        rooms = [l for l in json.loads(DATA.read_text())["levels"] if l["pack"] == COPYCAT_PACK]
+        self.assertTrue(rooms)
+        for l in rooms:
+            self.assertEqual(plays_as(project_of(l)), "Plays as a Simon room.", l["name"])
 
     def test_every_shipped_level_validates_with_no_error(self):
         for l in json.loads(DATA.read_text())["levels"]:

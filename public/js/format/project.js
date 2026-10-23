@@ -82,7 +82,17 @@ const CAPTIVATOR_SET = new Set(CAPTIVATORS);
 const UNDRAWN_KINDS = new Set(BONUS_UNDRAWN_KINDS);
 const UNDRAWN_TYPES = new Set(BONUS_UNDRAWN_TYPES);
 const CENTRE = [17, 17, 17];
-const META = ["title", "author", "notes", "world", "into", "time", "hidden", "invisibleFromAfar"];
+const META = [
+  "title",
+  "author",
+  "notes",
+  "world",
+  "into",
+  "time",
+  "hidden",
+  "invisibleFromAfar",
+  "simon",
+];
 
 export const fromLevel = projectOf;
 
@@ -97,6 +107,7 @@ export const blank = (world) => ({
   time: DEFAULT_TIME,
   hidden: false,
   invisibleFromAfar: false,
+  simon: false,
   circuits: {},
   blocks: [{ cell: [...CENTRE], kind: 0, faces: { 0: { type: START, facing: 3 } } }],
 });
@@ -270,11 +281,15 @@ export function counts(project, hides) {
 
 export function playsAs(project) {
   const keyed = project.blocks.some((b) => facesOf(b).some(([, o]) => o.type === KEY));
-  if (project.hidden)
-    return keyed
-      ? "Plays as a hidden level, with the glass ball on half-seen blocks."
-      : "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks.";
-  return keyed ? "Plays as an arcade level." : "Plays as a bonus level since it has no key.";
+  const room = !keyed && !!project.simon;
+  if (project.hidden) {
+    if (keyed) return "Plays as a hidden level, with the glass ball on half-seen blocks.";
+    if (room) return "Plays as a hidden Simon room, with the glass ball on half-seen blocks.";
+    return "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks.";
+  }
+  if (keyed) return "Plays as an arcade level.";
+  if (room) return "Plays as a Simon room.";
+  return "Plays as a bonus level since it has no key.";
 }
 
 /** Whether a target names a slot of a world pack or a finals pack. */
@@ -586,7 +601,7 @@ export function validate(project, hides, names = {}) {
 
   validateCircuits(project, warn, names);
   const n = counts(project, hides);
-  const undrawn = n.keys || project.hidden ? [] : undrawnInBonus(blocks, names);
+  const undrawn = n.keys || project.hidden || project.simon ? [] : undrawnInBonus(blocks, names);
   if (undrawn.length)
     warn(
       `with no key the game draws the bonus artwork, which has no picture for ${listed(undrawn)}`,
@@ -835,6 +850,7 @@ export function readProject(source) {
   }
   project.hidden = flag("hidden");
   project.invisibleFromAfar = flag("invisibleFromAfar");
+  project.simon = flag("simon");
   project.circuits = {};
   if (raw.circuits !== undefined && !isObject(raw.circuits))
     report.push("circuits is not a table of colours; every colour starts on");
@@ -906,6 +922,7 @@ export function writeProject(project) {
   head.time = project.time ?? DEFAULT_TIME;
   head.hidden = !!project.hidden;
   head.invisibleFromAfar = !!project.invisibleFromAfar;
+  head.simon = !!project.simon;
   head.circuits = Object.fromEntries(
     Object.entries(project.circuits ?? {})
       .filter(([, state]) => state === "off")

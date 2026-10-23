@@ -85,6 +85,7 @@ const project = (blocks, more = {}) => ({
   time: 99,
   hidden: false,
   invisibleFromAfar: false,
+  simon: false,
   circuits: {},
   blocks,
   ...more,
@@ -112,7 +113,10 @@ const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 test("a blank level has a start to build from and nothing the game would mishandle", () => {
   const p = blank("HAZE");
   assert.deepEqual(texts(validate(p, HIDES, NAMES), "error"), []);
-  assert.deepEqual([p.title, p.world, p.time, p.blocks.length], [UNTITLED, "HAZE", 99, 1]);
+  assert.deepEqual(
+    [p.title, p.world, p.time, p.simon, p.blocks.length],
+    [UNTITLED, "HAZE", 99, false, 1],
+  );
   assert.deepEqual(faceAt(p, [17, 17, 17], 0), start());
   assert.equal(playsAs(p), "Plays as a bonus level since it has no key.");
 });
@@ -277,9 +281,11 @@ test("every shipped level validates with no error and plays as the game plays it
     l.records.some((r) => r.kind === SETTINGS_KIND && r.type === 1),
   );
   assert.deepEqual([bonus.length, hidden.length], [30, 10]);
+  assert.ok(mapData.levels.some((l) => l.pack === objects.skins.copycat));
   for (const l of mapData.levels) {
     const p = fromLevel(l);
     assert.deepEqual(texts(validate(p, HIDES, NAMES), "error"), [], l.name);
+    assert.equal(p.simon, l.pack === objects.skins.copycat, l.name);
     const plays = playsAs(p);
     if (hidden.includes(l))
       assert.equal(
@@ -289,8 +295,9 @@ test("every shipped level validates with no error and plays as the game plays it
       );
     else if (bonus.includes(l))
       assert.equal(plays, "Plays as a bonus level since it has no key.", l.name);
-    else if (l.pack !== objects.skins.copycat)
-      assert.equal(plays, "Plays as an arcade level.", l.name);
+    else if (l.pack === objects.skins.copycat)
+      assert.equal(plays, "Plays as a Simon room.", l.name);
+    else assert.equal(plays, "Plays as an arcade level.", l.name);
   }
 });
 
@@ -1164,6 +1171,7 @@ test("a keyless level is warned of what the bonus artwork has no picture for", (
     ),
   );
   assert.ok(!warnings(blocks, { hidden: true }).some((w) => w.includes("bonus artwork")));
+  assert.ok(!warnings(blocks, { simon: true }).some((w) => w.includes("bonus artwork")));
   blocks[0].faces[5] = { type: KEY };
   assert.ok(!warnings(blocks).some((w) => w.includes("bonus artwork")));
   assert.ok(
@@ -1192,6 +1200,16 @@ test("how a level plays", () => {
   assert.equal(
     playsAs({ ...keyless, hidden: true }),
     "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks.",
+  );
+  assert.equal(playsAs({ ...keyless, simon: true }), "Plays as a Simon room.");
+  assert.equal(playsAs({ ...keyed, simon: true }), "Plays as an arcade level.");
+  assert.equal(
+    playsAs({ ...keyless, simon: true, hidden: true }),
+    "Plays as a hidden Simon room, with the glass ball on half-seen blocks.",
+  );
+  assert.equal(
+    playsAs({ ...keyed, simon: true, hidden: true }),
+    "Plays as a hidden level, with the glass ball on half-seen blocks.",
   );
   assert.deepEqual(
     validate(keyed, HIDES, NAMES).map((f) => f.level),
@@ -1222,9 +1240,30 @@ test("the reader refuses another format's file and nothing else", () => {
     time: 99,
     hidden: false,
     invisibleFromAfar: false,
+    simon: false,
     circuits: {},
     blocks: [],
   });
+});
+
+test("the Simon flag is read as hidden is, true or false, anything else said and taken as false, and written always", () => {
+  const read = (more) => readProject({ format: FORMAT, world: WORLD, blocks: [], ...more });
+  assert.equal(read({}).project.simon, false);
+  assert.equal(read({ simon: true }).project.simon, true);
+  assert.equal(read({ simon: false }).project.simon, false);
+  for (const simon of [1, "yes", null, [true]]) {
+    const { project: p, report, repairs } = read({ simon });
+    assert.equal(p.simon, false, JSON.stringify(simon));
+    assert.deepEqual(report, ["simon is neither true nor false; it is taken as false"]);
+    assert.equal(repairs, 1);
+  }
+  const room = fromLevel(mapData.levels.find((l) => l.pack === objects.skins.copycat));
+  assert.equal(room.simon, true);
+  const text = writeProject(room);
+  assert.ok(text.includes('\n  "invisibleFromAfar": false,\n  "simon": true,\n  "circuits"'));
+  assert.deepEqual(readProject(text), { project: room, report: [], repairs: 0 });
+  assert.ok(writeProject(setMeta(room, { simon: false })).includes('\n  "simon": false,\n'));
+  assert.ok(writeProject(project([])).includes('\n  "simon": false,\n'));
 });
 
 test("the reader takes what it knows of a newer file, fills the defaults and drops what cannot be a block", () => {
@@ -1681,6 +1720,7 @@ test("the writer writes the document's keys in its order, one block a line, the 
     "time",
     "hidden",
     "invisibleFromAfar",
+    "simon",
     "circuits",
     "blocks",
   ]);

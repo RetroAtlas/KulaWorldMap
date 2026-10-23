@@ -25,6 +25,7 @@ It spells the game's own structure in the game's own numbers: cells are lattice 
   "time": 99,
   "hidden": false,
   "invisibleFromAfar": false,
+  "simon": false,
   "circuits": { "1": "off" },
   "blocks": [
     { "cell": [17, 12, 17], "kind": 0, "faces": { "0": { "type": 30, "facing": 3 } } },
@@ -48,6 +49,7 @@ It spells the game's own structure in the game's own numbers: cells are lattice 
 | `time` | seconds, which the game multiplies by 50 into its clock | 99 |
 | `hidden` | the settings record's type 1: the glass ball and translucent faces | `false` |
 | `invisibleFromAfar` | the settings record's `f2` 1: invisible blocks show from afar and fade near the ball | `false` |
+| `simon` | the level is a Simon room, played in the game's Simon mode as the rooms of the Copycat pack are, with its world's artwork, no clock and the pad read one move at a time ([motion.md](motion.md)); a copy of a shipped room carries it, and a level with a key plays as an arcade level whatever the flag, which stays stored and inert until the key goes | `false` |
 | `circuits` | per colour `"0"` to `"3"`, yellow, blue, green, red, `"on"` or `"off"`; a colour not named starts on | `{}` |
 | `blocks` | the sparse lattice, one entry per placed cell | `[]` with a line where it is missing or not a list |
 
@@ -107,6 +109,8 @@ Everything the game derives at load or never reads is left out and rebuilt at ev
 - The level type (derived from the key count).
 - Names, since names change and numbers do not.
 - Any id local to one browser, since a file is a level and not a slot in someone's browser.
+
+The mode a level is played in is the pack's and not the level's: the game plays a room of the Copycat pack in its Simon mode by where it lies, and a level's bytes have no place for the mode, so the file carries `simon` for the map alone, which is how a level kept outside the pack says it is a room.
 
 ## The level file a project means
 
@@ -240,7 +244,7 @@ Both take `skins.hides` of `public/objects.json` for the face count, and without
 - An object looking into a block, a crumbling or vanishing block or a beam's cell.
 - A beam ending on a plain block that carries something, which keeps working but paints plain.
 - A hidden exit 26 on a block that is not plain, which the glow loader passes over and the game has not been seen to take.
-- A level with no key, which the game draws with the bonus artwork, placing a block or a face that artwork has no picture for, the fire, ice and acid blocks, the moving platform's four textures and the fire, ice and acid paint, the exit, the clock, the start on a clock and the fruit, whose models in the second set are the placeholder texture ([tgi.md](tgi.md)), named in the warning by their annotation names, and which no keyless level of the disc places.
+- A level with no key that is neither hidden nor a Simon room, which the game draws with the bonus artwork, placing a block or a face that artwork has no picture for, the fire, ice and acid blocks, the moving platform's four textures and the fire, ice and acid paint, the exit, the clock, the start on a clock and the fruit, whose models in the second set are the placeholder texture ([tgi.md](tgi.md)), named in the warning by their annotation names, and which no keyless level of the disc places.
 - A platform's speed other than 30 or length outside 2 to 3.
 - A time above 99, which the clock has never been seen to show.
 - A phase of 4 or 5.
@@ -283,7 +287,7 @@ The faces are counted as the loader builds them, replaying `skins.hides` of `pub
 
 HIDDEN 10 comes to 766 by that count, and one more plain block in the open takes it over 768.
 
-**Plays as.** "Plays as an arcade level." where a key stands on a block of kinds 0 to 4; "Plays as a bonus level since it has no key." where none does, by the loader's count at `0x80027b2c`; "Plays as a hidden level, with the glass ball on half-seen blocks." where `hidden` is set; and "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks." for a hidden level with no key.
+**Plays as.** "Plays as an arcade level." where a key stands on a block of kinds 0 to 4, whatever `simon` says; "Plays as a bonus level since it has no key." where none does, by the loader's count at `0x80027b2c`; "Plays as a Simon room." where none does and `simon` is set; "Plays as a hidden level, with the glass ball on half-seen blocks." where `hidden` is set; and "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks." or "Plays as a hidden Simon room, with the glass ball on half-seen blocks." for a hidden level with no key, by `simon`.
 
 ## The drafts a browser keeps
 

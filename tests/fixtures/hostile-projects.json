@@ -41,6 +41,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": []
    },
@@ -167,6 +168,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {
      "1": "off"
     },
@@ -411,6 +413,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -600,6 +603,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -703,6 +707,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -818,6 +823,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -924,6 +930,7 @@
     "time": 45,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -1022,6 +1029,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -1096,6 +1104,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -1175,6 +1184,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -1266,6 +1276,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -1365,6 +1376,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {
      "0": "off"
     },
@@ -1437,6 +1449,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -1529,6 +1542,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -1623,6 +1637,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -1694,6 +1709,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -1767,6 +1783,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -1830,6 +1847,7 @@
     "time": -5,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -1893,6 +1911,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -1976,6 +1995,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -2049,6 +2069,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": []
    },
@@ -2121,6 +2142,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": []
    },
@@ -2203,6 +2225,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -2320,6 +2343,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -2435,6 +2459,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -2533,6 +2558,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -2659,6 +2685,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -2785,6 +2812,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -2895,6 +2923,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -2990,6 +3019,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -3079,6 +3109,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -3168,6 +3199,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -3248,6 +3280,7 @@
     "time": 32767,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -3316,6 +3349,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -6381,6 +6415,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -9529,6 +9564,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -9650,6 +9686,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -9720,6 +9757,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -9801,6 +9839,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -9881,6 +9920,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -9992,6 +10032,7 @@
     "time": -32768,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -10109,6 +10150,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -10175,6 +10217,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -10252,6 +10295,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -10332,6 +10376,7 @@
     "time": 99,
     "hidden": false,
     "invisibleFromAfar": false,
+    "simon": false,
     "circuits": {},
     "blocks": [
      {
@@ -10359,6 +10404,65 @@
    ],
    "level": {
     "kwl": "0c2438bd477825dbec873a7487656b1f1269c1450fc3de2a8ce1146b9f36861f"
+   }
+  },
+  {
+   "name": "a Simon flag that is text",
+   "input": {
+    "format": "kula-world-level",
+    "world": "HIRO",
+    "simon": "yes",
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 3
+       }
+      }
+     }
+    ]
+   },
+   "project": {
+    "format": "kula-world-level",
+    "version": 1,
+    "title": "",
+    "author": "",
+    "notes": "",
+    "world": "HIRO",
+    "time": 99,
+    "hidden": false,
+    "invisibleFromAfar": false,
+    "simon": false,
+    "circuits": {},
+    "blocks": [
+     {
+      "cell": [
+       5,
+       5,
+       5
+      ],
+      "kind": 0,
+      "faces": {
+       "0": {
+        "type": 30,
+        "facing": 3
+       }
+      }
+     }
+    ]
+   },
+   "report": [
+    "simon is neither true nor false; it is taken as false"
+   ],
+   "level": {
+    "kwl": "108a536c5005d3b261a630f66659b95a6fa85a181c4ae029919e807a810e2b60"
    }
   }
  ]

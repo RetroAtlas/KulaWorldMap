@@ -50,6 +50,7 @@ const MAP_FILE = `{
   "time": 99,
   "hidden": false,
   "invisibleFromAfar": false,
+  "simon": false,
   "circuits": {},
   "blocks": [
     { "cell": [17, 17, 17], "kind": 0, "faces": { "0": { "type": 30, "facing": 3 } } }

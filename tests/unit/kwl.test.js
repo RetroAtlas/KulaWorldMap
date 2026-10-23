@@ -3,11 +3,12 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { mapData, levelKey } from "./fixtures.js";
+import { mapData, objects, levelKey } from "./fixtures.js";
 import { deflate } from "../../public/js/format/deflate.js";
 import { SIDE } from "../../public/js/format/lattice.js";
 import {
   CELLS,
+  COPYCAT_PACK,
   FACES,
   FIRST_RECORD,
   FORMAT,
@@ -155,6 +156,7 @@ const PLAYGROUND = {
   time: 45,
   hidden: true,
   invisibleFromAfar: true,
+  simon: false,
   circuits: { 1: "off" },
   blocks: [
     {
@@ -202,6 +204,7 @@ const project = (blocks, more = {}) => ({
   time: 99,
   hidden: false,
   invisibleFromAfar: false,
+  simon: false,
   circuits: {},
   blocks,
   ...more,
@@ -351,6 +354,26 @@ test("a shipped level's project is a fixed point of writing and reading it back"
     const p = projectOf(l);
     const meta = { name: l.name, shown: l.shown, theme: l.theme, pack: l.pack, index: l.index };
     assert.deepEqual(projectOf(levelOf(writeKwl(p), meta)), p, l.name);
+  }
+});
+
+test("a Simon room's project carries the flag, a world level's does not, and the bytes carry neither", () => {
+  assert.equal(COPYCAT_PACK, objects.skins.copycat);
+  const rooms = mapData.levels.filter((l) => l.pack === COPYCAT_PACK);
+  assert.ok(rooms.length > 0);
+  for (const l of mapData.levels) assert.equal(projectOf(l).simon, l.pack === COPYCAT_PACK, l.name);
+  for (const room of rooms) {
+    const p = projectOf(room);
+    const bytes = writeKwl(p);
+    assert.deepEqual(writeKwl({ ...p, simon: false }), bytes, room.name);
+    const meta = { name: room.name, theme: room.theme, pack: room.pack, index: room.index };
+    assert.equal(projectOf(levelOf(bytes, meta)).simon, true, room.name);
+    assert.equal(
+      projectOf(levelOf(bytes, { ...meta, pack: `/${room.theme}/${room.theme}.PAK` })).simon,
+      false,
+      room.name,
+    );
+    assert.equal(readKwl(bytes, room.theme).project.simon, false, room.name);
   }
 });
 

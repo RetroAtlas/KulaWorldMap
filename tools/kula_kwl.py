@@ -76,6 +76,7 @@ VERSION = 1
 WORLDS = THEMES
 WORLD_SLOTS = 20
 FINAL_SLOTS = 2
+COPYCAT_PACK = "/HIRO/COPYCAT.PAK"   # the pack whose levels the game plays as Simon rooms
 TITLE_MOST = 80      # the most characters a reader keeps of a title
 TEXT_MOST = 2000     # and of any other text
 
@@ -472,6 +473,7 @@ def project_of(level, report=None):
         "time": level["time"],
         "hidden": hidden,
         "invisibleFromAfar": flip,
+        "simon": level.get("pack") == COPYCAT_PACK,
         "circuits": {str(c): "off" for c in sorted(states) if states[c] == STATE_OFF},
         "blocks": sorted(blocks, key=lambda b: tuple(b["cell"])),
     })
@@ -1124,6 +1126,7 @@ def read_project(raw):
         project["time"] = held
     project["hidden"] = flag("hidden")
     project["invisibleFromAfar"] = flag("invisibleFromAfar")
+    project["simon"] = flag("simon")
     project["circuits"] = {}
     if "circuits" in raw and not isinstance(raw["circuits"], dict):
         report.append("circuits is not a table of colours; every colour starts on")
@@ -1248,11 +1251,18 @@ def counts(project, hides):
 
 def plays_as(project):
     keyed = any(o["type"] == KEY for b in project["blocks"] for o in _faces_of(b).values())
+    room = not keyed and _truthy(project.get("simon"))
     if _truthy(project.get("hidden")):
         if keyed:
             return "Plays as a hidden level, with the glass ball on half-seen blocks."
+        if room:
+            return "Plays as a hidden Simon room, with the glass ball on half-seen blocks."
         return "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks."
-    return "Plays as an arcade level." if keyed else "Plays as a bonus level since it has no key."
+    if keyed:
+        return "Plays as an arcade level."
+    if room:
+        return "Plays as a Simon room."
+    return "Plays as a bonus level since it has no key."
 
 
 def _slot_of(pack, index):
@@ -1374,7 +1384,7 @@ def validate(project, hides):
 
     _validate_circuits(project, warn)
     n = counts(project, hides)
-    undrawn = [] if n["keys"] or _truthy(project.get("hidden")) else _undrawn_in_bonus(blocks)
+    undrawn = [] if n["keys"] or _truthy(project.get("hidden")) or _truthy(project.get("simon")) else _undrawn_in_bonus(blocks)
     if undrawn:
         warn(f"with no key the game draws the bonus artwork, which has no picture for {_listed(undrawn)}")
     if not hides:

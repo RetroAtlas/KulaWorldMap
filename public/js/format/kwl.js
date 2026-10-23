@@ -17,6 +17,8 @@ export const WORLDS = [
 ];
 export const WORLD_SLOTS = 20;
 export const FINAL_SLOTS = 2;
+/** The pack whose levels the game plays as Simon rooms. */
+export const COPYCAT_PACK = "/HIRO/COPYCAT.PAK";
 
 export const CELLS = SIDE ** 3;
 export const GRID_BYTES = CELLS * 2;
@@ -404,6 +406,7 @@ export function projectOf(level, report = []) {
     time: level.time,
     hidden,
     invisibleFromAfar: flip,
+    simon: level.pack === COPYCAT_PACK,
     circuits,
     blocks: blocks.sort(byCell),
   });
