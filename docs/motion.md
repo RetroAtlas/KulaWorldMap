@@ -1025,6 +1025,10 @@ The corkscrew's `f3` sets θ at load to 1024, 682, 341 or 0 for 0 to 3, a sixth 
 
 A probe looks 400 units back toward the block, into its cell, and one block along the side or the heading, and a block counts if `0x8003fc00` says it can be stood over, which is any plain style, a crumbling block, or a record whose slot for that face is empty, holds a captivator, the start, fire, ice or type 4, and never a moving platform, a coin, a key or a device; going ahead also needs the cell above the block ahead empty, and a lit beam's cells count as filled, a dark beam's and a vanishing block's while it is gone as empty.
 
+A vanishing block's top is asked through the record's type word, over which the loader writes the block's own lattice value, `5 + i` for record `i` (`0x80028bc4`, `0x80028bcc`), so to a walker on the tops a vanishing block counts only where that value is 30 or 50 or more (`0x8003fc5c` to `0x8003fc98`).
+
+A beam's two ends count as the plain style, since the loader writes style 0 over both (`0x80035b2c`, `0x80035bb8`, `0x80035c38`, `0x80035ca8`, and [level-format.md](level-format.md)).
+
 Turning is `0x8003d378`, `0x8003d4f4` and `0x8003d22c`: toward the side, toward the other side, or about, and a turn swaps the heading and the side and touches nothing else; what is drawn is RotMatrix of the entry's own three angles (`0x8003d7c8`), so a star tumbles on unbroken through a turn, and the wheel's nose swings round only because its turn steps one of its angles.
 
 The slow star decides each time it crosses the middle of a cell along its heading, which `0x8003fca4` measures: if there is a block beside it on the side it turns onto it, else if there is one on the other side it turns that way, else if it cannot go on it turns about; and it walks 13 a frame.
