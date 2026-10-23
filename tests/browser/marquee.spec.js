@@ -476,17 +476,26 @@ test("Select's key pressed again keeps the set and its line", async ({ page }) =
   expect(errors).toEqual([]);
 });
 
-test("a brush change clears a refusal and gives the set its line back", async ({ page }) => {
+test("a brush change makes Place the tool and lets the set go, as the tool's own key does", async ({
+  page,
+}) => {
   const errors = trackErrors(page);
   await fresh(page);
+  const before = await cells(page);
   await marquee(page, [B, C]);
   await expect(status(page)).toHaveText(selected(2));
   await page.keyboard.press("j");
   await expect(said(page)).toHaveText(/^Brush: /);
+  await expect(tool(page, "place")).toHaveAttribute("aria-pressed", "true");
+  await expect(status(page)).toHaveText("");
+  await page.keyboard.press("Shift+ArrowDown");
+  expect(await cells(page)).toEqual(before);
+  // a refusal's line goes with the brush change, and Alt-click takes the block's kind the same way
+  await page.keyboard.press("i");
+  await marquee(page, [B, C]);
   await expect(status(page)).toHaveText(selected(2));
   await page.keyboard.press("Shift+ArrowRight");
   await expect(status(page)).toHaveText(HELD);
-  // Alt-click takes the block's kind as the brush, with the set still in hand
   await page.keyboard.down("Alt");
   await click(page, await top(page, D));
   await page.keyboard.up("Alt");
@@ -494,9 +503,10 @@ test("a brush change clears a refusal and gives the set its line back", async ({
     "aria-pressed",
     "true",
   );
-  await expect(status(page)).toHaveText(selected(2));
+  await expect(tool(page, "place")).toHaveAttribute("aria-pressed", "true");
+  await expect(status(page)).toHaveText("");
   await page.keyboard.press("Shift+ArrowDown");
-  await expect(said(page)).toHaveText("Moved 2 blocks by 0, 1, 0");
+  expect(await cells(page)).toEqual(before);
   expect(errors).toEqual([]);
 });
 

@@ -243,12 +243,9 @@ function wireTools() {
       brush = e.kind !== undefined ? { id: e.id, kind: e.kind } : { id: e.id, type: e.type };
       if (e.variant !== undefined) brush.variant = e.variant;
       if (e.colour !== undefined) brush.colour = e.colour;
-      dropRun();
-      disarm();
-      status(set.size ? setLine(set.size) : "");
+      setTool("place");
       say(`Brush: ${e.label}`);
       emit("brush-changed");
-      drawSoon();
     },
     () => togglePalette(false),
   );

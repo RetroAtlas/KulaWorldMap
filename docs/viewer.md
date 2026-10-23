@@ -230,7 +230,7 @@ The palette floats above the strip while editing, and the strip's Palette button
 
 Its tabs are the groups a player meets, blocks, what is paint on a face or the ball's start, the devices, the hazards and the pickups, and its rows are every kind of block and every thing the game places, by name and with the legend's icon, a teleporter or a switch of each colour, a coin of each worth and a gem of each colour a row of their own, the fruit as one row since the game shows the player's next fruit whichever is placed, which the map draws by the level's number and a run places by what it has kept, as below, and the one thing the game never names by its number.
 
-The pressed row is the brush: a block makes Place lay that kind, and a thing makes Place put it on the face you click in place of whatever stood there, so the tip's last line names it and its icon stands on the hovered face.
+The pressed row is the brush: a block makes Place lay that kind, and a thing makes Place put it on the face you click in place of whatever stood there, so the tip's last line names it and its icon stands on the hovered face. Choosing a row makes Place the tool, whichever tool was pressed, so the next click lays what was chosen.
 
 `1` to `9` press the shown group's rows and `j` and `k` step through every row across the groups; Alt-click takes whatever is under the pointer as the brush, the thing on the face with its colour and its facing, or the kind of the block.
 

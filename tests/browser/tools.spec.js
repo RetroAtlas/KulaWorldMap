@@ -277,6 +277,52 @@ test("a refusal leaves the strip with the brush as it does with the tool", async
   expect(errors).toEqual([]);
 });
 
+test("choosing a brush makes Place the tool, by a row, a digit, j or k, or Alt-click", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await fresh(page);
+  const start = [17, 17, 17];
+  const pressed = (name) => expect(tool(page, name)).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("z");
+  await pressed("erase");
+  await page.locator("#palette .tabs button", { hasText: "Pickups" }).click();
+  await page.locator('#palette .rows button[data-id="t31"]').click();
+  await pressed("place");
+  await expect(tool(page, "erase")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator("#say")).toHaveText("Brush: Key");
+  // so the click that follows places rather than erases
+  await click(page, await plusX(page, start));
+  expect((await blocks(page)).find((b) => b.cell.join() === start.join()).faces).toMatchObject({
+    1: { type: 31 },
+  });
+  await page.keyboard.press("i");
+  await pressed("select");
+  await page.keyboard.press("2");
+  await pressed("place");
+  await page.keyboard.press("z");
+  await pressed("erase");
+  await page.keyboard.press("j");
+  await pressed("place");
+  await page.keyboard.press("i");
+  await pressed("select");
+  await page.keyboard.down("Alt");
+  await click(page, await top(page, start));
+  await page.keyboard.up("Alt");
+  await expect(page.locator('#palette .rows button[aria-pressed="true"]')).toHaveAttribute(
+    "data-id",
+    "t30",
+  );
+  await pressed("place");
+  // Turn is an action and not a tool, and leaves the tool as it stands
+  await page.keyboard.press("z");
+  await page.keyboard.press("Escape");
+  await page.locator("#turnBtn").click();
+  await expect(page.locator("#say")).toHaveText(/^Brush facing /);
+  await pressed("erase");
+  expect(errors).toEqual([]);
+});
+
 test("a block laid above the slice raises it, and the grid lays a first floor", async ({
   page,
 }) => {
