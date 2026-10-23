@@ -369,7 +369,7 @@ A draft is exported to the disc by `public/js/editor/patchdialog.js`, which take
 
 The rows, the image and its plan live as long as the page: the box opened again holds what it held when it was closed, with a row added for the draft it is opened for where none holds it and the rows whose drafts went meanwhile dropped without a word, and plans again over the image it holds rather than reading it again.
 
-It refuses nothing but errors: a project with any error from the checks below is shown its errors and gets no patch, warnings go in a fold and stop nothing, and a project the writer cannot write is refused with the writer's reason.
+It refuses nothing but errors: a project with any error from the checks in "What the game would make of a project" above is shown its errors and gets no patch, warnings go in a fold and stop nothing, and a project the writer cannot write is refused with the writer's reason.
 
 ### A row's slot
 
