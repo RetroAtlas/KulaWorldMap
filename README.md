@@ -47,7 +47,7 @@ That writes `public/map_data.json`, `public/objects.json` and `public/packs.json
 
 ## Where the rest is
 
-- [docs/viewer.md](docs/viewer.md): every control the map has, what moves, the compass, the search and the permalinks, and how the viewer is built.
+- [docs/viewer.md](docs/viewer.md): every control the map has, what moves, the compass, the search and the permalinks, the editor, the route planner and play mode, and how the viewer is built.
 - [docs/level-format.md](docs/level-format.md): the level file, reading by reading, with what each rests on, the object catalogue and the cheat that reaches any level.
 - [docs/tgi.md](docs/tgi.md): the artwork, and the rule that paints each face.
 - [docs/ggi.md](docs/ggi.md): the objects' meshes, colours and sprites.
@@ -55,6 +55,7 @@ That writes `public/map_data.json`, `public/objects.json` and `public/packs.json
 - [docs/camera.md](docs/camera.md): how the game frames a level.
 - [docs/annotations.md](docs/annotations.md): what each curated name, point value and note rests on.
 - [docs/editor.md](docs/editor.md): the level editor's file, the level written back to the game's bytes, and the checks that hold the writers to the disc.
+- [docs/disc.md](docs/disc.md): the disc image, its sectors and the room in each pack, and how a level is placed onto it and carried in a patch.
 - [docs/tools.md](docs/tools.md): what each tool under `tools/` does.
 - [CLAUDE.md](CLAUDE.md): the rules for changing any of it, and [backlog/](backlog/) the open questions.
 
