@@ -59,7 +59,7 @@ A block of kinds 0 to 4 may carry `faces`, keyed by the game's face numbers `"0"
 
 A wandering ball or a corkscrew with no facing heads as 1 does, which is how the disc leaves most of them, since the captivators' routine at `0x8003f98c` turns for a word of 2, 3 or 4 alone ([motion.md](motion.md)), as do the two stars and the wheel, whose heading comes through the same routine, and so does what the start's routine at `0x80038178` turns, the starts and the teleporter, which turns for the same three words.
 
-The arrow is taken to follow the same pattern unverified, since no routine this repo has read turns it and no arrow on the disc carries a 0, so every reader of this repo reads a facing of 0 on a type that needs one as 1, with a line saying so.
+The hazards at `0x8003a9a4` lay the arrow's way from its facing by the rule the start follows ([motion.md](motion.md)), and a facing of 0 heads as 1 there as it does for the starts, so every reader of this repo reads a facing of 0 on a type that needs one as 1, with a line saying so.
 
 `variant` is what the type's one varying field holds, the colour 0 to 3 of a teleporter 5 or a switch 9, the tier 2, 1, 0 of a coin 37 for bronze, blue, gold, the cut 0, 1, 2 of a gem 36 for blue, green, red, and the phase 0 to 3 of the moving spikes 11 and the corkscrew 56.
 
