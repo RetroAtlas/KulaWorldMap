@@ -665,6 +665,13 @@ const claims = [
       : null,
     /and the (\d+) packs by path/,
   ],
+  [
+    "docs/tgi.md",
+    "clocks left turned",
+    [turnedClocks.length, ofType(8).length],
+    /carries 4 in its `f2` on (\d+) of its (\d+) placements/,
+  ],
+  ["docs/tgi.md", "Simon rooms", rooms.length, /which is the pack the (\w+) Simon rooms are in/],
   ["docs/annotations.md", "curated scores", curated, /each of the other (\d+) curates its `score`/],
 ];
 
