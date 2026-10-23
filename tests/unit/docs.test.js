@@ -149,6 +149,26 @@ const [YELLOW, BLUE, GREEN, RED] = [0, 1, 2, 3];
 const ring = (t, colour) => rings.find((g) => title(g.l) === t && g.colour === colour)?.size;
 const selfRings = (l) => rings.filter((g) => g.l === l && g.size === 1).length;
 
+const devicesOf = (l) => l.records.flatMap((r) => r.on.filter((o) => [5, 9].includes(o.type)));
+const lasersOf = (l, colour) => l.records.filter((r) => r.kind === 8 && r.colour === colour);
+// The levels where a switch or a teleporter shares its colour with a laser.
+const sharing = mapData.levels.filter((l) =>
+  devicesOf(l).some((o) => lasersOf(l, field(o, "f3")).length),
+);
+// Whether every device on a level starts on exactly where the beams of its colour start lit.
+const agreeing = (l) =>
+  devicesOf(l).every((o) =>
+    lasersOf(l, field(o, "f3")).every((r) => (field(r, "f3") === 1) === (field(o, "f4") === 1)),
+  );
+const listed = (ns) => `${ns.slice(0, -1).join(", ")} and ${ns.at(-1)}`;
+const sharingAs = (prefix) =>
+  listed(
+    sharing
+      .filter((l) => title(l).startsWith(`${prefix} `))
+      .map((l) => Number(title(l).slice(prefix.length + 1)))
+      .sort((a, b) => a - b),
+  );
+
 const bonus = mapData.levels.filter((l) => inWorld(l) && [15, 16, 17].includes(l.index));
 const rooms = mapData.levels.filter((l) => /COPYCAT/.test(l.pack));
 const onStart = (l) => on(30)(l) === 1 && !on(29)(l);
@@ -440,6 +460,15 @@ const claims = [
         title(l) === "BONUS 30" && field(o, "f9") === -1 && field(o, "f10") === -1 && o.v === -1,
     ),
     /The (\d+) pickups whose number is unset, all on BONUS 30 with their `f9`, `f10` and `f14` unset too/,
+  ],
+  [
+    "docs/level-format.md",
+    "levels where lasers and switches or teleporters share a colour and agree",
+    sharing.every(agreeing) &&
+    sharing.every((l) => /^(?:LEVEL|FINAL) \d+$/.test(title(l)) || copies.includes(l))
+      ? [sharingAs("LEVEL"), sharingAs("FINAL"), sharing.filter((l) => copies.includes(l)).length]
+      : null,
+    /no exceptions across LEVEL (\d+(?:, \d+)* and \d+), FINAL (\d+(?:, \d+)* and \d+) and the (\w+) copies of OBJ LEVEL\./,
   ],
   ["docs/level-format.md", "switches", ofType(9).length, /(\d+) switches in all/],
   [
