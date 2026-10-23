@@ -680,8 +680,7 @@ test("the ball turns in place, Down moves nothing and Settings has no switch for
   await page.keyboard.press("ArrowRight");
   await expect(line(page)).toContainText("facing +x");
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
-  // the game's pad has no Down, so Down moves nothing, and play still takes the key, so it does
-  // not pan the view off the ball
+  // play asks nothing of Down but still takes the key, so neither the ball nor the view moves
   await page.keyboard.press("ArrowDown");
   await page.waitForTimeout(200);
   await expect(line(page)).toContainText("facing +x");
@@ -2912,7 +2911,7 @@ test.describe("with a touch screen", () => {
       expect(spot.x).toBeLessThan(375 - 40);
       expect(lineBox.width).toBeGreaterThan(strip.width * 0.8);
       expect(lineBox.height).toBeLessThan(45);
-      // the game's pad has no Down, so the pad has no down arrow and no row under the turns
+      // play asks nothing of Down, so the pad has no down arrow and no row under the turns
       await expect(page.locator('#pad [data-pad="down"]')).toHaveCount(0);
       // the roll is a bar over the two turns, and the jump stands at the bottom right, level with
       // the pad, the corner's widgets clear of the jump, the pad and the strip
