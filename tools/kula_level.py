@@ -27,7 +27,7 @@ second, and kind 6 keeps a fixed-point copy of its own cell. Whatever the
 other slots of those kinds hold is not in play: the game takes the things on a
 record of a kind below 5 and no other.
 
-A lattice cell holds one of five plain block styles below 5, or 5 + i for a
+A lattice cell holds one of five block styles below 5, or 5 + i for a
 block carrying record i. The record repeats the cell's own coordinates, which
 is what pins the two representations together and is checked on every build.
 
