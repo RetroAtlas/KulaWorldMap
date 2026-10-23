@@ -311,7 +311,7 @@ A hashchange to a `#DRAFT` link after a plain boot loads the editor when the sto
 
 ### The card and a new draft
 
-The card's title field takes at most 80 characters, and its time field a whole number of seconds from 1 to 32767, the range the file's word holds, saying so in a toast when it keeps the old value; the checks warn above 99 rather than refuse.
+The card's title field takes at most 80 characters, and its time field any number of seconds from 1 to 32767, the most the file's word holds, saying so in a toast when it keeps the old value, and a fraction lands as the nearest whole second; the checks warn above 99 rather than refuse.
 
 The card's Plays as select writes `simon` through `setMeta` as one step, labelled "changed how the level plays", offering a bonus level or a Simon room while the level has no key, and shows an arcade level alone, disabled, where a key stands, since the keys decide and the flag waits, stored, for the last key to go; the sentence under the settings says the result, by `playsAs`.
 
