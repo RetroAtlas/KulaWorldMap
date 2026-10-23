@@ -93,7 +93,6 @@ Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/contact.
 - `fitWith` and the `link-opening` event in `navigate.js`.
 - `ballsWith` and a traveller's `tint` and `body` in `things.js`.
 - `lightsWith` in `lights.js`.
-- The ribbon's pieces.
 - `adoptCourse` and `current` in `course.js`.
 - `tipWith` in `interaction.js`.
 - The panel's `onShow` and the `play-changed` event the editor listens to.
