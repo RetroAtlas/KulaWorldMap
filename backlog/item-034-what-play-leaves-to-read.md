@@ -42,7 +42,7 @@ The counts that would hold the reading to play, in DuckStation with frame advanc
 - A crumbling block gone on the twentieth frame from the one the ball first stands on.
 - Through a teleport the body's turn, which the reading says is kept, the ball arriving turned within its new frame as it stood within the old rather than laid afresh as the start lays it.
 
-Each count that differs corrects motion.md before the ball moves on the map.
+Each count that differs corrects motion.md, and the ball on the map with it.
 
 ## Ruled out
 
