@@ -94,6 +94,13 @@ from test_kula_level import block, level, slot  # noqa: E402
 TOOL = Path(__file__).resolve().parents[1] / "kula_kwl.py"
 EDITOR_DOC = Path(__file__).resolve().parents[2] / "docs" / "editor.md"
 FORMAT_DOC = Path(__file__).resolve().parents[2] / "docs" / "level-format.md"
+BARE_FACES = re.compile(r"the form the disc holds on ([\d,]+) of its empty faces")
+UNSET_SLOTS = re.compile(r"(\d+) to (\d+) of its (\d+) platforms, (\d+) to (\d+) of its (\d+) crumbling blocks, "
+                         r"(\d+) to (\d+) of its (\d+) vanishing blocks and (\d+) to (\d+) of its (\d+) lasers by slot")
+NUMBERED_LEVELS = re.compile(r"numbers its pickups as the writer does on all (\d+) levels that number them")
+NUMBER_RUNS = re.compile(r"runs 0 to n-1 with no repeats on (\d+) of the (\d+) levels that have any\. "
+                         r"The (\w+) with a repeat are ((?:[A-Z]+ \d+, )*[A-Z]+ \d+ and [A-Z]+ \d+),")
+SLOT_SENTENCES = {EDITOR_DOC: (BARE_FACES, UNSET_SLOTS, NUMBERED_LEVELS), FORMAT_DOC: (NUMBER_RUNS,)}
 PACKS = Path(__file__).resolve().parents[2] / "public" / "packs.json"
 HIDES = json.loads(OBJECTS.read_text())["skins"]["hides"]
 START, EXIT, KEY, COIN, GEM = 30, 7, 31, 37, 36
@@ -1634,6 +1641,15 @@ class TheCompare(unittest.TestCase):
         self.assertEqual(dict(gone), {"settings records with no flag set": 1, "records carrying nothing": 1})
 
 
+class TheDocuments(unittest.TestCase):
+    def test_the_sentences_the_disc_test_reads_still_match_its_patterns_without_the_disc(self):
+        for doc, patterns in SLOT_SENTENCES.items():
+            text = doc.read_text()
+            for pattern in patterns:
+                with self.subTest((doc.name, pattern.pattern)):
+                    self.assertIsNotNone(pattern.search(text), f"{doc.name} has no sentence matching {pattern.pattern}")
+
+
 @unittest.skipUnless(os.environ.get("KULA_DISC"), "needs the disc")
 class TheDisc(unittest.TestCase):
     def test_the_caps_and_the_loader_figures_are_the_executables_own(self):
@@ -1656,18 +1672,15 @@ class TheDisc(unittest.TestCase):
         with open_disc() as disc:
             f = slot_figures(disc)
         doc = EDITOR_DOC.read_text()
-        bare = re.search(r"the form the disc holds on ([\d,]+) of its empty faces", doc)
+        bare = BARE_FACES.search(doc)
         self.assertEqual(int(bare.group(1).replace(",", "")), f["bare"])
-        unset = re.search(r"(\d+) to (\d+) of its (\d+) platforms, (\d+) to (\d+) of its (\d+) crumbling blocks, "
-                          r"(\d+) to (\d+) of its (\d+) vanishing blocks and (\d+) to (\d+) of its (\d+) lasers by slot", doc)
+        unset = UNSET_SLOTS.search(doc)
         self.assertEqual([int(g) for g in unset.groups()],
                          [*f["unset"][PLATFORM_KIND], *f["unset"][6], *f["unset"][7], *f["unset"][LASER_KIND]])
-        numbered = re.search(r"numbers its pickups as the writer does on all (\d+) levels that number them", doc)
+        numbered = NUMBERED_LEVELS.search(doc)
         self.assertEqual((int(numbered.group(1)), f["ordered"]), (f["numbered"], f["numbered"]))
         self.assertEqual(f["repeats"], ["BONUS 16", "FINAL 11", "FINAL 13", "LECEL 94", "LEVEL 134"])
-        fmt = FORMAT_DOC.read_text()
-        runs = re.search(r"runs 0 to n-1 with no repeats on (\d+) of the (\d+) levels that have any\. "
-                         r"The (\w+) with a repeat are ((?:[A-Z]+ \d+, )*[A-Z]+ \d+ and [A-Z]+ \d+),", fmt)
+        runs = NUMBER_RUNS.search(FORMAT_DOC.read_text())
         self.assertEqual((int(runs.group(1)), int(runs.group(2))), (f["numbered"] - len(f["repeats"]), f["numbered"]))
         self.assertEqual(runs.group(3), "five")
         self.assertEqual(sorted(runs.group(4).replace(" and ", ", ").split(", ")), f["repeats"])
