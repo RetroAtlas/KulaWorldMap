@@ -25,3 +25,14 @@ test("a paragraph of the docs is one line, never wrapped", () => {
     });
   }
 });
+
+const LONGEST_LINE = 1000;
+
+test("every line of the docs is short enough to diff whole", () => {
+  const long = [];
+  for (const path of docs)
+    lines(path).forEach((line, i) => {
+      if (line.length > LONGEST_LINE) long.push(`${path}:${i + 1} (${line.length})`);
+    });
+  assert.deepEqual(long, [], "cut each where its sentences or clauses join, a point to a line");
+});
