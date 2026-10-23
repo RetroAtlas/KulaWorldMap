@@ -792,7 +792,7 @@ The viewer takes the pad in a room as the game's case takes it, one move at a ti
 - Nothing is read while a verdict stands.
 - The idle count grows on a frame at rest with no turn running and goes back to nothing on any other.
 - Up and Cross set the two latches the bouncy pill shares, whose count grows while either stands and, as it reaches the table's latch, asks the jump of Cross's latch and the roll of Up's latch, the count and both latches cleared, which they are on every frame instead while the idle count is under the first gate.
-- The three requests are nothing while the idle count is under the second gate, and from it a held Left or Right asks its turn and puts the idle count back to nothing, in place of the arcade's presses, so the viewer's Down, which the game's pad has not, does nothing in a room.
+- The three requests are nothing while the idle count is under the second gate, and from it a held Left or Right asks its turn and puts the idle count back to nothing, in place of the arcade's presses.
 - The roll asked without a jump off an edge beside a neighbour is refused on every level, as the game's case refuses it in this mode alone, though the arcade's roll comes to the same rest by its own gate ("The ball's moves" above).
 - A move left is packed into the table's bits and held to the sequence at the index, stored where the halfword there is the empty one, with the verdict done where the index is the count of moves, and compared where it holds a move, with the verdict wrong where the two differ, the index counting on either way.
 
