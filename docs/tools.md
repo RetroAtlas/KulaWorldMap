@@ -29,4 +29,4 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `icons.js` | render the raster icons from the favicon (Node, needs Playwright) |
 | `serve.py` | local static server, caching off, 404.html like the host |
 
-`kula_build.py` writes the three JSON files and the sheet in under a second, laid out so that a rebuild diffs line by line, or model by model, and refuses to write when the level file's cross-check fails ([level-format.md](level-format.md)). [tgi.md](tgi.md) and [ggi.md](ggi.md) show the artwork and geometry tools' own switches.
+`kula_build.py` writes the three JSON files and the sheet in under a second, laid out so that a rebuild diffs line by line, or model by model, and refuses to write when the level file's cross-check fails ([level-format.md](level-format.md)) or when a cap or a loader figure the level writer's checks rest on is not what the executable holds ([editor.md](editor.md)). [tgi.md](tgi.md) and [ggi.md](ggi.md) show the artwork and geometry tools' own switches.

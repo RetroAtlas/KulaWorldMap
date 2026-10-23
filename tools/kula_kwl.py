@@ -1995,6 +1995,32 @@ def executable(code):
     }
 
 
+def _figure(v):
+    if isinstance(v, range):
+        return f"{v.start} to {v.stop - 1}"
+    if isinstance(v, (set, frozenset)):
+        return ", ".join(str(x) for x in sorted(v))
+    return str(v)
+
+
+def figure_failures(r):
+    """Where a cap or a loader figure the checks hold is not what the executable's reading gives, a line each."""
+    figures = [(f"the cap on {what}", CAPS[what], r[what]) for what in sorted(set(CAPS) & set(r))]
+    figures += [
+        ("the list of untraced caps", set(UNTRACED), set(CAPS) - set(r)),
+        ("the length cap", LENGTH_CAP, r["platform.length"]),
+        ("the moving spikes' type", MOVING_SPIKES, r["spikes.type"]),
+        ("the glow loader's set of types", PLAIN_ONLY - {MOVING_SPIKES}, r["glow.types"]),
+        ("the key's type", KEY, r["key.type"]),
+        ("the count of block kinds", BLOCK_KINDS, r["block.kinds"]),
+        ("the run of numbered types", range(min(NUMBERED), max(NUMBERED) + 1),
+         range(r["numbered.from"], r["numbered.from"] + r["numbered.count"])),
+        ("the run of inner cells", INNER, range(r["inner.from"], r["inner.below"])),
+        ("the first captivator", min(CAPTIVATORS), r["captivators.from"]),
+    ]
+    return [f"{what} is {_figure(held)}, not the executable's {_figure(read)}" for what, held, read in figures if held != read]
+
+
 # The words the rebuild writes differently outside the unread mask, each a leftover the game never reads, by its count on the disc.
 RESIDUALS = {
     # the clock's f2, which the loader never turns

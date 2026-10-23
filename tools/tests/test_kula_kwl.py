@@ -51,6 +51,7 @@ from kula_kwl import (  # noqa: E402
     executable,
     deflate_vectors,
     digests,
+    figure_failures,
     hostile,
     plays_as,
     project_of,
@@ -1591,6 +1592,7 @@ class TheDisc(unittest.TestCase):
         self.assertEqual((r["numbered.from"], r["numbered.from"] + r["numbered.count"]), (min(NUMBERED), max(NUMBERED) + 1))
         self.assertEqual(INNER, range(r["inner.from"], r["inner.below"]))
         self.assertEqual(min(CAPTIVATORS), r["captivators.from"])
+        self.assertEqual(figure_failures(r), [])
 
     def test_the_documents_slot_figures_are_the_discs(self):
         with open_disc() as disc:

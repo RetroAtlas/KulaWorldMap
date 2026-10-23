@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import EXE, THEMES, open_disc, packs
 from kula_ggi import FILE as GGI, Ggi, jump, shadows, sparks, write_objects
+from kula_kwl import executable, figure_failures
 from kula_level import Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
 from kula_motion import BALL, Code, readings, table
 from kula_pak import Pak
@@ -94,7 +95,8 @@ def main():
     skins = skins_table(code, {t: disc.read_file(f"/{t}/{t}.TGI") for t in THEMES})
     rooms = copycat_worlds(code)
 
-    read, checked, problems, speeds = [], 0, [], set()
+    read, checked, speeds = [], 0, set()
+    problems = figure_failures(executable(code))
     for theme, path in packs(disc):
         pak = Pak(disc.read_file(path), path)
         simon = path == skins["copycat"]
