@@ -95,8 +95,8 @@ const HALF_HIGH = 120 / 160;
 
 const along = (p, ...terms) => terms.reduce((q, [k, v]) => q.map((c, i) => c + k * v[i]), p);
 
-/** Where the game's camera stands as the level opens, and the corners of what
-    it sees at the depth of the face under the ball. */
+/** Where the game's camera rests behind the ball on its start, and the corners
+    of what it sees at the depth of the face under the ball. */
 export function startCamera(l) {
   const start = startsOf(l).at(-1);
   const heading = start && markerHeading(start);

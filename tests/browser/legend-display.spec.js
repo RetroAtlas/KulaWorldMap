@@ -737,7 +737,7 @@ test("where the system asks for reduced motion the map opens still, and a choice
   expect(await kept()).toEqual({});
 });
 
-/** The map's colour where the game's camera stands as the level opens. */
+/** The map's colour where the game's camera rests behind the ball on its start. */
 const atEye = (page) =>
   page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);

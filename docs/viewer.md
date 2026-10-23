@@ -81,7 +81,7 @@ A switch that does something only while another is on is greyed while that one i
 
 The gear at the top of the sidebar, or `Shift-s`, opens Settings, for the switches used less, their keys working from the map as the others do and in the panel itself. The Display's reset leaves them as they are.
 
-Among them, `c` draws where the game's camera stands as the level opens, behind the ball and above it, and the wedge it sees ([camera.md](camera.md)), and the compass at the map's bottom right can be put away.
+Among them, `c` draws where the game's camera comes to rest at the level's start, behind the ball and above it, and the wedge it sees ([camera.md](camera.md)), and the compass at the map's bottom right can be put away.
 
 Under Play, the golden dust the ball leaves, the map's and not the game's, can be put away, and a block's panel can be given Play from here, off by default so that the map opens as a map, which stands the ball on the face you clicked and plays from there, and the ball can be given the game's own run with Play on through the levels, off by default so that a level plays on its own, which banks a done level's points into a total as the game does, takes a death's cost from it, goes on from a way out to the level the game loads next and plays the Simon rooms as the game's match between two players, as Rolling the ball below says.
 
