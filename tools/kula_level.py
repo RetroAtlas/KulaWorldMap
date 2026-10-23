@@ -20,12 +20,12 @@ faces of the block, in the order the game numbers directions: -z, +x, +y, -y,
 -x, +z. A slot whose type is not zero is an object standing on that face, and
 a block whose top is bare is not empty. The kind word is set in the first slot
 only. It is the block's, and a few kinds do not carry objects in their first
-two slots: a laser or a rail names its two ends there, with the type the
-direction from the block to the far end numbered as above, a rail keeping
-which end it starts from, its length in blocks and its speed in the second,
-and kind 6 keeps a fixed-point copy of its own cell. Whatever the other slots
-of those kinds hold is not in play: the game takes the things on a record of
-a kind below 5 and no other.
+two slots: a laser or a moving platform names its two ends there, with the
+type the direction from the block to the far end numbered as above, a platform
+keeping which end it starts from, its length in blocks and its speed in the
+second, and kind 6 keeps a fixed-point copy of its own cell. Whatever the
+other slots of those kinds hold is not in play: the game takes the things on a
+record of a kind below 5 and no other.
 
 A lattice cell holds one of five plain block styles below 5, or 5 + i for a
 block carrying record i. The record repeats the cell's own coordinates, which
