@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { mapData, annotations, objects } from "./fixtures.js";
+import { mapData, annotations, objects, levelKey } from "./fixtures.js";
 import {
   setAnnotations,
   setObjects,
@@ -14,6 +14,7 @@ import {
   index,
   levelMarkers,
   blockMarkers,
+  levelScore,
 } from "../../public/js/viewer/data.js";
 import { levelPoints, tallied, playsBonus } from "../../public/js/viewer/draw/points.js";
 import { state } from "../../public/js/viewer/state.js";
@@ -138,6 +139,38 @@ test("the kind sections' shares by world are what the data holds", () => {
   assert.ok(half, "annotations.md has no sentence about where the invisible blocks are");
   assert.deepEqual(half.slice(1).map(Number), [total(invisible), invisible.get("HAZE")]);
   assert.ok(invisible.get("HAZE") * 2 > total(invisible));
+});
+
+// A level's section of annotations.md, from its heading to the next.
+const section = (l) => {
+  const at = reasons.indexOf(`### ${levelKey(l)}:`);
+  const end = reasons.indexOf("\n#", at + 1);
+  return at < 0 ? "" : reasons.slice(at, end < 0 ? undefined : end);
+};
+const figure = (s) => Number(s.replace(/,/g, ""));
+
+test("a curated score's section says how much more the disc holds, and no other section does", () => {
+  state.data = mapData;
+  const curated = mapData.levels.filter((l) => levelScore(l) !== null);
+  for (const l of curated) {
+    const more = /The disc holds ([\d,]+) more/.exec(section(l));
+    assert.ok(more, `annotations.md does not say how much more ${levelKey(l)} holds`);
+    assert.equal(figure(more[1]), levelPoints(l) - levelScore(l), levelKey(l));
+  }
+  assert.equal(
+    reasons.match(/The disc holds [\d,]+ more/g)?.length,
+    curated.length,
+    "annotations.md says how much more the disc holds where no score is curated",
+  );
+});
+
+test("annotations.md's LEVEL 131 is collected for all the disc holds", () => {
+  state.data = mapData;
+  const l = level("LEVEL 131");
+  const m = /for the level's full ([\d,]+), everything the disc holds/.exec(section(l));
+  assert.ok(m, "annotations.md has no sentence giving LEVEL 131's total");
+  assert.equal(figure(m[1]), levelPoints(l));
+  assert.equal(levelScore(l), null);
 });
 
 test("a bonus level's tally reads a cell's kind off the record its value names, not off another on the cell", () => {

@@ -4,11 +4,13 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { mapData, annotations, packs } from "./fixtures.js";
 import { LARGEST, packSize } from "../../public/js/format/pak.js";
+import { PICKUPS } from "../../public/js/format/kwl.js";
 
 const text = (path) =>
   readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
 const format = text("docs/level-format.md");
 const disc = text("docs/disc.md");
+const reasons = text("docs/annotations.md");
 const page = text("public/index.html");
 
 const objectsOf = (levels) => levels.flatMap((l) => l.records.flatMap((r) => r.on));
@@ -25,12 +27,18 @@ const catalogue = mapData.levels.find(
 const types = new Set(objects.map((o) => o.type));
 const here = new Set(objectsOf([catalogue]).map((o) => o.type));
 const covered = [...types].filter((t) => here.has(t));
-const WORDS = "no one two three four five six seven eight nine ten eleven twelve".split(" ");
-const number = (s) => (WORDS.includes(s) ? WORDS.indexOf(s) : Number(s.replace(/,/g, "")));
+const WORDS = [
+  ..."no one two three four five six seven eight nine ten".split(" "),
+  ..."eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split(" "),
+];
+const TENS = { twenty: 20, thirty: 30 };
+const number = (s) => {
+  const word = s.toLowerCase();
+  return WORDS.includes(word) ? WORDS.indexOf(word) : (TENS[word] ?? Number(s.replace(/,/g, "")));
+};
+// A capture is a figure where it reads as one, and a name otherwise.
+const read = (s) => (Number.isNaN(number(s)) ? s : number(s));
 
-// The README and the level format argue from counts, and a rebuild can move
-// any of them. Each row is the figure a sentence rests on, so a claim cannot
-// go stale in silence.
 const inWorld = (l) => !/FI\.PAK|COPYCAT/.test(l.pack);
 const levels = (test) => mapData.levels.filter(test).length;
 const SECTOR = 2048;
@@ -38,6 +46,84 @@ const sum = (xs, f) => xs.reduce((n, x) => n + f(x), 0);
 const held = sum(packs.packs, (p) => p.size);
 const capacity = sum(packs.packs, (p) => p.capacity);
 const wins = (p) => sum(p.slots, (s) => s.size - s.size9);
+
+const title = (l) => l.shown || l.name;
+const named = (t) => mapData.levels.find((l) => title(l) === t);
+const records = mapData.levels.flatMap((l) => l.records.map((r) => ({ l, r })));
+const ofKind = (k) => records.filter(({ r }) => r.kind === k);
+const placements = records.flatMap(({ l, r }) => r.on.map((o) => ({ l, r, o })));
+const ofType = (t) => placements.filter(({ o }) => o.type === t);
+const on = (t) => (l) => sum(l.records, (r) => r.on.filter((o) => o.type === t).length);
+const kindOn = (k) => (l) => l.records.filter((r) => r.kind === k).length;
+const field = (x, name) => x.f[Number(name.slice(1)) - 2];
+// How many there are where every one passes, and null where one does not.
+const all = (xs, ok) => (xs.every(ok) ? xs.length : null);
+const uniform = (xs) => (xs.every((x) => x === xs[0]) ? xs[0] : null);
+const values = (t, name) => new Set(ofType(t).map(({ o }) => field(o, name))).size;
+
+// The game's first of a thing is the first numbered level that carries one.
+const numbered = mapData.levels
+  .filter((l) => /^LEVEL \d+$/.test(title(l)))
+  .sort((a, b) => number(title(a).slice(6)) - number(title(b).slice(6)));
+const first = (carried) => {
+  const l = numbered.find((l) => carried(l) > 0);
+  return [title(l), carried(l)];
+};
+
+const copies = mapData.levels.filter((l) => l.name === "OBJ LEVEL");
+// What each copy of the catalogue holds, where every copy holds it alike and no other level any.
+const inEachCopy = (carried) =>
+  mapData.levels.every((l) => carried(l) === (copies.includes(l) ? carried(copies[0]) : 0))
+    ? carried(copies[0])
+    : null;
+const style = (v) => (l) => l.cells.filter((c, i) => i % 4 === 3 && c === v).length;
+const cellsOf = (l) =>
+  Array.from({ length: l.cells.length / 4 }, (_, i) => l.cells.slice(4 * i, 4 * i + 3));
+const lattices = new Map(mapData.levels.map((l) => [l, new Set(cellsOf(l).map(String))]));
+const inLattice = (l, cell) => lattices.get(l).has(String(cell));
+
+const ends = (r) => [r.f.slice(2, 5), r.f.slice(5, 8)];
+const lowerFirst = ({ r }) => ends(r)[0].every((v, i) => v <= ends(r)[1][i]);
+const oneAxis = ({ r }) => ends(r)[0].filter((v, i) => v !== ends(r)[1][i]).length === 1;
+const beamEnds = ofKind(8).flatMap(({ l, r }) => ends(r).map((end) => inLattice(l, end)));
+
+const settings = ofKind(9);
+const lastRecord = ({ l, r }) => l.records.at(-1) === r;
+const hiddenFlag = settings.filter(({ r }) => r.type === 1);
+const fromAfar = settings.filter(({ r }) => field(r, "f2") === 1);
+const onEmptyCell = settings.filter(({ l, r }) => !inLattice(l, [r.x, r.y, r.z]));
+
+// Every teleporter with the one its link names, a record's index times sixteen plus a face.
+const teleporters = mapData.levels.flatMap((l) => {
+  const at = new Map();
+  l.records.forEach((r, k) => r.on.forEach((o) => o.type === 5 && at.set(k * 16 + o.face, o)));
+  return [...at.values()].map((o) => ({ o, to: at.get(field(o, "f7")) }));
+});
+
+const bonus = mapData.levels.filter((l) => inWorld(l) && [15, 16, 17].includes(l.index));
+const rooms = mapData.levels.filter((l) => /COPYCAT/.test(l.pack));
+const onStart = (l) => on(30)(l) === 1 && !on(29)(l);
+const onClock = (l) => on(29)(l) === 1 && !on(30)(l);
+const offStart = mapData.levels.filter((l) => !onStart(l));
+const coin = annotations.types[37];
+const worth = (t, points) =>
+  all(
+    ofType(37).filter(({ l }) => title(l) === t),
+    ({ o }) => coin.variants[field(o, coin.by)]?.points === points,
+  );
+const withoutCommonFruit = ({ l }) => !on(46)(l);
+const hiddenExits = mapData.levels.filter(on(26));
+// A level's pickups where they are the only ones in the game whose number is unset, else null.
+const unnumberedOn = (t) => {
+  const pickups = placements.filter(({ o }) => PICKUPS.includes(o.type));
+  const its = pickups.filter(({ l }) => title(l) === t);
+  const unset = pickups.filter(({ o }) => field(o, "f5") === -1);
+  return unset.length === its.length && unset.every(({ l }) => title(l) === t) ? its.length : null;
+};
+const depths = cellsOf(named("HIDDEN 10")).map(([, , z]) => z);
+const frame = depths.filter((z) => z !== 32);
+
+// Each row is the figure a sentence rests on, so a rebuild that moves it cannot go unnoticed.
 const claims = [
   ["README.md", "levels", mapData.levels.length, /All (\d+) levels are here/],
   [
@@ -123,15 +209,353 @@ const claims = [
     [packs.room.size, packs.room.lba, Math.ceil(packs.room.size / SECTOR)],
     /`\/3\.00`, the last file: ([\d,]+) bytes at sector (\d+), ([\d,]+) sectors/,
   ],
+  [
+    "docs/annotations.md",
+    "curated scores",
+    Object.values(annotations.levels).filter((e) => "score" in e).length,
+    /each of the other (\d+) curates its `score`/,
+  ],
 ];
 
 for (const [file, what, value, pattern] of claims) {
   test(`${file}'s ${what} is what the data holds`, () => {
     const m = pattern.exec(text(file));
     assert.ok(m, `${file} has no sentence matching ${pattern}`);
-    assert.deepEqual(m.slice(1).map(number), [].concat(value));
+    assert.deepEqual(m.slice(1).map(read), [].concat(value));
   });
 }
+
+// annotations.md's sections by the key of the entry each gives the reasons for.
+const sections = new Map();
+for (const part of reasons.split(/^(?=#+ )/m)) {
+  const heading = part.slice(0, part.indexOf("\n"));
+  for (const m of heading.matchAll(/^### ((?:world|kind|type) \w+)|(\/[A-Z]+\/[A-Z]+\.PAK#\d+)/g))
+    sections.set(m[1] ?? m[2], part);
+}
+
+const reasonClaims = [
+  [
+    "kind 3",
+    "levels whose settings turn the invisible blocks round",
+    fromAfar.length,
+    /on the (\w+) levels whose settings record carries a first field of 1/,
+  ],
+  [
+    "kind 4",
+    "acid blocks",
+    inEachCopy((l) => style(4)(l) + kindOn(4)(l)),
+    /^(One) cell in each copy of OBJ LEVEL and nowhere else\./m,
+  ],
+  [
+    "kind 5",
+    "platforms with the lower end first",
+    all(ofKind(5), lowerFirst),
+    /the lower along the axis first on all (\d+)/,
+  ],
+  ["kind 5", "the first platform", first(kindOn(5))[0], /^(LEVEL \d+) carries the game's first\./m],
+  [
+    "kind 6",
+    "the first crumbling blocks",
+    first(kindOn(6)),
+    /^(LEVEL \d+) carries the game's first kind 6, (\w+) of them/m,
+  ],
+  [
+    "kind 6",
+    "crumbling blocks keeping 512 times their cell",
+    all(
+      ofKind(6),
+      ({ r }) => String(r.f.slice(0, 3)) === String([r.x, r.y, r.z].map((v) => 512 * v)),
+    ),
+    /512 times its own cell on all (\d+)/,
+  ],
+  [
+    "kind 7",
+    "the first vanishing block",
+    first(kindOn(7))[0],
+    /^(LEVEL \d+) carries the game's first kind 7\./m,
+  ],
+  [
+    "kind 8",
+    "lasers on one axis",
+    all(ofKind(8), oneAxis),
+    /It runs on one axis on all (\d+) in the game/,
+  ],
+  [
+    "kind 8",
+    "lasers with the lower end first",
+    all(ofKind(8), lowerFirst),
+    /and the lower first on all (\d+)/,
+  ],
+  [
+    "kind 8",
+    "beam ends the lattice leaves empty",
+    [beamEnds.filter((inside) => !inside).length, beamEnds.length],
+    /which is why (\d+) of the (\d+) ends are cells the level file leaves empty/,
+  ],
+  [
+    "kind 9",
+    "levels whose last record it is",
+    all(settings, lastRecord),
+    /^The last record on (\d+) levels/m,
+  ],
+  [
+    "kind 9",
+    "hidden levels",
+    all(hiddenFlag, ({ l }) => inWorld(l) && l.index === 18),
+    /and is 1 on exactly the (\w+)\./,
+  ],
+  [
+    "kind 9",
+    "settings records on empty cells",
+    [onEmptyCell.length, settings.length],
+    /The record stands on an empty cell on (\d+) of the (\d+)\./,
+  ],
+  [
+    "type 5",
+    "the first teleporters",
+    first(on(5)),
+    /^(LEVEL \d+) carries the game's first (\w+)\./m,
+  ],
+  [
+    "type 5",
+    "teleporters leading to one of their colour",
+    all(teleporters, ({ o, to }) => to && field(to, "f3") === field(o, "f3")),
+    /on all (\d+) one of the same colour/,
+  ],
+  [
+    "type 5",
+    "teleporters facing 1 to 4",
+    all(teleporters, ({ o }) => field(o, "f2") >= 1 && field(o, "f2") <= 4),
+    /It is 1 to 4 on all (\d+)/,
+  ],
+  [
+    "type 7",
+    "levels with an exit, and the bonus and Simon levels without",
+    [levels((l) => on(7)(l) === 1), all(bonus, (l) => !on(7)(l)), all(rooms, (l) => !on(7)(l))],
+    /One on each of (\d+) levels, and none on the (\d+) bonus and (\d+) Simon levels/,
+  ],
+  [
+    "type 8",
+    "the first clocks",
+    first(on(8)),
+    /^(LEVEL \d+) carries the game's first (\w+), painted/m,
+  ],
+  ["type 9", "the first switch", first(on(9))[0], /^(LEVEL \d+) carries the game's first;/m],
+  [
+    "type 9",
+    "LEVEL 98's lasers",
+    kindOn(8)(named("LEVEL 98")),
+    /the same circuit numbers its (\w+) lasers carry/,
+  ],
+  [
+    "type 10",
+    "the first boost buttons",
+    first(on(10)),
+    /^(LEVEL \d+) carries the game's first (\w+)\./m,
+  ],
+  ["type 11", "the moving spikes' phases", values(11, "f3"), /`f3` takes (\w+) values/],
+  ["type 12", "the first spikes", first(on(12)), /^(LEVEL \d+) carries the game's first (\w+)\./m],
+  [
+    "type 26",
+    "levels with a hidden exit, and how many in each world",
+    [
+      all(hiddenExits, (l) => on(26)(l) === 1),
+      uniform(mapData.themes.map((w) => hiddenExits.filter((l) => l.theme === w.id).length)),
+    ],
+    /^(\w+) levels carry one, (\w+) in each world/m,
+  ],
+  ["type 28", "the first arrows", first(on(28)), /^(LEVEL \d+) carries the game's first (\w+)\./m],
+  [
+    "type 29",
+    "starts on a clock, each its level's only start",
+    [all(ofType(29), ({ l }) => onClock(l)), ...ofType(29).map(({ l }) => title(l))],
+    /^(\w+) in the game, on (LEVEL \d+) and (LEVEL \d+) \(`LEVEL 135` on the disc\), and each level's only start/m,
+  ],
+  [
+    "type 30",
+    "levels that start on a start, and the others on a clock",
+    [levels(onStart), all(offStart, onClock)],
+    /^One on each of (\d+) levels; the other (\w+) start the ball on a clock instead/m,
+  ],
+  ["type 31", "HIDDEN 10's keys", on(31)(named("HIDDEN 10")), /HIDDEN 10's (\w+) are on the face/],
+  [
+    "type 32",
+    "the first lethargy pills",
+    first(on(32)),
+    /^(LEVEL \d+) carries the game's first (\w+)\./m,
+  ],
+  [
+    "type 33",
+    "the first bouncy pill, and LEVEL 88's",
+    [first(on(33))[0], on(33)(named("LEVEL 88"))],
+    /^(LEVEL \d+) carries the game's first, and LEVEL 88 has (\w+)\./m,
+  ],
+  [
+    "type 34",
+    "invincibility pills, all in the catalogue",
+    [ofType(34).length, inEachCopy(on(34))],
+    /^(\w+) in the game, (\w+) in each copy of OBJ LEVEL/m,
+  ],
+  ["type 35", "the first hourglass", first(on(35))[0], /^(LEVEL \d+) carries the game's first\./m],
+  [
+    "type 36",
+    "LEVEL 64's green gem",
+    all(
+      ofType(36).filter(({ l }) => title(l) === "LEVEL 64"),
+      ({ o }) => field(o, "f3") === 1,
+    ),
+    /LEVEL 64's green (one) 1/,
+  ],
+  [
+    "type 37",
+    "the gold coins of LEVEL 112 and HIDDEN 10",
+    [worth("LEVEL 112", 750), worth("HIDDEN 10", 750)],
+    /LEVEL 112's (\w+) and HIDDEN 10's (\w+), which show gold, are the 750 kind/,
+  ],
+  [
+    "type 38",
+    "the first sunglasses",
+    first(on(38)),
+    /^(LEVEL \d+) carries the game's first (\w+), and each/m,
+  ],
+  [
+    "type 42",
+    "stars, all in the catalogue",
+    [ofType(42).length, inEachCopy(on(42))],
+    /^(\w+) in the game, (\w+) in each copy of OBJ LEVEL/m,
+  ],
+  [
+    "type 43",
+    "apples",
+    [ofType(43).length, ...ofType(43).map(({ l }) => title(l))],
+    /^(\w+) placement in the game, on (LEVEL \d+)\./m,
+  ],
+  [
+    "type 44",
+    "watermelons",
+    all(ofType(44), withoutCommonFruit),
+    /^(\w+) in the game, each on a level without the common fruit type/m,
+  ],
+  [
+    "type 45",
+    "pumpkins",
+    all(ofType(45), withoutCommonFruit),
+    /^(\w+) in the game, each on a level without the common fruit type/m,
+  ],
+  [
+    "type 46",
+    "levels with the common fruit",
+    all(mapData.levels.filter(on(46)), (l) => on(46)(l) === 1),
+    /one on each of (\d+) levels/,
+  ],
+  [
+    "type 47",
+    "strawberries",
+    [all(ofType(47), withoutCommonFruit), ...ofType(47).map(({ l }) => title(l))],
+    /^(\w+) placement in the game, on (LEVEL \d+), a level without the common fruit type/m,
+  ],
+  [
+    "type 50",
+    "LEVEL 132's slow captivators",
+    on(50)(named("LEVEL 132")),
+    /LEVEL 132 sends the ball through a gap between (\w+) of them/,
+  ],
+  [
+    "type 51",
+    "the first rolling stone, and LEVEL 52's",
+    [first(on(51))[0], on(51)(named("LEVEL 52"))],
+    /^(LEVEL \d+) carries the game's first, and LEVEL 52 (\w+)\./m,
+  ],
+  [
+    "type 52",
+    "the first quick captivators",
+    first(on(52)),
+    /^The game's first are (LEVEL \d+)'s (\w+)\./m,
+  ],
+  [
+    "type 56",
+    "the first corkscrews",
+    first(on(56)),
+    /^(LEVEL \d+) carries the game's first (\w+), and LEVEL 122's/m,
+  ],
+  ["type 56", "the corkscrews' phases", values(56, "f3"), /`f3`, (\w+)-valued/],
+  [
+    "/HILLS/HILLS.PAK#19",
+    "the catalogue's copies",
+    copies.length,
+    /identical in the (\w+) worlds that ship it/,
+  ],
+  [
+    "/HILLS/HILLS.PAK#15",
+    "BONUS 4's gems",
+    on(36)(named("BONUS 4")),
+    /the (\w+) gems inside that ring/,
+  ],
+  [
+    "/HILLS/HILLS.PAK#18",
+    "HIDDEN 2's crumbling blocks",
+    kindOn(6)(named("HIDDEN 2")),
+    /one of the (\w+) crumbling blocks/,
+  ],
+  [
+    "/HAZE/HAZEFI.PAK#1",
+    "FINAL 16's gems on the ring at y=28",
+    ofType(36).filter(({ l, r }) => title(l) === "FINAL 16" && r.y === 28).length,
+    /ten of the (\w+) gems on the ring at y=28/,
+  ],
+  [
+    "/HELL/HELL.PAK#17",
+    "the pickups without a number",
+    unnumberedOn("BONUS 30"),
+    /Its (\w+) pickups are the only ones in the game without a pickup number/,
+  ],
+  [
+    "/HELL/HELL.PAK#18",
+    "the lettering and the frame",
+    [depths.length - frame.length, 32 - Math.max(...frame), frame.length],
+    /The (\d+) blocks of lettering lie flat on z=32, the floor of the lattice and (\d+) blocks below the playable structure\. The other (\d+)/,
+  ],
+  [
+    "/HELL/HELL.PAK#18",
+    "what the level places, all on the frame's -y face",
+    all(
+      placements.filter(({ l }) => title(l) === "HIDDEN 10"),
+      ({ o }) => o.face === 3 && [30, 7, 31, 37, 36].includes(o.type),
+    ) && [30, 7].every((t) => on(t)(named("HIDDEN 10")) === 1)
+      ? [31, 37, 36].map((t) => on(t)(named("HIDDEN 10")))
+      : null,
+    /the start, the exit, (\w+) keys, (\w+) (?:\w+ )?coins and (\w+) gems, stands on its `-y` face/,
+  ],
+];
+
+for (const [entry, what, value, pattern] of reasonClaims) {
+  test(`annotations.md's ${entry}, ${what}, is what the data holds`, () => {
+    const m = pattern.exec(sections.get(entry) ?? "");
+    assert.ok(m, `annotations.md's ${entry} has no sentence matching ${pattern}`);
+    assert.deepEqual(m.slice(1).map(read), [].concat(value));
+  });
+}
+
+// The tally counts keys on crumbling blocks, which the game never walks and the data leaves out.
+test("annotations.md's key tally is what the data holds, with the keys the game never walks", () => {
+  const m =
+    /One to (\w+) a level on the disc: (\d+) levels with one, (\d+) with two, (\d+) with three, (\w+) with four, and (\w+) with (\w+), ([A-Z]+ \d+), (\w+) of whose keys stand on crumbling blocks the game never walks, so in play it asks for (\w+)\./.exec(
+      sections.get("type 31") ?? "",
+    );
+  assert.ok(m, "annotations.md has no sentence tallying the keys");
+  const [most, one, two, three, four, withMost, most2, level, unwalked, asked] = m
+    .slice(1)
+    .map(read);
+  const keys = on(31);
+  const others = mapData.levels.filter((l) => title(l) !== level && keys(l) > 0);
+  assert.deepEqual(
+    [one, two, three, four],
+    [1, 2, 3, 4].map((n) => others.filter((l) => keys(l) === n).length),
+  );
+  assert.equal(one + two + three + four, others.length);
+  assert.equal(keys(named(level)), asked);
+  assert.deepEqual([most, most2, withMost], [asked + unwalked, asked + unwalked, 1]);
+});
 
 test("level-format.md's catalogue records are the nine that are their own thing", () => {
   const m =
