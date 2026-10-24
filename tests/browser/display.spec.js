@@ -212,6 +212,7 @@ test("a dialog opened as another closes stays open, on an entry of its own", asy
 test("a notice comes and goes at the foot of the map, and a repeat does not stack", async ({
   page,
 }) => {
+  await page.clock.install();
   await page.goto("/#HIRO/0");
   await settle(page);
   const toasts = page.locator("#toastStack .toast");
@@ -228,9 +229,11 @@ test("a notice comes and goes at the foot of the map, and a repeat does not stac
   expect(tops[0]).toBeGreaterThan(tops[1]);
   expect(tops[1]).toBeGreaterThan(tops[2]);
   // each leaves in its time, and what waited comes on as it does
-  await expect(toasts.filter({ hasText: "Five." })).toBeVisible({ timeout: 10000 });
+  await page.clock.runFor(3000 + 150);
+  await expect(toasts.filter({ hasText: "Five." })).toBeVisible();
   await expect(page.locator("#toastStack .toast-more")).toHaveCount(0);
-  await expect(toasts).toHaveCount(0, { timeout: 10000 });
+  await page.clock.runFor(3000 + 150);
+  await expect(toasts).toHaveCount(0);
 });
 
 test("where the system asks for reduced motion a notice neither slides nor drains", async ({
