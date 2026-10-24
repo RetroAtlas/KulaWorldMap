@@ -381,18 +381,42 @@ test("a read that lands late for an image no longer current changes nothing, and
 }) => {
   const errors = trackErrors(page);
   const slow = syntheticImage();
+  // A file of the slow size, and whatever is sliced from it, is read once __release
+  // opens its gate; __release returns when no such read is left in flight.
   await page.addInitScript((slowSize) => {
     const read = Blob.prototype.arrayBuffer;
     const slice = Blob.prototype.slice;
-    const dawdles = (blob) => blob.slow === true || blob.size === slowSize;
+    const gates = [];
+    let pending = 0;
+    const gateOf = (blob) => {
+      if (blob.gate) return blob.gate;
+      if (!(blob instanceof File) || blob.size !== slowSize) return null;
+      const gate = {};
+      gate.held = new Promise((open) => (gate.open = open));
+      gates.push(gate);
+      return (blob.gate = gate);
+    };
     Blob.prototype.slice = function (...args) {
       const out = slice.apply(this, args);
-      if (dawdles(this)) out.slow = true;
+      const gate = gateOf(this);
+      if (gate) out.gate = gate;
       return out;
     };
     Blob.prototype.arrayBuffer = async function () {
-      if (dawdles(this)) await new Promise((r) => setTimeout(r, 120));
-      return read.call(this);
+      const gate = gateOf(this);
+      if (!gate) return read.call(this);
+      pending++;
+      try {
+        await gate.held;
+        return await read.call(this);
+      } finally {
+        pending--;
+      }
+    };
+    window.__release = async () => {
+      for (const gate of gates) gate.open();
+      do await new Promise((r) => setTimeout(r));
+      while (pending);
     };
   }, slow.length);
   await page.goto(EDIT);
@@ -412,7 +436,7 @@ test("a read that lands late for an image no longer current changes nothing, and
   await dialog.locator("#patchDisc").setInputFiles(file("quick.bin", quick));
   await expect(status).toHaveText("quick.bin is read.");
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
-  await page.waitForTimeout(2500);
+  await page.evaluate(() => window.__release());
   await expect(status).toHaveText("quick.bin is read.");
   await expect(dialog.locator("#patchWarnings li").first()).toHaveText(
     "the image has 44 sectors, not the 109,607 of the disc",
@@ -429,6 +453,7 @@ test("a read that lands late for an image no longer current changes nothing, and
   await expect(dialog).toBeHidden();
   await openPatch(page, id);
   await expect(dialog).toBeVisible();
+  await page.evaluate(() => window.__release());
   await expect(status).toHaveText("slow.bin is read.");
   await expect(dialog.locator("#patchWarnings li")).toHaveText(WARNINGS);
   await expect(dialog.locator("#patchPlay li").first()).toContainText("slow.ppf");
