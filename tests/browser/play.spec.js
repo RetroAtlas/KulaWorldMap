@@ -46,6 +46,9 @@ const FRUIT = [15, 15, 17];
 const FRUIT_TYPE = 46;
 // BONUS 1: a level with no key, which the game opens from white
 const BONUS_LEVEL = "/#HIRO/15/45,35/fit/33";
+// LEVEL 68: the start on 17,18,17, and blue teleporters round a ring of three, the one on 17,7,17
+// leading to the one on 17,25,17
+const TELEPORT_LEVEL = "/#COWBOY/7/45,35/fit/33";
 const PLAY_FILES = /\/js\/play\/(play|ball|dust|effects|rules|world|drive|contact|hazards)\.js$/;
 const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 const TIME_UP_PAD =
@@ -1715,6 +1718,39 @@ test("a right click selects while playing, Esc clears the selection before it le
   await expect(page.locator("#play")).toBeHidden();
   expect(errors).toEqual([]);
 });
+
+for (const motion of [false, true])
+  test(`a click on the name a teleporter's panel gives for where it leads leaves play and centres the view there, with Motion ${motion ? "on" : "off"}`, async ({
+    page,
+  }) => {
+    const errors = trackErrors(page);
+    await opened(page, { motion, hash: TELEPORT_LEVEL });
+    await startPlay(page);
+    // with Motion on the view eases round behind the ball, so the click waits for it to be there
+    await expect.poll(async () => (await probe(page)).frame).toEqual(IDENTITY);
+    await page.evaluate(async () => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { showCell }, { cellKey }] = await Promise.all(
+        ["viewer/state.js", "viewer/chrome/detail.js", "format/lattice.js"].map(at),
+      );
+      showCell(state.idx.cells.get(cellKey(17, 7, 17)));
+    });
+    const go = page.locator("#detail .goto");
+    await expect(go).toHaveText("17, 25, 17 top");
+    const entries = await page.evaluate(() => history.length);
+    await go.click();
+    await expect(page.locator("#play")).toBeHidden();
+    await expect(page.locator("#detail")).toContainText("cell 17,25,17");
+    const left = await probe(page);
+    expect(left.playing).toBe(false);
+    expect(left.frame).toBeNull();
+    expect(left.target).toEqual([17.5, 25.5, 17.5]);
+    expect([left.cam.panX, left.cam.panY]).toEqual([0, 0]);
+    expect(left.fitted).toBe(false);
+    await expect.poll(() => page.url()).toMatch(/\/17\.5,25\.5,17\.5\/0,0\/33\/17,25,17$/);
+    expect(await page.evaluate(() => history.length)).toBe(entries + 1);
+    expect(errors).toEqual([]);
+  });
 
 /** The clock face's type, as the strip of a marker writes it. */
 const clockFace = (page) =>
