@@ -1793,7 +1793,11 @@ export function bootPlay() {
       body.append(el("p", { className: "sub", textContent: `${TAKEN(m)}.` }));
   });
   on("level-changed", () => {
-    if (!changing) leave({ restore: false });
+    if (live && !changing) {
+      leave({ restore: false });
+      // the level was fitted before play heard of it, with the ball still framing the view
+      if (state.framing === fit) fit();
+    }
     icon();
   });
   on("level-updated", () => {

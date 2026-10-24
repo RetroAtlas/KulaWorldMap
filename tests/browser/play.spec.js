@@ -1752,6 +1752,30 @@ for (const motion of [false, true])
     expect(errors).toEqual([]);
   });
 
+test("choosing the level shown while playing leaves play with the level fitted, as choosing it does without the ball", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false, hash: TELEPORT_LEVEL });
+  await startPlay(page);
+  const li = await page.evaluate(
+    async () => (await import(new URL("js/viewer/state.js", location.href).href)).state.li,
+  );
+  await page.locator(`#worlds .levels button[data-i='${li}']`).click();
+  await expect(page.locator("#play")).toBeHidden();
+  const left = await probe(page);
+  expect(left.playing).toBe(false);
+  expect(left.fitted).toBe(true);
+  // a view that is fitted is the one fitting it again gives
+  await page.evaluate(async () => {
+    const { fit } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
+    fit();
+  });
+  const again = await probe(page);
+  expect([again.cam, again.target]).toEqual([left.cam, left.target]);
+  expect(errors).toEqual([]);
+});
+
 /** The clock face's type, as the strip of a marker writes it. */
 const clockFace = (page) =>
   page.evaluate(async () => {
