@@ -33,7 +33,7 @@ Read [docs/camera.md](docs/camera.md) before touching the start camera the viewe
 - `python3 -m unittest discover -s tools/tests`.
 - `python3 -m compileall -q tools/`.
 - `ruff check tools/` at the release [.github/workflows/ci.yml](.github/workflows/ci.yml) pins, which `pipx run ruff==<release> check tools/` runs without installing it.
-- `npm run test:browser` when the viewer changed.
+- `npm run test:browser` when the viewer or its tests changed.
 
 A change to the viewer that is to draw exactly as before, a move, a re-wiring or a speed-up, is proven with `npm run pixels`, which renders the working tree and `HEAD` over the matrix in `tests/pixels/cases.js` with the clock held still, with the editor absent and with it loaded, and names every capture whose map, pick, hit test or animation differs, and passes when it names none. A change meant to draw differently does not run it: most captures show the thing it changes, so the list says nothing its browser test and a look in the viewer do not.
 
