@@ -20,21 +20,22 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kula_motion_code
+import kula_motion_light
 import kula_motion_things
-from kula_disc import EXE, EXE_BASE, THEMES, open_disc
+from kula_disc import EXE, EXE_BASE, open_disc
 from kula_level import BLOCK_KINDS, FACE, FACES, FIRST_RECORD, SIDE, STYLES, UNPLACED_KIND
 from kula_motion_code import (ACID, ADD, BALL, BALL_RECORD, BLOCK, CRUMBLING_UNDER, FIRE, GP, GP_INIT, HZ, ICE,
                               INVISIBLE, LIT, ONE, PHASES, READS_FIRST, TURN, Code, dispatch, root)
+from kula_motion_light import (GLINT_RECORDS, GLINT_STATE, GLINT_TIMES, LIGHT_ROOT, SHADOW_SQUARE, glint, glow, light,
+                               root_table, shadow_half, spike_cycle, vanish_cycle)
 from kula_motion_things import (BUTTON_REACH, DICE_TIMES, LASER_LEVELS, QUARTER, QUARTERED, SPUN_AT, WORLD_AXES, laser,
                                 spin_orders)
-from mips import Machine
-
-SPIKE_FRAMES = 32    # frames in the moving spikes' mesh, flat to full
 
 # What has to be there for the numbers below to mean what the doc says.
 CHECKS = [
     *kula_motion_code.CHECKS,
     *kula_motion_things.CHECKS,
+    *kula_motion_light.CHECKS,
     # The ball's position.
     (0x800361d0, "sll $v0, $v0, 9", "the start puts the ball's position at its cell"),
     (0x800361c0, "lh $v1, -24272($v1)", "and along its face's normal"),
@@ -656,199 +657,6 @@ CHECKS = [
     (0x80022808, "sw $v0, 5812($gp)", "under a flag of 1"),
     (0x80022818, "lw $v1, 5812($gp)", "which a routine of the frame reads"),
     (0x80022838, "bgez $v0, 0x8002287c", "running the count down"),
-    # A device's light.
-    (0x8002d3d4, "addiu $v0, $v0, -5", "the draw of a thing on a block sends it on by its type"),
-    (0x8002d3f8, "lw $v0, 116($at)", "through a table of cases"),
-    (0x8002d468, "jal 0x8002e3d8", "a teleporter's case makes a light"),
-    (0x8002d594, "jal 0x8002e3d8", "and an exit's case"),
-    (0x8002d660, "jal 0x8002e3d8", "and a switch's case"),
-    (0x8002d41c, "bne $v1, $s4, 0x8002d6e0", "only while its f4 is 1"),
-    (0x8002d6ec, "jal 0x8002d994", "and lets it go otherwise"),
-    (0x8002d424, "lhu $v0, 30($s2)", "counting in the last pad of its slot"),
-    (0x8002d48c, "sh $v0, 32($s2)", "and keeping the light in the kind word of the slot after"),
-    (0x8002d6d0, "jal 0x8002f2b4", "and gives the light it holds its colour"),
-    (0x8002d494, "bne $s0, $v0, 0x8002d708", "while a teleporter's light is lit its model is lifted"),
-    (0x8002d49c, "lh $a1, 6($s2)", "by its circuit, its f3"),
-    (0x8002d4c0, "mult $s5, $v1", "its light times the circuit's lift"),
-    (0x8002d4f8, "sra $s5, $a2, 12", "over 4096"),
-    (0x8002d5c0, "bne $s0, $v0, 0x8002d708", "and an open exit's model while its light is lit"),
-    (0x8002d68c, "bne $s0, $v0, 0x8002d708", "and a switch's model"),
-    (0x8002f2c0, "sw $a1, -3708($at)", "the first word of the light's entry"),
-    (0x800297c4, "sh $t2, 30($a0)", "the loader starts the count"),
-    (0x800297c8, "sh $t0, 32($a0)", "holding no light"),
-    (0x8002a4ac, "jal 0x80051020", "the frame adds the lights to their faces"),
-    (0x8002a614, "jal 0x80036958", "before the walk that turns them over"),
-    (0x800369b4, "jal 0x80039200", "which is the walk over the things on the blocks"),
-    (0x80039e5c, "jal 0x8002d2ac", "that draws each"),
-    (0x8002f1b8, "beq $v0, $v1, 0x8002f2a8", "a light takes a face only where the lattice holds a block"),
-    (0x8002f1d8, "beq $a3, $v1, 0x8002f2a8", "that has the face"),
-    (0x8002f1e0, "lbu $v1, 6($a3)", "and turns the levels by the face's turn"),
-    (0x80051098, "sw $zero, 0($a3)", "a corner of level 0 takes nothing"),
-    (0x800510e4, "sw $t7, 8($a3)", "of level 2 the light's colour"),
-    (0x800510bc, "sll $s0, $t7, 4", "and of level 1 the colour sixteen times over"),
-    (0x800510e8, "mvmva", "times a matrix"),
-    (0x800510f8, "srl $t7, $t7, 4", "and back down by sixteen"),
-    (0x80051118, "sw $t7, 4($a3)", "each channel's lowest bit cleared"),
-    (0x80051180, "lw $t6, 0($t6)", "each corner takes its level by its two bits"),
-    (0x80051188, "add $t5, $t5, $t6", "added to its colour"),
-    (0x80051198, "ori $t5, $t5, 255", "a channel that passes 255 stands at it"),
-    (0x800511b4, "and $t5, $t5, $v0", "less its lowest bit"),
-    # The shadow under the ball and the captivators.
-    (0x80022f28, "sw $v0, 10240($gp)", "the parser keeps the .GGI header's sixth bound"),
-    (0x800290f8, "lw $v1, 22328($v1)", "which the shadow's sprites are counted past"),
-    (0x800290ec, "addiu $v0, $zero, 44", "each shadow is a textured quad"),
-    (0x800292f4, "jal 0x8005f8c8", "semi-transparent where its sprite is"),
-    (0x80051ebc, "nclip", "the square's corners are tested for their winding"),
-    (0x80051edc, "bgtz $v0, 0x80051eec", "and it is drawn only where they wind toward the view"),
-    (0x8002c990, "sb $s4, 4($s0)", "a captivator's shadow is as strong as its caller says"),
-    (0x8002cff8, "sb $s4, 4($s0)", "and the ball's shadow"),
-    (0x8003db78, "addiu $v0, $zero, 1024", "the square is laid flat by a quarter turn"),
-    (0x8003dd50, "sw $zero, 72($sp)", "the slow star's shadow is the round one"),
-    (0x8003e3d4, "sw $zero, 72($sp)", "the wandering ball's shadow"),
-    (0x8003f91c, "sw $zero, 72($sp)", "the fast star's shadow"),
-    (0x8003eb40, "sw $zero, 72($sp)", "the corkscrew's shadow"),
-    (0x80032450, "sw $zero, 72($sp)", "and the ball's shadow"),
-    (0x8003f0bc, "lhu $v0, -23528($at)", "the wheel's shadow is turned by its third angle"),
-    (0x8003f0cc, "jal 0x80060cc8", "after the quarter turn, so about its normal"),
-    (0x8003cdac, "sh $v0, -23528($at)", "which is the angle the wheel's turns step"),
-    (0x8003b7c4, "addiu $v0, $s4, 24", "the loader copies an entry's position"),
-    (0x8003b7bc, "addiu $v1, $s4, 32", "into its home"),
-    (0x8003e87c, "addu $v0, $v0, $fp", "and the corkscrew's shadow lies under its home"),
-    (0x8003e8f8, "subu $v1, $v1, $v0", "less a multiple of its normal"),
-    (0x8003e9e4, "lh $v0, -23414($at)", "as strong as the corkscrew's bounce"),
-    (0x8003ea08, "jal 0x8005fb58", "less a multiple of its sine"),
-    (0x80031f3c, "jal 0x800603f8", "the ball's shadow is widened by the landing's squash"),
-    (0x80031f54, "jal 0x800603f8", "and by the breath's squash"),
-    # The moving spikes.
-    (0x8002a128, "sh $zero, 6($a1)", "the loader clears a moving spikes slot's f3"),
-    (0x8002a130, "sh $v0, 8($a1)", "and writes its f4 for a phase that starts down"),
-    (0x8002a178, "sh $t5, 8($a1)", "or held up or retracting"),
-    (0x8002bc84, "sh $v0, 8($s3)", "the routine writes f4 as the spikes start to rise"),
-    (0x8002be64, "sh $v0, 8($s3)", "and once the harmless frames of the retraction remain"),
-    # The vanishing block.
-    (0x8002b7e8, "sw $zero, 12($v0)", "a vanishing block that returns starts its faces black"),
-    (0x8002b9a0, "sb $zero, 1($v0)", "settled, its faces lose the translucent flag"),
-    (0x8002b9fc, "sb $t6, 1($v0)", "and take it as they start to dim"),
-    # The invisible block's light.
-    (0x8002a4a0, "addiu $a0, $a0, 23128", "the frame hands the light its struct"),
-    (0x8002a4a4, "jal 0x80051318", "and runs it"),
-    (0x80036914, "sw $v0, 23128($at)", "into which the ball's routine writes where it touches its face"),
-    (0x80027c14, "sw $v0, 23140($at)", "the loader keeps the near distance there"),
-    (0x80027c20, "sw $v0, 23144($at)", "and the far one"),
-    (0x80027c28, "sw $zero, 23148($at)", "and no flag"),
-    (0x80027c5c, "bne $v0, $t2, 0x80027ca0", "a record of the settings' kind"),
-    (0x80027c78, "lh $v0, 4($v1)", "whose first field"),
-    (0x80027c80, "bne $v0, $a0, 0x80027ca0", "holds the value"),
-    (0x80027c8c, "sw $t0, 23140($at)", "keeps its own near distance"),
-    (0x80027c94, "sw $a3, 23144($at)", "and far one"),
-    (0x80027c9c, "sw $v0, 23148($at)", "and the flag"),
-    (0x800513e0, "lw $a3, 12($a0)", "the light reads the near distance"),
-    (0x800513e4, "lw $t0, 16($a0)", "and the far one"),
-    (0x8005134c, "lw $t9, 20($a0)", "and the flag"),
-    (0x800513b8, "beq $t9, $zero, 0x800513c4", "which hides every face, or shows it where the flag is set"),
-    (0x80051418, "sub $s3, $a0, $t0", "its box starts at the ball less the far distance"),
-    (0x8005141c, "addi $s3, $s3, 256", "in the cell that falls in"),
-    (0x80051424, "srl $s3, $s3, 9", "a cell to 512 units"),
-    (0x8005142c, "slti $at, $s3, 34", "within the lattice"),
-    (0x80051444, "add $s4, $a0, $t0", "and ends at the ball plus the far distance"),
-    (0x80051594, "add $s6, $s2, $t5", "each face's four vertices"),
-    (0x800515d0, "sqr", "are measured by their squares"),
-    (0x800515f0, "mtc2 $s3, lzcs", "and the root's row is the count of leading zeros in the sum"),
-    (0x80051604, "sll $s5, $s4, 4", "four words a row"),
-    (0x80051614, "and $s3, $s3, $s7", "the row's mask takes the sum's top bit off"),
-    (0x80051618, "multu $s6, $s3", "and its step times what is left"),
-    (0x80051630, "srlv $s6, $s6, $s3", "shifted down as far as the top bit is up"),
-    (0x80051640, "add $s3, $s3, $s5", "is added to its root"),
-    (0x80051644, "slt $at, $a3, $s3", "a corner past the near distance"),
-    (0x80051410, "divu $s3, $s4", "is lit less by the fixed point over the stretch to the far one"),
-    (0x80051658, "multu $s3, $t2", "times how far past it the corner is"),
-    (0x8005166c, "sll $s4, $s4, 9", "shifted down across the product's two words"),
-    (0x80051674, "sub $s3, $s5, $s3", "taken from full"),
-    (0x80051678, "bgtz $s3, 0x80051684", "and no lower than nothing"),
-    (0x80051684, "beq $t9, $zero, 0x80051690", "and where the flag is set"),
-    (0x8005168c, "sub $s3, $s4, $s3", "taken from full again"),
-    (0x80051690, "beq $s3, $zero, 0x800516ac", "a corner lit at all"),
-    (0x80051698, "ori $t8, $t8, 1", "draws its face"),
-    (0x8005157c, "addiu $t8, $zero, 22", "shaded between its corners"),
-    (0x800516ac, "sw $s3, 16($s4)", "whose colours the four are"),
-    (0x80056870, "andi $t9, $t1, 1", "the transform draws a face whose first bit is set"),
-    (0x800568d0, "andi $t9, $ra, 16", "and shades one whose fifth is between its corners"),
-    # The ball's light.
-    (0x80035278, "lhu $v1, 22884($at)", "the camera's matrix"),
-    (0x80035280, "sh $v1, 276($s0)", "is copied into the ball's state row by row"),
-    (0x800315e8, "lh $v0, 282($s3)", "the ball's light is the camera's second row"),
-    (0x800315ec, "lh $v1, 288($s3)", "its third"),
-    (0x800315f0, "lhu $a0, 276($s3)", "and its first"),
-    (0x800315f8, "subu $v0, $zero, $v0", "turned round"),
-    (0x80031600, "subu $v0, $v0, $v1", "less the third"),
-    (0x80031604, "subu $v0, $v0, $a0", "less the first"),
-    (0x8003165c, "jal 0x80060218", "made a unit long"),
-    (0x80031fe0, "sh $v0, 6356($gp)", "as the light matrix's first row"),
-    (0x80032004, "jal 0x800603f8", "and carried into the ball's frame"),
-    (0x80032410, "sw $v0, 80($sp)", "the ball's draw hands on a background"),
-    (0x80032418, "sw $v0, 84($sp)", "the light's colour in red"),
-    (0x80032454, "sw $zero, 88($sp)", "none from the other two lights"),
-    (0x800324a4, "sw $zero, 92($sp)", "nor in green"),
-    (0x800324a8, "sw $v0, 96($sp)", "and a base"),
-    (0x8002ce80, "sw $t9, -22648($at)", "which the command carries"),
-    (0x8002ce94, "sw $v0, -22648($at)", "with the light's colour"),
-    (0x8002cee8, "sw $fp, -22648($at)", "and the base"),
-    (0x8005446c, "ncct", "the renderer lights a ball's corners by their normals"),
-    (0x80054444, "andi $t6, $t6, 255", "keeps the red channel"),
-    (0x800545d0, "sll $t4, $t4, 4", "sixteen times over"),
-    (0x8005467c, "gpf", "as the share of its light a corner takes"),
-    (0x80032158, "addiu $v0, $v0, -4096", "and the ball's own light is 4096 untinted"),
-    # The gem's glints.
-    (0x80022f84, "jal 0x80023258", "the parser builds the glints' records"),
-    (0x80022f5c, "addiu $a1, $zero, 1", "of a model of the second table"),
-    (0x80022f74, "addu $a3, $s2, $zero", "a row of it for each pass of the outer loop"),
-    (0x80022f78, "sw $s0, 16($sp)", "and a slot for each pass of the inner"),
-    (0x800232c0, "sll $v0, $a2, 6", "the model is a type"),
-    (0x800232b8, "sll $v1, $a3, 4", "a row a level of detail"),
-    (0x8002327c, "sll $a0, $a0, 2", "and a slot a cut"),
-    (0x800232f0, "lw $v0, 20($v1)", "a record keeps where the model's colours are"),
-    (0x80023310, "addiu $v0, $v1, 8", "past their block's count and length"),
-    (0x8002332c, "sra $v0, $v0, 4", "and how many polygons have one, sixteen bytes each"),
-    (0x80022f68, "sw $v0, 20($sp)", "the parser hands the builder a chance"),
-    (0x80023334, "sw $t2, 8($t0)", "which the record keeps third"),
-    (0x80050d6c, "lw $s7, 8($a0)", "and the glint reads as its chance"),
-    (0x80022f7c, "sw $t0, 24($sp)", "a rise"),
-    (0x80023338, "sw $t3, 12($t0)", "kept fourth"),
-    (0x80050e54, "lw $t3, 12($a0)", "and read as the rise"),
-    (0x80022f70, "sw $a3, 28($sp)", "a top"),
-    (0x8002333c, "sw $t4, 16($t0)", "kept fifth"),
-    (0x80050e58, "lw $s1, 16($a0)", "and read as the top"),
-    (0x80022f80, "sw $v1, 32($sp)", "a fall"),
-    (0x80023340, "sw $t5, 20($t0)", "kept sixth"),
-    (0x80050e5c, "lw $s2, 20($a0)", "and read as the fall"),
-    (0x80022f88, "sw $v0, 36($sp)", "and how many slots"),
-    (0x80023344, "sw $t1, 24($t0)", "kept seventh"),
-    (0x80050d78, "lw $v0, 24($a0)", "and read as the slots"),
-    (0x80050e84, "addi $a0, $a0, 28", "which start past the record's seven words"),
-    (0x80050e94, "addi $a0, $a0, 20", "five words each"),
-    (0x8002a6b8, "jal 0x8002a998", "the frame's draw ends"),
-    (0x8002aa38, "jal 0x80050d04", "by running the glint over every record"),
-    (0x8002aa68, "jal 0x800530b0", "before it draws the models"),
-    (0x80050d50, "lw $s6, 0($s7)", "a run steps the state of the glint's own generator"),
-    (0x80050d5c, "mult $s6, $t8", "by a multiplier"),
-    (0x80050d68, "sw $s6, 0($s7)", "and keeps it"),
-    (0x80050d70, "srl $t8, $s6, 16", "a glint starts where the state's high half"),
-    (0x80050d74, "mult $t8, $s7", "times the chance"),
-    (0x80050d80, "srl $s7, $s7, 16", "over 65536"),
-    (0x80050d84, "bne $s7, $zero, 0x80050e54", "is nothing"),
-    (0x80050db4, "andi $s6, $s6, 65535", "on the polygon that the low half"),
-    (0x80050db8, "mult $s6, $t8", "times the count"),
-    (0x80050dc4, "srl $t8, $t8, 16", "over 65536 names"),
-    (0x80050df0, "bne $s6, $gp, 0x80050ddc", "unless that polygon is glinting already"),
-    (0x80050e18, "beq $t9, $zero, 0x80050e30", "stepping a flat polygon's colour"),
-    (0x80050ec8, "add $t8, $t8, $t3", "a corner rises by the rise"),
-    (0x80050ecc, "slt $at, $t8, $t6", "to no more than the top"),
-    (0x80050f34, "ori $a1, $a1, 32", "until all are there"),
-    (0x80050f60, "sub $t8, $t8, $s2", "then falls by the fall"),
-    (0x80050f68, "slt $at, $t8, $fp", "to no less than its own"),
-    (0x80050fdc, "sw $zero, -20($a0)", "and once all are back its slot is free"),
-    (0x800534f4, "lw $s6, 0($s1)", "the renderer reads a polygon's first corner"),
-    (0x80053604, "mtc2 $s6, rgbc", "and draws a flat one in that colour"),
     # What the ball takes.
     (0x80035620, "sw $zero, -29572($at)", "the loader marks every slot as not to be taken"),
     (0x80035690, "sw $s4, -29572($at)", "and then a fruit as to be taken"),
@@ -2233,6 +2041,7 @@ CHECKS = [
 IMMEDIATES = [
     *kula_motion_code.IMMEDIATES,
     *kula_motion_things.IMMEDIATES,
+    *kula_motion_light.IMMEDIATES,
     ("the ball", "ball.breathe", "breathes at this angle a frame at least", 0x800326b4, "addiu $v0, $v1, {}"),
     ("the ball", "ball.breathe.full", "and faster by the ticks its time is short of this", 0x80032690, "addiu $v0, $zero, {}"),
     ("the ball", "ball.light.down", "its light takes the camera's row down the screen shifted up this far", 0x800315f4,
@@ -2406,128 +2215,11 @@ IMMEDIATES = [
     ("the body's orientation", "body.wall", "and a wall by this about the frame's x, the frame's matrix each time the other way",
      0x800312d4, "addiu $v0, $zero, {}"),
 
-    ("moving spikes", "spikes.phase.down", "phase: down, if phase times step is under", 0x8002a120, "slti $v0, $v1, {}"),
-    ("moving spikes", "spikes.phase.held", "phase: held up, if under", 0x8002a148, "slti $v0, $v1, {}"),
-    ("moving spikes", "spikes.phase.retracting", "phase: retracting, if under", 0x8002a160, "slti $v0, $v1, {}"),
-    ("moving spikes", "spikes.phase.down.from", "phase: down for this many frames less the phase", 0x8002a134, "addiu $v0, $zero, {}"),
-    ("moving spikes", "spikes.phase.held.from", "phase: held for this many less the phase", 0x8002a15c, "addiu $v0, $zero, {}"),
-    ("moving spikes", "spikes.phase.retracting.from", "phase: retracting this many less the phase", 0x8002a170, "addiu $v0, $zero, {}"),
-    ("moving spikes", "spikes.down", "down, frames", 0x8002be6c, "addiu $s0, $zero, {}"),
-    ("moving spikes", "spikes.rise", "rising, frames", 0x8002bc6c, "addiu $s0, $zero, {}"),
-    ("moving spikes", "spikes.rattle", "rattling, frames", 0x8002bd00, "addiu $s0, $zero, {}"),
-    ("moving spikes", "spikes.hold", "held up, frames", 0x8002bd58, "addiu $s0, $zero, {}"),
-    ("moving spikes", "spikes.retract", "retracting, frames", 0x8002bd70, "addiu $s0, $zero, {}"),
-    ("moving spikes", "spikes.harmless", "retracting: harmless once this many remain", 0x8002be54, "addiu $v0, $zero, {}"),
-    ("moving spikes", "spikes.phase.down.flag", "phase: f4 for a phase that starts down", 0x8002a12c, "addiu $v0, $zero, {}"),
-    ("moving spikes", "spikes.phase.up.flag", "phase: f4 for one that starts held up or retracting", 0x8002a098,
-     "addiu $t5, $zero, {}"),
-    ("moving spikes", "spikes.rise.flag", "rising: f4 as it starts", 0x8002bc74, "addiu $v0, $zero, {}"),
-    ("moving spikes", "spikes.retract.flag", "retracting: f4 once the harmless frames remain", 0x8002be5c,
-     "addiu $v0, $zero, {}"),
-
-    ("vanishing block", "vanish.phase.absent", "phase: starts absent if under", 0x80028bd0, "slti $v0, $a1, {}"),
-    ("vanishing block", "vanish.phase.absent.from", "phase: absent for this many frames less the phase", 0x80028c1c, "addiu $v0, $zero, {}"),
-    ("vanishing block", "vanish.phase.solid.from", "phase: solid for this many less the phase", 0x80028cb8, "addiu $v0, $zero, {}"),
-    ("vanishing block", "vanish.absent", "absent, frames", 0x8002bb78, "addiu $a2, $zero, {}"),
-    ("vanishing block", "vanish.in", "fading in, frames", 0x8002b7fc, "addiu $a2, $zero, {}"),
-    ("vanishing block", "vanish.settle", "settling, frames", 0x8002b900, "addiu $a2, $zero, {}"),
-    ("vanishing block", "vanish.solid", "solid, frames", 0x8002b9c0, "addiu $a2, $zero, {}"),
-    ("vanishing block", "vanish.dim", "dimming, frames", 0x8002b9d4, "addiu $a2, $zero, {}"),
-    ("vanishing block", "vanish.out", "flashing out, frames", 0x8002bad4, "addiu $a2, $zero, {}"),
-    ("vanishing block", "vanish.in.over", "fading in: the count is taken from this", 0x8002b858, "addiu $v0, $zero, {}"),
-    ("vanishing block", "vanish.settle.floor", "settling: the ramp stands this far above black", 0x8002b93c, "addiu $a1, $v1, {}"),
-    ("vanishing block", "vanish.dim.from", "dimming: the ramp is taken from this", 0x8002ba50, "addiu $v0, $zero, {}"),
-
     ("crumbling block", "crumble.size", "size at load, units", 0x80028ab8, "addiu $a3, $zero, {}"),
     ("crumbling block", "crumble.shrink", "shrinks per frame once broken, units", 0x8002b5b8, "addiu $v0, $v0, {}"),
 
     ("moving platform", "platform.dwell", "the dwell laid at each end and counted down before the move test, frames",
      0x80032e7c, "addiu $v1, $zero, {}"),
-
-    ("shadows", "shadow.sprite", "the round one is this sprite past the .GGI header's sixth bound", 0x80029098, "addiu $s1, $s5, {}"),
-    ("shadows", "shadow.sprites", "and the square one the next, of this many", 0x80029374, "slti $v0, $s5, {}"),
-    ("shadows", "shadow.drop.50", "slow star: lies this far along its normal from its entry, units", 0x8003db5c, "addiu $a3, $zero, {}"),
-    ("shadows", "shadow.drop.51", "wheel: lies this far along its normal from its entry, units", 0x8003f07c, "addiu $a3, $zero, {}"),
-    ("shadows", "shadow.drop.52", "fast star: lies this far along its normal from its entry, units", 0x8003f728, "addiu $a3, $zero, {}"),
-    ("shadows", "shadow.drop.53", "wandering ball: lies this far along its normal from its entry, units", 0x8003e1e0, "addiu $a3, $zero, {}"),
-    ("shadows", "shadow.strength.50", "slow star: strength, of 128", 0x8003dd3c, "addiu $v0, $zero, {}"),
-    ("shadows", "shadow.strength.51", "wheel: strength, of 128", 0x8003f280, "addiu $v0, $zero, {}"),
-    ("shadows", "shadow.strength.52", "fast star: strength, of 128", 0x8003f908, "addiu $v0, $zero, {}"),
-    ("shadows", "shadow.strength.53", "wandering ball: strength, of 128", 0x8003e3c0, "addiu $v0, $zero, {}"),
-    ("shadows", "shadow.sprite.51", "wheel: its sprite, of the two", 0x8003f288, "addiu $v0, $zero, {}"),
-    ("shadows", "shadow.strength.56", "corkscrew: strength on its face, of 128", 0x8003ea2c, "addiu $v0, $zero, {}"),
-    ("shadows", "shadow.ball.top", "ball: fades to nothing this far off its face, units", 0x80031f30, "addiu $v0, $zero, {}"),
-    ("shadows", "shadow.ball.shift", "ball: its height short of that, shifted up this far", 0x80032458, "sll $v1, $v1, {}"),
-    ("shadows", "standing.centre", "ball: the cell its centre lies in is taken this far past the centre, units", 0x8003746c,
-     "addiu $v1, $v1, {}"),
-    ("shadows", "standing.shift", "and shifted down this far, a block", 0x80037470, "sra $v1, $v1, {}"),
-    ("shadows", "standing.first", "ball: the block under that cell carries a record from this lattice word", 0x800377ac,
-     "slti $v0, $a0, {}"),
-    ("shadows", "standing.kind.5", "ball: a platform under it is tested as this kind", 0x80037810, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.word.5", "and reads as this", 0x80037818, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.kind.6", "ball: a crumbling block as this kind", 0x80037838, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.word.6", "and reads as this", 0x80037840, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.kind.7", "ball: a vanishing block as this kind", 0x80037860, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.word.7", "and reads as this", 0x80037868, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.kind.1", "ball: fire as this kind, which reads as itself", 0x80037888, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.kind.2", "ball: ice as this kind, which reads as itself", 0x800378b0, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.kind.3", "ball: an invisible block as this kind", 0x800378d8, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.word.3", "and reads as this", 0x800378e0, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.kind.4", "ball: acid as this kind, which reads as itself", 0x80037900, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.style.1", "ball: a lattice style of this reads as fire's kind", 0x80037950, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.style.2", "of this as ice's kind", 0x80037964, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.style.3", "of this as the invisible block's kind", 0x8003796c, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.style.word.3", "which reads as this", 0x80037980, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.style.4", "and of this as acid's kind", 0x8003798c, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.nothing", "ball: a bare plain block reads as this", 0x800379ac, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.none", "as does a cell holding this, no block", 0x800379a8, "addiu $v1, $zero, {}"),
-
-    ("invisible block", "light.kind", "the light takes blocks of this kind", 0x80051558, "addiu $s4, $zero, {}"),
-    ("invisible block", "light.near", "full within this far of the ball, units", 0x80027c0c, "addiu $v0, $zero, {}"),
-    ("invisible block", "light.far", "and nothing from this far", 0x80027c18, "addiu $v0, $zero, {}"),
-    ("invisible block", "light.full", "full is this, of 128", 0x80051654, "addiu $s3, $zero, {}"),
-    ("invisible block", "light.full.fade", "and fades from this", 0x8005165c, "addiu $s5, $zero, {}"),
-    ("invisible block", "light.full.turned", "and is taken from this where the flag is set", 0x80051688,
-     "addiu $s4, $zero, {}"),
-    ("invisible block", "light.scale", "over the stretch between the two, this in the top half of a word", 0x80051408,
-     "lui $s3, {}"),
-    ("invisible block", "light.bits", "the product shifted down this far", 0x80051664, "srl $s3, $s3, {}"),
-    ("invisible block", "light.bits.high", "its high word shifted up this far", 0x8005166c, "sll $s4, $s4, {}"),
-    ("invisible block", "light.turned.kind", "a record of this kind", 0x80027c34, "addiu $t2, $zero, {}"),
-    ("invisible block", "light.turned.value", "whose first field is this turns the light round", 0x80027c38,
-     "addiu $a0, $zero, {}"),
-    ("invisible block", "light.turned.near", "nothing within this far, units", 0x80027c40, "addiu $t0, $zero, {}"),
-    ("invisible block", "light.turned.far", "and full from this far", 0x80027c44, "addiu $a3, $zero, {}"),
-
-    ("devices' light", "glow.every", "a teleporter turns its light over every this many frames", 0x8002d440,
-     "addiu $v0, $zero, {}"),
-    ("devices' light", "glow.every.exit", "an exit", 0x8002d56c, "addiu $v0, $zero, {}"),
-    ("devices' light", "glow.every.switch", "a switch", 0x8002d638, "addiu $v0, $zero, {}"),
-    ("devices' light", "glow.every.load", "and the loader starts the count at this", 0x80029764,
-     "addiu $t2, $zero, {}"),
-    ("devices' light", "glow.part.x", "level 1 is the colour times this of 4096 in red", 0x8005106c,
-     "addiu $t7, $zero, {}"),
-    ("devices' light", "glow.part.y", "in green", 0x80051078, "addiu $t7, $zero, {}"),
-    ("devices' light", "glow.part.z", "in blue", 0x80051084, "addiu $t7, $zero, {}"),
-
-    ("gem's glints", "glint.model", "the records are of this model of the second table", 0x80022f60,
-     "addiu $a2, $zero, {}"),
-    ("gem's glints", "glint.cuts", "the parser builds a record for each of this many slots", 0x80022f90, "slti $v0, $s0, {}"),
-    ("gem's glints", "glint.rows", "in each of this many rows", 0x80022fa0, "slti $v0, $s2, {}"),
-    ("gem's glints", "glint.record", "bytes from one slot's record to the next", 0x80022f98, "addiu $s1, $s1, {}"),
-    ("gem's glints", "glint.row", "and from one row's records to the next", 0x80022fa8, "addiu $s3, $s3, {}"),
-    ("gem's glints", "glint.head", "a record's slots start this far in", 0x80023348, "addiu $t0, $t0, {}"),
-    ("gem's glints", "glint.slot", "and are this many bytes each", 0x80023364, "addiu $t0, $t0, {}"),
-    ("gem's glints", "glint.chance", "a glint starts where a draw of this many comes up nothing", 0x80022f64,
-     "addiu $v0, $zero, {}"),
-    ("gem's glints", "glint.slots", "glints a record holds at once", 0x80022f6c, "addiu $v0, $zero, {}"),
-    ("gem's glints", "glint.flat", "bytes of a flat polygon's colour stepped", 0x80050e1c, "addiu $gp, $zero, {}"),
-    ("gem's glints", "glint.frame.cuts", "the frame runs the glint over this many records a row", 0x8002aa44,
-     "slti $v0, $s1, {}"),
-    ("gem's glints", "glint.frame.rows", "for this many rows", 0x8002aa54, "slti $v0, $s4, {}"),
-    ("gem's glints", "glint.frame.record", "stepping this far a record", 0x8002aa4c, "addiu $s0, $s0, {}"),
-    ("gem's glints", "glint.frame.row", "and this far a row", 0x8002aa5c, "addiu $s3, $s3, {}"),
-    ("gem's glints", "glint.plus", "a draw adds this after it multiplies", 0x80050d64, "addiu $s6, $s6, {}"),
 
     ("what the ball takes", "take.live", "the loader marks a thing the walk may take with this", 0x800355c4,
      "addiu $s4, $zero, {}"),
@@ -3190,6 +2882,7 @@ IMMEDIATES = [
 MULTIPLIERS = [
     *kula_motion_code.MULTIPLIERS,
     *kula_motion_things.MULTIPLIERS,
+    *kula_motion_light.MULTIPLIERS,
     ("the ball", "ball.breathe.reach", "breathes this much of 4096 wider and twice as much shorter", 0x800326e0, 5, "v0", "v0"),
     ("the ball", "time.tick", "the level's time is this many ticks a second", 0x80035f90, 6, "v1", "v0"),
     ("the ball", "move.cells.up", "the cells about the ball: bytes from a layer's words to the layer above", 0x8003761c, 3,
@@ -3212,16 +2905,8 @@ MULTIPLIERS = [
     ("the ball's jump", "jump.snap", "as the jump ends the centre is the saved one moved this far along the heading",
      0x8002fe80, 1, "v0", "v0"),
     ("the ball's jump", "jump.far", "or this far after the long jump", 0x8002fe30, 4, "v0", "v1"),
-    ("moving spikes", "spikes.phase.step", "phase: frames per step", 0x8002a110, 4, "v1", "v1"),
-    ("vanishing block", "vanish.phase.step", "phase: frames per step", 0x80028c10, 3, "a1", "v1"),
-    ("vanishing block", "vanish.in.scale", "fading in: the count's rise times this", 0x8002b860, 2, "v0", "v1"),
-    ("vanishing block", "vanish.settle.scale", "settling: the count times this", 0x8002b914, 3, "a2", "v0"),
-    ("vanishing block", "vanish.dim.scale", "dimming: the count times this", 0x8002ba28, 3, "a2", "v0"),
-    ("vanishing block", "vanish.out.scale", "flashing out: the count times this", 0x8002bae8, 2, "a2", "v0"),
     ("moving platform", "platform.scale", "speed on the disc is scaled by this over sixty", 0x80032a60, 5, "v1", "v0"),
     ("the view in play", "rock.scale", "the pill's word is scaled by this before its sine", 0x80035324, 1, "a0", "v0"),
-    ("shadows", "shadow.corkscrew.drop", "corkscrew: lies this far from its home toward the block, units", 0x8003e8e0, 6, "v1", "v0"),
-    ("shadows", "shadow.corkscrew.fade", "corkscrew: weaker by this times the sine of its bounce", 0x8003ea10, 3, "v0", "v1"),
     ("what the ball takes", "hourglass.points", "the hourglass scores this a second of the clock it leaves", 0x800390a8, 5,
      "v1", "v0"),
     ("the level's clock and its end", "mark.under", "the block marked lies this far under the ball's centre, units",
@@ -3268,26 +2953,14 @@ MULTIPLIERS = [
 # reciprocal with no shift after it.
 FLIGHT_THIRD = (0x80034240, "lui $t0, {}", 0x80034248, "ori $t0, $t0, {}")
 
-# And the glints' generator's state.
-GLINT_TIMES = (0x80050d54, "lui $t8, {}", 0x80050d58, "ori $t8, $t8, {}")
-
 # A divisor the compiler turned into a multiply by a reciprocal and a shift:
 # the two halves of the reciprocal and the shift of the high word.
 DIVISORS = [
     *kula_motion_code.DIVISORS,
     *kula_motion_things.DIVISORS,
+    *kula_motion_light.DIVISORS,
     ("the ball", "ball.breathe.over", "over this", 0x80032680, "lui $a0, {}", 0x80032684, "ori $a0, $a0, {}",
      0x800326a8, "sra $v1, $a2, {}"),
-    ("shadows", "shadow.ball.over", "ball: and divided by this", 0x800323d4, "lui $s2, {}", 0x800323d8,
-     "ori $s2, $s2, {}", 0x80032494, "sra $v0, $t8, {}"),
-    ("vanishing block", "vanish.in.by", "fading in: over this", 0x8002b850, "lui $a0, {}", 0x8002b854,
-     "ori $a0, $a0, {}", 0x8002b87c, "sra $v0, $t7, {}"),
-    ("vanishing block", "vanish.settle.by", "settling: over this", 0x8002b90c, "lui $v1, {}", 0x8002b910,
-     "ori $v1, $v1, {}", 0x8002b934, "sra $v1, $t7, {}"),
-    ("vanishing block", "vanish.dim.by", "dimming: over this", 0x8002ba20, "lui $v1, {}", 0x8002ba24,
-     "ori $v1, $v1, {}", 0x8002ba48, "sra $v1, $t7, {}"),
-    ("vanishing block", "vanish.out.by", "flashing out: over this", 0x8002bae0, "lui $v1, {}", 0x8002bae4,
-     "ori $v1, $v1, {}", 0x8002bb04, "sra $v1, $t7, {}"),
     ("what the ball takes", "hourglass.second", "the hourglass counts the clock it leaves in seconds of this many ticks",
      0x80039060, "lui $a0, {}", 0x80039064, "ori $a0, $a0, {}", 0x800390a0, "sra $v1, $t3, {}"),
     ("what harms the ball", "heat.shake.over", "the heat shakes the pad by more by the heat over this", 0x80036724,
@@ -3306,28 +2979,8 @@ DIVISORS = [
 GREYS = [
     *kula_motion_code.GREYS,
     *kula_motion_things.GREYS,
-    ("vanishing block", "vanish.in.to", "fading in: ends at", 0x8002b8c8, "lui $v1, {}", 0x8002b8cc, "ori $v1, $v1, {}"),
-    ("vanishing block", "vanish.settle.to", "settling: ends at", 0x8002b984, "lui $v1, {}", 0x8002b988, "ori $v1, $v1, {}"),
-    ("vanishing block", "vanish.dim.at", "dimming: starts at", 0x8002b9e0, "lui $v1, {}", 0x8002b9e4, "ori $v1, $v1, {}"),
-    ("vanishing block", "vanish.out.at", "flashing out: starts at", 0x8002ba9c, "lui $v1, {}", 0x8002baa0, "ori $v1, $v1, {}"),
-    ("gem's glints", "glint.rise", "a glinting corner rises by this in each channel", 0x80022f34, "lui $t0, {}",
-     0x80022f38, "ori $t0, $t0, {}"),
-    ("gem's glints", "glint.top", "to no more than this", 0x80022f3c, "lui $a3, {}", 0x80022f40, "ori $a3, $a3, {}"),
-    ("gem's glints", "glint.fall", "and falls by this to no less than its own", 0x80022f44, "lui $v1, {}",
-     0x80022f48, "ori $v1, $v1, {}"),
+    *kula_motion_light.GREYS,
 ]
-
-# The shadow's four vertices, each x, y, z and a pad, where both draws load
-# them from.
-SHADOW_SQUARE = (0x8002c8d0, 0x8002c8d4)
-
-# The square root the invisible block's light takes: a table of four words a
-# row, by the count of leading zeros in the square, where a lui and an addiu
-# build its address. The rows kept are those for a square of 2^8 or more;
-# past them the words are not part of the root's table, and a square that
-# small is well within any near distance.
-LIGHT_ROOT = (0x800513f8, 0x800513fc)
-ROOT_ROWS = 24
 
 # The ball's states, dispatched through a table by the state plus one, and
 # the three the moves run in: at rest, rolling and round an edge.
@@ -3360,6 +3013,7 @@ NEXT_MODE_CLEARS = (0x800482e4, 0x8004adc4, 0x8004b5dc)
 SCANS = [
     *kula_motion_code.SCANS,
     *kula_motion_things.SCANS,
+    *kula_motion_light.SCANS,
     ("the devices under the ball", "send.stores",
      "stores in the send, each resolved to its address, none from 564 to 688 of the ball's record",
      0x8003a6b4, 0x8003a8fc, "s0", (564, 688),
@@ -3375,25 +3029,6 @@ SIMON_AT = {"idle": (0x800a4c8c, 7508), "latch": (0x800a4c90, 7512), "move": (0x
             "count": (0x800a4cac, 7540), "round": (0x800a4cb0, 7544), "verdict": (0x800a4cb4, 7548),
             "turn": (0x800a33ac, 1140), "last": (0x800a5704, 10188), "starter": (0x800a38a0, 2408)}
 
-# A device's light: the routine that makes it from a cell and a face, the one
-# that adds a face to it where the face is there, and the three cases of the
-# draw, with where each builds the address of its table of colours, a word
-# a colour, four a world by the circuit or one a world.
-GLOW_MAKE = 0x8002e3d8
-GLOW_FACE = 0x8002f16c
-GLOW_CASES = {5: 0x8002d408, 7: 0x8002d534, 9: 0x8002d600}
-GLOW_TYPES = (0x80010074, 5, 24)  # the draw's table of cases: where, the first type, how many
-GLOW_COLOURS = {5: ((0x8002d514, 0x8002d51c), 4), 7: ((0x8002d5ec, 0x8002d5f4), 1),
-                9: ((0x8002d6c4, 0x8002d6cc), 4)}
-GLOW_LEVELS = 3           # the levels a corner can take
-# Where a lit teleporter's lift is, by circuit, and the shifts that double a lit exit's and switch's light.
-GLOW_LIFT = (0x8002d4b0, 0x8002d4b8)
-GLOW_DOUBLE = {7: (0x8002d5c8, 0x8002d5cc), 9: (0x8002d694, 0x8002d698)}
-MVMVA_SF = 1 << 19        # the command's bit that shifts its products down by 12
-
-# Where the parser and the frame put the glints' records, and their generator's state.
-GLINT_RECORDS = ((0x80022f4c, 0x80022f50), (0x8002aa2c, 0x8002aa30))
-GLINT_STATE = (0x80050d48, 0x80050d4c)
 MODE_WORD = (0x800a572c, 10228)   # the lethargy effect's mode word, and its offset from gp
 LEVEL_MODE = (0x800a53d4, 9372)   # the level's mode word, and its offset from gp
 LEVEL_MODE_READ = (0x80034830, 0x80034834)   # where the ending's view builds its address
@@ -3403,7 +3038,6 @@ SCREEN_WORDS = {"wide": 0x800a33d4, "high": 0x800a33dc, "distance": 0x800a33e4,
                 "across": 0x800a33d8, "down": 0x800a33e0}
 FLAT_TEXTURED = 0x2c      # the GPU's code for a flat textured quad
 ONE_PLAYER = 2            # the gate the screen's effect asks the count of players against
-CORNER = 4                # bytes to a corner of a polygon's colour
 
 # The contact walk's and the loader's cases by type, from the first each
 # knows, and the case every other type goes to.
@@ -3516,48 +3150,6 @@ def readings(code):
     dispatch(code, LOADER_TYPES, LOADER_CASES, LOADER_PLAIN, "the loader")
     dispatch(code, END_FACES, END_CASES, None, "the end landing")
     return out
-
-
-def shadow_half(code):
-    """How far the shadow's square reaches either way of its middle, from the
-    four vertices both draws load: every corner of a square, flat in y."""
-    at = code.address(*SHADOW_SQUARE) - EXE_BASE
-    corners = [struct.unpack_from("<4h", code.blob, at + 8 * i) for i in range(4)]
-    half = abs(corners[0][0])
-    if sorted((x, z) for x, _, z, _ in corners) != [(-half, -half), (-half, half), (half, -half), (half, half)] \
-            or any(y or pad for _, y, _, pad in corners):
-        sys.exit(f"the shadow's vertices are {corners}, not a square flat in y")
-    return half
-
-
-def root_table(code):
-    """The rows of the light's square root, by the count of leading zeros in
-    the square: the root of the power of two the square is past, and how far
-    it is to the root of the next. A row's mask takes that power of two off
-    the square, which is what lets a row be read as the two numbers."""
-    at = code.address(*LIGHT_ROOT) - EXE_BASE
-    rows = []
-    for zeros in range(ROOT_ROWS):
-        step, mask, root, pad = struct.unpack_from("<4I", code.blob, at + 16 * zeros)
-        if mask != (1 << (31 - zeros)) - 1 or pad:
-            sys.exit(f"the root's row for {zeros} leading zeros masks with 0x{mask:x} and pads with {pad}")
-        rows.append([root, step])
-    return rows
-
-
-def light(r):
-    """How the game lights an invisible block near the ball, and the distances
-    of a level that turns the light round."""
-    if r["light.kind"] != INVISIBLE:
-        sys.exit(f"the light takes blocks of kind {r['light.kind']}, not the invisible block's kind")
-    if not r["light.full"] == r["light.full.fade"] == r["light.full.turned"]:
-        sys.exit("the light is not full at the same brightness where it is full, fades and turns round")
-    if r["light.bits"] + r["light.bits.high"] != 32 or r["light.scale"] << 16 != r["light.full"] << r["light.bits"]:
-        sys.exit("the light's fixed point does not come back to full over the stretch")
-    return {"near": r["light.near"], "far": r["light.far"], "full": r["light.full"],
-            "bits": r["light.bits"], "root": r["light.root"],
-            "turned": {"kind": r["light.turned.kind"], "value": r["light.turned.value"],
-                       "near": r["light.turned.near"], "far": r["light.turned.far"]}}
 
 
 def moves(code, r):
@@ -3705,217 +3297,6 @@ def body(r):
     if r["body.one"] != ONE or r["body.one.landing"] != ONE:
         sys.exit("the matrices are not laid in the one fixed point")
     return r["body.wrap"]
-
-
-def glow_spill(code):
-    """What a device's light takes, for each face it can stand on: groups of
-    faces tried in order until one is there, the thing's own face first and
-    then one group for each of its four edges. A face is an offset from the
-    thing's cell, the face of the block there, and a level at each of its
-    corners in the order of its texture's first turn. Each group is read by
-    running the routine that makes a light, answering that no face is there
-    and then that each in turn is, which is how the groups are told apart."""
-    m = Machine(code)
-    origin = (10, 10, 10)
-    out = []
-    for face in range(FACES):
-        def trace(there):
-            calls = []
-
-            def add(args, words):
-                x, y, z, f = args
-                call = [x - origin[0], y - origin[1], z - origin[2], f, words]
-                calls.append(call)
-                return 0 if there(call) else 1
-            m.run(GLOW_MAKE, [*origin, face], [], {GLOW_FACE: add})
-            return calls
-        tried = trace(lambda call: False)
-        heads = trace(lambda call: True)
-        starts = [tried.index(h) for h in heads]
-        groups = [tried[a:b] for a, b in zip(starts, starts[1:] + [len(tried)])]
-        if groups[0] != [[0, 0, 0, face, [GLOW_LEVELS - 1] * 4]]:
-            sys.exit(f"a light on face {face} does not start from that face at full")
-        for g, group in enumerate(groups):
-            for k, call in enumerate(group):
-                expect = [c for i, grp in enumerate(groups) for j, c in enumerate(grp) if i != g or j <= k]
-                if trace(lambda c: c == call) != expect:
-                    sys.exit(f"a light on face {face} does not stop at the face it finds in group {g}")
-                if any(v not in range(GLOW_LEVELS) for v in call[4]) or call[3] not in range(FACES):
-                    sys.exit(f"a light on face {face} tries {call}")
-        out.append(groups)
-    return out
-
-
-def glow(code, r):
-    """A device's light: how often it is turned over, what level 1 is of the
-    colour, what the light takes for each face, and the colours by type."""
-    everies = {r[k] for k in ("glow.every", "glow.every.exit", "glow.every.switch", "glow.every.load")}
-    parts = {r[k] for k in ("glow.part.x", "glow.part.y", "glow.part.z")}
-    if len(everies) != 1 or len(parts) != 1:
-        sys.exit(f"the devices' light turns over every {everies} frames and takes {parts} for level 1")
-    if not code.word(0x800510e8) & MVMVA_SF:
-        sys.exit("level 1's product is not shifted down by 12")
-    at, first, count = GLOW_TYPES
-    for typ in range(first, first + count):
-        case = 0x80000000 | code.word(at + 4 * (typ - first))
-        if (typ in GLOW_CASES) != (case in GLOW_CASES.values()) or GLOW_CASES.get(typ, case) != case:
-            sys.exit(f"type {typ} goes to the case at 0x{case:08x}")
-    colours = {}
-    for t, (at, each) in GLOW_COLOURS.items():
-        base = code.address(*at)
-        words = [code.word(base + 4 * i) for i in range(len(THEMES) * each)]
-        colours[t] = [[[(w >> s) & 255 for s in (0, 8, 16)] for w in words[i * each:(i + 1) * each]]
-                      for i in range(len(THEMES))]
-    return {"every": everies.pop(), "part": [parts.pop(), 1 << 12], "spill": glow_spill(code),
-            "lift": glow_lift(code)}, colours
-
-
-def glow_lift(code):
-    """What a lit device's model is drawn times, in 4096ths a channel: a
-    teleporter's lift by its circuit, an exit's and a switch's lift one for all."""
-    if code.multiplier(0x8002d4a4, 3, "a1", "v0") != 12:
-        sys.exit("a teleporter's lift is not three words to a circuit")
-    base = code.address(*GLOW_LIFT)
-    circuits = GLOW_COLOURS[5][1]
-    lift = {5: [[code.word(base + 12 * c + 4 * ch) for ch in range(3)] for c in range(circuits)]}
-    for t, (up, down) in GLOW_DOUBLE.items():
-        times = 1 << (code.immediate(up, "sll $v0, $s5, {}") - code.immediate(down, "sra $s5, $v0, {}"))
-        lift[t] = [[times << 12] * 3]
-    return {str(t): lift[t] for t in sorted(lift)}
-
-
-def glint(r):
-    """The gem's glints: the chance a run starts one, how a glinting corner
-    rises and falls, how many a record holds at once, the parser's rows and
-    cuts of records, which the frame runs over a row at a time, and the
-    generator a run steps once."""
-    if r["glint.at"] != r["glint.frame.at"]:
-        sys.exit(f"the frame runs the glint over 0x{r['glint.frame.at']:08x}, "
-                 f"not the records the parser builds at 0x{r['glint.at']:08x}")
-    for key in ("rows", "cuts", "record", "row"):
-        if r[f"glint.{key}"] != r[f"glint.frame.{key}"]:
-            sys.exit(f"the frame runs the glint over {r[f'glint.frame.{key}']} where the parser's {key} is "
-                     f"{r[f'glint.{key}']}")
-    if r["glint.record"] != r["glint.head"] + r["glint.slots"] * r["glint.slot"] \
-            or r["glint.row"] != r["glint.cuts"] * r["glint.record"]:
-        sys.exit("a glint's record does not hold its slots, or a row its records")
-    if r["glint.flat"] != CORNER:
-        sys.exit(f"a glint steps {r['glint.flat']} bytes of a flat polygon's colour, not its first corner")
-    return {"chance": r["glint.chance"], "rise": r["glint.rise"], "top": r["glint.top"], "fall": r["glint.fall"],
-            "slots": r["glint.slots"], "rows": r["glint.rows"], "cuts": r["glint.cuts"],
-            "dice": {"seed": r["glint.seed"], "times": r["glint.times"], "plus": r["glint.plus"]}}
-
-
-def spike_cycle(r, phase, frames=SPIKE_FRAMES, at=None):
-    """The frame the moving spikes show on each frame of one cycle, for a
-    phase, with whether their f4 holds the value the hazards kill on.
-
-    The game's routine is run from the state its loader gives that phase,
-    past the first cycle, which the loader cuts short or stretches, and one
-    steady cycle is taken from the same frame for every phase, so the
-    programs keep the game's spacing between them.
-    """
-    deadly, harmless = r["spikes.rise.flag"], r["spikes.retract.flag"]
-    if deadly != r["spikes11.deadly"] or harmless == deadly:
-        sys.exit("the moving spikes' f4 is not the hazards' deadly value as they rise and another as they retract")
-    if (r["spikes.phase.down.flag"], r["spikes.phase.up.flag"]) != (harmless, deadly):
-        sys.exit("the loader does not start the moving spikes harmless down and deadly held up or retracting")
-    top = frames - 1
-    v = phase * r["spikes.phase.step"]
-    if v < r["spikes.phase.down"]:
-        state, count, frame, flag = 0, r["spikes.phase.down.from"] - v, 0, r["spikes.phase.down.flag"]
-    elif v < r["spikes.phase.held"]:
-        state, count, frame, flag = 3, r["spikes.phase.held.from"] - v, top, r["spikes.phase.up.flag"]
-    else:
-        state, count, frame, flag = 4, r["spikes.phase.retracting.from"] - v, top, r["spikes.phase.up.flag"]
-    rise, rattle, retract = r["spikes.rise"], r["spikes.rattle"], r["spikes.retract"]
-    cycle = r["spikes.down"] + rise + 1 + rattle + 1 + r["spikes.hold"] + retract + 1
-    at = cycle * 2 if at is None else at
-    seq = []
-    for _ in range(at + cycle * 2):
-        count -= 1
-        if state == 0:
-            if count <= 0:
-                state, count, flag = 1, rise, deadly
-        elif state == 1:
-            if count >= 0:
-                frame = (rise - 1 - count) * frames // rise
-            else:
-                state, count, frame = 2, rattle, top
-        elif state == 2:
-            if count < 0:
-                state, count, frame = 3, r["spikes.hold"], top
-            else:
-                frame = top if count % 2 == 0 else top - count * frames // rattle
-        elif state == 3:
-            if count <= 0:
-                state, count = 4, retract
-        else:
-            if count < 0:
-                state, count, frame = 0, r["spikes.down"], 0
-            else:
-                frame = count * frames // retract
-                if count == r["spikes.harmless"]:
-                    flag = harmless
-        seq.append((frame, flag == deadly))
-    return period(seq, at, cycle, "the moving spikes")
-
-
-def vanish_cycle(r, phase, at=None):
-    """The state of a vanishing block on each frame of one cycle, for a phase,
-    with the brightness its faces are drawn at, taken as the spikes' cycle is."""
-    v = phase * r["vanish.phase.step"]
-    if phase < r["vanish.phase.absent"]:
-        state, count, level = 0, r["vanish.phase.absent.from"] - v, 0
-    else:
-        state, count, level = 3, r["vanish.phase.solid.from"] - v, r["vanish.settle.to"]
-    lasts = [r["vanish.absent"], r["vanish.in"], r["vanish.settle"],
-             r["vanish.solid"], r["vanish.dim"], r["vanish.out"]]
-    for name, last in zip(("in", "settle", "dim", "out"), (lasts[1], lasts[2], lasts[4], lasts[5])):
-        if r[f"vanish.{name}.by"] != last:
-            sys.exit(f"the vanishing block's ramp {name} runs over {r[f'vanish.{name}.by']} frames of {last}")
-    if r["vanish.in.over"] != lasts[1]:
-        sys.exit(f"the vanishing block fades in from {r['vanish.in.over']} over {lasts[1]} frames")
-    cycle = sum(lasts)
-    at = cycle * 2 if at is None else at
-    seq = []
-    for _ in range(at + cycle * 2):
-        count -= 1
-        if state == 0:
-            if count <= 0:
-                state, count = 1, lasts[1]
-        elif state == 1:
-            if count > 0:
-                level = (r["vanish.in.over"] - count) * r["vanish.in.scale"] // r["vanish.in.by"]
-            else:
-                state, count, level = 2, lasts[2], r["vanish.in.to"]
-        elif state == 2:
-            if count > 0:
-                level = count * r["vanish.settle.scale"] // r["vanish.settle.by"] + r["vanish.settle.floor"]
-            else:
-                state, count, level = 3, lasts[3], r["vanish.settle.to"]
-        elif state == 3:
-            if count <= 0:
-                state, count, level = 4, lasts[4], r["vanish.dim.at"]
-        elif state == 4:
-            if count > 0:
-                level = r["vanish.dim.from"] - count * r["vanish.dim.scale"] // r["vanish.dim.by"]
-            else:
-                state, count, level = 5, lasts[5], r["vanish.out.at"]
-        else:
-            if count > 0:
-                level = r["vanish.out.scale"] * count // r["vanish.out.by"]
-            else:
-                state, count, level = 0, lasts[0], 0
-        seq.append((state, level))
-    return period(seq, at, cycle, "the vanishing block")
-
-
-def period(seq, at, cycle, what):
-    """One cycle from `at`, which has to repeat, or the reading is wrong."""
-    if seq[at:at + cycle] != seq[at + cycle:at + 2 * cycle]:
-        sys.exit(f"{what} does not repeat every {cycle} frames from frame {at}")
-    return seq[at:at + cycle]
 
 
 def take(r):

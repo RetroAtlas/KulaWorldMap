@@ -27,6 +27,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `kula_motion.py` | what the executable does to each thing every frame, the rates behind [motion.md](motion.md) |
 | `kula_motion_code.py` | the executable as the readings read it, a word or an instruction at a time, the units and the words the readings share, and the frame loop's checks, "The frame" in [motion.md](motion.md) |
 | `kula_motion_things.py` | the things on a block, how each is laid out and turned and the rates it moves at, the boost button, the captivators, their order and the dice, the spin each type's draw builds, and the laser, "The things on a block", "The captivators" and "The laser" in [motion.md](motion.md) |
+| `kula_motion_light.py` | a device's light, the colour a teleporter, a switch or an exit that is on casts on the faces round it, the shadows under the ball and the captivators, the moving spikes' and the vanishing block's cycles, the invisible block's light as the ball comes near, the ball's own light and the gem's glints, "The devices' light", "The shadows", "The moving spikes", "The vanishing block", "The invisible block" and "The gem's glints" in [motion.md](motion.md) |
 | `ogcard.js` | render the social card from the map itself (Node, needs Playwright) |
 | `icons.js` | render the raster icons from the favicon (Node, needs Playwright) |
 | `serve.py` | local static server, caching off, 404.html like the host |

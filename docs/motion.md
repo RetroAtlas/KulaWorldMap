@@ -923,7 +923,7 @@ The loader starts every one of the three on a plain block, which all 441 are, at
 
 A face is there where the lattice holds a block that has the face, as the loader built it, so a face built unseen behind a crumbling block counts and one the loader built nothing for does not.
 
-The levels are given in the order of the face's corners at its texture's first turn, and `0x8002f16c` turns them by the face's own turn, its byte at 6, so they stay with the block. `tools/kula_motion.py` runs `0x8002e3d8` for each face with that call answered by hand to read the faces and levels it tries, in order.
+The levels are given in the order of the face's corners at its texture's first turn, and `0x8002f16c` turns them by the face's own turn, its byte at 6, so they stay with the block. `tools/kula_motion_light.py` runs `0x8002e3d8` for each face with that call answered by hand to read the faces and levels it tries, in order.
 
 **Each frame the faces of a light are shaded between their corners with the light added.**
 
