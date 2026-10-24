@@ -30,16 +30,16 @@ test("the start camera stands 648 units behind the ball's centre and 531 above i
   }
 });
 
-test("at the ball the start camera sees a block's width three times over, the ball below the middle", () => {
+test("at the ball the start camera sees a block's width three times over and two and a half blocks high, the ball 47 lines below the middle", () => {
   const { eye, sees } = startCamera(levelNamed("LEVEL 1"));
   const across = length(minus(sees[1], sees[0]));
   const high = length(minus(sees[3], sees[0]));
   assert.ok(Math.abs(across - 3.125) < 1e-9, `${across}`);
-  assert.ok(Math.abs(high / across - 0.75) < 1e-9, `${high}`);
+  assert.ok(Math.abs(high - 2.5) < 1e-9, `${high}`);
   const middle = sees.reduce((m, p) => m.map((v, i) => v + p[i] / 4), [0, 0, 0]);
   const centre = [17.5, 18.5, 17 - 100 / 512];
-  const drop = length(minus(centre, middle)) / (high / 2);
-  assert.ok(Math.abs(drop - 50 / 120) < 1e-9, `${drop}`);
+  const lines = (length(minus(centre, middle)) / (high / 2)) * 120;
+  assert.ok(Math.abs(lines - 46.875) < 1e-9, `${lines}`);
   assert.ok(Math.abs(length(minus(middle, eye)) - 800 / 512) < 1e-9);
 });
 

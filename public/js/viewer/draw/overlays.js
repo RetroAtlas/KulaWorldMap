@@ -86,13 +86,13 @@ export function label(ctx, text, x, y, colour) {
 // The game's view at rest, in its own units: pitched down from the ball's
 // heading, the ball's centre, a radius off its face, below the view's middle and
 // ahead of the eye, on a screen given as its half-width and half-height over its
-// distance.
+// distance, the scene squashed top to bottom.
 const PITCH = (250 / 4096) * 2 * Math.PI;
 const RADIUS = 100 / 512;
 const BELOW = 250 / 512;
 const AHEAD = 800 / 512;
 const HALF_WIDE = 160 / 160;
-const HALF_HIGH = 120 / 160;
+const HALF_HIGH = 120 / 160 / (3840 / 4096);
 
 const along = (p, ...terms) => terms.reduce((q, [k, v]) => q.map((c, i) => c + k * v[i]), p);
 
