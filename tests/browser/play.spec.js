@@ -610,7 +610,7 @@ test("p stands the ball on the start and takes its view, the arrows roll it, and
   await expect(page.locator("#chipLine")).not.toContainText("sliced");
 
   // a tap of Up rolls the ball one block on; the view follows it rather than panning
-  await page.keyboard.press("ArrowUp");
+  await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
   await expect
     .poll(() => station(page))
     .toEqual({
@@ -680,7 +680,7 @@ test("the ball turns in place, Down moves nothing and Settings has no switch for
   await opened(page, { motion: false });
   await startPlay(page);
   await expect(line(page)).toContainText("facing -y");
-  await page.keyboard.press("ArrowRight");
+  await betweenFrames(page, () => page.keyboard.press("ArrowRight"));
   await expect(line(page)).toContainText("facing +x");
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   // play asks nothing of Down but still takes the key, so neither the ball nor the view moves
@@ -768,7 +768,7 @@ test("the link holds the view the ball was put down from, nothing is written to 
     }
   });
   await startPlay(page);
-  await page.keyboard.press("ArrowUp");
+  await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
   await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 17, 17]);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   await page.waitForTimeout(500);
@@ -826,7 +826,7 @@ test("with Motion off a step snaps and nothing draws once the ball rests, the le
   await expect(clockLine(page)).toHaveText("Time 99");
   expect(await frameAt(page)).toBe(0);
   expect(await drawn(page)).toBe(0);
-  await page.keyboard.press("ArrowUp");
+  await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
   await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 17, 17]);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   expect(await drawn(page)).toBe(0);
@@ -1280,7 +1280,7 @@ const toggled = async (page, id, def) => {
 };
 /** Roll the ball a block on and wait for it to rest on `block`. */
 const rolled = async (page, block) => {
-  await page.keyboard.press("ArrowUp");
+  await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
   await expect.poll(async () => (await probe(page)).station.block).toEqual(block);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
 };
@@ -1511,7 +1511,7 @@ test("Keep, pressed, keeps a jump the ball made as a jump of the route, and Foll
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await listening(page);
-  await page.keyboard.press("ArrowRight");
+  await betweenFrames(page, () => page.keyboard.press("ArrowRight"));
   await expect(line(page)).toContainText("facing +x");
   await page.keyboard.press("ArrowUp");
   await expect.poll(async () => (await probe(page)).station.block).toEqual([18, 17, 17]);
@@ -1991,7 +1991,7 @@ test("over the far edge of a ridge the ball goes round onto the side, and the fr
   await startPlay(page);
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
-  await page.keyboard.press("ArrowRight");
+  await betweenFrames(page, () => page.keyboard.press("ArrowRight"));
   await expect(line(page)).toContainText("facing +x");
   await page.keyboard.press("ArrowUp");
   await expect.poll(async () => (await probe(page)).station.block).toEqual([18, 17, 17]);
@@ -2049,7 +2049,7 @@ test("Space hops the ball in place, jumps it two blocks on while it rolls, and a
   const errors = trackErrors(page);
   await opened(page, { motion: false });
   await startPlay(page);
-  await page.keyboard.press(" ");
+  await betweenFrames(page, () => page.keyboard.press(" "));
   // the level's opening frames first, then the hop, so the poll is quick
   await expect.poll(async () => (await probe(page)).station.moving, { intervals: [25] }).toBe(true);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
@@ -2078,7 +2078,7 @@ test("Space hops the ball in place, jumps it two blocks on while it rolls, and a
     P.playAt({ x: 32, y: 17, z: 17, face: 0 });
   });
   await expect(page.locator("#play")).toBeVisible();
-  await page.keyboard.press("ArrowLeft");
+  await betweenFrames(page, () => page.keyboard.press("ArrowLeft"));
   await expect(line(page)).toContainText("facing +x");
   await page.keyboard.down("ArrowUp");
   await page.keyboard.press(" ");
@@ -2115,7 +2115,7 @@ test("the ball takes the coin it rolls onto, which is gone from the frame, the l
   expect(await drawsThing(page, coin, 37)).toBe(true);
   expect(await exits(page)).toEqual({ open: false, form: null });
   const roll = async (block) => {
-    await page.keyboard.press("ArrowUp");
+    await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
     await expect
       .poll(async () => (await probe(page)).station.block, { intervals: [25] })
       .toEqual(block);
@@ -2392,7 +2392,7 @@ test("the shadow the game paints into a coin's face goes with the coin as the ba
   const face = [coin[0] + 0.3, coin[1] + 0.5, coin[2]];
   expect(await pixelAt(page, face)).not.toEqual(await bareTop(page, face));
   for (const block of [[17, 17, 17], coin, [17, 15, 17]]) {
-    await page.keyboard.press("ArrowUp");
+    await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
     await expect
       .poll(async () => (await probe(page)).station.block, { intervals: [25] })
       .toEqual(block);
@@ -2418,7 +2418,7 @@ test("with Motion off a hop on a coin's block takes the coin on the first frame,
   await expect(line(page)).toHaveText("Playing · on the top of 17,16,17, facing +y");
   await expect(page.locator("#playPoints")).toHaveText("0 points");
   expect(await drawn(page)).toBe(0);
-  await page.keyboard.press(" ");
+  await betweenFrames(page, () => page.keyboard.press(" "));
   await expect(page.locator("#playPoints")).toHaveText("250 points");
   await expect(say(page)).toHaveText("Coin (bronze) taken, 250 points.");
   // the level's opening frames first, then the hop, so the poll is quick
@@ -2573,7 +2573,7 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   expect(await presses(page)).toEqual([]);
   expect(await switched(page, [17, 16, 17])).toBe("on");
   const roll = async (block) => {
-    await page.keyboard.press("ArrowUp");
+    await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
     await expect
       .poll(async () => (await probe(page)).station.block, { intervals: [25] })
       .toEqual(block);
@@ -2717,7 +2717,7 @@ test("spikes kill the ball: the strip says so in red while the game's countdown 
   });
   await forgive.click();
   await expect(forgive).toHaveAttribute("aria-pressed", "true");
-  await page.keyboard.press("ArrowUp");
+  await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
   await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 16, 17]);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   await page.keyboard.press("ArrowUp");
@@ -2783,7 +2783,7 @@ test("ice slides the ball on over every block to the first that is not ice, and 
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   // one tap of Up, and the slide carries the ball over the ice to the arrow's block
-  await page.keyboard.press("ArrowUp");
+  await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
   await expect
     .poll(async () => (await probe(page)).station.block, { intervals: [25] })
     .toEqual([17, 13, 17]);
@@ -2851,7 +2851,7 @@ test("on fire the ball reddens: where it stands its pixels are redder on the who
   const block = [17, 16, 17];
   const rolled = async () => {
     await startPlay(page);
-    await page.keyboard.press("ArrowUp");
+    await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
     await expect.poll(async () => (await probe(page)).station.block).toEqual(block);
     await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
     return fillAbout(page, await canvasAt(page, ballOver(block)));
@@ -2901,7 +2901,7 @@ test("a crumbling block breaks under the ball, scoring, and is gone a third of a
   // with Motion on the level runs at rest, so the block goes while the ball stands on it, and
   // the ball stands a frame or two over the gone block before the game drops it
   const sampled = shadowed(page, [17, 16, 17]);
-  await page.keyboard.press("ArrowUp");
+  await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
   await expect
     .poll(async () => (await probe(page)).station.block, { intervals: [25] })
     .toEqual([17, 16, 17]);
@@ -2935,7 +2935,7 @@ test("a vanishing block drops the ball as its cycle takes it out of the lattice,
   await expect(page.locator("#chipLine")).toContainText("3 blocks");
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
-  await page.keyboard.press("ArrowUp");
+  await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
   await expect
     .poll(async () => (await probe(page)).station.block, { intervals: [25] })
     .toEqual([17, 16, 17]);
@@ -2974,8 +2974,10 @@ test("a lone crumbling block, reached by a jump, goes with a burst of dust where
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await listening(page);
   // Up held past the level's opening, whose frames sample it as the game's frames do, until the jump
-  await page.keyboard.down("ArrowUp");
-  await page.keyboard.press(" ");
+  await betweenFrames(page, async () => {
+    await page.keyboard.down("ArrowUp");
+    await page.keyboard.press(" ");
+  });
   await expect.poll(async () => (await probe(page)).station.moving, { intervals: [25] }).toBe(true);
   await page.keyboard.up("ArrowUp");
   await expect
@@ -3207,8 +3209,10 @@ test("a jump onto a moving platform rides it: the strip says so, the ball stands
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   // Up held past the level's opening, whose frames sample it as the game's frames do, and the tap of
   // Space kept for the first frame that reads the pad, which jumps the ball from rest
-  await page.keyboard.down("ArrowUp");
-  await page.keyboard.press(" ");
+  await betweenFrames(page, async () => {
+    await page.keyboard.down("ArrowUp");
+    await page.keyboard.press(" ");
+  });
   await expect.poll(async () => (await probe(page)).station.moving, { intervals: [25] }).toBe(true);
   await page.keyboard.up("ArrowUp");
   await expect(status(page)).toHaveText(RIDING, { timeout: 5000 });
@@ -3294,6 +3298,12 @@ const frozen = (page) =>
     };
     (await import(new URL("js/viewer/draw/render.js", location.href).href)).draw();
   });
+/** Press `keys` on the held clock, so that no frame comes between a key's down and its up. */
+const betweenFrames = async (page, keys) => {
+  await frozen(page);
+  await keys();
+  await page.evaluate(() => window.__thaw());
+};
 /** Step the frozen level a frame of the clock at a time through `steps` steps, with `hold` held
     down until the ball stands on the block `until` names, reading before the first and after each
     the frame count, the ball's block and the mean of the canvas's channels: the readings and the
@@ -3528,7 +3538,7 @@ for (const motion of [false, true])
     await opened(page, { motion });
     await startPlay(page);
     // past the level's opening, which holds the pad dead
-    await page.keyboard.press("ArrowRight");
+    await betweenFrames(page, () => page.keyboard.press("ArrowRight"));
     await expect.poll(async () => (await station(page)).heading).toBe("+x");
     await expect.poll(async () => (await station(page)).moving).toBe(false);
     await frozen(page);
@@ -3896,7 +3906,7 @@ test("the lethargy pill halves the pace as the game does: from the frame after i
   await expect(line(page)).toHaveText("Playing · on the top of 19,19,17, facing -y");
   await listening(page);
   // a quarter turn toward the pill, past the level's opening, which holds the pad dead
-  await page.keyboard.press("ArrowLeft");
+  await betweenFrames(page, () => page.keyboard.press("ArrowLeft"));
   await expect.poll(async () => (await station(page)).heading).toBe("-x");
   await expect.poll(async () => (await station(page)).moving).toBe(false);
   await frozen(page);
@@ -3969,7 +3979,7 @@ test("the lethargy pill rolls the view and ghosts the screen as the game does: t
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 19,19,17, facing -y");
   await listening(page);
-  await page.keyboard.press("ArrowLeft");
+  await betweenFrames(page, () => page.keyboard.press("ArrowLeft"));
   await expect.poll(async () => (await station(page)).heading).toBe("-x");
   await expect.poll(async () => (await station(page)).moving).toBe(false);
   await frozen(page);
@@ -4571,7 +4581,7 @@ test("on a hidden level the ending's view turns the level under an eye that does
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 19,21,17, facing -y");
   // past the level's opening, which holds the pad dead, and facing the gap beside the start
-  await page.keyboard.press("ArrowLeft");
+  await betweenFrames(page, () => page.keyboard.press("ArrowLeft"));
   await expect.poll(async () => (await station(page)).heading).toBe("-x");
   await expect.poll(async () => (await station(page)).moving).toBe(false);
   await frozen(page);
@@ -4683,7 +4693,7 @@ test("with Play on through the levels on a death on a level of the disc costs th
   await expect(total).toHaveText("Total 0");
   await expect(line(page)).toHaveText("Playing · on the top of 17,18,17, facing -y");
   // past the level's opening, which holds the pad dead, and facing the level's edge
-  await page.keyboard.press("ArrowLeft");
+  await betweenFrames(page, () => page.keyboard.press("ArrowLeft"));
   await expect.poll(async () => (await station(page)).heading).toBe("-x");
   await expect.poll(async () => (await station(page)).moving).toBe(false);
   await frozen(page);
