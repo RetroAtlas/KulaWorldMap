@@ -373,6 +373,7 @@ test("without the game's face table the checks still run, the table is said to b
   for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
     await expect(dialog.locator(b)).toBeDisabled();
   await expect(dialog.locator("#patchReady")).toHaveText(missing);
+  await expect(dialog.locator("#patchPlaying")).toBeHidden();
   expect(errors).toEqual([
     "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
   ]);
@@ -499,6 +500,10 @@ test("a draft another tab repairs under the open box is written as it is now, no
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
   await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
+  await expect(dialog.locator("#patchReady")).toHaveText(
+    "A level with errors cannot go on the disc until they are fixed.",
+  );
+  await expect(dialog.locator("#patchPlaying")).toBeHidden();
 
   const repaired = await stored(page, id);
   repaired.drafts[id].doc = { ...synthetic(6), into: "/HIRO/HIRO.PAK#1" };
@@ -512,6 +517,7 @@ test("a draft another tab repairs under the open box is written as it is now, no
     "It fits in the slot's own bytes, with 179 bytes to spare.",
   );
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
+  await expect(dialog.locator("#patchPlaying")).toBeVisible();
   const patch = await saved(page, dialog.locator("#patchPpf"));
   expect(sha256(patch.bytes)).toBe(CASE.ppf);
 

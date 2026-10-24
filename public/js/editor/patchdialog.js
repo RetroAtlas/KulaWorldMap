@@ -123,6 +123,7 @@ const nameOf = (row) => row.doc?.title || UNTITLED;
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const showing = () => d !== null && !ui.overlay.hidden;
 const blocked = () => d.rows.map((row) => row.blocked).find(Boolean) ?? null;
+const offered = () => !!d.placed && !blocked();
 const slotTitle = (key) => d.titles.get(key) ?? `slot ${split(key)[1] + 1}`;
 const slotTheme = (key) => d.themes.get(key) ?? themeOf(split(key)[0]);
 
@@ -786,7 +787,7 @@ async function placed(mine = ++turn) {
 }
 
 function downloads() {
-  const ready = !!d.placed && !blocked();
+  const ready = offered();
   for (const control of [ui.ppf, ui.xdelta, ui.image, ui.cue]) control.disabled = !ready;
   ui.ready.textContent = readiness();
 }
@@ -802,7 +803,7 @@ function readiness() {
 }
 
 function play() {
-  const lines = d.file && d.placed ? placements(d.file.name, base()) : [];
+  const lines = offered() ? placements(d.file.name, base()) : [];
   ui.play.textContent = "";
   for (const line of lines) ui.play.append(el("li", { textContent: line }));
   ui.playing.hidden = !lines.length;
