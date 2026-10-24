@@ -173,7 +173,7 @@ They are a hazard: the ball's code at `0x8003b02c` sets it dying on a type 12 un
 
 ### type 26: Hidden exit
 
-Ten levels carry one, one in each world, and the disc keeps a second on LEVEL 82 on a record the game never walks.
+Ten levels carry one, one in each world, and the disc keeps a second on two of them, LEVEL 25 and LEVEL 82, on records the game never walks.
 
 LEVEL 132's is the one the NTSC release puts out of reach.
 

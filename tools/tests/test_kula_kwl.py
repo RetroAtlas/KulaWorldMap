@@ -17,7 +17,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_disc import EXE, open_disc  # noqa: E402
+from kula_disc import EXE, open_disc, packs  # noqa: E402
 from kula_kwl import (  # noqa: E402
     BONUS_UNDRAWN_KINDS,
     BONUS_UNDRAWN_TYPES,
@@ -84,17 +84,20 @@ from kula_level import (  # noqa: E402
     OWN,
     PLATFORM_KIND,
     SIDE,
+    SPANS,
     SWITCH,
     TELEPORTER,
     TRAILER_KIND,
     UNPLACED_KIND,
     Level,
 )
+from kula_pak import Pak  # noqa: E402
 from test_kula_level import block, level, slot  # noqa: E402
 
 TOOL = Path(__file__).resolve().parents[1] / "kula_kwl.py"
 EDITOR_DOC = Path(__file__).resolve().parents[2] / "docs" / "editor.md"
 FORMAT_DOC = Path(__file__).resolve().parents[2] / "docs" / "level-format.md"
+ANNOTATIONS_DOC = Path(__file__).resolve().parents[2] / "docs" / "annotations.md"
 BARE_FACES = re.compile(r"the form the disc holds on ([\d,]+) of its empty faces")
 UNSET_SLOTS = re.compile(r"(\d+) to (\d+) of its (\d+) platforms, (\d+) to (\d+) of its (\d+) crumbling blocks, "
                          r"(\d+) to (\d+) of its (\d+) vanishing blocks and (\d+) to (\d+) of its (\d+) lasers by slot")
@@ -103,11 +106,39 @@ NUMBER_RUNS = re.compile(r"runs 0 to n-1 with no repeats on (\d+) of the (\d+) l
                          r"The (\w+) with a repeat are ((?:[A-Z]+ \d+, )*[A-Z]+ \d+ and [A-Z]+ \d+),")
 LEFT_OBJECTS = re.compile(r"The disc keeps (\d+) objects on the other slots of those four kinds, on (\d+) levels, "
                           r"and they read as what an editor leaves behind: (\d+) are a fire or a type 4 alone")
-SLOT_SENTENCES = {EDITOR_DOC: (BARE_FACES, UNSET_SLOTS, NUMBERED_LEVELS), FORMAT_DOC: (NUMBER_RUNS, LEFT_OBJECTS)}
+EXITS_KEPT = re.compile(r"the disc keeps a second on (\w+) of them and a third on one of those, ([A-Z]+ \d+), "
+                        r"on records the game never walks")
+HIDDEN_KEPT = re.compile(r"the disc keeps a second on (\w+) of them, ([A-Z]+ \d+) and ([A-Z]+ \d+), "
+                         r"on records the game never walks")
+SLOT_SENTENCES = {EDITOR_DOC: (BARE_FACES, UNSET_SLOTS, NUMBERED_LEVELS), FORMAT_DOC: (NUMBER_RUNS, LEFT_OBJECTS),
+                  ANNOTATIONS_DOC: (EXITS_KEPT, HIDDEN_KEPT)}
+WORDS = {w: n for n, w in enumerate("nought one two three four five six seven eight nine ten".split())}
 PACKS = Path(__file__).resolve().parents[2] / "public" / "packs.json"
 HIDES = json.loads(OBJECTS.read_text())["skins"]["hides"]
-START, EXIT, KEY, COIN, GEM = 30, 7, 31, 37, 36
+START, EXIT, HIDDEN_EXIT, KEY, COIN, GEM = 30, 7, 26, 31, 37, 36
 WORLD = "HIRO"
+
+
+def held_by_record(disc, types):
+    """Per level, by its pack and index, how many things of each type stand on the
+    records of each kind."""
+    out = {}
+    for theme, path in packs(disc):
+        pak = Pak(disc.read_file(path), path)
+        for i in range(len(pak)):
+            held = Counter()
+            for r in Level(pak.level(i), pak.name(i), theme).records:
+                for s in r.slots[0 if r.kind < BLOCK_KINDS else 2 if r.kind in SPANS else 1:]:
+                    if s[1] in types:
+                        held[s[1], r.kind] += 1
+            out[path, i] = held
+    return out
+
+
+def held_of(held, typ, walked=None):
+    """How many things of a type a level holds, or only those on the records the game
+    walks, or only those on the others."""
+    return sum(n for (t, kind), n in held.items() if t == typ and walked in (None, kind < BLOCK_KINDS))
 
 
 def obj(typ, f2=0, f3=0, f4=1):
@@ -1698,6 +1729,23 @@ class TheDisc(unittest.TestCase):
         self.assertEqual(sorted(runs.group(4).replace(" and ", ", ").split(", ")), f["repeats"])
         left = LEFT_OBJECTS.search(FORMAT_DOC.read_text())
         self.assertEqual(tuple(int(g) for g in left.groups()), f["left"])
+
+    def test_annotations_counts_of_what_the_disc_keeps_on_records_never_walked_are_the_discs(self):
+        titles = {(l["pack"], l["index"]): l.get("shown", l["name"]) for l in json.loads(DATA.read_text())["levels"]}
+        with open_disc() as disc:
+            held = held_by_record(disc, (EXIT, HIDDEN_EXIT))
+        doc = ANNOTATIONS_DOC.read_text()
+
+        def at_least(typ, n):
+            return sorted(titles[k] for k, c in held.items() if held_of(c, typ) >= n)
+
+        for typ in (EXIT, HIDDEN_EXIT):
+            self.assertEqual([k for k, c in held.items() if held_of(c, typ, walked=True) > 1], [], typ)
+        exits = EXITS_KEPT.search(doc)
+        self.assertEqual((WORDS[exits.group(1)], [exits.group(2)]), (len(at_least(EXIT, 2)), at_least(EXIT, 3)))
+        hidden = HIDDEN_KEPT.search(doc)
+        self.assertEqual((WORDS[hidden.group(1)], sorted(hidden.group(2, 3))),
+                         (len(at_least(HIDDEN_EXIT, 2)), at_least(HIDDEN_EXIT, 2)))
 
     def test_every_level_rebuilt_plays_as_the_disc_and_differs_in_the_words_listed_alone(self):
         with open_disc() as disc:
