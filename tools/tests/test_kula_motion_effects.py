@@ -6,8 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_motion import effect_init, effect_tables, effects  # noqa: E402
 from kula_motion_code import GP  # noqa: E402
+from kula_motion_effects import effect_init, effect_tables, effects  # noqa: E402
 from motion_fixture import AT, GAME, addiu, code, lui, lw, sb, sw  # noqa: E402
 
 
