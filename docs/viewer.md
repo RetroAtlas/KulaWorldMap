@@ -658,9 +658,7 @@ The module has every count and threshold read from the motion table and no wall 
 - It says on the strip that the ball rides a platform while it does and draws it, its dust and the view's target where the platform has carried it.
 - It shows the cause of a death in red on the strip while its countdown runs and says it.
 - With Forgive pressed it puts the ball back at rest instead, where it last rested or on the rest before where it died standing there, and says what would have happened.
-- Once the level has ended, by its clock, the ball lost off the lattice, a death, the exit or the last block of a level with no key, it shows no ball, reads no key, lets the camera's frame go and turns the view about the level's middle by the game's own angles, the yaw by the third of the three, which the game turns about the lattice's upright, and the pitch by the first, which it turns about the view's own across, the second, whose axis the orbit has not, left out, and with the zoom standing in for the game's eye, since the orbit has none, the eye standing the level's radius and the table's offset off the middle and swinging its reach nearer and further by turns, and the zoom following how large the level would look from it, for the length of one swing of an arcade level's eye, whichever figures the level's own eye swings by, or until Space, Enter or a tap of the pad starts the level again, the view easing back behind the ball.
 - It asks for the next frame through the frame hook while the level runs, the ending's view turns or something moves.
-- It takes the camera through the frame, the anchored target and the parked view in `js/viewer/state.js` and frames it in the fit's place through `js/viewer/chrome/navigate.js`.
 - It fills the panel through `onShow`.
 - It ends editing through an event the editor listens to.
 - It draws, behind a switch of Settings, the dust of `js/play/dust.js`, born over a block and drawn in its cell hook, on by default and neither born nor kept while its switch is off.
@@ -675,6 +673,13 @@ The module has every count and threshold read from the motion table and no wall 
 - It tints the ball through the traveller's tint by its heat, its melt and its cold as the game tints the ball's light, each into its own channel and off the other two, raises it red, green and blue in turn by the game's counter while the invincibility pill's word stands, the counter stepping on each frame the ball is drawn under the pill and kept for the page's life as the game keeps it, and flashes it between white and black by the game's own angle while it is marked dying.
 - It lends the things on the blocks the live ball's point in place of the starts' points.
 - It says through `tipWith` in `js/viewer/chrome/interaction.js` and the panel's `onShow` that a thing the level as installed still lists is taken.
+
+### The camera behind the ball
+
+`js/play/eye.js` is the camera behind the ball and the ending's eye, pure too: the view framed behind the ball as drawn in the height the strip leaves free and drawn after it as it moves, the ball's frame pitched down while it falls and rolled about the line of sight while the lethargy pill works, the ending's eye swinging about the level's middle by the game's own angles, and the ease that brings the view round behind the ball as play opens or a level starts again and back to where it stood as play leaves, each written into the camera's frame, orbit and target, with the level, the ball as drawn, the free height and the clock handed in by `js/play/play.js`, which registers the framing in the fit's place.
+
+- Once the level has ended, by its clock, the ball lost off the lattice, a death, the exit or the last block of a level with no key, it shows no ball, reads no key, lets the camera's frame go and turns the view about the level's middle by the game's own angles, the yaw by the third of the three, which the game turns about the lattice's upright, and the pitch by the first, which it turns about the view's own across, the second, whose axis the orbit has not, left out, and with the zoom standing in for the game's eye, since the orbit has none, the eye standing the level's radius and the table's offset off the middle and swinging its reach nearer and further by turns, and the zoom following how large the level would look from it, for the length of one swing of an arcade level's eye, whichever figures the level's own eye swings by, or until Space, Enter or a tap of the pad starts the level again, the view easing back behind the ball.
+- It takes the camera through the frame, the anchored target and the parked view in `js/viewer/state.js` and frames it in the fit's place through `js/viewer/chrome/navigate.js`.
 
 ### What play says
 

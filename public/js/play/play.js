@@ -4,17 +4,7 @@ import { $, el, emit, on } from "../viewer/ui/dom.js";
 import { adoptCourse, current, measureStrip } from "../viewer/chrome/course.js";
 import { ageDust, burstDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
 import { drawEffects, effectsWith } from "./effects.js";
-import {
-  state,
-  BLOCK,
-  FIT_MARGIN,
-  FIT_ZOOM_MAX,
-  ZOOM_MAX,
-  ZOOM_MIN,
-  basisAt,
-  fitLevel,
-  levelCentre,
-} from "../viewer/state.js";
+import { state } from "../viewer/state.js";
 import { SIDE, cellKey } from "../format/lattice.js";
 import {
   ballFor,
@@ -56,17 +46,7 @@ import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
 import { say as announce } from "../viewer/chrome/a11y.js";
 import { clearDetail, onShow, showCell } from "../viewer/chrome/detail.js";
 import { tipWith } from "../viewer/chrome/interaction.js";
-import {
-  PAD,
-  REST,
-  aloft,
-  blockUnder,
-  centreOf,
-  faceUnder,
-  moving,
-  offsetFrame,
-  turned,
-} from "./ball.js";
+import { PAD, REST, aloft, blockUnder, centreOf, faceUnder, moving } from "./ball.js";
 import {
   drives,
   frame as gameFrame,
@@ -77,8 +57,8 @@ import {
   stand,
   startRun,
 } from "./rules.js";
-import { SCREEN, blanksOf, drawn, rockOf } from "./passes.js";
-import { FORM, MODE, conclude, gameOf, nextOf } from "./game.js";
+import { SCREEN, blanksOf } from "./passes.js";
+import { MODE, conclude, gameOf, nextOf } from "./game.js";
 import {
   AT,
   BROKE,
@@ -126,6 +106,20 @@ import {
   thenOn,
 } from "./phrases.js";
 import { courseDriver, keyPad } from "./drive.js";
+import {
+  arrive,
+  easeOn,
+  easing,
+  eyeOf,
+  finishEase,
+  follow,
+  frameBall,
+  radiusOf,
+  startEase,
+  turning,
+  viewNow,
+  viewOf,
+} from "./eye.js";
 import { probeOf as liveProbe, viewOf as drawnIndex } from "./world.js";
 import {
   BALL,
@@ -151,13 +145,6 @@ const KEY_MARKER = { type: KEY_TYPE, face: 0, variant: null, f: [] };
 const HALF = 0.5;
 // a channel's full byte, the unit the flash's strength is in
 const BYTE = 255;
-const YAW = 20;
-const PITCH = 30;
-const ZOOM = { blocks: 8, min: 0.8, max: 3 };
-const BELOW = 1 / 5;
-const FOLLOW_MS = 120;
-const LANDS = 1e-4;
-const ENTER_MS = 600;
 const LEAVE_MS = 450;
 const GAP_MS = 250;
 const BITS = {
@@ -182,12 +169,10 @@ let framing = false;
 let saying = null;
 const unsaid = [];
 let telling = false;
-let ease = null;
 let redraw = false;
 // whether the pass last run took the lethargy pill, and whether one ran since the frame hook drew
 let lit = false;
 let passed = false;
-let rolled = null;
 // the frame as last displayed while the pill works, tinted, for the ghost
 const lastCv = document.createElement("canvas");
 const lastCtx = lastCv.getContext("2d");
@@ -206,7 +191,6 @@ const typing = (e) =>
 const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 const motionOn = () => state.show.motion;
 const pillTable = () => motionTable().types[String(LETHARGY_TYPE)].lasts;
-const smooth = (t) => t * t * (3 - 2 * t);
 
 // --- the ball as the frame draws it -----------------------------------------------------
 
@@ -241,106 +225,9 @@ export const handed = () => (live ? (travellerOf(live, live.level)?.get(BALL) ??
 
 // --- the camera ---------------------------------------------------------------------------
 
-const mul = (a, b) =>
-  [0, 1, 2].flatMap((j) =>
-    [0, 1, 2].map((i) => a[i] * b[3 * j] + a[3 + i] * b[3 * j + 1] + a[6 + i] * b[3 * j + 2]),
-  );
-const transpose = (m) => [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]];
-const basisOf = (yaw, pitch) => {
-  const { right, up, toward } = basisAt(yaw, pitch);
-  return [...right, ...up, ...toward];
-};
-
-function quatOf(m) {
-  const [m00, m10, m20, m01, m11, m21, m02, m12, m22] = m;
-  const t = m00 + m11 + m22;
-  if (t > 0) {
-    const s = Math.sqrt(t + 1) * 2;
-    return [(m21 - m12) / s, (m02 - m20) / s, (m10 - m01) / s, s / 4];
-  }
-  if (m00 > m11 && m00 > m22) {
-    const s = Math.sqrt(1 + m00 - m11 - m22) * 2;
-    return [s / 4, (m01 + m10) / s, (m02 + m20) / s, (m21 - m12) / s];
-  }
-  if (m11 > m22) {
-    const s = Math.sqrt(1 + m11 - m00 - m22) * 2;
-    return [(m01 + m10) / s, s / 4, (m12 + m21) / s, (m02 - m20) / s];
-  }
-  const s = Math.sqrt(1 + m22 - m00 - m11) * 2;
-  return [(m02 + m20) / s, (m12 + m21) / s, s / 4, (m10 - m01) / s];
-}
-
-const matOf = ([x, y, z, w]) => [
-  1 - 2 * (y * y + z * z),
-  2 * (x * y + z * w),
-  2 * (x * z - y * w),
-  2 * (x * y - z * w),
-  1 - 2 * (x * x + z * z),
-  2 * (y * z + x * w),
-  2 * (x * z + y * w),
-  2 * (y * z - x * w),
-  1 - 2 * (x * x + y * y),
-];
-
-function slerp(a, b, t) {
-  let d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
-  if (d < 0) {
-    b = b.map((v) => -v);
-    d = -d;
-  }
-  if (d > 0.9995) {
-    const q = a.map((v, i) => v + (b[i] - v) * t);
-    const len = Math.hypot(...q);
-    return q.map((v) => v / len);
-  }
-  const theta = Math.acos(d) * t;
-  const r = b.map((v, i) => v - a[i] * d);
-  const len = Math.hypot(...r);
-  return a.map((v, i) => v * Math.cos(theta) + (r[i] / len) * Math.sin(theta));
-}
-
-/** The view's rotation: the frame turned by the orbit's yaw and pitch. */
-const viewOf = (frame, yaw, pitch) =>
-  frame ? mul(frame, basisOf(yaw, pitch)) : basisOf(yaw, pitch);
-
-/** The frame rolled about the view's line of sight by the pill's angle, the orbit's yaw and pitch
-    composed first, or the frame itself while the pill's word is not positive; the array stands
-    while the frame, the angle and the orbit do, since the frame is compared by identity. */
-function rocked(frame) {
-  const { turn } = motionTable();
-  const angle = rockOf(live.run.words.pills[LETHARGY_TYPE], pillTable().rock, turn);
-  if (!angle) return frame;
-  const { yaw, pitch } = state.cam;
-  const r = rolled;
-  if (r && r.frame === frame && r.angle === angle && r.yaw === yaw && r.pitch === pitch)
-    return r.out;
-  const b = basisOf(yaw, pitch);
-  const out = mul(turned(mul(frame, b), 2, angle / turn), transpose(b));
-  rolled = { frame, angle, yaw, pitch, out };
-  return out;
-}
-
-/** Frame the view on the ball: behind it and above, the ball a little below the middle. */
-function frameBall(l) {
-  if (!live || l !== live.level) {
-    state.frame = null;
-    return fitLevel(l);
-  }
-  if (live.ended) return frameEnding(l);
-  const s = shown(live);
-  state.target = [...s.centre];
-  if (!live.framed) {
-    state.cam.yaw = YAW;
-    state.cam.pitch = PITCH;
-    live.framed = true;
-  }
-  const { w, h } = state.view;
-  const free = h - chrome();
-  const zoom = Math.min(ZOOM.max, Math.max(ZOOM.min, Math.min(w, free) / (ZOOM.blocks * BLOCK)));
-  state.cam.zoom = zoom;
-  state.cam.panX = 0;
-  state.cam.panY = -(free * (0.5 + BELOW) - h / 2) / (zoom * BLOCK);
-}
+/** The fit's framer while the ball is on the map: the view behind the ball as drawn, in the
+    height the strip leaves free. */
+const framer = (l) => frameBall(l, live, live && shown(live), state.view.h - chrome());
 
 /** How much of the map's height the strip takes, as it stands, from its foot; the pad lies over
     the view and takes none. */
@@ -349,107 +236,6 @@ function chrome() {
   if (strip.hidden) return 0;
   return $("cv").getBoundingClientRect().bottom - strip.getBoundingClientRect().top;
 }
-
-// --- the ending's view --------------------------------------------------------------------
-
-/** Half the level's box's diagonal, in blocks: no cell of it lies further from its middle. */
-const radiusOf = (l) => Math.hypot(...[0, 1, 2].map((i) => l.max[i] - l.min[i] + 1)) / 2;
-
-/** Frame the ending's view: the level's middle in the middle of what the strip leaves free,
-    zoomed so that the whole level fits with the eye at its mean distance. */
-function frameEnding(l) {
-  const e = live.ended;
-  state.target = levelCentre(l);
-  const { w, h } = state.view;
-  e.free = h - chrome();
-  const fits = (Math.min(w, e.free) - FIT_MARGIN) / (2 * e.radius * BLOCK);
-  e.base = Math.max(ZOOM_MIN, Math.min(FIT_ZOOM_MAX, fits));
-  swung();
-}
-
-/** The eye the level's mode word stands at an ending: the arcade's swing, the no-key level's
-    quicker and wider swing, or the hidden level's eye, which does not swing, its fourth angle
-    never stepping. */
-const eyeOf = (view, form) => {
-  if (form === FORM.bonus) return { ...view, ...view.bonus };
-  if (form === FORM.hidden) return { ...view, ...view.hidden, swing: 0, reach: 0 };
-  return view;
-};
-
-// The orbit has no eye, so the zoom stands in for how large the level looks from the game's eye,
-// which stands the level's radius and an offset off the middle and swings its reach, where it
-// has one, nearer and further by turns.
-function swung() {
-  const e = live.ended;
-  const { turn } = motionTable();
-  const eye = (theta) =>
-    e.radius * blockUnits() + e.view.off + e.view.reach * Math.sin((theta / turn) * 2 * Math.PI);
-  const zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, (e.base * eye(0)) / eye(e.theta)));
-  state.cam.zoom = zoom;
-  state.cam.panX = 0;
-  state.cam.panY = -(e.free / 2 - state.view.h / 2) / (zoom * BLOCK);
-}
-
-/** One frame of the ending's view: the screen's words stepped as the game's draw steps them, the
-    yaw turned by the game's third angle, the pitch by its first, the eye along its swing, and the
-    level started again as the view's length runs out. */
-function turning() {
-  const e = live.ended;
-  const { turn } = motionTable();
-  drawn(live.run);
-  const [pitch, , yaw] = e.view.angles;
-  state.cam.yaw += (yaw * 360) / turn;
-  state.cam.pitch += (pitch * 360) / turn;
-  e.theta += e.view.swing;
-  e.frame += 1;
-  swung();
-  if (e.frame >= e.length) startOver();
-}
-
-function startEase(from, to, ms, done) {
-  if (!motionOn()) {
-    done();
-    return;
-  }
-  ease = { from, to, qa: quatOf(from.rot), start: performance.now(), ms, done };
-}
-
-function easing(now) {
-  const e = ease;
-  const t = Math.max(0, Math.min(1, (now - e.start) / e.ms));
-  if (t >= 1) {
-    ease = null;
-    e.done();
-    writeHash();
-    return;
-  }
-  const k = smooth(t);
-  const rot = matOf(slerp(e.qa, quatOf(e.to.rot()), k));
-  const { yaw, pitch } = state.cam;
-  state.frame = mul(rot, transpose(basisOf(yaw, pitch)));
-  state.cam.zoom = Math.exp(
-    Math.log(e.from.zoom) + (Math.log(e.to.zoom) - Math.log(e.from.zoom)) * k,
-  );
-  state.cam.panX = e.from.panX + (e.to.panX - e.from.panX) * k;
-  state.cam.panY = e.from.panY + (e.to.panY - e.from.panY) * k;
-  const target = e.to.target();
-  state.target = e.from.target.map((v, i) => v + (target[i] - v) * k);
-}
-
-function finishEase() {
-  if (!ease) return;
-  const e = ease;
-  ease = null;
-  e.done();
-}
-
-const viewNow = () => ({
-  rot: viewOf(state.frame, state.cam.yaw, state.cam.pitch),
-  zoom: state.cam.zoom,
-  panX: state.cam.panX,
-  panY: state.cam.panY,
-  target: [...state.target],
-});
 
 // --- the frame ----------------------------------------------------------------------------
 
@@ -461,30 +247,18 @@ function wake() {
 
 /** Run the game frames the wall clock owes, and move the camera after the ball. */
 function advance() {
-  if (changing || (!live && !ease)) return;
+  if (changing || (!live && !easeOn())) return;
   const now = performance.now();
   const dt = Math.min(GAP_MS, now - last);
   last = now;
   let moved = live ? stepped(dt) : false;
   // after the step, so the ease ends on this frame
-  if (ease) {
-    easing(now);
+  if (easeOn()) {
+    if (easing(now)) writeHash();
     invalidatePick();
   }
   if (!live) return;
-  if (!ease && !live.ended) {
-    const s = shown(live);
-    const k = motionOn() ? 1 - Math.exp(-dt / FOLLOW_MS) : 1;
-    state.target = state.target.map((v, i) => {
-      const off = s.centre[i] - v;
-      return Math.abs(off) < LANDS ? s.centre[i] : v + off * k;
-    });
-    const frame = rocked(motionOn() ? looked(live.run.ball) : s.frame);
-    if (state.frame !== frame) {
-      state.frame = frame;
-      moved = true;
-    }
-  }
+  if (!easeOn() && !live.ended && follow(live, shown(live), dt)) moved = true;
   if (moved) invalidatePick();
 }
 
@@ -537,8 +311,9 @@ function stepped(dt) {
       saying = null;
       lit = false;
       passed = true;
-      if (live.ended) turning();
-      else played();
+      if (live.ended) {
+        if (turning(live)) startOver();
+      } else played();
       framing = false;
       if (saying !== null) told(saying);
       if (live) {
@@ -631,7 +406,7 @@ function refuge() {
 
 const again = () =>
   !!(
-    ease ||
+    easeOn() ||
     (live &&
       (motionOn() ||
         (!live.ended && (moving(live.run.ball) || drives(live.run) || keys.busy() || live.driver))))
@@ -712,9 +487,6 @@ function sized(cv, w, h) {
     cv.height = h;
   }
 }
-
-/** The ball's frame pitched further down by the view's word while it falls. */
-const looked = (b) => (b.look.word ? offsetFrame(b.frame, 0, b.look.word, b.rules.turn) : b.frame);
 
 function happened(event) {
   const b = live.run.ball;
@@ -998,7 +770,7 @@ function startOver({ onward = true } = {}) {
   last = performance.now();
   state.frame = b.frame;
   fit();
-  arrive(from);
+  arrive(live, from, () => shown(live).centre, performance.now());
   line();
   refreshPanel();
   redraw = true;
@@ -1410,9 +1182,9 @@ function enter(at = null) {
   icon();
   sync();
   measure();
-  fitWith(frameBall);
+  fitWith(framer);
   fit();
-  arrive(from);
+  arrive(live, from, () => shown(live).centre, performance.now());
   runWith((l) => sourceOf(live, l));
   emit("play-changed", true);
   emit("slice-changed");
@@ -1422,19 +1194,6 @@ function enter(at = null) {
   draw();
   const s = stateOf(ball, live.probe);
   say(PLAYING(l, s.face, s.block, s.h));
-}
-
-/** Bring the view round behind the ball from `from`, easing with Motion on and at once without. */
-function arrive(from) {
-  const to = {
-    ...viewNow(),
-    rot: () => viewOf(looked(live.run.ball), state.cam.yaw, state.cam.pitch),
-    target: () => shown(live).centre,
-  };
-  startEase(from, to, ENTER_MS, () => {
-    state.frame = live?.run.ball.frame ?? state.frame;
-  });
-  if (ease) state.frame = mul(from.rot, transpose(basisOf(state.cam.yaw, state.cam.pitch)));
 }
 
 function leave({ restore = true } = {}) {
@@ -1483,7 +1242,7 @@ function leave({ restore = true } = {}) {
     panY: parked.cam.panY,
     target: () => parked.target,
   };
-  startEase(viewNow(), to, LEAVE_MS, done);
+  startEase(viewNow(), to, LEAVE_MS, performance.now(), done);
   invalidatePick();
   drawSoon();
   sayLeaving(LEFT_PLAY_RESTORED);

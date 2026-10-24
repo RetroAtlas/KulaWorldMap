@@ -119,6 +119,7 @@ const PURE = [
   "play/hazards.js",
   "play/phrases.js",
   "play/traveller.js",
+  "play/eye.js",
 ];
 
 test("a module of the simulation imports only the model, the lattice and the simulation", () => {

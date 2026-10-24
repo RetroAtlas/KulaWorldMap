@@ -58,6 +58,7 @@ test("p stands the ball on the start and takes its view, the arrows roll it, and
       "/js/play/drive.js",
       "/js/play/dust.js",
       "/js/play/effects.js",
+      "/js/play/eye.js",
       "/js/play/game.js",
       "/js/play/hazards.js",
       "/js/play/passes.js",
