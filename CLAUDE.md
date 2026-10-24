@@ -37,6 +37,8 @@ Read [docs/camera.md](docs/camera.md) before touching the start camera the viewe
 
 A change to the viewer that is to draw exactly as before, a move, a re-wiring or a speed-up, is proven with `npm run pixels`, which renders the working tree and `HEAD` over the matrix in `tests/pixels/cases.js` with the clock held still, with the editor absent and with it loaded, and names every capture whose map, pick, hit test or animation differs, and passes when it names none. A change meant to draw differently does not run it: most captures show the thing it changes, so the list says nothing its browser test and a look in the viewer do not.
 
+The matrix also stands the ball on a level, so a move inside play is proven by `npm run pixels` as a move inside the viewer is.
+
 Where a change is about speed, `npm run frame` says where a frame's main-thread time goes, part by part, at a phone's size with the CPU slowed, and given a ref measures that ref beside the working tree, and `npm run boot` opens the page over a throttled network and says when its first frame and its first textured frame land, given a ref beside that ref's frames; both are there to reach for, not checks a commit must pass.
 
 No commit message reports what a test found, a test of its own or any other: every commit passes them all.

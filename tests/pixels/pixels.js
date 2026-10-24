@@ -4,7 +4,9 @@
 // and names every capture that differs: the map canvas, the pick canvas, the
 // hit test over a grid of points, the cell and the face it finds, whether the
 // frame goes on redrawing, and whether a world's atlas redraws the map when it
-// lands. A change that is to draw exactly as before passes with nothing named.
+// lands. The play captures stand the ball on a level and hash the frame, the
+// strip and the HUD at held game frames. A change that is to draw exactly as
+// before passes with nothing named.
 //
 //     npm run pixels -- [<ref>] [--save <dir>] [--all]
 //
@@ -16,7 +18,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { chromium } from "@playwright/test";
 import { ROOT, serve, checkout, locate } from "../public.js";
-import { cases, live } from "./cases.js";
+import { cases, live, play } from "./cases.js";
 import { WORLDS } from "../../public/js/format/kwl.js";
 import { blank } from "../../public/js/format/project.js";
 
@@ -304,8 +306,165 @@ async function liveness(page, c) {
   }, c);
 }
 
+// Play's captures enter at a held page time, step the game by the most frames one draw runs, as
+// play caps a step, and leave with the clock stepped past the view's ease back.
+const PLAY_AT = 10000;
+const STEP_MS = 250;
+const LEFT_MS = 500;
+
+async function playBoot(page) {
+  await page.evaluate(async () => {
+    const P = await import(new URL("js/play/play.js", location.href).href);
+    P.bootPlay();
+  });
+}
+
+/** Stand the ball on one case's level and hash what the frame paints and what the strip and the
+    HUD show at each of its game frames, and at the ending where it has one. */
+async function playCapture(page, c, keep) {
+  return page.evaluate(
+    async ({ c, keep, at, step, left }) => {
+      const { state } = await window.__module("state.js");
+      const R = await window.__module("render.js");
+      const N = await window.__module("navigate.js");
+      const { probeOf } = await window.__module("walk.js");
+      const { motionTable } = await window.__module("data.js");
+      const P = await import(new URL("js/play/play.js", location.href).href);
+      const li = state.data.levels.findIndex(
+        (l) => l.pack.endsWith("/" + c.level[0]) && l.index === c.level[1],
+      );
+      if (li < 0) throw new Error(`no level ${c.level}`);
+      const cv = document.getElementById("cv");
+      const strip = document.getElementById("play");
+      const hud = document.getElementById("hud");
+      const pad = document.getElementById("pad");
+      const jump = document.getElementById("jump");
+      const padBtn = document.getElementById("padBtn");
+      const padOn = () => padBtn.getAttribute("aria-pressed") === "true";
+      const hz = motionTable().hz;
+      const most = Math.floor((step * hz) / 1000);
+      let now = at;
+      const tick = (ms) => {
+        now += ms;
+        window.__setNow(now);
+        R.draw();
+      };
+      const run = (frames) => {
+        while (frames > 0) {
+          const n = Math.min(frames, most);
+          // a hair over, as the held clock's differences can come to a hair under a frame
+          tick((n * 1000) / hz + 1e-6);
+          frames -= n;
+        }
+      };
+      // the strip's height and the canvas's size arrive through ResizeObservers, delivered in
+      // the browser's rendering step
+      const settled = async () => {
+        let was = null;
+        for (let i = 0; i < 50; i++) {
+          await new Promise((r) => window.__realRAF(r));
+          await new Promise((r) => setTimeout(r, 0));
+          const sizes = [state.view.w, state.view.h, strip.offsetHeight, cv.width, cv.height];
+          if (sizes.join() === was) return;
+          was = sizes.join();
+        }
+        throw new Error(`the layout did not settle on ${c.id}`);
+      };
+      // the effects sheet is fetched on the first particle
+      const landed = async () => {
+        if (window.__images.every((i) => i.complete && i.naturalWidth > 0)) return;
+        await window.__atlasesIn();
+      };
+      const hash = async (bytes) =>
+        [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+      const text = (s) => new TextEncoder().encode(s);
+      const shot = async (frame) => {
+        await landed();
+        R.invalidatePick();
+        R.draw();
+        // the hit test paints the pick whole
+        R.cellAt(0, 0);
+        const pk = window.__pick;
+        const main = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
+        const pick = pk.getContext("2d").getImageData(0, 0, pk.width, pk.height).data;
+        const out = {
+          id: `${c.id}@${frame}`,
+          main: await hash(main),
+          pick: await hash(pick),
+          strip: await hash(text(strip.innerText)),
+          hud: await hash(text(hud.innerText)),
+          clock: R.clock(),
+          pad: [!pad.hidden, !jump.hidden, document.body.classList.contains("padded")],
+          view: [cv.width, cv.height, state.view.dpr],
+        };
+        if (keep) out.png = [cv.toDataURL("image/png"), pk.toDataURL("image/png")];
+        return out;
+      };
+
+      window.__setNow(0);
+      Object.assign(state.show, window.__defaults, c.show, { motion: false });
+      state.cam.yaw = c.yaw;
+      state.cam.pitch = c.pitch;
+      N.selectLevel(li);
+      state.show.motion = c.show.motion;
+      R.draw();
+      const had = padOn();
+      if (had !== !!c.pad) padBtn.click();
+      window.__setNow(at);
+      if (c.at) {
+        const probe = probeOf(state.idx);
+        const list = [...state.idx.cells.values()].filter((x) =>
+          probe.standable([x.x, x.y, x.z], c.at.face),
+        );
+        const x = list[Math.min(c.at.nth || 0, list.length - 1)];
+        if (!x) throw new Error(`no face ${c.at.face} to stand on in ${c.level}`);
+        P.playAt({ x: x.x, y: x.y, z: x.z, face: c.at.face });
+      } else P.togglePlay();
+      if (!P.playing()) throw new Error(`play did not start on ${c.id}`);
+      await settled();
+      const shots = [];
+      let done = 0;
+      for (const f of c.frames) {
+        run(f - done);
+        done = f;
+        // the frame drawn is the one before the frame the rules stand at
+        if (R.clock() !== Math.max(0, f - 1))
+          throw new Error(`the clock reads ${R.clock()} after ${f} frames on ${c.id}`);
+        shots.push(await shot(f));
+      }
+      if (c.ending) {
+        const clock = document.getElementById("playClock");
+        const seconds = () => Number(clock.textContent.replace(/\D/g, ""));
+        // the largest steps to the clock's last second, then a frame at a time to the ending,
+        // which is when the frame is handed no ball
+        for (let i = 0; seconds() >= 1; i++) {
+          if (i > 10000) throw new Error(`the clock did not run out on ${c.id}`);
+          run(most);
+        }
+        for (let i = 0; P.handed() !== null; i++) {
+          if (i > 1000) throw new Error(`the level did not end on ${c.id}`);
+          run(1);
+        }
+        shots.push(await shot("end"));
+        for (const k of [1, 2]) {
+          run(1);
+          shots.push(await shot(`end+${k}`));
+        }
+      }
+      P.togglePlay();
+      tick(left);
+      if (P.playing()) throw new Error(`play did not leave on ${c.id}`);
+      if (padOn() !== had) padBtn.click();
+      return shots;
+    },
+    { c, keep, at: PLAY_AT, step: STEP_MS, left: LEFT_MS },
+  );
+}
+
 /** Every capture of the public/ at `root`, or of the cases in `only`, with
-    the editor absent and with it loaded. */
+    the editor absent and with it loaded, and the ball on a level with it absent. */
 async function render(browser, root, { only = null, keep = null } = {}) {
   const server = await serve(root);
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -314,7 +473,8 @@ async function render(browser, root, { only = null, keep = null } = {}) {
     for (const [side, store] of SIDES) {
       for (const dpr of [1, 2]) {
         const todo = cases.filter((c) => (c.dpr || 1) === dpr && (!only || only.has(c.id)));
-        if (!todo.length) continue;
+        const starts = side === "" && dpr === 1 ? play.filter((c) => !only || only.has(c.id)) : [];
+        if (!todo.length && !starts.length) continue;
         const page = await browser.newPage({
           viewport: { width: 1280, height: 720 },
           deviceScaleFactor: dpr,
@@ -325,6 +485,8 @@ async function render(browser, root, { only = null, keep = null } = {}) {
         await preload(page);
         for (const c of todo) shots.push(...(await capture(page, c, !!keep)));
         if (dpr === 1 && !only) for (const c of live) shots.push(await liveness(page, c));
+        if (starts.length) await playBoot(page);
+        for (const c of starts) shots.push(...(await playCapture(page, c, !!keep)));
         await page.close();
         for (const shot of shots) {
           shot.id = side + shot.id;
@@ -392,7 +554,7 @@ try {
       : `all ${after.length} captures match ${ref} (${took}s)`,
   );
   const shown = new Set(
-    found.map((f) => caseOf(f.id)).filter((id) => cases.some((c) => c.id === id)),
+    found.map((f) => caseOf(f.id)).filter((id) => [...cases, ...play].some((c) => c.id === id)),
   );
   if (save && shown.size) {
     const dir = resolve(save);

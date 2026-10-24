@@ -226,3 +226,33 @@ export const live = [
   ["H10", {}],
   ["L51/wheel", { models: false, skins: false }],
 ].map(([id, show]) => ({ id, level: LEVELS[id.split("/")[0]], yaw: 45, pitch: 35, show }));
+
+// The ball on a level: a start with Motion on at the entry frame, through the view's ease and
+// after it, with Motion off, with the pad shown, on a face of a case's choosing, and an ending
+// with the clock run out, which stays on the level with Play on off. Every case pins the
+// switches play reads along with Motion.
+const PLAYING = { motion: true, dust: true, playfrom: false, playon: false };
+export const play = [];
+const start = (id, level, [yaw, pitch], extra = {}) =>
+  play.push({
+    id: `play/${id}`,
+    level: LEVELS[level],
+    yaw,
+    pitch,
+    frames: [0, 90],
+    ...extra,
+    show: { ...PLAYING, ...extra.show },
+  });
+for (const name of ["L1", "LESSON", "OBJ", "L94", "B15", "S8", "H3"]) {
+  start(`${name}/v1`, name, V1, { frames: [0, 15, 30, 90] });
+  start(`${name}/v3`, name, V3);
+  start(`${name}/still`, name, V1, { show: { motion: false }, frames: [0] });
+}
+for (const name of ["L1", "B15", "S8"]) start(`${name}/pad`, name, V1, { pad: true });
+start("L1/+x", "L1", V1, { at: { face: 1 } });
+start("LESSON/under", "LESSON", V3, { at: { face: 5 } });
+start("B1/ending", "B1", V1, { ending: true, frames: [0] });
+for (const c of play) {
+  if (seen.has(c.id)) throw new Error(`duplicate case ${c.id}`);
+  seen.add(c.id);
+}
