@@ -480,6 +480,8 @@ Dragging turns the view about the ball, the wheel zooms, and `f` frames the ball
 
 With Motion on the level runs as the game's does while the ball rests, the clock counting down and what moves on the blocks moving; with Motion off the level jumps to its new footing rather than tumbling, the ball from one block's middle to the next, its dust lies still along the way, and the level waits between moves, its clock and what moves on it standing until the ball is driven again.
 
+With Motion on the view eases round behind the ball as play starts and back to where it was as `Esc` or Leave leaves play, with Motion off it cuts, and a press, a link or a level chosen while it eases back ends the ease, so what that does starts from the view play is leaving for.
+
 ## Permalinks
 
 The URL is a permalink: `#INCA/11/45,35/0.90/17,17,17/0,0/33` is the level by its pack and its slot in it (LEVEL 42, the numbering the cheat in [level-format.md](level-format.md) takes), the yaw and pitch it is turned to, zoom, the cell it orbits around, the pan away from that cell, and the slice, and after those the selected block where there is one, and a planned route, which rides at the tail as one word the planner reads back and every earlier version of the map passes over.

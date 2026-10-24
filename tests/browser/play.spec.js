@@ -1776,6 +1776,61 @@ test("choosing the level shown while playing leaves play with the level fitted, 
   expect(errors).toEqual([]);
 });
 
+// LEVEL 68 turned and zoomed by hand, so the view play leaves for is not the level's fit
+const TELEPORT_VIEW = "/#COWBOY/7/45,35/1.20/17,17,17/0,0/33";
+
+test("with Motion on a click on where a teleporter leads, made as the view eases back out of play, centres there on the view from before play", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { hash: TELEPORT_VIEW });
+  const before = await probe(page);
+  await startPlay(page);
+  await expect.poll(async () => (await probe(page)).frame).toEqual(IDENTITY);
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { showCell }, { cellKey }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/detail.js", "format/lattice.js"].map(at),
+    );
+    showCell(state.idx.cells.get(cellKey(17, 7, 17)));
+  });
+  await page.locator("#leaveBtn").click();
+  await page.locator("#detail .goto").click();
+  await expect.poll(async () => (await probe(page)).frame).toBeNull();
+  const left = await probe(page);
+  expect(left.target).toEqual([17.5, 25.5, 17.5]);
+  expect([left.cam, left.slice]).toEqual([before.cam, before.slice]);
+  expect(errors).toEqual([]);
+});
+
+test("with Motion on a level chosen as the view eases back out of play is fitted from the view before play", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { hash: TELEPORT_VIEW });
+  const before = await probe(page);
+  await startPlay(page);
+  await expect.poll(async () => (await probe(page)).frame).toEqual(IDENTITY);
+  await page.locator("#leaveBtn").click();
+  await page.locator("#worlds .levels button[title='LEVEL 69']").click();
+  await expect.poll(async () => (await probe(page)).frame).toBeNull();
+  const left = await probe(page);
+  expect(
+    await page.evaluate(
+      async () => (await import(new URL("js/viewer/state.js", location.href).href)).state.lvl.shown,
+    ),
+  ).toBe("LEVEL 69");
+  expect(left.fitted).toBe(true);
+  expect([left.cam.yaw, left.cam.pitch]).toEqual([before.cam.yaw, before.cam.pitch]);
+  await page.evaluate(async () => {
+    const { fit } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
+    fit();
+  });
+  const again = await probe(page);
+  expect([again.cam, again.target]).toEqual([left.cam, left.target]);
+  expect(errors).toEqual([]);
+});
+
 /** The clock face's type, as the strip of a marker writes it. */
 const clockFace = (page) =>
   page.evaluate(async () => {

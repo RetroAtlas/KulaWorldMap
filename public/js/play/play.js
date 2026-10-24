@@ -1685,7 +1685,8 @@ function leave({ restore = true } = {}) {
   finishEase();
   const parked = state.parked;
   // the view and the presses go back only where the level shown is the one they were parked on
-  const back = parked !== null && slotOf(state.lvl) === parked.slot;
+  const home = () => parked !== null && slotOf(state.lvl) === parked.slot;
+  const back = home();
   live = null;
   keys.clear();
   unsaid.length = 0;
@@ -1700,7 +1701,7 @@ function leave({ restore = true } = {}) {
     state.frame = null;
     state.anchored = false;
     state.parked = null;
-    if (restore && back) {
+    if (restore && home()) {
       Object.assign(state.cam, parked.cam);
       state.target = [...parked.target];
       state.slice = parked.slice;
@@ -1775,6 +1776,16 @@ export function bootPlay() {
   wired = true;
   document.addEventListener("keydown", keydown, { capture: true });
   document.addEventListener("keyup", keyup, { capture: true });
+  // a press while the view eases back out of play ends the ease, so what it does starts from the
+  // view play leaves for
+  for (const type of ["pointerdown", "keydown"])
+    addEventListener(
+      type,
+      () => {
+        if (!live) finishEase();
+      },
+      { capture: true },
+    );
   // read as the focus lands, since by the keydown a clicked button's focus is visible too
   document.addEventListener("focusin", (e) => {
     keyed = e.target.matches(":focus-visible");
@@ -1797,7 +1808,7 @@ export function bootPlay() {
       leave({ restore: false });
       // the level was fitted before play heard of it, with the ball still framing the view
       if (state.framing === fit) fit();
-    }
+    } else if (!live) finishEase();
     icon();
   });
   on("level-updated", () => {
@@ -1810,7 +1821,10 @@ export function bootPlay() {
     const under = blockUnder(b);
     if (!b.riding && !state.idx.cells.has(cellKey(...under)) && !live.probe.filled(under)) leave();
   });
-  on("link-opening", () => leave({ restore: false }));
+  on("link-opening", () => {
+    if (live) leave({ restore: false });
+    else finishEase();
+  });
   on("go-to", ({ x, y, z }) => {
     if (!live) return;
     // the find has been drawn by now, the view still following the ball
