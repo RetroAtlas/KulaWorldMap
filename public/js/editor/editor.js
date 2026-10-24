@@ -30,11 +30,11 @@ import {
   faceAt,
   moveBlocks,
   removeBlock,
-  runOf,
   same,
   setBlock,
   setFace,
 } from "../format/project.js";
+import { runOf } from "../format/checks.js";
 import { load } from "./drafts.js";
 import { canRedo, canUndo, redo, undo } from "./trail.js";
 import { copyShown, levelFor, wireDrafts } from "./draftlist.js";

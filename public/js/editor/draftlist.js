@@ -16,18 +16,15 @@ import { say, describeLevel } from "../viewer/chrome/a11y.js";
 import { toast } from "../viewer/ui/toast.js";
 import { COLOURS, KEY, SWITCH, facesOf, writeKwl } from "../format/kwl.js";
 import {
-  ERROR,
   UNTITLED,
   blank,
-  circuitMembers,
   fromLevel,
-  playsAs,
   setCircuit,
   setMeta,
   toLevel,
-  validate,
   writeProject,
 } from "../format/project.js";
+import { ERROR, circuitMembers, playsAs, validate } from "../format/checks.js";
 import { download, readLevelText, slug } from "./files.js";
 import { pasteLevelLink } from "./importdialog.js";
 import { draftOf, readLevel, readWith } from "./intake.js";

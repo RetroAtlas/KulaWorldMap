@@ -14,7 +14,8 @@ import {
 } from "../viewer/data.js";
 import { onShow, showCell } from "../viewer/chrome/detail.js";
 import * as palette from "./palette.js";
-import { blockAt, circuitMembers, setBlock, setCircuit, setFace } from "../format/project.js";
+import { blockAt, setBlock, setCircuit, setFace } from "../format/project.js";
+import { circuitMembers } from "../format/checks.js";
 import {
   BLOCK_KINDS,
   COLOURS,

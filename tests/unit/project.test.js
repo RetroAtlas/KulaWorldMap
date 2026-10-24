@@ -35,21 +35,14 @@ import {
   writeKwl,
 } from "../../public/js/format/kwl.js";
 import {
-  COUNTERS,
   DRAFT_PACK,
   UNTITLED,
   blank,
   blockAt,
-  circuitMembers,
-  counts,
-  describe,
   faceAt,
   fromLevel,
   moveBlocks,
-  playsAs,
-  playsRoom,
   readProject,
-  recordOverflow,
   removeBlock,
   same,
   setBlock,
@@ -57,9 +50,18 @@ import {
   setFace,
   setMeta,
   toLevel,
-  validate,
   writeProject,
 } from "../../public/js/format/project.js";
+import {
+  COUNTERS,
+  circuitMembers,
+  counts,
+  describe,
+  playsAs,
+  playsRoom,
+  recordOverflow,
+  validate,
+} from "../../public/js/format/checks.js";
 
 setAnnotations(annotations);
 setObjects(objects);

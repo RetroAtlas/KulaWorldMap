@@ -19,15 +19,8 @@ import {
   writeKwl,
 } from "../format/kwl.js";
 import { deflate } from "../format/deflate.js";
-import {
-  ERROR,
-  UNTITLED,
-  describe,
-  playsAs,
-  playsRoom,
-  setMeta,
-  validate,
-} from "../format/project.js";
+import { UNTITLED, setMeta } from "../format/project.js";
+import { ERROR, describe, playsAs, playsRoom, validate } from "../format/checks.js";
 import { RAW_ONLY, download, isIso, slug } from "./files.js";
 import { draftOf, readLevel } from "./intake.js";
 import { guessSlot } from "./slotguess.js";

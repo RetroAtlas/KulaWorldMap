@@ -20,7 +20,8 @@ import { levelPoints, tallied, playsBonus } from "../../public/js/viewer/draw/po
 import { state } from "../../public/js/viewer/state.js";
 import { SIDE } from "../../public/js/format/lattice.js";
 import { FORMAT } from "../../public/js/format/kwl.js";
-import { blank, counts, fromLevel, toLevel } from "../../public/js/format/project.js";
+import { blank, fromLevel, toLevel } from "../../public/js/format/project.js";
+import { counts } from "../../public/js/format/checks.js";
 
 setAnnotations(annotations);
 setObjects(objects);

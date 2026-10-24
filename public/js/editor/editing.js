@@ -8,7 +8,7 @@ import { toast } from "../viewer/ui/toast.js";
 import { get } from "./drafts.js";
 import { edit } from "./trail.js";
 import { CRUMBLING_KIND, LASER_KIND, SPAN_KINDS, VANISHING_KIND, sameCell } from "../format/kwl.js";
-import { ERROR, describe, runOf, validate } from "../format/project.js";
+import { ERROR, describe, runOf, validate } from "../format/checks.js";
 import * as palette from "./palette.js";
 
 export const BRITTLE =

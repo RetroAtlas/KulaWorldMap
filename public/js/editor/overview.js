@@ -18,7 +18,7 @@ import {
   playsAs,
   typeWord,
   validate,
-} from "../format/project.js";
+} from "../format/checks.js";
 import { across, place3, plural } from "./editing.js";
 
 let wired = false;

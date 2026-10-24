@@ -2,7 +2,8 @@
 // a file name out of a title, and a level read out of whatever was picked or
 // pasted, by what it holds and never by its name.
 import { FORMAT, GRID_BYTES, HEAD, RECORD, WORLDS, readKwl, writeKwl } from "../format/kwl.js";
-import { readProject, recordOverflow } from "../format/project.js";
+import { readProject } from "../format/project.js";
+import { recordOverflow } from "../format/checks.js";
 import { readPak } from "../format/pak.js";
 import { openDisc } from "../format/iso.js";
 import { PACKS } from "../format/patch.js";
