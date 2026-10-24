@@ -1,7 +1,7 @@
 // Play mode: the ball stood on the level and rolled by the keys, or along the planned route, the
 // camera behind it.
 import { $, el, emit, on } from "../viewer/ui/dom.js";
-import { adoptCourse, current } from "../viewer/chrome/course.js";
+import { current } from "../viewer/chrome/course.js";
 import { ageDust, burstDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
 import { drawEffects, effectsWith } from "./effects.js";
 import { flashing, screened } from "./screen.js";
@@ -17,7 +17,7 @@ import {
   skinsTable,
   worldTint,
 } from "../viewer/data.js";
-import { probeOf, stepBetween, tangent } from "../viewer/walk.js";
+import { probeOf, tangent } from "../viewer/walk.js";
 import {
   draw,
   drawSoon,
@@ -57,16 +57,12 @@ import {
   AT,
   BROKE,
   CLOCK_ROUND,
-  DONE_WHY,
   DYING,
   FORGIVEN,
   GONE,
-  KEEPING,
-  KEPT,
   LAUNCHED,
   LEFT_PLAY,
   LEFT_PLAY_RESTORED,
-  NO_FIRST_STOP,
   NO_START,
   NOWHERE,
   OBJECTS_ON,
@@ -75,7 +71,6 @@ import {
   PUT_ON,
   REFUSED,
   RIDING,
-  ROUTE_STANDS,
   SENDING,
   SENT,
   STANDS,
@@ -90,10 +85,9 @@ import {
   endingName,
   faceName,
   howEnded,
-  isFollowing,
   noted,
 } from "./phrases.js";
-import { courseDriver, keyPad } from "./drive.js";
+import { keyPad } from "./drive.js";
 import {
   arrive,
   easeOn,
@@ -143,6 +137,7 @@ import {
   verdict,
   wireStrip,
 } from "./strip.js";
+import { drive, followFrom, followed, keep, refuge, rested, retire, walked } from "./route.js";
 
 const LETHARGY_TYPE = 32;
 const LEAVE_MS = 450;
@@ -307,7 +302,7 @@ function played() {
     travelDust(was, footOf(b), b.n, () => under);
   }
   for (const event of events) happened(event);
-  rested(b);
+  rested(live, b);
   flashed(live, run.words);
   glowed(live, run.words);
   if (run.words.send >= 0) status(live, SENDING);
@@ -316,30 +311,13 @@ function played() {
     status(live, null);
   if (live.driver) {
     const why = live.driver.done(run);
-    if (why) followed(why);
+    if (why) followed(live, why);
     else if (!live.status) status(live, following());
   }
   const death = deathOf(run.words);
   if (death) status(live, DYING[death], true);
   else if (live.dire) status(live, null);
   if (b.state === REST) live.notes.length = 0;
-}
-
-// The last two stations the ball rested on, the heading the latest at each.
-function rested(b) {
-  const rests = live.rests;
-  const last = rests.at(-1);
-  if (last && sameStation(last, b.rest)) rests[rests.length - 1] = b.rest;
-  else live.rests = [...rests.slice(-1), b.rest];
-}
-
-/** Where a forgiven ball is put back: its last rest, or the rest before where it died at rest
-    there. */
-function refuge() {
-  const b = live.run.ball;
-  const here = { cell: blockUnder(b), face: faceUnder(b) };
-  const [earlier, last] = live.rests.length > 1 ? live.rests.slice(-2) : [null, b.rest];
-  return earlier && b.state === REST && sameStation(last, here) ? earlier : b.rest;
 }
 
 const again = () =>
@@ -428,7 +406,7 @@ function happened(event) {
     const block = blockUnder(b);
     say(noted(live.notes, AT(block, faceUnder(b))));
     status(live, b.riding ? RIDING : null);
-    walked({ cell: block, face: faceUnder(b) });
+    walked(live, { cell: block, face: faceUnder(b) });
     if (!motionOn())
       travelDust(live.still.foot, footOf(b), b.n, (p) => blockAt(live.probe, p, b.n, block), true);
   } else if (event.face) {
@@ -513,7 +491,7 @@ function sent({ to }) {
   const b = live.run.ball;
   live.station = true;
   live.still = stateOf(b, live.probe);
-  walked({ cell: to.cell, face: to.face }, true);
+  walked(live, { cell: to.cell, face: to.face }, true);
   state.frame = b.frame;
   state.target = [...centreOf(b)];
   if (state.framing === fit) fit();
@@ -554,7 +532,7 @@ function ended(code) {
   };
   keys.clear();
   owed = 0;
-  retire();
+  retire(live);
   live.keeping = false;
   routing(live);
   finishEase();
@@ -580,11 +558,11 @@ function pickedLevel(pick) {
 /** The death forgiven: the ball put back at rest and the status saying what would have been. */
 function forgive(name) {
   const b = live.run.ball;
-  revive(live.run, refuge());
+  revive(live.run, refuge(live));
   live.flash = 0;
   live.still = stateOf(b, live.probe);
   live.station = true;
-  walked({ cell: blockUnder(b), face: faceUnder(b) }, true);
+  walked(live, { cell: blockUnder(b), face: faceUnder(b) }, true);
   status(live, FORGIVEN(name));
   say(FORGIVEN(name));
   state.frame = b.frame;
@@ -666,19 +644,6 @@ function goOn(next) {
 
 // --- the way the ball has come ------------------------------------------------------------
 
-const sameStation = (a, b) => a.face === b.face && a.cell.every((v, i) => v === b.cell[i]);
-
-/** One more stop on the way the ball has come, joined by the roll or the jump that reaches it, or by
-    a leap where it was sent or where no step does. */
-function walked(station, leap = false) {
-  const w = live.walk;
-  const last = w.stations.at(-1);
-  if (last && sameStation(last, station)) return;
-  if (last) w.steps.push(leap ? null : stepBetween(last, station));
-  w.stations.push(station);
-  if (live.keeping) hand();
-}
-
 function drawDustOver(ctx, c, home, key, ghost) {
   if (!live || ghost || c.k !== undefined) return;
   drawDust(ctx, key);
@@ -690,86 +655,20 @@ function followRoute() {
   const route = current();
   if (!live || live.ended || !route) return;
   if (live.driver) {
-    retire();
+    retire(live);
     return;
   }
-  const b = live.run.ball;
-  const here = { cell: blockUnder(b), face: faceUnder(b) };
-  const last = route.stations.length - 1;
-  let i = route.stations.findIndex((s, j) => j < last && sameStation(s, here));
-  let placed = "";
-  const [first] = route.stations;
-  if (i < 0 && !live.probe.standable(first.cell, first.face)) {
-    status(live, NO_FIRST_STOP);
+  const { error, i, at } = followFrom(live, route);
+  if (error) {
+    status(live, error);
     return;
   }
   live.keeping = false;
-  if (i < 0) {
-    put({ cell: first.cell, face: first.face, h: tangent(first.face, route.steps[0]?.k ?? 0) });
-    placed = `${PUT_ON(first.face, first.cell)} `;
-    i = 0;
-  }
-  live.driver = courseDriver(route, i);
-  live.route = route;
-  routing(live);
+  if (at) put(at);
+  drive(live, route, i);
   status(live, following());
-  say(placed + following());
+  say((at ? `${PUT_ON(at.face, at.cell)} ` : "") + following());
   wake();
-}
-
-/** The driver let go, the keys and the pad having the ball. */
-function retire() {
-  if (!live?.driver) return;
-  live.driver = null;
-  live.route = null;
-  if (isFollowing(live.status)) status(live, null);
-  routing(live);
-}
-
-/** The driver done, and why said. */
-function followed(why) {
-  retire();
-  status(live, DONE_WHY[why]);
-  say(DONE_WHY[why]);
-}
-
-/** Hand the way the ball has come to the planner as the route: whether it took it, and where
-    another route stands keeping ends. */
-function hand() {
-  const { stations, steps } = live.walk;
-  const c = {
-    stations: [...stations],
-    steps: [...steps],
-    marks: new Set([0, stations.length - 1]),
-  };
-  // the hand-over's own course-changed is not a change from the planner's side
-  live.kept = null;
-  const taken = adoptCourse(c);
-  if (taken) live.kept = current();
-  else live.keeping = false;
-  routing(live);
-  return taken;
-}
-
-/** Keep: pressed, the way the ball has come is the route and grows under the ball
-    as it goes on; pressed again, the route stays as it is; once the level has ended the whole
-    way is handed over once. */
-function keep() {
-  if (!live) return;
-  if (live.keeping) {
-    live.keeping = false;
-    routing(live);
-    return;
-  }
-  if (!hand()) {
-    status(live, ROUTE_STANDS);
-    return;
-  }
-  live.keeping = !live.ended;
-  const text = live.keeping ? KEEPING : KEPT;
-  say(text);
-  toast(text);
-  routing(live);
 }
 
 // --- entering and leaving -----------------------------------------------------------------
@@ -916,10 +815,10 @@ export function togglePlay() {
 /** Stand the live ball at rest on `at`, the keys having it, the view cut to it and the way it has
     come taking a stop there. */
 function put(at) {
-  retire();
+  retire(live);
   stand(live.run, at);
   live.still = stateOf(live.run.ball, live.probe);
-  walked({ cell: at.cell, face: at.face });
+  walked(live, { cell: at.cell, face: at.face });
   keys.clear();
   status(live, null);
   state.frame = live.run.ball.frame;
@@ -950,10 +849,10 @@ export function bootPlay() {
   wired = true;
   wireStrip({
     startOver,
-    retire,
+    retire: () => retire(live),
     wake,
     followRoute,
-    keep,
+    keep: () => keep(live),
     leave,
     togglePlay,
     keys,
@@ -1010,7 +909,7 @@ export function bootPlay() {
   });
   on("density-changed", () => icon(live));
   on("course-changed", () => {
-    if (live?.driver && current() !== live.route) retire();
+    if (live?.driver && current() !== live.route) retire(live);
     if (live?.kept && current() !== live.kept) {
       live.kept = null;
       live.keeping = false;

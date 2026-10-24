@@ -653,16 +653,15 @@ The module has every count and threshold read from the motion table and no wall 
 - It parks the panel's presses with the view and gives the level its circuits as the game loads them while the ball is on it, and as it leaves, where the level shown is the one they were parked on, gives the presses back, and the view with them unless choosing a level, opening a link or a click on the name a teleporter's panel gives for where it leads is what leaves play.
 - Where a click on the name a teleporter's panel gives for where it leads leaves play, it centres the view there as it leaves, since the click's find is drawn before play hears of it, with the view still following the ball, and writes the history entry the find opened at once, which the find wrote with the view from before play.
 - It bursts dust where the ball throws a switch, under the ball as a crumbling block breaks, where a block has gone, clearing the panel where it showed that block, and at a boost button's launch.
-- It cuts the view to a teleport's far end rather than easing after the ball and makes a leap of the way the ball has come.
+- It cuts the view to a teleport's far end rather than easing after the ball.
 - It says on the strip that the ball rides a platform while it does and draws it, its dust and the view's target where the platform has carried it.
 - It shows the cause of a death in red on the strip while its countdown runs and says it.
-- With Forgive pressed it puts the ball back at rest instead, where it last rested or on the rest before where it died standing there, and says what would have happened.
+- With Forgive pressed it puts the ball back at rest instead and says what would have happened.
 - It asks for the next frame through the frame hook while the level runs, the ending's view turns or something moves.
 - It fills the panel through `onShow`.
 - It ends editing through an event the editor listens to.
 - It draws, behind a switch of Settings, the dust of `js/play/dust.js`, born over a block and drawn in its cell hook, on by default and neither born nor kept while its switch is off, `js/play/dust.js` checking the switch itself as it is asked for dust.
 - It draws the game's bursts through `js/play/effects.js` in the frame hook, before the pill's screen, from the rows the rules resolved, each particle a sprite of the sheet on a square turned by its angle and added to the frame, a world effect's particles where the camera puts its place and the teleporter's particles at its point of the game's screen scaled to the canvas, the sheet fetched as the first burst needs it, which casts a world effect's light on the faces about the pickup through `lightsWith` in the colour the rules summed.
-- It hands the walk to the planner through an export of its chrome that takes a route where none stands or where the one standing is the last it took, so the route grows under the ball as the walk is handed over again at each station.
 
 ### The ball as the frame draws it
 
@@ -689,6 +688,14 @@ The module has every count and threshold read from the motion table and no wall 
 `js/play/strip.js` is play's chrome, the strip, the HUD, the pad, the keys and the live region: the strip's line, the ball's block, face and heading or that the level has ended, and its status, a notice, the route's word or the verdict, in red while a death's countdown runs, the HUD's figures, each written only where it changed, with the key drawn as the legend draws it where keys are counted, Keep and Follow as the route stands, the pad, shown on a touch screen until its button puts it away, and the arrow keys, Space, Enter and Esc, read into the keys the frame samples or passed to the handlers it is wired with, Forgive's flag, the height the strip takes from the map for the camera's framing, and the sentences the live region is told, one an animation frame, those a game frame says held until the frame is done so that only its last is heard, with the live level handed in by `js/play/play.js`, which wires it once with its handlers.
 
 - It shows the clock, the keys or the blocks left and the points in the HUD.
+
+### The way the ball has come
+
+`js/play/route.js` is the way the ball has come and the planner handshake: the stops the ball has come to, each joined to the one before by the roll or the jump that reaches it or by a leap where the ball was sent or put back, the last two stations it rested on, where following the planner's route begins, the stop the ball stands on short of the last or the first, which the ball is put on, the driver set on the route and let go, and the way handed to the planner as the route, with the live level handed in by `js/play/play.js`, which puts the ball on the first stop, says that it follows and wires Keep and Follow to it.
+
+- It makes a leap of the way the ball has come where the ball is sent.
+- It keeps the last two stations the ball rested on, so with Forgive pressed the ball is put back where it last rested or on the rest before where it died standing there.
+- It hands the walk to the planner through an export of its chrome that takes a route where none stands or where the one standing is the last it took, so the route grows under the ball as the walk is handed over again at each station.
 
 ### What play says
 
