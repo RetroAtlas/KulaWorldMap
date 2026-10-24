@@ -37,7 +37,6 @@ const OVER = {
   "public/js/format/project.js": 1000,
   "public/js/format/kwl.js": 1000,
   "public/js/editor/patchdialog.js": 900,
-  "tests/browser/camera-links.spec.js": 1600,
   "tests/browser/course.spec.js": 900,
   "tests/unit/project.test.js": 1900,
   "tests/unit/docs.test.js": 1300,
