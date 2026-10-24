@@ -29,7 +29,7 @@ const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b
 const still = [0, 0, 0];
 const marker = (f3 = 0) => ({ f: [0, f3, 1, 0, -1, -1, -1, 386, 1, -1, -1] });
 
-test("a light scales each channel by its own in 4096ths, rounding down", () => {
+test("a light scales each channel by its own channel in 4096ths, rounding down", () => {
   assert.deepEqual(byLight([100, 201, 255], [4096, 2048, 8192]), [100, 100, 510]);
   assert.deepEqual(byLight([4096, 4096, 4096], [6144, 6144, 5120]), [6144, 6144, 5120]);
 });
@@ -152,7 +152,7 @@ test("a turn is its rate in 4096ths of a turn a frame", () => {
   near(gem.about[1], (1000 + 29 * 100) / 4096);
 });
 
-test("a bob is a sine of its reach, and a lift is the corkscrew's alone", () => {
+test("a bob is a sine of its reach, and a lift belongs to the corkscrew alone", () => {
   const coin = table.types[37];
   near(pose(table, coin, marker(), 0, still).bob, 0);
   near(pose(table, coin, marker(), 1024 / 58, still).bob, -20, 1e-6);
@@ -426,11 +426,11 @@ test("a glinting facet is white on its second frame and back as it was on its 18
     [254, 254, 254],
     [238, 238, 238],
   ]);
-  // each channel stops at its own as the grey comes down to it, the strongest first
+  // each channel stops at its own value as the grey comes down to it, the strongest first
   assert.deepEqual(seen[11], [94, 94, 101]);
   assert.deepEqual(seen[15], [30, 41, 101]);
   assert.deepEqual(seen[17], [0, 41, 101]);
-  // a channel past the top dips to it, and is its own again at the first fall
+  // a channel past the top dips to it, and is its own value again at the first fall
   assert.deepEqual(
     glintSteps(glint, [[0, 115, 255]]).map(([c]) => c[2]),
     [254, 254, ...Array(16).fill(255)],
@@ -462,7 +462,7 @@ test("from the generator's first value the blue and the red cut start a glint on
   assert.deepEqual(glints(fresh(), cuts, 0), [[{ k: 15, at: 0 }], [], [{ k: 28, at: 0 }]]);
 });
 
-test("a frame draws once for every cut at every level of detail, the first level's three first", () => {
+test("a frame draws once for every cut at every level of detail, the first level's three draws first", () => {
   const draws = [];
   let state = glint.dice.seed;
   for (let i = 0; i < 9 * 60; i++)
@@ -670,7 +670,7 @@ test("the hourglass turns the clock round and scores ten a whole second of what 
   assert.equal(taken(1).points, 1190);
 });
 
-test("a pill's word runs down as the game runs it, the bouncy pill's never, and the sunglasses' blink is 21 spells of 9 frames with the first a frame short", () => {
+test("a pill's word runs down as the game runs it, the bouncy pill's word never, and the sunglasses' blink is 21 spells of 9 frames with the first a frame short", () => {
   const lasts = (t) => table.types[t].lasts;
   assert.deepEqual(lasts(32), {
     word: 360,
@@ -756,8 +756,8 @@ test("the lethargy pill halves the pace for 192 passes, rolls the view 128 eithe
   assert.equal(roll(words[0]), -90);
   assert.equal(Math.max(...words.map(roll)), 128);
   assert.equal(Math.min(...words.map(roll)), -128);
-  // the mode stands from the pill's pass, through the pass the word reaches nothing and the end's,
-  // to the pass the fade falls below nothing on, and every pass but the first waits double
+  // the mode stands from the pill's pass, through the pass the word reaches nothing and the end's
+  // pass, to the pass the fade falls below nothing on, and every pass but the first waits double
   const fade = [];
   for (let g = pill.screen.fade.from - pill.screen.fade.by; g >= 0; g -= pill.screen.fade.by)
     fade.push(g);
@@ -854,7 +854,7 @@ test("the clock ticks once a frame, fifty to a shown second, and a level ends in
   assert.equal((99 * play.clock.second) / play.clock.tick / table.hz, 82.5);
 });
 
-test("the end screen names each outcome in the game's own word, a death's in capitals, the game's end and the Simon match's winner or its draw", () => {
+test("the end screen names each outcome in the game's own word, a death's word in capitals, the game's end and the Simon match's winner or its draw", () => {
   const { words, ending } = table.play;
   assert.deepEqual(words, {
     exit: "Well Done!",
@@ -945,7 +945,7 @@ test("a death costs 50 times the level's number, at most 5000, the finals number
   assert.equal(penalty(99), 4950);
   assert.equal(penalty(100), 5000);
   assert.equal(penalty(150), 5000);
-  // LEVEL 42 is the third world's twelfth, and FINAL 12 the sixth world's second
+  // LEVEL 42 is the third world's twelfth level, and FINAL 12 the sixth world's second final
   assert.equal(penalty(2 * points.levels + 11 + 1), 2100);
   assert.equal(penalty(5 * points.finals + 1 + 1), 600);
 });
@@ -980,7 +980,7 @@ test("an exit leads to the slot after, five fruit to a bonus level by thirds of 
   }
 });
 
-test("a Simon room latches Up and Cross over five frames from the third at rest, turns from the sixth, packs a move in four bits, holds 512 rounds of two more moves from the first's two in a sequence of empty halfwords, tells the sequence done from a wrong move, goes round two players from the word the menu sets and is won past 5 points, which ends the game as a total below nothing", () => {
+test("a Simon room latches Up and Cross over five frames from the third at rest, turns from the sixth, packs a move in four bits, holds 512 rounds of two more moves from the first round's two moves in a sequence of empty halfwords, tells the sequence done from a wrong move, goes round two players from the word the menu sets and is won past 5 points, which ends the game as a total below nothing", () => {
   const { simon, next } = table.play;
   assert.deepEqual(simon, {
     latch: 5,
@@ -1000,13 +1000,13 @@ test("a Simon room latches Up and Cross over five frames from the third at rest,
   assert.ok(simon.empty < 0);
   assert.ok(simon.verdict.done > 0 && simon.verdict.wrong > 0);
   assert.notEqual(simon.verdict.done, simon.verdict.wrong);
-  // the word the menu sets is a player's once flipped, and the game's end is a total below nothing
+  // the word the menu sets is a player's number once flipped, and the game's end is a total below nothing
   assert.ok(simon.starter >= 0 && simon.starter < simon.players);
   assert.ok(simon.over < 0);
   // a tap of Up on the third frame at rest asks the roll on the seventh, past the turn's gate on the sixth
   assert.equal(simon.idle[0] + simon.latch - 1, 7);
   assert.ok(simon.idle[0] + simon.latch - 1 >= simon.idle[1]);
-  // the bits are one each, and a forward jump is both of its
+  // the bits are one each, and a forward jump is both of its bits
   assert.deepEqual(
     Object.values(simon.bits).sort((a, b) => a - b),
     [1, 2, 4, 8],
@@ -1085,7 +1085,7 @@ test("a taken coin bursts a dark ring growing 12.5 units a frame under a white r
   assert.deepEqual(effects.teleport, { hud: 3 });
   assert.equal(tableOf(3).frames, 58);
   assert.deepEqual(effects.hud.teleport, [160, 166]);
-  // the red disc's light shows blue and the electric blue ball's red, the colour word's first byte lying highest
+  // the red disc's light shows blue and the electric blue ball's light red, the colour word's first byte lying highest
   assert.deepEqual(effects.sprites.colours[2], [60, 60, 127]);
   assert.deepEqual(effects.sprites.colours[3], [127, 20, 20]);
   assert.equal(effects.light.over, 512);
@@ -1177,7 +1177,7 @@ test("the ending's view swings every 341 frames, stands on a hidden level where 
   assert.equal(Math.floor(table.turn / view.bonus.swing), 70);
   assert.deepEqual(view.angles, [-8, 3, 10]);
   // the eye of a hidden level's ending stands 400 past the free camera's distance and does not swing,
-  // which is where the arcade's swing and the no-key level's both come nearest
+  // which is where the arcade's swing and the no-key level's swing both come nearest
   assert.equal(view.hidden.off, 400);
   assert.equal(view.off - view.reach, view.hidden.off);
   assert.equal(view.bonus.off - view.bonus.reach, view.hidden.off);

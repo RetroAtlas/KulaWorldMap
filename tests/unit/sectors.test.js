@@ -15,8 +15,8 @@ import {
   sector,
 } from "../../public/js/format/sectors.js";
 
-// Sectors the Python side built once the disc's own had come out of it bit
-// for bit, so the port is held to the disc through them.
+// Sectors the Python side built once the disc's own sectors had come out of it
+// bit for bit, so the port is held to the disc through them.
 const { cases, broken } = JSON.parse(
   readFileSync(fileURLToPath(new URL("../fixtures/sectors.json", import.meta.url)), "utf8"),
 );

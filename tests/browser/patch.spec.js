@@ -1034,8 +1034,8 @@ test("two drafts go onto the disc as one patch, the second added from the select
     '"spiral-and-1-more.xdelta" "spiral-and-1-more.bin"',
   );
 
-  // a clash made once the image is placed: the fits are the layout's again, not
-  // the last placing's, and the placing comes back when the clash goes
+  // a clash made once the image is placed: the fits come from the layout again, not
+  // from the last placing, and the placing comes back when the clash goes
   await second.locator("select").selectOption("/HIRO/HIRO.PAK#1");
   await expect(dialog.locator("#patchClash p")).toHaveText([
     "error: two levels take LEVEL 2's place",

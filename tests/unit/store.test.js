@@ -76,7 +76,7 @@ test("what cannot be read stays under its key, and the ids it names stay out of 
   assert.equal(store.next, 7);
 });
 
-test("two spellings of one number are two keys: the number's own is read, the other stays as it is", () => {
+test("two spellings of one number are two keys: the number's own spelling is read, the other stays as it is", () => {
   const raw = {
     version: 1,
     next: 2,
@@ -113,7 +113,7 @@ test("a write carries the drafts and what could not be read, under the store's v
   assert.deepEqual(again.drafts[4], raw.drafts[4]);
 });
 
-test("a higher version is kept, and a lower or missing one reads as this one's", () => {
+test("a higher version is kept, and a lower or missing one reads as this reader's version", () => {
   assert.equal(parse(text({ version: 7, drafts: {} })).store.version, 7);
   for (const v of [undefined, 0, 1, -3, "7", 1.5])
     assert.equal(parse(text({ version: v, drafts: {} })).store.version, VERSION, String(v));
@@ -181,7 +181,7 @@ test("two copies changed at the same time settle on the larger text, whichever s
   assert.deepEqual([...n.dirty], [1]);
 });
 
-test("two copies changed at the same time that write the same keep this tab's, whatever order its keys are in", () => {
+test("two copies changed at the same time that write the same keep this tab's copy, whatever order its keys are in", () => {
   const m = marks({ dirty: [1] });
   const mine = at("Same", 5);
   mine.doc = Object.fromEntries(Object.entries(mine.doc).reverse());

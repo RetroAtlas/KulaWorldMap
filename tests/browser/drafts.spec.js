@@ -420,7 +420,7 @@ test("new asks for editing once its level is open, and copy this level does not"
   expect(errors).toEqual([]);
 });
 
-test("a level of your own marked a Simon room is drawn with its world's artwork, where one with no key wears the bonus artwork and one with a key its world's", async ({
+test("a level of your own marked a Simon room is drawn with its world's artwork, where one with no key wears the bonus artwork and one with a key its world's artwork", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -666,7 +666,7 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   await panelRow.click();
   await expect(toggle(2)).toHaveText("starts off");
   await expect(members.nth(2)).toHaveText("1 switch, 1 laser");
-  // the panel's row speaks and the card's does not, so the card's press takes the sentence down
+  // the panel's row speaks and the card's row does not, so the card's press takes the sentence down
   await expect(page.locator("#say")).toHaveText("Turned the green circuit off");
   await toggle(2).click();
   await expect(toggle(2)).toHaveText("starts on");

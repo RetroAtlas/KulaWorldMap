@@ -10,7 +10,7 @@ const record = (page) => {
 };
 const textures = (asked) => asked.filter((p) => p.startsWith("/tex/"));
 
-test("the page asks for the world's textures itself, once, and the other worlds' once the map has drawn, each once and without a redraw", async ({
+test("the page asks for the world's textures itself, once, and the other worlds' textures once the map has drawn, each once and without a redraw", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -39,7 +39,7 @@ test("the page asks for the world's textures itself, once, and the other worlds'
   expect(await drawn(page)).toBe(0);
   await expect.poll(() => textures(asked).length, { timeout: 15000 }).toBe(WORLDS);
   expect(new Set(textures(asked)).size).toBe(WORLDS);
-  // the next world's came first, so stepping into it finds its textures here
+  // the next world's textures came first, so stepping into it finds its textures here
   const order = textures(asked);
   expect(order[1]).toBe("/tex/ARCTIC.png");
   await page.evaluate(() => {
@@ -51,7 +51,7 @@ test("the page asks for the world's textures itself, once, and the other worlds'
   expect(errors).toEqual([]);
 });
 
-test("a browser set to save data gets the shown world's textures and no other's ahead", async ({
+test("a browser set to save data gets the shown world's textures and no other world's textures ahead", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -67,7 +67,7 @@ test("a browser set to save data gets the shown world's textures and no other's 
   expect(errors).toEqual([]);
 });
 
-test("a link to a draft preloads no texture, and the level shown asks for its own once", async ({
+test("a link to a draft preloads no texture, and the level shown asks for its own texture once", async ({
   page,
 }) => {
   const asked = record(page);

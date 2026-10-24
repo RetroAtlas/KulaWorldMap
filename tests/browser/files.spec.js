@@ -58,7 +58,7 @@ const MAP_FILE = `{
 }
 `;
 
-test("a draft saves as the map's file and as the game's, and the row counts the changes since", async ({
+test("a draft saves as the map's file and as the game's file, and the row counts the changes since", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -105,7 +105,7 @@ test("a draft saves as the map's file and as the game's, and the row counts the 
   expect(back.report).toEqual([]);
   await expect(row).toHaveText("saved to a file");
 
-  // the row above holds the four openers alone, so the saves are the card's
+  // the row above holds the four openers alone, so the saves are on the card
   const actions = page.locator("#yours .actions button");
   await expect(actions).toHaveCount(4);
   expect(await actions.evaluateAll((buttons) => buttons.map((b) => b.id))).toEqual([

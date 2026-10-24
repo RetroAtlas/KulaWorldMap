@@ -76,7 +76,7 @@ test("the lattice answers as the game reads it: a coin blocks, fire and a star d
   assert.equal(p.free([0, 10, 17], 0, 0), false, "and nothing to stand over");
 });
 
-test("a lit beam's cells are filled, and a dark one's are empty, as the game writes them", () => {
+test("a lit beam's cells are filled, and a dark one's cells are empty, as the game writes them", () => {
   const beam = (y, lit) => ({
     x: 10,
     y,

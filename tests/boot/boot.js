@@ -3,11 +3,11 @@
 // and its data have all arrived, when the first frame with a level on it is
 // drawn, and when the shown world's textures are asked for and land, which is
 // the first textured frame. Given a ref, the ref's public/ is measured beside
-// the working tree's, a round of each in turn, since two runs of the same tree
-// differ by a few per cent. The server here is HTTP/1.1 over six connections,
-// where the host's HTTP/2 carries every request on one, so the modules cost
-// more here than there: the sides compare fairly and the figures are on the
-// conservative side.
+// the working tree's public/, a round of each in turn, since two runs of the
+// same tree differ by a few per cent. The server here is HTTP/1.1 over six
+// connections, where the host's HTTP/2 carries every request on one, so the
+// modules cost more here than there: the sides compare fairly and the figures
+// are on the conservative side.
 //
 //     npm run boot -- [<ref>] [--views a,b] [--net 10000/60] [--rounds 3] [--detail]
 //

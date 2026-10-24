@@ -74,7 +74,7 @@ async function fresh(page) {
   await expect(page.locator("#detail .form")).toBeVisible();
 }
 
-test("a registered note stands in for the level's own where it answers, and leaves it where it does not", async ({
+test("a registered note stands in for the level's own note where it answers, and leaves it where it does not", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -322,7 +322,7 @@ test("a key no roll from the start reaches is a finding, cleared once its block 
   expect(errors).toEqual([]);
 });
 
-test("a face that looks into a block, a pickup's or the start's, is left to the checks", async ({
+test("a face that looks into a block, a pickup's or the start's face, is left to the checks", async ({
   page,
 }) => {
   const errors = trackErrors(page);

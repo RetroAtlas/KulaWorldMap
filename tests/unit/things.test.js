@@ -80,7 +80,7 @@ test("a module may stand its ball's points in place of the level's starts, and n
   assert.deepEqual(ballsFor(l, 0), starts);
 });
 
-test("the ball's shadow is full at rest, fades as the ball rises and is gone a block up, and the corkscrew's thins by its bounce", () => {
+test("the ball's shadow is full at rest, fades as the ball rises and is gone a block up, and the corkscrew's shadow thins by its bounce", () => {
   const ball = objects.motion.types[30].shadow;
   assert.equal(shadowStrength(ball, 0, 100), 128);
   assert.equal(shadowStrength(ball, 0, 306), 64);
@@ -94,7 +94,7 @@ test("a squash lies along the face however the body has rolled, and at rest as t
   const up = FACE_NORMAL[0];
   const wide = 1.05;
   const tall = 0.9;
-  // a quarter roll about the across axis turns the model's forward out of
+  // a quarter roll about the across axis turns the model's forward axis out of
   // the face, where the body is short, not wide
   const rolled = times(squashed(face, wide, tall), spin("xyz", [0.25, 0, 0]));
   const forward = [0, 1, 2].map((i) => rolled[i][1]);

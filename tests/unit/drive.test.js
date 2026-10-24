@@ -121,7 +121,7 @@ function driven(driver, run, most = 400) {
   }
   return { pads, rests, frames, states, why };
 }
-/** The frame whose events hold a landing, the ball's first since frame `after`. */
+/** The frame whose events hold a landing, the ball's first landing since frame `after`. */
 const landing = (frames, after = -1) =>
   frames.findIndex((out, f) => f > after && out.some((e) => e.at === "landed"));
 /** Whether a ball left in state `s` is in the air. */
@@ -299,7 +299,7 @@ test("a roll the lattice no longer allows is a leap, as the planner draws it: re
   assert.ok(!refused(out.frames));
 });
 
-test("a course driver is strayed where the ball stands on no station of the course's", () => {
+test("a course driver is strayed where the ball stands on no station of the course", () => {
   const course = {
     stations: [A, B, C],
     steps: [
@@ -451,7 +451,7 @@ test("a jump the lattice no longer allows is a leap, as the planner draws it: th
   }
 });
 
-test("the planner's jump is the stepper's: over a plate, with the landing gone and a block one, two or three below or none, and with a block in each of the five cells the arc flies through, jumpAt lands the ball where Up and Cross from rest bring it to rest", () => {
+test("the planner's jump is the stepper's jump: over a plate, with the landing gone and a block one, two or three below or none, and with a block in each of the five cells the arc flies through, jumpAt lands the ball where Up and Cross from rest bring it to rest", () => {
   const C = A.cell;
   const at = (up, on, side = 0) => [C[0] + side, C[1] - on, C[2] - up];
   const plate = [-1, 0, 1].flatMap((side) => [0, 1, 2, 3].map((on) => at(0, on, side)));
@@ -595,7 +595,7 @@ test("a key down on the frame before, let go and pressed again over frames that 
   assert.equal(keys.busy(), false);
 });
 
-test("another source's bits join the keys', and a key it gave down reads up before a press of it", () => {
+test("another source's bits join the keys' bits, and a key it gave down reads up before a press of it", () => {
   const keys = keyPad();
   assert.equal(keys.pad(true, PAD.left), PAD.left);
   tap(keys, PAD.left);

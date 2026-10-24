@@ -155,7 +155,7 @@ test("a typed title is one step, undone from the map and left to the field insid
   await expect(page.locator("#chipLine b")).toHaveText("Spiral");
   expect(await steps(page)).toEqual({ past: 1, future: 0 });
 
-  // inside the field the chord is the field's own, and the store mirrors the field
+  // inside the field the chord is the field's own undo, and the store mirrors the field
   await page.keyboard.press("Control+z");
   expect(await steps(page)).toEqual({ past: 1, future: 0 });
   await expect(page.locator("#say")).not.toHaveText(/^Undid/);
@@ -347,7 +347,7 @@ test("Delete erases the selection's object, then its block, and keeps the last b
   expect(errors).toEqual([]);
 });
 
-test("the steps are this visit's alone", async ({ page }) => {
+test("the steps belong to this visit alone", async ({ page }) => {
   const errors = trackErrors(page);
   await fresh(page);
   await click(page, await plusX(page, START));

@@ -29,7 +29,7 @@ function graph() {
   return out;
 }
 
-test("every static import names a file of the page's", () => {
+test("every static import names one of the page's files", () => {
   for (const [name, imports] of graph())
     for (const target of imports) assert.ok(existsSync(join(dir, target)), `${name}: ${target}`);
 });
@@ -74,12 +74,12 @@ test("no module imports itself through its imports", () => {
   for (const name of g.keys()) visit(name);
 });
 
-// The folders are layers: what each may import is its own and those beneath
-// it, so nothing of the screen reaches the model, the readers and writers
-// reach nothing of the viewer, and nothing of the editor or of play reaches
-// the viewer. The lattice every layer lays a level in is the one file all may
-// import, and the boot at the root reaches the editor and play through a
-// dynamic import alone.
+// The folders are layers: what each may import is its own layer and those
+// beneath it, so nothing of the screen reaches the model, the readers and
+// writers reach nothing of the viewer, and nothing of the editor or of play
+// reaches the viewer. The lattice every layer lays a level in is the one file
+// all may import, and the boot at the root reaches the editor and play through
+// a dynamic import alone.
 const LATTICE = "format/lattice.js";
 const LAYERS = {
   viewer: ["viewer", LATTICE],
@@ -129,7 +129,7 @@ test("a module of the simulation imports only the model, the lattice and the sim
 // A module is parsed whole before any of it runs, so one construct the engine
 // does not know is a blank page rather than one broken feature; older WebKit
 // does not know a regex lookbehind.
-test("no module of the page's uses a regex lookbehind", () => {
+test("no module of the page uses a regex lookbehind", () => {
   for (const name of modules())
     assert.ok(!/\(\?<[=!]/.test(readFileSync(join(dir, name), "utf8")), name);
 });

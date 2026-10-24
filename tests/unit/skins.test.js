@@ -10,7 +10,7 @@ const START_ON_A_CLOCK = 29;
 const CLOCK = 8;
 const SLOW_STAR = 50;
 
-test("a pickup's shadow is painted into its face, and the ball and the captivators cast their own", () => {
+test("a pickup's shadow is painted into its face, and the ball and the captivators cast their own shadows", () => {
   assert.equal(shadowed(skins, COIN), true);
   assert.equal(shadowed(skins, GEM), true);
   const cast = Object.entries(objects.motion.types).filter(([, e]) => e.shadow);
@@ -101,7 +101,7 @@ test("a clock, and the start on one, paint the clock's face", () => {
   assert.equal(face(0, [START_ON_A_CLOCK]).tex, set.types[CLOCK][0]);
 });
 
-test("a pickup's face carries its shadow on stone and on ice, and a star's does not", () => {
+test("a pickup's face carries its shadow on stone and on ice, and a star's face does not", () => {
   assert.equal(face(0, [COIN]).tex, set.types[COIN][1]);
   assert.equal(face(ICE, [COIN]).tex, set.kinds[ICE][1]);
   assert.equal(face(ICE, [ARROW]).tex, set.kinds[ICE][0]);

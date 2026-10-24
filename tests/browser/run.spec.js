@@ -119,7 +119,7 @@ async function opened(page, link) {
   await expect(page.locator("#showMotion")).not.toBeChecked();
 }
 
-test("a source hands the frame its clock and its index, and the frame is its own again once it stops", async ({
+test("a source hands the frame its clock and its index, and the frame has its own clock and index again once it stops", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -170,7 +170,7 @@ test("a source hands the frame its clock and its index, and the frame is its own
   expect(errors).toEqual([]);
 });
 
-test("a source hands the frame what travels, drawn and picked where it puts it and never stepped, and the frame walks its own again once it stops", async ({
+test("a source hands the frame what travels, drawn and picked where it puts it and never stepped, and the frame walks its own walkers again once it stops", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -213,7 +213,7 @@ test("a source hands the frame what travels, drawn and picked where it puts it a
   const rolled = await walked(ROLLED);
   expect(rolled.at).toBe(ROLLED);
   expect(rolled.offset[1]).toBeGreaterThan(1.5);
-  // handed with a frame well past the wheel's own, which a frame stepping it would bring it to
+  // handed with a frame well past the wheel's own frame, which a frame stepping it would bring it to
   await page.evaluate(async (frame) => {
     const { runWith } = await import(new URL("js/viewer/draw/render.js", location.href).href);
     window.__handed = { frame, travel: window.__travel };

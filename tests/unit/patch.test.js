@@ -229,7 +229,7 @@ function readVarint(buf, pos) {
   }
 }
 
-/** The Adler-32 a byte at a time, so the writer's is checked against something not itself. */
+/** The Adler-32 a byte at a time, so the writer's Adler-32 is checked against something not itself. */
 function slowAdler32(data) {
   let a = 1;
   let b = 0;
@@ -324,7 +324,7 @@ test("the synthetic image built here is the one the Python built, byte for byte"
 });
 
 for (const c of fixture.cases) {
-  test(`${c.name}: the plan, the patched image, the PPF and the xdelta are the fixture's`, async () => {
+  test(`${c.name}: the plan, the patched image, the PPF and the xdelta are what the fixture holds`, async () => {
     const stream = streamOf(synthetic(c.blocks));
     assert.equal(stream.length, c.stream);
     const { blob, placed, after } = await place(stream);
@@ -525,7 +525,7 @@ test("a rebuilt pack that comes to fewer sectors is written over the sectors it 
   assert.deepEqual(readPak(await read.readFile(SYNTHETIC_PACK)).names, ["LEVEL 1", "A", "LEVEL 3"]);
 });
 
-test("a directory sector is rewritten under its own subheader, which need not be a file's last", async () => {
+test("a directory sector is rewritten under its own subheader, which need not be a file's last subheader", async () => {
   const DIR_AT = SYNTHETIC_SECTORS;
   const root = concat([
     record("\0", ROOT_AT, USER, 2),
@@ -689,7 +689,7 @@ test("the record of the slot being replaced is never inflated, so a damaged one 
   );
 });
 
-test("the verifier refuses an image that is not the plan's", async () => {
+test("the verifier refuses an image that is not the plan's image", async () => {
   const stream = streamOf(synthetic(CASE.rebuild.blocks));
   const { disc, placed, after } = await place(stream);
   await assert.rejects(
@@ -788,7 +788,7 @@ test("the fixture's sets are two levels in one pack, and a level in each of the 
 });
 
 for (const s of fixture.sets) {
-  test(`${s.name}: the placements, the merged sectors, the patched image, the PPF and the xdelta are the fixture's`, async () => {
+  test(`${s.name}: the placements, the merged sectors, the patched image, the PPF and the xdelta are what the fixture holds`, async () => {
     const items = itemsOf(s.items);
     assert.deepEqual(
       items.map((i) => i.stream.length),
@@ -953,7 +953,7 @@ test("a pack moved once is rebuilt in its new place or moved again", async () =>
   await held(heavier, moved.planned, moved.after);
 });
 
-test("the verifier of a set refuses an image that is not the plan's", async () => {
+test("the verifier of a set refuses an image that is not the plan's image", async () => {
   const items = itemsOf([FIRST, SECOND]);
   const { blob, planned, patched } = await placeAll(items);
   const unplaced = { message: `${SYNTHETIC_PACK}#${SLOT} does not inflate to the level` };
@@ -1090,7 +1090,7 @@ test("the stretches that differ", () => {
   assert.deepEqual(runs(b("abcdef"), b("ABCDEF")), [[0, 6]]);
 });
 
-test("the Adler-32 is zlib's", () => {
+test("the Adler-32 is zlib's Adler-32", () => {
   assert.equal(adler32(bytesOf("Wikipedia")), 0x11e60398);
   assert.equal(adler32(new Uint8Array(0)), 1);
   const long = noise(7, 100000);

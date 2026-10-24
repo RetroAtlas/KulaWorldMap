@@ -237,7 +237,7 @@ test("the world lays the walkers and the dice and keeps a platform's home and bo
   assert.equal([...later.walkers.values()][0].at, 40, "laid at the frame asked for");
 });
 
-test("the word for what the ball stands on is the game's: a face's type on a plain block, each other kind its own", () => {
+test("the word for what the ball stands on is the game's word: a face's type on a plain block, each other kind its own number", () => {
   const blocks = [
     [10, 10, 17],
     [11, 10, 17, 1],
@@ -293,7 +293,7 @@ test("the word for what the ball stands on is the game's: a face's type on a pla
   assert.equal(standingOf(over), -1, "a dark beam's nothing");
 });
 
-test("the probe answers the lattice as the planner's did, and names the kind and the word under a cell", () => {
+test("the probe answers the lattice as the planner's probe did, and names the kind and the word under a cell", () => {
   const l = level(
     [...row(10, 13, 10, 17), [12, 10, 17, 2], [15, 10, 17], [20, 14, 17]],
     [own(11, 10, 17, 6), patch(13, 10, 17, TOP), patch(15, 10, 17, 1), platform(20, 14, 17)],
@@ -386,7 +386,7 @@ test("the world counts the blocks a level with no key marks: the kinds the game 
   assert.equal(w.counted.size, 27);
 });
 
-test("the index the frame draws is the level's own until something is taken, and then the same less that marker alone", () => {
+test("the index the frame draws is the level's own index until something is taken, and then the same less that marker alone", () => {
   const l = level(row(10, 12, 10, 17), [
     { x: 10, y: 10, z: 17, kind: 0, on: [object(0, 37), object(1, 31)] },
     { x: 11, y: 10, z: 17, kind: 0, on: [object(0, 37)] },
@@ -427,7 +427,7 @@ test("the index the frame draws is the level's own until something is taken, and
   );
 });
 
-test("the index the frame draws carries each marked block with the frame it is first drawn marked on, rebuilt as one is marked, and is the level's own while none stands", () => {
+test("the index the frame draws carries each marked block with the frame it is first drawn marked on, rebuilt as one is marked, and is the level's own index while none stands", () => {
   const l = level(row(10, 12, 10, 17));
   const idx = index(l);
   const w = worldOf(l, idx, TABLES, CIRCUITS);
@@ -641,7 +641,7 @@ test("the probe answers the lattice as the last frame's step left it, the cycle'
   assert.equal(p.solid([11, 10, 17]), true, "the level's first frame where the run has none");
 });
 
-test("the probe follows a platform's body: solid where the body stands now and empty at its home cell while it is away, the platform named with its shift, the axis of its run, its first block's centre and its count, and to a riding ball the platform's own blocks at home alone, the word under it the platform's", () => {
+test("the probe follows a platform's body: solid where the body stands now and empty at its home cell while it is away, the platform named with its shift, the axis of its run, its first block's centre and its count, and to a riding ball the platform's own blocks at home alone, the word under it the platform's word", () => {
   const l = level([...row(10, 13, 10, 17), [20, 14, 17]], [platform(20, 14, 17)]);
   const live = standing(l, [10, 10, 17]);
   const p = probeOf(live);
@@ -711,7 +711,7 @@ const FRUITS = Object.entries(motion.types)
   .sort(([, a], [, b]) => a.take.fruit - b.take.fruit)
   .map(([type]) => Number(type));
 
-test("while a run stands a fruit takes the type of the first of the five the run's word has not, its own where the word has every one, in a copy of its marker, and keeps the index's where no run stands", () => {
+test("while a run stands a fruit takes the type of the first of the five the run's word has not, its own type where the word has every one, in a copy of its marker, and keeps the index's marker where no run stands", () => {
   const [first, second, third, , fifth] = FRUITS;
   const c = [17, 17, 17];
   const l = level([c], [{ x: 17, y: 17, z: 17, kind: 0, on: [object(TOP, third)] }]);

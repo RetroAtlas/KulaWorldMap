@@ -119,7 +119,7 @@ test("a level is told by its blocks at positions and its time", () => {
     assert.ok(!isOrbit(other), JSON.stringify(other));
 });
 
-test("the viewer's axes are the game's with y and z swapped and the height counted from the top", () => {
+test("the viewer's axes are the game's axes with y and z swapped and the height counted from the top", () => {
   const { project, report } = readOrbit(
     level([plain([1, 31, 2], 2), starting([3, 16, 4])], { time: 45 }),
     "MARS",
@@ -279,7 +279,7 @@ test("a value that is no word of the file is said so and left empty, while null 
   assert.deepEqual([nulls.report, nulls.repairs], [[REWIRED], 1]);
 });
 
-test("lines of one shape are kept to three and the rest counted, as the level reader's are", () => {
+test("lines of one shape are kept to three and the rest counted, as the level reader's lines are", () => {
   const blocks = [starting([3, 16, 4])];
   for (let i = 0; i < 20; i++) blocks.push(plain([40 + i, 16, 4]));
   for (let i = 0; i < 5; i++) blocks.push({ type: 12, pos: [6 + i, 16, 4] });

@@ -169,8 +169,9 @@ test("a level numbers its pickups from 0 with no repeats", () => {
   assert.equal(numbered, 228);
 });
 
-// A switch or teleporter's starting state is its circuit's, and the lasers of
-// that circuit carry the same bit, so within a level a colour has one state.
+// A switch or teleporter's starting state is its circuit's state, and the
+// lasers of that circuit carry the same bit, so within a level a colour has
+// one state.
 test("a circuit starts on or off as one, across its lasers, switches and teleporters", () => {
   const LASER_KIND = 8;
   const LIT_FIELD = 1;

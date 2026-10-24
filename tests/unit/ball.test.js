@@ -188,7 +188,7 @@ test("a turn in place leaves the body where it stands in the world while the sid
   assert.ok(aboutAxis(body, side, by).some((v, i) => Math.abs(v - b.body[i]) > 1e-6));
 });
 
-test("round an edge the body takes the arc's four turns about the side a frame behind the arc, with no spin step on those frames, a quarter in all as the frame's own", () => {
+test("round an edge the body takes the arc's four turns about the side a frame behind the arc, with no spin step on those frames, a quarter in all as the frame's own turn", () => {
   const probe = row(15, 18);
   const b = ballAt(RULES, [17, 16, 17], TOP, UP);
   let before = null;
@@ -204,7 +204,7 @@ test("round an edge the body takes the arc's four turns about the side a frame b
   const side = [...b.s];
   const spinStep = () => (table.spin * b.spinSpeed) / TURN;
   // the frame turns a quarter about the side at the edge; the edge's frame and the arc's first
-  // take their spin steps
+  // frame take their spin steps
   nearly(aligned(b), aboutAxis(was, side, -QUARTER / TURN));
   nearly(b.body, aboutAxis(before, side, spinStep()));
   let body = [...b.body];
@@ -600,7 +600,7 @@ test("a turn pressed during a turn whose ramp a climb replaces fires as the clim
   assert.deepEqual(b.h, [1, 0, 0]);
   assert.deepEqual(b.n, [0, 1, 0]);
   assert.equal(moving(b), false);
-  // a Left asked during the climb's ramp is taken at its end, and the Right waits for the Left's
+  // a Left asked during the climb's ramp is taken at its end, and the Right waits for the Left's ramp
   const { b: c, events: more } = played(PAD.left);
   assert.deepEqual(more.slice(3), [
     [34, { turned: LEFT }],
@@ -1232,7 +1232,7 @@ test("a landing past the middle at an edge the side rule refuses rests where the
   assert.deepEqual(blockUnder(b), [17, 15, 17]);
 });
 
-test("a landing at the climb's progress under a wall climbs on the frame after, not the landing's", () => {
+test("a landing at the climb's progress under a wall climbs on the frame after, not the landing's frame", () => {
   const probe = row(14, 18, [[17, 14, 16]]);
   const b = ballAt(RULES, [17, 18, 17], TOP, UP);
   run(b, probe, 23, PAD.up);
@@ -1251,11 +1251,11 @@ test("a landing at the climb's progress under a wall climbs on the frame after, 
   assert.deepEqual(blockUnder(b), [17, 14, 16]);
 });
 
-test("the shadow's height is the centre's off the block under it, and nothing over nothing", () => {
+test("the shadow's height is the centre's height off the block under it, and nothing over nothing", () => {
   const probe = row(15, 18);
   const b = ballAt(RULES, [17, 18, 17], TOP, UP);
   assert.equal(clearance(b, probe), 100);
-  // over the hop the height is the centre's while the shadow could show, and nothing above a block's
+  // over the hop the height is the centre's height while the shadow could show, and nothing above a block's height
   const seen = new Set();
   for (let f = 1; f <= 30; f++) {
     run(b, probe, 1, f === 1 ? PAD.cross : 0);
@@ -1506,8 +1506,9 @@ test("where the probe says the block under is slick the roll goes on over an edg
   const ice = slippery(stone, [17, 15, 17]);
   const b = ballAt(RULES, [17, 15, 17], TOP, UP);
   const events = [];
-  // the input routine drops the request at such an edge whatever the block, as the game's does,
-  // and the rules make it again on ice after it, which is what a frame with the request forced is
+  // the input routine drops the request at such an edge whatever the block, as the game's routine
+  // does, and the rules make it again on ice after it, which is what a frame with the request
+  // forced is
   const forced = (probe) => {
     const out = [];
     b.pad = PAD.up;
@@ -1590,7 +1591,7 @@ const brittle = (probe, ...cells) => {
 const EDGE = objects.motion.kinds["6"].edge;
 const HELD = { ...RULES, edge: EDGE };
 
-test("on a block the probe says is brittle, with the floor ahead empty and nothing beside, a rolling ball loses the forward request and its speed from the hold's progress and is set back from the push's, so it never goes round the edge it would on stone", () => {
+test("on a block the probe says is brittle, with the floor ahead empty and nothing beside, a rolling ball loses the forward request and its speed from the hold's progress and is set back from the push's progress, so it never goes round the edge it would on stone", () => {
   const stone = row(15, 18);
   const probe = brittle(stone, [17, 15, 17]);
   const rolled = (rules, probe) => {
@@ -1764,7 +1765,7 @@ function ridden() {
   return { b, probe, at, frames };
 }
 
-test("a landing on a platform's body rides it: the position made the platform's, the block under and the centre the level's, the platform's own blocks alone solid to the ball, and the forward jump leaves it with the position the level's again", () => {
+test("a landing on a platform's body rides it: the position made relative to the platform, the block under and the centre in the level, the platform's own blocks alone solid to the ball, and the forward jump leaves it with the position no longer relative to the platform", () => {
   const { b, probe, at, frames } = ridden();
   assert.equal(frames.length, 30, "on the frame the jump comes down");
   assert.deepEqual(frames.at(-1), [{ rode: { key: "rail" } }, { at: "landed" }]);

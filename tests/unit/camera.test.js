@@ -15,8 +15,8 @@ const minus = (a, b) => a.map((v, i) => v - b[i]);
 const length = (v) => Math.hypot(...v);
 
 test("the start camera stands 648 units behind the ball's centre and 531 above it, the centre 100 off its face", () => {
-  // LEVEL 1's ball faces -y from the top of its block, HIDDEN 10's faces +z
-  // from its -y side
+  // LEVEL 1's ball faces -y from the top of its block, HIDDEN 10's ball faces
+  // +z from its -y side
   for (const [name, centre, offset] of [
     ["LEVEL 1", [17.5, 18.5, 17 - 100 / 512], [0, 648, -531]],
     ["HIDDEN 10", [17.5, 15 - 100 / 512, 10.5], [0, -531, -648]],

@@ -215,8 +215,8 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   await expect(page.locator("#say")).toHaveText(
     "Set the length of the moving platform at 18, 17, 17 to 3",
   );
-  // a speed is any word the file holds, which the checks warn of away from the disc's, and an
-  // empty field is put back
+  // a speed is any word the file holds, which the checks warn of away from the disc's speeds, and
+  // an empty field is put back
   const slow = page.locator("#chipNote .findings li", { hasText: "a platform running at 0" });
   await field(page, "speed").fill("0");
   await field(page, "speed").press("Enter");

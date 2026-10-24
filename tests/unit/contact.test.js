@@ -75,7 +75,7 @@ function level(blocks, records = [], time = 99, keyed = true) {
 }
 /** A row of blocks along y at x 17, z 17. */
 const row = (y0, y1) => Array.from({ length: y1 - y0 + 1 }, (_, i) => [17, y0 + i, 17]);
-/** The start on the top of (17, 18, 17), heading −y as LEVEL 1's does. */
+/** The start on the top of (17, 18, 17), heading −y as LEVEL 1's start does. */
 const start = () => ({ x: 17, y: 18, z: 17, kind: 0, on: [object(0, 30, 0, 3)] });
 /** A thing of `type` on a face of the row's block at `y`. */
 const on = (y, type, f3 = 0, face = TOP) => ({

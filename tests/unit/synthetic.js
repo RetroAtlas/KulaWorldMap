@@ -1,8 +1,8 @@
 // The Python tests' synthetic image, built here from the page's own writers:
 // the volume descriptor, the root and one world's directory, SYSTEM.CNF, two
-// one-sector packs of small levels, the world pack's at level 1 so that
-// recompression wins room, a /3.00 of zero sectors and a postgap. The fixture
-// holds its digest, so the two builders cannot drift apart.
+// one-sector packs of small levels, the world pack's streams at level 1 so
+// that recompression wins room, a /3.00 of zero sectors and a postgap. The
+// fixture holds its digest, so the two builders cannot drift apart.
 import {
   CELLS,
   FORMAT,
@@ -73,7 +73,7 @@ export function synthetic(n, title = "Spiral") {
 export const streamOf = (project, level = 6) => deflate(writeKwl(project), level);
 
 const BARE = [-1, 0, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
-// A switch of colour 1 whose list head is record 0, its own; a start; a
+// A switch of colour 1 whose list head is record 0, its own record; a start; a
 // teleporter of colour 1 wired to nothing.
 const COMMUNITY = [
   [

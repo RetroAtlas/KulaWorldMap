@@ -131,7 +131,7 @@ function level(blocks, records = [], time = 99, keyed = true) {
 }
 /** A row of blocks along y at x 17, z 17. */
 const row = (y0, y1) => Array.from({ length: y1 - y0 + 1 }, (_, i) => [17, y0 + i, 17]);
-/** The start on the top of (17, 18, 17), heading −y as LEVEL 1's does. */
+/** The start on the top of (17, 18, 17), heading −y as LEVEL 1's start does. */
 const start = (type = 30) => ({ x: 17, y: 18, z: 17, kind: 0, on: [object(0, type, 3)] });
 /** A crumbling block's record at (17, `y`, 17), whole. */
 const crumbling = (y) => ({ x: 17, y, z: 17, kind: CRUMBLING, type: 1, f: Array(11).fill(0) });
@@ -244,7 +244,7 @@ test("the clock stands while the ball is on a clock face and runs again as it ro
   assert.equal(live.words.clock, full - 11 * play.clock.tick);
 });
 
-test("a run keeps the game's mode word by the level's pack or its mark as a room and the level's by its keys, its settings record and that mode, and the clock stands in the Simon rooms", () => {
+test("a run keeps the game's mode word by the level's pack or its mark as a room and the level's mode word by its keys, its settings record and that mode, and the clock stands in the Simon rooms", () => {
   const full = 99 * play.clock.second;
   const keyed = begin(level(row(10, 18), [start()]));
   assert.deepEqual(
@@ -295,7 +295,7 @@ test("a run keeps the game's mode word by the level's pack or its mark as a room
   assert.equal(arcade.words.clock, full - 60 * play.clock.tick, "the arcade's clock falls");
 });
 
-test("a level's number is its world's place times the levels a world plus its slot plus one, a final's twice the place plus the slot plus 151, as every shipped title has it, and a draft or a Simon room stands nowhere in the count", () => {
+test("a level's number is its world's place times the levels a world plus its slot plus one, a final's number twice the place plus the slot plus 151, as every shipped title has it, and a draft or a Simon room stands nowhere in the count", () => {
   const station = (place, slot, final = false) => ({ place, slot, final });
   assert.equal(numberOf(station(1, 1), play), 17);
   assert.equal(numberOf(station(2, 3), play), 34);
@@ -409,7 +409,7 @@ test("the ending's step with a game: a death on a level with no key or on a hidd
   end(out, play.ending.bonus, []);
   assert.deepEqual(conclude(out), { penalty: 0, banked: 150, total: 3150, over: false });
   assert.equal(out.words.score, 150);
-  // the points routine alone clears nothing: the clear is the step's
+  // the points routine alone clears nothing: the clear belongs to the step
   const alone = begin(counted(level(row(10, 18), [start()], 99, false), 0, 15), null, game);
   alone.words.score = 150;
   end(alone, play.ending.time, []);
@@ -492,7 +492,7 @@ function picked(game, place, slot, code, { keyed = true, hidden = false, final =
   return nextOf(game, live, COUNT);
 }
 
-test("an ordinary level with a way out leads to the slot after and a death to the level itself, and the fifteenth leads to the next world's first", () => {
+test("an ordinary level with a way out leads to the slot after and a death to the level itself, and the fifteenth leads to the next world's first level", () => {
   const game = startGame();
   assert.deepEqual(picked(game, 0, 3, play.ending.exit), slotted(0, 4));
   assert.deepEqual(game, startGame(), "nothing kept and nothing cleared");
@@ -503,7 +503,7 @@ test("an ordinary level with a way out leads to the slot after and a death to th
   assert.deepEqual(picked(game, 3, 14, play.ending.spikes), slotted(3, 14));
 });
 
-test("a way out with every fruit banked clears both fruit words, keeps the slot after and opens the bonus level of the finished slot's third, the fifteenth keeping the pack's count so that its bonus level leads to the next world's first", () => {
+test("a way out with every fruit banked clears both fruit words, keeps the slot after and opens the bonus level of the finished slot's third, the fifteenth keeping the pack's count so that its bonus level leads to the next world's first level", () => {
   const { bonus, fruit } = play.next;
   const full = () => ({ total: 100, bank: fruit, fruit, count: 5, kept: 0 });
   let game = full();
@@ -564,7 +564,7 @@ test("a bonus level, whatever its outcome, goes back to the slot kept, or where 
   assert.deepEqual(g, { total: 0, bank: 0, fruit: 0, count: 5, kept: 8 }, "both words cleared");
 });
 
-test("the last world's fifteenth ends the game, and a final, a draft and a total below nothing give no level", () => {
+test("the last world's fifteenth level ends the game, and a final, a draft and a total below nothing give no level", () => {
   const game = startGame();
   const last = TABLES.worlds.length - 1;
   assert.deepEqual(picked(game, last, 13, play.ending.exit), slotted(last, 14));
@@ -963,7 +963,7 @@ test("a run recorded replays frame for frame from a fresh start", () => {
   assert.deepEqual(second, first);
 });
 
-test("the word for what the ball stands on is read between its state and its move step: a climb's frame reads under the face being left and a wrap's the cell beyond the edge", () => {
+test("the word for what the ball stands on is read between its state and its move step: a climb's frame reads under the face being left and a wrap's frame the cell beyond the edge", () => {
   const wall = level([...row(16, 18), [17, 15, 17, 2], [17, 14, 17], [17, 14, 16]], [start()]);
   const live = begin(wall);
   live.words.wait = 0;
@@ -1174,7 +1174,7 @@ test("the sunglasses show every invisible block while their word stands, blink i
   assert.equal(live.words.blink, null);
   live.words.pills[SUNGLASSES] = word;
   assert.equal(seeing(live), true, "shown from the frame of the take");
-  // the frames the word is not negative on after the take's own, then the blink's
+  // the frames the word is not negative on after the take's own frame, then the blink's frames
   const standing = Math.floor(word / step);
   const lengths = [blink.first, ...Array(blink.times - 1).fill(blink.frames)];
   const blinking = lengths.reduce((a, b) => a + b, 0);
@@ -1401,7 +1401,7 @@ function riding(records = [], keyed = true) {
   return { ...d, arrived, seen };
 }
 
-test("the landings try a platform before a block: a jump that comes down on a platform's body where it stands rides it at rest, the standing word the platform's, and one that comes down on its home cell while the body is away falls through", () => {
+test("the landings try a platform before a block: a jump that comes down on a platform's body where it stands rides it at rest, the standing word the platform's word, and one that comes down on its home cell while the body is away falls through", () => {
   const { live, key, w, arrived, seen } = riding();
   assert.equal(w.dwell <= PLATFORM.dwell && w.dwell > 0, true);
   const rode = seen.find((e) => e.rode);
@@ -1474,7 +1474,7 @@ test("riding, the ball's travel is its platform's position less its home, taken 
   assert.ok(!seen.some((s) => s.block === "20,15,17"), "the far end is the first block's");
 });
 
-test("the contact walk takes nothing while the ball rides, the cells about it being the platform's: an hourglass beside the body's second block, within reach by the table's measure of the ball rolled onto that block at home, is left", () => {
+test("the contact walk takes nothing while the ball rides, the cells about it being the platform's cells: an hourglass beside the body's second block, within reach by the table's measure of the ball rolled onto that block at home, is left", () => {
   const face = FACE_NORMAL.findIndex((n) => n[1] === 1);
   const beside = { x: 18, y: 14, z: 16, kind: 0, on: [object(face, HOURGLASS)] };
   const { live, w, home } = riding([beside]);
@@ -1500,7 +1500,7 @@ test("the contact walk takes nothing while the ball rides, the cells about it be
   assert.equal(live.world.taken.size, 0);
 });
 
-test("a level with no key marks no block under the riding ball, the cells about it being the platform's, so the count stands and the level does not end while it rides", () => {
+test("a level with no key marks no block under the riding ball, the cells about it being the platform's cells, so the count stands and the level does not end while it rides", () => {
   const { live, key } = riding([], false);
   const b = live.ball;
   assert.deepEqual(b.riding, { key });
@@ -1512,7 +1512,7 @@ test("a level with no key marks no block under the riding ball, the cells about 
   assert.deepEqual(b.riding, { key });
 });
 
-test("relevel keeps a riding ball on its platform where the edited level still holds it, its travel the new world's, and sets it down in the level where it does not", () => {
+test("relevel keeps a riding ball on its platform where the edited level still holds it, its travel the new world's shift, and sets it down in the level where it does not", () => {
   const { l, live, key } = riding();
   const b = live.ball;
   for (let f = 0; f < 200 && !b.travel.some((v) => v !== 0); f++) frame(live, 0);
@@ -1584,7 +1584,7 @@ test("on a boost button the pad is not read, and the game moves the ball of itse
   assert.deepEqual(blockUnder(live.ball), [17, 16, 17]);
 });
 
-test("rolled onto a boost button the ball is taken from the keys, rolled on by the game from the roll's progress with the count written on every ground frame, and launched as the long jump on the first frame its progress is the fire's or more, landing three blocks on at that progress and resting there with Up released", () => {
+test("rolled onto a boost button the ball is taken from the keys, rolled on by the game from the roll's progress with the count written on every ground frame, and launched as the long jump on the first frame its progress is the fire's progress or more, landing three blocks on at that progress and resting there with Up released", () => {
   const live = begin(level(row(5, 18), [start(), button(16)]));
   live.words.wait = 0;
   const { boost } = LEAP;
@@ -1858,7 +1858,7 @@ test("Up and Cross held under the bouncy pill arm the long jump, which lands thr
   }
 });
 
-test("the latch: Up held gives the roll's request from the fourth frame on every frame, a tap gives it once on the fourth frame counting its own and the count starts over on the first frame after that with neither latch set, and both held arm the long jump once per landing", () => {
+test("the latch: Up held gives the roll's request from the fourth frame on every frame, a tap gives it once on the fourth frame counting its own frame and the count starts over on the first frame after that with neither latch set, and both held arm the long jump once per landing", () => {
   const n = BOUND.latch;
   const ball = { long: 0, state: REST };
   const fresh = () => ({ up: 0, cross: 0, count: 0 });
@@ -1911,7 +1911,7 @@ test("the latch: Up held gives the roll's request from the fourth frame on every
   assert.equal(latched(both, PAD.up, BOUND, long).arm, false, "not with Up alone");
 });
 
-test("a landing on the bouncy pill with the latch's count at nothing hops first, Up held from the landing on, and with a count one under the latch's left by an earlier pill Up held jumps the ball forward at once", () => {
+test("a landing on the bouncy pill with the latch's count at nothing hops first, Up held from the landing on, and with a count one under the latch's frames left by an earlier pill Up held jumps the ball forward at once", () => {
   const l = level(row(2, 18), [start(), pill(16)]);
   const live = begin(l);
   live.words.wait = 0;
@@ -1960,8 +1960,8 @@ test("an invincibility pill ends the bounding: the bouncy pill's word is put bac
 const LETHARGIC = motion.types[LETHARGY].lasts;
 const TELEPORT_FLASH = motion.effects.flash.teleport;
 const OPENING_FLASH = motion.effects.flash.bonus;
-/** The passes the screen's mode stands after the pill's own: the word's, the end's, the fade's
-    and the one that clears it. */
+/** The passes the screen's mode stands after the pill's own pass: the word's passes, the end's
+    pass, the fade's passes and the one that clears it. */
 const SLOWED =
   LETHARGIC.word / LETHARGIC.step + 1 + LETHARGIC.screen.fade.from / LETHARGIC.screen.fade.by + 1;
 /** The passes a flash shows on after the one that starts it, its strength stepped once a pass
@@ -1982,7 +1982,7 @@ const FADING = [
   [SCREEN.off, 0],
 ];
 
-test("the lethargy pill halves the pace from the frame after its take: every pass waits the table's blanks while the screen's mode stands, through the word's passes, the end's and the fade's, and one blank again after", () => {
+test("the lethargy pill halves the pace from the frame after its take: every pass waits the table's blanks while the screen's mode stands, through the word's passes, the end's pass and the fade's passes, and one blank again after", () => {
   const live = begin(level(row(2, 18), [start(), pill(16, Number(LETHARGY))]));
   const w = live.words;
   assert.equal(w.screen, SCREEN.off);
@@ -2027,7 +2027,7 @@ test("an invincibility pill taken while the mode stands brings the end forward: 
   assert.equal(blanksOf(live), 1);
 });
 
-test("a teleport's send starts the flash in the teleport's mode at the table's strength, which the draw steps once a pass: the strength shows on the derived passes after the send's, each waiting the flash's blanks, and is gone with one blank from the next", () => {
+test("a teleport's send starts the flash in the teleport's mode at the table's strength, which the draw steps once a pass: the strength shows on the derived passes after the send's pass, each waiting the flash's blanks, and is gone with one blank from the next", () => {
   const port = (x, y, facing, to) => {
     const o = object(0, TELEPORTER, facing, 1);
     o.f[fieldIndex("f7")] = to * 16;
@@ -2123,7 +2123,7 @@ test("the draw's step alone, as the ending's view runs it, keeps the ghost stand
 const ROCK = LETHARGIC.rock;
 /** The roll's angle the table predicts for the pill's word, in the turn's units. */
 const rock = (word) => rockOf(word, ROCK, motion.turn);
-/** The angles over the passes the word is positive, the pill's own first. */
+/** The angles over the passes the word is positive, the pill's own pass first. */
 const WAVE = Array.from({ length: LETHARGIC.word / LETHARGIC.step }, (_, k) =>
   rock(LETHARGIC.word - LETHARGIC.step * k),
 );
@@ -2243,7 +2243,7 @@ const FRUITS = Object.entries(motion.types)
   .sort(([, a], [, b]) => a.take.fruit - b.take.fruit)
   .map(([type]) => Number(type));
 
-test("a run places the level's fruit by the game's pickups' word, the take sets the placed type's bit, relevel keeps the placement and the next run places by the word banked, while a level with no game keeps its own", () => {
+test("a run places the level's fruit by the game's pickups' word, the take sets the placed type's bit, relevel keeps the placement and the next run places by the word banked, while a level with no game keeps its own fruit", () => {
   const [, second, third] = FRUITS;
   const fruit = { x: 17, y: 16, z: 17, kind: 0, on: [object(0, third)] };
   const l = counted(level(row(10, 18), [start(), fruit]), 0, 2);
@@ -2305,7 +2305,7 @@ const colourOf = (row) =>
     [0, 0, 0],
   );
 
-test("a coin taken starts its kind's table at the thing's place with a light from its cell and face, which draws a row a pass from the take's and is gone from the list the pass after its last, and a run and a restart start the list empty", () => {
+test("a coin taken starts its kind's table at the thing's place with a light from its cell and face, which draws a row a pass from the take's pass and is gone from the list the pass after its last row, and a run and a restart start the list empty", () => {
   const live = begin(level(row(2, 18), [start(), pickup(16, COIN)]));
   const w = live.words;
   assert.deepEqual(w.effects, []);
@@ -2336,7 +2336,7 @@ test("a coin taken starts its kind's table at the thing's place with a light fro
   assert.deepEqual(restart(again).words.effects, []);
 });
 
-test("a key starts two effects, its HUD kind at the key's icon, which the map has no point for, before its world kind, a fruit's second effect at its icon's point and the hourglass's at the clock's point, and the list holds the table's most and refuses the rest, as it does a kind without a table", () => {
+test("a key starts two effects, its HUD kind at the key's icon, which the map has no point for, before its world kind, a fruit's second effect at its icon's point and the hourglass's second effect at the clock's point, and the list holds the table's most and refuses the rest, as it does a kind without a table", () => {
   const live = begin(level(row(2, 18), [start(), pickup(16, KEY)]));
   const took = takes(live);
   const { world, hud } = EFFECTS.starts[KEY];
@@ -2386,7 +2386,7 @@ test("a key starts two effects, its HUD kind at the key's icon, which the map ha
   assert.equal(startEffect(live, none, at), false, "a kind with no table");
 });
 
-test("a fruit's first row draws its stripes' angle from the dice the wandering ball draws from, so the dice after its take stand elsewhere than after a coin's, whose rows never draw, and the angle runs on from the draw by the rows' own", () => {
+test("a fruit's first row draws its stripes' angle from the dice the wandering ball draws from, so the dice after its take stand elsewhere than after a coin's take, whose rows never draw, and the angle runs on from the draw by the rows' own angles", () => {
   const first = dice(motion.dice);
   const drawn = first(motion.turn);
   const after = (type) => {
@@ -2475,7 +2475,7 @@ const room = (blocks = row(10, 18), records = [start()]) => ({
   pack: objects.skins.copycat,
 });
 /** The frame at rest on which Up held from the first asks the roll: the latch runs from the first
-    gate and asks as its count reaches the latch's. */
+    gate and asks as its count reaches the latch's frames. */
 const ASKS = ROOMS.idle[0] + ROOMS.latch - 1;
 /** Run the level through the start's dead frames, so the next frame is the first that reads the
     pad. */
@@ -2491,7 +2491,7 @@ function rolled(live) {
 }
 const fresh = () => startMatch(ROOMS);
 
-test("a Simon room opens on a match as the reset leaves it, the sequence filled with the empty halfword, the count of moves at the first, the round at nothing and the turn the first player's, with the idle count, the index and the verdict at nothing, a match handed in has its round counted on and its count by the grow, and a level outside the rooms holds no match", () => {
+test("a Simon room opens on a match as the reset leaves it, the sequence filled with the empty halfword, the count of moves at the first, the round at nothing and the turn the first player's turn, with the idle count, the index and the verdict at nothing, a match handed in has its round counted on and its count by the grow, and a level outside the rooms holds no match", () => {
   const live = begin(room());
   const w = live.words;
   assert.equal(w.mode, SIMON);
@@ -2603,7 +2603,7 @@ test("the frame a round's wait runs out reads the pad as any wait's last frame d
   assert.deepEqual(next.match.sequence.slice(0, 4), [bits.forward, bits.forward, bits.left, empty]);
 });
 
-test("in a Simon room Cross held within the latch's five frames joins Up's roll as the forward jump, one move of the two bits, and Cross alone is the hop, one of the jump's", () => {
+test("in a Simon room Cross held within the latch's five frames joins Up's roll as the forward jump, one move of the two bits, and Cross alone is the hop, one move of the jump's bit", () => {
   const live = begin(room());
   const w = live.words;
   const { idle, bits } = ROOMS;
@@ -2764,7 +2764,7 @@ function done(live) {
 /** The other player than `player`. */
 const other = (player) => (player + 1) % ROOMS.players;
 /** A Simon game in its second match of a room, the word the loop flips left so that the room's
-    load flips it to 1, with `points` the players'. */
+    load flips it to 1, with `points` the players' points. */
 const second = (points = [0, 0]) => ({ ...startSimon(ROOMS), points: [...points], starter: 0 });
 
 test("a room with no game plays alone: a round done carries the match on with the round counted and the count grown, a wrong move resets it to the first round, and nothing is scored or picked", () => {
@@ -2788,7 +2788,7 @@ test("a room with no game plays alone: a round done carries the match on with th
   assert.equal(again.game, null);
 });
 
-test("with a game the first room from the map's entry opens a match as the menu does: the word the menu set flipped and given as the turn, the first player's, the round the first with two moves to make and the players' points at nothing, and the game a level is played in is the rooms' for a room, the arcade's for a level the game counts, a final among them, and none for a draft", () => {
+test("with a game the first room from the map's entry opens a match as the menu does: the word the menu set flipped and given as the turn, the first player's turn, the round the first with two moves to make and the players' points at nothing, and the game a level is played in is the rooms' game for a room, the arcade's game for a level the game counts, a final among them, and none for a draft", () => {
   const game = startSimon(ROOMS);
   assert.deepEqual(game, { total: 0, points: [0, 0], starter: ROOMS.starter });
   const live = begin(roomAt(0), null, game);
@@ -2845,7 +2845,7 @@ test("a round done passes the turn as the verdict is judged, gives no point, pic
   assert.equal(next.game, game);
 });
 
-test("a failed round gives the other player than the turn's a point and resets the match with the flipped word as the turn: the same room again where the word was 0, the second player opening, and the next room where it was 1, the first player opening, a death a failed round too", () => {
+test("a failed round gives the other player than the turn's player a point and resets the match with the flipped word as the turn: the same room again where the word was 0, the second player opening, and the next room where it was 1, the first player opening, a death a failed round too", () => {
   const game = startSimon(ROOMS);
   const first = begin(roomAt(0), null, game);
   opened(first);
@@ -2877,7 +2877,7 @@ test("a failed round gives the other player than the turn's a point and resets t
   assert.deepEqual(roundOf(third.match), { round: 1, moves: 2 });
 });
 
-test("the rooms step on from each room's second match alone and wrap to the first after the tenth's", () => {
+test("the rooms step on from each room's second match alone and wrap to the first after the tenth room's second match", () => {
   const rooms = play.next.worlds;
   for (let slot = 0; slot < rooms; slot++) {
     const firstMatch = begin(roomAt(slot), null, startSimon(ROOMS));

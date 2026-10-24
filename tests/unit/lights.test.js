@@ -42,7 +42,7 @@ lightsWith((...args) => {
   return cast;
 });
 
-test("the devices alone light the faces, the exit's own all over and those past its edges at the corners on the edge", () => {
+test("the devices alone light the faces, the exit's own face all over and those past its edges at the corners on the edge", () => {
   shut();
   assert.deepEqual(deviceLights(level, idx, LIT), { lit: new Map(), on: false });
   opened();
@@ -84,7 +84,7 @@ test("a module's light from a cell and a face lights the faces a device there li
   cast = null;
 });
 
-test("a module's light sums with a device's where they share a face, and one from a cell with no block casts nothing", () => {
+test("a module's light sums with a device's light where they share a face, and one from a cell with no block casts nothing", () => {
   opened();
   const device = deviceLights(level, idx, LIT).lit;
   cast = [{ x: home.x, y: home.y, z: home.z, face: exit.face, colour: green }];

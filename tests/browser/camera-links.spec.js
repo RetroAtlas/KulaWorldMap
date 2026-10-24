@@ -312,7 +312,7 @@ test("a bracket held down steps on through the levels on one history entry", asy
   await expect(title).toHaveText("LEVEL 1");
 });
 
-test("a key typed with Option or AltGr reaches the map, and a shortcut stays the browser's", async ({
+test("a key typed with Option or AltGr reaches the map, and a shortcut stays with the browser", async ({
   page,
 }) => {
   await page.goto("/#HIRO/0");
@@ -1149,7 +1149,7 @@ test("the compass shades its block as the map shades a face, with textures or wi
   page,
 }) => {
   const [PLUS_X, PLUS_Y] = [1, 2];
-  // HIRO's textures light its +y sides brightest and INCA's its +x sides,
+  // HIRO's textures light its +y sides brightest and INCA's textures its +x sides,
   // and without them the light that falls on every world lights +x the more
   for (const [link, keys, bright, dim] of [
     ["#HIRO/11/45,35", [], PLUS_Y, PLUS_X],
@@ -1268,7 +1268,7 @@ test("the readout follows the camera with the pointer off the map", async ({ pag
 test("the readout says nothing and the corner stays hidden while no level is on screen", async ({
   page,
 }) => {
-  // the blocked data is an error on the console, so only the page's own are counted
+  // the blocked data is an error on the console, so only the page's own errors are counted
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.route("**/map_data.json", (route) => route.abort());

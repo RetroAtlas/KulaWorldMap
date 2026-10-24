@@ -302,7 +302,7 @@ test("the preview tints each cell of the run by what lies in it", async ({ page 
     "free",
   ]);
   expect(run.blocked).toBe(true);
-  // a laser ends on a plain block, and that end is its own
+  // a laser ends on a plain block, which becomes its own end
   await page.keyboard.press("Escape");
   await pick(page, "Blocks", "k8/0");
   await click(page, await plusY(page, START));

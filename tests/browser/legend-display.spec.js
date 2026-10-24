@@ -803,14 +803,14 @@ test("a setting's key works inside the settings, once a press", async ({ page })
   await page.keyboard.press("c");
   await expect(box).not.toBeChecked();
   await expect(panel.locator("label:has(#showCamera) .def")).toHaveText("");
-  // a key of the display's stays the map's, and the dialog keeps it from the map
+  // a key of the display stays the map's key, and the dialog keeps it from the map
   await page.keyboard.press("t");
   await expect(page.locator("#showSkins")).toBeChecked();
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();
 });
 
-test("a switch clicked leaves the keys to the map, and the slider keeps its own", async ({
+test("a switch clicked leaves the keys to the map, and the slider keeps its own keys", async ({
   page,
 }) => {
   await page.goto("/#HIRO/0/45,35/1");
@@ -975,7 +975,7 @@ test("each of the six controls answers to the letter that names it", async ({ pa
   await expect(page.locator("#course")).toBeVisible();
   await page.keyboard.press("r");
   await expect(page.locator("#showCourse")).not.toBeChecked();
-  // a plain s is the sidebar's, and Settings waits on the shifted key
+  // a plain s is the sidebar's key, and Settings waits on the shifted key
   const menu = page.locator("#menuBtn");
   await expect(menu).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("s");

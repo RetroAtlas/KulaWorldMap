@@ -328,7 +328,7 @@ test("a thing on a face turned away shows where no block covers it, and x shows 
   // further down its block covers its middle
   expect(await shows(-6)).toBe(true);
   expect(await shows(-40)).toBe(false);
-  // but the selected block's shows through whatever the switch says
+  // but the selected block's ball shows through whatever the switch says
   await page.evaluate(async () => {
     const { state } = await import(new URL("js/viewer/state.js", location.href).href);
     const { showCell } = await import(new URL("js/viewer/chrome/detail.js", location.href).href);
@@ -988,7 +988,7 @@ test("a polygon the game culls shows only facing the view, in the order its mode
   expect(errors).toEqual([]);
 });
 
-test("a thing is drawn in its world's light for the face it stands on, and a bonus level's in none", async ({
+test("a thing is drawn in its world's light for the face it stands on, and a bonus level's thing in none", async ({
   page,
 }) => {
   const errors = trackErrors(page);

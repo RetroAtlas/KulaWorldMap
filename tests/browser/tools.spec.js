@@ -242,7 +242,7 @@ test("Place lays a block across the face clicked and selects it, and refuses the
   await click(page, await top(page, start));
   expect(await toasts(page)).toContain("That cell holds a block already.");
   expect((await blocks(page)).length).toBe(4);
-  // a refusal is the tool's, and goes with it
+  // a refusal belongs to the tool, and goes with it
   await expect(page.locator("#toolStatus")).toHaveText("That cell holds a block already.");
   await page.keyboard.press("z");
   await expect(page.locator("#toolStatus")).toHaveText("");
@@ -445,7 +445,7 @@ test("Erase takes the object off a face, then the block, and keeps the last bloc
   expect(errors).toEqual([]);
 });
 
-test("a platform's body builds against the cell it stands in, not its record's", async ({
+test("a platform's body builds against the cell it stands in, not its record's cell", async ({
   page,
 }) => {
   const errors = trackErrors(page);

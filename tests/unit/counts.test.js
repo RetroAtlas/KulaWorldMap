@@ -53,7 +53,7 @@ test("a level's objects are the markers that stand on a face", () => {
 // record here, and a platform's axis is the one its two ends differ on.
 const ends = (r) => [r.f.slice(2, 5), r.f.slice(5, 8)];
 
-test("a level's blocks are the lattice's and the ones the game adds on its empty cells", () => {
+test("a level's blocks are the lattice's blocks and the ones the game adds on its empty cells", () => {
   let beamEnds = 0,
     emptyEnds = 0,
     carried = 0,
@@ -331,7 +331,7 @@ test("a platform's blocks stop at the lattice's edge, however long its record sa
   assert.equal(platformCells({ ...r, length: -5 }).length, 1);
 });
 
-test("a platform's route is laid a cell at a time, from the cell at one end to the other's", () => {
+test("a platform's route is laid a cell at a time, from the cell at one end to the other end's cell", () => {
   let routes = 0;
   for (const l of mapData.levels) {
     const { railCells } = index(l);

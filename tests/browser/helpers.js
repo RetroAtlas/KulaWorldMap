@@ -21,7 +21,7 @@ export async function settle(page) {
   });
 }
 
-/** The steps a draft can take back and take again, the shown draft's where no id is given. */
+/** The steps a draft can take back and take again, the shown draft's steps where no id is given. */
 export const steps = (page, id = null) =>
   page.evaluate(async (id) => {
     const [{ state }, { steps }] = await Promise.all(

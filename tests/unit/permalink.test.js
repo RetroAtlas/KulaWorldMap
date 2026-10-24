@@ -78,7 +78,7 @@ test("what follows the slice is read by its shape, and a segment the reader does
     assert.equal(parseHash(head + tail).picked, null, tail);
 });
 
-test("a lettered segment at the tail is a module's own, read beside the cell in either order", () => {
+test("a lettered segment at the tail is a module's own segment, read beside the cell in either order", () => {
   const head = "#HIRO/11/45,35/1/21.5,13.5,18.5/0,0/33";
   for (const tail of ["/rAbc-_9/21,13,18", "/21,13,18/rAbc-_9"]) {
     const link = parseHash(head + tail);
@@ -87,7 +87,7 @@ test("a lettered segment at the tail is a module's own, read beside the cell in 
   }
   assert.deepEqual(parseHash(`${head}/rAbc/21,13,18/p_-9Z`).tails, ["rAbc", "p_-9Z"]);
   assert.deepEqual(parseHash("#HIRO/11/45,35/fit/33/rAbc-_9").tails, ["rAbc-_9"]);
-  // a cell, the fit flag, a segment too short or of another shape is no module's
+  // a cell, the fit flag, a segment too short or of another shape is no module's segment
   for (const segment of [
     "21,13,18",
     "fit",

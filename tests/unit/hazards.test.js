@@ -137,7 +137,7 @@ const beam = (z, lit = true) => ({
   colour: 2,
   f: [1, lit ? 1 : 0, 15, 15, z, 19, 15, z, -1, -1, -1],
 });
-/** The start on the top of (17, 18, 17), heading −y as LEVEL 1's does. */
+/** The start on the top of (17, 18, 17), heading −y as LEVEL 1's start does. */
 const start = () => ({ x: 17, y: 18, z: 17, kind: 0, on: [object(TOP, 30, { facing: 3 })] });
 /** A thing of `type` on the top of the row's block at `y`. */
 const on = (y, type, opts) => ({ x: 17, y, z: 17, kind: 0, on: [object(TOP, type, opts)] });
@@ -564,7 +564,7 @@ test("a lit beam in the ball's own cell kills it in four frames, on the ground o
   assert.ok(!switched.some((f) => has(f, "dying")), "nor a beam switched off");
 });
 
-test("a beam switched on about the ball at rest kills it on the frame after the switch and not on its own, the hazards testing the word the last frame's read of the cells about the ball left", () => {
+test("a beam switched on about the ball at rest kills it on the frame after the switch and not on its own frame, the hazards testing the word the last frame's read of the cells about the ball left", () => {
   const live = standing(
     level([...row(10, 18), [15, 15, 16], [19, 15, 16]], [start(), beam(16, false)]),
     { cell: [17, 15, 17], face: TOP, h: UP },
@@ -770,7 +770,7 @@ test("the moving spikes kill while the table's list says their flag held the dea
   );
 });
 
-test("a captivator catches the ball within its reach of its position as the rules have stepped it, the walkers standing while the ball is caught, over any countdown but a catch's own and under the guard, and the wandering ball within its own shorter reach", () => {
+test("a captivator catches the ball within its reach of its position as the rules have stepped it, the walkers standing while the ball is caught, over any countdown but a catch's own countdown and under the guard, and the wandering ball within its own shorter reach", () => {
   const platform = {
     x: 20,
     y: 14,

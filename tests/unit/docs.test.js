@@ -966,7 +966,7 @@ const reasonClaims = [
   ],
   [
     "type 33",
-    "the first bouncy pill, and LEVEL 88's",
+    "the first bouncy pill, and LEVEL 88's bouncy pills",
     [first(on(33))[0], on(33)(named("LEVEL 88"))],
     /^(LEVEL \d+) carries the game's first bouncy pill, and LEVEL 88 has (\w+)\./m,
   ],
@@ -1047,7 +1047,7 @@ const reasonClaims = [
   ],
   [
     "type 51",
-    "the first rolling stone, and LEVEL 52's",
+    "the first rolling stone, and LEVEL 52's rolling stones",
     [first(on(51))[0], on(51)(named("LEVEL 52"))],
     /^(LEVEL \d+) carries the game's first rolling stone, and LEVEL 52 (\w+)\./m,
   ],

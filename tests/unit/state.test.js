@@ -186,7 +186,7 @@ test("a fitted level has every corner of every block inside the view, with the m
   }
 });
 
-test("under no frame the camera is the plain orbit's, and the pinned link's cells stand where they always have", (t) => {
+test("under no frame the camera is the plain orbit, and the pinned link's cells stand where they always have", (t) => {
   pinnedView(t);
   state.frame = null;
   const { right, up, toward } = camera();
@@ -197,7 +197,7 @@ test("under no frame the camera is the plain orbit's, and the pinned link's cell
   }
 });
 
-test("a traveller's frame is a rotation on every face at every heading, and the world's own on the top face heading -y", () => {
+test("a traveller's frame is a rotation on every face at every heading, and the world's own frame on the top face heading -y", () => {
   for (const [face, n] of FACE_NORMAL.entries())
     for (let k = 0; k < 4; k++) {
       const h = heading(face, k + 1).d;

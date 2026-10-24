@@ -507,7 +507,7 @@ test("Undo and Redo step the route's changes back and forward, from the strip an
   expect(errors).toEqual([]);
 });
 
-test("the planner's undo keys yield to the editor's while editing", async ({ page }) => {
+test("the planner's undo keys yield to the editor's undo keys while editing", async ({ page }) => {
   const errors = trackErrors(page);
   await draft(page);
   await page.keyboard.press("r");

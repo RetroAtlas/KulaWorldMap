@@ -335,7 +335,7 @@ function inPlay(l) {
 
 // --- the shipped levels --------------------------------------------------------
 
-test("the writer's bytes and their deflate are the Python writer's, on every shipped level", () => {
+test("the writer's bytes and their deflate are those of the Python writer, on every shipped level", () => {
   assert.equal(Object.keys(digests).length, mapData.levels.length);
   assert.equal(mapData.levels.length, 230);
   assert.match(ZLIB, /^\d+\.\d+/);
@@ -361,7 +361,7 @@ test("a shipped level's project is a fixed point of writing and reading it back"
   }
 });
 
-test("the slot counts are the packs' as the layout lists them", () => {
+test("the slot counts are those of the packs as the layout lists them", () => {
   const slotsOf = (path) => packs.packs.find((p) => p.path === path).slots.length;
   for (const w of WORLDS) {
     assert.equal(slotsOf(`/${w}/${w}.PAK`), WORLD_SLOTS, w);
@@ -370,7 +370,7 @@ test("the slot counts are the packs' as the layout lists them", () => {
   assert.equal(slotsOf(COPYCAT_PACK), COPYCAT_SLOTS);
 });
 
-test("a Simon room's project carries the flag, a world level's does not, and the bytes carry neither", () => {
+test("a Simon room's project carries the flag, a world level's project does not, and the bytes carry neither", () => {
   assert.equal(COPYCAT_PACK, objects.skins.copycat);
   const rooms = mapData.levels.filter((l) => l.pack === COPYCAT_PACK);
   assert.ok(rooms.length > 0);
@@ -1057,7 +1057,7 @@ test("a platform's length that runs past the edge is cut to what fits, and the w
         }),
       ],
     );
-  // the run's upper end is 6, so 27 blocks reach the last cell the game builds and 28 the lattice's last
+  // the run's upper end is 6, so 27 blocks reach the last cell the game builds and 28 the lattice's last cell
   for (const [length, held] of [
     [32767, 27],
     [29, 27],

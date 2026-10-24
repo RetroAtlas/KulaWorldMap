@@ -4,8 +4,8 @@
 // taken. Each view prints its frames a second, the median frame's script,
 // and the milliseconds per frame each part of the renderer takes, a sample
 // counting to the outermost part it falls in. Given a ref, the ref's public/
-// is measured beside the working tree's, a round of each in turn, since two
-// runs of the same tree differ by a few per cent.
+// is measured beside the working tree's public/, a round of each in turn,
+// since two runs of the same tree differ by a few per cent.
 //
 //     npm run frame -- [<ref>] [--views a,b] [--dpr 1,3] [--rate 4] [--secs 4]
 //         [--rounds 2] [--size 412x915] [--pointer hover|drag|zoom]
@@ -37,8 +37,8 @@ const VIEWS = {
 };
 
 // The parts of a frame, by the function the renderer draws each through.
-// A sample under draw in none of them is the draw's own, and one outside
-// the page's script is the browser's: the canvas's flush to the GPU, the
+// A sample under draw in none of them is the draw's own time, and one outside
+// the page's script is the browser's time: the canvas's flush to the GPU, the
 // compositor, input.
 const PARTS = {
   visible: "sort",
@@ -65,7 +65,7 @@ const PARTS = {
 const OUTSIDE = { "(idle)": "idle", "(program)": "native", "(garbage collector)": "gc" };
 
 /** The parts whose function the viewer at `root` does not define, where a
-    rename would count their time to the draw's own without a word. */
+    rename would count their time to the draw itself without a word. */
 async function unknownParts(root) {
   const files = (await readdir(join(root, "js"), { recursive: true })).filter(
     (f) => f.endsWith(".js") && !f.startsWith("vendor/"),

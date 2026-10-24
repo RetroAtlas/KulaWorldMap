@@ -43,7 +43,7 @@ test("a name, its type number and the bare number find the same things", () => {
   assert.equal(find("31").length, byName.length);
 });
 
-test("a variant answers to its own name and to its type's", () => {
+test("a variant answers to its own name and to its type's name", () => {
   const bronze = find("bronze");
   assert.ok(bronze.length > 0);
   assert.ok(bronze.every((c) => c.name === "Coin (bronze)"));

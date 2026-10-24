@@ -508,7 +508,7 @@ test("every length the writer refuses is an error of its own text, whatever else
   // a far end on the lattice's last cell says so, and hides nothing of the length
   assert.deepEqual(errors(rail(33, 1)), ["the far end is past the edge"]);
   assert.deepEqual(errors(rail(33, 2)), [held(33, 2)]);
-  // a far end off the lattice is the far end's error, not the length's
+  // a far end off the lattice is the far end's error, not the length's error
   assert.deepEqual(errors(rail(31, 2, 40)), ["the far end is past the edge"]);
 });
 

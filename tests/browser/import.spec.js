@@ -92,7 +92,7 @@ function imageWithMods() {
   return image;
 }
 
-/** The synthetic image with the Simon rooms' pack beside HIRO's, holding two rooms. */
+/** The synthetic image with the Simon rooms' pack beside HIRO's packs, holding two rooms. */
 function imageWithSimon() {
   const PAK_AT = SYNTHETIC_SECTORS;
   const simon = writePak(
