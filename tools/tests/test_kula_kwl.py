@@ -124,6 +124,11 @@ START, EXIT, HIDDEN_EXIT, KEY, COIN, GEM = 30, 7, 26, 31, 37, 36
 WORLD = "HIRO"
 
 
+def titles():
+    """The map's title for each shipped level, by its pack and index."""
+    return {(l["pack"], l["index"]): l.get("shown", l["name"]) for l in json.loads(DATA.read_text())["levels"]}
+
+
 def held_by_record(disc, types):
     """Per level, by its pack and index, how many things of each type stand on the
     records of each kind."""
@@ -1727,22 +1732,23 @@ class TheDisc(unittest.TestCase):
                          [*f["unset"][PLATFORM_KIND], *f["unset"][6], *f["unset"][7], *f["unset"][LASER_KIND]])
         numbered = NUMBERED_LEVELS.search(doc)
         self.assertEqual((int(numbered.group(1)), f["ordered"]), (f["numbered"], f["numbered"]))
-        self.assertEqual(f["repeats"], ["BONUS 16", "FINAL 11", "FINAL 13", "LECEL 94", "LEVEL 134"])
+        repeats = sorted(titles()[k] for k in f["repeats"])
+        self.assertEqual(repeats, ["BONUS 16", "FINAL 11", "FINAL 13", "LEVEL 134", "LEVEL 94"])
         runs = NUMBER_RUNS.search(FORMAT_DOC.read_text())
         self.assertEqual((int(runs.group(1)), int(runs.group(2))), (f["numbered"] - len(f["repeats"]), f["numbered"]))
         self.assertEqual(runs.group(3), "five")
-        self.assertEqual(sorted(runs.group(4).replace(" and ", ", ").split(", ")), f["repeats"])
+        self.assertEqual(sorted(runs.group(4).replace(" and ", ", ").split(", ")), repeats)
         left = LEFT_OBJECTS.search(FORMAT_DOC.read_text())
         self.assertEqual(tuple(int(g) for g in left.groups()), f["left"])
 
     def test_annotations_counts_of_what_the_disc_keeps_on_records_never_walked_are_the_discs(self):
-        titles = {(l["pack"], l["index"]): l.get("shown", l["name"]) for l in json.loads(DATA.read_text())["levels"]}
+        title = titles()
         with open_disc() as disc:
             held = held_by_record(disc, (EXIT, HIDDEN_EXIT, KEY))
         doc = ANNOTATIONS_DOC.read_text()
 
         def at_least(typ, n):
-            return sorted(titles[k] for k, c in held.items() if held_of(c, typ) >= n)
+            return sorted(title[k] for k, c in held.items() if held_of(c, typ) >= n)
 
         for typ in (EXIT, HIDDEN_EXIT):
             self.assertEqual([k for k, c in held.items() if held_of(c, typ, walked=True) > 1], [], typ)
@@ -1755,7 +1761,7 @@ class TheDisc(unittest.TestCase):
         keys = Counter(held_of(c, KEY) for c in held.values() if held_of(c, KEY))
         self.assertEqual([WORDS.get(g) or int(g) for g in tally.groups()], [max(keys), *(keys[n] for n in range(1, 7))])
         kept = KEYS_KEPT.search(doc)
-        self.assertEqual({titles[k]: {kind: n for (t, kind), n in c.items() if t == KEY and kind >= BLOCK_KINDS}
+        self.assertEqual({title[k]: {kind: n for (t, kind), n in c.items() if t == KEY and kind >= BLOCK_KINDS}
                           for k, c in held.items() if held_of(c, KEY, walked=False)},
                          {kept.group(1): {UNPLACED_KIND: 1}, kept.group(3): {CRUMBLING_KIND: WORDS[kept.group(2)]}})
 

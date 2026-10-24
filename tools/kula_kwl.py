@@ -2104,7 +2104,7 @@ def slot_figures(disc):
                 ordered += walked == list(range(len(walked)))
                 every = [n for n in every if n != -1]
                 if len(set(every)) != len(every):
-                    repeats.append(L.name)
+                    repeats.append((path, i))
     return {"bare": bare, "unset": {k: (min(c.values()), max(c.values()), totals[k]) for k, c in unset.items()},
             "left": (left["objects"], left["levels"], left["alone"]),
             "numbered": numbered, "ordered": ordered, "repeats": sorted(repeats)}
