@@ -51,9 +51,9 @@ CHECKS = [
     (0x800284e0, "jal 0x80047418", "each of its four lines starts its brightness at random"),
     (0x8002815c, "beq $s1, $zero, 0x80028184", "circuit 0's colour is two shifts"),
     (0x80028198, "or $v0, $v0, $v1", "put together"),
-    (0x8002814c, "beq $s1, $t3, 0x8002819c", "circuit 1's is one"),
-    (0x8002816c, "beq $s1, $t2, 0x800281a8", "and circuit 2's"),
-    (0x80028174, "beq $s1, $t1, 0x800281b4", "and circuit 3's"),
+    (0x8002814c, "beq $s1, $t3, 0x8002819c", "circuit 1's colour is one"),
+    (0x8002816c, "beq $s1, $t2, 0x800281a8", "and circuit 2's colour"),
+    (0x80028174, "beq $s1, $t1, 0x800281b4", "and circuit 3's colour"),
     (0x8005190c, "lhu $fp, 0($fp)", "the renderer reads whether a beam is lit"),
     (0x80051914, "bne $fp, $zero, 0x8005192c", "and draws only one that is"),
     (0x80051a18, "sra $t9, $t9, 6", "filing a cell's stretch by the depth of its centre"),
@@ -62,7 +62,7 @@ CHECKS = [
     (0x80051be4, "lui $at, 0x4200", "and a flat line down the middle, blended the same way"),
     (0x80051c44, "bne $fp, $zero, 0x80051c14", "every frame a dark beam's cells"),
     (0x80051c38, "addiu $t4, $zero, -1", "are written empty"),
-    (0x80051c9c, "beq $fp, $zero, 0x80051c6c", "and a lit one's"),
+    (0x80051c9c, "beq $fp, $zero, 0x80051c6c", "and a lit one's cells"),
     (0x80051c90, "addiu $t4, $zero, -2", "are written as beam"),
     (0x80035ab4, "bne $v1, $v0, 0x80035cac", "the loader's walk at load takes the records of kind 8 too"),
     (0x80035b2c, "sh $zero, 0($v0)", "lays a bare block at the lower end of a beam along x"),
@@ -160,7 +160,7 @@ CHECKS = [
     (0x80037aa8, "andi $v0, $v0, 511", "how far the centre is into its cell"),
     (0x80037b10, "sh $v0, 336($a2)", "along the heading is the progress at 336"),
     (0x80037b2c, "subu $v0, $v0, $v1", "taken from the far side for a heading the other way"),
-    (0x80037af4, "swr $v1, 344($a2)", "with the last frame's kept at 344"),
+    (0x80037af4, "swr $v1, 344($a2)", "with the last frame's progress kept at 344"),
     (0x80037d6c, "addu $v0, $v0, $a1", "and a progress is laid by moving the centre along the heading"),
     (0x80037d74, "sh $v0, 60($a0)", "from the edge behind it"),
     (0x80030264, "bne $v1, $v0, 0x8003060c", "the move step runs in the rolling state alone"),
@@ -220,7 +220,7 @@ CHECKS = [
     (0x80030600, "swr $v0, 12($s0)", "into the heading"),
     (0x80037444, "lh $v0, 486($s0)", "the cells about a ball on a platform"),
     (0x80037454, "jal 0x80033930", "are read otherwise"),
-    (0x800374a8, "subu $v1, $v1, $v0", "the others are read from the cell under the ball's own"),
+    (0x800374a8, "subu $v1, $v1, $v0", "the others are read from the cell under the ball's own cell"),
     (0x800374b4, "addu $v0, $v0, $v1", "one over to the side"),
     (0x800374bc, "subu $v0, $v0, $a2", "and one back"),
     (0x80037590, "addu $a0, $a0, $t7", "a cell up for each along the normal"),
@@ -267,8 +267,8 @@ CHECKS = [
     (0x80036528, "addiu $v0, $zero, 10", "or the ball stands on a boost button"),
     (0x80036538, "beq $v1, $v0, 0x80036548", "by the word at 356"),
     (0x80036b44, "sw $zero, 100($s0)", "the pad routine first drops the jump's request"),
-    (0x80036b98, "sw $zero, 96($s0)", "the roll's"),
-    (0x80036b9c, "sw $zero, 92($s0)", "and the turn's"),
+    (0x80036b98, "sw $zero, 96($s0)", "the roll's request"),
+    (0x80036b9c, "sw $zero, 92($s0)", "and the turn's request"),
     (0x800366bc, "jal 0x80032aec", "the input routine, then the platforms"),
     (0x8003670c, "jal 0x8003a928", "the hazards"),
     (0x8003679c, "jal 0x8003d570", "the captivators' reach"),
@@ -289,7 +289,7 @@ CHECKS = [
     (0x80036af8, "lh $v0, 1148($gp)", "the input routine reads an option"),
     (0x80036b14, "sh $v0, 7080($gp)", "that sets the repeat's wait"),
     (0x80036b20, "sh $zero, 7080($gp)", "or none"),
-    (0x80040cc0, "sw $v0, 21808($at)", "the loop keeps every frame's pad as the last frame's, read or not"),
+    (0x80040cc0, "sw $v0, 21808($at)", "the loop keeps every frame's pad as the last frame's pad, read or not"),
     (0x80036be4, "lw $v0, 9720($gp)", "which the input routine takes as it runs"),
     (0x80036bf0, "sw $v0, 7504($gp)", "to tell a new press from a held one"),
     (0x80036bf8, "beq $v1, $v0, 0x80036e4c", "the Simon rooms' mode reads the pad another way"),
@@ -323,7 +323,7 @@ CHECKS = [
     (0x80036dd4, "bne $a0, $v0, 0x80036e08", "and where Cross is latched"),
     (0x80036ddc, "bne $v1, $a0, 0x80036e08", "with Up"),
     (0x80036dec, "bne $v0, $zero, 0x80036e08", "the long jump's word is nothing"),
-    (0x80036dfc, "beq $v0, $v1, 0x80036e08", "and the state is not the forward jump's, the word is armed"),
+    (0x80036dfc, "beq $v0, $v1, 0x80036e08", "and the state is not the forward jump's state, the word is armed"),
     (0x80036e08, "sh $zero, 1150($gp)", "both latches are cleared"),
     (0x80036e0c, "sh $zero, 1152($gp)", "either way"),
     (0x80036e10, "j 0x80037178", "and the count kept"),
@@ -436,7 +436,7 @@ CHECKS = [
     (0x8002ff74, "lh $v0, 312($s0)", "the speed along the heading"),
     (0x8002ff7c, "blez $v0, 0x8002ff8c", "where it is forward"),
     (0x8002ff84, "sh $zero, 312($s0)", "is dropped on every frame of the fall"),
-    (0x8002ff90, "bgez $v0, 0x8002ffb0", "and where it is back, a bounce's"),
+    (0x8002ff90, "bgez $v0, 0x8002ffb0", "and where it is back, a bounce's speed"),
     (0x8002ff9c, "sh $v0, 312($s0)", "decays"),
     (0x8002ffac, "sh $zero, 312($s0)", "to nothing"),
     (0x8002ffbc, "sh $v0, 310($s0)", "the speed down at 310 grows"),
@@ -482,19 +482,19 @@ CHECKS = [
     # The body's orientation.
     (0x80031044, "lw $v0, 536($s3)", "the ball's draw reads the mark at 536"),
     (0x8003104c, "bne $v0, $zero, 0x80031160", "and where one stands takes no spin step and no rebuild"),
-    (0x8003105c, "bne $v1, $v0, 0x80031074", "else the spin step is the jump's in the jump's state"),
+    (0x8003105c, "bne $v1, $v0, 0x80031074", "else the spin step is the jump's spin step in the jump's state"),
     (0x80031064, "jal 0x800324f8", "there"),
-    (0x80031074, "jal 0x800325c0", "and the rest's otherwise"),
-    (0x80032508, "lh $v0, 320($s0)", "the jump's turns by the spin's speed at 320"),
+    (0x80031074, "jal 0x800325c0", "and the rest's spin step otherwise"),
+    (0x80032508, "lh $v0, 320($s0)", "the jump's spin step turns by the spin's speed at 320"),
     (0x8003250c, "addiu $a1, $s0, 596", "the body's matrix at 596"),
     (0x80032518, "jal 0x80060f58", "about x"),
-    (0x800325d0, "lh $v0, 320($s0)", "and the rest's by the same word"),
+    (0x800325d0, "lh $v0, 320($s0)", "and the rest's spin step by the same word"),
     (0x800325d4, "addiu $a1, $s0, 596", "the same matrix"),
     (0x800325e0, "jal 0x80060f58", "about the same axis"),
     (0x80060ff8, "sh $t8, 6($a1)", "the turn mixing the matrix's second row"),
     (0x80061088, "sh $t8, 12($a1)", "and its third, so it is laid on from the left"),
     (0x80031084, "jal 0x80060308", "the draw straightens the body's matrix on every frame"),
-    (0x800310a4, "addiu $s0, $s3, 564", "and the frame's, at 564"),
+    (0x800310a4, "addiu $s0, $s3, 564", "and the frame's matrix, at 564"),
     (0x800310ac, "jal 0x80060308", "the same way"),
     (0x800310cc, "lw $v0, 456($s3)", "and while no ramp runs"),
     (0x800310d4, "bne $v0, $zero, 0x80031160", "rebuilds the frame's matrix"),
@@ -504,9 +504,9 @@ CHECKS = [
     (0x8003115c, "sh $v0, 580($s3)", "its columns"),
     (0x800313b4, "addiu $a0, $s3, 564", "the model is drawn through the frame's matrix"),
     (0x800313f0, "jal 0x800603f8", "times the squash"),
-    (0x8003141c, "addiu $a1, $s3, 596", "times the body's"),
+    (0x8003141c, "addiu $a1, $s3, 596", "times the body's matrix"),
     (0x80031420, "jal 0x800603f8", "in that order"),
-    (0x800314bc, "jal 0x800603f8", "and the camera's over all"),
+    (0x800314bc, "jal 0x800603f8", "and the camera's matrix over all"),
     (0x800314c4, "lh $v1, 702($s3)", "and takes the squash's word for the position"),
     (0x80031428, "lhu $v0, 6292($gp)", "and copies the product"),
     (0x80031430, "sh $v0, 660($s3)", "into a fourth matrix at 660"),
@@ -522,20 +522,20 @@ CHECKS = [
     (0x80031168, "bne $v1, $v0, 0x800311b4", "the edge's mark"),
     (0x80031190, "jal 0x80060a38", "builds a turn from three angles"),
     (0x80031198, "addiu $a0, $s3, 564", "and lays it on the frame's matrix"),
-    (0x800311a4, "jal 0x800603f8", "from the right, the body's untouched"),
+    (0x800311a4, "jal 0x800603f8", "from the right, the body's matrix untouched"),
     (0x800311b4, "bne $v1, $v0, 0x80031250", "a turn right's mark"),
     (0x80031208, "jal 0x800603f8", "lays its turn on the body's matrix from the left"),
     (0x80031220, "jal 0x800609f8", "and the turn's transpose"),
-    (0x80031234, "jal 0x800603f8", "on the frame's from the right"),
+    (0x80031234, "jal 0x800603f8", "on the frame's matrix from the right"),
     (0x80031320, "jal 0x800609f8", "the wall's turn transposed for the frame"),
     (0x80031258, "bne $v1, $v0, 0x800312d0", "a turn left's mark"),
     (0x80031294, "jal 0x800603f8", "the same"),
     (0x800312c0, "jal 0x800603f8", "on both"),
-    (0x800312d0, "bne $v1, $v0, 0x8003133c", "and a wall's"),
+    (0x800312d0, "bne $v1, $v0, 0x8003133c", "and a wall's mark"),
     (0x80031308, "jal 0x800603f8", "the same"),
     (0x80031334, "jal 0x800603f8", "on both"),
     (0x8002f358, "sh $v0, 564($a0)", "the start lays the frame's matrix as the identity"),
-    (0x8002f35c, "sh $v0, 596($a0)", "and the body's"),
+    (0x8002f35c, "sh $v0, 596($a0)", "and the body's matrix"),
     (0x8002f360, "sh $v0, 628($a0)", "and a third at 628"),
     (0x80030c18, "addiu $s1, $zero, 1", "which a landing from the jump's state"),
     (0x80030c34, "jal 0x80032730", "takes"),
@@ -679,17 +679,17 @@ CHECKS = [
     (0x800309b8, "sw $zero, 412($s0)", "a bounce off a wall"),
     (0x80030ae8, "sw $zero, 412($s0)", "a drop under a block above"),
     (0x80035ea4, "sw $zero, -23888($at)", "and the level's start"),
-    (0x8002f880, "addiu $v0, $zero, 1", "and the states' dispatcher, in every state but the jump's"),
+    (0x8002f880, "addiu $v0, $zero, 1", "and the states' dispatcher, in every state but the jump's state"),
     (0x8002f884, "beq $v1, $v0, 0x8002f8a4", "which it passes over"),
     (0x8002f88c, "lw $v0, 412($s0)", "reads the word"),
     (0x8002f8a0, "sw $zero, 412($s0)", "and clears it from the kept value up"),
     (0x80036e04, "sw $v1, 412($s0)", "the bouncy pill's latch on the pad arms it as the button does"),
     (0x80037d1c, "lhu $a0, 342($a2)", "the measure routine takes the last frame's measure along the normal"),
-    (0x80037d34, "subu $v0, $v0, $a0", "off this frame's"),
+    (0x80037d34, "subu $v0, $v0, $a0", "off this frame's measure"),
     (0x80037d3c, "sh $v0, 326($a2)", "and keeps the change at 326"),
     (0x800300b0, "sh $zero, 320($s0)", "hopping, each row puts the spin's speed at nothing"),
     (0x800300b8, "lhu $t0, 0($v0)", "and takes this row's height"),
-    (0x800300c4, "subu $v1, $v1, $t0", "off the next's"),
+    (0x800300c4, "subu $v1, $v1, $t0", "off the next row's height"),
     (0x800300f8, "sh $zero, 76($s0)", "and nothing across"),
     (0x80030110, "sh $zero, 78($s0)", "or along"),
     (0x80030124, "addu $v0, $v0, $a0", "moves the centre from where it is"),
@@ -748,8 +748,8 @@ CHECKS = [
     (0x8002d3d4, "addiu $v0, $v0, -5", "the draw of a thing on a block sends it on by its type"),
     (0x8002d3f8, "lw $v0, 116($at)", "through a table of cases"),
     (0x8002d468, "jal 0x8002e3d8", "a teleporter's case makes a light"),
-    (0x8002d594, "jal 0x8002e3d8", "and an exit's"),
-    (0x8002d660, "jal 0x8002e3d8", "and a switch's"),
+    (0x8002d594, "jal 0x8002e3d8", "and an exit's case"),
+    (0x8002d660, "jal 0x8002e3d8", "and a switch's case"),
     (0x8002d41c, "bne $v1, $s4, 0x8002d6e0", "only while its f4 is 1"),
     (0x8002d6ec, "jal 0x8002d994", "and lets it go otherwise"),
     (0x8002d424, "lhu $v0, 30($s2)", "counting in the last pad of its slot"),
@@ -757,10 +757,10 @@ CHECKS = [
     (0x8002d6d0, "jal 0x8002f2b4", "and gives the light it holds its colour"),
     (0x8002d494, "bne $s0, $v0, 0x8002d708", "while a teleporter's light is lit its model is lifted"),
     (0x8002d49c, "lh $a1, 6($s2)", "by its circuit, its f3"),
-    (0x8002d4c0, "mult $s5, $v1", "its light times the circuit's"),
+    (0x8002d4c0, "mult $s5, $v1", "its light times the circuit's lift"),
     (0x8002d4f8, "sra $s5, $a2, 12", "over 4096"),
-    (0x8002d5c0, "bne $s0, $v0, 0x8002d708", "and an open exit's while its light is lit"),
-    (0x8002d68c, "bne $s0, $v0, 0x8002d708", "and a switch's"),
+    (0x8002d5c0, "bne $s0, $v0, 0x8002d708", "and an open exit's model while its light is lit"),
+    (0x8002d68c, "bne $s0, $v0, 0x8002d708", "and a switch's model"),
     (0x8002f2c0, "sw $a1, -3708($at)", "the first word of the light's entry"),
     (0x800297c4, "sh $t2, 30($a0)", "the loader starts the count"),
     (0x800297c8, "sh $t0, 32($a0)", "holding no light"),
@@ -789,14 +789,14 @@ CHECKS = [
     (0x80051ebc, "nclip", "the square's corners are tested for their winding"),
     (0x80051edc, "bgtz $v0, 0x80051eec", "and it is drawn only where they wind toward the view"),
     (0x8002c990, "sb $s4, 4($s0)", "a captivator's shadow is as strong as its caller says"),
-    (0x8002cff8, "sb $s4, 4($s0)", "and the ball's"),
+    (0x8002cff8, "sb $s4, 4($s0)", "and the ball's shadow"),
     (0x8003db78, "addiu $v0, $zero, 1024", "the square is laid flat by a quarter turn"),
-    (0x8003dd50, "sw $zero, 72($sp)", "the slow star's is the round one"),
-    (0x8003e3d4, "sw $zero, 72($sp)", "the wandering ball's"),
-    (0x8003f91c, "sw $zero, 72($sp)", "the fast star's"),
-    (0x8003eb40, "sw $zero, 72($sp)", "the corkscrew's"),
-    (0x80032450, "sw $zero, 72($sp)", "and the ball's"),
-    (0x8003f0bc, "lhu $v0, -23528($at)", "the wheel's is turned by its third angle"),
+    (0x8003dd50, "sw $zero, 72($sp)", "the slow star's shadow is the round one"),
+    (0x8003e3d4, "sw $zero, 72($sp)", "the wandering ball's shadow"),
+    (0x8003f91c, "sw $zero, 72($sp)", "the fast star's shadow"),
+    (0x8003eb40, "sw $zero, 72($sp)", "the corkscrew's shadow"),
+    (0x80032450, "sw $zero, 72($sp)", "and the ball's shadow"),
+    (0x8003f0bc, "lhu $v0, -23528($at)", "the wheel's shadow is turned by its third angle"),
     (0x8003f0cc, "jal 0x80060cc8", "after the quarter turn, so about its normal"),
     (0x8003cdac, "sh $v0, -23528($at)", "which is the angle the wheel's turns step"),
     (0x8003b7c4, "addiu $v0, $s4, 24", "the loader copies an entry's position"),
@@ -806,7 +806,7 @@ CHECKS = [
     (0x8003e9e4, "lh $v0, -23414($at)", "as strong as the corkscrew's bounce"),
     (0x8003ea08, "jal 0x8005fb58", "less a multiple of its sine"),
     (0x80031f3c, "jal 0x800603f8", "the ball's shadow is widened by the landing's squash"),
-    (0x80031f54, "jal 0x800603f8", "and by the breath's"),
+    (0x80031f54, "jal 0x800603f8", "and by the breath's squash"),
     # The moving spikes.
     (0x8002a128, "sh $zero, 6($a1)", "the loader clears a moving spikes slot's f3"),
     (0x8002a130, "sh $v0, 8($a1)", "and writes its f4 for a phase that starts down"),
@@ -966,7 +966,7 @@ CHECKS = [
     (0x800385a0, "beq $v0, $zero, 0x8003916c", "too"),
     (0x800385b4, "lh $v1, -29536($at)", "it measures from the ball's centre to the thing's position"),
     (0x800385c0, "mult $v0, $v0", "squared"),
-    (0x8003862c, "slt $v0, $v0, $v1", "against the thing's reach squared plus the ball's"),
+    (0x8003862c, "slt $v0, $v0, $v1", "against the thing's reach squared plus the ball's radius squared"),
     (0x80038630, "beq $v0, $zero, 0x8003916c", "and passes over one out of reach"),
     (0x80038670, "sw $zero, 7236($gp)", "a thing in reach is to be taken"),
     (0x80038674, "addiu $v0, $v0, -27", "and its type less the first the walk knows"),
@@ -1001,14 +1001,14 @@ CHECKS = [
     (0x80039094, "sw $v0, 22332($at)", "and writes the difference back as the clock"),
     (0x800390c4, "sw $v1, 21448($at)", "scoring by the seconds of it"),
     (0x800387d4, "sw $v0, -23752($at)", "the lethargy pill sets its word"),
-    (0x80038854, "sw $v0, -23744($at)", "the invincibility pill its"),
-    (0x800388b8, "sw $v0, -23748($at)", "the bouncy pill its"),
+    (0x80038854, "sw $v0, -23744($at)", "the invincibility pill its word"),
+    (0x800388b8, "sw $v0, -23748($at)", "the bouncy pill its word"),
     (0x8003892c, "sw $v0, -23756($at)", "and the sunglasses theirs"),
     (0x80035de0, "addiu $v0, $zero, -1", "which the level's load sets to -1"),
-    (0x80035de8, "sw $v0, -23756($at)", "the sunglasses'"),
-    (0x80035df0, "sw $v0, -23752($at)", "the lethargy pill's"),
-    (0x80035df8, "sw $v0, -23744($at)", "the invincibility pill's"),
-    (0x80035e00, "sw $v0, -23748($at)", "and the bouncy pill's"),
+    (0x80035de8, "sw $v0, -23756($at)", "the sunglasses' word"),
+    (0x80035df0, "sw $v0, -23752($at)", "the lethargy pill's word"),
+    (0x80035df8, "sw $v0, -23744($at)", "the invincibility pill's word"),
+    (0x80035e00, "sw $v0, -23748($at)", "and the bouncy pill's word"),
     (0x8003b2d0, "bne $v0, $zero, 0x8003b2e4", "the hazards routine finds the sunglasses' word at nothing"),
     (0x8003b2d8, "jal 0x8002bec8", "and starts their blink"),
     (0x8003b2e8, "bltz $v0, 0x8003b2f4", "counting the word down while it is not negative"),
@@ -1016,7 +1016,7 @@ CHECKS = [
     (0x8003893c, "jal 0x8002bec8", "the take calls the blink's start"),
     (0x8002bf38, "sw $zero, 24144($at)", "the take's call clears the blink's state"),
     (0x8002bf44, "sw $v1, 23192($at)", "and sets the flag"),
-    (0x8002bee8, "sw $v0, 24144($at)", "the start marks the state an off spell's"),
+    (0x8002bee8, "sw $v0, 24144($at)", "the start marks the state an off spell's state"),
     (0x8002bef8, "sw $v0, 18076($at)", "lays the count"),
     (0x8002bf08, "sw $v0, 18080($at)", "and the timer"),
     (0x8002bf14, "sw $zero, 23192($at)", "and clears the flag"),
@@ -1038,11 +1038,11 @@ CHECKS = [
     (0x8002a3e8, "jal 0x8002bf50", "the frame's draw runs the blink before the light"),
     (0x8002a3c8, "lw $s0, 12096($gp)", "under a gate of its own"),
     (0x8002a3d8, "bne $s0, $v0, 0x8002a6c8", "which is not read"),
-    (0x8003b300, "bltz $v0, 0x8003b310", "and the invincibility pill's"),
+    (0x8003b300, "bltz $v0, 0x8003b310", "and the invincibility pill's word"),
     (0x8003b30c, "sw $v0, -23744($at)", "by its step"),
     (0x8003b31c, "bltz $v0, 0x8003b35c", "and while that runs"),
     (0x8003b33c, "sw $v0, -23748($at)", "puts the bouncy pill's word back"),
-    (0x8003b358, "sw $zero, -23752($at)", "and the lethargy pill's at nothing"),
+    (0x8003b358, "sw $zero, -23752($at)", "and the lethargy pill's word at nothing"),
     (0x8003b384, "bltz $v0, 0x8003b398", "the lethargy pill's word not negative"),
     (0x8003b38c, "sw $v0, 0($s1)", "counts down by its step"),
     (0x8003b390, "jal 0x8003b468", "and ticks the clock on"),
@@ -1078,7 +1078,7 @@ CHECKS = [
     (0x80020288, "beq $v1, $v0, 0x800202b4", "the start's pass"),
     (0x80020274, "beq $v1, $a0, 0x80020398", "the passes the pill works"),
     (0x8002029c, "beq $v1, $v0, 0x80020518", "the end's pass"),
-    (0x800202a4, "beq $v1, $v0, 0x800205f4", "and the fade's"),
+    (0x800202a4, "beq $v1, $v0, 0x800205f4", "and the fade's pass"),
     (0x80024060, "lw $v1, 10240($gp)", "the flash's quad shows a sprite counted from the group's start"),
     (0x80024274, "lhu $v0, -23060($at)", "with its page word"),
     (0x8002428c, "lhu $v0, -23062($at)", "and its palette word"),
@@ -1178,7 +1178,7 @@ CHECKS = [
     (0x80014f28, "jal 0x800609c8", "to put the world's sun on the screen"),
     (0x80036bb4, "bltz $v0, 0x80036bc0", "the bouncy pill's word not negative"),
     (0x8003659c, "bne $v0, $zero, 0x800365cc", "and at its hold or more"),
-    (0x800365a0, "addiu $v0, $zero, 2", "while the state at 408 is the rolling state's"),
+    (0x800365a0, "addiu $v0, $zero, 2", "while the state at 408 is the rolling state's number"),
     (0x800365a8, "lw $v1, -23892($v1)", "and no other"),
     (0x800365b0, "bne $v1, $v0, 0x800365cc", "the ball's routine"),
     (0x800365bc, "sw $zero, -24200($at)", "drops the jump"),
@@ -1211,7 +1211,7 @@ CHECKS = [
     (0x8003a5c8, "bne $a0, $v0, 0x8003a5f4", "does nothing unless the ball stands on one"),
     (0x8003a5e4, "lh $v1, 8($v0)", "whose f4"),
     (0x8003a5ec, "beq $v1, $v0, 0x8003a600", "is 1"),
-    (0x8003a608, "beq $v0, $a0, 0x8003a90c", "and the marker is not its"),
+    (0x8003a608, "beq $v0, $a0, 0x8003a90c", "and the marker is not its type"),
     (0x8003a610, "lhu $v0, 336($s0)", "and asks the progress"),
     (0x8003a620, "beq $v0, $zero, 0x8003a908", "within the band"),
     (0x8003a630, "bne $v0, $s1, 0x8003a654", "starting the count where none runs"),
@@ -1225,7 +1225,7 @@ CHECKS = [
     (0x8003a710, "sw $v0, 348($s0)", "as the slot the ball stands on"),
     (0x8003a724, "lh $a1, 4($v0)", "takes the far end's f2"),
     (0x8003a734, "jal 0x80038178", "lays the frame by it"),
-    (0x8003a750, "swr $v0, 44($s0)", "copies the side into the view's"),
+    (0x8003a750, "swr $v0, 44($s0)", "copies the side into the view's side"),
     (0x8003a770, "swr $v0, 36($s0)", "the heading"),
     (0x8003a790, "swr $v0, 52($s0)", "and the normal"),
     (0x8003a86c, "sw $s2, 408($s0)", "puts the ball at rest"),
@@ -1280,13 +1280,13 @@ CHECKS = [
     (0x800364b4, "lw $v0, 13264($v0)", "at the view word's index"),
     (0x800364c8, "sw $v1, 19612($at)", "copies the ending to 0x800a4c9c"),
     (0x800365e4, "lw $v1, 19612($at)", "which the routine reads back"),
-    (0x800365ec, "bne $v1, $v0, 0x80036630", "from where an exit's"),
+    (0x800365ec, "bne $v1, $v0, 0x80036630", "from where an exit's ending"),
     (0x80036600, "beq $v0, $v1, 0x80036638", "with one player"),
     (0x80036610, "bne $v0, $v1, 0x80036640", "or with both results"),
     (0x80036620, "beq $v0, $v1, 0x80036638", "at 1"),
     (0x80036630, "beq $v1, $zero, 0x80036640", "or any other"),
     (0x8003663c, "sw $v1, 24064($at)", "becomes the outcome"),
-    (0x80036450, "bne $a0, $v0, 0x80036470", "the spikes'"),
+    (0x80036450, "bne $a0, $v0, 0x80036470", "the spikes' ending"),
     (0x80036460, "bne $v0, $v1, 0x80036470", "with the wait at 1"),
     (0x8003646c, "sw $a0, 24064($at)", "is written into the outcome directly"),
     (0x8003b058, "bne $s1, $v0, 0x8003b0d0", "the spikes' ending is the invincibility word"),
@@ -1313,7 +1313,7 @@ CHECKS = [
     (0x8003aec0, "j 0x8003afa8", "with the hidden exit's wait"),
     (0x80041b18, "bgez $a0, 0x80041b90", "a level that ends badly"),
     (0x80041b24, "lw $v0, 21460($v0)", "in a mode"),
-    (0x80041b2c, "blez $v0, 0x80041b38", "past the arcade's"),
+    (0x80041b2c, "blez $v0, 0x80041b38", "past the arcade's mode"),
     (0x80041b34, "sw $zero, 9360($gp)", "scores nothing"),
     # What harms the ball.
     (0x80035e74, "sh $v0, -23930($at)", "a level's start sets the countdown at 370"),
@@ -1326,7 +1326,7 @@ CHECKS = [
     (0x80040fd4, "bne $v0, $zero, 0x8004100c", "is set"),
     (0x80040fec, "lw $v0, 10432($gp)", "or a third word at 0x800a57f8"),
     (0x80040ff4, "bne $v0, $zero, 0x8004100c", "is set, runs"),
-    (0x8004100c, "jal 0x80036aa8", "another routine instead of the ball's"),
+    (0x8004100c, "jal 0x80036aa8", "another routine instead of the ball's routine"),
     (0x80036aac, "addiu $v0, $zero, 1", "which sets the guard"),
     (0x80036abc, "sh $v0, 12192($gp)", "to one"),
     (0x80036ac0, "jal 0x800347b8", "and runs the ending's view"),
@@ -1357,7 +1357,7 @@ CHECKS = [
     (0x8003a980, "sw $v0, 540($s0)", "set the ending at 540"),
     (0x8003a988, "sh $v0, 370($s0)", "the countdown"),
     (0x8003a990, "sh $zero, 312($s0)", "drop the speed"),
-    (0x8003a994, "sh $zero, 320($s0)", "and the spin's"),
+    (0x8003a994, "sh $zero, 320($s0)", "and the spin's speed"),
     (0x8003a998, "sw $v0, 516($s0)", "and set the heat at 516"),
     (0x8003ab48, "bne $v1, $v0, 0x8003ac2c", "on fire"),
     (0x8003ab50, "jal 0x8003b514", "the air is asked after"),
@@ -1416,7 +1416,7 @@ CHECKS = [
     (0x800367ec, "sh $v0, -23594($at)", "freezes the ball"),
     (0x800367f8, "sh $v0, -23930($at)", "sets the countdown"),
     (0x80036804, "sh $zero, -23988($at)", "drops the speed"),
-    (0x8003680c, "sh $zero, -23980($at)", "and the spin's"),
+    (0x8003680c, "sh $zero, -23980($at)", "and the spin's speed"),
     (0x80036814, "sw $s0, -23760($at)", "sets the ending"),
     (0x8003681c, "sw $v0, -23788($at)", "and marks the ball dying"),
     (0x800366d0, "beq $v1, $v0, 0x800366fc", "the captivators stand still once the ball is captured"),
@@ -1517,8 +1517,8 @@ CHECKS = [
     (0x800699a4, "bne $at, $zero, 0x80069998", "the glow's counter among them"),
     (0x800363f0, "lh $v0, 0($a0)", "the ball's routine counts the countdown"),
     (0x80036418, "sw $zero, -24204($at)", "with the forward request cleared"),
-    (0x80036420, "sw $zero, -24208($at)", "the turn's"),
-    (0x80036428, "sw $zero, -24200($at)", "and the jump's"),
+    (0x80036420, "sw $zero, -24208($at)", "the turn's request"),
+    (0x80036428, "sw $zero, -24200($at)", "and the jump's request"),
     (0x80036334, "bne $a0, $v0, 0x80036398", "the Simon rooms' verdict at 0x800a4cb4, done"),
     (0x8003636c, "sw $a0, -23760($at)", "is the exit's ending"),
     (0x800363a0, "bne $v1, $v0, 0x800363e8", "and wrong"),
@@ -1532,11 +1532,11 @@ CHECKS = [
     (0x80034920, "lw $v1, 7048($gp)", "and puts the eye the free camera's distance"),
     (0x80034964, "sw $v0, 22912($at)", "and more away, whatever the level's mode"),
     (0x80034834, "lw $v1, 21460($v1)", "which it reads at 0x800a53d4"),
-    (0x80034840, "bne $v1, $zero, 0x80034870", "in the arcade's steps the fourth angle"),
+    (0x80034840, "bne $v1, $zero, 0x80034870", "in the arcade's mode steps the fourth angle"),
     (0x80034874, "lw $v1, 21460($v1)", "reads the mode again"),
     (0x8003487c, "bne $v1, $v0, 0x800348ac", "on a level with no key steps it faster"),
     (0x80034954, "lw $v1, 21460($v1)", "and again"),
-    (0x80034968, "bne $v1, $zero, 0x800349c8", "in the arcade's"),
+    (0x80034968, "bne $v1, $zero, 0x800349c8", "in the arcade's mode"),
     (0x80034974, "jal 0x8005fb58", "takes the sine of the fourth angle"),
     (0x800349c4, "sw $v0, 22912($at)", "and writes the eye's swing over the distance"),
     (0x800349cc, "lw $v1, 21460($v1)", "and once more"),
@@ -1550,7 +1550,7 @@ CHECKS = [
     (0x80027bdc, "sw $v0, 9372($gp)", "the level's mode word is 1"),
     (0x80027be8, "sw $zero, 9372($gp)", "and otherwise 0"),
     (0x80027c54, "lh $v0, 0($v1)", "the kind of each record"),
-    (0x80027c5c, "bne $v0, $t2, 0x80027ca0", "where it is the settings record's"),
+    (0x80027c5c, "bne $v0, $t2, 0x80027ca0", "where it is the settings record's kind"),
     (0x80027c64, "lh $v0, 2($v1)", "its first slot's type"),
     (0x80027c6c, "bne $v0, $a0, 0x80027c78", "where it is the hidden flag"),
     (0x80027c74, "sw $t1, 9372($gp)", "makes the word 2"),
@@ -1587,7 +1587,7 @@ CHECKS = [
     (0x8003b534, "slti $v0, $v0, 2", "while its count stands at two or more, the ball is in the air"),
     (0x8003aab0, "bne $v1, $v0, 0x8003aac4", "on ice, before the air test is asked"),
     (0x8003aab8, "sw $v0, 96($s0)", "the hazards make the forward request"),
-    (0x8003aac0, "sw $zero, 92($s0)", "and drop the turn's"),
+    (0x8003aac0, "sw $zero, 92($s0)", "and drop the turn's request"),
     (0x8003acec, "bne $v1, $v0, 0x8003ad64", "and on the ground on ice, as the heat cools"),
     (0x8003ad4c, "sw $v0, 520($s0)", "the cold at 520 grows"),
     (0x8003ad60, "sw $v0, 520($s0)", "and is set back"),
@@ -1644,7 +1644,7 @@ CHECKS = [
     (0x800330a8, "jal 0x800334f0", "and probes"),
     (0x80033518, "sll $v0, $v0, 9", "a block under the centre"),
     (0x80033584, "jal 0x800379e8", "for the cell it lies in"),
-    (0x800335b8, "bne $v1, $v0, 0x80033640", "whose record is a platform's"),
+    (0x800335b8, "bne $v1, $v0, 0x80033640", "whose record is a platform's record"),
     (0x80033624, "jal 0x80032ec4", "with the ball within its body"),
     (0x800330dc, "sh $v0, 486($s0)", "marks the ball riding at 486"),
     (0x800330f0, "sw $s2, 408($s0)", "at rest"),
@@ -1674,7 +1674,7 @@ CHECKS = [
     (0x8002f70c, "jal 0x80033810", "as does the hop"),
     (0x80033818, "sh $v0, 488($a2)", "marking the leave at 488"),
     (0x80033828, "sh $zero, 486($a2)", "unmarking the ride"),
-    (0x800338e8, "sh $v1, 60($a2)", "with the centre the level's again"),
+    (0x800338e8, "sh $v1, 60($a2)", "with the centre no longer relative to the platform"),
     (0x8003391c, "sh $zero, 84($a2)", "and no travel"),
     # The platform landings' direction and body tests.
     (0x800335dc, "jal 0x80037f98", "the body landing takes the face of the ball's normal"),
@@ -1788,7 +1788,7 @@ CHECKS = [
     (0x80015a90, "lw $a3, 8($v0)", "and a length"),
     (0x80015abc, "jal 0x8005800c", "inflated by the zlib the executable carries"),
     (0x80015acc, "jal 0x80058060", "in one call"),
-    (0x80015c28, "addiu $s2, $s2, 1", "a word is two entries, the index's and the next"),
+    (0x80015c28, "addiu $s2, $s2, 1", "a word is two entries, the index's entry and the next"),
     (0x80015d3c, "addiu $a1, $zero, 2", "the first taken off what is behind it"),
     (0x80015e28, "addiu $a1, $zero, 1", "and the second added to it"),
     # The last final's completion.
@@ -1831,7 +1831,7 @@ CHECKS = [
     (0x800424b0, "sw $v0, 1224($gp)", "into the word at 0x800a3400"),
     (0x800424b4, "lw $v0, 1212($gp)", "and returns while the word at 0x800a33f4"),
     (0x800424bc, "bne $v0, $zero, 0x8004297c", "is set"),
-    (0x800424c8, "lw $v0, 13232($v0)", "the arcade's branch is the game's mode word's"),
+    (0x800424c8, "lw $v0, 13232($v0)", "the arcade's branch is the game's mode word's branch"),
     (0x800424d0, "bne $v0, $zero, 0x80042618", "at nothing"),
     (0x800424dc, "lw $v0, 21460($v0)", "on an ordinary level"),
     (0x800424e4, "bne $v0, $zero, 0x80042618", "alone"),
@@ -1845,7 +1845,7 @@ CHECKS = [
     (0x80042520, "lw $v0, 24576($v0)", "reads the pack's count at 0x80156000"),
     (0x80042528, "sw $v0, 1232($gp)", "instead"),
     (0x8004252c, "lw $v1, 1232($gp)", "then takes the slot"),
-    (0x80042534, "sw $v0, 1232($gp)", "makes it the hidden level's"),
+    (0x80042534, "sw $v0, 1232($gp)", "makes it the hidden level's slot"),
     (0x80042538, "sw $v1, 10716($gp)", "and keeps the slot after at 0x800a5914"),
     (0x80042544, "lw $v0, 1232($gp)", "the exit's way counts the slot"),
     (0x80042548, "lw $v1, 9396($gp)", "and reads the bank"),
@@ -1936,17 +1936,17 @@ CHECKS = [
     (0x80036ebc, "beq $v0, $zero, 0x80036ec8", "with Up held"),
     (0x80036ec4, "sh $v0, 1152($gp)", "sets Up's latch at 0x800a33b8"),
     (0x80036ecc, "beq $v0, $zero, 0x80036ed8", "and with Cross held"),
-    (0x80036ed4, "sh $v0, 1150($gp)", "Cross's at 0x800a33b6"),
+    (0x80036ed4, "sh $v0, 1150($gp)", "Cross's latch at 0x800a33b6"),
     (0x80036ed8, "lh $v0, 1152($gp)", "with Up's latch"),
     (0x80036ee0, "beq $v0, $v1, 0x80036ef8", "set"),
-    (0x80036ee8, "lh $v0, 1150($gp)", "or Cross's"),
+    (0x80036ee8, "lh $v0, 1150($gp)", "or Cross's latch"),
     (0x80036ef0, "bne $v0, $v1, 0x80036f08", "set"),
     (0x80036ef8, "lhu $v0, 7512($gp)", "the latch's count at 0x800a4c90"),
     (0x80036f04, "sh $v0, 7512($gp)", "grows"),
     (0x80036f08, "lh $v0, 7512($gp)", "and once it is no longer under the latch's frames"),
     (0x80036f14, "bne $v0, $zero, 0x80036f38", ""),
     (0x80036f1c, "lh $v0, 1150($gp)", "Cross's latch"),
-    (0x80036f20, "lh $v1, 1152($gp)", "and Up's"),
+    (0x80036f20, "lh $v1, 1152($gp)", "and Up's latch"),
     (0x80036f24, "sh $zero, 7512($gp)", "with the count cleared"),
     (0x80036f28, "sh $zero, 1150($gp)", "and both latches"),
     (0x80036f2c, "sh $zero, 1152($gp)", ""),
@@ -2051,7 +2051,7 @@ CHECKS = [
     (0x800496b8, "sw $s0, 2408($gp)", "and the word at 0x800a38a0 alike"),
     (0x80049678, "addiu $v0, $v0, 22252", "and clears the points from the second player's word"),
     (0x8004967c, "sw $zero, 0($v0)", ""),
-    (0x80049684, "bgez $v1, 0x8004967c", "down to the first's"),
+    (0x80049684, "bgez $v1, 0x8004967c", "down to the first player's word"),
     (0x80041b3c, "lw $v0, 13232($v0)", "an ending below nothing reads the mode word"),
     (0x80041b44, "bne $v0, $s2, 0x80041b90", "and in the Simon rooms"),
     (0x80041b50, "lw $v1, 13228($v1)", "takes the turn"),
@@ -2088,7 +2088,7 @@ CHECKS = [
     (0x80015808, "bne $v0, $zero, 0x8001587c", "at nothing"),
     (0x80015814, "lw $v1, 22248($v1)", "reads the first player's points"),
     (0x80015820, "beq $v0, $zero, 0x80015840", "and under the gate"),
-    (0x8001582c, "lw $v0, 22252($v0)", "the second's"),
+    (0x8001582c, "lw $v0, 22252($v0)", "the second player's points"),
     (0x80015838, "bne $v0, $zero, 0x8001587c", "and leaves the word where both are under it"),
     (0x80015844, "lw $v0, 24064($v0)", "else with the outcome"),
     (0x8001584c, "bgez $v0, 0x8001587c", "below nothing"),
@@ -2102,7 +2102,7 @@ CHECKS = [
     (0x8004ad5c, "bne $v0, $zero, 0x8004ae2c", "at nothing"),
     (0x8004ad68, "lw $v0, 22248($v0)", "asks the first player's points"),
     (0x8004ad74, "beq $v0, $zero, 0x8004ad94", "against the gate"),
-    (0x8004ad80, "lw $v0, 22252($v0)", "and the second's"),
+    (0x8004ad80, "lw $v0, 22252($v0)", "and the second player's points"),
     (0x8004ad8c, "bne $v0, $zero, 0x8004ae2c", ""),
     (0x8004adcc, "sw $v0, 24196($at)", "and past it puts the total at 0x800a5e84 below nothing"),
     (0x8004ade0, "sw $zero, 13228($at)", "with the turn cleared"),
@@ -2111,7 +2111,7 @@ CHECKS = [
     (0x80011520, "addiu $v0, $v0, -4", "startup clears the twelve pointers a word at a time"),
     (0x80011524, "lui $v0, 0x000a", "and fills them from seven tables in the data"),
     (0x80011550, "lw $a1, 23216($a1)", "reads how many effect sprites the .GGI header counts"),
-    (0x80011594, "sw $a0, 5088($gp)", "the last pointer filled, kind 10's"),
+    (0x80011594, "sw $a0, 5088($gp)", "the last pointer filled, kind 10's pointer"),
     (0x800115f8, "sb $v1, 5124($gp)", "and the last byte of the sprites' colours"),
     (0x800115fc, "blez $a1, 0x800118a0", "lays no quad where the header counts none"),
     (0x80011618, "addiu $s0, $s0, -19372", "the quads lie at 0x800ab454"),
@@ -2121,11 +2121,11 @@ CHECKS = [
     (0x80011660, "jal 0x8005f8c8", "makes the quad semi-transparent"),
     (0x80011694, "sb $v0, 12($s0)", "the sprite's place and size give the first corner's texture coordinates"),
     (0x800116c4, "sb $v0, 13($s0)", ""),
-    (0x80011708, "sb $v1, 20($s0)", "the second's"),
+    (0x80011708, "sb $v1, 20($s0)", "the second corner's texture coordinates"),
     (0x80011738, "sb $v0, 21($s0)", ""),
-    (0x80011768, "sb $v0, 28($s0)", "the third's"),
+    (0x80011768, "sb $v0, 28($s0)", "the third corner's texture coordinates"),
     (0x800117ac, "sb $v1, 29($s0)", ""),
-    (0x800117f0, "sb $v1, 36($s0)", "and the fourth's"),
+    (0x800117f0, "sb $v1, 36($s0)", "and the fourth corner's texture coordinates"),
     (0x80011834, "sb $v1, 37($s0)", ""),
     (0x80011868, "sh $v0, -19358($at)", "its palette word"),
     (0x80011884, "sh $v0, -19350($at)", "and its page word, which holds the blend"),
@@ -2183,7 +2183,7 @@ CHECKS = [
     (0x80012078, "sh $v0, 0($v1)", "kept in the entry's slot for the particle"),
     (0x80012084, "mult $s5, $v0", "the size times the cosine"),
     (0x800120d4, "lh $a0, 0($v0)", "else the slot's angle"),
-    (0x800120dc, "addu $a0, $v1, $a0", "plus the row's"),
+    (0x800120dc, "addu $a0, $v1, $a0", "plus the row's angle"),
     (0x80012134, "mult $s5, $v0", "and times the sine"),
     (0x8001213c, "lh $v0, 0($s7)", "the size"),
     (0x80012144, "bltz $v0, 0x800121d8", "below nothing picks the square off a corner"),
@@ -2209,10 +2209,10 @@ CHECKS = [
     (0x800123dc, "sh $v0, 0($v1)", "kept in the slot"),
     (0x800123e4, "bne $a1, $zero, 0x800123f0", "where the cosine shifted down by 16 is nothing"),
     (0x80012440, "div $a2, $a1", "divides the size where the depth should"),
-    (0x80012454, "bne $a1, $zero, 0x80012460", "the sine's"),
+    (0x80012454, "bne $a1, $zero, 0x80012460", "the sine"),
     (0x8001247c, "div $v0, $a1", "likewise"),
     (0x800124c4, "lh $a0, 0($v0)", "else the slot's angle"),
-    (0x800124cc, "addu $a0, $a1, $a0", "plus the row's"),
+    (0x800124cc, "addu $a0, $a1, $a0", "plus the row's angle"),
     (0x800124d4, "lw $v1, 13284($v1)", "the screen's distance"),
     (0x800124dc, "mult $s5, $v1", "times the size"),
     (0x800124ec, "div $v1, $s0", "over the depth"),
@@ -2293,9 +2293,9 @@ CHECKS = [
     (0x80038c18, "addu $a0, $zero, $zero", "kind 0"),
     (0x80038c28, "addu $a2, $zero, $zero", "with no light"),
     (0x80038cc8, "addiu $a1, $a1, 13172", "at the second fruit's icon"),
-    (0x80038d70, "addiu $a1, $a1, 13180", "the third's"),
-    (0x80038e18, "addiu $a1, $a1, 13188", "the fourth's"),
-    (0x80038ec0, "addiu $a1, $a1, 13196", "and the fifth's"),
+    (0x80038d70, "addiu $a1, $a1, 13180", "the third fruit's icon"),
+    (0x80038e18, "addiu $a1, $a1, 13188", "the fourth fruit's icon"),
+    (0x80038ec0, "addiu $a1, $a1, 13196", "and the fifth fruit's icon"),
     (0x80038f64, "addu $a0, $zero, $zero", "type 27's case, never reached, starts kind 0 at each icon"),
     (0x80038ffc, "addu $a1, $a1, $s0", "and kind 4 at the thing"),
     (0x8003907c, "lui $a1, 0x000a", "the hourglass's HUD effect"),
@@ -2363,7 +2363,7 @@ IMMEDIATES = [
     ("the ball", "move.middle.past", "and a roll that may not go on is past the middle from this", 0x800302d4,
      "slti $v0, $v0, {}"),
     ("the ball", "move.stop", "a stop at the middle lays the centre at this", 0x8003029c, "addiu $a1, $zero, {}"),
-    ("the ball", "move.stop.refused", "as does a refused roll's", 0x80030304, "addiu $a1, $zero, {}"),
+    ("the ball", "move.stop.refused", "as does a refused roll's stop", 0x80030304, "addiu $a1, $zero, {}"),
     ("the ball", "move.ice", "may roll over an edge beside a neighbour on this kind alone", 0x80030e34, "xori $v0, $v0, {}"),
     ("the ball", "move.ice.slide", "and slides on past the middle on it", 0x800302dc, "addiu $v0, $zero, {}"),
     ("the ball", "move.climb", "a wall ahead takes the ball up it at this progress", 0x800303a0, "slti $v0, $v0, {}"),
@@ -2495,7 +2495,7 @@ IMMEDIATES = [
     ("the ball's jump", "hop.rows", "the hop's rows start this many bytes in", 0x8002f75c, "addiu $v1, $v1, {}"),
     ("the ball's jump", "hop.skip", "its count falls from one past this to nothing", 0x80030080, "addiu $v1, $zero, {}"),
     ("the ball's jump", "hop.step", "by this a frame", 0x80030084, "addiu $v0, $v0, {}"),
-    ("the ball's jump", "hop.ahead", "and each row moves the centre by the height this many bytes on, the next row's, less this row's",
+    ("the ball's jump", "hop.ahead", "and each row moves the centre by the height this many bytes on, the next row's height, less this row's height",
      0x800300b4, "lhu $v1, {}($v0)"),
     ("the ball's jump", "hop.row", "a row read this many bytes a step", 0x800300bc, "addiu $v0, $a3, {}"),
 
@@ -2507,10 +2507,10 @@ IMMEDIATES = [
     ("the body's orientation", "body.mark.right", "a turn right marks the frame's own draw with this", 0x80034b10,
      "addiu $v0, $zero, {}"),
     ("the body's orientation", "body.mark.left", "and a turn left with this", 0x80034bc8, "addiu $v0, $zero, {}"),
-    ("the body's orientation", "body.test.wrap", "the draw takes this mark as the edge's", 0x80031164, "addiu $v0, $zero, {}"),
-    ("the body's orientation", "body.test.right", "this as a turn right's", 0x8003116c, "addiu $v0, $zero, {}"),
-    ("the body's orientation", "body.test.left", "this as a turn left's", 0x80031254, "addiu $v0, $zero, {}"),
-    ("the body's orientation", "body.test.wall", "and this as a wall's", 0x8003125c, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.test.wrap", "the draw takes this mark as the edge's mark", 0x80031164, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.test.right", "this as a turn right's mark", 0x8003116c, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.test.left", "this as a turn left's mark", 0x80031254, "addiu $v0, $zero, {}"),
+    ("the body's orientation", "body.test.wall", "and this as a wall's mark", 0x8003125c, "addiu $v0, $zero, {}"),
     ("the body's orientation", "body.wrap", "round an edge the frame's matrix turns by this a frame about its x, the side",
      0x80031180, "addiu $v0, $zero, {}"),
     ("the body's orientation", "body.right", "a turn right turns the body's matrix by this about the frame's z, its down",
@@ -2613,10 +2613,10 @@ IMMEDIATES = [
     ("shadows", "standing.word.3", "and reads as this", 0x800378e0, "addiu $v0, $zero, {}"),
     ("shadows", "standing.kind.4", "ball: acid as this kind, which reads as itself", 0x80037900, "addiu $v0, $zero, {}"),
     ("shadows", "standing.style.1", "ball: a lattice style of this reads as fire's kind", 0x80037950, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.style.2", "of this as ice's", 0x80037964, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.style.3", "of this as the invisible block's", 0x8003796c, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.style.2", "of this as ice's kind", 0x80037964, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.style.3", "of this as the invisible block's kind", 0x8003796c, "addiu $v0, $zero, {}"),
     ("shadows", "standing.style.word.3", "which reads as this", 0x80037980, "addiu $v0, $zero, {}"),
-    ("shadows", "standing.style.4", "and of this as acid's", 0x8003798c, "addiu $v0, $zero, {}"),
+    ("shadows", "standing.style.4", "and of this as acid's kind", 0x8003798c, "addiu $v0, $zero, {}"),
     ("shadows", "standing.nothing", "ball: a bare plain block reads as this", 0x800379ac, "addiu $v0, $zero, {}"),
     ("shadows", "standing.none", "as does a cell holding this, no block", 0x800379a8, "addiu $v1, $zero, {}"),
 
@@ -2653,7 +2653,7 @@ IMMEDIATES = [
     ("gem's glints", "glint.cuts", "the parser builds a record for each of this many slots", 0x80022f90, "slti $v0, $s0, {}"),
     ("gem's glints", "glint.rows", "in each of this many rows", 0x80022fa0, "slti $v0, $s2, {}"),
     ("gem's glints", "glint.record", "bytes from one slot's record to the next", 0x80022f98, "addiu $s1, $s1, {}"),
-    ("gem's glints", "glint.row", "and from one row's to the next", 0x80022fa8, "addiu $s3, $s3, {}"),
+    ("gem's glints", "glint.row", "and from one row's records to the next", 0x80022fa8, "addiu $s3, $s3, {}"),
     ("gem's glints", "glint.head", "a record's slots start this far in", 0x80023348, "addiu $t0, $t0, {}"),
     ("gem's glints", "glint.slot", "and are this many bytes each", 0x80023364, "addiu $t0, $t0, {}"),
     ("gem's glints", "glint.chance", "a glint starts where a draw of this many comes up nothing", 0x80022f64,
@@ -2689,14 +2689,14 @@ IMMEDIATES = [
      "addiu $s4, $zero, {}"),
     ("what the ball takes", "take.stand", "a pickup's middle stands this far from its block's centre, units",
      0x800355c8, "addiu $s7, $zero, {}"),
-    ("what the ball takes", "take.stand.coin", "a coin's this far", 0x800357a4, "addiu $v0, $zero, {}"),
-    ("what the ball takes", "take.stand.star", "type 42's this far", 0x800357d8, "addiu $v0, $zero, {}"),
-    ("what the ball takes", "take.stand.hourglass", "an hourglass's this far", 0x80035850, "addiu $v0, $zero, {}"),
-    ("what the ball takes", "take.stand.gem", "and a gem's this far, past the first cut", 0x80035844,
+    ("what the ball takes", "take.stand.coin", "a coin's middle this far", 0x800357a4, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.stand.star", "type 42's middle this far", 0x800357d8, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.stand.hourglass", "an hourglass's middle this far", 0x80035850, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.stand.gem", "and a gem's middle this far, past the first cut", 0x80035844,
      "addiu $v0, $zero, {}"),
     ("what the ball takes", "take.reach", "a pickup's reach squared, units", 0x800355cc, "addiu $s6, $zero, {}"),
-    ("what the ball takes", "take.reach.key", "a key's", 0x800358ac, "addiu $v0, $zero, {}"),
-    ("what the ball takes", "take.reach.fruit", "and a fruit's", 0x8003566c, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.reach.key", "a key's reach squared", 0x800358ac, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.reach.fruit", "and a fruit's reach squared", 0x8003566c, "addiu $v0, $zero, {}"),
     ("what the ball takes", "take.within", "the walk adds this, the ball's radius squared, to it", 0x800384c8,
      "addiu $v0, $zero, {}"),
     ("what the ball takes", "take.first", "the walk's cases start at this type", 0x80038674, "addiu $v0, $v0, {}"),
@@ -2875,11 +2875,11 @@ IMMEDIATES = [
     ("the level's clock and its end", "words.copycat", "Copycat, this mode", 0x800157f0, "addiu $v0, $zero, {}"),
     ("the level's clock and its end", "words.won2", "shows this for the second player's win", 0x80015868,
      "addiu $s2, $zero, {}"),
-    ("the level's clock and its end", "words.won1", "this for the first's", 0x8001586c, "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.won1", "this for the first player's win", 0x8001586c, "addiu $s2, $zero, {}"),
     ("the level's clock and its end", "words.equal", "and this for a draw", 0x80015878, "addiu $s2, $zero, {}"),
     ("the level's clock and its end", "words.trial.won2", "as does the time trial for two players", 0x800159f4,
      "addiu $s2, $zero, {}"),
-    ("the level's clock and its end", "words.trial.won1", "the first's", 0x800159f8, "addiu $s2, $zero, {}"),
+    ("the level's clock and its end", "words.trial.won1", "the first player's win", 0x800159f8, "addiu $s2, $zero, {}"),
     ("the level's clock and its end", "words.trial.equal", "and a draw", 0x80015a04, "addiu $s2, $zero, {}"),
     ("the level's clock and its end", "words.final.world", "the last final completed, the world counted on to this",
      0x800158b4, "addiu $v0, $zero, {}"),
@@ -2951,7 +2951,7 @@ IMMEDIATES = [
      "addiu $v0, $zero, {}"),
     ("the level's clock and its end", "end.exit.landing", "the exit's result written at once after a landing", 0x8003aef8,
      "addiu $v1, $zero, {}"),
-    ("the level's clock and its end", "end.hidden.landing", "and the hidden exit's", 0x8003af6c, "addiu $v1, $zero, {}"),
+    ("the level's clock and its end", "end.hidden.landing", "and the hidden exit's result", 0x8003af6c, "addiu $v1, $zero, {}"),
     ("the level's clock and its end", "end.bonus.landing", "and a bonus level's outcome", 0x8003ae9c,
      "addiu $v0, $zero, {}"),
     ("the level's clock and its end", "simon.done", "the Simon rooms' verdict at this is the sequence done", 0x80036330,
@@ -2961,11 +2961,11 @@ IMMEDIATES = [
      "addiu $v1, $a0, {}"),
     ("the level's clock and its end", "end.view.y", "its second by this", 0x800347f4, "addiu $v1, $a0, {}"),
     ("the level's clock and its end", "end.view.z", "its third by this", 0x80034818, "addiu $a0, $a1, {}"),
-    ("the level's clock and its end", "end.view.swing", "and its fourth, the swing's, by this", 0x80034850,
+    ("the level's clock and its end", "end.view.swing", "and its fourth, the swing's angle, by this", 0x80034850,
      "addiu $v1, $a0, {}"),
     ("the level's clock and its end", "end.view.swing.bonus", "or on a level with no key by this", 0x8003488c,
      "addiu $v1, $a0, {}"),
-    ("the level's clock and its end", "end.view.off", "the eye stands this further than the free camera's", 0x800349b4,
+    ("the level's clock and its end", "end.view.off", "the eye stands this further than the free camera's distance", 0x800349b4,
      "addiu $v0, $v0, {}"),
     ("the level's clock and its end", "end.view.off.bonus", "or on a level with no key this", 0x80034a28,
      "addiu $v0, $v0, {}"),
@@ -2977,7 +2977,7 @@ IMMEDIATES = [
      "addiu $v0, $zero, {}"),
     ("the level's mode", "mode.at", "the loader's mode routine reads the level's mode word this far past gp",
      0x80027b30, "lw $v0, {}($gp)"),
-    ("the level's mode", "mode.key", "counts the slots of this type, the key's", 0x80027b4c, "addiu $t0, $zero, {}"),
+    ("the level's mode", "mode.key", "counts the slots of this type, the key's type", 0x80027b4c, "addiu $t0, $zero, {}"),
     ("the level's mode", "mode.kinds", "on the records of kinds below this", 0x80027b64, "sltiu $v0, $v0, {}"),
     ("the level's mode", "mode.slots", "in this many slots of each", 0x80027bac, "slti $v0, $a0, {}"),
     ("the level's mode", "mode.bonus", "and writes this where there are none", 0x80027bd8, "addiu $v0, $zero, {}"),
@@ -2985,7 +2985,7 @@ IMMEDIATES = [
     ("the level's mode", "mode.hidden.flag", "and a type of this in its first slot marks a hidden level",
      0x80027c38, "addiu $a0, $zero, {}"),
     ("the level's mode", "mode.hidden", "which writes this", 0x80027c3c, "addiu $t1, $zero, {}"),
-    ("the level's mode", "mode.simon", "and the game's mode word at this, the Simon rooms', puts it back to 0",
+    ("the level's mode", "mode.simon", "and the game's mode word at this, the Simon rooms' mode, puts it back to 0",
      0x80027cb8, "addiu $v0, $zero, {}"),
     ("the level's clock and its end", "death.most.gate", "a death's penalty is held under this", 0x80041ff0,
      "slti $v0, $v1, {}"),
@@ -3223,11 +3223,11 @@ IMMEDIATES = [
      0x800426b8, "slti $v0, $v0, {}"),
     ("the Simon rooms", "simon.points.gate", "the end screen names the winner where the first player's points are no longer "
      "under this", 0x8001581c, "slti $v0, $v1, {}"),
-    ("the Simon rooms", "simon.points.gate.other", "or the second's this", 0x80015834, "slti $v0, $v0, {}"),
+    ("the Simon rooms", "simon.points.gate.other", "or the second player's points this", 0x80015834, "slti $v0, $v0, {}"),
     ("the Simon rooms", "simon.menu.cross", "menu code reads a press of this bit", 0x8004ad40, "andi $v0, $v0, {}"),
     ("the Simon rooms", "simon.menu.gate", "and asks the first player's points against this", 0x8004ad70,
      "slti $v0, $v0, {}"),
-    ("the Simon rooms", "simon.menu.gate.other", "and the second's", 0x8004ad88, "slti $v0, $v0, {}"),
+    ("the Simon rooms", "simon.menu.gate.other", "and the second player's points", 0x8004ad88, "slti $v0, $v0, {}"),
     ("the Simon rooms", "simon.menu.over", "and past it puts the total at this", 0x8004ada8, "addiu $v0, $zero, {}"),
 
     ("the effects", "effect.slots.last", "startup clears the effect tables' pointers from the one at this index down",
@@ -3239,7 +3239,7 @@ IMMEDIATES = [
     ("the effects", "effect.colour.e", "another", 0x800115ac, "addiu $v0, $zero, {}"),
     ("the effects", "effect.colour.f", "and the last", 0x800115b8, "addiu $v0, $zero, {}"),
     ("the effects", "effect.sprites", "quads laid for this many sprites", 0x80011608, "slti $v0, $s1, {}"),
-    ("the effects", "effect.full", "each coloured this, the texture's own, until a row sets it",
+    ("the effects", "effect.full", "each coloured this, the texture's own colour, until a row sets it",
     0x80011628, "addiu $v0, $zero, {}"),
     ("the effects", "effect.quad", "a quad is this many bytes", 0x8001189c, "addiu $s2, $s2, {}"),
     ("the effects", "effect.most", "effects in a player's list at most", 0x80011900, "slti $v0, $a0, {}"),
@@ -3274,8 +3274,8 @@ IMMEDIATES = [
     ("the effects", "effect.world.shift.sine", "and times the sine by this", 0x80012580, "sra $t1, $v1, {}"),
     ("the effects", "effect.light.shift", "a colour byte times the brightness is shifted down by this into the light",
     0x800126e4, "sra $v0, $t3, {}"),
-    ("the effects", "effect.light.shift.g", "the second byte's", 0x800126ec, "sra $v0, $t2, {}"),
-    ("the effects", "effect.light.shift.b", "and the third's", 0x80012704, "sra $v0, $t6, {}"),
+    ("the effects", "effect.light.shift.g", "the second byte's shift", 0x800126ec, "sra $v0, $t2, {}"),
+    ("the effects", "effect.light.shift.b", "and the third byte's shift", 0x80012704, "sra $v0, $t6, {}"),
     ("the effects", "effect.table.shift", "the frame's table lies at the buffer times 513 shifted up by this",
     0x800129ac, "sll $v1, $v1, {}"),
     ("the effects", "effect.row.step", "a row is this many bytes", 0x800129f4, "addiu $s7, $s7, {}"),
@@ -3293,8 +3293,8 @@ IMMEDIATES = [
     0x800207bc, "addiu $v0, $zero, {}"),
     ("the effects", "teleport.flash.step", "and takes this off mode 0's strength a pass",
     0x80020810, "addiu $v0, $v0, {}"),
-    ("the effects", "teleport.flash.step.1", "off mode 1's", 0x8002081c, "addiu $v0, $v0, {}"),
-    ("the effects", "teleport.flash.step.last", "and off the last mode's", 0x80020828, "addiu $v0, $v0, {}"),
+    ("the effects", "teleport.flash.step.1", "off mode 1's strength", 0x8002081c, "addiu $v0, $v0, {}"),
+    ("the effects", "teleport.flash.step.last", "and off the last mode's strength", 0x80020828, "addiu $v0, $v0, {}"),
     ("the effects", "teleport.flash.level", "the level's load starts the flash on a level whose mode word is this",
     0x80024420, "addiu $v0, $zero, {}"),
     ("the effects", "teleport.flash.level.mode", "in this mode", 0x80024450, "addiu $v0, $zero, {}"),
@@ -3366,7 +3366,7 @@ MULTIPLIERS = [
     ("the ball", "time.tick", "the level's time is this many ticks a second", 0x80035f90, 6, "v1", "v0"),
     ("the ball", "move.cells.up", "the cells about the ball: bytes from a layer's words to the layer above", 0x8003761c, 3,
      "t2", "v1"),
-    ("the ball", "move.cells.on", "and from a row's to the row ahead", 0x80037638, 3, "t1", "a0"),
+    ("the ball", "move.cells.on", "and from a row's words to the row ahead", 0x80037638, 3, "t1", "a0"),
     ("the ball's roll", "arc.1.normal", "round an edge, the first frame moves the centre this far along the new normal",
      0x8002fa64, 6, "v1", "v0"),
     ("the ball's roll", "arc.1.heading", "and this far along the new heading", 0x8002fa7c, 1, "v1", "v1"),
@@ -3949,7 +3949,7 @@ def light(r):
     """How the game lights an invisible block near the ball, and the distances
     of a level that turns the light round."""
     if r["light.kind"] != INVISIBLE:
-        sys.exit(f"the light takes blocks of kind {r['light.kind']}, not the invisible block's")
+        sys.exit(f"the light takes blocks of kind {r['light.kind']}, not the invisible block's kind")
     if not r["light.full"] == r["light.full.fade"] == r["light.full.turned"]:
         sys.exit("the light is not full at the same brightness where it is full, fades and turns round")
     if r["light.bits"] + r["light.bits.high"] != 32 or r["light.scale"] << 16 != r["light.full"] << r["light.bits"]:
@@ -4070,9 +4070,9 @@ def jump(r):
     if r["jump.wall.low"] != r["ball.rest"] or r["jump.ceiling.behind"] != r["ball.rest"] + 1:
         sys.exit("the floor ahead or a block behind is not met at the ball's radius")
     if r["jump.recentre"] != r["roll.recentre"] or r["jump.bounce"] != r["roll.fall"]:
-        sys.exit("a jump's centre is not drawn across, or a bounce does not start down, as a roll's are")
+        sys.exit("a jump's centre is not drawn across, or a bounce does not start down, as in a roll")
     if r["boost.type"] != BUTTON:
-        sys.exit(f"the launch is a type {r['boost.type']}'s, not the boost button's")
+        sys.exit(f"the launch belongs to type {r['boost.type']}, not to the boost button")
     if not r["jump.arm"] < r["jump.keep"] <= r["jump.long"]:
         sys.exit("the long jump's word, armed, would not survive to the jump, or a count kept would land it long")
     if r["hop.rows"] != r["jump.rows"] or r["hop.skip"] != r["jump.skip"] or r["hop.step"] != r["jump.step"]:
@@ -4477,7 +4477,7 @@ def devices(r):
     and the run about the middle the marker that keeps either from acting
     twice holds in."""
     if r["send.type"] != 5 or r["send.mark"] != r["send.type"] or r["throw.type"] != 9:
-        sys.exit("the devices' routines run on other types than the teleporter's and the switch's")
+        sys.exit("the devices' routines run on other types than the teleporter's type and the switch's type")
     if r["send.hold"] != r["send.hold.after"]:
         sys.exit("the teleporter holds the pad off otherwise after the ball is sent than before")
     if r["throw.laser"] != FACES:
@@ -4583,10 +4583,10 @@ def simon(r):
         sys.exit("the idle count does not grow in the rest state")
     if any(r[f"simon.pad.{key}"] != r[f"pad.{key}"] for key in ("up", "cross", "left", "right")) \
             or r["simon.menu.cross"] != r["pad.cross"]:
-        sys.exit("the Simon rooms read other bits of the pad than the arcade's")
+        sys.exit("the Simon rooms read other bits of the pad than the arcade's bits")
     if r["simon.turn.left"] != r["pad.turn.left"] or r["simon.turn.right"] != r["pad.turn.right"] \
             or r["simon.empty"] != r["simon.turn.right"]:
-        sys.exit("the Simon rooms' turns are not the arcade's, or a turn right is not told by the empty halfword's -1")
+        sys.exit("the Simon rooms' turns are not the arcade's turns, or a turn right is not told by the empty halfword's -1")
     if {r["simon.latch.up"], r["simon.latch.cross"], r["simon.latch.set"], r["simon.request"], r["simon.flag"],
             r["simon.idle.step"], r["simon.latch.step"], r["simon.index.step"], r["simon.round.step"], r["simon.pass"],
             r["simon.other"], r["simon.point"], r["simon.room.step"], r["simon.world.step"], r["simon.first"],
@@ -4611,7 +4611,7 @@ def simon(r):
             or r["simon.menu.over"] >= 0 or r["simon.wait"] >= r["start.wait"]:
         sys.exit("the rooms' round, the worlds' count, the game's end or the branch's wait is not as read elsewhere")
     if any(r["gp"] + off != addr for addr, off in SIMON_AT.values()):
-        sys.exit("a word of the Simon rooms' does not lie where its offset from gp puts it")
+        sys.exit("a word of the Simon rooms does not lie where its offset from gp puts it")
     return {"latch": r["simon.latch"], "idle": [r["simon.idle.latch"], r["simon.idle.turn"]], "bits": bits,
             "store": r["simon.store.last"] + 1, "empty": r["simon.empty"], "first": r["simon.first"],
             "verdict": {"done": r["simon.verdict.done"], "wrong": r["simon.verdict.wrong"]}, "grow": r["simon.grow"],
@@ -4725,7 +4725,7 @@ def effects(r):
     level's load starting the last mode's on a level with no key."""
     pointers, colours, tables = r["effect.pointers"], r["effect.colours"], r["effect.tables"]
     if len(pointers) != r["effect.slots.last"] + 1 or pointers[-1] != 0 or 0 in pointers[:-1]:
-        sys.exit("the effect tables' pointers are not eleven kinds' of twelve")
+        sys.exit("the effect tables' pointers are not eleven kinds' pointers of twelve")
     first = {kind: pointers.index(at) for kind, at in enumerate(pointers[:-1])}
     world = {t: r[f"effect.kind.{t}"] for t in EFFECT_WORLD}
     hud = {31: EFFECT_HUD_KIND, 35: r["effect.kind.35.hud"], 5: r["effect.kind.5.hud"],
@@ -4747,7 +4747,7 @@ def effects(r):
                     sys.exit(f"row {f} of the effect table at 0x{at:08x} draws from the dice in the world with something to show")
     stored = {r[f"effect.colour.{c}"] for c in "abcdef"} | {0}
     if len(colours) != r["effect.sprites"] or {ch for c in colours for ch in c} != stored or max(stored) >= r["effect.full"]:
-        sys.exit("the sprites' colours are not the bytes startup stores, under the texture's own")
+        sys.exit("the sprites' colours are not the bytes startup stores, under the texture's own colour")
     shown = [[third, second, first_byte] for first_byte, second, third in colours]
     if r["effect.player"] != r["effect.most"] * r["effect.entry"] or r["effect.buffer"] != PARTICLES * r["effect.quad"] \
             or r["effect.prims"] != BUFFERS * r["effect.buffer"] or r["effect.entry"] != r["effect.prims"] + 4 * ENTRY_WORDS \
@@ -4816,9 +4816,9 @@ def play(r):
     past their values, and the level's mode word one word for the loader
     that writes it and the ending's view that reads it."""
     if r["exit.type"] != 7 or r["exit.hidden.type"] != 26:
-        sys.exit("the exits are tested as other types than the exit's and the hidden exit's")
+        sys.exit("the exits are tested as other types than the exit's type and the hidden exit's type")
     if r["clock.mode"] != 1 or r["clock.face"] != 8:
-        sys.exit("the clock stands in another mode than the Simon rooms' or on another type than the clock face")
+        sys.exit("the clock stands in another mode than the Simon rooms' mode or on another type than the clock face")
     if r["mark.under"] != BLOCK // 2 + r["ball.rest"]:
         sys.exit(f"a bonus level marks the block {r['mark.under']} under the ball's centre, not the one it stands on")
     if r["mark.skips"] != INVISIBLE:
@@ -4834,7 +4834,7 @@ def play(r):
             sys.exit(f"{', '.join(keys)} are not one value")
     ending = {name: r[f"end.{name}"] for name in ENDINGS}
     if sorted(ending.values()) != [v for v in range(-8, 4) if v] or r["end.spikes"] != UNHARMED:
-        sys.exit(f"the endings are {ending}, not one code each from -8 to 3 with the spikes' the invincibility word's rest")
+        sys.exit(f"the endings are {ending}, not one code each from -8 to 3 with the spikes' ending the invincibility word's rest")
     if r["simon.wrong"] != r["simon.done"] + 1:
         sys.exit("the Simon rooms' verdicts are not one and two")
     if r["death.most.gate"] != r["death.most"] + 1 or r["death.levels"] != LEVELS:
@@ -4865,7 +4865,7 @@ def play(r):
         sys.exit("the bonus slots do not come round in thirds of the world's levels")
     if r["next.hidden"] != r["next.bonus.first"] + r["next.round"] or r["next.chain.end"] != r["next.hidden"] \
             or r["next.hidden.out"] != r["end.hidden"]:
-        sys.exit("the hidden slot does not follow the bonus slots, or is not the hidden exit's")
+        sys.exit("the hidden slot does not follow the bonus slots, or is not the hidden exit's slot")
     if r["next.one"] != 1 or r["next.final"] != r["run.worlds"] * r["next.slots"] + 1 \
             or r["next.levels.final"] != r["death.finals"] or r["death.finals"] != FINALS:
         sys.exit("the finals are not numbered on from the worlds' levels, or are not two a world")
@@ -4877,7 +4877,7 @@ def play(r):
     shown = (*picks.values(), r["words.over"], r["words.better"], r["words.slow"], r["words.qualified"],
              r["words.failed"], r["words.won1"], r["words.won2"], r["words.equal"])
     if any(index not in r["words"] for index in shown) or r["words.last"] != -PAIR:
-        sys.exit("the end screen picks an entry that letters no word, or draws past another count than its pairs'")
+        sys.exit("the end screen picks an entry that letters no word, or draws past another count than its pairs' count")
     if r["words.final"] != picks["acid"] or r["words.copycat"] != r["clock.mode"] \
             or r["words.slow.gate"] != 20 * r["words.allowance"] + 1:
         sys.exit("the final's branch does not pick the acid's word, Copycat is not the clock's standing mode, "
@@ -4991,7 +4991,7 @@ def blocks(r):
         sys.exit("the body test does not dispatch on the axis word by the positive way's number")
     if r["ride.body.count.less"] != -1 or r["ride.body.block"] != BLOCK or r["ride.body.ends"] != BLOCK // 2 \
             or r["ride.body.ends.back"] != -r["ride.body.ends"]:
-        sys.exit("the body test does not reach from the first block's centre to the last's and half a block past each")
+        sys.exit("the body test does not reach from the first block's centre to the last block's centre and half a block past each")
     if r["ride.end.kind"] != PLATFORM or r["ride.end.kind.under"] != PLATFORM or r["ride.end.bias"] != BLOCK \
             or r["ride.end.block"] != BLOCK:
         sys.exit("the end landing is not read from a platform's kind, or lays the body otherwise than a block at a time")
@@ -5017,7 +5017,7 @@ def standing(r):
     block the lattice's empty word, each held to the kind or the style its
     case tests."""
     if r["standing.centre"] != BLOCK // 2 or 1 << r["standing.shift"] != BLOCK:
-        sys.exit("the cell the ball's centre lies in is not the nearest block's")
+        sys.exit("the cell the ball's centre lies in is not the nearest block's cell")
     if r["standing.first"] != FIRST_RECORD:
         sys.exit(f"the block under the ball carries a record from {r['standing.first']}, not from the first record")
     words = {kind: kind for kind in (FIRE, ICE, ACID)}
@@ -5231,7 +5231,7 @@ def show_readings(code):
     modes = readings(code)
     rows.append(("the level's mode", f"the level's mode word the ending's view reads, 0x{modes['mode.word']:08x}, "
                  "lies this far past gp", LEVEL_MODE_READ[0], modes["mode.word"] - modes["gp"]))
-    rows.append(("the level's mode", f"and the game's, which the mode routine reads, 0x{modes['game.mode.word']:08x}, "
+    rows.append(("the level's mode", f"and the game's mode word, which the mode routine reads, 0x{modes['game.mode.word']:08x}, "
                  "this far", GAME_MODE_READ[0], modes["game.mode.word"] - modes["gp"]))
     rows.append(("shadows", "the square reaches this far either way of its middle, units",
                  code.address(*SHADOW_SQUARE), readings(code)["shadow.half"]))

@@ -251,7 +251,7 @@ def main():
     ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to $KULA_DISC")
     ap.add_argument("--file", default=EXE, help="file on the disc to disassemble")
     ap.add_argument("--base", type=lambda v: int(v, 0), default=None,
-                    help="load address of the file (default: the executable's)")
+                    help="load address of the file (default: the executable's load address)")
     ap.add_argument("--at", type=lambda v: int(v, 0), required=True, help="address to start at")
     ap.add_argument("--count", type=int, default=32, help="instructions to print")
     args = ap.parse_args()

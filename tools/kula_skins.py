@@ -71,7 +71,7 @@ CHECKS = [
     (0x8002d3a8, "lw $v1, 300($v0)", "in either set"),
     (0x8002d3c4, "lw $s5, 0($v1)", "a light is three words"),
     (0x8002d3c8, "lw $s6, 4($v1)", "one a channel"),
-    (0x8002d3d0, "lw $s7, 8($v1)", "of the header's"),
+    (0x8002d3d0, "lw $s7, 8($v1)", "of the header's words"),
     (0x80027880, "lui $v0, 0x0080", "a face is laid with a colour word"),
     (0x80027884, "ori $v0, $v0, 32896", "of a channel's own brightness"),
     (0x800278b0, "sw $v0, 36($sp)", "handed to its record"),
@@ -83,11 +83,11 @@ CHECKS = [
     (0x80027000, "lw $v1, 13324($v1)", "a level with no key runs its faces through colour cycles the world word"),
     (0x8002701c, "subu $v1, $v1, $v0", "picks by its parity"),
     (0x80027020, "sll $v0, $a3, 1", "twice a cycle's length"),
-    (0x80027024, "mult $v1, $v0", "times the parity is the first table's"),
+    (0x80027024, "mult $v1, $v0", "times the parity is the first table's offset"),
     (0x80027064, "sw $v0, 24($sp)", "handed to the chain first"),
     (0x8002702c, "sll $v1, $v1, 1", "twice the parity"),
     (0x80027030, "addiu $v1, $v1, 1", "and one"),
-    (0x80027034, "mult $v1, $a3", "times the length is the second table's"),
+    (0x80027034, "mult $v1, $a3", "times the length is the second table's offset"),
     (0x80027078, "sw $v0, 28($sp)", "handed after it"),
     (0x80027040, "addu $a2, $zero, $zero", "to a chain of faces with no frames"),
     (0x8002704c, "sw $zero, 16($sp)", "and no frame table"),
@@ -109,7 +109,7 @@ CHECKS = [
     (0x8004f464, "and $s2, $s1, $at", "read off the face"),
     (0x8004f468, "bne $s2, $zero, 0x8004f484", "the second where it is set"),
     (0x8004f478, "lbu $s2, 0($s2)", "the first table's frame"),
-    (0x8004f48c, "lbu $s2, 0($s2)", "or the second table's"),
+    (0x8004f48c, "lbu $s2, 0($s2)", "or the second table's frame"),
     (0x8004f494, "sb $s2, 3($t6)", "written the same way"),
     (0x8004f498, "lui $at, 0x0006", "and its colour table by bits 17 and 18"),
     (0x8004f49c, "and $s2, $s1, $at", "of the same"),
@@ -162,7 +162,7 @@ IMMEDIATES = [
     ("faces", "invisible", "an invisible block's model in its set", 0x80027420, "addiu $a2, $a2, {}"),
     ("faces", "crumbling", "a crumbling block's model", 0x80027568, "addiu $a2, $a2, {}"),
     ("faces", "laser", "a laser's near end's model", 0x800282c8, "addiu $a2, $a2, {}"),
-    ("faces", "laser.far", "and its far end's", 0x80028a38, "addiu $a2, $a2, {}"),
+    ("faces", "laser.far", "and its far end's model", 0x80028a38, "addiu $a2, $a2, {}"),
     ("faces", "invisible.flags", "an invisible face's flags", 0x800273f0, "addiu $a3, $zero, {}"),
     ("faces", "shadow.plain", "a type from here shows its second quad on a plain face", 0x800276d4, "slti $v0, $s1, {}"),
     ("faces", "shadow.from", "on ice, a type from here", 0x80027834, "addiu $v0, $v1, {}"),
@@ -188,14 +188,14 @@ IMMEDIATES = [
     ("sets", "copycat.steps", "the mode whose rooms step through the worlds", 0x80042620, "addiu $v0, $zero, {}"),
     ("sets", "bonus.mode", "a level without a key plays in this mode", 0x80027bd8, "addiu $v0, $zero, {}"),
 
-    ("lights", "light.arcade", "a thing's light is this far into the header past its shade's", 0x8002d3bc,
+    ("lights", "light.arcade", "a thing's light is this far into the header past its shade's offset", 0x8002d3bc,
      "addiu $v0, $v0, {}"),
     ("lights", "light.bonus", "or this far in this mode", 0x8002d394, "addiu $v0, $v0, {}"),
     ("lights", "light.mode", "the mode", 0x8002d334, "addiu $a0, $zero, {}"),
 
     ("hiding", "path.crumbling", "the selector that takes the crumbling block's path", 0x80027390, "addiu $v0, $zero, {}"),
-    ("hiding", "path.vanishing", "the vanishing block's", 0x800273a0, "addiu $v0, $zero, {}"),
-    ("hiding", "path.invisible", "the invisible block's", 0x800273b4, "addiu $v0, $zero, {}"),
+    ("hiding", "path.vanishing", "the vanishing block's path", 0x800273a0, "addiu $v0, $zero, {}"),
+    ("hiding", "path.invisible", "the invisible block's path", 0x800273b4, "addiu $v0, $zero, {}"),
     ("hiding", "hide.below", "any other face is not built toward a neighbour of a kind below", 0x800273a8, "sltiu $v0, $s2, {}"),
     ("hiding", "hide.also.a", "nor toward this kind", 0x8002767c, "addiu $t1, $zero, {}"),
     ("hiding", "hide.also.b", "or this", 0x80027684, "addiu $v0, $zero, {}"),
@@ -349,7 +349,7 @@ def platform_table(code, r):
                 elif model == r["platform.stone"] or 0 <= model < PLATFORM_MODELS:
                     faces.append([model, turn % TURNS])
                 else:
-                    sys.exit(f"a platform face names model {model}, not one of the platform's")
+                    sys.exit(f"a platform face names model {model}, not one of the platform's models")
             out[axis][role] = faces
     return out
 

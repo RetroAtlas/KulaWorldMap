@@ -2131,7 +2131,7 @@ def check(disc, out=print):
                 for o in r.objects:
                     constants.setdefault(o.type, Counter())[(o.f[7], o.f[8], o.v)] += 1
     failures += trio_failures(constants)
-    out(f"{levels} levels rebuilt; every rebuild verifies and plays as the disc's"
+    out(f"{levels} levels rebuilt; every rebuild verifies and plays as the disc's level does"
         if not failures else f"{levels} levels rebuilt; {len(failures)} differ in play:")
     for f in failures:
         out(f"  {f}")

@@ -134,7 +134,7 @@ def main():
     ap.add_argument("--world", default="HIRO", choices=THEMES)
     ap.add_argument("--clut", type=int, default=None,
                     help="paint every texture through the palette on this VRAM row; "
-                         "default is each texture's own")
+                         "default is each texture's own palette")
     ap.add_argument("--shade", type=int, default=1, choices=range(SHADES),
                     help="which of the three lighting levels to draw")
     ap.add_argument("--sections", action="store_true")
