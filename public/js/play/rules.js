@@ -30,6 +30,7 @@ import {
 } from "./world.js";
 import { contact } from "./contact.js";
 import {
+  BALL,
   INVINCIBLE,
   boosting,
   broken,
@@ -70,7 +71,6 @@ import { SIDE, cellKey } from "../format/lattice.js";
 import { OFF_LATTICE, layHeading, startsOf, TANGENT } from "../viewer/data.js";
 import { advance } from "../viewer/travel.js";
 
-const BALL = 30;
 const BUTTON = 10;
 const PLATFORM = 5;
 const CRUMBLING = 6;

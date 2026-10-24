@@ -16,9 +16,8 @@ import { faceAxes } from "../viewer/motion.js";
 import { blockUnder, centreOf, clearance, faceUnder, positionOf } from "./ball.js";
 import { frameShown, travelOf, viewOf as drawnIndex } from "./world.js";
 import { glowOf, glowStep, seeing } from "./passes.js";
+import { BALL as BALL_TYPE, INVINCIBLE } from "./hazards.js";
 
-export const BALL_TYPE = 30;
-const INVINCIBLE_TYPE = 34;
 // the ball's key among the frame's travellers, which no thing of the level's answers to
 export const BALL = "ball";
 // the untinted light, the unit a traveller's tint is in
@@ -31,7 +30,7 @@ const PLAIN_KIND = 0;
 let glowCounter = 0;
 
 const motionOn = () => state.show.motion;
-const glowTable = () => motionTable().types[String(INVINCIBLE_TYPE)].lasts.glow;
+const glowTable = () => motionTable().types[String(INVINCIBLE)].lasts.glow;
 
 /** What the ball shows: its block and face, heading, centre and foot, body and lift. */
 export function stateOf(b, probe) {
@@ -135,7 +134,7 @@ export function tintOf(live, w) {
     return [level, level, level];
   }
   const words = [w.heat, w.melt, w.cold];
-  const glowing = w.pills[INVINCIBLE_TYPE] >= 0;
+  const glowing = w.pills[INVINCIBLE] >= 0;
   if (!words.some(Boolean) && !glowing) return undefined;
   const { own, other } = types[String(BALL_TYPE)].tint;
   const raised = glowing ? glowOf(glowCounter, glowTable(), turn) : null;
@@ -159,8 +158,7 @@ export function flashed(live, w) {
 // The glow's counter steps on each frame the ball is drawn with the pill's word not negative, and
 // is never put back.
 export function glowed(live, w) {
-  if (!live.ended && w.pills[INVINCIBLE_TYPE] >= 0)
-    glowCounter = glowStep(glowCounter, glowTable());
+  if (!live.ended && w.pills[INVINCIBLE] >= 0) glowCounter = glowStep(glowCounter, glowTable());
 }
 
 /** The things on `key`'s block the ball has taken, as play's level still lists them. */

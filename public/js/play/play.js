@@ -34,7 +34,8 @@ import { onShow } from "../viewer/chrome/detail.js";
 import { tipWith } from "../viewer/chrome/interaction.js";
 import { REST, aloft, blockUnder, moving } from "./ball.js";
 import { drives, frame as gameFrame, heeds, relevel, stand, startRun } from "./rules.js";
-import { blanksOf } from "./passes.js";
+import { BALL as BALL_TYPE } from "./hazards.js";
+import { LETHARGY, blanksOf } from "./passes.js";
 import {
   DYING,
   LEFT_PLAY,
@@ -67,7 +68,6 @@ import {
 import { probeOf as liveProbe } from "./world.js";
 import {
   BALL,
-  BALL_TYPE,
   firstStandable,
   flashed,
   footOf,
@@ -99,7 +99,6 @@ import {
 import { drive, followFrom, followed, keep, rested, retire, walked } from "./route.js";
 import { gameFor, happened, refreshPanel, startOver as restarted } from "./events.js";
 
-const LETHARGY_TYPE = 32;
 const LEAVE_MS = 450;
 const GAP_MS = 250;
 
@@ -244,7 +243,7 @@ function played() {
   const was = !aloft(b) ? footOf(b) : null;
   const blinked = !!run.words.blink;
   const events = gameFrame(run, pad);
-  if (events.some((e) => e.pill?.type === LETHARGY_TYPE)) lit = true;
+  if (events.some((e) => e.pill?.type === LETHARGY)) lit = true;
   if (!motionOn()) ageDust(1 / motionTable().hz);
   else if (was && !aloft(b) && !events.some((e) => e.sent)) {
     const under = blockUnder(b);

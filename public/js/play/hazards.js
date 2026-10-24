@@ -16,7 +16,7 @@ const BUTTON = 10;
 const MOVING_SPIKES = 11;
 const SPIKES = 12;
 const ARROW = 28;
-const BALL = 30;
+export const BALL = 30;
 export const INVINCIBLE = 34;
 // a crumbling block's type word
 const WHOLE = 1;

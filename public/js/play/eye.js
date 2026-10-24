@@ -14,10 +14,9 @@ import {
 } from "../viewer/state.js";
 import { blockUnits, motionTable } from "../viewer/data.js";
 import { offsetFrame, turned } from "./ball.js";
-import { drawn, rockOf } from "./passes.js";
+import { LETHARGY, drawn, rockOf } from "./passes.js";
 import { FORM } from "./game.js";
 
-const LETHARGY_TYPE = 32;
 const YAW = 20;
 const PITCH = 30;
 const ZOOM = { blocks: 8, min: 0.8, max: 3 };
@@ -30,7 +29,7 @@ let ease = null;
 let rolled = null;
 
 const motionOn = () => state.show.motion;
-const rockTable = () => motionTable().types[String(LETHARGY_TYPE)].lasts.rock;
+const rockTable = () => motionTable().types[String(LETHARGY)].lasts.rock;
 const smooth = (t) => t * t * (3 - 2 * t);
 
 const mul = (a, b) =>
@@ -103,7 +102,7 @@ const looked = (b) => (b.look.word ? offsetFrame(b.frame, 0, b.look.word, b.rule
     while the frame, the angle and the orbit do, since the frame is compared by identity. */
 export function rocked(live, frame) {
   const { turn } = motionTable();
-  const angle = rockOf(live.run.words.pills[LETHARGY_TYPE], rockTable(), turn);
+  const angle = rockOf(live.run.words.pills[LETHARGY], rockTable(), turn);
   if (!angle) return frame;
   const { yaw, pitch } = state.cam;
   const r = rolled;

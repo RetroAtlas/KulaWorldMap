@@ -8,12 +8,12 @@ import { iconFor } from "../viewer/draw/icons.js";
 import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
 import { say as announce } from "../viewer/chrome/a11y.js";
 import { PAD } from "./ball.js";
+import { KEY } from "./world.js";
 import { MODE } from "./game.js";
 import { ENDED, FOLLOWING, FOLLOWING_PAD, LINE, hudOf, isFollowing, thenOn } from "./phrases.js";
 import { shown } from "./traveller.js";
 
-const KEY_TYPE = 31;
-const KEY_MARKER = { type: KEY_TYPE, face: 0, variant: null, f: [] };
+const KEY_MARKER = { type: KEY, face: 0, variant: null, f: [] };
 const BITS = {
   ArrowUp: PAD.up,
   ArrowLeft: PAD.left,
