@@ -84,10 +84,11 @@ export function label(ctx, text, x, y, colour) {
 }
 
 // The game's view at rest, in its own units: pitched down from the ball's
-// heading, the middle of the face under the ball below the view's middle and
+// heading, the ball's centre, a radius off its face, below the view's middle and
 // ahead of the eye, on a screen given as its half-width and half-height over its
 // distance.
 const PITCH = (250 / 4096) * 2 * Math.PI;
+const RADIUS = 100 / 512;
 const BELOW = 250 / 512;
 const AHEAD = 800 / 512;
 const HALF_WIDE = 160 / 160;
@@ -96,7 +97,7 @@ const HALF_HIGH = 120 / 160;
 const along = (p, ...terms) => terms.reduce((q, [k, v]) => q.map((c, i) => c + k * v[i]), p);
 
 /** Where the game's camera rests behind the ball on its start, and the corners
-    of what it sees at the depth of the face under the ball. */
+    of what it sees at the depth of the ball's centre. */
 export function startCamera(l) {
   const start = startsOf(l).at(-1);
   const heading = start && markerHeading(start);
@@ -106,8 +107,8 @@ export function startCamera(l) {
   const [c, s] = [Math.cos(PITCH), Math.sin(PITCH)];
   const ahead = along([0, 0, 0], [c, heading], [-s, up]);
   const down = along([0, 0, 0], [-c, up], [-s, heading]);
-  const under = along([start.x + 0.5, start.y + 0.5, start.z + 0.5], [0.5, up]);
-  const eye = along(under, [-AHEAD, ahead], [-BELOW, down]);
+  const centre = along([start.x + 0.5, start.y + 0.5, start.z + 0.5], [0.5 + RADIUS, up]);
+  const eye = along(centre, [-AHEAD, ahead], [-BELOW, down]);
   const sees = [
     [-1, -1],
     [1, -1],

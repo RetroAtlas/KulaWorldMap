@@ -14,16 +14,16 @@ const near = (a, b, what) =>
 const minus = (a, b) => a.map((v, i) => v - b[i]);
 const length = (v) => Math.hypot(...v);
 
-test("the start camera stands 648 units behind the face under the ball and 531 above it", () => {
+test("the start camera stands 648 units behind the ball's centre and 531 above it, the centre 100 off its face", () => {
   // LEVEL 1's ball faces -y from the top of its block, HIDDEN 10's faces +z
   // from its -y side
-  for (const [name, under, offset] of [
-    ["LEVEL 1", [17.5, 18.5, 17], [0, 648, -531]],
-    ["HIDDEN 10", [17.5, 15, 10.5], [0, -531, -648]],
+  for (const [name, centre, offset] of [
+    ["LEVEL 1", [17.5, 18.5, 17 - 100 / 512], [0, 648, -531]],
+    ["HIDDEN 10", [17.5, 15 - 100 / 512, 10.5], [0, -531, -648]],
   ]) {
     const { eye } = startCamera(levelNamed(name));
     near(
-      minus(eye, under),
+      minus(eye, centre),
       offset.map((v) => v / 512),
       name,
     );
@@ -37,8 +37,8 @@ test("at the ball the start camera sees a block's width three times over, the ba
   assert.ok(Math.abs(across - 3.125) < 1e-9, `${across}`);
   assert.ok(Math.abs(high / across - 0.75) < 1e-9, `${high}`);
   const middle = sees.reduce((m, p) => m.map((v, i) => v + p[i] / 4), [0, 0, 0]);
-  const under = [17.5, 18.5, 17];
-  const drop = length(minus(under, middle)) / (high / 2);
+  const centre = [17.5, 18.5, 17 - 100 / 512];
+  const drop = length(minus(centre, middle)) / (high / 2);
   assert.ok(Math.abs(drop - 50 / 120) < 1e-9, `${drop}`);
   assert.ok(Math.abs(length(minus(middle, eye)) - 800 / 512) < 1e-9);
 });
@@ -55,5 +55,9 @@ test("the start camera stands behind the last start, where the game puts the bal
   });
   const l = { records: [start(3, 3, 3, 1), start(8, 8, 8, 3)] };
   const { eye } = startCamera(l);
-  near(minus(eye, [8.5, 8.5, 8]), [0, 648 / 512, -531 / 512], "the last start, facing -y");
+  near(
+    minus(eye, [8.5, 8.5, 8 - 100 / 512]),
+    [0, 648 / 512, -531 / 512],
+    "the last start, facing -y",
+  );
 });
