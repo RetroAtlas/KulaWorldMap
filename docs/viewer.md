@@ -652,7 +652,6 @@ The module has every count and threshold read from the motion table and no wall 
 - It steps the game's frames from the frame's under hook by the wall clock, each through the rules with the pad as the keys give it, the words of a driver following the planner's route, read through an export of its chrome, added to it while one runs and the driver let go on an arrow, Space or a press of the pad, the level running while the ball rests with Motion on and only while the ball moves, a key is held or a driver runs without it.
 - It parks the panel's presses with the view and gives the level its circuits as the game loads them while the ball is on it, and as it leaves, where the level shown is the one they were parked on, gives the presses back, and the view with them unless choosing a level, opening a link or a click on the name a teleporter's panel gives for where it leads is what leaves play.
 - Where a click on the name a teleporter's panel gives for where it leads leaves play, it centres the view there as it leaves, since the click's find is drawn before play hears of it, with the view still following the ball, and writes the history entry the find opened at once, which the find wrote with the view from before play.
-- It shows the clock, the keys or the blocks left and the points in the HUD.
 - It bursts dust where the ball throws a switch, under the ball as a crumbling block breaks, where a block has gone, clearing the panel where it showed that block, and at a boost button's launch.
 - It cuts the view to a teleport's far end rather than easing after the ball and makes a leap of the way the ball has come.
 - It says on the strip that the ball rides a platform while it does and draws it, its dust and the view's target where the platform has carried it.
@@ -684,6 +683,12 @@ The module has every count and threshold read from the motion table and no wall 
 ### The pill's screen
 
 `js/play/screen.js` is the pill's screen and the flash on the canvas, painted in the frame hook over the game's bursts: the flash of white on the pill's own pass, the frame last drawn as a ghost at half strength over the scene on each pass the pill works and on the end's pass, and a white glow at the fade's level on each pass after, the frame drawn kept, tinted by the table's colour over its grey, for the next pass's ghost, on a canvas made as the first is kept and let go as the screen is off, and the flash's quad, white added over everything at the strength the pass left, a byte a channel, on every frame it stands above nothing with Motion on, the words running and nothing drawn with it off, with the run, whether a pass ran since the frame hook last drew and whether the pass last run took the pill handed in by `js/play/play.js`.
+
+### Play's chrome
+
+`js/play/strip.js` is play's chrome, the strip, the HUD, the pad, the keys and the live region: the strip's line, the ball's block, face and heading or that the level has ended, and its status, a notice, the route's word or the verdict, in red while a death's countdown runs, the HUD's figures, each written only where it changed, with the key drawn as the legend draws it where keys are counted, Keep and Follow as the route stands, the pad, shown on a touch screen until its button puts it away, and the arrow keys, Space, Enter and Esc, read into the keys the frame samples or passed to the handlers it is wired with, Forgive's flag, the height the strip takes from the map for the camera's framing, and the sentences the live region is told, one an animation frame, those a game frame says held until the frame is done so that only its last is heard, with the live level handed in by `js/play/play.js`, which wires it once with its handlers.
+
+- It shows the clock, the keys or the blocks left and the points in the HUD.
 
 ### What play says
 

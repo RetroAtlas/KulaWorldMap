@@ -66,6 +66,7 @@ test("p stands the ball on the start and takes its view, the arrows roll it, and
       "/js/play/play.js",
       "/js/play/rules.js",
       "/js/play/screen.js",
+      "/js/play/strip.js",
       "/js/play/traveller.js",
       "/js/play/world.js",
     ]);

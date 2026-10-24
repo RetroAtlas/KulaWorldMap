@@ -1,24 +1,20 @@
 // Play mode: the ball stood on the level and rolled by the keys, or along the planned route, the
 // camera behind it.
 import { $, el, emit, on } from "../viewer/ui/dom.js";
-import { adoptCourse, current, measureStrip } from "../viewer/chrome/course.js";
+import { adoptCourse, current } from "../viewer/chrome/course.js";
 import { ageDust, burstDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
 import { drawEffects, effectsWith } from "./effects.js";
 import { flashing, screened } from "./screen.js";
 import { state } from "../viewer/state.js";
 import { SIDE, cellKey } from "../format/lattice.js";
 import {
-  ballFor,
   blockUnits,
   flip,
   jumpTable,
-  levelTitle,
   litNow,
-  markerModel,
   markerNow,
   motionTable,
   skinsTable,
-  worldName,
   worldTint,
 } from "../viewer/data.js";
 import { probeOf, stepBetween, tangent } from "../viewer/walk.js";
@@ -31,7 +27,6 @@ import {
   runWith,
 } from "../viewer/draw/render.js";
 import { ballsWith } from "../viewer/draw/things.js";
-import { iconFor } from "../viewer/draw/icons.js";
 import { toast } from "../viewer/ui/toast.js";
 import {
   centreOn,
@@ -43,11 +38,9 @@ import {
   writeHash,
 } from "../viewer/chrome/navigate.js";
 import { slotOf } from "../viewer/permalink.js";
-import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
-import { say as announce } from "../viewer/chrome/a11y.js";
 import { clearDetail, onShow, showCell } from "../viewer/chrome/detail.js";
 import { tipWith } from "../viewer/chrome/interaction.js";
-import { PAD, REST, aloft, blockUnder, centreOf, faceUnder, moving } from "./ball.js";
+import { REST, aloft, blockUnder, centreOf, faceUnder, moving } from "./ball.js";
 import {
   drives,
   frame as gameFrame,
@@ -59,16 +52,13 @@ import {
   startRun,
 } from "./rules.js";
 import { blanksOf } from "./passes.js";
-import { MODE, conclude, gameOf, nextOf } from "./game.js";
+import { conclude, gameOf, nextOf } from "./game.js";
 import {
   AT,
   BROKE,
   CLOCK_ROUND,
   DONE_WHY,
   DYING,
-  ENDED,
-  FOLLOWING,
-  FOLLOWING_PAD,
   FORGIVEN,
   GONE,
   KEEPING,
@@ -76,7 +66,6 @@ import {
   LAUNCHED,
   LEFT_PLAY,
   LEFT_PLAY_RESTORED,
-  LINE,
   NO_FIRST_STOP,
   NO_START,
   NOWHERE,
@@ -101,10 +90,8 @@ import {
   endingName,
   faceName,
   howEnded,
-  hudOf,
   isFollowing,
   noted,
-  thenOn,
 } from "./phrases.js";
 import { courseDriver, keyPad } from "./drive.js";
 import {
@@ -138,20 +125,28 @@ import {
   takenOn,
   travellerOf,
 } from "./traveller.js";
+import {
+  caption,
+  chrome,
+  clearSaying,
+  following,
+  forgiving,
+  holdSaying,
+  icon,
+  line,
+  measure,
+  releaseSaying,
+  routing,
+  say,
+  status,
+  sync,
+  verdict,
+  wireStrip,
+} from "./strip.js";
 
-const KEY_TYPE = 31;
 const LETHARGY_TYPE = 32;
-const KEY_MARKER = { type: KEY_TYPE, face: 0, variant: null, f: [] };
 const LEAVE_MS = 450;
 const GAP_MS = 250;
-const BITS = {
-  ArrowUp: PAD.up,
-  ArrowLeft: PAD.left,
-  ArrowRight: PAD.right,
-  ArrowDown: PAD.down,
-  " ": PAD.cross,
-};
-const PAD_BITS = { up: PAD.up, left: PAD.left, right: PAD.right, jump: PAD.cross };
 const AT_SWITCH = 6;
 const AT_GONE = 10;
 const AT_BREAK = 2;
@@ -162,27 +157,16 @@ const keys = keyPad();
 let last = 0;
 let owed = 0;
 let idle = true;
-let framing = false;
-let saying = null;
-const unsaid = [];
-let telling = false;
 let redraw = false;
 // whether the pass last run took the lethargy pill, and whether one ran since the frame hook drew
 let lit = false;
 let passed = false;
-let measure = () => {};
-let padShown = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
-let forgiving = false;
-let keyed = false;
 let wired = false;
 // whether play itself is changing the level through the funnel
 let changing = false;
 
 export const playing = () => live !== null;
 
-const typing = (e) =>
-  /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
-const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 const motionOn = () => state.show.motion;
 
 // --- the ball as the frame draws it -----------------------------------------------------
@@ -222,14 +206,6 @@ export const handed = () => (live ? (travellerOf(live, live.level)?.get(BALL) ??
     height the strip leaves free. */
 const framer = (l) => frameBall(l, live, live && shown(live), state.view.h - chrome());
 
-/** How much of the map's height the strip takes, as it stands, from its foot; the pad lies over
-    the view and takes none. */
-function chrome() {
-  const strip = $("play");
-  if (strip.hidden) return 0;
-  return $("cv").getBoundingClientRect().bottom - strip.getBoundingClientRect().top;
-}
-
 // --- the frame ----------------------------------------------------------------------------
 
 function wake() {
@@ -255,29 +231,10 @@ function advance() {
   if (moved) invalidatePick();
 }
 
-// a sentence waits for an animation frame of its own, as the live region keeps only its last
-function told(text) {
-  if (telling) {
-    unsaid.push(text);
-    return;
-  }
-  announce(text);
-  telling = true;
-  requestAnimationFrame(() => {
-    telling = false;
-    if (unsaid.length) told(unsaid.shift());
-  });
-}
-
-const say = (text) => {
-  if (framing) saying = text;
-  else told(text);
-};
-
 // what leaving says waits a frame, so what the way out says of where it goes is heard first
 const sayLeaving = (text) =>
   requestAnimationFrame(() => {
-    if (!live) told(text);
+    if (!live) say(text);
   });
 
 const running = () =>
@@ -300,15 +257,13 @@ function stepped(dt) {
     let blanks = blanksOf(live.run);
     while (owed >= blanks && live) {
       owed -= blanks;
-      framing = true;
-      saying = null;
+      holdSaying();
       lit = false;
       passed = true;
       if (live.ended) {
         if (turning(live)) startOver();
       } else played();
-      framing = false;
-      if (saying !== null) told(saying);
+      releaseSaying();
       if (live) {
         stood();
         blanks = blanksOf(live.run);
@@ -323,7 +278,7 @@ function stepped(dt) {
     moved = true;
   }
   stood();
-  if (moved) line();
+  if (moved) line(live);
   return moved;
 }
 
@@ -355,18 +310,18 @@ function played() {
   rested(b);
   flashed(live, run.words);
   glowed(live, run.words);
-  if (run.words.send >= 0) status(SENDING);
-  else if (run.words.blink && !blinked) status(WEARING_OFF);
+  if (run.words.send >= 0) status(live, SENDING);
+  else if (run.words.blink && !blinked) status(live, WEARING_OFF);
   else if (live.status === SENDING || (live.status === WEARING_OFF && !run.words.blink))
-    status(null);
+    status(live, null);
   if (live.driver) {
     const why = live.driver.done(run);
     if (why) followed(why);
-    else if (!live.status) status(following());
+    else if (!live.status) status(live, following());
   }
   const death = deathOf(run.words);
-  if (death) status(DYING[death], true);
-  else if (live.dire) status(null);
+  if (death) status(live, DYING[death], true);
+  else if (live.dire) status(live, null);
   if (b.state === REST) live.notes.length = 0;
 }
 
@@ -412,7 +367,7 @@ function more(ctx) {
 function happened(event) {
   const b = live.run.ball;
   if (event.refused) {
-    if (REFUSED[event.refused]) status(REFUSED[event.refused]);
+    if (REFUSED[event.refused]) status(live, REFUSED[event.refused]);
     return;
   }
   if (event.ended) {
@@ -459,7 +414,7 @@ function happened(event) {
     return;
   }
   if (event.alit) {
-    if (live.status === RIDING) status(null);
+    if (live.status === RIDING) status(live, null);
     return;
   }
   if (event.clock) {
@@ -472,7 +427,7 @@ function happened(event) {
     live.station = true;
     const block = blockUnder(b);
     say(noted(live.notes, AT(block, faceUnder(b))));
-    status(b.riding ? RIDING : null);
+    status(live, b.riding ? RIDING : null);
     walked({ cell: block, face: faceUnder(b) });
     if (!motionOn())
       travelDust(live.still.foot, footOf(b), b.n, (p) => blockAt(live.probe, p, b.n, block), true);
@@ -482,7 +437,7 @@ function happened(event) {
     burstDust(footOf(b), b.n, blockUnder(b), AT_SWITCH, !motionOn());
   } else if (event.turned) {
     live.station = true;
-    if (Object.values(REFUSED).includes(live.status)) status(b.riding ? RIDING : null);
+    if (Object.values(REFUSED).includes(live.status)) status(live, b.riding ? RIDING : null);
   }
 }
 
@@ -514,7 +469,7 @@ function threw({ circuit }) {
 function boosted() {
   const b = live.run.ball;
   burstDust(footOf(b), b.n, blockUnder(b), AT_LAUNCH, !motionOn());
-  status(LAUNCHED);
+  status(live, LAUNCHED);
   say(LAUNCHED);
   live.notes.push(LAUNCHED);
 }
@@ -562,7 +517,7 @@ function sent({ to }) {
   state.frame = b.frame;
   state.target = [...centreOf(b)];
   if (state.framing === fit) fit();
-  status(null);
+  status(live, null);
   say(SENT(to.face, to.cell));
   redraw = true;
   invalidatePick();
@@ -601,19 +556,15 @@ function ended(code) {
   owed = 0;
   retire();
   live.keeping = false;
-  routing();
+  routing(live);
   finishEase();
   state.frame = null;
   fit();
-  status(verdict());
-  say(verdict());
+  status(live, verdict(live));
+  say(verdict(live));
   redraw = true;
   invalidatePick();
 }
-
-/** The strip's verdict: how the level ended and what the key goes on to, the level the game loads
-    next or this one again, the pad named while it shows. */
-const verdict = () => `${live.ended.how} ${thenOn(live.ended.next, padShown)}`;
 
 /** The levels the pack holds, as the data has them. */
 const packCount = (pack) => state.data.levels.filter((l) => l.pack === pack).length;
@@ -634,7 +585,7 @@ function forgive(name) {
   live.still = stateOf(b, live.probe);
   live.station = true;
   walked({ cell: blockUnder(b), face: faceUnder(b) }, true);
-  status(FORGIVEN(name));
+  status(live, FORGIVEN(name));
   say(FORGIVEN(name));
   state.frame = b.frame;
   if (state.framing === fit) fit();
@@ -684,15 +635,15 @@ function startOver({ onward = true } = {}) {
   live.flash = 0;
   live.still = stateOf(b, live.probe);
   resetDust(worldTint(l.theme));
-  routing();
-  status(start ? null : NO_START);
+  routing(live);
+  status(live, start ? null : NO_START);
   keys.clear();
   owed = 0;
   last = performance.now();
   state.frame = b.frame;
   fit();
   arrive(live, from, () => shown(live).centre, performance.now());
-  line();
+  line(live);
   refreshPanel();
   redraw = true;
   invalidatePick();
@@ -733,23 +684,6 @@ function drawDustOver(ctx, c, home, key, ghost) {
   drawDust(ctx, key);
 }
 
-/** The strip's route buttons: Keep while no route stands or the route is the way the ball has
-    come, pressed while that way goes on being handed over, Follow while a route stands, pressed
-    while the ball follows it and dim once the level has ended. */
-function routing() {
-  const route = current();
-  const keep = $("keepBtn");
-  keep.disabled = !live || (route !== null && route !== live.kept);
-  keep.setAttribute("aria-pressed", String(!!live?.keeping));
-  const follow = $("followBtn");
-  follow.hidden = !live || route === null;
-  follow.disabled = !live || live.ended !== null;
-  follow.setAttribute("aria-pressed", String(live?.driver != null));
-}
-
-/** The strip's word while the ball follows the route, the pad named while it shows. */
-const following = () => (padShown ? FOLLOWING_PAD : FOLLOWING);
-
 /** Roll the ball along the planned route from the stop it stands on, or from the first stop,
     where it is put, when it stands on none or on the last; pressed again, let the ball go. */
 function followRoute() {
@@ -766,7 +700,7 @@ function followRoute() {
   let placed = "";
   const [first] = route.stations;
   if (i < 0 && !live.probe.standable(first.cell, first.face)) {
-    status(NO_FIRST_STOP);
+    status(live, NO_FIRST_STOP);
     return;
   }
   live.keeping = false;
@@ -777,8 +711,8 @@ function followRoute() {
   }
   live.driver = courseDriver(route, i);
   live.route = route;
-  routing();
-  status(following());
+  routing(live);
+  status(live, following());
   say(placed + following());
   wake();
 }
@@ -788,14 +722,14 @@ function retire() {
   if (!live?.driver) return;
   live.driver = null;
   live.route = null;
-  if (isFollowing(live.status)) status(null);
-  routing();
+  if (isFollowing(live.status)) status(live, null);
+  routing(live);
 }
 
 /** The driver done, and why said. */
 function followed(why) {
   retire();
-  status(DONE_WHY[why]);
+  status(live, DONE_WHY[why]);
   say(DONE_WHY[why]);
 }
 
@@ -813,7 +747,7 @@ function hand() {
   const taken = adoptCourse(c);
   if (taken) live.kept = current();
   else live.keeping = false;
-  routing();
+  routing(live);
   return taken;
 }
 
@@ -824,213 +758,18 @@ function keep() {
   if (!live) return;
   if (live.keeping) {
     live.keeping = false;
-    routing();
+    routing(live);
     return;
   }
   if (!hand()) {
-    status(ROUTE_STANDS);
+    status(live, ROUTE_STANDS);
     return;
   }
   live.keeping = !live.ended;
   const text = live.keeping ? KEEPING : KEPT;
   say(text);
   toast(text);
-  routing();
-}
-
-// --- the strip and the pad ----------------------------------------------------------------
-
-function status(text, dying = false) {
-  if (!live) return;
-  live.status = text;
-  live.dire = dying;
-  const el = $("playStatus");
-  if (el.textContent !== (text ?? "")) el.textContent = text ?? "";
-  el.classList.toggle("dying", dying);
-}
-
-function figure(id, text, title = null) {
-  const el = $(id);
-  if (el.textContent !== text) el.textContent = text;
-  if (title !== null && el.title !== title) el.title = title;
-}
-
-/** Fill a figure of the HUD's row from its phrase: the number in its bold, what stands before
-    the number in the span a reader alone gets and the word after it in its small, each with its
-    own space, so the figure reads as the phrase, written only where it changed. */
-function reading(id, phrase, title = null) {
-  const el = $(id);
-  const [, before, n, after] = /^(.*?)\s*(\d+)\s*(.*)$/.exec(phrase);
-  const parts = [
-    [".sr", before && `${before} `],
-    ["b", n],
-    ["small", after && ` ${after}`],
-  ];
-  for (const [part, text] of parts) {
-    const node = el.querySelector(part);
-    if (node && node.textContent !== text) node.textContent = text;
-  }
-  if (title !== null && el.title !== title) el.title = title;
-}
-
-/** Keep the keys figure's mark to the level: the legend's key where keys are counted and
-    nothing where blocks are, drawn again when `fresh`. */
-function marked(bonus, fresh = false) {
-  const mark = $("playKeys").querySelector(".mark");
-  if (!fresh && mark.hasChildNodes() === !bonus) return;
-  const model = bonus ? null : markerModel(KEY_MARKER, state.lvl);
-  if (model) mark.replaceChildren(iconFor(model, 18));
-  else mark.replaceChildren();
-}
-
-function line() {
-  if (!live) return;
-  const s = shown(live);
-  const text = live.ended ? ENDED : LINE(s.face, s.block, s.h);
-  const el = $("playLine");
-  if (el.textContent !== text) el.textContent = text;
-  const w = live.run.words;
-  const game = live.run.game;
-  const hud = hudOf(w, game, live.run.match, motionTable().play);
-  reading("playClock", hud.clock);
-  reading("playKeys", hud.keys, hud.keysTitle);
-  marked(w.bonus);
-  reading("playPoints", hud.points);
-  const room = w.mode === MODE.simon;
-  for (const id of ["playRound", "playMoves"]) $(id).hidden = !room;
-  for (const id of ["playTurn", "playMatch"]) $(id).hidden = !(room && game);
-  if (room) {
-    figure("playRound", hud.round);
-    figure("playMoves", hud.moves);
-    if (game) {
-      figure("playTurn", hud.turn);
-      figure("playMatch", hud.match);
-    }
-  }
-  $("playTotal").hidden = !game || room;
-  if (game && !room) figure("playTotal", hud.total);
-}
-
-function sync() {
-  $("play").hidden = !live;
-  $("hud").hidden = !live;
-  document.body.classList.toggle("playing", live !== null);
-  const padUp = live !== null && padShown;
-  $("pad").hidden = !padUp;
-  $("jump").hidden = !padUp;
-  document.body.classList.toggle("padded", padUp);
-  $("padBtn").setAttribute("aria-pressed", String(padShown));
-  $("forgiveBtn").setAttribute("aria-pressed", String(forgiving));
-  if (live) {
-    line();
-    $("playStatus").textContent = live.status ?? "";
-    $("playStatus").classList.toggle("dying", live.dire);
-  }
-}
-
-function wirePad() {
-  const bitOf = (e) => PAD_BITS[e.target.closest("[data-pad]")?.dataset.pad] ?? 0;
-  const release = (e) => {
-    const bit = bitOf(e);
-    if (bit) keys.up(bit);
-  };
-  const press = (e) => {
-    const bit = bitOf(e);
-    if (!bit || !live) return;
-    e.preventDefault();
-    if (live.ended) {
-      startOver();
-      wake();
-      return;
-    }
-    retire();
-    e.target.setPointerCapture(e.pointerId);
-    keys.down(bit);
-    wake();
-  };
-  for (const group of [$("pad"), $("jump")]) {
-    group.addEventListener("pointerdown", press);
-    for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
-      group.addEventListener(type, release);
-  }
-  $("padBtn").onclick = () => {
-    padShown = !padShown;
-    if (live?.ended) status(verdict());
-    else if (isFollowing(live?.status)) status(following());
-    sync();
-  };
-  $("forgiveBtn").onclick = () => {
-    forgiving = !forgiving;
-    sync();
-  };
-  $("followBtn").onclick = followRoute;
-  $("keepBtn").onclick = keep;
-  $("leaveBtn").onclick = () => leave();
-}
-
-/** Draw the pad's ball for the level shown and, while the ball is on it, the HUD's key and the
-    level's name. */
-function icon() {
-  const l = state.lvl;
-  const model = l && ballFor(l);
-  $("padBall").replaceChildren(model ? iconFor(model, 40) : "");
-  if (!live) return;
-  marked(live.run.words.bonus, true);
-  caption();
-}
-
-/** Name the level in the HUD as the level line names it. */
-function caption() {
-  const l = state.lvl;
-  $("hudTitle").textContent = `${levelTitle(l)} · ${worldName(l.theme)}`;
-}
-
-// --- the keys -----------------------------------------------------------------------------
-
-const modified = (e) => e.metaKey || e.ctrlKey || e.altKey;
-
-function keydown(e) {
-  if (!state.lvl || typing(e) || dialogOpen()) return;
-  if (e.key === "p" && !modified(e) && !e.shiftKey) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!e.repeat) togglePlay();
-    return;
-  }
-  if (!live) return;
-  if (e.key === "Escape") {
-    if (e.defaultPrevented || state.selected) return;
-    if (sidebarOverlays() && document.body.classList.contains("sidebar-open")) return;
-    e.preventDefault();
-    e.stopPropagation();
-    leave();
-    return;
-  }
-  if (live.ended) {
-    const starts =
-      e.key === " " || (e.key === "Enter" && !(keyed && e.target.tagName === "BUTTON"));
-    if (!(starts || BITS[e.key]) || e.shiftKey || modified(e)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    if (starts && !e.repeat) {
-      startOver();
-      wake();
-    }
-    return;
-  }
-  const bit = BITS[e.key];
-  if (!bit || e.shiftKey || modified(e)) return;
-  e.preventDefault();
-  e.stopPropagation();
-  if (e.repeat) return;
-  retire();
-  keys.down(bit);
-  wake();
-}
-
-function keyup(e) {
-  const bit = BITS[e.key];
-  if (bit) keys.up(bit);
+  routing(live);
 }
 
 // --- entering and leaving -----------------------------------------------------------------
@@ -1094,14 +833,14 @@ function enter(at = null) {
   const ball = run.ball;
   live.still = stateOf(ball, live.probe);
   resetDust(worldTint(l.theme));
-  routing();
+  routing(live);
   keys.clear();
   owed = 0;
   last = performance.now();
   state.anchored = true;
   state.frame = ball.frame;
-  icon();
-  sync();
+  icon(live);
+  sync(live);
   measure();
   fitWith(framer);
   fit();
@@ -1126,13 +865,13 @@ function leave({ restore = true } = {}) {
   const back = home();
   live = null;
   keys.clear();
-  unsaid.length = 0;
+  clearSaying();
   fitWith(null);
   runWith(null);
   refreshPanel();
   if (back) state.presses = parked.presses;
   resetDust(null);
-  sync();
+  sync(live);
   emit("play-changed", false);
   const done = () => {
     state.frame = null;
@@ -1182,10 +921,10 @@ function put(at) {
   live.still = stateOf(live.run.ball, live.probe);
   walked({ cell: at.cell, face: at.face });
   keys.clear();
-  status(null);
+  status(live, null);
   state.frame = live.run.ball.frame;
   if (state.framing === fit) fit();
-  line();
+  line(live);
   invalidatePick();
   drawSoon();
 }
@@ -1209,8 +948,17 @@ export function playAt(c) {
 export function bootPlay() {
   if (wired) return;
   wired = true;
-  document.addEventListener("keydown", keydown, { capture: true });
-  document.addEventListener("keyup", keyup, { capture: true });
+  wireStrip({
+    startOver,
+    retire,
+    wake,
+    followRoute,
+    keep,
+    leave,
+    togglePlay,
+    keys,
+    live: () => live,
+  });
   // a press while the view eases back out of play ends the ease, so what it does starts from the
   // view play leaves for
   for (const type of ["pointerdown", "keydown"])
@@ -1221,13 +969,6 @@ export function bootPlay() {
       },
       { capture: true },
     );
-  // read as the focus lands, since by the keydown a clicked button's focus is visible too
-  document.addEventListener("focusin", (e) => {
-    keyed = e.target.matches(":focus-visible");
-  });
-  addEventListener("blur", () => keys.up());
-  wirePad();
-  measure = measureStrip($("play"), "--play-h");
   overlayWith({ under: () => void advance(), cell: drawDustOver, frame: more });
   effectsWith(() => live?.run ?? null);
   movingWith((l) => travellerOf(live, l));
@@ -1244,7 +985,7 @@ export function bootPlay() {
       // the level was fitted before play heard of it, with the ball still framing the view
       if (state.framing === fit) fit();
     } else if (!live) finishEase();
-    icon();
+    icon(live);
   });
   on("level-updated", () => {
     if (!live) return;
@@ -1267,17 +1008,17 @@ export function bootPlay() {
     leave({ restore: false });
     settle();
   });
-  on("density-changed", icon);
+  on("density-changed", () => icon(live));
   on("course-changed", () => {
     if (live?.driver && current() !== live.route) retire();
     if (live?.kept && current() !== live.kept) {
       live.kept = null;
       live.keeping = false;
     }
-    routing();
+    routing(live);
   });
   on("show-changed", (key) => {
     if (key === "dust" && live && !state.show.dust) resetDust(worldTint(live.level.theme));
   });
-  sync();
+  sync(live);
 }
