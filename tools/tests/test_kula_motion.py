@@ -15,12 +15,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
     CHECKS, DIVISORS, END_CASES, END_FACES, GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, GREYS, IMMEDIATES, LIGHT_ROOT,
-    LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, MULTIPLIERS, ROOT_ROWS, SCANS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES,
+    LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, MULTIPLIERS, ROOT_ROWS, SCANS, SHADOW_SQUARE, STATES,
     TAKE_CASES, TAKE_TAIL, TAKE_TYPES, WORDS_COUNT, WORDS_TABLE,
-    blocks, body, devices, effect_init, effect_tables, effects, exits, flight, glint, glow_lift, glow_spill, harms,
-    jump, laser, light, moves, play, roll, root_table, shadow_half, simon, spike_cycle, spin_orders, standing, table,
-    take, vanish_cycle, words)
+    blocks, body, devices, effect_init, effect_tables, effects, exits, flight, glint, glow_lift, glow_spill, harms, jump,
+    light, moves, play, roll, root_table, shadow_half, simon, spike_cycle, standing, table, take, vanish_cycle, words)
 from kula_motion_code import GP, PHASES, Code, dispatch  # noqa: E402
+from kula_motion_things import SPINS, SPUN_AT, laser, spin_orders  # noqa: E402
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "gp": 28, "sp": 29, "ra": 31}
