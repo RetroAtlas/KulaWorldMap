@@ -22,7 +22,7 @@ const cross = (a, b) =>
   );
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const axisOf = (v) => v.findIndex((c) => c !== 0);
-/** The cell a point of the ball's lies in, its centre's in the level where none is given. */
+/** The cell a point of the ball lies in, or where none is given the cell its centre lies in. */
 export const cellOf = (b, p = positionOf(b)) => p.map((c) => Math.floor((c + b.half) / b.unit));
 export const faceOf = (n) => FACE_NORMAL.findIndex((f) => f.every((c, i) => c === n[i]));
 
@@ -256,7 +256,7 @@ function swap(b, h, n) {
     while a turn's ramp runs. The roll and the jump are the pad's alone, put at nothing before
     the keys are read, so either asked earlier in the frame stands only where the pad is not
     read; where `asked` is given, its `forward` and `jump` stand in place of Up and Cross, read
-    by a rule of the caller's, and its `turn`, where it has one, in place of the presses. A press
+    by a rule the caller gives, and its `turn`, where it has one, in place of the presses. A press
     is a bit held now and not on the last frame, and a held turn presses again once the count
     passes the repeat. With no jump asked, the floor ahead empty and a block beside the block
     under, the roll is refused; with nothing beside and the block under one the last frame's
@@ -402,8 +402,8 @@ function withinRun(b, p, slack) {
   return b.pos[i] + reach >= p.at[i] && far + reach >= b.pos[i];
 }
 
-/** Ride the platform `p` at rest: the position made relative to the platform's, in which the
-    platform's blocks stand at home and are all the probe calls solid. */
+/** Ride the platform `p` at rest: the position made relative to the platform's position, in which
+    the platform's blocks stand at home and are all the probe calls solid. */
 function ride(b, p, out) {
   b.pos = add(b.pos, p.travel, -1);
   b.riding = { key: p.key };
@@ -446,10 +446,10 @@ function dock(b, probe, out) {
 
 /** Land on a platform first, by the body landing and, where it finds nothing, the end landing,
     riding it, else where the point the radius under the centre lies in a block that is no
-    platform's: laid the radius off its face at rest, the speed the top where the roll is asked,
-    which a landing short of the middle's third with no jump asked asks itself, a request the
-    pad's reading replaces on the frame after, and the speed as the air left it otherwise, for
-    the roll asked next; the long jump's word is cleared. */
+    part of a platform: laid the radius off its face at rest, the speed the top where the roll is
+    asked, which a landing short of the middle's third with no jump asked asks itself, a request
+    the pad's reading replaces on the frame after, and the speed as the air left it otherwise,
+    for the roll asked next; the long jump's word is cleared. */
 function land(b, probe, out) {
   if (b.rules.ride && probe.platform && (board(b, probe, out) || dock(b, probe, out))) return true;
   const block = cellOf(b, add(b.pos, b.n, -b.radius));
@@ -668,7 +668,8 @@ function acting(b, probe, out) {
   else if (b.state === REST) resting(b);
 }
 
-/** The body's turn for the draw; a turn marks this frame's, a wall and the arc the next's. */
+/** The body's turn for the draw; a turn marks it for this frame, a wall and the arc for the
+    next. */
 function spinning(b) {
   const mark = b.mark;
   b.mark = b.marked;
@@ -679,7 +680,7 @@ function spinning(b) {
 }
 
 /** The frame from the requests on: what happened, as events, added to `out`. The last frame's
-    landing, a block's or a hop's end's, is cleared first, so a caller between `read` and `run`
+    landing, on a block or at a hop's end, is cleared first, so a caller between `read` and `run`
     still sees it; the long jump's word is cleared outside the jump's state where it has counted
     past its arming, as the states' dispatcher clears it; while the ball is `frozen` its state
     does nothing, nor the move step nor the landings, and a ramp, the look and the spin go on;

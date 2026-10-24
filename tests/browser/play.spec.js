@@ -28,7 +28,7 @@ const HIDDEN_LEVEL = "/#HIRO/18/45,35/fit/33";
 // SIMON 1: the start on the top row of a ring, facing along it, with nothing two blocks on
 const SIMON_LEVEL = "/#COPYCAT/0/45,35/fit/33";
 const SIMON_PACK = "/HIRO/COPYCAT.PAK";
-// the points are the layout's, a pickup standing on the block the first move rolls onto
+// the points are the layout's points, a pickup standing on the block the first move rolls onto
 const ROUND_DONE =
   "^Well Done! The round is done\\. \\d+ points, \\d+ seconds left\\. Space or Enter starts the level again\\.$";
 const AXES = {
@@ -940,7 +940,7 @@ test("time runs out into the strip's verdict with the pad dead and the view let 
   expect(errors).toEqual([]);
 });
 
-test("Enter starts the level again after a button was clicked, the sidebar's or the strip's, and is left to a strip button the keyboard has moved to, which Space is not", async ({
+test("Enter starts the level again after a button was clicked in the sidebar or on the strip, and is left to a strip button the keyboard has moved to, which Space is not", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -1216,7 +1216,7 @@ test("Keep hands the way the ball has come to the planner and goes on handing it
   await rolled(page, [17, 16, 17]);
   await expect(count).toHaveText("Route planner · 2 stops");
   expect((await route(page)).stations).toHaveLength(2);
-  // pressed once more, the route being the ball's own, the whole way is handed over
+  // pressed once more, the route being the ball's own route, the whole way is handed over
   await expect(keep).toBeEnabled();
   await keep.click();
   await expect(keep).toHaveAttribute("aria-pressed", "true");
@@ -1293,7 +1293,7 @@ test("the route kept under the ball shows in gold on the block the ball crossed 
   await opened(page, { motion: false });
   await startPlay(page);
   const keep = page.locator("#keepBtn");
-  // the dust put away, so any gold over the block is the route's, and two rolls, so the block
+  // the dust put away, so any gold over the block is the route's gold, and two rolls, so the block
   // behind the ball carries a whole roll of it
   await toggled(page, "showDust", "on by default");
   await rolled(page, [17, 17, 17]);
@@ -1437,7 +1437,7 @@ test("following a route to its leap stops the ball there and says so, and with t
   await settle(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a block beside the start's and another across a gap no roll crosses
+  // a block beside the start's block and another across a gap no roll crosses
   await laid(page, [18, 17, 17], { kind: 0 });
   await laid(page, [20, 17, 17], { kind: 0 });
   await expect(page.locator("#chipLine")).toContainText("3 blocks");
@@ -1495,7 +1495,7 @@ test("Keep, pressed, keeps a jump the ball made as a jump of the route, and Foll
   await settle(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a block beside the start's and another across a gap no roll crosses, which a jump clears,
+  // a block beside the start's block and another across a gap no roll crosses, which a jump clears,
   // and a key out of reach, which keeps the level an arcade one that rolling onto every block
   // does not end
   await laid(page, [18, 17, 17], { kind: 0 });
@@ -2328,7 +2328,8 @@ test("with Play on through the levels on a way out goes on to the level the game
     .toContain("On to LEVEL 2. The ball stands on the top of 17,18,17, facing -y.");
   // the funnel's own history entry, with the view the ball was first put down from
   expect(page.url()).toMatch(/#HIRO\/1\/45,35\/fit\/33$/);
-  // Esc leaves play on LEVEL 2 with the ball's view, LEVEL 1's parked view being another level's
+  // Esc leaves play on LEVEL 2 with the ball's view, LEVEL 1's parked view being another
+  // level's view
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
   await expect(page.locator("#chip b")).toHaveText("LEVEL 2");
@@ -2442,10 +2443,10 @@ test("with Motion off a hop on a coin's block takes the coin on the first frame,
 // LEVEL 1's key, on the top of 20,15,17, three blocks on from the turn
 const KEY_BLOCK = [20, 15, 17];
 const KEY_TYPE = 31;
-/** Drive the frozen level along `way` to the block before the key's, roll onto the key's and step
-    on through its burst, reading on each frame the mean brightness the frame paints within most of
-    a block of the key's place: the frame the key was taken on, the table's frames and the
-    samples. */
+/** Drive the frozen level along `way` to the block before the key's block, roll onto the key's
+    block and step on through its burst, reading on each frame the mean brightness the frame paints
+    within most of a block of the key's place: the frame the key was taken on, the table's frames
+    and the samples. */
 const burstAbout = (page, way) =>
   page.evaluate(
     async ([way, block, type]) => {
@@ -2835,7 +2836,7 @@ test("ice slides the ball on over every block to the first that is not ice, and 
   expect(errors).toEqual([]);
 });
 
-test("on fire the ball reddens: where it stands its pixels are redder on the whole than the untinted ball's on plain stone, and with Motion off nothing draws once it rests", async ({
+test("on fire the ball reddens: where it stands its pixels are redder on the whole than the untinted ball's pixels on plain stone, and with Motion off nothing draws once it rests", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -3491,7 +3492,7 @@ test("the sunglasses show every invisible block as the game does, the ball's lig
   expect(after.slice(standing + blinking).every((r) => r.status === "")).toBe(true);
   // once the view has settled, a top's pixels at a phase of the shimmer are the same on every
   // frame of the same state: the look every face takes while the blocks are seen, read off the
-  // word's frames, and the light's, read off the frames after the blink
+  // word's frames, and the light's look, read off the frames after the blink
   const phase = (r) => r.frame % period;
   const look = new Map();
   const unlit = new Map();
@@ -4116,7 +4117,8 @@ test("the lethargy pill rolls the view and ghosts the screen as the game does: t
   expect(bright(ghost)).toBeGreaterThan(bright(base) / 2 + 60);
   expect(bright(ghost)).toBeLessThan(250);
   expect(ghost[1] - ghost[0] - (base[1] - base[0]) / 2).toBeGreaterThan(8);
-  // the glow fades from the end: brighter first, dimmer midway, the scene's own at its last pass
+  // the glow fades from the end: brighter first, dimmer midway, the scene's own brightness at its
+  // last pass
   expect(bright(samples[end + 1])).toBeGreaterThan(bright(samples[end + Math.ceil(fades / 2)]));
   expect(bright(samples[end + Math.ceil(fades / 2)])).toBeGreaterThan(bright(samples[end + fades]));
   expect(Math.abs(bright(samples[end + fades]) - bright(base))).toBeLessThanOrEqual(10);
@@ -4307,7 +4309,7 @@ test("a teleport's shell is laid as the game lays it: the sprite's third corner 
   expect(errors).toEqual([]);
 });
 
-test("a level with no key opens from white as the game's does: the first frame is white over the whole canvas, the white wanes on each pass at full pace, and the frame the derived passes on is the scene's own again", async ({
+test("a level with no key opens from white as in the game: the first frame is white over the whole canvas, the white wanes on each pass at full pace, and the frame the derived passes on is the scene's own frame again", async ({
   page,
 }) => {
   const errors = trackErrors(page);

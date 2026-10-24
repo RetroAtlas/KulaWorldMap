@@ -24,7 +24,7 @@ const CLOCK_START = 29;
 export const KEY = 31;
 // The kinds the game's walk over the inner lattice builds and counts.
 const COUNTED = new Set([0, 1, 2, 4, 6, 7]);
-// The game starts an entry's angles at zero, where a pickup's are random.
+// The game starts an entry's angles at zero, where a pickup's angles are random.
 const ENTRY_PHASE = [0, 0, 0];
 
 const add = (p, v, k = 1) => p.map((c, i) => c + v[i] * k);
@@ -327,8 +327,8 @@ export function marked(world, key, frame) {
     gone, with what stood on them, with the blocks marked and the frame each was first drawn
     marked on as `marked`, and, until the level's outcome stands, less the starts, whose ball the
     ball on the level is, the start the game takes leaving the clock where it stands on one;
-    shaped as the level's, play's own where nothing is dropped or marked, and rebuilt only when
-    any of those changes. */
+    shaped as the level's index, play's own index itself where nothing is dropped or marked, and
+    rebuilt only when any of those changes. */
 export function viewOf(live) {
   const world = live.world;
   const ended = !!live.words.outcome;

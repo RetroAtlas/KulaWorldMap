@@ -31,8 +31,8 @@ const station = (b) => ({ cell: blockUnder(b), face: faceUnder(b) });
 const standingOf = (motion, kind) => motion.kinds[String(kind)].standing;
 
 /** The death `cause` as a countdown, refused once the outcome stands, while a wait runs or the
-    invincibility pill stands, or while the ending is this cause's own where it `overrides`
-    another's; whether it took. */
+    invincibility pill stands, or while the ending is this cause's own ending where it
+    `overrides` another cause's ending; whether it took. */
 export function die(live, out, cause, how = {}) {
   const { freeze = false, mark = false, kept = false, wait = null, overrides = false } = how;
   const w = live.words;
@@ -55,8 +55,8 @@ export function die(live, out, cause, how = {}) {
 
 // The arrow under the ball, on the ground or in the air, lets the forward request stand along its
 // way alone, said where the ball is at rest and no jump is asked, and ice makes the request,
-// dropping a turn's and the refusal the pad's reading said; the arrow's way, where one is under
-// the ball.
+// dropping a turn's request and the refusal the pad's reading said; the arrow's way, where one is
+// under the ball.
 function steered(live, out) {
   const w = live.words;
   const b = live.ball;
@@ -220,8 +220,8 @@ function pointOf(live, c, frame) {
 
 /** The first captivator within its reach of the ball's position words as they stand, a walker
     where it has stepped to and any other entry where its bounce has lifted it on this frame,
-    catches the ball, over any countdown but a catch's own; the words of a ball riding a platform
-    are relative to it, which puts it out of every captivator's reach. */
+    catches the ball, over any countdown but a catch's own countdown; the words of a ball riding
+    a platform are relative to it, which puts it out of every captivator's reach. */
 export function catching(live, out) {
   const pos = wordsOf(live);
   const { frame } = live.words;

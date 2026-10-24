@@ -358,7 +358,7 @@ function travellers(l) {
     // at an inner corner the ball touches the block it leaves as well as the wall, and a
     // platform's blocks are drawn off their cells, so while the climb's ramp runs or the ball
     // rides it sorts as the unit cube about its centre would, by that cube's corner as a block
-    // sorts by its cell's, rather than by the block under it
+    // sorts by its cell's depth, rather than by the block under it
     depth:
       live.run.ball.ramp?.kind === "climb" || live.run.ball.riding
         ? depth(...s.centre.map((v) => v - 0.5))
@@ -528,7 +528,7 @@ const eyeOf = (view, form) => {
   return view;
 };
 
-// The orbit has no eye, so the zoom stands in for how large the level looks from the game's,
+// The orbit has no eye, so the zoom stands in for how large the level looks from the game's eye,
 // which stands the level's radius and an offset off the middle and swings its reach, where it
 // has one, nearer and further by turns.
 function swung() {
@@ -618,7 +618,7 @@ function advance() {
   const dt = Math.min(GAP_MS, now - last);
   last = now;
   let moved = live ? stepped(dt) : false;
-  // after the step, so the ease's end is this frame's
+  // after the step, so the ease ends on this frame
   if (ease) {
     easing(now);
     invalidatePick();

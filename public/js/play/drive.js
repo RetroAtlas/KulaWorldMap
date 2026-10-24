@@ -66,10 +66,10 @@ export function keyPad() {
     the step on from each station it comes to is a roll the way it heads, so the ball comes to
     rest only where the course turns, jumps, leaps or ends, or the jump, Up and Cross together
     for the one frame that takes the ball off its station from rest, after which it gives nothing
-    and judges nothing while the ball is in the air, the block under a flying ball being no
-    station of the course's, and reads the landing as it reads any station; done at the course's
+    and judges nothing while the ball is in the air, the block under a flying ball being none
+    of the course's stations, and reads the landing as it reads any station; done at the course's
     end, at a leap, which no roll or jump follows, a roll or a jump the lattice as it stands no
-    longer allows counting as one, or where the ball stands on no station of the course's,
+    longer allows counting as one, or where the ball stands on none of the course's stations,
     strayed. */
 export function courseDriver(course, i = 0) {
   const { stations, steps } = course;

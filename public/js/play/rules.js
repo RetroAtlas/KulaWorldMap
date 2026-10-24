@@ -74,16 +74,16 @@ const effectTable = (live, kind) => effectsOf(live).tables[effectsOf(live).kinds
 /** The screen's mode word under the lethargy pill: the states its routine runs, in their order. */
 export const SCREEN = { off: 0, flash: 1, ghost: 2, end: 3, fade: 4 };
 
-/** The flash's mode word, as its routine takes it: a send's, or the opening's on a level with no
-    key, each naming the table's entry the strength and the step come from. */
+/** The flash's mode word, as its routine takes it: a send's mode, or the opening's mode on a level
+    with no key, each naming the table's entry the strength and the step come from. */
 export const FLASH = { teleport: "teleport", bonus: "bonus" };
 
-/** The level's mode word, as the loader numbers a level: the arcade's, a level with no key or a
-    hidden level. */
+/** The level's mode word, as the loader numbers a level: the arcade's mode, a level with no key or
+    a hidden level. */
 export const FORM = { arcade: 0, bonus: 1, hidden: 2 };
 
-/** The game's mode word, as the menu that starts a game sets it: the arcade's, or the Simon
-    rooms', which the Copycat pack is played in. */
+/** The game's mode word, as the menu that starts a game sets it: the arcade's mode, or the Simon
+    rooms' mode, which the Copycat pack is played in. */
 export const MODE = { arcade: 0, simon: 1 };
 const SIMON = MODE.simon;
 
@@ -92,8 +92,8 @@ const SIMON = MODE.simon;
 export const startGame = () => ({ total: 0, bank: 0, fruit: 0, count: 0, kept: 0 });
 
 /** The Simon rooms' game as the menu that starts the mode leaves it: the players' points at
-    nothing, the word the loop flips before a reset at the menu's, and the total at nothing, which
-    the game's end puts below it. */
+    nothing, the word the loop flips before a reset at the menu's value, and the total at
+    nothing, which the game's end puts below it. */
 export const startSimon = ({ players, starter }) => ({
   total: 0,
   points: Array(players).fill(0),
@@ -117,12 +117,12 @@ export const roundOf = ({ round, count }) => ({ round: round + 1, moves: count +
 // The other player than `player`'s, the next taken round the players.
 const other = (player, players) => (player + 1) % players;
 
-/** The game's mode word: the Simon rooms' for a room, else the arcade's. */
+/** The game's mode word: the Simon rooms' mode for a room, else the arcade's mode. */
 export const modeOf = (l, { skins }) => (simonRoom(skins, l) ? SIMON : MODE.arcade);
 
 /** The game the level is played in: `game` carried on where one stands, else a fresh one, the
-    Simon rooms' for a room and the arcade's for a level the game counts, or null for a level it
-    counts nowhere, a draft. */
+    Simon rooms' game for a room and the arcade's game for a level the game counts, or null for a
+    level it counts nowhere, a draft. */
 export function gameOf(l, tables, game = null) {
   if (modeOf(l, tables) === SIMON) return game ?? startSimon(tables.motion.play.simon);
   return stationOf(l, tables) ? (game ?? startGame()) : null;
@@ -161,10 +161,11 @@ export function conclude(live) {
 
 /** The Simon rooms' step on the frame an ending stands, over `game`, the mode's words, in the
     loop's order: a failed round, any outcome below nothing, gives a point to the other player than
-    the turn's, and then, where the room the game loads next is the first and a player's points
-    are past the table's with the outcome below nothing, the end screen names the winner, or the
-    draw where the two are equal, and the game is ended as the menu code ends it, the total put
-    below nothing. The player given the point, or null, and the screen's word, or null. */
+    the turn's player, and then, where the room the game loads next is the first and a player's
+    points are past the table's points with the outcome below nothing, the end screen names the
+    winner, or the draw where the two are equal, and the game is ended as the menu code ends it,
+    the total put below nothing. The player given the point, or null, and the screen's word, or
+    null. */
 export function scored(game, live) {
   const w = live.words;
   const { simon, words } = live.tables.motion.play;
@@ -409,8 +410,8 @@ export const heeds = (live) => {
   return w.wait <= 1 && w.rolled <= 1 && w.standing !== BUTTON && !judged(live);
 };
 
-// The verdict becomes the ending, the exit's code for the sequence done and the rooms' own for
-// a wrong move, with the rooms' wait, and is cleared; the sequence done passes the turn to the
+// The verdict becomes the ending, the exit's code for the sequence done and the rooms' own code
+// for a wrong move, with the rooms' wait, and is cleared; the sequence done passes the turn to the
 // other player.
 function judge(live) {
   const w = live.words;
@@ -493,7 +494,7 @@ function ground(live, out) {
   const b = live.ball;
   const { ending, wait } = live.tables.motion.play;
   if (w.bonus) {
-    // the cells about a riding ball are its platform's, which hold no block of the level's
+    // the cells about a riding ball are its platform's cells, which hold none of the level's blocks
     if (!b.riding) mark(live, cellOf(b, add(b.pos, b.n, -(b.half + b.radius))), out);
     if (w.unmarked !== 0) return;
     if (b.landed) end(live, ending.bonus, out);
@@ -545,7 +546,7 @@ export function startEffect(live, kind, at, { light = null, icon = null } = {}) 
   return true;
 }
 
-// The point of the game's HUD a pickup's second effect stands at: the clock's for the pickup
+// The point of the game's HUD a pickup's second effect stands at: the clock's point for the pickup
 // that turns the clock, a fruit's icon by its bit, and the key's icon, which the map has no
 // point for.
 function iconOf({ clock, fruit }, take) {
@@ -734,7 +735,7 @@ function readCells(live) {
     count steps while either stands and is put at nothing otherwise, and until it reaches the
     pill's `latch` nothing more is read; from there the roll's request is the Up latch, the long
     jump is armed where both latches stand with the ball's `long` at nothing and its `state` not
-    the forward jump's, and both latches are cleared with the count kept. The jump is asked
+    the forward jump's state, and both latches are cleared with the count kept. The jump is asked
     whatever the keys. */
 export function latched(latch, pad, lasts, { long, state }) {
   if (pad & PAD.up) latch.up = 1;
@@ -753,11 +754,11 @@ export function latched(latch, pad, lasts, { long, state }) {
     the last frame left it: null while a verdict stands, nothing read. Else the idle count grows
     on a frame at rest with no turn running and goes back to nothing on any other; Up held sets
     the Up latch and Cross held the Cross latch, the count grows while either stands, and as it
-    reaches the table's latch the jump's request takes Cross's latch and the roll's Up's, with
-    the count and both latches cleared, which they are on every frame instead while the idle
-    count is under the first gate; while it is under the second gate the three requests are
-    nothing, and from it a held Left asks a turn of 1 and a held Right one of -1, each putting
-    the idle count back to nothing. */
+    reaches the table's latch the jump's request takes Cross's latch and the roll's request Up's
+    latch, with the count and both latches cleared, which they are on every frame instead while
+    the idle count is under the first gate; while it is under the second gate the three requests
+    are nothing, and from it a held Left asks a turn of 1 and a held Right one of -1, each
+    putting the idle count back to nothing. */
 export function copied(w, pad, simon, b) {
   if (w.verdict) return null;
   const latch = w.latch;
@@ -833,7 +834,7 @@ function held(live) {
 /** One game frame with `pad` as held: what happened, as events. The frame the clock runs out on
     runs to its end, as the game's does, the crumbling blocks breaking up and the screen's words
     stepping last as the draw runs them, and nothing runs once the outcome stands; the ending's
-    view is the mode's. */
+    view is the one the mode gives. */
 export function frame(live, pad) {
   const w = live.words;
   const b = live.ball;
@@ -882,8 +883,8 @@ export function frame(live, pad) {
   w.way = b.way;
   if (w.bonus && out.some((e) => e.face === "climb")) mark(live, ahead, out);
   if (!w.guard) contact(live, out);
-  // the bursts, the teleporter's as its count starts and a pickup's as it is taken, and the flash
-  // as a send lands the ball
+  // the bursts, the teleporter's burst as its count starts and a pickup's burst as it is taken, and
+  // the flash as a send lands the ball
   for (const e of out) {
     if (e.took) burst(live, e.took);
     else if (e.sending) {
