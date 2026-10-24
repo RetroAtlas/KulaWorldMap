@@ -44,7 +44,6 @@ const OVER = {
   "tests/browser/legend-display.spec.js": 1200,
   "tests/browser/course.spec.js": 900,
   "tests/unit/project.test.js": 1900,
-  "tests/unit/hazards.test.js": 1600,
   "tests/unit/docs.test.js": 1300,
   "tests/unit/kwl.test.js": 1300,
   "tests/unit/motion.test.js": 1300,
