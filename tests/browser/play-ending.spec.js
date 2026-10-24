@@ -1,7 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { faced, frozen, laid, settle, timed, trackErrors } from "./helpers.js";
 import {
-  ENDED,
   IDENTITY,
   LEVEL,
   betweenFrames,
@@ -20,6 +19,7 @@ import {
   status,
   stepTo,
 } from "./playhelpers.js";
+import { ENDED } from "../../public/js/play/phrases.js";
 
 // HIDDEN 1: a field of blocks two apart, the start on the one nearest the player, so a jump to
 // either side comes down on nothing

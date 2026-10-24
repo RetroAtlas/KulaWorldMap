@@ -17,24 +17,21 @@ import {
   fitLevel,
   levelCentre,
 } from "../viewer/state.js";
-import { SIDE, cellKey, FACE_NAME, FACE_NORMAL, DIRECTION_NAME } from "../format/lattice.js";
+import { SIDE, cellKey, FACE_NORMAL } from "../format/lattice.js";
 import {
   ballFor,
   blockUnits,
-  counted,
   flip,
   jumpTable,
   layHeading,
   levelTitle,
   litNow,
-  markerLabel,
   markerModel,
   markerNow,
   modelUnit,
   motionTable,
   skinsTable,
   startsOf,
-  theCircuit,
   worldName,
   worldTint,
   TANGENT,
@@ -74,7 +71,6 @@ import {
   blockUnder,
   centreOf,
   clearance,
-  faceOf,
   faceUnder,
   moving,
   offsetFrame,
@@ -92,7 +88,53 @@ import {
   startRun,
 } from "./rules.js";
 import { SCREEN, blanksOf, drawn, glowOf, glowStep, rockOf, seeing } from "./passes.js";
-import { FORM, MODE, conclude, gameOf, nextOf, roundOf } from "./game.js";
+import { FORM, MODE, conclude, gameOf, nextOf } from "./game.js";
+import {
+  AT,
+  BROKE,
+  CLOCK_ROUND,
+  DONE_WHY,
+  DYING,
+  ENDED,
+  FOLLOWING,
+  FOLLOWING_PAD,
+  FORGIVEN,
+  GONE,
+  KEEPING,
+  KEPT,
+  LAUNCHED,
+  LEFT_PLAY,
+  LEFT_PLAY_RESTORED,
+  LINE,
+  NO_FIRST_STOP,
+  NO_START,
+  NOWHERE,
+  OBJECTS_ON,
+  OPENED,
+  PLAYING,
+  PUT_ON,
+  REFUSED,
+  RIDING,
+  ROUTE_STANDS,
+  SENDING,
+  SENT,
+  STANDS,
+  STARTED,
+  TAKEN,
+  THROWN,
+  TOOK,
+  UNDERFOOT,
+  WEARING_OFF,
+  WOULD,
+  deathOf,
+  endingName,
+  faceName,
+  howEnded,
+  hudOf,
+  isFollowing,
+  noted,
+  thenOn,
+} from "./phrases.js";
 import { courseDriver, keyPad } from "./drive.js";
 import { frameShown, probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 
@@ -129,64 +171,6 @@ const BITS = {
 };
 const PAD_BITS = { up: PAD.up, left: PAD.left, right: PAD.right, jump: PAD.cross };
 const PLAIN_KIND = 0;
-const REFUSED = {
-  arrow: "The ball cannot roll off here: the arrow points another way.",
-};
-const LAUNCHED = "Launched by the boost button.";
-const RIDING = "The ball rides the platform.";
-const NO_START = "The level has no start, so the ball stands on the first face it could.";
-const NOWHERE = "The level has no face the ball could stand on.";
-const OBJECTS_ON = "Objects turned on, for the ball.";
-const VERDICT = {
-  exit: "Out by the exit: the level is done.",
-  hidden: "Out by the hidden exit: the level is done.",
-  bonus: "Every block is marked: the level is done.",
-};
-const DYING = {
-  spikes: "On the spikes",
-  fire: "Burnt",
-  captivator: "Caught",
-  acid: "In the acid",
-  laser: "In the beam",
-};
-const WOULD = {
-  spikes: "been killed on the spikes",
-  fire: "been burnt",
-  captivator: "been caught",
-  acid: "been dissolved in the acid",
-  laser: "been killed in the beam",
-  lost: "fallen off the level",
-};
-const FORGIVEN = (name) => `Forgiven: the ball would have ${WOULD[name]}.`;
-const ENDED = "The level has ended";
-const ROUND_DONE = "The round is done.";
-const ROUND_LOST = "The round is lost.";
-const PLAYER = (player) => `Player ${player + 1}`;
-const POINT_TO = (player) => `The round is lost, a point to ${PLAYER(player)}.`;
-const AFRESH = "The run starts afresh.";
-const MATCH_AFRESH = "The match starts afresh.";
-const OPENED = "The last key is taken: the exits are open.";
-const BROKE = "The crumbling block breaks under the ball.";
-const GONE = (cell) => `The crumbling block at ${cell} is gone.`;
-const SENDING = "The teleporter is sending the ball.";
-const WEARING_OFF = "The sunglasses are wearing off: the invisible blocks are about to hide again.";
-const KEYS_LEFT = "The keys left to take";
-const BLOCKS_LEFT = "The blocks left to roll onto";
-const AGAIN = "Space or Enter starts the level again.";
-const AGAIN_PAD = "Space, Enter or a tap on the pad starts the level again.";
-const ON = (title) => `Space or Enter goes on to ${title}.`;
-const ON_PAD = (title) => `Space, Enter or a tap on the pad goes on to ${title}.`;
-const KEPT = "The way the ball has come is now the route.";
-const KEEPING = "The way the ball has come is now the route, and grows as the ball goes on.";
-const ROUTE_STANDS = "A route already stands; clear it to keep the walk.";
-const FOLLOWING = "Following the route; an arrow or Space takes the ball back.";
-const FOLLOWING_PAD = "Following the route; an arrow, Space or the pad takes the ball back.";
-const NO_FIRST_STOP = "The route's first stop has nothing to stand on.";
-const DONE_WHY = {
-  end: "The route is done: the ball stands at its last stop.",
-  leap: "The route leaps from here, which the ball cannot follow.",
-  strayed: "The ball has left the route.",
-};
 const AT_SWITCH = 6;
 const AT_GONE = 10;
 const AT_BREAK = 2;
@@ -229,7 +213,6 @@ const motionOn = () => state.show.motion;
 const pillTable = () => motionTable().types[String(LETHARGY_TYPE)].lasts;
 const glowTable = () => motionTable().types[String(INVINCIBLE_TYPE)].lasts.glow;
 const smooth = (t) => t * t * (3 - 2 * t);
-const faceName = (v) => DIRECTION_NAME[faceOf(v)];
 
 // --- the ball as the frame draws it -----------------------------------------------------
 
@@ -753,19 +736,6 @@ function played() {
   if (b.state === REST) live.notes.length = 0;
 }
 
-/** The name of the ending `code` in the table, or null. */
-function endingName(code) {
-  const { ending } = motionTable().play;
-  return Object.keys(ending).find((k) => ending[k] === code) ?? null;
-}
-
-/** The cause of the death whose countdown runs, or null. */
-function deathOf(w) {
-  if (w.outcome || !w.ending) return null;
-  const name = endingName(w.ending);
-  return DYING[name] ? name : null;
-}
-
 // The dying flash's angle steps each frame the mark stands and starts over as it clears.
 function flashed(w) {
   const { types, turn } = motionTable();
@@ -939,19 +909,19 @@ function happened(event) {
   if (event.clock) {
     const { second } = motionTable().play.clock;
     const left = Math.max(0, Math.floor(event.clock.to / second));
-    say(`The hourglass turns the clock round: ${counted(left, "second")} left.`);
+    say(CLOCK_ROUND(left));
     return;
   }
   if (event.at) {
     live.station = true;
     const block = blockUnder(b);
-    say(noted(`${block.join(",")}, ${FACE_NAME[faceUnder(b)]}`));
+    say(noted(live.notes, AT(block, faceUnder(b))));
     status(b.riding ? RIDING : null);
     walked({ cell: block, face: faceUnder(b) });
     if (!motionOn()) strewn(live.still.foot, footOf(b), b.n, (p) => blockAt(p, b.n, block), true);
   } else if (event.face) {
     live.station = true;
-    say(noted(`${FACE_NAME[faceUnder(b)]} of ${blockUnder(b).join(",")}, now underfoot`));
+    say(noted(live.notes, UNDERFOOT(faceUnder(b), blockUnder(b))));
     burst(footOf(b), b.n, blockUnder(b), AT_SWITCH);
   } else if (event.turned) {
     live.station = true;
@@ -962,8 +932,7 @@ function happened(event) {
 /** A thing taken: the take said, and the panel brought up to date where it shows the block. */
 function taken({ key, face, points }) {
   const m = (live.run.world.idx.markers.get(key) ?? []).find((m) => m.face === face);
-  const label = markerLabel(m);
-  say(points ? `${label} taken, ${counted(points, "point")}.` : `${label} taken.`);
+  say(TOOK(m, points));
   refreshPanel();
   invalidatePick();
 }
@@ -973,15 +942,11 @@ function refreshPanel() {
   if (state.selected) showCell(state.selected, { raise: false });
 }
 
-/** A stop's sentence with what happened on the way to it, which a sentence of its own said
-    mid-roll would lose to the stop's within the frame. */
-const noted = (text) => (live.notes.length ? `${text}. ${live.notes.splice(0).join(" ")}` : text);
-
 /** A switch thrown under the ball: dust at its foot, the circuit's turn said, the panel redrawn. */
 function threw({ circuit }) {
   const b = live.run.ball;
   burst(footOf(b), b.n, blockUnder(b), AT_SWITCH);
-  const text = `Switch thrown: ${theCircuit(circuit)} turned over.`;
+  const text = THROWN(circuit);
   say(text);
   live.notes.push(text);
   refreshPanel();
@@ -1041,7 +1006,7 @@ function sent({ to }) {
   state.target = [...centreOf(b)];
   if (state.framing === fit) fit();
   status(null);
-  say(`Sent to the ${FACE_NAME[to.face]} of ${to.cell.join(",")}.`);
+  say(SENT(to.face, to.cell));
   redraw = true;
   invalidatePick();
 }
@@ -1057,22 +1022,15 @@ function sent({ to }) {
     length of one swing of an arcade level's eye, whichever eye the level's word stands. */
 function ended(code) {
   const { play, turn } = motionTable();
-  const { view, clock, words } = play;
+  const { view } = play;
   const run = live.run;
   if (!state.show.playon) run.game = null;
   const w = run.words;
-  const name = endingName(code);
   const settled = conclude(run);
-  const seconds = Math.max(0, Math.floor(w.clock / clock.second));
-  const room = w.mode === MODE.simon;
-  const word = words[name] ?? `${ENDED}.`;
-  const told = room ? roomTold(code, word, settled) : (VERDICT[name] ?? word);
-  const how = `${told} ${counted(w.score, "point")}, ${counted(seconds, "second")} left.`;
-  const did = settled && (room ? settled.won && MATCH_AFRESH : banked(settled, words));
   const next = run.game ? pickedLevel(nextOf(run.game, run, packCount(live.level.pack))) : null;
   live.ended = {
     code,
-    how: did ? `${how} ${did}` : how,
+    how: howEnded(code, w, settled, play),
     next,
     frame: 0,
     length: Math.floor(turn / view.swing),
@@ -1096,21 +1054,9 @@ function ended(code) {
   invalidatePick();
 }
 
-/** A room's word for its ending `code`: the end screen's `word`, or the winner's where the match
-    is won, and whether the round is done or lost, with whose point it is where a match is on. */
-function roomTold(code, word, settled) {
-  const named = settled?.won ?? word;
-  if (code > 0) return `${named} ${ROUND_DONE}`;
-  return settled?.point == null ? `${named} ${ROUND_LOST}` : `${named} ${POINT_TO(settled.point)}`;
-}
-
 /** The strip's verdict: how the level ended and what the key goes on to, the level the game loads
     next or this one again, the pad named while it shows. */
-const verdict = () => {
-  const { how, next } = live.ended;
-  const then = next ? (padShown ? ON_PAD : ON)(levelTitle(next)) : padShown ? AGAIN_PAD : AGAIN;
-  return `${how} ${then}`;
-};
+const verdict = () => `${live.ended.how} ${thenOn(live.ended.next, padShown)}`;
 
 /** The levels the pack holds, as the data has them. */
 const packCount = (pack) => state.data.levels.filter((l) => l.pack === pack).length;
@@ -1121,16 +1067,6 @@ function pickedLevel(pick) {
   if (!pick) return null;
   const l = state.data.levels.find((x) => x.pack === pick.pack && x.index === pick.index);
   return l && l !== live.level ? l : null;
-}
-
-/** What the ending did to the run's total: the penalty taken or the points banked, the total,
-    and where that is below nothing the game's word for its end. */
-function banked({ penalty, banked: points, total, over }, words) {
-  const did = penalty
-    ? `${counted(penalty, "point")} off the total`
-    : `${counted(points, "point")} banked`;
-  const sum = `${did}, ${counted(total, "point")} in all.`;
-  return over ? `${sum} ${words.over} ${AFRESH}` : sum;
 }
 
 /** The death forgiven: the ball put back at rest and the status saying what would have been. */
@@ -1203,9 +1139,7 @@ function startOver({ onward = true } = {}) {
   refreshPanel();
   redraw = true;
   invalidatePick();
-  say(
-    `${went ? `On to ${levelTitle(l)}` : `${levelTitle(l)} again`}. The ball stands on the ${FACE_NAME[at.face]} of ${at.cell.join(",")}, facing ${faceName(b.h)}.`,
-  );
+  say(STARTED(l, went, at.face, at.cell, b.h));
 }
 
 /** Go on to `next`, a level of the disc, through the viewer's level funnel with play kept on:
@@ -1258,7 +1192,6 @@ function routing() {
 
 /** The strip's word while the ball follows the route, the pad named while it shows. */
 const following = () => (padShown ? FOLLOWING_PAD : FOLLOWING);
-const isFollowing = (text) => text === FOLLOWING || text === FOLLOWING_PAD;
 
 /** Roll the ball along the planned route from the stop it stands on, or from the first stop,
     where it is put, when it stands on none or on the last; pressed again, let the ball go. */
@@ -1282,7 +1215,7 @@ function followRoute() {
   live.keeping = false;
   if (i < 0) {
     put({ cell: first.cell, face: first.face, h: tangent(first.face, route.steps[0]?.k ?? 0) });
-    placed = `The ball is put on the ${FACE_NAME[first.face]} of ${first.cell.join(",")}. `;
+    placed = `${PUT_ON(first.face, first.cell)} `;
     i = 0;
   }
   live.driver = courseDriver(route, i);
@@ -1355,7 +1288,6 @@ const takenOn = (key) =>
         (m) => m.face !== null && live.run.world.taken.has(`${key}/${m.face}`),
       )
     : [];
-const TAKEN = (m) => `Taken: ${markerLabel(m)} on the ${FACE_NAME[m.face]}`;
 
 // --- the strip and the pad ----------------------------------------------------------------
 
@@ -1405,36 +1337,29 @@ function marked(bonus, fresh = false) {
 function line() {
   if (!live) return;
   const s = shown();
-  const text = live.ended
-    ? ENDED
-    : `Playing · on the ${FACE_NAME[s.face]} of ${s.block.join(",")}, facing ${faceName(s.h)}`;
+  const text = live.ended ? ENDED : LINE(s.face, s.block, s.h);
   const el = $("playLine");
   if (el.textContent !== text) el.textContent = text;
   const w = live.run.words;
-  const { clock } = motionTable().play;
-  reading("playClock", `Time ${Math.max(0, Math.floor(w.clock / clock.second))}`);
-  reading(
-    "playKeys",
-    w.bonus ? counted(w.unmarked, "block") : `Keys ${w.keys}`,
-    w.bonus ? BLOCKS_LEFT : KEYS_LEFT,
-  );
-  marked(w.bonus);
-  reading("playPoints", counted(w.score, "point"));
   const game = live.run.game;
+  const hud = hudOf(w, game, live.run.match, motionTable().play);
+  reading("playClock", hud.clock);
+  reading("playKeys", hud.keys, hud.keysTitle);
+  marked(w.bonus);
+  reading("playPoints", hud.points);
   const room = w.mode === MODE.simon;
   for (const id of ["playRound", "playMoves"]) $(id).hidden = !room;
   for (const id of ["playTurn", "playMatch"]) $(id).hidden = !(room && game);
   if (room) {
-    const { round, moves } = roundOf(live.run.match);
-    figure("playRound", `Round ${round}`);
-    figure("playMoves", counted(moves, "move"));
+    figure("playRound", hud.round);
+    figure("playMoves", hud.moves);
     if (game) {
-      figure("playTurn", `${PLAYER(live.run.match.turn)}'s turn`);
-      figure("playMatch", `Match ${game.points.join(" : ")}`);
+      figure("playTurn", hud.turn);
+      figure("playMatch", hud.match);
     }
   }
   $("playTotal").hidden = !game || room;
-  if (game && !room) figure("playTotal", `Total ${game.total}`);
+  if (game && !room) figure("playTotal", hud.total);
 }
 
 function sync() {
@@ -1665,9 +1590,7 @@ function enter(at = null) {
   invalidatePick();
   draw();
   const s = stateOf(ball);
-  say(
-    `Playing ${levelTitle(l)}. The ball stands on the ${FACE_NAME[s.face]} of ${s.block.join(",")}, facing ${faceName(s.h)}. The arrows roll and turn it, Esc leaves.`,
-  );
+  say(PLAYING(l, s.face, s.block, s.h));
 }
 
 /** Bring the view round behind the ball from `from`, easing with Motion on and at once without. */
@@ -1719,7 +1642,7 @@ function leave({ restore = true } = {}) {
   };
   if (!restore || !back) {
     done();
-    sayLeaving("Left play.");
+    sayLeaving(LEFT_PLAY);
     return;
   }
   const to = {
@@ -1732,7 +1655,7 @@ function leave({ restore = true } = {}) {
   startEase(viewNow(), to, LEAVE_MS, done);
   invalidatePick();
   drawSoon();
-  sayLeaving("Left play; the view is as it was.");
+  sayLeaving(LEFT_PLAY_RESTORED);
 }
 
 export function togglePlay() {
@@ -1769,9 +1692,7 @@ export function playAt(c) {
   if (live.ended) startOver({ onward: false });
   put(at);
   const s = live.still;
-  say(
-    `The ball stands on the ${FACE_NAME[s.face]} of ${s.block.join(",")}, facing ${faceName(s.h)}.`,
-  );
+  say(STANDS(s.face, s.block, s.h));
 }
 
 export function bootPlay() {

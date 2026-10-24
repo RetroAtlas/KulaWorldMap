@@ -1,16 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { overlaps, trackErrors } from "./helpers.js";
-import {
-  FOLLOWING_PAD,
-  anchor,
-  hold,
-  line,
-  opened,
-  probe,
-  startPlay,
-  status,
-  top,
-} from "./playhelpers.js";
+import { anchor, hold, line, opened, probe, startPlay, status, top } from "./playhelpers.js";
+import { FOLLOWING_PAD } from "../../public/js/play/phrases.js";
 
 test.describe("with a touch screen", () => {
   test.use({ hasTouch: true });

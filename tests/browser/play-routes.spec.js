@@ -1,7 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { drawn, faced, gold, laid, settle, still, topPixels, trackErrors } from "./helpers.js";
 import {
-  FOLLOWING_PAD,
   LEVEL,
   betweenFrames,
   line,
@@ -17,16 +16,13 @@ import {
   stopOn,
   toggled,
 } from "./playhelpers.js";
-
-const KEEPING = "The way the ball has come is now the route, and grows as the ball goes on.";
-
-const FOLLOWING = "Following the route; an arrow or Space takes the ball back.";
-
-const FOLLOWED = "The route is done: the ball stands at its last stop.";
-
-const AT_LEAP = "The route leaps from here, which the ball cannot follow.";
-
-const NO_FIRST_STOP = "The route's first stop has nothing to stand on.";
+import {
+  DONE_WHY,
+  FOLLOWING,
+  FOLLOWING_PAD,
+  KEEPING,
+  NO_FIRST_STOP,
+} from "../../public/js/play/phrases.js";
 
 test("Keep hands the way the ball has come to the planner and goes on handing it over as the ball goes on, until it is pressed again, the route is cleared or followed, and another's route leaves it disabled", async ({
   page,
@@ -167,8 +163,8 @@ test("Follow rolls the ball along the planned route to its last stop and says th
   await expect
     .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [50] })
     .toEqual([20, 15, 17]);
-  await expect(status(page)).toHaveText(FOLLOWED);
-  await expect(say(page)).toHaveText(FOLLOWED);
+  await expect(status(page)).toHaveText(DONE_WHY.end);
+  await expect(say(page)).toHaveText(DONE_WHY.end);
   await expect(follow).toHaveAttribute("aria-pressed", "false");
   await expect.poll(() => said(page)).toContain(FOLLOWING);
   await expect.poll(() => said(page)).toContain("17,15,17, top");
@@ -262,8 +258,8 @@ test("following a route to its leap stops the ball there and says so, and with t
   await expect
     .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [50] })
     .toEqual([18, 17, 17]);
-  await expect(status(page)).toHaveText(AT_LEAP);
-  await expect(say(page)).toHaveText(AT_LEAP);
+  await expect(status(page)).toHaveText(DONE_WHY.leap);
+  await expect(say(page)).toHaveText(DONE_WHY.leap);
   await expect(follow).toHaveAttribute("aria-pressed", "false");
   expect((await probe(page)).station).toEqual({
     block: [18, 17, 17],
@@ -351,8 +347,8 @@ test("Keep, pressed, keeps a jump the ball made as a jump of the route, and Foll
   await expect(follow).toHaveAttribute("aria-pressed", "true");
   const put = `The ball is put on the top of 17,17,17. ${FOLLOWING}`;
   await expect.poll(() => said(page)).toContain(put);
-  await expect(status(page)).toHaveText(FOLLOWED, { timeout: 10_000 });
-  await expect(say(page)).toHaveText(FOLLOWED);
+  await expect(status(page)).toHaveText(DONE_WHY.end, { timeout: 10_000 });
+  await expect(say(page)).toHaveText(DONE_WHY.end);
   await expect(follow).toHaveAttribute("aria-pressed", "false");
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   expect((await probe(page)).station).toEqual({

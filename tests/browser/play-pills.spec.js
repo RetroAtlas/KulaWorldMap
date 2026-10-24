@@ -12,6 +12,7 @@ import {
   station,
   stepped,
 } from "./playhelpers.js";
+import { WEARING_OFF } from "../../public/js/play/phrases.js";
 
 // LEVEL 86: the start on a ring of blocks, a bouncy pill two blocks on across a gap and blocks two
 // apart beyond it
@@ -20,8 +21,6 @@ const PILL_LEVEL = "/#FIELD/10/45,35/fit/33";
 // LEVEL 43: the start at one end of a row of three blocks, a lethargy pill on the block at the
 // other end, to the ball's left as the level opens
 const LETHARGY_LEVEL = "/#INCA/12/45,35/fit/33";
-
-const WEARING_OFF = "The sunglasses are wearing off: the invisible blocks are about to hide again.";
 
 test("the sunglasses show every invisible block as the game does, the ball's light off them while they last, then blink them as they wear off, the strip saying so, and the ball's light alone shows them again", async ({
   page,

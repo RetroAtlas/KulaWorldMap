@@ -2,7 +2,6 @@ import { test, expect } from "@playwright/test";
 import { frozen, onward, trackErrors } from "./helpers.js";
 import {
   DONE,
-  ENDED,
   IDENTITY,
   WAY_OUT,
   betweenFrames,
@@ -18,6 +17,7 @@ import {
   stepTo,
   toggled,
 } from "./playhelpers.js";
+import { ENDED } from "../../public/js/play/phrases.js";
 
 // LEVEL 3: the fruit on the top of 15,15,17, of the common type, which the map draws as the third
 // of the five by the level's number

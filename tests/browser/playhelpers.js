@@ -10,11 +10,7 @@ export const BONUS_LEVEL = "/#HIRO/15/45,35/fit/33";
 export const DONE =
   /^Out by the exit: the level is done\. 1500 points, \d+ seconds left\. 1500 points banked, 1500 points in all\. Space or Enter goes on to LEVEL 2\.$/;
 
-export const ENDED = "The level has ended";
-
 export const TAKEN = "Taken: Coin (bronze) on the top";
-
-export const FOLLOWING_PAD = "Following the route; an arrow, Space or the pad takes the ball back.";
 
 export const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 

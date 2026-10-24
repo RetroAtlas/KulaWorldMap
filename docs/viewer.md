@@ -671,6 +671,18 @@ The module has every count and threshold read from the motion table and no wall 
 - It draws the game's bursts through `js/play/effects.js` in the frame hook, before the pill's screen, from the rows the rules resolved, each particle a sprite of the sheet on a square turned by its angle and added to the frame, a world effect's particles where the camera puts its place and the teleporter's particles at its point of the game's screen scaled to the canvas, the sheet fetched as the first burst needs it, which casts a world effect's light on the faces about the pickup through `lightsWith` in the colour the rules summed.
 - It hands the walk to the planner through an export of its chrome that takes a route where none stands or where the one standing is the last it took, so the route grows under the ball as the walk is handed over again at each station.
 
+### What play says
+
+`js/play/phrases.js` is what play says, pure too: every sentence the strip, the HUD and the live region say, composed from what each names, the level's title, the ball's block, face and heading, the run's words, the thing or the circuit at hand and the table's words, and nothing of the page.
+
+- The stop the ball comes to, its block and face, with what happened on the way to it, which a sentence of its own said mid-roll would lose to the stop's within the frame, and the face that is underfoot after a turn round an edge.
+- What happens on the way: the thing taken with its points, the switch thrown with its circuit, the hourglass's turn of the clock, the crumbling block's break and its fall, the last key's opening of the exits, the boost button's launch, the platform the ball rides, the teleporter sending the ball and where it is sent, the sunglasses wearing off and the arrow that refuses the roll.
+- Where the ball stands and which way it faces, as play opens, as the ball is put on a face and as the level starts again or the next is gone on to, the strip's line while the ball is on the map, and what leaving says.
+- The route's words: the ball following it, the pad named while it shows, the ball put on its first stop, why the route is done, the way the ball has come kept as the route, and a route that already stands.
+- The cause of a death, read from the words' ending while its countdown runs, and what Forgive spared the ball.
+- The verdict: how the level ended, the end screen's word for the ending or the map's for a way out, a room's with whether the round is done or lost and whose point it is, the points and the seconds left, what the ending did to the run's total, the penalty taken or the points banked, the total and the game's word where the total has gone below nothing, or that a won match starts afresh, and what a key goes on to, the level the game loads next or this one again, the pad named while it shows.
+- The HUD's figures: the time, the keys or the blocks left with the title that says which, the points, and in a Simon room the round and its moves, with the match's turn and points where a match is on, else the run's total where a run is on.
+
 ### The compass's canvas
 
 Beside the frame, `js/viewer/draw/compass.js` paints the compass on a canvas of its own: a block in the camera's own projection whose faces take the shades the level's faces do, so it turns exactly as the level does. Every frame drawn asks for it, and it paints again only when the turn, its frame, the world or the textures have changed.

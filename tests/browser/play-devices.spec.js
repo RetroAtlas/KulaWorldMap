@@ -18,12 +18,7 @@ import {
   switched,
   ticked,
 } from "./playhelpers.js";
-
-const SENDING = "The teleporter is sending the ball.";
-
-const RIDING = "The ball rides the platform.";
-
-const LAUNCHED = "Launched by the boost button.";
+import { LAUNCHED, RIDING, SENDING } from "../../public/js/play/phrases.js";
 
 /** The view, the ball and the dust over `blocks` on the first drawn frame the ball stands on
     `block`, read as `probe` reads them, or null where it never comes to stand there. */

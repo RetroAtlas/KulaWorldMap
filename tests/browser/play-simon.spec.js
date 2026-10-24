@@ -2,7 +2,6 @@ import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { frozen, laid, onward, roomed, trackErrors } from "./helpers.js";
 import {
-  ENDED,
   jumped,
   line,
   opened,
@@ -14,6 +13,7 @@ import {
   stepTo,
   toggled,
 } from "./playhelpers.js";
+import { ENDED } from "../../public/js/play/phrases.js";
 
 // SIMON 1: the start on the top row of a ring, facing along it, with nothing two blocks on
 const SIMON_LEVEL = "/#COPYCAT/0/45,35/fit/33";
