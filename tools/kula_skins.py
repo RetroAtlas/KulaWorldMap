@@ -20,7 +20,7 @@ import kula_tgi as tgi
 from kula_disc import EXE, EXE_BASE, THEMES, open_disc
 from kula_level import FACE, FACES
 from kula_tex import mean
-from kula_motion import Code
+from kula_motion_code import Code
 from mips import Machine
 
 TURNS = 4            # the quarter turns a texture can be laid at

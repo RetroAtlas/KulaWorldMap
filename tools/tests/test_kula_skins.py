@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
-from kula_motion import Code  # noqa: E402
+from kula_motion_code import Code  # noqa: E402
 from kula_skins import (CHECKS, HEADER, IMMEDIATES, header, hiding, lights, marked, sets)  # noqa: E402
 
 R = {"zero": 0, "at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7,

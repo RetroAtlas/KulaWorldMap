@@ -21,7 +21,8 @@ from kula_disc import EXE, THEMES, open_disc, packs
 from kula_ggi import FILE as GGI, Ggi, jump, shadows, sparks, write_objects
 from kula_kwl import executable, figure_failures
 from kula_level import Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
-from kula_motion import BALL, Code, readings, table
+from kula_motion import readings, table
+from kula_motion_code import BALL, Code
 from kula_pak import Pak
 from kula_place import RECOMPRESS, ROOM
 from kula_sector import USER, sectors_of

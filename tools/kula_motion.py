@@ -12,7 +12,6 @@ The game runs its loop once per vertical blank.
 """
 import argparse
 import json
-import math
 import re
 import struct
 import sys
@@ -20,27 +19,18 @@ import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import kula_motion_code
 from kula_disc import EXE, EXE_BASE, THEMES, open_disc
 from kula_level import BLOCK_KINDS, FACE, FACES, FIRST_RECORD, SIDE, STYLES, UNPLACED_KIND
-from mips import Machine, decode
+from kula_motion_code import (ACID, ADD, BALL, BALL_RECORD, BLOCK, CRUMBLING_UNDER, FIRE, GP, GP_INIT, HZ, ICE,
+                              INVISIBLE, LIT, ONE, PHASES, READS_FIRST, TURN, Code, dispatch, root)
+from mips import Machine
 
-TURN = 4096          # the angle that is one full turn
-BLOCK = 512          # units across a block
-ONE = 4096           # a matrix's unit, 1.0 in the GTE's fixed point
-HZ = 60
-PHASES = 4           # the values a phase field takes
 SPIKE_FRAMES = 32    # frames in the moving spikes' mesh, flat to full
 
 # What has to be there for the numbers below to mean what the doc says.
 CHECKS = [
-    # The frame loop.
-    (0x80040a78, "addiu $a0, $a0, -588", "before its frame loop a level installs the callback at 0x8003fdb4"),
-    (0x80040a7c, "jal 0x80065e28", "through the system library"),
-    (0x8003fdbc, "sw $v0, -17288($at)", "which sets the flag at 0x800cbc78"),
-    (0x80040b04, "jal 0x80051d08", "and each pass of the loop waits once"),
-    (0x80051d18, "beq $t1, $zero, 0x80051d10", "until the flag is set"),
-    (0x80040ad0, "lw $v0, 22316($v0)", "the half-rate word the loop reads is 0x800a572c"),
-    (0x80039608, "lw $v0, 13264($v0)", "the view word the updates read is 0x800a33d0"),
+    *kula_motion_code.CHECKS,
     # The laser.
     (0x80028214, "addiu $v0, $zero, 8", "the laser builder takes the records of kind 8"),
     (0x8002833c, "addiu $v0, $s5, 6", "and keeps where the record says it is lit, f3"),
@@ -2319,6 +2309,7 @@ CHECKS = [
 # A number that is the immediate of one instruction: the pattern is the
 # disassembly with {} where the immediate goes.
 IMMEDIATES = [
+    *kula_motion_code.IMMEDIATES,
     ("on a block", "start.range", "angles a pickup starts at, drawn from", 0x80035934, "addiu $a0, $zero, {}"),
     ("on a block", "button.start", "boost button's starting height, of 16", 0x80035958, "addiu $v0, $zero, {}"),
     ("on a block", "coin.turn", "coin, key, sunglasses: turn per frame", 0x80039890, "addiu $a0, $v1, {}"),
@@ -3347,17 +3338,12 @@ LASER_CIRCUITS = [["laser.colour.0a", "laser.colour.0b"], ["laser.colour.1"],
                   ["laser.colour.2"], ["laser.colour.3"]]
 CHANNEL = 8          # bits to a channel of a colour word, red lowest
 LEVEL_BITS = 5       # the depth the GPU draws a colour at
-ADD = 1              # the blend that adds a quad to what is behind it
-
-# The instructions whose first register is read rather than written.
-READS_FIRST = {"sb", "sh", "sw", "swl", "swr", "mtc2", "ctc2", "mthi", "mtlo",
-               "mult", "multu", "div", "divu", "beq", "bne", "blez", "bgtz", "bltz", "bgez",
-               "bltzal", "bgezal", "jr"}
 
 # A number that is the multiplier a run of shifts and adds applies to what a
 # register held on entry: the run starts at the address and is this many
 # instructions long, and the product is read from the last register named.
 MULTIPLIERS = [
+    *kula_motion_code.MULTIPLIERS,
     ("on a block", "coin.bob.reach", "coin, key, sunglasses: bob's reach, units", 0x800398e0, 3, "v0", "v1"),
     ("on a block", "fruit.bob.reach", "fruit: bob's reach, units", 0x800397c0, 3, "v0", "v1"),
     ("on a block", "fruit.tilt.reach", "fruit: tilt's reach, angle", 0x80039810, 5, "v0", "v1"),
@@ -3462,6 +3448,7 @@ GLINT_TIMES = (0x80050d54, "lui $t8, {}", 0x80050d58, "ori $t8, $t8, {}")
 # A divisor the compiler turned into a multiply by a reciprocal and a shift:
 # the two halves of the reciprocal and the shift of the high word.
 DIVISORS = [
+    *kula_motion_code.DIVISORS,
     ("the ball", "ball.breathe.over", "over this", 0x80032680, "lui $a0, {}", 0x80032684, "ori $a0, $a0, {}",
      0x800326a8, "sra $v1, $a2, {}"),
     ("shadows", "shadow.ball.over", "ball: and divided by this", 0x800323d4, "lui $s2, {}", 0x800323d8,
@@ -3490,6 +3477,7 @@ DIVISORS = [
 
 # A brightness or a step of one, a grey held as a colour word in two halves.
 GREYS = [
+    *kula_motion_code.GREYS,
     ("vanishing block", "vanish.in.to", "fading in: ends at", 0x8002b8c8, "lui $v1, {}", 0x8002b8cc, "ori $v1, $v1, {}"),
     ("vanishing block", "vanish.settle.to", "settling: ends at", 0x8002b984, "lui $v1, {}", 0x8002b988, "ori $v1, $v1, {}"),
     ("vanishing block", "vanish.dim.at", "dimming: starts at", 0x8002b9e0, "lui $v1, {}", 0x8002b9e4, "ori $v1, $v1, {}"),
@@ -3512,21 +3500,16 @@ SHADOW_SQUARE = (0x8002c8d0, 0x8002c8d4)
 # small is well within any near distance.
 LIGHT_ROOT = (0x800513f8, 0x800513fc)
 ROOT_ROWS = 24
-INVISIBLE = 3
 
 # The ball's states, dispatched through a table by the state plus one, and
 # the three the moves run in: at rest, rolling and round an edge.
 STATES = (0x80010134, -1, 9)
 STATE_AT = {-1: 0x8002f8e4, 0: 0x8003007c, 1: 0x8002fce0, 2: 0x8002f930, 6: 0x8002ff18, 7: 0x8002fa38}
 ARC_STEPS = 4             # frames the ball takes round an edge
-BALL = "30"               # the ball's type in the table
 BUTTON = 10               # the boost button's type
 LONG = [3, 2]             # the long jump takes each row times the first over the second
-ICE = 2
 PLATFORM = 5
 ABOUT = 3                 # cells each way about the ball
-FIRE, ACID = 1, 4         # the kinds that harm by standing on them
-LIT = -2                  # a lit beam's cell in the lattice
 OFF = -1                  # the lattice's word for no block
 VANISHING = 7
 KEY, EXIT, HIDDEN_EXIT, MOVING_SPIKES, SPIKES, WANDERER, CORKSCREW = 31, 7, 26, 11, 12, 53, 56
@@ -3534,7 +3517,6 @@ SLOTS = 6                 # slots to a record
 ARROW = 28
 BROWN = 0                 # type 42's form that stays and harms
 UNHARMED = -1             # the invincibility word while no pill lasts
-BALL_RECORD = 0x800ba114  # the ball's record, which the pills' words lie in
 INVINCIBLE_WORD = 0x800ba340
 CLEARED = ((0x80069988, 0x8006998c), (0x80069990, 0x80069994))  # the range the start zeroes word by word
 LEVELS = 15               # levels a world the penalty counts
@@ -3542,16 +3524,13 @@ FINALS = 2                # finals a world
 NEXT_ROUND = (0x800425ac, "lui $v1, {}", 0x800425b0, "ori $v1, $v1, {}")   # the bonus slots come round by it
 NEXT_MODE = 0x800a3448    # the word the next-level routine's other starts hang on
 NEXT_MODE_CLEARS = (0x800482e4, 0x8004adc4, 0x8004b5dc)
-STORES = {0x28, 0x29, 0x2a, 0x2b, 0x2e}   # the store opcodes
-WIDTHS = {"sb": 1, "sh": 2, "sw": 4, "swc2": 4}   # bytes a store writes; swl and swr stay within their word
-ARGUMENTS = ("a0", "a1", "a2", "a3")
-CALLER_SAVED = ("at", "v0", "v1", *ARGUMENTS, *(f"t{i}" for i in range(10)), "ra")
 
 # A stretch of code whose every store the scan resolves to an address, none within a span of the
 # ball's record: its first and last instruction, the register handed the record, the span's first
 # and last word, and the calls the record goes on to, each where, the callee and the argument
 # registers holding it with their offsets.
 SCANS = [
+    *kula_motion_code.SCANS,
     ("the devices under the ball", "send.stores",
      "stores in the send, each resolved to its address, none from 564 to 688 of the ball's record",
      0x8003a6b4, 0x8003a8fc, "s0", (564, 688),
@@ -3598,8 +3577,6 @@ QUARTER = (0x8003b914, "addiu $a0, $zero, {}")
 # Where the parser and the frame put the glints' records, and their generator's state.
 GLINT_RECORDS = ((0x80022f4c, 0x80022f50), (0x8002aa2c, 0x8002aa30))
 GLINT_STATE = (0x80050d48, 0x80050d4c)
-GP_INIT = (0x80069a04, 0x80069a08)
-GP = 0x800a2f38
 MODE_WORD = (0x800a572c, 10228)   # the lethargy effect's mode word, and its offset from gp
 LEVEL_MODE = (0x800a53d4, 9372)   # the level's mode word, and its offset from gp
 LEVEL_MODE_READ = (0x80034830, 0x80034834)   # where the ending's view builds its address
@@ -3632,7 +3609,6 @@ END_CASES = {FACE.index(f): at for f, at in (*END_NEAR.items(), *END_FAR.items()
 CUTS = 3                  # a gem's cuts, by its f3
 TIERS = 3                 # a coin's tiers, by its f3
 CRUMBLING = 6
-CRUMBLING_UNDER = 96      # the ball's word for standing on a crumbling block
 ENDINGS = ("exit", "bonus", "hidden", "spikes", "time", "lost", "fire", "captivator", "acid", "laser", "simon")
 
 # The level's end screen: a table of deflated images two to a word, the word each pair letters read off the pictures
@@ -3668,171 +3644,6 @@ BUFFERS = 2
 ENTRY_WORDS = 6
 FLAT = 0x28
 FLAT_WORDS = 5
-
-
-class Code:
-    def __init__(self, blob):
-        self.blob = blob
-
-    def word(self, addr):
-        return struct.unpack_from("<I", self.blob, addr - EXE_BASE)[0]
-
-    def holds(self, addr, n=4):
-        return EXE_BASE <= addr and addr + n <= EXE_BASE + len(self.blob)
-
-    def read(self, addr, n):
-        return self.blob[addr - EXE_BASE:addr - EXE_BASE + n]
-
-    def text(self, addr):
-        return decode(self.word(addr), addr)[0]
-
-    def immediate(self, addr, pattern):
-        text = self.text(addr)
-        rx = "^" + re.escape(pattern).replace(r"\{\}", r"(-?(?:0x)?[0-9a-f]+)") + "$"
-        m = re.match(rx, text)
-        if not m:
-            sys.exit(f"0x{addr:08x} reads `{text}`, not `{pattern}`")
-        return int(m.group(1), 0) if m.lastindex else None
-
-    def address(self, lui, addiu):
-        """The address a lui and the addiu or load after it build, in RAM's mirror."""
-        hi = re.match(r"lui \$\w+, (0x[0-9a-f]+)$", self.text(lui))
-        lo = re.match(r"(?:addiu \$\w+, \$\w+, |lw \$\w+, )(-?\d+)", self.text(addiu))
-        if not hi or not lo:
-            sys.exit(f"0x{lui:08x} and 0x{addiu:08x} read `{self.text(lui)}` and `{self.text(addiu)}`, not an address")
-        return (0x80000000 | (int(hi.group(1), 0) << 16)) + int(lo.group(1))
-
-    def word_of(self, hi, hp, lo, lp):
-        """The word a lui and an ori hold between them."""
-        return (self.immediate(hi, hp) << 16) | (self.immediate(lo, lp) & 0xFFFF)
-
-    def grey(self, hi, hp, lo, lp):
-        """The level of a colour word whose three channels are one."""
-        word = self.word_of(hi, hp, lo, lp)
-        if word != (word & 0xFF) * 0x010101:
-            sys.exit(f"0x{hi:08x} and 0x{lo:08x} hold the colour 0x{word:08x}, not a grey")
-        return word & 0xFF
-
-    def divisor(self, hi, hp, lo, lp, sa, sp):
-        """The number a multiply by a reciprocal and a shift divides by."""
-        return round(2 ** (32 + self.immediate(sa, sp)) / self.word_of(hi, hp, lo, lp))
-
-    def multiplier(self, addr, count, src, dst):
-        """The factor applied to `src` by `count` instructions of shifts and adds."""
-        coef = {src: 1, "zero": 0}
-        for i in range(count):
-            pc = addr + 4 * i
-            text = self.text(pc)
-            m = re.match(r"(sll|addu|subu) \$(\w+), \$(\w+)(?:, \$(\w+)|, (\d+))$", text)
-            if m:
-                op, rd, a, b, sa = m.groups()
-                x, y = coef.get(a), coef.get(b) if b else 0
-                if x is None or y is None:
-                    coef[rd] = None
-                elif op == "sll":
-                    coef[rd] = x << int(sa)
-                else:
-                    coef[rd] = x + y if op == "addu" else x - y
-            else:
-                m = re.match(r"(\w+) \$(\w+)", text)
-                if m and m.group(1) not in READS_FIRST and m.group(2) in coef and m.group(2) != "zero":
-                    coef[m.group(2)] = None      # overwritten by something not a shift or add
-        if coef.get(dst) is None:
-            sys.exit(f"0x{addr:08x}: {dst} is not a multiple of {src} after {count} instructions")
-        return coef[dst]
-
-    def stores_to(self, addr):
-        """Every store to `addr` through gp, or through $at after a lui, as (address, register stored)."""
-        out = []
-        words = struct.unpack_from(f"<{len(self.blob) // 4}I", self.blob)
-        for i, w in enumerate(words):
-            if w >> 26 not in STORES:
-                continue
-            base, imm = (w >> 21) & 31, w & 0xFFFF
-            if imm >= 0x8000:
-                imm -= 0x10000
-            if base == 28:
-                at = GP + imm
-            elif base == 1 and i and words[i - 1] >> 16 == 0x3C01:
-                at = (0x80000000 | ((words[i - 1] & 0xFFFF) << 16)) + imm
-            else:
-                continue
-            if at == addr:
-                out.append((EXE_BASE + 4 * i, (w >> 16) & 31))
-        return out
-
-    def resolved(self, start, end, base, span, calls=(), record=BALL_RECORD):
-        """How many stores the stretch from `start` to `end` makes, each resolved to an address through `base`,
-        which holds `record`, a register derived from it, gp, sp or a lui; none within the record's `span` of
-        words, no pointer made into it, and the record handed on by the `calls` listed alone."""
-        low, high = record + span[0], record + span[1] + 3
-        held = {base: (record, True), "gp": (GP, False)}     # a register's address, and whether it is the record's address
-        awaited = {where: (callee, handed) for where, callee, handed in calls}
-        count, pc = 0, start
-        while pc <= end:
-            text = self.text(pc)
-            if text.startswith("jal "):
-                count += self.follow(pc + 4, held, low, high)     # the delay slot runs before the call
-                handed = {r: a - record for r, (a, own) in held.items() if own and r in ARGUMENTS}
-                callee, want = awaited.pop(pc, (0, None))
-                if text != f"jal 0x{callee:08x}" or handed != want:
-                    sys.exit(f"0x{pc:08x} `{text}` is handed the record in {handed}, which the reading does not follow")
-                for r in CALLER_SAVED:
-                    held.pop(r, None)
-                pc += 8
-                continue
-            count += self.follow(pc, held, low, high)
-            pc += 4
-        if awaited:
-            sys.exit(f"0x{start:08x}: the calls at {', '.join(f'0x{a:08x}' for a in awaited)} are not made")
-        return count
-
-    def follow(self, pc, held, low, high):
-        """One instruction of a scanned stretch: a store resolved and counted, a pointer tracked, a register
-        overwritten forgotten."""
-        text = self.text(pc)
-        m = re.match(r"(sb|sh|sw|swl|swr|swc2) \S+, (-?\d+)\(\$(\w+)\)$", text)
-        if m:
-            op, imm, reg = m.group(1), int(m.group(2)), m.group(3)
-            if reg == "sp":
-                return 1                                  # the stack cannot hold the record
-            if reg not in held:
-                sys.exit(f"0x{pc:08x} `{text}` stores through a register the scan cannot resolve")
-            at = held[reg][0] + imm
-            first, last = (at & ~3, (at & ~3) + 3) if op in ("swl", "swr") else (at, at + WIDTHS[op] - 1)
-            if first <= high and last >= low:
-                sys.exit(f"0x{pc:08x} `{text}` stores to 0x{at:08x}, within the span")
-            return 1
-        if text.startswith((".word", "jalr")) or (text.startswith("jr ") and text != "jr $ra"):
-            sys.exit(f"0x{pc:08x} `{text}`, which the scan does not follow")
-        m = re.match(r"(?:b\w+|j) .*0x([0-9a-f]{8})$", text)
-        if m and int(m.group(1), 16) <= pc:
-            sys.exit(f"0x{pc:08x} `{text}` loops back, which the scan does not follow")
-        m = re.match(r"lui \$(\w+), (0x[0-9a-f]+)$", text)
-        if m:
-            held[m.group(1)] = (0x80000000 | (int(m.group(2), 0) << 16), False)
-            return 0
-        m = re.match(r"addiu \$(\w+), \$(\w+), (-?\d+)$", text)
-        if m and m.group(2) in held:
-            at, own = held[m.group(2)]
-            self.point(pc, held, m.group(1), at + int(m.group(3)), own, low, high)
-            return 0
-        m = re.match(r"(?:addu|or) \$(\w+), \$(\w+), \$(\w+)$", text)
-        if m and "zero" in m.groups()[1:]:
-            src = m.group(2) if m.group(3) == "zero" else m.group(3)
-            if src in held:
-                self.point(pc, held, m.group(1), *held[src], low, high)
-                return 0
-        m = re.match(r"(\w+) \$(\w+)", text)
-        if m and m.group(1) not in READS_FIRST:
-            held.pop(m.group(2), None)
-        return 0
-
-    def point(self, pc, held, reg, at, own, low, high):
-        """`reg` comes to hold the address `at`, unless that lies within the span."""
-        if low <= at <= high:
-            sys.exit(f"0x{pc:08x} `{self.text(pc)}` points into the span, at 0x{at:08x}")
-        held[reg] = (at, own)
 
 
 def readings(code):
@@ -3888,23 +3699,6 @@ def readings(code):
     dispatch(code, LOADER_TYPES, LOADER_CASES, LOADER_PLAIN, "the loader")
     dispatch(code, END_FACES, END_CASES, None, "the end landing")
     return out
-
-
-def dispatch(code, where, cases, default, what):
-    """A table of cases by type holds the case each type is known to go to."""
-    at, first, count = where
-    for typ in range(first, first + count):
-        case = 0x80000000 | code.word(at + 4 * (typ - first))
-        if cases.get(typ, default) != case:
-            sys.exit(f"{what} sends type {typ} to 0x{case:08x}")
-
-
-def root(v, what):
-    """The root of a reach the code holds squared."""
-    r = math.isqrt(v)
-    if r * r != v:
-        sys.exit(f"{what} is {v}, not a square")
-    return r
 
 
 def spin_orders(code):

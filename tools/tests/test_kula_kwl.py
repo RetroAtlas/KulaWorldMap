@@ -1706,7 +1706,7 @@ class TheDocuments(unittest.TestCase):
 @unittest.skipUnless(os.environ.get("KULA_DISC"), "needs the disc")
 class TheDisc(unittest.TestCase):
     def test_the_caps_and_the_loader_figures_are_the_executables_own(self):
-        from kula_motion import Code
+        from kula_motion_code import Code
         with open_disc() as disc:
             r = executable(Code(disc.read_file(EXE)))
         for what in ("records", "faces", "lights", "spikes", "captivators", "crumbling", "vanishing", "objects"):

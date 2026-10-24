@@ -25,6 +25,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | `png.py` | write a PNG, and squeeze it with `oxipng` where that is installed |
 | `mips.py` | disassemble the executable, which is how the lattice was pinned down, and run a routine of it |
 | `kula_motion.py` | what the executable does to each thing every frame, the rates behind [motion.md](motion.md) |
+| `kula_motion_code.py` | the executable as the readings read it, a word or an instruction at a time, the units and the words the readings share, and the frame loop's checks, "The frame" in [motion.md](motion.md) |
 | `ogcard.js` | render the social card from the map itself (Node, needs Playwright) |
 | `icons.js` | render the raster icons from the favicon (Node, needs Playwright) |
 | `serve.py` | local static server, caching off, 404.html like the host |

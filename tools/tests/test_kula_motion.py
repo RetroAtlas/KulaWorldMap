@@ -14,12 +14,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import (  # noqa: E402
-    END_CASES, END_FACES, GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, GP, LIGHT_ROOT, LOADER_CASES, LOADER_PLAIN,
-    LOADER_TYPES, PHASES, ROOT_ROWS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES, TAKE_CASES, TAKE_TAIL, TAKE_TYPES, WORDS_COUNT,
-    WORDS_TABLE,
-    Code, blocks, body, devices, dispatch, effect_init, effect_tables, effects, exits, flight, glint, glow_lift,
-    glow_spill, harms, jump, laser, light, moves, play, roll, root_table, shadow_half, simon, spike_cycle, spin_orders,
-    standing, table, take, vanish_cycle, words)
+    CHECKS, DIVISORS, END_CASES, END_FACES, GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, GREYS, IMMEDIATES, LIGHT_ROOT,
+    LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, MULTIPLIERS, ROOT_ROWS, SCANS, SHADOW_SQUARE, SPINS, SPUN_AT, STATES,
+    TAKE_CASES, TAKE_TAIL, TAKE_TYPES, WORDS_COUNT, WORDS_TABLE,
+    blocks, body, devices, effect_init, effect_tables, effects, exits, flight, glint, glow_lift, glow_spill, harms,
+    jump, laser, light, moves, play, roll, root_table, shadow_half, simon, spike_cycle, spin_orders, standing, table,
+    take, vanish_cycle, words)
+from kula_motion_code import GP, PHASES, Code, dispatch  # noqa: E402
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "gp": 28, "sp": 29, "ra": 31}
@@ -1375,6 +1376,23 @@ class Table(unittest.TestCase):
         self.assertEqual([len(d) for d in t["types"]["11"]["deadly"]], [143] * PHASES)
         self.assertEqual([sum(d) for d in t["types"]["11"]["deadly"]], [68] * PHASES)
         self.assertEqual(set(t["kinds"]), {"1", "2", "3", "4", "5", "6", "7", "8"})
+
+
+class Lists(unittest.TestCase):
+    BY_HAND = {"button.reach", "flight.third", "next.round", "next.mode.load", "next.mode.clears", "next.mode.writes",
+               "simon.store", "simon.fill.from", "dice.times", "glint.times", "glint.seed", "glint.at", "glint.frame.at",
+               "gp", "mode.word", "game.mode.word", "glow.counter.load", "glow.clear", "laser.levels", "shadow.half",
+               "light.root", "glow", "glow.colours", "spin.order", "spin.quarter", "words", "effect.pointers",
+               "effect.colours", "effect.tables", "effect.sine.at", "effect.sine.one", "effect.hud.at", "effect.table.at",
+               *(f"screen.load.{name}" for name in ("wide", "high", "distance", "across", "down"))}
+
+    def test_the_six_lists_hold_their_counts_and_every_check_is_an_address_an_instruction_and_a_sentence(self):
+        self.assertEqual([len(t) for t in (CHECKS, IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS)], [2241, 750, 67, 12, 7, 2])
+        self.assertEqual({tuple(type(x) for x in check) for check in CHECKS}, {(int, str, str)})
+
+    def test_every_key_is_read_once_and_none_of_them_is_set_by_hand(self):
+        keys = [entry[1] for t in (IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS) for entry in t]
+        self.assertEqual(sorted(set(keys) - self.BY_HAND), sorted(keys))
 
 
 if __name__ == "__main__":
