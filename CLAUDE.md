@@ -74,11 +74,11 @@ No commit message reports what a test found, this one's or any other's: every co
 
 The editor draws a draft as the viewer draws a disc level, and nothing else: a draft is a level object of `map_data.json`'s shape, made by the level writer and reader in `public/js/format/kwl.js` from the project in `public/js/format/project.js`, drawn by the same code as a shipped level, and never entered into `state.data`; every level reaches the screen through the one funnel in `public/js/viewer/chrome/navigate.js`.
 
-The editor draws and listens only through registration seams, the frame's hooks in `render.js`, the click, drag and hover registrations and `tipWith` in `interaction.js`, the panel's `onShow` in `detail.js`, and the level line's `noteWith` and the link's `provideLevels` in `navigate.js`.
+The editor draws and listens only through seams, registrations and events: the frame's hooks in `render.js`, the click, drag and hover registrations and `tipWith` in `interaction.js`, the panel's `onShow` and `selection-changed` event in `detail.js`, the level line's `noteWith`, the link's `provideLevels` and the `level-changed` and `level-updated` events in `navigate.js`, the `atlas-loaded` event in `atlas.js` and play's `play-changed`.
 
 So the faithful modules carry no editor branch: `things.js`, `skins.js`, `lights.js`, `beams.js`, `atlas.js`, `motion.js`, `travel.js`, `icons.js`, `compass.js`, `search.js`, `objectsearch.js`, `placesearch.js`, `dialog.js`, `modal.js`, `toast.js`, and under `tools/` `kula_build.py` apart from `packs.json` and `kula_level.py`, are the modules the editor leaves untouched, `search.js`, `dialog.js`, `modal.js` and `skins.js` apart, which changed for every caller's sake, the search re-scoping on `level-updated`, a dialog or a modal giving the focus back to the control that opened it, and the skins lending the viewer's points their test for a key, and carry no branch of the editor's.
 
-The route planner, `course.js` and `ribbon.js`, draws and listens only through the same kind of seams, the block hook, the pointer lists and the link's tail, and carries no branch in a faithful module.
+The route planner, `course.js` and `ribbon.js`, draws and listens only through the same kind of seams, the block hook, the pointer lists, the link's tail, the `level-changed` and `level-updated` events and the editor's `editing-changed` and `drafts-moved`, and carries no branch in a faithful module.
 
 Play mode is built the same way.
 
