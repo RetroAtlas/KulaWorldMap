@@ -27,6 +27,7 @@ from kula_kwl import (  # noqa: E402
     CAPTIVATORS,
     COPYCAT_PACK,
     COPYCAT_SLOTS,
+    CRUMBLING_KIND,
     DIGESTS,
     DISC_MAX,
     DROPPED,
@@ -110,8 +111,12 @@ EXITS_KEPT = re.compile(r"the disc keeps a second on (\w+) of them and a third o
                         r"on records the game never walks")
 HIDDEN_KEPT = re.compile(r"the disc keeps a second on (\w+) of them, ([A-Z]+ \d+) and ([A-Z]+ \d+), "
                          r"on records the game never walks")
+KEYS_ON_DISC = re.compile(r"One to (\w+) a level on the disc: (\d+) levels with one, (\d+) with two, (\d+) with three, "
+                          r"(\w+) with four, (\w+) with five and (\w+) with six\.")
+KEYS_KEPT = re.compile(r"([A-Z]+ \d+)'s fifth key stands on its settings record and (\w+) of ([A-Z]+ \d+)'s keys on "
+                       r"crumbling blocks, records the game never walks")
 SLOT_SENTENCES = {EDITOR_DOC: (BARE_FACES, UNSET_SLOTS, NUMBERED_LEVELS), FORMAT_DOC: (NUMBER_RUNS, LEFT_OBJECTS),
-                  ANNOTATIONS_DOC: (EXITS_KEPT, HIDDEN_KEPT)}
+                  ANNOTATIONS_DOC: (EXITS_KEPT, HIDDEN_KEPT, KEYS_ON_DISC, KEYS_KEPT)}
 WORDS = {w: n for n, w in enumerate("nought one two three four five six seven eight nine ten".split())}
 PACKS = Path(__file__).resolve().parents[2] / "public" / "packs.json"
 HIDES = json.loads(OBJECTS.read_text())["skins"]["hides"]
@@ -1733,7 +1738,7 @@ class TheDisc(unittest.TestCase):
     def test_annotations_counts_of_what_the_disc_keeps_on_records_never_walked_are_the_discs(self):
         titles = {(l["pack"], l["index"]): l.get("shown", l["name"]) for l in json.loads(DATA.read_text())["levels"]}
         with open_disc() as disc:
-            held = held_by_record(disc, (EXIT, HIDDEN_EXIT))
+            held = held_by_record(disc, (EXIT, HIDDEN_EXIT, KEY))
         doc = ANNOTATIONS_DOC.read_text()
 
         def at_least(typ, n):
@@ -1746,6 +1751,13 @@ class TheDisc(unittest.TestCase):
         hidden = HIDDEN_KEPT.search(doc)
         self.assertEqual((WORDS[hidden.group(1)], sorted(hidden.group(2, 3))),
                          (len(at_least(HIDDEN_EXIT, 2)), at_least(HIDDEN_EXIT, 2)))
+        tally = KEYS_ON_DISC.search(doc)
+        keys = Counter(held_of(c, KEY) for c in held.values() if held_of(c, KEY))
+        self.assertEqual([WORDS.get(g) or int(g) for g in tally.groups()], [max(keys), *(keys[n] for n in range(1, 7))])
+        kept = KEYS_KEPT.search(doc)
+        self.assertEqual({titles[k]: {kind: n for (t, kind), n in c.items() if t == KEY and kind >= BLOCK_KINDS}
+                          for k, c in held.items() if held_of(c, KEY, walked=False)},
+                         {kept.group(1): {UNPLACED_KIND: 1}, kept.group(3): {CRUMBLING_KIND: WORDS[kept.group(2)]}})
 
     def test_every_level_rebuilt_plays_as_the_disc_and_differs_in_the_words_listed_alone(self):
         with open_disc() as disc:

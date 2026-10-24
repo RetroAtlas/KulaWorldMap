@@ -203,7 +203,7 @@ The game picks the ball's design by the world's place from the fourteen the disc
 
 ### type 31: Key
 
-One to six a level on the disc: 61 levels with one, 92 with two, 31 with three, five with four, and one with six, FINAL 13, three of whose keys stand on crumbling blocks the game never walks, so in play it asks for three.
+One to six a level on the disc: 61 levels with one, 92 with two, 31 with three, four with four, one with five and one with six. HIDDEN 10's fifth key stands on its settings record and three of FINAL 13's keys on crumbling blocks, records the game never walks, so in play HIDDEN 10 asks for four and FINAL 13 for three.
 
 LEVEL 1's and LEVEL 2's are on the cells the map draws them on, and HIDDEN 10's four are on the face.
 

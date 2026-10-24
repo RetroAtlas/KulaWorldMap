@@ -1102,25 +1102,29 @@ for (const [entry, what, value, pattern] of reasonClaims) {
   });
 }
 
-// The tally counts keys on crumbling blocks, which the game never walks and the data leaves out.
+// The tally counts the keys on records the game never walks, which the data leaves out.
 test("annotations.md's key tally is what the data holds, with the keys the game never walks", () => {
-  const m =
-    /One to (\w+) a level on the disc: (\d+) levels with one, (\d+) with two, (\d+) with three, (\w+) with four, and (\w+) with (\w+), ([A-Z]+ \d+), (\w+) of whose keys stand on crumbling blocks the game never walks, so in play it asks for (\w+)\./.exec(
-      sections.get("type 31") ?? "",
+  const section = sections.get("type 31") ?? "";
+  const tally =
+    /One to (\w+) a level on the disc: (\d+) levels with one, (\d+) with two, (\d+) with three, (\w+) with four, (\w+) with five and (\w+) with six\./.exec(
+      section,
     );
-  assert.ok(m, "annotations.md has no sentence tallying the keys");
-  const [most, one, two, three, four, withMost, most2, level, unwalked, asked] = m
-    .slice(1)
-    .map(read);
+  const kept =
+    /([A-Z]+ \d+)'s fifth key stands on its settings record and (\w+) of ([A-Z]+ \d+)'s keys on crumbling blocks, records the game never walks, so in play \1 asks for (\w+) and \3 for (\w+)\./.exec(
+      section,
+    );
+  assert.ok(tally && kept, "annotations.md has no sentences tallying the keys");
+  const [most, ...byCount] = tally.slice(1).map(read);
+  const [fifth, crumbling, sixth, asksFifth, asksSixth] = kept.slice(1).map(read);
   const keys = on(31);
-  const others = mapData.levels.filter((l) => title(l) !== level && keys(l) > 0);
+  assert.deepEqual([keys(named(fifth)), keys(named(sixth))], [asksFifth, asksSixth]);
+  const extra = (l) => (title(l) === fifth ? 5 - asksFifth : title(l) === sixth ? crumbling : 0);
+  const onDisc = mapData.levels.map((l) => keys(l) + extra(l)).filter((n) => n > 0);
+  assert.equal(Math.max(...onDisc), most);
   assert.deepEqual(
-    [one, two, three, four],
-    [1, 2, 3, 4].map((n) => others.filter((l) => keys(l) === n).length),
+    byCount,
+    [1, 2, 3, 4, 5, 6].map((n) => onDisc.filter((k) => k === n).length),
   );
-  assert.equal(one + two + three + four, others.length);
-  assert.equal(keys(named(level)), asked);
-  assert.deepEqual([most, most2, withMost], [asked + unwalked, asked + unwalked, 1]);
 });
 
 test("level-format.md's catalogue records are the nine that are their own thing", () => {
