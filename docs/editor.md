@@ -2,7 +2,7 @@
 
 What the editor's files hold and what its writers put on the disc, reading by reading, with what each rests on.
 
-The project file is the editor's permanent record of a level and this document is its specification, so that a reader outside this repo can read one; the level file is the game's own bytes, and the rules for writing it from a project and reading a project out of any file the game would load are here, with the words the game never reads named and the checks that hold both writers to the disc.
+The project file is the editor's permanent record of a level and this document is its specification, so that a reader outside this repo can read one; the level file is the game's own bytes, and the rules for writing it from a project and reading a project out of any file the game would load are here, with the words the game never reads named and what holds both writers to the disc.
 
 [level-format.md](level-format.md) is where the readings of the game's file come from, and `tools/kula_kwl.py` is the Python writer every figure here was measured with.
 
@@ -485,7 +485,7 @@ The control being worked is found again by its `data-field` after the panel is r
 
 The sentences and helpers the tools and the form both use live in `public/js/editor/editing.js`, the refusal sentences, the words a label is built from, the draft on screen, the checks a change is held to and the span a cell belongs to, so the two import it and never each other.
 
-## The checks
+## What holds the writers to the disc
 
 **The digest fixture.** `tests/fixtures/kwl-digests.json` holds, for each of the 230 shipped levels keyed by `pack#index`, the SHA-256 of its canonical file rebuilt from `public/map_data.json`, the SHA-256 of that file's zlib stream at level 6, the level the disc was packed at, and at level 9, the level the layout fit and the image fit meet on, and the level-6 stream's length, under the version of the zlib that wrote them.
 

@@ -1639,7 +1639,7 @@ def _validate_circuits(project, warn):
             warn(f"the {word} switches have nothing to switch" if word else f"the switches of circuit {c} have nothing to switch")
 
 
-# --- the checks that hold the writer to the data and the disc -----------------
+# --- what holds the writer to the data and the disc ---------------------------
 
 def digests(data):
     """Per shipped level, the digest of its canonical file and of that file's deflate

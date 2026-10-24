@@ -1238,3 +1238,13 @@ test("disc.md's room table is what the packs' records leave a level, slot by slo
     }),
   );
 });
+
+test("no section of editor.md takes the word it gives validate's findings as its title", () => {
+  const titles = text("docs/editor.md")
+    .split("\n")
+    .filter((line) => /^#+ /.test(line));
+  assert.deepEqual(
+    titles.filter((t) => /\bchecks?\b/i.test(t)),
+    [],
+  );
+});
