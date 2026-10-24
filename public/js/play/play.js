@@ -342,16 +342,6 @@ function stood() {
   live.station = false;
 }
 
-/** A burst of `n0` motes at `point` over `block`, while the dust is on, still with Motion off. */
-function burst(point, n, block, n0) {
-  if (state.show.dust) burstDust(point, n, block, n0, !motionOn());
-}
-
-/** Dust along the footprint's travel from `from` to `to`, while the dust is on. */
-function strewn(from, to, n, blockOf, still = false) {
-  if (state.show.dust) travelDust(from, to, n, blockOf, still);
-}
-
 /** One game frame of the level with the pad as held, its dust, and what happened. */
 function played() {
   const run = live.run;
@@ -366,7 +356,7 @@ function played() {
   if (!motionOn()) ageDust(1 / motionTable().hz);
   else if (was && !aloft(b) && !events.some((e) => e.sent)) {
     const under = blockUnder(b);
-    strewn(was, footOf(b), b.n, () => under);
+    travelDust(was, footOf(b), b.n, () => under);
   }
   for (const event of events) happened(event);
   rested(b);
@@ -554,11 +544,11 @@ function happened(event) {
     status(b.riding ? RIDING : null);
     walked({ cell: block, face: faceUnder(b) });
     if (!motionOn())
-      strewn(live.still.foot, footOf(b), b.n, (p) => blockAt(live.probe, p, b.n, block), true);
+      travelDust(live.still.foot, footOf(b), b.n, (p) => blockAt(live.probe, p, b.n, block), true);
   } else if (event.face) {
     live.station = true;
     say(noted(live.notes, UNDERFOOT(faceUnder(b), blockUnder(b))));
-    burst(footOf(b), b.n, blockUnder(b), AT_SWITCH);
+    burstDust(footOf(b), b.n, blockUnder(b), AT_SWITCH, !motionOn());
   } else if (event.turned) {
     live.station = true;
     if (Object.values(REFUSED).includes(live.status)) status(b.riding ? RIDING : null);
@@ -581,7 +571,7 @@ function refreshPanel() {
 /** A switch thrown under the ball: dust at its foot, the circuit's turn said, the panel redrawn. */
 function threw({ circuit }) {
   const b = live.run.ball;
-  burst(footOf(b), b.n, blockUnder(b), AT_SWITCH);
+  burstDust(footOf(b), b.n, blockUnder(b), AT_SWITCH, !motionOn());
   const text = THROWN(circuit);
   say(text);
   live.notes.push(text);
@@ -592,7 +582,7 @@ function threw({ circuit }) {
     so until the ball lands. */
 function boosted() {
   const b = live.run.ball;
-  burst(footOf(b), b.n, blockUnder(b), AT_LAUNCH);
+  burstDust(footOf(b), b.n, blockUnder(b), AT_LAUNCH, !motionOn());
   status(LAUNCHED);
   say(LAUNCHED);
   live.notes.push(LAUNCHED);
@@ -602,7 +592,7 @@ function boosted() {
     the break said the first time. */
 function broke({ key }) {
   const b = live.run.ball;
-  burst(footOf(b), b.n, blockUnder(b), AT_BREAK);
+  burstDust(footOf(b), b.n, blockUnder(b), AT_BREAK, !motionOn());
   if (live.broken.has(key)) return;
   live.broken.add(key);
   say(BROKE);
@@ -614,7 +604,7 @@ function broke({ key }) {
 function fell({ key }) {
   const { x, y, z } = live.idx.cells.get(key);
   const over = nearestDrawn([x, y, z]);
-  if (over) burst([x + 0.5, y + 0.5, z + 0.5], live.run.ball.n, over, AT_GONE);
+  if (over) burstDust([x + 0.5, y + 0.5, z + 0.5], live.run.ball.n, over, AT_GONE, !motionOn());
   if (state.selected?.key === key) clearDetail();
   say(GONE([x, y, z].join(",")));
   redraw = true;

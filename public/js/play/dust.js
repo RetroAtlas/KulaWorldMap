@@ -105,8 +105,9 @@ function birth(point, n, block, still) {
 }
 
 /** Dust along the footprint's travel from `from` to `to`, each mote over the block `blockOf`
-    names for its point, born still where `still`. */
+    names for its point, born still where `still`, while the dust is on. */
 export function travelDust(from, to, n, blockOf, still = false) {
+  if (!state.show.dust) return;
   const d = Math.hypot(...to.map((c, i) => c - from[i]));
   owed += d * PER_BLOCK;
   const n0 = Math.floor(owed);
@@ -118,8 +119,10 @@ export function travelDust(from, to, n, blockOf, still = false) {
   }
 }
 
-/** A burst of `n0` motes at `point` over `block`, born still where `still`. */
+/** A burst of `n0` motes at `point` over `block`, born still where `still`, while the dust
+    is on. */
 export function burstDust(point, n, block, n0, still) {
+  if (!state.show.dust) return;
   for (let k = 0; k < n0; k++) birth(point, n, block, still);
 }
 
