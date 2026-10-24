@@ -647,29 +647,34 @@ The module has every count and threshold read from the motion table and no wall 
 
 ### The ball on the map
 
-`js/play/play.js` stands the ball on the map as one of the frame's travellers, keyed as nothing on the level is and handed the body's turn relative to the axes the frame lays it on:
+`js/play/play.js` stands the ball on the map as one of the frame's travellers, built by `js/play/traveller.js`:
 
 - It steps the game's frames from the frame's under hook by the wall clock, each through the rules with the pad as the keys give it, the words of a driver following the planner's route, read through an export of its chrome, added to it while one runs and the driver let go on an arrow, Space or a press of the pad, the level running while the ball rests with Motion on and only while the ball moves, a key is held or a driver runs without it.
-- It hands the frame play's own clock, the frame the rules last ran, which is the one the game's frame draws after its step, the level's index less what the ball has taken, the walkers as the rules stepped them and whether every invisible block is seen through `runWith`, so the phases, the lights and what travels draw as the game's frame draws them, a taken thing is neither drawn nor picked and the face it stood on is painted bare, and while the sunglasses last, and in the on spells of their blink, the blocks light no invisible face and every one keeps the look the map draws it in out of the light.
 - It parks the panel's presses with the view and gives the level its circuits as the game loads them while the ball is on it, and as it leaves, where the level shown is the one they were parked on, gives the presses back, and the view with them unless choosing a level, opening a link or a click on the name a teleporter's panel gives for where it leads is what leaves play.
 - Where a click on the name a teleporter's panel gives for where it leads leaves play, it centres the view there as it leaves, since the click's find is drawn before play hears of it, with the view still following the ball, and writes the history entry the find opened at once, which the find wrote with the view from before play.
 - It shows the clock, the keys or the blocks left and the points in the HUD.
 - It bursts dust where the ball throws a switch, under the ball as a crumbling block breaks, where a block has gone, clearing the panel where it showed that block, and at a boost button's launch.
 - It cuts the view to a teleport's far end rather than easing after the ball and makes a leap of the way the ball has come.
 - It says on the strip that the ball rides a platform while it does and draws it, its dust and the view's target where the platform has carried it.
-- It says through `tipWith` in `js/viewer/chrome/interaction.js` and the panel's `onShow` that a thing the level as installed still lists is taken.
 - It shows the cause of a death in red on the strip while its countdown runs and says it.
-- It tints the ball through the traveller's tint by its heat, its melt and its cold as the game tints the ball's light, each into its own channel and off the other two, raises it red, green and blue in turn by the game's counter while the invincibility pill's word stands, the counter stepping on each frame the ball is drawn under the pill and kept for the page's life as the game keeps it, and flashes it between white and black by the game's own angle while it is marked dying.
 - With Forgive pressed it puts the ball back at rest instead, where it last rested or on the rest before where it died standing there, and says what would have happened.
 - Once the level has ended, by its clock, the ball lost off the lattice, a death, the exit or the last block of a level with no key, it shows no ball, reads no key, lets the camera's frame go and turns the view about the level's middle by the game's own angles, the yaw by the third of the three, which the game turns about the lattice's upright, and the pitch by the first, which it turns about the view's own across, the second, whose axis the orbit has not, left out, and with the zoom standing in for the game's eye, since the orbit has none, the eye standing the level's radius and the table's offset off the middle and swinging its reach nearer and further by turns, and the zoom following how large the level would look from it, for the length of one swing of an arcade level's eye, whichever figures the level's own eye swings by, or until Space, Enter or a tap of the pad starts the level again, the view easing back behind the ball.
 - It asks for the next frame through the frame hook while the level runs, the ending's view turns or something moves.
 - It takes the camera through the frame, the anchored target and the parked view in `js/viewer/state.js` and frames it in the fit's place through `js/viewer/chrome/navigate.js`.
-- It lends the things on the blocks the live ball's point in place of the starts' points.
 - It fills the panel through `onShow`.
 - It ends editing through an event the editor listens to.
 - It draws, behind a switch of Settings, the dust of `js/play/dust.js`, born over a block and drawn in its cell hook, on by default and neither born nor kept while its switch is off.
 - It draws the game's bursts through `js/play/effects.js` in the frame hook, before the pill's screen, from the rows the rules resolved, each particle a sprite of the sheet on a square turned by its angle and added to the frame, a world effect's particles where the camera puts its place and the teleporter's particles at its point of the game's screen scaled to the canvas, the sheet fetched as the first burst needs it, which casts a world effect's light on the faces about the pickup through `lightsWith` in the colour the rules summed.
 - It hands the walk to the planner through an export of its chrome that takes a route where none stands or where the one standing is the last it took, so the route grows under the ball as the walk is handed over again at each station.
+
+### The ball as the frame draws it
+
+`js/play/traveller.js` is the ball as the frame draws it, pure too: the ball as one of the frame's travellers, keyed as nothing on the level is and handed the body's turn relative to the axes the frame lays it on, what the frame draws at and with while the ball is on the map, the ball's tint, the start the game takes and the ball as it last stood, which Motion off draws, each reaching the map through a seam `js/play/play.js` registers.
+
+- It hands the frame play's own clock, the frame the rules last ran, which is the one the game's frame draws after its step, the level's index less what the ball has taken, the walkers as the rules stepped them and whether every invisible block is seen through `runWith`, so the phases, the lights and what travels draw as the game's frame draws them, a taken thing is neither drawn nor picked and the face it stood on is painted bare, and while the sunglasses last, and in the on spells of their blink, the blocks light no invisible face and every one keeps the look the map draws it in out of the light.
+- It tints the ball through the traveller's tint by its heat, its melt and its cold as the game tints the ball's light, each into its own channel and off the other two, raises it red, green and blue in turn by the game's counter while the invincibility pill's word stands, the counter stepping on each frame the ball is drawn under the pill and kept for the page's life as the game keeps it, and flashes it between white and black by the game's own angle while it is marked dying.
+- It lends the things on the blocks the live ball's point in place of the starts' points.
+- It says through `tipWith` in `js/viewer/chrome/interaction.js` and the panel's `onShow` that a thing the level as installed still lists is taken.
 
 ### What play says
 

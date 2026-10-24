@@ -12,32 +12,25 @@ import {
   ZOOM_MAX,
   ZOOM_MIN,
   basisAt,
-  camera,
-  depth,
   fitLevel,
   levelCentre,
 } from "../viewer/state.js";
-import { SIDE, cellKey, FACE_NORMAL } from "../format/lattice.js";
+import { SIDE, cellKey } from "../format/lattice.js";
 import {
   ballFor,
   blockUnits,
   flip,
   jumpTable,
-  layHeading,
   levelTitle,
   litNow,
   markerModel,
   markerNow,
-  modelUnit,
   motionTable,
   skinsTable,
-  startsOf,
   worldName,
   worldTint,
-  TANGENT,
 } from "../viewer/data.js";
 import { probeOf, stepBetween, tangent } from "../viewer/walk.js";
-import { faceAxes } from "../viewer/motion.js";
 import {
   draw,
   drawSoon,
@@ -66,15 +59,12 @@ import { tipWith } from "../viewer/chrome/interaction.js";
 import {
   PAD,
   REST,
-  ROLLING,
-  WRAPPING,
+  aloft,
   blockUnder,
   centreOf,
-  clearance,
   faceUnder,
   moving,
   offsetFrame,
-  positionOf,
   turned,
 } from "./ball.js";
 import {
@@ -87,7 +77,7 @@ import {
   stand,
   startRun,
 } from "./rules.js";
-import { SCREEN, blanksOf, drawn, glowOf, glowStep, rockOf, seeing } from "./passes.js";
+import { SCREEN, blanksOf, drawn, rockOf } from "./passes.js";
 import { FORM, MODE, conclude, gameOf, nextOf } from "./game.js";
 import {
   AT,
@@ -136,17 +126,27 @@ import {
   thenOn,
 } from "./phrases.js";
 import { courseDriver, keyPad } from "./drive.js";
-import { frameShown, probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
+import { probeOf as liveProbe, viewOf as drawnIndex } from "./world.js";
+import {
+  BALL,
+  BALL_TYPE,
+  blockAt,
+  firstStandable,
+  flashed,
+  footOf,
+  glowed,
+  markersFor,
+  shown,
+  sourceOf,
+  startOf,
+  stateOf,
+  takenOn,
+  travellerOf,
+} from "./traveller.js";
 
-const BALL_TYPE = 30;
 const KEY_TYPE = 31;
 const LETHARGY_TYPE = 32;
-const INVINCIBLE_TYPE = 34;
 const KEY_MARKER = { type: KEY_TYPE, face: 0, variant: null, f: [] };
-// the ball's key among the frame's travellers, which no thing of the level's answers to
-const BALL = "ball";
-// the untinted light, the unit a traveller's tint is in
-const LIGHT = 4096;
 // the ghost's blend takes half of the last frame and half of the scene
 const HALF = 0.5;
 // a channel's full byte, the unit the flash's strength is in
@@ -160,8 +160,6 @@ const LANDS = 1e-4;
 const ENTER_MS = 600;
 const LEAVE_MS = 450;
 const GAP_MS = 250;
-// how far toward the camera a block counts as covering the ball, in blocks, and the sampling step
-const COVER = { reach: 1.5, step: 0.25 };
 const BITS = {
   ArrowUp: PAD.up,
   ArrowLeft: PAD.left,
@@ -170,7 +168,6 @@ const BITS = {
   " ": PAD.cross,
 };
 const PAD_BITS = { up: PAD.up, left: PAD.left, right: PAD.right, jump: PAD.cross };
-const PLAIN_KIND = 0;
 const AT_SWITCH = 6;
 const AT_GONE = 10;
 const AT_BREAK = 2;
@@ -191,8 +188,6 @@ let redraw = false;
 let lit = false;
 let passed = false;
 let rolled = null;
-// the invincible ball's glow counter, kept for the page's life as the game keeps it
-let glowCounter = 0;
 // the frame as last displayed while the pill works, tinted, for the ghost
 const lastCv = document.createElement("canvas");
 const lastCtx = lastCv.getContext("2d");
@@ -211,36 +206,9 @@ const typing = (e) =>
 const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 const motionOn = () => state.show.motion;
 const pillTable = () => motionTable().types[String(LETHARGY_TYPE)].lasts;
-const glowTable = () => motionTable().types[String(INVINCIBLE_TYPE)].lasts.glow;
 const smooth = (t) => t * t * (3 - 2 * t);
 
 // --- the ball as the frame draws it -----------------------------------------------------
-
-/** What the ball shows: its block and face, heading, centre and foot, body and lift. */
-function stateOf(b) {
-  return {
-    block: blockUnder(b),
-    face: faceUnder(b),
-    h: b.h,
-    centre: centreOf(b),
-    foot: footOf(b),
-    point: positionOf(b).map((v) => v + b.half),
-    body: bodyOf(b),
-    height: clearance(b, live.probe),
-    frame: b.ramp ? b.ramp.to : b.frame,
-  };
-}
-
-/** The body relative to the axes the frame lays the ball on, across, forward and up, by rows. */
-function bodyOf(b) {
-  const f = faceAxes(b.n, b.h);
-  const [x, y, z] = [0, 1, 2].map((j) => b.body.slice(3 * j, 3 * j + 3));
-  const along = (k, v) => f[0][k] * v[0] + f[1][k] * v[1] + f[2][k] * v[2];
-  return [0, 1, 2].map((k) => [along(k, x), along(k, y), along(k, z)]);
-}
-
-/** The ball as drawn: live while Motion is on, else as it last stood. */
-const shown = () => (motionOn() ? stateOf(live.run.ball) : live.still);
 
 /** The tables the rules read: the motion table, the mesh file's arc for the jump, a block's units,
     where the data's records and styles begin, the skins and the worlds in the game's order. */
@@ -262,106 +230,14 @@ const circuitsOf = () => ({ on: (m) => markerNow(m) === "on", lit: litNow, flip 
     on: `game` carried on, or a fresh one of the level's mode; else none. */
 const gameFor = (l, tables, game = null) => (state.show.playon ? gameOf(l, tables, game) : null);
 
-/** What the frame draws at and with while the ball is on the map: the frame the rules last ran,
-    which is the one the game's draw shows, the ending's view's frames added once the level has
-    ended, the level's index less what the ball has taken, the walkers where the rules have
-    stepped them, and whether every invisible block is seen. */
-const source = (l) =>
-  live && l === live.level
-    ? {
-        frame: frameShown(live.run) + (live.ended?.frame ?? 0),
-        idx: drawnIndex(live.run),
-        travel: travelOf(live.run),
-        seeing: seeing(live.run),
-      }
-    : null;
-
-/** Whether a block stands between `centre`, in blocks, and the camera, within the cover's reach. */
-function covered(centre) {
-  const { toward } = camera();
-  for (let t = COVER.step; t <= COVER.reach; t += COVER.step)
-    if (live.probe.filled(centre.map((v, i) => Math.floor(v + toward[i] * t)))) return true;
-  return false;
-}
-
-const onFace = (b) => b.state === REST || b.state === ROLLING || b.state === WRAPPING;
-/** Where the ball touches its face, in blocks. */
-const footOf = (b) => centreOf(b).map((v, i) => v - (b.n[i] * b.radius) / b.unit);
-/** The block whose face `foot` lies on, under the normal `n`, or `block` where that cell is
-    empty. */
-function blockAt(foot, n, block) {
-  const c = foot.map((v, i) => Math.floor(v - 0.5 * n[i]));
-  return live.probe.filled(c) ? c : block;
-}
-
 export function station() {
   if (!live) return null;
-  const s = shown();
+  const s = shown(live);
   return { block: s.block, face: s.face, heading: faceName(s.h), moving: moving(live.run.ball) };
 }
 
 /** What the frame is handed for the ball, or null while no ball is on the level. */
-export const handed = () => (live ? (travellers(live.level)?.get(BALL) ?? null) : null);
-
-function travellers(l) {
-  if (!live || l !== live.level || live.ended) return null;
-  const s = shown();
-  const m = live.markers[s.face];
-  const n = FACE_NORMAL[s.face];
-  const model = markerModel(m, l);
-  // the viewer stands a thing a hair off its face; the ball keeps that gap, so it stands where
-  // the start's ball stood
-  const reach = model ? Math.max(0, -model.box[0][1]) * modelUnit() : 0;
-  const offset = s.centre.map((v, i) => v - reach * n[i] - (s.block[i] + 0.5 + 0.5 * n[i]));
-  const c = live.idx.cells.get(cellKey(...s.block)) ?? {
-    x: s.block[0],
-    y: s.block[1],
-    z: s.block[2],
-    v: PLAIN_KIND,
-  };
-  const going = {
-    w: { c, m, face: s.face },
-    offset,
-    fwd: s.h,
-    body: s.body,
-    height: s.height,
-    tint: tintOf(live.run.words),
-    through: covered(s.centre),
-    // at an inner corner the ball touches the block it leaves as well as the wall, and a
-    // platform's blocks are drawn off their cells, so while the climb's ramp runs or the ball
-    // rides it sorts as the unit cube about its centre would, by that cube's corner as a block
-    // sorts by its cell's depth, rather than by the block under it
-    depth:
-      live.run.ball.ramp?.kind === "climb" || live.run.ball.riding
-        ? depth(...s.centre.map((v) => v - 0.5))
-        : undefined,
-  };
-  return new Map([[BALL, going]]);
-}
-
-/** The ball's light: flashing while it is marked dying, else tinted by its heat, melt and cold
-    and, while the invincibility pill's word stands, raised by the glow. */
-function tintOf(w) {
-  const { types, turn } = motionTable();
-  if (w.dying) {
-    const level = LIGHT + LIGHT * Math.sin((live.flash / turn) * 2 * Math.PI);
-    return [level, level, level];
-  }
-  const words = [w.heat, w.melt, w.cold];
-  const glowing = w.pills[INVINCIBLE_TYPE] >= 0;
-  if (!words.some(Boolean) && !glowing) return undefined;
-  const { own, other } = types[String(BALL_TYPE)].tint;
-  const raised = glowing ? glowOf(glowCounter, glowTable(), turn) : null;
-  // the sine's one is the untinted light
-  const lift = (ch) => (raised ? (raised[ch] * LIGHT) / turn : 0);
-  return words.map((word, ch) => {
-    const tinted = words.reduce(
-      (level, v, k) => (k === ch ? level : level - Math.floor((v * LIGHT) / other)),
-      LIGHT + Math.floor((word * LIGHT) / own),
-    );
-    return Math.max(0, tinted + lift(ch));
-  });
-}
+export const handed = () => (live ? (travellerOf(live, live.level)?.get(BALL) ?? null) : null);
 
 // --- the camera ---------------------------------------------------------------------------
 
@@ -451,7 +327,7 @@ function frameBall(l) {
     return fitLevel(l);
   }
   if (live.ended) return frameEnding(l);
-  const s = shown();
+  const s = shown(live);
   state.target = [...s.centre];
   if (!live.framed) {
     state.cam.yaw = YAW;
@@ -597,7 +473,7 @@ function advance() {
   }
   if (!live) return;
   if (!ease && !live.ended) {
-    const s = shown();
+    const s = shown(live);
     const k = motionOn() ? 1 - Math.exp(-dt / FOLLOW_MS) : 1;
     state.target = state.target.map((v, i) => {
       const off = s.centre[i] - v;
@@ -687,7 +563,7 @@ function stepped(dt) {
     drawn frame may run several. */
 function stood() {
   const b = live.run.ball;
-  if (!moving(b) || live.station) live.still = stateOf(b);
+  if (!moving(b) || live.station) live.still = stateOf(b, live.probe);
   live.station = false;
 }
 
@@ -708,19 +584,19 @@ function played() {
   // a tap stands until a frame reads the pad, as the level opens with it dead, and is dropped
   // while an ending stands, so its wait's last frame reads only the keys held on it
   const pad = keys.pad(heeds(run), live.driver ? live.driver.pad(run) : 0, !run.words.ending);
-  const was = onFace(b) ? footOf(b) : null;
+  const was = !aloft(b) ? footOf(b) : null;
   const blinked = !!run.words.blink;
   const events = gameFrame(run, pad);
   if (events.some((e) => e.pill?.type === LETHARGY_TYPE)) lit = true;
   if (!motionOn()) ageDust(1 / motionTable().hz);
-  else if (was && onFace(b) && !events.some((e) => e.sent)) {
+  else if (was && !aloft(b) && !events.some((e) => e.sent)) {
     const under = blockUnder(b);
     strewn(was, footOf(b), b.n, () => under);
   }
   for (const event of events) happened(event);
   rested(b);
-  flashed(run.words);
-  glowed(run.words);
+  flashed(live, run.words);
+  glowed(live, run.words);
   if (run.words.send >= 0) status(SENDING);
   else if (run.words.blink && !blinked) status(WEARING_OFF);
   else if (live.status === SENDING || (live.status === WEARING_OFF && !run.words.blink))
@@ -734,19 +610,6 @@ function played() {
   if (death) status(DYING[death], true);
   else if (live.dire) status(null);
   if (b.state === REST) live.notes.length = 0;
-}
-
-// The dying flash's angle steps each frame the mark stands and starts over as it clears.
-function flashed(w) {
-  const { types, turn } = motionTable();
-  live.flash = w.dying ? (live.flash + types[String(BALL_TYPE)].dying.flash) % turn : 0;
-}
-
-// The glow's counter steps on each frame the ball is drawn with the pill's word not negative, and
-// is never put back.
-function glowed(w) {
-  if (!live.ended && w.pills[INVINCIBLE_TYPE] >= 0)
-    glowCounter = glowStep(glowCounter, glowTable());
 }
 
 // The last two stations the ball rested on, the heading the latest at each.
@@ -918,7 +781,8 @@ function happened(event) {
     say(noted(live.notes, AT(block, faceUnder(b))));
     status(b.riding ? RIDING : null);
     walked({ cell: block, face: faceUnder(b) });
-    if (!motionOn()) strewn(live.still.foot, footOf(b), b.n, (p) => blockAt(p, b.n, block), true);
+    if (!motionOn())
+      strewn(live.still.foot, footOf(b), b.n, (p) => blockAt(live.probe, p, b.n, block), true);
   } else if (event.face) {
     live.station = true;
     say(noted(live.notes, UNDERFOOT(faceUnder(b), blockUnder(b))));
@@ -1000,7 +864,7 @@ function nearestDrawn(cell) {
 function sent({ to }) {
   const b = live.run.ball;
   live.station = true;
-  live.still = stateOf(b);
+  live.still = stateOf(b, live.probe);
   walked({ cell: to.cell, face: to.face }, true);
   state.frame = b.frame;
   state.target = [...centreOf(b)];
@@ -1074,7 +938,7 @@ function forgive(name) {
   const b = live.run.ball;
   revive(live.run, refuge());
   live.flash = 0;
-  live.still = stateOf(b);
+  live.still = stateOf(b, live.probe);
   live.station = true;
   walked({ cell: blockUnder(b), face: faceUnder(b) }, true);
   status(FORGIVEN(name));
@@ -1125,7 +989,7 @@ function startOver({ onward = true } = {}) {
   live.rests = [];
   live.broken = new Set();
   live.flash = 0;
-  live.still = stateOf(b);
+  live.still = stateOf(b, live.probe);
   resetDust(worldTint(l.theme));
   routing();
   status(start ? null : NO_START);
@@ -1281,14 +1145,6 @@ function keep() {
   routing();
 }
 
-/** The things on `key`'s block the ball has taken, as play's level still lists them. */
-const takenOn = (key) =>
-  live
-    ? (live.run.world.idx.markers.get(key) ?? []).filter(
-        (m) => m.face !== null && live.run.world.taken.has(`${key}/${m.face}`),
-      )
-    : [];
-
 // --- the strip and the pad ----------------------------------------------------------------
 
 function status(text, dying = false) {
@@ -1336,7 +1192,7 @@ function marked(bonus, fresh = false) {
 
 function line() {
   if (!live) return;
-  const s = shown();
+  const s = shown(live);
   const text = live.ended ? ENDED : LINE(s.face, s.block, s.h);
   const el = $("playLine");
   if (el.textContent !== text) el.textContent = text;
@@ -1486,31 +1342,6 @@ function keyup(e) {
 
 // --- entering and leaving -----------------------------------------------------------------
 
-/** The start the game takes, as the ball stands on it, or null. */
-function startOf(l, probe) {
-  const s = startsOf(l).at(-1);
-  if (!s) return null;
-  const cell = [s.x, s.y, s.z];
-  if (!probe.standable(cell, s.face)) return null;
-  return { cell, face: s.face, h: layHeading(s) ?? TANGENT[s.face], marker: s };
-}
-
-/** The first face of the level the ball could stand on, or null. */
-function firstStandable(probe) {
-  for (const c of state.idx.cells.values())
-    for (let face = 0; face < FACE_NORMAL.length; face++)
-      if (probe.standable([c.x, c.y, c.z], face))
-        return { cell: [c.x, c.y, c.z], face, h: tangent(face, 0) };
-  return null;
-}
-
-function markersFor(start) {
-  const base = start?.marker
-    ? { type: start.marker.type, f: start.marker.f, v: undefined, variant: null }
-    : { type: BALL_TYPE, f: [], v: undefined, variant: null };
-  return FACE_NORMAL.map((_, face) => ({ ...base, id: BALL, face }));
-}
-
 function enter(at = null) {
   const l = state.lvl;
   const motion = motionTable();
@@ -1568,7 +1399,7 @@ function enter(at = null) {
     kept: null,
   };
   const ball = run.ball;
-  live.still = stateOf(ball);
+  live.still = stateOf(ball, live.probe);
   resetDust(worldTint(l.theme));
   routing();
   keys.clear();
@@ -1582,14 +1413,14 @@ function enter(at = null) {
   fitWith(frameBall);
   fit();
   arrive(from);
-  runWith(source);
+  runWith((l) => sourceOf(live, l));
   emit("play-changed", true);
   emit("slice-changed");
   chip();
   writeHash();
   invalidatePick();
   draw();
-  const s = stateOf(ball);
+  const s = stateOf(ball, live.probe);
   say(PLAYING(l, s.face, s.block, s.h));
 }
 
@@ -1598,7 +1429,7 @@ function arrive(from) {
   const to = {
     ...viewNow(),
     rot: () => viewOf(looked(live.run.ball), state.cam.yaw, state.cam.pitch),
-    target: () => shown().centre,
+    target: () => shown(live).centre,
   };
   startEase(from, to, ENTER_MS, () => {
     state.frame = live?.run.ball.frame ?? state.frame;
@@ -1668,7 +1499,7 @@ export function togglePlay() {
 function put(at) {
   retire();
   stand(live.run, at);
-  live.still = stateOf(live.run.ball);
+  live.still = stateOf(live.run.ball, live.probe);
   walked({ cell: at.cell, face: at.face });
   keys.clear();
   status(null);
@@ -1719,12 +1550,12 @@ export function bootPlay() {
   measure = measureStrip($("play"), "--play-h");
   overlayWith({ under: () => void advance(), cell: drawDustOver, frame: more });
   effectsWith(() => live?.run ?? null);
-  movingWith(travellers);
-  ballsWith(() => (live && !live.ended ? [shown().point] : null));
-  tipWith((c) => takenOn(cellKey(c.x, c.y, c.z)).map(TAKEN));
+  movingWith((l) => travellerOf(live, l));
+  ballsWith(() => (live && !live.ended ? [shown(live).point] : null));
+  tipWith((c) => takenOn(live, cellKey(c.x, c.y, c.z)).map(TAKEN));
   onShow((box, c) => {
     const body = box.querySelector("#detailBody");
-    for (const m of takenOn(cellKey(c.x, c.y, c.z)))
+    for (const m of takenOn(live, cellKey(c.x, c.y, c.z)))
       body.append(el("p", { className: "sub", textContent: `${TAKEN(m)}.` }));
   });
   on("level-changed", () => {

@@ -88,7 +88,7 @@ The route planner, `course.js` and `ribbon.js`, draws and listens only through t
 
 Play mode is built the same way.
 
-Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/game.js`, `play/passes.js`, `play/contact.js`, `play/hazards.js` and `play/drive.js`, and its sentences, `play/phrases.js`, are pure, every count and threshold read from `objects.motion` and no wall clock among them, and the unit tests hold them to importing the model, the lattice and each other alone.
+Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/game.js`, `play/passes.js`, `play/contact.js`, `play/hazards.js` and `play/drive.js`, its sentences, `play/phrases.js`, and the ball as the frame draws it, `play/traveller.js`, are pure, every count and threshold read from `objects.motion` and no wall clock among them, and the unit tests hold them to importing the model, the lattice and each other alone.
 
 `play/ball.js` never asks its probe what kind a block is and carries none of the mode's policy, so a lost ball says so and stays where it fell.
 
@@ -103,7 +103,7 @@ Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/game.js`
 - `tipWith` in `interaction.js`.
 - The panel's `onShow` and `go-to` event in `detail.js`, and the `play-changed` event the editor listens to.
 
-So the faithful modules carry no branch for play either; `play/dust.js`, `play/effects.js` and `play/phrases.js` are its own, and `play/effects.js` casts its light through `lightsWith` in `lights.js`.
+So the faithful modules carry no branch for play either; `play/dust.js`, `play/effects.js`, `play/phrases.js` and `play/traveller.js` are its own, and `play/effects.js` casts its light through `lightsWith` in `lights.js`.
 
 "How it is built" in [docs/viewer.md](docs/viewer.md) says what each of play's modules computes and what play hands the map through its seams.
 

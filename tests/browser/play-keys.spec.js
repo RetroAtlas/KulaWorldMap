@@ -64,6 +64,7 @@ test("p stands the ball on the start and takes its view, the arrows roll it, and
       "/js/play/phrases.js",
       "/js/play/play.js",
       "/js/play/rules.js",
+      "/js/play/traveller.js",
       "/js/play/world.js",
     ]);
   await expect(line(page)).toHaveText("Playing · on the top of 17,18,17, facing -y");
