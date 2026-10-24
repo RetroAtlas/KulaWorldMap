@@ -545,7 +545,7 @@ const claims = [
       lastSlot((path) => /FI\.PAK/.test(path)),
       lastSlot((path) => /COPYCAT/.test(path)),
     ],
-    /a world pack's slot 0 to (\d+), a finals pack's 0 or (\d+) or the Simon rooms' pack's 0 to (\d+)/,
+    /a world pack's slot 0 to (\d+), a finals pack's slot 0 or (\d+) or the Simon rooms' pack's slot 0 to (\d+)/,
   ],
   [
     "docs/editor.md",

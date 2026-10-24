@@ -85,7 +85,7 @@ The gear at the top of the sidebar, or `Shift-s`, opens Settings, for the switch
 
 Among them, `c` draws where the game's camera comes to rest at the level's start, behind the ball and above it, and the wedge it sees ([camera.md](camera.md)), and the compass at the map's bottom right can be put away.
 
-Under Play, the golden dust the ball leaves, the map's and not the game's, can be put away, and a block's panel can be given Play from here, off by default so that the map opens as a map, which stands the ball on the face you clicked and plays from there, and the ball can be given the game's own run with Play on through the levels, off by default so that a level plays on its own, which banks a done level's points into a total as the game does, takes a death's cost from it, goes on from a way out to the level the game loads next and plays the Simon rooms as the game's match between two players, as Rolling the ball below says.
+Under Play, the golden dust the ball leaves, which comes from the map and not from the game, can be put away, and a block's panel can be given Play from here, off by default so that the map opens as a map, which stands the ball on the face you clicked and plays from there, and the ball can be given the game's own run with Play on through the levels, off by default so that a level plays on its own, which banks a done level's points into a total as the game does, takes a death's cost from it, goes on from a way out to the level the game loads next and plays the Simon rooms as the game's match between two players, as Rolling the ball below says.
 
 `s` shows and hides the sidebar itself.
 
@@ -97,7 +97,7 @@ In the list and in the buttons' tooltips the map names Ctrl and Alt as the keybo
 
 **Search** with `/` for a level (`level 42`, `bonus`, `final 7`), a world (`inca`), a cell (`17,12,17`), an object by name or type (`key`, `type 34`), or a block by the name or number of its kind (`ice block`, `kind=2`), where `block` alone finds every block named for its kind and none of the plain ones.
 
-A search for objects or blocks lists every one the game places, this level's first, then the rest of its world's, then the other worlds'; Enter or a click goes to one and selects it, and the list stays for the next. The cross in the box clears it, as `Esc` does.
+A search for objects or blocks lists every one the game places, those on this level first, then the rest of those in its world, then those in the other worlds; Enter or a click goes to one and selects it, and the list stays for the next. The cross in the box clears it, as `Esc` does.
 
 A space means every term must match and a comma or `or` means any (`coin, key`), and a field is searched as `name=value` (`starts=off`, `facing=+x`, or `type 34 f10=2` for the raw fields the panel shows).
 
@@ -115,9 +115,9 @@ On a level of your own the note is the level's overview instead, editing or not:
 
 It is brought up to date at every change, a link that holds the focus keeping it, and folds as any note does.
 
-One finding is the map's own rather than the file's: where a key, a coin or anything else the ball takes stands where no roll from the start reaches it, over the blocks alone as the planner reckons a route, the note names each with the face and the block it stands on, the keys first, a face that looks into another block left to the checks, and says that a jump, a teleporter, a platform, ice and a fall are not counted.
+One finding comes from the map itself rather than from the file: where a key, a coin or anything else the ball takes stands where no roll from the start reaches it, over the blocks alone as the planner reckons a route, the note names each with the face and the block it stands on, the keys first, a face that looks into another block left to the checks, and says that a jump, a teleporter, a platform, ice and a fall are not counted.
 
-The sidebar lists a world's levels in the order of its pack, then its two finals, then the Simon room the game's Simon mode plays in it on its first round, and `[` and `]` step to the previous and next level in that order, on from a world's last level to the next world's first and back, and stop at the first level of the first world and the last of the last.
+The sidebar lists a world's levels in the order of its pack, then its two finals, then the Simon room the game's Simon mode plays in it on its first round, and `[` and `]` step to the previous and next level in that order, on from a world's last level to the next world's first level and back, and stop at the first level of the first world and the last of the last.
 
 While the ball is on the level with Play on through the levels on in Settings, a way out moves the line on to the level the game loads next, and in the Simon rooms a failed round to the room the game loads next, as Rolling the ball below says.
 
@@ -137,7 +137,7 @@ Where this browser holds levels of its own that could not be read, a row under t
 
 For the shown draft a Level card edits its title, up to eighty characters, its world, the time its clock starts at, any number of seconds from 1 to 32767, rounded to whole seconds, which says so when it keeps the old value, and whether it plays as a hidden level or shows invisible blocks from afar, each change redrawing the map with the view, the slice, the hidden kinds, the selection, the clock and the switch presses kept; a Plays as choice above Hidden level lets a level with no key play as a bonus level or as a Simon room, one step undo takes back, and shows a level with a key as an arcade level with no choice, since the game decides that from the keys, its tip saying so and that taking every key away opens the choice.
 
-Under those, Circuits lists the four colours, each with its swatch, whether it starts on or off, which its button turns over as one step undo takes back, and how many switches, teleporters and lasers of it the level has, or that it has none, so a colour's starting state is set beside the level's other settings, each row a group named Circuit, as the panel's is, and each button named for a reader by its colour, "green circuit", with whether it starts on in whether it is pressed, since "starts on" is the state and not the name, and the swatch there for the eye alone.
+Under those, Circuits lists the four colours, each with its swatch, whether it starts on or off, which its button turns over as one step undo takes back, and how many switches, teleporters and lasers of it the level has, or that it has none, so a colour's starting state is set beside the level's other settings, each row a group named Circuit, as the panel's row is, and each button named for a reader by its colour, "green circuit", with whether it starts on in whether it is pressed, since "starts on" is the state and not the name, and the swatch there for the eye alone.
 
 The card announces none of its changes to the level's settings, where the panel does, so a change made from it clears what the panel last said.
 
@@ -147,7 +147,7 @@ The card offers `duplicate` and `delete`, which asks to be pressed again, each s
 
 The card's `save as .json` writes the draft as the map's own file and `save as .kwl` as the file the game loads, each named after the title, after which the row reads "saved to a file" and counts the changes since, with a dot on the save button while there are any; `open a file…` in the row above takes either back, or a level file from elsewhere, read for what it holds rather than by its name, opens it as a new draft and says what it had to repair, or that it has notes on what it read where it repaired nothing.
 
-`open a file…` also takes a pack of the game's, which asks which of its levels to open and opens it in the world on screen, since a pack does not say which world it is from, a disc image, which asks for the pack and the level and opens it in the world the map lists the level that lies there under, named as the pause screen names it, and in the pack's own world where none of the game's lies there, and a level saved by the community's level viewer, read in the world on screen; declining the question opens nothing.
+`open a file…` also takes one of the game's packs, which asks which of its levels to open and opens it in the world on screen, since a pack does not say which world it is from, a disc image, which asks for the pack and the level and opens it in the world the map lists the level that lies there under, named as the pause screen names it, and in the pack's own world where none of the game's levels lies there, and a level saved by the community's level viewer, read in the world on screen; declining the question opens nothing.
 
 `paste a link…` in the same row opens a box for the link to a level shared from the community's level viewer, which opens as a new draft in the world on screen, or in the world the link names where that is one of the ten; a text that is no such link is said so under the field, which stays for another try.
 
@@ -159,23 +159,23 @@ A draft goes onto the disc from its Level card, which opens "Put it on the disc"
 
 The levels: a row for each, the draft the box was opened for first, and under the rows `add a level…`, which lists the other levels this browser holds by title and adds a row for the one chosen, with `a file…` last, and `take all out`; each row has `take out`, and with no rows the box says to add a level and offers no download.
 
-`a file…` takes what the sidebar's `open a file…` takes, a level file of the map's or the game's, a pack or a disc image, or a level saved by the community's level viewer, and opens it as a new level of your own, listed under Your levels as saved to a file, with what the reader had to repair said once, as the sidebar says it; a pack or a disc image asks which level to take as it does there, in the box's place, and the box comes back once the question is answered or declined.
+`a file…` takes what the sidebar's `open a file…` takes, one of the map's level files or a level file of the game, a pack or a disc image, or a level saved by the community's level viewer, and opens it as a new level of your own, listed under Your levels as saved to a file, with what the reader had to repair said once, as the sidebar says it; a pack or a disc image asks which level to take as it does there, in the box's place, and the box comes back once the question is answered or declined.
 
-The new level's row takes the slot its file names, else the slot its title names, else the slot its copy came from, else the first slot no other row takes, a Simon room's where the level plays as one, and the map stays on the level it showed.
+The new level's row takes the slot its file names, else the slot its title names, else the slot its copy came from, else the first slot no other row takes, a Simon room's slot where the level plays as one, and the map stays on the level it showed.
 
 A row shows the level's title, how it plays, and what the checks find, the errors listed with the sentence that a level with errors cannot go on the disc until they are fixed, the warnings folded away, and a level the checks pass said to have no warnings.
 
-A row shows its slot, one of any of the ten worlds' packs or their finals packs, or one of the ten Simon rooms', named as the pause screen names the level there and grouped by world, the Simon rooms last as a group of their own, with whose place the level takes and how the game reaches it, a new game starting at the first slot, the rest of a world's slots taking a save that has got that far, the finals coming once the arcade is finished and a room being the one Simon mode plays in its world on its first round, and a note that the level will wear that world's artwork where it is not the draft's own.
+A row shows its slot, one of any of the ten worlds' packs or their finals packs, or one of the ten Simon rooms' slots, named as the pause screen names the level there and grouped by world, the Simon rooms last as a group of their own, with whose place the level takes and how the game reaches it, a new game starting at the first slot, the rest of a world's slots taking a save that has got that far, the finals coming once the arcade is finished and a room being the one Simon mode plays in its world on its first round, and a note that the level will wear that world's artwork where it is not the draft's own artwork.
 
 Where the level and its slot disagree on how it plays, the row says so under that: a level that is not a Simon room in a room's slot is played in Simon mode there, and a Simon room in any other slot as a bonus level there, since the game decides by where a level lies.
 
-The choice stays with the draft and in its file, a draft that has made none offered the slot its title names, the level whose title stands in it or the level its first number counts to, a bonus, final or hidden level or a Simon room where that word stands before the number, else the slot its copy came from, else the first slot no other row takes, a Simon room's where the level plays as one, and never a slot another row has.
+The choice stays with the draft and in its file, a draft that has made none offered the slot its title names, the level whose title stands in it or the level its first number counts to, a bonus, final or hidden level or a Simon room where that word stands before the number, else the slot its copy came from, else the first slot no other row takes, a Simon room's slot where the level plays as one, and never a slot another row has.
 
 A row shows its fit, whether the level fits the slot's own bytes, needs the pack rebuilt, with its other levels packed tighter where that is what makes room, or moves the pack into the disc's free sectors, with the bytes to spare, each level fitted after the rows above it, so two levels in one pack are fitted together, worked out from the disc as pressed until the image is given and read from the image after, and from the disc as pressed again while the rows cannot be placed as they stand.
 
 Two rows on one slot are an error under the rows, which names the level whose place they both take and holds the patches back until a slot changes, and the later of the two shows no fit until then.
 
-The disc: the image, dropped onto the box or chosen with the browser's own file control, which names the image chosen or dropped, read in the browser and sent nowhere, anything about it that is not the disc's said as a warning rather than a refusal, and then the downloads, a PPF patch, an xdelta patch, and the patched disc with its cue sheet, each named after the level, or after the first level and how many more there are, the disc saved through the browser's own picker where it has one.
+The disc: the image, dropped onto the box or chosen with the browser's own file control, which names the image chosen or dropped, read in the browser and sent nowhere, anything about it that differs from the disc said as a warning rather than a refusal, and then the downloads, a PPF patch, an xdelta patch, and the patched disc with its cue sheet, each named after the level, or after the first level and how many more there are, the disc saved through the browser's own picker where it has one.
 
 Playing it, which appears once there is a patch: where each emulator wants the patch, DuckStation and PCSX-Redux beside the image under its name, ePSXe and PCSX-ReARMed in their patches folder under the game's serial, how xdelta3 applies the other, and that Mednafen, Beetle and RetroArch take the patched disc instead.
 
@@ -218,7 +218,7 @@ The game builds nothing past the edge, a cell cannot be filled twice or across a
 
 Every step can be taken back: `Ctrl-Z` undoes the last change to the draft on screen and `Ctrl-Shift-Z` takes it again, as the strip's Undo and Redo do, a new step after an undo lets the steps taken back go, a change that leaves the draft as it stands is no step and counts as no change, letters typed into the title within a second of each other join one step, so a pause starts another and a run of them that ends where it began leaves none, and `Delete` or `Backspace` erases what is selected, its object first and then its block, or every block of a selected set.
 
-The steps are this visit's alone, kept for each draft until the page is left, and a form field keeps the browser's own keys.
+The steps belong to this visit alone, kept for each draft until the page is left, and a form field keeps the browser's own keys.
 
 ### Several blocks at once
 
@@ -256,7 +256,7 @@ The pointer then previews the run from that block to the cell you hover, or to t
 
 The second click lays it, the far end across the face you click, on the floor through the grid, or, for a laser, on the plain bare block or the other laser's block you click, which a laser may end on.
 
-A run keeps to one line and to the lattice, a platform's run stays empty, a laser's two ends are each empty, a plain bare block or another laser's with nothing between, and a run needs two cells: each refusal is said and lays nothing, and `Esc` cancels a waiting run, as changing the tool or the brush does.
+A run keeps to one line and to the lattice, a platform's run stays empty, a laser's two ends are each empty, a plain bare block or another laser's block with nothing between, and a run needs two cells: each refusal is said and lays nothing, and `Esc` cancels a waiting run, as changing the tool or the brush does.
 
 The palette's laser rows come in the four colours and Alt-click on a laser takes its colour; a click with a platform or laser brush on a run's own block takes that block as the first click, whatever the brush's kind or colour, so the second re-lays its run in one step and the run keeps its own kind and colour; Erase on a run's block takes the run whole; and nothing stands on a platform's or a laser's faces.
 
@@ -268,7 +268,7 @@ A row of six buttons, Faces, stands for the block's faces, a dot on each that ho
 
 Under it the block's kind can be changed, a vanishing block's phase set, a platform's length and speed typed and a laser's colour chosen, the axis and the far end of a run shown as they are, and a run's other cells show the run's own block; what the chosen face holds is a list grouped as the palette is, with nothing at its head, and the thing on it can be faced one of its four ways, under Facing, given its colour, worth or phase, and a teleporter says where it leads.
 
-A face that holds a switch or a teleporter, and a laser's block, show the circuit of their colour in one row: its swatch, whether it starts on or off, which the button turns over, and how many switches, teleporters and lasers share the colour, the row the Level card shows for all four, read as the card's is, the button named by its colour and the swatch for the eye alone.
+A face that holds a switch or a teleporter, and a laser's block, show the circuit of their colour in one row: its swatch, whether it starts on or off, which the button turns over, and how many switches, teleporters and lasers share the colour, the row the Level card shows for all four, read as the card's row is, the button named by its colour and the swatch for the eye alone.
 
 "Place the brush here" and "Build against this face" lay what a click on that face would, so a level can be built from the keyboard; the Place button is greyed while the face holds what it would place, keeping the focus and saying so when pressed, and with a platform or a laser for the brush there is none, since a run is laid on the map in two clicks.
 
@@ -284,9 +284,9 @@ A run takes two such pairs.
 
 A long press selects whatever is under the finger from any tool, as a right click does with a mouse.
 
-On a phone the palette and the panel open as sheets at the foot of the map, one at a time, each with a close button, the strip standing above whichever is open and the map still turning above that; the strip's Palette button opens the palette, which does not open of itself there, and `Esc` or the close button puts a sheet away, `Esc` taking the palette's before it clears the selection, which takes the panel's with it.
+On a phone the palette and the panel open as sheets at the foot of the map, one at a time, each with a close button, the strip standing above whichever is open and the map still turning above that; the strip's Palette button opens the palette, which does not open of itself there, and `Esc` or the close button puts a sheet away, `Esc` taking the palette's sheet before it clears the selection, which takes the panel's sheet with it.
 
-What a tap places or clears is selected and outlined as with a mouse, but the panel's sheet stays down, through a change of brush or of mode too, and through every redraw of the draft, a second block, an erase, an undo or a card edit, and the palette's stays as it was, so a floor is built without a sheet to put away at every block; a long press, or a tap with Select, opens the panel.
+What a tap places or clears is selected and outlined as with a mouse, but the panel's sheet stays down, through a change of brush or of mode too, and through every redraw of the draft, a second block, an erase, an undo or a card edit, and the palette's sheet stays as it was, so a floor is built without a sheet to put away at every block; a long press, or a tap with Select, opens the panel.
 
 ## Planning a route
 
@@ -431,11 +431,11 @@ A moving platform carries the ball: a ball that comes down on one from a jump or
 
 Rolling onto a platform's block from a neighbour stands the ball on it as on stone, as a hop in place sets a riding ball down on it, and the platform moving off from under it leaves it to fall.
 
-A boost button launches the ball as the game's does: rolled onto one, the ball is taken from the keys, rolls on by itself past the button's middle and leaps three blocks on, higher than a jump, and one that comes down on a button, from a jump, a fall or a hop, leaps from it on the next frame whatever the keys, so buttons three blocks apart send the ball from one to the next; the strip says so and dust rises at the launch, without the game's sounds or the pad's shudder.
+A boost button launches the ball as in the game: rolled onto one, the ball is taken from the keys, rolls on by itself past the button's middle and leaps three blocks on, higher than a jump, and one that comes down on a button, from a jump, a fall or a hop, leaps from it on the next frame whatever the keys, so buttons three blocks apart send the ball from one to the next; the strip says so and dust rises at the launch, without the game's sounds or the pad's shudder.
 
 ### The Simon rooms
 
-A Simon room, one of the game's or a level of your own marked one, is played as the game plays it, one move at a time:
+A Simon room, one of the game's rooms or a level of your own marked one, is played as the game plays it, one move at a time:
 
 - Up rolls the ball a block at a time, a held up rolling on after a short rest on each block.
 - Space held with up jumps the ball two blocks on.
@@ -451,7 +451,7 @@ A wrong move, or a fall, loses the round and scores a point for the other player
 
 ### The clock and the opening
 
-The level's clock runs from the time the level gives, counting down as the game's does while the ball is on the level; the level opens with the view coming to the ball and the keys live after the game's own short hold, with no fly-in, so it takes no key for its first few frames, and a key tapped before then is kept for the opening's end, while a key held through them is read as held, not pressed, once they are over.
+The level's clock runs from the time the level gives, counting down as the game's clock does while the ball is on the level; the level opens with the view coming to the ball and the keys live after the game's own short hold, with no fly-in, so it takes no key for its first few frames, and a key tapped before then is kept for the opening's end, while a key held through them is read as held, not pressed, once they are over.
 
 The clock stands while the ball is on a clock face, and through the Simon rooms, as it does in the game.
 
@@ -462,7 +462,7 @@ When the time runs out, the ball falls off the level, or the level is done, the 
 - The ball is gone.
 - The strip says the level has ended and how, a death or the clock running out in the word the game's end screen shows for it, with the points and the time left, what the ending did to the run's total where a run is on and what the key goes on to.
 - The keys and the pad move nothing.
-- The view lets go of the ball and turns about the level's middle as the game's does at an ending, the level turning over and the view drawing nearer and further by turns, quicker and wider on a level with no key as the game's is, standing still on a hidden level, where the game's eye does not swing, and swinging the slower way in the Simon rooms, which the game plays as the arcade's whatever a room holds.
+- The view lets go of the ball and turns about the level's middle as the game's view does at an ending, the level turning over and the view drawing nearer and further by turns, quicker and wider on a level with no key as the game's swing is, standing still on a hidden level, where the game's eye does not swing, and swinging the slower way in the Simon rooms, which the game gives the arcade's swing whatever a room holds.
 
 The ending lasts until Space, Enter or a tap on the pad, or the time one of the slower swings takes, near six seconds on any level, starts a level again, with the clock full and the view coming round behind the ball, as the game loads a level after an ending: the same level from its start, everything the ball took back on its face and the level's switches as it was loaded with, unless a run is on, with Play on through the levels on in Settings, when a way out goes on instead to the level the game picks, the world's next level, or, once the five fruit are banked, one of its three bonus levels, the first opened by the world's first five levels, the second by the next five levels and the third by the last five levels, and by the hidden exit its hidden level, a bonus or a hidden level going back to the level after the one that led to it, or on to the next world's first level where that was the world's last level, as the last level itself does.
 
@@ -478,7 +478,7 @@ A button the keyboard has moved the focus to, as Tab does, keeps Enter and is pr
 
 Dragging turns the view about the ball, the wheel zooms, and `f` frames the ball again; `Esc` leaves play with the view and the slice as they were before, or with the ball's view where the run has gone on to another level since, choosing a level, the one shown among them, opening a link, going to a find on another level or a click on the name a teleporter's panel gives for where it leads leaves play too, keeping the view it goes to, the level's fit where a level is chosen; a find on the level shown selects the block at its cell, where there is one, while play goes on.
 
-With Motion on the level runs as the game's does while the ball rests, the clock counting down and what moves on the blocks moving; with Motion off the level jumps to its new footing rather than tumbling, the ball from one block's middle to the next, its dust lies still along the way, and the level waits between moves, its clock and what moves on it standing until the ball is driven again.
+With Motion on the level runs as the game's level does while the ball rests, the clock counting down and what moves on the blocks moving; with Motion off the level jumps to its new footing rather than tumbling, the ball from one block's middle to the next, its dust lies still along the way, and the level waits between moves, its clock and what moves on it standing until the ball is driven again.
 
 With Motion on the view eases round behind the ball as play starts and back to where it was as `Esc` or Leave leaves play, with Motion off it cuts, and a press, a link or a level chosen while it eases back ends the ease, so what that does starts from the view play is leaving for.
 
@@ -511,23 +511,23 @@ The modules lie in layers, and a module imports only its own layer and those ben
 
 ### What the page fetches
 
-The page itself starts what the boot will ask for before any of its modules has arrived: every module the boot imports, so they load in one round rather than as each is found in the last, the data files, and the textures of the world the link's pack names, or the first world's where there is no link, so everything is on its way together.
+The page itself starts what the boot will ask for before any of its modules has arrived: every module the boot imports, so they load in one round rather than as each is found in the last, the data files, and the textures of the world the link's pack names, or the first world's textures where there is no link, so everything is on its way together.
 
-Once that world's textures have landed and the page is idle, the other worlds' are fetched one at a time behind whatever the page asks for itself, from the next world on, unless the browser is set to save data, so a change of world finds them here; `js/viewer/draw/atlas.js` keeps every atlas for the visit, and a frame redraws for a landing only when it is the shown world's.
+Once that world's textures have landed and the page is idle, the other worlds' textures are fetched one at a time behind whatever the page asks for itself, from the next world on, unless the browser is set to save data, so a change of world finds them here; `js/viewer/draw/atlas.js` keeps every atlas for the visit, and a frame redraws for a landing only when it is the shown world's atlas.
 
 Beside the worlds' atlases under `tex/` the build lays the sheet of the seven sprites the game's effects draw, for play alone, which the page does not preload.
 
 ### How a level reaches the screen
 
-Every level reaches the screen through one funnel in `js/viewer/chrome/navigate.js`, the disc's by their place in the data and any other through `showLevel`, and a module may provide levels for a link to name beyond the disc's slots, or keep a segment of its own at the link's tail, written with the view and handed back to it when a link opens; a level from elsewhere installed again is an update, which keeps the hidden kinds, the slice and the selection where the level still has its cell.
+Every level reaches the screen through one funnel in `js/viewer/chrome/navigate.js`, the disc's levels by their place in the data and any other through `showLevel`, and a module may provide levels for a link to name beyond the disc's slots, or keep a segment of its own at the link's tail, written with the view and handed back to it when a link opens; a level from elsewhere installed again is an update, which keeps the hidden kinds, the slice and the selection where the level still has its cell.
 
 ### Drawing the frame
 
 `js/viewer/draw/render.js` draws the frame: it puts the cells in the painter's order, keeps the pick canvas that turns a point on the screen into a cell, lays what shows through the blocks over the map, and draws again while anything moves.
 
-It draws the blocks through `js/viewer/draw/blocks.js`, which lays each world's textures from `js/viewer/draw/atlas.js` and the light a device casts on them from `js/viewer/draw/lights.js`, which casts a light a module hands it as it casts a device's, from a cell and a face in a colour of the module's own, on the faces a device there would light and at the same levels, so that nothing on the blocks changes until a module hands one.
+It draws the blocks through `js/viewer/draw/blocks.js`, which lays each world's textures from `js/viewer/draw/atlas.js` and the light a device casts on them from `js/viewer/draw/lights.js`, which casts a light a module hands it as it casts a device's light, from a cell and a face in a colour of the module's own, on the faces a device there would light and at the same levels, so that nothing on the blocks changes until a module hands one.
 
-Where the index the frame draws from marks a block, with the frame of its mark, `js/viewer/draw/blocks.js` hands `faceSkin` in `js/viewer/skins.js` the frames since the mark for each of the block's faces, or with Motion off a count past the whole fade, and `faceSkin` paints such a face as the game paints a block the ball has rolled onto, faded in from grey, so play's marks reach the faces with no branch of play's in either module.
+Where the index the frame draws from marks a block, with the frame of its mark, `js/viewer/draw/blocks.js` hands `faceSkin` in `js/viewer/skins.js` the frames since the mark for each of the block's faces, or with Motion off a count past the whole fade, and `faceSkin` paints such a face as the game paints a block the ball has rolled onto, faded in from grey, so play's marks reach the faces with no branch for play in either module.
 
 It draws what stands on them through `js/viewer/draw/things.js`, a laser's beam through `js/viewer/draw/beams.js`, and what is neither, from a platform's route and the ground grid to the scale bar and the lettering of a label, through `js/viewer/draw/overlays.js`, which draws the arrow to where a teleporter leads with `js/viewer/draw/arrow.js`, a link drawn as OddworldMap draws its links and knowing nothing of either map.
 
@@ -535,7 +535,7 @@ It draws what stands on them through `js/viewer/draw/things.js`, a laser's beam 
 
 What draws over the map from outside it registers with the frame's four hooks, one run before any block where the ground grid is drawn, which may skip the grid by returning true, one on each block once it is drawn and before the things standing on it, one after each block with what stands on it, and one once the see-through layer is laid, which may ask for another frame by returning true.
 
-A module may also hand the frame travellers of its own, each keyed as the level's own walkers are, by a cell and a face, or by a name of its own, and drawn, sorted and picked as they are, or sorted at a depth of its own where it hands one, reckoned as a block's is, from the corner of the unit cube about it, standing in for the thing whose cell and face its key names where it names one.
+A module may also hand the frame travellers of its own, each keyed as the level's own walkers are, by a cell and a face, or by a name of its own, and drawn, sorted and picked as they are, or sorted at a depth of its own where it hands one, reckoned as a block's depth is, from the corner of the unit cube about it, standing in for the thing whose cell and face its key names where it names one.
 
 A traveller that asks to show through the blocks that cover it is drawn again on the see-through layer, without its shadow, as a thing on a face turned away is while that switch is on.
 
@@ -545,9 +545,9 @@ A module may give the things on the blocks the points its ball stands at in plac
 
 It may tint a traveller it hands by three numbers, one a channel, which the thing's colours are drawn through.
 
-A module that runs the level may hand the frame the clock it draws at, the index of cells and things it draws from, shaped as the level's own with a thing only on a block it holds, and what travels, each standing in for the frame's own while it is registered, and may say that every invisible block is seen.
+A module that runs the level may hand the frame the clock it draws at, the index of cells and things it draws from, shaped as the level's own index with a thing only on a block it holds, and what travels, each standing in for the frame's own counterpart while it is registered, and may say that every invisible block is seen.
 
-So what is gone from the level as it runs is neither drawn nor picked, the walkers stand where the module has stepped them and no invisible face is lit while every one is seen, while the hover, the tip and the panel read the level as installed and the frame's own clock, index and walkers are its again once it stops.
+So what is gone from the level as it runs is neither drawn nor picked, the walkers stand where the module has stepped them and no invisible face is lit while every one is seen, while the hover, the tip and the panel read the level as installed and the frame's own clock, index and walkers are in use again once it stops.
 
 What listens to the pointer registers with `js/viewer/chrome/interaction.js` for a click, for a drag, which what registers may take from the camera at the press, and for what about the cell under the pointer matters to the hover, which is how the editor draws its grid, washes and ghost and takes its clicks and drags.
 
@@ -581,7 +581,7 @@ The frame run rolls on over an edge beside a neighbour where the probe says the 
 
 The frame run holds a rolling ball on a block its last read found brittle short of its free edge, the forward request and the speed dropped from the table's progress and the centre set back from its further mark.
 
-The frame run comes down on a platform's body before a block where the probe names one a block under its centre, riding it, its position kept the platform's and the platform's own blocks all the probe calls solid while it rides, so that it never drops off one, and leaves the platform by the forward jump or the hop alone, its position the level's again and the hop's end standing it by the lattice as it stands.
+The frame run comes down on a platform's body before a block where the probe names one a block under its centre, riding it, its position kept relative to the platform and the platform's own blocks all the probe calls solid while it rides, so that it never drops off one, and leaves the platform by the forward jump or the hop alone, its position in the level again and the hop's end standing it by the lattice as it stands.
 
 The frame run throws a jump back as off a wall from the wall's progress where a way a caller set differs from its heading and clears the way where it lies along.
 
@@ -599,7 +599,7 @@ A caller may place the ball at rest on any face, its ramp and its look gone, and
 
 `js/play/world.js` is what the ball has taken and marked, each mark with the frame it is first drawn on, and the blocks that have gone.
 
-`js/play/world.js` is the index the frame draws, the level's own less what is taken and the blocks gone with what stood on them, carrying the marked blocks with their frames, and, until the level's outcome stands, less the starts, whose ball the ball on the level is, the start the game takes leaving the clock's own marker where it stands on one.
+`js/play/world.js` is the index the frame draws, the level's own index less what is taken and the blocks gone with what stood on them, carrying the marked blocks with their frames, and, until the level's outcome stands, less the starts, whose ball the ball on the level is, the start the game takes leaving the clock's own marker where it stands on one.
 
 ### The game's frame
 
@@ -612,7 +612,7 @@ A caller may place the ball at rest on any face, its ramp and its look gone, and
 - The walkers stepped.
 - What is under the ball on the ground, the block a level with no key marks or the exit the ball leaves by with no key left.
 - The pills' words run down.
-- The devices under the ball and a riding ball's travel taken afresh from its platform's.
+- The devices under the ball and a riding ball's travel taken afresh from its platform's travel.
 - The ball run, reading what it stands on where the game does.
 - The ball's contact with what stands about it.
 - The endings, with a run's start, its start again after an ending and the return of a lost ball, and the run's total and its fruit, settled on the frame an ending stands and carried through the start again.
@@ -625,9 +625,9 @@ The module has every count and threshold read from the motion table and no wall 
 
 - What harms it, a lit beam in its own cell by the last frame's read of the cells about it, on the ground or in the air, fire under it on the ground, heating it a frame and by the landing's measure on the frame after a landing, and cooling off fire, acid on the ground, the spikes, and the moving spikes on the frames the table says their flag held the deadly value, read as the game's hazards read it, what the last frame's step left, each death the countdown the game sets, with its ending and its wait, the ball frozen and marked where the game freezes and marks it and its speeds dropped where the game drops them, refused while a wait runs or the invincibility pill stands, with the burning ball's swell and the acid's melt growing in the wait's slot.
 - The arrow under the ball, on the ground or in the air, whose way is laid from its facing as the start's heading is and which drops the forward request where the ball's heading differs from it, the strip told where the ball is at rest, the way standing for the jump's wall test while the ball is in the air over an arrow and cleared on the ground.
-- Ice under the ball, which makes the forward request and drops a turn's on every frame and on the ground cools the heat by the chill and grows the cold, set back past its top, the cold waning off ice.
+- Ice under the ball, which makes the forward request and drops a turn's request on every frame and on the ground cools the heat by the chill and grows the cold, set back past its top, the cold waning off ice.
 - The crumbling block under the ball on the ground, scored while its word is whole and written broken on every frame, and the frame's last part, where the game's draw runs the crumbling blocks, which breaks a broken block, shrinks a breaking one a frame and empties its cell as the size goes negative, so that nothing stands or rolls on it and the frame draws it no longer.
-- The captivators' hit test that follows the routine every frame the pill does not stand, over each walker where the rules have stepped it and each other entry where the loader stands it, the corkscrew's point risen with its bounce as the frame draws it, a ball rolling under it while it is up and a jump over it caught then, from the ball's position words as they stand, so that a ball riding a platform is caught by nothing, as in the game, which catches the ball over any countdown but its own, the captivators standing while it stands.
+- The captivators' hit test that follows the routine every frame the pill does not stand, over each walker where the rules have stepped it and each other entry where the loader stands it, the corkscrew's point risen with its bounce as the frame draws it, a ball rolling under it while it is up and a jump over it caught then, from the ball's position words as they stand, so that a ball riding a platform is caught by nothing, as in the game, which catches the ball over any countdown but its own countdown, the captivators standing while it stands.
 - The switch thrown as the ball comes within the table's band of its middle along and across, which turns its circuit over through the map's own presses as the panel's button does.
 - The teleporter that is on counting its frames while the ball stands within its band, the wait held and the ball's requests cleared, and then placing the ball at rest on the face its slot names, facing as that teleporter does.
 - The marker that keeps a device from acting twice in one visit, cleared where the ball has left the middle by more than the table's reach, read between the ball's state and its move step where the game reads it.
@@ -637,13 +637,13 @@ The module has every count and threshold read from the motion table and no wall 
 `js/play/drive.js` gives pad words per frame:
 
 - The keys as they are pressed, each press down on a frame of its own and read up for a frame first where the frame before had its key down, so that no two presses read as one key held on, a key down as a frame that does not read the pad runs sampled by that frame as the game's loop samples the pad on every frame, so that it is no press when the pad is read again, and a key tapped over such frames, which the game never sees, kept for the first that reads the pad, one a key.
-- A planned route followed, which reads the ball's block, face and heading off the ball each frame and, with the ball at rest and no turn asked or running, asks the turn the route's next step wants, by the shorter way, or the roll, which it holds while the ball rolls and the step on from the station it has come to is a roll the way it heads, so the ball rests only where the route turns, leaps or ends, and is done at the route's end, at a leap, which no roll follows, a roll the lattice as it stands no longer allows counting as one, as the planner draws it, read through the probe the rules ask of the level, or where the ball stands on no station of the route's.
+- A planned route followed, which reads the ball's block, face and heading off the ball each frame and, with the ball at rest and no turn asked or running, asks the turn the route's next step wants, by the shorter way, or the roll, which it holds while the ball rolls and the step on from the station it has come to is a roll the way it heads, so the ball rests only where the route turns, leaps or ends, and is done at the route's end, at a leap, which no roll follows, a roll the lattice as it stands no longer allows counting as one, as the planner draws it, read through the probe the rules ask of the level, or where the ball stands on none of the route's stations.
 - A recording replayed.
 - The recorder that keeps a recording, run-length coded.
 
 ### The ball on the map
 
-`js/play/play.js` stands the ball on the map as a traveller of the frame's, keyed as nothing of the level's is and handed the body's turn relative to the axes the frame lays it on:
+`js/play/play.js` stands the ball on the map as one of the frame's travellers, keyed as nothing on the level is and handed the body's turn relative to the axes the frame lays it on:
 
 - It steps the game's frames from the frame's under hook by the wall clock, each through the rules with the pad as the keys give it, the words of a driver following the planner's route, read through an export of its chrome, added to it while one runs and the driver let go on an arrow, Space or a press of the pad, the level running while the ball rests with Motion on and only while the ball moves, a key is held or a driver runs without it.
 - It hands the frame play's own clock, the frame the rules last ran, which is the one the game's frame draws after its step, the level's index less what the ball has taken, the walkers as the rules stepped them and whether every invisible block is seen through `runWith`, so the phases, the lights and what travels draw as the game's frame draws them, a taken thing is neither drawn nor picked and the face it stood on is painted bare, and while the sunglasses last, and in the on spells of their blink, the blocks light no invisible face and every one keeps the look the map draws it in out of the light.
@@ -660,7 +660,7 @@ The module has every count and threshold read from the motion table and no wall 
 - Once the level has ended, by its clock, the ball lost off the lattice, a death, the exit or the last block of a level with no key, it shows no ball, reads no key, lets the camera's frame go and turns the view about the level's middle by the game's own angles, the yaw by the third of the three, which the game turns about the lattice's upright, and the pitch by the first, which it turns about the view's own across, the second, whose axis the orbit has not, left out, and with the zoom standing in for the game's eye, since the orbit has none, the eye standing the level's radius and the table's offset off the middle and swinging its reach nearer and further by turns, and the zoom following how large the level would look from it, for the length of one swing of an arcade level's eye, whichever figures the level's own eye swings by, or until Space, Enter or a tap of the pad starts the level again, the view easing back behind the ball.
 - It asks for the next frame through the frame hook while the level runs, the ending's view turns or something moves.
 - It takes the camera through the frame, the anchored target and the parked view in `js/viewer/state.js` and frames it in the fit's place through `js/viewer/chrome/navigate.js`.
-- It lends the things on the blocks the live ball's point in place of the starts'.
+- It lends the things on the blocks the live ball's point in place of the starts' points.
 - It fills the panel through `onShow`.
 - It ends editing through an event the editor listens to.
 - It draws, behind a switch of Settings, the dust of `js/play/dust.js`, born over a block and drawn in its cell hook, on by default and neither born nor kept while its switch is off.
@@ -675,7 +675,7 @@ Beside the frame, `js/viewer/draw/compass.js` paints the compass on a canvas of 
 
 The camera is a plain orbit: a yaw and a pitch give three unit vectors, and every point is projected orthographically onto two of them with the third as depth.
 
-A module may hand `js/viewer/state.js` a frame, a rotation in world coordinates, and the three are then turned about it, so the yaw and pitch count from the frame's axes rather than the world's and the compass turns with them; and a module may park the camera, the target, the framing and the slice as they were and frame the view in the fit's place through `js/viewer/chrome/navigate.js`, so that `f`, the button and a resize go through it, the button is dim while it holds the view, and a link written meanwhile carries the parked view rather than the one on screen.
+A module may hand `js/viewer/state.js` a frame, a rotation in world coordinates, and the three are then turned about it, so the yaw and pitch count from the frame's axes rather than the world's axes and the compass turns with them; and a module may park the camera, the target, the framing and the slice as they were and frame the view in the fit's place through `js/viewer/chrome/navigate.js`, so that `f`, the button and a resize go through it, the button is dim while it holds the view, and a link written meanwhile carries the parked view rather than the one on screen.
 
 Cubes are drawn back to front by that depth, which is exact for equal cubes on a lattice, and a face is drawn only when its outward normal turns toward the camera and no block the game hides that face behind stands against it.
 

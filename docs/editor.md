@@ -10,7 +10,7 @@ The project file is the editor's permanent record of a level and this document i
 
 A project is a JSON document in UTF-8, a byte-order mark passed over, with the extension `.kula.json`.
 
-It spells the game's own structure in the game's own numbers: cells are lattice coordinates with `z` counting down, kinds and types are the numbers the game uses, faces are the game's six.
+It spells the game's own structure in the game's own numbers: cells are lattice coordinates with `z` counting down, kinds and types are the numbers the game uses, faces are the game's six faces.
 
 ```json
 {
@@ -42,9 +42,9 @@ It spells the game's own structure in the game's own numbers: cells are lattice 
 | key | meaning | default on read |
 | --- | --- | --- |
 | `format`, `version` | the marker `kula-world-level` and the integer 1; a reader refuses any other marker | the marker is required; a `version` that is not a whole number is read as 1 with a line, and a higher one is read with a line saying the file is newer |
-| `title`, `author`, `notes` | the author's, a title of up to 80 characters and the others of up to 2000; the game never shows them | `""`, and a longer text is cut to its most with a line |
+| `title`, `author`, `notes` | the author's texts, a title of up to 80 characters and the others of up to 2000; the game never shows them | `""`, and a longer text is cut to its most with a line |
 | `world` | one of the ten disc ids, `HIRO`, `HILLS`, `INCA`, `ARCTIC`, `COWBOY`, `FIELD`, `ATLANT`, `HAZE`, `MARS`, `HELL`: the artwork, the ball and the music | `""`, which the checks name as an error and the file opener refuses, and a longer text is cut to 2000 with a line |
-| `into` | the target slot on the disc, in the repo's `pack#index` form, a world pack's slot 0 to 19, a finals pack's 0 or 1 or the Simon rooms' pack's 0 to 9 | none, and a longer text is cut to 2000 with a line |
+| `into` | the target slot on the disc, in the repo's `pack#index` form, a world pack's slot 0 to 19, a finals pack's slot 0 or 1 or the Simon rooms' pack's slot 0 to 9 | none, and a longer text is cut to 2000 with a line |
 | `from` | where a template came from, the shipped level's `pack#index` | none, and a longer text is cut to 2000 with a line |
 | `time` | seconds, which the game multiplies by 50 into its clock | 99 |
 | `hidden` | the settings record's type 1: the glass ball and translucent faces | `false` |
@@ -86,9 +86,9 @@ A template of a shipped level takes its `title` from the number the pause screen
 - A platform's `length` whose run reaches past the edge from the run's upper end is the most the edge leaves room for, or 1 where it leaves none, and one below 1 is 1.
 - A face key that is not one of the six, a second spelling of a face already named, and a face entry with nothing standing there, a type of 0 or none, are left out.
 - A block is left out where it has no cell of three whole numbers and a kind, where its cell lies outside the lattice, where its kind is not 0 to 8, where an earlier block that was kept stands on its cell, or where it is a span with no far end, or one on its own cell, outside the lattice or along no one axis from its cell, since the writer has no bytes for any of these.
-- A key the reader does not know is passed over in silence, and a higher `version` is read with a line saying so, which is a note and not a repair, since every value was taken as written, and the one line of this reader's that the count of repairs beside its report leaves out.
+- A key the reader does not know is passed over in silence, and a higher `version` is read with a line saying so, which is a note and not a repair, since every value was taken as written, and the one line of this reader's report that the count of repairs beside it leaves out.
 
-Lines of one shape are kept to the first three and the rest counted, as the level reader's are. So the reader leaves out only what has no shape the file can hold, keeps everything that has one, and what comes out is a project the level writer writes, with the checks naming what the game would make of it, a cell past the edge, a type the game does not play or a run over the cap among them.
+Lines of one shape are kept to the first three and the rest counted, as the level reader's lines are. So the reader leaves out only what has no shape the file can hold, keeps everything that has one, and what comes out is a project the level writer writes, with the checks naming what the game would make of it, a cell past the edge, a type the game does not play or a run over the cap among them.
 
 The one such project the writer still refuses is one with so many records that a link or a pickup number runs past the file's word, and since a link word names at most 2048 records of blocks, the settings record taking none, the file opener and `--from-json` refuse a project whose blocks carry more than that before the writer runs, in the checks' own words for the record cap, so the author reads the count of records and not the block whose word overran; the gate goes by the count alone, so a crowd of that size with no device, which the writer would still write, is refused with the rest.
 
@@ -110,7 +110,7 @@ Everything the game derives at load or never reads is left out and rebuilt at ev
 - Names, since names change and numbers do not.
 - Any id local to one browser, since a file is a level and not a slot in someone's browser.
 
-The mode a level is played in is the pack's and not the level's: the game plays a room of the Copycat pack in its Simon mode by where it lies, and a level's bytes have no place for the mode, so the file carries `simon` for the map alone, which is how a level kept outside the pack says it is a room.
+The mode a level is played in comes from the pack and not from the level: the game plays a room of the Copycat pack in its Simon mode by where it lies, and a level's bytes have no place for the mode, so the file carries `simon` for the map alone, which is how a level kept outside the pack says it is a room.
 
 ## The level file a project means
 
@@ -145,20 +145,20 @@ On a level the writers write, the -1 there stops a captivator walking any face o
 
 `dir` is the game's direction from the record's cell to `far`, 0 `-z`, 1 `+x`, 2 `+y`, 3 `-y`, 4 `-x`, 5 `+z`; `axis` is 1, 2 or 5 for a run along `x`, `y` or `z`; `l` is the lower end and `u` the upper, lower first on all 160 spans of the disc; `end` is 0 when the record stands at the lower end and 1 at the upper, as on 37 of 37; `lit` is 1 where the laser's colour starts on and 0 where it starts off; `5 + k` is the record's own lattice value, which the platform loader at `0x80032908` writes over its whole run.
 
-`phase` is the vanishing block's; `hidden` and `flip` are the two settings; `sx, sy, sz` is the cell of the start the game takes, or `0, 0, 0` with no start; `time` is the project's.
+`phase` is the vanishing block's `phase`; `hidden` and `flip` are the two settings; `sx, sy, sz` is the cell of the start the game takes, or `0, 0, 0` with no start; `time` is the project's `time`.
 
 The trailer's cell words are -1, so every file ends `ff ff ff ff ff ff`.
 
-**The words of an object slot by type.** `facing` is the project's where the type turns and 0 elsewhere; `variant` is the project's where the type has one and 0 elsewhere; `state` is `f4`, the word the draw and contact walks gate on at `0x80039280` and `0x80038580`, so a pickup with 0 there is neither drawn nor collected; `number` is the pickup's, below, and -1 on anything else; `next` and `link` are the links, below, and -1 on anything else; `f8` is 0, the frame the draw command carries; `F9`, `F10` and `F14` are the constants the disc holds for the type, which the loader overwrites or never reads.
+**The words of an object slot by type.** `facing` is the project's `facing` where the type turns and 0 elsewhere; `variant` is the project's `variant` where the type has one and 0 elsewhere; `state` is `f4`, the word the draw and contact walks gate on at `0x80039280` and `0x80038580`, so a pickup with 0 there is neither drawn nor collected; `number` is the pickup's number, below, and -1 on anything else; `next` and `link` are the links, below, and -1 on anything else; `f8` is 0, the frame the draw command carries; `F9`, `F10` and `F14` are the constants the disc holds for the type, which the loader overwrites or never reads.
 
 | type | what | facing | variant | state | F9, F10, F14 |
 | --- | --- | --- | --- | --- | --- |
 | 1 fire, 2 ice | paint | | | 0 | -1, -1, -1 |
 | 4 acid patch | paint | | | 0 | -1, -1, -1 |
-| 5 teleporter | device | yes | colour | the colour's, 1 on or 2 off | 256, 1, 30 |
+| 5 teleporter | device | yes | colour | the colour's state, 1 on or 2 off | 256, 1, 30 |
 | 7 exit | device | | | 2 | 500, 1, 30 |
 | 8 clock | paint | | | 0 | 256, 0, 0 |
-| 9 switch | device | | colour | the colour's, 1 on or 2 off | 256, 0, 0 |
+| 9 switch | device | | colour | the colour's state, 1 on or 2 off | 256, 0, 0 |
 | 10 boost button | device | | | 1 | 256, 3, 0 |
 | 11 moving spikes | hazard | | phase | 1 | 256, 0, 0 |
 | 12 spikes | hazard | | | 1 | 256, 0, 0 |
@@ -197,7 +197,7 @@ The game walks the lattice by value and the records by the count, so the lattice
 - The last stretch is the trailer where its kind is 666; otherwise none is there, the time is 99 and the report says so.
 - A settings record anywhere among the records gives the two flags, and several give the flags of all of them.
 - A record whose cell words differ from the cell naming it is moved to that cell; a cell naming a record that is not there, or that another cell names first, or that is not a block, is left empty; a record no cell names, the settings record apart, is dropped. Each is a report line.
-- A span's two ends are read from `f4` to `f9` and sorted lower first; `far` is the end that is not the record's cell, and a record standing at neither end, on the line through the two, is laid from its cell to the upper end, which makes its cell the span's lower end or, where the cell lies past the upper end, its upper, and where its cell lies off that line the far end is laid along their axis through the cell, at the upper end's place or, where that is level with the cell, the lower end's, each reported.
+- A span's two ends are read from `f4` to `f9` and sorted lower first; `far` is the end that is not the record's cell, and a record standing at neither end, on the line through the two, is laid from its cell to the upper end, which makes its cell the span's lower end or, where the cell lies past the upper end, its upper end, and where its cell lies off that line the far end is laid along their axis through the cell, at the upper end's place or, where that is level with the cell, the lower end's place, each reported.
 - A span whose two ends are one cell, whose ends lie along no one axis or whose far end lies outside the lattice is dropped and its cell left empty, reported, since the writer has no bytes for the first two and the loader would write past the lattice for the third.
 - The direction and axis words are never read.
 - A platform's length is cut to what the edge leaves room for from the run's upper end, or to 1 where it leaves none, or raised to 1 from below, reported; its length and speed are otherwise kept, and noted outside 2 to 3 and 30; a vanishing block's phase is kept, and noted at 4 or 5, the notes being the lines that repair nothing.
@@ -228,11 +228,11 @@ Both take `skins.hides` of `public/objects.json` for the face count, and without
 - A laser's `colour` that is not one of the four.
 - A `phase` outside 0 to 5.
 - A span with no far end, or whose far end is its own cell, lies along no one axis or lies past the edge.
-- A platform's run, lower end to upper end plus its length, reaching past the edge, or past the lattice itself, which the checks name apart since the writer has no bytes for it, or holding any block but its own.
+- A platform's run, lower end to upper end plus its length, reaching past the edge, or past the lattice itself, which the checks name apart since the writer has no bytes for it, or holding any block but its own blocks.
 - A platform longer than 7 blocks, since the ride at `0x80033810` marks its run in an 8 by 8 by 8 grid at `0x800d4e30` by its length word and an eighth block lands past the row.
 - A platform shorter than one block.
 - A platform's length or speed outside the file's range.
-- A beam crossing a block, or ending on a block that is neither plain nor another laser's, since the loader writes style 0 over both ends and `-2` between unconditionally.
+- A beam crossing a block, or ending on a block that is neither plain nor another laser's block, since the loader writes style 0 over both ends and `-2` between unconditionally.
 - A platform's run through a beam or over a beam's end, a beam through a platform's run, or a beam ending in another's beam, since the loaders fill the lattice in record order and the last to write a cell has it.
 - No start.
 - A time below 1 or outside the file's range.
@@ -283,7 +283,7 @@ The caps are the room the game's memory holds, unchecked by the game:
 - The captivators' 180-byte entries at `0x800ba3dc` run to the next table after 32.
 - The crumbling and vanishing blocks' index lists at `0x800a5668` and `0x800a576c` hold 64 each before the tables that follow them.
 
-The caps on platforms, 8, and on the blocks a keyless level counts, 256, are conservative choices with no traced table behind them. The instructions these figures rest on, with the loader's kinds below 5, its types 5 to 47, the glow loader's three types, the key's type and the face builder's 1 to 32, are listed in the tool in the shape `tools/kula_skins.py` checks its readings, and the disc test and the build both read them off the executable and hold the caps, the length cap and the type constants to them, naming the two caps they cannot, so a stale figure fails a rebuild as it fails the test.
+The caps on platforms, 8, and on the blocks a keyless level counts, 256, are conservative choices with no traced table behind them. The instructions these figures rest on, with the loader's kinds below 5, its types 5 to 47, the glow loader's three types, the key's type and the face builder's walk from 1 to 32, are listed in the tool in the shape `tools/kula_skins.py` checks its readings, and the disc test and the build both read them off the executable and hold the caps, the length cap and the type constants to them, naming the two caps they cannot, so a stale figure fails a rebuild as it fails the test.
 
 The faces are counted as the loader builds them, replaying `skins.hides` of `public/objects.json` ([tgi.md](tgi.md)) over every block inside 1 to 32, a beam's two ends standing plain blocks first: a face toward a neighbour of a kind the block's kind hides behind is not built, except that a kind outside the table's own list is built unseen toward a crumbling block, a laser's own cell hides like the plain block the loader has made of it, which, with the ends standing plain blocks, is read off the loader at `0x80035a70` and untested in play, since no keyless level of the disc outside the Simon rooms, which score nothing, has a laser, and a platform's blocks take their faces from the loader's tables, six on a lone block and five, four and five along a run.
 
@@ -297,7 +297,7 @@ The browser store is a convenience and the exported file is the record; the view
 
 ### The store
 
-`public/js/editor/drafts.js` keeps the drafts under `localStorage["kula.drafts"]` as `{ "version": 1, "next": n, "drafts": { id: { "doc", "updated", "saved", "edits" } } }`: `version` is this version's 1, or the higher number the store was found with, `doc` is a project as the file holds it, `updated` the time of the last change, `saved` the time of the last save to a file or null, `edits` the changes since that save, counted as below.
+`public/js/editor/drafts.js` keeps the drafts under `localStorage["kula.drafts"]` as `{ "version": 1, "next": n, "drafts": { id: { "doc", "updated", "saved", "edits" } } }`: `version` is 1 in this version, or the higher number the store was found with, `doc` is a project as the file holds it, `updated` the time of the last change, `saved` the time of the last save to a file or null, `edits` the changes since that save, counted as below.
 
 Ids are whole numbers taken from `next`, which only ever grows and is never taken past the largest integer the language holds exactly; a store that has reached it makes no more levels and says so.
 
@@ -327,11 +327,11 @@ One of them whose key is such a number and that has a draft's shape, the format'
 
 A repair the reader makes to a stored document at boot is silent and the draft's saved mark stands, where the importer says what it repaired.
 
-A store whose `version` is higher than this one's is read for what this version knows and written back under that version, with the entries this version does not know.
+A store whose `version` is higher than this version's number is read for what this version knows and written back under that version, with the entries this version does not know.
 
 ### Writing the store
 
-A browser whose storage throws on read keeps the drafts in memory alone and says they live until the page is closed; one that refuses a write for want of room, told by the error's name, says it gives the map no room to keep levels while nothing of the map's is stored yet and that it is full once levels are, and one that refuses a write for any other reason says plainly that it could not keep the levels just now, each once per streak of failures, not at every keystroke.
+A browser whose storage throws on read keeps the drafts in memory alone and says they live until the page is closed; one that refuses a write for want of room, told by the error's name, says it gives the map no room to keep levels while no level is stored yet and that it is full once levels are, and one that refuses a write for any other reason says plainly that it could not keep the levels just now, each once per streak of failures, not at every keystroke.
 
 Writes wait 300 ms after the last change and are flushed on `pagehide`, on `visibilitychange` to hidden and through `flush()`, which an export calls first, and every write first merges the stored copy where it is not the text this tab last read or wrote, as a page shown again from the back-forward cache (`pageshow` with `persisted`) or thawed (`resume`) does, since either may have missed another tab's writes.
 
@@ -356,7 +356,7 @@ Either save flushes the store first and then marks the draft saved, `saved` the 
 - The map's own file is read by `readProject` and refused where its world is not one of the ten.
 - The game's level is read by `readKwl` in the world on screen and titled by the file's stem.
 - A pack, a disc image or a level of the community's viewer is read as that section says.
-- JSON that is neither the map's file nor the viewer's is refused, as is anything the order places nowhere.
+- JSON that is neither the map's file nor the viewer's file is refused, as is anything the order places nowhere.
 - A project whose blocks carry more records than a link word can name is refused in the checks' words for the record cap, and a document the writer cannot write with the writer's reason.
 
 Every open makes a new draft marked saved, since the file is the record, and the reader's report shows as one toast, the line itself where there is one, the count of repairs where there are more, or that the level was read with notes where no line is a repair, and in full in a fold at the top of the Level card, under the same count or the same words, until another draft is shown.
@@ -373,13 +373,13 @@ It refuses nothing but errors and a level it cannot check in full, and a row it 
 
 ### A row's slot
 
-A row's target is its project's `into`, a slot of a world pack, a finals pack or the Simon rooms' pack in the `pack#index` form, chosen in the row from `public/packs.json`, the worlds' packs grouped by world and the Simon rooms' pack a last group of its own, shown as the project's `into`, else the slot `guessSlot` in `public/js/editor/slotguess.js` reads out of the title, else its `from`, else the first slot no other row takes of the kind the level plays as, a room's for a level that plays as a Simon room by `playsRoom` of `public/js/format/project.js` and a world pack's or a finals pack's for any other, else the first slot no other row takes, and written to the draft through `setMeta` only when the author changes it, so the file carries a target the author chose and never the dialog's default or its guess.
+A row's target is its project's `into`, a slot of a world pack, a finals pack or the Simon rooms' pack in the `pack#index` form, chosen in the row from `public/packs.json`, the worlds' packs grouped by world and the Simon rooms' pack a last group of its own, shown as the project's `into`, else the slot `guessSlot` in `public/js/editor/slotguess.js` reads out of the title, else its `from`, else the first slot no other row takes of the kind the level plays as, a room's slot for a level that plays as a Simon room by `playsRoom` of `public/js/format/project.js` and a world pack's or a finals pack's slot for any other, else the first slot no other row takes, and written to the draft through `setMeta` only when the author changes it, so the file carries a target the author chose and never the dialog's default or its guess.
 
 A draft has the one `into`, whichever patches it is placed in, and its row shows it.
 
-The row says whose place the level takes and how the game reaches it, a world pack's first slot where a new game starts, the rest of a world's slots with a save that has got that far, a finals slot once the arcade is finished and a room's slot as the room Simon mode plays in its world on its first round, the room's world being the one the map lists it under; under that, where the level and the slot disagree on how it plays, that the game plays it in Simon mode there, for a level that does not play as a Simon room in a room's slot, or as a bonus level there, for a level that plays as a Simon room in any other slot; and that it will wear the slot's world's artwork where that is not the level's own.
+The row says whose place the level takes and how the game reaches it, a world pack's first slot where a new game starts, the rest of a world's slots with a save that has got that far, a finals slot once the arcade is finished and a room's slot as the room Simon mode plays in its world on its first round, the room's world being the one the map lists it under; under that, where the level and the slot disagree on how it plays, that the game plays it in Simon mode there, for a level that does not play as a Simon room in a room's slot, or as a bonus level there, for a level that plays as a Simon room in any other slot; and that it will wear the slot's world's artwork where that is not the level's own artwork.
 
-`guessSlot(title, listed, taken)` is pure, over the pairs of key and title the row's select lists, the pause screen's names, the Simon rooms' among them, and never names a key in `taken`, a word and a number it runs into read as spaced on both sides, so that `SIMON10`, the disc's own spelling, and `Simon 10` are one title: the slot whose title is the draft's title, case aside and with the whitespace trimmed and collapsed; else the one whose title stands in the draft's title as whole words, the longest where several do, so that `My LEVEL 101 remix` names LEVEL 101 and not LEVEL 10; else the one titled `LEVEL n` for the first number in the title, or `BONUS n`, `FINAL n`, `HIDDEN n` or `SIMON n` where that word, in any case, stands before the number; else null.
+`guessSlot(title, listed, taken)` is pure, over the pairs of key and title the row's select lists, the pause screen's names, the Simon rooms' names among them, and never names a key in `taken`, a word and a number it runs into read as spaced on both sides, so that `SIMON10`, the disc's own spelling, and `Simon 10` are one title: the slot whose title is the draft's title, case aside and with the whitespace trimmed and collapsed; else the one whose title stands in the draft's title as whole words, the longest where several do, so that `My LEVEL 101 remix` names LEVEL 101 and not LEVEL 10; else the one titled `LEVEL n` for the first number in the title, or `BONUS n`, `FINAL n`, `HIDDEN n` or `SIMON n` where that word, in any case, stands before the number; else null.
 
 The rows settle in passes, every `into` first, then the guesses in row order, each over the slots no row has yet, then the `from`s, then the free slots of each level's kind, then the free slots, so a guess never takes a slot chosen for another row, whichever row is first.
 
@@ -390,7 +390,7 @@ Two rows naming one slot are an error under the rows, in the checks' words, and 
 The fit is worked out twice:
 
 - Before the image is given, and after it while the rows cannot be placed as they stand, two on one slot, one with no slot or one the writer refuses, from `public/packs.json` alone through `fitAll(pack, items)` over each pack's rows in row order, each with the length of the level's zlib stream at level 6, the level the disc was packed at, and its length at level 9, which decides each path and the bytes to spare from the slot's record, the name the slot would take from the title, the pack's capacity and the other records' lengths as stored and recompressed, as the rows above leave them, and is never optimistic since a rebuilt pack's name table never grows.
-- Once the image is read, through `planAll` over the image itself, inflating with the browser's `DecompressionStream`, and `verifyAll` over the patched image, which gives the same paths and room where the image is the disc's and the truth where it is not, whose warnings about an image that is not the disc's are shown once and stop nothing, and whose refusal is shown on the row of the first level the image will not take, the rows above it keeping their fits.
+- Once the image is read, through `planAll` over the image itself, inflating with the browser's `DecompressionStream`, and `verifyAll` over the patched image, which gives the same paths and room where the image is of the disc and the truth where it is not, whose warnings about an image that is not of the disc are shown once and stop nothing, and whose refusal is shown on the row of the first level the image will not take, the rows above it keeping their fits.
 
 The patches are then the bytes of [disc.md](disc.md): the PPF with the description `Kula World Map: <title>`, the titles of several joined by commas, the VCDIFF, and the patched image as the original's slices with the written sectors between them, each named `<slug>` with its extension, or `<slug>-and-<n>-more` after the first row's title and the count of the others, and each download flushing the store first.
 
@@ -415,7 +415,7 @@ Every file opened this way makes a new draft marked saved, as the map's own file
 
 The community's Saturn viewer, orbit, keeps a level as JSON of blocks, and the same level in a share link.
 
-In the JSON, `type` is the game's kind, `pos` is the game's cell `(x, y, z)` written as `(x, 33 - z, y)`, and a block of kinds 0 to 4 carries six `items`, one a face, each the slot's words under the viewer's names, `id`, `option`, `variant` and `state` for the type, the facing, the variant and the state, with `route` and `to` for the two link words on a teleporter or a switch, 65535 where the file holds -1, and `null` where the link leaves a slot empty; a block with no item is the lattice's own and a block whose items are all bare is one too.
+In the JSON, `type` is the game's kind, `pos` is the game's cell `(x, y, z)` written as `(x, 33 - z, y)`, and a block of kinds 0 to 4 carries six `items`, one a face, each the slot's words under the viewer's names, `id`, `option`, `variant` and `state` for the type, the facing, the variant and the state, with `route` and `to` for the two link words on a teleporter or a switch, 65535 where the file holds -1, and `null` where the link leaves a slot empty; a block with no item is the lattice's own block and a block whose items are all bare is one too.
 
 A platform carries `from`, `to` and `start` as the game's points with `y` and `z` swapped and no flip, the last times 512 as the file has it, with `movement`, `orientation`, `length`, `speed` and `id` for the words the file holds under those meanings; a vanishing block carries its record's first eight words as `intervals`, the phase second; and a laser carries `from`, `to`, `orientation` and four words named `length`, `speed`, `variant` and `state` that are really whether it starts lit, its own lattice value, its colour and its next link, so they are mapped by position rather than by name.
 
@@ -423,11 +423,11 @@ A platform carries `from`, `to` and `start` as the game's points with `y` and `z
 
 `public/js/format/orbit.js` reads a level by laying every word back into the game's file, the records in the order the blocks come and the lattice naming each, and reading that with `readKwl`, so one reader decides what a level means and the repairs above apply to the viewer's files as to any other; a block outside the lattice, a second block on a cell or a kind the game has not is left out first, with a line in the report.
 
-Of the viewer's 203 level files, 169 read back to the canonical bytes of a shipped level and the rest to no level of the disc's, and `tests/fixtures/orbit-levels.json` holds five of the 169 with the slot each is, lasers, a platform, devices and the flag among them, so the axes and the laser words are held to the disc.
+Of the viewer's 203 level files, 169 read back to the canonical bytes of a shipped level and the rest to none of the disc's levels, and `tests/fixtures/orbit-levels.json` holds five of the 169 with the slot each is, lasers, a platform, devices and the flag among them, so the axes and the laser words are held to the disc.
 
-The share link carries the level as text, a header of `time|hidden|reverse` and a line a block, every number in base 36 with `~` for 65535 and `_` for an empty slot, gzipped and written in base64url without padding under `level=`, with the viewer's theme under `theme=`; `readOrbitLink` takes a whole URL, a query or the bare value, refuses a value that is only digits, which names one of the viewer's own levels, reads the level in the world `theme` names where that is one of the disc's and the world on screen otherwise, saying so where it is not, and `readLevelText` titles it Shared level.
+The share link carries the level as text, a header of `time|hidden|reverse` and a line a block, every number in base 36 with `~` for 65535 and `_` for an empty slot, gzipped and written in base64url without padding under `level=`, with the viewer's theme under `theme=`; `readOrbitLink` takes a whole URL, a query or the bare value, refuses a value that is only digits, which names one of the viewer's own levels, reads the level in the world `theme` names where that is one of the disc's worlds and the world on screen otherwise, saying so where it is not, and `readLevelText` titles it Shared level.
 
-The link is pasted into the box the sidebar's `paste a link…` opens, which reads it in the world on screen, shows the reader's refusal under the field and keeps the field for another paste, and the result is a new draft marked saved, as a file's is. The fixture holds the link the viewer's own encoder makes of each of its five levels.
+The link is pasted into the box the sidebar's `paste a link…` opens, which reads it in the world on screen, shows the reader's refusal under the field and keeps the field for another paste, and the result is a new draft marked saved, as it is for a file. The fixture holds the link the viewer's own encoder makes of each of its five levels.
 
 ## The palette
 
@@ -461,19 +461,19 @@ Every control changes one key of the project through the copy-on-write functions
 
 A teleporter's "leads to" and a run's axis and far end are shown and not edited, since the links are rebuilt at every write and a run is re-laid with the tool.
 
-The refusals are the editor's, by the same conditions: a device on a block that is not plain, anything on a span's, crumbling or vanishing block's faces, a face that looks into another block, and any change the checks newly flag as an error, found by validating the changed copy, after which the control goes back to what it showed; a Length or Speed the browser cannot read as a number is put back with the form's own sentence, that it must be a number, and an emptied one in silence, as is one that rounds to what the block holds, which takes no step.
+The refusals are those of the editor, by the same conditions: a device on a block that is not plain, anything on a span's, crumbling or vanishing block's faces, a face that looks into another block, and any change the checks newly flag as an error, found by validating the changed copy, after which the control goes back to what it showed; a Length or Speed the browser cannot read as a number is put back with the form's own sentence, that it must be a number, and an emptied one in silence, as is one that rounds to what the block holds, which takes no step.
 
 ### The buttons and the brush
 
-The two buttons place through the editor's own `placeHere` and `buildAgainst`, which the editor hands the form when it wires it, with `holdsBrush`, whether a face holds what Place would put there as the game reads the two, a facing left out heading as 1 and a variant left out reading as 0, since a copy of a shipped level spells out what the palette's brushes leave out, so the keyboard path and the pointer's are one rule and the form imports nothing of the editor's.
+The two buttons place through the editor's own `placeHere` and `buildAgainst`, which the editor hands the form when it wires it, with `holdsBrush`, whether a face holds what Place would put there as the game reads the two, a facing left out heading as 1 and a variant left out reading as 0, since a copy of a shipped level spells out what the palette's brushes leave out, so the keyboard path and the pointer's path are one rule and the form imports nothing from the editor.
 
 The form learns that the mode or the brush changed through events the editor emits, and its Place button names the brush, is greyed with `aria-disabled` where `holdsBrush` finds the face holding it already, so that it keeps the focus its own press leaves on it and a press says the refusal, and is left out for a platform or a laser, whose run is laid on the map in two clicks.
 
 ### The overview on the level line
 
-How the level plays, its counts against the caps and the disc's maxima, `validate`'s findings and one of the overview's own, the things the ball takes that no walk from the start reaches, by `reachable` of `public/js/viewer/walk.js` over the planner's probe, named keys first with where each stands, through `typeWord` and `listed` of `public/js/format/project.js`, the words `validate`'s own findings name a type and a list by, a face that looks into another block left to `validate`, and said to count no jump, teleporter, platform, ice or fall, are the level line's rather than the panel's.
+How the level plays, its counts against the caps and the disc's maxima, `validate`'s findings and one finding of the overview's own, the things the ball takes that no walk from the start reaches, by `reachable` of `public/js/viewer/walk.js` over the planner's probe, named keys first with where each stands, through `typeWord` and `listed` of `public/js/format/project.js`, the words `validate`'s own findings name a type and a list by, a face that looks into another block left to `validate`, and said to count no jump, teleporter, platform, ice or fall, belong to the level line rather than to the panel.
 
-`public/js/editor/overview.js` registers with the chip's one seam, `noteWith(fn)` in `public/js/viewer/chrome/navigate.js`, which asks what is registered for the note of the level it shows and falls back to the level's own, so a shipped level's note is untouched and a draft's carries the overview, built again with the chip at every update of the level, each finding linking to its cell through the panel and, while it holds the focus, found again by its `data-field` in the note built after the edit.
+`public/js/editor/overview.js` registers with the chip's one seam, `noteWith(fn)` in `public/js/viewer/chrome/navigate.js`, which asks what is registered for the note of the level it shows and falls back to the level's own note, so a shipped level's note is untouched and a draft's note carries the overview, built again with the chip at every update of the level, each finding linking to its cell through the panel and, while it holds the focus, found again by its `data-field` in the note built after the edit.
 
 The note floats over the map, so the counts and the findings stand under one summary line that tallies the errors and the warnings, a `details` element open where the sidebar stands beside the map and closed where it overlays it, by `sidebarOverlays` of `public/js/viewer/chrome/sidebar.js`, until the author opens it, which is kept for the session.
 
@@ -520,7 +520,7 @@ The mask is the header word; words 96 to 118 of every record; words 13 and 15 of
 
 A level whose rebuild has fewer records than the disc, 144 that carry a settings record with neither flag set and 2 that carry a record with nothing on it, is compared on the records both have, and the two counts come from the same stripping the record check uses and are pinned beside the residual table.
 
-All 230 levels play as the disc's.
+All 230 levels play as the disc's levels do.
 
 Outside the mask the rebuild differs from the disc in these words and no others, each a class the tool's own table pins by its count, which `--check` fails on when a count moves or a class appears and the unit test holds too, so a writer change that moves one is a finding and not a filler; the check also holds the three constants the writer puts in an object slot by type, `F9`, `F10` and `F14`, to the three most of the disc's objects of that type carry, so a wrong constant fails the check and not only the digests:
 
