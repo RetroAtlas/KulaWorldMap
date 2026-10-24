@@ -103,7 +103,7 @@ Play's modules reach the map only through the seams:
 - `tipWith` in `interaction.js`.
 - The panel's `onShow` and `go-to` event in `detail.js`, and the `play-changed` event the editor listens to.
 
-So the faithful modules carry no branch for play either; `play/dust.js`, `play/effects.js`, `play/phrases.js`, `play/traveller.js` and `play/eye.js` are its own, and `play/effects.js` casts its light through `lightsWith` in `lights.js`.
+So the faithful modules carry no branch for play either; `play/dust.js`, `play/effects.js`, `play/phrases.js`, `play/traveller.js`, `play/eye.js` and `play/screen.js` are its own, and `play/effects.js` casts its light through `lightsWith` in `lights.js`.
 
 "How it is built" in [docs/viewer.md](docs/viewer.md) says what each of play's modules computes and what play hands the map through its seams.
 

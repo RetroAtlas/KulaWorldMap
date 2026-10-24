@@ -4,6 +4,7 @@ import { $, el, emit, on } from "../viewer/ui/dom.js";
 import { adoptCourse, current, measureStrip } from "../viewer/chrome/course.js";
 import { ageDust, burstDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
 import { drawEffects, effectsWith } from "./effects.js";
+import { flashing, screened } from "./screen.js";
 import { state } from "../viewer/state.js";
 import { SIDE, cellKey } from "../format/lattice.js";
 import {
@@ -57,7 +58,7 @@ import {
   stand,
   startRun,
 } from "./rules.js";
-import { SCREEN, blanksOf } from "./passes.js";
+import { blanksOf } from "./passes.js";
 import { MODE, conclude, gameOf, nextOf } from "./game.js";
 import {
   AT,
@@ -141,10 +142,6 @@ import {
 const KEY_TYPE = 31;
 const LETHARGY_TYPE = 32;
 const KEY_MARKER = { type: KEY_TYPE, face: 0, variant: null, f: [] };
-// the ghost's blend takes half of the last frame and half of the scene
-const HALF = 0.5;
-// a channel's full byte, the unit the flash's strength is in
-const BYTE = 255;
 const LEAVE_MS = 450;
 const GAP_MS = 250;
 const BITS = {
@@ -173,9 +170,6 @@ let redraw = false;
 // whether the pass last run took the lethargy pill, and whether one ran since the frame hook drew
 let lit = false;
 let passed = false;
-// the frame as last displayed while the pill works, tinted, for the ghost
-const lastCv = document.createElement("canvas");
-const lastCtx = lastCv.getContext("2d");
 let measure = () => {};
 let padShown = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 let forgiving = false;
@@ -190,7 +184,6 @@ const typing = (e) =>
   /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
 const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 const motionOn = () => state.show.motion;
-const pillTable = () => motionTable().types[String(LETHARGY_TYPE)].lasts;
 
 // --- the ball as the frame draws it -----------------------------------------------------
 
@@ -407,75 +400,13 @@ const again = () =>
     and one more where the view has just cut. */
 function more(ctx) {
   drawEffects(ctx);
-  screened(ctx);
-  flashing(ctx);
+  const ran = passed;
+  passed = false;
+  screened(ctx, live, { ran, lit });
+  flashing(ctx, live);
   const asked = again() || redraw;
   redraw = false;
   return asked;
-}
-
-/** The pill's screen, as the game's draw of the pass showed it: the flash on the pill's own pass,
-    the last frame as a ghost at half strength over the scene on each pass the pill works and on
-    the end's pass, and the white glow at the fade's level on each pass after; the frame drawn is
-    kept, tinted, for the next pass's ghost. */
-function screened(ctx) {
-  const ran = passed;
-  passed = false;
-  if (!live || live.run.words.screen === SCREEN.off) {
-    sized(lastCv, 0, 0);
-    return;
-  }
-  const w = live.run.words;
-  const { grey, tint, fade } = pillTable().screen;
-  const { w: width, h: height } = state.view;
-  const ghost = w.screen === SCREEN.ghost;
-  ctx.save();
-  if (ghost && lit) glow(ctx, grey, grey, width, height);
-  else if (ghost || w.fade === fade.from) {
-    ctx.globalAlpha = HALF;
-    if (lastCv.width) ctx.drawImage(lastCv, 0, 0, width, height);
-  } else glow(ctx, w.fade, grey, width, height);
-  ctx.restore();
-  if (ran && ghost) kept(ctx.canvas, tint, grey);
-}
-
-/** The flash's quad, as the game's draw lays it over everything: white added to the whole screen
-    at the strength the pass left, a byte a channel, on every frame it is above nothing with
-    Motion on; with it off the words run and nothing is drawn. */
-function flashing(ctx) {
-  const strength = live?.run.words.flash ?? 0;
-  if (strength <= 0 || !motionOn()) return;
-  const { w: width, h: height } = state.view;
-  ctx.save();
-  glow(ctx, strength, BYTE, width, height);
-  ctx.restore();
-}
-
-// A white quad added to the whole screen at `level` over `full`, the texel as it is.
-function glow(ctx, level, full, width, height) {
-  if (level <= 0) return;
-  ctx.globalCompositeOperation = "lighter";
-  ctx.globalAlpha = level / full;
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, width, height);
-}
-
-// The canvas kept for the ghost, tinted by the table's colour over its grey.
-function kept(cv, tint, grey) {
-  sized(lastCv, cv.width, cv.height);
-  lastCtx.setTransform(1, 0, 0, 1, 0, 0);
-  lastCtx.globalCompositeOperation = "copy";
-  lastCtx.drawImage(cv, 0, 0);
-  lastCtx.globalCompositeOperation = "multiply";
-  lastCtx.fillStyle = `rgb(${tint.map((v) => Math.round((v * BYTE) / grey)).join(" ")})`;
-  lastCtx.fillRect(0, 0, lastCv.width, lastCv.height);
-}
-
-function sized(cv, w, h) {
-  if (cv.width !== w || cv.height !== h) {
-    cv.width = w;
-    cv.height = h;
-  }
 }
 
 function happened(event) {
