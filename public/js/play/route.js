@@ -4,13 +4,11 @@
 // the route.
 import { adoptCourse, current } from "../viewer/chrome/course.js";
 import { toast } from "../viewer/ui/toast.js";
-import { stepBetween, tangent } from "../viewer/walk.js";
+import { sameStation, stepBetween, tangent } from "../viewer/walk.js";
 import { REST, blockUnder, faceUnder } from "./ball.js";
 import { courseDriver } from "./drive.js";
 import { DONE_WHY, KEEPING, KEPT, NO_FIRST_STOP, ROUTE_STANDS, isFollowing } from "./phrases.js";
 import { routing, say, status } from "./strip.js";
-
-const sameStation = (a, b) => a.face === b.face && a.cell.every((v, i) => v === b.cell[i]);
 
 /** One more stop on the way the ball has come, joined by the roll or the jump that reaches it, or by
     a leap where it was sent or where no step does. */

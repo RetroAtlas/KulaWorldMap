@@ -16,6 +16,7 @@ import {
   lifted,
   pieces,
   probeOf,
+  sameStation,
   shortestWalk,
   step,
   validate,
@@ -95,7 +96,6 @@ const typing = (e) =>
   /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
 const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 const stationOf = (c) => ({ cell: [c.x, c.y, c.z], face: c.face });
-const sameStation = (a, b) => a.face === b.face && a.cell.every((v, i) => v === b.cell[i]);
 
 function probeNow() {
   if (probed !== state.idx) {

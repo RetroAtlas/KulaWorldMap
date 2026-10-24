@@ -114,7 +114,7 @@ export function stepBetween(a, b) {
 
 export const stationKey = ({ cell, face }) => cellKey(...cell) * 6 + face;
 const stationId = (station, k) => stationKey(station) * 4 + k;
-const sameStation = (a, b) => same(a.cell, b.cell) && a.face === b.face;
+export const sameStation = (a, b) => same(a.cell, b.cell) && a.face === b.face;
 
 function unwind(seen, id) {
   let node = seen.get(id);
