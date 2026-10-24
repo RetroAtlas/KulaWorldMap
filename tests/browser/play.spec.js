@@ -49,7 +49,7 @@ const BONUS_LEVEL = "/#HIRO/15/45,35/fit/33";
 // LEVEL 68: the start on 17,18,17, and blue teleporters round a ring of three, the one on 17,7,17
 // leading to the one on 17,25,17
 const TELEPORT_LEVEL = "/#COWBOY/7/45,35/fit/33";
-const PLAY_FILES = /\/js\/play\/(play|ball|dust|effects|rules|world|drive|contact|hazards)\.js$/;
+const PLAY_FILES = /\/js\/play\/[^/]+\.js$/;
 const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 const TIME_UP_PAD =
   "TIME OUT! 0 points, 0 seconds left. Space, Enter or a tap on the pad starts the level again.";
