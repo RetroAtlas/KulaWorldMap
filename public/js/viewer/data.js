@@ -72,7 +72,7 @@ const BEAM_KIND = 8;
 const RAIL_KIND = 5;
 // The kinds whose record is a block and nothing more; the others are a thing
 // in their own right as well.
-const PLAIN_KINDS = new Set([0, 1, 2, 3, 4]);
+const BLOCK_ONLY_KINDS = new Set([0, 1, 2, 3, 4]);
 const PLAIN = 0;
 export const OFF_LATTICE = -1;
 
@@ -96,7 +96,7 @@ export const objectId = (o) => {
 
 export function markersOf(r) {
   const out = [];
-  if (!PLAIN_KINDS.has(r.kind))
+  if (!BLOCK_ONLY_KINDS.has(r.kind))
     out.push({ id: `k${r.kind}`, kind: r.kind, type: r.type, f: r.f, face: null, variant: null });
   for (const o of r.on) {
     const variant = variantOf(o);
@@ -503,7 +503,7 @@ export function kindBlocks(l, first) {
   for (let i = 0; i < l.cells.length; i += 4) {
     const [x, y, z, v] = l.cells.slice(i, i + 4);
     const kind = v < first ? v : l.records[v - first].kind;
-    if (kind !== PLAIN && PLAIN_KINDS.has(kind))
+    if (kind !== PLAIN && BLOCK_ONLY_KINDS.has(kind))
       out.push({
         x,
         y,
