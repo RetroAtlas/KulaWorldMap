@@ -1863,6 +1863,30 @@ test("leaving play says so after what the way out says of where it goes, a telep
   expect(errors).toEqual([]);
 });
 
+test("a click on where a teleporter leads, made while playing, writes the entry it opens with the view it goes to at once", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false, hash: TELEPORT_LEVEL });
+  await startPlay(page);
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { showCell }, { cellKey }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/detail.js", "format/lattice.js"].map(at),
+    );
+    showCell(state.idx.cells.get(cellKey(17, 7, 17)));
+  });
+  const entries = await page.evaluate(() => history.length);
+  // read in the same task as the click, before the bar's settle could write it
+  const hash = await page.evaluate(() => {
+    document.querySelector("#detail .goto").click();
+    return location.hash;
+  });
+  expect(hash).toMatch(/\/17\.5,25\.5,17\.5\/0,0\/33\/17,25,17$/);
+  expect(await page.evaluate(() => history.length)).toBe(entries + 1);
+  expect(errors).toEqual([]);
+});
+
 /** The clock face's type, as the strip of a marker writes it. */
 const clockFace = (page) =>
   page.evaluate(async () => {

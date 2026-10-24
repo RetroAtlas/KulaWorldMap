@@ -52,7 +52,15 @@ import {
 import { ballsWith } from "../viewer/draw/things.js";
 import { iconFor } from "../viewer/draw/icons.js";
 import { toast } from "../viewer/ui/toast.js";
-import { centreOn, chip, fit, fitWith, selectLevel, writeHash } from "../viewer/chrome/navigate.js";
+import {
+  centreOn,
+  chip,
+  fit,
+  fitWith,
+  selectLevel,
+  settle,
+  writeHash,
+} from "../viewer/chrome/navigate.js";
 import { slotOf } from "../viewer/permalink.js";
 import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
 import { say as announce } from "../viewer/chrome/a11y.js";
@@ -1833,9 +1841,10 @@ export function bootPlay() {
   });
   on("go-to", ({ x, y, z }) => {
     if (!live) return;
-    // the find has been drawn by now, the view still following the ball
+    // the find has been drawn on the ball's view and written with the view from before play
     centreOn(x, y, z);
     leave({ restore: false });
+    settle();
   });
   on("density-changed", icon);
   on("course-changed", () => {
