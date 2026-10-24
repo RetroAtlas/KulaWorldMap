@@ -3,20 +3,17 @@ import assert from "node:assert/strict";
 import { objects } from "./fixtures.js";
 import { index } from "../../public/js/viewer/data.js";
 import { HOP, JUMP, LEFT, PAD, REST, ROLLING, blockUnder } from "../../public/js/play/ball.js";
+import { end, frame, heeds, restart } from "../../public/js/play/rules.js";
 import {
   conclude,
-  end,
-  frame,
   gameOf,
-  heeds,
   nextOf,
-  restart,
   roundOf,
   scored,
   startGame,
   startSimon,
   stationOf,
-} from "../../public/js/play/rules.js";
+} from "../../public/js/play/game.js";
 import {
   ASKS,
   ROOMS,

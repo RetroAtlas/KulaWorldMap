@@ -19,10 +19,9 @@ import {
   relevel,
   restart,
   rockOf,
-  settle,
   startEffect,
-  startGame,
 } from "../../public/js/play/rules.js";
+import { settle, startGame } from "../../public/js/play/game.js";
 import {
   HOURGLASS,
   INVINCIBLE,

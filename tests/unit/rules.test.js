@@ -14,16 +14,8 @@ import {
   blockUnder,
   faceUnder,
 } from "../../public/js/play/ball.js";
-import {
-  FORM,
-  end,
-  frame,
-  heeds,
-  relevel,
-  restart,
-  revive,
-  stand,
-} from "../../public/js/play/rules.js";
+import { end, frame, heeds, relevel, restart, revive, stand } from "../../public/js/play/rules.js";
+import { FORM } from "../../public/js/play/game.js";
 import { probeOf } from "../../public/js/play/world.js";
 import { recorder, replayDriver } from "../../public/js/play/drive.js";
 import {

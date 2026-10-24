@@ -82,28 +82,23 @@ import {
   turned,
 } from "./ball.js";
 import {
-  FORM,
-  MODE,
   SCREEN,
   blanksOf,
-  conclude,
   drawn,
   drives,
   frame as gameFrame,
-  gameOf,
   glowOf,
   glowStep,
   heeds,
-  nextOf,
   relevel,
   restart,
   revive,
   rockOf,
-  roundOf,
   seeing,
   stand,
   startRun,
 } from "./rules.js";
+import { FORM, MODE, conclude, gameOf, nextOf, roundOf } from "./game.js";
 import { courseDriver, keyPad } from "./drive.js";
 import { frameShown, probeOf as liveProbe, travelOf, viewOf as drawnIndex } from "./world.js";
 

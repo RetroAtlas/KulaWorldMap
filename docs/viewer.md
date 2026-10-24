@@ -615,7 +615,7 @@ A caller may place the ball at rest on any face, its ramp and its look gone, and
 - The devices under the ball and a riding ball's travel taken afresh from its platform's travel.
 - The ball run, reading what it stands on where the game does.
 - The ball's contact with what stands about it.
-- The endings, with a run's start, its start again after an ending and the return of a lost ball, and the run's total and its fruit, settled on the frame an ending stands and carried through the start again.
+- The endings, with a run's start, its start again after an ending and the return of a lost ball, the game carried through the start again.
 
 The module has every count and threshold read from the motion table and no wall clock in it, so a run of pad words replays frame for frame.
 
@@ -631,6 +631,8 @@ The module has every count and threshold read from the motion table and no wall 
 - The switch thrown as the ball comes within the table's band of its middle along and across, which turns its circuit over through the map's own presses as the panel's button does.
 - The teleporter that is on counting its frames while the ball stands within its band, the wait held and the ball's requests cleared, and then placing the ball at rest on the face its slot names, facing as that teleporter does.
 - The marker that keeps a device from acting twice in one visit, cleared where the ball has left the middle by more than the table's reach, read between the ball's state and its move step where the game reads it.
+
+`js/play/game.js` is the game's words, pure too: the mode a level is played in and where it stands in the game's count, the run's total and its fruit, settled on the frame an ending stands, the slot the game loads next, and the Simon rooms' match, its rounds, its two players' turns and points, the room it goes on to and the moves the rooms read from the pad, pack and hold to the sequence.
 
 ### Pad words
 

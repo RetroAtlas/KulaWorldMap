@@ -33,7 +33,6 @@ const KINDS = [
 const OVER = {
   "public/js/play/play.js": 1900,
   "public/js/editor/editor.js": 1300,
-  "public/js/play/rules.js": 1000,
   "public/js/format/kwl.js": 1000,
   "public/js/editor/patchdialog.js": 900,
   "tests/browser/course.spec.js": 900,

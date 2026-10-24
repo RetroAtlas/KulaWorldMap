@@ -1,17 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, objects } from "./fixtures.js";
+import { end, restart } from "../../public/js/play/rules.js";
 import {
   FORM,
   conclude,
-  end,
   nextOf,
   numberOf,
-  restart,
   settle,
   startGame,
   stationOf,
-} from "../../public/js/play/rules.js";
+} from "../../public/js/play/game.js";
 import {
   COUNT,
   TABLES,

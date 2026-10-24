@@ -111,6 +111,7 @@ const PURE = [
   "play/ball.js",
   "play/world.js",
   "play/rules.js",
+  "play/game.js",
   "play/drive.js",
   "play/contact.js",
   "play/hazards.js",

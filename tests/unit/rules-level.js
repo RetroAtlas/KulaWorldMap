@@ -9,14 +9,8 @@ import {
   setObjects,
 } from "../../public/js/viewer/data.js";
 import { PAD, REST, ROLLING } from "../../public/js/play/ball.js";
-import {
-  end,
-  frame,
-  nextOf,
-  startMatch,
-  startRun,
-  startSimon,
-} from "../../public/js/play/rules.js";
+import { end, frame, startRun } from "../../public/js/play/rules.js";
+import { nextOf, startMatch, startSimon } from "../../public/js/play/game.js";
 
 setObjects(objects);
 setAnnotations(annotations);
