@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { trackErrors, settle, landed, textured, drawn } from "./helpers.js";
+import { trackErrors, settle, landed, textured, drawn, frame } from "./helpers.js";
 
 const WORLDS = 10;
 /** The paths the page asks for, as it asks for them. */
@@ -61,8 +61,13 @@ test("a browser set to save data gets the shown world's textures and no other wo
   });
   await page.goto("/#HAZE/0/45,35/fit/33");
   await settle(page);
+  // held still, so that the draw can go idle
+  await page.locator("#showMotion").uncheck();
   await landed(page);
-  await page.waitForTimeout(1500);
+  // the others would be asked for in the idle time the draw leaves; a request let go in the last
+  // frame counted reaches the list within one more
+  await expect.poll(() => drawn(page, 2, 0)).toBe(0);
+  await frame(page);
   expect(textures(asked)).toEqual(["/tex/HAZE.png"]);
   expect(errors).toEqual([]);
 });
