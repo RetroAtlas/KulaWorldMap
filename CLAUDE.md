@@ -117,6 +117,11 @@ After any change to the level writers, whoever holds the disc runs `python3 tool
 - A browser test asserts the wiring, that the strip says one thing after another, and never replays frame by frame what a unit test replays.
 - A game formula is never re-derived in a test; the test reads the table's word and the module's result.
 - A new browser test is one behaviour; a test that would assert a second is cut in two, the second taking the first's setup through a helper.
+- A browser test of play holds the page's clock before its first step of the game and steps the game through the shared helpers, reading the frames it means; it waits on the wall clock only where the wall clock is its subject.
+- The live region, the toasts, the drawer and the hash's deferred write run on timers and animation frames the held clock does not drive, and a held-clock test awaits or flushes them.
+- A spec file is one subject, named for it; a new test goes in the spec of its subject, and a new spec is made only for a subject no spec holds.
+- A spec at its cap splits by the behaviours it holds, each file named for them.
+- A helper two specs need moves to a helper module beside them, named for what it serves; a helper one spec needs stays at that spec's head.
 - A feature commit adds a unit test where the change is arithmetic, one assertion to the browser test of the same behaviour where it is wiring, and a new browser test only for a new behaviour the browser alone shows.
 - A commit that adds a browser test names in its body the unit test, by file and title, that holds what the change computes.
 - A reading only the disc can hold is held by the tool's own check against the disc, or by a rebuild that changes nothing committed.

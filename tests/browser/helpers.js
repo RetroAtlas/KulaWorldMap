@@ -157,3 +157,81 @@ export const topPixels = (page, cell) =>
 
 /** Whether a pixel is the route's gold. */
 export const gold = ([r, g, b]) => r > 230 && g > 170 && b < 150;
+
+/** Hold the page's clock still and draw on it, so the level runs only as `stepped` steps it. */
+export const frozen = (page) =>
+  page.evaluate(async () => {
+    const real = performance.now.bind(performance);
+    let now = real();
+    performance.now = () => now;
+    // a hair over, as on the held clock a frame's milliseconds can come to a hair under a frame
+    window.__step = (ms) => {
+      now += ms + 1e-6;
+    };
+    window.__thaw = () => {
+      performance.now = real;
+    };
+    (await import(new URL("js/viewer/draw/render.js", location.href).href)).draw();
+  });
+
+/** Run the frozen level `n` game frames on, drawing each. */
+export const onward = (page, n) =>
+  page.evaluate(async (n) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw }, { motionTable }] = await Promise.all(
+      ["viewer/draw/render.js", "viewer/data.js"].map(at),
+    );
+    for (let i = 0; i < n; i++) {
+      window.__step(1000 / motionTable().hz);
+      draw();
+    }
+  }, n);
+
+/** Put `block` into the shown draft at `cell`, or take the block there out with null, through the
+    model. */
+export const laid = (page, cell, block) =>
+  page.evaluate(
+    async ([cell, block]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { get, update }, { setBlock, removeBlock }] = await Promise.all(
+        ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
+      );
+      const id = state.lvl.draft;
+      update(id, block ? setBlock(get(id).doc, cell, block) : removeBlock(get(id).doc, cell));
+    },
+    [cell, block],
+  );
+
+/** Stand `object` on `face` of `cell` in the shown draft through the model, or take what stands
+    there off with null. */
+export const faced = (page, cell, face, object) =>
+  page.evaluate(
+    async ([cell, face, object]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { get, update }, { setFace }] = await Promise.all(
+        ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
+      );
+      update(state.lvl.draft, setFace(get(state.lvl.draft).doc, cell, face, object));
+    },
+    [cell, face, object],
+  );
+
+/** Give the shown draft `time` seconds through the model. */
+export const timed = (page, time) =>
+  page.evaluate(async (time) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }] = await Promise.all(
+      ["viewer/state.js", "editor/drafts.js"].map(at),
+    );
+    update(state.lvl.draft, { ...get(state.lvl.draft).doc, time });
+  }, time);
+
+/** Mark the shown draft a Simon room through the model. */
+export const roomed = (page, simon) =>
+  page.evaluate(async (simon) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }, { setMeta }] = await Promise.all(
+      ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
+    );
+    update(state.lvl.draft, setMeta(get(state.lvl.draft).doc, { simon }));
+  }, simon);
