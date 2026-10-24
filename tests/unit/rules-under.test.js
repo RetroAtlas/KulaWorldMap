@@ -14,7 +14,8 @@ import {
   cellOf,
   positionOf,
 } from "../../public/js/play/ball.js";
-import { frame, relevel, restart, seeing } from "../../public/js/play/rules.js";
+import { frame, relevel, restart } from "../../public/js/play/rules.js";
+import { seeing } from "../../public/js/play/passes.js";
 import { probeOf, shiftOf, standingOf, viewOf } from "../../public/js/play/world.js";
 import { blockPhase } from "../../public/js/viewer/motion.js";
 import {

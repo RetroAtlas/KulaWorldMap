@@ -634,6 +634,8 @@ The module has every count and threshold read from the motion table and no wall 
 
 `js/play/game.js` is the game's words, pure too: the mode a level is played in and where it stands in the game's count, the run's total and its fruit, settled on the frame an ending stands, the slot the game loads next, and the Simon rooms' match, its rounds, its two players' turns and points, the room it goes on to and the moves the rooms read from the pad, pack and hold to the sequence.
 
+`js/play/passes.js` is the draw's passes, pure too: the lethargy pill's screen, its mode moved on and its fade stepped as each pass ends, the effects' rows, each burst a pickup or the teleporter starts drawing the row of its frame count and a world effect's light in the colour its particles sum to, the flash a send and a level with no key start, waning by its step as each pass ends, the blanks the frame loop waits before a pass while the pill's screen or the teleport's flash stands, the view's roll by the pill's word, the invincible ball's glow by its counter, and whether every invisible block is seen, while the sunglasses' word stands and in the on spells of their blink.
+
 ### Pad words
 
 `js/play/drive.js` gives pad words per frame:

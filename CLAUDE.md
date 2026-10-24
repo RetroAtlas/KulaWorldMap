@@ -86,7 +86,7 @@ The route planner, `course.js` and `ribbon.js`, draws and listens only through t
 
 Play mode is built the same way.
 
-Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/game.js`, `play/contact.js`, `play/hazards.js` and `play/drive.js`, is pure, every count and threshold read from `objects.motion` and no wall clock among them, and the unit tests hold the simulation's modules to importing the model, the lattice and each other alone.
+Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/game.js`, `play/passes.js`, `play/contact.js`, `play/hazards.js` and `play/drive.js`, is pure, every count and threshold read from `objects.motion` and no wall clock among them, and the unit tests hold the simulation's modules to importing the model, the lattice and each other alone.
 
 `play/ball.js` never asks its probe what kind a block is and carries none of the mode's policy, so a lost ball says so and stays where it fell.
 

@@ -5,7 +5,7 @@ import { BLOCK, screen, state } from "../viewer/state.js";
 import { blockUnits, motionTable, sparksSheet } from "../viewer/data.js";
 import { lightsWith } from "../viewer/draw/lights.js";
 import { drawSoon } from "../viewer/draw/render.js";
-import { effectLights, particlesOf } from "./rules.js";
+import { effectLights, particlesOf } from "./passes.js";
 
 // the HUD's points the map has a place for; it has none for the icons
 const PLACED = new Set(["teleport"]);

@@ -5,22 +5,19 @@ import { cellKey } from "../../public/js/format/lattice.js";
 import { fieldIndex, index } from "../../public/js/viewer/data.js";
 import { dice } from "../../public/js/viewer/travel.js";
 import { PAD, blockUnder } from "../../public/js/play/ball.js";
+import { end, frame, relevel, restart } from "../../public/js/play/rules.js";
 import {
   FLASH,
   SCREEN,
   blanksOf,
   drawn,
   effectLights,
-  end,
-  frame,
   glowOf,
   glowStep,
   particlesOf,
-  relevel,
-  restart,
   rockOf,
   startEffect,
-} from "../../public/js/play/rules.js";
+} from "../../public/js/play/passes.js";
 import { settle, startGame } from "../../public/js/play/game.js";
 import {
   HOURGLASS,
