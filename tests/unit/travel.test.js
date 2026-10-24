@@ -133,6 +133,23 @@ test("where two beams cross, a lit one fills the cell whichever comes first", ()
   }
 });
 
+test("a beam's two ends are bare blocks to what travels, on every face, whatever the lattice holds there", () => {
+  const ends = [
+    [12, 10, 17],
+    [12, 14, 17],
+  ];
+  const l = level(ends, [
+    { x: 12, y: 10, z: 17, kind: 0, on: [object(0, 37)] },
+    { x: 12, y: 14, z: 17, kind: 8, type: 3, f: [2, 1, ...ends[0], ...ends[1], -1, -1, -1] },
+  ]);
+  const p = probe(l);
+  for (const end of ends) {
+    assert.equal(p.value(end, 0), 0, `${end} holds the plain style`);
+    for (let face = 0; face < 6; face++)
+      assert.equal(p.free(end, face, 0), true, `${end} can be stood over on face ${face}`);
+  }
+});
+
 test("a thing on its way stands over the block it leaves and the one it comes onto", () => {
   const w = { c: { x: 12, y: 10, z: 17 }, face: 0 };
   assert.deepEqual(under(w, [0, 0, 0])[0], [12, 10, 17], "at rest, its own block first");

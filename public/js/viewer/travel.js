@@ -16,7 +16,6 @@ const GRID = 256;
 const PLATFORM_KIND = 5;
 const CRUMBLING_KIND = 6;
 const VANISHING_KIND = 7;
-const BEAM_KIND = 8;
 const BETWEEN = -2;
 // The types standing on a face that a captivator may still cross.
 const CROSSABLE = new Set([30, 1, 2, 4]);
@@ -71,7 +70,7 @@ export function probe(l, lit = (ray) => ray.lit) {
   const crossed = new Map();
   for (const ray of beams(l)) {
     const { a, b, axis } = ray;
-    for (const end of [a, b]) if (!cells.has(cellKey(...end))) cells.set(cellKey(...end), 0);
+    for (const end of [a, b]) cells.set(cellKey(...end), 0);
     for (let t = Math.min(a[axis], b[axis]) + 1; t < Math.max(a[axis], b[axis]); t++) {
       const cell = [...a];
       cell[axis] = t;
@@ -103,11 +102,8 @@ export function probe(l, lit = (ray) => ray.lit) {
       if (r.kind === PLATFORM_KIND) return false;
       if (r.kind === CRUMBLING_KIND) return true;
       let type = r.on.find((o) => o.face === face)?.type ?? 0;
-      // A laser and a vanishing block keep their own payload in their first
-      // two slots, which the game reads as a face's object all the same.
-      if (r.kind === BEAM_KIND && face === 0) type = r.type;
       if (r.kind === VANISHING_KIND && face === 0) type = v;
-      if ((r.kind === BEAM_KIND || r.kind === VANISHING_KIND) && face === 1) return false;
+      if (r.kind === VANISHING_KIND && face === 1) return false;
       return type === 0 || type >= CAPTIVATORS_FROM || CROSSABLE.has(type);
     },
     empty: (cell, frame) => value(cell, frame) === OFF_LATTICE,
