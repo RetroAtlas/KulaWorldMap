@@ -516,7 +516,7 @@ const claims = [
       ring("LEVEL 70", GREEN),
       ring("BONUS 23", RED),
     ],
-    /All (\d+) name a teleporter of their own colour, which the build checks as well, and a colour's teleporters on a level send the ball round one ring: (\d+) pairs, (\d+) that name themselves, (\w+) in each copy of OBJ LEVEL, and (\w+) longer rings, LEVEL 68's (\w+) blue and (\w+) yellow, LEVEL 70's (\w+) green and BONUS 23's (\w+) red/,
+    /All (\d+) name a teleporter of their own colour, which the build checks as well, and a colour's teleporters on a level send the ball round one ring: (\d+) pairs, (\d+) that name themselves, (\w+) in each copy of OBJ LEVEL, and (\w+) longer rings, LEVEL 68's (\w+) blue and (\w+) yellow, LEVEL 70's (\w+) green and BONUS 23's (\w+) red teleporters/,
   ],
   [
     "docs/level-format.md",
@@ -805,7 +805,12 @@ const reasonClaims = [
     all(ofKind(5), lowerFirst),
     /the lower along the axis first on all (\d+)/,
   ],
-  ["kind 5", "the first platform", first(kindOn(5))[0], /^(LEVEL \d+) carries the game's first\./m],
+  [
+    "kind 5",
+    "the first platform",
+    first(kindOn(5))[0],
+    /^(LEVEL \d+) carries the game's first moving platform\./m,
+  ],
   [
     "kind 6",
     "the first crumbling blocks",
@@ -862,13 +867,13 @@ const reasonClaims = [
     "type 2",
     "the first ice patches, and the ice blocks on their level",
     [...first(on(2)), iceBlocks(named(first(on(2))[0]))],
-    /^(LEVEL \d+) carries the game's first (\w+), as well as (\w+) ice blocks\./m,
+    /^(LEVEL \d+) carries the game's first (\w+) ice patches, as well as (\w+) ice blocks\./m,
   ],
   [
     "type 5",
     "the first teleporters",
     first(on(5)),
-    /^(LEVEL \d+) carries the game's first (\w+)\./m,
+    /^(LEVEL \d+) carries the game's first (\w+) teleporters\./m,
   ],
   [
     "type 5",
@@ -892,9 +897,9 @@ const reasonClaims = [
     "type 8",
     "the first clocks",
     first(on(8)),
-    /^(LEVEL \d+) carries the game's first (\w+), painted/m,
+    /^(LEVEL \d+) carries the game's first (\w+) clocks, painted/m,
   ],
-  ["type 9", "the first switch", first(on(9))[0], /^(LEVEL \d+) carries the game's first;/m],
+  ["type 9", "the first switch", first(on(9))[0], /^(LEVEL \d+) carries the game's first switch;/m],
   [
     "type 9",
     "LEVEL 98's lasers",
@@ -905,16 +910,21 @@ const reasonClaims = [
     "type 10",
     "the first boost buttons",
     first(on(10)),
-    /^(LEVEL \d+) carries the game's first (\w+)\./m,
+    /^(LEVEL \d+) carries the game's first (\w+) boost buttons\./m,
   ],
   [
     "type 11",
     "the first moving spikes, and those on LEVEL 41",
     [...first(on(11)), on(11)(named("LEVEL 41"))],
-    /^(LEVEL \d+) carries the game's first (\w+), and LEVEL 41 (\w+)\./m,
+    /^(LEVEL \d+) carries the game's first (\w+) moving spikes, and LEVEL 41 (\w+)\./m,
   ],
   ["type 11", "the moving spikes' phases", values(11, "f3"), /`f3` takes (\w+) values/],
-  ["type 12", "the first spikes", first(on(12)), /^(LEVEL \d+) carries the game's first (\w+)\./m],
+  [
+    "type 12",
+    "the first spikes",
+    first(on(12)),
+    /^(LEVEL \d+) carries the game's first (\w+) spikes\./m,
+  ],
   [
     "type 26",
     "levels with a hidden exit, and how many in each world",
@@ -924,7 +934,12 @@ const reasonClaims = [
     ],
     /^(\w+) levels carry one, (\w+) in each world/m,
   ],
-  ["type 28", "the first arrows", first(on(28)), /^(LEVEL \d+) carries the game's first (\w+)\./m],
+  [
+    "type 28",
+    "the first arrows",
+    first(on(28)),
+    /^(LEVEL \d+) carries the game's first (\w+) arrows\./m,
+  ],
   [
     "type 29",
     "starts on a clock, each its level's only start",
@@ -937,18 +952,23 @@ const reasonClaims = [
     [levels(onStart), all(offStart, onClock)],
     /^One on each of (\d+) levels; the other (\w+) start the ball on a clock instead/m,
   ],
-  ["type 31", "HIDDEN 10's keys", on(31)(named("HIDDEN 10")), /HIDDEN 10's (\w+) are on the face/],
+  [
+    "type 31",
+    "HIDDEN 10's keys",
+    on(31)(named("HIDDEN 10")),
+    /HIDDEN 10's (\w+) keys are on the face/,
+  ],
   [
     "type 32",
     "the first lethargy pills",
     first(on(32)),
-    /^(LEVEL \d+) carries the game's first (\w+)\./m,
+    /^(LEVEL \d+) carries the game's first (\w+) lethargy pills\./m,
   ],
   [
     "type 33",
     "the first bouncy pill, and LEVEL 88's",
     [first(on(33))[0], on(33)(named("LEVEL 88"))],
-    /^(LEVEL \d+) carries the game's first, and LEVEL 88 has (\w+)\./m,
+    /^(LEVEL \d+) carries the game's first bouncy pill, and LEVEL 88 has (\w+)\./m,
   ],
   [
     "type 34",
@@ -956,7 +976,12 @@ const reasonClaims = [
     [ofType(34).length, inEachCopy(on(34))],
     /^(\w+) in the game, (\w+) in each copy of OBJ LEVEL/m,
   ],
-  ["type 35", "the first hourglass", first(on(35))[0], /^(LEVEL \d+) carries the game's first\./m],
+  [
+    "type 35",
+    "the first hourglass",
+    first(on(35))[0],
+    /^(LEVEL \d+) carries the game's first hourglass\./m,
+  ],
   [
     "type 36",
     "LEVEL 64's green gem",
@@ -964,19 +989,19 @@ const reasonClaims = [
       ofType(36).filter(({ l }) => title(l) === "LEVEL 64"),
       ({ o }) => field(o, "f3") === 1,
     ),
-    /LEVEL 64's green (one) 1/,
+    /LEVEL 64's (one) green gem 1/,
   ],
   [
     "type 37",
     "the gold coins of LEVEL 112 and HIDDEN 10",
     [worth("LEVEL 112", 750), worth("HIDDEN 10", 750)],
-    /LEVEL 112's (\w+) and HIDDEN 10's (\w+), which show gold, are the 750 kind/,
+    /LEVEL 112's (\w+) and HIDDEN 10's (\w+) coins, which show gold, are the 750 kind/,
   ],
   [
     "type 38",
     "the numbered levels' first sunglasses, and the level before them in play with some",
     [...first(on(38)), ...ahead(on(38))],
-    /^(LEVEL \d+) carries the numbered levels' first (\w+), though ([A-Z]+ \d+), which comes before it in play, carries (\w+)\./m,
+    /^(LEVEL \d+) carries the numbered levels' first (\w+) sunglasses, though ([A-Z]+ \d+), which comes before it in play, carries (\w+)\./m,
   ],
   [
     "type 42",
@@ -1024,25 +1049,25 @@ const reasonClaims = [
     "type 51",
     "the first rolling stone, and LEVEL 52's",
     [first(on(51))[0], on(51)(named("LEVEL 52"))],
-    /^(LEVEL \d+) carries the game's first, and LEVEL 52 (\w+)\./m,
+    /^(LEVEL \d+) carries the game's first rolling stone, and LEVEL 52 (\w+)\./m,
   ],
   [
     "type 52",
     "the first quick captivators",
     first(on(52)),
-    /^The game's first are (LEVEL \d+)'s (\w+)\./m,
+    /^(LEVEL \d+) carries the game's first (\w+) quick captivators\./m,
   ],
   [
     "type 53",
     "the first wandering captivators",
     first(on(53)),
-    /^(LEVEL \d+) carries the game's first (\w+), and the way one shakes/m,
+    /^(LEVEL \d+) carries the game's first (\w+) wandering captivators, and the way one shakes/m,
   ],
   [
     "type 56",
     "the numbered levels' first corkscrews, and the level before them in play with some",
     [...first(on(56)), ...ahead(on(56))],
-    /^(LEVEL \d+) carries the numbered levels' first (\w+), though ([A-Z]+ \d+), which comes before it in play, carries (\w+)\./m,
+    /^(LEVEL \d+) carries the numbered levels' first (\w+) bouncing captivators, though ([A-Z]+ \d+), which comes before it in play, carries (\w+)\./m,
   ],
   ["type 56", "the corkscrews' phases", values(56, "f3"), /`f3`, (\w+)-valued/],
   [
@@ -1141,7 +1166,7 @@ test("level-format.md's catalogue arithmetic adds up", () => {
   const missing = [...types].filter((t) => !here.has(t));
   const placed = (set) => objects.filter((o) => set.includes(o.type)).length;
   const m =
-    /the (\w+) it misses are placed ([\d,]+) times between them against the \d+'s ([\d,]+)/.exec(
+    /the (\w+) it misses are placed ([\d,]+) times between them against the \d+ types' ([\d,]+) placements/.exec(
       format,
     );
   assert.ok(m, "level-format.md has no sentence about what the catalogue misses");
@@ -1174,7 +1199,9 @@ test("level-format.md's points are the ones annotations.json scores", () => {
     type(38).points,
     annotations.kinds[6].points,
   ]);
-  const star = /Type 42's (\d+) is the one points value that rests on the executable/.exec(format);
+  const star = /Type 42's (\d+) points is the one points value that rests on the executable/.exec(
+    format,
+  );
   assert.ok(star, "level-format.md has no sentence giving the catalogue star's points");
   assert.equal(number(star[1]), type(42).points);
 });

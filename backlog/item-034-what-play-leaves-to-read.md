@@ -15,9 +15,9 @@ The ball on a moving platform, past what motion.md's "The blocks under the ball"
 - What the 27-word read does with the body test, which it calls too where the lattice names a platform's record (`0x800376c0` to `0x800376e4`), so that what holds a ball that comes down on a platform's body without riding it, from a hop in place or a roll from a neighbour, and whether it falls as the platform moves off, turn on it, where the map's probe follows the drawn body, and the level's lattice names a platform's record at its first block's cell alone, 37 records on the disc with the other home cells and every cell along the runs absent from the map's data, so the game may board only over that cell where the map boards along the drawn body, unread.
 - What the riding read of the platform's lattice (`0x80033978` onward) writes at 356, for which the map stands the platform's own word in.
 - The ceiling test's first question to `0x80032fd0`, which reads the cell above as a record for a platform overhead and drops the ball where it answers.
-- Whether a ball riding a platform can roll off its end onto a block the platform docks against, since the platform's lattice holds no block of the level's, is for the emulator.
+- Whether a ball riding a platform can roll off its end onto a block the platform docks against, since the platform's lattice holds no block of the level, is for the emulator.
 
-The ball in the air, what the reading passed over: how the ball is laid after the arrow's bounce, and the word at 700 the draw scales the ball by, which the level's load clears (`0x80035e34`) and a routine of the jump's alone writes (`0x80032558` to `0x8003259c`) from a word at gp+6456 that nothing writes but to clear it (`0x800324ec`).
+The ball in the air, what the reading passed over: how the ball is laid after the arrow's bounce, and the word at 700 the draw scales the ball by, which the level's load clears (`0x80035e34`) and a routine of the jump alone writes (`0x80032558` to `0x8003259c`) from a word at gp+6456 that nothing writes but to clear it (`0x800324ec`).
 
 Two of motion.md's sentences rest on less than a listing: that a snapped centre lying in a block lands inside it where it was less than 156 in, the wall met at 412 standing between, follows from the landing's arithmetic and was not read off a case; and the call at `0x8004f108` the −66 landing makes, the pad's vibration under the vibration option, is made on a bounce and on a hit on a block above too (`0x80030924`, `0x80030a94`), which the map has no pad to shudder for.
 
@@ -46,6 +46,6 @@ Each count that differs corrects motion.md, and the ball on the map with it.
 
 ## Ruled out
 
-Reading any of it from the level data: none of it is there, and every rule above is the executable's.
+Reading any of it from the level data: none of it is there, and every rule above is in the executable.
 
 Running the game in the page, as item 32 ruled out.

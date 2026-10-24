@@ -14,8 +14,8 @@ The words are known and the step that would carry them exists, "Playing it", whi
 
 What the tool knows and the page would have to: the cheat reaches the world packs only, since the three words name a world and a slot in it, and the finals are reached once the arcade is finished, by the flag at `0x800a3454` ([docs/motion.md](../docs/motion.md)), which the three words do not set, so a draft going into a finals pack gets no cheat; a draft going into a Simon room's slot gets none either, since the rooms' pack is named only in the mode the rooms are played in, 1 in the word at `0x800a33b0` ([docs/tgi.md](../docs/tgi.md)), which the three words do not set; and the PAL release keeps the words at `800A2EA4`, `800A2EA8` and `800A2EA0`, which matters once [item 26](item-026-other-releases-discs.md) brings that disc in.
 
-Each emulator takes cheats in a form of its own, and the tool writes DuckStation's; the others' are to be read from their documentation, as the patch paths were.
+Each emulator takes cheats in a form of its own, and the tool writes DuckStation's form; the other emulators' forms are to be read from their documentation, as the patch paths were.
 
-Open: whether the cheat is offered beside the patch for every slot but the first or only where the save would be long in coming, and whether the free-camera cheat goes with it as the tool's does.
+Open: whether the cheat is offered beside the patch for every slot but the first or only where the save would be long in coming, and whether the free-camera cheat goes with it as it does in the tool's output.
 
-Ruled out: nothing; the three words are the game's, and the dialog can carry them without the tool.
+Ruled out: nothing; the three words belong to the game, and the dialog can carry them without the tool.

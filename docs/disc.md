@@ -22,7 +22,7 @@ Sectors 0 to 15 are the system area: 0 to 3 empty, 4 to 11 the licence data, and
 
 The data files lie in address order with no gap between them but the directory sectors: each world's directory stands between the last pack of the world before it and its own artwork, so `COPYCAT.PAK` ends at 1011, ARCTIC's directory is 1012 and `ARCTIC.TGI` begins at 1013. A pack is therefore followed at once by the next file or by a directory, and cannot grow past the sectors it has.
 
-A directory record holds a file's extent and size in both byte orders, little-endian at 2 and 10 and big-endian at 6 and 14, and the two agree on every record of the disc; a pack's record lies in its world's directory sector, the world pack's at offset 96 and the finals pack's at 212 or 216, but for HIRO, whose directory has `COPYCAT.PAK` at 96, `HIRO.PAK` at 214 and `HIROFI.PAK` at 388.
+A directory record holds a file's extent and size in both byte orders, little-endian at 2 and 10 and big-endian at 6 and 14, and the two agree on every record of the disc; a pack's record lies in its world's directory sector, the world pack's record at offset 96 and the finals pack's record at 212 or 216, but for HIRO, whose directory has `COPYCAT.PAK` at 96, `HIRO.PAK` at 214 and `HIROFI.PAK` at 388.
 
 The one room on the disc is `/3.00`, the last file: 31,752,000 bytes at sector 93953, 15,504 sectors whose user data is zero on every one, and a name the executable never spells.
 
@@ -51,7 +51,7 @@ The file and channel are 0 and the coding 0 on every Form 1 sector of the disc; 
 
 The submode is `0x08`, data, on an ordinary sector of a file and `0x89`, data with end of record and end of file, on the last sector of every file outside `/XA`, of every directory, and of the terminator, the path tables and the root, 53 in all; the volume descriptor alone has `0x09`.
 
-The streams' picture frames carry `0x48`, real-time data, and `FINAL.STR` ends on `0xC8`; `0x00` is on 5,696 sectors, the postgap's 150 and the rest inside three of the music files and the logo stream, the empty sectors of their interleave.
+The streams' picture frames carry `0x48`, real-time data, and `FINAL.STR` ends on `0xC8`; `0x00` is on 5,696 sectors, the postgap's 150 sectors and the rest inside three of the music files and the logo stream, the empty sectors of their interleave.
 
 Among the Form 2 sectors `0x64` is the audio, `0xE4` the last sector of each of the music's channels and of the logo's sound, 17 in all, and `0x20` the four empty sectors of the system area.
 
@@ -77,7 +77,7 @@ An emulator passes a sector on whatever its parity says and a console's drive do
 
 ## The packs
 
-The 21 packs and their room, as the disc allots it: the size is the directory record's, the sectors are what that size occupies, the capacity is those sectors' user bytes and the slack is what is left in the last sector. Every pack is followed at once by the next file or a directory, so the capacity is the most a pack can be made in place; `INCA.PAK` fills its sectors exactly.
+The 21 packs and their room, as the disc allots it: the size is what the directory record gives, the sectors are what that size occupies, the capacity is those sectors' user bytes and the slack is what is left in the last sector. Every pack is followed at once by the next file or a directory, so the capacity is the most a pack can be made in place; `INCA.PAK` fills its sectors exactly.
 
 | pack | sector | size | sectors | capacity | slack |
 | --- | --- | --- | --- | --- | --- |
@@ -155,25 +155,25 @@ The sector after the pack is kept clear, since the game reads one sector past a 
 | `/HELL/HELL.PAK` | 255 | 951 | 1,637 to 2,378 | 453 to 1,262 |
 | `/HELL/HELLFI.PAK` | 1,970 | 174 | 3,043 to 3,145 | 961 to 1,113 |
 
-The slack is the last sector's, as above; level 9 wins what recompressing every record of the pack at level 9 saves, 8,168 bytes across the disc; and the room for a level is the longest stream a slot takes without a move, the pack's capacity less the table, the names and the other records at level 9, smallest for the slot whose record is smallest.
+The slack is what is left in the last sector, as above; level 9 wins what recompressing every record of the pack at level 9 saves, 8,168 bytes across the disc; and the room for a level is the longest stream a slot takes without a move, the pack's capacity less the table, the names and the other records at level 9, smallest for the slot whose record is smallest.
 
 A stream no longer than the slot's record goes in place, one no longer than the record plus the slack rebuilds the pack as it is, one within the room rebuilds it recompressed, and a longer one moves the pack.
 
-Written back from their fields, 224 of the disc's 230 levels go into their own slot in place; six come out a few bytes longer than the disc's stream, BONUS 30 by 82 since its pickups are renumbered, and rebuild their pack, LEVEL 33 recompressing INCA's, which has no slack at all.
+Written back from their fields, 224 of the disc's 230 levels go into their own slot in place; six come out a few bytes longer than the disc's stream, BONUS 30 by 82 since its pickups are renumbered, and rebuild their pack, LEVEL 33 recompressing INCA's world pack, which has no slack at all.
 
 **Several levels** go onto the disc as one patch. Each is placed over the image as the earlier ones left it, in the order given, so two levels in one pack go in place where each fits its own slot's bytes, and otherwise the later one rebuilds the pack carrying the earlier one's new stream, recompressed with the others where that is what makes room; a level placed in place keeps its slot's name even when a later placement renames another slot; and a pack moved once may be rebuilt in its new place or moved again.
 
 The sectors of every placement are merged, a later one replacing an earlier at the same address, so a directory sector that two packs share carries both records and the set is one list of sectors for a patch to carry; two levels naming one slot are refused.
 
-The result is read back as one placement's is: each pack touched lies where the last placement into it put it and reads back as that placement's records and names, every level's slot inflates to its level, and every merged sector checks.
+The result is read back as it is for one placement: each pack touched lies where the last placement into it put it and reads back as that placement's records and names, every level's slot inflates to its level, and every merged sector checks.
 
 The fixture below holds two sets beside its single placements, two levels in one pack and a level in a world pack with another in its finals pack, each set with its placements, its merged sectors and the digests of the patched image, the PPF and the VCDIFF.
 
 Everything the fit rests on is in `public/packs.json`, which `tools/kula_build.py` writes from the disc beside `map_data.json`: under `room` the path, sector and size of `/3.00`, and under `packs`, in the order the levels come, each pack's `path`, `lba`, `size` as its directory record gives it, `capacity` as its sectors hold, and its `slots` in order, each with the `name` the table carries, the `size` of the record as stored and `size9`, its length recompressed at level 9.
 
-The viewer's `public/js/format/pak.js` lays a pack out from its names and sizes exactly as `kula_pak.pack` does, which is the file's length on all 21 packs since the disc's packs have no gaps, and fits a stream's length to a slot by the three paths above from that file alone, naming the slot after the level's title as a rebuild or a move will, so the fit the page shows without the image is the fit the tools make with it, path and bytes to spare alike, wherever the image is the disc's. Several levels into one pack are fitted in order over a copy of the pack's layout that each fit leaves as the placement will, the slot's record at its stream's length and at its level-9 length once a later rebuild recompresses the others, every other record at its level-9 length after a rebuild that recompressed them, the pack's size and sectors after a rebuild or a move, and the slot's name from the title, so the fit shown for a set is the set's.
+The viewer's `public/js/format/pak.js` lays a pack out from its names and sizes exactly as `kula_pak.pack` does, which is the file's length on all 21 packs since the disc's packs have no gaps, and fits a stream's length to a slot by the three paths above from that file alone, naming the slot after the level's title as a rebuild or a move will, so the fit the page shows without the image is the fit the tools make with it, path and bytes to spare alike, wherever the image is an image of the disc. Several levels into one pack are fitted in order over a copy of the pack's layout that each fit leaves as the placement will, the slot's record at its stream's length and at its level-9 length once a later rebuild recompresses the others, every other record at its level-9 length after a rebuild that recompressed them, the pack's size and sectors after a rebuild or a move, and the slot's name from the title, so the fit shown for a set is the set's fit.
 
-It can promise no more than that: an image whose packs are not the disc's gives another fit when it is read, and that one is the truth.
+It can promise no more than that: an image whose packs are not the disc's packs gives another fit when it is read, and that one is the truth.
 
 A title that gives nothing keeps the slot's name, and a name is never longer than the one it replaces, so a fit worked out from the shipped names alone is at worst a few bytes short of the room, never over it.
 
@@ -185,15 +185,15 @@ In place, the sectors holding the table entry and the record change and no other
 
 Rebuilt, every sector of the pack changes, since the records after the slot move, and the world's directory sector changes where the size did, by the eight bytes of the record's size in its two byte orders, the sector's own sync, header and subheader kept.
 
-Moved, the sectors of the pack in its run of `/3.00` are new, data sectors ending on an end-of-file sector as a pack's are everywhere else on the disc, and the directory sector changes by the extent and the size; the pack's old sectors are left as they were, named by nothing.
+Moved, the sectors of the pack in its run of `/3.00` are new, data sectors ending on an end-of-file sector as a pack's sectors are everywhere else on the disc, and the directory sector changes by the extent and the size; the pack's old sectors are left as they were, named by nothing.
 
 The placer reads the result back through the same readers that read the disc, the directory walk and the pack reader, inflates the slot and compares it with the level, compares every record and name with what it meant to write, and checks every sector it wrote.
 
-The unit tests drive every path over a synthetic image, built with the disc's structure in 43 sectors: the volume descriptor, the root and one world's directory, `SYSTEM.CNF`, a world pack and a finals pack of one sector each holding small levels written by the level writer, the world pack's at level 1 so that recompression wins room, a `/3.00` of twelve zero sectors and a postgap.
+The unit tests drive every path over a synthetic image, built with the disc's structure in 43 sectors: the volume descriptor, the root and one world's directory, `SYSTEM.CNF`, a world pack and a finals pack of one sector each holding small levels written by the level writer, the world pack's streams at level 1 so that recompression wins room, a `/3.00` of twelve zero sectors and a postgap.
 
-Under `$KULA_DISC` they do the same on a copy of the disc, placing LEVEL 1's own stream and larger levels by every path into HIRO's first slot, a longer one into INCA's and two levels at once into HIRO's first two slots, and prove after each that nothing outside the written sectors moved.
+Under `$KULA_DISC` they do the same on a copy of the disc, placing LEVEL 1's own stream and larger levels by every path into HIRO's first slot, a longer one into INCA's first slot and two levels at once into HIRO's first two slots, and prove after each that nothing outside the written sectors moved.
 
-The image is known by its structure and never by a hash: a raw image of 2352-byte sectors with the volume descriptor at sector 16, the system identifier `PLAYSTATION`, a `SYSTEM.CNF` booting `cdrom:SLUS_007.24;1` and the 21 packs by path, so that a size or a file that is not the disc's is a warning rather than a refusal.
+The image is known by its structure and never by a hash: a raw image of 2352-byte sectors with the volume descriptor at sector 16, the system identifier `PLAYSTATION`, a `SYSTEM.CNF` booting `cdrom:SLUS_007.24;1` and the 21 packs by path, so that a size or a file that is not the one on the disc is a warning rather than a refusal.
 
 ## The patch
 
@@ -211,7 +211,7 @@ A window is the indicator 5, source and checksum, the length and position of the
 
 Every integer is base 128, most significant first, with the high bit set on every byte but the last.
 
-The instructions are the default code table's: a COPY, opcode 19 with its size following and its address in the address section as an absolute offset into the source segment, for every unchanged stretch, and an ADD, opcode 1 with its size following and its bytes in the data section, for every changed one, so a window with nothing changed is one COPY of itself.
+The instructions are those of the default code table: a COPY, opcode 19 with its size following and its address in the address section as an absolute offset into the source segment, for every unchanged stretch, and an ADD, opcode 1 with its size following and its bytes in the data section, for every changed one, so a window with nothing changed is one COPY of itself.
 
 xdelta3 checks the Adler-32 of every window and that the delta encoding's length counts everything after it, and the encoding is one that xdelta3 and Rom Patcher JS decode; LEVEL 1 in place is 1,469 bytes of it, LEVEL 4 in LEVEL 1's slot 14,329.
 

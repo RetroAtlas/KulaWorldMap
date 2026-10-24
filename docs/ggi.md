@@ -49,15 +49,15 @@ Types 39 to 41 and 48 to 49 all point at the arrow, which reads as a placeholder
 
 The draw of a thing on a block reaches its model through the table as it stands (`0x8002d878`): word `type × 16 + row × 4 + f3`, the row 2 where the thing's depth passes the farther of the two distances at 292 and 296 of the struct `0x800a5764` points at, 1 where it passes the nearer and 0 otherwise, so a far thing draws a coarser model.
 
-The fruit a level shows is not its type's: the loader rewrites it to the first of the five not yet collected ([motion.md](motion.md)), so LEVEL 1's fruit is type 46, the bananas, where play shows an apple, and on the arcade levels each numbered level shows the next of the five round, which is how the map draws them.
+The fruit a level shows is not the one its type names: the loader rewrites it to the first of the five not yet collected ([motion.md](motion.md)), so LEVEL 1's fruit is type 46, the bananas, where play shows an apple, and on the arcade levels each numbered level shows the next of the five round, which is how the map draws them.
 
 **The first table holds fourteen balls and the things that move.** Entries 0 to 13 are spheres of radius 100, most of 98 vertices and one of 140, each entry naming the same model three times over.
 
 The game picks among them at `0x80035ff4`: the world's place for an arcade level, so the ball is thematic, world 0, Hiro, white with coloured panels and world 3, Arctic, white and red; for a bonus level one of entries 10 to 12, by a counter the start routine steps at every level start since the game was switched on (`0x8003601c`), restarts included, so which one a player meets depends on the path they took; for a hidden level, which the code numbers mode 2, entry 13, a glass shell of 180 translucent polygons with three shards inside, green, yellow and red, drawn from the same mesh; and in the Japanese release whatever the ball designer chose.
 
-The viewer takes the world's, the glass one for a level the hidden flag marks, and for a level with no key one of the three, in the order of the bonus slots where the level stands in one and the first elsewhere; entries 20 to 24 are a three-pointed star, the wheel at three levels of detail, a four-pointed star, the hexagonal ball and the corkscrew at three levels: types 50, 51, 52, 53 and 56, the thinner star with three points being type 50 and the fuller one with four type 52, which play settled.
+The viewer takes the world's ball, the glass one for a level the hidden flag marks, and for a level with no key one of the three, in the order of the bonus slots where the level stands in one and the first elsewhere; entries 20 to 24 are a three-pointed star, the wheel at three levels of detail, a four-pointed star, the hexagonal ball and the corkscrew at three levels: types 50, 51, 52, 53 and 56, the thinner star with three points being type 50 and the fuller one with four type 52, which play settled.
 
-The parser runs `0x80023258` at load over model 36's three rows and three slots, the gem's three cuts at each level of detail, and builds a 348-byte record from each of the nine, which is the only call of that routine and is what makes the gems glint ([motion.md](motion.md)); the ball's draw and the captivators' reach their models through the first table by the same two distances (`0x8002cd78`, `0x8002c7d8`).
+The parser runs `0x80023258` at load over model 36's three rows and three slots, the gem's three cuts at each level of detail, and builds a 348-byte record from each of the nine, which is the only call of that routine and is what makes the gems glint ([motion.md](motion.md)); the ball's draw and the captivators' draws reach their models through the first table by the same two distances (`0x8002cd78`, `0x8002c7d8`).
 
 **A model** is a header and three or four blocks:
 
@@ -72,9 +72,9 @@ The parser runs `0x80023258` at load over model 36's three rows and three slots,
 
 The flags say in what order the polygons go (`0x8005343c`): at 0 in the order the model holds them, at 1 each by the mean depth of its corners into a table of 64 steps of 16 units about the model's own depth, which the chain runs through from the furthest step to the nearest and, within a step, from the polygon linked last to the one linked first (`0x80053b04`, `avsz3` and `avsz4`, `0x80053da8`), and at 2 in the model's order again with each corner lit by its vertex's normal (`ncct`, `0x8005446c`); 78 of the 105 models are drawn in their order, 13 by depth and the 14 balls by their normals.
 
-A polygon whose first corner's red is odd is dropped where its first three corners do not run clockwise on the screen (`0x80053530`, then `nclip` and `0x8005359c`), which on every model is where it faces away: 5,812 of the 5,849 opaque polygons are culled so, and of the 600 translucent ones only the glass ball's 180, so every other translucent polygon is seen from both sides.
+A polygon whose first corner's red is odd is dropped where its first three corners do not run clockwise on the screen (`0x80053530`, then `nclip` and `0x8005359c`), which on every model is where it faces away: 5,812 of the 5,849 opaque polygons are culled so, and of the 600 translucent ones only the glass ball's 180 polygons, so every other translucent polygon is seen from both sides.
 
-A flat polygon is drawn in its first corner's colour and a Gouraud one in each corner's (`0x80053604`), every colour scaled by the light of the face its thing stands on and faded with its depth (`dcpl`).
+A flat polygon is drawn in its first corner's colour and a Gouraud one in each corner's colour (`0x80053604`), every colour scaled by the light of the face its thing stands on and faded with its depth (`dcpl`).
 
 A translucent polygon meets what is behind it in its model's blend: half of each, 0, on the gem, the hourglass's glass and the glass ball's shell, and what is behind with a quarter of the polygon added, 3, on the exit's cross and on the hidden exit, which is translucent all over and so shows as a faint green glow.
 
@@ -96,7 +96,7 @@ The motion table ([motion.md](motion.md)) ships these readings, each type's spin
 
 A thing on a block takes the .TGI header's triple for the shade of its face, the same table and the same three triples its world's textures are shaded with ([tgi.md](tgi.md)), the face picking its shade by the header's word at 300 (`0x8002d3a8`) and the shade its triple from the set at byte 24, or from the set at 156, 4096 throughout, on a level the game plays as a bonus level (`0x8002d364`); so in Hiro a thing on a top shows 0.9, 0.8 and 0.8 of its colours, on the face the world lights most 1.2, 1.1 and 1.1, and on the one it lights least 0.7, 0.6 and 0.6.
 
-While a teleporter's light is lit, its light is taken again times its circuit's triple at `0x800a3308`, 1.5 in the channels its colour lights and 1.25 in the others, and a switch's or an open exit's twice over (`0x8002d49c`, `0x8002d694`, `0x8002d5c8`), so a lit device's model flashes with its light.
+While a teleporter's light is lit, its light is taken again times its circuit's triple at `0x800a3308`, 1.5 in the channels its colour lights and 1.25 in the others, and a switch's or an open exit's light twice over (`0x8002d49c`, `0x8002d694`, `0x8002d5c8`), so a lit device's model flashes with its light.
 
 The viewer lights what stands on a block and a lit device's model so, as the game does.
 
@@ -116,7 +116,7 @@ The fourteen balls are the beach-ball designs the Japanese release lets a player
 
 **The last section is the sprites and the lettering**, 148 uploads walked by `0x80022fd8` into a table of 180 twelve-byte descriptors (bpp, whether the upload named a blend, which the HUD's primitives take for their semi-transparency, the GPU's clut and tpage words, the offset within the page, width, height) that the HUD code indexes.
 
-Each is `i16 bpp, i16 abr`, for a paletted one `u16 x, y` of its palette in VRAM, `i16 inline, u16 late` and the palette's words where `inline` is 0, then `u16 x, y, w, h` of the image and its pixels where `late` is 0, `w` in pixels and the data padded to four bytes; every one is a VRAM upload like the artwork's, to the right of the world's textures at `x` 496 and up.
+Each is `i16 bpp, i16 abr`, for a paletted one `u16 x, y` of its palette in VRAM, `i16 inline, u16 late` and the palette's words where `inline` is 0, then `u16 x, y, w, h` of the image and its pixels where `late` is 0, `w` in pixels and the data padded to four bytes; every one is a VRAM upload like the artwork's uploads, to the right of the world's textures at `x` 496 and up.
 
 Entries 0 to 9 are the five fruit icons grey and lit, in the same order as types 43 to 47; 10 to 16 are seven 64x64 pictures (a purple glow, the ball's stripes, a red disc, an electric blue ball, a shell, two rings of sparks), the sprites of the bursts a pickup and a teleport start ([motion.md](motion.md)); 23 to 26 and 126 are the controller's four symbols; 27 to 70 and 132 to 147 the menus' words; 71 to 102 thirty-two 4x3 swatches; 119 and 125 the digits; 122 a single white texel, two pixels by one, that the lethargy pill's flash and fade stretch over the screen ([camera.md](camera.md)); 123 and 124 the key icon grey and gold; and 130 and 131 the two shadows the game draws under the ball and the captivators, a round one and a square one, both taken away from what is behind them ([motion.md](motion.md)).
 

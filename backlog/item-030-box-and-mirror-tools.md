@@ -12,7 +12,7 @@ A box tool and a mirror tool were put aside for after the editor shipped.
 
 **A box** is the run's shape over three axes: a first click sets one corner as a block would be laid, the pointer previews the cuboid to the hovered cell, every cell tinted where it may go and red where it may not, and the second click lays it, every cell the brush's kind and nothing on the faces.
 
-The refusals are Place's, the edge and a taken cell, and the checks' caps bite sooner: 123 records is the level, so a box of five by five by five is over it on its own, and the preview counts before the click.
+The refusals are those of Place, the edge and a taken cell, and the checks' caps bite sooner: 123 records is the level, so a box of five by five by five is over it on its own, and the preview counts before the click.
 
 What the game builds of a box is its shell, since a cell sealed on every side has no face built and counts for nothing but a record; whether the tool lays the shell alone, which is what an author means by a box, or the solid, is the first decision.
 

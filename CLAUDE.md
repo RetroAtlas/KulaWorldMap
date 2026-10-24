@@ -37,17 +37,17 @@ Read [docs/camera.md](docs/camera.md) before touching the start camera the viewe
 
 A change to the viewer that is to draw exactly as before, a move, a re-wiring or a speed-up, is proven with `npm run pixels`, which renders the working tree and `HEAD` over the matrix in `tests/pixels/cases.js` with the clock held still, with the editor absent and with it loaded, and names every capture whose map, pick, hit test or animation differs, and passes when it names none. A change meant to draw differently does not run it: most captures show the thing it changes, so the list says nothing its browser test and a look in the viewer do not.
 
-Where a change is about speed, `npm run frame` says where a frame's main-thread time goes, part by part, at a phone's size with the CPU slowed, and given a ref measures that ref beside the working tree, and `npm run boot` opens the page over a throttled network and says when its first frame and its first textured frame land, given a ref beside that ref's; both are there to reach for, not checks a commit must pass.
+Where a change is about speed, `npm run frame` says where a frame's main-thread time goes, part by part, at a phone's size with the CPU slowed, and given a ref measures that ref beside the working tree, and `npm run boot` opens the page over a throttled network and says when its first frame and its first textured frame land, given a ref beside that ref's frames; both are there to reach for, not checks a commit must pass.
 
-No commit message reports what a test found, this one's or any other's: every commit passes them all.
+No commit message reports what a test found, a test of its own or any other: every commit passes them all.
 
 ## Conventions
 
 - [`backlog/`](backlog/) holds the open questions, one file per question, with what has been ruled out. Read it before starting anything large. A question earns a file when the gap between finding it and answering it is long enough for the reasoning to be forgotten; the commit that answers it deletes the file and says what was decided.
 - A paragraph or a bullet of the docs, the backlog, the README or this file is one line, never wrapped, and makes one point: what one control does, one module's job, one rule, or one reading and what it rests on. A new point is a line of its own beside the one it qualifies, never one more clause on a line that makes a point already, and a line that would pass 1,000 characters is cut where its sentences or clauses join, in the commit that grows it. The unit tests hold every line to that length and fail a paragraph that runs onto a second line.
-- A `##` title is renamed only in a commit that updates every citation of it, since the docs cite their sections, their own and each other's, by title. A long section takes `###` subsections at its own turns, in its own words, repeating no heading of its document, unless its readings open on bold leads, which head them already; `docs/annotations.md` takes none, since its tests read every `###` as an entry and end a section at any heading.
+- A `##` title is renamed only in a commit that updates every citation of it, since the docs cite their own sections and each other's sections by title. A long section takes `###` subsections at its own turns, in its own words, repeating no heading of its document, unless its readings open on bold leads, which head them already; `docs/annotations.md` takes none, since its tests read every `###` as an entry and end a section at any heading.
 - The deployed site is `public/`, and the host serves that directory, so repo artefacts (`README.md`, this file) cannot ship by accident.
-- The Pages deploy is the last job of [.github/workflows/ci.yml](.github/workflows/ci.yml) and `needs` every check job in it, so a push to `main` publishes only what passed; a check that lands in a workflow of its own would gate nothing. The job is OddworldMap's, action versions included.
+- The Pages deploy is the last job of [.github/workflows/ci.yml](.github/workflows/ci.yml) and `needs` every check job in it, so a push to `main` publishes only what passed; a check that lands in a workflow of its own would gate nothing. The job is the one OddworldMap runs, action versions included.
 - What the site says, anything under `public/` a visitor can read or hear, is for someone looking at the map. Take out how the project knows a thing: the evidence for a reading, the counts and cross-checks that prove it, and what is or is not decoded yet. Keep anything a player would miss, curiosities and the other releases' differences included, even where the model or the legend shows part of it. The site never names this repo's scripts or files, a path on anyone's machine, an address or a date, and the walkthrough is credited in the About and named nowhere else, on the site or in the code.
 - A finding goes to `docs/` while it is being made and reaches the site once it is settled.
 - A change to what the map draws or counts searches the site's text, the notes first, for anything that describes it, and brings it up to date in the same commit.
@@ -76,7 +76,7 @@ The editor draws a draft as the viewer draws a disc level, and nothing else: a d
 
 The editor draws and listens only through seams, registrations and events: the frame's hooks in `render.js`, the click, drag and hover registrations and `tipWith` in `interaction.js`, the panel's `onShow` and `selection-changed` event in `detail.js`, the level line's `noteWith`, the link's `provideLevels` and the `level-changed` and `level-updated` events in `navigate.js`, the `atlas-loaded` event in `atlas.js` and play's `play-changed`.
 
-So the faithful modules carry no editor branch: `things.js`, `skins.js`, `lights.js`, `beams.js`, `atlas.js`, `motion.js`, `travel.js`, `icons.js`, `compass.js`, `search.js`, `objectsearch.js`, `placesearch.js`, `dialog.js`, `modal.js`, `toast.js`, and under `tools/` `kula_build.py` apart from `packs.json` and `kula_level.py`, are the modules the editor leaves untouched, `search.js`, `dialog.js`, `modal.js` and `skins.js` apart, which changed for every caller's sake, the search re-scoping on `level-updated`, a dialog or a modal giving the focus back to the control that opened it, and the skins lending the viewer's points their test for a key, and carry no branch of the editor's.
+So the faithful modules carry no editor branch: `things.js`, `skins.js`, `lights.js`, `beams.js`, `atlas.js`, `motion.js`, `travel.js`, `icons.js`, `compass.js`, `search.js`, `objectsearch.js`, `placesearch.js`, `dialog.js`, `modal.js`, `toast.js`, and under `tools/` `kula_build.py` apart from `packs.json` and `kula_level.py`, are the modules the editor leaves untouched, `search.js`, `dialog.js`, `modal.js` and `skins.js` apart, which changed for every caller's sake, the search re-scoping on `level-updated`, a dialog or a modal giving the focus back to the control that opened it, and the skins lending the viewer's points their test for a key, and carry no branch for the editor.
 
 The route planner, `course.js` and `ribbon.js`, draws and listens only through the same kind of seams, the block hook, the pointer lists, the link's tail, the `level-changed` and `level-updated` events and the editor's `editing-changed` and `drafts-moved`, and carries no branch in a faithful module.
 
@@ -84,11 +84,11 @@ Play mode is built the same way.
 
 Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/contact.js`, `play/hazards.js` and `play/drive.js`, is pure, every count and threshold read from `objects.motion` and no wall clock among them, and the unit tests hold the simulation's modules to importing the model, the lattice and each other alone.
 
-`play/ball.js` never asks its probe what kind a block is and carries no policy of the mode's, so a lost ball says so and stays where it fell.
+`play/ball.js` never asks its probe what kind a block is and carries none of the mode's policy, so a lost ball says so and stays where it fell.
 
 `play/play.js` reaches the map only through the seams:
 
-- The frame's travellers through `movingWith`, its four hooks, `runWith` and its `density-changed` event in `render.js`, its marks on the blocks reaching `skins.js` through `faceSkin`'s marked argument as the game's own paint for a marked face and not as a branch of play's.
+- The frame's travellers through `movingWith`, its four hooks, `runWith` and its `density-changed` event in `render.js`, its marks on the blocks reaching `skins.js` through `faceSkin`'s marked argument as the game's own paint for a marked face and not as a branch for play.
 - The camera's `frame`, `anchored` and `parked` in `state.js`.
 - `fitWith` and the `level-changed`, `level-updated` and `link-opening` events in `navigate.js`.
 - The switches' `show-changed` event in `sidebar.js`.
@@ -97,7 +97,7 @@ Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/contact.
 - `tipWith` in `interaction.js`.
 - The panel's `onShow` and `go-to` event in `detail.js`, and the `play-changed` event the editor listens to.
 
-So the faithful modules carry no branch of play's either; `play/dust.js` and `play/effects.js` are its own, and `play/effects.js` casts its light through `lightsWith` in `lights.js`.
+So the faithful modules carry no branch for play either; `play/dust.js` and `play/effects.js` are its own, and `play/effects.js` casts its light through `lightsWith` in `lights.js`.
 
 "How it is built" in [docs/viewer.md](docs/viewer.md) says what each of play's modules computes and what play hands the map through its seams.
 

@@ -12,7 +12,7 @@ A level is titled by the number the game's pause screen gives it, which the engi
 
 A route can be planned over a level's blocks, stop by stop, drawn the way the ball would roll between them by the game's own rules for a step, and the ball itself can be rolled over the level by the keys, or along the planned route, as the game rolls it, the level turning with it round an edge or up a wall.
 
-The data is read from the NTSC-U release, sold as **Roll Away** (SLUS-00724). The same game shipped as Kula World in PAL territories and Kula Quest in Japan; the level data is the game's own as this release ships it, and where a level is known to differ in the other two, its note says so.
+The data is read from the NTSC-U release, sold as **Roll Away** (SLUS-00724). The same game shipped as Kula World in PAL territories and Kula Quest in Japan; the level data is the game's own data as this release ships it, and where a level is known to differ in the other two, its note says so.
 
 The map is an editor as well. Make a level of your own, or copy a shipped one and change it: lay blocks against faces or across the floor, put the game's objects on them, run platforms and lasers between two cells, and have the game's own rules refuse what it could not load.
 
@@ -26,7 +26,7 @@ A block of the five kinds carries a record where something stands on it, and fou
 
 The game numbers its blocks and objects and names none of them; the names on the map are curated from the game's own models and textures and from play, and the points from play.
 
-The artwork is the game's own, each world's textures replayed from its own file onto the faces the game's loader paints them on, and the objects are drawn from the one mesh file on the disc, moving at the rates the executable moves them.
+The artwork is the game's own artwork, each world's textures replayed from its own file onto the faces the game's loader paints them on, and the objects are drawn from the one mesh file on the disc, moving at the rates the executable moves them.
 
 Nothing in a level says how a block looks or how a thing moves: those are rules in the game's code, read off the executable.
 

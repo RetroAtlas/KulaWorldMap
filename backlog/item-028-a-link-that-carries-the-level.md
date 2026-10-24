@@ -4,7 +4,7 @@
 
 A link to a draft, `#DRAFT/3/...`, names a slot in the browser that holds it: it opens the draft on that device and gives way to the view on screen anywhere else ([docs/viewer.md](../docs/viewer.md)), by the rule that a file is a level and a browser-local id is not one.
 
-The one link that carries a level today is the community's, orbit's `?level=` share link, which `paste a link…` reads as a template: its codec is orbit's words, a header of the time and the hidden and reverse flags and a line of base36 per block, gzipped and written as base64url, so it carries no title, author or notes and names a world only where the link does ([docs/editor.md](../docs/editor.md)).
+The one link that carries a level today is the community's link, orbit's `?level=` share link, which `paste a link…` reads as a template: its codec is orbit's words, a header of the time and the hidden and reverse flags and a line of base36 per block, gzipped and written as base64url, so it carries no title, author or notes and names a world only where the link does ([docs/editor.md](../docs/editor.md)).
 
 A shareable link of the project itself, so that an author can hand a level to someone without a file, was put aside for after the editor shipped.
 

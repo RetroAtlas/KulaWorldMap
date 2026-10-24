@@ -8,7 +8,7 @@ The commits from "Draw a model's polygons without building them afresh every fra
 
 What is left is mostly the canvas's own work: 2,000-2,500 polygon fills a frame for the models, each with its colour set, a clip and a `drawImage` for every textured face, and the flush of all of it to the GPU; and the GPU's work, which the harness cannot see on a phone.
 
-Going further changes the picture, however slightly, so each step below is the visitor's to take: a setting in the Settings panel, off by default, so the map looks as it does unless the visitor asks for frames over picture. Whether the map should ever say that a setting would help, when it sees frames dropped, is open.
+Going further changes the picture, however slightly, so each step below is for the visitor to take: a setting in the Settings panel, off by default, so the map looks as it does unless the visitor asks for frames over picture. Whether the map should ever say that a setting would help, when it sees frames dropped, is open.
 
 The order is the one that saves most and shows least first; the fourth saves least for what it changes.
 
@@ -16,13 +16,13 @@ The order is the one that saves most and shows least first; the fourth saves lea
 
 The figures are `npm run frame` at its defaults (the CPU throttled 4x, 412x915 at a device pixel ratio of 3, an M4 Max's GPU), taken 2026-09-29.
 
-**1. Frames at the game's rate.** Most fast Android phones run the display at 90 or 120 Hz, and the loop draws on every tick, while the game's own clock steps 60 times a second. Drawing at most once a game frame halves the work on a 120 Hz screen, the main thread's and the GPU's, and changes nothing on a 60 Hz one. The cost is that a turning coin shows 60 poses a second rather than twice as many.
+**1. Frames at the game's rate.** Most fast Android phones run the display at 90 or 120 Hz, and the loop draws on every tick, while the game's own clock steps 60 times a second. Drawing at most once a game frame halves the work on a 120 Hz screen, the main thread's and the GPU's work, and changes nothing on a 60 Hz one. The cost is that a turning coin shows 60 poses a second rather than twice as many.
 
 `animate` in [render.js](../public/js/viewer/draw/render.js) is where: a tick that comes less than a game frame after the last draw asks for the next.
 
 Whether a drag keeps every tick is part of the question.
 
-**2. A lower pixel ratio.** `resize` in [render.js](../public/js/viewer/draw/render.js) caps the canvas at a device pixel ratio of 2. A cap of 1.5 draws 44% fewer pixels and 1 draws 75% fewer. The saving is all the GPU's: on the machine the harness runs on, the main thread's time does not move with the ratio (1 and 3 within 0.3 ms of each other). The cost is softer edges, lines and lettering on a sharp screen; the 64x64 textures change little. A slider over the steps, rather than a switch.
+**2. A lower pixel ratio.** `resize` in [render.js](../public/js/viewer/draw/render.js) caps the canvas at a device pixel ratio of 2. A cap of 1.5 draws 44% fewer pixels and 1 draws 75% fewer. The saving is all on the GPU: on the machine the harness runs on, the main thread's time does not move with the ratio (1 and 3 within 0.3 ms of each other). The cost is softer edges, lines and lettering on a sharp screen; the 64x64 textures change little. A slider over the steps, rather than a switch.
 
 **3. Faces without their clip.** Each textured face is clipped to its outline before its texture is laid on it (`cube` in [blocks.js](../public/js/viewer/draw/blocks.js)). Laying the texture alone saves a save, a clip and a restore a face, about 0.3 ms a frame on LEVEL 45, and the GPU's clipping. The cost is a face's edge anti-aliased by its texture rather than its outline, which may leave hairline seams between faces.
 

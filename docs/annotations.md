@@ -32,23 +32,23 @@ The lattice's style 1 and a record's kind 1 are the same thing, the second being
 
 It is a hazard: in play the ball swells and reddens on it and burns on the third fire square in a row.
 
-The code heats the ball on fire, by 40 a frame and by 600 at a time besides, and past 2000 sets it dying with a cause of its own rather than the captivators' (`0x8003ab40` to `0x8003ac14`), which is why the notes say it burns.
+The code heats the ball on fire, by 40 a frame and by 600 at a time besides, and past 2000 sets it dying with a cause of its own rather than the captivators' cause (`0x8003ab40` to `0x8003ac14`), which is why the notes say it burns.
 
 ### kind 2: Ice block
 
 Style 2 in the lattice, kind 2 in a record, painted with the ice texture ([tgi.md](tgi.md)), and in play the ball slides across it.
 
-Most of the game's 668 are in Arctic and Hell, 244 and 233.
+Most of the game's 668 ice blocks are in Arctic and Hell, 244 and 233.
 
 ### kind 3: Invisible block
 
 Style 3 in the lattice, kind 3 in a record.
 
-More than half of the game's 1245 are in Haze, 705 of them.
+More than half of the game's 1245 invisible blocks are in Haze, 705 of them.
 
-That rolling over one in a bonus level scores nothing, which the map's totals count on, is the executable's: the walk that counts a bonus level's blocks takes the plain, fire, ice, acid, crumbling and vanishing kinds and not this one ([level-format.md](level-format.md)).
+That rolling over one in a bonus level scores nothing, which the map's totals count on, rests on the executable: the walk that counts a bonus level's blocks takes the plain, fire, ice, acid, crumbling and vanishing kinds and not this one ([level-format.md](level-format.md)).
 
-How one shows is the executable's: [motion.md](motion.md) has the routine. It is hidden and lights up only within a block of the ball, and on the seven levels whose settings record carries a first field of 1 it is the other way round, seen everywhere and fading out as the ball comes within three and a half blocks, gone within two and a half, which is the note's "only from far away". The sunglasses show them all.
+How one shows rests on the executable: [motion.md](motion.md) has the routine. It is hidden and lights up only within a block of the ball, and on the seven levels whose settings record carries a first field of 1 it is the other way round, seen everywhere and fading out as the ball comes within three and a half blocks, gone within two and a half, which is the note's "only from far away". The sunglasses show them all.
 
 ### kind 4: Acid block
 
@@ -66,7 +66,7 @@ The record's type is the direction from its block to the far end, and its tail k
 
 `f2` is the axis, as the direction number of its positive way, 1, 2 or 5, and `f4` to `f6` and `f7` to `f9` are the two ends, the lower along the axis first on all 37 ([level-format.md](level-format.md)).
 
-LEVEL 71 carries the game's first.
+LEVEL 71 carries the game's first moving platform.
 
 ### kind 6: Crumbling block
 
@@ -101,7 +101,7 @@ The loader reads its first slot as the level's settings:
 - A type of 1 marks a hidden level, which draws its blocks half-transparent and the glass ball, and is 1 on exactly the ten.
 - A first field of 1 turns round how invisible blocks show, on LEVEL 106 to 108, 110 and 111, SIMON 9 and HIDDEN 8, which kind 3 has.
 
-The record stands on an empty cell on 114 of the 160. Its other slots hold objects like any block's, 55 of them on 43 levels, which the walk does not reach either. So the slots read as a block deleted in the editor with its faces left as they were, and the build ships the record without them.
+The record stands on an empty cell on 114 of the 160. Its other slots hold objects like any block's slots, 55 of them on 43 levels, which the walk does not reach either. So the slots read as a block deleted in the editor with its faces left as they were, and the build ships the record without them.
 
 [level-format.md](level-format.md) has the addresses.
 
@@ -119,47 +119,47 @@ It is a hazard for the fire block's reasons.
 
 The loader paints the face with the ice block's own texture ([tgi.md](tgi.md)).
 
-LEVEL 47 carries the game's first seventeen, as well as six ice blocks.
+LEVEL 47 carries the game's first seventeen ice patches, as well as six ice blocks.
 
 The game reads a patch as ice for the roll as for the chill. The ball's read of the block under it writes one word for what it stands on, 2 for a kind-2 block (`0x800378bc`) and, for a plain block, the type of the slot on the face it stands on (`0x80037944`, `0x8003794c`), so 2 for a patch there, and the roll's predicate (`0x80030e2c` to `0x80030e38`) and the hazards' ice case (`0x8003aab0`) ask that word, not the block's kind ([motion.md](motion.md)).
 
 ### type 5: Teleporter
 
-LEVEL 66 carries the game's first two.
+LEVEL 66 carries the game's first two teleporters.
 
-The colour is `f3`, the circuit number the lasers and switches use: LEVEL 68's are yellow and blue and read 0 and 1, LEVEL 70's yellow, red and green read 0, 3 and 2.
+The colour is `f3`, the circuit number the lasers and switches use: LEVEL 68's teleporters are yellow and blue and read 0 and 1, LEVEL 70's yellow, red and green teleporters read 0, 3 and 2.
 
 `f4` says whether it starts on, 1 for on and 2 for off: the draw lights a teleporter while it is 1 ([motion.md](motion.md)), and on every level with lasers of the same colour the field agrees with whether the beams start lit ([level-format.md](level-format.md)).
 
 `f7` is its destination: the teleporter's routine reads it at `0x8003a6e4` as the record and face of the teleporter the ball comes out of, on all 147 one of the same colour, and where three or more share a colour on a level they send the ball round a ring, one way ([level-format.md](level-format.md)).
 
-`f2` is its facing, the way the ball faces as it comes out of this one: once the teleporter's routine has the destination it reads that teleporter's `f2` (`0x8003a724`) and faces the ball by it through the routine that faces the ball at the start (`0x80038178`, called at `0x8003a734` and by the start's routine at `0x80036114`), so it counts in the quarter turns the start and the arrows do, and the loader turns the teleporter itself by the same field, as it turns every object its table knows (`0x800359ec`, into `0x80039ec0`). It is 1 to 4 on all 147, and unlike the start's it has not been checked in play.
+`f2` is its facing, the way the ball faces as it comes out of this one: once the teleporter's routine has the destination it reads that teleporter's `f2` (`0x8003a724`) and faces the ball by it through the routine that faces the ball at the start (`0x80038178`, called at `0x8003a734` and by the start's routine at `0x80036114`), so it counts in the quarter turns the start and the arrows do, and the loader turns the teleporter itself by the same field, as it turns every object its table knows (`0x800359ec`, into `0x80039ec0`). It is 1 to 4 on all 147, and unlike the start's facing it has not been checked in play.
 
 ### type 7: Exit
 
 One on each of 190 levels, and none on the 30 bonus and 10 Simon levels, which have no exit to reach; the disc keeps a second on three of them and a third on one of those, LEVEL 94, on records the game never walks ([level-format.md](level-format.md)).
 
-LEVEL 1's, LEVEL 2's and HIDDEN 10's stand on the cells and faces the map draws them on.
+LEVEL 1's, LEVEL 2's and HIDDEN 10's exits stand on the cells and faces the map draws them on.
 
 ### type 8: Clock
 
-LEVEL 56 carries the game's first seven, painted with the clock's face ([tgi.md](tgi.md)); the clock LEVEL 136 starts you on is the start itself, type 29, which the loader makes a clock of.
+LEVEL 56 carries the game's first seven clocks, painted with the clock's face ([tgi.md](tgi.md)); the clock LEVEL 136 starts you on is the start itself, type 29, which the loader makes a clock of.
 
 ### type 9: Switch
 
-LEVEL 84 carries the game's first; LEVEL 98's red, green and blue read 3, 2 and 1 in `f3`, the same circuit numbers its three lasers carry.
+LEVEL 84 carries the game's first switch; LEVEL 98's red, green and blue switches read 3, 2 and 1 in `f3`, the same circuit numbers its three lasers carry.
 
 The field after the colour is the circuit's starting state, 1 for on and 2 for off, and agrees with the lasers and teleporters of that colour on every level.
 
-That a switch turns every laser and teleporter of its colour on and off is the code's: a press walks a list its `f7` starts (`0x8003a388`) and turns over each thing on it, and on every level the list is exactly the switches, teleporters and lasers of the switch's colour ([level-format.md](level-format.md)).
+That a switch turns every laser and teleporter of its colour on and off rests on the code: a press walks a list its `f7` starts (`0x8003a388`) and turns over each thing on it, and on every level the list is exactly the switches, teleporters and lasers of the switch's colour ([level-format.md](level-format.md)).
 
 ### type 10: Boost button
 
-LEVEL 26 carries the game's first three.
+LEVEL 26 carries the game's first three boost buttons.
 
 ### type 11: Moving spikes
 
-LEVEL 40 carries the game's first two, and LEVEL 41 six.
+LEVEL 40 carries the game's first two moving spikes, and LEVEL 41 six.
 
 `f3` takes four values, which is where in the cycle each one starts, its phase ([motion.md](motion.md)).
 
@@ -167,7 +167,7 @@ They are a hazard while up: the ball's code at `0x8003b0d0` sets it dying on a t
 
 ### type 12: Spikes
 
-LEVEL 4 carries the game's first four.
+LEVEL 4 carries the game's first four spikes.
 
 They are a hazard: the ball's code at `0x8003b02c` sets it dying on a type 12 under it.
 
@@ -175,11 +175,11 @@ They are a hazard: the ball's code at `0x8003b02c` sets it dying on a type 12 un
 
 Ten levels carry one, one in each world, and the disc keeps a second on two of them, LEVEL 25 and LEVEL 82, on records the game never walks.
 
-LEVEL 132's is the one the NTSC release puts out of reach.
+LEVEL 132's hidden exit is the one the NTSC release puts out of reach.
 
 ### type 28: Arrow
 
-LEVEL 61 carries the game's first twelve.
+LEVEL 61 carries the game's first twelve arrows.
 
 `f2` takes 1 to 4, a quarter turn each on the face: on a block's top they point +y, -x, -y and +x, which LEVEL 62's arrows in play fixed, one of each; [level-format.md](level-format.md) has the sides.
 
@@ -189,7 +189,7 @@ Two in the game, on LEVEL 58 and LEVEL 136 (`LEVEL 135` on the disc), and each l
 
 The routine that places the ball at `0x80036100` takes a type 29 like a type 30, faces the ball by the same field, and then makes the slot a clock, type 8, at `0x8003627c`, so the ball starts on a clock, and both starts were checked in play.
 
-The face is painted with the clock's face like any clock's.
+The face is painted with the clock's face, as any clock is.
 
 ### type 30: Start
 
@@ -197,7 +197,7 @@ The block and face the ball starts on, checked in play on LEVEL 1, LEVEL 2 and H
 
 One on each of 228 levels; the other two start the ball on a clock instead, type 29.
 
-`f2` is the way the ball faces, in the quarter turns the arrows use: LEVEL 1's reads 3, which is -y, and the first coin is two blocks that way.
+`f2` is the way the ball faces, in the quarter turns the arrows use: LEVEL 1's start reads 3, which is -y, and the first coin is two blocks that way.
 
 The game picks the ball's design by the world's place from the fourteen the disc holds ([ggi.md](ggi.md)).
 
@@ -205,55 +205,55 @@ The game picks the ball's design by the world's place from the fourteen the disc
 
 One to six a level on the disc: 61 levels with one, 92 with two, 31 with three, four with four, one with five and one with six. HIDDEN 10's fifth key stands on its settings record and three of FINAL 13's keys on crumbling blocks, records the game never walks, so in play HIDDEN 10 asks for four and FINAL 13 for three.
 
-LEVEL 1's and LEVEL 2's are on the cells the map draws them on, and HIDDEN 10's four are on the face.
+LEVEL 1's and LEVEL 2's keys are on the cells the map draws them on, and HIDDEN 10's four keys are on the face.
 
 ### type 32: Lethargy pill
 
 Named for what it does in play: its mode word makes the play loop wait two blanks a pass, so the ball and everything else run at half pace while the screen rocks ([motion.md](motion.md), [camera.md](camera.md)).
 
-LEVEL 10 carries the game's first four.
+LEVEL 10 carries the game's first four lethargy pills.
 
-How long it lasts is the code's: its case sets the word at `0x800ba338` to 360 (`0x800387d4`), and the ball's routine, which the play loop runs once a pass, takes 2 off it a pass (`0x8003b388`) and 4 ticks off the clock with it (`0x8003b390`, through `0x8003b468`), testing the word before it counts it down, so the pill lasts 181 passes, six seconds at two blanks each, and costs 724 ticks beyond the clock's own, 14.5 of its seconds at fifty ticks to the second ([motion.md](motion.md)), which the note gives as about fifteen.
+How long it lasts rests on the code: its case sets the word at `0x800ba338` to 360 (`0x800387d4`), and the ball's routine, which the play loop runs once a pass, takes 2 off it a pass (`0x8003b388`) and 4 ticks off the clock with it (`0x8003b390`, through `0x8003b468`), testing the word before it counts it down, so the pill lasts 181 passes, six seconds at two blanks each, and costs 724 ticks beyond the clock's own ticks, 14.5 of its seconds at fifty ticks to the second ([motion.md](motion.md)), which the note gives as about fifteen.
 
 ### type 33: Bouncy pill
 
-LEVEL 86 carries the game's first, and LEVEL 88 has two.
+LEVEL 86 carries the game's first bouncy pill, and LEVEL 88 has two.
 
 ### type 34: Invincibility pill
 
 Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use.
 
-The name is play's: taken on OBJ LEVEL, it sets the ball flashing in colours, and while it does nothing harms it, not the spikes, the moving spikes, the stars, the rolling stone, the corkscrew or fire.
+The name rests on play: taken on OBJ LEVEL, it sets the ball flashing in colours, and while it does nothing harms it, not the spikes, the moving spikes, the stars, the rolling stone, the corkscrew or fire.
 
 The code says the same. The ball's contact walk at `0x80038548` sends it to its case at `0x80038804`, which scores nothing, sets the word at `0x800ba340` to 840 and takes the pill off its face; the loader sets that word to -1 (`0x80035df8`), and the ball's routine counts it down by one a frame back to -1 (`0x8003b2f8`), so the pill lasts 14 s.
 
-Every path that sets the ball dying first tests that the word is -1: the laser's beam (`0x8003a960`), fire (`0x8003ab64`, `0x8003abc8`), the acid block (`0x8003acbc`), the spikes (`0x8003b050`), the moving spikes (`0x8003b108`), the things that travel (`0x80036760`) and type 42's brown form (`0x800386d8`). While the word runs, the same routine also sets the bouncy pill's word at `0x800ba33c` to -1 and the lethargy pill's at `0x800ba338` to 0 (`0x8003b324` to `0x8003b358`), and in play it cancels both pills.
+Every path that sets the ball dying first tests that the word is -1: the laser's beam (`0x8003a960`), fire (`0x8003ab64`, `0x8003abc8`), the acid block (`0x8003acbc`), the spikes (`0x8003b050`), the moving spikes (`0x8003b108`), the things that travel (`0x80036760`) and type 42's brown form (`0x800386d8`). While the word runs, the same routine also sets the bouncy pill's word at `0x800ba33c` to -1 and the lethargy pill's word at `0x800ba338` to 0 (`0x8003b324` to `0x8003b358`), and in play it cancels both pills.
 
-The colours are the ball's draw's: while the word is not -1 a counter steps by 100 round 8192 and each channel of the ball's light is raised by three times the sine of it over a turn of its own, red first, green a quarter round on and blue a quarter after that ([motion.md](motion.md) "What harms the ball").
+The colours come from the ball's draw: while the word is not -1 a counter steps by 100 round 8192 and each channel of the ball's light is raised by three times the sine of it over a turn of its own, red first, green a quarter round on and blue a quarter after that ([motion.md](motion.md) "What harms the ball").
 
 ### type 35: Hourglass
 
-LEVEL 6 carries the game's first.
+LEVEL 6 carries the game's first hourglass.
 
 The code turns the clock round and scores by what it leaves: the ball's contact walk at `0x80038548` sends it to its case at `0x80039048`, which writes 5999 less the clock back as the clock and adds 10 for every whole second of the new clock, 50 ticks each ([motion.md](motion.md)), so taken with s whole seconds left it leaves 119 − s seconds and scores 1190 − 10·s, 1190 with less than a second left, which is the most it can score and what the map counts each at.
 
-Play had put the rule at 1200 less twelve a second, rounded to the nearest 10, from a few counts; the code's is what the note gives.
+Play had put the rule at 1200 less twelve a second, rounded to the nearest 10, from a few counts; the code's rule is what the note gives.
 
 ### type 36: Gem
 
 It scores 2975 in play whatever the colour, the figure the ball's contact walk adds for it (type 42).
 
-The colour is `f3`: LEVEL 5's blue gems read 0, LEVEL 64's green one 1, and the red ones of LEVEL 77, 103 and 118 read 2.
+The colour is `f3`: LEVEL 5's blue gems read 0, LEVEL 64's one green gem 1, and the red ones of LEVEL 77, 103 and 118 read 2.
 
 ### type 37: Coin
 
 Three tiers, told apart by `f3`, which score 250, 500 and 750 in play, the three figures the ball's contact walk adds for a coin (type 42).
 
-LEVEL 1's and LEVEL 2's are the 250 kind and read bronze in play; LEVEL 112's thirteen and HIDDEN 10's eight, which show gold, are the 750 kind; the middle tier is the blue one, on BONUS 15 and HIDDEN 5 among others. The three colours are the models' own ([ggi.md](ggi.md)).
+LEVEL 1's and LEVEL 2's coins are the 250 kind and read bronze in play; LEVEL 112's thirteen and HIDDEN 10's eight coins, which show gold, are the 750 kind; the middle tier is the blue one, on BONUS 15 and HIDDEN 5 among others. The three colours are the models' own colours ([ggi.md](ggi.md)).
 
 ### type 38: Sunglasses
 
-LEVEL 113 carries the numbered levels' first three, though HIDDEN 6, which comes before it in play, carries one.
+LEVEL 113 carries the numbered levels' first three sunglasses, though HIDDEN 6, which comes before it in play, carries one.
 
 Each scores 500 in play ([motion.md](motion.md) has the timer it starts).
 
@@ -263,7 +263,7 @@ Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the le
 
 What it does is in the code. Its `f5` is set as on every pickup ([level-format.md](level-format.md)), and the ball's contact walk at `0x80038548`, which sends a type 27 to 47 through the table at `0x80010238`, gives it a case of its own at `0x800386a4` that reads its form, `f3`, which changes every 2.6 s ([motion.md](motion.md)).
 
-In the green form, 1, it adds 1550 to the score at `0x800a53c8`, the word the same walk adds a key's 1000, a gem's 2975, a coin's 250, 500 or 750 and a fruit's 2500 to, and the walk's tail takes it off its face.
+In the green form, 1, it adds 1550 to the score at `0x800a53c8`, the word the same walk adds a key's 1000 points, a gem's 2975 points, a coin's 250, 500 or 750 points and a fruit's 2500 points to, and the walk's tail takes it off its face.
 
 In the brown form, 0, it stays, and sets the ball dying with the cause a captivator's touch sets (`0x80036814`), which makes it a hazard.
 
@@ -313,13 +313,13 @@ In play, touching it costs the ball its life, and the lost life is what restarts
 
 Drawn as the wheel the disc keeps beside the stars.
 
-LEVEL 51 carries the game's first, and LEVEL 52 four.
+LEVEL 51 carries the game's first rolling stone, and LEVEL 52 four.
 
 It rolls round a course of its own, turning where it cannot go on ([motion.md](motion.md)), and in play touching it costs the ball its life. It is a hazard by the routine the things that travel share.
 
 ### type 52: Captivator, quick
 
-The game's first are LEVEL 22's seven.
+LEVEL 22 carries the game's first seven quick captivators.
 
 That it is the fuller star with four short points was seen in play beside type 50, and it is the quicker of the two ([motion.md](motion.md)); `f2` is its direction.
 
@@ -327,7 +327,7 @@ In play, touching it costs the ball its life, and the lost life is what restarts
 
 ### type 53: Captivator, wandering
 
-LEVEL 81 carries the game's first seven, and the way one shakes before it moves tells which way it will go ([motion.md](motion.md)). It has no direction field.
+LEVEL 81 carries the game's first seven wandering captivators, and the way one shakes before it moves tells which way it will go ([motion.md](motion.md)). It has no direction field.
 
 Its walk is the same on every play of a level, which play on OBJ LEVEL showed and the game's dice explain, seeded as the level starts and drawn from by nothing else while the ball stands still ([motion.md](motion.md)).
 
@@ -335,7 +335,7 @@ In play, touching it costs the ball its life, as the rolling stone does. It is a
 
 ### type 56: Captivator, bouncing
 
-LEVEL 45 carries the numbered levels' first six, though HIDDEN 3, which comes before it in play, carries nine.
+LEVEL 45 carries the numbered levels' first six bouncing captivators, though HIDDEN 3, which comes before it in play, carries nine.
 
 LEVEL 122's corkscrews go up in sequence, which is what `f3`, four-valued, reads as: its phase ([motion.md](motion.md)).
 
@@ -377,7 +377,7 @@ The best score in play. The disc holds 150 more, three crumbling blocks on the t
 
 ### /FIELD/FIELD.PAK#15: BONUS 16
 
-The redesign is The Cutting Room Floor's.
+The redesign is from The Cutting Room Floor's Roll Away page.
 
 ### /FIELD/FIELD.PAK#16: BONUS 17
 
@@ -403,13 +403,13 @@ The best score in play. The disc holds 30500 more: ten of the eleven gems on the
 
 ### /MARS/MARS.PAK#10: LEVEL 131
 
-The regional difference is The Cutting Room Floor's, which also calls the coin unreachable; in this release it is not. It is the blue coin on the -x face of the ice block at 7,16,21, and it was collected in play for the level's full 12,290, everything the disc holds.
+The regional difference is from The Cutting Room Floor's Roll Away page, which also calls the coin unreachable; in this release it is not. It is the blue coin on the -x face of the ice block at 7,16,21, and it was collected in play for the level's full 12,290 points, everything the disc holds.
 
 ### /MARS/MARS.PAK#11: LEVEL 132
 
-That the hidden exit at 14,19,18 cannot be reached once it has appeared is the walkthrough's, which finds no way to it.
+That the hidden exit at 14,19,18 cannot be reached once it has appeared rests on the walkthrough, which finds no way to it.
 
-The regional history is The Cutting Room Floor's.
+The regional history is from The Cutting Room Floor's Roll Away page.
 
 ### /MARS/MARS.PAK#12: LEVEL 133
 

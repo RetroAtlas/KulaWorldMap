@@ -30,7 +30,7 @@ The last is kind 666 and where its cell would be the disc writes three `0xFFFF`,
 
 The level lies at `0x8015e000`, lattice first, and `0x80025be4` points the game at its record count (`0x80171314`) and its first record (`0x80171316`); the level's start at `0x80035f5c` takes the record the count points past, and where its kind is 666 multiplies `f6` by 50 into the level's clock at `0x800a573c`, which it sets to 4950, 99 seconds, where the kind is anything else. Every other walk of the record table stops short of the count, and no other code reaches the record: the other places the executable holds 666 are a menu's states and a sound table. So the cell and the two numbers are never read.
 
-The two numbers are multiples of 5 on every level, 0 and 0 on 157, and run as far as -1620, and the cell stands on a block on 213 levels, on a block that carries a record on 192. The time ships as the level's `time`, and the rest does not ship; a level's camera is the game's rule, not the level's ([camera.md](camera.md)).
+The two numbers are multiples of 5 on every level, 0 and 0 on 157, and run as far as -1620, and the cell stands on a block on 213 levels, on a block that carries a record on 192. The time ships as the level's `time`, and the rest does not ship; a level's camera is the game's rule, not something the level holds ([camera.md](camera.md)).
 
 Framing the stretches the other way round, cell first, reads cleanly and pairs every record with the cell one slot behind it. `Level.verify` cannot tell the two apart, because the cells come out in the same order either way; that check is necessary, and it is what caught the block-style reading, but it is not sufficient.
 
@@ -42,7 +42,7 @@ The six slots are the six faces of the block, in the order the game numbers dire
 
 A slot is a kind word, a type, eleven fields, a pad, a value and a pad, and a slot whose type is not zero is an object standing on that face. So a block carries up to six objects, 688 carry two, and since the ball sticks to whichever face it rolls onto a level's objects are on all six, 3485 on tops, 931 on undersides and 1469 on sides; a block whose top slot is bare is not empty: 1262 of the 1266 records that were once read as a "blue coin" on the top are a bare top with the object on another face.
 
-The kind word is the block's and is set in the first slot only, which is why a face's own kind word reads `-1` and why the same coin turns up under kinds 0, 1, 2 and 3: those are kinds of block, not of object, and the type is what names the thing.
+The kind word belongs to the block and is set in the first slot only, which is why a face's own kind word reads `-1` and why the same coin turns up under kinds 0, 1, 2 and 3: those are kinds of block, not of object, and the type is what names the thing.
 
 Three things fix the face order, none of them a guess:
 
@@ -54,7 +54,7 @@ A fourth check runs on the disc alone: an object on a face cannot sit inside the
 
 Four kinds keep words of their own in their first slots in place of what stands on a face, a laser (8) and a moving platform (5) in the first two and a crumbling block (6) and a vanishing block (7) in the first alone. A laser names its two ends in the first and keeps its circuit in the second, a moving platform names the two ends of its run in the first and keeps which end it is at, its length and its speed in the second, kind 6 keeps a fixed-point copy of its own cell in the first, three words that are 512 times its coordinates on all 435, which is what a block that moves would keep, though the game writes 512 over its first word at load and counts that down once the block breaks, and kind 7 keeps where in its cycle it starts in its first field ([motion.md](motion.md)).
 
-**What stands on their other slots is never taken in play, and neither is anything on kind 9**: every walk the game makes over the records for the things on them, the loader's numbering at `0x800355e8`, the start's at `0x800360cc`, the ball's contact at `0x80038548` and the draw at `0x80039254`, takes a record of a kind below 5 and no other, so an object on a platform, a crumbling, vanishing or laser block or the settings record is never numbered, drawn or collected.
+**What stands on their other slots is never taken in play, and neither is anything on kind 9**: every walk the game makes over the records for the things on them, the loader's numbering at `0x800355e8`, the start's walk at `0x800360cc`, the ball's contact at `0x80038548` and the draw at `0x80039254`, takes a record of a kind below 5 and no other, so an object on a platform, a crumbling, vanishing or laser block or the settings record is never numbered, drawn or collected.
 
 The game reads the types in a vanishing block's other slots all the same, for a captivator that walks: whether one may walk over a block is asked of the type in the block's slot for the face it walks on, so the file's type there decides it on any face of a vanishing block but its top, as on any face of a plain block, though no level on the disc brings a captivator to such a face ([motion.md](motion.md)).
 
@@ -86,11 +86,11 @@ The points live in `annotations.json`, because the levels do not hold them, and 
 
 The unit tests hold each curated score below what the disc holds, so it cannot outlive its reason, and the points to the figures this document gives, so one cannot change without the arithmetic changing with it.
 
-Type 42's 1550 is the one points value that rests on the executable rather than play, since only the object catalogue holds one; [annotations.md](annotations.md) gives what each name and value rests on, entry by entry.
+Type 42's 1550 points is the one points value that rests on the executable rather than play, since only the object catalogue holds one; [annotations.md](annotations.md) gives what each name and value rests on, entry by entry.
 
-**A level with no key plays as a bonus level, by its keys and not by its slot.** The loader's mode routine at `0x80027b2c` counts the keys, every slot of type 31 in the six slots of every record of a kind below 5 (`0x80027b4c`, `0x80027b64`, `0x80027b88`, `0x80027bac`), into a count at `0x800a5efc` it clears first (`0x80027b3c`), and writes the level's mode word, 9372 past gp at `0x800a53d4` (`0x80027b30`): 1 where the count is nothing and 0 otherwise (`0x80027bd4` to `0x80027be8`), then 2 where the settings record, kind 9, carries a type of 1 in its first slot, the hidden flag (`0x80027c34` to `0x80027c74`), and last 0 again where the game's mode word at `0x800a33b0` is 1, the Simon rooms' (`0x80027cb4` to `0x80027cc4`).
+**A level with no key plays as a bonus level, by its keys and not by its slot.** The loader's mode routine at `0x80027b2c` counts the keys, every slot of type 31 in the six slots of every record of a kind below 5 (`0x80027b4c`, `0x80027b64`, `0x80027b88`, `0x80027bac`), into a count at `0x800a5efc` it clears first (`0x80027b3c`), and writes the level's mode word, 9372 past gp at `0x800a53d4` (`0x80027b30`): 1 where the count is nothing and 0 otherwise (`0x80027bd4` to `0x80027be8`), then 2 where the settings record, kind 9, carries a type of 1 in its first slot, the hidden flag (`0x80027c34` to `0x80027c74`), and last 0 again where the game's mode word at `0x800a33b0` is 1, the Simon rooms' mode (`0x80027cb4` to `0x80027cc4`).
 
-Nothing else writes the level's word, and the two words are two: the game's names the game being played, 1 in the Simon rooms, and the level's names the level's own mode, 0 the arcade's, 1 a level with no key and 2 a hidden level, which the deaths' penalty and the ending's view read ([motion.md](motion.md)). The start routine at `0x80035fbc` sets a second flag from the same count outside the Simon rooms.
+Nothing else writes the level's word, and the two words are two: the game's word names the game being played, 1 in the Simon rooms, and the level's word names the level's own mode, 0 the arcade's mode, 1 a level with no key and 2 a hidden level, which the deaths' penalty and the ending's view read ([motion.md](motion.md)). The start routine at `0x80035fbc` sets a second flag from the same count outside the Simon rooms.
 
 The mode is presentation: the second set of textures, the bonus song (`0x80040678`), the key icons off and the blocks-left meter on, no level number on the pause screen, and the level that follows, which is the slot last saved on entering a bonus or hidden level (`0x800427d4`) rather than the next one. The flag is the play:
 
@@ -111,7 +111,7 @@ The beam's colour is a word of the record's second slot, a circuit number the sw
 
 A moving platform (kind 5) has the same layout: its `type` is the direction it sets off in, the first three of its cells are the end of the run lower along the axis and the next three the end higher, and its second slot holds which end it is at, how many blocks long it is, 2 or 3, laid from its cell along the positive way of the axis its first field names, and its speed, 30 a frame on all 37, which the loader scales by 50/60; the routine at `0x80032af4` runs it, and [motion.md](motion.md) has the numbers.
 
-Only a platform's first block has a cell in the lattice: the other 40, on 25 levels, stand on cells the file leaves empty. So what the viewer counts as a level's blocks is every block in play, the lattice's, the empty ends of a beam and the rest of a platform.
+Only a platform's first block has a cell in the lattice: the other 40, on 25 levels, stand on cells the file leaves empty. So what the viewer counts as a level's blocks is every block in play, the lattice's blocks, the empty ends of a beam and the rest of a platform.
 
 The game draws the beam a cell at a time, from the face of one end block to the face of the other, and neither end is the emitter: [motion.md](motion.md) has how it is built and drawn.
 
@@ -121,7 +121,7 @@ A slot is sixteen words, and the map names each by its place in the slot, counti
 
 What each means is read per type: `annotations.json` names the field that tells a type's variants apart (`by`), the one that holds the way it points (`facing`) and the one that says whether a switched device starts on (`state`).
 
-A `facing` field is not one of the six direction numbers: it takes 1 to 4 and turns the thing a quarter turn at a time about the inward normal of its face, from a first tangent that is the world's `+y` laid onto the face, the world's up on the `+y` face and the world's down on the `-y` face. LEVEL 62's arrows fixed the top in play, one arrow of each value, pointing +y, -x, -y and +x; LEVEL 106's fixed three sides, its `+x` arrows reading 2 and pointing up, its `-x` arrows reading 4 and pointing up, its `+y` arrows reading 1 and pointing up, which one first tangent could not give and the two above give exactly.
+A `facing` field is not one of the six direction numbers: it takes 1 to 4 and turns the thing a quarter turn at a time about the inward normal of its face, from a first tangent that is the world's `+y` laid onto the face, the world's up on the `+y` face and the world's down on the `-y` face. LEVEL 62's arrows fixed the top in play, one arrow of each value, pointing +y, -x, -y and +x; LEVEL 106's arrows fixed three sides, its `+x` arrows reading 2 and pointing up, its `-x` arrows reading 4 and pointing up, its `+y` arrows reading 1 and pointing up, which one first tangent could not give and the two above give exactly.
 
 The `-y` face was once read as the `+y` face's mirror, up; the executable's own table of the six faces, at `0x80039ec0` for the things on a block and `0x8003f98c` for the captivators, lays a first tangent of `+y` on four faces, up on `+y` and down on `-y`, and agrees with play on the four faces play had fixed, so the map took its word for the fifth, and play then fixed that one too: LEVEL 68's three arrows on a `-y` face, reading 3, point up under it in the game as they do on the map.
 
@@ -137,7 +137,7 @@ The game does not play by the disc's numbers in any case: the loader at `0x80035
 
 The record table is not a skin table: it holds coins, keys and beams, and its last entry stands on no cell at all. How a block looks is the loader's rule, by the kind and by the type of what stands on each face, and [tgi.md](tgi.md) has it: the type paints the face too, a plate under a device, a shadow under a pickup, and the thing itself stands off the face.
 
-**The start is the last slot of type 30 or 29 the loader meets** walking the records of kinds below 5 and their six slots (`0x80036100`): it stands the ball off that face, turned by the slot's `f2` the way an arrow is, and where the type was 29 writes 8 into the slot (`0x8003627c`), so the ball starts on a clock. ARCTIC's LEVEL 58 and Hell's LEVEL 136 do, each with no type 30 at all, and in play both start the ball on a clock. Every level has one start the game reaches; LEVEL 130's second, on a vanishing block, is one it never walks.
+**The start is the last slot of type 30 or 29 the loader meets** walking the records of kinds below 5 and their six slots (`0x80036100`): it stands the ball off that face, turned by the slot's `f2` the way an arrow is, and where the type was 29 writes 8 into the slot (`0x8003627c`), so the ball starts on a clock. ARCTIC's LEVEL 58 and Hell's LEVEL 136 do, each with no type 30 at all, and in play both start the ball on a clock. Every level has one start the game reaches; LEVEL 130's second start, on a vanishing block, is one it never walks.
 
 **`f4` on a teleporter or a switch is its circuit's starting state**, 1 for on and 2 for off, and it is the same bit the laser record keeps for whether its beam starts lit. On every level that has lasers and switches or teleporters of one colour, the two agree, no exceptions across LEVEL 93, 97, 98, 101, 103, 104, 105, 109, 124, 136 and 149, FINAL 3, 6, 10, 18 and 20 and the nine copies of OBJ LEVEL. The draw lights a teleporter, a switch or an exit while its `f4` is 1 ([motion.md](motion.md)). The map draws the disc's reading, a device that starts off hollow and a beam that starts dark not at all, or broken among the outlines.
 
@@ -149,7 +149,7 @@ On every level each switch's list is exactly the switches, teleporters and laser
 
 The teleporter's routine at `0x8003a58c` runs while the ball stands on a teleporter whose `f4` is 1, counts down from 15 (`0x8003a638`), and then puts the ball on the face its `f7` names, at that record's cell (`0x8003a6e4`), facing the way that teleporter's `f2` says through the routine that faces the ball at the start (`0x80038178`, which `0x80036114` calls too, and which turns the heading for an `f2` of 2, 3 or 4 alone, so a 0 there heads as a 1 does).
 
-All 147 name a teleporter of their own colour, which the build checks as well, and a colour's teleporters on a level send the ball round one ring: 55 pairs, 18 that name themselves, two in each copy of OBJ LEVEL, and four longer rings, LEVEL 68's three blue and five yellow, LEVEL 70's three green and BONUS 23's eight red, each gone round one way.
+All 147 name a teleporter of their own colour, which the build checks as well, and a colour's teleporters on a level send the ball round one ring: 55 pairs, 18 that name themselves, two in each copy of OBJ LEVEL, and four longer rings, LEVEL 68's three blue and five yellow, LEVEL 70's three green and BONUS 23's eight red teleporters, each gone round one way.
 
 ## Level numbers and world names
 
@@ -163,7 +163,7 @@ World ids are the disc's directory names (`HIRO`, `ATLANT`, ...), and that is al
 
 A world's pack holds twenty slots: 0 to 14 are the numbered levels, 15 to 17 the bonus ones, 18 the hidden one, and 19 the slot no menu asks for, which is `OBJ LEVEL` in every world but the first, where it is the Japanese release's tutorial.
 
-**`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: 36 objects and nine records of the kinds that are their own thing on a flat floor, covering **23 of the game's 30 object types**, and the seven it misses are placed 124 times between them against the 23's 5,437. Everything on it stands on top, so walking it once in an emulator names most of the game's vocabulary and says nothing about faces. `tools/kula_objlevel.py` writes the floor plan and the sheet to fill in.
+**`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: 36 objects and nine records of the kinds that are their own thing on a flat floor, covering **23 of the game's 30 object types**, and the seven it misses are placed 124 times between them against the 23 types' 5,437 placements. Everything on it stands on top, so walking it once in an emulator names most of the game's vocabulary and says nothing about faces. `tools/kula_objlevel.py` writes the floor plan and the sheet to fill in.
 
 **Any level is a cheat away.** Aris Efraimidis's GameShark codes name the three words the game loads a level from: `800A340C` and `800A3410` take the world, 0 to 9 in pack order, and `800A3408` the slot within it.
 

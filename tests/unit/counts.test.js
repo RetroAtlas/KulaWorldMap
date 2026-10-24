@@ -134,12 +134,17 @@ test("the kind sections' shares by world are what the data holds", () => {
   };
   const total = (m) => [...m.values()].reduce((a, b) => a + b, 0);
   const ice = byWorld(2);
-  const most = /Most of the game's (\d+) are in Arctic and Hell, (\d+) and (\d+)\./.exec(reasons);
+  const most = /Most of the game's (\d+) ice blocks are in Arctic and Hell, (\d+) and (\d+)\./.exec(
+    reasons,
+  );
   assert.ok(most, "annotations.md has no sentence about where the ice blocks are");
   assert.deepEqual(most.slice(1).map(Number), [total(ice), ice.get("ARCTIC"), ice.get("HELL")]);
   assert.ok((ice.get("ARCTIC") + ice.get("HELL")) * 2 > total(ice));
   const invisible = byWorld(3);
-  const half = /More than half of the game's (\d+) are in Haze, (\d+) of them\./.exec(reasons);
+  const half =
+    /More than half of the game's (\d+) invisible blocks are in Haze, (\d+) of them\./.exec(
+      reasons,
+    );
   assert.ok(half, "annotations.md has no sentence about where the invisible blocks are");
   assert.deepEqual(half.slice(1).map(Number), [total(invisible), invisible.get("HAZE")]);
   assert.ok(invisible.get("HAZE") * 2 > total(invisible));
@@ -171,7 +176,7 @@ test("a curated score's section says how much more the disc holds, and no other 
 test("annotations.md's LEVEL 131 is collected for all the disc holds", () => {
   state.data = mapData;
   const l = level("LEVEL 131");
-  const m = /for the level's full ([\d,]+), everything the disc holds/.exec(section(l));
+  const m = /for the level's full ([\d,]+) points, everything the disc holds/.exec(section(l));
   assert.ok(m, "annotations.md has no sentence giving LEVEL 131's total");
   assert.equal(figure(m[1]), levelPoints(l));
   assert.equal(levelScore(l), null);
