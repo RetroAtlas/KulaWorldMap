@@ -44,7 +44,6 @@ const OVER = {
   "tools/kula_motion.py": 1500,
   "tools/kula_kwl.py": 2300,
   "tools/tests/test_kula_kwl.py": 1800,
-  "tools/tests/test_kula_motion.py": 1400,
 };
 
 const lines = (path) => readFileSync(join(root, path), "utf8").split("\n").length - 1;
