@@ -36,7 +36,7 @@ const object = (face, type, facing = 0) => ({
 });
 const row = (x0, x1, y, z) => Array.from({ length: x1 - x0 + 1 }, (_, i) => [x0 + i, y, z]);
 
-test("a facing heads along the game's second tangent and turns a quarter at a time", () => {
+test("a facing heads along the face's first tangent and turns a quarter at a time", () => {
   assert.deepEqual(heading(0, 1), { d: [0, 1, 0], s: [-1, 0, 0] });
   assert.deepEqual(heading(0, 2), { d: [-1, 0, 0], s: [0, -1, 0] });
   assert.deepEqual(heading(0, 3), { d: [0, -1, 0], s: [1, 0, 0] });

@@ -6,6 +6,8 @@ import { mapData, annotations, packs, levelKey } from "./fixtures.js";
 import { IN_PLACE, LARGEST, REBUILD, fit, packSize } from "../../public/js/format/pak.js";
 import { FACES, PICKUPS } from "../../public/js/format/kwl.js";
 import { FACE_NORMAL } from "../../public/js/format/lattice.js";
+import { TANGENT, cross, layHeading } from "../../public/js/viewer/data.js";
+import { heading } from "../../public/js/viewer/travel.js";
 import { PACKS } from "../../public/js/format/patch.js";
 import { USER, USER_OFF } from "../../public/js/format/sectors.js";
 import { FINALS_AT, PACK_AT, ROOM_AT, ROOM_SECTORS, SYNTHETIC_SECTORS } from "./synthetic.js";
@@ -251,6 +253,26 @@ const laidOut = (p) =>
     p.slots.map((s) => s.name),
     p.slots.map((s) => s.size),
   );
+
+const axisName = (v) => {
+  const i = v.findIndex((c) => c !== 0);
+  return `${v[i] > 0 ? "+" : "-"}${"xyz"[i]}`;
+};
+// The docs' name for a tangent of a face, the second being the first turned a quarter.
+const tangentName = (face, v) => {
+  const first = TANGENT[face];
+  const second = cross(
+    FACE_NORMAL[face].map((c) => -c),
+    first,
+  );
+  const named = {
+    first,
+    second,
+    "first turned round": first.map((c) => -c),
+    "second turned round": second.map((c) => -c),
+  };
+  return Object.keys(named).find((n) => named[n].every((c, i) => c === v[i]));
+};
 
 // Each row is the figure a sentence rests on, so a rebuild that moves it cannot go unnoticed.
 const claims = [
@@ -734,6 +756,18 @@ const claims = [
   ],
   ["docs/tgi.md", "Simon rooms", rooms.length, /which is the pack the (\w+) Simon rooms are in/],
   ["docs/annotations.md", "curated scores", curated, /each of the other (\d+) curates its `score`/],
+  [
+    "docs/motion.md",
+    "tangent each facing of an arrow gives its way",
+    [1, 2, 3, 4].map((k) => tangentName(0, layHeading({ face: 0, f: [k] }))),
+    /gives the (\w+) for a facing of 1 or any value but 2, 3 and 4, the (\w+) for 2, the (\w+ turned round) for 3 and the (\w+ turned round) for 4/,
+  ],
+  [
+    "docs/motion.md",
+    "tangent a walker with a facing of 1 heads along",
+    [tangentName(0, heading(0, 1).d), axisName(heading(0, 1).d)],
+    /a facing of 1 heads along the (\w+) tangent, ([+-][xyz]) on the top/,
+  ],
 ];
 
 for (const [file, what, value, pattern] of claims) {

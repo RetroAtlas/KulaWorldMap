@@ -22,9 +22,7 @@ const BETWEEN = -2;
 const CROSSABLE = new Set([30, 1, 2, 4]);
 const CAPTIVATORS_FROM = 50;
 
-// The two tangents the game lays on each face. A facing of 1 heads along the
-// second, and each further value up to 4 turns a quarter about the normal, the
-// side following the heading; any other heads as 1 does.
+// Each face's second tangent and then its first, along which a facing of 1 heads.
 const TANGENTS = [
   [
     [-1, 0, 0],
