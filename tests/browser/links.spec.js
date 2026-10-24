@@ -1,32 +1,30 @@
 import { expect, test } from "@playwright/test";
 import { frame, settle, still, textured, trackErrors } from "./helpers.js";
 
-test("a permalink opens on the level and the camera it names", async ({ page }) => {
+test("a permalink opens on the level and the camera it names, and drops the parts it cannot read", async ({
+  page,
+}) => {
+  const view = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      return { name: state.lvl.name, ...state.cam, slice: state.slice, target: state.target };
+    });
   await page.goto("/#HIRO/11/30,20/1.25/18,13,17/0,0/25");
   await settle(page);
-  const cam = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
-    return { name: state.lvl.name, ...state.cam, slice: state.slice, target: state.target };
-  });
+  const cam = await view();
   expect(cam.name).toBe("LEVEL 12");
   expect(cam.yaw).toBe(30);
   expect(cam.pitch).toBe(20);
   expect(cam.zoom).toBeCloseTo(1.25, 5);
   expect(cam.slice).toBe(25);
   expect(cam.target).toEqual([18, 13, 17]);
-});
-
-test("a permalink keeps the parts it can read and drops the rest", async ({ page }) => {
+  // a zoom and a slice that cannot be read: the zoom lands positive and the slice on the whole level
+  await page.goto("about:blank");
   await page.goto("/#HIRO/11/30,20/0/18,13,17/x/3.5");
   await settle(page);
-  const cam = await page.evaluate(async () => {
-    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
-    return { ...state.cam, slice: state.slice, target: state.target };
-  });
-  expect([cam.yaw, cam.pitch]).toEqual([30, 20]);
-  expect(cam.zoom).toBeGreaterThan(0);
-  expect(cam.target).toEqual([18, 13, 17]);
-  expect(cam.slice).toBe(33);
+  const odd = await view();
+  expect([odd.yaw, odd.pitch, odd.target, odd.slice]).toEqual([30, 20, [18, 13, 17], 33]);
+  expect(odd.zoom).toBeGreaterThan(0);
 });
 
 test("a permalink that names a zoom and no cell opens at that zoom, centred on the blocks as a fit is", async ({

@@ -28,35 +28,6 @@ const arrives = (page, copy) =>
     [KEY, copy],
   );
 
-test("a store a newer version wrote is read for what this one knows and written back under its version", async ({
-  page,
-}) => {
-  const errors = trackErrors(page);
-  const newer = { ...KEPT, version: 7, drafts: { ...KEPT.drafts, 3: { later: true } }, next: 4 };
-  await page.addInitScript(
-    ([key, store]) => {
-      try {
-        localStorage.setItem(key, JSON.stringify(store));
-      } catch {
-        /* the blank page has no storage */
-      }
-    },
-    [KEY, newer],
-  );
-  await page.goto("/#DRAFT/1/45,35/fit/33");
-  await settle(page);
-  expect((await shown(page)).draft).toBe(1);
-  await expect(page.locator("#draftRows button .name")).toHaveText(["Kept"]);
-  await expect(page.locator("#draftUnread .state")).toHaveText(
-    "1 draft in this browser could not be read",
-  );
-  await page.locator("#draftTitle").fill("Kept II");
-  await written(page, (s) => s?.drafts[1]?.doc.title).toBe("Kept II");
-  const out = await stored(page);
-  expect([out.version, out.next, out.drafts[3]]).toEqual([7, 4, { later: true }]);
-  expect(errors).toEqual([]);
-});
-
 test("a draft deleted here is not taken back from another tab's copy, and one changed here is kept, until the write", async ({
   page,
 }) => {

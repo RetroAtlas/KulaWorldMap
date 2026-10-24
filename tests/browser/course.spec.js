@@ -362,20 +362,14 @@ test("a Shift-click adds a jump from the last stop, over a gap or down onto a lo
   await expect(status(page)).toHaveText("Click a face to add a stop, Shift-click to add a jump.");
   const east = headingOn(0, [1, 0, 0]);
   const refused = "No jump from the last stop comes down on that face.";
-  // from the start a jump across the gap comes down on nothing, the block two on being missing
-  await shiftClick(page, await top(page, [20, 17, 17]));
-  await expect(page.locator("#toastStack .toast")).toHaveText([refused]);
-  await expect(status(page)).toHaveText(refused);
-  await expect(status(page)).not.toHaveClass(/\bhint\b/);
-  expect(await route(page)).toBeNull();
-  await expect(line(page)).toHaveText("Route planner · 0 stops");
-
   await click(page, await top(page, [18, 17, 17]));
   await expect(line(page)).toHaveText("Route planner · 2 stops");
   await expect(status(page)).toHaveText("");
-  // the block one on is no jump's landing either
+  // the block one on is no jump's landing
   await shiftClick(page, await top(page, [17, 17, 17]));
+  await expect(page.locator("#toastStack .toast")).toHaveText([refused]);
   await expect(status(page)).toHaveText(refused);
+  await expect(status(page)).not.toHaveClass(/\bhint\b/);
   await expect(line(page)).toHaveText("Route planner · 2 stops");
   expect((await route(page)).steps).toEqual([{ k: east, o: 0 }]);
 

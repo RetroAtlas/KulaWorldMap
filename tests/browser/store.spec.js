@@ -22,7 +22,7 @@ const FULL = "This browser cannot hold more drafts; save them to files and delet
 const NUMBERED_OUT =
   "This browser has run out of numbers for its levels, so no more can be made here.";
 
-test("a draft in the store that cannot be read is kept as it is, with one toast, and the rest stay", async ({
+test("a draft in the store that cannot be read is kept as it is, under the store's version, with one toast, and the rest stay", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -42,7 +42,7 @@ test("a draft in the store that cannot be read is kept as it is, with one toast,
   await page.addInitScript(
     ([key, good, unread]) => {
       const store = {
-        version: 1,
+        version: 7,
         next: 5,
         drafts: { 1: { doc: good, updated: 1, saved: null, edits: 2 }, ...unread },
       };
@@ -69,11 +69,11 @@ test("a draft in the store that cannot be read is kept as it is, with one toast,
   ]);
   const row = page.locator("#draftUnread");
   await expect(row.locator(".state")).toHaveText("3 drafts in this browser could not be read");
-  // a change here writes the store with those entries as they were
+  // a change here writes the store under its version, with those entries as they were
   await page.locator("#draftTitle").fill("Good II");
   await written(page, (s) => s?.drafts[1]?.doc.title).toBe("Good II");
   const after = await stored(page);
-  expect(after.next).toBe(5);
+  expect([after.version, after.next]).toEqual([7, 5]);
   expect([after.drafts[2], after.drafts[3], after.drafts[4]]).toEqual([
     unread[2],
     unread[3],
