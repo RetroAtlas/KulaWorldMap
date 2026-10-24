@@ -193,6 +193,7 @@ test("a visitor whose editor cannot be loaded still gets the map, and is told", 
     }
   }, KEY);
   await page.route("**/js/editor/editor.js", (route) => route.abort());
+  await page.clock.install();
   await page.goto("/#DRAFT/1/45,35/fit/33");
   await settle(page);
   expect((await shown(page)).li).toBe(0);
@@ -201,7 +202,8 @@ test("a visitor whose editor cannot be loaded still gets the map, and is told", 
   expect((await shown(page)).li).toBe(1);
   await expect(page.locator("#chipLine b")).toHaveText("LEVEL 2");
   // the editor's key still asks for it, and says so again
-  await expect(page.locator("#toastStack .toast")).toHaveCount(0, { timeout: 6000 });
+  await page.clock.runFor(3000 + 150);
+  await expect(page.locator("#toastStack .toast")).toHaveCount(0);
   await page.keyboard.press("w");
   await expect(page.locator("#toastStack .toast")).toHaveText([UNLOADED]);
   expect((await shown(page)).li).toBe(1);
@@ -251,6 +253,7 @@ test("an editor whose boot throws leaves the map and its controls, which say so 
       ].join("\n"),
     }),
   );
+  await page.clock.install();
   await page.goto("/#DRAFT/1/45,35/fit/33");
   await settle(page);
   expect((await shown(page)).li).toBe(0);
@@ -258,7 +261,8 @@ test("an editor whose boot throws leaves the map and its controls, which say so 
   expect(await page.evaluate(() => window.__boots)).toBe(1);
   // each control says so again, once the last toast has gone, and none runs the boot again or does what it does
   for (const control of [() => page.keyboard.press("w"), () => page.locator("#draftNew").click()]) {
-    await expect(page.locator("#toastStack .toast")).toHaveCount(0, { timeout: 6000 });
+    await page.clock.runFor(3000 + 150);
+    await expect(page.locator("#toastStack .toast")).toHaveCount(0);
     await control();
     await expect(page.locator("#toastStack .toast")).toHaveText([UNLOADED]);
   }

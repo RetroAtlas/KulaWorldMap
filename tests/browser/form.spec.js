@@ -192,6 +192,7 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   page,
 }) => {
   const errors = trackErrors(page);
+  await page.clock.install();
   await fresh(page);
   await lay(page, [18, 17, 17], PLATFORM);
   await select(page, [18, 17, 17]);
@@ -251,6 +252,8 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   await field(page, "speed").press("Enter");
   expect(blockAt(await doc(page), [18, 17, 17]).speed).toBe(30);
   await expect(slow).toHaveCount(0);
+  // the stack emptied, so each refusal's toast comes on at once
+  await page.clock.runFor(3000 + 150);
   // a length below one, or one the lattice or the game's grid cannot hold, is refused, said,
   // and the field put back
   for (const [bad, why] of [
@@ -265,6 +268,7 @@ test("a run's own block types a platform's length and speed or picks a laser's c
     await expect(field(page, "length")).toHaveValue("3");
     expect(blockAt(await doc(page), [18, 17, 17]).length).toBe(3);
   }
+  await page.clock.runFor(3000 + 150);
   // a speed past the file's word is refused the same way
   const fast = "A speed of 32768, outside the file's range.";
   await field(page, "speed").fill("32768");

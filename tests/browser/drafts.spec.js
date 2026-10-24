@@ -609,6 +609,7 @@ test("the card's time field takes the seconds the file can hold and says when it
   page,
 }) => {
   const errors = trackErrors(page);
+  await page.clock.install();
   await page.goto(EDIT);
   await settle(page);
   await page.locator("#draftNew").click();
@@ -643,6 +644,7 @@ test("the card's time field takes the seconds the file can hold and says when it
   await time.blur();
   await expect(time).toHaveValue("99");
   expect((await shown(page)).time).toBe(99);
+  await page.clock.runFor(3000 + 150);
   await expect(page.locator("#toastStack .toast")).toHaveCount(0);
   await time.fill("200");
   await time.blur();

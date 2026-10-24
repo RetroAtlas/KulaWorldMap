@@ -394,6 +394,7 @@ test("a browser that cannot unpack the game's files is told so, for a pack and f
   await page.addInitScript(() => {
     delete window.DecompressionStream;
   });
+  await page.clock.install();
   await page.goto(EDIT_MARS);
   await settle(page);
   const dialog = page.locator("#import");
@@ -405,7 +406,8 @@ test("a browser that cannot unpack the game's files is told so, for a pack and f
   await dialog.locator("#importOpen").click();
   await expect(dialog).toBeHidden();
   await expect(toast).toHaveText([sentence]);
-  await expect(toast).toHaveCount(0, { timeout: 6000 });
+  await page.clock.runFor(3000 + 150);
+  await expect(toast).toHaveCount(0);
   await page.locator("#draftFile").setInputFiles(file("image.bin", syntheticImage()));
   await expect(dialog).toBeVisible();
   await dialog.locator("#importOpen").click();

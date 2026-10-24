@@ -62,6 +62,7 @@ test("a draft saves as the map's file and as the game's file, and the row counts
   page,
 }) => {
   const errors = trackErrors(page);
+  await page.clock.install();
   await page.goto(EDIT);
   await settle(page);
   await page.locator("#draftNew").click();
@@ -92,7 +93,8 @@ test("a draft saves as the map's file and as the game's file, and the row counts
   const note = page.locator("#draftCard .note");
   await expect(note).toBeVisible();
   await expect(note).toHaveText("Saved in this browser");
-  await expect(note).toBeHidden({ timeout: 4000 });
+  await page.clock.runFor(300 + 2000);
+  await expect(note).toBeHidden();
 
   const asGame = await saved(page, saveKwl);
   expect(asGame.name).toBe("spiral-two.kwl");

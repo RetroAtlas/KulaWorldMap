@@ -573,6 +573,7 @@ test.describe("editing on a phone", () => {
   });
 
   test("a hold of any length selects, and the lift that ends it arms nothing", async ({ page }) => {
+    await page.clock.install();
     await editFresh(page);
     const point = await top(page, START);
     const cdp = await page.context().newCDPSession(page);
@@ -582,7 +583,7 @@ test.describe("editing on a phone", () => {
     });
     await expect.poll(async () => (await shown(page)).selected).toEqual(START);
     // held on well past any window the long press might have opened
-    await page.waitForTimeout(1200);
+    await page.clock.runFor(1200);
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     await cdp.detach();
     await expect(page.locator("#detail")).toBeVisible();

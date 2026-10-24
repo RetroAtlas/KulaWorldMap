@@ -307,6 +307,7 @@ test("a browser with no room at all keeps the draft on screen and says so once",
       return set.call(this, k, v);
     };
   }, KEY);
+  await page.clock.install();
   await page.goto(EDIT);
   await settle(page);
   await page.locator("#draftNew").click();
@@ -316,7 +317,8 @@ test("a browser with no room at all keeps the draft on screen and says so once",
   await expect(page.locator("#draftRows button")).toHaveCount(1);
   expect(await stored(page)).toBeNull();
 
-  await expect(page.locator("#toastStack .toast")).toHaveCount(0, { timeout: 6000 });
+  await page.clock.runFor(3000 + 150);
+  await expect(page.locator("#toastStack .toast")).toHaveCount(0);
   await page.locator("#draftTitle").fill("Spiral");
   await expect(page.locator("#chipLine b")).toHaveText("Spiral");
   await flush(page);
