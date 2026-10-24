@@ -31,7 +31,6 @@ const KINDS = [
 // A file already over its cap stands here at the next hundred above its size,
 // a row a commit may lower and none may raise.
 const OVER = {
-  "public/js/play/play.js": 1000,
   "public/js/editor/editor.js": 1300,
   "public/js/format/kwl.js": 1000,
   "public/js/editor/patchdialog.js": 900,

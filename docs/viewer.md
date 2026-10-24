@@ -652,11 +652,8 @@ The module has every count and threshold read from the motion table and no wall 
 - It steps the game's frames from the frame's under hook by the wall clock, each through the rules with the pad as the keys give it, the words of a driver following the planner's route, read through an export of its chrome, added to it while one runs and the driver let go on an arrow, Space or a press of the pad, the level running while the ball rests with Motion on and only while the ball moves, a key is held or a driver runs without it.
 - It parks the panel's presses with the view and gives the level its circuits as the game loads them while the ball is on it, and as it leaves, where the level shown is the one they were parked on, gives the presses back, and the view with them unless choosing a level, opening a link or a click on the name a teleporter's panel gives for where it leads is what leaves play.
 - Where a click on the name a teleporter's panel gives for where it leads leaves play, it centres the view there as it leaves, since the click's find is drawn before play hears of it, with the view still following the ball, and writes the history entry the find opened at once, which the find wrote with the view from before play.
-- It bursts dust where the ball throws a switch, under the ball as a crumbling block breaks, where a block has gone, clearing the panel where it showed that block, and at a boost button's launch.
-- It cuts the view to a teleport's far end rather than easing after the ball.
-- It says on the strip that the ball rides a platform while it does and draws it, its dust and the view's target where the platform has carried it.
-- It shows the cause of a death in red on the strip while its countdown runs and says it.
-- With Forgive pressed it puts the ball back at rest instead and says what would have happened.
+- It draws the ball, its dust and the view's target where a platform has carried it.
+- It shows the cause of a death in red on the strip while its countdown runs.
 - It asks for the next frame through the frame hook while the level runs, the ending's view turns or something moves.
 - It fills the panel through `onShow`.
 - It ends editing through an event the editor listens to.
@@ -696,6 +693,16 @@ The module has every count and threshold read from the motion table and no wall 
 - It makes a leap of the way the ball has come where the ball is sent.
 - It keeps the last two stations the ball rested on, so with Forgive pressed the ball is put back where it last rested or on the rest before where it died standing there.
 - It hands the walk to the planner through an export of its chrome that takes a route where none stands or where the one standing is the last it took, so the route grows under the ball as the walk is handed over again at each station.
+
+### What the game's events do on the map
+
+`js/play/events.js` is the game's events as play answers them: the thing taken said and the panel brought up to date, the switch thrown and the boost button's launch with dust at the ball's foot, the crumbling block's break with dust each time and said the first and its fall with dust where it stood and the panel cleared where it showed it, the teleporter's send with a leap of the way and the view cut to its far end, the stop the ball comes to said with what happened on the way, the ending, with the run's points settled or the match's point given and the level the game loads next picked as the game's loop does them, the view let go and the verdict on the strip, a death forgiven with the ball put back at rest, and the level started over or the next gone on to through the viewer's funnel with play kept on, with the live level handed in by `js/play/play.js`, which steps the frames the events come from and lets the keys go and counts the clock afresh as the level ends or starts over.
+
+- It bursts dust where the ball throws a switch, under the ball as a crumbling block breaks, where a block has gone, clearing the panel where it showed that block, and at a boost button's launch.
+- It cuts the view to a teleport's far end rather than easing after the ball.
+- It says on the strip that the ball rides a platform while it does.
+- It says the cause of a death as its countdown starts.
+- With Forgive pressed it puts the ball back at rest instead and says what would have happened.
 
 ### What play says
 

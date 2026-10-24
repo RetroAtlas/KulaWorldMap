@@ -2,7 +2,7 @@
 // camera behind it.
 import { $, el, emit, on } from "../viewer/ui/dom.js";
 import { current } from "../viewer/chrome/course.js";
-import { ageDust, burstDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
+import { ageDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
 import { drawEffects, effectsWith } from "./effects.js";
 import { flashing, screened } from "./screen.js";
 import { state } from "../viewer/state.js";
@@ -28,85 +28,46 @@ import {
 } from "../viewer/draw/render.js";
 import { ballsWith } from "../viewer/draw/things.js";
 import { toast } from "../viewer/ui/toast.js";
-import {
-  centreOn,
-  chip,
-  fit,
-  fitWith,
-  selectLevel,
-  settle,
-  writeHash,
-} from "../viewer/chrome/navigate.js";
+import { centreOn, chip, fit, fitWith, settle, writeHash } from "../viewer/chrome/navigate.js";
 import { slotOf } from "../viewer/permalink.js";
-import { clearDetail, onShow, showCell } from "../viewer/chrome/detail.js";
+import { onShow } from "../viewer/chrome/detail.js";
 import { tipWith } from "../viewer/chrome/interaction.js";
-import { REST, aloft, blockUnder, centreOf, faceUnder, moving } from "./ball.js";
-import {
-  drives,
-  frame as gameFrame,
-  heeds,
-  relevel,
-  restart,
-  revive,
-  stand,
-  startRun,
-} from "./rules.js";
+import { REST, aloft, blockUnder, moving } from "./ball.js";
+import { drives, frame as gameFrame, heeds, relevel, stand, startRun } from "./rules.js";
 import { blanksOf } from "./passes.js";
-import { conclude, gameOf, nextOf } from "./game.js";
 import {
-  AT,
-  BROKE,
-  CLOCK_ROUND,
   DYING,
-  FORGIVEN,
-  GONE,
-  LAUNCHED,
   LEFT_PLAY,
   LEFT_PLAY_RESTORED,
   NO_START,
   NOWHERE,
   OBJECTS_ON,
-  OPENED,
   PLAYING,
   PUT_ON,
-  REFUSED,
-  RIDING,
   SENDING,
-  SENT,
   STANDS,
-  STARTED,
   TAKEN,
-  THROWN,
-  TOOK,
-  UNDERFOOT,
   WEARING_OFF,
-  WOULD,
   deathOf,
-  endingName,
   faceName,
-  howEnded,
-  noted,
 } from "./phrases.js";
 import { keyPad } from "./drive.js";
 import {
   arrive,
   easeOn,
   easing,
-  eyeOf,
   finishEase,
   follow,
   frameBall,
-  radiusOf,
   startEase,
   turning,
   viewNow,
   viewOf,
 } from "./eye.js";
-import { probeOf as liveProbe, viewOf as drawnIndex } from "./world.js";
+import { probeOf as liveProbe } from "./world.js";
 import {
   BALL,
   BALL_TYPE,
-  blockAt,
   firstStandable,
   flashed,
   footOf,
@@ -124,7 +85,6 @@ import {
   chrome,
   clearSaying,
   following,
-  forgiving,
   holdSaying,
   icon,
   line,
@@ -134,31 +94,24 @@ import {
   say,
   status,
   sync,
-  verdict,
   wireStrip,
 } from "./strip.js";
-import { drive, followFrom, followed, keep, refuge, rested, retire, walked } from "./route.js";
+import { drive, followFrom, followed, keep, rested, retire, walked } from "./route.js";
+import { gameFor, happened, refreshPanel, startOver as restarted } from "./events.js";
 
 const LETHARGY_TYPE = 32;
 const LEAVE_MS = 450;
 const GAP_MS = 250;
-const AT_SWITCH = 6;
-const AT_GONE = 10;
-const AT_BREAK = 2;
-const AT_LAUNCH = 10;
 
 let live = null;
 const keys = keyPad();
 let last = 0;
 let owed = 0;
 let idle = true;
-let redraw = false;
 // whether the pass last run took the lethargy pill, and whether one ran since the frame hook drew
 let lit = false;
 let passed = false;
 let wired = false;
-// whether play itself is changing the level through the funnel
-let changing = false;
 
 export const playing = () => live !== null;
 
@@ -181,10 +134,6 @@ const tablesOf = () => ({
 /** The circuits as the map holds them, so a press in the panel and a switch the ball throws are
     one truth. */
 const circuitsOf = () => ({ on: (m) => markerNow(m) === "on", lit: litNow, flip });
-
-/** The game the run plays, where its setting is on and the level is one the game plays a game
-    on: `game` carried on, or a fresh one of the level's mode; else none. */
-const gameFor = (l, tables, game = null) => (state.show.playon ? gameOf(l, tables, game) : null);
 
 export function station() {
   if (!live) return null;
@@ -211,7 +160,7 @@ function wake() {
 
 /** Run the game frames the wall clock owes, and move the camera after the ball. */
 function advance() {
-  if (changing || (!live && !easeOn())) return;
+  if (live?.changing || (!live && !easeOn())) return;
   const now = performance.now();
   const dt = Math.min(GAP_MS, now - last);
   last = now;
@@ -301,7 +250,7 @@ function played() {
     const under = blockUnder(b);
     travelDust(was, footOf(b), b.n, () => under);
   }
-  for (const event of events) happened(event);
+  for (const event of events) happened(live, event);
   rested(live, b);
   flashed(live, run.words);
   glowed(live, run.words);
@@ -318,6 +267,10 @@ function played() {
   if (death) status(live, DYING[death], true);
   else if (live.dire) status(live, null);
   if (b.state === REST) live.notes.length = 0;
+  if (live.ended) {
+    keys.clear();
+    owed = 0;
+  }
 }
 
 const again = () =>
@@ -337,309 +290,9 @@ function more(ctx) {
   passed = false;
   screened(ctx, live, { ran, lit });
   flashing(ctx, live);
-  const asked = again() || redraw;
-  redraw = false;
+  const asked = again() || !!live?.redraw;
+  if (live) live.redraw = false;
   return asked;
-}
-
-function happened(event) {
-  const b = live.run.ball;
-  if (event.refused) {
-    if (REFUSED[event.refused]) status(live, REFUSED[event.refused]);
-    return;
-  }
-  if (event.ended) {
-    const name = endingName(event.ended.code);
-    if (forgiving && WOULD[name]) forgive(name);
-    else ended(event.ended.code);
-    return;
-  }
-  if (event.dying) {
-    say(DYING[event.dying.cause]);
-    if (forgiving) forgive(event.dying.cause);
-    return;
-  }
-  if (event.took) {
-    taken(event.took);
-    return;
-  }
-  if (event.opened) {
-    say(OPENED);
-    return;
-  }
-  if (event.threw) {
-    threw(event.threw);
-    return;
-  }
-  if (event.broke) {
-    broke(event.broke);
-    return;
-  }
-  if (event.fell) {
-    fell(event.fell);
-    return;
-  }
-  if (event.sent) {
-    sent(event.sent);
-    return;
-  }
-  if (event.boosted) {
-    boosted();
-    return;
-  }
-  if (event.rode) {
-    live.notes.push(RIDING);
-    return;
-  }
-  if (event.alit) {
-    if (live.status === RIDING) status(live, null);
-    return;
-  }
-  if (event.clock) {
-    const { second } = motionTable().play.clock;
-    const left = Math.max(0, Math.floor(event.clock.to / second));
-    say(CLOCK_ROUND(left));
-    return;
-  }
-  if (event.at) {
-    live.station = true;
-    const block = blockUnder(b);
-    say(noted(live.notes, AT(block, faceUnder(b))));
-    status(live, b.riding ? RIDING : null);
-    walked(live, { cell: block, face: faceUnder(b) });
-    if (!motionOn())
-      travelDust(live.still.foot, footOf(b), b.n, (p) => blockAt(live.probe, p, b.n, block), true);
-  } else if (event.face) {
-    live.station = true;
-    say(noted(live.notes, UNDERFOOT(faceUnder(b), blockUnder(b))));
-    burstDust(footOf(b), b.n, blockUnder(b), AT_SWITCH, !motionOn());
-  } else if (event.turned) {
-    live.station = true;
-    if (Object.values(REFUSED).includes(live.status)) status(live, b.riding ? RIDING : null);
-  }
-}
-
-/** A thing taken: the take said, and the panel brought up to date where it shows the block. */
-function taken({ key, face, points }) {
-  const m = (live.run.world.idx.markers.get(key) ?? []).find((m) => m.face === face);
-  say(TOOK(m, points));
-  refreshPanel();
-  invalidatePick();
-}
-
-/** The panel drawn again where it shows a block, so what it says of the block's things holds. */
-function refreshPanel() {
-  if (state.selected) showCell(state.selected, { raise: false });
-}
-
-/** A switch thrown under the ball: dust at its foot, the circuit's turn said, the panel redrawn. */
-function threw({ circuit }) {
-  const b = live.run.ball;
-  burstDust(footOf(b), b.n, blockUnder(b), AT_SWITCH, !motionOn());
-  const text = THROWN(circuit);
-  say(text);
-  live.notes.push(text);
-  refreshPanel();
-}
-
-/** The ball launched off a boost button: dust at its foot, the launch said, and the strip saying
-    so until the ball lands. */
-function boosted() {
-  const b = live.run.ball;
-  burstDust(footOf(b), b.n, blockUnder(b), AT_LAUNCH, !motionOn());
-  status(live, LAUNCHED);
-  say(LAUNCHED);
-  live.notes.push(LAUNCHED);
-}
-
-/** A crumbling block broken under the ball: dust at its foot each time the game breaks it, and
-    the break said the first time. */
-function broke({ key }) {
-  const b = live.run.ball;
-  burstDust(footOf(b), b.n, blockUnder(b), AT_BREAK, !motionOn());
-  if (live.broken.has(key)) return;
-  live.broken.add(key);
-  say(BROKE);
-  live.notes.push(BROKE);
-}
-
-/** A crumbling block gone: dust where it stood, drawn over the nearest block the frame still
-    draws, the panel cleared where it showed the block, and the fall said. */
-function fell({ key }) {
-  const { x, y, z } = live.idx.cells.get(key);
-  const over = nearestDrawn([x, y, z]);
-  if (over) burstDust([x + 0.5, y + 0.5, z + 0.5], live.run.ball.n, over, AT_GONE, !motionOn());
-  if (state.selected?.key === key) clearDetail();
-  say(GONE([x, y, z].join(",")));
-  redraw = true;
-  invalidatePick();
-}
-
-/** The cell nearest `cell` among those the frame draws, or null where it draws none. */
-function nearestDrawn(cell) {
-  let best = null;
-  let least = Infinity;
-  for (const c of drawnIndex(live.run).cells.values()) {
-    const d = (c.x - cell[0]) ** 2 + (c.y - cell[1]) ** 2 + (c.z - cell[2]) ** 2;
-    if (d < least) [best, least] = [[c.x, c.y, c.z], d];
-  }
-  return best;
-}
-
-/** The ball sent by a teleporter: a leap in its way, the view cut to it. */
-function sent({ to }) {
-  const b = live.run.ball;
-  live.station = true;
-  live.still = stateOf(b, live.probe);
-  walked(live, { cell: to.cell, face: to.face }, true);
-  state.frame = b.frame;
-  state.target = [...centreOf(b)];
-  if (state.framing === fit) fit();
-  status(live, null);
-  say(SENT(to.face, to.cell));
-  redraw = true;
-  invalidatePick();
-}
-
-/** The level has ended: the loop's step runs, a bad ending past the arcade's mode scoring nothing
-    on any level, and where a run is on, and its setting still is, the run's points are settled,
-    or in a Simon room the match's point given and its winner named, and the level the game loads
-    next picked, as the game's loop does all three, and where the setting has gone off the run
-    ends here; the ball is gone and the pad dead, the view lets go of the ball and turns about the
-    level's middle as the game's does, the eye standing by the level's mode word, and the strip
-    gives the verdict with the points and the time left, what the ending did to the run's total
-    or to the match and what the key goes on to, until a key goes on or the view has run the
-    length of one swing of an arcade level's eye, whichever eye the level's word stands. */
-function ended(code) {
-  const { play, turn } = motionTable();
-  const { view } = play;
-  const run = live.run;
-  if (!state.show.playon) run.game = null;
-  const w = run.words;
-  const settled = conclude(run);
-  const next = run.game ? pickedLevel(nextOf(run.game, run, packCount(live.level.pack))) : null;
-  live.ended = {
-    code,
-    how: howEnded(code, w, settled, play),
-    next,
-    frame: 0,
-    length: Math.floor(turn / view.swing),
-    theta: 0,
-    view: eyeOf(view, w.form),
-    radius: radiusOf(live.level),
-    free: 0,
-    base: 1,
-  };
-  keys.clear();
-  owed = 0;
-  retire(live);
-  live.keeping = false;
-  routing(live);
-  finishEase();
-  state.frame = null;
-  fit();
-  status(live, verdict(live));
-  say(verdict(live));
-  redraw = true;
-  invalidatePick();
-}
-
-/** The levels the pack holds, as the data has them. */
-const packCount = (pack) => state.data.levels.filter((l) => l.pack === pack).length;
-
-/** The level of the disc at `pick`, a pack and an index, where it is another than the one played,
-    else null. */
-function pickedLevel(pick) {
-  if (!pick) return null;
-  const l = state.data.levels.find((x) => x.pack === pick.pack && x.index === pick.index);
-  return l && l !== live.level ? l : null;
-}
-
-/** The death forgiven: the ball put back at rest and the status saying what would have been. */
-function forgive(name) {
-  const b = live.run.ball;
-  revive(live.run, refuge(live));
-  live.flash = 0;
-  live.still = stateOf(b, live.probe);
-  live.station = true;
-  walked(live, { cell: blockUnder(b), face: faceUnder(b) }, true);
-  status(live, FORGIVEN(name));
-  say(FORGIVEN(name));
-  state.frame = b.frame;
-  if (state.framing === fit) fit();
-  refreshPanel();
-  redraw = true;
-  invalidatePick();
-}
-
-/** The level the game loads after an ending, from its start: the level it picked, another of the
-    disc, reached through the viewer's funnel with play kept on, or, where the pick is this level
-    or `onward` is off, this one again; the run goes on with the ball, or begins where its setting
-    has come on since the ball was put down, the view comes back behind the ball, and a level with
-    no start stands the ball on the first face it could, as entering does. */
-function startOver({ onward = true } = {}) {
-  if (!live) return;
-  const from = viewNow();
-  const went = onward && goOn(live.ended?.next);
-  const l = went ? state.lvl : live.level;
-  const idx = went ? state.idx : live.idx;
-  const probe = went ? probeOf(idx) : live.probe;
-  const start = startOf(l, probe);
-  const where = start ? null : firstStandable(probe);
-  if (!start && !where) {
-    toast(NOWHERE);
-    leave();
-    return;
-  }
-  live.run.game = gameFor(l, live.run.tables, live.run.game);
-  live.run = restart(live.run, where, { level: l, idx });
-  live.level = l;
-  live.idx = idx;
-  live.probe = liveProbe(live.run);
-  live.markers = markersFor(start);
-  live.ended = null;
-  live.driver = null;
-  live.route = null;
-  live.keeping = false;
-  live.kept = null;
-  live.framed = false;
-  state.presses = new Map();
-  const b = live.run.ball;
-  const at = { cell: blockUnder(b), face: faceUnder(b) };
-  live.walk = { stations: [at], steps: [] };
-  live.notes = [];
-  live.rests = [];
-  live.broken = new Set();
-  live.flash = 0;
-  live.still = stateOf(b, live.probe);
-  resetDust(worldTint(l.theme));
-  routing(live);
-  status(live, start ? null : NO_START);
-  keys.clear();
-  owed = 0;
-  last = performance.now();
-  state.frame = b.frame;
-  fit();
-  arrive(live, from, () => shown(live).centre, performance.now());
-  line(live);
-  refreshPanel();
-  redraw = true;
-  invalidatePick();
-  say(STARTED(l, went, at.face, at.cell, b.h));
-}
-
-/** Go on to `next`, a level of the disc, through the viewer's level funnel with play kept on:
-    whether the level changed. */
-function goOn(next) {
-  const i = next ? state.data.levels.indexOf(next) : -1;
-  if (i < 0 || i === state.li) return false;
-  changing = true;
-  try {
-    selectLevel(i);
-  } finally {
-    changing = false;
-  }
-  return true;
 }
 
 // --- the way the ball has come ------------------------------------------------------------
@@ -728,6 +381,8 @@ function enter(at = null) {
     route: null,
     keeping: false,
     kept: null,
+    redraw: false,
+    changing: false,
   };
   const ball = run.ball;
   live.still = stateOf(ball, live.probe);
@@ -828,6 +483,19 @@ function put(at) {
   drawSoon();
 }
 
+/** The level over from its start, or on to the next, the keys let go and the clock counting from
+    now, or play left where no face can stand the ball. */
+function startOver(opts) {
+  if (!live) return;
+  if (!restarted(live, opts)) {
+    leave();
+    return;
+  }
+  keys.clear();
+  owed = 0;
+  last = performance.now();
+}
+
 /** Stand the ball on `face` of the block at `c`, starting play if it has not. */
 export function playAt(c) {
   const probe = live?.probe ?? probeOf(state.idx);
@@ -879,7 +547,7 @@ export function bootPlay() {
       body.append(el("p", { className: "sub", textContent: `${TAKEN(m)}.` }));
   });
   on("level-changed", () => {
-    if (live && !changing) {
+    if (live && !live.changing) {
       leave({ restore: false });
       // the level was fitted before play heard of it, with the ball still framing the view
       if (state.framing === fit) fit();
