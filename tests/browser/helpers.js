@@ -235,3 +235,66 @@ export const roomed = (page, simon) =>
     );
     update(state.lvl.draft, setMeta(get(state.lvl.draft).doc, { simon }));
   }, simon);
+
+// One thing drawn by itself onto a grey canvas the map's size, with the fills it made.
+export const alone = (page, cell, type, frame = 0) =>
+  page.evaluate(
+    async ([cell, type, frame]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { drawThing }, { cellKey }] = await Promise.all(
+        ["viewer/state.js", "viewer/draw/things.js", "format/lattice.js"].map(at),
+      );
+      const key = cellKey(...cell);
+      const m = state.idx.markers.get(key).find((m) => m.type === type);
+      const { w, h, dpr } = state.view;
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(w * dpr);
+      cv.height = Math.round(h * dpr);
+      const g = cv.getContext("2d");
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.fillStyle = "rgb(100 100 100)";
+      g.fillRect(0, 0, w, h);
+      const fills = [];
+      const fill = g.fill;
+      g.fill = function (...a) {
+        fills.push([this.globalCompositeOperation, this.fillStyle]);
+        return fill.apply(this, a);
+      };
+      drawThing(g, m, state.idx.cells.get(key), state.lvl, frame);
+      const d = g.getImageData(0, 0, cv.width, cv.height).data;
+      const changed = [];
+      for (let i = 0; i < d.length; i += 4)
+        if (d[i] !== 100 || d[i + 1] !== 100 || d[i + 2] !== 100)
+          changed.push([d[i], d[i + 1], d[i + 2]]);
+      return { fills, changed };
+    },
+    [cell, type, frame],
+  );
+
+/** The zoom the view is at, and the one a fit taken now gives it. */
+export const fitted = (page) =>
+  page.evaluate(async () => {
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const { fit } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
+    const zoom = state.cam.zoom;
+    fit();
+    const width = document.getElementById("cv").clientWidth;
+    return { zoom, fit: state.cam.zoom, width, measured: state.view.w };
+  });
+
+/** The cell under a client point, as the readout writes it. */
+export const cellUnder = (page, point) =>
+  page.evaluate(async ([x, y]) => {
+    const { cellAt } = await import(new URL("js/viewer/draw/render.js", location.href).href);
+    const r = document.getElementById("cv").getBoundingClientRect();
+    const c = cellAt(x - r.left, y - r.top);
+    return c && `${c.x}, ${c.y}, ${c.z}`;
+  }, point);
+
+/** The hovered cell, as the readout writes it. */
+export const hovered = (page) =>
+  page.evaluate(async () => {
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const c = state.hover;
+    return c && `${c.x}, ${c.y}, ${c.z}`;
+  });
