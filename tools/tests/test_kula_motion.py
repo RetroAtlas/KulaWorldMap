@@ -9,11 +9,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_motion import CHECKS, DIVISORS, GREYS, IMMEDIATES, MULTIPLIERS, SCANS, effects, play, table  # noqa: E402
+from kula_motion import CHECKS, DIVISORS, GREYS, IMMEDIATES, MULTIPLIERS, SCANS, effects, table  # noqa: E402
 from kula_motion_blocks import blocks  # noqa: E402
 from kula_motion_code import PHASES  # noqa: E402
 from kula_motion_harms import harms  # noqa: E402
 from kula_motion_light import glint  # noqa: E402
+from kula_motion_run import play  # noqa: E402
 from kula_motion_things import SPUN_AT  # noqa: E402
 from motion_fixture import (AT, GAME, addiu, addu, beq, code, jal, jr, lh, lui, lw, ori, sb, sh, sll, sra,  # noqa: E402
                             subu, sw, swl, swr, xori)

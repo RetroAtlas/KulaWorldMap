@@ -41,7 +41,6 @@ const OVER = {
   "tests/unit/kwl.test.js": 1300,
   "tests/unit/motion.test.js": 1300,
   "tests/unit/patch.test.js": 1200,
-  "tools/kula_motion.py": 1500,
   "tools/kula_kwl.py": 2300,
   "tools/tests/test_kula_kwl.py": 1800,
 };

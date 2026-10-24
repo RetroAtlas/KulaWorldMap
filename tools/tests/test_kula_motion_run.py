@@ -10,9 +10,9 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
-from kula_motion import WORDS_COUNT, WORDS_TABLE, play, words  # noqa: E402
 from kula_motion_code import Code  # noqa: E402
 from kula_motion_jump import flight  # noqa: E402
+from kula_motion_run import WORDS_COUNT, WORDS_TABLE, play, words  # noqa: E402
 from kula_motion_simon import simon  # noqa: E402
 from motion_fixture import AT, GAME, lui, lw  # noqa: E402
 
@@ -97,13 +97,13 @@ class Words(unittest.TestCase):
 
     def test_a_pair_reads_as_its_word_where_its_digest_is_the_pinned_one(self):
         dark, light = self.image(b"the relief"), self.image(b"the highlights")
-        with mock.patch("kula_motion.WORDS", {0: ("HELLO!", zlib.crc32(dark + light))}):
+        with mock.patch("kula_motion_run.WORDS", {0: ("HELLO!", zlib.crc32(dark + light))}):
             self.assertEqual(words(self.code([zlib.compress(dark), zlib.compress(light)])), {0: "HELLO!"})
 
     def test_another_count_another_pair_not_an_image_or_not_a_stream_stops_the_reading(self):
         dark, light = self.image(b"the relief"), self.image(b"the highlights")
         pair = [zlib.compress(dark), zlib.compress(light)]
-        with mock.patch("kula_motion.WORDS", {0: ("HELLO!", zlib.crc32(dark + light))}):
+        with mock.patch("kula_motion_run.WORDS", {0: ("HELLO!", zlib.crc32(dark + light))}):
             for c in (self.code(pair, count=WORDS_COUNT - 1), self.code(pair[::-1]),
                       self.code([zlib.compress(self.image(b"the relief", flags=9)), pair[1]]),
                       self.code([pair[0], zlib.compress(b"\x10\0\0")]), self.code([pair[0], b"not deflate"])):
