@@ -1831,6 +1831,38 @@ test("with Motion on a level chosen as the view eases back out of play is fitted
   expect(errors).toEqual([]);
 });
 
+test("leaving play says so after what the way out says of where it goes, a teleporter's far end or another level", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false, hash: TELEPORT_LEVEL });
+  await startPlay(page);
+  await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { showCell }, { cellKey }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/detail.js", "format/lattice.js"].map(at),
+    );
+    showCell(state.idx.cells.get(cellKey(17, 7, 17)));
+  });
+  const go = page.locator("#detail .goto");
+  const there = await go.getAttribute("data-said");
+  await listening(page);
+  await go.click();
+  await expect.poll(() => said(page)).toEqual([there, "Left play."]);
+  await startPlay(page);
+  await page.evaluate(() => (window.__said = []));
+  await page.locator("#worlds .levels button[title='LEVEL 69']").click();
+  const described = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { describeLevel }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/a11y.js"].map(at),
+    );
+    return describeLevel(state.lvl);
+  });
+  await expect.poll(() => said(page)).toEqual([described, "Left play."]);
+  expect(errors).toEqual([]);
+});
+
 /** The clock face's type, as the strip of a marker writes it. */
 const clockFace = (page) =>
   page.evaluate(async () => {

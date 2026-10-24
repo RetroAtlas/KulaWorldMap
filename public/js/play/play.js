@@ -651,6 +651,12 @@ const say = (text) => {
   else told(text);
 };
 
+// what leaving says waits a frame, so what the way out says of where it goes is heard first
+const sayLeaving = (text) =>
+  requestAnimationFrame(() => {
+    if (!live) told(text);
+  });
+
 const running = () =>
   live.ended
     ? motionOn()
@@ -1716,7 +1722,7 @@ function leave({ restore = true } = {}) {
   };
   if (!restore || !back) {
     done();
-    say("Left play.");
+    sayLeaving("Left play.");
     return;
   }
   const to = {
@@ -1729,7 +1735,7 @@ function leave({ restore = true } = {}) {
   startEase(viewNow(), to, LEAVE_MS, done);
   invalidatePick();
   drawSoon();
-  say("Left play; the view is as it was.");
+  sayLeaving("Left play; the view is as it was.");
 }
 
 export function togglePlay() {
