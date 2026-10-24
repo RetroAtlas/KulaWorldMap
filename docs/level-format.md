@@ -70,7 +70,7 @@ A slot has no position of its own; it is a face of the block the record stands o
 
 ## Blocks and the things on them
 
-**A lattice value below `firstRecord` and a record's kind word are the same enumeration**: 0 is a plain block, 1 fire, 2 ice, 3 invisible, 4 the acid block, and a block with something standing on it keeps its kind in the record instead of the cell. Of the cells that hold a style, 4517 cells are plain, then 1065 invisible, 527 ice and 70 fire.
+**A lattice value below `firstRecord` and a record's kind word are the same enumeration**: 0 is a plain block, 1 fire, 2 ice, 3 invisible, 4 the acid block, and a block with something standing on it keeps its kind in the record instead of the cell. Of the cells that hold a style, 4517 cells are plain, then 1065 invisible, 527 ice, 70 fire and 9 acid.
 
 Each kind wears the texture the game paints it with ([tgi.md](tgi.md)), and how the invisible block and the vanishing block show is the game's own cycle ([motion.md](motion.md)). The loader reads a cell's style as its kind (`0x8002df84`) and paints the block by the kind, so a style is not a texture: a plain block draws one of the world's four stones at random per face, and the other kinds the texture the artwork's model table pairs with their number ([tgi.md](tgi.md)).
 

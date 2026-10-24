@@ -323,8 +323,8 @@ const claims = [
   [
     "docs/level-format.md",
     "cells by style",
-    [count(0), count(3), count(2), count(1)],
-    /(\d+) cells are plain, then (\d+) invisible, (\d+) ice and (\d+) fire/,
+    [count(0), count(3), count(2), count(1), count(4)],
+    /(\d+) cells are plain, then (\d+) invisible, (\d+) ice, (\d+) fire and (\d+) acid/,
   ],
   [
     "docs/level-format.md",
