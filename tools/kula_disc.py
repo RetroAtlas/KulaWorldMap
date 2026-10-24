@@ -51,7 +51,7 @@ def output_at(arg, flag, exts=("",), replaces=True):
     if mode is not None and stat.S_ISDIR(mode):
         sys.exit(f"{path} is a directory; say a name for {flag}")
     # a file that stands is replaced, which asks leave of the file and not of its directory,
-    # or is the tool's own to refuse where it never writes over one
+    # or is left to the tool's own refusal where it never writes over one
     if mode is not None and first == path:
         if replaces and not os.access(path, os.W_OK):
             sys.exit(f"{path} cannot be written: {os.strerror(errno.EACCES)}")

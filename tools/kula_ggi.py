@@ -181,7 +181,7 @@ class Ggi:
 # for a paletted one `u16 x, y` of its palette in VRAM, `i16 inline, u16 late`
 # and the palette's words where `inline` is 0, and then `u16 x, y, w, h` of
 # the image with its pixels where `late` is 0, w in pixels and the data padded
-# to four bytes. Everything is a VRAM upload, like the artwork's.
+# to four bytes. Everything is a VRAM upload, like the artwork's uploads.
 TEXTURES = 6
 VRAM_W, VRAM_H = 1024, 512
 
@@ -279,7 +279,7 @@ def palette_word(page, t, u, v):
 # The shadows are sprites counted past the group the header's six bounds end
 # on, drawn in the blend that takes each texel away from what is behind it.
 # Each is written as rows of a character a texel, in base 32, what the texel
-# takes off every channel; the game's are grey, and semi-transparent wherever
+# takes off every channel; the game's shadows are grey, and semi-transparent wherever
 # they are not nothing.
 SUBTRACT = 2
 BASE32 = "0123456789abcdefghijklmnopqrstuv"

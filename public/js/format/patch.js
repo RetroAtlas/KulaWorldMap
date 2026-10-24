@@ -66,7 +66,7 @@ function padded(bytes, length) {
   return out;
 }
 
-/** What says the image is not the disc's, each a warning rather than a refusal. */
+/** What says the image is not an image of the disc, each a warning rather than a refusal. */
 export async function identify(disc) {
   const out = [];
   if (disc.size % SECTOR_RAW)
@@ -195,8 +195,8 @@ async function planOn(disc, packPath, slot, stream, title, inflate) {
 /**
  * The sectors that put the stream into the slot, read off the image: the fit,
  * where the pack lies afterwards, the sectors to write as [lba, raw] in
- * address order, and what says the image is not the disc's. inflate turns a
- * zlib stream into its bytes, asynchronously, however the host does that.
+ * address order, and what says the image is not an image of the disc. inflate
+ * turns a zlib stream into its bytes, asynchronously, however the host does that.
  */
 export async function plan(disc, packPath, slot, stream, title, inflate) {
   const placed = await planOn(disc, packPath, slot, stream, title, inflate);
@@ -208,7 +208,7 @@ export async function plan(disc, packPath, slot, stream, title, inflate) {
  * slot, stream, title } each planned over the image as the earlier ones left
  * it, in the order given: each item's plan in order, the sectors to write
  * merged in address order, a later one replacing an earlier at the same
- * address, and what says the image is not the disc's.
+ * address, and what says the image is not an image of the disc.
  */
 export async function planAll(blob, items, inflate) {
   const named = new Set();
@@ -232,7 +232,7 @@ export async function planAll(blob, items, inflate) {
 
 /**
  * Read the pack back through the readers and hold it to the plan: the slot
- * inflates to the level, every record and name is the plan's, the directory
+ * inflates to the level, every record and name is as planned, the directory
  * places the pack where the plan put it, and every sector written checks.
  */
 export async function verify(disc, packPath, slot, stream, placed, inflate) {

@@ -35,7 +35,7 @@ LOADS = {"lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "sb", "sh", "swl", "sw", 
 LOGIC = {"andi", "ori", "xori"}      # the immediates MIPS zero-extends
 
 # The geometry coprocessor: its data and control registers, the four moves
-# between them and the CPU's, and its commands by their low six bits.
+# between them and the CPU's registers, and its commands by their low six bits.
 GTE_DATA = ["vxy0", "vz0", "vxy1", "vz1", "vxy2", "vz2", "rgbc", "otz",
             "ir0", "ir1", "ir2", "ir3", "sxy0", "sxy1", "sxy2", "sxyp",
             "sz0", "sz1", "sz2", "sz3", "rgb0", "rgb1", "rgb2", "res1",
@@ -131,7 +131,7 @@ def listing(blob, base, start, count, mark=()):
 
 
 class Machine:
-    """Enough of a MIPS to run a routine of the game's to its return, from
+    """Enough of a MIPS to run a routine of the game's code to its return, from
     the arguments and the words on the stack it is given. A call it makes is
     answered by `calls`, by the address called, from the four arguments and
     four stack words the call is made with; what it loads and has not stored

@@ -39,7 +39,7 @@ const isVec = (v) => Array.isArray(v) && v.length === 3 && v.every(Number.isInte
 const isListOrNone = (v) => v == null || Array.isArray(v);
 
 /**
- * Whether a parsed JSON is a level of the viewer's: blocks at positions, with
+ * Whether a parsed JSON is one of the viewer's levels: blocks at positions, with
  * a time, any items and intervals they carry in lists.
  */
 export const isOrbit = (json) =>
@@ -58,8 +58,8 @@ export const isOrbit = (json) =>
       isListOrNone(b.intervals),
   );
 
-// The viewer's position of a cell is (x, 33 - z, y) of the game's, while the
-// points a span names keep the game's values with y and z swapped.
+// The viewer's position of a cell is (x, 33 - z, y) of the game's cell, while
+// the points a span names keep the game's values with y and z swapped.
 const cellOf = ([x, y, z]) => [x, z, EDGE - y];
 const pointOf = ([x, y, z]) => [x, z, y];
 const text = (cell) => cell.join(", ");
@@ -203,7 +203,7 @@ export function kwlOfOrbit(json) {
   return { bytes: out, report: collapse(report), repairs: report.length };
 }
 
-/** { project, report, repairs } for a level of the viewer's, read in the world given. */
+/** { project, report, repairs } for one of the viewer's levels, read in the world given. */
 export function readOrbit(json, world = WORLDS[0]) {
   const { bytes, report, repairs } = kwlOfOrbit(json);
   const read = readKwl(bytes, world);
@@ -319,7 +319,7 @@ function unbase64(param) {
   }
 }
 
-/** { project, report, repairs } for a shared level's link, or its level parameter, read in the world given unless the link names one of the disc's. */
+/** { project, report, repairs } for a shared level's link, or its level parameter, read in the world given unless the link names one of the disc's worlds. */
 export async function readOrbitLink(text, world = WORLDS[0]) {
   const parts = linkParts(text);
   if (!parts) throw new Error(NOT_LINK);

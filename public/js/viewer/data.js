@@ -31,7 +31,7 @@ export const kindMotion = (kind) => shapes.motion?.kinds[String(kind)] ?? null;
 export const typeModels = (type) => shapes.types[String(type)] ?? [];
 const GOURAUD = 16;
 /** The colour the map fills a model's polygon with, from its corners' own
-    colours or those given: the first corner's, in which the game draws a flat
+    colours or those given: the first corner's colour, in which the game draws a flat
     polygon, or their mean where the game shades between them. */
 export function polygonColour(
   model,
@@ -304,16 +304,16 @@ const OPEN = 0;
 const SHUT = 1;
 /** The form the exit is drawn in while the exits stand open, or null. */
 export const exitForm = (m) => (m.face !== null && m.type === EXIT && exitsOpen() ? OPEN : null);
-/** Whether the record's face shows marked open, as the exit's does while the exits stand open. */
+/** Whether the record's face shows marked open, as the exit's face does while the exits stand open. */
 export const openFace = (r, face) =>
   exitsOpen() && r.on.some((o) => o.face === face && o.type === EXIT);
 // The ball starts on a plain face or on a clock.
 const START = 30;
 const STARTS = new Set([29, START]);
 // The glass ball for a level the hidden flag marks, one of three for a level
-// with no key, turned by a counter the level cannot know, and the world's
+// with no key, turned by a counter the level cannot know, and the world's ball
 // otherwise. A bonus slot stands in for the counter where the level stands in
-// one of the disc's.
+// one of the disc's slots.
 const BONUS_BALL = 10;
 const BONUS_BALLS = 3;
 const HIDDEN_BALL = 13;
@@ -332,8 +332,8 @@ export function ballFor(l) {
   return shapes.balls[design] || shapes.balls[0] || null;
 }
 // What stands on a face is drawn in its world's light for the face's shade,
-// from the set a bonus level lights from on one, and a lit device's in that
-// times its lift; the ball and the captivators carry lights of their own.
+// from the set a bonus level lights from on one, and a lit device's model in
+// that times its lift; the ball and the captivators carry lights of their own.
 const lightSets = new WeakMap();
 export function lightOf(m, l, frame) {
   const skins = skinsTable();

@@ -114,7 +114,7 @@ function startOf() {
   return { station, heading: headingOn(s.face, markerHeading(s)) };
 }
 
-/** The heading at a course's end: the last step's, the start's on a course of the start alone, else any. */
+/** The heading at a course's end: the last step's heading, the start's heading on a course of the start alone, else any. */
 function headingAt(c) {
   if (!c.steps.length) {
     const start = startOf();
@@ -486,7 +486,7 @@ export function wireCourse() {
   });
   overlayWith({ block: drawRibbon, cell: drawWash, frame: drawOver });
 
-  // Cmd-Y stays the browser's
+  // Cmd-Y stays the browser's shortcut
   document.addEventListener(
     "keydown",
     (e) => {

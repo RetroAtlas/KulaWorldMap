@@ -462,8 +462,8 @@ function additions() {
 // Every row's slot list and the slot it shows, in passes so a guess never takes
 // a slot chosen for another row: its target, or none where that is no slot, else
 // a guess from its title, else its template's slot, else the first free slot of
-// its kind, a room's for a level that plays as a Simon room, else the first free
-// slot.
+// its kind, a room's slot for a level that plays as a Simon room, else the first
+// free slot.
 function retarget() {
   const keys = state.data.levels.map((l) => [`${l.pack}#${l.index}`, l]);
   d.titles = new Map(keys.map(([key, l]) => [key, levelTitle(l)]));
@@ -747,7 +747,7 @@ async function before(file, items) {
 // above leave it, read back through the verifier over the patched image before
 // the downloads are offered; a refusal lands on the row of the first level the
 // image will not take, and while the rows cannot be placed as they stand the
-// fits are the layout's.
+// fits come from the layout.
 async function placed(mine = ++turn) {
   const { file, rows } = d;
   d.placed = null;

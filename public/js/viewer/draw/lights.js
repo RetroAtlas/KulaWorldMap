@@ -63,7 +63,7 @@ export const lightsWith = (fn) => {
   casters.push(fn);
 };
 
-/** For each face lit, keyed by its cell and its number in the game's six, the
+/** For each face lit, keyed by its cell and its number among the game's six faces, the
     colour added at each corner in the order of its texture's first turn; and
     whether any device is on or a module casts a light. */
 export function deviceLights(l, idx, frame) {

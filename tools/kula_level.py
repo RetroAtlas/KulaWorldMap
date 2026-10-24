@@ -19,7 +19,7 @@ A slot is [kind, type, eleven fields, pad, value, pad]. The six are the six
 faces of the block, in the order the game numbers directions: -z, +x, +y, -y,
 -x, +z. A slot whose type is not zero is an object standing on that face, and
 a block whose top is bare is not empty. The kind word is set in the first slot
-only. It is the block's, and a few kinds keep words of their own in place of
+only. It is the block's kind, and a few kinds keep words of their own in place of
 what stands on a face, a span in its first two slots and kinds 6 and 7 in the
 first alone: a laser or a moving platform names its two ends there, with the
 type the direction from the block to the far end numbered as above, a platform
@@ -34,8 +34,8 @@ block carrying record i. The record repeats the cell's own coordinates, which
 is what pins the two representations together and is checked on every build.
 
 A switch and a teleporter name other slots by a link, the record's index times
-sixteen plus the face, with 6 for a laser's own record. A teleporter's names
-where it sends the ball, a teleporter of its own colour. A switch's starts the
+sixteen plus the face, with 6 for a laser's own record. A teleporter's link names
+where it sends the ball, a teleporter of its own colour. A switch's link starts the
 list of what it flips, each switch or teleporter on it naming the next and a
 laser doing so in its second slot, and the list is every switch, teleporter
 and laser of the switch's colour. Both are checked on every build.
@@ -243,7 +243,7 @@ class Level:
                 flips = self.circuit(k, face)
                 same = sorted(at for at, other in colour.items() if other == c)
                 if sorted(flips) != same:
-                    bad.append(f"{where} flips {sorted(flips)}, not its colour's {same}")
+                    bad.append(f"{where} flips {sorted(flips)}, not its colour's slots, {same}")
                 continue
             to = link(self.records[k].slots[face][LINK_WORD])
             if colour.get(to) != c or to[1] == OWN or self.records[to[0]].slots[to[1]][1] != TELEPORTER:

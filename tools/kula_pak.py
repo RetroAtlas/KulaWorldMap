@@ -7,7 +7,7 @@
     1 to 4 bytes                       padding to a four-byte boundary
     ...                                the records themselves, back to back in slot order
 
-Names are the game's own, spelling included ("LECEL 94" in Atlantis), and
+Names are the game's own names, spelling included ("LECEL 94" in Atlantis), and
 the game never reads them. The file ends where the last record ends.
 """
 import struct

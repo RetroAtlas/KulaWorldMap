@@ -786,7 +786,7 @@ function moveDrag(c, e) {
 
 // --- the tools -----------------------------------------------------------------------------
 
-/** Select what a tool placed or cleared; on a phone a finger's leaves the panel's sheet down. */
+/** Select what a tool placed or cleared; on a phone a finger's selection leaves the panel's sheet down. */
 function select(cell, face = null, e = null) {
   const at = state.idx.cells.get(cellKey(...cell));
   if (!at) return;
@@ -892,7 +892,7 @@ function anchorRefusal(doc) {
   return blockAt(doc, pending.anchor) ? HELD : null;
 }
 
-/** The span the pending run would lay toward `far`: its own, re-laid, or the brush's. */
+/** The span the pending run would lay toward `far`: its own, re-laid, or the brush's span. */
 function spanToward(doc, far) {
   const own = ownSpan(doc);
   if (own) return { ...own, far };
@@ -973,7 +973,7 @@ export function runPreview() {
 
 /** Each cell of a run by what else lies in it: a block or the edge, which the
     checks refuse, or another laser's beam or another platform's run, which they
-    do not, a laser's far end on a plain or a laser's block being its to end on. */
+    do not, a laser's far end on a plain or a laser's block being one it may end on. */
 function verdicts(doc, span, cells) {
   const beams = new Set();
   const runs = new Set();

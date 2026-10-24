@@ -264,7 +264,7 @@ def copycat_pack(code, r):
     the keys, in the form the disc's directory gives it.
 
     In that mode, and only for the level pack, the game takes the path one
-    past the worlds'.
+    past the worlds' paths.
     """
     if r["copycat.mode"] != r["copycat.names"]:
         sys.exit("the mode that names its own pack is not the one that keeps the first set")
@@ -277,7 +277,7 @@ def copycat_worlds(code):
     """The world each room of the copycat pack is played in on the mode's
     first round, by its number: the mode steps the world word with the room
     from the first, and the word picks the world's path out of the table,
-    which keeps the worlds' before the pack's own."""
+    which keeps the worlds' paths before the pack's own path."""
     r = readings(code)
     if r["copycat.steps"] != r["copycat.mode"]:
         sys.exit("the mode whose rooms step through the worlds is not the one that names its own pack")
@@ -453,7 +453,7 @@ def header(blob):
 
 def lights(blob, r):
     """The light a thing on a face takes by the face's shade, in 4096ths a
-    channel: the set every mode lights from but one, and that mode's."""
+    channel: the set every mode lights from but one, and that mode's set."""
     def at(offset):
         return [list(struct.unpack_from(f"<{CHANNELS}i", blob, offset + 4 * CHANNELS * k)) for k in range(SHADES)]
     return {"arcade": at(r["light.arcade"]), "bonus": at(r["light.bonus"])}

@@ -19,7 +19,7 @@ import { slotOf, formatHash, parseHash } from "../permalink.js";
 // The level on screen, by its slot.
 let shown = null;
 
-/** Install a level: one of the disc's at index `i`, or one from elsewhere with
+/** Install a level: one of the disc's levels at index `i`, or one from elsewhere with
     -1. The same level from elsewhere installed again is an update, which keeps
     the selection named by `keep` where its cell is still there. */
 function install(l, i, { keepView = false, push = true, keep = null } = {}) {
@@ -55,7 +55,7 @@ export function selectLevel(i, opts = {}) {
   install(l, i, opts);
 }
 
-/** Show a level that is not among the disc's. */
+/** Show a level that is not among the disc's levels. */
 export const showLevel = (l, opts = {}) => install(l, -1, opts);
 
 let framer = null;

@@ -31,7 +31,7 @@ export function slotTitle(path, index, name) {
   return name || `slot ${index + 1}`;
 }
 
-/** The world a slot opens in: the one the map lists the shipped level there under, else its pack's, else null. */
+/** The world a slot opens in: the one the map lists the shipped level there under, else its pack's world, else null. */
 export function slotWorld(path, index) {
   return shippedAt(path, index)?.theme ?? worldOf(path);
 }
@@ -62,8 +62,8 @@ const packNote = (path, world) => {
 // lands a moment later; an answer handed over before then would push a level
 // the Back then undoes, so every answer waits for it. Dialogs number their
 // entries as they open, so what is waited on is the entry current when the
-// box opened or any later one, never an older dialog's that the bar was moved
-// back onto.
+// box opened or any later one, never an older dialog's entry that the bar was
+// moved back onto.
 let opened = Infinity;
 const settled = () =>
   new Promise((resolve) => {

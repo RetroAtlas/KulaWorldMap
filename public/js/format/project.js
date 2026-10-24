@@ -322,8 +322,8 @@ const facingOk = (v) => Number.isInteger(v) && v >= 1 && v <= 4;
 /** A platform's length as the loader walks it: the file's word, or the default where the value is none. */
 const lengthOf = (b) => (inWord(b.length) ? b.length : DEFAULT_LENGTH);
 
-/** The cells a span covers: a platform's from its lower end to its upper end
-    plus its length, a laser's from end to end. */
+/** The cells a span covers: a platform's cells from its lower end to its upper end
+    plus its length, a laser's cells from end to end. */
 export function runOf(b) {
   const axis = spanAxis(b.cell, b.far);
   const [lower, upper] = b.cell[axis] < b.far[axis] ? [b.cell, b.far] : [b.far, b.cell];

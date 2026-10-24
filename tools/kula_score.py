@@ -112,7 +112,7 @@ def main():
         if score is not None:
             line += f"   curated {score:6}   {score - total:+d}"
             if score >= total:
-                bad.append(f"{l['name']}: the curated {score} is not below the disc's {total}")
+                bad.append(f"{l['name']}: the curated {score} is not below the disc's total, {total}")
         print(line)
     if bad:
         sys.exit("\n".join(bad))

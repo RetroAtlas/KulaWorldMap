@@ -40,7 +40,7 @@ import {
 import { label } from "./overlays.js";
 import { NEUTRAL } from "./atlas.js";
 
-// The paint on a face says what its marker would, as a block's does for a
+// The paint on a face says what its marker would, as a block's paint does for a
 // record's own kind.
 export const quietAmongModels = (m, painted, selected) =>
   markerGroup(m) === "settings" ? !selected : painted && markerGroup(m) !== "object";
@@ -94,8 +94,8 @@ const pressedAt = (motion, m, home, l) =>
 export function drawThing(ctx, m, c, l, frame, home = c, going = null) {
   if (state.hiddenKinds.has(m.id)) return false;
   const motion = state.show.models ? motionOf(m) : null;
-  // the game starts a pickup's angles at random and an entry's at zero, as a
-  // thing that travels does, whatever cell it is drawn from
+  // the game starts a pickup's angles at random and an entry's angles at zero,
+  // as a thing that travels does, whatever cell it is drawn from
   const phase = !motion
     ? null
     : motion.entry || going
@@ -557,7 +557,7 @@ function spriteOf(k) {
     const img = g.createImageData(cv.width, cv.height);
     rows.forEach((row, v) =>
       [...row].forEach((ch, u) => {
-        // a level of 31 is a whole channel, as a texel's is
+        // a level of 31 is a whole channel, as a texel's 31 is
         const level = parseInt(ch, 32) << 3;
         img.data.set([level, level, level, level ? 255 : 0], (v * cv.width + u) * 4);
       }),

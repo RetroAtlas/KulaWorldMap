@@ -45,7 +45,7 @@ export const state = {
     playon: false,
   },
   hiddenKinds: new Set(),
-  // by colour, and the last key's, the clock frames at which a panel turned each circuit over
+  // by colour, and by the last key for the exits, the clock frames at which a panel turned each circuit over
   presses: new Map(),
   hover: null,
   selected: null,
@@ -66,14 +66,14 @@ export function basisAt(yaw, pitch) {
   };
 }
 
-// A vector given in a frame's coordinates, in the world's.
+// A vector given in a frame's coordinates, in the world's coordinates.
 const inWorld = (f, v) => [
   v[0] * f[0] + v[1] * f[3] + v[2] * f[6],
   v[0] * f[1] + v[1] * f[4] + v[2] * f[7],
   v[0] * f[2] + v[1] * f[5] + v[2] * f[8],
 ];
 
-/** The view's basis: the orbit's at the yaw and pitch, turned about `state.frame` where set. */
+/** The view's basis: the orbit's basis at the yaw and pitch, turned about `state.frame` where set. */
 export function camera() {
   const { yaw, pitch } = state.cam;
   const { frame } = state;

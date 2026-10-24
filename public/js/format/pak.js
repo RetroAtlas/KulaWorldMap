@@ -32,7 +32,7 @@ export function packSize(names, sizes) {
  * in place when it is no longer than the record it replaces; else the pack
  * rebuilt within its sectors, first with the other records as they are and
  * then with them recompressed; else moved into the free sectors. The size is
- * the pack's afterwards and the room the bytes to spare on that path. A title
+ * the pack's size afterwards and the room the bytes to spare on that path. A title
  * names the slot of a rebuilt or moved pack, as writing it will.
  */
 export function fit(pack, slot, size, title = null) {

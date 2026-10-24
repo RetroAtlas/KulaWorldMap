@@ -139,7 +139,7 @@ function openRead(read) {
   open(id, `Opened ${nameOf(read.project)}`);
 }
 
-/** Write the draft to a file, as the map's or as the game's, and mark it saved. */
+/** Write the draft to a file, as the map's own file or as the game's level file, and mark it saved. */
 function saveAs(id, game) {
   drafts.flush();
   const d = drafts.get(id);

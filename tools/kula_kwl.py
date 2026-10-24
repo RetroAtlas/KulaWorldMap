@@ -276,8 +276,8 @@ def _entries(d):
 
 
 def _entries_of(v):
-    """A JSON value's entries as the page's Object.entries walks them: a table's,
-    a list's or a text's by index, else none."""
+    """A JSON value's entries as the page's Object.entries walks them: a table's
+    entries, a list's or a text's entries by index, else none."""
     if isinstance(v, dict):
         return _entries(v)
     if isinstance(v, (list, str)):
@@ -790,7 +790,7 @@ def read_kwl(blob, world=WORLDS[0]):
     notes, the lines on a value kept as it was: the lattice decides where a record
     stands and which records exist, the file's length decides how many stretches
     it holds, and a trailer is made up where the file has none. Only a length that
-    is not a level's raises."""
+    is not a level's length raises."""
     report = []
     notes = 0
 
@@ -1440,8 +1440,8 @@ def _length_of(b):
 
 
 def _run(b):
-    """The cells a span covers: a platform's from its lower end to its upper end
-    plus its length, a laser's from end to end."""
+    """The cells a span covers: a platform's cells from its lower end to its upper end
+    plus its length, a laser's cells from end to end."""
     cell, far = tuple(b["cell"]), tuple(b["far"])
     axis = span_axis(cell, far)
     lower, upper = sorted((cell, far))
@@ -2031,7 +2031,7 @@ def figure_failures(r):
         ("the run of inner cells", INNER, range(r["inner.from"], r["inner.below"])),
         ("the first captivator", min(CAPTIVATORS), r["captivators.from"]),
     ]
-    return [f"{what} is {_figure(held)}, not the executable's {_figure(read)}" for what, held, read in figures if held != read]
+    return [f"{what} is {_figure(held)}, not the executable's figure, {_figure(read)}" for what, held, read in figures if held != read]
 
 
 # The words the rebuild writes differently outside the unread mask, each a leftover nothing on its level reads, by its count on the disc.

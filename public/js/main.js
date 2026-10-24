@@ -274,7 +274,7 @@ const bootPlay = () =>
     ? Promise.resolve(unplayable())
     : (playLoading ??= import("./play/play.js").then(playReady, unplayable));
 
-// Until play is up, its key, its button and the panel's load it and then do what they do.
+// Until play is up, its key, its button and the panel's button load it and then do what they do.
 function wirePlay() {
   const btn = $("playBtn");
   const icon = () => {
@@ -383,8 +383,8 @@ Promise.all([
 });
 
 // Once the shown world's textures have landed and the page is idle, the other
-// worlds' are fetched ahead, from the next world on, unless the browser is
-// set to save data.
+// worlds' textures are fetched ahead, from the next world on, unless the
+// browser is set to save data.
 function warmOthers() {
   if (navigator.connection?.saveData) return;
   const idle = globalThis.requestIdleCallback ?? ((fn) => setTimeout(fn, 2000));

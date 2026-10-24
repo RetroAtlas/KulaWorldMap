@@ -75,7 +75,7 @@ export function commit(id, next, label) {
   return took;
 }
 
-/** The errors `next` has that `before` had not, `before`'s read through `as` first. */
+/** The errors `next` has that `before` had not, `before`'s errors read through `as` first. */
 export function newErrors(before, next, as = (f) => f) {
   const hides = skinsTable()?.hides;
   const errorsOf = (p) => validate(p, hides, NAMES).filter((f) => f.level === ERROR);

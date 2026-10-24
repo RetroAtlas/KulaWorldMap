@@ -766,7 +766,7 @@ export const REWIRED =
 
 /** { project, report, repairs } for any file the game would load, the report collapsed and the
     repairs the count of its lines before that, less the notes, the lines on a value kept as it
-    was; only a length that is not a level's throws. */
+    was; only a length that is not a level's length throws. */
 export function readKwl(bytes, world = WORLDS[0]) {
   const report = [];
   let notes = 0;

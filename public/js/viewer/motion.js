@@ -1,6 +1,6 @@
-// In the game's units throughout: a frame is the game's, counted from the
-// level's first, a rate is per frame, an angle is in the table's parts of a
-// turn, and a reach is in model units.
+// In the game's units throughout: a frame is the game's frame, counted from the
+// level's first frame, a rate is per frame, an angle is in the table's parts of
+// a turn, and a reach is in model units.
 import { hashes } from "./hash.js";
 
 export const frameAt = (table, ms) => (ms / 1000) * table.hz;
@@ -62,7 +62,7 @@ export function phasesOf(table, x, y, z, face) {
   return [next() % table.turn, next() % table.turn, next() % table.turn];
 }
 
-// A phase read from a field is f3's, one of four values.
+// A phase read from a field is in f3, one of four values.
 export const phaseField = (m) => m.f[1] & 3;
 
 /**

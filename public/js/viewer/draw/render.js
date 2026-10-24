@@ -36,7 +36,7 @@ const pick = pickCv.getContext("2d", { willReadFrequently: true });
 let pickStale = true;
 let pickFrom = null;
 let pickList = [];
-// where the canvas holds paint, and where that paint is the last draw's
+// where the canvas holds paint, and where that paint is from the last draw
 let laid = null;
 let painted = null;
 const WHOLE = { x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
@@ -206,7 +206,7 @@ function sortDepth(idx, w, offset) {
 }
 
 // The level's clock starts at its first frame as the level opens or motion is
-// turned on, as play's does, and stands there while motion is off, and while
+// turned on, as play's clock does, and stands there while motion is off, and while
 // the page is hidden, when the run moves on by the time it was hidden instead.
 // The same level installed again keeps its clock, and what travels is laid
 // out again from the level as it stands.
@@ -245,10 +245,10 @@ function same(a, b) {
 
 // What runs the level from outside the frame: a module may hand the frame the
 // clock it draws at, the index it draws from and what travels, given the
-// level, each standing in for the frame's own while it is registered, and may
-// say that every invisible block is seen. A handed index is shaped as the
-// level's own, with a marker only on a cell it holds, and may carry the
-// blocks it has marked with the frame of each mark.
+// level, each standing in for the frame's own clock, index or travel while it
+// is registered, and may say that every invisible block is seen. A handed
+// index is shaped as the level's own index, with a marker only on a cell it
+// holds, and may carry the blocks it has marked with the frame of each mark.
 let source = null;
 export const runWith = (fn) => {
   source = fn;

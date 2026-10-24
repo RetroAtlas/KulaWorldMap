@@ -78,7 +78,7 @@ class Reads(unittest.TestCase):
 
     def test_the_first_record_shares_its_stretch_with_the_header(self):
         """The header takes the six bytes where a cell would be, so the first
-        record's slots are not padding and are read like any other's."""
+        record's slots are not padding and are read like any other record's slots."""
         L = Level(level({(1, 2, 3): FIRST_RECORD, (4, 5, 6): FIRST_RECORD + 1},
                         [block((1, 2, 3), faces={0: KEY}), block((4, 5, 6), faces={0: COIN})],
                         header=-20))
@@ -209,7 +209,7 @@ class Circuits(unittest.TestCase):
             ((1, 2, 3), {"faces": {0: device(SWITCH, 1, -1, at(0, 0))}}),
             ((1, 4, 3), {"faces": {0: device(TELEPORTER, 1, -1, at(1, 0))}}),
         )
-        self.assertIn("flips [(0, 0)], not its colour's [(0, 0), (1, 0)]", L.verify()[0])
+        self.assertIn("flips [(0, 0)], not its colour's slots, [(0, 0), (1, 0)]", L.verify()[0])
 
     def test_a_teleporter_that_sends_the_ball_to_another_colour(self):
         L = circuit_level(

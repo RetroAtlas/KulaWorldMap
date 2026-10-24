@@ -629,7 +629,7 @@ class Reads(unittest.TestCase):
                           block((5, 2, 3), kind=PLATFORM_KIND, faces={0: slot(2, 2, 1, 5, 2, 3, 5, upper, 3)},
                                 second=slot(length, 30, -1, FIRST_RECORD + 1, kind=0))])
 
-        # the run's upper end is 6, so 27 blocks reach the last cell the game builds and 28 the lattice's last
+        # the run's upper end is 6, so 27 blocks reach the last cell the game builds and 28 the lattice's last cell
         for length, held in ((32767, 27), (29, 27), (28, 27), (0, 1), (-32768, 1)):
             p, report, _ = read_kwl(platform(length))
             self.assertEqual(p["blocks"][1]["length"], held, length)
@@ -1072,7 +1072,7 @@ class Validates(unittest.TestCase):
         # a far end on the lattice's last cell says so, and hides nothing of the length
         self.assertEqual(self.errors(rail(33, 1)), ["the far end is past the edge"])
         self.assertEqual(self.errors(rail(33, 2)), [held(2)])
-        # a far end off the lattice is the far end's error, not the length's
+        # a far end off the lattice is the far end's error, not the length's error
         self.assertEqual(self.errors(rail(31, 2, far=40)), ["the far end is past the edge"])
 
     def test_a_beam_ends_on_nothing_a_plain_block_or_another_laser_and_crosses_nothing(self):

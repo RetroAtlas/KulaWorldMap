@@ -3456,7 +3456,7 @@ FLIGHT_THIRD = (0x80034240, "lui $t0, {}", 0x80034248, "ori $t0, $t0, {}")
 
 # What a draw multiplies the dice's state by, held in two halves of a word.
 DICE_TIMES = (0x80047418, "lui $v1, {}", 0x80047420, "ori $v1, $v1, {}")
-# And the glints' generator's.
+# And the glints' generator's state.
 GLINT_TIMES = (0x80050d54, "lui $t8, {}", 0x80050d58, "ori $t8, $t8, {}")
 
 # A divisor the compiler turned into a multiply by a reciprocal and a shift:
@@ -3508,8 +3508,8 @@ SHADOW_SQUARE = (0x8002c8d0, 0x8002c8d4)
 # The square root the invisible block's light takes: a table of four words a
 # row, by the count of leading zeros in the square, where a lui and an addiu
 # build its address. The rows kept are those for a square of 2^8 or more;
-# past them the words are not the root's, and a square that small is well
-# within any near distance.
+# past them the words are not part of the root's table, and a square that
+# small is well within any near distance.
 LIGHT_ROOT = (0x800513f8, 0x800513fc)
 ROOT_ROWS = 24
 INVISIBLE = 3
@@ -3578,7 +3578,7 @@ GLOW_TYPES = (0x80010074, 5, 24)  # the draw's table of cases: where, the first 
 GLOW_COLOURS = {5: ((0x8002d514, 0x8002d51c), 4), 7: ((0x8002d5ec, 0x8002d5f4), 1),
                 9: ((0x8002d6c4, 0x8002d6cc), 4)}
 GLOW_LEVELS = 3           # the levels a corner can take
-# Where a lit teleporter's lift is, by circuit, and the shifts that double a lit exit's and switch's.
+# Where a lit teleporter's lift is, by circuit, and the shifts that double a lit exit's and switch's light.
 GLOW_LIFT = (0x8002d4b0, 0x8002d4b8)
 GLOW_DOUBLE = {7: (0x8002d5c8, 0x8002d5cc), 9: (0x8002d694, 0x8002d698)}
 MVMVA_SF = 1 << 19        # the command's bit that shifts its products down by 12
@@ -3766,7 +3766,7 @@ class Code:
         which holds `record`, a register derived from it, gp, sp or a lui; none within the record's `span` of
         words, no pointer made into it, and the record handed on by the `calls` listed alone."""
         low, high = record + span[0], record + span[1] + 3
-        held = {base: (record, True), "gp": (GP, False)}     # a register's address, and whether it is the record's
+        held = {base: (record, True), "gp": (GP, False)}     # a register's address, and whether it is the record's address
         awaited = {where: (callee, handed) for where, callee, handed in calls}
         count, pc = 0, start
         while pc <= end:
@@ -4058,7 +4058,7 @@ def jump(r):
     """The jump, the hop and the boost button's launch, each number against
     the others: the jump at the roll's top speed, the rows past a count and
     three pads, the landings two and three blocks on, a wall met in the air
-    where one takes a roll, and the centre drawn across as a roll's is."""
+    where one takes a roll, and the centre drawn across as a roll's centre is."""
     if r["jump.speed"] != r["roll.top"]:
         sys.exit("the jump does not start at the roll's top speed")
     if r["jump.rows"] != 4 * r["jump.row"] or r["jump.step"] != -1:
@@ -4090,7 +4090,7 @@ def body(r):
     """The body's orientation, each number against the others: the draw's
     four marks the ones the routines that set them are tested for, each its
     own and none the cleared word; a turn in place and a wall turning the
-    body's matrix a quarter turn, which the frame's takes back; the arc's
+    body's matrix a quarter turn, which the frame's matrix takes back; the arc's
     frames turning the frame's matrix a quarter turn in all; and the
     matrices in the one fixed point. Returns the arc's turn a frame."""
     marks = {k: r[f"body.mark.{k}"] for k in ("wrap", "wall", "right", "left")}
@@ -4172,7 +4172,7 @@ def glow(code, r):
 
 def glow_lift(code):
     """What a lit device's model is drawn times, in 4096ths a channel: a
-    teleporter's by its circuit, an exit's and a switch's one for all."""
+    teleporter's lift by its circuit, an exit's and a switch's lift one for all."""
     if code.multiplier(0x8002d4a4, 3, "a1", "v0") != 12:
         sys.exit("a teleporter's lift is not three words to a circuit")
     base = code.address(*GLOW_LIFT)
@@ -4350,10 +4350,10 @@ def take(r):
     middle the ball's centre has to come, the ball's own radius apart, where
     that middle stands off its block's centre, what it scores and, for a
     fruit, the bit it sets in the pickups' word; and for each thing that lasts, the word it sets and how that word runs down, the
-    bouncy pill's latch, the lethargy pill's with the blanks a pass waits while
+    bouncy pill's latch, the lethargy pill's word with the blanks a pass waits while
     its effect stands, the roll of the view and the screen's flash, ghost,
-    stretch and fade, and the invincibility pill's with the glow the ball's draw
-    runs off its word."""
+    stretch and fade, and the invincibility pill's word with the glow the ball's draw
+    runs off it."""
     if r["take.live"] != 1 or r["take.open"] != 1 or r["take.third"] != 2:
         sys.exit("the loader or the walk marks a thing with something other than 1")
     if r["take.first"] != -min(TAKE_CASES) or r["take.first"] + max(TAKE_CASES) >= TAKE_TYPES[2]:
@@ -4496,7 +4496,7 @@ def flight(r):
     frame, each held against the others: the end read alike before and
     after a step, the curve's unit and the depth's share both the end, the
     turn and the roll undone from it, the mode skipped the one the clock
-    stands in, the pitch and the depths the view in play's, and the hold at
+    stands in, the pitch and the depths those of the view in play, and the hold at
     the gate or past it where the start's wait and the last wait stay
     under it."""
     end = r["flight.end.gate"] - 1
@@ -4569,7 +4569,7 @@ def simon(r):
     round, the word the menu sets for the loop to flip and the total the menu
     code puts to end the game, each held against the others: one mode for the
     pad's case, the start's branch, the loop's point, the next-level routine's
-    branch and the menu, the pad's verdicts the ending's, the bits one each,
+    branch and the menu, the pad's verdicts the ones the ending reads, the bits one each,
     the reset's fill the sequence the pad reads from its last halfword down,
     a latched request past the turn's gate, and one gate for the points
     wherever they are asked."""
@@ -4713,7 +4713,7 @@ def effects(r):
     the flash, each held against the others: twelve pointers with the last
     empty and the kinds the pickups start among them, the three pills one
     kind and the five fruit and type 27's case one, the HUD's kinds apart
-    from the world's, two particles a row, every sprite among the seven
+    from the world's kinds, two particles a row, every sprite among the seven
     and every brightness a byte, the dice's -1 the one angle below nothing
     and drawn in the world only where nothing shows, a size's shifts one
     for the cosine and the sine past the sine's one, the entry two buffers
@@ -4722,7 +4722,7 @@ def effects(r):
     send, sent from its last word, every HUD point's third word -1, and
     the flash marked, tested and given with the one the loop waits two
     blanks on, a flat quad over the screen in the blend that adds, the
-    level's load starting the last mode's on a level with no key."""
+    level's load starting the last mode's flash on a level with no key."""
     pointers, colours, tables = r["effect.pointers"], r["effect.colours"], r["effect.tables"]
     if len(pointers) != r["effect.slots.last"] + 1 or pointers[-1] != 0 or 0 in pointers[:-1]:
         sys.exit("the effect tables' pointers are not eleven kinds' pointers of twelve")
@@ -4912,7 +4912,7 @@ def harms(r):
     by type: fire's heat and acid's melt with their limits, the laser's cell
     and the heat it leaves, the moving spikes' deadly value and their own
     countdown, the captivators' reach as the squared distance each catches
-    the ball within, the corkscrew's with how far off the face the point its
+    the ball within, the corkscrew's reach with how far off the face the point its
     bounce moves stands at a landing, and the dying ball's flash and tint."""
     if r["fire.kind"] != FIRE or r["acid.kind"] != ACID or r["laser.cell"] != LIT:
         sys.exit("fire, acid or the laser is not read from its own kind or the lit beam's cell")
@@ -5054,7 +5054,7 @@ def table(r, platform_speed):
     there, a kind or a type that can hurt the ball what it does, a kind the
     ball slides on, breaks or rides what it does to the roll, each kind the
     word the ball keeps for standing on it, and the level's own words, the clock's, the endings', the end screen's, a
-    bonus level's, an ending's, a run's, the Simon rooms', the fly-in's and the screen's, sit under `play`. The devices' light and each device's
+    bonus level's, an ending's, a run's, the Simon rooms', the fly-in's and the screen's words, sit under `play`. The devices' light and each device's
     colours, by world and then by circuit where it has one, sit apart from
     the types, whose entries are what moves, as do the effects a pickup or
     a teleport starts, their tables, their sprites' colours and the flash,
@@ -5129,8 +5129,8 @@ def table(r, platform_speed):
     types[30]["light"] = {"view": [-1, -(1 << r["ball.light.down"]), -(1 << r["ball.light.into"])],
                           "background": r["ball.light.background"], "colour": r["ball.light.colour"],
                           "base": r["ball.light.base"]}
-    # the ball's lies as far toward the block from its middle as the middle
-    # is off the face, so on the face
+    # the ball's shadow lies as far toward the block from its middle as the
+    # middle is off the face, so on the face
     types[30]["shadow"] = {"sprite": 0, "off": 0, "strength": 1 << r["shadow.ball.shift"],
                            "top": r["shadow.ball.top"], "over": r["shadow.ball.over"],
                            "squash": True}

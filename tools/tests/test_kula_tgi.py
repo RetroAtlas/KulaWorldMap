@@ -24,7 +24,7 @@ TEXTURE_AT = [(0, 0), (TEX_W, 0)]
 MIP_AT = (TEX_W * 2, 0)
 FILL = [5, 200]
 # The quad records: the three palette rows a texture is drawn through, and
-# one record whose position is no texture's.
+# one record whose position is no texture's position.
 ROWS = [(0, 1, 0), (1, 0, 1)]
 NOWHERE = (500, 300)
 # The model table: runs into the quad records.

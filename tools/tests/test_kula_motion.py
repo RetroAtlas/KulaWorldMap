@@ -512,7 +512,7 @@ class Glow(unittest.TestCase):
     EDGE = [[-1, 0, -1, 1, [0, 2, 0, 2]], [-1, 0, 0, 0, [0, 2, 0, 2]], [0, 0, 0, 4, [0, 1, 0, 1]]]
 
     def maker(self, own=OWN):
-        """A routine where the game's makes a light, which takes the face it is
+        """A routine where the game's routine makes a light, which takes the face it is
         given at `own`, then the first of three faces for one edge that is
         there."""
         words = [addu("s0", "a0", "zero"), addu("v1", "a2", "zero")]
@@ -572,7 +572,7 @@ class Lift(unittest.TestCase):
     TELEPORTER = [[6144, 6144, 5120], [5120, 5120, 6144], [5120, 6144, 5120], [6144, 5120, 5120]]
 
     def code(self, up=13, down=12):
-        """An executable whose lit devices lift their light as the game's do."""
+        """An executable whose lit devices lift their light as the game's devices do."""
         table = 0x800a3308
         blob = bytearray(table - EXE_BASE + 48)
         put = lambda at, w: struct.pack_into("<I", blob, at - EXE_BASE, w)

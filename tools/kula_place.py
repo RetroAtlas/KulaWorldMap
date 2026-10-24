@@ -91,7 +91,7 @@ class Fit(NamedTuple):
 
 class Placed(NamedTuple):
     """A fit, where the pack lies afterwards, the sectors to write as (lba, raw
-    sector) in address order, and what says the image is not the disc's."""
+    sector) in address order, and what says the image is not an image of the disc."""
     fit: Fit
     lba: int
     writes: list
@@ -101,7 +101,7 @@ class Placed(NamedTuple):
 class Planned(NamedTuple):
     """Several placements: each item's Placed in the order given, the sectors
     to write merged in address order, a later one replacing an earlier at the
-    same address, and what says the image is not the disc's."""
+    same address, and what says the image is not an image of the disc."""
     placed: list
     writes: list
     warnings: list
@@ -155,7 +155,7 @@ def fit(pak, capacity, slot, stream, title=None):
 
 
 def identify(disc):
-    """What says the image is not the disc's, each a warning rather than a refusal."""
+    """What says the image is not an image of the disc, each a warning rather than a refusal."""
     out = []
     disc.f.seek(0, 2)
     size = disc.f.tell()
@@ -292,7 +292,7 @@ def plan_all(disc, items):
 
 def verify(disc, pack_path, slot, stream, placed):
     """Read the pack back through the readers and hold it to the plan: the slot
-    inflates to the level, every record and name is the plan's, the directory
+    inflates to the level, every record and name is as planned, the directory
     places the pack where the plan put it, and every sector written checks."""
     key = pack_path.upper()
     if disc.files.get(key) != (placed.lba, placed.fit.size):
@@ -432,7 +432,7 @@ def synthetic_packs():
 def synthetic_image():
     """A few sectors with the disc's structure, every one built whole: the volume
     descriptor, the root and one world's directory, SYSTEM.CNF, two one-sector
-    packs of small levels, the world pack's at level 1 so that recompression
+    packs of small levels, the world pack's streams at level 1 so that recompression
     wins room, a /3.00 of zero sectors and a postgap."""
     packs_ = synthetic_packs()
     cnf = BOOT + b"\r\nTCB = 4\r\nEVENT = 16\r\nSTACK = 0X801FFF00\r\n"
