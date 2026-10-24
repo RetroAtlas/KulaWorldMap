@@ -55,6 +55,7 @@ from kula_kwl import (  # noqa: E402
     describe,
     executable,
     deflate_vectors,
+    diff_words,
     digests,
     figure_failures,
     hostile,
@@ -1623,6 +1624,15 @@ class TheCompare(unittest.TestCase):
         self.assertEqual(residuals(Counter(RESIDUALS), Counter(DROPPED)), [])
         self.assertEqual(residuals(Counter(RESIDUALS) + Counter({"kind 7 slot 0 f3": 2}), Counter(DROPPED)),
                          ["2 x kind 7 slot 0 f3, where the table lists 0"])
+
+    def test_the_type_of_a_vanishing_blocks_other_slots_is_held_to_the_disc_and_their_other_words_are_not(self):
+        C = Level(canonical(project([plain((5, 5, 5), f0=start()), {"cell": [6, 5, 5], "kind": 7, "phase": 0}])))
+        blob = bytearray(C.blob)
+        for w, v in ((1, 9), (17, 1), (18, 5), (49, 0), (95, 2)):
+            struct.pack_into("<h", blob, GRID_BYTES + 6 + 256 + 2 * w, v)
+        classes = Counter()
+        diff_words(Level(bytes(blob)), C, classes, {})
+        self.assertEqual(dict(classes), {"kind 7 slot 1 type": 1, "kind 7 slot 3 type": 1})
 
     def test_the_per_type_constants_are_held_to_the_mode_of_the_discs_objects(self):
         self.assertEqual(trio_failures({31: Counter({(386, 1, -100): 70, (0, 0, 0): 2})}), [])

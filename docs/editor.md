@@ -101,7 +101,7 @@ Everything the game derives at load or never reads is left out and rebuilt at ev
 - Each device's own state word (a colour turns over as one, so the colour's state is what is stored).
 - The header word (unread, [the backlog](../backlog/item-005-the-header-word.md)).
 - The trailer's cell and two numbers (unread).
-- The sixteen never-set words, the extras and the filler words of every slot.
+- The sixteen never-set words, the extras and the filler words of every slot, the type word of a vanishing block's slots 1 to 5 among them, though the game reads it for a captivator walking one of those faces.
 - Record order (lattice order at every write).
 - The beam's cells (the loader writes them at `0x80035a70`).
 - A span's direction, axis and end order (derived from `cell` and `far`).
@@ -139,7 +139,9 @@ Then the records, 256 bytes each: every block of kinds 5 to 8 and every block of
 
 `K` is the block's kind in slot 0 and -1 in slots 1 to 5.
 
-A face with nothing on it on a block of kinds 0 to 4 is the bare slot, the form the disc holds on 19,430 of its empty faces, and the game tests only its type 0 and its state 0; the slots a record of kinds 5 to 8 has no use for are -1 throughout, which is what the disc holds on most of them, 32 to 33 of its 37 platforms, 337 to 402 of its 435 crumbling blocks, 40 to 93 of its 98 vanishing blocks and 116 to 117 of its 123 lasers by slot, the rest carrying an editor's leftovers in words the game never reads.
+A face with nothing on it on a block of kinds 0 to 4 is the bare slot, the form the disc holds on 19,430 of its empty faces, and the game tests only its type 0 and its state 0; the slots a record of kinds 5 to 8 has no use for are -1 throughout, which is what the disc holds on most of them, 32 to 33 of its 37 platforms, 337 to 402 of its 435 crumbling blocks, 40 to 93 of its 98 vanishing blocks and 116 to 117 of its 123 lasers by slot, the rest carrying an editor's leftovers in words the game never reads, but for the type word of a vanishing block's slot, which it reads for a captivator walking that face.
+
+On a level the writers write, the -1 there stops a captivator walking any face of a vanishing block but its top, as a device does, where the disc's leftovers let one over on 16 levels, none of which brings one to such a face ([motion.md](motion.md)).
 
 `dir` is the game's direction from the record's cell to `far`, 0 `-z`, 1 `+x`, 2 `+y`, 3 `-y`, 4 `-x`, 5 `+z`; `axis` is 1, 2 or 5 for a run along `x`, `y` or `z`; `l` is the lower end and `u` the upper, lower first on all 160 spans of the disc; `end` is 0 when the record stands at the lower end and 1 at the upper, as on 37 of 37; `lit` is 1 where the laser's colour starts on and 0 where it starts off; `5 + k` is the record's own lattice value, which the platform loader at `0x80032908` writes over its whole run.
 
@@ -514,7 +516,7 @@ The unit tests hold the port to the Python side through the digest fixture, both
 
 Word for word: every word of every matched record and of the trailer outside an explicit mask of what the game never reads, a link compared as the cell and face it names and a record's own lattice value as itself, so that a record folded or left out does not read as a hundred shifted words.
 
-The mask is the header word; words 96 to 118 of every record; words 13 and 15 of every slot; the kind word of slots 2 to 5; the trailer's words 1 to 5 and its slots 1 to 5; every word of a settings record but its two flags; a bare slot's words other than its type and its state; an object's `f9`, `f10` and `f14`, its `f6` and `f7` on anything but a teleporter or a switch, and its `f5` on BONUS 30, whose pickups the disc left unnumbered, the five levels where a number repeats needing no mask since the repeat stands on a crumbling block, whose words the mask takes already; a platform's second slot but its end, length, speed and lattice value, and its first slot from `f10` on; a crumbling block's first slot from `f5` on and its other slots; a vanishing block's type word, its first slot from `f3` on and its other slots; and a laser's slots 2 to 5.
+The mask is the header word; words 96 to 118 of every record; words 13 and 15 of every slot; the kind word of slots 2 to 5; the trailer's words 1 to 5 and its slots 1 to 5; every word of a settings record but its two flags; a bare slot's words other than its type and its state; an object's `f9`, `f10` and `f14`, its `f6` and `f7` on anything but a teleporter or a switch, and its `f5` on BONUS 30, whose pickups the disc left unnumbered, the five levels where a number repeats needing no mask since the repeat stands on a crumbling block, whose words the mask takes already; a platform's second slot but its end, length, speed and lattice value, and its first slot from `f10` on; a crumbling block's first slot from `f5` on and its other slots; a vanishing block's type word, its first slot from `f3` on and its other slots but their types; and a laser's slots 2 to 5.
 
 A level whose rebuild has fewer records than the disc, 144 that carry a settings record with neither flag set and 2 that carry a record with nothing on it, is compared on the records both have, and the two counts come from the same stripping the record check uses and are pinned beside the residual table.
 
@@ -530,3 +532,4 @@ Outside the mask the rebuild differs from the disc in these words and no others,
 | the extras 119 to 124 of one ice block and one crumbling block | 12 | a platform's position left on LEVEL 54 and FINAL 11, read for kind 5 alone |
 | the kind word of one object slot | 1 | 0 on LEVEL 71, the scratch word the game writes before it reads |
 | one teleporter's `f6` | 1 | LEVEL 125's two yellow teleporters, the one chain of the disc left unlinked, which nothing walks since the colour has no switch |
+| the type word of a vanishing block's slots 1 to 5 | 81 | an editor's leftovers on 17 levels, mostly a fire or a type 4 in the second slot, read for a captivator walking that face, which no level on the disc brings there |

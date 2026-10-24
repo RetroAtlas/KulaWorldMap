@@ -23,9 +23,10 @@ only. It is the block's, and a few kinds do not carry objects in their first
 two slots: a laser or a moving platform names its two ends there, with the
 type the direction from the block to the far end numbered as above, a platform
 keeping which end it starts from, its length in blocks and its speed in the
-second, and kind 6 keeps a fixed-point copy of its own cell. Whatever the
-other slots of those kinds hold is not in play: the game takes the things on a
-record of a kind below 5 and no other.
+second, and kind 6 keeps a fixed-point copy of its own cell. What stands on
+the other slots of those kinds is never taken in play: the game takes the
+things on a record of a kind below 5 and no other, though it reads a vanishing
+block's types there for a captivator that walks.
 
 A lattice cell holds one of five block styles below 5, or 5 + i for a
 block carrying record i. The record repeats the cell's own coordinates, which

@@ -1745,7 +1745,7 @@ def unread(kind, w, dslot, cslot, name):
     if kind == CRUMBLING_KIND:
         return slot >= 1 or sw >= 5
     if kind == VANISHING_KIND:
-        return slot >= 1 or sw == 1 or sw >= 3
+        return sw != 1 if slot >= 1 else (sw == 1 or sw >= 3)
     if kind == LASER_KIND:
         return slot >= 2
     typ = dslot[1]
@@ -2034,7 +2034,7 @@ def figure_failures(r):
     return [f"{what} is {_figure(held)}, not the executable's {_figure(read)}" for what, held, read in figures if held != read]
 
 
-# The words the rebuild writes differently outside the unread mask, each a leftover the game never reads, by its count on the disc.
+# The words the rebuild writes differently outside the unread mask, each a leftover nothing on its level reads, by its count on the disc.
 RESIDUALS = {
     # the clock's f2, which the loader never turns
     "kind 0..4 object type 8 f2": 27,
@@ -2054,6 +2054,12 @@ RESIDUALS = {
     "kind 0..4 object type 35 kind word": 1,
     # LEVEL 125's two yellow teleporters, the one chain the disc left unlinked
     "kind 0..4 object type 5 f6": 1,
+    # the type of a vanishing block's other slots, read for a captivator walking that face, which no shipped level brings there
+    "kind 7 slot 1 type": 58,
+    "kind 7 slot 2 type": 5,
+    "kind 7 slot 3 type": 6,
+    "kind 7 slot 4 type": 6,
+    "kind 7 slot 5 type": 6,
 }
 # The levels whose rebuild keeps fewer records than the disc, by what it leaves out.
 DROPPED = {UNFLAGGED: 144, BARE_RECORDS: 2}
