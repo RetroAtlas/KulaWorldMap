@@ -265,8 +265,8 @@ test("the reader trusts nothing the bytes say about where a record or a name lie
     return out;
   };
   assert.throws(() => readPak(blob.subarray(0, 3)), /ends before its count/);
-  assert.throws(() => readPak(doctored(0, 0)), /a count of 0 is not a pack's/);
-  assert.throws(() => readPak(doctored(0, SLOTS_MOST + 1)), /a count of 33 is not a pack's/);
+  assert.throws(() => readPak(doctored(0, 0)), /no pack counts 0 levels/);
+  assert.throws(() => readPak(doctored(0, SLOTS_MOST + 1)), /no pack counts 33 levels/);
   assert.throws(() => readPak(doctored(0, 5)), /the table runs past the pack/);
   assert.throws(() => readPak(doctored(4, 4)), /the record of slot 0 lies outside the pack/);
   assert.throws(() => readPak(doctored(8, 0)), /the record of slot 0 lies outside the pack/);

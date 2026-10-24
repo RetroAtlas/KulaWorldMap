@@ -11,8 +11,8 @@ import { isOrbit, readOrbit, readOrbitLink } from "../format/orbit.js";
 import { inflate as unpack } from "../format/inflate.js";
 import { pickFromDisc, pickFromPack, slotTitle, slotWorld } from "./importdialog.js";
 
-const NOT_MAP = "That file is not a level file of the map's.";
-const NOT_LEVEL = "That file is neither a level of the map's nor one of the game's.";
+const NOT_MAP = "That file is not one of the map's level files.";
+const NOT_LEVEL = "That file is neither one of the map's level files nor a level file of the game.";
 const TOO_LARGE =
   "That file is far larger than any level file, and it does not read as a disc image.";
 const CUE_SHEET = "That file is a cue sheet; open the disc image it names, the .bin beside it.";

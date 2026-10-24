@@ -161,13 +161,13 @@ test("opening a file makes a saved draft out of what it holds, or refuses it wit
 
   await input.setInputFiles(file("other.json", JSON.stringify({ hello: 1, blocks: [] })));
   await expect(page.locator("#toastStack .toast")).toHaveText([
-    "That file is not a level file of the map's.",
+    "That file is not one of the map's level files.",
   ]);
   await expect(rows).toHaveCount(3);
   await input.setInputFiles(file("noise.kwl", new Uint8Array(1000).fill(7)));
   await expect(page.locator("#toastStack .toast")).toHaveText([
-    "That file is neither a level of the map's nor one of the game's.",
-    "That file is not a level file of the map's.",
+    "That file is neither one of the map's level files nor a level file of the game.",
+    "That file is not one of the map's level files.",
   ]);
   await expect(rows).toHaveCount(3);
   // the gate goes by the count alone, so a crowd with no device, which the writer writes, is refused as one with a switch is

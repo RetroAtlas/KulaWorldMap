@@ -1228,15 +1228,15 @@ test("a level added from a file is a saved draft of Your levels and a row on the
 
   await picker.setInputFiles(file("other.json", JSON.stringify({ hello: 1, blocks: [] })));
   await expect(page.locator("#toastStack .toast")).toHaveText([
-    "That file is not a level file of the map's.",
+    "That file is not one of the map's level files.",
   ]);
   await expect(dialog).toBeVisible();
   await expect(level).toHaveCount(2);
   await expect(yours).toHaveCount(2);
   await picker.setInputFiles(file("noise.kwl", new Uint8Array(1000).fill(7)));
   await expect(page.locator("#toastStack .toast")).toHaveText([
-    "That file is neither a level of the map's nor one of the game's.",
-    "That file is not a level file of the map's.",
+    "That file is neither one of the map's level files nor a level file of the game.",
+    "That file is not one of the map's level files.",
   ]);
   await expect(level).toHaveCount(2);
   await expect(yours).toHaveCount(2);

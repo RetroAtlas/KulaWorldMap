@@ -102,7 +102,7 @@ export function readPak(bytes) {
   if (bytes.length < 4) throw new Error("the pack ends before its count");
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const count = view.getUint32(0, true);
-  if (count < 1 || count > SLOTS_MOST) throw new Error(`a count of ${count} is not a pack's`);
+  if (count < 1 || count > SLOTS_MOST) throw new Error(`no pack counts ${count} levels`);
   const table = 4 + count * 12;
   if (table > bytes.length) throw new Error("the table runs past the pack");
   const names = [];

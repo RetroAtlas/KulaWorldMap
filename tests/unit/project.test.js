@@ -697,7 +697,7 @@ test("a document that bypassed the reader is checked alike on both sides", () =>
     NAMES,
   ).map(describe);
   assert.deepEqual(findings, [
-    "error: the world '' is not one of the disc's ten",
+    "error: the world '' is not one of the disc's ten worlds",
     "error: the target '{\"pack\":1}' is not a slot of a world pack, a finals pack or the Simon rooms' pack",
     "error: a time of true seconds, outside the file's range",
     "error at 5,5,5 face 0: a facing of 1 to 4 is needed",
@@ -769,7 +769,7 @@ test("the target's slot is a run of ASCII digits, and the world and the target a
       `the target '${text}' is not a slot of a world pack, a finals pack or the Simon rooms' pack`,
     ]);
   assert.deepEqual(errors([plain([5, 5, 5], 0, { 0: start() })], { world: "it's" }), [
-    "the world 'it's' is not one of the disc's ten",
+    "the world 'it's' is not one of the disc's ten worlds",
   ]);
 });
 
@@ -996,7 +996,7 @@ test("what the format takes, and what it warns about", () => {
     ),
   );
   assert.ok(
-    errors(one, { world: "MOON" }).includes("the world 'MOON' is not one of the disc's ten"),
+    errors(one, { world: "MOON" }).includes("the world 'MOON' is not one of the disc's ten worlds"),
   );
   for (const [into, ok] of [
     ["/HIRO/HIRO.PAK#0", true],

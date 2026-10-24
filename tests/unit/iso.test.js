@@ -136,11 +136,11 @@ test("a file without the mark, one that ends before its directory, and a record 
   await assert.rejects(openDisc(new Blob([image(24, 20, short)])), /runs past its table/);
 });
 
-test("a directory longer than any disc's is refused before it is read", async () => {
+test("a directory longer than one on any disc is refused before it is read", async () => {
   const sectors = 20 + DIR_MOST + 2;
   await assert.rejects(
     openDisc(new Blob([image(sectors, 20, new Uint8Array(0), DIR_MOST * USER + 1)])),
-    /the directory at sector 20 is longer than any disc's/,
+    /the directory at sector 20 is longer than a directory on any disc/,
   );
   const disc = await openDisc(new Blob([image(sectors, 20, new Uint8Array(0), DIR_MOST * USER)]));
   assert.equal(disc.files.size, 0);

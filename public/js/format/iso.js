@@ -106,7 +106,7 @@ class Disc {
   async readDir(lba, size, prefix) {
     if (this.walked.has(lba)) throw new Error(`the directory at sector ${lba} is reached twice`);
     if (size > DIR_MOST * USER)
-      throw new Error(`the directory at sector ${lba} is longer than any disc's`);
+      throw new Error(`the directory at sector ${lba} is longer than a directory on any disc`);
     this.walked.add(lba);
     const data = await this.read(lba, size);
     let pos = 0;

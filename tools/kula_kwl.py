@@ -1074,7 +1074,7 @@ def read_project(raw):
         report.append(f"a version of {_show(raw['version'])} is not a whole number; "
                       f"the file is read as version {VERSION}")
     elif "version" in raw and raw["version"] > VERSION:
-        report.append(f"written as version {_int(raw['version'])} of the format, newer than this reader's {VERSION}; "
+        report.append(f"written as version {_int(raw['version'])} of the format, newer than this reader's version {VERSION}; "
                       f"what it knows is read")
         notes += 1
 
@@ -1303,7 +1303,7 @@ def validate(project, hides):
 
     world = project.get("world") if isinstance(project.get("world"), str) else ""
     if world not in WORLDS:
-        err(f"the world '{world}' is not one of the disc's ten")
+        err(f"the world '{world}' is not one of the disc's ten worlds")
     into = project.get("into")
     if into is not None:
         text = into if isinstance(into, str) else _show(into)

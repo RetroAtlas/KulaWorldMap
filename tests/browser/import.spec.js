@@ -421,13 +421,13 @@ test("a file that is none of these is still refused with one toast", async ({ pa
   await settle(page);
   await page.locator("#draftFile").setInputFiles(file("sectors.bin", new Uint8Array(2352 * 17)));
   await expect(page.locator("#toastStack .toast")).toHaveText([
-    "That file is neither a level of the map's nor one of the game's.",
+    "That file is neither one of the map's level files nor a level file of the game.",
   ]);
   await page
     .locator("#draftFile")
     .setInputFiles(file("almost.pak", Uint8Array.of(1, 0, 0, 0, 1, 2, 3)));
   await expect(page.locator("#toastStack .toast").first()).toHaveText(
-    "That file is neither a level of the map's nor one of the game's.",
+    "That file is neither one of the map's level files nor a level file of the game.",
   );
   await expect(page.locator("#draftRows button")).toHaveCount(0);
   expect(errors).toEqual([]);

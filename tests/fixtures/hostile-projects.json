@@ -228,7 +228,7 @@
     ]
    },
    "report": [
-    "written as version 7 of the format, newer than this reader's 1; what it knows is read",
+    "written as version 7 of the format, newer than this reader's version 1; what it knows is read",
     "a time of \"soon\" is not a whole number; it is 99",
     "hidden is neither true nor false; it is taken as false",
     "colour 3 is neither on nor off; it starts on",

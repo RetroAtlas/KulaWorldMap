@@ -525,7 +525,7 @@ export function validate(project, hides, names = {}) {
     out.push({ level: WARNING, text, at: at(cell, face) });
 
   const world = typeof project.world === "string" ? project.world : "";
-  if (!WORLDS.includes(world)) err(`the world '${world}' is not one of the disc's ten`);
+  if (!WORLDS.includes(world)) err(`the world '${world}' is not one of the disc's ten worlds`);
   if (project.into != null) {
     const text = typeof project.into === "string" ? project.into : JSON.stringify(project.into);
     const hash = text.lastIndexOf("#");
@@ -803,7 +803,7 @@ export function readProject(source) {
     );
   else if (safe(raw.version) && raw.version > VERSION) {
     report.push(
-      `written as version ${raw.version} of the format, newer than this reader's ${VERSION}; what it knows is read`,
+      `written as version ${raw.version} of the format, newer than this reader's version ${VERSION}; what it knows is read`,
     );
     notes++;
   }

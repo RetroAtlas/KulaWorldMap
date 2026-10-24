@@ -771,7 +771,7 @@ class ReadsProjects(unittest.TestCase):
             {"cell": [11, 5, 5], "kind": 7, "phase": 0},
         ])
         self.assertEqual(report, [
-            "written as version 7 of the format, newer than this reader's 1; what it knows is read",
+            "written as version 7 of the format, newer than this reader's version 1; what it knows is read",
             'a time of "soon" is not a whole number; it is 99',
             "hidden is neither true nor false; it is taken as false",
             "colour 3 is neither on nor off; it starts on",
@@ -1155,7 +1155,7 @@ class Validates(unittest.TestCase):
             ],
         }, HIDES)
         self.assertEqual([describe(f) for f in findings], [
-            "error: the world '' is not one of the disc's ten",
+            "error: the world '' is not one of the disc's ten worlds",
             "error: the target '{\"pack\":1}' is not a slot of a world pack, a finals pack or the Simon rooms' pack",
             "error: a time of true seconds, outside the file's range",
             "error at 5,5,5 face 0: a facing of 1 to 4 is needed",
@@ -1208,7 +1208,7 @@ class Validates(unittest.TestCase):
         for text in ("/HIRO/HIRO.PAK#٣", "/HIRO/HIRO.PAK#²", "/HIRO/HIRO.PAK#3 "):
             self.assertEqual(into(text), [f"the target '{text}' is not a slot of a world pack, a finals pack or the Simon rooms' pack"])
         self.assertEqual(self.errors([plain((5, 5, 5), t0=start())], world="it's"),
-                         ["the world 'it's' is not one of the disc's ten"])
+                         ["the world 'it's' is not one of the disc's ten worlds"])
 
     def test_the_face_cap_with_the_level_that_sits_under_it(self):
         data = json.loads(DATA.read_text())
@@ -1345,7 +1345,7 @@ class Validates(unittest.TestCase):
         self.assertIn("a speed of 65566, outside the file's range", self.errors([plain((5, 5, 5), t0=start()), wide]))
         self.assertIn("a length of 40000, outside the file's range",
                       self.errors([plain((5, 5, 5), t0=start()), dict(wide, length=40000, speed=30)]))
-        self.assertIn("the world 'MOON' is not one of the disc's ten", self.errors([plain((5, 5, 5), t0=start())], world="MOON"))
+        self.assertIn("the world 'MOON' is not one of the disc's ten worlds", self.errors([plain((5, 5, 5), t0=start())], world="MOON"))
         for into, ok in (("/HIRO/HIRO.PAK#0", True), ("/HELL/HELLFI.PAK#1", True), ("/HELL/HELLFI.PAK#2", False),
                          ("/HIRO/COPYCAT.PAK#0", True), ("/HIRO/COPYCAT.PAK#9", True), ("/HIRO/COPYCAT.PAK#10", False),
                          ("HIRO#0", False)):
