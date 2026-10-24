@@ -63,11 +63,11 @@ test("a record is a block carrying up to six objects, one to a face", () => {
       assert.notEqual(r.kind, TRAILER_KIND, where);
       assert.ok(r.on.length <= FACES, `${where} carries ${r.on.length}`);
       assert.equal(new Set(r.on.map((o) => o.face)).size, r.on.length, `${where} doubles a face`);
+      // the map leaves out what stands on a record that keeps words of its own
+      if ("type" in r) assert.deepEqual(r.on, [], `${where} kind ${r.kind}`);
       for (const o of r.on) {
         assert.ok(o.face >= 0 && o.face < FACES, `${where} face ${o.face}`);
         assert.ok(o.type > 0, `${where} face ${o.face} is bare`);
-        // a kind with a payload of its own keeps its first two slots for it
-        if ("type" in r) assert.ok(o.face >= 2, `${where} kind ${r.kind} face ${o.face}`);
       }
     }
   }

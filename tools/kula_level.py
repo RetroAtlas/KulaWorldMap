@@ -19,8 +19,9 @@ A slot is [kind, type, eleven fields, pad, value, pad]. The six are the six
 faces of the block, in the order the game numbers directions: -z, +x, +y, -y,
 -x, +z. A slot whose type is not zero is an object standing on that face, and
 a block whose top is bare is not empty. The kind word is set in the first slot
-only. It is the block's, and a few kinds do not carry objects in their first
-two slots: a laser or a moving platform names its two ends there, with the
+only. It is the block's, and a few kinds keep words of their own in place of
+what stands on a face, a span in its first two slots and kinds 6 and 7 in the
+first alone: a laser or a moving platform names its two ends there, with the
 type the direction from the block to the far end numbered as above, a platform
 keeping which end it starts from, its length in blocks and its speed in the
 second, and kind 6 keeps a fixed-point copy of its own cell. What stands on
@@ -63,7 +64,8 @@ LASER_KIND = 8
 PLATFORM_KIND = 5
 NOWHERE = (-1, -1, -1)
 
-# The kinds whose first two slots are the block's own payload, not its faces.
+# The kinds whose own payload fills their first slot, or a span's first two
+# slots, in place of a face.
 PAYLOAD_KINDS = frozenset({5, 6, 7, LASER_KIND})
 # The kind the lattice never names: it is the last record on the levels that
 # have it, and its first slot is the level's settings, which the loader reads.

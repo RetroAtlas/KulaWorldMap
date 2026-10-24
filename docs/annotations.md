@@ -137,7 +137,7 @@ The colour is `f3`, the circuit number the lasers and switches use: LEVEL 68's a
 
 ### type 7: Exit
 
-One on each of 190 levels, and none on the 30 bonus and 10 Simon levels, which have no exit to reach; the disc keeps a second on three of them, on records the game never walks ([level-format.md](level-format.md)).
+One on each of 190 levels, and none on the 30 bonus and 10 Simon levels, which have no exit to reach; the disc keeps a second on three of them and a third on one of those, LEVEL 94, on records the game never walks ([level-format.md](level-format.md)).
 
 LEVEL 1's, LEVEL 2's and HIDDEN 10's stand on the cells and faces the map draws them on.
 

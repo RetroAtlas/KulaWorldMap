@@ -101,7 +101,9 @@ UNSET_SLOTS = re.compile(r"(\d+) to (\d+) of its (\d+) platforms, (\d+) to (\d+)
 NUMBERED_LEVELS = re.compile(r"numbers its pickups as the writer does on all (\d+) levels that number them")
 NUMBER_RUNS = re.compile(r"runs 0 to n-1 with no repeats on (\d+) of the (\d+) levels that have any\. "
                          r"The (\w+) with a repeat are ((?:[A-Z]+ \d+, )*[A-Z]+ \d+ and [A-Z]+ \d+),")
-SLOT_SENTENCES = {EDITOR_DOC: (BARE_FACES, UNSET_SLOTS, NUMBERED_LEVELS), FORMAT_DOC: (NUMBER_RUNS,)}
+LEFT_OBJECTS = re.compile(r"The disc keeps (\d+) objects on the other slots of those four kinds, on (\d+) levels, "
+                          r"and they read as what an editor leaves behind: (\d+) are a fire or a type 4 alone")
+SLOT_SENTENCES = {EDITOR_DOC: (BARE_FACES, UNSET_SLOTS, NUMBERED_LEVELS), FORMAT_DOC: (NUMBER_RUNS, LEFT_OBJECTS)}
 PACKS = Path(__file__).resolve().parents[2] / "public" / "packs.json"
 HIDES = json.loads(OBJECTS.read_text())["skins"]["hides"]
 START, EXIT, KEY, COIN, GEM = 30, 7, 31, 37, 36
@@ -1694,6 +1696,8 @@ class TheDisc(unittest.TestCase):
         self.assertEqual((int(runs.group(1)), int(runs.group(2))), (f["numbered"] - len(f["repeats"]), f["numbered"]))
         self.assertEqual(runs.group(3), "five")
         self.assertEqual(sorted(runs.group(4).replace(" and ", ", ").split(", ")), f["repeats"])
+        left = LEFT_OBJECTS.search(FORMAT_DOC.read_text())
+        self.assertEqual(tuple(int(g) for g in left.groups()), f["left"])
 
     def test_every_level_rebuilt_plays_as_the_disc_and_differs_in_the_words_listed_alone(self):
         with open_disc() as disc:
