@@ -150,6 +150,37 @@ test("a beam's two ends are bare blocks to what travels, on every face, whatever
   }
 });
 
+test("a vanishing block is stood over on its top by its own lattice value and on no other face, its other slots unset", () => {
+  const vanishing = (x) => ({
+    x,
+    y: 10,
+    z: 17,
+    kind: 7,
+    type: 0,
+    f: [2, ...Array(10).fill(-1)],
+    on: [],
+  });
+  const filler = Array.from({ length: 44 }, (_, i) => ({
+    x: 1 + (i % 30),
+    y: 1 + Math.floor(i / 30),
+    z: 17,
+    kind: 0,
+  }));
+  const records = [vanishing(16), ...filler, vanishing(12)];
+  const blocks = records.map((r) => [r.x, r.y, r.z]);
+  const p = probe(level(blocks, records));
+  assert.equal(p.value([16, 10, 17], 0), mapData.firstRecord);
+  assert.equal(p.value([12, 10, 17], 0), 50);
+  assert.equal(p.free([16, 10, 17], 0, 0), false, "a value of 5 refuses its top");
+  assert.equal(p.free([12, 10, 17], 0, 0), true, "and one of 50 passes");
+  for (const cell of [
+    [16, 10, 17],
+    [12, 10, 17],
+  ])
+    for (let face = 1; face < 6; face++)
+      assert.equal(p.free(cell, face, 0), false, `${cell} refuses face ${face}`);
+});
+
 test("a thing on its way stands over the block it leaves and the one it comes onto", () => {
   const w = { c: { x: 12, y: 10, z: 17 }, face: 0 };
   assert.deepEqual(under(w, [0, 0, 0])[0], [12, 10, 17], "at rest, its own block first");

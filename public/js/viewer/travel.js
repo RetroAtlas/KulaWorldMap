@@ -17,6 +17,7 @@ const PLATFORM_KIND = 5;
 const CRUMBLING_KIND = 6;
 const VANISHING_KIND = 7;
 const BETWEEN = -2;
+const UNSET = -1;
 // The types standing on a face that a captivator may still cross.
 const CROSSABLE = new Set([30, 1, 2, 4]);
 const CAPTIVATORS_FROM = 50;
@@ -102,8 +103,8 @@ export function probe(l, lit = (ray) => ray.lit) {
       if (r.kind === PLATFORM_KIND) return false;
       if (r.kind === CRUMBLING_KIND) return true;
       let type = r.on.find((o) => o.face === face)?.type ?? 0;
-      if (r.kind === VANISHING_KIND && face === 0) type = v;
-      if (r.kind === VANISHING_KIND && face === 1) return false;
+      // the loader writes a vanishing block's own lattice value over its top's type
+      if (r.kind === VANISHING_KIND) type = face === 0 ? v : UNSET;
       return type === 0 || type >= CAPTIVATORS_FROM || CROSSABLE.has(type);
     },
     empty: (cell, frame) => value(cell, frame) === OFF_LATTICE,

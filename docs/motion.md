@@ -1033,6 +1033,8 @@ A vanishing block's top is asked through the record's type word, over which the 
 
 Its other faces are asked through their own slots' type words by the same read (`0x8003fc48` to `0x8003fc5c`), which the block's loader and its cycle leave as the file holds them, writing the type word, `f3` and `f4` of the first slot alone (`0x80028bcc`, `0x80028c58`, `0x80028cc0`, `0x8002b844`, `0x8002bbd4`), so a walker on any face of a vanishing block but its top passes or stops by the file's type there, as it does on the face of a plain block.
 
+The map ships none of a vanishing block's slots past its first, so the viewer reads the type word of its slot for each other face as the level writers write it, −1, and to a walker on any face but the top a vanishing block never counts; the disc's own leftovers in those slots, a passing type in some, are not shipped, and no walker the disc places can ever ask the lattice about a vanishing block.
+
 A beam's two ends count as the plain style, since the loader writes style 0 over both (`0x80035b2c`, `0x80035bb8`, `0x80035c38`, `0x80035ca8`, and [level-format.md](level-format.md)).
 
 Turning is `0x8003d378`, `0x8003d4f4` and `0x8003d22c`: toward the side, toward the other side, or about, and a turn swaps the heading and the side and touches nothing else; what is drawn is RotMatrix of the entry's own three angles (`0x8003d7c8`), so a star tumbles on unbroken through a turn, and the wheel's nose swings round only because its turn steps one of its angles.
