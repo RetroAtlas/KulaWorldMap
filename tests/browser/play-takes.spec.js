@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { textured, trackErrors } from "./helpers.js";
+import { frozen, stepUntil, textured, trackErrors } from "./helpers.js";
 import {
   DONE,
   TAKEN,
   about,
-  betweenFrames,
   line,
   opened,
   pixelAt,
@@ -12,6 +11,7 @@ import {
   say,
   startPlay,
   status,
+  table,
   toggled,
   top,
 } from "./playhelpers.js";
@@ -65,16 +65,13 @@ async function drawsThing(page, c, type) {
   return JSON.stringify(shown) !== JSON.stringify(hidden);
 }
 
-/** Whether the exits stand open, and the form LEVEL 1's exit is drawn in. */
-const exits = (page) =>
-  page.evaluate(async () => {
-    const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { exitsOpen, exitForm }, { cellKey }] = await Promise.all(
-      ["viewer/state.js", "viewer/data.js", "format/lattice.js"].map(at),
-    );
-    const m = state.idx.markers.get(cellKey(17, 12, 17)).find((m) => m.type === 7);
-    return { open: exitsOpen(), form: exitForm(m) };
-  });
+/** Tap Up and step the frozen level to the ball's rest on `block`, a second of frames the bound;
+    a tap stands until a frame reads the pad, so the first waits through the level's opening. */
+const rolledTo = async (page, block, hz) => {
+  await page.keyboard.press("ArrowUp");
+  const run = await stepUntil(page, { block, moving: false }, hz);
+  expect(run.at(-1).station).toMatchObject({ block, moving: false });
+};
 
 test("the ball takes the coin it rolls onto, which is gone from the frame, the last key opens the exits, rolling onto the open exit ends the level, and with Play on through the levels on Space goes on to LEVEL 2 with the total carried", async ({
   page,
@@ -82,7 +79,9 @@ test("the ball takes the coin it rolls onto, which is gone from the frame, the l
   const errors = trackErrors(page);
   await opened(page, { motion: false });
   await toggled(page, "playOn", "off by default");
+  const { hz } = await table(page);
   await startPlay(page);
+  await frozen(page);
   const coin = [17, 16, 17];
   const keys = page.locator("#playKeys");
   const points = page.locator("#playPoints");
@@ -91,39 +90,36 @@ test("the ball takes the coin it rolls onto, which is gone from the frame, the l
   await expect(points).toHaveText("0 points");
   await expect(total).toHaveText("Total 0");
   expect(await drawsThing(page, coin, 37)).toBe(true);
-  expect(await exits(page)).toEqual({ open: false, form: null });
-  const roll = async (block) => {
-    await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
-    await expect
-      .poll(async () => (await probe(page)).station.block, { intervals: [25] })
-      .toEqual(block);
-    await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  // a tap of `key` is stepped to the quarter turn's rest, the line saying the ball faces `heading`
+  const turned = async (key, heading) => {
+    await page.keyboard.press(key);
+    const turn = await stepUntil(page, { line: `facing \\${heading}`, moving: false }, hz);
+    expect(turn.at(-1).station).toMatchObject({ heading, moving: false });
+    await expect(line(page)).toContainText(`facing ${heading}`);
   };
-  await roll([17, 17, 17]);
-  await roll(coin);
+  await rolledTo(page, [17, 17, 17], hz);
+  await rolledTo(page, coin, hz);
   await expect(points).toHaveText("250 points");
   await expect(keys).toHaveText("Keys 1");
-  await roll([17, 15, 17]);
+  await rolledTo(page, [17, 15, 17], hz);
   expect(await drawsThing(page, coin, 37)).toBe(false);
   // the tip lists the coin as the level as installed holds it, and says it is taken
   const over = await top(page, coin);
   await page.mouse.move(over.x, over.y);
   await expect(page.locator("#tip")).toContainText(TAKEN);
   await page.mouse.move(2, 2);
-  await page.keyboard.press("ArrowRight");
-  await expect(line(page)).toContainText("facing +x");
-  for (const x of [18, 19, 20]) await roll([x, 15, 17]);
+  await turned("ArrowRight", "+x");
+  for (const x of [18, 19, 20]) await rolledTo(page, [x, 15, 17], hz);
   await expect(keys).toHaveText("Keys 0");
   await expect(points).toHaveText("1250 points");
-  expect(await exits(page)).toEqual({ open: true, form: 0 });
-  await page.keyboard.press("ArrowLeft");
-  await expect(line(page)).toContainText("facing -y");
-  for (const y of [14, 13, 12]) await roll([20, y, 17]);
+  await turned("ArrowLeft", "-y");
+  for (const y of [14, 13, 12]) await rolledTo(page, [20, y, 17], hz);
   await expect(points).toHaveText("1500 points");
-  await page.keyboard.press("ArrowLeft");
-  await expect(line(page)).toContainText("facing -x");
-  for (const x of [19, 18]) await roll([x, 12, 17]);
+  await turned("ArrowLeft", "-x");
+  for (const x of [19, 18]) await rolledTo(page, [x, 12, 17], hz);
+  // the roll onto the open exit runs on through the exit's wait to the ending
   await page.keyboard.press("ArrowUp");
+  await stepUntil(page, { status: "^Out by the exit" }, hz);
   await expect(status(page)).toHaveText(DONE);
   await expect(say(page)).toHaveText(DONE);
   await expect(total).toHaveText("Total 1500");
@@ -132,6 +128,7 @@ test("the ball takes the coin it rolls onto, which is gone from the frame, the l
   expect(done.frame).toBeNull();
   expect(done.fitted).toBe(true);
   // Space goes on to the level the game loads next, with play on and the run's total carried
+  await page.evaluate(() => window.__thaw());
   await page.keyboard.press(" ");
   await expect(page.locator("#chip b")).toHaveText("LEVEL 2");
   await expect(status(page)).toHaveText("");
@@ -153,18 +150,14 @@ test("the shadow the game paints into a coin's face goes with the coin as the ba
   await page.keyboard.press("t");
   await expect(page.locator("#showSkins")).toBeChecked();
   await textured(page);
+  const { hz } = await table(page);
   await startPlay(page);
+  await frozen(page);
   const coin = [17, 16, 17];
   // clear of the face's middle, where the dust lies
   const face = [coin[0] + 0.3, coin[1] + 0.5, coin[2]];
   expect(await pixelAt(page, face)).not.toEqual(await bareTop(page, face));
-  for (const block of [[17, 17, 17], coin, [17, 15, 17]]) {
-    await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
-    await expect
-      .poll(async () => (await probe(page)).station.block, { intervals: [25] })
-      .toEqual(block);
-    await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
-  }
+  for (const block of [[17, 17, 17], coin, [17, 15, 17]]) await rolledTo(page, block, hz);
   await expect(page.locator("#playPoints")).toHaveText("250 points");
   expect(await pixelAt(page, face)).toEqual(await bareTop(page, face));
   expect(errors).toEqual([]);
