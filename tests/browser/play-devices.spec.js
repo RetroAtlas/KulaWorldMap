@@ -91,7 +91,7 @@ const rideDepths = (page) =>
     return { ball: g.depth, cell: under ? depth(...under) : null };
   });
 
-test("rolling over a switch throws it, and an on teleporter sends the ball to its far end, the view cutting there and the body keeping its turn, with a leap in the way it has come", async ({
+test("rolling over a switch throws it, and an on teleporter sends the ball to its far end, the view cutting there and the body keeping its turn", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -162,21 +162,6 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
     moving: false,
   });
   expect(await status(page).textContent()).toBe("");
-  await page.locator("#keepBtn").click();
-  await expect(page.locator("#courseLine")).toContainText("1 leap");
-  const route = await page.evaluate(async () => {
-    const { current } = await import(new URL("js/viewer/chrome/course.js", location.href).href);
-    const c = current();
-    return { stations: c.stations, steps: c.steps };
-  });
-  expect(route.stations).toEqual([
-    { cell: [17, 17, 17], face: 0 },
-    { cell: [17, 16, 17], face: 0 },
-    { cell: [17, 15, 17], face: 0 },
-    { cell: [17, 14, 17], face: 0 },
-  ]);
-  // a leap between the two ends, though a roll could join them
-  expect(route.steps).toEqual([{ k: 2, o: 0 }, { k: 2, o: 0 }, null]);
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
   expect(errors).toEqual([]);

@@ -14,6 +14,7 @@ import {
   IDENTITY,
   arcadeDraft,
   ballOver,
+  clockOf,
   dustOver,
   line,
   listening,
@@ -21,7 +22,6 @@ import {
   probe,
   said,
   say,
-  seconds,
   startPlay,
   status,
   table,
@@ -92,9 +92,6 @@ const shadowHeight = (page) =>
     const g = P.handed();
     return g && Number.isFinite(g.height) ? g.height : null;
   });
-
-/** The level's clock in frames, which bounds the stepping of a level that runs on. */
-const clockOf = async (page, play) => (await seconds(page)) * play.clock.second;
 
 test("spikes kill the ball: the strip says so in red while the game's countdown runs, the verdict names the cause and Space starts the level again, and with Forgive pressed the ball is put back where it last rested instead, from the spikes and from a fall alike", async ({
   page,

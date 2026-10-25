@@ -332,6 +332,9 @@ export const table = (page) =>
     (await import(new URL("js/viewer/data.js", location.href).href)).motionTable(),
   );
 
+/** The level's clock in frames: the strip's seconds times the table's ticks a shown second. */
+export const clockOf = async (page, play) => (await seconds(page)) * play.clock.second;
+
 /** Press `keys` on the held clock, so that no frame comes between a key's down and its up. */
 export const betweenFrames = async (page, keys) => {
   await frozen(page);
