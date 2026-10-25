@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { trackErrors } from "./helpers.js";
+import { frozen, stepUntil, trackErrors } from "./helpers.js";
 import {
   UNTURNED,
   arcadeDraft,
-  betweenFrames,
+  clockOf,
   dustOver,
   frameFor,
   line,
@@ -13,41 +13,12 @@ import {
   said,
   say,
   startPlay,
-  station,
   status,
   switched,
+  table,
   teleportDraft,
-  ticked,
 } from "./playhelpers.js";
 import { LAUNCHED, RIDING, SENDING } from "../../public/js/play/phrases.js";
-
-/** The view, the ball and the dust over `blocks` on the first drawn frame the ball stands on
-    `block`, read as `probe` reads them, or null where it never comes to stand there. */
-const arrived = (page, block, blocks) =>
-  page.evaluate(
-    async ([block, blocks]) => {
-      const at = (p) => import(new URL(`js/${p}`, location.href).href);
-      const [{ state }, P, { dustOver }, { cellKey }] = await Promise.all(
-        ["viewer/state.js", "play/play.js", "play/dust.js", "format/lattice.js"].map(at),
-      );
-      const round = (v) => Math.round(v * 1000) / 1000;
-      const until = performance.now() + 8000;
-      while (performance.now() < until) {
-        const station = P.station();
-        if (station && !station.moving && station.block.every((v, i) => v === block[i]))
-          return {
-            station,
-            frame: state.frame.map((v) => round(v) + 0),
-            target: state.target.map(round),
-            fitted: document.getElementById("fitBtn").classList.contains("fitted"),
-            dust: blocks.map((c) => dustOver(cellKey(...c))),
-          };
-        await new Promise((r) => requestAnimationFrame(r));
-      }
-      return null;
-    },
-    [block, blocks],
-  );
 
 /** The ball's body as handed to the frame and in the world, rounded. */
 const bodyHanded = (page) =>
@@ -96,19 +67,20 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
 }) => {
   const errors = trackErrors(page);
   // the teleporters lead to each other a block apart, so that a roll could join them, and the far
-  // one faces across the row, so that Up is refused there with the near one's block beside
+  // one faces across the row, so that the send turns the ball
   await teleportDraft(page, { motion: false });
+  const { hz } = await table(page);
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await listening(page);
   expect(await presses(page)).toEqual([]);
   expect(await switched(page, [17, 16, 17])).toBe("on");
+  await frozen(page);
+  // a tap of Up waits for the opening's first read frame and rolls the ball a block on
   const roll = async (block) => {
-    await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
-    await expect
-      .poll(async () => (await probe(page)).station.block, { intervals: [25] })
-      .toEqual(block);
-    await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+    await page.keyboard.press("ArrowUp");
+    const run = await stepUntil(page, { block, moving: false }, hz);
+    expect(run.at(-1).station).toMatchObject({ block, moving: false });
   };
   await roll([17, 16, 17]);
   expect(await switched(page, [17, 16, 17])).toBe("off");
@@ -128,20 +100,19 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   // frame, the body in the world turning with the frame
   const held = await bodyHanded(page);
   expect(held.body).not.toEqual(UNTURNED);
-  // with Motion on the level runs at rest, so the count runs out on its own; the view is read on
-  // the first frame the ball stands at the far end, where a target eased after the ball rather
-  // than cut would still be on its way from the near one
+  // with Motion on the level runs at rest, so the count runs out as the frames step; the view is
+  // read on the first frame the ball stands at the far end, where a target eased after the ball
+  // rather than cut would still be on its way from the near one
   await page.keyboard.press("v");
   await expect(page.locator("#showMotion")).toBeChecked();
-  const far = await arrived(
-    page,
-    [17, 14, 17],
-    [
-      [17, 15, 17],
-      [17, 14, 17],
-    ],
-  );
-  expect(far.station).toEqual({ block: [17, 14, 17], face: 0, heading: "+x", moving: false });
+  const sent = await stepUntil(page, { block: [17, 14, 17], moving: false }, hz);
+  expect(sent.at(-1).station).toEqual({
+    block: [17, 14, 17],
+    face: 0,
+    heading: "+x",
+    moving: false,
+  });
+  const far = await probe(page);
   expect(far.frame).toEqual(await frameFor(page, [1, 0, 0], [0, 0, -1]));
   expect(far.target).toEqual([17.5, 14.5, 16.805]);
   expect(far.fitted).toBe(true);
@@ -150,18 +121,7 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   expect(landed.world).not.toEqual(held.world);
   await expect(line(page)).toHaveText("Playing · on the top of 17,14,17, facing +x");
   await expect.poll(() => said(page)).toContain("Sent to the top of 17,14,17.");
-  // the pad is dead through the hold, and then Up is refused, the near end's block beside, and
-  // the strip says nothing of it: two seconds of the clock, a whole one of frames past the hold,
-  // and the ball has not moved
-  await page.keyboard.press("ArrowUp");
-  await ticked(page, 2);
-  expect((await probe(page)).station).toEqual({
-    block: [17, 14, 17],
-    face: 0,
-    heading: "+x",
-    moving: false,
-  });
-  expect(await status(page).textContent()).toBe("");
+  await page.evaluate(() => window.__thaw());
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
   expect(errors).toEqual([]);
@@ -176,38 +136,37 @@ test("a jump onto a moving platform rides it: the strip says so, the ball stands
   await arcadeDraft(page, {
     blocks: [[[16, 15, 17], { kind: 5, far: [17, 15, 17], length: 3, speed: 30 }]],
   });
+  const { hz, play } = await table(page);
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await frozen(page);
+  const clock = await clockOf(page, play);
   // Up held past the level's opening, whose frames sample it as the game's frames do, and the tap of
   // Space kept for the first frame that reads the pad, which jumps the ball from rest
-  await betweenFrames(page, async () => {
-    await page.keyboard.down("ArrowUp");
-    await page.keyboard.press(" ");
-  });
-  await expect.poll(async () => (await probe(page)).station.moving, { intervals: [25] }).toBe(true);
+  await page.keyboard.down("ArrowUp");
+  await page.keyboard.press(" ");
+  const leapt = await stepUntil(page, { moving: true }, hz);
+  expect(leapt.at(-1).station.moving).toBe(true);
   await page.keyboard.up("ArrowUp");
-  await expect(status(page)).toHaveText(RIDING, { timeout: 5000 });
+  await stepUntil(page, { status: "^The ball rides" }, clock);
+  await expect(status(page)).toHaveText(RIDING);
   await expect(say(page)).toHaveText(`17,15,17, top. ${RIDING}`);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   // the platform goes back to its cell and comes again, the ball standing on it meanwhile
-  await expect
-    .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [25] })
-    .toEqual([16, 15, 17]);
+  const carried = await stepUntil(page, { block: [16, 15, 17], moving: false }, clock);
+  expect(carried.at(-1).station).toMatchObject({ block: [16, 15, 17], moving: false });
   await expect(line(page)).toHaveText("Playing · on the top of 16,15,17, facing -y");
   await expect(status(page)).toHaveText(RIDING);
-  const carried = await probe(page);
-  expect(carried.station.moving).toBe(false);
-  expect(carried.target[1]).toBeCloseTo(15.5, 1);
-  expect(carried.target[0]).toBeLessThan(17.5);
-  await expect
-    .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [25] })
-    .toEqual([17, 15, 17]);
+  const { target } = await probe(page);
+  expect(target[1]).toBeCloseTo(15.5, 1);
+  expect(target[0]).toBeLessThan(17.5);
+  const back = await stepUntil(page, { block: [17, 15, 17], moving: false }, clock);
+  expect(back.at(-1).station).toMatchObject({ block: [17, 15, 17], moving: false });
   // facing +y, the camera behind it, the ball must sort nearer than the body cell under it, which
   // is drawn off its lattice cell, or the cell's top paints over the ball
   for (const heading of ["+x", "+y"]) {
     await page.keyboard.press("ArrowRight");
-    await expect.poll(async () => (await station(page)).heading).toBe(heading);
-    await expect.poll(async () => (await station(page)).moving).toBe(false);
+    const turned = await stepUntil(page, { line: `facing \\${heading}`, moving: false }, hz);
+    expect(turned.at(-1).station).toMatchObject({ heading, moving: false });
   }
   await expect(status(page)).toHaveText(RIDING);
   const depths = await rideDepths(page);
@@ -232,18 +191,21 @@ test("a boost button launches the ball three blocks on, and a landing on another
     ],
     motion: false,
   });
+  const { play } = await table(page);
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await listening(page);
+  await frozen(page);
+  const clock = await clockOf(page, play);
   // held on until the strip says the ball is launched, which it does through the flight
   await page.keyboard.down("ArrowUp");
-  await expect(status(page)).toHaveText(LAUNCHED, { timeout: 10_000 });
+  await stepUntil(page, { status: "^Launched" }, clock);
+  await expect(status(page)).toHaveText(LAUNCHED);
   await page.keyboard.up("ArrowUp");
   expect(await dustOver(page, [17, 15, 17])).toBeGreaterThan(0);
-  await expect
-    .poll(async () => (await probe(page)).station.block, { timeout: 10_000, intervals: [25] })
-    .toEqual([17, 9, 17]);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  // the second button launches the ball again as it comes down, and the second flight comes to
+  // rest three blocks on, where the strip and the live region are read
+  await stepUntil(page, { block: [17, 9, 17], moving: false }, clock);
   await expect(status(page)).toHaveText("");
   await expect(line(page)).toHaveText("Playing · on the top of 17,9,17, facing -y");
   await expect.poll(async () => (await said(page)).filter((t) => t === LAUNCHED)).toHaveLength(2);
