@@ -123,6 +123,7 @@ After any change to the level writers, whoever holds the disc runs `python3 tool
 - A new browser test is one behaviour; a test that would assert a second is cut in two, the second taking the first's setup through a helper.
 - A browser test of play holds the page's clock before its first step of the game and steps the game through the shared helpers, reading the frames it means; it waits on the wall clock only where the wall clock is its subject.
 - The live region, the toasts, the drawer and the hash's deferred write run on timers and animation frames the held clock does not drive, and a held-clock test awaits or flushes them.
+- A browser test runs under five seconds on a developer's machine and ten in CI; one that cannot carries `test.slow()` with a line saying what it waits for, and the suite's reporter names any other and fails the run.
 - A spec file is one subject, named for it; a new test goes in the spec of its subject, and a new spec is made only for a subject no spec holds.
 - A spec at its cap splits by the behaviours it holds, each file named for them.
 - A helper two specs need moves to a helper module beside them, named for what it serves; a helper one spec needs stays at that spec's head.
