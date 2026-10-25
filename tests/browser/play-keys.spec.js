@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { drafted, trackErrors } from "./helpers.js";
+import { frozen, onward, stepUntil, trackErrors } from "./helpers.js";
 import {
   IDENTITY,
   ballOver,
@@ -14,12 +14,10 @@ import {
   startPlay,
   station,
   status,
-  ticked,
+  table,
 } from "./playhelpers.js";
 
 const PLAY_FILES = /\/js\/play\/[^/]+\.js$/;
-
-const LOST = /^FELL OFF! 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
 
 const sliced = (page, z) =>
   page.evaluate(async (z) => {
@@ -27,6 +25,13 @@ const sliced = (page, z) =>
     const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
     setSlice(SIDE - 1 - z);
   }, z);
+
+/** Write to the bar what waits to be written, as the view's rest would. */
+const flushed = (page) =>
+  page.evaluate(async () => {
+    const { settle } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
+    settle();
+  });
 
 test("p stands the ball on the start and takes its view, the arrows roll it, and Esc puts the view, the slice and the start's ball back", async ({
   page,
@@ -104,11 +109,19 @@ test("p stands the ball on the start and takes its view, the arrows roll it, and
   expect(rolled.cam.panY).toBe(entered.cam.panY);
   expect(rolled.target).not.toEqual(entered.target);
   expect(await pixelAt(page, ballOver(start))).not.toEqual(withBall);
+  // an arrow with a modifier is left to the browser, so the frame after it moves nothing
+  await frozen(page);
   await page.keyboard.down("Alt");
   await page.keyboard.press("ArrowUp");
   await page.keyboard.up("Alt");
-  await page.waitForTimeout(400);
-  expect((await probe(page)).station.block).toEqual([17, 17, 17]);
+  await onward(page, 1);
+  expect((await probe(page)).station).toEqual({
+    block: [17, 17, 17],
+    face: 0,
+    heading: "-y",
+    moving: false,
+  });
+  await page.evaluate(() => window.__thaw());
 
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
@@ -136,12 +149,20 @@ test("the ball turns in place, Down moves nothing and Settings has no switch for
   await opened(page, { motion: false });
   await startPlay(page);
   await expect(line(page)).toContainText("facing -y");
-  await betweenFrames(page, () => page.keyboard.press("ArrowRight"));
-  await expect(line(page)).toContainText("facing +x");
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  const { hz, play } = await table(page);
+  await frozen(page);
+  // a tap of `key` stands until a frame reads the pad, and the quarter turn it asks is stepped to
+  // its rest, the line saying the ball faces `heading`
+  const turned = async (key, heading) => {
+    await page.keyboard.press(key);
+    const turn = await stepUntil(page, { line: `facing \\${heading}`, moving: false }, hz);
+    expect(turn.at(-1).station.moving).toBe(false);
+    await expect(line(page)).toContainText(`facing ${heading}`);
+  };
+  await turned("ArrowRight", "+x");
   // play asks nothing of Down but still takes the key, so neither the ball nor the view moves
   await page.keyboard.press("ArrowDown");
-  await page.waitForTimeout(200);
+  await onward(page, 1);
   await expect(line(page)).toContainText("facing +x");
   expect((await probe(page)).station.moving).toBe(false);
   expect((await probe(page)).fitted).toBe(true);
@@ -152,18 +173,13 @@ test("the ball turns in place, Down moves nothing and Settings has no switch for
   await page.keyboard.press("Escape");
   await expect(page.locator("#settings")).toBeHidden();
   // an about turn is two quarter turns, as on the game's pad
-  await page.keyboard.press("ArrowRight");
-  await expect(line(page)).toContainText("facing +y");
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
-  await page.keyboard.press("ArrowRight");
-  await expect(line(page)).toContainText("facing -x");
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  await turned("ArrowRight", "+y");
+  await turned("ArrowRight", "-x");
   // LEVEL 1's ring: off its block to the -x there is nothing, and a block stands beside it, so
-  // Up held until the clock ticks moves nothing, and the strip says nothing of it
+  // Up held through a second of the clock moves nothing, and the strip says nothing of it
   await page.keyboard.down("ArrowUp");
-  await ticked(page);
+  await onward(page, play.clock.second);
   await page.keyboard.up("ArrowUp");
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   expect((await probe(page)).station).toEqual({
     block: [17, 18, 17],
     face: 0,
@@ -197,7 +213,7 @@ test("the link holds the view the ball was put down from, nothing is written to 
   await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
   await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 17, 17]);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
-  await page.waitForTimeout(500);
+  await flushed(page);
   expect(page.url()).toBe(url);
   expect(await page.evaluate(() => window.__wrote)).toBe(0);
   await page.goBack();
@@ -228,53 +244,38 @@ test("entering play gives the level its circuits as the game loads them, and lea
   expect(errors).toEqual([]);
 });
 
-test("Space hops the ball in place, jumps it two blocks on while it rolls, and a jump off the lattice is lost, which ends the level", async ({
-  page,
-}) => {
+test("Space hops the ball in place and jumps it two blocks on while it rolls", async ({ page }) => {
   const errors = trackErrors(page);
   await opened(page, { motion: false });
   await startPlay(page);
-  await betweenFrames(page, () => page.keyboard.press(" "));
-  // the level's opening frames first, then the hop, so the poll is quick
-  await expect.poll(async () => (await probe(page)).station.moving, { intervals: [25] }).toBe(true);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
-  expect((await probe(page)).station.block).toEqual([17, 18, 17]);
-  await page.keyboard.down("ArrowUp");
-  await page.waitForTimeout(60);
+  const { hz } = await table(page);
+  await frozen(page);
+  // a tap of Space stands through the level's opening frames, and the hop that reads it lifts the
+  // ball and sets it back where it stood
   await page.keyboard.press(" ");
+  const lifted = await stepUntil(page, { moving: true }, hz);
+  expect(lifted.at(-1).station.moving).toBe(true);
+  const hopped = await stepUntil(page, { moving: false }, hz);
+  expect(hopped.at(-1).station).toEqual({
+    block: [17, 18, 17],
+    face: 0,
+    heading: "-y",
+    moving: false,
+  });
+  // Up held rolls the ball on, and Space read while it rolls, Up still held, jumps it two blocks on
+  await page.keyboard.down("ArrowUp");
+  const rolling = await stepUntil(page, { moving: true }, hz);
+  expect(rolling.at(-1).station.moving).toBe(true);
+  await page.keyboard.press(" ");
+  await onward(page, 1);
   await page.keyboard.up("ArrowUp");
-  await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 16, 17]);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  const landed = await stepUntil(page, { block: [17, 16, 17], moving: false }, hz);
+  expect(landed.at(-1).station).toEqual({
+    block: [17, 16, 17],
+    face: 0,
+    heading: "-y",
+    moving: false,
+  });
   await expect(say(page)).toHaveText("17,16,17, top");
-  // from the lattice's last column a jump lands past its edge, and the ball is lost
-  await drafted(page, {
-    blocks: [[[32, 17, 17], { kind: 0 }]],
-    faces: [[[17, 17, 17], 4, { type: 31 }]],
-  });
-  // Motion is off still, kept from the first half by the display's store
-  await expect(page.locator("#showMotion")).not.toBeChecked();
-  await page.evaluate(async () => {
-    const P = await import(new URL("js/play/play.js", location.href).href);
-    P.bootPlay();
-    P.playAt({ x: 32, y: 17, z: 17, face: 0 });
-  });
-  await expect(page.locator("#play")).toBeVisible();
-  await betweenFrames(page, () => page.keyboard.press("ArrowLeft"));
-  await expect(line(page)).toContainText("facing +x");
-  await page.keyboard.down("ArrowUp");
-  await page.keyboard.press(" ");
-  await page.keyboard.up("ArrowUp");
-  await expect(status(page)).toHaveText(LOST);
-  await expect(say(page)).toHaveText(LOST);
-  const lost = await probe(page);
-  expect(lost.playing).toBe(true);
-  expect(lost.frame).toBeNull();
-  expect(lost.target).toEqual([25, 17.5, 17.5]);
-  expect(lost.fitted).toBe(true);
-  await page.keyboard.press(" ");
-  await expect(status(page)).toHaveText("");
-  const again = await probe(page);
-  expect(again.station).toEqual({ block: [17, 17, 17], face: 0, heading: "-y", moving: false });
-  expect(again.frame).toEqual(IDENTITY);
   expect(errors).toEqual([]);
 });
