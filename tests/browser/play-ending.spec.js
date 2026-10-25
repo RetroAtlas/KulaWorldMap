@@ -4,13 +4,13 @@ import {
   IDENTITY,
   arcadeDraft,
   clockLine,
+  clockOf,
   flipped,
   jumped,
   line,
   presses,
   probe,
   say,
-  seconds,
   startPlay,
   starts,
   status,
@@ -294,7 +294,7 @@ test("a jump off the lattice is lost, which ends the level", async ({ page }) =>
   await frozen(page);
   // the level's clock bounds the stepping; a tap of Left waits for the opening's first read frame
   // and turns the ball to face the edge, and a jump from rest there comes down on nothing
-  const clock = (await seconds(page)) * play.clock.second;
+  const clock = await clockOf(page, play);
   await page.keyboard.press("ArrowLeft");
   const turned = await stepUntil(page, { line: "facing \\+x", moving: false }, clock);
   expect(turned.at(-1).station.moving).toBe(false);

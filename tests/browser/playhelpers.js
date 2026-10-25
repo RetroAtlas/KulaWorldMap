@@ -263,7 +263,7 @@ export const teleportDraft = (page, more = {}) =>
     ],
   });
 
-// the route, the switches and the rolls
+// the route and the switches
 /** The planner's route as it stands: its stations, steps and sorted marks, or null. */
 export const route = (page) =>
   page.evaluate(async () => {
@@ -280,13 +280,6 @@ export const toggled = async (page, id, def) => {
   await expect(page.locator(`#settings label:has(#${id}) .def`)).toHaveText(def);
   await page.keyboard.press("Escape");
   await expect(page.locator("#settings")).toBeHidden();
-};
-
-/** Roll the ball a block on and wait for it to rest on `block`. */
-export const rolled = async (page, block) => {
-  await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
-  await expect.poll(async () => (await probe(page)).station.block).toEqual(block);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
 };
 
 /** Click the top of `c`, which with the planner on adds a stop there. */

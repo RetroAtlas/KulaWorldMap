@@ -3,9 +3,10 @@ import { frozen, onward, textured, trackErrors } from "./helpers.js";
 import {
   BONUS_LEVEL,
   WAY_OUT,
+  betweenFrames,
   line,
   opened,
-  rolled,
+  probe,
   startPlay,
   teleportDraft,
   toggled,
@@ -16,6 +17,13 @@ const dustAlive = (page) =>
   page.evaluate(async () =>
     (await import(new URL("js/play/dust.js", location.href).href)).dustAlive(),
   );
+
+/** Roll the ball a block on and wait for it to rest on `block`. */
+const rolled = async (page, block) => {
+  await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
+  await expect.poll(async () => (await probe(page)).station.block).toEqual(block);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+};
 
 // LEVEL 1's key, on the top of 20,15,17, three blocks on from the turn
 const KEY_BLOCK = [20, 15, 17];
