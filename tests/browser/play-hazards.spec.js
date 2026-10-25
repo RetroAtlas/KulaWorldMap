@@ -85,12 +85,13 @@ const fillAbout = (page, [x, y]) =>
     [x, y],
   );
 
-/** The height the ball is handed to the frame with, for its shadow, finite or null. */
+/** The height the ball is handed to the frame with, for its shadow, finite or null, and
+    undefined while no ball is handed. */
 const shadowHeight = (page) =>
   page.evaluate(async () => {
     const P = await import(new URL("js/play/play.js", location.href).href);
     const g = P.handed();
-    return g && Number.isFinite(g.height) ? g.height : null;
+    return g ? (Number.isFinite(g.height) ? g.height : null) : undefined;
   });
 
 test("spikes kill the ball: the strip says so in red while the game's countdown runs, the verdict names the cause and Space starts the level again, and with Forgive pressed the ball is put back where it last rested instead, from the spikes and from a fall alike", async ({
@@ -388,9 +389,9 @@ test("a corkscrew catches the ball from where it bounces: rolled under one that 
   // the opening wait and the corkscrew's first landing pass within the first second, before Up is
   // held, which rolls the ball two blocks on, released as the ball reaches the corkscrew's block
   // so that it stops under it, the corkscrew near its top by then
-  await onward(page, hz);
+  const waited = await stepUntil(page, null, hz, { status: true, dying: true });
   await page.keyboard.down("ArrowUp");
-  const reached = await stepUntil(page, { block: [17, 15, 17] }, hz);
+  const reached = await stepUntil(page, { block: [17, 15, 17] }, hz, { status: true, dying: true });
   expect(reached.at(-1).station.block).toEqual([17, 15, 17]);
   await page.keyboard.up("ArrowUp");
   const rested = await stepUntil(page, { moving: false }, hz, { status: true, dying: true });
@@ -400,11 +401,11 @@ test("a corkscrew catches the ball from where it bounces: rolled under one that 
     heading: "-y",
     moving: false,
   });
-  expect(rested.every((s) => s.status === "" && !s.dying)).toBe(true);
   // uncaught at rest under the risen corkscrew, and caught as its rise comes down within reach
   const caught = await stepUntil(page, { dying: true }, hz, { status: true });
   expect(caught.length).toBeGreaterThan(1);
-  expect(caught.slice(0, -1).every((s) => s.status === "" && !s.dying)).toBe(true);
+  const before = [...waited, ...reached, ...rested, ...caught.slice(0, -1)];
+  expect(before.every((s) => s.status === "" && !s.dying)).toBe(true);
   expect(caught.at(-1).status).toBe(DYING.captivator);
   await expect(status(page)).toHaveClass(/dying/);
   await expect.poll(() => said(page)).toContain(DYING.captivator);

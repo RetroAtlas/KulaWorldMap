@@ -11,6 +11,7 @@ import {
   presses,
   probe,
   say,
+  seconds,
   startPlay,
   station,
   status,
@@ -177,9 +178,11 @@ test("the ball turns in place, Down moves nothing and Settings has no switch for
   await turned("ArrowRight", "-x");
   // LEVEL 1's ring: off its block to the -x there is nothing, and a block stands beside it, so
   // Up held through a second of the clock moves nothing, and the strip says nothing of it
+  const before = await seconds(page);
   await page.keyboard.down("ArrowUp");
   await onward(page, play.clock.second);
   await page.keyboard.up("ArrowUp");
+  expect(await seconds(page)).toBe(before - 1);
   expect((await probe(page)).station).toEqual({
     block: [17, 18, 17],
     face: 0,

@@ -105,9 +105,8 @@ export const drawn = (page, frames = 24, ms = 400) =>
         n++;
         return clear.apply(this, a);
       };
-      const end = performance.now() + ms;
-      for (let i = 0; i < frames || performance.now() < end; i++)
-        await new Promise(requestAnimationFrame);
+      const end = Date.now() + ms;
+      for (let i = 0; i < frames || Date.now() < end; i++) await new Promise(requestAnimationFrame);
       g.clearRect = clear;
       return n;
     },
@@ -402,7 +401,10 @@ export async function drafted(
         ["viewer/state.js", "editor/drafts.js", "format/project.js", "viewer/data.js"].map(at),
       );
     const l = toLevel(get(state.lvl.draft).doc, state.lvl.draft);
-    return [counted(blockCount(l), "block"), counted(objectCount(l), "object")];
+    const parts = [counted(blockCount(l), "block")];
+    const n = objectCount(l);
+    if (n) parts.push(counted(n, "object"));
+    return parts;
   });
   const chip = page.locator("#chipLine");
   for (const count of counts) await expect(chip).toContainText(count);

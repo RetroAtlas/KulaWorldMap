@@ -120,6 +120,7 @@ test("with Motion off a step snaps and nothing draws once the ball rests, the le
   // the frame drawn is the last the roll ran, the clock having counted down over the frames run,
   // and a frame stepped while the ball rests runs none
   const ran = await frameAt(page);
+  expect(ran).toBeGreaterThan(0);
   expect(ran).toBe(roll.at(-1).frame);
   const shown = await clockLine(page).textContent();
   expect(shown).not.toBe("Time 99");
