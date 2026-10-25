@@ -160,7 +160,8 @@ export const topPixels = (page, cell) =>
 /** Whether a pixel is the route's gold. */
 export const gold = ([r, g, b]) => r > 230 && g > 170 && b < 150;
 
-/** Hold the page's clock still and draw on it, so the level runs only as `stepped` steps it. */
+/** Hold the page's clock still and draw on it, so the level runs only as `stepped` steps it; a
+    thaw lets the clock run on from where the steps left it, never back. */
 export const frozen = (page) =>
   page.evaluate(async () => {
     const real = performance.now.bind(performance);
@@ -171,7 +172,8 @@ export const frozen = (page) =>
       now += ms + 1e-6;
     };
     window.__thaw = () => {
-      performance.now = real;
+      const ahead = now - real();
+      performance.now = () => real() + ahead;
     };
     (await import(new URL("js/viewer/draw/render.js", location.href).href)).draw();
   });
