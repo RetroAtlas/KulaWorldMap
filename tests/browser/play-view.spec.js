@@ -127,7 +127,7 @@ test("with Motion off a step snaps and nothing draws once the ball rests, the le
   await onward(page, 1);
   expect(await frameAt(page)).toBe(ran);
   await expect(clockLine(page)).toHaveText(shown);
-  // the idle window is a spell of the wall clock, so the clock is let go before it
+  // the clock let go, a resting ball draws nothing on the running clock either
   await page.evaluate(() => window.__thaw());
   expect(await drawn(page, 6, 100)).toBe(0);
   await page.keyboard.press("Escape");
