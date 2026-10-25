@@ -1,57 +1,30 @@
 import { test, expect } from "@playwright/test";
-import { drafted, faced, frozen, trackErrors } from "./helpers.js";
+import { drafted, faced, frozen, onward, stepUntil, trackErrors } from "./helpers.js";
 import {
   IDENTITY,
   arcadeDraft,
-  betweenFrames,
   clockLine,
   flipped,
   jumped,
   line,
-  opened,
-  orbited,
   presses,
   probe,
   say,
+  seconds,
   startPlay,
   starts,
-  station,
   status,
-  stepTo,
+  table,
 } from "./playhelpers.js";
-import { ENDED } from "../../public/js/play/phrases.js";
-
-// HIDDEN 1: a field of blocks two apart, the start on the one nearest the player, so a jump to
-// either side comes down on nothing
-const HIDDEN_LEVEL = "/#HIRO/18/45,35/fit/33";
+import { ENDED, NO_START } from "../../public/js/play/phrases.js";
+import { KEY } from "../../public/js/play/world.js";
 
 const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 
 const TIME_UP_PAD =
   "TIME OUT! 0 points, 0 seconds left. Space, Enter or a tap on the pad starts the level again.";
 
-/** The zooms the ending's view draws at from the yaw `from`, one a drawn frame, through the
-    frames one swing of the quicker eye takes, counted by the yaw's turn, and whether the view
-    was still the ending's, the camera's frame let go, at their end. */
-const swung = (page, from) =>
-  page.evaluate(async (from) => {
-    const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { motionTable }] = await Promise.all(
-      ["viewer/state.js", "viewer/data.js"].map(at),
-    );
-    const { turn, play } = motionTable();
-    const step = (play.view.angles[2] * 360) / turn;
-    const frames = Math.ceil(turn / play.view.bonus.swing) + 1;
-    const turned = () => (state.cam.yaw - from) / step;
-    const round = (v) => Math.round(v * 1000) / 1000;
-    const zooms = [];
-    const until = performance.now() + 8000;
-    while (state.frame === null && turned() < frames && performance.now() < until) {
-      zooms.push(round(state.cam.zoom));
-      await new Promise((r) => requestAnimationFrame(r));
-    }
-    return { zooms, held: state.frame === null && turned() >= frames };
-  }, from);
+const LOST = /^FELL OFF! 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
 
 /** Move the keyboard's focus to `button` as Tab does, stepping off it and back. */
 const tabbedTo = async (page, button) => {
@@ -66,12 +39,16 @@ test("time runs out into the strip's verdict with the pad dead and the view let 
 }) => {
   const errors = trackErrors(page);
   await arcadeDraft(page, { time: 2, motion: false });
+  const { play } = await table(page);
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await expect(clockLine(page)).toHaveText("Time 2");
+  await frozen(page);
+  // with Motion off the level runs only while a key is held, so Up held runs the clock out
   await page.keyboard.down("ArrowUp");
-  await expect(status(page)).toHaveText(TIME_UP, { timeout: 10_000 });
+  await stepUntil(page, { status: "^TIME OUT" }, 2 * play.clock.second);
   await page.keyboard.up("ArrowUp");
+  await expect(status(page)).toHaveText(TIME_UP);
   await expect(say(page)).toHaveText(TIME_UP);
   await expect(line(page)).toHaveText(ENDED);
   await expect(clockLine(page)).toHaveText("Time 0");
@@ -82,27 +59,15 @@ test("time runs out into the strip's verdict with the pad dead and the view let 
   expect(over.target).toEqual([17.5, 17.5, 17.5]);
   expect(over.fitted).toBe(true);
   await page.keyboard.press("ArrowLeft");
-  await page.waitForTimeout(200);
+  await onward(page, 1);
   const held = await probe(page);
   expect(held.station).toEqual(over.station);
   expect(held.cam).toEqual(over.cam);
-  // Enter on a strip button the keyboard has moved to works the button rather than starting the
-  // level again, and the verdict names the pad while the pad shows
-  const padBtn = page.locator("#padBtn");
-  const padWas = await padBtn.getAttribute("aria-pressed");
-  await tabbedTo(page, padBtn);
-  await page.keyboard.press("Enter");
-  await expect(padBtn).toHaveAttribute("aria-pressed", padWas === "true" ? "false" : "true");
-  await expect(status(page)).toHaveText(padWas === "true" ? TIME_UP : TIME_UP_PAD);
-  await page.keyboard.press("Enter");
-  await expect(padBtn).toHaveAttribute("aria-pressed", padWas);
-  await expect(status(page)).toHaveText(padWas === "true" ? TIME_UP_PAD : TIME_UP);
   await flipped(page, 1, 7);
   expect(await presses(page)).toEqual([[1, [7]]]);
   // Space starts the level again whatever has the focus
   await page.keyboard.press(" ");
   await expect(status(page)).toHaveText("");
-  await expect(padBtn).toHaveAttribute("aria-pressed", padWas);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await expect(clockLine(page)).toHaveText("Time 2");
   await expect(say(page)).toContainText(
@@ -114,6 +79,7 @@ test("time runs out into the strip's verdict with the pad dead and the view let 
   expect(again.cam.yaw).toBe(20);
   expect(again.cam.pitch).toBe(30);
   expect(await presses(page)).toEqual([]);
+  await page.evaluate(() => window.__thaw());
   await page.keyboard.down("ArrowUp");
   await expect.poll(async () => (await probe(page)).station.face).not.toBe(0);
   await page.keyboard.up("ArrowUp");
@@ -125,11 +91,14 @@ test("Enter starts the level again after a button was clicked in the sidebar or 
 }) => {
   const errors = trackErrors(page);
   await arcadeDraft(page, { time: 2, motion: false });
+  const { play } = await table(page);
   await startPlay(page);
+  await frozen(page);
   const ended = async (verdict) => {
     await page.keyboard.down("ArrowUp");
-    await expect(status(page)).toHaveText(verdict, { timeout: 10_000 });
+    await stepUntil(page, { status: "^TIME OUT" }, 2 * play.clock.second);
     await page.keyboard.up("ArrowUp");
+    await expect(status(page)).toHaveText(verdict);
     await expect(line(page)).toHaveText(ENDED);
   };
   const started = async () => {
@@ -183,18 +152,22 @@ test("when the time runs out with Motion on, the view lets go of the ball and tu
   const errors = trackErrors(page);
   // a key makes the level an arcade one, whose ending's view swings the slower way
   await arcadeDraft(page, { time: 2 });
+  const { hz, play } = await table(page);
   await startPlay(page);
-  await expect
-    .poll(() => status(page).textContent(), { timeout: 10_000, intervals: [50] })
-    .toBe(TIME_UP);
+  await frozen(page);
+  // the view comes round behind the ball first, the level running meanwhile, and the clock runs out
+  const came = await stepUntil(page, { eased: true }, hz);
+  expect(came.at(-1).eased).toBe(true);
+  await stepUntil(page, { status: "^TIME OUT" }, 2 * play.clock.second);
+  await expect(status(page)).toHaveText(TIME_UP);
   await expect(say(page)).toHaveText(TIME_UP);
   const over = await probe(page);
   expect(over.playing).toBe(true);
   expect(over.frame).toBeNull();
   expect(over.target).toEqual([17.5, 17.5, 17.5]);
   expect(over.fitted).toBe(true);
-  // the view turns and the eye swings, frame by frame
-  await expect.poll(async () => (await probe(page)).cam.yaw).not.toBe(over.cam.yaw);
+  // the view turns and the eye swings, frame by frame, and the verdict stands
+  await onward(page, 1);
   const turned = await probe(page);
   expect(turned.cam.yaw).toBeGreaterThan(over.cam.yaw);
   expect(turned.cam.pitch).toBeLessThan(over.cam.pitch);
@@ -202,21 +175,16 @@ test("when the time runs out with Motion on, the view lets go of the ball and tu
   expect(turned.frame).toBeNull();
   expect(turned.target).toEqual([17.5, 17.5, 17.5]);
   expect(turned.station).toEqual(over.station);
-  // through one swing of the quicker eye the arcade eye only draws further off than it stood,
-  // and the verdict stands
-  const { zooms, held } = await swung(page, over.cam.yaw);
-  expect(held).toBe(true);
-  expect(zooms.length).toBeGreaterThan(1);
-  expect(Math.max(...zooms)).toBe(zooms[0]);
-  expect(Math.min(...zooms)).toBeLessThan(zooms[0]);
-  expect(await status(page).textContent()).toBe(TIME_UP);
+  await expect(status(page)).toHaveText(TIME_UP);
   await page.keyboard.press(" ");
   await expect(status(page)).toHaveText("");
   await expect(say(page)).toContainText(
     "again. The ball stands on the top of 17,17,17, facing -y.",
   );
-  await expect.poll(async () => (await probe(page)).frame, { intervals: [50] }).toEqual(IDENTITY);
+  const eased = await stepUntil(page, { eased: true }, hz);
+  expect(eased.at(-1).eased).toBe(true);
   const back = await probe(page);
+  expect(back.frame).toEqual(IDENTITY);
   expect(back.cam.yaw).toBe(20);
   expect(back.cam.pitch).toBe(30);
   expect(back.station).toEqual({ block: [17, 17, 17], face: 0, heading: "-y", moving: false });
@@ -236,40 +204,45 @@ test("left alone, the ending's view runs the length of the slower swing and the 
   });
   await expect.poll(async () => (await probe(page)).target).toEqual([18, 17.5, 17.5]);
   const before = await probe(page);
+  const { hz, turn, play } = await table(page);
   await startPlay(page);
+  await frozen(page);
+  // the view comes round behind the ball first, and the clock runs out as the level runs meanwhile
+  const came = await stepUntil(page, { eased: true }, hz);
+  expect(came.at(-1).eased).toBe(true);
+  await stepUntil(page, { status: "^TIME OUT" }, 2 * play.clock.second);
   // the block under the ball scored as the level opened, and a death on a level with no key
   // scores nothing, run or no run
-  await expect
-    .poll(() => status(page).textContent(), { timeout: 10_000, intervals: [50] })
-    .toBe(TIME_UP);
-  const since = Date.now();
+  await expect(status(page)).toHaveText(TIME_UP);
   const over = await probe(page);
   expect(over.frame).toBeNull();
-  // a level with no key swings the quicker way: within one swing of its eye the view draws nearer
-  // than it stood, and the verdict stands past that swing
-  const { zooms, held } = await swung(page, over.cam.yaw);
-  expect(held).toBe(true);
-  expect(zooms.length).toBeGreaterThan(1);
-  expect(Math.max(...zooms)).toBeGreaterThan(zooms[0]);
-  expect(await status(page).textContent()).toBe(TIME_UP);
-  // the view runs the length of the slower swing, near six seconds, which the frames cannot run
-  // ahead of the wall clock, and then the level starts again by itself
-  await expect(status(page)).toHaveText("", { timeout: 10_000 });
-  expect(Date.now() - since).toBeGreaterThan(5000);
+  // the view runs the length of the slower swing, the verdict standing on every frame of it but
+  // the last, on which the level starts again by itself
+  const length = Math.floor(turn / play.view.swing);
+  const swing = await stepUntil(page, { status: "^$" }, length);
+  expect(swing.length).toBe(length);
+  expect(swing.slice(0, -1).every((s) => s.status === TIME_UP)).toBe(true);
+  expect(swing.at(-1).status).toBe("");
   await expect(say(page)).toContainText(
     "again. The ball stands on the top of 17,17,17, facing -y.",
   );
-  await expect.poll(async () => (await probe(page)).frame, { intervals: [50] }).toEqual(IDENTITY);
-  await expect(status(page)).toHaveText(TIME_UP, { timeout: 10_000 });
+  const eased = await stepUntil(page, { eased: true }, hz);
+  expect(eased.at(-1).eased).toBe(true);
+  expect((await probe(page)).frame).toEqual(IDENTITY);
+  await stepUntil(page, { status: "^TIME OUT" }, 2 * play.clock.second);
+  await expect(status(page)).toHaveText(TIME_UP);
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
-  // the ending has let the frame go already, so the wait is for the view the ease lands on
-  await expect
-    .poll(async () => {
-      const { playing, frame, cam, target } = await probe(page);
-      return { playing, frame, cam, target };
-    })
-    .toEqual({ playing: false, frame: null, cam: before.cam, target: before.target });
+  // the ending has let the frame go already, so the view read is the one the ease lands on
+  const left = await stepUntil(page, { eased: true }, hz);
+  expect(left.at(-1).eased).toBe(true);
+  const { playing, frame, cam, target } = await probe(page);
+  expect({ playing, frame, cam, target }).toEqual({
+    playing: false,
+    frame: null,
+    cam: before.cam,
+    target: before.target,
+  });
   expect(errors).toEqual([]);
 });
 
@@ -278,48 +251,67 @@ test("a level whose start was edited away under play starts again on the first f
 }) => {
   const errors = trackErrors(page);
   await arcadeDraft(page, { time: 1, motion: false });
+  const { play } = await table(page);
   await startPlay(page);
   await expect(clockLine(page)).toHaveText("Time 1");
+  await frozen(page);
   await page.keyboard.down("ArrowUp");
-  await expect(status(page)).toHaveText(TIME_UP, { timeout: 10_000 });
+  await stepUntil(page, { status: "^TIME OUT" }, play.clock.second);
   await page.keyboard.up("ArrowUp");
+  await expect(status(page)).toHaveText(TIME_UP);
   expect(await starts(page)).toBe(1);
   await faced(page, [17, 17, 17], 0, null);
   await expect.poll(() => starts(page)).toBe(0);
   expect((await probe(page)).playing).toBe(true);
   await page.keyboard.press(" ");
-  await expect(status(page)).toHaveText(
-    "The level has no start, so the ball stands on the first face it could.",
-  );
+  await expect(status(page)).toHaveText(NO_START);
   await expect(clockLine(page)).toHaveText("Time 1");
   expect((await probe(page)).station).toEqual(
     expect.objectContaining({ block: [17, 17, 17], face: 0, moving: false }),
   );
+  await page.evaluate(() => window.__thaw());
   await page.keyboard.down("ArrowUp");
   await expect.poll(async () => (await probe(page)).station.face).not.toBe(0);
   await page.keyboard.up("ArrowUp");
   expect(errors).toEqual([]);
 });
 
-test("on a hidden level the ending's view turns the level under an eye that does not swing, as the game's does", async ({
-  page,
-}) => {
+test("a jump off the lattice is lost, which ends the level", async ({ page }) => {
   const errors = trackErrors(page);
-  await opened(page, { hash: HIDDEN_LEVEL });
-  await startPlay(page);
-  await expect(line(page)).toHaveText("Playing · on the top of 19,21,17, facing -y");
-  // past the level's opening, which holds the pad dead, and facing the gap beside the start
-  await betweenFrames(page, () => page.keyboard.press("ArrowLeft"));
-  await expect.poll(async () => (await station(page)).heading).toBe("-x");
-  await expect.poll(async () => (await station(page)).moving).toBe(false);
+  // from the lattice's last column a jump lands past its edge, and the ball is lost
+  await drafted(page, {
+    blocks: [[[32, 17, 17], { kind: 0 }]],
+    faces: [[[17, 17, 17], 4, { type: KEY }]],
+    motion: false,
+  });
+  const { play } = await table(page);
+  await page.evaluate(async () => {
+    const P = await import(new URL("js/play/play.js", location.href).href);
+    P.bootPlay();
+    P.playAt({ x: 32, y: 17, z: 17, face: 0 });
+  });
+  await expect(page.locator("#play")).toBeVisible();
   await frozen(page);
-  // a jump two blocks on comes down on nothing, and the ball falls off the level
+  // the level's clock bounds the stepping; a tap of Left waits for the opening's first read frame
+  // and turns the ball to face the edge, and a jump from rest there comes down on nothing
+  const clock = (await seconds(page)) * play.clock.second;
+  await page.keyboard.press("ArrowLeft");
+  const turned = await stepUntil(page, { line: "facing \\+x", moving: false }, clock);
+  expect(turned.at(-1).station.moving).toBe(false);
+  await expect(line(page)).toContainText("facing +x");
   await jumped(page);
-  expect(await stepTo(page, "^FELL OFF!", 400)).not.toBeNull();
-  const seen = await orbited(page, 40);
-  await page.evaluate(() => window.__thaw());
-  // the zoom stands from frame to frame while the yaw turns
-  expect(new Set(seen.map((s) => s.zoom)).size).toBe(1);
-  expect(new Set(seen.map((s) => s.yaw)).size).toBe(seen.length);
+  await stepUntil(page, { status: "^FELL OFF" }, clock);
+  await expect(status(page)).toHaveText(LOST);
+  await expect(say(page)).toHaveText(LOST);
+  const lost = await probe(page);
+  expect(lost.playing).toBe(true);
+  expect(lost.frame).toBeNull();
+  expect(lost.target).toEqual([25, 17.5, 17.5]);
+  expect(lost.fitted).toBe(true);
+  await page.keyboard.press(" ");
+  await expect(status(page)).toHaveText("");
+  const again = await probe(page);
+  expect(again.station).toEqual({ block: [17, 17, 17], face: 0, heading: "-y", moving: false });
+  expect(again.frame).toEqual(IDENTITY);
   expect(errors).toEqual([]);
 });

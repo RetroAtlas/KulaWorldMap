@@ -326,6 +326,12 @@ export const WAY_OUT = [
 ];
 
 // the held clock's drivers
+/** The motion table as the page reads it, for the frame counts a stepped test asks of it. */
+export const table = (page) =>
+  page.evaluate(async () =>
+    (await import(new URL("js/viewer/data.js", location.href).href)).motionTable(),
+  );
+
 /** Press `keys` on the held clock, so that no frame comes between a key's down and its up. */
 export const betweenFrames = async (page, keys) => {
   await frozen(page);

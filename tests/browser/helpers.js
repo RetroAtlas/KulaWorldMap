@@ -192,17 +192,25 @@ export const onward = (page, n) =>
 /** Step the frozen level a game frame at a time, each drawn, until every reading `until` names
     holds, at most `most` frames, or through `most` frames with `until` null: the strip's status,
     its line or the live region matching a pattern, the ball's `block`, whether it is `moving`,
-    whether the status is `dying`, or a `frame` reached. Each frame's `readings` come back, with
-    those `until` names: the `frame` count, the ball's `station`, the texts of `status`, `line`
-    and `say`, `dying`, the colour of a `pixel` at a point of the level and a hash of the `top` of
-    a cell, the last of them the frame `until` held on where it held within `most`. */
+    whether the status is `dying`, whether the view has `eased` to where it was going, or a
+    `frame` reached. Each frame's `readings` come back, with those `until` names: the `frame`
+    count, the ball's `station`, the texts of `status`, `line` and `say`, `dying`, `eased`, the
+    colour of a `pixel` at a point of the level and a hash of the `top` of a cell, the last of
+    them the frame `until` held on where it held within `most`. */
 export const stepUntil = (page, until, most, readings = {}) =>
   page.evaluate(
     async ([until, most, readings]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
-      const [{ state, screen }, { draw, clock }, { motionTable }, P] = await Promise.all(
-        ["viewer/state.js", "viewer/draw/render.js", "viewer/data.js", "play/play.js"].map(at),
-      );
+      const [{ state, screen }, { draw, clock }, { motionTable }, P, { easeOn }] =
+        await Promise.all(
+          [
+            "viewer/state.js",
+            "viewer/draw/render.js",
+            "viewer/data.js",
+            "play/play.js",
+            "play/eye.js",
+          ].map(at),
+        );
       const g = document.getElementById("cv").getContext("2d");
       const status = document.getElementById("playStatus");
       const k = state.view.dpr;
@@ -251,6 +259,7 @@ export const stepUntil = (page, until, most, readings = {}) =>
         line: () => document.getElementById("playLine").textContent,
         say: () => document.getElementById("say").textContent,
         dying: () => status.classList.contains("dying"),
+        eased: () => !easeOn(),
         pixel: () => pixel(readings.pixel),
         top: () => top(readings.top),
       };
@@ -260,6 +269,7 @@ export const stepUntil = (page, until, most, readings = {}) =>
         line: matching("line"),
         say: matching("say"),
         dying: (want) => read.dying() === want,
+        eased: (want) => read.eased() === want,
         moving: (want) => P.station()?.moving === want,
         block: (cell) => P.station()?.block.every((v, i) => v === cell[i]) === true,
         frame: (n) => clock() >= n,
