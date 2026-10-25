@@ -189,8 +189,8 @@ const sprited = (page, steps, { hold, until }) =>
           key("keyup", hold);
           held = false;
         }
-        // the sheet effects.js fetches on the first pass with particles lands between frames, so
-        // the steps yield from the teleporter's block until a sprite is laid
+        // the sheet is fetched as the first particle needs it and lands between frames, so the
+        // steps yield from the teleporter's block until a sprite is laid
         if (!held && !sprites.length) await new Promise((r) => setTimeout(r));
       }
       if (held) key("keyup", hold);

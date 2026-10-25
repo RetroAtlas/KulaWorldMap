@@ -137,7 +137,7 @@ test("playing from another block leaves the level one ball, a start on a clock s
   expect(errors).toEqual([]);
 });
 
-test("with Motion off a hop on a coin's block takes the coin on the first frame, nothing draws once the ball rests, and the tip and the panel say the coin is taken", async ({
+test("with Motion off a tap of Space runs the level a frame, which takes the coin the ball rests over, nothing draws while the ball rests, and the tip and the panel say the coin is taken", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -159,8 +159,8 @@ test("with Motion off a hop on a coin's block takes the coin on the first frame,
   await onward(page, 1);
   await expect(page.locator("#playPoints")).toHaveText("250 points");
   await expect(say(page)).toHaveText("Coin (bronze) taken, 250 points.");
-  // a frame more, and the frame the map draws at is play's, which counts on where the map's own
-  // stands with Motion off
+  // a frame more, and the frame the map draws at is play's: after one frame it stands at nought,
+  // where the map's own stands with Motion off
   await onward(page, 1);
   expect(await frameAt(page)).toBe(1);
   const over = await top(page, coin);

@@ -66,8 +66,8 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   page,
 }) => {
   const errors = trackErrors(page);
-  // the teleporters lead to each other a block apart, so that a roll could join them, and the far
-  // one faces across the row, so that the send turns the ball
+  // the teleporters lead to each other a block apart, and the far one faces across the row, so that
+  // the send turns the ball
   await teleportDraft(page, { motion: false });
   const { hz } = await table(page);
   await startPlay(page);

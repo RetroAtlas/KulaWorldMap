@@ -73,7 +73,7 @@ const rolledTo = async (page, block, hz) => {
   expect(run.at(-1).station).toMatchObject({ block, moving: false });
 };
 
-test("the ball takes the coin it rolls onto, which is gone from the frame, the last key opens the exits, rolling onto the open exit ends the level, and with Play on through the levels on Space goes on to LEVEL 2 with the total carried", async ({
+test("the ball takes the coin it rolls onto, which is gone from the frame, rolling onto the exit with the last key taken ends the level, and with Play on through the levels on Space goes on to LEVEL 2 with the total carried", async ({
   page,
 }) => {
   const errors = trackErrors(page);
