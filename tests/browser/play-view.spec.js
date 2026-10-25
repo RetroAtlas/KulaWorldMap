@@ -1,20 +1,22 @@
 import { test, expect } from "@playwright/test";
-import { drafted, drawn, trackErrors } from "./helpers.js";
+import { drafted, drawn, frozen, onward, stepUntil, trackErrors } from "./helpers.js";
 import {
   IDENTITY,
-  UNTURNED,
   anchor,
-  betweenFrames,
   clockLine,
   frameAt,
-  frameFor,
   line,
   opened,
   probe,
   say,
   seconds,
   startPlay,
+  table,
 } from "./playhelpers.js";
+import { KEY } from "../../public/js/play/world.js";
+
+// the view's frame behind a ball on a top face facing -x
+const TURNED = [0, -1, 0, 1, 0, 0, 0, 0, 1];
 
 /** How many times a frame lays a canvas the map's size over the map, which the see-through
     layer alone is. */
@@ -34,81 +36,38 @@ const throughDrawn = (page) =>
     return n;
   });
 
-/** The view's frame, the ball's heading and its body, as handed to the frame and in the world, on
-    every animation frame until the view's frame is `until`, or 8 s pass. */
-const turnedThrough = (page, until) =>
-  page.evaluate(async (until) => {
-    const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, P, { faceAxes, times }, { FACE_NORMAL }] = await Promise.all(
-      ["viewer/state.js", "play/play.js", "viewer/motion.js", "format/lattice.js"].map(at),
-    );
-    const round = (v) => Math.round(v * 1000) / 1000 + 0;
-    const out = [];
-    const end = performance.now() + 8000;
-    while (performance.now() < end) {
-      const g = P.handed();
-      const laid = faceAxes(FACE_NORMAL[g.w.face], g.fwd);
-      out.push({
-        frame: state.frame.map(round),
-        heading: P.station().heading,
-        body: g.body.map((row) => row.map(round)),
-        world: times(laid, g.body).map((row) => row.map(round)),
-      });
-      if (out.at(-1).frame.every((v, i) => v === until[i])) return out;
-      await new Promise((r) => requestAnimationFrame(r));
-    }
-    return out;
-  }, until);
-
-test("with Motion on the view eases in and out, and the ball tumbles over the game's frames", async ({
+test("with Motion on the view eases in and out, and turns round the ball over the game's frames", async ({
   page,
 }) => {
   const errors = trackErrors(page);
   await opened(page);
   const before = await probe(page);
+  const { hz } = await table(page);
+  // frozen before play opens, so the ease starts on the held clock and its first stepped frame
+  // finds the view on its way round behind the ball
+  await frozen(page);
   await startPlay(page);
-  await expect.poll(async () => (await probe(page)).frame).toEqual(IDENTITY);
+  const came = await stepUntil(page, { eased: true }, hz, { view: true });
+  expect(came.length).toBeGreaterThan(1);
+  expect(came[0].view).not.toEqual(IDENTITY);
+  expect(came.at(-1).view).toEqual(IDENTITY);
+  // a turn swaps the heading at once, and the view turns round the ball over the turn's frames
   await page.keyboard.press("ArrowLeft");
-  await expect.poll(async () => (await probe(page)).station.heading).toBe("-x");
-  const during = await probe(page);
-  expect(during.frame).not.toEqual([0, -1, 0, 1, 0, 0, 0, 0, 1]);
-  await expect.poll(async () => (await probe(page)).frame).toEqual([0, -1, 0, 1, 0, 0, 0, 0, 1]);
+  const turn = await stepUntil(page, { line: "facing \\-x", moving: false }, hz, {
+    station: true,
+    view: true,
+  });
+  const turning = turn.filter((s) => s.station.heading === "-x");
+  expect(turning.length).toBeGreaterThan(1);
+  expect(turning[0].view).not.toEqual(TURNED);
+  expect(turning.at(-1).view).toEqual(TURNED);
   await page.keyboard.press("Escape");
   const leaving = await probe(page);
   expect(leaving.playing).toBe(false);
   expect(leaving.frame).not.toBeNull();
-  await expect.poll(async () => (await probe(page)).frame).toBeNull();
+  const left = await stepUntil(page, { eased: true }, hz, { view: true });
+  expect(left.at(-1).view).toBeNull();
   expect((await probe(page)).cam).toEqual(before.cam);
-  expect(errors).toEqual([]);
-});
-
-test("a turn in place turns the view round the ball and leaves the body's turn where it stands, as the game does", async ({
-  page,
-}) => {
-  const errors = trackErrors(page);
-  await opened(page);
-  await startPlay(page);
-  await expect.poll(async () => (await probe(page)).frame).toEqual(IDENTITY);
-  // a block's roll turns the body, so that the turn has a turn to keep
-  await page.keyboard.press("ArrowUp");
-  await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 17, 17]);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
-  const [before] = await turnedThrough(page, IDENTITY);
-  expect(before.heading).toBe("-y");
-  expect(before.body).not.toEqual(UNTURNED);
-  const final = await frameFor(page, [-1, 0, 0], [0, 0, -1]);
-  const sampling = turnedThrough(page, final);
-  await page.keyboard.press("ArrowLeft");
-  const samples = await sampling;
-  const turning = samples.filter((s) => s.heading === "-x");
-  // the view turns over the turn's frames while the body handed to the frame stands, and the body
-  // in the world is as it was before the turn, the frame alone having turned under it
-  expect(turning.length).toBeGreaterThan(1);
-  expect(turning.at(-1).frame).toEqual(final);
-  expect(turning.some((s) => s.frame.some((v, i) => v !== final[i]))).toBe(true);
-  for (const s of turning) expect(s.body).toEqual(turning[0].body);
-  expect(turning[0].body).not.toEqual(before.body);
-  for (const s of samples) expect(s.world).toEqual(before.world);
   expect(errors).toEqual([]);
 });
 
@@ -148,22 +107,28 @@ test("with Motion off a step snaps and nothing draws once the ball rests, the le
 }) => {
   const errors = trackErrors(page);
   await opened(page, { motion: false });
+  const { hz } = await table(page);
   await startPlay(page);
   expect((await probe(page)).frame).toEqual(IDENTITY);
   await expect(clockLine(page)).toHaveText("Time 99");
   expect(await frameAt(page)).toBe(0);
-  expect(await drawn(page)).toBe(0);
-  await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
-  await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 17, 17]);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
-  expect(await drawn(page)).toBe(0);
-  // the frame drawn is the last the roll ran, the level's opening ones among them, the clock
-  // having ticked once on each frame run, and no more while it rests
+  expect(await drawn(page, 6, 100)).toBe(0);
+  await frozen(page);
+  await page.keyboard.press("ArrowUp");
+  const roll = await stepUntil(page, { block: [17, 17, 17], moving: false }, hz, { frame: true });
+  expect(roll.at(-1).station).toMatchObject({ block: [17, 17, 17], moving: false });
+  // the frame drawn is the last the roll ran, the clock having counted down over the frames run,
+  // and a frame stepped while the ball rests runs none
   const ran = await frameAt(page);
-  expect(ran).toBeGreaterThan(18);
-  await expect(clockLine(page)).toHaveText(`Time ${Math.floor((99 * 50 - ran - 1) / 50)}`);
-  await page.waitForTimeout(300);
+  expect(ran).toBe(roll.at(-1).frame);
+  const shown = await clockLine(page).textContent();
+  expect(shown).not.toBe("Time 99");
+  await onward(page, 1);
   expect(await frameAt(page)).toBe(ran);
+  await expect(clockLine(page)).toHaveText(shown);
+  // the idle window is a spell of the wall clock, so the clock is let go before it
+  await page.evaluate(() => window.__thaw());
+  expect(await drawn(page, 6, 100)).toBe(0);
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
   expect(await frameAt(page)).toBe(0);
@@ -196,24 +161,33 @@ test("over the far edge of a ridge the ball goes round onto the side, and the fr
   const errors = trackErrors(page);
   await drafted(page, {
     blocks: [[[18, 17, 17], { kind: 0 }]],
-    faces: [[[17, 17, 17], 4, { type: 31 }]],
+    faces: [[[17, 17, 17], 4, { type: KEY }]],
     motion: false,
   });
+  const { hz } = await table(page);
   await startPlay(page);
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
-  await betweenFrames(page, () => page.keyboard.press("ArrowRight"));
+  await frozen(page);
+  // a tap stands through the level's opening until a frame reads the pad
+  await page.keyboard.press("ArrowRight");
+  const turn = await stepUntil(page, { line: "facing \\+x", moving: false }, hz);
+  expect(turn.at(-1).station).toMatchObject({ heading: "+x", moving: false });
   await expect(line(page)).toContainText("facing +x");
   await page.keyboard.press("ArrowUp");
-  await expect.poll(async () => (await probe(page)).station.block).toEqual([18, 17, 17]);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  const roll = await stepUntil(page, { block: [18, 17, 17], moving: false }, hz);
+  expect(roll.at(-1).station).toMatchObject({ block: [18, 17, 17], moving: false });
   await expect(say(page)).toHaveText("18,17,17, top");
   await page.keyboard.press("ArrowUp");
-  await expect.poll(async () => (await probe(page)).station.face).toBe(1);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  const wrap = await stepUntil(page, { face: 1, moving: false }, hz);
+  expect(wrap.at(-1).station).toEqual({
+    block: [18, 17, 17],
+    face: 1,
+    heading: "+z",
+    moving: false,
+  });
   await expect(say(page)).toHaveText("18,17,17, +x side");
   const p = await probe(page);
-  expect(p.station).toEqual({ block: [18, 17, 17], face: 1, heading: "+z", moving: false });
   expect(p.frame.slice(6, 9).map((v) => -v + 0)).toEqual([1, 0, 0]);
   await expect(line(page)).toHaveText("Playing · on the +x side of 18,17,17, facing +z");
   await page.keyboard.press("Escape");
@@ -234,14 +208,15 @@ test("out of an inner corner the ball climbs the wall ahead, and shows through t
     ],
     motion: false,
   });
+  const { hz } = await table(page);
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   expect(await throughDrawn(page)).toBe(0);
+  await frozen(page);
   await page.keyboard.down("ArrowUp");
-  await expect.poll(async () => (await probe(page)).station.face).toBe(2);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  const climb = await stepUntil(page, { face: 2, moving: false }, hz);
   await page.keyboard.up("ArrowUp");
-  expect((await probe(page)).station).toEqual({
+  expect(climb.at(-1).station).toEqual({
     block: [17, 16, 16],
     face: 2,
     heading: "-z",

@@ -193,14 +193,15 @@ export const onward = (page, n) =>
 
 /** Step the frozen level a game frame at a time, each drawn, until every reading `until` names
     holds, at most `most` frames, or through `most` frames with `until` null: the strip's status,
-    its line or the live region matching a pattern, the ball's `block`, whether it is `moving`,
-    whether the status is `dying`, whether the view has `eased` to where it was going, whether the
-    frame is `seeing` every invisible block, whether the view's frame has `turned` off the frame
-    given, or a `frame` reached. Each frame's `readings` come back, with those `until` names: the
-    `frame` count, the ball's `station`, the texts of `status`, `line` and `say`, `dying`,
-    `eased`, `seeing`, the `view`'s frame as `probe` rounds it, the colour of a `pixel` at a point
-    of the level, a hash of the `top` of a cell and the mean colour of the `canvas` over a grid of
-    its points, the last of them the frame `until` held on where it held within `most`. */
+    its line or the live region matching a pattern, the ball's `block` or `face`, whether it is
+    `moving`, whether the status is `dying`, whether the view has `eased` to where it was going,
+    whether the frame is `seeing` every invisible block, whether the view's frame has `turned` off
+    the frame given, or a `frame` reached. Each frame's `readings` come back, with those `until`
+    names: the `frame` count, the ball's `station`, the texts of `status`, `line` and `say`,
+    `dying`, `eased`, `seeing`, the `view`'s frame as `probe` rounds it, the colour of a `pixel`
+    at a point of the level, a hash of the `top` of a cell and the mean colour of the `canvas`
+    over a grid of its points, the last of them the frame `until` held on where it held within
+    `most`. */
 export const stepUntil = (page, until, most, readings = {}) =>
   page.evaluate(
     async ([until, most, readings]) => {
@@ -299,9 +300,10 @@ export const stepUntil = (page, until, most, readings = {}) =>
         },
         moving: (want) => P.station()?.moving === want,
         block: (cell) => P.station()?.block.every((v, i) => v === cell[i]) === true,
+        face: (want) => P.station()?.face === want,
         frame: (n) => clock() >= n,
       };
-      const READ = { block: "station", moving: "station", turned: "view" };
+      const READ = { block: "station", face: "station", moving: "station", turned: "view" };
       const named = (name) => READ[name] ?? name;
       const names = new Set([
         ...Object.keys(readings).filter((name) => readings[name]),

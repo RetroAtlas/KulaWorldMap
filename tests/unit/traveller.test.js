@@ -5,7 +5,7 @@ import { index } from "../../public/js/viewer/data.js";
 import { faceAxes } from "../../public/js/viewer/motion.js";
 import { probeOf } from "../../public/js/viewer/walk.js";
 import { FACE_NORMAL } from "../../public/js/format/lattice.js";
-import { PAD, ROLLING } from "../../public/js/play/ball.js";
+import { LEFT, PAD, REST, ROLLING } from "../../public/js/play/ball.js";
 import { frame } from "../../public/js/play/rules.js";
 import { glowOf, glowStep } from "../../public/js/play/passes.js";
 import {
@@ -180,6 +180,36 @@ test("the body lies along the face's axes at rest, and mid-roll its rows read ba
   }
   assert.deepEqual(round(body[0]), [1, 0, 0]);
   assert.notDeepEqual(round(body[1]), [0, 1, 0]);
+});
+
+test("a turn in place leaves the body handed to the frame standing through the turn's ramp, other than it was before the turn, and the body in the world as it was", () => {
+  const live = begin(level(row(10, 18), [start()]));
+  const b = live.ball;
+  // a roll turns the body, so that the turn has a turn to keep
+  assert.ok(until(live, PAD.up, (l) => l.ball.state === ROLLING));
+  assert.ok(until(live, 0, (l) => l.ball.state === REST));
+  const before = bodyOf(b).map(round);
+  const world = [...b.body];
+  assert.notDeepEqual(before, [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+  ]);
+  assert.deepEqual(
+    frame(live, PAD.left).filter((e) => e.turned),
+    [{ turned: LEFT }],
+  );
+  assert.ok(b.ramp);
+  const held = bodyOf(b).map(round);
+  assert.notDeepEqual(held, before);
+  let frames = 0;
+  while (b.ramp) {
+    frame(live, 0);
+    frames++;
+    assert.deepEqual(bodyOf(b).map(round), held, `frame ${frames}`);
+  }
+  assert.ok(frames > 1);
+  assert.deepEqual(b.body, world);
 });
 
 test("the start the game takes is the level's last, as the ball stands on it, and null where the level has none or a block stands over it", () => {
