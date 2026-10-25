@@ -262,7 +262,6 @@ test("the dust is born only with its setting on, on by default, and what is aliv
 test("the key taken bursts as the game's does: the frames after the take are brighter about the key's place than the frame before, the faces about it lit with the sparks, and dark again past the table's frames", async ({
   page,
 }) => {
-  test.slow();
   const errors = trackErrors(page);
   await opened(page);
   // the burst lights the faces' textures, so they are put back on, and the map's dust is put
