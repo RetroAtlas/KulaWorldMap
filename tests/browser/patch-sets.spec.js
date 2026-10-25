@@ -42,7 +42,6 @@ const slotOf = async (image, pack, slot) => {
 test("two drafts go onto the disc as one patch, the second added from the select, as the fixture's set in one pack", async ({
   page,
 }) => {
-  test.slow();
   const errors = trackErrors(page);
   await page.addInitScript(() => {
     delete window.showSaveFilePicker;
@@ -221,7 +220,6 @@ test("two drafts go onto the disc as one patch, the second added from the select
 test("a level in a world pack and another in its finals pack go on as one patch, as the fixture's set across packs", async ({
   page,
 }) => {
-  test.slow();
   const errors = trackErrors(page);
   await page.addInitScript(() => {
     delete window.showSaveFilePicker;
@@ -280,7 +278,6 @@ test("a level in a world pack and another in its finals pack go on as one patch,
 test("a level added from a file is a saved draft of Your levels and a row on the slot its file names, and a file that holds no level is refused with one toast", async ({
   page,
 }) => {
-  test.slow();
   const errors = trackErrors(page);
   await page.addInitScript(() => {
     delete window.showSaveFilePicker;

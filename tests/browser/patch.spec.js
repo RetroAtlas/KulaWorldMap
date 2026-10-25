@@ -35,7 +35,6 @@ const keyOf = (title) => {
 test("the draft goes onto the disc as the fixture's bytes, the slot kept on the draft", async ({
   page,
 }) => {
-  test.slow();
   const errors = trackErrors(page);
   await page.addInitScript(() => {
     delete window.showSaveFilePicker;
