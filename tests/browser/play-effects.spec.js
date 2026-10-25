@@ -10,6 +10,7 @@ import {
   teleportDraft,
   toggled,
 } from "./playhelpers.js";
+import { KEY } from "../../public/js/play/world.js";
 
 const dustAlive = (page) =>
   page.evaluate(async () =>
@@ -18,8 +19,6 @@ const dustAlive = (page) =>
 
 // LEVEL 1's key, on the top of 20,15,17, three blocks on from the turn
 const KEY_BLOCK = [20, 15, 17];
-
-const KEY_TYPE = 31;
 
 /** Drive the frozen level along `way` to the block before the key's block, roll onto the key's
     block and step on through its burst, reading on each frame the mean brightness the frame paints
@@ -88,7 +87,7 @@ const burstAbout = (page, way) =>
       }
       return { took, frames, samples };
     },
-    [way, KEY_BLOCK, KEY_TYPE],
+    [way, KEY_BLOCK, KEY],
   );
 
 /** Step the frozen level a frame of the clock at a time through `steps` steps, with `hold` held
