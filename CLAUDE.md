@@ -35,7 +35,7 @@ Read [docs/camera.md](docs/camera.md) before touching the start camera the viewe
 - `ruff check tools/` at the release [.github/workflows/ci.yml](.github/workflows/ci.yml) pins, which `pipx run ruff==<release> check tools/` runs without installing it.
 - `npm run test:browser` when the viewer or its tests changed.
 
-A change to the viewer that is to draw exactly as before, a move, a re-wiring or a speed-up, is proven with `npm run pixels`, which renders the working tree and `HEAD` over the matrix in `tests/pixels/cases.js` with the clock held still, with the editor absent and with it loaded, and names every capture whose map, pick, hit test or animation differs, and passes when it names none. A change meant to draw differently does not run it: most captures show the thing it changes, so the list says nothing its browser test and a look in the viewer do not.
+A change to the viewer that is to draw exactly as before, a move, a re-wiring or a speed-up, is proven with `npm run pixels`, which renders the working tree and `HEAD` over the matrix in `tests/pixels/cases.js` with the clock held still, with the editor absent and with it loaded, and names every capture whose map, pick, hit test or animation differs, or whose strip and HUD say something else with the ball on a level, and passes when it names none. A change meant to draw differently does not run it: most captures show the thing it changes, so the list says nothing its browser test and a look in the viewer do not.
 
 The matrix also stands the ball on a level, so a move inside play is proven by `npm run pixels` as a move inside the viewer is.
 
@@ -88,7 +88,9 @@ The route planner, `course.js` and `ribbon.js`, draws and listens only through t
 
 Play mode is built the same way.
 
-Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/game.js`, `play/passes.js`, `play/contact.js`, `play/hazards.js` and `play/drive.js`, its sentences, `play/phrases.js`, the ball as the frame draws it, `play/traveller.js`, and the camera behind the ball, `play/eye.js`, are pure, every count and threshold read from `objects.motion` and no wall clock among them, and the unit tests hold them to importing the model, the lattice and each other alone.
+Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/game.js`, `play/passes.js`, `play/contact.js`, `play/hazards.js` and `play/drive.js`, is pure, every count and threshold read from `objects.motion` and no wall clock among them.
+
+What play computes without the page lives in a pure module under `play/` with a unit test of its own, as its sentences do in `play/phrases.js`, the ball as the frame draws it in `play/traveller.js` and the camera behind the ball in `play/eye.js`, and the unit tests hold the pure modules to importing the model, the lattice and each other alone.
 
 `play/ball.js` never asks its probe what kind a block is and carries none of the mode's policy, so a lost ball says so and stays where it fell.
 

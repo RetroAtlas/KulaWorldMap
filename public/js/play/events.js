@@ -216,14 +216,14 @@ function sent(live, { to }) {
 }
 
 /** The level has ended: the loop's step runs, a bad ending past the arcade's mode scoring nothing
-    on any level, and where a run is on, and its setting still is, the run's points are settled,
-    or in a Simon room the match's point given and its winner named, and the level the game loads
-    next picked, as the game's loop does all three, and where the setting has gone off the run
-    ends here; the ball is gone and the pad dead, the view lets go of the ball and turns about the
-    level's middle as the game's does, the eye standing by the level's mode word, and the strip
-    gives the verdict with the points and the time left, what the ending did to the run's total
-    or to the match and what the key goes on to, until a key goes on or the view has run the
-    length of one swing of an arcade level's eye, whichever eye the level's word stands. */
+    on any level, and where a run is on, and its setting still is, the run's points are settled, or
+    in a Simon room the match's point given and its winner named, and the level the game loads next
+    picked, as the game's loop does all three, and where the setting has gone off the run ends here;
+    the ball is gone, the view lets go of the ball and turns about the level's middle as the game's
+    does, the eye standing by the level's mode word, and the strip gives the verdict with the points
+    and the time left, what the ending did to the run's total or to the match and what the key goes
+    on to, until a key goes on or the view has run the length of one swing of an arcade level's eye,
+    whichever eye the level's word stands. */
 function ended(live, code) {
   const { play, turn } = motionTable();
   const { view } = play;

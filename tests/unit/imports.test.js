@@ -122,7 +122,7 @@ const PURE = [
   "play/eye.js",
 ];
 
-test("a module of the simulation imports only the model, the lattice and the simulation", () => {
+test("a pure module of play imports only the model, the lattice and the pure modules", () => {
   const g = graph();
   for (const name of PURE)
     for (const target of g.get(name))
