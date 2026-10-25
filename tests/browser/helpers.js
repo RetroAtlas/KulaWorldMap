@@ -160,8 +160,8 @@ export const topPixels = (page, cell) =>
 /** Whether a pixel is the route's gold. */
 export const gold = ([r, g, b]) => r > 230 && g > 170 && b < 150;
 
-/** Hold the page's clock still and draw on it, so the level runs only as `stepped` steps it; a
-    thaw lets the clock run on from where the steps left it, never back. */
+/** Hold the page's clock still and draw on it, so the level runs only as `onward` and `stepUntil`
+    step it; a thaw lets the clock run on from where the steps left it, never back. */
 export const frozen = (page) =>
   page.evaluate(async () => {
     const real = performance.now.bind(performance);
@@ -194,16 +194,18 @@ export const onward = (page, n) =>
 /** Step the frozen level a game frame at a time, each drawn, until every reading `until` names
     holds, at most `most` frames, or through `most` frames with `until` null: the strip's status,
     its line or the live region matching a pattern, the ball's `block`, whether it is `moving`,
-    whether the status is `dying`, whether the view has `eased` to where it was going, or a
-    `frame` reached. Each frame's `readings` come back, with those `until` names: the `frame`
-    count, the ball's `station`, the texts of `status`, `line` and `say`, `dying`, `eased`, the
-    colour of a `pixel` at a point of the level and a hash of the `top` of a cell, the last of
-    them the frame `until` held on where it held within `most`. */
+    whether the status is `dying`, whether the view has `eased` to where it was going, whether the
+    frame is `seeing` every invisible block, whether the view's frame has `turned` off the frame
+    given, or a `frame` reached. Each frame's `readings` come back, with those `until` names: the
+    `frame` count, the ball's `station`, the texts of `status`, `line` and `say`, `dying`,
+    `eased`, `seeing`, the `view`'s frame as `probe` rounds it, the colour of a `pixel` at a point
+    of the level, a hash of the `top` of a cell and the mean colour of the `canvas` over a grid of
+    its points, the last of them the frame `until` held on where it held within `most`. */
 export const stepUntil = (page, until, most, readings = {}) =>
   page.evaluate(
     async ([until, most, readings]) => {
       const at = (p) => import(new URL(`js/${p}`, location.href).href);
-      const [{ state, screen }, { draw, clock }, { motionTable }, P, { easeOn }] =
+      const [{ state, screen }, { draw, clock, overlayWith }, { motionTable }, P, { easeOn }] =
         await Promise.all(
           [
             "viewer/state.js",
@@ -254,6 +256,21 @@ export const stepUntil = (page, until, most, readings = {}) =>
           }
         return hash >>> 0;
       };
+      const canvas = () => {
+        const { w, h } = state.view;
+        const sum = [0, 0, 0];
+        let n = 0;
+        for (let j = 1; j <= 6; j++)
+          for (let i = 1; i <= 8; i++) {
+            const x = Math.round((w * i * k) / 9);
+            const y = Math.round((h * j * k) / 7);
+            const d = g.getImageData(x, y, 1, 1).data;
+            for (let ch = 0; ch < 3; ch++) sum[ch] += d[ch];
+            n++;
+          }
+        return sum.map((v) => Math.round(v / n));
+      };
+      const round = (v) => Math.round(v * 1000) / 1000 + 0;
       const read = {
         frame: () => clock(),
         station: () => P.station(),
@@ -262,8 +279,11 @@ export const stepUntil = (page, until, most, readings = {}) =>
         say: () => document.getElementById("say").textContent,
         dying: () => status.classList.contains("dying"),
         eased: () => !easeOn(),
+        seeing: () => window.__seeing.on,
+        view: () => state.frame && state.frame.map(round),
         pixel: () => pixel(readings.pixel),
         top: () => top(readings.top),
+        canvas,
       };
       const matching = (name) => (pattern) => new RegExp(pattern).test(read[name]());
       const holds = {
@@ -272,15 +292,30 @@ export const stepUntil = (page, until, most, readings = {}) =>
         say: matching("say"),
         dying: (want) => read.dying() === want,
         eased: (want) => read.eased() === want,
+        seeing: (want) => read.seeing() === want,
+        turned: (from) => {
+          const view = read.view();
+          return !!view && !view.every((v, i) => v === from[i]);
+        },
         moving: (want) => P.station()?.moving === want,
         block: (cell) => P.station()?.block.every((v, i) => v === cell[i]) === true,
         frame: (n) => clock() >= n,
       };
-      const named = (name) => (name === "block" || name === "moving" ? "station" : name);
+      const READ = { block: "station", moving: "station", turned: "view" };
+      const named = (name) => READ[name] ?? name;
       const names = new Set([
         ...Object.keys(readings).filter((name) => readings[name]),
         ...Object.keys(until ?? {}).map(named),
       ]);
+      // seeing is read off the scene a block hook is handed, the hook staying for the page's life
+      if (names.has("seeing") && !window.__seeing) {
+        window.__seeing = { on: false };
+        overlayWith({
+          block: (ctx, c, home, key, ghost, scene) => {
+            window.__seeing.on = scene.seeing;
+          },
+        });
+      }
       const out = [];
       for (let i = 0; i < most; i++) {
         window.__step(1000 / motionTable().hz);

@@ -24,6 +24,7 @@ import {
   viewNow,
   viewOf,
 } from "../../public/js/play/eye.js";
+import { rockOf } from "../../public/js/play/passes.js";
 import { LETHARGY, begin, level, motion, play, row, start } from "./rules-level.js";
 
 const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
@@ -298,6 +299,44 @@ test("the pill's roll gives the frame itself while its word is not positive, els
   assert.notEqual(turned, out);
   assert.equal(rocked(live, f), turned);
   live.run.words.pills[LETHARGY] = 0;
+  assert.equal(rocked(live, f), f);
+});
+
+test("the pill's roll turns the view about its line of sight by the table's angle for the word, up tipping left for a positive angle, whichever way the orbit stands, and leaves the frame itself where the angle comes to nothing", () => {
+  fresh();
+  const live = playOn();
+  const f = live.run.ball.frame;
+  const { word, step, rock } = motion.types[LETHARGY].lasts;
+  const angleOf = (w) => rockOf(w, rock, motion.turn);
+  /** The view rolled about its toward by `angle`, up tipping left for a positive one. */
+  const rolledBy = (view, angle) => {
+    const [right, up, toward] = [0, 3, 6].map((k) => view.slice(k, k + 3));
+    const c = Math.cos((angle / motion.turn) * 2 * Math.PI);
+    const s = Math.sin((angle / motion.turn) * 2 * Math.PI);
+    return [
+      ...right.map((v, i) => c * v + s * up[i]),
+      ...up.map((v, i) => c * v - s * right[i]),
+      ...toward,
+    ];
+  };
+  // the word whose scaled angle is a quarter turn, where the sine is one
+  const quarter = motion.turn / (4 * rock.scale);
+  assert.ok(angleOf(quarter) > 0);
+  for (const [yaw, pitch] of [
+    [20, 30],
+    [45, 35],
+  ]) {
+    Object.assign(state.cam, { yaw, pitch });
+    const rest = viewOf(f, yaw, pitch);
+    for (const w of [word, word - step, word - 2 * step, quarter]) {
+      live.run.words.pills[LETHARGY] = w;
+      const angle = angleOf(w);
+      assert.notEqual(angle, 0);
+      near(viewOf(rocked(live, f), yaw, pitch), rolledBy(rest, angle), `word ${w} at yaw ${yaw}: `);
+    }
+  }
+  live.run.words.pills[LETHARGY] = 2 * quarter;
+  assert.equal(angleOf(2 * quarter), 0);
   assert.equal(rocked(live, f), f);
 });
 
