@@ -25,6 +25,8 @@ Read [docs/camera.md](docs/camera.md) before touching the start camera the viewe
 
 [docs/viewer.md](docs/viewer.md) says what every control of the viewer does, so a change to one brings it up to date in the same commit.
 
+[docs/testing.md](docs/testing.md) says what each suite of checks is, how it runs and how a test is added, so a change to a suite, a helper module or the config brings it up to date in the same commit.
+
 ## Before a commit
 
 - `npm test` (the unit tests pin the README's and the docs' figures to the data, so a rebuild that moves a count fails there rather than going stale in silence).
