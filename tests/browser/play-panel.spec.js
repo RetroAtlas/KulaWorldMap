@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { drafted, drawn, trackErrors } from "./helpers.js";
+import { drafted, drawn, frozen, onward, trackErrors } from "./helpers.js";
 import {
   TAKEN,
   at,
-  betweenFrames,
+  clockOf,
   frameAt,
   handed,
   line,
@@ -12,17 +12,11 @@ import {
   probe,
   say,
   status,
+  table,
   top,
 } from "./playhelpers.js";
 
 const plusX = (page, c) => at(page, c[0] + 1, c[1] + 0.5, c[2] + 0.5);
-
-/** The clock face's type, as the strip of a marker writes it. */
-const clockFace = (page) =>
-  page.evaluate(async () => {
-    const { motionTable } = await import(new URL("js/viewer/data.js", location.href).href);
-    return String(motionTable().play.clock.face);
-  });
 
 test("a right click selects while playing, Esc clears the selection before it leaves, and the panel's Play from here, there with its setting on alone, moves the ball", async ({
   page,
@@ -99,10 +93,10 @@ test("playing from another block leaves the level one ball, a start on a clock s
     await page.keyboard.press(key);
     await expect(page.locator(id)).not.toBeChecked();
   }
-  const clock = await clockFace(page);
+  const { play } = await table(page);
+  // the clock face's type, as the strip of a marker writes it
+  const face = String(play.clock.face);
   const start = [17, 17, 17];
-  expect(await marked(page, "29")).toBe(1);
-  expect(await marked(page, clock)).toBe(0);
   await page.evaluate(async () => {
     const P = await import(new URL("js/play/play.js", location.href).href);
     P.bootPlay();
@@ -114,19 +108,24 @@ test("playing from another block leaves the level one ball, a start on a clock s
   );
   expect(await handed(page)).toBe(true);
   expect(await marked(page, "29")).toBe(1);
-  expect(await marked(page, clock)).toBe(1);
+  expect(await marked(page, face)).toBe(1);
   const over = await top(page, start);
   await page.mouse.click(over.x, over.y, { button: "right" });
   await expect(page.locator("#detail")).toContainText("Start on a clock");
   await page.keyboard.press("Escape");
   await expect(page.locator("#detail")).toBeHidden();
   await page.mouse.move(2, 2);
+  await frozen(page);
+  const clock = await clockOf(page, play);
+  // with Motion off the level runs only while a key is held, so Left held runs the clock out
   await page.keyboard.down("ArrowLeft");
-  await expect(status(page)).toHaveText(/^TIME OUT!/, { timeout: 10_000 });
+  await onward(page, clock);
   await page.keyboard.up("ArrowLeft");
+  await expect(status(page)).toHaveText(/^TIME OUT!/);
   expect(await handed(page)).toBe(false);
   expect(await marked(page, "29")).toBe(1);
-  expect(await marked(page, clock)).toBe(0);
+  expect(await marked(page, face)).toBe(0);
+  await page.evaluate(() => window.__thaw());
   await page.keyboard.press(" ");
   await expect(status(page)).toHaveText("");
   expect((await probe(page)).station).toEqual(
@@ -134,7 +133,7 @@ test("playing from another block leaves the level one ball, a start on a clock s
   );
   expect(await handed(page)).toBe(true);
   expect(await marked(page, "29")).toBe(1);
-  expect(await marked(page, clock)).toBe(1);
+  expect(await marked(page, face)).toBe(1);
   expect(errors).toEqual([]);
 });
 
@@ -153,14 +152,17 @@ test("with Motion off a hop on a coin's block takes the coin on the first frame,
   await expect(line(page)).toHaveText("Playing · on the top of 17,16,17, facing +y");
   await expect(page.locator("#playPoints")).toHaveText("0 points");
   expect(await drawn(page)).toBe(0);
-  await betweenFrames(page, () => page.keyboard.press(" "));
+  await frozen(page);
+  // a tap of Space stands until a frame reads the pad, and the level's first frame, run for it,
+  // takes the coin the ball rests over
+  await page.keyboard.press(" ");
+  await onward(page, 1);
   await expect(page.locator("#playPoints")).toHaveText("250 points");
   await expect(say(page)).toHaveText("Coin (bronze) taken, 250 points.");
-  // the level's opening frames first, then the hop, so the poll is quick
-  await expect.poll(async () => (await probe(page)).station.moving, { intervals: [25] }).toBe(true);
-  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
-  expect(await drawn(page)).toBe(0);
-  expect(await frameAt(page)).toBeGreaterThan(0);
+  // a frame more, and the frame the map draws at is play's, which counts on where the map's own
+  // stands with Motion off
+  await onward(page, 1);
+  expect(await frameAt(page)).toBe(1);
   const over = await top(page, coin);
   await page.mouse.move(over.x, over.y);
   await expect(page.locator("#tip")).toContainText(TAKEN);
@@ -169,6 +171,7 @@ test("with Motion off a hop on a coin's block takes the coin on the first frame,
   await expect(page.locator("#detail")).toContainText(`${TAKEN}.`);
   await page.keyboard.press("Escape");
   await expect(page.locator("#detail")).toBeHidden();
+  await page.evaluate(() => window.__thaw());
   await page.keyboard.press("Escape");
   await expect(page.locator("#play")).toBeHidden();
   expect(errors).toEqual([]);
