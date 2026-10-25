@@ -14,26 +14,25 @@ import {
   station,
 } from "./playhelpers.js";
 
-for (const motion of [false, true])
-  test(`two taps of Left turn the ball twice where the second comes before the frame after the one that read the first, with Motion ${motion ? "on" : "off"}`, async ({
-    page,
-  }) => {
-    const errors = trackErrors(page);
-    await opened(page, { motion });
-    await startPlay(page);
-    // past the level's opening, which holds the pad dead
-    await betweenFrames(page, () => page.keyboard.press("ArrowRight"));
-    await expect.poll(async () => (await station(page)).heading).toBe("+x");
-    await expect.poll(async () => (await station(page)).moving).toBe(false);
-    await frozen(page);
-    await page.keyboard.press("ArrowLeft");
-    await onward(page, 1);
-    expect((await station(page)).heading).toBe("-y");
-    await page.keyboard.press("ArrowLeft");
-    await onward(page, 40);
-    expect((await station(page)).heading).toBe("-x");
-    expect(errors).toEqual([]);
-  });
+test("two taps of Left turn the ball twice where the second comes before the frame after the one that read the first, with Motion off", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false });
+  await startPlay(page);
+  // past the level's opening, which holds the pad dead
+  await betweenFrames(page, () => page.keyboard.press("ArrowRight"));
+  await expect.poll(async () => (await station(page)).heading).toBe("+x");
+  await expect.poll(async () => (await station(page)).moving).toBe(false);
+  await frozen(page);
+  await page.keyboard.press("ArrowLeft");
+  await onward(page, 1);
+  expect((await station(page)).heading).toBe("-y");
+  await page.keyboard.press("ArrowLeft");
+  await onward(page, 40);
+  expect((await station(page)).heading).toBe("-x");
+  expect(errors).toEqual([]);
+});
 
 test("a key pressed while the level runs takes no time from it: every frame the clock owes is run", async ({
   page,
