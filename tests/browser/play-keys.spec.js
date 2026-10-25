@@ -1,8 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { faced, laid, settle, trackErrors } from "./helpers.js";
+import { drafted, trackErrors } from "./helpers.js";
 import {
   IDENTITY,
-  LEVEL,
   ballOver,
   betweenFrames,
   flipped,
@@ -248,14 +247,10 @@ test("Space hops the ball in place, jumps it two blocks on while it rolls, and a
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   await expect(say(page)).toHaveText("17,16,17, top");
   // from the lattice's last column a jump lands past its edge, and the ball is lost
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  await laid(page, [32, 17, 17], { kind: 0 });
-  await expect(page.locator("#chipLine")).toContainText("2 blocks");
-  await faced(page, [17, 17, 17], 4, { type: 31 });
-  await expect(page.locator("#chipLine")).toContainText("2 objects");
+  await drafted(page, {
+    blocks: [[[32, 17, 17], { kind: 0 }]],
+    faces: [[[17, 17, 17], 4, { type: 31 }]],
+  });
   // Motion is off still, kept from the first half by the display's store
   await expect(page.locator("#showMotion")).not.toBeChecked();
   await page.evaluate(async () => {

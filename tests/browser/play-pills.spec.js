@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { faced, frozen, laid, settle, still, textured, trackErrors } from "./helpers.js";
+import { frozen, settle, still, trackErrors } from "./helpers.js";
 import {
-  LEVEL,
+  arcadeDraft,
   betweenFrames,
   frameAt,
   line,
@@ -27,22 +27,20 @@ test("the sunglasses show every invisible block as the game does, the ball's lig
 }) => {
   test.slow();
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a key out of reach keeps the level an arcade one; the sunglasses on the block ahead, an
-  // invisible block within the ball's light once it stands there and another well out of it,
-  // whose shimmer runs in the same phase, since the game spreads it by the cell's position
+  // the sunglasses on the block ahead, an invisible block within the ball's light once it stands
+  // there and another well out of it, whose shimmer runs in the same phase, since the game
+  // spreads it by the cell's position
   const near = [18, 15, 17];
   const far = [20, 13, 17];
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  await laid(page, [17, 16, 17], { kind: 0 });
-  await faced(page, [17, 16, 17], 0, { type: 38 });
-  await laid(page, near, { kind: 3 });
-  await laid(page, far, { kind: 3 });
-  await expect(page.locator("#chipLine")).toContainText("4 blocks");
-  await textured(page);
+  await arcadeDraft(page, {
+    blocks: [
+      [[17, 16, 17], { kind: 0 }],
+      [near, { kind: 3 }],
+      [far, { kind: 3 }],
+    ],
+    faces: [[[17, 16, 17], 0, { type: 38 }]],
+    textures: true,
+  });
   const table = await page.evaluate(async () => {
     const { motionTable, skinsTable } = await import(
       new URL("js/viewer/data.js", location.href).href
@@ -458,15 +456,11 @@ test("the invincibility pill colours the ball's light as the game does: from the
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a key out of reach keeps the level an arcade one; the pill on the block ahead of the start
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  await laid(page, [17, 16, 17], { kind: 0 });
-  await faced(page, [17, 16, 17], 0, { type: 34 });
-  await expect(page.locator("#chipLine")).toContainText("2 blocks");
+  // the pill on the block ahead of the start
+  await arcadeDraft(page, {
+    blocks: [[[17, 16, 17], { kind: 0 }]],
+    faces: [[[17, 16, 17], 0, { type: 34 }]],
+  });
   await listening(page);
   /** The ball rolled onto the pill's block on the held clock, and on each game frame from the
       pill's, through the word's frames and three after, the light the frame is handed with the

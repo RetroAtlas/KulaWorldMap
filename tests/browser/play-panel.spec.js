@@ -1,7 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { drawn, faced, laid, settle, timed, trackErrors } from "./helpers.js";
+import { drafted, drawn, trackErrors } from "./helpers.js";
 import {
-  LEVEL,
   TAKEN,
   at,
   betweenFrames,
@@ -75,15 +74,11 @@ test("playing from another block leaves the level one ball, a start on a clock s
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  await timed(page, 1);
-  await expect(page.locator("#chipLine")).toContainText("time 1");
-  await laid(page, [18, 17, 17], { kind: 0 });
-  await expect(page.locator("#chipLine")).toContainText("2 blocks");
-  await faced(page, [17, 17, 17], 0, { type: 29, facing: 3 });
+  await drafted(page, {
+    blocks: [[[18, 17, 17], { kind: 0 }]],
+    faces: [[[17, 17, 17], 0, { type: 29, facing: 3 }]],
+    time: 1,
+  });
   await expect
     .poll(() =>
       page.evaluate(async () => {

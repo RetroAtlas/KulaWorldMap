@@ -1,7 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { drawn, faced, gold, laid, settle, still, topPixels, trackErrors } from "./helpers.js";
+import { drafted, drawn, gold, laid, still, topPixels, trackErrors } from "./helpers.js";
 import {
-  LEVEL,
   betweenFrames,
   line,
   listening,
@@ -232,14 +231,13 @@ test("following a route to its leap stops the ball there and says so, and with t
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
   // a block beside the start's block and another across a gap no roll crosses
-  await laid(page, [18, 17, 17], { kind: 0 });
-  await laid(page, [20, 17, 17], { kind: 0 });
-  await expect(page.locator("#chipLine")).toContainText("3 blocks");
+  await drafted(page, {
+    blocks: [
+      [[18, 17, 17], { kind: 0 }],
+      [[20, 17, 17], { kind: 0 }],
+    ],
+  });
   await page.keyboard.press("w");
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
   await still(page);
@@ -290,18 +288,16 @@ test("Keep, pressed, keeps a jump the ball made as a jump of the route, and Foll
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
   // a block beside the start's block and another across a gap no roll crosses, which a jump clears,
   // and a key out of reach, which keeps the level an arcade one that rolling onto every block
   // does not end
-  await laid(page, [18, 17, 17], { kind: 0 });
-  await laid(page, [20, 17, 17], { kind: 0 });
-  await expect(page.locator("#chipLine")).toContainText("3 blocks");
-  await faced(page, [17, 17, 17], 4, { type: 31 });
-  await expect(page.locator("#chipLine")).toContainText("2 objects");
+  await drafted(page, {
+    blocks: [
+      [[18, 17, 17], { kind: 0 }],
+      [[20, 17, 17], { kind: 0 }],
+    ],
+    faces: [[[17, 17, 17], 4, { type: 31 }]],
+  });
   await page.keyboard.press("w");
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
   await still(page);

@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { drawn, faced, frozen, laid, onward, settle, textured, trackErrors } from "./helpers.js";
+import { drawn, frozen, onward, textured, trackErrors } from "./helpers.js";
 import {
   BONUS_LEVEL,
-  LEVEL,
   WAY_OUT,
   line,
   opened,
   rolled,
   startPlay,
+  teleportDraft,
   toggled,
 } from "./playhelpers.js";
 
@@ -296,23 +296,7 @@ test("a teleport flashes the screen as the game does: the frame after the send i
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // the switch test's level: a key out of reach, a yellow switch and two blue teleporters a block
-  // apart, the far one facing across the row
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  for (const cell of [
-    [17, 16, 17],
-    [17, 15, 17],
-    [17, 14, 17],
-  ])
-    await laid(page, cell, { kind: 0 });
-  await faced(page, [17, 16, 17], 0, { type: 9, variant: 0 });
-  await faced(page, [17, 15, 17], 0, { type: 5, variant: 1 });
-  await faced(page, [17, 14, 17], 0, { type: 5, variant: 1, facing: 4 });
-  await expect(page.locator("#chipLine")).toContainText("5 objects");
+  await teleportDraft(page);
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await frozen(page);
@@ -341,23 +325,7 @@ test("a teleport's shell is laid as the game lays it: the sprite's third corner 
 }) => {
   test.slow();
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // the switch test's level: a key out of reach, a yellow switch and two blue teleporters a block
-  // apart, the far one facing across the row
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  for (const cell of [
-    [17, 16, 17],
-    [17, 15, 17],
-    [17, 14, 17],
-  ])
-    await laid(page, cell, { kind: 0 });
-  await faced(page, [17, 16, 17], 0, { type: 9, variant: 0 });
-  await faced(page, [17, 15, 17], 0, { type: 5, variant: 1 });
-  await faced(page, [17, 14, 17], 0, { type: 5, variant: 1, facing: 4 });
-  await expect(page.locator("#chipLine")).toContainText("5 objects");
+  await teleportDraft(page);
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await frozen(page);

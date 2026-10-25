@@ -1,8 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { drawn, faced, laid, settle, trackErrors } from "./helpers.js";
+import { drafted, drawn, trackErrors } from "./helpers.js";
 import {
   IDENTITY,
-  LEVEL,
   UNTURNED,
   anchor,
   betweenFrames,
@@ -195,16 +194,11 @@ test("over the far edge of a ridge the ball goes round onto the side, and the fr
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  await laid(page, [18, 17, 17], { kind: 0 });
-  await expect(page.locator("#chipLine")).toContainText("2 blocks");
-  await faced(page, [17, 17, 17], 4, { type: 31 });
-  await expect(page.locator("#chipLine")).toContainText("2 objects");
-  await page.keyboard.press("v");
-  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await drafted(page, {
+    blocks: [[[18, 17, 17], { kind: 0 }]],
+    faces: [[[17, 17, 17], 4, { type: 31 }]],
+    motion: false,
+  });
   await startPlay(page);
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
@@ -231,17 +225,15 @@ test("out of an inner corner the ball climbs the wall ahead, and shows through t
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
   // a floor ahead of the start, a wall on it, and a block beside the wall that stops the roll at its middle
-  await laid(page, [17, 16, 17], { kind: 0 });
-  await laid(page, [17, 16, 16], { kind: 0 });
-  await laid(page, [18, 16, 16], { kind: 0 });
-  await expect(page.locator("#chipLine")).toContainText("4 blocks");
-  await page.keyboard.press("v");
-  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await drafted(page, {
+    blocks: [
+      [[17, 16, 17], { kind: 0 }],
+      [[17, 16, 16], { kind: 0 }],
+      [[18, 16, 16], { kind: 0 }],
+    ],
+    motion: false,
+  });
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   expect(await throughDrawn(page)).toBe(0);

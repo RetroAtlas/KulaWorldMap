@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
-import { drawn, frozen, onward, settle, still, written } from "./helpers.js";
+import { drafted, drawn, frozen, onward, settle, still, written } from "./helpers.js";
+import { KEY } from "../../public/js/play/world.js";
 
 // the levels the tests open, and what the strip and the live region say
 export const LEVEL = "/#HIRO/0/45,35/fit/33";
@@ -235,6 +236,32 @@ export async function startPlay(page) {
   await page.keyboard.press("p");
   await expect(page.locator("#play")).toBeVisible();
 }
+
+// the levels of your own the tests lay
+/** A new level with a key on the +x side of the start's block, out of the ball's reach, so that
+    the level plays as an arcade one rather than ending once every block is rolled onto, with what
+    `more` lays and asks of `drafted`. */
+export const arcadeDraft = (page, more = {}) =>
+  drafted(page, { ...more, faces: [[[17, 17, 17], 1, { type: KEY }], ...(more.faces ?? [])] });
+
+/** The arcade level with a yellow switch on the block ahead of the start and two blue teleporters
+    on the two beyond, leading to each other a block apart, the far one facing across the row. */
+export const teleportDraft = (page, more = {}) =>
+  arcadeDraft(page, {
+    ...more,
+    blocks: [
+      [[17, 16, 17], { kind: 0 }],
+      [[17, 15, 17], { kind: 0 }],
+      [[17, 14, 17], { kind: 0 }],
+      ...(more.blocks ?? []),
+    ],
+    faces: [
+      [[17, 16, 17], 0, { type: 9, variant: 0 }],
+      [[17, 15, 17], 0, { type: 5, variant: 1 }],
+      [[17, 14, 17], 0, { type: 5, variant: 1, facing: 4 }],
+      ...(more.faces ?? []),
+    ],
+  });
 
 // the route, the switches and the rolls
 /** The planner's route as it stands: its stations, steps and sorted marks, or null. */

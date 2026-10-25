@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { faced, frozen, laid, settle, timed, trackErrors } from "./helpers.js";
+import { drafted, faced, frozen, trackErrors } from "./helpers.js";
 import {
   IDENTITY,
-  LEVEL,
+  arcadeDraft,
   betweenFrames,
   clockLine,
   flipped,
@@ -65,17 +65,7 @@ test("time runs out into the strip's verdict with the pad dead and the view let 
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  await timed(page, 2);
-  await expect(page.locator("#chipLine")).toContainText("time 2");
-  // a key out of the ball's reach, so the level plays as an arcade one and not by its blocks
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  await expect(page.locator("#chipLine")).toContainText("2 objects");
-  await page.keyboard.press("v");
-  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await arcadeDraft(page, { time: 2, motion: false });
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await expect(clockLine(page)).toHaveText("Time 2");
@@ -134,16 +124,7 @@ test("Enter starts the level again after a button was clicked in the sidebar or 
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  await timed(page, 2);
-  await expect(page.locator("#chipLine")).toContainText("time 2");
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  await expect(page.locator("#chipLine")).toContainText("2 objects");
-  await page.keyboard.press("v");
-  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await arcadeDraft(page, { time: 2, motion: false });
   await startPlay(page);
   const ended = async (verdict) => {
     await page.keyboard.down("ArrowUp");
@@ -200,15 +181,8 @@ test("when the time runs out with Motion on, the view lets go of the ball and tu
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  await timed(page, 2);
-  await expect(page.locator("#chipLine")).toContainText("time 2");
   // a key makes the level an arcade one, whose ending's view swings the slower way
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  await expect(page.locator("#chipLine")).toContainText("2 objects");
+  await arcadeDraft(page, { time: 2 });
   await startPlay(page);
   await expect
     .poll(() => status(page).textContent(), { timeout: 10_000, intervals: [50] })
@@ -253,15 +227,8 @@ test("left alone, the ending's view runs the length of the slower swing and the 
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  await timed(page, 2);
-  await expect(page.locator("#chipLine")).toContainText("time 2");
   // a second block the ball never rolls onto, so the level with no key is not done by its blocks
-  await laid(page, [18, 17, 17], { kind: 0 });
-  await expect(page.locator("#chipLine")).toContainText("2 blocks");
+  await drafted(page, { blocks: [[[18, 17, 17], { kind: 0 }]], time: 2 });
   // framed anew about both blocks, as leaving play frames it
   await page.evaluate(async () => {
     const { fit } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
@@ -310,16 +277,7 @@ test("a level whose start was edited away under play starts again on the first f
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  await timed(page, 1);
-  await expect(page.locator("#chipLine")).toContainText("time 1");
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  await expect(page.locator("#chipLine")).toContainText("2 objects");
-  await page.keyboard.press("v");
-  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await arcadeDraft(page, { time: 1, motion: false });
   await startPlay(page);
   await expect(clockLine(page)).toHaveText("Time 1");
   await page.keyboard.down("ArrowUp");

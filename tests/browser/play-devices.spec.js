@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { faced, laid, settle, trackErrors } from "./helpers.js";
+import { trackErrors } from "./helpers.js";
 import {
-  LEVEL,
   UNTURNED,
+  arcadeDraft,
   betweenFrames,
   dustOver,
   frameFor,
@@ -16,6 +16,7 @@ import {
   station,
   status,
   switched,
+  teleportDraft,
   ticked,
 } from "./playhelpers.js";
 import { LAUNCHED, RIDING, SENDING } from "../../public/js/play/phrases.js";
@@ -94,27 +95,9 @@ test("rolling over a switch throws it, and an on teleporter sends the ball to it
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a key out of reach keeps the level an arcade one; a yellow switch, and two blue teleporters
-  // that lead to each other a block apart, so that a roll could join them, the far one facing
-  // across the row, so that Up is refused there with the near one's block beside
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  for (const cell of [
-    [17, 16, 17],
-    [17, 15, 17],
-    [17, 14, 17],
-  ])
-    await laid(page, cell, { kind: 0 });
-  await faced(page, [17, 16, 17], 0, { type: 9, variant: 0 });
-  await faced(page, [17, 15, 17], 0, { type: 5, variant: 1 });
-  await faced(page, [17, 14, 17], 0, { type: 5, variant: 1, facing: 4 });
-  await expect(page.locator("#chipLine")).toContainText("4 blocks");
-  await expect(page.locator("#chipLine")).toContainText("5 objects");
-  await page.keyboard.press("v");
-  await expect(page.locator("#showMotion")).not.toBeChecked();
+  // the teleporters lead to each other a block apart, so that a roll could join them, and the far
+  // one faces across the row, so that Up is refused there with the near one's block beside
+  await teleportDraft(page, { motion: false });
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await listening(page);
@@ -203,15 +186,11 @@ test("a jump onto a moving platform rides it: the strip says so, the ball stands
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a key out of reach keeps the level an arcade one; a platform three blocks long runs a block
-  // along x two blocks before the start, so the cell a jump comes down on is always under it
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  await laid(page, [16, 15, 17], { kind: 5, far: [17, 15, 17], length: 3, speed: 30 });
-  await expect(page.locator("#chipLine")).toContainText("4 blocks");
+  // a platform three blocks long runs a block along x two blocks before the start, so the cell a
+  // jump comes down on is always under it
+  await arcadeDraft(page, {
+    blocks: [[[16, 15, 17], { kind: 5, far: [17, 15, 17], length: 3, speed: 30 }]],
+  });
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   // Up held past the level's opening, whose frames sample it as the game's frames do, and the tap of
@@ -256,20 +235,18 @@ test("a boost button launches the ball three blocks on, and a landing on another
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a key out of reach keeps the level an arcade one; a row of blocks with a boost button two on
-  // and another three past it, so the first launch comes down on the second
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  for (let y = 16; y >= 9; y--) await laid(page, [17, y, 17], { kind: 0 });
-  await faced(page, [17, 15, 17], 0, { type: 10 });
-  await faced(page, [17, 12, 17], 0, { type: 10 });
-  await expect(page.locator("#chipLine")).toContainText("9 blocks");
-  await expect(page.locator("#chipLine")).toContainText("4 objects");
-  await page.keyboard.press("v");
-  await expect(page.locator("#showMotion")).not.toBeChecked();
+  // a row of blocks with a boost button two on and another three past it, so the first launch
+  // comes down on the second
+  const row = [];
+  for (let y = 16; y >= 9; y--) row.push([[17, y, 17], { kind: 0 }]);
+  await arcadeDraft(page, {
+    blocks: row,
+    faces: [
+      [[17, 15, 17], 0, { type: 10 }],
+      [[17, 12, 17], 0, { type: 10 }],
+    ],
+    motion: false,
+  });
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await listening(page);

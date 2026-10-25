@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { drawn, faced, frozen, laid, settle, still, trackErrors } from "./helpers.js";
+import { drawn, frozen, laid, settle, still, trackErrors } from "./helpers.js";
 import {
   IDENTITY,
-  LEVEL,
+  arcadeDraft,
   ballOver,
   betweenFrames,
   dustOver,
@@ -111,19 +111,15 @@ test("spikes kill the ball: the strip says so in red while the game's countdown 
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a key out of reach keeps the level an arcade one; two blocks on, spikes
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  await laid(page, [17, 16, 17], { kind: 0 });
-  await laid(page, [17, 15, 17], { kind: 0 });
-  await faced(page, [17, 15, 17], 0, { type: 12 });
-  await expect(page.locator("#chipLine")).toContainText("3 blocks");
-  await expect(page.locator("#chipLine")).toContainText("3 objects");
-  await page.keyboard.press("v");
-  await expect(page.locator("#showMotion")).not.toBeChecked();
+  // two blocks on, spikes on the second
+  await arcadeDraft(page, {
+    blocks: [
+      [[17, 16, 17], { kind: 0 }],
+      [[17, 15, 17], { kind: 0 }],
+    ],
+    faces: [[[17, 15, 17], 0, { type: 12 }]],
+    motion: false,
+  });
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   const forgive = page.locator("#forgiveBtn");
@@ -217,25 +213,18 @@ test("ice slides the ball on over every block to the first that is not ice, and 
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a key out of reach keeps the level an arcade one; three ice blocks on, then a stone block
-  // carrying an arrow that points back the way the ball comes
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  for (const cell of [
-    [17, 16, 17],
-    [17, 15, 17],
-    [17, 14, 17],
-  ])
-    await laid(page, cell, { kind: 2 });
-  await laid(page, [17, 13, 17], { kind: 0 });
-  await faced(page, [17, 13, 17], 0, { type: 28, facing: 1 });
-  await expect(page.locator("#chipLine")).toContainText("5 blocks");
-  await expect(page.locator("#chipLine")).toContainText("3 objects");
-  await page.keyboard.press("v");
-  await expect(page.locator("#showMotion")).not.toBeChecked();
+  // three ice blocks on, then a stone block carrying an arrow that points back the way the ball
+  // comes
+  await arcadeDraft(page, {
+    blocks: [
+      [[17, 16, 17], { kind: 2 }],
+      [[17, 15, 17], { kind: 2 }],
+      [[17, 14, 17], { kind: 2 }],
+      [[17, 13, 17], { kind: 0 }],
+    ],
+    faces: [[[17, 13, 17], 0, { type: 28, facing: 1 }]],
+    motion: false,
+  });
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   // one tap of Up, and the slide carries the ball over the ice to the arrow's block
@@ -295,15 +284,7 @@ test("on fire the ball reddens: where it stands its pixels are redder on the who
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  await laid(page, [17, 16, 17], { kind: 0 });
-  await expect(page.locator("#chipLine")).toContainText("2 blocks");
-  await page.keyboard.press("v");
-  await expect(page.locator("#showMotion")).not.toBeChecked();
+  await arcadeDraft(page, { blocks: [[[17, 16, 17], { kind: 0 }]], motion: false });
   const block = [17, 16, 17];
   const rolled = async () => {
     await startPlay(page);
@@ -340,14 +321,8 @@ test("a crumbling block breaks under the ball, scoring, and is gone a third of a
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a key out of reach keeps the level an arcade one; a crumbling block on, with nothing below it
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  await laid(page, [17, 16, 17], { kind: 6 });
-  await expect(page.locator("#chipLine")).toContainText("2 blocks");
+  // a crumbling block on, with nothing below it
+  await arcadeDraft(page, { blocks: [[[17, 16, 17], { kind: 6 }]] });
   // a point of the block's top that the ball and its shadow leave clear
   const corner = [17.15, 16.15, 17];
   const stood = await pixelAt(page, corner);
@@ -379,16 +354,13 @@ test("a vanishing block drops the ball as its cycle takes it out of the lattice,
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a key out of reach keeps the level an arcade one; a vanishing block on that stands as the
-  // level opens, and a block a gap below it
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  await laid(page, [17, 16, 17], { kind: 7, phase: 2 });
-  await laid(page, [17, 16, 19], { kind: 0 });
-  await expect(page.locator("#chipLine")).toContainText("3 blocks");
+  // a vanishing block on that stands as the level opens, and a block a gap below it
+  await arcadeDraft(page, {
+    blocks: [
+      [[17, 16, 17], { kind: 7, phase: 2 }],
+      [[17, 16, 19], { kind: 0 }],
+    ],
+  });
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
@@ -417,15 +389,8 @@ test("a lone crumbling block, reached by a jump, goes with a burst of dust where
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a key out of reach keeps the level an arcade one; a crumbling block a jump on, with nothing
-  // beside it or below it
-  await faced(page, [17, 17, 17], 1, { type: 31 });
-  await laid(page, [17, 15, 17], { kind: 6 });
-  await expect(page.locator("#chipLine")).toContainText("2 blocks");
+  // a crumbling block a jump on, with nothing beside it or below it
+  await arcadeDraft(page, { blocks: [[[17, 15, 17], { kind: 6 }]] });
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await listening(page);

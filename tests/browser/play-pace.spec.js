@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { faced, frozen, onward, settle, trackErrors } from "./helpers.js";
+import { frozen, onward, trackErrors } from "./helpers.js";
 import {
   IDENTITY,
-  LEVEL,
+  arcadeDraft,
   betweenFrames,
   frameAt,
   line,
@@ -70,12 +70,7 @@ test("every sentence the level says has an animation frame of its own, however m
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.goto(LEVEL);
-  await settle(page);
-  await page.locator("#draftNew").click();
-  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
-  // a key out of reach keeps the level an arcade one
-  await faced(page, [17, 17, 17], 1, { type: 31 });
+  await arcadeDraft(page);
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   await expect.poll(() => frameAt(page)).toBeGreaterThan(30);

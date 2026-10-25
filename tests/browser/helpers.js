@@ -1,3 +1,5 @@
+import { expect } from "@playwright/test";
+
 export function trackErrors(page) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
@@ -187,6 +189,98 @@ export const onward = (page, n) =>
     }
   }, n);
 
+/** Step the frozen level a game frame at a time, each drawn, until every reading `until` names
+    holds, at most `most` frames, or through `most` frames with `until` null: the strip's status,
+    its line or the live region matching a pattern, the ball's `block`, whether it is `moving`,
+    whether the status is `dying`, or a `frame` reached. Each frame's `readings` come back, with
+    those `until` names: the `frame` count, the ball's `station`, the texts of `status`, `line`
+    and `say`, `dying`, the colour of a `pixel` at a point of the level and a hash of the `top` of
+    a cell, the last of them the frame `until` held on where it held within `most`. */
+export const stepUntil = (page, until, most, readings = {}) =>
+  page.evaluate(
+    async ([until, most, readings]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state, screen }, { draw, clock }, { motionTable }, P] = await Promise.all(
+        ["viewer/state.js", "viewer/draw/render.js", "viewer/data.js", "play/play.js"].map(at),
+      );
+      const g = document.getElementById("cv").getContext("2d");
+      const status = document.getElementById("playStatus");
+      const k = state.view.dpr;
+      const pixel = ([x, y, z]) => {
+        const [px, py] = screen(x, y, z);
+        return [...g.getImageData(Math.round(px * k), Math.round(py * k), 1, 1).data.slice(0, 3)];
+      };
+      const top = ([x, y, z]) => {
+        const quad = [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [0, 1],
+        ].map(([dx, dy]) => screen(x + dx, y + dy, z).map((v) => v * k));
+        const xs = quad.map((p) => p[0]);
+        const ys = quad.map((p) => p[1]);
+        const x0 = Math.floor(Math.min(...xs));
+        const y0 = Math.floor(Math.min(...ys));
+        const w = Math.ceil(Math.max(...xs)) - x0 + 1;
+        const h = Math.ceil(Math.max(...ys)) - y0 + 1;
+        const d = g.getImageData(x0, y0, w, h).data;
+        const inside = (px, py) => {
+          let turn = 0;
+          for (let i = 0; i < 4; i++) {
+            const [ax, ay] = quad[i];
+            const [bx, by] = quad[(i + 1) % 4];
+            const s = Math.sign((bx - ax) * (py - ay) - (by - ay) * (px - ax));
+            if (s && turn && s !== turn) return false;
+            turn ||= s;
+          }
+          return true;
+        };
+        let hash = 2166136261;
+        for (let j = 0; j < h; j++)
+          for (let i = 0; i < w; i++) {
+            if (!inside(x0 + i + 0.5, y0 + j + 0.5)) continue;
+            const o = (j * w + i) * 4;
+            for (let ch = 0; ch < 3; ch++) hash = Math.imul(hash ^ d[o + ch], 16777619);
+          }
+        return hash >>> 0;
+      };
+      const read = {
+        frame: () => clock(),
+        station: () => P.station(),
+        status: () => status.textContent,
+        line: () => document.getElementById("playLine").textContent,
+        say: () => document.getElementById("say").textContent,
+        dying: () => status.classList.contains("dying"),
+        pixel: () => pixel(readings.pixel),
+        top: () => top(readings.top),
+      };
+      const matching = (name) => (pattern) => new RegExp(pattern).test(read[name]());
+      const holds = {
+        status: matching("status"),
+        line: matching("line"),
+        say: matching("say"),
+        dying: (want) => read.dying() === want,
+        moving: (want) => P.station()?.moving === want,
+        block: (cell) => P.station()?.block.every((v, i) => v === cell[i]) === true,
+        frame: (n) => clock() >= n,
+      };
+      const named = (name) => (name === "block" || name === "moving" ? "station" : name);
+      const names = new Set([
+        ...Object.keys(readings).filter((name) => readings[name]),
+        ...Object.keys(until ?? {}).map(named),
+      ]);
+      const out = [];
+      for (let i = 0; i < most; i++) {
+        window.__step(1000 / motionTable().hz);
+        draw();
+        out.push(Object.fromEntries([...names].map((name) => [name, read[name]()])));
+        if (until && Object.entries(until).every(([name, want]) => holds[name](want))) break;
+      }
+      return out;
+    },
+    [until, most, readings],
+  );
+
 /** Put `block` into the shown draft at `cell`, or take the block there out with null, through the
     model. */
 export const laid = (page, cell, block) =>
@@ -235,6 +329,45 @@ export const roomed = (page, simon) =>
     );
     update(state.lvl.draft, setMeta(get(state.lvl.draft).doc, { simon }));
   }, simon);
+
+/** Open the editor on a new level of your own in the world of the level at `hash`, lay `blocks`
+    and `faces` in it through the model and give it `time` seconds where given, and wait for the
+    chip to count the blocks and the objects the document yields; `motion: false` and
+    `textures: false` press `v` and `t` and see their switches off, and `textures: true` waits for
+    the world's textures. */
+export async function drafted(
+  page,
+  { hash = "/#HIRO/0/45,35/fit/33", blocks = [], faces = [], time, motion, textures } = {},
+) {
+  await page.goto(hash);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "true");
+  if (time !== undefined) await timed(page, time);
+  for (const [cell, block] of blocks) await laid(page, cell, block);
+  for (const [cell, face, object] of faces) await faced(page, cell, face, object);
+  const counts = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get }, { toLevel }, { blockCount, counted, objectCount }] =
+      await Promise.all(
+        ["viewer/state.js", "editor/drafts.js", "format/project.js", "viewer/data.js"].map(at),
+      );
+    const l = toLevel(get(state.lvl.draft).doc, state.lvl.draft);
+    return [counted(blockCount(l), "block"), counted(objectCount(l), "object")];
+  });
+  const chip = page.locator("#chipLine");
+  for (const count of counts) await expect(chip).toContainText(count);
+  if (time !== undefined) await expect(chip).toContainText(`time ${time}`);
+  if (motion === false) {
+    await page.keyboard.press("v");
+    await expect(page.locator("#showMotion")).not.toBeChecked();
+  }
+  if (textures === false) {
+    await page.keyboard.press("t");
+    await expect(page.locator("#showSkins")).not.toBeChecked();
+  }
+  if (textures === true) await textured(page);
+}
 
 // One thing drawn by itself onto a grey canvas the map's size, with the fills it made.
 export const alone = (page, cell, type, frame = 0) =>
