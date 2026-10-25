@@ -1,6 +1,17 @@
 import { test, expect } from "@playwright/test";
-import { drafted, drawn, gold, laid, still, topPixels, trackErrors } from "./helpers.js";
 import {
+  drafted,
+  drawn,
+  frozen,
+  gold,
+  laid,
+  stepUntil,
+  still,
+  topPixels,
+  trackErrors,
+} from "./helpers.js";
+import {
+  arcadeDraft,
   betweenFrames,
   line,
   listening,
@@ -10,9 +21,11 @@ import {
   route,
   said,
   say,
+  seconds,
   startPlay,
   status,
   stopOn,
+  table,
   toggled,
 } from "./playhelpers.js";
 import {
@@ -359,5 +372,44 @@ test("Keep, pressed, keeps a jump the ball made as a jump of the route, and Foll
   const stops = told.slice(told.indexOf(put) + 1).filter((t) => /^\d+,\d+,\d+, top$/.test(t));
   expect(stops).toEqual(["18,17,17, top", "20,17,17, top"]);
   await expect(page.locator("#courseLine")).toHaveText("Route planner · 2 stops · 1 jump");
+  expect(errors).toEqual([]);
+});
+
+test("Keep hands over every block a slide over ice passed as a stop of the way the ball has come", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // three ice blocks on, then a stone block, where the slide stops
+  await arcadeDraft(page, {
+    blocks: [
+      [[17, 16, 17], { kind: 2 }],
+      [[17, 15, 17], { kind: 2 }],
+      [[17, 14, 17], { kind: 2 }],
+      [[17, 13, 17], { kind: 0 }],
+    ],
+    motion: false,
+  });
+  const { play } = await table(page);
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await frozen(page);
+  // the level's clock bounds the stepping; one tap of Up, and the slide carries the ball over the
+  // ice to the stone block
+  const clock = (await seconds(page)) * play.clock.second;
+  await page.keyboard.press("ArrowUp");
+  const slid = await stepUntil(page, { block: [17, 13, 17], moving: false }, clock);
+  expect(slid.at(-1).station.moving).toBe(false);
+  // the way it has come passed over every ice block
+  await page.locator("#keepBtn").click();
+  await expect(page.locator("#courseLine")).toContainText("2 stops");
+  expect((await route(page)).stations).toEqual(
+    [
+      [17, 17, 17],
+      [17, 16, 17],
+      [17, 15, 17],
+      [17, 14, 17],
+      [17, 13, 17],
+    ].map((cell) => ({ cell, face: 0 })),
+  );
   expect(errors).toEqual([]);
 });
