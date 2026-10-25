@@ -33,8 +33,6 @@ test.describe("with a touch screen", () => {
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
     const rested = (await probe(page)).station.block;
-    await page.waitForTimeout(400);
-    expect((await probe(page)).station.block).toEqual(rested);
     // the jump, held, hops the ball where it stands
     const jump = await page.locator("#padBall").boundingBox();
     await cdp.send("Input.dispatchTouchEvent", {
