@@ -148,6 +148,23 @@ test("in a Simon room Up held from rest asks the roll on the fifth frame of the 
   );
 });
 
+test("in a Simon room Up held after a rest past both gates asks the roll on the fifth frame held, the latch counting from the first", () => {
+  const live = begin(room());
+  const w = live.words;
+  const b = live.ball;
+  opened(live);
+  steps(live, ROOMS.idle[1]);
+  assert.equal(w.idle, ROOMS.idle[1]);
+  for (let i = 1; i < ROOMS.latch; i++) {
+    frame(live, PAD.up);
+    assert.deepEqual([w.latch.up, w.latch.count], [1, i], `the latch on frame ${i}`);
+    assert.equal(b.state, REST);
+  }
+  frame(live, PAD.up);
+  assert.equal(b.state, ROLLING, "the roll asked as the count reaches the latch");
+  assert.deepEqual(w.latch, { up: 0, cross: 0, count: 0 });
+});
+
 test("the frame a round's wait runs out reads the pad as any wait's last frame does, the idle count as the verdict's frame left it, so a Left held then is a turn and a move held to the sequence, carried into the next round with the count grown", () => {
   const live = begin(room());
   const w = live.words;

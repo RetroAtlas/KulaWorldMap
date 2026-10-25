@@ -25,7 +25,7 @@ import {
   viewOf,
 } from "../../public/js/play/eye.js";
 import { rockOf } from "../../public/js/play/passes.js";
-import { LETHARGY, begin, level, motion, play, row, start } from "./rules-level.js";
+import { LETHARGY, SIMON, begin, level, motion, play, row, start } from "./rules-level.js";
 
 const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 const levelNamed = (name) => mapData.levels.find((l) => l.name === name);
@@ -161,6 +161,24 @@ test("through one swing of the quicker eye the arcade eye only draws further off
   assert.ok(zooms.length > 1);
   assert.equal(Math.max(...zooms), zooms[0]);
   assert.ok(Math.min(...zooms) < zooms[0]);
+});
+
+test("a Simon room's mode word stands the arcade eye at its ending, which draws further off on every frame through a quarter of its swing and comes back from the frame after, well past a quarter of the quicker eye's swing", () => {
+  fresh();
+  const live = playOn(levelNamed("SIMON 1"));
+  assert.equal(live.run.words.mode, SIMON);
+  assert.equal(live.run.words.form, FORM.arcade);
+  ended(live, live.run.words.form);
+  frameEnding(live, 600);
+  const quarter = Math.round(motion.turn / (4 * play.view.swing));
+  assert.ok(quarter > motion.turn / (4 * play.view.bonus.swing) + 1);
+  const zooms = [state.cam.zoom];
+  for (let i = 0; i <= quarter; i++) {
+    turning(live);
+    zooms.push(state.cam.zoom);
+  }
+  for (let i = 1; i <= quarter; i++) assert.ok(zooms[i] < zooms[i - 1], `frame ${i}`);
+  assert.ok(zooms[quarter + 1] > zooms[quarter]);
 });
 
 test("within one swing of its eye a level with no key draws nearer than it stood", () => {

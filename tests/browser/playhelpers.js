@@ -363,23 +363,6 @@ export const stepTo = (page, verdict, most) =>
     [verdict, most],
   );
 
-/** The camera's zoom and yaw as the ending's view stands and after each of `frames` frozen frames
-    more. */
-export const orbited = (page, frames) =>
-  page.evaluate(async (frames) => {
-    const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ state }, { draw }, { motionTable }] = await Promise.all(
-      ["viewer/state.js", "viewer/draw/render.js", "viewer/data.js"].map(at),
-    );
-    const seen = [{ zoom: state.cam.zoom, yaw: state.cam.yaw }];
-    for (let i = 0; i < frames; i++) {
-      window.__step(1000 / motionTable().hz);
-      draw();
-      seen.push({ zoom: state.cam.zoom, yaw: state.cam.yaw });
-    }
-    return seen;
-  }, frames);
-
 /** Hold Up and tap Space over one frozen frame, which reads both as the forward jump. */
 export async function jumped(page) {
   await page.keyboard.down("ArrowUp");
