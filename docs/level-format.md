@@ -167,7 +167,7 @@ A world's pack holds twenty slots: 0 to 14 are the numbered levels, 15 to 17 the
 
 Slot 19 is `OBJ LEVEL` in every world but the first on the US and Japanese discs, where the first holds the Japanese release's tutorial, and in every world on the PAL disc, which has no LESSON.
 
-**`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: 36 objects and nine records of the kinds that are their own thing on a flat floor, covering **23 of the game's 30 object types**, and the seven it misses are placed 124 times between them against the 23 types' 5,437 placements. Everything on it stands on top, so walking it once in an emulator names most of the game's vocabulary and says nothing about faces. `tools/kula_objlevel.py` writes the floor plan and the sheet to fill in.
+**`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game, the tenth world holding the Lesson on the US and Japanese discs and the catalogue once more on the PAL disc. It is the developers' object catalogue: 36 objects and nine records of the kinds that are their own thing on a flat floor, covering **23 of the game's 30 object types**, and the seven it misses are placed 124 times between them against the 23 types' 5,437 placements. Everything on it stands on top, so walking it once in an emulator names most of the game's vocabulary and says nothing about faces. `tools/kula_objlevel.py` writes the floor plan and the sheet to fill in.
 
 **Any level is a cheat away.** Aris Efraimidis's GameShark codes name the three words the game loads a level from: `800A340C` and `800A3410` take the world, 0 to 9 in pack order, and `800A3408` the slot within it.
 

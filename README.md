@@ -24,7 +24,7 @@ Drafts stay in the browser until they are saved, as the map's own file or as the
 
 Every level is one compressed record inside a pack: a fixed 34 x 34 x 34 lattice of cells, each empty, one of five kinds of block, or a block carrying a record, and a table of records, a block's record being its kind and six slots that are its six faces, with an object standing on any face whose slot is filled.
 
-A block of the five kinds carries a record where something stands on it, and four plain blocks on the disc carry one with nothing on them; a moving platform, a crumbling or vanishing block and a laser carry one whatever stands on them; and most levels keep their settings in one more and every level its time in the last, records that belong to no block and that no cell names.
+A block of the five kinds carries a record where something stands on it, and four plain blocks on the disc carry one with nothing on them; a moving platform, a crumbling or vanishing block and a laser carry one whatever stands on them; and most levels keep their settings in one more and every level its time in the last, but for one on the PAL disc, records that belong to no block and that no cell names.
 
 The game numbers its blocks and objects and names none of them; the names on the map are curated from the game's own models and textures and from play, and the points from play.
 

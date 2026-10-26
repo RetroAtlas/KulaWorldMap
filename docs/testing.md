@@ -26,6 +26,8 @@ A reading only the disc can hold is held by the tool's own check against each of
 
 `test_kula_kwl_check.py` holds the check the same way, a class for each release that runs where that release's variable is set and holds every level of its disc, rebuilt, to the disc in play and to that release's tables of the words the rebuild writes differently and of the levels whose records it does not keep one for one.
 
+`test_kula_sector.py`'s disc class runs per release the same way, each where its variable is set, holding the pack, directory and sampled sectors it rebuilds to that image's counts.
+
 The release files are held the same way, each to its own disc: `test_kula_build.py`'s class for each runs where the release's variable is set and holds the committed file to what the build writes for that disc, and `python3 tools/kula_build.py --all` with the three variables set changes nothing committed.
 
 The release reader's table of addresses is held to the three executables by its own run, `python3 tools/kula_release.py --release <id>` with that release's disc variable set, which stops at the first instruction that is not the one expected.

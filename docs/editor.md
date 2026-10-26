@@ -183,7 +183,7 @@ A type not in the table is written with state 0 and the constants -1, which is a
 
 `next(M[0])` is -1 and `next(M[i])` is `link(M[i-1])`, written to `f6` of a device and to word 7 of a laser's second slot, so the list a switch walks runs down the members from the highest; every switch's `f7` is `link(M[n-1])`. The colour's teleporters sorted ascending, `T[0]` to `T[m-1]`, send the ball round one ring, `f7(T[i]) = link(T[(i-1) mod m])`, a lone teleporter naming itself. This is the rule the disc's 104 switches and 147 teleporters follow without exception ([level-format.md](level-format.md)), and `Level.verify` holds every written file to it.
 
-**The pickup numbers.** Walking the records in order and the faces 0 to 5 of each, the fourteen pickup types, 31 to 38 and 42 to 47, take `f5` of 0 to n-1 and every other slot -1. On the records the game walks the disc numbers its pickups as the writer does on all 228 levels that number them, BONUS 30 having left its thirty unnumbered; a pickup an editor left on a crumbling block, which the game never walks, repeats a number on five levels, and the writer numbers nothing there; the loader renumbers at load in any case.
+**The pickup numbers.** Walking the records in order and the faces 0 to 5 of each, the fourteen pickup types, 31 to 38 and 42 to 47, take `f5` of 0 to n-1 and every other slot -1. On the records the game walks the NTSC-U disc numbers its pickups as the writer does on all 228 levels that number them, its BONUS 30 having left its thirty unnumbered; a pickup an editor left on a crumbling block, which the game never walks, repeats a number on five levels, and the writer numbers nothing there; the loader renumbers at load in any case.
 
 **Undefined bytes.** A project has no level file, and `canonical` raises rather than invent one, where a cell is not three coordinates in 0 to 33, two blocks stand on one cell, a kind is not 0 to 8, a face key with something standing under it is not an integer or names a face outside the six, one face of a block is named twice, as `"5"` and `"05"` do, a span has no far end or one outside 0 to 33 or runs along no one axis, a platform's length runs past the lattice from the run's upper end or is below one, a laser's colour or a device's variant is not one of the four, or any word is asked for more than -32768 to 32767, the file's range, as a time or a platform's speed can; both writers refuse each with one sentence, and `validate` names each of these as an error first.
 
@@ -522,7 +522,9 @@ The mask is the header word; words 96 to 118 of every record; words 13 and 15 of
 
 A level whose rebuild has fewer records than the disc, on the NTSC-U disc 144 that carry a settings record with neither flag set and 2 that carry a record with nothing on it, is compared on the records both have, and the counts come from the same stripping the record check uses and are pinned beside the residual table, a table a release.
 
-The PAL disc's counts are 142 and 2, since the lesson in HIRO's slot 19, which carries a flagless settings record, is the catalogue there, and its BONUS 30 carries none and has no trailer, which the stripping counts as a class of its own, one level with no trailer record; the Japanese disc's counts are the NTSC-U disc's.
+The PAL disc's counts are 142 and 2, since the lesson in HIRO's slot 19, which carries a flagless settings record, is the catalogue there, and its BONUS 30 carries none and has no trailer, which the stripping counts as a class of its own, one level with no trailer record.
+
+The Japanese disc's two counts are the NTSC-U disc's.
 
 All 230 levels of each of the three discs play as that disc's levels do.
 
@@ -538,4 +540,6 @@ Outside the mask the rebuild differs from the NTSC-U disc in these words and no 
 | one teleporter's `f6` | 1 | LEVEL 125's two yellow teleporters, the one chain of the disc left unlinked, which nothing walks since the colour has no switch |
 | the type word of a vanishing block's slots 1 to 5 | 81 | an editor's leftovers on 17 levels, mostly a fire or a type 4 in the second slot, read for a captivator walking that face, which no level on the disc brings there |
 
-The Japanese disc's counts are the NTSC-U disc's exactly, its differing levels moving none; the PAL disc's differ in two, 30 clocks' `f2` against 27 and 62 vanishing blocks' slot 1 types against 58, the three clocks and four vanishing blocks of the catalogue its HIRO slot 19 holds in the lesson's place, the copy the other nine worlds' slot 19 holds on every disc.
+The Japanese disc's counts are the NTSC-U disc's exactly, its differing levels moving none.
+
+The PAL disc's differ in two, 30 clocks' `f2` against 27 and 62 vanishing blocks' slot 1 types against 58, the three clocks and four vanishing blocks of the catalogue its HIRO slot 19 holds in the lesson's place, the copy the other nine worlds' slot 19 holds on every disc.

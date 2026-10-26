@@ -26,7 +26,9 @@ Sectors 0 to 15 are the system area: 0 to 3 empty, 4 to 11 the licence data, and
 
 The data files lie in address order with no gap between them but the directory sectors: each world's directory stands between the last pack of the world before it and its own artwork, so `COPYCAT.PAK` ends at 1011, ARCTIC's directory is 1012 and `ARCTIC.TGI` begins at 1013. A pack is therefore followed at once by the next file or by a directory, and cannot grow past the sectors it has.
 
-The PAL and Japanese images lay each world's files alphabetically behind its directory, so a pack precedes its artwork there, where the NTSC-U image puts the artwork first and the packs last; so the directories, the packs and the room lie at other sectors on them, which the table below and the second table under "The packs" give.
+The PAL and Japanese images lay each world's files alphabetically behind its directory, so a world pack precedes its artwork there and its finals pack follows it, where the NTSC-U image puts the artwork first and the packs last.
+
+So the directories, the packs and the room lie at other sectors on those two images, which the table below and the second table under "The packs" give.
 
 A directory record holds a file's extent and size in both byte orders, little-endian at 2 and 10 and big-endian at 6 and 14, and the two agree on every record of the disc; a pack's record lies in its world's directory sector, the world pack's record at offset 96 and the finals pack's record at 212 or 216, but for HIRO, whose directory has `COPYCAT.PAK` at 96, `HIRO.PAK` at 214 and `HIROFI.PAK` at 388.
 
@@ -38,7 +40,9 @@ Of the 109,607 sectors, 31,601 are Form 1 and 78,006 Form 2. The Form 1 sectors 
 
 A Form 2 sector carries 2324 bytes of data, no ECC, and an EDC at 2348 over bytes 16 to 2347, which is the same CRC as below over a longer span and checks on all 78,006. Nothing here writes one.
 
-The three images side by side, each figure read off its own image: the sectors, the volume descriptor's creation date, the executable the boot line names and the sectors it lies at, the Form 1 and Form 2 sectors, the root and `/XA` directory sectors and the room's sector; the twelve directories of one sector, the 21 pack paths, the offsets of the packs' records inside their directory sectors and the room's 31,752,000 bytes are the same on all three.
+The three images side by side, each figure read off its own image: the sectors, the volume descriptor's creation date, the executable the boot line names and the sectors it lies at, the Form 1 and Form 2 sectors, the root and `/XA` directory sectors and the room's sector.
+
+The twelve directories of one sector, the 21 pack paths, the offsets of the packs' records inside their directory sectors and the room's 31,752,000 bytes are the same on all three.
 
 | disc | sectors | created | boots | Form 1 | Form 2 | root | `/XA` | `/3.00` |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -88,6 +92,8 @@ What settles the reading is the disc: rebuilt from its address, subheader and us
 A sector whose two subheader copies differ while its EDC and ECC are those of its bytes cannot be rebuilt from its first copy, since the tool writes equal copies and nothing here writes such a sector, so `--sweep` counts it apart from the sectors that fail, names it, and passes when every other Form 1 sector rebuilds.
 
 The unit test under `$KULA_DISC` holds 423 of them, the 85 pack sectors, the volume descriptor, the twelve directory sectors and 325 sampled every 97th sector across the image, and asserts the count.
+
+Its classes for the PAL and Japanese images, under `$KULA_DISC_EU` and `$KULA_DISC_JP`, hold 402 and 669 sectors the same way, 85 and 84 of them packs and 304 and 572 sampled, with the volume descriptor and the twelve directory sectors on each.
 
 The viewer's port, `public/js/format/sectors.js`, is the same arithmetic over `Uint8Array`s and is held to the Python side through `tests/fixtures/sectors.json`: thirteen synthetic sectors at varied addresses and submodes and two with a user byte flipped, written by the tool only after its own check against the disc has passed, and carrying no byte of the disc.
 
