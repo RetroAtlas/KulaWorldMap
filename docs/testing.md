@@ -20,7 +20,11 @@ One spec runs with its name after the command, `npm run test:browser -- play-hud
 
 The motion reader's tests run over a hand-typed fixture of the executable's words, `motion_fixture.py`'s `GAME`, which covers most of the readings' keys, so they hold the reader to the fixture and not to the executable; what holds the reader to the executable is the tool's table against the disc, which the build compares.
 
+`test_kula_release.py` holds the release reader the same way, to a fixture of each release's executable's words, every stretch the readings match at its own address in a blob of that executable's size, and to a changed word at any reading stopping it.
+
 A reading only the disc can hold is held by the tool's own check against the disc, `python3 tools/kula_kwl.py --check` with `KULA_DISC` set, or by a rebuild with `python3 tools/kula_build.py` that changes nothing committed.
+
+The release reader's table of addresses is held to the three executables by its own run, `python3 tools/kula_release.py --release <id>` with that release's disc variable set, which stops at the first instruction that is not the one expected.
 
 ## Where a check lives
 
