@@ -30,7 +30,7 @@ import { ballsWith } from "../viewer/draw/things.js";
 import { toast } from "../viewer/ui/toast.js";
 import { centreOn, chip, fit, fitWith, settle, writeHash } from "../viewer/chrome/navigate.js";
 import { slotOf } from "../viewer/permalink.js";
-import { onShow } from "../viewer/chrome/detail.js";
+import { onShow, refreshDetail } from "../viewer/chrome/detail.js";
 import { tipWith } from "../viewer/chrome/interaction.js";
 import { REST, aloft, blockUnder, moving } from "./ball.js";
 import { drives, frame as gameFrame, heeds, relevel, stand, startRun } from "./rules.js";
@@ -97,7 +97,7 @@ import {
   wireStrip,
 } from "./strip.js";
 import { drive, followFrom, followed, keep, rested, retire, walked } from "./route.js";
-import { gameFor, happened, refreshPanel, startOver as restarted } from "./events.js";
+import { gameFor, happened, startOver as restarted } from "./events.js";
 
 const LEAVE_MS = 450;
 const GAP_MS = 250;
@@ -421,7 +421,7 @@ function leave({ restore = true } = {}) {
   clearSaying();
   fitWith(null);
   runWith(null);
-  refreshPanel();
+  refreshDetail();
   if (back) state.presses = parked.presses;
   resetDust(null);
   sync(live);

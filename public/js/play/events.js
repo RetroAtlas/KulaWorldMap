@@ -2,12 +2,12 @@
 // ending with its verdict and its eye, a death forgiven and the level started over or the next
 // gone on to.
 import { state } from "../viewer/state.js";
-import { motionTable, worldTint } from "../viewer/data.js";
+import { levelAt, levelsIn, motionTable, worldTint } from "../viewer/data.js";
 import { probeOf } from "../viewer/walk.js";
 import { invalidatePick } from "../viewer/draw/render.js";
 import { toast } from "../viewer/ui/toast.js";
 import { fit, selectLevel } from "../viewer/chrome/navigate.js";
-import { clearDetail, showCell } from "../viewer/chrome/detail.js";
+import { clearDetail, refreshDetail } from "../viewer/chrome/detail.js";
 import { burstDust, resetDust, travelDust } from "./dust.js";
 import { blockUnder, centreOf, faceUnder } from "./ball.js";
 import { restart, revive } from "./rules.js";
@@ -137,13 +137,8 @@ export function happened(live, event) {
 function taken(live, { key, face, points }) {
   const m = (live.run.world.idx.markers.get(key) ?? []).find((m) => m.face === face);
   say(TOOK(m, points));
-  refreshPanel();
+  refreshDetail();
   invalidatePick();
-}
-
-/** The panel drawn again where it shows a block, so what it says of the block's things holds. */
-export function refreshPanel() {
-  if (state.selected) showCell(state.selected, { raise: false });
 }
 
 /** A switch thrown under the ball: dust at its foot, the circuit's turn said, the panel redrawn. */
@@ -153,7 +148,7 @@ function threw(live, { circuit }) {
   const text = THROWN(circuit);
   say(text);
   live.notes.push(text);
-  refreshPanel();
+  refreshDetail();
 }
 
 /** The ball launched off a boost button: dust at its foot, the launch said, and the strip saying
@@ -232,7 +227,7 @@ function ended(live, code) {
   const w = run.words;
   const settled = conclude(run);
   const next = run.game
-    ? pickedLevel(live, nextOf(run.game, run, packCount(live.level.pack)))
+    ? pickedLevel(live, nextOf(run.game, run, levelsIn(live.level.pack).length))
     : null;
   live.ended = {
     code,
@@ -258,14 +253,11 @@ function ended(live, code) {
   invalidatePick();
 }
 
-/** The levels the pack holds, as the data has them. */
-const packCount = (pack) => state.data.levels.filter((l) => l.pack === pack).length;
-
 /** The level of the disc at `pick`, a pack and an index, where it is another than the one played,
     else null. */
 function pickedLevel(live, pick) {
   if (!pick) return null;
-  const l = state.data.levels.find((x) => x.pack === pick.pack && x.index === pick.index);
+  const l = levelAt(pick.pack, pick.index);
   return l && l !== live.level ? l : null;
 }
 
@@ -281,7 +273,7 @@ function forgive(live, name) {
   say(FORGIVEN(name));
   state.frame = b.frame;
   if (state.framing === fit) fit();
-  refreshPanel();
+  refreshDetail();
   live.redraw = true;
   invalidatePick();
 }
@@ -332,7 +324,7 @@ export function startOver(live, { onward = true } = {}) {
   fit();
   arrive(live, from, () => shown(live).centre, performance.now());
   line(live);
-  refreshPanel();
+  refreshDetail();
   live.redraw = true;
   invalidatePick();
   say(STARTED(l, went, at.face, at.cell, b.h));

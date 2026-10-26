@@ -215,6 +215,11 @@ export function showCell(c, { raise = true } = {}) {
   emit("selection-changed");
 }
 
+/** Rebuild the panel for the cell it shows, a hidden panel left down, so what it says of the cell holds. */
+export function refreshDetail() {
+  if (state.selected) showCell(state.selected, { raise: false });
+}
+
 function fold(box) {
   const btn = box.querySelector(".fold");
   btn.setAttribute("aria-expanded", String(!folded));

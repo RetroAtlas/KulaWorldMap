@@ -3,8 +3,7 @@
 // the levels of the chosen pack and a line on which world the level will
 // wear; and, for a shared level, the link to paste.
 import { $, el } from "../viewer/ui/dom.js";
-import { state } from "../viewer/state.js";
-import { levelTitle, worldName } from "../viewer/data.js";
+import { levelAt, levelsIn, levelTitle, worldName } from "../viewer/data.js";
 import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
 import { WORLDS } from "../format/kwl.js";
 
@@ -21,23 +20,20 @@ function worldOf(path) {
   return WORLDS.includes(world) ? world : null;
 }
 
-const shippedAt = (path, index) =>
-  state.data?.levels.find((l) => l.pack === path && l.index === index);
-
 /** What a slot is called: the pause screen's title where a shipped level lies there, else the pack's name for it. */
 export function slotTitle(path, index, name) {
-  const shipped = shippedAt(path, index);
+  const shipped = levelAt(path, index);
   if (shipped) return levelTitle(shipped);
   return name || `slot ${index + 1}`;
 }
 
 /** The world a slot opens in: the one the map lists the shipped level there under, else its pack's world, else null. */
 export function slotWorld(path, index) {
-  return shippedAt(path, index)?.theme ?? worldOf(path);
+  return levelAt(path, index)?.theme ?? worldOf(path);
 }
 
 function packWorld(path) {
-  const worlds = new Set(state.data?.levels.filter((l) => l.pack === path).map((l) => l.theme));
+  const worlds = new Set(levelsIn(path).map((l) => l.theme));
   if (worlds.size > 1) return null;
   return worlds.size ? [...worlds][0] : worldOf(path);
 }

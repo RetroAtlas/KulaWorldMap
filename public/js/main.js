@@ -11,7 +11,7 @@ import {
   setSidebar,
 } from "./viewer/chrome/sidebar.js";
 import { applyHash, selectLevel, writeHash } from "./viewer/chrome/navigate.js";
-import { onShow, showCell } from "./viewer/chrome/detail.js";
+import { onShow, refreshDetail } from "./viewer/chrome/detail.js";
 import { probeOf } from "./viewer/walk.js";
 import { FACE_NAME } from "./format/lattice.js";
 import { wireCourse } from "./viewer/chrome/course.js";
@@ -294,7 +294,7 @@ function wirePlay() {
     $("detailBody").prepend(el("p", { className: "put" }, put));
   });
   on("show-changed", (key) => {
-    if (key === "playfrom" && state.selected) showCell(state.selected, { raise: false });
+    if (key === "playfrom") refreshDetail();
   });
   document.addEventListener(
     "keydown",

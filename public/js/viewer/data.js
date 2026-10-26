@@ -67,6 +67,11 @@ export const levelNote = (l) =>
 /** The maximum a level can score where that is less than everything it holds, else null. */
 export const levelScore = (l) => ann.levels[`${l.pack}#${l.index}`]?.score ?? null;
 export const levelTitle = (l) => l.shown || l.name;
+/** The level of the disc in pack `pack` at `index`, else null. */
+export const levelAt = (pack, index) =>
+  state.data.levels.find((l) => l.pack === pack && l.index === index) ?? null;
+/** The levels of the disc in pack `pack`. */
+export const levelsIn = (pack) => state.data.levels.filter((l) => l.pack === pack);
 
 const BEAM_KIND = 8;
 const RAIL_KIND = 5;
@@ -318,7 +323,7 @@ const BONUS_BALL = 10;
 const BONUS_BALLS = 3;
 const HIDDEN_BALL = 13;
 const WORLD_LEVELS = 15;
-const onDisc = (l) => state.data.levels.some((d) => d.pack === l.pack && d.index === l.index);
+const onDisc = (l) => levelAt(l.pack, l.index) !== null;
 export function ballFor(l) {
   const world = state.data.themes.findIndex((t) => t.id === l.theme);
   const skins = skinsTable();
