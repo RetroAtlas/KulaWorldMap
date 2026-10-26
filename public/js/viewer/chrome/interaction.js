@@ -1,4 +1,4 @@
-import { $, emit, on } from "../ui/dom.js";
+import { $, emit, on, typing } from "../ui/dom.js";
 import { state, BLOCK, PITCH_MIN, PITCH_MAX, ZOOM_MIN, ZOOM_MAX, pivot } from "../state.js";
 import { drawSoon, cellAt, invalidatePick, pointing, onResize } from "../draw/render.js";
 import { chip, writeHash, stepLevel, fit, setSlice } from "./navigate.js";
@@ -350,8 +350,7 @@ cv.addEventListener(
 
 addEventListener("keydown", (e) => {
   // a focused switch leaves the map its keys, and the slider keeps its arrows
-  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
-  if (e.key === "/" && !typing) {
+  if (e.key === "/" && !typing(e)) {
     e.preventDefault();
     setSidebar(true);
     $("search").focus();
@@ -361,7 +360,7 @@ addEventListener("keydown", (e) => {
   // Many layouts type punctuation with Option or AltGr, and AltGr arrives as
   // Ctrl with Alt; with a letter, a digit or a named key, Alt is a shortcut.
   const typed = e.altKey && !e.metaKey && /^[^\p{L}\p{N}]$/u.test(e.key);
-  if (typing || ((e.metaKey || e.ctrlKey || e.altKey) && !typed)) return;
+  if (typing(e) || ((e.metaKey || e.ctrlKey || e.altKey) && !typed)) return;
   const step = e.shiftKey ? 220 : 70;
   switch (e.key) {
     case "ArrowLeft":

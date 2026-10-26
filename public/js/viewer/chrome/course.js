@@ -1,5 +1,5 @@
 // The route planner: stops clicked on the faces, joined by the shortest walk, a jump or a leap.
-import { $, emit, on } from "../ui/dom.js";
+import { $, dialogOpen, emit, on, typing } from "../ui/dom.js";
 import { state, effectsOn } from "../state.js";
 import { FACE_NAME, cellKey } from "../../format/lattice.js";
 import { counted, markerGroup, markerHeading, startsOf } from "../data.js";
@@ -92,9 +92,6 @@ export function adoptCourse(c) {
 
 const editing = () => document.body.classList.contains("editing");
 const active = () => state.show.course && !editing();
-const typing = (e) =>
-  /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
-const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 const stationOf = (c) => ({ cell: [c.x, c.y, c.z], face: c.face });
 
 function probeNow() {

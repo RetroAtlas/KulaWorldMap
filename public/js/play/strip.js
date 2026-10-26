@@ -1,6 +1,6 @@
 // Play's chrome: the strip and the HUD that stand beside the map while the ball is on it, the pad
 // and the keys that roll it, and the live region's queue of what play says.
-import { $ } from "../viewer/ui/dom.js";
+import { $, dialogOpen, typing } from "../viewer/ui/dom.js";
 import { current, measureStrip } from "../viewer/chrome/course.js";
 import { state } from "../viewer/state.js";
 import { ballFor, levelTitle, markerModel, motionTable, worldName } from "../viewer/data.js";
@@ -31,10 +31,6 @@ export let measure = () => {};
 export let padShown = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 export let forgiving = false;
 let keyed = false;
-
-const typing = (e) =>
-  /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
-const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 
 // --- the live region ----------------------------------------------------------------------
 

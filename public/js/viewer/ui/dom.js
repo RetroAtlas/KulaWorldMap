@@ -13,3 +13,10 @@ export function el(tag, props = {}, ...kids) {
 /** Text made safe for the page's markup. */
 export const escaped = (text) =>
   text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+
+/** Whether a key event came from a form field, which keeps the browser's own keys. */
+export const typing = (e) =>
+  /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
+
+/** Whether a dialog stands open over the page. */
+export const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;

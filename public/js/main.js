@@ -1,4 +1,4 @@
-import { $, el, on } from "./viewer/ui/dom.js";
+import { $, dialogOpen, el, on, typing } from "./viewer/ui/dom.js";
 import { state } from "./viewer/state.js";
 import { resize, onResize } from "./viewer/draw/render.js";
 import { loadJson, setAnnotations, setObjects, ballFor } from "./viewer/data.js";
@@ -212,9 +212,6 @@ const bootEditor = () =>
     ? Promise.resolve(unloaded())
     : (loading ??= import("./editor/editor.js").then(ready, unloaded));
 
-const typing = (e) =>
-  /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
-
 // Until the editor is up, its controls load it and then do what they do.
 function wireEntry() {
   const entry = (id, fire) => {
@@ -230,7 +227,7 @@ function wireEntry() {
     "keydown",
     (e) => {
       if (editor || e.key !== "w" || e.metaKey || e.ctrlKey || e.altKey || !state.lvl) return;
-      if (typing(e) || document.querySelector(".modal:not([hidden])")) return;
+      if (typing(e) || dialogOpen()) return;
       e.preventDefault();
       e.stopPropagation();
       if (toggling) return;
@@ -303,7 +300,7 @@ function wirePlay() {
     "keydown",
     (e) => {
       if (play || e.key !== "p" || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-      if (!state.lvl || typing(e) || document.querySelector(".modal:not([hidden])")) return;
+      if (!state.lvl || typing(e) || dialogOpen()) return;
       e.preventDefault();
       e.stopPropagation();
       if (playToggling) return;

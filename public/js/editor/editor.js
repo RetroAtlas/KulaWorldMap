@@ -1,6 +1,6 @@
 // The editor, loaded only when the page is opened to make levels: the mode,
 // its tools and keys, and what it draws over the map through the frame's hooks.
-import { $, emit, on } from "../viewer/ui/dom.js";
+import { $, dialogOpen, emit, on, typing } from "../viewer/ui/dom.js";
 import { state, BLOCK, facing as turnedToView, screen, sliceZ } from "../viewer/state.js";
 import { SIDE, cellKey, FACE_NORMAL, FACE_NAME } from "../format/lattice.js";
 import { circuitPhrase, levelTitle, markerLabel } from "../viewer/data.js";
@@ -126,7 +126,6 @@ export const editing = () => mode.on && onDraft();
 // a platform's block builds against the cell it stands in, which its record names only for the first
 const cellOf = (c) => c.body ?? [c.x, c.y, c.z];
 const across = (c, face) => beside(cellOf(c), face);
-const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;
 const phone = () => sidebarOverlays();
 const hovered = () => armed?.c ?? state.hover;
 const waiting = () => (pending.touch ? WAITING_TOUCH : WAITING);
@@ -474,8 +473,7 @@ function disarm() {
 // A form field keeps the browser's own keys, and an open dialog keeps every key.
 function keys(e) {
   if (!state.lvl || dialogOpen()) return;
-  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
-  if (typing) return;
+  if (typing(e)) return;
   if (e.key === "Escape") disarm();
   const mod = e.metaKey || e.ctrlKey;
   const key = e.key.toLowerCase();
