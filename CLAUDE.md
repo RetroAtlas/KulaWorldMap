@@ -105,7 +105,7 @@ Play's modules reach the map only through the seams:
 - `ballsWith` and a traveller's `tint` and `body` in `things.js`.
 - `adoptCourse`, `current` and the `course-changed` event in `course.js`.
 - `tipWith` in `interaction.js`.
-- The panel's `onShow` and `go-to` event in `detail.js`, and the `play-changed` event the editor listens to.
+- The panel's `onShow` and `go-to` event, and its `clearDetail` and `refreshDetail`, in `detail.js`, and the `play-changed` event the editor listens to.
 
 So the faithful modules carry no branch for play either; `play/dust.js`, `play/effects.js`, `play/phrases.js`, `play/traveller.js`, `play/eye.js`, `play/screen.js`, `play/strip.js`, `play/route.js` and `play/events.js` are its own, and `play/effects.js` casts its light through `lightsWith` in `lights.js`.
 
