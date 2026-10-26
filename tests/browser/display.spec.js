@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { drawn, landed, settle } from "./helpers.js";
+import { drawn, keyed, landed, settle } from "./helpers.js";
 
 const notice = (page, msg) =>
   page.evaluate(
@@ -198,10 +198,7 @@ test("a dialog opened as another closes stays open, on an entry of its own", asy
   await page.keyboard.press("?");
   const first = await page.evaluate(() => history.state.dialog);
   // both at once, before the Back that closing the first spends has landed
-  await page.evaluate(() => {
-    for (const key of ["Escape", "?"])
-      document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
-  });
+  await keyed(page, "keydown", ["Escape", "?"], { active: true });
   await expect.poll(() => page.evaluate(() => history.state?.dialog)).toBeGreaterThan(first);
   await expect(help).toBeVisible();
   await page.goBack();

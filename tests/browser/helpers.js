@@ -329,6 +329,18 @@ export const stepUntil = (page, until, most, readings = {}) =>
     [until, most, readings],
   );
 
+/** Dispatch `type` for `keys`, one or more, on the body, or with `active` on the active element. */
+export const keyed = (page, type, keys, { active = false } = {}) =>
+  page.evaluate(
+    ([type, keys, active]) => {
+      for (const key of keys)
+        (active ? document.activeElement : document.body).dispatchEvent(
+          new KeyboardEvent(type, { key, bubbles: true }),
+        );
+    },
+    [type, [keys].flat(), active],
+  );
+
 /** Put `block` into the shown draft at `cell`, or take the block there out with null, through the
     model. */
 export const laid = (page, cell, block) =>

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { frozen, laid, onward, roomed, trackErrors } from "./helpers.js";
+import { frozen, keyed, laid, onward, roomed, trackErrors } from "./helpers.js";
 import {
   line,
   opened,
@@ -102,13 +102,9 @@ test("a Simon room takes the pad one move at a time: Up held rolls the ball one 
   expect(await station(page)).toEqual({ ...before, block: [20, 10, 20] });
   // Left held turns the ball, which is the round's second move, and the verdict ends the room as
   // the ball comes to rest from the turn
-  await page.evaluate(() =>
-    document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true })),
-  );
+  await keyed(page, "keydown", "ArrowLeft");
   expect(await stepTo(page, ROUND_DONE, 120)).not.toBeNull();
-  await page.evaluate(() =>
-    document.body.dispatchEvent(new KeyboardEvent("keyup", { key: "ArrowLeft", bubbles: true })),
-  );
+  await keyed(page, "keyup", "ArrowLeft");
   await expect(status(page)).toHaveText(new RegExp(ROUND_DONE));
   expect(errors).toEqual([]);
 });
