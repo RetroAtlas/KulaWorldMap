@@ -113,7 +113,7 @@ So the faithful modules carry no branch for play either; `play/dust.js`, `play/e
 
 The project file grows by one rule: keys are only added, a published key never changes its meaning or its type, every optional key has a default on read and a reader ignores keys it does not know, with [docs/editor.md](docs/editor.md) as the specification.
 
-After any change to the level writers, whoever holds the disc runs `python3 tools/kula_kwl.py --check` with `KULA_DISC` set, which holds the rebuild to the disc word for word and fails on any residual its table does not list.
+After any change to the level writers, whoever holds the discs runs `python3 tools/kula_kwl.py --check` on each of the three, with `KULA_DISC`, `KULA_DISC_EU` and `KULA_DISC_JP` set and `--release` naming the disc, which holds the rebuild to that disc word for word and fails on any residual the disc's own table of residuals does not list.
 
 ### Where a check lives
 

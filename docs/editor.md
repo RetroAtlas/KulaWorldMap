@@ -505,7 +505,7 @@ zlib's output at a level has been stable across its releases, and a zlib whose o
 
 The unit tests hold the port to the Python side through the digest fixture, both digests over all 230 templates, and through the fixed point: a template written to the game's bytes and read back is the same project, and the level the viewer draws of a project carries the shipped level's markers, by cell and by every field the renderer reads.
 
-**The disc check.** `python3 tools/kula_kwl.py --check`, with `$KULA_DISC` set, parses every level of the disc, rebuilds it from its fields through `project_of_level` and `canonical`, and holds the rebuild to the disc two ways. In play:
+**The disc check.** `python3 tools/kula_kwl.py --check`, with `$KULA_DISC` set, or with `--release eu` or `--release jp` and `$KULA_DISC_EU` or `$KULA_DISC_JP` set, parses every level of that disc, rebuilds it from its fields through `project_of_level` and `canonical`, and holds the rebuild to the disc two ways. In play:
 
 - The rebuild passes `Level.verify`.
 - The same cells hold the same kinds.
@@ -516,13 +516,17 @@ The unit tests hold the port to the Python side through the digest fixture, both
 
 Word for word: every word of every matched record and of the trailer outside an explicit mask of what the game never reads, a link compared as the cell and face it names and a record's own lattice value as itself, so that a record folded or left out does not read as a hundred shifted words.
 
-The mask is the header word; words 96 to 118 of every record; words 13 and 15 of every slot; the kind word of slots 2 to 5; the trailer's words 1 to 5 and its slots 1 to 5; every word of a settings record but its two flags; a bare slot's words other than its type and its state; an object's `f9`, `f10` and `f14`, its `f6` and `f7` on anything but a teleporter or a switch, and its `f5` on BONUS 30, whose pickups the disc left unnumbered, the five levels where a number repeats needing no mask since the repeat stands on a crumbling block, whose words the mask takes already; a platform's second slot but its end, length, speed and lattice value, and its first slot from `f10` on; a crumbling block's first slot from `f5` on and its other slots; a vanishing block's type word, its first slot from `f3` on and its other slots but their types; and a laser's slots 2 to 5.
+The PAL disc's BONUS 30, whose file ends at its count, has no trailer, so its words are compared over its records alone, and its time, the game's default where the record past the count is no trailer, is the time the rebuild's trailer carries.
 
-A level whose rebuild has fewer records than the disc, 144 that carry a settings record with neither flag set and 2 that carry a record with nothing on it, is compared on the records both have, and the two counts come from the same stripping the record check uses and are pinned beside the residual table.
+The mask is the header word; words 96 to 118 of every record; words 13 and 15 of every slot; the kind word of slots 2 to 5; the trailer's words 1 to 5 and its slots 1 to 5; every word of a settings record but its two flags; a bare slot's words other than its type and its state; an object's `f9`, `f10` and `f14`, its `f6` and `f7` on anything but a teleporter or a switch, and its `f5` on the NTSC-U and Japanese discs' BONUS 30, whose pickups those discs left unnumbered, where the PAL disc's BONUS 30, which numbers its pickups, takes none, the five levels where a number repeats needing no mask since the repeat stands on a crumbling block, whose words the mask takes already; a platform's second slot but its end, length, speed and lattice value, and its first slot from `f10` on; a crumbling block's first slot from `f5` on and its other slots; a vanishing block's type word, its first slot from `f3` on and its other slots but their types; and a laser's slots 2 to 5.
 
-All 230 levels play as the disc's levels do.
+A level whose rebuild has fewer records than the disc, on the NTSC-U disc 144 that carry a settings record with neither flag set and 2 that carry a record with nothing on it, is compared on the records both have, and the counts come from the same stripping the record check uses and are pinned beside the residual table, a table a release.
 
-Outside the mask the rebuild differs from the disc in these words and no others, each a class the tool's own table pins by its count, which `--check` fails on when a count moves or a class appears and the unit test holds too, so a writer change that moves one is a finding and not a filler; the check also holds the three constants the writer puts in an object slot by type, `F9`, `F10` and `F14`, to the three most of the disc's objects of that type carry, so a wrong constant fails the check and not only the digests:
+The PAL disc's counts are 142 and 2, since the lesson in HIRO's slot 19, which carries a flagless settings record, is the catalogue there, and its BONUS 30 carries none and has no trailer, which the stripping counts as a class of its own, one level with no trailer record; the Japanese disc's counts are the NTSC-U disc's.
+
+All 230 levels of each of the three discs play as that disc's levels do.
+
+Outside the mask the rebuild differs from the NTSC-U disc in these words and no others, each a class the tool's own table pins by its count, a table a release, which `--check` fails on when a count moves or a class appears and the unit test holds too, so a writer change that moves one is a finding and not a filler; the check also holds the three constants the writer puts in an object slot by type, `F9`, `F10` and `F14`, to the three most of the disc's objects of that type carry, so a wrong constant fails the check and not only the digests:
 
 | words | count | what it is |
 | --- | --- | --- |
@@ -533,3 +537,5 @@ Outside the mask the rebuild differs from the disc in these words and no others,
 | the kind word of one object slot | 1 | 0 on LEVEL 71, the scratch word the game writes before it reads |
 | one teleporter's `f6` | 1 | LEVEL 125's two yellow teleporters, the one chain of the disc left unlinked, which nothing walks since the colour has no switch |
 | the type word of a vanishing block's slots 1 to 5 | 81 | an editor's leftovers on 17 levels, mostly a fire or a type 4 in the second slot, read for a captivator walking that face, which no level on the disc brings there |
+
+The Japanese disc's counts are the NTSC-U disc's exactly, its differing levels moving none; the PAL disc's differ in two, 30 clocks' `f2` against 27 and 62 vanishing blocks' slot 1 types against 58, the three clocks and four vanishing blocks of the catalogue its HIRO slot 19 holds in the lesson's place, the copy the other nine worlds' slot 19 holds on every disc.

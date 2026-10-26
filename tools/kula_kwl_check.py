@@ -1,9 +1,12 @@
 """What holds the level writer to the disc and the executable: every level of
-the disc rebuilt from its fields and held to the disc, in play and word for
-word outside the words the game never reads, and the caps and the loader
-figures the writer's checks rest on, read off the executable.
+a disc rebuilt from its fields and held to the disc, in play and word for
+word outside the words the game never reads, against that release's tables
+of the words the rebuild writes differently and of the levels whose records
+it does not keep one for one, and the caps and the loader figures the
+writer's checks rest on, read off the executable.
 
-    python3 tools/kula_kwl.py --check                                # every disc level, needs $KULA_DISC
+    python3 tools/kula_kwl.py --check                                # every level of the disc, needs $KULA_DISC
+    python3 tools/kula_kwl.py --check --release eu                   # the PAL disc's, needs $KULA_DISC_EU; jp the Japanese disc's
 """
 import re
 import struct
@@ -58,8 +61,9 @@ from kula_level import (
 from kula_pak import Pak
 
 # The words the game never reads, by the research behind docs/editor.md, which
-# the disc's own levels fill with an editor's leftovers.
-F5_LEVELS = frozenset({"BONUS 30"})
+# the disc's own levels fill with an editor's leftovers; the pickup numbers are
+# masked on the levels of each release that left them unset.
+F5_LEVELS = {"us": frozenset({"BONUS 30"}), "eu": frozenset(), "jp": frozenset({"BONUS 30"})}
 WORD_NAME = {0: "kind word", 1: "type", 13: "w13", 14: "f14", 15: "w15"}
 
 
@@ -67,8 +71,9 @@ def word_name(w):
     return WORD_NAME.get(w, f"f{w}")
 
 
-def unread(kind, w, dslot, cslot, name):
-    """Whether word w of a record of this kind is one the game never reads."""
+def unread(kind, w, dslot, cslot, unnumbered):
+    """Whether word w of a record of this kind is one the game never reads, on a
+    level whose pickup numbers the disc left unset where `unnumbered`."""
     if w >= SLOT * FACES:
         return w <= 118 or kind == UNPLACED_KIND
     slot, sw = divmod(w, SLOT)
@@ -95,7 +100,7 @@ def unread(kind, w, dslot, cslot, name):
         return True
     if sw in (6, 7) and typ not in (TELEPORTER, SWITCH):
         return True
-    return sw == 5 and name in F5_LEVELS
+    return sw == 5 and unnumbered
 
 
 def _at_of(L, word):
@@ -151,12 +156,15 @@ def _circuits(L):
 
 UNFLAGGED = "settings records with no flag set"
 BARE_RECORDS = "records carrying nothing"
+NO_TRAILER = "no trailer record"
 
 
 def stripped(L):
-    """The records of a level the rebuild keeps, and a count of the rest by what
-    they are: a settings record with no flag set, which the writer leaves out,
-    and a record of kinds 0 to 4 with nothing on it, which folds into the lattice."""
+    """The records of a level the rebuild keeps, and a count of what differs
+    around them by what it is: a settings record with no flag set, which the
+    writer leaves out, a record of kinds 0 to 4 with nothing on it, which folds
+    into the lattice, and no trailer where the file ends at its count, which the
+    writer always writes."""
     kept, gone = [], Counter()
     for r in L.records:
         if r.kind == UNPLACED_KIND and not (r.type == 1 or r.f[0] == 1):
@@ -165,6 +173,8 @@ def stripped(L):
             gone[BARE_RECORDS] += 1
         else:
             kept.append(r)
+    if L.trailer is None:
+        gone[NO_TRAILER] += 1
     return kept, gone
 
 
@@ -213,14 +223,17 @@ def _flags(L):
     return any(r.type == 1 for r in settings), any(r.f[0] == 1 for r in settings)
 
 
-def diff_words(L, C, classes, examples):
-    """Count every word that differs outside the unread mask, by its class."""
+def diff_words(L, C, classes, examples, release):
+    """Count every word that differs outside the unread mask, by its class, over
+    the records both levels have and the trailer where the disc's level has one."""
+    unnumbered = L.name in F5_LEVELS[release]
     disc = {r.cell: k for k, r in enumerate(L.records) if r.kind != UNPLACED_KIND}
     canon = {r.cell: k for k, r in enumerate(C.records) if r.kind != UNPLACED_KIND}
     pairs = [(disc[c], canon[c]) for c in disc if c in canon]
     pairs += [(k, j) for k, r in enumerate(L.records) if r.kind == UNPLACED_KIND
               for j, s in enumerate(C.records) if s.kind == UNPLACED_KIND]
-    pairs.append((L.count, C.count))
+    if L.trailer is not None:
+        pairs.append((L.count, C.count))
     for kd, kc in pairs:
         a = L.records[kd] if kd < L.count else L.trailer
         b = C.records[kc] if kc < C.count else C.trailer
@@ -230,7 +243,7 @@ def diff_words(L, C, classes, examples):
             slot, sw = divmod(w, SLOT)
             dslot = a.slots[slot] if w < SLOT * FACES else None
             cslot = b.slots[slot] if w < SLOT * FACES else None
-            if unread(a.kind, w, dslot, cslot, L.name):
+            if unread(a.kind, w, dslot, cslot, unnumbered):
                 continue
             x = _value(L, kd, a.kind, w, da[w]) if kd < L.count else da[w]
             y = _value(C, kc, b.kind, w, db[w]) if kc < C.count else db[w]
@@ -374,8 +387,8 @@ def figure_failures(r):
     return [f"{what} is {_figure(held)}, not the executable's figure, {_figure(read)}" for what, held, read in figures if held != read]
 
 
-# The words the rebuild writes differently outside the unread mask, each a leftover nothing on its level reads, by its count on the disc.
-RESIDUALS = {
+# The words the rebuild writes differently outside the unread mask, each a leftover nothing on its level reads, by its count on the US disc.
+US_RESIDUALS = {
     # the clock's f2, which the loader never turns
     "kind 0..4 object type 8 f2": 27,
     # an editor's leftovers in the unused slots of five platforms
@@ -401,12 +414,21 @@ RESIDUALS = {
     "kind 7 slot 4 type": 6,
     "kind 7 slot 5 type": 6,
 }
-# The levels whose rebuild keeps fewer records than the disc, by what it leaves out.
-DROPPED = {UNFLAGGED: 144, BARE_RECORDS: 2}
+# The levels whose rebuild has other records than the disc, by what it leaves out or writes.
+US_DROPPED = {UNFLAGGED: 144, BARE_RECORDS: 2}
+# The tables by release. The Japanese disc's levels move no count; the PAL disc's HIRO slot 19 holds the catalogue in the
+# lesson's place, with clocks and vanishing blocks of its own, and its BONUS 30 is a level of its own with no settings
+# record and no trailer.
+RESIDUALS = {
+    "us": US_RESIDUALS,
+    "eu": {**US_RESIDUALS, "kind 0..4 object type 8 f2": 30, "kind 7 slot 1 type": 62},
+    "jp": US_RESIDUALS,
+}
+DROPPED = {"us": US_DROPPED, "eu": {UNFLAGGED: 142, BARE_RECORDS: 2, NO_TRAILER: 1}, "jp": US_DROPPED}
 
 
 def slot_figures(disc):
-    """What the disc's slots hold, as the docs state it: the bare slots on blocks
+    """What the disc's slots hold, as the docs state it of the NTSC-U disc: the bare slots on blocks
     of kinds 0 to 4, the unused slots of the four payload kinds that are -1
     throughout, by slot, the objects on those slots, the levels they stand on
     and how many are a fire or a type 4 alone in the second slot of a crumbling
@@ -450,10 +472,12 @@ def slot_figures(disc):
             "numbered": numbered, "ordered": ordered, "repeats": sorted(repeats)}
 
 
-def check(disc, out=print):
+def check(disc, release, out=print):
     """Rebuild every level of the disc from its fields and hold the result to the
-    disc: in play, and word for word outside the unread mask. Returns (semantic
-    failures, residual classes, levels dropping records by what they drop)."""
+    disc: in play, and word for word outside the unread mask, with the pickup
+    numbers of the release's unnumbered levels masked. Returns (semantic failures,
+    residual classes, levels whose records the rebuild does not keep one for one,
+    by what differs)."""
     classes, examples, failures, dropped = Counter(), {}, [], Counter()
     constants = {}
     levels = 0
@@ -466,7 +490,7 @@ def check(disc, out=print):
             failures += [f"{L.name}: {m}" for m in C.verify()]
             failures += [f"{L.name}: {m}" for m in compare(L, C)]
             dropped.update(stripped(L)[1].keys())
-            diff_words(L, C, classes, examples)
+            diff_words(L, C, classes, examples, release)
             for r in L.records:
                 for o in r.objects:
                     constants.setdefault(o.type, Counter())[(o.f[7], o.f[8], o.v)] += 1
@@ -476,7 +500,8 @@ def check(disc, out=print):
     for f in failures:
         out(f"  {f}")
     out(f"{dropped[UNFLAGGED]} levels leave out a settings record with no flag set, "
-        f"{dropped[BARE_RECORDS]} fold a record carrying nothing into a plain block")
+        f"{dropped[BARE_RECORDS]} fold a record carrying nothing into a plain block, "
+        f"{dropped[NO_TRAILER]} gain a trailer where the file ends at its count")
     if not classes:
         out("no word differs outside the unread mask")
     for what, n in sorted(classes.items(), key=lambda kv: -kv[1]):
@@ -499,13 +524,14 @@ def trio_failures(constants):
     return out
 
 
-def residuals(classes, dropped):
-    """What the check found that its tables do not list, a line each."""
+def residuals(classes, dropped, release):
+    """What the check found that the release's tables do not list, a line each."""
+    words, levels = RESIDUALS[release], DROPPED[release]
     out = []
-    for what in sorted(set(classes) | set(RESIDUALS)):
-        if classes.get(what, 0) != RESIDUALS.get(what, 0):
-            out.append(f"{classes.get(what, 0)} x {what}, where the table lists {RESIDUALS.get(what, 0)}")
-    for what in sorted(set(dropped) | set(DROPPED)):
-        if dropped.get(what, 0) != DROPPED.get(what, 0):
-            out.append(f"{dropped.get(what, 0)} levels with {what}, where the table lists {DROPPED.get(what, 0)}")
+    for what in sorted(set(classes) | set(words)):
+        if classes.get(what, 0) != words.get(what, 0):
+            out.append(f"{classes.get(what, 0)} x {what}, where the table lists {words.get(what, 0)}")
+    for what in sorted(set(dropped) | set(levels)):
+        if dropped.get(what, 0) != levels.get(what, 0):
+            out.append(f"{dropped.get(what, 0)} levels with {what}, where the table lists {levels.get(what, 0)}")
     return out

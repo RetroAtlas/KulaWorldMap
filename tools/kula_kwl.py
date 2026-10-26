@@ -7,7 +7,7 @@
     python3 tools/kula_kwl.py --digests                              # tests/fixtures/kwl-digests.json
     python3 tools/kula_kwl.py --deflate-vectors                      # tests/fixtures/deflate-vectors.json
     python3 tools/kula_kwl.py --hostile                              # tests/fixtures/hostile-projects.json
-    python3 tools/kula_kwl.py --check                                # every disc level, needs $KULA_DISC
+    python3 tools/kula_kwl.py --check [--release eu]                 # every disc level, needs $KULA_DISC or the release's variable
 
 A project is the editor's file: the game's own structure spelled in JSON, a
 block per placed cell with what stands on each face, a span's far end, a
@@ -34,7 +34,7 @@ from functools import lru_cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import THEMES, file_at, open_disc, output_at
+from kula_disc import RELEASES, THEMES, file_at, open_disc, open_release, output_at, release_of
 from kula_level import (
     BLOCK_KINDS,
     CELLS,
@@ -1761,7 +1761,10 @@ def main():
     ap.add_argument("--hostile", action="store_true",
                     help=f"rewrite what the readers give for the documents of {HOSTILE.relative_to(ROOT)}")
     ap.add_argument("--check", action="store_true", help="hold the rebuild of every disc level to the disc")
-    ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to $KULA_DISC")
+    ap.add_argument("--release", choices=list(RELEASES), default=None,
+                    help="the release whose tables --check holds the disc to; defaults to the one its boot line names")
+    ap.add_argument("--disc", default=None,
+                    help="raw PS1 image; defaults to $KULA_DISC, or with --release to that release's own variable")
     args = ap.parse_args()
 
     if args.template:
@@ -1811,9 +1814,13 @@ def main():
         print(f"{len(fixture['cases'])} documents -> {HOSTILE.relative_to(ROOT)}")
     elif args.check:
         from kula_kwl_check import check, residuals
-        with open_disc(args.disc) as disc:
-            failures, classes, dropped = check(disc)
-        unlisted = residuals(classes, dropped)
+        disc = open_release(args.release, args.disc) if args.release else open_disc(args.disc)
+        release = args.release or release_of(disc)
+        if release is None:
+            sys.exit(f"{disc.f.name} boots none of the three releases' executables; say whose tables hold it with --release")
+        with disc:
+            failures, classes, dropped = check(disc, release)
+        unlisted = residuals(classes, dropped, release)
         for line in unlisted:
             print(f"not in the table: {line}", file=sys.stderr)
         if failures or unlisted:

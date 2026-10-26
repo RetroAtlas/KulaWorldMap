@@ -22,7 +22,9 @@ The motion reader's tests run over a hand-typed fixture of the executable's word
 
 `test_kula_release.py` holds the release reader the same way, to a fixture of each release's executable's words, every stretch the readings match at its own address in a blob of that executable's size, and to a changed word at any reading stopping it.
 
-A reading only the disc can hold is held by the tool's own check against the disc, `python3 tools/kula_kwl.py --check` with `KULA_DISC` set, or by a rebuild with `python3 tools/kula_build.py` that changes nothing committed.
+A reading only the disc can hold is held by the tool's own check against each of the three discs, `python3 tools/kula_kwl.py --check` with `KULA_DISC` set and `--release eu` or `--release jp` with `KULA_DISC_EU` or `KULA_DISC_JP` set, or by a rebuild with `python3 tools/kula_build.py` that changes nothing committed.
+
+`test_kula_kwl_check.py` holds the check the same way, a class for each release that runs where that release's variable is set and holds every level of its disc, rebuilt, to the disc in play and to that release's tables of the words the rebuild writes differently and of the levels whose records it does not keep one for one.
 
 The release files are held the same way, each to its own disc: `test_kula_build.py`'s class for each runs where the release's variable is set and holds the committed file to what the build writes for that disc, and `python3 tools/kula_build.py --all` with the three variables set changes nothing committed.
 

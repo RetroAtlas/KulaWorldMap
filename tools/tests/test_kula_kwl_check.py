@@ -1,6 +1,7 @@
 """Unit tests for the level writer's disc check: python3 -m unittest discover -s tools/tests
 
-Only the last class needs the disc, and it is skipped without $KULA_DISC.
+The disc classes at the end need one, the figures' class the disc under $KULA_DISC and
+the rebuild's classes each release's own, every one skipped without its variable.
 """
 
 import json
@@ -14,8 +15,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_disc import EXE, open_disc, packs  # noqa: E402
+from kula_disc import DISC_VARS, EXE, RELEASES, open_disc, open_release, packs  # noqa: E402
 from kula_kwl import (  # noqa: E402
+    BARE,
     CAPS,
     CAPTIVATORS,
     CRUMBLING_KIND,
@@ -34,7 +36,10 @@ from kula_kwl import (  # noqa: E402
 )
 from kula_kwl_check import (  # noqa: E402
     DROPPED,
+    F5_LEVELS,
+    NO_TRAILER,
     RESIDUALS,
+    UNFLAGGED,
     UNTRACED,
     check,
     compare,
@@ -48,6 +53,7 @@ from kula_kwl_check import (  # noqa: E402
 )
 from kula_level import (  # noqa: E402
     BLOCK_KINDS,
+    FACES,
     FIRST_RECORD,
     GRID_BYTES,
     LASER_KIND,
@@ -58,7 +64,7 @@ from kula_level import (  # noqa: E402
 )
 from kula_pak import Pak  # noqa: E402
 from test_kula_kwl import WORLD, obj, plain, playground, project, start  # noqa: E402
-from test_kula_level import block, level  # noqa: E402
+from test_kula_level import block, level, untrailed  # noqa: E402
 
 EDITOR_DOC = Path(__file__).resolve().parents[2] / "docs" / "editor.md"
 FORMAT_DOC = Path(__file__).resolve().parents[2] / "docs" / "level-format.md"
@@ -122,8 +128,8 @@ class TheCompare(unittest.TestCase):
         phased = json.loads(json.dumps(p))
         next(b for b in phased["blocks"] if b["kind"] == 7)["phase"] = 3
         self.assertIn("the phase at (10, 14, 17) differs", compare(L, Level(canonical(phased))))
-        self.assertEqual(residuals(Counter(RESIDUALS), Counter(DROPPED)), [])
-        self.assertEqual(residuals(Counter(RESIDUALS) + Counter({"kind 7 slot 0 f3": 2}), Counter(DROPPED)),
+        self.assertEqual(residuals(Counter(RESIDUALS["us"]), Counter(DROPPED["us"]), "us"), [])
+        self.assertEqual(residuals(Counter(RESIDUALS["us"]) + Counter({"kind 7 slot 0 f3": 2}), Counter(DROPPED["us"]), "us"),
                          ["2 x kind 7 slot 0 f3, where the table lists 0"])
 
     def test_the_type_of_a_vanishing_blocks_other_slots_is_held_to_the_disc_and_their_other_words_are_not(self):
@@ -132,7 +138,7 @@ class TheCompare(unittest.TestCase):
         for w, v in ((1, 9), (17, 1), (18, 5), (49, 0), (95, 2)):
             struct.pack_into("<h", blob, GRID_BYTES + 6 + 256 + 2 * w, v)
         classes = Counter()
-        diff_words(Level(bytes(blob)), C, classes, {})
+        diff_words(Level(bytes(blob)), C, classes, {}, "us")
         self.assertEqual(dict(classes), {"kind 7 slot 1 type": 1, "kind 7 slot 3 type": 1})
 
     def test_the_per_type_constants_are_held_to_the_mode_of_the_discs_objects(self):
@@ -150,6 +156,40 @@ class TheCompare(unittest.TestCase):
         kept, gone = stripped(Level(flagless))
         self.assertEqual(len(kept), 1)
         self.assertEqual(dict(gone), {"settings records with no flag set": 1, "records carrying nothing": 1})
+
+    def test_a_level_with_no_trailer_is_compared_on_its_records_and_counted_under_the_trailer_class(self):
+        faces = {0: obj(START, 3, 0, 0), **{j: list(BARE) for j in range(1, FACES)}}
+        L = Level(untrailed({(5, 5, 5): FIRST_RECORD}, [block((5, 5, 5), faces=faces)]), "BONUS 30")
+        C = Level(canonical(project_of_level(L, world=WORLD)))
+        self.assertEqual((L.trailer, C.trailer.f[4], compare(L, C)), (None, 99, []))
+        classes = Counter()
+        diff_words(L, C, classes, {}, "eu")
+        self.assertEqual(dict(classes), {})
+        self.assertEqual(dict(stripped(L)[1]), {NO_TRAILER: 1})
+
+
+class TheTables(unittest.TestCase):
+    def test_every_table_names_the_three_releases_and_the_japanese_tables_are_the_us_tables(self):
+        for table in (RESIDUALS, DROPPED, F5_LEVELS):
+            self.assertEqual(list(table), list(RELEASES))
+            self.assertEqual(table["jp"], table["us"])
+
+    def test_the_pal_tables_move_three_counts_add_the_trailer_class_and_mask_no_level(self):
+        self.assertEqual(set(RESIDUALS["eu"]), set(RESIDUALS["us"]))
+        self.assertEqual({what for what in RESIDUALS["us"] if RESIDUALS["eu"][what] != RESIDUALS["us"][what]},
+                         {"kind 0..4 object type 8 f2", "kind 7 slot 1 type"})
+        self.assertEqual({what for what in DROPPED["us"] if DROPPED["eu"][what] != DROPPED["us"][what]}, {UNFLAGGED})
+        self.assertEqual(set(DROPPED["eu"]) - set(DROPPED["us"]), {NO_TRAILER})
+        self.assertEqual(F5_LEVELS["eu"], frozenset())
+
+    def test_the_residuals_are_read_against_the_release_named(self):
+        for release in RELEASES:
+            with self.subTest(release):
+                self.assertEqual(residuals(Counter(RESIDUALS[release]), Counter(DROPPED[release]), release), [])
+        moved = residuals(Counter(RESIDUALS["us"]), Counter(DROPPED["us"]), "eu")
+        self.assertEqual([line.split(", where")[0] for line in moved],
+                         [f"{RESIDUALS['us'][what]} x {what}" for what in ("kind 0..4 object type 8 f2", "kind 7 slot 1 type")]
+                         + [f"0 levels with {NO_TRAILER}", f"{DROPPED['us'][UNFLAGGED]} levels with {UNFLAGGED}"])
 
 
 class TheDocuments(unittest.TestCase):
@@ -223,13 +263,40 @@ class TheDisc(unittest.TestCase):
                           for k, c in held.items() if held_of(c, KEY, walked=False)},
                          {kept.group(1): {UNPLACED_KIND: 1}, kept.group(3): {CRUMBLING_KIND: WORDS[kept.group(2)]}})
 
+
+class Rebuilt:
+    """Every level of a release's disc rebuilt and held to the disc and to the release's tables."""
+    release = None
+
+    @classmethod
+    def setUpClass(cls):
+        cls.disc = open_release(cls.release)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.disc.close()
+
     def test_every_level_rebuilt_plays_as_the_disc_and_differs_in_the_words_listed_alone(self):
-        with open_disc() as disc:
-            failures, classes, dropped = check(disc, out=lambda *_: None)
+        failures, classes, dropped = check(self.disc, self.release, out=lambda *_: None)
         self.assertEqual(failures, [])
-        self.assertEqual(dict(classes), RESIDUALS)
-        self.assertEqual(dict(dropped), DROPPED)
-        self.assertEqual(residuals(classes, dropped), [])
+        self.assertEqual(dict(classes), RESIDUALS[self.release])
+        self.assertEqual(dict(dropped), DROPPED[self.release])
+        self.assertEqual(residuals(classes, dropped, self.release), [])
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["us"]), f"needs the disc under ${DISC_VARS['us']}")
+class TheDiscRebuilt(Rebuilt, unittest.TestCase):
+    release = "us"
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["eu"]), f"needs the PAL disc under ${DISC_VARS['eu']}")
+class ThePalDiscRebuilt(Rebuilt, unittest.TestCase):
+    release = "eu"
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["jp"]), f"needs the Japanese disc under ${DISC_VARS['jp']}")
+class TheJapaneseDiscRebuilt(Rebuilt, unittest.TestCase):
+    release = "jp"
 
 
 if __name__ == "__main__":
