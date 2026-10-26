@@ -4,9 +4,12 @@ import { state, screen } from "../viewer/state.js";
 import { hashes } from "../viewer/hash.js";
 import { cellKey } from "../format/lattice.js";
 
-const CAP = 320;
-const PER_BLOCK = 16;
-const LIFE = [1.2, 2];
+/** The most motes alive at once: past it a birth drops the oldest. */
+export const CAP = 320;
+/** The motes strewn over a block's length of travel. */
+export const PER_BLOCK = 16;
+/** The shortest and the longest life of a mote. */
+export const LIFE = [1.2, 2];
 const TWINKLE = [3, 6];
 const RISE = [0.5, 1.2];
 const GRAVITY = 2.2;
