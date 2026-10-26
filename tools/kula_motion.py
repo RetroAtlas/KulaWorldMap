@@ -342,6 +342,7 @@ def show_readings(code):
     for addr, pattern, what in CHECKS:
         code.immediate(addr, pattern)
         print(f"  0x{addr:08x}  {what}")
+    run = readings(code)
     rows = []
     for group, key, what, addr, pattern in IMMEDIATES:
         rows.append((group, what, addr, code.immediate(addr, pattern)))
@@ -350,10 +351,9 @@ def show_readings(code):
     for group, key, what, start, end, base, span, calls in SCANS:
         rows.append((group, what, start, code.resolved(start, end, base, span, calls)))
     rows.append(("on a block", "boost button: sinks while the ball is within, units",
-                 BUTTON_REACH[0], readings(code)["button.reach"]))
+                 BUTTON_REACH[0], run["button.reach"]))
     rows.append(("the fly-in", "the curve's second point lies this share of eight blocks along the side on",
-                 FLIGHT_THIRD[0], readings(code)["flight.third"]))
-    run = readings(code)
+                 FLIGHT_THIRD[0], run["flight.third"]))
     rows.append(("the level's clock and its end", "the bonus slots come round every this many, by the reciprocal",
                  NEXT_ROUND[0], run["next.round"]))
     rows.append(("the level's clock and its end", "the word the next-level routine's other starts hang on, as the "
@@ -365,51 +365,48 @@ def show_readings(code):
     rows.append(("the Simon rooms", "the reset fills it from the halfword this many bytes past its first",
                  SIMON_FILL[0], run["simon.fill.from"] - run["simon.store"]))
     rows.append(("dice", "a draw multiplies the state by this", DICE_TIMES[0],
-                 readings(code)["dice.times"]))
+                 run["dice.times"]))
     rows.append(("gem's glints", "a draw multiplies the generator's state by this", GLINT_TIMES[0],
-                 readings(code)["glint.times"]))
+                 run["glint.times"]))
     rows.append(("gem's glints", "the generator's state as the executable loads it", code.address(*GLINT_STATE),
-                 readings(code)["glint.seed"]))
+                 run["glint.seed"]))
     for name, what in (("wide", "the screen's width as the executable loads it"), ("high", "and its height"),
                        ("distance", "the projection's screen distance"), ("across", "the scale across, of 4096"),
                        ("down", "and the scale down")):
-        rows.append(("the view in play", what, SCREEN_WORDS[name], readings(code)[f"screen.load.{name}"]))
+        rows.append(("the view in play", what, SCREEN_WORDS[name], run[f"screen.load.{name}"]))
     for group, key, what, hi, hp, lo, lp, sa, sp in DIVISORS:
         rows.append((group, what, hi, code.divisor(hi, hp, lo, lp, sa, sp)))
     for group, key, what, hi, hp, lo, lp in GREYS:
         rows.append((group, what, hi, code.grey(hi, hp, lo, lp)))
-    glow = readings(code)
-    counter = glow["gp"] + glow["glow.counter.at"]
+    counter = run["gp"] + run["glow.counter.at"]
     rows.append(("what harms the ball", "the glow's counter as the executable loads it", counter,
-                 glow["glow.counter.load"]))
+                 run["glow.counter.load"]))
     rows.append(("what harms the ball",
-                 f"the start clears this many bytes from 0x{glow['glow.clear'][0]:08x}, the counter at 0x{counter:08x} among them",
-                 CLEARED[0][0], glow["glow.clear"][1] - glow["glow.clear"][0]))
-    modes = readings(code)
-    rows.append(("the level's mode", f"the level's mode word the ending's view reads, 0x{modes['mode.word']:08x}, "
-                 "lies this far past gp", LEVEL_MODE_READ[0], modes["mode.word"] - modes["gp"]))
-    rows.append(("the level's mode", f"and the game's mode word, which the mode routine reads, 0x{modes['game.mode.word']:08x}, "
-                 "this far", GAME_MODE_READ[0], modes["game.mode.word"] - modes["gp"]))
+                 f"the start clears this many bytes from 0x{run['glow.clear'][0]:08x}, the counter at 0x{counter:08x} among them",
+                 CLEARED[0][0], run["glow.clear"][1] - run["glow.clear"][0]))
+    rows.append(("the level's mode", f"the level's mode word the ending's view reads, 0x{run['mode.word']:08x}, "
+                 "lies this far past gp", LEVEL_MODE_READ[0], run["mode.word"] - run["gp"]))
+    rows.append(("the level's mode", f"and the game's mode word, which the mode routine reads, 0x{run['game.mode.word']:08x}, "
+                 "this far", GAME_MODE_READ[0], run["game.mode.word"] - run["gp"]))
     rows.append(("shadows", "the square reaches this far either way of its middle, units",
-                 code.address(*SHADOW_SQUARE), readings(code)["shadow.half"]))
+                 code.address(*SHADOW_SQUARE), run["shadow.half"]))
     rows.append(("invisible block", "rows of the square root it measures a corner by",
-                 code.address(*LIGHT_ROOT), len(readings(code)["light.root"])))
-    levels = readings(code)["laser.levels"]
+                 code.address(*LIGHT_ROOT), len(run["light.root"])))
+    levels = run["laser.levels"]
     rows.append(("laser", f"steps in the beam's table, levels {min(levels)} to {max(levels)}",
                  code.address(*LASER_LEVELS[0]), len(levels)))
     sprites = 0x80000000 | code.word(code.address(*WORDS_TABLE))
     for index, word in words(code).items():
         rows.append(("the level's clock and its end", f"the end screen's word at {index}, in two sprites",
                      sprites + 4 + 8 * index, word))
-    fx = readings(code)
-    for at, t in sorted(fx["effect.tables"].items()):
-        kinds = [k for k, p in enumerate(fx["effect.pointers"]) if p == at]
+    for at, t in sorted(run["effect.tables"].items()):
+        kinds = [k for k, p in enumerate(run["effect.pointers"]) if p == at]
         rows.append(("the effects", f"the table at 0x{at:08x}, kinds {', '.join(map(str, kinds))}, runs this many frames of "
                      f"{t['count']} particles", EFFECT_POINTERS[0] + 4 * kinds[0], t["frames"]))
-    rows.append(("the effects", "the sine table gives this at a quarter turn", fx["effect.sine.at"], fx["effect.sine.one"]))
+    rows.append(("the effects", "the sine table gives this at a quarter turn", run["effect.sine.at"], run["effect.sine.one"]))
     for name in ("clock", "teleport"):
         rows.append(("the effects", f"the HUD point the {name}'s effect starts at, x, y and the third word",
-                     code.address(*EFFECT_HUD[name]), ",".join(map(str, fx["effect.hud.at"][name]))))
+                     code.address(*EFFECT_HUD[name]), ",".join(map(str, run["effect.hud.at"][name]))))
     order = {g: i for i, g in enumerate(dict.fromkeys(r[0] for r in rows))}
     rows.sort(key=lambda r: (order[r[0]], r[2]))
     last = None
