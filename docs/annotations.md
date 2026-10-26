@@ -423,7 +423,9 @@ The second fruit, on the `+y` face of the crumbling block at 17,16,20, is left o
 
 ### /MARS/MARS.PAK#16: BONUS 26
 
-The best score in play. The disc holds 8925 more, three gems under the three far blocks, which only the bouncy pill reaches and which the pill then keeps you from collecting.
+The best score in play. The disc holds 8925 more, three gems on the far side of the three far blocks, which only the bouncy pill reaches and which the pill then keeps you from collecting.
+
+The three stand on the `+x` face of 21,13,20, 21,15,20 and 21,17,20, the far column, and face away from the rest of the level.
 
 ### /MARS/MARS.PAK#18: HIDDEN 9
 
