@@ -24,7 +24,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from disc import Disc  # noqa: E402
-from kula_disc import RELEASES  # noqa: E402
+from kula_disc import RELEASES, RELEASE_FILES  # noqa: E402
 from kula_kwl import DATA, canonical, project_of_level, template  # noqa: E402
 from kula_level import Level  # noqa: E402
 from kula_pak import Pak  # noqa: E402
@@ -39,7 +39,6 @@ from kula_patch import (  # noqa: E402
     PPF_MAGIC,
     PREFIX,
     RECORD_MOST,
-    RELEASE_FILES,
     SETS,
     SLOT,
     TITLE,

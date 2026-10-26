@@ -28,6 +28,7 @@ RELEASES = {
            "base": 0x80010000 - 0x800, "gp": 0x8009f064},
 }
 DISC_VARS = {"us": "KULA_DISC", "eu": "KULA_DISC_EU", "jp": "KULA_DISC_JP"}
+RELEASE_FILES = {r: Path(__file__).resolve().parent.parent / "public" / "releases" / f"{r}.json" for r in RELEASES}
 EXE = RELEASES["us"]["exe"]
 EXE_BASE = RELEASES["us"]["base"]
 

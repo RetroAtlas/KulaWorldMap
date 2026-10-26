@@ -28,7 +28,7 @@ from collections import namedtuple
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import DISC_VARS, RELEASES, THEMES, open_release, packs
+from kula_disc import DISC_VARS, RELEASE_FILES, RELEASES, THEMES, open_release, packs
 from kula_ggi import FILE as GGI, Ggi, jump, shadows, sparks, write_objects
 from kula_kwl_check import executable, figure_failures
 from kula_level import DEFAULT_TIME, Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
@@ -45,7 +45,6 @@ OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
 OBJECTS = OUT.parent / "objects.json"
 PACKS = OUT.parent / "packs.json"
 SPARKS = OUT.parent / "tex" / "sparks.png"
-RELEASE_FILES = {r: OUT.parent / "releases" / f"{r}.json" for r in RELEASES}
 WORLD_LEVELS = 15
 FINAL_LEVELS = 2
 BASE = "us"

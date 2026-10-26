@@ -36,7 +36,7 @@ import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import RELEASES, file_at, open_disc, output_at, release_of
+from kula_disc import RELEASE_FILES, RELEASES, file_at, open_disc, output_at, release_of
 from kula_kwl import DATA, OBJECTS, canonical, describe, level_at, project_at, template, validate
 from kula_place import (
     SYNTHETIC_FINALS,
@@ -50,11 +50,11 @@ from kula_place import (
     verify_all,
     written,
 )
+from kula_score import levels_of
 from kula_sector import HEX_RUN, SECTOR_RAW, raw_sector
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "tests" / "fixtures" / "patch-digests.json"
-RELEASE_FILES = {r: ROOT / "public" / "releases" / f"{r}.json" for r in RELEASES}
 
 PPF_MAGIC = b"PPF30"
 PPF_VERSION = 2
@@ -246,7 +246,7 @@ def shipped(release):
     file holds in their place."""
     data = json.loads(DATA.read_text())
     variants = json.loads(RELEASE_FILES[release].read_text())["levels"]
-    data["levels"] = [variants.get(f"{level['pack']}#{level['index']}", level) for level in data["levels"]]
+    data["levels"] = levels_of(data["levels"], variants)
     return data
 
 

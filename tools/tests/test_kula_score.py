@@ -10,7 +10,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_score import (OBJECTS, RELEASE_FILES, BLOCK_POINTS, HOURGLASS, compared, curated, hourglass_points,  # noqa: E402
+from kula_disc import RELEASE_FILES  # noqa: E402
+from kula_score import (OBJECTS, BLOCK_POINTS, HOURGLASS, compared, curated, hourglass_points,  # noqa: E402
                         level_points, levels_of, plays_bonus, points_of, tallied)
 
 SKINS = json.loads(OBJECTS.read_text())["skins"]

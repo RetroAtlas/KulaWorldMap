@@ -16,7 +16,6 @@ from kula_build import (  # noqa: E402
     BASE,
     IDENTITY,
     PACKS,
-    RELEASE_FILES,
     code_of,
     layout_of,
     other_release,
@@ -27,7 +26,7 @@ from kula_build import (  # noqa: E402
     slot_problems,
     variants,
 )
-from kula_disc import DISC_VARS, RELEASES, open_disc, open_release, packs  # noqa: E402
+from kula_disc import DISC_VARS, RELEASES, RELEASE_FILES, open_disc, open_release, packs  # noqa: E402
 from kula_kwl import (  # noqa: E402
     CAPS,
     CAPTIVATORS,
