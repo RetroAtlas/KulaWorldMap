@@ -405,6 +405,9 @@
     "/MARS/MARS.PAK#19": {
       "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in world after world, and nothing in the game leads to it."
     },
+    "/HELL/HELL.PAK#7": {
+      "note": "Hell's one hidden exit stands under a block here. The PAL release left it out, so its last hidden level cannot be reached there."
+    },
     "/HELL/HELL.PAK#14": {
       "score": 22440,
       "note": "The level holds 50 more points, one crumbling block that the best score leaves standing."

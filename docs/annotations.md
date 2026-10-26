@@ -10,7 +10,7 @@ The points rest on play, and so does each level's `score`, the best score play r
 
 Syonyx's Roll Away walkthrough (GameFAQs, 2006) states a maximum score for 209 levels, and on 193 of them it is the disc's total, which is what says that everything on those can be collected; of the other 16, play collects everything on LEVEL 128, BONUS 29, BONUS 30, FINAL 12 and FINAL 13, and each of the other 11 curates its `score` ([level-format.md](level-format.md) has the arithmetic).
 
-Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page, apart from the catalogue the PAL disc holds in HIRO's slot 19, which was read off its image.
+Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page, apart from the catalogue the PAL disc holds in HIRO's slot 19 and the hidden exit its LEVEL 143 lacks, which were read off its image.
 
 An entry marked `hazard` is one that can cost the ball its life, and its section says what shows it.
 
@@ -430,6 +430,12 @@ The three stand on the `+x` face of 21,13,20, 21,15,20 and 21,17,20, the far col
 ### /MARS/MARS.PAK#18: HIDDEN 9
 
 From The Cutting Room Floor's Roll Away page.
+
+### /HELL/HELL.PAK#7: LEVEL 143
+
+The exit is the one type 26 on the level, on the underside of the block at 17,5,17, on the US and Japanese discs, and the PAL disc's LEVEL 143 lacks it, read off the three images.
+
+With LEVEL 132's exit missing on that disc too, the PAL disc's eight hidden exits leave HIDDEN 9 and HIDDEN 10 unreachable there.
 
 ### /HELL/HELL.PAK#14: LEVEL 150
 
