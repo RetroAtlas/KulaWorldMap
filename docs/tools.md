@@ -5,7 +5,7 @@ Dependency-free Python 3, standard library only. `oxipng` is used to compress im
 | | |
 | --- | --- |
 | `disc.py` | a raw PS1 image as an ISO9660 tree, addressed by full path |
-| `kula_disc.py` | where this game keeps its packs, textures and executable |
+| `kula_disc.py` | where this game keeps its packs, textures and executable, the three releases by id, and which of them an image is, told by its boot line |
 | `kula_pak.py` | the `.PAK` container, and the names inside it |
 | `kula_level.py` | the lattice and the record table, field by field |
 | `kula_build.py` | reads every level, every mesh and every pack's layout, and writes `public/map_data.json`, `public/objects.json`, `public/packs.json` and the sheet of the effects' sprites under `public/tex/` |

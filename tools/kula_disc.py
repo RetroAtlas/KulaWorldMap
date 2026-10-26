@@ -1,6 +1,8 @@
-"""The Roll Away disc: where the level packs, textures and executable live.
+"""The game's discs: the three releases by id, where each keeps its level packs,
+textures and executable, and which of them an image is, told by its boot line.
 
-`$KULA_DISC` points at a raw .bin image of the NTSC-U release (SLUS-00724).
+`$KULA_DISC`, `$KULA_DISC_EU` and `$KULA_DISC_JP` point at raw .bin images of the
+North American, European and Japanese releases.
 """
 import errno
 import os
@@ -12,8 +14,22 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from disc import Disc
 
-EXE = "/SLUS_007.24"
-EXE_BASE = 0x80010000 - 0x800    # the PS-EXE header occupies the first 0x800 bytes
+# `base` is the load address less the PS-EXE header, where the file's first byte would
+# stand in memory; `gp` the pointer the startup sets.
+RELEASES = {
+    "us": {"label": "US", "name": "Roll Away", "region": "North America", "serial": "SLUS-00724",
+           "boot": "SLUS_007.24", "sectors": 109607, "exe": "/SLUS_007.24",
+           "base": 0x80010000 - 0x800, "gp": 0x800a2f38},
+    "eu": {"label": "EU", "name": "Kula World", "region": "Europe", "serial": "SCES-01000",
+           "boot": "SCES_010.00", "sectors": 108471, "exe": "/SCES_010.00",
+           "base": 0x80011000 - 0x800, "gp": 0x800a29e0},
+    "jp": {"label": "JP", "name": "Kula Quest", "region": "Japan", "serial": "SCPS-10064",
+           "boot": "SCPS_100.64", "sectors": 136980, "exe": "/SCPS_100.64",
+           "base": 0x80010000 - 0x800, "gp": 0x8009f064},
+}
+DISC_VARS = {"us": "KULA_DISC", "eu": "KULA_DISC_EU", "jp": "KULA_DISC_JP"}
+EXE = RELEASES["us"]["exe"]
+EXE_BASE = RELEASES["us"]["base"]
 
 # The order a player meets them.
 THEMES = ["HIRO", "HILLS", "INCA", "ARCTIC", "COWBOY",
@@ -80,6 +96,46 @@ def open_disc(path=None):
         sys.exit(f"{path} cannot be read: {e.strerror}")
     except (ValueError, IndexError, struct.error, RecursionError) as e:
         sys.exit(f"{path} does not read as a disc image: {e}")
+
+
+def release_of(disc):
+    """The id of the release whose executable the image's SYSTEM.CNF boots, or None
+    where the image has no SYSTEM.CNF or its BOOT line names no release's."""
+    if "/SYSTEM.CNF" not in disc.files:
+        return None
+    for line in disc.read_file("/SYSTEM.CNF").decode("ascii", "replace").upper().splitlines():
+        key, eq, value = line.partition("=")
+        if eq and key.strip() == "BOOT":
+            return next((r for r, e in RELEASES.items() if e["boot"] in value), None)
+    return None
+
+
+def open_release(release, path=None):
+    """The image of a release, from the path given, else from the release's own
+    variable, or the tool's exit in one sentence where there is none or the image
+    boots another executable than that release's."""
+    entry = RELEASES[release]
+    path = path or os.environ.get(DISC_VARS[release])
+    if not path:
+        sys.exit(f"no disc image: pass --disc or set ${DISC_VARS[release]}")
+    disc = open_disc(path)
+    found = release_of(disc)
+    if found != release:
+        disc.close()
+        boots = RELEASES[found]["boot"] if found else "no executable the game shipped"
+        sys.exit(f"{path} boots {boots}, not the {entry['name']} disc's {entry['boot']}")
+    return disc
+
+
+def exe_of(disc):
+    """The path and base of the executable the image boots, or the tool's exit
+    where the image has no SYSTEM.CNF or its BOOT line names no release's."""
+    if "/SYSTEM.CNF" not in disc.files:
+        sys.exit(f"{disc.f.name} has no SYSTEM.CNF")
+    release = release_of(disc)
+    if release is None:
+        sys.exit(f"{disc.f.name}: SYSTEM.CNF names none of the three releases' executables")
+    return RELEASES[release]["exe"], RELEASES[release]["base"]
 
 
 def packs(disc):
