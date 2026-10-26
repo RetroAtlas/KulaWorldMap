@@ -24,7 +24,7 @@ DATA = ROOT / "public" / "map_data.json"
 NAMES = ROOT / "public" / "annotations.json"
 OBJECTS = ROOT / "public" / "objects.json"
 RELEASE_FILES = {r: ROOT / "public" / "releases" / f"{r}.json" for r in RELEASES}
-BASE = "us"          # the release the data and a level's own curated score are of
+BASE = "us"
 BLOCK_POINTS = 50
 HOURGLASS = 35
 # The kinds the game's walk over the inner lattice builds and counts.

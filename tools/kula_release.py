@@ -98,8 +98,8 @@ DIVISORS = [
 ]
 
 # A reading a release has no instruction for, read as the instruction that
-# stands where it would, the call after the clock's store: the keys it
-# leaves null, and the call's text at each such release's address.
+# stands where it would: the keys it leaves null, and that instruction's text
+# at each such release's address.
 ABSENT = [
     ("the clock", ("clock.swap.from", "clock.swap.to"),
      "the start goes on from the clock's store to its call, swapping nothing",
@@ -109,8 +109,7 @@ ABSENT = [
 ]
 
 # Where the clock word is reached, each a lui and the load or store after it
-# but the HUD's, which loads it off gp: the start's store, the hourglass's
-# load and store and, where there is one, the swap's.
+# but the HUD's, which loads it off gp.
 CLOCK_WORD = {
     "us": {"start": (0x80035fac, 0x80035fb0), "hud": 0x8001eb9c,
            "hourglass": (0x80039068, 0x8003906c, 0x80039090, 0x80039094)},

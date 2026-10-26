@@ -48,7 +48,7 @@ SPARKS = OUT.parent / "tex" / "sparks.png"
 RELEASE_FILES = {r: OUT.parent / "releases" / f"{r}.json" for r in RELEASES}
 WORLD_LEVELS = 15
 FINAL_LEVELS = 2
-BASE = "us"          # the release the data is read from, which the others' files are written against
+BASE = "us"
 IDENTITY = ("label", "name", "region", "serial", "boot", "sectors")
 
 # What a run reads off a disc.

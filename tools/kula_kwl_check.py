@@ -416,9 +416,7 @@ US_RESIDUALS = {
 }
 # The levels whose rebuild has other records than the disc, by what it leaves out or writes.
 US_DROPPED = {UNFLAGGED: 144, BARE_RECORDS: 2}
-# The tables by release. The Japanese disc's levels move no count; the PAL disc's HIRO slot 19 holds the catalogue in the
-# lesson's place, with clocks and vanishing blocks of its own, and its BONUS 30 is a level of its own with no settings
-# record and no trailer.
+# The tables by release.
 RESIDUALS = {
     "us": US_RESIDUALS,
     "eu": {**US_RESIDUALS, "kind 0..4 object type 8 f2": 30, "kind 7 slot 1 type": 62},
