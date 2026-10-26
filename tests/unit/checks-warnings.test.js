@@ -11,10 +11,12 @@ import {
 } from "../../public/js/format/kwl.js";
 import { fromLevel } from "../../public/js/format/project.js";
 import {
+  TIME_LIMIT,
   circuitMembers,
   describe,
   playsAs,
   playsRoom,
+  timeOf,
   validate,
 } from "../../public/js/format/checks.js";
 import {
@@ -129,6 +131,18 @@ test("what the format takes, and what it warns about", () => {
   assert.deepEqual(errors([...one, rail]), []);
   assert.ok(warnings([...one, rail]).includes("a platform 5 blocks long"));
   assert.ok(warnings([...one, rail]).includes("a platform running at 20"));
+});
+
+test("a typed time yields the nearest whole second from 1 to the file's limit, and null off it", () => {
+  assert.equal(TIME_LIMIT, 32767);
+  assert.equal(timeOf("1"), 1);
+  assert.equal(timeOf(String(TIME_LIMIT)), TIME_LIMIT);
+  for (const off of ["0", "", "32768", "-5", "0.5", "32767.4"])
+    assert.equal(timeOf(off), null, off);
+  assert.deepEqual(["2.5", "4.5", "1.4", "99.4", "200"].map(timeOf), [3, 5, 1, 99, 200]);
+  const one = [plain([5, 5, 5], 0, { 0: start() })];
+  assert.deepEqual(errors(one, { time: 1 }), []);
+  assert.deepEqual(errors(one, { time: TIME_LIMIT }), []);
 });
 
 test("an object looks into an empty cell", () => {

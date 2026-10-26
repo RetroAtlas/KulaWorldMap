@@ -24,7 +24,7 @@ import {
   toLevel,
   writeProject,
 } from "../format/project.js";
-import { ERROR, circuitMembers, playsAs, validate } from "../format/checks.js";
+import { ERROR, TIME_LIMIT, circuitMembers, playsAs, timeOf, validate } from "../format/checks.js";
 import { download, readLevelText, slug } from "./files.js";
 import { pasteLevelLink } from "./importdialog.js";
 import { draftOf, readLevel, readWith } from "./intake.js";
@@ -35,7 +35,6 @@ import * as drafts from "./drafts.js";
 const CONFIRM_MS = 4000;
 const NOTE_MS = 2000;
 const TITLE_LENGTH = 80;
-const TIME_LIMIT = 2 ** 15 - 1;
 const TIME_RANGE = `The time is from 1 to ${TIME_LIMIT} seconds.`;
 const GAME_FILE = "application/octet-stream";
 const NO_KEY = "How the game plays the level while it has no key";
@@ -311,9 +310,8 @@ function buildForm(id, box) {
     title: "The seconds the clock starts at",
   });
   time.onchange = () => {
-    const n = Number(time.value);
-    if (time.value !== "" && n >= 1 && n <= TIME_LIMIT) {
-      const v = Math.round(n);
+    const v = timeOf(time.value);
+    if (v !== null) {
       edit({ time: v }, "changed the time");
       time.value = String(v);
     } else {

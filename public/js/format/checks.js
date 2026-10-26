@@ -385,6 +385,14 @@ export function recordOverflow(project) {
   return carried > LINK_RECORDS ? overCap("records", counts(project).records) : null;
 }
 
+export const TIME_LIMIT = 2 ** 15 - 1;
+
+/** The nearest whole second a time yields, or null where it is not from 1 to the limit. */
+export const timeOf = (value) => {
+  const n = Number(value);
+  return n >= 1 && n <= TIME_LIMIT ? Math.round(n) : null;
+};
+
 /** What the game would make of the project, as findings with a level, a text and a place,
     naming kinds, things and circuits through `names` and by number where it gives none. */
 export function validate(project, hides, names = {}) {
@@ -408,7 +416,7 @@ export function validate(project, hides, names = {}) {
   }
   const time = project.time ?? DEFAULT_TIME;
   if (!inWord(time)) err(`a time of ${time} seconds, outside the file's range`);
-  else if (time < 1) err(`a time of ${time} seconds`);
+  else if (timeOf(time) === null) err(`a time of ${time} seconds`);
   else if (time > TIME_MAX)
     warn(`a time of ${time} seconds, above the ${TIME_MAX} the game's levels keep to`);
 
