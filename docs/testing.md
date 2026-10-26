@@ -6,7 +6,7 @@ Every check of the repo lives where what it checks is computed: a unit test for 
 
 `npm test` runs the unit tests under `tests/unit` with Node's own runner, every file in its own process, in a few seconds; they read the shipped data through `tests/unit/fixtures.js` (`map_data.json`, `objects.json`, `annotations.json` and `packs.json`) and the synthetic disc image `tests/unit/synthetic.js` builds from the page's own writers.
 
-The unit tests also hold the repo to its conventions: `imports.test.js` the layers, the preloads and the pure modules of play, `prose.test.js` the docs' one-point lines, `sizes.test.js` every module, spec, unit test and tool to a size, `docs.test.js` and `counts.test.js` the README's and the docs' figures to the data, `hashes.test.js` that nothing cites a commit by its hash, `site.test.js` what the site may say, and `backlog.test.js` the backlog's numbering and links.
+The unit tests also hold the repo to its conventions: `imports.test.js` the layers, the preloads and the pure modules of play, `prose.test.js` the docs' one-point lines, `sizes.test.js` every module, spec, unit test and tool to a size, `docs.test.js` and `counts.test.js` the README's and the docs' figures to the data, `hashes.test.js` that nothing cites a commit by its hash, `site.test.js` what the site may say, `backlog.test.js` the backlog's numbering and links, and `frame.test.js` the frame tool's parts to the functions the viewer defines.
 
 `npm run test:browser` runs the browser tests under `tests/browser` with Playwright in Chromium, at 1280 by 720, against the site served from `public/` on port 8480; every test opens its own page, so the tests of one file run spread over the workers as the files do.
 
@@ -17,6 +17,8 @@ One spec runs with its name after the command, `npm run test:browser -- play-hud
 `npm run frame` and `npm run boot` are measurements, not checks: where a frame's time goes, and when the page's first frames land over a throttled network.
 
 `python3 -m unittest discover -s tools/tests` runs the tools' tests without the disc, the motion reader's one file a module, `test_kula_motion_<subject>.py`, over the shared `motion_fixture.py`; `python3 -m compileall -q tools/` and `ruff check tools/` at the release [.github/workflows/ci.yml](../.github/workflows/ci.yml) pins complete the Python checks.
+
+The motion reader's tests run over a hand-typed fixture of the executable's words, `motion_fixture.py`'s `GAME`, which covers most of the readings' keys, so they hold the reader to the fixture and not to the executable; what holds the reader to the executable is the tool's table against the disc, which the build compares.
 
 A reading only the disc can hold is held by the tool's own check against the disc, `python3 tools/kula_kwl.py --check` with `KULA_DISC` set, or by a rebuild with `python3 tools/kula_build.py` that changes nothing committed.
 
