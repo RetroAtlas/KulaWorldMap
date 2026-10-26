@@ -10,7 +10,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_score import OBJECTS, BLOCK_POINTS, level_points, plays_bonus, tallied  # noqa: E402
+from kula_score import (OBJECTS, RELEASE_FILES, BLOCK_POINTS, HOURGLASS, compared, curated, hourglass_points,  # noqa: E402
+                        level_points, levels_of, plays_bonus, points_of, tallied)
 
 SKINS = json.loads(OBJECTS.read_text())["skins"]
 HIDES = SKINS["hides"]
@@ -81,6 +82,39 @@ class ThePoints(unittest.TestCase):
         self.assertEqual(level_points(lv, kinds, types, FIRST, SKINS), 550)
         simon = level(cube(1), [], pack=SKINS["copycat"])
         self.assertFalse(plays_bonus(simon, SKINS))
+
+
+class TheRelease(unittest.TestCase):
+    def test_the_hourglass_scores_the_most_each_release_s_rules_allow(self):
+        rules = {r: json.loads(p.read_text())["rules"]["hourglass"] for r, p in RELEASE_FILES.items()}
+        self.assertEqual([hourglass_points(rules[r]) for r in ("us", "eu", "jp")], [1190, 990, 0])
+        self.assertEqual(hourglass_points({"from": 5999, "second": None, "points": None}), 0)
+        kinds, types = points_of({"kinds": {}, "types": {str(HOURGLASS): {"points": 1190}}}, 990)
+        self.assertEqual(types[HOURGLASS]({"type": HOURGLASS}), 990)
+
+    def test_a_release_s_levels_are_the_base_s_with_its_own_slots_in_their_place(self):
+        base = [{"pack": "/HIRO/HIRO.PAK", "index": i} for i in range(3)]
+        own = {"pack": "/HIRO/HIRO.PAK", "index": 1, "release": "eu"}
+        self.assertEqual(levels_of(base, {"/HIRO/HIRO.PAK#1": own}), [base[0], own, base[2]])
+        self.assertEqual(levels_of(base, {}), base)
+
+    def test_a_curated_score_is_compared_only_where_it_is_meant_for_the_release(self):
+        ann = {"kinds": {}, "types": {str(HOURGLASS): {"points": 1190}, str(KEY): {"points": 1000}},
+               "levels": {"/HIRO/HIRO.PAK#0": {"score": 900},
+                          "/HIRO/HIRO.PAK#1": {"score": 1000, "releases": {"eu": {"score": 800}}},
+                          "/HIRO/HIRO.PAK#2": {"releases": {"jp": {"note": "The same level."}}}}}
+        self.assertEqual(curated(ann, "us"), {"/HIRO/HIRO.PAK#0": 900, "/HIRO/HIRO.PAK#1": 1000})
+        self.assertEqual(curated(ann, "eu"), {"/HIRO/HIRO.PAK#1": 800})
+        self.assertEqual(curated(ann, "jp"), {})
+        levels = [{**level([10, 10, 17, FIRST], [record(10, 10, 17, 0, on=[HOURGLASS, KEY])]), "index": i}
+                  for i in range(3)]
+        for release, hourglass, scores in (("us", 1190, [900, 1000, None]), ("eu", 990, [None, 800, None]),
+                                           ("jp", 0, [None, None, None])):
+            with self.subTest(release):
+                rows = compared(levels, ann, hourglass, release, FIRST, SKINS)
+                self.assertEqual([l["index"] for l, _, _ in rows], [0, 1, 2])
+                self.assertEqual([(total, score) for _, total, score in rows],
+                                 [(1000 + hourglass, score) for score in scores])
 
 
 if __name__ == "__main__":

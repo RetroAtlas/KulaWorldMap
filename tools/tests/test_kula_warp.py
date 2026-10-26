@@ -1,7 +1,8 @@
-"""Unit tests for the disc copy's writer: python3 -m unittest discover -s tools/tests
+"""Unit tests for the cheat and the disc copy's writer: python3 -m unittest discover -s tools/tests
 
 Nothing here needs the disc: the images are a few sectors built as the disc
-builds them, and the tool runs over the placer's synthetic image.
+builds them, and the tool runs over the placer's synthetic image, booting
+each release's executable in turn.
 """
 
 import shutil
@@ -16,6 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from disc import Disc  # noqa: E402
+from kula_disc import RELEASES  # noqa: E402
 from kula_pak import Pak  # noqa: E402
 from kula_place import PACK_AT, SYNTHETIC_FINALS, SYNTHETIC_PACK, synthetic_image  # noqa: E402
 from kula_sector import (  # noqa: E402
@@ -29,10 +31,15 @@ from kula_sector import (  # noqa: E402
     noise,
     sector,
 )
-from kula_warp import changed  # noqa: E402
+from kula_warp import CHEATS, changed, cheat  # noqa: E402
+from test_kula_disc import booting  # noqa: E402
 
 TOOL = Path(__file__).resolve().parents[1] / "kula_warp.py"
 IMAGE = synthetic_image()
+# The words each release's cheat is made of: the world's two, the slot's and the camera's.
+WORDS = {"us": ("800A340C", "800A3410", "800A3408", "800BA296"),
+         "eu": ("800A2EA4", "800A2EA8", "800A2EA0", "800B9D3E"),
+         "jp": ("8009F510", "8009F514", "8009F50C", None)}
 
 
 def raw(image, i):
@@ -100,6 +107,21 @@ class TheRewrite(unittest.TestCase):
         self.assertEqual(self.rewritten(path, before, 1, 5, user(before, 1)[5:9])[1], [])
 
 
+class TheCheat(unittest.TestCase):
+    def test_the_words_are_the_release_s_and_the_camera_s_goes_where_select_frees_it(self):
+        self.assertEqual(set(CHEATS), set(RELEASES))
+        for release, (world, world2, slot, camera) in WORDS.items():
+            with self.subTest(release):
+                lines = cheat(release, "LEVEL 3", "HIRO", 2)
+                self.assertEqual(lines[:6], ["[LEVEL 3 (HIRO)]", "Type = Gameshark",
+                                             f"{world} 0000", f"{world2} 0000", f"{slot} 0002", ""])
+                if camera is None:
+                    self.assertEqual(lines[6:], ["# Select frees the camera on this release"])
+                else:
+                    self.assertEqual(lines[6:], ["[Free camera]", "Type = Gameshark", f"{camera} 0001"])
+        self.assertEqual(cheat("us", "HIDDEN 10", "HELL", 18)[2:5], ["800A340C 0009", "800A3410 0009", "800A3408 0012"])
+
+
 class TheTool(unittest.TestCase):
     def setUp(self):
         self.dir = Path(tempfile.mkdtemp())
@@ -113,6 +135,22 @@ class TheTool(unittest.TestCase):
     def slot_level(self, image, pack_path, slot):
         with Disc(image) as disc:
             return Pak(disc.read_file(pack_path), pack_path).level(slot)
+
+    def test_the_cheat_is_in_the_words_of_the_disc_given_told_by_its_boot_line(self):
+        for release in WORDS:
+            with self.subTest(release):
+                self.src.write_bytes(booting(RELEASES[release]["boot"].encode()))
+                done = self.run_tool("--cheat", "--level", f"{SYNTHETIC_PACK}#2")
+                self.assertEqual(done.returncode, 0, done.stderr)
+                self.assertEqual(done.stdout.splitlines(), cheat(release, "LEVEL 3", "HIRO", 2))
+        self.src.write_bytes(booting(b"SLES_000.00"))
+        done = self.run_tool("--cheat", "--level", f"{SYNTHETIC_PACK}#2")
+        self.assertEqual(done.returncode, 1, done.stderr)
+        self.assertEqual(done.stdout, "")
+        self.assertEqual(done.stderr.splitlines()[-1],
+                         f"{self.src} boots none of the three releases' executables, so no cheat is known for it")
+        self.assertNotIn("Traceback", done.stderr)
+        self.assertEqual(sorted(p.name for p in self.dir.iterdir()), [self.src.name])
 
     def test_a_slot_of_the_same_pack_is_pointed_at_another_s_record_and_the_copy_proven(self):
         out = self.dir / "warped.bin"

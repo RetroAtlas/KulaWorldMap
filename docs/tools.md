@@ -12,10 +12,10 @@ A tool that reads a release's disc takes its image from `--disc`, else from `$KU
 | `kula_level.py` | the lattice and the record table, field by field |
 | `kula_build.py` | reads every level, every mesh and every pack's layout, and writes `public/map_data.json`, `public/objects.json`, `public/packs.json` and the sheet of the effects' sprites under `public/tex/`, and for each release its rules, its packs' layout and the levels of its disc that differ from the US data, under `public/releases/` |
 | `kula_kinds.py` | per-type contact sheets, for naming objects |
-| `kula_score.py` | what each level scores, beside the curated score where there is one |
+| `kula_score.py` | what each level scores on the disc of a release, the US disc's unless `--release` says, the hourglass's points by that release's rules, beside the curated score where there is one meant for that disc |
 | `kula_faces.py` | what the six slots of every record hold, per kind and per face |
 | `kula_objlevel.py` | the floor plan and sheet for naming objects by walking OBJ LEVEL |
-| `kula_warp.py` | the cheat, or a disc copy, that reaches a level no menu asks for |
+| `kula_warp.py` | the cheat, in the words of whichever of the three discs is given, or a disc copy, that reaches a level no menu asks for |
 | `kula_kwl.py` | a level written back to the game's bytes from its fields, and read out of any file the game would load ([editor.md](editor.md)) |
 | `kula_kwl_check.py` | every level of the disc rebuilt from its fields and held to the disc, in play and word for word outside the words the game never reads, which `kula_kwl.py --check` runs, and the caps and the loader figures the writer's checks rest on, read off the executable for the build ([editor.md](editor.md)) |
 | `kula_sector.py` | a Mode 2 Form 1 sector built as the disc has it, EDC and ECC included, and the disc's own sectors rebuilt to prove it ([disc.md](disc.md)) |

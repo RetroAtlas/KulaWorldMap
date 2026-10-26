@@ -17,10 +17,11 @@ A level carries no world of its own, so it wears whichever world's artwork the
 pack it is reached from belongs to.
 
 `--cheat` writes the world and the slot the game is loading, which reaches any
-slot of any world pack without a patched disc, in the form DuckStation takes,
-with a second cheat that frees the camera to orbit the level. The PAL release
-keeps them at 0x800A2EA4, 0x800A2EA8 and 0x800A2EA0. The disc copy is for the
-packs the cheat cannot name, and for a real console.
+slot of any world pack without a patched disc, in the form DuckStation takes
+and in the words of whichever of the three discs is given, told by its boot
+line, with a second cheat that frees the camera to orbit the level on the
+discs where no button does. The disc copy is for the packs the cheat cannot
+name, and for a real console.
 
 Every sector a write touches is rebuilt whole, EDC and ECC included, as the
 disc has them.
@@ -34,16 +35,19 @@ import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import THEMES, open_disc, output_at, packs
+from kula_disc import THEMES, open_disc, output_at, packs, release_of
 from kula_pak import Pak
 from kula_place import written
 from kula_sector import USER, USER_OFF, raw_sector, rewrite, sectors_of
 
 CATALOGUE = "OBJ LEVEL"
-WORLD_WORDS = (0x800A340C, 0x800A3410)
-SLOT_WORD = 0x800A3408
-# Frees the camera, as Select does on the Japanese release.
-CAMERA_WORD = 0x800BA296
+# The words a release loads a level from, the slot's and the world's two, and the
+# ball's word that frees the camera where no button does.
+CHEATS = {
+    "us": {"slot": 0x800A3408, "world": (0x800A340C, 0x800A3410), "camera": 0x800BA296},
+    "eu": {"slot": 0x800A2EA0, "world": (0x800A2EA4, 0x800A2EA8), "camera": 0x800B9D3E},
+    "jp": {"slot": 0x8009F50C, "world": (0x8009F510, 0x8009F514), "camera": None},
+}
 
 
 def find(disc, want):
@@ -62,6 +66,18 @@ def slot_named(pak, name):
         if pak.name(i).upper() == name:
             return i
     return None
+
+
+def cheat(release, what, world, slot):
+    """The lines of the release's cheat that loads a slot of a world's pack, and of
+    the one that frees the camera where no button of that release does."""
+    words = CHEATS[release]
+    lines = [f"[{what} ({world})]", "Type = Gameshark"]
+    lines += [f"{word:08X} {THEMES.index(world):04X}" for word in words["world"]]
+    lines += [f"{words['slot']:08X} {slot:04X}", ""]
+    if words["camera"] is None:
+        return lines + ["# Select frees the camera on this release"]
+    return lines + ["[Free camera]", "Type = Gameshark", f"{words['camera']:08X} 0001"]
 
 
 def changed(f, lba, user):
@@ -122,18 +138,13 @@ def warp(args, src, disc):
     what = donor_pak.name(donor_slot)
 
     if args.cheat:
+        release = release_of(disc)
+        if release is None:
+            sys.exit(f"{src} boots none of the three releases' executables, so no cheat is known for it")
         world = donor_path.strip("/").split("/")[0].upper()
         if world not in THEMES or not donor_path.upper().endswith(f"/{world}.PAK"):
             sys.exit(f"the cheat reaches the world packs only, not {donor_path}")
-        print(f"[{what} ({world})]")
-        print("Type = Gameshark")
-        for word in WORLD_WORDS:
-            print(f"{word:08X} {THEMES.index(world):04X}")
-        print(f"{SLOT_WORD:08X} {donor_slot:04X}")
-        print()
-        print("[Free camera]")
-        print("Type = Gameshark")
-        print(f"{CAMERA_WORD:08X} 0001")
+        print("\n".join(cheat(release, what, world, donor_slot)))
         return
     out = output_at(args.out if args.out else src.with_name(f"{src.stem} ({what.lower()}).bin"), "--out", replaces=False)
     if out.suffix.lower() == ".cue":
