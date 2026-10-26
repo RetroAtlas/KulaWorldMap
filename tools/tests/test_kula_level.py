@@ -16,11 +16,13 @@ from kula_level import (  # noqa: E402
     FACES,
     FIELDS,
     FIRST_RECORD,
+    GRID_BYTES,
     HEAD,
     LASER_KIND,
     NOWHERE,
     OWN,
     PAYLOAD_KINDS,
+    RECORD,
     SIDE,
     SWITCH,
     TELEPORTER,
@@ -50,17 +52,22 @@ def block(cell, kind=0, faces=None, second=None):
     return struct.pack(f"<{WORDS}h", *words, *cell)
 
 
-def level(cells, records, trailer=None, header=None):
-    """cells is {(x, y, z): value}; records is a list of 256-byte blocks."""
+def untrailed(cells, records, header=None):
+    """A level whose file ends at its count: cells is {(x, y, z): value}; records is
+    a list of 256-byte blocks, and the count is their number."""
     grid = [EMPTY] * CELLS
     for (x, y, z), v in cells.items():
         grid[(x * SIDE + y) * SIDE + z] = v
     blob = struct.pack(f"<{CELLS}H", *grid)
     blob += struct.pack("<iH", len(cells) if header is None else header, len(records))
-    blob += b"".join(records)
+    return blob + b"".join(records)
+
+
+def level(cells, records, trailer=None, header=None):
+    """The same with a trailer after its records, one of kind 666 timed at 99 unless given."""
     if trailer is None:
         trailer = block(NOWHERE, kind=TRAILER_KIND, faces={0: slot(20, 13, 17, -5, 0, 99)})
-    return blob + trailer
+    return untrailed(cells, records, header) + trailer
 
 
 COIN = slot(37, 0, 2, 1, 0, 48, -1, 0, 386, 1, v=-100)
@@ -133,16 +140,39 @@ class Reads(unittest.TestCase):
         self.assertEqual(L.records, [])
         self.assertEqual(L.verify(), [])
 
+    def test_the_time_is_the_trailers_time_where_there_is_one(self):
+        timed = block(NOWHERE, kind=TRAILER_KIND, faces={0: slot(20, 13, 17, -5, 0, 45)})
+        L = Level(level({}, [], trailer=timed))
+        self.assertEqual((L.trailer.f[4], L.time), (45, 45))
+        self.assertEqual(Level(level({}, [])).time, 99)
+
+    def test_a_level_may_end_at_its_count_with_no_trailer(self):
+        L = Level(untrailed({(1, 2, 3): FIRST_RECORD}, [block((1, 2, 3), faces={0: COIN})]))
+        self.assertIsNone(L.trailer)
+        self.assertEqual((L.count, len(L.records), L.time), (1, 1, 99))
+        self.assertEqual(L.records[0].objects[0].type, 37)
+        self.assertEqual(L.verify(), [])
+
     def test_the_lattice_index_is_the_one_the_game_walks(self):
         L = Level(level({(0, 0, 1): 0, (0, 1, 0): 1, (1, 0, 0): 2}, []))
         self.assertEqual(sorted(L.cells), [(0, 0, 1, 0), (0, 1, 0, 1), (1, 0, 0, 2)])
         self.assertEqual(L.extent(), ((0, 1), (0, 1), (0, 1)))
 
     def test_a_short_or_mis_sized_blob_is_refused(self):
-        with self.assertRaises(ValueError):
-            Level(b"\xff" * 32)
-        with self.assertRaises(ValueError):
-            Level(level({}, [])[:-1])
+        records = [block((1, 2, 3)), block((4, 5, 6))]
+        whole, bare = level({}, records), untrailed({}, records)
+        for blob in (b"\xff" * 32, whole[:-1], whole + b"\0", whole + block(NOWHERE),
+                     bare[:-RECORD], bare[:-1], bare + b"\0"):
+            with self.assertRaises(ValueError):
+                Level(blob)
+
+    def test_a_refusal_names_both_lengths_a_level_takes(self):
+        records = [block((1, 2, 3)), block((4, 5, 6))]
+        counted = GRID_BYTES + HEAD + RECORD * len(records)
+        with self.assertRaises(ValueError) as caught:
+            Level(untrailed({}, records)[:-RECORD], "BONUS 30")
+        self.assertEqual(str(caught.exception),
+                         f"BONUS 30: {counted - RECORD} bytes, expected {counted + RECORD}, or {counted} with no trailer")
 
 
 class Verifies(unittest.TestCase):
@@ -153,6 +183,11 @@ class Verifies(unittest.TestCase):
     def test_a_cell_naming_a_record_that_is_not_there(self):
         L = Level(level({(1, 2, 3): FIRST_RECORD + 9}, [block((1, 2, 3), faces={0: COIN})]))
         self.assertIn("names record 9 of 1", L.verify()[0])
+
+    def test_a_cell_naming_the_record_past_the_count_of_a_level_with_no_trailer(self):
+        L = Level(untrailed({(1, 2, 3): FIRST_RECORD, (4, 5, 6): FIRST_RECORD + 1},
+                            [block((1, 2, 3), faces={0: COIN})]))
+        self.assertEqual(L.verify(), ["cell 4,5,6 names record 1 of 1"])
 
     def test_a_beam_whose_block_is_at_neither_end(self):
         beam = slot(1, 1, 1, 4, 2, 3, 9, 2, 3)

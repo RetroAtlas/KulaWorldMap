@@ -64,7 +64,7 @@ def level_json(L, theme, pack, index):
         "max": [x1, y1, z1],
         "cells": cells,
         "records": [r.as_dict() for r in L.records],
-        "time": L.trailer.f[4],
+        "time": L.time,
     }
     shown = shown_as(theme, pack, index)
     if shown:

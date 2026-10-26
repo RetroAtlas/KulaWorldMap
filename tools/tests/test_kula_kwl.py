@@ -566,8 +566,9 @@ class Reads(unittest.TestCase):
     def test_a_count_one_too_high_is_read_from_the_length_and_counted_among_the_repairs(self):
         blob = bytearray(playground())
         struct.pack_into("<H", blob, GRID_BYTES + 4, 9)
-        with self.assertRaises(ValueError):
-            Level(bytes(blob))
+        L = Level(bytes(blob))
+        self.assertEqual((L.trailer, L.time), (None, 99))
+        self.assertIn(f"kind {TRAILER_KIND} among the records, at [8]", L.verify())
         p, report, repairs = read_kwl(bytes(blob), world=WORLD)
         self.assertEqual(p, PLAYGROUND)
         self.assertIn("the header counts 9 records and the file holds 8", report)

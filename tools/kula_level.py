@@ -6,7 +6,8 @@
     u16             record count
     record[count]   256 bytes each, starting right after the count
     trailer         the same shape, kind 666: the level's time in f6, and a
-                    cell and two numbers the game never reads
+                    cell and two numbers the game never reads, or nothing
+                    where a level's file ends at its count
     3 x 0xFFFF      where the trailer's cell would go
 
 A record is a block, and it ends with its cell: a kind word, six 32-byte
@@ -60,6 +61,7 @@ FIELD_WORD = 2       # the word of a slot the fields start at, and what names th
 VALUE_WORD = 14
 HEAD = 6             # the cell that ends a record, or the level header
 TRAILER_KIND = 666
+DEFAULT_TIME = 99    # the game's time where the record past the count is no trailer
 LASER_KIND = 8
 PLATFORM_KIND = 5
 NOWHERE = (-1, -1, -1)
@@ -168,9 +170,9 @@ class Level:
         self.theme = theme
         self.blob = blob
         self.header, self.count = struct.unpack_from("<iH", blob, GRID_BYTES)
-        expect = GRID_BYTES + HEAD + RECORD * (1 + self.count)
-        if len(blob) != expect:
-            raise ValueError(f"{name}: {len(blob)} bytes, expected {expect}")
+        counted = GRID_BYTES + HEAD + RECORD * self.count
+        if len(blob) not in (counted + RECORD, counted):
+            raise ValueError(f"{name}: {len(blob)} bytes, expected {counted + RECORD}, or {counted} with no trailer")
 
         self.cells = []          # (x, y, z, value)
         cells = struct.unpack_from(f"<{CELLS}H", blob, 0)
@@ -179,10 +181,15 @@ class Level:
                 self.cells.append((i // (SIDE * SIDE), (i // SIDE) % SIDE, i % SIDE, v))
 
         self.records = [self._record(k) for k in range(self.count)]
-        self.trailer = self._record(self.count)
+        self.trailer = self._record(self.count) if len(blob) > counted else None
 
     def _record(self, k):
         return Record(struct.unpack_from(f"<{WORDS}h", self.blob, GRID_BYTES + HEAD + RECORD * k))
+
+    @property
+    def time(self):
+        """The level's time in seconds: the trailer's time where there is one and the game's default where there is none."""
+        return DEFAULT_TIME if self.trailer is None else self.trailer.f[4]
 
     def verify(self):
         """What has to hold if the lattice is being read the way the engine reads it.
@@ -208,10 +215,11 @@ class Level:
         trailers = [k for k, r in enumerate(self.records) if r.kind == TRAILER_KIND]
         if trailers:
             bad.append(f"kind {TRAILER_KIND} among the records, at {trailers}")
-        if self.trailer.kind != TRAILER_KIND:
-            bad.append(f"the trailer is kind {self.trailer.kind}, expected {TRAILER_KIND}")
-        if self.trailer.cell != NOWHERE:
-            bad.append(f"the trailer claims a cell at {self.trailer.x},{self.trailer.y},{self.trailer.z}")
+        if self.trailer is not None:
+            if self.trailer.kind != TRAILER_KIND:
+                bad.append(f"the trailer is kind {self.trailer.kind}, expected {TRAILER_KIND}")
+            if self.trailer.cell != NOWHERE:
+                bad.append(f"the trailer claims a cell at {self.trailer.x},{self.trailer.y},{self.trailer.z}")
         bad += self._circuits()
         return bad
 

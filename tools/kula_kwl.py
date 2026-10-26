@@ -38,6 +38,7 @@ from kula_disc import THEMES, file_at, open_disc, output_at, packs
 from kula_level import (
     BLOCK_KINDS,
     CELLS,
+    DEFAULT_TIME,
     PAYLOAD_KINDS,
     EMPTY,
     FACES,
@@ -85,7 +86,6 @@ CRUMBLING_KIND = 6
 VANISHING_KIND = 7
 SPAN_KINDS = frozenset({PLATFORM_KIND, LASER_KIND})
 COLOURS = 4
-DEFAULT_TIME = 99
 DEFAULT_SPEED = 30
 DEFAULT_LENGTH = 2
 LENGTHS = range(2, 4)
@@ -505,7 +505,7 @@ def project_of_level(L, world=None, report=None, **meta):
     """The project a parsed level means, every word of the file in hand; `meta`
     lays a shipped level's `shown`, `pack` and `index` over it."""
     report = [] if report is None else report
-    level = _level_dict(L.cells, L.records, L.trailer.f[4], world or L.theme or WORLDS[0], L.name, report)
+    level = _level_dict(L.cells, L.records, L.time, world or L.theme or WORLDS[0], L.name, report)
     level.update({k: v for k, v in meta.items() if v is not None})
     return project_of(level, report)
 
@@ -1856,7 +1856,7 @@ def compare(L, C):
             bad.append(f"the crumbling block's cell words at {cell} differ")
     if _circuits(L) != _circuits(C):
         bad.append("the circuits differ")
-    if L.trailer.f[4] != C.trailer.f[4]:
+    if L.time != C.time:
         bad.append("the time differs")
     if _flags(L) != _flags(C):
         bad.append("the settings differ")
