@@ -2,7 +2,7 @@
 // each names.
 import { counted, levelTitle, markerLabel, motionTable, theCircuit } from "../viewer/data.js";
 import { DIRECTION_NAME, FACE_NAME } from "../format/lattice.js";
-import { faceOf } from "./ball.js";
+import { faceOf } from "../viewer/walk.js";
 import { MODE, roundOf } from "./game.js";
 
 export const REFUSED = {

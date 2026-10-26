@@ -1,6 +1,7 @@
 // The ball's roll over the lattice, a game frame at a time, by the executable's rules.
 import { FACE_NORMAL } from "../format/lattice.js";
 import { frameOf } from "../viewer/state.js";
+import { faceOf } from "../viewer/walk.js";
 
 export const REST = -1;
 export const HOP = 0;
@@ -24,7 +25,6 @@ const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const axisOf = (v) => v.findIndex((c) => c !== 0);
 /** The cell a point of the ball lies in, or where none is given the cell its centre lies in. */
 export const cellOf = (b, p = positionOf(b)) => p.map((c) => Math.floor((c + b.half) / b.unit));
-export const faceOf = (n) => FACE_NORMAL.findIndex((f) => f.every((c, i) => c === n[i]));
 
 const NO_JUMP = { count: 0, rows: [] };
 
