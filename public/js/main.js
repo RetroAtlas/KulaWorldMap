@@ -2,6 +2,7 @@ import { $, dialogOpen, el, on, typing } from "./viewer/ui/dom.js";
 import { state } from "./viewer/state.js";
 import { resize, onResize } from "./viewer/draw/render.js";
 import { loadJson, setAnnotations, setObjects, ballFor } from "./viewer/data.js";
+import { setReleases } from "./viewer/release.js";
 import { iconFor } from "./viewer/draw/icons.js";
 import {
   buildWorlds,
@@ -344,14 +345,18 @@ Promise.all([
   loadJson("map_data.json"),
   loadJson("annotations.json", {}),
   loadJson("objects.json", {}),
+  loadJson("releases/us.json", null),
+  loadJson("releases/eu.json", null),
+  loadJson("releases/jp.json", null),
   awaited ? import("./editor/editor.js").catch(() => null) : null,
-]).then(([data, ann, objects, module]) => {
+]).then(([data, ann, objects, us, eu, jp, module]) => {
   if (!data) {
     $("chipLine").textContent = "The map's data could not be loaded.";
     return;
   }
   setAnnotations(ann);
   setObjects(objects);
+  setReleases([us, eu, jp]);
   state.data = data;
   $("about").innerHTML =
     `All ${data.levels.length} levels across ${data.themes.length} worlds. ` +

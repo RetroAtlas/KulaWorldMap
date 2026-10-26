@@ -3,6 +3,21 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { mapData, packs, releases, levelKey, TRAILER_KIND } from "./fixtures.js";
+import { state } from "../../public/js/viewer/state.js";
+import {
+  compose,
+  current,
+  differs as differsOn,
+  layoutOf,
+  levelOn,
+  levelsOf,
+  releaseOf,
+  releases as known,
+  rulesOf,
+  setCurrent,
+  setReleases,
+} from "../../public/js/viewer/release.js";
+import { blank, toLevel } from "../../public/js/format/project.js";
 
 const [us, eu, jp] = releases;
 const FACES = 6;
@@ -188,4 +203,114 @@ test("the README's sentence on the slots that differ is what the files hold", ()
     variants(eu).length,
     variants(jp).length,
   ]);
+});
+
+state.data = mapData;
+const VARIANT = "/MARS/MARS.PAK#11";
+const slot = (key) => mapData.levels.findIndex((l) => levelKey(l) === key);
+
+test("a release's levels are the base's slot for slot, its variants in place and every other slot the base's own object", () => {
+  setReleases(releases);
+  for (const r of releases) {
+    const levels = levelsOf(r.id);
+    assert.equal(levels.length, mapData.levels.length, r.id);
+    levels.forEach((l, i) => {
+      const b = mapData.levels[i];
+      assert.deepEqual([l.pack, l.index, l.theme], [b.pack, b.index, b.theme], `${r.id} ${i}`);
+      assert.equal(l, r.levels[levelKey(b)] ?? b, `${r.id} ${levelKey(b)}`);
+    });
+    assert.equal(levels.filter((l, i) => l !== mapData.levels[i]).length, variants(r).length, r.id);
+  }
+});
+
+test("a release's levels are built once for the data and again for other data or other files", () => {
+  setReleases(releases);
+  const first = levelsOf("eu");
+  assert.equal(levelsOf("eu"), first);
+  assert.equal(levelsOf("eu")[slot(VARIANT)], eu.levels[VARIANT]);
+  state.data = { ...mapData, levels: mapData.levels.slice(0, 1) };
+  assert.equal(levelsOf("eu").length, 1);
+  state.data = mapData;
+  const again = levelsOf("eu");
+  assert.notEqual(again, first);
+  assert.deepEqual(again, first);
+  setReleases(releases);
+  assert.notEqual(levelsOf("eu"), again);
+});
+
+test("the level on a release at a slot is its variant there, the base's elsewhere, and a draft is handed back as it is", () => {
+  setReleases(releases);
+  const base = mapData.levels[slot(VARIANT)];
+  assert.equal(levelOn(base, "eu"), eu.levels[VARIANT]);
+  assert.equal(levelOn(base, "jp"), jp.levels[VARIANT]);
+  assert.equal(levelOn(eu.levels[VARIANT], "us"), base);
+  assert.equal(levelOn(jp.levels[VARIANT], "eu"), eu.levels[VARIANT]);
+  assert.equal(levelOn(base), base);
+  setCurrent("eu");
+  assert.equal(levelOn(base), eu.levels[VARIANT]);
+  const same = mapData.levels[0];
+  assert.deepEqual(differsOn(levelKey(same)), []);
+  assert.equal(levelOn(same, "jp"), same);
+  const draft = toLevel(blank("HIRO"), 1);
+  assert.equal(levelOn(draft), draft);
+  assert.equal(levelOn(draft, "jp"), draft);
+  setCurrent("us");
+});
+
+test("the releases a slot differs on are those whose file holds it, and none for an identical slot", () => {
+  setReleases(releases);
+  assert.deepEqual(differsOn(VARIANT), ["eu", "jp"]);
+  assert.deepEqual(differsOn(levelKey(mapData.levels[0])), []);
+  for (const r of releases)
+    for (const key of Object.keys(r.levels))
+      assert.ok(differsOn(key).includes(r.id), `${r.id} ${key}`);
+});
+
+test("the release shown is the base until a loaded one is chosen, and an unknown id changes nothing", () => {
+  setReleases(releases);
+  assert.equal(current(), "us");
+  setCurrent("jp");
+  assert.equal(current(), "jp");
+  setCurrent("pal");
+  assert.equal(current(), "jp");
+  setReleases([us, eu, null]);
+  assert.equal(current(), "us");
+  setReleases(releases);
+});
+
+test("a file that did not load leaves its release out, and the base is built in where its own file is missing", () => {
+  setReleases([us, null, jp]);
+  assert.deepEqual(
+    known().map((r) => r.id),
+    ["us", "jp"],
+  );
+  assert.equal(releaseOf("eu"), null);
+  assert.deepEqual(differsOn(VARIANT), ["jp"]);
+  assert.equal(levelsOf("eu")[slot(VARIANT)], mapData.levels[slot(VARIANT)]);
+  setReleases([null, eu, jp]);
+  assert.deepEqual(
+    known().map((r) => r.id),
+    ["us", "eu", "jp"],
+  );
+  assert.deepEqual(releaseOf("us"), { id: "us", label: "US", name: "Roll Away", levels: {} });
+  assert.equal(levelsOf("us")[slot(VARIANT)], mapData.levels[slot(VARIANT)]);
+  assert.equal(layoutOf("us"), null);
+  assert.equal(rulesOf("us"), null);
+  setReleases(releases);
+  assert.equal(releaseOf("us"), us);
+  assert.equal(layoutOf("eu"), eu.packs);
+  assert.equal(rulesOf("jp"), jp.rules);
+});
+
+test("a composed entry takes the overlay's keys, loses one the overlay nulls and keeps the rest of the base", () => {
+  const base = { name: "Hourglass", points: 1190, note: "Flips the timer." };
+  assert.deepEqual(compose(base, { points: 990, score: 7 }), {
+    name: "Hourglass",
+    points: 990,
+    note: "Flips the timer.",
+    score: 7,
+  });
+  assert.deepEqual(compose(base, { note: null }), { name: "Hourglass", points: 1190 });
+  assert.equal(compose(base, undefined), base);
+  assert.deepEqual(base, { name: "Hourglass", points: 1190, note: "Flips the timer." });
 });

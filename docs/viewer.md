@@ -513,6 +513,8 @@ The modules lie in layers, and a module imports only its own layer and those ben
 
 The page itself starts what the boot will ask for before any of its modules has arrived: every module the boot imports, so they load in one round rather than as each is found in the last, the data files, and the textures of the world the link's pack names, or the first world's textures where there is no link, so everything is on its way together.
 
+The page fetches the three release files beside the data, one a release, each small since it carries only the slots whose level differs from the US one, and a file that cannot be loaded leaves that release out.
+
 Once that world's textures have landed and the page is idle, the other worlds' textures are fetched one at a time behind whatever the page asks for itself, from the next world on, unless the browser is set to save data, so a change of world finds them here; `js/viewer/draw/atlas.js` keeps every atlas for the visit, and a frame redraws for a landing only when it is the shown world's atlas.
 
 Beside the worlds' atlases under `tex/` the build lays the sheet of the seven sprites the game's effects draw, for play alone, which the page does not preload.
