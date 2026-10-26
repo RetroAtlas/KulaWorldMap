@@ -12,7 +12,9 @@ A level is titled by the number the game's pause screen gives it, which the engi
 
 A route can be planned over a level's blocks, stop by stop, drawn the way the ball would roll between them by the game's own rules for a step, and the ball itself can be rolled over the level by the keys, or along the planned route, as the game rolls it, the level turning with it round an edge or up a wall.
 
-The data is read from the NTSC-U release, sold as **Roll Away** (SLUS-00724). The same game shipped as Kula World in PAL territories and Kula Quest in Japan; the level data is the game's own data as this release ships it, and where a level is known to differ in the other two, its note says so.
+The data is read from all three discs the game shipped on, Roll Away in North America (SLUS-00724), Kula World in PAL territories (SCES-01000) and Kula Quest in Japan (SCPS-10064), which share 213 of their 230 levels byte for byte, the PAL disc differing in five slots and the Japanese in thirteen.
+
+The map draws the North American release's levels, and where a level is known to differ in the other two its note says so.
 
 The map is an editor as well. Make a level of your own, or copy a shipped one and change it: lay blocks against faces or across the floor, put the game's objects on them, run platforms and lasers between two cells, and have the game's own rules refuse what it could not load.
 
@@ -38,14 +40,18 @@ To serve the viewer locally:
 python3 tools/serve.py
 ```
 
-The disc is never committed. To rebuild the data, point `$KULA_DISC` at a raw 2352-byte-sector `.bin` image:
+The discs are never committed. To rebuild the data, point `$KULA_DISC` at a raw 2352-byte-sector `.bin` image of the North American disc:
 
 ```bash
 export KULA_DISC="/path/to/Roll Away.bin"
 python3 tools/kula_build.py
 ```
 
-That writes `public/map_data.json`, `public/objects.json` and `public/packs.json`, the levels, the objects' meshes and the packs' layout, and `public/tex/sparks.png`, the sprites the game's effects draw, all four generated **and committed**, so regenerate them rather than hand-editing.
+That writes `public/map_data.json`, `public/objects.json` and `public/packs.json`, the levels, the objects' meshes and the packs' layout, `public/tex/sparks.png`, the sprites the game's effects draw, and `public/releases/us.json`, the release's rules and layout, all five generated **and committed**, so regenerate them rather than hand-editing.
+
+The other two discs are read the same way, `$KULA_DISC_EU` naming the PAL image and `$KULA_DISC_JP` the Japanese one: `python3 tools/kula_build.py --release eu` writes `public/releases/eu.json`, that release's rules, its packs' layout and the levels of its disc that differ from the North American data, and `--release jp` writes `public/releases/jp.json` the same way, both generated and committed too.
+
+`python3 tools/kula_build.py --all` rebuilds every release whose variable is set, the North American data first, since the other two are written against it.
 
 ## Where the rest is
 

@@ -10,7 +10,7 @@ A tool that takes a release reads that release's image from `--disc`, else from 
 | `kula_disc.py` | where this game keeps its packs, textures and executable, the three releases by id, and which of them an image is, told by its boot line |
 | `kula_pak.py` | the `.PAK` container, and the names inside it |
 | `kula_level.py` | the lattice and the record table, field by field |
-| `kula_build.py` | reads every level, every mesh and every pack's layout, and writes `public/map_data.json`, `public/objects.json`, `public/packs.json` and the sheet of the effects' sprites under `public/tex/` |
+| `kula_build.py` | reads every level, every mesh and every pack's layout, and writes `public/map_data.json`, `public/objects.json`, `public/packs.json` and the sheet of the effects' sprites under `public/tex/`, and for each release its rules, its packs' layout and the levels of its disc that differ from the US data, under `public/releases/` |
 | `kula_kinds.py` | per-type contact sheets, for naming objects |
 | `kula_score.py` | what each level scores, beside the curated score where there is one |
 | `kula_faces.py` | what the six slots of every record hold, per kind and per face |
@@ -43,4 +43,10 @@ A tool that takes a release reads that release's image from `--disc`, else from 
 | `icons.js` | render the raster icons from the favicon (Node, needs Playwright) |
 | `serve.py` | local static server, caching off, 404.html like the host |
 
-`kula_build.py` writes the three JSON files and the sheet in under a second, laid out so that a rebuild diffs line by line, or model by model, and refuses to write when the level file's cross-check fails ([level-format.md](level-format.md)) or when a cap or a loader figure the level writer's checks rest on is not what the executable holds ([editor.md](editor.md)). [tgi.md](tgi.md) and [ggi.md](ggi.md) show the artwork and geometry tools' own switches.
+`kula_build.py` writes the four JSON files and the sheet in under a second, laid out so that a rebuild diffs line by line, or model by model, and refuses to write when the level file's cross-check fails ([level-format.md](level-format.md)) or when a cap or a loader figure the level writer's checks rest on is not what the executable holds ([editor.md](editor.md)). [tgi.md](tgi.md) and [ggi.md](ggi.md) show the artwork and geometry tools' own switches.
+
+`python3 tools/kula_build.py --release eu` reads the PAL disc alone, its image and its executable, makes every check the US build makes on it, compares its levels slot by slot with the committed US data and writes `public/releases/eu.json`, with `jp` doing the same for the Japanese disc.
+
+`--all` runs every release whose variable is set, the US first, since the other two are written against its data.
+
+A level read without a trailer is named in the printout and ships with the time the game gives it.

@@ -4,7 +4,7 @@ Every check of the repo lives where what it checks is computed: a unit test for 
 
 ## The suites
 
-`npm test` runs the unit tests under `tests/unit` with Node's own runner, every file in its own process, in a few seconds; they read the shipped data through `tests/unit/fixtures.js` (`map_data.json`, `objects.json`, `annotations.json` and `packs.json`) and the synthetic disc image `tests/unit/synthetic.js` builds from the page's own writers.
+`npm test` runs the unit tests under `tests/unit` with Node's own runner, every file in its own process, in a few seconds; they read the shipped data through `tests/unit/fixtures.js` (`map_data.json`, `objects.json`, `annotations.json`, `packs.json` and the release files under `releases/`) and the synthetic disc image `tests/unit/synthetic.js` builds from the page's own writers.
 
 The unit tests also hold the repo to its conventions: `imports.test.js` the layers, the preloads and the pure modules of play, `prose.test.js` the docs' one-point lines, `sizes.test.js` every module, spec, unit test and tool to a size, `docs.test.js` and `counts.test.js` the README's and the docs' figures to the data, `hashes.test.js` that nothing cites a commit by its hash, `site.test.js` what the site may say, `backlog.test.js` the backlog's numbering and links, and `frame.test.js` the frame tool's parts to the functions the viewer defines.
 
@@ -23,6 +23,8 @@ The motion reader's tests run over a hand-typed fixture of the executable's word
 `test_kula_release.py` holds the release reader the same way, to a fixture of each release's executable's words, every stretch the readings match at its own address in a blob of that executable's size, and to a changed word at any reading stopping it.
 
 A reading only the disc can hold is held by the tool's own check against the disc, `python3 tools/kula_kwl.py --check` with `KULA_DISC` set, or by a rebuild with `python3 tools/kula_build.py` that changes nothing committed.
+
+The release files are held the same way, each to its own disc: `test_kula_build.py`'s class for each runs where the release's variable is set and holds the committed file to what the build writes for that disc, and `python3 tools/kula_build.py --all` with the three variables set changes nothing committed.
 
 The release reader's table of addresses is held to the three executables by its own run, `python3 tools/kula_release.py --release <id>` with that release's disc variable set, which stops at the first instruction that is not the one expected.
 

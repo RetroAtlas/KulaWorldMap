@@ -163,7 +163,9 @@ World ids are the disc's directory names (`HIRO`, `ATLANT`, ...), and that is al
 
 ## The levels no menu asks for
 
-A world's pack holds twenty slots: 0 to 14 are the numbered levels, 15 to 17 the bonus ones, 18 the hidden one, and 19 the slot no menu asks for, which is `OBJ LEVEL` in every world but the first, where it is the Japanese release's tutorial.
+A world's pack holds twenty slots: 0 to 14 are the numbered levels, 15 to 17 the bonus ones, 18 the hidden one, and 19 the slot no menu asks for.
+
+Slot 19 is `OBJ LEVEL` in every world but the first on the US and Japanese discs, where the first holds the Japanese release's tutorial, and in every world on the PAL disc, which has no LESSON.
 
 **`OBJ LEVEL`** ships in nine of the ten worlds, identical every time, and never appears in the game. It is the developers' object catalogue: 36 objects and nine records of the kinds that are their own thing on a flat floor, covering **23 of the game's 30 object types**, and the seven it misses are placed 124 times between them against the 23 types' 5,437 placements. Everything on it stands on top, so walking it once in an emulator names most of the game's vocabulary and says nothing about faces. `tools/kula_objlevel.py` writes the floor plan and the sheet to fill in.
 

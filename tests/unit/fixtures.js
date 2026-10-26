@@ -7,6 +7,9 @@ export const mapData = JSON.parse(readFileSync(at("map_data.json"), "utf8"));
 export const annotations = JSON.parse(readFileSync(at("annotations.json"), "utf8"));
 export const objects = JSON.parse(readFileSync(at("objects.json"), "utf8"));
 export const packs = JSON.parse(readFileSync(at("packs.json"), "utf8"));
+export const releases = ["us", "eu", "jp"].map((id) =>
+  JSON.parse(readFileSync(at(`releases/${id}.json`), "utf8")),
+);
 export const levelKey = (l) => `${l.pack}#${l.index}`;
 
 // Two kinds the disc numbers and the data does not: the record every level

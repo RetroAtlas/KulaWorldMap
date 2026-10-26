@@ -1,6 +1,6 @@
 """Unit tests for the build: python3 -m unittest discover -s tools/tests
 
-Only the packs file's class needs the disc, and it is skipped without $KULA_DISC.
+The packs file's class and the release files' classes need a disc, each skipped without its variable.
 """
 
 import json
@@ -12,8 +12,22 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_build import PACKS, packs_json  # noqa: E402
-from kula_disc import open_disc, packs  # noqa: E402
+from kula_build import (  # noqa: E402
+    BASE,
+    IDENTITY,
+    PACKS,
+    RELEASE_FILES,
+    code_of,
+    layout_of,
+    other_release,
+    packs_json,
+    release_json,
+    rules_of,
+    slot,
+    slot_problems,
+    variants,
+)
+from kula_disc import DISC_VARS, RELEASES, open_disc, open_release, packs  # noqa: E402
 from kula_kwl import (  # noqa: E402
     CAPS,
     CAPTIVATORS,
@@ -107,6 +121,100 @@ class ThePacksFile(unittest.TestCase):
 
     def test_the_committed_file_is_what_the_build_writes(self):
         self.assertEqual(self.text, json.dumps(packs_json(self.disc), indent=1))
+
+
+def level(pack, index, **more):
+    """A level dict of the shape the build ships, with its one-point lattice, and anything given over it."""
+    return {"name": f"L{index}", "theme": "HIRO", "pack": pack, "index": index, "placed": 1, "header": 1,
+            "min": [1, 2, 3], "max": [1, 2, 3], "cells": [1, 2, 3, 0], "records": [], "time": 99, **more}
+
+
+BASE_LEVELS = [level("/HIRO/HIRO.PAK", 0, shown="LEVEL 1"), level("/HIRO/HIRO.PAK", 1, shown="LEVEL 2"),
+               level("/HIRO/HIROFI.PAK", 0, shown="FINAL 1")]
+BASE_PACKS = ["/HIRO/HIRO.PAK", "/HIRO/HIROFI.PAK"]
+
+
+class TheComparison(unittest.TestCase):
+    def setUp(self):
+        self.base = {slot(l): l for l in BASE_LEVELS}
+
+    def test_the_slots_whose_level_is_not_the_bases_are_picked_in_order_naming_the_release(self):
+        theirs = [level("/HIRO/HIRO.PAK", 0, shown="LEVEL 1", time=45), dict(BASE_LEVELS[1]),
+                  level("/HIRO/HIROFI.PAK", 0, shown="FINAL 1", cells=[1, 2, 3, 2])]
+        picked = variants(self.base, theirs, "eu")
+        self.assertEqual(list(picked), ["/HIRO/HIRO.PAK#0", "/HIRO/HIROFI.PAK#0"])
+        self.assertEqual(picked["/HIRO/HIRO.PAK#0"], {**theirs[0], "release": "eu"})
+        self.assertEqual(picked["/HIRO/HIROFI.PAK#0"], {**theirs[2], "release": "eu"})
+        self.assertNotIn("release", theirs[0])
+
+    def test_a_disc_whose_every_level_is_the_bases_has_no_variant(self):
+        self.assertEqual(variants(self.base, [dict(l) for l in BASE_LEVELS], "jp"), {})
+
+    def test_the_packs_and_the_slots_have_to_be_the_bases_in_its_order_under_its_titles(self):
+        levels = [dict(l) for l in BASE_LEVELS]
+        self.assertEqual(slot_problems(self.base, levels, BASE_PACKS), [])
+        self.assertEqual(slot_problems(self.base, levels, BASE_PACKS + ["/HIRO/COPYCAT.PAK"]),
+                         ["the packs are not the base's: /HIRO/COPYCAT.PAK"])
+        self.assertEqual(slot_problems(self.base, levels[:2], BASE_PACKS), ["2 slots, not the base's 3"])
+        self.assertEqual(slot_problems(self.base, [levels[1], levels[0], levels[2]], BASE_PACKS),
+                         ["/HIRO/HIRO.PAK#1, LEVEL 2, stands where the base has /HIRO/HIRO.PAK#0, LEVEL 1"])
+        self.assertEqual(slot_problems(self.base, [levels[0], levels[1], {**levels[2], "shown": "FINAL 2"}], BASE_PACKS),
+                         ["/HIRO/HIROFI.PAK#0, FINAL 2, stands where the base has /HIRO/HIROFI.PAK#0, FINAL 1"])
+
+    def test_the_file_keys_the_identity_the_rules_the_layout_and_the_levels_in_order(self):
+        data = release_json("eu", {"hz": 50}, {"room": {}, "packs": []}, {"/HIRO/HIRO.PAK#0": {}})
+        self.assertEqual(list(data), ["id", *IDENTITY, "rules", "packs", "levels"])
+        self.assertEqual(data["id"], "eu")
+        self.assertEqual({k: data[k] for k in IDENTITY}, {k: RELEASES["eu"][k] for k in IDENTITY})
+        self.assertEqual((data["rules"], data["packs"], data["levels"]),
+                         ({"hz": 50}, {"room": {}, "packs": []}, {"/HIRO/HIRO.PAK#0": {}}))
+
+
+class ReleaseFile:
+    """A release's committed file held to what the build writes for its disc."""
+    release = None
+
+    @classmethod
+    def setUpClass(cls):
+        cls.disc = open_release(cls.release)
+        cls.text = RELEASE_FILES[cls.release].read_text()
+        cls.data = json.loads(cls.text)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.disc.close()
+
+    def written(self):
+        if self.release == BASE:
+            return release_json(BASE, rules_of(code_of(self.disc, BASE), BASE), layout_of(self.disc), {})
+        return other_release(self.disc, self.release)[0]
+
+    def test_the_committed_file_is_what_the_build_writes(self):
+        self.assertEqual(self.text, json.dumps(self.written(), indent=1))
+
+    def test_the_file_names_its_release_and_holds_its_discs_layout(self):
+        entry = RELEASES[self.release]
+        self.assertEqual([self.data["id"], *(self.data[k] for k in IDENTITY)], [self.release, *(entry[k] for k in IDENTITY)])
+        self.assertEqual(self.data["packs"], packs_json(self.disc))
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["us"]), f"needs the disc under ${DISC_VARS['us']}")
+class TheBaseFile(ReleaseFile, unittest.TestCase):
+    release = "us"
+
+    def test_the_base_has_no_variant_and_its_layout_is_the_packs_file(self):
+        self.assertEqual(self.data["levels"], {})
+        self.assertEqual(json.dumps(self.data["packs"], indent=1), PACKS.read_text())
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["eu"]), f"needs the PAL disc under ${DISC_VARS['eu']}")
+class ThePalFile(ReleaseFile, unittest.TestCase):
+    release = "eu"
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["jp"]), f"needs the Japanese disc under ${DISC_VARS['jp']}")
+class TheJapaneseFile(ReleaseFile, unittest.TestCase):
+    release = "jp"
 
 
 if __name__ == "__main__":
