@@ -27,6 +27,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
 import { ROOT, serve, checkout, locate } from "../public.js";
+import { OUTSIDE, PARTS } from "./parts.js";
 
 const VIEWS = {
   bonus29: "#HELL/16/-333,-3/fit/33",
@@ -35,34 +36,6 @@ const VIEWS = {
   lasers: "#HELL/13/45,35/fit/33",
   travellers: "#FIELD/9/45,35/fit/33",
 };
-
-// The parts of a frame, by the function the renderer draws each through.
-// A sample under draw in none of them is the draw's own time, and one outside
-// the page's script is the browser's time: the canvas's flush to the GPU, the
-// compositor, input.
-const PARTS = {
-  visible: "sort",
-  travelling: "travel",
-  deviceLights: "lights",
-  drawBlock: "blocks",
-  drawThing: "things",
-  drawBeams: "beams",
-  paintPick: "pick",
-  drawRails: "overlays",
-  drawBase: "overlays",
-  drawScale: "overlays",
-  drawLink: "overlays",
-  outline: "overlays",
-  drawFloor: "editor",
-  drawCell: "editor",
-  drawGhost: "editor",
-  drawPieces: "course",
-  drawLeaps: "course",
-  drawJumps: "course",
-  drawRings: "course",
-  drawDust: "play",
-};
-const OUTSIDE = { "(idle)": "idle", "(program)": "native", "(garbage collector)": "gc" };
 
 /** The parts whose function the viewer at `root` does not define, where a
     rename would count their time to the draw itself without a word. */
