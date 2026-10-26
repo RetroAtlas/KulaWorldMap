@@ -16,7 +16,7 @@ One spec runs with its name after the command, `npm run test:browser -- play-hud
 
 `npm run frame` and `npm run boot` are measurements, not checks: where a frame's time goes, and when the page's first frames land over a throttled network.
 
-`python3 -m unittest discover -s tools/tests` runs the tools' tests without the disc, the motion reader's one file a module, `test_kula_motion_<subject>.py`, over the shared `motion_fixture.py`; `python3 -m compileall -q tools/` and `ruff check tools/` at the release [.github/workflows/ci.yml](../.github/workflows/ci.yml) pins complete the Python checks.
+`python3 -m unittest discover -s tools/tests` runs the tools' tests without the disc, the motion reader's one file a module, `test_kula_motion_<subject>.py`, over the shared `motion_fixture.py`, and the tests of the level writer's disc check in `test_kula_kwl_check.py` beside the writer's own `test_kula_kwl.py`; `python3 -m compileall -q tools/` and `ruff check tools/` at the release [.github/workflows/ci.yml](../.github/workflows/ci.yml) pins complete the Python checks.
 
 The motion reader's tests run over a hand-typed fixture of the executable's words, `motion_fixture.py`'s `GAME`, which covers most of the readings' keys, so they hold the reader to the fixture and not to the executable; what holds the reader to the executable is the tool's table against the disc, which the build compares.
 

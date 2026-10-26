@@ -30,7 +30,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import DISC_VARS, RELEASES, THEMES, open_release, packs
 from kula_ggi import FILE as GGI, Ggi, jump, shadows, sparks, write_objects
-from kula_kwl import executable, figure_failures
+from kula_kwl_check import executable, figure_failures
 from kula_level import DEFAULT_TIME, Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
 from kula_motion import readings, table
 from kula_motion_code import BALL, Code

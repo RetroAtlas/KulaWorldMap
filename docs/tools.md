@@ -16,7 +16,8 @@ A tool that takes a release reads that release's image from `--disc`, else from 
 | `kula_faces.py` | what the six slots of every record hold, per kind and per face |
 | `kula_objlevel.py` | the floor plan and sheet for naming objects by walking OBJ LEVEL |
 | `kula_warp.py` | the cheat, or a disc copy, that reaches a level no menu asks for |
-| `kula_kwl.py` | a level written back to the game's bytes from its fields, read out of any file the game would load, and held to the disc word for word ([editor.md](editor.md)) |
+| `kula_kwl.py` | a level written back to the game's bytes from its fields, and read out of any file the game would load ([editor.md](editor.md)) |
+| `kula_kwl_check.py` | every level of the disc rebuilt from its fields and held to the disc, in play and word for word outside the words the game never reads, which `kula_kwl.py --check` runs, and the caps and the loader figures the writer's checks rest on, read off the executable for the build ([editor.md](editor.md)) |
 | `kula_sector.py` | a Mode 2 Form 1 sector built as the disc has it, EDC and ECC included, and the disc's own sectors rebuilt to prove it ([disc.md](disc.md)) |
 | `kula_place.py` | a level's stream put into a slot of a pack on a copy of the image, in place, in a pack rebuilt within its sectors or in one moved into the free sectors, every written sector built whole ([disc.md](disc.md)) |
 | `kula_patch.py` | a level, or several as one patch, written onto the disc as a PPF, an xdelta or a patched image, each from a project, a level file or a shipped level ([disc.md](disc.md)) |

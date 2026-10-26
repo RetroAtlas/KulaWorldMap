@@ -37,9 +37,8 @@ from kula_kwl import (  # noqa: E402
     MOVING_SPIKES,
     NUMBERED,
     PLAIN_ONLY,
-    UNTRACED,
-    figure_failures,
 )
+from kula_kwl_check import UNTRACED, figure_failures  # noqa: E402
 from kula_level import BLOCK_KINDS  # noqa: E402
 from kula_pak import Pak  # noqa: E402
 from kula_place import RECOMPRESS, ROOM  # noqa: E402

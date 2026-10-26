@@ -39,8 +39,8 @@ const OVER = {
   "tests/unit/kwl.test.js": 1300,
   "tests/unit/motion.test.js": 1300,
   "tests/unit/patch.test.js": 1200,
-  "tools/kula_kwl.py": 2300,
-  "tools/tests/test_kula_kwl.py": 1800,
+  "tools/kula_kwl.py": 1900,
+  "tools/tests/test_kula_kwl.py": 1600,
 };
 
 const lines = (path) => readFileSync(join(root, path), "utf8").split("\n").length - 1;
