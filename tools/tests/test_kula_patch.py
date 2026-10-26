@@ -24,7 +24,8 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from disc import Disc  # noqa: E402
-from kula_kwl import canonical, project_of_level  # noqa: E402
+from kula_disc import RELEASES  # noqa: E402
+from kula_kwl import DATA, canonical, project_of_level, template  # noqa: E402
 from kula_level import Level  # noqa: E402
 from kula_pak import Pak  # noqa: E402
 from kula_patch import (  # noqa: E402
@@ -38,7 +39,7 @@ from kula_patch import (  # noqa: E402
     PPF_MAGIC,
     PREFIX,
     RECORD_MOST,
-    SERIAL,
+    RELEASE_FILES,
     SETS,
     SLOT,
     TITLE,
@@ -55,11 +56,13 @@ from kula_patch import (  # noqa: E402
     placements,
     ppf,
     runs,
+    shipped,
     varint,
     vcdiff,
 )
 from kula_place import SYNTHETIC_FINALS, SYNTHETIC_PACK, place, place_all, plan, plan_all, synthetic, synthetic_image  # noqa: E402
 from kula_sector import SECTOR_RAW  # noqa: E402
+from test_kula_disc import booting  # noqa: E402
 
 IMAGE = synthetic_image()
 CASE = {name: n for name, n in CASES}
@@ -241,16 +244,18 @@ class ThePatches(unittest.TestCase):
                 sectors = {at // SECTOR_RAW for at, _ in changed}
                 self.assertEqual(sectors, {lba for lba, _ in placed.writes})
 
-    def test_the_placements_name_the_image_for_two_emulators_and_the_serial_for_two(self):
-        lines = placements("/discs/Roll Away.bin", "out/spiral")
+    def test_the_placements_name_the_image_for_two_emulators_and_the_folder_given_for_two(self):
+        lines = placements("/discs/Roll Away.bin", "out/spiral", "SLUS_007.24")
         self.assertEqual(len(lines), 3)
         self.assertIn("Roll Away.ppf", lines[0])
         self.assertIn("DuckStation", lines[0])
         self.assertIn("PCSX-Redux", lines[0])
-        self.assertIn(SERIAL, lines[1])
         self.assertIn("ePSXe", lines[1])
+        for entry in RELEASES.values():
+            self.assertIn(f"folder as {entry['boot']}, with no extension", placements("/discs/x.bin", "out/spiral", entry["boot"])[1])
+        self.assertEqual(placements("/discs/Roll Away.bin", "out/spiral", None), [lines[0], lines[2]])
         self.assertIn('xdelta3 -d -s "Roll Away.bin" "spiral.xdelta" "spiral.bin"', lines[2])
-        spaced = placements("/discs/Roll Away.bin", "out/level 4")[2]
+        spaced = placements("/discs/Roll Away.bin", "out/level 4", "SLUS_007.24")[2]
         self.assertTrue(spaced.endswith('xdelta3 -d -s "Roll Away.bin" "level 4.xdelta" "level 4.bin"'), spaced)
 
     @unittest.skipUnless(shutil.which("xdelta3"), "needs xdelta3 on PATH")
@@ -375,7 +380,9 @@ class TheTool(unittest.TestCase):
                 f"the pack {tower['size']} bytes at sector {tower['lba']}",
                 "2 sectors written: 24, 25"])
             self.assertEqual(done.stderr.splitlines(), ["warning: a key and no exit"] * 2 + [
-                "warning: the image has 43 sectors, not the 109,607 of the disc", "warning: 19 of the 21 packs are missing"])
+                "warning: the image has 43 sectors, not the 109,607 of the Roll Away disc", "warning: 19 of the 21 packs are missing"])
+            self.assertIn("  ePSXe and PCSX-ReARMed read it from their patches folder as SLUS_007.24, with no extension",
+                          done.stdout.splitlines())
             self.assertEqual(digest((scratch / "world.bin").read_bytes()), held["patched"])
             self.assertEqual(digest((scratch / "world.ppf").read_bytes()), held["ppf"])
             self.assertEqual(digest((scratch / "world.xdelta").read_bytes()), held["xdelta"])
@@ -387,6 +394,24 @@ class TheTool(unittest.TestCase):
             self.assertEqual(pak.names(), ["LEVEL 1", "LEVEL 2", "TOWER"])
             self.assertEqual([pak.level(i) for i in range(3)],
                              [before.level(0), canonical(synthetic(spiral["blocks"])), canonical(synthetic(tower["blocks"]))])
+
+    def test_a_shipped_level_is_the_disc_s_that_release_names_and_the_folder_the_image_s_own(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scratch = Path(scratch)
+            (scratch / "us.bin").write_bytes(IMAGE)
+            (scratch / "eu.bin").write_bytes(booting(b"SCES_010.00"))
+            run = lambda out, image, *more: subprocess.run(  # noqa: E731
+                [sys.executable, TOOL, "--level", "/HELL/HELL.PAK#17", "--into", f"{SYNTHETIC_PACK}#{SLOT}",
+                 "--out", scratch / out, "--disc", scratch / image, "--ppf", *more], capture_output=True, text=True)
+            base, pal = run("base", "us.bin"), run("pal", "eu.bin", "--release", "eu")
+            sizes = [len(zlib.compress(canonical(template(shipped(r), "/HELL/HELL.PAK#17")), 6)) for r in ("us", "eu")]
+            self.assertNotEqual(*sizes)
+            for done, size, boot in ((base, sizes[0], "SLUS_007.24"), (pal, sizes[1], "SCES_010.00")):
+                self.assertEqual(done.returncode, 0, done.stderr)
+                self.assertIn(f"BONUS 30 ({size} bytes) into {SYNTHETIC_PACK}#{SLOT}: rebuild", done.stdout)
+                self.assertIn(f"patches folder as {boot}, with no extension", done.stdout)
+            self.assertIn("warning: the image has 43 sectors, not the 108,471 of the Kula World disc", pal.stderr)
+            self.assertNotEqual((scratch / "base.ppf").read_bytes(), (scratch / "pal.ppf").read_bytes())
 
     def test_one_level_without_an_into_goes_into_the_first_slot_of_hiro(self):
         with tempfile.TemporaryDirectory() as scratch:
@@ -810,6 +835,22 @@ class TheTool(unittest.TestCase):
             with Disc(scratch / "image.bin") as disc:
                 placed = plan(disc, SYNTHETIC_PACK, SLOT, stream_of(CASE["rebuild"]), "ok")
             self.assertEqual(Pak(apply_ppf(IMAGE, patch)[25 * SECTOR_RAW + 24:][:placed.fit.size]).names(), ["LEVEL 1", "OK", "LEVEL 3"])
+
+
+class TheShippedLevels(unittest.TestCase):
+    def test_a_release_s_levels_are_the_us_data_with_its_own_slots_in_their_place(self):
+        base = json.loads(DATA.read_text())
+        self.assertEqual(shipped("us"), base)
+        for release in RELEASES:
+            with self.subTest(release):
+                variants = json.loads(RELEASE_FILES[release].read_text())["levels"]
+                levels = shipped(release)["levels"]
+                self.assertEqual([(l["pack"], l["index"]) for l in levels], [(l["pack"], l["index"]) for l in base["levels"]])
+                self.assertEqual({f"{l['pack']}#{l['index']}": l for l in levels if "release" in l}, variants)
+                self.assertEqual([l for l in levels if "release" not in l],
+                                 [l for l in base["levels"] if f"{l['pack']}#{l['index']}" not in variants])
+        self.assertEqual(template(shipped("eu"), "/HIRO/HIRO.PAK#19")["title"], "OBJ LEVEL")
+        self.assertEqual(template(shipped("us"), "/HIRO/HIRO.PAK#19")["title"], "LESSON")
 
 
 @unittest.skipUnless(os.environ.get("KULA_DISC"), "needs the disc under $KULA_DISC")

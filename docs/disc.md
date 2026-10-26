@@ -4,6 +4,8 @@ What the disc holds for writing a level back onto it, reading by reading, with w
 
 Every figure here is measured on the NTSC-U image under `$KULA_DISC`: by `tools/kula_sector.py`, whose `--check` rebuilds the disc's own sectors and compares, by `tools/kula_place.py`, which puts a level into a pack on a copy of the image, and by `tools/kula_patch.py`, which writes the result out as a patch; the unit tests hold the readings to the disc wherever it is present.
 
+The PAL image under `$KULA_DISC_EU` and the Japanese image under `$KULA_DISC_JP` were measured the same way, by the same tools, and the two tables below give their figures where they differ from the NTSC-U image's: the three images side by side under "The image" and every pack's sector under "The packs".
+
 [level-format.md](level-format.md) is the level inside a pack, and [editor.md](editor.md) how a level is written from its fields.
 
 ## The image
@@ -24,6 +26,8 @@ Sectors 0 to 15 are the system area: 0 to 3 empty, 4 to 11 the licence data, and
 
 The data files lie in address order with no gap between them but the directory sectors: each world's directory stands between the last pack of the world before it and its own artwork, so `COPYCAT.PAK` ends at 1011, ARCTIC's directory is 1012 and `ARCTIC.TGI` begins at 1013. A pack is therefore followed at once by the next file or by a directory, and cannot grow past the sectors it has.
 
+The PAL and Japanese images lay each world's files alphabetically behind its directory, so a pack precedes its artwork there, where the NTSC-U image puts the artwork first and the packs last; so the directories, the packs and the room lie at other sectors on them, which the table below and the second table under "The packs" give.
+
 A directory record holds a file's extent and size in both byte orders, little-endian at 2 and 10 and big-endian at 6 and 14, and the two agree on every record of the disc; a pack's record lies in its world's directory sector, the world pack's record at offset 96 and the finals pack's record at 212 or 216, but for HIRO, whose directory has `COPYCAT.PAK` at 96, `HIRO.PAK` at 214 and `HIROFI.PAK` at 388.
 
 The one room on the disc is `/3.00`, the last file: 31,752,000 bytes at sector 93953, 15,504 sectors whose user data is zero on every one, and a name the executable never spells.
@@ -33,6 +37,16 @@ After it, sectors 109457 to 109606 are the track's postgap, 150 sectors with a s
 Of the 109,607 sectors, 31,601 are Form 1 and 78,006 Form 2. The Form 1 sectors are every data file, `/3.00`, the system area, the postgap and the picture frames of the two video streams; the Form 2 sectors are the four music files' XA audio and the sound of the streams.
 
 A Form 2 sector carries 2324 bytes of data, no ECC, and an EDC at 2348 over bytes 16 to 2347, which is the same CRC as below over a longer span and checks on all 78,006. Nothing here writes one.
+
+The three images side by side, each figure read off its own image: the sectors, the volume descriptor's creation date, the executable the boot line names and the sectors it lies at, the Form 1 and Form 2 sectors, the root and `/XA` directory sectors and the room's sector; the twelve directories of one sector, the 21 pack paths, the offsets of the packs' records inside their directory sectors and the room's 31,752,000 bytes are the same on all three.
+
+| disc | sectors | created | boots | Form 1 | Form 2 | root | `/XA` | `/3.00` |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Roll Away, SLUS-00724 | 109,607 | 1998-11-03 | `SLUS_007.24` at 24 to 321 | 31,601 | 78,006 | 22 | 3946 | 93953 |
+| Kula World, SCES-01000 | 108,471 | 1998-06-24 | `SCES_010.00` at 24 to 318 | 29,444 | 79,027 | 22 | 4040 | 92817 |
+| Kula Quest, SCPS-10064 | 136,980 | 1999-04-01 | `SCPS_100.64` at 3652 to 3941 | 55,553 | 81,427 | 22 | 3943 | 121326 |
+
+On the Japanese image the executable lies after the last pack, `/MARS/MARSFI.PAK` at 3651, with `SYSTEM.CNF` at 3942 behind it, where the other two images put `SYSTEM.CNF` at 23 and the executable from 24.
 
 ## The sector
 
@@ -108,6 +122,38 @@ The 21 packs and their room, as the disc allots it: the size is what the directo
 | `/HELL/HELLFI.PAK` | 2969 | 2,126 | 2 | 4,096 | 1,970 |
 
 Between them the packs hold 156,146 bytes in 85 sectors, 174,080 bytes of capacity, so 17,934 bytes are spare across the disc.
+
+On the PAL and Japanese images the 21 packs lie at other sectors but one, the PAL image's `HIROFI.PAK` at the NTSC-U image's 1008, and the table below gives every pack's sector on the three.
+
+Seven packs differ in size between the images, four on the PAL image and five on the Japanese, `MARS.PAK` and `HELL.PAK` among both, and eighteen slots' records differ, five on the PAL image and thirteen on the Japanese, which are the slots whose levels differ.
+
+The Japanese image's `FIELD.PAK` is 12,072 bytes in six sectors, a capacity of 12,288, where the NTSC-U image's 12,347 take seven; every other pack has the same capacity on the three images, so the Japanese packs take 84 sectors to the other two's 85.
+
+Where each pack lies on the three images, so that a reader of a patch written against another disc can find its pack:
+
+| pack | NTSC-U | PAL | Japanese |
+| --- | --- | --- | --- |
+| `/HIRO/HIRO.PAK` | 1002 | 475 | 2452 |
+| `/HIRO/COPYCAT.PAK` | 1009 | 320 | 2294 |
+| `/HIRO/HIROFI.PAK` | 1008 | 1008 | 3000 |
+| `/HILLS/HILLS.PAK` | 3286 | 3045 | 1974 |
+| `/HILLS/HILLSFI.PAK` | 3292 | 3365 | 2292 |
+| `/INCA/INCA.PAK` | 3609 | 3367 | 3002 |
+| `/INCA/INCAFI.PAK` | 3615 | 3697 | 3322 |
+| `/ARCTIC/ARCTIC.PAK` | 1332 | 3699 | 24 |
+| `/ARCTIC/ARCTICFI.PAK` | 1339 | 4039 | 349 |
+| `/COWBOY/COWBOY.PAK` | 1983 | 1701 | 684 |
+| `/COWBOY/COWBOYFI.PAK` | 1990 | 2032 | 997 |
+| `/FIELD/FIELD.PAK` | 2313 | 2034 | 999 |
+| `/FIELD/FIELDFI.PAK` | 2320 | 2366 | 1324 |
+| `/ATLANT/ATLANT.PAK` | 1666 | 1362 | 351 |
+| `/ATLANT/ATLANTFI.PAK` | 1674 | 1699 | 682 |
+| `/HAZE/HAZE.PAK` | 2636 | 2368 | 1326 |
+| `/HAZE/HAZEFI.PAK` | 2644 | 2699 | 1647 |
+| `/MARS/MARS.PAK` | 3937 | 1018 | 3324 |
+| `/MARS/MARSFI.PAK` | 3945 | 1360 | 3651 |
+| `/HELL/HELL.PAK` | 2961 | 2701 | 1649 |
+| `/HELL/HELLFI.PAK` | 2969 | 3042 | 1971 |
 
 ## The pack, written back
 
@@ -197,7 +243,7 @@ The unit tests drive every path over a synthetic image, built with the disc's st
 
 Under `$KULA_DISC` they do the same on a copy of the disc, placing LEVEL 1's own stream and larger levels by every path into HIRO's first slot, a longer one into INCA's first slot and two levels at once into HIRO's first two slots, and prove after each that nothing outside the written sectors moved.
 
-The image is known by its structure and never by a hash: a raw image of 2352-byte sectors with the volume descriptor at sector 16, the system identifier `PLAYSTATION`, a `SYSTEM.CNF` booting `cdrom:SLUS_007.24;1` and the 21 packs by path, so that a size or a file that is not the one on the disc is a warning rather than a refusal.
+The image is known by its structure and never by a hash: a raw image of 2352-byte sectors with the volume descriptor at sector 16, the system identifier `PLAYSTATION`, a `SYSTEM.CNF` whose boot line names one of the three executables, that release's sector count and the 21 packs by path, so that a size or a line that is not the release's is a warning rather than a refusal.
 
 ## The patch
 
@@ -231,6 +277,6 @@ What holds them to the tools is the fixture above: the unit tests build the synt
 
 PCSX-Redux reads the same file by the same name with nothing to turn on.
 
-ePSXe and PCSX-ReARMed read it from their patches folder under the game's serial, `SLUS_007.24`, with no extension.
+ePSXe and PCSX-ReARMed read it from their patches folder under the game's serial, `SLUS_007.24`, `SCES_010.00` or `SCPS_100.64` as the image's boot line spells it, with no extension.
 
 Mednafen, Beetle and RetroArch apply no patch to a disc image and take the patched copy instead, which plays everywhere and can be burned, since every sector it carries is built whole.

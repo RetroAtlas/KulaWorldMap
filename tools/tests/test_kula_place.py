@@ -1,8 +1,9 @@
 """Unit tests for the placer: python3 -m unittest discover -s tools/tests
 
 The image is the synthetic one the placer builds, a few sectors with the
-disc's structure. The last class holds the placer to the disc under
-$KULA_DISC, on one copy of it, and is skipped without it.
+disc's structure. The disc classes at the end need one: the placer is held to
+the disc under $KULA_DISC on one copy of it, and each of the three images to
+being an image of its disc, every class skipped without its variable.
 """
 
 import hashlib
@@ -19,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from disc import EXTENT, SIZE, Disc, record  # noqa: E402
-from kula_disc import open_disc, packs  # noqa: E402
+from kula_disc import DISC_VARS, RELEASES, open_disc, open_release, packs  # noqa: E402
 from kula_kwl import REWIRED, canonical, project_of_level, read_kwl  # noqa: E402
 from kula_level import Level  # noqa: E402
 from kula_pak import Pak, pack  # noqa: E402
@@ -73,6 +74,7 @@ from kula_sector import (  # noqa: E402
     rewrite,
     sector,
 )
+from test_kula_disc import booting, without_cnf  # noqa: E402
 
 IMAGE = synthetic_image()
 SLOT = 1
@@ -509,12 +511,32 @@ class ThePlacer(unittest.TestCase):
             fitted = plan(disc, SYNTHETIC_PACK, SLOT, stream_of(synthetic(LEVELS["recompressed"])), TITLE).fit
         self.assertEqual((fitted.path, fitted.recompressed), (REBUILD, True))
 
-    def test_the_image_is_known_by_its_structure_and_warned_about_where_it_is_not_the_disc(self):
+    def test_the_image_is_known_by_its_structure_and_warned_about_where_it_is_not_the_disc_it_boots(self):
         with Disc(self.src) as disc:
-            self.assertEqual(identify(disc), [f"the image has {SYNTHETIC_SECTORS} sectors, not the 109,607 of the disc",
+            self.assertEqual(identify(disc), [f"the image has {SYNTHETIC_SECTORS} sectors, not the 109,607 of the Roll Away disc",
                                               "19 of the 21 packs are missing"])
             stream = stream_of(synthetic(LEVELS[IN_PLACE]))
             self.assertEqual(plan(disc, SYNTHETIC_PACK, SLOT, stream).warnings, identify(disc))
+        with open(self.src, "r+b") as f:
+            f.truncate(RELEASES["us"]["sectors"] * SECTOR_RAW)
+        with Disc(self.src) as disc:
+            self.assertEqual(identify(disc), ["19 of the 21 packs are missing"])
+
+    def test_an_image_booting_another_release_s_executable_is_held_to_that_disc_s_count(self):
+        self.src.write_bytes(booting(b"SCES_010.00"))
+        with Disc(self.src) as disc:
+            self.assertEqual(identify(disc), [f"the image has {SYNTHETIC_SECTORS} sectors, not the 108,471 of the Kula World disc",
+                                              "19 of the 21 packs are missing"])
+        self.src.write_bytes(booting(b"SCPS_100.64"))
+        with Disc(self.src) as disc:
+            self.assertEqual(identify(disc)[0], f"the image has {SYNTHETIC_SECTORS} sectors, not the 136,980 of the Kula Quest disc")
+
+    def test_an_image_booting_none_of_the_three_is_told_so_in_one_sentence_and_held_to_no_count(self):
+        for image in (booting(b"SLES_000.00"), without_cnf()):
+            self.src.write_bytes(image)
+            with Disc(self.src) as disc:
+                self.assertEqual(identify(disc), ["SYSTEM.CNF names none of the three releases' executables",
+                                                  "19 of the 21 packs are missing"])
 
     def test_what_is_refused(self):
         stream = stream_of(synthetic(LEVELS[IN_PLACE]))
@@ -706,9 +728,6 @@ class TheDisc(unittest.TestCase):
         cls.disc.close()
         shutil.rmtree(cls.dir)
 
-    def test_the_image_is_the_disc(self):
-        self.assertEqual(identify(self.disc), [])
-
     def test_the_writer_reproduces_every_pack_of_the_disc_but_for_its_padding(self):
         for _, path in packs(self.disc):
             blob = self.disc.read_file(path)
@@ -841,6 +860,31 @@ class TheDisc(unittest.TestCase):
         self.assertEqual(paths, {IN_PLACE: 224, REBUILD: 6})
         self.assertEqual(longer, [("BONUS 1", 6, False), ("SIMON 4", 2, False), ("LEVEL 33", 1, True),
                                   ("LEVEL 86", 2, False), ("LEVEL 87", 5, False), ("BONUS 30", 82, False)])
+
+
+class Image:
+    """One release's image, opened through its own variable, is an image of its disc."""
+    release = None
+
+    def test_the_image_is_the_disc(self):
+        disc = open_release(self.release)
+        self.addCleanup(disc.close)
+        self.assertEqual(identify(disc), [])
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["us"]), f"needs the disc under ${DISC_VARS['us']}")
+class TheImage(Image, unittest.TestCase):
+    release = "us"
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["eu"]), f"needs the PAL disc under ${DISC_VARS['eu']}")
+class ThePalImage(Image, unittest.TestCase):
+    release = "eu"
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["jp"]), f"needs the Japanese disc under ${DISC_VARS['jp']}")
+class TheJapaneseImage(Image, unittest.TestCase):
+    release = "jp"
 
 
 if __name__ == "__main__":

@@ -5,20 +5,24 @@
     python3 tools/kula_patch.py --level spiral.kula.json --into /HIRO/HIRO.PAK#0 --out spiral
     python3 tools/kula_patch.py --level spiral.kwl --into /HIRO/HIRO.PAK#0 --out spiral --ppf
     python3 tools/kula_patch.py --level /HIRO/HIRO.PAK#3 --into /HIRO/HIRO.PAK#0 --out level4 --image
+    python3 tools/kula_patch.py --level /HELL/HELL.PAK#17 --release eu --into /HELL/HELL.PAK#17 --out bonus30 --ppf
     python3 tools/kula_patch.py --level spiral.kwl --into /HIRO/HIRO.PAK#0 \
                                 --level tower.kwl --into /HIRO/HIRO.PAK#1 --out world
     python3 tools/kula_patch.py --fixture               # tests/fixtures/patch-digests.json
 
 The level, a project file, a level file or a shipped level, is written as the
 game's bytes, deflated, and placed in its slot by kula_place; the sectors the
-placement writes are what the patches carry. Several levels, each --level
-paired with the --into after it, are placed in the order given, each over the
-image as the earlier ones left it, and the sectors of every placement are one
-patch. A PPF 3.0 patch is what the PlayStation emulators lay over an untouched
-image, each reading it from a place of its own; an xdelta patch, VCDIFF as
-xdelta3 writes it, is what a player applies with xdelta3 or Rom Patcher to get
-a patched copy; the image is that copy itself, with its cue sheet beside it.
-Nothing here writes to the original image.
+placement writes are what the patches carry. A shipped level is the US disc's
+unless --release names another disc, whose level it is where that disc's file
+under public/releases/ holds the slot. Several levels, each --level paired
+with the --into after it, are placed in the order given, each over the image
+as the earlier ones left it, and the sectors of every placement are one patch.
+A PPF 3.0 patch is what the PlayStation emulators lay over an untouched image,
+each reading it from a place of its own, two of them from a folder named after
+the executable the image boots; an xdelta patch, VCDIFF as xdelta3 writes it,
+is what a player applies with xdelta3 or Rom Patcher to get a patched copy;
+the image is that copy itself, with its cue sheet beside it. Nothing here
+writes to the original image.
 """
 import argparse
 import hashlib
@@ -32,7 +36,7 @@ import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import file_at, open_disc, output_at
+from kula_disc import RELEASES, file_at, open_disc, output_at, release_of
 from kula_kwl import DATA, OBJECTS, canonical, describe, level_at, project_at, template, validate
 from kula_place import (
     SYNTHETIC_FINALS,
@@ -50,6 +54,7 @@ from kula_sector import HEX_RUN, SECTOR_RAW, raw_sector
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "tests" / "fixtures" / "patch-digests.json"
+RELEASE_FILES = {r: ROOT / "public" / "releases" / f"{r}.json" for r in RELEASES}
 
 PPF_MAGIC = b"PPF30"
 PPF_VERSION = 2
@@ -57,7 +62,6 @@ DESCRIPTION = 50
 BLOCK_AT = 0x9320       # 32 bytes into sector 16: the volume descriptor from its system identifier on
 BLOCK = 1024
 RECORD_MOST = 255
-SERIAL = "SLUS_007.24"  # the name ePSXe and PCSX-ReARMed look the patch up by
 
 VCDIFF_MAGIC = b"\xd6\xc3\xc4\x00"
 WINDOW = 8 << 20
@@ -165,11 +169,14 @@ def description(titles):
     return PREFIX + ", ".join(titles)
 
 
-def placements(image, out):
-    """Where each emulator wants the PPF, and how the xdelta is applied."""
+def placements(image, out, boot):
+    """Where each emulator wants the PPF, and how the xdelta is applied; the folder
+    two of them read it from is named `boot`, the executable the image boots, and
+    goes unsaid where the image boots none of the three."""
     image, out = Path(image), Path(out)
+    folder = [f"ePSXe and PCSX-ReARMed read it from their patches folder as {boot}, with no extension"] if boot else []
     return [f"DuckStation, with Apply Image Patches on, and PCSX-Redux read the PPF beside the image as {image.stem}.ppf",
-            f"ePSXe and PCSX-ReARMed read it from their patches folder as {SERIAL}, with no extension",
+            *folder,
             f'the xdelta applies with: xdelta3 -d -s "{image.name}" "{out.name}.xdelta" "{out.name}.bin"']
 
 
@@ -234,8 +241,17 @@ def fixture(scratch):
 
 # --- the command line ---------------------------------------------------------------
 
-def load_level(arg, world):
-    """A project from a .kula.json, a .kwl, or a shipped level named PACK#slot."""
+def shipped(release):
+    """The levels of a release's disc: the US data with the slots the release's
+    file holds in their place."""
+    data = json.loads(DATA.read_text())
+    variants = json.loads(RELEASE_FILES[release].read_text())["levels"]
+    data["levels"] = [variants.get(f"{level['pack']}#{level['index']}", level) for level in data["levels"]]
+    return data
+
+
+def load_level(arg, world, release):
+    """A project from a .kula.json, a .kwl, or a shipped level named PACK#slot, the release's disc's."""
     path = Path(arg)
     if file_at(arg):
         if path.suffix == ".json":
@@ -245,7 +261,7 @@ def load_level(arg, world):
         return project, report
     if "#" in arg:
         try:
-            return template(json.loads(DATA.read_text()), arg), []
+            return template(shipped(release), arg), []
         except KeyError:
             sys.exit(f"no shipped level is {arg}; name one like /HIRO/HIRO.PAK#0")
     sys.exit(f"no file at {arg}")
@@ -263,6 +279,8 @@ def main():
     ap.add_argument("--xdelta", action="store_true", help="write NAME.xdelta")
     ap.add_argument("--image", action="store_true", help="write NAME.bin and NAME.cue")
     ap.add_argument("--world", default="HIRO", help="the world a .kwl file is read as being for")
+    ap.add_argument("--release", choices=list(RELEASES), default="us",
+                    help="the disc whose level a PACK#slot names, where that disc's level differs from the US one")
     ap.add_argument("--fixture", action="store_true", help=f"write {FIXTURE.relative_to(ROOT)}")
     args = ap.parse_args()
 
@@ -295,7 +313,7 @@ def main():
     hides = json.loads(OBJECTS.read_text())["skins"]["hides"]
     items = []
     for arg, into in zip(args.level, intos):
-        project, report = load_level(arg, args.world)
+        project, report = load_level(arg, args.world, args.release)
         for line in report:
             print(line, file=sys.stderr)
         pack_path, _, slot = into.rpartition("#")
@@ -318,6 +336,7 @@ def main():
     try:
         with disc:
             planned = plan_all(disc, items)
+            release = release_of(disc)
     except ValueError as e:
         sys.exit(str(e))
     except OSError as e:
@@ -353,7 +372,7 @@ def main():
         except OSError as e:
             sys.exit(f"{path} cannot be written: {e.strerror}")
         print(f"{path}: {len(blob)} bytes")
-    for line in placements(src, out):
+    for line in placements(src, out, RELEASES[release]["boot"] if release else None):
         print(f"  {line}")
 
 

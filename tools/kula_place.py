@@ -29,9 +29,9 @@ address, so the set is one patch.
 
 The image is known by its structure, not by a hash: a raw image of 2352-byte
 sectors with the volume descriptor at sector 16, the system identifier the
-console looks for, a SYSTEM.CNF that boots the game's executable and the 21
-packs by path. What is missing is a warning, so a synthetic image drives the
-tests.
+console looks for, a SYSTEM.CNF whose boot line names one of the three
+releases' executables, that release's sector count and the 21 packs by path.
+What is missing is a warning, so a synthetic image drives the tests.
 """
 import shutil
 import struct
@@ -42,7 +42,7 @@ from typing import NamedTuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from disc import Disc, record, set_record
-from kula_disc import THEMES
+from kula_disc import RELEASES, THEMES, release_of
 from kula_kwl import FORMAT, VERSION, canonical
 from kula_pak import Pak, pack
 from kula_sector import (
@@ -65,8 +65,6 @@ RECOMPRESS = 9
 ROOM = "/3.00"         # the file whose sectors are all zero, where a pack can move to
 PVD = 16
 SYSTEM_ID = b"PLAYSTATION"
-BOOT = b"BOOT = cdrom:SLUS_007.24;1"
-NTSC_U = 109607        # sectors in the North American image
 PACKS = ([f"/{t}/{t}.PAK" for t in THEMES] + [f"/{t}/{t}FI.PAK" for t in THEMES]
          + ["/HIRO/COPYCAT.PAK"])
 CUE = 'FILE "{}" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n'
@@ -155,21 +153,21 @@ def fit(pak, capacity, slot, stream, title=None):
 
 
 def identify(disc):
-    """What says the image is not an image of the disc, each a warning rather than a refusal."""
+    """What says the image is not an image of one of the three discs, each a warning rather than a refusal."""
     out = []
+    entry = RELEASES.get(release_of(disc))
     disc.f.seek(0, 2)
     size = disc.f.tell()
     if size % SECTOR_RAW:
         out.append(f"the image is {size:,} bytes, which is not whole sectors of {SECTOR_RAW}")
-    elif size != NTSC_U * SECTOR_RAW:
-        out.append(f"the image has {size // SECTOR_RAW:,} sectors, not the {NTSC_U:,} of the disc")
+    elif entry and size != entry["sectors"] * SECTOR_RAW:
+        out.append(f"the image has {size // SECTOR_RAW:,} sectors, not the {entry['sectors']:,} of the {entry['name']} disc")
     pvd = disc.sector(PVD)
     system = pvd[8:40].rstrip()
     if system != SYSTEM_ID:
         out.append(f"the system identifier is {system.decode('ascii', 'replace')!r}, not {SYSTEM_ID.decode()}")
-    cnf = disc.read_file("/SYSTEM.CNF") if "/SYSTEM.CNF" in disc.files else b""
-    if BOOT not in cnf:
-        out.append(f"SYSTEM.CNF does not say {BOOT.decode()}")
+    if entry is None:
+        out.append("SYSTEM.CNF names none of the three releases' executables")
     missing = [p for p in PACKS if p not in disc.files]
     if missing:
         out.append(f"{len(missing)} of the {len(PACKS)} packs are missing")
@@ -435,7 +433,7 @@ def synthetic_image():
     packs of small levels, the world pack's streams at level 1 so that recompression
     wins room, a /3.00 of zero sectors and a postgap."""
     packs_ = synthetic_packs()
-    cnf = BOOT + b"\r\nTCB = 4\r\nEVENT = 16\r\nSTACK = 0X801FFF00\r\n"
+    cnf = f"BOOT = cdrom:{RELEASES['us']['boot']};1\r\nTCB = 4\r\nEVENT = 16\r\nSTACK = 0X801FFF00\r\n".encode()
     pvd = bytearray(USER)
     pvd[0] = 1
     pvd[1:6] = b"CD001"
