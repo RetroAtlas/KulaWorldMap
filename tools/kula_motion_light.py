@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import EXE_BASE, THEMES
+from kula_disc import THEMES
 from kula_level import FACES
 from kula_motion_code import INVISIBLE
 from mips import Machine
@@ -406,8 +406,8 @@ CORNER = 4                # bytes to a corner of a polygon's colour
 def shadow_half(code):
     """How far the shadow's square reaches either way of its middle, from the
     four vertices both draws load: every corner of a square, flat in y."""
-    at = code.address(*SHADOW_SQUARE) - EXE_BASE
-    corners = [struct.unpack_from("<4h", code.blob, at + 8 * i) for i in range(4)]
+    at = code.address(*SHADOW_SQUARE)
+    corners = [struct.unpack("<4h", code.read(at + 8 * i, 8)) for i in range(4)]
     half = abs(corners[0][0])
     if sorted((x, z) for x, _, z, _ in corners) != [(-half, -half), (-half, half), (half, -half), (half, half)] \
             or any(y or pad for _, y, _, pad in corners):
@@ -420,10 +420,10 @@ def root_table(code):
     the square: the root of the power of two the square is past, and how far
     it is to the root of the next. A row's mask takes that power of two off
     the square, which is what lets a row be read as the two numbers."""
-    at = code.address(*LIGHT_ROOT) - EXE_BASE
+    at = code.address(*LIGHT_ROOT)
     rows = []
     for zeros in range(ROOT_ROWS):
-        step, mask, root, pad = struct.unpack_from("<4I", code.blob, at + 16 * zeros)
+        step, mask, root, pad = struct.unpack("<4I", code.read(at + 16 * zeros, 16))
         if mask != (1 << (31 - zeros)) - 1 or pad:
             sys.exit(f"the root's row for {zeros} leading zeros masks with 0x{mask:x} and pads with {pad}")
         rows.append([root, step])

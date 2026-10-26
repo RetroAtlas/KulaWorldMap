@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kula_tgi as tgi
-from kula_disc import EXE, EXE_BASE, THEMES, open_disc
+from kula_disc import EXE, THEMES, open_disc
 from kula_level import FACE, FACES
 from kula_tex import mean
 from kula_motion_code import Code
@@ -250,13 +250,13 @@ FACE_TABLE = (0x80028e90, 0x80028e98)
 
 
 def text_at(code, addr):
-    p = addr - EXE_BASE
+    p = addr - code.base
     end = code.blob.index(b"\0", p)
     return code.blob[p:end].decode("ascii")
 
 
 def entry(code, table, i):
-    return struct.unpack_from("<I", code.blob, table + 4 * i - EXE_BASE)[0] | MIRROR
+    return code.word(table + 4 * i) | MIRROR
 
 
 def copycat_pack(code, r):
@@ -340,7 +340,7 @@ def platform_table(code, r):
         out[axis] = {}
         for role, lui, addiu in PLATFORM_TABLES:
             at = code.address(lui, addiu) + a * stride
-            pairs = struct.unpack_from(f"<{FACES * 2}h", code.blob, at - EXE_BASE)
+            pairs = struct.unpack(f"<{FACES * 2}h", code.read(at, FACES * 4))
             faces = []
             for f in range(FACES):
                 model, turn = pairs[2 * f], pairs[2 * f + 1]
@@ -371,7 +371,7 @@ def cycles(code, r):
     takes, fading to it as `marked` says."""
     def span(start, end):
         a, b = code.address(*start), code.address(*end)
-        return code.blob[a - EXE_BASE:b - EXE_BASE]
+        return code.read(a, b - a)
 
     def colours(raw):
         words = struct.unpack_from(f"<{len(raw) // 4}I", raw)
@@ -388,13 +388,13 @@ def cycles(code, r):
     shadowed_at = code.address(*bonus["shadowed"])
     base = code.address(*bonus["level"][0])
     length_at = code.address(*bonus["level"][1])
-    length = struct.unpack_from("<I", code.blob, length_at - EXE_BASE)[0]
-    palette = colours(code.blob[base - EXE_BASE:base - EXE_BASE + BONUS_CYCLES * length * 4])
+    length = code.word(length_at)
+    palette = colours(code.read(base, BONUS_CYCLES * length * 4))
     return {
         "fire": {"of": r["fire.of"], "frames": list(span(*CYCLES["fire"]["frames"]))},
         "invisible": {"frames": list(span(*inv["frames"])), "level": grey(colours(span(*inv["level"])))},
         "bonus": {"frames": frames,
-                  "shadowed": list(code.blob[shadowed_at - EXE_BASE:shadowed_at - EXE_BASE + len(frames)]),
+                  "shadowed": list(code.read(shadowed_at, len(frames))),
                   "colour": [palette[i * length:(i + 1) * length] for i in range(BONUS_CYCLES)],
                   "marked": marked(r)},
         "spread": r["phase.unit"] * code.multiplier(*PHASE_SPREAD),

@@ -27,7 +27,7 @@ import kula_motion_run
 import kula_motion_simon
 import kula_motion_take
 import kula_motion_things
-from kula_disc import EXE, EXE_BASE, open_disc
+from kula_disc import EXE, open_disc
 from kula_motion_blocks import CRUMBLING, blocks, standing
 from kula_motion_code import BLOCK, GP_INIT, HZ, PHASES, TURN, Code, dispatch
 from kula_motion_effects import (EFFECT_HUD, EFFECT_POINTERS, EFFECT_TABLE, effect_places, effect_setup, effect_sine,
@@ -178,7 +178,7 @@ def readings(code):
     for _, key, _, *args in GREYS:
         out[key] = code.grey(*args)
     start, end = (code.address(*pair) for pair in LASER_LEVELS)
-    out["laser.levels"] = list(code.blob[start - EXE_BASE:end - EXE_BASE])
+    out["laser.levels"] = list(code.read(start, end - start))
     out["shadow.half"] = shadow_half(code)
     out["light.root"] = root_table(code)
     out["glow"], out["glow.colours"] = glow(code, out)

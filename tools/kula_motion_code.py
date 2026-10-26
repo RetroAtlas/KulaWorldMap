@@ -58,17 +58,20 @@ ADD = 1              # the blend that adds a quad to what is behind it
 
 
 class Code:
-    def __init__(self, blob):
+    """The executable's bytes, addressed from `base`, where its first byte stands in memory."""
+
+    def __init__(self, blob, base=EXE_BASE):
         self.blob = blob
+        self.base = base
 
     def word(self, addr):
-        return struct.unpack_from("<I", self.blob, addr - EXE_BASE)[0]
+        return struct.unpack_from("<I", self.blob, addr - self.base)[0]
 
     def holds(self, addr, n=4):
-        return EXE_BASE <= addr and addr + n <= EXE_BASE + len(self.blob)
+        return self.base <= addr and addr + n <= self.base + len(self.blob)
 
     def read(self, addr, n):
-        return self.blob[addr - EXE_BASE:addr - EXE_BASE + n]
+        return self.blob[addr - self.base:addr - self.base + n]
 
     def text(self, addr):
         return decode(self.word(addr), addr)[0]
@@ -145,7 +148,7 @@ class Code:
             else:
                 continue
             if at == addr:
-                out.append((EXE_BASE + 4 * i, (w >> 16) & 31))
+                out.append((self.base + 4 * i, (w >> 16) & 31))
         return out
 
     def resolved(self, start, end, base, span, calls=(), record=BALL_RECORD):

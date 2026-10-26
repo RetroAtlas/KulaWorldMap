@@ -88,9 +88,9 @@ def swr(rt, rs, imm):
 AT = EXE_BASE + 0x800
 
 
-def code(*words):
+def code(*words, base=EXE_BASE):
     blob = bytearray(0x800) + b"".join(struct.pack("<I", w) for w in words)
-    return Code(bytes(blob))
+    return Code(bytes(blob), base)
 
 
 # The numbers the executable holds, as the reader returns them.

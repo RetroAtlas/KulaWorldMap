@@ -17,7 +17,6 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import EXE_BASE
 from kula_motion_code import ADD, GP, ONE, READS_FIRST, TURN
 from kula_motion_take import ONE_PLAYER, TAKE_CASES
 
@@ -430,10 +429,10 @@ def effect_tables(code, pointers):
     for at in sorted(set(pointers) - {0}):
         if not code.holds(at, 4):
             sys.exit(f"the effect table at 0x{at:08x} lies outside the executable")
-        count, frames = struct.unpack_from("<hh", code.blob, at - EXE_BASE)
+        count, frames = struct.unpack("<hh", code.read(at, 4))
         if count <= 0 or frames <= 0 or not code.holds(at, 4 + 8 * count * frames):
             sys.exit(f"the effect table at 0x{at:08x} holds {count} particles over {frames} frames")
-        rows = [[list(struct.unpack_from("<hhhH", code.blob, at + 4 + 8 * (f * count + p) - EXE_BASE))
+        rows = [[list(struct.unpack("<hhhH", code.read(at + 4 + 8 * (f * count + p), 8)))
                  for p in range(count)] for f in range(frames)]
         out[at] = {"count": count, "frames": frames, "rows": rows}
     return out
@@ -450,7 +449,7 @@ def effect_places(code):
     """The HUD points the key-less effects start at, three halfwords each, as data."""
     def point(pair):
         at = code.address(*pair)
-        return list(struct.unpack_from("<hhh", code.blob, at - EXE_BASE))
+        return list(struct.unpack("<hhh", code.read(at, 6)))
     return {"clock": point(EFFECT_HUD["clock"]), "teleport": point(EFFECT_HUD["teleport"]),
             "fruit": [point(pair) for pair in EFFECT_HUD["fruit"]]}
 

@@ -9,6 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion import CHECKS, DIVISORS, GREYS, IMMEDIATES, MULTIPLIERS, SCANS, table  # noqa: E402
 from kula_motion_blocks import blocks  # noqa: E402
 from kula_motion_code import PHASES  # noqa: E402
@@ -56,6 +57,15 @@ class Reads(unittest.TestCase):
         c = code(addiu("a0", "v0", -75))
         with self.assertRaises(SystemExit):
             c.immediate(AT, "addiu $a0, $v1, {}")
+
+    def test_the_words_stand_at_the_base_the_code_is_built_at(self):
+        shift = 0x400
+        c = code(sw("v0", "gp", 1296), addiu("a0", "v1", -75), base=EXE_BASE + shift)
+        self.assertEqual(c.immediate(AT + shift + 4, "addiu $a0, $v1, {}"), -75)
+        with self.assertRaises(SystemExit):
+            c.immediate(AT + 4, "addiu $a0, $v1, {}")
+        self.assertEqual(c.stores_to(0x800a3448), [(AT + shift, 2)])
+        self.assertEqual([c.holds(a) for a in (EXE_BASE + shift, EXE_BASE + shift - 4)], [True, False])
 
     def test_a_multiplier_is_what_shifts_and_adds_do_to_a_register(self):
         c = code(sll("v1", "v0", 2), addu("v1", "v1", "v0"), sll("v1", "v1", 2))
