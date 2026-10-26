@@ -331,10 +331,12 @@ export function startOver(live, { onward = true } = {}) {
   return true;
 }
 
-/** Go on to `next`, a level of the disc, through the viewer's level funnel with play kept on:
-    whether the level changed. */
+/** Go on to `next`, a level of the disc, by its slot through the viewer's level funnel with play
+    kept on: whether the level changed. */
 function goOn(live, next) {
-  const i = next ? state.data.levels.indexOf(next) : -1;
+  const i = next
+    ? state.data.levels.findIndex((l) => l.pack === next.pack && l.index === next.index)
+    : -1;
   if (i < 0 || i === state.li) return false;
   live.changing = true;
   try {
