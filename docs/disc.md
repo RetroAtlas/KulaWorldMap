@@ -10,7 +10,9 @@ Every figure here is measured on the NTSC-U image under `$KULA_DISC`: by `tools/
 
 The image is 257,795,664 bytes, which is 109,607 sectors of 2352 bytes and nothing over, one Mode 2 data track, so the cue sheet is the three lines `tools/kula_warp.py` writes beside a copy.
 
-Every sector of the 109,607 opens with the twelve-byte sync, carries its own address in the header as minutes, seconds and frames in BCD counted from the two-second pregap, so sector 1002 reads `00 15 27 02` and the last, 109606, `24 23 31 02`, and has 2 for its mode; both copies of the subheader agree on every sector.
+Every sector of the 109,607 opens with the twelve-byte sync, carries its own address in the header as minutes, seconds and frames in BCD counted from the two-second pregap, so sector 1002 reads `00 15 27 02` and the last, 109606, `24 23 31 02`, and has 2 for its mode; both copies of the subheader agree on every sector of the NTSC-U and PAL images.
+
+On the Japanese image under `$KULA_DISC_JP` one sector of an ending movie, 86762 in `/XA/170_320.IKI`, carries two different copies of its subheader, `01 ef 14 a0` and `01 8f c8 12`, with an EDC and an ECC that are those of its bytes, which `tools/kula_sector.py --sweep` reports and passes over.
 
 The primary volume descriptor is sector 16: type 1, `CD001`, system and application identifier `PLAYSTATION`, a volume identifier of 32 spaces, a volume space of 109,607 blocks of 2048 bytes, and no Joliet descriptor after it, so every file has exactly one directory record.
 
@@ -68,6 +70,8 @@ For P, a plane is 24 rows of 43 columns, byte n at row n // 43 and column n % 43
 Both codes have the check matrix of a row of ones over a row of descending powers of alpha: a codeword V of n bytes has sum V_i = 0 and sum V_i alpha^(n - 1 - i) = 0, so with S the sum of the data bytes and T the sum of the data bytes weighted by alpha^(n - 1 - i), the first parity byte is (T + S) / (alpha + 1) and the second is the first plus S.
 
 What settles the reading is the disc: rebuilt from its address, subheader and user data alone by `tools/kula_sector.py --sweep`, every one of the 31,601 Form 1 sectors of the image comes out bit for bit as the disc has it, in 51 seconds, and one flipped user byte fails both the EDC and the ECC of any of them.
+
+A sector whose two subheader copies differ while its EDC and ECC are those of its bytes cannot be rebuilt from its first copy, since the tool writes equal copies and nothing here writes such a sector, so `--sweep` counts it apart from the sectors that fail, names it, and passes when every other Form 1 sector rebuilds.
 
 The unit test under `$KULA_DISC` holds 423 of them, the 85 pack sectors, the volume descriptor, the twelve directory sectors and 325 sampled every 97th sector across the image, and asserts the count.
 

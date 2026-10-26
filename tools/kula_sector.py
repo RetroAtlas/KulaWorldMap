@@ -167,6 +167,11 @@ def check(raw):
             and bytes(raw[ECC_OFF:]) == ecc(raw))
 
 
+def split(raw):
+    """Whether the sector's two copies of its subheader differ."""
+    return raw[SUBHEADER_OFF:SUBHEADER_OFF + 4] != raw[SUBHEADER_OFF + 4:USER_OFF]
+
+
 # The disc holds the readings above: its own sectors have to come out of them
 # bit for bit.
 
@@ -238,19 +243,23 @@ def verify(disc):
 
 
 def sweep(disc):
-    """How many Form 1 sectors of the whole image rebuild, and the addresses of any that do not."""
+    """How many Form 1 sectors of the whole image rebuild, the addresses of any that
+    do not, and apart from those the addresses of any that check as they stand but
+    carry two different copies of the subheader, which sector() never writes."""
     disc.f.seek(0, 2)
     total = disc.f.tell() // SECTOR_RAW
-    count, failed = 0, []
+    count, failed, apart = 0, [], []
     for lba in range(total):
         raw = raw_sector(disc.f, lba)
         if raw[SUBHEADER_OFF + 2] & FORM2:
             continue
         if rebuilt(raw, lba):
             count += 1
+        elif split(raw) and check(raw):
+            apart.append(lba)
         else:
             failed.append(lba)
-    return count, failed
+    return count, failed, apart
 
 
 # The fixture: synthetic sectors for the viewer's port to be held to, written
@@ -318,8 +327,10 @@ def main():
         ap.error("say --check, --sweep or --fixture")
     with open_disc(args.disc) as disc:
         if args.sweep:
-            count, missed = sweep(disc)
+            count, missed, apart = sweep(disc)
             print(f"{count:5} Form 1 sectors rebuilt bit for bit")
+            for lba in apart:
+                print(f"sector {lba} carries two different subheader copies and checks as it stands")
             for lba in missed:
                 print(f"sector {lba} does not rebuild")
             if missed:

@@ -1,7 +1,8 @@
 """Unit tests for the sector builder: python3 -m unittest discover -s tools/tests
 
-The fixture needs nothing. The last class holds the readings to the disc under
-$KULA_DISC and is skipped without it.
+The fixture needs nothing. The last three classes hold the readings to each
+release's disc under $KULA_DISC, $KULA_DISC_EU and $KULA_DISC_JP, each skipped
+without its variable.
 """
 
 import base64
@@ -16,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from disc import Disc  # noqa: E402
-from kula_disc import open_disc, packs  # noqa: E402
+from kula_disc import DISC_VARS, open_release, packs  # noqa: E402
 from kula_place import SYNTHETIC_SECTORS, synthetic_image  # noqa: E402
 from kula_sector import (  # noqa: E402
     DATA_SUBMODE,
@@ -29,15 +30,18 @@ from kula_sector import (  # noqa: E402
     USER,
     USER_OFF,
     check,
+    close,
     ecc,
     edc,
     fixture,
     header,
     noise,
     raw_sector,
+    rebuilt,
     rewrite,
     sector,
     sectors_of,
+    split,
     sweep,
     verify,
 )
@@ -48,6 +52,11 @@ unb64 = base64.b64decode
 
 def stored_edc(raw):
     return struct.unpack_from("<I", raw, EDC_OFF)[0]
+
+
+def with_second_copy(raw, copy):
+    """The sector with its second subheader copy replaced and its EDC and ECC recomputed."""
+    return close(bytes(raw[:SUBHEADER_OFF + 4]) + copy + bytes(raw[USER_OFF:EDC_OFF]))
 
 
 class TheFixture(unittest.TestCase):
@@ -113,6 +122,20 @@ class TheSector(unittest.TestCase):
         with self.assertRaises(ValueError):
             rewrite(sector(0, bytes(USER), DATA_SUBMODE), bytes(USER + 1))
 
+    def test_a_sector_whose_subheader_copies_differ_checks_but_does_not_rebuild(self):
+        whole = sector(1002, noise(1), DATA_SUBMODE)
+        other = bytes([0, 0, EOF_SUBMODE, 0])
+        raw = with_second_copy(whole, other)
+        self.assertEqual(raw[:SUBHEADER_OFF + 4], whole[:SUBHEADER_OFF + 4])
+        self.assertEqual(raw[SUBHEADER_OFF + 4:USER_OFF], other)
+        self.assertEqual(raw[USER_OFF:EDC_OFF], whole[USER_OFF:EDC_OFF])
+        self.assertNotEqual(raw[EDC_OFF:ECC_OFF], whole[EDC_OFF:ECC_OFF])
+        self.assertNotEqual(raw[ECC_OFF:], whole[ECC_OFF:])
+        self.assertFalse(split(whole))
+        self.assertTrue(split(raw))
+        self.assertTrue(check(raw))
+        self.assertFalse(rebuilt(raw, 1002))
+
 
 class TheSweep(unittest.TestCase):
     def test_every_form_1_sector_of_an_image_is_rebuilt_and_one_that_differs_is_named(self):
@@ -121,19 +144,39 @@ class TheSweep(unittest.TestCase):
             path = Path(scratch) / "image.bin"
             path.write_bytes(image)
             with Disc(path) as disc:
-                self.assertEqual(sweep(disc), (SYNTHETIC_SECTORS, []))
+                self.assertEqual(sweep(disc), (SYNTHETIC_SECTORS, [], []))
             image[25 * SECTOR_RAW + USER_OFF + 9] ^= 0x10
             image[30 * SECTOR_RAW + EDC_OFF] ^= 0x01
             path.write_bytes(image)
             with Disc(path) as disc:
-                self.assertEqual(sweep(disc), (SYNTHETIC_SECTORS - 2, [25, 30]))
+                self.assertEqual(sweep(disc), (SYNTHETIC_SECTORS - 2, [25, 30], []))
+
+    def test_a_sector_whose_subheader_copies_differ_is_counted_apart_where_it_checks(self):
+        image = bytearray(synthetic_image())
+        at = 28 * SECTOR_RAW
+        image[at:at + SECTOR_RAW] = with_second_copy(image[at:at + SECTOR_RAW], bytes([0, 0, EOF_SUBMODE, 0]))
+        image[32 * SECTOR_RAW + SUBHEADER_OFF + 6] ^= 0x01
+        with tempfile.TemporaryDirectory() as scratch:
+            path = Path(scratch) / "image.bin"
+            path.write_bytes(image)
+            with Disc(path) as disc:
+                self.assertEqual(sweep(disc), (SYNTHETIC_SECTORS - 2, [32], [28]))
 
 
-@unittest.skipUnless(os.environ.get("KULA_DISC"), "needs the disc under $KULA_DISC")
-class TheDisc(unittest.TestCase):
+COUNTS = {
+    "us": {"volume descriptor": 1, "pack": 85, "directory": 12, "sampled": 325},
+    "eu": {"volume descriptor": 1, "pack": 85, "directory": 12, "sampled": 304},
+    "jp": {"volume descriptor": 1, "pack": 84, "directory": 12, "sampled": 572},
+}
+
+
+class Held:
+    """A release's disc held to the readings: its sectors come out of them bit for bit."""
+    release = None
+
     @classmethod
     def setUpClass(cls):
-        cls.disc = open_disc()
+        cls.disc = open_release(cls.release)
 
     @classmethod
     def tearDownClass(cls):
@@ -142,7 +185,7 @@ class TheDisc(unittest.TestCase):
     def test_its_sectors_come_out_of_the_readings_bit_for_bit(self):
         counts, failed = verify(self.disc)
         self.assertEqual(failed, [])
-        self.assertEqual(counts, {"volume descriptor": 1, "pack": 85, "directory": 12, "sampled": 325})
+        self.assertEqual(counts, COUNTS[self.release])
 
     def test_a_pack_runs_on_data_sectors_and_ends_on_an_end_of_file_sector(self):
         for _, path in packs(self.disc):
@@ -158,6 +201,21 @@ class TheDisc(unittest.TestCase):
         self.assertFalse(check(raw))
         self.assertNotEqual(edc(raw), stored_edc(raw))
         self.assertNotEqual(ecc(raw), bytes(raw[ECC_OFF:]))
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["us"]), f"needs the disc under ${DISC_VARS['us']}")
+class TheDisc(Held, unittest.TestCase):
+    release = "us"
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["eu"]), f"needs the PAL disc under ${DISC_VARS['eu']}")
+class ThePalDisc(Held, unittest.TestCase):
+    release = "eu"
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["jp"]), f"needs the Japanese disc under ${DISC_VARS['jp']}")
+class TheJapaneseDisc(Held, unittest.TestCase):
+    release = "jp"
 
 
 if __name__ == "__main__":
