@@ -188,6 +188,17 @@ body:not(.sidebar-open) .sidebar {
   border-color: var(--accent);
   font-weight: 600;
 }
+.scope button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.panel h2 .release {
+  margin: 0 0 0 auto;
+  letter-spacing: 0;
+}
+.release button {
+  font-weight: 400;
+}
 
 .found {
   color: var(--dim);

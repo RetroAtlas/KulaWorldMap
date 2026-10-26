@@ -12,6 +12,7 @@ import {
   setSidebar,
 } from "./viewer/chrome/sidebar.js";
 import { applyHash, selectLevel, writeHash } from "./viewer/chrome/navigate.js";
+import { wireRelease } from "./viewer/chrome/release.js";
 import { onShow, refreshDetail } from "./viewer/chrome/detail.js";
 import { probeOf } from "./viewer/walk.js";
 import { FACE_NAME } from "./format/lattice.js";
@@ -362,6 +363,7 @@ Promise.all([
     `All ${data.levels.length} levels across ${data.themes.length} worlds. ` +
     `Press <kbd style="margin:0">?</kbd> for the keys.`;
   buildWorlds();
+  wireRelease();
   wireDisplay();
   wireCourse();
   const up = module && ready(module);

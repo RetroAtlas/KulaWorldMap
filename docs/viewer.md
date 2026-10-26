@@ -121,6 +121,20 @@ The sidebar lists a world's levels in the order of its pack, then its two finals
 
 While the ball is on the level with Play on through the levels on in Settings, a way out moves the line on to the level the game loads next, and in the Simon rooms a failed round to the room the game loads next, as Rolling the ball below says.
 
+## The three discs
+
+Beside the Worlds heading stand three buttons, US, EU and JP, one for each disc the game shipped on, Roll Away in North America, Kula World in PAL territories and Kula Quest in Japan, and the one pressed is the disc whose levels the map shows, each button's tooltip naming its game and its serial.
+
+A press shows the level on screen as that disc ships it, most levels being the same on all three, keeps the view where it was turned by hand and frames the level afresh where it was fitted, since a slot's level on another disc may have another extent, and keeps the selected block where that disc's level still has its cell.
+
+The choice is kept from one visit to the next, so a visit with no link opens on the disc chosen last, while a link that names a level opens the US release's level whatever is kept, the bar following the link.
+
+While the ball is on the level the bar is disabled, since play holds the level it started on, and its tooltip says to leave play to change the release.
+
+A level of your own stays on screen under any disc, since it belongs to none until it is put on one, and a press draws its line again for the disc chosen.
+
+Meanwhile play's rules, the clock and the hourglass among them, and the artwork, HAZE's tint on the Japanese disc among it, are the US release's whatever disc is chosen.
+
 ## Your levels
 
 The sidebar's "Your levels", after the worlds, lists the levels of your own this browser holds, folded under its heading as the worlds are, with how many it holds and a chevron beside the name: the fold is closed on a first visit, opens by itself when a level of your own is made, copied, opened or followed to, and otherwise stays as it was last left, across visits and reloads.
