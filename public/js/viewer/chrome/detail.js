@@ -1,5 +1,6 @@
 import { $, el, on, emit, escaped } from "../ui/dom.js";
 import { state } from "../state.js";
+import { current } from "../release.js";
 import { cellKey, FACE_NAME, DIRECTION_NAME } from "../../format/lattice.js";
 import {
   OFF_LATTICE,
@@ -33,7 +34,7 @@ import {
 import { blockIcon, markerIcon } from "../draw/icons.js";
 import { draw, clock } from "../draw/render.js";
 
-let stats = null;
+const stats = new Map();
 let folded = false;
 const hooks = [];
 
@@ -125,7 +126,7 @@ const opener = (m) => {
 };
 
 const placed = (m) => {
-  const s = stats.get(m.id);
+  const s = stats.get(current()).get(m.id);
   if (!s) return "";
   let html = `<p class="sub" style="margin-top:6px">Placed ${s.total} times in ${s.levels} level${s.levels === 1 ? "" : "s"}`;
   if (s.only === s.levels) html += `, never more than once`;
@@ -139,7 +140,8 @@ export function showCell(c, { raise = true } = {}) {
   state.selected = { ...c, key };
   const records = state.idx.records.get(key) || [];
   const marks = state.idx.markers.get(key) || [];
-  if (!stats) stats = markerStats(state.data);
+  const release = current();
+  if (!stats.has(release)) stats.set(release, markerStats(release));
   const box = $("detail");
   const off = c.v === OFF_LATTICE;
   const plain = c.v < state.data.firstRecord;

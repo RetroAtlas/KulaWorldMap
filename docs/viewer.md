@@ -521,7 +521,7 @@ Beside the worlds' atlases under `tex/` the build lays the sheet of the seven sp
 
 ### How a level reaches the screen
 
-Every level reaches the screen through one funnel in `js/viewer/chrome/navigate.js`, the disc's levels by their place in the data and any other through `showLevel`, and a module may provide levels for a link to name beyond the disc's slots, or keep a segment of its own at the link's tail, written with the view and handed back to it when a link opens; a level from elsewhere installed again is an update, which keeps the hidden kinds, the slice and the selection where the level still has its cell.
+Every level reaches the screen through one funnel in `js/viewer/chrome/navigate.js`, the disc's levels by their place in the data, the release shown choosing the level installed at that place, and any other through `showLevel`, and a module may provide levels for a link to name beyond the disc's slots, or keep a segment of its own at the link's tail, written with the view and handed back to it when a link opens; a level from elsewhere installed again is an update, which keeps the hidden kinds, the slice and the selection where the level still has its cell.
 
 ### Drawing the frame
 

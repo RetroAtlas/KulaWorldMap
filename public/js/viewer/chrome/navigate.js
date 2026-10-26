@@ -15,6 +15,7 @@ import { levelPoints } from "../draw/points.js";
 import { draw, drawSoon, invalidatePick } from "../draw/render.js";
 import { showCell, clearDetail } from "./detail.js";
 import { slotOf, formatHash, parseHash } from "../permalink.js";
+import { levelOn } from "../release.js";
 
 // The level on screen, by its slot.
 let shown = null;
@@ -52,7 +53,7 @@ function install(l, i, { keepView = false, push = true, keep = null } = {}) {
 export function selectLevel(i, opts = {}) {
   const l = state.data.levels[i];
   if (!l) return;
-  install(l, i, opts);
+  install(levelOn(l), i, opts);
 }
 
 /** Show a level that is not among the disc's levels. */

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { mapData, packs, releases, levelKey, TRAILER_KIND } from "./fixtures.js";
+import { annotations, mapData, packs, releases, levelKey, TRAILER_KIND } from "./fixtures.js";
 import { state } from "../../public/js/viewer/state.js";
 import {
   compose,
@@ -18,6 +18,15 @@ import {
   setReleases,
 } from "../../public/js/viewer/release.js";
 import { blank, toLevel } from "../../public/js/format/project.js";
+import {
+  levelAt,
+  levelMarkers,
+  levelScore,
+  levelsIn,
+  markerPoints,
+  markerStats,
+  setAnnotations,
+} from "../../public/js/viewer/data.js";
 
 const [us, eu, jp] = releases;
 const FACES = 6;
@@ -313,4 +322,74 @@ test("a composed entry takes the overlay's keys, loses one the overlay nulls and
   assert.deepEqual(compose(base, { note: null }), { name: "Hourglass", points: 1190 });
   assert.equal(compose(base, undefined), base);
   assert.deepEqual(base, { name: "Hourglass", points: 1190, note: "Flips the timer." });
+});
+
+const HELL = "/HELL/HELL.PAK";
+const LEVEL_102 = "/ATLANT/ATLANT.PAK#11";
+const BONUS_26 = "/MARS/MARS.PAK#16";
+const HOURGLASS = 35;
+const GEM = 36;
+
+test("a slot's level and a pack's levels are the release shown's", () => {
+  setReleases(releases);
+  const variant = eu.levels[`${HELL}#17`];
+  const shipped = mapData.levels.filter((l) => l.pack === HELL);
+  setCurrent("eu");
+  assert.equal(levelAt(HELL, 17), variant);
+  assert.ok(levelsIn(HELL).includes(variant));
+  assert.equal(levelsIn(HELL).length, shipped.length);
+  setCurrent("us");
+  assert.equal(levelAt(HELL, 17), mapData.levels[slot(`${HELL}#17`)]);
+  assert.deepEqual(levelsIn(HELL), shipped);
+  assert.equal(levelAt(HELL, shipped.length), null);
+});
+
+test("an annotation is read with its override for the release shown, a null taking a score away", () => {
+  setReleases(releases);
+  setAnnotations({
+    ...annotations,
+    levels: {
+      ...annotations.levels,
+      [LEVEL_102]: { ...annotations.levels[LEVEL_102], releases: { jp: { score: null } } },
+    },
+    types: {
+      ...annotations.types,
+      [HOURGLASS]: { ...annotations.types[HOURGLASS], releases: { eu: { points: 990 } } },
+    },
+  });
+  const level = mapData.levels[slot(LEVEL_102)];
+  const hourglass = levelMarkers(mapData.levels[slot("/HIRO/HIRO.PAK#5")]).find(
+    (m) => m.face !== null && m.type === HOURGLASS,
+  );
+  assert.equal(levelScore(level), 23115);
+  assert.equal(markerPoints(hourglass), 1190);
+  setCurrent("jp");
+  assert.equal(levelScore(level), null);
+  assert.equal(markerPoints(hourglass), 1190);
+  setCurrent("eu");
+  assert.equal(levelScore(level), 23115);
+  assert.equal(markerPoints(hourglass), 990);
+  setCurrent("us");
+  setAnnotations(annotations);
+});
+
+test("the statistics count the release shown's levels, so a type the Japanese disc removes is placed fewer times under it", () => {
+  setReleases(releases);
+  const gems = (levels) =>
+    levels.reduce(
+      (n, l) => n + l.records.reduce((k, r) => k + r.on.filter((o) => o.type === GEM).length, 0),
+      0,
+    );
+  const placed = (stats) =>
+    [...stats]
+      .filter(([id]) => id.split("/")[0] === `t${GEM}`)
+      .reduce((n, [, s]) => n + s.total, 0);
+  const onJp = mapData.levels.map((l) => jp.levels[levelKey(l)] ?? l);
+  assert.equal(placed(markerStats()), gems(mapData.levels));
+  assert.equal(placed(markerStats("jp")), gems(onJp));
+  setCurrent("jp");
+  assert.equal(placed(markerStats()), gems(onJp));
+  assert.ok(gems(onJp) < gems(mapData.levels));
+  assert.equal(gems([mapData.levels[slot(BONUS_26)]]) - gems([jp.levels[BONUS_26]]), 3);
+  setCurrent("us");
 });

@@ -2,11 +2,15 @@ import { state } from "./state.js";
 import { SIDE, cellKey, FACE_NORMAL } from "../format/lattice.js";
 import { platesOf, lookOf, keyed, shadowed } from "./skins.js";
 import { glowing, byLight } from "./motion.js";
+import { compose, current, levelsOf } from "./release.js";
 
 let ann = { worlds: {}, kinds: {}, types: {}, levels: {} };
 export const setAnnotations = (a) => {
   ann = { worlds: {}, kinds: {}, types: {}, levels: {}, ...a };
 };
+/** An entry as the release shown reads it, its override for that release written over its own keys. */
+const forRelease = (e) => (e?.releases?.[current()] ? compose(e, e.releases[current()]) : e);
+const annotated = (table, key) => forRelease(ann[table][String(key)]);
 
 let shapes = { block: 512, types: {}, balls: [], shadows: [], motion: null, skins: null };
 export const setObjects = (o) => {
@@ -55,23 +59,24 @@ export async function loadJson(url, fallback) {
   }
 }
 
-export const worldName = (id) => ann.worlds[id]?.name || id;
+export const worldName = (id) => annotated("worlds", id)?.name || id;
 
+const levelEntry = (l) => annotated("levels", `${l.pack}#${l.index}`);
 export const levelNote = (l) =>
   [
     levelTitle(l) !== l.name ? `The game's files name this level ${l.name}.` : "",
-    ann.levels[`${l.pack}#${l.index}`]?.note,
+    levelEntry(l)?.note,
   ]
     .filter(Boolean)
     .join(" ");
 /** The maximum a level can score where that is less than everything it holds, else null. */
-export const levelScore = (l) => ann.levels[`${l.pack}#${l.index}`]?.score ?? null;
+export const levelScore = (l) => levelEntry(l)?.score ?? null;
 export const levelTitle = (l) => l.shown || l.name;
-/** The level of the disc in pack `pack` at `index`, else null. */
+/** The level of the release shown in pack `pack` at `index`, else null. */
 export const levelAt = (pack, index) =>
-  state.data.levels.find((l) => l.pack === pack && l.index === index) ?? null;
-/** The levels of the disc in pack `pack`. */
-export const levelsIn = (pack) => state.data.levels.filter((l) => l.pack === pack);
+  levelsOf(current()).find((l) => l.pack === pack && l.index === index) ?? null;
+/** The levels of the release shown in pack `pack`. */
+export const levelsIn = (pack) => levelsOf(current()).filter((l) => l.pack === pack);
 
 const BEAM_KIND = 8;
 const RAIL_KIND = 5;
@@ -89,7 +94,7 @@ export const fieldIndex = (key) => Number(key.slice(1)) - FIRST_FIELD;
 export const VALUE_KEY = `f${VALUE_WORD}`;
 
 const variantOf = (o) => {
-  const by = ann.types[String(o.type)]?.by;
+  const by = annotated("types", o.type)?.by;
   return by ? String(o.f[fieldIndex(by)]) : null;
 };
 /** The legend's key for a thing on a face: its type, and its variant where one
@@ -144,8 +149,9 @@ export const markerGroup = (m) =>
 export const ownMarker = (marks, kind) =>
   marks.find((m) => m.face === null && m.kind === kind) ?? null;
 
-const entry = (m) => (m.face === null ? ann.kinds[String(m.kind)] : ann.types[String(m.type)]);
-const variant = (m) => (m.variant === null ? null : entry(m)?.variants?.[m.variant] || null);
+const entry = (m) => (m.face === null ? annotated("kinds", m.kind) : annotated("types", m.type));
+const variant = (m) =>
+  m.variant === null ? null : forRelease(entry(m)?.variants?.[m.variant]) || null;
 export const markerName = (m) => variant(m)?.name || entry(m)?.name || null;
 export const entryName = (m) => entry(m)?.name || null;
 export const markerLabel = (m) =>
@@ -260,7 +266,8 @@ export const holdsKey = (l) => {
   const skins = skinsTable();
   return !!skins && keyed(skins, l);
 };
-const circuitVariant = (circuit) => ann.types[String(SWITCH)]?.variants?.[String(circuit)];
+const circuitVariant = (circuit) =>
+  forRelease(annotated("types", SWITCH)?.variants?.[String(circuit)]);
 export const circuitColour = (circuit) => circuitVariant(circuit)?.colour ?? null;
 /** A circuit's word, the bracketed part of its switch's name, or null where the annotations have none. */
 export const circuitWord = (circuit) =>
@@ -295,7 +302,7 @@ export const fieldName = (m, i) => {
   if (entry(m)?.state === f) return "state";
   return entry(m)?.fields?.[f] ?? null;
 };
-export const kindName = (kind) => ann.kinds[String(kind)]?.name || null;
+export const kindName = (kind) => annotated("kinds", kind)?.name || null;
 /** The names validate puts in its findings. */
 export const NAMES = { kind: kindName, entry: entryName, circuit: circuitWord };
 
@@ -386,8 +393,8 @@ export function markerModel(m, l, form = null) {
   const variant = form ?? (m.variant !== null ? Number(m.variant) : opens);
   return models[variant] || models[0];
 }
-export const kindNote = (kind) => ann.kinds[String(kind)]?.note || "";
-export const kindHazard = (kind) => ann.kinds[String(kind)]?.hazard === true;
+export const kindNote = (kind) => annotated("kinds", kind)?.note || "";
+export const kindHazard = (kind) => annotated("kinds", kind)?.hazard === true;
 // A beam's ends belong to the laser, so a block standing at either one carries
 // its mark whatever the lattice holds there.
 export const blockHazard = (kind, end) =>
@@ -532,9 +539,9 @@ export function blockCount(l) {
 export const objectCount = (l) => l.records.reduce((n, r) => n + r.on.length, 0);
 export const counted = (n, noun) => `${n} ${noun}${n === 1 ? "" : "s"}`;
 
-export function markerStats(data) {
+export function markerStats(release = current()) {
   const stats = new Map();
-  for (const l of data.levels) {
+  for (const l of levelsOf(release)) {
     const seen = new Map();
     for (const m of levelMarkers(l)) seen.set(m.id, (seen.get(m.id) || 0) + 1);
     for (const [k, n] of seen) {
