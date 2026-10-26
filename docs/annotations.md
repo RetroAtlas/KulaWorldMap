@@ -10,7 +10,7 @@ The points rest on play, and so does each level's `score`, the best score play r
 
 Syonyx's Roll Away walkthrough (GameFAQs, 2006) states a maximum score for 209 levels, and on 193 of them it is the disc's total, which is what says that everything on those can be collected; of the other 16, play collects everything on LEVEL 128, BONUS 29, BONUS 30, FINAL 12 and FINAL 13, and each of the other 11 curates its `score` ([level-format.md](level-format.md) has the arithmetic).
 
-Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page.
+Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page, apart from the catalogue the PAL disc holds in HIRO's slot 19, which was read off its image.
 
 An entry marked `hazard` is one that can cost the ball its life, and its section says what shows it.
 
@@ -349,9 +349,11 @@ Its hit test reads the position its bounce writes, so a ball under it is within 
 
 Aris Efraimidis's GameShark codes found it, and `python3 tools/kula_warp.py --cheat --level /HIRO/HIRO.PAK#19` prints the cheat that reaches it.
 
+On the PAL disc HIRO's slot 19 holds the catalogue, byte for byte the other nine worlds' copy, so that disc has no LESSON, read off its image.
+
 ### /HILLS/HILLS.PAK#19, /INCA/INCA.PAK#19, /ARCTIC/ARCTIC.PAK#19, /COWBOY/COWBOY.PAK#19, /FIELD/FIELD.PAK#19, /ATLANT/ATLANT.PAK#19, /HAZE/HAZE.PAK#19, /MARS/MARS.PAK#19, /HELL/HELL.PAK#19: OBJ LEVEL
 
-The name is what it holds: one of nearly every object in the game on a flat floor, identical in the nine worlds that ship it, and no way to it in play.
+The name is what it holds: one of nearly every object in the game on a flat floor, identical in the nine worlds that ship it on the US and Japanese discs and in all ten on the PAL disc, read off the three images, and no way to it in play.
 
 Walked once in an emulator, each object names itself; `tools/kula_objlevel.py` writes the floor plan, and `tools/kula_warp.py --cheat` prints the emulator cheat that reaches it.
 
