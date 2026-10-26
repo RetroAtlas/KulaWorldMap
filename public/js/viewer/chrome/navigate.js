@@ -15,22 +15,30 @@ import { levelPoints } from "../draw/points.js";
 import { draw, drawSoon, invalidatePick } from "../draw/render.js";
 import { showCell, clearDetail } from "./detail.js";
 import { slotOf, formatHash, parseHash } from "../permalink.js";
-import { levelOn } from "../release.js";
+import { levelOn, current } from "../release.js";
 
-// The level on screen, by its slot.
+// The level on screen, by its slot, and the release it came from.
 let shown = null;
+let shownRelease = null;
 
 /** Install a level: one of the disc's levels at index `i`, or one from elsewhere with
-    -1. The same level from elsewhere installed again is an update, which keeps
-    the selection named by `keep` where its cell is still there. */
-function install(l, i, { keepView = false, push = true, keep = null } = {}) {
+    -1. The same level from elsewhere installed again is an update, as is any level
+    where `update` asks, which keeps the selection named by `keep` where its cell is
+    still there; `keepView` keeps the view and the slice, and `refit` beside it frames
+    the level afresh where the view was fitted. */
+function install(
+  l,
+  i,
+  { keepView = false, push = true, keep = null, update = false, refit = false } = {},
+) {
   settle();
   // Nothing lies behind the first level shown, so arriving there is no entry.
   const left = state.lvl !== null;
   const key = slotOf(l);
   if (key !== shown) state.presses = new Map();
-  const updated = i < 0 && key === shown;
+  const updated = update || (i < 0 && key === shown);
   shown = key;
+  shownRelease = current();
   state.li = i;
   state.lvl = l;
   state.idx = index(l);
@@ -41,7 +49,7 @@ function install(l, i, { keepView = false, push = true, keep = null } = {}) {
   if (!keepView) {
     state.slice = SIDE - 1;
     fit();
-  }
+  } else if (refit && state.framing === fit) fit();
   invalidatePick();
   emit(updated ? "level-updated" : "level-changed", i);
   if (kept) showCell(face == null ? kept : { ...kept, face }, { raise: false });
@@ -58,6 +66,18 @@ export function selectLevel(i, opts = {}) {
 
 /** Show a level that is not among the disc's levels. */
 export const showLevel = (l, opts = {}) => install(l, -1, opts);
+
+/** Install the slot shown again as an update, the selection kept at `keep` where its
+    cell still stands, and frame the level afresh where the view was fitted. */
+const reinstall = (keep) =>
+  selectLevel(state.li, { update: true, keepView: true, refit: true, keep, push: false });
+
+/** Reinstall the slot shown in place, the selection kept where its cell still stands
+    unless `keep` is off; a draft has no other release, so its line alone is drawn again. */
+export function reshow({ keep = true } = {}) {
+  if (state.li < 0) chip();
+  else reinstall(keep ? (state.selected?.key ?? null) : null);
+}
 
 let framer = null;
 /** Register what frames the view in the fit's place, given the level; null gives the fit back. */
@@ -90,7 +110,9 @@ export function centreOn(x, y, z) {
   state.framing = null;
 }
 
+// The level whose note stands under the line, and the release it was read on.
 let noted = null;
+let notedOn = null;
 // Registered note makers, each given the level and answering with an element, HTML or nothing.
 const notes = [];
 export function noteWith(fn) {
@@ -124,8 +146,9 @@ export function chip() {
     parts.push(`<span class="sep">·</span><span class="t">time ${l.time}</span>`);
   if (sliceZ() > l.min[2]) parts.push(`<span class="sep">·</span>sliced to z\u2265${sliceZ()}`);
   $("chipLine").innerHTML = parts.join("");
-  if (noted === l) return;
+  if (noted === l && notedOn === current()) return;
   noted = l;
+  notedOn = current();
   const note = noteOf(l);
   if (typeof note === "string") $("chipNote").innerHTML = note;
   else $("chipNote").replaceChildren(note);
@@ -179,10 +202,13 @@ const levelFrom = (slot) => {
 
 const tails = [];
 /** Register a segment of the link's tail: `write()` answers it, or null for
-    none, and `read` is given an opened link's segment of that letter, or null
-    where the link carries none. */
-export function tailWith({ letter, write, read }) {
-  tails.push({ letter, write, read });
+    none; `read`, where given, is handed an opened link's segment of that letter,
+    or null where the link carries none; and `before`, where given, is told the
+    segment before the link's slot is resolved, and where the link cannot be
+    honoured is told the segment it wrote before the link was read, so that it
+    puts itself back. */
+export function tailWith({ letter, write, read = null, before = null }) {
+  tails.push({ letter, write, read, before });
 }
 
 /** Write the view to the address bar once it has rested, or at once as a
@@ -253,12 +279,19 @@ export function applyHash() {
   drop();
   known = location.hash;
   const link = parseHash(known);
+  const segmentOf = (letter) => link.tails.find((segment) => segment[0] === letter) ?? null;
+  const held = tails.map(({ write }) => write());
+  for (const { letter, before } of tails) before?.(segmentOf(letter));
   const i = levelAt(link.slot);
   if (i === undefined) {
     const l = levelFrom(link.slot);
-    if (!l) return false;
+    if (!l) {
+      tails.forEach(({ before }, k) => before?.(held[k]));
+      return false;
+    }
     if (state.lvl?.draft !== l.draft) showLevel(l, { keepView: true });
   } else if (i !== state.li) selectLevel(i, { keepView: true });
+  else if (shownRelease !== current()) reinstall(link.picked ? cellKey(...link.picked) : null);
   emit("link-opening");
   if (link.turn) [state.cam.yaw, state.cam.pitch] = link.turn;
   if (link.target) state.target = link.target;
@@ -270,8 +303,7 @@ export function applyHash() {
   const cell = link.picked && state.idx.cells.get(cellKey(...link.picked));
   if (cell) showCell(cell);
   else clearDetail();
-  for (const { letter, read } of tails)
-    read(link.tails.find((segment) => segment[0] === letter) ?? null);
+  for (const { letter, read } of tails) read?.(segmentOf(letter));
   writeHash();
   invalidatePick();
   emit("slice-changed");

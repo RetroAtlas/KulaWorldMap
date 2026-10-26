@@ -521,7 +521,7 @@ Beside the worlds' atlases under `tex/` the build lays the sheet of the seven sp
 
 ### How a level reaches the screen
 
-Every level reaches the screen through one funnel in `js/viewer/chrome/navigate.js`, the disc's levels by their place in the data, the release shown choosing the level installed at that place, and any other through `showLevel`, and a module may provide levels for a link to name beyond the disc's slots, or keep a segment of its own at the link's tail, written with the view and handed back to it when a link opens; a level from elsewhere installed again is an update, which keeps the hidden kinds, the slice and the selection where the level still has its cell.
+Every level reaches the screen through one funnel in `js/viewer/chrome/navigate.js`, the disc's levels by their place in the data, the release shown choosing the level installed at that place, and any other through `showLevel`, and a module may provide levels for a link to name beyond the disc's slots, or keep a segment of its own at the link's tail, written with the view and handed back to it when a link opens; a level from elsewhere installed again is an update, as is a level installed again at its own slot where the module asks, which keeps the hidden kinds, the slice and the selection where the level still has its cell.
 
 ### Drawing the frame
 
@@ -556,6 +556,8 @@ What listens to the pointer registers with `js/viewer/chrome/interaction.js` for
 A module may add lines of its own to the tip through `tipWith` in `js/viewer/chrome/interaction.js`, under what the tip says of the cell, which is how the editor and the planner say what a click there would do and play says what the ball has taken from it.
 
 A module may fill the panel through `onShow` in `js/viewer/chrome/detail.js` and stand a note of its own under the level line through `noteWith` in `js/viewer/chrome/navigate.js`, which asks what is registered before it falls back to the level's own note, and those two seams are how the editor's form and a draft's overview come in.
+
+A module may reinstall the slot shown in place through `reshow` in `js/viewer/chrome/navigate.js`, which keeps the selection where its cell stands and frames the level afresh where it was fitted, and may register a segment of the link's tail with `before` beside `read`, told the segment before the slot is resolved, so that what it names is installed once.
 
 The route planner is built on the same seams and loads with the boot, since a linked route must draw on the first frame:
 
