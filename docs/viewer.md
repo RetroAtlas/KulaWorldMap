@@ -135,7 +135,13 @@ Beside the Worlds heading stand three buttons, US, EU and JP, one for each disc 
 
 A press shows the level on screen as that disc ships it, most levels being the same on all three, keeps the view where it was turned by hand and frames the level afresh where it was fitted, since a slot's level on another disc may have another extent, and keeps the selected block where that disc's level still has its cell.
 
-While a disc other than the US one is shown the level line, the HUD and the level as it is spoken say so, as The level line and the order of the levels above says, and a level that is the same on that disc says nothing beyond the tag and the disc's figures.
+While a disc other than the US one is shown the level line, the HUD and the level as it is spoken say so, as The level line and the order of the levels above says, and a level that is the same on that disc keeps its note and says nothing beyond the tag and the disc's figures, unless that disc has something of its own to say of it.
+
+A level that differs on the disc shown carries that disc's own note under the line, saying what its level there has or lacks.
+
+A level that is the same on the disc shown carries that disc's own note too where the level's note speaks for the US release alone or that disc has no way into the level, HIRO's slot 19 under JP, whose note says this release keeps the Lesson off the menu the Japanese release lists it on, and HIDDEN 9 and HIDDEN 10 under EU, which no level of the PAL disc leads to.
+
+The line reads the disc's best score where one is known for that disc and the whole total otherwise, so BONUS 26's line reads its whole total under JP, the Japanese disc having taken away the three far gems that could not be collected.
 
 In the sidebar a level button carries a dot after its title where its slot holds another level on any of the discs, the same whichever disc is shown, since differing is a fact of the slot, and its tooltip names the discs it differs on, the PAL and Japanese discs for LEVEL 132 and the PAL disc for BONUS 30.
 

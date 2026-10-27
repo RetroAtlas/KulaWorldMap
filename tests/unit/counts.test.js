@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { mapData, annotations, objects, levelKey } from "./fixtures.js";
+import { mapData, annotations, objects, releases, levelKey } from "./fixtures.js";
 import {
   setAnnotations,
   setObjects,
@@ -22,6 +22,13 @@ import { SIDE } from "../../public/js/format/lattice.js";
 import { FORMAT } from "../../public/js/format/kwl.js";
 import { blank, fromLevel, toLevel } from "../../public/js/format/project.js";
 import { counts } from "../../public/js/format/checks.js";
+import {
+  BASE,
+  discWord,
+  levelOn,
+  setCurrent,
+  setReleases,
+} from "../../public/js/viewer/release.js";
 
 setAnnotations(annotations);
 setObjects(objects);
@@ -172,6 +179,48 @@ test("a curated score's section says how much more the disc holds, and no other 
     curated.length,
     "annotations.md says how much more the disc holds where no score is curated",
   );
+});
+
+// A release's own score is reasoned the same way, in a line of the level's
+// section opening on the disc's word, and a score taken away on a release is
+// one that release's total has come down to or under.
+test("a release's curated score has its section say how much more that disc holds, and no other line does", () => {
+  state.data = mapData;
+  setReleases(releases);
+  let curated = 0;
+  try {
+    for (const r of releases) {
+      if (r.id === BASE) continue;
+      setCurrent(r.id);
+      const says = `On the ${discWord(r.id)} disc it holds ([\\d,]+) more`;
+      const own = (l) => annotations.levels[levelKey(l)]?.releases?.[r.id] ?? {};
+      const overridden = mapData.levels.filter((l) => "score" in own(l));
+      for (const l of overridden) {
+        const total = levelPoints(levelOn(l));
+        const score = levelScore(l);
+        if (score === null) {
+          const base = annotations.levels[levelKey(l)].score;
+          assert.ok(total <= base, `${levelKey(l)} on ${r.id}: holds ${total}, more than ${base}`);
+          continue;
+        }
+        curated++;
+        const more = new RegExp(says).exec(section(l));
+        assert.ok(
+          more,
+          `annotations.md does not say how much more ${levelKey(l)} holds on ${r.id}`,
+        );
+        assert.equal(figure(more[1]), total - score, `${levelKey(l)} on ${r.id}`);
+      }
+      assert.equal(
+        reasons.match(new RegExp(says, "g"))?.length ?? 0,
+        overridden.filter((l) => own(l).score !== null).length,
+        `annotations.md says how much more the ${discWord(r.id)} disc holds where no score is curated`,
+      );
+    }
+  } finally {
+    setCurrent(BASE);
+  }
+  assert.ok(curated > 0);
 });
 
 test("annotations.md's LEVEL 131 is collected for all the disc holds", () => {

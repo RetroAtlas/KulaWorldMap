@@ -329,21 +329,46 @@
   },
   "levels": {
     "/HIRO/HIRO.PAK#19": {
-      "note": "The training level the Japanese release lists as Lesson on its main menu, with one of nearly everything the game has on one floor. This release keeps it in the game but off the menu, and the PAL disc has a copy of the developers' catalogue here instead."
+      "note": "The training level the Japanese release lists as Lesson on its main menu, with one of nearly everything the game has on one floor. This release keeps it in the game but off the menu, and the PAL disc has a copy of the developers' catalogue here instead.",
+      "releases": {
+        "eu": {
+          "note": "The developers' object catalogue, a tenth copy, where the US and Japanese discs keep the training level the Japanese release lists as Lesson. Nothing in the game leads to it."
+        },
+        "jp": {
+          "note": "The training level this release lists as Lesson on its main menu, with most of what the game has laid out on one floor. The US release keeps it in the game but off the menu, and the PAL disc has a copy of the developers' catalogue here instead."
+        }
+      }
     },
     "/HILLS/HILLS.PAK#15": {
       "score": 25100,
-      "note": "The level holds 3500 more points, in the twelve coins on the corners of the lowest ring. They and the four gems inside that ring cannot both be had, and the gems score more. The Japanese release removes the coins."
+      "note": "The level holds 3500 more points, in the twelve coins on the corners of the lowest ring. They and the four gems inside that ring cannot both be had, and the gems score more. The Japanese release removes the coins.",
+      "releases": {
+        "jp": {
+          "score": null,
+          "note": "This release took the twelve coins off the corners of the lowest ring, which could not be had together with the four gems inside it, so everything here can be collected."
+        }
+      }
     },
     "/HILLS/HILLS.PAK#18": {
       "score": 7200,
-      "note": "The best score takes the coin under the exit block, which the Japanese release removes. It leaves one of the ten crumbling blocks, the 50 more points the level holds."
+      "note": "The best score takes the coin under the exit block, which the Japanese release removes. It leaves one of the ten crumbling blocks, the 50 more points the level holds.",
+      "releases": {
+        "jp": {
+          "score": null,
+          "note": "This release removes the coin under the exit block and the lowest of the ten crumbling blocks."
+        }
+      }
     },
     "/HILLS/HILLS.PAK#19": {
       "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in world after world, and nothing in the game leads to it."
     },
     "/HILLS/HILLSFI.PAK#0": {
-      "note": "The Final has no fruit, but the PAL release put an apple on this level anyway. The US and Japanese releases removed it, leaving the blue teleporter it stood beside with nothing to reach."
+      "note": "The Final has no fruit, but the PAL release put an apple on this level anyway. The US and Japanese releases removed it, leaving the blue teleporter it stood beside with nothing to reach.",
+      "releases": {
+        "eu": {
+          "note": "The Final has no other fruit, but this release has one here, two blocks from the blue teleporter. The US and Japanese releases took it out."
+        }
+      }
     },
     "/INCA/INCA.PAK#9": {
       "score": 8675,
@@ -363,14 +388,30 @@
       "note": "The level holds 150 more points, three crumbling blocks on the top level that cannot be broken by any means."
     },
     "/FIELD/FIELD.PAK#15": {
-      "note": "The Japanese release redesigned this level, taking out the gem ringed with spike traps. This is the US layout."
+      "note": "The Japanese release redesigned this level, taking out the gem ringed with spike traps. This is the layout of the US and PAL releases.",
+      "releases": {
+        "jp": {
+          "note": "This release cut the ring of blocks that carries a gem among the moving spikes, thirteen blocks with six spike traps, two gems and four coins."
+        }
+      }
     },
     "/FIELD/FIELD.PAK#16": {
       "score": 19050,
-      "note": "The level holds 4475 more points, in the gem and two gold coins on whichever end block is reached last. Touching the last block ends a bonus level before anything on it can be collected. The Japanese release puts a single gem on each end instead."
+      "note": "The level holds 4475 more points, in the gem and two gold coins on whichever end block is reached last. Touching the last block ends a bonus level before anything on it can be collected. The Japanese release puts a single gem on each end instead.",
+      "releases": {
+        "jp": {
+          "score": null,
+          "note": "This release puts a single blue gem on each end block, facing outwards on three of them and to the side on the fourth, in place of the two coins, two pills and the gem beneath that the block carries in the other releases."
+        }
+      }
     },
     "/FIELD/FIELD.PAK#18": {
-      "note": "The Japanese release took a coin and the two moving platforms out of this level. The platforms made the coin easier to reach and back from, and were not the only way."
+      "note": "The Japanese release took a coin and the two moving platforms out of this level. The platforms made the coin easier to reach and back from, and were not the only way.",
+      "releases": {
+        "jp": {
+          "note": "This release took out the coin under the exit block and the two moving platforms that helped reach it."
+        }
+      }
     },
     "/FIELD/FIELD.PAK#19": {
       "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in world after world, and nothing in the game leads to it."
@@ -381,7 +422,16 @@
     },
     "/ATLANT/ATLANT.PAK#11": {
       "score": 23115,
-      "note": "The level holds 750 more points, in a gold coin inside one of the rings that cannot be reached. The Japanese release removes it."
+      "note": "The level holds 750 more points, in a gold coin inside one of the rings that cannot be reached. The Japanese release removes it.",
+      "releases": {
+        "eu": {
+          "score": 22915
+        },
+        "jp": {
+          "score": null,
+          "note": "This release removes the gold coin inside the ring that could not be reached, so everything here can be collected."
+        }
+      }
     },
     "/ATLANT/ATLANT.PAK#19": {
       "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in world after world, and nothing in the game leads to it."
@@ -391,46 +441,120 @@
     },
     "/HAZE/HAZEFI.PAK#1": {
       "score": 24065,
-      "note": "The level holds 30500 more points. That is ten of the eleven gems on the ring at y=28, which cannot be left once reached, and a gold coin."
+      "note": "The level holds 30500 more points. That is ten of the eleven gems on the ring at y=28, which cannot be left once reached, and a gold coin.",
+      "releases": {
+        "eu": {
+          "score": 23865
+        },
+        "jp": {
+          "score": 22875
+        }
+      }
     },
     "/MARS/MARS.PAK#10": {
-      "note": "The Japanese release un-iced one face of the solid ice block for an arrow that nothing can reach. It also removed the blue coin on the same block, which can be collected here."
+      "note": "The Japanese release un-iced one face of the solid ice block for an arrow that nothing can reach. It also removed the blue coin on the same block, which can be collected here.",
+      "releases": {
+        "jp": {
+          "note": "This release makes the ice block the blue coin stood on an ordinary block iced on five faces, with an arrow on the sixth. It also removes the coin, which can be collected in the other releases."
+        }
+      }
     },
     "/MARS/MARS.PAK#11": {
-      "note": "The hidden exit at 14,19,18 stands on a block that cannot be reached once it has appeared. The PAL release forgot to place it, and the Japanese release moved it to LEVEL 134, the one release in which every hidden level can be played."
+      "note": "The hidden exit at 14,19,18 stands on a block that cannot be reached once it has appeared. The PAL release forgot to place it, and the Japanese release moved it to LEVEL 134, the one release in which every hidden level can be played.",
+      "releases": {
+        "eu": {
+          "note": "This release has no hidden exit here, and none on its last world either, so its last two hidden levels cannot be reached. The US release has one at 14,19,18, on a block that cannot be reached once it has appeared."
+        },
+        "jp": {
+          "note": "This release has no hidden exit here and puts Mars's on LEVEL 134 instead, so every hidden level can be played. The US release has one at 14,19,18, on a block that cannot be reached once it has appeared."
+        }
+      }
     },
     "/MARS/MARS.PAK#12": {
-      "note": "The Japanese release moved one of the gems off the lethal tile it stands on here onto a kinder one."
+      "note": "The Japanese release moved one of the gems off the lethal tile it stands on here onto a kinder one.",
+      "releases": {
+        "jp": {
+          "note": "This release moved the gem off the fire block onto a safe one, and made it green."
+        }
+      }
     },
     "/MARS/MARS.PAK#13": {
-      "note": "The Japanese release moves the world's hidden exit to this level."
+      "note": "The Japanese release moves the world's hidden exit to this level.",
+      "releases": {
+        "jp": {
+          "note": "This release puts Mars's hidden exit here, under a block. The US release has it on LEVEL 132 and the PAL release nowhere."
+        }
+      }
     },
     "/MARS/MARS.PAK#16": {
       "score": 19000,
-      "note": "The level holds 8925 more points, in three gems on the far side of the three far blocks. Only the bouncy pill reaches them, and the pill then keeps you from collecting them. The Japanese release removes them."
+      "note": "The level holds 8925 more points, in three gems on the far side of the three far blocks. Only the bouncy pill reaches them, and the pill then keeps you from collecting them. The Japanese release removes them.",
+      "releases": {
+        "jp": {
+          "score": null,
+          "note": "This release removes the three gems on the far side of the far blocks, which only the bouncy pill reaches, so everything here can be collected."
+        }
+      }
     },
     "/MARS/MARS.PAK#18": {
-      "note": "The only hidden level with a fruit, at 9,18,15, which the Japanese release removed. In this release the exit that leads here is out of reach."
+      "note": "The only hidden level with a fruit, at 9,18,15, which the Japanese release removed. In this release the exit that leads here is out of reach.",
+      "releases": {
+        "eu": {
+          "note": "The only hidden level with a fruit, at 9,18,15, which the Japanese release removed. On this disc no level has the exit that leads here."
+        },
+        "jp": {
+          "note": "The US and PAL releases have a fruit here, at 9,18,15, the only one on a hidden level. This release removed it, and is the one in which the exit that leads here can be reached."
+        }
+      }
     },
     "/MARS/MARS.PAK#19": {
       "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in world after world, and nothing in the game leads to it."
     },
     "/HELL/HELL.PAK#7": {
-      "note": "Hell's one hidden exit stands under a block here. The PAL release left it out, so its last hidden level cannot be reached there."
+      "note": "Hell's one hidden exit stands under a block here. The PAL release left it out, so its last hidden level cannot be reached there.",
+      "releases": {
+        "eu": {
+          "note": "This release has no hidden exit here, Hell's only one, so its last hidden level cannot be reached."
+        }
+      }
     },
     "/HELL/HELL.PAK#14": {
       "score": 22440,
-      "note": "The level holds 50 more points, one crumbling block that the best score leaves standing."
+      "note": "The level holds 50 more points, one crumbling block that the best score leaves standing.",
+      "releases": {
+        "eu": {
+          "score": 22240
+        },
+        "jp": {
+          "score": 21250
+        }
+      }
     },
     "/HELL/HELL.PAK#15": {
       "score": 21475,
-      "note": "The level holds 1000 more points, in the two coins on top of the first platform, a face that cannot be reached. The Japanese release removes them."
+      "note": "The level holds 1000 more points, in the two coins on top of the first platform, a face that cannot be reached. The Japanese release removes them.",
+      "releases": {
+        "jp": {
+          "score": null,
+          "note": "This release removes the two coins on top of the first platform that could not be reached, and a third under it."
+        }
+      }
     },
     "/HELL/HELL.PAK#17": {
-      "note": "This is the one arcade level rebuilt between the PAL and the US release."
+      "note": "The US and Japanese releases rebuilt this level, and the PAL disc has a different one in this slot.",
+      "releases": {
+        "eu": {
+          "note": "A different level from the one on the US and Japanese discs, with an hourglass, sunglasses and a fruit that level lacks."
+        }
+      }
     },
     "/HELL/HELL.PAK#18": {
-      "note": "160 of its 178 blocks are not part of the level. They lie flat far below it, spelling VERY WELL DONE in block letters six blocks tall. The other 18 are an upright frame, and everything on the level stands on the side from which the lettering reads the right way round."
+      "note": "160 of its 178 blocks are not part of the level. They lie flat far below it, spelling VERY WELL DONE in block letters six blocks tall. The other 18 are an upright frame, and everything on the level stands on the side from which the lettering reads the right way round.",
+      "releases": {
+        "eu": {
+          "note": "160 of its 178 blocks lie flat far below the level, spelling VERY WELL DONE in block letters six blocks tall. The other 18 are an upright frame, and everything on the level stands on the side from which the lettering reads the right way round. On this disc no level has the exit that leads here."
+        }
+      }
     },
     "/HELL/HELL.PAK#19": {
       "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in world after world, and nothing in the game leads to it."

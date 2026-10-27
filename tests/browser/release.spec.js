@@ -12,6 +12,7 @@ const read = (path) =>
   JSON.parse(readFileSync(new URL(`../../public/${path}`, import.meta.url), "utf8"));
 const [us, eu, jp] = ["us", "eu", "jp"].map((id) => read(`releases/${id}.json`));
 const mapData = read("map_data.json");
+const annotations = read("annotations.json");
 const slotIndex = (key) => mapData.levels.findIndex((l) => `${l.pack}#${l.index}` === key);
 
 const bar = (page) => page.locator("#release");
@@ -46,6 +47,16 @@ const gems = (l) => l.records.reduce((n, r) => n + r.on.filter((o) => o.type ===
 /** The points the level line counts. */
 const points = async (page) =>
   Number(/(\d+) points/.exec(await page.locator("#chipLine").textContent())[1]);
+
+/** The points the level on screen holds, as the map counts them. */
+const total = (page) =>
+  page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { levelPoints }] = await Promise.all(
+      ["viewer/state.js", "viewer/draw/points.js"].map(at),
+    );
+    return levelPoints(state.lvl);
+  });
 
 test("the bar stands in the Worlds heading with US pressed, and a press of EU installs the PAL BONUS 30", async ({
   page,
@@ -441,4 +452,21 @@ test("a route planned on BONUS 30 under US is kept apart from one planned under 
     Object.keys(JSON.parse(localStorage.getItem("kula.course")).by).sort(),
   );
   expect(keys).toEqual(["HELL/17@eu", "HELL/17@us"]);
+});
+
+test("BONUS 26's note after a press of JP is that disc's own, and its line reads the total with no best score", async ({
+  page,
+}) => {
+  await page.goto("/#MARS/16");
+  await settle(page);
+  const chip = page.locator("#chipLine");
+  const note = page.locator("#chipNote");
+  const entry = annotations.levels[BONUS_26];
+  await expect(chip).toContainText(`${entry.score} of ${await total(page)} points`);
+  await expect(note).toContainText(entry.note);
+  await press(page, "jp");
+  await expect(pressed(page)).toHaveText("JP");
+  await expect(note).toContainText(entry.releases.jp.note);
+  await expect(chip).toContainText(`${await total(page)} points`);
+  await expect(chip).not.toContainText(" of ");
 });

@@ -10,7 +10,7 @@ The points rest on play, and so does each level's `score`, the best score play r
 
 Syonyx's Roll Away walkthrough (GameFAQs, 2006) states a maximum score for 209 levels, and on 193 of them it is the disc's total, which is what says that everything on those can be collected; of the other 16, play collects everything on LEVEL 128, BONUS 29, BONUS 30, FINAL 12 and FINAL 13, and each of the other 11 curates its `score` ([level-format.md](level-format.md) has the arithmetic).
 
-Every regional difference a note mentions is from The Cutting Room Floor's Roll Away page, apart from the catalogue the PAL disc holds in HIRO's slot 19 and the hidden exit its LEVEL 143 lacks, which were read off its image.
+The regional differences the notes mention were read off the three discs' images, slot by slot, and The Cutting Room Floor's Roll Away page, which the About credits, first named most of them, missing the exit the PAL disc's LEVEL 143 lacks, the crumbling block the Japanese disc's HIDDEN 2 loses, the green its LEVEL 133's moved gem takes, the third coin its BONUS 28 loses and the Lesson the PAL disc has none of.
 
 An entry marked `hazard` is one that can cost the ball its life, and its section says what shows it.
 
@@ -355,6 +355,10 @@ Aris Efraimidis's GameShark codes found it, and `python3 tools/kula_warp.py --ch
 
 On the PAL disc HIRO's slot 19 holds the catalogue, byte for byte the other nine worlds' copy, so that disc has no LESSON, read off its image.
 
+On the Japanese disc the slot holds the LESSON byte for byte as the US disc does, read off the two images.
+
+That the Japanese release's main menu lists it is from The Cutting Room Floor's Roll Away page.
+
 ### /HILLS/HILLS.PAK#19, /INCA/INCA.PAK#19, /ARCTIC/ARCTIC.PAK#19, /COWBOY/COWBOY.PAK#19, /FIELD/FIELD.PAK#19, /ATLANT/ATLANT.PAK#19, /HAZE/HAZE.PAK#19, /MARS/MARS.PAK#19, /HELL/HELL.PAK#19: OBJ LEVEL
 
 The name is what it holds: one of nearly every object in the game on a flat floor, identical in the nine worlds that ship it on the US and Japanese discs and in all ten on the PAL disc, read off the three images, and no way to it in play.
@@ -365,13 +369,19 @@ Walked once in an emulator, each object names itself; `tools/kula_objlevel.py` w
 
 The best score in play. The disc holds 3500 more, the twelve coins on the corners of the lowest ring: they and the four gems inside that ring cannot both be had, and the gems score more.
 
+On the Japanese disc the twelve coins are gone, the top faces of the three blocks at each corner of the ring at z=22, read off its image, and its total is the best score here, so everything on it can be collected there and the score is taken away.
+
 ### /HILLS/HILLS.PAK#18: HIDDEN 2
 
 The best score in play: it leaves one of the ten crumbling blocks, and takes the coin under the exit block, which the Japanese release removes. The disc holds 50 more.
 
+On the Japanese disc the coin under 17,15,14, the exit block, and the crumbling block at 17,17,15, the lowest of the ten, are gone, read off its image, and play on that disc collects everything on the level, so no score is curated there.
+
 ### /HILLS/HILLSFI.PAK#0: FINAL 3
 
 From The Cutting Room Floor's Roll Away page.
+
+On the PAL disc a fruit stands on the top face of 16,17,12, two blocks from the blue teleporter on 16,19,12 and the one fruit in the finals on any disc, read off the three images, and the note calls it a fruit since the map draws its type by its model, the bananas, on a final (type 46).
 
 ### /INCA/INCA.PAK#9: LEVEL 40
 
@@ -385,13 +395,19 @@ The best score in play. The disc holds 150 more, three crumbling blocks on the t
 
 The redesign is from The Cutting Room Floor's Roll Away page.
 
+On the Japanese disc the thirteen blocks at z=21 with x 11 to 14 and y 15 to 19, the six moving spikes, the two gems and the four coins on them are gone, read off its image.
+
 ### /FIELD/FIELD.PAK#16: BONUS 17
 
 The best score in play. The disc holds 4475 more, the gem and two gold coins on whichever end block is reached last, since touching the last block ends a bonus level before anything on it can be collected.
 
+On the Japanese disc each end block, 3,17,17, 17,3,17, 17,31,17 and 31,17,17, carries one blue gem, on the outward face of 17,3,17, 17,31,17 and 31,17,17 and on the `+y` side of 3,17,17, where the US and PAL discs' carry a coin on top, a coin on the outward face, a lethargy pill on each other side and a gem beneath and no gem on any side, read off the three images, and play on that disc collects everything on the level, so no score is curated there.
+
 ### /FIELD/FIELD.PAK#18: HIDDEN 6
 
 From The Cutting Room Floor's Roll Away page.
+
+On the Japanese disc the coin under 8,15,15, the exit block, and the platforms at 6,13,15 and 12,15,19 are gone, read off its image.
 
 ### /ATLANT/ATLANT.PAK#3: LEVEL 94
 
@@ -403,13 +419,23 @@ The hourglass and two gold coins on the crumbling blocks are left out because th
 
 The best score in play. The disc holds 750 more, a gold coin inside one of the rings that cannot be reached.
 
+On the PAL disc it holds 750 more, the same coin, the score moving with the hourglass's points there (type 35).
+
+On the Japanese disc the coin under 23,19,19 is gone, read off its image, so everything on it can be collected there and the score is taken away.
+
 ### /HAZE/HAZEFI.PAK#1: FINAL 16
 
 The best score in play. The disc holds 30500 more: ten of the eleven gems on the ring at y=28, which cannot be left once reached, and a gold coin.
 
+On the PAL disc it holds 30500 more, the same gems and coin, the score moving with the hourglass's points there (type 35).
+
+On the Japanese disc it holds 30500 more, the same gems and coin, the score moving with the hourglass's points there (type 35).
+
 ### /MARS/MARS.PAK#10: LEVEL 131
 
 The regional difference is from The Cutting Room Floor's Roll Away page, which also calls the coin unreachable; in this release it is not. It is the blue coin on the -x face of the ice block at 7,16,21, and it was collected in play for the level's full 12,290 points, everything the disc holds.
+
+On the Japanese disc 7,16,21 is a plain block with ice on its five other faces and an arrow on its `+x` face, and the coin is gone, read off its image.
 
 ### /MARS/MARS.PAK#11: LEVEL 132
 
@@ -417,13 +443,21 @@ That the hidden exit at 14,19,18 cannot be reached once it has appeared rests on
 
 The regional history is from The Cutting Room Floor's Roll Away page.
 
+On the PAL disc the exit is gone and nothing else of the level changes, read off its image, and with LEVEL 143's gone too that disc has no way into HIDDEN 9 or HIDDEN 10.
+
+On the Japanese disc the exit is gone the same way and LEVEL 134 has Mars's instead, read off its image, so that disc has a hidden exit for each of its ten hidden levels.
+
 ### /MARS/MARS.PAK#12: LEVEL 133
 
 From The Cutting Room Floor's Roll Away page.
 
+On the Japanese disc the gem on the top face of the fire block at 15,18,24 is gone and a green one stands on the top face of the plain block at 22,11,24, where the US one is red, read off its image.
+
 ### /MARS/MARS.PAK#13: LEVEL 134
 
 The second fruit, on the `+y` face of the crumbling block at 17,16,20, is left out because the game never walks what stands on a crumbling block ([level-format.md](level-format.md)).
+
+On the Japanese disc a hidden exit stands on the underside of 15,16,20, Mars's one there, read off its image.
 
 ### /MARS/MARS.PAK#16: BONUS 26
 
@@ -431,9 +465,15 @@ The best score in play. The disc holds 8925 more, three gems on the far side of 
 
 The three stand on the `+x` face of 21,13,20, 21,15,20 and 21,17,20, the far column, and face away from the rest of the level.
 
+On the Japanese disc the three gems are gone, read off its image, and its total is the best score here, so everything on it can be collected there and the score is taken away.
+
 ### /MARS/MARS.PAK#18: HIDDEN 9
 
 From The Cutting Room Floor's Roll Away page.
+
+On the PAL disc the level is the US one, read off its image, and no level of that disc has the exit that leads here, LEVEL 132's and LEVEL 143's being gone.
+
+On the Japanese disc the fruit on the `-x` face of 9,18,15 is gone, read off its image, and LEVEL 134's exit leads here.
 
 ### /HELL/HELL.PAK#7: LEVEL 143
 
@@ -441,13 +481,21 @@ The exit is the one type 26 on the level, on the underside of the block at 17,5,
 
 With LEVEL 132's exit missing on that disc too, the PAL disc's eight hidden exits leave HIDDEN 9 and HIDDEN 10 unreachable there.
 
+On the PAL disc the exit is gone and nothing else of the level changes, read off its image.
+
 ### /HELL/HELL.PAK#14: LEVEL 150
 
 The best score in play. The disc holds 50 more, the one crumbling block it leaves standing.
 
+On the PAL disc it holds 50 more, the same crumbling block, the score moving with the hourglass's points there (type 35).
+
+On the Japanese disc it holds 50 more, the same crumbling block, the score moving with the hourglass's points there (type 35).
+
 ### /HELL/HELL.PAK#15: BONUS 28
 
 The best score in play. The disc holds 1000 more, the two coins on top of the first platform, a face that cannot be reached.
+
+On the Japanese disc the coins on the top faces of 18,19,12 and 19,17,12 and the one under 17,17,12 are gone, read off its image, and its total is below the best score here, so the score is taken away.
 
 ### /HELL/HELL.PAK#17: BONUS 30
 
@@ -455,6 +503,12 @@ From The Cutting Room Floor's Roll Away page.
 
 Its thirty pickups are the only ones in the game without a pickup number.
 
+On the PAL disc the slot holds another level altogether, read off its image, with an hourglass, sunglasses and a fruit where the US and Japanese level has none, and its file ends at its count with no trailer, so its time is the 99 seconds the game gives it ([level-format.md](level-format.md) has the routine).
+
+The PAL disc's level is the earlier one, the game having been made in Sweden and released in Europe first, which is why the notes call the US and Japanese level the rebuild.
+
 ### /HELL/HELL.PAK#18: HIDDEN 10
 
 The 160 blocks of lettering lie flat on z=32, the floor of the lattice and 22 blocks below the playable structure. The other 18 are a frame standing in the xz plane, and everything the level places, the start, the exit, four keys, eight gold coins and four gems, stands on its `-y` face ([level-format.md](level-format.md) has how the lettering fixed the handedness).
+
+On the PAL disc the level is the US one, read off its image, and no level of that disc has the exit that leads here, LEVEL 143's being gone.
