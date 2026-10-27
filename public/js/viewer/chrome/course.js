@@ -4,7 +4,6 @@ import { state, effectsOn } from "../state.js";
 import { FACE_NAME, cellKey } from "../../format/lattice.js";
 import { counted, markerGroup, markerHeading, startsOf } from "../data.js";
 import { slotOf } from "../permalink.js";
-import { current as release, differs } from "../release.js";
 import {
   CAP,
   JUMP,
@@ -320,12 +319,8 @@ function writeStore(change) {
   }
 }
 
-/** The key a route on `l` is kept under: its slot, and the disc shown as well where the slot
-    differs between the discs. */
-const keyOf = (l) => {
-  const slot = slotOf(l);
-  return differs(`${l.pack}#${l.index}`).length ? `${slot}@${release()}` : slot;
-};
+/** The key a route on `l` is kept under: its slot, and its disc where it is another disc's level. */
+const keyOf = (l) => (l.release ? `${slotOf(l)}@${l.release}` : slotOf(l));
 
 function remember() {
   if (!state.lvl) return;

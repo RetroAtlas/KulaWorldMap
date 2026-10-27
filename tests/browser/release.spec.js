@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { settle, still } from "./helpers.js";
-import { route, startPlay, top } from "./playhelpers.js";
+import { route, startPlay, stopOn, top } from "./playhelpers.js";
 
 const LOCKED = "Leave play to change the release";
 const BONUS_30 = "/HELL/HELL.PAK#17";
@@ -451,7 +451,25 @@ test("a route planned on BONUS 30 under US is kept apart from one planned under 
   const keys = await page.evaluate(() =>
     Object.keys(JSON.parse(localStorage.getItem("kula.course")).by).sort(),
   );
-  expect(keys).toEqual(["HELL/17@eu", "HELL/17@us"]);
+  expect(keys).toEqual(["HELL/17", "HELL/17@eu"]);
+});
+
+test("a route planned on BONUS 30 under US stays through a press of JP, which ships the US level there", async ({
+  page,
+}) => {
+  await page.goto("/#HELL/17/45,35/fit/33");
+  await settle(page);
+  await still(page);
+  await page.keyboard.press("r");
+  const line = page.locator("#courseLine");
+  await expect(line).toHaveText("Route planner · 0 stops");
+  await stopOn(page, [18, 21, 21]);
+  await expect(line).toHaveText("Route planner · 2 stops");
+  const planned = await route(page);
+  await press(page, "jp");
+  await expect(pressed(page)).toHaveText("JP");
+  await expect(line).toHaveText("Route planner · 2 stops");
+  expect(await route(page)).toEqual(planned);
 });
 
 test("BONUS 26's note after a press of JP is that disc's own, and its line reads the total with no best score", async ({

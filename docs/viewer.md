@@ -350,7 +350,7 @@ On a level of your own the strip stands above the editor's strip, and while edit
 
 The route is kept with its level in this browser, for levels of your own as well, and it rides in the link, so a link copied with it opens with it wherever it is opened; a link without one leaves the kept route as it is.
 
-A route is kept by its level, and by its level and the disc shown where the slot differs between the discs, so a route planned on the PAL BONUS 30 never stands over the US one, while a level that is the same on every disc keeps one route whichever is shown.
+A route is kept by the level shown, its slot and, where that is another disc's level, its disc, so a route planned on the PAL BONUS 30 never stands over the US one, while a level the discs share keeps one route whichever disc is shown, BONUS 30 under JP among them, since the Japanese disc ships the US level there.
 
 The switch itself is not kept from one visit to the next, and a route stays on the map with the switch off.
 
