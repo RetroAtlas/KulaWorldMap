@@ -1,10 +1,9 @@
 // The disc a patch is for: the bar US · EU · JP in the box's disc step, pressed
 // by hand until an image is read and locked to the disc its boot line names after.
 import { el } from "../viewer/ui/dom.js";
-import { BASE, discWord, releaseOf, releases } from "../viewer/release.js";
+import { BASE, nameOf, releaseOf, releases } from "../viewer/release.js";
 
 const LABEL = "The disc the patch is for";
-const nameOf = (r) => `${r.name}, the ${discWord(r.id)} release${r.serial ? ` (${r.serial})` : ""}`;
 const fromLayout = (name) =>
   `The fits above are worked out for the ${name} disc until the image is given.`;
 

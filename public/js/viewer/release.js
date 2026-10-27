@@ -14,6 +14,9 @@ export const releaseOf = (id) => entries.find((r) => r.id === id) ?? null;
 export const current = () => shown;
 /** The word for a release's disc, or its region as the file gives it where the map has no word. */
 export const discWord = (id) => WORDS[id] ?? releaseOf(id)?.region ?? id;
+/** A release named for a tooltip: its game, its disc and its serial where the file gives one. */
+export const nameOf = (r) =>
+  `${r.name}, the ${discWord(r.id)} release${r.serial ? ` (${r.serial})` : ""}`;
 
 /** The release files in order, a failed load as null and left out; the base is built in where its file is missing. */
 export function setReleases(files) {

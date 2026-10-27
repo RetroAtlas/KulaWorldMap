@@ -1,12 +1,10 @@
 import { $, el, emit, on } from "../ui/dom.js";
-import { BASE, current, discWord, releaseOf, releases, setCurrent } from "../release.js";
+import { BASE, current, nameOf, releaseOf, releases, setCurrent } from "../release.js";
 import { reshow, settle, tailWith, writeHash } from "./navigate.js";
 
 const KEY = "kula.release";
 const LINK = "d-";
 const LOCKED = "Leave play to change the release";
-
-const nameOf = (r) => `${r.name}, the ${discWord(r.id)} release${r.serial ? ` (${r.serial})` : ""}`;
 
 function kept() {
   try {

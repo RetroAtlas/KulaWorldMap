@@ -12,6 +12,7 @@ import {
   layoutOf,
   levelOn,
   levelsOf,
+  nameOf,
   releaseOf,
   releases as known,
   rulesOf,
@@ -297,6 +298,8 @@ test("the word for a disc is the map's, PAL for the European release and Japanes
   setReleases([...releases, { ...eu, id: "au", region: "Australia", levels: {} }]);
   assert.equal(discWord("au"), "Australia");
   assert.equal(discWord("nz"), "nz");
+  assert.equal(nameOf(eu), `${eu.name}, the PAL release (${eu.serial})`);
+  assert.equal(nameOf({ id: "us", name: "Roll Away" }), "Roll Away, the North American release");
   setReleases(releases);
 });
 
