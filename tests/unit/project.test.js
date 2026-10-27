@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { levelKey, mapData, objects } from "./fixtures.js";
+import { levelKey, mapData, objects, releases } from "./fixtures.js";
 import { NAMES, index, platformCells } from "../../public/js/viewer/data.js";
 import { SIDE } from "../../public/js/format/lattice.js";
 import {
@@ -594,6 +594,44 @@ test("a title, an author, notes, a world, a target or a source past their most a
     "into is 2016 characters long, more than the 2000 kept; it is cut to 2000",
   ]);
   assert.deepEqual(readProject(writeProject(p)).report, []);
+});
+
+test("the disc a template came from is read and written after its source, cut as a text is, and absent by default", () => {
+  const blocks = [plain([5, 5, 5], 0, { 0: start() })];
+  const { project: p, report } = readProject(
+    project(blocks, { from: "/HELL/HELL.PAK#17", fromRelease: "eu" }),
+  );
+  assert.deepEqual(report, []);
+  assert.equal(p.fromRelease, "eu");
+  const text = writeProject(p);
+  assert.match(text, /\n {2}"from": "\/HELL\/HELL\.PAK#17",\n {2}"fromRelease": "eu",\n {2}"time"/);
+  assert.deepEqual(readProject(text), { project: p, report: [], repairs: 0 });
+  const plainRead = readProject(project(blocks));
+  assert.ok(!("fromRelease" in plainRead.project));
+  assert.ok(!writeProject(plainRead.project).includes("fromRelease"));
+  const number = readProject(project(blocks, { fromRelease: 2 }));
+  assert.ok(!("fromRelease" in number.project));
+  assert.deepEqual(number.report, ["fromRelease is not text; it is left out"]);
+  const long = readProject(project(blocks, { fromRelease: "e".repeat(2001) }));
+  assert.equal(long.project.fromRelease, "e".repeat(2000));
+  assert.deepEqual(long.report, [
+    "fromRelease is 2001 characters long, more than the 2000 kept; it is cut to 2000",
+  ]);
+});
+
+test("a template of another disc's level records its disc after its source, and a US template records none", () => {
+  const [, ...others] = releases;
+  for (const r of others)
+    for (const [key, v] of Object.entries(r.levels)) {
+      const p = fromLevel(v);
+      const keys = Object.keys(p);
+      const at = keys.indexOf("from");
+      assert.deepEqual(keys.slice(at, at + 3), ["from", "fromRelease", "time"], key);
+      assert.deepEqual([p.from, p.fromRelease], [key, r.id], key);
+      assert.deepEqual(readProject(writeProject(p)).project, p, key);
+      assert.ok(!("release" in toLevel(p, 1)), key);
+    }
+  for (const l of mapData.levels) assert.ok(!("fromRelease" in fromLevel(l)), l.name);
 });
 
 test("a whole number past 2^53 is no whole number, and is reported as the page parsed it", () => {

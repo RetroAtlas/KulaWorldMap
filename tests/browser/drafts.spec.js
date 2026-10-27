@@ -151,6 +151,7 @@ test("new makes a draft, shown and kept in this browser, which a reload brings b
   await expect(page.locator("#draftTitle")).toHaveValue("Untitled level");
   await expect(page.locator("#draftWorld")).toHaveValue("HIRO");
   await expect(page.locator("#draftTime")).toHaveValue("99");
+  await expect(page.locator("#draftFrom")).toBeHidden();
 
   await written(page, (s) => s?.version).toBe(1);
   const store = await stored(page);
@@ -188,6 +189,7 @@ test("copy this level makes a draft out of the level on screen, and of a draft a
   const doc = await docOf(page, copy.draft);
   expect(doc).toMatchObject({ title: "LEVEL 1", world: "HIRO", from: "/HIRO/HIRO.PAK#0" });
   await expect(page.locator("#draftRows button .name")).toHaveText("LEVEL 1");
+  await expect(page.locator("#draftFrom")).toHaveText("Copied from LEVEL 1");
   await expect(page.locator("#say")).toContainText("Copied LEVEL 1. Draft, LEVEL 1");
 
   await page.locator("#draftCopy").click();

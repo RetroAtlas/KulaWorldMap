@@ -46,6 +46,7 @@ It spells the game's own structure in the game's own numbers: cells are lattice 
 | `world` | one of the ten disc ids, `HIRO`, `HILLS`, `INCA`, `ARCTIC`, `COWBOY`, `FIELD`, `ATLANT`, `HAZE`, `MARS`, `HELL`: the artwork, the ball and the music | `""`, which the checks name as an error and the file opener refuses, and a longer text is cut to 2000 with a line |
 | `into` | the target slot on the disc, in the repo's `pack#index` form, a world pack's slot 0 to 19, a finals pack's slot 0 or 1 or the Simon rooms' pack's slot 0 to 9 | none, and a longer text is cut to 2000 with a line |
 | `from` | where a template came from, the shipped level's `pack#index` | none, and a longer text is cut to 2000 with a line |
+| `fromRelease` | the disc the template came from, `eu` or `jp`, where it was not the US one | none, a `from` without it is a template of the US release, and a longer text is cut to 2000 with a line |
 | `time` | seconds, which the game multiplies by 50 into its clock | 99 |
 | `hidden` | the settings record's type 1: the glass ball and translucent faces | `false` |
 | `invisibleFromAfar` | the settings record's `f2` 1: invisible blocks show from afar and fade near the ball | `false` |
@@ -80,7 +81,7 @@ A template of a shipped level takes its `title` from the number the pause screen
 **Reading a project file.** `readProject`, and `read_project` in the tool, refuse a document that does not carry the marker and take everything else, with a report line for every value it could not take as written:
 
 - A key of the wrong type takes its default, so `"length": "3"` is a two-block platform and a `time` that is not a whole number is 99, a whole number being one JSON spells within the 2^53 both readers hold exactly, with or without a point, so a larger one takes the default as a fraction does.
-- A `title` past 80 characters, or any other text past 2000, `author`, `notes`, `world`, `into` or `from`, is cut to that many.
+- A `title` past 80 characters, or any other text past 2000, `author`, `notes`, `world`, `into`, `from` or `fromRelease`, is cut to that many.
 - A `type`, `facing`, `speed`, `phase` or `time` past the file's word, -32768 to 32767, is the nearest word the file holds, as is a `variant` on a type whose variant has no range.
 - A colour or a variant outside its range, or missing, is 0.
 - A platform's `length` whose run reaches past the edge from the run's upper end is the most the edge leaves room for, or 1 where it leaves none, and one below 1 is 1.

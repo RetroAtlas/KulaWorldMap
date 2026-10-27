@@ -399,7 +399,10 @@ export function projectOf(level, report = []) {
     notes: "",
     world: level.theme,
   };
-  if ("pack" in level) project.from = levelKey(level.pack, level.index);
+  if ("pack" in level) {
+    project.from = levelKey(level.pack, level.index);
+    if ("release" in level) project.fromRelease = level.release;
+  }
   const circuits = {};
   for (const c of [...states.keys()].sort((a, b) => a - b))
     if (states.get(c) === STATE_OFF) circuits[String(c)] = "off";

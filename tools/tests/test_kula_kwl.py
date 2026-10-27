@@ -223,6 +223,14 @@ class RoundTrips(unittest.TestCase):
         with self.assertRaises(KeyError):
             template(data, "/HIRO/HIRO.PAK#99")
 
+    def test_a_template_of_another_discs_level_records_its_disc_after_its_source_and_a_us_templates_none(self):
+        variant = json.loads((DATA.parent / "releases" / "eu.json").read_text())["levels"]["/HELL/HELL.PAK#17"]
+        p = project_of(variant)
+        keys = list(p)
+        self.assertEqual((p["from"], p["fromRelease"]), ("/HELL/HELL.PAK#17", "eu"))
+        self.assertEqual(keys[keys.index("from"):keys.index("from") + 3], ["from", "fromRelease", "time"])
+        self.assertNotIn("fromRelease", template(json.loads(DATA.read_text()), "/HELL/HELL.PAK#17"))
+
     def test_the_slot_counts_are_the_packs_as_the_layout_lists_them(self):
         packs = {p["path"]: len(p["slots"]) for p in json.loads(PACKS.read_text())["packs"]}
         for w in WORLDS:
@@ -858,6 +866,13 @@ class ReadsProjects(unittest.TestCase):
             "world is 2001 characters long, more than the 2000 kept; it is cut to 2000",
             "into is 2016 characters long, more than the 2000 kept; it is cut to 2000",
         ])
+
+    def test_the_disc_a_template_came_from_is_kept_as_its_source_is_and_absent_by_default(self):
+        p, report, _ = read_project(project([], **{"from": "/HELL/HELL.PAK#17", "fromRelease": "eu"}))
+        self.assertEqual((p["from"], p["fromRelease"], report), ("/HELL/HELL.PAK#17", "eu", []))
+        self.assertNotIn("fromRelease", read_project(project([]))[0])
+        p, report, _ = read_project(project([], fromRelease=2))
+        self.assertEqual((p.get("fromRelease"), report), (None, ["fromRelease is not text; it is left out"]))
 
     def test_a_whole_number_past_2_53_is_no_whole_number_and_is_reported_as_the_page_parsed_it(self):
         p, report, _ = read_project(json.loads(f'''{{"format": "{FORMAT}", "world": "{WORLD}", "time": 9007199254740993, "blocks": [

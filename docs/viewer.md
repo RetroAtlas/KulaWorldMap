@@ -175,6 +175,8 @@ Where this browser holds levels of its own that could not be read, a row under t
 
 For the shown draft a Level card edits its title, up to eighty characters, its world, the time its clock starts at, any number of seconds from 1 to 32767, rounded to whole seconds, which says so when it keeps the old value, and whether it plays as a hidden level or shows invisible blocks from afar, each change redrawing the map with the view, the slice, the hidden kinds, the selection, the clock and the switch presses kept; a Plays as choice above Hidden level lets a level with no key play as a bonus level or as a Simon room, one step undo takes back, and shows a level with a key as an arcade level with no choice, since the game decides that from the keys, its tip saying so and that taking every key away opens the choice.
 
+Under its title the card of a copy of one of the game's levels says which level it was copied from, naming the disc where that level is the PAL or the Japanese disc's own.
+
 Under those, Circuits lists the four colours, each with its swatch, whether it starts on or off, which its button turns over as one step undo takes back, and how many switches, teleporters and lasers of it the level has, or that it has none, so a colour's starting state is set beside the level's other settings, each row a group named Circuit, as the panel's row is, and each button named for a reader by its colour, "green circuit", with whether it starts on in whether it is pressed, since "starts on" is the state and not the name, and the swatch there for the eye alone.
 
 The card announces none of its changes to the level's settings, where the panel does, so a change made from it clears what the panel last said.

@@ -363,6 +363,8 @@ export function readProject(source) {
   if (into !== undefined) project.into = into;
   const from = optional("from", TEXT_MOST);
   if (from !== undefined) project.from = from;
+  const fromRelease = optional("fromRelease", TEXT_MOST);
+  if (fromRelease !== undefined) project.fromRelease = fromRelease;
   if (raw.time === undefined || safe(raw.time)) project.time = raw.time ?? DEFAULT_TIME;
   else {
     report.push(`a time of ${show(raw.time)} is not a whole number; it is ${DEFAULT_TIME}`);
@@ -444,6 +446,7 @@ export function writeProject(project) {
   };
   if (project.into !== undefined) head.into = project.into;
   if (project.from !== undefined) head.from = project.from;
+  if (project.fromRelease !== undefined) head.fromRelease = project.fromRelease;
   head.time = project.time ?? DEFAULT_TIME;
   head.hidden = !!project.hidden;
   head.invisibleFromAfar = !!project.invisibleFromAfar;

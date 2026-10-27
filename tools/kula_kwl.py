@@ -468,6 +468,8 @@ def project_of(level, report=None):
     }
     if "pack" in level:
         project["from"] = level_key(level["pack"], level["index"])
+        if "release" in level:
+            project["fromRelease"] = level["release"]
     project.update({
         "time": level["time"],
         "hidden": hidden,
@@ -1114,6 +1116,9 @@ def read_project(raw):
     source = optional("from", TEXT_MOST)
     if source is not None:
         project["from"] = source
+    disc = optional("fromRelease", TEXT_MOST)
+    if disc is not None:
+        project["fromRelease"] = disc
     if "time" not in raw or _whole(raw["time"]):
         project["time"] = _int(raw["time"]) if "time" in raw else DEFAULT_TIME
     else:

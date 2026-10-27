@@ -11,10 +11,11 @@ import {
   circuitPhrase,
   theCircuit,
 } from "../viewer/data.js";
+import { BASE, discWord, levelOn, releaseOf } from "../viewer/release.js";
 import { selectLevel, showLevel } from "../viewer/chrome/navigate.js";
 import { say, describeLevel } from "../viewer/chrome/a11y.js";
 import { toast } from "../viewer/ui/toast.js";
-import { COLOURS, KEY, SWITCH, facesOf, writeKwl } from "../format/kwl.js";
+import { COLOURS, KEY, SWITCH, facesOf, levelKey, writeKwl } from "../format/kwl.js";
 import {
   UNTITLED,
   blank,
@@ -260,6 +261,17 @@ function card(id, d) {
   box.hidden = false;
 }
 
+/** What a copy's card says of its source: the level its slot holds on the disc it was read from. */
+function copiedFrom(doc) {
+  const slot = state.data.levels.find((l) => levelKey(l.pack, l.index) === doc.from);
+  if (!slot) return "";
+  const disc = releaseOf(doc.fromRelease) ? doc.fromRelease : BASE;
+  const title = levelTitle(levelOn(slot, disc));
+  return disc === BASE
+    ? `Copied from ${title}`
+    : `Copied from ${title} on the ${discWord(disc)} disc`;
+}
+
 function reportFold({ lines, repairs }) {
   return el(
     "details",
@@ -291,6 +303,7 @@ function buildForm(id, box) {
     title: "The level's title",
   });
   title.oninput = () => edit({ title: title.value }, "changed the title", true);
+  const source = el("p", { id: "draftFrom", className: "sub", hidden: true });
 
   const world = el("select", {
     id: "draftWorld",
@@ -392,6 +405,7 @@ function buildForm(id, box) {
     imported?.id === id && imported.lines.length ? reportFold(imported) : [],
     el("h3", { textContent: "Level" }),
     field("Title", title),
+    source,
     field("World", world),
     field("Time", time),
     field("Plays as", mode),
@@ -411,6 +425,8 @@ function buildForm(id, box) {
     id,
     sync(d) {
       set(title, d.doc.title);
+      source.textContent = copiedFrom(d.doc);
+      source.hidden = !source.textContent;
       set(world, d.doc.world);
       set(time, String(d.doc.time));
       const key = keyed(d.doc);
