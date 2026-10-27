@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { annotations, mapData, packs, releases, levelKey, TRAILER_KIND } from "./fixtures.js";
+import { annotations, mapData, most, packs, releases, levelKey, TRAILER_KIND } from "./fixtures.js";
 import { state } from "../../public/js/viewer/state.js";
 import {
   compose,
@@ -51,9 +51,6 @@ const WORDS = "no one two three four five six seven eight nine ten eleven twelve
   " ",
 );
 const number = (s) => (WORDS.includes(s) ? WORDS.indexOf(s) : Number(s));
-/** The most an hourglass scores under a release's rules, nothing where its case never divides the clock. */
-const most = ({ from, second, points }) =>
-  second === null ? 0 : points * Math.floor(from / second);
 
 test("the three files are the US, PAL and Japanese releases, each its identity, rules, layout and levels", () => {
   assert.deepEqual(
@@ -249,7 +246,8 @@ test("a release's levels are built once for the data and again for other data or
   assert.notEqual(levelsOf("eu"), again);
 });
 
-test("the level on a release at a slot is its variant there, the base's elsewhere, and a draft is handed back as it is", () => {
+test("the level on a release at a slot is its variant there, the base's elsewhere, and a draft is handed back as it is", (t) => {
+  t.after(() => setCurrent("us"));
   setReleases(releases);
   const base = mapData.levels[slot(VARIANT)];
   assert.equal(levelOn(base, "eu"), eu.levels[VARIANT]);
@@ -265,7 +263,6 @@ test("the level on a release at a slot is its variant there, the base's elsewher
   const draft = toLevel(blank("HIRO"), 1);
   assert.equal(levelOn(draft), draft);
   assert.equal(levelOn(draft, "jp"), draft);
-  setCurrent("us");
 });
 
 test("the releases a slot differs on are those whose file holds it, and none for an identical slot", () => {
@@ -277,7 +274,11 @@ test("the releases a slot differs on are those whose file holds it, and none for
       assert.ok(differsOn(key).includes(r.id), `${r.id} ${key}`);
 });
 
-test("the release shown is the base until a loaded one is chosen, and an unknown id changes nothing", () => {
+test("the release shown is the base until a loaded one is chosen, and an unknown id changes nothing", (t) => {
+  t.after(() => {
+    setReleases(releases);
+    setCurrent("us");
+  });
   setReleases(releases);
   assert.equal(current(), "us");
   setCurrent("jp");
@@ -286,7 +287,6 @@ test("the release shown is the base until a loaded one is chosen, and an unknown
   assert.equal(current(), "jp");
   setReleases([us, eu, null]);
   assert.equal(current(), "us");
-  setReleases(releases);
 });
 
 test("the word for a disc is the map's, PAL for the European release and Japanese for the Japanese one, and the file's region where the map has none", () => {
@@ -343,7 +343,8 @@ const BONUS_26 = "/MARS/MARS.PAK#16";
 const HOURGLASS = 35;
 const GEM = 36;
 
-test("a slot's level and a pack's levels are the release shown's", () => {
+test("a slot's level and a pack's levels are the release shown's", (t) => {
+  t.after(() => setCurrent("us"));
   setReleases(releases);
   const variant = eu.levels[`${HELL}#17`];
   const shipped = mapData.levels.filter((l) => l.pack === HELL);
@@ -357,7 +358,11 @@ test("a slot's level and a pack's levels are the release shown's", () => {
   assert.equal(levelAt(HELL, shipped.length), null);
 });
 
-test("an annotation is read with its override for the release shown, a null taking a score away", () => {
+test("an annotation is read with its override for the release shown, a null taking a score away", (t) => {
+  t.after(() => {
+    setCurrent("us");
+    setAnnotations(annotations);
+  });
   setReleases(releases);
   setAnnotations({
     ...annotations,
@@ -382,11 +387,10 @@ test("an annotation is read with its override for the release shown, a null taki
   setCurrent("eu");
   assert.equal(levelScore(level), 23115);
   assert.equal(markerPoints(hourglass), 990);
-  setCurrent("us");
-  setAnnotations(annotations);
 });
 
-test("the hourglass's points under each release are what its rules make of the clock it turns", () => {
+test("the hourglass's points under each release are what its rules make of the clock it turns", (t) => {
+  t.after(() => setCurrent("us"));
   setReleases(releases);
   setAnnotations(annotations);
   const hourglass = levelMarkers(mapData.levels[slot("/HIRO/HIRO.PAK#5")]).find(
@@ -396,10 +400,10 @@ test("the hourglass's points under each release are what its rules make of the c
     setCurrent(r.id);
     assert.equal(markerPoints(hourglass), most(r.rules.hourglass), r.id);
   }
-  setCurrent("us");
 });
 
-test("the statistics count the release shown's levels, so a type the Japanese disc removes is placed fewer times under it", () => {
+test("the statistics count the release shown's levels, so a type the Japanese disc removes is placed fewer times under it", (t) => {
+  t.after(() => setCurrent("us"));
   setReleases(releases);
   const gems = (levels) =>
     levels.reduce(
@@ -417,5 +421,4 @@ test("the statistics count the release shown's levels, so a type the Japanese di
   assert.equal(placed(markerStats()), gems(onJp));
   assert.ok(gems(onJp) < gems(mapData.levels));
   assert.equal(gems([mapData.levels[slot(BONUS_26)]]) - gems([jp.levels[BONUS_26]]), 3);
-  setCurrent("us");
 });

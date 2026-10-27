@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { packs, releases } from "./fixtures.js";
+import { most, packs, releases } from "./fixtures.js";
 
 const text = (path) =>
   readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
@@ -40,9 +40,6 @@ test("disc.md's pack sector table is where each release's layout puts every pack
   );
 });
 
-/** The most an hourglass scores under a release's rules, nothing where its case never divides the clock. */
-const most = ({ from, second, points }) =>
-  second === null ? 0 : points * Math.floor(from / second);
 const figure = (s) => (s === "nothing" ? 0 : number(s));
 
 test("level-format.md's hourglass sentence gives the other discs' figures as their rules make them", () => {

@@ -4,7 +4,7 @@ Every check of the repo lives where what it checks is computed: a unit test for 
 
 ## The suites
 
-`npm test` runs the unit tests under `tests/unit` with Node's own runner, every file in its own process, in a few seconds; they read the shipped data through `tests/unit/fixtures.js` (`map_data.json`, `objects.json`, `annotations.json`, `packs.json` and the release files under `releases/`) and the synthetic disc image `tests/unit/synthetic.js` builds from the page's own writers.
+`npm test` runs the unit tests under `tests/unit` with Node's own runner, every file in its own process, in a few seconds; they read the shipped data through `tests/unit/fixtures.js` (`map_data.json`, `objects.json`, `annotations.json`, `packs.json` and the release files under `releases/`), which also holds the few helpers the files share, and the synthetic disc image `tests/unit/synthetic.js` builds from the page's own writers.
 
 The unit tests also hold the repo to its conventions: `imports.test.js` the layers, the preloads and the pure modules of play, `prose.test.js` the docs' one-point lines, `sizes.test.js` every module, spec, unit test and tool to a size, `docs.test.js`, `docs-releases.test.js` and `counts.test.js` the README's and the docs' figures to the data, `hashes.test.js` that nothing cites a commit by its hash, `site.test.js` what the site may say, `backlog.test.js` the backlog's numbering and links, and `frame.test.js` the frame tool's parts to the functions the viewer defines.
 

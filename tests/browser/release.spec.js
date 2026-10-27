@@ -317,7 +317,7 @@ test("the canvas's label opens with the game's name on a disc other than the US 
   );
 });
 
-test("a draft on screen keeps the bar live, and a press changes the points its line shows where it holds an hourglass", async ({
+test("a draft on screen keeps the bar live, a press changes the points its line shows where it holds an hourglass, and Back takes the game's name off the canvas's label", async ({
   page,
 }) => {
   await page.goto("/#HIRO/5");

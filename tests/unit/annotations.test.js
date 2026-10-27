@@ -70,10 +70,11 @@ test("every annotated kind, type and variant is placed somewhere", () => {
   }
 });
 
-// The catalogue's note is on copies of OBJ LEVEL and on nothing else under
+// The catalogue's note is on every copy of OBJ LEVEL and on nothing else under
 // every release, read as the map reads it, with the release's own note where
-// the entry has one; the base ships nine copies.
-test("the catalogue note is on OBJ LEVEL under every release, nine times on the base", () => {
+// the entry has one.
+test("the catalogue note is on every copy of OBJ LEVEL under every release and on nothing else, nine on the base", (t) => {
+  t.after(() => setCurrent(BASE));
   setAnnotations(annotations);
   state.data = mapData;
   setReleases(releases);
@@ -81,10 +82,10 @@ test("the catalogue note is on OBJ LEVEL under every release, nine times on the 
     setCurrent(r.id);
     const noted = levelsOf(r.id).filter((l) => /object catalogue/i.test(levelNote(l)));
     for (const l of noted) assert.equal(l.name, "OBJ LEVEL", `${r.id}: ${levelKey(l)}`);
-    assert.ok(noted.length >= 9, `${r.id}: ${noted.length} catalogue notes`);
+    const copies = levelsOf(r.id).filter((l) => l.name === "OBJ LEVEL").length;
+    assert.equal(noted.length, copies, `${r.id}: ${noted.length} catalogue notes`);
     if (r.id === BASE) assert.equal(noted.length, 9);
   }
-  setCurrent(BASE);
 });
 
 // A curated score exists to say that not everything on a level can be had,
