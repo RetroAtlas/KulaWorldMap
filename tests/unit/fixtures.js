@@ -10,7 +10,6 @@ export const packs = JSON.parse(readFileSync(at("packs.json"), "utf8"));
 export const releases = ["us", "eu", "jp"].map((id) =>
   JSON.parse(readFileSync(at(`releases/${id}.json`), "utf8")),
 );
-/** The discs as the placer takes them: each release's id, the word for it, the executable it boots and its sector count. */
 export const discs = releases.map(({ id, name, boot, sectors }) => ({ id, name, boot, sectors }));
 export const levelKey = (l) => `${l.pack}#${l.index}`;
 

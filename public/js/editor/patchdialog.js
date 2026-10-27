@@ -77,8 +77,6 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const showing = () => d !== null && !ui.overlay.hidden;
 const blocked = () => d.rows.map((row) => row.blocked).find(Boolean) ?? null;
 const offered = () => !!d.placed && !blocked();
-/** The discs as the placer tells them apart, from the model's releases. */
-const discs = () => releases().map(({ id, name, boot, sectors }) => ({ id, name, boot, sectors }));
 /** The layout of the disc the patch is for, or null where its file did not load. */
 const discLayout = () => layoutOf(d.chosen);
 
@@ -565,7 +563,7 @@ async function take(file) {
   try {
     if (await isIso(file)) throw new Error(RAW_ONLY);
     disc = await openDisc(file);
-    known = await identify(disc, discs());
+    known = await identify(disc, releases());
     if (!layoutOf(known.release ?? d.chosen)) packs = await packsOf(disc);
   } catch (e) {
     if (mine !== turn) return;
@@ -596,7 +594,7 @@ async function before(file, items) {
   let fits = [];
   for (let n = 1; n < items.length; n++) {
     try {
-      fits = (await planAll(file, items.slice(0, n), inflate, discs())).placed.map((p) => p.fit);
+      fits = (await planAll(file, items.slice(0, n), inflate, releases())).placed.map((p) => p.fit);
     } catch {
       break;
     }
@@ -626,7 +624,7 @@ async function placed(mine = ++turn) {
   let planned;
   let image;
   try {
-    planned = await planAll(file, items, inflate, discs());
+    planned = await planAll(file, items, inflate, releases());
     image = patchedImage(file, planned.writes);
     await verifyAll(await openDisc(image), items, planned, inflate);
   } catch (e) {
