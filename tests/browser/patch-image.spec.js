@@ -438,7 +438,7 @@ test("a read that lands late for an image no longer current changes nothing, and
   await page.evaluate(() => window.__release());
   await expect(status).toHaveText("quick.bin is read.");
   await expect(dialog.locator("#patchWarnings li").first()).toHaveText(
-    "the image has 44 sectors, not the 109,607 of the disc",
+    "the image has 44 sectors, not the 109,607 of the Roll Away disc",
   );
   await expect(dialog.locator("#patchPlay li").first()).toContainText("quick.ppf");
   await expect(dialog.locator("#patchPpf")).toBeEnabled();

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { inflateSync } from "node:zlib";
-import { mapData, packs, levelKey } from "./fixtures.js";
+import { discs, levelKey, mapData, packs } from "./fixtures.js";
 import {
   BUFFER,
   IN_PLACE,
@@ -528,7 +528,7 @@ test("fitAll over the layout gives the placer's fits over the image, set by set 
     ],
   ];
   for (const [name, members, paths] of sets) {
-    const planned = await planAll(blob, members, inflate);
+    const planned = await planAll(blob, members, inflate, discs);
     assert.deepEqual(
       planned.placed.map((p) => [p.fit.path, p.fit.recompressed]),
       paths,

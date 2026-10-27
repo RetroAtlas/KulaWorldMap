@@ -221,6 +221,8 @@ The disc: the image, dropped onto the box or chosen with the browser's own file 
 
 Playing it, which appears once there is a patch: where each emulator wants the patch, DuckStation and PCSX-Redux beside the image under its name, ePSXe and PCSX-ReARMed in their patches folder under the game's serial, how xdelta3 applies the other, and that Mednafen, Beetle and RetroArch take the patched disc instead.
 
+The folder ePSXe and PCSX-ReARMed read from is named for the disc the image's boot line names, and the line is left out where the boot line names none of the three.
+
 A browser that cannot unpack the game's files says a newer one is needed.
 
 Before any download is offered the plan is read back through the patched disc, each level placed over the disc as the rows above it leave it, the directory, the packs and the slots read as the game reads them and every written sector checked, and the patches are then the stretches where those sectors differ from the image, so a browser that cannot put that disc together is told on the row of the level it cannot place that the level cannot be placed, and gets no patch.

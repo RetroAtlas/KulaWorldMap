@@ -13,13 +13,10 @@ import {
 } from "./sectors.js";
 import { IN_PLACE, REBUILD, fitPak, readPak, writePak } from "./pak.js";
 import { PVD, openDisc, setRecord } from "./iso.js";
-import { WORLDS } from "./kwl.js";
+import { WORLDS, spelled } from "./kwl.js";
 
 export const ROOM = "/3.00";
-export const NTSC_U = 109607;
 export const SYSTEM_ID = "PLAYSTATION";
-export const BOOT = "BOOT = cdrom:SLUS_007.24;1";
-export const SERIAL = "SLUS_007.24";
 export const PACKS = [
   ...WORLDS.map((w) => `/${w}/${w}.PAK`),
   ...WORLDS.map((w) => `/${w}/${w}FI.PAK`),
@@ -66,25 +63,43 @@ function padded(bytes, length) {
   return out;
 }
 
-/** What says the image is not an image of the disc, each a warning rather than a refusal. */
-export async function identify(disc) {
-  const out = [];
+// The boot line of a SYSTEM.CNF, upper-cased, or nothing where it has none.
+function bootLine(cnf) {
+  for (const line of cnf.split(/\r?\n/)) {
+    const eq = line.indexOf("=");
+    if (eq > 0 && line.slice(0, eq).trim().toUpperCase() === "BOOT") return line.toUpperCase();
+  }
+  return "";
+}
+
+/**
+ * Which of the discs in the table the image is, the one whose executable its
+ * SYSTEM.CNF boots or null, and what says it is not an image of that disc,
+ * each a warning rather than a refusal. An entry of the table is { id, name,
+ * boot, sectors }: the disc's id, the word for it, the executable its boot
+ * line names and its sector count.
+ */
+export async function identify(disc, releases) {
+  const warnings = [];
+  const cnf = disc.files.has("/SYSTEM.CNF") ? ascii(await disc.readFile("/SYSTEM.CNF")) : "";
+  const boot = bootLine(cnf);
+  const entry = releases.find((r) => boot.includes(r.boot)) ?? null;
   if (disc.size % SECTOR_RAW)
-    out.push(
+    warnings.push(
       `the image is ${commas(disc.size)} bytes, which is not whole sectors of ${SECTOR_RAW}`,
     );
-  else if (disc.size !== NTSC_U * SECTOR_RAW)
-    out.push(
-      `the image has ${commas(disc.size / SECTOR_RAW)} sectors, not the ${commas(NTSC_U)} of the disc`,
+  else if (entry && disc.size !== entry.sectors * SECTOR_RAW)
+    warnings.push(
+      `the image has ${commas(disc.size / SECTOR_RAW)} sectors, not the ${commas(entry.sectors)} of the ${entry.name} disc`,
     );
   const pvd = await disc.sector(PVD);
   const system = ascii(pvd.subarray(8, 40)).replace(/\s+$/, "");
-  if (system !== SYSTEM_ID) out.push(`the system identifier is '${system}', not ${SYSTEM_ID}`);
-  const cnf = disc.files.has("/SYSTEM.CNF") ? ascii(await disc.readFile("/SYSTEM.CNF")) : "";
-  if (!cnf.includes(BOOT)) out.push(`SYSTEM.CNF does not say ${BOOT}`);
+  if (system !== SYSTEM_ID) warnings.push(`the system identifier is '${system}', not ${SYSTEM_ID}`);
+  if (!entry)
+    warnings.push(`SYSTEM.CNF names none of the ${spelled(releases.length)} discs' executables`);
   const missing = PACKS.filter((p) => !disc.files.has(p)).length;
-  if (missing) out.push(`${missing} of the ${PACKS.length} packs are missing`);
-  return out;
+  if (missing) warnings.push(`${missing} of the ${PACKS.length} packs are missing`);
+  return { release: entry?.id ?? null, warnings };
 }
 
 // The sectors of a file's run that differ once it holds the user data given,
@@ -195,12 +210,13 @@ async function planOn(disc, packPath, slot, stream, title, inflate) {
 /**
  * The sectors that put the stream into the slot, read off the image: the fit,
  * where the pack lies afterwards, the sectors to write as [lba, raw] in
- * address order, and what says the image is not an image of the disc. inflate
- * turns a zlib stream into its bytes, asynchronously, however the host does that.
+ * address order, which disc of the table the image is and what says it is not
+ * an image of that disc. inflate turns a zlib stream into its bytes,
+ * asynchronously, however the host does that.
  */
-export async function plan(disc, packPath, slot, stream, title, inflate) {
+export async function plan(disc, packPath, slot, stream, title, inflate, releases) {
   const placed = await planOn(disc, packPath, slot, stream, title, inflate);
-  return { ...placed, warnings: await identify(disc) };
+  return { ...placed, ...(await identify(disc, releases)) };
 }
 
 /**
@@ -208,9 +224,10 @@ export async function plan(disc, packPath, slot, stream, title, inflate) {
  * slot, stream, title } each planned over the image as the earlier ones left
  * it, in the order given: each item's plan in order, the sectors to write
  * merged in address order, a later one replacing an earlier at the same
- * address, and what says the image is not an image of the disc.
+ * address, which disc of the table the image is and what says it is not an
+ * image of that disc.
  */
-export async function planAll(blob, items, inflate) {
+export async function planAll(blob, items, inflate, releases) {
   const named = new Set();
   for (const { pack, slot } of items) {
     const key = `${pack.toUpperCase()}#${slot}`;
@@ -218,16 +235,16 @@ export async function planAll(blob, items, inflate) {
     named.add(key);
   }
   const disc = await openDisc(blob);
-  const warnings = await identify(disc);
+  const known = await identify(disc, releases);
   const placed = [];
   const merged = new Map();
   for (const { pack, slot, stream, title } of items) {
     const view = merged.size ? await openDisc(patchedImage(blob, [...merged])) : disc;
     const one = await planOn(view, pack, slot, stream, title, inflate);
-    placed.push({ ...one, warnings });
+    placed.push({ ...one, ...known });
     for (const [lba, raw] of one.writes) merged.set(lba, raw);
   }
-  return { placed, writes: [...merged].sort((a, b) => a[0] - b[0]), warnings };
+  return { placed, writes: [...merged].sort((a, b) => a[0] - b[0]), ...known };
 }
 
 /**
@@ -456,13 +473,19 @@ export async function vcdiff(original, writes, window = WINDOW) {
 const basename = (path) => path.split("/").pop();
 const stem = (name) => (name.lastIndexOf(".") > 0 ? name.slice(0, name.lastIndexOf(".")) : name);
 
-/** Where each emulator wants the PPF, and how the xdelta is applied. */
-export function placements(image, out) {
+/**
+ * Where each emulator wants the PPF, and how the xdelta is applied; the folder
+ * two of them read it from is named `boot`, the executable the image boots,
+ * and goes unsaid where that is null.
+ */
+export function placements(image, out, boot) {
   const imageName = basename(image);
   const outName = basename(out);
   return [
     `DuckStation, with Apply Image Patches on, and PCSX-Redux read the PPF beside the image as ${stem(imageName)}.ppf`,
-    `ePSXe and PCSX-ReARMed read it from their patches folder as ${SERIAL}, with no extension`,
+    ...(boot
+      ? [`ePSXe and PCSX-ReARMed read it from their patches folder as ${boot}, with no extension`]
+      : []),
     `the xdelta applies with: xdelta3 -d -s "${imageName}" "${outName}.xdelta" "${outName}.bin"`,
   ];
 }

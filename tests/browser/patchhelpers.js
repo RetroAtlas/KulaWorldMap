@@ -17,7 +17,7 @@ export const ADD = "add a level…";
 export const FILE = "a file…";
 
 export const WARNINGS = [
-  "the image has 43 sectors, not the 109,607 of the disc",
+  "the image has 43 sectors, not the 109,607 of the Roll Away disc",
   "19 of the 21 packs are missing",
 ];
 

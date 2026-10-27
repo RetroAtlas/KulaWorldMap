@@ -131,7 +131,9 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   const play = dialog.locator("#patchPlay li");
   await expect(play).toHaveCount(3);
   await expect(play.nth(0)).toContainText("synthetic.ppf");
-  await expect(play.nth(1)).toContainText("SLUS_007.24");
+  await expect(play.nth(1)).toHaveText(
+    "ePSXe and PCSX-ReARMed read it from their patches folder as SLUS_007.24, with no extension",
+  );
   await expect(play.nth(2)).toContainText(
     'xdelta3 -d -s "synthetic.bin" "spiral.xdelta" "spiral.bin"',
   );

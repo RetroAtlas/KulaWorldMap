@@ -19,7 +19,7 @@ import { deflate } from "../../public/js/format/deflate.js";
 import { writePak } from "../../public/js/format/pak.js";
 import { record } from "../../public/js/format/iso.js";
 import { DATA_SUBMODE, EOF_SUBMODE, USER, sector } from "../../public/js/format/sectors.js";
-import { BOOT, SYSTEM_ID } from "../../public/js/format/patch.js";
+import { SYSTEM_ID } from "../../public/js/format/patch.js";
 
 export const ROOT_AT = 22;
 export const CNF_AT = 23;
@@ -33,6 +33,7 @@ export const SYNTHETIC_SECTORS = ROOM_AT + ROOM_SECTORS + POSTGAP;
 export const SYNTHETIC_PACK = "/HIRO/HIRO.PAK";
 export const SYNTHETIC_FINALS = "/HIRO/HIROFI.PAK";
 export const WORLD = "HIRO";
+export const BOOT = "BOOT = cdrom:SLUS_007.24;1";
 const PVD_AT = 16;
 const PICKUPS = [37, 36, 31, 32, 33, 34, 35, 38];
 const SIDES = [10, 12, 1, 2, 8];

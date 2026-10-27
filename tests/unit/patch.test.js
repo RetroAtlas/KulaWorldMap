@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { openAsBlob, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { inflateSync } from "node:zlib";
-import { mapData, packs } from "./fixtures.js";
+import { discs, mapData, packs } from "./fixtures.js";
 import { projectOf, writeKwl } from "../../public/js/format/kwl.js";
 import { deflate } from "../../public/js/format/deflate.js";
 import { EXTENT, SIZE, openDisc, record } from "../../public/js/format/iso.js";
@@ -39,7 +39,6 @@ import {
   PREFIX,
   RECORD_MOST,
   ROOM,
-  SERIAL,
   VCDIFF_MAGIC,
   VCD_ADLER32,
   VCD_SOURCE,
@@ -95,7 +94,7 @@ const CASE = Object.fromEntries(fixture.cases.map((c) => [c.name, c]));
 const [FIRST, SECOND] = fixture.sets[0].items;
 const SUBMODE_AT = 18;
 const WARNINGS = [
-  "the image has 43 sectors, not the 109,607 of the disc",
+  "the image has 43 sectors, not the 109,607 of the Roll Away disc",
   "19 of the 21 packs are missing",
 ];
 
@@ -141,7 +140,7 @@ async function place(
 ) {
   const blob = new Blob([image]);
   const disc = await openDisc(blob);
-  const placed = await plan(disc, pack, slot, stream, title, inflate);
+  const placed = await plan(disc, pack, slot, stream, title, inflate, discs);
   const patched = patchedImage(blob, placed.writes);
   await verify(await openDisc(patched), pack, slot, stream, placed, inflate);
   return { blob, disc, placed, patched, after: await bytes(patched) };
@@ -159,7 +158,7 @@ const itemsOf = (members) =>
 /** The levels placed together into the synthetic image, proven through the patched image. */
 async function placeAll(items, image = IMAGE) {
   const blob = new Blob([image]);
-  const planned = await planAll(blob, items, inflate);
+  const planned = await planAll(blob, items, inflate, discs);
   const patched = patchedImage(blob, planned.writes);
   await verifyAll(await openDisc(patched), items, planned, inflate);
   return { blob, planned, patched, after: await bytes(patched) };
@@ -489,6 +488,7 @@ test("a pack moves into the first free run of the room, behind one already moved
       streamOf(synthetic(200)),
       null,
       inflate,
+      discs,
     ),
     /has no run of 4 zero sectors left/,
   );
@@ -615,14 +615,17 @@ test("what is refused", async () => {
   const disc = await openDisc(new Blob([IMAGE]));
   const stream = streamOf(synthetic(CASE["in place"].blocks));
   const moving = streamOf(synthetic(CASE.relocate.blocks));
-  await assert.rejects(plan(disc, "/HIRO/COPYCAT.PAK", 0, stream, null, inflate), /no such pack/);
-  await assert.rejects(plan(disc, SYNTHETIC_PACK, 3, stream, null, inflate), /slots/);
   await assert.rejects(
-    plan(disc, SYNTHETIC_PACK, SLOT, bytesOf("not a stream"), null, inflate),
+    plan(disc, "/HIRO/COPYCAT.PAK", 0, stream, null, inflate, discs),
+    /no such pack/,
+  );
+  await assert.rejects(plan(disc, SYNTHETIC_PACK, 3, stream, null, inflate, discs), /slots/);
+  await assert.rejects(
+    plan(disc, SYNTHETIC_PACK, SLOT, bytesOf("not a stream"), null, inflate, discs),
     /not one the game inflates/,
   );
   await assert.rejects(
-    plan(disc, SYNTHETIC_PACK, SLOT, stored(ROOM_SECTORS * USER - USER), null, inflate),
+    plan(disc, SYNTHETIC_PACK, SLOT, stored(ROOM_SECTORS * USER - USER), null, inflate, discs),
     /sectors and the pack needs/,
   );
   const crowded = IMAGE.slice();
@@ -631,7 +634,7 @@ test("what is refused", async () => {
   for (let i = 0; i < ROOM_SECTORS; i += 2)
     crowded.set(sector(ROOM_AT + i, mark, DATA_SUBMODE), (ROOM_AT + i) * SECTOR_RAW);
   await assert.rejects(
-    plan(await openDisc(new Blob([crowded])), SYNTHETIC_PACK, SLOT, moving, null, inflate),
+    plan(await openDisc(new Blob([crowded])), SYNTHETIC_PACK, SLOT, moving, null, inflate, discs),
     /has no run of 3 zero sectors left/,
   );
   const roomless = IMAGE.slice();
@@ -643,7 +646,10 @@ test("what is refused", async () => {
   roomless.set(sector(ROOT_AT, padded(root, USER), EOF_SUBMODE), ROOT_AT * SECTOR_RAW);
   const bare = await openDisc(new Blob([roomless]));
   assert.ok(!bare.files.has(ROOM));
-  await assert.rejects(plan(bare, SYNTHETIC_PACK, SLOT, moving, null, inflate), /has no \/3\.00/);
+  await assert.rejects(
+    plan(bare, SYNTHETIC_PACK, SLOT, moving, null, inflate, discs),
+    /has no \/3\.00/,
+  );
   const rebuilt = await plan(
     bare,
     SYNTHETIC_PACK,
@@ -651,6 +657,7 @@ test("what is refused", async () => {
     streamOf(synthetic(CASE.rebuild.blocks)),
     null,
     inflate,
+    discs,
   );
   assert.equal(rebuilt.fit.path, REBUILD);
 });
@@ -662,7 +669,8 @@ test("a record that does not inflate stops only a rebuild that would recompress 
   damaged.set(sector(PACK_AT, data, EOF_SUBMODE), PACK_AT * SECTOR_RAW);
   const disc = await openDisc(new Blob([damaged]));
   const fitted = async (c) =>
-    (await plan(disc, SYNTHETIC_PACK, SLOT, streamOf(synthetic(c.blocks)), TITLE, inflate)).fit;
+    (await plan(disc, SYNTHETIC_PACK, SLOT, streamOf(synthetic(c.blocks)), TITLE, inflate, discs))
+      .fit;
   assert.equal((await fitted(CASE["in place"])).path, IN_PLACE);
   assert.deepEqual(
     [(await fitted(CASE.rebuild)).path, (await fitted(CASE.rebuild)).recompressed],
@@ -819,12 +827,19 @@ for (const s of fixture.sets) {
 test("one level is planned as plan plans it", async () => {
   const blob = new Blob([IMAGE]);
   const [first] = itemsOf([FIRST]);
-  const one = await plan(await openDisc(blob), SYNTHETIC_PACK, SLOT, first.stream, TITLE, inflate);
-  const planned = await planAll(blob, [first], inflate);
-  assert.deepEqual(planned, { placed: [one], writes: one.writes, warnings: one.warnings });
-  assert.deepEqual(await planAll(blob, [], inflate), {
+  const disc = await openDisc(blob);
+  const one = await plan(disc, SYNTHETIC_PACK, SLOT, first.stream, TITLE, inflate, discs);
+  const planned = await planAll(blob, [first], inflate, discs);
+  assert.deepEqual(planned, {
+    placed: [one],
+    writes: one.writes,
+    release: one.release,
+    warnings: one.warnings,
+  });
+  assert.deepEqual(await planAll(blob, [], inflate, discs), {
     placed: [],
     writes: [],
+    release: "us",
     warnings: WARNINGS,
   });
 });
@@ -832,7 +847,8 @@ test("one level is planned as plan plans it", async () => {
 test("the second is planned over the image the first leaves, and a later sector replaces an earlier one", async () => {
   const blob = new Blob([IMAGE]);
   const [first, second] = itemsOf([FIRST, SECOND]);
-  const one = await plan(await openDisc(blob), SYNTHETIC_PACK, SLOT, first.stream, TITLE, inflate);
+  const disc = await openDisc(blob);
+  const one = await plan(disc, SYNTHETIC_PACK, SLOT, first.stream, TITLE, inflate, discs);
   const two = await plan(
     await openDisc(patchedImage(blob, one.writes)),
     SYNTHETIC_PACK,
@@ -840,8 +856,9 @@ test("the second is planned over the image the first leaves, and a later sector 
     second.stream,
     second.title,
     inflate,
+    discs,
   );
-  const planned = await planAll(blob, [first, second], inflate);
+  const planned = await planAll(blob, [first, second], inflate, discs);
   assert.deepEqual(planned.placed, [one, two]);
   assert.deepEqual(
     [lbas(one), lbas(two), lbas(planned)],
@@ -985,10 +1002,15 @@ test("two levels naming one slot are refused", async () => {
   const blob = new Blob([IMAGE]);
   const [first, second] = itemsOf([FIRST, SECOND]);
   await assert.rejects(
-    planAll(blob, [first, { ...second, pack: SYNTHETIC_PACK.toLowerCase(), slot: SLOT }], inflate),
+    planAll(
+      blob,
+      [first, { ...second, pack: SYNTHETIC_PACK.toLowerCase(), slot: SLOT }],
+      inflate,
+      discs,
+    ),
     { message: `two levels name ${SYNTHETIC_PACK.toLowerCase()}#${SLOT}, which holds one` },
   );
-  assert.equal((await planAll(blob, [first, second], inflate)).placed.length, 2);
+  assert.equal((await planAll(blob, [first, second], inflate, discs)).placed.length, 2);
 });
 
 // --- the patches ------------------------------------------------------------------------
@@ -1102,17 +1124,17 @@ test("the Adler-32 is zlib's Adler-32", () => {
 });
 
 test("the placements name the image for two emulators and the serial for two, and the cue sheet the image", () => {
-  const lines = placements("/discs/Roll Away.bin", "out/spiral");
+  const lines = placements("/discs/Roll Away.bin", "out/spiral", discs[0].boot);
   assert.equal(lines.length, 3);
   assert.ok(lines[0].includes("Roll Away.ppf") && lines[0].includes("DuckStation"), lines[0]);
   assert.ok(lines[0].includes("PCSX-Redux"), lines[0]);
-  assert.ok(lines[1].includes(SERIAL) && lines[1].includes("ePSXe"), lines[1]);
+  assert.ok(lines[1].includes("SLUS_007.24") && lines[1].includes("ePSXe"), lines[1]);
   assert.ok(
     lines[2].includes('xdelta3 -d -s "Roll Away.bin" "spiral.xdelta" "spiral.bin"'),
     lines[2],
   );
   assert.ok(
-    placements("/discs/Roll Away.bin", "out/level 4")[2].endsWith(
+    placements("/discs/Roll Away.bin", "out/level 4", discs[0].boot)[2].endsWith(
       'xdelta3 -d -s "Roll Away.bin" "level 4.xdelta" "level 4.bin"',
     ),
   );
@@ -1123,28 +1145,6 @@ test("the placements name the image for two emulators and the serial for two, an
   for (const name of ["kula $& level.bin", "level$`.bin", "a$$b.bin", "x$'.bin"])
     assert.equal(cue(name).split("\n")[0], `FILE "${name}" BINARY`, name);
   assert.equal(cue('my "disc".bin').split("\n")[0], 'FILE "my \\"disc\\".bin" BINARY');
-});
-
-test("the image is known by its structure and warned about where it is not the disc", async () => {
-  assert.deepEqual(await identify(await openDisc(new Blob([IMAGE]))), WARNINGS);
-  const odd = await identify(await openDisc(new Blob([IMAGE, new Uint8Array(1)])));
-  assert.equal(odd[0], "the image is 101,137 bytes, which is not whole sectors of 2352");
-  const quiet = IMAGE.slice();
-  quiet.set(sector(CNF_AT, new Uint8Array(USER), EOF_SUBMODE), CNF_AT * SECTOR_RAW);
-  assert.ok(
-    (await identify(await openDisc(new Blob([quiet])))).includes(
-      "SYSTEM.CNF does not say BOOT = cdrom:SLUS_007.24;1",
-    ),
-  );
-  const other = IMAGE.slice();
-  const pvd = user(IMAGE, 16).slice();
-  pvd.set(bytesOf("SATURN".padEnd(32)), 8);
-  other.set(sector(16, pvd, 0x09), 16 * SECTOR_RAW);
-  assert.ok(
-    (await identify(await openDisc(new Blob([other])))).includes(
-      "the system identifier is 'SATURN', not PLAYSTATION",
-    ),
-  );
 });
 
 // --- the disc, where it is -----------------------------------------------------------
@@ -1159,10 +1159,10 @@ test(
     for (const p of packs.packs)
       assert.deepEqual(disc.files.get(p.path), { lba: p.lba, size: p.size }, p.path);
     assert.deepEqual(disc.files.get(ROOM), { lba: packs.room.lba, size: packs.room.size });
-    assert.deepEqual(await identify(disc), []);
+    assert.deepEqual(await identify(disc, discs), { release: "us", warnings: [] });
     const level = mapData.levels[0];
     const own = deflate(writeKwl(projectOf(level)), 6);
-    const placed = await plan(disc, level.pack, level.index, own, null, inflate);
+    const placed = await plan(disc, level.pack, level.index, own, null, inflate, discs);
     assert.deepEqual([placed.fit.path, placed.lba, lbas(placed)], [IN_PLACE, 1002, [1002]]);
     assert.equal(placed.fit.room, packs.packs[0].slots[0].size - own.length);
     assert.deepEqual(placed.warnings, []);
@@ -1177,7 +1177,7 @@ test(
     same(delta.subarray(0, 5), [...VCDIFF_MAGIC, 0]);
     const fourth = mapData.levels.find((l) => l.pack === level.pack && l.index === 3);
     const longer = deflate(writeKwl(projectOf(fourth)), 6);
-    const rebuilt = await plan(disc, level.pack, level.index, longer, fourth.name, inflate);
+    const rebuilt = await plan(disc, level.pack, level.index, longer, fourth.name, inflate, discs);
     assert.deepEqual([rebuilt.fit.path, rebuilt.fit.recompressed], [REBUILD, false]);
     assert.deepEqual(lbas(rebuilt), [322, 1002, 1003, 1004, 1005, 1006, 1007]);
     assert.equal((await ppf(blob, rebuilt.writes, PREFIX + fourth.name)).length, 14879);

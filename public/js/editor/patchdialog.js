@@ -7,6 +7,7 @@
 import { $, el, on } from "../viewer/ui/dom.js";
 import { state } from "../viewer/state.js";
 import { NAMES, levelTitle, loadJson, skinsTable, worldName } from "../viewer/data.js";
+import { releaseOf, releases } from "../viewer/release.js";
 import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
 import { toast } from "../viewer/ui/toast.js";
 import {
@@ -119,6 +120,8 @@ const blocked = () => d.rows.map((row) => row.blocked).find(Boolean) ?? null;
 const offered = () => !!d.placed && !blocked();
 const slotTitle = (key) => d.titles.get(key) ?? `slot ${split(key)[1] + 1}`;
 const slotTheme = (key) => d.themes.get(key) ?? themeOf(split(key)[0]);
+/** The discs as the placer tells them apart, from the model's releases. */
+const discs = () => releases().map(({ id, name, boot, sectors }) => ({ id, name, boot, sectors }));
 
 /** What the downloads are called: the first level's slug, and how many more there are. */
 function base() {
@@ -338,6 +341,7 @@ export async function openPatchDialog(id) {
     file: null,
     disc: null,
     packs: null,
+    release: null,
     placed: null,
     image: null,
     imageName: null,
@@ -690,6 +694,7 @@ async function take(file) {
   d.file = file;
   d.disc = null;
   d.packs = null;
+  d.release = null;
   d.placed = null;
   d.image = null;
   d.imageName = null;
@@ -728,7 +733,7 @@ async function before(file, items) {
   let fits = [];
   for (let n = 1; n < items.length; n++) {
     try {
-      fits = (await planAll(file, items.slice(0, n), inflate)).placed.map((p) => p.fit);
+      fits = (await planAll(file, items.slice(0, n), inflate, discs())).placed.map((p) => p.fit);
     } catch {
       break;
     }
@@ -758,7 +763,7 @@ async function placed(mine = ++turn) {
   let planned;
   let image;
   try {
-    planned = await planAll(file, items, inflate);
+    planned = await planAll(file, items, inflate, discs());
     image = patchedImage(file, planned.writes);
     await verifyAll(await openDisc(image), items, planned, inflate);
   } catch (e) {
@@ -771,6 +776,7 @@ async function placed(mine = ++turn) {
     return;
   }
   if (mine !== turn) return;
+  d.release = planned.release;
   d.placed = planned;
   d.image = image;
   rows.forEach((row, i) => (row.u.fit.textContent = fitText(planned.placed[i].fit)));
@@ -796,7 +802,9 @@ function readiness() {
 }
 
 function play() {
-  const lines = offered() ? placements(d.file.name, base()) : [];
+  const lines = offered()
+    ? placements(d.file.name, base(), releaseOf(d.release)?.boot ?? null)
+    : [];
   ui.play.textContent = "";
   for (const line of lines) ui.play.append(el("li", { textContent: line }));
   ui.playing.hidden = !lines.length;
