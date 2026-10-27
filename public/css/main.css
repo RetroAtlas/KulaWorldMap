@@ -832,7 +832,7 @@ body:not(.sidebar-open) .menu-btn .cross {
   border-radius: 8px;
   line-height: 20px;
   font-size: 12.5px;
-  max-width: min(60%, 460px);
+  max-width: min(60%, 560px);
 }
 /* the padding makes the line as tall as the menu button, so the two sit on
    one row */
@@ -878,16 +878,21 @@ body:not(.sidebar-open) .menu-btn .cross {
 .chip .t {
   color: var(--warn);
 }
+/* the line alone sets the chip's width, and the note wraps within it */
 .chip .note {
   color: var(--dim);
   font-size: 12px;
   margin: 0 10px;
   border-top: 1px solid var(--line);
   padding: 5px 0 6px;
+  contain: inline-size;
 }
-/* a draft's overview in the note */
+/* a draft's overview in the note, which widens the chip as far as it goes */
 .chip:has(.overview) {
   max-width: min(calc(100% - 64px), 460px);
+}
+.chip .note:has(.overview) {
+  contain: none;
 }
 .chip .overview {
   line-height: 16px;
