@@ -524,7 +524,7 @@ With Motion on the view eases round behind the ball as play starts and back to w
 
 The URL is a permalink: `#INCA/11/45,35/0.90/17,17,17/0,0/33` is the level by its pack and its slot in it (LEVEL 42, the numbering the cheat in [level-format.md](level-format.md) takes), the yaw and pitch it is turned to, zoom, the cell it orbits around, the pan away from that cell, and the slice, and after those the selected block where there is one, and a planned route, which rides at the tail as one word the planner reads back and every earlier version of the map passes over.
 
-The disc rides at the tail too, as `d-eu` or `d-jp`, the US release writing none, so a link with no disc opens the US level for everyone, whatever disc the browser kept, and a code the reader does not know is passed over.
+The disc rides at the tail too, as `d-eu` or `d-jp`, the US release writing none, so a link with no disc opens the US level for everyone, whatever disc the browser kept, and a code the map does not know opens the US level as a link with no disc does.
 
 While the level is framed to fit the window, the link says `fit` in place of the zoom, the cell and the pan (`#INCA/11/45,35/fit/33`), so it opens framed to whatever window it is opened in, as one that stops at the turn does; a link that names the zoom, the cell or the pan holds the view there, and one that names the zoom alone opens at that zoom centred on the blocks, as a fit is.
 

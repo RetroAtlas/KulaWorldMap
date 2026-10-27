@@ -65,10 +65,9 @@ export function wireRelease() {
   tailWith({
     letter: LINK[0],
     write: () => (current() === BASE ? null : LINK + current()),
-    // an unknown code leaves the release as it is, as the reader passes an unknown segment over
     before: (segment) => {
-      if (segment === null) setCurrent(BASE);
-      else if (segment.startsWith(LINK)) setCurrent(segment.slice(LINK.length));
+      const code = segment?.startsWith(LINK) ? segment.slice(LINK.length).toLowerCase() : null;
+      setCurrent(releaseOf(code) ? code : BASE);
     },
   });
   on("link-opening", reflect);

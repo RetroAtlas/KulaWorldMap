@@ -178,7 +178,7 @@ test("a press writes the disc at the link's tail, and a press on US takes it off
   await expect.poll(() => page.url()).toMatch(/#HELL\/17\/45,35\/fit\/33$/);
 });
 
-test("a link carrying the disc opens its level on that disc in one install, the bar following", async ({
+test("a link carrying the disc, in any case, opens its level on that disc in one install, the bar following", async ({
   page,
 }) => {
   // every sentence the live region is given, in order
@@ -189,7 +189,7 @@ test("a link carrying the disc opens its level on that disc in one install, the 
         if (r.target.id === "say") for (const n of r.addedNodes) said.push(n.textContent);
     }).observe(document, { subtree: true, childList: true });
   });
-  await page.goto("/#HELL/17/45,35/fit/33/d-eu");
+  await page.goto("/#HELL/17/45,35/fit/33/d-EU");
   await settle(page);
   await expect(pressed(page)).toHaveText("EU");
   const pal = eu.levels[BONUS_30];
@@ -205,6 +205,16 @@ test("a link carrying the disc opens its level on that disc in one install, the 
   expect(said).toHaveLength(1);
   expect(said[0]).toMatch(new RegExp(`^${eu.name}, ${pal.name}, HELL, ${pal.placed} blocks`));
   await expect.poll(() => page.url()).toMatch(/#HELL\/17\/45,35\/fit\/33\/d-eu$/);
+});
+
+test("a link carrying a disc code the map does not know opens the US level", async ({ page }) => {
+  await page.goto("/#HELL/17/45,35/fit/33/d-eu");
+  await settle(page);
+  await expect(pressed(page)).toHaveText("EU");
+  await page.evaluate(() => (location.hash = "#HELL/17/45,35/fit/33/d-xx"));
+  await expect(pressed(page)).toHaveText("US");
+  expect(await shown(page)).toMatchObject({ release: "us", from: "us" });
+  await expect.poll(() => page.url()).toMatch(/#HELL\/17\/45,35\/fit\/33$/);
 });
 
 test("Back after a press returns to the US level, the bar following", async ({ page }) => {
