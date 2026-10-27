@@ -80,6 +80,8 @@ Style 4 is one cell in each copy of `OBJ LEVEL` and nowhere else, and in play it
 
 The game has **30 distinct object types** and names none of them. What stands on a face is named the same way, by the model the game draws for it ([ggi.md](ggi.md)) and what it does in play, and play gives the points: coins at 250, 500 and 750 by the value of their one varying field, gems 2975, keys 1000, fruit 2500, an hourglass 1190, sunglasses 500 and a crumbling block 50.
 
+The hourglass scores differently on the other two discs, read off their executables: the PAL disc's turns the clock round from 4999 ticks rather than 5999 and scores 990 at most, and the Japanese disc's turns it round from 7199 and scores nothing.
+
 Syonyx's Roll Away walkthrough (GameFAQs, 2006) states a maximum score for 209 levels, and by those points the disc's total is that maximum on 193 of them, which is what says that everything on those can be collected; it never scores higher than the disc holds. On the other 16 the disc holds more: play collects everything on five of them, and on the other 11 something cannot be collected.
 
 A level with no key scores 50 for every block the ball rolls onto, the first time, and the game counts the blocks it builds as it builds them (`0x800271d8`): a block of the plain, fire, ice, acid, crumbling or vanishing kinds, at the lattice's inner coordinates 1 to 32, with at least one face built. So an invisible block is not one of them, nor a block sealed on every side, a platform or a laser's own block, and the map counts the same way.
@@ -88,7 +90,7 @@ The points live in `annotations.json`, because the levels do not hold them, and 
 
 The unit tests hold each curated score below what the disc holds, so it cannot outlive its reason, and the points to the figures this document gives, so one cannot change without the arithmetic changing with it.
 
-Type 42's 1550 points is the one points value that rests on the executable rather than play, since only the object catalogue holds one; [annotations.md](annotations.md) gives what each name and value rests on, entry by entry.
+Type 42's 1550 points is the one points value that rests on the executable rather than play, since only the object catalogue holds one, the hourglass's on the other two discs apart; [annotations.md](annotations.md) gives what each name and value rests on, entry by entry.
 
 **A level with no key plays as a bonus level, by its keys and not by its slot.** The loader's mode routine at `0x80027b2c` counts the keys, every slot of type 31 in the six slots of every record of a kind below 5 (`0x80027b4c`, `0x80027b64`, `0x80027b88`, `0x80027bac`), into a count at `0x800a5efc` it clears first (`0x80027b3c`), and writes the level's mode word, 9372 past gp at `0x800a53d4` (`0x80027b30`): 1 where the count is nothing and 0 otherwise (`0x80027bd4` to `0x80027be8`), then 2 where the settings record, kind 9, carries a type of 1 in its first slot, the hidden flag (`0x80027c34` to `0x80027c74`), and last 0 again where the game's mode word at `0x800a33b0` is 1, the Simon rooms' mode (`0x80027cb4` to `0x80027cc4`).
 

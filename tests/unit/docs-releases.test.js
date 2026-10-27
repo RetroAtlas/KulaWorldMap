@@ -4,7 +4,10 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { packs, releases } from "./fixtures.js";
 
-const disc = readFileSync(fileURLToPath(new URL("../../docs/disc.md", import.meta.url)), "utf8");
+const text = (path) =>
+  readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
+const disc = text("docs/disc.md");
+const format = text("docs/level-format.md");
 const number = (s) => Number(s.replace(/,/g, ""));
 const rows = (pattern) => [...disc.matchAll(pattern)].map((m) => m.slice(1));
 // The US layout is packs.json, which its release file repeats.
@@ -34,4 +37,25 @@ test("disc.md's pack sector table is where each release's layout puts every pack
     ]),
     layouts[0].packs.map((p, k) => [p.path, ...layouts.map((l) => l.packs[k].lba)]),
   );
+});
+
+/** The most an hourglass scores under a release's rules, nothing where its case never divides the clock. */
+const most = ({ from, second, points }) =>
+  second === null ? 0 : points * Math.floor(from / second);
+const figure = (s) => (s === "nothing" ? 0 : number(s));
+
+test("level-format.md's hourglass sentence gives the other discs' figures as their rules make them", () => {
+  const m =
+    /^The hourglass scores differently on the other two discs, read off their executables: the PAL disc's turns the clock round from (\d+) ticks rather than (\d+) and scores (\d+) at most, and the Japanese disc's turns it round from (\d+) and scores (\w+)\.$/m.exec(
+      format,
+    );
+  assert.ok(m, "level-format.md has no sentence on the hourglass's points on the other discs");
+  const [us, eu, jp] = releases;
+  assert.deepEqual(m.slice(1).map(figure), [
+    eu.rules.hourglass.from,
+    us.rules.hourglass.from,
+    most(eu.rules.hourglass),
+    jp.rules.hourglass.from,
+    most(jp.rules.hourglass),
+  ]);
 });

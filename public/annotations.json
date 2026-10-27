@@ -1,5 +1,5 @@
 {
-  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated. `kinds` names the block kinds, which the lattice's style values and the records' kind word share. `types` names what stands on a face: `by` names the field whose value tells a type's variants apart, each with its own name and, where it has one, colour and points; `facing` names the field that holds the way a thing points, as quarter turns on its face; `state` names the field that says whether a device a switch toggles starts on; and `points` is what collecting one scores. On a kind or a type, `hazard` marks one that can cost the ball its life, and `fields` says what a raw field holds, by its number, where that is settled; a `facing` or `state` field is named by its key. `levels` is keyed by pack path and index; a level's `score` is the most it scores where the disc holds more than can be collected, and its note says what is out of reach.",
+  "_comment": "Hand-curated names and notes for what the game leaves numbered. Never generated. `kinds` names the block kinds, which the lattice's style values and the records' kind word share. `types` names what stands on a face: `by` names the field whose value tells a type's variants apart, each with its own name and, where it has one, colour and points; `facing` names the field that holds the way a thing points, as quarter turns on its face; `state` names the field that says whether a device a switch toggles starts on; and `points` is what collecting one scores. On a kind or a type, `hazard` marks one that can cost the ball its life, and `fields` says what a raw field holds, by its number, where that is settled; a `facing` or `state` field is named by its key. `levels` is keyed by pack path and index; a level's `score` is the most it scores where the disc holds more than can be collected, and its note says what is out of reach. Any entry may carry `releases`, a release's own `note`, `score` or `points` under that release's id, read in place of the entry's own under it, a `null` taking a score away.",
   "worlds": {},
   "kinds": {
     "0": {
@@ -203,7 +203,17 @@
     "35": {
       "name": "Hourglass",
       "points": 1190,
-      "note": "Flips the timer, and scores more the less time is left when you take it. It scores 10 for every whole second the flipped timer shows, so 1190 with under a second left and 200 taken at once with 99 left."
+      "note": "Flips the timer, and scores more the less time is left when you take it. It scores 10 for every whole second the flipped timer shows, so 1190 with under a second left and 200 taken at once with 99 left.",
+      "releases": {
+        "eu": {
+          "points": 990,
+          "note": "Flips the timer, and scores more the less time is left when you take it. It scores 10 for every whole second the flipped timer shows, so 990 with under a second left and nothing taken at once with 99 left."
+        },
+        "jp": {
+          "points": 0,
+          "note": "Flips the timer, and scores nothing in this release."
+        }
+      }
     },
     "36": {
       "name": "Gem",

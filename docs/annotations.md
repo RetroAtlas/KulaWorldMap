@@ -6,7 +6,7 @@ This file is why each of those is believed, one section per entry under the entr
 
 A name rests on what the game draws for its number and on what the thing does in play: a kind wears the texture the loader paints it with ([tgi.md](tgi.md)), a type is the model the mesh file keeps under its number ([ggi.md](ggi.md)) or the paint the loader gives its face, and a section adds what the executable says.
 
-The points rest on play, and so does each level's `score`, the best score play reaches where the disc holds more than can be collected; type 42's points rest on the executable instead, since only the object catalogue holds one.
+The points rest on play, and so does each level's `score`, the best score play reaches where the disc holds more than can be collected; type 42's points rest on the executable instead, since only the object catalogue holds one, and so do the hourglass's on the PAL and Japanese discs (type 35).
 
 Syonyx's Roll Away walkthrough (GameFAQs, 2006) states a maximum score for 209 levels, and on 193 of them it is the disc's total, which is what says that everything on those can be collected; of the other 16, play collects everything on LEVEL 128, BONUS 29, BONUS 30, FINAL 12 and FINAL 13, and each of the other 11 curates its `score` ([level-format.md](level-format.md) has the arithmetic).
 
@@ -238,6 +238,10 @@ LEVEL 6 carries the game's first hourglass.
 The code turns the clock round and scores by what it leaves: the ball's contact walk at `0x80038548` sends it to its case at `0x80039048`, which writes 5999 less the clock back as the clock and adds 10 for every whole second of the new clock, 50 ticks each ([motion.md](motion.md)), so taken with s whole seconds left it leaves 119 − s seconds and scores 1190 − 10·s, 1190 with less than a second left, which is the most it can score and what the map counts each at.
 
 Play had put the rule at 1200 less twelve a second, rounded to the nearest 10, from a few counts; the code's rule is what the note gives.
+
+On the PAL disc the hourglass's case (`SCES_010.00`, `0x800398cc` to `0x8003994c`) writes 4999 less the clock back and adds the same 10 for every whole second of the new clock, 50 ticks each, so taken with s whole seconds left it leaves 99 − s seconds and scores 990 − 10·s, 990 with less than a second left, which is the most it can score there and what the map counts each at under that release.
+
+On the Japanese disc the hourglass's case (`SCPS_100.64`, `0x80039684` to `0x80039708`) writes 7199 less the clock back and never touches the score, so taken with s whole seconds left it leaves 119 − s seconds and scores nothing, which is what the map counts each at under that release.
 
 ### type 36: Gem
 

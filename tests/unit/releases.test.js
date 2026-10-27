@@ -51,6 +51,9 @@ const WORDS = "no one two three four five six seven eight nine ten eleven twelve
   " ",
 );
 const number = (s) => (WORDS.includes(s) ? WORDS.indexOf(s) : Number(s));
+/** The most an hourglass scores under a release's rules, nothing where its case never divides the clock. */
+const most = ({ from, second, points }) =>
+  second === null ? 0 : points * Math.floor(from / second);
 
 test("the three files are the US, PAL and Japanese releases, each its identity, rules, layout and levels", () => {
   assert.deepEqual(
@@ -191,8 +194,6 @@ test("the rules are what each release's executable sets", () => {
     each((x) => x.hourglass.from),
     [5999, 4999, 7199],
   );
-  const most = ({ from, second, points }) =>
-    second === null ? 0 : points * Math.floor(from / second);
   assert.deepEqual(
     each((x) => most(x.hourglass)),
     [1190, 990, 0],
@@ -383,6 +384,19 @@ test("an annotation is read with its override for the release shown, a null taki
   assert.equal(markerPoints(hourglass), 990);
   setCurrent("us");
   setAnnotations(annotations);
+});
+
+test("the hourglass's points under each release are what its rules make of the clock it turns", () => {
+  setReleases(releases);
+  setAnnotations(annotations);
+  const hourglass = levelMarkers(mapData.levels[slot("/HIRO/HIRO.PAK#5")]).find(
+    (m) => m.face !== null && m.type === HOURGLASS,
+  );
+  for (const r of releases) {
+    setCurrent(r.id);
+    assert.equal(markerPoints(hourglass), most(r.rules.hourglass), r.id);
+  }
+  setCurrent("us");
 });
 
 test("the statistics count the release shown's levels, so a type the Japanese disc removes is placed fewer times under it", () => {
