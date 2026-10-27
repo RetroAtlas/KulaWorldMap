@@ -138,13 +138,14 @@ function showHelp() {
 }
 
 function showAbout(opener) {
-  const d = state.data;
-  if (!d) return;
   openModal(
     "About this map",
     `<p>An unofficial fan project, unaffiliated with the rights holders in <em>Kula World</em>.
-    Every level is read from the game's own data on the ${d.release} disc; the same game
-    shipped as <em>Kula World</em> in PAL territories and as <em>Kula Quest</em> in Japan.</p>
+    Every level is read from the game's own data on the discs of its three releases,
+    <em>Roll Away</em> in North America, <em>Kula World</em> in PAL territories and
+    <em>Kula Quest</em> in Japan, which the US, EU and JP buttons beside the worlds switch
+    between. Most levels are the same on all three discs, and a level that differs says so in
+    its note.</p>
     <p>Blocks wear the game's own textures, painted face by face and shaded as the game does
     it, and the objects are the game's own models in its own colours, standing on the faces the
     game puts them on and moving at its pace.</p>

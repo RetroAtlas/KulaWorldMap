@@ -6,7 +6,7 @@ It is at **[kulaworld.retroatlas.org](https://kulaworld.retroatlas.org/)**, part
 
 ![The map on Arctic's copy of the object catalogue, with one of nearly every object in the game laid out on one floor](screenshot.png)
 
-All 230 levels are here, which is more than the game ever shows you in one place: 150 numbered levels across ten worlds, 30 bonus and 10 hidden levels, the 20 finals, the 10 Simon rooms, the lesson and the nine copies of the object catalogue that no menu reaches.
+All 230 levels are here, which is more than the game ever shows you in one place: 150 numbered levels across ten worlds, 30 bonus and 10 hidden levels, the 20 finals, the 10 Simon rooms, and, on the North American disc, the lesson and the nine copies of the object catalogue that no menu reaches.
 
 A level is titled by the number the game's pause screen gives it, which the engine counts through the worlds rather than reading from the level record; where the record calls it something else, the level's note says so.
 
@@ -14,7 +14,9 @@ A route can be planned over a level's blocks, stop by stop, drawn the way the ba
 
 The data is read from all three discs the game shipped on, Roll Away in North America (SLUS-00724), Kula World in PAL territories (SCES-01000) and Kula Quest in Japan (SCPS-10064), which share 213 of their 230 levels byte for byte, the PAL disc differing in five slots and the Japanese in thirteen.
 
-The map draws the North American release's levels, and where a level is known to differ in the other two its note says so.
+The map shows whichever disc a visitor chooses, every level as that disc ships it, and where a level differs between the discs its note says what changed.
+
+The hourglass scores 1190 at most on the North American disc, 990 on the PAL disc and nothing on the Japanese one, so the points and the best score the map gives a level are those of the disc shown.
 
 The map is an editor as well. Make a level of your own, or copy a shipped one and change it: lay blocks against faces or across the floor, put the game's objects on them, run platforms and lasers between two cells, and have the game's own rules refuse what it could not load.
 

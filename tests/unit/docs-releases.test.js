@@ -8,6 +8,7 @@ const text = (path) =>
   readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
 const disc = text("docs/disc.md");
 const format = text("docs/level-format.md");
+const readme = text("README.md");
 const number = (s) => Number(s.replace(/,/g, ""));
 const rows = (pattern) => [...disc.matchAll(pattern)].map((m) => m.slice(1));
 // The US layout is packs.json, which its release file repeats.
@@ -58,4 +59,16 @@ test("level-format.md's hourglass sentence gives the other discs' figures as the
     jp.rules.hourglass.from,
     most(jp.rules.hourglass),
   ]);
+});
+
+test("the README's hourglass sentence gives each disc's figure as its rules make it", () => {
+  const m =
+    /^The hourglass scores (\d+) at most on the North American disc, (\d+) on the PAL disc and (\w+) on the Japanese one, so the points and the best score the map gives a level are those of the disc shown\.$/m.exec(
+      readme,
+    );
+  assert.ok(m, "the README has no sentence on the hourglass's points on the three discs");
+  assert.deepEqual(
+    m.slice(1).map(figure),
+    releases.map((r) => most(r.rules.hourglass)),
+  );
 });
