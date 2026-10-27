@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { settle, still } from "./helpers.js";
-import { startPlay } from "./playhelpers.js";
+import { route, startPlay, top } from "./playhelpers.js";
 
 const LOCKED = "Leave play to change the release";
 const BONUS_30 = "/HELL/HELL.PAK#17";
@@ -404,4 +404,41 @@ test("a search's list shown beside a draft is built anew when the disc changes, 
   await page.goBack();
   await expect(pressed(page)).toHaveText("US");
   await expect(rows).toHaveCount(1);
+});
+
+test("a route planned on BONUS 30 under US is kept apart from one planned under EU, each back on its disc", async ({
+  page,
+}) => {
+  await page.goto("/#HELL/17/45,35/fit/33");
+  await settle(page);
+  await still(page);
+  await page.keyboard.press("r");
+  await expect(page.locator("#showCourse")).toBeChecked();
+  const line = page.locator("#courseLine");
+  await expect(line).toHaveText("Route planner · 0 stops");
+  const first = await top(page, [18, 21, 21]);
+  await page.mouse.click(first.x, first.y);
+  await expect(line).toHaveText("Route planner · 2 stops");
+  const onUs = await route(page);
+  await press(page, "eu");
+  await expect(pressed(page)).toHaveText("EU");
+  await expect(line).toHaveText("Route planner · 0 stops");
+  expect(await route(page)).toBeNull();
+  await still(page);
+  const second = await top(page, [20, 8, 7]);
+  await page.mouse.click(second.x, second.y);
+  await expect(line).toHaveText("Route planner · 2 stops");
+  const onEu = await route(page);
+  expect(onEu).not.toEqual(onUs);
+  await press(page, "us");
+  await expect(pressed(page)).toHaveText("US");
+  await expect(line).toHaveText("Route planner · 2 stops");
+  expect(await route(page)).toEqual(onUs);
+  await press(page, "eu");
+  await expect(pressed(page)).toHaveText("EU");
+  expect(await route(page)).toEqual(onEu);
+  const keys = await page.evaluate(() =>
+    Object.keys(JSON.parse(localStorage.getItem("kula.course")).by).sort(),
+  );
+  expect(keys).toEqual(["HELL/17@eu", "HELL/17@us"]);
 });

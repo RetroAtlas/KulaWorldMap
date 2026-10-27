@@ -4,6 +4,7 @@ import { state, effectsOn } from "../state.js";
 import { FACE_NAME, cellKey } from "../../format/lattice.js";
 import { counted, markerGroup, markerHeading, startsOf } from "../data.js";
 import { slotOf } from "../permalink.js";
+import { current as release, differs } from "../release.js";
 import {
   CAP,
   JUMP,
@@ -69,6 +70,8 @@ let probe = null;
 let probed = null;
 let waiting = null;
 let timer = 0;
+// the key the route on screen is kept under
+let under = null;
 let disarmClear = () => {};
 
 export const current = () => course;
@@ -296,8 +299,8 @@ function readStore() {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || "null");
     if (v?.version === VERSION && v.by && typeof v.by === "object")
-      for (const [slot, e] of Object.entries(v.by))
-        if (typeof e?.c === "string" && Number.isFinite(e.at)) by[slot] = e;
+      for (const [key, e] of Object.entries(v.by))
+        if (typeof e?.c === "string" && Number.isFinite(e.at)) by[key] = e;
   } catch {
     /* ignore */
   }
@@ -309,17 +312,24 @@ function writeStore(change) {
   try {
     const store = readStore();
     change(store.by);
-    const slots = Object.keys(store.by).sort((a, b) => store.by[b].at - store.by[a].at);
-    for (const slot of slots.slice(MOST)) delete store.by[slot];
+    const keys = Object.keys(store.by).sort((a, b) => store.by[b].at - store.by[a].at);
+    for (const key of keys.slice(MOST)) delete store.by[key];
     localStorage.setItem(KEY, JSON.stringify(store));
   } catch {
     /* ignore */
   }
 }
 
+/** The key a route on `l` is kept under: its slot, and the disc shown as well where the slot
+    differs between the discs. */
+const keyOf = (l) => {
+  const slot = slotOf(l);
+  return differs(`${l.pack}#${l.index}`).length ? `${slot}@${release()}` : slot;
+};
+
 function remember() {
   if (!state.lvl) return;
-  waiting = { slot: slotOf(state.lvl), text: course ? encode(course) : null };
+  waiting = { key: keyOf(state.lvl), text: course ? encode(course) : null };
   clearTimeout(timer);
   timer = setTimeout(flush, SETTLE);
 }
@@ -328,18 +338,30 @@ function flush() {
   clearTimeout(timer);
   timer = 0;
   if (!waiting) return;
-  const { slot, text } = waiting;
+  const { key, text } = waiting;
   waiting = null;
   writeStore((by) => {
-    if (text) by[slot] = { at: Date.now(), c: text };
-    else delete by[slot];
+    if (text) by[key] = { at: Date.now(), c: text };
+    else delete by[key];
   });
 }
 
-const stored = (slot) => {
-  const entry = readStore().by[slot];
+const stored = (key) => {
+  const entry = readStore().by[key];
   return entry ? decode(entry.c) : null;
 };
+
+/** Take up the route kept for the level shown, a change still waiting written first. */
+function recall() {
+  flush();
+  under = keyOf(state.lvl);
+  probed = null;
+  note = null;
+  past = [];
+  future = [];
+  disarmClear();
+  adopt(stored(under));
+}
 
 // --- the strip -----------------------------------------------------------------------------
 
@@ -514,18 +536,13 @@ export function wireCourse() {
     },
   });
 
-  on("level-changed", () => {
-    flush();
-    probed = null;
-    note = null;
-    past = [];
-    future = [];
-    disarmClear();
-    adopt(stored(slotOf(state.lvl)));
-  });
+  on("level-changed", recall);
   on("level-updated", () => {
-    probed = null;
-    adopt(course);
+    if (keyOf(state.lvl) !== under) recall();
+    else {
+      probed = null;
+      adopt(course);
+    }
   });
   on("drafts-moved", (pairs) => {
     flush();

@@ -344,6 +344,8 @@ On a level of your own the strip stands above the editor's strip, and while edit
 
 The route is kept with its level in this browser, for levels of your own as well, and it rides in the link, so a link copied with it opens with it wherever it is opened; a link without one leaves the kept route as it is.
 
+A route is kept by its level, and by its level and the disc shown where the slot differs between the discs, so a route planned on the PAL BONUS 30 never stands over the US one, while a level that is the same on every disc keeps one route whichever is shown.
+
 The switch itself is not kept from one visit to the next, and a route stays on the map with the switch off.
 
 A level of your own edited under a route keeps the route as it was: a stop whose face no longer stands is a dashed ring and a roll or a jump the blocks no longer allow a dashed leap, so an undo of the edit makes the route whole again.
