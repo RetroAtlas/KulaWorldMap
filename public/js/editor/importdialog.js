@@ -3,7 +3,8 @@
 // the levels of the chosen pack and a line on which world the level will
 // wear; and, for a shared level, the link to paste.
 import { $, el } from "../viewer/ui/dom.js";
-import { levelAt, levelsIn, levelTitle, worldName } from "../viewer/data.js";
+import { levelsIn, levelTitle, worldName } from "../viewer/data.js";
+import { current, levelsOf } from "../viewer/release.js";
 import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
 import { WORLDS } from "../format/kwl.js";
 
@@ -20,16 +21,20 @@ function worldOf(path) {
   return WORLDS.includes(world) ? world : null;
 }
 
+/** The level a release ships at a pack's slot, the release shown where none is named, or null where no shipped level lies there. */
+const shippedAt = (path, index, release) =>
+  levelsOf(release ?? current()).find((l) => l.pack === path && l.index === index) ?? null;
+
 /** What a slot is called: the pause screen's title where a shipped level lies there, else the pack's name for it. */
-export function slotTitle(path, index, name) {
-  const shipped = levelAt(path, index);
+export function slotTitle(path, index, name, release) {
+  const shipped = shippedAt(path, index, release);
   if (shipped) return levelTitle(shipped);
   return name || `slot ${index + 1}`;
 }
 
 /** The world a slot opens in: the one the map lists the shipped level there under, else its pack's world, else null. */
-export function slotWorld(path, index) {
-  return levelAt(path, index)?.theme ?? worldOf(path);
+export function slotWorld(path, index, release) {
+  return shippedAt(path, index, release)?.theme ?? worldOf(path);
 }
 
 function packWorld(path) {
@@ -180,16 +185,17 @@ export async function pickFromPack(names, world) {
 /**
  * Which level of a disc image to open: { path, slot } of the chosen pack, or
  * null where the visitor declines. packs are [{ path, names }] as the image
- * has them, and a pack under none of the disc's worlds opens in the world given.
+ * has them, release the id of the disc the image is, whose titles the slots
+ * take, and a pack under none of the disc's worlds opens in the world given.
  */
-export function pickFromDisc(packs, world) {
+export function pickFromDisc(packs, world, release) {
   return pick({
     heading: "Open a level from a disc",
     packs: packs.map(({ path, names }) => ({
       path,
       label: packLabel(path),
       note: packNote(path, world),
-      slots: names.map((name, i) => slotTitle(path, i, name)),
+      slots: names.map((name, i) => slotTitle(path, i, name, release)),
     })),
   });
 }

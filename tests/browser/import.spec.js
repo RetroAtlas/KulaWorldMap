@@ -5,17 +5,25 @@ import { settle, trackErrors } from "./helpers.js";
 import { FILE_MOST } from "../../public/js/editor/files.js";
 import { writePak } from "../../public/js/format/pak.js";
 import { record } from "../../public/js/format/iso.js";
-import { EOF_SUBMODE, SECTOR_RAW, USER, sector } from "../../public/js/format/sectors.js";
+import {
+  DATA_SUBMODE,
+  EOF_SUBMODE,
+  SECTOR_RAW,
+  USER,
+  sector,
+} from "../../public/js/format/sectors.js";
 import { projectOf, readKwl, writeKwl } from "../../public/js/format/kwl.js";
-import { mapData, levelKey } from "../unit/fixtures.js";
+import { mapData, levelKey, releases } from "../unit/fixtures.js";
 import {
   CNF,
   CNF_AT,
   ROOM_AT,
   ROOM_SECTORS,
   ROOT_AT,
+  SYNTHETIC_PACK,
   SYNTHETIC_SECTORS,
   WORLD_AT,
+  booting,
   streamOf,
   synthetic,
   syntheticImage,
@@ -143,6 +151,42 @@ test("a pack asks which level to open, and opens it under its name in the world 
   expect(errors).toEqual([]);
 });
 
+/** The synthetic image booting `boot`, its HIRO.PAK one of twenty slots named for their places, over as many sectors as it takes. */
+function imageWithSlots(boot) {
+  const PAK_AT = SYNTHETIC_SECTORS;
+  const names = Array.from({ length: 20 }, (_, i) => `SLOT ${i + 1}`);
+  const pak = writePak(
+    names,
+    names.map((name, i) => streamOf(synthetic(1 + (i % 3), name))),
+  );
+  const named = (path, at, blob) => record(`${path.split("/").pop()};1`, at, blob.length);
+  const world = concat([
+    record("\0", WORLD_AT, USER, 2),
+    record("\x01", ROOT_AT, USER, 2),
+    ...syntheticPacks().map(([path, at, blob]) =>
+      path === SYNTHETIC_PACK ? named(path, PAK_AT, pak) : named(path, at, blob),
+    ),
+  ]);
+  const parts = [];
+  for (let at = 0; at < pak.length; at += USER) parts.push(pak.subarray(at, at + USER));
+  const image = concat([
+    booting(boot),
+    ...parts.map((part, i) =>
+      sector(PAK_AT + i, padded(part), i === parts.length - 1 ? EOF_SUBMODE : DATA_SUBMODE),
+    ),
+  ]);
+  image.set(sector(WORLD_AT, padded(world), EOF_SUBMODE), WORLD_AT * SECTOR_RAW);
+  return image;
+}
+
+const title = (l) => l.shown || l.name;
+/** The titles a disc gives HIRO.PAK's first twenty slots, in the fixtures' words. */
+const hiroTitles = (release) =>
+  mapData.levels
+    .filter((l) => l.pack === SYNTHETIC_PACK && l.index < 20)
+    .sort((a, b) => a.index - b.index)
+    .map((l) => title(release.levels[levelKey(l)] ?? l));
+
 test("a disc image lists its packs and opens the chosen slot in the pack's own world", async ({
   page,
 }) => {
@@ -175,6 +219,41 @@ test("a disc image lists its packs and opens the chosen slot in the pack's own w
   const entry = await entryOf(page, opened.draft);
   expect(entry.doc).toMatchObject({ title: "FINAL 2", world: "HIRO" });
   expect(entry.doc.blocks).toEqual(blocksOf(synthetic(5, "FINAL 5"), "HIRO"));
+  expect(await toasts(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("a disc image's slots are titled as the disc its boot line names titles them", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT_MARS);
+  await settle(page);
+  const [us, eu] = releases;
+  const pal = hiroTitles(eu);
+  expect(pal[19]).not.toBe(hiroTitles(us)[19]);
+  const dialog = page.locator("#import");
+  const slots = dialog.locator("#importSlot option");
+  await page.locator("#draftFile").setInputFiles(file("pal.bin", imageWithSlots(eu.boot)));
+  await expect(dialog).toBeVisible();
+  await expect(slots).toHaveText(pal);
+  await dialog.locator("#importSlot").selectOption({ index: 19 });
+  await dialog.locator("#importOpen").click();
+  await expect(dialog).toBeHidden();
+  const rows = page.locator("#draftRows button");
+  await expect(rows).toHaveCount(1);
+  const opened = await shown(page);
+  expect(opened).toMatchObject({ li: -1, theme: "HIRO" });
+  expect(opened.chip).toContain(pal[19]);
+  const entry = await entryOf(page, opened.draft);
+  expect(entry.doc).toMatchObject({ title: pal[19], world: "HIRO" });
+  expect(entry.doc.blocks).toEqual(blocksOf(synthetic(2, "SLOT 20"), "HIRO"));
+  await page.locator("#draftFile").setInputFiles(file("us.bin", imageWithSlots(us.boot)));
+  await expect(dialog).toBeVisible();
+  await expect(slots).toHaveText(hiroTitles(us));
+  await dialog.locator("#importCancel").click();
+  await expect(dialog).toBeHidden();
+  await expect(rows).toHaveCount(1);
   expect(await toasts(page)).toEqual([]);
   expect(errors).toEqual([]);
 });

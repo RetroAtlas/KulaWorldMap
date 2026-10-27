@@ -191,6 +191,8 @@ The card's `save as .json` writes the draft as the map's own file and `save as .
 
 `open a file…` also takes one of the game's packs, which asks which of its levels to open and opens it in the world on screen, since a pack does not say which world it is from, a disc image, which asks for the pack and the level and opens it in the world the map lists the level that lies there under, named as the pause screen names it, and in the pack's own world where none of the game's levels lies there, and a level saved by the community's level viewer, read in the world on screen; declining the question opens nothing.
 
+A disc image's levels are named as the disc the image is names them, told by its boot line, so an image of the PAL disc offers HIRO's slot 19 as OBJ LEVEL where an image of the US disc offers LESSON, and an image whose boot line names none of the three discs is named as the disc the map shows.
+
 `paste a link…` in the same row opens a box for the link to a level shared from the community's level viewer, which opens as a new draft in the world on screen, or in the world the link names where that is one of the ten; a text that is no such link is said so under the field, which stays for another try.
 
 Your levels stay in this browser, written a moment after each change, with "Saved in this browser" shown for a moment on the card, until they are saved to a file; a browser that cannot keep them, one that gives the map no room for them, one with no room for more, or one that refuses to keep them for another reason, says so.

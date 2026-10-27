@@ -415,7 +415,9 @@ Anything else is refused.
 
 A pack asks which slot to open, each named as the pack names it, and the chosen record is inflated with the browser's `DecompressionStream` and read by `readKwl` in the world on screen, since a pack's bytes do not say which world they are from, titled by the slot's name or the file's stem; a browser that cannot inflate is told it needs a newer one.
 
-A disc image is walked as the patcher walks it, a slice at a time where it is handed over as a file, and lists the packs it holds, the 21 the disc has and any other `.PAK` the walk finds, then the slots of the chosen pack, each titled as the pause screen titles the shipped level that lies there and by the pack's name otherwise; the chosen record is read in the world of the pack's directory, and in the world on screen for a pack from elsewhere. Declining either question opens nothing and says nothing.
+A disc image is walked as the patcher walks it, a slice at a time where it is handed over as a file, and lists the packs it holds, the 21 the disc has and any other `.PAK` the walk finds, then the slots of the chosen pack, each titled as the pause screen of the disc the image is titles the shipped level that lies there and by the pack's name otherwise; the chosen record is read in the world of the pack's directory, and in the world on screen for a pack from elsewhere. Declining either question opens nothing and says nothing.
+
+The disc an image is, which titles its slots and the draft the chosen one makes, is told by its boot line through `identify` of `public/js/format/patch.js` over the release model's entries, as the disc box tells it, so an image of the PAL disc offers HIRO's slot 19 as OBJ LEVEL where an image of the US disc offers LESSON; an image whose boot line names none of the three is titled as the disc the map shows, and a pack alone, which names no disc, as the pack names its slots.
 
 Every file opened this way makes a new draft marked saved, as the map's own file does, with the reader's report in the card's fold.
 

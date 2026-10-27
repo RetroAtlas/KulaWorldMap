@@ -6,10 +6,11 @@ import { readProject } from "../format/project.js";
 import { recordOverflow } from "../format/checks.js";
 import { readPak } from "../format/pak.js";
 import { openDisc } from "../format/iso.js";
-import { PACKS } from "../format/patch.js";
+import { PACKS, identify } from "../format/patch.js";
 import { SECTOR_RAW, USER_OFF } from "../format/sectors.js";
 import { isOrbit, readOrbit, readOrbitLink } from "../format/orbit.js";
 import { inflate as unpack } from "../format/inflate.js";
+import { releases } from "../viewer/release.js";
 import { pickFromDisc, pickFromPack, slotTitle, slotWorld } from "./importdialog.js";
 
 const NOT_MAP = "That file is not one of the map's level files.";
@@ -139,6 +140,7 @@ async function readFromDisc(blob, world) {
   } catch (e) {
     throw new Error(`That file does not read as a disc image: ${e.message}.`);
   }
+  const { release } = await identify(disc, releases());
   const others = [...disc.files.keys()].filter((p) => p.endsWith(".PAK") && !PACKS.includes(p));
   const packs = [];
   for (const path of [...PACKS.filter((p) => disc.files.has(p)), ...others.sort()]) {
@@ -150,15 +152,15 @@ async function readFromDisc(blob, world) {
     }
   }
   if (!packs.length) throw new Error(NO_PACKS);
-  const choice = await pickFromDisc(packs, world);
+  const choice = await pickFromDisc(packs, world, release);
   if (!choice) return null;
   const pack = packs.find((p) => p.path === choice.path);
   const read = readGame(
     await inflate(pack.streams[choice.slot]),
-    slotWorld(pack.path, choice.slot) ?? world,
+    slotWorld(pack.path, choice.slot, release) ?? world,
     NOT_A_LEVEL,
   );
-  read.project.title = slotTitle(pack.path, choice.slot, pack.names[choice.slot]);
+  read.project.title = slotTitle(pack.path, choice.slot, pack.names[choice.slot], release);
   return read;
 }
 
