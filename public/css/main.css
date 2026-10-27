@@ -394,6 +394,18 @@ body:not(.sidebar-open) .sidebar {
   color: #06222f;
   border-color: var(--accent);
 }
+.levels button .diff {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-left: 4px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--accent);
+}
+.levels button[aria-current="true"] .diff {
+  background: currentColor;
+}
 
 .group + .group {
   margin-top: 8px;

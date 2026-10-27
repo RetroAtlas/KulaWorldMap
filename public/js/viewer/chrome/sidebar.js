@@ -12,7 +12,9 @@ import {
   markerColour,
 } from "../data.js";
 import { markerIcon } from "../draw/icons.js";
+import { current, differs, levelOn } from "../release.js";
 import { selectLevel, setSlice } from "./navigate.js";
+import { discWord } from "./release.js";
 import { draw, invalidatePick } from "../draw/render.js";
 import { toast } from "../ui/toast.js";
 
@@ -69,18 +71,16 @@ export function buildWorlds() {
     const list = el("div", { className: "levels" });
     for (const i of w.levels) {
       const l = state.data.levels[i];
-      const b = el("button", {
-        type: "button",
-        textContent: short(levelTitle(l)),
-        title: levelTitle(l),
-      });
+      const b = el("button", { type: "button" });
       b.dataset.i = i;
       b.onclick = () => selectLevel(i);
+      entitle(b, l);
       list.append(b);
     }
     d.append(list);
     box.append(d);
   }
+  titled = current();
   markLevel();
 }
 
@@ -89,6 +89,33 @@ const short = (name) => {
   if (!m) return name;
   return m[2] ? (m[1] === "LEVEL" ? m[2] : `${m[1][0]}${m[2]}`) : m[1];
 };
+
+const slotOf = (l) => `${l.pack}#${l.index}`;
+const listed = (words) =>
+  words.length < 2 ? words.join("") : `${words.slice(0, -1).join(", ")} and ${words.at(-1)}`;
+
+function entitle(b, l) {
+  const on = differs(slotOf(l));
+  const name = levelTitle(levelOn(l));
+  b.title = on.length
+    ? `${name}, differs on the ${listed(on.map(discWord))} disc${on.length > 1 ? "s" : ""}`
+    : name;
+  b.replaceChildren(short(name));
+  if (on.length) {
+    const dot = el("span", { className: "diff" });
+    dot.setAttribute("aria-hidden", "true");
+    b.append(dot);
+  }
+}
+
+// The titles follow the release shown, whichever way it changed.
+let titled = null;
+function retitle() {
+  if (current() === titled) return;
+  titled = current();
+  for (const b of $("worlds").querySelectorAll(".levels button"))
+    entitle(b, state.data.levels[Number(b.dataset.i)]);
+}
 
 function markLevel() {
   for (const b of $("worlds").querySelectorAll(".levels button")) {
@@ -327,6 +354,7 @@ function restoreYours() {
 }
 
 on("level-changed", (i) => {
+  retitle();
   markLevel();
   state.hiddenKinds.clear();
   buildKinds();
@@ -347,3 +375,6 @@ on("level-updated", () => {
   buildKinds();
   syncSlice();
 });
+
+on("release-changed", retitle);
+on("link-opening", retitle);

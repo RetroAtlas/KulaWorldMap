@@ -5,6 +5,7 @@ import { startPlay } from "./playhelpers.js";
 
 const LOCKED = "Leave play to change the release";
 const BONUS_30 = "/HELL/HELL.PAK#17";
+const SLOT_19 = "/HIRO/HIRO.PAK#19";
 const read = (path) =>
   JSON.parse(readFileSync(new URL(`../../public/${path}`, import.meta.url), "utf8"));
 const [us, eu, jp] = ["us", "eu", "jp"].map((id) => read(`releases/${id}.json`));
@@ -12,6 +13,7 @@ const mapData = read("map_data.json");
 const slotIndex = (key) => mapData.levels.findIndex((l) => `${l.pack}#${l.index}` === key);
 
 const bar = (page) => page.locator("#release");
+const button = (page, key) => page.locator(`#worlds .levels button[data-i='${slotIndex(key)}']`);
 const pressed = (page) => bar(page).locator('button[aria-pressed="true"]');
 const press = (page, id) => bar(page).locator(`button[data-release="${id}"]`).click();
 
@@ -137,6 +139,7 @@ test("the choice survives a reload of the bare site, and a bare level link opens
   await page.goto("/");
   await settle(page);
   await expect(pressed(page)).toHaveText("EU");
+  await expect(button(page, SLOT_19)).toHaveText("OBJ LEVEL");
   expect(await shown(page)).toMatchObject({ release: "eu", li: 0, kept: "eu" });
   await page.goto("about:blank");
   await page.goto("/#MARS/11");
@@ -270,4 +273,59 @@ test("a draft on screen keeps the bar live, and a press changes the points its l
   expect(await shown(page)).toMatchObject({ release: "eu", li: -1, draft: 1 });
   await page.goBack();
   await expect(pressed(page)).toHaveText("US");
+});
+
+test("a dot stands on the button of every slot that differs between the discs, whichever is shown, its title naming them", async ({
+  page,
+}) => {
+  await page.goto("/#MARS/11");
+  await settle(page);
+  const marked = page.locator("#worlds .levels button:has(.diff)");
+  const slots = [...new Set([...Object.keys(eu.levels), ...Object.keys(jp.levels)])]
+    .map(slotIndex)
+    .sort((a, b) => a - b);
+  expect(slots).toHaveLength(17);
+  await expect(marked).toHaveCount(17);
+  const dotted = await marked.evaluateAll((bs) => bs.map((b) => Number(b.dataset.i)));
+  expect(dotted.sort((a, b) => a - b)).toEqual(slots);
+  const titles = await marked.evaluateAll((bs) => bs.map((b) => b.title));
+  for (const t of titles) expect(t).toMatch(/, differs on the .+ discs?$/);
+  await expect(button(page, "/MARS/MARS.PAK#11")).toHaveAttribute(
+    "title",
+    "LEVEL 132, differs on the PAL and Japanese discs",
+  );
+  await expect(button(page, BONUS_30)).toHaveAttribute(
+    "title",
+    "BONUS 30, differs on the PAL disc",
+  );
+  await expect(button(page, "/HILLS/HILLS.PAK#15")).toHaveAttribute(
+    "title",
+    "BONUS 4, differs on the Japanese disc",
+  );
+  await expect(marked.first().locator(".diff")).toHaveAttribute("aria-hidden", "true");
+  await expect(button(page, "/HIRO/HIRO.PAK#0")).toHaveAttribute("title", "LEVEL 1");
+  await expect(button(page, "/HIRO/HIRO.PAK#0").locator(".diff")).toHaveCount(0);
+  await press(page, "jp");
+  await expect(pressed(page)).toHaveText("JP");
+  await expect(marked).toHaveCount(17);
+});
+
+test("HIRO's slot 19 reads OBJ LEVEL after a press of EU and LESSON after US, its mark and its dot kept", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/19");
+  await settle(page);
+  const b = button(page, SLOT_19);
+  await expect(b).toHaveText("LESSON");
+  await expect(b).toHaveAttribute("title", "LESSON, differs on the PAL disc");
+  await expect(b).toHaveAttribute("aria-current", "true");
+  await press(page, "eu");
+  await expect(pressed(page)).toHaveText("EU");
+  await expect(b).toHaveText("OBJ LEVEL");
+  await expect(b).toHaveAttribute("title", "OBJ LEVEL, differs on the PAL disc");
+  await expect(b).toHaveAttribute("aria-current", "true");
+  await expect(b.locator(".diff")).toHaveCount(1);
+  await press(page, "us");
+  await expect(pressed(page)).toHaveText("US");
+  await expect(b).toHaveText("LESSON");
 });

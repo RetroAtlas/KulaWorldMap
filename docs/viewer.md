@@ -119,6 +119,8 @@ One finding comes from the map itself rather than from the file: where a key, a 
 
 The sidebar lists a world's levels in the order of its pack, then its two finals, then the Simon room the game's Simon mode plays in it on its first round, and `[` and `]` step to the previous and next level in that order, on from a world's last level to the next world's first level and back, and stop at the first level of the first world and the last of the last.
 
+A level button carries a dot after its title where its slot holds another level on one of the other discs, as The three discs below says.
+
 While the ball is on the level with Play on through the levels on in Settings, a way out moves the line on to the level the game loads next, and in the Simon rooms a failed round to the room the game loads next, as Rolling the ball below says.
 
 ## The three discs
@@ -126,6 +128,10 @@ While the ball is on the level with Play on through the levels on in Settings, a
 Beside the Worlds heading stand three buttons, US, EU and JP, one for each disc the game shipped on, Roll Away in North America, Kula World in PAL territories and Kula Quest in Japan, and the one pressed is the disc whose levels the map shows, each button's tooltip naming its game and its serial.
 
 A press shows the level on screen as that disc ships it, most levels being the same on all three, keeps the view where it was turned by hand and frames the level afresh where it was fitted, since a slot's level on another disc may have another extent, and keeps the selected block where that disc's level still has its cell.
+
+In the sidebar a level button carries a dot after its title where its slot holds another level on any of the discs, the same whichever disc is shown, since differing is a fact of the slot, and its tooltip names the discs it differs on, the PAL and Japanese discs for LEVEL 132 and the PAL disc for BONUS 30.
+
+The buttons are titled by the level each slot holds on the disc shown, so HIRO's slot 19, the Lesson on the US and Japanese discs, reads OBJ LEVEL under EU, where the PAL disc has a copy of the object catalogue instead, and LESSON again under US or JP.
 
 The choice is kept from one visit to the next, so a visit with no link opens on the disc chosen last, while a link that names a level opens it on the disc the link carries, the US release where it carries none, whatever is kept, the bar following the link.
 
