@@ -6,7 +6,7 @@ It is at **[kulaworld.retroatlas.org](https://kulaworld.retroatlas.org/)**, part
 
 ![The map on Arctic's copy of the object catalogue, with one of nearly every object in the game laid out on one floor](screenshot.png)
 
-All 230 levels are here, which is more than the game ever shows you in one place: 150 numbered levels across ten worlds, 30 bonus and 10 hidden levels, the 20 finals, the 10 Simon rooms, and, on the North American disc, the lesson and the nine copies of the object catalogue that no menu reaches.
+All 230 levels are here, which is more than the game ever shows you in one place: 150 numbered levels across ten worlds, 30 bonus and 10 hidden levels, the 20 finals, the 10 Simon rooms, the nine copies of the object catalogue that no menu reaches, and the lesson, which only the Japanese disc's menu lists and the PAL disc swaps for a tenth copy of the catalogue.
 
 A level is titled by the number the game's pause screen gives it, which the engine counts through the worlds rather than reading from the level record; where the record calls it something else, the level's note says so.
 
