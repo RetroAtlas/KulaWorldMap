@@ -42,6 +42,8 @@ import {
 } from "../format/patch.js";
 import { inflate } from "../format/inflate.js";
 
+// --- the words and the constants -----------------------------------------------------------
+
 const FIRST = "/HIRO/HIRO.PAK#0";
 const ROOMS = "Simon rooms";
 const LEVEL = 6;
@@ -83,6 +85,8 @@ const IDS = {
   wear: "patchWear",
   fit: "patchFit",
 };
+
+// --- the dialog's state and the helpers ----------------------------------------------------
 
 let layout = null;
 let ui = null;
@@ -139,6 +143,8 @@ function fitText(f) {
       : `The pack is rebuilt to make room, with ${spare}, so the patch carries its other levels too.`;
   return `The pack moves into the disc's free sectors, with ${spare}, so the patch carries its other levels too.`;
 }
+
+// --- building the box ----------------------------------------------------------------------
 
 const section = (title, ...kids) => el("section", {}, el("h4", { textContent: title }), ...kids);
 const button = (id, text, title) => el("button", { id, type: "button", textContent: text, title });
@@ -288,6 +294,8 @@ function build() {
   });
   return u;
 }
+
+// --- the rows ------------------------------------------------------------------------------
 
 /** A row for the draft with this id, put under the others: its parts, and what the box works out for it. */
 function newRow(id) {
@@ -456,6 +464,8 @@ function additions() {
   ui.add.selectedIndex = 0;
 }
 
+// --- the slots -----------------------------------------------------------------------------
+
 // Every row's slot list and the slot it shows, in passes so a guess never takes
 // a slot chosen for another row: its target, or none where that is no slot, else
 // a guess from its title, else its template's slot, else the first free slot of
@@ -504,6 +514,8 @@ function retarget() {
   if (!d.disc) layoutFits();
 }
 
+// --- a row's checks ------------------------------------------------------------------------
+
 /** The checks' findings in the row, and the sentence that keeps the patches back, or null. */
 function checks(row) {
   const box = row.u.checks;
@@ -538,6 +550,8 @@ function checks(row) {
   return hides ? null : NO_TABLE;
 }
 
+// --- the image's packs ---------------------------------------------------------------------
+
 // The packs of the image's own directory, which stand in for the layout where it could not be loaded.
 async function packsOf(disc) {
   const out = [];
@@ -552,6 +566,8 @@ async function packsOf(disc) {
   }
   return out;
 }
+
+// --- the slot lists, whose place a level takes and the clashes -----------------------------
 
 /** The slots of every pack, grouped by world with the Simon rooms last, or null where neither the layout nor the image is read. */
 function optionGroups() {
@@ -647,6 +663,8 @@ function clashes() {
   }
 }
 
+// --- the fits from the layout --------------------------------------------------------------
+
 // The fits from the packs' layout, each pack's rows fitted in order; a row on a
 // slot an earlier row takes is not fitted and shows none.
 function layoutFits() {
@@ -684,6 +702,8 @@ function layoutFits() {
     }
   }
 }
+
+// --- the image -----------------------------------------------------------------------------
 
 async function take(file) {
   if (typeof DecompressionStream !== "function") {
@@ -784,6 +804,8 @@ async function placed(mine = ++turn) {
   downloads();
   play();
 }
+
+// --- the downloads and the saving ----------------------------------------------------------
 
 function downloads() {
   const ready = offered();
