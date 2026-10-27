@@ -167,6 +167,8 @@ The editor loads only when it is wanted, when a level of your own is made, opene
 
 `new` makes a level of one plain block and a start in the world on screen and opens it editing, and `copy this level` makes one out of the level on screen, a shipped level as the game loads it or a copy of a draft, and opens it as it is; either is a draft at once, marked "Draft" on the level line and shown on the map as the game would load it.
 
+Where the disc shown is the PAL or the Japanese one and the level is that disc's own, the copy carries the disc's code after the level's title, `BONUS 30 (EU)`, so copies of one slot from two discs are told apart in the rows.
+
 A level of your own marked a Simon room is shown as the game shows the rooms, with its world's artwork and not the bonus artwork a level with no key wears, and the ball plays it as one, as Rolling the ball below says; a key on it makes it an arcade level all the same, since the game decides that from the keys.
 
 A row shows a draft, with "not saved to a file" and, once there have been changes, how many, undo taking one away and redo giving it back and a typed title counting once; choosing one shows it, as choosing a level does, and a link to it (`#DRAFT/3/...`) opens it on the device that holds it, pasted into the address bar as well as followed at the start, and anywhere else gives way to the view on screen, saying once that the level is kept in another browser.

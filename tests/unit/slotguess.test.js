@@ -21,6 +21,7 @@ test("a listed title standing in the title as whole words names its slot, the lo
   assert.equal(guessSlot("My level 10, remixed", listed), key("LEVEL 10"));
   assert.equal(guessSlot("LEVEL 1 and LEVEL 10", listed), key("LEVEL 10"));
   assert.equal(guessSlot("(bonus 3)", listed), key("BONUS 3"));
+  assert.equal(guessSlot("BONUS 30 (EU)", listed), key("BONUS 30"));
   assert.equal(guessSlot("LEVEL 1010", listed), null);
 });
 

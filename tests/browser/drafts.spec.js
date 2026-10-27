@@ -203,6 +203,52 @@ test("copy this level makes a draft out of the level on screen, and of a draft a
   expect(errors).toEqual([]);
 });
 
+test("copy this level and w title a copy of a level that differs on the disc shown with that disc's code, and a copy under US with the title alone", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HELL/17/45,35/fit/33/d-eu");
+  await settle(page);
+  await expect(page.locator("#chipLine .tag")).toHaveText("EU");
+  await page.locator("#draftCopy").click();
+  const rows = page.locator("#draftRows button");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.locator(".name")).toHaveText("BONUS 30 (EU)");
+  await expect(page.locator("#chipLine b")).toHaveText("BONUS 30 (EU)");
+  await expect(page.locator("#chipLine .tag")).toHaveText(["Draft", "EU"]);
+  await expect(page.locator("#say")).toContainText("Copied BONUS 30 (EU).");
+  await expect(page.locator("#say")).toContainText("Draft, BONUS 30 (EU), HELL,");
+  const pal = await shown(page);
+  expect(pal.li).toBe(-1);
+  expect(await docOf(page, pal.draft)).toMatchObject({
+    title: "BONUS 30 (EU)",
+    from: "/HELL/HELL.PAK#17",
+    fromRelease: "eu",
+  });
+
+  await page.evaluate(() => (location.hash = "#HELL/17/45,35/fit/33"));
+  await expect(page.locator("#chipLine b")).toHaveText("BONUS 30");
+  await expect(page.locator("#chipLine .tag")).toHaveCount(0);
+  await page.locator("#draftCopy").click();
+  await expect(rows).toHaveCount(2);
+  await expect(rows.locator(".name")).toHaveText(["BONUS 30", "BONUS 30 (EU)"]);
+  await expect(page.locator("#draftRows button[aria-current='true'] .name")).toHaveText("BONUS 30");
+  await expect(page.locator("#say")).toContainText("Copied BONUS 30. Draft, BONUS 30, HELL,");
+  const us = await shown(page);
+  expect(us.draft).not.toBe(pal.draft);
+  const doc = await docOf(page, us.draft);
+  expect(doc).toMatchObject({ title: "BONUS 30", from: "/HELL/HELL.PAK#17" });
+  expect(doc).not.toHaveProperty("fromRelease");
+
+  await page.evaluate(() => (location.hash = "#HELL/17/45,35/fit/33/d-eu"));
+  await expect(page.locator("#chipLine .tag")).toHaveText("EU");
+  await page.keyboard.press("w");
+  await expect(page.locator("#say")).toHaveText(
+    /^Copied BONUS 30 \(EU\)\. .*Draft, BONUS 30 \(EU\), HELL, .*\. Editing on\.$/,
+  );
+  expect(errors).toEqual([]);
+});
+
 test("the Level card edits the draft as the game would load it, keeping the view", async ({
   page,
 }) => {
