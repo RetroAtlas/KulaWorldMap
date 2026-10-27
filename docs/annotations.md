@@ -381,7 +381,7 @@ On the Japanese disc the coin under 17,15,14, the exit block, and the crumbling 
 
 From The Cutting Room Floor's Roll Away page.
 
-On the PAL disc a fruit stands on the top face of 16,17,12, two blocks from the blue teleporter on 16,19,12 and the one fruit in the finals on any disc, read off the three images, and the note calls it a fruit since the map draws its type by its model, the bananas, on a final (type 46).
+On the PAL disc a fruit stands on the top face of 16,17,12, two blocks from the blue teleporter on 16,19,12 and the one fruit in the finals on any disc, read off the three images, and the notes call it a fruit since the map draws its type by its model, the bananas, on a final (type 46).
 
 ### /INCA/INCA.PAK#9: LEVEL 40
 
@@ -461,9 +461,11 @@ On the Japanese disc a hidden exit stands on the underside of 15,16,20, Mars's o
 
 ### /MARS/MARS.PAK#16: BONUS 26
 
-The best score in play. The disc holds 8925 more, three gems on the far side of the three far blocks, which only the bouncy pill reaches and which the pill then keeps you from collecting.
+The best score in play. The disc holds 8925 more, three gems on the outward faces of the three-by-three wall of blocks at the level's `+x` edge, which only the bouncy pill reaches and which the pill then keeps you from collecting.
 
-The three stand on the `+x` face of 21,13,20, 21,15,20 and 21,17,20, the far column, and face away from the rest of the level.
+The three stand on the `+x` face of 21,13,20, 21,15,20 and 21,17,20, the middle row of that wall's nine blocks, and face away from the rest of the level, which lies at `-x` of them.
+
+The fourth gem on that wall's `+x` side, on 21,15,23, is one the best score collects.
 
 On the Japanese disc the three gems are gone, read off its image, and its total is the best score here, so everything on it can be collected there and the score is taken away.
 

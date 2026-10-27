@@ -363,7 +363,7 @@
       "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in world after world, and nothing in the game leads to it."
     },
     "/HILLS/HILLSFI.PAK#0": {
-      "note": "The Final has no fruit, but the PAL release put an apple on this level anyway. The US and Japanese releases removed it, leaving the blue teleporter it stood beside with nothing to reach.",
+      "note": "The Final has no fruit, but the PAL release put one on this level anyway. The US and Japanese releases removed it, leaving the blue teleporter it stood beside with nothing to reach.",
       "releases": {
         "eu": {
           "note": "The Final has no other fruit, but this release has one here, two blocks from the blue teleporter. The US and Japanese releases took it out."
@@ -463,7 +463,7 @@
       "note": "The hidden exit at 14,19,18 stands on a block that cannot be reached once it has appeared. The PAL release forgot to place it, and the Japanese release moved it to LEVEL 134, the one release in which every hidden level can be played.",
       "releases": {
         "eu": {
-          "note": "This release has no hidden exit here, and none on its last world either, so its last two hidden levels cannot be reached. The US release has one at 14,19,18, on a block that cannot be reached once it has appeared."
+          "note": "This release has no hidden exit here, and none on its last world either, so HIDDEN 9 and HIDDEN 10 cannot be reached. The US release has one at 14,19,18, on a block that cannot be reached once it has appeared."
         },
         "jp": {
           "note": "This release has no hidden exit here and puts Mars's on LEVEL 134 instead, so every hidden level can be played. The US release has one at 14,19,18, on a block that cannot be reached once it has appeared."
@@ -488,11 +488,11 @@
     },
     "/MARS/MARS.PAK#16": {
       "score": 19000,
-      "note": "The level holds 8925 more points, in three gems on the far side of the three far blocks. Only the bouncy pill reaches them, and the pill then keeps you from collecting them. The Japanese release removes them.",
+      "note": "The level holds 8925 more points, in three gems on the outward faces of 21,13,20, 21,15,20 and 21,17,20, turned away from the rest of the level. Only the bouncy pill reaches them, and the pill then keeps you from collecting them. The Japanese release removes them.",
       "releases": {
         "jp": {
           "score": null,
-          "note": "This release removes the three gems on the far side of the far blocks, which only the bouncy pill reaches, so everything here can be collected."
+          "note": "This release removes the three gems on the outward faces of 21,13,20, 21,15,20 and 21,17,20, which only the bouncy pill reaches, so everything here can be collected."
         }
       }
     },
@@ -511,10 +511,10 @@
       "note": "The developers' object catalogue, with one of nearly every object in the game laid out on a flat floor. It ships unchanged in world after world, and nothing in the game leads to it."
     },
     "/HELL/HELL.PAK#7": {
-      "note": "Hell's one hidden exit stands under a block here. The PAL release left it out, so its last hidden level cannot be reached there.",
+      "note": "Hell's one hidden exit stands under a block here. The PAL release left it out, so HIDDEN 10 cannot be reached there.",
       "releases": {
         "eu": {
-          "note": "This release has no hidden exit here, Hell's only one, so its last hidden level cannot be reached."
+          "note": "This release has no hidden exit here, Hell's only one, so HIDDEN 10 cannot be reached."
         }
       }
     },
