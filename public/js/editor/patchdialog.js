@@ -423,8 +423,6 @@ function additions() {
   ui.add.selectedIndex = 0;
 }
 
-// --- a row's checks ------------------------------------------------------------------------
-
 /** The checks' findings in the row, and the sentence that keeps the patches back, or null. */
 function checks(row) {
   const box = row.u.checks;
@@ -457,23 +455,6 @@ function checks(row) {
   if (!findings.length && hides) box.append(el("p", { className: "sub", textContent: CLEAN }));
   if (errors.length) return ERRORS;
   return hides ? null : NO_TABLE;
-}
-
-// --- the image's packs ---------------------------------------------------------------------
-
-// The packs of the image's own directory, which stand in for the layout where it could not be loaded.
-async function packsOf(disc) {
-  const out = [];
-  for (const path of PACKS) {
-    if (!keyShaped(`${path}#0`) || !disc.files.has(path)) continue;
-    try {
-      const pak = readPak(await disc.readFile(path));
-      out.push({ path, slots: pak.names.map((name) => ({ name })) });
-    } catch {
-      continue;
-    }
-  }
-  return out;
 }
 
 // --- the slot chosen -----------------------------------------------------------------------
@@ -539,6 +520,21 @@ function layoutFits() {
 }
 
 // --- the image -----------------------------------------------------------------------------
+
+// The packs of the image's own directory, which stand in for the layout where it could not be loaded.
+async function packsOf(disc) {
+  const out = [];
+  for (const path of PACKS) {
+    if (!keyShaped(`${path}#0`) || !disc.files.has(path)) continue;
+    try {
+      const pak = readPak(await disc.readFile(path));
+      out.push({ path, slots: pak.names.map((name) => ({ name })) });
+    } catch {
+      continue;
+    }
+  }
+  return out;
+}
 
 async function take(file) {
   if (typeof DecompressionStream !== "function") {
