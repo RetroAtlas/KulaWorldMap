@@ -400,7 +400,7 @@ body:not(.sidebar-open) .sidebar {
   height: 4px;
   margin-left: 4px;
   border-radius: 50%;
-  vertical-align: middle;
+  vertical-align: 0.2em;
   background: var(--accent);
 }
 .levels button[aria-current="true"] .diff {
