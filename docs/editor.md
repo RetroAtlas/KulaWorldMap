@@ -74,7 +74,7 @@ The writers of this repo write a project the same way, so a diff between two is 
 
 A template of a shipped level takes its `title` from the number the pause screen shows, or the disc's name where the game shows none.
 
-A copy made on the map of a level that differs on the disc shown carries that disc's code after the level's title, `BONUS 30 (EU)`, so two copies of one slot from two discs are told apart, and a copy of a level the discs share keeps the plain title.
+A copy made on the map of a level that differs on the disc shown carries that disc's tag after the level's title, `BONUS 30 (EU)`, so two copies of one slot from two discs are told apart, and a copy of a level the discs share keeps the plain title.
 
 **The growth rule.** Keys are only ever added; a published key never changes its meaning or its type; every optional key has a default on read; a reader ignores keys it does not know.
 
@@ -369,7 +369,9 @@ The read and the draft are one rule in `public/js/editor/intake.js`, which the s
 
 ## Onto the disc
 
-A draft is exported to the disc by `public/js/editor/patchdialog.js`, which takes a list of drafts, a row each, and places them as one patch: opened from a draft's card it lists that draft, a select under the rows adds any other draft this browser holds or, by its last entry, a level from a file, read as the sidebar's `open a file…` reads one through `public/js/editor/intake.js` and made a draft marked saved, a pack's or an image's question asked in the box's place and the box opened again once it is answered or declined, and a row's `take out` drops it, as `take all out` drops every row; each row's slot list, the slot settled for it, whose place its level takes and the clashes under the rows are worked out in `public/js/editor/patchslots.js` over the box's rows and the chosen disc's layout, and the bar that chooses the disc, its lock and its words are `public/js/editor/discbar.js`.
+A draft is exported to the disc by `public/js/editor/patchdialog.js`, which takes a list of drafts, a row each, and places them as one patch: opened from a draft's card it lists that draft, a select under the rows adds any other draft this browser holds or, by its last entry, a level from a file, read as the sidebar's `open a file…` reads one through `public/js/editor/intake.js` and made a draft marked saved, a pack's or an image's question asked in the box's place and the box opened again once it is answered or declined, and a row's `take out` drops it, as `take all out` drops every row.
+
+Each row's slot list, the slot settled for it, whose place its level takes and the clashes under the rows are worked out in `public/js/editor/patchslots.js` over the box's rows and the chosen disc's layout, and the bar that chooses the disc, its lock and its words are `public/js/editor/discbar.js`.
 
 The rows, the image and its plan live as long as the page: the box opened again holds what it held when it was closed, with a row added for the draft it is opened for where none holds it and the rows whose drafts went meanwhile dropped without a word, and plans again over the image it holds rather than reading it again.
 
