@@ -1,5 +1,6 @@
 // No DOM, so it stays importable in bare Node.
 import { cellKey, FACE_NAME, DIRECTION_NAME } from "../../format/lattice.js";
+import { state } from "../state.js";
 import {
   markersOf,
   kindBlocks,
@@ -64,11 +65,11 @@ function candidate(li, l, at, m) {
   };
 }
 
-function candidates(data) {
+function candidates(levels) {
   const out = [];
-  data.levels.forEach((l, li) => {
+  levels.forEach((l, li) => {
     for (const r of l.records) for (const m of markersOf(r)) out.push(candidate(li, l, r, m));
-    for (const b of kindBlocks(l, data.firstRecord)) out.push(candidate(li, l, b, b.marker));
+    for (const b of kindBlocks(l, state.data.firstRecord)) out.push(candidate(li, l, b, b.marker));
   });
   return out;
 }
@@ -76,9 +77,9 @@ function candidates(data) {
 // Nothing the index reads changes after boot.
 const cache = new WeakMap();
 
-export function objectCandidates(data) {
-  let rows = cache.get(data);
-  if (!rows) cache.set(data, (rows = candidates(data)));
+export function objectCandidates(levels) {
+  let rows = cache.get(levels);
+  if (!rows) cache.set(levels, (rows = candidates(levels)));
   return rows;
 }
 
@@ -96,8 +97,8 @@ export function rowOf(h, terms) {
   return [h.face, h.cell, ...h.shown, ...matched].filter(Boolean);
 }
 
-export function matchObjects(data, groups, terms) {
-  return objectCandidates(data)
+export function matchObjects(levels, groups, terms) {
+  return objectCandidates(levels)
     .filter((c) => matchesBy(groups, answers(c)))
     .map((c) => ({ ...c, rank: rankFor(c.name, terms) }));
 }

@@ -5,7 +5,9 @@ import { startPlay } from "./playhelpers.js";
 
 const LOCKED = "Leave play to change the release";
 const BONUS_30 = "/HELL/HELL.PAK#17";
+const BONUS_26 = "/MARS/MARS.PAK#16";
 const SLOT_19 = "/HIRO/HIRO.PAK#19";
+const GEM = 36;
 const read = (path) =>
   JSON.parse(readFileSync(new URL(`../../public/${path}`, import.meta.url), "utf8"));
 const [us, eu, jp] = ["us", "eu", "jp"].map((id) => read(`releases/${id}.json`));
@@ -37,6 +39,9 @@ const shown = (page) =>
       kept: localStorage.getItem("kula.release"),
     };
   });
+
+/** How many gems a level holds. */
+const gems = (l) => l.records.reduce((n, r) => n + r.on.filter((o) => o.type === GEM).length, 0);
 
 /** The points the level line counts. */
 const points = async (page) =>
@@ -365,4 +370,38 @@ test("HIRO's slot 19 reads OBJ LEVEL after a press of EU and LESSON after US, it
   await press(page, "us");
   await expect(pressed(page)).toHaveText("US");
   await expect(b).toHaveText("LESSON");
+});
+
+test("a search's list shown under US is built anew after a press of JP, with the gems that disc has", async ({
+  page,
+}) => {
+  await page.goto("/#MARS/16");
+  await settle(page);
+  await page.locator("#search").fill("gem");
+  const here = page.locator("#results [role=group]").first();
+  await expect(here).toHaveAttribute("aria-label", "MARS · BONUS 26");
+  const rows = here.locator("[role=option]");
+  await expect(rows).toHaveCount(gems(mapData.levels[slotIndex(BONUS_26)]));
+  await press(page, "jp");
+  await expect(pressed(page)).toHaveText("JP");
+  await expect(rows).toHaveCount(gems(jp.levels[BONUS_26]));
+  await expect(page.locator("#search")).toHaveValue("gem");
+});
+
+test("a search's list shown beside a draft is built anew when the disc changes, LESSON leaving on a press of EU and returning with Back", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/19");
+  await settle(page);
+  await page.locator("#draftCopy").click();
+  await expect(page.locator("#chipLine .tag")).toHaveText("Draft");
+  await page.locator("#search").fill("lesson");
+  const rows = page.locator("#results [role=group][aria-label=Levels] [role=option]");
+  await expect(rows).toHaveCount(1);
+  await press(page, "eu");
+  await expect(pressed(page)).toHaveText("EU");
+  await expect(rows).toHaveCount(0);
+  await page.goBack();
+  await expect(pressed(page)).toHaveText("US");
+  await expect(rows).toHaveCount(1);
 });

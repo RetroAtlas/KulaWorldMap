@@ -99,6 +99,10 @@ In the list and in the buttons' tooltips the map names Ctrl and Alt as the keybo
 
 A search for objects or blocks lists every one the game places, those on this level first, then the rest of those in its world, then those in the other worlds; Enter or a click goes to one and selects it, and the list stays for the next. The cross in the box clears it, as `Esc` does.
 
+A search is of the disc shown, so under JP it lists none of the gems the Japanese disc took out and under EU it finds OBJ LEVEL in HIRO.
+
+A list on screen is built anew when the disc changes, so it never names a cell the disc shown lacks.
+
 A space means every term must match and a comma or `or` means any (`coin, key`), and a field is searched as `name=value` (`starts=off`, `facing=+x`, or `type 34 f10=2` for the raw fields the panel shows).
 
 The bar under the box narrows a search to the world or the level in hand, or, by level, lists the levels that hold the thing with the one holding most of it first.

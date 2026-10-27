@@ -1,5 +1,6 @@
 import { $, el, on } from "../ui/dom.js";
 import { state, sliceZ } from "../state.js";
+import { current as release, levelsOf } from "../release.js";
 import { SIDE, cellKey } from "../../format/lattice.js";
 import {
   worldName,
@@ -34,6 +35,7 @@ let cursor = -1;
 // The row the cursor is on, by key, so it is found again as the list grows.
 let current = null;
 let builtFor = null;
+let builtOn = null;
 
 const options = () => [...out.querySelectorAll("[role=option]")];
 
@@ -181,6 +183,7 @@ function render() {
     return;
   }
   builtFor = state.lvl.theme;
+  builtOn = release();
   // Read as a query, a cell's commas would ask for any of its three numbers.
   const cell = CELL.exec(q)?.slice(1).map(Number);
   if (cell) {
@@ -201,7 +204,8 @@ function render() {
   const groups = parseQuery(q);
   const terms = queryTerms(groups);
 
-  const places = matchPlaces(state.data, groups, terms, state.li);
+  const shipped = levelsOf(builtOn);
+  const places = matchPlaces(shipped, groups, terms, state.li);
   const worlds = places.filter((c) => c.world && scope !== "level" && inScope(-1, c.world.id));
   const levels = places.filter((c) => c.level && inScope(c.li, c.level.theme));
   if (worlds.length)
@@ -223,7 +227,7 @@ function render() {
       ),
     );
 
-  const hits = matchObjects(state.data, groups, terms).filter((h) => inScope(h.li, h.level.theme));
+  const hits = matchObjects(shipped, groups, terms).filter((h) => inScope(h.li, h.level.theme));
   let where = scope === "all" ? "" : ` in ${scopeLabel()}`;
   if (scope === "bylevel") {
     const holders = new Map();
@@ -398,12 +402,24 @@ box.addEventListener("keydown", (e) => {
   }
 });
 
-// A list is built anew only where its finds no longer fit its scope; one
-// that still fits stays as it was, so a walk down it is not thrown off.
+// A list is built anew only where its finds no longer fit its scope or were
+// found on another disc; one that still fits stays as it was, so a walk down
+// it is not thrown off.
 function rescope() {
   if (bar.hidden) return;
-  if (scope === "level" || (scope === "world" && state.lvl.theme !== builtFor)) render();
+  if (
+    scope === "level" ||
+    (scope === "world" && state.lvl.theme !== builtFor) ||
+    release() !== builtOn
+  )
+    render();
   else scopeBar();
+}
+// A change of disc under a draft installs no level, so it reaches the list only here.
+function relist() {
+  if (!bar.hidden && release() !== builtOn) render();
 }
 on("level-changed", rescope);
 on("level-updated", rescope);
+on("release-changed", relist);
+on("link-opening", relist);

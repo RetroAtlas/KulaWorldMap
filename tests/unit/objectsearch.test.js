@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapData, annotations } from "./fixtures.js";
+import { mapData, annotations, releases, levelKey } from "./fixtures.js";
 import {
   setAnnotations,
   markersOf,
@@ -10,6 +10,7 @@ import {
   kindName,
 } from "../../public/js/viewer/data.js";
 import { state } from "../../public/js/viewer/state.js";
+import { levelsOf, setReleases } from "../../public/js/viewer/release.js";
 import { parseQuery, queryTerms } from "../../public/js/viewer/chrome/searchquery.js";
 import {
   matchObjects,
@@ -18,10 +19,11 @@ import {
 } from "../../public/js/viewer/chrome/objectsearch.js";
 
 setAnnotations(annotations);
+state.data = mapData;
 
-const find = (q) => {
+const find = (q, levels = mapData.levels) => {
   const groups = parseQuery(q);
-  return matchObjects(mapData, groups, queryTerms(groups));
+  return matchObjects(levels, groups, queryTerms(groups));
 };
 const blocks = mapData.levels.flatMap((l) => kindBlocks(l, mapData.firstRecord));
 const placed =
@@ -29,9 +31,9 @@ const placed =
 const ofKind = (kind) => blocks.filter((b) => b.marker.kind === kind).length;
 
 test("every marker the game places, and every block of a kind of its own, is a candidate, once, in the disc's order", () => {
-  const rows = objectCandidates(mapData);
+  const rows = objectCandidates(mapData.levels);
   assert.equal(rows.length, placed);
-  assert.equal(objectCandidates(mapData), rows);
+  assert.equal(objectCandidates(mapData.levels), rows);
   for (let i = 1; i < rows.length; i++) assert.ok(rows[i - 1].li <= rows[i].li);
 });
 
@@ -114,19 +116,18 @@ test("block alone finds every block named for its kind, and no plain one", () =>
 });
 
 test("a block's row carries no type, since a block has none", () => {
-  for (const c of objectCandidates(mapData).filter((c) => c.marker.type === null))
+  for (const c of objectCandidates(mapData.levels).filter((c) => c.marker.type === null))
     assert.ok(!c.tokens.includes("null") && !c.more.some((s) => s.startsWith("type=")));
   assert.equal(find("null").length, 0);
 });
 
 test("the search finds in a level what the legend counts there", () => {
-  state.data = mapData;
   const tally = (markers) => {
     const n = new Map();
     for (const m of markers) n.set(m.id, (n.get(m.id) || 0) + 1);
     return n;
   };
-  const byLevel = Map.groupBy(objectCandidates(mapData), (c) => c.li);
+  const byLevel = Map.groupBy(objectCandidates(mapData.levels), (c) => c.li);
   mapData.levels.forEach((l, li) => {
     const legend = tally([...levelMarkers(l), ...blockMarkers(l)]);
     assert.deepEqual(tally((byLevel.get(li) ?? []).map((c) => c.marker)), legend, l.name);
@@ -136,7 +137,7 @@ test("the search finds in a level what the legend counts there", () => {
 const rowFor = (q) => {
   const groups = parseQuery(q);
   const terms = queryTerms(groups);
-  return matchObjects(mapData, groups, terms).map((h) => rowOf(h, terms));
+  return matchObjects(mapData.levels, groups, terms).map((h) => rowOf(h, terms));
 };
 
 test("a row names the face and cell, and nothing more where the name says why", () => {
@@ -160,4 +161,26 @@ test("a raw pair a term named joins the row, once", () => {
   for (const row of rowFor("f3=2")) assert.equal(row.filter((s) => s === "f3=2").length, 1);
   for (const row of rowFor("starts=off"))
     assert.equal(row.filter((s) => s === "starts=off").length, 1);
+});
+
+const BONUS_26 = "/MARS/MARS.PAK#16";
+const GEM = 36;
+
+test("a release's levels are indexed as they stand, so the Japanese disc has three fewer gems in BONUS 26, every row at its slot's own index", () => {
+  setReleases(releases);
+  const slot = mapData.levels.findIndex((l) => levelKey(l) === BONUS_26);
+  const gems = (id) => find("gem", levelsOf(id)).filter((c) => c.li === slot);
+  assert.ok(gems("us").length > 3);
+  assert.ok(gems("us").every((c) => c.marker.type === GEM));
+  assert.equal(gems("us").length, find("gem").filter((c) => c.li === slot).length);
+  assert.equal(gems("jp").length, gems("us").length - 3);
+  assert.ok(gems("jp").every((c) => c.level === levelsOf("jp")[slot]));
+  for (const id of ["us", "eu", "jp"]) {
+    const rows = objectCandidates(levelsOf(id));
+    assert.equal(objectCandidates(levelsOf(id)), rows, id);
+    assert.ok(
+      rows.every((c) => c.level === levelsOf(id)[c.li]),
+      id,
+    );
+  }
 });
