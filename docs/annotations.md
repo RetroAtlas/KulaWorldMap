@@ -359,6 +359,8 @@ On the Japanese disc the slot holds the LESSON byte for byte as the US disc does
 
 That the Japanese release's main menu lists it is from The Cutting Room Floor's Roll Away page.
 
+It carries 22 of the game's 32 object types, several of them many times over.
+
 ### /HILLS/HILLS.PAK#19, /INCA/INCA.PAK#19, /ARCTIC/ARCTIC.PAK#19, /COWBOY/COWBOY.PAK#19, /FIELD/FIELD.PAK#19, /ATLANT/ATLANT.PAK#19, /HAZE/HAZE.PAK#19, /MARS/MARS.PAK#19, /HELL/HELL.PAK#19: OBJ LEVEL
 
 The name is what it holds: one of nearly every object in the game on a flat floor, identical in the nine worlds that ship it on the US and Japanese discs and in all ten on the PAL disc, read off the three images, and no way to it in play.
@@ -382,6 +384,8 @@ On the Japanese disc the coin under 17,15,14, the exit block, and the crumbling 
 From The Cutting Room Floor's Roll Away page.
 
 On the PAL disc a fruit stands on the top face of 16,17,12, two blocks from the blue teleporter on 16,19,12 and the one fruit in the finals on any disc, read off the three images, and the notes call it a fruit since the map draws its type by its model, the bananas, on a final (type 46).
+
+The teleporter is left with nothing to reach because the ice on 15,18,12 and 17,18,12 slides the ball past the turn onto 16,17,12, the block the fruit stood on, so the teleporter at 16,19,12 is the only way there.
 
 ### /INCA/INCA.PAK#9: LEVEL 40
 
@@ -408,6 +412,8 @@ On the Japanese disc each end block, 3,17,17, 17,3,17, 17,31,17 and 31,17,17, ca
 From The Cutting Room Floor's Roll Away page.
 
 On the Japanese disc the coin under 8,15,15, the exit block, and the platforms at 6,13,15 and 12,15,19 are gone, read off its image.
+
+What the platforms are for: once the exit is open the boost button lands the ball on the exit, and the platforms are the way to the coin under it.
 
 ### /ATLANT/ATLANT.PAK#3: LEVEL 94
 

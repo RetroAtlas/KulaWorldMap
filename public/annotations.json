@@ -329,7 +329,7 @@
   },
   "levels": {
     "/HIRO/HIRO.PAK#19": {
-      "note": "The training level the Japanese release lists as Lesson on its main menu, with one of nearly everything the game has on one floor. This release keeps it in the game but off the menu, and the PAL disc has a copy of the developers' catalogue here instead.",
+      "note": "The training level the Japanese release lists as Lesson on its main menu, with most of what the game has laid out on one floor. This release keeps it in the game but off the menu, and the PAL disc has a copy of the developers' catalogue here instead.",
       "releases": {
         "eu": {
           "note": "The developers' object catalogue, a tenth copy, where the US and Japanese discs keep the training level the Japanese release lists as Lesson. Nothing in the game leads to it."
@@ -406,7 +406,7 @@
       }
     },
     "/FIELD/FIELD.PAK#18": {
-      "note": "The Japanese release took a coin and the two moving platforms out of this level. The platforms made the coin easier to reach and back from, and were not the only way.",
+      "note": "The Japanese release took the coin under the exit block and the two moving platforms out of this level. Once the exit is open the boost button lands the ball on the exit, and the platforms are the way to that coin.",
       "releases": {
         "jp": {
           "note": "This release took out the coin under the exit block and the two moving platforms that helped reach it."
