@@ -1,10 +1,11 @@
 // The slot each row of the disc box takes: the slots of every pack, grouped
-// by world with the Simon rooms last and listed in every row, the passes that
-// settle a slot for each row, whose place the level takes and how the game
-// reaches it, and the rows that clash on one slot. The box hands in its state,
-// the packs' layout and the line under its rows the clashes go on.
+// by world with the Simon rooms last, titled as the disc the patch is for
+// titles them and listed in every row, the passes that settle a slot for each
+// row, whose place the level takes and how the game reaches it, and the rows
+// that clash on one slot. The box hands in its state, that disc's layout and
+// the line under its rows the clashes go on.
 import { el } from "../viewer/ui/dom.js";
-import { state } from "../viewer/state.js";
+import { levelsOf } from "../viewer/release.js";
 import { levelTitle, skinsTable, worldName } from "../viewer/data.js";
 import {
   COPYCAT_PACK,
@@ -71,7 +72,7 @@ const slotTheme = (d, key) => d.themes.get(key) ?? themeOf(split(key)[0]);
 // its kind, a room's slot for a level that plays as a Simon room, else the first
 // free slot.
 export function retarget(d, layout, errors) {
-  const keys = state.data.levels.map((l) => [`${l.pack}#${l.index}`, l]);
+  const keys = levelsOf(d.chosen).map((l) => [`${l.pack}#${l.index}`, l]);
   d.titles = new Map(keys.map(([key, l]) => [key, levelTitle(l)]));
   d.themes = new Map(keys.map(([key, l]) => [key, l.theme]));
   const groups = optionGroups(d, layout);

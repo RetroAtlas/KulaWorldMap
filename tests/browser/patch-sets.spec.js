@@ -110,7 +110,9 @@ test("two drafts go onto the disc as one patch, the second added from the select
   );
   await expect(second.locator(".room")).toHaveText("");
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
-  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "synthetic.bin is read, an image of the Roll Away disc.",
+  );
   await expect(dialog.locator("#patchReady")).toHaveText(
     "Give each level a slot of its own above.",
   );
@@ -251,7 +253,9 @@ test("a level in a world pack and another in its finals pack go on as one patch,
   expect((await docOf(page, tower)).into).toBe("/HIRO/HIROFI.PAK#0");
 
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
-  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "synthetic.bin is read, an image of the Roll Away disc.",
+  );
   await expect(dialog.locator("#patchFit")).toHaveText(
     "It fits in the slot's own bytes, with 179 bytes to spare.",
   );
@@ -344,7 +348,9 @@ test("a level added from a file is a saved draft of Your levels and a row on the
   // the two rows are the fixture's set once the first takes its slot
   await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
-  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "synthetic.bin is read, an image of the Roll Away disc.",
+  );
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
   const patch = await saved(page, dialog.locator("#patchPpf"));
   expect(patch.name).toBe("spiral-and-1-more.ppf");

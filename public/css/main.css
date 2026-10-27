@@ -1876,6 +1876,9 @@ body.padded .detail {
   outline: 2px solid var(--accent-dim);
   outline-offset: -1px;
 }
+#patch .scope {
+  margin: 0 0 8px;
+}
 #patch .drop {
   display: block;
   border: 1px dashed var(--line);

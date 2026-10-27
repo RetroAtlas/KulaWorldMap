@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { settle, steps, trackErrors } from "./helpers.js";
 import { SYNTHETIC_SECTORS, streamOf, synthetic, syntheticImage } from "../unit/synthetic.js";
 import { USER, sector } from "../../public/js/format/sectors.js";
-import { packs } from "../unit/fixtures.js";
+import { packs, releases } from "../unit/fixtures.js";
 import { REBUILD, RELOCATE, fit } from "../../public/js/format/pak.js";
 import {
   CASE,
@@ -18,7 +18,7 @@ import {
   stored,
 } from "./patchhelpers.js";
 
-test("a draft whose id another tab takes while the box is opening is still the one the box shows", async ({
+test("a draft whose id another tab takes under the open box is still the one the box shows", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -26,10 +26,6 @@ test("a draft whose id another tab takes while the box is opening is still the o
   await settle(page);
   const shown = await opened(page, "spiral.kula.json", synthetic(6));
   const store = await stored(page, shown);
-  let held = null;
-  await page.route("**/packs.json", (route) => {
-    held = route;
-  });
   const id = await page.evaluate(
     async ([project, store]) => {
       const drafts = await import(new URL("js/editor/drafts.js", location.href).href);
@@ -58,8 +54,6 @@ test("a draft whose id another tab takes while the box is opening is still the o
     },
     [synthetic(6, "Second"), store],
   );
-  await expect.poll(() => held !== null).toBe(true);
-  await held.continue();
   const dialog = page.locator("#patch");
   await expect(dialog).toBeVisible();
   await expect(dialog.locator(".name")).toHaveText("Second");
@@ -87,7 +81,9 @@ test("a draft another tab repairs under the open box is written as it is now, no
   );
   await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
-  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "synthetic.bin is read, an image of the Roll Away disc.",
+  );
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
   await expect(dialog.locator("#patchReady")).toHaveText(
     "A level with errors cannot go on the disc until they are fixed.",
@@ -138,7 +134,11 @@ test("without the disc's layout the fit waits for the image, whose own packs the
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.route("**/packs.json", (route) => route.fulfill({ status: 404, body: "" }));
+  const bare = { ...releases[0] };
+  delete bare.packs;
+  await page.route("**/releases/us.json", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(bare) }),
+  );
   await page.goto(EDIT);
   await settle(page);
   const id = await opened(page, "hell.kula.json", {
@@ -164,7 +164,9 @@ test("without the disc's layout the fit waits for the image, whose own packs the
   expect((await docOf(page, id)).into).toBe("/HELL/HELL.PAK#3");
 
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
-  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "synthetic.bin is read, an image of the Roll Away disc.",
+  );
   await expect(slot.locator("option")).toHaveText([
     "/HELL/HELL.PAK#3, which this image has not",
     "LEVEL 1",
@@ -187,9 +189,7 @@ test("without the disc's layout the fit waits for the image, whose own packs the
   expect((await docOf(page, id)).into).toBe("/HIRO/HIRO.PAK#1");
   const patch = await saved(page, dialog.locator("#patchPpf"));
   expect(sha256(patch.bytes)).toBe(CASE.ppf);
-  expect(errors).toEqual([
-    "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
-  ]);
+  expect(errors).toEqual([]);
 });
 
 test("the fit from the layout says when the pack is recompressed or moved, and names the pack a level is too big for", async ({
@@ -202,8 +202,12 @@ test("the fit from the layout says when the pack is recompressed or moved, and n
       s.size = p.path === "/HIRO/HIRO.PAK" ? 2000 : s.size;
       s.size9 = p.path === "/HIRO/HIRO.PAK" ? 1990 : s.size9;
     }
-  await page.route("**/packs.json", (route) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(bloated) }),
+  await page.route("**/releases/us.json", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ...releases[0], packs: bloated }),
+    }),
   );
   await page.goto(EDIT);
   await settle(page);
@@ -356,7 +360,9 @@ test("a target the file names that is no slot is an error until a slot is chosen
   await expect(dialog.locator("#patchFit")).toHaveText("");
   expect((await docOf(page, id)).into).toBe("/HIRO/COPYCAT.PAK#10");
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
-  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "synthetic.bin is read, an image of the Roll Away disc.",
+  );
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
   await expect(dialog.locator("#patchReady")).toHaveText("Choose a slot above.");
   await slot.selectOption("/HIRO/HIRO.PAK#0");
@@ -433,10 +439,10 @@ test("a read that lands late for an image no longer current changes nothing, and
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
   await expect(dialog.locator("#patchReady")).toHaveText("");
   await dialog.locator("#patchDisc").setInputFiles(file("quick.bin", quick));
-  await expect(status).toHaveText("quick.bin is read.");
+  await expect(status).toHaveText("quick.bin is read, an image of the Roll Away disc.");
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
   await page.evaluate(() => window.__release());
-  await expect(status).toHaveText("quick.bin is read.");
+  await expect(status).toHaveText("quick.bin is read, an image of the Roll Away disc.");
   await expect(dialog.locator("#patchWarnings li").first()).toHaveText(
     "the image has 44 sectors, not the 109,607 of the Roll Away disc",
   );
@@ -453,7 +459,7 @@ test("a read that lands late for an image no longer current changes nothing, and
   await openPatch(page, id);
   await expect(dialog).toBeVisible();
   await page.evaluate(() => window.__release());
-  await expect(status).toHaveText("slow.bin is read.");
+  await expect(status).toHaveText("slow.bin is read, an image of the Roll Away disc.");
   await expect(dialog.locator("#patchWarnings li")).toHaveText(WARNINGS);
   await expect(dialog.locator("#patchPlay li").first()).toContainText("slow.ppf");
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
@@ -492,7 +498,9 @@ test("the plan is read back from the patched image before the downloads are offe
   const dialog = page.locator("#patch");
   await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", image));
-  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "synthetic.bin is read, an image of the Roll Away disc.",
+  );
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
   const ranges = await page.evaluate(() => window.readBack);
   const sectorAt = (lba) => [lba * 2352, (lba + 1) * 2352];

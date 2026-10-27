@@ -1,20 +1,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { inflateSync } from "node:zlib";
-import { discs } from "./fixtures.js";
+import { discs, releases } from "./fixtures.js";
 import { openDisc } from "../../public/js/format/iso.js";
-import { EOF_SUBMODE, SECTOR_RAW, USER, USER_OFF, sector } from "../../public/js/format/sectors.js";
+import { SECTOR_RAW, USER, USER_OFF, sector } from "../../public/js/format/sectors.js";
 import { identify, placements, plan, planAll } from "../../public/js/format/patch.js";
+import { fromLevel } from "../../public/js/format/project.js";
+import { writeKwl } from "../../public/js/format/kwl.js";
+import { deflate } from "../../public/js/format/deflate.js";
+import { IN_PLACE, REBUILD, RECOMPRESS, fitAll } from "../../public/js/format/pak.js";
 import {
   BOOT,
-  CNF,
-  CNF_AT,
   SYNTHETIC_PACK,
   SYNTHETIC_SECTORS,
+  booting,
   bytesOf,
   streamOf,
   synthetic,
   syntheticImage,
+  withCnf,
 } from "./synthetic.js";
 
 // The synthetic image boots the US executable; a copy booting another is the
@@ -24,25 +28,12 @@ const [US, EU, JP] = discs;
 const MISSING = "19 of the 21 packs are missing";
 const NONE = "SYSTEM.CNF names none of the three discs' executables";
 const inflate = async (bytes) => new Uint8Array(inflateSync(bytes));
-const ascii = (bytes) => String.fromCharCode(...bytes);
 const short = (count, disc) =>
   `the image has ${SYNTHETIC_SECTORS} sectors, not the ${count} of the ${disc} disc`;
 const known = async (image, table = discs) => identify(await openDisc(new Blob([image])), table);
-const padded = (bytes) => {
-  const out = new Uint8Array(USER);
-  out.set(bytes);
-  return out;
-};
-
-/** The synthetic image with this text as its SYSTEM.CNF. */
-function withCnf(text) {
-  const out = IMAGE.slice();
-  out.set(sector(CNF_AT, padded(bytesOf(text)), EOF_SUBMODE), CNF_AT * SECTOR_RAW);
-  return out;
-}
-
-/** The synthetic image booting this executable, the rest of its SYSTEM.CNF as it was. */
-const booting = (boot) => withCnf(ascii(CNF).replace(BOOT, `BOOT = cdrom:${boot};1`));
+const HELL = "/HELL/HELL.PAK";
+const BONUS_30 = 17;
+const hellOf = (r) => r.packs.packs.find((p) => p.path === HELL);
 
 test("the table is the three discs, each with the executable it boots", () => {
   assert.deepEqual(
@@ -127,4 +118,29 @@ test("the placements name the folder they are given, and leave it unsaid where t
     placements("/discs/x.bin", "out/spiral", US.boot)[0],
     placements("/discs/x.bin", "out/spiral", US.boot)[2],
   ]);
+});
+
+test("a copy of the PAL BONUS 30 fits each disc's HELL.PAK as the box works it out before the image, in place on EU and by a rebuild on US and JP", () => {
+  const [us, eu, jp] = releases;
+  const doc = fromLevel(eu.levels[`${HELL}#${BONUS_30}`]);
+  const item = {
+    slot: BONUS_30,
+    size: streamOf(doc).length,
+    size9: deflate(writeKwl(doc), RECOMPRESS).length,
+    title: `${doc.title} (EU)`,
+  };
+  const shipped = hellOf(eu).slots[BONUS_30].size;
+  assert.ok(item.size < shipped, `${item.size} against the disc's ${shipped}`);
+  const [onEu] = fitAll(hellOf(eu), [item]);
+  assert.equal(onEu.path, IN_PLACE);
+  assert.equal(onEu.room, shipped - item.size);
+  for (const [r, room] of [
+    [us, 87],
+    [jp, 149],
+  ]) {
+    const [f] = fitAll(hellOf(r), [item]);
+    assert.equal(f.path, REBUILD, r.id);
+    assert.equal(f.recompressed, false, r.id);
+    assert.equal(f.room, room, r.id);
+  }
 });

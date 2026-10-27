@@ -213,15 +213,19 @@ Where the level and its slot disagree on how it plays, the row says so under tha
 
 The choice stays with the draft and in its file, a draft that has made none offered the slot its title names, the level whose title stands in it or the level its first number counts to, a bonus, final or hidden level or a Simon room where that word stands before the number, else the slot its copy came from, else the first slot no other row takes, a Simon room's slot where the level plays as one, and never a slot another row has.
 
-A row shows its fit, whether the level fits the slot's own bytes, needs the pack rebuilt, with its other levels packed tighter where that is what makes room, or moves the pack into the disc's free sectors, with the bytes to spare, each level fitted after the rows above it, so two levels in one pack are fitted together, worked out from the disc as pressed until the image is given and read from the image after, and from the disc as pressed again while the rows cannot be placed as they stand.
+A row shows its fit, whether the level fits the slot's own bytes, needs the pack rebuilt, with its other levels packed tighter where that is what makes room, or moves the pack into the disc's free sectors, with the bytes to spare, each level fitted after the rows above it, so two levels in one pack are fitted together, worked out from the chosen disc as pressed until the image is given and read from the image after, and from the chosen disc as pressed again while the rows cannot be placed as they stand.
 
 Two rows on one slot are an error under the rows, which names the level whose place they both take and holds the patches back until a slot changes, and the later of the two shows no fit until then.
 
 The disc: the image, dropped onto the box or chosen with the browser's own file control, which names the image chosen or dropped, read in the browser and sent nowhere, anything about it that differs from the disc said as a warning rather than a refusal, and then the downloads, a PPF patch, an xdelta patch, and the patched disc with its cue sheet, each named after the level, or after the first level and how many more there are, the disc saved through the browser's own picker where it has one.
 
+Above the image's file control stands the bar `US · EU · JP`, the disc the patch is for, which stands on the disc the map shows when the box opens and whose press titles the slots as that disc titles them, HIRO's slot 19 as OBJ LEVEL under EU, works out the fits from that disc as pressed and names that disc's folder under Playing it, with a line under the bar saying the fits are worked out for that disc until the image is given, shown where the disc is not the US one.
+
+Once the image is read the bar is locked to the disc its boot line names, that button pressed and the others disabled, and the line under the file control says the image is read as an image of that disc; an image whose boot line names none of the three leaves the bar as pressed, with the warning, and a new file unlocks the bar until it is read.
+
 Playing it, which appears once there is a patch: where each emulator wants the patch, DuckStation and PCSX-Redux beside the image under its name, ePSXe and PCSX-ReARMed in their patches folder under the game's serial, how xdelta3 applies the other, and that Mednafen, Beetle and RetroArch take the patched disc instead.
 
-The folder ePSXe and PCSX-ReARMed read from is named for the disc the image's boot line names, and the line is left out where the boot line names none of the three.
+The folder ePSXe and PCSX-ReARMed read from is the serial of the disc the bar shows, the disc the image's boot line names once the image is read and the disc pressed where it names none.
 
 A browser that cannot unpack the game's files says a newer one is needed.
 

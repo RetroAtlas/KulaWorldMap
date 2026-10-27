@@ -109,12 +109,18 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await expect(dialog.locator("#patchAdd")).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(dialog.locator("#patchClear")).toBeFocused();
+  for (const id of ["us", "eu", "jp"]) {
+    await page.keyboard.press("Tab");
+    await expect(dialog.locator(`#patchDiscs button[data-release="${id}"]`)).toBeFocused();
+  }
   await page.keyboard.press("Tab");
   await expect(disc).toBeFocused();
 
   await disc.setInputFiles(file("synthetic.bin", syntheticImage()));
   await expect(disc).toHaveValue(/synthetic\.bin$/);
-  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "synthetic.bin is read, an image of the Roll Away disc.",
+  );
   await expect(disc).toHaveValue(/synthetic\.bin$/);
   const [chooser] = await Promise.all([page.waitForEvent("filechooser"), disc.click()]);
   expect(await chooser.element().getAttribute("id")).toBe("patchDisc");
@@ -187,7 +193,9 @@ test("a level with an error shows it and keeps the patches back, image or no ima
   );
   await expect(dialog.locator("#patchFit")).toContainText("to spare.");
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
-  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "synthetic.bin is read, an image of the Roll Away disc.",
+  );
   await expect(dialog.locator("#patchWarnings li")).toHaveText(WARNINGS);
   for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
     await expect(dialog.locator(b)).toBeDisabled();
@@ -269,7 +277,9 @@ test("without the game's face table the checks still run, the table is said to b
   await expect(dialog.locator("#patchChecks")).toContainText(missing);
   await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
-  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "synthetic.bin is read, an image of the Roll Away disc.",
+  );
   for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
     await expect(dialog.locator(b)).toBeDisabled();
   await expect(dialog.locator("#patchReady")).toHaveText(
@@ -288,7 +298,9 @@ test("without the game's face table the checks still run, the table is said to b
   await expect(dialog.locator("#patchChecks .errors li")).toHaveCount(0);
   await expect(dialog.locator("#patchChecks")).toContainText(missing);
   await dialog.locator("#patchSlot").selectOption("/HIRO/HIRO.PAK#1");
-  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "synthetic.bin is read, an image of the Roll Away disc.",
+  );
   await expect(dialog.locator("#patchFit")).toHaveText(
     "It fits in the slot's own bytes, with 179 bytes to spare.",
   );
@@ -342,7 +354,9 @@ test("an image dropped beside the box is taken rather than opened in the tab", a
     });
   }, Buffer.from(syntheticImage()).toString("base64"));
   expect(prevented).toEqual([true, true]);
-  await expect(dialog.locator("#patchStatus")).toHaveText("dropped.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "dropped.bin is read, an image of the Roll Away disc.",
+  );
   expect(
     await dialog.locator("#patchDisc").evaluate((i) => [...i.files].map((f) => f.name)),
   ).toEqual(["dropped.bin"]);
@@ -545,7 +559,9 @@ test("a level another tab deletes leaves its row, and the box closes when the la
   const level = rows(dialog);
   await expect(level).toHaveCount(2);
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
-  await expect(dialog.locator("#patchStatus")).toHaveText("synthetic.bin is read.");
+  await expect(dialog.locator("#patchStatus")).toHaveText(
+    "synthetic.bin is read, an image of the Roll Away disc.",
+  );
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
   await expect(dialog.locator("#patchPlay li").nth(2)).toContainText('"spiral-and-1-more.xdelta"');
 
@@ -603,7 +619,7 @@ test("the box keeps its levels and the image once closed, a card's opening adds 
   await add.selectOption(String(tower));
   await expect(names).toHaveText(["Spiral", "Tower"]);
   await dialog.locator("#patchDisc").setInputFiles(file("synthetic.bin", syntheticImage()));
-  await expect(status).toHaveText("synthetic.bin is read.");
+  await expect(status).toHaveText("synthetic.bin is read, an image of the Roll Away disc.");
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
@@ -611,7 +627,7 @@ test("the box keeps its levels and the image once closed, a card's opening adds 
   // opened again from the same card: the rows, the image and the downloads as they were left
   await openFrom(spiral);
   await expect(names).toHaveText(["Spiral", "Tower"]);
-  await expect(status).toHaveText("synthetic.bin is read.");
+  await expect(status).toHaveText("synthetic.bin is read, an image of the Roll Away disc.");
   await expect(dialog.locator("#patchWarnings li")).toHaveText(WARNINGS);
   for (const b of ["#patchPpf", "#patchXdelta", "#patchImage", "#patchCue"])
     await expect(dialog.locator(b)).toBeEnabled();
@@ -637,7 +653,7 @@ test("the box keeps its levels and the image once closed, a card's opening adds 
   await openFrom(spiral);
   await expect(names).toHaveText(["Spiral", "Third"]);
   expect(await toasts(page)).toEqual([]);
-  await expect(status).toHaveText("synthetic.bin is read.");
+  await expect(status).toHaveText("synthetic.bin is read, an image of the Roll Away disc.");
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
 
   await clear.click();
@@ -647,7 +663,7 @@ test("the box keeps its levels and the image once closed, a card's opening adds 
   await expect(dialog.locator("#patchReady")).toHaveText("Add a level above to make the patches.");
   await expect(dialog.locator("#patchPpf")).toBeDisabled();
   await expect(dialog.locator("#patchPlaying")).toBeHidden();
-  await expect(status).toHaveText("synthetic.bin is read.");
+  await expect(status).toHaveText("synthetic.bin is read, an image of the Roll Away disc.");
   expect((await add.locator("option").allTextContents()).sort()).toEqual(
     [ADD, "Spiral", "Third", FILE].sort(),
   );
@@ -655,41 +671,5 @@ test("the box keeps its levels and the image once closed, a card's opening adds 
   await expect(names).toHaveText(["Third"]);
   await expect(dialog.locator("#patchPpf")).toBeEnabled();
   await expect(dialog.locator("#patchPlay li").nth(2)).toContainText('"third.xdelta"');
-  expect(errors).toEqual([]);
-});
-
-test("a draft deleted while the box waits for the layout to open for it leaves without a word, and the box opens for another draft after", async ({
-  page,
-}) => {
-  const errors = trackErrors(page);
-  await page.goto(EDIT);
-  await settle(page);
-  const tower = await opened(page, "tower.kula.json", synthetic(30, "Tower"));
-  const spiral = await opened(page, "spiral.kula.json", synthetic(6));
-  let held = null;
-  await page.route("**/packs.json", (route) => {
-    held = route;
-  });
-  await page.evaluate(async (id) => {
-    const { openPatchDialog } = await import(
-      new URL("js/editor/patchdialog.js", location.href).href
-    );
-    window.opening = openPatchDialog(id);
-  }, spiral);
-  await expect.poll(() => held !== null).toBe(true);
-  const del = page.locator("#draftCard button", { hasText: /^delete/ });
-  await del.click();
-  await expect(del).toHaveText("delete?");
-  await del.click();
-  await expect(page.locator("#draftRows button")).toHaveCount(1);
-  await held.continue();
-  await page.evaluate(() => window.opening);
-  const dialog = page.locator("#patch");
-  await expect(dialog).toBeHidden();
-  expect(await toasts(page)).toEqual([]);
-  await openPatch(page, tower);
-  await expect(dialog).toBeVisible();
-  await expect(rows(dialog).locator(".name")).toHaveText(["Tower"]);
-  await expect(dialog.locator("#patchAdd option")).toHaveText([ADD, FILE]);
   expect(errors).toEqual([]);
 });

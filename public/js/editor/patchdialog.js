@@ -1,13 +1,13 @@
 // Your levels onto the disc, in one scrolling box: a row for each level, with
-// its checks, the slot it takes and its fit, then the image and the patches,
-// then where each emulator wants them. The fits are worked out from the packs'
-// layout until the image is given and read from the image after, and from the
-// layout again while the rows cannot be placed as they stand; every byte of the
-// patches is written here.
+// its checks, the slot it takes and its fit, then the disc the patch is for,
+// the image and the patches, then where each emulator wants them. The fits are
+// worked out from the chosen disc's layout until the image is given and read
+// from the image after, and from the layout again while the rows cannot be
+// placed as they stand; every byte of the patches is written here.
 import { $, el, on } from "../viewer/ui/dom.js";
 import { state } from "../viewer/state.js";
-import { NAMES, loadJson, skinsTable } from "../viewer/data.js";
-import { releaseOf, releases } from "../viewer/release.js";
+import { NAMES, skinsTable } from "../viewer/data.js";
+import { current, layoutOf, releaseOf, releases } from "../viewer/release.js";
 import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
 import { toast } from "../viewer/ui/toast.js";
 import { writeKwl } from "../format/kwl.js";
@@ -17,6 +17,7 @@ import { ERROR, describe, playsAs, validate } from "../format/checks.js";
 import { RAW_ONLY, download, isIso, slug } from "./files.js";
 import { draftOf, readLevel } from "./intake.js";
 import { CHOOSE, keyShaped, retarget, split } from "./patchslots.js";
+import { discBar, readAs, reflectDiscs } from "./discbar.js";
 import * as drafts from "./drafts.js";
 import { edit } from "./trail.js";
 import { IN_PLACE, REBUILD, RECOMPRESS, fitAll, readPak } from "../format/pak.js";
@@ -25,6 +26,7 @@ import {
   PACKS,
   cue,
   description,
+  identify,
   patchedImage,
   placements,
   planAll,
@@ -62,7 +64,6 @@ const cannot = (why) => `The level cannot be placed there: ${why}.`;
 
 // --- the dialog's state and the helpers ----------------------------------------------------
 
-let layout = null;
 let ui = null;
 // The rows, the image and its plan, kept while the page lives, so the box
 // opened again holds what it held when it was closed.
@@ -78,6 +79,8 @@ const blocked = () => d.rows.map((row) => row.blocked).find(Boolean) ?? null;
 const offered = () => !!d.placed && !blocked();
 /** The discs as the placer tells them apart, from the model's releases. */
 const discs = () => releases().map(({ id, name, boot, sectors }) => ({ id, name, boot, sectors }));
+/** The layout of the disc the patch is for, or null where its file did not load. */
+const discLayout = () => layoutOf(d.chosen);
 
 /** What the downloads are called: the first level's slug, and how many more there are. */
 function base() {
@@ -129,6 +132,7 @@ function build() {
       accept: $("draftFile").accept,
       hidden: true,
     }),
+    bar: discBar(chooseDisc),
     disc: el("input", { id: "patchDisc", type: "file", accept: ".bin,.img,.iso" }),
     status: el("p", { id: "patchStatus" }),
     warnings: el("ul", { id: "patchWarnings", className: "warnings" }),
@@ -203,6 +207,8 @@ function build() {
     section("The levels", u.rows, u.clash, el("div", { className: "add" }, u.add, u.clear, u.file)),
     section(
       "The disc",
+      u.bar.group,
+      u.bar.note,
       el("p", { id: "patchPrivate", textContent: PRIVATE }),
       drop,
       u.status,
@@ -289,14 +295,15 @@ function newRow(id) {
   return row;
 }
 
-/** Open the dialog for the draft with this id, with a row for it where none holds it. */
-export async function openPatchDialog(id) {
+/** Open the dialog for the draft with this id, with a row for it where none holds it, the bar on the disc the map shows unless an image locks it. */
+export function openPatchDialog(id) {
   if (!drafts.get(id)) return;
   ui ??= build();
   d ??= {
     rows: [],
     titles: null,
     themes: null,
+    chosen: null,
     clashed: false,
     file: null,
     disc: null,
@@ -306,11 +313,10 @@ export async function openPatchDialog(id) {
     image: null,
     imageName: null,
   };
-  // The row stands before the layout loads, so the drafts-moved handler keeps its id current.
-  const row = d.rows.find((r) => r.id === id) ?? newRow(id);
-  layout ??= await loadJson("packs.json");
+  if (d.release === null) d.chosen = current();
+  if (!d.rows.some((row) => row.id === id)) newRow(id);
   refresh();
-  if (d.rows.includes(row)) openDialog(ui.overlay, $("draftPatch"));
+  openDialog(ui.overlay, $("draftPatch"));
 }
 
 function add(id) {
@@ -366,10 +372,11 @@ function refresh() {
   }
   d.rows = kept;
   for (const row of d.rows) load(row);
-  retarget(d, layout, ui.clash);
+  retarget(d, discLayout(), ui.clash);
   if (!d.disc) layoutFits();
   additions();
   ui.clear.disabled = !d.rows.length;
+  reflectDiscs(ui.bar, d);
   if (d.disc) placed();
   else {
     downloads();
@@ -482,11 +489,20 @@ function choose(row, into) {
   refresh();
 }
 
+// --- the disc chosen -----------------------------------------------------------------------
+
+function chooseDisc(id) {
+  if (id === d.chosen) return;
+  d.chosen = id;
+  refresh();
+}
+
 // --- the fits from the layout --------------------------------------------------------------
 
 // The fits from the packs' layout, each pack's rows fitted in order; a row on a
 // slot an earlier row takes is not fitted and shows none.
 function layoutFits() {
+  const layout = discLayout();
   const byPack = new Map();
   const taken = new Set();
   for (const row of d.rows) {
@@ -540,12 +556,15 @@ async function take(file) {
   ui.status.textContent = `Reading ${file.name}…`;
   downloads();
   play();
+  reflectDiscs(ui.bar, d);
   let disc;
+  let known;
   let packs = null;
   try {
     if (await isIso(file)) throw new Error(RAW_ONLY);
     disc = await openDisc(file);
-    if (!layout) packs = await packsOf(disc);
+    known = await identify(disc, discs());
+    if (!layoutOf(known.release ?? d.chosen)) packs = await packsOf(disc);
   } catch (e) {
     if (mine !== turn) return;
     ui.status.textContent =
@@ -557,8 +576,11 @@ async function take(file) {
   if (mine !== turn) return;
   d.disc = disc;
   d.packs = packs;
-  ui.status.textContent = `${file.name} is read.`;
-  if (packs) retarget(d, layout, ui.clash);
+  d.release = known.release;
+  if (d.release) d.chosen = d.release;
+  ui.status.textContent = readAs(file.name, releaseOf(d.release));
+  retarget(d, discLayout(), ui.clash);
+  reflectDiscs(ui.bar, d);
   await placed(mine);
 }
 
@@ -615,7 +637,6 @@ async function placed(mine = ++turn) {
     return;
   }
   if (mine !== turn) return;
-  d.release = planned.release;
   d.placed = planned;
   d.image = image;
   rows.forEach((row, i) => (row.u.fit.textContent = fitText(planned.placed[i].fit)));
@@ -643,9 +664,7 @@ function readiness() {
 }
 
 function play() {
-  const lines = offered()
-    ? placements(d.file.name, base(), releaseOf(d.release)?.boot ?? null)
-    : [];
+  const lines = offered() ? placements(d.file.name, base(), releaseOf(d.chosen)?.boot ?? null) : [];
   ui.play.textContent = "";
   for (const line of lines) ui.play.append(el("li", { textContent: line }));
   ui.playing.hidden = !lines.length;

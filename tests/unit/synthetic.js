@@ -18,7 +18,13 @@ import { SIDE } from "../../public/js/format/lattice.js";
 import { deflate } from "../../public/js/format/deflate.js";
 import { writePak } from "../../public/js/format/pak.js";
 import { record } from "../../public/js/format/iso.js";
-import { DATA_SUBMODE, EOF_SUBMODE, USER, sector } from "../../public/js/format/sectors.js";
+import {
+  DATA_SUBMODE,
+  EOF_SUBMODE,
+  SECTOR_RAW,
+  USER,
+  sector,
+} from "../../public/js/format/sectors.js";
 import { SYSTEM_ID } from "../../public/js/format/patch.js";
 
 export const ROOT_AT = 22;
@@ -207,3 +213,14 @@ export function syntheticImage() {
   }
   return concat(sectors);
 }
+
+/** The image with this text as its SYSTEM.CNF. */
+export function withCnf(text) {
+  const out = syntheticImage();
+  out.set(sector(CNF_AT, padded(bytesOf(text)), EOF_SUBMODE), CNF_AT * SECTOR_RAW);
+  return out;
+}
+
+/** The image booting this executable, the rest of its SYSTEM.CNF as it stands. */
+export const booting = (boot) =>
+  withCnf(String.fromCharCode(...CNF).replace(BOOT, `BOOT = cdrom:${boot};1`));
