@@ -363,8 +363,8 @@ Promise.all([
   $("about").innerHTML =
     `All ${data.levels.length} levels across ${data.themes.length} worlds. ` +
     `Press <kbd style="margin:0">?</kbd> for the keys.`;
-  buildWorlds();
   wireRelease();
+  buildWorlds();
   wireDisplay();
   wireCourse();
   const up = module && ready(module);

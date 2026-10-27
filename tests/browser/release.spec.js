@@ -225,8 +225,10 @@ test("Back after a press returns to the US level, the bar following", async ({ p
   const chip = page.locator("#chipLine");
   await press(page, "eu");
   await expect(chip).toContainText(`${eu.levels[BONUS_30].placed} blocks`);
+  await expect(button(page, SLOT_19)).toHaveText("OBJ LEVEL");
   await page.goBack();
   await expect(pressed(page)).toHaveText("US");
+  await expect(button(page, SLOT_19)).toHaveText("LESSON");
   const us30 = mapData.levels[slotIndex(BONUS_30)];
   await expect(chip).toContainText(`${us30.placed} blocks`);
   await expect(page.locator("#say")).toHaveText(

@@ -353,7 +353,6 @@ function restoreYours() {
 }
 
 on("level-changed", (i) => {
-  retitle();
   markLevel();
   state.hiddenKinds.clear();
   buildKinds();
