@@ -223,7 +223,7 @@ class RoundTrips(unittest.TestCase):
         with self.assertRaises(KeyError):
             template(data, "/HIRO/HIRO.PAK#99")
 
-    def test_a_template_of_another_discs_level_records_its_disc_after_its_source_and_a_us_templates_none(self):
+    def test_a_template_of_another_discs_level_records_its_disc_after_its_source_and_a_us_template_records_none(self):
         variant = json.loads((DATA.parent / "releases" / "eu.json").read_text())["levels"]["/HELL/HELL.PAK#17"]
         p = project_of(variant)
         keys = list(p)

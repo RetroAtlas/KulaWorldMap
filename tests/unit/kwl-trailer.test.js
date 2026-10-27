@@ -111,7 +111,7 @@ test("a file a record short of its count, or two past it, reads from its length 
   assert.deepEqual([over.repairs, over.project.blocks.length, over.project.time], [2, 37, 99]);
 });
 
-test("a file that ends inside a record is refused, whatever its count says", () => {
+test("a file that ends inside a record is refused", () => {
   const cut = BONUS.slice(0, -1);
   assert.throws(
     () => readKwl(cut),
