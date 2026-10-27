@@ -73,8 +73,9 @@ export function wireRelease() {
   });
   on("link-opening", reflect);
   on("play-changed", (playing) => {
-    for (const b of buttons()) b.disabled = playing;
-    if (playing) group.title = LOCKED;
-    else group.removeAttribute("title");
+    for (const b of buttons()) {
+      b.disabled = playing;
+      b.title = playing ? LOCKED : nameOf(releaseOf(b.dataset.release));
+    }
   });
 }

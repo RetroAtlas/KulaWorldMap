@@ -246,11 +246,14 @@ test("the bar is disabled while the ball is on the level, and enabled again once
   await still(page);
   await startPlay(page);
   await expect(bar(page).locator("button:disabled")).toHaveCount(3);
-  await expect(bar(page)).toHaveAttribute("title", LOCKED);
+  await expect(bar(page).locator(`button[title="${LOCKED}"]`)).toHaveCount(3);
   await page.locator("#leaveBtn").click();
   await expect(page.locator("#play")).toBeHidden();
   await expect(bar(page).locator("button:disabled")).toHaveCount(0);
-  await expect(bar(page)).not.toHaveAttribute("title", /./);
+  await expect(bar(page).locator('button[data-release="eu"]')).toHaveAttribute(
+    "title",
+    `${eu.name}, the PAL release (${eu.serial})`,
+  );
 });
 
 test("the live region says the disc on a press", async ({ page }) => {

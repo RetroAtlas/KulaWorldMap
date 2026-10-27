@@ -188,7 +188,7 @@ body:not(.sidebar-open) .sidebar {
   border-color: var(--accent);
   font-weight: 600;
 }
-.scope button:disabled {
+.release button:disabled {
   opacity: 0.4;
   cursor: default;
 }

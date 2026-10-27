@@ -151,7 +151,7 @@ The choice is kept from one visit to the next, so a visit with no link opens on 
 
 A press is a history entry, so Back returns to the level as the other disc ships it, the bar following.
 
-While the ball is on the level the bar is disabled, since play holds the level it started on, and its tooltip says to leave play to change the release.
+While the ball is on the level the bar is disabled, since play holds the level it started on, and each button's tooltip says to leave play to change the release, naming its game again once play is left.
 
 A level of your own stays on screen under any disc, since it belongs to none until it is put on one, and a press draws its line again for the disc chosen.
 
