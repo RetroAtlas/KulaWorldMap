@@ -1,6 +1,6 @@
 import { $, on } from "../ui/dom.js";
 import { state } from "../state.js";
-import { BASE, current, releaseOf } from "../release.js";
+import { BASE, current, discWord, releaseOf } from "../release.js";
 import {
   worldName,
   levelNote,
@@ -37,7 +37,16 @@ function label() {
   return line;
 }
 
-on("level-changed", () => say(label()));
+let spoken = BASE;
+
+/** Speak the level, its disc first where it is not the one the level was last spoken under. */
+function speak() {
+  const changed = current() !== spoken;
+  spoken = current();
+  say((changed ? `Showing the ${discWord(spoken)} release. ` : "") + label());
+}
+
+on("level-changed", speak);
 on("level-updated", label);
-on("release-changed", label);
-on("link-opening", label);
+on("release-changed", speak);
+on("link-opening", () => (current() === spoken ? label() : speak()));

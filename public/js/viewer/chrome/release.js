@@ -1,8 +1,6 @@
 import { $, el, emit, on } from "../ui/dom.js";
-import { state } from "../state.js";
 import { BASE, current, discWord, releaseOf, releases, setCurrent } from "../release.js";
 import { reshow, settle, tailWith, writeHash } from "./navigate.js";
-import { describeLevel, say } from "./a11y.js";
 
 const KEY = "kula.release";
 const LINK = "d-";
@@ -43,8 +41,6 @@ function choose(id) {
   writeHash(true);
   emit("release-changed", id);
   reflect();
-  const r = releaseOf(id);
-  say(`Showing ${r.name}, the ${discWord(id)} release. ${describeLevel(state.lvl)}`);
 }
 
 /** Build the bar from the releases that loaded, taking the kept choice where the link names no level. */

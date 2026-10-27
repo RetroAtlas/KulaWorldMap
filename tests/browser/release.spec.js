@@ -203,7 +203,9 @@ test("a link carrying the disc, in any case, opens its level on that disc in one
   });
   const said = await page.evaluate(() => window.__said);
   expect(said).toHaveLength(1);
-  expect(said[0]).toMatch(new RegExp(`^${eu.name}, ${pal.name}, HELL, ${pal.placed} blocks`));
+  expect(said[0]).toMatch(
+    new RegExp(`^Showing the PAL release\\. ${eu.name}, ${pal.name}, HELL, ${pal.placed} blocks`),
+  );
   await expect.poll(() => page.url()).toMatch(/#HELL\/17\/45,35\/fit\/33\/d-eu$/);
 });
 
@@ -225,7 +227,11 @@ test("Back after a press returns to the US level, the bar following", async ({ p
   await expect(chip).toContainText(`${eu.levels[BONUS_30].placed} blocks`);
   await page.goBack();
   await expect(pressed(page)).toHaveText("US");
-  await expect(chip).toContainText(`${mapData.levels[slotIndex(BONUS_30)].placed} blocks`);
+  const us30 = mapData.levels[slotIndex(BONUS_30)];
+  await expect(chip).toContainText(`${us30.placed} blocks`);
+  await expect(page.locator("#say")).toHaveText(
+    new RegExp(`^Showing the North American release\\. ${us30.name}, HELL, ${us30.placed} blocks`),
+  );
   expect(await shown(page)).toMatchObject({
     release: "us",
     from: "us",
@@ -273,7 +279,7 @@ test("the live region says the disc on a press", async ({ page }) => {
   await expect(page.locator("#say")).toHaveText(level);
   await press(page, "jp");
   await expect(page.locator("#say")).toHaveText(
-    `Showing ${jp.name}, the Japanese release. ${jp.name}, ${level}`,
+    `Showing the Japanese release. ${jp.name}, ${level}`,
   );
 });
 
