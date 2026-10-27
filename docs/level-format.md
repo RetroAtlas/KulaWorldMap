@@ -90,7 +90,7 @@ The points live in `annotations.json`, because the levels do not hold them, and 
 
 The unit tests hold each curated score below what the disc holds, so it cannot outlive its reason, and the points to the figures this document gives, so one cannot change without the arithmetic changing with it.
 
-Type 42's 1550 points is the one points value that rests on the executable rather than play, since only the object catalogue holds one, the hourglass's on the other two discs apart; [annotations.md](annotations.md) gives what each name and value rests on, entry by entry.
+Type 42's 1550 points is the one points value that rests on the executable rather than play, the hourglass's on the other two discs apart, since only the object catalogue holds one; [annotations.md](annotations.md) gives what each name and value rests on, entry by entry.
 
 **A level with no key plays as a bonus level, by its keys and not by its slot.** The loader's mode routine at `0x80027b2c` counts the keys, every slot of type 31 in the six slots of every record of a kind below 5 (`0x80027b4c`, `0x80027b64`, `0x80027b88`, `0x80027bac`), into a count at `0x800a5efc` it clears first (`0x80027b3c`), and writes the level's mode word, 9372 past gp at `0x800a53d4` (`0x80027b30`): 1 where the count is nothing and 0 otherwise (`0x80027bd4` to `0x80027be8`), then 2 where the settings record, kind 9, carries a type of 1 in its first slot, the hidden flag (`0x80027c34` to `0x80027c74`), and last 0 again where the game's mode word at `0x800a33b0` is 1, the Simon rooms' mode (`0x80027cb4` to `0x80027cc4`).
 

@@ -557,6 +557,8 @@ The page itself starts what the boot will ask for before any of its modules has 
 
 The page fetches the three release files beside the data, one a release, each small since it carries only the slots whose level differs from the US one, and a file that cannot be loaded leaves that release out.
 
+The US release is built into the model, so the map shows it under its own name where its file cannot be loaded.
+
 Once that world's textures have landed and the page is idle, the other worlds' textures are fetched one at a time behind whatever the page asks for itself, from the next world on, unless the browser is set to save data, so a change of world finds them here; `js/viewer/draw/atlas.js` keeps every atlas for the visit, and a frame redraws for a landing only when it is the shown world's atlas.
 
 Beside the worlds' atlases under `tex/` the build lays the sheet of the seven sprites the game's effects draw, for play alone, which the page does not preload.

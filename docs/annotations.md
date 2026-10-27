@@ -241,7 +241,7 @@ Play had put the rule at 1200 less twelve a second, rounded to the nearest 10, f
 
 On the PAL disc the hourglass's case (`SCES_010.00`, `0x800398cc` to `0x8003994c`) writes 4999 less the clock back and adds the same 10 for every whole second of the new clock, 50 ticks each, so taken with s whole seconds left it leaves 99 − s seconds and scores 990 − 10·s, 990 with less than a second left, which is the most it can score there and what the map counts each at under that release.
 
-On the Japanese disc the hourglass's case (`SCPS_100.64`, `0x80039684` to `0x80039708`) writes 7199 less the clock back and never touches the score, so taken with s whole seconds left it leaves 119 − s seconds and scores nothing, which is what the map counts each at under that release.
+On the Japanese disc the hourglass's case (`SCPS_100.64`, `0x80039684` to `0x80039708`) writes 7199 less the clock back and never touches the score, so taken with s whole seconds left, 60 ticks each on that disc, it leaves 119 − s seconds and scores nothing, which is what the map counts each at under that release.
 
 ### type 36: Gem
 
@@ -473,7 +473,7 @@ On the Japanese disc the three gems are gone, read off its image, and its total 
 
 From The Cutting Room Floor's Roll Away page.
 
-On the PAL disc the level is the US one, read off its image, and no level of that disc has the exit that leads here, LEVEL 132's and LEVEL 143's being gone.
+On the PAL disc the level is the US one, read off its image, and no level of that disc has the exit that leads here, LEVEL 132's being gone.
 
 On the Japanese disc the fruit on the `-x` face of 9,18,15 is gone, read off its image, and LEVEL 134's exit leads here.
 
@@ -497,7 +497,7 @@ On the Japanese disc it holds 50 more, the same crumbling block, the score movin
 
 The best score in play. The disc holds 1000 more, the two coins on top of the first platform, a face that cannot be reached.
 
-On the Japanese disc the coins on the top faces of 18,19,12 and 19,17,12 and the one under 17,17,12 are gone, read off its image, and its total is below the best score here, so the score is taken away.
+On the Japanese disc the coins on the top faces of 18,19,12 and 19,17,12 and the one under 17,17,12 are gone, read off its image, and with the two top coins gone everything on it can be collected there, so the score is taken away.
 
 ### /HELL/HELL.PAK#17: BONUS 30
 
