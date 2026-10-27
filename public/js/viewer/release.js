@@ -1,8 +1,9 @@
 // The three releases the game shipped on, each a disc the map knows by one shape, and the one shown.
 import { state } from "./state.js";
 
-const BASE = "us";
+export const BASE = "us";
 const FALLBACK = { id: BASE, label: "US", name: "Roll Away", levels: {} };
+const WORDS = { us: "North American", eu: "PAL", jp: "Japanese" };
 
 let entries = [FALLBACK];
 let shown = BASE;
@@ -11,6 +12,8 @@ let cache = { data: null, by: new Map(), slots: null };
 export const releases = () => entries;
 export const releaseOf = (id) => entries.find((r) => r.id === id) ?? null;
 export const current = () => shown;
+/** The word for a release's disc, or its region as the file gives it where the map has no word. */
+export const discWord = (id) => WORDS[id] ?? releaseOf(id)?.region ?? id;
 
 /** The release files in order, a failed load as null and left out; the base is built in where its file is missing. */
 export function setReleases(files) {

@@ -109,6 +109,8 @@ The line at the top of the map names the level and counts what it holds, with th
 
 While the ball is on the level a HUD stands in the line's place, naming the level and showing the clock, the points and the keys, as Rolling the ball below says, and the line is back when play is left.
 
+Where the disc shown is not the US one, the line carries the disc's tag, EU or JP, after the title, the game and its release named in the tag's tooltip, the HUD's title carries the same word while the ball is on the level, and the level as it is spoken puts the game's name first, while under the US disc none of the three names it.
+
 A click or a tap on the line folds the note away and back, a dot on the line saying there is one, and the map keeps it as it was left, from level to level and from one visit to the next.
 
 On a level of your own the note is the level's overview instead, editing or not: how it plays, as an arcade level with a key or a bonus level without, hidden or not, in the sentence the Level card also says, the chip spreading to the map's width on a phone so that it takes fewer rows; and, under one line that counts the errors and the warnings and says the counts are below it, its counts against the room the game has, every one that could be counted, those at nought dimmed, red where one is over it and amber where it is more than any level on the disc, and everything the checks find, errors first, each at a cell a click on it selects, so the panel is right there, a fold that stands open where the sidebar has a column of its own and closed on a phone, where the sidebar overlays the map, until it is opened, and then stays as it was last left, from draft to draft, for the rest of the visit.
@@ -128,6 +130,8 @@ While the ball is on the level with Play on through the levels on in Settings, a
 Beside the Worlds heading stand three buttons, US, EU and JP, one for each disc the game shipped on, Roll Away in North America, Kula World in PAL territories and Kula Quest in Japan, and the one pressed is the disc whose levels the map shows, each button's tooltip naming its game and its serial.
 
 A press shows the level on screen as that disc ships it, most levels being the same on all three, keeps the view where it was turned by hand and frames the level afresh where it was fitted, since a slot's level on another disc may have another extent, and keeps the selected block where that disc's level still has its cell.
+
+While a disc other than the US one is shown the level line, the HUD and the level as it is spoken say so, as The level line and the order of the levels above says, and a level that is the same on that disc says nothing beyond the tag and the disc's figures.
 
 In the sidebar a level button carries a dot after its title where its slot holds another level on any of the discs, the same whichever disc is shown, since differing is a fact of the slot, and its tooltip names the discs it differs on, the PAL and Japanese discs for LEVEL 132 and the PAL disc for BONUS 30.
 
@@ -710,7 +714,9 @@ The module has every count and threshold read from the motion table and no wall 
 
 ### Play's chrome
 
-`js/play/strip.js` is play's chrome, the strip, the HUD, the pad, the keys and the live region: the strip's line, the ball's block, face and heading or that the level has ended, and its status, a notice, the route's word or the verdict, in red while a death's countdown runs, the HUD's figures, each written only where it changed, with the key drawn as the legend draws it where keys are counted, Keep and Follow as the route stands, the pad, shown on a touch screen until its button puts it away, and `p`, the arrow keys, Space, Enter and Esc, read into the keys the frame samples or passed to the handlers it is wired with, Forgive's flag, the height the strip takes from the map for the camera's framing, and the sentences the live region is told, one an animation frame, those a game frame says held until the frame is done so that only its last is heard, with the live level handed in by `js/play/play.js`, which wires it once with its handlers.
+`js/play/strip.js` is play's chrome, the strip, the HUD, the pad, the keys and the live region: the strip's line, the ball's block, face and heading or that the level has ended, and its status, a notice, the route's word or the verdict, in red while a death's countdown runs, the HUD's title, the level's as the level line names it with the disc's word where the disc shown is not the US one, and the HUD's figures, each written only where it changed, with the key drawn as the legend draws it where keys are counted.
+
+Beside those stand Keep and Follow as the route stands, the pad, shown on a touch screen until its button puts it away, `p`, the arrow keys, Space, Enter and Esc, read into the keys the frame samples or passed to the handlers it is wired with, Forgive's flag, the height the strip takes from the map for the camera's framing, and the sentences the live region is told, one an animation frame, those a game frame says held until the frame is done so that only its last is heard, with the live level handed in by `js/play/play.js`, which wires it once with its handlers.
 
 - It shows the clock, the keys or the blocks left and the points in the HUD.
 

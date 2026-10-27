@@ -3,6 +3,7 @@
 import { $, dialogOpen, typing } from "../viewer/ui/dom.js";
 import { current, measureStrip } from "../viewer/chrome/course.js";
 import { state } from "../viewer/state.js";
+import { BASE, current as disc, releaseOf } from "../viewer/release.js";
 import { ballFor, levelTitle, markerModel, motionTable, worldName } from "../viewer/data.js";
 import { iconFor } from "../viewer/draw/icons.js";
 import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
@@ -172,7 +173,9 @@ export function icon(live) {
 /** Name the level in the HUD as the level line names it. */
 export function caption() {
   const l = state.lvl;
-  $("hudTitle").textContent = `${levelTitle(l)} · ${worldName(l.theme)}`;
+  const parts = [levelTitle(l), worldName(l.theme)];
+  if (disc() !== BASE) parts.push(releaseOf(disc()).label);
+  $("hudTitle").textContent = parts.join(" · ");
 }
 
 /** The strip's route buttons: Keep while no route stands or the route is the way the ball has

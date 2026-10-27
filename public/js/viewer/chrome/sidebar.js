@@ -12,9 +12,8 @@ import {
   markerColour,
 } from "../data.js";
 import { markerIcon } from "../draw/icons.js";
-import { current, differs, levelOn } from "../release.js";
+import { current, differs, discWord, levelOn } from "../release.js";
 import { selectLevel, setSlice } from "./navigate.js";
-import { discWord } from "./release.js";
 import { draw, invalidatePick } from "../draw/render.js";
 import { toast } from "../ui/toast.js";
 

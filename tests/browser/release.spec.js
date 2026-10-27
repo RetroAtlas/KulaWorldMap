@@ -187,7 +187,7 @@ test("a link carrying the disc opens its level on that disc in one install, the 
   });
   const said = await page.evaluate(() => window.__said);
   expect(said).toHaveLength(1);
-  expect(said[0]).toMatch(new RegExp(`^${pal.name}, HELL, ${pal.placed} blocks`));
+  expect(said[0]).toMatch(new RegExp(`^${eu.name}, ${pal.name}, HELL, ${pal.placed} blocks`));
   await expect.poll(() => page.url()).toMatch(/#HELL\/17\/45,35\/fit\/33\/d-eu$/);
 });
 
@@ -244,7 +244,39 @@ test("the live region says the disc on a press", async ({ page }) => {
   await expect(page.locator("#say")).toHaveText(level);
   await press(page, "jp");
   await expect(page.locator("#say")).toHaveText(
-    `Showing ${jp.name}, the Japanese release. ${level}`,
+    `Showing ${jp.name}, the Japanese release. ${jp.name}, ${level}`,
+  );
+});
+
+test("the disc's tag stands on the level line after a press of EU, the game and its release in its tooltip, and goes on US", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const tag = page.locator("#chipLine .tag");
+  await expect(tag).toHaveCount(0);
+  await press(page, "eu");
+  await expect(tag).toHaveText("EU");
+  await expect(tag).toHaveAttribute("title", `${eu.name}, the PAL release`);
+  await press(page, "us");
+  await expect(tag).toHaveCount(0);
+});
+
+test("the canvas's label opens with the game's name on a disc other than the US one", async ({
+  page,
+}) => {
+  await page.goto("/#HELL/17/45,35/fit/33/d-eu");
+  await settle(page);
+  const pal = eu.levels[BONUS_30];
+  await expect(page.locator("#cv")).toHaveAttribute(
+    "aria-label",
+    new RegExp(`^${eu.name}, ${pal.name}, HELL, ${pal.placed} blocks`),
+  );
+  await press(page, "us");
+  const us30 = mapData.levels[slotIndex(BONUS_30)];
+  await expect(page.locator("#cv")).toHaveAttribute(
+    "aria-label",
+    new RegExp(`^${us30.name}, HELL, ${us30.placed} blocks`),
   );
 });
 
@@ -269,10 +301,15 @@ test("a draft on screen keeps the bar live, and a press changes the points its l
   await press(page, "eu");
   await expect(pressed(page)).toHaveText("EU");
   await expect.poll(() => points(page)).toBe(before - 200);
-  await expect(page.locator("#chipLine .tag")).toHaveText("Draft");
+  await expect(page.locator("#chipLine .tag")).toHaveText(["Draft", "EU"]);
+  await expect(page.locator("#cv")).toHaveAttribute(
+    "aria-label",
+    new RegExp(`^${eu.name}, Draft, `),
+  );
   expect(await shown(page)).toMatchObject({ release: "eu", li: -1, draft: 1 });
   await page.goBack();
   await expect(pressed(page)).toHaveText("US");
+  await expect(page.locator("#cv")).toHaveAttribute("aria-label", /^Draft, /);
 });
 
 test("a dot stands on the button of every slot that differs between the discs, whichever is shown, its title naming them", async ({

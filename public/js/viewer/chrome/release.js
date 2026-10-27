@@ -1,17 +1,12 @@
 import { $, el, emit, on } from "../ui/dom.js";
 import { state } from "../state.js";
-import { current, releaseOf, releases, setCurrent } from "../release.js";
+import { BASE, current, discWord, releaseOf, releases, setCurrent } from "../release.js";
 import { reshow, settle, tailWith, writeHash } from "./navigate.js";
 import { describeLevel, say } from "./a11y.js";
 
 const KEY = "kula.release";
-const BASE = "us";
 const LINK = "d-";
 const LOCKED = "Leave play to change the release";
-const WORDS = { us: "North American", eu: "PAL", jp: "Japanese" };
-
-/** The word for a release's disc, or its region as the file gives it where the map has no word. */
-export const discWord = (id) => WORDS[id] ?? releaseOf(id)?.region ?? id;
 
 const nameOf = (r) => `${r.name}, the ${discWord(r.id)} release${r.serial ? ` (${r.serial})` : ""}`;
 

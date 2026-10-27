@@ -1,5 +1,6 @@
 import { $, on } from "../ui/dom.js";
 import { state } from "../state.js";
+import { BASE, current, releaseOf } from "../release.js";
 import {
   worldName,
   levelNote,
@@ -14,6 +15,7 @@ import { levelPoints } from "../draw/points.js";
 export function describeLevel(l) {
   const parts = [levelTitle(l), worldName(l.theme), counted(blockCount(l), "block")];
   if (l.draft !== undefined) parts.unshift("Draft");
+  if (current() !== BASE) parts.unshift(releaseOf(current()).name);
   const n = objectCount(l);
   if (n) parts.push(counted(n, "object"));
   const points = levelPoints(l);
@@ -37,3 +39,5 @@ function label() {
 
 on("level-changed", () => say(label()));
 on("level-updated", label);
+on("release-changed", label);
+on("link-opening", label);

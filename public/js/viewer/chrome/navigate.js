@@ -15,7 +15,7 @@ import { levelPoints } from "../draw/points.js";
 import { draw, drawSoon, invalidatePick } from "../draw/render.js";
 import { showCell, clearDetail } from "./detail.js";
 import { slotOf, formatHash, parseHash } from "../permalink.js";
-import { levelOn, current } from "../release.js";
+import { BASE, current, discWord, levelOn, releaseOf } from "../release.js";
 
 // The level on screen, by its slot, and the release it came from.
 let shown = null;
@@ -128,11 +128,21 @@ function noteOf(l) {
   return levelNote(l);
 }
 
+function tags(l) {
+  const out = l.draft === undefined ? [] : ['<span class="tag">Draft</span>'];
+  if (current() !== BASE) {
+    const r = releaseOf(current());
+    const title = escaped(`${r.name}, the ${discWord(r.id)} release`);
+    out.push(`<span class="tag" title="${title}">${escaped(r.label)}</span>`);
+  }
+  return out.join("");
+}
+
 export function chip() {
   const l = state.lvl;
   if (!l) return;
   const parts = [
-    `<b>${escaped(levelTitle(l))}</b>${l.draft === undefined ? "" : '<span class="tag">Draft</span>'}`,
+    `<b>${escaped(levelTitle(l))}</b>${tags(l)}`,
     `<span class="sep">·</span>${worldName(l.theme)}`,
     `<span class="sep">·</span>${counted(blockCount(l), "block")}`,
   ];

@@ -97,6 +97,16 @@ test("the HUD takes the level line's place while the ball is on the level, namin
   expect(errors).toEqual([]);
 });
 
+test("the HUD's title carries the disc's word on a level as another disc ships it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false, hash: "/#HELL/17/45,35/fit/33/d-eu" });
+  await startPlay(page);
+  await expect(page.locator("#hudTitle")).toHaveText("BONUS 30 · HELL · EU");
+  expect(errors).toEqual([]);
+});
+
 test("on a level with no key the HUD counts the blocks still to roll onto and draws no key", async ({
   page,
 }) => {

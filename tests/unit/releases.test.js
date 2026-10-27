@@ -8,6 +8,7 @@ import {
   compose,
   current,
   differs as differsOn,
+  discWord,
   layoutOf,
   levelOn,
   levelsOf,
@@ -284,6 +285,17 @@ test("the release shown is the base until a loaded one is chosen, and an unknown
   assert.equal(current(), "jp");
   setReleases([us, eu, null]);
   assert.equal(current(), "us");
+  setReleases(releases);
+});
+
+test("the word for a disc is the map's, PAL for the European release and Japanese for the Japanese one, and the file's region where the map has none", () => {
+  setReleases(releases);
+  assert.equal(discWord("us"), "North American");
+  assert.equal(discWord("eu"), "PAL");
+  assert.equal(discWord("jp"), "Japanese");
+  setReleases([...releases, { ...eu, id: "au", region: "Australia", levels: {} }]);
+  assert.equal(discWord("au"), "Australia");
+  assert.equal(discWord("nz"), "nz");
   setReleases(releases);
 });
 
