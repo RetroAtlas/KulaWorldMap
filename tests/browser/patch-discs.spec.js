@@ -2,14 +2,14 @@ import { expect, test } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
 import { booting, synthetic, syntheticImage } from "../unit/synthetic.js";
 import { mapData, releases } from "../unit/fixtures.js";
+import { levelTitle } from "../../public/js/viewer/data.js";
 import { EDIT, WARNINGS, file, openPatch, opened } from "./patchhelpers.js";
 
 const [us, eu, jp] = releases;
 const SLOT_19 = "/HIRO/HIRO.PAK#19";
 const BONUS_30 = "/HELL/HELL.PAK#17";
 const NONE = "SYSTEM.CNF names none of the three discs' executables";
-const title = (l) => l.shown || l.name;
-const lesson = title(mapData.levels.find((l) => `${l.pack}#${l.index}` === SLOT_19));
+const lesson = levelTitle(mapData.levels.find((l) => `${l.pack}#${l.index}` === SLOT_19));
 const bar = (dialog) => dialog.locator("#patchDiscs");
 const pressed = (dialog) => bar(dialog).locator('button[aria-pressed="true"]');
 const press = (dialog, id) => bar(dialog).locator(`button[data-release="${id}"]`).click();
@@ -63,7 +63,7 @@ test("a press titles the slots as that disc titles them, HIRO's slot 19 OBJ LEVE
   await expect(dialog.locator("#patchFor")).toHaveText("");
   await press(dialog, "eu");
   await expect(pressed(dialog)).toHaveText(eu.label);
-  await expect(option).toHaveText(title(eu.levels[SLOT_19]));
+  await expect(option).toHaveText(levelTitle(eu.levels[SLOT_19]));
   await expect(dialog.locator("#patchFor")).toHaveText(forDisc(eu));
   await press(dialog, "us");
   await expect(pressed(dialog)).toHaveText(us.label);

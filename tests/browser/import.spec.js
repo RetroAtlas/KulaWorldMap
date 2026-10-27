@@ -14,6 +14,7 @@ import {
 } from "../../public/js/format/sectors.js";
 import { projectOf, readKwl, writeKwl } from "../../public/js/format/kwl.js";
 import { mapData, levelKey, releases } from "../unit/fixtures.js";
+import { levelTitle } from "../../public/js/viewer/data.js";
 import {
   CNF,
   CNF_AT,
@@ -179,13 +180,12 @@ function imageWithSlots(boot) {
   return image;
 }
 
-const title = (l) => l.shown || l.name;
 /** The titles a disc gives HIRO.PAK's first twenty slots, in the fixtures' words. */
 const hiroTitles = (release) =>
   mapData.levels
     .filter((l) => l.pack === SYNTHETIC_PACK && l.index < 20)
     .sort((a, b) => a.index - b.index)
-    .map((l) => title(release.levels[levelKey(l)] ?? l));
+    .map((l) => levelTitle(release.levels[levelKey(l)] ?? l));
 
 test("a disc image lists its packs and opens the chosen slot in the pack's own world", async ({
   page,
