@@ -1,11 +1,12 @@
 import { $, el, emit, on } from "../ui/dom.js";
 import { state } from "../state.js";
 import { current, releaseOf, releases, setCurrent } from "../release.js";
-import { reshow, writeHash } from "./navigate.js";
+import { reshow, settle, tailWith, writeHash } from "./navigate.js";
 import { describeLevel, say } from "./a11y.js";
 
 const KEY = "kula.release";
 const BASE = "us";
+const LINK = "d-";
 const LOCKED = "Leave play to change the release";
 const WORDS = { us: "North American", eu: "PAL", jp: "Japanese" };
 
@@ -40,6 +41,7 @@ function reflect() {
 
 function choose(id) {
   if (id === current() || !releaseOf(id)) return;
+  settle();
   setCurrent(id);
   keep(id);
   reshow();
@@ -65,6 +67,16 @@ export function wireRelease() {
     }),
   );
   reflect();
+  tailWith({
+    letter: LINK[0],
+    write: () => (current() === BASE ? null : LINK + current()),
+    // an unknown code leaves the release as it is, as the reader passes an unknown segment over
+    before: (segment) => {
+      if (segment === null) setCurrent(BASE);
+      else if (segment.startsWith(LINK)) setCurrent(segment.slice(LINK.length));
+    },
+  });
+  on("link-opening", reflect);
   on("play-changed", (playing) => {
     for (const b of buttons()) b.disabled = playing;
     if (playing) group.title = LOCKED;

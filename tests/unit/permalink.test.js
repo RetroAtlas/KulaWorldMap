@@ -128,6 +128,29 @@ test("a module's segments are written after the cell, and read back in the writt
   assert.equal(written(null, false), "#INCA/11/45,35/0.90/17.5,12,17/0,0/20/rAbc-_9/p0_-");
 });
 
+test("the disc's segment passes the tail's shape where a bare code does not, and reads back beside the planner's in either order", () => {
+  const head = "#HELL/17/45,35/fit/33";
+  for (const segment of ["d-eu", "d-jp"])
+    assert.deepEqual(parseHash(`${head}/${segment}`).tails, [segment], segment);
+  for (const segment of ["eu", "eEU", "EU", "d-"])
+    assert.deepEqual(parseHash(`${head}/${segment}`).tails, [], segment);
+  for (const tails of [
+    ["d-eu", "rAbc-_9"],
+    ["rAbc-_9", "d-eu"],
+  ]) {
+    const hash = formatHash({
+      slot: "HELL/17",
+      cam,
+      target: [17, 17, 17],
+      slice: 33,
+      fitted: true,
+      tails,
+    });
+    assert.equal(hash, `${head}/${tails.join("/")}`);
+    assert.deepEqual(parseHash(hash).tails, tails, hash);
+  }
+});
+
 test("a link escaped on its way reads as the link", () => {
   const link = parseHash("#INCA%2F11%2F45%2C35%2F0.90%2F17%2C17%2C17%2F0%2C0%2F33%2F17%2C12%2C17");
   assert.equal(link.slot, "INCA/11");

@@ -127,7 +127,9 @@ Beside the Worlds heading stand three buttons, US, EU and JP, one for each disc 
 
 A press shows the level on screen as that disc ships it, most levels being the same on all three, keeps the view where it was turned by hand and frames the level afresh where it was fitted, since a slot's level on another disc may have another extent, and keeps the selected block where that disc's level still has its cell.
 
-The choice is kept from one visit to the next, so a visit with no link opens on the disc chosen last, while a link that names a level opens the US release's level whatever is kept, the bar following the link.
+The choice is kept from one visit to the next, so a visit with no link opens on the disc chosen last, while a link that names a level opens it on the disc the link carries, the US release where it carries none, whatever is kept, the bar following the link.
+
+A press is a history entry, so Back returns to the level as the other disc ships it, the bar following.
 
 While the ball is on the level the bar is disabled, since play holds the level it started on, and its tooltip says to leave play to change the release.
 
@@ -500,11 +502,13 @@ With Motion on the view eases round behind the ball as play starts and back to w
 
 The URL is a permalink: `#INCA/11/45,35/0.90/17,17,17/0,0/33` is the level by its pack and its slot in it (LEVEL 42, the numbering the cheat in [level-format.md](level-format.md) takes), the yaw and pitch it is turned to, zoom, the cell it orbits around, the pan away from that cell, and the slice, and after those the selected block where there is one, and a planned route, which rides at the tail as one word the planner reads back and every earlier version of the map passes over.
 
+The disc rides at the tail too, as `d-eu` or `d-jp`, the US release writing none, so a link with no disc opens the US level for everyone, whatever disc the browser kept, and a code the reader does not know is passed over.
+
 While the level is framed to fit the window, the link says `fit` in place of the zoom, the cell and the pan (`#INCA/11/45,35/fit/33`), so it opens framed to whatever window it is opened in, as one that stops at the turn does; a link that names the zoom, the cell or the pan holds the view there, and one that names the zoom alone opens at that zoom centred on the blocks, as a fit is.
 
 While the ball is being rolled the link keeps the view the ball was first put down from, so a link copied then opens the level as it looked before, or, once a run has gone on to another level, opens that level in the same view, and playing itself is never in a link.
 
-Turning, panning, zooming, slicing and picking bring the entry up to date once the view has rested; choosing a level or a find makes a history entry at once, with what waits written onto the entry beneath it first, so Back returns to where you were; and Back and Forward read the bar rather than write it.
+Turning, panning, zooming, slicing and picking bring the entry up to date once the view has rested; choosing a level, a disc or a find makes a history entry at once, with what waits written onto the entry beneath it first, so Back returns to where you were; and Back and Forward read the bar rather than write it.
 
 A segment never changes what it means, and what a link carries grows at its tail, which the reader takes by shape and passes over where it does not know it; a unit test holds one link to where it puts the lattice on the screen.
 

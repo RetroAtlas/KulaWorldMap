@@ -146,6 +146,79 @@ test("the choice survives a reload of the bare site, and a bare level link opens
   expect(await shown(page)).toMatchObject({ release: "us", from: "us", kept: "eu" });
 });
 
+test("a press writes the disc at the link's tail, and a press on US takes it off", async ({
+  page,
+}) => {
+  await page.goto("/#HELL/17/45,35/fit/33");
+  await settle(page);
+  await press(page, "eu");
+  await expect(pressed(page)).toHaveText("EU");
+  await expect.poll(() => page.url()).toMatch(/#HELL\/17\/45,35\/fit\/33\/d-eu$/);
+  await press(page, "us");
+  await expect(pressed(page)).toHaveText("US");
+  await expect.poll(() => page.url()).toMatch(/#HELL\/17\/45,35\/fit\/33$/);
+});
+
+test("a link carrying the disc opens its level on that disc in one install, the bar following", async ({
+  page,
+}) => {
+  // every sentence the live region is given, in order
+  await page.addInitScript(() => {
+    const said = (window.__said = []);
+    new MutationObserver((records) => {
+      for (const r of records)
+        if (r.target.id === "say") for (const n of r.addedNodes) said.push(n.textContent);
+    }).observe(document, { subtree: true, childList: true });
+  });
+  await page.goto("/#HELL/17/45,35/fit/33/d-eu");
+  await settle(page);
+  await expect(pressed(page)).toHaveText("EU");
+  const pal = eu.levels[BONUS_30];
+  await expect(page.locator("#chipLine")).toContainText(`${pal.placed} blocks`);
+  expect(await shown(page)).toMatchObject({
+    release: "eu",
+    from: "eu",
+    li: slotIndex(BONUS_30),
+    fitted: true,
+    kept: null,
+  });
+  const said = await page.evaluate(() => window.__said);
+  expect(said).toHaveLength(1);
+  expect(said[0]).toMatch(new RegExp(`^${pal.name}, HELL, ${pal.placed} blocks`));
+  await expect.poll(() => page.url()).toMatch(/#HELL\/17\/45,35\/fit\/33\/d-eu$/);
+});
+
+test("Back after a press returns to the US level, the bar following", async ({ page }) => {
+  await page.goto("/#HELL/17");
+  await settle(page);
+  const chip = page.locator("#chipLine");
+  await press(page, "eu");
+  await expect(chip).toContainText(`${eu.levels[BONUS_30].placed} blocks`);
+  await page.goBack();
+  await expect(pressed(page)).toHaveText("US");
+  await expect(chip).toContainText(`${mapData.levels[slotIndex(BONUS_30)].placed} blocks`);
+  expect(await shown(page)).toMatchObject({
+    release: "us",
+    from: "us",
+    li: slotIndex(BONUS_30),
+    kept: "eu",
+  });
+});
+
+test("a link carrying the disc opened while the ball is on the level leaves play, as any link does", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0/45,35/fit/33");
+  await settle(page);
+  await still(page);
+  await startPlay(page);
+  await page.evaluate(() => (location.hash = "#HIRO/0/45,35/fit/33/d-eu"));
+  await expect(page.locator("#play")).toBeHidden();
+  await expect(pressed(page)).toHaveText("EU");
+  await expect(bar(page).locator("button:disabled")).toHaveCount(0);
+  expect(await shown(page)).toMatchObject({ release: "eu", li: 0 });
+});
+
 test("the bar is disabled while the ball is on the level, and enabled again once play is left", async ({
   page,
 }) => {
@@ -195,4 +268,6 @@ test("a draft on screen keeps the bar live, and a press changes the points its l
   await expect.poll(() => points(page)).toBe(before - 200);
   await expect(page.locator("#chipLine .tag")).toHaveText("Draft");
   expect(await shown(page)).toMatchObject({ release: "eu", li: -1, draft: 1 });
+  await page.goBack();
+  await expect(pressed(page)).toHaveText("US");
 });
