@@ -295,7 +295,7 @@ function newRow(id) {
   return row;
 }
 
-/** Open the dialog for the draft with this id, with a row for it where none holds it, the bar on the disc the map shows unless an image locks it. */
+/** Open the dialog for the draft with this id, with a row for it where none holds it, the bar on the disc the map shows until one is pressed or an image locks it. */
 export function openPatchDialog(id) {
   if (!drafts.get(id)) return;
   ui ??= build();
@@ -304,6 +304,7 @@ export function openPatchDialog(id) {
     titles: null,
     themes: null,
     chosen: null,
+    picked: false,
     clashed: false,
     file: null,
     disc: null,
@@ -313,7 +314,7 @@ export function openPatchDialog(id) {
     image: null,
     imageName: null,
   };
-  if (d.release === null) d.chosen = current();
+  if (d.release === null && !d.picked) d.chosen = current();
   if (!d.rows.some((row) => row.id === id)) newRow(id);
   refresh();
   openDialog(ui.overlay, $("draftPatch"));
@@ -492,8 +493,9 @@ function choose(row, into) {
 // --- the disc chosen -----------------------------------------------------------------------
 
 function chooseDisc(id) {
-  if (id === d.chosen) return;
+  if (id === d.chosen || d.release !== null) return;
   d.chosen = id;
+  d.picked = true;
   refresh();
 }
 

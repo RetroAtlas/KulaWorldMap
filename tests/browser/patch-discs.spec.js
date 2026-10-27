@@ -72,6 +72,24 @@ test("a press titles the slots as that disc titles them, HIRO's slot 19 OBJ LEVE
   expect(errors).toEqual([]);
 });
 
+test("the disc pressed holds while the box is closed and opened again", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  const id = await opened(page, "spiral.kula.json", synthetic(6));
+  await openPatch(page, id);
+  const dialog = page.locator("#patch");
+  await expect(pressed(dialog)).toHaveText(us.label);
+  await press(dialog, "jp");
+  await expect(pressed(dialog)).toHaveText(jp.label);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await openPatch(page, id);
+  await expect(dialog).toBeVisible();
+  await expect(pressed(dialog)).toHaveText(jp.label);
+  expect(errors).toEqual([]);
+});
+
 test("a copy of the PAL BONUS 30 is fitted to the disc pressed before the image is given, a rebuild under US and in place under EU", async ({
   page,
 }) => {

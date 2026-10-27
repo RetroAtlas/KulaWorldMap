@@ -221,7 +221,9 @@ Two rows on one slot are an error under the rows, which names the level whose pl
 
 The disc: the image, dropped onto the box or chosen with the browser's own file control, which names the image chosen or dropped, read in the browser and sent nowhere, anything about it that differs from the disc said as a warning rather than a refusal, and then the downloads, a PPF patch, an xdelta patch, and the patched disc with its cue sheet, each named after the level, or after the first level and how many more there are, the disc saved through the browser's own picker where it has one.
 
-Above the image's file control stands the bar `US · EU · JP`, the disc the patch is for, which stands on the disc the map shows when the box opens and whose press titles the slots as that disc titles them, HIRO's slot 19 as OBJ LEVEL under EU, works out the fits from that disc as pressed and names that disc's folder under Playing it, with a line under the bar saying the fits are worked out for that disc until the image is given, shown where the disc is not the US one.
+Above the image's file control stands the bar `US · EU · JP`, the disc the patch is for, which stands on the disc the map shows until one is pressed and whose press titles the slots as that disc titles them, HIRO's slot 19 as OBJ LEVEL under EU, works out the fits from that disc as pressed and names that disc's folder under Playing it, with a line under the bar saying the fits are worked out for that disc until the image is given, shown where the disc is not the US one.
+
+A disc pressed in the box holds while the box is closed and opened again, as the rows and the image do.
 
 Once the image is read the bar is locked to the disc its boot line names, that button pressed and the others disabled, and the line under the file control says the image is read as an image of that disc; an image whose boot line names none of the three leaves the bar as pressed, with the warning, and a new file unlocks the bar until it is read.
 
