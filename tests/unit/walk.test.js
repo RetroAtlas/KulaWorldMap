@@ -491,6 +491,58 @@ test("a half laid back over one already laid carries no chevron against it", () 
   );
 });
 
+test("a half the way crosses again the same way is laid once, and a station marked twice gets one dot", () => {
+  const out = toward(0, X);
+  const back = toward(0, neg(X));
+  const A = top(10, 10, 17);
+  const B = top(11, 10, 17);
+  const { byKey } = pieces({
+    stations: [A, B, A, B],
+    steps: [
+      { k: out, o: 0 },
+      { k: back, o: 0 },
+      { k: out, o: 0 },
+    ],
+    marks: new Set([0, 2, 3]),
+  });
+  const on = (x) => byKey.get(cellKey(x, 10, 17));
+  const halves = (x) => on(x).filter((p) => !p.stop);
+  assert.deepEqual(
+    halves(10).map((p) => [p.i, p.chevron]),
+    [
+      [0, X],
+      [1, null],
+    ],
+    "the roll out with its chevron and the roll back with none, the second roll out over neither",
+  );
+  assert.deepEqual(
+    halves(11).map((p) => [p.i, p.chevron]),
+    [
+      [0, null],
+      [1, null],
+    ],
+    "the roll in, and the roll back out over it",
+  );
+  for (const x of [10, 11]) {
+    const [there, again] = halves(x);
+    near(again.from, there.to, "the block's two halves run");
+    near(again.to, there.from, "opposite ways");
+  }
+  assert.deepEqual(
+    on(10)
+      .filter((p) => p.stop)
+      .map((p) => p.i),
+    [0],
+    "one dot where the start is marked twice, the first mark's",
+  );
+  assert.deepEqual(
+    on(11)
+      .filter((p) => p.stop)
+      .map((p) => p.i),
+    [3],
+  );
+});
+
 test("a step is two half-pieces on the faces it crosses, a chevron on the first, a dot at each stop", () => {
   const k = toward(0, X);
   const course = {

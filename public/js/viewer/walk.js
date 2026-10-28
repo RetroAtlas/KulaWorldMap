@@ -300,15 +300,20 @@ export function validate(probe, { stations, steps }) {
 export const lifted = ({ cell, face }) =>
   cell.map((c, i) => c + 0.5 + FACE_NORMAL[face][i] * (0.5 + LIFT));
 
-/** The half-pieces on each block by its key, the leaps and the jumps, which lie in the air. */
+/** The half-pieces on each block by its key, each laid once however often the way crosses it,
+    and the leaps and the jumps, which lie in the air. */
 export function pieces({ stations, steps, marks }) {
   const byKey = new Map();
   const leaps = [];
   const jumps = [];
   const laid = new Set();
+  const placed = new Set();
   const span = (p, q) => [...p, ...q].map((v) => v.toFixed(3)).join();
   const put = ({ cell, face }, from, to, chevron, i, stop) => {
     const key = cellKey(...cell);
+    const id = `${key}/${span(from, to)}/${stop}`;
+    if (placed.has(id)) return;
+    placed.add(id);
     if (!byKey.has(key)) byKey.set(key, []);
     byKey.get(key).push({ key, face, from, to, chevron, i, stop });
   };
@@ -336,9 +341,8 @@ export function pieces({ stations, steps, marks }) {
     laid.add(span(out, edge));
     laid.add(span(edge, into));
   });
-  for (const i of marks) {
-    const s = stations[i];
-    if (s) put(s, lifted(s), lifted(s), null, i, true);
-  }
+  stations.forEach((s, i) => {
+    if (marks.has(i)) put(s, lifted(s), lifted(s), null, i, true);
+  });
   return { byKey, leaps, jumps };
 }
