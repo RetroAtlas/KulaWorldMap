@@ -1,7 +1,8 @@
 // The questions a level from elsewhere asks: which of a pack's or a disc
 // image's levels to open, in one box with the packs where there are several,
 // the levels of the chosen pack and a line on which world the level will
-// wear; and, for a shared level, the link to paste.
+// wear; for a shared level, the link to paste; and for a patch, the image it
+// was made for, over which the levels it changes are listed.
 import { $, el } from "../viewer/ui/dom.js";
 import { levelTitle, worldName } from "../viewer/data.js";
 import { current, levelsOf } from "../viewer/release.js";
@@ -11,6 +12,10 @@ import { WORLDS } from "../format/kwl.js";
 const PASTE_NOTE =
   "Paste a link from the community's level viewer. The level opens as your own, in the world on screen or the one the link names.";
 const PASTE_FIRST = "Paste the link first.";
+const PATCH_NOTE =
+  "A patch carries only what it changes, so its levels come back whole over the disc image it was made for.";
+const NO_CHANGE = "The patch changes no level of this image.";
+const heldOver = (name) => `Read over ${name}, the image Put it on the disc holds.`;
 
 let ui = null;
 let pending = null;
@@ -318,5 +323,160 @@ export function pasteLevelLink(world, read) {
     openDialog(paste.overlay, $("draftPaste"));
     stood();
     paste.link.focus();
+  });
+}
+
+// --- the levels a patch holds -----------------------------------------------------------
+
+let fromPatch = null;
+let pendingPatch = null;
+
+function settlePatch(result) {
+  const done = pendingPatch;
+  pendingPatch = null;
+  done?.(settled().then(() => result));
+}
+
+function buildPatch() {
+  const x = el("button", {
+    className: "x",
+    type: "button",
+    title: "Close (Esc)",
+    textContent: "×",
+  });
+  x.setAttribute("aria-label", "Close");
+  const u = {
+    name: el("p", { id: "fromPatchName" }),
+    said: el("p", { id: "fromPatchSaid", className: "sub" }),
+    over: el("p", { id: "fromPatchOver" }),
+    image: el("input", { id: "fromPatchImage", type: "file", accept: ".bin,.img,.iso" }),
+    says: el("p", { id: "fromPatchSays", className: "says" }),
+    levels: el("ul", { id: "fromPatchLevels" }),
+    open: el("button", { id: "fromPatchOpen", type: "button", textContent: "open" }),
+    cancel: el("button", { id: "fromPatchCancel", type: "button", textContent: "cancel" }),
+    found: null,
+    read: null,
+  };
+  u.says.setAttribute("aria-live", "polite");
+  u.levels.setAttribute("aria-label", "The levels the patch puts on the disc");
+  u.drop = el(
+    "label",
+    { className: "drop" },
+    el("span", { textContent: "Drop the disc image here, or choose it" }),
+    u.image,
+  );
+  // Cleared before the picker opens, so that choosing the same image again fires change.
+  u.image.onclick = () => (u.image.value = "");
+  u.image.onchange = () => {
+    const file = u.image.files[0];
+    if (file) readPatched(file);
+  };
+  u.open.onclick = () => {
+    if (!u.found?.length) return;
+    const levels = u.found;
+    closeDialog();
+    settlePatch(levels);
+  };
+  u.cancel.onclick = () => {
+    closeDialog();
+    settlePatch(null);
+  };
+  const box = el(
+    "div",
+    { className: "box settings import" },
+    x,
+    el("h3", { id: "fromPatchTitle", textContent: "Open levels from a patch" }),
+    el("p", { id: "fromPatchNote", textContent: PATCH_NOTE }),
+    u.name,
+    u.said,
+    u.over,
+    u.drop,
+    u.says,
+    u.levels,
+    el("div", { className: "row" }, u.open, u.cancel),
+  );
+  u.overlay = el("div", { id: "fromPatch", className: "modal", hidden: true }, box);
+  u.overlay.ondragover = (e) => {
+    if (u.drop.hidden) return;
+    e.preventDefault();
+    u.drop.classList.add("over");
+  };
+  u.overlay.ondragleave = () => u.drop.classList.remove("over");
+  u.overlay.ondrop = (e) => {
+    if (u.drop.hidden) return;
+    e.preventDefault();
+    u.drop.classList.remove("over");
+    const file = e.dataTransfer?.files?.[0];
+    if (file) readPatched(file);
+  };
+  u.overlay.setAttribute("role", "dialog");
+  u.overlay.setAttribute("aria-modal", "true");
+  u.overlay.setAttribute("aria-labelledby", "fromPatchTitle");
+  new MutationObserver(() => {
+    if (u.overlay.hidden) settlePatch(null);
+  }).observe(u.overlay, { attributes: true, attributeFilter: ["hidden"] });
+  document.body.append(u.overlay);
+  return u;
+}
+
+// The levels the patch changes over the image given, listed with the world
+// each opens in; what the read refuses is said in the image's place. A read
+// answers the ask it was made for, and not one that came after it.
+async function readPatched(image) {
+  const u = fromPatch;
+  const asked = pendingPatch;
+  u.found = null;
+  u.levels.textContent = "";
+  u.open.disabled = true;
+  u.says.textContent = `Reading ${image.name}…`;
+  let found;
+  try {
+    found = await u.read(image);
+  } catch (e) {
+    if (pendingPatch !== asked) return;
+    u.says.textContent = e.message;
+    return;
+  }
+  if (pendingPatch !== asked) return;
+  u.found = found.levels;
+  u.says.textContent = [found.check, found.levels.length ? "" : NO_CHANGE]
+    .filter(Boolean)
+    .join(" ");
+  for (const level of found.levels)
+    u.levels.append(el("li", { textContent: `${level.title} (${worldName(level.world)})` }));
+  u.open.disabled = !found.levels.length;
+  if (found.levels.length) u.open.focus();
+}
+
+/**
+ * Which levels of a patch to open: the box names the patch and, for a PPF,
+ * what its description says, asks for the disc image it was made for unless
+ * `held` is the image the disc box holds, then lists what `read(image)` gives,
+ * { check, levels }, the check a line on whether the image is the patch's or
+ * null and each level { title, world } as it will open, with what `read`
+ * throws said in the box. The levels, all of them, or null where the visitor
+ * declines.
+ */
+export function pickFromPatch({ name, description, held }, read) {
+  fromPatch ??= buildPatch();
+  settlePatch(null);
+  const u = fromPatch;
+  u.read = read;
+  u.found = null;
+  u.name.textContent = name;
+  u.said.textContent = description;
+  u.said.hidden = !description;
+  u.over.textContent = held ? heldOver(held.file.name) : "";
+  u.over.hidden = !held;
+  u.drop.hidden = !!held;
+  u.says.textContent = "";
+  u.levels.textContent = "";
+  u.open.disabled = true;
+  return new Promise((resolve) => {
+    pendingPatch = resolve;
+    openDialog(u.overlay, $("draftOpen"));
+    stood();
+    if (held) readPatched(held.file);
+    else u.image.focus();
   });
 }

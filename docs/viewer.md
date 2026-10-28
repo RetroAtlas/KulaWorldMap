@@ -195,6 +195,12 @@ The card's `save as .json` writes the draft as the map's own file and `save as .
 
 A disc image's levels are named as the disc the image is names them, told by its boot line, so an image of the PAL disc offers HIRO's slot 19 as OBJ LEVEL where an image of the US disc offers LESSON, and an image whose boot line names none of the three discs is named as the disc the map shows.
 
+`open a file…` also takes a patch the disc box made, a PPF or an xdelta, which opens "Open levels from a patch": the patch's name and, for a PPF, what it says of itself, then a chooser for the disc image it was made for, since a patch carries only what it changes and its levels come back whole only over that image, or, where "Put it on the disc" holds an image read, that image, used without asking and named.
+
+Once the image is read the box says, for a PPF, whether the patch was made for it, and lists the levels the patch puts on the disc, each named as the pause screen names the level in its slot with the world the map lists the slot under; `open` opens them all as drafts marked saved, each on its slot, the first shown and how many opened said where there are several, and `cancel` opens nothing.
+
+A PPF given another image says so and keeps the chooser, as does a patch that does not apply to the image given, and a patch that changes no level of it says so and offers nothing.
+
 `paste a link…` in the same row opens a box for the link to a level shared from the community's level viewer, which opens as a new draft in the world on screen, or in the world the link names where that is one of the ten; a text that is no such link is said so under the field, which stays for another try.
 
 Your levels stay in this browser, written a moment after each change, with "Saved in this browser" shown for a moment on the card, until they are saved to a file; a browser that cannot keep them, one that gives the map no room for them, one with no room for more, or one that refuses to keep them for another reason, says so.
@@ -206,6 +212,8 @@ A draft goes onto the disc from its Level card, which opens "Put it on the disc"
 The levels: a row for each, the draft the box was opened for first, and under the rows `add a level…`, which lists the other levels this browser holds by title and adds a row for the one chosen, with `a file…` last, and `take all out`; each row has `take out`, and with no rows the box says to add a level and offers no download.
 
 `a file…` takes what the sidebar's `open a file…` takes, one of the map's level files or a level file of the game, a pack or a disc image, or a level saved by the community's level viewer, and opens it as a new level of your own, listed under Your levels as saved to a file, with what the reader had to repair said once, as the sidebar says it; a pack or a disc image asks which level to take as it does there, in the box's place, and the box comes back once the question is answered or declined.
+
+`a file…` takes a patch the box made too, which asks for the image it was made for as the sidebar's does, or reads over the image the box already holds without asking, and adds a row for each level the patch puts on the disc, each on the slot it holds there.
 
 The new level's row takes the slot its file names, else the slot its title names, else the slot its copy came from, else the first slot no other row takes, a Simon room's slot where the level plays as one, and the map stays on the level it showed.
 

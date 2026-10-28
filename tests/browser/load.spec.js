@@ -21,7 +21,7 @@ test("a plain visit shows the section and fetches none of the editor, which w th
   // the picker offers every kind of file the reader takes
   await expect(page.locator("#draftFile")).toHaveAttribute(
     "accept",
-    ".json,.kwl,.pak,.bin,.img,.iso",
+    ".json,.kwl,.pak,.bin,.img,.iso,.ppf,.xdelta",
   );
   expect(requested).toContain("/js/main.js");
   expect(fetched()).toEqual([]);

@@ -1884,7 +1884,8 @@ body.padded .detail {
 #patch .scope {
   margin: 0 0 8px;
 }
-#patch .drop {
+#patch .drop,
+#fromPatch .drop {
   display: block;
   border: 1px dashed var(--line);
   border-radius: 8px;
@@ -1894,11 +1895,13 @@ body.padded .detail {
   font-size: 12.5px;
   cursor: pointer;
 }
-#patch .drop.over {
+#patch .drop.over,
+#fromPatch .drop.over {
   border-color: var(--accent);
   color: var(--ink);
 }
-#patch .drop input {
+#patch .drop input,
+#fromPatch .drop input {
   display: block;
   margin-top: 6px;
   font: inherit;
@@ -1968,10 +1971,12 @@ body.padded .detail {
 }
 
 /* the import picker: which level of a pack or a disc image to open */
-#import .box {
+#import .box,
+#fromPatch .box {
   width: 420px;
 }
-#import p {
+#import p,
+#fromPatch p {
   margin: 0 0 10px;
   font-size: 12.5px;
 }
@@ -2001,12 +2006,14 @@ body.padded .detail {
   outline: 2px solid var(--accent-dim);
   outline-offset: -1px;
 }
-#import .row {
+#import .row,
+#fromPatch .row {
   display: flex;
   gap: 6px;
   margin-top: 10px;
 }
-#import .row button {
+#import .row button,
+#fromPatch .row button {
   background: var(--panel-2);
   border: 1px solid var(--line);
   color: var(--ink);
@@ -2016,8 +2023,24 @@ body.padded .detail {
   font-size: 12px;
   cursor: pointer;
 }
-#import .row button:hover {
+#import .row button:hover,
+#fromPatch .row button:hover {
   border-color: var(--accent-dim);
+}
+#fromPatch .row button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+#fromPatch .says {
+  margin: 0 0 10px;
+}
+#fromPatch .says:empty {
+  display: none;
+}
+#fromPatch ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 12.5px;
 }
 
 /* the paste dialog: a shared level's link, opened as a draft */

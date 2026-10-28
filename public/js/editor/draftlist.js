@@ -28,8 +28,8 @@ import {
 import { ERROR, TIME_LIMIT, circuitMembers, playsAs, timeOf, validate } from "../format/checks.js";
 import { download, readLevelText, slug } from "./files.js";
 import { pasteLevelLink } from "./importdialog.js";
-import { draftOf, readLevel, readWith } from "./intake.js";
-import { openPatchDialog } from "./patchdialog.js";
+import { draftsOf, readLevel, readWith } from "./intake.js";
+import { heldImage, openPatchDialog } from "./patchdialog.js";
 import { edit as step } from "./trail.js";
 import * as drafts from "./drafts.js";
 
@@ -130,16 +130,22 @@ async function openFile() {
   const input = $("draftFile");
   const file = input.files[0];
   input.value = "";
-  if (file) openRead(await readLevel(file, state.lvl.theme));
+  if (file) openRead(await readLevel(file, state.lvl.theme, heldImage()), file.name);
 }
 
-/** A level read from elsewhere becomes a draft marked saved, since the file is the record, shown with the reader's report on its card. */
-function openRead(read) {
+/** A level read from elsewhere becomes a draft marked saved, since the file is the record, shown with the reader's report on its card; the levels of one file become one each, the first shown. */
+function openRead(read, name) {
   if (!read) return;
-  const id = draftOf(read);
-  if (id === null) return;
-  imported = { id, lines: read.report, repairs: read.repairs };
-  open(id, `Opened ${nameOf(read.project)}`);
+  const reads = [read].flat();
+  const ids = draftsOf(reads, name);
+  if (!ids.length) return;
+  imported = { id: ids[0], lines: reads[0].report, repairs: reads[0].repairs };
+  open(
+    ids[0],
+    ids.length > 1
+      ? `Opened ${ids.length} levels from ${name}`
+      : `Opened ${nameOf(reads[0].project)}`,
+  );
 }
 
 /** Write the draft to a file, as the map's own file or as the game's level file, and mark it saved. */

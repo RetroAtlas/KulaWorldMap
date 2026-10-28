@@ -360,12 +360,17 @@ Either save flushes the store first and then marks the draft saved, `saved` the 
 - The map's own file is read by `readProject` and refused where its world is not one of the ten.
 - The game's level is read by `readKwl` in the world on screen and titled by the file's stem.
 - A pack, a disc image or a level of the community's viewer is read as that section says.
+- A patch the map made, a PPF or an xdelta, is read as that section says, and gives a read for each level it puts on the disc.
 - JSON that is neither the map's file nor the viewer's file is refused, as is anything the order places nowhere.
 - A project whose blocks carry more records than a link word can name is refused in the checks' words for the record cap, and a document the writer cannot write with the writer's reason.
 
 Every open makes a new draft marked saved, since the file is the record, and the reader's report shows as one toast, the line itself where there is one, the count of repairs where there are more, or that the level was read with notes where no line is a repair, and in full in a fold at the top of the Level card, under the same count or the same words, until another draft is shown.
 
 The read and the draft are one rule in `public/js/editor/intake.js`, which the sidebar's `open a file…` and `paste a link…` and the disc box's `a file…` share: `readLevel` reads a file through `readLevelFile` in the world on screen and says a refusal in one toast, and `draftOf` makes the draft marked saved and says the report, so a level from elsewhere becomes a draft the same way wherever it is opened from; the sidebar then shows the draft with the fold, and the box adds its row and leaves the map where it was.
+
+`draftsOf` makes a draft marked saved of each of several reads of one file, a patch's, and says how many opened from it in one toast in place of their reports; the sidebar shows the first, and the box adds a row for each.
+
+`readLevel` takes the image the disc box holds read, `heldImage` of `public/js/editor/patchdialog.js`, the file and the disc it is, and hands it to the reader, so a patch reads over it without asking for an image.
 
 ## Onto the disc
 
@@ -408,7 +413,8 @@ The patches are then the bytes of [disc.md](disc.md): the PPF with the descripti
 
 `readLevelFile` reads a file by what it holds, in one order, and never by its name:
 
-- A file of whole 2352-byte sectors with the volume mark at sector 16 is a disc image, sniffed first so that one handed over as a file is read a slice at a time rather than whole.
+- A file whose head is the PPF 3.0 magic or the VCDIFF magic is a patch, sniffed first since a patch is small and unmistakable.
+- A file of whole 2352-byte sectors with the volume mark at sector 16 is a disc image, sniffed next so that one handed over as a file is read a slice at a time rather than whole.
 - Text that parses as JSON is the map's file where it carries the marker and the community viewer's level where it has `blocks` at `pos` and a `time`.
 - Bytes whose first word counts 1 to 32 slots whose table, records and NUL-ended names all lie within the file are a pack.
 - A length that is the lattice, the six header bytes and whole records is the game's level.
@@ -421,7 +427,11 @@ A disc image is walked as the patcher walks it, a slice at a time where it is ha
 
 The disc an image is, which titles its slots and the draft the chosen one makes, is told by its boot line through `identify` of `public/js/format/patch.js` over the release model's entries, as the disc box tells it, so an image of the PAL disc offers HIRO's slot 19 as OBJ LEVEL where an image of the US disc offers LESSON; an image whose boot line names none of the three is titled as the disc the map shows, and a pack alone, which names no disc, as the pack names its slots.
 
-Every file opened this way makes a new draft marked saved, as the map's own file does, with the reader's report in the card's fold.
+A patch is read by the readers of `public/js/format/patchread.js` and asks for the disc image it was made for, unless the disc box holds one read, since a patch carries only the stretches that differ and a level comes back whole only over that image: the PPF's block check is held against the image first, and an image it is not made for is said in the box and nothing listed; the patch's stretches are laid over the image, every pack of both images read, and each slot whose record inflates to another level is listed, named as the pause screen of the image's disc names the level there with the world the map lists the slot under, which `slotTitle` and `slotWorld` give as they do for a disc image; a window or a stretch that does not apply, or a record that does not inflate, is said in the box in the reader's words.
+
+Each level a patch lists is read by `readKwl` in its slot's world, titled by the slot's name in the patched pack, which a rebuild names after the level's title and an in-place placement leaves as the slot's, with `into` the slot in the `pack#index` form, so the disc box offers it back on its own slot, and `simon` set where the pack is the Simon rooms'; opening gives every listed level, and declining gives nothing.
+
+Every file opened this way makes a new draft marked saved, as the map's own file does, with the reader's report in the card's fold, and a patch makes one of each level it lists.
 
 ### The community's viewer
 

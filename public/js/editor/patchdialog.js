@@ -15,7 +15,7 @@ import { deflate } from "../format/deflate.js";
 import { UNTITLED, setMeta } from "../format/project.js";
 import { ERROR, describe, playsAs, validate } from "../format/checks.js";
 import { RAW_ONLY, download, isIso, slug } from "./files.js";
-import { draftOf, readLevel } from "./intake.js";
+import { draftsOf, readLevel } from "./intake.js";
 import { CHOOSE, keyShaped, retarget, split } from "./patchslots.js";
 import { discBar, readAs, reflectDiscs } from "./discbar.js";
 import * as drafts from "./drafts.js";
@@ -293,6 +293,9 @@ function newRow(id) {
   return row;
 }
 
+/** The disc image the box holds read, { file, release }, or null while it holds none. */
+export const heldImage = () => (d?.disc ? { file: d.file, release: d.release } : null);
+
 /** Open the dialog for the draft with this id, with a row for it where none holds it, the bar on the disc the map shows until one is pressed or an image locks it. */
 export function openPatchDialog(id) {
   if (!drafts.get(id)) return;
@@ -338,15 +341,17 @@ function takeAllOut() {
   ui.add.focus();
 }
 
-// A level from a file, read as the sidebar reads one and made a draft; a pack
-// or an image asks its question in the box's place, and the box comes back
-// once it is answered, brought up to date, with the new row where there is one.
+// A level from a file, read as the sidebar reads one and made a draft, or the
+// levels a patch holds, a draft each; a pack, an image or a patch asks its
+// question in the box's place, a patch over the image the box holds where it
+// holds one, and the box comes back once it is answered, brought up to date,
+// with the new rows where there are any.
 async function fromFile(file) {
-  const read = await readLevel(file, state.lvl.theme);
-  const id = read ? draftOf(read) : null;
+  const read = await readLevel(file, state.lvl.theme, heldImage());
+  const ids = read ? draftsOf([read].flat(), file.name) : [];
   const back = ui.overlay.hidden;
   if (back) openDialog(ui.overlay, $("draftPatch"));
-  if (id !== null) add(id);
+  if (ids.length) for (const id of ids) add(id);
   else if (back) refresh();
   ui.add.focus();
 }
