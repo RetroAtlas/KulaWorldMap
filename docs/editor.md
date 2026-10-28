@@ -102,7 +102,7 @@ Everything the game derives at load or never reads is left out and rebuilt at ev
 - The links between switches, teleporters and lasers (a stale one hangs the game or sends the ball into garbage, [level-format.md](level-format.md)).
 - The pickup numbers (the loader renumbers everything it walks at `0x80035998`).
 - Each device's own state word (a colour turns over as one, so the colour's state is what is stored).
-- The header word (unread, [the backlog](../backlog/item-005-the-header-word.md)).
+- The header word (unread, [level-format.md](level-format.md)).
 - The trailer's cell and two numbers (unread).
 - The sixteen never-set words, the extras and the filler words of every slot, the type word of a vanishing block's slots 1 to 5 among them, though the game reads it for a captivator walking one of those faces.
 - Record order (lattice order at every write).
