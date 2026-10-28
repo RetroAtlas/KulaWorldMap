@@ -579,13 +579,15 @@ Beside the worlds' atlases under `tex/` the build lays the sheet of the seven sp
 
 ### How a level reaches the screen
 
-Every level reaches the screen through one funnel in `js/viewer/chrome/navigate.js`, the disc's levels by their place in the data, the release shown choosing the level installed at that place, and any other through `showLevel`, and a module may provide levels for a link to name beyond the disc's slots, or keep a segment of its own at the link's tail, written with the view and handed back to it when a link opens; a level from elsewhere installed again is an update, as is a level installed again at its own slot where the module asks, which keeps the hidden kinds, the slice and the selection where the level still has its cell.
+Every level reaches the screen through one funnel in `js/viewer/chrome/navigate.js`, the disc's levels by their place in the data, the release shown choosing the level installed at that place, and any other through `showLevel`, and a module may provide levels for a link to name beyond the disc's slots through `provideLevels`, or keep a segment of its own at the link's tail through `tailWith`, written with the view and handed back to it when a link opens; a level from elsewhere installed again is an update, as is a level installed again at its own slot where the module asks, which keeps the hidden kinds, the slice and the selection where the level still has its cell.
+
+A draft reaches the screen as `toLevel` in `js/format/project.js` makes it, the level the reader in `js/format/kwl.js` makes of the bytes the writer there writes for the draft, so what the frame draws is what the game would load of it, drawn as a disc level is.
 
 ### Drawing the frame
 
 `js/viewer/draw/render.js` draws the frame: it puts the cells in the painter's order, keeps the pick canvas that turns a point on the screen into a cell, lays what shows through the blocks over the map, and draws again while anything moves.
 
-It draws the blocks through `js/viewer/draw/blocks.js`, which lays each world's textures from `js/viewer/draw/atlas.js` and the light a device casts on them from `js/viewer/draw/lights.js`, which casts a light a module hands it as it casts a device's light, from a cell and a face in a colour of the module's own, on the faces a device there would light and at the same levels, so that nothing on the blocks changes until a module hands one.
+It draws the blocks through `js/viewer/draw/blocks.js`, which lays each world's textures from `js/viewer/draw/atlas.js` and the light a device casts on them from `js/viewer/draw/lights.js`, which casts a light a module hands it through `lightsWith` as it casts a device's light, from a cell and a face in a colour of the module's own, on the faces a device there would light and at the same levels, so that nothing on the blocks changes until a module hands one.
 
 Where the index the frame draws from marks a block, with the frame of its mark, `js/viewer/draw/blocks.js` hands `faceSkin` in `js/viewer/skins.js` the frames since the mark for each of the block's faces, or with Motion off a count past the whole fade, and `faceSkin` paints such a face as the game paints a block the ball has rolled onto, faded in from grey, so play's marks reach the faces with no branch for play in either module.
 
@@ -593,27 +595,29 @@ It draws what stands on them through `js/viewer/draw/things.js`, a laser's beam 
 
 ### The seams
 
-What draws over the map from outside it registers with the frame's four hooks, one run before any block where the ground grid is drawn, which may skip the grid by returning true, one on each block once it is drawn and before the things standing on it, one after each block with what stands on it, and one once the see-through layer is laid, which may ask for another frame by returning true.
+What draws over the map from outside it registers with the frame's four hooks through `overlayWith` in `js/viewer/draw/render.js`, one run before any block where the ground grid is drawn, which may skip the grid by returning true, one on each block once it is drawn and before the things standing on it, one after each block with what stands on it, and one once the see-through layer is laid, which may ask for another frame by returning true.
 
-A module may also hand the frame travellers of its own, each keyed as the level's own walkers are, by a cell and a face, or by a name of its own, and drawn, sorted and picked as they are, or sorted at a depth of its own where it hands one, reckoned as a block's depth is, from the corner of the unit cube about it, standing in for the thing whose cell and face its key names where it names one.
+A module may also hand the frame travellers of its own through `movingWith`, each keyed as the level's own walkers are, by a cell and a face, or by a name of its own, and drawn, sorted and picked as they are, or sorted at a depth of its own where it hands one, reckoned as a block's depth is, from the corner of the unit cube about it, standing in for the thing whose cell and face its key names where it names one.
 
 A traveller that asks to show through the blocks that cover it is drawn again on the see-through layer, without its shadow, as a thing on a face turned away is while that switch is on.
 
 A traveller that hands a body, a rotation by rows relative to the axes the thing is laid on, across, forward and up, is turned by it in place of the thing's own spin, its squash and its shadow laid as before.
 
-A module may give the things on the blocks the points its ball stands at in place of the level's starts, so the invisible blocks light and the boost buttons sink under a ball that moves.
+A module may give the things on the blocks the points its ball stands at in place of the level's starts through `ballsWith` in `js/viewer/draw/things.js`, so the invisible blocks light and the boost buttons sink under a ball that moves.
 
 It may tint a traveller it hands by three numbers, one a channel, which the thing's colours are drawn through.
 
-A module that runs the level may hand the frame the clock it draws at, the index of cells and things it draws from, shaped as the level's own index with a thing only on a block it holds, and what travels, each standing in for the frame's own counterpart while it is registered, and may say that every invisible block is seen.
+A module that runs the level may hand the frame, through `runWith`, the clock it draws at, the index of cells and things it draws from, shaped as the level's own index with a thing only on a block it holds, and what travels, each standing in for the frame's own counterpart while it is registered, and may say that every invisible block is seen.
 
 So what is gone from the level as it runs is neither drawn nor picked, the walkers stand where the module has stepped them and no invisible face is lit while every one is seen, while the hover, the tip and the panel read the level as installed and the frame's own clock, index and walkers are in use again once it stops.
 
-What listens to the pointer registers with `js/viewer/chrome/interaction.js` for a click, for a drag, which what registers may take from the camera at the press, and for what about the cell under the pointer matters to the hover, which is how the editor draws its grid, washes and ghost and takes its clicks and drags.
+What listens to the pointer registers with `js/viewer/chrome/interaction.js` for a click through `onCellClick`, for a drag through `dragWith`, which what registers may take from the camera at the press, and through `hoverBy` for what about the cell under the pointer matters to the hover, which is how the editor draws its grid, washes and ghost and takes its clicks and drags.
 
 A module may add lines of its own to the tip through `tipWith` in `js/viewer/chrome/interaction.js`, under what the tip says of the cell, which is how the editor and the planner say what a click there would do and play says what the ball has taken from it.
 
 A module may fill the panel through `onShow` in `js/viewer/chrome/detail.js` and stand a note of its own under the level line through `noteWith` in `js/viewer/chrome/navigate.js`, which asks what is registered before it falls back to the level's own note, and those two seams are how the editor's form and a draft's overview come in.
+
+A module may take the panel down through `clearDetail` and build it again for the cell it shows through `refreshDetail`, both in `js/viewer/chrome/detail.js`, which is how play keeps what the panel says true as the level runs.
 
 A module may reinstall the slot shown in place through `reshow` in `js/viewer/chrome/navigate.js`, which keeps the selection where its cell stands and frames the level afresh where it was fitted, and may register a segment of the link's tail with `before` beside `read`, told the segment before the slot is resolved, so that what it names is installed once.
 
@@ -622,6 +626,25 @@ The route planner is built on the same seams and loads with the boot, since a li
 - `js/viewer/walk.js` is the model, pure and testable without a page, the ball's three moves and the side rule over a probe of the lattice, the shortest walk between two faces, every face a walk from one reaches, which is how a draft's note knows what the start cannot roll to, the course's codec and its pieces.
 - `js/viewer/draw/ribbon.js` paints a block's pieces, the leaps and the rings and nothing of the page.
 - `js/viewer/chrome/course.js` is the planner's chrome, the clicks, the strip, the store and the link, drawing through the block hook and listening through the pointer lists and the link's tail.
+
+The planner hands play the route standing through `current` in `js/viewer/chrome/course.js` and takes the way the ball has come as the route through `adoptCourse` there.
+
+### What the bus carries
+
+The viewer tells the editor, the planner and play what has changed through the `emit`/`on` pair, and they tell it and each other there, by these events:
+
+- `level-changed` and `level-updated`, which the funnel says with the level's place as it installs a level, the second where the install is an update, and which the editor, the planner and play follow as the chrome beside the map does, the search building a list narrowed to the level anew on either.
+- `link-opening`, which the funnel says as a link opens, once the link's level is installed and before its view is laid, on which play lets the ball go.
+- `selection-changed`, which the panel says as the cell it shows changes or it closes, and which the editor follows.
+- `go-to`, which the panel says with the cell a click on a name in it leads to, on which the search finds that cell and play centres the view there and lets the ball go.
+- `show-changed`, which the sidebar says with a switch's key as it is turned and the level line as its note folds, on which play puts the dust away as its switch goes off.
+- `density-changed`, which the frame says once the canvas is sized again for a change in the screen's pixel density, on which whatever paints an icon paints it again.
+- `atlas-loaded`, which `js/viewer/draw/atlas.js` says with the world as that world's textures land, on which the editor draws its palette and its icons again.
+- `slice-changed`, which whatever moves the slice says, play among them as it takes the view and gives it back, and which the slice's control follows.
+- `course-changed`, which the planner says with the route as it changes, on which Follow and Keep let go of a route that no longer stands.
+- `editing-changed`, which the editor says as editing turns on or off, on which the planner drops the refusal its strip shows.
+- `drafts-moved`, which the editor says with the ids it moves drafts from and to, on which the planner moves the routes it keeps for those drafts to their new ids.
+- `play-changed`, which play says as the ball is put on the map or taken off, on which the editor ends editing and the disc's bar is disabled.
 
 ### Loading the editor and play mode
 
@@ -700,7 +723,7 @@ The module has every count and threshold read from the motion table and no wall 
 
 ### Pad words
 
-`js/play/drive.js` gives pad words per frame:
+`js/play/drive.js` gives pad words per frame, pure too:
 
 - The keys as they are pressed, each press down on a frame of its own and read up for a frame first where the frame before had its key down, so that no two presses read as one key held on, a key down as a frame that does not read the pad runs sampled by that frame as the game's loop samples the pad on every frame, so that it is no press when the pad is read again, and a key tapped over such frames, which the game never sees, kept for the first that reads the pad, one a key.
 - A planned route followed, which reads the ball's block, face and heading off the ball each frame and, with the ball at rest and no turn asked or running, asks the turn the route's next step wants, by the shorter way, or the roll, which it holds while the ball rolls and the step on from the station it has come to is a roll the way it heads, so the ball rests only where the route turns, leaps or ends, and is done at the route's end, at a leap, which no roll follows, a roll the lattice as it stands no longer allows counting as one, as the planner draws it, read through the probe the rules ask of the level, or where the ball stands on none of the route's stations.
@@ -790,7 +813,7 @@ Beside the frame, `js/viewer/draw/compass.js` paints the compass on a canvas of 
 
 The camera is a plain orbit: a yaw and a pitch give three unit vectors, and every point is projected orthographically onto two of them with the third as depth.
 
-A module may hand `js/viewer/state.js` a frame, a rotation in world coordinates, and the three are then turned about it, so the yaw and pitch count from the frame's axes rather than the world's axes and the compass turns with them; and a module may park the camera, the target, the framing and the slice as they were and frame the view in the fit's place through `js/viewer/chrome/navigate.js`, so that `f`, the button and a resize go through it, the button is dim while it holds the view, and a link written meanwhile carries the parked view rather than the one on screen.
+A module may hand `js/viewer/state.js` a frame, a rotation in world coordinates, and the three are then turned about it, so the yaw and pitch count from the frame's axes rather than the world's axes and the compass turns with them; and a module may park the camera, the target, the framing and the slice as they were and frame the view in the fit's place through `fitWith` in `js/viewer/chrome/navigate.js`, so that `f`, the button and a resize go through it, the button is dim while it holds the view, and a link written meanwhile carries the parked view rather than the one on screen.
 
 Cubes are drawn back to front by that depth, which is exact for equal cubes on a lattice, and a face is drawn only when its outward normal turns toward the camera and no block the game hides that face behind stands against it.
 

@@ -81,40 +81,23 @@ No commit message reports what a test found, a test of its own or any other: eve
 
 ### The editor, the route planner and play mode
 
-The editor draws a draft as the viewer draws a disc level, and nothing else: a draft is a level object of `map_data.json`'s shape, made by the level writer and reader in `public/js/format/kwl.js` from the project in `public/js/format/project.js`, drawn by the same code as a shipped level, and never entered into `state.data`; every level reaches the screen through the one funnel in `public/js/viewer/chrome/navigate.js`.
+No module of the viewer but the planner's own asks whether the editor, the route planner or play is on: a module that must act otherwise while one of them is on hears so from that one's event, and the unit tests hold the viewer to importing nothing of the editor or of play.
 
-The editor draws and listens only through seams, registrations and events: the frame's hooks in `render.js`, the click, drag and hover registrations and `tipWith` in `interaction.js`, the panel's `onShow` and `selection-changed` event in `detail.js`, the level line's `noteWith`, the link's `provideLevels` and the `level-changed` and `level-updated` events in `navigate.js`, the `atlas-loaded` event in `atlas.js` and play's `play-changed`.
+Where one of them needs the viewer to call it back or to tell it what has changed, the viewer offers a seam any caller could use, a registration or an event; "How it is built" in [docs/viewer.md](docs/viewer.md) lists the seams, and a commit that adds one adds it there.
 
-So the faithful modules carry no editor branch: `things.js`, `skins.js`, `lights.js`, `beams.js`, `atlas.js`, `motion.js`, `travel.js`, `icons.js`, `compass.js`, `search.js`, `objectsearch.js`, `placesearch.js`, `dialog.js`, `modal.js`, `toast.js`, and under `tools/` `kula_build.py` apart from `packs.json` and `kula_level.py`, are the modules the editor leaves untouched, `search.js`, `dialog.js`, `modal.js` and `skins.js` apart, which changed for every caller's sake, the search re-scoping on `level-updated`, a dialog or a modal giving the focus back to the control that opened it, and the skins lending the viewer's points their test for a key, and carry no branch for the editor.
+The parser and the build carry no branch for any of them either: what one of them needs of the disc, the build writes as data any caller can read.
 
-The route planner, `course.js` and `ribbon.js`, draws and listens only through the same kind of seams, the block hook, the pointer lists, the link's tail, the `level-changed` and `level-updated` events and the editor's `editing-changed` and `drafts-moved`, and carries no branch in a faithful module.
+The editor draws a draft as the viewer draws a disc level and in no other way: a draft is a level object of `map_data.json`'s shape that never enters `state.data` and reaches the screen through the one funnel in `public/js/viewer/chrome/navigate.js`, as every level does.
 
-Play mode is built the same way.
+Play's simulation is pure, every count and threshold read from `objects.motion` and no wall clock in it.
 
-Its simulation, `play/ball.js`, `play/world.js`, `play/rules.js`, `play/game.js`, `play/passes.js`, `play/contact.js`, `play/hazards.js` and `play/drive.js`, is pure, every count and threshold read from `objects.motion` and no wall clock among them.
-
-What play computes without the page lives in a pure module under `play/` with a unit test of its own, as its sentences do in `play/phrases.js`, the ball as the frame draws it in `play/traveller.js` and the camera behind the ball in `play/eye.js`, and the unit tests hold the pure modules to importing the model, the lattice and each other alone.
+What play computes without the page, the simulation among it, lives in a pure module under `play/` with a unit test of its own and a place on the list of pure modules in `tests/unit/imports.test.js`, which holds each to importing the model, the lattice and the others alone.
 
 `play/ball.js` never asks its probe what kind a block is and carries none of the mode's policy, so a lost ball says so and stays where it fell.
 
-Play's modules reach the map only through the seams:
-
-- The frame's travellers through `movingWith`, its four hooks, `runWith` and its `density-changed` event in `render.js`, its marks on the blocks reaching `skins.js` through `faceSkin`'s marked argument as the game's own paint for a marked face and not as a branch for play.
-- The camera's `frame`, `anchored` and `parked` in `state.js`.
-- `fitWith` and the `level-changed`, `level-updated` and `link-opening` events in `navigate.js`.
-- The switches' `show-changed` event in `sidebar.js`.
-- `ballsWith` and a traveller's `tint` and `body` in `things.js`.
-- `adoptCourse`, `current` and the `course-changed` event in `course.js`.
-- `tipWith` in `interaction.js`.
-- The panel's `onShow` and `go-to` event, and its `clearDetail` and `refreshDetail`, in `detail.js`, and the `play-changed` event the editor listens to.
-
-So the faithful modules carry no branch for play either; `play/dust.js`, `play/effects.js`, `play/phrases.js`, `play/traveller.js`, `play/eye.js`, `play/screen.js`, `play/strip.js`, `play/route.js` and `play/events.js` are its own, and `play/effects.js` casts its light through `lightsWith` in `lights.js`.
-
-"How it is built" in [docs/viewer.md](docs/viewer.md) says what each of play's modules computes and what play hands the map through its seams.
-
 The project file grows by one rule: keys are only added, a published key never changes its meaning or its type, every optional key has a default on read and a reader ignores keys it does not know, with [docs/editor.md](docs/editor.md) as the specification.
 
-After any change to the level writers, whoever holds the discs runs `python3 tools/kula_kwl.py --check` on each of the three, with `KULA_DISC`, `KULA_DISC_EU` and `KULA_DISC_JP` set and `--release` naming the disc, which holds the rebuild to that disc word for word and fails on any residual the disc's own table of residuals does not list.
+After any change to the level writers, whoever holds the discs runs `python3 tools/kula_kwl.py --check` on each disc, as "What holds the writers to the disc" in [docs/editor.md](docs/editor.md) says.
 
 ### Where a check lives
 
