@@ -30,10 +30,8 @@ import {
   sector,
 } from "../../public/js/format/sectors.js";
 import {
-  ADD,
   BLOCK,
   BLOCK_AT,
-  COPY,
   DESCRIPTION,
   PPF_MAGIC,
   PREFIX,
@@ -59,6 +57,12 @@ import {
   verify,
   verifyAll,
 } from "../../public/js/format/patch.js";
+import {
+  appliedImage,
+  ppfPatch,
+  vcdiffPatch,
+  vcdiffStretches,
+} from "../../public/js/format/patchread.js";
 import {
   CNF,
   CNF_AT,
@@ -123,6 +127,9 @@ const padded = (data, length) => {
   out.set(data);
   return out;
 };
+const applyPpf = async (blob, patch) => bytes(appliedImage(blob, ppfPatch(patch).stretches));
+const decodeVcdiff = async (blob, patch) =>
+  bytes(appliedImage(blob, await vcdiffStretches(blob, patch)));
 
 /** A directory record's extent and size, each as [little-endian, big-endian]. */
 function bothWaysAt(data, pos) {
@@ -195,29 +202,7 @@ async function held(items, planned, after) {
   }
 }
 
-// --- the appliers the patches are proven by ---------------------------------------
-
-/** The original with a PPF 3.0 patch's records laid over it. */
-function applyPpf(original, patch) {
-  same(patch.subarray(0, 6), [...PPF_MAGIC, 2]);
-  assert.deepEqual([...patch.subarray(56, 60)], [0, 1, 0, 0]);
-  same(patch.subarray(60, 60 + BLOCK), original.subarray(BLOCK_AT, BLOCK_AT + BLOCK));
-  const out = original.slice();
-  for (const [at, data] of ppfRecords(patch)) out.set(data, at);
-  return out;
-}
-
-function ppfRecords(patch) {
-  const view = new DataView(patch.buffer, patch.byteOffset);
-  const out = [];
-  for (let pos = 60 + BLOCK; pos < patch.length;) {
-    const at = Number(view.getBigUint64(pos, true));
-    const n = patch[pos + 8];
-    out.push([at, patch.subarray(pos + 9, pos + 9 + n)]);
-    pos += 9 + n;
-  }
-  return out;
-}
+// --- what the patches are proven by, beside the readers --------------------------------
 
 function readVarint(buf, pos) {
   let n = 0;
@@ -237,72 +222,6 @@ function slowAdler32(data) {
     b = (b + a) % 65521;
   }
   return b * 65536 + a;
-}
-
-/**
- * The target a VCDIFF patch of COPY and ADD instructions builds from the
- * source, every window's Adler-32 and lengths checked on the way.
- */
-function decodeVcdiff(source, patch) {
-  same(patch.subarray(0, 5), [...VCDIFF_MAGIC, 0]);
-  const view = new DataView(patch.buffer, patch.byteOffset);
-  const out = [];
-  let pos = 5;
-  let done = 0;
-  while (pos < patch.length) {
-    assert.equal(patch[pos], VCD_SOURCE | VCD_ADLER32);
-    let srcLen, srcPos, deltaLen, targetLen, dataLen, instLen, addrLen;
-    [srcLen, pos] = readVarint(patch, pos + 1);
-    [srcPos, pos] = readVarint(patch, pos);
-    [deltaLen, pos] = readVarint(patch, pos);
-    const body = pos;
-    [targetLen, pos] = readVarint(patch, pos);
-    assert.equal(patch[pos], 0, "a delta indicator of 0");
-    [dataLen, pos] = readVarint(patch, pos + 1);
-    [instLen, pos] = readVarint(patch, pos);
-    [addrLen, pos] = readVarint(patch, pos);
-    const adler = view.getUint32(pos, false);
-    pos += 4;
-    const data = patch.subarray(pos, pos + dataLen);
-    const inst = patch.subarray(pos + dataLen, pos + dataLen + instLen);
-    const addr = patch.subarray(pos + dataLen + instLen, pos + dataLen + instLen + addrLen);
-    pos += dataLen + instLen + addrLen;
-    assert.equal(pos - body, deltaLen, "the delta encoding length counts everything after it");
-    assert.deepEqual(
-      [srcPos, srcLen],
-      [done, targetLen],
-      "the source segment is the window's own stretch",
-    );
-    const segment = source.subarray(srcPos, srcPos + srcLen);
-    const target = new Uint8Array(targetLen);
-    let tp = 0;
-    let ip = 0;
-    let dp = 0;
-    let ap = 0;
-    while (ip < instLen) {
-      const op = inst[ip];
-      let size;
-      [size, ip] = readVarint(inst, ip + 1);
-      if (op === COPY) {
-        let at;
-        [at, ap] = readVarint(addr, ap);
-        target.set(segment.subarray(at, at + size), tp);
-      } else if (op === ADD) {
-        target.set(data.subarray(dp, dp + size), tp);
-        dp += size;
-      } else assert.fail(`opcode ${op}`);
-      tp += size;
-    }
-    assert.deepEqual(
-      [dp, ap, tp],
-      [dataLen, addrLen, targetLen],
-      "every section is consumed whole",
-    );
-    assert.equal(slowAdler32(target), adler, "the window's checksum");
-    out.push(target);
-    done += targetLen;
-  }
-  return [concat(out), out.length];
 }
 
 // --- the fixture ----------------------------------------------------------------------
@@ -812,12 +731,11 @@ for (const s of fixture.sets) {
     const patch = await ppf(blob, planned.writes, description(items.map((i) => i.title)));
     assert.equal(sha256(patch), s.ppf);
     assert.equal(text(patch.subarray(6, 56)), "Kula World Map: Spiral, Tower".padEnd(DESCRIPTION));
-    same(applyPpf(IMAGE, patch), after);
+    same(await applyPpf(blob, patch), after);
     const delta = await vcdiff(blob, planned.writes);
     assert.equal(sha256(delta), s.xdelta);
-    const [target, windows] = decodeVcdiff(IMAGE, delta);
-    same(target, after);
-    assert.equal(windows, 1);
+    same(await decodeVcdiff(blob, delta), after);
+    assert.equal(vcdiffPatch(delta).length, 1);
     assert.deepEqual(planned.warnings, WARNINGS);
     for (const p of planned.placed) assert.deepEqual(p.warnings, WARNINGS);
     await held(items, planned, after);
@@ -1024,7 +942,7 @@ test("a PPF is the header, the block check and a record for every changed stretc
     assert.deepEqual([...patch.subarray(56, 60)], [0, 1, 0, 0], c.name);
     same(patch.subarray(60, 60 + BLOCK), IMAGE.subarray(BLOCK_AT, BLOCK_AT + BLOCK), c.name);
     assert.equal(text(IMAGE.subarray(BLOCK_AT, BLOCK_AT + 11)), "PLAYSTATION");
-    const records = ppfRecords(patch);
+    const records = ppfPatch(patch).stretches;
     const at = records.map(([offset]) => offset);
     assert.deepEqual(at, sorted(at), c.name);
     assert.equal(
@@ -1039,7 +957,7 @@ test("a PPF is the header, the block check and a record for every changed stretc
       );
       same(after.subarray(offset, offset + data.length), data, c.name);
     }
-    same(applyPpf(IMAGE, patch), after, c.name);
+    same(await applyPpf(blob, patch), after, c.name);
   }
 });
 
@@ -1055,9 +973,8 @@ test("a VCDIFF decodes to the patched image and copies the rest from the source"
   for (const c of fixture.cases) {
     const { blob, placed, after } = await place(streamOf(synthetic(c.blocks)));
     const patch = await vcdiff(blob, placed.writes);
-    const [target, windows] = decodeVcdiff(IMAGE, patch);
-    same(target, after, c.name);
-    assert.equal(windows, 1, c.name);
+    same(await decodeVcdiff(blob, patch), after, c.name);
+    assert.equal(vcdiffPatch(patch).length, 1, c.name);
     assert.ok(patch.length < (await ppf(blob, placed.writes, PREFIX + TITLE)).length, c.name);
   }
 });
@@ -1065,9 +982,15 @@ test("a VCDIFF decodes to the patched image and copies the rest from the source"
 test("windows of a size that cuts a sector in two decode the same", async () => {
   const { blob, placed, after } = await place(streamOf(synthetic(CASE.relocate.blocks)));
   for (const window of [WINDOW, 16384, 7 * SECTOR_RAW + 1, 2048]) {
-    const [target, windows] = decodeVcdiff(IMAGE, await vcdiff(blob, placed.writes, window));
-    same(target, after, window);
-    assert.equal(windows, Math.ceil(IMAGE.length / window), window);
+    const patch = await vcdiff(blob, placed.writes, window);
+    same(await decodeVcdiff(blob, patch), after, window);
+    const windows = vcdiffPatch(patch);
+    assert.equal(windows.length, Math.ceil(IMAGE.length / window), window);
+    for (const w of windows) {
+      assert.equal(w.indicator, VCD_SOURCE | VCD_ADLER32, window);
+      assert.deepEqual([w.srcPos, w.srcLen], [w.start, w.targetLen], window);
+      assert.equal(w.adler, slowAdler32(after.subarray(w.start, w.start + w.targetLen)), window);
+    }
   }
   const cut = (lba) =>
     Math.floor((lba * SECTOR_RAW) / 16384) !== Math.floor(((lba + 1) * SECTOR_RAW - 1) / 16384);
@@ -1171,7 +1094,7 @@ test(
     await verify(await openDisc(patched), level.pack, level.index, own, placed, inflate);
     const patch = await ppf(blob, placed.writes, PREFIX + level.name);
     assert.equal(patch.length, 1687);
-    assert.ok(ppfRecords(patch).every(([at]) => Math.floor(at / SECTOR_RAW) === 1002));
+    assert.ok(ppfPatch(patch).stretches.every(([at]) => Math.floor(at / SECTOR_RAW) === 1002));
     const delta = await vcdiff(blob, placed.writes);
     assert.equal(delta.length, 1469);
     same(delta.subarray(0, 5), [...VCDIFF_MAGIC, 0]);
