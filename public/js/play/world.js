@@ -22,6 +22,7 @@ const CRUMBLING = 6;
 const LASER = 8;
 const CLOCK_START = 29;
 export const KEY = 31;
+const HIDDEN_EXIT = 26;
 // The kinds the game's walk over the inner lattice builds and counts.
 const COUNTED = new Set([0, 1, 2, 4, 6, 7]);
 // The game starts an entry's angles at zero, where a pickup's angles are random.
@@ -325,21 +326,34 @@ export function marked(world, key, frame) {
 
 /** The index the frame draws from: the one play holds less the things taken and the blocks
     gone, with what stood on them, with the blocks marked and the frame each was first drawn
-    marked on as `marked`, and, until the level's outcome stands, less the starts, whose ball the
-    ball on the level is, the start the game takes leaving the clock where it stands on one;
-    shaped as the level's index, play's own index itself where nothing is dropped or marked, and
-    rebuilt only when any of those changes. */
+    marked on as `marked`, until the level's outcome stands less the starts, whose ball the ball
+    on the level is, the start the game takes leaving the clock where it stands on one, and while
+    a key remains less the hidden exits, which the game shows only once the last key opens the
+    exits; shaped as the level's index, play's own index itself where nothing is dropped or
+    marked, and rebuilt only when any of those changes. */
 export function viewOf(live) {
   const world = live.world;
   const ended = !!live.words.outcome;
-  if (!world.view || world.view.ended !== ended) world.view = { ended, idx: drawn(world, ended) };
+  const shut = live.words.keys > 0;
+  if (!world.view || world.view.ended !== ended || world.view.shut !== shut)
+    world.view = { ended, shut, idx: drawn(world, ended, shut) };
   return world.view.idx;
 }
 
-function drawn(world, ended) {
+const unseen = (m) => m.face !== null && m.type === HIDDEN_EXIT;
+
+function drawn(world, ended, shut) {
   const { idx } = world;
   const starts = ended ? [] : world.starts;
-  if (!world.taken.size && !world.gone.size && !world.marked.size && !starts.length) return idx;
+  const hidden = shut ? [...idx.markers].filter(([, marks]) => marks.some(unseen)) : [];
+  if (
+    !world.taken.size &&
+    !world.gone.size &&
+    !world.marked.size &&
+    !starts.length &&
+    !hidden.length
+  )
+    return idx;
   const markers = new Map(idx.markers);
   const less = (key, dropped, left = []) =>
     markers.set(key, [...(markers.get(key) ?? []).filter((m) => !dropped(m)), ...left]);
@@ -348,6 +362,7 @@ function drawn(world, ended) {
     less(key, (m) => m.face === face);
   }
   for (const s of starts) less(s.key, (m) => m === s.m, s.left);
+  for (const [key] of hidden) less(key, unseen);
   const view = { ...idx, markers, marked: new Map(world.marked) };
   if (world.gone.size) {
     view.cells = new Map(idx.cells);

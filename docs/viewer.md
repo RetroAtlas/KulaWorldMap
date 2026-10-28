@@ -430,6 +430,8 @@ The sunglasses show every invisible block as the game shows them, in the look th
 
 The last key opens the exits, which turn green and faster and cast their light as they do from the panel, and rolling onto an open exit, or landing on one, leaves the level.
 
+The hidden exit stands unseen while a key remains and appears as the last key opens the exits, as in the game; the map itself shows it from the first, a thing to find.
+
 On a level with no key, the Simon rooms apart, the HUD counts the blocks still to roll onto instead, every block the ball stands on scoring the first time, the invisible blocks excepted, and taking the game's colour for a block rolled onto, which fades in over half a second as it does in the game and stands at once with Motion off, and the level is done with the last of them; such a level opens from white with Motion on, as the game opens one, the white clearing over its first moment, a level of your own with no key too.
 
 The tip and the panel still list a thing the ball has taken, and say it is taken.
@@ -749,7 +751,7 @@ The module has every count and threshold read from the motion table and no wall 
 
 `js/play/traveller.js` is the ball as the frame draws it, pure too: the ball as one of the frame's travellers, keyed as nothing on the level is and handed the body's turn relative to the axes the frame lays it on, what the frame draws at and with while the ball is on the map, the ball's tint, the start the game takes and the ball as it last stood, which Motion off draws, each reaching the map through a seam `js/play/play.js` registers.
 
-- It hands the frame play's own clock, the frame the rules last ran, which is the one the game's frame draws after its step, the level's index less what the ball has taken, the walkers as the rules stepped them and whether every invisible block is seen through `runWith`, so the phases, the lights and what travels draw as the game's frame draws them, a taken thing is neither drawn nor picked and the face it stood on is painted bare, and while the sunglasses last, and in the on spells of their blink, the blocks light no invisible face and every one keeps the look the map draws it in out of the light.
+- It hands the frame play's own clock, the frame the rules last ran, which is the one the game's frame draws after its step, the level's index less what the ball has taken and less the hidden exits while a key remains, the walkers as the rules stepped them and whether every invisible block is seen through `runWith`, so the phases, the lights and what travels draw as the game's frame draws them, a taken thing is neither drawn nor picked and the face it stood on is painted bare, and while the sunglasses last, and in the on spells of their blink, the blocks light no invisible face and every one keeps the look the map draws it in out of the light.
 - It tints the ball through the traveller's tint by its heat, its melt and its cold as the game tints the ball's light, each into its own channel and off the other two, raises it red, green and blue in turn by the game's counter while the invincibility pill's word stands, the counter stepping on each frame the ball is drawn under the pill and kept for the page's life as the game keeps it, and flashes it between white and black by the game's own angle while it is marked dying.
 - It lends the things on the blocks the live ball's point in place of the starts' points.
 - It says through `tipWith` in `js/viewer/chrome/interaction.js` and the panel's `onShow` that a thing the level as installed still lists is taken.

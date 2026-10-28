@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { frozen, stepUntil, textured, trackErrors } from "./helpers.js";
+import { drafted, frozen, stepUntil, textured, trackErrors } from "./helpers.js";
 import {
   DONE,
   TAKEN,
@@ -160,5 +160,51 @@ test("the shadow the game paints into a coin's face goes with the coin as the ba
   for (const block of [[17, 17, 17], coin, [17, 15, 17]]) await rolledTo(page, block, hz);
   await expect(page.locator("#playPoints")).toHaveText("250 points");
   expect(await pixelAt(page, face)).toEqual(await bareTop(page, face));
+  expect(errors).toEqual([]);
+});
+
+/** The fills one frame makes for a hidden exit's polygons, which the game draws added at a quarter. */
+const hiddenExitFills = (page) =>
+  page.evaluate(async () => {
+    const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
+    const g = document.getElementById("cv").getContext("2d");
+    const fill = g.fill;
+    let n = 0;
+    g.fill = function (...a) {
+      if (this.globalCompositeOperation === "lighter" && String(this.fillStyle).endsWith(", 0.25)"))
+        n += 1;
+      return fill.apply(this, a);
+    };
+    draw();
+    g.fill = fill;
+    return n;
+  });
+
+test("the hidden exit is unseen while a key remains and appears as the last key opens the exits, while the map shows it from the first", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // the one key on the block ahead of the start, the hidden exit on the block beyond it
+  await drafted(page, {
+    blocks: [
+      [[17, 16, 17], { kind: 0 }],
+      [[17, 15, 17], { kind: 0 }],
+    ],
+    faces: [
+      [[17, 16, 17], 0, { type: 31 }],
+      [[17, 15, 17], 0, { type: 26 }],
+    ],
+    motion: false,
+    textures: true,
+  });
+  expect(await hiddenExitFills(page)).toBeGreaterThan(0);
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  expect(await hiddenExitFills(page)).toBe(0);
+  await page.keyboard.press("ArrowUp");
+  await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 16, 17]);
+  await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
+  await expect(page.locator("#playKeys")).toHaveText(/\b0\b/);
+  expect(await hiddenExitFills(page)).toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });
