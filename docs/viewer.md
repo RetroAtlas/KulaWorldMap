@@ -85,6 +85,8 @@ The gear at the top of the sidebar, or `Shift-s`, opens Settings, for the switch
 
 Among them, `c` draws where the game's camera comes to rest at the level's start, behind the ball and above it, and the wedge it sees ([camera.md](camera.md)), and the compass at the map's bottom right can be put away.
 
+Invisible blocks, on by default, draws every invisible block in the look it has beside the ball, so the map shows the whole level; off, an invisible block is drawn only where the ball is near it, or the selected block or the pointer, which stand in for the ball on the map, in the viewer as in play, as the game shows one, while the sunglasses in play still show them all.
+
 Under Play, the golden dust the ball leaves, which comes from the map and not from the game, can be put away, and a block's panel can be given Play from here, off by default so that the map opens as a map, which stands the ball on the face you clicked and plays from there, and the ball can be given the game's own run with Play on through the levels, off by default so that a level plays on its own, which banks a done level's points into a total as the game does, takes a death's cost from it, goes on from a way out to the level the game loads next and plays the Simon rooms as the game's match between two players, as Rolling the ball below says.
 
 `s` shows and hides the sidebar itself.
@@ -426,7 +428,7 @@ The lethargy pill slows the level to half pace for as long as it lasts, as the g
 
 The invincibility pill keeps the ball from being killed while it lasts and runs the ball's light through red, green and blue while it does.
 
-The sunglasses show every invisible block as the game shows them, in the look the map gives one the ball's light does not reach, so for as long as they last no invisible block lights up beside the ball, and as they wear off the invisible blocks beside the ball blink between lit and that look for a few seconds, which the strip says as the blink begins, before the ball's light alone shows them again.
+The sunglasses show every invisible block as the game shows them, in the look the map gives one beside the ball, so for as long as they last no invisible block lights up beside the ball, and as they wear off the invisible blocks beside the ball blink between seen and unseen for a few seconds, which the strip says as the blink begins, before the ball's light alone shows them again.
 
 The last key opens the exits, which turn green and faster and cast their light as they do from the panel, and rolling onto an open exit, or landing on one, leaves the level.
 

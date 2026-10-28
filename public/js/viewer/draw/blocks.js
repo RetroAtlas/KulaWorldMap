@@ -236,23 +236,26 @@ function deviceLight(sums, sk, g, skins) {
 const peak = (skins) => Array(3).fill(Math.max(...skins.cycles.invisible.level));
 
 // Near the ball an invisible face is lit corner by corner as the game lights
-// it, and the map's look fills in what the light leaves dark. Where the level
-// turns the light round, a face the light reaches is drawn as the game draws
-// it there instead. While the frame says every invisible block is seen,
-// nothing is lit and every face keeps the look.
+// it. With the invisible blocks shown, the map's look fills in what the light
+// leaves dark; without, a face the light leaves dark is not drawn, as in the
+// game. Where the level turns the light round, a face the light reaches is
+// drawn as the game draws it there instead. While the frame says every
+// invisible block is seen, nothing is lit and every face keeps the look. The
+// light returned is the level's, or null where the kind has none.
 const lights = new WeakMap();
 function lightUp(sk, l, home, face, corners) {
   const entry = kindMotion(INVISIBLE)?.light;
-  if (!entry) return;
+  if (!entry) return null;
   if (!lights.has(l)) lights.set(l, lightOn(entry, l));
   const light = lights.get(l);
   const block = 1 / modelUnit();
   const cell = [home.x, home.y, home.z];
   const at = corners.map((c) => c.map((v, i) => (cell[i] + v) * block));
   const levels = cornersLit(light, ballsFor(l, face), cell, at, block);
-  if (!levels || (!light.turned && !levels.some(Boolean))) return;
+  if (!levels || (!light.turned && !levels.some(Boolean))) return light;
   sk.shaded = levels;
   sk.fill = !light.turned;
+  return light;
 }
 
 function kindOf(c, idx, key) {
@@ -292,8 +295,14 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
       const sk = faceSkin(skins, look, still, g, kind, shown, effect, place, plate, marked);
       if (sk?.live) live = true;
       if (sk && kind === INVISIBLE) {
+        const filled = seeing || state.show.invisible;
         if (!effectsOn()) sk.colour = peak(skins);
-        else if (!seeing) lightUp(sk, l, home, g, skins.corners[g][sk.turn]);
+        const light =
+          seeing || (filled && !effectsOn())
+            ? null
+            : lightUp(sk, l, home, g, skins.corners[g][sk.turn]);
+        if (!filled && light && !sk.shaded && !light.turned) return null;
+        if (!filled && light) sk.fill = false;
       }
       const added = !place && lights?.get(`${key}/${g}`);
       if (sk && added && !sk.add) sk.glow = deviceLight(added, sk, g, skins);

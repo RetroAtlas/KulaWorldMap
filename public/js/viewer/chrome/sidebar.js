@@ -31,6 +31,7 @@ const SHOWN = [
   ["showHidden", "hidden"],
   ["showCamera", "camera"],
   ["showCompass", "compass"],
+  ["showInvisible", "invisible"],
   ["showCourse", "course"],
   ["showDust", "dust"],
   ["playFrom", "playfrom"],

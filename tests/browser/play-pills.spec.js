@@ -10,6 +10,7 @@ import {
   said,
   startPlay,
   table,
+  toggled,
 } from "./playhelpers.js";
 import { LETHARGY, SUNGLASSES } from "../../public/js/play/passes.js";
 import { WEARING_OFF } from "../../public/js/play/phrases.js";
@@ -163,6 +164,21 @@ test("the bouncy pill bounds the ball as the game does: taken with the keys rele
     "19,17,17",
   ]);
   await expect.poll(() => said(page)).toContain("Bouncy pill taken.");
+  expect(errors).toEqual([]);
+});
+
+test("with Invisible blocks off, an invisible block beyond the ball's reach is not drawn in play", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const far = [20, 13, 17];
+  await arcadeDraft(page, { blocks: [[far, { kind: 3 }]], motion: false, textures: true });
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  const bright = (px) => Math.max(...px) > 60;
+  expect((await topPixels(page, far)).filter(bright).length).toBeGreaterThan(200);
+  await toggled(page, "showInvisible", "on by default");
+  expect((await topPixels(page, far)).filter(bright)).toEqual([]);
   expect(errors).toEqual([]);
 });
 

@@ -183,13 +183,14 @@ test("every switch's key is the one its row shows and the key list names", async
     [
       ...["showSkins", "showObjects", "showModels", "showMotion", "showThrough", "showLabels"],
       ...["showOutlines", "showBase", "panMode", "showFaces", "showHidden", "showCamera"],
-      ...["showCompass", "showCourse", "showDust", "playFrom", "playOn"],
+      ...["showCompass", "showInvisible", "showCourse", "showDust", "playFrom", "playOn"],
     ].sort(),
   );
   // the compass and the Play switches have no key, every letter that reads as the compass being
   // taken
   expect(rows.filter((r) => !r.key).map((r) => r.id)).toEqual([
     "showCompass",
+    "showInvisible",
     "showDust",
     "playFrom",
     "playOn",

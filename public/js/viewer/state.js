@@ -36,6 +36,7 @@ export const state = {
     hidden: false,
     camera: false,
     compass: true,
+    invisible: true,
     skins: true,
     outlines: false,
     note: true,

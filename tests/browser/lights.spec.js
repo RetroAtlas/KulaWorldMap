@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { alone, landed, settle, trackErrors } from "./helpers.js";
+import { toggled } from "./playhelpers.js";
 
 /** How bright the top of an invisible block is near its edge with the
     block beside it, alone and with that block selected, which stands in for
@@ -271,6 +272,28 @@ test("where a level turns the light round, an invisible block beside the ball is
   await page.goto("/#HAZE/0/45,35");
   await settle(page);
   await landed(page);
+  const [seen, gone] = await litBeside(page, [20, 10, 17], [20, 9, 17], true);
+  expect(gone).toBeLessThan(seen - 20);
+  expect(errors).toEqual([]);
+});
+
+test("with Invisible blocks off, an invisible block is drawn only where the ball is near it, and one a level shows from afar stays", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#INCA/0/45,35");
+  await settle(page);
+  await landed(page);
+  const [shown] = await litBeside(page, [15, 15, 17], [15, 14, 17]);
+  await toggled(page, "showInvisible", "on by default");
+  const [alone, lit] = await litBeside(page, [15, 15, 17], [15, 14, 17]);
+  expect(alone).toBeLessThan(shown - 10);
+  expect(lit).toBeGreaterThan(alone + 15);
+  // LEVEL 106 turns the light round, so a block beyond the ball's reach is drawn as before
+  await page.goto("/#HAZE/0/45,35");
+  await settle(page);
+  await landed(page);
+  await expect(page.locator("#showInvisible")).not.toBeChecked();
   const [seen, gone] = await litBeside(page, [20, 10, 17], [20, 9, 17], true);
   expect(gone).toBeLessThan(seen - 20);
   expect(errors).toEqual([]);
