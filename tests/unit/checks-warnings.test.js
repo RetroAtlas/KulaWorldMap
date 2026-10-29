@@ -54,7 +54,7 @@ test("what the format takes, and what it warns about", () => {
   ];
   assert.deepEqual(errors(turned), ["a facing of 1 to 4, or none"]);
   const warned = warnings(blocks);
-  assert.ok(warned.includes("the star is untested in play"));
+  assert.ok(warned.includes("the hedgehog is untested in play"));
   assert.deepEqual(
     warned.filter((w) => w.includes("next fruit")),
     [],

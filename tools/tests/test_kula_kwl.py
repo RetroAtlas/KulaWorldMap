@@ -1275,7 +1275,7 @@ class Validates(unittest.TestCase):
         turned = [plain((5, 5, 5), t0=start(), t1={"type": 53, "facing": 7}, t2={"type": 56})]
         self.assertEqual(self.errors(turned), ["a facing of 1 to 4, or none"])
         warnings = self.warnings(blocks)
-        self.assertIn("the star is untested in play", warnings)
+        self.assertIn("the hedgehog is untested in play", warnings)
         self.assertEqual([w for w in warnings if "next fruit" in w], [])
         self.assertIn("a time of 0 seconds", self.errors([plain((5, 5, 5), t0=start())], time=0))
         self.assertIn("a time of 120 seconds, above the 99 the game's levels keep to",

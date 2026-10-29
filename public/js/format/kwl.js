@@ -102,7 +102,7 @@ export const PICKUPS = [
   TYPE.GEM,
   TYPE.COIN,
   TYPE.SUNGLASSES,
-  TYPE.STAR,
+  TYPE.HEDGEHOG,
   ...TYPE.FRUIT,
 ];
 const PICKUP_SET = new Set(PICKUPS);
@@ -157,7 +157,7 @@ const TRIO = new Map([
   [TYPE.BOOST_BUTTON, [256, 3, 0]],
   [TYPE.START_ON_CLOCK, [386, 1, -100]],
   [TYPE.GEM, [386, 1, -17]],
-  [TYPE.STAR, [416, 0, 100]],
+  [TYPE.HEDGEHOG, [416, 0, 100]],
   ...[TYPE.CLOCK, TYPE.SWITCH, TYPE.MOVING_SPIKES, TYPE.SPIKES, TYPE.ARROW, TYPE.START].map((t) => [
     t,
     [256, 0, 0],

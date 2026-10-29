@@ -36,7 +36,7 @@ const LETHARGY = 32;
 const HOURGLASS = 35;
 const COIN = 37;
 const SUNGLASSES = 38;
-const STAR = 42;
+const HEDGEHOG = 42;
 const take = (type) => motion.types[String(type)].take;
 const lasts = (type) => motion.types[String(type)].lasts;
 
@@ -260,9 +260,9 @@ test("a pill sets the word its type keeps, which the next frame runs down, and t
   assert.equal(live.words.score, take(SUNGLASSES).points);
 });
 
-test("the catalogue star is taken in its green form, where it circles, and in its brown form catches the ball as a captivator does and is kept", () => {
-  const l = level(row(10, 18), [start(), on(16, STAR)]);
-  const { form, orbit, take: t, harm } = motion.types[String(STAR)];
+test("the hedgehog is taken in its green form, where it circles, and in its brown form catches the ball as a captivator does and is kept", () => {
+  const l = level(row(10, 18), [start(), on(16, HEDGEHOG)]);
+  const { form, orbit, take: t, harm } = motion.types[String(HEDGEHOG)];
   assert.equal(harm.form, 0);
   const green = begin(l, { cell: [17, 16, 17], face: TOP, h: UP });
   green.world.pickups.get(slot(16)).phase = [form.past, 0, 0];
@@ -286,7 +286,7 @@ test("the catalogue star is taken in its green form, where it circles, and in it
     caught.events.filter((e) => e.dying),
     [{ dying: { cause: "captivator", wait: play.wait.captivator } }],
   );
-  assert.equal(taken(brown), 0, "the star is kept");
+  assert.equal(taken(brown), 0, "the hedgehog is kept");
   assert.deepEqual(
     [brown.words.ending, brown.words.wait, brown.words.frozen, brown.words.dying],
     [play.ending.captivator, play.wait.captivator, 1, 1],

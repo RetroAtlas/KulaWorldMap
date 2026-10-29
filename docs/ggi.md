@@ -41,7 +41,7 @@ Words 15 to 17 repeat the second table's length, 3,600.
 
 A row is a level of detail, three of them where the model has any and the fourth row unused, and a slot is the variant the type's varying field picks: four teleporters and four switches for the four circuit colours, three gems that are three different cuts, three coins, two exits for red and green.
 
-Types 34 and 42, which only the object catalogue places, are a third pill, a flat tablet, and two many-pointed stars.
+Types 34 and 42, which only the object catalogue places, are a third pill, a flat tablet, and two hedgehogs, a brown one and a green one.
 
 Types with no model of their own, 1, 2, 8, 29 and 30, are the ones drawn on the block's face or not at all: fire, ice, the clock, the start on a clock and the start, the last two where the ball is, for which the viewer draws the world's ball.
 
@@ -84,7 +84,7 @@ The viewer draws a model as the game does, laid out and turned as the game lays 
 
 A thing on a block is drawn by the camera's matrix times its own times a spin (`0x800603f8`, from `0x80039d7c`): its own, built as the level loads (`0x80039ec0`), lays the model's `z` along the outward normal of its face, its `y` along the face's first tangent turned by its `f2` as a `facing` turns a thing ([level-format.md](level-format.md)), whatever its type (`0x800359ec`), and its `x` along `y × z`, a turn with no mirror in it.
 
-The spin is built from three angles in 4096ths, right-handed turns about the model's own `x`, `y` and `z`, either by `0x80060a38`, which turns it about `z` first and `x` last, for the teleporter, the exits and the gem (`0x80039b38`), or by `0x80060cc8`, which turns it about `x` first and `z` last, for the coins, the key, the fruit, the pills, the hourglass and the catalogue star (`0x80039ac0`); the teleporter, the exits and the gem turn about `z` alone, so the first routine's order tells only on the stars and the wandering ball.
+The spin is built from three angles in 4096ths, right-handed turns about the model's own `x`, `y` and `z`, either by `0x80060a38`, which turns it about `z` first and `x` last, for the teleporter, the exits and the gem (`0x80039b38`), or by `0x80060cc8`, which turns it about `x` first and `z` last, for the coins, the key, the fruit, the pills, the hourglass and the hedgehog (`0x80039ac0`); the teleporter, the exits and the gem turn about `z` alone, so the first routine's order tells only on the stars and the wandering ball.
 
 The wheel and the corkscrew are laid out as a thing on a block is and spun by the second routine (`0x8003ec88`, `0x8003e4d0`), and their draws multiply in, innermost, a second matrix the loader builds for every captivator, a quarter turn about `z` (`0x8003b914`, `0x8003b980`), so that they are turned a quarter before the spin; the stars and the wandering ball are turned by the first alone, in the world's axes, with no face in it (`0x8003d7c8`, `0x8003de4c`, `0x8003f390`).
 

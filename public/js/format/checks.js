@@ -292,11 +292,9 @@ function validateOutlook(cell, j, kinds, beams, warn) {
 const lower = (name) => name[0].toLowerCase() + name.slice(1);
 export const listed = (items) =>
   items.length > 1 ? `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}` : items[0];
-// Words for the types the annotations leave unnamed.
-const TYPE_WORDS = { [TYPE.STAR]: "star" };
 /** A type as a finding names it, with the article: by its name, else by its number. */
 export const typeWord = (type, names) => {
-  const name = names.entry?.({ face: 0, type }) ?? TYPE_WORDS[type];
+  const name = names.entry?.({ face: 0, type });
   return name ? `the ${lower(name)}` : `type ${type}`;
 };
 
@@ -463,7 +461,7 @@ export function validate(project, hides, names = {}) {
           err(`a variant of ${o.variant}`, cell, j);
       }
       if (STARTS.has(t)) starts.push([cell, j]);
-      if (t === TYPE.STAR) warn(`${typeWord(t, names)} is untested in play`, cell, j);
+      if (t === TYPE.HEDGEHOG) warn(`${typeWord(t, names)} is untested in play`, cell, j);
       validateOutlook(cell, j, kinds, beams, warn);
     }
     for (const key of strayFaceKeys(b))

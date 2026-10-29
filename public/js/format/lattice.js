@@ -50,7 +50,7 @@ export const TYPE = {
   GEM: 36,
   COIN: 37,
   SUNGLASSES: 38,
-  STAR: 42,
+  HEDGEHOG: 42,
   FRUIT: [43, 44, 45, 46, 47],
   CAPTIVATOR_SLOW: 50,
   ROLLING_STONE: 51,

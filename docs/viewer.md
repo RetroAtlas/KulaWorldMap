@@ -298,7 +298,7 @@ A set is made with a mouse or a pen: a finger's drag turns the level, so there i
 
 The palette floats above the strip while editing, and the strip's Palette button puts it away and brings it back.
 
-Its tabs are the groups a player meets, blocks, what is paint on a face or the ball's start, the devices, the hazards and the pickups, and its rows are every kind of block and every thing the game places, by name and with the legend's icon, a teleporter or a switch of each colour, a coin of each worth and a gem of each colour a row of their own, the fruit as one row since the game shows the player's next fruit whichever is placed, which the map draws by the level's number and a run places by what it has kept, as below, and the one thing the game never names by its number.
+Its tabs are the groups a player meets, blocks, what is paint on a face or the ball's start, the devices, the hazards and the pickups, and its rows are every kind of block and every thing the game places, by name and with the legend's icon, a teleporter or a switch of each colour, a coin of each worth and a gem of each colour a row of their own, the fruit as one row since the game shows the player's next fruit whichever is placed, which the map draws by the level's number and a run places by what it has kept, as below.
 
 The pressed row is the brush: a block makes Place lay that kind, and a thing makes Place put it on the face you click in place of whatever stood there, so the tip's last line names it and its icon stands on the hovered face. Choosing a row makes Place the tool, whichever tool was pressed, so the next click lays what was chosen.
 
@@ -475,7 +475,7 @@ What harms the ball in the game harms it here:
 - A fire block heats it while it stands or rolls on fire, by a jolt more as it lands on one, and burns it once it is hot enough, the heat cooling again off the fire.
 - The acid block dissolves it in a moment.
 - The spikes kill it at once and the moving spikes while they are up or just about to rise.
-- A captivator catches it as it comes within reach, as the catalogue star does in its brown form.
+- A captivator catches it as it comes within reach, as the hedgehog does in its brown form.
 
 The ball reddens with heat and greens in acid, flashes as the spikes or a captivator take it, and the strip says in red what is killing it while the game's own countdown runs, after which the level has ended as it does when the time runs out, the strip saying how, and starts again the same way, though the ball does not swell as it burns.
 

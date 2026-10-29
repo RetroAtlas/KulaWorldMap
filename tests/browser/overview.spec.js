@@ -195,11 +195,11 @@ test("a draft's note carries how it plays, its counts and the findings, each fin
   await expect(more.locator("summary")).toHaveText("1 warning; the counts are below");
   await field(page, "thing").selectOption("t42");
   const findings = note.locator(".findings li");
-  await expect(findings).toHaveText([/^warning: the star is untested in play at /]);
+  await expect(findings).toHaveText([/^warning: the hedgehog is untested in play at /]);
   await expect(findings.first()).toHaveClass("warning");
   await expect(findings.first().locator(".there")).toHaveText("17, 17, 17");
   await expect(findings.first().locator(".there")).toHaveAccessibleName(
-    "the star is untested in play at 17, 17, 17, +x side",
+    "the hedgehog is untested in play at 17, 17, 17, +x side",
   );
   await expect(findings.first()).toContainText(", +x side");
   await field(page, "face-0").click();
@@ -289,7 +289,7 @@ test("a finding's link that holds the focus keeps it through an edit", async ({ 
   expect(await selected(page)).toEqual({ cell: HOME, face: 1 });
   await expect(link).toBeFocused();
   await page.keyboard.press("Control+z");
-  await expect(findings).toHaveText([/^warning: the star is untested in play at /]);
+  await expect(findings).toHaveText([/^warning: the hedgehog is untested in play at /]);
   await expect(link).toBeFocused();
   await field(page, "face-0").click();
   expect(await selected(page)).toEqual({ cell: HOME, face: 0 });

@@ -174,7 +174,7 @@ The trailer's cell words are -1, so every file ends `ff ff ff ff ff ff`.
 | 36 gem | pickup | | cut | 1 | 386, 1, -17 |
 | 37 coin | pickup | | tier | 1 | 386, 1, -100 |
 | 38 sunglasses | pickup | | | 1 | 386, 1, -100 |
-| 42 star | pickup | | | 1 | 416, 0, 100 |
+| 42 hedgehog | pickup | | | 1 | 416, 0, 100 |
 | 43 to 47 fruit | pickup | | | 1 | 386, 1, 100 |
 | 50, 51, 52 captivators | hazard | yes | | 0 | -1, -1, -1 |
 | 53 wandering ball | hazard | yes | | 0 | -1, -1, -1 |
@@ -258,7 +258,7 @@ Both take `skins.hides` of `public/objects.json` for the face count, and without
 - A lone teleporter leading to itself.
 - A switch whose colour has nothing to switch.
 - A key with no exit, hidden or not.
-- The star 42, untested in play.
+- The hedgehog, type 42, untested in play.
 - A counter above the disc's own maximum, below.
 
 | counter | what is counted | cap | most on the disc |

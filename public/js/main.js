@@ -151,8 +151,7 @@ function showAbout(opener) {
     game puts them on and moving at its pace.</p>
     <p>The game never names its objects; the names here were settled against the game's data and
     in play, with Syonyx's Roll Away walkthrough (GameFAQs, 2006) as a guide. The Cutting Room
-    Floor's Roll Away page first named most of what the Japanese and PAL releases changed. Anything
-    still unnamed shows the number the game gives it.</p>
+    Floor's Roll Away page first named most of what the Japanese and PAL releases changed.</p>
     <p>You can make levels of your own: build them block by block on the map, keep them in this
     browser, save them as files, the map's own or the level the game loads, and put one on the
     game's disc as a patch an emulator applies. A level is packed for the disc with pako's deflate,

@@ -1005,7 +1005,7 @@ const reasonClaims = [
   ],
   [
     "type 42",
-    "stars, all in the catalogue",
+    "hedgehogs, all in the catalogue",
     [ofType(42).length, inEachCopy(on(42))],
     /^(\w+) in the game, (\w+) in each copy of OBJ LEVEL/m,
   ],
@@ -1199,11 +1199,10 @@ test("level-format.md's points are the ones annotations.json scores", () => {
     type(38).points,
     annotations.kinds[6].points,
   ]);
-  const star = /Type 42's (\d+) points is the one points value that rests on the executable/.exec(
-    format,
-  );
-  assert.ok(star, "level-format.md has no sentence giving the catalogue star's points");
-  assert.equal(number(star[1]), type(42).points);
+  const hedgehog =
+    /Type 42's (\d+) points is the one points value that rests on the executable/.exec(format);
+  assert.ok(hedgehog, "level-format.md has no sentence giving the hedgehog's points");
+  assert.equal(number(hedgehog[1]), type(42).points);
 });
 
 // The page describes itself three times over, to search engines and to the

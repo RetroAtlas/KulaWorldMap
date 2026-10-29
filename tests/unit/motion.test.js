@@ -236,7 +236,7 @@ test("the moving spikes are deadly from two frames before they rise until eleven
   );
 });
 
-test("the catalogue star circles fast in the brown form and slowly in the green", () => {
+test("the hedgehog circles fast in the brown form and slowly in the green", () => {
   const e = table.types[42];
   const key = "test";
   const first = orbit(table, e, key, 0, still);

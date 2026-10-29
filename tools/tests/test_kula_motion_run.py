@@ -43,7 +43,7 @@ class Play(unittest.TestCase):
                                        "scale": {"across": 4096, "down": 3840}})
 
     def test_an_ending_shared_or_waited_otherwise_stops_the_reading(self):
-        for change in ({"end.acid": -4}, {"end.exit": 4}, {"end.star": -4}, {"wait.star": 9}, {"wait.hidden": 4},
+        for change in ({"end.acid": -4}, {"end.exit": 4}, {"end.hedgehog": -4}, {"wait.hedgehog": 9}, {"wait.hidden": 4},
                        {"wait.simon.done": 24}, {"mark.under": 300}, {"mark.skips": 2}, {"clock.face": 9},
                        {"exit.type": 8}, {"end.exit.landing": 2}, {"simon.done": 3}, {"end.captivator.still": -4},
                        {"acid.gain.wait": 200}, {"death.each.final": 25}, {"end.time": -3}, {"end.spikes": -2},

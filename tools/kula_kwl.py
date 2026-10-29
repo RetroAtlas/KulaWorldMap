@@ -107,7 +107,7 @@ EXIT = 7
 MOVING_SPIKES = 11
 HIDDEN_EXIT = 26
 KEY = 31
-STAR = 42
+HEDGEHOG = 42
 FRUIT = range(43, 48)
 CAPTIVATORS = range(50, 57)
 # f2 is a heading on these; a wandering ball or a corkscrew with 0 there heads as 1.
@@ -129,7 +129,7 @@ STATE = {t: STATE_ON for t in (10, 11, 12, 28, *PICKUPS)}
 STATE.update({EXIT: STATE_OFF, HIDDEN_EXIT: STATE_OFF})
 # f9, f10 and f14 by type, the words the disc holds for it.
 TRIO = {TELEPORTER: (256, 1, 30), EXIT: (500, 1, 30), HIDDEN_EXIT: (500, 1, 30), 10: (256, 3, 0),
-        START_ON_CLOCK: (386, 1, -100), 36: (386, 1, -17), STAR: (416, 0, 100)}
+        START_ON_CLOCK: (386, 1, -100), 36: (386, 1, -17), HEDGEHOG: (416, 0, 100)}
 TRIO.update({t: (256, 0, 0) for t in (8, SWITCH, 11, 12, 28, START)})
 TRIO.update({t: (386, 1, -100) for t in (KEY, 37, 38)})
 TRIO.update({t: (386, 2, 100) for t in (32, 33, 34, 35)})
@@ -1377,8 +1377,8 @@ def validate(project, hides):
                     err(f"a variant of {_js_text(v)}", cell, j)
             if t in (START, START_ON_CLOCK):
                 starts.append((cell, j))
-            if t == STAR:
-                warn("the star is untested in play", cell, j)
+            if t == HEDGEHOG:
+                warn("the hedgehog is untested in play", cell, j)
             _validate_outlook(cell, j, kinds, beams, warn)
         for key in _stray_face_keys(b):
             err(f"face {json.dumps(key, ensure_ascii=False)} is not one of the six", cell)

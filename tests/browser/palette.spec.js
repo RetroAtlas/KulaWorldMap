@@ -136,8 +136,7 @@ test("the palette's groups and rows come from the data, named as the legend name
   expect(ids).not.toContain("t4");
   expect(ids.filter((id) => /^t4[3-7]$/.test(id))).toEqual(["t46"]);
   expect(rows.find((r) => r.id === "t46").title).toContain("next fruit");
-  expect(rows.find((r) => r.id === "t42").label).toBe("type 42");
-  expect(rows.find((r) => r.id === "t42").title).not.toBe("type 42");
+  expect(rows.find((r) => r.id === "t42").label).toBe("Hedgehog");
   expect(groups.Devices.map((r) => r.id)).toEqual([
     ...["t5/0", "t5/1", "t5/2", "t5/3", "t7"],
     ...["t9/0", "t9/1", "t9/2", "t9/3", "t10", "t26"],

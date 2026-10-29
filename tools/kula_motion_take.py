@@ -402,7 +402,7 @@ IMMEDIATES = [
     ("what the ball takes", "take.stand", "a pickup's middle stands this far from its block's centre, units",
      0x800355c8, "addiu $s7, $zero, {}"),
     ("what the ball takes", "take.stand.coin", "a coin's middle this far", 0x800357a4, "addiu $v0, $zero, {}"),
-    ("what the ball takes", "take.stand.star", "type 42's middle this far", 0x800357d8, "addiu $v0, $zero, {}"),
+    ("what the ball takes", "take.stand.hedgehog", "type 42's middle this far", 0x800357d8, "addiu $v0, $zero, {}"),
     ("what the ball takes", "take.stand.hourglass", "an hourglass's middle this far", 0x80035850, "addiu $v0, $zero, {}"),
     ("what the ball takes", "take.stand.gem", "and a gem's middle this far, past the first cut", 0x80035844,
      "addiu $v0, $zero, {}"),
@@ -420,7 +420,7 @@ IMMEDIATES = [
     ("what the ball takes", "coin.points.0", "a coin of the first tier", 0x80038ba8, "addiu $v0, $v0, {}"),
     ("what the ball takes", "coin.points.1", "of the second", 0x80038bd0, "addiu $v0, $v0, {}"),
     ("what the ball takes", "coin.points.2", "and of the third", 0x80038bf8, "addiu $v0, $v0, {}"),
-    ("what the ball takes", "star42.points", "type 42 in its green form", 0x80038780, "addiu $v0, $v0, {}"),
+    ("what the ball takes", "hedgehog.points", "type 42 in its green form", 0x80038780, "addiu $v0, $v0, {}"),
     ("what the ball takes", "sunglasses.points", "the sunglasses", 0x80038930, "addiu $v1, $v1, {}"),
     ("what the ball takes", "fruit.points.43", "a fruit of type 43", 0x80038c8c, "addiu $v0, $v0, {}"),
     ("what the ball takes", "fruit.points.44", "44", 0x80038d34, "addiu $v0, $v0, {}"),
@@ -671,7 +671,7 @@ def take(r):
         36: {**pickup, "stand": [stand] + [r["take.stand.gem"]] * (CUTS - 1), "points": r["gem.points"]},
         37: {**pickup, "stand": r["take.stand.coin"], "points": [r[f"coin.points.{t}"] for t in range(TIERS)]},
         38: {**pickup, "points": r["sunglasses.points"]},
-        42: {**pickup, "stand": r["take.stand.star"], "points": r["star42.points"]},
+        42: {**pickup, "stand": r["take.stand.hedgehog"], "points": r["hedgehog.points"]},
     }
     for t in range(43, 48):
         taken[t] = {"reach": reach["take.reach.fruit"], "stand": stand, "points": next(iter(fruit)),

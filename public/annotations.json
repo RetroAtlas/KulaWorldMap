@@ -266,9 +266,10 @@
       "note": "Reveals invisible blocks for a while."
     },
     "42": {
+      "name": "Hedgehog",
       "points": 1550,
       "hazard": true,
-      "note": "A many-pointed star that turns from brown to green and back every few seconds. While brown it captures the ball on touch, and while green it can be collected for 1550. Only on the object catalogue level, so nothing in play uses it."
+      "note": "A hedgehog that runs round in circles and turns from brown to green and back every few seconds. While brown it captures the ball on touch, and while green it can be collected for 1550. Only on the object catalogue level, so nothing in play uses it."
     },
     "43": {
       "name": "Fruit",

@@ -245,13 +245,13 @@ On the Japanese disc the hourglass's case (`SCPS_100.64`, `0x80039684` to `0x800
 
 ### type 36: Gem
 
-It scores 2975 in play whatever the colour, the figure the ball's contact walk adds for it (type 42).
+It scores 2975 in play whatever the colour, the figure the ball's contact walk adds for it, which the hedgehog's section lists (type 42).
 
 The colour is `f3`: LEVEL 5's blue gems read 0, LEVEL 64's one green gem 1, and the red ones of LEVEL 77, 103 and 118 read 2.
 
 ### type 37: Coin
 
-Three tiers, told apart by `f3`, which score 250, 500 and 750 in play, the three figures the ball's contact walk adds for a coin (type 42).
+Three tiers, told apart by `f3`, which score 250, 500 and 750 in play, the three figures the ball's contact walk adds for a coin, which the hedgehog's section lists (type 42).
 
 LEVEL 1's and LEVEL 2's coins are the 250 kind and read bronze in play; LEVEL 112's thirteen and HIDDEN 10's eight coins, which show gold, are the 750 kind; the middle tier is the blue one, on BONUS 15 and HIDDEN 5 among others. The three colours are the models' own colours ([ggi.md](ggi.md)).
 
@@ -261,9 +261,11 @@ LEVEL 113 carries the numbered levels' first three sunglasses, though HIDDEN 6, 
 
 Each scores 500 in play ([motion.md](motion.md) has the timer it starts).
 
-### type 42
+### type 42: Hedgehog
 
-Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use, and nothing names it.
+Nine in the game, one in each copy of OBJ LEVEL, so it is catalogue stock the levels never use.
+
+The name rests on its two models, one for each form, a spiny creature with two eyes, brown in the form that captures the ball and green and smaller in the one that is collected ([ggi.md](ggi.md)), and on how it goes, running round its block's centre, a lap in 0.82 s while brown and in 11 s while green ([motion.md](motion.md)).
 
 What it does is in the code. Its `f5` is set as on every pickup ([level-format.md](level-format.md)), and the ball's contact walk at `0x80038548`, which sends a type 27 to 47 through the table at `0x80010238`, gives it a case of its own at `0x800386a4` that reads its form, `f3`, which changes every 2.6 s ([motion.md](motion.md)).
 

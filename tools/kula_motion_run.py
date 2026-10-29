@@ -237,8 +237,8 @@ IMMEDIATES = [
     ("the level's clock and its end", "wait.fire", "after this many", 0x8003ac18, "addiu $v0, $zero, {}"),
     ("the level's clock and its end", "end.captivator", "caught by a captivator", 0x800367a8, "addiu $s0, $zero, {}"),
     ("the level's clock and its end", "wait.captivator", "after this many", 0x800367f0, "addiu $v0, $zero, {}"),
-    ("the level's clock and its end", "end.star", "or by type 42's brown form", 0x800386f8, "addiu $v0, $zero, {}"),
-    ("the level's clock and its end", "wait.star", "after this many", 0x80038704, "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "end.hedgehog", "or by type 42's brown form", 0x800386f8, "addiu $v0, $zero, {}"),
+    ("the level's clock and its end", "wait.hedgehog", "after this many", 0x80038704, "addiu $v0, $zero, {}"),
     ("the level's clock and its end", "end.acid", "on the acid block", 0x8003acc8, "addiu $v0, $zero, {}"),
     ("the level's clock and its end", "wait.acid", "after this many", 0x8003acd4, "addiu $v1, $zero, {}"),
     ("the level's clock and its end", "end.laser", "in a beam", 0x8003a97c, "addiu $v0, $zero, {}"),
@@ -474,8 +474,8 @@ def play(r):
         sys.exit(f"a bonus level skips blocks of kind {r['mark.skips']}, not the invisible ones")
     for keys in (("end.exit", "end.exit.landing", "simon.done"), ("end.bonus", "end.bonus.landing"),
                  ("end.hidden", "end.hidden.landing"), ("end.acid", "end.acid.wait"), ("end.fire", "end.fire.swell"),
-                 ("end.captivator", "end.captivator.still", "end.star"), ("wait.exit", "wait.hidden"),
-                 ("wait.simon", "wait.simon.done"), ("wait.spikes", "wait.spikes.landing", "wait.captivator", "wait.star"),
+                 ("end.captivator", "end.captivator.still", "end.hedgehog"), ("wait.exit", "wait.hidden"),
+                 ("wait.simon", "wait.simon.done"), ("wait.spikes", "wait.spikes.landing", "wait.captivator", "wait.hedgehog"),
                  ("acid.gain", "acid.gain.wait"), ("death.each", "death.each.final"),
                  ("words.won1", "words.trial.won1"), ("words.won2", "words.trial.won2"),
                  ("words.equal", "words.trial.equal")):

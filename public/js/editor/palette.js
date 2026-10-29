@@ -8,7 +8,6 @@ import {
   markerColour,
   markerHazard,
   markerLabel,
-  markerNote,
   objectId,
   paintsFace,
 } from "../viewer/data.js";
@@ -86,7 +85,6 @@ function build() {
       const e = { id: marker.id, group: groupOf(marker), type, label, title: label, marker };
       if (v !== null) e.variant = Number(v);
       if (TYPE.FRUIT.includes(type)) e.title = FRUIT_NOTE;
-      else if (type === TYPE.STAR && markerNote(marker)) e.title = markerNote(marker);
       out.push(e);
     }
   }
