@@ -5,14 +5,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { levelKey, mapData, objects, releases } from "./fixtures.js";
 import { NAMES, index, platformCells } from "../../public/js/viewer/data.js";
-import { SIDE } from "../../public/js/format/lattice.js";
-import {
-  FORMAT,
-  LASER_KIND,
-  PLATFORM_KIND,
-  SETTINGS_KIND,
-  writeKwl,
-} from "../../public/js/format/kwl.js";
+import { SIDE, KIND } from "../../public/js/format/lattice.js";
+import { FORMAT, writeKwl } from "../../public/js/format/kwl.js";
 import {
   DRAFT_PACK,
   UNTITLED,
@@ -158,7 +152,7 @@ test("a move lays the blocks named at their cells plus the delta, a span's far e
   let p = blank(WORLD);
   p = setBlock(p, [19, 17, 17], { kind: 2, faces: { 0: coin } });
   p = setBlock(p, [20, 17, 17], { kind: 0 });
-  p = setBlock(p, [19, 20, 17], { kind: PLATFORM_KIND, far: [21, 20, 17], length: 2, speed: 30 });
+  p = setBlock(p, [19, 20, 17], { kind: KIND.PLATFORM, far: [21, 20, 17], length: 2, speed: 30 });
   p = setBlock(p, [25, 17, 17], { kind: 0 });
   const before = structuredClone(p);
   const cells = (q) => q.blocks.map((b) => b.cell);
@@ -183,7 +177,7 @@ test("a move lays the blocks named at their cells plus the delta, a span's far e
   assert.deepEqual(blockAt(q, [20, 17, 16]), { cell: [20, 17, 16], kind: 2, faces: { 0: coin } });
   assert.deepEqual(blockAt(q, [20, 20, 16]), {
     cell: [20, 20, 16],
-    kind: PLATFORM_KIND,
+    kind: KIND.PLATFORM,
     far: [22, 20, 16],
     length: 2,
     speed: 30,
@@ -296,8 +290,8 @@ test("the reader takes what it knows of a newer file, fills the defaults and dro
       { cell: [5, 5], kind: 0 },
       { cell: [6, 5, 5] },
       "a block",
-      { cell: [7, 5, 5], kind: PLATFORM_KIND, far: [7, 9, 5] },
-      { cell: [9, 5, 5], kind: LASER_KIND, far: [9, 9, 5] },
+      { cell: [7, 5, 5], kind: KIND.PLATFORM, far: [7, 9, 5] },
+      { cell: [9, 5, 5], kind: KIND.LASER, far: [9, 9, 5] },
       { cell: [11, 5, 5], kind: 7 },
       { cell: [5, 5, 5], kind: 2 },
       { cell: [40, 5, 5], kind: 0 },
@@ -312,8 +306,8 @@ test("the reader takes what it knows of a newer file, fills the defaults and dro
   assert.deepEqual(p.circuits, { 1: "off" });
   assert.deepEqual(p.blocks, [
     { cell: [5, 5, 5], kind: 0, faces: { 0: { type: START, facing: 3 } } },
-    { cell: [7, 5, 5], kind: PLATFORM_KIND, far: [7, 9, 5], length: 2, speed: 30 },
-    { cell: [9, 5, 5], kind: LASER_KIND, far: [9, 9, 5], colour: 0 },
+    { cell: [7, 5, 5], kind: KIND.PLATFORM, far: [7, 9, 5], length: 2, speed: 30 },
+    { cell: [9, 5, 5], kind: KIND.LASER, far: [9, 9, 5], colour: 0 },
     { cell: [11, 5, 5], kind: 7, phase: 0 },
   ]);
   assert.ok(report.some((line) => line.startsWith("written as version 7")));
@@ -352,10 +346,10 @@ test("the reader leaves out what the writer has no bytes for, and holds a word t
         },
       },
       { cell: [5, 5, 5], kind: 2 },
-      { cell: [6, 5, 5], kind: SETTINGS_KIND },
+      { cell: [6, 5, 5], kind: KIND.SETTINGS },
       { cell: [7, 5, 5], kind: -1 },
-      { cell: [8, 5, 5], kind: LASER_KIND, far: [10, 7, 5], colour: 0 },
-      { cell: [9, 5, 5], kind: PLATFORM_KIND, far: [9, 9, 5], length: 2, speed: -70000 },
+      { cell: [8, 5, 5], kind: KIND.LASER, far: [10, 7, 5], colour: 0 },
+      { cell: [9, 5, 5], kind: KIND.PLATFORM, far: [9, 9, 5], length: 2, speed: -70000 },
       { cell: [11, 5, 5], kind: 7, phase: 70000 },
       { cell: [0, 34, 5], kind: 0 },
       { cell: [12, 5, 5], kind: 0, faces: { 0: coin } },
@@ -372,7 +366,7 @@ test("the reader leaves out what the writer has no bytes for, and holds a word t
         2: { type: KEY, variant: -32768 },
       },
     },
-    { cell: [9, 5, 5], kind: PLATFORM_KIND, far: [9, 9, 5], length: 2, speed: -32768 },
+    { cell: [9, 5, 5], kind: KIND.PLATFORM, far: [9, 9, 5], length: 2, speed: -32768 },
     { cell: [11, 5, 5], kind: 7, phase: 32767 },
     { cell: [12, 5, 5], kind: 0, faces: { 0: coin } },
   ]);
@@ -458,14 +452,14 @@ test("the reader reports every default it takes, and repairs what the writer wou
         },
       },
       { cell: [6, 5, 5], kind: 0, faces: "none" },
-      { cell: [7, 5, 5], kind: PLATFORM_KIND, far: [7, 9, 5], length: "3", speed: 2.5 },
-      { cell: [9, 5, 5], kind: LASER_KIND, far: [9, 9, 5], colour: 7 },
-      { cell: [10, 5, 5], kind: LASER_KIND, far: [10, 9, 5], colour: "red" },
+      { cell: [7, 5, 5], kind: KIND.PLATFORM, far: [7, 9, 5], length: "3", speed: 2.5 },
+      { cell: [9, 5, 5], kind: KIND.LASER, far: [9, 9, 5], colour: 7 },
+      { cell: [10, 5, 5], kind: KIND.LASER, far: [10, 9, 5], colour: "red" },
       { cell: [11, 5, 5], kind: 7, phase: "x" },
-      { cell: [12, 5, 5], kind: LASER_KIND, far: [12, 5, 5], colour: 0 },
-      { cell: [13, 5, 5], kind: LASER_KIND, far: [13, 5, 40], colour: 0 },
-      { cell: [14, 5, 5], kind: LASER_KIND, colour: 0 },
-      { cell: [15, 5, 5], kind: PLATFORM_KIND, far: [15, 5] },
+      { cell: [12, 5, 5], kind: KIND.LASER, far: [12, 5, 5], colour: 0 },
+      { cell: [13, 5, 5], kind: KIND.LASER, far: [13, 5, 40], colour: 0 },
+      { cell: [14, 5, 5], kind: KIND.LASER, colour: 0 },
+      { cell: [15, 5, 5], kind: KIND.PLATFORM, far: [15, 5] },
       { cell: [16, 5, 5], kind: 0, faces: { 0: { type: COIN }, 1: { type: SWITCH } } },
     ],
   });
@@ -483,9 +477,9 @@ test("the reader reports every default it takes, and repairs what the writer wou
       },
     },
     { cell: [6, 5, 5], kind: 0 },
-    { cell: [7, 5, 5], kind: PLATFORM_KIND, far: [7, 9, 5], length: 2, speed: 30 },
-    { cell: [9, 5, 5], kind: LASER_KIND, far: [9, 9, 5], colour: 0 },
-    { cell: [10, 5, 5], kind: LASER_KIND, far: [10, 9, 5], colour: 0 },
+    { cell: [7, 5, 5], kind: KIND.PLATFORM, far: [7, 9, 5], length: 2, speed: 30 },
+    { cell: [9, 5, 5], kind: KIND.LASER, far: [9, 9, 5], colour: 0 },
+    { cell: [10, 5, 5], kind: KIND.LASER, far: [10, 9, 5], colour: 0 },
     { cell: [11, 5, 5], kind: 7, phase: 0 },
     {
       cell: [16, 5, 5],
@@ -522,15 +516,15 @@ test("a platform's length that runs past the edge is cut on the way in, to a run
   const { project: p, report } = readProject(
     project([
       plain([5, 5, 5], 0, { 0: start() }),
-      { cell: [10, 28, 17], kind: PLATFORM_KIND, far: [10, 30, 17], length: 32767, speed: 30 },
-      { cell: [12, 10, 17], kind: PLATFORM_KIND, far: [12, 14, 17], length: 0, speed: 30 },
-      { cell: [14, 10, 17], kind: PLATFORM_KIND, far: [14, 14, 17], length: 19, speed: 30 },
-      { cell: [16, 31, 17], kind: PLATFORM_KIND, far: [16, 33, 17], length: 2, speed: 30 },
-      { cell: [18, 33, 17], kind: PLATFORM_KIND, far: [18, 20, 17], length: 2, speed: 30 },
+      { cell: [10, 28, 17], kind: KIND.PLATFORM, far: [10, 30, 17], length: 32767, speed: 30 },
+      { cell: [12, 10, 17], kind: KIND.PLATFORM, far: [12, 14, 17], length: 0, speed: 30 },
+      { cell: [14, 10, 17], kind: KIND.PLATFORM, far: [14, 14, 17], length: 19, speed: 30 },
+      { cell: [16, 31, 17], kind: KIND.PLATFORM, far: [16, 33, 17], length: 2, speed: 30 },
+      { cell: [18, 33, 17], kind: KIND.PLATFORM, far: [18, 20, 17], length: 2, speed: 30 },
     ]),
   );
   assert.deepEqual(
-    p.blocks.filter((b) => b.kind === PLATFORM_KIND).map((b) => b.length),
+    p.blocks.filter((b) => b.kind === KIND.PLATFORM).map((b) => b.length),
     [3, 1, 19, 1, 1],
   );
   assert.deepEqual(report, [
@@ -548,7 +542,7 @@ test("a platform's length that runs past the edge is cut on the way in, to a run
   ]);
   const c = hostile.cases.find((c) => c.name === "two hundred platforms of length 32767");
   const { project: q, report: lines, repairs } = readProject(structuredClone(c.input));
-  const platforms = q.blocks.filter((b) => b.kind === PLATFORM_KIND);
+  const platforms = q.blocks.filter((b) => b.kind === KIND.PLATFORM);
   assert.equal(platforms.length, 200);
   assert.deepEqual(
     platforms.map((b) => b.length),
@@ -560,7 +554,7 @@ test("a platform's length that runs past the edge is cut on the way in, to a run
     !texts(validate(q, HIDES, NAMES), "error").includes("the platform's run reaches past the edge"),
   );
   const walked = toLevel(q, 1)
-    .records.filter((r) => r.kind === PLATFORM_KIND)
+    .records.filter((r) => r.kind === KIND.PLATFORM)
     .reduce((n, r) => n + platformCells(r).length, 0);
   assert.equal(
     walked,
@@ -644,7 +638,7 @@ test("a whole number past 2^53 is no whole number, and is reported as the page p
   );
   assert.equal(p.time, 99);
   assert.deepEqual(p.blocks.slice(1), [
-    { cell: [7, 5, 5], kind: PLATFORM_KIND, far: [7, 9, 5], length: 2, speed: 30 },
+    { cell: [7, 5, 5], kind: KIND.PLATFORM, far: [7, 9, 5], length: 2, speed: 30 },
     { cell: [9, 5, 5], kind: 7, phase: 0 },
   ]);
   assert.deepEqual(report, [
@@ -818,7 +812,7 @@ test("the writer keeps only what the game reads of a face, and only the colours 
         3: { type: 0 },
       }),
       { cell: [7, 5, 5], kind: 7 },
-      { cell: [9, 5, 5], kind: PLATFORM_KIND, far: [9, 8, 5] },
+      { cell: [9, 5, 5], kind: KIND.PLATFORM, far: [9, 8, 5] },
     ],
     { circuits: { 2: "on", 1: "off", 0: "off" } },
   );
@@ -853,7 +847,7 @@ test("the writer keeps only what the game reads of a face, and only the colours 
   assert.deepEqual(q.blocks[1], { cell: [7, 5, 5], kind: 7, phase: 0 });
   assert.deepEqual(q.blocks[2], {
     cell: [9, 5, 5],
-    kind: PLATFORM_KIND,
+    kind: KIND.PLATFORM,
     far: [9, 8, 5],
     length: 2,
     speed: 30,

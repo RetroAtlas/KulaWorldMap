@@ -1,11 +1,11 @@
 // The ball's contact with what stands about it: the pickups within reach of its centre are taken,
 // each type by its own case, over the cells about the ball in the game's order.
-import { FACE_NORMAL, cellKey } from "../format/lattice.js";
+import { FACE_NORMAL, cellKey, TYPE } from "../format/lattice.js";
 import { LAST_KEY, layHeading, TANGENT } from "../viewer/data.js";
 import { faceAxes, orbit, pose } from "../viewer/motion.js";
 import { cellOf } from "./ball.js";
 import { die } from "./hazards.js";
-import { KEY, took } from "./world.js";
+import { took } from "./world.js";
 
 const add = (p, v, k = 1) => p.map((c, i) => c + v[i] * k);
 const squared = (a, b) => a.reduce((sum, c, i) => sum + (c - b[i]) ** 2, 0);
@@ -44,7 +44,7 @@ function take(live, p, at, out) {
   if (t.fruit) w.fruit |= t.fruit;
   out.push({ took: { key: p.key, face: m.face, type: m.type, variant: m.variant, points, at } });
   if (turned) out.push({ clock: turned });
-  if (m.type === KEY) {
+  if (m.type === TYPE.KEY) {
     w.keys -= 1;
     out.push({ keys: { left: w.keys } });
     if (w.keys === 0) {

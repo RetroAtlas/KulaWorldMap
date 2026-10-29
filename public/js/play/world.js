@@ -1,6 +1,6 @@
 // The level as play holds it: what stands where, what travels and what has gone, built once from
 // the level and probed as the ball rolls, in the game's units.
-import { SIDE, cellKey, FACE_NORMAL } from "../format/lattice.js";
+import { SIDE, cellKey, FACE_NORMAL, KIND, TYPE } from "../format/lattice.js";
 import {
   OFF_LATTICE,
   beams,
@@ -15,16 +15,15 @@ import { cellOf, faceUnder } from "./ball.js";
 
 const LOW = 1;
 const HIGH = SIDE - 2;
-const PLAIN = 0;
-const ICE = 2;
-const PLATFORM = 5;
-const CRUMBLING = 6;
-const LASER = 8;
-const CLOCK_START = 29;
-export const KEY = 31;
-const HIDDEN_EXIT = 26;
 // The kinds the game's walk over the inner lattice builds and counts.
-const COUNTED = new Set([0, 1, 2, 4, 6, 7]);
+const COUNTED = new Set([
+  KIND.PLAIN,
+  KIND.FIRE,
+  KIND.ICE,
+  KIND.ACID,
+  KIND.CRUMBLING,
+  KIND.VANISHING,
+]);
 // The game starts an entry's angles at zero, where a pickup's angles are random.
 const ENTRY_PHASE = [0, 0, 0];
 
@@ -34,7 +33,8 @@ const slot = (key, face) => `${key}/${face}`;
 const byVariant = (v, m) => (Array.isArray(v) ? (v[Number(m.variant)] ?? v[0]) : v);
 
 /** How many keys the level holds for the ball to take. */
-export const keysOf = (world) => [...world.pickups.values()].filter((p) => p.m.type === KEY).length;
+export const keysOf = (world) =>
+  [...world.pickups.values()].filter((p) => p.m.type === TYPE.KEY).length;
 
 /** The index with its fruit placed as the loader places them under a run whose pickups' word is
     `fruit`: each takes the type of the first of the five whose bit in the word is clear, or keeps
@@ -67,7 +67,7 @@ function built(kinds, hides, cell, kind) {
   const unseen = String(kind) in hides.kinds ? [] : hides.unseen;
   return FACE_NORMAL.some((n) => {
     let theirs = kinds.get(cellKey(...add(cell, n)));
-    if (theirs === LASER) theirs = PLAIN;
+    if (theirs === KIND.LASER) theirs = KIND.PLAIN;
     return theirs === undefined || !hidden.includes(theirs) || unseen.includes(theirs);
   });
 }
@@ -91,8 +91,8 @@ export function worldOf(l, given, tables, circuits, frame = 0, fruit = null) {
     for (const end of [ray.a, ray.b]) {
       ends.add(cellKey(...end));
       if (!cells.has(cellKey(...end))) {
-        cells.set(cellKey(...end), PLAIN);
-        laid.push([...end, PLAIN]);
+        cells.set(cellKey(...end), KIND.PLAIN);
+        laid.push([...end, KIND.PLAIN]);
       }
     }
   const kinds = new Map([...cells].map(([k, v]) => [k, v < first ? v : l.records[v - first].kind]));
@@ -112,15 +112,15 @@ export function worldOf(l, given, tables, circuits, frame = 0, fruit = null) {
   const faces = new Map();
   for (const r of l.records) {
     const key = cellKey(r.x, r.y, r.z);
-    if (r.kind === PLATFORM)
+    if (r.kind === KIND.PLATFORM)
       platforms.set(key, {
         r,
         home: [r.x, r.y, r.z].map((v) => v * unit),
         axis: platformAxis(r),
         body: platformCells(r),
       });
-    if (r.kind === CRUMBLING)
-      crumbling.set(key, { type: r.type, size: motion.kinds[String(CRUMBLING)].size });
+    if (r.kind === KIND.CRUMBLING)
+      crumbling.set(key, { type: r.type, size: motion.kinds[String(KIND.CRUMBLING)].size });
     for (const o of r.on) faces.set(slot(key, o.face), o.type);
   }
   // the loader stands the ball on a clock where the start it takes asks for one
@@ -131,12 +131,12 @@ export function worldOf(l, given, tables, circuits, frame = 0, fruit = null) {
     const key = cellKey(s.x, s.y, s.z);
     const m = idx.markers.get(key).find((m) => m.face === s.face && m.type === s.type);
     const left =
-      s === start && s.type === CLOCK_START
-        ? markersOf({ kind: PLAIN, on: [{ ...m, type: clock }] })
+      s === start && s.type === TYPE.START_ON_CLOCK
+        ? markersOf({ kind: KIND.PLAIN, on: [{ ...m, type: clock }] })
         : [];
     return { key, m, left };
   });
-  if (start?.type === CLOCK_START)
+  if (start?.type === TYPE.START_ON_CLOCK)
     faces.set(slot(cellKey(start.x, start.y, start.z), start.face), clock);
   const pickups = new Map();
   const devices = new Map();
@@ -189,7 +189,7 @@ export function worldOf(l, given, tables, circuits, frame = 0, fruit = null) {
     kinds,
     standing,
     ends,
-    beam: motion.kinds[String(LASER)].harm.cell,
+    beam: motion.kinds[String(KIND.LASER)].harm.cell,
     faces,
     pickups,
     devices,
@@ -255,7 +255,7 @@ function standingAt(world, cell, face, frame) {
   const word = world.probe.value(cell, frame);
   if (word === world.beam) return undefined;
   if (kind === undefined || word === OFF_LATTICE || world.ends.has(key)) return OFF_LATTICE;
-  if (kind !== PLAIN) return world.standing.get(kind);
+  if (kind !== KIND.PLAIN) return world.standing.get(kind);
   return world.cells.get(key) >= world.first
     ? (world.faces.get(slot(key, face)) ?? 0)
     : OFF_LATTICE;
@@ -264,7 +264,7 @@ function standingAt(world, cell, face, frame) {
 /** The game's word for what the ball stands on, the platform's while it rides one. */
 export function standingOf(live) {
   const b = live.ball;
-  if (b.riding) return live.world.standing.get(PLATFORM);
+  if (b.riding) return live.world.standing.get(KIND.PLATFORM);
   const under = add(cellOf(b), b.n, -1);
   return standingAt(live.world, under, faceUnder(b), frameShown(live)) ?? live.words.standing;
 }
@@ -280,7 +280,7 @@ export function probeOf(live) {
   const world = () => live.world;
   const value = (cell) => world().probe.value(cell, frameShown(live));
   const filled = (cell) =>
-    (value(cell) >= 0 && kindAt(world(), cell) !== PLATFORM) ||
+    (value(cell) >= 0 && kindAt(world(), cell) !== KIND.PLATFORM) ||
     (inside(cell) && platformAt(world(), cell) !== null);
   const aboard = (cell) =>
     world()
@@ -293,8 +293,8 @@ export function probeOf(live) {
     platform: (cell) => (inside(cell) ? platformAt(world(), cell) : null),
     slick: (cell) =>
       standingAt(world(), cell, faceUnder(live.ball), frameShown(live)) ===
-      world().standing.get(ICE),
-    brittle: (cell) => kindAt(world(), cell) === CRUMBLING,
+      world().standing.get(KIND.ICE),
+    brittle: (cell) => kindAt(world(), cell) === KIND.CRUMBLING,
     value,
     standing: (cell, face) => standingAt(world(), cell, face, frameShown(live)),
   };
@@ -340,7 +340,7 @@ export function viewOf(live) {
   return world.view.idx;
 }
 
-const unseen = (m) => m.face !== null && m.type === HIDDEN_EXIT;
+const unseen = (m) => m.face !== null && m.type === TYPE.HIDDEN_EXIT;
 
 function drawn(world, ended, shut) {
   const { idx } = world;

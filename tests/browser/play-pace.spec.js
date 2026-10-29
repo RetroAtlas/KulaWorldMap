@@ -14,7 +14,7 @@ import {
   station,
   table,
 } from "./playhelpers.js";
-import { BALL } from "../../public/js/play/hazards.js";
+import { TYPE } from "../../public/js/format/lattice.js";
 
 test("two taps of Left turn the ball twice where the second comes before the frame after the one that read the first, with Motion off", async ({
   page,
@@ -32,7 +32,7 @@ test("two taps of Left turn the ball twice where the second comes before the fra
   await onward(page, 1);
   expect((await station(page)).heading).toBe("-y");
   await page.keyboard.press("ArrowLeft");
-  await onward(page, 2 * types[String(BALL)].quarter.frames);
+  await onward(page, 2 * types[String(TYPE.START)].quarter.frames);
   expect((await station(page)).heading).toBe("-x");
   expect(errors).toEqual([]);
 });

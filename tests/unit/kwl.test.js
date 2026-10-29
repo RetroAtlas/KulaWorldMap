@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { mapData, objects, packs, levelKey } from "./fixtures.js";
 import { deflate } from "../../public/js/format/deflate.js";
-import { SIDE } from "../../public/js/format/lattice.js";
+import { SIDE, KIND, TYPE } from "../../public/js/format/lattice.js";
 import {
   CELLS,
   COPYCAT_PACK,
@@ -16,18 +16,12 @@ import {
   FORMAT,
   GRID_BYTES,
   HEAD,
-  LASER_KIND,
   LINK_WORD,
   NEXT_WORD,
   OWN,
-  PLATFORM_KIND,
   RECORD,
   REWIRED,
-  SETTINGS_KIND,
   SLOT,
-  SWITCH,
-  TELEPORTER,
-  TRAILER_KIND,
   WORDS,
   WORLDS,
   WORLD_SLOTS,
@@ -106,7 +100,7 @@ function level(cells, records, { trailer = null, header = null } = {}) {
   hv.setInt32(0, header ?? cells.size, true);
   hv.setUint16(4, records.length, true);
   const tail =
-    trailer ?? block(NOWHERE, { kind: TRAILER_KIND, faces: { 0: slot(20, [13, 17, -5, 0, 99]) } });
+    trailer ?? block(NOWHERE, { kind: KIND.TRAILER, faces: { 0: slot(20, [13, 17, -5, 0, 99]) } });
   return join(grid, head, ...records, tail);
 }
 
@@ -114,7 +108,7 @@ function level(cells, records, { trailer = null, header = null } = {}) {
 const obj = (typ, f2 = 0, f3 = 0, f4 = 1) => slot(typ, [f2, f3, f4, -1, -1, -1, 0]);
 const trailer = (cell, time) =>
   block(NOWHERE, {
-    kind: TRAILER_KIND,
+    kind: KIND.TRAILER,
     faces: { 0: slot(cell[0], [cell[1], cell[2], 0, 0, time]) },
   });
 const cells = (entries) => new Map(entries.map(([cell, v]) => [cell.join(), v]));
@@ -130,23 +124,23 @@ function playground() {
   put([10, 10, 17], { faces: { 0: obj(START, 3, 0, 0), 1: obj(COIN, 0, 2), 5: obj(KEY) } });
   put([10, 12, 17], { kind: 6, faces: { 0: slot(1, [5120, 6144, 8704]) } });
   put([10, 14, 17], { kind: 7, faces: { 0: slot(0, [2]) } });
-  put([12, 10, 17], { faces: { 0: obj(SWITCH, 0, 1, 2), 2: obj(TELEPORTER, 4, 1, 2) } });
+  put([12, 10, 17], { faces: { 0: obj(TYPE.SWITCH, 0, 1, 2), 2: obj(TYPE.TELEPORTER, 4, 1, 2) } });
   put([12, 14, 17], {
-    faces: { 0: obj(TELEPORTER, 2, 1, 2), 1: obj(53, 4, 0, 0), 3: obj(56, 0, 2, 0) },
+    faces: { 0: obj(TYPE.TELEPORTER, 2, 1, 2), 1: obj(53, 4, 0, 0), 3: obj(56, 0, 2, 0) },
   });
   at.set("13,10,17", 2);
   at.set("13,12,17", 3);
   put([14, 10, 17], {
-    kind: PLATFORM_KIND,
+    kind: KIND.PLATFORM,
     faces: { 0: slot(2, [2, 1, 14, 10, 17, 14, 13, 17]) },
     second: slot(2, [30, -1, FIRST_RECORD + 5], { kind: 0 }),
   });
   put([16, 10, 17], {
-    kind: LASER_KIND,
+    kind: KIND.LASER,
     faces: { 0: slot(1, [1, 0, 16, 10, 17, 20, 10, 17]) },
     second: slot(1, [-1, -1, FIRST_RECORD + 6, -1, 1, -1]),
   });
-  records.push(block([0, 0, 0], { kind: SETTINGS_KIND, faces: { 0: slot(1, [1]) } }));
+  records.push(block([0, 0, 0], { kind: KIND.SETTINGS, faces: { 0: slot(1, [1]) } }));
   return level(at, records, { trailer: trailer([10, 10, 17], 45) });
 }
 
@@ -178,23 +172,23 @@ const PLAYGROUND = {
       cell: [12, 10, 17],
       kind: 0,
       faces: {
-        0: { type: SWITCH, variant: 1 },
-        2: { type: TELEPORTER, facing: 4, variant: 1 },
+        0: { type: TYPE.SWITCH, variant: 1 },
+        2: { type: TYPE.TELEPORTER, facing: 4, variant: 1 },
       },
     },
     {
       cell: [12, 14, 17],
       kind: 0,
       faces: {
-        0: { type: TELEPORTER, facing: 2, variant: 1 },
+        0: { type: TYPE.TELEPORTER, facing: 2, variant: 1 },
         1: { type: 53, facing: 4 },
         3: { type: 56, variant: 2 },
       },
     },
     { cell: [13, 10, 17], kind: 2 },
     { cell: [13, 12, 17], kind: 3 },
-    { cell: [14, 10, 17], kind: PLATFORM_KIND, far: [14, 13, 17], length: 2, speed: 30 },
-    { cell: [16, 10, 17], kind: LASER_KIND, far: [20, 10, 17], colour: 1 },
+    { cell: [14, 10, 17], kind: KIND.PLATFORM, far: [14, 13, 17], length: 2, speed: 30 },
+    { cell: [16, 10, 17], kind: KIND.LASER, far: [20, 10, 17], colour: 1 },
   ],
 };
 
@@ -253,26 +247,27 @@ function verify(blob) {
     named.add(v - FIRST_RECORD);
   }
   l.records.forEach((r, k) => {
-    if (r.kind !== SETTINGS_KIND && !named.has(k)) bad.push(`record ${k} is named by no cell`);
-    if (r.kind === PLATFORM_KIND || r.kind === LASER_KIND) {
+    if (r.kind !== KIND.SETTINGS && !named.has(k)) bad.push(`record ${k} is named by no cell`);
+    if (r.kind === KIND.PLATFORM || r.kind === KIND.LASER) {
       const ends = [r.f.slice(2, 5), r.f.slice(5, 8)];
       if (!ends.some((e) => e[0] === r.x && e[1] === r.y && e[2] === r.z))
         bad.push(`record ${k} stands at neither end of its span`);
     }
   });
   const tail = words(blob, l.records.length);
-  if (tail[0] !== TRAILER_KIND || tail.slice(-3).some((w) => w !== -1)) bad.push("the trailer");
+  if (tail[0] !== KIND.TRAILER || tail.slice(-3).some((w) => w !== -1)) bad.push("the trailer");
   const colour = new Map();
   l.records.forEach((r, k) => {
-    if (r.kind === LASER_KIND) colour.set(`${k},${OWN}`, r.colour);
+    if (r.kind === KIND.LASER) colour.set(`${k},${OWN}`, r.colour);
     for (const o of r.on)
-      if (o.type === SWITCH || o.type === TELEPORTER) colour.set(`${k},${o.face}`, o.f[1]);
+      if (o.type === TYPE.SWITCH || o.type === TYPE.TELEPORTER)
+        colour.set(`${k},${o.face}`, o.f[1]);
   });
   for (const [where, c] of colour) {
     const [k, face] = where.split(",").map(Number);
     if (face === OWN) continue;
     const same = [...colour].filter(([, d]) => d === c).map(([w]) => w);
-    if (l.records[k].on.find((o) => o.face === face).type === SWITCH) {
+    if (l.records[k].on.find((o) => o.face === face).type === TYPE.SWITCH) {
       const flips = circuit(blob, k, face).map((a) => a.join());
       if (flips.sort().join(";") !== same.sort().join(";"))
         bad.push(`the switch on record ${k} face ${face} flips ${flips}, not ${same}`);
@@ -280,7 +275,7 @@ function verify(blob) {
     }
     const to = linkTarget(slotOf(blob, k, face)[LINK_WORD]);
     const target = to && l.records[to[0]]?.on.find((o) => o.face === to[1]);
-    if (!to || colour.get(to.join()) !== c || to[1] === OWN || target?.type !== TELEPORTER)
+    if (!to || colour.get(to.join()) !== c || to[1] === OWN || target?.type !== TYPE.TELEPORTER)
       bad.push(`the teleporter on record ${k} face ${face} sends the ball to ${to}`);
   }
   return bad;
@@ -303,7 +298,7 @@ const VARIANT_TYPES = new Set([5, 9, 11, 36, 37, 56]);
 function inPlay(l) {
   const records = new Map();
   for (const r of l.records) {
-    if (r.kind === SETTINGS_KIND || (r.kind < FIRST_RECORD && !r.on.length)) continue;
+    if (r.kind === KIND.SETTINGS || (r.kind < FIRST_RECORD && !r.on.length)) continue;
     const d = { kind: r.kind };
     if (r.kind < FIRST_RECORD)
       d.on = r.on
@@ -315,15 +310,15 @@ function inPlay(l) {
           state: o.f[2],
         }))
         .sort((a, b) => a.face - b.face);
-    if (r.kind === PLATFORM_KIND || r.kind === LASER_KIND) {
+    if (r.kind === KIND.PLATFORM || r.kind === KIND.LASER) {
       d.span = [r.f.slice(2, 5), r.f.slice(5, 8)].sort(compareCells);
     }
-    if (r.kind === LASER_KIND) Object.assign(d, { colour: r.colour, lit: r.f[1] === 1 });
-    if (r.kind === PLATFORM_KIND) Object.assign(d, { length: r.length, speed: r.speed ?? 30 });
+    if (r.kind === KIND.LASER) Object.assign(d, { colour: r.colour, lit: r.f[1] === 1 });
+    if (r.kind === KIND.PLATFORM) Object.assign(d, { length: r.length, speed: r.speed ?? 30 });
     if (r.kind === 7) d.phase = r.f[0];
     records.set(`${r.x},${r.y},${r.z}`, d);
   }
-  const settings = l.records.filter((r) => r.kind === SETTINGS_KIND);
+  const settings = l.records.filter((r) => r.kind === KIND.SETTINGS);
   return {
     kinds: kindAt(l),
     records,
@@ -410,8 +405,8 @@ test("the settings record goes only where a flag is set, and the file ends in th
     const bytes = writeKwl(p);
     const c = levelOf(bytes);
     const last = c.records[c.records.length - 1];
-    assert.equal(last?.kind === SETTINGS_KIND, p.hidden || p.invisibleFromAfar, l.name);
-    if (last?.kind === SETTINGS_KIND) {
+    assert.equal(last?.kind === KIND.SETTINGS, p.hidden || p.invisibleFromAfar, l.name);
+    if (last?.kind === KIND.SETTINGS) {
       settings++;
       assert.deepEqual([last.type, last.f[0]], [p.hidden ? 1 : 0, p.invisibleFromAfar ? 1 : 0]);
       assert.deepEqual([last.x, last.y, last.z], [0, 0, 0]);
@@ -431,10 +426,10 @@ test("a level read from its bytes is written back to bytes that read the same", 
   assert.deepEqual(verify(out), []);
   assert.deepEqual(projectOf(c), p);
   assert.deepEqual([c.header, c.records.length], [9, 8]);
-  assert.equal(c.records[7].kind, SETTINGS_KIND);
-  assert.deepEqual(words(out, 7).slice(0, 4), [SETTINGS_KIND, 1, 1, 0]);
+  assert.equal(c.records[7].kind, KIND.SETTINGS);
+  assert.deepEqual(words(out, 7).slice(0, 4), [KIND.SETTINGS, 1, 1, 0]);
   assert.deepEqual([c.records[7].x, c.records[7].y, c.records[7].z], [0, 0, 0]);
-  assert.deepEqual(words(out, 8).slice(0, 7), [TRAILER_KIND, 10, 10, 17, 0, 0, 45]);
+  assert.deepEqual(words(out, 8).slice(0, 7), [KIND.TRAILER, 10, 10, 17, 0, 0, 45]);
   assert.deepEqual([...out.slice(-6)], Array(6).fill(0xff));
   const wandering = c.records[4].on.find((o) => o.face === 1);
   const corkscrew = c.records[4].on.find((o) => o.face === 3);
@@ -463,7 +458,7 @@ test("the settings record goes only where a flag is set", () => {
   const p = project(PLAYGROUND.blocks, { circuits: { 1: "off" } });
   const c = levelOf(writeKwl(p));
   assert.equal(c.records.length, 7);
-  assert.ok(!c.records.some((r) => r.kind === SETTINGS_KIND));
+  assert.ok(!c.records.some((r) => r.kind === KIND.SETTINGS));
   assert.equal(levelOf(writeKwl({ ...p, hidden: true })).records.length, 8);
   assert.equal(levelOf(writeKwl({ ...p, invisibleFromAfar: true })).records.length, 8);
 });
@@ -482,7 +477,7 @@ test("the bytes are undefined for what the lattice cannot hold", () => {
       writeKwl(
         project([
           plain([5, 5, 5], 0, { 0: start() }),
-          { cell: [6, 6, 6], kind: LASER_KIND, far: [8, 8, 6], colour: 0 },
+          { cell: [6, 6, 6], kind: KIND.LASER, far: [8, 8, 6], colour: 0 },
         ]),
       ),
     /no one axis/,
@@ -491,7 +486,7 @@ test("the bytes are undefined for what the lattice cannot hold", () => {
     () =>
       writeKwl(
         project([
-          plain([5, 5, 5], 0, { 0: start(), 2: { type: TELEPORTER, facing: 1, variant: 7 } }),
+          plain([5, 5, 5], 0, { 0: start(), 2: { type: TYPE.TELEPORTER, facing: 1, variant: 7 } }),
         ]),
       ),
     /not one of the four/,
@@ -516,7 +511,7 @@ test("the bytes are undefined for what the lattice cannot hold", () => {
         writeKwl(
           project([
             plain([5, 5, 5], 0, { 0: start() }),
-            { cell: [6, 6, 6], kind: LASER_KIND, far, colour: 0 },
+            { cell: [6, 6, 6], kind: KIND.LASER, far, colour: 0 },
           ]),
         ),
       /the span at 6,6,6 needs a far end/,
@@ -526,7 +521,7 @@ test("the bytes are undefined for what the lattice cannot hold", () => {
       writeKwl(
         project([
           plain([5, 5, 5], 0, { 0: start() }),
-          { cell: [6, 6, 6], kind: LASER_KIND, far: [6, 6, 34], colour: 0 },
+          { cell: [6, 6, 6], kind: KIND.LASER, far: [6, 6, 34], colour: 0 },
         ]),
       ),
     /the far end 6,6,34 of the span at 6,6,6 is outside the lattice/,
@@ -536,7 +531,7 @@ test("the bytes are undefined for what the lattice cannot hold", () => {
       writeKwl(
         project([
           plain([5, 5, 5], 0, { 0: start() }),
-          { cell: [6, 6, 6], kind: PLATFORM_KIND, far: [6, -1, 6] },
+          { cell: [6, 6, 6], kind: KIND.PLATFORM, far: [6, -1, 6] },
         ]),
       ),
     /the far end 6,-1,6 of the span at 6,6,6 is outside the lattice/,
@@ -571,7 +566,7 @@ test("the bytes are undefined for what the lattice cannot hold", () => {
 });
 
 test("a face key names its face by number, however it is spelled", () => {
-  const teleporter = { type: TELEPORTER, facing: 1, variant: 0 };
+  const teleporter = { type: TYPE.TELEPORTER, facing: 1, variant: 0 };
   const spelled = project([plain([5, 5, 5], 0, { "00": start(), "05": teleporter })]);
   const plainly = project([plain([5, 5, 5], 0, { 0: start(), 5: teleporter })]);
   assert.deepEqual(writeKwl(spelled), writeKwl(plainly));
@@ -583,14 +578,14 @@ test("a colour's members each name the one before, every switch starts at the la
   const blob = writeKwl(
     project([
       plain([10, 10, 17], 0, {
-        0: { type: SWITCH, variant: 2 },
-        3: { type: TELEPORTER, facing: 1, variant: 2 },
+        0: { type: TYPE.SWITCH, variant: 2 },
+        3: { type: TYPE.TELEPORTER, facing: 1, variant: 2 },
       }),
-      plain([10, 12, 17], 0, { 0: { type: TELEPORTER, facing: 1, variant: 2 } }),
-      { cell: [12, 10, 17], kind: LASER_KIND, far: [12, 10, 13], colour: 2 },
+      plain([10, 12, 17], 0, { 0: { type: TYPE.TELEPORTER, facing: 1, variant: 2 } }),
+      { cell: [12, 10, 17], kind: KIND.LASER, far: [12, 10, 13], colour: 2 },
       plain([14, 10, 17], 0, {
-        0: { type: SWITCH, variant: 2 },
-        5: { type: TELEPORTER, facing: 2, variant: 2 },
+        0: { type: TYPE.SWITCH, variant: 2 },
+        5: { type: TYPE.TELEPORTER, facing: 2, variant: 2 },
       }),
       plain([16, 10, 17], 0, { 0: start() }),
     ]),
@@ -618,7 +613,7 @@ test("a colour's members each name the one before, every switch starts at the la
 test("a lone teleporter names itself, and a colour without a switch starts on", () => {
   const blob = writeKwl(
     project([
-      plain([10, 10, 17], 0, { 0: start(), 2: { type: TELEPORTER, facing: 1, variant: 3 } }),
+      plain([10, 10, 17], 0, { 0: start(), 2: { type: TYPE.TELEPORTER, facing: 1, variant: 3 } }),
     ]),
   );
   assert.equal(slotOf(blob, 0, 2)[LINK_WORD], 2);
@@ -663,14 +658,14 @@ test("a reversed laser pair reads lower end first", () => {
   const beam = slot(4, [1, 1, 20, 10, 17, 16, 10, 17]);
   const blob = level(cells([[[16, 10, 17], FIRST_RECORD]]), [
     block([16, 10, 17], {
-      kind: LASER_KIND,
+      kind: KIND.LASER,
       faces: { 0: beam },
       second: slot(1, [-1, -1, 5, -1, 0, -1]),
     }),
   ]);
   const { project: p } = readKwl(blob);
   assert.deepEqual(p.blocks, [
-    { cell: [16, 10, 17], kind: LASER_KIND, far: [20, 10, 17], colour: 0 },
+    { cell: [16, 10, 17], kind: KIND.LASER, far: [20, 10, 17], colour: 0 },
   ]);
   assert.deepEqual(slotOf(writeKwl(p), 0, 0).slice(1, 10), [1, 1, 1, 16, 10, 17, 20, 10, 17]);
 });
@@ -679,7 +674,7 @@ test("a span whose block is at neither end is laid from its cell to the upper en
   const read = (a, b) => {
     const blob = level(cells([[[16, 10, 17], FIRST_RECORD]]), [
       block([16, 10, 17], {
-        kind: LASER_KIND,
+        kind: KIND.LASER,
         faces: { 0: slot(1, [1, 1, ...a, ...b]) },
         second: slot(1, [-1, -1, 5, -1, 0, -1]),
       }),
@@ -701,7 +696,7 @@ test("a span off its block's line is laid along its axis through the block, or d
   const laser = (a, b, cell = [16, 10, 17]) =>
     level(cells([[cell, FIRST_RECORD]]), [
       block(cell, {
-        kind: LASER_KIND,
+        kind: KIND.LASER,
         faces: { 0: slot(1, [1, 1, ...a, ...b]) },
         second: slot(1, [-1, -1, 5, -1, 0, -1]),
       }),
@@ -761,7 +756,7 @@ test("a span off its block's line is laid along its axis through the block, or d
 test("a span to nowhere or to its own cell is dropped", () => {
   const laser = (far) =>
     block([16, 10, 17], {
-      kind: LASER_KIND,
+      kind: KIND.LASER,
       faces: { 0: slot(1, [1, 1, 16, 10, 17, ...far]) },
       second: slot(1, [-1, -1, 5, -1, 0, -1]),
     });
@@ -797,13 +792,13 @@ test("a span to nowhere or to its own cell is dropped", () => {
 test("a facing of 0 on a type that needs one is read as 1, the way the game heads", () => {
   const blob = level(cells([[[1, 2, 3], FIRST_RECORD]]), [
     block([1, 2, 3], {
-      faces: { 0: obj(START, 0, 0, 0), 2: obj(TELEPORTER, 0, 1, 1), 3: obj(53, 0, 0, 0) },
+      faces: { 0: obj(START, 0, 0, 0), 2: obj(TYPE.TELEPORTER, 0, 1, 1), 3: obj(53, 0, 0, 0) },
     }),
   ]);
   const { project: p, report } = readKwl(blob);
   assert.deepEqual(p.blocks[0].faces, {
     0: { type: START, facing: 1 },
-    2: { type: TELEPORTER, facing: 1, variant: 1 },
+    2: { type: TYPE.TELEPORTER, facing: 1, variant: 1 },
     3: { type: 53 },
   });
   assert.deepEqual(report, [
@@ -824,13 +819,13 @@ test("a colour or a variant outside its range is read as 0, as the project reade
       block([1, 2, 3], {
         faces: {
           0: obj(START, 3, 0, 0),
-          1: obj(SWITCH, 0, 9, 2),
+          1: obj(TYPE.SWITCH, 0, 9, 2),
           2: obj(COIN, 0, 3),
           3: obj(56, 0, -1, 0),
         },
       }),
       block([5, 2, 3], {
-        kind: LASER_KIND,
+        kind: KIND.LASER,
         faces: { 0: slot(2, [2, 1, 5, 2, 3, 5, 6, 3]) },
         second: slot(1, [-1, -1, FIRST_RECORD + 1, -1, 7, -1]),
       }),
@@ -839,11 +834,11 @@ test("a colour or a variant outside its range is read as 0, as the project reade
   const { project: p, report } = readKwl(blob);
   assert.deepEqual(p.blocks[0].faces, {
     0: { type: START, facing: 3 },
-    1: { type: SWITCH, variant: 0 },
+    1: { type: TYPE.SWITCH, variant: 0 },
     2: { type: COIN, variant: 0 },
     3: { type: 56, variant: 0 },
   });
-  assert.deepEqual(p.blocks[1], { cell: [5, 2, 3], kind: LASER_KIND, far: [5, 6, 3], colour: 0 });
+  assert.deepEqual(p.blocks[1], { cell: [5, 2, 3], kind: KIND.LASER, far: [5, 6, 3], colour: 0 });
   assert.deepEqual(p.circuits, { 0: "off" });
   assert.deepEqual(report.slice(0, 4), [
     "type 9 on face 1 of the block at 1,2,3 has a variant of 9, which is not one of the four; it is 0",
@@ -900,8 +895,8 @@ test("an unwired teleporter is wired on the way out", () => {
       [[1, 4, 3], FIRST_RECORD + 1],
     ]),
     [
-      block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0), 2: obj(TELEPORTER, 1, 3, 1) } }),
-      block([1, 4, 3], { faces: { 0: obj(TELEPORTER, 1, 3, 1) } }),
+      block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0), 2: obj(TYPE.TELEPORTER, 1, 3, 1) } }),
+      block([1, 4, 3], { faces: { 0: obj(TYPE.TELEPORTER, 1, 3, 1) } }),
     ],
   );
   assert.ok(verify(blob).length > 0);
@@ -938,17 +933,17 @@ test("several settings records give the flags of all of them, wherever they stan
     ]),
     [
       block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0) } }),
-      block([0, 0, 0], { kind: SETTINGS_KIND, faces: { 0: slot(1) } }),
+      block([0, 0, 0], { kind: KIND.SETTINGS, faces: { 0: slot(1) } }),
       block([1, 4, 3], { faces: { 0: obj(COIN, 0, 1) } }),
-      block([0, 0, 0], { kind: SETTINGS_KIND, faces: { 0: slot(0, [1]) } }),
+      block([0, 0, 0], { kind: KIND.SETTINGS, faces: { 0: slot(0, [1]) } }),
     ],
   );
   const { project: p, report } = readKwl(blob);
   assert.deepEqual([p.hidden, p.invisibleFromAfar], [true, true]);
   assert.ok(report.includes("2 settings records; the flags of all of them are taken"), report);
   const out = levelOf(writeKwl(p));
-  assert.equal(out.records.filter((r) => r.kind === SETTINGS_KIND).length, 1);
-  assert.equal(out.records[out.records.length - 1].kind, SETTINGS_KIND);
+  assert.equal(out.records.filter((r) => r.kind === KIND.SETTINGS).length, 1);
+  assert.equal(out.records[out.records.length - 1].kind, KIND.SETTINGS);
 });
 
 test("a cell naming a record another cell already names is left empty, and a bare record folds", () => {
@@ -984,7 +979,7 @@ test("a platform's length and speed and a vanishing block's phase are kept and r
     [
       block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0) } }),
       block([5, 2, 3], {
-        kind: PLATFORM_KIND,
+        kind: KIND.PLATFORM,
         faces: { 0: slot(2, [2, 1, 5, 2, 3, 5, 6, 3]) },
         second: slot(4, [20, -1, FIRST_RECORD + 1], { kind: 0 }),
       }),
@@ -994,7 +989,7 @@ test("a platform's length and speed and a vanishing block's phase are kept and r
   const { project: p, report, repairs } = readKwl(blob);
   assert.deepEqual(p.blocks[1], {
     cell: [5, 2, 3],
-    kind: PLATFORM_KIND,
+    kind: KIND.PLATFORM,
     far: [5, 6, 3],
     length: 4,
     speed: 20,
@@ -1024,8 +1019,8 @@ test("a line on a value kept is a note, which the count of repairs leaves out", 
     circuits: {},
     blocks: [
       { cell: [5, 5, 5], kind: 0, faces: { 0: { type: START, facing: 3 } } },
-      { cell: [10, 12, 17], kind: PLATFORM_KIND, far: [10, 16, 17], length: 4, speed: 30 },
-      { cell: [12, 12, 17], kind: PLATFORM_KIND, far: [12, 16, 17], length: 4, speed: 30 },
+      { cell: [10, 12, 17], kind: KIND.PLATFORM, far: [10, 16, 17], length: 4, speed: 30 },
+      { cell: [12, 12, 17], kind: KIND.PLATFORM, far: [12, 16, 17], length: 4, speed: 30 },
     ],
   };
   const bytes = writeKwl(kept);
@@ -1051,7 +1046,7 @@ test("a platform's length that runs past the edge is cut to what fits, and the w
       [
         block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0) } }),
         block([5, 2, 3], {
-          kind: PLATFORM_KIND,
+          kind: KIND.PLATFORM,
           faces: { 0: slot(2, [2, 1, 5, 2, 3, 5, upper, 3]) },
           second: slot(length, [30, -1, FIRST_RECORD + 1], { kind: 0 }),
         }),
@@ -1101,8 +1096,8 @@ test("a switch whose list loops back on itself reads, and is rewired on the way 
     block(cycle, {
       faces: {
         0: obj(START, 3, 0, 0),
-        2: slot(SWITCH, [0, 1, 1, -1, 2, 2, 0]),
-        3: slot(TELEPORTER, [1, 1, 1, -1, 3, 3, 0]),
+        2: slot(TYPE.SWITCH, [0, 1, 1, -1, 2, 2, 0]),
+        3: slot(TYPE.TELEPORTER, [1, 1, 1, -1, 3, 3, 0]),
       },
     }),
   ]);
@@ -1171,7 +1166,7 @@ test("what stands on the kinds the game never walks is counted and left out", ()
   assert.deepEqual(levelOf(blob).records[1].on, []);
   const flagged = level(cells([[[1, 2, 3], FIRST_RECORD]]), [
     block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0) } }),
-    block([0, 0, 0], { kind: SETTINGS_KIND, faces: { 0: slot(1), 2: obj(COIN, 0, 1) } }),
+    block([0, 0, 0], { kind: KIND.SETTINGS, faces: { 0: slot(1), 2: obj(COIN, 0, 1) } }),
   ]);
   const read = readKwl(flagged);
   assert.deepEqual([read.project.hidden, read.project.invisibleFromAfar], [true, false]);
@@ -1188,8 +1183,8 @@ test("a colour whose devices disagree takes its first device's state, and says s
       [[1, 4, 3], FIRST_RECORD + 1],
     ]),
     [
-      block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0), 2: obj(SWITCH, 0, 2, 2) } }),
-      block([1, 4, 3], { faces: { 0: obj(TELEPORTER, 1, 2, 1) } }),
+      block([1, 2, 3], { faces: { 0: obj(START, 3, 0, 0), 2: obj(TYPE.SWITCH, 0, 2, 2) } }),
+      block([1, 4, 3], { faces: { 0: obj(TYPE.TELEPORTER, 1, 2, 1) } }),
     ],
   );
   const { project: p, report } = readKwl(blob);
@@ -1265,5 +1260,5 @@ test("a level file's name, world, pack, index and room mark come from the caller
       [16, 14, 17],
     ],
   );
-  assert.equal(draft.records.find((r) => r.kind === PLATFORM_KIND).speed, 30);
+  assert.equal(draft.records.find((r) => r.kind === KIND.PLATFORM).speed, 30);
 });

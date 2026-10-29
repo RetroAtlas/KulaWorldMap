@@ -1,5 +1,5 @@
 import { state, basisAt } from "../state.js";
-import { SIDE } from "../../format/lattice.js";
+import { SIDE, KIND } from "../../format/lattice.js";
 import { worldTint, skinsTable, markerModel, markerGroup, polygonColour } from "../data.js";
 import { atlasFor, paint } from "./atlas.js";
 import { lookOf, faceSkin, platformPlace } from "../skins.js";
@@ -91,9 +91,6 @@ const TOP = FACES.findIndex((f) => f.game === 0);
 const MID = SIDE / 2;
 const CELL = { x: MID, y: MID, z: MID };
 const TILE_MARGIN = 3;
-const INVISIBLE = 3;
-const PLATFORM = 5;
-const BEAM_KIND = 8;
 
 function canvasOf(size) {
   const cv = document.createElement("canvas");
@@ -119,7 +116,7 @@ function looks(l) {
 function brightest(skins, look) {
   const light = (frame) =>
     SHOWN.reduce((sum, i) => {
-      const sk = faceSkin(skins, look, CELL, FACES[i].game, INVISIBLE, null, frame);
+      const sk = faceSkin(skins, look, CELL, FACES[i].game, KIND.INVISIBLE, null, frame);
       return sum + sk.colour[0];
     }, 0);
   const pulse = [...skins.cycles.invisible.level.keys()];
@@ -143,11 +140,11 @@ export function blockIcon(
     const p = [x - 0.5, y - 0.5, z - 0.5];
     return [size / 2 + dot(p, VIEW.right) * scale, size / 2 - dot(p, VIEW.up) * scale];
   };
-  const place = kind === PLATFORM && r ? platformPlace({ ...r, length: 1 }, 0) : null;
-  const beam = plate ?? (kind === BEAM_KIND ? r?.colour : undefined);
+  const place = kind === KIND.PLATFORM && r ? platformPlace({ ...r, length: 1 }, 0) : null;
+  const beam = plate ?? (kind === KIND.LASER ? r?.colour : undefined);
   const alpha = SKINNED_LOOK[kind]?.alpha ?? 1;
   const paints = looks(l);
-  const frame = paints && kind === INVISIBLE ? brightest(paints.skins, paints.look) : 0;
+  const frame = paints && kind === KIND.INVISIBLE ? brightest(paints.skins, paints.look) : 0;
   for (const i of SHOWN) {
     const face = FACES[i].game;
     trace(g, FACES[i].c.map(to));
@@ -176,13 +173,13 @@ export function paintIcon(l, type, size = 22) {
   g.rect(lo, lo, hi - lo, hi - lo);
   const paints = looks(l);
   if (!paints) {
-    g.fillStyle = flatFace(tintOf(l), 0, TOP);
+    g.fillStyle = flatFace(tintOf(l), KIND.PLAIN, TOP);
     g.fill();
     return cv;
   }
   const { skins, look, img } = paints;
-  const r = { kind: 0, on: [{ face: 0, type }] };
-  const sk = faceSkin(skins, look, CELL, 0, 0, r, 0);
+  const r = { kind: KIND.PLAIN, on: [{ face: 0, type }] };
+  const sk = faceSkin(skins, look, CELL, 0, KIND.PLAIN, r, 0);
   const corners = [lo, hi].flatMap((y) => [lo, hi].map((x) => [x, y]));
   g.clip();
   paint(g, corners, { ...sk, img }, shadeOf(TOP, l.theme), 1);

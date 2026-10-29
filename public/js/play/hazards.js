@@ -1,23 +1,11 @@
 // The hazards routine's work under and about the ball, in its order, the hit test after it, and
 // the draw's part of the frame, the crumbling blocks breaking up.
 import { REST, acrossOf, aloft, blockUnder, cellOf, faceUnder, place, progressOf } from "./ball.js";
-import { cellKey, FACE_NORMAL } from "../format/lattice.js";
+import { cellKey, FACE_NORMAL, KIND, TYPE } from "../format/lattice.js";
 import { layHeading, markerCircuit, markerDestination, TANGENT } from "../viewer/data.js";
 import { phaseField, pose } from "../viewer/motion.js";
 import { fell } from "./world.js";
 
-const FIRE = 1;
-const ICE = 2;
-const ACID = 4;
-const PLATFORM = 5;
-const CRUMBLING = 6;
-const LASER = 8;
-const BUTTON = 10;
-const MOVING_SPIKES = 11;
-const SPIKES = 12;
-const ARROW = 28;
-export const BALL = 30;
-export const INVINCIBLE = 34;
 // a crumbling block's type word
 const WHOLE = 1;
 const BROKEN = 2;
@@ -39,7 +27,9 @@ export function die(live, out, cause, how = {}) {
   const b = live.ball;
   const { play } = live.tables.motion;
   const code = play.ending[cause];
-  const refused = overrides ? w.ending === code : w.wait !== 0 || w.pills[INVINCIBLE] >= 0;
+  const refused = overrides
+    ? w.ending === code
+    : w.wait !== 0 || w.pills[TYPE.INVINCIBILITY_PILL] >= 0;
   if (w.outcome || refused) return false;
   w.ending = code;
   w.wait = wait ?? play.wait[cause];
@@ -61,10 +51,10 @@ function steered(live, out) {
   const w = live.words;
   const b = live.ball;
   let way = null;
-  if (w.standing === ARROW) {
+  if (w.standing === TYPE.ARROW) {
     const under = add(cellOf(b), b.n, -1);
     const m = (live.idx.markers.get(cellKey(...under)) ?? []).find((o) => o.face === faceUnder(b));
-    if (m?.type === ARROW) {
+    if (m?.type === TYPE.ARROW) {
       way = (layHeading(m) ?? TANGENT[m.face]).map((c) => c || 0);
       if (differs(b.h, way)) {
         if (b.forward && !b.wantJump && b.state === REST) out.push({ refused: "arrow" });
@@ -72,7 +62,7 @@ function steered(live, out) {
       }
     }
   }
-  if (w.standing === standingOf(live.tables.motion, ICE)) {
+  if (w.standing === standingOf(live.tables.motion, KIND.ICE)) {
     b.forward = true;
     b.turn = 0;
     b.waiting = 0;
@@ -86,7 +76,7 @@ function steered(live, out) {
 // chill besides, and wanes off ice.
 function chilled(live) {
   const w = live.words;
-  const ice = live.tables.motion.kinds[String(ICE)];
+  const ice = live.tables.motion.kinds[String(KIND.ICE)];
   if (w.standing === ice.standing) {
     w.heat = Math.max(0, w.heat - ice.chill);
     w.cold += ice.cold.gain;
@@ -101,12 +91,12 @@ export function harms(live, out) {
   const w = live.words;
   const b = live.ball;
   const { motion } = live.tables;
-  const laser = motion.kinds[String(LASER)].harm;
+  const laser = motion.kinds[String(KIND.LASER)].harm;
   if (w.cell === laser.cell && die(live, out, "laser")) w.heat = laser.heat;
   const way = steered(live, out);
-  const fire = motion.kinds[String(FIRE)].heat;
-  const guarded = w.pills[INVINCIBLE] >= 0;
-  if (w.standing === standingOf(motion, FIRE)) {
+  const fire = motion.kinds[String(KIND.FIRE)].heat;
+  const guarded = w.pills[TYPE.INVINCIBILITY_PILL] >= 0;
+  if (w.standing === standingOf(motion, KIND.FIRE)) {
     if (!aloft(b) && !guarded) w.heat += fire.burn;
     if (b.landed && !guarded) w.heat += fire.land;
     if (w.heat > fire.limit) die(live, out, "fire", { freeze: true });
@@ -116,9 +106,9 @@ export function harms(live, out) {
     return;
   }
   w.way = null;
-  const acid = motion.kinds[String(ACID)].melt;
+  const acid = motion.kinds[String(KIND.ACID)].melt;
   w.melt = Math.min(w.melt, acid.top);
-  if (w.standing === standingOf(motion, ACID) && die(live, out, "acid", { kept: true }))
+  if (w.standing === standingOf(motion, KIND.ACID) && die(live, out, "acid", { kept: true }))
     w.melt += acid.gain;
   chilled(live);
 }
@@ -127,8 +117,8 @@ export function harms(live, out) {
 export function counting(live) {
   const w = live.words;
   const { play, kinds } = live.tables.motion;
-  if (w.ending === play.ending.fire) w.swell += kinds[String(FIRE)].heat.swell;
-  if (w.ending === play.ending.acid) w.melt += kinds[String(ACID)].melt.gain;
+  if (w.ending === play.ending.fire) w.swell += kinds[String(KIND.FIRE)].heat.swell;
+  if (w.ending === play.ending.acid) w.melt += kinds[String(KIND.ACID)].melt.gain;
 }
 
 /** The crumbling block under the ball on the ground: its points while its word is still whole,
@@ -136,7 +126,7 @@ export function counting(live) {
 export function broken(live) {
   const w = live.words;
   const b = live.ball;
-  const entry = live.tables.motion.kinds[String(CRUMBLING)];
+  const entry = live.tables.motion.kinds[String(KIND.CRUMBLING)];
   if (w.standing !== entry.standing) return;
   const block = live.world.crumbling.get(cellKey(...add(cellOf(b), b.n, -1)));
   if (!block) return;
@@ -148,7 +138,7 @@ export function broken(live) {
     shrinks by the table's step a frame until its size goes negative, when it is gone from the
     lattice. */
 export function crumble(live, out) {
-  const { shrink } = live.tables.motion.kinds[String(CRUMBLING)];
+  const { shrink } = live.tables.motion.kinds[String(KIND.CRUMBLING)];
   for (const [key, block] of live.world.crumbling) {
     if (block.type === BROKEN) {
       block.type = BREAKING;
@@ -167,9 +157,9 @@ export function crumble(live, out) {
 export function spiked(live, out) {
   const w = live.words;
   const b = live.ball;
-  if (w.standing === SPIKES) die(live, out, "spikes", { freeze: true, mark: true });
-  if (w.standing !== MOVING_SPIKES) return;
-  const entry = live.tables.motion.types[String(MOVING_SPIKES)];
+  if (w.standing === TYPE.SPIKES) die(live, out, "spikes", { freeze: true, mark: true });
+  if (w.standing !== TYPE.MOVING_SPIKES) return;
+  const entry = live.tables.motion.types[String(TYPE.MOVING_SPIKES)];
   const { cell, face } = station(b);
   const m = (live.idx.markers.get(cellKey(...cell)) ?? []).find((o) => o.face === face);
   const deadly = entry.deadly[phaseField(m)];
@@ -186,8 +176,8 @@ export function spiked(live, out) {
 export function boosting(live, out) {
   const w = live.words;
   const b = live.ball;
-  if (w.standing !== BUTTON) return;
-  const { boost, arm } = live.tables.motion.types[String(BALL)].jump;
+  if (w.standing !== TYPE.BOOST_BUTTON) return;
+  const { boost, arm } = live.tables.motion.types[String(TYPE.START)].jump;
   if (b.progress >= boost.roll) w.rolled = boost.frames;
   if (b.progress < boost.fire && !b.landed) return;
   w.rolled = 0;
@@ -205,7 +195,7 @@ function wordsOf(live) {
   const b = live.ball;
   if (!b.riding) return b.pos;
   const { home } = live.world.platforms.get(b.riding.key);
-  const { bias } = live.tables.motion.kinds[String(PLATFORM)].ride;
+  const { bias } = live.tables.motion.kinds[String(KIND.PLATFORM)].ride;
   return b.pos.map((v, i) => v - home[i] + bias);
 }
 

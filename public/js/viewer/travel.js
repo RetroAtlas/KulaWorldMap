@@ -1,6 +1,6 @@
 // The game's own rules for what travels across blocks, stepped frame by frame
 // from the level's start in the game's units and unit vectors.
-import { SIDE, cellKey, FACE_NORMAL } from "../format/lattice.js";
+import { SIDE, cellKey, FACE_NORMAL, KIND, TYPE } from "../format/lattice.js";
 import { OFF_LATTICE, beams, kindMotion, platformAxis } from "./data.js";
 import { state } from "./state.js";
 import { blockPhase } from "./motion.js";
@@ -8,19 +8,18 @@ import { blockPhase } from "./motion.js";
 const UNIT = 512;
 const HALF = UNIT / 2;
 const PROBE = 400;
-const SLOW_STAR = 50;
-const WHEEL = 51;
-const FAST_STAR = 52;
-const WANDERER = 53;
 const GRID = 256;
-const PLATFORM_KIND = 5;
-const CRUMBLING_KIND = 6;
-const VANISHING_KIND = 7;
 const BETWEEN = -2;
 const UNSET = -1;
 // The types standing on a face that a captivator may still cross.
-const CROSSABLE = new Set([30, 1, 2, 4]);
-const CAPTIVATORS_FROM = 50;
+const CROSSABLE = new Set([TYPE.START, TYPE.FIRE, TYPE.ICE, 4]);
+const CAPTIVATORS_FROM = TYPE.CAPTIVATOR_SLOW;
+const WALKING = new Set([
+  TYPE.CAPTIVATOR_SLOW,
+  TYPE.ROLLING_STONE,
+  TYPE.CAPTIVATOR_QUICK,
+  TYPE.CAPTIVATOR_WANDERING,
+]);
 
 // Each face's second tangent and then its first, along which a facing of 1 heads.
 const TANGENTS = [
@@ -79,7 +78,7 @@ export function probe(l, lit = (ray) => ray.lit) {
       crossed.set(k, [...(crossed.get(k) ?? []), ray]);
     }
   }
-  const vanishing = kindMotion(VANISHING_KIND);
+  const vanishing = kindMotion(KIND.VANISHING);
   const value = ([x, y, z], frame) => {
     if ([x, y, z].some((c) => c < 1 || c > SIDE - 2)) return OFF_LATTICE;
     const rays = crossed.get(cellKey(x, y, z));
@@ -87,7 +86,7 @@ export function probe(l, lit = (ray) => ray.lit) {
     const v = cells.get(cellKey(x, y, z)) ?? OFF_LATTICE;
     if (v >= first && vanishing) {
       const r = l.records[v - first];
-      if (r.kind === VANISHING_KIND && blockPhase(vanishing, r, frame).state === 0)
+      if (r.kind === KIND.VANISHING && blockPhase(vanishing, r, frame).state === 0)
         return OFF_LATTICE;
     }
     return v;
@@ -100,11 +99,11 @@ export function probe(l, lit = (ray) => ray.lit) {
       if (v < styles) return true;
       const i = v - first;
       const r = l.records[i];
-      if (r.kind === PLATFORM_KIND) return false;
-      if (r.kind === CRUMBLING_KIND) return true;
+      if (r.kind === KIND.PLATFORM) return false;
+      if (r.kind === KIND.CRUMBLING) return true;
       let type = r.on.find((o) => o.face === face)?.type ?? 0;
       // the loader writes a vanishing block's own lattice value over its top's type
-      if (r.kind === VANISHING_KIND) type = face === 0 ? v : UNSET;
+      if (r.kind === KIND.VANISHING) type = face === 0 ? v : UNSET;
       return type === 0 || type >= CAPTIVATORS_FROM || CROSSABLE.has(type);
     },
     empty: (cell, frame) => value(cell, frame) === OFF_LATTICE,
@@ -152,12 +151,12 @@ export function walker(m, c, l, table, frame = 0) {
     kind: m.face === null ? m.kind : null,
   };
   const home = [c.x, c.y, c.z].map((v) => v * UNIT);
-  if (w.kind === PLATFORM_KIND) {
+  if (w.kind === KIND.PLATFORM) {
     const r = l.records.find(
-      (r) => r.kind === PLATFORM_KIND && r.x === c.x && r.y === c.y && r.z === c.z,
+      (r) => r.kind === KIND.PLATFORM && r.x === c.x && r.y === c.y && r.z === c.z,
     );
     const axis = platformAxis(r);
-    const entry = table.kinds[String(PLATFORM_KIND)];
+    const entry = table.kinds[String(KIND.PLATFORM)];
     Object.assign(w, {
       axis,
       length: r.length || 1,
@@ -188,18 +187,18 @@ export function walker(m, c, l, table, frame = 0) {
   w.pos = [...w.origin];
   w.first = w.d;
   w.turn = { from: w.d, way: null, part: 0 };
-  if (m.type === WANDERER) Object.assign(w, { mode: 0, fresh: true });
+  if (m.type === TYPE.CAPTIVATOR_WANDERING) Object.assign(w, { mode: 0, fresh: true });
   return w;
 }
 
 /** The offset is in blocks. Only the wheel turns its body with its way; a star
     tumbles the same whichever way it walks. */
 export function place(w) {
-  const from = w.kind === PLATFORM_KIND ? [w.c.x, w.c.y, w.c.z].map((v) => v * UNIT) : w.origin;
+  const from = w.kind === KIND.PLATFORM ? [w.c.x, w.c.y, w.c.z].map((v) => v * UNIT) : w.origin;
   const offset = w.pos.map((v, i) => (v - from[i]) / UNIT);
-  if (w.kind === PLATFORM_KIND) return { offset };
+  if (w.kind === KIND.PLATFORM) return { offset };
   let fwd = w.first;
-  if (w.type === WHEEL) {
+  if (w.type === TYPE.ROLLING_STONE) {
     fwd = w.d;
     if (w.state) {
       const { from, way, part } = w.turn;
@@ -341,11 +340,11 @@ export function advance(ws, p, frame, roll) {
   const to = Math.floor(frame);
   for (let at = ws[0]?.at ?? to; at < to; at++) {
     for (const w of ws) {
-      if (w.kind === PLATFORM_KIND) stepPlatform(w);
-      else if (w.type === SLOW_STAR) stepStar(w, p, at);
-      else if (w.type === WHEEL) stepWheel(w, p, at);
-      else if (w.type === FAST_STAR) stepFastStar(w);
-      else if (w.type === WANDERER) stepWanderer(w, p, at, roll);
+      if (w.kind === KIND.PLATFORM) stepPlatform(w);
+      else if (w.type === TYPE.CAPTIVATOR_SLOW) stepStar(w, p, at);
+      else if (w.type === TYPE.ROLLING_STONE) stepWheel(w, p, at);
+      else if (w.type === TYPE.CAPTIVATOR_QUICK) stepFastStar(w);
+      else if (w.type === TYPE.CAPTIVATOR_WANDERING) stepWanderer(w, p, at, roll);
       w.at = at + 1;
     }
   }
@@ -359,10 +358,7 @@ export function walkers(l, idx, table, frame = 0) {
   for (const [key, marks] of idx.markers) {
     const c = idx.cells.get(key);
     for (const m of marks) {
-      const moves =
-        m.face === null
-          ? m.kind === PLATFORM_KIND
-          : [SLOW_STAR, WHEEL, FAST_STAR, WANDERER].includes(m.type);
+      const moves = m.face === null ? m.kind === KIND.PLATFORM : WALKING.has(m.type);
       if (moves) out.set(`${key}/${m.face}`, walker(m, c, l, table, frame));
     }
   }

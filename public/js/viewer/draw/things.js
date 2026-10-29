@@ -1,5 +1,5 @@
 import { state, BLOCK, camera, depth, facing, screen, screenTo, effectFrame } from "../state.js";
-import { cellKey, FACE_NORMAL, FACE_NAME } from "../../format/lattice.js";
+import { cellKey, FACE_NORMAL, FACE_NAME, TYPE } from "../../format/lattice.js";
 import {
   markerColour,
   markerLabel,
@@ -153,7 +153,6 @@ const BLEND = 2;
 const GOURAUD = 16;
 // How a translucent polygon meets what is behind it, by its model's blend.
 const BLENDS = { 0: ["source-over", 0.5], 1: ["lighter", 1], 3: ["lighter", 0.25] };
-const STONE = 51;
 const WORLD = [
   [1, 0, 0],
   [0, 1, 0],
@@ -187,7 +186,7 @@ function drawObject(ctx, m, c, model, motion, frame, phase, extras) {
     // squashed about its centre, so it is stood lower by as much, and its
     // underside stays on the face while its top comes down
     lift = GAP + (rest - GAP) * tall;
-    if (going && m.type === STONE) about[0] = going.roll / motionTable().turn;
+    if (going && m.type === TYPE.ROLLING_STONE) about[0] = going.roll / motionTable().turn;
     if (going?.about) for (let i = 0; i < 3; i++) about[i] += going.about[i];
     if (motion.bob) lift += (motion.bob.reach + p.bob) * unit;
     lift += p.lift * unit;

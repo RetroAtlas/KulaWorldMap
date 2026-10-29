@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { SIDE, cellKey, FACE_NORMAL } from "../format/lattice.js";
+import { SIDE, cellKey, FACE_NORMAL, KIND, TYPE } from "../format/lattice.js";
 import { platesOf, lookOf, keyed, shadowed } from "./skins.js";
 import { glowing, byLight } from "./motion.js";
 import { compose, current, levelsOf } from "./release.js";
@@ -30,7 +30,7 @@ export const sparksSheet = () => shapes.sparks ?? null;
 export const motionOf = (m) =>
   m.face === null
     ? null
-    : (shapes.motion?.types[String(STARTS.has(m.type) ? START : m.type)] ?? null);
+    : (shapes.motion?.types[String(STARTS.has(m.type) ? TYPE.START : m.type)] ?? null);
 export const kindMotion = (kind) => shapes.motion?.kinds[String(kind)] ?? null;
 export const typeModels = (type) => shapes.types[String(type)] ?? [];
 const GOURAUD = 16;
@@ -78,12 +78,9 @@ export const levelAt = (pack, index) =>
 /** The levels of the release shown in pack `pack`. */
 export const levelsIn = (pack) => levelsOf(current()).filter((l) => l.pack === pack);
 
-const BEAM_KIND = 8;
-const RAIL_KIND = 5;
 // The kinds whose record is a block and nothing more; the others are a thing
 // in their own right as well.
-const BLOCK_ONLY_KINDS = new Set([0, 1, 2, 3, 4]);
-const PLAIN = 0;
+const BLOCK_ONLY_KINDS = new Set([KIND.PLAIN, KIND.FIRE, KIND.ICE, KIND.INVISIBLE, KIND.ACID]);
 export const OFF_LATTICE = -1;
 
 // A raw word goes by its place in its slot, counted from the kind word.
@@ -136,13 +133,12 @@ export function shownOn(r, marks = []) {
     no mesh, and it is below the types the loader stands on the stone. */
 export const paintsFace = (type) =>
   !!shapes.skins && type < shapes.skins.shadow.from && !shapes.types[String(type)];
-const SETTINGS_KIND = 9;
 export const markerGroup = (m) =>
   m.face !== null
     ? paintsFace(m.type)
       ? "face"
       : "object"
-    : m.kind === SETTINGS_KIND
+    : m.kind === KIND.SETTINGS
       ? "settings"
       : "block";
 
@@ -252,22 +248,20 @@ export const openFor = (m, frame) => (isExit(m) ? framesOn(false, pressesOf(LAST
 /** Whether a switched device or the exit casts its light at `frame`, turning
     it over every `every` frames it has been on. */
 export const lightOnAt = (m, every, frame) =>
-  m.face !== null && m.type === EXIT
+  m.face !== null && m.type === TYPE.EXIT
     ? glowing(every, false, pressesOf(LAST_KEY), frame)
     : markerState(m) !== null &&
       glowing(every, markerState(m) === "on", pressesOf(markerCircuit(m)), frame);
-const SWITCH = 9;
-const EXIT = 7;
-const HIDDEN_EXIT = 26;
-export const isSwitch = (m) => m.face !== null && m.type === SWITCH;
-export const isExit = (m) => m.face !== null && (m.type === EXIT || m.type === HIDDEN_EXIT);
+export const isSwitch = (m) => m.face !== null && m.type === TYPE.SWITCH;
+export const isExit = (m) =>
+  m.face !== null && (m.type === TYPE.EXIT || m.type === TYPE.HIDDEN_EXIT);
 /** Whether the level holds a key, and so a last key to take. */
 export const holdsKey = (l) => {
   const skins = skinsTable();
   return !!skins && keyed(skins, l);
 };
 const circuitVariant = (circuit) =>
-  forRelease(annotated("types", SWITCH)?.variants?.[String(circuit)]);
+  forRelease(annotated("types", TYPE.SWITCH)?.variants?.[String(circuit)]);
 export const circuitColour = (circuit) => circuitVariant(circuit)?.colour ?? null;
 /** A circuit's word, the bracketed part of its switch's name, or null where the annotations have none. */
 export const circuitWord = (circuit) =>
@@ -286,13 +280,12 @@ export const theCircuit = (circuit) =>
   circuitWord(circuit) ? `the ${circuitPhrase(circuit)}` : circuitPhrase(circuit);
 // A teleporter names the one it sends the ball to by that one's record, times
 // sixteen, plus its face.
-const TELEPORTER = 5;
 const DESTINATION = fieldIndex("f7");
 export function markerDestination(m, l) {
-  if (m.face === null || m.type !== TELEPORTER || m.f[DESTINATION] < 0) return null;
+  if (m.face === null || m.type !== TYPE.TELEPORTER || m.f[DESTINATION] < 0) return null;
   const r = l.records[m.f[DESTINATION] >> 4];
   const face = m.f[DESTINATION] & 15;
-  if (!r?.on.some((o) => o.face === face && o.type === TELEPORTER)) return null;
+  if (!r?.on.some((o) => o.face === face && o.type === TYPE.TELEPORTER)) return null;
   return { x: r.x, y: r.y, z: r.z, face };
 }
 export const fieldName = (m, i) => {
@@ -306,22 +299,17 @@ export const kindName = (kind) => annotated("kinds", kind)?.name || null;
 /** The names validate puts in its findings. */
 export const NAMES = { kind: kindName, entry: entryName, circuit: circuitWord };
 
-// Where the game numbers a level, a fruit shows as the one the player needs
-// next, the level's number counted round the fruit, unless its marker says
-// its type is the one placed.
-const FRUIT_FIRST = 43;
-const FRUIT = 5;
 // The loader shuts every exit, and only the last key opens one.
 const OPEN = 0;
 const SHUT = 1;
 /** The form the exit is drawn in while the exits stand open, or null. */
-export const exitForm = (m) => (m.face !== null && m.type === EXIT && exitsOpen() ? OPEN : null);
+export const exitForm = (m) =>
+  m.face !== null && m.type === TYPE.EXIT && exitsOpen() ? OPEN : null;
 /** Whether the record's face shows marked open, as the exit's face does while the exits stand open. */
 export const openFace = (r, face) =>
-  exitsOpen() && r.on.some((o) => o.face === face && o.type === EXIT);
+  exitsOpen() && r.on.some((o) => o.face === face && o.type === TYPE.EXIT);
 // The ball starts on a plain face or on a clock.
-const START = 30;
-const STARTS = new Set([29, START]);
+const STARTS = new Set([TYPE.START_ON_CLOCK, TYPE.START]);
 // The glass ball for a level the hidden flag marks, one of three for a level
 // with no key, turned by a counter the level cannot know, and the world's ball
 // otherwise. A bonus slot stands in for the counter where the level stands in
@@ -384,12 +372,15 @@ export function markerModel(m, l, form = null) {
   if (m.face === null) return null;
   if (STARTS.has(m.type)) return ballFor(l);
   let type = m.type;
+  // Where the game numbers a level, a fruit shows as the one the player needs
+  // next, the level's number counted round the fruit, unless its marker says
+  // its type is the one placed.
   const n = /^LEVEL (\d+)$/.exec(l.shown || "");
-  if (n && !m.placed && type >= FRUIT_FIRST && type < FRUIT_FIRST + FRUIT)
-    type = FRUIT_FIRST + ((Number(n[1]) - 1) % FRUIT);
+  if (n && !m.placed && TYPE.FRUIT.includes(type))
+    type = TYPE.FRUIT[(Number(n[1]) - 1) % TYPE.FRUIT.length];
   const models = shapes.types[String(type)];
   if (!models) return null;
-  const opens = type === EXIT ? SHUT : 0;
+  const opens = type === TYPE.EXIT ? SHUT : 0;
   const variant = form ?? (m.variant !== null ? Number(m.variant) : opens);
   return models[variant] || models[0];
 }
@@ -398,15 +389,15 @@ export const kindHazard = (kind) => annotated("kinds", kind)?.hazard === true;
 // A beam's ends belong to the laser, so a block standing at either one carries
 // its mark whatever the lattice holds there.
 export const blockHazard = (kind, end) =>
-  (kind !== null && kindHazard(kind)) || (end && kindHazard(BEAM_KIND));
+  (kind !== null && kindHazard(kind)) || (end && kindHazard(KIND.LASER));
 /** A beam's end that holds a block of its own rather than the laser's record. */
-export const farEnd = (kind, end) => end && kind !== null && kind !== BEAM_KIND;
+export const farEnd = (kind, end) => end && kind !== null && kind !== KIND.LASER;
 
 // A beam record spans two cells on one axis, and the blocks at its ends are
 // not always in the lattice.
 export const beams = (l) =>
   l.records
-    .filter((r) => r.kind === BEAM_KIND)
+    .filter((r) => r.kind === KIND.LASER)
     .map((r) => {
       const a = r.f.slice(2, 5),
         b = r.f.slice(5, 8);
@@ -423,7 +414,7 @@ export const beams = (l) =>
 // its run, on one axis.
 export const rails = (l) =>
   l.records
-    .filter((r) => r.kind === RAIL_KIND)
+    .filter((r) => r.kind === KIND.PLATFORM)
     .map((r) => {
       const a = r.f.slice(2, 5),
         b = r.f.slice(5, 8);
@@ -515,7 +506,7 @@ export function kindBlocks(l, first) {
   for (let i = 0; i < l.cells.length; i += 4) {
     const [x, y, z, v] = l.cells.slice(i, i + 4);
     const kind = v < first ? v : l.records[v - first].kind;
-    if (kind !== PLAIN && BLOCK_ONLY_KINDS.has(kind))
+    if (kind !== KIND.PLAIN && BLOCK_ONLY_KINDS.has(kind))
       out.push({
         x,
         y,
@@ -533,7 +524,7 @@ export function blockCount(l) {
   for (let i = 0; i < l.cells.length; i += 4) cells.add(cellKey(...l.cells.slice(i, i + 3)));
   for (const r of beams(l)) for (const c of [r.a, r.b]) cells.add(cellKey(...c));
   for (const r of l.records)
-    if (r.kind === RAIL_KIND) for (const c of platformCells(r)) cells.add(cellKey(...c));
+    if (r.kind === KIND.PLATFORM) for (const c of platformCells(r)) cells.add(cellKey(...c));
   return cells.size;
 }
 export const objectCount = (l) => l.records.reduce((n, r) => n + r.on.length, 0);
@@ -557,11 +548,11 @@ export function markerStats(release = current()) {
 
 const OBJECT_COLOUR = "#9fb3d1";
 const KIND_COLOUR = {
-  5: "#22d3ee",
-  6: "#fbbf24",
-  7: "#60a5fa",
-  8: "#34d399",
-  9: "#fb7185",
+  [KIND.PLATFORM]: "#22d3ee",
+  [KIND.CRUMBLING]: "#fbbf24",
+  [KIND.VANISHING]: "#60a5fa",
+  [KIND.LASER]: "#34d399",
+  [KIND.SETTINGS]: "#fb7185",
 };
 
 export const kindColour = (kind) => KIND_COLOUR[kind] || "#94a3b8";

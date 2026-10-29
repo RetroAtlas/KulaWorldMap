@@ -66,6 +66,7 @@ No commit message reports what a test found, a test of its own or any other: eve
   - `editor/` and `play/` are what load only through the boot's dynamic import, the editor when a level of your own is wanted and play when the ball is.
   - `main.js` is the boot.
 - A new module goes in the lowest layer its imports allow, and where that leaves a choice, with what uses it.
+- The game's number for a kind of block or a type of thing the annotations name is read from `KIND` or `TYPE` in `format/lattice.js`, named as the annotations and [docs/level-format.md](docs/level-format.md) name it, and no module keeps a constant of its own for one.
 - Every module under `public/js`, spec under `tests/browser`, file under `tests/unit` and tool or test under `tools/` is held under a size by the unit tests: 800 lines for a module or a spec and 1,000 for a unit test or a tool.
 - A file already over its cap stands in the size test's table at its allowance, the next hundred above its size; a commit that shrinks it lowers the row, none raises one, and the commit that brings it under the cap takes its row out.
 - A change that would push a file past its cap or its row splits the file first, in a commit of its own, where its sections join, a subject to a file.

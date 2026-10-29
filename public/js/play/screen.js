@@ -3,7 +3,8 @@
 // flash's quad added over everything.
 import { state } from "../viewer/state.js";
 import { motionTable } from "../viewer/data.js";
-import { LETHARGY, SCREEN } from "./passes.js";
+import { SCREEN } from "./passes.js";
+import { TYPE } from "../format/lattice.js";
 
 // the ghost's blend takes half of the last frame and half of the scene
 const HALF = 0.5;
@@ -16,7 +17,7 @@ let lastCv = null;
 let lastCtx = null;
 
 const motionOn = () => state.show.motion;
-const pillTable = () => motionTable().types[String(LETHARGY)].lasts;
+const pillTable = () => motionTable().types[String(TYPE.LETHARGY_PILL)].lasts;
 
 /** The pill's screen, as the game's draw of the pass showed it: the flash on the pill's own pass,
     the last frame as a ghost at half strength over the scene on each pass the pill works and on

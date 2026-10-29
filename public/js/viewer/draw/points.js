@@ -1,5 +1,5 @@
 import { state } from "../state.js";
-import { SIDE, FACE_NORMAL } from "../../format/lattice.js";
+import { SIDE, FACE_NORMAL, KIND } from "../../format/lattice.js";
 import { OFF_LATTICE, index, levelMarkers, markerPoints, skinsTable } from "../data.js";
 import { keyed, simonRoom } from "../skins.js";
 import { hasFace } from "./blocks.js";
@@ -9,7 +9,14 @@ import { hasFace } from "./blocks.js";
 // lattice builds, with at least one face built. A beam's empty end is the
 // plain block the loader stands there first.
 const BLOCK_POINTS = 50;
-const COUNTED_KINDS = new Set([0, 1, 2, 4, 6, 7]);
+const COUNTED_KINDS = new Set([
+  KIND.PLAIN,
+  KIND.FIRE,
+  KIND.ICE,
+  KIND.ACID,
+  KIND.CRUMBLING,
+  KIND.VANISHING,
+]);
 const inner = (v) => v >= 1 && v <= SIDE - 2;
 
 /** Whether the level plays by the bonus rules: no key, outside the Simon rooms. */

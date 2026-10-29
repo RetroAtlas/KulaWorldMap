@@ -1,5 +1,5 @@
 // The editor's checks: what the game would make of a project, counted and judged as the loader would.
-import { FACE_NORMAL, SIDE } from "./lattice.js";
+import { FACE_NORMAL, SIDE, KIND, TYPE } from "./lattice.js";
 import {
   BLOCK_KINDS,
   BONUS_UNDRAWN_KINDS,
@@ -11,37 +11,25 @@ import {
   COPYCAT_SLOTS,
   COUNTED_KINDS,
   COUNTER_WORDS,
-  CRUMBLING_KIND,
   DEFAULT_LENGTH,
   DEFAULT_SPEED,
   DEFAULT_TIME,
   DIM_AT_ONCE,
   DISC_MAX,
-  EXIT,
   FACES,
   FACING_NEEDED,
   FACING_TYPES,
   FINAL_SLOTS,
-  HIDDEN_EXIT,
-  KEY,
-  LASER_KIND,
   LENGTHS,
   LENGTH_CAP,
   LIGHTS,
   LINK_RECORDS,
-  MOVING_SPIKES,
   NUMBERED,
   PHASES,
   PLAIN_ONLY,
-  PLATFORM_KIND,
   PLAYED,
-  SETTINGS_KIND,
-  STAR,
   STARTS,
-  SWITCH,
-  TELEPORTER,
   TIME_MAX,
-  VANISHING_KIND,
   VARIANTS,
   VARIANT_TYPES,
   WORLDS,
@@ -76,7 +64,8 @@ const hasFar = (b) => Array.isArray(b.far) && b.far.length === 3;
 function kindsAt(blocks) {
   const kinds = new Map(blocks.map((b) => [keyOf(b.cell), b.kind]));
   for (const b of blocks)
-    if (b.kind === LASER_KIND && hasFar(b) && !kinds.has(keyOf(b.far))) kinds.set(keyOf(b.far), 0);
+    if (b.kind === KIND.LASER && hasFar(b) && !kinds.has(keyOf(b.far)))
+      kinds.set(keyOf(b.far), KIND.PLAIN);
   return kinds;
 }
 
@@ -87,7 +76,7 @@ function built(hides, kinds, cell, kind) {
   let n = 0;
   for (const d of FACE_NORMAL) {
     let theirs = kinds.get(keyOf(beyond(cell, d)));
-    if (theirs === LASER_KIND) theirs = 0;
+    if (theirs === KIND.LASER) theirs = KIND.PLAIN;
     if (theirs === undefined || !own.includes(theirs) || unseen.includes(theirs)) n++;
   }
   return n;
@@ -124,7 +113,7 @@ export function counts(project, hides) {
   for (const [key, kind] of hides ? kinds : []) {
     const cell = key.split(",").map(Number);
     if (!cell.every(inner)) continue;
-    if (kind === PLATFORM_KIND) {
+    if (kind === KIND.PLATFORM) {
       const length = lengthOf(at.get(key));
       n.faces += length < 2 ? FACES : 4 * length + 2;
       continue;
@@ -134,24 +123,25 @@ export function counts(project, hides) {
     if (COUNTED_KINDS.has(kind) && faces) n.blocks++;
   }
   for (const b of blocks) {
-    if (b.kind === PLATFORM_KIND) n.platforms++;
-    else if (b.kind === LASER_KIND) n.lasers++;
-    else if (b.kind === VANISHING_KIND) n.vanishing++;
-    else if (b.kind === CRUMBLING_KIND) n.crumbling++;
+    if (b.kind === KIND.PLATFORM) n.platforms++;
+    else if (b.kind === KIND.LASER) n.lasers++;
+    else if (b.kind === KIND.VANISHING) n.vanishing++;
+    else if (b.kind === KIND.CRUMBLING) n.crumbling++;
     if (carries(b)) n.records++;
     for (const [, o] of facesOf(b)) {
       if (NUMBERED.has(o.type)) n.objects++;
       if (CAPTIVATOR_SET.has(o.type)) n.captivators++;
-      if (o.type === KEY) n.keys++;
+      if (o.type === TYPE.KEY) n.keys++;
       if (LIGHTS.has(o.type)) n.lights++;
-      if (o.type === MOVING_SPIKES) n.spikes++;
+      if (o.type === TYPE.MOVING_SPIKES) n.spikes++;
     }
   }
   if (project.hidden || project.invisibleFromAfar) n.records++;
   return n;
 }
 
-const hasKey = (project) => project.blocks.some((b) => facesOf(b).some(([, o]) => o.type === KEY));
+const hasKey = (project) =>
+  project.blocks.some((b) => facesOf(b).some(([, o]) => o.type === TYPE.KEY));
 
 /** Whether the level plays as a Simon room: marked one, with no key, since a key makes an arcade
     level of it. */
@@ -197,7 +187,7 @@ const lengthOf = (b) => (inWord(b.length) ? b.length : DEFAULT_LENGTH);
 export function runOf(b) {
   const axis = spanAxis(b.cell, b.far);
   const [lower, upper] = b.cell[axis] < b.far[axis] ? [b.cell, b.far] : [b.far, b.cell];
-  const extra = b.kind === PLATFORM_KIND ? lengthOf(b) - 1 : 0;
+  const extra = b.kind === KIND.PLATFORM ? lengthOf(b) - 1 : 0;
   const cells = [];
   for (let t = Math.max(lower[axis], 0); t <= Math.min(upper[axis] + extra, SIDE - 1); t++) {
     const c = [...lower];
@@ -216,11 +206,11 @@ function filled(blocks) {
   const beams = new Map();
   const ends = new Map();
   const runs = new Map();
-  for (const b of spans(blocks, LASER_KIND)) {
+  for (const b of spans(blocks, KIND.LASER)) {
     for (const c of runOf(b).slice(1, -1)) beams.set(keyOf(c), [...(beams.get(keyOf(c)) ?? []), b]);
     ends.set(keyOf(b.far), b);
   }
-  for (const b of spans(blocks, PLATFORM_KIND)) for (const c of runOf(b)) runs.set(keyOf(c), b);
+  for (const b of spans(blocks, KIND.PLATFORM)) for (const c of runOf(b)) runs.set(keyOf(c), b);
   return { beams, ends, runs };
 }
 
@@ -232,8 +222,8 @@ function validateSpan(b, blocksAt, loader, err, warn) {
   if (direction(cell, far) === null)
     return err("the far end is not along one axis from the block", cell);
   if (!far.every(onLattice)) return err("the far end is past the edge", cell);
-  const length = b.kind === PLATFORM_KIND ? (b.length ?? DEFAULT_LENGTH) : 1;
-  if (b.kind === PLATFORM_KIND) {
+  const length = b.kind === KIND.PLATFORM ? (b.length ?? DEFAULT_LENGTH) : 1;
+  if (b.kind === KIND.PLATFORM) {
     if (!inWord(length)) return err(`a length of ${length}, outside the file's range`, cell);
     if (length < 1)
       return err(`a platform ${length} blocks long, which is less than one block`, cell);
@@ -242,7 +232,7 @@ function validateSpan(b, blocksAt, loader, err, warn) {
   }
   if (!far.every(inner)) return err("the far end is past the edge", cell);
   const { beams, ends, runs } = loader;
-  if (b.kind === PLATFORM_KIND) {
+  if (b.kind === KIND.PLATFORM) {
     const speed = b.speed ?? DEFAULT_SPEED;
     const axis = spanAxis(cell, far);
     if (!inner(Math.max(cell[axis], far[axis]) + length - 1))
@@ -274,12 +264,12 @@ function validateSpan(b, blocksAt, loader, err, warn) {
     const other = blocksAt.get(key);
     if (sameCell(c, cell)) continue;
     if (sameCell(c, far)) {
-      if (other && other.kind === 0 && facesOf(other).length)
+      if (other && other.kind === KIND.PLAIN && facesOf(other).length)
         warn(
           "the beam's end makes a bare plain block of the block there; what stands on it still works but its faces paint plain",
           cell,
         );
-      else if (other && other.kind !== 0 && other.kind !== LASER_KIND)
+      else if (other && other.kind !== KIND.PLAIN && other.kind !== KIND.LASER)
         err("a beam ends on an empty cell, a plain block or another laser's block", cell);
       for (const laser of beams.get(key) ?? [])
         err(`the beam ends in the beam from ${cellText(laser.cell)}`, cell);
@@ -296,8 +286,8 @@ function validateOutlook(cell, j, kinds, beams, warn) {
   const theirs = kinds.get(keyOf(next));
   if (theirs === undefined) {
     if (beams.has(keyOf(next))) warn("looks into a beam", cell, j);
-  } else if (theirs === CRUMBLING_KIND) warn("looks into a crumbling block", cell, j);
-  else if (theirs === VANISHING_KIND) warn("looks into a vanishing block", cell, j);
+  } else if (theirs === KIND.CRUMBLING) warn("looks into a crumbling block", cell, j);
+  else if (theirs === KIND.VANISHING) warn("looks into a vanishing block", cell, j);
   else warn(`looks into the block at ${cellText(next)}`, cell, j);
 }
 
@@ -305,7 +295,7 @@ const lower = (name) => name[0].toLowerCase() + name.slice(1);
 export const listed = (items) =>
   items.length > 1 ? `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}` : items[0];
 // Words for the types the annotations leave unnamed.
-const TYPE_WORDS = { [STAR]: "star" };
+const TYPE_WORDS = { [TYPE.STAR]: "star" };
 /** A type as a finding names it, with the article: by its name, else by its number. */
 export const typeWord = (type, names) => {
   const name = names.entry?.({ face: 0, type }) ?? TYPE_WORDS[type];
@@ -337,7 +327,7 @@ export function circuitMembers(project) {
   }));
   const memberOf = (colour) => (Number.isInteger(colour) ? members[colour] : undefined);
   for (const b of project.blocks) {
-    if (b.kind === LASER_KIND) {
+    if (b.kind === KIND.LASER) {
       const m = memberOf(b.colour ?? 0);
       if (m) m.lasers++;
       continue;
@@ -345,8 +335,8 @@ export function circuitMembers(project) {
     for (const [, o] of facesOf(b)) {
       const m = memberOf(o.variant ?? 0);
       if (!m) continue;
-      if (o.type === TELEPORTER) m.teleporters++;
-      else if (o.type === SWITCH) m.switches++;
+      if (o.type === TYPE.TELEPORTER) m.teleporters++;
+      else if (o.type === TYPE.SWITCH) m.switches++;
     }
   }
   return members;
@@ -434,7 +424,7 @@ export function validate(project, hides, names = {}) {
   const starts = [];
   for (const b of blocks) {
     const { cell, kind } = b;
-    if (!Number.isInteger(kind) || kind < 0 || kind >= SETTINGS_KIND) {
+    if (!Number.isInteger(kind) || kind < 0 || kind >= KIND.SETTINGS) {
       err(`kind ${kind} is not a kind of block`, cell);
       continue;
     }
@@ -442,13 +432,13 @@ export function validate(project, hides, names = {}) {
       err("nothing stands on a platform's, laser's, crumbling or vanishing block's faces", cell);
     const twice = faceNamedTwice(b);
     if (twice !== null) err(`face ${twice} is named twice`, cell);
-    if (kind === VANISHING_KIND) {
+    if (kind === KIND.VANISHING) {
       const phase = b.phase ?? 0;
       if (DIM_AT_ONCE.includes(phase)) warn(`a phase of ${phase} dims at once`, cell);
       else if (!Number.isInteger(phase) || phase < 0 || phase >= PHASES)
         err(`a phase of ${phase}`, cell);
     }
-    if (kind === LASER_KIND && !(Number.isInteger(b.colour) && b.colour >= 0 && b.colour < COLOURS))
+    if (kind === KIND.LASER && !(Number.isInteger(b.colour) && b.colour >= 0 && b.colour < COLOURS))
       err(`a colour of ${b.colour ?? "none"}`, cell);
     if (isSpan(b)) validateSpan(b, blocksAt, loader, err, warn);
     for (const [j, o] of facesOf(b)) {
@@ -458,8 +448,9 @@ export function validate(project, hides, names = {}) {
         continue;
       }
       if (!PLAYED.has(t)) err(`type ${t} is nothing the game plays`, cell, j);
-      if (PLAIN_ONLY.has(t) && kind !== 0) err("a device works on a plain block only", cell, j);
-      if (t === HIDDEN_EXIT && kind !== 0)
+      if (PLAIN_ONLY.has(t) && kind !== KIND.PLAIN)
+        err("a device works on a plain block only", cell, j);
+      if (t === TYPE.HIDDEN_EXIT && kind !== KIND.PLAIN)
         warn(
           "the game has not been seen to take a hidden exit on a block that is not plain",
           cell,
@@ -474,7 +465,7 @@ export function validate(project, hides, names = {}) {
           err(`a variant of ${o.variant}`, cell, j);
       }
       if (STARTS.has(t)) starts.push([cell, j]);
-      if (t === STAR) warn(`${typeWord(t, names)} is untested in play`, cell, j);
+      if (t === TYPE.STAR) warn(`${typeWord(t, names)} is untested in play`, cell, j);
       validateOutlook(cell, j, kinds, beams, warn);
     }
     for (const key of strayFaceKeys(b))
@@ -498,7 +489,9 @@ export function validate(project, hides, names = {}) {
   if (!hides) warn("the face count could not be read, so the faces and the blocks are not counted");
   if (
     n.keys &&
-    !blocks.some((b) => facesOf(b).some(([, o]) => o.type === EXIT || o.type === HIDDEN_EXIT))
+    !blocks.some((b) =>
+      facesOf(b).some(([, o]) => o.type === TYPE.EXIT || o.type === TYPE.HIDDEN_EXIT),
+    )
   )
     warn("a key and no exit");
   for (const [what, cap] of Object.entries(CAPS))

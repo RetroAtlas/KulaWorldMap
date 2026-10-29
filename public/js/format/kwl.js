@@ -1,5 +1,5 @@
 // The game's level file: a project's bytes, and a project out of any file the game loads.
-import { SIDE, cellKey, FACE_NORMAL } from "./lattice.js";
+import { SIDE, cellKey, FACE_NORMAL, KIND, TYPE } from "./lattice.js";
 
 export const FORMAT = "kula-world-level";
 export const VERSION = 1;
@@ -31,14 +31,8 @@ export const FACES = FACE_NORMAL.length;
 const EMPTY = 0xffff;
 export const FIRST_RECORD = 5;
 export const BLOCK_KINDS = 5;
-export const PLATFORM_KIND = 5;
-export const CRUMBLING_KIND = 6;
-export const VANISHING_KIND = 7;
-export const LASER_KIND = 8;
-export const SETTINGS_KIND = 9;
-export const TRAILER_KIND = 666;
-export const SPAN_KINDS = new Set([PLATFORM_KIND, LASER_KIND]);
-const PAYLOAD_KINDS = new Set([PLATFORM_KIND, CRUMBLING_KIND, VANISHING_KIND, LASER_KIND]);
+export const SPAN_KINDS = new Set([KIND.PLATFORM, KIND.LASER]);
+const PAYLOAD_KINDS = new Set([KIND.PLATFORM, KIND.CRUMBLING, KIND.VANISHING, KIND.LASER]);
 export const COLOURS = 4;
 export const DEFAULT_TIME = 99;
 export const TIME_MAX = 99;
@@ -56,79 +50,125 @@ export const LINK_WORD = 7;
 export const LINK_RECORDS = 2 ** 15 / 16;
 const AXIS_WORD = [1, 2, 5];
 
-export const TELEPORTER = 5;
-export const EXIT = 7;
-export const SWITCH = 9;
-export const MOVING_SPIKES = 11;
-export const HIDDEN_EXIT = 26;
-export const START_ON_CLOCK = 29;
-export const START = 30;
-export const KEY = 31;
-export const STAR = 42;
-export const FRUIT = [43, 44, 45, 46, 47];
-export const CAPTIVATORS = [50, 51, 52, 53, 54, 55, 56];
-export const STARTS = new Set([START, START_ON_CLOCK]);
+export const CAPTIVATORS = [
+  TYPE.CAPTIVATOR_SLOW,
+  TYPE.ROLLING_STONE,
+  TYPE.CAPTIVATOR_QUICK,
+  TYPE.CAPTIVATOR_WANDERING,
+  54,
+  55,
+  TYPE.CAPTIVATOR_BOUNCING,
+];
+export const STARTS = new Set([TYPE.START, TYPE.START_ON_CLOCK]);
 // What the bonus artwork, drawn for a level with no key, has no picture for.
-export const BONUS_UNDRAWN_KINDS = [1, 2, 4, PLATFORM_KIND];
-export const BONUS_UNDRAWN_TYPES = [1, 2, 4, EXIT, 8, START_ON_CLOCK, ...FRUIT];
-export const FACING_TYPES = new Set([TELEPORTER, 28, START_ON_CLOCK, START, 50, 51, 52, 53, 56]);
-export const FACING_NEEDED = new Set([TELEPORTER, 28, START_ON_CLOCK, START, 50, 51, 52]);
+export const BONUS_UNDRAWN_KINDS = [KIND.FIRE, KIND.ICE, KIND.ACID, KIND.PLATFORM];
+export const BONUS_UNDRAWN_TYPES = [
+  TYPE.FIRE,
+  TYPE.ICE,
+  4,
+  TYPE.EXIT,
+  TYPE.CLOCK,
+  TYPE.START_ON_CLOCK,
+  ...TYPE.FRUIT,
+];
+export const FACING_NEEDED = new Set([
+  TYPE.TELEPORTER,
+  TYPE.ARROW,
+  TYPE.START_ON_CLOCK,
+  TYPE.START,
+  TYPE.CAPTIVATOR_SLOW,
+  TYPE.ROLLING_STONE,
+  TYPE.CAPTIVATOR_QUICK,
+]);
+export const FACING_TYPES = new Set([
+  ...FACING_NEEDED,
+  TYPE.CAPTIVATOR_WANDERING,
+  TYPE.CAPTIVATOR_BOUNCING,
+]);
 export const VARIANTS = {
-  [TELEPORTER]: COLOURS,
-  [SWITCH]: COLOURS,
-  11: PHASES,
-  36: 3,
-  37: 3,
-  56: PHASES,
+  [TYPE.TELEPORTER]: COLOURS,
+  [TYPE.SWITCH]: COLOURS,
+  [TYPE.MOVING_SPIKES]: PHASES,
+  [TYPE.GEM]: 3,
+  [TYPE.COIN]: 3,
+  [TYPE.CAPTIVATOR_BOUNCING]: PHASES,
 };
 export const VARIANT_TYPES = new Set(Object.keys(VARIANTS).map(Number));
-export const PICKUPS = [31, 32, 33, 34, 35, 36, 37, 38, 42, 43, 44, 45, 46, 47];
+export const PICKUPS = [
+  TYPE.KEY,
+  TYPE.LETHARGY_PILL,
+  TYPE.BOUNCY_PILL,
+  TYPE.INVINCIBILITY_PILL,
+  TYPE.HOURGLASS,
+  TYPE.GEM,
+  TYPE.COIN,
+  TYPE.SUNGLASSES,
+  TYPE.STAR,
+  ...TYPE.FRUIT,
+];
 const PICKUP_SET = new Set(PICKUPS);
 const CAPTIVATOR_SET = new Set(CAPTIVATORS);
-export const PLAIN_ONLY = new Set([TELEPORTER, EXIT, SWITCH, MOVING_SPIKES]);
-export const LIGHTS = new Set([TELEPORTER, EXIT, SWITCH]);
-export const NUMBERED = new Set([5, 7, 9, 10, 11, 12, 26, 28, ...PICKUPS]);
+export const PLAIN_ONLY = new Set([TYPE.TELEPORTER, TYPE.EXIT, TYPE.SWITCH, TYPE.MOVING_SPIKES]);
+export const LIGHTS = new Set([TYPE.TELEPORTER, TYPE.EXIT, TYPE.SWITCH]);
+export const NUMBERED = new Set([
+  TYPE.TELEPORTER,
+  TYPE.EXIT,
+  TYPE.SWITCH,
+  TYPE.BOOST_BUTTON,
+  TYPE.MOVING_SPIKES,
+  TYPE.SPIKES,
+  TYPE.HIDDEN_EXIT,
+  TYPE.ARROW,
+  ...PICKUPS,
+]);
 export const PLAYED = new Set([
-  1,
-  2,
+  TYPE.FIRE,
+  TYPE.ICE,
   4,
-  5,
-  7,
-  8,
-  9,
-  10,
-  11,
-  12,
-  26,
-  28,
-  29,
-  30,
-  50,
-  51,
-  52,
-  53,
-  56,
+  TYPE.TELEPORTER,
+  TYPE.EXIT,
+  TYPE.CLOCK,
+  TYPE.SWITCH,
+  TYPE.BOOST_BUTTON,
+  TYPE.MOVING_SPIKES,
+  TYPE.SPIKES,
+  TYPE.HIDDEN_EXIT,
+  TYPE.ARROW,
+  TYPE.START_ON_CLOCK,
+  TYPE.START,
+  TYPE.CAPTIVATOR_SLOW,
+  TYPE.ROLLING_STONE,
+  TYPE.CAPTIVATOR_QUICK,
+  TYPE.CAPTIVATOR_WANDERING,
+  TYPE.CAPTIVATOR_BOUNCING,
   ...PICKUPS,
 ]);
 export const STATE_ON = 1;
 export const STATE_OFF = 2;
 const STATE = new Map([
-  ...[10, 11, 12, 28, ...PICKUPS].map((t) => [t, STATE_ON]),
-  [EXIT, STATE_OFF],
-  [HIDDEN_EXIT, STATE_OFF],
+  ...[TYPE.BOOST_BUTTON, TYPE.MOVING_SPIKES, TYPE.SPIKES, TYPE.ARROW].map((t) => [t, STATE_ON]),
+  ...PICKUPS.map((t) => [t, STATE_ON]),
+  [TYPE.EXIT, STATE_OFF],
+  [TYPE.HIDDEN_EXIT, STATE_OFF],
 ]);
 const TRIO = new Map([
-  [TELEPORTER, [256, 1, 30]],
-  [EXIT, [500, 1, 30]],
-  [HIDDEN_EXIT, [500, 1, 30]],
-  [10, [256, 3, 0]],
-  [START_ON_CLOCK, [386, 1, -100]],
-  [36, [386, 1, -17]],
-  [STAR, [416, 0, 100]],
-  ...[8, SWITCH, 11, 12, 28, START].map((t) => [t, [256, 0, 0]]),
-  ...[KEY, 37, 38].map((t) => [t, [386, 1, -100]]),
-  ...[32, 33, 34, 35].map((t) => [t, [386, 2, 100]]),
-  ...FRUIT.map((t) => [t, [386, 1, 100]]),
+  [TYPE.TELEPORTER, [256, 1, 30]],
+  [TYPE.EXIT, [500, 1, 30]],
+  [TYPE.HIDDEN_EXIT, [500, 1, 30]],
+  [TYPE.BOOST_BUTTON, [256, 3, 0]],
+  [TYPE.START_ON_CLOCK, [386, 1, -100]],
+  [TYPE.GEM, [386, 1, -17]],
+  [TYPE.STAR, [416, 0, 100]],
+  ...[TYPE.CLOCK, TYPE.SWITCH, TYPE.MOVING_SPIKES, TYPE.SPIKES, TYPE.ARROW, TYPE.START].map((t) => [
+    t,
+    [256, 0, 0],
+  ]),
+  ...[TYPE.KEY, TYPE.COIN, TYPE.SUNGLASSES].map((t) => [t, [386, 1, -100]]),
+  ...[TYPE.LETHARGY_PILL, TYPE.BOUNCY_PILL, TYPE.INVINCIBILITY_PILL, TYPE.HOURGLASS].map((t) => [
+    t,
+    [386, 2, 100],
+  ]),
+  ...TYPE.FRUIT.map((t) => [t, [386, 1, 100]]),
 ]);
 const NO_TRIO = [-1, -1, -1];
 const BARE = [-1, 0, -1, -1, 0, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1];
@@ -182,7 +222,14 @@ export const DISC_MAX = {
   lights: 19,
   spikes: 19,
 };
-export const COUNTED_KINDS = new Set([0, 1, 2, 4, CRUMBLING_KIND, VANISHING_KIND]);
+export const COUNTED_KINDS = new Set([
+  KIND.PLAIN,
+  KIND.FIRE,
+  KIND.ICE,
+  KIND.ACID,
+  KIND.CRUMBLING,
+  KIND.VANISHING,
+]);
 
 export const onLattice = (v) => Number.isInteger(v) && v >= 0 && v < SIDE;
 export const inner = (v) => Number.isInteger(v) && v >= 1 && v <= SIDE - 2;
@@ -348,14 +395,14 @@ export function projectOf(level, report = []) {
         faces[String(o.face)] = faceOf(o, cell, report);
       if (r.on.length) b.faces = faces;
       else folded++;
-    } else if (r.kind === PLATFORM_KIND) {
+    } else if (r.kind === KIND.PLATFORM) {
       b.far = farOf(r, cell);
       b.length = r.length;
       b.speed = r.speed ?? DEFAULT_SPEED;
-    } else if (r.kind === LASER_KIND) {
+    } else if (r.kind === KIND.LASER) {
       b.far = farOf(r, cell);
       b.colour = colourOf(r, cell, report);
-    } else if (r.kind === VANISHING_KIND) {
+    } else if (r.kind === KIND.VANISHING) {
       b.phase = r.f[0];
     }
     blocks.push(b);
@@ -365,7 +412,7 @@ export function projectOf(level, report = []) {
   let hidden = false;
   let flip = false;
   for (const r of records) {
-    if (r.kind !== SETTINGS_KIND) continue;
+    if (r.kind !== KIND.SETTINGS) continue;
     hidden ||= r.type === 1;
     flip ||= r.f[0] === 1;
   }
@@ -374,11 +421,11 @@ export function projectOf(level, report = []) {
   const disagree = new Set();
   for (const r of records) {
     let found;
-    if (r.kind === LASER_KIND)
+    if (r.kind === KIND.LASER)
       found = [[inColour(r.colour) ? r.colour : 0, r.f[1] === 1 ? STATE_ON : STATE_OFF]];
     else if (r.kind < BLOCK_KINDS)
       found = r.on
-        .filter((o) => o.type === TELEPORTER || o.type === SWITCH)
+        .filter((o) => o.type === TYPE.TELEPORTER || o.type === TYPE.SWITCH)
         .map((o) => [inColour(o.f[1]) ? o.f[1] : 0, o.f[2] === STATE_OFF ? STATE_OFF : STATE_ON]);
     else continue;
     for (const [colour, state] of found) {
@@ -424,10 +471,10 @@ function members(carried) {
   const out = Array.from({ length: COLOURS }, () => []);
   carried.forEach((b, k) => {
     const found =
-      b.kind === LASER_KIND
+      b.kind === KIND.LASER
         ? [[b.colour, OWN]]
         : facesOf(b)
-            .filter(([, o]) => o.type === TELEPORTER || o.type === SWITCH)
+            .filter(([, o]) => o.type === TYPE.TELEPORTER || o.type === TYPE.SWITCH)
             .map(([j, o]) => [o.variant ?? 0, j]);
     for (const [colour, face] of found) {
       if (!Number.isInteger(colour) || colour < 0 || colour >= COLOURS)
@@ -439,7 +486,7 @@ function members(carried) {
 }
 
 const typeAt = (carried, [k, face]) =>
-  face === OWN ? LASER_KIND : facesOf(carried[k]).find(([j]) => j === face)[1].type;
+  face === OWN ? KIND.LASER : facesOf(carried[k]).find(([j]) => j === face)[1].type;
 
 /** record * 16 + face -> [next, link] for every switch, teleporter and laser. */
 function links(carried) {
@@ -449,11 +496,11 @@ function links(carried) {
     M.forEach((m, i) => out.set(linkOf(m), [i === 0 ? -1 : linkOf(M[i - 1]), -1]));
     if (!M.length) continue;
     const last = linkOf(M[M.length - 1]);
-    const T = M.filter((m) => typeAt(carried, m) === TELEPORTER);
+    const T = M.filter((m) => typeAt(carried, m) === TYPE.TELEPORTER);
     T.forEach((t, i) => {
       out.get(linkOf(t))[1] = linkOf(T[(i + T.length - 1) % T.length]);
     });
-    for (const m of M) if (typeAt(carried, m) === SWITCH) out.get(linkOf(m))[1] = last;
+    for (const m of M) if (typeAt(carried, m) === TYPE.SWITCH) out.get(linkOf(m))[1] = last;
   }
   return out;
 }
@@ -494,7 +541,8 @@ function recordWords(b, k, states, linkTable, numberTable) {
   if (kind < BLOCK_KINDS) {
     for (const [j, o] of facesOf(b)) {
       const t = o.type;
-      const state = t === TELEPORTER || t === SWITCH ? states[o.variant ?? 0] : (STATE.get(t) ?? 0);
+      const state =
+        t === TYPE.TELEPORTER || t === TYPE.SWITCH ? states[o.variant ?? 0] : (STATE.get(t) ?? 0);
       slots[j] = objectSlot(
         j === 0 ? kind : -1,
         o,
@@ -503,7 +551,7 @@ function recordWords(b, k, states, linkTable, numberTable) {
         linkTable.get(k * 16 + j) ?? [-1, -1],
       );
     }
-  } else if (kind === PLATFORM_KIND) {
+  } else if (kind === KIND.PLATFORM) {
     const { d, axis, lower, upper } = spanWords(cell, b.far);
     const length = b.length ?? DEFAULT_LENGTH;
     if (Number.isInteger(length) && (length < 1 || length > roomFor(cell, b.far)))
@@ -527,11 +575,11 @@ function recordWords(b, k, states, linkTable, numberTable) {
       PLATFORM_UNIT,
       PLATFORM_UNIT,
     );
-  } else if (kind === CRUMBLING_KIND) {
+  } else if (kind === KIND.CRUMBLING) {
     slots[0] = [kind, 1, ...cell.map((c) => FIXED * c), ...fill(11)];
-  } else if (kind === VANISHING_KIND) {
+  } else if (kind === KIND.VANISHING) {
     slots[0] = [kind, 0, b.phase ?? 0, ...fill(13)];
-  } else if (kind === LASER_KIND) {
+  } else if (kind === KIND.LASER) {
     const { d, axis, lower, upper } = spanWords(cell, b.far);
     const lit = states[b.colour] === STATE_ON ? 1 : 0;
     slots[0] = [kind, d, axis, lit, ...lower, ...upper, ...fill(6)];
@@ -546,7 +594,7 @@ function recordWords(b, k, states, linkTable, numberTable) {
 
 function settingsWords(project) {
   const words = Array(WORDS).fill(0);
-  words[0] = SETTINGS_KIND;
+  words[0] = KIND.SETTINGS;
   words[1] = project.hidden ? 1 : 0;
   words[2] = project.invisibleFromAfar ? 1 : 0;
   return words;
@@ -561,7 +609,7 @@ export function startCell(carried) {
 
 function trailerWords(project, carried) {
   const words = fill(WORDS);
-  words[0] = TRAILER_KIND;
+  words[0] = KIND.TRAILER;
   words.splice(1, 3, ...startCell(carried));
   words[4] = 0;
   words[5] = 0;
@@ -580,7 +628,7 @@ export function writeKwl(project) {
       throw new Error(`cell ${cellText(cell)} is outside the lattice`);
     if (seen.has(cellKey(...cell))) throw new Error(`two blocks on cell ${cellText(cell)}`);
     seen.add(cellKey(...cell));
-    if (!Number.isInteger(kind) || kind < 0 || kind >= SETTINGS_KIND)
+    if (!Number.isInteger(kind) || kind < 0 || kind >= KIND.SETTINGS)
       throw new Error(`kind ${kind} is not a kind of block`);
     for (const key of strayFaceKeys(b))
       throw new Error(`face ${JSON.stringify(key)} is not one of the six`);
@@ -654,12 +702,12 @@ const objectsOf = (r) =>
 
 function recordDict(r) {
   const d = { x: r.cell[0], y: r.cell[1], z: r.cell[2], kind: r.kind };
-  if (PAYLOAD_KINDS.has(r.kind) || r.kind === SETTINGS_KIND) {
+  if (PAYLOAD_KINDS.has(r.kind) || r.kind === KIND.SETTINGS) {
     d.type = typeOf(r);
     d.f = fOf(r);
   }
-  if (r.kind === LASER_KIND) d.colour = r.slots[1][6];
-  if (r.kind === PLATFORM_KIND) {
+  if (r.kind === KIND.LASER) d.colour = r.slots[1][6];
+  if (r.kind === KIND.PLATFORM) {
     d.length = r.slots[1][1];
     d.speed = r.slots[1][2];
   }
@@ -714,7 +762,7 @@ export function levelOf(bytes, meta = {}) {
     ...extent(cells),
     cells,
     records,
-    time: trailer.kind === TRAILER_KIND ? fOf(trailer)[4] : DEFAULT_TIME,
+    time: trailer.kind === KIND.TRAILER ? fOf(trailer)[4] : DEFAULT_TIME,
   });
 }
 
@@ -753,8 +801,8 @@ function wiring(records, devices = records) {
   for (const r of devices) {
     if (r.kind >= BLOCK_KINDS) continue;
     r.slots.forEach((s, j) => {
-      if (s[1] === SWITCH) out.push(`${cellText(r.cell)}/${j} flips ${list(s[LINK_WORD])}`);
-      else if (s[1] === TELEPORTER) {
+      if (s[1] === TYPE.SWITCH) out.push(`${cellText(r.cell)}/${j} flips ${list(s[LINK_WORD])}`);
+      else if (s[1] === TYPE.TELEPORTER) {
         const at = linkTarget(s[LINK_WORD]);
         out.push(`${cellText(r.cell)}/${j} leads to ${at === null ? "none" : target(at)}`);
       }
@@ -788,7 +836,7 @@ export function readKwl(bytes, world = WORLDS[0]) {
   );
   const count = view.getUint16(GRID_BYTES + 4, true);
   let time = DEFAULT_TIME;
-  if (records.length && records[records.length - 1].kind === TRAILER_KIND)
+  if (records.length && records[records.length - 1].kind === KIND.TRAILER)
     time = fOf(records.pop())[4];
   else report.push(`no trailer, so the time is ${DEFAULT_TIME}`);
   if (count !== records.length)
@@ -799,7 +847,7 @@ export function readKwl(bytes, world = WORLDS[0]) {
     if (v < FIRST_RECORD) return v;
     const k = v - FIRST_RECORD;
     const r = records[k];
-    if (!r || r.kind < 0 || r.kind >= SETTINGS_KIND) {
+    if (!r || r.kind < 0 || r.kind >= KIND.SETTINGS) {
       report.push(
         `cell ${cellText(cell)} names record ${k}, which is not a block; the cell is left empty`,
       );
@@ -824,7 +872,7 @@ export function readKwl(bytes, world = WORLDS[0]) {
   let kept = [];
   const settings = [];
   records.forEach((r, k) => {
-    if (r.kind === SETTINGS_KIND) settings.push(k);
+    if (r.kind === KIND.SETTINGS) settings.push(k);
     else if (named.has(k)) kept.push(k);
     else
       report.push(
@@ -881,7 +929,7 @@ export function readKwl(bytes, world = WORLDS[0]) {
         continue;
       }
       r.slots[0].splice(4, 6, ...[r.cell, far].sort(compareCells).flat());
-      if (r.kind === PLATFORM_KIND) {
+      if (r.kind === KIND.PLATFORM) {
         const [, length, speed] = r.slots[1];
         const held = heldLength(length, innerRoomFor(r.cell, far));
         if (held !== length) {
@@ -895,7 +943,7 @@ export function readKwl(bytes, world = WORLDS[0]) {
         if (speed !== DEFAULT_SPEED) note(`the platform at ${cellText(r.cell)} runs at ${speed}`);
       }
     }
-    if (r.kind === VANISHING_KIND && DIM_AT_ONCE.includes(fOf(r)[0]))
+    if (r.kind === KIND.VANISHING && DIM_AT_ONCE.includes(fOf(r)[0]))
       note(`the vanishing block at ${cellText(r.cell)} has phase ${fOf(r)[0]}, which dims at once`);
   }
 

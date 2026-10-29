@@ -2,13 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { annotations, mapData, objects } from "./fixtures.js";
 import { NAMES, setAnnotations } from "../../public/js/viewer/data.js";
-import {
-  BONUS_UNDRAWN_KINDS,
-  BONUS_UNDRAWN_TYPES,
-  LASER_KIND,
-  PLATFORM_KIND,
-  PLAYED,
-} from "../../public/js/format/kwl.js";
+import { BONUS_UNDRAWN_KINDS, BONUS_UNDRAWN_TYPES, PLAYED } from "../../public/js/format/kwl.js";
 import { fromLevel } from "../../public/js/format/project.js";
 import {
   TIME_LIMIT,
@@ -36,6 +30,7 @@ import {
   texts,
   warnings,
 } from "./project-doc.js";
+import { KIND } from "../../public/js/format/lattice.js";
 
 const EXIT = 7;
 
@@ -76,7 +71,7 @@ test("what the format takes, and what it warns about", () => {
   );
   const wide = {
     cell: [10, 10, 17],
-    kind: PLATFORM_KIND,
+    kind: KIND.PLATFORM,
     far: [10, 14, 17],
     length: 2,
     speed: 65566,
@@ -127,7 +122,7 @@ test("what the format takes, and what it warns about", () => {
     ),
   );
   assert.ok(errors([...one, plain([5, 5, 5])]).includes("two blocks on one cell"));
-  const rail = { cell: [10, 10, 17], kind: PLATFORM_KIND, far: [10, 14, 17], length: 5, speed: 20 };
+  const rail = { cell: [10, 10, 17], kind: KIND.PLATFORM, far: [10, 14, 17], length: 5, speed: 20 };
   assert.deepEqual(errors([...one, rail]), []);
   assert.ok(warnings([...one, rail]).includes("a platform 5 blocks long"));
   assert.ok(warnings([...one, rail]).includes("a platform running at 20"));
@@ -152,7 +147,7 @@ test("an object looks into an empty cell", () => {
     { cell: [5, 6, 5], kind: 6 },
     { cell: [5, 4, 4], kind: 7, phase: 0 },
     { cell: [5, 4, 5], kind: 7, phase: 0 },
-    { cell: [5, 8, 7], kind: LASER_KIND, far: [5, 8, 3], colour: 0 },
+    { cell: [5, 8, 7], kind: KIND.LASER, far: [5, 8, 3], colour: 0 },
     plain([6, 8, 5], 0, { 4: coin }),
   ];
   const warned = warnings(blocks);
@@ -177,14 +172,14 @@ test("a circuit's members are counted on the faces the game walks, by colour", (
     }),
     {
       cell: [7, 5, 5],
-      kind: PLATFORM_KIND,
+      kind: KIND.PLATFORM,
       far: [7, 9, 5],
       length: 2,
       speed: 30,
       faces: { 0: { type: SWITCH, variant: 2 } },
     },
-    { cell: [9, 5, 5], kind: LASER_KIND, far: [9, 9, 5], colour: 2 },
-    { cell: [11, 5, 5], kind: LASER_KIND, far: [11, 9, 5] },
+    { cell: [9, 5, 5], kind: KIND.LASER, far: [9, 9, 5], colour: 2 },
+    { cell: [11, 5, 5], kind: KIND.LASER, far: [11, 9, 5] },
     plain([13, 5, 5], 0, {
       0: { type: TELEPORTER, facing: 1, variant: 7 },
       1: { type: SWITCH, variant: -1 },
@@ -205,7 +200,7 @@ test("the circuits' warnings", () => {
       1: { type: TELEPORTER, facing: 1, variant: 0 },
       2: { type: SWITCH, variant: 1 },
     }),
-    { cell: [9, 9, 9], kind: LASER_KIND, far: [9, 12, 9], colour: 2 },
+    { cell: [9, 9, 9], kind: KIND.LASER, far: [9, 12, 9], colour: 2 },
   ];
   const warned = warnings(blocks, { circuits: { 2: "off" } });
   assert.ok(warned.includes("the green circuit starts off and has no switch to turn it on"));
@@ -265,7 +260,7 @@ test("a keyless level is warned of what the bonus artwork has no picture for", (
     }),
     plain([7, 5, 5], 1),
     plain([9, 5, 5], 2),
-    { cell: [11, 5, 5], kind: PLATFORM_KIND, far: [11, 8, 5], length: 2, speed: 30 },
+    { cell: [11, 5, 5], kind: KIND.PLATFORM, far: [11, 8, 5], length: 2, speed: 30 },
   ];
   assert.ok(
     warnings(blocks).includes(

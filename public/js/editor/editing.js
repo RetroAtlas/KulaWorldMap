@@ -1,13 +1,13 @@
 // What the tools and the form share: the sentences, the words, the draft on screen and the checks.
 import { $ } from "../viewer/ui/dom.js";
 import { state } from "../viewer/state.js";
-import { cellKey, FACE_NORMAL } from "../format/lattice.js";
+import { cellKey, FACE_NORMAL, KIND } from "../format/lattice.js";
 import { NAMES, circuitPhrase, entryName, kindName, skinsTable } from "../viewer/data.js";
 import { say } from "../viewer/chrome/a11y.js";
 import { toast } from "../viewer/ui/toast.js";
 import { get } from "./drafts.js";
 import { edit } from "./trail.js";
-import { CRUMBLING_KIND, LASER_KIND, SPAN_KINDS, VANISHING_KIND, sameCell } from "../format/kwl.js";
+import { SPAN_KINDS, sameCell } from "../format/kwl.js";
 import { ERROR, describe, runOf, validate } from "../format/checks.js";
 import * as palette from "./palette.js";
 
@@ -28,7 +28,7 @@ export const kindWord = (kind) => lower(kindName(kind) || "plain block");
 export const brushWord = () => {
   const e = palette.chosen();
   if (!e) return "thing";
-  if (e.kind === LASER_KIND) return circuitPhrase(e.colour, kindWord(e.kind));
+  if (e.kind === KIND.LASER) return circuitPhrase(e.colour, kindWord(e.kind));
   return e.kind !== undefined ? kindWord(e.kind) : lower(e.label);
 };
 export const across = (cell, face) => cell.map((v, i) => v + FACE_NORMAL[face][i]);
@@ -49,7 +49,7 @@ export const plainOnly = (e) => {
 };
 export const holding = () => `That face holds ${aWord(brushWord())} already.`;
 export const brittle = (b) =>
-  SPAN_KINDS.has(b.kind) || b.kind === CRUMBLING_KIND || b.kind === VANISHING_KIND;
+  SPAN_KINDS.has(b.kind) || b.kind === KIND.CRUMBLING || b.kind === KIND.VANISHING;
 /** The span whose run takes `cell`, its own block's cell included; null where none does. */
 export const spanAt = (doc, cell) =>
   doc.blocks.find(

@@ -26,7 +26,6 @@ import {
   table,
   teleportDraft,
 } from "./playhelpers.js";
-import { KEY } from "../../public/js/play/world.js";
 import {
   DONE_WHY,
   FOLLOWING,
@@ -34,6 +33,7 @@ import {
   KEEPING,
   NO_FIRST_STOP,
 } from "../../public/js/play/phrases.js";
+import { TYPE } from "../../public/js/format/lattice.js";
 
 const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -312,7 +312,7 @@ test("Keep, pressed, keeps a jump the ball made as a jump of the route, and Foll
       [[18, 17, 17], { kind: 0 }],
       [[20, 17, 17], { kind: 0 }],
     ],
-    faces: [[[17, 17, 17], 4, { type: KEY }]],
+    faces: [[[17, 17, 17], 4, { type: TYPE.KEY }]],
   });
   await page.keyboard.press("w");
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");

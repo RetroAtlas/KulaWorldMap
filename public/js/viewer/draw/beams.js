@@ -2,8 +2,8 @@ import { state, screen, effectsOn } from "../state.js";
 import { kindMotion, litNow, circuitColour } from "../data.js";
 import { seed } from "../hash.js";
 import { outlineStroke } from "./blocks.js";
+import { KIND } from "../../format/lattice.js";
 
-const BEAM_KIND = 8;
 const BLOCK = 512; // the game's units to a block
 const INK = [232, 238, 251];
 const DARK_DASH = [5, 3];
@@ -23,7 +23,7 @@ const SIDES = [
 
 /** Returns whether any stretch through the cell changes by the next frame. */
 export function drawBeams(ctx, c, ghost, frame) {
-  const beam = kindMotion(BEAM_KIND);
+  const beam = kindMotion(KIND.LASER);
   let live = false;
   for (const { ray, k } of c.beams) {
     const lit = litNow(ray);

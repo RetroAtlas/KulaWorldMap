@@ -15,7 +15,7 @@ import { BASE, discWord, levelOn, releaseOf } from "../viewer/release.js";
 import { selectLevel, showLevel } from "../viewer/chrome/navigate.js";
 import { say, describeLevel } from "../viewer/chrome/a11y.js";
 import { toast } from "../viewer/ui/toast.js";
-import { COLOURS, KEY, SWITCH, facesOf, levelKey, writeKwl } from "../format/kwl.js";
+import { COLOURS, facesOf, levelKey, writeKwl } from "../format/kwl.js";
 import {
   UNTITLED,
   blank,
@@ -32,6 +32,7 @@ import { draftsOf, readLevel, readWith } from "./intake.js";
 import { heldImage, openPatchDialog } from "./patchdialog.js";
 import { edit as step } from "./trail.js";
 import * as drafts from "./drafts.js";
+import { TYPE } from "../format/lattice.js";
 
 const CONFIRM_MS = 4000;
 const NOTE_MS = 2000;
@@ -52,7 +53,7 @@ const quietly = (id, next, label, opts) => {
   step(id, next, label, opts);
   say("");
 };
-const keyed = (doc) => doc.blocks.some((b) => facesOf(b).some(([, o]) => o.type === KEY));
+const keyed = (doc) => doc.blocks.some((b) => facesOf(b).some(([, o]) => o.type === TYPE.KEY));
 const NO_MEMBERS = "nothing of this colour";
 const startsOff = (doc, colour) => doc.circuits?.[String(colour)] === "off";
 const some = (n, word, words = `${word}s`) => `${n} ${n === 1 ? word : words}`;
@@ -475,7 +476,7 @@ function circuitRows(id) {
     const lamp = el("span", { className: "lamp" });
     lamp.style.setProperty(
       "--lamp",
-      markerColour({ type: SWITCH, face: 0, variant: String(colour) }),
+      markerColour({ type: TYPE.SWITCH, face: 0, variant: String(colour) }),
     );
     lamp.setAttribute("aria-hidden", "true");
     const toggle = el("button", { id: `draftCircuit${colour}`, type: "button" });

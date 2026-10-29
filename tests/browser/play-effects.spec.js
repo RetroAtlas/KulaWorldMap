@@ -11,7 +11,7 @@ import {
   teleportDraft,
   toggled,
 } from "./playhelpers.js";
-import { KEY } from "../../public/js/play/world.js";
+import { TYPE } from "../../public/js/format/lattice.js";
 
 const dustAlive = (page) =>
   page.evaluate(async () =>
@@ -95,7 +95,7 @@ const burstAbout = (page, way) =>
       }
       return { took, frames, samples };
     },
-    [way, KEY_BLOCK, KEY],
+    [way, KEY_BLOCK, TYPE.KEY],
   );
 
 /** Step the frozen level a frame of the clock at a time through `steps` steps, with `hold` held

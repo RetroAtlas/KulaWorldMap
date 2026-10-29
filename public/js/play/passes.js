@@ -1,11 +1,9 @@
+import { TYPE } from "../format/lattice.js";
 // The draw's passes over the game's words: the step over the screen's words as each pass ends and
 // the effects' run after it, the bursts a pickup and a teleporter start, the flash a send and a
 // level with no key start, the blanks a pass waits, the view's roll by the pill's word, the
 // invincible ball's glow by its counter and the sunglasses' blink, which says whether every
 // invisible block is seen.
-
-export const LETHARGY = 32;
-export const SUNGLASSES = 38;
 
 export const lastsOf = (live, type) => live.tables.motion.types[String(type)].lasts;
 const flashOf = (live, mode) => live.tables.motion.effects.flash[mode];
@@ -126,7 +124,7 @@ export function startFlash(live, mode) {
     and counts on. */
 export function drawn(live) {
   const w = live.words;
-  const { fade } = lastsOf(live, LETHARGY).screen;
+  const { fade } = lastsOf(live, TYPE.LETHARGY_PILL).screen;
   if (w.screen === SCREEN.flash) w.screen = SCREEN.ghost;
   else if (w.screen === SCREEN.end) {
     w.screen = SCREEN.fade;
@@ -150,7 +148,7 @@ export function drawn(live) {
     opening's flash waits none. */
 export function blanksOf(live) {
   const w = live.words;
-  if (w.screen) return lastsOf(live, LETHARGY).blanks;
+  if (w.screen) return lastsOf(live, TYPE.LETHARGY_PILL).blanks;
   if (w.flashing === FLASH.teleport) return flashOf(live, w.flashing).blanks;
   return 1;
 }
@@ -192,4 +190,4 @@ export function blinking(w, { times, frames }) {
 /** Whether every invisible block is seen this frame: the sunglasses' word stands, or their blink
     is in an on spell. */
 export const seeing = (live) =>
-  live.words.pills[SUNGLASSES] >= 0 || (live.words.blink?.spell ?? 0) % 2 === 1;
+  live.words.pills[TYPE.SUNGLASSES] >= 0 || (live.words.blink?.spell ?? 0) % 2 === 1;

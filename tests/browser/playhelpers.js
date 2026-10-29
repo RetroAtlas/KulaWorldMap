@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { drafted, drawn, frozen, onward, settle, still, written } from "./helpers.js";
-import { KEY } from "../../public/js/play/world.js";
+import { TYPE } from "../../public/js/format/lattice.js";
 
 // the levels the tests open, and what the strip and the live region say
 export const LEVEL = "/#HIRO/0/45,35/fit/33";
@@ -242,7 +242,7 @@ export async function startPlay(page) {
     the level plays as an arcade one rather than ending once every block is rolled onto, with what
     `more` lays and asks of `drafted`. */
 export const arcadeDraft = (page, more = {}) =>
-  drafted(page, { ...more, faces: [[[17, 17, 17], 1, { type: KEY }], ...(more.faces ?? [])] });
+  drafted(page, { ...more, faces: [[[17, 17, 17], 1, { type: TYPE.KEY }], ...(more.faces ?? [])] });
 
 /** The arcade level with a yellow switch on the block ahead of the start and two blue teleporters
     on the two beyond, leading to each other a block apart, the far one facing across the row. */

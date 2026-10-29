@@ -1,5 +1,5 @@
 import { state, BLOCK, project, facing, screen, sliceZ, effectsOn } from "../state.js";
-import { cellKey, FACE_NORMAL } from "../../format/lattice.js";
+import { cellKey, FACE_NORMAL, KIND } from "../../format/lattice.js";
 import { OFF_LATTICE, skinsTable, kindMotion, modelUnit, shownOn, openFace } from "../data.js";
 import { blockPhase, lightOn, cornersLit } from "../motion.js";
 import { ballsFor } from "./things.js";
@@ -107,9 +107,6 @@ const SHADE = FACES.map((f) =>
 );
 export const shadeOf = (i, world) => skinsTable()?.shade[world]?.[FACES[i].game] ?? SHADE[i];
 
-const PLATFORM = 5;
-const BEAM_KIND = 8;
-
 /** Whether a block of `kind` builds no face toward the neighbour `nb`. The
     game stands a plain block at a beam's ends before it builds a face, so an
     end hides like one. */
@@ -117,7 +114,9 @@ function hiddenBehind(kind, nb, idx) {
   const hides = skinsTable()?.hides;
   if (!hides || kind === undefined) return true;
   const theirs = kindOf(nb, idx, cellKey(nb.x, nb.y, nb.z));
-  return (hides.kinds[String(kind)] ?? hides.other).includes(theirs === BEAM_KIND ? 0 : theirs);
+  return (hides.kinds[String(kind)] ?? hides.other).includes(
+    theirs === KIND.LASER ? KIND.PLAIN : theirs,
+  );
 }
 
 /** Whether the block at a cell has face `g`, in the game's numbering, as the
@@ -192,30 +191,28 @@ export const flatFace = (tint, kind, i) => litFace(kindTint(tint, kind), i);
 // How a kind of block reads without its textures, and with them, where only a
 // block not there to be stood on keeps its broken outline.
 const LOOK = {
-  1: { wash: "rgba(255 70 30 / 0.45)" },
-  2: { wash: "rgba(160 225 255 / 0.45)" },
-  3: { alpha: 0.35, dash: [3, 3] },
-  6: { wash: "rgba(0 0 0 / 0.3)", dash: [6, 3] },
-  7: { alpha: 0.2, dash: [2, 4] },
+  [KIND.FIRE]: { wash: "rgba(255 70 30 / 0.45)" },
+  [KIND.ICE]: { wash: "rgba(160 225 255 / 0.45)" },
+  [KIND.INVISIBLE]: { alpha: 0.35, dash: [3, 3] },
+  [KIND.CRUMBLING]: { wash: "rgba(0 0 0 / 0.3)", dash: [6, 3] },
+  [KIND.VANISHING]: { alpha: 0.2, dash: [2, 4] },
 };
 export const SKINNED_LOOK = {
-  3: { alpha: 0.7, dash: [3, 3] },
-  7: { alpha: 0.2, dash: [2, 4] },
+  [KIND.INVISIBLE]: { alpha: 0.7, dash: [3, 3] },
+  [KIND.VANISHING]: { alpha: 0.2, dash: [2, 4] },
 };
-const INVISIBLE = 3;
-const VANISHING = 7;
 const GLASS_FACE = 0.5;
 // The kinds the game builds on a path of their own, which a hidden level's
 // glass leaves out.
-const UNGLAZED = new Set([INVISIBLE, VANISHING]);
+const UNGLAZED = new Set([KIND.INVISIBLE, KIND.VANISHING]);
 const TRANSLUCENT = 4;
 const FADING = 0.6;
 
 /** Held still, a vanishing block looks as it does when it starts to go. */
 function vanishingLook(r, frame, skinned) {
   if (!state.show.motion) return { alpha: FADING };
-  const { state: step, level } = blockPhase(kindMotion(VANISHING), r, frame);
-  if (step === 0) return (skinned ? SKINNED_LOOK : LOOK)[VANISHING];
+  const { state: step, level } = blockPhase(kindMotion(KIND.VANISHING), r, frame);
+  if (step === 0) return (skinned ? SKINNED_LOOK : LOOK)[KIND.VANISHING];
   const k = Math.abs(level - NEUTRAL) / NEUTRAL;
   const wash = level > NEUTRAL ? `rgba(255 255 255 / ${0.8 * k})` : `rgba(0 0 0 / ${0.8 * k})`;
   return { alpha: step >= TRANSLUCENT ? FADING : 1, wash };
@@ -244,7 +241,7 @@ const peak = (skins) => Array(3).fill(Math.max(...skins.cycles.invisible.level))
 // light returned is the level's, or null where the kind has none.
 const lights = new WeakMap();
 function lightUp(sk, l, home, face, corners) {
-  const entry = kindMotion(INVISIBLE)?.light;
+  const entry = kindMotion(KIND.INVISIBLE)?.light;
   if (!entry) return null;
   if (!lights.has(l)) lights.set(l, lightOn(entry, l));
   const light = lights.get(l);
@@ -271,7 +268,7 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
   const kind = kindOf(c, idx, key);
   const rec = c.v >= state.data.firstRecord ? idx.records.get(key)?.[0] : null;
   let style = (atlas ? SKINNED_LOOK : LOOK)[kind] || {};
-  if (kind === VANISHING && kindMotion(kind)) {
+  if (kind === KIND.VANISHING && kindMotion(kind)) {
     live = true;
     style = vanishingLook(rec, frame, !!atlas);
   }
@@ -281,7 +278,7 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
   const a = (ghost ? 0.16 : 1) * (style.alpha ?? 1) * glass;
   let skin = null;
   if (atlas) {
-    const place = c.k !== undefined && rec?.kind === PLATFORM ? platformPlace(rec, c.k) : null;
+    const place = c.k !== undefined && rec?.kind === KIND.PLATFORM ? platformPlace(rec, c.k) : null;
     const still = place ? { ...home, [place.axis]: home[place.axis] + c.k } : home;
     const plates = idx.plates.get(key);
     const shown = rec && shownOn(rec, idx.markers.get(key));
@@ -294,7 +291,7 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
         mark === undefined ? !!shown && openFace(shown, g) : effectsOn() ? frame - mark : Infinity;
       const sk = faceSkin(skins, look, still, g, kind, shown, effect, place, plate, marked);
       if (sk?.live) live = true;
-      if (sk && kind === INVISIBLE) {
+      if (sk && kind === KIND.INVISIBLE) {
         const filled = seeing || state.show.invisible;
         if (!effectsOn()) sk.colour = peak(skins);
         const light =

@@ -6,7 +6,7 @@ import { ageDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
 import { drawEffects, effectsWith } from "./effects.js";
 import { flashing, screened } from "./screen.js";
 import { state } from "../viewer/state.js";
-import { SIDE, cellKey } from "../format/lattice.js";
+import { SIDE, cellKey, TYPE } from "../format/lattice.js";
 import {
   blockUnits,
   flip,
@@ -34,8 +34,7 @@ import { onShow, refreshDetail } from "../viewer/chrome/detail.js";
 import { tipWith } from "../viewer/chrome/interaction.js";
 import { REST, aloft, blockUnder, moving } from "./ball.js";
 import { drives, frame as gameFrame, heeds, relevel, stand, startRun } from "./rules.js";
-import { BALL as BALL_TYPE } from "./hazards.js";
-import { LETHARGY, blanksOf } from "./passes.js";
+import { blanksOf } from "./passes.js";
 import {
   DYING,
   LEFT_PLAY,
@@ -243,7 +242,7 @@ function played() {
   const was = !aloft(b) ? footOf(b) : null;
   const blinked = !!run.words.blink;
   const events = gameFrame(run, pad);
-  if (events.some((e) => e.pill?.type === LETHARGY)) lit = true;
+  if (events.some((e) => e.pill?.type === TYPE.LETHARGY_PILL)) lit = true;
   if (!motionOn()) ageDust(1 / motionTable().hz);
   else if (was && !aloft(b) && !events.some((e) => e.sent)) {
     const under = blockUnder(b);
@@ -328,7 +327,7 @@ function followRoute() {
 function enter(at = null) {
   const l = state.lvl;
   const motion = motionTable();
-  if (!l || !motion?.types[String(BALL_TYPE)]) return;
+  if (!l || !motion?.types[String(TYPE.START)]) return;
   finishEase();
   const probe = probeOf(state.idx);
   const start = startOf(l, probe);

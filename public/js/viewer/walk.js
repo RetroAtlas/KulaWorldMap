@@ -1,12 +1,11 @@
 // The ball's moves over the lattice, station to station, and the course they make.
-import { SIDE, cellKey, FACE_NORMAL } from "../format/lattice.js";
+import { SIDE, cellKey, FACE_NORMAL, KIND } from "../format/lattice.js";
 import { heading } from "./travel.js";
 import { platformCells } from "./data.js";
 
 const LOW = 1;
 const HIGH = SIDE - 2;
 const CELLS = SIDE * SIDE * SIDE;
-const PLATFORM_KIND = 5;
 const ROLL_ON = 0;
 const INNER_CORNER = 1;
 const OUTER_EDGE = 2;
@@ -37,7 +36,7 @@ export function probeOf(idx) {
   const bodies = new Set();
   for (const records of idx.records.values())
     for (const r of records)
-      if (r.kind === PLATFORM_KIND) for (const c of platformCells(r)) bodies.add(cellKey(...c));
+      if (r.kind === KIND.PLATFORM) for (const c of platformCells(r)) bodies.add(cellKey(...c));
   const solid = (cell) => {
     if (!cell.every((v) => v >= LOW && v <= HIGH)) return false;
     const key = cellKey(...cell);

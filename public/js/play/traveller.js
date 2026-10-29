@@ -2,7 +2,7 @@
 // at and with while the ball is on the map, the ball's tint, the start the game takes and the
 // ball as it last stood.
 import { state, camera, depth } from "../viewer/state.js";
-import { cellKey, FACE_NORMAL } from "../format/lattice.js";
+import { cellKey, FACE_NORMAL, KIND, TYPE } from "../format/lattice.js";
 import {
   TANGENT,
   layHeading,
@@ -16,7 +16,6 @@ import { faceAxes } from "../viewer/motion.js";
 import { blockUnder, centreOf, clearance, faceUnder, positionOf } from "./ball.js";
 import { frameShown, travelOf, viewOf as drawnIndex } from "./world.js";
 import { glowOf, glowStep, seeing } from "./passes.js";
-import { BALL as BALL_TYPE, INVINCIBLE } from "./hazards.js";
 
 // the ball's key among the frame's travellers, which no thing of the level's answers to
 export const BALL = "ball";
@@ -24,13 +23,12 @@ export const BALL = "ball";
 const LIGHT = 4096;
 // how far toward the camera a block counts as covering the ball, in blocks, and the sampling step
 const COVER = { reach: 1.5, step: 0.25 };
-const PLAIN_KIND = 0;
 
 // the invincible ball's glow counter, kept for the page's life as the game keeps it
 let glowCounter = 0;
 
 const motionOn = () => state.show.motion;
-const glowTable = () => motionTable().types[String(INVINCIBLE)].lasts.glow;
+const glowTable = () => motionTable().types[String(TYPE.INVINCIBILITY_PILL)].lasts.glow;
 
 /** What the ball shows: its block and face, heading, centre and foot, body and lift. */
 export function stateOf(b, probe) {
@@ -103,7 +101,7 @@ export function travellerOf(live, l) {
     x: s.block[0],
     y: s.block[1],
     z: s.block[2],
-    v: PLAIN_KIND,
+    v: KIND.PLAIN,
   };
   const going = {
     w: { c, m, face: s.face },
@@ -134,9 +132,9 @@ export function tintOf(live, w) {
     return [level, level, level];
   }
   const words = [w.heat, w.melt, w.cold];
-  const glowing = w.pills[INVINCIBLE] >= 0;
+  const glowing = w.pills[TYPE.INVINCIBILITY_PILL] >= 0;
   if (!words.some(Boolean) && !glowing) return undefined;
-  const { own, other } = types[String(BALL_TYPE)].tint;
+  const { own, other } = types[String(TYPE.START)].tint;
   const raised = glowing ? glowOf(glowCounter, glowTable(), turn) : null;
   // the sine's one is the untinted light
   const lift = (ch) => (raised ? (raised[ch] * LIGHT) / turn : 0);
@@ -152,13 +150,14 @@ export function tintOf(live, w) {
 // The dying flash's angle steps each frame the mark stands and starts over as it clears.
 export function flashed(live, w) {
   const { types, turn } = motionTable();
-  live.flash = w.dying ? (live.flash + types[String(BALL_TYPE)].dying.flash) % turn : 0;
+  live.flash = w.dying ? (live.flash + types[String(TYPE.START)].dying.flash) % turn : 0;
 }
 
 // The glow's counter steps on each frame the ball is drawn with the pill's word not negative, and
 // is never put back.
 export function glowed(live, w) {
-  if (!live.ended && w.pills[INVINCIBLE] >= 0) glowCounter = glowStep(glowCounter, glowTable());
+  if (!live.ended && w.pills[TYPE.INVINCIBILITY_PILL] >= 0)
+    glowCounter = glowStep(glowCounter, glowTable());
 }
 
 /** The things on `key`'s block the ball has taken, as play's level still lists them. */
@@ -190,6 +189,6 @@ export function firstStandable(probe) {
 export function markersFor(start) {
   const base = start?.marker
     ? { type: start.marker.type, f: start.marker.f, v: undefined, variant: null }
-    : { type: BALL_TYPE, f: [], v: undefined, variant: null };
+    : { type: TYPE.START, f: [], v: undefined, variant: null };
   return FACE_NORMAL.map((_, face) => ({ ...base, id: BALL, face }));
 }

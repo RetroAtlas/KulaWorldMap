@@ -2,7 +2,7 @@
 // its tools and keys, and what it draws over the map through the frame's hooks.
 import { $, dialogOpen, emit, on, typing } from "../viewer/ui/dom.js";
 import { state, BLOCK, facing as turnedToView, screen, sliceZ } from "../viewer/state.js";
-import { SIDE, cellKey, FACE_NORMAL, FACE_NAME } from "../format/lattice.js";
+import { SIDE, cellKey, FACE_NORMAL, FACE_NAME, KIND } from "../format/lattice.js";
 import { circuitPhrase, levelTitle, markerLabel } from "../viewer/data.js";
 import { provideLevels, setSlice } from "../viewer/chrome/navigate.js";
 import { cellAt, drawSoon, overlayWith } from "../viewer/draw/render.js";
@@ -15,9 +15,7 @@ import {
   DEFAULT_LENGTH,
   DEFAULT_SPEED,
   FACING_TYPES,
-  LASER_KIND,
   PLAIN_ONLY,
-  PLATFORM_KIND,
   SPAN_KINDS,
   VARIANT_TYPES,
   cellText,
@@ -96,7 +94,7 @@ const HOLD_MS = 500;
 
 const mode = { on: false, tool: "place" };
 // What Place lays: a kind of block, or a thing for a face, turned as `facing` says.
-let brush = { id: "k0", kind: 0 };
+let brush = { id: "k0", kind: KIND.PLAIN };
 let facing = 1;
 // A run waiting for its far end: its own cell, whether it re-lays the span
 // there, and whether a finger began it.
@@ -130,7 +128,7 @@ const phone = () => sidebarOverlays();
 const hovered = () => armed?.c ?? state.hover;
 const waiting = () => (pending.touch ? WAITING_TOUCH : WAITING);
 const spanWord = (b) =>
-  b.kind === LASER_KIND ? circuitPhrase(b.colour ?? 0, kindWord(b.kind)) : kindWord(b.kind);
+  b.kind === KIND.LASER ? circuitPhrase(b.colour ?? 0, kindWord(b.kind)) : kindWord(b.kind);
 const toCell = ([x, y, z]) => ({ x, y, z });
 
 export function bootEditor() {
@@ -870,9 +868,9 @@ function candidate(c, e, doc) {
   if (!c) return e ? landing(null, e) : null;
   const cell = [c.x, c.y, c.z];
   const kind = ownSpan(doc)?.kind ?? brush.kind;
-  if (kind === LASER_KIND) {
+  if (kind === KIND.LASER) {
     const b = blockAt(doc, cell);
-    if (b && ((b.kind === 0 && !facesOf(b).length) || b.kind === LASER_KIND)) return cell;
+    if (b && ((b.kind === KIND.PLAIN && !facesOf(b).length) || b.kind === KIND.LASER)) return cell;
   }
   return c.face == null ? null : across(c, c.face);
 }
@@ -893,9 +891,9 @@ function anchorRefusal(doc) {
 function spanToward(doc, far) {
   const own = ownSpan(doc);
   if (own) return { ...own, far };
-  if (brush.kind === PLATFORM_KIND)
-    return { kind: PLATFORM_KIND, far, length: DEFAULT_LENGTH, speed: DEFAULT_SPEED };
-  return { kind: LASER_KIND, far, colour: brush.colour ?? 0 };
+  if (brush.kind === KIND.PLATFORM)
+    return { kind: KIND.PLATFORM, far, length: DEFAULT_LENGTH, speed: DEFAULT_SPEED };
+  return { kind: KIND.LASER, far, colour: brush.colour ?? 0 };
 }
 
 function startRun(c, e, d) {
@@ -976,7 +974,7 @@ function verdicts(doc, span, cells) {
   const runs = new Set();
   for (const b of doc.blocks) {
     if (!SPAN_KINDS.has(b.kind) || !b.far || sameCell(b.cell, span.cell)) continue;
-    const laser = b.kind === LASER_KIND;
+    const laser = b.kind === KIND.LASER;
     const taken = laser ? runOf(b).slice(1, -1) : runOf(b);
     for (const c of taken) (laser ? beams : runs).add(cellKey(...c));
   }
@@ -985,8 +983,8 @@ function verdicts(doc, span, cells) {
     if (!c.every(inner)) return "blocked";
     const other = blockAt(doc, c);
     if (other) {
-      const end = span.kind === LASER_KIND && sameCell(c, span.far);
-      return end && (other.kind === 0 || other.kind === LASER_KIND) ? "free" : "blocked";
+      const end = span.kind === KIND.LASER && sameCell(c, span.far);
+      return end && (other.kind === KIND.PLAIN || other.kind === KIND.LASER) ? "free" : "blocked";
     }
     const key = cellKey(...c);
     return beams.has(key) ? "beam" : runs.has(key) ? "run" : "free";
@@ -1024,7 +1022,7 @@ function placeThing(c, d, e) {
   const b = blockAt(d.doc, cell);
   if (!b) return false;
   const entry = palette.chosen();
-  if (PLAIN_ONLY.has(brush.type) && b.kind !== 0) return refuse(plainOnly(entry));
+  if (PLAIN_ONLY.has(brush.type) && b.kind !== KIND.PLAIN) return refuse(plainOnly(entry));
   if (brittle(b)) return refuse(BRITTLE);
   if (blockAt(d.doc, across(c, c.face))) return refuse(LOOKS_INTO);
   if (holdsBrush(c)) return refuse(holding());
@@ -1267,7 +1265,7 @@ export function ghostPreview() {
   const h = floor ? null : hovered();
   if (!floor && h?.face == null) return null;
   const cell = floor ?? across(h, h.face);
-  const kind = SPAN_KINDS.has(brush.kind) ? 0 : brush.kind;
+  const kind = SPAN_KINDS.has(brush.kind) ? KIND.PLAIN : brush.kind;
   const key = `${cell}|${kind}`;
   if (ghost?.doc !== d.doc || ghost.key !== key) {
     const blocked = kind === undefined ? !!floor : blockRefusal(d.doc, cell, kind) !== null;

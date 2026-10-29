@@ -13,7 +13,7 @@ import {
   startPlay,
   table,
 } from "./playhelpers.js";
-import { KEY } from "../../public/js/play/world.js";
+import { TYPE } from "../../public/js/format/lattice.js";
 
 // the view's frame behind a ball on a top face facing -x
 const TURNED = [0, -1, 0, 1, 0, 0, 0, 0, 1];
@@ -162,7 +162,7 @@ test("over the far edge of a ridge the ball goes round onto the side, and the fr
   const errors = trackErrors(page);
   await drafted(page, {
     blocks: [[[18, 17, 17], { kind: 0 }]],
-    faces: [[[17, 17, 17], 4, { type: KEY }]],
+    faces: [[[17, 17, 17], 4, { type: TYPE.KEY }]],
     motion: false,
   });
   const { hz } = await table(page);

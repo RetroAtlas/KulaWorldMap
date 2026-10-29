@@ -4,7 +4,6 @@ import { writeProject } from "../../public/js/format/project.js";
 import { SLUG_MOST } from "../../public/js/editor/files.js";
 import { synthetic, syntheticImage } from "../unit/synthetic.js";
 import { annotations, mapData } from "../unit/fixtures.js";
-import { EXIT } from "../../public/js/format/kwl.js";
 import {
   ADD,
   CASE,
@@ -23,6 +22,7 @@ import {
   stored,
   toasts,
 } from "./patchhelpers.js";
+import { TYPE } from "../../public/js/format/lattice.js";
 
 const FIFTH = "/#HIRO/4/45,35/fit/33";
 
@@ -214,7 +214,7 @@ test("a level the checks pass says it has no warnings, in no fold and with no er
   await page.goto(EDIT);
   await settle(page);
   const clean = synthetic(6, "Clean");
-  clean.blocks[0].faces[1] = { type: EXIT };
+  clean.blocks[0].faces[1] = { type: TYPE.EXIT };
   const id = await opened(page, "clean.kula.json", clean);
   await openPatch(page, id);
   const dialog = page.locator("#patch");

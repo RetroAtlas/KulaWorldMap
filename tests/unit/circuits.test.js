@@ -25,7 +25,7 @@ import {
   circuitPhrase,
   theCircuit,
 } from "../../public/js/viewer/data.js";
-import { SWITCH } from "../../public/js/format/kwl.js";
+import { TYPE } from "../../public/js/format/lattice.js";
 
 const levelNamed = (name, pack) =>
   mapData.levels.find((l) => l.name === name && (!pack || l.pack === pack));
@@ -140,11 +140,11 @@ test("a teleporter leads to one of its own colour, and nothing else leads anywhe
 test("a circuit's word is the bracketed part of its switch's name, and empty brackets give none", () => {
   /** The annotations with every switch variant named `name`. */
   const switchesNamed = (name) => {
-    const sw = annotations.types[String(SWITCH)];
+    const sw = annotations.types[String(TYPE.SWITCH)];
     const variants = Object.fromEntries(
       Object.entries(sw.variants).map(([k, v]) => [k, { ...v, name }]),
     );
-    return { ...annotations, types: { ...annotations.types, [SWITCH]: { ...sw, variants } } };
+    return { ...annotations, types: { ...annotations.types, [TYPE.SWITCH]: { ...sw, variants } } };
   };
   setAnnotations(annotations);
   assert.equal(circuitWord(2), "green");

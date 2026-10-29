@@ -16,22 +16,19 @@ import { blockIcon, markerIcon } from "../viewer/draw/icons.js";
 import {
   COLOURS,
   FACING_TYPES,
-  FRUIT,
-  LASER_KIND,
   PICKUPS,
   PLAIN_ONLY,
   PLAYED,
-  SETTINGS_KIND,
-  STAR,
   STARTS,
   VARIANTS,
 } from "../format/kwl.js";
+import { KIND, TYPE } from "../format/lattice.js";
 
 export const GROUPS = ["Blocks", "On the face", "Devices", "Hazards", "Pickups"];
 // The acid patch works by the code and is untested in play, so it is not offered.
 const UNTRIED = 4;
-// Every fruit shows as the one the player needs next, so one entry stands for all.
-const FRUIT_SHOWN = 46;
+// Every fruit shows as the one the player needs next, so the common fruit's entry stands for all.
+const FRUIT_SHOWN = TYPE.FRUIT[3];
 const FRUIT_NOTE = "The game shows the player's next fruit, whichever is placed";
 const PICKUP_SET = new Set(PICKUPS);
 const NO_WORDS = Array(16).fill(0);
@@ -50,12 +47,12 @@ const split = (type) => objectId({ type, f: NO_WORDS }).includes("/");
 
 /** The legend's key for a thing of the project's shape, every fruit under the row that stands for them. */
 export const idOf = ({ type, variant }) => {
-  const t = FRUIT.includes(type) ? FRUIT_SHOWN : type;
+  const t = TYPE.FRUIT.includes(type) ? FRUIT_SHOWN : type;
   return split(t) ? `t${t}/${variant ?? 0}` : `t${t}`;
 };
 
 /** The key of a block's row: its kind, and for a laser its colour as well. */
-export const kindId = (b) => (b.kind === LASER_KIND ? `k${b.kind}/${b.colour ?? 0}` : `k${b.kind}`);
+export const kindId = (b) => (b.kind === KIND.LASER ? `k${b.kind}/${b.colour ?? 0}` : `k${b.kind}`);
 
 /** A colour's word, as the annotations name a switch of it, or the circuit's number as a name. */
 export const colourName = circuitName;
@@ -74,9 +71,9 @@ let entries = null;
 
 function build() {
   const out = [];
-  for (let kind = 0; kind < SETTINGS_KIND; kind++) {
+  for (let kind = 0; kind < KIND.SETTINGS; kind++) {
     const name = kindName(kind) ?? `kind ${kind}`;
-    const colours = kind === LASER_KIND ? [...Array(COLOURS).keys()] : [undefined];
+    const colours = kind === KIND.LASER ? [...Array(COLOURS).keys()] : [undefined];
     for (const colour of colours) {
       const id = kindId({ kind, colour });
       const label = colour === undefined ? name : `${name} (${colourName(colour)})`;
@@ -87,7 +84,7 @@ function build() {
     }
   }
   const types = [...PLAYED]
-    .filter((t) => t !== UNTRIED && (!FRUIT.includes(t) || t === FRUIT_SHOWN))
+    .filter((t) => t !== UNTRIED && (!TYPE.FRUIT.includes(t) || t === FRUIT_SHOWN))
     .sort((a, b) => a - b);
   for (const type of types) {
     const variants = split(type) ? [...Array(VARIANTS[type] ?? 1).keys()].map(String) : [null];
@@ -96,8 +93,8 @@ function build() {
       const label = markerLabel(marker);
       const e = { id: marker.id, group: groupOf(marker), type, label, title: label, marker };
       if (v !== null) e.variant = Number(v);
-      if (FRUIT.includes(type)) e.title = FRUIT_NOTE;
-      else if (type === STAR && markerNote(marker)) e.title = markerNote(marker);
+      if (TYPE.FRUIT.includes(type)) e.title = FRUIT_NOTE;
+      else if (type === TYPE.STAR && markerNote(marker)) e.title = markerNote(marker);
       out.push(e);
     }
   }

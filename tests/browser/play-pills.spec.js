@@ -12,8 +12,8 @@ import {
   table,
   toggled,
 } from "./playhelpers.js";
-import { LETHARGY, SUNGLASSES } from "../../public/js/play/passes.js";
 import { WEARING_OFF } from "../../public/js/play/phrases.js";
+import { TYPE } from "../../public/js/format/lattice.js";
 
 // LEVEL 86: the start on a ring of blocks, a bouncy pill two blocks on across a gap and blocks two
 // apart beyond it
@@ -41,7 +41,7 @@ async function facingPill(page) {
   const turned = await stepUntil(page, { line: "facing -x", moving: false, eased: true }, hz);
   expect(turned.at(-1).station.moving).toBe(false);
   await expect(line(page)).toContainText("facing -x");
-  return { errors, hz, clock, lasts: types[String(LETHARGY)].lasts };
+  return { errors, hz, clock, lasts: types[String(TYPE.LETHARGY_PILL)].lasts };
 }
 
 test("the sunglasses show every invisible block as the game does, the ball's light off them while they last, then blink them as they wear off, the strip saying so, and the ball's light alone shows them again", async ({
@@ -59,7 +59,7 @@ test("the sunglasses show every invisible block as the game does, the ball's lig
       [near, { kind: 3 }],
       [far, { kind: 3 }],
     ],
-    faces: [[[17, 16, 17], 0, { type: SUNGLASSES }]],
+    faces: [[[17, 16, 17], 0, { type: TYPE.SUNGLASSES }]],
     textures: true,
   });
   const { hz, types } = await table(page);
@@ -68,7 +68,7 @@ test("the sunglasses show every invisible block as the game does, the ball's lig
     const { frames, level } = skinsTable().cycles.invisible;
     return [frames.length, level.length];
   });
-  const { word, step, blink } = types[String(SUNGLASSES)].lasts;
+  const { word, step, blink } = types[String(TYPE.SUNGLASSES)].lasts;
   const gcd = (a, b) => (b ? gcd(b, a % b) : a);
   // the shimmer and the pulse come round together once in this many frames
   const period = (cycle[0] * cycle[1]) / gcd(...cycle);

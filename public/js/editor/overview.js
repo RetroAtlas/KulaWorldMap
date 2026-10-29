@@ -1,14 +1,14 @@
 // A draft's overview for the level line's note: how it plays, its counts and the findings.
 import { el } from "../viewer/ui/dom.js";
 import { state } from "../viewer/state.js";
-import { cellKey, FACE_NAME } from "../format/lattice.js";
+import { cellKey, FACE_NAME, TYPE } from "../format/lattice.js";
 import { NAMES, index, motionTable, skinsTable, startsOf } from "../viewer/data.js";
 import { probeOf, reachable, stationKey } from "../viewer/walk.js";
 import { showCell } from "../viewer/chrome/detail.js";
 import { noteWith } from "../viewer/chrome/navigate.js";
 import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
 import { get } from "./drafts.js";
-import { BLOCK_KINDS, CAPS, COUNTER_WORDS, DISC_MAX, KEY } from "../format/kwl.js";
+import { BLOCK_KINDS, CAPS, COUNTER_WORDS, DISC_MAX } from "../format/kwl.js";
 import {
   ERROR,
   WARNING,
@@ -74,7 +74,7 @@ function unreached(l) {
   }
   if (!missed.length) return null;
   const named = missed
-    .sort((a, b) => (b.m.type === KEY) - (a.m.type === KEY))
+    .sort((a, b) => (b.m.type === TYPE.KEY) - (a.m.type === TYPE.KEY))
     .map(
       ({ m, cell }) =>
         `${typeWord(m.type, NAMES)} on the ${FACE_NAME[m.face]} of the block at ${place3(cell)}`,

@@ -3,7 +3,7 @@
 // share link of the same written as lines of base36, gzipped and base64url.
 // Both are read by laying the words back into the game's file and reading
 // that, so one reader decides what a level means and what to repair.
-import { SIDE } from "./lattice.js";
+import { SIDE, KIND } from "./lattice.js";
 import {
   CELLS,
   DEFAULT_TIME,
@@ -11,9 +11,7 @@ import {
   GRID_BYTES,
   HEAD,
   RECORD,
-  SETTINGS_KIND,
   SLOT,
-  TRAILER_KIND,
   WORDS,
   WORLDS,
   collapse,
@@ -26,10 +24,6 @@ const SENTINEL = "~";
 const NONE = "_";
 const EDGE = SIDE - 1;
 const BLOCK_KINDS = 5;
-const PLATFORM = 5;
-const CRUMBLING = 6;
-const VANISHING = 7;
-const LASER = 8;
 const LEVEL_PARAM = "level";
 const THEME_PARAM = "theme";
 export const NOT_LINK = "That is not a link to a shared level.";
@@ -120,7 +114,7 @@ function record(b, cell, report) {
       if (it.route !== undefined) w[slot + 6] = face(it.route, "route");
       if (it.to !== undefined) w[slot + 7] = face(it.to, "to");
     }
-  } else if (b.type === PLATFORM) {
+  } else if (b.type === KIND.PLATFORM) {
     w[1] = one(b.movement, "movement");
     w[2] = one(b.orientation, "orientation");
     w.set(three(b.from, "from"), 4);
@@ -130,9 +124,9 @@ function record(b, cell, report) {
     w[SLOT + 2] = one(b.speed, "speed");
     w[SLOT + 4] = one(b.id, "id");
     w.set(three(b.start, "start"), WORDS - 9);
-  } else if (b.type === VANISHING) {
+  } else if (b.type === KIND.VANISHING) {
     (b.intervals ?? []).slice(0, 8).forEach((v, i) => (w[1 + i] = one(v, `interval ${i}`)));
-  } else if (b.type === LASER) {
+  } else if (b.type === KIND.LASER) {
     w[2] = one(b.orientation, "orientation");
     w[3] = one(b.length, "length");
     w.set(three(b.from, "from"), 4);
@@ -162,7 +156,7 @@ export function kwlOfOrbit(json) {
       report.push(`two blocks stand at ${text(cell)}; the first was kept`);
       continue;
     }
-    if (!Number.isInteger(b.type) || b.type < 0 || b.type > LASER) {
+    if (!Number.isInteger(b.type) || b.type < 0 || b.type > KIND.LASER) {
       report.push(
         `a block of kind ${b.type} at ${text(cell)} is not one the game has and was left out`,
       );
@@ -177,14 +171,14 @@ export function kwlOfOrbit(json) {
   const reverse = flag(json.reverse, "reverse", report);
   if (hidden || reverse) {
     const w = new Uint16Array(WORDS).fill(EMPTY);
-    w[0] = SETTINGS_KIND;
+    w[0] = KIND.SETTINGS;
     w[1] = hidden ? 1 : 0;
     w[2] = reverse ? 1 : 0;
     w.set([0, 0, 0], WORDS - 3);
     records.push(w);
   }
   const trailer = new Uint16Array(WORDS).fill(EMPTY);
-  trailer[0] = TRAILER_KIND;
+  trailer[0] = KIND.TRAILER;
   const time = isWord(json.time) ? json.time : DEFAULT_TIME;
   if (time !== json.time)
     report.push(
@@ -256,7 +250,7 @@ export function parseOrbitText(text) {
     const type = dec(parts[0]);
     const pos = vec(parts, 1);
     if (type < BLOCK_KINDS) json.blocks.push({ type, pos, items: parts.slice(4).map(item) });
-    else if (type === PLATFORM) {
+    else if (type === KIND.PLATFORM) {
       if (parts.length !== 18) throw new Error(NOT_LINK);
       json.blocks.push({
         type,
@@ -270,10 +264,10 @@ export function parseOrbitText(text) {
         speed: dec(parts[16]),
         id: dec(parts[17]),
       });
-    } else if (type === CRUMBLING) json.blocks.push({ type, pos });
-    else if (type === VANISHING)
+    } else if (type === KIND.CRUMBLING) json.blocks.push({ type, pos });
+    else if (type === KIND.VANISHING)
       json.blocks.push({ type, pos, intervals: parts.slice(4).map(dec) });
-    else if (type === LASER) {
+    else if (type === KIND.LASER) {
       if (parts.length !== 15) throw new Error(NOT_LINK);
       json.blocks.push({
         type,

@@ -17,7 +17,7 @@ import {
   table,
 } from "./playhelpers.js";
 import { ENDED, NO_START } from "../../public/js/play/phrases.js";
-import { KEY } from "../../public/js/play/world.js";
+import { TYPE } from "../../public/js/format/lattice.js";
 
 const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the level again.";
 
@@ -281,7 +281,7 @@ test("a jump off the lattice is lost, which ends the level", async ({ page }) =>
   // from the lattice's last column a jump lands past its edge, and the ball is lost
   await drafted(page, {
     blocks: [[[32, 17, 17], { kind: 0 }]],
-    faces: [[[17, 17, 17], 4, { type: KEY }]],
+    faces: [[[17, 17, 17], 4, { type: TYPE.KEY }]],
     motion: false,
   });
   const { play } = await table(page);

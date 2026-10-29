@@ -1,6 +1,6 @@
 import { $, on, emit } from "../ui/dom.js";
 import { state, BLOCK, depth, facing, screen, sliceZ, effectFrame } from "../state.js";
-import { cellKey, FACE_NORMAL } from "../../format/lattice.js";
+import { cellKey, FACE_NORMAL, KIND } from "../../format/lattice.js";
 import {
   worldTint,
   motionTable,
@@ -131,7 +131,6 @@ on("atlas-loaded", (world) => {
   draw();
 });
 
-const PLATFORM = 5;
 const THROUGH = 0.35;
 const away = (face) => face !== null && face !== undefined && !facing(FACE_NORMAL[face]);
 
@@ -143,7 +142,7 @@ function visible(idx, moving) {
       if (c.z < sliceZ() && !state.show.hidden) continue;
       const key = cellKey(c.x, c.y, c.z);
       const r = c.v >= state.data.firstRecord ? idx.records.get(key)?.[0] : null;
-      if (r?.kind !== PLATFORM) {
+      if (r?.kind !== KIND.PLATFORM) {
         out.push(c);
         // A thing on a face turned away from the view sorts as the cell it
         // stands in, behind its block, so the block hides only what it covers.

@@ -1,7 +1,7 @@
 // The panel's form while editing, on the panel's onShow seam: the block, its face and its circuit.
 import { $, el, on } from "../viewer/ui/dom.js";
 import { state } from "../viewer/state.js";
-import { cellKey, FACE_NAME, DIRECTION_NAME } from "../format/lattice.js";
+import { cellKey, FACE_NAME, DIRECTION_NAME, KIND, TYPE } from "../format/lattice.js";
 import {
   circuitPhrase,
   kindName,
@@ -22,14 +22,9 @@ import {
   DEFAULT_LENGTH,
   DEFAULT_SPEED,
   FACING_TYPES,
-  LASER_KIND,
   PHASES,
   PLAIN_ONLY,
-  PLATFORM_KIND,
   SPAN_KINDS,
-  SWITCH,
-  TELEPORTER,
-  VANISHING_KIND,
   VARIANTS,
   VARIANT_TYPES,
   spanAxis,
@@ -71,7 +66,7 @@ const FACE_SPOKEN = [
 ];
 const TURNS = 4;
 // the types whose one varying field is a phase
-const PHASED = new Set([11, 56]);
+const PHASED = new Set([TYPE.MOVING_SPIKES, TYPE.CAPTIVATOR_BOUNCING]);
 const NO_WORDS = Array(16).fill(0);
 let wired = false;
 let focused = null;
@@ -212,7 +207,7 @@ function blockCard(d, b, from) {
   }
   const out = card("Block", field("Kind", kind));
   if (from) out.append(line(`Part of the run of the block at ${place3(cell)}.`));
-  if (b.kind === VANISHING_KIND) {
+  if (b.kind === KIND.VANISHING) {
     const phase = el("select", { title: "The phase the block vanishes in" });
     phase.dataset.field = "phase";
     for (let p = 0; p < PHASES; p++) phase.append(option(String(p), String(p)));
@@ -237,7 +232,7 @@ function blockCard(d, b, from) {
       field("Runs to", el("span", { className: "value", textContent: place3(b.far) })),
     );
   }
-  if (b.kind === PLATFORM_KIND) {
+  if (b.kind === KIND.PLATFORM) {
     const number = (name, key, fallback, min) => {
       const input = el("input", { type: "number", step: 1, inputMode: "numeric", title: name });
       if (min !== undefined) input.min = min;
@@ -266,7 +261,7 @@ function blockCard(d, b, from) {
       number("Speed", "speed", DEFAULT_SPEED),
     );
   }
-  if (b.kind === LASER_KIND) {
+  if (b.kind === KIND.LASER) {
     out.append(
       group(
         "Colour",
@@ -274,7 +269,7 @@ function blockCard(d, b, from) {
           "laser",
           COLOURS,
           b.colour ?? 0,
-          (v) => swatchOf(SWITCH, v),
+          (v) => swatchOf(TYPE.SWITCH, v),
           (v) => palette.colourName(v),
           (v) =>
             change(
@@ -295,7 +290,7 @@ function changeKind(d, b, kind, select) {
   const keeps = kind < BLOCK_KINDS;
   const block = { kind };
   if (keeps && b.faces) block.faces = b.faces;
-  if (kind === VANISHING_KIND) block.phase = b.phase ?? 0;
+  if (kind === KIND.VANISHING) block.phase = b.phase ?? 0;
   const dropped = !keeps && b.faces && Object.keys(b.faces).length > 0;
   change(
     d,
@@ -425,7 +420,7 @@ function faceCard(d, own, c, face) {
           );
       out.append(group(phases ? "Phase" : coloured ? "Colour" : "Worth", row));
     }
-    if (o.type === TELEPORTER && m) {
+    if (o.type === TYPE.TELEPORTER && m) {
       const to = markerDestination(m, state.lvl);
       const where = !to
         ? "nowhere yet"
@@ -434,7 +429,8 @@ function faceCard(d, own, c, face) {
           : `${place3([to.x, to.y, to.z])}, ${FACE_NAME[to.face]}`;
       out.append(field("Leads to", el("span", { className: "value", textContent: where })));
     }
-    if (o.type === TELEPORTER || o.type === SWITCH) out.append(circuitRow(d, o.variant ?? 0));
+    if (o.type === TYPE.TELEPORTER || o.type === TYPE.SWITCH)
+      out.append(circuitRow(d, o.variant ?? 0));
   }
   const here = { ...state.idx.cells.get(cellKey(...cell)), face };
   const row = el("div", { className: "row" });
@@ -481,7 +477,7 @@ function changeThing(d, own, face, select, o) {
   const e = palette.entryOf(select.value);
   if (!e) return;
   let why = null;
-  if (PLAIN_ONLY.has(e.type) && own.kind !== 0) why = plainOnly(e);
+  if (PLAIN_ONLY.has(e.type) && own.kind !== KIND.PLAIN) why = plainOnly(e);
   else if (brittle(own)) why = BRITTLE;
   else if (blockAt(d.doc, across(cell, face))) why = LOOKS_INTO;
   if (why) {
@@ -528,7 +524,7 @@ function circuitRow(d, colour) {
       `turned ${theCircuit(colour)} ${off ? "on" : "off"}`,
     );
   const swatch = el("span", { className: "lamp" });
-  swatch.style.setProperty("--lamp", swatchOf(SWITCH, colour));
+  swatch.style.setProperty("--lamp", swatchOf(TYPE.SWITCH, colour));
   swatch.setAttribute("aria-hidden", "true");
   return group(
     "Circuit",

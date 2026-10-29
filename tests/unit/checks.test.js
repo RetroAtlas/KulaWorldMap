@@ -13,17 +13,8 @@ import {
   markerState,
 } from "../../public/js/viewer/data.js";
 import { hasFace } from "../../public/js/viewer/draw/blocks.js";
-import { FACE_NORMAL, SIDE, cellKey } from "../../public/js/format/lattice.js";
-import {
-  CAPS,
-  DISC_MAX,
-  FORMAT,
-  LASER_KIND,
-  PLATFORM_KIND,
-  SETTINGS_KIND,
-  inner,
-  writeKwl,
-} from "../../public/js/format/kwl.js";
+import { FACE_NORMAL, SIDE, cellKey, KIND } from "../../public/js/format/lattice.js";
+import { CAPS, DISC_MAX, FORMAT, inner, writeKwl } from "../../public/js/format/kwl.js";
 import { DRAFT_PACK, fromLevel, setBlock, toLevel } from "../../public/js/format/project.js";
 import { COUNTERS, counts, describe, playsAs, validate } from "../../public/js/format/checks.js";
 import {
@@ -51,7 +42,7 @@ test("every shipped level validates with no error and plays as the game plays it
     (l) => [15, 16, 17].includes(l.index) && !/FI\.PAK/.test(l.pack),
   );
   const hidden = mapData.levels.filter((l) =>
-    l.records.some((r) => r.kind === SETTINGS_KIND && r.type === 1),
+    l.records.some((r) => r.kind === KIND.SETTINGS && r.type === 1),
   );
   assert.deepEqual([bonus.length, hidden.length], [30, 10]);
   assert.ok(mapData.levels.some((l) => l.pack === objects.skins.copycat));
@@ -83,7 +74,7 @@ test("the face count is the renderer's rule, replayed over every shipped level",
     for (const c of idx.cells.values()) {
       if (!inner(c.x) || !inner(c.y) || !inner(c.z)) continue;
       const r = c.v === OFF_LATTICE ? null : idx.records.get(cellKey(c.x, c.y, c.z))?.[0];
-      if (r?.kind === PLATFORM_KIND) {
+      if (r?.kind === KIND.PLATFORM) {
         faces += 4 * r.length + 2;
         continue;
       }
@@ -131,7 +122,7 @@ test("a template drawn as the game would load it shows the shipped level's marke
     circuit: m.face === null ? null : markerCircuit(m),
     to: m.face === null ? null : markerDestination(m, l),
     span:
-      m.face === null && (m.kind === PLATFORM_KIND || m.kind === LASER_KIND)
+      m.face === null && (m.kind === KIND.PLATFORM || m.kind === KIND.LASER)
         ? m.f.slice(0, 8)
         : null,
     phase: m.face === null && m.kind === 7 ? m.f[0] : null,
@@ -145,7 +136,7 @@ test("a template drawn as the game would load it shows the shipped level's marke
     );
     const want = index(l);
     const got = index(drawn);
-    const keep = (m) => m.face !== null || m.kind !== SETTINGS_KIND;
+    const keep = (m) => m.face !== null || m.kind !== KIND.SETTINGS;
     const cells = [...want.markers.keys()].filter((k) => want.markers.get(k).some(keep)).sort();
     const drawnCells = [...got.markers.keys()].filter((k) => got.markers.get(k).some(keep)).sort();
     assert.deepEqual(drawnCells, cells, l.name);
@@ -234,7 +225,7 @@ test("the game builds nothing past the edge", () => {
 });
 
 test("a platform runs over empty cells", () => {
-  const rail = { cell: [10, 10, 17], kind: PLATFORM_KIND, far: [10, 14, 17], length: 3, speed: 30 };
+  const rail = { cell: [10, 10, 17], kind: KIND.PLATFORM, far: [10, 14, 17], length: 3, speed: 30 };
   const base = [plain([5, 5, 5], 0, { 0: start() }), rail];
   assert.deepEqual(errors(base), []);
   for (const cell of [
@@ -246,7 +237,7 @@ test("a platform runs over empty cells", () => {
       `the platform's run crosses the block at ${cell.join(",")}`,
     ]);
   assert.deepEqual(errors([...base, plain([10, 17, 17])]), []);
-  const edge = { cell: [30, 10, 17], kind: PLATFORM_KIND, far: [31, 10, 17], length: 2, speed: 30 };
+  const edge = { cell: [30, 10, 17], kind: KIND.PLATFORM, far: [31, 10, 17], length: 2, speed: 30 };
   assert.deepEqual(errors([base[0], edge]), []);
   for (const over of [
     { ...edge, far: [32, 10, 17] },
@@ -263,7 +254,7 @@ test("a platform runs over empty cells", () => {
 test("every length the writer refuses is an error of its own text, whatever else the platform has", () => {
   const rail = (upper, length, far = upper) => [
     plain([5, 5, 5], 0, { 0: start() }),
-    { cell: [10, upper - 1, 17], kind: PLATFORM_KIND, far: [10, far, 17], length, speed: 30 },
+    { cell: [10, upper - 1, 17], kind: KIND.PLATFORM, far: [10, far, 17], length, speed: 30 },
   ];
   const held = (upper, length) => `a platform ${length} blocks long, which the lattice cannot hold`;
   for (const upper of [30, 31, 32, 33])
@@ -285,12 +276,12 @@ test("every length the writer refuses is an error of its own text, whatever else
 });
 
 test("a beam ends on nothing, a plain block or another laser, and crosses nothing", () => {
-  const beam = { cell: [10, 10, 17], kind: LASER_KIND, far: [14, 10, 17], colour: 0 };
+  const beam = { cell: [10, 10, 17], kind: KIND.LASER, far: [14, 10, 17], colour: 0 };
   const base = [plain([5, 5, 5], 0, { 0: start() }), beam];
   assert.deepEqual(errors(base), []);
   assert.deepEqual(errors([...base, plain([14, 10, 17])]), []);
   assert.deepEqual(
-    errors([...base, { cell: [14, 10, 17], kind: LASER_KIND, far: [14, 14, 17], colour: 1 }]),
+    errors([...base, { cell: [14, 10, 17], kind: KIND.LASER, far: [14, 14, 17], colour: 1 }]),
     [],
   );
   assert.ok(
@@ -315,23 +306,23 @@ test("a beam ends on nothing, a plain block or another laser, and crosses nothin
 
 test("the cells the loaders fill are checked against each other", () => {
   const base = plain([5, 5, 5], 0, { 0: start() });
-  const beam = { cell: [10, 10, 17], kind: LASER_KIND, far: [10, 16, 17], colour: 0 };
-  const across = { cell: [8, 13, 17], kind: LASER_KIND, far: [12, 13, 17], colour: 1 };
+  const beam = { cell: [10, 10, 17], kind: KIND.LASER, far: [10, 16, 17], colour: 0 };
+  const across = { cell: [8, 13, 17], kind: KIND.LASER, far: [12, 13, 17], colour: 1 };
   assert.deepEqual(errors([base, beam, across]), []);
   assert.deepEqual(
     warnings([base, beam, across]).filter((w) => w.includes("crosses the beam")),
     [],
   );
-  const into = { cell: [8, 13, 17], kind: LASER_KIND, far: [10, 13, 17], colour: 1 };
+  const into = { cell: [8, 13, 17], kind: KIND.LASER, far: [10, 13, 17], colour: 1 };
   assert.deepEqual(errors([base, beam, into]), ["the beam ends in the beam from 10,10,17"]);
-  const rail = { cell: [8, 13, 17], kind: PLATFORM_KIND, far: [12, 13, 17], length: 2, speed: 30 };
+  const rail = { cell: [8, 13, 17], kind: KIND.PLATFORM, far: [12, 13, 17], length: 2, speed: 30 };
   assert.deepEqual(errors([base, beam, rail]), [
     "the platform's run crosses the beam from 10,10,17",
     "the beam crosses the platform's run from 8,13,17",
   ]);
   const overEnd = {
     cell: [8, 16, 17],
-    kind: PLATFORM_KIND,
+    kind: KIND.PLATFORM,
     far: [12, 16, 17],
     length: 2,
     speed: 30,
@@ -339,7 +330,7 @@ test("the cells the loaders fill are checked against each other", () => {
   assert.deepEqual(errors([base, beam, overEnd]), [
     "the platform's run crosses the end of the beam from 10,10,17",
   ]);
-  const clear = { cell: [8, 18, 17], kind: PLATFORM_KIND, far: [12, 18, 17], length: 2, speed: 30 };
+  const clear = { cell: [8, 18, 17], kind: KIND.PLATFORM, far: [12, 18, 17], length: 2, speed: 30 };
   assert.deepEqual(errors([base, beam, clear]), []);
 });
 
@@ -350,13 +341,13 @@ test("a span lies along one axis inside the edge", () => {
     [[10, 33, 17], "the far end is past the edge"],
     [[10, 32767, 17], "the far end is past the edge"],
   ]) {
-    const beam = { cell: [10, 10, 17], kind: LASER_KIND, far, colour: 0 };
+    const beam = { cell: [10, 10, 17], kind: KIND.LASER, far, colour: 0 };
     assert.ok(errors([plain([5, 5, 5], 0, { 0: start() }), beam]).includes(text), text);
   }
   // the walk over a span's cells never leaves the lattice, however far the end lies
   const far = Array.from({ length: 1000 }, (_, i) => ({
     cell: [1 + (i % 32), 1 + Math.floor(i / 32), 5],
-    kind: LASER_KIND,
+    kind: KIND.LASER,
     far: [1 + (i % 32), 1 + Math.floor(i / 32), 32767],
     colour: 0,
   }));
@@ -364,7 +355,7 @@ test("a span lies along one axis inside the edge", () => {
   assert.equal(found.filter((e) => e === "the far end is past the edge").length, 1000);
   const long = {
     cell: [10, 10, 17],
-    kind: PLATFORM_KIND,
+    kind: KIND.PLATFORM,
     far: [10, 12, 17],
     length: 32000,
     speed: 30,
@@ -377,7 +368,7 @@ test("a span lies along one axis inside the edge", () => {
   assert.ok(
     errors([
       plain([5, 5, 5], 0, { 0: start() }),
-      { cell: [10, 10, 17], kind: LASER_KIND, colour: 0 },
+      { cell: [10, 10, 17], kind: KIND.LASER, colour: 0 },
     ]).includes("a span needs a far end"),
   );
 });
@@ -391,7 +382,7 @@ test("a keyless level with a laser counts the blocks the loader makes", () => {
     [11, 10, 18],
   ];
   const blocks = [
-    { cell: [10, 10, 17], kind: LASER_KIND, far: [10, 14, 17], colour: 0 },
+    { cell: [10, 10, 17], kind: KIND.LASER, far: [10, 14, 17], colour: 0 },
     plain([11, 10, 17]),
     ...ring.map((cell) => plain(cell)),
   ];
@@ -428,8 +419,8 @@ test("a bad colour or variant is a finding and leaves the circuits pass alone", 
       2: { type: SWITCH, variant: -1 },
       3: { type: COIN, variant: "gold" },
     }),
-    { cell: [9, 9, 9], kind: LASER_KIND, far: [9, 12, 9], colour: 7 },
-    { cell: [9, 9, 12], kind: LASER_KIND, far: [9, 12, 12] },
+    { cell: [9, 9, 9], kind: KIND.LASER, far: [9, 12, 9], colour: 7 },
+    { cell: [9, 9, 12], kind: KIND.LASER, far: [9, 12, 12] },
   ];
   const findings = validate(project(blocks, { circuits: { 7: "off" } }), HIDES, NAMES);
   const found = texts(findings, "error");
@@ -461,8 +452,8 @@ test("a document that bypassed the reader is checked alike on both sides", () =>
         },
         { cell: [6, 5, 5], kind: true },
         { cell: [7, 5, 5], kind: 7, phase: true },
-        { cell: [8, 5, 5], kind: LASER_KIND, far: [8, 5, 50], colour: false },
-        { cell: [10, 5, 5], kind: PLATFORM_KIND, far: [10, 9, 5], length: false, speed: true },
+        { cell: [8, 5, 5], kind: KIND.LASER, far: [8, 5, 50], colour: false },
+        { cell: [10, 5, 5], kind: KIND.PLATFORM, far: [10, 9, 5], length: false, speed: true },
       ],
     },
     HIDES,
@@ -582,7 +573,7 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
   const withStart = (more) => [plain([5, 5, 5], 0, { 0: start() }), ...more];
   const rail = (i) => ({
     cell: [1 + 2 * i, 10, 5],
-    kind: PLATFORM_KIND,
+    kind: KIND.PLATFORM,
     far: [1 + 2 * i, 12, 5],
     length: 2,
     speed: 30,
@@ -699,7 +690,7 @@ test("the light and the moving spikes caps", () => {
 test("a platform longer than the ride's grid", () => {
   const rail = (length) => [
     plain([5, 5, 5], 0, { 0: start() }),
-    { cell: [10, 10, 17], kind: PLATFORM_KIND, far: [10, 14, 17], length, speed: 30 },
+    { cell: [10, 10, 17], kind: KIND.PLATFORM, far: [10, 14, 17], length, speed: 30 },
   ];
   assert.deepEqual(errors(rail(7)), []);
   assert.ok(warnings(rail(7)).includes("a platform 7 blocks long"));
@@ -712,7 +703,7 @@ test("a platform longer than the ride's grid", () => {
 test("a platform shorter than one block", () => {
   const rail = (length) => [
     plain([5, 5, 5], 0, { 0: start() }),
-    { cell: [10, 10, 17], kind: PLATFORM_KIND, far: [10, 14, 17], length, speed: 30 },
+    { cell: [10, 10, 17], kind: KIND.PLATFORM, far: [10, 14, 17], length, speed: 30 },
   ];
   assert.deepEqual(errors(rail(0)), ["a platform 0 blocks long, which is less than one block"]);
   assert.deepEqual(errors(rail(-3)), ["a platform -3 blocks long, which is less than one block"]);

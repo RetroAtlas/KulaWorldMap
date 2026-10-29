@@ -10,12 +10,7 @@ import {
   FACING_TYPES,
   FORMAT,
   HEADS_AS_ONE,
-  LASER_KIND,
-  PLATFORM_KIND,
-  SETTINGS_KIND,
   SPAN_KINDS,
-  START,
-  VANISHING_KIND,
   VARIANTS,
   VARIANT_TYPES,
   VERSION,
@@ -35,6 +30,7 @@ import {
   spelled,
   writeKwl,
 } from "./kwl.js";
+import { KIND, TYPE } from "./lattice.js";
 
 export const DRAFT_PACK = "/DRAFT/DRAFT.PAK";
 export const UNTITLED = "Untitled level";
@@ -69,7 +65,7 @@ export const blank = (world) => ({
   invisibleFromAfar: false,
   simon: false,
   circuits: {},
-  blocks: [{ cell: [...CENTRE], kind: 0, faces: { 0: { type: START, facing: 3 } } }],
+  blocks: [{ cell: [...CENTRE], kind: KIND.PLAIN, faces: { 0: { type: TYPE.START, facing: 3 } } }],
 });
 
 export const keyOf = (cell) => cell.join();
@@ -258,7 +254,7 @@ function readBlock(raw, i, report, seen) {
     report.push(`${at} stands outside the lattice; it is left out`);
     return null;
   }
-  if (b.kind < 0 || b.kind >= SETTINGS_KIND) {
+  if (b.kind < 0 || b.kind >= KIND.SETTINGS) {
     report.push(`${at} has a kind of ${b.kind}, which is not a kind of block; it is left out`);
     return null;
   }
@@ -286,7 +282,7 @@ function readBlock(raw, i, report, seen) {
       return null;
     b.far = [...far];
   }
-  if (b.kind === PLATFORM_KIND) {
+  if (b.kind === KIND.PLATFORM) {
     b.length = whole(raw, "length", DEFAULT_LENGTH, at, report);
     const held = heldLength(b.length, innerRoomFor(b.cell, b.far));
     if (held !== b.length) {
@@ -296,8 +292,8 @@ function readBlock(raw, i, report, seen) {
     }
     b.speed = word(whole(raw, "speed", DEFAULT_SPEED, at, report), "speed", at, report);
   }
-  if (b.kind === LASER_KIND) b.colour = oneOf(raw, "colour", COLOURS, at, report);
-  if (b.kind === VANISHING_KIND)
+  if (b.kind === KIND.LASER) b.colour = oneOf(raw, "colour", COLOURS, at, report);
+  if (b.kind === KIND.VANISHING)
     b.phase = word(whole(raw, "phase", 0, at, report), "phase", at, report);
   seen.set(cellText(b.cell), i);
   return b;
@@ -414,13 +410,13 @@ function writeBlock(b) {
   if (b.faces && b.kind >= BLOCK_KINDS && Object.keys(b.faces).length) out.faces = b.faces;
   else if (faces.length)
     out.faces = Object.fromEntries(faces.map(([j, o]) => [String(j), writeFace(o)]));
-  if (b.kind === VANISHING_KIND) out.phase = b.phase ?? 0;
+  if (b.kind === KIND.VANISHING) out.phase = b.phase ?? 0;
   if (isSpan(b) && b.far) out.far = b.far;
-  if (b.kind === PLATFORM_KIND) {
+  if (b.kind === KIND.PLATFORM) {
     out.length = b.length ?? DEFAULT_LENGTH;
     out.speed = b.speed ?? DEFAULT_SPEED;
   }
-  if (b.kind === LASER_KIND) out.colour = b.colour ?? 0;
+  if (b.kind === KIND.LASER) out.colour = b.colour ?? 0;
   return out;
 }
 

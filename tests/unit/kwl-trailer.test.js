@@ -1,19 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { SIDE } from "../../public/js/format/lattice.js";
+import { SIDE, KIND, TYPE } from "../../public/js/format/lattice.js";
 import {
   CELLS,
-  EXIT,
   FACES,
   FIRST_RECORD,
   FORMAT,
-  FRUIT,
   GRID_BYTES,
   HEAD,
   RECORD,
   SLOT,
-  START,
-  TRAILER_KIND,
   VERSION,
   WORDS,
   levelOf,
@@ -51,7 +47,8 @@ function untrailed(records, plain, count = records.length) {
   return out;
 }
 
-const topOf = (k) => (k === 0 ? START : k === 29 ? EXIT : FRUIT[k % FRUIT.length]);
+const topOf = (k) =>
+  k === 0 ? TYPE.START : k === 29 ? TYPE.EXIT : TYPE.FRUIT[k % TYPE.FRUIT.length];
 // Thirty records in a row, the start first and the exit last, with a plain block
 // of each lattice kind beside the first five.
 const RECORDS = Array.from({ length: 30 }, (_, k) =>
@@ -63,7 +60,7 @@ const BLOCKS = RECORDS.flatMap((_, k) => [
   {
     cell: [1 + k, 10, 17],
     kind: 0,
-    faces: { 0: k === 0 ? { type: START, facing: 1 } : { type: topOf(k) } },
+    faces: { 0: k === 0 ? { type: TYPE.START, facing: 1 } : { type: topOf(k) } },
   },
   ...(k < PLAIN.length ? [{ cell: [1 + k, 12, 17], kind: k }] : []),
 ]);
@@ -93,7 +90,7 @@ test("the level written back from it gains a trailer timed at 99 and reads back 
   const out = writeKwl(readKwl(BONUS).project);
   assert.equal(out.length, BONUS.length + RECORD);
   const trailer = new DataView(out.buffer, out.length - RECORD);
-  assert.deepEqual([trailer.getInt16(0, true), levelOf(out).time], [TRAILER_KIND, 99]);
+  assert.deepEqual([trailer.getInt16(0, true), levelOf(out).time], [KIND.TRAILER, 99]);
   assert.deepEqual(readKwl(out), { project: PROJECT, report: [], repairs: 0 });
 });
 
@@ -105,7 +102,7 @@ test("a file a record short of its count, or two past it, reads from its length 
     "cell 30,10,17 names record 29, which is not a block; the cell is left empty",
   ]);
   assert.deepEqual([short.repairs, short.project.blocks.length, short.project.time], [3, 34, 99]);
-  const more = [record([31, 10, 17], FRUIT[0]), record([32, 10, 17], FRUIT[1])];
+  const more = [record([31, 10, 17], TYPE.FRUIT[0]), record([32, 10, 17], TYPE.FRUIT[1])];
   const over = readKwl(untrailed([...RECORDS, ...more], PLAIN, RECORDS.length));
   assert.deepEqual(over.report, [NO_TRAILER, "the header counts 30 records and the file holds 32"]);
   assert.deepEqual([over.repairs, over.project.blocks.length, over.project.time], [2, 37, 99]);

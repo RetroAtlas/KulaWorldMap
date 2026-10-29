@@ -17,7 +17,6 @@ import {
   turning,
 } from "./ball.js";
 import {
-  KEY,
   fell,
   frameShown,
   keysOf,
@@ -30,8 +29,6 @@ import {
 } from "./world.js";
 import { contact } from "./contact.js";
 import {
-  BALL,
-  INVINCIBLE,
   boosting,
   broken,
   catching,
@@ -56,9 +53,7 @@ import {
 } from "./game.js";
 import {
   FLASH,
-  LETHARGY,
   SCREEN,
-  SUNGLASSES,
   blinking,
   burst,
   drawn,
@@ -67,27 +62,21 @@ import {
   startEffect,
   startFlash,
 } from "./passes.js";
-import { SIDE, cellKey } from "../format/lattice.js";
+import { SIDE, cellKey, KIND, TYPE } from "../format/lattice.js";
 import { OFF_LATTICE, layHeading, startsOf, TANGENT } from "../viewer/data.js";
 import { advance } from "../viewer/travel.js";
 
-const BUTTON = 10;
-const PLATFORM = 5;
-const CRUMBLING = 6;
-const EXIT = 7;
-const HIDDEN_EXIT = 26;
-const BOUNCY = 33;
-const OUT = { [EXIT]: "exit", [HIDDEN_EXIT]: "hidden" };
+const OUT = { [TYPE.EXIT]: "exit", [TYPE.HIDDEN_EXIT]: "hidden" };
 
 const add = (p, v, k = 1) => p.map((c, i) => c + v[i] * k);
 
 const rulesOf = ({ motion, unit, jump }) => ({
-  table: motion.types[String(BALL)],
+  table: motion.types[String(TYPE.START)],
   turn: motion.turn,
   unit,
   jump,
-  edge: motion.kinds[String(CRUMBLING)].edge,
-  ride: motion.kinds[String(PLATFORM)].ride,
+  edge: motion.kinds[String(KIND.CRUMBLING)].edge,
+  ride: motion.kinds[String(KIND.PLATFORM)].ride,
 });
 
 /** The start the game takes, as a station, or null. */
@@ -222,7 +211,7 @@ const judged = (live) =>
     becomes the ending as the frame begins. */
 export const heeds = (live) => {
   const w = live.words;
-  return w.wait <= 1 && w.rolled <= 1 && w.standing !== BUTTON && !judged(live);
+  return w.wait <= 1 && w.rolled <= 1 && w.standing !== TYPE.BOOST_BUTTON && !judged(live);
 };
 
 // The verdict becomes the ending, the exit's code for the sequence done and the rooms' own code
@@ -240,7 +229,7 @@ function judge(live) {
 
 /** Whether the game moves the ball of itself on the coming frame, whatever the pad: a self-roll
     runs, or the ball stands on a boost button. */
-export const drives = (live) => live.words.rolled > 0 || live.words.standing === BUTTON;
+export const drives = (live) => live.words.rolled > 0 || live.words.standing === TYPE.BOOST_BUTTON;
 
 // A wait holds the pad off and clears the ball's requests, and as it runs out the ending it was
 // set with becomes the result, the spikes' the outcome a frame before that.
@@ -330,21 +319,22 @@ function pills(live, out) {
   const w = live.words;
   const p = w.pills;
   const lasts = (type) => lastsOf(live, type);
-  if (p[SUNGLASSES] >= 0) {
-    p[SUNGLASSES] -= lasts(SUNGLASSES).step;
-    const { frames, first = frames } = lasts(SUNGLASSES).blink;
-    w.blink = p[SUNGLASSES] < 0 ? { spell: 0, left: first } : null;
-  } else if (w.blink) blinking(w, lasts(SUNGLASSES).blink);
-  if (p[INVINCIBLE] >= 0) p[INVINCIBLE] -= lasts(INVINCIBLE).step;
-  if (p[INVINCIBLE] >= 0) {
-    if (p[BOUNCY] >= 0) p[BOUNCY] = -1;
-    if (p[LETHARGY] < 0) return;
-    p[LETHARGY] = 0;
+  if (p[TYPE.SUNGLASSES] >= 0) {
+    p[TYPE.SUNGLASSES] -= lasts(TYPE.SUNGLASSES).step;
+    const { frames, first = frames } = lasts(TYPE.SUNGLASSES).blink;
+    w.blink = p[TYPE.SUNGLASSES] < 0 ? { spell: 0, left: first } : null;
+  } else if (w.blink) blinking(w, lasts(TYPE.SUNGLASSES).blink);
+  if (p[TYPE.INVINCIBILITY_PILL] >= 0)
+    p[TYPE.INVINCIBILITY_PILL] -= lasts(TYPE.INVINCIBILITY_PILL).step;
+  if (p[TYPE.INVINCIBILITY_PILL] >= 0) {
+    if (p[TYPE.BOUNCY_PILL] >= 0) p[TYPE.BOUNCY_PILL] = -1;
+    if (p[TYPE.LETHARGY_PILL] < 0) return;
+    p[TYPE.LETHARGY_PILL] = 0;
   }
-  if (p[LETHARGY] >= 0) {
-    if (p[LETHARGY] === 0 && w.screen) w.screen = SCREEN.end;
-    p[LETHARGY] -= lasts(LETHARGY).step;
-    tick(live, out, lasts(LETHARGY).ticks);
+  if (p[TYPE.LETHARGY_PILL] >= 0) {
+    if (p[TYPE.LETHARGY_PILL] === 0 && w.screen) w.screen = SCREEN.end;
+    p[TYPE.LETHARGY_PILL] -= lasts(TYPE.LETHARGY_PILL).step;
+    tick(live, out, lasts(TYPE.LETHARGY_PILL).ticks);
   }
 }
 
@@ -407,10 +397,11 @@ function copy(live, pad, probe, out) {
 function held(live) {
   const w = live.words;
   const b = live.ball;
-  if (w.pills[BOUNCY] < lastsOf(live, BOUNCY).hold || b.state !== ROLLING) return;
+  if (w.pills[TYPE.BOUNCY_PILL] < lastsOf(live, TYPE.BOUNCY_PILL).hold || b.state !== ROLLING)
+    return;
   b.forward = false;
   b.wantJump = false;
-  w.pills[BOUNCY] += 1;
+  w.pills[TYPE.BOUNCY_PILL] += 1;
 }
 
 /** One game frame with `pad` as held: what happened, as events. The frame the clock runs out on
@@ -435,7 +426,7 @@ export function frame(live, pad) {
   if (w.wait > 0) waiting(live, out);
   if (w.rolled > 0) rolled(live);
   if (heard) {
-    const bounding = w.pills[BOUNCY] >= 0;
+    const bounding = w.pills[TYPE.BOUNCY_PILL] >= 0;
     // the pill asks the jump before the guard's test, which with Cross held reads nothing more,
     // and a read clears the guard
     if (!(w.guard && pad & PAD.cross)) {
@@ -444,7 +435,9 @@ export function frame(live, pad) {
       b.pad = pad;
       if (w.mode === SIMON) copy(live, pad, probe, out);
       else {
-        const asked = bounding ? latched(w.latch, pad, lastsOf(live, BOUNCY), b) : undefined;
+        const asked = bounding
+          ? latched(w.latch, pad, lastsOf(live, TYPE.BOUNCY_PILL), b)
+          : undefined;
         read(b, probe, out, asked);
         if (asked?.arm) b.long = b.table.jump.arm;
       }
@@ -456,7 +449,7 @@ export function frame(live, pad) {
   if (w.result) end(live, w.result, out);
   movers(live);
   if (!w.guard) hazards(live, out);
-  if (w.pills[INVINCIBLE] < 0) catching(live, out);
+  if (w.pills[TYPE.INVINCIBILITY_PILL] < 0) catching(live, out);
   b.frozen = w.frozen !== 0;
   b.way = w.way;
   // the block ahead of the one under the ball, which a climb marks as the block under its wall
@@ -474,7 +467,7 @@ export function frame(live, pad) {
       startEffect(live, teleport.hud, hud.teleport, { icon: "teleport" });
     } else if (e.sent) startFlash(live, FLASH.teleport);
   }
-  if (out.some((e) => e.pill?.type === LETHARGY)) w.screen = SCREEN.flash;
+  if (out.some((e) => e.pill?.type === TYPE.LETHARGY_PILL)) w.screen = SCREEN.flash;
   if (out.some((e) => e.lost)) end(live, ending.lost, out);
   crumble(live, out);
   drawn(live);
@@ -542,7 +535,7 @@ export function relevel(live, l, idx) {
     else alight(b);
   }
   const w = live.words;
-  const takenKeys = [...world.taken].filter((s) => world.pickups.get(s).m.type === KEY).length;
+  const takenKeys = [...world.taken].filter((s) => world.pickups.get(s).m.type === TYPE.KEY).length;
   w.keys = keysOf(world) - takenKeys;
   w.unmarked = world.counted.size - world.marked.size;
   readCells(live);

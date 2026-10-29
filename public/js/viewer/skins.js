@@ -1,14 +1,9 @@
 // A copy of the game's rule for what it paints on a face; a level stores only
 // what a block is and what stands on it.
-import { cellKey, FACE_NORMAL } from "../format/lattice.js";
+import { cellKey, FACE_NORMAL, KIND } from "../format/lattice.js";
 import { seed } from "./hash.js";
 
 const BLOCK = 512; // the game's units to a block
-const ICE = 2;
-const INVISIBLE = 3;
-const CRUMBLING = 6;
-const VANISHING = 7;
-const BEAM_KIND = 8;
 const PLATFORM_ROLES = ["first", "middle", "last"];
 // The two faces along each axis, the one looking down it first.
 const FACE_ALONG = [
@@ -125,27 +120,27 @@ export function faceSkin(skins, look, c, face, kind, r, frame, place, plate, mar
   }
   if (plate !== undefined) return { tex: set.laser[plate] ?? set.laser[0], turn: 0 };
 
-  const on = kind === BEAM_KIND || !r ? null : r.on.find((o) => o.face === face);
+  const on = kind === KIND.LASER || !r ? null : r.on.find((o) => o.face === face);
   const type = on && on.type < skins.plainFrom ? on.type : 0;
   const kinds = set.kinds[String(kind)];
   const sel = kinds ? kind : type;
   const out = { tex: 0, turn: 0, live: look.bonus || sel === cyc.fire.of };
   if (kinds) {
     out.tex = kinds[0];
-    if (kind === ICE && on && shadowed(skins, on.type)) out.tex = pick(kinds, 1);
-    else if (kind === INVISIBLE) {
+    if (kind === KIND.ICE && on && shadowed(skins, on.type)) out.tex = pick(kinds, 1);
+    else if (kind === KIND.INVISIBLE) {
       out.tex = at(kinds, cyc.invisible.frames);
       const level = cycled(cyc.invisible.level);
       out.colour = [level, level, level];
       out.add = skins.blend[String(kind)] === 1;
       out.live = true;
-    } else if (kind === VANISHING) {
+    } else if (kind === KIND.VANISHING) {
       out.turn = stoneTurn(skins, look, h);
       if (look.bonus) {
         out.tex = at(kinds, cyc.bonus.frames);
         out.colour = bonusColour();
       }
-    } else if (kind === CRUMBLING && look.bonus) out.colour = bonusColour();
+    } else if (kind === KIND.CRUMBLING && look.bonus) out.colour = bonusColour();
   } else if (type) {
     const texs = set.types[String(type)];
     out.tex = pick(texs, marked === true || shadowed(skins, type) ? 1 : 0);
