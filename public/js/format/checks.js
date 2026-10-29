@@ -1,5 +1,5 @@
 // The editor's checks: what the game would make of a project, counted and judged as the loader would.
-import { FACE_NORMAL, SIDE, KIND, TYPE } from "./lattice.js";
+import { FACE_NORMAL, SIDE, KIND, TYPE, COUNTED_KINDS, STARTS } from "./lattice.js";
 import {
   BLOCK_KINDS,
   BONUS_UNDRAWN_KINDS,
@@ -9,7 +9,6 @@ import {
   COLOURS,
   COPYCAT_PACK,
   COPYCAT_SLOTS,
-  COUNTED_KINDS,
   COUNTER_WORDS,
   DEFAULT_LENGTH,
   DEFAULT_SPEED,
@@ -28,7 +27,6 @@ import {
   PHASES,
   PLAIN_ONLY,
   PLAYED,
-  STARTS,
   TIME_MAX,
   VARIANTS,
   VARIANT_TYPES,

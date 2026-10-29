@@ -13,16 +13,8 @@ import {
   paintsFace,
 } from "../viewer/data.js";
 import { blockIcon, markerIcon } from "../viewer/draw/icons.js";
-import {
-  COLOURS,
-  FACING_TYPES,
-  PICKUPS,
-  PLAIN_ONLY,
-  PLAYED,
-  STARTS,
-  VARIANTS,
-} from "../format/kwl.js";
-import { KIND, TYPE } from "../format/lattice.js";
+import { COLOURS, FACING_TYPES, PICKUPS, PLAIN_ONLY, PLAYED, VARIANTS } from "../format/kwl.js";
+import { KIND, TYPE, STARTS } from "../format/lattice.js";
 
 export const GROUPS = ["Blocks", "On the face", "Devices", "Hazards", "Pickups"];
 // The acid patch works by the code and is untested in play, so it is not offered.

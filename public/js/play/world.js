@@ -1,6 +1,6 @@
 // The level as play holds it: what stands where, what travels and what has gone, built once from
 // the level and probed as the ball rolls, in the game's units.
-import { SIDE, cellKey, FACE_NORMAL, KIND, TYPE } from "../format/lattice.js";
+import { SIDE, cellKey, FACE_NORMAL, KIND, TYPE, COUNTED_KINDS } from "../format/lattice.js";
 import {
   OFF_LATTICE,
   beams,
@@ -15,15 +15,6 @@ import { cellOf, faceUnder } from "./ball.js";
 
 const LOW = 1;
 const HIGH = SIDE - 2;
-// The kinds the game's walk over the inner lattice builds and counts.
-const COUNTED = new Set([
-  KIND.PLAIN,
-  KIND.FIRE,
-  KIND.ICE,
-  KIND.ACID,
-  KIND.CRUMBLING,
-  KIND.VANISHING,
-]);
 // The game starts an entry's angles at zero, where a pickup's angles are random.
 const ENTRY_PHASE = [0, 0, 0];
 
@@ -101,7 +92,7 @@ export function worldOf(l, given, tables, circuits, frame = 0, fruit = null) {
   for (const [x, y, z] of laid) {
     const key = cellKey(x, y, z);
     const kind = kinds.get(key);
-    if (COUNTED.has(kind) && inside([x, y, z]) && built(kinds, hides, [x, y, z], kind))
+    if (COUNTED_KINDS.has(kind) && inside([x, y, z]) && built(kinds, hides, [x, y, z], kind))
       counted.add(key);
   }
   const standing = new Map();

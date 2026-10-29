@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { SIDE, cellKey, FACE_NORMAL, KIND, TYPE } from "../format/lattice.js";
+import { SIDE, cellKey, FACE_NORMAL, KIND, TYPE, STARTS } from "../format/lattice.js";
 import { platesOf, lookOf, keyed, shadowed } from "./skins.js";
 import { glowing, byLight } from "./motion.js";
 import { compose, current, levelsOf } from "./release.js";
@@ -308,8 +308,6 @@ export const exitForm = (m) =>
 /** Whether the record's face shows marked open, as the exit's face does while the exits stand open. */
 export const openFace = (r, face) =>
   exitsOpen() && r.on.some((o) => o.face === face && o.type === TYPE.EXIT);
-// The ball starts on a plain face or on a clock.
-const STARTS = new Set([TYPE.START_ON_CLOCK, TYPE.START]);
 // The glass ball for a level the hidden flag marks, one of three for a level
 // with no key, turned by a counter the level cannot know, and the world's ball
 // otherwise. A bonus slot stands in for the counter where the level stands in

@@ -58,3 +58,14 @@ export const TYPE = {
   CAPTIVATOR_WANDERING: 53,
   CAPTIVATOR_BOUNCING: 56,
 };
+// The kinds of block a level with no key counts, as the game builds them.
+export const COUNTED_KINDS = new Set([
+  KIND.PLAIN,
+  KIND.FIRE,
+  KIND.ICE,
+  KIND.ACID,
+  KIND.CRUMBLING,
+  KIND.VANISHING,
+]);
+// The ball starts on a plain face or on a clock.
+export const STARTS = new Set([TYPE.START, TYPE.START_ON_CLOCK]);

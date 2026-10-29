@@ -573,7 +573,7 @@ A segment never changes what it means, and what a link carries grows at its tail
 The modules lie in layers, and a module imports only its own layer and those beneath it:
 
 - Under `js/viewer/`, what a plain visit loads, the root is the model, which touches neither the page nor a canvas, `ui/` the page's primitives, which know nothing of the map, `draw/` what paints the canvases and `chrome/` what stands beside the map and speaks for it.
-- `js/format/` reads and writes the level, the project, the pack, the disc image, the patch and the store, touches no DOM and nothing of the viewer, and holds the lattice, its side, the key of a cell, the six faces in the game's order and the game's numbers for the kinds of block and the types of thing, which every layer imports.
+- `js/format/` reads and writes the level, the project, the pack, the disc image, the patch and the store, touches no DOM and nothing of the viewer, and holds the lattice, its side, the key of a cell, the six faces in the game's order, the game's numbers for the kinds of block and the types of thing and the sets of them the layers share, which every layer imports.
 - `js/editor/` is what loads when a level of your own is wanted.
 - `js/play/` is what loads when the ball is wanted.
 

@@ -1,5 +1,5 @@
 // The game's level file: a project's bytes, and a project out of any file the game loads.
-import { SIDE, cellKey, FACE_NORMAL, KIND, TYPE } from "./lattice.js";
+import { SIDE, cellKey, FACE_NORMAL, KIND, TYPE, STARTS } from "./lattice.js";
 
 export const FORMAT = "kula-world-level";
 export const VERSION = 1;
@@ -59,7 +59,6 @@ export const CAPTIVATORS = [
   55,
   TYPE.CAPTIVATOR_BOUNCING,
 ];
-export const STARTS = new Set([TYPE.START, TYPE.START_ON_CLOCK]);
 // What the bonus artwork, drawn for a level with no key, has no picture for.
 export const BONUS_UNDRAWN_KINDS = [KIND.FIRE, KIND.ICE, KIND.ACID, KIND.PLATFORM];
 export const BONUS_UNDRAWN_TYPES = [
@@ -222,14 +221,6 @@ export const DISC_MAX = {
   lights: 19,
   spikes: 19,
 };
-export const COUNTED_KINDS = new Set([
-  KIND.PLAIN,
-  KIND.FIRE,
-  KIND.ICE,
-  KIND.ACID,
-  KIND.CRUMBLING,
-  KIND.VANISHING,
-]);
 
 export const onLattice = (v) => Number.isInteger(v) && v >= 0 && v < SIDE;
 export const inner = (v) => Number.isInteger(v) && v >= 1 && v <= SIDE - 2;
