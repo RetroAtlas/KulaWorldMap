@@ -32,7 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import BASE, DISC_VARS, RELEASE_FILES, RELEASES, THEMES, open_release, packs
-from kula_ggi import FILE as GGI, Ggi, jump, shadows, sparks, write_objects
+from kula_ggi import FILE as GGI, OBJECTS, SPARKS, Ggi, jump, shadows, sparks, write_objects
 from kula_kwl_check import executable, figure_failures
 from kula_level import DEFAULT_TIME, Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
 from kula_motion import readings, table
@@ -47,9 +47,7 @@ from png import write_png
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
 PUBLIC = OUT.parent
-OBJECTS = PUBLIC / "objects.json"
 PACKS = PUBLIC / "packs.json"
-SPARKS = PUBLIC / "tex" / "sparks.png"
 WORLD_LEVELS = 15
 FINAL_LEVELS = 2
 IDENTITY = ("label", "name", "region", "serial", "boot", "sectors")

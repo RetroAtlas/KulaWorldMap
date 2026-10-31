@@ -22,7 +22,7 @@ A tool that reads a release's disc takes its image from `--disc`, else from `$KU
 | `kula_place.py` | a level's stream put into a slot of a pack on a copy of the image, in place, in a pack rebuilt within its sectors or in one moved into the free sectors, every written sector built whole ([disc.md](disc.md)) |
 | `kula_patch.py` | a level, or several as one patch, written onto whichever of the three discs' images is given as a PPF, an xdelta or a patched image, each from a project, a level file or a shipped level, the US disc's or the disc's `--release` names ([disc.md](disc.md)) |
 | `kula_tgi.py` | a world's artwork: sections, VRAM page, textures |
-| `kula_ggi.py` | the objects' geometry: the model tables, every mesh, and a sheet of them drawn |
+| `kula_ggi.py` | the objects' geometry: the model tables, every mesh, and a sheet of them drawn, and for another release the models and the arc its file changes from the base's |
 | `kula_skins.py` | what the game paints on every face of every block, read off the executable |
 | `kula_tex.py` | the atlases the viewer draws with, every texture of a world in its three shades, and for another release the cells of its textures that differ from the base's atlases, laid on sheets of the atlas's grid |
 | `png.py` | write a PNG, read one back, and squeeze what it writes with `oxipng` where that is installed |

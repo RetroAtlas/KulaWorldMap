@@ -25,10 +25,15 @@ and the shading is baked into the colours.
 After the models come the sprites and the lettering the game draws flat, as
 VRAM uploads with their palettes.
 
+For another release, `overlay` gives what its file changes from the committed
+base, the model lists of the types it draws otherwise and the arc where that
+differs, and refuses a file that changes anything else the build ships.
+
     python3 tools/kula_ggi.py --sections
     python3 tools/kula_ggi.py --tables
-    python3 tools/kula_ggi.py --sheet          # out/ggi/models.png and models.md
-    python3 tools/kula_ggi.py --textures       # out/ggi/textures.png and textures.md
+    python3 tools/kula_ggi.py --sheet                  # out/ggi/models.png and models.md
+    python3 tools/kula_ggi.py --textures               # out/ggi/textures.png and textures.md
+    python3 tools/kula_ggi.py --release jp --overlay   # the types and the arc the Japanese disc's file changes, as JSON
 """
 import argparse
 import json
@@ -38,16 +43,19 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import open_disc
-from png import write_png
+from kula_disc import BASE, RELEASE_FILES, RELEASES, open_release
+from png import read_png, write_png
 
 FILE = "/HIRO/HIRO.GGI"
-OUT = Path(__file__).resolve().parent.parent / "out" / "ggi"
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "out" / "ggi"
+OBJECTS = ROOT / "public" / "objects.json"
+SPARKS = ROOT / "public" / "tex" / "sparks.png"
 
 HEADER_WORDS = 19
 SECTIONS_AT = 6          # header word holding the first section's size
 SECTIONS = 7
-BASE = 52                # the first section starts after the 13-word header
+BODY = 52                # the first section starts after the 13-word header
 TABLE_AT = (13, 14)      # header words placing the two tables inside section 0
 SINGLES = 25             # entries in the first table
 TYPES = 50               # models in the second table, one per object type
@@ -134,10 +142,10 @@ class Ggi:
     def __init__(self, blob):
         self.blob = blob
         self.header = struct.unpack_from(f"<{HEADER_WORDS}I", blob, 0)
-        self.bounds = [BASE]
+        self.bounds = [BODY]
         for c in self.header[SECTIONS_AT:SECTIONS_AT + SECTIONS]:
             self.bounds.append(self.bounds[-1] + 2 * c)
-        self.table_at = [BASE + self.header[w] for w in TABLE_AT]
+        self.table_at = [BODY + self.header[w] for w in TABLE_AT]
         t1, t2 = self.table_at
         self.singles = [struct.unpack_from(f"<{SLOTS}I", blob, t1 + 4 * SLOTS * i)
                         for i in range(SINGLES)]
@@ -503,8 +511,38 @@ def write_objects(g, path, placed=None, motion=None, skins=None, shadows=None, a
     return data
 
 
-def read(disc=None):
-    return Ggi(open_disc(disc).read_file(FILE))
+def overlay(g, base, readings, sheet=None):
+    """What a release's file changes from `base`, the committed objects parsed:
+    under `types` the whole model list of every placed type whose models are
+    not the base's, and under `jump` the arc where its count or rows are not,
+    else `{}`. `readings` are the executable's `jump.skip`, `shadow.sprite`,
+    `shadow.sprites` and `effect.sprites`, and `sheet` the committed effects'
+    sheet as `read_png` gives it, read from its place when not given. The
+    writer stops where the file is not the base's in what it does not ship: a
+    type missing, a ball that is none of the base's, a shadow or an effects'
+    sprite drawn otherwise, or another block size."""
+    theirs = objects(g, {int(t) for t in base["types"]})
+    if theirs["block"] != base["block"]:
+        sys.exit(f"a block is {theirs['block']} units, not the base's {base['block']}")
+    apart = set(theirs["types"]) ^ set(base["types"])
+    if apart:
+        sys.exit(f"the types with models are not the base's: {', '.join(sorted(apart, key=int))}")
+    strange = [str(i) for i, b in enumerate(theirs["balls"]) if b not in base["balls"]]
+    if strange:
+        sys.exit(f"ball entries {', '.join(strange)} name no model of the base's {len(base['balls'])}")
+    if shadows(g, readings["shadow.sprite"], readings["shadow.sprites"]) != base["shadows"]:
+        sys.exit("the shadows are not the base's")
+    count = readings["effect.sprites"]
+    side, px = sparks(g, count)
+    if (sheet or read_png(SPARKS)) != (side * count, side, px):
+        sys.exit("the effects' sprites are not the committed sheet's")
+    arc = jump(g, readings["jump.skip"])
+    return {"types": {t: m for t, m in theirs["types"].items() if m != base["types"][t]},
+            "jump": arc if arc != base["jump"] else {}}
+
+
+def read(release=BASE, disc=None):
+    return Ggi(open_release(release, disc).read_file(FILE))
 
 
 def show_sections(g):
@@ -539,6 +577,21 @@ def show_tables(g):
               f"flags {m.flags}  quads {len(m.quads):3}  vertices {len(m.points()):3}  "
               f"frames {len(m.frames):2}  normals {'yes' if m.normals else 'no '}  "
               f"box {lo}..{hi}  {'; '.join(labels)}")
+
+
+def show_overlay(g, release):
+    """Which types and whether the arc the release's file changes from the
+    committed base, and the overlay's size in bytes as compact JSON."""
+    missing = [p.name for p in (OBJECTS, RELEASE_FILES[BASE]) if not p.exists()]
+    if missing:
+        sys.exit(f"no {' or '.join(missing)} to write {release} against; build the base first")
+    own = json.loads(RELEASE_FILES[BASE].read_text())
+    if "objects" not in own:
+        sys.exit(f"{RELEASE_FILES[BASE].name} carries no readings of the base's executable to check "
+                 f"the models of {RELEASES[release]['name']} with; build the base first")
+    out = overlay(g, json.loads(OBJECTS.read_text()), own["objects"]["readings"])
+    print(json.dumps({"types": list(out["types"]), "jump": bool(out["jump"]),
+                      "bytes": len(json.dumps(out, separators=(",", ":")))}))
 
 
 CELL = 128
@@ -658,14 +711,17 @@ def sheet(g):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to $KULA_DISC")
+    ap.add_argument("--release", choices=list(RELEASES), default=BASE, help="the release whose disc is read")
+    ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to the release's own variable")
     ap.add_argument("--sections", action="store_true", help="the header and the seven sections")
     ap.add_argument("--tables", action="store_true", help="both model tables and every model")
     ap.add_argument("--sheet", action="store_true", help="draw every model to out/ggi/")
     ap.add_argument("--textures", action="store_true", help="draw every sprite to out/ggi/")
+    ap.add_argument("--overlay", action="store_true",
+                    help="the types and whether the arc the release's file changes from the committed base, as JSON")
     args = ap.parse_args()
-    g = read(args.disc)
-    if args.sections or not (args.tables or args.sheet or args.textures):
+    g = read(args.release, args.disc)
+    if args.sections or not (args.tables or args.sheet or args.textures or args.overlay):
         show_sections(g)
     if args.tables:
         show_tables(g)
@@ -673,6 +729,8 @@ def main():
         sheet(g)
     if args.textures:
         texture_sheet(g)
+    if args.overlay:
+        show_overlay(g, args.release)
 
 
 if __name__ == "__main__":
