@@ -45,7 +45,7 @@ CHECKS = [
     (0x80033f38, "sw $v1, 6996($gp)", "and the slowing step at its first value"),
     (0x8003431c, "lw $v1, 6992($gp)", "the view routine reads the parameter"),
     (0x80034344, "beq $v0, $zero, 0x80034360", "and takes the flight while it is within the end"),
-    (0x80034350, "lw $v0, 13232($v0)", "and the mode word at 0x800a33b0"),
+    (0x80034350, "lw $v0, 13232($v0)", "and the game's mode word"),
     (0x80034358, "bne $v0, $s4, 0x80034390", "is not the one the flight is skipped in"),
     (0x800343cc, "jal 0x80033cbc", "it evaluates the curve"),
     (0x80033cc8, "sll $v0, $t4, 1", "whose unit is one shifted up by two thirds"),

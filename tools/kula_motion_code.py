@@ -21,13 +21,13 @@ PHASES = 4           # the values a phase field takes
 
 CHECKS = [
     # The frame loop.
-    (0x80040a78, "addiu $a0, $a0, -588", "before its frame loop a level installs the callback at 0x8003fdb4"),
+    (0x80040a78, "addiu $a0, $a0, -588", "before its frame loop a level installs the callback each blank runs"),
     (0x80040a7c, "jal 0x80065e28", "through the system library"),
-    (0x8003fdbc, "sw $v0, -17288($at)", "which sets the flag at 0x800cbc78"),
+    (0x8003fdbc, "sw $v0, -17288($at)", "which sets the flag the loop waits on"),
     (0x80040b04, "jal 0x80051d08", "and each pass of the loop waits once"),
     (0x80051d18, "beq $t1, $zero, 0x80051d10", "until the flag is set"),
-    (0x80040ad0, "lw $v0, 22316($v0)", "the half-rate word the loop reads is 0x800a572c"),
-    (0x80039608, "lw $v0, 13264($v0)", "the view word the updates read is 0x800a33d0"),
+    (0x80040ad0, "lw $v0, 22316($v0)", "the half-rate word the loop reads is the lethargy pill's mode word"),
+    (0x80039608, "lw $v0, 13264($v0)", "the view word the updates read selects a second view the game never draws"),
 ]
 IMMEDIATES = []
 MULTIPLIERS = []

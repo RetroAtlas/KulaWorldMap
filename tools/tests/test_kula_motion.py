@@ -3,6 +3,7 @@
 Nothing here needs the disc.
 """
 
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -18,6 +19,7 @@ from kula_motion_harms import harms  # noqa: E402
 from kula_motion_light import glint  # noqa: E402
 from kula_motion_run import play  # noqa: E402
 from kula_motion_things import SPUN_AT  # noqa: E402
+from kula_skins import CHECKS as SKIN_CHECKS, IMMEDIATES as SKIN_IMMEDIATES  # noqa: E402
 from motion_fixture import (AT, GAME, addiu, addu, beq, code, jal, jr, lh, lui, lw, ori, sb, sh, sll, sra,  # noqa: E402
                             subu, sw, swl, swr, xori)
 
@@ -318,6 +320,11 @@ class Lists(unittest.TestCase):
     def test_every_key_is_read_once_and_none_of_them_is_set_by_hand(self):
         keys = [entry[1] for t in (IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS) for entry in t]
         self.assertEqual(sorted(set(keys) - self.BY_HAND), sorted(keys))
+
+    def test_no_check_sentence_and_no_readings_meaning_names_an_address(self):
+        sentences = [check[2] for check in (*CHECKS, *SKIN_CHECKS)]
+        sentences += [entry[2] for t in (IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS, SKIN_IMMEDIATES) for entry in t]
+        self.assertEqual([s for s in sentences if re.search(r"0x8[0-9a-f]{7}", s)], [])
 
 
 if __name__ == "__main__":
