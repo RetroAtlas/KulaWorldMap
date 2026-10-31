@@ -17,16 +17,17 @@ from png import read_png, write_png  # noqa: E402
 # a colour per pixel, more than a palette holds, so the squeeze keeps the colour type
 W, H = 32, 24
 
-# two pixels a row: the first row plain, the second as each filter encodes it
-PREV = (10, 20, 30, 11, 90, 10)
-WANT = (12, 25, 50, 41, 48, 70)
-# under Paeth the second pixel's channels take the left, the upper and the upper-left byte in turn
+# three pixels a row: the first row plain, the second as each filter encodes it
+PREV = (10, 20, 30, 11, 90, 10, 6, 70, 40)
+WANT = (12, 25, 50, 21, 100, 60, 30, 80, 100)
+# under Paeth the second pixel's channels take the left, the upper and the upper-left byte in turn,
+# and the third's first two tie, the left with the upper-left and the upper with the upper-left
 FILTERED = {
-    0: (12, 25, 50, 41, 48, 70),
-    1: (12, 25, 50, 29, 23, 20),
-    2: (2, 5, 20, 30, 214, 60),
-    3: (7, 15, 35, 30, 247, 40),
-    4: (2, 5, 20, 29, 214, 40),
+    0: (12, 25, 50, 21, 100, 60, 30, 80, 100),
+    1: (12, 25, 50, 9, 75, 10, 9, 236, 40),
+    2: (2, 5, 20, 10, 10, 50, 24, 10, 60),
+    3: (7, 15, 35, 10, 43, 30, 17, 251, 50),
+    4: (2, 5, 20, 9, 10, 30, 9, 10, 40),
 }
 
 
@@ -44,10 +45,10 @@ def chunk(tag, data):
 
 
 def png_of(rows, depth=8, colour=2, interlace=0, extra=b""):
-    """A two-pixel-wide PNG of the rows given, each a filter type and its bytes."""
+    """A PNG of the rows given, each a filter type and its bytes, three a pixel."""
     scan = b"".join(bytes([kind]) + bytes(row) for kind, row in rows)
     return (b"\x89PNG\r\n\x1a\n"
-            + chunk(b"IHDR", struct.pack(">IIBBBBB", 2, len(rows), depth, colour, 0, 0, interlace))
+            + chunk(b"IHDR", struct.pack(">IIBBBBB", len(rows[0][1]) // 3, len(rows), depth, colour, 0, 0, interlace))
             + extra + chunk(b"IDAT", zlib.compress(scan)) + chunk(b"IEND", b""))
 
 
@@ -76,11 +77,11 @@ class ThePng(unittest.TestCase):
         for kind, row in FILTERED.items():
             with self.subTest(filter=kind):
                 self.out.write_bytes(png_of([(0, PREV), (kind, row)]))
-                self.assertEqual(read_png(self.out), (2, 2, rgba(PREV, WANT)))
+                self.assertEqual(read_png(self.out), (3, 2, rgba(PREV, WANT)))
 
     def test_a_transparency_key_reads_as_alpha_0_on_the_pixel_it_names(self):
         self.out.write_bytes(png_of([(0, PREV)], extra=chunk(b"tRNS", struct.pack(">3H", 11, 90, 10))))
-        self.assertEqual(read_png(self.out), (2, 1, bytes((10, 20, 30, 255, 11, 90, 10, 0))))
+        self.assertEqual(read_png(self.out), (3, 1, bytes((10, 20, 30, 255, 11, 90, 10, 0, 6, 70, 40, 255))))
 
     def test_a_depth_or_a_layout_the_reader_does_not_take_is_refused(self):
         for header in (dict(depth=16), dict(interlace=1), dict(colour=3)):
