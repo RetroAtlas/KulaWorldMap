@@ -22,7 +22,7 @@ A cross-check comes from the level data: a moving platform's speed on the disc i
 
 Angles are in 4096ths of a turn, the unit the sine table at `0x8005fb58` takes; distances are in units of which a block is 512; and one word, `0x800a33d0`, gates every update below with a test against zero. It selects a second view the shipped game never draws: it is a data word that loads as 0 and is never written, so the gates are always open.
 
-A frame is a sixtieth of a second on this disc and the Japanese and a fiftieth on the PAL disc, by the video mode each executable's startup sets, NTSC on this disc and the Japanese (`0x8004e9fc`; `SCPS_100.64`, `0x80051e08`) and PAL on the PAL disc (`SCES_010.00`, `0x8004f7ac`), which the build ships as each release's `hz`.
+A frame is a sixtieth of a second on this disc and the Japanese and a fiftieth on the PAL disc, by the video mode each executable's startup sets, NTSC on this disc and the Japanese (`0x8004e9fc`; `SCPS_100.64`, `0x80051e08`) and PAL on the PAL disc (`SCES_010.00`, `0x8004f7ac`), which the build ships as `hz` under each release's rules.
 
 The table ships the frames of a second, sixty, as `hz` and the angle of a whole turn, 4096, as `turn`.
 
@@ -1217,7 +1217,7 @@ It paints the shadow under a pickup only while the pickup is drawn, so the face 
 
 Which of the two tangents a pill flips about and a fruit tilts about rests on the naming of the model's axes in [ggi.md](ggi.md) and on RotMatrix's order; a pill in play flips the way the map does.
 
-What else the PAL and Japanese executables change in play is not read, beyond the clock, the hourglass, the pills, the platform's speed and the breath above, the fast star below, and the view's scale and the free camera in [camera.md](camera.md).
+What else the PAL and Japanese executables change in play is not read, beyond the frame's length, the clock, the hourglass, the pills, the platform's speed and the breath above, the fast star below, and the view's scale and the free camera in [camera.md](camera.md).
 
 In play every rate and count but the clock's and the hourglass's is the US executable's on every disc until the readers are generalised, the pills' frames, the platform's speed and the breath among them, so under the PAL disc play runs sixty frames a real second where that disc's come fifty, and its clock's seconds run down six for every five real ones.
 
