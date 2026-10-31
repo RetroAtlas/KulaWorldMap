@@ -395,12 +395,12 @@ const glintsThrough = (entry, model) =>
 // ones; a frame's fills are kept for every thing drawn on it in one light.
 const glinters = new WeakMap();
 function glintFills(entry, type, model, frame, light) {
-  let g = glinters.get(entry);
+  const models = typeModels(type);
+  let g = glinters.get(models);
   if (!g) {
-    const models = typeModels(type);
     const steps = models.map((cut) => glintsThrough(entry, cut));
     g = { models, steps, lengths: steps.map((cut) => cut.map((s) => s.length)), at: null };
-    glinters.set(entry, g);
+    glinters.set(models, g);
   }
   const cut = g.models.indexOf(model);
   if (cut < 0) return null;
