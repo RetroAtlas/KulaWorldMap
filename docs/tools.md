@@ -56,7 +56,7 @@ Cutting the sheets takes a few seconds more than the levels do, most of it readi
 
 The same run reads the disc's `/HIRO/HIRO.GGI` through `kula_ggi.py` and records in the release file, under `objects`, the whole model list of every type whose models are not the committed `public/objects.json`'s and the jump's arc where it is not, beside the four readings of the US executable the meshes are read with, which the US file records and the run takes from it.
 
-It stops where that file differs from the US one in anything the build does not ship, a type's models missing or added, a ball that is none of the US fourteen, a shadow or an effects' sprite drawn otherwise or another block size, since the release file would otherwise say nothing of the change.
+It stops where that file differs from the US one in what the release file does not carry, a type's models missing or added, a ball that is none of the US fourteen, a shadow or an effects' sprite drawn otherwise or another block size, since the release file would otherwise say nothing of the change.
 
 `--all` runs every release whose variable is set, the US first, since the other two are written against its data.
 

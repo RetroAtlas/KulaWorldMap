@@ -19,7 +19,7 @@ python3 tools/kula_ggi.py --sections
 python3 tools/kula_ggi.py --tables                 # both model tables, and every model's shape
 python3 tools/kula_ggi.py --sheet                  # out/ggi/models.png, every model in its colours
 python3 tools/kula_ggi.py --textures               # out/ggi/textures.png, every sprite and glyph
-python3 tools/kula_ggi.py --release jp --overlay   # the types and the arc the Japanese disc's file changes, as JSON
+python3 tools/kula_ggi.py --release jp --overlay   # which types and whether the arc the Japanese disc's file changes, and the overlay's size, as JSON
 ```
 
 ## How it was found

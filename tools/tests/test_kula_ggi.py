@@ -240,7 +240,7 @@ NORMALS = [(0, 4096, 0)] * 4
 
 
 def quad(grey, dz=0, normals=None):
-    """One square model in a grey, moved `dz` along z, with normals where given."""
+    """One square model in a grey, shifted `dz` along z, with normals where given."""
     return model([((0, 1, 2, 3), True, grey)], [[(x, y, z + dz) for x, y, z in Ships.SQUARE]], normals)
 
 

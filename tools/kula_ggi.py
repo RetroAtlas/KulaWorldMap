@@ -33,7 +33,7 @@ differs, and refuses a file that changes anything else the build ships.
     python3 tools/kula_ggi.py --tables
     python3 tools/kula_ggi.py --sheet                  # out/ggi/models.png and models.md
     python3 tools/kula_ggi.py --textures               # out/ggi/textures.png and textures.md
-    python3 tools/kula_ggi.py --release jp --overlay   # the types and the arc the Japanese disc's file changes, as JSON
+    python3 tools/kula_ggi.py --release jp --overlay   # which types and whether the arc the Japanese disc's file changes, and the overlay's size, as JSON
 """
 import argparse
 import json
