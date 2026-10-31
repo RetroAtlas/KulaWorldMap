@@ -449,9 +449,14 @@ async function playCapture(page, c, keep) {
       if (c.ending) {
         const clock = document.getElementById("playClock");
         const seconds = () => Number(clock.textContent.replace(/\D/g, ""));
+        const { current, rulesOf } = await import(
+          new URL("js/viewer/release.js", location.href).href
+        );
+        // the figure the HUD shows through the clock's last second and never falls under
+        const last = rulesOf(current())?.clock.plus ?? 0;
         // the largest steps to the clock's last second, then a frame at a time to the ending,
         // which is when the frame is handed no ball
-        for (let i = 0; seconds() >= 1; i++) {
+        for (let i = 0; seconds() > last; i++) {
           if (i > 10000) throw new Error(`the clock did not run out on ${c.id}`);
           run(most);
         }

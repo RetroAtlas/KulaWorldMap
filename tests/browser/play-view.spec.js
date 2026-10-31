@@ -110,7 +110,7 @@ test("with Motion off a step snaps and nothing draws once the ball rests, the le
   const { hz } = await table(page);
   await startPlay(page);
   expect((await probe(page)).frame).toEqual(IDENTITY);
-  await expect(clockLine(page)).toHaveText("Time 99");
+  await expect(clockLine(page)).toHaveText("Time 83");
   expect(await frameAt(page)).toBe(0);
   expect(await drawn(page, 6, 100)).toBe(0);
   await frozen(page);
@@ -123,7 +123,7 @@ test("with Motion off a step snaps and nothing draws once the ball rests, the le
   expect(ran).toBeGreaterThan(0);
   expect(ran).toBe(roll.at(-1).frame);
   const shown = await clockLine(page).textContent();
-  expect(shown).not.toBe("Time 99");
+  expect(shown).not.toBe("Time 83");
   await onward(page, 1);
   expect(await frameAt(page)).toBe(ran);
   await expect(clockLine(page)).toHaveText(shown);

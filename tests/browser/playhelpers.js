@@ -325,7 +325,15 @@ export const table = (page) =>
     (await import(new URL("js/viewer/data.js", location.href).href)).motionTable(),
   );
 
-/** The level's clock in frames: the strip's seconds times the table's ticks a shown second. */
+/** The rules of the release shown, as the page reads them. */
+export const rules = (page) =>
+  page.evaluate(async () => {
+    const { current, rulesOf } = await import(new URL("js/viewer/release.js", location.href).href);
+    return rulesOf(current());
+  });
+
+/** Frames enough for a stepped test to reach what it waits for: the strip's seconds times the
+    table's ticks a second. */
 export const clockOf = async (page, play) => (await seconds(page)) * play.clock.second;
 
 /** Press `keys` on the held clock, so that no frame comes between a key's down and its up. */

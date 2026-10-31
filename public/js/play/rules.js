@@ -79,6 +79,15 @@ const rulesOf = ({ motion, unit, jump }) => ({
   ride: motion.kinds[String(KIND.PLATFORM)].ride,
 });
 
+// The clock the start fills: the level's time in the release's ticks a second, one clock made
+// another where the start makes one, or in the table's second where no rules are given.
+function filled(time, play, rules) {
+  if (!rules) return time * play.clock.second;
+  const { fill, swap } = rules.clock;
+  const clock = time * fill;
+  return swap && clock === swap[0] ? swap[1] : clock;
+}
+
 /** The start the game takes, as a station, or null. */
 function startOf(l) {
   const s = startsOf(l).at(-1);
@@ -136,7 +145,7 @@ export function startRun(l, idx, tables, circuits, at = null, game = null, match
     ball: ballAt(rulesOf(tables), where.cell, where.face, where.h),
     words: {
       frame: 0,
-      clock: l.time * play.clock.second,
+      clock: filled(l.time, play, tables.rules),
       score: 0,
       keys,
       mode,

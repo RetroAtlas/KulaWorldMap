@@ -6,6 +6,7 @@ import { ageDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
 import { drawEffects, effectsWith } from "./effects.js";
 import { flashing, screened } from "./screen.js";
 import { state } from "../viewer/state.js";
+import { BASE, current as disc, rulesOf } from "../viewer/release.js";
 import { SIDE, cellKey, TYPE } from "../format/lattice.js";
 import {
   blockUnits,
@@ -118,7 +119,8 @@ const motionOn = () => state.show.motion;
 // --- the ball as the frame draws it -----------------------------------------------------
 
 /** The tables the rules read: the motion table, the mesh file's arc for the jump, a block's units,
-    where the data's records and styles begin, the skins and the worlds in the game's order. */
+    where the data's records and styles begin, the skins, the worlds in the game's order and the
+    rules of the disc shown, the base's where it has none. */
 const tablesOf = () => ({
   motion: motionTable(),
   jump: jumpTable(),
@@ -127,6 +129,7 @@ const tablesOf = () => ({
   styles: state.data.styles,
   skins: skinsTable(),
   worlds: state.data.themes.map((t) => t.id),
+  rules: rulesOf(disc()) ?? rulesOf(BASE),
 });
 
 /** The circuits as the map holds them, so a press in the panel and a switch the ball throws are

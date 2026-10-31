@@ -2,7 +2,7 @@
 // ending with its verdict and its eye, a death forgiven and the level started over or the next
 // gone on to.
 import { state } from "../viewer/state.js";
-import { levelAt, levelsIn, motionTable, worldTint } from "../viewer/data.js";
+import { levelAt, levelsIn, worldTint } from "../viewer/data.js";
 import { probeOf } from "../viewer/walk.js";
 import { invalidatePick } from "../viewer/draw/render.js";
 import { toast } from "../viewer/ui/toast.js";
@@ -34,6 +34,7 @@ import {
   endingName,
   howEnded,
   noted,
+  secondsOf,
 } from "./phrases.js";
 import { arrive, eyeOf, finishEase, radiusOf, viewNow } from "./eye.js";
 import { probeOf as liveProbe, viewOf as drawnIndex } from "./world.js";
@@ -110,9 +111,8 @@ export function happened(live, event) {
     return;
   }
   if (event.clock) {
-    const { second } = motionTable().play.clock;
-    const left = Math.max(0, Math.floor(event.clock.to / second));
-    say(CLOCK_ROUND(left));
+    const { motion, rules } = live.run.tables;
+    say(CLOCK_ROUND(secondsOf(event.clock.to, motion.play, rules)));
     return;
   }
   if (event.at) {
@@ -220,9 +220,10 @@ function sent(live, { to }) {
     on to, until a key goes on or the view has run the length of one swing of an arcade level's eye,
     whichever eye the level's word stands. */
 function ended(live, code) {
-  const { play, turn } = motionTable();
-  const { view } = play;
   const run = live.run;
+  const { motion, rules } = run.tables;
+  const { play, turn } = motion;
+  const { view } = play;
   if (!state.show.playon) run.game = null;
   const w = run.words;
   const settled = conclude(run);
@@ -231,7 +232,7 @@ function ended(live, code) {
     : null;
   live.ended = {
     code,
-    how: howEnded(code, w, settled, play),
+    how: howEnded(code, w, settled, play, rules),
     next,
     frame: 0,
     length: Math.floor(turn / view.swing),

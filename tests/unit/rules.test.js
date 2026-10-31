@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { objects } from "./fixtures.js";
+import { objects, releases } from "./fixtures.js";
 import { index } from "../../public/js/viewer/data.js";
 import { dice } from "../../public/js/viewer/travel.js";
 import {
@@ -14,16 +14,27 @@ import {
   blockUnder,
   faceUnder,
 } from "../../public/js/play/ball.js";
-import { end, frame, heeds, relevel, restart, revive, stand } from "../../public/js/play/rules.js";
+import {
+  end,
+  frame,
+  heeds,
+  relevel,
+  restart,
+  revive,
+  stand,
+  startRun,
+} from "../../public/js/play/rules.js";
 import { FORM } from "../../public/js/play/game.js";
 import { probeOf } from "../../public/js/play/world.js";
 import { recorder, replayDriver } from "../../public/js/play/drive.js";
 import {
   ROLL,
   SIMON,
+  TABLES,
   TOP,
   UP,
   begin,
+  circuits,
   level,
   motion,
   object,
@@ -88,6 +99,25 @@ test("the clock ticks once a frame and the level ends with the clock's code as i
   assert.deepEqual(frame(live, PAD.up), [], "and nothing runs after");
   assert.equal(live.words.frame, ticks);
   assert.equal(live.ball.state, REST);
+});
+
+test("a run's clock is filled by the release's rules where they are handed in, the level's time in that disc's ticks a second and the clock its start makes of one it swaps, 4950 for 99 seconds on the US and PAL discs and 7140 on the Japanese, as a level with no trailer gets there, ticking once a frame on each, and by the table's second where none are", () => {
+  const l = level(row(10, 18), [start()]);
+  const under = (rules, on = l) => startRun(on, index(on), { ...TABLES, rules }, circuits());
+  const filled = releases.map((r) => under(r.rules).words.clock);
+  assert.deepEqual(filled, [4950, 4950, 7140]);
+  assert.deepEqual(
+    filled,
+    releases.map((r) => r.rules.clock.default),
+  );
+  for (const r of releases) {
+    const live = under(r.rules);
+    steps(live, 10);
+    assert.equal(live.words.clock, r.rules.clock.default - 10 * play.clock.tick, r.id);
+  }
+  const jp = releases.find((r) => r.id === "jp").rules;
+  assert.equal(under(jp, level(row(10, 18), [start()], 50)).words.clock, 3000);
+  assert.equal(under(null).words.clock, 99 * play.clock.second);
 });
 
 test("the clock stands while the ball is on a clock face and runs again as it rolls off", () => {

@@ -32,14 +32,14 @@ import { DYING, REFUSED } from "../../public/js/play/phrases.js";
 // its bounce as the level opens
 const CORKSCREW_LEVEL = "/#INCA/18/45,35/fit/33";
 
-const SPIKED = /^SPIKED! 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
+const SPIKED = /^SPIKED! 0 points, \d+ seconds left\. Space or Enter starts the level again\.$/;
 
 const FORGIVEN = "Forgiven: the ball would have been killed on the spikes.";
 
 const FORGIVEN_FALL = "Forgiven: the ball would have fallen off the level.";
 
 const LOST_BROKEN =
-  /^FELL OFF! 50 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
+  /^FELL OFF! 50 points, \d+ seconds left\. Space or Enter starts the level again\.$/;
 
 const BROKE = "17,16,17, top. The crumbling block breaks under the ball.";
 

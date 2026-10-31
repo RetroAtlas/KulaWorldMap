@@ -171,7 +171,9 @@ The Japanese disc draws the exit and the hidden exit as a sign reading 出口, t
 
 The PAL disc draws the arrow a little further along the way it points, and its jump is lower and over fewer frames, landing where the US one does, which a planned route's jump and the ball's jump in play follow.
 
-Meanwhile play's rules, the clock and the hourglass among them, are the US release's whatever disc is chosen.
+Play's clock follows the disc shown, filled as that disc's game fills it and shown as its HUD shows it, so a 99-second level opens at 83 on the US disc, whose clock runs 82.5 seconds, at 100 on the PAL disc, where it runs its 99, and at 120 on the Japanese disc, where every 99-second level runs 119; play's frame rate stays the US release's meanwhile, so a PAL level's seconds run down six for every five real ones until the executables are read.
+
+Meanwhile play's other rules, the hourglass among them, are the US release's whatever disc is chosen.
 
 ## Your levels
 
@@ -410,7 +412,7 @@ The arrow keys move the ball, up rolling it onto the next block for as long as i
 
 On a phone the strip is a bar at the foot of the screen, over the scale bar, its one row of text the ball's block, face and heading, or a notice or a verdict while one stands, with the buttons in one row beneath, the planner's strip standing on the bar where it shows and the pad's two parts and the corner's widgets above them.
 
-While the ball is on the level a HUD at the top of the map takes the level line's place, naming the level and showing the seconds it has left in the middle, the points at its left and the keys still to take at its right, the key drawn as the legend draws it, with the run's total and the Simon rooms' figures in a smaller row under them where they apply; the HUD lies over the view as the pad does, so the ball is framed clear of the strip alone.
+While the ball is on the level a HUD at the top of the map takes the level line's place, naming the level and showing in the middle the time it has left as the game's HUD counts it, one more than the whole seconds its clock holds, so that a 99-second level opens at 83 on the US disc and the figure never reads 0, the points at its left and the keys still to take at its right, the key drawn as the legend draws it, with the run's total and the Simon rooms' figures in a smaller row under them where they apply; the HUD lies over the view as the pad does, so the ball is framed clear of the strip alone.
 
 ### The jump, the fall and the dust
 
@@ -732,7 +734,7 @@ A caller may place the ball at rest on any face, its ramp and its look gone, and
 - The ball's contact with what stands about it.
 - The endings, with a run's start, its start again after an ending and the return of a lost ball, the game carried through the start again.
 
-The module has every count and threshold read from the motion table and no wall clock in it, so a run of pad words replays frame for frame.
+The module has every count and threshold read from the motion table, the clock's fill from the rules of the disc shown, and no wall clock in it, so a run of pad words replays frame for frame.
 
 `js/play/contact.js` is that contact, pure too, the walk over the cells about the ball that takes a pickup within reach of its centre, each type by its own case, the key count and the last key's opening of the exits among them.
 
@@ -825,7 +827,7 @@ It starts the level over, or goes on to the next by its slot, the level of the r
 
 ### What play says
 
-`js/play/phrases.js` is what play says, pure too: every sentence the strip, the HUD and the live region say, composed from what each names, the level's title, the ball's block, face and heading, the run's words, the thing or the circuit at hand and the table's words, and nothing of the page.
+`js/play/phrases.js` is what play says, pure too: every sentence the strip, the HUD and the live region say, composed from what each names, the level's title, the ball's block, face and heading, the run's words, the thing or the circuit at hand, the table's words and the disc's rules for the seconds the clock shows, and nothing of the page.
 
 - The stop the ball comes to, its block and face, with what happened on the way to it, which a sentence of its own said mid-roll would lose to the stop's within the frame, and the face that is underfoot after a turn round an edge.
 - What happens on the way: the thing taken with its points, the switch thrown with its circuit, the hourglass's turn of the clock, the crumbling block's break and its fall, the last key's opening of the exits, the boost button's launch, the platform the ball rides, the teleporter sending the ball and where it is sent, the sunglasses wearing off and the arrow that refuses the roll.
@@ -833,7 +835,7 @@ It starts the level over, or goes on to the next by its slot, the level of the r
 - The route's words: the ball following it, the pad named while it shows, the ball put on its first stop, why the route is done, the way the ball has come kept as the route, and a route that already stands.
 - The cause of a death, read from the words' ending while its countdown runs, and what Forgive spared the ball.
 - The verdict: how the level ended, the end screen's word for the ending or the map's for a way out, a room's with whether the round is done or lost and whose point it is, the points and the seconds left, what the ending did to the run's total, the penalty taken or the points banked, the total and the game's word where the total has gone below nothing, or that a won match starts afresh, and what a key goes on to, the level the game loads next or this one again, the pad named while it shows.
-- The HUD's figures: the time, the keys or the blocks left with the title that says which, the points, and in a Simon room the round and its moves, with the match's turn and points where a match is on, else the run's total where a run is on.
+- The HUD's figures: the time as the game's HUD counts it, one more than the whole seconds the clock holds by the disc's rules, the keys or the blocks left with the title that says which, the points, and in a Simon room the round and its moves, with the match's turn and points where a match is on, else the run's total where a run is on.
 
 ### The compass's canvas
 

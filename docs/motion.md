@@ -14,7 +14,7 @@ The viewer draws everything that moves on the spot from that table, on a clock o
 
 Each pass waits once, at `0x80051d08`, for a flag that a callback installed through the system library before the loop sets (`0x8003fdb4`, installed at `0x80040a7c`), which every rate play has borne out puts at once a vertical blank; unless one of two words is set, `0x800a572c`, the lethargy pill's mode word, which stands while the pill works and halves the game's pace ("What the ball takes" below), or `0x800a592c`, the word of the teleport's flash, which `0x80020764` writes (`0x8002076c`) and a teleport's send sets to 1 ("The effects" below), in which case the wait is `VSync(2)` (`0x80040ad8`, `0x80040af4`, `0x80040af8`), two blanks, and a counter at `0x8004188c` ticks by two instead of one.
 
-Play bears out that the level's clock ticks once a pass, 50 ticks to a second it shows: OBJ LEVEL's 99 seconds are then 4950 passes, and play counted 57 moves of a wandering ball in them, at 86 a move, where 99 seconds of sixtieths would have held 69.
+Play bears out that the level's clock ticks once a pass: OBJ LEVEL's 99 seconds are 4950 passes, 82.5 s, and play counted 57 moves of a wandering ball in them, at 86 a move, where 99 seconds of sixtieths would have held 69; the HUD shows one more than the whole sixtieths the clock holds, 83 as a 99-second level starts, and draws its digits only from 50 down, which play on the US disc bears out, the figure fading in at 48 about 34 seconds after the camera settles behind the ball and the time running out about 82 seconds after it ("The level's clock and its end" below), while the 50-tick second is the hourglass's score alone ("What the ball takes" below).
 
 A cross-check comes from the level data: a moving platform's speed on the disc is 30 units a frame on all 37, and the loader at `0x80032a5c` scales it by 50/60 before use, which is what a game authored for a 50 Hz release does when it is built for 60. The rates that live in the code carry no such scaling, so on the PAL disc they may run at 50 a second or may have been retuned; this disc says nothing about that.
 
@@ -597,9 +597,11 @@ The laser's blocks are read as the game's lattice holds them: a beam's two ends 
 
 ## The level's clock and its end
 
-**The clock ticks once a frame at the top of the ball's routine, 50 ticks to a second it shows, and stands while the ball is on a clock face.** The ball's routine calls `0x8003b468` with 1 first (`0x800362ec`, `0x800362f8`); the routine leaves the clock where the word at 356 reads 8, the clock face, where the word at `0x800a344c`, which nothing writes but to clear it, is set, or in the Simon rooms' mode (`0x8003b474` to `0x8003b498`), and otherwise takes the ticks off the clock at `0x800a573c` and where that comes to nothing or less writes −2 into the level's outcome at `0x800a5e00` (`0x8003b4ac` to `0x8003b4c4`); the lethargy pill calls it with 4 more.
+**The clock ticks once a frame at the top of the ball's routine, stands while the ball is on a clock face, and is shown by the HUD as one more than the whole sixtieths it holds.** The ball's routine calls `0x8003b468` with 1 first (`0x800362ec`, `0x800362f8`); the routine leaves the clock where the word at 356 reads 8, the clock face, where the word at `0x800a344c`, which nothing writes but to clear it, is set, or in the Simon rooms' mode (`0x8003b474` to `0x8003b498`), and otherwise takes the ticks off the clock at `0x800a573c` and where that comes to nothing or less writes −2 into the level's outcome at `0x800a5e00` (`0x8003b4ac` to `0x8003b4c4`); the lethargy pill calls it with 4 more.
 
 The start fills the clock with the level's time times 50 ([level-format.md](level-format.md)), 4950 for 99 seconds, 82.5 s of frames, and a flag at `0x800a53c4` tells the HUD the clock stands.
+
+The HUD multiplies the clock by the reciprocal of 60, shifts the product and adds 1 before it draws the digits (`0x8001e314`, `0x8001eb9c` to `0x8001ebbc`), so it reads 83 as a 99-second level starts and 1 as the clock runs out, never 0, and draws its digits only from 50 down, which play on the US disc bears out ("The frame" above); the 50-tick second is the hourglass's score alone ("What the ball takes" above).
 
 **A level ends in the outcome word, positive for a way out and negative for a loss.** Most endings are first written into the ball's record at 540 with a wait at 370; the ball's routine counts the wait down, holding the pad and the requests off meanwhile (`0x800363f8` to `0x80036428`), and as it runs out copies the ending to the result at `0x800a4c9c` (`0x800364a8`, `0x800364c8`), a store indexed by the word at `0x800a33d0` that gates every update ("The frame" above), from where it becomes the outcome: a result of 1 only where the word at `0x800a33cc` is 1 or both results, at `0x800a4c9c` and `0x800a4ca0`, are 1 (`0x800365ec` to `0x80036628`), and any other straight in (`0x80036630`, `0x8003663c`).
 
@@ -624,6 +626,8 @@ In the Simon rooms the input routine's verdict at `0x800a4cb4`, 1 for the sequen
 Every death but the clock, the lattice's edge and a Simon room's failure, whose test asks only the verdict, the turn count and the rest state (`0x800363a8` to `0x800363cc`), is refused while the invincibility pill's word is not −1, and an outcome below nothing in a mode past the arcade's mode, a bonus or a hidden level, leaves the score at nothing as the loop takes it (`0x80041b18` to `0x80041b34`).
 
 The table ships the codes as `play`'s `ending` and the waits as its `wait`, and the clock's tick, its second, the face it stands on and its outcome as `clock`.
+
+Each release's rules carry its clock's fill, its default, the swap its start makes of one clock for another and the seconds its HUD shows the clock in with the one it adds, read off its own executable ([tools.md](tools.md)), and play fills and shows the clock by the rules of the disc shown, the table's 50-tick second standing where none are to hand.
 
 **The end screen names the outcome in a word of the game's own lettering, a death's word in capitals.** While an ending stands the loop draws the end screen on each pass (`0x80041bf0` calls `0x80015fe8`, and that the loader at `0x800156e0`), which reads the outcome (`0x800156e4`) and takes twice its negation as an index where it is negative (`0x80015714` to `0x8001571c`), 20 where it is not (`0x80015730`) and 0 where there is none yet (`0x80015a1c`), into a table of 38 deflated sprites at `0x80088798`, whose address the word at `0x80075fd8` holds (`0x80015a34`) and whose count comes first, an index past the count less two drawing nothing (`0x80015a3c` to `0x80015a4c`).
 
@@ -1193,7 +1197,11 @@ It paints the shadow under a pickup only while the pickup is drawn, so the face 
 
 Which of the two tangents a pill flips about and a fruit tilts about rests on the naming of the model's axes in [ggi.md](ggi.md) and on RotMatrix's order; a pill in play flips the way the map does.
 
-What the PAL release runs at is not on this disc.
+The PAL release runs at fifty frames a second and the Japanese at sixty, by the video mode each executable's startup sets (`SCES_010.00`, `0x8004f7ac`; `SCPS_100.64`, `0x80051e08`), which the build ships as each release's `hz`; what else the PAL code retunes for its rate is not read, so play's frame rate and every per-frame count are the US release's on every disc meanwhile, and under the PAL disc play ticks the clock sixty times a real second where that disc's frames come fifty to the second, so its seconds run down six for every five real ones.
+
+The PAL start fills the clock with the level's time times 50, and with 4950 where the level has no trailer, as the US start does (`SCES_010.00`, `0x800367e8`, `0x80036800`), and its HUD shows the clock in seconds of 50 ticks and one more than the whole of them (`0x8001ebf0`, `0x8001f47c` to `0x8001f494`), so a 99-second level lasts its 99 seconds on that disc and reads 100 as it starts.
+
+The Japanese start fills the clock with the level's time times 60, and with 7140 where the level has no trailer (`SCPS_100.64`, `0x800362e4`, `0x800362f4`), then makes a clock of exactly 5940 into 7140 (`0x80036308`, `0x80036310`), so every 99-second level lasts 119 seconds on that disc, and its HUD shows sixtieths and one more as the US one does (`0x8001eeec`, `0x8001f660` to `0x8001f67c`), 120 as such a level starts.
 
 The laser's beam was not looked at for a pulse.
 

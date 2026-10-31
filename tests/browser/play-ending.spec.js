@@ -24,7 +24,7 @@ const TIME_UP = "TIME OUT! 0 points, 0 seconds left. Space or Enter starts the l
 const TIME_UP_PAD =
   "TIME OUT! 0 points, 0 seconds left. Space, Enter or a tap on the pad starts the level again.";
 
-const LOST = /^FELL OFF! 0 points, 9\d seconds left\. Space or Enter starts the level again\.$/;
+const LOST = /^FELL OFF! 0 points, \d+ seconds left\. Space or Enter starts the level again\.$/;
 
 /** Move the keyboard's focus to `button` as Tab does, stepping off it and back. */
 const tabbedTo = async (page, button) => {
@@ -51,7 +51,7 @@ test("time runs out into the strip's verdict with the pad dead and the view let 
   await expect(status(page)).toHaveText(TIME_UP);
   await expect(say(page)).toHaveText(TIME_UP);
   await expect(line(page)).toHaveText(ENDED);
-  await expect(clockLine(page)).toHaveText("Time 0");
+  await expect(clockLine(page)).toHaveText("Time 1");
   const over = await probe(page);
   expect(over.playing).toBe(true);
   // the view stands on the level's middle, the ball's frame let go, and with Motion off it stays

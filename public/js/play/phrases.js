@@ -96,6 +96,11 @@ export const CLOCK_ROUND = (left) =>
 export const noted = (notes, text) =>
   notes.length ? `${text}. ${notes.splice(0).join(" ")}` : text;
 
+/** The whole seconds `clock` holds, in the ticks the release's HUD shows a second, or the table's
+    where no rules are given. */
+export const secondsOf = (clock, play, rules) =>
+  Math.floor(Math.max(0, clock) / (rules?.clock.shown ?? play.clock.second));
+
 /** The name of the ending `code` in the table, or null. */
 export function endingName(code) {
   const { ending } = motionTable().play;
@@ -130,10 +135,10 @@ export function banked({ penalty, banked: points, total, over }, words) {
 /** How the level ended: the end screen's word for the ending, or the map's for a way out, a
     room's with whether the round is done or lost, the points and the time left, and what the
     ending did to the run's total or, where the match is won, that it starts afresh. */
-export function howEnded(code, w, settled, play) {
-  const { clock, words } = play;
+export function howEnded(code, w, settled, play, rules = null) {
+  const { words } = play;
   const name = endingName(code);
-  const seconds = Math.max(0, Math.floor(w.clock / clock.second));
+  const seconds = secondsOf(w.clock, play, rules);
   const room = w.mode === MODE.simon;
   const word = words[name] ?? `${ENDED}.`;
   const told = room ? roomTold(code, word, settled) : (VERDICT[name] ?? word);
@@ -147,12 +152,13 @@ export function howEnded(code, w, settled, play) {
 export const thenOn = (next, pad) =>
   next ? (pad ? ON_PAD : ON)(levelTitle(next)) : pad ? AGAIN_PAD : AGAIN;
 
-/** The HUD's figures: the time, the keys or the blocks left with the title that says which, the
-    points, and in a Simon room the round and its moves, with the match's turn and points where a
-    match is on, else the run's total where a run is on. */
-export function hudOf(w, game, match, play) {
+/** The HUD's figures: the time as the game's HUD counts it, the whole seconds the clock holds by
+    the release's rules and the one they add, the keys or the blocks left with the title that says
+    which, the points, and in a Simon room the round and its moves, with the match's turn and
+    points where a match is on, else the run's total where a run is on. */
+export function hudOf(w, game, match, play, rules = null) {
   const out = {
-    clock: `Time ${Math.max(0, Math.floor(w.clock / play.clock.second))}`,
+    clock: `Time ${(rules?.clock.plus ?? 0) + secondsOf(w.clock, play, rules)}`,
     keys: w.bonus ? counted(w.unmarked, "block") : `Keys ${w.keys}`,
     keysTitle: w.bonus ? BLOCKS_LEFT : KEYS_LEFT,
     points: counted(w.score, "point"),

@@ -4,7 +4,7 @@ import { $, dialogOpen, typing } from "../viewer/ui/dom.js";
 import { current, measureStrip } from "../viewer/chrome/course.js";
 import { state } from "../viewer/state.js";
 import { BASE, current as disc, releaseOf } from "../viewer/release.js";
-import { ballFor, levelTitle, markerModel, motionTable, worldName } from "../viewer/data.js";
+import { ballFor, levelTitle, markerModel, worldName } from "../viewer/data.js";
 import { iconFor } from "../viewer/draw/icons.js";
 import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
 import { say as announce } from "../viewer/chrome/a11y.js";
@@ -122,7 +122,8 @@ export function line(live) {
   if (el.textContent !== text) el.textContent = text;
   const w = live.run.words;
   const game = live.run.game;
-  const hud = hudOf(w, game, live.run.match, motionTable().play);
+  const { motion, rules } = live.run.tables;
+  const hud = hudOf(w, game, live.run.match, motion.play, rules);
   reading("playClock", hud.clock);
   reading("playKeys", hud.keys, hud.keysTitle);
   marked(w.bonus);

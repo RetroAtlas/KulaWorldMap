@@ -10,6 +10,7 @@ import {
   pixelAt,
   presses,
   probe,
+  rules,
   say,
   seconds,
   startPlay,
@@ -150,7 +151,7 @@ test("the ball turns in place, Down moves nothing and Settings has no switch for
   await opened(page, { motion: false });
   await startPlay(page);
   await expect(line(page)).toContainText("facing -y");
-  const { hz, play } = await table(page);
+  const { hz } = await table(page);
   await frozen(page);
   // a tap of `key` stands until a frame reads the pad, and the quarter turn it asks is stepped to
   // its rest, the line saying the ball faces `heading`
@@ -177,10 +178,12 @@ test("the ball turns in place, Down moves nothing and Settings has no switch for
   await turned("ArrowRight", "+y");
   await turned("ArrowRight", "-x");
   // LEVEL 1's ring: off its block to the -x there is nothing, and a block stands beside it, so
-  // Up held through a second of the clock moves nothing, and the strip says nothing of it
+  // Up held through a second of the clock as the HUD shows it moves nothing, and the strip says
+  // nothing of it
+  const { clock } = await rules(page);
   const before = await seconds(page);
   await page.keyboard.down("ArrowUp");
-  await onward(page, play.clock.second);
+  await onward(page, clock.shown);
   await page.keyboard.up("ArrowUp");
   expect(await seconds(page)).toBe(before - 1);
   expect((await probe(page)).station).toEqual({

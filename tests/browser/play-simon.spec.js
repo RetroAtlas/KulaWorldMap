@@ -21,7 +21,7 @@ const ROUND_DONE =
 
 // the round lost by the second player's wrong move, which scores for the first
 const ROUND_LOST =
-  "^Wrong Move! The round is lost, a point to Player 1\\. \\d+ points, 99 seconds left\\. Space or Enter starts the level again\\.$";
+  "^Wrong Move! The round is lost, a point to Player 1\\. \\d+ points, 82 seconds left\\. Space or Enter starts the level again\\.$";
 
 /** The strip's figures for a room and its match, each its text or null while hidden. */
 const roomFigures = (page) =>
@@ -212,13 +212,13 @@ test("a level of your own marked a Simon room plays as the rooms do: the HUD cou
   const before = await station(page);
   expect(before).toEqual({ block: [17, 17, 17], face: 0, heading: "-y", moving: false });
   await frozen(page);
-  expect(await seconds(page)).toBe(99);
+  expect(await seconds(page)).toBe(83);
   // past the opening and long at rest, with the clock standing through it all
   await onward(page, 40);
-  expect(await seconds(page)).toBe(99);
+  expect(await seconds(page)).toBe(83);
   expect(await copied(page, "ArrowUp")).toBe(true);
   expect(await station(page)).toEqual({ ...before, block: [17, 16, 17] });
-  expect(await seconds(page)).toBe(99);
+  expect(await seconds(page)).toBe(83);
   await page.evaluate(() => window.__thaw());
   expect(errors).toEqual([]);
 });

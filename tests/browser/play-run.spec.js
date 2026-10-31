@@ -249,7 +249,7 @@ test("with Play on through the levels on a death on a level of the disc costs th
   const penalty = Math.min(most, each);
   await expect(status(page)).toHaveText(
     new RegExp(
-      `^FELL OFF! 0 points, 9\\d seconds left\\. ${penalty} points off the total, -${penalty} points in all\\. Game Over! The run starts afresh\\. Space or Enter starts the level again\\.$`,
+      `^FELL OFF! 0 points, \\d+ seconds left\\. ${penalty} points off the total, -${penalty} points in all\\. Game Over! The run starts afresh\\. Space or Enter starts the level again\\.$`,
     ),
   );
   await expect(total).toHaveText(`Total -${penalty}`);

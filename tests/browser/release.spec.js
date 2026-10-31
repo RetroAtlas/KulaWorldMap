@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { frozen, settle, still, textured } from "./helpers.js";
-import { pixelAt, route, startPlay, stopOn, top } from "./playhelpers.js";
+import { clockLine, pixelAt, route, startPlay, stopOn, top } from "./playhelpers.js";
 
 const LOCKED = "Leave play to change the release";
 const BONUS_30 = "/HELL/HELL.PAK#17";
@@ -273,6 +273,24 @@ test("the bar is disabled while the ball is on the level, and enabled again once
     "title",
     `${eu.name}, the PAL release (${eu.serial})`,
   );
+});
+
+test("the HUD's clock at LEVEL 1's start reads the PAL figure with EU pressed and the Japanese one with JP", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0/45,35/fit/33/d-eu");
+  await settle(page);
+  await still(page);
+  await expect(pressed(page)).toHaveText("EU");
+  await frozen(page);
+  await startPlay(page);
+  await expect(clockLine(page)).toHaveText("Time 100");
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#play")).toBeHidden();
+  await press(page, "jp");
+  await expect(pressed(page)).toHaveText("JP");
+  await startPlay(page);
+  await expect(clockLine(page)).toHaveText("Time 120");
 });
 
 test("the live region says the disc on a press", async ({ page }) => {

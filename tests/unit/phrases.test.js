@@ -1,10 +1,23 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapData, objects } from "./fixtures.js";
-import { end } from "../../public/js/play/rules.js";
+import { mapData, objects, releases } from "./fixtures.js";
+import { index } from "../../public/js/viewer/data.js";
+import { end, startRun } from "../../public/js/play/rules.js";
 import { conclude, startGame, startSimon } from "../../public/js/play/game.js";
 import { banked, howEnded, hudOf, roomTold, thenOn } from "../../public/js/play/phrases.js";
-import { ROOMS, begin, counted, level, play, room, row, settings, start } from "./rules-level.js";
+import {
+  ROOMS,
+  TABLES,
+  begin,
+  circuits,
+  counted,
+  level,
+  play,
+  room,
+  row,
+  settings,
+  start,
+} from "./rules-level.js";
 
 const AGAIN = "Space or Enter starts the level again.";
 
@@ -177,4 +190,46 @@ test("the HUD's figures count the time, the keys or the blocks left and the poin
     turn: "Player 1's turn",
     match: "Match 1 : 0",
   });
+});
+
+test("under a release's rules the HUD counts the time as that disc's HUD does, one more than the whole seconds the clock holds in its ticks, 83 as a 99-second level starts on the US disc, 100 on the PAL disc and 120 on the Japanese, and 1 as the clock runs out, while the ending's seconds left are the whole seconds alone, and with no rules the table's seconds count with nothing added", () => {
+  const l = forms().exit;
+  const under = (rules) => startRun(l, index(l), { ...TABLES, rules }, circuits());
+  const exit = "Out by the exit: the level is done.";
+  assert.deepEqual(
+    releases.map((r) => {
+      const { words } = under(r.rules);
+      return [
+        hudOf(words, null, null, play, r.rules).clock,
+        howEnded(play.ending.exit, words, null, play, r.rules),
+      ];
+    }),
+    [
+      ["Time 83", `${exit} 0 points, 82 seconds left.`],
+      ["Time 100", `${exit} 0 points, 99 seconds left.`],
+      ["Time 120", `${exit} 0 points, 119 seconds left.`],
+    ],
+  );
+  const us = releases[0].rules;
+  const out = under(us);
+  for (const clock of [0, -2]) {
+    out.words.clock = clock;
+    assert.equal(hudOf(out.words, null, null, play, us).clock, "Time 1");
+    assert.equal(
+      howEnded(play.ending.time, out.words, null, play, us),
+      `${play.words.time} 0 points, 0 seconds left.`,
+    );
+  }
+  out.words.clock = us.clock.shown;
+  assert.equal(hudOf(out.words, null, null, play, us).clock, "Time 2");
+  assert.equal(
+    howEnded(play.ending.time, out.words, null, play, us),
+    `${play.words.time} 0 points, 1 second left.`,
+  );
+  const none = under(null);
+  assert.equal(hudOf(none.words, null, null, play).clock, "Time 99");
+  assert.equal(
+    howEnded(play.ending.exit, none.words, null, play),
+    `${exit} 0 points, 99 seconds left.`,
+  );
 });
