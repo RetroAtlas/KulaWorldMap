@@ -219,7 +219,11 @@ LEVEL 10 carries the game's first four lethargy pills.
 
 How long it lasts rests on the code: its case sets the word at `0x800ba338` to 360 (`0x800387d4`), and the ball's routine, which the play loop runs once a pass, takes 2 off it a pass (`0x8003b388`) and 4 ticks off the clock with it (`0x8003b390`, through `0x8003b468`), testing the word before it counts it down, so the pill lasts 181 passes, six seconds at two blanks each, and costs 724 ticks beyond the clock's own ticks, 14.5 of its seconds at fifty ticks to the second ([motion.md](motion.md)), which the note gives as about fifteen.
 
-On the Japanese disc the pill's model is recoloured at all three levels of detail, every colour record changed over the same points, its red to a light grey and its yellow to a dark grey, read off its mesh file ([ggi.md](ggi.md)), so its note there names the grey and keeps the US note's sentences without their figures, since the pill's constants are not read off the Japanese executable and that disc's clock counts 60 ticks a second, read off its executable ([tools.md](tools.md)), on which the 724 ticks would be about twelve of its seconds and not fifteen, while play runs the pill by the US reading whatever disc is shown ([viewer.md](viewer.md)).
+On the PAL disc the pill's case sets the word to 300 (`SCES_010.00`, `0x80039050`) and the ball's routine takes 2 off it and 4 ticks off the clock a pass as the US one does (`0x8003bc04`, `0x8003bc10`), so the pill lasts 151 passes, six seconds at two blanks each of a fiftieth, and costs 604 ticks, about twelve of that disc's seconds at fifty ticks to the second, which its note gives.
+
+On the Japanese disc the pill's model is recoloured at all three levels of detail, every colour record changed over the same points, its red to a light grey and its yellow to a dark grey, read off its mesh file ([ggi.md](ggi.md)), and its case sets the same 360 while the ball's routine takes the same 2 off it and 4 ticks off the clock a pass (`SCPS_100.64`, `0x80038d94`, `0x8003b81c`, `0x8003b828`), so the pill lasts the 181 passes and costs the 724 ticks the US one does, about twelve of that disc's seconds at sixty ticks to the second, which its note gives with the grey named.
+
+Play runs the pill by the US executable's reading whatever disc is shown ([viewer.md](viewer.md)).
 
 ### type 33: Bouncy pill
 

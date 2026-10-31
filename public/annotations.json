@@ -202,8 +202,11 @@
       "name": "Lethargy pill",
       "note": "Slows the ball to half pace and rocks the screen for six seconds, while the timer races. That costs about fifteen extra seconds on the clock.",
       "releases": {
+        "eu": {
+          "note": "Slows the ball to half pace and rocks the screen for six seconds, while the timer races. That costs about twelve extra seconds on the clock."
+        },
         "jp": {
-          "note": "Grey in this release. Slows the ball to half pace and rocks the screen, while the timer races."
+          "note": "Grey in this release. Slows the ball to half pace and rocks the screen for six seconds, while the timer races. That costs about twelve extra seconds on the clock."
         }
       }
     },
