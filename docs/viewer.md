@@ -169,7 +169,7 @@ The objects follow the disc too: a thing the chosen disc models otherwise is dra
 
 The Japanese disc draws the exit and the hidden exit as a sign reading 出口, the hidden exit's translucent all over, and the lethargy pill in light and dark grey.
 
-The PAL disc draws the arrow a little further along the way it points, and its jump is lower and shorter, which a planned route's jump and the ball's jump in play follow.
+The PAL disc draws the arrow a little further along the way it points, and its jump is lower and over fewer frames, landing where the US one does, which a planned route's jump and the ball's jump in play follow.
 
 Meanwhile play's rules, the clock and the hourglass among them, are the US release's whatever disc is chosen.
 
@@ -593,7 +593,7 @@ The modules lie in layers, and a module imports only its own layer and those ben
 
 The page itself starts what the boot will ask for before any of its modules has arrived: every module the boot imports, so they load in one round rather than as each is found in the last, the data files, and the textures of the world the link's pack names, or the first world's textures where there is no link, so everything is on its way together.
 
-The page fetches the three release files beside the data, one a release, each small since it carries only the slots whose level differs from the US one, and a file that cannot be loaded leaves that release out.
+The page fetches the three release files beside the data, one a release, each carrying only what its disc changes, the levels, the artwork and the models that differ from the US one, and a file that cannot be loaded leaves that release out.
 
 The US release is built into the model, so the map shows it under its own name where its file cannot be loaded.
 
