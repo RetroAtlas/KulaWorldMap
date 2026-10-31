@@ -50,8 +50,13 @@ const BOTTOM = [300, -84];
 const SIDEWAYS = [15, 60];
 
 export const cases = [];
+const levelOf = (level) => {
+  if (Array.isArray(level)) return level;
+  if (!LEVELS[level]) throw new Error(`no level ${level} in the matrix's table`);
+  return LEVELS[level];
+};
 const add = (id, level, [yaw, pitch], extra = {}) =>
-  cases.push({ id, level: LEVELS[level] ?? level, yaw, pitch, frames: [T1], ...extra });
+  cases.push({ id, level: levelOf(level), yaw, pitch, frames: [T1], ...extra });
 
 // A: every level, three views, and three frames on the first
 for (const name of Object.keys(LEVELS)) {
