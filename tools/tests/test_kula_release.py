@@ -74,13 +74,13 @@ WORDS = {
 
 # The rules each executable's words read as, and the clock word they reach.
 RULES = {
-    "us": {"hz": 60, "clock": {"fill": 50, "default": 4950, "swap": None, "shown": 60},
+    "us": {"hz": 60, "clock": {"fill": 50, "default": 4950, "swap": None, "shown": 60, "plus": 1},
            "hourglass": {"from": 5999, "second": 50, "points": 10},
            "pause": {"levels": 15, "finals": 2, "firstFinal": 151}},
-    "eu": {"hz": 50, "clock": {"fill": 50, "default": 4950, "swap": None, "shown": 50},
+    "eu": {"hz": 50, "clock": {"fill": 50, "default": 4950, "swap": None, "shown": 50, "plus": 1},
            "hourglass": {"from": 4999, "second": 50, "points": 10},
            "pause": {"levels": 15, "finals": 2, "firstFinal": 151}},
-    "jp": {"hz": 60, "clock": {"fill": 60, "default": 7140, "swap": [5940, 7140], "shown": 60},
+    "jp": {"hz": 60, "clock": {"fill": 60, "default": 7140, "swap": [5940, 7140], "shown": 60, "plus": 1},
            "hourglass": {"from": 7199, "second": None, "points": None},
            "pause": {"levels": 15, "finals": 2, "firstFinal": 151}},
 }

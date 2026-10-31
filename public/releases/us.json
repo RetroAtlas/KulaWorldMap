@@ -12,7 +12,8 @@
    "fill": 50,
    "default": 4950,
    "swap": null,
-   "shown": 60
+   "shown": 60,
+   "plus": 1
   },
   "hourglass": {
    "from": 5999,

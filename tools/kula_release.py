@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """What a release's executable changes about a level, read off its code: the
-frame rate, the clock's fill, default and swap and the seconds the HUD shows
-it in, the hourglass's count and points, and the pause screen's numbering.
+frame rate, the clock's fill, default and swap, the seconds the HUD shows it
+in and what it adds to them, the hourglass's count and points, and the pause
+screen's numbering.
 
     python3 tools/kula_release.py --release eu            # every reading, with its address
     python3 tools/kula_release.py --release jp --table    # the rules the build ships
@@ -61,6 +62,8 @@ IMMEDIATES = [
      "addiu $v0, $zero, {}", {"us": 0x80035fa8, "eu": 0x80036800, "jp": 0x800362f4}),
     ("the clock", "clock.swap.from", "and then takes a clock of this", "addiu $v0, $zero, {}", {"jp": 0x80036308}),
     ("the clock", "clock.swap.to", "to this", "addiu $v0, $zero, {}", {"jp": 0x80036310}),
+    ("the clock", "clock.plus", "the HUD shows this many more than the whole seconds the clock holds",
+     "addiu $t4, $v0, {}", {"us": 0x8001ebbc, "eu": 0x8001f494, "jp": 0x8001f67c}),
     ("the hourglass", "hourglass.from", "the hourglass takes the clock from this many ticks", "addiu $v0, $zero, {}",
      {"us": 0x80039070, "eu": 0x800398f4, "jp": 0x800396bc}),
     ("the pause screen", "pause.firstFinal", "the pause screen numbers the finals from this", "addiu $a2, $v1, {}",
@@ -183,13 +186,14 @@ def readings(code, release):
 
 def rules(code, release):
     """The release's rules: frames a second, the clock's fill of ticks a second of the trailer's time, its default,
-    the swap of one clock for another where the start makes one and the ticks the HUD shows a second, the ticks the
-    hourglass takes the clock from and the seconds and points it scores by where it scores, and the pause screen's
-    levels a world, finals a world and the first final's number."""
+    the swap of one clock for another where the start makes one, the ticks the HUD shows a second and what it adds
+    to the whole seconds, the ticks the hourglass takes the clock from and the seconds and points it scores by where
+    it scores, and the pause screen's levels a world, finals a world and the first final's number."""
     r = readings(code, release)
     swap = None if r["clock.swap.from"] is None else [r["clock.swap.from"], r["clock.swap.to"]]
     return {"hz": r["hz"],
-            "clock": {"fill": r["clock.fill"], "default": r["clock.default"], "swap": swap, "shown": r["clock.shown"]},
+            "clock": {"fill": r["clock.fill"], "default": r["clock.default"], "swap": swap, "shown": r["clock.shown"],
+                      "plus": r["clock.plus"]},
             "hourglass": {"from": r["hourglass.from"], "second": r["hourglass.second"], "points": r["hourglass.points"]},
             "pause": {"levels": r["pause.levels"], "finals": r["pause.finals"], "firstFinal": r["pause.firstFinal"]}}
 

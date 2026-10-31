@@ -329,6 +329,10 @@ test("the rules are what each release's executable sets", () => {
     [60, 50, 60],
   );
   assert.deepEqual(
+    each((x) => x.clock.plus),
+    [1, 1, 1],
+  );
+  assert.deepEqual(
     each((x) => x.hourglass.from),
     [5999, 4999, 7199],
   );
