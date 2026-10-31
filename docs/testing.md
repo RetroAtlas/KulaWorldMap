@@ -18,6 +18,8 @@ One spec runs with its name after the command, `npm run test:browser -- play-hud
 
 `npm run pixels` renders the working tree and a ref, `HEAD` unless one is given, over the matrix in `tests/pixels/cases.js` with the clock held still, the ball stood on a level for the play cases, and names every capture that differs; it proves a change meant to draw as before, a move or a re-wiring, and is not run for one meant to draw differently.
 
+The matrix also stands levels on the other discs, such a case naming its disc in its id, `A/B1/jp/v1`, which the harness sets through the release model before it selects the level and puts back once the case is captured, so a ref from before that model runs those cases on the US disc.
+
 `npm run frame` and `npm run boot` are measurements, not checks: where a frame's time goes, and when the page's first frames land over a throttled network.
 
 `python3 -m unittest discover -s tools/tests` runs the tools' tests without the disc, the motion reader's one file a module, `test_kula_motion_<subject>.py`, over the shared `motion_fixture.py`, the atlas writer's tests and the build's artwork tests over the worlds `tgi_fixture.py` builds, and the tests of the level writer's disc check in `test_kula_kwl_check.py` beside the writer's own `test_kula_kwl.py`; `python3 -m compileall -q tools/` and `ruff check tools/` at the release [.github/workflows/ci.yml](../.github/workflows/ci.yml) pins complete the Python checks.

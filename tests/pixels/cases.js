@@ -1,5 +1,6 @@
 // The matrix: every case names a level by pack and slot and a yaw and pitch,
-// and whatever it changes from the fitted view with the display's defaults.
+// and whatever it changes from the fitted view with the display's defaults,
+// the disc among them.
 const T0 = 10000;
 const T1 = 10617;
 const T2 = 14167;
@@ -50,7 +51,7 @@ const SIDEWAYS = [15, 60];
 
 export const cases = [];
 const add = (id, level, [yaw, pitch], extra = {}) =>
-  cases.push({ id, level: LEVELS[level], yaw, pitch, frames: [T1], ...extra });
+  cases.push({ id, level: LEVELS[level] ?? level, yaw, pitch, frames: [T1], ...extra });
 
 // A: every level, three views, and three frames on the first
 for (const name of Object.keys(LEVELS)) {
@@ -63,6 +64,16 @@ for (const name of ["L1", "LESSON", "OBJ", "L94", "H10", "B15", "F6", "L111"]) {
   add(`A/${name}/bottom`, name, BOTTOM);
   add(`A/${name}/sideways`, name, SIDEWAYS);
 }
+// and a level on another disc, in that disc's artwork and as that disc lays it
+for (const [name, release, view, at, level = name] of [
+  ["B1", "jp", "v1", V1],
+  ["B1", "jp", "top", TOP],
+  ["L111", "jp", "v1", V1],
+  ["L1", "eu", "v2", V2],
+  ["LESSON", "eu", "v1", V1],
+  ["B30", "eu", "v1", V1, ["HELL.PAK", 17]],
+])
+  add(`A/${name}/${release}/${view}`, level, at, { release });
 
 // B: each display switch away from its default, alone and in company
 const FLIPS = {

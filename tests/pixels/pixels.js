@@ -4,15 +4,18 @@
 // and names every capture that differs: the map canvas, the pick canvas, the
 // hit test over a grid of points, the cell and the face it finds, whether the
 // frame goes on redrawing, and whether a world's atlas redraws the map when it
-// lands. The play captures stand the ball on a level and hash the frame, the
-// strip and the HUD at held game frames. A change that is to draw exactly as
-// before passes with nothing named.
+// lands. A case that names a disc is drawn as that disc ships it where the
+// side has the release model, and on the US disc where it has not. The play
+// captures stand the ball on a level and hash the frame, the strip and the
+// HUD at held game frames. A change that is to draw exactly as before passes
+// with nothing named.
 //
 //     npm run pixels -- [<ref>] [--save <dir>] [--all]
 //
 // --save writes both sides of every capture that differs as PNGs. Past a few
 // differing captures the rest are counted by what differs rather than named,
 // and --all names every one.
+import { existsSync } from "node:fs";
 import { mkdtemp, writeFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -160,15 +163,17 @@ async function preload(page) {
   });
 }
 
-/** Draw one case at each of its times and hash what it painted. */
-async function capture(page, c, keep) {
+/** Draw one case at each of its times and hash what it painted, on the disc
+    it names where the side has the release model. */
+async function capture(page, c, keep, discs) {
   return page.evaluate(
-    async ({ c, keep }) => {
+    async ({ c, keep, discs }) => {
       const { state } = await window.__module("state.js");
       const R = await window.__module("render.js");
       const N = await window.__module("navigate.js");
       const { frameAt } = await window.__module("motion.js");
       const { motionTable } = await window.__module("data.js");
+      const D = discs && c.release ? await window.__module("viewer/release.js") : null;
       const li = state.data.levels.findIndex(
         (l) => l.pack.endsWith("/" + c.level[0]) && l.index === c.level[1],
       );
@@ -179,9 +184,15 @@ async function capture(page, c, keep) {
       Object.assign(state.show, window.__defaults, c.show || {}, { motion: false });
       state.cam.yaw = c.yaw;
       state.cam.pitch = c.pitch;
+      if (D) {
+        D.setCurrent(c.release);
+        if (D.current() !== c.release) throw new Error(`no release ${c.release}`);
+      }
       N.selectLevel(li);
       state.show.motion = c.show?.motion ?? window.__defaults.motion;
       R.draw();
+      // the first draw of a world on a disc fetches the disc's sheets
+      if (D) await window.__atlasesIn();
       // a press is a colour pressed before the first frame, or a colour and a page time
       state.presses = new Map();
       for (const press of c.flip || []) {
@@ -269,9 +280,10 @@ async function capture(page, c, keep) {
       state.hover = null;
       state.hiddenKinds = new Set();
       state.presses = new Map();
+      D?.setCurrent(D.BASE);
       return shots;
     },
-    { c, keep },
+    { c, keep, discs },
   );
 }
 
@@ -468,6 +480,7 @@ async function playCapture(page, c, keep) {
 async function render(browser, root, { only = null, keep = null } = {}) {
   const server = await serve(root);
   const base = `http://127.0.0.1:${server.address().port}`;
+  const discs = existsSync(join(root, "js", "viewer", "release.js"));
   const out = [];
   try {
     for (const [side, store] of SIDES) {
@@ -483,7 +496,7 @@ async function render(browser, root, { only = null, keep = null } = {}) {
         const shots = [];
         if (dpr === 1 && !only) shots.push(...(await arrival(page)));
         await preload(page);
-        for (const c of todo) shots.push(...(await capture(page, c, !!keep)));
+        for (const c of todo) shots.push(...(await capture(page, c, !!keep, discs)));
         if (dpr === 1 && !only) for (const c of live) shots.push(await liveness(page, c));
         if (starts.length) await playBoot(page);
         for (const c of starts) shots.push(...(await playCapture(page, c, !!keep)));
