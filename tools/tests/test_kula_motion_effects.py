@@ -16,6 +16,8 @@ class Effects(unittest.TestCase):
                  lw("a1", "a1", 23216), sb("v1", "gp", 5104), sb("zero", "gp", 5105))
         self.assertEqual(effect_init(c, (AT, AT + 28)),
                          {c.gp + 5048: ("sw", 0x800988f8), c.gp + 5104: ("sb", 100), c.gp + 5105: ("sb", 0)})
+        moved = code(lui("v0", 0x000a), addiu("v0", "v0", -30472), sw("v0", "gp", 5048), gp=0x800a29e0)
+        self.assertEqual(effect_init(moved, (AT, AT + 12)), {0x800a29e0 + 5048: ("sw", 0x800988f8)})
         with self.assertRaises(SystemExit):
             effect_init(code(lw("a1", "a1", 23216), sw("a1", "gp", 5048)), (AT, AT + 8))
 
