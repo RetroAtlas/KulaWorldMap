@@ -73,7 +73,7 @@ test("the README's hourglass sentence gives each disc's figure as its rules make
 
 test("annotations.md's line on the shorter levels with an hourglass counts them and scores a take as one starts by the US and PAL rules", () => {
   const m =
-    /^The notes put that take on a level of the usual length, since (\d+) of the (\d+) levels with an hourglass run 99 seconds and the other (\d+) run (\d+) to (\d+), where a take as the level starts scores (\d+) down to (\d+) on the US disc and (\d+) down to (\d+) on the PAL disc\.$/m.exec(
+    /^The notes put that take on a level of the usual length, since (\d+) of the US disc's (\d+) levels with an hourglass run 99 seconds and the other (\d+) run (\d+) to (\d+), where a take as the level starts scores (\d+) down to (\d+) on that disc and (\d+) down to (\d+) on the PAL disc\.$/m.exec(
       reasons,
     );
   assert.ok(m, "annotations.md has no line on the lengths of the levels with an hourglass");

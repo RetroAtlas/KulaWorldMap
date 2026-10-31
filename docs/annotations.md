@@ -257,7 +257,7 @@ Play turns and scores the hourglass by the rules of the disc shown as the level'
 
 The notes count a take from the level's start rather than from the timer's reading, since the HUD shows one more than the whole seconds its clock holds, 83 as a 99-second level starts on the US disc and 100 on the PAL disc, never 99.
 
-The notes put that take on a level of the usual length, since 84 of the 92 levels with an hourglass run 99 seconds and the other 8 run 20 to 35, where a take as the level starts scores 990 down to 840 on the US disc and 790 down to 640 on the PAL disc.
+The notes put that take on a level of the usual length, since 84 of the US disc's 92 levels with an hourglass run 99 seconds and the other 8 run 20 to 35, where a take as the level starts scores 990 down to 840 on that disc and 790 down to 640 on the PAL disc.
 
 ### type 36: Gem
 
