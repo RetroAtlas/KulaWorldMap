@@ -30,14 +30,17 @@ import {
 } from "../../public/js/viewer/release.js";
 import { blank, toLevel } from "../../public/js/format/project.js";
 import {
+  jumpTable,
   levelAt,
   levelMarkers,
   levelScore,
   levelsIn,
+  markerModel,
   markerPoints,
   markerStats,
   setAnnotations,
   setObjects,
+  typeModels,
   worldTint,
 } from "../../public/js/viewer/data.js";
 
@@ -581,4 +584,41 @@ test("a world's colour untextured is the release shown's tint where its file has
   assert.notEqual(worldTint("HAZE"), hex(objects.skins.tint.HAZE));
   assert.equal(worldTint("ARCTIC"), hex(objects.skins.tint.ARCTIC));
   assert.equal(worldTint("NOWHERE"), null);
+});
+
+const EXIT = 7;
+const ARROW = 28;
+const LESSON = "/HIRO/HIRO.PAK#19";
+
+test("a type's models are the release shown's where its file carries the list and the base's otherwise, the file's own objects, so the Japanese disc draws its exit and the PAL disc its arrow", (t) => {
+  t.after(() => setCurrent("us"));
+  setReleases(releases);
+  setObjects(objects);
+  setAnnotations(annotations);
+  const lesson = mapData.levels[slot(LESSON)];
+  const exit = levelMarkers(lesson).find((m) => m.face !== null && m.type === EXIT);
+  assert.equal(typeModels(EXIT), objects.types[EXIT]);
+  assert.equal(typeModels(ARROW), objects.types[ARROW]);
+  assert.ok(objects.types[EXIT].includes(markerModel(exit, lesson)));
+  setCurrent("jp");
+  assert.equal(typeModels(EXIT), jp.objects.types[EXIT]);
+  assert.equal(typeModels(ARROW), objects.types[ARROW]);
+  assert.ok(jp.objects.types[EXIT].includes(markerModel(exit, lesson)));
+  assert.ok(!objects.types[EXIT].includes(markerModel(exit, lesson)));
+  setCurrent("eu");
+  assert.equal(typeModels(EXIT), objects.types[EXIT]);
+  assert.equal(typeModels(ARROW), eu.objects.types[ARROW]);
+  assert.deepEqual(typeModels(999), []);
+});
+
+test("the jump's arc is the release shown's where its file carries rows and the base's otherwise, so the PAL disc jumps along its own 27 rows and the Japanese disc along the base's", (t) => {
+  t.after(() => setCurrent("us"));
+  setReleases(releases);
+  setObjects(objects);
+  assert.equal(jumpTable(), objects.jump);
+  setCurrent("eu");
+  assert.equal(jumpTable(), eu.objects.jump);
+  assert.equal(jumpTable().rows.length, 27);
+  setCurrent("jp");
+  assert.equal(jumpTable(), objects.jump);
 });

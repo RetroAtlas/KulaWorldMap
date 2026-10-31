@@ -19,7 +19,10 @@ export const setObjects = (o) => {
 export const modelUnit = () => 1 / shapes.block;
 export const blockUnits = () => shapes.block;
 export const motionTable = () => shapes.motion;
-export const jumpTable = () => shapes.jump ?? { count: 0, rows: [] };
+export const jumpTable = () => {
+  const own = releaseOf(current())?.objects?.jump;
+  return own?.rows?.length ? own : (shapes.jump ?? { count: 0, rows: [] });
+};
 export const skinsTable = () => shapes.skins;
 export const worldTint = (world) => {
   const c = releaseOf(current())?.art?.tint?.[world] ?? shapes.skins?.tint?.[world];
@@ -32,7 +35,8 @@ export const motionOf = (m) =>
     ? null
     : (shapes.motion?.types[String(STARTS.has(m.type) ? TYPE.START : m.type)] ?? null);
 export const kindMotion = (kind) => shapes.motion?.kinds[String(kind)] ?? null;
-export const typeModels = (type) => shapes.types[String(type)] ?? [];
+export const typeModels = (type) =>
+  releaseOf(current())?.objects?.types?.[String(type)] ?? shapes.types[String(type)] ?? [];
 const GOURAUD = 16;
 /** The colour the map fills a model's polygon with, from its corners' own
     colours or those given: the first corner's colour, in which the game draws a flat
@@ -376,8 +380,8 @@ export function markerModel(m, l, form = null) {
   const n = /^LEVEL (\d+)$/.exec(l.shown || "");
   if (n && !m.placed && TYPE.FRUIT.includes(type))
     type = TYPE.FRUIT[(Number(n[1]) - 1) % TYPE.FRUIT.length];
-  const models = shapes.types[String(type)];
-  if (!models) return null;
+  const models = typeModels(type);
+  if (!models.length) return null;
   const opens = type === TYPE.EXIT ? SHUT : 0;
   const variant = form ?? (m.variant !== null ? Number(m.variant) : opens);
   return models[variant] || models[0];

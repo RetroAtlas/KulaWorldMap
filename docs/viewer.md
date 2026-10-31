@@ -165,6 +165,12 @@ The PAL disc draws the faces of HIRO's blocks that look along `-y` about a third
 
 The Japanese disc draws every level with no key in a grey swirl with no green, with a target of two rings on its plates, and draws HAZE in pale peach stones with an orange flame and a dark blob under its devices, and HAZE's colour there, which its swatch, its untextured blocks and the dust the ball raises take, is that disc's own.
 
+The objects follow the disc too: a thing the chosen disc models otherwise is drawn, on the map and in the legend, with that disc's own model.
+
+The Japanese disc draws the exit and the hidden exit as a sign reading 出口, the hidden exit's translucent all over, and the lethargy pill in light and dark grey.
+
+The PAL disc draws the arrow a little further along the way it points, and its jump is lower and shorter, which a planned route's jump and the ball's jump in play follow.
+
 Meanwhile play's rules, the clock and the hourglass among them, are the US release's whatever disc is chosen.
 
 ## Your levels
@@ -614,6 +620,8 @@ It draws the blocks through `js/viewer/draw/blocks.js`, which lays each world's 
 Where the index the frame draws from marks a block, with the frame of its mark, `js/viewer/draw/blocks.js` hands `faceSkin` in `js/viewer/skins.js` the frames since the mark for each of the block's faces, or with Motion off a count past the whole fade, and `faceSkin` paints such a face as the game paints a block the ball has rolled onto, faded in from grey, so play's marks reach the faces with no branch for play in either module.
 
 It draws what stands on them through `js/viewer/draw/things.js`, a laser's beam through `js/viewer/draw/beams.js`, and what is neither, from a platform's route and the ground grid to the scale bar and the lettering of a label, through `js/viewer/draw/overlays.js`, which draws the arrow to where a teleporter leads with `js/viewer/draw/arrow.js`, a link drawn as OddworldMap draws its links and knowing nothing of either map.
+
+A disc's models reach `js/viewer/draw/things.js`, the legend's icons and play through `js/viewer/data.js`, which hands out each type's model list and the jump's arc from the release shown's file where that file carries them and from the base's otherwise, the file's own objects every time, so what draws a thing carries no branch for the disc and its caches keyed by model hold.
 
 ### The seams
 
