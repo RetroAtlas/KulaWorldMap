@@ -55,8 +55,10 @@ const KEYS = [
   "rules",
   "packs",
   "art",
+  "objects",
   "levels",
 ];
+const READINGS = ["jump.skip", "shadow.sprite", "shadow.sprites", "effect.sprites"];
 const base = new Map(mapData.levels.map((l) => [levelKey(l), l]));
 const variants = (r) => Object.entries(r.levels);
 const differs = (a, b) => JSON.stringify(a) !== JSON.stringify(b);
@@ -65,7 +67,7 @@ const WORDS = "no one two three four five six seven eight nine ten eleven twelve
 );
 const number = (s) => (WORDS.includes(s) ? WORDS.indexOf(s) : Number(s));
 
-test("the three files are the US, PAL and Japanese releases, each its identity, rules, layout, art and levels", () => {
+test("the three files are the US, PAL and Japanese releases, each its identity, rules, layout, art, objects and levels", () => {
   assert.deepEqual(
     releases.map((r) => r.id),
     ["us", "eu", "jp"],
@@ -75,7 +77,7 @@ test("the three files are the US, PAL and Japanese releases, each its identity, 
     for (const k of ["label", "name", "region", "serial", "boot"])
       assert.ok(typeof r[k] === "string" && r[k].length, `${r.id} ${k}`);
     assert.ok(Number.isInteger(r.sectors) && r.sectors > 0, r.id);
-    for (const k of ["rules", "packs", "art", "levels"])
+    for (const k of ["rules", "packs", "art", "objects", "levels"])
       assert.ok(r[k] && typeof r[k] === "object" && !Array.isArray(r[k]), `${r.id} ${k}`);
   }
 });
@@ -245,6 +247,64 @@ test("the PAL disc draws HIRO otherwise and tints no world; the Japanese disc dr
       world,
     );
   assert.deepEqual(Object.keys(jp.art.tint), ["HAZE"]);
+});
+
+test("every release's objects carry the base's four readings, the types its disc draws otherwise and the arc, and the base's own carry no type and no arc", () => {
+  for (const r of releases) {
+    assert.deepEqual(Object.keys(r.objects), ["readings", "types", "jump"], r.id);
+    assert.deepEqual(Object.keys(r.objects.readings), READINGS, r.id);
+    for (const v of Object.values(r.objects.readings))
+      assert.ok(Number.isInteger(v) && v >= 0, r.id);
+    assert.deepEqual(r.objects.readings, us.objects.readings, r.id);
+  }
+  assert.deepEqual([us.objects.types, us.objects.jump], [{}, {}]);
+});
+
+/** A model as objects.json ships one: its polygons name its vertices, each with a colour a corner. */
+function shaped(m, where) {
+  const own = Object.keys(m).filter((k) => !["normals", "sorted", "blend"].includes(k));
+  assert.deepEqual(own, ["box", "frames", "polys", "rgb", "flags"], where);
+  const n = m.frames[0].length / 3;
+  assert.ok(Number.isInteger(n) && n > 0, where);
+  for (const f of m.frames) assert.equal(f.length, n * 3, `${where} frames`);
+  assert.equal(m.polys.length, m.rgb.length, where);
+  assert.equal(m.polys.length, m.flags.length, where);
+  m.polys.forEach((p, i) => {
+    assert.ok(p.length === 3 || p.length === 4, `${where} polygon ${i}`);
+    for (const v of p) assert.ok(v >= 0 && v < n, `${where} polygon ${i} names ${v}`);
+    assert.equal(m.rgb[i].length, p.length * 3, `${where} polygon ${i} colours`);
+  });
+  const [lo, hi] = m.box;
+  assert.deepEqual([lo.length, hi.length], [3, 3], `${where} box`);
+  for (let i = 0; i < 3; i++) assert.ok(lo[i] <= hi[i], `${where} box`);
+}
+
+test("a release's types name types of objects.json, a whole list of the base's length each, every model shaped as the base's are and no list the base's, and its arc is a count over rows of three", () => {
+  for (const r of releases) {
+    for (const [t, models] of Object.entries(r.objects.types)) {
+      const where = `${r.id} type ${t}`;
+      assert.ok(t in objects.types, where);
+      assert.equal(models.length, objects.types[t].length, where);
+      models.forEach((m, i) => shaped(m, `${where} model ${i}`));
+      assert.ok(differs(models, objects.types[t]), `${where} is the base's list`);
+    }
+    if (Object.keys(r.objects.jump).length === 0) continue;
+    assert.deepEqual(Object.keys(r.objects.jump), ["count", "rows"], r.id);
+    const { count, rows } = r.objects.jump;
+    assert.ok(Number.isInteger(count) && count > 0 && rows.length > 0, r.id);
+    for (const row of rows) {
+      assert.equal(row.length, 3, r.id);
+      for (const v of row) assert.ok(Number.isInteger(v), r.id);
+    }
+    assert.ok(differs(r.objects.jump, objects.jump), `${r.id} arc is the base's`);
+  }
+});
+
+test("the PAL disc draws the arrow otherwise and jumps along an arc of 27 rows; the Japanese disc draws the exits, the hidden exit and the lethargy pill otherwise and jumps along the base's arc", () => {
+  assert.deepEqual(Object.keys(eu.objects.types), ["28"]);
+  assert.equal(eu.objects.jump.rows.length, 27);
+  assert.deepEqual(Object.keys(jp.objects.types), ["7", "26", "32"]);
+  assert.deepEqual(jp.objects.jump, {});
 });
 
 test("the rules are what each release's executable sets", () => {

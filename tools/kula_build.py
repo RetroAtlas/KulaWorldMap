@@ -6,9 +6,10 @@ slot without the image, and write public/packs.json; the sprites the
 game's effects draw, and write their sheet to public/tex/sparks.png; and for
 each release its file under public/releases/, its identity, the rules of its
 executable, its packs' layout, the levels of its disc that differ from the US
-data and its artwork against the US atlases, the sheets of the textures its
+data, its artwork against the US atlases, the sheets of the textures its
 disc draws otherwise, laid under public/tex/<id>/, and the tint of a world it
-colours otherwise.
+colours otherwise, and its objects against the US models, the model lists of
+the types its mesh file draws otherwise and the jump's arc where that differs.
 
     export KULA_DISC="/path/to/Roll Away.bin"
     python3 tools/kula_build.py                 # the US data and public/releases/us.json
@@ -16,9 +17,10 @@ colours otherwise.
     python3 tools/kula_build.py --all           # every release whose variable is set, the US first
 
 Another release's run reads its own image and its own executable and nothing
-of the US disc, compares its levels slot by slot with the committed US data
-and its textures cell by cell with the committed US atlases, and makes every
-check the US build makes on its disc before it writes.
+of the US disc, compares its levels slot by slot with the committed US data,
+its textures cell by cell with the committed US atlases and its meshes model
+by model with the committed US objects, and makes every check the US build
+makes on its disc before it writes.
 
 The output is generated and committed, so regenerate it rather than editing it.
 """
@@ -32,11 +34,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_disc import BASE, DISC_VARS, RELEASE_FILES, RELEASES, THEMES, open_release, packs
-from kula_ggi import FILE as GGI, OBJECTS, SPARKS, Ggi, jump, shadows, sparks, write_objects
+from kula_ggi import FILE as GGI, OBJECTS, SPARKS, Ggi, jump, overlay, shadows, sparks, write_objects
 from kula_kwl_check import executable, figure_failures
 from kula_level import DEFAULT_TIME, Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
 from kula_motion import readings, table
-from kula_motion_code import BALL, Code
+from kula_motion_code import Code
 from kula_pak import Pak
 from kula_place import RECOMPRESS, ROOM
 from kula_release import rules as release_rules
@@ -51,6 +53,7 @@ PACKS = PUBLIC / "packs.json"
 WORLD_LEVELS = 15
 FINAL_LEVELS = 2
 IDENTITY = ("label", "name", "region", "serial", "boot", "sectors")
+MESH_READINGS = ("jump.skip", "shadow.sprite", "shadow.sprites", "effect.sprites")
 
 # What a run reads off a disc.
 Read = namedtuple("Read", "levels checked speeds untrailed problems")
@@ -220,13 +223,33 @@ def release_art(release, tgis, skins, quads, atlases):
     return art, pixels
 
 
-def release_json(release, rules, layout, art, levels):
+def mesh_readings(r):
+    """The readings of the executable the mesh readers take, which the base's
+    file records and another release's models are read and checked with."""
+    return {k: r[k] for k in MESH_READINGS}
+
+
+def base_objects(readings):
+    """The base's objects entry: the readings its meshes are read with and no
+    model list or arc of its own."""
+    return {"readings": readings, "types": {}, "jump": {}}
+
+
+def release_objects(g, base, readings, sheet=None):
+    """Another release's objects entry against the base's models: the readings
+    its mesh file is read and checked with, the model lists of the types it
+    draws otherwise and the arc where that differs, as `overlay` gives them."""
+    return {"readings": readings, **overlay(g, base, readings, sheet)}
+
+
+def release_json(release, rules, layout, art, objects, levels):
     """The release's file: its identity, the rules of its executable, the layout
-    of its packs, its artwork laid against the base's atlases and the levels of
-    its disc that differ from the base's."""
+    of its packs, its artwork laid against the base's atlases, its objects
+    against the base's models and the levels of its disc that differ from the
+    base's."""
     entry = RELEASES[release]
     return {"id": release, **{k: entry[k] for k in IDENTITY}, "rules": rules, "packs": layout, "art": art,
-            "levels": levels}
+            "objects": objects, "levels": levels}
 
 
 def other_release(disc, release):
@@ -235,17 +258,19 @@ def other_release(disc, release):
     the world each room is played in come from the committed data, since no
     executable but the base's is read for them, so a room that is not the
     base's cannot be placed and is refused; the sheets are cut against the
-    committed atlases and the tint taken with the committed skins, so no disc
-    but the release's own is opened."""
-    missing = [p.name for p in (OUT, OBJECTS, RELEASE_FILES[BASE]) if not p.exists()]
+    committed atlases, the tint taken with the committed skins and the models
+    held to the committed objects with the readings the base's file records,
+    so no disc but the release's own is opened."""
+    missing = [p.name for p in (OUT, OBJECTS, SPARKS, RELEASE_FILES[BASE]) if not p.exists()]
     if missing:
         sys.exit(f"no {' or '.join(missing)} to write {release} against; build the base first")
     base = {slot(l): l for l in json.loads(OUT.read_text())["levels"]}
-    skins = json.loads(OBJECTS.read_text())["skins"]
+    shapes = json.loads(OBJECTS.read_text())
+    skins = shapes["skins"]
     own = json.loads(RELEASE_FILES[BASE].read_text())
-    if "art" not in own:
-        sys.exit(f"{RELEASE_FILES[BASE].name} carries no digest of the base's artwork to hold the sheets of "
-                 f"{release} to; build the base first")
+    if "art" not in own or "objects" not in own:
+        sys.exit(f"{RELEASE_FILES[BASE].name} carries no digest of the base's artwork or readings of its executable "
+                 f"to hold {release} to; build the base first")
     copycat = skins["copycat"]
     rooms = [l["theme"] for l in sorted((l for l in base.values() if l["pack"] == copycat), key=lambda l: l["index"])]
     rules = rules_of(code_of(disc, release), release)
@@ -258,7 +283,8 @@ def other_release(disc, release):
     if rooms_apart:
         sys.exit(f"{', '.join(rooms_apart)} differ from the base's rooms, which say the world each is played in")
     art, pixels = release_art(release, tgis_of(disc), skins, own["art"]["quads"], base_atlases(THEMES))
-    return release_json(release, rules, layout_of(disc), art, levels), read, pixels
+    models = release_objects(Ggi(disc.read_file(GGI)), shapes, own["objects"]["readings"])
+    return release_json(release, rules, layout_of(disc), art, models, levels), read, pixels
 
 
 def write_release(release, data):
@@ -321,17 +347,18 @@ def build_base(disc):
         sys.exit(f"the skins name {skins['copycat']}, which is no pack on the disc")
     layout = layout_of(disc)
     g = Ggi(disc.read_file(GGI))
-    cast = shadows(g, r["shadow.sprite"], r["shadow.sprites"])
-    arc = jump(g, motion["types"][BALL]["jump"]["skip"])
-    side, sheet = sparks(g, r["effect.sprites"])
-    burst = {"side": side, "count": r["effect.sprites"]}
+    mesh = mesh_readings(r)
+    cast = shadows(g, mesh["shadow.sprite"], mesh["shadow.sprites"])
+    arc = jump(g, mesh["jump.skip"])
+    side, sheet = sparks(g, mesh["effect.sprites"])
+    burst = {"side": side, "count": mesh["effect.sprites"]}
 
     SPARKS.parent.mkdir(parents=True, exist_ok=True)
     write_png(SPARKS, side * burst["count"], side, sheet)
     shapes = write_objects(g, OBJECTS, placed, motion, skins, cast, arc, burst)
     OUT.write_text(json.dumps(data, indent=1))
     PACKS.write_text(json.dumps(layout, indent=1))
-    own = write_release(BASE, release_json(BASE, rules, layout, base_art(tgis), {}))
+    own = write_release(BASE, release_json(BASE, rules, layout, base_art(tgis), base_objects(mesh), {}))
     report(read)
     print(f"{counted(levels)} -> {written(OUT)}")
     models = sum(len(v) for v in shapes["types"].values()) + len(shapes["balls"])
@@ -345,7 +372,8 @@ def build_base(disc):
     print(f"{len(layout['packs'])} packs holding {held:,} bytes in {capacity // USER} sectors of "
           f"{capacity:,} -> {written(PACKS)}")
     print(f"the rules of {RELEASES[BASE]['boot']} beside the layout, a digest of each of the {len(tgis)} worlds' "
-          f"model table and quads and no level differing from the base's own -> {written(own)}")
+          f"model table and quads, the {len(mesh)} readings the meshes are read with and no level differing from "
+          f"the base's own -> {written(own)}")
 
 
 def build_release(disc, release):
@@ -360,6 +388,11 @@ def build_release(disc, release):
     print(f"{len(files)} sheet{'s' if len(files) != 1 else ''} carrying the {cells} cells the disc draws otherwise, "
           f"laid over {len(art['sheets'])} of {len(THEMES)} worlds, and a tint of its own for "
           f"{', '.join(art['tint']) or 'no world'} -> {', '.join(written(p) for p, *_ in files.values()) or 'nothing'}")
+    models = data["objects"]
+    kinds = list(models["types"])
+    own = f"the models of type{'s' if len(kinds) > 1 else ''} {', '.join(kinds)}" if kinds else "no model"
+    arc = f"an arc of {len(models['jump']['rows'])} rows" if models["jump"] else "no arc"
+    print(f"{own} and {arc} of its own, the rest the base's")
 
 
 def main():

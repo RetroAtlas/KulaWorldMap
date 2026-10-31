@@ -1368,5 +1368,15 @@
   "sheets": {},
   "tint": {}
  },
+ "objects": {
+  "readings": {
+   "jump.skip": 2,
+   "shadow.sprite": 14,
+   "shadow.sprites": 2,
+   "effect.sprites": 7
+  },
+  "types": {},
+  "jump": {}
+ },
  "levels": {}
 }

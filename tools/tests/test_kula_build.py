@@ -18,12 +18,15 @@ from kula_build import (  # noqa: E402
     PACKS,
     PUBLIC,
     base_art,
+    base_objects,
     code_of,
     layout_of,
+    mesh_readings,
     other_release,
     packs_json,
     release_art,
     release_json,
+    release_objects,
     rules_of,
     slot,
     slot_problems,
@@ -43,12 +46,14 @@ from kula_kwl import (  # noqa: E402
 )
 from kula_kwl_check import UNTRACED, figure_failures  # noqa: E402
 from kula_level import BLOCK_KINDS, FACE  # noqa: E402
+from kula_motion import readings  # noqa: E402
 from kula_pak import Pak  # noqa: E402
 from kula_place import RECOMPRESS, ROOM  # noqa: E402
 from kula_sector import USER, sectors_of  # noqa: E402
 from kula_skins import tint  # noqa: E402
 from kula_tex import OUT as TEX, SHARED, digest, mean  # noqa: E402
 from png import read_png  # noqa: E402
+from test_kula_ggi import EXITS, PLACED, READINGS, committed, ggi, quad  # noqa: E402
 from tgi_fixture import BOTH, BRIGHT, PALETTES, atlases, tgi_blob, worlds  # noqa: E402
 
 
@@ -167,14 +172,15 @@ class TheComparison(unittest.TestCase):
         self.assertEqual(slot_problems(self.base, [levels[0], levels[1], {**levels[2], "shown": "FINAL 2"}], BASE_PACKS),
                          ["/HIRO/HIROFI.PAK#0, FINAL 2, stands where the base has /HIRO/HIROFI.PAK#0, FINAL 1"])
 
-    def test_the_file_keys_the_identity_the_rules_the_layout_the_art_and_the_levels_in_order(self):
+    def test_the_file_keys_the_identity_the_rules_the_layout_the_art_the_objects_and_the_levels_in_order(self):
         art = {"quads": {}, "sheets": {}, "tint": {}}
-        data = release_json("eu", {"hz": 50}, {"room": {}, "packs": []}, art, {"/HIRO/HIRO.PAK#0": {}})
-        self.assertEqual(list(data), ["id", *IDENTITY, "rules", "packs", "art", "levels"])
+        models = {"readings": {}, "types": {}, "jump": {}}
+        data = release_json("eu", {"hz": 50}, {"room": {}, "packs": []}, art, models, {"/HIRO/HIRO.PAK#0": {}})
+        self.assertEqual(list(data), ["id", *IDENTITY, "rules", "packs", "art", "objects", "levels"])
         self.assertEqual(data["id"], "eu")
         self.assertEqual({k: data[k] for k in IDENTITY}, {k: RELEASES["eu"][k] for k in IDENTITY})
-        self.assertEqual((data["rules"], data["packs"], data["art"], data["levels"]),
-                         ({"hz": 50}, {"room": {}, "packs": []}, art, {"/HIRO/HIRO.PAK#0": {}}))
+        self.assertEqual((data["rules"], data["packs"], data["art"], data["objects"], data["levels"]),
+                         ({"hz": 50}, {"room": {}, "packs": []}, art, models, {"/HIRO/HIRO.PAK#0": {}}))
 
 
 SHADE = [1, 0, 2, 0, 2, 0]    # the top face alone in its shade
@@ -227,6 +233,24 @@ class TheArt(unittest.TestCase):
         self.assertNotEqual(art["tint"]["A"], tint(US_WORLDS["A"], STONES, SHADE))
 
 
+class TheObjects(unittest.TestCase):
+    def test_the_base_records_the_readings_the_meshes_are_read_with_and_no_model_or_arc_of_its_own(self):
+        self.assertEqual(mesh_readings({**READINGS, "coin.bob": 3}), READINGS)
+        self.assertEqual(base_objects(READINGS), {"readings": READINGS, "types": {}, "jump": {}})
+
+    def test_another_release_carries_the_readings_beside_the_types_and_the_arc_its_file_changes(self):
+        base, sheet = committed(ggi(), set(PLACED))
+        rows = [[0, 0, -48], [61, 0, -96], [117, 0, -144]]
+        g = ggi(types={7: EXITS, 28: [quad(5, dz=40)]}, arc=(4, rows))
+        out = release_objects(g, base, READINGS, sheet)
+        self.assertEqual(list(out), ["readings", "types", "jump"])
+        self.assertEqual(out["readings"], READINGS)
+        self.assertEqual(list(out["types"]), ["28"])
+        self.assertNotEqual(out["types"]["28"], base["types"]["28"])
+        self.assertEqual(out["jump"], {"count": 4, "rows": rows})
+        self.assertEqual(release_objects(ggi(), base, READINGS, sheet), {"readings": READINGS, "types": {}, "jump": {}})
+
+
 class ReleaseFile:
     """A release's committed file held to what the build writes for its disc."""
     release = None
@@ -243,8 +267,9 @@ class ReleaseFile:
 
     def written(self):
         if self.release == BASE:
-            return release_json(BASE, rules_of(code_of(self.disc, BASE), BASE), layout_of(self.disc),
-                                base_art(tgis_of(self.disc)), {})
+            code = code_of(self.disc, BASE)
+            return release_json(BASE, rules_of(code, BASE), layout_of(self.disc), base_art(tgis_of(self.disc)),
+                                base_objects(mesh_readings(readings(code))), {})
         return other_release(self.disc, self.release)[0]
 
     def test_the_committed_file_is_what_the_build_writes(self):
@@ -277,9 +302,10 @@ class ReleaseFile:
 class TheBaseFile(ReleaseFile, unittest.TestCase):
     release = "us"
 
-    def test_the_base_has_no_variant_no_sheet_and_no_tint_and_its_layout_is_the_packs_file(self):
+    def test_the_base_has_no_variant_no_sheet_no_tint_and_no_model_of_its_own_and_its_layout_is_the_packs_file(self):
         self.assertEqual(self.data["levels"], {})
         self.assertEqual((self.data["art"]["sheets"], self.data["art"]["tint"]), ({}, {}))
+        self.assertEqual((self.data["objects"]["types"], self.data["objects"]["jump"]), ({}, {}))
         self.assertEqual(json.dumps(self.data["packs"], indent=1), PACKS.read_text())
 
 
