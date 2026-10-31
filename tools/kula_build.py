@@ -347,7 +347,7 @@ def build_base(disc):
     print(f"{len(layout['packs'])} packs holding {held:,} bytes in {capacity // USER} sectors of "
           f"{capacity:,} -> {written(PACKS)}")
     print(f"the rules of {RELEASES[BASE]['boot']} beside the layout, a digest of each of the {len(tgis)} worlds' "
-          f"artwork and no level differing from the base's own -> {written(own)}")
+          f"model table and quads and no level differing from the base's own -> {written(own)}")
 
 
 def build_release(disc, release):
