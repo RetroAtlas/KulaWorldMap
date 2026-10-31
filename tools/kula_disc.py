@@ -27,10 +27,11 @@ RELEASES = {
            "boot": "SCPS_100.64", "sectors": 136980, "exe": "/SCPS_100.64",
            "base": 0x80010000 - 0x800, "gp": 0x8009f064},
 }
+BASE = "us"    # the release the data is built from, which the others are written against
 DISC_VARS = {"us": "KULA_DISC", "eu": "KULA_DISC_EU", "jp": "KULA_DISC_JP"}
 RELEASE_FILES = {r: Path(__file__).resolve().parent.parent / "public" / "releases" / f"{r}.json" for r in RELEASES}
-EXE = RELEASES["us"]["exe"]
-EXE_BASE = RELEASES["us"]["base"]
+EXE = RELEASES[BASE]["exe"]
+EXE_BASE = RELEASES[BASE]["base"]
 
 # The order a player meets them.
 THEMES = ["HIRO", "HILLS", "INCA", "ARCTIC", "COWBOY",

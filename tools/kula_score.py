@@ -16,14 +16,13 @@ import json
 import sys
 from pathlib import Path
 
-from kula_disc import RELEASE_FILES, RELEASES
+from kula_disc import BASE, RELEASE_FILES, RELEASES
 from kula_level import BLOCK_KINDS, FIELD_WORD
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "public" / "map_data.json"
 NAMES = ROOT / "public" / "annotations.json"
 OBJECTS = ROOT / "public" / "objects.json"
-BASE = "us"
 BLOCK_POINTS = 50
 HOURGLASS = 35
 # The kinds the game's walk over the inner lattice builds and counts.

@@ -16,11 +16,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kula_tgi as tgi
-from kula_disc import RELEASES, THEMES, file_at, open_release
+from kula_disc import BASE, RELEASES, THEMES, file_at, open_release
 from png import read_png, write_png
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "tex"
-BASE = "us"
 SHARED = "all"
 SHADES = 3
 SIZE = 64
