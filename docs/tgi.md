@@ -8,6 +8,7 @@ python3 tools/kula_tgi.py --world HIRO --vram        # the whole VRAM page
 python3 tools/kula_tgi.py --world HIRO --textures    # the 56 textures
 python3 tools/kula_skins.py                          # what goes on which face, with the addresses
 python3 tools/kula_tex.py                            # the atlases the viewer draws with
+python3 tools/kula_tex.py --release jp               # the cells the Japanese disc changes, as sheets laid over the atlases
 ```
 
 ## How it was found

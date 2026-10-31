@@ -24,7 +24,7 @@ A tool that reads a release's disc takes its image from `--disc`, else from `$KU
 | `kula_tgi.py` | a world's artwork: sections, VRAM page, textures |
 | `kula_ggi.py` | the objects' geometry: the model tables, every mesh, and a sheet of them drawn |
 | `kula_skins.py` | what the game paints on every face of every block, read off the executable |
-| `kula_tex.py` | the atlases the viewer draws with, every texture of a world in its three shades |
+| `kula_tex.py` | the atlases the viewer draws with, every texture of a world in its three shades, and for another release the cells of its textures that differ from the base's atlases, laid on sheets of the atlas's grid |
 | `png.py` | write a PNG, read one back, and squeeze what it writes with `oxipng` where that is installed |
 | `mips.py` | disassemble the executable, which is how the lattice was pinned down, and run a routine of it |
 | `kula_motion.py` | the table the build ships, gathered from the `kula_motion_*.py` readings, and the printout of every reading with the address it was read at, the rates behind [motion.md](motion.md) |
