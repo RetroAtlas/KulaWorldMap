@@ -114,7 +114,12 @@
     },
     "7": {
       "name": "Exit",
-      "note": "Red until every key is collected, then green. Touching it ends the level."
+      "note": "Red until every key is collected, then green. Touching it ends the level.",
+      "releases": {
+        "jp": {
+          "note": "A sign reading 出口 in this release, red until every key is collected and then green. Touching it ends the level."
+        }
+      }
     },
     "8": {
       "name": "Clock",
@@ -166,7 +171,12 @@
     },
     "26": {
       "name": "Hidden exit",
-      "note": "A colourless exit that appears once every key is collected. It leads to the world's hidden level."
+      "note": "A colourless exit that appears once every key is collected. It leads to the world's hidden level.",
+      "releases": {
+        "jp": {
+          "note": "A faint sign reading 出口 that appears once every key is collected. It leads to the world's hidden level."
+        }
+      }
     },
     "28": {
       "name": "Arrow",
@@ -190,7 +200,12 @@
     },
     "32": {
       "name": "Lethargy pill",
-      "note": "Slows the ball to half pace and rocks the screen for six seconds, while the timer races. That costs about fifteen extra seconds on the clock."
+      "note": "Slows the ball to half pace and rocks the screen for six seconds, while the timer races. That costs about fifteen extra seconds on the clock.",
+      "releases": {
+        "jp": {
+          "note": "Grey in this release. Slows the ball to half pace and rocks the screen, while the timer races."
+        }
+      }
     },
     "33": {
       "name": "Bouncy pill",

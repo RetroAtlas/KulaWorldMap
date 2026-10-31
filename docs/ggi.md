@@ -2,11 +2,15 @@
 
 `/HIRO/HIRO.GGI` is the one file of its kind on the disc, 310,376 bytes, and it holds the meshes of everything the game draws in 3D that is not a block: the ball, every object a level places, and the things that move, each in its own colours, and after them the sprites and the lettering the game draws flat.
 
+The PAL disc's file is 309,592 bytes and the Japanese disc's 317,364, each laid out as the US file is, its thirteen header words in the same places, the same seven sections, both model tables at the same bytes and 105 models, and what each changes is read off it below: the PAL file one model, the jump's arc, the HUD's icons, the title and the copyright notice, the Japanese file six models and the lettering of the menus and the HUD.
+
 It is loaded once at startup rather than per world, which is why the objects look the same in every world while the blocks change.
 
 `tools/kula_ggi.py` reads all of it.
 
 `tools/kula_build.py` writes what the viewer draws to `public/objects.json`: for every type some level places and that has a mesh, its models at full detail, one per variant, as vertices per frame, polygons, a colour per corner and the flags, with `sorted` on a model the game draws by depth, `blend` on one with translucent polygons and `normals` on the balls, in the game's units with a block 512 across.
+
+For the PAL and Japanese discs `tools/kula_build.py` writes, through `tools/kula_ggi.py`, the whole model list of every type whose models are not `public/objects.json`'s and the jump's arc where it is not, under `objects` in the disc's release file, which the viewer reads in place of the base's for the types and the arc it carries, so a disc's things are drawn with its own models ([viewer.md](viewer.md)).
 
 The types that move are keyed by their type numbers from the first table, on the reading below, and the fourteen balls come after, for the start.
 
@@ -30,6 +34,8 @@ The level packs and the artwork are loaded later and per world; this one is not.
 
 **A 13-word header, then seven sections laid end to end from byte 52.** Words 6 to 12 are the sections' sizes in `u16`, and the seventh boundary lands on the file's end exactly: S0 191,496 bytes, S1 1,920, S2 8,192, S3 8,192, S4 12, S5 204, S6 100,308.
 
+The PAL file's sections are the same sizes but S5 at 172 bytes and S6 at 99,556, the Japanese file's but S0 at 188,916 and S6 at 109,876, and S1 to S4 are the same bytes on all three.
+
 Words 13 and 14 (8 and 408) place two tables inside S0, at bytes 60 and 460.
 
 Words 0 to 5 (10, 7, 10, 44, 32, 13) are summed cumulatively by the parser into 10, 17, 27, 71, 103 and 116 and kept; what they bound is not read.
@@ -48,6 +54,8 @@ Types with no model of their own, 1, 2, 8, 29 and 30, are the ones drawn on the 
 
 Types 39 to 41 and 48 to 49 all point at the arrow, which reads as a placeholder.
 
+On the PAL disc the arrow, the one model that file changes, is the same fourteen points moved 40 units along the way it points, its top cut into another quad and triangle over the same colours.
+
 The draw of a thing on a block reaches its model through the table as it stands (`0x8002d878`): word `type × 16 + row × 4 + f3`, the row 2 where the thing's depth passes the farther of the two distances at 292 and 296 of the struct `0x800a5764` points at, 1 where it passes the nearer and 0 otherwise, so a far thing draws a coarser model.
 
 The fruit a level shows is not the one its type names: the loader rewrites it to the first of the five not yet collected ([motion.md](motion.md)), so LEVEL 1's fruit is type 46, the bananas, where play shows an apple, and on the arcade levels each numbered level shows the next of the five round, which is how the map draws them.
@@ -55,6 +63,8 @@ The fruit a level shows is not the one its type names: the loader rewrites it to
 **The first table holds fourteen balls and the things that move.** Entries 0 to 13 are spheres of radius 100, most of 98 vertices and one of 140, each entry naming the same model three times over.
 
 The game picks among them at `0x80035ff4`: the world's place for an arcade level, so the ball is thematic, world 0, Hiro, white with coloured panels and world 3, Arctic, white and red; for a bonus level one of entries 10 to 12, by a counter the start routine steps at every level start since the game was switched on (`0x8003601c`), restarts included, so which one a player meets depends on the path they took; for a hidden level, which the code numbers mode 2, entry 13, a glass shell of 180 translucent polygons with three shards inside, green, yellow and red, drawn from the same mesh; and in the Japanese release whatever the ball designer chose.
+
+The Japanese file holds the same fourteen balls byte for byte, its first table's entries 3 to 12 naming the US file's 4, 5, 7, 8, 10, 11, 12, 3, 6 and 9, and the map draws the US order on every disc until which ball a world shows there is settled (below).
 
 The viewer takes the world's ball, the glass one for a level the hidden flag marks, and for a level with no key one of the three, in the order of the bonus slots where the level stands in one and the first elsewhere; entries 20 to 24 are a three-pointed star, the wheel at three levels of detail, a four-pointed star, the hexagonal ball and the corkscrew at three levels: types 50, 51, 52, 53 and 56, the thinner star with three points being type 50 and the fuller one with four type 52, which play settled.
 
@@ -66,6 +76,7 @@ The parser runs `0x80023258` at load over model 36's three rows and three slots,
 - Polygons: four `u8` vertex indices each, as many as the texture block has records.
 - Vertices: `u32 frames, u32 bytes per frame`, then per frame three vertices to a 20-byte group, `x1 z1 x2 z2 x3 z3 y1 y2 y3 pad` as `i16`, unused slots holding `-1`. Y is up. Every model has one frame except the moving spikes, which have 32.
 - Colours: `u32 1, u32 bytes`, then 16 bytes per polygon, four corners of `r, g, b, flags`, the flags on the first corner only: `0x20` always, `0x10` for a Gouraud polygon, `0x08` for a quad, `0x02` for a translucent one. The byte is the command the GPU draws the polygon by, which the renderer hands on as it stands, and its bit 0, which would take a texture raw, is set on no polygon; the lowest bit of the first corner's red says whether the polygon is culled where it faces away (below). That these are colours and not texture coordinates is what the coins say: tier 0 is `(201, 157, 78)`, gold, tier 1 `(79, 157, 201)`, blue, tier 2 `(173, 86, 0)`, bronze; the four teleporters' panels are `(255, 255, 0)`, `(0, 0, 255)`, `(0, 255, 0)` and `(255, 0, 0)`; the exit's two variants are green and red, the lethargy pill red and yellow and the bouncy pill purple and pink, as they look in play. The shading is baked in, a teleporter's grey body running from 38 to 167 by face.
+- On the Japanese disc the lethargy pill is grey at all three levels of detail, every colour record changed over the same points, its red `(255, 0, 0)` a light grey from `(158, 158, 158)` to `(181, 181, 181)` by face and its yellow `(231, 231, 0)` a dark grey of `(58, 58, 58)` or `(59, 59, 59)`; the bouncy pill and the third pill are as the US file has them.
 - The quad flag is what settled the triangles, which the fourth index could not: it is 0 on the spikes and 116 to 120 on the ball's pole, and read as quads the polygons without the flag were off their plane by a triangle's width on 88% of them, the ones with it on none. 3,306 of the 6,449 polygons are triangles.
 - Normals, where there is a fourth block and bit 1 of the flags is set: packed like the vertices, unit length 4096. Only the balls have them.
 
@@ -78,6 +89,10 @@ A polygon whose first corner's red is odd is dropped where its first three corne
 A flat polygon is drawn in its first corner's colour and a Gouraud one in each corner's colour (`0x80053604`), every colour scaled by the light of the face its thing stands on and faded with its depth (`dcpl`).
 
 A translucent polygon meets what is behind it in its model's blend: half of each, 0, on the gem, the hourglass's glass and the glass ball's shell, and what is behind with a quarter of the polygon added, 3, on the exit's cross and on the hidden exit, which is translucent all over and so shows as a faint green glow.
+
+On the Japanese disc the exit is a sign reading 出口 in place of the cross, 62 quads over 64 vertices, 364 wide and 196 tall, green and red as the cross is, with no translucent polygon and every polygon culled where it faces away.
+
+The hidden exit there is the same quads over the same points, seven of them wound the other way about, in the green exit's colours but for thirteen corners one lower in green, with the first corner's red even on every polygon where the exit's is odd and every one translucent in blend 3, so no polygon is culled where it faces away and it shows there as a faint green sign seen from both sides.
 
 The viewer draws a model as the game does, laid out and turned as the game lays it out and turns it, in its order or by depth as its flags say, dropping a polygon the game culls where it faces away and blending a translucent one as its model says, half and half or a quarter added, and filling a flat polygon with its first corner's colour and a Gouraud one with the mean of its corners; it sorts by the mean depth itself rather than in the game's 64 steps, and leaves out the fade with depth.
 
@@ -115,25 +130,39 @@ The table ships the ball's light with how it moves, as `light`, and the viewer l
 
 The fourteen balls are the beach-ball designs the Japanese release lets a player pick from.
 
-**The last section is the sprites and the lettering**, 148 uploads walked by `0x80022fd8` into a table of 180 twelve-byte descriptors (bpp, whether the upload named a blend, which the HUD's primitives take for their semi-transparency, the GPU's clut and tpage words, the offset within the page, width, height) that the HUD code indexes.
+**The last section is the sprites and the lettering**, 148 uploads walked by `0x80022fd8` into the US executable's table of 180 twelve-byte descriptors (bpp, whether the upload named a blend, which the HUD's primitives take for their semi-transparency, the GPU's clut and tpage words, the offset within the page, width, height) that the HUD code indexes.
 
 Each is `i16 bpp, i16 abr`, for a paletted one `u16 x, y` of its palette in VRAM, `i16 inline, u16 late` and the palette's words where `inline` is 0, then `u16 x, y, w, h` of the image and its pixels where `late` is 0, `w` in pixels and the data padded to four bytes; every one is a VRAM upload like the artwork's uploads, to the right of the world's textures at `x` 496 and up.
 
-Entries 0 to 9 are the five fruit icons grey and lit, in the same order as types 43 to 47; 10 to 16 are seven 64x64 pictures (a purple glow, the ball's stripes, a red disc, an electric blue ball, a shell, two rings of sparks), the sprites of the bursts a pickup and a teleport start ([motion.md](motion.md)); 23 to 26 and 126 are the controller's four symbols; 27 to 70 and 132 to 147 the menus' words; 71 to 102 thirty-two 4x3 swatches; 119 and 125 the digits; 122 a single white texel, two pixels by one, that the lethargy pill's flash and fade stretch over the screen ([camera.md](camera.md)); 123 and 124 the key icon grey and gold; and 130 and 131 the two shadows the game draws under the ball and the captivators, a round one and a square one, both taken away from what is behind them ([motion.md](motion.md)).
+Entries 0 to 9 are the five fruit icons grey and lit, in the same order as types 43 to 47; 10 to 16 are seven 64x64 pictures (a purple glow, the ball's stripes, a red disc, an electric blue ball, a shell, two rings of sparks), the sprites of the bursts a pickup and a teleport start ([motion.md](motion.md)); 23 to 26 and 126 are the controller's four symbols; 27 to 70 the menus' words, and 132 to 147 the title, the copyright notice, a dot, a red barred circle, the HUD's SCORE and LEVELS and the five letters of BONUS, each grey and lit; 71 to 102 thirty-two 4x3 swatches; 119 and 125 the digits; 122 a single white texel, two pixels by one, that the lethargy pill's flash and fade stretch over the screen ([camera.md](camera.md)); 123 and 124 the key icon grey and gold; and 130 and 131 the two shadows the game draws under the ball and the captivators, a round one and a square one, both taken away from what is behind them ([motion.md](motion.md)).
 
 The header's six bounds (10, 17, 27, 71, 103, 116) are where these groups begin.
 
+On the PAL disc seventeen of the 148 differ: fifteen are redrawn one to three rows taller at the same width, the ten fruit icons, the two key icons and three more (116 to 118), and the title (132) and the copyright notice (133) are the PAL game's own.
+
+On the Japanese disc the file holds 181 uploads: the menus' 44 words are 63 at 27 to 89, most of them Japanese lettering, 29 and 30 the US file's 29 and 30 and 77 and 78 its 67 and 68 ten places on, the title, the copyright notice and two of the HUD's words (132, 133, 136 and 137 on the US file) are the Japanese game's own at 151, 152, 155 and 156, fourteen more stand at its end, 167 to 180, and every other sprite is the US picture, at its US place up to 26 and nineteen places on past the words, the shadows at 149 and 150.
+
+Its header's fourth word is 63 for the 63 words, so its bounds are 10, 17, 27, 90, 122 and 135 and the sixth puts its shadows where they stand.
+
 The build ships the seven sprites of the bursts for play's effects on one sheet, `public/tex/sparks.png`, beside the worlds' atlases: each is read through its palette into RGB, black wherever a texel adds nothing, since the game adds every one to what is behind it, and laid in a row in the header's order, so a sprite is found on the sheet by its number and the side and the count that `objects.json` carries under `sparks`.
+
+The seven bursts and the two shadows are the same pixels on all three discs, so the sheet and the shadows ship once, for every release.
 
 The build stops where the header counts other than the sprites the game lays quads for, where one is not a paletted square of one size drawn in the blend that adds, or where a texel would be drawn opaque rather than added.
 
 **The fifth section is the jump's arc.** It opens with a count of 33 and three halfwords of nothing, and holds 32 rows of `i16` height, right and back, where the ball's centre stands on each frame of a jump against where the jump began, in the game's units: right is 0 throughout, back runs from −47 to −1023, a block and all but one unit of a second, and the height rises from 0 to 458 at the 15th and 16th rows and comes down to −24, with four bytes left at the section's end.
 
+On the PAL disc the section is 172 bytes and holds a count of 28 and 27 rows, back running from −48 to −1024 and the height rising to 411 at the 14th and 15th rows and coming down to 56, with two bytes left; the Japanese disc's arc is the US one.
+
 The parser sums the header's section sizes and keeps where the fifth begins (`0x80022e44` to `0x80022ea0`), the ball's init copies that as the jump's table (`0x8002f2ec`, `0x8002f368`), and the jump runs through 30 of the rows while the hop takes the heights' differences ([motion.md](motion.md)).
 
 The build ships the count and the rows as `jump`.
 
+A disc whose arc differs ships its count and rows under `objects.jump` in its release file, which a planned route's jump and the ball's jump in play take under that disc ([viewer.md](viewer.md)).
+
 **The scale.** A block is 512 units: a crumbling block's record keeps its cell times 512, and the spikes and the teleporter, which cover a block's face, are 462 and 486 across. The ball is radius 100, the exit 266 wide, a coin 186.
+
+On the Japanese disc the exit's sign is 364 wide.
 
 The sheet draws every model at one scale on that reading, and the viewer draws each object as itself at the same scale, standing on its face with its lowest point just off the block, a captivator at the height the game draws its entry ([motion.md](motion.md)), turned the way its record says where it has a direction, and the start as the world's ball turned the way it faces.
 
@@ -144,3 +173,5 @@ Fire, ice and the clock, having no mesh, are the faces the game paints them as (
 **Sections 1 to 3**, 1,920, 8,192 and 8,192 bytes; the two of 8 KB are the size of sixteen 256-colour palettes and are not needed to draw anything above.
 
 Section 4 is twelve bytes of text, `dummy!!!` and two line breaks.
+
+**Which ball a Japanese world shows.** The Japanese file's first table names the same fourteen balls with entries 3 to 12 in another order, and the word its pick routine reads for the world's place is not traced on that disc, so whether a world there shows the ball the US entry names or the one its own entry names is not read, and the map draws the US order on every disc until it is.

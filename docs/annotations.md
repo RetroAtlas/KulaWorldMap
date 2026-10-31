@@ -141,6 +141,8 @@ One on each of 190 levels, and none on the 30 bonus and 10 Simon levels, which h
 
 LEVEL 1's, LEVEL 2's and HIDDEN 10's exits stand on the cells and faces the map draws them on.
 
+On the Japanese disc the exit's two models are a sign reading 出口 in place of the cross, 62 quads over 64 vertices and 364 wide, green and red as the cross is and with no translucent polygon, read off its mesh file ([ggi.md](ggi.md)), and the red and the green are its two variants there as on the US disc, so the sign turns green as the cross does and its note there says what the player sees.
+
 ### type 8: Clock
 
 LEVEL 56 carries the game's first seven clocks, painted with the clock's face ([tgi.md](tgi.md)); the clock LEVEL 136 starts you on is the start itself, type 29, which the loader makes a clock of.
@@ -176,6 +178,8 @@ They are a hazard: the ball's code at `0x8003b02c` sets it dying on a type 12 un
 Ten levels carry one, one in each world, and the disc keeps a second on two of them, LEVEL 25 and LEVEL 82, on records the game never walks.
 
 LEVEL 132's hidden exit is the one the NTSC release puts out of reach.
+
+On the Japanese disc the hidden exit is the exit's sign again, the same 62 quads over the same points, seven wound the other way about, in the green exit's colours to within one of green, with no polygon culled where it faces away where the exit's every polygon is, and every one translucent in the blend that adds a quarter, read off its mesh file ([ggi.md](ggi.md)), so it shows as a faint sign seen from both sides where the US disc's shows a faint cross, which is what its note there says.
 
 ### type 28: Arrow
 
@@ -214,6 +218,8 @@ Named for what it does in play: its mode word makes the play loop wait two blank
 LEVEL 10 carries the game's first four lethargy pills.
 
 How long it lasts rests on the code: its case sets the word at `0x800ba338` to 360 (`0x800387d4`), and the ball's routine, which the play loop runs once a pass, takes 2 off it a pass (`0x8003b388`) and 4 ticks off the clock with it (`0x8003b390`, through `0x8003b468`), testing the word before it counts it down, so the pill lasts 181 passes, six seconds at two blanks each, and costs 724 ticks beyond the clock's own ticks, 14.5 of its seconds at fifty ticks to the second ([motion.md](motion.md)), which the note gives as about fifteen.
+
+On the Japanese disc the pill's model is recoloured at all three levels of detail, every colour record changed over the same points, its red to a light grey and its yellow to a dark grey, read off its mesh file ([ggi.md](ggi.md)), so its note there names the grey and keeps the US note's sentences without their figures, since the pill's constants are not read off the Japanese executable and that disc's clock counts 60 ticks a second, read off its executable ([tools.md](tools.md)), on which the 724 ticks would be about twelve of its seconds and not fifteen, while play runs the pill by the US reading whatever disc is shown ([viewer.md](viewer.md)).
 
 ### type 33: Bouncy pill
 
