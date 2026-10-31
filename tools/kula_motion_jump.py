@@ -301,6 +301,7 @@ SCANS = []
 # The share of the side the fly-in's second point lies on, a divide by a
 # reciprocal with no shift after it.
 FLIGHT_THIRD = (0x80034240, "lui $t0, {}", 0x80034248, "ori $t0, $t0, {}")
+NAMED = {"FLIGHT_THIRD": ("matched", FLIGHT_THIRD)}
 
 BUTTON = 10               # the boost button's type
 LONG = [3, 2]             # the long jump takes each row times the first over the second

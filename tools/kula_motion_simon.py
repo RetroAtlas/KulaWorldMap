@@ -301,6 +301,7 @@ SIMON_FILL = (0x80035cdc, 0x80035ce0)    # and the halfword the reset fills it f
 SIMON_AT = {"idle": (0x800a4c8c, 7508), "latch": (0x800a4c90, 7512), "move": (0x800a4adc, 7076),
             "count": (0x800a4cac, 7540), "round": (0x800a4cb0, 7544), "verdict": (0x800a4cb4, 7548),
             "turn": (0x800a33ac, 1140), "last": (0x800a5704, 10188), "starter": (0x800a38a0, 2408)}
+NAMED = {"SIMON_STORE": ("pair", SIMON_STORE), "SIMON_FILL": ("pair", SIMON_FILL), "SIMON_AT": ("offset", SIMON_AT)}
 
 
 def simon(r):

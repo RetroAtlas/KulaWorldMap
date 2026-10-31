@@ -415,6 +415,10 @@ ENDINGS = ("exit", "bonus", "hidden", "spikes", "time", "lost", "fire", "captiva
 # and held to the disc by a digest of the pair's two images.
 WORDS_TABLE = (0x80015a30, 0x80015a34)
 WORDS_COUNT = 38
+NAMED = {"NEXT_ROUND": ("matched", NEXT_ROUND), "NEXT_MODE": ("word", NEXT_MODE),
+         "NEXT_MODE_CLEARS": ("instruction", NEXT_MODE_CLEARS), "LEVEL_MODE": ("offset", LEVEL_MODE, ("mode.at",)),
+         "LEVEL_MODE_READ": ("pair", LEVEL_MODE_READ), "GAME_MODE": ("offset", GAME_MODE),
+         "GAME_MODE_READ": ("pair", GAME_MODE_READ), "WORDS_TABLE": ("pair", WORDS_TABLE)}
 PAIR = 2                  # sprites to a word
 TIM = (0x10, 0x8)         # an image's magic and its flags, four bits a pixel with a palette
 WORDS = {0: ("LOADING!", 0x122f0a86), 2: ("SPIKED!", 0xfbb76945), 4: ("TIME OUT!", 0x7aae5b28),
@@ -437,20 +441,25 @@ def words(code):
         sys.exit(f"the end screen's table at 0x{sprites:08x} holds {count} entries, not {WORDS_COUNT}")
     out = {}
     for index, (word, digest) in WORDS.items():
-        pair = b""
-        for entry in range(index, index + PAIR):
-            offset, size = code.word(sprites + 4 + 8 * entry), code.word(sprites + 8 + 8 * entry)
-            try:
-                image = zlib.decompress(code.read(sprites + offset, size))
-            except zlib.error as e:
-                sys.exit(f"entry {entry} of the end screen's table does not inflate: {e}")
-            if len(image) < 8 or struct.unpack_from("<II", image) != TIM:
-                sys.exit(f"entry {entry} of the end screen's table is not an image four bits a pixel with a palette")
-            pair += image
-        if zlib.crc32(pair) != digest:
+        if zlib.crc32(b"".join(pair_of(code, sprites, index))) != digest:
             sys.exit(f"entries {index} and {index + 1} of the end screen's table are not the pair read as {word!r}")
         out[index] = word
     return out
+
+
+def pair_of(code, sprites, index):
+    """The two images of the pair whose first entry is at the index in the end screen's table, each inflated."""
+    pair = []
+    for entry in range(index, index + PAIR):
+        offset, size = code.word(sprites + 4 + 8 * entry), code.word(sprites + 8 + 8 * entry)
+        try:
+            image = zlib.decompress(code.read(sprites + offset, size))
+        except zlib.error as e:
+            sys.exit(f"entry {entry} of the end screen's table does not inflate: {e}")
+        if len(image) < 8 or struct.unpack_from("<II", image) != TIM:
+            sys.exit(f"entry {entry} of the end screen's table is not an image four bits a pixel with a palette")
+        pair.append(image)
+    return pair
 
 
 def play(r):

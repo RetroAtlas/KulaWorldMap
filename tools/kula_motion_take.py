@@ -581,6 +581,11 @@ END_FACES = (0x80010170, 0, FACES)
 END_NEAR = {"-x": 0x800333cc, "-y": 0x80033404, "-z": 0x8003343c}
 END_FAR = {"+x": 0x800333d8, "+y": 0x80033410, "+z": 0x80033444}
 END_CASES = {FACE.index(f): at for f, at in (*END_NEAR.items(), *END_FAR.items())}
+NAMED = {"INVINCIBLE_WORD": ("word", INVINCIBLE_WORD), "MODE_WORD": ("offset", MODE_WORD),
+         "SCREEN_WORDS": ("word", SCREEN_WORDS), "TAKE_TYPES": ("table", TAKE_TYPES), "TAKE_TAIL": ("routine", TAKE_TAIL),
+         "TAKE_CASES": ("routine", TAKE_CASES), "LOADER_TYPES": ("table", LOADER_TYPES),
+         "LOADER_PLAIN": ("routine", LOADER_PLAIN), "LOADER_CASES": ("routine", LOADER_CASES),
+         "END_FACES": ("table", END_FACES), "END_NEAR": ("routine", END_NEAR), "END_FAR": ("routine", END_FAR)}
 CUTS = 3                  # a gem's cuts, by its f3
 TIERS = 3                 # a coin's tiers, by its f3
 

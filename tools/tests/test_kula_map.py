@@ -1,0 +1,386 @@
+"""Unit tests for the map writer: python3 -m unittest discover -s tools/tests
+
+Nothing here needs the disc.
+"""
+
+import io
+import json
+import struct
+import sys
+import tempfile
+import unittest
+import zlib
+from contextlib import redirect_stdout
+from pathlib import Path
+from types import SimpleNamespace
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from align_fixture import ANCHORS, GAPS, ORDER, laid, pill, spikes, twin  # noqa: E402
+from kula_align import MODULES  # noqa: E402
+from kula_disc import RELEASES  # noqa: E402
+from kula_map import FITS, KINDS, build, check, cut, dump, leaves, pattern_on, registries, relation, report, write_words  # noqa: E402
+from motion_fixture import addiu, addu, jal, jr, lh, lui, lw, sll, sw  # noqa: E402
+from png import read_png  # noqa: E402
+
+GP = RELEASES["us"]["gp"]
+RATES = (60, 50)
+HIGH = 0x8001             # the half of every address of the fixture's code and data
+MODE = 1296               # the mode word's offset from gp
+CLOCK = -17288            # the clock word's low half under 0x800a
+
+
+def tim(colour):
+    """An image four bits a pixel with a palette of one colour, four pixels by two."""
+    clut = struct.pack("<IHHHH", 12 + 32, 0, 0, 16, 1) + struct.pack("<16H", colour, *([0] * 15))
+    return struct.pack("<II", 0x10, 0x8) + clut + struct.pack("<IHHHH", 12 + 4, 0, 0, 1, 2) + bytes(4)
+
+
+def words_table(images):
+    """The end screen's table over the images: its count, an offset and a length an entry, then the images
+    deflated, as a list of words."""
+    deflated = [zlib.compress(image) for image in images]
+    table = bytearray(struct.pack("<I", len(images)))
+    at = 4 + 8 * len(images)
+    for image in deflated:
+        table += struct.pack("<II", at, len(image))
+        at += len(image) + (-len(image)) % 4
+    for image in deflated:
+        table += image + bytes((-len(image)) % 4)
+    return list(struct.unpack_from(f"<{len(table) // 4}I", table))
+
+
+IMAGES = (tim(0x7fff), tim(0x001f))
+DIGEST = zlib.crc32(b"".join(IMAGES))
+
+
+def mode(callee, at=MODE, store=MODE, clock=CLOCK, four=4, table=0, words=0, fill=(sll("v0", "v1", 2), addu("v0", "v0", "v1"))):
+    """A routine of the tests' own: it reads the mode word off gp and stores to it, reaches the clock word as the
+    clock's routine does, picks a case out of a table in the data, reads the end screen's table through a pointer
+    there, calls the step and fills a word by a run of shifts and adds."""
+    return [addiu("sp", "sp", -24), sw("ra", "sp", 16), lw("v0", "gp", at), lui("at", 0x800a), addiu("v1", "at", clock),
+            sw("v1", "gp", store), lui("at", HIGH), addu("at", "at", "v0"), lw("v0", "at", table), lui("at", HIGH),
+            lw("v0", "at", words), jal(callee), addiu("a0", "zero", four), lh("v1", "a0", 12), *fill, sw("v0", "a0", 36),
+            lw("ra", "sp", 16), jr("ra"), addiu("sp", "sp", 24)]
+
+
+def executable(gaps=None, routines=None, images=IMAGES, cases=("spikes", "vanish"), **at):
+    """The fixture's executable with the mode routine after its others and the data its routine reaches after the
+    tail: the cases' table, the pointer to the end screen's table and that table, laid twice over so the routine
+    knows where the data stands."""
+    routines = routines or {}
+    make = routines.get("mode", mode)
+    order = ORDER + ("mode",)
+    first = laid(order=order, gaps=gaps, routines={**routines, "mode": make}, **at)
+    data_at = first.starts["data"]
+    table = data_at - (HIGH << 16)
+    data = [first.starts[name] for name in cases] + [data_at + 4 * len(cases) + 4] + words_table(images)
+    copy = laid(order=order, gaps=gaps, routines={**routines, "mode": lambda c: make(c, table=table, words=table + 4 * len(cases))},
+                data=data, **at)
+    assert copy.starts == first.starts
+    return copy
+
+
+def module(us):
+    """A reader's lists over the fixture's executable, as the test's own module."""
+    s = us.starts
+    text = us.listing.text
+    at = us.listing.position
+
+    def pattern(addr):
+        return text[at(addr)].rsplit(" ", 1)[0] + " {}" if "(" not in text[at(addr)] else \
+            text[at(addr)].replace(text[at(addr)].split(", ")[1].split("(")[0], "{}")
+
+    lists = {kind: [] for kind in ("CHECKS", "IMMEDIATES", "MULTIPLIERS", "DIVISORS", "GREYS", "SCANS")}
+    for routine, i, kind, key in ANCHORS:
+        addr = s[routine] + 4 * i
+        if kind == "CHECKS":
+            lists["CHECKS"].append((addr, text[at(addr)], key))
+        elif kind == "IMMEDIATES":
+            lists["IMMEDIATES"].append(("fixture", key, key, addr, pattern(addr)))
+    lists["MULTIPLIERS"].append(("fixture", "pill.fill", "fills by", s["pill"] + 4 * 6, 2, "v1", "v0"))
+    lists["MULTIPLIERS"].append(("fixture", "mode.fill", "fills by", s["mode"] + 4 * 14, 2, "v1", "v0"))
+    c = s["clock"]
+    lists["DIVISORS"].append(("fixture", "clock.shown", "shown in", c + 12, "lui $v0, {}", c + 16, "ori $v0, $v0, {}",
+                              c + 28, "sra $v0, $v1, {}"))
+    lists["GREYS"].append(("fixture", "clock.grey", "grey of", c + 40, "lui $v1, {}", c + 44, "ori $v1, $v1, {}"))
+    m = s["mode"]
+    lists["IMMEDIATES"] += [("fixture", "mode.at", "the mode word this far past gp", m + 8, "lw $v0, {}($gp)"),
+                            ("fixture", "mode.four", "four", m + 48, "addiu $a0, $zero, {}")]
+    lists["CHECKS"].append((m + 44, text[at(m + 44)], "the mode routine calls the step"))
+    lists["SCANS"].append(("fixture", "mode.stores", "stores", m, m + 20, "a0", (0, 8), ()))
+    named = {"MODE_WORD": ("offset", (GP + MODE, MODE), ("mode.at",)), "CLOCK_WORD": ("word", (0x800a << 16) + CLOCK),
+             "CASES": ("table", (s["data"], 0, 2)), "SPIKES": ("routine", s["spikes"]), "CALL": ("instruction", m + 44),
+             "CLOCK_PAIR": ("pair", (m + 12, m + 16)), "SHOWN": ("matched", (c + 12, "lui $v0, {}", c + 16, "ori $v0, $v0, {}")),
+             "FILL": ("run", (m + 56, 2, "v1", "v0")), "WORDS_TABLE": ("pair", (m + 36, m + 40)),
+             "GLOW": ("instruction", {7: (s["twin"] + 24, s["twin"] + 28)})}
+    return SimpleNamespace(__name__="fixture", NAMED=named, **lists)
+
+
+def hand(**tables):
+    out = {name: {"eu": {}} for name in ("PLACED", "TUNED", "ABSENT", "RESHAPED", "MULTIPLIERS", "WORDS")}
+    out["EXTRA"] = {"eu": []}
+    for name, rows in tables.items():
+        out[name]["eu"] = rows
+    return SimpleNamespace(**out)
+
+
+US = executable()
+FIXTURE = module(US)
+WORDS = {0: ("HELLO!", DIGEST)}
+
+
+def mapped(copy, hand_table=None, rates=RATES, modules=(FIXTURE,)):
+    return build(US.listing, copy.listing, "eu", modules=modules, hand=hand_table or hand(), rates=rates, us_words=WORDS)
+
+
+def key_rows(built):
+    return {row["key"]: row for row in built["rows"].values() if "key" in row}
+
+
+def pending_keys(built):
+    return {p.get("key", p.get("name", p.get("pair"))): p for p in built["pending"]}
+
+
+class Relations(unittest.TestCase):
+    def test_a_ratio_cuts_toward_nothing_either_side_of_it(self):
+        self.assertEqual((cut(63, 50, 60), cut(-80, 50, 60), cut(14, 60, 50), cut(33, 60, 50)), (52, -66, 16, 39))
+
+    def test_each_relation_and_each_direction_of_each_scaling(self):
+        self.assertEqual(relation("k", 360, 360, RATES, {}), "same")
+        self.assertEqual(relation("k", 360, 300, RATES, {}), "count")
+        self.assertEqual(relation("k", 16, 14, RATES, {}), "count")
+        self.assertEqual(relation("k", 5, 6, RATES, {}), "rate")
+        self.assertEqual(relation("k", 33, 40, RATES, {}), "rate")
+        self.assertEqual(relation("k", -66, -80, RATES, {}), "rate")
+        self.assertIsNone(relation("k", 77, 65, RATES, {}))
+        self.assertEqual(relation("k", 77, 65, RATES, {"k": "its lurch is retuned"}), "tuned")
+        self.assertEqual(relation("k", 9372, 9600, RATES, {}, address=9600), "address")
+        self.assertIsNone(relation("k", 9372, 9372, RATES, {"k": "why"}, address=9600))
+
+    def test_no_scaling_is_offered_where_the_two_executables_run_at_one_rate(self):
+        self.assertIsNone(relation("k", 360, 300, (60, 60), {}))
+        self.assertEqual(relation("k", 360, 360, (60, 60), {}), "same")
+
+    def test_a_pattern_takes_the_registers_of_the_instruction_placed(self):
+        self.assertEqual(pattern_on("addiu $v0, $zero, {}", "addiu $v0, $zero, 360", "addiu $v1, $zero, 300"), "addiu $v1, $zero, {}")
+        self.assertEqual(pattern_on("lh $v0, {}($s0)", "lh $v0, 6($s0)", "lh $v0, 6($s5)"), "lh $v0, {}($s5)")
+        self.assertEqual(pattern_on("lw $v0, {}($gp)", "lw $v0, 9372($gp)", "lw $v0, 9600($gp)"), "lw $v0, {}($gp)")
+
+
+class Rows(unittest.TestCase):
+    def test_a_shifted_copy_maps_every_row_as_the_same_with_its_tier_and_every_name(self):
+        copy = executable(gaps=GAPS)
+        built = mapped(copy)
+        self.assertEqual(built["pending"], [])
+        rows = key_rows(built)
+        self.assertEqual({row["by"] for row in rows.values()}, {"same", "address"})
+        self.assertEqual(rows["pill.lethargy"], {"key": "pill.lethargy", "at": f"0x{copy.places['pill.lethargy']:08x}",
+                                                 "word": "0x24020168", "text": "addiu $v0, $zero, 360", "tier": "strict10",
+                                                 "pattern": "addiu $v0, $zero, {}", "us": 360, "value": 360, "by": "same"})
+        self.assertEqual((rows["pill.fill"]["count"], rows["pill.fill"]["value"], len(rows["pill.fill"]["words"])), (2, 5, 2))
+        self.assertEqual((rows["mode.fill"]["count"], rows["mode.fill"]["value"], rows["mode.fill"]["tier"]), (2, 5, "strict10"))
+        self.assertEqual((rows["clock.shown"]["value"], rows["clock.grey"]["value"], len(rows["clock.shown"]["at"])), (60, 128, 3))
+        self.assertEqual(rows["mode.at"], {**rows["mode.at"], "us": MODE, "value": MODE, "by": "address"})
+        check_row = built["rows"][f"0x{US.places['the pill tests its word']:08x}"]
+        self.assertEqual(set(check_row), {"at", "word", "text", "tier"})
+        s = copy.starts
+        self.assertEqual(built["names"]["CASES"], [f"0x{s['data']:08x}", 0, 2])
+        self.assertEqual(built["names"]["SPIKES"], f"0x{s['spikes']:08x}")
+        self.assertEqual(built["names"]["MODE_WORD"], [f"0x{GP + MODE:08x}", MODE])
+        self.assertEqual(built["names"]["CLOCK_WORD"], f"0x{(0x800a << 16) + CLOCK:08x}")
+        self.assertEqual(built["names"]["FILL"], [f"0x{s['mode'] + 56:08x}", 2, "v1", "v0"])
+        self.assertEqual(built["names"]["SHOWN"], [f"0x{s['clock'] + 12:08x}", "lui $v0, {}", f"0x{s['clock'] + 16:08x}", "ori $v0, $v0, {}"])
+        self.assertEqual(built["names"]["GLOW"], {7: [f"0x{s['twin'] + 24:08x}", f"0x{s['twin'] + 28:08x}"]})
+        self.assertEqual(built["words"], {"count": 2, "pairs": {"0": ["HELLO!", f"0x{DIGEST:08x}"]}})
+
+    def test_a_scaled_copy_reads_its_counts_and_rates_in_either_direction_of_truncation(self):
+        copy = executable(gaps=GAPS, routines={"pill": lambda c: pill(c, counts=(300, 700)),
+                                               "spikes": lambda c: spikes("s0", "a0", 52, 12), "twin": lambda c: twin(c, count=8)})
+        rows = key_rows(mapped(copy))
+        self.assertEqual({k: (rows[k]["us"], rows[k]["value"], rows[k]["by"]) for k in
+                          ("pill.lethargy", "pill.invincible", "spikes.down", "spikes.hold", "twin.count")},
+                         {"pill.lethargy": (360, 300, "count"), "pill.invincible": (840, 700, "count"),
+                          "spikes.down": (63, 52, "count"), "spikes.hold": (14, 12, "count"), "twin.count": (7, 8, "rate")})
+
+    def test_a_value_outside_every_relation_is_pending_with_both_values_and_no_row(self):
+        copy = executable(gaps=GAPS, routines={"twin": lambda c: twin(c, count=10)})
+        built = mapped(copy)
+        self.assertNotIn("twin.count", key_rows(built))
+        self.assertEqual(built["pending"], [{"address": f"0x{US.places['twin.count']:08x}", "module": "fixture",
+                                             "list": "IMMEDIATES", "key": "twin.count",
+                                             "why": "10 stands in no relation to the base's 7", "us": 7, "value": 10}])
+        tuned = mapped(copy, hand(TUNED={"twin.count": "the twin counts ten"}))
+        self.assertEqual(tuned["pending"], [])
+        self.assertEqual(key_rows(tuned)["twin.count"]["by"], "tuned")
+
+    def test_a_multiplier_run_is_read_at_its_place_with_its_own_count(self):
+        longer = (sll("v0", "v1", 1), addu("v0", "v0", "v1"), sll("v0", "v0", 1))
+        copy = executable(gaps=GAPS, routines={"mode": lambda c, **k: mode(c, fill=longer, **k)})
+        built = mapped(copy)
+        row = key_rows(built)["mode.fill"]
+        self.assertEqual((row["at"], row["count"], row["us"], row["value"], row["by"], len(row["words"])),
+                         (f"0x{copy.starts['mode'] + 56:08x}", 3, 5, 6, "rate", 3))
+        self.assertEqual(built["names"]["FILL"], [f"0x{copy.starts['mode'] + 56:08x}", 3, "v1", "v0"])
+        self.assertEqual(built["pending"], [])
+
+    def test_a_hand_run_is_read_as_given(self):
+        copy = executable(gaps=GAPS)
+        at = copy.starts["mode"] + 56
+        row = key_rows(mapped(copy, hand(MULTIPLIERS={"mode.fill": (at, 2, "v1", "v0", "the run as laid")})))["mode.fill"]
+        self.assertEqual((row["at"], row["count"], row["value"], row["tier"]), (f"0x{at:08x}", 2, 5, "hand"))
+
+    def test_a_stale_hand_row_stops_the_writer(self):
+        with self.assertRaises(SystemExit):
+            mapped(executable(gaps=GAPS), hand(TUNED={"nobody.home": "a key no reader lists"}))
+
+
+class Words(unittest.TestCase):
+    def test_a_word_is_derived_through_the_instructions_reaching_it_and_an_offset_against_the_copys_gp(self):
+        copy = executable(gaps=GAPS, routines={"mode": lambda c, **k: mode(c, at=MODE + 400, store=MODE + 400, **k)}, gp=GP - 400)
+        built = mapped(copy)
+        self.assertEqual(built["names"]["MODE_WORD"], [f"0x{GP + MODE:08x}", MODE + 400])
+        self.assertEqual((key_rows(built)["mode.at"]["value"], key_rows(built)["mode.at"]["by"]), (MODE + 400, "address"))
+        self.assertEqual(built["pending"], [])
+
+    def test_a_word_two_instructions_reach_otherwise_is_refused_and_the_offset_read_as_it_is_pending(self):
+        copy = executable(gaps=GAPS, routines={"mode": lambda c, **k: mode(c, store=MODE + 4, **k)})
+        built = mapped(copy)
+        self.assertNotIn("MODE_WORD", built["names"])
+        self.assertNotIn("mode.at", key_rows(built))
+        why = pending_keys(built)
+        self.assertEqual(why["MODE_WORD"]["why"], f"the instructions reaching it reach 0x{GP + MODE:08x} (0x{copy.starts['mode'] + 8:08x}) "
+                                                  f"and 0x{GP + MODE + 4:08x} (0x{copy.starts['mode'] + 20:08x})")
+        self.assertEqual(why["mode.at"]["why"], "the word it is an offset of is not derived")
+
+    def test_a_word_moved_on_the_copy_is_the_copys_through_a_lui_and_the_load_after_it(self):
+        from align_fixture import clock
+        copy = executable(gaps=GAPS, routines={"clock": lambda c: clock(c, word=CLOCK + 8),
+                                               "mode": lambda c, **k: mode(c, clock=CLOCK + 8, **k)})
+        self.assertEqual(mapped(copy)["names"]["CLOCK_WORD"], f"0x{(0x800a << 16) + CLOCK + 8:08x}")
+
+    def test_a_tables_entries_are_held_to_where_the_bases_entries_were_placed(self):
+        copy = executable(gaps=GAPS, cases=("vanish", "spikes"))
+        why = pending_keys(mapped(copy))
+        self.assertIn("CASES", why)
+        self.assertTrue(why["CASES"]["why"].startswith(f"entry 0 of the table derived at 0x{copy.starts['data']:08x} is "))
+
+    def test_the_end_screens_pairs_are_lettered_by_the_bases_digest_or_the_hands_word(self):
+        copy = executable(gaps=GAPS, images=(tim(0x7fff), tim(0x03e0)))
+        built = mapped(copy)
+        self.assertEqual(built["words"], {"count": 2, "pairs": {}})
+        self.assertEqual(built["pending"], [{"pair": 0, "why": "its images are not the base's 'HELLO!' pair, and the hand table gives no word for them"}])
+        given = mapped(copy, hand(WORDS={0: "HALLO!"}))
+        digest = zlib.crc32(tim(0x7fff) + tim(0x03e0))
+        self.assertEqual(given["words"], {"count": 2, "pairs": {"0": ["HALLO!", f"0x{digest:08x}"]}})
+        self.assertEqual(given["pending"], [])
+
+    def test_the_pairs_are_rendered_side_by_side_named_by_their_index(self):
+        copy = executable(gaps=GAPS)
+        with tempfile.TemporaryDirectory() as out, redirect_stdout(io.StringIO()):
+            write_words(copy.listing, mapped(copy), out)
+            w, h, rgba = read_png(Path(out) / "0.png")
+        self.assertEqual((w, h), (8, 2))
+        self.assertEqual(rgba[:4], bytes((255, 255, 255, 255)))
+        self.assertEqual(rgba[16:20], bytes((255, 0, 0, 255)))
+
+
+class Hand(unittest.TestCase):
+    def test_a_placed_row_wins_over_the_aligner_and_one_of_another_shape_is_refused(self):
+        copy = executable(gaps=GAPS, routines={"twin": lambda c: twin(c, count=7)})
+        twice = executable(gaps=GAPS)
+        at = copy.places["twin.count"]
+        built = mapped(copy, hand(PLACED={US.places["twin.count"]: (at, "the twin's count, by its lui of 0x800b")}))
+        self.assertEqual((key_rows(built)["twin.count"]["at"], key_rows(built)["twin.count"]["tier"]), (f"0x{at:08x}", "hand"))
+        with self.assertRaises(SystemExit) as refused:
+            mapped(twice, hand(PLACED={US.places["twin.count"]: (twice.places["twin.count"] + 4, "the wrong instruction")}))
+        self.assertIn("a check the release lays out otherwise is a reshaped row", str(refused.exception))
+
+    def test_an_absent_row_is_written_with_the_standing_instructions_word(self):
+        from motion_fixture import ori
+        copy = executable(gaps=GAPS, routines={"pill": lambda c: pill(c, load=ori)})
+        at = copy.places["pill.invincible"]
+        built = mapped(copy, hand(ABSENT={"pill.invincible": (at, "ori $v0, $zero, 840", "the pill's second count is or'ed in")}))
+        self.assertEqual(key_rows(built)["pill.invincible"], {"key": "pill.invincible", "absent": True, "at": f"0x{at:08x}",
+                                                               "word": f"0x{copy.listing.code.word(at):08x}", "text": "ori $v0, $zero, 840"})
+        self.assertEqual([p for p in built["pending"] if p.get("key") == "pill.invincible"], [])
+        with self.assertRaises(SystemExit):
+            mapped(copy, hand(ABSENT={"pill.invincible": (at, "addiu $v0, $zero, 840", "not what stands there")}))
+
+    def test_a_reshaped_row_is_written_as_given_and_an_extra_check_verified(self):
+        copy = executable(gaps=GAPS)
+        us_at = US.places["and test it"]
+        at = copy.places["and store it"]
+        built = mapped(copy, hand(RESHAPED={us_at: (at, "sw $v0, 12($s0)", "the test is folded into the store")},
+                                  EXTRA=[(copy.places["spikes.down"], "addiu $v1, $zero, 63", "the copy's own check")]))
+        self.assertEqual(built["rows"][f"0x{us_at:08x}"], {"at": f"0x{at:08x}", "word": f"0x{copy.listing.code.word(at):08x}",
+                                                            "text": "sw $v0, 12($s0)", "tier": "reshaped"})
+        self.assertEqual(built["extra"], [{"at": f"0x{copy.places['spikes.down']:08x}", "word": "0x2403003f", "text": "addiu $v1, $zero, 63"}])
+        with self.assertRaises(SystemExit):
+            mapped(copy, hand(RESHAPED={us_at: (at, "sw $v0, 16($s0)", "not what stands there")}))
+
+
+class Files(unittest.TestCase):
+    def test_the_map_is_written_a_row_to_a_line_and_the_check_holds_it_to_the_discs(self):
+        copy = executable(gaps=GAPS)
+        built = mapped(copy)
+        with tempfile.TemporaryDirectory() as out:
+            path = Path(out) / "eu.json"
+            dump(built, path)
+            text = path.read_text()
+            self.assertEqual(json.loads(text), json.loads(json.dumps(built)))
+            self.assertEqual(len([line for line in text.splitlines() if line.startswith('  "0x')]), len(built["rows"]))
+            with redirect_stdout(io.StringIO()) as said:
+                check(built, path)
+            self.assertIn("holds what the discs and the hand table give", said.getvalue())
+            changed = json.loads(text)
+            key = f"0x{US.places['pill.lethargy']:08x}"
+            changed["rows"][key]["word"] = "0x24020169"
+            path.write_text(json.dumps(changed))
+            with self.assertRaises(SystemExit) as stopped:
+                check(built, path)
+            self.assertIn(f"rows {key} holds", str(stopped.exception))
+
+    def test_the_check_refuses_a_map_with_pending_rows(self):
+        copy = executable(gaps=GAPS, routines={"twin": lambda c: twin(c, count=10)})
+        built = mapped(copy)
+        with tempfile.TemporaryDirectory() as out:
+            path = Path(out) / "eu.json"
+            dump(built, path)
+            with self.assertRaises(SystemExit) as stopped:
+                check(built, path)
+            self.assertIn("has 1 pending rows", str(stopped.exception))
+
+    def test_the_report_lists_the_pending_then_the_hands_rows_then_the_loosely_placed(self):
+        copy = executable(gaps=GAPS, routines={"twin": lambda c: twin(c, count=10)})
+        with redirect_stdout(io.StringIO()) as said:
+            report(mapped(copy))
+        text = said.getvalue()
+        self.assertTrue(text.startswith("pending: 1\n  address 0x"))
+        self.assertEqual([line for line in text.splitlines() if line and not line.startswith("  ")],
+                         ["pending: 1", "tuned: 0", "absent: 0", "reshaped: 0", "renamed or loose: 0"])
+
+
+class Registries(unittest.TestCase):
+    def test_every_registry_entry_of_every_module_names_a_kind_the_writer_knows_and_holds_a_leaf_of_it(self):
+        entries = registries(MODULES)
+        self.assertEqual({e.module for e in entries}, {m.__name__ for m in MODULES} - {"kula_motion_blocks"})
+        for e in entries:
+            with self.subTest(f"{e.module}.{e.name}"):
+                self.assertIn(e.kind, KINDS)
+                self.assertTrue(list(leaves(e.kind, e.value)))
+                self.assertTrue(e.kind == "offset" or not e.keys)
+
+    def test_a_kind_the_writer_does_not_know_stops_it(self):
+        with self.assertRaises(SystemExit):
+            registries([SimpleNamespace(__name__="odd", NAMED={"X": ("byte", 0x80010000)})])
+
+    def test_a_leaf_is_told_by_its_shape_alone(self):
+        self.assertTrue(FITS["pair"]((1, 2)) and FITS["offset"]((1, 2)) and not FITS["pair"](((1, 2), 4)))
+        self.assertTrue(FITS["matched"]((1, "lui $v0, {}")) and not FITS["matched"]((1, 2)))
+        self.assertTrue(FITS["run"]((1, 3, "v1", "v0")) and FITS["table"]((1, 0, 9)) and not FITS["table"]((1, 2)))
+        self.assertEqual(list(leaves("pair", {5: ((1, 2), 4), 7: ((3, 4), 1)})), [(1, 2), (3, 4)])
+
+
+if __name__ == "__main__":
+    unittest.main()

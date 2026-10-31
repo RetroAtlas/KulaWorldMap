@@ -393,12 +393,21 @@ GLOW_COLOURS = {5: ((0x8002d514, 0x8002d51c), 4), 7: ((0x8002d5ec, 0x8002d5f4), 
 GLOW_LEVELS = 3           # the levels a corner can take
 # Where a lit teleporter's lift is, by circuit, and the shifts that double a lit exit's and switch's light.
 GLOW_LIFT = (0x8002d4b0, 0x8002d4b8)
+GLOW_LIFT_STRIDE = (0x8002d4a4, 3, "a1", "v0")    # a circuit's lift is this many words on
 GLOW_DOUBLE = {7: (0x8002d5c8, 0x8002d5cc), 9: (0x8002d694, 0x8002d698)}
+GLOW_MVMVA = 0x800510e8   # the command that makes level 1's product
 MVMVA_SF = 1 << 19        # the command's bit that shifts its products down by 12
 
 # Where the parser and the frame put the glints' records, and their generator's state.
 GLINT_RECORDS = ((0x80022f4c, 0x80022f50), (0x8002aa2c, 0x8002aa30))
 GLINT_STATE = (0x80050d48, 0x80050d4c)
+
+NAMED = {"GLINT_TIMES": ("matched", GLINT_TIMES), "SHADOW_SQUARE": ("pair", SHADOW_SQUARE), "LIGHT_ROOT": ("pair", LIGHT_ROOT),
+         "GLOW_MAKE": ("routine", GLOW_MAKE), "GLOW_FACE": ("routine", GLOW_FACE), "GLOW_CASES": ("routine", GLOW_CASES),
+         "GLOW_TYPES": ("table", GLOW_TYPES), "GLOW_COLOURS": ("pair", GLOW_COLOURS), "GLOW_LIFT": ("pair", GLOW_LIFT),
+         "GLOW_LIFT_STRIDE": ("run", GLOW_LIFT_STRIDE), "GLOW_DOUBLE": ("instruction", GLOW_DOUBLE),
+         "GLOW_MVMVA": ("instruction", GLOW_MVMVA), "GLINT_RECORDS": ("pair", GLINT_RECORDS),
+         "GLINT_STATE": ("pair", GLINT_STATE)}
 
 CORNER = 4                # bytes to a corner of a polygon's colour
 
@@ -491,7 +500,7 @@ def glow(code, r):
     parts = {r[k] for k in ("glow.part.x", "glow.part.y", "glow.part.z")}
     if len(everies) != 1 or len(parts) != 1:
         sys.exit(f"the devices' light turns over every {everies} frames and takes {parts} for level 1")
-    if not code.word(0x800510e8) & MVMVA_SF:
+    if not code.word(GLOW_MVMVA) & MVMVA_SF:
         sys.exit("level 1's product is not shifted down by 12")
     at, first, count = GLOW_TYPES
     for typ in range(first, first + count):
@@ -511,7 +520,7 @@ def glow(code, r):
 def glow_lift(code):
     """What a lit device's model is drawn times, in 4096ths a channel: a
     teleporter's lift by its circuit, an exit's and a switch's lift one for all."""
-    if code.multiplier(0x8002d4a4, 3, "a1", "v0") != 12:
+    if code.multiplier(*GLOW_LIFT_STRIDE) != 12:
         sys.exit("a teleporter's lift is not three words to a circuit")
     base = code.address(*GLOW_LIFT)
     circuits = GLOW_COLOURS[5][1]

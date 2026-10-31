@@ -218,12 +218,12 @@ IMMEDIATES = [
 ]
 
 # An address the code builds from a lui and an addiu, and the table there.
-PLATFORM_TABLES = [
-    ("single", 0x80027e40, 0x80027e44),
-    ("first", 0x80027e58, 0x80027e5c),
-    ("middle", 0x80027e80, 0x80027e84),
-    ("last", 0x80027e90, 0x80027e94),
-]
+PLATFORM_TABLES = {
+    "single": (0x80027e40, 0x80027e44),
+    "first": (0x80027e58, 0x80027e5c),
+    "middle": (0x80027e80, 0x80027e84),
+    "last": (0x80027e90, 0x80027e94),
+}
 PLATFORM_AXIS_STRIDE = (0x80027e08, 3, "v1", "s5")
 PLATFORM_AXES = "xyz"
 PLATFORM_MODELS = 4  # the platform's own models open a set
@@ -247,6 +247,11 @@ MIRROR = 0x80000000   # the tables hold addresses without RAM's mirror bit
 PHASE_SPREAD = (0x80027a98, 3, "t0", "v0")     # the phase divides the face's position by unit times this
 BONUS_CYCLES = 4     # colour cycles on a level with no key: a pair per world parity, a face as built then one the ball has marked
 FACE_TABLE = (0x80028e90, 0x80028e98)
+LIGHT_STRIDES = ((0x8002d384, 3, "v1", "v0"), (0x8002d3b0, 3, "v1", "v0"))   # a shade's light is this many words on
+
+NAMED = {"PLATFORM_TABLES": ("pair", PLATFORM_TABLES), "PLATFORM_AXIS_STRIDE": ("run", PLATFORM_AXIS_STRIDE),
+         "CYCLES": ("pair", CYCLES), "PATH_TABLE": ("pair", PATH_TABLE), "EXT_TABLE": ("pair", EXT_TABLE),
+         "PHASE_SPREAD": ("run", PHASE_SPREAD), "FACE_TABLE": ("pair", FACE_TABLE), "LIGHT_STRIDES": ("run", LIGHT_STRIDES)}
 
 
 def text_at(code, addr):
@@ -338,7 +343,7 @@ def platform_table(code, r):
     out = {"stone": r["platform.stone"]}
     for a, axis in enumerate(PLATFORM_AXES):
         out[axis] = {}
-        for role, lui, addiu in PLATFORM_TABLES:
+        for role, (lui, addiu) in PLATFORM_TABLES.items():
             at = code.address(lui, addiu) + a * stride
             pairs = struct.unpack(f"<{FACES * 2}h", code.read(at, FACES * 4))
             faces = []
@@ -433,8 +438,8 @@ def readings(code):
         sys.exit("a laser's two ends wear different plates")
     if out["light.mode"] != out["bonus.mode"]:
         sys.exit(f"the second set of lights is for mode {out['light.mode']}, not the mode a level without a key plays in")
-    for at in (0x8002d384, 0x8002d3b0):
-        if code.multiplier(at, 3, "v1", "v0") != 4 * CHANNELS:
+    for run in LIGHT_STRIDES:
+        if code.multiplier(*run) != 4 * CHANNELS:
             sys.exit("a light is not three words to a shade")
     quad = (out["shadow.quad"] << 16) >> 24
     if quad != 1:

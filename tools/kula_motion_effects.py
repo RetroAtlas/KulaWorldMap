@@ -362,6 +362,9 @@ EFFECT_SINE = (0x8005fba8, "lui $at, {}", 0x8005fbb0, "lh $v0, {}($at)")
 EFFECT_HUD = {"clock": (0x8003907c, 0x80039080), "teleport": (0x8003a640, 0x8003a644),
               "fruit": ((0x80038c1c, 0x80038c20), (0x80038cc4, 0x80038cc8), (0x80038d6c, 0x80038d70),
                         (0x80038e14, 0x80038e18), (0x80038ebc, 0x80038ec0))}
+NAMED = {"EFFECT_INIT": ("instruction", EFFECT_INIT), "EFFECT_POINTERS": ("offset", EFFECT_POINTERS),
+         "EFFECT_COLOURS": ("offset", EFFECT_COLOURS), "EFFECT_TABLE": ("pair", EFFECT_TABLE),
+         "EFFECT_SINE": ("matched", EFFECT_SINE), "EFFECT_HUD": ("pair", EFFECT_HUD)}
 EFFECT_HUD_KIND = 0
 EFFECT_WORLD = (27, 31, 32, 33, 34, 35, 36, 37, 38, 42, 43, 44, 45, 46, 47)
 PARTICLES = 2

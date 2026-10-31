@@ -71,12 +71,12 @@ def loose(text):
     return REGISTER.sub("$", shape(text))
 
 
-def anchors():
+def anchors(modules=MODULES):
     """Every address of the base's executable the readers match an instruction at, by module and list: a check's or
     an immediate's instruction, each instruction of a multiplier's run, a divisor's three and a grey's two, and a
     scan's first and last instructions with the calls it lists."""
     out = []
-    for module in MODULES:
+    for module in modules:
         name = module.__name__
         lists = {kind: getattr(module, kind, ()) for kind in LISTS}
         out += [Anchor(name, "CHECKS", what, addr) for addr, _, what in lists["CHECKS"]]

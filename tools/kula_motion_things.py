@@ -213,6 +213,10 @@ WORLD_AXES = (50, 52, 53)  # turned by their spin alone, with no face in it
 QUARTERED = (51, 56)       # their first matrix turned about z before the spin
 QUARTER = (0x8003b914, "addiu $a0, $zero, {}")
 
+NAMED = {"LASER_LEVELS": ("pair", LASER_LEVELS), "BUTTON_REACH": ("matched", BUTTON_REACH),
+         "DICE_TIMES": ("matched", DICE_TIMES), "SPINS": ("routine", tuple(SPINS)), "SPUN_AT": ("instruction", SPUN_AT),
+         "QUARTER": ("matched", QUARTER)}
+
 
 def spin_orders(code):
     """The product each type's spin is, by the routine its draw calls."""

@@ -605,6 +605,7 @@ SCANS = []
 # the three the moves run in: at rest, rolling and round an edge.
 STATES = (0x80010134, -1, 9)
 STATE_AT = {-1: 0x8002f8e4, 0: 0x8003007c, 1: 0x8002fce0, 2: 0x8002f930, 6: 0x8002ff18, 7: 0x8002fa38}
+NAMED = {"STATES": ("table", STATES), "STATE_AT": ("routine", STATE_AT)}
 ARC_STEPS = 4             # frames the ball takes round an edge
 
 ABOUT = 3                 # cells each way about the ball

@@ -325,6 +325,8 @@ SCANS = []
 EXIT, HIDDEN_EXIT, MOVING_SPIKES, SPIKES, WANDERER, CORKSCREW = 7, 26, 11, 12, 53, 56
 BROWN = 0                 # type 42's form that stays and harms
 CLEARED = ((0x80069988, 0x8006998c), (0x80069990, 0x80069994))  # the range the start zeroes word by word
+GLOW_COUNTER = (0x800a46f4, 6076)   # the glow's counter, and its offset from gp
+NAMED = {"CLEARED": ("pair", CLEARED), "GLOW_COUNTER": ("offset", GLOW_COUNTER, ("glow.counter.at",))}
 
 
 def harms(r):

@@ -46,6 +46,10 @@ CALLER_SAVED = ("at", "v0", "v1", *ARGUMENTS, *(f"t{i}" for i in range(10)), "ra
 GP_INIT = (0x80069a04, 0x80069a08)
 RECORD_INIT = (0x80036888, 0x8003688c)
 
+# The address constants outside the lists, each with the kind of thing it is, by which it is found on another
+# release's executable.
+NAMED = {"GP_INIT": ("pair", GP_INIT), "RECORD_INIT": ("pair", RECORD_INIT)}
+
 BALL = "30"               # the ball's type in the table
 ICE = 2
 FIRE, ACID = 1, 4         # the kinds that harm by standing on them

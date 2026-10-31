@@ -313,6 +313,8 @@ DIVISORS = [
 GREYS = []
 SCANS = []
 
+NAMED = {}
+
 PLATFORM = 5
 OFF = -1                  # the lattice's word for no block
 VANISHING = 7
