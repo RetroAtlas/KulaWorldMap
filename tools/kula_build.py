@@ -5,17 +5,20 @@ public/objects.json; every pack's layout, from which a level is fitted to a
 slot without the image, and write public/packs.json; the sprites the
 game's effects draw, and write their sheet to public/tex/sparks.png; and for
 each release its file under public/releases/, its identity, the rules of its
-executable, its packs' layout and the levels of its disc that differ from the
-US data.
+executable, its packs' layout, the levels of its disc that differ from the US
+data and its artwork against the US atlases, the sheets of the textures its
+disc draws otherwise, laid under public/tex/<id>/, and the tint of a world it
+colours otherwise.
 
     export KULA_DISC="/path/to/Roll Away.bin"
     python3 tools/kula_build.py                 # the US data and public/releases/us.json
-    python3 tools/kula_build.py --release eu    # public/releases/eu.json, from $KULA_DISC_EU
+    python3 tools/kula_build.py --release eu    # public/releases/eu.json and public/tex/eu/, from $KULA_DISC_EU
     python3 tools/kula_build.py --all           # every release whose variable is set, the US first
 
 Another release's run reads its own image and its own executable and nothing
-of the US disc, compares its levels slot by slot with the committed US data,
-and makes every check the US build makes on its disc before it writes.
+of the US disc, compares its levels slot by slot with the committed US data
+and its textures cell by cell with the committed US atlases, and makes every
+check the US build makes on its disc before it writes.
 
 The output is generated and committed, so regenerate it rather than editing it.
 """
@@ -38,13 +41,15 @@ from kula_pak import Pak
 from kula_place import RECOMPRESS, ROOM
 from kula_release import rules as release_rules
 from kula_sector import USER, sectors_of
-from kula_skins import copycat_worlds, table as skins_table
+from kula_skins import copycat_worlds, table as skins_table, tint
+from kula_tex import base_atlases, digest, sheet_at, sheets, write_sheets
 from png import write_png
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
-OBJECTS = OUT.parent / "objects.json"
-PACKS = OUT.parent / "packs.json"
-SPARKS = OUT.parent / "tex" / "sparks.png"
+PUBLIC = OUT.parent
+OBJECTS = PUBLIC / "objects.json"
+PACKS = PUBLIC / "packs.json"
+SPARKS = PUBLIC / "tex" / "sparks.png"
 WORLD_LEVELS = 15
 FINAL_LEVELS = 2
 BASE = "us"
@@ -122,6 +127,11 @@ def code_of(disc, release):
     return Code(disc.read_file(entry["exe"]), entry["base"])
 
 
+def tgis_of(disc):
+    """Each world's artwork off the disc, by world."""
+    return {t: disc.read_file(f"/{t}/{t}.TGI") for t in THEMES}
+
+
 def rules_of(code, release):
     """The release's rules off its executable, or the tool's exit where its pause
     screen does not number the levels as the titles count them."""
@@ -185,23 +195,61 @@ def variants(base, levels, release):
     return {slot(l): {**l, "release": release} for l in levels if l != base[slot(l)]}
 
 
-def release_json(release, rules, layout, levels):
+def base_art(tgis):
+    """The base's artwork entry: a digest a world of the model table and the quads,
+    which say what each texture index means and which another release's sheets are
+    held to, and no sheet or tint of its own."""
+    return {"quads": {w: digest(blob) for w, blob in tgis.items()}, "sheets": {}, "tint": {}}
+
+
+def release_art(release, tgis, skins, quads, atlases):
+    """Another release's artwork entry against the base's digests, skins and atlases,
+    with the pixels of its sheets: its worlds' digests, each of which has to match
+    the base's digest for a cell keyed by texture index to mean the same texture; by
+    world, in drawing order, the sheets of the cells its disc draws otherwise, as
+    paths under public/; and the tint of each world whose stones do not average to
+    the base's colour."""
+    theirs = {w: digest(blob) for w, blob in tgis.items()}
+    apart = [w for w, d in theirs.items() if d != quads.get(w)]
+    if apart:
+        sys.exit(f"the model table or the quads of {', '.join(apart)} are not the base's table and quads, so a "
+                 f"texture index means another texture there and no sheet can be laid over the base's atlas")
+    order, pixels = sheets(tgis, atlases)
+    laid = {w: [sheet_at(release, name).relative_to(PUBLIC).as_posix() for name in names]
+            for w, names in order.items()}
+    stones = skins["sets"]["arcade"]["stone"]
+    tints = {w: tint(blob, stones, skins["shade"][w]) for w, blob in tgis.items()}
+    art = {"quads": theirs, "sheets": laid, "tint": {w: t for w, t in tints.items() if t != skins["tint"][w]}}
+    return art, pixels
+
+
+def release_json(release, rules, layout, art, levels):
     """The release's file: its identity, the rules of its executable, the layout
-    of its packs and the levels of its disc that differ from the base's."""
+    of its packs, its artwork laid against the base's atlases and the levels of
+    its disc that differ from the base's."""
     entry = RELEASES[release]
-    return {"id": release, **{k: entry[k] for k in IDENTITY}, "rules": rules, "packs": layout, "levels": levels}
+    return {"id": release, **{k: entry[k] for k in IDENTITY}, "rules": rules, "packs": layout, "art": art,
+            "levels": levels}
 
 
 def other_release(disc, release):
     """Another release's file, written against the committed base, with the
-    levels read for it: the Simon rooms' pack and the world each room is played
-    in come from the committed data, since no executable but the base's is read
-    for them, so a room that is not the base's cannot be placed and is refused."""
-    missing = [p.name for p in (OUT, OBJECTS) if not p.exists()]
+    levels read for it and the pixels of its sheets: the Simon rooms' pack and
+    the world each room is played in come from the committed data, since no
+    executable but the base's is read for them, so a room that is not the
+    base's cannot be placed and is refused; the sheets are cut against the
+    committed atlases and the tint taken with the committed skins, so no disc
+    but the release's own is opened."""
+    missing = [p.name for p in (OUT, OBJECTS, RELEASE_FILES[BASE]) if not p.exists()]
     if missing:
         sys.exit(f"no {' or '.join(missing)} to write {release} against; build the base first")
     base = {slot(l): l for l in json.loads(OUT.read_text())["levels"]}
-    copycat = json.loads(OBJECTS.read_text())["skins"]["copycat"]
+    skins = json.loads(OBJECTS.read_text())["skins"]
+    own = json.loads(RELEASE_FILES[BASE].read_text())
+    if "art" not in own:
+        sys.exit(f"{RELEASE_FILES[BASE].name} carries no digest of the base's artwork to hold the sheets of "
+                 f"{release} to; build the base first")
+    copycat = skins["copycat"]
     rooms = [l["theme"] for l in sorted((l for l in base.values() if l["pack"] == copycat), key=lambda l: l["index"])]
     rules = rules_of(code_of(disc, release), release)
     read = read_levels(disc, copycat, rooms)
@@ -212,7 +260,8 @@ def other_release(disc, release):
     rooms_apart = [k for k in levels if k.startswith(f"{copycat}#")]
     if rooms_apart:
         sys.exit(f"{', '.join(rooms_apart)} differ from the base's rooms, which say the world each is played in")
-    return release_json(release, rules, layout_of(disc), levels), read
+    art, pixels = release_art(release, tgis_of(disc), skins, own["art"]["quads"], base_atlases(THEMES))
+    return release_json(release, rules, layout_of(disc), art, levels), read, pixels
 
 
 def write_release(release, data):
@@ -244,7 +293,8 @@ def report(read):
 
 def build_base(disc):
     code = code_of(disc, BASE)
-    skins = skins_table(code, {t: disc.read_file(f"/{t}/{t}.TGI") for t in THEMES})
+    tgis = tgis_of(disc)
+    skins = skins_table(code, tgis)
     read = read_levels(disc, skins["copycat"], copycat_worlds(code))
     problems = figure_failures(executable(code)) + read.problems
     if problems:
@@ -284,7 +334,7 @@ def build_base(disc):
     shapes = write_objects(g, OBJECTS, placed, motion, skins, cast, arc, burst)
     OUT.write_text(json.dumps(data, indent=1))
     PACKS.write_text(json.dumps(layout, indent=1))
-    own = write_release(BASE, release_json(BASE, rules, layout, {}))
+    own = write_release(BASE, release_json(BASE, rules, layout, base_art(tgis), {}))
     report(read)
     print(f"{counted(levels)} -> {written(OUT)}")
     models = sum(len(v) for v in shapes["types"].values()) + len(shapes["balls"])
@@ -297,16 +347,22 @@ def build_base(disc):
     capacity = sum(p["capacity"] for p in layout["packs"])
     print(f"{len(layout['packs'])} packs holding {held:,} bytes in {capacity // USER} sectors of "
           f"{capacity:,} -> {written(PACKS)}")
-    print(f"the rules of {RELEASES[BASE]['boot']} beside the layout, no level differing from the base's own "
-          f"-> {written(own)}")
+    print(f"the rules of {RELEASES[BASE]['boot']} beside the layout, a digest of each of the {len(tgis)} worlds' "
+          f"artwork and no level differing from the base's own -> {written(own)}")
 
 
 def build_release(disc, release):
-    data, read = other_release(disc, release)
+    data, read, pixels = other_release(disc, release)
+    files = write_sheets(release, pixels)
     path = write_release(release, data)
     report(read)
     print(f"{counted(read.levels)}, {len(data['levels'])} differing from the base's, with the rules of "
           f"{RELEASES[release]['boot']} and the layout of {len(data['packs']['packs'])} packs -> {written(path)}")
+    art = data["art"]
+    cells = sum(n for *_, n in files.values())
+    print(f"{len(files)} sheet{'s' if len(files) != 1 else ''} carrying the {cells} cells the disc draws otherwise, "
+          f"laid over {len(art['sheets'])} of {len(THEMES)} worlds, and a tint of its own for "
+          f"{', '.join(art['tint']) or 'no world'} -> {', '.join(written(p) for p, *_ in files.values()) or 'nothing'}")
 
 
 def main():

@@ -20,7 +20,7 @@ One spec runs with its name after the command, `npm run test:browser -- play-hud
 
 `npm run frame` and `npm run boot` are measurements, not checks: where a frame's time goes, and when the page's first frames land over a throttled network.
 
-`python3 -m unittest discover -s tools/tests` runs the tools' tests without the disc, the motion reader's one file a module, `test_kula_motion_<subject>.py`, over the shared `motion_fixture.py`, and the tests of the level writer's disc check in `test_kula_kwl_check.py` beside the writer's own `test_kula_kwl.py`; `python3 -m compileall -q tools/` and `ruff check tools/` at the release [.github/workflows/ci.yml](../.github/workflows/ci.yml) pins complete the Python checks.
+`python3 -m unittest discover -s tools/tests` runs the tools' tests without the disc, the motion reader's one file a module, `test_kula_motion_<subject>.py`, over the shared `motion_fixture.py`, the atlas writer's tests and the build's artwork tests over the worlds `tgi_fixture.py` builds, and the tests of the level writer's disc check in `test_kula_kwl_check.py` beside the writer's own `test_kula_kwl.py`; `python3 -m compileall -q tools/` and `ruff check tools/` at the release [.github/workflows/ci.yml](../.github/workflows/ci.yml) pins complete the Python checks.
 
 The motion reader's tests run over a hand-typed fixture of the executable's words, `motion_fixture.py`'s `GAME`, which covers most of the readings' keys, so they hold the reader to the fixture and not to the executable; what holds the reader to the executable is the tool's table against the disc, which the build compares.
 
@@ -33,6 +33,8 @@ A reading only the disc can hold is held by the tool's own check against each of
 `test_kula_sector.py`'s disc class runs per release the same way, each where its variable is set, holding the pack, directory and sampled sectors it rebuilds to that image's counts.
 
 The release files are held the same way, each to its own disc: `test_kula_build.py`'s class for each runs where the release's variable is set and holds the committed file to what the build writes for that disc, and `python3 tools/kula_build.py --all` with the three variables set changes nothing committed.
+
+The sheets a release file names are held by the same class to files under `public/tex/<id>/` of the atlas's size, none lying there unnamed, and by the rebuild, which writes them again byte for byte.
 
 The release reader's table of addresses is held to the three executables by its own run, `python3 tools/kula_release.py --release <id>` with that release's disc variable set, which stops at the first instruction that is not the one expected.
 

@@ -16,14 +16,18 @@ from kula_build import (  # noqa: E402
     BASE,
     IDENTITY,
     PACKS,
+    PUBLIC,
+    base_art,
     code_of,
     layout_of,
     other_release,
     packs_json,
+    release_art,
     release_json,
     rules_of,
     slot,
     slot_problems,
+    tgis_of,
     variants,
 )
 from kula_disc import DISC_VARS, RELEASES, RELEASE_FILES, open_disc, open_release, packs  # noqa: E402
@@ -38,10 +42,14 @@ from kula_kwl import (  # noqa: E402
     PLAIN_ONLY,
 )
 from kula_kwl_check import UNTRACED, figure_failures  # noqa: E402
-from kula_level import BLOCK_KINDS  # noqa: E402
+from kula_level import BLOCK_KINDS, FACE  # noqa: E402
 from kula_pak import Pak  # noqa: E402
 from kula_place import RECOMPRESS, ROOM  # noqa: E402
 from kula_sector import USER, sectors_of  # noqa: E402
+from kula_skins import tint  # noqa: E402
+from kula_tex import OUT as TEX, SHARED, digest, mean  # noqa: E402
+from png import read_png  # noqa: E402
+from tgi_fixture import BOTH, BRIGHT, PALETTES, atlases, tgi_blob, worlds  # noqa: E402
 
 
 def reading():
@@ -159,13 +167,64 @@ class TheComparison(unittest.TestCase):
         self.assertEqual(slot_problems(self.base, [levels[0], levels[1], {**levels[2], "shown": "FINAL 2"}], BASE_PACKS),
                          ["/HIRO/HIROFI.PAK#0, FINAL 2, stands where the base has /HIRO/HIROFI.PAK#0, FINAL 1"])
 
-    def test_the_file_keys_the_identity_the_rules_the_layout_and_the_levels_in_order(self):
-        data = release_json("eu", {"hz": 50}, {"room": {}, "packs": []}, {"/HIRO/HIRO.PAK#0": {}})
-        self.assertEqual(list(data), ["id", *IDENTITY, "rules", "packs", "levels"])
+    def test_the_file_keys_the_identity_the_rules_the_layout_the_art_and_the_levels_in_order(self):
+        art = {"quads": {}, "sheets": {}, "tint": {}}
+        data = release_json("eu", {"hz": 50}, {"room": {}, "packs": []}, art, {"/HIRO/HIRO.PAK#0": {}})
+        self.assertEqual(list(data), ["id", *IDENTITY, "rules", "packs", "art", "levels"])
         self.assertEqual(data["id"], "eu")
         self.assertEqual({k: data[k] for k in IDENTITY}, {k: RELEASES["eu"][k] for k in IDENTITY})
-        self.assertEqual((data["rules"], data["packs"], data["levels"]),
-                         ({"hz": 50}, {"room": {}, "packs": []}, {"/HIRO/HIRO.PAK#0": {}}))
+        self.assertEqual((data["rules"], data["packs"], data["art"], data["levels"]),
+                         ({"hz": 50}, {"room": {}, "packs": []}, art, {"/HIRO/HIRO.PAK#0": {}}))
+
+
+SHADE = [1, 1, 2, 0, 1, 1]
+STONES = [[0], [1]]
+US_WORLDS = worlds(A=PALETTES, B=PALETTES)
+ATLASES = atlases(US_WORLDS)
+
+
+def skins_for(blobs):
+    """The skins the build reads a tint with, as the committed table carries them: the arcade
+    stones, the shade each face wears and each world's tint, the mean of its own stones."""
+    return {"sets": {"arcade": {"stone": STONES}}, "shade": {w: SHADE for w in blobs},
+            "tint": {w: tint(b, STONES, SHADE) for w, b in blobs.items()}}
+
+
+class TheArt(unittest.TestCase):
+    def test_the_base_records_a_digest_a_world_and_no_sheet_or_tint_of_its_own(self):
+        self.assertEqual(base_art(US_WORLDS),
+                         {"quads": {w: digest(b) for w, b in US_WORLDS.items()}, "sheets": {}, "tint": {}})
+
+    def test_a_tint_is_the_mean_of_the_stones_first_quads_in_the_top_faces_shade(self):
+        blob = US_WORLDS["A"]
+        self.assertEqual(tint(blob, STONES, SHADE), mean(blob, [0, 1], SHADE[FACE.index("-z")]))
+        self.assertNotEqual(tint(blob, STONES, SHADE), tint(blob, STONES, [0] * len(SHADE)))
+
+    def test_a_world_with_another_model_table_or_other_quads_than_the_base_stops_the_build_naming_it(self):
+        theirs = {"A": tgi_blob(textures=2, models=((0, 1),)), "B": tgi_blob(textures=2)}
+        with self.assertRaises(SystemExit) as stop:
+            release_art("eu", theirs, skins_for(US_WORLDS), base_art(US_WORLDS)["quads"], ATLASES)
+        self.assertIn("A", str(stop.exception))
+        self.assertNotIn("B", str(stop.exception))
+
+    def test_the_sheets_are_named_a_world_in_drawing_order_as_paths_under_public(self):
+        theirs = worlds(A=BOTH, B=BRIGHT)
+        art, pixels = release_art("eu", theirs, skins_for(US_WORLDS), base_art(US_WORLDS)["quads"], ATLASES)
+        self.assertEqual(art["quads"], base_art(US_WORLDS)["quads"])
+        self.assertEqual(art["sheets"], {"A": [f"tex/eu/{SHARED}.png", "tex/eu/A.png"], "B": [f"tex/eu/{SHARED}.png"]})
+        self.assertEqual(set(pixels), {SHARED, "A"})
+
+    def test_a_world_whose_every_cell_is_the_bases_has_no_sheet(self):
+        theirs = worlds(A=BRIGHT, B=PALETTES)
+        art, pixels = release_art("jp", theirs, skins_for(US_WORLDS), base_art(US_WORLDS)["quads"], ATLASES)
+        self.assertEqual(art["sheets"], {"A": ["tex/jp/A.png"]})
+        self.assertEqual(list(pixels), ["A"])
+
+    def test_the_tint_is_recorded_for_the_worlds_whose_stones_do_not_average_to_the_bases_colour(self):
+        theirs = worlds(A=BOTH, B=BRIGHT)
+        art, _ = release_art("jp", theirs, skins_for(US_WORLDS), base_art(US_WORLDS)["quads"], ATLASES)
+        self.assertEqual(art["tint"], {"A": tint(theirs["A"], STONES, SHADE)})
+        self.assertNotEqual(art["tint"]["A"], tint(US_WORLDS["A"], STONES, SHADE))
 
 
 class ReleaseFile:
@@ -184,7 +243,8 @@ class ReleaseFile:
 
     def written(self):
         if self.release == BASE:
-            return release_json(BASE, rules_of(code_of(self.disc, BASE), BASE), layout_of(self.disc), {})
+            return release_json(BASE, rules_of(code_of(self.disc, BASE), BASE), layout_of(self.disc),
+                                base_art(tgis_of(self.disc)), {})
         return other_release(self.disc, self.release)[0]
 
     def test_the_committed_file_is_what_the_build_writes(self):
@@ -195,13 +255,31 @@ class ReleaseFile:
         self.assertEqual([self.data["id"], *(self.data[k] for k in IDENTITY)], [self.release, *(entry[k] for k in IDENTITY)])
         self.assertEqual(self.data["packs"], packs_json(self.disc))
 
+    def test_every_sheet_the_file_names_stands_at_the_atlass_size_and_nothing_else_lies_beside_it(self):
+        sizes = {}
+
+        def size(path):
+            if path not in sizes:
+                sizes[path] = read_png(path)[:2]
+            return sizes[path]
+
+        named = set()
+        for world, paths in self.data["art"]["sheets"].items():
+            for p in paths:
+                named.add(PUBLIC / p)
+                self.assertTrue((PUBLIC / p).is_file(), p)
+                self.assertEqual(size(PUBLIC / p), size(TEX / f"{world}.png"), p)
+        folder = TEX / self.release
+        self.assertEqual(set(folder.glob("*.png")) if folder.is_dir() else set(), named)
+
 
 @unittest.skipUnless(os.environ.get(DISC_VARS["us"]), f"needs the disc under ${DISC_VARS['us']}")
 class TheBaseFile(ReleaseFile, unittest.TestCase):
     release = "us"
 
-    def test_the_base_has_no_variant_and_its_layout_is_the_packs_file(self):
+    def test_the_base_has_no_variant_no_sheet_and_no_tint_and_its_layout_is_the_packs_file(self):
         self.assertEqual(self.data["levels"], {})
+        self.assertEqual((self.data["art"]["sheets"], self.data["art"]["tint"]), ({}, {}))
         self.assertEqual(json.dumps(self.data["packs"], indent=1), PACKS.read_text())
 
 

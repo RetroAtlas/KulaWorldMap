@@ -487,6 +487,13 @@ def sets(models, groups, r):
     return out
 
 
+def tint(blob, stones, shade):
+    """The one colour a world's blocks wear until their textures arrive: the mean
+    of the world's stones, each as its model's first quad shows it, in the shade
+    the header gives the top face."""
+    return mean(blob, [stone[0] for stone in stones], shade[FACE.index("-z")])
+
+
 def table(code, tgis):
     """The table the build ships under "skins" in public/objects.json.
 
@@ -512,8 +519,6 @@ def table(code, tgis):
     if shadow_from != r["shadow.plain"]:
         sys.exit("plain and ice faces shadow different types")
     faces = sets(models, groups, r)
-    stones = [stone[0] for stone in faces["arcade"]["stone"]]
-    top = FACE.index("-z")
     return {
         "textures": len(tgi.textures(next(iter(tgis.values())))),
         "shade": {w: h["shade"] for w, h in worlds.items()},
@@ -527,7 +532,7 @@ def table(code, tgis):
         "hides": hiding(r),
         "hidden": {"kind": r["hidden.kind"], "type": r["hidden.flag"]},
         "light": {w: h["light"] for w, h in worlds.items()},
-        "tint": {w: mean(tgis[w], stones, h["shade"][top]) for w, h in worlds.items()},
+        "tint": {w: tint(tgis[w], faces["arcade"]["stone"], h["shade"]) for w, h in worlds.items()},
         "plainFrom": r["plain.from"],
         "shadow": {"from": shadow_from, "to": shadow_from + r["shadow.span"] - 1,
                    "except": [r["shadow.not.a"], r["shadow.not.b"], r["shadow.not.c"]]},

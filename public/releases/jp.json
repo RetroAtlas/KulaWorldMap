@@ -1355,6 +1355,60 @@
    }
   ]
  },
+ "art": {
+  "quads": {
+   "HIRO": "72fa342a59c63f90a76b2d99af0fc2083d3c23902665b32b4784a75d2086b7ce",
+   "HILLS": "72fa342a59c63f90a76b2d99af0fc2083d3c23902665b32b4784a75d2086b7ce",
+   "INCA": "72fa342a59c63f90a76b2d99af0fc2083d3c23902665b32b4784a75d2086b7ce",
+   "ARCTIC": "72fa342a59c63f90a76b2d99af0fc2083d3c23902665b32b4784a75d2086b7ce",
+   "COWBOY": "72fa342a59c63f90a76b2d99af0fc2083d3c23902665b32b4784a75d2086b7ce",
+   "FIELD": "72fa342a59c63f90a76b2d99af0fc2083d3c23902665b32b4784a75d2086b7ce",
+   "ATLANT": "72fa342a59c63f90a76b2d99af0fc2083d3c23902665b32b4784a75d2086b7ce",
+   "HAZE": "72fa342a59c63f90a76b2d99af0fc2083d3c23902665b32b4784a75d2086b7ce",
+   "MARS": "72fa342a59c63f90a76b2d99af0fc2083d3c23902665b32b4784a75d2086b7ce",
+   "HELL": "72fa342a59c63f90a76b2d99af0fc2083d3c23902665b32b4784a75d2086b7ce"
+  },
+  "sheets": {
+   "HIRO": [
+    "tex/jp/all.png"
+   ],
+   "HILLS": [
+    "tex/jp/all.png"
+   ],
+   "INCA": [
+    "tex/jp/all.png"
+   ],
+   "ARCTIC": [
+    "tex/jp/all.png"
+   ],
+   "COWBOY": [
+    "tex/jp/all.png"
+   ],
+   "FIELD": [
+    "tex/jp/all.png"
+   ],
+   "ATLANT": [
+    "tex/jp/all.png"
+   ],
+   "HAZE": [
+    "tex/jp/all.png",
+    "tex/jp/HAZE.png"
+   ],
+   "MARS": [
+    "tex/jp/all.png"
+   ],
+   "HELL": [
+    "tex/jp/all.png"
+   ]
+  },
+  "tint": {
+   "HAZE": [
+    159,
+    124,
+    114
+   ]
+  }
+ },
  "levels": {
   "/HILLS/HILLS.PAK#15": {
    "name": "BONUS 4",

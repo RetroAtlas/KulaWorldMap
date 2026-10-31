@@ -1,8 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { annotations, mapData, most, packs, releases, levelKey, TRAILER_KIND } from "./fixtures.js";
+import {
+  annotations,
+  mapData,
+  most,
+  objects,
+  packs,
+  releases,
+  levelKey,
+  TRAILER_KIND,
+} from "./fixtures.js";
 import { state } from "../../public/js/viewer/state.js";
 import {
   compose,
@@ -43,6 +52,7 @@ const KEYS = [
   "sectors",
   "rules",
   "packs",
+  "art",
   "levels",
 ];
 const base = new Map(mapData.levels.map((l) => [levelKey(l), l]));
@@ -53,7 +63,7 @@ const WORDS = "no one two three four five six seven eight nine ten eleven twelve
 );
 const number = (s) => (WORDS.includes(s) ? WORDS.indexOf(s) : Number(s));
 
-test("the three files are the US, PAL and Japanese releases, each its identity, rules, layout and levels", () => {
+test("the three files are the US, PAL and Japanese releases, each its identity, rules, layout, art and levels", () => {
   assert.deepEqual(
     releases.map((r) => r.id),
     ["us", "eu", "jp"],
@@ -63,7 +73,7 @@ test("the three files are the US, PAL and Japanese releases, each its identity, 
     for (const k of ["label", "name", "region", "serial", "boot"])
       assert.ok(typeof r[k] === "string" && r[k].length, `${r.id} ${k}`);
     assert.ok(Number.isInteger(r.sectors) && r.sectors > 0, r.id);
-    for (const k of ["rules", "packs", "levels"])
+    for (const k of ["rules", "packs", "art", "levels"])
       assert.ok(r[k] && typeof r[k] === "object" && !Array.isArray(r[k]), `${r.id} ${k}`);
   }
 });
@@ -168,6 +178,70 @@ test("each layout names the packs of packs.json in order, with the room and one 
     assert.ok(r.packs.room.lba >= runs[runs.length - 1][1], r.id);
     assert.ok(r.packs.room.size > Math.max(...r.packs.packs.map((p) => p.capacity)), r.id);
   }
+});
+
+const themes = mapData.themes.map((t) => t.id);
+const under = (path) => fileURLToPath(new URL(`../../public/${path}`, import.meta.url));
+/** A PNG's width and height, off its header. */
+const size = (path) => {
+  const png = readFileSync(under(path));
+  return [png.readUInt32BE(16), png.readUInt32BE(20)];
+};
+
+test("the base's art is a digest a world of the data, with no sheet and no tint of its own", () => {
+  assert.deepEqual(Object.keys(us.art), ["quads", "sheets", "tint"]);
+  assert.deepEqual(Object.keys(us.art.quads), themes);
+  for (const [world, digest] of Object.entries(us.art.quads))
+    assert.match(digest, /^[0-9a-f]{64}$/, world);
+  assert.deepEqual([us.art.sheets, us.art.tint], [{}, {}]);
+});
+
+test("every release's quads are the base's quads, so a cell of a sheet means the same texture on every disc", () => {
+  for (const r of releases) {
+    assert.deepEqual(Object.keys(r.art), ["quads", "sheets", "tint"], r.id);
+    assert.deepEqual(r.art.quads, us.art.quads, r.id);
+  }
+});
+
+test("a release's sheets are files under its own directory of the US atlas's size, a world of the data each, and nothing else lies there", () => {
+  for (const r of releases) {
+    const named = new Set();
+    for (const [world, paths] of Object.entries(r.art.sheets)) {
+      assert.ok(themes.includes(world), `${r.id} ${world}`);
+      assert.ok(paths.length > 0, `${r.id} ${world}`);
+      for (const path of paths) {
+        assert.match(path, new RegExp(`^tex/${r.id}/\\w+\\.png$`), `${r.id} ${world}`);
+        assert.deepEqual(size(path), size(`tex/${world}.png`), `${r.id} ${path}`);
+        named.add(path.split("/").pop());
+      }
+    }
+    const folder = under(`tex/${r.id}`);
+    assert.deepEqual(existsSync(folder) ? readdirSync(folder).sort() : [], [...named].sort(), r.id);
+  }
+});
+
+test("a release's tint names only worlds of the data, a triple of bytes each, none the US tint of its world", () => {
+  for (const r of releases) {
+    for (const [world, tint] of Object.entries(r.art.tint)) {
+      assert.ok(themes.includes(world), `${r.id} ${world}`);
+      assert.equal(tint.length, 3, `${r.id} ${world}`);
+      for (const v of tint) assert.ok(Number.isInteger(v) && v >= 0 && v < 256, `${r.id} ${world}`);
+      assert.notDeepEqual(tint, objects.skins.tint[world], `${r.id} ${world}`);
+    }
+  }
+});
+
+test("the PAL disc draws HIRO otherwise and tints no world; the Japanese disc draws every world otherwise, HAZE on a sheet of its own, and tints HAZE alone", () => {
+  assert.deepEqual(eu.art.sheets, { HIRO: ["tex/eu/HIRO.png"] });
+  assert.deepEqual(eu.art.tint, {});
+  assert.deepEqual(Object.keys(jp.art.sheets), themes);
+  for (const world of themes)
+    assert.deepEqual(
+      jp.art.sheets[world],
+      world === "HAZE" ? ["tex/jp/all.png", "tex/jp/HAZE.png"] : ["tex/jp/all.png"],
+      world,
+    );
+  assert.deepEqual(Object.keys(jp.art.tint), ["HAZE"]);
 });
 
 test("the rules are what each release's executable sets", () => {

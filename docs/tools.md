@@ -10,7 +10,7 @@ A tool that reads a release's disc takes its image from `--disc`, else from `$KU
 | `kula_disc.py` | where this game keeps its packs, textures and executable, the three releases by id, and which of them an image is, told by its boot line |
 | `kula_pak.py` | the `.PAK` container, and the names inside it |
 | `kula_level.py` | the lattice and the record table, field by field |
-| `kula_build.py` | reads every level, every mesh and every pack's layout, and writes `public/map_data.json`, `public/objects.json`, `public/packs.json` and the sheet of the effects' sprites under `public/tex/`, and for each release its rules, its packs' layout and the levels of its disc that differ from the US data, under `public/releases/` |
+| `kula_build.py` | reads every level, every mesh and every pack's layout, and writes `public/map_data.json`, `public/objects.json`, `public/packs.json` and the sheet of the effects' sprites under `public/tex/`, and for each release, under `public/releases/`, its rules, its packs' layout, the levels of its disc that differ from the US data and its artwork against the US atlases, with the sheets of the textures its disc draws otherwise laid under `public/tex/<id>/` |
 | `kula_kinds.py` | per-type contact sheets, for naming objects |
 | `kula_score.py` | what each level scores on the disc of a release, the US disc's unless `--release` says, the hourglass's points by that release's rules, beside the curated score where there is one meant for that disc |
 | `kula_faces.py` | what the six slots of every record hold, per kind and per face |
@@ -47,6 +47,10 @@ A tool that reads a release's disc takes its image from `--disc`, else from `$KU
 `kula_build.py` writes the four JSON files and the sheet in under a second, laid out so that a rebuild diffs line by line, or model by model, and refuses to write when the level file's cross-check fails ([level-format.md](level-format.md)) or when a cap or a loader figure the level writer's checks rest on is not what the executable holds ([editor.md](editor.md)). [tgi.md](tgi.md) and [ggi.md](ggi.md) show the artwork and geometry tools' own switches.
 
 `python3 tools/kula_build.py --release eu` reads the PAL disc alone, its image and its executable, makes every check the US build makes on it, compares its levels slot by slot with the committed US data and writes `public/releases/eu.json`, with `jp` doing the same for the Japanese disc.
+
+The same run reads the disc's ten `.TGI` files and holds the model table and the quads of each to the digests the US file records, since a sheet keyed by texture index would mean another texture otherwise, and stops with the worlds named where any differs.
+
+It then cuts, through `kula_tex.py` and against the committed US atlases rather than the US disc, the sheets of the cells the disc draws otherwise, writes them under `public/tex/eu/` with any sheet an earlier build left there removed, and records in the release file each world's sheets in drawing order and the tint of each world whose stones do not average to the US colour, which takes a few seconds more than the levels do.
 
 `--all` runs every release whose variable is set, the US first, since the other two are written against its data.
 

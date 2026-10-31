@@ -49,9 +49,11 @@ export KULA_DISC="/path/to/Roll Away.bin"
 python3 tools/kula_build.py
 ```
 
-That writes `public/map_data.json`, `public/objects.json` and `public/packs.json`, the levels, the objects' meshes and the packs' layout, `public/tex/sparks.png`, the sprites the game's effects draw, and `public/releases/us.json`, the release's rules and layout, all five generated **and committed**, so regenerate them rather than hand-editing.
+That writes `public/map_data.json`, `public/objects.json` and `public/packs.json`, the levels, the objects' meshes and the packs' layout, `public/tex/sparks.png`, the sprites the game's effects draw, and `public/releases/us.json`, the release's rules, its layout and a digest of each world's artwork, all five generated **and committed**, so regenerate them rather than hand-editing.
 
 The other two discs are read the same way, `$KULA_DISC_EU` naming the PAL image and `$KULA_DISC_JP` the Japanese one: `python3 tools/kula_build.py --release eu` writes `public/releases/eu.json`, that release's rules, its packs' layout and the levels of its disc that differ from the North American data, and `--release jp` writes `public/releases/jp.json` the same way, both generated and committed too.
+
+Each of those two runs also lays, under `public/tex/eu/` or `public/tex/jp/`, sheets of the atlases' size carrying only the textures its disc draws differently from the North American one, which its release file names world by world beside the tint of any world whose blocks that disc colours otherwise, the sheets generated and committed too.
 
 `python3 tools/kula_build.py --all` rebuilds every release whose variable is set, the North American data first, since the other two are written against it.
 

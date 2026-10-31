@@ -80,7 +80,7 @@ def cells(blob):
 def digest(blob):
     """A digest of the model table and the quads, which say what each texture index means."""
     bounds = tgi.sections(blob)
-    return hashlib.sha1(b"".join(blob[bounds[s]:bounds[s + 1]] for s in (tgi.MODELS, tgi.MAP))).hexdigest()
+    return hashlib.sha256(b"".join(blob[bounds[s]:bounds[s + 1]] for s in (tgi.MODELS, tgi.MAP))).hexdigest()
 
 
 def mean(blob, texs, shade):
@@ -154,21 +154,25 @@ def base_atlases(worlds):
     return out
 
 
-def write_sheets(release, theirs, base):
-    """A release's sheets written under its own directory, any other left there from an earlier
-    build removed; the sheets each world takes in order and, per sheet, its path, size and cells."""
-    order, pixels = sheets(theirs, base)
+def sheet_at(release, name):
+    """Where a release's sheet stands, under the atlases' directory by the release's id."""
+    return OUT / release / f"{name}.png"
+
+
+def write_sheets(release, pixels):
+    """A release's sheets, each by name with its pixels, written under its own directory, any other
+    left there from an earlier build removed; per sheet its path, size and cells."""
     out = OUT / release
     for stale in out.glob("*.png") if out.is_dir() else ():
         if stale.stem not in pixels:
             stale.unlink()
     files = {}
     for name, (w, h, px, n) in pixels.items():
-        out.mkdir(parents=True, exist_ok=True)
-        path = out / f"{name}.png"
+        path = sheet_at(release, name)
+        path.parent.mkdir(parents=True, exist_ok=True)
         write_png(path, w, h, px)
         files[name] = (path, w, h, n)
-    return order, files
+    return files
 
 
 def write_atlases(disc, worlds):
@@ -198,7 +202,8 @@ def main():
         write_atlases(disc, [args.world] if args.world else THEMES)
         return
     tgis = {world: disc.read_file(f"/{world}/{world}.TGI") for world in THEMES}
-    order, files = write_sheets(args.release, tgis, base_atlases(THEMES))
+    order, pixels = sheets(tgis, base_atlases(THEMES))
+    files = write_sheets(args.release, pixels)
     if not files:
         print(f"no texture of {RELEASES[args.release]['name']} differs from the base's; nothing written")
         return
