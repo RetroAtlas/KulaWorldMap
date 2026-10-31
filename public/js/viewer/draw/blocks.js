@@ -303,7 +303,7 @@ export function drawBlock(ctx, c, home, key, ghost, sel, hov, scene) {
       }
       const added = !place && lights?.get(`${key}/${g}`);
       if (sk && added && !sk.add) sk.glow = deviceLight(added, sk, g, skins);
-      return sk && { ...sk, img: atlas, world: l.theme, corners: skins.corners[g][sk.turn] };
+      return sk && { ...sk, atlas, world: l.theme, corners: skins.corners[g][sk.turn] };
     };
   }
   cube(

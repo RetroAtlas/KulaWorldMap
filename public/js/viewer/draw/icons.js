@@ -107,10 +107,10 @@ const tintOf = (l) => worldTint(l.theme) ?? "#93a8d4";
 
 function looks(l) {
   const skins = skinsTable();
-  const img = skins && atlasFor(l.theme);
-  if (!img) return null;
+  const atlas = skins && atlasFor(l.theme);
+  if (!atlas) return null;
   const world = state.data.themes.findIndex((t) => t.id === l.theme);
-  return { skins, img, look: lookOf(skins, l, world) };
+  return { skins, atlas, look: lookOf(skins, l, world) };
 }
 
 function brightest(skins, look) {
@@ -149,12 +149,12 @@ export function blockIcon(
     const face = FACES[i].game;
     trace(g, FACES[i].c.map(to));
     if (paints) {
-      const { skins, look, img } = paints;
+      const { skins, look, atlas } = paints;
       const at = face === PLATE_FACE ? beam : undefined;
       const sk = faceSkin(skins, look, CELL, face, kind, null, frame, place, at);
       g.save();
       g.clip();
-      paint(g, skins.corners[face][sk.turn].map(to), { ...sk, img }, shadeOf(i, l.theme), alpha);
+      paint(g, skins.corners[face][sk.turn].map(to), { ...sk, atlas }, shadeOf(i, l.theme), alpha);
       g.restore();
     } else {
       g.globalAlpha = alpha;
@@ -177,12 +177,12 @@ export function paintIcon(l, type, size = 22) {
     g.fill();
     return cv;
   }
-  const { skins, look, img } = paints;
+  const { skins, look, atlas } = paints;
   const r = { kind: KIND.PLAIN, on: [{ face: 0, type }] };
   const sk = faceSkin(skins, look, CELL, 0, KIND.PLAIN, r, 0);
   const corners = [lo, hi].flatMap((y) => [lo, hi].map((x) => [x, y]));
   g.clip();
-  paint(g, corners, { ...sk, img }, shadeOf(TOP, l.theme), 1);
+  paint(g, corners, { ...sk, atlas }, shadeOf(TOP, l.theme), 1);
   return cv;
 }
 

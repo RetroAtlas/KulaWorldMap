@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { settle, still } from "./helpers.js";
-import { route, startPlay, stopOn, top } from "./playhelpers.js";
+import { frozen, settle, still, textured } from "./helpers.js";
+import { pixelAt, route, startPlay, stopOn, top } from "./playhelpers.js";
 
 const LOCKED = "Leave play to change the release";
 const BONUS_30 = "/HELL/HELL.PAK#17";
@@ -13,6 +13,7 @@ const read = (path) =>
 const [us, eu, jp] = ["us", "eu", "jp"].map((id) => read(`releases/${id}.json`));
 const mapData = read("map_data.json");
 const annotations = read("annotations.json");
+const objects = read("objects.json");
 const slotIndex = (key) => mapData.levels.findIndex((l) => `${l.pack}#${l.index}` === key);
 
 const bar = (page) => page.locator("#release");
@@ -508,4 +509,53 @@ test("BONUS 26's note after a press of JP is that disc's own, and its line reads
   await expect(note).toContainText(entry.releases.jp.note);
   await expect(chip).toContainText(`${await total(page)} points`);
   await expect(chip).not.toContainText(" of ");
+});
+
+const BONUS_1 = "/#HIRO/15/45,35/fit/33";
+// the top of a plain block at BONUS 1's far corner, with nothing on it or above it
+const SWIRL = [23.5, 20.5, 17];
+// the canvas's own colour, behind the level
+const VOID = [17, 23, 37];
+
+/** Listen for the world's textures landing again, before whatever brings them. */
+const onLanding = (page, world) =>
+  page.evaluate(async (world) => {
+    const { on } = await import(new URL("js/viewer/ui/dom.js", location.href).href);
+    window.__landing = new Promise((r) => on("atlas-loaded", (w) => w === world && r()));
+  }, world);
+const landing = (page) => page.evaluate(() => window.__landing);
+
+test("a face of BONUS 1 is drawn otherwise once HIRO's textures land after a press of JP, and as before after a press of US", async ({
+  page,
+}) => {
+  await page.goto(BONUS_1);
+  await settle(page);
+  await textured(page);
+  await still(page);
+  await frozen(page);
+  const onUs = await pixelAt(page, SWIRL);
+  expect(onUs).not.toEqual(VOID);
+  await onLanding(page, "HIRO");
+  await press(page, "jp");
+  await expect(pressed(page)).toHaveText("JP");
+  await landing(page);
+  expect(await pixelAt(page, SWIRL)).not.toEqual(onUs);
+  await press(page, "us");
+  await expect(pressed(page)).toHaveText("US");
+  expect(await pixelAt(page, SWIRL)).toEqual(onUs);
+});
+
+const rgb = ([r, g, b]) => `rgb(${r}, ${g}, ${b})`;
+
+test("HAZE's swatch in the Worlds list takes the Japanese disc's colour after a press of JP and the US colour after a press of US", async ({
+  page,
+}) => {
+  await page.goto("/#HAZE/5");
+  await settle(page);
+  const swatch = page.locator('#worlds .world[data-world="HAZE"] .swatch');
+  await expect(swatch).toHaveCSS("background-color", rgb(objects.skins.tint.HAZE));
+  await press(page, "jp");
+  await expect(swatch).toHaveCSS("background-color", rgb(jp.art.tint.HAZE));
+  await press(page, "us");
+  await expect(swatch).toHaveCSS("background-color", rgb(objects.skins.tint.HAZE));
 });

@@ -37,6 +37,8 @@ import {
   markerPoints,
   markerStats,
   setAnnotations,
+  setObjects,
+  worldTint,
 } from "../../public/js/viewer/data.js";
 
 const [us, eu, jp] = releases;
@@ -498,4 +500,24 @@ test("the statistics count the release shown's levels, so a type the Japanese di
   assert.equal(placed(markerStats()), gems(onJp));
   assert.ok(gems(onJp) < gems(mapData.levels));
   assert.equal(gems([mapData.levels[slot(BONUS_26)]]) - gems([jp.levels[BONUS_26]]), 3);
+});
+
+test("a world's colour untextured is the release shown's tint where its file has one and the base's otherwise, so HAZE takes the Japanese disc's", (t) => {
+  t.after(() => setCurrent("us"));
+  setReleases(releases);
+  setObjects(objects);
+  const hex = (c) => `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+  for (const r of releases) {
+    setCurrent(r.id);
+    for (const world of themes)
+      assert.equal(
+        worldTint(world),
+        hex(r.art.tint[world] ?? objects.skins.tint[world]),
+        `${r.id} ${world}`,
+      );
+  }
+  setCurrent("jp");
+  assert.notEqual(worldTint("HAZE"), hex(objects.skins.tint.HAZE));
+  assert.equal(worldTint("ARCTIC"), hex(objects.skins.tint.ARCTIC));
+  assert.equal(worldTint("NOWHERE"), null);
 });

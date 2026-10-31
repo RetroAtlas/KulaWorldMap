@@ -2,7 +2,7 @@ import { state } from "./state.js";
 import { SIDE, cellKey, FACE_NORMAL, KIND, TYPE, STARTS } from "../format/lattice.js";
 import { platesOf, lookOf, keyed, shadowed } from "./skins.js";
 import { glowing, byLight } from "./motion.js";
-import { compose, current, levelsOf } from "./release.js";
+import { compose, current, levelsOf, releaseOf } from "./release.js";
 
 let ann = { worlds: {}, kinds: {}, types: {}, levels: {} };
 export const setAnnotations = (a) => {
@@ -22,7 +22,7 @@ export const motionTable = () => shapes.motion;
 export const jumpTable = () => shapes.jump ?? { count: 0, rows: [] };
 export const skinsTable = () => shapes.skins;
 export const worldTint = (world) => {
-  const c = shapes.skins?.tint?.[world];
+  const c = releaseOf(current())?.art?.tint?.[world] ?? shapes.skins?.tint?.[world];
   return c ? "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("") : null;
 };
 export const shadowSprites = () => shapes.shadows;

@@ -159,7 +159,9 @@ While the ball is on the level the bar is disabled, since play holds the level i
 
 A level of your own stays on screen under any disc, since it belongs to none until it is put on one, and a press draws its line again for the disc chosen.
 
-Meanwhile play's rules, the clock and the hourglass among them, and the artwork, HAZE's tint on the Japanese disc among it, are the US release's whatever disc is chosen.
+The artwork follows the disc too: the PAL disc draws the faces of HIRO's blocks that look along `-y` about a third darker, the Japanese disc draws every level with no key in a grey swirl with no green, with a target of two rings on its plates, and draws HAZE in pale peach stones with an orange flame and a dark blob under its devices, and HAZE's colour there, which its swatch, its untextured blocks and the dust the ball raises take, is that disc's own.
+
+Meanwhile play's rules, the clock and the hourglass among them, are the US release's whatever disc is chosen.
 
 ## Your levels
 
@@ -587,6 +589,8 @@ The US release is built into the model, so the map shows it under its own name w
 
 Once that world's textures have landed and the page is idle, the other worlds' textures are fetched one at a time behind whatever the page asks for itself, from the next world on, unless the browser is set to save data, so a change of world finds them here; `js/viewer/draw/atlas.js` keeps every atlas for the visit, and a frame redraws for a landing only when it is the shown world's atlas.
 
+A disc that draws a world otherwise names sheets of the atlas's size, transparent but for the cells its textures change, which the page does not preload: they are fetched with the world's atlas when a level of that world is first drawn on that disc, or ahead behind the atlas as the other worlds' are, and composited over the atlas once all have landed, while a world the disc names no sheet for draws the atlas itself, with no canvas and no extra fetch.
+
 Beside the worlds' atlases under `tex/` the build lays the sheet of the seven sprites the game's effects draw, for play alone, which the page does not preload.
 
 ### How a level reaches the screen
@@ -600,6 +604,8 @@ A draft reaches the screen as `toLevel` in `js/format/project.js` makes it, the 
 `js/viewer/draw/render.js` draws the frame: it puts the cells in the painter's order, keeps the pick canvas that turns a point on the screen into a cell, lays what shows through the blocks over the map, and draws again while anything moves.
 
 It draws the blocks through `js/viewer/draw/blocks.js`, which lays each world's textures from `js/viewer/draw/atlas.js` and the light a device casts on them from `js/viewer/draw/lights.js`, which casts a light a module hands it through `lightsWith` as it casts a device's light, from a cell and a face in a colour of the module's own, on the faces a device there would light and at the same levels, so that nothing on the blocks changes until a module hands one.
+
+`js/viewer/draw/atlas.js` keeps its atlases by disc and world, a disc's atlas of a world being the US atlas with that disc's sheets drawn over it at the origin in the order its file names them, built once all have landed and said with `atlas-loaded` as the atlas's own landing is, so `js/viewer/draw/blocks.js` and whatever else paints a face asks for the world's atlas alone and carries no branch for the disc.
 
 Where the index the frame draws from marks a block, with the frame of its mark, `js/viewer/draw/blocks.js` hands `faceSkin` in `js/viewer/skins.js` the frames since the mark for each of the block's faces, or with Motion off a count past the whole fade, and `faceSkin` paints such a face as the game paints a block the ball has rolled onto, faded in from grey, so play's marks reach the faces with no branch for play in either module.
 
@@ -651,7 +657,7 @@ The viewer tells the editor, the planner and play what has changed through the `
 - `go-to`, which the panel says with the cell a click on a name in it leads to, on which the search finds that cell and play centres the view there and lets the ball go.
 - `show-changed`, which the sidebar says with a switch's key as it is turned and the level line as its note folds, on which play puts the dust away as its switch goes off.
 - `density-changed`, which the frame says once the canvas is sized again for a change in the screen's pixel density, on which whatever paints an icon paints it again.
-- `atlas-loaded`, which `js/viewer/draw/atlas.js` says with the world as that world's textures land, on which the editor draws its palette and its icons again.
+- `atlas-loaded`, which `js/viewer/draw/atlas.js` says with the world as that world's textures land, and again as the disc's sheets are drawn over them, on which the editor draws its palette and its icons again.
 - `slice-changed`, which whatever moves the slice says, play among them as it takes the view and gives it back, and which the slice's control follows.
 - `course-changed`, which the planner says with the route as it changes, on which Follow and Keep let go of a route that no longer stands.
 - `editing-changed`, which the editor says as editing turns on or off, on which the planner drops the refusal its strip shows.

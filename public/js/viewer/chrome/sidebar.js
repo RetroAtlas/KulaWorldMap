@@ -54,16 +54,23 @@ export function setSidebar(open) {
   btn.title = `${label} (s)`;
 }
 
+/** The swatch coloured as the world's blocks draw untextured on the disc shown. */
+const tinted = (swatch, id) => {
+  swatch.style.background = worldTint(id) ?? "#889";
+  return swatch;
+};
+
 export function buildWorlds() {
   const box = $("worlds");
   box.textContent = "";
   for (const w of state.data.themes) {
     const d = el("details", { className: "world" });
+    d.dataset.world = w.id;
     d.append(
       el(
         "summary",
         {},
-        el("span", { className: "swatch", style: `background:${worldTint(w.id) ?? "#889"}` }),
+        tinted(el("span", { className: "swatch" }), w.id),
         el("span", {}, worldName(w.id)),
         el("span", { className: "n" }, String(w.levels.length)),
       ),
@@ -108,13 +115,15 @@ function entitle(b, l) {
   }
 }
 
-// The titles follow the release shown, whichever way it changed.
+// The titles and the swatches follow the release shown, whichever way it changed.
 let titled = null;
-function retitle() {
+function follow() {
   if (current() === titled) return;
   titled = current();
   for (const b of $("worlds").querySelectorAll(".levels button"))
     entitle(b, state.data.levels[Number(b.dataset.i)]);
+  for (const d of $("worlds").querySelectorAll(".world"))
+    tinted(d.querySelector(".swatch"), d.dataset.world);
 }
 
 function markLevel() {
@@ -375,5 +384,5 @@ on("level-updated", () => {
   syncSlice();
 });
 
-on("release-changed", retitle);
-on("link-opening", retitle);
+on("release-changed", follow);
+on("link-opening", follow);

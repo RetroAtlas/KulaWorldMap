@@ -226,7 +226,7 @@ test("a face in full light is the game's lit face at any pulse, and an unlit one
       g.beginPath();
       g.rect(0, 0, 64, 64);
       g.clip();
-      const face = { img: atlasFor(state.lvl.theme), tex, add: true, ...sk };
+      const face = { atlas: atlasFor(state.lvl.theme), tex, add: true, ...sk };
       paint(
         g,
         [
@@ -324,7 +324,7 @@ test("a light on a face with a colour of its own adds to that colour and is not 
       g.beginPath();
       g.rect(0, 0, 64, 64);
       g.clip();
-      const sk = { img: atlasFor(state.lvl.theme), tex, colour: [168, 0, 0], glow };
+      const sk = { atlas: atlasFor(state.lvl.theme), tex, colour: [168, 0, 0], glow };
       paint(
         g,
         [
