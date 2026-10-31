@@ -19,7 +19,7 @@ The filenames are built at `0x8004ccf8`, which takes a world index, an extension
 
 **A 400-byte header, then eleven sections.** The parser reads eleven `u32` at header offsets 356 to 396, each a count of `u16`, and walks cumulative pointers from `base + 400`. The eleventh boundary lands exactly on the file size in all ten worlds, which is what says the reading is right.
 
-The thirty files of the three discs share the container: the eleventh boundary lands on the file size in every one, the uploads below come in the same order at the same places and sizes but one, HIRO's second palette block on the PAL disc, the 56 textures are paired with the same palette rows, and the header words the loader reads are the same, the one header word that differs between the discs, where any does, being the count of section 7, in HIRO on the PAL disc the count of section 10 instead.
+The thirty files of the three discs share the container: the eleventh boundary lands on the file size in every one, the uploads below come in the same order at the same places and sizes but one, HIRO's second palette block on the PAL disc, the 56 textures are paired with the same palette rows, and the header words the loader reads are the same but one count where any differs between the discs, section 7's, or in HIRO on the PAL disc section 10's.
 
 **The last section is not a picture, it is a list of VRAM uploads.** The loop at `0x800254e0` reads `u16 x, y, w, h`, hands the four of them and the bytes that follow to the Psy-Q `LoadImage` at `0x8005c580`, then skips `w * h * 2` bytes and goes round again. So `w` counts 16-bit VRAM words, not pixels, and an 8bpp texture is twice that many pixels wide. The walk consumes every section-10 byte exactly, with nothing left over, in every world.
 
@@ -73,7 +73,7 @@ So a pickup's shadow on the map is the game's texture and only the ball and the 
 
 In HAZE alone the Japanese disc changes the first set too, 21 textures, 0 to 7, 9, 10, 12, 19 to 21, 24, 25 and 33 to 37: the stones a pale peach where the US disc's are a dusky rose, the fire an orange X in place of the red cracks, and the round plate at 21 and the acid splat at 24 soft dark blobs like the painted shadows; its section 9 differs as well, in 192,549 of its 225,224 bytes, which no other world's does on either disc.
 
-The exit's crosses, textures 17 and 18, are the same texels on every disc and drawn the same on the Japanese one, so the Japanese release's own sign at its exit is a model in the one `.GGI` and not a face.
+The exit's crosses, textures 17 and 18, are the same texels on every disc and drawn the same on the Japanese one, so the Japanese release's own sign at its exit is a model in the one `.GGI` ([ggi.md](ggi.md)) and not a face.
 
 The second set has one stone, model 68, the animated swirl at 38 to 45, run through its eight frames and a pair of colour cycles that the world's parity picks out of four (`0x80027024`, `0x80027034`), the first for a face as built, the same magenta in every world left for violet and red in the even worlds and for red and brown in the odd, and the second for one the ball has marked on a level with no key, orange in the even worlds and blue in the odd ([motion.md](motion.md)), which the map spreads across the level by position, a marked block's colour coming the same way.
 
