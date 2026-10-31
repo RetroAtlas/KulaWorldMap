@@ -159,7 +159,11 @@ While the ball is on the level the bar is disabled, since play holds the level i
 
 A level of your own stays on screen under any disc, since it belongs to none until it is put on one, and a press draws its line again for the disc chosen.
 
-The artwork follows the disc too: the PAL disc draws the faces of HIRO's blocks that look along `-y` about a third darker, the Japanese disc draws every level with no key in a grey swirl with no green, with a target of two rings on its plates, and draws HAZE in pale peach stones with an orange flame and a dark blob under its devices, and HAZE's colour there, which its swatch, its untextured blocks and the dust the ball raises take, is that disc's own.
+The artwork follows the disc too: a world the chosen disc paints otherwise is drawn in that disc's own textures.
+
+The PAL disc draws the faces of HIRO's blocks that look along `-y` about a third darker.
+
+The Japanese disc draws every level with no key in a grey swirl with no green, with a target of two rings on its plates, and draws HAZE in pale peach stones with an orange flame and a dark blob under its devices, and HAZE's colour there, which its swatch, its untextured blocks and the dust the ball raises take, is that disc's own.
 
 Meanwhile play's rules, the clock and the hourglass among them, are the US release's whatever disc is chosen.
 

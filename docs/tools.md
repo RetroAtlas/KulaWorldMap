@@ -50,7 +50,9 @@ A tool that reads a release's disc takes its image from `--disc`, else from `$KU
 
 The same run reads the disc's ten `.TGI` files and holds the model table and the quads of each to the digests the US file records, since a sheet keyed by texture index would mean another texture otherwise, and stops with the worlds named where any differs.
 
-It then cuts, through `kula_tex.py` and against the committed US atlases rather than the US disc, the sheets of the cells the disc draws otherwise, writes them under `public/tex/eu/` with any sheet an earlier build left there removed, and records in the release file each world's sheets in drawing order and the tint of each world whose stones do not average to the US colour, which takes a few seconds more than the levels do.
+It then cuts, through `kula_tex.py` and against the committed US atlases rather than the US disc, the sheets of the cells the disc draws otherwise, writes them under `public/tex/eu/` with any sheet an earlier build left there removed, and records in the release file each world's sheets in drawing order and the tint of each world whose stones do not average to the US colour.
+
+Cutting the sheets takes a few seconds more than the levels do, most of it reading the US atlases back.
 
 `--all` runs every release whose variable is set, the US first, since the other two are written against its data.
 
