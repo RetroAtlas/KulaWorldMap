@@ -1,6 +1,6 @@
 # The .TGI files: the artwork format
 
-Each world keeps its artwork in one `.TGI`, between 628 KB and 664 KB. The container is decoded, read off the game's own parser rather than guessed at, and `tools/kula_tgi.py` reads it; which texture the game paints on which face is the level loader's business, and `tools/kula_skins.py` reads that off the executable.
+Each world keeps its artwork in one `.TGI`, between 626 KB and 682 KB. The container is decoded, read off the game's own parser rather than guessed at, and `tools/kula_tgi.py` reads it; which texture the game paints on which face is the level loader's business, and `tools/kula_skins.py` reads that off the executable.
 
 ```bash
 python3 tools/kula_tgi.py --world HIRO --sections
@@ -19,6 +19,8 @@ The filenames are built at `0x8004ccf8`, which takes a world index, an extension
 
 **A 400-byte header, then eleven sections.** The parser reads eleven `u32` at header offsets 356 to 396, each a count of `u16`, and walks cumulative pointers from `base + 400`. The eleventh boundary lands exactly on the file size in all ten worlds, which is what says the reading is right.
 
+The thirty files of the three discs share the container: the eleventh boundary lands on the file size in every one, the uploads below come in the same order at the same places and sizes but one, HIRO's second palette block on the PAL disc, the 56 textures are paired with the same palette rows, and the header words the loader reads are the same, the one header word that differs between the discs, where any does, being the count of section 7, in HIRO on the PAL disc the count of section 10 instead.
+
 **The last section is not a picture, it is a list of VRAM uploads.** The loop at `0x800254e0` reads `u16 x, y, w, h`, hands the four of them and the bytes that follow to the Psy-Q `LoadImage` at `0x8005c580`, then skips `w * h * 2` bytes and goes round again. So `w` counts 16-bit VRAM words, not pixels, and an 8bpp texture is twice that many pixels wide. The walk consumes every section-10 byte exactly, with nothing left over, in every world.
 
 **Each world ships 56 textures.** They arrive as 32x64-word uploads, which is 64x64 pixels at 8bpp, and each carries three smaller levels: 8x32, 4x16 and 2x8 words. Those only make sense as 32x32, 16x16 and 8x8 at 4bpp, so the mip levels are half-depth. 56 of each, four levels, 224 uploads.
@@ -27,9 +29,13 @@ Replaying the uploads recovers the page exactly, and `tools/kula_tex.py` writes 
 
 Until it arrives, and with the textures off, the viewer draws the world's blocks in one colour, the mean of the world's stones as a top wears them, which `tools/kula_skins.py` takes from the same texels and the build ships under `skins` as `tint`.
 
+That colour differs for HAZE alone on the Japanese disc, [159, 124, 114] against [132, 81, 93], and a release's sheets, the cells its disc draws otherwise on the atlases' own grid, and any tint of its own go in its release file under `art`, which `tools/kula_tex.py` cuts and `tools/kula_build.py` writes ([tools.md](tools.md)).
+
 **Palettes are two uploads parked off the side of the page**, 256 words wide at VRAM x=768: one of 72 rows from the top, which is the 72 palettes of 256 colours the textures are paired with, and one from row 90 whose height the world sets, 25 rows in Hiro and 72 in Atlantis, whose rows are the 16-colour palettes the renderer draws through, below.
 
 They are ordinary VRAM writes like anything else, which is why looking for them by scanning the file for smooth 16-bit runs found impostors: pixel data read as colour is smooth too. Arctic's stones show that a scan is no way to pick them out either: their palettes hold 23 greys in the dark shade and 25 in the bright, which a scan asking for 32 distinct words refuses, so the atlas reads the rows a texture's record names and nothing else.
+
+On the PAL disc HIRO's second block is 24 rows against 25, the one upload of the thirty files whose shape differs, and its file is 512 bytes the shorter for it.
 
 **Section 6 pairs each texture with its palettes.** A CLUT id for a palette at VRAM x=768 is `(row << 6) | 48`, so `id & 63 == 48` is a fingerprint, and section 6 is 16.5% such values against a fraction of a percent everywhere else. Its record is 20 `u16`, 427 of them, and the fingerprint falls on fixed slots within that stride.
 
@@ -39,7 +45,13 @@ A record opens with three CLUT ids, and the same three palettes appear again as 
 
 The triples, at bytes 24 to 59 of the header and Hiro's figures above, are also the light the game puts on what stands on a face, by the same face's shade, and a level played as a bonus level lights its things with the header's second set at byte 156, 4096 in every channel in every world ([ggi.md](ggi.md)).
 
+The PAL disc changes no texel and one set of palettes: in HIRO the dark shade's palettes of the first set, textures 0 to 37, come out at 0.69 of the US luminance, 0.68 to 0.70 texture by texture, with the other two shades as the US disc has them, so HIRO's three palettes measure `0.73 : 1.00 : 1.18` there and the face its dark shade is worn by, the `-y` side, is about a third darker on that disc, the exit's crosses among them; no other world's texture or palette differs on that disc.
+
+The 16-colour palettes the renderer draws the mips through come out darkened with it, to 0.69 of the US luminance at the nearest steps of depth, and section 0's table is rewritten to name them, so the game draws HIRO's `-y` faces darker as the map does, and not only in the 64x64 textures the map takes.
+
 **Section 5 is a table of 119 models, and it is byte-identical in all ten worlds.** Each entry is `i16 first, i16 count` naming a run of section-6 quads (`0x800259b8` reads one by its model's index, four bytes an entry), so a model index means the same thing everywhere and only the pixels behind it change.
+
+It is byte-identical on all three discs as well, and so is section 6, so a texture index and a model index mean the same texture on every disc, which is what lets a disc ship sheets of only the cells it draws otherwise, laid over the US atlases, and the build holds both sections of every disc's files to the US file's digest before it cuts one ([tools.md](tools.md)).
 
 The copy loop at `0x8002569c` walks it and builds, at `0x800afe94`, a 32-byte entry per quad per shade, laid model by model with the shades of a model side by side; for each quad it works out `u = (x mod 64) * 2` and `v = y mod 256` before calling `getTPage(1, 0, ...)`, whose `tp` of 1 is what says the textures are 8bpp.
 
@@ -59,9 +71,15 @@ Models 11 to 60 are indexed by type, so 12 is the fire's five frames at 33 to 37
 
 So a pickup's shadow on the map is the game's texture and only the ball and the captivators cast a drawn one ([motion.md](motion.md)).
 
+In HAZE alone the Japanese disc changes the first set too, 21 textures, 0 to 7, 9, 10, 12, 19 to 21, 24, 25 and 33 to 37: the stones a pale peach where the US disc's are a dusky rose, the fire an orange X in place of the red cracks, and the round plate at 21 and the acid splat at 24 soft dark blobs like the painted shadows; its section 9 differs as well, in 192,549 of its 225,224 bytes, which no other world's does on either disc.
+
+The exit's crosses, textures 17 and 18, are the same texels on every disc and drawn the same on the Japanese one, so the Japanese release's own sign at its exit is a model in the one `.GGI` and not a face.
+
 The second set has one stone, model 68, the animated swirl at 38 to 45, run through its eight frames and a pair of colour cycles that the world's parity picks out of four (`0x80027024`, `0x80027034`), the first for a face as built, the same magenta in every world left for violet and red in the even worlds and for red and brown in the odd, and the second for one the ball has marked on a level with no key, orange in the even worlds and blue in the odd ([motion.md](motion.md)), which the map spreads across the level by position, a marked block's colour coming the same way.
 
 Its crumbling block is the grey cracked stone at 54, its plates the green target at 55, and its pickups' models run through the swirl and the swirl with a shadow, 38 to 53.
+
+On the Japanese disc the second set is another picture, the same in every world: textures 38 to 55 and the palette rows 60 to 71 they are drawn through change in all ten files and to the same bytes in each, the swirl a dark grey with no green in it, the cracked stone darker and the target two green rings with no centre dot, and since the set's three shades are one picture on every disc, the colour a face of a level with no key takes there comes from the colour cycles alone.
 
 A model whose only quad is texture 8 is a placeholder for a type the loader never puts on a face.
 
@@ -116,5 +134,9 @@ The table holds block faces and nothing else: a type's model is the face under t
 ## Not settled
 
 **Sections 7 to 9 are unread.** Section 9 is 225 KB and the largest after the artwork, and the geometry may live there.
+
+Section 7 is the one section whose size the discs change beyond HIRO's palette block above, 8,604 to 35,216 bytes larger on the PAL disc in eight worlds and the US disc's size in HIRO and HILLS, 1,760 to 3,600 bytes smaller on the Japanese disc in every world, and nothing settled above draws on what it holds.
+
+**What the PAL and Japanese executables change in the loader's rules.** The colour cycles a level with no key runs and the lists of what hides a face are read off the US executable alone and applied to every disc, so the map colours the Japanese disc's grey swirl with the US release's cycles until the other two executables are read.
 
 **What the 8bpp level of each texture is for.** It is uploaded like the rest and the renderer never reads it for a block face; the level select or a near view may.
