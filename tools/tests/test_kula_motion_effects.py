@@ -6,7 +6,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_motion_code import GP  # noqa: E402
 from kula_motion_effects import effect_init, effect_tables, effects  # noqa: E402
 from motion_fixture import AT, GAME, addiu, code, lui, lw, sb, sw  # noqa: E402
 
@@ -16,7 +15,7 @@ class Effects(unittest.TestCase):
         c = code(lui("v0", 0x000a), addiu("v0", "v0", -30472), sw("v0", "gp", 5048), addiu("v1", "zero", 100),
                  lw("a1", "a1", 23216), sb("v1", "gp", 5104), sb("zero", "gp", 5105))
         self.assertEqual(effect_init(c, (AT, AT + 28)),
-                         {GP + 5048: ("sw", 0x800988f8), GP + 5104: ("sb", 100), GP + 5105: ("sb", 0)})
+                         {c.gp + 5048: ("sw", 0x800988f8), c.gp + 5104: ("sb", 100), c.gp + 5105: ("sb", 0)})
         with self.assertRaises(SystemExit):
             effect_init(code(lw("a1", "a1", 23216), sw("a1", "gp", 5048)), (AT, AT + 8))
 

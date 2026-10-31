@@ -7,7 +7,7 @@ A tool that reads a release's disc takes its image from `--disc`, else from `$KU
 | | |
 | --- | --- |
 | `disc.py` | a raw PS1 image as an ISO9660 tree, addressed by full path |
-| `kula_disc.py` | where this game keeps its packs, textures and executable, the three releases by id, and which of them an image is, told by its boot line |
+| `kula_disc.py` | where this game keeps its packs, textures and executable, the three releases by id, each with its executable's load address, the pointer its start sets in gp and the address of the ball's record, and which of them an image is, told by its boot line |
 | `kula_pak.py` | the `.PAK` container, and the names inside it |
 | `kula_level.py` | the lattice and the record table, field by field |
 | `kula_build.py` | reads every level, every mesh and every pack's layout, and writes `public/map_data.json`, `public/objects.json`, `public/packs.json` and the sheet of the effects' sprites under `public/tex/`, and for each release, under `public/releases/`, its rules, its packs' layout, the levels of its disc that differ from the US data, its artwork against the US atlases, with the sheets of the textures its disc draws otherwise laid under `public/tex/<id>/`, and its objects against the US models, the model lists of the types its mesh file draws otherwise and the jump's arc where that differs |

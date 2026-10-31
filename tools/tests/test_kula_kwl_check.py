@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_disc import DISC_VARS, EXE, RELEASES, open_disc, open_release, packs  # noqa: E402
+from kula_disc import BASE, DISC_VARS, EXE, RELEASES, open_disc, open_release, packs  # noqa: E402
 from kula_kwl import (  # noqa: E402
     BARE,
     CAPS,
@@ -206,7 +206,7 @@ class TheDisc(unittest.TestCase):
     def test_the_caps_and_the_loader_figures_are_the_executables_own(self):
         from kula_motion_code import Code
         with open_disc() as disc:
-            r = executable(Code(disc.read_file(EXE)))
+            r = executable(Code.of(BASE, disc.read_file(EXE)))
         for what in ("records", "faces", "lights", "spikes", "captivators", "crumbling", "vanishing", "objects"):
             self.assertEqual(CAPS[what], r[what], what)
         self.assertEqual(set(CAPS) - set(r), set(UNTRACED))

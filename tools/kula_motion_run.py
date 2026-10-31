@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_level import BLOCK_KINDS, UNPLACED_KIND
-from kula_motion_code import BLOCK, GP, INVISIBLE
+from kula_motion_code import BLOCK, INVISIBLE
 from kula_motion_jump import flight
 from kula_motion_simon import simon
 from kula_motion_take import UNHARMED
@@ -490,7 +490,7 @@ def play(r):
         sys.exit("a death's penalty is not gated at its most, or does not count a world's levels")
     if r["gp"] + LEVEL_MODE[1] != r["mode.word"] or r["mode.word"] != LEVEL_MODE[0] or r["mode.at"] != LEVEL_MODE[1]:
         sys.exit("the level's mode word the loader writes is not the one the ending's view reads")
-    if r["game.mode.word"] != GAME_MODE[0] or GP + GAME_MODE[1] != GAME_MODE[0] or r["mode.simon"] != r["clock.mode"]:
+    if r["game.mode.word"] != GAME_MODE[0] or r["gp"] + GAME_MODE[1] != GAME_MODE[0] or r["mode.simon"] != r["clock.mode"]:
         sys.exit("the mode routine does not put the level's word back to 0 in the mode the clock stands in")
     if sorted((0, r["mode.bonus"], r["mode.hidden"])) != [0, 1, 2] or r["mode.hidden.flag"] != 1:
         sys.exit("the level's modes are not 0, 1 and 2, or the hidden flag is not a type of 1")

@@ -100,7 +100,7 @@ class Take(unittest.TestCase):
                                                   "glow.green.rest": 3071},
                        {"glow.gain.green": 2}, {"glow.gain.blue": 4}, {"glow.counter.load": 5},
                        {"glow.counter.at": 0}, {"glow.clear": [0x800a4700, 0x800fb1e8]},
-                       {"glow.clear": [0x800a4220, 0x800a46f4]}):
+                       {"glow.clear": [0x800a4220, 0x800a46f4]}, {"record": 0x800ba118}):
             with self.assertRaises(SystemExit):
                 take({**GAME, **change})
 

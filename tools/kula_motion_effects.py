@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_motion_code import ADD, GP, ONE, READS_FIRST, TURN
+from kula_motion_code import ADD, ONE, READS_FIRST, TURN
 from kula_motion_take import ONE_PLAYER, TAKE_CASES
 
 CHECKS = [
@@ -392,7 +392,7 @@ def effect_init(code, span=EFFECT_INIT):
         if m:
             if regs.get(m.group(2)) is None:
                 sys.exit(f"0x{pc:08x} stores a register the run has not set")
-            stored[GP + int(m.group(3))] = (m.group(1), regs[m.group(2)])
+            stored[code.gp + int(m.group(3))] = (m.group(1), regs[m.group(2)])
             continue
         m = re.match(r"(\w+) \$(\w+)", text)
         if m and m.group(1) not in READS_FIRST:
@@ -403,7 +403,7 @@ def effect_init(code, span=EFFECT_INIT):
 def effect_setup(code, slots, sprites):
     """The pointers to the effect tables, nothing where a kind has none, and
     the sprites' colours, three bytes each, as startup stores them."""
-    if GP + EFFECT_POINTERS[1] != EFFECT_POINTERS[0] or GP + EFFECT_COLOURS[1] != EFFECT_COLOURS[0]:
+    if code.gp + EFFECT_POINTERS[1] != EFFECT_POINTERS[0] or code.gp + EFFECT_COLOURS[1] != EFFECT_COLOURS[0]:
         sys.exit("the effect tables' pointers or the sprites' colours do not lie where their offsets from gp put them")
     stored = effect_init(code)
     pointers = []

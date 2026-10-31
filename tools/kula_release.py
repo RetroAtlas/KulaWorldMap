@@ -142,7 +142,7 @@ def clock_word(code, release):
     """The clock word the start fills, which the HUD, the hourglass and the swap have to reach too."""
     places = CLOCK_WORD[release]
     word = reaches(code, *places["start"], "lui $at, {}", "sw $v0, {}($at)")
-    reached = {places["hud"]: RELEASES[release]["gp"] + code.immediate(places["hud"], "lw $v1, {}($gp)")}
+    reached = {places["hud"]: code.gp + code.immediate(places["hud"], "lw $v1, {}($gp)")}
     for name in ("hourglass", "swap"):
         if name in places:
             hi, lo, hi2, lo2 = places[name]
@@ -199,8 +199,7 @@ def rules(code, release):
 
 
 def read(release, disc=None):
-    entry = RELEASES[release]
-    return Code(open_release(release, disc).read_file(entry["exe"]), entry["base"])
+    return Code.of(release, open_release(release, disc).read_file(RELEASES[release]["exe"]))
 
 
 def show_readings(code, release):
@@ -222,7 +221,7 @@ def show_readings(code, release):
             rows.append((group, what, where[release][0], run[key]))
     rows.append(("the clock", f"the clock the start fills, the HUD shows and the hourglass turns lies at "
                  f"0x{run['clock.word']:08x}, this far past gp", CLOCK_WORD[release]["hud"],
-                 run["clock.word"] - RELEASES[release]["gp"]))
+                 run["clock.word"] - code.gp))
     rows.sort(key=lambda r: (GROUPS.index(r[0]), r[2]))
     last = None
     for group, what, addr, value in rows:

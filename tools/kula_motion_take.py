@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kula_level import FACE, FACES
-from kula_motion_code import BALL_RECORD, BLOCK, CRUMBLING_UNDER, GP, TURN, root
+from kula_motion_code import BLOCK, CRUMBLING_UNDER, TURN, root
 
 CHECKS = [
     # What the ball takes.
@@ -628,7 +628,7 @@ def take(r):
         sys.exit("the bouncy pill's latch does not count frames by one")
     if r["crumble.under"] != CRUMBLING_UNDER:
         sys.exit(f"a crumbling block scores while the ball stands on {r['crumble.under']}")
-    if r["gp"] != GP or GP + MODE_WORD[1] != MODE_WORD[0] or r["pill.lethargy.players"] != ONE_PLAYER:
+    if r["gp"] + MODE_WORD[1] != MODE_WORD[0] or r["pill.lethargy.players"] != ONE_PLAYER:
         sys.exit("the lethargy effect's mode word is not where gp puts it, or its start is not gated at one player")
     if r["rock.round"] != (1 << r["rock.shift"]) - 1:
         sys.exit("the view's roll is not rounded toward nothing by its own shift")
@@ -643,7 +643,7 @@ def take(r):
     if rest != (r["screen.reset.across"], r["screen.reset.down"]) \
             or rest != (r["screen.load.across"], r["screen.load.down"]):
         sys.exit("the stretch does not rest at the scales the executable loads and a level's leaving puts back")
-    if r["glow.gate"] != UNHARMED or BALL_RECORD + r["glow.gate.word"] != INVINCIBLE_WORD:
+    if r["glow.gate"] != UNHARMED or r["record"] + r["glow.gate.word"] != INVINCIBLE_WORD:
         sys.exit("the ball's draw does not gate its glow on the invincibility pill's word at rest")
     glow_round = 1 << r["glow.round.shift"]
     if r["glow.round.rest"] != r["glow.step"] + glow_round - 1 or glow_round != 2 * TURN:

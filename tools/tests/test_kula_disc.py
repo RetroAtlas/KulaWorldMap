@@ -20,7 +20,7 @@ from kula_place import CNF_AT, ROOT_AT, synthetic_image  # noqa: E402
 from kula_sector import USER, USER_OFF, rewrite  # noqa: E402
 
 IMAGE = synthetic_image()
-KEYS = {"label", "name", "region", "serial", "boot", "sectors", "exe", "base", "gp"}
+KEYS = {"label", "name", "region", "serial", "boot", "sectors", "exe", "base", "gp", "record"}
 
 
 def user_of(image, lba):

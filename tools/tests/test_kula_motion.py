@@ -9,10 +9,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_disc import EXE_BASE  # noqa: E402
+from kula_disc import EXE_BASE, RELEASES  # noqa: E402
 from kula_motion import CHECKS, DIVISORS, GREYS, IMMEDIATES, MULTIPLIERS, SCANS, table  # noqa: E402
 from kula_motion_blocks import blocks  # noqa: E402
-from kula_motion_code import PHASES  # noqa: E402
+from kula_motion_code import PHASES, Code  # noqa: E402
 from kula_motion_effects import effects  # noqa: E402
 from kula_motion_harms import harms  # noqa: E402
 from kula_motion_light import glint  # noqa: E402
@@ -66,6 +66,27 @@ class Reads(unittest.TestCase):
             c.immediate(AT + 4, "addiu $a0, $v1, {}")
         self.assertEqual(c.stores_to(0x800a3448), [(AT + shift, 2)])
         self.assertEqual([c.holds(a) for a in (EXE_BASE + shift, EXE_BASE + shift - 4)], [True, False])
+
+    def test_a_code_is_built_at_the_base_the_gp_and_the_record_of_its_release(self):
+        for release, entry in RELEASES.items():
+            c = Code.of(release, bytes(0x800))
+            self.assertEqual((c.base, c.gp, c.record), (entry["base"], entry["gp"], entry["record"]))
+        c = code()
+        self.assertEqual((c.base, c.gp, c.record), tuple(RELEASES["us"][k] for k in ("base", "gp", "record")))
+
+    def test_a_store_through_gp_is_found_under_the_gp_the_code_is_given_and_missed_under_the_us_one(self):
+        c = code(sw("v0", "gp", 1296), gp=0x800a29e0)
+        self.assertEqual(c.stores_to(0x800a29e0 + 1296), [(AT, 2)])
+        self.assertEqual(c.stores_to(0x800a3448), [])
+
+    def test_a_stretch_is_scanned_against_the_span_of_the_record_the_code_is_given(self):
+        span, record = (564, 688), 0x800b9bbc
+        into = (lui("at", 0x000c), sh("v0", "at", -25104))      # 0x800b9df0, 564 past that record
+        self.assertEqual(code(*into).resolved(AT, AT + 4, "s0", span), 1)
+        with self.assertRaises(SystemExit):
+            code(*into, record=record).resolved(AT, AT + 4, "s0", span)
+        c = code(lui("at", 0x000c), sh("v0", "at", -23736), record=record)
+        self.assertEqual(c.resolved(AT, AT + 4, "s0", span), 1)
 
     def test_a_multiplier_is_what_shifts_and_adds_do_to_a_register(self):
         c = code(sll("v1", "v0", 2), addu("v1", "v1", "v0"), sll("v1", "v1", 2))
@@ -282,8 +303,8 @@ class Table(unittest.TestCase):
 class Lists(unittest.TestCase):
     BY_HAND = {"button.reach", "flight.third", "next.round", "next.mode.load", "next.mode.clears", "next.mode.writes",
                "simon.store", "simon.fill.from", "dice.times", "glint.times", "glint.seed", "glint.at", "glint.frame.at",
-               "gp", "mode.word", "game.mode.word", "glow.counter.load", "glow.clear", "laser.levels", "shadow.half",
-               "light.root", "glow", "glow.colours", "spin.order", "spin.quarter", "words", "effect.pointers",
+               "gp", "record", "mode.word", "game.mode.word", "glow.counter.load", "glow.clear", "laser.levels",
+               "shadow.half", "light.root", "glow", "glow.colours", "spin.order", "spin.quarter", "words", "effect.pointers",
                "effect.colours", "effect.tables", "effect.sine.at", "effect.sine.one", "effect.hud.at", "effect.table.at",
                *(f"screen.load.{name}" for name in ("wide", "high", "distance", "across", "down"))}
 

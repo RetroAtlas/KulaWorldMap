@@ -96,7 +96,7 @@ def executable(release, changed=()):
         struct.pack_into(f"<{len(words)}I", blob, start - base, *words)
     for addr, word in changed:
         struct.pack_into("<I", blob, addr - base, word)
-    return Code(bytes(blob), base)
+    return Code.of(release, bytes(blob))
 
 
 def touched(release):

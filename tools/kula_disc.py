@@ -15,17 +15,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from disc import Disc
 
 # `base` is the load address less the PS-EXE header, where the file's first byte would
-# stand in memory; `gp` the pointer the startup sets.
+# stand in memory; `gp` the pointer the startup sets; `record` the ball's record.
 RELEASES = {
     "us": {"label": "US", "name": "Roll Away", "region": "North America", "serial": "SLUS-00724",
            "boot": "SLUS_007.24", "sectors": 109607, "exe": "/SLUS_007.24",
-           "base": 0x80010000 - 0x800, "gp": 0x800a2f38},
+           "base": 0x80010000 - 0x800, "gp": 0x800a2f38, "record": 0x800ba114},
     "eu": {"label": "EU", "name": "Kula World", "region": "Europe", "serial": "SCES-01000",
            "boot": "SCES_010.00", "sectors": 108471, "exe": "/SCES_010.00",
-           "base": 0x80011000 - 0x800, "gp": 0x800a29e0},
+           "base": 0x80011000 - 0x800, "gp": 0x800a29e0, "record": 0x800b9bbc},
     "jp": {"label": "JP", "name": "Kula Quest", "region": "Japan", "serial": "SCPS-10064",
            "boot": "SCPS_100.64", "sectors": 136980, "exe": "/SCPS_100.64",
-           "base": 0x80010000 - 0x800, "gp": 0x8009f064},
+           "base": 0x80010000 - 0x800, "gp": 0x8009f064, "record": 0x800d2fa8},
 }
 BASE = "us"    # the release the data is built from, which the others are written against
 DISC_VARS = {"us": "KULA_DISC", "eu": "KULA_DISC_EU", "jp": "KULA_DISC_JP"}

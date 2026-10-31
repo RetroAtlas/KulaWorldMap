@@ -122,9 +122,8 @@ def layout_of(disc):
 
 
 def code_of(disc, release):
-    """The release's executable, read at the address its first byte stands at."""
-    entry = RELEASES[release]
-    return Code(disc.read_file(entry["exe"]), entry["base"])
+    """The release's executable, read at the addresses its entry of the release table gives."""
+    return Code.of(release, disc.read_file(RELEASES[release]["exe"]))
 
 
 def tgis_of(disc):

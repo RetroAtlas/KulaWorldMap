@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import EXE_BASE
+from kula_disc import BASE, RELEASES
 from mips import decode
 
 TURN = 4096          # the angle that is one full turn
@@ -45,8 +45,6 @@ WIDTHS = {"sb": 1, "sh": 2, "sw": 4, "swc2": 4}   # bytes a store writes; swl an
 ARGUMENTS = ("a0", "a1", "a2", "a3")
 CALLER_SAVED = ("at", "v0", "v1", *ARGUMENTS, *(f"t{i}" for i in range(10)), "ra")
 GP_INIT = (0x80069a04, 0x80069a08)
-GP = 0x800a2f38
-BALL_RECORD = 0x800ba114  # the ball's record, which the pills' words lie in
 
 BALL = "30"               # the ball's type in the table
 ICE = 2
@@ -58,11 +56,20 @@ ADD = 1              # the blend that adds a quad to what is behind it
 
 
 class Code:
-    """The executable's bytes, addressed from `base`, where its first byte stands in memory."""
+    """The executable's bytes, addressed from `base`, where its first byte stands in memory, with the pointer the
+    start sets in gp and the address of the ball's record, which the stores a reading resolves go by."""
 
-    def __init__(self, blob, base=EXE_BASE):
+    def __init__(self, blob, base=RELEASES[BASE]["base"], gp=RELEASES[BASE]["gp"], record=RELEASES[BASE]["record"]):
         self.blob = blob
         self.base = base
+        self.gp = gp
+        self.record = record
+
+    @classmethod
+    def of(cls, release, blob):
+        """The release's executable at the addresses its entry of the release table gives."""
+        entry = RELEASES[release]
+        return cls(blob, entry["base"], entry["gp"], entry["record"])
 
     def word(self, addr):
         return struct.unpack_from("<I", self.blob, addr - self.base)[0]
@@ -142,7 +149,7 @@ class Code:
             if imm >= 0x8000:
                 imm -= 0x10000
             if base == 28:
-                at = GP + imm
+                at = self.gp + imm
             elif base == 1 and i and words[i - 1] >> 16 == 0x3C01:
                 at = (0x80000000 | ((words[i - 1] & 0xFFFF) << 16)) + imm
             else:
@@ -151,19 +158,19 @@ class Code:
                 out.append((self.base + 4 * i, (w >> 16) & 31))
         return out
 
-    def resolved(self, start, end, base, span, calls=(), record=BALL_RECORD):
+    def resolved(self, start, end, base, span, calls=()):
         """How many stores the stretch from `start` to `end` makes, each resolved to an address through `base`,
-        which holds `record`, a register derived from it, gp, sp or a lui; none within the record's `span` of
+        which holds the record, a register derived from it, gp, sp or a lui; none within the record's `span` of
         words, no pointer made into it, and the record handed on by the `calls` listed alone."""
-        low, high = record + span[0], record + span[1] + 3
-        held = {base: (record, True), "gp": (GP, False)}     # a register's address, and whether it is the record's address
+        low, high = self.record + span[0], self.record + span[1] + 3
+        held = {base: (self.record, True), "gp": (self.gp, False)}     # a register's address, and whether it is the record's address
         awaited = {where: (callee, handed) for where, callee, handed in calls}
         count, pc = 0, start
         while pc <= end:
             text = self.text(pc)
             if text.startswith("jal "):
                 count += self.follow(pc + 4, held, low, high)     # the delay slot runs before the call
-                handed = {r: a - record for r, (a, own) in held.items() if own and r in ARGUMENTS}
+                handed = {r: a - self.record for r, (a, own) in held.items() if own and r in ARGUMENTS}
                 callee, want = awaited.pop(pc, (0, None))
                 if text != f"jal 0x{callee:08x}" or handed != want:
                     sys.exit(f"0x{pc:08x} `{text}` is handed the record in {handed}, which the reading does not follow")

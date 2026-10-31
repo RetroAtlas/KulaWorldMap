@@ -27,7 +27,7 @@ import kula_motion_run
 import kula_motion_simon
 import kula_motion_take
 import kula_motion_things
-from kula_disc import EXE, open_disc
+from kula_disc import BASE, EXE, open_disc
 from kula_motion_blocks import CRUMBLING, blocks, standing
 from kula_motion_code import BLOCK, GP_INIT, HZ, PHASES, TURN, Code, dispatch
 from kula_motion_effects import (EFFECT_HUD, EFFECT_POINTERS, EFFECT_TABLE, effect_places, effect_setup, effect_sine,
@@ -167,6 +167,9 @@ def readings(code):
     out["glint.seed"] = code.word(code.address(*GLINT_STATE))
     out["glint.at"], out["glint.frame.at"] = (code.address(*pair) for pair in GLINT_RECORDS)
     out["gp"] = code.address(*GP_INIT)
+    if out["gp"] != code.gp:
+        sys.exit(f"the start sets gp to 0x{out['gp']:08x}, not the 0x{code.gp:08x} the release table gives")
+    out["record"] = code.record
     out["mode.word"] = code.address(*LEVEL_MODE_READ)
     out["game.mode.word"] = code.address(*GAME_MODE_READ)
     out["glow.counter.load"] = int.from_bytes(code.read(out["gp"] + out["glow.counter.at"], 2), "little", signed=True)
@@ -335,7 +338,7 @@ def table(r, platform_speed):
 
 
 def read(disc=None):
-    return Code(open_disc(disc).read_file(EXE))
+    return Code.of(BASE, open_disc(disc).read_file(EXE))
 
 
 def show_readings(code):

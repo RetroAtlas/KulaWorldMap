@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kula_tgi as tgi
-from kula_disc import EXE, THEMES, open_disc
+from kula_disc import BASE, EXE, THEMES, open_disc
 from kula_level import FACE, FACES
 from kula_tex import mean
 from kula_motion_code import Code
@@ -544,7 +544,7 @@ def table(code, tgis):
 
 def read(disc=None):
     d = open_disc(disc)
-    return Code(d.read_file(EXE)), {w: d.read_file(f"/{w}/{w}.TGI") for w in THEMES}
+    return Code.of(BASE, d.read_file(EXE)), {w: d.read_file(f"/{w}/{w}.TGI") for w in THEMES}
 
 
 def show_readings(code, tgis):

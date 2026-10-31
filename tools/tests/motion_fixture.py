@@ -88,9 +88,10 @@ def swr(rt, rs, imm):
 AT = EXE_BASE + 0x800
 
 
-def code(*words, base=EXE_BASE):
+def code(*words, **at):
+    """An executable of the words from AT, at the US base, gp and record unless `at` gives another."""
     blob = bytearray(0x800) + b"".join(struct.pack("<I", w) for w in words)
-    return Code(bytes(blob), base)
+    return Code(bytes(blob), **at)
 
 
 # The numbers the executable holds, as the reader returns them.
@@ -171,7 +172,7 @@ GAME = {
     "fruit.points.45": 2500, "fruit.points.46": 2500, "fruit.points.47": 2500,
     "hourglass.from": 5999, "hourglass.second": 50, "hourglass.points": 10,
     "pill.lethargy": 360, "pill.lethargy.step": -2, "pill.lethargy.ticks": 4, "pill.invincible": 840,
-    "pill.lethargy.players": 2, "pill.lethargy.blanks": 2, "gp": 0x800a2f38,
+    "pill.lethargy.players": 2, "pill.lethargy.blanks": 2, "gp": 0x800a2f38, "record": 0x800ba114,
     "rock.scale": 64, "rock.shift": 5, "rock.round": 31,
     "flash.code": 44, "flash.sprite": 6, "flash.laid": 128, "screen.grey": 128, "screen.phase": 1024,
     "screen.magnitude": 780, "screen.idle.step": 106, "screen.tint.outer": 96, "screen.tint.green": 112,
