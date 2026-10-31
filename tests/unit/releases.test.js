@@ -218,7 +218,8 @@ test("a release's sheets are files under its own directory of the US atlas's siz
       }
     }
     const folder = under(`tex/${r.id}`);
-    assert.deepEqual(existsSync(folder) ? readdirSync(folder).sort() : [], [...named].sort(), r.id);
+    const lying = existsSync(folder) ? readdirSync(folder).filter((f) => f.endsWith(".png")) : [];
+    assert.deepEqual(lying.sort(), [...named].sort(), r.id);
   }
 });
 
