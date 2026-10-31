@@ -44,6 +44,7 @@ WIDTHS = {"sb": 1, "sh": 2, "sw": 4, "swc2": 4}   # bytes a store writes; swl an
 ARGUMENTS = ("a0", "a1", "a2", "a3")
 CALLER_SAVED = ("at", "v0", "v1", *ARGUMENTS, *(f"t{i}" for i in range(10)), "ra")
 GP_INIT = (0x80069a04, 0x80069a08)
+RECORD_INIT = (0x80036888, 0x8003688c)
 
 BALL = "30"               # the ball's type in the table
 ICE = 2

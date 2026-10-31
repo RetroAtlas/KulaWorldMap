@@ -29,7 +29,7 @@ import kula_motion_take
 import kula_motion_things
 from kula_disc import BASE, EXE, open_disc
 from kula_motion_blocks import CRUMBLING, blocks, standing
-from kula_motion_code import BLOCK, GP_INIT, PHASES, TURN, Code, dispatch
+from kula_motion_code import BLOCK, GP_INIT, PHASES, RECORD_INIT, TURN, Code, dispatch
 from kula_motion_effects import (EFFECT_HUD, EFFECT_POINTERS, EFFECT_TABLE, effect_places, effect_setup, effect_sine,
                                  effect_tables, effects)
 from kula_motion_harms import CLEARED, harms
@@ -170,7 +170,9 @@ def readings(code):
     out["gp"] = code.address(*GP_INIT)
     if out["gp"] != code.gp:
         sys.exit(f"the start sets gp to 0x{out['gp']:08x}, not the 0x{code.gp:08x} the release table gives")
-    out["record"] = code.record
+    out["record"] = code.address(*RECORD_INIT)
+    if out["record"] != code.record:
+        sys.exit(f"the ball's routine forms its record at 0x{out['record']:08x}, not the 0x{code.record:08x} the release table gives")
     out["mode.word"] = code.address(*LEVEL_MODE_READ)
     out["game.mode.word"] = code.address(*GAME_MODE_READ)
     out["glow.counter.load"] = int.from_bytes(code.read(out["gp"] + out["glow.counter.at"], 2), "little", signed=True)

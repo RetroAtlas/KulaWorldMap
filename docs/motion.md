@@ -74,7 +74,7 @@ On the PAL disc the breath takes the time against 5000 and a fortieth of the dif
 
 ## The ball's moves
 
-**The ball keeps a frame of three unit vectors, a heading, a side and a normal, and a position, and reads the lattice about itself every frame.** Its record is at `0x800ba114` (`0x8003688c`): the heading at 12, the side at 20 and the normal at 28, each three halfwords of −1, 0 or 1, and the position at 60, in units of which a block is 512, lying in the cell whose 512 units hold it (`0x80037464` to `0x80037470`).
+**The ball keeps a frame of three unit vectors, a heading, a side and a normal, and a position, and reads the lattice about itself every frame.** Its record is at `0x800ba114` (`0x80036888`, `0x8003688c`): the heading at 12, the side at 20 and the normal at 28, each three halfwords of −1, 0 or 1, and the position at 60, in units of which a block is 512, lying in the cell whose 512 units hold it (`0x80037464` to `0x80037470`).
 
 The start lays the three through `0x80038178` from the face and the slot's `f2` ([camera.md](camera.md)), the normal being the face's outward normal (`0x80038260` to `0x800382b0`), and `0x800383ec` lays them as a matrix in 4096ths at 212, the side, the heading turned round and the normal its columns (`0x80038400` to `0x80038454`).
 
