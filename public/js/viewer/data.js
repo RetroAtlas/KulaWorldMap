@@ -136,7 +136,7 @@ export function shownOn(r, marks = []) {
 /** Whether a type is paint on its face with nothing standing there: it has
     no mesh, and it is below the types the loader stands on the stone. */
 export const paintsFace = (type) =>
-  !!shapes.skins && type < shapes.skins.shadow.from && !shapes.types[String(type)];
+  !!shapes.skins && type < shapes.skins.shadow.from && !typeModels(type).length;
 export const markerGroup = (m) =>
   m.face !== null
     ? paintsFace(m.type)
