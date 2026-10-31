@@ -2,13 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { most, packs, releases } from "./fixtures.js";
+import { mapData, most, packs, releases } from "./fixtures.js";
 
 const text = (path) =>
   readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
 const disc = text("docs/disc.md");
 const format = text("docs/level-format.md");
 const readme = text("README.md");
+const reasons = text("docs/annotations.md");
 const number = (s) => Number(s.replace(/,/g, ""));
 const rows = (pattern) => [...disc.matchAll(pattern)].map((m) => m.slice(1));
 // The US layout is packs.json, which its release file repeats.
@@ -68,4 +69,31 @@ test("the README's hourglass sentence gives each disc's figure as its rules make
     m.slice(1).map(figure),
     releases.map((r) => most(r.rules.hourglass)),
   );
+});
+
+test("annotations.md's line on the shorter levels with an hourglass counts them and scores a take as one starts by the US and PAL rules", () => {
+  const m =
+    /^The notes put that take on a level of the usual length, since (\d+) of the (\d+) levels with an hourglass run 99 seconds and the other (\d+) run (\d+) to (\d+), where a take as the level starts scores (\d+) down to (\d+) on the US disc and (\d+) down to (\d+) on the PAL disc\.$/m.exec(
+      reasons,
+    );
+  assert.ok(m, "annotations.md has no line on the lengths of the levels with an hourglass");
+  const withOne = mapData.levels.filter((l) =>
+    l.records.some((r) => r.on.some((o) => o.type === 35)),
+  );
+  const shorter = withOne.map((l) => l.time).filter((t) => t !== 99);
+  const [shortest, longest] = [Math.min(...shorter), Math.max(...shorter)];
+  const atStart = ({ clock, hourglass: h }, t) =>
+    h.points * Math.trunc((h.from - t * clock.fill) / h.second);
+  const [us, eu] = releases;
+  assert.deepEqual(m.slice(1).map(figure), [
+    withOne.length - shorter.length,
+    withOne.length,
+    shorter.length,
+    shortest,
+    longest,
+    atStart(us.rules, shortest),
+    atStart(us.rules, longest),
+    atStart(eu.rules, shortest),
+    atStart(eu.rules, longest),
+  ]);
 });

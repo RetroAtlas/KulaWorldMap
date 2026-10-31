@@ -1,9 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { drafted, frozen, stepUntil, textured, trackErrors } from "./helpers.js";
+import { readFileSync } from "node:fs";
+import { drafted, frame, frozen, stepUntil, textured, trackErrors } from "./helpers.js";
 import {
   DONE,
   TAKEN,
   about,
+  jumped,
   line,
   opened,
   pixelAt,
@@ -15,6 +17,15 @@ import {
   toggled,
   top,
 } from "./playhelpers.js";
+
+const read = (path) =>
+  JSON.parse(readFileSync(new URL(`../../public/${path}`, import.meta.url), "utf8"));
+const eu = read("releases/eu.json");
+const mapData = read("map_data.json");
+
+// LEVEL 6, which carries the game's first hourglass, under the PAL disc
+const LEVEL_6 = "/#HIRO/5/45,35/fit/33/d-eu";
+const SIX = mapData.levels.find((l) => l.pack === "/HIRO/HIRO.PAK" && l.index === 5);
 
 /** The red, green and blue the frame paints at a point of a block's top, with everything on
     that face taken off the record first. */
@@ -66,11 +77,23 @@ async function drawsThing(page, c, type) {
 }
 
 /** Tap Up and step the frozen level to the ball's rest on `block`, a second of frames the bound;
-    a tap stands until a frame reads the pad, so the first waits through the level's opening. */
+    a tap stands until a frame reads the pad, so the first waits through the level's opening: the
+    frames stepped. */
 const rolledTo = async (page, block, hz) => {
   await page.keyboard.press("ArrowUp");
   const run = await stepUntil(page, { block, moving: false }, hz);
   expect(run.at(-1).station).toMatchObject({ block, moving: false });
+  return run.length;
+};
+
+/** Tap `key` and step the frozen level to the quarter turn's rest, the line saying the ball faces
+    `heading`, a second of frames the bound: the frames stepped. */
+const turnedTo = async (page, key, heading, hz) => {
+  await page.keyboard.press(key);
+  const turn = await stepUntil(page, { line: `facing \\${heading}`, moving: false }, hz);
+  expect(turn.at(-1).station).toMatchObject({ heading, moving: false });
+  await expect(line(page)).toContainText(`facing ${heading}`);
+  return turn.length;
 };
 
 test("the ball takes the coin it rolls onto, which is gone from the frame, rolling onto the exit with the last key taken ends the level, and with Play on through the levels on Space goes on to LEVEL 2 with the total carried", async ({
@@ -90,13 +113,6 @@ test("the ball takes the coin it rolls onto, which is gone from the frame, rolli
   await expect(points).toHaveText("0 points");
   await expect(total).toHaveText("Total 0");
   expect(await drawsThing(page, coin, 37)).toBe(true);
-  // a tap of `key` is stepped to the quarter turn's rest, the line saying the ball faces `heading`
-  const turned = async (key, heading) => {
-    await page.keyboard.press(key);
-    const turn = await stepUntil(page, { line: `facing \\${heading}`, moving: false }, hz);
-    expect(turn.at(-1).station).toMatchObject({ heading, moving: false });
-    await expect(line(page)).toContainText(`facing ${heading}`);
-  };
   await rolledTo(page, [17, 17, 17], hz);
   await rolledTo(page, coin, hz);
   await expect(points).toHaveText("250 points");
@@ -108,14 +124,14 @@ test("the ball takes the coin it rolls onto, which is gone from the frame, rolli
   await page.mouse.move(over.x, over.y);
   await expect(page.locator("#tip")).toContainText(TAKEN);
   await page.mouse.move(2, 2);
-  await turned("ArrowRight", "+x");
+  await turnedTo(page, "ArrowRight", "+x", hz);
   for (const x of [18, 19, 20]) await rolledTo(page, [x, 15, 17], hz);
   await expect(keys).toHaveText("Keys 0");
   await expect(points).toHaveText("1250 points");
-  await turned("ArrowLeft", "-y");
+  await turnedTo(page, "ArrowLeft", "-y", hz);
   for (const y of [14, 13, 12]) await rolledTo(page, [20, y, 17], hz);
   await expect(points).toHaveText("1500 points");
-  await turned("ArrowLeft", "-x");
+  await turnedTo(page, "ArrowLeft", "-x", hz);
   for (const x of [19, 18]) await rolledTo(page, [x, 12, 17], hz);
   // the roll onto the open exit runs on through the exit's wait to the ending
   await page.keyboard.press("ArrowUp");
@@ -206,5 +222,44 @@ test("the hidden exit is unseen while a key remains and appears as the last key 
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   await expect(page.locator("#playKeys")).toHaveText(/\b0\b/);
   expect(await hiddenExitFills(page)).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
+
+test("under the PAL disc the hourglass on LEVEL 6 turns the clock round from that disc's count, and the HUD's points after it is taken read what that disc's rules give", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { motion: false, hash: LEVEL_6 });
+  await expect(page.locator('#release button[aria-pressed="true"]')).toHaveText("EU");
+  const { hz } = await table(page);
+  await frozen(page);
+  await startPlay(page);
+  const points = page.locator("#playPoints");
+  // the way from the start on the upper ring down to the lower floor and along it to the
+  // hourglass, each tap stepped to its rest and the game frames counted, since the clock ticks
+  // once a frame and the take reads it as its frame's tick left it
+  let frames = 0;
+  frames += await turnedTo(page, "ArrowLeft", "-x", hz);
+  frames += await rolledTo(page, [17, 20, 15], hz);
+  frames += await turnedTo(page, "ArrowRight", "-y", hz);
+  for (const y of [19, 18, 17]) frames += await rolledTo(page, [17, y, 15], hz);
+  await jumped(page);
+  frames += 1;
+  const landing = await stepUntil(page, { block: [17, 15, 17], moving: false }, 3 * hz);
+  expect(landing.at(-1).station).toMatchObject({ block: [17, 15, 17], face: 0, moving: false });
+  frames += landing.length;
+  frames += await turnedTo(page, "ArrowLeft", "-x", hz);
+  for (const x of [16, 15]) frames += await rolledTo(page, [x, 15, 17], hz);
+  const before = Number((await points.textContent()).replace(/\D/g, ""));
+  // the live region tells one sentence an animation frame, so the stop's goes through first
+  await frame(page);
+  await page.keyboard.press("ArrowUp");
+  const roll = await stepUntil(page, { say: "^The hourglass turns the clock round" }, hz);
+  expect(roll.at(-1).say).toMatch(/^The hourglass turns the clock round/);
+  frames += roll.length;
+  const clock = SIX.time * eu.rules.clock.fill - frames;
+  const left = eu.rules.hourglass.from - clock;
+  const scored = eu.rules.hourglass.points * Math.trunc(left / eu.rules.hourglass.second);
+  await expect(points).toHaveText(`${before + scored} points`);
   expect(errors).toEqual([]);
 });

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { objects, mapData, annotations } from "./fixtures.js";
+import { objects, mapData, annotations, releases, most } from "./fixtures.js";
 import { state } from "../../public/js/viewer/state.js";
 import { cellKey } from "../../public/js/format/lattice.js";
 import {
@@ -14,6 +14,7 @@ import {
 import { PAD, REST, blockUnder } from "../../public/js/play/ball.js";
 import { startRun, frame } from "../../public/js/play/rules.js";
 import { viewOf } from "../../public/js/play/world.js";
+import { contact } from "../../public/js/play/contact.js";
 
 setObjects(objects);
 setAnnotations(annotations);
@@ -236,6 +237,60 @@ test("the hourglass turns the clock round to 5999 less what it reads, and scores
     [play.clock.out],
     "and the next tick ends the level",
   );
+});
+
+test("under a release's rules the hourglass turns the clock round from that disc's count and scores that disc's points for every whole second it leaves: taken as a 99-second level opens it leaves 1049 ticks and scores 200 on the US disc, 49 and nothing on the PAL disc and 59 and nothing on the Japanese disc, whose start makes 7140 of the clock's 5940, taken with a tick left it scores 1190, 990 and nothing, and the type's own count and points stand where no rules are handed in", () => {
+  const l = level(row(10, 18), [start(), on(16, HOURGLASS)]);
+  const over = { cell: [17, 16, 17], face: TOP, h: UP };
+  const under = (rules) => startRun(l, index(l), { ...TABLES, rules }, circuits(), over);
+  // the contact walk over the run as it stands: the clock the hourglass leaves and what it scores
+  const took = (live) => {
+    const out = [];
+    contact(live, out);
+    const turned = out.find((e) => e.clock).clock;
+    const { points } = out.find((e) => e.took).took;
+    assert.equal(live.words.clock, turned.to);
+    assert.equal(live.words.score, points);
+    return { from: turned.from, left: turned.to, points };
+  };
+  const scored = ({ points, second }, left) =>
+    points === null ? 0 : points * Math.trunc(left / second);
+  const opened = releases.map((r) => took(under(r.rules)));
+  assert.deepEqual(
+    opened.map((t) => t.from),
+    releases.map((r) => r.rules.clock.default),
+    "the clock full as the level opens",
+  );
+  assert.deepEqual(
+    opened.map((t) => t.left),
+    [1049, 49, 59],
+  );
+  assert.deepEqual(
+    opened.map((t) => t.left),
+    releases.map((r) => r.rules.hourglass.from - r.rules.clock.default),
+  );
+  assert.deepEqual(
+    opened.map((t) => t.points),
+    [200, 0, 0],
+  );
+  assert.deepEqual(
+    opened.map((t) => t.points),
+    releases.map((r, i) => scored(r.rules.hourglass, opened[i].left)),
+  );
+  const late = releases.map((r) => {
+    const live = under(r.rules);
+    live.words.clock = 1;
+    return took(live).points;
+  });
+  assert.deepEqual(late, [1190, 990, 0]);
+  assert.deepEqual(
+    late,
+    releases.map((r) => most(r.rules.hourglass)),
+  );
+  const own = took(under(null));
+  const { clock, points } = take(HOURGLASS);
+  assert.equal(own.left, clock.from - 99 * play.clock.second);
+  assert.equal(own.points, points * Math.trunc(own.left / clock.second));
 });
 
 test("a pill sets the word its type keeps, which the next frame runs down, and the sunglasses score as they set theirs", () => {

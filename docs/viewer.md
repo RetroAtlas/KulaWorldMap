@@ -173,7 +173,7 @@ The PAL disc draws the arrow a little further along the way it points, and its j
 
 Play's clock follows the disc shown, filled as that disc's game fills it and shown as its HUD shows it, so a 99-second level opens at 83 on the US disc, whose clock runs 82.5 seconds, at 100 on the PAL disc, where it runs its 99, and at 120 on the Japanese disc, where every 99-second level runs 119; play's frame rate stays the US release's meanwhile, so a PAL level's seconds run down six for every five real ones until the executables are read.
 
-Meanwhile play's other rules, the hourglass among them, are the US release's whatever disc is chosen.
+Meanwhile play's other rules, how long a pill lasts among them, are the US release's whatever disc is chosen.
 
 ## Your levels
 
@@ -440,7 +440,7 @@ The ball rolls at the game's own pace, turns and tumbles over the game's own fra
 
 The ball takes what the game's ball takes: a coin, a gem, a key, the sunglasses, a fruit, the hourglass or a pill is gone from its face, its painted shadow with it, as the ball comes within reach of it, in the game's own burst of sparks, which lights the faces about it for a moment.
 
-The hourglass turns the clock round as it does in the game, leaving two minutes less what it had and scoring for each second it leaves.
+The hourglass turns the clock round as it does in the game on the disc shown, leaving a hundred seconds less what it had on the US and PAL discs and two minutes less on the Japanese disc, and scoring by what it leaves on the first two and nothing on the Japanese.
 
 A pill sets what it sets in the game.
 
@@ -736,7 +736,7 @@ A caller may place the ball at rest on any face, its ramp and its look gone, and
 
 The module has every count and threshold read from the motion table, the clock's fill from the rules of the disc shown, and no wall clock in it, so a run of pad words replays frame for frame.
 
-`js/play/contact.js` is that contact, pure too, the walk over the cells about the ball that takes a pickup within reach of its centre, each type by its own case, the key count and the last key's opening of the exits among them.
+`js/play/contact.js` is that contact, pure too, the walk over the cells about the ball that takes a pickup within reach of its centre, each type by its own case, the key count, the last key's opening of the exits and the hourglass's turn of the clock by the disc's rules among them.
 
 `js/play/hazards.js` is what that routine runs under and about the ball, pure too:
 

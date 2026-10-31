@@ -247,11 +247,17 @@ LEVEL 6 carries the game's first hourglass.
 
 The code turns the clock round and scores by what it leaves: the ball's contact walk at `0x80038548` sends it to its case at `0x80039048`, which writes 5999 less the clock back as the clock and adds 10 for every whole second of the new clock, 50 ticks each ([motion.md](motion.md)), so taken with s whole seconds left it leaves 119 − s seconds and scores 1190 − 10·s, 1190 with less than a second left, which is the most it can score and what the map counts each at.
 
-Play had put the rule at 1200 less twelve a second, rounded to the nearest 10, from a few counts; the code's rule is what the note gives.
+Play had put the rule at 1200 less twelve a second, rounded to the nearest 10, from a few counts; the code's rule is what the figures the note gives rest on.
 
 On the PAL disc the hourglass's case (`SCES_010.00`, `0x800398cc` to `0x8003994c`) writes 4999 less the clock back and adds the same 10 for every whole second of the new clock, 50 ticks each, so taken with s whole seconds left it leaves 99 − s seconds and scores 990 − 10·s, 990 with less than a second left, which is the most it can score there and what the map counts each at under that release.
 
 On the Japanese disc the hourglass's case (`SCPS_100.64`, `0x80039684` to `0x80039708`) writes 7199 less the clock back and never touches the score, so taken with s whole seconds left, 60 ticks each on that disc, it leaves 119 − s seconds and scores nothing, which is what the map counts each at under that release.
+
+Play turns and scores the hourglass by the rules of the disc shown as the level's clock stands, which the start fills by that disc's rules ([motion.md](motion.md)), so taken the moment a 99-second level starts it leaves 1049 ticks and scores 200 on the US disc, 49 ticks and nothing on the PAL disc, whose clock starts at the same 4950, and 59 ticks and nothing on the Japanese disc, whose start fills such a level's clock to 7140, and taken with a tick left it scores 1190, 990 and nothing.
+
+The notes count a take from the level's start rather than from the timer's reading, since the HUD shows one more than the whole seconds its clock holds, 83 as a 99-second level starts on the US disc and 100 on the PAL disc, never 99.
+
+The notes put that take on a level of the usual length, since 84 of the 92 levels with an hourglass run 99 seconds and the other 8 run 20 to 35, where a take as the level starts scores 990 down to 840 on the US disc and 790 down to 640 on the PAL disc.
 
 ### type 36: Gem
 

@@ -221,11 +221,11 @@
     "35": {
       "name": "Hourglass",
       "points": 1190,
-      "note": "Flips the timer, and scores more the less time is left when you take it. It scores 10 for every whole second the flipped timer shows, so 1190 with under a second left, and 200 if taken straight away with 99 left.",
+      "note": "Flips the timer, and scores more the less time is left when you take it. It scores 1190 at most, with the timer nearly out, and 200 if taken the moment a level of the usual length starts.",
       "releases": {
         "eu": {
           "points": 990,
-          "note": "Flips the timer, and scores more the less time is left when you take it. It scores 10 for every whole second the flipped timer shows, so 990 with under a second left, and nothing if taken straight away with 99 left."
+          "note": "Flips the timer, and scores more the less time is left when you take it. It scores 990 at most, with the timer nearly out, and nothing if taken the moment a level of the usual length starts."
         },
         "jp": {
           "points": 0,

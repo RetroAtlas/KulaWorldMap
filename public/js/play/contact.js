@@ -28,6 +28,11 @@ function placeOf(live, p) {
   return { at, form };
 }
 
+/** The count a thing that turns the clock turns it from and the seconds and points it scores by:
+    the release's rules' where they name the hourglass, else its type's own. */
+const glassOf = (t, rules) =>
+  rules?.hourglass ?? { from: t.clock.from, second: t.clock.second, points: t.points };
+
 function take(live, p, at, out) {
   const w = live.words;
   const { m, take: t } = p;
@@ -36,9 +41,13 @@ function take(live, p, at, out) {
   let points = p.points;
   let turned = null;
   if (t.clock) {
-    turned = { from: w.clock, to: t.clock.from - w.clock };
+    const glass = glassOf(t, live.tables.rules);
+    turned = { from: w.clock, to: glass.from - w.clock };
     w.clock = turned.to;
-    points = t.points * Math.trunc(w.clock / t.clock.second);
+    points =
+      glass.points === null || glass.second === null
+        ? 0
+        : glass.points * Math.trunc(w.clock / glass.second);
   }
   w.score += points;
   if (t.fruit) w.fruit |= t.fruit;

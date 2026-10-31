@@ -336,7 +336,13 @@ The table ships the two writes as the two types' `shut` and `opened`.
 
 **The hourglass turns the clock round and scores by what it leaves.** Its case takes the clock at `0x800a573c` from 5999, a tick short of the 6000 the breath takes the time against, and writes the difference back (`0x80039070`, `0x80039074`, `0x80039094`), so a clock at c ticks becomes 5999 − c, and adds 10 for every whole second of the new clock, 50 ticks each (`0x80039060`, `0x800390a8`, `0x800390c4`): taken at once on a 99-second level it leaves 20 seconds and scores 200, and taken with s whole seconds left it leaves 119 − s and scores 1190 − 10·s, 1190 with less than a second left.
 
+On the PAL disc the case takes the clock from 4999 (`SCES_010.00`, `0x800398f4`, `0x800398f8`, `0x80039918`) and adds the same 10 for every 50 ticks of what it leaves (`0x800398e4`, `0x8003992c`, `0x80039940`), so taken at once on a 99-second level it leaves 49 ticks and scores nothing, and taken with s whole seconds left it leaves 99 − s and scores 990 − 10·s, 990 at most.
+
+On the Japanese disc the case takes the clock from 7199 (`SCPS_100.64`, `0x800396bc`, `0x800396c0`, `0x800396c8`) and goes on from the clock's store to its call (`0x800396cc`) with nothing added to the score, so the hourglass scores nothing on that disc, and taken at once on a 99-second level, whose clock the start fills to 7140, it leaves 59 ticks.
+
 The table ships the 10, the 5999 and the 50 under the hourglass's `take`, and the 1190 [annotations.md](annotations.md) counts each at rests on them.
+
+Each release's rules carry the count its hourglass takes the clock from and the seconds and points it scores by, null where its case adds nothing, read off its own executable ([tools.md](tools.md)), and play turns and scores the hourglass by the rules of the disc shown, the table's count, seconds and points standing where none are to hand.
 
 **A pill or the sunglasses set a word the hazards routine runs down.** The level's load sets the four words to −1 (`0x80035de0` to `0x80035e00`).
 
@@ -378,7 +384,7 @@ The viewer takes what the ball rolls over as the game does:
 
 - On every frame the guard is off it walks the cells about the ball and takes a pickup whose place lies within its reach of the ball's centre, the place its block's centre moved along the face's normal by its stand, bobbing by the table's reach about it and, for type 42, circling at the table's radius, each on the angles the map hashes for the thing, since the game's angles are random, and without the ten the game's bob stands above its stand, which the table does not ship.
 - A key comes off the count and the last turns the exits' circuit over as the panel's button does.
-- The hourglass turns the clock round and scores by the arithmetic above, the division signed as the game's division is.
+- The hourglass turns the clock round and scores by the arithmetic above with the count, the seconds and the points of the disc shown, nothing where its case adds nothing, the division signed as the game's division is.
 - A pill or the sunglasses set the word the hazards run down, in the order of the routine, the sunglasses' word starting the blink as it runs out, in the table's spells, the first of them the table's shorter spell, and the flag standing while the word is not negative or a spell is on, which the frame draws every invisible face through ("The invisible block" below).
 - Type 42's green form is taken while its brown form is left for the captivators' case.
 
