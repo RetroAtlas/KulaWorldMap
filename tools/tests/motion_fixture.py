@@ -295,7 +295,7 @@ GAME = {
     "crumble.size": 512, "crumble.shrink": -26, "crumble.whole": 1, "crumble.broken": 2, "crumble.broken.seen": 2,
     "crumble.breaking": 3, "crumble.code.input": 96, "crumble.edge.hold": 301, "crumble.edge.back": 401,
     "crumble.edge.push": 40, "ride.kind": 5, "ride.body.off": 101, "ride.bias": 512, "ride.bias.back": -512,
-    "ride.bias.travel": -512, "ride.rumble": 70, "ride.beam": -2,
+    "ride.bias.travel": -512, "ride.rumble": 70, "ride.beam": -2, "platform.over": 60,
     "ride.face.x": 1, "ride.face.x.back": 4, "ride.face.y": 2, "ride.face.y.back": 3, "ride.face.z": 5,
     "ride.along.x": 1, "ride.along.x.back": 4, "ride.along.face.x.back": 4, "ride.along.y.from": -2, "ride.along.y.span": 2,
     "ride.along.face.y.from": -2, "ride.along.face.y.span": 2, "ride.along.z.back": 5, "ride.along.face.z.back": 5,

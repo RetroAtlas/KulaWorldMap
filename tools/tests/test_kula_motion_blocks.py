@@ -6,8 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_motion_blocks import blocks, standing  # noqa: E402
-from motion_fixture import GAME  # noqa: E402
+from kula_motion_blocks import DIVISORS, blocks, standing  # noqa: E402
+from motion_fixture import AT, GAME, code, lui, ori, sra  # noqa: E402
 
 
 class Blocks(unittest.TestCase):
@@ -32,6 +32,13 @@ class Blocks(unittest.TestCase):
                        {"ride.end.tolerance": 90}, {"ride.end.low": 256}, {"ride.end.high": 456}):
             with self.assertRaises(SystemExit):
                 blocks({**GAME, **change})
+
+
+class Platform(unittest.TestCase):
+    def test_the_speeds_divisor_is_read_off_the_loaders_reciprocal_and_shift(self):
+        row = next(row for row in DIVISORS if row[1] == "platform.over")
+        c = code(lui("a1", 0x8888), ori("a1", "a1", 0x8889), sra("v1", "v1", 5))
+        self.assertEqual(c.divisor(AT, row[4], AT + 4, row[6], AT + 8, row[8]), 60)
 
 
 class Standing(unittest.TestCase):

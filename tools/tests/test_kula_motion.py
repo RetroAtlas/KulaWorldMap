@@ -193,12 +193,15 @@ class Table(unittest.TestCase):
         last = (31, 32, 33, 34, 35, 37, 38, 42, 43, 44, 45, 46, 47, 51, 56)
         r["spin.order"] = {t: "zyx" if t in last else "xyz" for t in SPUN_AT}
         r["spin.quarter"] = 1024
-        t = table(r, 30)
+        t = table(r, 30, 60)
         self.assertEqual(t["hz"], 60)
         self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1,
                                            "ride": {"bias": 512, "rumble": 70,
                                                     "body": {"off": 100, "ends": 256}, "end": {"tolerance": 100}},
                                            "standing": 95})
+        fifty = table(r, 30, 50)
+        self.assertEqual((fifty["hz"], fifty["kinds"]["5"]["speed"]), (50, 25))
+        self.assertEqual(table({**r, "platform.over": 50}, 30, 60)["kinds"]["5"]["speed"], 30)
         self.assertEqual(t["kinds"]["3"]["light"]["far"], 512)
         self.assertEqual(t["glow"]["colours"]["9"], [[[25, 25, 0]] * 4])
         self.assertEqual(t["glow"]["every"], 19)
@@ -236,7 +239,7 @@ class Table(unittest.TestCase):
         self.assertNotIn("before", t["types"]["37"])
         self.assertNotIn("glint", t["types"]["37"])
         with self.assertRaises(SystemExit):
-            table({**r, "glint.model": 39}, 30)
+            table({**r, "glint.model": 39}, 30, 60)
         self.assertEqual(set(t["types"]["10"]["press"]), {"start", "full", "sink", "rise", "reach"})
         self.assertEqual(t["shadow"], {"half": 150})
         for k in ("50", "52", "53"):
@@ -251,7 +254,7 @@ class Table(unittest.TestCase):
         self.assertEqual({k for k, v in t["types"].items() if "shadow" in v},
                          {"30", "50", "51", "52", "53", "56"})
         with self.assertRaises(SystemExit):
-            table({**r, "shadow.sprite.51": 2}, 30)
+            table({**r, "shadow.sprite.51": 2}, 30, 60)
         self.assertEqual(set(t["types"]), {str(k) for k in
                                            (5, 7, 9, 10, 11, 26, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42,
                                             43, 44, 45, 46, 47, 50, 51, 52, 53, 56)})
@@ -309,7 +312,7 @@ class Lists(unittest.TestCase):
                *(f"screen.load.{name}" for name in ("wide", "high", "distance", "across", "down"))}
 
     def test_the_six_lists_hold_their_counts_and_every_check_is_an_address_an_instruction_and_a_sentence(self):
-        self.assertEqual([len(t) for t in (CHECKS, IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS)], [2241, 750, 67, 12, 7, 2])
+        self.assertEqual([len(t) for t in (CHECKS, IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS)], [2241, 750, 67, 13, 7, 2])
         self.assertEqual({tuple(type(x) for x in check) for check in CHECKS}, {(int, str, str)})
 
     def test_every_key_is_read_once_and_none_of_them_is_set_by_hand(self):

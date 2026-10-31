@@ -29,7 +29,7 @@ import kula_motion_take
 import kula_motion_things
 from kula_disc import BASE, EXE, open_disc
 from kula_motion_blocks import CRUMBLING, blocks, standing
-from kula_motion_code import BLOCK, GP_INIT, HZ, PHASES, TURN, Code, dispatch
+from kula_motion_code import BLOCK, GP_INIT, PHASES, TURN, Code, dispatch
 from kula_motion_effects import (EFFECT_HUD, EFFECT_POINTERS, EFFECT_TABLE, effect_places, effect_setup, effect_sine,
                                  effect_tables, effects)
 from kula_motion_harms import CLEARED, harms
@@ -43,6 +43,7 @@ from kula_motion_take import (END_CASES, END_FACES, LOADER_CASES, LOADER_PLAIN, 
                               TAKE_CASES, TAKE_TAIL, TAKE_TYPES, devices, exits, take)
 from kula_motion_things import (BUTTON_REACH, DICE_TIMES, LASER_LEVELS, QUARTER, QUARTERED, WORLD_AXES, laser,
                                 spin_orders)
+from kula_release import rules as release_rules
 
 # What has to be there for the numbers below to mean what the doc says.
 CHECKS = [
@@ -200,7 +201,7 @@ def readings(code):
     return out
 
 
-def table(r, platform_speed):
+def table(r, platform_speed, hz):
     """The motion table by type and by kind of block, in the game's units.
 
     A cycle is a frame program per phase, and the moving spikes say beside it
@@ -218,7 +219,7 @@ def table(r, platform_speed):
     colours, by world and then by circuit where it has one, sit apart from
     the types, whose entries are what moves, as do the effects a pickup or
     a teleport starts, their tables, their sprites' colours and the flash,
-    under `effects`.
+    under `effects`; the frames of a second ship as given.
     """
     bob = {"rate": r["coin.bob"], "reach": r["coin.bob.reach"]}
     fruit = {"turn": r["fruit.turn"],
@@ -310,7 +311,7 @@ def table(r, platform_speed):
         if "shadow" in entry and entry["shadow"]["sprite"] >= r["shadow.sprites"]:
             sys.exit(f"type {t}'s shadow is sprite {entry['shadow']['sprite']} of {r['shadow.sprites']}")
     kinds = {
-        5: {"speed": platform_speed * r["platform.scale"] // HZ, "dwell": r["platform.dwell"]},
+        5: {"speed": platform_speed * r["platform.scale"] // r["platform.over"], "dwell": r["platform.dwell"]},
         7: {"cycle": [[s for s, _ in vanish_cycle(r, p)] for p in range(PHASES)],
             "level": [[v for _, v in vanish_cycle(r, p)] for p in range(PHASES)]},
         3: {"light": light(r)},
@@ -327,7 +328,7 @@ def table(r, platform_speed):
     for k, word in standing(r).items():
         kinds.setdefault(k, {})["standing"] = word
     colours = {str(t): r["glow.colours"][t] for t in sorted(r["glow.colours"])}
-    return {"hz": HZ, "turn": TURN, "standoff": r["captivator.standoff"],
+    return {"hz": hz, "turn": TURN, "standoff": r["captivator.standoff"],
             "dice": {"seed": r["dice.seed"], "times": r["dice.times"], "plus": r["dice.plus"]},
             "shadow": {"half": r["shadow.half"]},
             "glow": {**r["glow"], "colours": colours},
@@ -341,7 +342,7 @@ def read(disc=None):
     return Code.of(BASE, open_disc(disc).read_file(EXE))
 
 
-def show_readings(code):
+def show_readings(code, hz):
     for addr, pattern, what in CHECKS:
         code.immediate(addr, pattern)
         print(f"  0x{addr:08x}  {what}")
@@ -418,7 +419,7 @@ def show_readings(code):
             print(f"\n{group}")
             last = group
         print(f"  0x{addr:08x}  {value:>6}  {what}")
-    print(f"\nangles are in {TURN}ths of a turn, units are {BLOCK} to a block, a frame is 1/{HZ} s")
+    print(f"\nangles are in {TURN}ths of a turn, units are {BLOCK} to a block, a frame is 1/{hz} s")
 
 
 def main():
@@ -429,10 +430,11 @@ def main():
                     help="the speed word the level data gives a moving platform")
     args = ap.parse_args()
     code = read(args.disc)
+    hz = release_rules(code, BASE)["hz"]
     if args.table:
-        print(json.dumps(table(readings(code), args.platform_speed), indent=1))
+        print(json.dumps(table(readings(code), args.platform_speed, hz), indent=1))
     else:
-        show_readings(code)
+        show_readings(code, hz)
 
 
 if __name__ == "__main__":

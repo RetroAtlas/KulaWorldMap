@@ -297,7 +297,7 @@ IMMEDIATES = [
      0x800333f8, "addiu $v0, $v0, {}"),
 ]
 MULTIPLIERS = [
-    ("moving platform", "platform.scale", "speed on the disc is scaled by this over sixty", 0x80032a60, 5, "v1", "v0"),
+    ("moving platform", "platform.scale", "speed on the disc is multiplied by this", 0x80032a60, 5, "v1", "v0"),
     ("the blocks under the ball", "crumble.edge.push",
      "the input routine sets a ball at a crumbling block's free edge back this far along its heading, units",
      0x800373cc, 4, "v0", "v1"),
@@ -306,7 +306,10 @@ MULTIPLIERS = [
     ("the blocks under the ball", "ride.end.block", "and the end landing's far end lies at the count times this", 0x800333f4, 1,
      "v0", "v0"),
 ]
-DIVISORS = []
+DIVISORS = [
+    ("moving platform", "platform.over", "and divided by this", 0x80032a4c, "lui $a1, {}", 0x80032a5c, "ori $a1, $a1, {}",
+     0x80032a84, "sra $v1, $v1, {}"),
+]
 GREYS = []
 SCANS = []
 

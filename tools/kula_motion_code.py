@@ -17,7 +17,6 @@ from mips import decode
 TURN = 4096          # the angle that is one full turn
 BLOCK = 512          # units across a block
 ONE = 4096           # a matrix's unit, 1.0 in the GTE's fixed point
-HZ = 60
 PHASES = 4           # the values a phase field takes
 
 CHECKS = [

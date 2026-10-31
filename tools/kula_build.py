@@ -356,7 +356,7 @@ def build_base(disc):
     }
     placed = {o["type"] for l in levels for r in l["records"] for o in r["on"]}
     r = readings(code)
-    motion = table(r, next(iter(read.speeds)))
+    motion = table(r, next(iter(read.speeds)), rules["hz"])
     if skins["copycat"] not in {l["pack"] for l in levels}:
         sys.exit(f"the skins name {skins['copycat']}, which is no pack on the disc")
     layout = layout_of(disc)
