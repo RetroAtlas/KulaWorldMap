@@ -20,6 +20,7 @@ from kula_build import (  # noqa: E402
     base_art,
     base_objects,
     code_of,
+    laid_out,
     layout_of,
     mesh_readings,
     other_release,
@@ -53,7 +54,7 @@ from kula_sector import USER, sectors_of  # noqa: E402
 from kula_skins import tint  # noqa: E402
 from kula_tex import OUT as TEX, SHARED, digest, mean  # noqa: E402
 from png import read_png  # noqa: E402
-from test_kula_ggi import EXITS, PLACED, READINGS, committed, ggi, quad  # noqa: E402
+from test_kula_ggi import ARROW, EXITS, PLACED, READINGS, committed, ggi, quad  # noqa: E402
 from tgi_fixture import BOTH, BRIGHT, PALETTES, atlases, tgi_blob, worlds  # noqa: E402
 
 
@@ -250,6 +251,18 @@ class TheObjects(unittest.TestCase):
         self.assertEqual(out["jump"], {"count": 4, "rows": rows})
         self.assertEqual(release_objects(ggi(), base, READINGS, sheet), {"readings": READINGS, "types": {}, "jump": {}})
 
+    def test_the_file_lays_each_model_on_a_line_of_its_own_and_reads_back_the_same(self):
+        base, sheet = committed(ggi(), set(PLACED))
+        g = ggi(types={7: [quad(7, dz=40), quad(9, dz=40)], 28: [ARROW]})
+        data = release_json("eu", {"hz": 50}, {"packs": []}, {}, release_objects(g, base, READINGS, sheet), {})
+        text = laid_out(data)
+        self.assertEqual(json.loads(text), data)
+        lines = [line.strip().rstrip(",") for line in text.splitlines()]
+        for m in data["objects"]["types"]["7"]:
+            self.assertIn(json.dumps(m, separators=(",", ":")), lines)
+        self.assertEqual(sum(line.startswith('{"box":') for line in lines), 2)
+        self.assertNotIn("\0", text)
+
 
 class ReleaseFile:
     """A release's committed file held to what the build writes for its disc."""
@@ -273,7 +286,7 @@ class ReleaseFile:
         return other_release(self.disc, self.release)[0]
 
     def test_the_committed_file_is_what_the_build_writes(self):
-        self.assertEqual(self.text, json.dumps(self.written(), indent=1))
+        self.assertEqual(self.text, laid_out(self.written()))
 
     def test_the_file_names_its_release_and_holds_its_discs_layout(self):
         entry = RELEASES[self.release]

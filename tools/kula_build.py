@@ -287,10 +287,25 @@ def other_release(disc, release):
     return release_json(release, rules, layout_of(disc), art, models, levels), read, pixels
 
 
+def laid_out(data):
+    """The release file's text, a space a level, but for the models of its
+    objects entry, each on a line as the base's objects file lays them, so a
+    rebuild diffs by model."""
+    models = []
+    types = {}
+    for t, lst in data["objects"]["types"].items():
+        types[t] = [f"\0{len(models) + i}\0" for i in range(len(lst))]
+        models.extend(lst)
+    text = json.dumps({**data, "objects": {**data["objects"], "types": types}}, indent=1)
+    for i, m in enumerate(models):
+        text = text.replace(json.dumps(f"\0{i}\0"), json.dumps(m, separators=(",", ":")))
+    return text
+
+
 def write_release(release, data):
     path = RELEASE_FILES[release]
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=1))
+    path.write_text(laid_out(data))
     return path
 
 
