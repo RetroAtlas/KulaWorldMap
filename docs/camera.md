@@ -30,6 +30,8 @@ Each copy reaches the coprocessor with its first row and its translation across 
 
 The words load as 4096 and 3840 and are put back to those as a level is left (`0x80041ba8`, `0x80020238` to `0x80020250`), so at rest the scene is drawn 15 of 16 as high as the coprocessor projects it, which is what a game authored for 256 lines does with 240 ([motion.md](motion.md)).
 
+On the PAL disc both words load as 4096 and are put back to it (`SCES_010.00`, `0x80020b10` to `0x80020b24`), and the pill's stretch takes its sine from 4096 as the scale down (`0x8002100c`), so that disc draws the scene as high as the coprocessor projects it; the Japanese disc keeps this disc's 3840 (`SCPS_100.64`, `0x8002570c`, `0x80021178`).
+
 The view routine reads the lethargy pill's word at 548 of the record, `0x800ba338` ([motion.md](motion.md)), and while it is positive (`0x80035268`, `0x8003531c`) rolls the view about its line of sight (`0x80035360`, `0x80035364`) by the sine of 64 times the word, taken modulo a turn (`0x80035324`, `0x80035334` to `0x80035340`, `0x8003533c`), rounded toward nothing and shifted down by 5 (`0x80035344`, `0x8003534c`, `0x80035358`): 128 either way at most, 11 degrees, a cycle every 32 passes as the word comes down by 2, over the 180 passes the word is positive, 6 s at the two-blank wait the pill brings.
 
 The hazards count the word down before the view reads it, so the roll's first angle is the sine at 64 times 360 and its last at 64 times 2. A positive angle tips the view's up to the left and turns the picture clockwise, since the routine scales the right and down rows by the cosine, takes the sine times the down row off the right row and adds the sine times the right row to the down row (`0x8006132c`, `0x800613bc`), so the first angle, 64 times 360 being five eighths of a turn round, tips the view's up to the right, 90 of 4096, 8 degrees.
@@ -108,6 +110,12 @@ A level opens in the viewer by the start's own words, the pad dead for 19 frames
 ## The free camera
 
 The routine that lays the curve, `0x80033e94`, measures the lattice too: the box round every cell it fills, the box's middle, and the distance from the middle to the furthest of them, plus 1200. While the ball's word at `0x800ba296` is set, which the Japanese release's Select button does and the cheat in [level-format.md](level-format.md) does on this one, `0x80034684` holds the eye that far from the box's middle and turns it with the pad. The level feeds this camera nothing either.
+
+The word is the ball's record plus 386 on every disc, the record standing at `0x800b9bbc` on the PAL disc and `0x800d2fa8` on the Japanese where the ball's routine takes it (`SCES_010.00`, `0x800370e4`; `SCPS_100.64`, `0x80036654`; here `0x80036888`), which puts the word at `0x800b9d3e` and `0x800d312a`, each tested where this disc's is (`0x80034bbc`, `0x800347e8`; here `0x80034360`); the cheats that set it on the first two discs are in [level-format.md](level-format.md).
+
+The Japanese input routine sets the word on a new press of Select outside the Simon rooms' mode, 1 in the game's mode word, at `0x8009f4ac` there ([motion.md](motion.md)), while the ball's state word at 408 reads −1, the rest state, and a halfword at `0x8009f068`, which the routine that starts an effect sets as it starts one of kind 3 and the effects' run clears at its head and sets again where an entry's word at 168 matches a word at `0x800a0824` whose meaning is not read, is at nothing (`SCPS_100.64`, `0x80037994` to `0x800379e4`; `0x80011970`, `0x800119c4`, `0x80011c28` to `0x80011c3c`), and clears it on another new press outside that mode (`0x8003780c` to `0x8003784c`), the level's start clearing it too (`0x800361d8`).
+
+The PAL input routine clears the word on a new press of Circle while it stands and sets it on no button (`SCES_010.00`, `0x80037a58` to `0x80037a7c`), and this disc's reads the word to gate the camera's keys and reads no button for it (`0x800371ec`).
 
 ## The view at an ending
 

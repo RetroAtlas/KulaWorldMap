@@ -16,9 +16,11 @@ Each pass waits once, at `0x80051d08`, for a flag that a callback installed thro
 
 Play bears out that the level's clock ticks once a pass: OBJ LEVEL's 99 seconds are 4950 passes, 82.5 s, and play counted 57 moves of a wandering ball in them, at 86 a move, where 99 seconds of sixtieths would have held 69; the HUD shows one more than the whole sixtieths the clock holds, 83 as a 99-second level starts, and draws its digits only from 50 down, which play on the US disc bears out, the figure fading in at 48 about 34 seconds after the camera settles behind the ball and the time running out about 82 seconds after it ("The level's clock and its end" below), while the 50-tick second is the hourglass's score alone ("What the ball takes" below).
 
-A cross-check comes from the level data: a moving platform's speed on the disc is 30 units a frame on all 37, and the loader at `0x80032a5c` scales it by 50/60 before use, which is what a game authored for a 50 Hz release does when it is built for 60. The rates that live in the code carry no such scaling, so on the PAL disc they may run at 50 a second or may have been retuned; this disc says nothing about that.
+A cross-check comes from the level data: a moving platform's speed on the disc is 30 units a frame on all 37, and the loader at `0x80032a5c` scales it by 50/60 before use, which is what a game authored for a 50 Hz release does when it is built for 60. The rates that live in the code carry no such scaling, and the other two executables show the PAL build retuned for fifty: its loader reads the speed back unscaled where the Japanese scales it as this one does ("The moving platform" below), and its pills last 300 and 700 frames where the Japanese keep this disc's 360 and 840 ("What the ball takes" below); what else it retunes is not read ("Not settled" below).
 
 Angles are in 4096ths of a turn, the unit the sine table at `0x8005fb58` takes; distances are in units of which a block is 512; and one word, `0x800a33d0`, gates every update below with a test against zero. It selects a second view the shipped game never draws: it is a data word that loads as 0 and is never written, so the gates are always open.
+
+A frame is a sixtieth of a second on this disc and the Japanese and a fiftieth on the PAL disc, by the video mode each executable's startup sets, NTSC on this disc and the Japanese (`0x8004e9fc`; `SCPS_100.64`, `0x80051e08`) and PAL on the PAL disc (`SCES_010.00`, `0x8004f7ac`), which the build ships as each release's `hz`.
 
 The table ships the frames of a second, sixty, as `hz` and the angle of a whole turn, 4096, as `turn`.
 
@@ -65,6 +67,8 @@ The block under the pointer and the selected block press a button too, each as t
 The ball at rest breathes. Its draw at `0x80031024` scales it by two matrices, one from a word at 700, which the level's load clears (`0x80035e34`) and a routine of the jump alone writes (`0x80032558` to `0x8003259c`), not read here, and one for an idle swell that never stops (`0x800325c0`): an angle steps by 40 a frame plus a fortieth of what the level's time is short of 6000 ticks, the time being kept in fiftieths of a second (`0x80035f90`), and the ball is drawn 200·sin of it wider across the face, in 4096ths, and twice that shorter along the normal, a landing's squash riding on the same word ("The ball's roll" below); the first matrix is wider by an amount taken from its word and shorter by the same (`0x8003138c` to `0x8003139c`).
 
 Both scale the ball about its centre, and the draw then moves the centre along the normal by the ball's radius of 100 times what the two have taken off its height (`0x800314c4`), so its underside stays on the face and its top alone rises and falls. On a level with 99 seconds that is a breath every 62 frames, just over a second, quickening to one every 22 as the clock runs down; the squash is applied after the ball's roll and before its face's orientation, so it is always along the face the ball stands on.
+
+On the PAL disc the breath takes the time against 5000 and a fortieth of the difference as here (`SCES_010.00`, `0x80032f10`, `0x80032f1c`), and on the Japanese disc against 7200 and a fiftieth of it (`SCPS_100.64`, `0x80032430`, `0x80032484`, `0x80032490`), each count a tick past the one that disc's hourglass takes the clock from ("What the ball takes" below), so a 99-second level's ball starts at a breath every 100 frames on either disc, 2 s on the PAL disc, and quickens to one every 25 frames there and every 22 on the Japanese as the clock runs down.
 
 ## The ball's moves
 
@@ -362,6 +366,8 @@ The sunglasses set `0x800ba334` to 840 (`0x80038924`, `0x8003892c`) and turn on 
 
 The table ships the four words as `lasts`, with the lethargy pill's step and ticks, the invincibility pill's step, the sunglasses' step and blink and the bouncy pill's hold and latch.
 
+On the PAL disc the lethargy pill sets its word to 300 and the other two pills and the sunglasses theirs to 700 (`SCES_010.00`, `0x80039050`, `0x800390d0`, `0x80039134`, `0x800391a8`), the frames of the same seconds at fifty a second, and the Japanese disc sets this disc's 360 and 840 (`SCPS_100.64`, `0x80038d94`, `0x80038e10`, `0x80038e70`, `0x80038edc`); play sets the table's words on every disc meanwhile ("Not settled" below).
+
 **The sunglasses' blink is 21 spells, off first and by turns, the first of 8 frames and every spell after of 9, and the flag stays off after the last.** The take calls `0x8002bec8` with 1 (`0x8003893c`, `0x80038940`), which clears a state word at `0x800a5e50` and sets the flag to 1 (`0x8002becc`, `0x8002bf38`, `0x8002bf44`); the hazards routine, finding the word at nothing, calls it with 0 (`0x8003b2d8`, `0x8003b2dc`), which marks the state an off spell's state, lays a count of 21 at `0x800a469c` and a timer of 9 at `0x800a46a0` and clears the flag (`0x8002bee8`, `0x8002beec`, `0x8002bef8`, `0x8002befc`, `0x8002bf08`, `0x8002bf14`), and then counts the word to −1 (`0x8003b2e8`, `0x8003b2ec`).
 
 The state, the count, the timer and the flag are each a store indexed by the word at `0x800a33d0` that gates every update ("The frame" above), four bytes a step (`0x8002bed4`, `0x8002bedc`), and the addresses here are the ones it selects at 0.
@@ -608,6 +614,10 @@ The laser's blocks are read as the game's lattice holds them: a beam's two ends 
 The start fills the clock with the level's time times 50 ([level-format.md](level-format.md)), 4950 for 99 seconds, 82.5 s of frames, and a flag at `0x800a53c4` tells the HUD the clock stands.
 
 The HUD multiplies the clock by the reciprocal of 60, shifts the product and adds 1 before it draws the digits (`0x8001e314`, `0x8001eb9c` to `0x8001ebbc`), so it reads 83 as a 99-second level starts and 1 as the clock runs out, never 0, and draws its digits only from 50 down, which play on the US disc bears out ("The frame" above); the 50-tick second is the hourglass's score alone ("What the ball takes" above).
+
+The PAL start fills the clock with the level's time times 50, and with 4950 where the level has no trailer, as the US start does (`SCES_010.00`, `0x800367e8`, `0x80036800`), and its HUD shows the clock in seconds of 50 ticks and one more than the whole of them (`0x8001ebf0`, `0x8001f47c` to `0x8001f494`), so a 99-second level lasts its 99 seconds on that disc and reads 100 as it starts.
+
+The Japanese start fills the clock with the level's time times 60, and with 7140 where the level has no trailer (`SCPS_100.64`, `0x800362e4`, `0x800362f4`), then makes a clock of exactly 5940 into 7140 (`0x80036308`, `0x80036310`), so every 99-second level lasts 119 seconds on that disc, and its HUD shows sixtieths and one more as the US one does (`0x8001eeec`, `0x8001f660` to `0x8001f67c`), 120 as such a level starts.
 
 **A level ends in the outcome word, positive for a way out and negative for a loss.** Most endings are first written into the ball's record at 540 with a wait at 370; the ball's routine counts the wait down, holding the pad and the requests off meanwhile (`0x800363f8` to `0x80036428`), and as it runs out copies the ending to the result at `0x800a4c9c` (`0x800364a8`, `0x800364c8`), a store indexed by the word at `0x800a33d0` that gates every update ("The frame" above), from where it becomes the outcome: a result of 1 only where the word at `0x800a33cc` is 1 or both results, at `0x800a4c9c` and `0x800a4ca0`, are 1 (`0x800365ec` to `0x80036628`), and any other straight in (`0x80036630`, `0x8003663c`).
 
@@ -995,6 +1005,8 @@ Kind 5's record is read three ways at once. Its `type` is the direction it is tr
 
 The routine at `0x80032af4` takes one off the dwell where it is not nothing, plays sound 107 where the dwell then stands at 1, and where it stands at nothing moves the position by the speed along the direction (`0x80032b50` to `0x80032be8`), dispatching on the direction through `0x80010158`; on reaching or passing the far end it reverses the direction (1 and 4, 2 and 3, 0 and 5 swap) and, after that frame's move, flips the end word and sets the dwell to 48 (`0x80032e48` to `0x80032e88`), so the platform stands still for the 47 frames after the one it arrives on, 0.78 s, plays sound 107 on the last of them and moves on the 48th. **At load the dwell is zeroed and the speed becomes 30 × 50 / 60 = 25**, 1500 units a second, a block in a third of a second (`0x8003278c`).
 
+The PAL loader zeroes the dwell and writes the speed back as the disc holds it (`SCES_010.00`, `0x800332e4` to `0x800332ec`), 30 a frame at fifty frames a second, the same 1500 units a second, and the Japanese loader scales it by 50/60 as this disc's does (`SCPS_100.64`, `0x80032f10` to `0x80032f54`).
+
 The record's faces are drawn at that position, one block after another the positive way along `f2`'s axis, by `0x8002b26c`, and the map lays the blocks so with the Motion switch on or off.
 
 The viewer runs the platform under the ball by the walker the map draws it by: the ball rides it from a landing on its body or against its end ("The blocks under the ball" above), is carried as the position words move, reverses with it at the run's ends and rides on through the dwell, and leaves it by a jump or a hop alone.
@@ -1203,11 +1215,11 @@ It paints the shadow under a pickup only while the pickup is drawn, so the face 
 
 Which of the two tangents a pill flips about and a fruit tilts about rests on the naming of the model's axes in [ggi.md](ggi.md) and on RotMatrix's order; a pill in play flips the way the map does.
 
-The PAL release runs at fifty frames a second and the Japanese at sixty, by the video mode each executable's startup sets (`SCES_010.00`, `0x8004f7ac`; `SCPS_100.64`, `0x80051e08`), which the build ships as each release's `hz`; what else the PAL code retunes for its rate is not read, so play's frame rate and every per-frame count are the US release's on every disc meanwhile, and under the PAL disc play ticks the clock sixty times a real second where that disc's frames come fifty to the second, so its seconds run down six for every five real ones.
+What else the PAL and Japanese executables change in play is not read, beyond the clock, the hourglass, the pills, the platform's speed and the breath above, the fast star below, and the view's scale and the free camera in [camera.md](camera.md).
 
-The PAL start fills the clock with the level's time times 50, and with 4950 where the level has no trailer, as the US start does (`SCES_010.00`, `0x800367e8`, `0x80036800`), and its HUD shows the clock in seconds of 50 ticks and one more than the whole of them (`0x8001ebf0`, `0x8001f47c` to `0x8001f494`), so a 99-second level lasts its 99 seconds on that disc and reads 100 as it starts.
+In play every rate and count but the clock's and the hourglass's is the US executable's on every disc until the readers are generalised, the pills' frames, the platform's speed and the breath among them, so under the PAL disc play runs sixty frames a real second where that disc's come fifty, and its clock's seconds run down six for every five real ones.
 
-The Japanese start fills the clock with the level's time times 60, and with 7140 where the level has no trailer (`SCPS_100.64`, `0x800362e4`, `0x800362f4`), then makes a clock of exactly 5940 into 7140 (`0x80036308`, `0x80036310`), so every 99-second level lasts 119 seconds on that disc, and its HUD shows sixtieths and one more as the US one does (`0x8001eeec`, `0x8001f660` to `0x8001f67c`), 120 as such a level starts.
+The end screen's words are read off this disc's table alone: whether the PAL disc's images differ as data is not read, and the Japanese disc's, in Japanese and with a Perfect! pair among them, are not transcribed.
 
 The laser's beam was not looked at for a pulse.
 
@@ -1238,6 +1250,8 @@ What the fruit takes 200 off, a word by the world at `0x800a5584` that the level
 The third of the three words the loop runs the ending's routine on, at `0x800a57f8`, is not read for what it means ("The level's clock and its end" above).
 
 A ball standing on a face whose slot is type 52, with the jump asked and the roll not, scores 5 a frame (`0x8003aaf8` to `0x8003ab3c`), which no level is known to reach.
+
+The PAL hazards routine carries the same case (`SCES_010.00`, `0x8003b368` to `0x8003b3b8`) and the Japanese none, no test of type 52 standing in its routine (`SCPS_100.64`, `0x8003aeb0` to `0x8003b950`), which runs straight from the call this disc's makes before the case to the test of the block's kind it makes after it (`0x8003b05c`, `0x8003b064`; here `0x8003aae0`, `0x8003ab40`), so the 5 a frame is not scored on that disc.
 
 How the finals are reached, by the flag at `0x800a3454`, which one routine writes from a table and another sets to 1 (`0x800462c8`, `0x8004910c`), and what the word at `0x800a33f4` marks, on which the points routine skips its banking and the next-level routine returns, are not read.
 
