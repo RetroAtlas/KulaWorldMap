@@ -177,7 +177,7 @@ class TheComparison(unittest.TestCase):
                          ({"hz": 50}, {"room": {}, "packs": []}, art, {"/HIRO/HIRO.PAK#0": {}}))
 
 
-SHADE = [1, 1, 2, 0, 1, 1]
+SHADE = [1, 0, 2, 0, 2, 0]    # the top face alone in its shade
 STONES = [[0], [1]]
 US_WORLDS = worlds(A=PALETTES, B=PALETTES)
 ATLASES = atlases(US_WORLDS)
