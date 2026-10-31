@@ -23,9 +23,11 @@ PALETTES = {
     # fourteen greys
     7: [0x8000 | ((v // 19 + 10) * 0x421) for v in range(256)],
 }
-# palette sets another release might ship: the bright shade's row repainted, and the middle one's with it
+# palette sets another release might ship: the bright shade's row repainted, the middle one's with it,
+# and the bright one's repainted another way
 BRIGHT = {**PALETTES, 7: PALETTES[5]}
 BOTH = {**BRIGHT, 6: PALETTES[7]}
+OTHER = {**PALETTES, 7: PALETTES[6]}
 
 
 def upload(x, y, w, h, words):

@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import kula_tgi as tgi  # noqa: E402
 from kula_tex import SHADES, SHARED, SIZE, atlas, cells, cut, digest, mean, sheets  # noqa: E402
-from tgi_fixture import BOTH, BRIGHT, PALETTES, PIXELS, ROWS, atlases, texture, tgi_blob, worlds  # noqa: E402
+from tgi_fixture import BOTH, BRIGHT, OTHER, PALETTES, PIXELS, ROWS, atlases, texture, tgi_blob, worlds  # noqa: E402
 
 
 def opaque(sheet):
@@ -95,6 +95,13 @@ class TheSheets(unittest.TestCase):
         order, pixels = sheets(worlds(A=BOTH, B=BRIGHT), BASE)
         self.assertEqual(opaque(pixels["A"]), {(0, 1), (1, 1)})
         self.assertEqual(pixels["A"][3], 2)
+
+    def test_a_cell_that_differs_another_way_in_each_world_goes_on_each_worlds_own_sheet(self):
+        order, pixels = sheets(worlds(A=BRIGHT, B=OTHER), BASE)
+        self.assertEqual(order, {"A": ["A"], "B": ["B"]})
+        self.assertNotIn(SHARED, pixels)
+        self.assertEqual(opaque(pixels["A"]), {(0, 2), (1, 2)})
+        self.assertEqual(opaque(pixels["B"]), {(0, 2), (1, 2)})
 
     def test_a_release_atlas_of_another_texture_count_is_refused(self):
         with self.assertRaises(SystemExit):
