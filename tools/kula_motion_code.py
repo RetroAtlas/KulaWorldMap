@@ -215,7 +215,8 @@ class Map:
 
     def place(self, addr, pattern):
         """Where a reading at the base's instruction is read on the release and by what: a keyed row's own pattern, a
-        registered constant's, a check row's text, or the pattern given where the map keeps none."""
+        registered constant's, a check row's text where the pattern given has no blank to read, or else the pattern
+        given."""
         row = self.absent(addr)
         if row is not None:
             sys.exit(f"0x{addr:08x} has no instruction on {self.release}: `{row['text']}` stands at {row['at']} where "
@@ -223,7 +224,9 @@ class Map:
         at, kept = self.lookup(addr) or (None, None)
         if at is None:
             sys.exit(f"the {self.release} map has no row for 0x{addr:08x}")
-        return at, pattern if kept is None else kept
+        if kept is None or (pattern is not None and "{}" in pattern and "{}" not in kept):
+            return at, pattern
+        return at, kept
 
     def halves(self, parts):
         """The addresses and patterns of a reading held in two or three instructions, each at its place: through the

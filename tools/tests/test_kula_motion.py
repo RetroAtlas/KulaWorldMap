@@ -218,6 +218,14 @@ class Mapped(unittest.TestCase):
         self.assertEqual(mapped(word, rows=rows, names={"QUARTER": [hexed(AT + SHIFT), pattern]}).immediate(us, pattern), 1024)
         self.assertIsNone(mapped(word, rows=rows, names={}).immediate(us, "addiu $a0, $zero, 1024"))
 
+    def test_a_check_row_at_a_registered_instructions_place_with_no_pattern_is_read_through_the_readers_own(self):
+        us, routine = SPUN_AT[50], 0x80060a38
+        word = jal(routine)
+        rows = ((hexed(us), {"at": hexed(AT + SHIFT), "word": hexed(word), "text": f"jal 0x{routine:08x}", "tier": "strict10"}),)
+        c = mapped(word, rows=rows, names={"SPUN_AT": {str(t): hexed(AT + SHIFT) for t in SPUN_AT}})
+        self.assertEqual(c.immediate(us, "jal {}"), routine)
+        self.assertIsNone(c.immediate(us, f"jal 0x{routine:08x}"))
+
     def test_a_multiplier_is_read_with_its_rows_count_and_registers(self):
         self.assertEqual(mapped(*WORDS).multiplier(AT + 8, 2, "a0", "a0"), 6)
 

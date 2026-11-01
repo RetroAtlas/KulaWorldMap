@@ -101,6 +101,18 @@ class Maps(unittest.TestCase):
                             if f"0x{us:08x}" in data["rows"]:
                                 self.assertIsNotNone(code.immediate(us, pattern))
 
+    def test_a_registered_instruction_the_map_keeps_no_pattern_for_is_read_by_the_readers_own_whatever_row_stands_there(self):
+        for release, data in COMMITTED.items():
+            code = Code.of(release, bytes(laid(release, data)), Map(data))
+            for name, (kind, value) in registry().items():
+                if kind != "instruction":
+                    continue
+                for us, at in beside(kind, value, data["names"][name]):
+                    with self.subTest(release=release, name=name, us=f"0x{us:08x}"):
+                        placed, pattern = code.place(us, "{}")
+                        self.assertEqual(placed, unhex(at))
+                        self.assertIn("{}", pattern)
+
     def test_an_absent_row_reads_none_through_every_reader_once_the_instruction_it_names_stands_there(self):
         for release, data in COMMITTED.items():
             code = Code.of(release, bytes(laid(release, data)), Map(data))
