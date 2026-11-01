@@ -642,12 +642,13 @@ def roll(r):
     lands, each number held against the others: the one top speed wherever
     the roll takes it, the arc ending where the ball rests off a face, the
     view's ramps each running their count of steps to within a step of a
-    quarter turn, or to it exactly, the last frame snapping the rest, and
-    every gate one past the value it gates."""
+    quarter turn round an edge and by the quarter turn over their frames,
+    cut toward nothing, in a turn and up a wall, the last frame snapping the
+    rest, and every gate one past the value it gates."""
     if len({r["roll.top"], r["roll.top.gate"], r["land.speed"], r["land.short.speed"], r["fall.spin.top"]}) != 1 \
             or r["fall.spin.top.gate"] != r["roll.top"] + 1:
         sys.exit("the roll's top speed is not one speed wherever it is taken")
-    if r["roll.gain"] != r["fall.spin.gain"] or r["roll.gain"] != r["fall.back"]:
+    if r["roll.gain"] != r["fall.back"]:
         sys.exit("the roll's speed does not grow and decay by one step")
     if r["roll.fall"] != r["roll.fall.rest"]:
         sys.exit("a fall from rest does not start as one from a roll")
@@ -663,11 +664,12 @@ def roll(r):
         sys.exit("a landing does not look a radius under the centre")
     quarter = TURN // 4
     if r["turn.frames"] != r["turn.frames.right"] or r["turn.step"] != -r["turn.step.right"] \
-            or not 0 < quarter - r["turn.frames"] * r["turn.step"] <= r["turn.step"]:
-        sys.exit("a turn's yaw does not come within a step of a quarter turn")
-    if not 0 < quarter - r["wrap.frames"] * r["wrap.step"] <= r["wrap.step"] \
-            or r["climb.frames"] * r["climb.step"] != -quarter:
-        sys.exit("a face change's pitch does not come to a quarter turn")
+            or r["turn.step"] != quarter // r["turn.frames"]:
+        sys.exit("a turn's yaw does not step by the quarter turn over its frames")
+    if not 0 < quarter - r["wrap.frames"] * r["wrap.step"] <= r["wrap.step"]:
+        sys.exit("an edge's pitch does not come within a step of a quarter turn")
+    if r["climb.step"] != -(quarter // r["climb.frames"]):
+        sys.exit("a wall's pitch does not step by the quarter turn over its frames")
     if r["spin"] != r["spin.rest"]:
         sys.exit("the body spins otherwise in the air than on a face")
     for key in ("frames", "rise", "fall"):

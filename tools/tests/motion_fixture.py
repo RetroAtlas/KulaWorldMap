@@ -1,4 +1,5 @@
-"""What the motion reader's tests share: instruction builders, an executable of a few words and the game's numbers."""
+"""What the motion reader's tests share: instruction builders, an executable of a few words and the game's numbers, the
+base executable's and the PAL executable's where they differ."""
 
 import struct
 import sys
@@ -7,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
-from kula_motion_code import Code, registry  # noqa: E402
+from kula_motion_code import Code, Map, registry  # noqa: E402
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "gp": 28, "sp": 29, "ra": 31}
@@ -311,10 +312,65 @@ GAME = {
     "names": {name: value for name, (_, value) in registry().items()},
 }
 
+# The PAL executable's readings where they differ from the base's, None for one it has no instruction for, and its map's places.
+EU = {
+    "spikes.phase.step": 29, "spikes.phase.down": 52, "spikes.phase.held": 80, "spikes.phase.retracting": 116,
+    "spikes.phase.down.from": 52, "spikes.phase.held.from": 80, "spikes.phase.retracting.from": 116,
+    "spikes.down": 52, "spikes.rise": 4, "spikes.rattle": 12, "spikes.hold": 12, "spikes.retract": 36, "spikes.harmless": 9,
+    "vanish.phase.step": 47, "vanish.phase.absent.from": 76, "vanish.phase.solid.from": 164, "vanish.absent": 76,
+    "vanish.in": 8, "vanish.settle": 4, "vanish.solid": 76, "vanish.dim": 8, "vanish.out": 16, "vanish.in.over": 8,
+    "vanish.in.by": None, "vanish.settle.scale": 56, "vanish.settle.by": None, "vanish.dim.scale": 28, "vanish.dim.by": None,
+    "vanish.out.by": None,
+    "roll.gain": 7, "roll.top.gate": 40, "roll.top": 40, "turn.frames": 16, "turn.step": 64, "turn.frames.right": 16,
+    "turn.step.right": -64, "wrap.frames": 11, "wrap.step": 93, "climb.frames": 14, "climb.step": -73,
+    "fall.gain": -6, "fall.top.gate": -79, "fall.top": -80, "fall.hop": None, "fall.spin.top.gate": 41, "fall.spin.top": 40,
+    "fall.back": 7, "land.speed": 40, "land.short.speed": 40, "land.thud": -80, "spin": -6, "spin.rest": -6,
+    "look.held": 26, "look.up": 26, "jump.speed": 40, "jump.skip": None, "hop.skip": None,
+    "ball.breathe.full": 5000, "hourglass.from": 4999, "pill.lethargy": 300, "pill.invincible": 700, "pill.bouncy": 700,
+    "pill.bouncy.hold": 699, "sunglasses.word": 700, "sunglasses.blink": 8, "sunglasses.blink.on": 8,
+    "sunglasses.blink.off": 8,
+    "gp": 0x800a29e0, "record": 0x800b9bbc, "glow.counter.at": 6172, "glow.clear": [0x800a3cb0, 0x800fa790],
+    "screen.idle.step": 128, "screen.wane": -6, "screen.step": 256, "screen.rest.down": 4096, "screen.reset.down": 4096,
+    "screen.load.high": 256, "screen.load.down": 4096,
+    "crumble.shrink": -32, "platform.over": None,
+    "end.view.x": -10, "end.view.y": 4, "end.view.z": 13, "end.view.swing": 15, "end.view.swing.bonus": 70,
+    "mode.at": 9600, "mode.word": 0x800a4f60, "game.mode.word": 0x800a2e48,
+    "next.mode.clears": [0x80048a50, 0x8004b554, 0x8004bd64],
+    "words.slow.gate": 1001, "words.allowance": 50,
+    "words": {**GAME["words"], 12: "Final Completed!", 32: "Draw!"},
+    "flight.first": 16, "flight.slow.gate": 881,
+    "simon.store": 0x800d74d0, "simon.fill.from": 0x800d7cce,
+    "glint.at": 0x800dd760, "glint.frame.at": 0x800dd760,
+    "teleport.flash.from": 272, "teleport.flash.from.1": 264, "teleport.flash.from.last": 256,
+    "teleport.flash.level.from": 256, "teleport.flash.step": -24, "teleport.flash.step.1": -16,
+    "teleport.flash.step.last": -8,
+    "effect.pointers": [0x80098954, 0x80098cd8, 0x80099758, 0x800991b0, 0x80098edc, 0x80098edc, 0x80099758, 0x80099758,
+                        0x800999fc, 0x800994c4, 0x80098edc, 0],
+    "effect.tables": {
+        0x80098954: {"count": 2, "frames": 2, "rows": [[[6, 0, 1596, 128], [0, 0, 96, 128]],
+                                                        [[6, 100, 1596, 128], [0, 100, 186, 128]]]},
+        0x80098cd8: {"count": 2, "frames": 1, "rows": [[[0, 0, 0, 200], [1, 3070, 4000, 128]]]},
+        0x80099758: {"count": 2, "frames": 2, "rows": [[[5, 0, 0, 0], [6, 0, 3096, 0]],
+                                                        [[5, 3696, 240, 42], [6, 3996, 3096, 20]]]},
+        0x800991b0: {"count": 2, "frames": 2, "rows": [[[0, 0, 0, 128], [3, 0, 0, 0]],
+                                                        [[4, -1, -3373, 0], [3, 667, 833, 206]]]},
+        0x80098edc: {"count": 2, "frames": 2, "rows": [[[0, 0, 4096, 0], [1, -1, 3096, 0]],
+                                                        [[0, 0, 4096, 28], [1, 152, 3186, 0]]]},
+        0x800999fc: {"count": 2, "frames": 1, "rows": [[[0, 0, 0, 128], [2, 0, 0, 0]]]},
+        0x800994c4: {"count": 2, "frames": 2, "rows": [[[6, -1, 0, 255], [2, 0, 4330, 90]],
+                                                        [[6, 3628, 1353, 248], [2, 0, 4405, 83]]]}},
+    "effect.sine.at": 0x8009be18,
+    "effect.hud.at": {"clock": [160, 26, -1], "teleport": [160, 180, -1],
+                      "fruit": [[208, 233, -1], [228, 232, -1], [253, 232, -1], [278, 232, -1], [299, 234, -1]]},
+    "effect.table.at": [0x800d2668, 0x800d2668, 0x800d2668],
+    "names": Code(b"", map=Map.load("eu")).names(),
+}
+GAME_EU = {**GAME, **EU}
+
 
 def rise_at(seq):
     """Where the spikes leave the ground: the frame after the last flat one."""
-    return next(i for i in range(len(seq)) if seq[i - 1] == 0 and seq[i] == 6)
+    return next(i for i in range(len(seq)) if seq[i - 1] == 0 and seq[i] != 0)
 
 
 def runs(seq):

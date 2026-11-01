@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_motion_effects import effect_init, effect_tables, effects  # noqa: E402
-from motion_fixture import AT, GAME, addiu, code, lui, lw, sb, sw  # noqa: E402
+from motion_fixture import AT, GAME, GAME_EU, addiu, code, lui, lw, sb, sw  # noqa: E402
 
 
 class Effects(unittest.TestCase):
@@ -56,6 +56,20 @@ class Effects(unittest.TestCase):
         self.assertEqual(len(range(254 - 6, 0, -6)), 42)
         self.assertEqual({k: e[k] for k in ("most", "particles", "near", "light")},
                          {"most": 16, "particles": 2, "near": 121, "light": {"over": 512}})
+
+    def test_on_the_pal_executable_the_effects_ship_its_tables_its_hud_points_and_its_flash(self):
+        e, base = effects(GAME_EU), effects(GAME)
+        same = ("sprites", "size", "kinds", "starts", "teleport", "most", "particles", "near", "light")
+        self.assertEqual({k: e[k] for k in same}, {k: base[k] for k in same})
+        self.assertEqual(set(e["tables"]), set(base["tables"]))
+        self.assertEqual(e["tables"]["2"], {"frames": 2, "rows": GAME_EU["effect.tables"][0x80099758]["rows"]})
+        self.assertEqual(e["hud"], {"clock": [160, 26], "teleport": [160, 180], "key": [6, 11],
+                                    "fruit": [[208, 233], [228, 232], [253, 232], [278, 232], [299, 234]]})
+        self.assertEqual(e["flash"], {"blend": 1, "teleport": {"from": 272, "step": 24, "blanks": 2},
+                                      "bonus": {"from": 256, "step": 8}})
+        # the flash shows on 11 passes, from 248 down to 8, and a level with no key opens from white over 31
+        self.assertEqual(len(range(272 - 24, 0, -24)), 11)
+        self.assertEqual(len(range(256 - 8, 0, -8)), 31)
 
     def test_an_effect_word_otherwise_stops_the_reading(self):
         tables, at = GAME["effect.tables"], GAME["effect.hud.at"]

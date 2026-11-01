@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion_code import Code  # noqa: E402
 from kula_motion_roll import STATES, body, moves, roll  # noqa: E402
-from motion_fixture import GAME  # noqa: E402
+from motion_fixture import GAME, GAME_EU  # noqa: E402
 
 
 class Moves(unittest.TestCase):
@@ -26,7 +26,8 @@ class Moves(unittest.TestCase):
         return Code(bytes(blob))
 
     def test_the_moves_hold_together_at_the_middle_the_wall_and_the_edge(self):
-        moves(self.states(), GAME)
+        for game in (GAME, GAME_EU):
+            moves(self.states(), game)
 
     def test_a_state_sent_elsewhere_stops_the_reading(self):
         words = list(self.STATES)
@@ -51,28 +52,44 @@ class Moves(unittest.TestCase):
 
 
 class Roll(unittest.TestCase):
-    def test_the_roll_ships_one_top_speed_and_an_arc_that_ends_a_radius_off_the_new_face(self):
-        r = roll(GAME)
-        self.assertEqual(r["rolling"], {"gain": 6, "top": 33, "middle": 256, "wrap": 512, "climb": 413, "touch": 412,
-                                     "resume": 100, "recentre": 8, "repeat": 6, "over": [101, 427]})
-        self.assertEqual(r["wrap"]["arc"], [[38, 8], [32, 22], [22, 32], [8, 39]])
-        self.assertEqual(sum(n for n, _ in r["wrap"]["arc"]), r["rolling"]["resume"])
-        self.assertEqual(sum(h for _, h in r["wrap"]["arc"]), r["rolling"]["resume"] + 1)
-        self.assertEqual((r["quarter"], r["climb"]), ({"frames": 19, "step": 53, "clamp": 10}, {"frames": 16, "step": -64}))
-        self.assertEqual(r["fall"]["lost"], [-2, 36])
-        self.assertEqual((r["fall"]["wall"], r["fall"]["behind"], r["fall"]["hold"]), (409, 103, [411, 102]))
-        self.assertEqual((r["spin"], r["squash"]["least"], r["look"]["far"]), (-5, 20, 650))
+    # a release's roll: its gain, top speed, fall's top, spin and hop, then the turn's, the edge's and the wall's ramps
+    SHIPPED = {
+        "us": ((6, 33, -66, -5, -30), ({"frames": 19, "step": 53, "clamp": 10}, [13, 78], {"frames": 16, "step": -64})),
+        "eu": ((7, 40, -80, -6, None), ({"frames": 16, "step": 64, "clamp": 10}, [11, 93], {"frames": 14, "step": -73})),
+    }
 
-    def test_a_top_speed_taken_otherwise_at_a_landing_stops_the_reading(self):
-        for change in ({"land.speed": 30}, {"land.short.speed": 30}, {"roll.top.gate": 34}, {"fall.spin.top": 32}):
-            with self.assertRaises(SystemExit):
-                roll({**GAME, **change})
+    def test_the_roll_ships_one_top_speed_and_an_arc_that_ends_a_radius_off_the_new_face(self):
+        for game, (speeds, ramps) in ((GAME, self.SHIPPED["us"]), (GAME_EU, self.SHIPPED["eu"])):
+            gain, top, fall, spin, hop = speeds
+            quarter, wrap, climb = ramps
+            with self.subTest(top=top):
+                r = roll(game)
+                self.assertEqual(r["rolling"], {"gain": gain, "top": top, "middle": 256, "wrap": 512, "climb": 413,
+                                                "touch": 412, "resume": 100, "recentre": 8, "repeat": 6, "over": [101, 427]})
+                self.assertEqual(r["wrap"]["arc"], [[38, 8], [32, 22], [22, 32], [8, 39]])
+                self.assertEqual(sum(n for n, _ in r["wrap"]["arc"]), r["rolling"]["resume"])
+                self.assertEqual(sum(h for _, h in r["wrap"]["arc"]), r["rolling"]["resume"] + 1)
+                self.assertEqual((r["quarter"], [r["wrap"]["frames"], r["wrap"]["step"]], r["climb"]), (quarter, wrap, climb))
+                self.assertEqual((r["fall"]["top"], r["fall"]["hop"], r["fall"]["lost"]), (fall, hop, [-2, 36]))
+                self.assertEqual((r["fall"]["wall"], r["fall"]["behind"], r["fall"]["hold"]), (409, 103, [411, 102]))
+                self.assertEqual((r["spin"], r["squash"]["least"], r["look"]["far"]), (spin, 20, 650))
+
+    def test_a_top_speed_taken_otherwise_at_a_landing_or_a_decay_not_the_gain_stops_the_reading(self):
+        for game, changes in ((GAME, ({"land.speed": 30}, {"land.short.speed": 30}, {"roll.top.gate": 34},
+                                      {"fall.spin.top": 32}, {"fall.back": 5})),
+                              (GAME_EU, ({"land.speed": 33}, {"roll.top.gate": 41}, {"fall.spin.top": 33}, {"roll.gain": 6}))):
+            for change in changes:
+                with self.assertRaises(SystemExit):
+                    roll({**game, **change})
 
     def test_a_ramp_that_does_not_come_to_a_quarter_turn_stops_the_reading(self):
-        for change in ({"wrap.frames": 12}, {"wrap.step": 79}, {"climb.step": -60}, {"turn.frames": 18},
-                       {"turn.step.right": -52}):
-            with self.assertRaises(SystemExit):
-                roll({**GAME, **change})
+        for game, changes in ((GAME, ({"wrap.frames": 12}, {"wrap.step": 79}, {"climb.step": -60}, {"turn.frames": 18},
+                                      {"turn.step.right": -52}, {"turn.step": 54, "turn.step.right": -54})),
+                              (GAME_EU, ({"wrap.frames": 10}, {"wrap.step": 94}, {"climb.step": -72},
+                                         {"turn.step": 63, "turn.step.right": -63}, {"turn.frames": 17, "turn.frames.right": 17}))):
+            for change in changes:
+                with self.assertRaises(SystemExit):
+                    roll({**game, **change})
 
     def test_an_arc_that_does_not_end_off_the_new_face_stops_the_reading(self):
         for change in ({"arc.4.normal": 9}, {"wrap.resume": 90}, {"land.off": 90}, {"land.under": 90}):
@@ -85,16 +102,19 @@ class Roll(unittest.TestCase):
                 roll({**GAME, **change})
 
     def test_a_gate_not_one_past_its_value_stops_the_reading(self):
-        for change in ({"fall.top.gate": -66}, {"turn.clamp.gate": 10}, {"look.to.gate": 32}, {"fall.wall": 408},
-                       {"squash.hop.rise": 180}, {"spin.rest": -4}):
-            with self.assertRaises(SystemExit):
-                roll({**GAME, **change})
+        for game, changes in ((GAME, ({"fall.top.gate": -66}, {"turn.clamp.gate": 10}, {"look.to.gate": 32}, {"fall.wall": 408},
+                                      {"squash.hop.rise": 180}, {"spin.rest": -4})),
+                              (GAME_EU, ({"fall.top.gate": -80}, {"spin.rest": -5}))):
+            for change in changes:
+                with self.assertRaises(SystemExit):
+                    roll({**game, **change})
 
 
 class Body(unittest.TestCase):
     def test_the_body_turns_a_quarter_over_the_arc_in_steps_of_a_sixteenth(self):
-        self.assertEqual(body(GAME), -256)
-        self.assertEqual(body(GAME) * 4, -1024)
+        for game in (GAME, GAME_EU):
+            self.assertEqual(body(game), -256)
+            self.assertEqual(body(game) * 4, -1024)
 
     def test_a_mark_not_the_one_the_draw_tests_for_or_shared_stops_the_reading(self):
         for change in ({"body.mark.right": 4}, {"body.test.wall": 3}, {"body.mark.wrap": 0, "body.test.wrap": 0},

@@ -7,16 +7,18 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_motion_jump import flight, jump  # noqa: E402
-from motion_fixture import GAME  # noqa: E402
+from motion_fixture import GAME, GAME_EU  # noqa: E402
 
 
 class Jump(unittest.TestCase):
     def test_the_jump_ships_its_speed_its_count_rule_and_its_landings(self):
-        j = jump(GAME)
-        self.assertEqual((j["speed"], j["skip"], j["snap"], j["far"], j["long"], j["scale"]), (33, 2, 1024, 1536, 3, [3, 2]))
-        self.assertEqual((j["catch"], j["wall"], j["low"], j["bounce"], j["recentre"]), (12, 412, 100, -10, 8))
-        self.assertEqual(j["boost"], {"roll": 151, "frames": 10, "fire": 231})
-        self.assertEqual((j["arm"], j["keep"]), (1, 2))
+        for game, speed, skip in ((GAME, 33, 2), (GAME_EU, 40, None)):
+            j = jump(game)
+            self.assertEqual((j["speed"], j["skip"], j["snap"], j["far"], j["long"], j["scale"]),
+                             (speed, skip, 1024, 1536, 3, [3, 2]))
+            self.assertEqual((j["catch"], j["wall"], j["low"], j["bounce"], j["recentre"]), (12, 412, 100, -10, 8))
+            self.assertEqual(j["boost"], {"roll": 151, "frames": 10, "fire": 231})
+            self.assertEqual((j["arm"], j["keep"]), (1, 2))
 
     def test_a_jump_at_another_speed_or_landing_elsewhere_stops_the_reading(self):
         for change in ({"jump.speed": 30}, {"jump.snap": 512}, {"jump.far": 1024}, {"jump.rows": 6},
@@ -48,30 +50,33 @@ class Flight(unittest.TestCase):
                                         "below": 250, "ahead": 800, "out": 14000,
                                         "curve": {"above": 100, "back": [4096, 3072, 2048, 0],
                                                   "left": [4096, 1707, 0, 0]}})
+        self.assertEqual(flight(GAME_EU), {**flight(GAME), "slow": 880, "first": 16, "frames": 69})
 
-    def test_the_fly_in_flies_68_frames_and_the_pad_is_read_on_the_70th(self):
-        f = flight(GAME)
-        t, inc, steps = 0, f["first"], []
-        while t <= f["end"]:
-            steps.append(f["step"] if t <= f["slow"] else inc)
-            if t > f["slow"]:
-                inc = max(inc - 1, f["least"])
-            t += steps[-1]
-        self.assertEqual(steps, [16] * 59 + [13, 12, 11, 10, 9, 8, 7, 6, 5])
-        self.assertEqual((len(steps), t), (f["frames"], f["end"] + 1))
-        # the pad's gate frame by frame, the hold and the live mark written at a frame's end, where the game writes them
-        wait, live, read, standing = GAME["start.wait"], True, None, 0
-        for frame in range(1, 80):
-            wait = max(wait - 1, 0)
-            if wait == 0 and live:
-                read = frame
-                break
-            standing += wait >= f["gate"]
-            if frame <= f["frames"]:
-                live, wait = False, f["hold"] if frame < f["frames"] else f["done"]
-            else:
-                live = True
-        self.assertEqual((read, standing), (70, 67))
+    def test_the_fly_in_flies_68_frames_and_the_pad_is_read_on_the_70th_69_and_the_71st_on_the_pal_executable(self):
+        for game, eased, past, read_on in ((GAME, [13, 12, 11, 10, 9, 8, 7, 6, 5], 1, (70, 67)),
+                                           (GAME_EU, [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4], 2, (71, 68))):
+            f = flight(game)
+            t, inc, steps = 0, f["first"], []
+            while t <= f["end"]:
+                steps.append(f["step"] if t <= f["slow"] else inc)
+                if t > f["slow"]:
+                    inc = max(inc - 1, f["least"])
+                t += steps[-1]
+            self.assertEqual(steps, [16] * (f["frames"] - len(eased)) + eased)
+            self.assertEqual((len(steps), t), (f["frames"], f["end"] + past))
+            # the pad's gate frame by frame, the hold and the live mark written at a frame's end, where the game writes them
+            wait, live, read, standing = game["start.wait"], True, None, 0
+            for frame in range(1, 80):
+                wait = max(wait - 1, 0)
+                if wait == 0 and live:
+                    read = frame
+                    break
+                standing += wait >= f["gate"]
+                if frame <= f["frames"]:
+                    live, wait = False, f["hold"] if frame < f["frames"] else f["done"]
+                else:
+                    live = True
+            self.assertEqual((read, standing), read_on)
 
 
 if __name__ == "__main__":

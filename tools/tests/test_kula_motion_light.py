@@ -12,7 +12,7 @@ from kula_motion_code import PHASES, Code  # noqa: E402
 from kula_motion_light import (GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, ROOT_ROWS,  # noqa: E402
                                SHADOW_SQUARE, glint, glow_lift, glow_spill, light, root_table, shadow_half, spike_cycle,
                                vanish_cycle)
-from motion_fixture import GAME, R, addiu, addu, beq, jal, jr, lui, rise_at, runs, sll, sra, sw  # noqa: E402
+from motion_fixture import GAME, GAME_EU, R, addiu, addu, beq, jal, jr, lui, rise_at, runs, sll, sra, sw  # noqa: E402
 
 
 class Shadow(unittest.TestCase):
@@ -72,10 +72,11 @@ class Light(unittest.TestCase):
             root_table(self.table(rows))
 
     def test_the_light_ships_both_ways_round_with_the_root_it_measures_by(self):
-        lit = light(GAME)
-        self.assertEqual((lit["near"], lit["far"], lit["full"], lit["bits"]), (350, 512, 128, 23))
-        self.assertEqual(lit["turned"], {"kind": 9, "value": 1, "near": 1280, "far": 1792})
-        self.assertEqual(lit["root"], GAME["light.root"])
+        for game in (GAME, GAME_EU):
+            lit = light(game)
+            self.assertEqual((lit["near"], lit["far"], lit["full"], lit["bits"]), (350, 512, 128, 23))
+            self.assertEqual(lit["turned"], {"kind": 9, "value": 1, "near": 1280, "far": 1792})
+            self.assertEqual(lit["root"], GAME["light.root"])
 
     def test_a_light_not_full_at_one_brightness_stops_the_reading(self):
         with self.assertRaises(SystemExit):
@@ -132,10 +133,11 @@ class Glow(unittest.TestCase):
 
 class Glint(unittest.TestCase):
     def test_the_glint_ships_its_steps_its_slots_and_a_generator_of_its_own(self):
-        g = glint(GAME)
-        self.assertEqual((g["chance"], g["rise"], g["top"], g["fall"], g["slots"]), (3, 128, 254, 16, 16))
-        self.assertEqual((g["rows"], g["cuts"]), (3, 3))
-        self.assertEqual(g["dice"], {"seed": 1, "times": 1103515245, "plus": 12345})
+        for game in (GAME, GAME_EU):
+            g = glint(game)
+            self.assertEqual((g["chance"], g["rise"], g["top"], g["fall"], g["slots"]), (3, 128, 254, 16, 16))
+            self.assertEqual((g["rows"], g["cuts"]), (3, 3))
+            self.assertEqual(g["dice"], {"seed": 1, "times": 1103515245, "plus": 12345})
 
     def test_a_frame_that_runs_the_glint_over_other_records_stops_the_reading(self):
         for change in ({"glint.frame.at": 0x800DE038}, {"glint.frame.rows": 2}, {"glint.frame.record": 344}):
@@ -208,6 +210,23 @@ class Cycles(unittest.TestCase):
             self.assertEqual((deadly * 3)[rise - 3:rise + 141], [False] + [True] * 68 + [False] * 75)
             self.assertEqual((frames * 3)[rise + 65:rise + 67], [8, 8])
         self.assertEqual([spike_cycle(GAME, p)[0][1] for p in range(PHASES)], [False, False, True, True])
+
+    def test_on_the_pal_executable_the_spikes_run_119_frames_with_their_phases_29_apart(self):
+        seq = [f for f, _ in spike_cycle(GAME_EU, 0)]
+        self.assertEqual(len(seq), 119)
+        self.assertTrue(all(0 <= f <= 31 for f in seq))
+        rise = rise_at(seq)
+        twice = seq + seq
+        self.assertEqual(twice[rise - 1:rise + 17], [0, 8, 16, 24, 31, 2, 31, 7, 31, 13, 31, 18, 31, 23, 31, 29, 31, 31])
+        self.assertEqual(runs([f == 0 for f in seq]), [[False, 63], [True, 56]])
+        starts = [rise_at([f for f, _ in spike_cycle(GAME_EU, p)]) for p in range(PHASES)]
+        self.assertEqual([(starts[0] - s) % 119 for s in starts], [0, 29, 60, 89])
+        for p in range(PHASES):
+            frames, deadly = map(list, zip(*spike_cycle(GAME_EU, p)))
+            rise = 119 + rise_at(frames)
+            self.assertEqual((deadly * 3)[rise - 3:rise + 117], [False] + [True] * 57 + [False] * 62)
+            self.assertEqual((frames * 3)[rise + 54:rise + 56], [8, 8])
+        self.assertEqual([spike_cycle(GAME_EU, p)[0][1] for p in range(PHASES)], [False, False, True, True])
 
     def test_a_flag_that_is_not_the_hazards_value_as_the_spikes_rise_stops_the_reading(self):
         for change in ({"spikes.rise.flag": 2}, {"spikes.retract.flag": 1}, {"spikes.phase.down.flag": 1},
