@@ -225,6 +225,18 @@ class Rows(unittest.TestCase):
         self.assertEqual(built["names"]["FILL"], [f"0x{copy.starts['mode'] + 56:08x}", 3, "v1", "v0"])
         self.assertEqual(built["pending"], [])
 
+    def test_a_run_is_cut_where_its_destination_is_overwritten_by_no_shift_or_add(self):
+        for fill, count in (((sll("v0", "v1", 2), addu("v0", "v0", "v1"), lw("v0", "a0", 8)), 2),
+                            ((sll("v0", "v1", 2), lw("a1", "a0", 8), addu("v0", "v0", "v1")), 3)):
+            with self.subTest(count=count):
+                copy = executable(gaps=GAPS, routines={"mode": lambda c, fill=fill, **k: mode(c, fill=fill, **k)})
+                built = mapped(copy)
+                row = key_rows(built)["mode.fill"]
+                at = f"0x{copy.starts['mode'] + 56:08x}"
+                self.assertEqual((row["at"], row["count"], len(row["words"]), row["value"], row["by"]), (at, count, count, 5, "same"))
+                self.assertEqual(built["names"]["FILL"], [at, count, "v1", "v0"])
+                self.assertEqual(built["pending"], [])
+
     def test_a_hand_run_is_read_as_given(self):
         copy = executable(gaps=GAPS)
         at = copy.starts["mode"] + 56
