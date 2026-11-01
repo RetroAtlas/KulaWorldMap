@@ -249,8 +249,8 @@ IMMEDIATES = [
     ("what harms the ball", "laser.cell", "the ball's own cell holding this, a lit beam, is the laser's death", 0x8003a944,
      "addiu $v1, $zero, {}"),
     ("what harms the ball", "laser.heat", "which sets the heat to this", 0x8003a98c, "addiu $v0, $zero, {}"),
-    ("what harms the ball", "star52.points", "on the fast star's face, with the jump asked and the roll not, the score grows "
-     "by this a frame", 0x8003ab34, "addiu $v0, $v0, {}"),
+    ("what harms the ball", "star52.points", "on the fast star's face, with the jump asked, the roll not and the ball not "
+     "hopping, the score grows by this a frame", 0x8003ab34, "addiu $v0, $v0, {}"),
     ("what harms the ball", "fire.kind", "fire is this kind under the ball", 0x8003ab44, "addiu $v0, $zero, {}"),
     ("what harms the ball", "fire.burn", "and heats it by this a frame on the ground", 0x8003ab7c, "addiu $v0, $v0, {}"),
     ("what harms the ball", "fire.landed", "the landing's mark at 494 being this on the frame after one", 0x8003abb8,
