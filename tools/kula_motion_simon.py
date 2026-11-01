@@ -313,10 +313,11 @@ def simon(r):
     round, the word the menu sets for the loop to flip and the total the menu
     code puts to end the game, each held against the others: one mode for the
     pad's case, the start's branch, the loop's point, the next-level routine's
-    branch and the menu, the pad's verdicts the ones the ending reads, the bits one each, the menu's press one
-    button and no direction, the reset's fill the sequence the pad reads from its last halfword down,
-    a latched request past the turn's gate, and one gate for the points
-    wherever they are asked."""
+    branch and the menu, the pad's verdicts the ones the ending reads, the
+    bits one each, the menu's press one button and no direction, the reset's
+    fill the sequence the pad reads from its last halfword down, a latched
+    request past the turn's gate, and one gate for the points wherever they
+    are asked."""
     if len({r["simon.mode"], r["simon.start.mode"], r["simon.loop.mode"], r["simon.next.mode"], r["simon.menu.start"],
             r["clock.mode"]}) != 1:
         sys.exit("the Simon rooms' case, branch, point and menu are not keyed on the mode the clock stands in")
