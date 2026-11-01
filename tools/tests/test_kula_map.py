@@ -252,11 +252,28 @@ class Rows(unittest.TestCase):
                 self.assertEqual(built["names"]["FILL"], [at, count, "v1", "v0"])
                 self.assertEqual(built["pending"], [])
 
+    def test_a_run_row_takes_the_least_sure_tier_of_the_placements_about_it(self):
+        longer = (sll("v0", "v1", 1), addu("v0", "v0", "v1"), sll("v0", "v0", 1))
+        copy = executable(gaps=GAPS, routines={"mode": lambda c, **k: mode(c, fill=longer, **k)})
+        start, at = US.starts["mode"] + 56, copy.starts["mode"] + 56
+        before, after = {start - 4: (at - 4, "the load before the run")}, {start + 8: (at + 12, "the store after it")}
+        self.assertEqual(key_rows(mapped(copy))["mode.fill"]["tier"], "aligned")
+        self.assertEqual(key_rows(mapped(copy, hand(PLACED=before)))["mode.fill"]["tier"], "aligned")
+        self.assertEqual(key_rows(mapped(copy, hand(PLACED=after)))["mode.fill"]["tier"], "offset")
+        self.assertEqual(key_rows(mapped(copy, hand(PLACED={**before, **after})))["mode.fill"]["tier"], "hand")
+
     def test_a_hand_run_is_read_as_given(self):
         copy = executable(gaps=GAPS)
         at = copy.starts["mode"] + 56
         row = key_rows(mapped(copy, hand(MULTIPLIERS={"mode.fill": (at, 2, "v1", "v0", "the run as laid")})))["mode.fill"]
         self.assertEqual((row["at"], row["count"], row["value"], row["tier"]), (f"0x{at:08x}", 2, 5, "hand"))
+
+    def test_two_keys_reading_one_address_otherwise_stop_the_writer(self):
+        shift = ("fixture", "pill.shift", "shifts by", US.starts["pill"] + 24, "sll $v0, $v1, {}")
+        modules = (SimpleNamespace(**{**vars(FIXTURE), "IMMEDIATES": FIXTURE.IMMEDIATES + [shift]}),)
+        with self.assertRaises(SystemExit) as stopped:
+            mapped(executable(gaps=GAPS), modules=modules)
+        self.assertEqual(str(stopped.exception), f"0x{US.starts['pill'] + 24:08x} is read as pill.shift and as pill.fill, which disagree")
 
     def test_a_stale_hand_row_stops_the_writer(self):
         with self.assertRaises(SystemExit):
