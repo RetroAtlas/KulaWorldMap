@@ -84,7 +84,7 @@ class Take(unittest.TestCase):
         with self.assertRaises(SystemExit):
             take({**GAME, "take.within": 8100})
 
-    def test_the_hourglasss_entry_carries_nulls_where_its_readings_are_absent(self):
+    def test_the_hourglass_s_entry_carries_nulls_where_its_readings_are_absent(self):
         taken, _ = take(Readings({**GAME, "hourglass.second": None, "hourglass.points": None}))
         self.assertEqual(taken[35], {"reach": 160, "stand": 436, "points": None, "clock": {"from": 5999, "second": None}})
 
