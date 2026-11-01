@@ -601,7 +601,7 @@ The modules lie in layers, and a module imports only its own layer and those ben
 
 The page itself starts what the boot will ask for before any of its modules has arrived: every module the boot imports, so they load in one round rather than as each is found in the last, the data files, and the textures of the world the link's pack names, or the first world's textures where there is no link, so everything is on its way together.
 
-The page fetches the three release files beside the data, one a release, each carrying only what its disc changes, the levels, the artwork and the models that differ from the US one, and a file that cannot be loaded leaves that release out.
+The page fetches the three release files beside the data, one a release, each carrying only what its disc changes, the levels, the artwork, the models and the motion and skins tables that differ from the US one, and a file that cannot be loaded leaves that release out.
 
 The US release is built into the model, so the map shows it under its own name where its file cannot be loaded.
 
