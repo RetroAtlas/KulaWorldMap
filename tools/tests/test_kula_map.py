@@ -292,6 +292,8 @@ class Rows(unittest.TestCase):
                 ("absent", "nobody.home", hand(ABSENT={"nobody.home": (at, "sra $v0, $v1, 5", "an instruction no reader lists")})),
                 ("absent", f"0x{immediate:08x}", hand(ABSENT={immediate: (at, "sra $v0, $v1, 5", "an address no reader lists as a check")})),
                 ("multiplier", "nobody.home", hand(MULTIPLIERS={"nobody.home": (at, 1, "v1", "v0", "a run no reader lists")})),
+                ("reshaped", f"0x{US.starts['mode'] + 4:08x}",
+                 hand(RESHAPED={US.starts["mode"] + 4: (copy.starts["mode"] + 4, "sw $ra, 16($sp)", "an address no reader lists")})),
                 ("placed", f"0x{US.starts['pill']:08x}", hand(PLACED={US.starts["pill"]: (copy.starts["pill"], "an address no reader lists")}))):
             with self.subTest(what, named=named):
                 with self.assertRaises(SystemExit) as stopped:
