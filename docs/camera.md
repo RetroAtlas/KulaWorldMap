@@ -50,7 +50,7 @@ The screen routine's tail runs on every pass the mode stands (`0x800206c8`): the
 
 So the scene is stretched wide as it is squashed tall and back, by the sine of the phase times a magnitude that is 775 of 4096 on the first pass and wanes 5 a pass, a cycle every 19 passes, to nothing over 155 passes, 5.2 s, after which the words stand within 5 of rest until the level is left.
 
-On the PAL disc the idle phase steps 128 a pass, the magnitude wanes by 6 and the stretch's phase steps 256 (`SCES_010.00`, `0x80020c74`, `0x80020fac`, `0x80020fc4`), so the magnitude is 774 on the first pass, a cycle takes 16 passes and the stretch is gone over 130 passes, the same 5.2 s, the tint, the fade and the 780 the magnitude starts from unscaled.
+On the PAL disc the idle phase steps 128 a pass, the magnitude wanes by 6 and the stretch's phase steps 256 (`SCES_010.00`, `0x80020c74`, `0x80020fac`, `0x80020fc4`), so the magnitude is 774 on the first pass, a cycle takes 16 passes and the stretch is gone over 129 passes, the same 5.2 s, the tint, the fade and the 780 the magnitude starts from unscaled.
 
 On the pass the pill's word reaches nothing the hazards ask the end ([motion.md](motion.md)) and the routine sets a level at 80, lays the quad's corners again, draws the ghost once more and moves on (`0x8002051c`, `0x80020530`, `0x80020588`, `0x800205a8`, `0x80020518`); on each pass after it takes 8 off the level and, while that is not below nothing, draws the quad at it (`0x800205fc` to `0x80020604`, `0x8002062c`, `0x80020658`, `0x80020680`), 72 down to 0 over 10 passes, a white glow fading out, and below nothing clears the mode (`0x800206bc`), the frame loop's wait a blank again from the pass after.
 
