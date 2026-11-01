@@ -291,7 +291,8 @@ class Rows(unittest.TestCase):
                 ("shift", "nobody.home", hand(SHIFTS={"nobody.home": (at, "sra $v0, $v1, 5", "a shift no reader lists")})),
                 ("absent", "nobody.home", hand(ABSENT={"nobody.home": (at, "sra $v0, $v1, 5", "an instruction no reader lists")})),
                 ("absent", f"0x{immediate:08x}", hand(ABSENT={immediate: (at, "sra $v0, $v1, 5", "an address no reader lists as a check")})),
-                ("multiplier", "nobody.home", hand(MULTIPLIERS={"nobody.home": (at, 1, "v1", "v0", "a run no reader lists")}))):
+                ("multiplier", "nobody.home", hand(MULTIPLIERS={"nobody.home": (at, 1, "v1", "v0", "a run no reader lists")})),
+                ("placed", f"0x{US.starts['pill']:08x}", hand(PLACED={US.starts["pill"]: (copy.starts["pill"], "an address no reader lists")}))):
             with self.subTest(what, named=named):
                 with self.assertRaises(SystemExit) as stopped:
                     mapped(copy, table)

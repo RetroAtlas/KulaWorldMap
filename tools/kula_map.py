@@ -178,9 +178,13 @@ def by_hand(us, entries, modules, reach):
     return [a for a in out if us.code.holds(a.address)]
 
 
-def place_by_hand(us, other, placements, left, table):
-    """The hand's placements over the aligner's, each refused unless the instruction at the place has the base's
-    shape, exact or with its registers renamed."""
+def place_by_hand(us, other, placements, left, table, listed):
+    """The hand's placements over the aligner's, each refused unless it names an anchor the readers list or the
+    writer places for a registered name, and the instruction at the place has the base's shape, exact or with its
+    registers renamed."""
+    stale = sorted(hexed(addr) for addr in set(table) - listed)
+    if stale:
+        sys.exit(f"the hand table's placed rows name {', '.join(stale)}, which no reader lists")
     for addr, (at, _) in table.items():
         if not us.code.holds(addr) or not other.code.holds(at):
             sys.exit(f"the hand places 0x{addr:08x} at 0x{at:08x}, outside an executable")
@@ -392,7 +396,7 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
     entries, reach = registries(modules), reaching(us)
     rows_in, hand_anchors = anchors(modules), by_hand(us, entries, modules, reach)
     placements, left = align(us, other, rows_in, hand=hand_anchors)
-    place_by_hand(us, other, placements, left, hand.PLACED.get(release, {}))
+    place_by_hand(us, other, placements, left, hand.PLACED.get(release, {}), {a.address for a in [*rows_in, *hand_anchors]})
     reshaped, runs = hand.RESHAPED.get(release, {}), hand.MULTIPLIERS.get(release, {})
     for addr, (at, text, *_) in reshaped.items():
         placements[addr] = Placement(at, "reshaped", standing(other, at, text, "reshaped row")["text"])
