@@ -146,6 +146,7 @@ class Overrides(unittest.TestCase):
         self.assertIsNone(JP.relation_of("words", GAME["words"], WORDS["eu"]))
         self.assertEqual(JP.relation_of("ball.breathe.full", 6000, 7200), "tuned")
         self.assertEqual(JP.relation_of("hourglass.second", 50, None), "absent")
+        self.assertEqual(JP.relation_of("pad.repeat", 6, None), "absent")
         self.assertEqual(JP.relation_of("simon.menu.cross", 16384, 8192), "tuned")
 
     def test_the_hiding_sets_each_release_gives_are_the_bases_the_japanese_paths_folding_kinds_into_ranges(self):

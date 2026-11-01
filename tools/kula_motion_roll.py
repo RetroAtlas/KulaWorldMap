@@ -691,7 +691,7 @@ def roll(r):
     return {
         "rolling": {"gain": r["roll.gain"], "top": r["roll.top"], "middle": r["move.middle"], "wrap": r["move.wrap"],
                  "climb": r["move.climb"], "touch": r["move.touch"], "resume": r["ball.rest"],
-                 "recentre": r["roll.recentre"], "repeat": r["pad.repeat"],
+                 "recentre": r["roll.recentre"], "repeat": r.get("pad.repeat"),
                  "over": [-r["roll.fall.from"], -r["roll.fall.from"] + r["roll.fall.span"] - 1]},
         "quarter": {"frames": r["turn.frames"], "step": r["turn.step"], "clamp": r["turn.clamp"]},
         "wrap": {"frames": r["wrap.frames"], "step": r["wrap.step"], "arc": arc},

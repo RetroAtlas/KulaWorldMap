@@ -1900,7 +1900,7 @@
   "0x80036abc": {"at": "0x8003b964", "word": "0xa7822cbe", "text": "sh $v0, 11454($gp)", "tier": "hand"},
   "0x80036ac0": {"at": "0x8003b968", "word": "0x0c00d34c", "text": "jal 0x80034d30", "tier": "hand"},
   "0x80036af8": {"at": "0x80036d54", "word": "0x8782044c", "text": "lh $v0, 1100($gp)", "tier": "aligned"},
-  "0x80036b10": {"key": "pad.repeat", "at": "0x80036d70", "word": "0x24020006", "text": "addiu $v0, $zero, 6", "tier": "aligned", "pattern": "addiu $v0, $zero, {}", "us": 6, "value": 6, "by": "same"},
+  "0x80036b10": {"key": "pad.repeat", "absent": true, "at": "0x80036d70", "word": "0x24020006", "text": "addiu $v0, $zero, 6"},
   "0x80036b14": {"at": "0x80036d74", "word": "0xa7822ade", "text": "sh $v0, 10974($gp)", "tier": "loose3"},
   "0x80036b20": {"at": "0x80036d80", "word": "0xa7802ade", "text": "sh $zero, 10974($gp)", "tier": "strict3"},
   "0x80036b44": {"at": "0x80036da4", "word": "0xae000064", "text": "sw $zero, 100($s0)", "tier": "aligned"},

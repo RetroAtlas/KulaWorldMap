@@ -80,6 +80,9 @@ ABSENT = {
     0x80042afc: (0x800420b8, "lw $v0, 1168($gp)",
                  "no routine of this disc sets the word the banking skips on: its four stores, in the menus, are clears, so the banking's "
                  "test here never skips"),
+    "pad.repeat": (0x80036d70, "addiu $v0, $zero, 6",
+                   "the 6 goes into the repeat's wait at 10974 past gp by the next instruction and is read nowhere, and the count "
+                   "at 364 it would be tested against is only ever cleared, so a held turn on this disc presses once and never again"),
     0x80036c4c: (0x80036f7c, "sh $zero, 364($s0)",
                  "the count at 364 is only ever cleared on this disc, here and at three other places, and never counted up: a held turn "
                  "does not press again"),

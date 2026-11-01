@@ -258,15 +258,15 @@ function swap(b, h, n) {
     read; where `asked` is given, its `forward` and `jump` stand in place of Up and Cross, read
     by a rule the caller gives, and its `turn`, where it has one, in place of the presses. A press
     is a bit held now and not on the last frame, and a held turn presses again once the count
-    passes the repeat. With no jump asked, the floor ahead empty and a block beside the block
-    under, the roll is refused; with nothing beside and the block under one the last frame's
-    read found brittle, a rolling ball is held short of the edge by `rules.edge`: from its hold
-    the forward request and the speed are dropped, and from its further mark the centre is set
-    back along the heading besides. */
+    passes the repeat, or never where the table has none. With no jump asked, the floor ahead
+    empty and a block beside the block under, the roll is refused; with nothing beside and the
+    block under one the last frame's read found brittle, a rolling ball is held short of the edge
+    by `rules.edge`: from its hold the forward request and the speed are dropped, and from its
+    further mark the centre is set back along the heading besides. */
 export function read(b, probe, out, asked) {
   const t = b.table.rolling;
   if (turning(b)) b.since = 0;
-  else if (++b.since > t.repeat) b.previous = 0;
+  else if (t.repeat !== null && ++b.since > t.repeat) b.previous = 0;
   const newly = b.pad & ~b.previous;
   b.previous = b.pad;
   const press = (dir) => {

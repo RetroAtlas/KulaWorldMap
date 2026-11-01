@@ -183,6 +183,8 @@ Play's clock follows the disc shown, filled as that disc's game fills it and sho
 
 On the Japanese disc the ball's breath follows that disc's own count of the clock, measured against 7200 ticks and quickened by a fiftieth of what the clock is short, where the US ball's is measured against 6000 and quickened by a fortieth.
 
+On the Japanese disc a held Left or Right turns the ball once, that disc's game never counting the frames after which a held turn presses again, where on the US and PAL discs the key held on turns it again from the seventh frame after the turn ends.
+
 On the Japanese disc the hourglass turns the clock round as the game's does there and scores nothing ("What the ball takes" below).
 
 On the Japanese disc an ending's view turns about the level more slowly, its three angles stepping -5, 2 and 7 a frame where the US view's step -8, 3 and 10, over the same length.

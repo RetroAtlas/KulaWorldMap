@@ -53,19 +53,21 @@ class Moves(unittest.TestCase):
 
 class Roll(unittest.TestCase):
     SHIPPED = {
-        "us": {"gain": 6, "top": 33, "fall": -66, "spin": -5, "hop": -30, "quarter": {"frames": 19, "step": 53, "clamp": 10},
-               "wrap": [13, 78], "climb": {"frames": 16, "step": -64}},
-        "eu": {"gain": 7, "top": 40, "fall": -80, "spin": -6, "hop": None, "quarter": {"frames": 16, "step": 64, "clamp": 10},
-               "wrap": [11, 93], "climb": {"frames": 14, "step": -73}},
+        "us": {"gain": 6, "top": 33, "fall": -66, "spin": -5, "hop": -30, "repeat": 6,
+               "quarter": {"frames": 19, "step": 53, "clamp": 10}, "wrap": [13, 78], "climb": {"frames": 16, "step": -64}},
+        "eu": {"gain": 7, "top": 40, "fall": -80, "spin": -6, "hop": None, "repeat": 6,
+               "quarter": {"frames": 16, "step": 64, "clamp": 10}, "wrap": [11, 93], "climb": {"frames": 14, "step": -73}},
     }
+    SHIPPED["jp"] = {**SHIPPED["us"], "repeat": None}
 
     def test_the_roll_ships_one_top_speed_and_an_arc_that_ends_a_radius_off_the_new_face(self):
-        for release, game in (("us", GAME), ("eu", Readings(GAME_EU)), ("jp", GAME_JP)):
-            pins = self.SHIPPED.get(release, self.SHIPPED["us"])
+        for release, game in (("us", GAME), ("eu", Readings(GAME_EU)), ("jp", Readings(GAME_JP))):
+            pins = self.SHIPPED[release]
             with self.subTest(release=release):
                 r = roll(game)
                 self.assertEqual(r["rolling"], {"gain": pins["gain"], "top": pins["top"], "middle": 256, "wrap": 512, "climb": 413,
-                                                "touch": 412, "resume": 100, "recentre": 8, "repeat": 6, "over": [101, 427]})
+                                                "touch": 412, "resume": 100, "recentre": 8, "repeat": pins["repeat"],
+                                                "over": [101, 427]})
                 self.assertEqual(r["wrap"]["arc"], [[38, 8], [32, 22], [22, 32], [8, 39]])
                 self.assertEqual(sum(n for n, _ in r["wrap"]["arc"]), r["rolling"]["resume"])
                 self.assertEqual(sum(h for _, h in r["wrap"]["arc"]), r["rolling"]["resume"] + 1)

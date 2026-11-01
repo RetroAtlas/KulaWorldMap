@@ -259,6 +259,36 @@ test("a Left pressed on a frame the pad is not read for, and still held as readi
   );
 });
 
+test("with no repeat in the table, as the Japanese disc counts none, a Left pressed and held on turns once, where the base's table turns again once the count has passed the repeat", () => {
+  const ball = motion.types["30"];
+  const noRepeat = {
+    ...TABLES,
+    motion: {
+      ...motion,
+      types: { ...motion.types, 30: { ...ball, rolling: { ...ROLL, repeat: null } } },
+    },
+  };
+  const l = level(row(10, 18), [start()]);
+  const held = ball.quarter.frames + ROLL.repeat + 4;
+  const again = [];
+  for (const tables of [TABLES, noRepeat]) {
+    const live = startRun(l, index(l), tables, circuits());
+    steps(live, play.start.wait);
+    assert.deepEqual(
+      frame(live, PAD.left).filter((e) => e.turned),
+      [{ turned: LEFT }],
+    );
+    again.push(steps(live, held, PAD.left).filter((e) => e.turned));
+    assert.equal(live.ball.previous, PAD.left);
+  }
+  assert.equal(
+    again[0].length,
+    1,
+    "the base's table turns again once the count has passed the repeat",
+  );
+  assert.deepEqual(again[1], [], "a table with no repeat turns once");
+});
+
 test("the guard a restart sets holds for 18 frames and clears on the 19th, and Cross held keeps it standing", () => {
   const l = level(row(10, 18), [start()]);
   const live = restart(begin(l));

@@ -123,6 +123,14 @@ test("the fast star's face scores nothing on the Japanese disc, whose entry for 
   assert.equal(motion.play.simon.points, 5);
 });
 
+test("the Japanese table has no repeat for a held turn, null in the file and in the table composed under that release, where the base's ball presses again once the count has passed 6", (t) => {
+  assert.equal(jp.objects.motion.types["30"].rolling.repeat, null);
+  assert.equal(motion.types["30"].rolling.repeat, 6);
+  setCurrent("jp");
+  t.after(() => setCurrent(BASE));
+  assert.equal(motionTable().types["30"].rolling.repeat, null);
+});
+
 test("the Japanese words are the end screen's own for every ending the base's table names, the Perfect! pair among them nowhere", () => {
   const { words } = jp.objects.motion.play;
   assert.deepEqual(Object.keys(words).sort(), Object.keys(motion.play.words).sort());

@@ -24,7 +24,7 @@ Every rate and count the PAL executable holds otherwise than this disc does is t
 
 The readings the hand table excepts are the eleven tuned with reasons of their own, the wandering ball's shake, the fly-in's slow gate, the climb's step, the view's scale down at rest and at its reset, the teleport flash's four levels and the vanishing block's settling and dimming scales; the seven the PAL has no instruction for, the jump's and the hop's skip, the hop's fall start, the platform's scaling and its divisor and the settling's and the dimming's divisors; and the two divisors it lays out as shifts, the vanishing block's fade in and flash out.
 
-The Japanese executable runs at sixty and scales nothing, so every keyed row of its map reads this disc's value, or this disc's word at an address of its own, but for the readings the hand table `tools/kula_map_hand_jp.py` names by key, as `tools/kula_map.py` holds every keyed row of its map: the sixteen tuned with reasons of their own, the breath's count and its divisor, the hourglass's count, the clock's ticks a second, the ending's view's three steps, the four gates the Simon match is won past and the button its menu reads, the three floors its face builder folds the hiding tests into and the landing's look under the ball, and the readings it has no instruction for, the hourglass's seconds and points, the fast star's points and the kinds and the range its folded tests take in.
+The Japanese executable runs at sixty and scales nothing, so every keyed row of its map reads this disc's value, or this disc's word at an address of its own, but for the readings the hand table `tools/kula_map_hand_jp.py` names by key, as `tools/kula_map.py` holds every keyed row of its map: the sixteen tuned with reasons of their own, the breath's count and its divisor, the hourglass's count, the clock's ticks a second, the ending's view's three steps, the four gates the Simon match is won past and the button its menu reads, the three floors its face builder folds the hiding tests into and the landing's look under the ball, and the readings it has no instruction for, the hourglass's seconds and points, the fast star's points, the pad's repeat, and the kinds and the range its folded tests take in.
 
 Angles are in 4096ths of a turn, the unit the sine table at `0x8005fb58` takes; distances are in units of which a block is 512; and one word, `0x800a33d0`, gates every update below with a test against zero. It selects a second view the shipped game never draws: it is a data word that loads as 0 and is never written, so the gates are always open.
 
@@ -147,6 +147,8 @@ The pad is the console's digital word, Up 16, Right 32, Down 64, Left 128, Cross
 A count at 364 runs while no turn does, and once it has passed 6 the last frame's pad is forgotten, so a held Left or Right presses again from the seventh frame after a turn ends (`0x80036c4c` to `0x80036c68`, `0x80036b10`), the 6 standing while the option at `0x800a33b4`, which the options menu toggles (`0x8004814c`, `0x80048154`), is set, and 0 otherwise, a held turn then repeating at once.
 
 On the Japanese disc the routine stores the wait at its head as here and reads it nowhere (`SCPS_100.64`, `0x80036d74`), clears the count at 364 and never counts it (`0x80036f7c`), and tells a new press from a held one once at its head, from the pad now and the pad before (`0x80036e54` to `0x80036e64`), the pad before never forgotten, so a held Left or Right presses once there and does not press again.
+
+The map holds the repeat absent on that disc, the 6 at `0x80036d70` being the one the routine stores and never tests, so the Japanese table ships its ball no repeat and a held Left or Right turns once in play there.
 
 A Left or Right pressed while a turn runs waits at 360 or 362 and is asked as the turn ends (`0x80036d18`, `0x80036d38`, `0x80036c84`).
 
@@ -334,6 +336,8 @@ The pad is not read while the count runs nor while the word under the ball reads
 The viewer judges a press as the game does. The game's loop copies the pad word into the last frame's word on every frame (`0x80040cc0`), the input routine takes that word as the one a press is judged against on the frames it runs (`0x80036be4`, `0x80036bf0`), and forgets it once the repeat count has passed (`0x80036c68`).
 
 So the viewer keeps every frame's word, read or not, judges a press against the word of the frame before and steps the repeat count on the frames that read alone, and a key held through frames the pad is not read for is no press when it is read again: a Left held from a level's first frame turns on the 26th frame, the first to read the pad being the 20th and the count passing 6 on the seventh of those.
+
+Under a table with no repeat, as the Japanese release file ships its ball, the viewer steps no count and never forgets the word of the frame before, so a Left held on turns once.
 
 A key tapped over frames the pad is not read for, which the game never sees, the viewer keeps for the first frame that reads it, one a key, so that with Motion off a tap can carry the level through its opening; that is the viewer's one deviation here.
 
@@ -1309,8 +1313,6 @@ It paints the shadow under a pickup only while the pickup is drawn, so the face 
 Which of the two tangents a pill flips about and a fruit tilts about rests on the naming of the model's axes in [ggi.md](ggi.md) and on RotMatrix's order; a pill in play flips the way the map does.
 
 Of the Japanese Simon rooms, what the word at `0x8009f530` holds as the menu starts the mode and as each room ends, whether every pass of the level loop counts it and whether anything clears it in a block, and what the branch's `div` leaves where no world is finished and the divisor is nothing ("The Simon rooms" above), are not read, so which world a fresh save's first room opens in there is for an emulator to show.
-
-Of the Japanese input routine, which never counts the repeat ("The ball's roll" above), the table carries this disc's 6 for that disc too, the wait being stored there, so play repeats a held turn under that disc as under this one, which that disc's game does not; whether the reading should stand absent there is not decided.
 
 The view's scale down, 3840 of 4096 on this disc and the Japanese and 4096 on the PAL ([camera.md](camera.md)), ships in the table as `play.screen.scale`, which the map reads nowhere: its view in play stands the same height on every disc, and the start camera it draws sees as high as this disc's on each.
 

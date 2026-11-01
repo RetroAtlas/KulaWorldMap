@@ -395,6 +395,7 @@ GAME_EU = {**GAME, **EU}
 JP = {
     "land.under": 101, "time.tick": 60, "ball.breathe.full": 7200, "ball.breathe.over": 50,
     "hourglass.from": 7199, "hourglass.second": None, "hourglass.points": None, "star52.points": None,
+    "pad.repeat": None,
     "end.view.x": -5, "end.view.y": 2, "end.view.z": 7,
     "simon.points.gate": 3, "simon.points.gate.other": 3, "simon.menu.gate": 3, "simon.menu.gate.other": 3,
     "simon.menu.cross": 8192,
