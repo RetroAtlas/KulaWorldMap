@@ -554,6 +554,16 @@ class Hand(unittest.TestCase):
         self.assertEqual(built["names"]["FILL"], [f"0x{at:08x}", 1, "v1", "v0"])
         self.assertEqual(built["pending"], [])
 
+    def test_a_run_row_named_for_an_entry_of_several_runs_stops_the_writer(self):
+        copy = executable(gaps=GAPS)
+        fills = ((US.starts["mode"] + 56, 2, "v1", "v0"), (US.starts["pill"] + 24, 2, "v1", "v0"))
+        modules = (SimpleNamespace(**{**vars(FIXTURE), "NAMED": {**FIXTURE.NAMED, "FILLS": ("run", fills)}}),)
+        self.assertEqual(len(mapped(copy, modules=modules)["names"]["FILLS"]), 2)
+        with self.assertRaises(SystemExit) as stopped:
+            mapped(copy, hand(MULTIPLIERS={"FILLS": (copy.starts["mode"] + 56, 2, "v1", "v0", "one run given for two")}), modules=modules)
+        self.assertEqual(str(stopped.exception), f"the hand table's multiplier row FILLS names 2 runs, at 0x{fills[0][0]:08x} and "
+                                                 f"0x{fills[1][0]:08x}, and a named row places one")
+
 
 class Files(unittest.TestCase):
     def test_the_map_is_written_a_row_to_a_line_and_the_check_holds_it_to_the_discs(self):
