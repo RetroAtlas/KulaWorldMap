@@ -130,8 +130,10 @@ def rebuilt(kind, value, theirs):
 class Map:
     """Where each instruction the readers match on the base's executable stands on a release's, as the map writer
     writes it: the rows by the base's address, an absent row among them naming the instruction standing where a
-    reading the release has no instruction for would be, the registered constants by name and the multipliers' runs
-    with their counts and registers there. A map with pending rows is refused."""
+    reading the release has no instruction for would be, the registered constants by name, the multipliers' runs
+    with their counts and registers there, and the end screen's table as its count and its pairs by the index of
+    each one's first entry, the word the release's pair letters and the digest of its two images. A map with
+    pending rows is refused."""
 
     def __init__(self, data):
         pending = data.get("pending") or []
@@ -144,6 +146,9 @@ class Map:
         self.places = {}
         self.runs = {addr: (unhex(row["at"]), row["count"], row["src"], row["dst"])
                      for addr, row in self.rows.items() if "count" in row}
+        block = data.get("words")
+        self.words = None if block is None else \
+            (block["count"], {int(i): (word, unhex(digest)) for i, (word, digest) in block["pairs"].items()})
         for name, (kind, _) in registry().items():
             if name not in self.names:
                 continue
@@ -313,6 +318,15 @@ class Code:
     def names(self):
         """Every registered constant's value on this executable, by name."""
         return {name: self.named(name) for name in registry()}
+
+    def words(self, count, pairs):
+        """The end screen's table on this executable, its count and its pairs by the index of each one's first entry,
+        the word the pair letters and the digest of its two images: the given with no map, else the map's."""
+        if self.map is None:
+            return count, pairs
+        if self.map.words is None:
+            sys.exit(f"the {self.map.release} map has no words block; regenerate it")
+        return self.map.words
 
     def immediate(self, addr, pattern):
         """The immediate of the instruction the readers match at the base's `addr`, read where this executable has it

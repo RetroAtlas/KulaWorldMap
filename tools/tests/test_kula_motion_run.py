@@ -10,7 +10,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
-from kula_motion_code import Code  # noqa: E402
+from kula_motion_code import Code, Map  # noqa: E402
 from kula_motion_jump import flight  # noqa: E402
 from kula_motion_run import WORDS_COUNT, WORDS_TABLE, play, words  # noqa: E402
 from kula_motion_simon import simon  # noqa: E402
@@ -69,19 +69,21 @@ class Play(unittest.TestCase):
 class Words(unittest.TestCase):
     POINTER = AT + 0x80
     TABLE = AT + 0x100
+    SHIFT = 0x1000       # how far on from the base's the mapped table's address is built
 
     def image(self, body, flags=8):
         return struct.pack("<II", 0x10, flags) + body
 
-    def code(self, streams, count=WORDS_COUNT):
-        """A table of `count` entries, the first of them the streams given and the rest the last stream again."""
+    def code(self, streams, count=WORDS_COUNT, at=WORDS_TABLE, map=None):
+        """A table of `count` entries, the first of them the streams given and the rest the last stream again, its
+        address built by the pair at `at`."""
         entries = self.TABLE + 4
         blobs = entries + 8 * count
-        end = max(blobs + sum(len(s) for s in streams), WORDS_TABLE[1] + 4)
+        end = max(blobs + sum(len(s) for s in streams), at[1] + 4)
         blob = bytearray(end - EXE_BASE)
-        put = lambda at, w: struct.pack_into("<I", blob, at - EXE_BASE, w)
-        put(WORDS_TABLE[0], lui("t0", self.POINTER >> 16 & 0x7FFF))
-        put(WORDS_TABLE[1], lw("t0", "t0", self.POINTER & 0xFFFF))
+        put = lambda where, w: struct.pack_into("<I", blob, where - EXE_BASE, w)
+        put(at[0], lui("t0", self.POINTER >> 16 & 0x7FFF))
+        put(at[1], lw("t0", "t0", self.POINTER & 0xFFFF))
         put(self.POINTER, self.TABLE & 0x1FFFFFFF)
         put(self.TABLE, count)
         at = blobs
@@ -93,7 +95,18 @@ class Words(unittest.TestCase):
         for i in range(len(streams), count):
             put(entries + 8 * i, at - len(streams[-1]) - self.TABLE)
             put(entries + 8 * i + 4, len(streams[-1]))
-        return Code(bytes(blob))
+        return Code(bytes(blob), map=map)
+
+    def mapped(self, streams, count, pairs, held=None):
+        """The streams in a table of `count` entries, read through a map whose words block holds `held` entries, the
+        count unless given, and the pairs, the table's address built SHIFT on from the base's."""
+        at = tuple(a + self.SHIFT for a in WORDS_TABLE)
+        block = None if pairs is None else {
+            "count": count if held is None else held,
+            "pairs": {str(i): [word, f"0x{digest:08x}"] for i, (word, digest) in pairs.items()}}
+        data = {"release": "eu", "rows": {}, "names": {"WORDS_TABLE": [f"0x{a:08x}" for a in at]}, "words": block,
+                "extra": [], "pending": []}
+        return self.code(streams, count=count, at=at, map=Map(data))
 
     def test_a_pair_reads_as_its_word_where_its_digest_is_the_pinned_one(self):
         dark, light = self.image(b"the relief"), self.image(b"the highlights")
@@ -109,6 +122,27 @@ class Words(unittest.TestCase):
                       self.code([pair[0], zlib.compress(b"\x10\0\0")]), self.code([pair[0], b"not deflate"])):
                 with self.assertRaises(SystemExit):
                     words(c)
+
+    def test_through_a_map_the_count_and_the_pairs_are_the_blocks_a_pair_the_base_lacks_among_them(self):
+        dark, light = self.image(b"the relief"), self.image(b"the highlights")
+        dim, bright = self.image(b"another relief"), self.image(b"other highlights")
+        streams = [zlib.compress(x) for x in (dark, light, dim, bright)]
+        pairs = {0: ("HALLO!", zlib.crc32(dark + light)), 2: ("BIS BALD!", zlib.crc32(dim + bright))}
+        self.assertEqual(words(self.mapped(streams, 4, pairs)), {0: "HALLO!", 2: "BIS BALD!"})
+
+    def test_a_pair_not_the_blocks_another_count_than_the_blocks_or_a_map_with_no_block_stops_the_reading(self):
+        dark, light = self.image(b"the relief"), self.image(b"the highlights")
+        pair = [zlib.compress(dark), zlib.compress(light)]
+        pairs = {0: ("HALLO!", zlib.crc32(dark + light))}
+        with self.assertRaises(SystemExit) as stopped:
+            words(self.mapped(pair[::-1], 2, pairs))
+        self.assertIn("entries 0 and 1", str(stopped.exception))
+        with self.assertRaises(SystemExit) as stopped:
+            words(self.mapped(pair, 2, pairs, held=4))
+        self.assertIn("holds 2 entries, not 4", str(stopped.exception))
+        with self.assertRaises(SystemExit) as stopped:
+            words(self.mapped(pair, 2, None))
+        self.assertIn("eu map has no words block", str(stopped.exception))
 
 
 if __name__ == "__main__":

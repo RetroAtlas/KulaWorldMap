@@ -3,7 +3,8 @@ top of the ball's routine and stands while the ball is on a clock face, the
 outcome word a level ends in, positive for a way out and negative for a
 loss, the frames each ending waits and the word of the game's own lettering
 the end screen names it by, read off its table of deflated images two to a
-word and held to the disc by a digest of each pair, the level's mode word
+word and held to the disc by a digest of each pair, each release's table by
+its own digests, the level's mode word
 the loader writes, 1 on a level with no key, 2 where the settings record's
 first slot marks a hidden level and 0 again in the Simon rooms, the start's
 two counts, the view an ending turns round the level and the points a death
@@ -434,13 +435,15 @@ def words(code):
     of the pair's first entry. The table the loader reads is the count of
     its entries and then an offset and a length for each, a deflated image
     four bits a pixel with a palette; a pair is held to the disc by a digest
-    of its two images, and a pair that letters no word is left out."""
+    of its two images, the base's own or its map's where the executable is
+    read through one, and a pair that letters no word is left out."""
     sprites = 0x80000000 | code.word(code.address(*WORDS_TABLE))
     count = code.word(sprites)
-    if count != WORDS_COUNT:
-        sys.exit(f"the end screen's table at 0x{sprites:08x} holds {count} entries, not {WORDS_COUNT}")
+    expected, pairs = code.words(WORDS_COUNT, WORDS)
+    if count != expected:
+        sys.exit(f"the end screen's table at 0x{sprites:08x} holds {count} entries, not {expected}")
     out = {}
-    for index, (word, digest) in WORDS.items():
+    for index, (word, digest) in pairs.items():
         if zlib.crc32(b"".join(pair_of(code, sprites, index))) != digest:
             sys.exit(f"entries {index} and {index + 1} of the end screen's table are not the pair read as {word!r}")
         out[index] = word

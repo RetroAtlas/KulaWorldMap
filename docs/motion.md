@@ -1221,7 +1221,7 @@ What else the PAL and Japanese executables change in play is not read, beyond th
 
 In play every rate and count but the clock's and the hourglass's is the US executable's on every disc until the readers are generalised, the pills' frames, the platform's speed and the breath among them, so under the PAL disc play runs sixty frames a real second where that disc's come fifty, and its clock's seconds run down six for every five real ones.
 
-The end screen's words are read off this disc's table alone: whether the PAL disc's images differ as data is not read, and the Japanese disc's, in Japanese and with a Perfect! pair among them, are not transcribed.
+The Japanese disc's end screen words, in Japanese and with a Perfect! pair among them, are not transcribed.
 
 The laser's beam was not looked at for a pulse.
 
