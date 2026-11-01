@@ -131,7 +131,8 @@ def rebuilt(kind, value, theirs):
 class Map:
     """Where each instruction the readers match on the base's executable stands on a release's, as the map writer
     writes it: the rows by the base's address, an absent row among them naming the instruction standing where a
-    reading the release has no instruction for would be and a shift row the shift a divisor is laid out as, the
+    reading the release has no instruction for would be, a shift row the shift a divisor is laid out as and a
+    reshaped row the instruction an immediate is laid out as with the value the hand gives it, the
     registered constants by name, the multipliers' runs with their counts and registers there, and the end screen's
     table as its count and its pairs by the index of each one's first entry, the word the release's pair letters and
     the digest of its two images. A map with pending rows is refused, and what a map has pending is read off its file
@@ -220,6 +221,12 @@ class Map:
         row = self.rows.get(addr)
         return row if row is not None and row.get("absent") else None
 
+    def reshaped(self, addr):
+        """The row saying the release lays the immediate at the base's `addr` out as another instruction, whose value
+        the hand table gives in the reading's own terms, or None where the map has no such row."""
+        row = self.rows.get(addr)
+        return row if row is not None and row.get("tier") == "reshaped" and "value" in row else None
+
     def shift(self, addr):
         """The row saying the release divides by a shift where the base's `addr` begins a multiply by a reciprocal,
         or None where the map has no such row."""
@@ -269,8 +276,9 @@ class Code:
     start sets in gp, the address of the ball's record, which the stores a reading resolves go by, and the map that
     says where each instruction the readers match on the base's executable stands on this one, none for the base,
     whose addresses are read as given; a reading the map says this executable has no instruction for reads as None
-    once the instruction standing in its place is matched, and a divisor it says this executable lays out as a shift
-    reads as two to the shift once that shift is matched."""
+    once the instruction standing in its place is matched, a divisor it says this executable lays out as a shift
+    reads as two to the shift once that shift is matched, and an immediate it says this executable lays out as
+    another instruction reads as the hand's value once that instruction is matched."""
 
     def __init__(self, blob, base=RELEASES[BASE]["base"], gp=RELEASES[BASE]["gp"], record=RELEASES[BASE]["record"],
                  map=None):
@@ -358,9 +366,14 @@ class Code:
 
     def immediate(self, addr, pattern):
         """The immediate of the instruction the readers match at the base's `addr`, read where this executable has it
-        and against the pattern the map keeps for it, or None where the map says this executable has none."""
+        and against the pattern the map keeps for it, the hand's value where the map says this executable lays it
+        out as another instruction, or None where it says this executable has none."""
         if self.absent(addr):
             return None
+        row = None if self.map is None else self.map.reshaped(addr)
+        if row is not None:
+            self.standing(row, addr)
+            return row["value"]
         at, pattern = self.place(addr, pattern)
         return self.immediate_at(at, pattern, addr)
 

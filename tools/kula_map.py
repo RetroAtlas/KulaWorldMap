@@ -16,8 +16,9 @@ the load, store or addiu that uses it through the adds between them, or a load o
 table taking a misplaced one out of the derivation; a table of cases is derived the same way and its entries held to
 where the base's entries were placed. A keyed value is written only where it stands in a relation to the base's: the same, a rate or a count
 scaled by the two frame rates in either direction of truncation, an offset the release's own derived word gives, a
-key the hand table lists as tuned, or a reading the hand table lists as absent, and a divisor the hand table says the
-release lays out as a shift is two to that shift, held the same way. What fits none, and every anchor the aligner
+key the hand table lists as tuned, or a reading the hand table lists as absent; a divisor the hand table says the
+release lays out as a shift is two to that shift and an immediate it says the release lays out as another
+instruction is the value it gives, each held the same way. What fits none, and every anchor the aligner
 leaves, goes to the map's pending block, and a map is not finished while that block holds anything. The base's build
 holds every committed map to the base's executable, each keyed row's base value against what that executable reads,
 so a reader that changes a row regenerates the map rather than leaving it stale.
@@ -393,7 +394,7 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
     placements, left = align(us, other, rows_in, hand=hand_anchors)
     place_by_hand(us, other, placements, left, hand.PLACED.get(release, {}))
     reshaped, runs = hand.RESHAPED.get(release, {}), hand.MULTIPLIERS.get(release, {})
-    for addr, (at, text, _) in reshaped.items():
+    for addr, (at, text, *_) in reshaped.items():
         placements[addr] = Placement(at, "reshaped", standing(other, at, text, "reshaped row")["text"])
     for addr in hand.ABSENT.get(release, {}):
         if isinstance(addr, int):
@@ -415,7 +416,7 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
             if key not in offsets:
                 offsets[key] = None
     rows = {}
-    for addr, (at, text, _) in reshaped.items():
+    for addr, (at, text, *_) in reshaped.items():
         rows[hexed(addr)] = {**standing(other, at, text, "reshaped row"), "tier": "reshaped"}
     keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending,
           {a.address for a in hand_anchors}, {e.name for e in entries if e.kind == "run"})
@@ -429,10 +430,12 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
     instruction reaching a word the hand table declares absent as the absent row it gives whatever was placed there,
     a keyed row with its value in its relation to the base's, a multiplier's row carrying the instruction that sets
     a register its run shifts by, a divisor the hand table says the release lays out as a shift with two to that
-    shift as its value, or the absent row the hand table gives; a hand row naming no check, no instruction reaching a
-    word, no key and no registered run stops the writer."""
+    shift as its value, an immediate it says the release lays out as another instruction with the value it gives,
+    or the absent row the hand table gives; a hand row naming no check, no instruction reaching a word, no key, no
+    registered run and no immediate stops the writer."""
     tuned, absent = hand.TUNED.get(release, {}), absent_rows(other, hand.ABSENT.get(release, {}))
     shifts, runs, used = shift_rows(other, hand.SHIFTS.get(release, {})), hand.MULTIPLIERS.get(release, {}), set()
+    restated = {addr: row for addr, row in hand.RESHAPED.get(release, {}).items() if len(row) == 4}
     values = base_values(us.code, modules)
 
     def put(addr, row, key=None):
@@ -484,6 +487,10 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
                 placed_row(addr)
         for _, key, _, addr, pattern in getattr(module, "IMMEDIATES", ()):
             def immediate(key=key, addr=addr, pattern=pattern):
+                if addr in restated:
+                    at, text, value, _ = restated[addr]
+                    used.add(addr)
+                    return value, {"key": key, **standing(other, at, text, "reshaped row"), "tier": "reshaped"}
                 p = place(addr, placements, why)
                 pat = pattern_on(pattern, us.text[us.position(addr)], p.text)
                 row = {"key": key, "at": hexed(p.at), "word": word_at(other, p.at), "text": p.text, "tier": p.tier, "pattern": pat}
@@ -523,7 +530,8 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
                        "text": [p.text for p in ps], "tier": weakest([p.tier for p in ps]), "pattern": pats}
                 return getattr(other.code, reader)(*(x for p, pat in zip(ps, pats) for x in (p.at, pat))), row
             valued(name, kind, key, parts[0], values[parts[0], key], halves)
-    for table, what in ((absent, "absent"), (shifts, "shift"), (tuned, "tuned"), (runs, "multiplier")):
+    for table, what in ((absent, "absent"), (shifts, "shift"), (tuned, "tuned"), (runs, "multiplier"),
+                        (restated, "reshaped immediate")):
         stale = sorted(hexed(k) if isinstance(k, int) else k for k in set(table) - used)
         if stale:
             sys.exit(f"the hand table's {what} rows name {', '.join(stale)}, which no reader lists")

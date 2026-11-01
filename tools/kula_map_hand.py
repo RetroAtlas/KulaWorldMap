@@ -1,7 +1,7 @@
 """What the hand settles of a release's map, where the aligner cannot: an anchor placed by a hand read, a key tuned
 otherwise than the frame rates scale it, a reading or a check the release has no instruction for, a divisor the
-release lays out as a shift, a check the release lays out as another instruction, a multiplier's run of another
-shape, a check the release alone has, and the words of the end-screen pairs the release draws otherwise. Every row
+release lays out as a shift, a check or an immediate the release lays out as another instruction, a multiplier's run
+of another shape, a check the release alone has, and the words of the end-screen pairs the release draws otherwise. Every row
 carries a sentence saying what the instruction is and why it is the one, and a hand row wins over the aligner's
 placement. Each release's rows are in a module of its own, `kula_map_hand_<id>.py`, gathered here by release.
 """
@@ -26,7 +26,9 @@ ABSENT = {release: module.ABSENT for release, module in BY_RELEASE.items()}
 # A divisor's key to (the address, the text, why) of the shift the release divides by in place of the base's reciprocal.
 SHIFTS = {release: module.SHIFTS for release, module in BY_RELEASE.items()}
 
-# A US address to (the release's address, the text, why) of the instruction that does the check's work there, or opens the routine there.
+# A US address to (the release's address, the text, why) of the instruction that does the check's work there, or opens the routine
+# there, or to (the release's address, the text, the value, why) of the one holding an immediate in another shape, the value in
+# the reading's own terms.
 RESHAPED = {release: module.RESHAPED for release, module in BY_RELEASE.items()}
 
 # A multiplier's key, or a registered run's name, to (the address, the count, the source register, the destination register, why) of its run.

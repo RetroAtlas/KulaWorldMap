@@ -475,6 +475,24 @@ class Hand(unittest.TestCase):
         self.assertEqual(built["names"]["SPIKES"], f"0x{at:08x}")
         self.assertEqual(built["rows"][f"0x{us_at:08x}"]["tier"], "reshaped")
 
+    def test_a_reshaped_row_for_an_immediate_is_written_with_the_hands_value_in_its_relation_to_the_bases(self):
+        from motion_fixture import ori
+        copy = executable(gaps=GAPS, routines={"pill": lambda c: pill(c, load=ori)})
+        us_at, at = US.places["pill.invincible"], copy.places["pill.invincible"]
+        built = mapped(copy, hand(RESHAPED={us_at: (at, "ori $v0, $zero, 840", 840, "the pill's second count is or'ed in")}))
+        self.assertEqual(key_rows(built)["pill.invincible"],
+                         {"key": "pill.invincible", "at": f"0x{at:08x}", "word": f"0x{copy.listing.code.word(at):08x}",
+                          "text": "ori $v0, $zero, 840", "tier": "reshaped", "us": 840, "value": 840, "by": "same"})
+        self.assertNotIn("pill.invincible", pending_keys(built))
+        left = pending_keys(mapped(copy, hand(RESHAPED={us_at: (at, "ori $v0, $zero, 840", 841, "one more")})))["pill.invincible"]
+        self.assertEqual((left["us"], left["value"], left["why"]), (840, 841, "841 stands in no relation to the base's 840"))
+        with self.assertRaises(SystemExit):
+            mapped(copy, hand(RESHAPED={us_at: (at, "ori $v0, $zero, 841", 840, "not what stands there")}))
+        check, store = US.places["and test it"], copy.places["and store it"]
+        with self.assertRaises(SystemExit) as stale:
+            mapped(copy, hand(RESHAPED={check: (store, "sw $v0, 12($s0)", 1, "a check given a value")}))
+        self.assertEqual(str(stale.exception), f"the hand table's reshaped immediate rows name 0x{check:08x}, which no reader lists")
+
     def test_an_absent_row_for_an_instruction_reaching_a_word_takes_it_out_of_the_derivation(self):
         copy = executable(gaps=GAPS)
         mode_use, clock_use = US.starts["mode"] + 16, US.starts["clock"] + 24
