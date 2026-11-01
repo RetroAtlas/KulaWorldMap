@@ -118,8 +118,7 @@ TUNED = {"eu": {
                         "where this disc has the 28 whole",
 }, "jp": {}}
 
-# A key, or a tuple of the keys of one reading, to (the address, the text, why) of the instruction standing where
-# the reading would be.
+# A key, or a tuple of the keys of one reading, to (the address, the text, why) of the instruction in the reading's place.
 ABSENT = {"eu": {
     "platform.scale": (0x800332e4, "lhu $v1, 36($v0)",
                        "the loader reads the speed's halfword at 36 and stores it back two instructions on as it is, "
@@ -143,8 +142,7 @@ ABSENT = {"eu": {
                       "times 224 by nine"),
 }, "jp": {}}
 
-# A divisor's key to (the address, the text, why) of the shift the release divides by, where the base multiplies by a
-# reciprocal and shifts.
+# A divisor's key to (the address, the text, why) of the shift the release divides by in place of the base's reciprocal.
 SHIFTS = {"eu": {
     "vanish.in.by": (0x8002c12c, "sra $a1, $v0, 3",
                      "the fade in divides the rise times 255 by a shift of three, by eight cut toward nothing, a second "
