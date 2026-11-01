@@ -1290,6 +1290,8 @@ What else the Japanese executable changes in play is not read, beyond the frame'
 
 In play every rate and count but the clock's and the hourglass's is the US executable's on the Japanese disc until its executable is read, the breath's cap and the ending's view among them.
 
+The view's scale down, 3840 of 4096 on this disc and the Japanese and 4096 on the PAL ([camera.md](camera.md)), ships in the table as `play.screen.scale`, which the map reads nowhere: its view in play stands the same height on every disc, and the start camera it draws sees as high as this disc's on each.
+
 The Japanese disc's end screen words, in Japanese and with a Perfect! pair among them, are not transcribed.
 
 The laser's beam was not looked at for a pulse.
