@@ -73,6 +73,7 @@ class Roll(unittest.TestCase):
                 self.assertEqual((r["fall"]["top"], r["fall"]["hop"], r["fall"]["lost"]), (fall, hop, [-2, 36]))
                 self.assertEqual((r["fall"]["wall"], r["fall"]["behind"], r["fall"]["hold"]), (409, 103, [411, 102]))
                 self.assertEqual((r["spin"], r["squash"]["least"], r["look"]["far"]), (spin, 20, 650))
+                self.assertEqual(r["fall"]["spin"], {"gain": 6, "wane": 1})
 
     def test_a_top_speed_taken_otherwise_at_a_landing_or_a_decay_not_the_gain_stops_the_reading(self):
         for game, changes in ((GAME, ({"land.speed": 30}, {"land.short.speed": 30}, {"roll.top.gate": 34},

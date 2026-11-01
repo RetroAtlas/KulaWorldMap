@@ -560,7 +560,9 @@ function falling(b, probe, out) {
   if (b.speed > 0) b.speed = 0;
   else if (b.speed < 0) b.speed = Math.min(0, b.speed + t.gain);
   b.pos = add(add(b.pos, b.n, b.v), b.h, b.speed);
-  b.spinSpeed = b.forward ? Math.min(b.spinSpeed + t.gain, t.top) : Math.max(0, b.spinSpeed - 1);
+  b.spinSpeed = b.forward
+    ? Math.min(b.spinSpeed + f.spin.gain, t.top)
+    : Math.max(0, b.spinSpeed - f.spin.wane);
   const cell = cellOf(b, b.pos);
   const p = progressOf(b);
   const [ahead, behind] = f.hold;

@@ -289,6 +289,7 @@ The viewer turns the ball's body as the game does:
 - It keeps the body as a rotation of its own in the world, turned on each frame about the side by five times the spin's speed and straightened after, so a turn in place, which swaps the heading and the side at once, leaves it where it stands while the view turns round it and the spin that follows turns it about the new side.
 - Up a wall the body stands while the frame turns under it, and the draw of the frame after takes no spin step.
 - Round an edge the frame's four turns of −256 about the side fall on the body one frame behind the arc, with no spin step on those frames, so it comes round the edge with the ball and meets the new face as its frame does.
+- In a fall it grows the spin's speed by the fall's own gain while Up is held, to the roll's top, and lets it wane by the fall's own step otherwise, each a reading of its own beside the roll's gain.
 
 The viewer throws the ball back off a wall met in the air and drops it under a block above as the game does: the frame that meets the wall sets the centre back by twice its advance along the heading, with the speed at that advance reversed, and the frame that meets the block sets it back by twice its rise along the normal, with the speed at nothing, for the jump and for the hop alike, and either puts the spin's speed at nothing, so the ball ends the frame as far back as it would have come on, or as far below as it would have risen, and falls from there, the body standing until Up is held.
 

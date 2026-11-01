@@ -500,6 +500,28 @@ test("a forward speed left in a falling ball's word by whatever dropped it is go
   assert.equal(b.pos[1], y);
 });
 
+test("a falling ball's spin grows by the fall's own gain while Up is held, to the roll's top, and wanes by the fall's own step otherwise, each read from the table", () => {
+  const spins = (spin, pad, from, frames) => {
+    const probe = row(15, 18);
+    const rules = { ...RULES, table: { ...table, fall: { ...table.fall, spin } } };
+    const b = ballAt(rules, [17, 16, 17], TOP, UP);
+    run(b, probe, 31, PAD.up | PAD.cross);
+    assert.equal(b.state, FALL);
+    b.spinSpeed = from;
+    const out = [];
+    for (let f = 0; f < frames; f++) {
+      run(b, probe, 1, pad);
+      assert.equal(b.state, FALL);
+      out.push(b.spinSpeed);
+    }
+    return out;
+  };
+  assert.deepEqual(spins(table.fall.spin, PAD.up, 0, 7), [6, 12, 18, 24, 30, 33, 33]);
+  assert.deepEqual(spins(table.fall.spin, 0, 4, 6), [3, 2, 1, 0, 0, 0]);
+  assert.deepEqual(spins({ gain: 2, wane: 3 }, PAD.up, 0, 4), [2, 4, 6, 8]);
+  assert.deepEqual(spins({ gain: 2, wane: 3 }, 0, 7, 4), [4, 1, 0, 0]);
+});
+
 test("a block met above sets the ball back by twice its rise and drops it with no speed forward and no spin, straight down onto the floor beneath, from a jump and from a hop", () => {
   const probe = row(15, 18, [[17, 15, 15]]);
   const b = ballAt(RULES, [17, 16, 17], TOP, UP);
