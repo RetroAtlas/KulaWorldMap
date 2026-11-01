@@ -70,6 +70,10 @@ def jr(rs):
     return (R[rs] << 21) | 8
 
 
+def jalr(rs):
+    return (R[rs] << 21) | (R["ra"] << 11) | 9
+
+
 def lui(rt, imm):
     return (0x0F << 26) | (R[rt] << 16) | (imm & 0xFFFF)
 

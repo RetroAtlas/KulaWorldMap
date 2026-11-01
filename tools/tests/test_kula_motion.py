@@ -21,8 +21,8 @@ from kula_motion_light import GLOW_CASES, glint  # noqa: E402
 from kula_motion_run import NEXT_MODE, play  # noqa: E402
 from kula_motion_things import QUARTER, SPUN_AT  # noqa: E402
 from kula_skins import CHECKS as SKIN_CHECKS, IMMEDIATES as SKIN_IMMEDIATES  # noqa: E402
-from motion_fixture import (AT, GAME, GAME_EU, GAME_JP, addiu, addu, beq, code, j, jal, jr, lh, lui, lw, ori, sb, sh,  # noqa: E402
-                            sll, sllv, sra, subu, sw, swl, swr, xori)
+from motion_fixture import (AT, GAME, GAME_EU, GAME_JP, addiu, addu, beq, code, j, jal, jalr, jr, lh, lui, lw, ori, sb,  # noqa: E402
+                            sh, sll, sllv, sra, subu, sw, swl, swr, xori)
 
 PUBLIC = Path(__file__).resolve().parents[2] / "public"
 
@@ -177,6 +177,24 @@ class Reads(unittest.TestCase):
         self.assertEqual(c.built(AT, AT + 8), 0x800a0010)
         c = code(lui("v1", 0x000a), j(AT + 400), sll("v0", "v0", 2), lw("a1", "v1", 16))
         self.assertIsNone(c.built(AT, AT + 12))
+
+    def test_a_call_drops_the_halves_in_the_caller_saved_registers_and_a_return_ends_the_walk(self):
+        c = code(lui("v0", 0x000c), jal(0x80012345), addiu("a0", "zero", 1), lw("v1", "v0", 16))
+        self.assertIsNone(c.built(AT, AT + 12))
+        with self.assertRaises(SystemExit):
+            c.address(AT, AT + 12)
+        c = code(lui("s0", 0x000c), jalr("t0"), addiu("a0", "zero", 1), lw("v1", "s0", 16))
+        self.assertEqual(c.built(AT, AT + 12), 0x800c0010)
+        c = code(lui("v0", 0x000c), jalr("t0"), 0, lw("v1", "v0", 16))
+        self.assertIsNone(c.built(AT, AT + 12))
+        c = code(lui("s0", 0x000c), jal(0x80012345), addiu("v0", "s0", 4), lw("v1", "v0", 16))
+        self.assertIsNone(c.built(AT, AT + 12))
+        c = code(lui("v0", 0x000c), jal(0x80012345), lw("v1", "v0", 16))
+        self.assertEqual(c.built(AT, AT + 8), 0x800c0010)
+        c = code(lui("v0", 0x000c), jr("ra"), 0, lw("v1", "v0", 16))
+        self.assertIsNone(c.built(AT, AT + 12))
+        c = code(lui("v0", 0x000c), jr("ra"), lw("v1", "v0", 16))
+        self.assertEqual(c.built(AT, AT + 8), 0x800c0010)
 
     def test_a_register_the_run_never_derived_stops_the_reading(self):
         c = code(sll("v1", "v0", 2), addu("v1", "v1", "a0"), sll("v1", "v1", 1))

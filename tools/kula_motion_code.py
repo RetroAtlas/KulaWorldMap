@@ -408,9 +408,10 @@ class Code:
 
     def built(self, hi_at, lo_at):
         """The address the lui at `hi_at` builds by `lo_at`, in RAM's mirror: an addiu between them adds its
-        immediate to the half, an addu carries the half past an index, a jump is followed through its delay slot,
-        and the addiu, load or store at `lo_at` adds its own; None where the lui, the use or what joins them is not
-        that, or the use is not reached within the walk."""
+        immediate to the half, an addu carries the half past an index, a jump is followed through its delay slot, a
+        call drops the halves in the caller-saved registers once its delay slot has run, and the addiu, load or store
+        at `lo_at` adds its own; None where the lui, the use or what joins them is not that, where a return stands
+        between them, or where the use is not reached within the walk."""
         hi = re.match(r"lui \$(\w+), (0x[0-9a-f]+)$", self.text(hi_at)) if lo_at > hi_at else None
         if not hi:
             return None
@@ -421,15 +422,22 @@ class Code:
             text = self.text(pc)
             if pc == lo_at:
                 return self.added(held, text)
-            m = re.match(r"j (0x[0-9a-f]+)$", text)
-            if m:
-                if pc + 4 == lo_at:
-                    return self.added(held, self.text(pc + 4))
-                self.carry(held, self.text(pc + 4))
-                pc = int(m.group(1), 16)
+            m = re.match(r"(j|jal|jalr|jr) (\S+)", text)
+            if not m:
+                self.carry(held, text)
+                pc += 4
                 continue
-            self.carry(held, text)
-            pc += 4
+            if pc + 4 == lo_at:
+                return self.added(held, self.text(pc + 4))
+            self.carry(held, self.text(pc + 4))     # the delay slot runs before the jump
+            if m.group(1) == "jr":
+                return None
+            if m.group(1) == "j":
+                pc = int(m.group(2), 16)
+                continue
+            for r in CALLER_SAVED:
+                held.pop(r, None)
+            pc += 8
         return None
 
     @staticmethod
