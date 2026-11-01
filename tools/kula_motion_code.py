@@ -223,9 +223,10 @@ class Map:
 
     def reshaped(self, addr):
         """The row saying the release lays the immediate at the base's `addr` out as another instruction, whose value
-        the hand table gives in the reading's own terms, or None where the map has no such row."""
+        the hand table gives in the reading's own terms, told by its value and no pattern, since a keyed row placed at
+        a reshaped instruction keeps its pattern and is read through it; None where the map has no such row."""
         row = self.rows.get(addr)
-        return row if row is not None and row.get("tier") == "reshaped" and "value" in row else None
+        return row if row is not None and row.get("tier") == "reshaped" and "value" in row and "pattern" not in row else None
 
     def shift(self, addr):
         """The row saying the release divides by a shift where the base's `addr` begins a multiply by a reciprocal,

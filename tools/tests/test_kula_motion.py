@@ -340,6 +340,19 @@ class Mapped(unittest.TestCase):
         self.assertIn(hexed(AT + SHIFT + 28), str(stopped.exception))
         self.assertIn(hexed(AT + 28), str(stopped.exception))
 
+    def test_a_keyed_row_placed_at_a_reshaped_instruction_keeps_its_pattern_and_is_read_through_it(self):
+        words = (*WORDS, addiu("v0", "v1", 101))
+        row = (hexed(AT + 28), {"key": "roll.fall.from", "at": hexed(AT + SHIFT + 28), "word": hexed(words[7]),
+                                "text": "addiu $v0, $v1, 101", "tier": "reshaped", "pattern": "addiu $v0, $v1, {}",
+                                "us": 101, "value": 101, "by": "same"})
+        c = mapped(*words, rows=(*ROWS, row))
+        self.assertIsNone(c.map.reshaped(AT + 28))
+        self.assertEqual(c.immediate(AT + 28, "addiu $v0, $v0, {}"), 101)
+        self.assertEqual(mapped(*words[:7], addiu("v0", "v1", 102), rows=(*ROWS, row)).immediate(AT + 28, "addiu $v0, $v0, {}"), 102)
+        with self.assertRaises(SystemExit) as stopped:
+            mapped(*words[:7], addiu("v0", "v0", 101), rows=(*ROWS, row)).immediate(AT + 28, "addiu $v0, $v0, {}")
+        self.assertIn("addiu $v0, $v1, {}", str(stopped.exception))
+
     def test_an_absent_check_passes_where_the_instruction_it_names_stands_and_stops_the_reader_where_another_does(self):
         words = (*WORDS, lw("v1", "s0", 356))
         absent = (hexed(AT + 28), {"absent": True, "at": hexed(AT + SHIFT + 28), "word": hexed(words[7]),
