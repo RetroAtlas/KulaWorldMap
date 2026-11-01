@@ -1,6 +1,13 @@
-"""The hand's rows for the Japanese release's map, each table in the shape `kula_map_hand.py` gives it."""
+"""The hand's rows for the Japanese release's map, each table in the shape `kula_map_hand.py` gives it, the placed
+rows gathered from `kula_map_hand_jp_placed.py`, a module of their own.
+"""
+import sys
+from pathlib import Path
 
-PLACED = {}
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import kula_map_hand_jp_placed
+
+PLACED = kula_map_hand_jp_placed.PLACED
 
 TUNED = {
     "ball.breathe.full": "7200 against 6000, the ticks the breath measures the clock short of, a tick past the 7199 this disc's "
