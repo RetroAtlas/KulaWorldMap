@@ -169,7 +169,7 @@ class Reads(unittest.TestCase):
             c.address(AT + 20, AT + 32)
 
     def test_an_address_is_built_through_a_jump_and_its_delay_slot(self):
-        c = code(lui("v1", 0x000a), addiu("v1", "v1", -3080), j(AT + 24), sll("v0", "v0", 2), lw("a0", "a0", 0),
+        c = code(lui("v1", 0x000a), addiu("v1", "v1", -3080), j(AT + 24), sll("v0", "v0", 2), addiu("v1", "v1", 4),
                  addiu("v0", "zero", 1), addu("v0", "v0", "v1"), lw("a1", "v0", 0))
         self.assertEqual(c.built(AT, AT + 28), 0x8009f3f8)
         self.assertEqual(c.address(AT, AT + 28), 0x8009f3f8)
