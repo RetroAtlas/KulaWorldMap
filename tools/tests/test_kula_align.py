@@ -11,7 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from align_fixture import ANCHORS, ORDER, anchors_of, base, broken, recast, renamed, reworked, shifted, twins  # noqa: E402
+from align_fixture import (ANCHORS, ORDER, anchors_of, base, broken, recast, renamed, returned, reworked,  # noqa: E402
+                           shifted, twins)
 from kula_align import (LISTS, MODULES, TIERS, VOTING, Anchor, Left, align, anchors, given, loose,  # noqa: E402
                         pair_by_votes, report, shape, show, windows)
 
@@ -74,6 +75,22 @@ class Windows(unittest.TestCase):
                 self.assertTrue(tier in by_tier or tier.startswith("strict"), tier)
                 self.assertEqual(at, copy.places[anchor.key])
                 self.assertEqual(shape(text), US.listing.shape[US.listing.position(anchor.address)])
+
+    def test_a_placement_outside_the_function_its_own_is_paired_with_lends_no_offset_and_the_pairs_own_places_the_rest(self):
+        copy = returned()
+        tiers, left = placed(copy)
+        self.assertEqual(left, [])
+        us, other = US.listing, copy.listing
+        hits = windows(us, other, sorted({us.position(a.address) for a in ROWS}))
+        pair = pair_by_votes(us, other, hits, {})[us.function(us.position(US.places["spikes.hold"]))[0]]
+        self.assertEqual(other.address(pair), copy.starts["spikes"])
+        stray = tiers["spikes.step"]
+        self.assertEqual(stray, (copy.places["spikes.step"], "strict3", "addiu $v0, $v0, -1"))
+        self.assertNotEqual(other.function(other.position(stray.at))[0], pair)
+        self.assertEqual(other.text[other.position(stray.at) - 4], "jr $ra")
+        self.assertEqual(tiers["spikes.hold"], (copy.places["spikes.hold"], "offset", "addiu $v1, $zero, 14"))
+        for key, (at, _, _) in tiers.items():
+            self.assertEqual(at, copy.places[key], key)
 
     def test_a_renamed_routines_anchors_are_placed_by_the_alignment_at_the_renamed_tier_with_the_releases_text(self):
         copy = renamed()

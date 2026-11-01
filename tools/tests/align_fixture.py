@@ -1,8 +1,9 @@
 """What the aligner's and the map writer's tests share: an executable of a few routines, where each reading in it
 stands, and copies of it laid out as another release lays out the same code, every routine shifted by its own
 amount, a word put in beside a reading, a register renamed throughout a routine, one that another routine shadows
-with the same opcodes and one that none does, a reading given by another instruction, and one routine twice over;
-a copy may carry other counts in its routines, words of data after its code and another gp."""
+with the same opcodes and one that none does, a reading given by another instruction, a routine returning early on
+the copy, and one routine twice over; a copy may carry other counts in its routines, words of data after its code
+and another gp."""
 
 import sys
 from collections import namedtuple
@@ -98,6 +99,7 @@ ANCHORS = [
 GAPS = {"pill": 1, "clock": 3, "spikes": 6, "step": 2, "vanish": 4, "twin": 5}    # words before each routine
 INSERTED = {"pill": 12, "clock": 9}      # where a word is put into a routine
 PUT_IN = subu("a2", "a2", "v1")
+RETURNED = {"spikes": 20, "vanish": 20}      # where a return is put into a routine, which cuts it in two
 
 
 def lay(order, gaps, change, routines, data=()):
@@ -139,9 +141,9 @@ def shifted():
     return laid(gaps=GAPS)
 
 
-def put_in(name, words):
-    at = INSERTED.get(name)
-    return words if at is None else words[:at] + [PUT_IN] + words[at:]
+def put_in(name, words, where=INSERTED, word=PUT_IN):
+    at = where.get(name)
+    return words if at is None else words[:at] + [word] + words[at:]
 
 
 def broken():
@@ -167,6 +169,12 @@ def reworked():
 def twins():
     """The twin's routine laid twice over, one after the other."""
     return laid(order=ORDER + ("twin",))
+
+
+def returned():
+    """A return put into the spikes' routine before its last readings and into the vanishing block's, which
+    shadows it, at the same place, cutting each in two on the copy."""
+    return laid(change=lambda name, words: put_in(name, words, RETURNED, jr("ra")), inserted=RETURNED)
 
 
 def anchors_of(copy):
