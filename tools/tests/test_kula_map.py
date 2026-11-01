@@ -518,13 +518,15 @@ class Hand(unittest.TestCase):
         self.assertEqual(str(stopped.exception), f"0x{use:08x} is the hand table's absent check and is read as mode.at")
 
     def test_an_absent_row_for_an_instruction_reaching_a_word_takes_it_out_of_the_derivation(self):
-        copy = executable(gaps=GAPS)
+        copy = executable(gaps=GAPS, routines={"mode": lambda c, **k: mode(c, clock=CLOCK + 8, **k)})
         mode_use, clock_use = US.starts["mode"] + 16, US.starts["clock"] + 24
-        word = f"0x{(0x800a << 16) + CLOCK:08x}"
-        at, text = copy.starts["mode"] + 16, f"addiu $v1, $at, {CLOCK}"
+        word, other = f"0x{(0x800a << 16) + CLOCK:08x}", f"0x{(0x800a << 16) + CLOCK + 8:08x}"
+        at, text = copy.starts["mode"] + 16, f"addiu $v1, $at, {CLOCK + 8}"
+        self.assertEqual(pending_keys(mapped(copy))["CLOCK_WORD"]["why"],
+                         f"the instructions reaching it reach {word} (0x{copy.starts['clock'] + 24:08x}) and {other} (0x{at:08x})")
         built = mapped(copy, hand(ABSENT={mode_use: (at, text, "the mode routine builds another word here")}))
         self.assertEqual(built["names"]["CLOCK_WORD"], word)
-        self.assertEqual(built["rows"][f"0x{mode_use:08x}"], {"absent": True, "at": f"0x{at:08x}", "word": f"0x{addiu('v1', 'at', CLOCK):08x}",
+        self.assertEqual(built["rows"][f"0x{mode_use:08x}"], {"absent": True, "at": f"0x{at:08x}", "word": f"0x{addiu('v1', 'at', CLOCK + 8):08x}",
                                                                "text": text, "tier": "hand"})
         self.assertNotIn("CLOCK_WORD", pending_keys(built))
         clock_at, clock_text = copy.starts["clock"] + 24, f"lw $a2, {CLOCK}($at)"
