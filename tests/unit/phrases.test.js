@@ -109,6 +109,15 @@ test("what the ending did to the run's total: the points banked or the penalty t
   );
 });
 
+test("the game's word is closed with a full stop before the run starts afresh where it ends in a letter, and keeps the mark it ends in", () => {
+  const did = (over) =>
+    banked({ penalty: 800, banked: 0, total: -800, over: true }, { ...play.words, over });
+  const sum = "800 points off the total, -800 points in all.";
+  assert.equal(did("Game Over"), `${sum} Game Over. The run starts afresh.`);
+  assert.equal(did("Game Over!"), `${sum} Game Over! The run starts afresh.`);
+  assert.equal(did("Game Over."), `${sum} Game Over. The run starts afresh.`);
+});
+
 test("a room's word says the round is done, or lost, with whose point it is where a match is on, and names the winner where the match is won", () => {
   const { exit, simon, won1 } = play.words;
   assert.equal(roomTold(play.ending.exit, exit, null), `${exit} The round is done.`);

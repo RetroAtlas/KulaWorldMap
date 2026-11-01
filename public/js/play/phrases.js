@@ -122,6 +122,9 @@ export function roomTold(code, word, settled) {
   return settled?.point == null ? `${named} ${ROUND_LOST}` : `${named} ${POINT_TO(settled.point)}`;
 }
 
+/** The word closed with a full stop where it ends in a letter or a digit. */
+const closed = (word) => (/[\p{L}\p{N}]$/u.test(word) ? `${word}.` : word);
+
 /** What the ending did to the run's total: the penalty taken or the points banked, the total,
     and where that is below nothing the game's word for its end. */
 export function banked({ penalty, banked: points, total, over }, words) {
@@ -129,7 +132,7 @@ export function banked({ penalty, banked: points, total, over }, words) {
     ? `${counted(penalty, "point")} off the total`
     : `${counted(points, "point")} banked`;
   const sum = `${did}, ${counted(total, "point")} in all.`;
-  return over ? `${sum} ${words.over} ${AFRESH}` : sum;
+  return over ? `${sum} ${closed(words.over)} ${AFRESH}` : sum;
 }
 
 /** How the level ended: the end screen's word for the ending, or the map's for a way out, a

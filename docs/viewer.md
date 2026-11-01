@@ -189,6 +189,8 @@ On the Japanese disc an ending's view turns about the level more slowly, its thr
 
 On the Japanese disc the strip gives an ending in the word that disc's end screen letters for it, 落ちた for a fall, タイムアウト for the clock running out and, in the Simon rooms, 良くできました for a round done and 間違えた for a wrong move, and the run's end as Game Over.
 
+The strip closes the game's end word with a full stop where it ends in a letter or a digit before saying the run starts afresh, so the Japanese disc's Game Over takes one and the US and PAL discs' Game Over! keeps its mark.
+
 On the Japanese disc the Simon rooms' match names its winner once a player is past two points rather than five, in that disc's own words.
 
 On the Japanese disc the faces of a level with no key run through that disc's own four colour cycles, 256 colours long where the other two discs' are 192 and through the same hues at levels of their own, so its grey swirl is coloured as that disc colours it.
