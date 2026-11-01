@@ -638,13 +638,13 @@ def moves(code, r):
 
 
 def roll(r):
-    """How the ball rolls, turns, goes round an edge and up a wall, falls and
-    lands, each number held against the others: the one top speed wherever
-    the roll takes it, the arc ending where the ball rests off a face, the
-    view's ramps each running their count of steps to within a step of a
-    quarter turn round an edge and by the quarter turn over their frames,
-    cut toward nothing, in a turn and up a wall, the last frame snapping the
-    rest, and every gate one past the value it gates."""
+    """How the ball rolls, turns, goes round an edge and up a wall, falls
+    and lands, each number held against the others: the one top speed
+    wherever the roll takes it, the arc ending where the ball rests off a
+    face, the view's ramps each stepping by the quarter turn over their
+    frames, cut toward nothing, round an edge, in a turn and up a wall, the
+    last frame snapping the rest, and every gate one past the value it
+    gates."""
     if len({r["roll.top"], r["roll.top.gate"], r["land.speed"], r["land.short.speed"], r["fall.spin.top"]}) != 1 \
             or r["fall.spin.top.gate"] != r["roll.top"] + 1:
         sys.exit("the roll's top speed is not one speed wherever it is taken")
@@ -666,8 +666,8 @@ def roll(r):
     if r["turn.frames"] != r["turn.frames.right"] or r["turn.step"] != -r["turn.step.right"] \
             or r["turn.step"] != quarter // r["turn.frames"]:
         sys.exit("a turn's yaw does not step by the quarter turn over its frames")
-    if not 0 < quarter - r["wrap.frames"] * r["wrap.step"] <= r["wrap.step"]:
-        sys.exit("an edge's pitch does not come within a step of a quarter turn")
+    if r["wrap.step"] != quarter // r["wrap.frames"]:
+        sys.exit("an edge's pitch does not step by the quarter turn over its frames")
     if r["climb.step"] != -(quarter // r["climb.frames"]):
         sys.exit("a wall's pitch does not step by the quarter turn over its frames")
     if r["spin"] != r["spin.rest"]:

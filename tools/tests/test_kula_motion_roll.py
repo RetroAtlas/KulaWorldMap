@@ -84,9 +84,9 @@ class Roll(unittest.TestCase):
                     roll({**game, **change})
 
     def test_a_ramp_that_does_not_come_to_a_quarter_turn_stops_the_reading(self):
-        for game, changes in ((GAME, ({"wrap.frames": 12}, {"wrap.step": 79}, {"climb.step": -60}, {"turn.frames": 18},
-                                      {"turn.step.right": -52}, {"turn.step": 54, "turn.step.right": -54})),
-                              (GAME_EU, ({"wrap.frames": 10}, {"wrap.step": 94}, {"climb.step": -72},
+        for game, changes in ((GAME, ({"wrap.frames": 12}, {"wrap.step": 79}, {"wrap.step": 77}, {"climb.step": -60},
+                                      {"turn.frames": 18}, {"turn.step.right": -52}, {"turn.step": 54, "turn.step.right": -54})),
+                              (GAME_EU, ({"wrap.frames": 10}, {"wrap.step": 94}, {"wrap.step": 92}, {"climb.step": -72},
                                          {"turn.step": 63, "turn.step.right": -63}, {"turn.frames": 17, "turn.frames.right": 17}))):
             for change in changes:
                 with self.assertRaises(SystemExit):
