@@ -12,8 +12,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from align_fixture import ANCHORS, ORDER, anchors_of, base, broken, recast, renamed, reworked, shifted, twins  # noqa: E402
-from kula_align import (LISTS, MODULES, TIERS, VOTING, Anchor, Left, align, anchors, loose, pair_by_votes,  # noqa: E402
-                        report, shape, show, windows)
+from kula_align import (LISTS, MODULES, TIERS, VOTING, Anchor, Left, align, anchors, given, loose,  # noqa: E402
+                        pair_by_votes, report, shape, show, windows)
 
 US = base()
 ROWS = anchors_of(US)
@@ -181,6 +181,21 @@ class Anchors(unittest.TestCase):
                 self.assertTrue(held)
                 self.assertEqual([hex(a) for a in held if a not in addresses], [])
                 self.assertEqual(len([a for a in rows if a.module == module.__name__]), len(held))
+
+    def test_an_address_given_by_hand_is_an_anchor_unless_the_rows_hold_it_and_one_off_a_word_or_the_code_exits(self):
+        us = US.listing
+        address = US.starts["vanish"] + 4 * 11
+        self.assertEqual(given(us, ROWS, address), [Anchor("", "", "", address)])
+        self.assertEqual(given(us, ROWS, US.places["twin.count"]), [])
+        start, end = us.address(0), us.address(len(us.text))
+        for bad, sentence in ((address + 2, f"0x{address + 2:08x} is not a multiple of four"),
+                              (start - 4, f"0x{start - 4:08x} is not in the Roll Away executable"),
+                              (end, f"0x{end:08x} is not in the Roll Away executable"),
+                              (end + 2, f"0x{end + 2:08x} is not in the Roll Away executable")):
+            with self.subTest(hex(bad)):
+                with self.assertRaises(SystemExit) as caught:
+                    given(us, ROWS, bad)
+                self.assertEqual(caught.exception.code, sentence)
 
 
 class Printouts(unittest.TestCase):

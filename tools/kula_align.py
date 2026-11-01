@@ -292,6 +292,16 @@ def show(us, other, address, anchors, placements, left):
     print("\n".join(f"  {line}" for line in other.lines(fo, end)))
 
 
+def given(us, rows, address):
+    """The address given by hand as an anchor, or none where the rows hold it already; one outside the base's
+    executable or not a multiple of four exits with a sentence."""
+    if not us.code.holds(address):
+        sys.exit(f"0x{address:08x} is not in the {RELEASES[BASE]['name']} executable")
+    if address % 4:
+        sys.exit(f"0x{address:08x} is not a multiple of four")
+    return [] if any(a.address == address for a in rows) else [Anchor("", "", "", address)]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--release", choices=[r for r in RELEASES if r != BASE], required=True,
@@ -304,11 +314,8 @@ def main():
     if not args.report and args.at is None:
         ap.error("say --report or --at")
     us, other = Listing.of(BASE), Listing.of(args.release, args.disc)
-    rows, hand = anchors(), []
-    if args.at is not None and all(a.address != args.at for a in rows):
-        if not us.code.holds(args.at):
-            sys.exit(f"0x{args.at:08x} is not in the {RELEASES[BASE]['name']} executable")
-        hand = [Anchor("", "", "", args.at)]
+    rows = anchors()
+    hand = given(us, rows, args.at) if args.at is not None else []
     placements, left = align(us, other, rows, hand=hand)
     if args.report:
         report(args.release, placements, left, rows)
