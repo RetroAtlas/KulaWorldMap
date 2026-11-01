@@ -2,7 +2,7 @@
 """Where each instruction the readings match on the base release's executable
 stands on another release's, found by the shape of the code about it.
 
-    python3 tools/kula_align.py --release eu --report         # the count per tier, and every anchor left by module and list
+    python3 tools/kula_align.py --release eu --report         # the count per tier, the anchors placed renamed and those left, by module and list
     python3 tools/kula_align.py --release eu --at 0x800387cc   # the base's window about an address beside the release's
 
 A shape is an instruction's text with every number dropped and the registers
@@ -11,11 +11,20 @@ is its own shape. An anchor is placed where the shapes about it, at radius 10,
 5 or 3, exact then loose, stand at one position of the other executable and
 no other; the executables are then split into functions at their returns and
 paired by the votes of the placements the two widest exact windows made inside
-them, a function whose votes split staying unpaired, and within a pair the one
+them, a function whose votes split staying unpaired, and the functions the
+votes leave are paired by the rare constants they share, a word a lui and an
+ori build, an immediate above 255 or a call to a function paired already, each
+held by three functions or fewer of each executable, where the two lie in the
+same order between their paired neighbours and neither has a second candidate.
+A placement by window whose place lies outside the function its own is paired
+with is left, as are two anchors placed at one place. Within a pair the one
 offset its placements share places an anchor whose shape stands at that
 offset, and an alignment of the two functions' loose shapes places the rest,
-exact or with the registers renamed. Every placement says its tier, and the
-anchors no tier places are listed for a hand read.
+exact or with the registers renamed, a check placed with its registers renamed
+only where the instructions before and after it align too, since its text is
+taken from the place and holds nothing on its own. Every placement says its
+tier, and the anchors placed renamed and those no tier places are listed for a
+hand read.
 """
 import argparse
 import bisect
@@ -41,7 +50,7 @@ import kula_motion_take
 import kula_motion_things
 import kula_skins
 from kula_disc import BASE, RELEASES, open_release
-from kula_motion_code import Code
+from kula_motion_code import READS_FIRST, Code
 from mips import decode
 
 # The readers whose lists hold the anchors, in the order the printouts take them, and the lists.
@@ -52,9 +61,21 @@ LISTS = ("CHECKS", "IMMEDIATES", "MULTIPLIERS", "DIVISORS", "GREYS", "SCANS")
 RADII = (10, 5, 3)      # the windows tried about an anchor, widest first
 TIERS = ("strict10", "strict5", "strict3", "loose10", "loose5", "loose3", "offset", "aligned", "renamed")
 VOTING = TIERS[:2]      # the tiers sure enough to pair functions by
+COMMON = 255            # an immediate up to this tells no function from another
+RARE = 3                # a constant held by this many functions or fewer of each executable tells them apart
 
 NUMBER = re.compile(r"(?<![$\w])-?(?:0x[0-9a-f]+|[0-9]+)(?![\w])")
 REGISTER = re.compile(r"\$\w+")
+IMMEDIATE = re.compile(r"(?:addi|addiu|andi|ori|xori|slti|sltiu) \$\w+, \$\w+, (-?\d+)$")
+LUI = re.compile(r"lui \$(\w+), (0x[0-9a-f]+)$")
+ORI = re.compile(r"ori \$(\w+), \$(\w+), (\d+)$")
+JAL = re.compile(r"jal (0x[0-9a-f]+)$")
+WRITTEN = re.compile(r"(\w+) \$(\w+)")
+
+UNPAIRED = "its function is unpaired"
+BEYOND = "it lies outside the aligned stretches of its pair"
+OUTSIDE = "its window stands outside the function its own is paired with"
+EDGE = "it stands with its registers renamed at the edge of an aligned stretch"
 
 Anchor = namedtuple("Anchor", "module list key address")
 Placement = namedtuple("Placement", "at tier text")
@@ -106,6 +127,7 @@ class Listing:
         self.loose = [loose(t) for t in self.text]
         self.starts = [0] + [i + 2 for i, t in enumerate(self.text) if t == "jr $ra" and i + 2 < count]
         self.indexes = {}
+        self.held = None
 
     @classmethod
     def of(cls, release, disc=None):
@@ -146,6 +168,35 @@ class Listing:
         return [f"0x{self.address(i):08x}  {self.text[i]}{'  <--' if i == mark else ''}"
                 for i in range(max(first, 0), min(last, len(self.text)))]
 
+    def constants(self):
+        """The constants each function holds, by its first position: the words its lui and ori pairs build, its
+        immediates above the common ones and the functions it calls, each by its first position."""
+        if self.held is None:
+            self.held = {}
+            for k, f0 in enumerate(self.starts):
+                f1 = self.starts[k + 1] if k + 1 < len(self.starts) else len(self.text)
+                high, found = {}, set()
+                for i in range(f0, f1):
+                    text = self.text[i]
+                    m = LUI.match(text)
+                    if m:
+                        high[m.group(1)] = int(m.group(2), 16) << 16
+                        continue
+                    m = ORI.match(text)
+                    if m and m.group(2) in high:
+                        found.add(("word", high[m.group(2)] | int(m.group(3))))
+                    m = IMMEDIATE.match(text)
+                    if m and abs(int(m.group(1))) > COMMON:
+                        found.add(("immediate", int(m.group(1))))
+                    m = JAL.match(text)
+                    if m and self.code.holds(int(m.group(1), 16)):
+                        found.add(("call", self.function(self.position(int(m.group(1), 16)))[0]))
+                    m = WRITTEN.match(text)
+                    if m and m.group(1) not in READS_FIRST:
+                        high.pop(m.group(2), None)
+                self.held[f0] = found
+        return self.held
+
 
 def by_window(us, other, i):
     """The tier and the position where the shapes about position i stand once and only once in the other listing,
@@ -179,8 +230,74 @@ def pair_by_votes(us, other, placed, pairs):
     return {fu: next(iter(count)) for fu, count in votes.items() if len(count) == 1 and fu not in pairs}
 
 
+def shared(us, other, pairs):
+    """Every rare constant each unpaired function of the base shares with each unpaired function of the other
+    listing, a call counting as the function it reaches once that one is paired, by the two functions."""
+    inverse = {fo: fu for fu, fo in pairs.items()}
+
+    def named(found, known, name):
+        return {(kind, name(v)) if kind == "call" else (kind, v) for kind, v in found if kind != "call" or v in known}
+
+    held = [{f: named(found, pairs, lambda v: v) for f, found in us.constants().items()},
+            {f: named(found, inverse, inverse.get) for f, found in other.constants().items()}]
+    counts = [Counter(c for found in side.values() for c in found) for side in held]
+    rare = {c for c in counts[0] if counts[0][c] <= RARE and 0 < counts[1][c] <= RARE}
+    holders = defaultdict(set)
+    for fo, found in held[1].items():
+        if fo not in inverse:
+            for c in found & rare:
+                holders[c].add(fo)
+    out = defaultdict(set)
+    for fu, found in held[0].items():
+        if fu not in pairs:
+            for c in found & rare:
+                for fo in holders[c]:
+                    out[fu, fo].add(c)
+    return out
+
+
+def between(pairs, fu, fo):
+    """Whether the other listing's function stands between the pairs of the base function's nearest paired
+    neighbours, as the base function stands between them."""
+    paired = sorted(pairs)
+    k = bisect.bisect_left(paired, fu)
+    low = pairs[paired[k - 1]] if k else -1
+    high = pairs[paired[k]] if k < len(paired) else float("inf")
+    return low < fo < high
+
+
+def pair_by_constants(us, other, placed, pairs):
+    """Each function of the base not yet paired, paired with the one function of the other listing not yet paired
+    that shares a rare constant with it and stands in the same order between their paired neighbours, where no
+    other function of either listing could be paired the same way; the pairs are made until no more are, since
+    each narrows the order the next are held to."""
+    out, known = {}, dict(pairs)
+    while True:
+        candidates = defaultdict(set)
+        for fu, fo in shared(us, other, known):
+            if between(known, fu, fo):
+                candidates[fu].add(fo)
+        taken = Counter(fo for cs in candidates.values() for fo in cs)
+        new = {fu: next(iter(cs)) for fu, cs in candidates.items() if len(cs) == 1 and taken[next(iter(cs))] == 1}
+        if not new:
+            return out
+        out.update(new)
+        known.update(new)
+
+
 # The pairers, each in turn pairing the functions the ones before it left.
-PAIRERS = (pair_by_votes,)
+PAIRERS = (pair_by_votes, pair_by_constants)
+
+
+def inside(us, other, i, j, pairs):
+    """Whether position j lies in the function paired with position i's, or that function is unpaired."""
+    fo = pairs.get(us.function(i)[0])
+    return fo is None or other.function(j)[0] == fo
+
+
+def flanked(blocks, i):
+    """Whether the instructions before and after position i lie in the aligned stretch it lies in."""
+    return any(a < i < a + n - 1 for a, _, n in blocks)
 
 
 def within(us, other, i, fo, offsets, blocks):
@@ -213,28 +330,45 @@ def align(us, other, anchors, pairers=PAIRERS, hand=()):
     pairs = {}
     for pairer in pairers:
         pairs.update(pairer(us, other, placed, pairs))
+    why = {}
+    for i, (_, j) in list(placed.items()):
+        if not inside(us, other, i, j, pairs):
+            del placed[i]
+            why[i] = OUTSIDE
     offsets = defaultdict(set)
     for i, (_, j) in placed.items():
-        fu = us.function(i)[0]
-        if pairs.get(fu) == other.function(j)[0]:
-            offsets[fu].add(j - i)
+        offsets[us.function(i)[0]].add(j - i)
     by_hand = {us.position(a.address) for a in hand} - set(positions)
-    blocks, why = {}, {}
+    keyed = {us.position(a.address) for a in anchors if a.list != "CHECKS"}
+    checks = {us.position(a.address) for a in anchors if a.list == "CHECKS"} - keyed
+    blocks = {}
     for i in positions + sorted(by_hand):
-        if i in placed:
+        if i in placed or i in why:
             continue
         fu = us.function(i)[0]
         hit = by_window(us, other, i) if i in by_hand else None
-        if not hit and fu in pairs:
+        if hit and not inside(us, other, i, hit[1], pairs):
+            hit, why[i] = None, OUTSIDE
+        elif not hit and fu in pairs:
             hit = within(us, other, i, pairs[fu], offsets[fu], blocks)
+            if hit and hit[0] == "renamed" and i in checks and not flanked(blocks[fu, pairs[fu]], i):
+                hit, why[i] = None, EDGE
         if hit:
             placed[i] = hit
-            continue
-        window = us.window("shape", i, RADII[-1])
-        stands = len(other.matches("shape", window)) if window else 0
-        why[i] = "its function is unpaired" if fu not in pairs else "it lies outside the aligned stretches of its pair"
-        if stands > 1:
-            why[i] += f", its shapes standing at {stands} places"
+        elif i not in why:
+            window = us.window("shape", i, RADII[-1])
+            stands = len(other.matches("shape", window)) if window else 0
+            why[i] = UNPAIRED if fu not in pairs else BEYOND
+            if stands > 1:
+                why[i] += f", its shapes standing at {stands} places"
+    at = defaultdict(list)
+    for i, (_, j) in placed.items():
+        at[j].append(i)
+    for group in at.values():
+        for i in group if len(group) > 1 else ():
+            del placed[i]
+            others = [f"0x{us.address(k):08x}" for k in sorted(group) if k != i]
+            why[i] = f"{' and '.join(others)} {'stands' if len(others) == 1 else 'stand'} at its place too"
     placements = {us.address(i): Placement(other.address(j), tier, other.text[j]) for i, (tier, j) in placed.items()}
     left = []
     for a in list(anchors) + [a for a in hand if us.position(a.address) in by_hand]:
@@ -245,24 +379,31 @@ def align(us, other, anchors, pairers=PAIRERS, hand=()):
     return placements, left
 
 
+def listed(title, rows):
+    """The rows' count of anchors and of addresses, then each anchor with what is said of it, by module and list in
+    the readers' order."""
+    print(f"\n{title}: {len(rows):,} anchors at {len({a.address for a, _ in rows}):,} addresses")
+    groups = defaultdict(list)
+    for a, said in rows:
+        groups[a.module, a.list].append(f"  0x{a.address:08x}  {a.key}: {said}")
+    names = [m.__name__ for m in MODULES]
+    for module, kind in sorted(groups, key=lambda g: (names.index(g[0]) if g[0] in names else len(names), LISTS.index(g[1]))):
+        print(f"\n{module} {kind}")
+        print("\n".join(groups[module, kind]))
+
+
 def report(release, placements, left, anchors):
-    """The count per tier over the anchors, and every anchor left by module and list."""
+    """The count per tier over the anchors, then every anchor placed with its registers renamed and every anchor
+    left, each by module and list."""
     addresses = {a.address for a in anchors}
     counts = Counter(p.tier for address, p in placements.items() if address in addresses)
     print(f"{RELEASES[release]['name']}: {sum(counts.values()):,} of {len(addresses):,} addresses placed")
     for tier in TIERS:
         if counts[tier]:
             print(f"  {tier:<9}{counts[tier]:>6,}")
-    left = [entry for entry in left if entry.anchor.address in addresses]
-    print(f"\nleft: {len(left):,} anchors at {len({entry.anchor.address for entry in left}):,} addresses")
-    groups = defaultdict(list)
-    for entry in left:
-        groups[entry.anchor.module, entry.anchor.list].append(entry)
-    names = [m.__name__ for m in MODULES]
-    for module, kind in sorted(groups, key=lambda g: (names.index(g[0]) if g[0] in names else len(names), LISTS.index(g[1]))):
-        print(f"\n{module} {kind}")
-        for entry in groups[module, kind]:
-            print(f"  0x{entry.anchor.address:08x}  {entry.anchor.key}: {entry.why}")
+    renamed = [a for a in anchors if a.address in placements and placements[a.address].tier == "renamed"]
+    listed("renamed", [(a, f"at 0x{placements[a.address].at:08x}  {placements[a.address].text}") for a in renamed])
+    listed("left", [(entry.anchor, entry.why) for entry in left if entry.anchor.address in addresses])
 
 
 def show(us, other, address, anchors, placements, left):
@@ -307,7 +448,8 @@ def main():
     ap.add_argument("--release", choices=[r for r in RELEASES if r != BASE], required=True,
                     help="the release whose executable the anchors are placed on")
     ap.add_argument("--disc", default=None, help="raw PS1 image of that release; defaults to the release's own variable")
-    ap.add_argument("--report", action="store_true", help="print the count per tier and every anchor left")
+    ap.add_argument("--report", action="store_true",
+                    help="print the count per tier, every anchor placed with its registers renamed and every anchor left")
     ap.add_argument("--at", type=lambda v: int(v, 0), default=None,
                     help="an address of the base's executable, shown beside its place")
     args = ap.parse_args()

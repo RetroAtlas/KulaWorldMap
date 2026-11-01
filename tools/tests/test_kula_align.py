@@ -11,10 +11,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from align_fixture import (ANCHORS, ORDER, anchors_of, base, broken, recast, renamed, returned, reworked,  # noqa: E402
-                           shifted, twins)
-from kula_align import (LISTS, MODULES, TIERS, VOTING, Anchor, Left, align, anchors, given, loose,  # noqa: E402
-                        pair_by_votes, report, shape, show, windows)
+from align_fixture import (ANCHORS, ORDER, anchors_of, base, broken, doubled, edged, kept, recast, relaid,  # noqa: E402
+                           renamed, returned, reworked, shifted, twins, unshadowed, wedged)
+from kula_align import (EDGE, LISTS, MODULES, OUTSIDE, TIERS, UNPAIRED, VOTING, Anchor, Left, align,  # noqa: E402
+                        anchors, given, loose, pair_by_constants, pair_by_votes, report, shape, shared, show, windows)
 
 US = base()
 ROWS = anchors_of(US)
@@ -25,6 +25,18 @@ def placed(copy):
     """Every anchor's tier, address and text on the copy, by key, and the anchors left."""
     placements, left = align(US.listing, copy.listing, ROWS)
     return {a.key: placements[a.address] for a in ROWS if a.address in placements}, left
+
+
+def voted(copy):
+    """The window placements on the copy and the pairs the votes make of them."""
+    us, other = US.listing, copy.listing
+    hits = windows(us, other, sorted({us.position(a.address) for a in ROWS}))
+    return hits, pair_by_votes(us, other, hits, {})
+
+
+def function_of(copy, name):
+    """The first position of the named routine's function on the copy."""
+    return copy.listing.function(copy.listing.position(copy.starts[name]))[0]
 
 
 class Shapes(unittest.TestCase):
@@ -76,21 +88,38 @@ class Windows(unittest.TestCase):
                 self.assertEqual(at, copy.places[anchor.key])
                 self.assertEqual(shape(text), US.listing.shape[US.listing.position(anchor.address)])
 
-    def test_a_placement_outside_the_function_its_own_is_paired_with_lends_no_offset_and_the_pairs_own_places_the_rest(self):
+    def test_a_window_hit_outside_the_function_its_own_is_paired_with_is_left_and_lends_no_offset(self):
         copy = returned()
         tiers, left = placed(copy)
-        self.assertEqual(left, [])
         us, other = US.listing, copy.listing
-        hits = windows(us, other, sorted({us.position(a.address) for a in ROWS}))
-        pair = pair_by_votes(us, other, hits, {})[us.function(us.position(US.places["spikes.hold"]))[0]]
+        hits, pairs = voted(copy)
+        pair = pairs[function_of(US, "spikes")]
         self.assertEqual(other.address(pair), copy.starts["spikes"])
-        stray = tiers["spikes.step"]
-        self.assertEqual(stray, (copy.places["spikes.step"], "strict3", "addiu $v0, $v0, -1"))
-        self.assertNotEqual(other.function(other.position(stray.at))[0], pair)
-        self.assertEqual(other.text[other.position(stray.at) - 4], "jr $ra")
+        stray = hits[us.position(US.places["spikes.step"])]
+        self.assertEqual(stray, ("strict3", other.position(copy.places["spikes.step"])))
+        self.assertNotEqual(other.function(stray[1])[0], pair)
+        self.assertEqual(other.text[stray[1] - 4], "jr $ra")
+        self.assertNotIn("spikes.step", tiers)
+        self.assertEqual(left, [Left(Anchor("fixture", "IMMEDIATES", "spikes.step", US.places["spikes.step"]), OUTSIDE,
+                                     copy.starts["spikes"])])
         self.assertEqual(tiers["spikes.hold"], (copy.places["spikes.hold"], "offset", "addiu $v1, $zero, 14"))
         for key, (at, _, _) in tiers.items():
             self.assertEqual(at, copy.places[key], key)
+
+    def test_two_anchors_landing_on_one_place_are_both_left_naming_each_other(self):
+        copy = unshadowed()
+        us, other = US.listing, copy.listing
+        hand = Anchor("", "", "", US.starts["vanish"] + 4 * 11)
+        phase = US.places["the spikes read their phase"]
+        placements, left = align(us, other, ROWS, hand=[hand])
+        self.assertNotIn(phase, placements)
+        self.assertNotIn(hand.address, placements)
+        self.assertEqual(left, [Left(Anchor("fixture", "CHECKS", "the spikes read their phase", phase),
+                                     f"0x{hand.address:08x} stands at its place too", copy.starts["spikes"]),
+                                Left(hand, f"0x{phase:08x} stands at its place too", None)])
+        alone, _ = align(us, other, ROWS)
+        self.assertEqual(alone[phase], (copy.places["the spikes read their phase"], "strict10", "lh $v0, 6($s0)"))
+        self.assertEqual({a: p for a, p in placements.items()}, {a: p for a, p in alone.items() if a != phase})
 
     def test_a_renamed_routines_anchors_are_placed_by_the_alignment_at_the_renamed_tier_with_the_releases_text(self):
         copy = renamed()
@@ -105,6 +134,29 @@ class Windows(unittest.TestCase):
             if routine != "spikes":
                 self.assertTrue(tiers[key].tier.startswith("strict"), key)
                 self.assertEqual(tiers[key].at, copy.places[key])
+
+    def test_a_renamed_check_at_the_edge_of_an_aligned_stretch_is_left_while_one_inside_it_is_placed(self):
+        copy = edged()
+        tiers, left = placed(copy)
+        self.assertEqual(tiers["the spikes read their phase"], (copy.places["the spikes read their phase"], "renamed",
+                                                                "lh $v0, 6($s5)"))
+        self.assertNotIn("and store it", tiers)
+        self.assertEqual(left, [Left(Anchor("fixture", "CHECKS", "and store it", US.places["and store it"]), EDGE,
+                                     copy.starts["spikes"])])
+        self.assertEqual(copy.listing.text[copy.listing.position(copy.places["and store it"])], "sw $v0, 12($s5)")
+        self.assertEqual({key: tiers[key].tier for key in ("spikes.down", "and test it", "spikes.hold", "spikes.step")},
+                         {"spikes.down": "aligned", "and test it": "aligned", "spikes.hold": "offset", "spikes.step": "strict5"})
+        for key, (at, _, _) in tiers.items():
+            self.assertEqual(at, copy.places[key], key)
+
+    def test_a_keyed_anchor_renamed_at_the_edge_of_an_aligned_stretch_is_placed(self):
+        copy = kept()
+        tiers, left = placed(copy)
+        self.assertEqual(left, [])
+        self.assertEqual(tiers["pill.invincible"], (copy.places["pill.invincible"], "renamed", "addiu $t0, $zero, 840"))
+        self.assertEqual(tiers["the pill tests its word"].tier, "offset")
+        for key, (at, _, _) in tiers.items():
+            self.assertEqual(at, copy.places[key], key)
 
     def test_a_renamed_routine_no_other_shadows_is_placed_by_the_loose_window_which_casts_no_vote(self):
         copy = recast()
@@ -178,6 +230,68 @@ class Functions(unittest.TestCase):
         self.assertEqual(pair_by_votes(us, other, {i: ("loose10", j)}, {}), {})
         self.assertEqual(pair_by_votes(us, other, {i: (VOTING[0], j)}, {us.function(i)[0]: 0}), {})
 
+    def test_a_routine_the_votes_cannot_pair_is_paired_by_the_rare_constants_it_shares_and_its_anchors_placed(self):
+        copy = relaid()
+        us, other = US.listing, copy.listing
+        hits, pairs = voted(copy)
+        fu, fo = function_of(US, "clock"), function_of(copy, "clock")
+        self.assertNotIn(fu, pairs)
+        self.assertEqual(pair_by_constants(us, other, hits, pairs), {fu: fo})
+        self.assertEqual(shared(us, other, pairs)[fu, fo],
+                         {("word", 0x88888889), ("word", 0x00808080), ("immediate", 0x8889), ("immediate", 0x8080),
+                          ("call", function_of(US, "step"))})
+        tiers, left = placed(copy)
+        self.assertEqual(left, [])
+        self.assertTrue(all(tiers[key].tier.startswith("loose") for routine, _, _, key in ANCHORS if routine == "clock"))
+        self.assertEqual(tiers["and marks the clock turned"].text, "sb $v0, 2($a3)")
+        for key, (at, _, _) in tiers.items():
+            self.assertEqual(at, copy.places[key], key)
+
+    def test_the_anchors_the_windows_leave_in_a_routine_the_constants_pair_are_placed_by_the_alignment(self):
+        copy = wedged()
+        us, other = US.listing, copy.listing
+        inner = ("clock.shown.sa", "clock.plus", "clock.grey.hi", "clock.grey.lo")
+        tiers, left = placed(copy)
+        self.assertEqual(left, [])
+        self.assertEqual({key: tiers[key].tier for key in inner}, dict.fromkeys(inner, "aligned"))
+        for key, (at, _, _) in tiers.items():
+            self.assertEqual(at, copy.places[key], key)
+        placements, left = align(us, other, ROWS, pairers=(pair_by_votes,))
+        self.assertEqual(left, [Left(Anchor("fixture", kind, key, US.places[key]), UNPAIRED, None)
+                                for _, _, kind, key in ANCHORS if key in inner])
+        self.assertEqual(placements, {a: p for a, p in align(us, other, ROWS)[0].items()
+                                      if a not in {US.places[key] for key in inner}})
+
+    def test_a_routine_whose_constants_two_routines_of_the_copy_hold_stays_unpaired(self):
+        copy = doubled()
+        us, other = US.listing, copy.listing
+        hits, pairs = voted(copy)
+        fu = function_of(US, "clock")
+        self.assertNotIn(fu, pairs)
+        self.assertEqual(pair_by_constants(us, other, hits, pairs), {})
+        self.assertEqual(len({fo for f, fo in shared(us, other, pairs) if f == fu}), 2)
+        tiers, left = placed(copy)
+        self.assertEqual({entry.anchor.key for entry in left}, {key for routine, _, _, key in ANCHORS if routine == "clock"})
+        self.assertEqual({(entry.why, entry.pair) for entry in left}, {(f"{UNPAIRED}, its shapes standing at 2 places", None)})
+        for key, (at, _, _) in tiers.items():
+            self.assertEqual(at, copy.places[key], key)
+
+    def test_a_common_constant_or_one_outside_the_paired_neighbours_order_pairs_nothing(self):
+        copy = twins()
+        us, other = US.listing, copy.listing
+        hits, pairs = voted(copy)
+        twin = function_of(US, "twin")
+        self.assertNotIn(twin, pairs)
+        self.assertEqual([f for f, _ in shared(us, other, pairs) if f == twin], [])
+        self.assertEqual(pair_by_constants(us, other, hits, pairs), {})
+        copy = relaid()
+        us, other = US.listing, copy.listing
+        hits, pairs = voted(copy)
+        clock, pill, spikes = (function_of(US, name) for name in ("clock", "pill", "spikes"))
+        swapped = {**pairs, pill: pairs[spikes], spikes: pairs[pill]}
+        self.assertEqual([fo for f, fo in shared(us, other, swapped) if f == clock], [function_of(copy, "clock")])
+        self.assertEqual(pair_by_constants(us, other, hits, swapped), {})
+
 
 class Anchors(unittest.TestCase):
     def test_the_readers_lists_hold_this_many_distinct_addresses_and_every_entry_of_every_list_is_among_them(self):
@@ -227,6 +341,20 @@ class Printouts(unittest.TestCase):
         self.assertEqual([tier for tier in TIERS if f"  {tier:<9}" in text], ["strict10"])
         self.assertIn("\nleft: 1 anchors at 1 addresses\n\nfixture IMMEDIATES\n  0x", text)
         self.assertIn("  twin.count: its function is unpaired, its shapes standing at 2 places\n", text)
+
+    def test_the_report_lists_the_anchors_placed_renamed_before_those_left(self):
+        copy = renamed()
+        placements, left = align(US.listing, copy.listing, ROWS)
+        out = io.StringIO()
+        with redirect_stdout(out):
+            report("eu", placements, left, ROWS)
+        text = out.getvalue()
+        phase, store = US.places["the spikes read their phase"], US.places["and store it"]
+        self.assertIn(f"\nrenamed: 2 anchors at 2 addresses\n\nfixture CHECKS\n"
+                      f"  0x{phase:08x}  the spikes read their phase: at 0x{copy.places['the spikes read their phase']:08x}  "
+                      f"lh $v0, 6($s5)\n  0x{store:08x}  and store it: at 0x{copy.places['and store it']:08x}  sw $v0, 12($s5)\n"
+                      "\nleft: 0 anchors at 0 addresses\n", text)
+        self.assertTrue(text.endswith("\nleft: 0 anchors at 0 addresses\n"))
 
     def test_the_report_counts_the_anchors_alone_where_an_address_given_by_hand_is_among_the_rows(self):
         copy = shifted()

@@ -2,8 +2,10 @@
 stands, and copies of it laid out as another release lays out the same code, every routine shifted by its own
 amount, a word put in beside a reading, a register renamed throughout a routine, one that another routine shadows
 with the same opcodes and one that none does, a reading given by another instruction, a routine returning early on
-the copy, and one routine twice over; a copy may carry other counts in its routines, words of data after its code
-and another gp."""
+the copy, one routine twice over, one shifted and renamed with the words it builds kept, that one with a word put
+in between its readings, one laid twice in its place, a renamed routine with a word put in after a reading, a count
+kept in another register, and a routine left out; a copy may carry other counts in its routines, words of data after
+its code and another gp."""
 
 import sys
 from collections import namedtuple
@@ -24,20 +26,21 @@ def branch(rs, rt, ahead):
     return beq(rs, rt, 0, 4 * (ahead + 1))
 
 
-def pill(callee, load=addiu, counts=(360, 840), fill=(sll("v0", "v1", 2), addu("v0", "v0", "v1"))):
-    """The pill's routine, its second count loaded by the instruction given, its two counts and the run that fills
-    its word as given."""
+def pill(callee, load=addiu, counts=(360, 840), fill=(sll("v0", "v1", 2), addu("v0", "v0", "v1")), kept="v0"):
+    """The pill's routine, its second count loaded by the instruction given into the register given, its two counts
+    and the run that fills its word as given."""
     return [addiu("sp", "sp", -24), sw("ra", "sp", 16), lw("v0", "a0", 20), lh("v1", "a0", 12),
             addiu("v0", "zero", counts[0]), sw("v0", "a0", 36), *fill,
-            sh("v0", "a0", 40), lw("v1", "a0", 44), branch("v1", "zero", 3), load("v0", "zero", counts[1]),
-            sw("v0", "a0", 48), jal(callee), addiu("a0", "a0", 4), lw("ra", "sp", 16), jr("ra"), addiu("sp", "sp", 24)]
+            sh("v0", "a0", 40), lw("v1", "a0", 44), branch("v1", "zero", 3), load(kept, "zero", counts[1]),
+            sw(kept, "a0", 48), jal(callee), addiu("a0", "a0", 4), lw("ra", "sp", 16), jr("ra"), addiu("sp", "sp", 24)]
 
 
-def clock(callee, word=-17288):
-    return [addiu("sp", "sp", -24), sw("ra", "sp", 16), lw("v1", "a1", 12), lui("v0", 0x8888), ori("v0", "v0", 0x8889),
-            lui("at", 0x800a), lw("a2", "at", word), sra("v0", "v1", 5), addiu("v0", "v0", 1), sh("v0", "a1", 4),
-            lui("v1", 0x0080), ori("v1", "v1", 0x8080), sw("v1", "a1", 8), xori("v0", "v0", 1), sb("v0", "a1", 2),
-            jal(callee), addiu("a0", "a1", 8), lw("ra", "sp", 16), jr("ra"), addiu("sp", "sp", 24)]
+def clock(callee, word=-17288, record="a1"):
+    """The clock's routine over the register it takes its record in, the two words it builds its own."""
+    return [addiu("sp", "sp", -24), sw("ra", "sp", 16), lw("v1", record, 12), lui("v0", 0x8888), ori("v0", "v0", 0x8889),
+            lui("at", 0x800a), lw("a2", "at", word), sra("v0", "v1", 5), addiu("v0", "v0", 1), sh("v0", record, 4),
+            lui("v1", 0x0080), ori("v1", "v1", 0x8080), sw("v1", record, 8), xori("v0", "v0", 1), sb("v0", record, 2),
+            jal(callee), addiu("a0", record, 8), lw("ra", "sp", 16), jr("ra"), addiu("sp", "sp", 24)]
 
 
 def spikes(s, a, down, hold, step=-1):
@@ -100,6 +103,8 @@ GAPS = {"pill": 1, "clock": 3, "spikes": 6, "step": 2, "vanish": 4, "twin": 5}  
 INSERTED = {"pill": 12, "clock": 9}      # where a word is put into a routine
 PUT_IN = subu("a2", "a2", "v1")
 RETURNED = {"spikes": 20, "vanish": 20}      # where a return is put into a routine, which cuts it in two
+EDGED = {"spikes": 17, "vanish": 17}      # where a word is put in after the store of the spikes' phase, and into its shadow
+KEPT = {"pill": 12}          # where a word is put in after the load of the pill's second count
 
 
 def lay(order, gaps, change, routines, data=()):
@@ -175,6 +180,41 @@ def returned():
     """A return put into the spikes' routine before its last readings and into the vanishing block's, which
     shadows it, at the same place, cutting each in two on the copy."""
     return laid(change=lambda name, words: put_in(name, words, RETURNED, jr("ra")), inserted=RETURNED)
+
+
+def relaid():
+    """Every routine shifted by its own amount and the clock's record kept in another register throughout, the two
+    words the clock builds and its call kept."""
+    return laid(gaps=GAPS, routines={"clock": lambda callee: clock(callee, record="a3")})
+
+
+def wedged():
+    """Every routine shifted by its own amount and the clock's record kept in another register throughout, with a
+    word put into the pill's routine after its last reading and into the clock's between its readings."""
+    return laid(gaps=GAPS, routines={"clock": lambda callee: clock(callee, record="a3")}, change=put_in, inserted=INSERTED)
+
+
+def doubled():
+    """The clock's routine laid twice over in its place, a gap before each and before the routine after them."""
+    return laid(order=("pill", "clock", "clock", "spikes", "step", "vanish", "twin"), gaps={"clock": 2, "spikes": 2})
+
+
+def edged():
+    """The spikes' record kept in another register throughout and a word put in after the store of its phase, and
+    into the vanishing block's routine, which shadows it, at the same place."""
+    return laid(routines={"spikes": lambda callee: spikes("s5", "a0", 63, 14)},
+                change=lambda name, words: put_in(name, words, EDGED), inserted=EDGED)
+
+
+def kept():
+    """The pill's second count kept in another register and a word put in after its load."""
+    return laid(routines={"pill": lambda callee: pill(callee, kept="t0")},
+                change=lambda name, words: put_in(name, words, KEPT), inserted=KEPT)
+
+
+def unshadowed():
+    """The vanishing block's routine left out, so nothing shadows the spikes'."""
+    return laid(order=("pill", "clock", "spikes", "step", "twin"))
 
 
 def anchors_of(copy):

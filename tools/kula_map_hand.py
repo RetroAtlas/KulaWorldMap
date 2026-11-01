@@ -70,6 +70,24 @@ PLACED = {"eu": {
     0x80030084: (0x800308b8, "the hop's count falling by one, straight after its load, with no skip tested against it "
                              "on this disc"),
     0x800301d4: (0x800309fc, "the state set to 6, falling, as the hop runs out over nothing"),
+    0x8002f91c: (0x80030164, "the fall from rest's -10 along the normal, loaded after the state is set to 3 and stored at "
+                             "310 before the jump out, as on the US"),
+    0x800307f4: (0x8003101c, "the jump's wall test against 412 on the progress at 336, at the top of the jump's routine, "
+                             "which saves s1 beside s0 and ra on this disc; the hop's routine opens with the same test on "
+                             "its own word at 334"),
+    # The moving spikes.
+    0x8002bd00: (0x8002c55c, "the rattle's count loaded into s0 before the jump out whose delay slot sets the state to 2, "
+                             "the first of the routine's two such loads, 12 on this disc for the US 14"),
+    0x8002bd58: (0x8002c5b0, "the hold's count loaded into s0 before the jump out whose delay slot sets the state to 3, "
+                             "the second of the two, the retract's countdown after it"),
+    # The level loop and the draw.
+    0x80041c34: (0x80042328, "the level loop's branch back to its frame loop while the word it tests is nothing, kept in s7 "
+                             "on this disc where the US reloads it into t2 off the stack, between a word copied across gp "
+                             "and the call that follows, whose delay slot carries nothing here"),
+    0x80036988: (0x800371e0, "the draw's branch past the ball while the outcome word is set, the second of three words it "
+                             "loads through a lui and tests in turn, each lying at another offset on this disc"),
+    0x80041cc0: (0x800423b4, "the world word's test against 10, which ends the game, after its load off gp and the sign "
+                             "test of the word before it, as on the US with both words at other offsets from gp"),
     # The wall test in the air and the air test.
     0x800308cc: (0x80031178, "the first axis test of the heading against the arrow's way, the way read off gp on this disc"),
     0x800308e4: (0x8003118c, "the second"),
