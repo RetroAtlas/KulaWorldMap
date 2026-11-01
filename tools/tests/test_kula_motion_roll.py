@@ -52,27 +52,27 @@ class Moves(unittest.TestCase):
 
 
 class Roll(unittest.TestCase):
-    # a release's roll: its gain, top speed, fall's top, spin and hop, then the turn's, the edge's and the wall's ramps
     SHIPPED = {
-        "us": ((6, 33, -66, -5, -30), ({"frames": 19, "step": 53, "clamp": 10}, [13, 78], {"frames": 16, "step": -64})),
-        "eu": ((7, 40, -80, -6, None), ({"frames": 16, "step": 64, "clamp": 10}, [11, 93], {"frames": 14, "step": -73})),
+        "us": {"gain": 6, "top": 33, "fall": -66, "spin": -5, "hop": -30, "quarter": {"frames": 19, "step": 53, "clamp": 10},
+               "wrap": [13, 78], "climb": {"frames": 16, "step": -64}},
+        "eu": {"gain": 7, "top": 40, "fall": -80, "spin": -6, "hop": None, "quarter": {"frames": 16, "step": 64, "clamp": 10},
+               "wrap": [11, 93], "climb": {"frames": 14, "step": -73}},
     }
 
     def test_the_roll_ships_one_top_speed_and_an_arc_that_ends_a_radius_off_the_new_face(self):
-        for game, (speeds, ramps) in ((GAME, self.SHIPPED["us"]), (Readings(GAME_EU), self.SHIPPED["eu"])):
-            gain, top, fall, spin, hop = speeds
-            quarter, wrap, climb = ramps
-            with self.subTest(top=top):
+        for game, pins in ((GAME, self.SHIPPED["us"]), (Readings(GAME_EU), self.SHIPPED["eu"])):
+            with self.subTest(top=pins["top"]):
                 r = roll(game)
-                self.assertEqual(r["rolling"], {"gain": gain, "top": top, "middle": 256, "wrap": 512, "climb": 413,
+                self.assertEqual(r["rolling"], {"gain": pins["gain"], "top": pins["top"], "middle": 256, "wrap": 512, "climb": 413,
                                                 "touch": 412, "resume": 100, "recentre": 8, "repeat": 6, "over": [101, 427]})
                 self.assertEqual(r["wrap"]["arc"], [[38, 8], [32, 22], [22, 32], [8, 39]])
                 self.assertEqual(sum(n for n, _ in r["wrap"]["arc"]), r["rolling"]["resume"])
                 self.assertEqual(sum(h for _, h in r["wrap"]["arc"]), r["rolling"]["resume"] + 1)
-                self.assertEqual((r["quarter"], [r["wrap"]["frames"], r["wrap"]["step"]], r["climb"]), (quarter, wrap, climb))
-                self.assertEqual((r["fall"]["top"], r["fall"]["hop"], r["fall"]["lost"]), (fall, hop, [-2, 36]))
+                self.assertEqual((r["quarter"], [r["wrap"]["frames"], r["wrap"]["step"]], r["climb"]),
+                                 (pins["quarter"], pins["wrap"], pins["climb"]))
+                self.assertEqual((r["fall"]["top"], r["fall"]["hop"], r["fall"]["lost"]), (pins["fall"], pins["hop"], [-2, 36]))
                 self.assertEqual((r["fall"]["wall"], r["fall"]["behind"], r["fall"]["hold"]), (409, 103, [411, 102]))
-                self.assertEqual((r["spin"], r["squash"]["least"], r["look"]["far"]), (spin, 20, 650))
+                self.assertEqual((r["spin"], r["squash"]["least"], r["look"]["far"]), (pins["spin"], 20, 650))
                 self.assertEqual(r["fall"]["spin"], {"gain": 6, "wane": 1})
 
     def test_a_top_speed_taken_otherwise_at_a_landing_or_a_decay_not_the_gain_stops_the_reading(self):
