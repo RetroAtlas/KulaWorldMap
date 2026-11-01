@@ -85,6 +85,8 @@ Its crumbling block is the grey cracked stone at 54, its plates the green target
 
 On the Japanese disc the second set is another picture, the same in every world: textures 38 to 55 and the palette rows 60 to 71 they are drawn through change in all ten files and to the same bytes in each, the swirl a dark grey with no green in it, the cracked stone darker and the target two green rings with no centre dot, and since the set's three shades are one picture on every disc, the colour a face of a level with no key takes there comes from the colour cycles alone.
 
+The Japanese executable's swirl's colour cycles are its own, four of 256 colours where the US table holds four of 192, through the same hues at levels of their own, read from a table of its own (`SCPS_100.64`, `0x80077a30`, its length at `0x80077a2c`, reached from `0x800272d0` and `0x80027310`) and standing in its release file under `objects`, so the map colours that disc's grey swirl with its own cycles.
+
 A model whose only quad is texture 8 is a placeholder for a type the loader never puts on a face.
 
 **A Simon room is played in the world of its number on the mode's first round, where the player has reached that world.** The world word and the room's number beside it at `0x800a3408` are 0 at power-on and are put back to 0 as a game in the mode ends (`0x80041e84`, and `0x80041eb4`, which the test of the mode at `0x80041e9c` leads to), and the menu that starts the mode (`0x80049674`) leaves both as they are, so the mode opens on its first room in Hiro.
@@ -123,6 +125,8 @@ The three fixed-point triples at the head of the file are the shades, and the si
 
 An empty cell, a beam's cells and every other kind let the face be built, so the stone behind an invisible block, a vanishing one or a platform's home is there to be seen, and through an invisible block it is. The build ships the lists under `skins.hides`, and the kind an ordinary face is built unseen behind apart as `unseen`, since such a face is there to be found though it is not drawn.
 
+On the PAL disc the face builder makes the same tests of the same kinds at addresses of its own (`SCES_010.00`, an ordinary face's path at `0x80027c78`, `0x80027f4c` and `0x80027f54`, the crumbling block's at `0x80027d54` to `0x80027d70`, the invisible block's at `0x80027c8c` to `0x80027ca0` and the kind an ordinary face is built unseen behind at `0x8002809c`), so its lists are this disc's and none stand in its release file.
+
 On the Japanese disc the face builder folds the kinds into ranges and the lists come out the same: an ordinary face's path tests kinds below 3 and then kind 4 (`SCPS_100.64`, `0x80027638`, `0x800278d8`) where this disc's tests kinds below 2, kind 2 and kind 4 (`0x800273a8`, `0x8002767c`, `0x80027684`), the crumbling block's path kinds below 3, then 4 and 6 (`0x80027708`, `0x80027714`, `0x8002771c`) where this disc's tests below 2, 2, 4 and 6 (`0x80027484` to `0x800274a0`), and the invisible block's path kinds below 5 in one test (`0x80027650`), a test of kinds below 3 before it overwritten before anything reads it (`0x8002764c`), where this disc's tests below 2, 2 to 3 and 4 (`0x800273bc` to `0x800273d0`), the kind an ordinary face is built unseen behind 6 on both (`0x80027a20`; here `0x800277cc`).
 
 **The record table is not a skin table.** A cell holds either a style or a record index, never both, so a block carrying a record has no style of its own, and the record every level ends with holds the level's time. Nothing in a level says how a block looks: the kind and the type say what it is, and the loader's rule above says the rest.
@@ -142,9 +146,5 @@ The table holds block faces and nothing else: a type's model is the face under t
 **Sections 7 to 9 are unread.** Section 9 is 225 KB and the largest after the artwork, and the geometry may live there.
 
 Section 7 is the one section whose size the discs change beyond HIRO's palette block above, 8,604 to 35,216 bytes larger on the PAL disc in eight worlds and the US disc's size in HIRO and HILLS, 1,760 to 3,600 bytes smaller on the Japanese disc in every world, and nothing settled above draws on what it holds.
-
-**What the PAL and Japanese executables change in the loader's rules.** The colour cycles a level with no key runs and the lists of what hides a face are read off all three executables, the PAL's cycles standing in its release file under `objects` and its hides the US ones.
-
-The Japanese executable's swirl's colour cycles are its own, four of 256 colours where the US table holds four of 192, through the same hues at levels of their own, read from a table of its own (`SCPS_100.64`, `0x80077a30`, its length at `0x80077a2c`, reached from `0x800272d0` and `0x80027310`) and standing in its release file under `objects`, so the map colours that disc's grey swirl with its own cycles.
 
 **What the 8bpp level of each texture is for.** It is uploaded like the rest and the renderer never reads it for a block face; the level select or a near view may.
