@@ -8,12 +8,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_motion_code import Readings  # noqa: E402
 from kula_motion_jump import flight, jump  # noqa: E402
-from motion_fixture import GAME, GAME_EU  # noqa: E402
+from motion_fixture import GAME, GAME_EU, GAME_JP  # noqa: E402
 
 
 class Jump(unittest.TestCase):
     def test_the_jump_ships_its_speed_its_count_rule_and_its_landings(self):
-        for game, speed, skip in ((GAME, 33, 2), (Readings(GAME_EU), 40, None)):
+        for game, speed, skip in ((GAME, 33, 2), (Readings(GAME_EU), 40, None), (GAME_JP, 33, 2)):
             j = jump(game)
             self.assertEqual((j["speed"], j["skip"], j["snap"], j["far"], j["long"], j["scale"]),
                              (speed, skip, 1024, 1536, 3, [3, 2]))
@@ -58,6 +58,7 @@ class Flight(unittest.TestCase):
                                         "curve": {"above": 100, "back": [4096, 3072, 2048, 0],
                                                   "left": [4096, 1707, 0, 0]}})
         self.assertEqual(flight(GAME_EU), {**flight(GAME), "slow": 880, "first": 16, "frames": 69})
+        self.assertEqual(flight(GAME_JP), flight(GAME))
 
     def test_the_fly_in_flies_68_frames_and_the_pad_is_read_on_the_70th_69_and_the_71st_on_the_pal_executable(self):
         for game, eased, past, read_on in ((GAME, [13, 12, 11, 10, 9, 8, 7, 6, 5], 1, (70, 67)),

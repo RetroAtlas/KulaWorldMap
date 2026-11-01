@@ -10,12 +10,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion_code import Code  # noqa: E402
 from kula_motion_things import SPINS, SPUN_AT, laser, spin_orders  # noqa: E402
-from motion_fixture import GAME, GAME_EU, jal  # noqa: E402
+from motion_fixture import GAME, GAME_EU, GAME_JP, jal  # noqa: E402
 
 
 class Laser(unittest.TestCase):
     def test_a_circuit_is_its_level_shifted_into_one_channel_or_two(self):
-        for game in (GAME, GAME_EU):
+        for game in (GAME, GAME_EU, GAME_JP):
             beam = laser(game)
             self.assertEqual(beam["colours"], [[8, 8, 0], [0, 0, 8], [0, 8, 0], [8, 0, 0]])
             self.assertEqual((beam["reach"], beam["nozzle"], beam["width"]), (256, 90, 14))

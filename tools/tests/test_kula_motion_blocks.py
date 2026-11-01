@@ -8,12 +8,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_motion_blocks import DIVISORS, blocks, platform, standing  # noqa: E402
 from kula_motion_code import Readings  # noqa: E402
-from motion_fixture import AT, GAME, GAME_EU, code, lui, ori, sra  # noqa: E402
+from motion_fixture import AT, GAME, GAME_EU, GAME_JP, code, lui, ori, sra  # noqa: E402
 
 
 class Blocks(unittest.TestCase):
     def test_the_blocks_under_the_ball_ship_the_cold_the_edge_rule_and_the_ride_by_kind(self):
-        for game, shrink in ((GAME, 26), (GAME_EU, 32)):
+        for game, shrink in ((GAME, 26), (GAME_EU, 32), (GAME_JP, 26)):
             b = blocks(game)
             self.assertEqual(b[2], {"chill": 150, "cold": {"gain": 40, "over": 500, "back": 400, "wane": 10}})
             self.assertEqual(b[6], {"size": 512, "shrink": shrink, "edge": {"hold": 301, "back": 401, "push": 40}})
@@ -49,11 +49,13 @@ class Platform(unittest.TestCase):
         for absent in ({"platform.scale": None}, {"platform.over": None}, {"platform.scale": None, "platform.over": None}):
             self.assertEqual(platform(Readings({**r, **absent}), 30), {"speed": 30, "dwell": 48})
         self.assertEqual(platform(Readings({**GAME_EU, "platform.dwell": 40}), 30), {"speed": 30, "dwell": 40})
+        self.assertEqual(platform(Readings({**GAME_JP, "platform.scale": 50, "platform.dwell": 48}), 30),
+                         {"speed": 25, "dwell": 48})
 
 
 class Standing(unittest.TestCase):
     def test_the_ball_stands_on_each_kind_as_its_own_number_or_one_past_the_types(self):
-        for game in (GAME, GAME_EU):
+        for game in (GAME, GAME_EU, GAME_JP):
             self.assertEqual(standing(game), {1: 1, 2: 2, 3: 93, 4: 4, 5: 95, 6: 96, 7: 97})
 
     def test_a_word_read_from_another_kind_or_style_or_a_cell_taken_otherwise_stops_the_reading(self):

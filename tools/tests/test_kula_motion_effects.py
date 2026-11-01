@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_motion_effects import effect_init, effect_tables, effects  # noqa: E402
-from motion_fixture import AT, GAME, GAME_EU, addiu, code, lui, lw, sb, sw  # noqa: E402
+from motion_fixture import AT, GAME, GAME_EU, GAME_JP, addiu, code, lui, lw, sb, sw  # noqa: E402
 
 
 class Effects(unittest.TestCase):
@@ -70,6 +70,9 @@ class Effects(unittest.TestCase):
         # the flash shows on 11 passes, from 248 down to 8, and a level with no key opens from white over 31
         self.assertEqual(len(range(272 - 24, 0, -24)), 11)
         self.assertEqual(len(range(256 - 8, 0, -8)), 31)
+
+    def test_on_the_japanese_executable_the_effects_ship_as_on_the_base_from_tables_at_its_own_addresses(self):
+        self.assertEqual(effects(GAME_JP), effects(GAME))
 
     def test_an_effect_word_otherwise_stops_the_reading(self):
         tables, at = GAME["effect.tables"], GAME["effect.hud.at"]

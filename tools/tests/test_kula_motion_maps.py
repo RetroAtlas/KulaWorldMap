@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import BASE, RELEASES  # noqa: E402
 from kula_motion_code import MAPS, Code, Map, beside, registry, unhex  # noqa: E402
 from mips import decode  # noqa: E402
-from motion_fixture import SIZE  # noqa: E402
+from motion_fixture import SIZE, finished  # noqa: E402
 
 COMMITTED = {path.stem: json.loads(path.read_text()) for path in sorted(MAPS.glob("*.json"))}
 LEFT = [{"address": "0x80010000", "module": "kula_motion_code", "list": "CHECKS", "key": "twin.count", "why": "left"},
@@ -38,11 +38,6 @@ def maps_of(**pending):
 
 def listed(v):
     return v if isinstance(v, list) else [v]
-
-
-def finished(data):
-    """The map's rows and names read as a finished map's, whatever it has pending."""
-    return Map({**data, "pending": []})
 
 
 def left(data):

@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion_code import Code, Readings  # noqa: E402
 from kula_motion_roll import STATES, body, moves, roll  # noqa: E402
-from motion_fixture import GAME, GAME_EU  # noqa: E402
+from motion_fixture import GAME, GAME_EU, GAME_JP  # noqa: E402
 
 
 class Moves(unittest.TestCase):
@@ -26,7 +26,7 @@ class Moves(unittest.TestCase):
         return Code(bytes(blob))
 
     def test_the_moves_hold_together_at_the_middle_the_wall_and_the_edge(self):
-        for game in (GAME, GAME_EU):
+        for game in (GAME, GAME_EU, GAME_JP):
             moves(self.states(), game)
 
     def test_a_state_sent_elsewhere_stops_the_reading(self):
@@ -60,8 +60,9 @@ class Roll(unittest.TestCase):
     }
 
     def test_the_roll_ships_one_top_speed_and_an_arc_that_ends_a_radius_off_the_new_face(self):
-        for game, pins in ((GAME, self.SHIPPED["us"]), (Readings(GAME_EU), self.SHIPPED["eu"])):
-            with self.subTest(top=pins["top"]):
+        for release, game in (("us", GAME), ("eu", Readings(GAME_EU)), ("jp", GAME_JP)):
+            pins = self.SHIPPED.get(release, self.SHIPPED["us"])
+            with self.subTest(release=release):
                 r = roll(game)
                 self.assertEqual(r["rolling"], {"gain": pins["gain"], "top": pins["top"], "middle": 256, "wrap": 512, "climb": 413,
                                                 "touch": 412, "resume": 100, "recentre": 8, "repeat": 6, "over": [101, 427]})
@@ -113,7 +114,7 @@ class Roll(unittest.TestCase):
 
 class Body(unittest.TestCase):
     def test_the_body_turns_a_quarter_over_the_arc_in_steps_of_a_sixteenth(self):
-        for game in (GAME, GAME_EU):
+        for game in (GAME, GAME_EU, GAME_JP):
             self.assertEqual(body(game), -256)
             self.assertEqual(body(game) * 4, -1024)
 

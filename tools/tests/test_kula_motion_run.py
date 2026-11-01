@@ -14,7 +14,7 @@ from kula_motion_code import Code, Map  # noqa: E402
 from kula_motion_jump import flight  # noqa: E402
 from kula_motion_run import WORDS_COUNT, WORDS_TABLE, play, words  # noqa: E402
 from kula_motion_simon import simon  # noqa: E402
-from motion_fixture import AT, GAME, GAME_EU, lui, lw  # noqa: E402
+from motion_fixture import AT, GAME, GAME_EU, GAME_JP, lui, lw  # noqa: E402
 
 
 class Play(unittest.TestCase):
@@ -52,6 +52,20 @@ class Play(unittest.TestCase):
                                        "scale": {"across": 4096, "down": 4096}})
         self.assertEqual((p["flight"], p["simon"]), (flight(GAME_EU), simon(GAME_EU)))
         same = ("start", "ending", "wait", "bonus", "points", "next")
+        self.assertEqual({k: p[k] for k in same}, {k: base[k] for k in same})
+
+    def test_on_the_japanese_executable_the_level_ships_its_clock_its_view_and_its_words(self):
+        p, base = play(GAME_JP), play(GAME)
+        self.assertEqual(p["clock"], {"tick": 1, "second": 60, "face": 8, "out": -2})
+        self.assertEqual(p["words"], {"exit": "良くできました", "bonus": "良くできました", "hidden": "良くできました",
+                                      "spikes": "刺さった", "time": "タイムアウト", "lost": "落ちた", "fire": "燃えた",
+                                      "captivator": "捕まった", "acid": "ファイナルクリア", "laser": "やられた",
+                                      "simon": "間違えた", "over": "Game Over", "won1": "1プレイヤーの勝ち",
+                                      "won2": "2プレイヤーの勝ち", "equal": "引き分け"})
+        self.assertEqual(p["view"], {"angles": [-5, 2, 7], "swing": 12, "off": 1400, "reach": 1000,
+                                     "bonus": {"swing": 58, "off": 3400, "reach": 3000}, "hidden": {"off": 400}})
+        self.assertEqual((p["flight"], p["simon"]), (flight(GAME_JP), simon(GAME_JP)))
+        same = ("start", "ending", "wait", "bonus", "points", "next", "screen")
         self.assertEqual({k: p[k] for k in same}, {k: base[k] for k in same})
 
     def test_an_ending_shared_or_waited_otherwise_stops_the_reading(self):

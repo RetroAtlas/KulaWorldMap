@@ -8,12 +8,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_motion_code import Readings  # noqa: E402
 from kula_motion_harms import harms  # noqa: E402
-from motion_fixture import GAME, GAME_EU  # noqa: E402
+from motion_fixture import GAME, GAME_EU, GAME_JP  # noqa: E402
 
 
 class Harms(unittest.TestCase):
     def test_the_harms_ship_by_kind_and_by_type_with_the_captivators_squared_reach(self):
-        for game in (GAME, GAME_EU):
+        for game, star in ((GAME, 5), (GAME_EU, 5), (Readings(GAME_JP), None)):
             h = harms(game)
             self.assertEqual(h["kinds"][1]["heat"], {"burn": 40, "land": 600, "limit": 2000, "cool": 15,
                                                      "swell": 210, "shake": {"base": 40, "over": 25, "big": 126}})
@@ -23,7 +23,7 @@ class Harms(unittest.TestCase):
             self.assertEqual(h["types"][42], {"harm": {"form": 0}})
             for t in (50, 51):
                 self.assertEqual(h["types"][t], {"catch": {"square": 44999}})
-            self.assertEqual(h["types"][52], {"catch": {"square": 44999}, "points": 5})
+            self.assertEqual(h["types"][52], {"catch": {"square": 44999}, "points": star})
             self.assertEqual(h["types"][56], {"catch": {"square": 44999, "stand": 200}})
             self.assertEqual(h["types"][53], {"catch": {"square": 16199}})
             self.assertEqual(h["types"][30], {"dying": {"flash": 1024}, "tint": {"own": 400, "other": 2000}})

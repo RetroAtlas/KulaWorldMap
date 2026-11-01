@@ -11,7 +11,7 @@ from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion_code import Code, Readings, dispatch  # noqa: E402
 from kula_motion_take import (END_FACES, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, TAKE_CASES, TAKE_TAIL,  # noqa: E402
                               TAKE_TYPES, devices, end_cases, exits, take)
-from motion_fixture import GAME, GAME_EU, code  # noqa: E402
+from motion_fixture import GAME, GAME_EU, GAME_JP, code  # noqa: E402
 
 
 class Dispatch(unittest.TestCase):
@@ -75,6 +75,13 @@ class Take(unittest.TestCase):
         self.assertEqual(lasting[34], {**lasted[34], "word": 700})
         self.assertEqual(lasting[38], {"word": 700, "step": 1, "blink": {"times": 21, "frames": 8, "first": 7}})
 
+    def test_on_the_japanese_executable_the_hourglass_turns_the_clock_from_7199_and_scores_nothing(self):
+        taken, lasting = take(Readings(GAME_JP))
+        base, lasted = take(GAME)
+        self.assertEqual(taken[35], {"reach": 160, "stand": 436, "points": None, "clock": {"from": 7199, "second": None}})
+        self.assertEqual({t: v for t, v in taken.items() if t != 35}, {t: v for t, v in base.items() if t != 35})
+        self.assertEqual(lasting, lasted)
+
     def test_a_reach_that_is_not_a_square_stops_the_reading(self):
         for change in ({"take.reach": 25000}, {"take.within": 10001}, {"take.reach.key": 22500 + 1}):
             with self.assertRaises(SystemExit):
@@ -129,14 +136,14 @@ class Take(unittest.TestCase):
                 take({**GAME, **change})
 
     def test_the_exits_ship_what_the_loader_and_the_last_key_write(self):
-        for game in (GAME, GAME_EU):
+        for game in (GAME, GAME_EU, GAME_JP):
             self.assertEqual(exits(game), {7: {"shut": {"f3": 1}, "opened": {"f3": 0, "f4": 1}},
                                            26: {"shut": {"f4": 0}, "opened": {"f4": 1}}})
 
 
 class Devices(unittest.TestCase):
     def test_the_teleporter_and_the_switch_ship_their_bands_about_the_middle(self):
-        for game in (GAME, GAME_EU):
+        for game in (GAME, GAME_EU, GAME_JP):
             d = devices(game)
             self.assertEqual(d[5]["send"], {"wait": 15, "band": [167, 345], "hold": 15, "rearm": [156, 356]})
             self.assertEqual(d[9]["throw"], {"band": [197, 315], "rearm": [156, 356]})

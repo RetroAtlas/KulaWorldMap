@@ -313,8 +313,8 @@ def simon(r):
     round, the word the menu sets for the loop to flip and the total the menu
     code puts to end the game, each held against the others: one mode for the
     pad's case, the start's branch, the loop's point, the next-level routine's
-    branch and the menu, the pad's verdicts the ones the ending reads, the bits one each,
-    the reset's fill the sequence the pad reads from its last halfword down,
+    branch and the menu, the pad's verdicts the ones the ending reads, the bits one each, the menu's press one
+    button and no direction, the reset's fill the sequence the pad reads from its last halfword down,
     a latched request past the turn's gate, and one gate for the points
     wherever they are asked."""
     if len({r["simon.mode"], r["simon.start.mode"], r["simon.loop.mode"], r["simon.next.mode"], r["simon.menu.start"],
@@ -325,9 +325,11 @@ def simon(r):
         sys.exit("the pad's verdicts are not the ones the ending reads")
     if r["simon.rest"] != STATES[1] or r["simon.rest.flag"] != STATES[1]:
         sys.exit("the idle count does not grow in the rest state")
-    if any(r[f"simon.pad.{key}"] != r[f"pad.{key}"] for key in ("up", "cross", "left", "right")) \
-            or r["simon.menu.cross"] != r["pad.cross"]:
+    if any(r[f"simon.pad.{key}"] != r[f"pad.{key}"] for key in ("up", "cross", "left", "right")):
         sys.exit("the Simon rooms read other bits of the pad than the arcade's bits")
+    menu = r["simon.menu.cross"]
+    if menu <= 0 or menu & (menu - 1) or menu in (r["pad.up"], r["pad.left"], r["pad.right"]):
+        sys.exit("menu code does not read a press of one button apart from the directions")
     if r["simon.turn.left"] != r["pad.turn.left"] or r["simon.turn.right"] != r["pad.turn.right"] \
             or r["simon.empty"] != r["simon.turn.right"]:
         sys.exit("the Simon rooms' turns are not the arcade's turns, or a turn right is not told by the empty halfword's -1")

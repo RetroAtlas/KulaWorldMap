@@ -12,7 +12,7 @@ from kula_motion_code import PHASES, Code  # noqa: E402
 from kula_motion_light import (GLOW_DOUBLE, GLOW_FACE, GLOW_LIFT, GLOW_MAKE, LIGHT_ROOT, ROOT_ROWS,  # noqa: E402
                                SHADOW_SQUARE, glint, glow_lift, glow_spill, light, root_table, shadow_half, spike_cycle,
                                vanish_cycle)
-from motion_fixture import GAME, GAME_EU, R, addiu, addu, beq, jal, jr, lui, rise_at, runs, sll, sra, sw  # noqa: E402
+from motion_fixture import GAME, GAME_EU, GAME_JP, R, addiu, addu, beq, jal, jr, lui, rise_at, runs, sll, sra, sw  # noqa: E402
 
 
 class Shadow(unittest.TestCase):
@@ -72,7 +72,7 @@ class Light(unittest.TestCase):
             root_table(self.table(rows))
 
     def test_the_light_ships_both_ways_round_with_the_root_it_measures_by(self):
-        for game in (GAME, GAME_EU):
+        for game in (GAME, GAME_EU, GAME_JP):
             lit = light(game)
             self.assertEqual((lit["near"], lit["far"], lit["full"], lit["bits"]), (350, 512, 128, 23))
             self.assertEqual(lit["turned"], {"kind": 9, "value": 1, "near": 1280, "far": 1792})
@@ -133,7 +133,7 @@ class Glow(unittest.TestCase):
 
 class Glint(unittest.TestCase):
     def test_the_glint_ships_its_steps_its_slots_and_a_generator_of_its_own(self):
-        for game in (GAME, GAME_EU):
+        for game in (GAME, GAME_EU, GAME_JP):
             g = glint(game)
             self.assertEqual((g["chance"], g["rise"], g["top"], g["fall"], g["slots"]), (3, 128, 254, 16, 16))
             self.assertEqual((g["rows"], g["cuts"]), (3, 3))
@@ -259,6 +259,11 @@ class Cycles(unittest.TestCase):
         self.assertEqual([v for s, v in seq if s == 5][:3] + [v for s, v in seq if s == 5][-2:], [255, 239, 223, 31, 15])
         appear = [[s for s, _ in vanish_cycle(GAME_EU, p)].index(1) for p in range(PHASES)]
         self.assertEqual([(appear[0] - a) % 188 for a in appear], [0, 47, 94, 141])
+
+    def test_on_the_japanese_executable_the_spikes_and_the_vanishing_block_run_as_on_the_base(self):
+        for p in range(PHASES):
+            self.assertEqual(spike_cycle(GAME_JP, p), spike_cycle(GAME, p))
+            self.assertEqual(vanish_cycle(GAME_JP, p), vanish_cycle(GAME, p))
 
     def test_a_vanishing_ramp_that_does_not_run_over_its_state_or_cover_the_span_stops_the_reading(self):
         for game, change in ((GAME, {"vanish.dim.by": 8}), (GAME, {"vanish.in.over": 8}), (GAME, {"vanish.settle.by": None}),

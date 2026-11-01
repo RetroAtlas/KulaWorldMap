@@ -1,5 +1,5 @@
 """What the motion reader's tests share: instruction builders, an executable of a few words and the game's numbers, the
-base executable's and the PAL executable's where they differ."""
+base executable's and the PAL and the Japanese executables' where they differ."""
 
 import struct
 import sys
@@ -104,6 +104,17 @@ def code(*words, **at):
     return Code(bytes(blob), **at)
 
 
+def finished(data):
+    """The map's rows and names read as a finished map's, whatever it has pending."""
+    return Map({**data, "pending": []})
+
+
+def names_on(release):
+    """Every registered constant's value on the release as its map places them, read whatever the map has pending, since
+    the readings here are typed by hand and not read through the map."""
+    return Code(b"", map=finished(Map.read(release))).names()
+
+
 # The numbers the executable holds, as the reader returns them.
 GAME = {
     "spikes.phase.step": 35, "spikes.phase.down": 63, "spikes.phase.held": 96,
@@ -173,7 +184,7 @@ GAME = {
     "body.one": 4096, "body.one.landing": 4096, "body.mark.wrap": 1, "body.mark.wall": 2, "body.mark.right": 3,
     "body.mark.left": 4, "body.test.wrap": 1, "body.test.right": 3, "body.test.left": 4, "body.test.wall": 2,
     "body.wrap": -256, "body.right": -1024, "body.left": 1024, "body.wall": -1024,
-    "time.tick": 50, "ball.breathe.full": 6000,
+    "time.tick": 50, "ball.breathe": 40, "ball.breathe.full": 6000, "ball.breathe.over": 40, "ball.breathe.reach": 200,
     "take.live": 1, "take.stand": 386, "take.stand.coin": 406, "take.stand.hedgehog": 416, "take.stand.hourglass": 436,
     "take.stand.gem": 436, "take.reach": 25600, "take.reach.key": 22500, "take.reach.fruit": 32400,
     "take.within": 10000, "take.first": -27, "take.open": 1, "take.third": 2,
@@ -317,6 +328,10 @@ GAME = {
     "standing.word.3": 93, "standing.word.5": 95, "standing.word.6": 96, "standing.word.7": 97, "standing.style.1": 1,
     "standing.style.2": 2, "standing.style.3": 3, "standing.style.4": 4, "standing.style.word.3": 93,
     "standing.nothing": -1, "standing.none": -1,
+    "path.crumbling": -6, "path.vanishing": -7, "path.invisible": 3,
+    "hide.below": 2, "hide.also.a": 2, "hide.also.b": 4, "hide.while": 6,
+    "invisible.below": 2, "invisible.from": -2, "invisible.span": 2, "invisible.also": 4,
+    "crumbling.below": 2, "crumbling.a": 2, "crumbling.b": 4, "crumbling.c": 6,
     "names": {name: value for name, (_, value) in registry().items()},
 }
 
@@ -371,9 +386,39 @@ EU = {
     "effect.hud.at": {"clock": [160, 26, -1], "teleport": [160, 180, -1],
                       "fruit": [[208, 233, -1], [228, 232, -1], [253, 232, -1], [278, 232, -1], [299, 234, -1]]},
     "effect.table.at": [0x800d2668, 0x800d2668, 0x800d2668],
-    "names": Code(b"", map=Map.load("eu")).names(),
+    "names": names_on("eu"),
 }
 GAME_EU = {**GAME, **EU}
+
+# The Japanese executable's readings where they differ from the base's, None for one it has no instruction for, and its
+# map's places.
+JP = {
+    "land.under": 101, "time.tick": 60, "ball.breathe.full": 7200, "ball.breathe.over": 50,
+    "hourglass.from": 7199, "hourglass.second": None, "hourglass.points": None, "star52.points": None,
+    "end.view.x": -5, "end.view.y": 2, "end.view.z": 7,
+    "simon.points.gate": 3, "simon.points.gate.other": 3, "simon.menu.gate": 3, "simon.menu.gate.other": 3,
+    "simon.menu.cross": 8192,
+    "gp": 0x8009f064, "record": 0x800d2fa8, "glow.counter.at": 9972, "glow.clear": [0x800a0728, 0x800f9490],
+    "mode.at": 9244, "mode.word": 0x800a1480, "game.mode.word": 0x8009f4ac,
+    "next.mode.clears": [0x80049a48, 0x8004a4a4, 0x8004a634, 0x8004bf28],
+    "simon.store": 0x800d6270, "simon.fill.from": 0x800d6a6e,
+    "glint.at": 0x800acde8, "glint.frame.at": 0x800acde8,
+    "effect.pointers": [0x80093fc4, 0x800943f8, 0x80095078, 0x800949c0, 0x8009465c, 0x8009465c, 0x80095078, 0x80095078,
+                        0x8009539c, 0x80094d64, 0x8009465c, 0],
+    "effect.tables": {0x80093fc4: GAME["effect.tables"][0x800988f8], 0x800943f8: GAME["effect.tables"][0x80098d2c],
+                      0x80095078: GAME["effect.tables"][0x800999ac], 0x800949c0: GAME["effect.tables"][0x800992f4],
+                      0x8009465c: GAME["effect.tables"][0x80098f90], 0x8009539c: GAME["effect.tables"][0x80099cd0],
+                      0x80094d64: GAME["effect.tables"][0x80099698]},
+    "effect.sine.at": 0x800978a8, "effect.table.at": [0x800c1e50, 0x800c1e50, 0x800c1e50],
+    "words": {0: "LOADING", 2: "刺さった", 4: "タイムアウト", 6: "落ちた", 8: "燃えた", 10: "捕まった", 12: "ファイナルクリア",
+              14: "やられた", 16: "間違えた", 18: "Game Over", 20: "良くできました", 22: "不合格 リトライするステージを選択して○ボタン",
+              24: "合格 ○ボタンで続ける", 28: "1プレイヤーの勝ち", 30: "2プレイヤーの勝ち", 32: "引き分け", 34: "大変良くできました",
+              36: "ステージクリア", 38: "大変良くできました Perfect!"},
+    "hide.below": 3, "hide.also.a": None, "invisible.below": 5, "invisible.from": None, "invisible.span": None,
+    "invisible.also": None, "crumbling.below": 3, "crumbling.a": None,
+    "names": names_on("jp"),
+}
+GAME_JP = {**GAME, **JP}
 
 
 def rise_at(seq):
