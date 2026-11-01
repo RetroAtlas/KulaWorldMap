@@ -103,6 +103,8 @@ After the first round the rooms are so played in other worlds: where every world
 
 From Mars the routine steps the world word on to Hell, which is open, and the check for the pack's end steps it once more, onto the path one past the ten worlds, so the loader names the next room's artwork `\HIRO\COPYCAT.TGI` (`0x80040348`), which the disc does not hold, and as the namer looks for a file again and again until it is found (`0x8004ce48` to `0x8004ce68`), the eleventh round never begins.
 
+On the Japanese disc the executable fixes no world for a room's first round, its branch picking the next room and its world by the player's progress and a word the level loop counts ("The Simon rooms" in [motion.md](motion.md)).
+
 **Which model a face draws is a rule in the loader, at `0x800271d8`**, and `tools/kula_skins.py` reads it and the build ships it under `skins` in `public/objects.json`.
 
 For each face of each cell the walk selects on the block's kind where that is not plain and on the type of the object on the face where it is (`0x80027338`; type 29 counts as the clock, `0x8002733c`, and a type from 50, the captivators, as nothing): a plain face draws a stone at random among the world's stones (`0x800276ac`), which the map hashes from the face's place so it is the same on every visit, a fire, ice or acid block or a face with an object of type `t` draws model 11 + `t` (`0x800276cc`), an invisible block model 6, a crumbling block model 4 and a vanishing block the first stone.

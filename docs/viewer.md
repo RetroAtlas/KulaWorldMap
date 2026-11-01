@@ -127,6 +127,8 @@ One finding comes from the map itself rather than from the file: where a key, a 
 
 The sidebar lists a world's levels in the order of its pack, then its two finals, then the Simon room the game's Simon mode plays in it on its first round, and `[` and `]` step to the previous and next level in that order, on from a world's last level to the next world's first level and back, and stop at the first level of the first world and the last of the last.
 
+The Japanese disc's Simon rooms, the US rooms byte for byte, are listed under the worlds the US release plays them in on its first round, since that disc's game fixes no world for a room.
+
 A level button carries a dot after its title where its slot holds another level on one of the other discs, as The three discs below says.
 
 While the ball is on the level with Play on through the levels on in Settings, a way out moves the line on to the level the game loads next, and in the Simon rooms a failed round to the room the game loads next, as Rolling the ball below says.
