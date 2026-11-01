@@ -22,6 +22,8 @@ While the ball falls, or in a jump while its count at 404 is under 10, its last 
 
 R1 held adds 21 a frame to the same word, to 650 (`0x80034f60`, `0x80034f90`), and R2 holds a word of its own that grows and comes back the same way and pitches the view up instead, bringing the eye in by half of it and the target up the screen by a third (`0x80034fd8`, `0x80035368` to `0x80035430`); the view is pitched down by 250 plus the first word (`0x800354cc`, `0x800354d4`). The same routine turns the ball's own frame, and not the view alone, as a wall ahead takes the ball up it and as a turn is asked ([motion.md](motion.md)).
 
+On the PAL disc R1 and R2 add 26 a frame (`SCES_010.00`, `0x800357ec`, `0x80035834`), to the same 650 in 25 frames, half a second, where this disc's take 31.
+
 **The matrix the coprocessor turns a point by is the view's rows with the first scaled by the word at `0x800a33d8` over 4096 and the second by the word at `0x800a33e0` over 4096, which load as 4096 and 3840; the lethargy pill rolls the view by its word and stretches the scene by a waning sine, and the screen flashes white as the pill is taken, carries a tinted ghost of the last frame while it works and fades a white glow as it ends.**
 
 Each pass the loop draws the background, the level and the sun's flare, each from a copy of the view of its own (`0x80041014`, `0x8004101c` and `0x80041034` call `0x8002a1b4`, `0x8002a3c0` and `0x80014d40`): the level's copy is the view as it is (`0x8002a4b4` to `0x8002a548`), and the background and the flare each take 8192 off every word of their copy's translation and shift it down by 4 (`0x8002a250` to `0x8002a29c`, `0x80014e38` to `0x80014e64`).
@@ -48,6 +50,8 @@ The screen routine's tail runs on every pass the mode stands (`0x800206c8`): the
 
 So the scene is stretched wide as it is squashed tall and back, by the sine of the phase times a magnitude that is 775 of 4096 on the first pass and wanes 5 a pass, a cycle every 19 passes, to nothing over 155 passes, 5.2 s, after which the words stand within 5 of rest until the level is left.
 
+On the PAL disc the idle phase steps 128 a pass, the magnitude wanes by 6 and the stretch's phase steps 256 (`SCES_010.00`, `0x80020c74`, `0x80020fac`, `0x80020fc4`), so the magnitude is 774 on the first pass, a cycle takes 16 passes and the stretch is gone over 130 passes, the same 5.2 s, the tint, the fade and the 780 the magnitude starts from unscaled.
+
 On the pass the pill's word reaches nothing the hazards ask the end ([motion.md](motion.md)) and the routine sets a level at 80, lays the quad's corners again, draws the ghost once more and moves on (`0x8002051c`, `0x80020530`, `0x80020588`, `0x800205a8`, `0x80020518`); on each pass after it takes 8 off the level and, while that is not below nothing, draws the quad at it (`0x800205fc` to `0x80020604`, `0x8002062c`, `0x80020658`, `0x80020680`), 72 down to 0 over 10 passes, a white glow fading out, and below nothing clears the mode (`0x800206bc`), the frame loop's wait a blank again from the pass after.
 
 The viewer rolls its view by the same word, the angle the table's scale and shift give the word the hazards leave, composed about the view's line of sight after its own yaw and pitch, a positive angle tipping its up to the left as in the game.
@@ -72,6 +76,8 @@ The level's start calls `0x80033e94` (`0x800362bc`), which takes the ball's head
 The same routine puts the flight's parameter at nothing and its slowing step at 13 (`0x80033f34`, `0x80033f38`, `0x80033f2c`), two words of the globals, at `0x800a4a88` and `0x800a4a8c`, and not of the record.
 
 **The parameter steps 16 a frame to 928 and once more past it, then 13, 12 and one less each frame, 5 at the end, 68 steps from 0 to 1025.**
+
+On the PAL disc the parameter steps 16 while it is under 881 and the slowing step starts at 16 (`SCES_010.00`, `0x80034e60`, `0x80034788`), so it steps 16 to 896, then 16, 15 and one less each frame, 4 at the end, 69 steps from 0 to 1026, 1.38 s, and the pad is dead for 70 frames and read from the 71st.
 
 The view routine, `0x8003431c`, which the ball's routine calls last in its frame (`0x800368dc`), reads the parameter (`0x8003431c`) and takes the flight while it is 1024 or less (`0x80034340`, `0x80034344`) and the mode word at `0x800a33b0` is not 1 (`0x80034350`, `0x80034354`, `0x80034358`); it evaluates the curve at the parameter and then steps it, by 16 while it is 928 or less (`0x80034604`, `0x8003460c`, `0x8003463c`) and past that by the slowing step, which falls by one each frame to no less than 1 (`0x80034610` to `0x80034630`).
 

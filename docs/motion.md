@@ -52,6 +52,8 @@ The bob some types have, and the hedgehog's circling, are an offset the routine 
 | 10 boost button | reacts to the ball and does nothing on its own: A is a height of 16, sinks by 1 a frame, to flat and no lower, while the ball is within 700 units, and rises by 4 a frame after, the model's height scaled by A/16 along its normal (`0x80039b48`): flat in 16 frames, a quarter of a second, and back in 4. Once A is back to 16 or more the game draws the model unscaled, so a rise from a height that is not a multiple of 4 overshoots by up to 3/16 for one frame and no longer |
 | 39 to 41, 48, 49 | the placeholder arrows turn by −14 |
 
+On the PAL disc every rate in the table, each type's turn, bob, tilt, flip, swing, form and circling, is this disc's scaled by the rule in "The frame" above, read at `0x80039bb0` to `0x8003a37c` (`SCES_010.00`), the key's turn −90 and bob −70 among them, so each thing turns, tilts and bobs in the seconds the table gives; and a device's light turns over every 16 frames there ("The devices' light" below).
+
 The variant a type draws is `f3` for every type, read by the draw dispatcher at `0x8002d878` as the model `type × 16 + row × 4 + f3` in the second table of the .GGI, the row a level of detail ([ggi.md](ggi.md)), which is why a coin's tier, a gem's cut and a teleporter's colour are all the same field, and why type 42 changes its shape by writing its own `f3`.
 
 Three more things happen in the draw and not in the walk:
@@ -154,6 +156,8 @@ The intents (`0x8002f3f4`) take the requests at rest, a jump asked with the roll
 
 Rolling on, with Up held through the middle, the ball covers a block in 512/33 frames, 15 or 16 by turns, 0.26 s. The speed is kept at 320 too, for the spin (`0x8002fa18`), and the rest state puts that word at nothing on every frame it runs (`0x8002f92c`).
 
+On the PAL disc the speed grows by 7 a frame to 40 (`SCES_010.00`, `0x800301f4`, `0x80030204`, `0x8003020c`), so the speeds run 7, 14, 21, 28, 35 and then 40, 105 units in the first five frames, the middle of the next cell is reached on the 16th frame, 0.32 s, and a block rolled through takes 12 or 13 frames by turns, the same 0.26 s.
+
 A roll over nothing, with no block under the ball's cell, between 101 and 427 of progress and not on a platform, drops the ball into a fall (`0x8002f944`, `0x8002f954`, `0x8002f958`, `0x8002f974`), as a ball at rest with the block under it gone is dropped (`0x8002f8f8`, `0x8002f910`), each by the word for the block under the ball's cell as the last frame's read left it (`0x8002f8f0`, `0x8002f93c`), the state running before the frame's read of the cells (`0x80036838`, `0x80036840`); a slide on ice is where a roll gets there.
 
 A turn asked while rolling stops the ball at the next middle, as "The ball's moves" above has it, and a held Left or Right, pressing again on every frame once the count has passed 6, asks the turn there; a tap short of the middle is lost.
@@ -165,6 +169,8 @@ The view routine, later in the same frame, swaps the ball's frame, a turn left p
 The camera is built not from the ball's frame but from the side, the normal and the heading the view holds at 44, 52 and 36, turned by the yaw about its down axis and by a pitch at 452 about its right axis (`0x80034e60`, `0x80034e9c`, `0x80034efc`, `0x80035238` to `0x80035258`), a positive yaw turning it left and a positive pitch down (`0x8006115c`, `0x80061154`, `0x80060fbc`, `0x80060fb4`).
 
 So over a turn the view turns from the old frame by 53, 106 and so on to 954 on the 18th frame, and on the 19th, as the count runs out, takes the ball's side and heading with the yaw at nothing again (`0x80034c20` to `0x80034ccc`), the last step being the 70 left of the quarter turn's 1024.
+
+On the PAL disc the count is 16 and the step 64 or −64 (`SCES_010.00`, `0x8003006c`, `0x80030074`, `0x8002fff4`, `0x8002fffc`), so the view turns by 64 a frame to 960 on the 15th and takes the ball's side and heading on the 16th with the quarter turn's last 64, the same 0.32 s in even steps.
 
 The view routine marks the turn for the draw at 536, 3 for a turn right and 4 for a turn left (`0x80034b10`, `0x80034b14`, `0x80034bc8`, `0x80034bcc`).
 
@@ -178,6 +184,8 @@ The fourth frame lays the centre 100 off the face plane nearest it (`0x8002fcd0`
 
 The edge tells the view with a 1 at 428, a count of 13 at 436 and a step of 78 at 444 (`0x80030574` to `0x80030590`); the view marks a ramp running at 456 and adds the step to its pitch on each frame of the count (`0x80034d7c` to `0x80034dd0`), 78 to 936 over twelve frames, and on the 13th takes the ball's normal and heading with the pitch at nothing (`0x80034dfc`, `0x80034e34`, `0x80034e40`), 88 for the last step, 0.22 s in all.
 
+On the PAL disc the count is 11 and the step 93 (`SCES_010.00`, `0x80030d9c`, `0x80030da4`), 93 to 930 over ten frames and 94 for the last, the same 0.22 s, and the middle of the new face is seven frames on at 40.
+
 A flag at 708 stands from the wrap until the progress reaches 101 and keeps the move step from a second wrap meanwhile (`0x8002fa40`, `0x8002f9a0`, `0x8003054c`, `0x80030554`), and the arc's count starts at nothing (`0x80030588`).
 
 State 7 writes 1 into 692 on each of its four frames (`0x8002fa50`, `0x8002fa58`), which the draw reads at 536 a frame behind, and on each of those four draws turns the frame's matrix at 564 by −256 about its own x, the side, taking no spin step (`0x80031164`, `0x80031168`, `0x80031180`, `0x80031190` to `0x800311a8`), 1024 in all, so the body turns a quarter turn round the edge in the roll's sense, one frame behind the arc.
@@ -188,11 +196,15 @@ While the ramp's mark at 456 stands the frame's matrix is not rebuilt from the f
 
 The pitch runs −64 a frame to −1024 and the view takes the new normal and heading as the count runs out, so the turn up is even, 16 steps of a sixty-fourth of a turn, 0.27 s.
 
+On the PAL disc the wall tells the view a count of 14 and a step of −73 (`SCES_010.00`, `0x80030ccc`, `0x80030cd4`), the quarter turn's 1024 over the frames cut toward nothing, so the pitch runs to −1022 before the view takes the new normal and heading, 0.28 s, and the roll goes on to the middle in four frames at 40.
+
 The wall writes 2 into 692 (`0x800304bc`, `0x800304c0`), and the draw of the frame after, taking no spin step, turns the body's matrix at 596 by −1024 about the frame's x and the frame's matrix at 564 by the same the other way (`0x8003125c`, `0x800312d0`, `0x800312d4` to `0x800312f0`, `0x80031308`, `0x80031320`, `0x80031334`), so the body is as it was and the frame alone has turned up the wall under it; the frame's matrix is not rebuilt while the ramp's mark at 456 stands.
 
 **The ball falls 5 a frame faster to 66, and lands where the point under its centre enters a block.** State 6 starts down at −10 from a roll or from rest (`0x8002f980`, `0x8002f91c`) and at −30 after a hop over nothing (`0x800301e0`), and adds −5 a frame at 310 to no more than −66 (`0x8002ffb8` to `0x8002ffd4`), 3960 units a second, moving the centre by it along the normal and by the speed at 312 along the heading (`0x8002ffe4`, `0x8002fff8`), which the state first drops wherever it is forward, on every frame of the fall (`0x8002ff74` to `0x8002ff84`), and lets decay by 6 a frame toward nothing where it is back, a bounce's speed (`0x8002ff90` to `0x8002ffac`), so a falling ball never travels forward, whatever a roll, a jump or a block above left in the word, and drifts back only after a bounce.
 
 The spin's speed at 320 grows by 6 to 33 while Up is held and wanes by 1 a frame otherwise (`0x8002ff20` to `0x8002ff60`), so a falling ball keeps turning.
+
+On the PAL disc the fall adds −6 a frame to no more than −80 (`SCES_010.00`, `0x800307ec`, `0x800307fc`, `0x80030804`), 4000 units a second, starting down at the same −10, a bounce's speed decays by 7 (`0x800307cc`), and the spin's speed grows by the same 6 a frame to 40 (`0x80030764`, `0x80030774`, `0x8003077c`), the one gain of the roll's and the fall's the PAL build leaves unscaled.
 
 A falling ball with a block ahead at its level, at a progress of 411 or more, is held at 409, and with one behind, under 102, at 103 (`0x80030734` to `0x8003077c`), about its radius, 103, off either wall.
 
@@ -208,6 +220,8 @@ A ball that comes down at −66 shudders the pad as it lands, where the vibratio
 
 A landing or a hop's end squashes the ball: a word rises by 187 a frame for four frames, to 748 of 4096, and comes off by 100 less 10 each frame, 90, 80 and on down to no less than 20 (`0x80030d50` to `0x80030d70`, `0x8003020c` to `0x8003021c`, `0x800325f0` to `0x80032664`), gone in 28 frames, 0.47 s, and is drawn with the breath as one squash (`0x80032718`), wider across the face by it and twice as much shorter along the normal.
 
+On the PAL disc the landing takes 40 at once with Up held and asks the roll at 40 (`SCES_010.00`, `0x800315e8`, `0x80031644`), the pad shudders under a ball that comes down at −80 (`0x80031528`), and the squash's words stand unscaled, so it is gone in the same 28 frames, 0.56 s there.
+
 **The jump runs the centre along a table of rows from the mesh file, 30 frames in the air, and lands two blocks on.** The forward jump needs a block under the ball (`0x8002f5f0`, `0x8002f5f8`).
 
 It saves the centre at 68 (`0x8002f630`, `0x8002f638`), takes the table the ball's init copied from the fifth section of the .GGI, which the parser found by summing the header's section sizes (`0x80022e44` to `0x80022ea0`, `0x8002f2ec`, `0x8002f368`, and [ggi.md](ggi.md)), its count of 33 as the count at 404 and its first row, 8 bytes in, at 416 (`0x8002f63c` to `0x8002f670`), sets the speed at 312 and the spin's speed at 320 to 33 (`0x8002f658` to `0x8002f660`) and enters its state (`0x8002f60c`); the rows write neither, so the ball turns at the roll's full rate through the arc.
@@ -215,6 +229,8 @@ It saves the centre at 68 (`0x8002f630`, `0x8002f638`), takes the table the ball
 Each frame the count falls by one, and from 3 straight to nothing (`0x8002fce4` to `0x8002fcf4`), and while it stands a row's height, right and back are taken, a halfword each (`0x8002fd24` to `0x8002fd5c`), turned by the frame matrix at 212, right along the side, back against the heading and height along the normal (`0x8002fdcc`), and added to the saved centre, which is drawn across toward the middle of its cell by 8 a frame as a roll's centre is (`0x8002fdd8`, `0x8002fddc`, `0x8002fdf4`); so the rows run for 30 frames, 0.5 s, the centre 458 up on the 15th and 16th and 986 along on the 30th.
 
 On the 31st the centre is the saved one moved 1024 along the heading, two blocks, and the landing is tried (`0x8002fe20`, `0x8002fe80`, `0x8002fe8c`, `0x8002feb4`).
+
+On the PAL disc the jump sets both speeds to 40 (`SCES_010.00`, `0x8002fea0`), takes the arc's count of 28 and lets it fall by one to nothing with no skip (`0x80030530`, `0x80030534`), so its 27 rows run 27 frames, 0.54 s, the centre 411 up on the 14th and 15th and 1024 along on the 27th, and the landing is tried on the 28th ([ggi.md](ggi.md)).
 
 On a face whose normal points the positive way along its axis, +x, +y or the underside, the point 100 under the snapped centre lies on the face plane itself, the saved centre having been laid 100 off it, and the lookup's rounding, which adds 256 to each coordinate and shifts it right by 9 (`0x800379e8`, `0x800379f0`, `0x800379f4`, `0x800379f8`, `0x80037a00`, `0x80037a0c`, `0x80037a10`), puts it in the cell beyond the block, so that landing fails and the fall's landing, on the frame after, lays the ball where the snap left it.
 
@@ -235,6 +251,8 @@ As the count runs out it asks after the block under the cell the centre stands i
 The rest state's lay takes the 14 back on the first frame without Cross; but Cross held is the jump asked on every frame (`0x80036e38` to `0x80036e48`), and the intents, which run before the state and take the requests at rest alone (`0x8002f4a8`, `0x8002f4b0`, `0x8002f4c0`, `0x8002f538`, `0x8002f540`), start the next hop on the frame after the end, so the lay never comes between held hops and the 14 adds up, 14 a hop.
 
 On the eighth, 112 in, the centre's cell is the block's own cell, and over a lone block the eighth hop ends in the fall, which the landing takes on the next frame, at −35, laying the ball at 100 again with a landing's squash; over a deeper floor the sink goes on until Cross is let go, and the lay brings the centre back to its face from as far as 356 in, which the 26th hop passes.
+
+On the PAL disc the hop's count falls to nothing the same way (`SCES_010.00`, `0x800308b8`, `0x800308bc`), so its 27th frame reads the row past the section's 27, a height of nothing ([ggi.md](ggi.md)), and the hop ends at the face's level, held hops sinking the ball by nothing; and a hop over nothing falls at the last frame's change along the normal, the word at 326 stored at 310 as it is (`0x800309f4`, `0x80030a14`), 56 a frame from that row, where this disc's starts at −30.
 
 **A block met in the air bounces the ball back, and one above drops it.** Jumping, the landings try a platform and then a block only while the count is under 12, the arc's last nine rows (`0x80030648`, `0x80030684` to `0x800306a0`), and then a wall (`0x800306c0`): from a progress of 412, with a block ahead at the ball's level, or ahead and above where the centre is 412 or more into its cell along the normal, within its radius of the cell over its own, or in the floor ahead, the cell ahead one below the ball's own cell, where it is under 100 (`0x800307f4`, `0x80030810`, `0x80030828` to `0x80030858`), the ball is moved back twice the frame's advance and falls at that advance reversed, starting down at −10 where it was rising, with the spin's speed at nothing (`0x80030934`, `0x80030968`, `0x800309a4`, `0x800309b4`, `0x800309c4`).
 
@@ -275,6 +293,8 @@ A long jump from the middle of its block toward a block two on and one up lands 
 The viewer bounds the ball under the pill as the game does: while the pill's word is not negative the pad's reading asks the jump on every frame it runs and takes Up and Cross through the latch, whose three words start at nothing with a run, which is one level, so a latch or a count the last pill left is not carried into the next level as the game carries it, and after the pad a rolling ball with the word at the hold or more has the jump and the roll dropped and the word stepped, so it rolls on to the middle and hops or bounds from there, the long jump armed where the latch arms it.
 
 **The body is a matrix of its own, at 596, kept from frame to frame and turned on each by −5 times the spin's speed at 320 about the frame's x, the side** (`0x80032508` to `0x8003251c`, `0x800325d0` to `0x800325e4`, `0x80060f58` laying the turn on the matrix's rows), the roll's speed while the ball rolls, 33 through a jump's rows and the frame it lands on, nothing at rest and through a hop, and in a fall what Up grows or lets wane; 165 of 4096 a frame at full speed, a turn every 25 frames, 0.41 s, where a ball of its radius rolling without slipping would turn every 19.
+
+On the PAL disc the body turns by −6 times the spin's speed, the speed times 6 in three instructions before the turn's call (`SCES_010.00`, `0x80032d94` to `0x80032d9c`, and `0x80032e60` at rest), 240 of 4096 a frame at full speed, a turn every 17 frames, 0.34 s, where a ball of its radius rolling without slipping would turn every 16.
 
 The draw multiplies the frame's matrix at 564 by the squash and then by the body's matrix, and the camera's matrix by that (`0x800313b4` to `0x80031424`, `0x800314bc`), so the squash lies along the face and the body's turn within the frame, and it straightens both matrices on every frame but a marked one (`0x80031084` to `0x800310c4`).
 
@@ -375,6 +395,8 @@ The table ships the four words as `lasts`, with the lethargy pill's step and tic
 
 On the PAL disc the lethargy pill sets its word to 300 and the other two pills and the sunglasses theirs to 700 (`SCES_010.00`, `0x80039050`, `0x800390d0`, `0x80039134`, `0x800391a8`), the frames of the same seconds at fifty a second, and the Japanese disc sets this disc's 360 and 840 (`SCPS_100.64`, `0x80038d94`, `0x80038e10`, `0x80038e70`, `0x80038edc`); play sets the PAL's words on the PAL disc and this disc's on the other two, the Japanese disc's own being the same.
 
+On the PAL disc those words run as this disc's do: the lethargy pill lasts 151 passes and costs 604 ticks beyond the clock's own, the mode word standing 162 passes, 324 blanks, 6.5 s, over which the clock loses 15 of its seconds, 9 more than those seconds cost otherwise; the invincibility pill keeps the ball safe for 701 frames, 14 s; the bouncy pill's hold is 699 (`0x80036df0`); and the sunglasses show every invisible face for 701 frames, 14 s.
+
 **The sunglasses' blink is 21 spells, off first and by turns, the first of 8 frames and every spell after of 9, and the flag stays off after the last.** The take calls `0x8002bec8` with 1 (`0x8003893c`, `0x80038940`), which clears a state word at `0x800a5e50` and sets the flag to 1 (`0x8002becc`, `0x8002bf38`, `0x8002bf44`); the hazards routine, finding the word at nothing, calls it with 0 (`0x8003b2d8`, `0x8003b2dc`), which marks the state an off spell's state, lays a count of 21 at `0x800a469c` and a timer of 9 at `0x800a46a0` and clears the flag (`0x8002bee8`, `0x8002beec`, `0x8002bef8`, `0x8002befc`, `0x8002bf08`, `0x8002bf14`), and then counts the word to −1 (`0x8003b2e8`, `0x8003b2ec`).
 
 The state, the count, the timer and the flag are each a store indexed by the word at `0x800a33d0` that gates every update ("The frame" above), four bytes a step (`0x8002bed4`, `0x8002bedc`), and the addresses here are the ones it selects at 0.
@@ -386,6 +408,8 @@ The invisible block's light reads the flag and nothing of the word, and draws ev
 The frame loop runs the ball's routine (`0x80040ffc`), which runs the hazards and then the contact (`0x8003670c`, `0x800368cc`), before the frame's draw at `0x8002a3c0` (`0x8004101c`), which runs the blink and then the light (`0x8002a3e8`, `0x8002a4a4`).
 
 So the flag is seen on from the take's frame through the 840 frames the word counts down, 841 frames, 14 s; on the frame the word is found at nothing the start lays the timer at 9 and the blink takes it to 8 before the light reads the flag off, so the first spell is 8 frames; every spell after runs from the frame the timer before it reaches nothing to the frame before its own does, 9 frames; and the count of 21 ends the blink as the 21st spell's timer runs out, so the odd spells are off and the even on, 11 off and 10 on, 188 frames in all, 3.1 s, and the flag stays off after.
+
+On the PAL disc the timer is laid at 8 (`SCES_010.00`, `0x8002c754`, `0x8002c820`, `0x8002c88c`), so the first spell is 7 frames and every spell after 8, 167 frames in all, 3.3 s, after the 701 frames, 14 s, the word of 700 keeps the flag on.
 
 The table ships the blink under the sunglasses' `lasts` as its `times`, its `frames` and its `first`, the first spell's frames.
 
@@ -561,6 +585,8 @@ The frame's draw, which the loop runs after the ball's routine, runs the crumbli
 
 A block takes 15 or 16 frames at full speed, so a ball rolling on crosses a crumbling block before it goes, and one that stops at its middle, eight frames in, has about a dozen frames left.
 
+On the PAL disc the block loses 32 a frame and is gone on the seventeenth (`SCES_010.00`, `0x8002be80`), and a block takes 12 or 13 frames at 40, so a ball that stops at a crumbling block's middle there, seven frames in, has about ten frames left.
+
 The input routine's tail keeps a ball on one from its free edge: with the floor ahead empty and nothing beside the block under, where the wrap would take the ball round, a rolling ball on a crumbling block with no jump asked loses the forward request and its speed from 301 of progress, and from 401 is set back 40 along its heading besides (`0x80037344` to `0x80037418`), the floor ahead, the blocks beside and the block under's word all read as the last frame's read of the cells left them (`0x8003733c`, `0x8003736c`, `0x80037374`), so it is held short of the far edge and cannot go round a crumbling block, only off it onto a block ahead, up a wall, into a jump, or down with it.
 
 The table ships the size, the shrink and the edge rule as kind 6's `size`, `shrink` and `edge`, beside its `points`.
@@ -664,7 +690,11 @@ An entry is eight bytes, an offset from the table and a length (`0x80015a88` to 
 
 The deaths read −1 "SPIKED!", −2 "TIME OUT!", −3 "FELL OFF!", −4 "FIRE!", −5 "CAPTURED!", −6 "ACID!", −7 "LASER!" and −8 "Wrong Move!", and every way out, by the exit, the hidden exit or a bonus level's last block, reads "Well Done!"; an outcome of nothing, the level loading, reads "LOADING!", and once the total is below nothing on an ordinary level of the arcade the screen fades to "Game Over!" (`0x80015784` to `0x800157e4`). The lettering sets the mark a space off the title-case words but "Wrong Move!", which the table drops.
 
+On the PAL disc the table of 38 stands at `0x800876b4`, its address in the word at `0x80074c4c` (`SCES_010.00`, `0x8001684c`, `0x80016850`), and nine of its eighteen pairs are drawn anew, each held by its own digest: pair 12 letters "Final Completed!" where this disc's letters "ACID!", so the acid's outcome, −6, picks "Final Completed!" there, pair 32 "Draw!" where this disc's letters "Equal Time!", while "LOADING!", "SPIKED!", "TIME OUT!", "FELL OFF!", "FIRE!", "CAPTURED!" and "LASER!" are drawn anew in the same words.
+
 The other modes have words of their own: the time trial's exit reads "Very Well Done!" where a time the trial keeps per player, with 60 frames a step of the difficulty added (`0x80015748`), is under a frame and "Level Cleared!" where it is past 20 seconds (`0x80015724` to `0x80015780`), its qualifying "You qualified!" or "You failed to qualify!" (`0x80015958`, `0x8001595c`), and two players, there or in Copycat, "Player 1 Won!", "Player 2 Won!" or "Equal Time!" (`0x800157f0`, `0x80015868` to `0x80015878`, `0x800159f4` to `0x80015a04`), and the pair at 26 is the memory card menu's picture.
+
+On the PAL disc the trial adds 50 frames a step of the difficulty, the step times 50 in five shifts and adds about a lui, an addu and a load (`SCES_010.00`, `0x8001655c` to `0x8001657c`), and the time is past 20 seconds at 1001 frames (`0x8001658c`), so a step of the difficulty buys a second on either disc.
 
 The last final's completion picks the acid's pair for one pass: the next-level routine, which the loop calls on an ending's first pass alone, before the end screen's draw (`0x80041b08` to `0x80041b10`, `0x80041b98`, `0x80041c30`), counts the world word at `0x800a340c` on as the pack's levels run out (`0x800428d0` to `0x800428d4`, `0x8004296c`, `0x80042970`), the loader in the arcade reads that word at 10 with the finals flag at `0x800a3454` set and a way out as the index 12 (`0x80015880` to `0x800158cc`), and the pass's tail puts the world back to nothing and the total below it (`0x80041d48` to `0x80041d4c`, `0x80041e44` to `0x80041e48`).
 
@@ -722,6 +752,8 @@ At 0, the arcade's value, a fourth angle steps 12 a frame (`0x80034840`, `0x8003
 
 At any other value, which on this disc is the hidden levels' 2, the fourth angle does not step and the eye stands at the distance plus 400, the figure every case writes first and the two swings write over (`0x80034958`, `0x80034964`), where either swing comes nearest, so the level turns under an eye that does not swing. In the Simon rooms the word is 0 whatever the room holds, so a room's ending swings as the arcade's ending does.
 
+On the PAL disc the three angles step −10, 4 and 13 a frame (`SCES_010.00`, `0x8003502c`, `0x80035050`, `0x80035074`) and the fourth 15 in the arcade and 70 on a level with no key (`0x800350ac`, `0x800350e8`), 5.5 s and 1.2 s a swing, the eye's distances the same.
+
 On the first frame of an ending the loop settles the points (`0x80041b08` to `0x80041b90`): a level completed adds its score, the word at `0x800a53c8` the pickups score at, to the total at `0x800a5e84` (`0x80042054`, `0x80042058`), and a death in the arcade mode, the level's mode word at nothing, takes off the total the score plus 50 times the level's number, the world's place times fifteen plus the slot plus one, at most 5000 (`0x80041f6c` to `0x80042018`), the finals counting two a world and no 151 (`0x80041fd0`); a death on a bonus or a hidden level, its score left at nothing as above, goes the completed level's way (`0x80041f80`), so nothing comes off the total.
 
 As the level is left a total below nothing ends the game, back to the title with the total at nothing again (`0x80041ca8`, `0x80041cb0`, `0x80041e54`, `0x80041ec4`, `0x800406c4`, `0x80041ecc`), and otherwise the game's loop loads the level again from the disc and sets the ball's words afresh (`0x800405bc`, `0x800405c4`), the same level after a death.
@@ -747,6 +779,8 @@ A death on an ordinary level, the level's mode word at nothing (`0x80041f6c`, `0
 Any other ending, a way out or a death on a bonus or a hidden level, counts one more fruit in a halfword at `0x800a593c` where the two words differ (`0x80042024` to `0x80042044`), banks the pickups' word (`0x80042050`) and adds the score to the total (`0x80042054`, `0x80042058`), so a fruit taken on a hidden level is kept though the ball dies there.
 
 The next-level routine first numbers an ordinary level (`0x80042460`, `0x80042468`) into a word at `0x800a3400`: the world's place times fifteen plus the slot plus one, or with the finals flag at `0x800a3454` set twice the place plus the slot plus 151, on from the ten worlds' 150 (`0x80042470` to `0x800424b0`).
+
+On the PAL disc the next-level routine numbers nothing, reading the level's mode word once before its ways out (`SCES_010.00`, `0x80042b38` to `0x80042b60`), and the routine that builds a level's record from the loaded pack numbers it instead, the place times fifteen plus the slot plus one, or twice the place plus the slot plus 151 where the entry itself is marked a final, into a halfword of the records' table (`0x80046524`, `0x80046570` to `0x800465a0`, `0x800465ac`, `0x800465e0` to `0x800465e8`); the word this disc's routine writes is read by nothing on either.
 
 Then on an ordinary level with a way out (`0x800424dc` to `0x800424f4`) the slot at `0x800a3408` counts on by one (`0x8004254c`, `0x80042558`), and where the bank's five low bits are all set, 31 (`0x80042548` to `0x8004255c`), both fruit words are cleared (`0x80042564`, `0x80042568`), the slot after is kept at `0x800a5914` (`0x8004256c`) and the slot becomes 15 plus the finished slot over five, that share taken round every three (`0x8004259c` to `0x800425e4`), so the first five levels of a world open its first bonus level, the next five its second and the last five its third; the hidden exit, the outcome 3 (`0x800424f8`, `0x800424fc`), keeps the slot after the same way and makes the slot 18 (`0x80042504` to `0x80042538`).
 
@@ -812,6 +846,8 @@ So the first round of a match asks two moves, at the index 0 and then at 1, the 
 
 On the ending's first pass the loop then gives a point to the other player than the turn's player, the turn plus one taken round the two, in a word a player at `0x800a56e8` (`0x80040a98`, `0x80041b18`, `0x80041b3c` to `0x80041b8c`), the two words the menu cleared as the mode began (`0x80049654`, `0x80049674` to `0x80049688`); the next-level routine's branch for the mode (`0x8004261c` to `0x80042648`), where the word at `0x800a38a0` is 1 (`0x80042654`, `0x8004265c`), counts the slot at `0x800a3408`, the room's index in the Copycat pack, and the world word at `0x800a340c` on by one together, the world back to the first where the furthest level reached at `0x800a3404`, counted in worlds of fifteen, falls short of it, and has the files loaded afresh through the word at `0x800a3414` (`0x80042660` to `0x800426ac`, and [tgi.md](tgi.md) for the rooms' round), and puts both back to nothing where the world word is 10 or more (`0x800426b0` to `0x800426c8`).
 
+On the PAL disc the branch stands at `0x80042ca0` to `0x80042ccc` (`SCES_010.00`), its test of the word the loop flips at `0x80042cd8` and `0x80042ce0`, its counting of the slot and the world word at `0x80042ce4` to `0x80042d30` and its return of both to nothing at `0x80042d34` to `0x80042d4c`, the slot, the world word and the furthest level reached 1216, 1220 and 1212 past its gp, and the build reads the worlds the ten rooms are played in off it, Hiro to Hell in this disc's order, and holds them to the rooms as committed.
+
 The load that follows flips the word and resets the match. So each room is played twice over, the first match opened by the first player and the second by the second, and the rooms step on after the second.
 
 **The end screen names the winner once the slot has come round to the first room and a player has more than 5 points, and menu code ends the game on the same test.** The screen's loader, in the mode and with the slot at nothing (`0x800157ec` to `0x80015808`), reads the two points words (`0x80015814`, `0x8001582c`), and where either is 6 or more and the outcome is below nothing (`0x8001581c`, `0x80015834`, `0x80015844`, `0x8001584c`) picks "Player 1 Won!", "Player 2 Won!" or "Equal Time!" by the two (`0x80015858` to `0x80015878`, and the words above) in place of the failure's own word; the slot is at nothing in the first room and again once the tenth room's second match has stepped it past the pack's count and round to the first ([tgi.md](tgi.md)), the routines of the ending's first pass running before the screen is drawn (`0x80041b98`, `0x80041bf0`).
@@ -873,6 +909,10 @@ Type 11 keeps a state in the kind word of the slot after its own, a countdown in
 
 Simulating the routine from each phase is what gives the frame lists and the 143; `python3 tools/mips.py --at 0x8002bbec --count 184` shows it.
 
+On the PAL disc the cycle is 119 frames, 2.38 s, the states lasting 52, 5, 13, 12 and 37 frames by counts of 52, 4, 12, 12 and 36 (`SCES_010.00`, `0x8002c6c4`, `0x8002c4e4`, `0x8002c5b0` for the rattle and the hold both, `0x8002c5c8`), and `f3` is a phase of 29 frames a step, by a shift of three, a subtraction, a shift of two and an addition (`0x8002a9d8`), against thresholds of 52, 80 and 116 (`0x8002a9e8` to `0x8002aa38`), so a phase of 1 starts down with 23 to go, 2 held up with 22 and 3 retracting with 29, and from the second cycle on the four run 29, 60 and 89 frames apart.
+
+There `f4` turns harmless as the retraction's count reaches 9 (`0x8002c6ac`), so the spikes are deadly for 57 frames of the 119, a phase of 0 from the 52nd frame of the cycle, 1 from the 23rd, 2 to the 48th and from the 111th and 3 to the 19th and from the 82nd, and a level opens with phases 0 and 1 harmless for 51 and 22 frames and phases 2 and 3 deadly for 48 and 19.
+
 **The spikes are deadly for 68 frames of the 143, from two frames before they leave the ground, and the first cycle's deadly frames are the steady cycle's deadly frames for every phase.** The routine writes `f4` as the states change, 1 as the rising state starts (`0x8002bc74`, `0x8002bc84`) and 2 as the retraction's count reaches 11 (`0x8002be5c`, `0x8002be64`), and the loader writes it with the first state, over the 1 every slot holds on the disc: 2 for a phase that starts down and 1 for one that starts held up or retracting (`0x8002a12c`, `0x8002a130`, `0x8002a098`, `0x8002a178`).
 
 So `f4` is 1 from the frame the down count runs out, two frames before the first frame off the ground, through the rising, the rattling and the held states to the retraction's 8 with 11 frames of it left, 68 frames, and 2 for the 75 after, a phase of 0 deadly from the 63rd frame of the cycle, 1 from the 28th, 2 to the 58th and from the 134th and 3 to the 23rd and from the 99th.
@@ -904,6 +944,10 @@ Kind 7 keeps its state in the first slot's `f3` and a countdown in `f4`, and the
 
 What the disc holds in the record's `type` word is overwritten at load with the lattice's own value for the cell, which is what the routine writes back when the block returns.
 
+On the PAL disc the cycle is 188 frames, 3.76 s, absent for 76, fading in over 8, settling over 4, solid for 76, dimming over 8 and flashing out over 16 (`SCES_010.00`, `0x8002c3f0`, `0x8002c0c4`, `0x8002c1bc`, `0x8002c260`, `0x8002c274`, `0x8002c358`), in the lattice for 112 frames and out of it for 76, and `f2` is a phase of 47 frames a step, in four instructions at `0x800294e0`, a phase under 2 starting absent with 76 − 47·f2 to go and the others solid with 164 − 47·f2 (`0x800294f0`, `0x80029590`).
+
+The PAL ramps run by other arithmetic: the fade in takes the count's rise times 255 by a shift of three (`SCES_010.00`, `0x8002c118` to `0x8002c12c`), black then 31 up to 223 by 32 a frame, the settling adds the count times 56 whole to 32 (`0x8002c1c8` to `0x8002c1d4`), white then 200, 144 and 88, the dimming takes the count times 28 whole off 256 (`0x8002c2c0` to `0x8002c2d0`), 32 up to 228 by 28, and the flash out takes the count times 255 by a shift of four (`0x8002c364` to `0x8002c370`), white down to 15 by 16.
+
 The map runs the cycle from the record's phase, solid and lit as the game lights it while the block is there and faint while it is gone, and the ball's reads see the cycle as the frame drawn before them showed it, as the game's read of the cells about the ball sees the lattice the last frame's step left, so the block is there for it on the frame after each it is drawn there ("The blocks under the ball" above).
 
 ## The invisible block
@@ -930,6 +974,8 @@ The table ships both pairs of distances, the settings' kind and the value that t
 
 With the sunglasses the faces are drawn flat, through the colour the animator at `0x8004f3b8` pulses from 48 to 136 of 128 over 90 frames while they cycle through their seven frames of shimmer over 144, which is the look the map draws them in, so that they can be seen at all.
 
+On the PAL disc the pulse runs over 88 frames and the shimmer over 120, the counts its executable's tables hold ([tgi.md](tgi.md)).
+
 The viewer lights them as the game does, from the ball at the level's start and from the block under the pointer and the one selected, each as the ball standing on that block's face that looks the way the lit face does, the stand-ins the boost button takes, measured from where the ball touches the face rather than from its centre ("Not settled" below).
 
 A face of a block in a stand-in's box is shaded between its corners' brightnesses, the nearest stand-in's brightness at each corner, and the sunglasses' look fills in as much as each corner falls short of full, so a face in full light looks exactly as in the game and one out of reach keeps that look, with nothing darker between.
@@ -949,6 +995,8 @@ While play's flag stands, the sunglasses' word or an on spell of their blink, no
 The draw of the things on a block (`0x8002d2ac`, which the walk calls for each of them at `0x80039e5c`) sends types 5, 7 and 9 through its table at `0x80010074` to a case each, and the hidden exit, 26, to none. While the thing's `f4` is 1 the case counts `f15`, the last pad of its slot, down, and when it reaches nothing sets it back to 19 and turns its light over: it makes a light from the thing's cell and face (`0x8002e3d8`) and keeps its handle in the low byte of the kind word of the slot after, with 256 over it to say it holds one, or lets the one it holds go (`0x8002d994`), leaving 255. While it holds one it gives it its colour every frame (`0x8002f2b4`), and while `f4` is not 1 it lets it go and counts nothing.
 
 The loader starts every one of the three on a plain block, which all 441 are, at 19 and holding none (`0x80029744`), and the faces take their light (`0x80051020`) before the walk that turns it over (`0x80036958`, both in the frame's draw at `0x8002a3c0`), so a thing on from the start is dark for the level's first 19 frames and lit for the next 19, lit while the frame over 19, rounded down, is odd. One turned off loses its light at once and stops counting, and once on again counts on from where it stopped, so it comes back on a phase of its own.
+
+On the PAL disc the count is 16 (`SCES_010.00`, `0x8002dc98`, `0x8002ddc4`, `0x8002de90`, and the loader's `0x8002a02c`), on for 16 frames and off for 16, the same 0.32 s, so a thing on from the start is dark for the level's first 16 frames and lit while the frame over 16, rounded down, is odd.
 
 **A light is a list of faces with a level at each corner.** The list at `0x800df184` holds 32 lights of eight words: a colour, −1 while the light is free, then up to seven faces, each a pointer with a byte of four two-bit levels over it, 0, 1 or 2 (`0x8002f16c`).
 
@@ -1010,6 +1058,8 @@ The glint is one of the effects, so while the Motion switch holds the level it s
 
 Kind 6's first slot holds 512 times its cell in `f2` to `f4` on the disc and the game does nothing with that: the loader at `0x80028a98` writes 512 into `f2`, and once the ball has broken the block (its `type` word goes from 1 to 2, then 3) the routine at `0x8002b3f4` takes 26 off `f2` a frame and drops the block from the lattice when it goes negative, twenty frames later, a third of a second, spawning debris from each face on the way.
 
+On the PAL disc the routine takes 32 off `f2` a frame (`SCES_010.00`, `0x8002be80`) and drops the block on the seventeenth frame, a third of a second as here.
+
 The viewer breaks the block by the same words: the rules keep each crumbling block's type word and size, the hazards write the word under the ball and the frame's last part breaks, shrinks and empties the block as the routine does ("The blocks under the ball" above), and the map draws a block that is gone no longer, with a burst of dust where it stood, while the debris and the shrinking faces of a breaking block are not drawn.
 
 ## The moving platform
@@ -1018,7 +1068,7 @@ Kind 5's record is read three ways at once. Its `type` is the direction it is tr
 
 The routine at `0x80032af4` takes one off the dwell where it is not nothing, plays sound 107 where the dwell then stands at 1, and where it stands at nothing moves the position by the speed along the direction (`0x80032b50` to `0x80032be8`), dispatching on the direction through `0x80010158`; on reaching or passing the far end it reverses the direction (1 and 4, 2 and 3, 0 and 5 swap) and, after that frame's move, flips the end word and sets the dwell to 48 (`0x80032e48` to `0x80032e88`), so the platform stands still for the 47 frames after the one it arrives on, 0.78 s, plays sound 107 on the last of them and moves on the 48th. **At load the dwell is zeroed and the speed becomes 30 × 50 / 60 = 25**, multiplied by 50 in the run at `0x80032a60` and divided by 60 through the reciprocal `0x88888889` at `0x80032a4c` and `0x80032a5c` with its shift of 5 at `0x80032a84`, 1500 units a second, a block in a third of a second (`0x8003278c`).
 
-The PAL loader zeroes the dwell and writes the speed back as the disc holds it (`SCES_010.00`, `0x800332e4` to `0x800332ec`), 30 a frame at fifty frames a second, the same 1500 units a second, and the Japanese loader scales it by 50/60 as this disc's does (`SCPS_100.64`, `0x80032f10` to `0x80032f54`).
+The PAL loader zeroes the dwell and writes the speed back as the disc holds it (`SCES_010.00`, `0x800332e4` to `0x800332ec`), 30 a frame at fifty frames a second, the same 1500 units a second, and its routine sets the dwell to 40 at each end (`0x800336d8`), so the platform stands for the 39 frames after the one it arrives on, the same 0.78 s, and moves on the 40th; the Japanese loader scales the speed by 50/60 as this disc's does (`SCPS_100.64`, `0x80032f10` to `0x80032f54`).
 
 The record's faces are drawn at that position, one block after another the positive way along `f2`'s axis, by `0x8002b26c`, and the map lays the blocks so with the Motion switch on or off.
 
@@ -1057,6 +1107,8 @@ The table ships that height with each of the five as its `entry`, and the viewer
 | 51 wheel | rolls 12 units a frame, a block in 0.71 s, and decides at cell middles; a turn steps its nose 13 a frame for 76 frames, 988 of a quarter's 1024, and the 77th snaps it square (`0x8003cdc8`), and an about-turn steps 26 and snaps the last 72 | rolls about its axle by −53, a turn in 1.29 s, while moving; the axle lies across the way its facing gives, which play on OBJ LEVEL fixed and which the viewer draws as a quarter turn on the mesh |
 | 53 wandering ball | shakes for 76 frames, 1.27 s, lurching along the way it will go by 65·(1 − cos θ), up to 130 units, with θ stepping n²/8 on the nth frame so the shaking quickens; then dashes 53 units a frame, a block in ten, settles on the grid and draws a new way from four (`0x8003c730`) | tumbles like the slow star |
 | 56 corkscrew | rises 400·sin θ along the normal, 0.78 blocks, with θ stepping 23 and wrapping at 2048, a half sine, so it lands and leaves at speed: a bounce every 89 frames, 1.48 s, with sound 24 at each landing, and the rise is written into the entry's position words from its home (`0x8003c3f4`, `0x8003c49c`, `0x8003c534`), so the hit test catches from where it bounces ("What harms the ball" above) | spins about the normal by −400·cos θ a frame, the step taken from its angle (`0x8003e4bc`), 2.8 turns up and 2.8 back |
+
+On the PAL disc the rates of the table are scaled by the rule in "The frame" above but the fast star's tumble, left at 64 and 32: the slow star walks 16 a frame and tumbles by 14, −120 and 52, the fast star sways by 64, the wheel rolls 15 a frame, steps its nose 16 a frame for 64 frames and 32 for an about-turn, the quarter and the half exactly with nothing to snap, and rolls about its axle by −64, the wandering ball shakes for 64 frames and dashes 64 a frame, a block in eight, and the corkscrew's θ steps 28 (`SCES_010.00`, `0x8003c520`, `0x8003df1c` to `0x8003df84`, `0x8003c988`, `0x8003c73c`, `0x8003d564` to `0x8003d6ac`, `0x8003f3ac`, `0x8003d340`, `0x8003d474`, `0x8003caa0`), so each covers a block and goes round in this disc's seconds.
 
 The corkscrew's `f3` sets θ at load to 1024, 682, 341 or 0 for 0 to 3, a sixth of a bounce a step, with 0 the highest; the other four start at their homes with everything zero, so their tumbling is in step across a level.
 
@@ -1148,6 +1200,8 @@ An effect on the HUD is given no light, 0 (`0x800389d8`, `0x80038c28`, `0x8003a6
 | 8, at the sunglasses | 52, 0.87 s | the glow, growing from nothing by 14.6 units a frame to 699 at frame 48, not turning, at 107 to frame 24 and fading by 13 to nothing at 33 | the red disc, from frame 24, 208 units out and growing by 4.7 a frame to 335 at the last frame, not turning, from 160 fading by 7 to nothing at 47 |
 | 9, at a pill | 49, 0.82 s | the white ring, at nothing to frame 19 though brightening from 11, then from a draw of the dice at frame 20 growing by 85 units a frame to 338 at 24 and turning back 468 a frame, a turn in 9 frames, from 255 fading by 7 to 59 at the last frame, where it is cut off | the red disc, growing by 22 units a frame to 224 at frame 10 and by 4.7 to 355 at 38, not turning, at 107 to frame 9, 160 at 10 and fading by 7 to nothing at 33, gone from 39 |
 
+On the PAL disc the seven tables run 56, 32, 42, 49, 45, 44 and 41 frames, the frames of the same seconds at fifty within one, each row's angle step, size and brightness six fifths of this disc's, a particle at 128 where this disc's is at 107 and the white ring 25 pixels out where this disc's is 21 (`SCES_010.00`, the pointers at `0x800a3d80` to `0x800a3da4`, filled at startup from `0x8001237c`), so a burst lasts as long and turns as far, and reaches about the size this disc's does.
+
 **Which effect each pickup starts** (`0x80038548` onward):
 
 - A coin kind 2 (`0x80038b34`).
@@ -1163,6 +1217,8 @@ A teleporter starts kind 3 at 160 and 166 of the screen, at `0x800a3394`, as its
 
 A fruit's five icons and the clock's point are at `0x800a336c` and `0x800a3364` as data, 208 and 217, 228 and 216, 253 and 216, 278 and 216, 299 and 218, and 160 and 28, each with −1 as its third word.
 
+On the PAL disc the points lie on a screen 256 lines high (`SCES_010.00`, `0x800a2e74`): the clock's at 160 and 26 (`0x800a2dfc`), the icons' at 208 and 233, 228 and 232, 253 and 232, 278 and 232 and 299 and 234 (`0x800a2e04`) and the teleport's at 160 and 180 (`0x800a2e2c`), with the scale down 4096 ([camera.md](camera.md)).
+
 **A teleport flashes the screen white and slows the game's pace through the flash.** The send (`0x8003a684` to `0x8003a68c`) calls `0x80020764` with 0 and 1: the routine marks the flash running at `0x800a5a28` (`0x80020764`, `0x80020768`), writes the 1 into the word at `0x800a592c` on which the frame loop waits two blanks where it is 1 (`0x8002076c`, `0x80040ae4`, `0x80040aec`, `0x80040af8`, "The frame" above), keeps the 0 as the flash's mode (`0x80020770`) and puts its strength at 268 for that mode (`0x80020774` to `0x80020788`, `0x800207ac`), 261 for mode 1 and 254 for mode 2 (`0x80020794` to `0x800207a8`).
 
 The frame's draw runs the flash (`0x8002a6b0`, `0x800207b8`) while the mark stands (`0x800207bc`, `0x800207c0`): each pass takes 20 off the strength for mode 0, 13 for mode 1 and 6 for mode 2 (`0x800207c8` to `0x8002082c`), and where it is above nothing (`0x80020830`, `0x80020838`) writes it into the three channels of a flat quad (`0x80020864`, `0x80020894`, `0x800208c4`) and links its page word, the quad merged behind it, at the first word of the frame's table (`0x800208ac`, `0x800208e8` to `0x80020940`), over everything, and else clears the mark and the word (`0x80020944`, `0x80020948`).
@@ -1170,6 +1226,8 @@ The frame's draw runs the flash (`0x8002a6b0`, `0x800207b8`) while the mark stan
 The quad is laid as a level loads (`0x800233a4`, `0x80024414`): a page word with blend 1 (`0x80024480`, `0x80024488`, `0x8005f808`), the blend that adds the quad to what is behind it, with a flat quad merged behind it, their lengths summed into the page word's tag and the quad's tag cleared (`0x800244b0`, `0x8002539c`, `0x800253c4`, `0x8005fa78`), made semi-transparent (`0x800244b8`, `0x800244bc`, `0x80024500`) with corners at nothing and at the two words at `0x800a33e8` and `0x800a33ec` plus one (`0x800244cc` to `0x80024504`), so the grey is added to every pixel.
 
 So a teleport shows the flash on 13 passes, at 248 falling by 20 to 8, and the word stands from the send to the pass after the last, so the loop waits two blanks on 13 passes, 26 blanks, 0.43 s, the game at half pace as under the lethargy pill. The same routine, on a level whose mode word at `0x800a53d4` is 1, a level with no key, is set at load to mode 2 at 254 with the word cleared (`0x8002441c` to `0x80024464`), so such a level opens from white, the flash fading by 6 over 42 passes, 0.7 s, at full pace.
+
+On the PAL disc the strengths are 272, 264 and 256 and the steps 24, 16 and 8 (`SCES_010.00`, `0x8002105c`, `0x8002107c`, `0x80021070`, `0x800210e4`, `0x800210f0`, `0x800210fc`, and `0x80024d20` at load), so each mode's first pass shows 248 as here, a teleport's flash runs 11 passes, 22 blanks, 0.44 s, and a level with no key opens from white over 31 passes, 0.62 s.
 
 The viewer plays the bursts as the game does. A pickup taken starts the kinds the table gives for its type, the HUD kind first where it has one, the hourglass's kind at the clock's point, a fruit's kind at its icon's point and the key's kind at a point of the HUD the map has not, and then the world kind at the thing's place with a light made from its cell and face; a teleporter starts its HUD kind at the screen's teleport point as its count starts, with no light; each is an entry in a list of the table's most, and a start past that, or of a kind without a table, is refused.
 
@@ -1228,7 +1286,7 @@ It paints the shadow under a pickup only while the pickup is drawn, so the face 
 
 Which of the two tangents a pill flips about and a fruit tilts about rests on the naming of the model's axes in [ggi.md](ggi.md) and on RotMatrix's order; a pill in play flips the way the map does.
 
-What else the Japanese executable changes in play is not read, beyond the frame's length, the clock, the hourglass, the pills, the platform's speed, the breath and the fast star above, and the view's scale and the free camera in [camera.md](camera.md); the PAL executable is read whole through its map, and what it changes from this disc's table stands in the PAL release file.
+What else the Japanese executable changes in play is not read, beyond the frame's length, the clock, the hourglass, the pills, the platform's speed, the breath and the fast star above, and the view's scale and the free camera in [camera.md](camera.md); the PAL executable is read whole through its map, and what it changes from this disc's table stands in the PAL release file and beside each reading above.
 
 In play every rate and count but the clock's and the hourglass's is the US executable's on the Japanese disc until its executable is read, the breath's cap and the ending's view among them.
 

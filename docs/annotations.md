@@ -237,6 +237,8 @@ The name rests on play: taken on OBJ LEVEL, it sets the ball flashing in colours
 
 The code says the same. The ball's contact walk at `0x80038548` sends it to its case at `0x80038804`, which scores nothing, sets the word at `0x800ba340` to 840 and takes the pill off its face; the loader sets that word to -1 (`0x80035df8`), and the ball's routine counts it down by one a frame back to -1 (`0x8003b2f8`), so the pill lasts 14 s.
 
+On the PAL disc the pill's case sets the word to 700 (`SCES_010.00`, `0x800390d0`) and the ball's routine counts it down by one a frame back to -1 as the US one does (`0x8003bb7c` to `0x8003bb88`), so the pill lasts the same 14 s, 701 frames at fifty.
+
 Every path that sets the ball dying first tests that the word is -1: the laser's beam (`0x8003a960`), fire (`0x8003ab64`, `0x8003abc8`), the acid block (`0x8003acbc`), the spikes (`0x8003b050`), the moving spikes (`0x8003b108`), the things that travel (`0x80036760`) and type 42's brown form (`0x800386d8`). While the word runs, the same routine also sets the bouncy pill's word at `0x800ba33c` to -1 and the lethargy pill's word at `0x800ba338` to 0 (`0x8003b324` to `0x8003b358`), and in play it cancels both pills.
 
 The colours come from the ball's draw: while the word is not -1 a counter steps by 100 round 8192 and each channel of the ball's light is raised by three times the sine of it over a turn of its own, red first, green a quarter round on and blue a quarter after that ([motion.md](motion.md) "What harms the ball").

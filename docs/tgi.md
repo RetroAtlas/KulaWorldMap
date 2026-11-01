@@ -69,6 +69,8 @@ In the first set the specials are models 0 to 3, the moving platform's own textu
 
 Models 11 to 60 are indexed by type, so 12 is the fire's five frames at 33 to 37, which run a 54-frame cycle, 13 the ice at 19 and, with a shadow on it, 20, 15 the acid block's green splat at 24, 16, 20 and 21 the round plate at 21 that a teleporter, a switch and a boost button stand on, 18 the exit's red cross and green cross at 17 and 18, 19 the clock face at 25, 22 the moving spikes' four holes at 22, 23 the spikes' plate at 23, and from 37 on, the hidden exit, the arrow, the start and the pickups, the stone plain at 4 and, where a pickup stands, with its painted shadow, texture 5, 6 or 7 by the size of the thing.
 
+On the PAL disc the fire's cycle runs 45 frames and the invisible block's shimmer 120 with a brightness cycle of 88, the counts of its executable's tables (`SCES_010.00`, `0x80027814` to `0x80027820`, `0x80027874` to `0x80027894`), the first two the frames of the same seconds at fifty and the brightness cycle 88 against 90.
+
 So a pickup's shadow on the map is the game's texture and only the ball and the captivators cast a drawn one ([motion.md](motion.md)).
 
 In HAZE alone the Japanese disc changes the first set too, 21 textures, 0 to 7, 9, 10, 12, 19 to 21, 24, 25 and 33 to 37: the stones a pale peach where the US disc's are a dusky rose, the fire an orange X in place of the red cracks, and the round plate at 21 and the acid splat at 24 soft dark blobs like the painted shadows; its section 9 differs as well, in 192,549 of its 225,224 bytes, which no other world's does on either disc.
@@ -76,6 +78,8 @@ In HAZE alone the Japanese disc changes the first set too, 21 textures, 0 to 7, 
 The exit's crosses, textures 17 and 18, are the same texels on every disc and drawn the same on the Japanese one, so the Japanese release's own sign at its exit is a model in the one `.GGI` ([ggi.md](ggi.md)) and not a face.
 
 The second set has one stone, model 68, the animated swirl at 38 to 45, run through its eight frames and a pair of colour cycles that the world's parity picks out of four (`0x80027024`, `0x80027034`), the first for a face as built, the same magenta in every world left for violet and red in the even worlds and for red and brown in the odd, and the second for one the ball has marked on a level with no key, orange in the even worlds and blue in the odd ([motion.md](motion.md)), which the map spreads across the level by position, a marked block's colour coming the same way.
+
+On the PAL disc the swirl's eight frames run a 56-frame cycle against 70, the count of its executable's table (`SCES_010.00`, `0x80027994` to `0x800279a8`), and its colour cycles stand in its release file ([motion.md](motion.md)).
 
 Its crumbling block is the grey cracked stone at 54, its plates the green target at 55, and its pickups' models run through the swirl and the swirl with a shadow, 38 to 53.
 
