@@ -324,6 +324,15 @@ class Mapped(unittest.TestCase):
         with self.assertRaises(SystemExit):
             mapped(*words, rows=(*rows, elsewhere)).resolved(AT, AT + 12, "s0", (564, 688), calls)
 
+    def test_a_call_the_scan_awaits_and_never_meets_is_named_with_the_releases_own_start(self):
+        words = (sh("v0", "s0", 492), addu("a2", "s0", "zero"), sh("v0", "s0", 494))
+        rows = (placed(0, words[0], text="sh $v0, 492($s0)"), placed(1, words[1], text="addu $a2, $s0, $zero"),
+                placed(2, words[2], text="sh $v0, 494($s0)"))
+        with self.assertRaises(SystemExit) as stopped:
+            mapped(*words, rows=rows).resolved(AT, AT + 8, "s0", (564, 688), ((AT + 4, 0x80038178, {"a2": 0}),))
+        self.assertIn(hexed(AT + SHIFT), str(stopped.exception))
+        self.assertNotIn(hexed(AT), str(stopped.exception))
+
 
 class Table(unittest.TestCase):
     def test_the_table_carries_a_program_per_phase_and_the_platform_scaled(self):

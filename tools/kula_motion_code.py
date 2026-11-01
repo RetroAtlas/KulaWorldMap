@@ -465,7 +465,8 @@ class Code:
         low, high = self.record + span[0], self.record + span[1] + 3
         held = {base: (self.record, True), "gp": (self.gp, False)}     # a register's address, and whether it is the record's address
         awaited = {self.at(where): (self.placed(callee), handed) for where, callee, handed in calls}
-        count, pc, end = 0, self.at(start), self.at(end)
+        start, end = self.at(start), self.at(end)
+        count, pc = 0, start
         while pc <= end:
             text = self.text(pc)
             if text.startswith("jal "):
