@@ -471,10 +471,11 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
             put(addr, {"at": hexed(p.at), "word": word_at(other, p.at), "text": p.text, "tier": p.tier})
 
     absent_checks = {addr for addr in absent if isinstance(addr, int)}
+    absent_addresses = {hexed(addr) for addr in absent_checks}
     for addr in absent_checks:
         put(addr, absent[addr])
     used |= (absent_checks & reachers) | (set(runs) & named_runs)
-    pending[:] = [p for p in pending if p.get("address") not in {hexed(addr) for addr in absent_checks}]
+    pending[:] = [p for p in pending if p.get("address") not in absent_addresses]
     for module in modules:
         name = module.__name__
         for addr, _, _ in getattr(module, "CHECKS", ()):
