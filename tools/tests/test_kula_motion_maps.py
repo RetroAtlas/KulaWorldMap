@@ -124,15 +124,18 @@ class Maps(unittest.TestCase):
                     self.assertIsNone(code.multiplier(unhex(us), 0, "", ""))
                     self.assertIsNone(code.divisor(unhex(us), "", 0, "", 0, ""))
 
-    def test_a_changed_word_at_a_place_stops_the_reader_naming_it(self):
+    def test_a_changed_word_at_a_keyed_or_an_absent_rows_place_stops_the_reader_naming_it(self):
         for release, data in COMMITTED.items():
-            blob = laid(release, data)
-            us, row = next((us, row) for us, row in data["rows"].items() if "pattern" in row and isinstance(row["at"], str))
-            struct.pack_into("<I", blob, unhex(row["at"]) - RELEASES[release]["base"], 0xFFFFFFFF)
-            with self.assertRaises(SystemExit) as stopped:
-                Code.of(release, bytes(blob), Map(data)).immediate(unhex(us), "")
-            self.assertIn(row["at"], str(stopped.exception))
-            self.assertIn(us, str(stopped.exception))
+            keyed = next((us, row) for us, row in data["rows"].items() if "pattern" in row and isinstance(row["at"], str))
+            absent = next((us, row) for us, row in data["rows"].items() if row.get("absent"))
+            for us, row in (keyed, absent):
+                blob = laid(release, data)
+                struct.pack_into("<I", blob, unhex(row["at"]) - RELEASES[release]["base"], 0xFFFFFFFF)
+                with self.subTest(release=release, key=row["key"]):
+                    with self.assertRaises(SystemExit) as stopped:
+                        Code.of(release, bytes(blob), Map(data)).immediate(unhex(us), "")
+                    self.assertIn(row["at"], str(stopped.exception))
+                    self.assertIn(us, str(stopped.exception))
 
     def test_every_registered_constant_has_its_value_in_the_map_in_the_registrys_shape(self):
         for release, data in COMMITTED.items():
