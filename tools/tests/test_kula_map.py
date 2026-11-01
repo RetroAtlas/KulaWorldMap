@@ -17,10 +17,10 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from align_fixture import ANCHORS, GAPS, ORDER, laid, pill, spikes, twin  # noqa: E402
-from kula_align import MODULES  # noqa: E402
+from kula_align import MODULES, Placement  # noqa: E402
 from kula_disc import RELEASES  # noqa: E402
-from kula_map import (FITS, KINDS, base_values, build, check, check_base, cut, dump, leaves, pattern_on,  # noqa: E402
-                      registries, relation, report, write_words)
+from kula_map import (FITS, KINDS, Pending, base_values, build, check, check_base, cut, derived, dump, leaves,  # noqa: E402
+                      pattern_on, reaching, registries, relation, report, write_words)
 from motion_fixture import addiu, addu, jal, jr, lh, lui, lw, sll, sra, sw  # noqa: E402
 from png import read_png  # noqa: E402
 
@@ -313,6 +313,39 @@ class Words(unittest.TestCase):
         copy = executable(gaps=GAPS, routines={"clock": lambda c: clock(c, word=CLOCK + 8),
                                                "mode": lambda c, **k: mode(c, clock=CLOCK + 8, **k)})
         self.assertEqual(mapped(copy)["names"]["CLOCK_WORD"], f"0x{(0x800a << 16) + CLOCK + 8:08x}")
+
+    def test_a_word_is_derived_through_the_adds_between_its_lui_and_its_load(self):
+        def added(callee, table=0, words=0, **k):
+            rows = mode(callee, table=table, words=words, **k)
+            i = rows.index(lw("v0", "at", table))
+            return [*rows[:i - 2], lui("at", HIGH), addiu("at", "at", table), addu("at", "at", "v0"), lw("v0", "at", 0), *rows[i + 1:]]
+        copy = executable(gaps=GAPS, routines={"mode": added})
+        built = mapped(copy)
+        self.assertEqual(built["names"]["CASES"], [f"0x{copy.starts['data']:08x}", 0, 2])
+        self.assertNotIn("CASES", pending_keys(built))
+
+    def test_a_lui_and_a_use_placed_where_no_address_is_built_are_passed_over(self):
+        copy = executable(gaps=GAPS)
+        word, reach = (0x800a << 16) + CLOCK, reaching(US.listing)
+        pairs = [(li, ui) for li, ui in reach[word] if li is not None]
+        self.assertGreater(len(pairs), 1)
+
+        def on_copy(i):
+            addr = US.listing.address(i)
+            routine = max((start for start in US.starts.values() if start <= addr), default=None)
+            name = next(n for n, start in US.starts.items() if start == routine)
+            at = copy.starts[name] + addr - routine
+            return Placement(at, "hand", copy.listing.text[copy.listing.position(at)])
+        placements = {US.listing.address(i): on_copy(i) for pair in pairs for i in pair}
+        self.assertEqual(derived(US.listing, copy.listing, word, reach, placements), word)
+        off = copy.starts["mode"] + 52
+        placements[US.listing.address(pairs[0][1])] = Placement(off, "hand", "lh $v1, 12($a0)")
+        self.assertEqual(derived(US.listing, copy.listing, word, reach, placements), word)
+        for _, ui in pairs:
+            placements[US.listing.address(ui)] = Placement(off, "hand", "lh $v1, 12($a0)")
+        with self.assertRaises(Pending) as left:
+            derived(US.listing, copy.listing, word, reach, placements)
+        self.assertEqual(str(left.exception), f"the instructions placed for it build no address, at 0x{off:08x} and 0x{off:08x}")
 
     def test_a_tables_entries_are_held_to_where_the_bases_entries_were_placed(self):
         copy = executable(gaps=GAPS, cases=("vanish", "spikes"))

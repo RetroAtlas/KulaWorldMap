@@ -382,14 +382,46 @@ class Code:
         return int(m.group(1), 0) if m.lastindex else None
 
     def address(self, lui, addiu):
-        """The address a lui and the addiu or load after it build, in RAM's mirror."""
+        """The address a lui and the addiu, load or store that uses it build, in RAM's mirror, through the adds
+        between them."""
         hi_at, lo_at = self.at(lui), self.at(addiu)
-        hi = re.match(r"lui \$\w+, (0x[0-9a-f]+)$", self.text(hi_at))
-        lo = re.match(r"(?:addiu \$\w+, \$\w+, |lw \$\w+, )(-?\d+)", self.text(lo_at))
-        if not hi or not lo:
+        value = self.built(hi_at, lo_at)
+        if value is None:
             where = f", where the base's 0x{lui:08x} and 0x{addiu:08x} are read" if (hi_at, lo_at) != (lui, addiu) else ""
             sys.exit(f"0x{hi_at:08x} and 0x{lo_at:08x} read `{self.text(hi_at)}` and `{self.text(lo_at)}`, not an address{where}")
-        return (0x80000000 | (int(hi.group(1), 0) << 16)) + int(lo.group(1))
+        return value
+
+    def built(self, hi_at, lo_at):
+        """The address the lui at `hi_at` builds by `lo_at`, in RAM's mirror: an addiu between them adds its
+        immediate to the half, an addu carries the half past an index, and the addiu, load or store at `lo_at` adds
+        its own; None where the lui, the use or what joins them is not that."""
+        hi = re.match(r"lui \$(\w+), (0x[0-9a-f]+)$", self.text(hi_at)) if lo_at > hi_at else None
+        if not hi:
+            return None
+        held = {hi.group(1): 0x80000000 | (int(hi.group(2), 0) << 16)}
+        for pc in range(hi_at + 4, lo_at + 4, 4):
+            text = self.text(pc)
+            m = re.match(r"addiu \$(\w+), \$(\w+), (-?\d+)$", text)
+            if m and m.group(2) in held:
+                if pc == lo_at:
+                    return held[m.group(2)] + int(m.group(3))
+                held[m.group(1)] = held[m.group(2)] + int(m.group(3))
+                continue
+            m = re.match(r"\w+ \$\w+, (-?\d+)\(\$(\w+)\)$", text)
+            if m and pc == lo_at:
+                return held[m.group(2)] + int(m.group(1)) if m.group(2) in held else None
+            m = re.match(r"addu \$(\w+), \$(\w+), \$(\w+)$", text)
+            if m:
+                high = [held[r] for r in m.groups()[1:] if r in held]
+                if len(high) == 1:
+                    held[m.group(1)] = high[0]
+                else:
+                    held.pop(m.group(1), None)
+                continue
+            m = re.match(r"(\w+) \$(\w+)", text)
+            if m and m.group(1) not in READS_FIRST:
+                held.pop(m.group(2), None)
+        return None
 
     def word_of(self, hi, hp, lo, lp):
         """The word a lui and an ori hold between them."""

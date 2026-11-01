@@ -11,9 +11,9 @@ constant the readers register by name at its value there, and the end-screen tab
 
 The aligner places the instructions. A multiplier's run is placed by the mapped instructions before and after it,
 its count read by walking the shifts and adds until the destination register is overwritten by something else; a
-data word is derived through a mapped instruction that reaches it, a lui and the load, store or addiu after it, or
-a load off gp; a table of cases is derived the same way and its entries held to where the base's entries were
-placed. A keyed value is written only where it stands in a relation to the base's: the same, a rate or a count
+data word is derived through a mapped instruction that reaches it, a lui and the load, store or addiu that uses it
+through the adds between them, or a load off gp; a table of cases is derived the same way and its entries held to
+where the base's entries were placed. A keyed value is written only where it stands in a relation to the base's: the same, a rate or a count
 scaled by the two frame rates in either direction of truncation, an offset the release's own derived word gives, a
 key the hand table lists as tuned, or a reading the hand table lists as absent, and a divisor the hand table says the
 release lays out as a shift is two to that shift, held the same way. What fits none, and every anchor the aligner
@@ -238,29 +238,29 @@ def run_at(us, other, start, count, dst, placements, why):
 
 def derived(us, other, word, reach, placements):
     """The word on the other executable that the placed instructions reaching the base's word reach, where every
-    one of them reaches the same."""
-    found = {}
+    one of them reaches the same: a load or a store off gp at its offset, a lui and its use through the adds between
+    them, and a lui and a use placed where no address is built between them passed over."""
+    found, unbuilt = {}, []
     for li, ui in reach.get(word, ()):
         use = placements.get(us.address(ui))
         lui = placements.get(us.address(li)) if li is not None else None
         if use is None or (li is not None and lui is None):
             continue
         text = other.text[other.position(use.at)]
-        m = USE.match(text) or ADDIU.match(text)
-        low = (int(m.group(1)) if m.re is USE else int(m.group(3))) if m else None
-        base = (m.group(2) if m else None)
         if li is None:
-            if base != "gp":
+            m = USE.match(text)
+            if not m or m.group(2) != "gp":
                 raise Pending(f"0x{use.at:08x} reads `{text}`, not a load or a store off gp")
-            value = other.code.gp + low
+            value = other.code.gp + int(m.group(1))
         else:
-            hi = LUI.match(other.text[other.position(lui.at)])
-            if not hi or low is None:
-                raise Pending(f"0x{lui.at:08x} and 0x{use.at:08x} read `{other.text[other.position(lui.at)]}` and "
-                              f"`{text}`, not an address")
-            value = (0x80000000 | (int(hi.group(2), 0) << 16)) + low
+            value = other.code.built(lui.at, use.at)
+            if value is None:
+                unbuilt.append(use.at)
+                continue
         found.setdefault(value, []).append(use.at)
     if not found:
+        if unbuilt:
+            raise Pending("the instructions placed for it build no address, at " + " and ".join(hexed(a) for a in unbuilt))
         raise Pending("no instruction reaching it is placed")
     if len(found) > 1:
         raise Pending("the instructions reaching it reach " + " and ".join(

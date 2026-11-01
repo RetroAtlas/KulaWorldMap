@@ -141,6 +141,17 @@ class Reads(unittest.TestCase):
         with self.assertRaises(SystemExit):
             c.address(AT + 4, AT + 8)
 
+    def test_an_address_is_built_through_the_adds_between_its_lui_and_its_use(self):
+        c = code(lui("v0", 0x0007), addiu("v1", "v0", 24200), sll("a1", "a0", 2), addu("v0", "a1", "v1"), lw("v0", "v0", 0),
+                 lui("v0", 0x0001), addiu("v0", "v0", 116), addu("v1", "v1", "v0"), lw("v0", "a0", 0))
+        self.assertEqual(c.address(AT, AT + 16), 0x80075e88)
+        self.assertEqual(c.built(AT, AT + 4), 0x80075e88)
+        self.assertEqual(c.built(AT + 20, AT + 24), 0x80010074)
+        self.assertIsNone(c.built(AT + 20, AT + 32))
+        self.assertIsNone(c.built(AT + 16, AT))
+        with self.assertRaises(SystemExit):
+            c.address(AT + 20, AT + 32)
+
     def test_a_register_the_run_never_derived_stops_the_reading(self):
         c = code(sll("v1", "v0", 2), addu("v1", "v1", "a0"), sll("v1", "v1", 1))
         with self.assertRaises(SystemExit):
