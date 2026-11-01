@@ -9,6 +9,8 @@ import sys
 import unittest
 import zlib
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -30,6 +32,7 @@ from kula_build import (  # noqa: E402
     release_art,
     release_json,
     release_objects,
+    rooms_of,
     rules_of,
     skins_overlay,
     slot,
@@ -186,6 +189,33 @@ class TheComparison(unittest.TestCase):
         self.assertEqual({k: data[k] for k in IDENTITY}, {k: RELEASES["eu"][k] for k in IDENTITY})
         self.assertEqual((data["rules"], data["packs"], data["art"], data["objects"], data["levels"]),
                          ({"hz": 50}, {"room": {}, "packs": []}, art, models, {"/HIRO/HIRO.PAK#0": {}}))
+
+
+COPYCAT = "/HIRO/COPYCAT.PAK"
+ROOMS = [level(COPYCAT, i, theme=t) for i, t in enumerate(("HIRO", "INCA", "MARS"))]
+
+
+class TheRooms(unittest.TestCase):
+    def setUp(self):
+        self.base = {slot(l): l for l in BASE_LEVELS + ROOMS[::-1]}
+
+    def test_without_a_map_the_committed_rooms_say_the_world_each_is_played_in_and_the_executable_is_not_read(self):
+        with mock.patch("kula_build.copycat_worlds") as read:
+            self.assertEqual(rooms_of(SimpleNamespace(map=None), self.base, COPYCAT), ["HIRO", "INCA", "MARS"])
+        read.assert_not_called()
+
+    def test_with_a_map_the_executables_worlds_come_back_where_the_committed_rooms_are_played_in_them(self):
+        code = SimpleNamespace(map={})
+        with mock.patch("kula_build.copycat_worlds", return_value=["HIRO", "INCA", "MARS"]) as read:
+            self.assertEqual(rooms_of(code, self.base, COPYCAT), ["HIRO", "INCA", "MARS"])
+        read.assert_called_once_with(code)
+
+    def test_a_room_played_in_another_world_than_the_committed_one_stops_the_build_naming_both_lists(self):
+        with mock.patch("kula_build.copycat_worlds", return_value=["HIRO", "HELL", "MARS"]):
+            with self.assertRaises(SystemExit) as stop:
+                rooms_of(SimpleNamespace(map={}), self.base, COPYCAT)
+        self.assertIn("HIRO, HELL, MARS", str(stop.exception))
+        self.assertIn("HIRO, INCA, MARS", str(stop.exception))
 
 
 SHADE = [1, 0, 2, 0, 2, 0]    # the top face alone in its shade
