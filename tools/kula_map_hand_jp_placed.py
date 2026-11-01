@@ -568,7 +568,8 @@ PLACED = {
     0x8003710c: (0x80037704, "the lui of the sequence the move is held to, in the delay slot of the jump's test on this disc "
                              "where the US has it after"),
     # The hazards.
-    0x8003aa80: (0x8003b004, "the block under the ball tested against the kind read off gp, as on the US"),
+    0x8003aa80: (0x8003b004, "the second axis test of the heading against the arrow's way, as on the US, the way's halfword "
+                             "read off gp on this disc where the US reads it at its absolute address"),
     0x8003aac0: (0x8003b040, "and the turn's request dropped at 92 off the record in s1"),
     0x8003abf4: (0x8003b110, "the heat tested past its limit"),
     0x8003aef8: (0x8003b428, "the exit's ending at a landing, 1, loaded after the result's address is built on this disc where "
