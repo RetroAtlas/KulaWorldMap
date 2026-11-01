@@ -612,8 +612,9 @@ def check(built, path):
     if not path.exists():
         sys.exit(f"no map at {path}")
     was = json.loads(path.read_text())
-    if was.get("pending"):
-        sys.exit(f"{path} has {len(was['pending'])} pending rows")
+    pending = was.get("pending") or []
+    if pending:
+        sys.exit(f"{path} has {len(pending)} pending row{'s' if len(pending) != 1 else ''}")
     now = json.loads(json.dumps(built))
     for block in ("rows", "names"):
         for key in sorted(set(was.get(block, {})) | set(now[block])):

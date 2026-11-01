@@ -357,7 +357,10 @@ class Mapped(unittest.TestCase):
                 {"name": "GLOW_MAKE", "module": "fixture", "why": "not placed"}]
         with self.assertRaises(SystemExit) as refused:
             mapped(*WORDS, pending=left)
-        self.assertIn("2 pending rows: twin.count, GLOW_MAKE", str(refused.exception))
+        self.assertTrue(str(refused.exception).endswith(" has 2 pending rows: twin.count, GLOW_MAKE"), str(refused.exception))
+        with self.assertRaises(SystemExit) as refused:
+            mapped(*WORDS, pending=left[1:])
+        self.assertTrue(str(refused.exception).endswith(" has 1 pending row: GLOW_MAKE"), str(refused.exception))
 
     def test_a_scan_takes_a_callee_where_the_map_places_it_and_as_called_where_it_does_not(self):
         words = (sh("v0", "s0", 492), jal(0x800389fc), addu("a2", "s0", "zero"), sh("v0", "s0", 494))

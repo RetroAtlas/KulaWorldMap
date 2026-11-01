@@ -142,7 +142,7 @@ class Map:
         pending = data.get("pending") or []
         if pending:
             left = ", ".join(str(p.get("key") or p.get("name") or p.get("address") or f"pair {p.get('pair')}") for p in pending)
-            sys.exit(f"the {data['release']} map has {len(pending)} pending rows: {left}")
+            sys.exit(f"the {data['release']} map has {len(pending)} pending row{'s' if len(pending) != 1 else ''}: {left}")
         self.release = data["release"]
         self.rows = {unhex(addr): row for addr, row in data["rows"].items()}
         self.names = data["names"]

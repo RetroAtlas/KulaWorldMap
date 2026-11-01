@@ -537,15 +537,17 @@ class Files(unittest.TestCase):
                 check(built, path)
             self.assertIn(f"rows {key} holds", str(stopped.exception))
 
-    def test_the_check_refuses_a_map_with_pending_rows(self):
-        copy = executable(gaps=GAPS, routines={"twin": lambda c: twin(c, count=10)})
-        built = mapped(copy)
-        with tempfile.TemporaryDirectory() as out:
-            path = Path(out) / "eu.json"
-            dump(built, path)
-            with self.assertRaises(SystemExit) as stopped:
-                check(built, path)
-            self.assertIn("has 1 pending rows", str(stopped.exception))
+    def test_the_check_refuses_a_map_with_pending_rows_counting_them(self):
+        one = executable(gaps=GAPS, routines={"twin": lambda c: twin(c, count=10)})
+        two = executable(gaps=GAPS, routines={"twin": lambda c: twin(c, count=10), "pill": lambda c: pill(c, counts=(360, 841))})
+        for copy, said in ((one, " has 1 pending row"), (two, " has 2 pending rows")):
+            built = mapped(copy)
+            with tempfile.TemporaryDirectory() as out, self.subTest(said):
+                path = Path(out) / "eu.json"
+                dump(built, path)
+                with self.assertRaises(SystemExit) as stopped:
+                    check(built, path)
+                self.assertTrue(str(stopped.exception).endswith(said), str(stopped.exception))
 
     def test_the_report_lists_the_pending_then_the_hands_rows_then_the_loosely_placed(self):
         copy = executable(gaps=GAPS, routines={"twin": lambda c: twin(c, count=10)})
