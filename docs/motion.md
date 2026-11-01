@@ -409,7 +409,7 @@ The frame loop runs the ball's routine (`0x80040ffc`), which runs the hazards an
 
 So the flag is seen on from the take's frame through the 840 frames the word counts down, 841 frames, 14 s; on the frame the word is found at nothing the start lays the timer at 9 and the blink takes it to 8 before the light reads the flag off, so the first spell is 8 frames; every spell after runs from the frame the timer before it reaches nothing to the frame before its own does, 9 frames; and the count of 21 ends the blink as the 21st spell's timer runs out, so the odd spells are off and the even on, 11 off and 10 on, 188 frames in all, 3.1 s, and the flag stays off after.
 
-On the PAL disc the timer is laid at 8 (`SCES_010.00`, `0x8002c754`, `0x8002c820`, `0x8002c88c`), so the first spell is 7 frames and every spell after 8, 167 frames in all, 3.3 s, after the 701 frames, 14 s, the word of 700 keeps the flag on.
+On the PAL disc the timer is laid at 8 (`SCES_010.00`, `0x8002c754`, `0x8002c820`, `0x8002c88c`), so the first spell is 7 frames and every spell after 8, 167 frames in all, 3.3 s, after the 701 frames, 14 s, through which the word of 700 keeps the flag on.
 
 The table ships the blink under the sunglasses' `lasts` as its `times`, its `frames` and its `first`, the first spell's frames.
 
