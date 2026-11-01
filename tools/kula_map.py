@@ -410,9 +410,12 @@ def held_apart(hand, release):
                 sys.exit(f"the hand table's {tables[addr]} and {what} rows meet at 0x{addr:08x}")
 
 
-def hand_runs(entries, table):
-    """The hand table's runs, a row named for a registered run naming an entry of one run, since the row places one;
-    the writer stopping on an entry of several."""
+def hand_runs(other, entries, table):
+    """The hand table's runs, each lying within the executable and a row named for a registered run naming an entry
+    of one run, since the row places one; the writer stopping on a run laid outside or an entry of several."""
+    for key, (at, n, *_) in table.items():
+        if not other.code.holds(at, 4 * n):
+            sys.exit(f"the hand table's multiplier row {key} lays {n} instructions at 0x{at:08x}, outside the executable")
     for e in entries:
         runs = list(leaves(e.kind, e.value)) if e.kind == "run" and e.name in table else []
         if len(runs) > 1:
@@ -433,7 +436,7 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
     placements, left = align(us, other, rows_in, hand=hand_anchors)
     anchored = {a.address for a in hand_anchors}
     place_by_hand(us, other, placements, left, hand.PLACED.get(release, {}), {a.address for a in rows_in} | anchored)
-    reshaped, runs = hand.RESHAPED.get(release, {}), hand_runs(entries, hand.MULTIPLIERS.get(release, {}))
+    reshaped, runs = hand.RESHAPED.get(release, {}), hand_runs(other, entries, hand.MULTIPLIERS.get(release, {}))
     within_lists(reshaped, {a.address for a in rows_in if a.list in ("CHECKS", "IMMEDIATES")} | anchored, "reshaped")
     for addr, (at, text, *_) in reshaped.items():
         placements[addr] = Placement(at, "reshaped", standing(other, at, text, "reshaped row")["text"])

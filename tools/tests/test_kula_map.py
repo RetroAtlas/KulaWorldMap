@@ -566,6 +566,16 @@ class Hand(unittest.TestCase):
         self.assertEqual(str(stopped.exception), f"the hand table's multiplier row FILLS names 2 runs, at 0x{fills[0][0]:08x} and "
                                                  f"0x{fills[1][0]:08x}, and a named row places one")
 
+    def test_a_hand_run_laid_outside_the_executable_stops_the_writer(self):
+        copy = executable(gaps=GAPS)
+        end = copy.listing.code.base + len(copy.listing.code.blob)
+        for key, at, n in (("FILL", end, 1), ("mode.fill", end - 4, 2)):
+            with self.subTest(key):
+                with self.assertRaises(SystemExit) as stopped:
+                    mapped(copy, hand(MULTIPLIERS={key: (at, n, "v1", "v0", "a run past the end")}))
+                self.assertEqual(str(stopped.exception),
+                                 f"the hand table's multiplier row {key} lays {n} instructions at 0x{at:08x}, outside the executable")
+
 
 class Files(unittest.TestCase):
     def test_the_map_is_written_a_row_to_a_line_and_the_check_holds_it_to_the_discs(self):
