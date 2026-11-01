@@ -130,10 +130,10 @@ def rebuilt(kind, value, theirs):
 class Map:
     """Where each instruction the readers match on the base's executable stands on a release's, as the map writer
     writes it: the rows by the base's address, an absent row among them naming the instruction standing where a
-    reading the release has no instruction for would be, the registered constants by name, the multipliers' runs
-    with their counts and registers there, and the end screen's table as its count and its pairs by the index of
-    each one's first entry, the word the release's pair letters and the digest of its two images. A map with
-    pending rows is refused."""
+    reading the release has no instruction for would be and a shift row the shift a divisor is laid out as, the
+    registered constants by name, the multipliers' runs with their counts and registers there, and the end screen's
+    table as its count and its pairs by the index of each one's first entry, the word the release's pair letters and
+    the digest of its two images. A map with pending rows is refused."""
 
     def __init__(self, data):
         pending = data.get("pending") or []
@@ -207,6 +207,12 @@ class Map:
         row = self.rows.get(addr)
         return row if row is not None and row.get("absent") else None
 
+    def shift(self, addr):
+        """The row saying the release divides by a shift where the base's `addr` begins a multiply by a reciprocal,
+        or None where the map has no such row."""
+        row = self.rows.get(addr)
+        return row if row is not None and "shift" in row else None
+
     def place(self, addr, pattern):
         """Where a reading at the base's instruction is read on the release and by what: a keyed row's own pattern, a
         registered constant's, a check row's text, or the pattern given where the map keeps none."""
@@ -247,7 +253,8 @@ class Code:
     start sets in gp, the address of the ball's record, which the stores a reading resolves go by, and the map that
     says where each instruction the readers match on the base's executable stands on this one, none for the base,
     whose addresses are read as given; a reading the map says this executable has no instruction for reads as None
-    once the instruction standing in its place is matched."""
+    once the instruction standing in its place is matched, and a divisor it says this executable lays out as a shift
+    reads as two to the shift once that shift is matched."""
 
     def __init__(self, blob, base=RELEASES[BASE]["base"], gp=RELEASES[BASE]["gp"], record=RELEASES[BASE]["record"],
                  map=None):
@@ -297,11 +304,16 @@ class Code:
         row = None if self.map is None else self.map.absent(addr)
         if row is None:
             return False
+        self.standing(row, addr)
+        return True
+
+    def standing(self, row, addr):
+        """The instruction a hand row names, held to stand at the row's place, where the base's `addr` is read, or
+        the tool's exit naming both."""
         at = unhex(row["at"])
         if self.text(at) != row["text"]:
             sys.exit(f"0x{at:08x} reads `{self.text(at)}`, not the `{row['text']}` standing where the base's "
                      f"0x{addr:08x} would be read")
-        return True
 
     def place(self, addr, pattern):
         return (addr, pattern) if self.map is None else self.map.place(addr, pattern)
@@ -382,10 +394,14 @@ class Code:
         return word & 0xFF
 
     def divisor(self, hi, hp, lo, lp, sa, sp):
-        """The number a multiply by a reciprocal and a shift divides by, or None where the map says this executable
-        has no such multiply."""
+        """The number a multiply by a reciprocal and a shift divides by, two to the shift where the map says this
+        executable divides by a shift alone, or None where it says this executable has no such multiply."""
         if self.absent(hi):
             return None
+        row = None if self.map is None else self.map.shift(hi)
+        if row is not None:
+            self.standing(row, hi)
+            return 2 ** row["shift"]
         hi, hp, lo, lp, sa, sp = self.halves((hi, hp, lo, lp, sa, sp))
         return round(2 ** (32 + self.immediate_at(sa, sp)) / self.joined(hi, hp, lo, lp))
 

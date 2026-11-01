@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_align import MODULES  # noqa: E402
 from kula_map import relation  # noqa: E402
-from kula_map_hand import ABSENT, TUNED, WORDS  # noqa: E402
+from kula_map_hand import ABSENT, SHIFTS, TUNED, WORDS  # noqa: E402
 from kula_motion_code import Code, Map  # noqa: E402
 from motion_fixture import GAME, GAME_EU  # noqa: E402
 
@@ -100,6 +100,13 @@ class Overrides(unittest.TestCase):
         self.assertEqual({key for key, how in by.items() if how == "tuned"}, set(TUNED[RELEASE]) & set(GAME))
         for key, why in TUNED[RELEASE].items():
             self.assertTrue(why.strip(), key)
+
+    def test_a_divisor_the_release_lays_out_as_a_shift_fits_a_count_and_is_read_as_a_number(self):
+        self.assertEqual((relation_of("vanish.in.by", 9, 8), relation_of("vanish.out.by", 19, 16)), ("count", "count"))
+        self.assertTrue(SHIFTS[RELEASE])
+        for key in SHIFTS[RELEASE]:
+            self.assertIsInstance(GAME_EU[key], int, key)
+            self.assertNotIn(key, ABSENT_KEYS)
 
     def test_a_value_scaled_otherwise_an_absence_the_hand_table_does_not_list_or_a_word_not_the_hands_fails(self):
         self.assertIsNone(relation_of("spikes.rise", 5, 3))

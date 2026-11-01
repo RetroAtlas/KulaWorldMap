@@ -247,10 +247,24 @@ class Cycles(unittest.TestCase):
         self.assertEqual([v for s, v in seq if s == 5][:3] + [v for s, v in seq if s == 5][-2:],
                          [255, 241, 228, 26, 13])
 
-    def test_a_vanishing_ramp_that_does_not_run_over_its_state_stops_the_reading(self):
-        for change in ({"vanish.dim.by": 8}, {"vanish.in.over": 8}):
+    def test_on_the_pal_executable_the_vanishing_block_runs_188_frames_two_ramps_by_a_shift_and_two_by_nothing(self):
+        seq = vanish_cycle(GAME_EU, 0)
+        self.assertEqual(len(seq), 188)
+        self.assertEqual(sorted(runs([s for s, _ in seq])), [[0, 76], [1, 8], [2, 4], [3, 76], [4, 8], [5, 16]])
+        self.assertTrue(all(0 <= v <= 255 for _, v in seq))
+        self.assertTrue(all(v == 128 for s, v in seq if s == 3))
+        self.assertEqual([v for s, v in seq if s == 1], [0, 31, 63, 95, 127, 159, 191, 223])
+        self.assertEqual([v for s, v in seq if s == 2], [255, 200, 144, 88])
+        self.assertEqual([v for s, v in seq if s == 4], [32, 60, 88, 116, 144, 172, 200, 228])
+        self.assertEqual([v for s, v in seq if s == 5][:3] + [v for s, v in seq if s == 5][-2:], [255, 239, 223, 31, 15])
+        appear = [[s for s, _ in vanish_cycle(GAME_EU, p)].index(1) for p in range(PHASES)]
+        self.assertEqual([(appear[0] - a) % 188 for a in appear], [0, 47, 94, 141])
+
+    def test_a_vanishing_ramp_that_does_not_run_over_its_state_or_cover_the_span_stops_the_reading(self):
+        for game, change in ((GAME, {"vanish.dim.by": 8}), (GAME, {"vanish.in.over": 8}), (GAME, {"vanish.settle.by": None}),
+                             (GAME_EU, {"vanish.dim.scale": 224}), (GAME_EU, {"vanish.out.by": 19})):
             with self.assertRaises(SystemExit):
-                vanish_cycle({**GAME, **change}, 0)
+                vanish_cycle({**game, **change}, 0)
 
     def test_the_vanishing_block_phases_are_a_quarter_cycle_apart(self):
         appear = [[s for s, _ in vanish_cycle(GAME, p)].index(1) for p in range(PHASES)]

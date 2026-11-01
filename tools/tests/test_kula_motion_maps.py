@@ -42,6 +42,8 @@ def read_back(code, us, row):
     """A keyed row's value as a reader reads it, by the base's address alone, the parts it would pass left blank."""
     if "count" in row:
         return code.multiplier(us, 0, "", "")
+    if "shift" in row:
+        return code.divisor(us, "", 0, "", 0, "")
     if isinstance(row["at"], list):
         reader = code.divisor if len(row["at"]) == 3 else code.grey
         return reader(us, *[0] * (2 * len(row["at"]) - 1))

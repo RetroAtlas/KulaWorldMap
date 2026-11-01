@@ -1,8 +1,8 @@
 """What the hand settles of a release's map, where the aligner cannot: an anchor placed by a hand read, a key tuned
-otherwise than the frame rates scale it, a reading the release has no instruction for, a check the release lays out
-as another instruction, a multiplier's run of another shape, a check the release alone has, and the words of the
-end-screen pairs the release draws otherwise. Every row carries a sentence saying what the instruction is and why
-it is the one, and a hand row wins over the aligner's placement.
+otherwise than the frame rates scale it, a reading the release has no instruction for, a divisor the release lays
+out as a shift, a check the release lays out as another instruction, a multiplier's run of another shape, a check
+the release alone has, and the words of the end-screen pairs the release draws otherwise. Every row carries a
+sentence saying what the instruction is and why it is the one, and a hand row wins over the aligner's placement.
 """
 
 # A US address to (the release's address, why): the same instruction, exact or with its registers renamed.
@@ -135,18 +135,25 @@ ABSENT = {"eu": {
     "fall.hop": (0x800309f4, "lhu $v1, 326($s0)",
                  "a hop over nothing starts down at the last frame's change along the normal, read off the record at 326 "
                  "and stored at 310 as it is, where the US stores a constant"),
-    "vanish.in.by": (0x8002c12c, "sra $a1, $v0, 3",
-                     "the fade in divides by a shift of three, by eight, rounded toward nothing, where the US multiplies "
-                     "by the reciprocal of nine and shifts"),
     "vanish.settle.by": (0x8002c1d4, "addiu $a1, $v0, 32",
                          "the settling adds its floor to the count times 56 with no division, where the US divides the "
                          "count times 224 by five"),
     "vanish.dim.by": (0x8002c2cc, "addiu $v1, $zero, 256",
                       "the dimming takes the count times 28 off 256 with no division, where the US divides the count "
                       "times 224 by nine"),
+}, "jp": {}}
+
+# A divisor's key to (the address, the text, why) of the shift the release divides by, where the base multiplies by a
+# reciprocal and shifts.
+SHIFTS = {"eu": {
+    "vanish.in.by": (0x8002c12c, "sra $a1, $v0, 3",
+                     "the fade in divides the rise times 255 by a shift of three, by eight cut toward nothing, a second "
+                     "shift of the sum plus seven fixing a negative, over the eight frames it fades in, where the US "
+                     "multiplies by the reciprocal of nine over nine"),
     "vanish.out.by": (0x8002c370, "sra $a1, $v0, 4",
-                      "the flash out divides by a shift of four, by sixteen, rounded toward nothing, where the US "
-                      "multiplies by the reciprocal of nineteen and shifts"),
+                      "the flash out divides the count times 255 by a shift of four, by sixteen cut toward nothing, a "
+                      "second shift of the sum plus fifteen fixing a negative, over the sixteen frames it flashes out, "
+                      "where the US multiplies by the reciprocal of nineteen over nineteen"),
 }, "jp": {}}
 
 # A US address to (the release's address, the text, why) of the instruction that does the check's work there.

@@ -20,7 +20,7 @@ from align_fixture import ANCHORS, GAPS, ORDER, laid, pill, spikes, twin  # noqa
 from kula_align import MODULES  # noqa: E402
 from kula_disc import RELEASES  # noqa: E402
 from kula_map import FITS, KINDS, build, check, cut, dump, leaves, pattern_on, registries, relation, report, write_words  # noqa: E402
-from motion_fixture import addiu, addu, jal, jr, lh, lui, lw, sll, sw  # noqa: E402
+from motion_fixture import addiu, addu, jal, jr, lh, lui, lw, sll, sra, sw  # noqa: E402
 from png import read_png  # noqa: E402
 
 GP = RELEASES["us"]["gp"]
@@ -118,7 +118,7 @@ def module(us):
 
 
 def hand(**tables):
-    out = {name: {"eu": {}} for name in ("PLACED", "TUNED", "ABSENT", "RESHAPED", "MULTIPLIERS", "WORDS")}
+    out = {name: {"eu": {}} for name in ("PLACED", "TUNED", "ABSENT", "SHIFTS", "RESHAPED", "MULTIPLIERS", "WORDS")}
     out["EXTRA"] = {"eu": []}
     for name, rows in tables.items():
         out[name]["eu"] = rows
@@ -307,6 +307,27 @@ class Hand(unittest.TestCase):
         with self.assertRaises(SystemExit):
             mapped(copy, hand(ABSENT={"pill.invincible": (at, "addiu $v0, $zero, 840", "not what stands there")}))
 
+    def test_a_shift_row_is_two_to_its_shift_held_by_relation_and_another_instruction_standing_there_is_refused(self):
+        from align_fixture import clock
+
+        def shifted(callee):
+            words = clock(callee)
+            return [*words[:3], *words[5:7], sra("v0", "v1", 6), *words[8:]]
+        copy = executable(gaps=GAPS, routines={"clock": shifted})
+        named = {name: entry for name, entry in FIXTURE.NAMED.items() if name != "SHOWN"}
+        modules = (SimpleNamespace(**{**vars(FIXTURE), "NAMED": named}),)
+        at = copy.starts["clock"] + 20
+        row = {"clock.shown": (at, "sra $v0, $v1, 6", "the clock divides by a shift of six")}
+        built = mapped(copy, hand(SHIFTS=row, TUNED={"clock.shown": "sixty-four against sixty"}), modules=modules)
+        self.assertEqual(key_rows(built)["clock.shown"], {"key": "clock.shown", "at": f"0x{at:08x}", "word": f"0x{sra('v0', 'v1', 6):08x}",
+                                                           "text": "sra $v0, $v1, 6", "shift": 6, "tier": "hand", "us": 60, "value": 64,
+                                                           "by": "tuned"})
+        self.assertEqual(built["pending"], [])
+        left = pending_keys(mapped(copy, hand(SHIFTS=row), modules=modules))["clock.shown"]
+        self.assertEqual((left["us"], left["value"], left["why"]), (60, 64, "64 stands in no relation to the base's 60"))
+        with self.assertRaises(SystemExit):
+            mapped(copy, hand(SHIFTS={"clock.shown": (at, "sra $v0, $v1, 5", "not what stands there")}), modules=modules)
+
     def test_a_reshaped_row_is_written_as_given_and_an_extra_check_verified(self):
         copy = executable(gaps=GAPS)
         us_at = US.places["and test it"]
@@ -358,7 +379,7 @@ class Files(unittest.TestCase):
         text = said.getvalue()
         self.assertTrue(text.startswith("pending: 1\n  address 0x"))
         self.assertEqual([line for line in text.splitlines() if line and not line.startswith("  ")],
-                         ["pending: 1", "tuned: 0", "absent: 0", "reshaped: 0", "renamed or loose: 0"])
+                         ["pending: 1", "tuned: 0", "absent: 0", "shift: 0", "reshaped: 0", "renamed or loose: 0"])
 
 
 class Registries(unittest.TestCase):

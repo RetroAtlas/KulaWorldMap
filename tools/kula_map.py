@@ -15,8 +15,9 @@ data word is derived through a mapped instruction that reaches it, a lui and the
 a load off gp; a table of cases is derived the same way and its entries held to where the base's entries were
 placed. A keyed value is written only where it stands in a relation to the base's: the same, a rate or a count
 scaled by the two frame rates in either direction of truncation, an offset the release's own derived word gives, a
-key the hand table lists as tuned, or a reading the hand table lists as absent. What fits none, and every anchor the
-aligner leaves, goes to the map's pending block, and a map is not finished while that block holds anything.
+key the hand table lists as tuned, or a reading the hand table lists as absent, and a divisor the hand table says the
+release lays out as a shift is two to that shift, held the same way. What fits none, and every anchor the aligner
+leaves, goes to the map's pending block, and a map is not finished while that block holds anything.
 """
 import argparse
 import json
@@ -344,6 +345,18 @@ def absent_rows(other, table):
     return out
 
 
+def shift_rows(other, table):
+    """Each key the release divides by a shift to its row, the shift's instruction the hand table gives held to the
+    executable and its count read off it."""
+    out = {}
+    for key, (at, text, _) in table.items():
+        m = re.match(r"sra \$\w+, \$\w+, (\d+)$", text)
+        if not m:
+            sys.exit(f"the hand table's shift row {key} reads `{text}`, not a shift right")
+        out[key] = {"key": key, **standing(other, at, text, "shift row"), "shift": int(m.group(1)), "tier": "hand"}
+    return out
+
+
 def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, us_words=WORDS):
     """The release's map: the rows by the base's address, the registered names, the end-screen words, the extra
     checks and what is pending, from the two listings and the hand table."""
@@ -381,9 +394,10 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
 
 def keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending):
     """Every list's rows into `rows`, by the base's address: a check's and a scan's as placed, a keyed row with its
-    value in its relation to the base's, or the absent row the hand table gives."""
+    value in its relation to the base's, a divisor the hand table says the release lays out as a shift with two to
+    that shift as its value, or the absent row the hand table gives."""
     tuned, absent = hand.TUNED.get(release, {}), absent_rows(other, hand.ABSENT.get(release, {}))
-    runs, used = hand.MULTIPLIERS.get(release, {}), set()
+    shifts, runs, used = shift_rows(other, hand.SHIFTS.get(release, {})), hand.MULTIPLIERS.get(release, {}), set()
 
     def put(addr, row, key=None):
         at = hexed(addr)
@@ -448,6 +462,8 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
             kind, reader = ("DIVISORS", "divisor") if len(parts) == 6 else ("GREYS", "grey")
 
             def halves(key=key, parts=parts, reader=reader):
+                if key in shifts:
+                    return 2 ** shifts[key]["shift"], shifts[key]
                 addrs, patterns = parts[::2], parts[1::2]
                 ps = [place(a, placements, why) for a in addrs]
                 pats = [pattern_on(pat, us.text[us.position(a)], p.text) for a, pat, p in zip(addrs, patterns, ps)]
@@ -455,7 +471,7 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
                        "text": [p.text for p in ps], "tier": weakest([p.tier for p in ps]), "pattern": pats}
                 return getattr(other.code, reader)(*(x for p, pat in zip(ps, pats) for x in (p.at, pat))), row
             valued(name, kind, key, parts[0], getattr(us.code, reader)(*parts), halves)
-    for table, what in ((absent, "absent"), (tuned, "tuned"), (runs, "multiplier")):
+    for table, what in ((absent, "absent"), (shifts, "shift"), (tuned, "tuned"), (runs, "multiplier")):
         stale = sorted(set(table) - used)
         if stale:
             sys.exit(f"the hand table's {what} rows name {', '.join(stale)}, which no reader lists")
@@ -513,15 +529,15 @@ def dump(built, path):
 
 
 def report(built):
-    """The pending rows, then the hand's tuned, absent and reshaped rows, then every row placed at a renamed or a
-    loose tier, for a hand read."""
+    """The pending rows, then the hand's tuned, absent, shift and reshaped rows, then every row placed at a renamed
+    or a loose tier, for a hand read."""
     pending = built["pending"]
     print(f"pending: {len(pending)}")
     for p in pending:
         print("  " + "  ".join(f"{k} {v}" for k, v in p.items()))
     rows = sorted(built["rows"].items())
     for title, keep in (("tuned", lambda r: r.get("by") == "tuned"), ("absent", lambda r: r.get("absent")),
-                        ("reshaped", lambda r: r.get("tier") == "reshaped"),
+                        ("shift", lambda r: "shift" in r), ("reshaped", lambda r: r.get("tier") == "reshaped"),
                         ("renamed or loose", lambda r: str(r.get("tier", "")).startswith("loose") or r.get("tier") == "renamed")):
         picked = [(addr, r) for addr, r in rows if keep(r)]
         print(f"\n{title}: {len(picked)}")

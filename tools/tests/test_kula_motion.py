@@ -273,6 +273,20 @@ class Mapped(unittest.TestCase):
             self.assertIn(hexed(AT + SHIFT + 28), str(stopped.exception))
             self.assertIn(hexed(AT + 28), str(stopped.exception))
 
+    def test_a_shift_row_reads_two_to_its_shift_and_another_instruction_standing_there_stops_the_reader(self):
+        words = (*WORDS, sra("a1", "v0", 3))
+        shift = (hexed(AT + 28), {"key": "vanish.in.by", "at": hexed(AT + SHIFT + 28), "word": hexed(words[7]),
+                                  "text": "sra $a1, $v0, 3", "shift": 3, "tier": "hand", "us": 9, "value": 8, "by": "count"})
+
+        def read(c):
+            return c.divisor(AT + 28, "lui $a0, {}", AT + 32, "ori $a0, $a0, {}", AT + 36, "sra $v0, $t7, {}")
+        c = mapped(*words, rows=(*ROWS, shift))
+        self.assertEqual((read(c), c.at(AT + 28)), (8, AT + SHIFT + 28))
+        with self.assertRaises(SystemExit) as stopped:
+            read(mapped(*words[:7], sra("a1", "v0", 4), rows=(*ROWS, shift)))
+        self.assertIn(hexed(AT + SHIFT + 28), str(stopped.exception))
+        self.assertIn(hexed(AT + 28), str(stopped.exception))
+
     def test_a_check_at_an_absent_row_stops_the_reader_naming_the_address(self):
         words = (*WORDS, sh("zero", "v0", 38))
         absent = (hexed(AT + 28), {"key": "platform.over", "absent": True, "at": hexed(AT + SHIFT + 28),

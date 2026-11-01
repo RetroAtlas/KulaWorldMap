@@ -611,7 +611,10 @@ def spike_cycle(r, phase, frames=SPIKE_FRAMES, at=None):
 
 def vanish_cycle(r, phase, at=None):
     """The state of a vanishing block on each frame of one cycle, for a phase,
-    with the brightness its faces are drawn at, taken as the spikes' cycle is."""
+    with the brightness its faces are drawn at, taken as the spikes' cycle is.
+    The fade in and the flash out divide by the frames they run over, and the
+    settling and the dimming cover the dimming's span over theirs, through a
+    divisor where the executable has one and whole where it has none."""
     v = phase * r["vanish.phase.step"]
     if phase < r["vanish.phase.absent"]:
         state, count, level = 0, r["vanish.phase.absent.from"] - v, 0
@@ -619,11 +622,20 @@ def vanish_cycle(r, phase, at=None):
         state, count, level = 3, r["vanish.phase.solid.from"] - v, r["vanish.settle.to"]
     lasts = [r["vanish.absent"], r["vanish.in"], r["vanish.settle"],
              r["vanish.solid"], r["vanish.dim"], r["vanish.out"]]
-    for name, last in zip(("in", "settle", "dim", "out"), (lasts[1], lasts[2], lasts[4], lasts[5])):
+    for name, last in (("in", lasts[1]), ("out", lasts[5])):
         if r[f"vanish.{name}.by"] != last:
             sys.exit(f"the vanishing block's ramp {name} runs over {r[f'vanish.{name}.by']} frames of {last}")
     if r["vanish.in.over"] != lasts[1]:
         sys.exit(f"the vanishing block fades in from {r['vanish.in.over']} over {lasts[1]} frames")
+
+    def over(name):
+        by = r.get(f"vanish.{name}.by")
+        return 1 if by is None else by
+
+    span = r["vanish.dim.from"] - r["vanish.dim.at"]
+    for name, last in (("settle", lasts[2]), ("dim", lasts[4])):
+        if r[f"vanish.{name}.scale"] * last != span * over(name):
+            sys.exit(f"the vanishing block's ramp {name} does not cover the dimming's {span} over {last} frames")
     cycle = sum(lasts)
     at = cycle * 2 if at is None else at
     seq = []
@@ -639,7 +651,7 @@ def vanish_cycle(r, phase, at=None):
                 state, count, level = 2, lasts[2], r["vanish.in.to"]
         elif state == 2:
             if count > 0:
-                level = count * r["vanish.settle.scale"] // r["vanish.settle.by"] + r["vanish.settle.floor"]
+                level = count * r["vanish.settle.scale"] // over("settle") + r["vanish.settle.floor"]
             else:
                 state, count, level = 3, lasts[3], r["vanish.settle.to"]
         elif state == 3:
@@ -647,7 +659,7 @@ def vanish_cycle(r, phase, at=None):
                 state, count, level = 4, lasts[4], r["vanish.dim.at"]
         elif state == 4:
             if count > 0:
-                level = r["vanish.dim.from"] - count * r["vanish.dim.scale"] // r["vanish.dim.by"]
+                level = r["vanish.dim.from"] - count * r["vanish.dim.scale"] // over("dim")
             else:
                 state, count, level = 5, lasts[5], r["vanish.out.at"]
         else:
