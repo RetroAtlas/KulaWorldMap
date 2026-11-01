@@ -20,16 +20,16 @@ PLACED = {release: module.PLACED for release, module in BY_RELEASE.items()}
 # A key to why its value is neither the US value nor a rate or a count scaled from it.
 TUNED = {release: module.TUNED for release, module in BY_RELEASE.items()}
 
-# A key, a tuple of the keys of one reading or a check's US address, to (the address, the text, why) of the instruction in its place.
+# A key, a tuple of the keys of one reading, or the US address of a check or of an instruction reaching a word, to (the address, the text, why) of the instruction in its place.
 ABSENT = {release: module.ABSENT for release, module in BY_RELEASE.items()}
 
 # A divisor's key to (the address, the text, why) of the shift the release divides by in place of the base's reciprocal.
 SHIFTS = {release: module.SHIFTS for release, module in BY_RELEASE.items()}
 
-# A US address to (the release's address, the text, why) of the instruction that does the check's work there.
+# A US address to (the release's address, the text, why) of the instruction that does the check's work there, or opens the routine there.
 RESHAPED = {release: module.RESHAPED for release, module in BY_RELEASE.items()}
 
-# A multiplier's key to (the address, the count, the source register, the destination register, why) of its run.
+# A multiplier's key, or a registered run's name, to (the address, the count, the source register, the destination register, why) of its run.
 MULTIPLIERS = {release: module.MULTIPLIERS for release, module in BY_RELEASE.items()}
 
 # Checks the release alone has, each (the address, the text, why).

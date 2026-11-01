@@ -10,9 +10,10 @@ constant the readers register by name at its value there, and the end-screen tab
     python3 tools/kula_map.py --words eu out/words         # each pair of the release's end-screen table as a PNG, to read a word off
 
 The aligner places the instructions. A multiplier's run is placed by the mapped instructions before and after it,
-its count read by walking the shifts and adds until the destination register is overwritten by something else; a
-data word is derived through a mapped instruction that reaches it, a lui and the load, store or addiu that uses it
-through the adds between them, or a load off gp; a table of cases is derived the same way and its entries held to
+its count read by walking the shifts and adds until the destination register is overwritten by something else, or
+stands as the hand table gives it; a data word is derived through a mapped instruction that reaches it, a lui and
+the load, store or addiu that uses it through the adds between them, or a load off gp, an absent row of the hand
+table taking a misplaced one out of the derivation; a table of cases is derived the same way and its entries held to
 where the base's entries were placed. A keyed value is written only where it stands in a relation to the base's: the same, a rate or a count
 scaled by the two frame rates in either direction of truncation, an offset the release's own derived word gives, a
 key the hand table lists as tuned, or a reading the hand table lists as absent, and a divisor the hand table says the
@@ -268,7 +269,7 @@ def derived(us, other, word, reach, placements):
     return next(iter(found))
 
 
-def leaf_on(us, other, entry, leaf, reach, placements, why):
+def leaf_on(us, other, entry, leaf, reach, placements, why, runs):
     """A registered constant's leaf as it stands on the other executable, in the base's shape."""
     kind = entry.kind
     if kind in ("instruction", "routine"):
@@ -283,7 +284,10 @@ def leaf_on(us, other, entry, leaf, reach, placements, why):
         return out
     if kind == "run":
         start, count, src, dst = leaf
-        at, n = run_at(us, other, start, count, dst, placements, why)
+        if entry.name in runs:
+            at, n, src, dst, _ = runs[entry.name]
+        else:
+            at, n = run_at(us, other, start, count, dst, placements, why)
         read(lambda: other.code.multiplier(at, n, src, dst))
         return [hexed(at), n, src, dst]
     word = leaf if kind == "word" else leaf[0]
@@ -385,16 +389,23 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
     if rates is None:
         rates = (release_readings(us.code, BASE)["hz"], release_readings(other.code, release)["hz"])
     entries, reach = registries(modules), reaching(us)
-    rows_in = anchors(modules)
-    placements, left = align(us, other, rows_in, hand=by_hand(us, entries, modules, reach))
+    rows_in, hand_anchors = anchors(modules), by_hand(us, entries, modules, reach)
+    placements, left = align(us, other, rows_in, hand=hand_anchors)
     place_by_hand(us, other, placements, left, hand.PLACED.get(release, {}))
+    reshaped, runs = hand.RESHAPED.get(release, {}), hand.MULTIPLIERS.get(release, {})
+    for addr, (at, text, _) in reshaped.items():
+        placements[addr] = Placement(at, "reshaped", standing(other, at, text, "reshaped row")["text"])
+    for addr in hand.ABSENT.get(release, {}):
+        if isinstance(addr, int):
+            placements.pop(addr, None)
+    left[:] = [entry for entry in left if entry.anchor.address not in reshaped]
     why = {entry.anchor.address: entry.why for entry in left}
     pending = [{"address": hexed(e.anchor.address), "module": e.anchor.module, "list": e.anchor.list, "key": e.anchor.key,
                 "why": e.why} for e in left if e.anchor.list in LEFT]
     names, offsets = {}, {}
     for e in entries:
         try:
-            names[e.name] = mapped(e.kind, e.value, lambda leaf: leaf_on(us, other, e, leaf, reach, placements, why))
+            names[e.name] = mapped(e.kind, e.value, lambda leaf: leaf_on(us, other, e, leaf, reach, placements, why, runs))
             if e.kind == "offset" and e.keys:
                 offsets.update(dict.fromkeys(e.keys, int(names[e.name][0], 16) - other.code.gp))
         except Pending as p:
@@ -404,22 +415,22 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
             if key not in offsets:
                 offsets[key] = None
     rows = {}
-    reshaped = hand.RESHAPED.get(release, {})
     for addr, (at, text, _) in reshaped.items():
         rows[hexed(addr)] = {**standing(other, at, text, "reshaped row"), "tier": "reshaped"}
-    pending = [p for p in pending if p.get("address") not in {hexed(a) for a in reshaped}]
-    keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending)
+    keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending,
+          {a.address for a in hand_anchors}, {e.name for e in entries if e.kind == "run"})
     extra = [standing(other, at, text, "extra row") for at, text, _ in hand.EXTRA.get(release, ())]
     return {"release": release, "rows": rows, "names": names, "extra": extra,
             "words": words_block(other, names, us_words, hand.WORDS.get(release, {}), pending), "pending": pending}
 
 
-def keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending):
-    """Every list's rows into `rows`, by the base's address: a check's and a scan's as placed, a check the hand table
-    declares absent as the absent row it gives whatever was placed there, a keyed row with its value in its relation
-    to the base's, a multiplier's row carrying the instruction that sets a register its run shifts by, a divisor the
-    hand table says the release lays out as a shift with two to that shift as its value, or the absent row the hand
-    table gives."""
+def keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending, reachers, named_runs):
+    """Every list's rows into `rows`, by the base's address: a check's and a scan's as placed, a check or an
+    instruction reaching a word the hand table declares absent as the absent row it gives whatever was placed there,
+    a keyed row with its value in its relation to the base's, a multiplier's row carrying the instruction that sets
+    a register its run shifts by, a divisor the hand table says the release lays out as a shift with two to that
+    shift as its value, or the absent row the hand table gives; a hand row naming no check, no instruction reaching a
+    word, no key and no registered run stops the writer."""
     tuned, absent = hand.TUNED.get(release, {}), absent_rows(other, hand.ABSENT.get(release, {}))
     shifts, runs, used = shift_rows(other, hand.SHIFTS.get(release, {})), hand.MULTIPLIERS.get(release, {}), set()
     values = base_values(us.code, modules)
@@ -459,6 +470,7 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
     absent_checks = {addr for addr in absent if isinstance(addr, int)}
     for addr in absent_checks:
         put(addr, absent[addr])
+    used |= (absent_checks & reachers) | (set(runs) & named_runs)
     pending[:] = [p for p in pending if p.get("address") not in {hexed(addr) for addr in absent_checks}]
     for module in modules:
         name = module.__name__

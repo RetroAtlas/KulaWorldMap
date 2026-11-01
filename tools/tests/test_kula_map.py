@@ -450,6 +450,36 @@ class Hand(unittest.TestCase):
         with self.assertRaises(SystemExit):
             mapped(copy, hand(RESHAPED={us_at: (at, "sw $v0, 16($s0)", "not what stands there")}))
 
+    def test_a_reshaped_row_places_a_registered_routines_entry(self):
+        copy = executable(gaps=GAPS, routines={"spikes": lambda callee: [lui("at", 0x800b), *spikes("s0", "a0", 63, 14)]})
+        us_at, at = US.starts["spikes"], copy.starts["spikes"]
+        self.assertEqual(mapped(copy)["names"]["SPIKES"], f"0x{at + 4:08x}")
+        built = mapped(copy, hand(RESHAPED={us_at: (at, "lui $at, 0x800b", "the routine opens with the half hoisted")}))
+        self.assertEqual(built["names"]["SPIKES"], f"0x{at:08x}")
+        self.assertEqual(built["rows"][f"0x{us_at:08x}"]["tier"], "reshaped")
+
+    def test_an_absent_row_for_an_instruction_reaching_a_word_takes_it_out_of_the_derivation(self):
+        copy = executable(gaps=GAPS)
+        mode_use, clock_use = US.starts["mode"] + 16, US.starts["clock"] + 24
+        word = f"0x{(0x800a << 16) + CLOCK:08x}"
+        at, text = copy.starts["mode"] + 16, f"addiu $v1, $at, {CLOCK}"
+        built = mapped(copy, hand(ABSENT={mode_use: (at, text, "the mode routine builds another word here")}))
+        self.assertEqual(built["names"]["CLOCK_WORD"], word)
+        self.assertEqual(built["rows"][f"0x{mode_use:08x}"], {"absent": True, "at": f"0x{at:08x}", "word": f"0x{addiu('v1', 'at', CLOCK):08x}",
+                                                               "text": text, "tier": "hand"})
+        self.assertNotIn("CLOCK_WORD", pending_keys(built))
+        clock_at, clock_text = copy.starts["clock"] + 24, f"lw $a2, {CLOCK}($at)"
+        built = mapped(copy, hand(ABSENT={mode_use: (at, text, "as above"), clock_use: (clock_at, clock_text, "and the clock's reads another")}))
+        self.assertEqual(pending_keys(built)["CLOCK_WORD"]["why"], "no instruction reaching it is placed")
+
+    def test_a_registered_run_is_read_as_the_hand_gives_it(self):
+        copy = executable(gaps=GAPS)
+        at = copy.starts["mode"] + 56
+        self.assertEqual(mapped(copy)["names"]["FILL"], [f"0x{at:08x}", 2, "v1", "v0"])
+        built = mapped(copy, hand(MULTIPLIERS={"FILL": (at, 1, "v1", "v0", "the run read as one shift")}))
+        self.assertEqual(built["names"]["FILL"], [f"0x{at:08x}", 1, "v1", "v0"])
+        self.assertEqual(built["pending"], [])
+
 
 class Files(unittest.TestCase):
     def test_the_map_is_written_a_row_to_a_line_and_the_check_holds_it_to_the_discs(self):
