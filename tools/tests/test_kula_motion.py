@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE, RELEASES  # noqa: E402
 from kula_motion import CHECKS, DIVISORS, GREYS, IMMEDIATES, MULTIPLIERS, SCANS, table  # noqa: E402
 from kula_motion_blocks import blocks  # noqa: E402
-from kula_motion_code import PHASES, Code, Map, Readings  # noqa: E402
+from kula_motion_code import PHASES, WALK, Code, Map, Readings  # noqa: E402
 from kula_motion_effects import effects  # noqa: E402
 from kula_motion_harms import harms  # noqa: E402
 from kula_motion_light import GLOW_CASES, glint  # noqa: E402
@@ -195,6 +195,15 @@ class Reads(unittest.TestCase):
         self.assertIsNone(c.built(AT, AT + 12))
         c = code(lui("v0", 0x000c), jr("ra"), lw("v1", "v0", 16))
         self.assertEqual(c.built(AT, AT + 8), 0x800c0010)
+
+    def test_the_builder_walks_on_and_the_setter_walks_back_the_same_number_of_instructions(self):
+        c = code(lui("v0", 0x000c), *[0] * (WALK - 1), lw("v1", "v0", 16), lw("v1", "v0", 16))
+        self.assertEqual(c.built(AT, AT + 4 * WALK), 0x800c0010)
+        self.assertIsNone(c.built(AT, AT + 4 * (WALK + 1)))
+        c = code(addiu("a2", "zero", 2), *[0] * (WALK - 1), sllv("v0", "v1", "a2"), sllv("v0", "v1", "a2"))
+        self.assertEqual(c.constant(AT + 4 * WALK, "a2"), 2)
+        with self.assertRaises(SystemExit):
+            c.constant(AT + 4 * (WALK + 1), "a2")
 
     def test_a_register_the_run_never_derived_stops_the_reading(self):
         c = code(sll("v1", "v0", 2), addu("v1", "v1", "a0"), sll("v1", "v1", 1))

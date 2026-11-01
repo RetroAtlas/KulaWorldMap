@@ -410,8 +410,9 @@ class Code:
         """The address the lui at `hi_at` builds by `lo_at`, in RAM's mirror: an addiu between them adds its
         immediate to the half, an addu carries the half past an index, a jump is followed through its delay slot, a
         call drops the halves in the caller-saved registers once its delay slot has run, and the addiu, load or store
-        at `lo_at` adds its own; None where the lui, the use or what joins them is not that, where a return stands
-        between them, or where the use is not reached within the walk."""
+        at `lo_at` adds its own; None where the lui, the use or what joins them is not that, where a return or another
+        jump through a register stands between them, or where the use is not reached within WALK steps of the lui, a
+        jump or a call taken with its delay slot as one."""
         hi = re.match(r"lui \$(\w+), (0x[0-9a-f]+)$", self.text(hi_at)) if lo_at > hi_at else None
         if not hi:
             return None
@@ -532,8 +533,9 @@ class Code:
         return coef[dst]
 
     def setter(self, before, reg):
-        """Where `reg` was last written before `before`, or the tool's exit where nothing within the walk writes it."""
-        for pc in range(before - 4, before - 4 * WALK, -4):
+        """Where `reg` was last written within the WALK instructions before `before`, or the tool's exit where none of
+        them writes it."""
+        for pc in (before - 4 * i for i in range(1, WALK + 1)):
             if not self.holds(pc):
                 break
             m = re.match(r"(\w+) \$(\w+)", self.text(pc))
