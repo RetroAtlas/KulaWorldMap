@@ -885,6 +885,8 @@
   "0x8002f934": {"at": "0x8002fa88", "word": "0x0c00caa4", "text": "jal 0x80032a90", "tier": "strict5"},
   "0x8002f938": {"key": "roll.recentre", "at": "0x8002fa8c", "word": "0x24050008", "text": "addiu $a1, $zero, 8", "tier": "strict3", "pattern": "addiu $a1, $zero, {}", "us": 8, "value": 8, "by": "same"},
   "0x8002f944": {"at": "0x8002fa98", "word": "0x04410012", "text": "bgez $v0, 0x8002fae4", "tier": "aligned"},
+  "0x8002f954": {"key": "roll.fall.from", "at": "0x8002faa8", "word": "0x28620065", "text": "slti $v0, $v1, 101", "tier": "reshaped", "us": -101, "value": -101, "by": "same"},
+  "0x8002f958": {"key": "roll.fall.span", "at": "0x8002fab0", "word": "0x286201ac", "text": "slti $v0, $v1, 428", "tier": "reshaped", "us": 327, "value": 327, "by": "same"},
   "0x8002f96c": {"at": "0x8002fac4", "word": "0x14400007", "text": "bne $v0, $zero, 0x8002fae4", "tier": "aligned"},
   "0x8002f974": {"at": "0x8002facc", "word": "0xae020198", "text": "sw $v0, 408($s0)", "tier": "aligned"},
   "0x8002f980": {"key": "roll.fall", "at": "0x8002fad8", "word": "0x2402fff6", "text": "addiu $v0, $zero, -10", "tier": "strict5", "pattern": "addiu $v0, $zero, {}", "us": -10, "value": -10, "by": "same"},
@@ -3335,8 +3337,5 @@
   {"at": "0x80042e78", "word": "0x28a20003", "text": "slti $v0, $a1, 3"},
   {"at": "0x80042e80", "word": "0x38420001", "text": "xori $v0, $v0, 1"}
  ],
- "pending": [
-  {"address": "0x8002f954", "module": "kula_motion_roll", "list": "IMMEDIATES", "key": "roll.fall.from", "why": "0x8002f954 is not placed: its window stands outside the function its own is paired with"},
-  {"address": "0x8002f958", "module": "kula_motion_roll", "list": "IMMEDIATES", "key": "roll.fall.span", "why": "0x8002f958 is not placed: its window stands outside the function its own is paired with"}
- ]
+ "pending": []
 }

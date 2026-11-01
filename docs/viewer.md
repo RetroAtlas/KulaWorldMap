@@ -179,7 +179,17 @@ On the PAL disc the fire's, the invisible block's and the swirl's cycles run at 
 
 Play's clock follows the disc shown, filled as that disc's game fills it and shown as its HUD shows it, so a 99-second level opens at 83 on the US disc, whose clock runs 82.5 seconds, at 100 on the PAL disc, where it runs its 99, and at 120 on the Japanese disc, where every 99-second level runs 119.
 
-On the Japanese disc alone play's other rules, how long a pill lasts among them, are the US release's until its executable is read.
+On the Japanese disc the ball's breath follows that disc's own count of the clock, measured against 7200 ticks and quickened by a fiftieth of what the clock is short, where the US ball's is measured against 6000 and quickened by a fortieth.
+
+On the Japanese disc the hourglass turns the clock round as the game's does there and scores nothing ("What the ball takes" below).
+
+On the Japanese disc an ending's view turns about the level more slowly, its three angles stepping -5, 2 and 7 a frame where the US view's step -8, 3 and 10, over the same length.
+
+On the Japanese disc the strip gives an ending in the word that disc's end screen letters for it, 落ちた for a fall, タイムアウト for the clock running out and, in the Simon rooms, 良くできました for a round done and 間違えた for a wrong move, and the run's end as Game Over.
+
+On the Japanese disc the Simon rooms' match names its winner once a player is past two points rather than five, in that disc's own words.
+
+On the Japanese disc the faces of a level with no key run through that disc's own four colour cycles, 256 colours long where the other two discs' are 192 and through the same hues at levels of their own, so its grey swirl is coloured as that disc colours it.
 
 ## Your levels
 

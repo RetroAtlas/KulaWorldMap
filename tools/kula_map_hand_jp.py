@@ -183,6 +183,13 @@ RESHAPED = {
     0x8002f16c: (0x8002efc8, "lui $t0, 0x001a",
                  "the glow face routine's entry, which this disc opens with the high half of a constant hoisted out of the body, the "
                  "body the US opens with following two instructions on"),
+    0x8002f954: (0x8002faa8, "slti $v0, $v1, 101", -101,
+                 "the fall window's start on a roll over nothing, tested on this disc as the progress, read signed, being under 101, "
+                 "which skips the fall, where the US adds -101 to the progress and tests what is left unsigned against the span; "
+                 "the window opens at 101 on both"),
+    0x8002f958: (0x8002fab0, "slti $v0, $v1, 428", 327,
+                 "and its end, the progress under 428 tested in the first test's delay slot, where the US tests the 327 units left "
+                 "past the start; the window closes at 428 on both, 327 units on"),
 }
 
 MULTIPLIERS = {

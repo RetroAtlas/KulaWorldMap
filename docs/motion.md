@@ -4,7 +4,7 @@ What the executable does to every object and every moving block each frame, read
 
 `--table` prints what the build ships under `motion` in `public/objects.json`, in the game's units, from the readings below and from what [camera.md](camera.md) and [ggi.md](ggi.md) read of the camera and the models, the rates by type and by kind of block among it, with the two cycles below as a frame program per phase, simulated from their routines and cut at one frame for all four phases so the game's spacing between them survives.
 
-The viewer draws everything that moves on the spot from that table, under the PAL disc with its release file's entries written over it, on a clock at the frame rate of the disc shown, sixty frames a second on this disc and the Japanese and fifty on the PAL, that starts at the level's first frame as the level opens, as play's clock does, and stands while the page is hidden, and what travels across blocks does so from the same table and the rules below, one game frame at a time; the Motion switch holds all of it at that first frame, except for a few things posed to show what they are.
+The viewer draws everything that moves on the spot from that table, under the PAL and the Japanese discs with that disc's release file's entries written over it, on a clock at the frame rate of the disc shown, sixty frames a second on this disc and the Japanese and fifty on the PAL, that starts at the level's first frame as the level opens, as play's clock does, and stands while the page is hidden, and what travels across blocks does so from the same table and the rules below, one game frame at a time; the Motion switch holds all of it at that first frame, except for a few things posed to show what they are.
 
 [level-format.md](level-format.md) is the same document for the level file and [ggi.md](ggi.md) for the meshes.
 
@@ -1292,15 +1292,13 @@ It paints the shadow under a pickup only while the pickup is drawn, so the face 
 
 Which of the two tangents a pill flips about and a fruit tilts about rests on the naming of the model's axes in [ggi.md](ggi.md) and on RotMatrix's order; a pill in play flips the way the map does.
 
-What else the Japanese executable changes in play is not read, beyond the frame's length, the clock, the hourglass, the pills, the platform's speed, the breath, the fast star and the Simon rooms' branch above, and the view's scale and the free camera in [camera.md](camera.md); the PAL executable is read whole through its map, and what it changes from this disc's table stands in the PAL release file and beside each reading above.
+What the Japanese executable changes from this disc's table stands whole in its release file, read through its map as the PAL executable's is, but the sections above say so beside their readings for the PAL disc alone and, of the Japanese, beside the frame's length, the clock, the hourglass, the pills, the platform's speed, the breath, the fast star and the Simon rooms' branch, and [camera.md](camera.md) beside the view's scale and the free camera.
 
 Of the Japanese Simon rooms, what the word at `0x8009f530` holds as the menu starts the mode and as each room ends, whether every pass of the frame routine counts it and whether anything clears it in a block, and what the branch's `div` leaves where no world is finished and the divisor is nothing ("The Simon rooms" above), are not read, so which world a fresh save's first room opens in there is for an emulator to show.
 
-In play every rate and count but the clock's and the hourglass's is the US executable's on the Japanese disc until its executable is read, the breath's cap and the ending's view among them.
-
 The view's scale down, 3840 of 4096 on this disc and the Japanese and 4096 on the PAL ([camera.md](camera.md)), ships in the table as `play.screen.scale`, which the map reads nowhere: its view in play stands the same height on every disc, and the start camera it draws sees as high as this disc's on each.
 
-The Japanese disc's end screen words, read off their renders into its map and held there by their digests, the Perfect! pair at 38 the other discs lack among them, ship nowhere yet: play on that disc shows this disc's `play.words` until its map is finished, and whether the pair at 38 ships beside the others is not decided.
+The Japanese disc's end screen holds a pair at 38 the other discs lack, lettered 大変良くできました Perfect!, which it picks in the normal mode where a word at `0x800a1f08` is 1 (`SCPS_100.64`, `0x80015c68`); what sets that word is not read, so the pair's word is held in the map by its digest and ships in no table.
 
 The laser's beam was not looked at for a pulse.
 

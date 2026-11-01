@@ -1,7 +1,20 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { frozen, settle, still, textured, trackErrors } from "./helpers.js";
-import { clockLine, pixelAt, route, startPlay, stopOn, top } from "./playhelpers.js";
+import {
+  betweenFrames,
+  clockLine,
+  jumped,
+  line,
+  pixelAt,
+  route,
+  startPlay,
+  station,
+  status,
+  stepTo,
+  stopOn,
+  top,
+} from "./playhelpers.js";
 
 const LOCKED = "Leave play to change the release";
 const BONUS_30 = "/HELL/HELL.PAK#17";
@@ -313,6 +326,32 @@ test("with EU pressed a second of the held clock takes one second off the HUD's 
     }
   });
   await expect(clockLine(page)).toHaveText("Time 99");
+  expect(errors).toEqual([]);
+});
+
+test("with JP pressed a fall off LEVEL 1 ends in the word the Japanese disc's end screen letters for it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0/45,35/fit/33/d-jp");
+  await settle(page);
+  await still(page);
+  await expect(pressed(page)).toHaveText("JP");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,18,17, facing -y");
+  // past the level's opening, which holds the pad dead, and facing the level's edge
+  await betweenFrames(page, () => page.keyboard.press("ArrowLeft"));
+  await expect.poll(async () => (await station(page)).heading).toBe("-x");
+  await expect.poll(async () => (await station(page)).moving).toBe(false);
+  await frozen(page);
+  // a jump two blocks on comes down on nothing, and the ball falls off the level
+  await jumped(page);
+  const { lost } = jp.objects.motion.play.words;
+  expect(lost).not.toBe(objects.motion.play.words.lost);
+  expect(await stepTo(page, `^${lost}`, 400)).not.toBeNull();
+  await expect(status(page)).toHaveText(
+    new RegExp(`^${lost} 0 points, \\d+ seconds left\\. Space or Enter starts the level again\\.$`),
+  );
   expect(errors).toEqual([]);
 });
 
