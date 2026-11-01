@@ -584,17 +584,26 @@ def show_tables(g):
               f"box {lo}..{hi}  {'; '.join(labels)}")
 
 
+def readings_of(release, files=RELEASE_FILES):
+    """The readings the release's meshes are read with, as the build recorded
+    them: off the release's own file where it is built, else off the base's."""
+    path = files[release] if files[release].exists() else files[BASE]
+    if not path.exists():
+        sys.exit(f"no {path.name} to read the meshes of {RELEASES[release]['name']} with; build the base first")
+    data = json.loads(path.read_text())
+    if "objects" not in data:
+        sys.exit(f"{path.name} carries no readings of its executable to read the meshes of "
+                 f"{RELEASES[release]['name']} with; build it again")
+    return data["objects"]["readings"]
+
+
 def show_overlay(g, release):
     """Which types and whether the arc the release's file changes from the
-    committed base, and the overlay's size in bytes as compact JSON."""
-    missing = [p.name for p in (OBJECTS, RELEASE_FILES[BASE]) if not p.exists()]
-    if missing:
-        sys.exit(f"no {' or '.join(missing)} to write {release} against; build the base first")
-    own = json.loads(RELEASE_FILES[BASE].read_text())
-    if "objects" not in own:
-        sys.exit(f"{RELEASE_FILES[BASE].name} carries no readings of the base's executable to check "
-                 f"the models of {RELEASES[release]['name']} with; build the base first")
-    out = overlay(g, json.loads(OBJECTS.read_text()), own["objects"]["readings"])
+    committed base, and the overlay's size in bytes as compact JSON, the arc
+    read with the readings the build recorded for the release."""
+    if not OBJECTS.exists():
+        sys.exit(f"no {OBJECTS.name} to write {release} against; build the base first")
+    out = overlay(g, json.loads(OBJECTS.read_text()), readings_of(release))
     print(json.dumps({"types": list(out["types"]), "jump": bool(out["jump"]),
                       "bytes": len(json.dumps(out, separators=(",", ":")))}))
 

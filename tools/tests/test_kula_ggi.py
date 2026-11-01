@@ -7,16 +7,17 @@ import json
 import os
 import struct
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_disc import DISC_VARS, open_release  # noqa: E402
+from kula_disc import BASE, DISC_VARS, RELEASE_FILES, open_release  # noqa: E402
 from kula_ggi import (  # noqa: E402
-    ABSENT, ARC, BALLS, BLEND, FILE, GROUP, PREFIX, QUAD, ROWS, SINGLES, SLOTS, SORTED, TEXTURES, TYPES, VRAM_H,
-    Ggi, Model, as_dict, jump, objects, overlay, rgb, shadows, sparks)
+    ABSENT, ARC, BALLS, BLEND, FILE, GROUP, OBJECTS, PREFIX, QUAD, ROWS, SINGLES, SLOTS, SORTED, TEXTURES, TYPES,
+    VRAM_H, Ggi, Model, as_dict, jump, objects, overlay, readings_of, rgb, shadows, sparks)
 
 
 def packed(frames):
@@ -365,6 +366,37 @@ class Overlay(unittest.TestCase):
                 overlay(g, base, READINGS, self.sheet)
 
 
+class RecordedReadings(unittest.TestCase):
+    """The readings the printout sizes a release's arc with, off the files the build writes."""
+
+    def files(self, folder, written):
+        paths = {r: Path(folder) / f"{r}.json" for r in (BASE, "eu")}
+        for r, data in written.items():
+            paths[r].write_text(json.dumps(data))
+        return paths
+
+    def test_a_release_reads_its_own_file_where_it_is_built_and_the_bases_otherwise(self):
+        own = {"objects": {"readings": {**READINGS, "jump.skip": None}}}
+        with tempfile.TemporaryDirectory() as folder:
+            files = self.files(folder, {BASE: {"objects": {"readings": READINGS}}, "eu": own})
+            self.assertEqual(readings_of("eu", files), own["objects"]["readings"])
+            self.assertEqual(readings_of(BASE, files), READINGS)
+            files["eu"].unlink()
+            self.assertEqual(readings_of("eu", files), READINGS)
+
+    def test_no_file_to_read_or_one_without_readings_stops_the_printout_naming_the_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            files = self.files(folder, {})
+            with self.assertRaises(SystemExit) as stop:
+                readings_of("eu", files)
+            self.assertIn("us.json", str(stop.exception))
+            self.files(folder, {"eu": {"levels": {}}})
+            with self.assertRaises(SystemExit) as stop:
+                readings_of("eu", files)
+            self.assertIn("eu.json", str(stop.exception))
+            self.assertNotIn("us.json", str(stop.exception))
+
+
 class ArcOnDisc:
     """The arc as a release's own file holds it."""
 
@@ -395,6 +427,10 @@ class ThePalArc(ArcOnDisc, unittest.TestCase):
         self.assertEqual(len(jump(self.g, READINGS["jump.skip"])["rows"]), 27)
         arc = jump(self.g, None)
         self.assertEqual((arc["count"], len(arc["rows"]), arc["rows"][-1]), (28, 28, [0, 148, 0]))
+
+    def test_the_printout_sizes_the_arc_as_the_release_file_ships_it(self):
+        shipped = json.loads(RELEASE_FILES[self.release].read_text())["objects"]["jump"]
+        self.assertEqual(overlay(self.g, json.loads(OBJECTS.read_text()), readings_of(self.release))["jump"], shipped)
 
 
 if __name__ == "__main__":
