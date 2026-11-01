@@ -1,7 +1,9 @@
 """Unit tests holding the fixture's readings of another release to the relations the map writer accepts:
 python3 -m unittest discover -s tools/tests
 
-Nothing here needs the disc.
+Nothing here needs the disc. The names relation holds the registry's names to the map's places, which the map writer
+wrote from the same registry, so it guards the fixture's copy of them and nothing of the disc; the address relation
+accepts any address in RAM.
 """
 
 import json
