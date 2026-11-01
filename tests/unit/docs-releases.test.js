@@ -103,11 +103,12 @@ const tgi = text("docs/tgi.md");
 const camera = text("docs/camera.md");
 const pal = releases[1].objects;
 const signed = (s) => number(s.replace("\u2212", "-"));
-const said = (doc, pattern, what) => {
+const saidOn = (disc) => (doc, pattern, what) => {
   const m = pattern.exec(doc);
-  assert.ok(m, `${what} has no PAL line matching ${pattern}`);
+  assert.ok(m, `${what} has no ${disc} line matching ${pattern}`);
   return m.slice(1).map(signed);
 };
+const said = saidOn("PAL");
 
 test("motion.md's PAL lines on the ball give the figures the PAL table holds", () => {
   const ball = pal.motion.types["30"];
@@ -345,4 +346,144 @@ test("tgi.md's and camera.md's PAL lines give the cycles, the flight and the scr
     ),
     [screen.wane, screen.step],
   );
+});
+
+const jp = releases[2];
+const jpMotion = jp.objects.motion;
+const jpMap = JSON.parse(text("tools/maps/jp.json"));
+const jpRow = (key) => Object.values(jpMap.rows).find((r) => r.key === key).value;
+const jpPair = (index) => jpMap.words.pairs[index][0];
+const saidJp = saidOn("Japanese");
+const letteredJp = (doc, pattern, what) => {
+  const m = pattern.exec(doc);
+  assert.ok(m, `${what} has no Japanese line matching ${pattern}`);
+  return m.slice(1);
+};
+
+test("motion.md's Japanese lines on the ball, the hourglass and the fast star give the figures the Japanese table holds", () => {
+  const { types } = jpMotion;
+  assert.deepEqual(
+    saidJp(
+      motion,
+      /^On the PAL disc the breath takes the time against \d+ and a fortieth of the difference as here \(.*?\), and on the Japanese disc against (\d+) and a fiftieth of it/m,
+      "The ball",
+    ),
+    [types["30"].breathe.full],
+  );
+  assert.equal(types["30"].breathe.over, 50);
+  assert.deepEqual(
+    saidJp(
+      motion,
+      /^On the Japanese disc the case takes the clock from (\d+) \(`SCPS_100\.64`, .*?\) with nothing added to the score/m,
+      "the hourglass",
+    ),
+    [types["35"].take.clock.from],
+  );
+  assert.equal(types["35"].take.clock.second, null);
+  assert.equal(types["35"].take.points, null);
+  assert.match(
+    motion,
+    /^The PAL hazards routine carries the case \(.*?\) and the Japanese none, no test of type 52 standing in its routine/m,
+  );
+  assert.equal(types["52"].points, null);
+});
+
+test("motion.md's Japanese lines on the clock, the end screen and the ending's view give the figures and the words the Japanese table, its rules and its map hold", () => {
+  const { play } = jpMotion;
+  assert.deepEqual(
+    saidJp(
+      motion,
+      /^The Japanese start fills the clock with the level's time times (\d+), .*?, and with (\d+) where the level has no trailer \(.*?\), then makes a clock of exactly (\d+) into (\d+)/m,
+      "the clock",
+    ),
+    [jp.rules.clock.fill, jp.rules.clock.default, ...jp.rules.clock.swap],
+  );
+  assert.equal(play.clock.second, jp.rules.clock.fill);
+  const { words } = play;
+  assert.deepEqual(
+    letteredJp(
+      motion,
+      /^On the Japanese disc the table holds (\d+) entries .*?: the deaths read (\S+), (\S+), (\S+), (\S+), (\S+), (\S+) at pair 12 where this disc's letters "ACID!", (\S+) and (\S+), every way out (\S+), the loading (\S+) and the game's end (.+?), the last two without the mark\.$/m,
+      "the end screen's words",
+    ),
+    [
+      String(jpMap.words.count),
+      words.spikes,
+      words.time,
+      words.lost,
+      words.fire,
+      words.captivator,
+      words.acid,
+      words.laser,
+      words.simon,
+      words.exit,
+      jpPair("0"),
+      words.over,
+    ],
+  );
+  for (const out of ["bonus", "hidden"]) assert.equal(words[out], words.exit, out);
+  assert.deepEqual(
+    letteredJp(
+      motion,
+      /^On the Japanese disc the other modes' pairs read (\S+) and (\S+) for the trial's two exits, (.+?) and (.+?) for its qualifying, and (\S+), (\S+) and (\S+) for two players/m,
+      "the other modes' words",
+    ),
+    [jpPair("34"), jpPair("36"), jpPair("24"), jpPair("22"), words.won1, words.won2, words.equal],
+  );
+  assert.deepEqual(
+    [jpPair("28"), jpPair("30"), jpPair("32")],
+    [words.won1, words.won2, words.equal],
+  );
+  assert.deepEqual(
+    letteredJp(
+      motion,
+      /^The Japanese table's pair at 38, which the other discs lack, letters (.+?), and the loader picks it/m,
+      "the Perfect! pair",
+    ),
+    [jpPair("38")],
+  );
+  assert.ok(!Object.values(words).includes(jpPair("38")));
+  assert.deepEqual(
+    saidJp(
+      motion,
+      /^On the Japanese disc the three angles step (−?\d+), (−?\d+) and (−?\d+) a frame \(.*?\), the fourth (\d+) in the arcade and (\d+) on a level with no key/m,
+      "the ending's view",
+    ),
+    [...play.view.angles, play.view.swing, play.view.bonus.swing],
+  );
+});
+
+test("motion.md's Japanese lines on the Simon match and the landing and tgi.md's on the hiding tests give the figures the Japanese table and its map hold", () => {
+  assert.deepEqual(
+    saidJp(
+      motion,
+      /^On the Japanese disc the screen's loader and the menu code name the winner and end the game where either player's points are (\d+) or more .*? so a match is won past (\d+) points rather than (\d+)/m,
+      "the Simon match",
+    ),
+    [jpRow("simon.points.gate"), jpMotion.play.simon.points, objects.motion.play.simon.points],
+  );
+  assert.deepEqual(
+    saidJp(
+      motion,
+      /^On the Japanese disc the landing takes the point (\d+) under the centre, a unit deeper \(.*?\), and lifts the centre (\d+) as here/m,
+      "the landing",
+    ),
+    [jpRow("land.under"), jpRow("land.lift")],
+  );
+  assert.deepEqual(
+    saidJp(
+      tgi,
+      /^On the Japanese disc the face builder folds the kinds into ranges and the lists come out the same: an ordinary face's path tests kinds below (\d+) and then kind (\d+) .*? the crumbling block's path kinds below (\d+), then (\d+) and (\d+) .*? the invisible block's path kinds below (\d+) in one test/m,
+      "tgi.md's hiding tests",
+    ),
+    [
+      "hide.below",
+      "hide.also.b",
+      "crumbling.below",
+      "crumbling.b",
+      "crumbling.c",
+      "invisible.below",
+    ].map(jpRow),
+  );
+  assert.ok(!("hides" in jp.objects.skins));
 });

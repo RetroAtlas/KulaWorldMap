@@ -24,6 +24,8 @@ Every rate and count the PAL executable holds otherwise than this disc does is t
 
 The readings the hand table excepts are the eleven tuned with reasons of their own, the wandering ball's shake, the fly-in's slow gate, the climb's step, the view's scale down at rest and at its reset, the teleport flash's four levels and the vanishing block's settling and dimming scales; the seven the PAL has no instruction for, the jump's and the hop's skip, the hop's fall start, the platform's scaling and its divisor and the settling's and the dimming's divisors; and the two divisors it lays out as shifts, the vanishing block's fade in and flash out.
 
+The Japanese executable runs at sixty and scales nothing, so every keyed row of its map reads this disc's value, or this disc's word at an address of its own, but for the readings the hand table `tools/kula_map_hand_jp.py` names by key, as `tools/kula_map.py` holds every keyed row of its map: the sixteen tuned with reasons of their own, the breath's count and its divisor, the hourglass's count, the clock's ticks a second, the ending's view's three steps, the four gates the Simon match is won past and the button its menu reads, the three floors its face builder folds the hiding tests into and the landing's look under the ball, and the readings it has no instruction for, the hourglass's seconds and points, the fast star's points and the single kinds its folded tests take in.
+
 Angles are in 4096ths of a turn, the unit the sine table at `0x8005fb58` takes; distances are in units of which a block is 512; and one word, `0x800a33d0`, gates every update below with a test against zero. It selects a second view the shipped game never draws: it is a data word that loads as 0 and is never written, so the gates are always open.
 
 A frame is a sixtieth of a second on this disc and the Japanese and a fiftieth on the PAL disc, by the video mode each executable's startup sets, NTSC on this disc and the Japanese (`0x8004e9fc`; `SCPS_100.64`, `0x80051e08`) and PAL on the PAL disc (`SCES_010.00`, `0x8004f7ac`), which the build ships as `hz` under each release's rules.
@@ -144,6 +146,8 @@ The pad is the console's digital word, Up 16, Right 32, Down 64, Left 128, Cross
 
 A count at 364 runs while no turn does, and once it has passed 6 the last frame's pad is forgotten, so a held Left or Right presses again from the seventh frame after a turn ends (`0x80036c4c` to `0x80036c68`, `0x80036b10`), the 6 standing while the option at `0x800a33b4`, which the options menu toggles (`0x8004814c`, `0x80048154`), is set, and 0 otherwise, a held turn then repeating at once.
 
+On the Japanese disc the routine stores the wait at its head as here and reads it nowhere (`SCPS_100.64`, `0x80036d74`), clears the count at 364 and never counts it (`0x80036f7c`), and tells a new press from a held one once at its head, from the pad now and the pad before (`0x80036e54` to `0x80036e64`), the pad before never forgotten, so a held Left or Right presses once there and does not press again.
+
 A Left or Right pressed while a turn runs waits at 360 or 362 and is asked as the turn ends (`0x80036d18`, `0x80036d38`, `0x80036c84`).
 
 Nothing is read until the view routine has marked the ball live at 460, which the fly-in holds off for 69 frames (`0x80036c2c`, `0x80034a6c`, `0x80034348`).
@@ -209,6 +213,8 @@ On the PAL disc the fall adds −6 a frame to no more than −80 (`SCES_010.00`,
 A falling ball with a block ahead at its level, at a progress of 411 or more, is held at 409, and with one behind, under 102, at 103 (`0x80030734` to `0x8003077c`), about its radius, 103, off either wall.
 
 Each frame the landings try a platform under it and then a block (`0x8003070c`, `0x8003071c`): the landing takes the point 100 under the centre along the normal and looks up the cell it lies in (`0x80030b5c` to `0x80030bd8`), and where that holds a block that is not part of a moving platform (`0x80030c0c`, `0x80030c14`) lifts the centre 100 along the normal and lays it 100 off the face plane nearest it (`0x80030cc4`, `0x80030cb8`, `0x80030d24`), at rest (`0x80030d30`).
+
+On the Japanese disc the landing takes the point 101 under the centre, a unit deeper (`SCPS_100.64`, `0x80030c8c` to `0x80030ca0`), and lifts the centre 100 as here (`0x80030df0` to `0x80030e04`), so under a jump's snapped centre the point lies a unit inside a block whose face's normal points the positive way, where this disc's lies on the face plane and that landing fails (below).
 
 Where Up is held the speed is 33 at once (`0x80030d40`, `0x80030d48`), the spin's speed written nowhere, so what the ball turned by in the air stands until the next state writes it, the rest state's nothing on the frame after (`0x8002f92c`), the hop's nothing (`0x800300b0`) or the roll's copy of its speed (`0x8002fa18`).
 
@@ -656,7 +662,7 @@ The HUD multiplies the clock by the reciprocal of 60, shifts the product and add
 
 The PAL start fills the clock with the level's time times 50, and with 4950 where the level has no trailer, as the US start does (`SCES_010.00`, `0x800367e8`, `0x80036800`), and its HUD shows the clock in seconds of 50 ticks and one more than the whole of them (`0x8001ebf0`, `0x8001f478` to `0x8001f494`), so a 99-second level lasts its 99 seconds on that disc and reads 100 as it starts.
 
-The Japanese start fills the clock with the level's time times 60, and with 7140 where the level has no trailer (`SCPS_100.64`, `0x800362e4`, `0x800362f4`), then makes a clock of exactly 5940 into 7140 (`0x80036308`, `0x80036310`), so every 99-second level lasts 119 seconds on that disc, and its HUD shows sixtieths and one more as the US one does (`0x8001eeec`, `0x8001f65c` to `0x8001f67c`), 120 as such a level starts.
+The Japanese start fills the clock with the level's time times 60, in a shift, a subtraction and a shift in the delay slot of the jump past the default (`SCPS_100.64`, `0x800362e4` to `0x800362f0`), and with 7140 where the level has no trailer (`0x800362f4`), then makes a clock of exactly 5940 into 7140 (`0x80036308`, `0x80036310`), so every 99-second level lasts 119 seconds on that disc, and its HUD shows sixtieths and one more as the US one does (`0x8001eeec`, `0x8001f65c` to `0x8001f67c`), 120 as such a level starts.
 
 **A level ends in the outcome word, positive for a way out and negative for a loss.** Most endings are first written into the ball's record at 540 with a wait at 370; the ball's routine counts the wait down, holding the pad and the requests off meanwhile (`0x800363f8` to `0x80036428`), and as it runs out copies the ending to the result at `0x800a4c9c` (`0x800364a8`, `0x800364c8`), a store indexed by the word at `0x800a33d0` that gates every update ("The frame" above), from where it becomes the outcome: a result of 1 only where the word at `0x800a33cc` is 1 or both results, at `0x800a4c9c` and `0x800a4ca0`, are 1 (`0x800365ec` to `0x80036628`), and any other straight in (`0x80036630`, `0x8003663c`).
 
@@ -692,9 +698,15 @@ The deaths read −1 "SPIKED!", −2 "TIME OUT!", −3 "FELL OFF!", −4 "FIRE!"
 
 On the PAL disc the table of 38 stands at `0x800876b4`, its address in the word at `0x80074c4c` (`SCES_010.00`, `0x8001684c`, `0x80016850`), and nine of the eighteen pairs that letter a word are drawn anew, each held by its own digest: pair 12 letters "Final Completed!" where this disc's letters "ACID!", so the acid's outcome, −6, picks "Final Completed!" there, pair 32 "Draw!" where this disc's letters "Equal Time!", while "LOADING!", "SPIKED!", "TIME OUT!", "FELL OFF!", "FIRE!", "CAPTURED!" and "LASER!" are drawn anew in the same words.
 
+On the Japanese disc the table holds 40 entries and stands at `0x800864a0`, its address in the word at `0x800795d8` (`SCPS_100.64`, `0x80015f7c`, `0x80015f80`), and every pair that letters a word is drawn anew in that disc's own words, each held by its digest: the deaths read 刺さった, タイムアウト, 落ちた, 燃えた, 捕まった, ファイナルクリア at pair 12 where this disc's letters "ACID!", やられた and 間違えた, every way out 良くできました, the loading LOADING and the game's end Game Over, the last two without the mark.
+
 The other modes have words of their own: the time trial's exit reads "Very Well Done!" where a time the trial keeps per player, with 60 frames a step of the difficulty added (`0x80015748`), is under a frame and "Level Cleared!" where it is past 20 seconds (`0x80015724` to `0x80015780`), its qualifying "You qualified!" or "You failed to qualify!" (`0x80015958`, `0x8001595c`), and two players, there or in Copycat, "Player 1 Won!", "Player 2 Won!" or "Equal Time!" (`0x800157f0`, `0x80015868` to `0x80015878`, `0x800159f4` to `0x80015a04`), and the pair at 26 is the memory card menu's picture.
 
 On the PAL disc the trial adds 50 frames a step of the difficulty, the step times 50 in five shifts and adds about a lui, an addu and a load (`SCES_010.00`, `0x8001655c` to `0x8001657c`), and the time is past 20 seconds at 1001 frames (`0x8001658c`), so a step of the difficulty buys a second on either disc.
+
+On the Japanese disc the other modes' pairs read 大変良くできました and ステージクリア for the trial's two exits, 合格 ○ボタンで続ける and 不合格 リトライするステージを選択して○ボタン for its qualifying, and 1プレイヤーの勝ち, 2プレイヤーの勝ち and 引き分け for two players, the trial adding 60 frames a step of the difficulty as here (`SCPS_100.64`, `0x80015ca0` to `0x80015cac`) and its slower exit past 1201 frames (`0x80015cc0`).
+
+The Japanese table's pair at 38, which the other discs lack, letters 大変良くできました Perfect!, and the loader picks it in place of the way out's pair in the normal mode, the game's mode word at `0x8009f4ac` at nothing, where a word at `0x800a1f08` is 1 (`SCPS_100.64`, `0x80015c4c` to `0x80015c68`).
 
 The last final's completion picks the acid's pair for one pass: the next-level routine, which the loop calls on an ending's first pass alone, before the end screen's draw (`0x80041b08` to `0x80041b10`, `0x80041b98`, `0x80041c30`), counts the world word at `0x800a340c` on as the pack's levels run out (`0x800428d0` to `0x800428d4`, `0x8004296c`, `0x80042970`), the loader in the arcade reads that word at 10 with the finals flag at `0x800a3454` set and a way out as the index 12 (`0x80015880` to `0x800158cc`), and the pass's tail puts the world back to nothing and the total below it (`0x80041d48` to `0x80041d4c`, `0x80041e44` to `0x80041e48`).
 
@@ -753,6 +765,8 @@ At 0, the arcade's value, a fourth angle steps 12 a frame (`0x80034840`, `0x8003
 At any other value, which on this disc is the hidden levels' 2, the fourth angle does not step and the eye stands at the distance plus 400, the figure every case writes first and the two swings write over (`0x80034958`, `0x80034964`), where either swing comes nearest, so the level turns under an eye that does not swing. In the Simon rooms the word is 0 whatever the room holds, so a room's ending swings as the arcade's ending does.
 
 On the PAL disc the three angles step −10, 4 and 13 a frame (`SCES_010.00`, `0x8003502c`, `0x80035050`, `0x80035074`) and the fourth 15 in the arcade and 70 on a level with no key (`0x800350ac`, `0x800350e8`), 5.5 s and 1.2 s a swing, the eye's distances the same.
+
+On the Japanese disc the three angles step −5, 2 and 7 a frame (`SCPS_100.64`, `0x80034d48`, `0x80034d6c`, `0x80034d90`), the fourth 12 in the arcade and 58 on a level with no key as here (`0x80034dc8`, `0x80034e04`), the eye's distances the same, so an ending turns the level more slowly under the same swings.
 
 On the first frame of an ending the loop settles the points (`0x80041b08` to `0x80041b90`): a level completed adds its score, the word at `0x800a53c8` the pickups score at, to the total at `0x800a5e84` (`0x80042054`, `0x80042058`), and a death in the arcade mode, the level's mode word at nothing, takes off the total the score plus 50 times the level's number, the world's place times fifteen plus the slot plus one, at most 5000 (`0x80041f6c` to `0x80042018`), the finals counting two a world and no 151 (`0x80041fd0`); a death on a bonus or a hidden level, its score left at nothing as above, goes the completed level's way (`0x80041f80`), so nothing comes off the total.
 
@@ -859,6 +873,8 @@ The load that follows flips the word and resets the match. So each room is playe
 **The end screen names the winner once the slot has come round to the first room and a player has more than 5 points, and menu code ends the game on the same test.** The screen's loader, in the mode and with the slot at nothing (`0x800157ec` to `0x80015808`), reads the two points words (`0x80015814`, `0x8001582c`), and where either is 6 or more and the outcome is below nothing (`0x8001581c`, `0x80015834`, `0x80015844`, `0x8001584c`) picks "Player 1 Won!", "Player 2 Won!" or "Equal Time!" by the two (`0x80015858` to `0x80015878`, and the words above) in place of the failure's own word; the slot is at nothing in the first room and again once the tenth room's second match has stepped it past the pack's count and round to the first ([tgi.md](tgi.md)), the routines of the ending's first pass running before the screen is drawn (`0x80041b98`, `0x80041bf0`).
 
 Menu code that reads a press of Cross (`0x8004ad2c` to `0x8004ad48`) asks the same of the slot and the points (`0x8004ad50` to `0x8004ad8c`), and where they pass puts the total at `0x800a5e84` below nothing and clears the turn and the world word among its words (`0x8004ad94` to `0x8004ae28`), which ends the game as the paragraphs above have it; otherwise the loop goes on to the room the branch chose.
+
+On the Japanese disc the screen's loader and the menu code name the winner and end the game where either player's points are 3 or more (`SCPS_100.64`, `0x80015d68`, `0x80015d80`, `0x800499d4`, `0x800499ec`) where this disc's ask 6, so a match is won past 2 points rather than 5, and the menu code reads a press of Circle (`0x800499a0`) where this disc's reads Cross.
 
 The table ships the Simon rooms' words as `play`'s `simon`: the latch's frames, the idle count's two gates, the four bits of a move, the sequence's length and the halfword that holds no move, the count of moves the reset leaves, the two verdicts, the moves a round adds, the points a game is won past, the players the turn and the point go round, the word the menu sets for the loop to flip and the total the menu code puts to end the game.
 
@@ -1292,13 +1308,13 @@ It paints the shadow under a pickup only while the pickup is drawn, so the face 
 
 Which of the two tangents a pill flips about and a fruit tilts about rests on the naming of the model's axes in [ggi.md](ggi.md) and on RotMatrix's order; a pill in play flips the way the map does.
 
-What the Japanese executable changes from this disc's table stands whole in its release file, read through its map as the PAL executable's is, but the sections above say so beside their readings for the PAL disc alone and, of the Japanese, beside the frame's length, the clock, the hourglass, the pills, the platform's speed, the breath, the fast star and the Simon rooms' branch, and [camera.md](camera.md) beside the view's scale and the free camera.
-
 Of the Japanese Simon rooms, what the word at `0x8009f530` holds as the menu starts the mode and as each room ends, whether every pass of the frame routine counts it and whether anything clears it in a block, and what the branch's `div` leaves where no world is finished and the divisor is nothing ("The Simon rooms" above), are not read, so which world a fresh save's first room opens in there is for an emulator to show.
+
+Of the Japanese input routine, which never counts the repeat ("The ball's roll" above), the table carries this disc's 6 for that disc too, the wait being stored there, so play repeats a held turn under that disc as under this one, which that disc's game does not; whether the reading should stand absent there is not decided.
 
 The view's scale down, 3840 of 4096 on this disc and the Japanese and 4096 on the PAL ([camera.md](camera.md)), ships in the table as `play.screen.scale`, which the map reads nowhere: its view in play stands the same height on every disc, and the start camera it draws sees as high as this disc's on each.
 
-The Japanese disc's end screen holds a pair at 38 the other discs lack, lettered 大変良くできました Perfect!, which it picks in the normal mode where a word at `0x800a1f08` is 1 (`SCPS_100.64`, `0x80015c68`); what sets that word is not read, so the pair's word is held in the map by its digest and ships in no table.
+What sets the word at `0x800a1f08` the Japanese end screen picks its Perfect! pair on ("The level's clock and its end" above) is not read, so the pair's word is held in the map by its digest and ships in no table.
 
 The laser's beam was not looked at for a pulse.
 
