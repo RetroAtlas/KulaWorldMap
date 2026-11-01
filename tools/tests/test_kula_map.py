@@ -215,6 +215,21 @@ class Rows(unittest.TestCase):
         self.assertEqual(tuned["pending"], [])
         self.assertEqual(key_rows(tuned)["twin.count"]["by"], "tuned")
 
+    def test_a_check_or_a_scan_anchor_the_aligner_leaves_is_pending_with_why_and_no_row(self):
+        c = US.starts["clock"]
+        scans = FIXTURE.SCANS + [("fixture", "clock.stores", "stores", c + 12, c + 36, "a1", (0, 8), ())]
+        modules = (SimpleNamespace(**{**vars(FIXTURE), "SCANS": scans}),)
+        built = mapped(executable(gaps=GAPS, routines={"clock": lambda callee: []}), modules=modules)
+        check_at, why = f"0x{US.places['and marks the clock turned']:08x}", "its function is unpaired"
+        self.assertEqual([p for p in built["pending"] if p.get("list") in ("CHECKS", "SCANS")],
+                         [{"address": check_at, "module": "fixture", "list": "CHECKS", "key": "and marks the clock turned", "why": why},
+                          {"address": f"0x{c + 12:08x}", "module": "fixture", "list": "SCANS", "key": "clock.stores.start", "why": why},
+                          {"address": f"0x{c + 36:08x}", "module": "fixture", "list": "SCANS", "key": "clock.stores.end", "why": why}])
+        self.assertNotIn(check_at, built["rows"])
+        plus = f"0x{US.places['clock.plus']:08x}"
+        self.assertIn({"address": plus, "module": "fixture", "list": "IMMEDIATES", "key": "clock.plus",
+                       "why": f"{plus} is not placed: {why}"}, built["pending"])
+
     def test_a_multiplier_run_is_read_at_its_place_with_its_own_count(self):
         longer = (sll("v0", "v1", 1), addu("v0", "v0", "v1"), sll("v0", "v0", 1))
         copy = executable(gaps=GAPS, routines={"mode": lambda c, **k: mode(c, fill=longer, **k)})
