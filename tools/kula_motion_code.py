@@ -38,10 +38,10 @@ GREYS = []
 SCANS = []
 
 # The instructions whose first register is read rather than written.
-WALK = 64
 READS_FIRST = {"sb", "sh", "sw", "swl", "swr", "mtc2", "ctc2", "mthi", "mtlo",
                "mult", "multu", "div", "divu", "beq", "bne", "blez", "bgtz", "bltz", "bgez",
                "bltzal", "bgezal", "jr"}
+WALK = 64            # steps a walk takes
 STORES = {0x28, 0x29, 0x2a, 0x2b, 0x2e}   # the store opcodes
 WIDTHS = {"sb": 1, "sh": 2, "sw": 4, "swc2": 4}   # bytes a store writes; swl and swr stay within their word
 ARGUMENTS = ("a0", "a1", "a2", "a3")
