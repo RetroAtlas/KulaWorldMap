@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
-from kula_motion_code import Code, dispatch  # noqa: E402
+from kula_motion_code import Code, Readings, dispatch  # noqa: E402
 from kula_motion_take import (END_FACES, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, TAKE_CASES, TAKE_TAIL,  # noqa: E402
                               TAKE_TYPES, devices, end_cases, exits, take)
 from motion_fixture import GAME, code  # noqa: E402
@@ -72,6 +72,10 @@ class Take(unittest.TestCase):
     def test_a_reach_not_adding_the_balls_radius_stops_the_reading(self):
         with self.assertRaises(SystemExit):
             take({**GAME, "take.within": 8100})
+
+    def test_the_hourglasss_entry_carries_nulls_where_its_readings_are_absent(self):
+        taken, _ = take(Readings({**GAME, "hourglass.second": None, "hourglass.points": None}))
+        self.assertEqual(taken[35], {"reach": 160, "stand": 436, "points": None, "clock": {"from": 5999, "second": None}})
 
     def test_a_fruit_scoring_otherwise_or_an_hourglass_counting_otherwise_stops_the_reading(self):
         for change in ({"fruit.points.45": 2000}, {"hourglass.second": 60}, {"hourglass.from": 4999}):

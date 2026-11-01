@@ -611,7 +611,7 @@ def take(r):
         sys.exit("the walk's reach does not add the ball's radius")
     reach = {k: root(r[k], k) for k in ("take.reach", "take.reach.key", "take.reach.fruit")}
     stand = r["take.stand"]
-    if r["hourglass.second"] != r["time.tick"]:
+    if r.get("hourglass.second") not in (None, r["time.tick"]):
         sys.exit("the hourglass counts seconds otherwise than the clock does")
     if r["hourglass.from"] + 1 != r["ball.breathe.full"]:
         sys.exit("the hourglass does not take the clock from a tick short of the cap the breath takes the time against")
@@ -676,8 +676,8 @@ def take(r):
     taken = {
         31: {"reach": reach["take.reach.key"], "stand": stand, "points": r["key.points"]},
         32: pickup, 33: pickup, 34: pickup,
-        35: {**pickup, "stand": r["take.stand.hourglass"], "points": r["hourglass.points"],
-             "clock": {"from": r["hourglass.from"], "second": r["hourglass.second"]}},
+        35: {**pickup, "stand": r["take.stand.hourglass"], "points": r.get("hourglass.points"),
+             "clock": {"from": r["hourglass.from"], "second": r.get("hourglass.second")}},
         36: {**pickup, "stand": [stand] + [r["take.stand.gem"]] * (CUTS - 1), "points": r["gem.points"]},
         37: {**pickup, "stand": r["take.stand.coin"], "points": [r[f"coin.points.{t}"] for t in range(TIERS)]},
         38: {**pickup, "points": r["sunglasses.points"]},

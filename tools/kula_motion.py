@@ -10,8 +10,11 @@ run of shifts and adds applies to a register, read by matching the
 instruction it lives in, so a build that lays the code out differently stops
 this with a message rather than yielding a number that looks like a reading.
 Another release's executable is read through its map under maps/, which says
-where each instruction matched on the US executable stands on it. The game
-runs its loop once per vertical blank.
+where each instruction matched on the US executable stands on it, and where
+the release has no instruction for a reading, the one that stands in its
+place is matched and the reading is null, which stops this too wherever the
+table has no rule for a null. The game runs its loop once per vertical
+blank.
 """
 import argparse
 import json
@@ -31,8 +34,8 @@ import kula_motion_simon
 import kula_motion_take
 import kula_motion_things
 from kula_disc import BASE, RELEASES, open_release
-from kula_motion_blocks import CRUMBLING, blocks, standing
-from kula_motion_code import BLOCK, GP_INIT, PHASES, RECORD_INIT, TURN, Code, Map, dispatch
+from kula_motion_blocks import CRUMBLING, blocks, platform, standing
+from kula_motion_code import BLOCK, GP_INIT, PHASES, RECORD_INIT, TURN, Code, Map, Readings, dispatch
 from kula_motion_effects import (EFFECT_HUD, EFFECT_TABLE, effect_places, effect_setup, effect_sine, effect_tables,
                                  effects)
 from kula_motion_harms import CLEARED, harms
@@ -148,8 +151,8 @@ SCANS = [
 def readings(code):
     """Every number, by its id, after the checks have passed."""
     for addr, pattern, _ in CHECKS:
-        code.immediate(addr, pattern)
-    out = {"names": code.names()}
+        code.check(addr, pattern)
+    out = Readings({"names": code.names()})
     for _, key, _, addr, pattern in IMMEDIATES:
         out[key] = code.immediate(addr, pattern)
     for _, key, _, addr, count, src, dst in MULTIPLIERS:
@@ -211,20 +214,22 @@ def table(r, platform_speed, hz):
 
     A cycle is a frame program per phase, and the moving spikes say beside it
     on which of its frames they kill. The platform's speed is the one the
-    level data holds, scaled as the loader scales it. A type the loader lifts
-    into an entry of its own says how far off its face the game draws the
-    model's origin, and a type the game draws a shadow under says which
-    sprite, how far off its face it lies and how strong it is, and the type
-    whose models glint says how. A pickup says what it takes for the ball
-    to take it and what that scores, a device under the ball what it does
-    there, a kind or a type that can hurt the ball what it does, a kind the
-    ball slides on, breaks or rides what it does to the roll, each kind the
-    word the ball keeps for standing on it, and the level's own words, the clock's, the endings', the end screen's, a
-    bonus level's, an ending's, a run's, the Simon rooms', the fly-in's and the screen's words, sit under `play`. The devices' light and each device's
-    colours, by world and then by circuit where it has one, sit apart from
-    the types, whose entries are what moves, as do the effects a pickup or
-    a teleport starts, their tables, their sprites' colours and the flash,
-    under `effects`; the frames of a second ship as given.
+    level data holds, scaled as the loader scales it where it does. A type
+    the loader lifts into an entry of its own says how far off its face the
+    game draws the model's origin, and a type the game draws a shadow under
+    says which sprite, how far off its face it lies and how strong it is, and
+    the type whose models glint says how. A pickup says what it takes for the
+    ball to take it and what that scores, a device under the ball what it
+    does there, a kind or a type that can hurt the ball what it does, a kind
+    the ball slides on, breaks or rides what it does to the roll, each kind
+    the word the ball keeps for standing on it, and the level's own words,
+    the clock's, the endings', the end screen's, a bonus level's, an
+    ending's, a run's, the Simon rooms', the fly-in's and the screen's words,
+    sit under `play`. The devices' light and each device's colours, by world
+    and then by circuit where it has one, sit apart from the types, whose
+    entries are what moves, as do the effects a pickup or a teleport starts,
+    their tables, their sprites' colours and the flash, under `effects`; the
+    frames of a second ship as given.
     """
     bob = {"rate": r["coin.bob"], "reach": r["coin.bob.reach"]}
     fruit = {"turn": r["fruit.turn"],
@@ -316,7 +321,7 @@ def table(r, platform_speed, hz):
         if "shadow" in entry and entry["shadow"]["sprite"] >= r["shadow.sprites"]:
             sys.exit(f"type {t}'s shadow is sprite {entry['shadow']['sprite']} of {r['shadow.sprites']}")
     kinds = {
-        5: {"speed": platform_speed * r["platform.scale"] // r["platform.over"], "dwell": r["platform.dwell"]},
+        5: platform(r, platform_speed),
         7: {"cycle": [[s for s, _ in vanish_cycle(r, p)] for p in range(PHASES)],
             "level": [[v for _, v in vanish_cycle(r, p)] for p in range(PHASES)]},
         3: {"light": light(r)},
@@ -351,7 +356,7 @@ def read(release=BASE, disc=None):
 
 def show_readings(code, hz):
     for addr, pattern, what in CHECKS:
-        code.immediate(addr, pattern)
+        code.check(addr, pattern)
         print(f"  0x{code.at(addr):08x}  {what}")
     run = readings(code)
     rows = []
@@ -425,7 +430,7 @@ def show_readings(code, hz):
         if group != last:
             print(f"\n{group}")
             last = group
-        print(f"  0x{addr:08x}  {value:>6}  {what}")
+        print(f"  0x{addr:08x}  {'absent' if value is None else value:>6}  {what}")
     print(f"\nangles are in {TURN}ths of a turn, units are {BLOCK} to a block, a frame is 1/{hz} s")
 
 

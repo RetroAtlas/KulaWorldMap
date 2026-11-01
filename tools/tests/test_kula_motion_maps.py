@@ -99,15 +99,16 @@ class Maps(unittest.TestCase):
                             if f"0x{us:08x}" in data["rows"]:
                                 self.assertIsNotNone(code.immediate(us, pattern))
 
-    def test_an_absent_row_stops_the_reader_naming_the_instruction_standing_there(self):
+    def test_an_absent_row_reads_none_through_every_reader_once_the_instruction_it_names_stands_there(self):
         for release, data in COMMITTED.items():
             code = Code.of(release, bytes(laid(release, data)), Map(data))
             for us, row in data["rows"].items():
                 if not row.get("absent"):
                     continue
-                with self.subTest(release=release, key=row["key"]), self.assertRaises(SystemExit) as stopped:
-                    read_back(code, unhex(us), {**row, "value": None})
-                self.assertIn(row["at"], str(stopped.exception))
+                with self.subTest(release=release, key=row["key"]):
+                    self.assertIsNone(code.immediate(unhex(us), ""))
+                    self.assertIsNone(code.multiplier(unhex(us), 0, "", ""))
+                    self.assertIsNone(code.divisor(unhex(us), "", 0, "", 0, ""))
 
     def test_a_changed_word_at_a_place_stops_the_reader_naming_it(self):
         for release, data in COMMITTED.items():

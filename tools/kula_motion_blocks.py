@@ -322,6 +322,13 @@ ARROW = 28
 CRUMBLING = 6
 
 
+def platform(r, speed):
+    """The moving platform's entry: the speed the level data holds, scaled
+    as the loader scales it where it does, and the dwell at each end."""
+    scale, over = r.get("platform.scale"), r.get("platform.over")
+    return {"speed": speed if None in (scale, over) else speed * scale // over, "dwell": r["platform.dwell"]}
+
+
 def blocks(r):
     """What the blocks under the ball do to its roll, by kind: ice's chill of
     the heat and its cold, the crumbling block's size, its shrink and the

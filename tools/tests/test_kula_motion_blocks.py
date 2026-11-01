@@ -6,7 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kula_motion_blocks import DIVISORS, blocks, standing  # noqa: E402
+from kula_motion_blocks import DIVISORS, blocks, platform, standing  # noqa: E402
+from kula_motion_code import Readings  # noqa: E402
 from motion_fixture import AT, GAME, code, lui, ori, sra  # noqa: E402
 
 
@@ -39,6 +40,13 @@ class Platform(unittest.TestCase):
         row = next(row for row in DIVISORS if row[1] == "platform.over")
         c = code(lui("a1", 0x8888), ori("a1", "a1", 0x8889), sra("v1", "v1", 5))
         self.assertEqual(c.divisor(AT, row[4], AT + 4, row[6], AT + 8, row[8]), 60)
+
+    def test_the_speed_is_the_levels_where_the_scale_or_the_divisor_is_absent_and_scaled_where_both_read(self):
+        r = {**GAME, "platform.scale": 50, "platform.dwell": 48}
+        self.assertEqual(platform(r, 30), {"speed": 25, "dwell": 48})
+        self.assertEqual(platform({**r, "platform.over": 50}, 30), {"speed": 30, "dwell": 48})
+        for absent in ({"platform.scale": None}, {"platform.over": None}, {"platform.scale": None, "platform.over": None}):
+            self.assertEqual(platform(Readings({**r, **absent}), 30), {"speed": 30, "dwell": 48})
 
 
 class Standing(unittest.TestCase):

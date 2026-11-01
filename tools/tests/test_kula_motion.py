@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE, RELEASES  # noqa: E402
 from kula_motion import CHECKS, DIVISORS, GREYS, IMMEDIATES, MULTIPLIERS, SCANS, table  # noqa: E402
 from kula_motion_blocks import blocks  # noqa: E402
-from kula_motion_code import PHASES, Code, Map  # noqa: E402
+from kula_motion_code import PHASES, Code, Map, Readings  # noqa: E402
 from kula_motion_effects import effects  # noqa: E402
 from kula_motion_harms import harms  # noqa: E402
 from kula_motion_light import GLOW_CASES, glint  # noqa: E402
@@ -163,6 +163,14 @@ class Reads(unittest.TestCase):
         with self.assertRaises(SystemExit):
             c.multiplier(AT, 3, "v0", "v1")
 
+    def test_an_absent_reading_is_none_through_get_and_read_as_a_number_stops_the_tool_naming_its_key(self):
+        r = Readings({"jump.skip": None, "jump.rows": 8})
+        self.assertEqual((r.get("jump.skip"), r["jump.rows"], r.get("jump.rows")), (None, 8, 8))
+        self.assertEqual(dict(r), {"jump.skip": None, "jump.rows": 8})
+        with self.assertRaises(SystemExit) as stopped:
+            r["jump.skip"]
+        self.assertIn("jump.skip", str(stopped.exception))
+
 
 SHIFT = 0x1000       # how far on from the base's addresses a mapped code's words are laid here, as the PAL executable's are
 WORDS = (addiu("v1", "zero", 300), lw("v0", "v0", 21960), sll("v0", "v1", 1), addu("v0", "v0", "v1"), sll("v0", "v0", 1),
@@ -248,6 +256,32 @@ class Mapped(unittest.TestCase):
             mapped(*words).immediate(AT + 4, "lw $v0, 22316($v0)")
         self.assertIn(hexed(AT + SHIFT + 4), str(stopped.exception))
         self.assertIn(hexed(AT + 4), str(stopped.exception))
+
+    def test_an_absent_row_reads_none_and_another_instruction_standing_there_stops_the_reader(self):
+        words = (*WORDS, sh("zero", "v0", 38))
+        absent = (hexed(AT + 28), {"key": "platform.over", "absent": True, "at": hexed(AT + SHIFT + 28),
+                                   "word": hexed(words[7]), "text": "sh $zero, 38($v0)"})
+        reads = (lambda c: c.immediate(AT + 28, "addiu $v0, $zero, {}"), lambda c: c.multiplier(AT + 28, 5, "v1", "v0"),
+                 lambda c: c.divisor(AT + 28, "lui $a1, {}", AT + 32, "ori $a1, $a1, {}", AT + 36, "sra $v1, $v1, {}"))
+        c = mapped(*words, rows=(*ROWS, absent))
+        for read in reads:
+            self.assertIsNone(read(c))
+        c = mapped(*words[:7], sh("zero", "v0", 36), rows=(*ROWS, absent))
+        for read in reads:
+            with self.assertRaises(SystemExit) as stopped:
+                read(c)
+            self.assertIn(hexed(AT + SHIFT + 28), str(stopped.exception))
+            self.assertIn(hexed(AT + 28), str(stopped.exception))
+
+    def test_a_check_at_an_absent_row_stops_the_reader_naming_the_address(self):
+        words = (*WORDS, sh("zero", "v0", 38))
+        absent = (hexed(AT + 28), {"key": "platform.over", "absent": True, "at": hexed(AT + SHIFT + 28),
+                                   "word": hexed(words[7]), "text": "sh $zero, 38($v0)"})
+        c = mapped(*words, rows=(*ROWS, absent))
+        c.check(AT + 4, "lw $v0, 22316($v0)")
+        with self.assertRaises(SystemExit) as stopped:
+            c.check(AT + 28, "sh $zero, 38($v0)")
+        self.assertIn(hexed(AT + 28), str(stopped.exception))
 
     def test_a_map_with_pending_rows_is_refused_naming_them(self):
         left = [{"address": hexed(AT), "module": "fixture", "list": "IMMEDIATES", "key": "twin.count", "why": "left"},
@@ -389,6 +423,9 @@ class Table(unittest.TestCase):
         self.assertEqual(t["play"]["clock"]["second"], 50)
         self.assertEqual(t["play"]["ending"]["lost"], -3)
         self.assertEqual(t["play"]["view"]["hidden"], {"off": 400})
+        with self.assertRaises(SystemExit) as stopped:
+            table(Readings({**r, "jump.skip": None}), 30, 60)
+        self.assertIn("jump.skip", str(stopped.exception))
         self.assertEqual(set(t["play"]),
                          {"start", "clock", "ending", "wait", "words", "bonus", "points", "view", "flight", "screen",
                           "next", "simon"})

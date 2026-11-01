@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
-from kula_motion_code import Code  # noqa: E402
+from kula_motion_code import Code, Readings  # noqa: E402
 from kula_skins import (CHECKS, HEADER, IMMEDIATES, header, hiding, lights, marked, sets)  # noqa: E402
 
 R = {"zero": 0, "at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7,
@@ -208,6 +208,19 @@ class Hiding(unittest.TestCase):
         h = hiding(self.GAME)
         self.assertNotIn(3, h["other"])
         self.assertIn(3, h["kinds"]["3"])
+
+    def test_a_kind_folded_into_a_range_the_path_tests_gives_the_set_the_separate_kinds_give(self):
+        folded = Readings({**self.GAME, "hide.below": 3, "hide.also.a": None})
+        self.assertEqual(hiding(folded)["other"], hiding(self.GAME)["other"])
+        ranged = Readings({**self.GAME, "invisible.below": 5, "invisible.from": None, "invisible.span": None,
+                           "invisible.also": None})
+        self.assertEqual(hiding(ranged)["kinds"]["3"], hiding(self.GAME)["kinds"]["3"])
+
+    def test_a_gate_or_one_end_of_the_range_the_path_lacks_stops_the_reading_naming_it(self):
+        for key in ("hide.below", "invisible.below", "crumbling.below", "invisible.from", "invisible.span"):
+            with self.assertRaises(SystemExit) as stopped:
+                hiding(Readings({**self.GAME, key: None}))
+            self.assertIn(key, str(stopped.exception))
 
 
 def check(addr):

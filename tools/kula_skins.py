@@ -23,7 +23,7 @@ import kula_tgi as tgi
 from kula_disc import BASE, RELEASES, THEMES, open_release
 from kula_level import FACE, FACES
 from kula_tex import mean
-from kula_motion_code import Code, Map
+from kula_motion_code import Code, Map, Readings
 from mips import Machine
 
 TURNS = 4            # the quarter turns a texture can be laid at
@@ -413,15 +413,22 @@ def hiding(r):
     """The neighbours a face is not built toward, or built unseen behind, by
     the kind of the block it belongs to, which picks the path the game takes.
     Of the kinds the path for every other face names, the ones it builds a
-    face unseen behind rather than not at all are given apart."""
-    below = lambda n: set(range(n))
-    other = below(r["hide.below"]) | {r["hide.also.a"], r["hide.also.b"], r["hide.while"]}
-    start = -r["invisible.from"]
-    invisible = below(r["invisible.below"]) | set(range(start, start + r["invisible.span"])) | {r["invisible.also"]}
-    crumbling = below(r["crumbling.below"]) | {r["crumbling.a"], r["crumbling.b"], r["crumbling.c"]}
+    face unseen behind rather than not at all are given apart. A single kind
+    the path has no instruction for adds nothing."""
+    read = lambda *keys: {r.get(k) for k in keys} - {None}
+    below = lambda key: set(range(r[key]))
+    start, span = r.get("invisible.from"), r.get("invisible.span")
+    if (start is None) != (span is None):
+        sys.exit(f"{'invisible.from' if start is None else 'invisible.span'} has no instruction on this executable "
+                 "while the other end of the invisible block's range is read")
+    other = below("hide.below") | read("hide.also.a", "hide.also.b", "hide.while")
+    invisible = below("invisible.below") | read("invisible.also")
+    if start is not None:
+        invisible |= set(range(-start, -start + span))
+    crumbling = below("crumbling.below") | read("crumbling.a", "crumbling.b", "crumbling.c")
     return {
         "other": sorted(other),
-        "unseen": [r["hide.while"]],
+        "unseen": sorted(read("hide.while")),
         "kinds": {
             str(r["path.invisible"]): sorted(invisible),
             str(-r["path.crumbling"]): sorted(crumbling),
@@ -433,8 +440,8 @@ def hiding(r):
 def readings(code):
     """Every number, by its id, after the checks have passed."""
     for addr, pattern, _ in CHECKS:
-        code.immediate(addr, pattern)
-    out = {}
+        code.check(addr, pattern)
+    out = Readings()
     for _, key, _, addr, pattern in IMMEDIATES:
         out[key] = code.immediate(addr, pattern)
     if out["laser"] != out["laser.far"]:
@@ -559,14 +566,15 @@ def read(release=BASE, disc=None):
 
 def show_readings(code, tgis):
     for addr, pattern, what in CHECKS:
-        code.immediate(addr, pattern)
+        code.check(addr, pattern)
         print(f"  0x{code.at(addr):08x}  {what}")
     last = None
     for group, key, what, addr, pattern in IMMEDIATES:
         if group != last:
             print(f"\n{group}")
             last = group
-        print(f"  0x{code.at(addr):08x}  {code.immediate(addr, pattern):>6}  {what}")
+        value = code.immediate(addr, pattern)
+        print(f"  0x{code.at(addr):08x}  {'absent' if value is None else value:>6}  {what}")
     r = readings(code)
     print("\nthe corners a face routine lays a texture's top left, top right, bottom left and bottom right on")
     for face, turns in enumerate(face_corners(code)):

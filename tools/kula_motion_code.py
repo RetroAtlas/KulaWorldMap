@@ -129,8 +129,9 @@ def rebuilt(kind, value, theirs):
 
 class Map:
     """Where each instruction the readers match on the base's executable stands on a release's, as the map writer
-    writes it: the rows by the base's address, the registered constants by name and the multipliers' runs with their
-    counts and registers there. A map with pending rows is refused."""
+    writes it: the rows by the base's address, an absent row among them naming the instruction standing where a
+    reading the release has no instruction for would be, the registered constants by name and the multipliers' runs
+    with their counts and registers there. A map with pending rows is refused."""
 
     def __init__(self, data):
         pending = data.get("pending") or []
@@ -195,11 +196,17 @@ class Map:
             sys.exit(f"the {self.release} map has no row for 0x{addr:08x}")
         return found[0]
 
+    def absent(self, addr):
+        """The row saying the release has no instruction for the reading at the base's `addr`, naming the instruction
+        standing where the reading would be, or None where the release has the instruction."""
+        row = self.rows.get(addr)
+        return row if row is not None and row.get("absent") else None
+
     def place(self, addr, pattern):
         """Where a reading at the base's instruction is read on the release and by what: a keyed row's own pattern, a
         registered constant's, a check row's text, or the pattern given where the map keeps none."""
-        row = self.rows.get(addr)
-        if row is not None and row.get("absent"):
+        row = self.absent(addr)
+        if row is not None:
             sys.exit(f"0x{addr:08x} has no instruction on {self.release}: `{row['text']}` stands at {row['at']} where "
                      "the reading would be")
         at, kept = self.lookup(addr) or (None, None)
@@ -234,7 +241,8 @@ class Code:
     """The executable's bytes, addressed from `base`, where its first byte stands in memory, with the pointer the
     start sets in gp, the address of the ball's record, which the stores a reading resolves go by, and the map that
     says where each instruction the readers match on the base's executable stands on this one, none for the base,
-    whose addresses are read as given."""
+    whose addresses are read as given; a reading the map says this executable has no instruction for reads as None
+    once the instruction standing in its place is matched."""
 
     def __init__(self, blob, base=RELEASES[BASE]["base"], gp=RELEASES[BASE]["gp"], record=RELEASES[BASE]["record"],
                  map=None):
@@ -278,6 +286,18 @@ class Code:
         found = self.map.lookup(addr)
         return None if found is None else found[0]
 
+    def absent(self, addr):
+        """Whether this executable has no instruction for the reading at the base's `addr`, as the map's row for it
+        says: the instruction the row names has to stand where the reading would be, else the tool's exit."""
+        row = None if self.map is None else self.map.absent(addr)
+        if row is None:
+            return False
+        at = unhex(row["at"])
+        if self.text(at) != row["text"]:
+            sys.exit(f"0x{at:08x} reads `{self.text(at)}`, not the `{row['text']}` standing where the base's "
+                     f"0x{addr:08x} would be read")
+        return True
+
     def place(self, addr, pattern):
         return (addr, pattern) if self.map is None else self.map.place(addr, pattern)
 
@@ -296,9 +316,19 @@ class Code:
 
     def immediate(self, addr, pattern):
         """The immediate of the instruction the readers match at the base's `addr`, read where this executable has it
-        and against the pattern the map keeps for it."""
+        and against the pattern the map keeps for it, or None where the map says this executable has none."""
+        if self.absent(addr):
+            return None
         at, pattern = self.place(addr, pattern)
         return self.immediate_at(at, pattern, addr)
+
+    def check(self, addr, pattern):
+        """A check's instruction matched at its place, or the tool's exit where the map says this executable has
+        none, since the readings rest on their checks and no release may lack one."""
+        if self.absent(addr):
+            sys.exit(f"the {self.map.release} map says this executable has no instruction for the check at the base's "
+                     f"0x{addr:08x}")
+        self.immediate(addr, pattern)
 
     def immediate_at(self, at, pattern, addr=None):
         """The immediate of the instruction at this executable's own `at`, matched against the pattern, the base's
@@ -338,13 +368,18 @@ class Code:
         return word & 0xFF
 
     def divisor(self, hi, hp, lo, lp, sa, sp):
-        """The number a multiply by a reciprocal and a shift divides by."""
+        """The number a multiply by a reciprocal and a shift divides by, or None where the map says this executable
+        has no such multiply."""
+        if self.absent(hi):
+            return None
         hi, hp, lo, lp, sa, sp = self.halves((hi, hp, lo, lp, sa, sp))
         return round(2 ** (32 + self.immediate_at(sa, sp)) / self.joined(hi, hp, lo, lp))
 
     def multiplier(self, addr, count, src, dst):
         """The factor applied to `src` by `count` instructions of shifts and adds, the run's place, count and
-        registers the map's where it has them."""
+        registers the map's where it has them, or None where the map says this executable has no such run."""
+        if self.absent(addr):
+            return None
         if self.map is not None:
             addr, count, src, dst = self.map.run(addr)
         coef = {src: 1, "zero": 0}
@@ -462,6 +497,18 @@ class Code:
         if low <= at <= high:
             sys.exit(f"0x{pc:08x} `{self.text(pc)}` points into the span, at 0x{at:08x}")
         held[reg] = (at, own)
+
+
+class Readings(dict):
+    """Every reading by its key as a reader returns them, one the map says the release has no instruction for None:
+    `get` hands that None to the few rules that take one, and reading it as a number is the tool's exit naming the
+    key."""
+
+    def __getitem__(self, key):
+        value = super().__getitem__(key)
+        if value is None:
+            sys.exit(f"{key} has no instruction on this executable, and what takes it needs a number")
+        return value
 
 
 def dispatch(code, where, cases, default, what):
