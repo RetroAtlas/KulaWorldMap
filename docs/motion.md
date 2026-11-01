@@ -905,19 +905,19 @@ Type 11 keeps a state in the kind word of the slot after its own, a countdown in
 
 **The cycle is 143 frames, 2.4 s, and `f3` is a phase of 35 frames a step.** The loader at `0x8002a078` sets the first state from `f3 × 35`: under 63 it starts down with 63 − 35·f3 to go, under 96 held up with 96 − 70 to go, under 140 retracting with 140 − 105 to go, so on the first cycle a phase of 2 holds the spikes up for 26 frames instead of 14 and a phase of 3 starts them three quarters up; from the second cycle on all four run the same 143 frames, 35, 72 and 107 frames apart.
 
+On the PAL disc the cycle is 119 frames, 2.38 s, the states lasting 52, 5, 13, 12 and 37 frames by counts of 52, 4, 12, 12 and 36 (`SCES_010.00`, `0x8002c6c4`, `0x8002c4e4`, `0x8002c5b0` for the rattle and the hold both, `0x8002c5c8`), and `f3` is a phase of 29 frames a step, by a shift of three, a subtraction, a shift of two and an addition (`0x8002a9d8`), against thresholds of 52, 80 and 116 (`0x8002a9e8` to `0x8002aa38`), so a phase of 1 starts down with 23 to go, 2 held up with 22 and 3 retracting with 29, and from the second cycle on the four run 29, 60 and 89 frames apart.
+
 `f3` is set to 0 at load, so every one draws the same model, and the 32 frames of the mesh go from flat to 388 units tall in equal steps.
 
 Simulating the routine from each phase is what gives the frame lists and the 143; `python3 tools/mips.py --at 0x8002bbec --count 184` shows it.
-
-On the PAL disc the cycle is 119 frames, 2.38 s, the states lasting 52, 5, 13, 12 and 37 frames by counts of 52, 4, 12, 12 and 36 (`SCES_010.00`, `0x8002c6c4`, `0x8002c4e4`, `0x8002c5b0` for the rattle and the hold both, `0x8002c5c8`), and `f3` is a phase of 29 frames a step, by a shift of three, a subtraction, a shift of two and an addition (`0x8002a9d8`), against thresholds of 52, 80 and 116 (`0x8002a9e8` to `0x8002aa38`), so a phase of 1 starts down with 23 to go, 2 held up with 22 and 3 retracting with 29, and from the second cycle on the four run 29, 60 and 89 frames apart.
-
-There `f4` turns harmless as the retraction's count reaches 9 (`0x8002c6ac`), so the spikes are deadly for 57 frames of the 119, a phase of 0 from the 52nd frame of the cycle, 1 from the 23rd, 2 to the 48th and from the 111th and 3 to the 19th and from the 82nd, and a level opens with phases 0 and 1 harmless for 51 and 22 frames and phases 2 and 3 deadly for 48 and 19.
 
 **The spikes are deadly for 68 frames of the 143, from two frames before they leave the ground, and the first cycle's deadly frames are the steady cycle's deadly frames for every phase.** The routine writes `f4` as the states change, 1 as the rising state starts (`0x8002bc74`, `0x8002bc84`) and 2 as the retraction's count reaches 11 (`0x8002be5c`, `0x8002be64`), and the loader writes it with the first state, over the 1 every slot holds on the disc: 2 for a phase that starts down and 1 for one that starts held up or retracting (`0x8002a12c`, `0x8002a130`, `0x8002a098`, `0x8002a178`).
 
 So `f4` is 1 from the frame the down count runs out, two frames before the first frame off the ground, through the rising, the rattling and the held states to the retraction's 8 with 11 frames of it left, 68 frames, and 2 for the 75 after, a phase of 0 deadly from the 63rd frame of the cycle, 1 from the 28th, 2 to the 58th and from the 134th and 3 to the 23rd and from the 99th.
 
 Since the loader lays each phase's first state so that its first retraction falls where the steady cycle's retraction does, a level opens with phases 0 and 1 harmless for 62 and 27 frames and phases 2 and 3 deadly for 58 and 23, the steady cycle's own frames, though a phase of 2 shows the spikes held up through frames on which the steady cycle rattles them.
+
+On the PAL disc `f4` turns harmless as the retraction's count reaches 9 (`SCES_010.00`, `0x8002c6ac`), so the spikes are deadly for 57 frames of the 119, a phase of 0 from the 52nd frame of the cycle, 1 from the 23rd, 2 to the 48th and from the 111th and 3 to the 19th and from the 82nd, and a level opens with phases 0 and 1 harmless for 51 and 22 frames and phases 2 and 3 deadly for 48 and 19.
 
 Each frame the ball's routine, the hazards in it, runs before the moving blocks step, and the draw after both (`0x80040ffc`, `0x8004101c`, `0x8002a48c`, `0x8002a614`), so the hazards read the `f4` the last frame's step left while the frame drawn shows that step's own frame.
 
@@ -942,11 +942,11 @@ Kind 7 keeps its state in the first slot's `f3` and a countdown in `f4`, and the
 
 **The cycle is 224 frames, 3.7 s, and `f2` is a phase of 56 frames a step**, a quarter exactly: a phase under 2 starts absent with 91 − 56·f2 to go and the others start solid with 196 − 56·f2 to go. The block is in the lattice, and can be stood on, from the moment it starts fading in to the moment it finishes flashing out, 133 frames, and out of it for 91.
 
-What the disc holds in the record's `type` word is overwritten at load with the lattice's own value for the cell, which is what the routine writes back when the block returns.
-
 On the PAL disc the cycle is 188 frames, 3.76 s, absent for 76, fading in over 8, settling over 4, solid for 76, dimming over 8 and flashing out over 16 (`SCES_010.00`, `0x8002c3f0`, `0x8002c0c4`, `0x8002c1bc`, `0x8002c260`, `0x8002c274`, `0x8002c358`), in the lattice for 112 frames and out of it for 76, and `f2` is a phase of 47 frames a step, in four instructions at `0x800294e0`, a phase under 2 starting absent with 76 − 47·f2 to go and the others solid with 164 − 47·f2 (`0x800294f0`, `0x80029590`).
 
 The PAL ramps run by other arithmetic: the fade in takes the count's rise times 255 by a shift of three (`SCES_010.00`, `0x8002c118` to `0x8002c12c`), black then 31 up to 223 by 32 a frame, the settling adds the count times 56 whole to 32 (`0x8002c1c8` to `0x8002c1d4`), white then 200, 144 and 88, the dimming takes the count times 28 whole off 256 (`0x8002c2c0` to `0x8002c2d0`), 32 up to 228 by 28, and the flash out takes the count times 255 by a shift of four (`0x8002c364` to `0x8002c370`), white down to 15 by 16.
+
+What the disc holds in the record's `type` word is overwritten at load with the lattice's own value for the cell, which is what the routine writes back when the block returns.
 
 The map runs the cycle from the record's phase, solid and lit as the game lights it while the block is there and faint while it is gone, and the ball's reads see the cycle as the frame drawn before them showed it, as the game's read of the cells about the ball sees the lattice the last frame's step left, so the block is there for it on the frame after each it is drawn there ("The blocks under the ball" above).
 
