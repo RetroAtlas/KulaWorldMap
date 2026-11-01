@@ -456,6 +456,21 @@ class Base(unittest.TestCase):
             self.assertIn(f"pill.lethargy at {key} holds the base's value as 361, where the base's executable reads 360",
                           str(stopped.exception))
 
+    def test_a_map_with_pending_rows_is_held_by_the_rows_it_has_and_its_pending_block_passed_over(self):
+        built = mapped(executable(gaps=GAPS, routines={"twin": lambda c: twin(c, count=10)}))
+        self.assertTrue(built["pending"])
+        with tempfile.TemporaryDirectory() as out:
+            path = Path(out) / "eu.json"
+            dump(built, path)
+            check_base(US.listing.code, path, (FIXTURE,))
+            changed = json.loads(path.read_text())
+            key = f"0x{US.places['pill.lethargy']:08x}"
+            changed["rows"][key]["us"] = 361
+            path.write_text(json.dumps(changed))
+            with self.assertRaises(SystemExit) as stopped:
+                check_base(US.listing.code, path, (FIXTURE,))
+            self.assertIn(f"pill.lethargy at {key}", str(stopped.exception))
+
 
 class Registries(unittest.TestCase):
     def test_every_registry_entry_of_every_module_names_a_kind_the_writer_knows_and_holds_a_leaf_of_it(self):

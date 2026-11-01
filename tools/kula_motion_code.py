@@ -133,7 +133,8 @@ class Map:
     reading the release has no instruction for would be and a shift row the shift a divisor is laid out as, the
     registered constants by name, the multipliers' runs with their counts and registers there, and the end screen's
     table as its count and its pairs by the index of each one's first entry, the word the release's pair letters and
-    the digest of its two images. A map with pending rows is refused."""
+    the digest of its two images. A map with pending rows is refused, and what a map has pending is read off its file
+    without building it."""
 
     def __init__(self, data):
         pending = data.get("pending") or []
@@ -167,11 +168,22 @@ class Map:
         return (MAPS / f"{release}.json").exists()
 
     @classmethod
-    def load(cls, release):
+    def read(cls, release):
+        """The release's map as its file holds it, or the tool's exit where there is none."""
         path = MAPS / f"{release}.json"
         if not path.exists():
             sys.exit(f"no map at {path}")
-        return cls(json.loads(path.read_text()))
+        return json.loads(path.read_text())
+
+    @classmethod
+    def load(cls, release):
+        return cls(cls.read(release))
+
+    @classmethod
+    def pending(cls, release):
+        """What the release's map has pending, read off its file without building the map, which refuses a map with
+        pending rows."""
+        return cls.read(release).get("pending") or []
 
     def shaped(self, name, walk):
         """What `walk` makes of a registered constant's value beside the map's, or the tool's exit where the two are

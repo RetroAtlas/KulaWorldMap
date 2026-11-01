@@ -7,8 +7,11 @@ release's size to read back through the map.
 import json
 import struct
 import sys
+import tempfile
 import unittest
+from contextlib import contextmanager
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -18,6 +21,19 @@ from mips import decode  # noqa: E402
 from motion_fixture import SIZE  # noqa: E402
 
 COMMITTED = {path.stem: json.loads(path.read_text()) for path in sorted(MAPS.glob("*.json"))}
+LEFT = [{"address": "0x80010000", "module": "kula_motion_code", "list": "CHECKS", "key": "twin.count", "why": "left"},
+        {"name": "GLOW_MAKE", "module": "kula_motion_light", "why": "not placed"}]
+
+
+@contextmanager
+def maps_of(**pending):
+    """A maps directory of its own standing where the readers look for one, holding a map for each release named,
+    empty but for the rows given as pending."""
+    with tempfile.TemporaryDirectory() as folder, mock.patch("kula_motion_code.MAPS", Path(folder)):
+        for release, left in pending.items():
+            data = {"release": release, "rows": {}, "names": {}, "words": None, "extra": [], "pending": left}
+            (Path(folder) / f"{release}.json").write_text(json.dumps(data))
+        yield
 
 
 def listed(v):
@@ -147,10 +163,21 @@ class Maps(unittest.TestCase):
 
     def test_a_map_with_pending_rows_is_refused(self):
         for release, data in COMMITTED.items():
-            left = [{"address": "0x80010000", "module": "kula_motion_code", "list": "CHECKS", "key": "twin.count", "why": "left"}]
             with self.assertRaises(SystemExit) as refused:
-                Map({**data, "pending": left})
+                Map({**data, "pending": LEFT})
             self.assertIn("twin.count", str(refused.exception))
+
+    def test_what_a_map_has_pending_is_read_off_its_file_without_building_it(self):
+        with maps_of(eu=[], jp=LEFT):
+            self.assertEqual((Map.pending("eu"), Map.pending("jp")), ([], LEFT))
+            self.assertEqual(Map.load("eu").release, "eu")
+            with self.assertRaises(SystemExit) as refused:
+                Map.load("jp")
+            self.assertIn("2 pending rows: twin.count, GLOW_MAKE", str(refused.exception))
+            self.assertFalse(Map.exists(BASE))
+            with self.assertRaises(SystemExit) as none:
+                Map.pending(BASE)
+            self.assertIn("no map at", str(none.exception))
 
 
 if __name__ == "__main__":

@@ -10,8 +10,8 @@ data, its artwork against the US atlases, the sheets of the textures its
 disc draws otherwise, laid under public/tex/<id>/, and the tint of a world it
 colours otherwise, its objects against the US models, the model lists of the
 types its mesh file draws otherwise and the jump's arc where that differs,
-and, where the release has a map under maps/, what its executable's motion and
-skins tables change from the US tables.
+and, where the release has a map under maps/ with nothing pending, what its
+executable's motion and skins tables change from the US tables.
 
     export KULA_DISC="/path/to/Roll Away.bin"
     python3 tools/kula_build.py                 # the US data and public/releases/us.json
@@ -128,10 +128,23 @@ def layout_of(disc):
     return packs_json(disc)
 
 
+def map_of(release):
+    """The release's map where it has one with nothing pending, else None, the printout saying where a map is left
+    aside for the rows it has pending, since no table is shipped through an unfinished map."""
+    if not Map.exists(release):
+        return None
+    left = Map.pending(release)
+    if left:
+        print(f"the {release} map has {len(left)} pending row{'s' if len(left) != 1 else ''}, so its tables and the "
+              f"readings its meshes are read with are the base's and the Simon rooms are the committed ones")
+        return None
+    return Map.load(release)
+
+
 def code_of(disc, release):
     """The release's executable, read at the addresses its entry of the release table gives and through its map
-    where it has one."""
-    return Code.of(release, disc.read_file(RELEASES[release]["exe"]), Map.load(release) if Map.exists(release) else None)
+    where it has one with nothing pending."""
+    return Code.of(release, disc.read_file(RELEASES[release]["exe"]), map_of(release))
 
 
 def tgis_of(disc):
@@ -341,12 +354,12 @@ def other_release(disc, release):
     the committed atlases, the tint taken with the committed skins and the
     models and the tables held to the committed objects, so no disc but the
     release's own is opened. Its executable is read through its map where it
-    has one, for its tables, the readings its meshes are read with and the
-    Simon rooms' pack and the world each room is played in, held to the
-    committed rooms; without a map the committed data says both and the
-    base's file the readings, since no executable but the base's is read, so a
-    room that is not the base's cannot be placed and is refused, and the tables
-    are the base's."""
+    has one with nothing pending, for its tables, the readings its meshes are
+    read with and the Simon rooms' pack and the world each room is played in,
+    held to the committed rooms; without a map the committed data says both
+    and the base's file the readings, since no executable but the base's is
+    read, so a room that is not the base's cannot be placed and is refused,
+    and the tables are the base's."""
     missing = [p.name for p in (OUT, OBJECTS, SPARKS, RELEASE_FILES[BASE]) if not p.exists()]
     if missing:
         sys.exit(f"no {' or '.join(missing)} to write {release} against; build the base first")

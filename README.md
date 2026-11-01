@@ -59,6 +59,8 @@ Each of those two runs also records in its release file, against `public/objects
 
 A run whose release has a map under `tools/maps/` reads that release's executable through it and records in the release file, against `public/objects.json` again, what the executable's motion and skins tables change from the North American ones, a key of either table whole and a type's or a kind's entry of the motion table whole, the rest of the tables being the North American ones; a release with no map records nothing there.
 
+A map that still has pending rows is passed over as no map, the run saying so, since the build never ships a table read through an unfinished map.
+
 `python3 tools/kula_build.py --all` rebuilds every release whose variable is set, the North American data first, since the other two are written against it.
 
 `python3 tools/kula_map.py --release <id>` rewrites that release's map, `tools/maps/<id>.json`, where each instruction the executable's readers match on the North American disc stands on that release's, from the two discs and the hand table `tools/kula_map_hand.py`, generated and committed too, and is run after a reader gains a row, before the build.

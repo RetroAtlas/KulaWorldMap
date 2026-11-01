@@ -3,11 +3,13 @@
 The packs file's class and the release files' classes need a disc, each skipped without its variable.
 """
 
+import io
 import json
 import os
 import sys
 import unittest
 import zlib
+from contextlib import redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -62,6 +64,7 @@ from kula_skins import tint  # noqa: E402
 from kula_tex import OUT as TEX, SHARED, digest, mean  # noqa: E402
 from png import read_png  # noqa: E402
 from test_kula_ggi import ARROW, EXITS, PLACED, READINGS, committed, ggi, quad  # noqa: E402
+from test_kula_motion_maps import LEFT, maps_of  # noqa: E402
 from tgi_fixture import BOTH, BRIGHT, PALETTES, atlases, tgi_blob, worlds  # noqa: E402
 
 
@@ -216,6 +219,18 @@ class TheRooms(unittest.TestCase):
                 rooms_of(SimpleNamespace(map={}), self.base, COPYCAT)
         self.assertIn("HIRO, HELL, MARS", str(stop.exception))
         self.assertIn("HIRO, INCA, MARS", str(stop.exception))
+
+
+class TheMap(unittest.TestCase):
+    def test_a_release_reads_through_its_map_where_nothing_is_pending_and_with_none_where_rows_are_the_run_saying_so(self):
+        disc = SimpleNamespace(read_file=lambda path: bytes(16))
+        with maps_of(eu=[], jp=LEFT), redirect_stdout(io.StringIO()) as said:
+            finished, unfinished, unmapped = code_of(disc, "eu"), code_of(disc, "jp"), code_of(disc, BASE)
+        self.assertEqual(finished.map.release, "eu")
+        self.assertIsNone(unfinished.map)
+        self.assertIsNone(unmapped.map)
+        self.assertEqual(said.getvalue(), "the jp map has 2 pending rows, so its tables and the readings its meshes are "
+                                          "read with are the base's and the Simon rooms are the committed ones\n")
 
 
 SHADE = [1, 0, 2, 0, 2, 0]    # the top face alone in its shade
