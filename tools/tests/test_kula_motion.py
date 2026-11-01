@@ -295,14 +295,16 @@ class Mapped(unittest.TestCase):
         self.assertIn(hexed(AT + SHIFT + 28), str(stopped.exception))
         self.assertIn(hexed(AT + 28), str(stopped.exception))
 
-    def test_a_check_at_an_absent_row_stops_the_reader_naming_the_address(self):
-        words = (*WORDS, sh("zero", "v0", 38))
-        absent = (hexed(AT + 28), {"key": "platform.over", "absent": True, "at": hexed(AT + SHIFT + 28),
-                                   "word": hexed(words[7]), "text": "sh $zero, 38($v0)"})
+    def test_an_absent_check_passes_where_the_instruction_it_names_stands_and_stops_the_reader_where_another_does(self):
+        words = (*WORDS, lw("v1", "s0", 356))
+        absent = (hexed(AT + 28), {"absent": True, "at": hexed(AT + SHIFT + 28), "word": hexed(words[7]),
+                                   "text": "lw $v1, 356($s0)", "tier": "hand"})
         c = mapped(*words, rows=(*ROWS, absent))
+        c.check(AT + 28, "addiu $v0, $zero, 52")
         c.check(AT + 4, "lw $v0, 22316($v0)")
         with self.assertRaises(SystemExit) as stopped:
-            c.check(AT + 28, "sh $zero, 38($v0)")
+            mapped(*words[:7], lw("v1", "s0", 352), rows=(*ROWS, absent)).check(AT + 28, "addiu $v0, $zero, 52")
+        self.assertIn(hexed(AT + SHIFT + 28), str(stopped.exception))
         self.assertIn(hexed(AT + 28), str(stopped.exception))
 
     def test_a_map_with_pending_rows_is_refused_naming_them(self):

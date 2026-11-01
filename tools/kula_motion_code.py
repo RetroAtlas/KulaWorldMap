@@ -364,11 +364,10 @@ class Code:
         return self.immediate_at(at, pattern, addr)
 
     def check(self, addr, pattern):
-        """A check's instruction matched at its place, or the tool's exit where the map says this executable has
-        none, since the readings rest on their checks and no release may lack one."""
+        """A check's instruction matched at its place, or a check the hand table declares absent held by the
+        instruction standing where the test would be."""
         if self.absent(addr):
-            sys.exit(f"the {self.map.release} map says this executable has no instruction for the check at the base's "
-                     f"0x{addr:08x}")
+            return
         self.immediate(addr, pattern)
 
     def immediate_at(self, at, pattern, addr=None):

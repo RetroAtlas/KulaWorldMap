@@ -338,11 +338,15 @@ def standing(other, at, text, what):
 
 
 def absent_rows(other, table):
-    """Each absent key to its row, the standing instruction the hand table gives held to the executable."""
+    """Each absent key to its row, and each check's base address the hand table declares absent to its row, the
+    standing instruction the hand table gives held to the executable."""
     out = {}
     for keys, (at, text, _) in table.items():
-        keys = keys if isinstance(keys, tuple) else (keys,)
         row = standing(other, at, text, "absent row")
+        if isinstance(keys, int):
+            out[keys] = {"absent": True, **row, "tier": "hand"}
+            continue
+        keys = keys if isinstance(keys, tuple) else (keys,)
         for key in keys:
             named = {"key": key} if len(keys) == 1 else {"keys": list(keys)}
             out[key] = {**named, "absent": True, **row}
@@ -411,9 +415,10 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
 
 
 def keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending):
-    """Every list's rows into `rows`, by the base's address: a check's and a scan's as placed, a keyed row with its
-    value in its relation to the base's, a divisor the hand table says the release lays out as a shift with two to
-    that shift as its value, or the absent row the hand table gives."""
+    """Every list's rows into `rows`, by the base's address: a check's and a scan's as placed, a check the hand table
+    declares absent as the absent row it gives whatever was placed there, a keyed row with its value in its relation
+    to the base's, a divisor the hand table says the release lays out as a shift with two to that shift as its value,
+    or the absent row the hand table gives."""
     tuned, absent = hand.TUNED.get(release, {}), absent_rows(other, hand.ABSENT.get(release, {}))
     shifts, runs, used = shift_rows(other, hand.SHIFTS.get(release, {})), hand.MULTIPLIERS.get(release, {}), set()
     values = base_values(us.code, modules)
@@ -450,10 +455,17 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
         if p is not None:
             put(addr, {"at": hexed(p.at), "word": word_at(other, p.at), "text": p.text, "tier": p.tier})
 
+    absent_checks = {addr for addr in absent if isinstance(addr, int)}
+    for addr in absent_checks:
+        put(addr, absent[addr])
+    pending[:] = [p for p in pending if p.get("address") not in {hexed(addr) for addr in absent_checks}]
     for module in modules:
         name = module.__name__
         for addr, _, _ in getattr(module, "CHECKS", ()):
-            placed_row(addr)
+            if addr in absent_checks:
+                used.add(addr)
+            else:
+                placed_row(addr)
         for _, _, _, start, end, _, _, calls in getattr(module, "SCANS", ()):
             for addr in (start, end, *(where for where, _, _ in calls)):
                 placed_row(addr)
@@ -491,7 +503,7 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
                 return getattr(other.code, reader)(*(x for p, pat in zip(ps, pats) for x in (p.at, pat))), row
             valued(name, kind, key, parts[0], values[parts[0], key], halves)
     for table, what in ((absent, "absent"), (shifts, "shift"), (tuned, "tuned"), (runs, "multiplier")):
-        stale = sorted(set(table) - used)
+        stale = sorted(hexed(k) if isinstance(k, int) else k for k in set(table) - used)
         if stale:
             sys.exit(f"the hand table's {what} rows name {', '.join(stale)}, which no reader lists")
 

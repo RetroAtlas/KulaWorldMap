@@ -277,15 +277,17 @@ class Rows(unittest.TestCase):
 
     def test_a_stale_hand_row_stops_the_writer(self):
         copy = executable(gaps=GAPS)
-        at = copy.starts["clock"] + 28
-        for what, table in (("tuned", hand(TUNED={"nobody.home": "a key no reader lists"})),
-                            ("shift", hand(SHIFTS={"nobody.home": (at, "sra $v0, $v1, 5", "a shift no reader lists")})),
-                            ("absent", hand(ABSENT={"nobody.home": (at, "sra $v0, $v1, 5", "an instruction no reader lists")})),
-                            ("multiplier", hand(MULTIPLIERS={"nobody.home": (at, 1, "v1", "v0", "a run no reader lists")}))):
-            with self.subTest(what):
+        at, immediate = copy.starts["clock"] + 28, US.places["pill.lethargy"]
+        for what, named, table in (
+                ("tuned", "nobody.home", hand(TUNED={"nobody.home": "a key no reader lists"})),
+                ("shift", "nobody.home", hand(SHIFTS={"nobody.home": (at, "sra $v0, $v1, 5", "a shift no reader lists")})),
+                ("absent", "nobody.home", hand(ABSENT={"nobody.home": (at, "sra $v0, $v1, 5", "an instruction no reader lists")})),
+                ("absent", f"0x{immediate:08x}", hand(ABSENT={immediate: (at, "sra $v0, $v1, 5", "an address no reader lists as a check")})),
+                ("multiplier", "nobody.home", hand(MULTIPLIERS={"nobody.home": (at, 1, "v1", "v0", "a run no reader lists")}))):
+            with self.subTest(what, named=named):
                 with self.assertRaises(SystemExit) as stopped:
                     mapped(copy, table)
-                self.assertEqual(str(stopped.exception), f"the hand table's {what} rows name nobody.home, which no reader lists")
+                self.assertEqual(str(stopped.exception), f"the hand table's {what} rows name {named}, which no reader lists")
 
 
 class Words(unittest.TestCase):
@@ -359,6 +361,20 @@ class Hand(unittest.TestCase):
         self.assertEqual([p for p in built["pending"] if p.get("key") == "pill.invincible"], [])
         with self.assertRaises(SystemExit):
             mapped(copy, hand(ABSENT={"pill.invincible": (at, "addiu $v0, $zero, 840", "not what stands there")}))
+
+    def test_an_absent_check_stands_at_its_address_whatever_the_aligner_placed_or_left_there(self):
+        placed, left = executable(gaps=GAPS), executable(gaps=GAPS, routines={"clock": lambda callee: []})
+        at, text = placed.places["pill.invincible"], "addiu $v0, $zero, 840"
+        row = {"absent": True, "at": f"0x{at:08x}", "word": f"0x{placed.listing.code.word(at):08x}", "text": text, "tier": "hand"}
+        tested, turned = US.places["the pill tests its word"], US.places["and marks the clock turned"]
+        built = mapped(placed, hand(ABSENT={tested: (at, text, "the copy makes no such test")}))
+        self.assertEqual((built["rows"][f"0x{tested:08x}"], built["pending"]), (row, []))
+        built = mapped(left, hand(ABSENT={turned: (at, text, "the copy makes no such test")}))
+        self.assertEqual(built["rows"][f"0x{turned:08x}"], row)
+        self.assertEqual([p for p in built["pending"] if p.get("address") == f"0x{turned:08x}"], [])
+        with self.assertRaises(SystemExit) as stopped:
+            mapped(placed, hand(ABSENT={tested: (at, "addiu $v0, $zero, 841", "not what stands there")}))
+        self.assertEqual(str(stopped.exception), f"the hand table's absent row at 0x{at:08x} reads `{text}`, not `addiu $v0, $zero, 841`")
 
     def test_a_shift_row_is_two_to_its_shift_held_by_relation_and_another_instruction_standing_there_is_refused(self):
         from align_fixture import clock

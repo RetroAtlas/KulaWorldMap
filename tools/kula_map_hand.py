@@ -1,8 +1,9 @@
 """What the hand settles of a release's map, where the aligner cannot: an anchor placed by a hand read, a key tuned
-otherwise than the frame rates scale it, a reading the release has no instruction for, a divisor the release lays
-out as a shift, a check the release lays out as another instruction, a multiplier's run of another shape, a check
-the release alone has, and the words of the end-screen pairs the release draws otherwise. Every row carries a
-sentence saying what the instruction is and why it is the one, and a hand row wins over the aligner's placement.
+otherwise than the frame rates scale it, a reading or a check the release has no instruction for, a divisor the
+release lays out as a shift, a check the release lays out as another instruction, a multiplier's run of another
+shape, a check the release alone has, and the words of the end-screen pairs the release draws otherwise. Every row
+carries a sentence saying what the instruction is and why it is the one, and a hand row wins over the aligner's
+placement.
 """
 
 # A US address to (the release's address, why): the same instruction, exact or with its registers renamed.
@@ -136,7 +137,7 @@ TUNED = {"eu": {
                         "where this disc has the 28 whole",
 }, "jp": {}}
 
-# A key, or a tuple of the keys of one reading, to (the address, the text, why) of the instruction in the reading's place.
+# A key, a tuple of the keys of one reading or a check's US address, to (the address, the text, why) of the instruction in its place.
 ABSENT = {"eu": {
     "platform.scale": (0x800332e4, "lhu $v1, 36($v0)",
                        "the loader reads the speed's halfword at 36 and stores it back two instructions on as it is, "
