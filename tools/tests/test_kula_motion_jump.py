@@ -6,13 +6,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from kula_motion_code import Readings  # noqa: E402
 from kula_motion_jump import flight, jump  # noqa: E402
 from motion_fixture import GAME, GAME_EU  # noqa: E402
 
 
 class Jump(unittest.TestCase):
     def test_the_jump_ships_its_speed_its_count_rule_and_its_landings(self):
-        for game, speed, skip in ((GAME, 33, 2), (GAME_EU, 40, None)):
+        for game, speed, skip in ((GAME, 33, 2), (Readings(GAME_EU), 40, None)):
             j = jump(game)
             self.assertEqual((j["speed"], j["skip"], j["snap"], j["far"], j["long"], j["scale"]),
                              (speed, skip, 1024, 1536, 3, [3, 2]))
@@ -41,6 +42,12 @@ class Jump(unittest.TestCase):
         for change in ({"hop.rows": 6}, {"hop.skip": 1}, {"hop.step": -2}, {"hop.row": 4}, {"hop.ahead": 4}):
             with self.assertRaises(SystemExit):
                 jump({**GAME, **change})
+
+    def test_a_hop_with_a_skip_where_the_jump_has_none_or_none_where_it_has_one_stops_the_reading(self):
+        for game, change in ((GAME, {"hop.skip": 3}), (GAME_EU, {"hop.skip": 2}), (GAME_EU, {"jump.skip": 2})):
+            with self.assertRaises(SystemExit) as stopped:
+                jump(Readings({**game, **change}))
+            self.assertIn("the hop does not run", str(stopped.exception))
 
 
 class Flight(unittest.TestCase):

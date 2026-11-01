@@ -328,11 +328,11 @@ def jump(r):
         sys.exit(f"the launch belongs to type {r['boost.type']}, not to the boost button")
     if not r["jump.arm"] < r["jump.keep"] <= r["jump.long"]:
         sys.exit("the long jump's word, armed, would not survive to the jump, or a count kept would land it long")
-    if r["hop.rows"] != r["jump.rows"] or r["hop.skip"] != r["jump.skip"] or r["hop.step"] != r["jump.step"]:
+    if r["hop.rows"] != r["jump.rows"] or r.get("hop.skip") != r.get("jump.skip") or r["hop.step"] != r["jump.step"]:
         sys.exit("the hop does not run the jump's rows by the jump's count")
     if r["hop.row"] != r["jump.row"] or r["hop.ahead"] != 3 * r["hop.row"]:
         sys.exit("the hop does not take the next row's height, a row of three halfwords on")
-    return {"speed": r["jump.speed"], "skip": r["jump.skip"], "snap": r["jump.snap"], "far": r["jump.far"],
+    return {"speed": r["jump.speed"], "skip": r.get("jump.skip"), "snap": r["jump.snap"], "far": r["jump.far"],
             "long": r["jump.long"], "scale": LONG, "arm": r["jump.arm"], "keep": r["jump.keep"],
             "recentre": r["jump.recentre"], "catch": r["jump.catch"],
             "wall": r["jump.wall"], "low": r["jump.wall.low"], "bounce": r["jump.bounce"],

@@ -437,9 +437,14 @@ class Table(unittest.TestCase):
         self.assertEqual(t["play"]["clock"]["second"], 50)
         self.assertEqual(t["play"]["ending"]["lost"], -3)
         self.assertEqual(t["play"]["view"]["hidden"], {"off": 400})
+        absent = table(Readings({**r, "jump.skip": None, "hop.skip": None, "fall.hop": None}), 30, 60)
+        ball = absent["types"]["30"]
+        self.assertEqual((ball["jump"]["skip"], ball["fall"]["hop"]), (None, None))
+        self.assertEqual(({**ball["jump"], "skip": r["jump.skip"]}, {**ball["fall"], "hop": r["fall.hop"]}),
+                         (t["types"]["30"]["jump"], t["types"]["30"]["fall"]))
         with self.assertRaises(SystemExit) as stopped:
-            table(Readings({**r, "jump.skip": None}), 30, 60)
-        self.assertIn("jump.skip", str(stopped.exception))
+            table(Readings({**r, "roll.gain": None}), 30, 60)
+        self.assertIn("roll.gain", str(stopped.exception))
         self.assertEqual(set(t["play"]),
                          {"start", "clock", "ending", "wait", "words", "bonus", "points", "view", "flight", "screen",
                           "next", "simon"})

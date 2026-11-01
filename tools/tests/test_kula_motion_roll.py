@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
-from kula_motion_code import Code  # noqa: E402
+from kula_motion_code import Code, Readings  # noqa: E402
 from kula_motion_roll import STATES, body, moves, roll  # noqa: E402
 from motion_fixture import GAME, GAME_EU  # noqa: E402
 
@@ -59,7 +59,7 @@ class Roll(unittest.TestCase):
     }
 
     def test_the_roll_ships_one_top_speed_and_an_arc_that_ends_a_radius_off_the_new_face(self):
-        for game, (speeds, ramps) in ((GAME, self.SHIPPED["us"]), (GAME_EU, self.SHIPPED["eu"])):
+        for game, (speeds, ramps) in ((GAME, self.SHIPPED["us"]), (Readings(GAME_EU), self.SHIPPED["eu"])):
             gain, top, fall, spin, hop = speeds
             quarter, wrap, climb = ramps
             with self.subTest(top=top):

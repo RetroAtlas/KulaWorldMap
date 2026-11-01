@@ -696,7 +696,7 @@ def roll(r):
         "quarter": {"frames": r["turn.frames"], "step": r["turn.step"], "clamp": r["turn.clamp"]},
         "wrap": {"frames": r["wrap.frames"], "step": r["wrap.step"], "arc": arc},
         "climb": {"frames": r["climb.frames"], "step": r["climb.step"]},
-        "fall": {"start": r["roll.fall"], "hop": r["fall.hop"], "gain": r["fall.gain"], "top": r["fall.top"],
+        "fall": {"start": r["roll.fall"], "hop": r.get("fall.hop"), "gain": r["fall.gain"], "top": r["fall.top"],
                  "short": r["land.short"], "wall": r["fall.wall"], "behind": r["fall.behind"],
                  "hold": [r["fall.wall.gate"], r["fall.behind.gate"]], "lost": [-2, cell]},
         "spin": r["spin"],
