@@ -46,7 +46,7 @@ USE = re.compile(r"\w+ \$\w+, (-?\d+)\(\$(\w+)\)$")
 ADDIU = re.compile(r"addiu \$(\w+), \$(\w+), (-?\d+)$")
 ADDU = re.compile(r"addu \$(\w+), \$(\w+), \$(\w+)$")
 WRITES = re.compile(r"(\w+) \$(\w+)")
-STEPS = re.compile(r"(sll|addu|subu) \$")
+STEPS = re.compile(r"(sll|sllv|addu|subu) \$")
 LEFT = ("CHECKS", "SCANS")      # the lists whose anchors go to pending as the aligner leaves them
 
 Entry = namedtuple("Entry", "module name kind value keys")
@@ -417,8 +417,9 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
 def keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending):
     """Every list's rows into `rows`, by the base's address: a check's and a scan's as placed, a check the hand table
     declares absent as the absent row it gives whatever was placed there, a keyed row with its value in its relation
-    to the base's, a divisor the hand table says the release lays out as a shift with two to that shift as its value,
-    or the absent row the hand table gives."""
+    to the base's, a multiplier's row carrying the instruction that sets a register its run shifts by, a divisor the
+    hand table says the release lays out as a shift with two to that shift as its value, or the absent row the hand
+    table gives."""
     tuned, absent = hand.TUNED.get(release, {}), absent_rows(other, hand.ABSENT.get(release, {}))
     shifts, runs, used = shift_rows(other, hand.SHIFTS.get(release, {})), hand.MULTIPLIERS.get(release, {}), set()
     values = base_values(us.code, modules)
@@ -487,6 +488,14 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
                     tier = weakest([placements[start - 4].tier, placements[start + 4 * count].tier])
                 row = {"key": key, "at": hexed(at), "count": n, "src": s, "dst": d,
                        "words": [word_at(other, at + 4 * i) for i in range(n)], "tier": tier}
+                sets = {}
+                for i in range(n):
+                    shift = re.match(r"sllv \$\w+, \$\w+, \$(\w+)$", other.text[other.position(at) + i])
+                    if shift:
+                        pc = other.code.setter(at + 4 * i, shift.group(1))
+                        sets[hexed(pc)] = word_at(other, pc)
+                if sets:
+                    row["sets"] = sets
                 return other.code.multiplier(at, n, s, d), row
             valued(name, "MULTIPLIERS", key, start, values[start, key], multiplier)
         for _, key, _, *parts in [*getattr(module, "DIVISORS", ()), *getattr(module, "GREYS", ())]:

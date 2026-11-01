@@ -20,8 +20,8 @@ from kula_motion_light import GLOW_CASES, glint  # noqa: E402
 from kula_motion_run import NEXT_MODE, play  # noqa: E402
 from kula_motion_things import QUARTER, SPUN_AT  # noqa: E402
 from kula_skins import CHECKS as SKIN_CHECKS, IMMEDIATES as SKIN_IMMEDIATES  # noqa: E402
-from motion_fixture import (AT, GAME, addiu, addu, beq, code, jal, jr, lh, lui, lw, ori, sb, sh, sll, sra,  # noqa: E402
-                            subu, sw, swl, swr, xori)
+from motion_fixture import (AT, GAME, addiu, addu, beq, code, j, jal, jr, lh, lui, lw, ori, sb, sh, sll, sllv,  # noqa: E402
+                            sra, subu, sw, swl, swr, xori)
 
 
 class Reads(unittest.TestCase):
@@ -101,6 +101,19 @@ class Reads(unittest.TestCase):
         c = code(sll("v0", "a0", 6))
         self.assertEqual(c.multiplier(AT, 1, "a0", "v0"), 64)
 
+    def test_a_shift_by_a_register_takes_the_constant_set_before_the_run(self):
+        c = code(addiu("a2", "zero", 2), beq("v0", "a2", AT + 4, AT + 36), lh("v1", "s0", 12), sll("v0", "v1", 1),
+                 addu("v0", "v0", "v1"), sllv("v0", "v0", "a2"), subu("v0", "v0", "v1"), sll("v0", "v0", 1))
+        self.assertEqual(c.multiplier(AT + 12, 5, "v1", "v0"), 22)
+        c = code(addiu("v0", "zero", 1), lh("a1", "s0", 6), sllv("v1", "a1", "v0"), addu("v1", "v1", "a1"), sll("v0", "v1", 2))
+        self.assertEqual(c.multiplier(AT + 8, 3, "a1", "v0"), 12)
+        c = code(lw("a2", "s0", 8), sllv("v0", "v1", "a2"))
+        with self.assertRaises(SystemExit):
+            c.multiplier(AT + 4, 1, "v1", "v0")
+        c = code(sllv("v0", "v1", "a2"))
+        with self.assertRaises(SystemExit):
+            c.multiplier(AT, 1, "v1", "v0")
+
     def test_a_store_scan_finds_stores_through_gp_and_through_at_after_a_lui(self):
         c = code(sw("v0", "gp", 1296), lui("at", 0x000a), sw("zero", "at", 13384), lui("at", 0x000a),
                  sh("a0", "at", 13384), sw("v1", "gp", 1300), sw("zero", "at", 13384), lw("v0", "gp", 1296))
@@ -151,6 +164,16 @@ class Reads(unittest.TestCase):
         self.assertIsNone(c.built(AT + 16, AT))
         with self.assertRaises(SystemExit):
             c.address(AT + 20, AT + 32)
+
+    def test_an_address_is_built_through_a_jump_and_its_delay_slot(self):
+        c = code(lui("v1", 0x000a), addiu("v1", "v1", -3080), j(AT + 24), sll("v0", "v0", 2), lw("a0", "a0", 0),
+                 addiu("v0", "zero", 1), addu("v0", "v0", "v1"), lw("a1", "v0", 0))
+        self.assertEqual(c.built(AT, AT + 28), 0x8009f3f8)
+        self.assertEqual(c.address(AT, AT + 28), 0x8009f3f8)
+        c = code(lui("v1", 0x000a), j(AT + 40), lw("a1", "v1", 16))
+        self.assertEqual(c.built(AT, AT + 8), 0x800a0010)
+        c = code(lui("v1", 0x000a), j(AT + 400), sll("v0", "v0", 2), lw("a1", "v1", 16))
+        self.assertIsNone(c.built(AT, AT + 12))
 
     def test_a_register_the_run_never_derived_stops_the_reading(self):
         c = code(sll("v1", "v0", 2), addu("v1", "v1", "a0"), sll("v1", "v1", 1))

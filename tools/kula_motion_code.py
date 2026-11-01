@@ -38,6 +38,7 @@ GREYS = []
 SCANS = []
 
 # The instructions whose first register is read rather than written.
+WALK = 64
 READS_FIRST = {"sb", "sh", "sw", "swl", "swr", "mtc2", "ctc2", "mthi", "mtlo",
                "mult", "multu", "div", "divu", "beq", "bne", "blez", "bgtz", "bltz", "bgez",
                "bltzal", "bgezal", "jr"}
@@ -393,34 +394,59 @@ class Code:
 
     def built(self, hi_at, lo_at):
         """The address the lui at `hi_at` builds by `lo_at`, in RAM's mirror: an addiu between them adds its
-        immediate to the half, an addu carries the half past an index, and the addiu, load or store at `lo_at` adds
-        its own; None where the lui, the use or what joins them is not that."""
+        immediate to the half, an addu carries the half past an index, a jump is followed through its delay slot,
+        and the addiu, load or store at `lo_at` adds its own; None where the lui, the use or what joins them is not
+        that, or the use is not reached within the walk."""
         hi = re.match(r"lui \$(\w+), (0x[0-9a-f]+)$", self.text(hi_at)) if lo_at > hi_at else None
         if not hi:
             return None
         held = {hi.group(1): 0x80000000 | (int(hi.group(2), 0) << 16)}
-        for pc in range(hi_at + 4, lo_at + 4, 4):
+        pc, left = hi_at + 4, WALK
+        while left and self.holds(pc):
+            left -= 1
             text = self.text(pc)
-            m = re.match(r"addiu \$(\w+), \$(\w+), (-?\d+)$", text)
-            if m and m.group(2) in held:
-                if pc == lo_at:
-                    return held[m.group(2)] + int(m.group(3))
-                held[m.group(1)] = held[m.group(2)] + int(m.group(3))
-                continue
-            m = re.match(r"\w+ \$\w+, (-?\d+)\(\$(\w+)\)$", text)
-            if m and pc == lo_at:
-                return held[m.group(2)] + int(m.group(1)) if m.group(2) in held else None
-            m = re.match(r"addu \$(\w+), \$(\w+), \$(\w+)$", text)
+            if pc == lo_at:
+                return self.added(held, text)
+            m = re.match(r"j (0x[0-9a-f]+)$", text)
             if m:
-                high = [held[r] for r in m.groups()[1:] if r in held]
-                if len(high) == 1:
-                    held[m.group(1)] = high[0]
-                else:
-                    held.pop(m.group(1), None)
+                if pc + 4 == lo_at:
+                    return self.added(held, self.text(pc + 4))
+                self.carry(held, self.text(pc + 4))
+                pc = int(m.group(1), 16)
                 continue
-            m = re.match(r"(\w+) \$(\w+)", text)
-            if m and m.group(1) not in READS_FIRST:
-                held.pop(m.group(2), None)
+            self.carry(held, text)
+            pc += 4
+        return None
+
+    @staticmethod
+    def carry(held, text):
+        """What the instruction does to the halves held: an addiu adds its immediate to a half, an addu carries one
+        half past an index, and any other write to a register drops that register's half."""
+        m = re.match(r"addiu \$(\w+), \$(\w+), (-?\d+)$", text)
+        if m and m.group(2) in held:
+            held[m.group(1)] = held[m.group(2)] + int(m.group(3))
+            return
+        m = re.match(r"addu \$(\w+), \$(\w+), \$(\w+)$", text)
+        if m:
+            high = [held[r] for r in m.groups()[1:] if r in held]
+            if len(high) == 1:
+                held[m.group(1)] = high[0]
+            else:
+                held.pop(m.group(1), None)
+            return
+        m = re.match(r"(\w+) \$(\w+)", text)
+        if m and m.group(1) not in READS_FIRST:
+            held.pop(m.group(2), None)
+
+    @staticmethod
+    def added(held, text):
+        """The address the addiu, load or store completes from the half it reads, or None where it reads none."""
+        m = re.match(r"addiu \$\w+, \$(\w+), (-?\d+)$", text)
+        if m:
+            return held[m.group(1)] + int(m.group(2)) if m.group(1) in held else None
+        m = re.match(r"\w+ \$\w+, (-?\d+)\(\$(\w+)\)$", text)
+        if m:
+            return held[m.group(2)] + int(m.group(1)) if m.group(2) in held else None
         return None
 
     def word_of(self, hi, hp, lo, lp):
@@ -452,8 +478,9 @@ class Code:
         return round(2 ** (32 + self.immediate_at(sa, sp)) / self.joined(hi, hp, lo, lp))
 
     def multiplier(self, addr, count, src, dst):
-        """The factor applied to `src` by `count` instructions of shifts and adds, the run's place, count and
-        registers the map's where it has them, or None where the map says this executable has no such run."""
+        """The factor applied to `src` by `count` instructions of shifts and adds, a shift by a register taking the
+        constant that register was last set to before it, the run's place, count and registers the map's where it
+        has them, or None where the map says this executable has no such run."""
         if self.absent(addr):
             return None
         if self.map is not None:
@@ -462,13 +489,15 @@ class Code:
         for i in range(count):
             pc = addr + 4 * i
             text = self.text(pc)
-            m = re.match(r"(sll|addu|subu) \$(\w+), \$(\w+)(?:, \$(\w+)|, (\d+))$", text)
+            m = re.match(r"(sll|sllv|addu|subu) \$(\w+), \$(\w+)(?:, \$(\w+)|, (\d+))$", text)
             if m:
                 op, rd, a, b, sa = m.groups()
+                if op == "sllv":
+                    sa, b = self.constant(pc, b), None
                 x, y = coef.get(a), coef.get(b) if b else 0
                 if x is None or y is None:
                     coef[rd] = None
-                elif op == "sll":
+                elif op in ("sll", "sllv"):
                     coef[rd] = x << int(sa)
                 else:
                     coef[rd] = x + y if op == "addu" else x - y
@@ -479,6 +508,26 @@ class Code:
         if coef.get(dst) is None:
             sys.exit(f"0x{addr:08x}: {dst} is not a multiple of {src} after {count} instructions")
         return coef[dst]
+
+    def setter(self, before, reg):
+        """Where `reg` was last written before `before`, or the tool's exit where nothing within the walk writes it."""
+        for pc in range(before - 4, before - 4 * WALK, -4):
+            if not self.holds(pc):
+                break
+            m = re.match(r"(\w+) \$(\w+)", self.text(pc))
+            if m and m.group(2) == reg and m.group(1) not in READS_FIRST:
+                return pc
+        sys.exit(f"0x{before:08x}: nothing before it sets {reg}")
+
+    def constant(self, before, reg):
+        """The constant `reg` holds at `before`: the immediate of the addiu or ori from zero that last wrote it, or
+        the tool's exit where another instruction wrote it last."""
+        pc = self.setter(before, reg)
+        text = self.text(pc)
+        m = re.match(r"(?:addiu|ori) \$\w+, \$zero, (\d+)$", text)
+        if not m:
+            sys.exit(f"0x{before:08x}: {reg} holds what `{text}` at 0x{pc:08x} leaves in it, not a constant")
+        return int(m.group(1))
 
     def stores_to(self, addr):
         """Every store to `addr` through gp, or through $at after a lui, as (address, register stored)."""

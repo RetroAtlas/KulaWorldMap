@@ -18,6 +18,10 @@ def sll(rd, rt, sa):
     return (R[rt] << 16) | (R[rd] << 11) | (sa << 6)
 
 
+def sllv(rd, rt, rs):
+    return (R[rs] << 21) | (R[rt] << 16) | (R[rd] << 11) | 4
+
+
 def addu(rd, rs, rt):
     return (R[rs] << 21) | (R[rt] << 16) | (R[rd] << 11) | 0x21
 
@@ -48,6 +52,10 @@ def sh(rt, rs, imm):
 
 def sb(rt, rs, imm):
     return (0x28 << 26) | (R[rs] << 21) | (R[rt] << 16) | (imm & 0xFFFF)
+
+
+def j(target):
+    return (2 << 26) | ((target >> 2) & 0x3FFFFFF)
 
 
 def jal(target):

@@ -56,12 +56,14 @@ def named(row):
 
 
 def laid(release, data):
-    """The release's executable as the map's words lay it, every other word nothing."""
+    """The release's executable as the map's words lay it, a run's with the words that set what it shifts by, every
+    other word nothing."""
     base = RELEASES[release]["base"]
     blob = bytearray(SIZE[release])
     for row in data["rows"].values():
         if "count" in row:
             places = [(unhex(row["at"]) + 4 * i, word) for i, word in enumerate(row["words"])]
+            places += [(unhex(at), word) for at, word in row.get("sets", {}).items()]
         else:
             places = [(unhex(at), word) for at, word in zip(listed(row["at"]), listed(row["word"]))]
         for at, word in places:

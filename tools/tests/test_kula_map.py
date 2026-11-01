@@ -21,7 +21,7 @@ from kula_align import MODULES, Placement  # noqa: E402
 from kula_disc import RELEASES  # noqa: E402
 from kula_map import (FITS, KINDS, Pending, base_values, build, check, check_base, cut, derived, dump, leaves,  # noqa: E402
                       pattern_on, reaching, registries, relation, report, write_words)
-from motion_fixture import addiu, addu, jal, jr, lh, lui, lw, sll, sra, sw  # noqa: E402
+from motion_fixture import addiu, addu, jal, jr, lh, lui, lw, sll, sllv, sra, sw  # noqa: E402
 from png import read_png  # noqa: E402
 
 GP = RELEASES["us"]["gp"]
@@ -261,6 +261,14 @@ class Rows(unittest.TestCase):
         self.assertEqual(key_rows(mapped(copy, hand(PLACED=before)))["mode.fill"]["tier"], "aligned")
         self.assertEqual(key_rows(mapped(copy, hand(PLACED=after)))["mode.fill"]["tier"], "offset")
         self.assertEqual(key_rows(mapped(copy, hand(PLACED={**before, **after})))["mode.fill"]["tier"], "hand")
+
+    def test_a_run_shifting_by_a_register_carries_the_instruction_that_sets_it(self):
+        fill = (addiu("a2", "zero", 3), sllv("v0", "v1", "a2"))
+        copy = executable(gaps=GAPS, routines={"mode": lambda c, **kw: mode(c, fill=fill, **kw)})
+        at = copy.starts["mode"] + 56
+        row = key_rows(mapped(copy, hand(TUNED={"mode.fill": "eight against five, a shift by the register set before it"})))["mode.fill"]
+        self.assertEqual((row["value"], row["by"], row["sets"]), (8, "tuned", {f"0x{at:08x}": f"0x{fill[0]:08x}"}))
+        self.assertNotIn("sets", key_rows(mapped(copy := executable(gaps=GAPS)))["mode.fill"])
 
     def test_a_hand_run_is_read_as_given(self):
         copy = executable(gaps=GAPS)
