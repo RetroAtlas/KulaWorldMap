@@ -4,8 +4,9 @@ amount, a word put in beside a reading, a register renamed throughout a routine,
 with the same opcodes and one that none does, a reading given by another instruction, a routine returning early on
 the copy, one routine twice over, one shifted and renamed with the words it builds kept, that one with a word put
 in between its readings, one laid twice in its place, a renamed routine with a word put in after a reading, a count
-kept in another register, and a routine left out; a copy may carry other counts in its routines, words of data after
-its code and another gp."""
+kept in another register, a routine left out, and a routine whose record is renamed beside its callee's with a word
+put in before its reading, so its call alone tells it; a copy may carry other counts in its routines, words of data
+after its code and another gp."""
 
 import sys
 from collections import namedtuple
@@ -70,9 +71,18 @@ def twin(callee, s="s0", count=7):
             lw("ra", "sp", 32), jr("ra"), addiu("sp", "sp", 40)]
 
 
+def caller(callee, s="s0"):
+    """The caller's routine over the register it keeps its record in: no word, no immediate above the common ones and
+    one call, which alone tells it from another routine."""
+    return [addiu("sp", "sp", -24), sw("ra", "sp", 16), sw(s, "sp", 12), addu(s, "a0", "zero"), lh("v0", s, 6),
+            sb("v0", s, 9), lw("a0", s, 16), jal(callee), addiu("a1", "zero", 3), lh("v0", s, 4), addiu("v0", "v0", 5),
+            sh("v0", s, 4), lw(s, "sp", 12), lw("ra", "sp", 16), jr("ra"), addiu("sp", "sp", 24)]
+
+
 ROUTINES = {"pill": pill, "clock": clock, "spikes": lambda callee: spikes("s0", "a0", 63, 14), "step": step,
-            "vanish": lambda callee: spikes("s5", "a1", 91, 9), "twin": twin}
-ORDER = ("pill", "clock", "spikes", "step", "vanish", "twin")
+            "vanish": lambda callee: spikes("s5", "a1", 91, 9), "caller": caller, "twin": twin}
+ORDER = ("pill", "clock", "spikes", "step", "vanish", "caller", "twin")
+CALLS = {"caller": "clock"}      # the routine a routine calls, where it is not the step
 TAIL = 16     # words after the last routine, which decode as nop
 
 # Each reading's routine and its position in it, the list it would stand in and its key.
@@ -96,35 +106,36 @@ ANCHORS = [
     ("spikes", 19, "IMMEDIATES", "spikes.hold"),
     ("spikes", 23, "IMMEDIATES", "spikes.step"),
     ("step", 5, "IMMEDIATES", "step.one"),
+    ("caller", 10, "IMMEDIATES", "caller.plus"),
     ("twin", 12, "IMMEDIATES", "twin.count"),
 ]
 
-GAPS = {"pill": 1, "clock": 3, "spikes": 6, "step": 2, "vanish": 4, "twin": 5}    # words before each routine
+GAPS = {"pill": 1, "clock": 3, "spikes": 6, "step": 2, "vanish": 4, "caller": 7, "twin": 5}    # words before each routine
 INSERTED = {"pill": 12, "clock": 9}      # where a word is put into a routine
 PUT_IN = subu("a2", "a2", "v1")
 RETURNED = {"spikes": 20, "vanish": 20}      # where a return is put into a routine, which cuts it in two
 EDGED = {"spikes": 17, "vanish": 17}      # where a word is put in after the store of the spikes' phase, and into its shadow
 KEPT = {"pill": 12}          # where a word is put in after the load of the pill's second count
+CHAINED = {"caller": 9}      # where a word is put in before the caller's reading
 
 
 def lay(order, gaps, change, routines, data=()):
     """The executable's words and where each routine starts, the routines in order each after its gap of nops,
     `routines` giving a routine's builder in place of its own and `change` its words as the copy lays them, `tail`
     where the words after the last one start, and `data` the words laid after the tail."""
-    starts, callee = {}, AT
-    for _ in range(2):      # the callee's address is known once the routines before it are laid
-        words, at, starts = [], AT, {}
+    starts = {}
+    for _ in range(2):      # a callee's address is known once the routines before it are laid
+        words, at, known, starts = [], AT, starts, {}
         for name in order:
             gap = gaps.get(name, 0)
             words += [0] * gap
             at += 4 * gap
-            body = change(name, routines[name](callee))
+            body = change(name, routines[name](known.get(CALLS.get(name, "step"), AT)))
             starts.setdefault(name, at)
             words += body
             at += 4 * len(body)
         starts["tail"] = at
         starts["data"] = at + 4 * TAIL
-        callee = starts["step"]
     return words + [0] * TAIL + list(data), starts
 
 
@@ -196,7 +207,7 @@ def wedged():
 
 def doubled():
     """The clock's routine laid twice over in its place, a gap before each and before the routine after them."""
-    return laid(order=("pill", "clock", "clock", "spikes", "step", "vanish", "twin"), gaps={"clock": 2, "spikes": 2})
+    return laid(order=("pill", "clock", "clock", "spikes", "step", "vanish", "caller", "twin"), gaps={"clock": 2, "spikes": 2})
 
 
 def edged():
@@ -214,7 +225,15 @@ def kept():
 
 def unshadowed():
     """The vanishing block's routine left out, so nothing shadows the spikes'."""
-    return laid(order=("pill", "clock", "spikes", "step", "twin"))
+    return laid(order=("pill", "clock", "spikes", "step", "caller", "twin"))
+
+
+def chained():
+    """Every routine shifted by its own amount, the clock's and the caller's records kept in other registers
+    throughout, and a word put into the caller's routine before its reading, so the caller is told by its call to the
+    clock and by nothing else."""
+    return laid(gaps=GAPS, routines={"clock": lambda callee: clock(callee, record="a3"), "caller": lambda callee: caller(callee, "s5")},
+                change=lambda name, words: put_in(name, words, CHAINED), inserted=CHAINED)
 
 
 def anchors_of(copy):

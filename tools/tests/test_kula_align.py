@@ -11,8 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from align_fixture import (ANCHORS, ORDER, anchors_of, base, broken, doubled, edged, kept, recast, relaid,  # noqa: E402
-                           renamed, returned, reworked, shifted, twins, unshadowed, wedged)
+from align_fixture import (ANCHORS, ORDER, anchors_of, base, broken, chained, doubled, edged, kept, recast,  # noqa: E402
+                           relaid, renamed, returned, reworked, shifted, twins, unshadowed, wedged)
 from kula_align import (EDGE, LISTS, MODULES, OUTSIDE, TIERS, UNPAIRED, VOTING, Anchor, Left, align,  # noqa: E402
                         anchors, given, loose, pair_by_constants, pair_by_votes, report, shape, shared, show, windows)
 
@@ -273,6 +273,22 @@ class Functions(unittest.TestCase):
         tiers, left = placed(copy)
         self.assertEqual({entry.anchor.key for entry in left}, {key for routine, _, _, key in ANCHORS if routine == "clock"})
         self.assertEqual({(entry.why, entry.pair) for entry in left}, {(f"{UNPAIRED}, its shapes standing at 2 places", None)})
+        for key, (at, _, _) in tiers.items():
+            self.assertEqual(at, copy.places[key], key)
+
+    def test_a_routine_told_by_its_call_alone_is_paired_in_the_round_after_its_callee_and_its_anchor_placed(self):
+        copy = chained()
+        us, other = US.listing, copy.listing
+        hits, pairs = voted(copy)
+        clock, caller = function_of(US, "clock"), function_of(US, "caller")
+        clock_fo, caller_fo = function_of(copy, "clock"), function_of(copy, "caller")
+        self.assertEqual({clock, caller} & set(pairs), set())
+        self.assertEqual([f for f, _ in shared(us, other, pairs) if f == caller], [])
+        self.assertEqual(shared(us, other, {**pairs, clock: clock_fo})[caller, caller_fo], {("call", clock)})
+        self.assertEqual(pair_by_constants(us, other, hits, pairs), {clock: clock_fo, caller: caller_fo})
+        tiers, left = placed(copy)
+        self.assertEqual(left, [])
+        self.assertEqual(tiers["caller.plus"], (copy.places["caller.plus"], "aligned", "addiu $v0, $v0, 5"))
         for key, (at, _, _) in tiers.items():
             self.assertEqual(at, copy.places[key], key)
 
