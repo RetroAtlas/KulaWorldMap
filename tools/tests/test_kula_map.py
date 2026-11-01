@@ -494,6 +494,27 @@ class Hand(unittest.TestCase):
             mapped(copy, hand(RESHAPED={check: (store, "sw $v0, 12($s0)", 1, "a check given a value")}))
         self.assertEqual(str(stale.exception), f"the hand table's reshaped immediate rows name 0x{check:08x}, which no reader lists")
 
+    def test_two_hand_rows_meeting_at_one_address_stop_the_writer(self):
+        copy = executable(gaps=GAPS)
+        tested, at = US.places["the pill tests its word"], copy.places["the pill tests its word"]
+        text = copy.listing.text[copy.listing.position(at)]
+        placed, reshaped = {tested: (at, "the test as laid")}, {tested: (at, text, "the test as laid")}
+        absent = {tested: (at, text, "the copy makes no such test")}
+        for named, tables in (("placed and reshaped", dict(PLACED=placed, RESHAPED=reshaped)),
+                              ("placed and absent", dict(PLACED=placed, ABSENT=absent)),
+                              ("reshaped and absent", dict(RESHAPED=reshaped, ABSENT=absent))):
+            with self.subTest(named):
+                with self.assertRaises(SystemExit) as stopped:
+                    mapped(copy, hand(**tables))
+                self.assertEqual(str(stopped.exception), f"the hand table's {named} rows meet at 0x{tested:08x}")
+
+    def test_a_reading_keyed_at_an_absent_checks_address_stops_the_writer(self):
+        copy = executable(gaps=GAPS)
+        use, at, text = US.starts["mode"] + 8, copy.starts["mode"] + 8, f"lw $v0, {MODE}($gp)"
+        with self.assertRaises(SystemExit) as stopped:
+            mapped(copy, hand(ABSENT={use: (at, text, "the mode word is read nowhere"), "mode.at": (at, text, "as above")}))
+        self.assertEqual(str(stopped.exception), f"0x{use:08x} is the hand table's absent check and is read as mode.at")
+
     def test_an_absent_row_for_an_instruction_reaching_a_word_takes_it_out_of_the_derivation(self):
         copy = executable(gaps=GAPS)
         mode_use, clock_use = US.starts["mode"] + 16, US.starts["clock"] + 24

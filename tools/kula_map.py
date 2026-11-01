@@ -388,11 +388,22 @@ def base_values(code, modules=MODULES):
     return out
 
 
+def held_apart(hand, release):
+    """The hand table's rows keyed by a base address, an address in one table alone, the writer stopping where two
+    tables name one."""
+    tables = {}
+    for what, table in (("placed", hand.PLACED), ("reshaped", hand.RESHAPED), ("absent", hand.ABSENT)):
+        for addr in table.get(release, {}):
+            if isinstance(addr, int) and tables.setdefault(addr, what) != what:
+                sys.exit(f"the hand table's {tables[addr]} and {what} rows meet at 0x{addr:08x}")
+
+
 def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, us_words=WORDS):
     """The release's map: the rows by the base's address, the registered names, the end-screen words, the extra
     checks and what is pending, from the two listings and the hand table."""
     if rates is None:
         rates = (release_readings(us.code, BASE)["hz"], release_readings(other.code, release)["hz"])
+    held_apart(hand, release)
     entries, reach = registries(modules), reaching(us)
     rows_in, hand_anchors = anchors(modules), by_hand(us, entries, modules, reach)
     placements, left = align(us, other, rows_in, hand=hand_anchors)
@@ -436,7 +447,8 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
     a register its run shifts by, a divisor the hand table says the release lays out as a shift with two to that
     shift as its value, an immediate it says the release lays out as another instruction with the value it gives,
     or the absent row the hand table gives; a hand row naming no check, no instruction reaching a word, no key, no
-    registered run and no immediate stops the writer."""
+    registered run and no immediate stops the writer, as does a reading keyed at an address the hand table declares
+    an absent check."""
     tuned, absent = hand.TUNED.get(release, {}), absent_rows(other, hand.ABSENT.get(release, {}))
     shifts, runs, used = shift_rows(other, hand.SHIFTS.get(release, {})), hand.MULTIPLIERS.get(release, {}), set()
     restated = {addr: row for addr, row in hand.RESHAPED.get(release, {}).items() if len(row) == 4}
@@ -446,6 +458,8 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
         at = hexed(addr)
         old = rows.get(at)
         was_keyed = old is not None and ("key" in old or "keys" in old)
+        if key is not None and old is not None and not was_keyed and old.get("absent"):
+            sys.exit(f"0x{addr:08x} is the hand table's absent check and is read as {key}")
         if old is None or (key is not None and not was_keyed):
             rows[at] = row
         elif key is not None and any(old.get(f) != row.get(f) for f in ("at", "pattern", "us", "value", "by", "absent")):
