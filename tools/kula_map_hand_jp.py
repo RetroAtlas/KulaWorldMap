@@ -235,9 +235,10 @@ MULTIPLIERS = {
 }
 
 EXTRA = [
+    # The end screen.
     (0x80015c68, "addiu $s2, $zero, 38",
      "the end screen picks pair 38 in the normal mode where the word at 0x800a1f08 is 1, a choice the US never makes"),
-    # The next-level routine's branch for the Simon rooms past the starter word's test, which keeps two tables the US does not.
+    # The Simon rooms' branch of the next-level routine.
     (0x8004290c, "addiu $t1, $zero, 1", "the 1 a marked halfword of either table holds, and the shift from an index to its halfword"),
     (0x80042910, "lui $v0, 0x000a", "the high half of the table by room"),
     (0x80042914, "addiu $v0, $v0, 8080", "and its base, 0x800a1f90, a halfword a room"),
@@ -271,9 +272,10 @@ EXTRA = [
     (0x80042ab0, "addiu $v1, $v1, 8080", "the table by room read at the slot"),
     (0x80042ab8, "lh $v1, 0($v0)", "its halfword"),
     (0x80042ac0, "beq $v1, $v0, 0x80042a74", "and the slot stepped on again where that is marked"),
-    # The word the branch divides, the menu that starts the mode and the test the end screen and the menu make of the tables.
+    # The level loop.
     (0x80041854, "addiu $v0, $v0, 1", "the word at 0x8009f530 counted up by one in the level loop's frame routine"),
     (0x80041858, "sw $v0, 1228($gp)", "and stored, by no other instruction that names it"),
+    # The tables' reset.
     (0x80048218, "jal 0x80042da4", "the menu that starts the mode, its mode and starter words set, calls the tables' reset"),
     (0x80042db8, "sh $zero, 0($v1)", "which clears the table by world"),
     (0x80042dbc, "sh $zero, 0($a0)", "and the table by room"),
@@ -282,6 +284,7 @@ EXTRA = [
     (0x80042dfc, "div $a0, $v0", "divides it by the furthest level reached in worlds of fifteen"),
     (0x80042e30, "sw $a0, 1192($gp)", "and makes the word modulo 10 the first room's slot"),
     (0x80042e34, "sw $a1, 1196($gp)", "and the remainder its world, with nothing marked to step past"),
+    # The marked rooms' count.
     (0x80042e54, "lh $v0, 0($v1)", "the routine the end screen and the menu ask reads the table by room"),
     (0x80042e78, "slti $v0, $a1, 3", "counts its halfwords at 1 against 3"),
     (0x80042e80, "xori $v0, $v0, 1",
