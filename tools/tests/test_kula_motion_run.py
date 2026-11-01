@@ -81,7 +81,7 @@ class Play(unittest.TestCase):
 class Words(unittest.TestCase):
     POINTER = AT + 0x80
     TABLE = AT + 0x100
-    SHIFT = 0x1000       # how far on from the base's the mapped table's address is built
+    SHIFT = 0x1000
 
     def image(self, body, flags=8):
         return struct.pack("<II", 0x10, flags) + body
@@ -98,14 +98,14 @@ class Words(unittest.TestCase):
         put(at[1], lw("t0", "t0", self.POINTER & 0xFFFF))
         put(self.POINTER, self.TABLE & 0x1FFFFFFF)
         put(self.TABLE, count)
-        at = blobs
+        cursor = blobs
         for i, stream in enumerate(streams):
-            blob[at - EXE_BASE:at - EXE_BASE + len(stream)] = stream
-            put(entries + 8 * i, at - self.TABLE)
+            blob[cursor - EXE_BASE:cursor - EXE_BASE + len(stream)] = stream
+            put(entries + 8 * i, cursor - self.TABLE)
             put(entries + 8 * i + 4, len(stream))
-            at += len(stream)
+            cursor += len(stream)
         for i in range(len(streams), count):
-            put(entries + 8 * i, at - len(streams[-1]) - self.TABLE)
+            put(entries + 8 * i, cursor - len(streams[-1]) - self.TABLE)
             put(entries + 8 * i + 4, len(streams[-1]))
         return Code(bytes(blob), map=map)
 

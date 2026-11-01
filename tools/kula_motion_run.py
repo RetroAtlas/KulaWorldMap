@@ -4,13 +4,13 @@ outcome word a level ends in, positive for a way out and negative for a
 loss, the frames each ending waits and the word of the game's own lettering
 the end screen names it by, read off its table of deflated images two to a
 word and held to the disc by a digest of each pair, each release's table by
-its own digests, the level's mode word
-the loader writes, 1 on a level with no key, 2 where the settings record's
-first slot marks a hidden level and 0 again in the Simon rooms, the start's
-two counts, the view an ending turns round the level and the points a death
-costs, the last final's completion, and the run, the points and the fruit
-banked as each level ends and the slot the next-level routine picks for the
-game to load next: "The level's clock and its end" in docs/motion.md.
+its own digests, the level's mode word the loader writes, 1 on a level with
+no key, 2 where the settings record's first slot marks a hidden level and 0
+again in the Simon rooms, the start's two counts, the view an ending turns
+round the level and the points a death costs, the last final's completion,
+and the run, the points and the fruit banked as each level ends and the
+slot the next-level routine picks for the game to load next: "The level's
+clock and its end" in docs/motion.md.
 """
 import struct
 import sys
