@@ -26,6 +26,8 @@ The matrix also stands levels on the other discs, such a case naming its disc in
 
 The motion reader's tests run over a hand-typed fixture of the readings, `motion_fixture.py`'s `GAME` for the base's executable and `GAME_EU` and `GAME_JP` for the PAL and the Japanese executables' where they differ, a reading an executable has no instruction for None, which covers most of the readings' keys, so each module's table functions and the relations they hold run over all three and a relation false on any executable's readings fails without a disc.
 
+`test_kula_motion.py` composes the whole table over each of the three and holds the ball's breath in it, the cap the time is taken against, its divisor and the ticks of a second, to the figures the release files under `public/releases/` ship for that executable, the base's `public/objects.json` where a release ships no entry of its own, so a figure that moves in the fixture or in a shipped file fails there.
+
 The places of the registry's names the fixture carries for a release are read off its map whatever the map has pending, since the fixture's readings are typed by hand and not read through the map.
 
 What holds the readers to an executable is each tool's own run against its disc, `python3 tools/kula_motion.py --release <id>` and `python3 tools/kula_skins.py --release <id>` with that release's disc variable set, which stop at the first instruction that is not the one expected, and the tool's table against the disc, which the build compares.

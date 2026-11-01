@@ -3,6 +3,7 @@
 Nothing here needs the disc.
 """
 
+import json
 import re
 import sys
 import unittest
@@ -20,8 +21,10 @@ from kula_motion_light import GLOW_CASES, glint  # noqa: E402
 from kula_motion_run import NEXT_MODE, play  # noqa: E402
 from kula_motion_things import QUARTER, SPUN_AT  # noqa: E402
 from kula_skins import CHECKS as SKIN_CHECKS, IMMEDIATES as SKIN_IMMEDIATES  # noqa: E402
-from motion_fixture import (AT, GAME, addiu, addu, beq, code, j, jal, jr, lh, lui, lw, ori, sb, sh, sll, sllv,  # noqa: E402
-                            sra, subu, sw, swl, swr, xori)
+from motion_fixture import (AT, GAME, GAME_EU, GAME_JP, addiu, addu, beq, code, j, jal, jr, lh, lui, lw, ori, sb, sh,  # noqa: E402
+                            sll, sllv, sra, subu, sw, swl, swr, xori)
+
+PUBLIC = Path(__file__).resolve().parents[2] / "public"
 
 
 class Reads(unittest.TestCase):
@@ -397,37 +400,44 @@ class Mapped(unittest.TestCase):
         self.assertNotIn(hexed(AT), str(stopped.exception))
 
 
+def tabled(game):
+    """The fixture's readings filled out with the things' motion and the few readings the table takes that the fixture
+    does not type, so the table runs over them."""
+    r = dict(game)
+    for key in ("coin.turn", "coin.bob", "coin.bob.reach", "fruit.turn", "fruit.tilt",
+                "fruit.tilt.reach", "fruit.bob", "fruit.bob.reach", "gem.turn",
+                "hourglass.swing", "hourglass.turn", "hourglass.lean", "pill.flip",
+                "pill.turn", "hedgehog.form", "hedgehog.form.past", "hedgehog.orbit.brown",
+                "hedgehog.orbit.green", "hedgehog.orbit.radius", "teleporter.turn",
+                "exit.turn", "exit.turn.open", "platform.dwell", "corkscrew.phase0",
+                "corkscrew.phase1", "corkscrew.phase2", "corkscrew.bounce",
+                "corkscrew.wrap", "corkscrew.rise", "corkscrew.spin", "star52.sway",
+                "star52.sway.reach", "star52.tumble.x", "star52.tumble.y",
+                "star50.tumble.x", "star50.tumble.y", "star50.tumble.z", "star50.travel",
+                "ball53.shake", "ball53.lurch.reach", "ball53.dash", "ball53.settle",
+                "ball53.ways", "wheel.roll",
+                "wheel.travel", "wheel.turning", "wheel.turn.right", "wheel.turn.about",
+                "corkscrew.drop", "ball.breathe", "ball.breathe.reach",
+                "button.start", "button.full", "button.sink", "button.rise", "button.reach",
+                "ball.breathe.full", "ball.breathe.over", "time.tick"):
+        r.setdefault(key, 1)
+    r.update({"ball.light.down": 2, "ball.light.into": 1, "ball.light.background": 2048,
+              "ball.light.colour": 4000, "ball.light.base": 178})
+    r["platform.scale"] = 50
+    r["captivator.standoff"] = 456
+    r["corkscrew.drop"] = 150
+    r.update({"dice.seed": 1, "dice.times": 0x41C64E6D, "dice.plus": 12345})
+    r["glow"] = {"every": 19, "part": [1792, 4096], "spill": []}
+    r["glow.colours"] = {5: [[[25, 25, 0]] * 4], 7: [[[16, 64, 16]]], 9: [[[25, 25, 0]] * 4]}
+    last = (31, 32, 33, 34, 35, 37, 38, 42, 43, 44, 45, 46, 47, 51, 56)
+    r["spin.order"] = {t: "zyx" if t in last else "xyz" for t in SPUN_AT}
+    r["spin.quarter"] = 1024
+    return r
+
+
 class Table(unittest.TestCase):
     def test_the_table_carries_a_program_per_phase_and_the_platform_scaled(self):
-        r = dict(GAME)
-        for key in ("coin.turn", "coin.bob", "coin.bob.reach", "fruit.turn", "fruit.tilt",
-                    "fruit.tilt.reach", "fruit.bob", "fruit.bob.reach", "gem.turn",
-                    "hourglass.swing", "hourglass.turn", "hourglass.lean", "pill.flip",
-                    "pill.turn", "hedgehog.form", "hedgehog.form.past", "hedgehog.orbit.brown",
-                    "hedgehog.orbit.green", "hedgehog.orbit.radius", "teleporter.turn",
-                    "exit.turn", "exit.turn.open", "platform.dwell", "corkscrew.phase0",
-                    "corkscrew.phase1", "corkscrew.phase2", "corkscrew.bounce",
-                    "corkscrew.wrap", "corkscrew.rise", "corkscrew.spin", "star52.sway",
-                    "star52.sway.reach", "star52.tumble.x", "star52.tumble.y",
-                    "star50.tumble.x", "star50.tumble.y", "star50.tumble.z", "star50.travel",
-                    "ball53.shake", "ball53.lurch.reach", "ball53.dash", "ball53.settle",
-                    "ball53.ways", "wheel.roll",
-                    "wheel.travel", "wheel.turning", "wheel.turn.right", "wheel.turn.about",
-                    "corkscrew.drop", "ball.breathe", "ball.breathe.reach",
-                    "button.start", "button.full", "button.sink", "button.rise", "button.reach",
-                    "ball.breathe.full", "ball.breathe.over", "time.tick"):
-            r.setdefault(key, 1)
-        r.update({"ball.light.down": 2, "ball.light.into": 1, "ball.light.background": 2048,
-                  "ball.light.colour": 4000, "ball.light.base": 178})
-        r["platform.scale"] = 50
-        r["captivator.standoff"] = 456
-        r["corkscrew.drop"] = 150
-        r.update({"dice.seed": 1, "dice.times": 0x41C64E6D, "dice.plus": 12345})
-        r["glow"] = {"every": 19, "part": [1792, 4096], "spill": []}
-        r["glow.colours"] = {5: [[[25, 25, 0]] * 4], 7: [[[16, 64, 16]]], 9: [[[25, 25, 0]] * 4]}
-        last = (31, 32, 33, 34, 35, 37, 38, 42, 43, 44, 45, 46, 47, 51, 56)
-        r["spin.order"] = {t: "zyx" if t in last else "xyz" for t in SPUN_AT}
-        r["spin.quarter"] = 1024
+        r = tabled(GAME)
         t = table(r, 30, 60)
         self.assertEqual(t["hz"], 60)
         self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1,
@@ -546,6 +556,17 @@ class Table(unittest.TestCase):
         self.assertEqual([len(d) for d in t["types"]["11"]["deadly"]], [143] * PHASES)
         self.assertEqual([sum(d) for d in t["types"]["11"]["deadly"]], [68] * PHASES)
         self.assertEqual(set(t["kinds"]), {"1", "2", "3", "4", "5", "6", "7", "8"})
+
+    def test_each_executables_breath_is_its_cap_its_divisor_and_its_tick_as_the_site_ships_them(self):
+        base = json.loads((PUBLIC / "objects.json").read_text())["motion"]["types"]["30"]["breathe"]
+        for release, game, figures in (("us", GAME, (6000, 40, 50)), ("eu", GAME_EU, (5000, 40, 50)),
+                                       ("jp", GAME_JP, (7200, 50, 60))):
+            with self.subTest(release):
+                shipped = json.loads((PUBLIC / "releases" / f"{release}.json").read_text())
+                breathe = table(Readings(tabled(game)), 30, shipped["rules"]["hz"])["types"]["30"]["breathe"]
+                self.assertEqual((breathe["full"], breathe["over"], breathe["tick"]), figures)
+                types = shipped["objects"]["motion"].get("types", {})
+                self.assertEqual(breathe, types["30"]["breathe"] if "30" in types else base)
 
 
 class Lists(unittest.TestCase):
