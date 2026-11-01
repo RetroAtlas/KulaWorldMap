@@ -254,7 +254,7 @@ EXTRA = [
     (0x8004295c, "slti $v0, $a2, 10", "over ten halfwords"),
     (0x80042968, "slti $v0, $a3, 3", "and where three or more rooms are done"),
     (0x8004296c, "beq $v0, $zero, 0x80042acc", "no room is picked and the reload word is left as it stands"),
-    (0x80042980, "lw $v1, 1228($gp)", "under three, a word 1228 past gp, 0x8009f530, which the frame routine counts"),
+    (0x80042980, "lw $v1, 1228($gp)", "under three, a word 1228 past gp, 0x8009f530, which the level loop counts up by one"),
     (0x80042998, "div $v1, $v0", "divided by the furthest level reached in worlds of fifteen"),
     (0x8004299c, "mfhi $a0", "whose remainder"),
     (0x800429a8, "sw $a0, 1196($gp)", "is the world word"),
@@ -273,7 +273,7 @@ EXTRA = [
     (0x80042ab8, "lh $v1, 0($v0)", "its halfword"),
     (0x80042ac0, "beq $v1, $v0, 0x80042a74", "and the slot stepped on again where that is marked"),
     # The level loop.
-    (0x80041854, "addiu $v0, $v0, 1", "the word at 0x8009f530 counted up by one in the level loop's frame routine"),
+    (0x80041854, "addiu $v0, $v0, 1", "the word at 0x8009f530 counted up by one in the level loop"),
     (0x80041858, "sw $v0, 1228($gp)", "and stored, by no other instruction that names it"),
     # The tables' reset.
     (0x80048218, "jal 0x80042da4", "the menu that starts the mode, its mode and starter words set, calls the tables' reset"),
