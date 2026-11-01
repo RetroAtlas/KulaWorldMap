@@ -150,6 +150,12 @@ def reachers(reach, word):
     return [i for li, ui in reach.get(word, ()) for i in (li, ui) if i is not None]
 
 
+def reaching_words(us, entries, reach):
+    """The address of every instruction reaching a registered word, an offset's word or a table."""
+    return {us.address(i) for e in entries if e.kind in ("word", "offset", "table")
+            for leaf in leaves(e.kind, e.value) for i in reachers(reach, leaf if e.kind == "word" else leaf[0])}
+
+
 def by_hand(us, entries, modules, reach):
     """Every address the map writer has placed besides the anchors the readers list: the instructions a registered
     constant names or builds an address with, the ones before and after each multiplier's run, the ones reaching
@@ -434,13 +440,13 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
     for addr, (at, text, *_) in reshaped.items():
         rows[hexed(addr)] = {**standing(other, at, text, "reshaped row"), "tier": "reshaped"}
     keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending,
-          {a.address for a in hand_anchors}, {e.name for e in entries if e.kind == "run"})
+          reaching_words(us, entries, reach), {e.name for e in entries if e.kind == "run"})
     extra = [standing(other, at, text, "extra row") for at, text, _ in hand.EXTRA.get(release, ())]
     return {"release": release, "rows": rows, "names": names, "extra": extra,
             "words": words_block(other, names, us_words, hand.WORDS.get(release, {}), pending), "pending": pending}
 
 
-def keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending, reachers, named_runs):
+def keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending, word_reachers, named_runs):
     """Every list's rows into `rows`, by the base's address: a check's and a scan's as placed, a check or an
     instruction reaching a word the hand table declares absent as the absent row it gives whatever was placed there,
     a keyed row with its value in its relation to the base's, a multiplier's row carrying the instruction that sets
@@ -492,7 +498,7 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
     absent_addresses = {hexed(addr) for addr in absent_checks}
     for addr in absent_checks:
         put(addr, absent[addr])
-    used |= (absent_checks & reachers) | (set(runs) & named_runs)
+    used |= (absent_checks & word_reachers) | (set(runs) & named_runs)
     pending[:] = [p for p in pending if p.get("address") not in absent_addresses]
     for module in modules:
         name = module.__name__

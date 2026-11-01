@@ -529,6 +529,23 @@ class Hand(unittest.TestCase):
         built = mapped(copy, hand(ABSENT={mode_use: (at, text, "as above"), clock_use: (clock_at, clock_text, "and the clock's reads another")}))
         self.assertEqual(pending_keys(built)["CLOCK_WORD"]["why"], "no instruction reaching it is placed")
 
+    def test_an_absent_check_is_taken_at_a_check_or_a_words_reacher_and_refused_elsewhere(self):
+        copy = executable(gaps=GAPS)
+        s, c, text = US.starts, copy.starts, copy.listing.text
+
+        def row(at):
+            return at, text[copy.listing.position(at)], "the copy lays this out otherwise"
+        for addr, at in ((US.places["the pill tests its word"], copy.places["the pill tests its word"]), (s["mode"] + 16, c["mode"] + 16)):
+            built = mapped(copy, hand(ABSENT={addr: row(at)}))
+            self.assertEqual(built["rows"][f"0x{addr:08x}"], {"absent": True, "at": f"0x{at:08x}", "word": f"0x{copy.listing.code.word(at):08x}",
+                                                            "text": text[copy.listing.position(at)], "tier": "hand"})
+        for what, addr, at in (("a registered instruction", s["twin"] + 24, c["twin"] + 24), ("a run's flank", s["mode"] + 52, c["mode"] + 52),
+                               ("a table's entry", s["vanish"], c["vanish"])):
+            with self.subTest(what):
+                with self.assertRaises(SystemExit) as stopped:
+                    mapped(copy, hand(ABSENT={addr: row(at)}))
+                self.assertEqual(str(stopped.exception), f"the hand table's absent rows name 0x{addr:08x}, which no reader lists")
+
     def test_a_registered_run_is_read_as_the_hand_gives_it(self):
         copy = executable(gaps=GAPS)
         at = copy.starts["mode"] + 56
