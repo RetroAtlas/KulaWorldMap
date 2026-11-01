@@ -616,10 +616,11 @@ def moves(code, r):
     the middle of a cell is half a block in, a wall takes the ball where its
     side touches the wall, an edge where its centre reaches the cell's far
     side, and the states the moves run in are the ones the table names."""
-    at, first, count = STATES
+    at, first, count = code.named("STATES")
+    cases = code.named("STATE_AT")
     for state in range(first, first + count):
         case = 0x80000000 | code.word(at + 4 * (state - first))
-        if STATE_AT.get(state, case) != case:
+        if cases.get(state, case) != case:
             sys.exit(f"the ball's state {state} runs at 0x{case:08x}")
     middles = {r[k] for k in ("move.middle", "move.middle.past", "move.stop", "move.stop.refused")}
     if middles != {BLOCK // 2} or r["move.middle.last"] != BLOCK // 2 + 1:

@@ -220,12 +220,13 @@ NAMED = {"LASER_LEVELS": ("pair", LASER_LEVELS), "BUTTON_REACH": ("matched", BUT
 
 def spin_orders(code):
     """The product each type's spin is, by the routine its draw calls."""
+    spins = dict(zip(code.named("SPINS"), SPINS.values()))
     out = {}
     for t, at in SPUN_AT.items():
         routine = code.immediate(at, "jal {}")
-        if routine not in SPINS:
+        if routine not in spins:
             sys.exit(f"type {t}'s spin is built by 0x{routine:08x}, which this does not know")
-        out[t] = SPINS[routine]
+        out[t] = spins[routine]
     return out
 
 

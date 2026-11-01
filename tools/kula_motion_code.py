@@ -4,10 +4,12 @@ it lives in, with the frame loop's checks and the units of "The frame" in
 docs/motion.md, the registers and opcodes a read goes by, and the words more
 than one reading tests.
 """
+import json
 import math
 import re
 import struct
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -58,22 +60,199 @@ LIT = -2                  # a lit beam's cell in the lattice
 CRUMBLING_UNDER = 96      # the ball's word for standing on a crumbling block
 ADD = 1              # the blend that adds a quad to what is behind it
 
+MAPS = Path(__file__).resolve().parent / "maps"
+
+# What a registered constant is, which says how it is found on another executable: an instruction or a routine's
+# entry is placed as an anchor is, a pair that builds an address and the instructions a pattern matches are placed
+# one by one, a data word and a word kept with its offset from gp are derived through the instructions that reach
+# them, a table of cases the same way with its entries read, and a multiplier's run as a multiplier row is.
+KINDS = ("instruction", "routine", "pair", "matched", "word", "offset", "table", "run")
+
+
+def ints(v, n):
+    return isinstance(v, tuple) and len(v) == n and all(isinstance(x, int) for x in v)
+
+
+def matched(v):
+    return isinstance(v, tuple) and v and len(v) % 2 == 0 \
+        and all(isinstance(x, int) if i % 2 == 0 else isinstance(x, str) for i, x in enumerate(v))
+
+
+FITS = {"instruction": lambda v: isinstance(v, int), "routine": lambda v: isinstance(v, int),
+        "pair": lambda v: ints(v, 2), "matched": matched, "word": lambda v: isinstance(v, int),
+        "offset": lambda v: ints(v, 2), "table": lambda v: ints(v, 3),
+        "run": lambda v: isinstance(v, tuple) and len(v) == 4 and ints(v[:2], 2) and all(isinstance(x, str) for x in v[2:])}
+
+
+def unhex(s):
+    return int(s, 16)
+
+
+# A leaf of a registered constant as a map writes it, back in the registry's own shape.
+LEAVES = {"instruction": unhex, "routine": unhex, "word": unhex, "pair": lambda t: tuple(unhex(x) for x in t),
+          "matched": lambda t: tuple(unhex(x) if i % 2 == 0 else x for i, x in enumerate(t)),
+          "run": lambda t: (unhex(t[0]), *t[1:]), "offset": lambda t: (unhex(t[0]), t[1]),
+          "table": lambda t: (unhex(t[0]), *t[1:])}
+
+
+@lru_cache(maxsize=None)
+def registry():
+    """Every address constant the readers register by name, with its kind: the readers import this module, so they
+    are reached from here once a name is asked for."""
+    from kula_align import MODULES
+    return {name: tuple(entry[:2]) for module in MODULES for name, entry in module.NAMED.items()}
+
+
+def beside(kind, value, theirs):
+    """Each leaf of the kind in a registered constant's value beside a map's value for it, the two nested alike."""
+    if FITS[kind](value):
+        yield value, theirs
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            yield from beside(kind, v, theirs[str(k)])
+    elif isinstance(value, (tuple, list)):
+        for v, t in zip(value, theirs):
+            yield from beside(kind, v, t)
+
+
+def rebuilt(kind, value, theirs):
+    """A map's value for a registered constant in the registry's own shape, every address an int, every sequence a
+    tuple, every key as the registry keys it and what is no leaf of the kind as the registry holds it."""
+    if FITS[kind](value):
+        return LEAVES[kind](theirs)
+    if isinstance(value, dict):
+        return {k: rebuilt(kind, v, theirs[str(k)]) for k, v in value.items()}
+    if isinstance(value, (tuple, list)):
+        return tuple(rebuilt(kind, v, t) for v, t in zip(value, theirs))
+    return value
+
+
+class Map:
+    """Where each instruction the readers match on the base's executable stands on a release's, as the map writer
+    writes it: the rows by the base's address, the registered constants by name and the multipliers' runs with their
+    counts and registers there. A map with pending rows is refused."""
+
+    def __init__(self, data):
+        pending = data.get("pending") or []
+        if pending:
+            left = ", ".join(str(p.get("key") or p.get("name") or p.get("address") or f"pair {p.get('pair')}") for p in pending)
+            sys.exit(f"the {data['release']} map has {len(pending)} pending rows: {left}")
+        self.release = data["release"]
+        self.rows = {unhex(addr): row for addr, row in data["rows"].items()}
+        self.names = data["names"]
+        self.places = {}
+        self.runs = {addr: (unhex(row["at"]), row["count"], row["src"], row["dst"])
+                     for addr, row in self.rows.items() if "count" in row}
+        for name, (kind, _) in registry().items():
+            if name not in self.names:
+                continue
+            for ours, theirs in self.shaped(name, lambda k, v, t: list(beside(k, v, t))):
+                if kind in ("instruction", "routine"):
+                    self.places[ours] = (unhex(theirs), None)
+                elif kind == "pair":
+                    self.places.update({a: (unhex(b), None) for a, b in zip(ours, theirs)})
+                elif kind == "matched":
+                    self.places.update({a: (unhex(b), p) for a, b, p in zip(ours[::2], theirs[::2], theirs[1::2])})
+                elif kind == "run":
+                    self.runs.setdefault(ours[0], (unhex(theirs[0]), *theirs[1:]))
+
+    @classmethod
+    def exists(cls, release):
+        return (MAPS / f"{release}.json").exists()
+
+    @classmethod
+    def load(cls, release):
+        path = MAPS / f"{release}.json"
+        if not path.exists():
+            sys.exit(f"no map at {path}")
+        return cls(json.loads(path.read_text()))
+
+    def shaped(self, name, walk):
+        """What `walk` makes of a registered constant's value beside the map's, or the tool's exit where the two are
+        not shaped alike."""
+        try:
+            return walk(*registry()[name], self.names[name])
+        except (KeyError, IndexError, TypeError):
+            sys.exit(f"the {self.release} map's value for {name} is not shaped as the registry's; regenerate it")
+
+    def lookup(self, addr):
+        """Where the base's instruction stands and the pattern the map keeps for it: a keyed row's own, a registered
+        constant's where the row is a check's, else the check's text, or None where the map has neither."""
+        row, placed = self.rows.get(addr), self.places.get(addr)
+        if row is None:
+            return placed
+        at, pattern = row["at"], row.get("pattern")
+        if pattern is None:
+            pattern = placed[1] if placed and placed[1] is not None else row.get("text")
+        if isinstance(at, list):
+            at, pattern = at[0], pattern[0]
+        return unhex(at), pattern
+
+    def at(self, addr):
+        """The release's address of the base's instruction, or the tool's exit where the map has no row for it."""
+        found = self.lookup(addr)
+        if found is None:
+            sys.exit(f"the {self.release} map has no row for 0x{addr:08x}")
+        return found[0]
+
+    def place(self, addr, pattern):
+        """Where a reading at the base's instruction is read on the release and by what: a keyed row's own pattern, a
+        registered constant's, a check row's text, or the pattern given where the map keeps none."""
+        row = self.rows.get(addr)
+        if row is not None and row.get("absent"):
+            sys.exit(f"0x{addr:08x} has no instruction on {self.release}: `{row['text']}` stands at {row['at']} where "
+                     "the reading would be")
+        at, kept = self.lookup(addr) or (None, None)
+        if at is None:
+            sys.exit(f"the {self.release} map has no row for 0x{addr:08x}")
+        return at, pattern if kept is None else kept
+
+    def halves(self, parts):
+        """The addresses and patterns of a reading held in two or three instructions, each at its place: through the
+        row the first keys where that row holds them all, else each through its own."""
+        row = self.rows.get(parts[0])
+        if row is not None and isinstance(row["at"], list):
+            return tuple(x for at, pattern in zip(row["at"], row["pattern"]) for x in (unhex(at), pattern))
+        return tuple(x for addr, pattern in zip(parts[::2], parts[1::2]) for x in self.place(addr, pattern))
+
+    def run(self, addr):
+        """Where a multiplier's run stands on the release, how many instructions it is and its registers there."""
+        found = self.runs.get(addr)
+        if found is None:
+            self.place(addr, None)
+            sys.exit(f"the {self.release} map has no run at 0x{addr:08x}")
+        return found
+
+    def named(self, name):
+        """A registered constant's value on the release, in the registry's own shape."""
+        if name not in self.names:
+            sys.exit(f"the {self.release} map has no value for {name}; regenerate it")
+        return self.shaped(name, rebuilt)
+
 
 class Code:
     """The executable's bytes, addressed from `base`, where its first byte stands in memory, with the pointer the
-    start sets in gp and the address of the ball's record, which the stores a reading resolves go by."""
+    start sets in gp, the address of the ball's record, which the stores a reading resolves go by, and the map that
+    says where each instruction the readers match on the base's executable stands on this one, none for the base,
+    whose addresses are read as given."""
 
-    def __init__(self, blob, base=RELEASES[BASE]["base"], gp=RELEASES[BASE]["gp"], record=RELEASES[BASE]["record"]):
+    def __init__(self, blob, base=RELEASES[BASE]["base"], gp=RELEASES[BASE]["gp"], record=RELEASES[BASE]["record"],
+                 map=None):
         self.blob = blob
         self.base = base
         self.gp = gp
         self.record = record
+        self.map = map
 
     @classmethod
-    def of(cls, release, blob):
-        """The release's executable at the addresses its entry of the release table gives."""
+    def of(cls, release, blob, map=None):
+        """The release's executable at the addresses its entry of the release table gives, read through `map`."""
         entry = RELEASES[release]
-        return cls(blob, entry["base"], entry["gp"], entry["record"])
+        return cls(blob, entry["base"], entry["gp"], entry["record"], map)
+
+    def own(self):
+        """The executable read at its own addresses, with no map between, which a reader keyed by release takes."""
+        return Code(self.blob, self.base, self.gp, self.record)
 
     def word(self, addr):
         return struct.unpack_from("<I", self.blob, addr - self.base)[0]
@@ -87,39 +266,87 @@ class Code:
     def text(self, addr):
         return decode(self.word(addr), addr)[0]
 
+    def at(self, addr):
+        """This executable's address of an instruction the readers match on the base's: the address itself with no
+        map, and the tool's exit where the map has no row for it."""
+        return addr if self.map is None else self.map.at(addr)
+
+    def placed(self, addr):
+        """As `at`, but None where the map has no row for the instruction."""
+        if self.map is None:
+            return addr
+        found = self.map.lookup(addr)
+        return None if found is None else found[0]
+
+    def place(self, addr, pattern):
+        return (addr, pattern) if self.map is None else self.map.place(addr, pattern)
+
+    def halves(self, parts):
+        return parts if self.map is None else self.map.halves(parts)
+
+    def named(self, name):
+        """A registered constant's value on this executable, the registry's own with no map."""
+        if name not in registry():
+            sys.exit(f"{name} is not a constant the readers register")
+        return registry()[name][1] if self.map is None else self.map.named(name)
+
+    def names(self):
+        """Every registered constant's value on this executable, by name."""
+        return {name: self.named(name) for name in registry()}
+
     def immediate(self, addr, pattern):
-        text = self.text(addr)
+        """The immediate of the instruction the readers match at the base's `addr`, read where this executable has it
+        and against the pattern the map keeps for it."""
+        at, pattern = self.place(addr, pattern)
+        return self.immediate_at(at, pattern, addr)
+
+    def immediate_at(self, at, pattern, addr=None):
+        """The immediate of the instruction at this executable's own `at`, matched against the pattern, the base's
+        `addr` named beside it where the match fails."""
+        text = self.text(at)
         rx = "^" + re.escape(pattern).replace(r"\{\}", r"(-?(?:0x)?[0-9a-f]+)") + "$"
         m = re.match(rx, text)
         if not m:
-            sys.exit(f"0x{addr:08x} reads `{text}`, not `{pattern}`")
+            where = f", where the base's 0x{addr:08x} is read" if addr is not None and addr != at else ""
+            sys.exit(f"0x{at:08x} reads `{text}`, not `{pattern}`{where}")
         return int(m.group(1), 0) if m.lastindex else None
 
     def address(self, lui, addiu):
         """The address a lui and the addiu or load after it build, in RAM's mirror."""
-        hi = re.match(r"lui \$\w+, (0x[0-9a-f]+)$", self.text(lui))
-        lo = re.match(r"(?:addiu \$\w+, \$\w+, |lw \$\w+, )(-?\d+)", self.text(addiu))
+        hi_at, lo_at = self.at(lui), self.at(addiu)
+        hi = re.match(r"lui \$\w+, (0x[0-9a-f]+)$", self.text(hi_at))
+        lo = re.match(r"(?:addiu \$\w+, \$\w+, |lw \$\w+, )(-?\d+)", self.text(lo_at))
         if not hi or not lo:
-            sys.exit(f"0x{lui:08x} and 0x{addiu:08x} read `{self.text(lui)}` and `{self.text(addiu)}`, not an address")
+            where = f", where the base's 0x{lui:08x} and 0x{addiu:08x} are read" if (hi_at, lo_at) != (lui, addiu) else ""
+            sys.exit(f"0x{hi_at:08x} and 0x{lo_at:08x} read `{self.text(hi_at)}` and `{self.text(lo_at)}`, not an address{where}")
         return (0x80000000 | (int(hi.group(1), 0) << 16)) + int(lo.group(1))
 
     def word_of(self, hi, hp, lo, lp):
         """The word a lui and an ori hold between them."""
-        return (self.immediate(hi, hp) << 16) | (self.immediate(lo, lp) & 0xFFFF)
+        return self.joined(*self.halves((hi, hp, lo, lp)))
+
+    def joined(self, hi, hp, lo, lp):
+        """The word a lui and an ori at this executable's own addresses hold between them."""
+        return (self.immediate_at(hi, hp) << 16) | (self.immediate_at(lo, lp) & 0xFFFF)
 
     def grey(self, hi, hp, lo, lp):
         """The level of a colour word whose three channels are one."""
-        word = self.word_of(hi, hp, lo, lp)
+        hi, hp, lo, lp = self.halves((hi, hp, lo, lp))
+        word = self.joined(hi, hp, lo, lp)
         if word != (word & 0xFF) * 0x010101:
             sys.exit(f"0x{hi:08x} and 0x{lo:08x} hold the colour 0x{word:08x}, not a grey")
         return word & 0xFF
 
     def divisor(self, hi, hp, lo, lp, sa, sp):
         """The number a multiply by a reciprocal and a shift divides by."""
-        return round(2 ** (32 + self.immediate(sa, sp)) / self.word_of(hi, hp, lo, lp))
+        hi, hp, lo, lp, sa, sp = self.halves((hi, hp, lo, lp, sa, sp))
+        return round(2 ** (32 + self.immediate_at(sa, sp)) / self.joined(hi, hp, lo, lp))
 
     def multiplier(self, addr, count, src, dst):
-        """The factor applied to `src` by `count` instructions of shifts and adds."""
+        """The factor applied to `src` by `count` instructions of shifts and adds, the run's place, count and
+        registers the map's where it has them."""
+        if self.map is not None:
+            addr, count, src, dst = self.map.run(addr)
         coef = {src: 1, "zero": 0}
         for i in range(count):
             pc = addr + 4 * i
@@ -165,18 +392,19 @@ class Code:
     def resolved(self, start, end, base, span, calls=()):
         """How many stores the stretch from `start` to `end` makes, each resolved to an address through `base`,
         which holds the record, a register derived from it, gp, sp or a lui; none within the record's `span` of
-        words, no pointer made into it, and the record handed on by the `calls` listed alone."""
+        words, no pointer made into it, and the record handed on by the `calls` listed alone, each to its callee
+        where this executable is known to hold it."""
         low, high = self.record + span[0], self.record + span[1] + 3
         held = {base: (self.record, True), "gp": (self.gp, False)}     # a register's address, and whether it is the record's address
-        awaited = {where: (callee, handed) for where, callee, handed in calls}
-        count, pc = 0, start
+        awaited = {self.at(where): (self.placed(callee), handed) for where, callee, handed in calls}
+        count, pc, end = 0, self.at(start), self.at(end)
         while pc <= end:
             text = self.text(pc)
             if text.startswith("jal "):
                 count += self.follow(pc + 4, held, low, high)     # the delay slot runs before the call
                 handed = {r: a - self.record for r, (a, own) in held.items() if own and r in ARGUMENTS}
                 callee, want = awaited.pop(pc, (0, None))
-                if text != f"jal 0x{callee:08x}" or handed != want:
+                if (callee is not None and text != f"jal 0x{callee:08x}") or handed != want:
                     sys.exit(f"0x{pc:08x} `{text}` is handed the record in {handed}, which the reading does not follow")
                 for r in CALLER_SAVED:
                     held.pop(r, None)

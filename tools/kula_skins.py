@@ -2,12 +2,15 @@
 """What the game paints on every face of every block, read off the executable
 and the artwork's model table.
 
-    python3 tools/kula_skins.py            # every reading, with its address
-    python3 tools/kula_skins.py --table    # the table the build ships
+    python3 tools/kula_skins.py                 # every reading, with its address
+    python3 tools/kula_skins.py --table         # the table the build ships
+    python3 tools/kula_skins.py --release eu    # the PAL executable's readings, each at its own address
 
 Every number is read by matching the instruction it lives in, so a build laid
 out differently stops this rather than yielding a reading that looks like
-one. The routines that place a face's corners are run rather than read.
+one. Another release's executable is read through its map under maps/, which
+says where each instruction matched on the US executable stands on it. The
+routines that place a face's corners are run rather than read.
 """
 import argparse
 import json
@@ -17,10 +20,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kula_tgi as tgi
-from kula_disc import BASE, EXE, THEMES, open_disc
+from kula_disc import BASE, RELEASES, THEMES, open_release
 from kula_level import FACE, FACES
 from kula_tex import mean
-from kula_motion_code import Code
+from kula_motion_code import Code, Map
 from mips import Machine
 
 TURNS = 4            # the quarter turns a texture can be laid at
@@ -547,21 +550,23 @@ def table(code, tgis):
     }
 
 
-def read(disc=None):
-    d = open_disc(disc)
-    return Code.of(BASE, d.read_file(EXE)), {w: d.read_file(f"/{w}/{w}.TGI") for w in THEMES}
+def read(release=BASE, disc=None):
+    """The release's executable off its image, read through its map where it has one, and its worlds' artwork."""
+    d = open_release(release, disc)
+    code = Code.of(release, d.read_file(RELEASES[release]["exe"]), Map.load(release) if Map.exists(release) else None)
+    return code, {w: d.read_file(f"/{w}/{w}.TGI") for w in THEMES}
 
 
 def show_readings(code, tgis):
     for addr, pattern, what in CHECKS:
         code.immediate(addr, pattern)
-        print(f"  0x{addr:08x}  {what}")
+        print(f"  0x{code.at(addr):08x}  {what}")
     last = None
     for group, key, what, addr, pattern in IMMEDIATES:
         if group != last:
             print(f"\n{group}")
             last = group
-        print(f"  0x{addr:08x}  {code.immediate(addr, pattern):>6}  {what}")
+        print(f"  0x{code.at(addr):08x}  {code.immediate(addr, pattern):>6}  {what}")
     r = readings(code)
     print("\nthe corners a face routine lays a texture's top left, top right, bottom left and bottom right on")
     for face, turns in enumerate(face_corners(code)):
@@ -590,10 +595,11 @@ def show_readings(code, tgis):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to $KULA_DISC")
+    ap.add_argument("--release", choices=list(RELEASES), default=BASE, help="the release whose executable is read")
+    ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to the release's own variable")
     ap.add_argument("--table", action="store_true", help="print the table the build ships")
     args = ap.parse_args()
-    code, tgis = read(args.disc)
+    code, tgis = read(args.release, args.disc)
     if args.table:
         print(json.dumps(table(code, tgis), indent=1))
     else:

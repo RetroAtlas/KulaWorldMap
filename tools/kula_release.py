@@ -156,6 +156,7 @@ def clock_word(code, release):
 
 def readings(code, release):
     """Every number, by its id, after the checks have passed."""
+    code = code.own()
     for _, pattern, where in CHECKS:
         if release in where:
             code.immediate(where[release], pattern)
@@ -203,6 +204,7 @@ def read(release, disc=None):
 
 
 def show_readings(code, release):
+    code = code.own()
     for what, pattern, where in CHECKS:
         if release in where:
             code.immediate(where[release], pattern)

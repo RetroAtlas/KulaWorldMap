@@ -31,19 +31,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kula_map_hand
 from kula_align import MODULES, REGISTER, TIERS, Anchor, Listing, Placement, align, anchors
 from kula_disc import BASE, RELEASES, output_at
-from kula_motion_code import READS_FIRST
+from kula_motion_code import FITS, KINDS, MAPS, READS_FIRST
 from kula_motion_run import PAIR, WORDS, pair_of
 from kula_release import readings as release_readings
 from png import write_png
 
-MAPS = Path(__file__).resolve().parent / "maps"
 OTHERS = [r for r in RELEASES if r != BASE]
 
-# What a registered constant is, which says how it is found on the other executable: an instruction or a routine's
-# entry is placed as an anchor is, a pair that builds an address and the instructions a pattern matches are placed
-# one by one, a data word and a word kept with its offset from gp are derived through the instructions that reach
-# them, a table of cases the same way with its entries read, and a multiplier's run as a multiplier row is.
-KINDS = ("instruction", "routine", "pair", "matched", "word", "offset", "table", "run")
 LUI = re.compile(r"lui \$(\w+), (0x[0-9a-f]+)$")
 USE = re.compile(r"\w+ \$\w+, (-?\d+)\(\$(\w+)\)$")
 ADDIU = re.compile(r"addiu \$(\w+), \$(\w+), (-?\d+)$")
@@ -81,21 +75,6 @@ def registries(modules=MODULES):
                 sys.exit(f"{module.__name__}.NAMED[{name!r}] is of kind {kind!r}, which the map writer does not know")
             out.append(Entry(module.__name__, name, kind, value, tuple(keys[0]) if keys else ()))
     return out
-
-
-def ints(v, n):
-    return isinstance(v, tuple) and len(v) == n and all(isinstance(x, int) for x in v)
-
-
-def matched(v):
-    return isinstance(v, tuple) and v and len(v) % 2 == 0 \
-        and all(isinstance(x, int) if i % 2 == 0 else isinstance(x, str) for i, x in enumerate(v))
-
-
-FITS = {"instruction": lambda v: isinstance(v, int), "routine": lambda v: isinstance(v, int),
-        "pair": lambda v: ints(v, 2), "matched": matched, "word": lambda v: isinstance(v, int),
-        "offset": lambda v: ints(v, 2), "table": lambda v: ints(v, 3),
-        "run": lambda v: isinstance(v, tuple) and len(v) == 4 and ints(v[:2], 2) and all(isinstance(x, str) for x in v[2:])}
 
 
 def leaves(kind, value):

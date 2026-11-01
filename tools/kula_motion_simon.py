@@ -354,7 +354,7 @@ def simon(r):
     if r["simon.next.worlds"] != r["run.worlds"] or r["simon.next.levels"] != r["death.levels"] \
             or r["simon.menu.over"] >= 0 or r["simon.wait"] >= r["start.wait"]:
         sys.exit("the rooms' round, the worlds' count, the game's end or the branch's wait is not as read elsewhere")
-    if any(r["gp"] + off != addr for addr, off in SIMON_AT.values()):
+    if any(r["gp"] + off != addr for addr, off in r["names"]["SIMON_AT"].values()):
         sys.exit("a word of the Simon rooms does not lie where its offset from gp puts it")
     return {"latch": r["simon.latch"], "idle": [r["simon.idle.latch"], r["simon.idle.turn"]], "bits": bits,
             "store": r["simon.store.last"] + 1, "empty": r["simon.empty"], "first": r["simon.first"],

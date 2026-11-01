@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """What the executable does to each thing every frame, read off its code.
 
-    python3 tools/kula_motion.py            # every reading, with its address
-    python3 tools/kula_motion.py --table    # the table the build ships
+    python3 tools/kula_motion.py                 # every reading, with its address
+    python3 tools/kula_motion.py --table         # the table the build ships
+    python3 tools/kula_motion.py --release eu    # the PAL executable's readings, each at its own address
 
 Every number is the immediate of one instruction or the multiplier a short
 run of shifts and adds applies to a register, read by matching the
 instruction it lives in, so a build that lays the code out differently stops
 this with a message rather than yielding a number that looks like a reading.
-The game runs its loop once per vertical blank.
+Another release's executable is read through its map under maps/, which says
+where each instruction matched on the US executable stands on it. The game
+runs its loop once per vertical blank.
 """
 import argparse
 import json
@@ -27,20 +30,19 @@ import kula_motion_run
 import kula_motion_simon
 import kula_motion_take
 import kula_motion_things
-from kula_disc import BASE, EXE, open_disc
+from kula_disc import BASE, RELEASES, open_release
 from kula_motion_blocks import CRUMBLING, blocks, standing
-from kula_motion_code import BLOCK, GP_INIT, PHASES, RECORD_INIT, TURN, Code, dispatch
-from kula_motion_effects import (EFFECT_HUD, EFFECT_POINTERS, EFFECT_TABLE, effect_places, effect_setup, effect_sine,
-                                 effect_tables, effects)
+from kula_motion_code import BLOCK, GP_INIT, PHASES, RECORD_INIT, TURN, Code, Map, dispatch
+from kula_motion_effects import (EFFECT_HUD, EFFECT_TABLE, effect_places, effect_setup, effect_sine, effect_tables,
+                                 effects)
 from kula_motion_harms import CLEARED, harms
 from kula_motion_jump import FLIGHT_THIRD, jump
 from kula_motion_light import (GLINT_RECORDS, GLINT_STATE, GLINT_TIMES, LIGHT_ROOT, SHADOW_SQUARE, glint, glow, light,
                                root_table, shadow_half, spike_cycle, vanish_cycle)
 from kula_motion_roll import body, moves, roll
-from kula_motion_run import GAME_MODE_READ, LEVEL_MODE_READ, NEXT_MODE, NEXT_ROUND, WORDS_TABLE, play, words
+from kula_motion_run import GAME_MODE_READ, LEVEL_MODE_READ, NEXT_ROUND, WORDS_TABLE, play, words
 from kula_motion_simon import SIMON_FILL, SIMON_STORE
-from kula_motion_take import (END_CASES, END_FACES, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, SCREEN_WORDS,
-                              TAKE_CASES, TAKE_TAIL, TAKE_TYPES, devices, exits, take)
+from kula_motion_take import devices, end_cases, exits, take
 from kula_motion_things import (BUTTON_REACH, DICE_TIMES, LASER_LEVELS, QUARTER, QUARTERED, WORLD_AXES, laser,
                                 spin_orders)
 from kula_release import rules as release_rules
@@ -147,7 +149,7 @@ def readings(code):
     """Every number, by its id, after the checks have passed."""
     for addr, pattern, _ in CHECKS:
         code.immediate(addr, pattern)
-    out = {}
+    out = {"names": code.names()}
     for _, key, _, addr, pattern in IMMEDIATES:
         out[key] = code.immediate(addr, pattern)
     for _, key, _, addr, count, src, dst in MULTIPLIERS:
@@ -157,8 +159,9 @@ def readings(code):
     out["button.reach"] = round(code.word_of(*BUTTON_REACH) ** 0.5)
     out["flight.third"] = round(2 ** 32 / code.word_of(*FLIGHT_THIRD))
     out["next.round"] = round(2 ** 32 / code.word_of(*NEXT_ROUND))
-    out["next.mode.load"] = code.word(NEXT_MODE)
-    stores = code.stores_to(NEXT_MODE)
+    mode = code.named("NEXT_MODE")
+    out["next.mode.load"] = code.word(mode)
+    stores = code.stores_to(mode)
     out["next.mode.clears"] = sorted(a for a, rt in stores if rt == 0)
     out["next.mode.writes"] = sorted(a for a, rt in stores if rt != 0)
     out["simon.store"] = code.address(*SIMON_STORE)
@@ -177,7 +180,7 @@ def readings(code):
     out["game.mode.word"] = code.address(*GAME_MODE_READ)
     out["glow.counter.load"] = int.from_bytes(code.read(out["gp"] + out["glow.counter.at"], 2), "little", signed=True)
     out["glow.clear"] = [code.address(*pair) for pair in CLEARED]
-    for name, addr in SCREEN_WORDS.items():
+    for name, addr in code.named("SCREEN_WORDS").items():
         out[f"screen.load.{name}"] = code.word(addr)
     for _, key, _, *args in DIVISORS:
         out[key] = code.divisor(*args)
@@ -197,9 +200,9 @@ def readings(code):
     out["effect.hud.at"] = effect_places(code)
     out["effect.table.at"] = [code.address(*pair) for pair in EFFECT_TABLE]
     moves(code, out)
-    dispatch(code, TAKE_TYPES, TAKE_CASES, TAKE_TAIL, "the contact walk")
-    dispatch(code, LOADER_TYPES, LOADER_CASES, LOADER_PLAIN, "the loader")
-    dispatch(code, END_FACES, END_CASES, None, "the end landing")
+    dispatch(code, code.named("TAKE_TYPES"), code.named("TAKE_CASES"), code.named("TAKE_TAIL"), "the contact walk")
+    dispatch(code, code.named("LOADER_TYPES"), code.named("LOADER_CASES"), code.named("LOADER_PLAIN"), "the loader")
+    dispatch(code, code.named("END_FACES"), end_cases(code), None, "the end landing")
     return out
 
 
@@ -340,60 +343,62 @@ def table(r, platform_speed, hz):
             "kinds": {str(k): kinds[k] for k in sorted(kinds)}}
 
 
-def read(disc=None):
-    return Code.of(BASE, open_disc(disc).read_file(EXE))
+def read(release=BASE, disc=None):
+    """The release's executable off its image, read through its map where it has one."""
+    blob = open_release(release, disc).read_file(RELEASES[release]["exe"])
+    return Code.of(release, blob, Map.load(release) if Map.exists(release) else None)
 
 
 def show_readings(code, hz):
     for addr, pattern, what in CHECKS:
         code.immediate(addr, pattern)
-        print(f"  0x{addr:08x}  {what}")
+        print(f"  0x{code.at(addr):08x}  {what}")
     run = readings(code)
     rows = []
     for group, key, what, addr, pattern in IMMEDIATES:
-        rows.append((group, what, addr, code.immediate(addr, pattern)))
+        rows.append((group, what, code.at(addr), code.immediate(addr, pattern)))
     for group, key, what, addr, count, src, dst in MULTIPLIERS:
-        rows.append((group, what, addr, code.multiplier(addr, count, src, dst)))
+        rows.append((group, what, code.at(addr), code.multiplier(addr, count, src, dst)))
     for group, key, what, start, end, base, span, calls in SCANS:
-        rows.append((group, what, start, code.resolved(start, end, base, span, calls)))
+        rows.append((group, what, code.at(start), code.resolved(start, end, base, span, calls)))
     rows.append(("on a block", "boost button: sinks while the ball is within, units",
-                 BUTTON_REACH[0], run["button.reach"]))
+                 code.at(BUTTON_REACH[0]), run["button.reach"]))
     rows.append(("the fly-in", "the curve's second point lies this share of eight blocks along the side on",
-                 FLIGHT_THIRD[0], run["flight.third"]))
+                 code.at(FLIGHT_THIRD[0]), run["flight.third"]))
     rows.append(("the level's clock and its end", "the bonus slots come round every this many, by the reciprocal",
-                 NEXT_ROUND[0], run["next.round"]))
+                 code.at(NEXT_ROUND[0]), run["next.round"]))
     rows.append(("the level's clock and its end", "the word the next-level routine's other starts hang on, as the "
-                 "executable loads it", NEXT_MODE, run["next.mode.load"]))
+                 "executable loads it", code.named("NEXT_MODE"), run["next.mode.load"]))
     rows.append(("the level's clock and its end", "stores to that word through gp or $at, every one of nothing",
                  run["next.mode.clears"][0], len(run["next.mode.clears"])))
     rows.append(("the Simon rooms", f"the sequence a move is held to lies at 0x{run['simon.store']:08x}, this many "
-                 "halfwords by the reset", SIMON_STORE[0], run["simon.store.last"] + 1))
+                 "halfwords by the reset", code.at(SIMON_STORE[0]), run["simon.store.last"] + 1))
     rows.append(("the Simon rooms", "the reset fills it from the halfword this many bytes past its first",
-                 SIMON_FILL[0], run["simon.fill.from"] - run["simon.store"]))
-    rows.append(("dice", "a draw multiplies the state by this", DICE_TIMES[0],
+                 code.at(SIMON_FILL[0]), run["simon.fill.from"] - run["simon.store"]))
+    rows.append(("dice", "a draw multiplies the state by this", code.at(DICE_TIMES[0]),
                  run["dice.times"]))
-    rows.append(("gem's glints", "a draw multiplies the generator's state by this", GLINT_TIMES[0],
+    rows.append(("gem's glints", "a draw multiplies the generator's state by this", code.at(GLINT_TIMES[0]),
                  run["glint.times"]))
     rows.append(("gem's glints", "the generator's state as the executable loads it", code.address(*GLINT_STATE),
                  run["glint.seed"]))
     for name, what in (("wide", "the screen's width as the executable loads it"), ("high", "and its height"),
                        ("distance", "the projection's screen distance"), ("across", "the scale across, of 4096"),
                        ("down", "and the scale down")):
-        rows.append(("the view in play", what, SCREEN_WORDS[name], run[f"screen.load.{name}"]))
+        rows.append(("the view in play", what, code.named("SCREEN_WORDS")[name], run[f"screen.load.{name}"]))
     for group, key, what, hi, hp, lo, lp, sa, sp in DIVISORS:
-        rows.append((group, what, hi, code.divisor(hi, hp, lo, lp, sa, sp)))
+        rows.append((group, what, code.at(hi), code.divisor(hi, hp, lo, lp, sa, sp)))
     for group, key, what, hi, hp, lo, lp in GREYS:
-        rows.append((group, what, hi, code.grey(hi, hp, lo, lp)))
+        rows.append((group, what, code.at(hi), code.grey(hi, hp, lo, lp)))
     counter = run["gp"] + run["glow.counter.at"]
     rows.append(("what harms the ball", "the glow's counter as the executable loads it", counter,
                  run["glow.counter.load"]))
     rows.append(("what harms the ball",
                  f"the start clears this many bytes from 0x{run['glow.clear'][0]:08x}, the counter at 0x{counter:08x} among them",
-                 CLEARED[0][0], run["glow.clear"][1] - run["glow.clear"][0]))
+                 code.at(CLEARED[0][0]), run["glow.clear"][1] - run["glow.clear"][0]))
     rows.append(("the level's mode", f"the level's mode word the ending's view reads, 0x{run['mode.word']:08x}, "
-                 "lies this far past gp", LEVEL_MODE_READ[0], run["mode.word"] - run["gp"]))
+                 "lies this far past gp", code.at(LEVEL_MODE_READ[0]), run["mode.word"] - run["gp"]))
     rows.append(("the level's mode", f"and the game's mode word, which the mode routine reads, 0x{run['game.mode.word']:08x}, "
-                 "this far", GAME_MODE_READ[0], run["game.mode.word"] - run["gp"]))
+                 "this far", code.at(GAME_MODE_READ[0]), run["game.mode.word"] - run["gp"]))
     rows.append(("shadows", "the square reaches this far either way of its middle, units",
                  code.address(*SHADOW_SQUARE), run["shadow.half"]))
     rows.append(("invisible block", "rows of the square root it measures a corner by",
@@ -408,7 +413,7 @@ def show_readings(code, hz):
     for at, t in sorted(run["effect.tables"].items()):
         kinds = [k for k, p in enumerate(run["effect.pointers"]) if p == at]
         rows.append(("the effects", f"the table at 0x{at:08x}, kinds {', '.join(map(str, kinds))}, runs this many frames of "
-                     f"{t['count']} particles", EFFECT_POINTERS[0] + 4 * kinds[0], t["frames"]))
+                     f"{t['count']} particles", code.named("EFFECT_POINTERS")[0] + 4 * kinds[0], t["frames"]))
     rows.append(("the effects", "the sine table gives this at a quarter turn", run["effect.sine.at"], run["effect.sine.one"]))
     for name in ("clock", "teleport"):
         rows.append(("the effects", f"the HUD point the {name}'s effect starts at, x, y and the third word",
@@ -426,13 +431,14 @@ def show_readings(code, hz):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to $KULA_DISC")
+    ap.add_argument("--release", choices=list(RELEASES), default=BASE, help="the release whose executable is read")
+    ap.add_argument("--disc", default=None, help="raw PS1 image; defaults to the release's own variable")
     ap.add_argument("--table", action="store_true", help="print the table the build ships")
     ap.add_argument("--platform-speed", type=int, default=30,
                     help="the speed word the level data gives a moving platform")
     args = ap.parse_args()
-    code = read(args.disc)
-    hz = release_rules(code, BASE)["hz"]
+    code = read(args.release, args.disc)
+    hz = release_rules(code, args.release)["hz"]
     if args.table:
         print(json.dumps(table(readings(code), args.platform_speed, hz), indent=1))
     else:

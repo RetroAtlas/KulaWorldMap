@@ -374,7 +374,7 @@ FLAT = 0x28
 FLAT_WORDS = 5
 
 
-def effect_init(code, span=EFFECT_INIT):
+def effect_init(code, span):
     """What startup's straight run from the first address to the second
     stores through gp, by address: a lui or an addiu sets a register, any
     other write unsets it, and a word or a byte stored from one that is set
@@ -406,18 +406,19 @@ def effect_init(code, span=EFFECT_INIT):
 def effect_setup(code, slots, sprites):
     """The pointers to the effect tables, nothing where a kind has none, and
     the sprites' colours, three bytes each, as startup stores them."""
-    if code.gp + EFFECT_POINTERS[1] != EFFECT_POINTERS[0] or code.gp + EFFECT_COLOURS[1] != EFFECT_COLOURS[0]:
+    pointers_at, colours_at = code.named("EFFECT_POINTERS"), code.named("EFFECT_COLOURS")
+    if code.gp + pointers_at[1] != pointers_at[0] or code.gp + colours_at[1] != colours_at[0]:
         sys.exit("the effect tables' pointers or the sprites' colours do not lie where their offsets from gp put them")
-    stored = effect_init(code)
+    stored = effect_init(code, code.named("EFFECT_INIT"))
     pointers = []
     for i in range(slots):
-        op, value = stored.get(EFFECT_POINTERS[0] + 4 * i, ("sw", 0))
+        op, value = stored.get(pointers_at[0] + 4 * i, ("sw", 0))
         if op != "sw":
             sys.exit(f"slot {i} of the effect tables' pointers is not stored as a word")
         pointers.append(value)
     colours = []
     for i in range(sprites):
-        channels = [stored.get(EFFECT_COLOURS[0] + 3 * i + c) for c in range(3)]
+        channels = [stored.get(colours_at[0] + 3 * i + c) for c in range(3)]
         if any(ch is None or ch[0] != "sb" for ch in channels):
             sys.exit(f"sprite {i}'s colour is not three bytes startup stores")
         colours.append([ch[1] for ch in channels])

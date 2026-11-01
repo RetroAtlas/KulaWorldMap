@@ -28,6 +28,8 @@ The motion reader's tests run over a hand-typed fixture of the executable's word
 
 `test_kula_release.py` holds the release reader the same way, to a fixture of each release's executable's words, every stretch the readings match at its own address in a blob of that executable's size, and to a changed word at any reading stopping it.
 
+`test_kula_motion_maps.py` holds the readers to every committed map the same way, over an executable of that release's size laid from the map's own words at the map's places: every row's word decodes to its text, every keyed row's value reads through `Code` by the row's US address alone, every registered instruction with a pattern is read by the map's pattern at its place whatever row stands there too, an absent row and a changed word at a place each stop the reader naming the place, every registered constant has its value in the map in the registry's shape, and a map with a pending row is refused.
+
 A reading only the disc can hold is held by the tool's own check against each of the three discs, `python3 tools/kula_kwl.py --check` with `KULA_DISC` set and `--release eu` or `--release jp` with `KULA_DISC_EU` or `KULA_DISC_JP` set, or by a rebuild with `python3 tools/kula_build.py` that changes nothing committed.
 
 `test_kula_kwl_check.py` holds the check the same way, a class for each release that runs where that release's variable is set and holds every level of its disc, rebuilt, to the disc in play and to that release's tables of the words the rebuild writes differently and of the levels whose records it does not keep one for one.

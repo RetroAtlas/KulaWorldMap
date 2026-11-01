@@ -13,12 +13,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_disc import EXE_BASE, RELEASES  # noqa: E402
 from kula_motion import CHECKS, DIVISORS, GREYS, IMMEDIATES, MULTIPLIERS, SCANS, table  # noqa: E402
 from kula_motion_blocks import blocks  # noqa: E402
-from kula_motion_code import PHASES, Code  # noqa: E402
+from kula_motion_code import PHASES, Code, Map  # noqa: E402
 from kula_motion_effects import effects  # noqa: E402
 from kula_motion_harms import harms  # noqa: E402
-from kula_motion_light import glint  # noqa: E402
-from kula_motion_run import play  # noqa: E402
-from kula_motion_things import SPUN_AT  # noqa: E402
+from kula_motion_light import GLOW_CASES, glint  # noqa: E402
+from kula_motion_run import NEXT_MODE, play  # noqa: E402
+from kula_motion_things import QUARTER, SPUN_AT  # noqa: E402
 from kula_skins import CHECKS as SKIN_CHECKS, IMMEDIATES as SKIN_IMMEDIATES  # noqa: E402
 from motion_fixture import (AT, GAME, addiu, addu, beq, code, jal, jr, lh, lui, lw, ori, sb, sh, sll, sra,  # noqa: E402
                             subu, sw, swl, swr, xori)
@@ -162,6 +162,111 @@ class Reads(unittest.TestCase):
         c = code(sll("v1", "v0", 1), lh("v0", "a0", 8), addu("v1", "v1", "v0"))
         with self.assertRaises(SystemExit):
             c.multiplier(AT, 3, "v0", "v1")
+
+
+SHIFT = 0x1000       # how far on from the base's addresses a mapped code's words are laid here, as the PAL executable's are
+WORDS = (addiu("v1", "zero", 300), lw("v0", "v0", 21960), sll("v0", "v1", 1), addu("v0", "v0", "v1"), sll("v0", "v0", 1),
+         lui("v0", 0x000a), lw("v0", "v0", 13260))
+
+
+def hexed(v):
+    return f"0x{v:08x}"
+
+
+def placed(i, word=None, **row):
+    """A row of a map of the tests' own for the i-th word, keyed by the base's address of it and placed SHIFT on."""
+    held = {} if word is None else {"word": hexed(word)}
+    return hexed(AT + 4 * i), {"at": hexed(AT + SHIFT + 4 * i), **held, "tier": "hand", **row}
+
+
+ROWS = (placed(0, WORDS[0], key="pill.lethargy", text="addiu $v1, $zero, 300", pattern="addiu $v1, $zero, {}", us=360,
+               value=300, by="count"),
+        placed(1, WORDS[1], text="lw $v0, 21960($v0)"),
+        placed(2, key="spin", count=3, src="v1", dst="v0", words=[hexed(w) for w in WORDS[2:5]], us=5, value=6, by="rate"),
+        placed(5, WORDS[5], text="lui $v0, 0x000a"), placed(6, WORDS[6], text="lw $v0, 13260($v0)"))
+NAMES = {"NEXT_MODE": "0x800a2ed0", "GLOW_CASES": {"5": "0x8002dc60", "7": "0x8002dd8c", "9": "0x8002de58"},
+         "QUARTER": ["0x8003c170", "addiu $a0, $zero, {}"]}
+
+
+def mapped(*words, rows=ROWS, names=NAMES, pending=()):
+    """A code of the words laid SHIFT on from AT, read through a map of the rows and the names."""
+    data = {"release": "eu", "rows": dict(rows), "names": names, "words": None, "extra": [], "pending": list(pending)}
+    return code(*words, base=EXE_BASE + SHIFT, map=Map(data))
+
+
+class Mapped(unittest.TestCase):
+    def test_an_immediate_is_read_at_its_rows_place_against_its_rows_pattern(self):
+        self.assertEqual(mapped(*WORDS).immediate(AT, "addiu $v0, $zero, {}"), 300)
+        with self.assertRaises(SystemExit):
+            code(*WORDS).immediate(AT, "addiu $v0, $zero, {}")
+
+    def test_a_check_is_matched_at_its_place_by_its_rows_text(self):
+        self.assertIsNone(mapped(*WORDS).immediate(AT + 4, "lw $v0, 22316($v0)"))
+
+    def test_a_check_row_at_a_registered_instructions_place_is_read_through_the_registered_pattern(self):
+        us, pattern = QUARTER
+        word = addiu("a0", "zero", 1024)
+        rows = ((hexed(us), {"at": hexed(AT + SHIFT), "word": hexed(word), "text": "addiu $a0, $zero, 1024", "tier": "strict10"}),)
+        self.assertEqual(mapped(word, rows=rows, names={"QUARTER": [hexed(AT + SHIFT), pattern]}).immediate(us, pattern), 1024)
+        self.assertIsNone(mapped(word, rows=rows, names={}).immediate(us, "addiu $a0, $zero, 1024"))
+
+    def test_a_multiplier_is_read_with_its_rows_count_and_registers(self):
+        self.assertEqual(mapped(*WORDS).multiplier(AT + 8, 2, "a0", "a0"), 6)
+
+    def test_an_address_is_built_through_two_rows_and_a_changed_word_names_both_addresses(self):
+        self.assertEqual(mapped(*WORDS).address(AT + 20, AT + 24), 0x800a33cc)
+        words = list(WORDS)
+        words[6] = sll("v0", "v0", 2)
+        with self.assertRaises(SystemExit) as stopped:
+            mapped(*words).address(AT + 20, AT + 24)
+        self.assertIn(hexed(AT + SHIFT + 24), str(stopped.exception))
+        self.assertIn(hexed(AT + 24), str(stopped.exception))
+
+    def test_a_registered_constant_is_the_maps_value_in_the_registrys_shape_and_its_own_with_no_map(self):
+        c = mapped(*WORDS)
+        self.assertEqual(c.named("NEXT_MODE"), 0x800a2ed0)
+        self.assertEqual(c.named("GLOW_CASES"), {5: 0x8002dc60, 7: 0x8002dd8c, 9: 0x8002de58})
+        self.assertEqual(c.named("QUARTER"), (0x8003c170, "addiu $a0, $zero, {}"))
+        self.assertEqual((code().named("NEXT_MODE"), code().named("GLOW_CASES")), (NEXT_MODE, GLOW_CASES))
+        self.assertEqual((code().at(AT), c.at(AT)), (AT, AT + SHIFT))
+        for name in ("GLOW_MAKE", "NOBODY"):
+            with self.assertRaises(SystemExit):
+                c.named(name)
+
+    def test_a_base_address_with_no_row_stops_the_reader_naming_it(self):
+        c = mapped(*WORDS)
+        for read in (lambda: c.immediate(AT + 100, "nop"), lambda: c.at(AT + 100), lambda: c.multiplier(AT + 100, 1, "v0", "v0"),
+                     lambda: c.address(AT + 20, AT + 100)):
+            with self.assertRaises(SystemExit) as stopped:
+                read()
+            self.assertIn(hexed(AT + 100), str(stopped.exception))
+
+    def test_a_changed_word_at_a_place_stops_the_reader_naming_both_addresses(self):
+        words = list(WORDS)
+        words[1] = lw("v0", "v0", 21964)
+        with self.assertRaises(SystemExit) as stopped:
+            mapped(*words).immediate(AT + 4, "lw $v0, 22316($v0)")
+        self.assertIn(hexed(AT + SHIFT + 4), str(stopped.exception))
+        self.assertIn(hexed(AT + 4), str(stopped.exception))
+
+    def test_a_map_with_pending_rows_is_refused_naming_them(self):
+        left = [{"address": hexed(AT), "module": "fixture", "list": "IMMEDIATES", "key": "twin.count", "why": "left"},
+                {"name": "GLOW_MAKE", "module": "fixture", "why": "not placed"}]
+        with self.assertRaises(SystemExit) as refused:
+            mapped(*WORDS, pending=left)
+        self.assertIn("2 pending rows: twin.count, GLOW_MAKE", str(refused.exception))
+
+    def test_a_scan_takes_a_callee_where_the_map_places_it_and_as_called_where_it_does_not(self):
+        words = (sh("v0", "s0", 492), jal(0x800389fc), addu("a2", "s0", "zero"), sh("v0", "s0", 494))
+        rows = (placed(0, words[0], text="sh $v0, 492($s0)"), placed(1, words[1], text="jal 0x800389fc"),
+                placed(3, words[3], text="sh $v0, 494($s0)"))
+        calls = ((AT + 4, 0x80038178, {"a2": 0}),)
+        self.assertEqual(mapped(*words, rows=rows).resolved(AT, AT + 12, "s0", (564, 688), calls), 2)
+        callee = ("0x80038178", {"at": "0x800389fc", "word": "0x24020005", "text": "addiu $v0, $zero, 5", "tier": "strict10"})
+        self.assertEqual(mapped(*words, rows=(*rows, callee)).resolved(AT, AT + 12, "s0", (564, 688), calls), 2)
+        elsewhere = ("0x80038178", {**callee[1], "at": "0x80038a00"})
+        with self.assertRaises(SystemExit):
+            mapped(*words, rows=(*rows, elsewhere)).resolved(AT, AT + 12, "s0", (564, 688), calls)
 
 
 class Table(unittest.TestCase):
@@ -311,7 +416,7 @@ class Lists(unittest.TestCase):
                "gp", "record", "mode.word", "game.mode.word", "glow.counter.load", "glow.clear", "laser.levels",
                "shadow.half", "light.root", "glow", "glow.colours", "spin.order", "spin.quarter", "words", "effect.pointers",
                "effect.colours", "effect.tables", "effect.sine.at", "effect.sine.one", "effect.hud.at", "effect.table.at",
-               *(f"screen.load.{name}" for name in ("wide", "high", "distance", "across", "down"))}
+               "names", *(f"screen.load.{name}" for name in ("wide", "high", "distance", "across", "down"))}
 
     def test_the_six_lists_hold_their_counts_and_every_check_is_an_address_an_instruction_and_a_sentence(self):
         self.assertEqual([len(t) for t in (CHECKS, IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS)], [2241, 750, 67, 13, 7, 2])

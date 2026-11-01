@@ -474,7 +474,7 @@ def glow_spill(code):
                 call = [x - origin[0], y - origin[1], z - origin[2], f, words]
                 calls.append(call)
                 return 0 if there(call) else 1
-            m.run(GLOW_MAKE, [*origin, face], [], {GLOW_FACE: add})
+            m.run(code.named("GLOW_MAKE"), [*origin, face], [], {code.named("GLOW_FACE"): add})
             return calls
         tried = trace(lambda call: False)
         heads = trace(lambda call: True)
@@ -500,12 +500,13 @@ def glow(code, r):
     parts = {r[k] for k in ("glow.part.x", "glow.part.y", "glow.part.z")}
     if len(everies) != 1 or len(parts) != 1:
         sys.exit(f"the devices' light turns over every {everies} frames and takes {parts} for level 1")
-    if not code.word(GLOW_MVMVA) & MVMVA_SF:
+    if not code.word(code.named("GLOW_MVMVA")) & MVMVA_SF:
         sys.exit("level 1's product is not shifted down by 12")
-    at, first, count = GLOW_TYPES
+    at, first, count = code.named("GLOW_TYPES")
+    cases = code.named("GLOW_CASES")
     for typ in range(first, first + count):
         case = 0x80000000 | code.word(at + 4 * (typ - first))
-        if (typ in GLOW_CASES) != (case in GLOW_CASES.values()) or GLOW_CASES.get(typ, case) != case:
+        if (typ in cases) != (case in cases.values()) or cases.get(typ, case) != case:
             sys.exit(f"type {typ} goes to the case at 0x{case:08x}")
     colours = {}
     for t, (at, each) in GLOW_COLOURS.items():

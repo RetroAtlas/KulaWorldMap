@@ -16,10 +16,9 @@ from kula_disc import RELEASES  # noqa: E402
 from kula_motion_code import Code  # noqa: E402
 from kula_release import (ABSENT, CHECKS, CLOCK_WORD, DIVISORS, GROUPS, IMMEDIATES, MULTIPLIERS, VIDEO,  # noqa: E402
                           readings, rules, show_readings)
-from motion_fixture import addiu, addu, lw  # noqa: E402
+from motion_fixture import SIZE, addiu, addu, lw  # noqa: E402
 
-# Each executable's size and its words at the readings, a stretch at a time from its first word's address.
-SIZE = {"us": 610304, "eu": 604160, "jp": 593920}
+# Each executable's words at the readings, a stretch at a time from its first word's address.
 WORDS = {
     "us": {
         0x80035f78: [0x84830000, 0x2402029a, 0x14620009, 0x00000000, 0x8483000c, 0x00000000, 0x00031040, 0x00431021,

@@ -38,7 +38,7 @@ from kula_ggi import FILE as GGI, OBJECTS, SPARKS, Ggi, jump, overlay, shadows, 
 from kula_kwl_check import executable, figure_failures
 from kula_level import DEFAULT_TIME, Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
 from kula_motion import readings, table
-from kula_motion_code import Code
+from kula_motion_code import Code, Map
 from kula_pak import Pak
 from kula_place import RECOMPRESS, ROOM
 from kula_release import rules as release_rules
@@ -122,8 +122,9 @@ def layout_of(disc):
 
 
 def code_of(disc, release):
-    """The release's executable, read at the addresses its entry of the release table gives."""
-    return Code.of(release, disc.read_file(RELEASES[release]["exe"]))
+    """The release's executable, read at the addresses its entry of the release table gives and through its map
+    where it has one."""
+    return Code.of(release, disc.read_file(RELEASES[release]["exe"]), Map.load(release) if Map.exists(release) else None)
 
 
 def tgis_of(disc):

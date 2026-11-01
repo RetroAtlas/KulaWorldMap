@@ -497,9 +497,11 @@ def play(r):
         sys.exit("the Simon rooms' verdicts are not one and two")
     if r["death.most.gate"] != r["death.most"] + 1 or r["death.levels"] != LEVELS:
         sys.exit("a death's penalty is not gated at its most, or does not count a world's levels")
-    if r["gp"] + LEVEL_MODE[1] != r["mode.word"] or r["mode.word"] != LEVEL_MODE[0] or r["mode.at"] != LEVEL_MODE[1]:
+    level, offset = r["names"]["LEVEL_MODE"]
+    if r["gp"] + offset != r["mode.word"] or r["mode.word"] != level or r["mode.at"] != offset:
         sys.exit("the level's mode word the loader writes is not the one the ending's view reads")
-    if r["game.mode.word"] != GAME_MODE[0] or r["gp"] + GAME_MODE[1] != GAME_MODE[0] or r["mode.simon"] != r["clock.mode"]:
+    game, offset = r["names"]["GAME_MODE"]
+    if r["game.mode.word"] != game or r["gp"] + offset != game or r["mode.simon"] != r["clock.mode"]:
         sys.exit("the mode routine does not put the level's word back to 0 in the mode the clock stands in")
     if sorted((0, r["mode.bonus"], r["mode.hidden"])) != [0, 1, 2] or r["mode.hidden.flag"] != 1:
         sys.exit("the level's modes are not 0, 1 and 2, or the hidden flag is not a type of 1")
@@ -527,8 +529,8 @@ def play(r):
     if r["next.one"] != 1 or r["next.final"] != r["run.worlds"] * r["next.slots"] + 1 \
             or r["next.levels.final"] != r["death.finals"] or r["death.finals"] != FINALS:
         sys.exit("the finals are not numbered on from the worlds' levels, or are not two a world")
-    if r["next.mode.load"] != 0 or r["next.mode.writes"] or tuple(r["next.mode.clears"]) != NEXT_MODE_CLEARS:
-        sys.exit(f"the word at 0x{NEXT_MODE:08x} does not load as 0, or something writes it")
+    if r["next.mode.load"] != 0 or r["next.mode.writes"] or tuple(r["next.mode.clears"]) != r["names"]["NEXT_MODE_CLEARS"]:
+        sys.exit("the word the next-level routine's other starts hang on does not load as 0, or something writes it")
     wait = {name: r[f"wait.{name}"] for name in ENDINGS if f"wait.{name}" in r}
     wait["bonus"] = r["wait.hidden"]
     picks = {name: -code * 2 if code < 0 else r["words.win"] for name, code in ending.items()}

@@ -580,7 +580,6 @@ LOADER_CASES = {**dict.fromkeys((5, 9, 11, 12, 28), 0x80035908), 7: 0x8003585c, 
 END_FACES = (0x80010170, 0, FACES)
 END_NEAR = {"-x": 0x800333cc, "-y": 0x80033404, "-z": 0x8003343c}
 END_FAR = {"+x": 0x800333d8, "+y": 0x80033410, "+z": 0x80033444}
-END_CASES = {FACE.index(f): at for f, at in (*END_NEAR.items(), *END_FAR.items())}
 NAMED = {"INVINCIBLE_WORD": ("word", INVINCIBLE_WORD), "MODE_WORD": ("offset", MODE_WORD),
          "SCREEN_WORDS": ("word", SCREEN_WORDS), "TAKE_TYPES": ("table", TAKE_TYPES), "TAKE_TAIL": ("routine", TAKE_TAIL),
          "TAKE_CASES": ("routine", TAKE_CASES), "LOADER_TYPES": ("table", LOADER_TYPES),
@@ -588,6 +587,11 @@ NAMED = {"INVINCIBLE_WORD": ("word", INVINCIBLE_WORD), "MODE_WORD": ("offset", M
          "END_FACES": ("table", END_FACES), "END_NEAR": ("routine", END_NEAR), "END_FAR": ("routine", END_FAR)}
 CUTS = 3                  # a gem's cuts, by its f3
 TIERS = 3                 # a coin's tiers, by its f3
+
+
+def end_cases(code):
+    """The end landing's case by face, the near routines' and the far routines' as the executable holds them."""
+    return {FACE.index(f): at for f, at in (*code.named("END_NEAR").items(), *code.named("END_FAR").items())}
 
 
 def take(r):
@@ -633,7 +637,8 @@ def take(r):
         sys.exit("the bouncy pill's latch does not count frames by one")
     if r["crumble.under"] != CRUMBLING_UNDER:
         sys.exit(f"a crumbling block scores while the ball stands on {r['crumble.under']}")
-    if r["gp"] + MODE_WORD[1] != MODE_WORD[0] or r["pill.lethargy.players"] != ONE_PLAYER:
+    mode, offset = r["names"]["MODE_WORD"]
+    if r["gp"] + offset != mode or r["pill.lethargy.players"] != ONE_PLAYER:
         sys.exit("the lethargy effect's mode word is not where gp puts it, or its start is not gated at one player")
     if r["rock.round"] != (1 << r["rock.shift"]) - 1:
         sys.exit("the view's roll is not rounded toward nothing by its own shift")
@@ -648,7 +653,7 @@ def take(r):
     if rest != (r["screen.reset.across"], r["screen.reset.down"]) \
             or rest != (r["screen.load.across"], r["screen.load.down"]):
         sys.exit("the stretch does not rest at the scales the executable loads and a level's leaving puts back")
-    if r["glow.gate"] != UNHARMED or r["record"] + r["glow.gate.word"] != INVINCIBLE_WORD:
+    if r["glow.gate"] != UNHARMED or r["record"] + r["glow.gate.word"] != r["names"]["INVINCIBLE_WORD"]:
         sys.exit("the ball's draw does not gate its glow on the invincibility pill's word at rest")
     glow_round = 1 << r["glow.round.shift"]
     if r["glow.round.rest"] != r["glow.step"] + glow_round - 1 or glow_round != 2 * TURN:

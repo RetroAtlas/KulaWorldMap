@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
-from kula_motion_code import Code  # noqa: E402
+from kula_motion_code import Code, registry  # noqa: E402
 
 R = {"at": 1, "v0": 2, "v1": 3, "a0": 4, "a1": 5, "a2": 6, "a3": 7, "t0": 8, "s0": 16, "s5": 21, "zero": 0,
      "gp": 28, "sp": 29, "ra": 31}
@@ -86,6 +86,7 @@ def swr(rt, rs, imm):
 
 
 AT = EXE_BASE + 0x800
+SIZE = {"us": 610304, "eu": 604160, "jp": 593920}    # each executable's size, which every address a test lays a word at lies within
 
 
 def code(*words, **at):
@@ -307,6 +308,7 @@ GAME = {
     "standing.word.3": 93, "standing.word.5": 95, "standing.word.6": 96, "standing.word.7": 97, "standing.style.1": 1,
     "standing.style.2": 2, "standing.style.3": 3, "standing.style.4": 4, "standing.style.word.3": 93,
     "standing.nothing": -1, "standing.none": -1,
+    "names": {name: value for name, (_, value) in registry().items()},
 }
 
 

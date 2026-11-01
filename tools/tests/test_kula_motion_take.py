@@ -9,9 +9,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kula_disc import EXE_BASE  # noqa: E402
 from kula_motion_code import Code, dispatch  # noqa: E402
-from kula_motion_take import (END_CASES, END_FACES, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, TAKE_CASES,  # noqa: E402
-                              TAKE_TAIL, TAKE_TYPES, devices, exits, take)
-from motion_fixture import GAME  # noqa: E402
+from kula_motion_take import (END_FACES, LOADER_CASES, LOADER_PLAIN, LOADER_TYPES, TAKE_CASES, TAKE_TAIL,  # noqa: E402
+                              TAKE_TYPES, devices, end_cases, exits, take)
+from motion_fixture import GAME, code  # noqa: E402
 
 
 class Dispatch(unittest.TestCase):
@@ -27,7 +27,8 @@ class Dispatch(unittest.TestCase):
         dispatch(self.cases(TAKE_TYPES, TAKE_CASES, TAKE_TAIL), TAKE_TYPES, TAKE_CASES, TAKE_TAIL, "the walk")
         dispatch(self.cases(LOADER_TYPES, LOADER_CASES, LOADER_PLAIN), LOADER_TYPES, LOADER_CASES, LOADER_PLAIN,
                  "the loader")
-        dispatch(self.cases(END_FACES, END_CASES, None), END_FACES, END_CASES, None, "the end landing")
+        ends = end_cases(code())
+        dispatch(self.cases(END_FACES, ends, None), END_FACES, ends, None, "the end landing")
 
     def test_a_type_sent_elsewhere_stops_the_reading(self):
         for swap in ({31: TAKE_CASES[37]}, {28: TAKE_CASES[31]}, {36: TAKE_TAIL}):
@@ -37,9 +38,9 @@ class Dispatch(unittest.TestCase):
         with self.assertRaises(SystemExit):
             dispatch(self.cases(LOADER_TYPES, {**LOADER_CASES, 7: LOADER_PLAIN}, LOADER_PLAIN), LOADER_TYPES,
                      LOADER_CASES, LOADER_PLAIN, "the loader")
+        ends = end_cases(code())
         with self.assertRaises(SystemExit):
-            dispatch(self.cases(END_FACES, {**END_CASES, 0: END_CASES[5]}, None), END_FACES, END_CASES, None,
-                     "the end landing")
+            dispatch(self.cases(END_FACES, {**ends, 0: ends[5]}, None), END_FACES, ends, None, "the end landing")
 
 
 class Take(unittest.TestCase):
