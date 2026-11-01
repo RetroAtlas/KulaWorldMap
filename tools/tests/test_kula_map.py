@@ -276,8 +276,16 @@ class Rows(unittest.TestCase):
         self.assertEqual(str(stopped.exception), f"0x{US.starts['pill'] + 24:08x} is read as pill.shift and as pill.fill, which disagree")
 
     def test_a_stale_hand_row_stops_the_writer(self):
-        with self.assertRaises(SystemExit):
-            mapped(executable(gaps=GAPS), hand(TUNED={"nobody.home": "a key no reader lists"}))
+        copy = executable(gaps=GAPS)
+        at = copy.starts["clock"] + 28
+        for what, table in (("tuned", hand(TUNED={"nobody.home": "a key no reader lists"})),
+                            ("shift", hand(SHIFTS={"nobody.home": (at, "sra $v0, $v1, 5", "a shift no reader lists")})),
+                            ("absent", hand(ABSENT={"nobody.home": (at, "sra $v0, $v1, 5", "an instruction no reader lists")})),
+                            ("multiplier", hand(MULTIPLIERS={"nobody.home": (at, 1, "v1", "v0", "a run no reader lists")}))):
+            with self.subTest(what):
+                with self.assertRaises(SystemExit) as stopped:
+                    mapped(copy, table)
+                self.assertEqual(str(stopped.exception), f"the hand table's {what} rows name nobody.home, which no reader lists")
 
 
 class Words(unittest.TestCase):
