@@ -40,6 +40,21 @@ def listed(v):
     return v if isinstance(v, list) else [v]
 
 
+def finished(data):
+    """The map's rows and names read as a finished map's, whatever it has pending."""
+    return Map({**data, "pending": []})
+
+
+def left(data):
+    """The registered names the map has pending."""
+    return {p["name"] for p in data["pending"] if "name" in p}
+
+
+def named(row):
+    """What a row is known by: its key, the keys of its reading, or the text of a check."""
+    return row.get("key", row.get("keys", row.get("text")))
+
+
 def laid(release, data):
     """The release's executable as the map's words lay it, every other word nothing."""
     base = RELEASES[release]["base"]
@@ -80,9 +95,15 @@ class Maps(unittest.TestCase):
         self.assertTrue(COMMITTED)
         self.assertNotIn(BASE, COMMITTED)
         self.assertFalse(Map.exists(BASE))
-        for release in COMMITTED:
+        for release, data in COMMITTED.items():
             self.assertTrue(Map.exists(release))
-            self.assertEqual(Map.load(release).release, release)
+            self.assertEqual(finished(data).release, release)
+            self.assertEqual(Map.pending(release), data["pending"])
+            if data["pending"]:
+                with self.assertRaises(SystemExit):
+                    Map.load(release)
+            else:
+                self.assertEqual(Map.load(release).release, release)
 
     def test_every_rows_word_decodes_to_its_text(self):
         for release, data in COMMITTED.items():
@@ -95,7 +116,7 @@ class Maps(unittest.TestCase):
 
     def test_every_keyed_row_reads_its_value_through_the_map_at_its_place(self):
         for release, data in COMMITTED.items():
-            code = Code.of(release, bytes(laid(release, data)), Map(data))
+            code = Code.of(release, bytes(laid(release, data)), finished(data))
             for us, row in data["rows"].items():
                 if "value" not in row:
                     continue
@@ -105,9 +126,9 @@ class Maps(unittest.TestCase):
 
     def test_a_registered_instruction_is_read_by_the_maps_pattern_at_its_place_whatever_row_stands_there(self):
         for release, data in COMMITTED.items():
-            code = Code.of(release, bytes(laid(release, data)), Map(data))
+            code = Code.of(release, bytes(laid(release, data)), finished(data))
             for name, (kind, value) in registry().items():
-                if kind != "matched":
+                if kind != "matched" or name in left(data):
                     continue
                 for ours, theirs in beside(kind, value, data["names"][name]):
                     for us, pattern, at, kept in zip(ours[::2], ours[1::2], theirs[::2], theirs[1::2]):
@@ -119,9 +140,9 @@ class Maps(unittest.TestCase):
 
     def test_a_registered_instruction_the_map_keeps_no_pattern_for_is_read_by_the_readers_own_whatever_row_stands_there(self):
         for release, data in COMMITTED.items():
-            code = Code.of(release, bytes(laid(release, data)), Map(data))
+            code = Code.of(release, bytes(laid(release, data)), finished(data))
             for name, (kind, value) in registry().items():
-                if kind != "instruction":
+                if kind != "instruction" or name in left(data):
                     continue
                 for us, at in beside(kind, value, data["names"][name]):
                     with self.subTest(release=release, name=name, us=f"0x{us:08x}"):
@@ -131,11 +152,11 @@ class Maps(unittest.TestCase):
 
     def test_an_absent_row_reads_none_through_every_reader_once_the_instruction_it_names_stands_there(self):
         for release, data in COMMITTED.items():
-            code = Code.of(release, bytes(laid(release, data)), Map(data))
+            code = Code.of(release, bytes(laid(release, data)), finished(data))
             for us, row in data["rows"].items():
                 if not row.get("absent"):
                     continue
-                with self.subTest(release=release, key=row["key"]):
+                with self.subTest(release=release, key=named(row)):
                     self.assertIsNone(code.immediate(unhex(us), ""))
                     self.assertIsNone(code.multiplier(unhex(us), 0, "", ""))
                     self.assertIsNone(code.divisor(unhex(us), "", 0, "", 0, ""))
@@ -147,17 +168,19 @@ class Maps(unittest.TestCase):
             for us, row in (keyed, absent):
                 blob = laid(release, data)
                 struct.pack_into("<I", blob, unhex(row["at"]) - RELEASES[release]["base"], 0xFFFFFFFF)
-                with self.subTest(release=release, key=row["key"]):
+                with self.subTest(release=release, key=named(row)):
                     with self.assertRaises(SystemExit) as stopped:
-                        Code.of(release, bytes(blob), Map(data)).immediate(unhex(us), "")
+                        Code.of(release, bytes(blob), finished(data)).immediate(unhex(us), "")
                     self.assertIn(row["at"], str(stopped.exception))
                     self.assertIn(us, str(stopped.exception))
 
     def test_every_registered_constant_has_its_value_in_the_map_in_the_registrys_shape(self):
         for release, data in COMMITTED.items():
-            self.assertEqual(sorted(data["names"]), sorted(registry()))
-            code = Code.of(release, bytes(SIZE[release]), Map(data))
+            self.assertEqual(sorted([*data["names"], *left(data)]), sorted(registry()))
+            code = Code.of(release, bytes(SIZE[release]), finished(data))
             for name, (_, value) in registry().items():
+                if name in left(data):
+                    continue
                 with self.subTest(release=release, name=name):
                     self.assertEqual(shape(code.named(name)), shape(value))
 
