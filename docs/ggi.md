@@ -154,6 +154,8 @@ The build stops where the header counts other than the sprites the game lays qua
 
 On the PAL disc the section is 172 bytes and holds a count of 28 and 27 rows, back running from −48 to −1024 and the height rising to 411 at the 14th and 15th rows and coming down to 56, with two bytes left; the Japanese disc's arc is the US one.
 
+With no skip, the PAL count falling by one to nothing, the PAL hop's last frame reads the row past the section's rows, the two bytes left and the next section's first four, a height of 0, so a PAL hop ends at the face's level where the US hop's 31st row ends it 14 below.
+
 The parser sums the header's section sizes and keeps where the fifth begins (`0x80022e44` to `0x80022ea0`), the ball's init copies that as the jump's table (`0x8002f2ec`, `0x8002f368`), and the jump runs through 30 of the rows while the hop takes the heights' differences ([motion.md](motion.md)).
 
 The build ships the count and the rows as `jump`.

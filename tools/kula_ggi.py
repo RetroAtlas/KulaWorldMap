@@ -405,17 +405,22 @@ ROW = 6
 
 def jump(g, skip):
     """The jump's count and rows. The game runs the count down by one a
-    frame and from one past `skip` straight to nothing, taking a row a frame
-    while it stands and the hop a row and the next, so the rows must reach as
-    far as the count takes them; what is left at the section's end is less
-    than a row."""
+    frame, and from one past `skip` straight to nothing where there is a
+    skip, taking a row a frame while the count stands, so the jump reads the
+    rows up to `count - 2 - skip` from the first, which must lie within the
+    section, and the hop, which takes a row and the next, the one after
+    those too. The rows are every full row the section holds and, where the
+    hop's last row lies past them, that row from the bytes where it stands,
+    as the game reads it."""
     blob, a, b = g.blob, g.bounds[ARC], g.bounds[ARC + 1]
     count, *pads = struct.unpack_from("<4h", blob, a)
     if count <= 0 or any(pads):
         sys.exit(f"the jump's section opens with {count} and {pads}, not a count and three pads")
-    rows = [list(struct.unpack_from("<3h", blob, a + ARC_HEAD + ROW * i)) for i in range((b - a - ARC_HEAD) // ROW)]
-    if len(rows) < count - skip:
-        sys.exit(f"the jump's section holds {len(rows)} rows for a count of {count}")
+    held = (b - a - ARC_HEAD) // ROW
+    last = count - 1 - (skip or 0)
+    if last > held:
+        sys.exit(f"the jump's section holds {held} rows for a count of {count}")
+    rows = [list(struct.unpack_from("<3h", blob, a + ARC_HEAD + ROW * i)) for i in range(max(held, last + 1))]
     return {"count": count, "rows": rows}
 
 

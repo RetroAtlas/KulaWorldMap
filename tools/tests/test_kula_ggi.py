@@ -1,9 +1,10 @@
 """Unit tests for the model reader: python3 -m unittest discover -s tools/tests
 
-Nothing here needs the disc.
+The arc's classes at the end need a release's disc, each skipped without its variable.
 """
 
 import json
+import os
 import struct
 import sys
 import unittest
@@ -12,9 +13,10 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from kula_disc import DISC_VARS, open_release  # noqa: E402
 from kula_ggi import (  # noqa: E402
-    ABSENT, ARC, BALLS, BLEND, GROUP, PREFIX, QUAD, ROWS, SINGLES, SLOTS, SORTED, TEXTURES, TYPES, VRAM_H, Ggi,
-    Model, as_dict, jump, objects, overlay, rgb, shadows, sparks)
+    ABSENT, ARC, BALLS, BLEND, FILE, GROUP, PREFIX, QUAD, ROWS, SINGLES, SLOTS, SORTED, TEXTURES, TYPES, VRAM_H,
+    Ggi, Model, as_dict, jump, objects, overlay, rgb, shadows, sparks)
 
 
 def packed(frames):
@@ -212,23 +214,39 @@ def arc_section(count, rows, pads=(0, 0, 0), slack=4):
     return struct.pack("<4h", count, *pads) + b"".join(struct.pack("<3h", *r) for r in rows) + bytes(slack)
 
 
-def arc(count, rows, pads=(0, 0, 0), slack=4):
-    """A .GGI whose fifth section is `arc_section`'s."""
+def arc(count, rows, pads=(0, 0, 0), slack=4, past=b""):
+    """A .GGI whose fifth section is `arc_section`'s, with `past` the bytes the next section opens with."""
     section = arc_section(count, rows, pads, slack)
-    return SimpleNamespace(blob=section, bounds=[0] * ARC + [0, len(section)])
+    return SimpleNamespace(blob=section + past, bounds=[0] * ARC + [0, len(section)])
 
 
 class Jump(unittest.TestCase):
     ROWS = [[0, 0, -47], [68, 0, -92], [129, 0, -135], [184, 0, -175]]
+    NEXT = struct.pack("<I", 148)      # what the next section opens with
 
     def test_the_arc_ships_its_count_and_its_rows(self):
         self.assertEqual(jump(arc(5, self.ROWS), 2), {"count": 5, "rows": self.ROWS})
         self.assertEqual(len(jump(arc(5, self.ROWS, slack=0), 2)["rows"]), 4)
 
-    def test_a_pad_that_is_not_nothing_or_too_few_rows_for_the_count_stop_the_build(self):
-        for g in (arc(5, self.ROWS, pads=(1, 0, 0)), arc(7, self.ROWS), arc(0, self.ROWS)):
+    def test_a_hops_last_row_past_the_sections_rows_is_read_from_the_bytes_where_it_stands(self):
+        self.assertEqual(jump(arc(7, self.ROWS, slack=2, past=self.NEXT), 2)["rows"], self.ROWS + [[0, 148, 0]])
+        self.assertEqual(jump(arc(6, self.ROWS, slack=2, past=self.NEXT), 2)["rows"], self.ROWS)
+
+    def test_no_skip_reads_the_counts_full_run(self):
+        g = arc(5, self.ROWS, slack=2, past=self.NEXT)
+        self.assertEqual(jump(g, None)["rows"], self.ROWS + [[0, 148, 0]])
+        self.assertEqual(jump(g, 2)["rows"], self.ROWS)
+
+    def test_a_pad_that_is_not_nothing_or_no_count_stops_the_build(self):
+        for g in (arc(5, self.ROWS, pads=(1, 0, 0)), arc(0, self.ROWS)):
             with self.assertRaises(SystemExit):
                 jump(g, 2)
+
+    def test_a_jump_whose_rows_lie_past_the_section_stops_the_build_naming_the_count(self):
+        for count, skip in ((8, 2), (6, None)):
+            with self.assertRaises(SystemExit) as caught:
+                jump(arc(count, self.ROWS), skip)
+            self.assertIn(f"4 rows for a count of {count}", caught.exception.code)
 
 
 READINGS = {"jump.skip": 2, "shadow.sprite": 1, "shadow.sprites": 2, "effect.sprites": 2}
@@ -345,6 +363,38 @@ class Overlay(unittest.TestCase):
                         (ggi(), {**self.base, "block": 256})):
             with self.assertRaises(SystemExit):
                 overlay(g, base, READINGS, self.sheet)
+
+
+class ArcOnDisc:
+    """The arc as a release's own file holds it."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.disc = open_release(cls.release)
+        cls.g = Ggi(cls.disc.read_file(FILE))
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.disc.close()
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["us"]), f"needs the disc under ${DISC_VARS['us']}")
+class TheBaseArc(ArcOnDisc, unittest.TestCase):
+    release = "us"
+
+    def test_the_arc_reads_thirty_two_rows_for_a_count_of_thirty_three(self):
+        arc = jump(self.g, READINGS["jump.skip"])
+        self.assertEqual((arc["count"], len(arc["rows"])), (33, 32))
+
+
+@unittest.skipUnless(os.environ.get(DISC_VARS["eu"]), f"needs the PAL disc under ${DISC_VARS['eu']}")
+class ThePalArc(ArcOnDisc, unittest.TestCase):
+    release = "eu"
+
+    def test_the_arc_reads_its_rows_with_the_bases_skip_and_the_hops_row_past_them_with_none(self):
+        self.assertEqual(len(jump(self.g, READINGS["jump.skip"])["rows"]), 27)
+        arc = jump(self.g, None)
+        self.assertEqual((arc["count"], len(arc["rows"]), arc["rows"][-1]), (28, 28, [0, 148, 0]))
 
 
 if __name__ == "__main__":
