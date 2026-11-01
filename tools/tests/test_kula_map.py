@@ -463,6 +463,11 @@ class Registries(unittest.TestCase):
         with self.assertRaises(SystemExit):
             registries([SimpleNamespace(__name__="odd", NAMED={"X": ("byte", 0x80010000)})])
 
+    def test_an_entry_whose_keys_are_a_bare_string_stops_it(self):
+        with self.assertRaises(SystemExit) as stopped:
+            registries([SimpleNamespace(__name__="odd", NAMED={"X": ("offset", (GP + MODE, MODE), "mode.at")})])
+        self.assertEqual(str(stopped.exception), "odd.NAMED['X'] gives its keys as 'mode.at', a bare string and not a tuple of them")
+
     def test_a_leaf_is_told_by_its_shape_alone(self):
         self.assertTrue(FITS["pair"]((1, 2)) and FITS["offset"]((1, 2)) and not FITS["pair"](((1, 2), 4)))
         self.assertTrue(FITS["matched"]((1, "lui $v0, {}")) and not FITS["matched"]((1, 2)))

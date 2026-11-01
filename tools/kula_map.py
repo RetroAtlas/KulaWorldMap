@@ -76,6 +76,8 @@ def registries(modules=MODULES):
             kind, value, *keys = entry
             if kind not in KINDS:
                 sys.exit(f"{module.__name__}.NAMED[{name!r}] is of kind {kind!r}, which the map writer does not know")
+            if keys and isinstance(keys[0], str):
+                sys.exit(f"{module.__name__}.NAMED[{name!r}] gives its keys as {keys[0]!r}, a bare string and not a tuple of them")
             out.append(Entry(module.__name__, name, kind, value, tuple(keys[0]) if keys else ()))
     return out
 
