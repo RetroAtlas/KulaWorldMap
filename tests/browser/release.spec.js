@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { frozen, settle, still, textured } from "./helpers.js";
+import { frozen, settle, still, textured, trackErrors } from "./helpers.js";
 import { clockLine, pixelAt, route, startPlay, stopOn, top } from "./playhelpers.js";
 
 const LOCKED = "Leave play to change the release";
@@ -291,6 +291,29 @@ test("the HUD's clock at LEVEL 1's start reads the PAL figure with EU pressed an
   await expect(pressed(page)).toHaveText("JP");
   await startPlay(page);
   await expect(clockLine(page)).toHaveText("Time 120");
+});
+
+test("with EU pressed a second of the held clock takes one second off the HUD's time, the level running fifty frames in it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0/45,35/fit/33/d-eu");
+  await settle(page);
+  await still(page);
+  await expect(pressed(page)).toHaveText("EU");
+  await frozen(page);
+  await startPlay(page);
+  await expect(clockLine(page)).toHaveText("Time 100");
+  // in steps no longer than one drawn frame may run, so that every frame the second owes is run
+  await page.evaluate(async () => {
+    const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
+    for (let i = 0; i < 4; i++) {
+      window.__step(250);
+      draw();
+    }
+  });
+  await expect(clockLine(page)).toHaveText("Time 99");
+  expect(errors).toEqual([]);
 });
 
 test("the live region says the disc on a press", async ({ page }) => {

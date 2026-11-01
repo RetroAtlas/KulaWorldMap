@@ -18,12 +18,37 @@ export const setObjects = (o) => {
 };
 export const modelUnit = () => 1 / shapes.block;
 export const blockUnits = () => shapes.block;
-export const motionTable = () => shapes.motion;
+// The release shown's motion and skins tables: the base's with what its file
+// carries written over, an entry of the motion table's types and kinds whole and
+// every other key whole, composed once per release and base, so an entry the file
+// does not carry stays the base's own object.
+const NESTED = ["types", "kinds"];
+function overlaid(base, own, nested = []) {
+  if (!base || !own || !Object.keys(own).length) return base;
+  const out = { ...base, ...own };
+  for (const k of nested) if (own[k]) out[k] = { ...base[k], ...own[k] };
+  return out;
+}
+let composed = null;
+function tables() {
+  const release = releaseOf(current());
+  if (composed?.shapes !== shapes || composed.release !== release) {
+    const own = release?.objects ?? {};
+    composed = {
+      shapes,
+      release,
+      motion: overlaid(shapes.motion, own.motion, NESTED),
+      skins: overlaid(shapes.skins, own.skins),
+    };
+  }
+  return composed;
+}
+export const motionTable = () => tables().motion;
 export const jumpTable = () => {
   const own = releaseOf(current())?.objects?.jump;
   return own?.rows?.length ? own : (shapes.jump ?? { count: 0, rows: [] });
 };
-export const skinsTable = () => shapes.skins;
+export const skinsTable = () => tables().skins;
 export const worldTint = (world) => {
   const c = releaseOf(current())?.art?.tint?.[world] ?? shapes.skins?.tint?.[world];
   return c ? "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("") : null;
@@ -33,8 +58,8 @@ export const sparksSheet = () => shapes.sparks ?? null;
 export const motionOf = (m) =>
   m.face === null
     ? null
-    : (shapes.motion?.types[String(STARTS.has(m.type) ? TYPE.START : m.type)] ?? null);
-export const kindMotion = (kind) => shapes.motion?.kinds[String(kind)] ?? null;
+    : (motionTable()?.types[String(STARTS.has(m.type) ? TYPE.START : m.type)] ?? null);
+export const kindMotion = (kind) => motionTable()?.kinds[String(kind)] ?? null;
 export const typeModels = (type) =>
   releaseOf(current())?.objects?.types?.[String(type)] ?? shapes.types[String(type)] ?? [];
 const GOURAUD = 16;
@@ -135,8 +160,10 @@ export function shownOn(r, marks = []) {
 
 /** Whether a type is paint on its face with nothing standing there: it has
     no mesh, and it is below the types the loader stands on the stone. */
-export const paintsFace = (type) =>
-  !!shapes.skins && type < shapes.skins.shadow.from && !typeModels(type).length;
+export const paintsFace = (type) => {
+  const skins = skinsTable();
+  return !!skins && type < skins.shadow.from && !typeModels(type).length;
+};
 export const markerGroup = (m) =>
   m.face !== null
     ? paintsFace(m.type)
@@ -336,11 +363,14 @@ export function ballFor(l) {
 // What stands on a face is drawn in its world's light for the face's shade,
 // from the set a bonus level lights from on one, and a lit device's model in
 // that times its lift; the ball and the captivators carry lights of their own.
+// A level's sets are kept by the skins table they are read from.
 const lightSets = new WeakMap();
 export function lightOf(m, l, frame) {
   const skins = skinsTable();
   if (!skins?.light || m.face === null || STARTS.has(m.type) || motionOf(m)?.entry) return null;
-  let lights = lightSets.get(l);
+  let levels = lightSets.get(skins);
+  if (!levels) lightSets.set(skins, (levels = new WeakMap()));
+  let lights = levels.get(l);
   if (!lights) {
     const look = lookOf(
       skins,
@@ -348,7 +378,7 @@ export function lightOf(m, l, frame) {
       state.data.themes.findIndex((t) => t.id === l.theme),
     );
     const set = skins.light[l.theme]?.[look.bonus ? "bonus" : "arcade"] ?? null;
-    lightSets.set(l, (lights = { set, lifted: new Map() }));
+    levels.set(l, (lights = { set, lifted: new Map() }));
   }
   const shade = skins.shade[l.theme]?.[m.face];
   const light = lights.set?.[shade];

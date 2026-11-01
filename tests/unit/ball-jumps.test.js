@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { FACE_NORMAL } from "../../public/js/format/lattice.js";
+import { releases } from "./fixtures.js";
 import {
   FALL,
   HOP,
@@ -35,6 +36,11 @@ import {
   run,
   table,
 } from "./ball-lattice.js";
+
+// The PAL release's ball and arc: 28 rows with the hop's last, no skip and no constant for a
+// hop's fall.
+const [, eu] = releases;
+const PAL = { ...RULES, table: eu.objects.motion.types["30"], jump: eu.objects.jump };
 
 test("Space at rest hops the ball in place over the table's rows, back at rest where it stood", () => {
   const probe = row(10, 18);
@@ -120,6 +126,48 @@ test("Cross let go after eight hops leaves the ball at rest at its radius on its
     assert.deepEqual(d.pos, rest);
     assert.equal(moving(d), false);
   }
+});
+
+test("a table with no skip runs a hop over every row of its arc, the last at the face's level, and with no constant for a hop's fall drops the ball over nothing from there at the last two rows' difference", () => {
+  const nothing = lattice();
+  const b = ballAt(PAL, [17, 18, 17], TOP, UP);
+  const { rows, count } = PAL.jump;
+  assert.deepEqual([PAL.table.jump.skip, PAL.table.fall.hop], [null, null]);
+  const rest = b.pos[2];
+  const heights = [];
+  for (let f = 1; f < count; f++) {
+    run(b, nothing, 1, PAD.cross);
+    assert.equal(b.state, HOP, `frame ${f}`);
+    heights.push(rest - b.pos[2]);
+  }
+  assert.deepEqual(
+    heights,
+    rows.slice(1).map((r) => r[0]),
+  );
+  assert.equal(heights.at(-1), 0);
+  run(b, nothing, 1, PAD.cross);
+  assert.equal(b.state, FALL);
+  assert.equal(b.v, rows[count - 1][0] - rows[count - 2][0]);
+  assert.ok(b.v < 0, String(b.v));
+});
+
+test("a table with no skip runs a jump over one row fewer than its arc's count and lands two blocks on with the frame after", () => {
+  const probe = row(10, 18);
+  const b = ballAt(PAL, [17, 18, 17], TOP, UP);
+  const { rows, count } = PAL.jump;
+  const rest = b.pos[2];
+  const heights = [];
+  for (let f = 1; f < count; f++) {
+    run(b, probe, 1, PAD.up | PAD.cross);
+    assert.equal(b.state, JUMP, `frame ${f}`);
+    heights.push(rest - b.pos[2]);
+  }
+  assert.deepEqual(
+    heights,
+    rows.slice(0, count - 1).map((r) => r[0]),
+  );
+  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed" }]);
+  assert.deepEqual([b.state, blockUnder(b)], [REST, [17, 16, 17]]);
 });
 
 test("the spin's speed is nothing on every frame of a hop after a jump with Cross held on, so the body does not turn in the hop", () => {

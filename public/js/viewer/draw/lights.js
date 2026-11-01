@@ -24,9 +24,14 @@ function spillOf(idx, glow, home, face) {
   return faces;
 }
 
+// What each device takes, kept by the motion table it is read from and then by
+// the index.
 const takes = new WeakMap();
-function takenBy(idx, glow) {
-  if (takes.has(idx)) return takes.get(idx);
+function takenBy(idx, table) {
+  let by = takes.get(table);
+  if (!by) takes.set(table, (by = new WeakMap()));
+  if (by.has(idx)) return by.get(idx);
+  const { glow } = table;
   const out = [];
   for (const [key, ms] of idx.markers) {
     for (const m of ms) {
@@ -35,7 +40,7 @@ function takenBy(idx, glow) {
       out.push({ m, faces: spillOf(idx, glow, idx.cells.get(key), m.face), colours });
     }
   }
-  takes.set(idx, out);
+  by.set(idx, out);
   return out;
 }
 
@@ -67,7 +72,8 @@ export const lightsWith = (fn) => {
     colour added at each corner in the order of its texture's first turn; and
     whether any device is on or a module casts a light. */
 export function deviceLights(l, idx, frame) {
-  const glow = motionTable()?.glow;
+  const table = motionTable();
+  const glow = table?.glow;
   const lit = new Map();
   let on = false;
   if (!glow) return { lit, on };
@@ -75,7 +81,7 @@ export function deviceLights(l, idx, frame) {
     0,
     state.data.themes.findIndex((t) => t.id === l.theme),
   );
-  for (const { m, faces, colours } of takenBy(idx, glow)) {
+  for (const { m, faces, colours } of takenBy(idx, table)) {
     if (state.hiddenKinds.has(m.id)) continue;
     if (markerNow(m) === "on" || (isExit(m) && exitsOpen())) on = true;
     if (!lightOnAt(m, glow.every, frame)) continue;

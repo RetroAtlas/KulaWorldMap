@@ -223,7 +223,7 @@ On the PAL disc the pill's case sets the word to 300 (`SCES_010.00`, `0x80039050
 
 On the Japanese disc the pill's model is recoloured at all three levels of detail, every colour record changed over the same points, its red to a light grey and its yellow to a dark grey, read off its mesh file ([ggi.md](ggi.md)), and its case sets the same 360 while the ball's routine takes the same 2 off it and 4 ticks off the clock a pass (`SCPS_100.64`, `0x80038d94`, `0x8003b81c`, `0x8003b828`), so the pill lasts the 181 passes and costs the 724 ticks the US one does, about twelve of that disc's seconds at sixty ticks to the second, which its note gives with the grey named.
 
-Play runs the pill by the US executable's reading whatever disc is shown ([viewer.md](viewer.md)).
+Play runs the pill by the PAL executable's reading on the PAL disc and by the US executable's on the other two, the Japanese disc's own being the same word ([viewer.md](viewer.md)).
 
 ### type 33: Bouncy pill
 

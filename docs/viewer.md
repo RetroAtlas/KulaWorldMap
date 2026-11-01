@@ -171,9 +171,15 @@ The Japanese disc draws the exit and the hidden exit as a sign reading 出口, t
 
 The PAL disc draws the arrow a little further along the way it points, and its jump is lower and over fewer frames, landing where the US one does, which a planned route's jump and the ball's jump in play follow.
 
-Play's clock follows the disc shown, filled as that disc's game fills it and shown as its HUD shows it, so a 99-second level opens at 83 on the US disc, whose clock runs 82.5 seconds, at 100 on the PAL disc, where it runs its 99, and at 120 on the Japanese disc, where every 99-second level runs 119; play's frame rate stays the US release's meanwhile, so a PAL level's seconds run down six for every five real ones until the executables are read.
+The motion follows the disc too: the PAL disc runs fifty frames a second, in play and in what moves on the map, with the frame counts its game was compiled for, so the pills last the same six and fourteen seconds, the moving platform crosses a block in the same time and the moving spikes keep their cycle to a hundredth of a second.
 
-Meanwhile play's other rules, how long a pill lasts among them, are the US release's whatever disc is chosen.
+On the PAL disc a hop ends at the face's level and falls from there where nothing is under the ball, and a jump and a hop run their rows to the last with no skip.
+
+On the PAL disc the fire's, the invisible block's and the swirl's cycles run at that disc's own counts.
+
+Play's clock follows the disc shown, filled as that disc's game fills it and shown as its HUD shows it, so a 99-second level opens at 83 on the US disc, whose clock runs 82.5 seconds, at 100 on the PAL disc, where it runs its 99, and at 120 on the Japanese disc, where every 99-second level runs 119.
+
+On the Japanese disc alone play's other rules, how long a pill lasts among them, are the US release's until its executable is read.
 
 ## Your levels
 
@@ -625,6 +631,12 @@ It draws what stands on them through `js/viewer/draw/things.js`, a laser's beam 
 
 A disc's models reach `js/viewer/draw/things.js`, the legend's icons and play through `js/viewer/data.js`, which hands out each type's model list and the jump's arc from the release shown's file where that file carries them and from the base's otherwise, the file's own objects every time, so what draws a thing carries no branch for the disc and its caches keyed by model hold.
 
+A disc's motion and skins tables reach the frame, the legend and play the same way, through `js/viewer/data.js`, which composes the release shown's file over the base's tables, an entry of the motion table's types and kinds whole and every other key whole, once per release, so what reads a table carries no branch for the disc and an entry the file does not carry stays the base's own object, which the caches keyed by an entry rest on.
+
+The caches keyed by a level or its index, the light sets in `js/viewer/data.js`, the invisible block's light in `js/viewer/draw/blocks.js` and the devices' takes in `js/viewer/draw/lights.js`, are keyed first by the table they read, so a slot the discs share never serves another disc's sets or takes after a change of disc.
+
+The frame's run keeps the time the level's clock started at and reads its frame from the time since at the rate of the table shown, the time the page was hidden added to the start, so a change of disc keeps a level's elapsed time and counts its frames at the new rate, and lays what travels afresh where it was laid from another table.
+
 ### The seams
 
 What draws over the map from outside it registers with the frame's four hooks through `overlayWith` in `js/viewer/draw/render.js`, one run before any block where the ground grid is drawn, which may skip the grid by returning true, one on each block once it is drawn and before the things standing on it, one after each block with what stands on it, and one once the see-through layer is laid, which may ask for another frame by returning true.
@@ -701,6 +713,8 @@ The frame run holds a rolling ball on a block its last read found brittle short 
 The frame run comes down on a platform's body before a block where the probe names one a block under its centre, riding it, its position kept relative to the platform and the platform's own blocks all the probe calls solid while it rides, so that it never drops off one, and leaves the platform by the forward jump or the hop alone, its position in the level again and the hop's end standing it by the lattice as it stands.
 
 The frame run throws a jump back as off a wall from the wall's progress where a way a caller set differs from its heading and clears the way where it lies along.
+
+The frame run reads a skip the table has none of as no skip, the arc's count falling to nothing by one, and a hop's fall start the table has none of as the last frame's change along the normal, the height of the row the hop reached less the row before it, as the game reads their absence.
 
 The frame run leaves a lost ball where it fell, saying so.
 

@@ -1,8 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { objects, releases } from "./fixtures.js";
+import {
+  kindMotion,
+  motionOf,
+  motionTable,
+  setObjects,
+  skinsTable,
+} from "../../public/js/viewer/data.js";
+import { BASE, setCurrent, setReleases } from "../../public/js/viewer/release.js";
 
 const [us, eu, jp] = releases;
+setObjects(objects);
+setReleases(releases);
 const { motion, skins } = objects;
 const NESTED = ["types", "kinds"];
 const differs = (a, b) => JSON.stringify(a) !== JSON.stringify(b);
@@ -79,4 +89,32 @@ test("the PAL table and the PAL rules agree where both readers read the same ins
     [take.clock.from, take.clock.second, take.points],
     [rules.hourglass.from, rules.hourglass.second, rules.hourglass.points],
   );
+});
+
+test("under the US release the viewer's motion and skins tables are the base's own objects", () => {
+  assert.equal(motionTable(), motion);
+  assert.equal(skinsTable(), skins);
+});
+
+test("under the PAL release the viewer's tables are the base's with the PAL file's keys written over, a type or a kind the file carries its own object and one it does not the base's, composed once", (t) => {
+  setCurrent("eu");
+  t.after(() => setCurrent(BASE));
+  const m = motionTable();
+  assert.equal(m.hz, 50);
+  assert.equal(motionTable(), m);
+  assert.notEqual(m, motion);
+  assert.equal(m.glow, eu.objects.motion.glow);
+  assert.equal(m.turn, motion.turn);
+  assert.equal(m.dice, motion.dice);
+  assert.equal(m.types["5"], eu.objects.motion.types["5"]);
+  assert.equal(m.types["9"], motion.types["9"]);
+  assert.equal(m.kinds["5"], eu.objects.motion.kinds["5"]);
+  assert.equal(m.kinds["1"], motion.kinds["1"]);
+  assert.equal(kindMotion(5).speed, 30);
+  assert.equal(motionOf({ face: 0, type: 32 }), eu.objects.motion.types["32"]);
+  assert.equal(motionOf({ face: 0, type: 9 }), motion.types["9"]);
+  const s = skinsTable();
+  assert.equal(skinsTable(), s);
+  assert.equal(s.cycles, eu.objects.skins.cycles);
+  assert.equal(s.shade, skins.shade);
 });

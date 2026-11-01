@@ -137,6 +137,6 @@ The table holds block faces and nothing else: a type's model is the face under t
 
 Section 7 is the one section whose size the discs change beyond HIRO's palette block above, 8,604 to 35,216 bytes larger on the PAL disc in eight worlds and the US disc's size in HIRO and HILLS, 1,760 to 3,600 bytes smaller on the Japanese disc in every world, and nothing settled above draws on what it holds.
 
-**What the PAL and Japanese executables change in the loader's rules.** The colour cycles a level with no key runs and the lists of what hides a face are read off the US and the PAL executables, the PAL's cycles standing in its release file under `objects` and its hides the US ones, and the map applies the US release's cycles to every disc until the viewer takes a disc's own and the Japanese executable is read, so it colours the Japanese disc's grey swirl with the US release's cycles.
+**What the PAL and Japanese executables change in the loader's rules.** The colour cycles a level with no key runs and the lists of what hides a face are read off the US and the PAL executables, the PAL's cycles standing in its release file under `objects` and its hides the US ones, and the map applies the US release's cycles to the Japanese disc until its executable is read, so it colours that disc's grey swirl with the US release's cycles.
 
 **What the 8bpp level of each texture is for.** It is uploaded like the rest and the renderer never reads it for a block face; the level select or a near view may.

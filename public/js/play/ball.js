@@ -489,9 +489,17 @@ function ceiling(b, probe, rise) {
   return true;
 }
 
+/** The arc's count after a frame of the jump or the hop: one fewer, or nothing where the table's
+    skip stands at it, which passes over the rows past the skip; with no skip in the table the
+    count falls to nothing by one. */
+function countDown(b) {
+  const { skip } = b.table.jump;
+  b.count = skip !== null && b.count === skip + 1 ? 0 : b.count - 1;
+}
+
 function jumping(b, probe, out) {
   const j = b.table.jump;
-  b.count = b.count === j.skip + 1 ? 0 : b.count - 1;
+  countDown(b);
   if (b.count <= 0) {
     b.pos = add(b.saved, b.h, b.long >= j.long ? j.far : j.snap);
     if (land(b, probe, out)) return;
@@ -533,8 +541,7 @@ function jumping(b, probe, out) {
 }
 
 function hopping(b, probe) {
-  const j = b.table.jump;
-  b.count = b.count === j.skip + 1 ? 0 : b.count - 1;
+  countDown(b);
   if (b.count <= 0) {
     if (probe.solid(add(cellOf(b, b.pos), b.n, -1))) {
       b.state = REST;
@@ -542,7 +549,8 @@ function hopping(b, probe) {
       return;
     }
     b.state = FALL;
-    b.v = b.table.fall.hop;
+    // with no constant in the table the fall starts at the last frame's change along the normal
+    b.v = b.table.fall.hop ?? b.jump.rows[b.row][0] - b.jump.rows[b.row - 1][0];
     return;
   }
   b.spinSpeed = 0;

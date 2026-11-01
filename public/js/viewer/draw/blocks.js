@@ -1,6 +1,14 @@
 import { state, BLOCK, project, facing, screen, sliceZ, effectsOn } from "../state.js";
 import { cellKey, FACE_NORMAL, KIND } from "../../format/lattice.js";
-import { OFF_LATTICE, skinsTable, kindMotion, modelUnit, shownOn, openFace } from "../data.js";
+import {
+  OFF_LATTICE,
+  skinsTable,
+  motionTable,
+  kindMotion,
+  modelUnit,
+  shownOn,
+  openFace,
+} from "../data.js";
 import { blockPhase, lightOn, cornersLit } from "../motion.js";
 import { ballsFor } from "./things.js";
 import { platformPlace, faceSkin } from "../skins.js";
@@ -238,13 +246,17 @@ const peak = (skins) => Array(3).fill(Math.max(...skins.cycles.invisible.level))
 // game. Where the level turns the light round, a face the light reaches is
 // drawn as the game draws it there instead. While the frame says every
 // invisible block is seen, nothing is lit and every face keeps the look. The
-// light returned is the level's, or null where the kind has none.
+// light returned is the level's, or null where the kind has none, and is kept
+// by the motion table it is read from.
 const lights = new WeakMap();
 function lightUp(sk, l, home, face, corners) {
   const entry = kindMotion(KIND.INVISIBLE)?.light;
   if (!entry) return null;
-  if (!lights.has(l)) lights.set(l, lightOn(entry, l));
-  const light = lights.get(l);
+  const table = motionTable();
+  let kept = lights.get(table);
+  if (!kept) lights.set(table, (kept = new WeakMap()));
+  if (!kept.has(l)) kept.set(l, lightOn(entry, l));
+  const light = kept.get(l);
   const block = 1 / modelUnit();
   const cell = [home.x, home.y, home.z];
   const at = corners.map((c) => c.map((v, i) => (cell[i] + v) * block));

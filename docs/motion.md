@@ -4,7 +4,7 @@ What the executable does to every object and every moving block each frame, read
 
 `--table` prints what the build ships under `motion` in `public/objects.json`, in the game's units, from the readings below and from what [camera.md](camera.md) and [ggi.md](ggi.md) read of the camera and the models, the rates by type and by kind of block among it, with the two cycles below as a frame program per phase, simulated from their routines and cut at one frame for all four phases so the game's spacing between them survives.
 
-The viewer draws everything that moves on the spot from that table, on a clock of sixty frames a second that starts at the level's first frame as the level opens, as play's clock does, and stands while the page is hidden, and what travels across blocks does so from the same table and the rules below, one game frame at a time; the Motion switch holds all of it at that first frame, except for a few things posed to show what they are.
+The viewer draws everything that moves on the spot from that table, under the PAL disc with its release file's entries written over it, on a clock at the frame rate of the disc shown, sixty frames a second on this disc and the Japanese and fifty on the PAL, that starts at the level's first frame as the level opens, as play's clock does, and stands while the page is hidden, and what travels across blocks does so from the same table and the rules below, one game frame at a time; the Motion switch holds all of it at that first frame, except for a few things posed to show what they are.
 
 [level-format.md](level-format.md) is the same document for the level file and [ggi.md](ggi.md) for the meshes.
 
@@ -373,7 +373,7 @@ The sunglasses set `0x800ba334` to 840 (`0x80038924`, `0x8003892c`) and turn on 
 
 The table ships the four words as `lasts`, with the lethargy pill's step and ticks, the invincibility pill's step, the sunglasses' step and blink and the bouncy pill's hold and latch.
 
-On the PAL disc the lethargy pill sets its word to 300 and the other two pills and the sunglasses theirs to 700 (`SCES_010.00`, `0x80039050`, `0x800390d0`, `0x80039134`, `0x800391a8`), the frames of the same seconds at fifty a second, and the Japanese disc sets this disc's 360 and 840 (`SCPS_100.64`, `0x80038d94`, `0x80038e10`, `0x80038e70`, `0x80038edc`); play sets the table's words on every disc meanwhile ("Not settled" below).
+On the PAL disc the lethargy pill sets its word to 300 and the other two pills and the sunglasses theirs to 700 (`SCES_010.00`, `0x80039050`, `0x800390d0`, `0x80039134`, `0x800391a8`), the frames of the same seconds at fifty a second, and the Japanese disc sets this disc's 360 and 840 (`SCPS_100.64`, `0x80038d94`, `0x80038e10`, `0x80038e70`, `0x80038edc`); play sets the PAL's words on the PAL disc and this disc's on the other two, the Japanese disc's own being the same.
 
 **The sunglasses' blink is 21 spells, off first and by turns, the first of 8 frames and every spell after of 9, and the flag stays off after the last.** The take calls `0x8002bec8` with 1 (`0x8003893c`, `0x80038940`), which clears a state word at `0x800a5e50` and sets the flag to 1 (`0x8002becc`, `0x8002bf38`, `0x8002bf44`); the hazards routine, finding the word at nothing, calls it with 0 (`0x8003b2d8`, `0x8003b2dc`), which marks the state an off spell's state, lays a count of 21 at `0x800a469c` and a timer of 9 at `0x800a46a0` and clears the flag (`0x8002bee8`, `0x8002beec`, `0x8002bef8`, `0x8002befc`, `0x8002bf08`, `0x8002bf14`), and then counts the word to −1 (`0x8003b2e8`, `0x8003b2ec`).
 
@@ -1224,7 +1224,7 @@ Which of the two tangents a pill flips about and a fruit tilts about rests on th
 
 What else the Japanese executable changes in play is not read, beyond the frame's length, the clock, the hourglass, the pills, the platform's speed and the breath above, the fast star below, and the view's scale and the free camera in [camera.md](camera.md); the PAL executable is read whole through its map, and what it changes from this disc's table stands in the PAL release file.
 
-In play every rate and count but the clock's and the hourglass's is the US executable's on every disc until the readers are generalised, the pills' frames, the platform's speed and the breath among them, so under the PAL disc play runs sixty frames a real second where that disc's come fifty, and its clock's seconds run down six for every five real ones.
+In play every rate and count but the clock's and the hourglass's is the US executable's on the Japanese disc until its executable is read, the breath's cap and the ending's view among them.
 
 The Japanese disc's end screen words, in Japanese and with a Perfect! pair among them, are not transcribed.
 

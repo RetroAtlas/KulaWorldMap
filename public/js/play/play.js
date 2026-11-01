@@ -191,7 +191,7 @@ const running = () =>
       keys.busy() ||
       live.driver !== null;
 
-/** Step the game frames `dt` ms owe, each taking the sixtieths the run's words ask, the level
+/** Step the game frames `dt` ms owe, each taking the blanks the run's words ask, the level
     running at rest with Motion on and only while the ball moves or a key is held without it, and
     the ending's view in the level's place once it has ended, with Motion on alone: whether
     anything moved. */

@@ -207,8 +207,11 @@ function sortDepth(idx, w, offset) {
 // The level's clock starts at its first frame as the level opens or motion is
 // turned on, as play's clock does, and stands there while motion is off, and while
 // the page is hidden, when the run moves on by the time it was hidden instead.
-// The same level installed again keeps its clock, and what travels is laid
-// out again from the level as it stands.
+// The run keeps the time it started at and counts its frames from there at the
+// rate of the table shown, so a level keeps its elapsed time across a change of
+// table. The same level installed again keeps its clock, and what travels is
+// laid out again from the level as it stands, and from the table shown where it
+// was laid from another.
 let run = null;
 let hiddenAt = document.hidden ? performance.now() : null;
 const now = () => hiddenAt ?? performance.now();
@@ -219,10 +222,11 @@ function syncRun() {
     const slot = slotOf(state.lvl);
     if (run?.slot === slot) run = { ...run, level: state.lvl, travel: carried(run, state.lvl) };
     else {
-      run = { slot, level: state.lvl, at: frameAt(table, now()), travel: null };
+      run = { slot, level: state.lvl, startMs: now(), travel: null };
       settleCircuits();
     }
   }
+  if (run?.travel && run.travel.table !== table) run.travel = null;
 }
 
 /** What travels, kept where the records it was lifted from are unchanged,
@@ -257,7 +261,9 @@ export const runWith = (fn) => {
 const handed = (l = state.lvl) => (l && source?.(l)) || null;
 
 const own = () =>
-  run && state.show.motion && run.level === state.lvl ? frameAt(motionTable(), now()) - run.at : 0;
+  run && state.show.motion && run.level === state.lvl
+    ? frameAt(motionTable(), now() - run.startMs)
+    : 0;
 const clockOf = (given) => given?.frame ?? own();
 export const clock = () => clockOf(handed());
 
@@ -265,10 +271,12 @@ export const clock = () => clockOf(handed());
 function stepped(l, idx, frame) {
   if (!run) return null;
   if (!run.travel) {
+    const table = motionTable();
     run.travel = {
-      walkers: walkers(l, idx, motionTable()),
+      table,
+      walkers: walkers(l, idx, table),
       probe: probe(l, litNow),
-      roll: dice(motionTable().dice),
+      roll: dice(table.dice),
     };
   }
   const travel = run.travel;
@@ -432,7 +440,7 @@ document.addEventListener("visibilitychange", () => {
     hiddenAt = performance.now();
     return;
   }
-  if (run && hiddenAt !== null) run.at += frameAt(motionTable(), performance.now() - hiddenAt);
+  if (run && hiddenAt !== null) run.startMs += performance.now() - hiddenAt;
   hiddenAt = null;
   draw();
 });
