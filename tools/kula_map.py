@@ -530,9 +530,9 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
 
 
 def words_block(other, names, us_words, given, pending):
-    """The end-screen table as the other executable holds it: its count and, per pair the base's table letters,
-    the word and the digest of the pair's two images, the base's word where the images are the base's and the hand
-    table's where they are the release's own."""
+    """The end-screen table as the other executable holds it: its count and, per pair the base's table or the hand
+    letters, the word and the digest of the pair's two images, the base's word where the images are the base's and
+    the hand table's where they are the release's own."""
     pair = names.get("WORDS_TABLE")
     if pair is None:
         return None
@@ -540,7 +540,7 @@ def words_block(other, names, us_words, given, pending):
     sprites = 0x80000000 | code.word(code.address(int(pair[0], 16), int(pair[1], 16)))
     count = code.word(sprites)
     out = {"count": count, "pairs": {}}
-    for index, (word, digest) in sorted(us_words.items()):
+    for index in sorted(set(us_words) | set(given)):
         if index + PAIR > count:
             pending.append({"pair": index, "why": f"the table holds {count} entries"})
             continue
@@ -549,6 +549,7 @@ def words_block(other, names, us_words, given, pending):
         except Pending as p:
             pending.append({"pair": index, "why": str(p)})
             continue
+        word, digest = us_words.get(index, (None, None))
         if theirs == digest:
             out["pairs"][str(index)] = [word, hexed(digest)]
         elif index in given:

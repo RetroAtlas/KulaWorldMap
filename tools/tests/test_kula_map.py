@@ -371,6 +371,23 @@ class Words(unittest.TestCase):
         self.assertEqual(given["words"], {"count": 2, "pairs": {"0": ["HALLO!", f"0x{digest:08x}"]}})
         self.assertEqual(given["pending"], [])
 
+    def test_a_pair_the_hand_letters_beyond_the_bases_table_is_held_by_its_own_digest(self):
+        own = (tim(0x03e0), tim(0x7c00))
+        built = mapped(executable(gaps=GAPS, images=(*IMAGES, *own)), hand(WORDS={2: "WELT!"}))
+        digest = zlib.crc32(b"".join(own))
+        self.assertEqual(built["words"], {"count": 4, "pairs": {"0": ["HELLO!", f"0x{DIGEST:08x}"],
+                                                                 "2": ["WELT!", f"0x{digest:08x}"]}})
+        self.assertEqual(built["pending"], [])
+        with tempfile.TemporaryDirectory() as out:
+            path = Path(out) / "eu.json"
+            dump(built, path)
+            with redirect_stdout(io.StringIO()):
+                check(built, path)
+            redrawn = mapped(executable(gaps=GAPS, images=(*IMAGES, own[0], tim(0x001f))), hand(WORDS={2: "WELT!"}))
+            with self.assertRaises(SystemExit) as stopped:
+                check(redrawn, path)
+            self.assertIn("words holds", str(stopped.exception))
+
     def test_the_pairs_are_rendered_side_by_side_named_by_their_index(self):
         copy = executable(gaps=GAPS)
         with tempfile.TemporaryDirectory() as out, redirect_stdout(io.StringIO()):

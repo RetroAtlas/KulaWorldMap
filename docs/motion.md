@@ -1292,7 +1292,7 @@ In play every rate and count but the clock's and the hourglass's is the US execu
 
 The view's scale down, 3840 of 4096 on this disc and the Japanese and 4096 on the PAL ([camera.md](camera.md)), ships in the table as `play.screen.scale`, which the map reads nowhere: its view in play stands the same height on every disc, and the start camera it draws sees as high as this disc's on each.
 
-The Japanese disc's end screen words, in Japanese and with a Perfect! pair among them, are not transcribed.
+The Japanese disc's end screen words, read off their renders into its map and held there by their digests, the Perfect! pair at 38 the other discs lack among them, ship nowhere yet: play on that disc shows this disc's `play.words` until its map is finished, and whether the pair at 38 ships beside the others is not decided.
 
 The laser's beam was not looked at for a pulse.
 

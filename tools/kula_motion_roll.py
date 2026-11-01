@@ -660,8 +660,8 @@ def roll(r):
     arc = [[r[f"arc.{i}.normal"], r[f"arc.{i}.heading"]] for i in range(1, ARC_STEPS + 1)]
     if sum(n for n, _ in arc) != r["wrap.resume"] or r["wrap.resume"] != r["ball.rest"] or r["land.off"] != r["ball.rest"]:
         sys.exit(f"the arc {arc} does not end with the ball resting off the new face")
-    if r["land.under"] != r["ball.rest"] or r["land.lift"] != r["ball.rest"]:
-        sys.exit("a landing does not look a radius under the centre")
+    if not r["ball.rest"] <= r["land.under"] < r["ball.rest"] + BLOCK or r["land.lift"] != r["ball.rest"]:
+        sys.exit("a landing does not look into the block under the face, a radius or more under the centre, or does not lift it a radius")
     quarter = TURN // 4
     if r["turn.frames"] != r["turn.frames.right"] or r["turn.step"] != -r["turn.step.right"] \
             or r["turn.step"] != quarter // r["turn.frames"]:

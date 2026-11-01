@@ -93,7 +93,7 @@ class Roll(unittest.TestCase):
                     roll({**game, **change})
 
     def test_an_arc_that_does_not_end_off_the_new_face_stops_the_reading(self):
-        for change in ({"arc.4.normal": 9}, {"wrap.resume": 90}, {"land.off": 90}, {"land.under": 90}):
+        for change in ({"arc.4.normal": 9}, {"wrap.resume": 90}, {"land.off": 90}, {"land.under": 90}, {"land.under": 612}):
             with self.assertRaises(SystemExit):
                 roll({**GAME, **change})
 

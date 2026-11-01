@@ -532,8 +532,8 @@ def play(r):
     if r["next.one"] != 1 or r["next.final"] != r["run.worlds"] * r["next.slots"] + 1 \
             or r["next.levels.final"] != r["death.finals"] or r["death.finals"] != FINALS:
         sys.exit("the finals are not numbered on from the worlds' levels, or are not two a world")
-    if r["next.mode.load"] != 0 or r["next.mode.writes"] or tuple(r["next.mode.clears"]) != r["names"]["NEXT_MODE_CLEARS"]:
-        sys.exit("the word the next-level routine's other starts hang on does not load as 0, or something writes it")
+    if r["next.mode.load"] != 0 or r["next.mode.writes"] or not set(r["names"]["NEXT_MODE_CLEARS"]) <= set(r["next.mode.clears"]):
+        sys.exit("the word the next-level routine's other starts hang on does not load as 0, something writes it, or a clear named is none")
     wait = {name: r[f"wait.{name}"] for name in ENDINGS if f"wait.{name}" in r}
     wait["bonus"] = r["wait.hidden"]
     picks = {name: -code * 2 if code < 0 else r["words.win"] for name, code in ending.items()}
