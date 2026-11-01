@@ -1557,7 +1557,7 @@
     "47": {"turn":24,"tilt":{"rate":-80,"reach":150},"bob":{"rate":-60,"reach":20},"take":{"reach":180,"stand":386,"points":2500,"fruit":16},"order":"zyx"},
     "50": {"tumble":[14,-120,52],"travel":16,"entry":{"stand":200},"shadow":{"sprite":0,"off":0,"strength":128},"order":"xyz","axes":"world","catch":{"square":44999}},
     "51": {"roll":-64,"travel":15,"turning":{"frames":64,"rate":16,"about":32},"entry":{"stand":200},"shadow":{"sprite":1,"off":0,"strength":128,"turns":true},"order":"zyx","before":[0,0,1024],"catch":{"square":44999}},
-    "52": {"tumble":[64,32,0],"sway":{"rate":64,"reach":600},"entry":{"stand":200},"shadow":{"sprite":0,"off":0,"strength":128},"order":"xyz","axes":"world","catch":{"square":44999}},
+    "52": {"tumble":[64,32,0],"sway":{"rate":64,"reach":600},"entry":{"stand":200},"shadow":{"sprite":0,"off":0,"strength":128},"order":"xyz","axes":"world","catch":{"square":44999},"points":5},
     "53": {"tumble":[14,-120,52],"shake":{"frames":65,"reach":65},"dash":64,"settle":513,"ways":4,"entry":{"stand":200},"shadow":{"sprite":0,"off":0,"strength":128},"order":"xyz","axes":"world","catch":{"square":16199}},
     "56": {"bounce":{"rate":28,"wrap":2048,"rise":400,"spin":-400},"phases":[1024,682,341,0],"entry":{"stand":50},"shadow":{"sprite":0,"off":30,"strength":128,"fade":48},"order":"zyx","before":[0,0,1024],"catch":{"square":44999,"stand":200}}
    },

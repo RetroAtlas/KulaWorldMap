@@ -17,7 +17,7 @@ from kula_align import (LISTS, MODULES, TIERS, VOTING, Anchor, Left, align, anch
 
 US = base()
 ROWS = anchors_of(US)
-DISTINCT = 3437       # the addresses the readers' lists hold between them
+DISTINCT = 3439       # the addresses the readers' lists hold between them
 
 
 def placed(copy):

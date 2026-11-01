@@ -1,13 +1,13 @@
 """What harms the ball, the hazards the ball's routine runs each frame over
 its cell and the block under it and the captivators' hit test after them,
 with a death as a countdown rather than a state and the dying ball's flash
-and tint, the lit beam that kills the ball whose cell it is, fire's heat and
-acid's melt with their limits and the heat's shake of the pad, the spikes
-and the moving spikes' deadly value, the captivators' and the wandering
-ball's reach as the squared distance each catches the ball within, the
-corkscrew's reach from where it bounces, and the invincible ball's colours,
-the light that runs red, green and blue by a counter: "What harms the ball"
-in docs/motion.md.
+and tint, the lit beam that kills the ball whose cell it is, the points a
+frame the fast star's face scores, fire's heat and acid's melt with their
+limits and the heat's shake of the pad, the spikes and the moving spikes'
+deadly value, the captivators' and the wandering ball's reach as the squared
+distance each catches the ball within, the corkscrew's reach from where it
+bounces, and the invincible ball's colours, the light that runs red, green
+and blue by a counter: "What harms the ball" in docs/motion.md.
 """
 import sys
 from pathlib import Path
@@ -60,6 +60,7 @@ CHECKS = [
     (0x8003a990, "sh $zero, 312($s0)", "drop the speed"),
     (0x8003a994, "sh $zero, 320($s0)", "and the spin's speed"),
     (0x8003a998, "sw $v0, 516($s0)", "and set the heat at 516"),
+    (0x8003aaec, "addiu $v0, $zero, 52", "the word for what the ball stands on is tested against the fast star's type"),
     (0x8003ab48, "bne $v1, $v0, 0x8003ac2c", "on fire"),
     (0x8003ab50, "jal 0x8003b514", "the air is asked after"),
     (0x8003ab58, "bne $v0, $zero, 0x8003abb4", "and on the ground"),
@@ -248,6 +249,8 @@ IMMEDIATES = [
     ("what harms the ball", "laser.cell", "the ball's own cell holding this, a lit beam, is the laser's death", 0x8003a944,
      "addiu $v1, $zero, {}"),
     ("what harms the ball", "laser.heat", "which sets the heat to this", 0x8003a98c, "addiu $v0, $zero, {}"),
+    ("what harms the ball", "star52.points", "on the fast star's face, with the jump asked and the roll not, the score grows "
+     "by this a frame", 0x8003ab34, "addiu $v0, $v0, {}"),
     ("what harms the ball", "fire.kind", "fire is this kind under the ball", 0x8003ab44, "addiu $v0, $zero, {}"),
     ("what harms the ball", "fire.burn", "and heats it by this a frame on the ground", 0x8003ab7c, "addiu $v0, $v0, {}"),
     ("what harms the ball", "fire.landed", "the landing's mark at 494 being this on the frame after one", 0x8003abb8,
@@ -334,8 +337,10 @@ def harms(r):
     by type: fire's heat and acid's melt with their limits, the laser's cell
     and the heat it leaves, the moving spikes' deadly value and their own
     countdown, the captivators' reach as the squared distance each catches
-    the ball within, the corkscrew's reach with how far off the face the point its
-    bounce moves stands at a landing, and the dying ball's flash and tint."""
+    the ball within, the fast star's points a frame, null where the routine
+    tests nothing for its type, the corkscrew's reach with how far off the
+    face the point its bounce moves stands at a landing, and the dying ball's
+    flash and tint."""
     if r["fire.kind"] != FIRE or r["acid.kind"] != ACID or r["laser.cell"] != LIT:
         sys.exit("fire, acid or the laser is not read from its own kind or the lit beam's cell")
     if r["laser.lay"] != r["laser.cell"]:
@@ -362,7 +367,7 @@ def harms(r):
         "types": {
             MOVING_SPIKES: {"harm": {"flag": r["spikes11.deadly"], "standing": r["wait.spikes.standing"]}},
             42: {"harm": {"form": BROWN}},
-            50: {"catch": catch}, 51: {"catch": catch}, 52: {"catch": catch},
+            50: {"catch": catch}, 51: {"catch": catch}, 52: {"catch": catch, "points": r.get("star52.points")},
             CORKSCREW: {"catch": {**catch, "stand": r["captivator.standoff"] - BLOCK // 2}},
             WANDERER: {"catch": {"square": r["catch.near.gate"] - 1}},
             int(BALL): {"dying": {"flash": r["dying.flash"]}, "tint": {"own": r["tint.own"], "other": r["tint.other"]}},

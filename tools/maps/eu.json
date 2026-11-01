@@ -2460,6 +2460,8 @@
   "0x8003aab0": {"at": "0x8003b32c", "word": "0x14620004", "text": "bne $v1, $v0, 0x8003b340", "tier": "strict5"},
   "0x8003aab8": {"at": "0x8003b334", "word": "0xae020060", "text": "sw $v0, 96($s0)", "tier": "strict5"},
   "0x8003aac0": {"at": "0x8003b33c", "word": "0xae00005c", "text": "sw $zero, 92($s0)", "tier": "strict10"},
+  "0x8003aaec": {"at": "0x8003b368", "word": "0x24020034", "text": "addiu $v0, $zero, 52", "tier": "strict10"},
+  "0x8003ab34": {"key": "star52.points", "at": "0x8003b3b0", "word": "0x24420005", "text": "addiu $v0, $v0, 5", "tier": "strict10", "pattern": "addiu $v0, $v0, {}", "us": 5, "value": 5, "by": "same"},
   "0x8003ab44": {"key": "fire.kind", "at": "0x8003b3c0", "word": "0x24020001", "text": "addiu $v0, $zero, 1", "tier": "strict10", "pattern": "addiu $v0, $zero, {}", "us": 1, "value": 1, "by": "same"},
   "0x8003ab48": {"at": "0x8003b3c4", "word": "0x14620038", "text": "bne $v1, $v0, 0x8003b4a8", "tier": "strict10"},
   "0x8003ab50": {"at": "0x8003b3cc", "word": "0x0c00ef64", "text": "jal 0x8003bd90", "tier": "strict10"},

@@ -463,6 +463,12 @@ The test is on the cell the centre lies in, on the ground or in the air, so a ju
 
 The table ships the cell and the heat as kind 8's `harm`.
 
+**A ball on the fast star's face scores 5 a frame while the jump is asked and the roll is not and the ball is not hopping, which no level is known to reach.** After the arrow's and ice's cases ("The blocks under the ball" below) the hazards read the word at 356 for what the ball stands on ("The shadows" below) and, where it is type 52 (`0x8003aae8`, `0x8003aaec`), with the roll's request at 96 nothing, the jump's request at 100 one and the state at 408 not the hop state's number (`0x8003aaf8` to `0x8003ab20`), add 5 to the score at `0x800a53c8` (`0x8003ab28` to `0x8003ab3c`), with no other test.
+
+The PAL hazards routine carries the case (`SCES_010.00`, `0x8003b368` to `0x8003b3b8`) and the Japanese none, no test of type 52 standing in its routine (`SCPS_100.64`, `0x8003aeb0` to `0x8003b950`), which runs straight from the call this disc's routine makes before the case to the test of the block's kind it makes after it (`0x8003b05c`, `0x8003b064`; here `0x8003aae0`, `0x8003ab40`), so the 5 a frame is not scored on that disc.
+
+The table ships the 5 as type 52's `points`.
+
 **Fire heats the ball by 40 a frame, by 600 as it lands on it, and kills past 2000.** On fire, kind 1 (`0x8003ab48`), on the ground alone, which the air test says (`0x8003ab50` calls `0x8003b514` and `0x8003ab58` skips the heat on its answer), and unharmed, the heat at 516 grows by 40 (`0x8003ab7c`, `0x8003ab80`), and on the frame after a landing on it, by the mark at 494 ("The devices under the ball" above), by 600 besides (`0x8003abb4` to `0x8003abe4`); past 2000, with no countdown running, the ball is frozen, the ending fire's code and the countdown 25 (`0x8003abf0` to `0x8003ac28`), and while that countdown runs the ball's routine widens the squash word at 704 by 210 a frame (`0x8003642c`, `0x80036448`, `0x80031390`, and "The ball" above), so it swells as it burns.
 
 Off fire the heat cools by 15 a frame, and on ice by 150 more, to no less than nothing (`0x8003ac60` to `0x8003ac6c`, `0x8003ad30` to `0x8003ad3c`).
@@ -1222,7 +1228,7 @@ It paints the shadow under a pickup only while the pickup is drawn, so the face 
 
 Which of the two tangents a pill flips about and a fruit tilts about rests on the naming of the model's axes in [ggi.md](ggi.md) and on RotMatrix's order; a pill in play flips the way the map does.
 
-What else the Japanese executable changes in play is not read, beyond the frame's length, the clock, the hourglass, the pills, the platform's speed and the breath above, the fast star below, and the view's scale and the free camera in [camera.md](camera.md); the PAL executable is read whole through its map, and what it changes from this disc's table stands in the PAL release file.
+What else the Japanese executable changes in play is not read, beyond the frame's length, the clock, the hourglass, the pills, the platform's speed, the breath and the fast star above, and the view's scale and the free camera in [camera.md](camera.md); the PAL executable is read whole through its map, and what it changes from this disc's table stands in the PAL release file.
 
 In play every rate and count but the clock's and the hourglass's is the US executable's on the Japanese disc until its executable is read, the breath's cap and the ending's view among them.
 
@@ -1255,10 +1261,6 @@ What a jump over flat ground shows otherwise than the game's jump, the landing c
 What the fruit takes 200 off, a word by the world at `0x800a5584` that the level loop sets as a level starts and the menus read (`0x80038c88` onward, `0x800407f0`), is not read.
 
 The third of the three words the loop runs the ending's routine on, at `0x800a57f8`, is not read for what it means ("The level's clock and its end" above).
-
-A ball standing on a face whose slot is type 52, with the jump asked and the roll not, scores 5 a frame (`0x8003aaf8` to `0x8003ab3c`), which no level is known to reach.
-
-The PAL hazards routine carries the same case (`SCES_010.00`, `0x8003b368` to `0x8003b3b8`) and the Japanese none, no test of type 52 standing in its routine (`SCPS_100.64`, `0x8003aeb0` to `0x8003b950`), which runs straight from the call this disc's makes before the case to the test of the block's kind it makes after it (`0x8003b05c`, `0x8003b064`; here `0x8003aae0`, `0x8003ab40`), so the 5 a frame is not scored on that disc.
 
 How the finals are reached, by the flag at `0x800a3454`, which one routine writes from a table and another sets to 1 (`0x800462c8`, `0x8004910c`), and what the word at `0x800a33f4` marks, on which the points routine skips its banking and the next-level routine returns, are not read.
 

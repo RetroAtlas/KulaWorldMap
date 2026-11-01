@@ -219,7 +219,7 @@ GAME = {
     "spikes12.type": 12, "spikes11.type": 11, "spikes11.deadly": 1, "wait.spikes.landing": 10,
     "wait.spikes.standing": 9, "end.captivator.still": -5, "catch.type53": 53, "catch.near.gate": 16200,
     "corkscrew.type": 56, "corkscrew.rise": 400, "corkscrew.rise.y": 400, "corkscrew.rise.z": 400,
-    "captivator.standoff": 456,
+    "captivator.standoff": 456, "star52.points": 5,
     "catch.square": 44999, "dying.flash": 1024, "dying.flash.full": 4096, "tint.full": -4096, "tint.own": 400,
     "tint.other": 2000, "simon.done": 1, "simon.wrong": 2, "end.view.x": -8, "end.view.y": 3, "end.view.z": 10,
     "end.view.swing": 12, "end.view.swing.bonus": 58, "end.view.off": 1400, "end.view.off.bonus": 3400,

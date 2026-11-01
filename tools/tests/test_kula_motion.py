@@ -437,9 +437,11 @@ class Table(unittest.TestCase):
         self.assertEqual(t["play"]["clock"]["second"], 50)
         self.assertEqual(t["play"]["ending"]["lost"], -3)
         self.assertEqual(t["play"]["view"]["hidden"], {"off": 400})
-        absent = table(Readings({**r, "jump.skip": None, "hop.skip": None, "fall.hop": None}), 30, 60)
+        absent = table(Readings({**r, "jump.skip": None, "hop.skip": None, "fall.hop": None, "star52.points": None}),
+                       30, 60)
         ball = absent["types"]["30"]
-        self.assertEqual((ball["jump"]["skip"], ball["fall"]["hop"]), (None, None))
+        self.assertEqual((ball["jump"]["skip"], ball["fall"]["hop"], absent["types"]["52"]["points"]), (None, None, None))
+        self.assertEqual({**absent["types"]["52"], "points": r["star52.points"]}, t["types"]["52"])
         self.assertEqual(({**ball["jump"], "skip": r["jump.skip"]}, {**ball["fall"], "hop": r["fall.hop"]}),
                          (t["types"]["30"]["jump"], t["types"]["30"]["fall"]))
         with self.assertRaises(SystemExit) as stopped:
@@ -475,7 +477,7 @@ class Lists(unittest.TestCase):
                "names", *(f"screen.load.{name}" for name in ("wide", "high", "distance", "across", "down"))}
 
     def test_the_six_lists_hold_their_counts_and_every_check_is_an_address_an_instruction_and_a_sentence(self):
-        self.assertEqual([len(t) for t in (CHECKS, IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS)], [2241, 750, 67, 13, 7, 2])
+        self.assertEqual([len(t) for t in (CHECKS, IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS)], [2242, 751, 67, 13, 7, 2])
         self.assertEqual({tuple(type(x) for x in check) for check in CHECKS}, {(int, str, str)})
 
     def test_every_key_is_read_once_and_none_of_them_is_set_by_hand(self):

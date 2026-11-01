@@ -217,7 +217,9 @@ def table(r, platform_speed, hz):
     level data holds, scaled as the loader scales it where it does. The
     jump's skip is null where the count falls to nothing by one with no skip,
     and the fall a hop over nothing starts is null where it starts at the
-    last frame's change along the normal rather than at a constant. A type
+    last frame's change along the normal rather than at a constant, and the
+    fast star's points a frame are null where the hazards routine tests
+    nothing for its type. A type
     the loader lifts into an entry of its own says how far off its face the
     game draws the model's origin, and a type the game draws a shadow under
     says which sprite, how far off its face it lies and how strong it is, and

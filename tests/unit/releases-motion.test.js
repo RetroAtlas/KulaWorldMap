@@ -73,6 +73,15 @@ test("the PAL table has no skip for the jump and no constant for a hop's fall, i
   assert.equal(eu.objects.jump.rows.length, 28);
 });
 
+test("the fast star's face scores 5 a frame on the base's table and on the PAL's, whose entry for it is whole", () => {
+  assert.equal(motion.types["52"].points, 5);
+  assert.equal(eu.objects.motion.types["52"].points, 5);
+  assert.equal(
+    Object.keys(eu.objects.motion.types["52"]).length,
+    Object.keys(motion.types["52"]).length,
+  );
+});
+
 test("the PAL skins change in their cycles alone, fire running 45 frames", () => {
   assert.deepEqual(Object.keys(eu.objects.skins), ["cycles"]);
   assert.equal(eu.objects.skins.cycles.fire.frames.length, 45);

@@ -6,6 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from kula_motion_code import Readings  # noqa: E402
 from kula_motion_harms import harms  # noqa: E402
 from motion_fixture import GAME, GAME_EU  # noqa: E402
 
@@ -20,11 +21,16 @@ class Harms(unittest.TestCase):
             self.assertEqual(h["kinds"][8], {"harm": {"cell": -2, "heat": 1900}})
             self.assertEqual(h["types"][11], {"harm": {"flag": 1, "standing": 9}})
             self.assertEqual(h["types"][42], {"harm": {"form": 0}})
-            for t in (50, 51, 52):
+            for t in (50, 51):
                 self.assertEqual(h["types"][t], {"catch": {"square": 44999}})
+            self.assertEqual(h["types"][52], {"catch": {"square": 44999}, "points": 5})
             self.assertEqual(h["types"][56], {"catch": {"square": 44999, "stand": 200}})
             self.assertEqual(h["types"][53], {"catch": {"square": 16199}})
             self.assertEqual(h["types"][30], {"dying": {"flash": 1024}, "tint": {"own": 400, "other": 2000}})
+
+    def test_the_fast_stars_points_ship_null_where_the_routine_tests_nothing_for_its_type(self):
+        h = harms(Readings({**GAME, "star52.points": None}))
+        self.assertEqual(h["types"][52], {"catch": {"square": 44999}, "points": None})
 
     def test_a_harm_read_from_another_kind_type_or_limit_stops_the_reading(self):
         for change in ({"fire.kind": 2}, {"laser.cell": -1}, {"laser.lay": -1}, {"fire.limit.gate": 2000},
