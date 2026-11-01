@@ -1377,7 +1377,9 @@
    "effect.sprites": 7
   },
   "types": {},
-  "jump": {}
+  "jump": {},
+  "motion": {},
+  "skins": {}
  },
  "levels": {}
 }

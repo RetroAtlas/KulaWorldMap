@@ -19,7 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from align_fixture import ANCHORS, GAPS, ORDER, laid, pill, spikes, twin  # noqa: E402
 from kula_align import MODULES  # noqa: E402
 from kula_disc import RELEASES  # noqa: E402
-from kula_map import FITS, KINDS, build, check, cut, dump, leaves, pattern_on, registries, relation, report, write_words  # noqa: E402
+from kula_map import (FITS, KINDS, base_values, build, check, check_base, cut, dump, leaves, pattern_on,  # noqa: E402
+                      registries, relation, report, write_words)
 from motion_fixture import addiu, addu, jal, jr, lh, lui, lw, sll, sra, sw  # noqa: E402
 from png import read_png  # noqa: E402
 
@@ -380,6 +381,28 @@ class Files(unittest.TestCase):
         self.assertTrue(text.startswith("pending: 1\n  address 0x"))
         self.assertEqual([line for line in text.splitlines() if line and not line.startswith("  ")],
                          ["pending: 1", "tuned: 0", "absent: 0", "shift: 0", "reshaped: 0", "renamed or loose: 0"])
+
+
+class Base(unittest.TestCase):
+    def test_the_bases_values_are_read_by_address_and_key_and_a_committed_row_the_base_no_longer_reads_is_named(self):
+        values = base_values(US.listing.code, (FIXTURE,))
+        s = US.starts
+        self.assertEqual(values[US.places["pill.lethargy"], "pill.lethargy"], 360)
+        self.assertEqual(values[s["pill"] + 4 * 6, "pill.fill"], 5)
+        self.assertEqual((values[s["clock"] + 12, "clock.shown"], values[s["clock"] + 40, "clock.grey"]), (60, 128))
+        built = mapped(executable(gaps=GAPS))
+        with tempfile.TemporaryDirectory() as out:
+            path = Path(out) / "eu.json"
+            dump(built, path)
+            check_base(US.listing.code, path, (FIXTURE,))
+            changed = json.loads(path.read_text())
+            key = f"0x{US.places['pill.lethargy']:08x}"
+            changed["rows"][key]["us"] = 361
+            path.write_text(json.dumps(changed))
+            with self.assertRaises(SystemExit) as stopped:
+                check_base(US.listing.code, path, (FIXTURE,))
+            self.assertIn(f"pill.lethargy at {key} holds the base's value as 361, where the base's executable reads 360",
+                          str(stopped.exception))
 
 
 class Registries(unittest.TestCase):

@@ -20,15 +20,18 @@ from kula_build import (  # noqa: E402
     base_art,
     base_objects,
     code_of,
+    hold_to_rules,
     laid_out,
     layout_of,
     mesh_readings,
+    motion_overlay,
     other_release,
     packs_json,
     release_art,
     release_json,
     release_objects,
     rules_of,
+    skins_overlay,
     slot,
     slot_problems,
     tgis_of,
@@ -48,6 +51,7 @@ from kula_kwl import (  # noqa: E402
 from kula_kwl_check import UNTRACED, figure_failures  # noqa: E402
 from kula_level import BLOCK_KINDS, FACE  # noqa: E402
 from kula_motion import readings  # noqa: E402
+from kula_motion_code import Readings  # noqa: E402
 from kula_pak import Pak  # noqa: E402
 from kula_place import RECOMPRESS, ROOM  # noqa: E402
 from kula_sector import USER, sectors_of  # noqa: E402
@@ -235,33 +239,125 @@ class TheArt(unittest.TestCase):
 
 
 class TheObjects(unittest.TestCase):
-    def test_the_base_records_the_readings_the_meshes_are_read_with_and_no_model_or_arc_of_its_own(self):
+    def test_the_base_records_the_readings_the_meshes_are_read_with_and_no_model_arc_motion_or_skins_of_its_own(self):
         self.assertEqual(mesh_readings({**READINGS, "coin.bob": 3}), READINGS)
-        self.assertEqual(base_objects(READINGS), {"readings": READINGS, "types": {}, "jump": {}})
+        self.assertEqual(base_objects(READINGS), {"readings": READINGS, "types": {}, "jump": {}, "motion": {}, "skins": {}})
+
+    def test_a_reading_the_executable_has_no_instruction_for_is_recorded_as_none(self):
+        self.assertEqual(mesh_readings(Readings({**READINGS, "jump.skip": None})), {**READINGS, "jump.skip": None})
 
     def test_another_release_carries_the_readings_beside_the_types_and_the_arc_its_file_changes(self):
         base, sheet = committed(ggi(), set(PLACED))
         rows = [[0, 0, -48], [61, 0, -96], [117, 0, -144]]
         g = ggi(types={7: EXITS, 28: [quad(5, dz=40)]}, arc=(4, rows))
         out = release_objects(g, base, READINGS, sheet)
-        self.assertEqual(list(out), ["readings", "types", "jump"])
+        self.assertEqual(list(out), ["readings", "types", "jump", "motion", "skins"])
         self.assertEqual(out["readings"], READINGS)
         self.assertEqual(list(out["types"]), ["28"])
         self.assertNotEqual(out["types"]["28"], base["types"]["28"])
         self.assertEqual(out["jump"], {"count": 4, "rows": rows})
-        self.assertEqual(release_objects(ggi(), base, READINGS, sheet), {"readings": READINGS, "types": {}, "jump": {}})
+        self.assertEqual(release_objects(ggi(), base, READINGS, sheet),
+                         {"readings": READINGS, "types": {}, "jump": {}, "motion": {}, "skins": {}})
 
-    def test_the_file_lays_each_model_on_a_line_of_its_own_and_reads_back_the_same(self):
+    def test_the_motion_and_the_skins_its_executable_changes_come_after_the_arc_as_given(self):
+        base, sheet = committed(ggi(), set(PLACED))
+        out = release_objects(ggi(), base, READINGS, sheet, motion={"hz": 50, "kinds": {"5": {"dwell": 40}}},
+                              skins={"hides": {"other": []}})
+        self.assertEqual(list(out), ["readings", "types", "jump", "motion", "skins"])
+        self.assertEqual((out["motion"], out["skins"]), ({"hz": 50, "kinds": {"5": {"dwell": 40}}}, {"hides": {"other": []}}))
+
+    def test_the_file_lays_each_model_and_each_entry_of_the_tables_on_a_line_of_its_own_and_reads_back_the_same(self):
         base, sheet = committed(ggi(), set(PLACED))
         g = ggi(types={7: [quad(7, dz=40), quad(9, dz=40)], 28: [ARROW]})
-        data = release_json("eu", {"hz": 50}, {"packs": []}, {}, release_objects(g, base, READINGS, sheet), {})
+        motion = {"hz": 50, "play": {"clock": {"second": 50}, "wait": {"fire": 21}},
+                  "types": {"30": {"breathe": {"full": 5000}}, "32": {"lasts": {"word": 300}}}, "kinds": {"5": {"dwell": 40}}}
+        skins = {"hides": {"other": [1, 2]}}
+        data = release_json("eu", {"hz": 50}, {"packs": []}, {},
+                            release_objects(g, base, READINGS, sheet, motion=motion, skins=skins), {})
         text = laid_out(data)
         self.assertEqual(json.loads(text), data)
         lines = [line.strip().rstrip(",") for line in text.splitlines()]
         for m in data["objects"]["types"]["7"]:
             self.assertIn(json.dumps(m, separators=(",", ":")), lines)
         self.assertEqual(sum(line.startswith('{"box":') for line in lines), 2)
+        for key, value in (("hz", 50), ("play", motion["play"]), ("30", motion["types"]["30"]), ("32", motion["types"]["32"]),
+                           ("5", motion["kinds"]["5"]), ("hides", skins["hides"])):
+            self.assertIn(f'"{key}": ' + json.dumps(value, separators=(",", ":")), lines)
         self.assertNotIn("\0", text)
+
+
+MOTION = {"hz": 60, "turn": 4096, "play": {"clock": {"tick": 1, "second": 50}, "wait": {"fire": 25}},
+          "types": {"30": {"breathe": {"full": 6000, "tick": 50}}, "32": {"turn": 20, "lasts": {"word": 360}},
+                    "35": {"turn": -16, "take": {"points": 10, "clock": {"from": 5999, "second": 50}}}},
+          "kinds": {"5": {"speed": 25, "dwell": 48}, "7": {"cycle": [[1, 2]]}}}
+SKINS = {"textures": 56, "shade": {"A": [1, 0]}, "turn": {"A": 2}, "light": {"A": [[1, 2, 3]]},
+         "tint": {"A": [1, 2, 3], "B": [4, 5, 6]}, "hides": {"other": [1]}, "cycles": {"fire": [1, 2]}}
+RULES = {"hz": 60, "clock": {"fill": 50}, "hourglass": {"from": 5999, "second": 50, "points": 10}}
+
+
+def changed(table, *changes):
+    """A copy of the table with each value set at its dotted path."""
+    out = json.loads(json.dumps(table))
+    for path, value in changes:
+        *keys, last = path.split(".")
+        node = out
+        for k in keys:
+            node = node[k]
+        node[last] = value
+    return out
+
+
+class TheTables(unittest.TestCase):
+    def test_the_overlay_writes_a_key_whole_where_it_differs_and_a_type_or_a_kind_whole_where_any_value_in_it_does(self):
+        theirs = changed(MOTION, ("hz", 50), ("types.32.lasts.word", 300), ("kinds.5.dwell", 40))
+        self.assertEqual(motion_overlay(theirs, MOTION),
+                         {"hz": 50, "types": {"32": {"turn": 20, "lasts": {"word": 300}}}, "kinds": {"5": {"speed": 25, "dwell": 40}}})
+        self.assertEqual(motion_overlay(changed(MOTION, ("play.wait.fire", 21)), MOTION),
+                         {"play": {"clock": {"tick": 1, "second": 50}, "wait": {"fire": 21}}})
+        self.assertEqual(motion_overlay(changed(MOTION), MOTION), {})
+
+    def test_a_table_lacking_an_entry_of_the_bases_or_keyed_otherwise_stops_the_build_naming_what_is_apart(self):
+        theirs = changed(MOTION)
+        del theirs["kinds"]["7"]
+        with self.assertRaises(SystemExit) as stop:
+            motion_overlay(theirs, MOTION)
+        self.assertIn("kinds lack 7", str(stop.exception))
+        theirs = changed(MOTION, ("glow", {}))
+        with self.assertRaises(SystemExit) as stop:
+            motion_overlay(theirs, MOTION)
+        self.assertIn("glow", str(stop.exception))
+
+    def test_the_skins_overlay_writes_a_key_whole_and_refuses_one_the_artwork_gives(self):
+        self.assertEqual(skins_overlay(changed(SKINS, ("hides.other", [1, 2])), SKINS), {"hides": {"other": [1, 2]}})
+        self.assertEqual(skins_overlay(changed(SKINS), SKINS), {})
+        for path, value in (("textures", 57), ("shade.A", [0, 0]), ("turn.A", 3), ("light.A", [[3, 2, 1]])):
+            with self.subTest(key=path):
+                with self.assertRaises(SystemExit) as stop:
+                    skins_overlay(changed(SKINS, (path, value)), SKINS)
+                self.assertIn(path.split(".")[0], str(stop.exception))
+
+    def test_a_worlds_tint_is_left_to_the_artwork_entry_where_that_names_the_world_and_refused_where_it_does_not(self):
+        theirs = changed(SKINS, ("tint.A", [3, 2, 1]), ("hides.other", [1, 2]))
+        self.assertEqual(skins_overlay(theirs, SKINS, ["A"]), {"hides": {"other": [1, 2]}})
+        self.assertEqual(skins_overlay(changed(SKINS, ("tint.A", [3, 2, 1])), SKINS, ["A", "B"]), {})
+        with self.assertRaises(SystemExit) as stop:
+            skins_overlay(theirs, SKINS, ["B"])
+        self.assertIn("tint A", str(stop.exception))
+        self.assertNotIn("B", str(stop.exception))
+
+    def test_the_table_and_the_rules_have_to_agree_where_both_readers_read_the_same_instructions_a_null_with_a_null(self):
+        hold_to_rules(MOTION, RULES)
+        nulls = changed(MOTION, ("types.35.take.points", None), ("types.35.take.clock.second", None))
+        hold_to_rules(nulls, changed(RULES, ("hourglass.second", None), ("hourglass.points", None)))
+        for table, rules, what in ((changed(MOTION, ("hz", 50)), RULES, "frames a second as 50, where the rules read 60"),
+                                   (MOTION, changed(RULES, ("clock.fill", 60)), "the clock's ticks a second"),
+                                   (changed(MOTION, ("types.35.take.clock.from", 4999)), RULES, "the hourglass's count"),
+                                   (nulls, RULES, "the hourglass's seconds as null"),
+                                   (MOTION, changed(RULES, ("hourglass.points", None)), "the hourglass's points as 10")):
+            with self.subTest(what=what):
+                with self.assertRaises(SystemExit) as stop:
+                    hold_to_rules(table, rules)
+                self.assertIn(what, str(stop.exception))
 
 
 class ReleaseFile:
@@ -319,6 +415,7 @@ class TheBaseFile(ReleaseFile, unittest.TestCase):
         self.assertEqual(self.data["levels"], {})
         self.assertEqual((self.data["art"]["sheets"], self.data["art"]["tint"]), ({}, {}))
         self.assertEqual((self.data["objects"]["types"], self.data["objects"]["jump"]), ({}, {}))
+        self.assertEqual((self.data["objects"]["motion"], self.data["objects"]["skins"]), ({}, {}))
         self.assertEqual(json.dumps(self.data["packs"], indent=1), PACKS.read_text())
 
 

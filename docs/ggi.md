@@ -162,6 +162,8 @@ The build ships the count and the rows as `jump`.
 
 A disc whose arc differs ships its count and rows under `objects.jump` in its release file, which a planned route's jump and the ball's jump in play take under that disc ([viewer.md](viewer.md)).
 
+The PAL file's arc is 28 rows, the section's 27 and the row past them the hop's last frame reads, since the build reads a disc's file with that disc's own skip once its executable is read through its map, the PAL's none, and records the skip under `objects.readings` as read, null.
+
 **The scale.** A block is 512 units: a crumbling block's record keeps its cell times 512, and the spikes and the teleporter, which cover a block's face, are 462 and 486 across. The ball is radius 100, the exit 266 wide, a coin 186.
 
 On the Japanese disc the exit's sign is 364 wide.

@@ -17,7 +17,9 @@ placed. A keyed value is written only where it stands in a relation to the base'
 scaled by the two frame rates in either direction of truncation, an offset the release's own derived word gives, a
 key the hand table lists as tuned, or a reading the hand table lists as absent, and a divisor the hand table says the
 release lays out as a shift is two to that shift, held the same way. What fits none, and every anchor the aligner
-leaves, goes to the map's pending block, and a map is not finished while that block holds anything.
+leaves, goes to the map's pending block, and a map is not finished while that block holds anything. The base's build
+holds every committed map to the base's executable, each keyed row's base value against what that executable reads,
+so a reader that changes a row regenerates the map rather than leaving it stale.
 """
 import argparse
 import json
@@ -357,6 +359,20 @@ def shift_rows(other, table):
     return out
 
 
+def base_values(code, modules=MODULES):
+    """Every keyed row's value on the base's executable, by the base's address and the key, as the map writer holds a
+    row to it."""
+    out = {}
+    for module in modules:
+        for _, key, _, addr, pattern in getattr(module, "IMMEDIATES", ()):
+            out[addr, key] = code.immediate(addr, pattern)
+        for _, key, _, start, count, src, dst in getattr(module, "MULTIPLIERS", ()):
+            out[start, key] = code.multiplier(start, count, src, dst)
+        for _, key, _, *parts in [*getattr(module, "DIVISORS", ()), *getattr(module, "GREYS", ())]:
+            out[parts[0], key] = (code.divisor if len(parts) == 6 else code.grey)(*parts)
+    return out
+
+
 def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, us_words=WORDS):
     """The release's map: the rows by the base's address, the registered names, the end-screen words, the extra
     checks and what is pending, from the two listings and the hand table."""
@@ -398,6 +414,7 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
     that shift as its value, or the absent row the hand table gives."""
     tuned, absent = hand.TUNED.get(release, {}), absent_rows(other, hand.ABSENT.get(release, {}))
     shifts, runs, used = shift_rows(other, hand.SHIFTS.get(release, {})), hand.MULTIPLIERS.get(release, {}), set()
+    values = base_values(us.code, modules)
 
     def put(addr, row, key=None):
         at = hexed(addr)
@@ -444,7 +461,7 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
                 pat = pattern_on(pattern, us.text[us.position(addr)], p.text)
                 row = {"key": key, "at": hexed(p.at), "word": word_at(other, p.at), "text": p.text, "tier": p.tier, "pattern": pat}
                 return other.code.immediate(p.at, pat), row
-            valued(name, "IMMEDIATES", key, addr, us.code.immediate(addr, pattern), immediate)
+            valued(name, "IMMEDIATES", key, addr, values[addr, key], immediate)
         for _, key, _, start, count, src, dst in getattr(module, "MULTIPLIERS", ()):
             def multiplier(key=key, start=start, count=count, src=src, dst=dst):
                 if key in runs:
@@ -457,7 +474,7 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
                 row = {"key": key, "at": hexed(at), "count": n, "src": s, "dst": d,
                        "words": [word_at(other, at + 4 * i) for i in range(n)], "tier": tier}
                 return other.code.multiplier(at, n, s, d), row
-            valued(name, "MULTIPLIERS", key, start, us.code.multiplier(start, count, src, dst), multiplier)
+            valued(name, "MULTIPLIERS", key, start, values[start, key], multiplier)
         for _, key, _, *parts in [*getattr(module, "DIVISORS", ()), *getattr(module, "GREYS", ())]:
             kind, reader = ("DIVISORS", "divisor") if len(parts) == 6 else ("GREYS", "grey")
 
@@ -470,7 +487,7 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
                 row = {"key": key, "at": [hexed(p.at) for p in ps], "word": [word_at(other, p.at) for p in ps],
                        "text": [p.text for p in ps], "tier": weakest([p.tier for p in ps]), "pattern": pats}
                 return getattr(other.code, reader)(*(x for p, pat in zip(ps, pats) for x in (p.at, pat))), row
-            valued(name, kind, key, parts[0], getattr(us.code, reader)(*parts), halves)
+            valued(name, kind, key, parts[0], values[parts[0], key], halves)
     for table, what in ((absent, "absent"), (shifts, "shift"), (tuned, "tuned"), (runs, "multiplier")):
         stale = sorted(set(table) - used)
         if stale:
@@ -562,6 +579,21 @@ def check(built, path):
         if was.get(block) != now[block]:
             sys.exit(f"{path}: {block} holds {was.get(block)}, where the discs give {now[block]}")
     print(f"{path} holds what the discs and the hand table give")
+
+
+def check_base(code, path, modules=MODULES):
+    """The committed map at `path` held to the base's executable: every keyed row's base value is what that
+    executable reads at the row's address, or the tool's exit naming the first that is not, so a reader that
+    changes a row cannot leave the map stale in silence."""
+    values = base_values(code, modules)
+    for addr, row in sorted(json.loads(path.read_text())["rows"].items()):
+        if "us" not in row:
+            continue
+        at = (int(addr, 16), row["key"])
+        if values.get(at) != row["us"]:
+            reads = f"the base's executable reads {values[at]}" if at in values else "no reader lists the row"
+            sys.exit(f"{path}: {row['key']} at {addr} holds the base's value as {row['us']}, where {reads}; "
+                     f"regenerate the map")
 
 
 def pixels(image):

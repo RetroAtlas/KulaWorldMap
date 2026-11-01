@@ -252,15 +252,22 @@ test("the PAL disc draws HIRO otherwise and tints no world; the Japanese disc dr
   assert.deepEqual(Object.keys(jp.art.tint), ["HAZE"]);
 });
 
-test("every release's objects carry the base's four readings, the types its disc draws otherwise and the arc, and the base's own carry no type and no arc", () => {
+test("every release's objects carry the four readings its meshes are read with, a count or null each, the types its disc draws otherwise, the arc and its tables' changes, and the base's own carry none of those", () => {
   for (const r of releases) {
-    assert.deepEqual(Object.keys(r.objects), ["readings", "types", "jump"], r.id);
+    assert.deepEqual(
+      Object.keys(r.objects),
+      ["readings", "types", "jump", "motion", "skins"],
+      r.id,
+    );
     assert.deepEqual(Object.keys(r.objects.readings), READINGS, r.id);
-    for (const v of Object.values(r.objects.readings))
-      assert.ok(Number.isInteger(v) && v >= 0, r.id);
-    assert.deepEqual(r.objects.readings, us.objects.readings, r.id);
+    for (const [k, v] of Object.entries(r.objects.readings))
+      assert.ok(v === null || (Number.isInteger(v) && v >= 0), `${r.id} ${k}`);
   }
-  assert.deepEqual([us.objects.types, us.objects.jump], [{}, {}]);
+  for (const v of Object.values(us.objects.readings)) assert.ok(Number.isInteger(v));
+  assert.deepEqual(
+    [us.objects.types, us.objects.jump, us.objects.motion, us.objects.skins],
+    [{}, {}, {}, {}],
+  );
 });
 
 /** A model as objects.json ships one: its polygons name its vertices, each with a colour a corner. */
@@ -303,9 +310,9 @@ test("a release's types name types of objects.json, a whole list of the base's l
   }
 });
 
-test("the PAL disc draws the arrow otherwise and jumps along an arc of 27 rows; the Japanese disc draws the exits, the hidden exit and the lethargy pill otherwise and jumps along the base's arc", () => {
+test("the PAL disc draws the arrow otherwise and jumps along an arc of 28 rows; the Japanese disc draws the exits, the hidden exit and the lethargy pill otherwise and jumps along the base's arc", () => {
   assert.deepEqual(Object.keys(eu.objects.types), ["28"]);
-  assert.equal(eu.objects.jump.rows.length, 27);
+  assert.equal(eu.objects.jump.rows.length, 28);
   assert.deepEqual(Object.keys(jp.objects.types), ["7", "26", "32"]);
   assert.deepEqual(jp.objects.jump, {});
 });
@@ -615,14 +622,14 @@ test("a type's models are the release shown's where its file carries the list an
   assert.deepEqual(typeModels(999), []);
 });
 
-test("the jump's arc is the release shown's where its file carries rows and the base's otherwise, so the PAL disc jumps along its own 27 rows and the Japanese disc along the base's", (t) => {
+test("the jump's arc is the release shown's where its file carries rows and the base's otherwise, so the PAL disc jumps along its own 28 rows and the Japanese disc along the base's", (t) => {
   t.after(() => setCurrent("us"));
   setReleases(releases);
   setObjects(objects);
   assert.equal(jumpTable(), objects.jump);
   setCurrent("eu");
   assert.equal(jumpTable(), eu.objects.jump);
-  assert.equal(jumpTable().rows.length, 27);
+  assert.equal(jumpTable().rows.length, 28);
   setCurrent("jp");
   assert.equal(jumpTable(), objects.jump);
 });

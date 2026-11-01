@@ -8,8 +8,10 @@ each release its file under public/releases/, its identity, the rules of its
 executable, its packs' layout, the levels of its disc that differ from the US
 data, its artwork against the US atlases, the sheets of the textures its
 disc draws otherwise, laid under public/tex/<id>/, and the tint of a world it
-colours otherwise, and its objects against the US models, the model lists of
-the types its mesh file draws otherwise and the jump's arc where that differs.
+colours otherwise, its objects against the US models, the model lists of the
+types its mesh file draws otherwise and the jump's arc where that differs,
+and, where the release has a map under maps/, what its executable's motion and
+skins tables change from the US tables.
 
     export KULA_DISC="/path/to/Roll Away.bin"
     python3 tools/kula_build.py                 # the US data and public/releases/us.json
@@ -18,9 +20,10 @@ the types its mesh file draws otherwise and the jump's arc where that differs.
 
 Another release's run reads its own image and its own executable and nothing
 of the US disc, compares its levels slot by slot with the committed US data,
-its textures cell by cell with the committed US atlases and its meshes model
-by model with the committed US objects, and makes every check the US build
-makes on its disc before it writes.
+its textures cell by cell with the committed US atlases, its meshes model by
+model with the committed US objects and, where it has a map, its executable's
+tables key by key with the committed US tables, and makes every check the US
+build makes on its disc before it writes.
 
 The output is generated and committed, so regenerate it rather than editing it.
 """
@@ -37,11 +40,13 @@ from kula_disc import BASE, DISC_VARS, RELEASE_FILES, RELEASES, THEMES, open_rel
 from kula_ggi import FILE as GGI, OBJECTS, SPARKS, Ggi, jump, overlay, shadows, sparks, write_objects
 from kula_kwl_check import executable, figure_failures
 from kula_level import DEFAULT_TIME, Level, SIDE, STYLES, FIRST_RECORD, PLATFORM_KIND
+from kula_map import check_base
 from kula_motion import readings, table
-from kula_motion_code import Code, Map
+from kula_motion_code import MAPS, Code, Map
 from kula_pak import Pak
 from kula_place import RECOMPRESS, ROOM
 from kula_release import rules as release_rules
+from kula_score import HOURGLASS
 from kula_sector import USER, sectors_of
 from kula_skins import copycat_worlds, table as skins_table, tint
 from kula_tex import base_atlases, digest, sheet_at, sheets, write_sheets
@@ -54,6 +59,8 @@ WORLD_LEVELS = 15
 FINAL_LEVELS = 2
 IDENTITY = ("label", "name", "region", "serial", "boot", "sectors")
 MESH_READINGS = ("jump.skip", "shadow.sprite", "shadow.sprites", "effect.sprites")
+NESTED = ("types", "kinds")
+ARTWORK = ("textures", "shade", "turn", "light")
 
 # What a run reads off a disc.
 Read = namedtuple("Read", "levels checked speeds untrailed problems")
@@ -224,29 +231,105 @@ def release_art(release, tgis, skins, quads, atlases):
 
 
 def mesh_readings(r):
-    """The readings of the executable the mesh readers take, which the base's
-    file records and another release's models are read and checked with."""
-    return {k: r[k] for k in MESH_READINGS}
+    """The readings of the executable the mesh readers take, which a release's
+    file records and its models are read and checked with, one the executable
+    has no instruction for None."""
+    return {k: r.get(k) for k in MESH_READINGS}
 
 
 def base_objects(readings):
     """The base's objects entry: the readings its meshes are read with and no
-    model list or arc of its own."""
-    return {"readings": readings, "types": {}, "jump": {}}
+    model list, arc, motion or skins of its own."""
+    return {"readings": readings, "types": {}, "jump": {}, "motion": {}, "skins": {}}
 
 
-def release_objects(g, base, readings, sheet=None):
-    """Another release's objects entry against the base's models: the readings
-    its mesh file is read and checked with, the model lists of the types it
-    draws otherwise and the arc where that differs, as `overlay` gives them."""
-    return {"readings": readings, **overlay(g, base, readings, sheet)}
+def release_objects(g, base, readings, sheet=None, motion=None, skins=None):
+    """Another release's objects entry against the base's models and tables:
+    the readings its mesh file is read and checked with, the model lists of
+    the types it draws otherwise and the arc where that differs, as `overlay`
+    gives them, and what its executable's motion and skins tables change, as
+    the overlays below give them, nothing where that executable is not read."""
+    return {"readings": readings, **overlay(g, base, readings, sheet), "motion": motion or {}, "skins": skins or {}}
+
+
+def table_overlay(theirs, base, nested=()):
+    """What a release's table changes from the base's: every key whose value is
+    not the base's, whole, but for the keys in `nested`, whose entries are
+    written one level down, an entry whole where any value in it differs; the
+    tool's exit where the table lacks a key or an entry of the base's, which
+    an overlay cannot say."""
+    apart = sorted(set(theirs) ^ set(base))
+    if apart:
+        sys.exit(f"the table's keys are not the base's: {', '.join(apart)}")
+    out = {}
+    for key, value in theirs.items():
+        if key in nested:
+            gone = [e for e in base[key] if e not in value]
+            if gone:
+                sys.exit(f"the table's {key} lack {', '.join(gone)}, which the base's hold")
+            entries = {e: v for e, v in value.items() if v != base[key].get(e)}
+            if entries:
+                out[key] = entries
+        elif value != base[key]:
+            out[key] = value
+    return out
+
+
+def motion_overlay(motion, base):
+    """What a release's motion table changes from the base's, its types and
+    kinds one level down."""
+    return table_overlay(motion, base, NESTED)
+
+
+def skins_overlay(skins, base, tinted=()):
+    """What a release's skins change from the base's, by key, the tint left to
+    the artwork entry, which carries a world's own where the disc colours it
+    otherwise; the tool's exit where a key the artwork gives rather than the
+    executable, the textures' count, the shades, the turns or the lights, is
+    not the base's, or a world's tint is and `tinted` does not name the world."""
+    out = table_overlay(skins, base)
+    given = [k for k in ARTWORK if k in out]
+    if given:
+        sys.exit(f"the skins' {', '.join(given)} are not the base's, though the artwork gives them")
+    worlds = [w for w, t in out.pop("tint", {}).items() if t != base["tint"].get(w) and w not in tinted]
+    if worlds:
+        sys.exit(f"the skins tint {', '.join(worlds)} otherwise than the base's, where the artwork entry names no tint")
+    return out
+
+
+def hold_to_rules(motion, rules):
+    """The motion table held to the rules where the two readers read the same
+    instructions: the frames of a second, the clock's ticks a second and the
+    hourglass's count, its seconds and its points, a null agreeing with a null."""
+    take = motion["types"][str(HOURGLASS)]["take"]
+    read = (("frames a second", motion["hz"], rules["hz"]),
+            ("the clock's ticks a second", motion["play"]["clock"]["second"], rules["clock"]["fill"]),
+            ("the hourglass's count", take["clock"]["from"], rules["hourglass"]["from"]),
+            ("the hourglass's seconds", take["clock"]["second"], rules["hourglass"]["second"]),
+            ("the hourglass's points", take["points"], rules["hourglass"]["points"]))
+    for what, theirs, ours in read:
+        if theirs != ours:
+            sys.exit(f"the motion table reads {what} as {json.dumps(theirs)}, where the rules read {json.dumps(ours)}")
+
+
+def rooms_of(code, base, copycat):
+    """The world each room of the Simon pack is played in, by its number: off
+    the release's own executable where it is read, held to the committed
+    base's rooms, else the base's, which the base's executable alone says."""
+    rooms = [l["theme"] for l in sorted((l for l in base.values() if l["pack"] == copycat), key=lambda l: l["index"])]
+    if code.map is None:
+        return rooms
+    worlds = copycat_worlds(code)
+    if worlds[:len(rooms)] != rooms:
+        sys.exit(f"the rooms step through {', '.join(worlds)} on this disc, where the base's are played in {', '.join(rooms)}")
+    return worlds
 
 
 def release_json(release, rules, layout, art, objects, levels):
     """The release's file: its identity, the rules of its executable, the layout
     of its packs, its artwork laid against the base's atlases, its objects
-    against the base's models and the levels of its disc that differ from the
-    base's."""
+    against the base's models and tables and the levels of its disc that differ
+    from the base's."""
     entry = RELEASES[release]
     return {"id": release, **{k: entry[k] for k in IDENTITY}, "rules": rules, "packs": layout, "art": art,
             "objects": objects, "levels": levels}
@@ -254,51 +337,69 @@ def release_json(release, rules, layout, art, objects, levels):
 
 def other_release(disc, release):
     """Another release's file, written against the committed base, with the
-    levels read for it and the pixels of its sheets: the Simon rooms' pack and
-    the world each room is played in come from the committed data, since no
-    executable but the base's is read for them, so a room that is not the
-    base's cannot be placed and is refused; the sheets are cut against the
-    committed atlases, the tint taken with the committed skins and the models
-    held to the committed objects with the readings the base's file records,
-    so no disc but the release's own is opened."""
+    levels read for it and the pixels of its sheets: the sheets are cut against
+    the committed atlases, the tint taken with the committed skins and the
+    models and the tables held to the committed objects, so no disc but the
+    release's own is opened. Its executable is read through its map where it
+    has one, for its tables, the readings its meshes are read with and the
+    Simon rooms' pack and the world each room is played in, held to the
+    committed rooms; without a map the committed data says both and the
+    base's file the readings, since no executable but the base's is read, so a
+    room that is not the base's cannot be placed and is refused, and the tables
+    are the base's."""
     missing = [p.name for p in (OUT, OBJECTS, SPARKS, RELEASE_FILES[BASE]) if not p.exists()]
     if missing:
         sys.exit(f"no {' or '.join(missing)} to write {release} against; build the base first")
     base = {slot(l): l for l in json.loads(OUT.read_text())["levels"]}
     shapes = json.loads(OBJECTS.read_text())
-    skins = shapes["skins"]
     own = json.loads(RELEASE_FILES[BASE].read_text())
     if "art" not in own or "objects" not in own:
         sys.exit(f"{RELEASE_FILES[BASE].name} carries no digest of the base's artwork or readings of its executable "
                  f"to hold {release} to; build the base first")
+    code = code_of(disc, release)
+    rules = rules_of(code, release)
+    tgis = tgis_of(disc)
+    skins = skins_table(code, tgis) if code.map is not None else shapes["skins"]
     copycat = skins["copycat"]
-    rooms = [l["theme"] for l in sorted((l for l in base.values() if l["pack"] == copycat), key=lambda l: l["index"])]
-    rules = rules_of(code_of(disc, release), release)
-    read = read_levels(disc, copycat, rooms)
+    read = read_levels(disc, copycat, rooms_of(code, base, copycat))
     problems = read.problems + slot_problems(base, read.levels, [p for _, p in packs(disc)])
     if problems:
         refuse(problems)
     levels = variants(base, read.levels, release)
     rooms_apart = [k for k in levels if k.startswith(f"{copycat}#")]
-    if rooms_apart:
+    if rooms_apart and code.map is None:
         sys.exit(f"{', '.join(rooms_apart)} differ from the base's rooms, which say the world each is played in")
-    art, pixels = release_art(release, tgis_of(disc), skins, own["art"]["quads"], base_atlases(THEMES))
-    models = release_objects(Ggi(disc.read_file(GGI)), shapes, own["objects"]["readings"])
+    art, pixels = release_art(release, tgis, shapes["skins"], own["art"]["quads"], base_atlases(THEMES))
+    mesh, motion, faces = own["objects"]["readings"], {}, {}
+    if code.map is not None:
+        r = readings(code)
+        theirs = table(r, next(iter(read.speeds)), rules["hz"])
+        hold_to_rules(theirs, rules)
+        mesh = mesh_readings(r)
+        motion, faces = motion_overlay(theirs, shapes["motion"]), skins_overlay(skins, shapes["skins"], art["tint"])
+    models = release_objects(Ggi(disc.read_file(GGI)), shapes, mesh, motion=motion, skins=faces)
     return release_json(release, rules, layout_of(disc), art, models, levels), read, pixels
 
 
 def laid_out(data):
     """The release file's text, a space a level, but for the models of its
-    objects entry, each on a line as the base's objects file lays them, so a
-    rebuild diffs by model."""
-    models = []
-    types = {}
-    for t, lst in data["objects"]["types"].items():
-        types[t] = [f"\0{len(models) + i}\0" for i in range(len(lst))]
-        models.extend(lst)
-    text = json.dumps({**data, "objects": {**data["objects"], "types": types}}, indent=1)
-    for i, m in enumerate(models):
-        text = text.replace(json.dumps(f"\0{i}\0"), json.dumps(m, separators=(",", ":")))
+    objects entry, each on a line as the base's objects file lays them, and
+    the keys of its motion and skins, a type's or a kind's entry and any other
+    key on a line of its own the same way, so a rebuild diffs by model or by
+    entry."""
+    held = []
+
+    def hold(value):
+        held.append(value)
+        return f"\0{len(held) - 1}\0"
+
+    objects = data["objects"]
+    types = {t: [hold(m) for m in lst] for t, lst in objects["types"].items()}
+    motion = {k: {e: hold(x) for e, x in v.items()} if k in NESTED else hold(v) for k, v in objects["motion"].items()}
+    skins = {k: hold(v) for k, v in objects["skins"].items()}
+    text = json.dumps({**data, "objects": {**objects, "types": types, "motion": motion, "skins": skins}}, indent=1)
+    for i, value in enumerate(held):
+        text = text.replace(json.dumps(f"\0{i}\0"), json.dumps(value, separators=(",", ":")))
     return text
 
 
@@ -358,6 +459,9 @@ def build_base(disc):
     placed = {o["type"] for l in levels for r in l["records"] for o in r["on"]}
     r = readings(code)
     motion = table(r, next(iter(read.speeds)), rules["hz"])
+    hold_to_rules(motion, rules)
+    for path in sorted(MAPS.glob("*.json")):
+        check_base(code, path)
     if skins["copycat"] not in {l["pack"] for l in levels}:
         sys.exit(f"the skins name {skins['copycat']}, which is no pack on the disc")
     layout = layout_of(disc)
@@ -407,7 +511,11 @@ def build_release(disc, release):
     kinds = list(models["types"])
     own = f"the models of type{'s' if len(kinds) > 1 else ''} {', '.join(kinds)}" if kinds else "no model"
     arc = f"an arc of {len(models['jump']['rows'])} rows" if models["jump"] else "no arc"
-    print(f"{own} and {arc} of its own, the rest the base's")
+    shapes = json.loads(OBJECTS.read_text())
+    motion, skins = models["motion"], models["skins"]
+    within = " and ".join(f"{len(motion.get(k, {}))} of {len(shapes['motion'][k])} {k}" for k in NESTED)
+    print(f"{own} and {arc} of its own, {len(motion)} of the motion table's {len(shapes['motion'])} keys, "
+          f"{within} among them, and {len(skins)} of the skins' {len(shapes['skins'])}, the rest the base's")
 
 
 def main():
