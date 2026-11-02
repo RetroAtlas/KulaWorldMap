@@ -309,6 +309,18 @@ class Words(unittest.TestCase):
         self.assertEqual((key_rows(built)["mode.at"]["value"], key_rows(built)["mode.at"]["by"]), (MODE + 400, "address"))
         self.assertEqual(built["pending"], [])
 
+    def test_a_word_is_derived_through_an_addiu_off_gp(self):
+        def pointed(callee, at=MODE, **k):
+            rows = mode(callee, at=at, store=at, **k)
+            rows[rows.index(sw("v1", "gp", at))] = addiu("v1", "gp", at)
+            return rows
+        us = executable(routines={"mode": pointed})
+        copy = executable(gaps=GAPS, routines={"mode": lambda c, **k: pointed(c, at=MODE + 400, **k)})
+        self.assertIn((None, us.listing.position(us.starts["mode"] + 20)), reaching(us.listing)[GP + MODE])
+        built = build(us.listing, copy.listing, "eu", modules=(module(us),), hand=hand(), rates=RATES, us_words=WORDS)
+        self.assertEqual(built["names"]["MODE_WORD"], [f"0x{GP + MODE + 400:08x}", MODE + 400])
+        self.assertEqual(built["pending"], [])
+
     def test_a_word_two_instructions_reach_otherwise_is_refused_and_the_offset_read_as_it_is_pending(self):
         copy = executable(gaps=GAPS, routines={"mode": lambda c, **k: mode(c, store=MODE + 4, **k)})
         built = mapped(copy)

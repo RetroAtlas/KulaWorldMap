@@ -12,7 +12,7 @@ constant the readers register by name at its value there, and the end-screen tab
 The aligner places the instructions. A multiplier's run is placed by the mapped instructions before and after it,
 its count read by walking the shifts and adds until the destination register is overwritten by something else, or
 stands as the hand table gives it; a data word is derived through a mapped instruction that reaches it, a lui and
-the load, store or addiu that uses it through the adds between them, or a load off gp, an absent row of the hand
+the load, store or addiu that uses it through the adds between them, or a load, a store or an addiu off gp, an absent row of the hand
 table taking a misplaced one out of the derivation; a table of cases is derived the same way and its entries held to
 where the base's entries were placed. A keyed value is written only where it stands in a relation to the base's: the same, a rate or a count
 scaled by the two frame rates in either direction of truncation, an offset the release's own derived word gives, a
@@ -107,6 +107,17 @@ def mapped(kind, value, leaf):
     return value
 
 
+def adding(text):
+    """The register a load, a store or an addiu adds its immediate to, and the immediate, or None and None."""
+    m = USE.match(text)
+    if m:
+        return m.group(2), int(m.group(1))
+    m = ADDIU.match(text)
+    if m:
+        return m.group(2), int(m.group(3))
+    return None, None
+
+
 def reaching(listing):
     """Every address an instruction of the listing reaches, each as the position of the lui holding its high half,
     None for one off gp, and the position of the load, store or addiu adding the low half; a lui's half is carried
@@ -128,12 +139,7 @@ def reaching(listing):
             else:
                 held.pop(rd, None)
             continue
-        m = USE.match(text)
-        base, low = (m.group(2), int(m.group(1))) if m else (None, None)
-        if not m:
-            m = ADDIU.match(text)
-            if m:
-                base, low = m.group(2), int(m.group(3))
+        base, low = adding(text)
         if base == "gp":
             out.setdefault(listing.code.gp + low, []).append((None, i))
         elif base in held:
@@ -256,8 +262,8 @@ def run_at(us, other, start, count, dst, placements, why):
 
 def derived(us, other, word, reach, placements):
     """The word on the other executable that the placed instructions reaching the base's word reach, where every
-    one of them reaches the same: a load or a store off gp at its offset, a lui and its use through the adds between
-    them, and a lui and a use placed where no address is built between them passed over."""
+    one of them reaches the same: a load, a store or an addiu off gp at its offset, a lui and its use through the
+    adds between them, and a lui and a use placed where no address is built between them passed over."""
     found, unbuilt = {}, []
     for li, ui in reach.get(word, ()):
         use = placements.get(us.address(ui))
@@ -266,10 +272,10 @@ def derived(us, other, word, reach, placements):
             continue
         text = other.text[other.position(use.at)]
         if li is None:
-            m = USE.match(text)
-            if not m or m.group(2) != "gp":
-                raise Pending(f"0x{use.at:08x} reads `{text}`, not a load or a store off gp")
-            value = other.code.gp + int(m.group(1))
+            base, low = adding(text)
+            if base != "gp":
+                raise Pending(f"0x{use.at:08x} reads `{text}`, not a load, a store or an addiu off gp")
+            value = other.code.gp + low
         else:
             value = other.code.built(lui.at, use.at)
             if value is None:
