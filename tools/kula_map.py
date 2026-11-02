@@ -438,8 +438,11 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
     place_by_hand(us, other, placements, left, hand.PLACED.get(release, {}), {a.address for a in rows_in} | anchored)
     reshaped, runs = hand.RESHAPED.get(release, {}), hand_runs(other, entries, hand.MULTIPLIERS.get(release, {}))
     within_lists(reshaped, {a.address for a in rows_in if a.list in ("CHECKS", "IMMEDIATES")} | anchored, "reshaped")
+    rows = {}
     for addr, (at, text, *_) in reshaped.items():
-        placements[addr] = Placement(at, "reshaped", standing(other, at, text, "reshaped row")["text"])
+        row = standing(other, at, text, "reshaped row")
+        placements[addr] = Placement(at, "reshaped", row["text"])
+        rows[hexed(addr)] = {**row, "tier": "reshaped"}
     for addr in hand.ABSENT.get(release, {}):
         if isinstance(addr, int):
             placements.pop(addr, None)
@@ -459,9 +462,6 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
         for key in e.keys:
             if key not in offsets:
                 offsets[key] = None
-    rows = {}
-    for addr, (at, text, *_) in reshaped.items():
-        rows[hexed(addr)] = {**standing(other, at, text, "reshaped row"), "tier": "reshaped"}
     keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending,
           reaching_words(us, entries, reach), {e.name for e in entries if e.kind == "run"})
     extra = [standing(other, at, text, "extra row") for at, text, _ in hand.EXTRA.get(release, ())]
