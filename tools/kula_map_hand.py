@@ -1,7 +1,4 @@
-"""What the hand settles of a release's map, where the aligner cannot: an anchor placed by a hand read, a key tuned
-otherwise than the frame rates scale it, a reading or a check the release has no instruction for, a divisor the
-release lays out as a shift, a check or an immediate the release lays out as another instruction, a multiplier's run
-of another shape, a check the release alone has, and the words of the end-screen pairs the release draws otherwise. Every row
+"""What the hand settles of a release's map, where the aligner cannot, a table to each kind of row. Every row
 carries a sentence saying what the instruction is and why it is the one, and a hand row wins over the aligner's
 placement. Each release's rows are in a module of its own, `kula_map_hand_<id>.py`, gathered here by release.
 """
