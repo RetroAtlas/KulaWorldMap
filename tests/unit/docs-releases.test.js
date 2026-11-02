@@ -310,7 +310,7 @@ test("motion.md's PAL lines on the level's end and the effects give the words, t
   );
 });
 
-test("tgi.md's and camera.md's PAL lines give the cycles, the flight and the screen as the PAL skins and table hold them", () => {
+test("tgi.md's and camera.md's PAL lines give the cycles, the flight and the screen as the PAL skins and table hold them, and the face builder's hides as absent from the skins", () => {
   const { cycles } = pal.skins;
   assert.deepEqual(
     said(
@@ -328,6 +328,12 @@ test("tgi.md's and camera.md's PAL lines give the cycles, the flight and the scr
     ),
     [cycles.bonus.frames.length, objects.skins.cycles.bonus.frames.length],
   );
+  said(
+    tgi,
+    /^On the PAL disc the face builder makes the same tests of the same kinds at addresses of its own/m,
+    "tgi.md's PAL hiding tests",
+  );
+  assert.ok(!("hides" in pal.skins));
   const { flight } = pal.motion.play;
   assert.deepEqual(
     said(
