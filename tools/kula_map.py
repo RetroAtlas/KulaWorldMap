@@ -12,16 +12,18 @@ constant the readers register by name at its value there, and the end-screen tab
 The aligner places the instructions. A multiplier's run is placed by the mapped instructions before and after it,
 its count read by walking the shifts and adds until the destination register is overwritten by something else, or
 stands as the hand table gives it; a data word is derived through a mapped instruction that reaches it, a lui and
-the load, store or addiu that uses it through the adds between them, or a load, a store or an addiu off gp, an absent row of the hand
-table taking a misplaced one out of the derivation; a table of cases is derived the same way and its entries held to
-where the base's entries were placed. A lui and its use placed where no address is built between them are passed over, and `--report` lists every such pair. A keyed value is written only where it stands in a relation to the base's: the same, a rate or a count
-scaled by the two frame rates in either direction of truncation, an offset the release's own derived word gives, a
-key the hand table lists as tuned, or a reading the hand table lists as absent; a divisor the hand table says the
-release lays out as a shift is two to that shift and an immediate it says the release lays out as another
-instruction is the value it gives, each held the same way. What fits none, and every anchor the aligner leaves that
-the hand table does not settle, goes to the map's pending block, and a map is not finished while that block holds
-anything. The base's build holds every committed map to the base's executable, each keyed row's base value against
-what that executable reads, so a reader that changes a row regenerates the map rather than leaving it stale.
+the load, store or addiu that uses it through the adds between them, or a load, a store or an addiu off gp, an
+absent row of the hand table taking a misplaced one out of the derivation; a table of cases is derived the same way
+and its entries held to where the base's entries were placed. A lui and its use placed where no address is built
+between them are passed over, and `--report` lists every such pair. A keyed value is written only where it stands in
+a relation to the base's: the same, a rate or a count scaled by the two frame rates in either direction of
+truncation, an offset the release's own derived word gives, a key the hand table lists as tuned, or a reading the
+hand table lists as absent; a divisor the hand table says the release lays out as a shift is two to that shift and
+an immediate it says the release lays out as another instruction is the value it gives, each held the same way. What
+fits none, and every anchor the aligner leaves that the hand table does not settle, goes to the map's pending block,
+and a map is not finished while that block holds anything. The base's build holds every committed map to the base's
+executable, each keyed row's base value against what that executable reads, so a reader that changes a row
+regenerates the map rather than leaving it stale.
 """
 import argparse
 import json
