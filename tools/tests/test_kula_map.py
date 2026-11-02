@@ -510,12 +510,25 @@ class Hand(unittest.TestCase):
                     mapped(copy, hand(**tables))
                 self.assertEqual(str(stopped.exception), f"the hand table's {named} rows meet at 0x{tested:08x}")
 
-    def test_a_reading_keyed_at_an_absent_checks_address_stops_the_writer(self):
+    def test_a_reading_valued_at_an_absent_checks_address_stops_the_writer_and_one_absent_too_stands_there(self):
         copy = executable(gaps=GAPS)
-        use, at, text = US.starts["mode"] + 8, copy.starts["mode"] + 8, f"lw $v0, {MODE}($gp)"
+        fill, at = US.starts["mode"] + 56, copy.starts["mode"] + 56
+        text = copy.listing.text[copy.listing.position(at)]
+        checked = (SimpleNamespace(**{**vars(FIXTURE), "CHECKS": FIXTURE.CHECKS + [(fill, US.listing.text[US.listing.position(fill)],
+                                                                                   "the mode fills its word")]}),)
         with self.assertRaises(SystemExit) as stopped:
-            mapped(copy, hand(ABSENT={use: (at, text, "the mode word is read nowhere"), "mode.at": (at, text, "as above")}))
-        self.assertEqual(str(stopped.exception), f"0x{use:08x} is the hand table's absent check and is read as mode.at")
+            mapped(copy, hand(ABSENT={fill: (at, text, "the copy fills its word otherwise")}), modules=checked)
+        self.assertEqual(str(stopped.exception), f"0x{fill:08x} is the hand table's absent check and is read as mode.fill")
+        use, at, text = US.starts["mode"] + 8, copy.starts["mode"] + 8, f"lw $v0, {MODE}($gp)"
+        built = mapped(copy, hand(ABSENT={use: (at, text, "the mode word is read nowhere"), "mode.at": (at, text, "as above")}))
+        self.assertEqual(built["rows"][f"0x{use:08x}"], {"key": "mode.at", "absent": True, "at": f"0x{at:08x}",
+                                                          "word": f"0x{copy.listing.code.word(at):08x}", "text": text})
+        self.assertEqual(built["pending"], [])
+        other = copy.listing.text[copy.listing.position(at + 4)]
+        with self.assertRaises(SystemExit) as stopped:
+            mapped(copy, hand(ABSENT={use: (at, text, "the mode word is read nowhere"), "mode.at": (at + 4, other, "as above")}))
+        self.assertEqual(str(stopped.exception),
+                         f"0x{use:08x} is absent as a check at 0x{at:08x} and as mode.at at 0x{at + 4:08x}, which disagree")
 
     def test_an_absent_row_for_an_instruction_reaching_a_word_takes_it_out_of_the_derivation(self):
         copy = executable(gaps=GAPS, routines={"mode": lambda c, **k: mode(c, clock=CLOCK + 8, **k)})
