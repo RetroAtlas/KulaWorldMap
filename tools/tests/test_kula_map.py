@@ -360,14 +360,19 @@ class Words(unittest.TestCase):
             at = copy.starts[name] + addr - routine
             return Placement(at, "hand", copy.listing.text[copy.listing.position(at)])
         placements = {US.listing.address(i): on_copy(i) for pair in pairs for i in pair}
-        self.assertEqual(derived(US.listing, copy.listing, word, reach, placements), word)
+        passed = []
+        self.assertEqual(derived(US.listing, copy.listing, word, reach, placements, passed), word)
+        self.assertEqual(passed, [])
         off = copy.starts["mode"] + 52
-        placements[US.listing.address(pairs[0][1])] = Placement(off, "hand", "lh $v1, 12($a0)")
-        self.assertEqual(derived(US.listing, copy.listing, word, reach, placements), word)
+        li, ui = (US.listing.address(i) for i in pairs[0])
+        placements[ui] = Placement(off, "hand", "lh $v1, 12($a0)")
+        self.assertEqual(derived(US.listing, copy.listing, word, reach, placements, passed), word)
+        self.assertEqual(passed, [{"lui": f"0x{li:08x}", "use": f"0x{ui:08x}", "at": [f"0x{placements[li].at:08x}", f"0x{off:08x}"],
+                                   "text": [placements[li].text, "lh $v1, 12($a0)"]}])
         for _, ui in pairs:
             placements[US.listing.address(ui)] = Placement(off, "hand", "lh $v1, 12($a0)")
         with self.assertRaises(Pending) as left:
-            derived(US.listing, copy.listing, word, reach, placements)
+            derived(US.listing, copy.listing, word, reach, placements, [])
         self.assertEqual(str(left.exception), f"the instructions placed for it build no address, at 0x{off:08x} and 0x{off:08x}")
 
     def test_a_tables_entries_are_held_to_where_the_bases_entries_were_placed(self):
@@ -621,7 +626,7 @@ class Files(unittest.TestCase):
             path = Path(out) / "eu.json"
             dump(built, path)
             text = path.read_text()
-            self.assertEqual(json.loads(text), json.loads(json.dumps(built)))
+            self.assertEqual(json.loads(text), {k: v for k, v in json.loads(json.dumps(built)).items() if k != "passed"})
             self.assertEqual(len([line for line in text.splitlines() if line.startswith('  "0x')]), len(built["rows"]))
             with redirect_stdout(io.StringIO()) as said:
                 check(built, path)
@@ -646,14 +651,28 @@ class Files(unittest.TestCase):
                     check(built, path)
                 self.assertTrue(str(stopped.exception).endswith(said), str(stopped.exception))
 
-    def test_the_report_lists_the_pending_then_the_hands_rows_then_the_loosely_placed(self):
+    def test_the_report_lists_the_pending_then_the_pairs_passed_over_then_the_hands_rows_then_the_loosely_placed(self):
         copy = executable(gaps=GAPS, routines={"twin": lambda c: twin(c, count=10)})
         with redirect_stdout(io.StringIO()) as said:
             report(mapped(copy))
         text = said.getvalue()
         self.assertTrue(text.startswith("pending: 1\n  address 0x"))
         self.assertEqual([line for line in text.splitlines() if line and not line.startswith("  ")],
-                         ["pending: 1", "tuned: 0", "absent: 0", "shift: 0", "reshaped: 0", "renamed or loose: 0"])
+                         ["pending: 1", "passed over: 0", "tuned: 0", "absent: 0", "shift: 0", "reshaped: 0", "renamed or loose: 0"])
+
+    def test_the_report_names_the_lui_pairs_the_derivation_passed_over(self):
+        copy = executable(gaps=GAPS)
+        m, c = US.starts["mode"], copy.starts["mode"]
+        built = mapped(copy, hand(PLACED={m + 12: (c + 36, "the lui placed at the table pointer's"),
+                                          m + 16: (c + 48, "and the use at the call's argument")}))
+        self.assertEqual((built["names"]["CLOCK_WORD"], built["pending"]), (f"0x{(0x800a << 16) + CLOCK:08x}", []))
+        texts = [f"lui $at, 0x{HIGH:04x}", "addiu $a0, $zero, 4"]
+        self.assertEqual(built["passed"], [{"name": "CLOCK_WORD", "lui": f"0x{m + 12:08x}", "use": f"0x{m + 16:08x}",
+                                            "at": [f"0x{c + 36:08x}", f"0x{c + 48:08x}"], "text": texts}])
+        with redirect_stdout(io.StringIO()) as said:
+            report(built)
+        self.assertIn(f"\npassed over: 1\n  0x{m + 12:08x} 0x{m + 16:08x}  0x{c + 36:08x} 0x{c + 48:08x}  CLOCK_WORD  "
+                      f"`{texts[0]}` `{texts[1]}`\n", said.getvalue())
 
 
 class Base(unittest.TestCase):

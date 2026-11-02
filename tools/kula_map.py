@@ -5,7 +5,7 @@ the other executable and the tier that placed it, every keyed value held to the 
 constant the readers register by name at its value there, and the end-screen table's pairs by their digests.
 
     python3 tools/kula_map.py --release eu                 # write tools/maps/eu.json from the two discs and the hand table
-    python3 tools/kula_map.py --report eu                  # the pending rows, the hand's rows and the loosely placed, for a hand read
+    python3 tools/kula_map.py --report eu                  # the pending rows, the pairs passed over, the hand's and the loose rows
     python3 tools/kula_map.py --check eu                   # derive the map again and hold the committed file to it
     python3 tools/kula_map.py --words eu out/words         # each pair of the release's end-screen table as a PNG, to read a word off
 
@@ -14,7 +14,7 @@ its count read by walking the shifts and adds until the destination register is 
 stands as the hand table gives it; a data word is derived through a mapped instruction that reaches it, a lui and
 the load, store or addiu that uses it through the adds between them, or a load, a store or an addiu off gp, an absent row of the hand
 table taking a misplaced one out of the derivation; a table of cases is derived the same way and its entries held to
-where the base's entries were placed. A keyed value is written only where it stands in a relation to the base's: the same, a rate or a count
+where the base's entries were placed. A lui and its use placed where no address is built between them are passed over, and `--report` lists every such pair. A keyed value is written only where it stands in a relation to the base's: the same, a rate or a count
 scaled by the two frame rates in either direction of truncation, an offset the release's own derived word gives, a
 key the hand table lists as tuned, or a reading the hand table lists as absent; a divisor the hand table says the
 release lays out as a shift is two to that shift and an immediate it says the release lays out as another
@@ -260,11 +260,12 @@ def run_at(us, other, start, count, dst, placements, why):
     return at, n
 
 
-def derived(us, other, word, reach, placements):
+def derived(us, other, word, reach, placements, passed):
     """The word on the other executable that the placed instructions reaching the base's word reach, where every
     one of them reaches the same: a load, a store or an addiu off gp at its offset, a lui and its use through the
-    adds between them, and a lui and a use placed where no address is built between them passed over."""
-    found, unbuilt = {}, []
+    adds between them, and a lui and a use placed where no address is built between them passed over, the pair
+    added to `passed` with the base's two addresses and the release's."""
+    found, over = {}, []
     for li, ui in reach.get(word, ()):
         use = placements.get(us.address(ui))
         lui = placements.get(us.address(li)) if li is not None else None
@@ -279,12 +280,14 @@ def derived(us, other, word, reach, placements):
         else:
             value = other.code.built(lui.at, use.at)
             if value is None:
-                unbuilt.append(use.at)
+                over.append({"lui": hexed(us.address(li)), "use": hexed(us.address(ui)),
+                             "at": [hexed(lui.at), hexed(use.at)], "text": [lui.text, use.text]})
                 continue
         found.setdefault(value, []).append(use.at)
+    passed += over
     if not found:
-        if unbuilt:
-            raise Pending("the instructions placed for it build no address, at " + " and ".join(hexed(a) for a in unbuilt))
+        if over:
+            raise Pending("the instructions placed for it build no address, at " + " and ".join(p["at"][1] for p in over))
         raise Pending("no instruction reaching it is placed")
     if len(found) > 1:
         raise Pending("the instructions reaching it reach " + " and ".join(
@@ -292,7 +295,7 @@ def derived(us, other, word, reach, placements):
     return next(iter(found))
 
 
-def leaf_on(us, other, entry, leaf, reach, placements, why, runs):
+def leaf_on(us, other, entry, leaf, reach, placements, why, runs, passed):
     """A registered constant's leaf as it stands on the other executable, in the base's shape."""
     kind = entry.kind
     if kind in ("instruction", "routine"):
@@ -314,7 +317,7 @@ def leaf_on(us, other, entry, leaf, reach, placements, why, runs):
         read(lambda: other.code.multiplier(at, n, src, dst))
         return [hexed(at), n, src, dst]
     word = leaf if kind == "word" else leaf[0]
-    value = derived(us, other, word, reach, placements)
+    value = derived(us, other, word, reach, placements, passed)
     if kind == "word":
         return hexed(value)
     if kind == "offset":
@@ -433,7 +436,8 @@ def hand_runs(other, entries, table):
 
 def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, us_words=WORDS):
     """The release's map: the rows by the base's address, the registered names, the end-screen words, the extra
-    checks and what is pending, from the two listings and the hand table."""
+    checks and what is pending, from the two listings and the hand table, and beside them the lui pairs the
+    derivation passed over, which the file leaves out and `--report` lists."""
     if rates is None:
         rates = (release_readings(us.code, BASE)["hz"], release_readings(other.code, release)["hz"])
     held_apart(hand, release)
@@ -456,14 +460,16 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
     why = {entry.anchor.address: entry.why for entry in left}
     pending = [{"address": hexed(e.anchor.address), "module": e.anchor.module, "list": e.anchor.list, "key": e.anchor.key,
                 "why": e.why} for e in left if e.anchor.list in LEFT]
-    names, offsets = {}, {}
+    names, offsets, passed = {}, {}, []
     for e in entries:
+        over = []
         try:
-            names[e.name] = mapped(e.kind, e.value, lambda leaf: leaf_on(us, other, e, leaf, reach, placements, why, runs))
+            names[e.name] = mapped(e.kind, e.value, lambda leaf: leaf_on(us, other, e, leaf, reach, placements, why, runs, over))
             if e.kind == "offset" and e.keys:
                 offsets.update(dict.fromkeys(e.keys, int(names[e.name][0], 16) - other.code.gp))
         except Pending as p:
             pending.append({"name": e.name, "module": e.module, "why": str(p)})
+        passed += [{"name": e.name, **pair} for pair in over]
     for e in entries:
         for key in e.keys:
             if key not in offsets:
@@ -472,7 +478,8 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
           reaching_words(us, entries, reach), {e.name for e in entries if e.kind == "run"})
     extra = [standing(other, at, text, "extra row") for at, text, _ in hand.EXTRA.get(release, ())]
     return {"release": release, "rows": rows, "names": names, "extra": extra,
-            "words": words_block(other, names, us_words, hand.WORDS.get(release, {}), pending), "pending": pending}
+            "words": words_block(other, names, us_words, hand.WORDS.get(release, {}), pending), "pending": pending,
+            "passed": passed}
 
 
 def keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending, word_reachers, named_runs):
@@ -650,12 +657,16 @@ def dump(built, path):
 
 
 def report(built):
-    """The pending rows, then the hand's tuned, absent, shift and reshaped rows, then every row placed at a renamed
-    or a loose tier, for a hand read."""
+    """The pending rows, the lui pairs the derivation passed over, then the hand's tuned, absent, shift and reshaped
+    rows, then every row placed at a renamed or a loose tier, for a hand read."""
     pending = built["pending"]
     print(f"pending: {len(pending)}")
     for p in pending:
         print("  " + "  ".join(f"{k} {v}" for k, v in p.items()))
+    passed = built["passed"]
+    print(f"\npassed over: {len(passed)}")
+    for p in passed:
+        print(f"  {p['lui']} {p['use']}  {p['at'][0]} {p['at'][1]}  {p['name']}  `{p['text'][0]}` `{p['text'][1]}`")
     rows = sorted(built["rows"].items())
     for title, keep in (("tuned", lambda r: r.get("by") == "tuned"), ("absent", lambda r: r.get("absent")),
                         ("shift", lambda r: "shift" in r), ("reshaped", lambda r: r.get("tier") == "reshaped"),
@@ -746,7 +757,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--release", choices=OTHERS, help="write the release's map under tools/maps/")
     ap.add_argument("--report", choices=OTHERS, metavar="RELEASE",
-                    help="print the pending rows, the hand's rows and the loosely placed rows of the release's map")
+                    help="print the release map's pending rows, the pairs passed over, the hand's rows and the loosely placed")
     ap.add_argument("--check", choices=OTHERS, metavar="RELEASE", help="hold the committed map of the release to the discs")
     ap.add_argument("--words", nargs=2, metavar=("RELEASE", "DIR"),
                     help="write each pair of the release's end-screen table as a PNG into the directory")
