@@ -268,7 +268,7 @@ class Rows(unittest.TestCase):
         at = copy.starts["mode"] + 56
         row = key_rows(mapped(copy, hand(TUNED={"mode.fill": "eight against five, a shift by the register set before it"})))["mode.fill"]
         self.assertEqual((row["value"], row["by"], row["sets"]), (8, "tuned", {f"0x{at:08x}": f"0x{fill[0]:08x}"}))
-        self.assertNotIn("sets", key_rows(mapped(copy := executable(gaps=GAPS)))["mode.fill"])
+        self.assertNotIn("sets", key_rows(mapped(executable(gaps=GAPS)))["mode.fill"])
 
     def test_a_hand_run_is_read_as_given(self):
         copy = executable(gaps=GAPS)
