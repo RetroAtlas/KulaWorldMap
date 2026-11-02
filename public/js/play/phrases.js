@@ -114,16 +114,16 @@ export function deathOf(w) {
   return DYING[name] ? name : null;
 }
 
+/** The word closed with a full stop where it ends in a letter or a digit. */
+const closed = (word) => (/[\p{L}\p{N}]$/u.test(word) ? `${word}.` : word);
+
 /** A room's word for its ending `code`: the end screen's `word`, or the winner's where the match
     is won, and whether the round is done or lost, with whose point it is where a match is on. */
 export function roomTold(code, word, settled) {
-  const named = settled?.won ?? word;
+  const named = closed(settled?.won ?? word);
   if (code > 0) return `${named} ${ROUND_DONE}`;
   return settled?.point == null ? `${named} ${ROUND_LOST}` : `${named} ${POINT_TO(settled.point)}`;
 }
-
-/** The word closed with a full stop where it ends in a letter or a digit. */
-const closed = (word) => (/[\p{L}\p{N}]$/u.test(word) ? `${word}.` : word);
 
 /** What the ending did to the run's total: the penalty taken or the points banked, the total,
     and where that is below nothing the game's word for its end. */
@@ -144,7 +144,7 @@ export function howEnded(code, w, settled, play, rules = null) {
   const seconds = secondsOf(w.clock, play, rules);
   const room = w.mode === MODE.simon;
   const word = words[name] ?? `${ENDED}.`;
-  const told = room ? roomTold(code, word, settled) : (VERDICT[name] ?? word);
+  const told = room ? roomTold(code, word, settled) : (VERDICT[name] ?? closed(word));
   const how = `${told} ${counted(w.score, "point")}, ${counted(seconds, "second")} left.`;
   const did = settled && (room ? settled.won && MATCH_AFRESH : banked(settled, words));
   return did ? `${how} ${did}` : how;

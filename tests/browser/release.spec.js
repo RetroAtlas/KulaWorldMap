@@ -350,7 +350,9 @@ test("with JP pressed a fall off LEVEL 1 ends in the word the Japanese disc's en
   expect(lost).not.toBe(objects.motion.play.words.lost);
   expect(await stepTo(page, `^${lost}`, 400)).not.toBeNull();
   await expect(status(page)).toHaveText(
-    new RegExp(`^${lost} 0 points, \\d+ seconds left\\. Space or Enter starts the level again\\.$`),
+    new RegExp(
+      `^${lost}\\. 0 points, \\d+ seconds left\\. Space or Enter starts the level again\\.$`,
+    ),
   );
   expect(errors).toEqual([]);
 });
