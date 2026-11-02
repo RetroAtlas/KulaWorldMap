@@ -118,7 +118,7 @@ const press = (m) => {
     ${on ? "On" : "Off"} · press to turn ${on ? "off" : "on"}</button></p>`;
 };
 
-const opener = (m) => {
+const exitPress = (m) => {
   const open = exitsOpen();
   return `<p class="press"><button type="button" data-circuit="${LAST_KEY}">
     <span class="lamp${open ? "" : " off"}" style="--lamp:${markerColour(m)}"></span>
@@ -181,7 +181,7 @@ export function showCell(c, { raise = true } = {}) {
     const note = markerNote(m);
     if (note) html += `<p class="sub">${note}</p>`;
     if (isSwitch(m)) html += press(m);
-    else if (isExit(m) && holdsKey(l)) html += opener(m);
+    else if (isExit(m) && holdsKey(l)) html += exitPress(m);
     html += `<table>${decoded(m, c)}${STORED}${fields(m)}</table>${placed(m)}`;
   }
   const folding = document.activeElement === box.querySelector(".fold");

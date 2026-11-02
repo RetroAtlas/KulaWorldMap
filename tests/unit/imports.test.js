@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, posix } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Linter } from "eslint";
 
 const dir = fileURLToPath(new URL("../../public/js", import.meta.url));
 const IMPORT = /^import\s(?:[^;]*?\sfrom\s+)?"(\.\.?\/[^"]+)"/gm;
@@ -138,4 +139,20 @@ test("a pure module of play imports only the model, the lattice and the pure mod
 test("no module of the page uses a regex lookbehind", () => {
   for (const name of modules())
     assert.ok(!/\(\?<[=!]/.test(readFileSync(join(dir, name), "utf8")), name);
+});
+
+// The Wayback Machine declares these above the first line of every module it serves.
+const WAYBACK = ["window", "self", "document", "location", "top", "parent", "frames", "opener"];
+
+test("every module of the page parses as the Wayback Machine serves it", () => {
+  const above = WAYBACK.map((name) => `var ${name};`).join(" ");
+  const linter = new Linter();
+  const errors = modules().flatMap((name) =>
+    linter
+      .verify(above + readFileSync(join(dir, name), "utf8"), {
+        languageOptions: { ecmaVersion: "latest", sourceType: "module" },
+      })
+      .map((e) => `${name}:${e.line}: ${e.message}`),
+  );
+  assert.deepEqual(errors, []);
 });
