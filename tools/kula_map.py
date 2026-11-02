@@ -470,14 +470,14 @@ def build(us, other, release, modules=MODULES, hand=kula_map_hand, rates=None, u
 
 
 def keyed(us, other, release, modules, hand, placements, why, rates, offsets, rows, pending, word_reachers, named_runs):
-    """Every list's rows into `rows`, by the base's address: a check's and a scan's as placed, a check or an
-    instruction reaching a word the hand table declares absent as the absent row it gives whatever was placed there,
-    a keyed row with its value in its relation to the base's, a multiplier's row carrying the instruction that sets
-    a register its run shifts by, a divisor the hand table says the release lays out as a shift with two to that
-    shift as its value, an immediate it says the release lays out as another instruction with the value it gives,
-    or the absent row the hand table gives; a hand row naming no check, no instruction reaching a word, no key, no
-    registered run and no immediate stops the writer, as does a reading with a value at an address the hand table
-    declares an absent check, where a reading declared absent too stands in the check's row's place."""
+    """Every list's rows into `rows`, by the base's address: a check's and a scan's as placed, a keyed row with its
+    value in its relation to the base's, and a multiplier's row carrying the instruction that sets a register its
+    run shifts by. Where the hand table speaks, its row stands instead: an absence at a check's or a word reacher's
+    address over whatever was placed there, an absence under a reading's key, two absences for one address standing
+    as the keyed one where they name one instruction, a shift the release lays a divisor out as with two to the
+    shift as its value, or another instruction it lays an immediate out as with the value it gives. The writer stops
+    on a hand row naming nothing a reader lists, on a reading with a value where the hand declares a check absent,
+    on two absences naming different instructions and on an immediate the hand both restates and declares absent."""
     tuned, absent = hand.TUNED.get(release, {}), absent_rows(other, hand.ABSENT.get(release, {}))
     shifts, runs, used = shift_rows(other, hand.SHIFTS.get(release, {})), hand.MULTIPLIERS.get(release, {}), set()
     restated = {addr: row for addr, row in hand.RESHAPED.get(release, {}).items() if len(row) == 4}
@@ -537,6 +537,9 @@ def keyed(us, other, release, modules, hand, placements, why, rates, offsets, ro
             for addr in (start, end, *(where for where, _, _ in calls)):
                 placed_row(addr)
         for _, key, _, addr, pattern in getattr(module, "IMMEDIATES", ()):
+            if addr in restated and key in absent:
+                sys.exit(f"the hand table's reshaped and absent rows meet at {key}, 0x{addr:08x}")
+
             def immediate(key=key, addr=addr, pattern=pattern):
                 if addr in restated:
                     at, text, value, _ = restated[addr]

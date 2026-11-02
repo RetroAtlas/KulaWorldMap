@@ -496,6 +496,15 @@ class Hand(unittest.TestCase):
             mapped(copy, hand(RESHAPED={check: (store, "sw $v0, 12($s0)", 1, "a check given a value")}))
         self.assertEqual(str(stale.exception), f"the hand table's reshaped immediate rows name 0x{check:08x}, which no reader lists")
 
+    def test_a_reshaped_immediate_and_an_absence_for_one_reading_stop_the_writer(self):
+        from motion_fixture import ori
+        copy = executable(gaps=GAPS, routines={"pill": lambda c: pill(c, load=ori)})
+        us_at, at = US.places["pill.invincible"], copy.places["pill.invincible"]
+        with self.assertRaises(SystemExit) as stopped:
+            mapped(copy, hand(RESHAPED={us_at: (at, "ori $v0, $zero, 840", 840, "the pill's second count is or'ed in")},
+                              ABSENT={"pill.invincible": (at, "ori $v0, $zero, 840", "and read nowhere")}))
+        self.assertEqual(str(stopped.exception), f"the hand table's reshaped and absent rows meet at pill.invincible, 0x{us_at:08x}")
+
     def test_two_hand_rows_meeting_at_one_address_stop_the_writer(self):
         copy = executable(gaps=GAPS)
         tested, at = US.places["the pill tests its word"], copy.places["the pill tests its word"]
