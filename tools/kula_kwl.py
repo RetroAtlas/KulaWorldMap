@@ -111,7 +111,7 @@ HEDGEHOG = 42
 FRUIT = range(43, 48)
 CAPTIVATORS = range(50, 57)
 # f2 is a heading on these; a wandering ball or a corkscrew with 0 there heads as 1.
-# What the bonus artwork, drawn for a level with no key, has no picture for.
+# What the bonus artwork, drawn for a level with no key, has no texture for.
 BONUS_UNDRAWN_KINDS = (1, 2, 4, PLATFORM_KIND)
 BONUS_UNDRAWN_TYPES = (1, 2, 4, EXIT, 8, START_ON_CLOCK, *FRUIT)
 FACING_TYPES = frozenset({TELEPORTER, 28, START_ON_CLOCK, START, 50, 51, 52, 53, 56})

@@ -59,7 +59,7 @@ export const CAPTIVATORS = [
   55,
   TYPE.CAPTIVATOR_BOUNCING,
 ];
-// What the bonus artwork, drawn for a level with no key, has no picture for.
+// What the bonus artwork, drawn for a level with no key, has no texture for.
 export const BONUS_UNDRAWN_KINDS = [KIND.FIRE, KIND.ICE, KIND.ACID, KIND.PLATFORM];
 export const BONUS_UNDRAWN_TYPES = [
   TYPE.FIRE,

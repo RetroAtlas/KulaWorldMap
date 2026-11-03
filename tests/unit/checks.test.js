@@ -186,7 +186,7 @@ test("a level needs one start, and says which of several the game takes", () => 
   assert.ok(warnings(several).includes("3 starts: the game takes face 5 of 7,5,5"));
 });
 
-test("a device works on a plain block only", () => {
+test("a device on a block that is not plain is an error, and a hidden exit there a warning", () => {
   const blocks = [
     plain([5, 5, 5], 0, { 0: start() }),
     plain([7, 5, 5], 2, { 0: { type: TELEPORTER, facing: 1, variant: 0 } }),
@@ -201,7 +201,7 @@ test("a device works on a plain block only", () => {
   assert.ok(!warnings(hidden).some((w) => w.includes("hidden exit")));
 });
 
-test("the game builds nothing past the edge", () => {
+test("a block past the edge is an error", () => {
   for (const cell of [
     [0, 5, 5],
     [5, 33, 5],

@@ -956,7 +956,7 @@ class Validates(unittest.TestCase):
         unordered = [plain((7, 5, 5), t5=start(2), t2=start(1)), plain((5, 5, 5), t0=start())]
         self.assertIn("3 starts: the game takes face 5 of 7,5,5", self.warnings(unordered))
 
-    def test_a_device_works_on_a_plain_block_only(self):
+    def test_a_device_on_a_block_that_is_not_plain_is_an_error_and_a_hidden_exit_there_a_warning(self):
         blocks = [plain((5, 5, 5), t0=start()), plain((7, 5, 5), kind=2, t0={"type": TELEPORTER, "facing": 1, "variant": 0})]
         self.assertIn("device: plain block only", self.errors(blocks))
         blocks[1]["kind"] = 0
@@ -967,7 +967,7 @@ class Validates(unittest.TestCase):
         hidden[1]["kind"] = 0
         self.assertFalse(any("hidden exit" in w for w in self.warnings(hidden)))
 
-    def test_the_game_builds_nothing_past_the_edge(self):
+    def test_a_block_past_the_edge_is_an_error(self):
         for cell in ((0, 5, 5), (5, 33, 5)):
             self.assertIn("block past the edge", self.errors([plain((5, 5, 5), t0=start()), plain(cell)]))
         self.assertEqual(self.errors([plain((1, 32, 1), t0=start())]), [])
@@ -1354,7 +1354,7 @@ class Validates(unittest.TestCase):
         with mock.patch("kula_kwl._names", return_value={"kinds": {}, "types": {}}):
             self.assertIsNone(_circuit_word(2))
 
-    def test_a_keyless_level_is_warned_of_what_the_bonus_artwork_has_no_picture_for(self):
+    def test_a_keyless_level_is_warned_of_what_the_bonus_artwork_has_no_texture_for(self):
         bonus = json.loads(OBJECTS.read_text())["skins"]["sets"]["bonus"]
 
         def placeholder(models):
