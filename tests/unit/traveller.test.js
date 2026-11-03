@@ -14,6 +14,7 @@ import {
   flashed,
   glowed,
   markersFor,
+  sourceOf,
   startOf,
   tintOf,
 } from "../../public/js/play/traveller.js";
@@ -253,4 +254,29 @@ test("the ball's six markers take the start's type and fields, or the ball's own
     six({ type: 30, f: l.records[0].on[0].f, v: undefined, variant: null }),
   );
   assert.deepEqual(markersFor(null), six({ type: 30, f: [], v: undefined, variant: null }));
+});
+
+test("the frame is handed the shake's shift in canvas pixels, the words' offset scaled from the game's screen by the lesser of the canvas's two ratios and rounded, and nothing with Motion off", () => {
+  const l = level(row(10, 18), [start()]);
+  const run = begin(l);
+  const live = { level: l, run, ended: null };
+  const { wide, high } = motion.play.screen;
+  const { view, show } = state;
+  try {
+    state.show = { ...show, motion: true };
+    state.view = { w: wide * 2, h: high * 2.5, dpr: 1 };
+    assert.deepEqual(sourceOf(live, l).shift, [0, 0]);
+    run.words.shift = [2, 1];
+    assert.deepEqual(sourceOf(live, l).shift, [4, 2], "the lesser ratio, the width's");
+    state.view = { w: wide * 3, h: high * 2.25, dpr: 1 };
+    assert.deepEqual(sourceOf(live, l).shift, [5, 2], "the height's, rounded");
+    run.words.shift = [0, -1];
+    assert.deepEqual(sourceOf(live, l).shift, [0, -2], "up, as the PAL disc's shake jolts");
+    state.show = { ...show, motion: false };
+    assert.deepEqual(sourceOf(live, l).shift, [0, 0]);
+    assert.equal(sourceOf(live, level(row(10, 18), [start()])), null);
+  } finally {
+    state.view = view;
+    state.show = show;
+  }
 });

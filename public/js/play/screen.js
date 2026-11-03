@@ -12,18 +12,27 @@ const HALF = 0.5;
 const BYTE = 255;
 
 // the frame as last displayed while the pill works, tinted, for the ghost, on a canvas made as
-// the first is kept
+// the first is kept, and the shift that frame was drawn under
 let lastCv = null;
 let lastCtx = null;
+let lastShift = [0, 0];
 
 const motionOn = () => state.show.motion;
 const pillTable = () => motionTable().types[String(TYPE.LETHARGY_PILL)].lasts;
 
+/** The shift the frame hooks draw under, in CSS pixels, off the context's transform. */
+function shiftOf(ctx) {
+  const { a, d, e, f } = ctx.getTransform();
+  return [e / a, f / d];
+}
+
 /** The pill's screen, as the game's draw of the pass showed it: the flash on the pill's own pass,
     the last frame as a ghost at half strength over the scene on each pass the pill works and on
     the end's pass, and the white glow at the fade's level on each pass after; the frame drawn is
-    kept, tinted, for the next pass's ghost. `ran` says whether a pass ran since the frame hook
-    last drew and `lit` whether the pass last run took the pill. */
+    kept, tinted, for the next pass's ghost, with the shift it was drawn under, which the ghost is
+    laid back by under the frame's own, so it stays on the scene as the game's frame before does
+    under the display's offset now. `ran` says whether a pass ran since the frame hook last drew
+    and `lit` whether the pass last run took the pill. */
 export function screened(ctx, live, { ran, lit }) {
   if (!live || live.run.words.screen === SCREEN.off) {
     if (lastCv) sized(lastCv, 0, 0);
@@ -37,10 +46,13 @@ export function screened(ctx, live, { ran, lit }) {
   if (ghost && lit) glow(ctx, grey, grey, width, height);
   else if (ghost || w.fade === fade.from) {
     ctx.globalAlpha = HALF;
-    if (lastCv?.width) ctx.drawImage(lastCv, 0, 0, width, height);
+    if (lastCv?.width) ctx.drawImage(lastCv, -lastShift[0], -lastShift[1], width, height);
   } else glow(ctx, w.fade, grey, width, height);
   ctx.restore();
-  if (ran && ghost) kept(ctx.canvas, tint, grey);
+  if (ran && ghost) {
+    kept(ctx.canvas, tint, grey);
+    lastShift = shiftOf(ctx);
+  }
 }
 
 /** The flash's quad, as the game's draw lays it over everything: white added to the whole screen

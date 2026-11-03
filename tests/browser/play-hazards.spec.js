@@ -94,6 +94,32 @@ const shadowHeight = (page) =>
     return g ? (Number.isFinite(g.height) ? g.height : null) : undefined;
   });
 
+/** The offsets the frame draws the scene under over `n` game frames, one a frame, read off the
+    canvas's transform where the frame hooks run, which the shake's shift moves. */
+const joltsOver = (page, n) =>
+  page.evaluate(async (n) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { draw, overlayWith }, { motionTable }] = await Promise.all(
+      ["viewer/state.js", "viewer/draw/render.js", "viewer/data.js"].map(at),
+    );
+    if (!window.__jolt) {
+      window.__jolt = [0, 0];
+      overlayWith({
+        frame: (ctx) => {
+          const { e, f } = ctx.getTransform();
+          window.__jolt = [e / state.view.dpr, f / state.view.dpr];
+        },
+      });
+    }
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      window.__step(1000 / motionTable().hz);
+      draw();
+      out.push(window.__jolt);
+    }
+    return out;
+  }, n);
+
 test("spikes kill the ball: the strip says so in red while the game's countdown runs, the verdict names the cause and Space starts the level again, and with Forgive pressed the ball is put back where it last rested instead, from the spikes and from a fall alike", async ({
   page,
 }) => {
@@ -305,13 +331,13 @@ test("on fire the ball reddens: where it stands its pixels are redder on the who
   expect(errors).toEqual([]);
 });
 
-test("a crumbling block breaks under the ball, scoring, shrinks about its middle and is gone a third of a second later, out of the frame, the ball falling with it and casting no shadow from the frame the block goes", async ({
+test("a crumbling block breaks under the ball, scoring, shrinks about its middle and is gone a third of a second later, out of the frame, the ball falling with it and casting no shadow from the frame the block goes, the picture jolted by the shake until its frames have run", async ({
   page,
 }) => {
   const errors = trackErrors(page);
   // a crumbling block on, with nothing below it
   await arcadeDraft(page, { blocks: [[[17, 16, 17], { kind: 6 }]] });
-  const { hz, play } = await table(page);
+  const { hz, play, kinds } = await table(page);
   // a point of the block's top that the ball and its shadow leave clear
   const corner = [17.15, 16.15, 17];
   const stood = await pixelAt(page, corner);
@@ -339,9 +365,20 @@ test("a crumbling block breaks under the ball, scoring, shrinks about its middle
     moving: false,
   });
   expect(shrunk.at(-1).pixel).not.toEqual(stood);
+  // the break starts the shake afresh on every frame the ball stands on the block, and the frame
+  // puts every cell at its screen point plus the offset, nothing on about half the frames
+  const jolts = await joltsOver(page, 8);
+  expect(
+    jolts.some(([x, y]) => x || y),
+    `jolts ${JSON.stringify(jolts)}`,
+  ).toBe(true);
   const dropped = await stepUntil(page, { moving: true }, clock, { pixel: corner });
   expect(dropped.at(-1).pixel).not.toEqual(stood);
   expect(await shadowHeight(page)).toBeNull();
+  // the last shake, started as the block went, runs its frames down as the ball falls, and the
+  // picture stands where the camera puts it again
+  const settled = await joltsOver(page, kinds[6].shake.frames + 2);
+  expect(settled.at(-1)).toEqual([0, 0]);
   await stepUntil(page, { status: "^FELL OFF" }, clock);
   await expect(status(page)).toHaveText(LOST_BROKEN);
   await expect.poll(() => said(page)).toContain(BROKE);

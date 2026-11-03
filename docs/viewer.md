@@ -438,6 +438,8 @@ While the ball is on the level a HUD at the top of the map takes the level line'
 
 Space jumps the ball two blocks on, from rest with up held or while it rolls, and standing still hops it in place, hop after hop for as long as Space is held; a jump that comes down on a block lands there and rolls on only while up is held, one that comes down on nothing falls straight down, a wall met in the air throws the ball back, and a ball that falls off the level is lost, which ends the level as the clock running out does; the ball's shadow fades as it rises and is gone while nothing is under it.
 
+A ball that lands from the fall's top speed, which a fall of a block's height reaches, jolts the picture as the game's does, with Motion on.
+
 The ball leaves golden dust behind it, which lifts off the face, settles and fades, until Settings puts the dust away.
 
 ### Keep and Follow
@@ -522,6 +524,8 @@ On ice the ball slides as it does in the game: it rolls on through every block's
 An arrow lets the ball roll off its block the way it points alone: facing any other way the ball will not roll, and the strip says so until it is turned, though it turns in place and hops as before, and a jump that passes over an arrow heading any way but the one it points is thrown back as off a wall.
 
 A crumbling block breaks the moment the ball stands on it, scoring as in the game, and is gone a third of a second later, dropping a ball still on it; a rolling ball crosses one before it goes, and one that stops on it has a moment to roll off, onto a block ahead, up a wall or into a jump, but cannot be rolled round a crumbling block's free edge, which holds it short of the edge until the block goes, as in the game.
+
+The picture jolts as the block breaks, as the game's does, and on for a moment after the ball has left the block or the block has gone, with Motion on; with Motion off the picture stands still.
 
 A breaking block shrinks about its middle over the game's frames before it goes, its textures squashed onto the smaller faces, and the blocks beside it show the faces they built toward it from the break, as in the game.
 
@@ -671,6 +675,8 @@ A module that runs the level may hand the frame, through `runWith`, the clock it
 
 The handed index may carry the blocks breaking up with the size of each in the game's units, which the frame draws as cubes of that side about their middles, every face turned to the camera drawn and the faces of the blocks beside them toward them shown, a platform's apart, the pick following the shrunk cube.
 
+The handed run may shift the whole scene by a vector of canvas pixels, under which everything from the ground grid to the frame hooks is drawn and the scale bar is not, and the pick follows it, so a point of the screen finds the cell drawn under it.
+
 So what is gone from the level as it runs is neither drawn nor picked, the walkers stand where the module has stepped them and no invisible face is lit while every one is seen, while the hover, the tip and the panel read the level as installed and the frame's own clock, index and walkers are in use again once it stops.
 
 What listens to the pointer registers with `js/viewer/chrome/interaction.js` for a click through `onCellClick`, for a drag through `dragWith`, which what registers may take from the camera at the press, and through `hoverBy` for what about the cell under the pointer matters to the hover, which is how the editor draws its grid, washes and ghost and takes its clicks and drags.
@@ -808,6 +814,7 @@ The screen's shake is among its words too, which a break and the thud landing st
 - It parks the panel's presses with the view and gives the level its circuits as the game loads them while the ball is on it, and as it leaves, where the level shown is the one they were parked on, gives the presses back, and the view with them unless choosing a level, opening a link or a click on the name a teleporter's panel gives for where it leads is what leaves play.
 - Where a click on the name a teleporter's panel gives for where it leads leaves play, it centres the view there as it leaves, since the click's find is drawn before play hears of it, with the view still following the ball, and writes the history entry the find opened at once, which the find wrote with the view from before play.
 - It draws the ball, its dust and the view's target where a platform has carried it.
+- It jolts the picture by the game's shake, through the shift it hands the frame, as a crumbling block breaks under the ball and as the ball lands from the fall's top speed, the hit test following the picture.
 - It shows the cause of a death in red on the strip while its countdown runs.
 - It asks for the next frame through the frame hook while the level runs, the ending's view turns or something moves.
 - It fills the panel through `onShow`.
@@ -820,6 +827,7 @@ The screen's shake is among its words too, which a break and the thud landing st
 `js/play/traveller.js` is the ball as the frame draws it, pure too: the ball as one of the frame's travellers, keyed as nothing on the level is and handed the body's turn relative to the axes the frame lays it on, what the frame draws at and with while the ball is on the map, the ball's tint, the start the game takes and the ball as it last stood, which Motion off draws, each reaching the map through a seam `js/play/play.js` registers.
 
 - It hands the frame play's own clock, the frame the rules last ran, which is the one the game's frame draws after its step, the level's index less what the ball has taken and less the hidden exits while a key remains, the walkers as the rules stepped them and whether every invisible block is seen through `runWith`, so the phases, the lights and what travels draw as the game's frame draws them, a taken thing is neither drawn nor picked and the face it stood on is painted bare, and while the sunglasses last, and in the on spells of their blink, the blocks light no invisible face and every one keeps the look the map draws it in out of the light.
+- It hands the frame the shake's shift of the scene, the words' offset in the game's screen pixels scaled to the canvas by the lesser of the canvas's width over the game's screen's and its height over it and rounded to whole pixels, as the game's display jolts, right and down where its origin rests at nothing and up as well on the PAL disc, and nothing with Motion off, when the words run and the picture stands still.
 - It tints the ball through the traveller's tint by its heat, its melt and its cold as the game tints the ball's light, each into its own channel and off the other two, raises it red, green and blue in turn by the game's counter while the invincibility pill's word stands, the counter stepping on each frame the ball is drawn under the pill and kept for the page's life as the game keeps it, and flashes it between white and black by the game's own angle while it is marked dying.
 - It lends the things on the blocks the live ball's point in place of the starts' points.
 - It says through `tipWith` in `js/viewer/chrome/interaction.js` and the panel's `onShow` that a thing the level as installed still lists is taken.
@@ -835,6 +843,8 @@ The screen's shake is among its words too, which a break and the thud landing st
 ### The pill's screen
 
 `js/play/screen.js` is the pill's screen and the flash on the canvas, painted in the frame hook over the game's bursts: the flash of white on the pill's own pass, the frame last drawn as a ghost at half strength over the scene on each pass the pill works and on the end's pass, and a white glow at the fade's level on each pass after, the frame drawn kept, tinted by the table's colour over its grey, for the next pass's ghost, on a canvas made as the first is kept and let go as the screen is off, and the flash's quad, white added over everything at the strength the pass left, a byte a channel, on every frame it stands above nothing with Motion on, the words running and nothing drawn with it off, with the run, whether a pass ran since the frame hook last drew and whether the pass last run took the pill handed in by `js/play/play.js`.
+
+The frame kept for the ghost was drawn under the shake's shift of its own frame, so the ghost is laid back by that shift under the frame's own and stays on the scene, as the game's frame before does under the display's offset now.
 
 ### Play's chrome
 

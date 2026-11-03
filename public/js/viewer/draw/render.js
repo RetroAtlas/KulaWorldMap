@@ -28,9 +28,9 @@ const cv = $("cv");
 const ctx = cv.getContext("2d");
 
 // A canvas painted one flat colour per cell and read back to hit-test a point,
-// painted from the cells of the draw it goes stale at, by the first hit test
-// after, and only about the point asked for where that is all the hit test
-// wants.
+// painted from the cells of the draw it goes stale at, under that draw's
+// shift, by the first hit test after, and only about the point asked for where
+// that is all the hit test wants.
 const pickCv = document.createElement("canvas");
 const pick = pickCv.getContext("2d", { willReadFrequently: true });
 let pickStale = true;
@@ -254,7 +254,8 @@ function same(a, b) {
 // index is shaped as the level's own index, with a marker only on a cell it
 // holds, and may carry the blocks it has marked with the frame of each mark
 // and the blocks breaking up with the size of each in the game's units, each
-// drawn as a cube of that side about its middle.
+// drawn as a cube of that side about its middle. A handed run may shift the
+// scene by a vector of canvas pixels, which the pick follows.
 let source = null;
 export const runWith = (fn) => {
   source = fn;
@@ -317,9 +318,14 @@ export function draw() {
 
   let covered = false;
   for (const fn of overlays.under) covered = fn(ctx, l) || covered;
-  if (state.show.base && !covered) drawBase(ctx, l);
   // after the under hooks, which step whatever runs the level
   const given = handed(l);
+  const shift = given?.shift ?? [0, 0];
+  // the scene is drawn under the shift, so the view it is culled against is taken back by it
+  const view = { x0: -shift[0], y0: -shift[1], x1: w - shift[0], y1: h - shift[1] };
+  ctx.save();
+  ctx.translate(shift[0], shift[1]);
+  if (state.show.base && !covered) drawBase(ctx, l);
   const idx = given?.idx ?? state.idx;
   syncRun();
   const frame = clockOf(given);
@@ -328,8 +334,10 @@ export function draw() {
   if (walking?.size && pointerIn) pickStale = true;
   const moving = movers.reduce((out, fn) => merged(out, fn(l, idx, frame)), walking);
   const cells = visible(idx, moving);
+  if (pickFrom && (pickFrom.shift[0] !== shift[0] || pickFrom.shift[1] !== shift[1]))
+    pickStale = true;
   if (pickStale) {
-    pickFrom = { cells, l };
+    pickFrom = { cells, l, shift };
     pickStale = false;
     painted = null;
   }
@@ -367,7 +375,7 @@ export function draw() {
   };
 
   for (const c of cells) {
-    if (offScreen(c)) continue;
+    if (!reaches(screen(c.x, c.y, c.z), view)) continue;
     const home = c.home || c;
     const ghost = home.z < sliceZ();
     if (c.beams) {
@@ -422,6 +430,7 @@ export function draw() {
     drawLink(ctx, from, to, markerColour(m), markerNow(m) === "off");
   }
   if (state.show.camera) drawCamera(ctx, l);
+  ctx.restore();
   drawScale(ctx);
   if ((spinning && state.show.motion) || again) animate();
 }
@@ -461,14 +470,11 @@ function reaches([px, py], area) {
   return px >= area.x0 - r && px <= area.x1 + r && py >= area.y0 - r && py <= area.y1 + r;
 }
 
-const offScreen = (c) =>
-  !reaches(screen(c.x, c.y, c.z), { x0: 0, y0: 0, x1: state.view.w, y1: state.view.h });
-
 /** Paint the pick from the last draw's cells, within `area`. Every cell takes
     its place in the list whether painted or not, so a colour read means the
     same cell whatever part was painted. */
 function paintPick(area) {
-  const { cells, l } = pickFrom;
+  const { cells, l, shift } = pickFrom;
   pickList = [];
   const { w, h } = state.view;
   if (laid === WHOLE || area === WHOLE) pick.clearRect(0, 0, w, h);
@@ -480,18 +486,25 @@ function paintPick(area) {
     pick.rect(area.x0, area.y0, area.x1 - area.x0, area.y1 - area.y0);
     pick.clip();
   }
-  const view = { x0: 0, y0: 0, x1: w, y1: h };
+  // the cells are painted under the draw's shift, so the view and the area are taken back by it
+  pick.translate(shift[0], shift[1]);
+  const back = (a) =>
+    a === WHOLE
+      ? a
+      : { x0: a.x0 - shift[0], y0: a.y0 - shift[1], x1: a.x1 - shift[0], y1: a.y1 - shift[1] };
+  const view = back({ x0: 0, y0: 0, x1: w, y1: h });
+  const about = back(area);
   for (const c of cells) {
     const at = screen(c.x, c.y, c.z);
     if (!reaches(at, view)) continue;
     const home = c.home || c;
     if (home.z < sliceZ() || c.beams || c.rails || c.mark) continue;
     if (c.thing) {
-      if (state.show.objects) pickGoing(c.thing, home, l, area);
+      if (state.show.objects) pickGoing(c.thing, home, l, about);
       continue;
     }
     pickList.push({ home, at: c });
-    if (!reaches(at, area)) continue;
+    if (!reaches(at, about)) continue;
     const col = pickColour(pickList.length);
     cube(pick, c, { cells: new Map() }, () => col, null, 1, null);
   }
@@ -567,15 +580,17 @@ export function cellAt(cx, cy, near = false) {
   }
   const front = [...proposed].sort((a, b) => b - a);
   const dpr = state.view.dpr;
+  const [sx, sy] = pickFrom.shift;
   for (const [dx, dy] of TRIES) {
-    const x = (px + dx) / dpr;
-    const y = (py + dy) / dpr;
+    const x = (px + dx) / dpr - sx;
+    const y = (py + dy) / dpr - sy;
     const id = front.find((v) => shows(pickList[v - 1], x, y));
     if (id) {
       const e = pickList[id - 1];
-      // the face is read at the point itself, which the probe may have left
-      // by a fraction of a pixel, and at the probe where the point is off the cube
-      const face = e.disc ? e.face : (faceAt(e.at, cx, cy) ?? faceAt(e.at, x, y));
+      // the face is read at the point itself, taken back by the shift, which the
+      // probe may have left by a fraction of a pixel, and at the probe where the
+      // point is off the cube
+      const face = e.disc ? e.face : (faceAt(e.at, cx - sx, cy - sy) ?? faceAt(e.at, x, y));
       return e.at?.body ? { ...e.home, face, body: e.at.body, k: e.at.k } : { ...e.home, face };
     }
   }

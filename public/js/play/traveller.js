@@ -30,6 +30,16 @@ let glowCounter = 0;
 const motionOn = () => state.show.motion;
 const glowTable = () => motionTable().types[String(TYPE.INVINCIBILITY_PILL)].lasts.glow;
 
+/** The display's offset the words hold, in canvas pixels: the game's screen pixels scaled by the
+    lesser of the canvas's width over the game's screen's and its height over it, rounded to whole
+    pixels, and nothing with Motion off, when the words run and the picture stands still. */
+function offsetOf(live) {
+  if (!motionOn()) return [0, 0];
+  const { wide, high } = motionTable().play.screen;
+  const k = Math.min(state.view.w / wide, state.view.h / high);
+  return live.run.words.shift.map((v) => Math.round(v * k));
+}
+
 /** What the ball shows: its block and face, heading, centre and foot, body and lift. */
 export function stateOf(b, probe) {
   return {
@@ -59,7 +69,7 @@ export const shown = (live) => (motionOn() ? stateOf(live.run.ball, live.probe) 
 /** What the frame draws at and with while the ball is on the map: the frame the rules last ran,
     which is the one the game's draw shows, the ending's view's frames added once the level has
     ended, the level's index less what the ball has taken, the walkers where the rules have
-    stepped them, and whether every invisible block is seen. */
+    stepped them, whether every invisible block is seen and the shake's shift of the scene. */
 export const sourceOf = (live, l) =>
   live && l === live.level
     ? {
@@ -67,6 +77,7 @@ export const sourceOf = (live, l) =>
         idx: drawnIndex(live.run),
         travel: travelOf(live.run),
         seeing: seeing(live.run),
+        shift: offsetOf(live),
       }
     : null;
 

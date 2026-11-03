@@ -58,7 +58,7 @@ The viewer rolls its view by the same word, the angle the table's scale and shif
 
 Its frame draws the screen from the words as the game's draw of the pass showed it: a flash to white on the pill's own pass, the frame last drawn, tinted by the table's colour over its grey, at half strength over the scene on each pass the pill works and on the end's pass, the order over or under being unread ([motion.md](motion.md)), and the white glow at the fade's level on each pass after.
 
-The scene is neither stretched under the pill nor shaken on a landing ([motion.md](motion.md)), which is recorded here as not drawn.
+The scene is not stretched under the pill, which is recorded here as not drawn, and the shake a −66 landing starts is drawn, as "The ball's roll" and "The crumbling block" in [motion.md](motion.md) read it.
 
 The table ships the roll as type 32's `lasts.rock`, the screen as its `lasts.screen` and the screen's words as they load as `play`'s `screen`, with the display's origin as the game lays it as its `origin` ([motion.md](motion.md)).
 

@@ -265,3 +265,89 @@ test("the lethargy pill rolls the view and ghosts the screen as the game does: t
   await expect.poll(() => said(page)).toContain("Lethargy pill taken.");
   expect(errors).toEqual([]);
 });
+
+/** Over `n` game frames, each drawn, the frame each draw showed, the shift the frame hooks drew
+    under and where the hook laid the ghost, the canvas drawn at half strength. */
+const ghostsOver = (page, n) =>
+  page.evaluate(async (n) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { draw, clock, overlayWith }, { motionTable }] = await Promise.all(
+      ["viewer/state.js", "viewer/draw/render.js", "viewer/data.js"].map(at),
+    );
+    if (!window.__ghosts) {
+      window.__ghosts = { shift: [0, 0], laid: [] };
+      overlayWith({
+        frame: (ctx) => {
+          const { e, f } = ctx.getTransform();
+          window.__ghosts.shift = [e / state.view.dpr, f / state.view.dpr];
+        },
+      });
+      const cv = document.getElementById("cv");
+      const drawImage = CanvasRenderingContext2D.prototype.drawImage;
+      CanvasRenderingContext2D.prototype.drawImage = function (img, ...args) {
+        if (
+          this.canvas === cv &&
+          img instanceof HTMLCanvasElement &&
+          img.width === cv.width &&
+          this.globalAlpha === 0.5
+        )
+          window.__ghosts.laid.push([args[0], args[1]]);
+        return drawImage.call(this, img, ...args);
+      };
+    }
+    const first = clock();
+    const frames = [];
+    for (let i = 0; i < n; i++) {
+      window.__ghosts.laid = [];
+      window.__step(1000 / motionTable().hz);
+      draw();
+      frames.push({ frame: clock(), shift: window.__ghosts.shift, laid: window.__ghosts.laid });
+    }
+    return { first, frames };
+  }, n);
+
+test("the pill's ghost stays on the scene while the screen shakes: kept from a frame drawn under one shift, it is laid back by that shift under the next frame's, through the break's shake and the landing's", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // a lethargy pill a block on, then a crumbling block over a block, so the break shakes the screen
+  // while the ghost trails and the fall from the gone block lands at the fall's top speed
+  await arcadeDraft(page, {
+    blocks: [
+      [[17, 16, 17], { kind: 0 }],
+      [[17, 15, 17], { kind: 6 }],
+      [[17, 15, 18], { kind: 0 }],
+    ],
+    faces: [[[17, 16, 17], 0, { type: TYPE.LETHARGY_PILL }]],
+  });
+  const { hz, play, kinds, types } = await table(page);
+  await startPlay(page);
+  await listening(page);
+  await frozen(page);
+  const clock = await clockOf(page, play);
+  await stepUntil(page, { eased: true }, hz);
+  await page.keyboard.press("ArrowUp");
+  await stepUntil(page, { block: [17, 16, 17], moving: false }, clock);
+  await expect.poll(() => said(page)).toContain("Lethargy pill taken.");
+  await page.keyboard.press("ArrowUp");
+  await stepUntil(page, { block: [17, 15, 17], moving: false }, clock);
+  // at the pill's half pace, the break's frames, the fall and the landing's frames
+  const span = 2 * (kinds[6].shake.frames + types[30].fall.shake.frames + 40);
+  const { first, frames } = await ghostsOver(page, span);
+  await expect(line(page)).toContainText("on the top of 17,15,18");
+  // the ghost is drawn before the frame is kept, so it is laid back by the last pass's shift
+  let kept = null;
+  const laid = [];
+  frames.forEach((f, i) => {
+    for (const at of f.laid) laid.push({ at, kept });
+    if (f.frame !== (i ? frames[i - 1].frame : first)) kept = f.shift;
+  });
+  const checked = laid.filter((l) => l.kept);
+  expect(checked.length).toBeGreaterThan(20);
+  expect(
+    checked.some((l) => l.kept[0] || l.kept[1]),
+    "a shift was kept",
+  ).toBe(true);
+  for (const { at, kept } of checked) expect(at).toEqual([-kept[0], -kept[1]]);
+  expect(errors).toEqual([]);
+});

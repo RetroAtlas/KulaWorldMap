@@ -1120,7 +1120,7 @@ On the PAL disc the shake's start and step stand at `0x800230c4` and `0x800230e4
 
 The viewer breaks the block by the same words: the rules keep each crumbling block's type word and size, the hazards write the word under the ball and the frame's last part breaks, shrinks and empties the block as the routine does ("The blocks under the ball" above), and the map draws a breaking block as a cube of its size about its middle, its textures squashed onto the smaller faces and every face turned to the camera drawn, the faces its neighbours built toward it shown from the break, a platform's apart, and a block that is gone no longer, with a burst of dust where it stood.
 
-The shake runs in the map's words alone, started by the break, afresh on every frame the ball stands on the breaking block, and by the −66 landing with the table's figures and stepped from the game's dice as the step is, the picture standing still.
+The map shakes the screen as the game does: the shake is started by the break, afresh on every frame the ball stands on the breaking block, and by the −66 landing with the table's figures, stepped from the game's dice as the step is, and the words' offset, the display's word less its rest, scaled from the game's 320 by 240 to the canvas, shifts the whole picture, right and down here and up as well on the PAL disc, the hit test following it, and nothing with Motion off, when the words run and the picture stands still.
 
 ## The moving platform
 
@@ -1370,7 +1370,7 @@ Of the body and the hop: the draw's marks for the Simon rooms and the bouncy pil
 
 Whether the game's ball is seen to sink under a held Cross, a fifth of a block after eight hops, snapping back with a squash over a lone block and sinking on over a deeper floor until the 26th hop lays it inside its block, is for the emulator to show; the draw takes the position at 60 with the squash's offset and the word at 84 (`0x800314c4`, `0x800314f0`), so the listing says it is seen.
 
-`0x8004ddbc`, which the button's launch calls with 10, a landing and a hop's end with 102 and a capture with 113, and which takes a number under 120 to a table (`0x8003b280`, `0x80030c6c`, `0x800301f4`, `0x800367c0`, `0x8004dddc`), is the sound call, and `0x800227f4` the screen's shake, read in "The crumbling block" above; the map plays no sound and shudders no pad, the button's shudder included (`0x8003b298`), and runs the shake in its words from the game's dice, the picture standing still.
+`0x8004ddbc`, which the button's launch calls with 10, a landing and a hop's end with 102 and a capture with 113, and which takes a number under 120 to a table (`0x8003b280`, `0x80030c6c`, `0x800301f4`, `0x800367c0`, `0x8004dddc`), is the sound call, and `0x800227f4` the screen's shake, read in "The crumbling block" above; the map plays no sound and shudders no pad, the button's shudder included (`0x8003b298`), and shakes the screen as the game does, from the game's dice.
 
 Why the hop reads a row ahead of the jump is not traced, nor what the word at the record's start selects, 3 at a jump's start and in a fall, 1 at a hop's start and a turn, 2 at a roll's start and 0 at a landing, a hop's end and a teleport's send.
 
