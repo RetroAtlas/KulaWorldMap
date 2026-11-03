@@ -123,8 +123,6 @@ On a level of your own the note is the level's overview instead, editing or not:
 
 It is brought up to date at every change, a link that holds the focus keeping it, and folds as any note does.
 
-One finding comes from the map itself rather than from the file: where a key, a coin or anything else the ball takes stands where no roll from the start reaches it, over the blocks alone as the planner reckons a route, the note names each with the face and the block it stands on, the keys first, a face that looks into another block left to the checks, and says that a jump, a teleporter, a platform, ice and a fall are not counted.
-
 The sidebar lists a world's levels in the order of its pack, then its two finals, then the Simon room the game's Simon mode plays in it on its first round, and `[` and `]` step to the previous and next level in that order, on from a world's last level to the next world's first level and back, and stop at the first level of the first world and the last of the last.
 
 The Japanese disc's Simon rooms, the US rooms byte for byte, are listed under the worlds the US release plays them in on its first round, since that disc's game fixes no world for a room.
@@ -683,7 +681,7 @@ A module may reinstall the slot shown in place through `reshow` in `js/viewer/ch
 
 The route planner is built on the same seams and loads with the boot, since a linked route must draw on the first frame:
 
-- `js/viewer/walk.js` is the model, pure and testable without a page, the ball's three moves and the side rule over a probe of the lattice, the shortest walk between two faces, every face a walk from one reaches, which is how a draft's note knows what the start cannot roll to, the course's codec and its pieces.
+- `js/viewer/walk.js` is the model, pure and testable without a page, the ball's three moves and the side rule over a probe of the lattice, the shortest walk between two faces, the course's codec and its pieces.
 - `js/viewer/draw/ribbon.js` paints a block's pieces, the leaps and the rings and nothing of the page.
 - `js/viewer/chrome/course.js` is the planner's chrome, the clicks, the strip, the store and the link, drawing through the block hook and listening through the pointer lists and the link's tail.
 

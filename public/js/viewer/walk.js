@@ -111,7 +111,7 @@ export function stepBetween(a, b) {
   return o === JUMP ? { k, o, d } : { k, o };
 }
 
-export const stationKey = ({ cell, face }) => cellKey(...cell) * 6 + face;
+const stationKey = ({ cell, face }) => cellKey(...cell) * 6 + face;
 const stationId = (station, k) => stationKey(station) * 4 + k;
 export const sameStation = (a, b) => same(a.cell, b.cell) && a.face === b.face;
 
@@ -151,20 +151,6 @@ export function shortestWalk(probe, from, to, headings = [0, 1, 2, 3]) {
     if (o !== null) open(step(station, k, o), headingAfter(station.face, k, o), id, { k, o });
   }
   return null;
-}
-
-/** Every station a walk from `from` reaches, by `stationKey`; the ball turns in place at any
-    station, so the heading plays no part. */
-export function reachable(probe, from) {
-  const reached = new Map([[stationKey(from), from]]);
-  for (const station of reached.values())
-    for (let k = 0; k < 4; k++) {
-      const o = outcomeAt(probe, station, k);
-      if (o === null) continue;
-      const next = step(station, k, o);
-      if (!reached.has(stationKey(next))) reached.set(stationKey(next), next);
-    }
-  return reached;
 }
 
 // Five nibbles spell a station; then one a step, a jump spelling two more, a leap five more, a

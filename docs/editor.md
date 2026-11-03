@@ -493,7 +493,7 @@ The form learns that the mode or the brush changed through events the editor emi
 
 ### The overview on the level line
 
-How the level plays, its counts against the caps and the disc's maxima, `validate`'s findings and one finding of the overview's own, the things the ball takes that no walk from the start reaches, by `reachable` of `public/js/viewer/walk.js` over the planner's probe, named keys first with where each stands, through `typeWord` and `listed` of `public/js/format/checks.js`, the words `validate`'s own findings name a type and a list by, a face that looks into another block left to `validate`, and said to count no jump, teleporter, platform, ice or fall, belong to the level line rather than to the panel.
+How the level plays, its counts against the caps and the disc's maxima and `validate`'s findings belong to the level line rather than to the panel.
 
 `public/js/editor/overview.js` registers with the chip's one seam, `noteWith(fn)` in `public/js/viewer/chrome/navigate.js`, which asks what is registered for the note of the level it shows and falls back to the level's own note, so a shipped level's note is untouched and a draft's note carries the overview, built again with the chip at every update of the level, each finding linking to its cell through the panel and, while it holds the focus, found again by its `data-field` in the note built after the edit.
 
