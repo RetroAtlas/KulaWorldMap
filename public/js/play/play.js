@@ -206,7 +206,10 @@ function stepped(dt) {
       lit = false;
       passed = true;
       if (live.ended) {
-        if (turning(live)) startOver();
+        const events = [];
+        const done = turning(live, events);
+        for (const event of events) happened(live, event);
+        if (done) startOver();
       } else played();
       releaseSaying();
       if (live) {

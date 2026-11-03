@@ -529,6 +529,8 @@ The picture jolts as the block breaks, as the game's does, and on for a moment a
 
 A breaking block shrinks about its middle over the game's frames before it goes, its textures squashed onto the smaller faces, and the blocks beside it show the faces they built toward it from the break, as in the game.
 
+A block breaking as the level ends goes on shrinking through the ending's view and is gone on the frame it would have been, as the game's draw runs the crumbling blocks on whatever the outcome, the map's dust bursting where it stood.
+
 A block that has gone is gone from the map, with a burst of dust where it stood, which is the map's own.
 
 A vanishing block carries the ball while it is there and drops it as it goes, and the ball rolls onto one about to go as readily as onto stone.
@@ -762,7 +764,7 @@ A caller may place the ball at rest on any face, its ramp and its look gone, and
 
 `js/play/rules.js` is the game's frame over the ball's motion and the level as play holds it, pure too, one game frame in the order the executable runs it:
 
-- The screen's shake stepped, which the game's loop draws before the level's routine and which alone runs on once the outcome stands, as the loop draws it outside that routine.
+- The screen's shake stepped, which the game's loop draws before the level's routine, and which is all the frame runs once the outcome stands, the draw's part going on in the ending's view.
 - The level's clock.
 - The guard a level that follows an ending opens with.
 - The wait that holds the pad off and clears the ball's requests.
@@ -838,7 +840,7 @@ The screen's shake is among its words too, which a break and the thud landing st
 
 - Once the level has ended, by its clock, the ball lost off the lattice, a death, the exit or the last block of a level with no key, it shows no ball, reads no key, lets the camera's frame go and turns the view about the level's middle by the game's own angles, the yaw by the third of the three, which the game turns about the lattice's upright, and the pitch by the first, which it turns about the view's own across, the second, whose axis the orbit has not, left out, and with the zoom standing in for the game's eye, since the orbit has none, the eye standing the level's radius and the table's offset off the middle and swinging its reach nearer and further by turns, and the zoom following how large the level would look from it, for the length of one swing of an arcade level's eye, whichever figures the level's own eye swings by, or until Space, Enter or a tap of the pad starts the level again, the view easing back behind the ball.
 - It takes the camera through the frame, the anchored target and the parked view in `js/viewer/state.js` and frames it in the fit's place through `js/viewer/chrome/navigate.js`.
-- Each frame of the ending's view steps the screen's shake and then the screen's words, as the game's loop and its draw run them on through an ending.
+- Each frame of the ending's view steps the screen's shake, breaks the crumbling blocks on and steps the screen's words, as the game's loop and its draw run them on through an ending, so a block breaking as the level ends shrinks and goes on the frames it would have, its fall handed to the page as an event.
 
 ### The pill's screen
 

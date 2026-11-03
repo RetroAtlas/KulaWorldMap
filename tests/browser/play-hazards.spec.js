@@ -458,3 +458,28 @@ test("a corkscrew catches the ball from where it bounces: rolled under one that 
   await expect.poll(() => said(page)).toContain(DYING.captivator);
   expect(errors).toEqual([]);
 });
+
+test("a crumbling block breaking as the clock runs out goes on shrinking through the ending's view and is gone on the frame it would have been, the fall said after the verdict", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  // a crumbling block on, with three seconds on the clock
+  await arcadeDraft(page, { blocks: [[[17, 16, 17], { kind: 6 }]], time: 3 });
+  const { play } = await table(page);
+  await startPlay(page);
+  await listening(page);
+  await frozen(page);
+  const clock = await clockOf(page, play);
+  // pressed with a quarter of a second left, the roll breaks the block a few frames before the end
+  await stepUntil(page, { frame: clock - 15 }, clock);
+  await page.keyboard.press("ArrowUp");
+  const ended = await stepUntil(page, { status: "^TIME OUT" }, 60);
+  expect(ended.at(-1).status).toMatch(/^TIME OUT! 50 points/);
+  const heard = await said(page);
+  expect(heard.some((s) => s.endsWith("The crumbling block breaks under the ball."))).toBe(true);
+  expect(heard).not.toContain(GONE);
+  await stepUntil(page, { say: "is gone" }, 40);
+  await expect.poll(() => said(page)).toContain(GONE);
+  expect(await status(page).textContent()).toMatch(/^TIME OUT! 50 points/);
+  expect(errors).toEqual([]);
+});

@@ -25,7 +25,9 @@ import {
   viewOf,
 } from "../../public/js/play/eye.js";
 import { rockOf, startShake } from "../../public/js/play/passes.js";
-import { LETHARGY, SIMON, begin, level, motion, play, row, start } from "./rules-level.js";
+import { end, frame } from "../../public/js/play/rules.js";
+import { cellKey } from "../../public/js/format/lattice.js";
+import { LETHARGY, SIMON, TOP, UP, begin, level, motion, play, row, start } from "./rules-level.js";
 
 const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 const levelNamed = (name) => mapData.levels.find((l) => l.name === name);
@@ -217,6 +219,36 @@ test("each frame of the ending's view steps the screen's shake, so a shake start
   turning(live);
   assert.equal(live.run.words.shake, null);
   assert.deepEqual(live.run.words.shift, [0, 0]);
+});
+
+test("each frame of the ending's view breaks the crumbling blocks on as the game's draw does whatever the outcome, so a block breaking as the level ends shrinks through the view by the table's step and goes on the frame it would have, the fall handed back as an event", () => {
+  fresh();
+  const crumbling = { x: 17, y: 17, z: 17, kind: 6, type: 1, f: Array(11).fill(0) };
+  const l = { ...level(row(10, 18), [start(), crumbling]), min: [17, 10, 17], max: [25, 25, 25] };
+  const run = begin(l, { cell: [17, 17, 17], face: TOP, h: UP });
+  const live = { level: l, run, probe: probeOf(run), still: null, framed: false, ended: null };
+  run.words.wait = 0;
+  frame(run, 0);
+  const key = cellKey(17, 17, 17);
+  const block = run.world.crumbling.get(key);
+  const { size, shrink } = motion.kinds["6"];
+  assert.deepEqual([block.type, block.size], [3, size - shrink]);
+  end(run, play.ending.time, []);
+  ended(live);
+  frameEnding(live, 600);
+  const out = [];
+  let frames = 1;
+  while (!out.some((e) => e.fell)) {
+    turning(live, out);
+    frames += 1;
+    if (block.size >= 0) assert.equal(run.world.breaking.get(key), block.size);
+  }
+  assert.deepEqual(out, [{ fell: { key } }]);
+  assert.equal(frames, Math.floor(size / shrink) + 1, "gone on the frame it would have");
+  assert.equal(run.world.breaking.size, 0);
+  assert.ok(run.world.gone.has(key));
+  assert.equal(turning(live, out), false);
+  assert.deepEqual(out, [{ fell: { key } }], "nothing more once the block is gone");
 });
 
 test("the view behind the ball stands at yaw 20 and pitch 30 the first time it is framed and keeps them as turned after, zoomed to eight blocks across the smaller of the view's width and what the strip leaves free, within its bounds, and panned so the ball stands a fifth below the middle of the free height", () => {

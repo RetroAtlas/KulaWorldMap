@@ -418,11 +418,11 @@ function held(live) {
 }
 
 /** One game frame with `pad` as held: what happened, as events. The screen's shake steps first,
-    as the game's loop draws it before the level's routine, and alone runs on once the outcome
-    stands; the frame the clock runs out on runs to its end, as the game's does, the crumbling
-    blocks breaking up and the screen's words stepping last as the draw runs them, and nothing
-    else runs once the outcome stands; the ending's view is the one the mode gives. A block
-    landing at the fall's top speed starts the shake with the ball's `fall.shake`. */
+    as the game's loop draws it before the level's routine, and is all the frame runs once the
+    outcome stands, the draw's part going on in the ending's view; the frame the clock runs out
+    on runs to its end, as the game's does, the crumbling blocks breaking up and the screen's
+    words stepping last as the draw runs them; the ending's view is the one the mode gives. A
+    block landing at the fall's top speed starts the shake with the ball's `fall.shake`. */
 export function frame(live, pad) {
   const w = live.words;
   const b = live.ball;
