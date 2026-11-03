@@ -13,10 +13,11 @@ from motion_fixture import AT, GAME, GAME_EU, GAME_JP, code, lui, ori, sra  # no
 
 class Blocks(unittest.TestCase):
     def test_the_blocks_under_the_ball_ship_the_cold_the_edge_rule_and_the_ride_by_kind(self):
-        for game, shrink in ((GAME, 26), (GAME_EU, 32), (GAME_JP, 26)):
+        for game, shrink, frames in ((GAME, 26, 36), (GAME_EU, 32, 30), (GAME_JP, 26, 36)):
             b = blocks(game)
             self.assertEqual(b[2], {"chill": 150, "cold": {"gain": 40, "over": 500, "back": 400, "wane": 10}})
-            self.assertEqual(b[6], {"size": 512, "shrink": shrink, "edge": {"hold": 301, "back": 401, "push": 40}})
+            self.assertEqual(b[6], {"size": 512, "shrink": shrink, "edge": {"hold": 301, "back": 401, "push": 40},
+                                    "shake": {"magnitude": 4, "frames": frames, "axes": 3}})
             self.assertEqual(b[5], {"ride": {"bias": 512, "rumble": 70, "body": {"off": 100, "ends": 256},
                                              "end": {"tolerance": 100}}})
             self.assertEqual(set(b), {2, 5, 6})
@@ -25,6 +26,9 @@ class Blocks(unittest.TestCase):
         for change in ({"ice.kind": 1}, {"arrow.type": 27}, {"ride.kind": 6}, {"crumble.code.input": 95},
                        {"cold.back": 500}, {"cold.wane": 10}, {"crumble.size": 256}, {"crumble.breaking": 2},
                        {"crumble.broken.seen": 3}, {"crumble.edge.hold": 256}, {"crumble.edge.back": 301},
+                       {"crumble.show.from": 1}, {"crumble.show.span": 3}, {"crumble.show.invisible": 2},
+                       {"crumble.show.platform": 6}, {"shake.magnitude": 0}, {"shake.frames": 0}, {"shake.axes": 0},
+                       {"shake.axes": 4},
                        {"ride.bias.travel": 512}, {"ride.body.off": 100}, {"ride.beam": -1}, {"ride.face.x.back": 1},
                        {"ride.face.z": 0}, {"ride.along.x.back": 2}, {"ride.along.y.from": -1}, {"ride.along.z.back": 4},
                        {"ride.along.face.x.back": 2}, {"ride.along.face.y.span": 3}, {"ride.along.face.z.back": 0},

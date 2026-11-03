@@ -54,9 +54,11 @@ class Moves(unittest.TestCase):
 class Roll(unittest.TestCase):
     SHIPPED = {
         "us": {"gain": 6, "top": 33, "fall": -66, "spin": -5, "hop": -30, "repeat": 6,
-               "quarter": {"frames": 19, "step": 53, "clamp": 10}, "wrap": [13, 78], "climb": {"frames": 16, "step": -64}},
+               "quarter": {"frames": 19, "step": 53, "clamp": 10}, "wrap": [13, 78], "climb": {"frames": 16, "step": -64},
+               "shake": {"magnitude": 3, "frames": 24, "axes": 2}},
         "eu": {"gain": 7, "top": 40, "fall": -80, "spin": -6, "hop": None, "repeat": 6,
-               "quarter": {"frames": 16, "step": 64, "clamp": 10}, "wrap": [11, 93], "climb": {"frames": 14, "step": -73}},
+               "quarter": {"frames": 16, "step": 64, "clamp": 10}, "wrap": [11, 93], "climb": {"frames": 14, "step": -73},
+               "shake": {"magnitude": 3, "frames": 20, "axes": 2}},
     }
     SHIPPED["jp"] = {**SHIPPED["us"], "repeat": None}
 
@@ -77,6 +79,15 @@ class Roll(unittest.TestCase):
                 self.assertEqual((r["fall"]["wall"], r["fall"]["behind"], r["fall"]["hold"]), (409, 103, [411, 102]))
                 self.assertEqual((r["spin"], r["squash"]["least"], r["look"]["far"]), (pins["spin"], 20, 650))
                 self.assertEqual(r["fall"]["spin"], {"gain": 6, "wane": 1})
+                self.assertEqual(r["fall"]["shake"], pins["shake"])
+
+    def test_a_thud_otherwise_than_at_the_falls_top_or_a_shake_with_no_magnitude_frames_or_axis_stops_the_reading(self):
+        for game, changes in ((GAME, ({"land.thud": -65}, {"land.shake.magnitude": 0}, {"land.shake.frames": 0},
+                                      {"land.shake.axes": 0}, {"land.shake.axes": 4})),
+                              (GAME_EU, ({"land.thud": -66}, {"land.shake.frames": 24, "land.shake.axes": 0}))):
+            for change in changes:
+                with self.assertRaises(SystemExit):
+                    roll({**game, **change})
 
     def test_a_top_speed_taken_otherwise_at_a_landing_or_a_decay_not_the_gain_stops_the_reading(self):
         for game, changes in ((GAME, ({"land.speed": 30}, {"land.short.speed": 30}, {"roll.top.gate": 34},

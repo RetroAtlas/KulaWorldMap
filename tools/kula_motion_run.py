@@ -567,4 +567,5 @@ def play(r):
             "flight": flight(r),
             "screen": {"wide": r["screen.load.wide"], "high": r["screen.load.high"],
                        "distance": r["screen.load.distance"],
-                       "scale": {"across": r["screen.load.across"], "down": r["screen.load.down"]}}}
+                       "scale": {"across": r["screen.load.across"], "down": r["screen.load.down"]},
+                       "origin": [r["screen.origin.x"], r["screen.origin.y"]]}}

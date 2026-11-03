@@ -40,7 +40,7 @@ class Play(unittest.TestCase):
                                      "bonus": {"swing": 58, "off": 3400, "reach": 3000}, "hidden": {"off": 400}})
         self.assertEqual(p["flight"], flight(GAME))
         self.assertEqual(p["screen"], {"wide": 320, "high": 240, "distance": 160,
-                                       "scale": {"across": 4096, "down": 3840}})
+                                       "scale": {"across": 4096, "down": 3840}, "origin": [0, 0]})
 
     def test_on_the_pal_executable_the_level_ships_its_view_its_screen_and_its_words(self):
         p, base = play(GAME_EU), play(GAME)
@@ -49,7 +49,7 @@ class Play(unittest.TestCase):
         self.assertEqual(p["view"], {"angles": [-10, 4, 13], "swing": 15, "off": 1400, "reach": 1000,
                                      "bonus": {"swing": 70, "off": 3400, "reach": 3000}, "hidden": {"off": 400}})
         self.assertEqual(p["screen"], {"wide": 320, "high": 256, "distance": 160,
-                                       "scale": {"across": 4096, "down": 4096}})
+                                       "scale": {"across": 4096, "down": 4096}, "origin": [0, 18]})
         self.assertEqual((p["flight"], p["simon"]), (flight(GAME_EU), simon(GAME_EU)))
         same = ("start", "ending", "wait", "bonus", "points", "next")
         self.assertEqual({k: p[k] for k in same}, {k: base[k] for k in same})

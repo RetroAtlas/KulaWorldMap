@@ -123,6 +123,14 @@ class Reads(unittest.TestCase):
         self.assertEqual(c.stores_to(0x800a3448), [(AT, 2), (AT + 8, 0), (AT + 16, 4)])
         self.assertEqual(c.stores_to(0x800a344c), [(AT + 20, 3)])
 
+    def test_the_constant_a_store_writes_is_nothing_for_zero_and_else_what_its_register_was_last_set_to(self):
+        c = code(lui("at", 0x000a), sw("zero", "at", 24296), addiu("v0", "zero", 18), lui("at", 0x000a),
+                 sw("v0", "at", 24300), lw("v0", "gp", 8), sh("v0", "at", 24300))
+        self.assertEqual((c.stored(AT + 4), c.stored(AT + 16)), (0, 18))
+        for at in (AT, AT + 24):
+            with self.assertRaises(SystemExit):
+                c.stored(at)
+
     def test_a_stretch_is_scanned_for_its_stores_through_the_record_a_copy_a_pointer_gp_sp_or_a_lui(self):
         c = code(sh("v0", "s0", 492), lui("at", 0x000c), sh("v0", "at", -24088), sw("v1", "gp", 7464),
                  addu("a2", "s0", "zero"), jal(0x80038178), sh("v0", "s0", 494), addu("a0", "s0", "zero"),
@@ -547,7 +555,8 @@ class Table(unittest.TestCase):
         self.assertEqual(t["types"]["5"]["send"]["band"], [167, 345])
         self.assertEqual(t["types"]["9"], {"throw": {"band": [197, 315], "rearm": [156, 356]}})
         self.assertEqual(t["kinds"]["6"], {"points": 50, "size": 512, "shrink": 26,
-                                           "edge": {"hold": 301, "back": 401, "push": 40}, "standing": 96})
+                                           "edge": {"hold": 301, "back": 401, "push": 40},
+                                           "shake": {"magnitude": 4, "frames": 36, "axes": 3}, "standing": 96})
         self.assertEqual(t["kinds"]["2"], {**blocks(GAME)[2], "standing": 2})
         self.assertEqual({k: v.get("standing") for k, v in t["kinds"].items()},
                          {"1": 1, "2": 2, "3": 93, "4": 4, "5": 95, "6": 96, "7": 97, "8": None})
@@ -602,10 +611,11 @@ class Lists(unittest.TestCase):
                "gp", "record", "mode.word", "game.mode.word", "glow.counter.load", "glow.clear", "laser.levels",
                "shadow.half", "light.root", "glow", "glow.colours", "spin.order", "spin.quarter", "words", "effect.pointers",
                "effect.colours", "effect.tables", "effect.sine.at", "effect.sine.one", "effect.hud.at", "effect.table.at",
-               "names", *(f"screen.load.{name}" for name in ("wide", "high", "distance", "across", "down"))}
+               "names", *(f"screen.load.{name}" for name in ("wide", "high", "distance", "across", "down")),
+               "screen.origin.x", "screen.origin.y"}
 
     def test_the_six_lists_hold_their_counts_and_every_check_is_an_address_an_instruction_and_a_sentence(self):
-        self.assertEqual([len(t) for t in (CHECKS, IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS)], [2242, 751, 67, 13, 7, 2])
+        self.assertEqual([len(t) for t in (CHECKS, IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS)], [2290, 761, 67, 13, 7, 2])
         self.assertEqual({tuple(type(x) for x in check) for check in CHECKS}, {(int, str, str)})
 
     def test_every_key_is_read_once_and_none_of_them_is_set_by_hand(self):

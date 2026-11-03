@@ -1,9 +1,9 @@
 """The ball's breath at rest and its position in its cell, its moves against
 the walls, the edges and the cells about it, its frame and the pad, the roll,
 the turn in place, the camera over a turn and a face change, the way round an
-edge, the fall and the landing, the landing's squash and the spin, and the
-body's orientation: "The ball", "The ball's moves" and "The ball's roll" in
-docs/motion.md.
+edge, the fall and the landing, the landing's shudder of the pad and shake
+of the screen, its squash and the spin, and the body's orientation: "The
+ball", "The ball's moves" and "The ball's roll" in docs/motion.md.
 """
 import sys
 from pathlib import Path
@@ -347,6 +347,10 @@ CHECKS = [
     (0x80037a10, "sra $a2, $v0, 9", "to its cell"),
     (0x80030c0c, "beq $v1, $v0, 0x80030db8", "a moving platform's record lands nothing here"),
     (0x80030c14, "bgez $a0, 0x80030c24", "nor does an empty cell"),
+    (0x80030c84, "lh $v1, 310($s0)", "the landing reads the speed the ball came down at"),
+    (0x80030c8c, "bne $v1, $v0, 0x80030cb8", "and where it is the fall's top"),
+    (0x80030c9c, "jal 0x8004f108", "shudders the pad"),
+    (0x80030cac, "jal 0x800227f4", "and shakes the screen"),
     (0x80030d24, "jal 0x80037e70", "else the centre is laid off the face"),
     (0x80030d30, "sw $v0, 408($s0)", "at rest"),
     (0x80030d40, "beq $v0, $zero, 0x80030d50", "at the top speed where the roll is asked"),
@@ -518,6 +522,11 @@ IMMEDIATES = [
      "slti $v0, $v0, {}"),
     ("the ball's roll", "land.short.speed", "at this speed", 0x80030da4, "addiu $v0, $zero, {}"),
     ("the ball's roll", "land.thud", "the ground shakes under a ball that falls at this", 0x80030c88, "addiu $v0, $zero, {}"),
+    ("the ball's roll", "land.shake.magnitude", "and the screen shakes with this magnitude, pixels", 0x80030ca4,
+     "addiu $a0, $zero, {}"),
+    ("the ball's roll", "land.shake.frames", "for this many frames", 0x80030ca8, "addiu $a1, $zero, {}"),
+    ("the ball's roll", "land.shake.axes", "on the axes of this mask, down the screen alone", 0x80030cb0,
+     "addiu $a2, $zero, {}"),
     ("the ball's roll", "lost", "the ball is lost where its cell plus one is this or more on an axis", 0x80036a18,
      "sltiu $a0, $a0, {}"),
     ("the ball's roll", "squash.frames", "a landing squashes the ball over this many frames", 0x80030d50,
@@ -643,8 +652,8 @@ def roll(r):
     wherever the roll takes it, the arc ending where the ball rests off a
     face, the view's ramps each stepping by the quarter turn over their
     frames, cut toward nothing, round an edge, in a turn and up a wall, the
-    last frame snapping the rest, and every gate one past the value it
-    gates."""
+    last frame snapping the rest, the thud at the fall's top speed with a
+    shake of the screen, and every gate one past the value it gates."""
     if len({r["roll.top"], r["roll.top.gate"], r["land.speed"], r["land.short.speed"], r["fall.spin.top"]}) != 1 \
             or r["fall.spin.top.gate"] != r["roll.top"] + 1:
         sys.exit("the roll's top speed is not one speed wherever it is taken")
@@ -654,6 +663,10 @@ def roll(r):
         sys.exit("a fall from rest does not start as one from a roll")
     if r["fall.top.gate"] != r["fall.top"] + 1 or r["turn.clamp.gate"] != r["turn.clamp"] + 1:
         sys.exit("a fall's top speed or a turn's clamp is not gated at itself")
+    if r["land.thud"] != r["fall.top"]:
+        sys.exit("the ground shakes under a ball that comes down otherwise than at the fall's top speed")
+    if r["land.shake.magnitude"] <= 0 or r["land.shake.frames"] <= 0 or not 1 <= r["land.shake.axes"] <= 3:
+        sys.exit("the landing's shake has no magnitude, no frames or no axis")
     if r["fall.wall"] + r["fall.behind"] != BLOCK or r["fall.wall.gate"] != r["fall.wall"] + 2 \
             or r["fall.behind.gate"] != r["fall.behind"] - 1:
         sys.exit("a falling ball is not held off the walls by about its radius")
@@ -699,7 +712,9 @@ def roll(r):
         "fall": {"start": r["roll.fall"], "hop": r.get("fall.hop"), "gain": r["fall.gain"], "top": r["fall.top"],
                  "short": r["land.short"], "wall": r["fall.wall"], "behind": r["fall.behind"],
                  "hold": [r["fall.wall.gate"], r["fall.behind.gate"]], "lost": [-2, cell],
-                 "spin": {"gain": r["fall.spin.gain"], "wane": -r["fall.spin.wane"]}},
+                 "spin": {"gain": r["fall.spin.gain"], "wane": -r["fall.spin.wane"]},
+                 "shake": {"magnitude": r["land.shake.magnitude"], "frames": r["land.shake.frames"],
+                           "axes": r["land.shake.axes"]}},
         "spin": r["spin"],
         "squash": {"frames": r["squash.frames"], "rise": r["squash.rise"], "fall": r["squash.fall"],
                    "ease": -r["squash.ease"], "least": r["squash.least"]},

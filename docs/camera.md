@@ -60,7 +60,7 @@ Its frame draws the screen from the words as the game's draw of the pass showed 
 
 The scene is neither stretched under the pill nor shaken on a landing ([motion.md](motion.md)), which is recorded here as not drawn.
 
-The table ships the roll as type 32's `lasts.rock`, the screen as its `lasts.screen` and the screen's words as they load as `play`'s `screen`.
+The table ships the roll as type 32's `lasts.rock`, the screen as its `lasts.screen` and the screen's words as they load as `play`'s `screen`, with the display's origin as the game lays it as its `origin` ([motion.md](motion.md)).
 
 ## The fly-in
 

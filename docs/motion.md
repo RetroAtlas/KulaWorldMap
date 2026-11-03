@@ -226,9 +226,15 @@ A ball landing on plain ground rolls on only where Up is held, from the near thi
 
 A ball that comes down at −66 shudders the pad as it lands, where the vibration option is on (`0x80030c88`, `0x8004f108`).
 
+The same landing shakes the screen: after the pad's shudder it calls the shake's start with a magnitude of 3, 24 frames and the mask 2, down the screen alone (`0x80030ca4` to `0x80030cb0`, and "The crumbling block" below for the shake), only where the speed is −66, so a landing from a fall that has reached the top speed shakes the screen and no other landing does, the shake's start having two callers, this and the crumbling block's break (`0x8002b58c`).
+
+The table ships the landing's shake as the ball's `fall.shake`, its magnitude, its frames and its axes mask.
+
 A landing or a hop's end squashes the ball: a word rises by 187 a frame for four frames, to 748 of 4096, and comes off by 100 less 10 each frame, 90, 80 and on down to no less than 20 (`0x80030d50` to `0x80030d70`, `0x8003020c` to `0x8003021c`, `0x800325f0` to `0x80032664`), gone in 28 frames, 0.47 s, and is drawn with the breath as one squash (`0x80032718`), wider across the face by it and twice as much shorter along the normal.
 
 On the PAL disc the landing takes 40 at once with Up held and asks the roll at 40 (`SCES_010.00`, `0x800315e8`, `0x80031644`), the pad shudders under a ball that comes down at −80 (`0x80031528`), and the squash's words stand unscaled, so it is gone in the same 28 frames, 0.56 s there.
+
+On the PAL disc the landing's shake runs 20 frames (`SCES_010.00`, `0x80031548`), the magnitude and the axis the same (`0x80031544`, `0x80031550`), two fifths of a second as here.
 
 **The jump runs the centre along a table of rows from the mesh file, 30 frames in the air, and lands two blocks on.** The forward jump needs a block under the ball (`0x8002f5f0`, `0x8002f5f8`).
 
@@ -591,7 +597,13 @@ In the air over an arrow the air test sets a flag at `0x800a5e98` (`0x8003b548`,
 
 **A crumbling block breaks the frame the ball first stands on it and is gone on the twentieth frame.** On a crumbling block, 96 at 356 ("The shadows" below, `0x8003afb8`), the hazards read the record's type word (`0x8003afd4`) and, where it is still 1, score 50 with a sound (`0x8003afdc` to `0x8003b00c`, and "What the ball takes" above), and write 2 into it on every frame the ball stands there (`0x8003b028`).
 
-The frame's draw, which the loop runs after the ball's routine, runs the crumbling blocks (`0x8002a40c`): a type of 2 breaks the block, its faces drawn whole and debris spawned, the screen shaken, a sound played and the type set to 3 (`0x8002b4b8` to `0x8002b5a8`), and from either type its `f2`, 512 at load, loses 26 a frame (`0x8002b5bc`) until it goes negative, on the twentieth frame, when the faces are undrawn, the type cleared and the lattice cell emptied (`0x8002b5c4`, `0x8002b64c`, `0x8002b690`, `0x8002b69c`), from which a ball at rest on it falls, and one rolling between 101 and 427 of progress ("The ball's roll" above).
+The frame's draw, which the loop runs after the ball's routine, runs the crumbling blocks (`0x8002a40c`): a type of 2 breaks the block, and from either type its `f2`, 512 at load, loses 26 a frame (`0x8002b4b8`, `0x8002b4c0`, `0x8002b5b8`) until it goes negative, on the twentieth frame, when the faces are made inactive, the type cleared and the lattice cell emptied (`0x8002b5c4`, `0x8002b64c`, `0x8002b690`, `0x8002b69c`), from which a ball at rest on it falls, and one rolling between 101 and 427 of progress ("The ball's roll" above).
+
+The break makes each of the block's six faces active, drawn whatever stands beyond, and asks the kind beyond each (`0x8002b4fc` to `0x8002b504`): where that is not −1 or −2, nothing or a beam's cell, not 3, an invisible block, and not 5, a platform (`0x8002b50c` to `0x8002b524`), the neighbour's face toward the block is made active too (`0x8002b534` to `0x8002b56c`), the face the loader built unseen behind a crumbling block ([tgi.md](tgi.md)), so the blocks beside a breaking block show their faces toward it from the break.
+
+The type is then set to 3 (`0x8002b57c`, `0x8002b580`), the screen's shake started with a magnitude of 4, 36 frames and the mask 3, both axes (`0x8002b584` to `0x8002b590`, "The crumbling block" below), and the pad shuddered (`0x8002b594` to `0x8002b5ac`); the break's sound is the hazards', played as they score the block.
+
+While `f2` is not below nothing the six faces are laid again by the face function of each direction, from the table at `0x800a3228`, with the quad, `f2` as the width, the cell's coordinates times 512 and a texture turn of nothing (`0x8002b5d4` to `0x8002b60c`); each takes half the width off every coordinate and lays its corners from there to there plus the width (`0x800297fc` to `0x80029818`, `0x8002987c`), so the six are the faces of a cube of side `f2` about the cell's point, the block's middle, as a whole block is the width 512 about the same point, and a breaking block shrinks about its middle, its textures squashed onto the smaller faces, the neighbours' faces behind it showing.
 
 A block takes 15 or 16 frames at full speed, so a ball rolling on crosses a crumbling block before it goes, and one that stops at its middle, eight frames in, has about a dozen frames left.
 
@@ -599,7 +611,7 @@ On the PAL disc the block loses 32 a frame and is gone on the seventeenth (`SCES
 
 The input routine's tail keeps a ball on one from its free edge: with the floor ahead empty and nothing beside the block under, where the wrap would take the ball round, a rolling ball on a crumbling block with no jump asked loses the forward request and its speed from 301 of progress, and from 401 is set back 40 along its heading besides (`0x80037344` to `0x80037418`), the floor ahead, the blocks beside and the block under's word all read as the last frame's read of the cells left them (`0x8003733c`, `0x8003736c`, `0x80037374`), so it is held short of the far edge and cannot go round a crumbling block, only off it onto a block ahead, up a wall, into a jump, or down with it.
 
-The table ships the size, the shrink and the edge rule as kind 6's `size`, `shrink` and `edge`, beside its `points`.
+The table ships the size, the shrink, the edge rule and the shake as kind 6's `size`, `shrink`, `edge` and `shake`, the shake's magnitude, its frames and its axes mask, beside its `points`.
 
 **A vanishing block drops the ball as it goes.** Its cell is in the lattice while it fades in, stands and flashes out, and −1 for the 91 frames it is absent ("The vanishing block" below); the 27 words about the ball are read from the lattice each frame, so a ball at rest on it is dropped once the word under it reads empty (`0x8002f8f8`, `0x8002f910`), one rolling falls between 101 and 427 of progress, and nothing refuses a roll onto a block about to go, the may-roll-on predicate asking only that the floor ahead be there (`0x80030dfc`).
 
@@ -1082,11 +1094,29 @@ The glint is one of the effects, so while the Motion switch holds the level it s
 
 ## The crumbling block
 
-Kind 6's first slot holds 512 times its cell in `f2` to `f4` on the disc and the game does nothing with that: the loader at `0x80028a98` writes 512 into `f2`, and once the ball has broken the block (its `type` word goes from 1 to 2, then 3) the routine at `0x8002b3f4` takes 26 off `f2` a frame and drops the block from the lattice when it goes negative, twenty frames later, a third of a second, spawning debris from each face on the way.
+Kind 6's first slot holds 512 times its cell in `f2` to `f4` on the disc and the game does nothing with that: the loader at `0x80028a98` writes 512 into `f2`, and once the ball has broken the block (its `type` word goes from 1 to 2, then 3) the routine at `0x8002b3f4` takes 26 off `f2` a frame and drops the block from the lattice when it goes negative, twenty frames later, a third of a second, laying the six faces at the shrinking size about the block's middle on the way ("The blocks under the ball" above).
 
 On the PAL disc the routine takes 32 off `f2` a frame (`SCES_010.00`, `0x8002be80`) and drops the block on the seventeenth frame, a third of a second as here.
 
-The viewer breaks the block by the same words: the rules keep each crumbling block's type word and size, the hazards write the word under the ball and the frame's last part breaks, shrinks and empties the block as the routine does ("The blocks under the ball" above), and the map draws a block that is gone no longer, with a burst of dust where it stood, while the debris and the shrinking faces of a breaking block are not drawn.
+**The break shakes the screen.** The shake's start (`0x800227f4`) keeps the magnitude, the frames as a timer and again as the divisor, and the axes mask, and marks the shake running (`0x800227f8` to `0x80022808`); the break calls it with 4, 36 and 3 ("The blocks under the ball" above) and the −66 landing with 3, 24 and 2 ("The ball's roll" above), and nothing else does.
+
+The step (`0x80022814`), which the level's frame loop runs on every pass, after the pad is kept and before the outcome gate and the ball's routine (`0x80040d44`, "The captivators" below), takes one off the timer (`0x80022830`) and below nothing stops the shake and puts the display's origin back (`0x80022838` to `0x80022870`), so a shake started on the level's last frames runs on through the ending's view.
+
+Else, where the mask has bit 1, it draws from the game's dice a number under twice the magnitude (`0x80022894`, `0x80022898`), takes the magnitude off it, multiplies by the timer and divides by the divisor, cut toward nothing (`0x800228a4` to `0x800228bc`), adds that to the display's x origin, clamps the sum at nothing (`0x800228cc` to `0x800228d8`) and writes it as the display's x (`0x800228fc`); where the mask has bit 2 it does the same for y (`0x80022908` to `0x80022980`).
+
+The origin words (`0x800a5ee8`, `0x800a5eec`) are the player's screen-position setting, nothing by default, so by default a negative offset is clamped away and the picture jolts right and down alone, by at most the magnitude less one of the game's 320 by 240 pixels on the first frame and less as the timer runs down, 3 pixels for the break and 2 for the landing.
+
+The step's draws come before the walkers' and the effects' on the same frame ("The captivators" below), two a frame over the break's 36 frames and one over the landing's 24, so a shake shifts the dice's sequence for everything drawn after it.
+
+The table ships the display's origin as the game lays it, across and down, as `play.screen.origin`, the words the step adds its offsets to before the clamp.
+
+On the PAL disc the break's shake runs 30 frames (`SCES_010.00`, `0x8002be50`), the magnitude and the axes the same (`0x8002be4c`, `0x8002be58`), three fifths of a second as here.
+
+On the PAL disc the origin down is laid at 18 as the game starts (`SCES_010.00`, `0x800407f8`, `0x8004080c`, and again by the setting's reset, `0x80048dc4`, `0x80048dd4`), the origin across at nothing as here (`0x80040804`), so along y the sum never meets the clamp and the picture jolts up as well as down there, up by as much as the magnitude less one and down by the magnitude less two, and right alone along x.
+
+On the PAL disc the shake's start and step stand at `0x800230c4` and `0x800230e4` (`SCES_010.00`), laid out as here.
+
+The viewer breaks the block by the same words: the rules keep each crumbling block's type word and size, the hazards write the word under the ball and the frame's last part breaks, shrinks and empties the block as the routine does ("The blocks under the ball" above), and the map draws a block that is gone no longer, with a burst of dust where it stood, while a breaking block is drawn whole until it goes, the faces its neighbours show toward it stay hidden and the screen stands still.
 
 ## The moving platform
 
@@ -1160,11 +1190,11 @@ The wandering ball settles on the grid after each block, draws one of the four w
 
 **The wandering ball's dice are seeded once, as its level starts.** They are the game's one random routine (`0x80047418`): a word of state multiplied by 1103515245 and added 12345 at each draw, a draw of n being n times the state's low half over 65536. The play loop runs a level through one routine (`0x80040690` calls `0x80040718`), which seeds that state with 1 before anything else (`0x80040748` calls `0x80025054`, whose first act is to call `0x8004740c` with 1) and then loops a frame at a time from `0x80040aa0` to `0x80041c34`, so a restart seeds it afresh and nothing else does.
 
-In the loop the balls draw in the order the loader lifted them, record by record and face by face (`0x8003b5dc`), each until it finds a way open, and the sequence runs on from one decision to the next. Three other things draw from it, none while the ball stands still: the screen's shake (`0x80022814`), only while the screen shakes; the effects ("The effects" below), only on a frame whose row asks a draw, which three of the seven tables do once each, and one is started by the ball's contacts (`0x800118c4`, called from `0x80038548` onward); and the pause and game-over menus.
+In the loop the balls draw in the order the loader lifted them, record by record and face by face (`0x8003b5dc`), each until it finds a way open, and the sequence runs on from one decision to the next. Three other things draw from it, none on a level left to itself: the screen's shake (`0x80022814`), a draw for each axis of its mask on each of its frames, 72 over a break's 36 frames from one start and 24 over a −66 landing's ("The crumbling block" above); the effects ("The effects" below), only on a frame whose row asks a draw, which three of the seven tables do once each, and one is started by the ball's contacts (`0x800118c4`, called from `0x80038548` onward); and the pause and game-over menus.
 
 So a level watched without playing walks its balls by their own draws alone, 1, 2, 3, 2, 3, 1, 2, 2, 2, 3, 0 and on from the start, the same on every play, and play on OBJ LEVEL bore that out move for move, 58 moves of the top ball from the start until the time ran out; a pickup collected, a shake or a pause on the way can shift the sequence for everything after, as far as the three routines' gates show.
 
-The table ships the seed, the multiplier and the addend as `dice`, from which the viewer draws the wandering balls' ways and a burst's angles where a row asks a draw.
+The table ships the seed, the multiplier and the addend as `dice`, from which the viewer draws the wandering balls' ways and a burst's angles where a row asks a draw, and from which the game's shake draws too, which the viewer does not, so after a break or a −66 landing its walkers' ways diverge from the game's.
 
 ## The effects
 
@@ -1336,7 +1366,7 @@ Of the body and the hop: the draw's marks for the Simon rooms and the bouncy pil
 
 Whether the game's ball is seen to sink under a held Cross, a fifth of a block after eight hops, snapping back with a squash over a lone block and sinking on over a deeper floor until the 26th hop lays it inside its block, is for the emulator to show; the draw takes the position at 60 with the squash's offset and the word at 84 (`0x800314c4`, `0x800314f0`), so the listing says it is seen.
 
-`0x8004ddbc`, which the button's launch calls with 10, a landing and a hop's end with 102 and a capture with 113, and which takes a number under 120 to a table (`0x8003b280`, `0x80030c6c`, `0x800301f4`, `0x800367c0`, `0x8004dddc`), is the sound call, and `0x800227f4`, which the −66 landing calls with 3, 24 and 2 after the pad's shudder and which keeps the three under a flag for a routine that runs the 24 down (`0x800227f8` to `0x80022808`, `0x80022818` to `0x80022838`), the screen's shake; the map plays no sound, shakes no screen and shudders no pad, the button's shudder included (`0x8003b298`).
+`0x8004ddbc`, which the button's launch calls with 10, a landing and a hop's end with 102 and a capture with 113, and which takes a number under 120 to a table (`0x8003b280`, `0x80030c6c`, `0x800301f4`, `0x800367c0`, `0x8004dddc`), is the sound call, and `0x800227f4` the screen's shake, read in "The crumbling block" above; the map plays no sound and shudders no pad, the button's shudder included (`0x8003b298`).
 
 Why the hop reads a row ahead of the jump is not traced, nor what the word at the record's start selects, 3 at a jump's start and in a fall, 1 at a hop's start and a turn, 2 at a roll's start and 0 at a landing, a hop's end and a teleport's send.
 

@@ -34,7 +34,7 @@ import kula_motion_simon
 import kula_motion_take
 import kula_motion_things
 from kula_disc import BASE, RELEASES, open_release
-from kula_motion_blocks import CRUMBLING, blocks, platform, standing
+from kula_motion_blocks import CRUMBLING, ORIGIN_STORES, blocks, platform, standing
 from kula_motion_code import BLOCK, GP_INIT, PHASES, RECORD_INIT, TURN, Code, Map, Readings, dispatch
 from kula_motion_effects import (EFFECT_HUD, EFFECT_TABLE, effect_places, effect_setup, effect_sine, effect_tables,
                                  effects)
@@ -185,6 +185,7 @@ def readings(code):
     out["glow.clear"] = [code.address(*pair) for pair in CLEARED]
     for name, addr in code.named("SCREEN_WORDS").items():
         out[f"screen.load.{name}"] = code.word(addr)
+    out["screen.origin.x"], out["screen.origin.y"] = (code.stored(addr) for addr in ORIGIN_STORES)
     for _, key, _, *args in DIVISORS:
         out[key] = code.divisor(*args)
     for _, key, _, *args in GREYS:
@@ -395,6 +396,9 @@ def show_readings(code, hz):
                        ("distance", "the projection's screen distance"), ("across", "the scale across, of 4096"),
                        ("down", "and the scale down")):
         rows.append(("the view in play", what, code.named("SCREEN_WORDS")[name], run[f"screen.load.{name}"]))
+    for addr, axis, what in zip(ORIGIN_STORES, ("x", "y"), ("the display's origin across as the game starts, which the "
+                                                            "shake's offsets are added to", "and its origin down")):
+        rows.append(("crumbling block", what, code.at(addr), run[f"screen.origin.{axis}"]))
     for group, key, what, hi, hp, lo, lp, sa, sp in DIVISORS:
         rows.append((group, what, code.at(hi), code.divisor(hi, hp, lo, lp, sa, sp)))
     for group, key, what, hi, hp, lo, lp in GREYS:

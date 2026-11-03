@@ -553,6 +553,16 @@ class Code:
             sys.exit(f"0x{before:08x}: {reg} holds what `{text}` at 0x{pc:08x} leaves in it, not a constant")
         return int(m.group(1))
 
+    def stored(self, addr):
+        """The constant the store the readers match at the base's `addr` writes: nothing where it stores $zero, else
+        the constant its register was last set to, or the tool's exit where another instruction stands there."""
+        at = self.at(addr)
+        text = self.text(at)
+        m = re.match(r"s[bhw] \$(\w+), -?\d+\(\$\w+\)$", text)
+        if not m:
+            sys.exit(f"0x{at:08x} reads `{text}`, not a store")
+        return 0 if m.group(1) == "zero" else self.constant(at, m.group(1))
+
     def stores_to(self, addr):
         """Every store to `addr` through gp, or through $at after a lui, as (address, register stored)."""
         out = []

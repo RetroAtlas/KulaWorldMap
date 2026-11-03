@@ -563,6 +563,7 @@ test("the fall, the landing's squash and the view's extra pitch ship their steps
     hold: [411, 102],
     lost: [-2, 36],
     spin: { gain: 6, wane: 1 },
+    shake: { magnitude: 3, frames: 24, axes: 2 },
   });
   // the squash rises for four frames and comes off by 90, 80 and on down to 20
   let word = 0;
@@ -792,6 +793,7 @@ test("the lethargy pill halves the pace for 192 passes, rolls the view 128 eithe
     high: 240,
     distance: 160,
     scale: { across: 4096, down: 3840 },
+    origin: [0, 0],
   });
   const down = screen.scale.down / screen.scale.across;
   const degrees = (half, distance) => Math.round((2 * Math.atan(half / distance) * 180) / Math.PI);
@@ -1205,7 +1207,7 @@ test("ice runs the cold 400, 440, 480 and back, and cools the heat ten times as 
   assert.equal(frames, 48);
 });
 
-test("a crumbling block is gone on the twentieth frame after it breaks, and holds a ball off its free edge", () => {
+test("a crumbling block is gone on the twentieth frame after it breaks, shakes the screen longer than a landing does, and holds a ball off its free edge", () => {
   const crumble = table.kinds[6];
   let size = crumble.size;
   let frames = 0;
@@ -1216,6 +1218,8 @@ test("a crumbling block is gone on the twentieth frame after it breaks, and hold
   assert.equal(frames, 20);
   // a block takes fewer frames than that at the roll's top speed
   assert.ok(Math.ceil(crumble.size / table.types[30].rolling.top) < frames);
+  assert.deepEqual(crumble.shake, { magnitude: 4, frames: 36, axes: 3 });
+  assert.ok(crumble.shake.frames > table.types[30].fall.shake.frames);
   assert.deepEqual(crumble.edge, { hold: 301, back: 401, push: 40 });
   assert.ok(crumble.edge.hold > table.types[30].rolling.middle);
 });

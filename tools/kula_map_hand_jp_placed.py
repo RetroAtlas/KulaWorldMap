@@ -49,6 +49,32 @@ PLACED = {
     # The screen's shake.
     0x80022818: (0x80023054, "the shake's flag read off gp at the top of the routine of the frame that runs its count down"),
     0x80022838: (0x80023074, "and the branch while the count stays at nothing or above"),
+    0x80022830: (0x8002306c, "the count taken down by one, straight after its load as on the US"),
+    0x80022850: (0x80023090, "the flag cleared off gp between the origin's two loads and its four stores, as on the US"),
+    0x80022884: (0x800230b0, "the mask's test for its first bit, after the mask's load off gp as on the US"),
+    0x80022894: (0x800230c0, "the first draw from the dice, the magnitude loaded off gp before it and doubled in its delay slot "
+                             "as on the US"),
+    0x80022898: (0x800230c4, "and the doubling, in the call's delay slot"),
+    0x800228a4: (0x800230d0, "the magnitude taken off the draw, after the magnitude and the count are loaded off gp as on the US"),
+    0x800228a8: (0x800230d4, "the multiply by the count"),
+    0x800228b8: (0x800230e4, "and the divide by the divisor, loaded off gp between them as on the US"),
+    0x800228cc: (0x800230f8, "the offset added to the origin's x into a1 on this disc, where the US adds it into a0"),
+    0x800228d0: (0x800230fc, "the clamp's branch on a1, the lui of the display's words in its delay slot on this disc where the "
+                             "US's carries nothing"),
+    0x800228d8: (0x80023104, "and the sum put to nothing in a1 where it is negative"),
+    0x80022908: (0x80023130, "the mask's test for its second bit, after the mask's load off gp as on the US"),
+    0x80022918: (0x80023140, "the second draw from the dice, the magnitude loaded and doubled about it as about the first"),
+    0x8002291c: (0x80023144, "and its doubling, in the call's delay slot"),
+    0x80022928: (0x80023150, "the magnitude taken off the second draw"),
+    0x8002292c: (0x80023154, "the multiply by the count"),
+    0x8002293c: (0x80023164, "and the divide by the divisor, as for the first"),
+    0x80022950: (0x80023178, "the offset added to the origin's y into a1 on this disc, where the US adds it into a0"),
+    0x80022954: (0x8002317c, "the clamp's branch on a1, the lui of the display's words in its delay slot as for x"),
+    0x8002295c: (0x80023184, "and the sum put to nothing in a1 where it is negative"),
+    # The face functions.
+    0x8002987c: (0x8002971c, "the first corner laid the width on from the point in the face function the crumbling blocks' "
+                             "routine calls first through its table, after the half width comes off each coordinate as on "
+                             "the US, whose jumps to the function's tail this disc lays out as returns"),
     # The gem's glints.
     0x80022f40: (0x8002369c, "the low half of the glints' top grey, after its lui as on the US"),
     0x8002aa5c: (0x8002afc8, "the 1044 the frame's row steps by, after the loop over the three models as on the US"),

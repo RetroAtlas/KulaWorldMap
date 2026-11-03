@@ -1,16 +1,17 @@
 """The blocks under the ball and what each does to it, the air test, ice
-that rolls the ball on and chills the heat while a cold grows on it and
-wanes off it, the arrow that lets the ball roll off it its own way alone,
-the crumbling block that breaks the frame the ball first stands on it,
-shrinks once broken and holds a rolling ball short of its free edge, the
-moving platform that carries the ball in a lattice of its own, its dwell and
-the scaling of its speed, and the landings onto it, the body landing by the
-face of the ball's normal across the run and the end landing against an end
-face, the direction and body tests held to the record's slot order, the
-bias, the rumble, the heights and the slack, and the word the ball keeps for
-what it stands on by the kind of the block under the cell its centre lies
-in: "The blocks under the ball", "The crumbling block" and "The moving
-platform" in docs/motion.md.
+that rolls the ball on and chills the heat while a cold grows and wanes,
+the arrow that lets the ball roll off it its own way alone, the crumbling
+block that breaks the frame the ball first stands on it, showing its faces
+and its neighbours' and shaking the screen, shrinks once broken and holds a
+rolling ball short of its free edge, the shake's start and its step by the
+game's dice and the display's origin the step offsets, as the game lays it,
+the moving platform that carries the ball in a lattice of its own, its
+dwell and the scaling of its speed, and the landings onto it, the body
+landing across the run and the end landing against an end face, their tests
+held to the record's slot order, the bias, the rumble, the heights and the
+slack, and the word the ball keeps for what it stands on, by the kind of
+the block under its centre's cell: "The blocks under the ball",
+"The crumbling block" and "The moving platform" in docs/motion.md.
 """
 import sys
 from pathlib import Path
@@ -65,10 +66,26 @@ CHECKS = [
     (0x8002a40c, "jal 0x8002b3ec", "the frame's draw runs the crumbling blocks"),
     (0x8002b4b8, "beq $v1, $v0, 0x8002b4d0", "a block marked broken"),
     (0x8002b4c0, "beq $v1, $t0, 0x8002b5b0", "or breaking"),
-    (0x8002b580, "sh $t0, 2($s4)", "is set breaking"),
-    (0x8002b58c, "jal 0x800227f4", "with the screen shaken"),
+    (0x8002b4fc, "ori $v0, $v0, 1", "the break marks each of a broken block's six faces active"),
+    (0x8002b504, "sb $v0, 0($v1)", "drawn whatever stands beyond"),
+    (0x8002b500, "jal 0x8002dfac", "asks the kind beyond each"),
+    (0x8002b514, "bne $v0, $zero, 0x8002b570", "passes over nothing and a beam's cell"),
+    (0x8002b51c, "beq $v1, $t0, 0x8002b570", "an invisible block"),
+    (0x8002b524, "beq $v1, $v0, 0x8002b570", "and a platform"),
+    (0x8002b534, "jal 0x8002e1c8", "and for any other neighbour takes its cell"),
+    (0x8002b540, "jal 0x8002e378", "and its face toward the block"),
+    (0x8002b568, "ori $v0, $v0, 1", "which it marks active too"),
+    (0x8002b56c, "sb $v0, 0($v1)", "shown from the break"),
+    (0x8002b580, "sh $t0, 2($s4)", "the block is set breaking"),
+    (0x8002b58c, "jal 0x800227f4", "the screen shaken"),
+    (0x8002b5a0, "jal 0x8004f080", "and the pad shuddered"),
     (0x8002b5bc, "sh $v0, 4($s4)", "and its size at f2 shrinks"),
     (0x8002b5c4, "bltz $v0, 0x8002b624", "until it goes negative"),
+    (0x8002b5e8, "lh $a1, 4($s4)", "the faces laid again at that size meanwhile"),
+    (0x8002b608, "jalr $ra, $v1", "by each direction's face function"),
+    (0x80029804, "sra $v0, $v0, 1", "each of which takes half the width"),
+    (0x80029808, "subu $a2, $a2, $v0", "off the cell's point"),
+    (0x8002987c, "addu $a0, $a2, $a1", "and lays the corners the width on from there, about the block's middle"),
     (0x8002b64c, "sw $v0, 0($v1)", "when its faces are undrawn"),
     (0x8002b690, "sh $zero, 2($s4)", "its type cleared"),
     (0x8002b69c, "sh $v0, 0($v1)", "and its lattice cell emptied"),
@@ -208,10 +225,44 @@ CHECKS = [
     (0x80037998, "sw $v1, 356($s0)", "and of acid"),
     (0x8003792c, "bne $v0, $zero, 0x800379d0", "a kind with no case leaves the word as it was"),
     (0x800379bc, "bne $v0, $v1, 0x800379c8", "as does a lattice word below the empty one"),
+    # The screen's shake.
+    (0x800227f8, "sw $a0, 5816($gp)", "the shake's start keeps the magnitude"),
+    (0x800227fc, "sw $a1, 5820($gp)", "the frames as the timer"),
+    (0x80022800, "sw $a1, 5824($gp)", "and again as the divisor"),
+    (0x80022804, "sw $a2, 5828($gp)", "and the axes mask"),
+    (0x80022808, "sw $v0, 5812($gp)", "and marks the shake running"),
+    (0x80022830, "addiu $v0, $v0, -1", "the step takes one off the timer"),
+    (0x80022838, "bgez $v0, 0x8002287c", "and below nothing"),
+    (0x80022850, "sw $zero, 5812($gp)", "stops the shake"),
+    (0x80022884, "andi $v0, $v0, 1", "else where the mask has bit 1"),
+    (0x80022894, "jal 0x80047418", "draws from the dice"),
+    (0x80022898, "sll $a0, $a0, 1", "under twice the magnitude"),
+    (0x800228a4, "subu $v0, $v0, $v1", "takes the magnitude off the draw"),
+    (0x800228a8, "mult $v0, $a0", "multiplies by the timer"),
+    (0x800228b8, "div $v1, $v0", "divides by the divisor"),
+    (0x800228cc, "addu $a0, $v1, $v0", "adds that to the display's x origin"),
+    (0x800228d0, "bgez $a0, 0x800228dc", "clamps the sum"),
+    (0x800228d8, "addu $a0, $zero, $zero", "at nothing"),
+    (0x80022908, "andi $v0, $v0, 2", "and where the mask has bit 2"),
+    (0x80022918, "jal 0x80047418", "draws again"),
+    (0x8002291c, "sll $a0, $a0, 1", "under twice the magnitude"),
+    (0x80022928, "subu $v0, $v0, $v1", "takes the magnitude off"),
+    (0x8002292c, "mult $v0, $a0", "multiplies by the timer"),
+    (0x8002293c, "div $v1, $v0", "divides by the divisor"),
+    (0x80022950, "addu $a0, $v1, $v0", "adds that to the y origin"),
+    (0x80022954, "bgez $a0, 0x80022960", "clamps the sum"),
+    (0x8002295c, "addu $a0, $zero, $zero", "at nothing"),
+    (0x80040024, "sw $zero, 24296($at)", "the display's origin across, which the offsets are added to, is laid as the "
+                                         "game starts"),
+    (0x8004002c, "sw $zero, 24300($at)", "and its origin down, each read as the register the store writes"),
 ]
 IMMEDIATES = [
     ("crumbling block", "crumble.size", "size at load, units", 0x80028ab8, "addiu $a3, $zero, {}"),
     ("crumbling block", "crumble.shrink", "shrinks per frame once broken, units", 0x8002b5b8, "addiu $v0, $v0, {}"),
+    ("crumbling block", "shake.magnitude", "the break shakes the screen with this magnitude, pixels", 0x8002b584,
+     "addiu $a0, $zero, {}"),
+    ("crumbling block", "shake.frames", "for this many frames", 0x8002b588, "addiu $a1, $zero, {}"),
+    ("crumbling block", "shake.axes", "on the axes of this mask, 1 across and 2 down", 0x8002b590, "addiu $a2, $zero, {}"),
 
     ("moving platform", "platform.dwell", "the dwell laid at each end and counted down before the move test, frames",
      0x80032e7c, "addiu $v1, $zero, {}"),
@@ -232,6 +283,11 @@ IMMEDIATES = [
      "addiu $v0, $zero, {}"),
     ("the blocks under the ball", "crumble.breaking", "setting the word to this while it shrinks", 0x8002b4bc,
      "addiu $t0, $zero, {}"),
+    ("the blocks under the ball", "crumble.show.from", "the break shows each neighbour's face toward the block, unless its kind plus this",
+     0x8002b50c, "addiu $v0, $v1, {}"),
+    ("the blocks under the ball", "crumble.show.span", "is under this, nothing or a beam's cell", 0x8002b510, "sltiu $v0, $v0, {}"),
+    ("the blocks under the ball", "crumble.show.invisible", "or it is this, an invisible block", 0x8002b518, "addiu $t0, $zero, {}"),
+    ("the blocks under the ball", "crumble.show.platform", "or this, a platform", 0x8002b520, "addiu $v0, $zero, {}"),
     ("the blocks under the ball", "crumble.code.input", "the input routine holds a ball rolling on this", 0x80037368,
      "addiu $v0, $zero, {}"),
     ("the blocks under the ball", "crumble.edge.hold", "short of its free edge, dropping the roll and the speed from this progress",
@@ -317,6 +373,7 @@ NAMED = {}
 
 PLATFORM = 5
 OFF = -1                  # the lattice's word for no block
+ORIGIN_STORES = (0x80040024, 0x8004002c)   # the display's origin laid across and down as the game starts
 VANISHING = 7
 ARROW = 28
 CRUMBLING = 6
@@ -331,8 +388,10 @@ def platform(r, speed):
 
 def blocks(r):
     """What the blocks under the ball do to its roll, by kind: ice's chill of
-    the heat and its cold, the crumbling block's size, its shrink and the
-    edge rule that keeps a ball from going round it, and a platform's landing
+    the heat and its cold, the crumbling block's size, its shrink, the edge
+    rule that keeps a ball from going round it and the shake its break
+    starts, the neighbours whose faces the break shows held to their kinds,
+    and a platform's landing
     height, the block its position is biased by, the pad's rumble, the body
     landing's height and reach along the run and the end landing's slack,
     each held to the kind or the type it is read from and to the ball's
@@ -349,6 +408,11 @@ def blocks(r):
     if (r["crumble.whole"], r["crumble.broken"], r["crumble.breaking"]) != (1, 2, 3) \
             or r["crumble.broken.seen"] != r["crumble.broken"]:
         sys.exit("a crumbling block's type does not go whole, broken, breaking")
+    if -r["crumble.show.from"] != LIT or r["crumble.show.span"] - r["crumble.show.from"] - 1 != OFF \
+            or r["crumble.show.invisible"] != INVISIBLE or r["crumble.show.platform"] != PLATFORM:
+        sys.exit("the break passes over other neighbours than nothing, a beam's cell, an invisible block and a platform")
+    if r["shake.magnitude"] <= 0 or r["shake.frames"] <= 0 or not 1 <= r["shake.axes"] <= 3:
+        sys.exit("the break's shake has no magnitude, no frames or no axis")
     if not r["move.middle"] < r["crumble.edge.hold"] < r["crumble.edge.back"] < BLOCK:
         sys.exit("the crumbling block's edge rule does not hold the ball past the middle and set it back short of the edge")
     if len({r["ride.bias"], -r["ride.bias.back"], -r["ride.bias.travel"], BLOCK}) != 1:
@@ -383,7 +447,8 @@ def blocks(r):
         ICE: {"chill": -r["heat.chill"],
               "cold": {"gain": r["cold.gain"], "over": over, "back": r["cold.back"], "wane": -r["cold.wane"]}},
         CRUMBLING: {"size": r["crumble.size"], "shrink": -r["crumble.shrink"],
-                    "edge": {"hold": r["crumble.edge.hold"], "back": r["crumble.edge.back"], "push": r["crumble.edge.push"]}},
+                    "edge": {"hold": r["crumble.edge.hold"], "back": r["crumble.edge.back"], "push": r["crumble.edge.push"]},
+                    "shake": {"magnitude": r["shake.magnitude"], "frames": r["shake.frames"], "axes": r["shake.axes"]}},
         PLATFORM: {"ride": {"bias": r["ride.bias"], "rumble": r["ride.rumble"],
                             "body": {"off": r["ball.rest"], "ends": r["ride.body.ends"]},
                             "end": {"tolerance": r["ride.end.tolerance"]}}},

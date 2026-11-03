@@ -153,6 +153,14 @@ test("motion.md's PAL lines on the ball give the figures the PAL table holds", (
     [ball.fall.gain, ball.fall.top],
   );
   assert.deepEqual(
+    said(motion, /^On the PAL disc the landing's shake runs (\d+) frames/m, "the landing's shake"),
+    [ball.fall.shake.frames],
+  );
+  assert.deepEqual(
+    [ball.fall.shake.magnitude, ball.fall.shake.axes],
+    [objects.motion.types["30"].fall.shake.magnitude, objects.motion.types["30"].fall.shake.axes],
+  );
+  assert.deepEqual(
     said(
       motion,
       /^On the PAL disc the jump sets both speeds to (\d+) \(`SCES_010\.00`, `0x8002fea0`\), takes the arc's count of (\d+)/m,
@@ -256,6 +264,24 @@ test("motion.md's PAL lines on the pills, the platform, the spikes, the vanishin
     ),
     [kinds["6"].shrink],
   );
+  assert.deepEqual(
+    said(motion, /^On the PAL disc the break's shake runs (\d+) frames/m, "the break's shake"),
+    [kinds["6"].shake.frames],
+  );
+  assert.deepEqual(
+    [kinds["6"].shake.magnitude, kinds["6"].shake.axes],
+    [objects.motion.kinds["6"].shake.magnitude, objects.motion.kinds["6"].shake.axes],
+  );
+  const { origin } = pal.motion.play.screen;
+  assert.deepEqual(
+    said(
+      motion,
+      /^On the PAL disc the origin down is laid at (\d+) as the game starts/m,
+      "the display's origin",
+    ),
+    [origin[1]],
+  );
+  assert.equal(origin[0], objects.motion.play.screen.origin[0]);
 });
 
 test("motion.md's PAL lines on the level's end and the effects give the words, the view, the tables and the HUD's points the PAL table holds", () => {
