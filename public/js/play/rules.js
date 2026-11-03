@@ -525,8 +525,8 @@ export function stand(live, { cell, face, h }) {
 }
 
 /** The level edited under the run: the world laid anew from it, the walkers at the run's frame,
-    what was taken, marked and gone carried where it still names the same thing, and the keys
-    and the blocks left counted again. */
+    what was taken, marked, broken and gone carried where it still names the same thing, and the
+    keys and the blocks left counted again. */
 export function relevel(live, l, idx) {
   const was = live.world;
   live.level = l;
@@ -536,6 +536,10 @@ export function relevel(live, l, idx) {
   for (const slot of was.taken)
     if (world.pickups.get(slot)?.m.type === was.pickups.get(slot).m.type) took(world, slot);
   for (const [key, at] of was.marked) if (world.cells.has(key)) marked(world, key, at);
+  for (const [key, block] of was.crumbling)
+    if (world.crumbling.has(key)) world.crumbling.set(key, { ...block });
+  for (const [key, size] of was.breaking)
+    if (world.crumbling.has(key)) world.breaking.set(key, size);
   for (const key of was.gone) if (world.crumbling.has(key)) fell(world, key);
   live.world = world;
   const b = live.ball;

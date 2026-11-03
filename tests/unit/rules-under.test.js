@@ -500,6 +500,33 @@ test("relevel carries a gone block where the level still holds a crumbling block
   assert.equal(probeOf(live).solid([17, 15, 17]), true);
 });
 
+test("relevel carries a breaking block's word and size where the level still holds a crumbling block there, so it goes on the frame it would have, and lets both go where it does not", () => {
+  const l = level([...row(10, 18), [17, 15, 19]], [start(), crumbling(15)]);
+  const live = begin(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  live.words.wait = 0;
+  const key = cellKey(17, 15, 17);
+  const { size: whole, shrink } = motion.kinds[String(CRUMBLING)];
+  steps(live, 10, 0);
+  const size = whole - 10 * shrink;
+  assert.deepEqual(live.world.crumbling.get(key), { type: 3, size });
+  assert.equal(live.world.breaking.get(key), size);
+  relevel(live, l, index(l));
+  assert.deepEqual(live.world.crumbling.get(key), { type: 3, size }, "carried");
+  assert.deepEqual([...live.world.breaking], [[key, size]]);
+  assert.deepEqual([...viewOf(live).breaking], [[key, size]], "and drawn at its size");
+  const events = steps(live, 10, 0);
+  assert.equal(events.find((e) => e.fell)?.at, 20, "gone on the twentieth frame from the break");
+  assert.equal(live.world.breaking.size, 0);
+  const again = begin(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  again.words.wait = 0;
+  steps(again, 10, 0);
+  const plain = level([...row(10, 18), [17, 15, 19]], [start()]);
+  relevel(again, plain, index(plain));
+  assert.equal(again.world.crumbling.size, 0, "let go where a plain block stands there");
+  assert.equal(again.world.breaking.size, 0);
+  assert.equal(viewOf(again).breaking, undefined);
+});
+
 test("the landings try a platform before a block: a jump that comes down on a platform's body where it stands rides it at rest, the standing word the platform's word, and one that comes down on its home cell while the body is away falls through", () => {
   const { live, key, w, arrived, seen } = riding();
   assert.equal(w.dwell <= PLATFORM.dwell && w.dwell > 0, true);

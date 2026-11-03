@@ -69,8 +69,8 @@ function built(kinds, hides, cell, kind) {
     and the word a lit beam's cell holds, the pickups with where each stands, the devices, the
     captivators with where each entry stands at home, its reach and what its pose needs, the
     crumbling blocks, the platforms, the blocks a level with no key counts, the starts with the
-    marker each leaves while the ball is on the level, what travels and the dice, the live sets
-    and the index the frame draws. */
+    marker each leaves while the ball is on the level, what travels and the dice, the live sets,
+    the blocks breaking up with the size of each and the index the frame draws. */
 export function worldOf(l, given, tables, circuits, frame = 0, fruit = null) {
   const { motion, unit, first, styles, skins } = tables;
   const idx = placed(given, motion, fruit);
@@ -195,6 +195,7 @@ export function worldOf(l, given, tables, circuits, frame = 0, fruit = null) {
     taken: new Set(),
     gone,
     marked: new Map(),
+    breaking: new Map(),
     view: null,
   };
 }
@@ -299,11 +300,12 @@ export function took(world, slot) {
 }
 
 /** A block gone from the lattice: its cell emptied, so that nothing stands or rolls on it, kept
-    among the gone, and left out of the index the frame draws. */
+    among the gone, out of the blocks breaking up, and left out of the index the frame draws. */
 export function fell(world, key) {
   world.cells.delete(key);
   world.kinds.delete(key);
   world.crumbling.delete(key);
+  world.breaking.delete(key);
   world.gone.add(key);
   world.view = null;
 }
@@ -317,17 +319,21 @@ export function marked(world, key, frame) {
 
 /** The index the frame draws from: the one play holds less the things taken and the blocks
     gone, with what stood on them, with the blocks marked and the frame each was first drawn
-    marked on as `marked`, until the level's outcome stands less the starts, whose ball the ball
-    on the level is, the start the game takes leaving the clock where it stands on one, and while
-    a key remains less the hidden exits, which the game shows only once the last key opens the
-    exits; shaped as the level's index, play's own index itself where nothing is dropped or
-    marked, and rebuilt only when any of those changes. */
+    marked on as `marked`, with the blocks breaking up and the size of each as `breaking`, the
+    live map itself while any is, so the frame reads each size as it stands, until the level's
+    outcome stands less the starts, whose ball the ball on the level is, the start the game takes
+    leaving the clock where it stands on one, and while a key remains less the hidden exits,
+    which the game shows only once the last key opens the exits; shaped as the level's index,
+    play's own index itself where nothing is dropped, marked or breaking, and rebuilt only when
+    any of those changes. */
 export function viewOf(live) {
   const world = live.world;
   const ended = !!live.words.outcome;
   const shut = live.words.keys > 0;
-  if (!world.view || world.view.ended !== ended || world.view.shut !== shut)
-    world.view = { ended, shut, idx: drawn(world, ended, shut) };
+  const breaking = world.breaking.size > 0;
+  const view = world.view;
+  if (!view || view.ended !== ended || view.shut !== shut || view.breaking !== breaking)
+    world.view = { ended, shut, breaking, idx: drawn(world, ended, shut) };
   return world.view.idx;
 }
 
@@ -341,6 +347,7 @@ function drawn(world, ended, shut) {
     !world.taken.size &&
     !world.gone.size &&
     !world.marked.size &&
+    !world.breaking.size &&
     !starts.length &&
     !hidden.length
   )
@@ -355,6 +362,7 @@ function drawn(world, ended, shut) {
   for (const s of starts) less(s.key, (m) => m === s.m, s.left);
   for (const [key] of hidden) less(key, unseen);
   const view = { ...idx, markers, marked: new Map(world.marked) };
+  if (world.breaking.size) view.breaking = world.breaking;
   if (world.gone.size) {
     view.cells = new Map(idx.cells);
     view.records = new Map(idx.records);

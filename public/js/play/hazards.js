@@ -135,18 +135,22 @@ export function broken(live) {
 }
 
 /** The draw's part of the frame: a block broken under the ball breaks up, and a breaking block
-    shrinks by the table's step a frame until its size goes negative, when it is gone from the
-    lattice. */
+    shrinks by the table's step a frame, its size kept for the frame to draw it at, until its size
+    goes negative, when it is gone from the lattice. */
 export function crumble(live, out) {
   const { shrink } = live.tables.motion.kinds[String(KIND.CRUMBLING)];
-  for (const [key, block] of live.world.crumbling) {
+  const { crumbling, breaking } = live.world;
+  for (const [key, block] of crumbling) {
     if (block.type === BROKEN) {
       block.type = BREAKING;
       out.push({ broke: { key } });
     }
     if (block.type !== BREAKING) continue;
     block.size -= shrink;
-    if (block.size >= 0) continue;
+    if (block.size >= 0) {
+      breaking.set(key, block.size);
+      continue;
+    }
     fell(live.world, key);
     out.push({ fell: { key } });
   }

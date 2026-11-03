@@ -323,19 +323,26 @@ test("in the air over an arrow the jump's wall test throws the ball back from 41
   assert.deepEqual(blockUnder(along.live.ball), [17, 16, 17], "down two blocks on");
 });
 
-test("a crumbling block under the ball scores the table's points once and is written broken on every frame the ball stands on it, breaking up at the frame's end, and is gone on the twentieth frame, the resting ball falling two frames after onto the block below, the first frame's read finding the cell empty and the next's rest state reading that", () => {
+test("a crumbling block under the ball scores the table's points once and is written broken on every frame the ball stands on it, breaking up at the frame's end with its size kept for the frame on every frame it shrinks, and is gone on the twentieth frame, out of the blocks breaking up, the resting ball falling two frames after onto the block below, the first frame's read finding the cell empty and the next's rest state reading that", () => {
   const l = level([...row(15, 18), [17, 15, 19]], [start(), crumbling(15)]);
   const live = standing(l, { cell: [17, 15, 17], face: TOP, h: UP });
   const key = cellKey(17, 15, 17);
   const block = live.world.crumbling.get(key);
   assert.deepEqual(block, { type: 1, size: CRUMBLE.size });
+  assert.equal(live.world.breaking.size, 0);
   assert.equal(live.words.standing, CRUMBLE.standing);
   const [first] = trace(live, 1, 0);
   assert.equal(live.words.score, CRUMBLE.points);
   assert.deepEqual(first.events, [{ broke: { key } }]);
   assert.equal(block.type, 3, "written broken by the hazards, breaking up by the frame's end");
   assert.equal(block.size, CRUMBLE.size - CRUMBLE.shrink, "shrunk on the frame it breaks");
-  const stood = trace(live, 18, 0);
+  assert.deepEqual([...live.world.breaking], [[key, block.size]], "its size kept for the frame");
+  const stood = [];
+  const sizes = [];
+  for (let i = 0; i < 18; i++) {
+    stood.push(...trace(live, 1, 0));
+    sizes.push(live.world.breaking.get(key));
+  }
   assert.equal(live.words.score, CRUMBLE.points, "scored once");
   assert.ok(
     stood.every((f) => has(f, "broke") && !has(f, "fell")),
@@ -344,12 +351,18 @@ test("a crumbling block under the ball scores the table's points once and is wri
   assert.ok(stood.every((f) => f.state === REST));
   assert.equal(block.size, CRUMBLE.size - 19 * CRUMBLE.shrink);
   assert.ok(block.size >= 0, "still there after nineteen");
+  assert.deepEqual(
+    sizes,
+    Array.from({ length: 18 }, (_, i) => CRUMBLE.size - (i + 2) * CRUMBLE.shrink),
+    "the size written on every frame it shrinks",
+  );
   const [twentieth] = trace(live, 1, 0);
   assert.deepEqual(twentieth.events, [{ broke: { key } }, { fell: { key } }]);
   assert.equal(twentieth.state, REST, "the ball at rest still as the frame ends");
   assert.equal(live.words.frame, 20);
   assert.ok(live.world.gone.has(key));
   assert.equal(live.world.crumbling.has(key), false);
+  assert.equal(live.world.breaking.has(key), false, "out of the blocks breaking up with the block");
   assert.equal(probeOf(live).solid([17, 15, 17]), false);
   const [read] = trace(live, 1, 0);
   assert.equal(read.state, REST, "at rest still on the frame whose read finds the cell empty");

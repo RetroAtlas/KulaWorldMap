@@ -589,6 +589,43 @@ test("fell empties a block's cell: nothing stands or rolls on it, the walkers' p
   assert.deepEqual(again.markers.get(key([12, 10, 17])), []);
 });
 
+test("the index the frame draws carries the blocks breaking up with the size of each, the live map itself, rebuilt as the first breaks and kept as a size moves or a second breaks, the level's own index again once none is breaking, and fell takes a block out of them", () => {
+  const l = level(row(10, 12, 10, 17), [own(11, 10, 17, 6), own(12, 10, 17, 6)]);
+  const idx = index(l);
+  const w = worldOf(l, idx, TABLES, CIRCUITS);
+  const live = { world: w, idx, words: { outcome: 0 } };
+  const [a, b] = [key([11, 10, 17]), key([12, 10, 17])];
+  assert.equal(w.breaking.size, 0);
+  assert.equal(viewOf(live), idx);
+  assert.equal(idx.breaking, undefined, "the level's own index carries no size");
+  w.breaking.set(a, 486);
+  const view = viewOf(live);
+  assert.notEqual(view, idx);
+  assert.equal(view.breaking, w.breaking, "the live map itself");
+  assert.deepEqual([...view.breaking], [[a, 486]]);
+  for (const part of ["cells", "records", "plates"]) assert.equal(view[part], idx[part]);
+  w.breaking.set(a, 460);
+  w.breaking.set(b, 486);
+  assert.equal(viewOf(live), view, "kept as the size moves and a second block breaks");
+  assert.deepEqual(
+    [...viewOf(live).breaking],
+    [
+      [a, 460],
+      [b, 486],
+    ],
+  );
+  w.breaking.delete(a);
+  w.breaking.delete(b);
+  assert.equal(viewOf(live), idx, "the level's own index again once none is breaking");
+  w.breaking.set(a, 434);
+  assert.notEqual(viewOf(live), idx);
+  fell(w, a);
+  assert.equal(w.breaking.has(a), false);
+  const gone = viewOf(live);
+  assert.equal(gone.breaking, undefined);
+  assert.equal(gone.cells.has(a), false);
+});
+
 test("the probe answers the lattice as the last frame's step left it, the cycle's entry for the frame before the one running, so a vanishing block is solid from the frame after the first it is drawn there to the frame after the last, and empty, the word under the ball nothing, from the frame after the first it is drawn absent, the first frame reading the first entry", () => {
   const vanishing = { ...own(11, 10, 17, 7, 0), f: [2, ...Array(10).fill(0)] };
   const l = level(row(10, 12, 10, 17), [vanishing]);
