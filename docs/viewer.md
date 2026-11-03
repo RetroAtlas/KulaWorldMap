@@ -523,7 +523,9 @@ An arrow lets the ball roll off its block the way it points alone: facing any ot
 
 A crumbling block breaks the moment the ball stands on it, scoring as in the game, and is gone a third of a second later, dropping a ball still on it; a rolling ball crosses one before it goes, and one that stops on it has a moment to roll off, onto a block ahead, up a wall or into a jump, but cannot be rolled round a crumbling block's free edge, which holds it short of the edge until the block goes, as in the game.
 
-A block that has gone is gone from the map, with a burst of dust where it stood, though the game's debris and its shrinking faces are not drawn.
+A breaking block shrinks about its middle over the game's frames before it goes, its textures squashed onto the smaller faces, and the blocks beside it show the faces they built toward it from the break, as in the game.
+
+A block that has gone is gone from the map, with a burst of dust where it stood, which is the map's own.
 
 A vanishing block carries the ball while it is there and drops it as it goes, and the ball rolls onto one about to go as readily as onto stone.
 
@@ -666,6 +668,8 @@ A module may give the things on the blocks the points its ball stands at in plac
 It may tint a traveller it hands by three numbers, one a channel, which the thing's colours are drawn through.
 
 A module that runs the level may hand the frame, through `runWith`, the clock it draws at, the index of cells and things it draws from, shaped as the level's own index with a thing only on a block it holds, and what travels, each standing in for the frame's own counterpart while it is registered, and may say that every invisible block is seen.
+
+The handed index may carry the blocks breaking up with the size of each in the game's units, which the frame draws as cubes of that side about their middles, every face turned to the camera drawn and the faces of the blocks beside them toward them shown, a platform's apart, the pick following the shrunk cube.
 
 So what is gone from the level as it runs is neither drawn nor picked, the walkers stand where the module has stepped them and no invisible face is lit while every one is seen, while the hover, the tip and the panel read the level as installed and the frame's own clock, index and walkers are in use again once it stops.
 
@@ -883,5 +887,7 @@ The camera is a plain orbit: a yaw and a pitch give three unit vectors, and ever
 A module may hand `js/viewer/state.js` a frame, a rotation in world coordinates, and the three are then turned about it, so the yaw and pitch count from the frame's axes rather than the world's axes and the compass turns with them; and a module may park the camera, the target, the framing and the slice as they were and frame the view in the fit's place through `fitWith` in `js/viewer/chrome/navigate.js`, so that `f`, the button and a resize go through it, the button is dim while it holds the view, and a link written meanwhile carries the parked view rather than the one on screen.
 
 Cubes are drawn back to front by that depth, which is exact for equal cubes on a lattice, and a face is drawn only when its outward normal turns toward the camera and no block the game hides that face behind stands against it.
+
+A face toward a block the index holds as breaking up is drawn all the same, the game making the faces toward a breaking block active at the break, a platform's apart, and a breaking block's own faces are drawn whole as it shrinks about its middle, hidden by no neighbour.
 
 Lighting comes from a fixed direction in the world rather than from the screen, so a face keeps its brightness as the view turns and the solid goes on reading as solid.

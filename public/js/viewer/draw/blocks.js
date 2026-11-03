@@ -6,6 +6,7 @@ import {
   motionTable,
   kindMotion,
   modelUnit,
+  blockUnits,
   shownOn,
   openFace,
 } from "../data.js";
@@ -127,6 +128,27 @@ function hiddenBehind(kind, nb, idx) {
   );
 }
 
+// The break makes the faces toward a breaking block active, a platform's apart.
+const shownToward = (idx, nb, kind) =>
+  kind !== KIND.PLATFORM && !!idx.breaking?.has(cellKey(nb.x, nb.y, nb.z));
+
+/** The cube the block at `c` is drawn as, in blocks: the unit cube at the cell, or for a cell
+    carrying its `size` in the game's units the cube of that side about the cell's middle, as the
+    game lays a breaking block's faces. */
+export function boxOf(c, unit) {
+  if (c.size === undefined) return { at: [c.x, c.y, c.z], side: 1 };
+  const side = c.size / unit;
+  return { at: [c.x, c.y, c.z].map((v) => v + 0.5 - side / 2), side };
+}
+
+/** The cube at `c` as the screen has it: its box in blocks, its corner's point and its side in
+    pixels. */
+function placed(c) {
+  const box = boxOf(c, blockUnits());
+  const [ox, oy] = screen(...box.at);
+  return { ...box, ox, oy, s: state.cam.zoom * BLOCK * box.side };
+}
+
 /** Whether the block at a cell has face `g`, in the game's numbering, as the
     game builds it: a face hidden behind its neighbour is built all the same
     where the neighbour is a kind it leaves the face unseen behind. */
@@ -141,15 +163,19 @@ export function hasFace(idx, c, g) {
 }
 
 /** A face whose `skin(i)` is null is left undrawn, and one with no skin is
-    filled with `colour(i)`. */
+    filled with `colour(i)`. A face toward a block that hides it is left out
+    unless that block is breaking up, and a breaking block's own faces are
+    drawn whole as it shrinks. */
 export function cube(g, c, idx, colour, edge, alpha, skin, kind) {
-  const s = state.cam.zoom * BLOCK;
-  const [ox, oy] = screen(c.x, c.y, c.z);
+  const { at, side, ox, oy, s } = placed(c);
   for (let i = 0; i < FACES.length; i++) {
     const f = FACES[i];
     if (!facing(f.n)) continue;
-    const nb = idx.cells.get(cellKey(c.x + f.d[0], c.y + f.d[1], c.z + f.d[2]));
-    if (nb && nb.z >= sliceZ() && hiddenBehind(kind, nb, idx)) continue;
+    if (c.size === undefined) {
+      const nb = idx.cells.get(cellKey(c.x + f.d[0], c.y + f.d[1], c.z + f.d[2]));
+      if (nb && nb.z >= sliceZ() && hiddenBehind(kind, nb, idx) && !shownToward(idx, nb, kind))
+        continue;
+    }
     const sk = skin ? skin(i) : undefined;
     if (sk === null) continue;
     const pts = f.c.map(([dx, dy, dz]) => {
@@ -160,10 +186,12 @@ export function cube(g, c, idx, colour, edge, alpha, skin, kind) {
     pts.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y)));
     g.closePath();
     if (sk) {
-      const at = sk.corners.map(([dx, dy, dz]) => screen(c.x + dx, c.y + dy, c.z + dz));
+      const corners = sk.corners.map(([dx, dy, dz]) =>
+        screen(at[0] + dx * side, at[1] + dy * side, at[2] + dz * side),
+      );
       g.save();
       g.clip();
-      paint(g, at, sk, shadeOf(i, sk.world), alpha);
+      paint(g, corners, sk, shadeOf(i, sk.world), alpha);
       g.restore();
     } else {
       g.fillStyle = colour ? colour(i) : edge;
@@ -354,8 +382,7 @@ const pointsOf = (f, ox, oy, s) =>
 
 /** The screen points of a face of the cube at `c`, by the game's number. */
 export function facePoints(c, game) {
-  const s = state.cam.zoom * BLOCK;
-  const [ox, oy] = screen(c.x, c.y, c.z);
+  const { ox, oy, s } = placed(c);
   return pointsOf(
     FACES.find((f) => f.game === game),
     ox,
@@ -367,8 +394,7 @@ export function facePoints(c, game) {
 /** The game's number of the face of the block at `c` that the point lies on,
     among the faces turned to the camera, or null where none covers it. */
 export function faceAt(c, x, y) {
-  const s = state.cam.zoom * BLOCK;
-  const [ox, oy] = screen(c.x, c.y, c.z);
+  const { ox, oy, s } = placed(c);
   for (const f of FACES) {
     if (!facing(f.n)) continue;
     if (inside(pointsOf(f, ox, oy, s), x, y)) return f.game;
@@ -387,8 +413,7 @@ export function outlineStroke(ctx, colour, dash = []) {
 export function outline(ctx, c, idx, colour, dash = []) {
   ctx.save();
   outlineStroke(ctx, colour, dash);
-  const s = state.cam.zoom * BLOCK;
-  const [ox, oy] = screen(c.x, c.y, c.z);
+  const { ox, oy, s } = placed(c);
   for (const f of FACES) {
     if (!facing(f.n)) continue;
     ctx.beginPath();

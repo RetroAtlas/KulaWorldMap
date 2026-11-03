@@ -1118,7 +1118,9 @@ On the PAL disc the origin down is laid at 18 as the game starts (`SCES_010.00`,
 
 On the PAL disc the shake's start and step stand at `0x800230c4` and `0x800230e4` (`SCES_010.00`), laid out as here.
 
-The viewer breaks the block by the same words: the rules keep each crumbling block's type word and size, the hazards write the word under the ball and the frame's last part breaks, shrinks and empties the block as the routine does ("The blocks under the ball" above), and the map draws a block that is gone no longer, with a burst of dust where it stood, while a breaking block is drawn whole until it goes, the faces its neighbours show toward it stay hidden, and the shake runs in the map's words alone, started by the break, afresh on every frame the ball stands on the breaking block, and by the −66 landing with the table's figures and stepped from the game's dice as the step is, the picture standing still.
+The viewer breaks the block by the same words: the rules keep each crumbling block's type word and size, the hazards write the word under the ball and the frame's last part breaks, shrinks and empties the block as the routine does ("The blocks under the ball" above), and the map draws a breaking block as a cube of its size about its middle, its textures squashed onto the smaller faces and every face turned to the camera drawn, the faces its neighbours built toward it shown from the break, a platform's apart, and a block that is gone no longer, with a burst of dust where it stood.
+
+The shake runs in the map's words alone, started by the break, afresh on every frame the ball stands on the breaking block, and by the −66 landing with the table's figures and stepped from the game's dice as the step is, the picture standing still.
 
 ## The moving platform
 

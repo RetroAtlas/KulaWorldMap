@@ -305,7 +305,7 @@ test("on fire the ball reddens: where it stands its pixels are redder on the who
   expect(errors).toEqual([]);
 });
 
-test("a crumbling block breaks under the ball, scoring, and is gone a third of a second later, out of the frame, the ball falling with it and casting no shadow from the frame the block goes", async ({
+test("a crumbling block breaks under the ball, scoring, shrinks about its middle and is gone a third of a second later, out of the frame, the ball falling with it and casting no shadow from the frame the block goes", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -329,6 +329,16 @@ test("a crumbling block breaks under the ball, scoring, and is gone a third of a
   expect(rolled.at(-1).station.moving).toBe(false);
   await expect(page.locator("#playPoints")).toHaveText("50 points");
   expect(await status(page).textContent()).toBe("");
+  // at rest on the breaking block a few frames on, the frame draws it shrunk about its middle,
+  // away from the corner the whole block painted
+  const shrunk = await stepUntil(page, null, 3, { pixel: corner, station: true });
+  expect(shrunk.at(-1).station).toEqual({
+    block: [17, 16, 17],
+    face: 0,
+    heading: "-y",
+    moving: false,
+  });
+  expect(shrunk.at(-1).pixel).not.toEqual(stood);
   const dropped = await stepUntil(page, { moving: true }, clock, { pixel: corner });
   expect(dropped.at(-1).pixel).not.toEqual(stood);
   expect(await shadowHeight(page)).toBeNull();

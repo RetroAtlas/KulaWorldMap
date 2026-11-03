@@ -143,7 +143,8 @@ function visible(idx, moving) {
       const key = cellKey(c.x, c.y, c.z);
       const r = c.v >= state.data.firstRecord ? idx.records.get(key)?.[0] : null;
       if (r?.kind !== KIND.PLATFORM) {
-        out.push(c);
+        const size = cells === idx.cells ? idx.breaking?.get(key) : undefined;
+        out.push(size === undefined ? c : { ...c, size });
         // A thing on a face turned away from the view sorts as the cell it
         // stands in, behind its block, so the block hides only what it covers.
         if (cells !== idx.cells) continue;
@@ -251,7 +252,9 @@ function same(a, b) {
 // level, each standing in for the frame's own clock, index or travel while it
 // is registered, and may say that every invisible block is seen. A handed
 // index is shaped as the level's own index, with a marker only on a cell it
-// holds, and may carry the blocks it has marked with the frame of each mark.
+// holds, and may carry the blocks it has marked with the frame of each mark
+// and the blocks breaking up with the size of each in the game's units, each
+// drawn as a cube of that side about its middle.
 let source = null;
 export const runWith = (fn) => {
   source = fn;
