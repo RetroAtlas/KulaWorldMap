@@ -39,6 +39,7 @@ import {
   facesOf,
   inWord,
   inner,
+  isCell,
   onLattice,
   roomFor,
   sameCell,
@@ -54,7 +55,7 @@ const UNDRAWN_KINDS = new Set(BONUS_UNDRAWN_KINDS);
 const UNDRAWN_TYPES = new Set(BONUS_UNDRAWN_TYPES);
 
 const beyond = (cell, d) => [cell[0] + d[0], cell[1] + d[1], cell[2] + d[2]];
-const hasFar = (b) => Array.isArray(b.far) && b.far.length === 3;
+const hasFar = (b) => isCell(b.far);
 
 /** The lattice as the loader leaves it before building faces: a beam's far end
     stands a plain block where the file has none. */

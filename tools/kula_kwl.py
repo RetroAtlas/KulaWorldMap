@@ -157,8 +157,13 @@ def lattice_index(cell):
     return (x * SIDE + y) * SIDE + z
 
 
+def _joined(v):
+    """A list as the page's join spells it, a null as nothing."""
+    return ",".join("" if x is None else _js_text(x) for x in v)
+
+
 def cell_text(cell):
-    return ",".join(_js_text(c) for c in cell) if isinstance(cell, (list, tuple)) else _js_text(cell)
+    return _joined(cell) if isinstance(cell, (list, tuple)) else _js_text(cell)
 
 
 def is_cell(v):
@@ -230,7 +235,7 @@ def _js_text(v):
     if isinstance(v, (int, float)):
         return _js_number(v)
     if isinstance(v, list):
-        return ",".join(_js_text(x) for x in v)
+        return _joined(v)
     return "[object Object]"
 
 
@@ -1153,8 +1158,8 @@ def read_project(raw):
 # --- what the game would make of a project ------------------------------------
 
 def _is_far(v):
-    """Whether a far end has the shape the span rules read, three coordinates."""
-    return isinstance(v, list) and len(v) == 3
+    """Whether a far end has the shape the span rules read, three whole numbers."""
+    return isinstance(v, list) and len(v) == 3 and all(_is_int(c) for c in v)
 
 
 def _kinds_at(blocks):

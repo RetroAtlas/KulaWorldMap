@@ -1046,6 +1046,11 @@ class Validates(unittest.TestCase):
     def test_a_span_lies_along_one_axis_inside_the_edge(self):
         for far, text in (([10, 10, 17], "far end: the block's own cell"),
                           ([12, 12, 17], "far end 12,12,17: not along one axis"),
+                          ([10, 12.5, 17], "far end 10,12.5,17: not along one axis"),
+                          (["10", 12, 17], "far end 10,12,17: not along one axis"),
+                          ([None, 12, 17], "far end ,12,17: not along one axis"),
+                          ([[10], 12, 17], "far end 10,12,17: not along one axis"),
+                          ([{}, 12, 17], "far end [object Object],12,17: not along one axis"),
                           ([10, 33, 17], "far end 10,33,17: past the edge"),
                           ([10, 32767, 17], "far end 10,32767,17: past the edge")):
             beam = {"cell": [10, 10, 17], "kind": LASER_KIND, "far": far, "colour": 0}

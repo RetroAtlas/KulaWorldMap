@@ -320,6 +320,11 @@ test("a span lies along one axis inside the edge", () => {
   for (const [far, text] of [
     [[10, 10, 17], "far end: the block's own cell"],
     [[12, 12, 17], "far end 12,12,17: not along one axis"],
+    [[10, 12.5, 17], "far end 10,12.5,17: not along one axis"],
+    [["10", 12, 17], "far end 10,12,17: not along one axis"],
+    [[null, 12, 17], "far end ,12,17: not along one axis"],
+    [[[10], 12, 17], "far end 10,12,17: not along one axis"],
+    [[{}, 12, 17], "far end [object Object],12,17: not along one axis"],
     [[10, 33, 17], "far end 10,33,17: past the edge"],
     [[10, 32767, 17], "far end 10,32767,17: past the edge"],
   ]) {
