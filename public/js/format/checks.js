@@ -213,46 +213,38 @@ function filled(blocks) {
 
 function validateSpan(b, blocksAt, loader, err, warn) {
   const { cell, far } = b;
-  if (!far) return err("a span needs a far end", cell);
-  if (!hasFar(b)) return err("the far end is not along one axis from the block", cell);
-  if (sameCell(far, cell)) return err("the far end is the block's own cell", cell);
+  if (!far) return err("span: no far end", cell);
+  if (!hasFar(b)) return err(`far end ${far}: not along one axis`, cell);
+  if (sameCell(far, cell)) return err("far end: the block's own cell", cell);
   if (direction(cell, far) === null)
-    return err("the far end is not along one axis from the block", cell);
-  if (!far.every(onLattice)) return err("the far end is past the edge", cell);
+    return err(`far end ${cellText(far)}: not along one axis`, cell);
+  if (!far.every(onLattice)) return err(`far end ${cellText(far)}: past the edge`, cell);
   const length = b.kind === KIND.PLATFORM ? (b.length ?? DEFAULT_LENGTH) : 1;
   if (b.kind === KIND.PLATFORM) {
-    if (!inWord(length)) return err(`a length of ${length}, outside the file's range`, cell);
-    if (length < 1)
-      return err(`a platform ${length} blocks long, which is less than one block`, cell);
-    if (length > roomFor(cell, far))
-      return err(`a platform ${length} blocks long, which the lattice cannot hold`, cell);
+    if (!inWord(length)) return err(`length ${length}: outside the file's range`, cell);
+    if (length < 1) return err(`length ${length}: below 1`, cell);
+    if (length > roomFor(cell, far)) return err(`length ${length}: past the lattice`, cell);
   }
-  if (!far.every(inner)) return err("the far end is past the edge", cell);
+  if (!far.every(inner)) return err(`far end ${cellText(far)}: past the edge`, cell);
   const { beams, ends, runs } = loader;
   if (b.kind === KIND.PLATFORM) {
     const speed = b.speed ?? DEFAULT_SPEED;
     const axis = spanAxis(cell, far);
     if (!inner(Math.max(cell[axis], far[axis]) + length - 1))
-      return err("the platform's run reaches past the edge", cell);
-    if (length > LENGTH_CAP)
-      err(
-        `a platform ${length} blocks long, more than the ${LENGTH_CAP} the game's grid holds`,
-        cell,
-      );
-    else if (!LENGTHS.includes(length)) warn(`a platform ${length} blocks long`, cell);
-    if (!inWord(speed)) err(`a speed of ${speed}, outside the file's range`, cell);
-    else if (speed !== DEFAULT_SPEED) warn(`a platform running at ${speed}`, cell);
+      return err("run: past the edge", cell);
+    if (length > LENGTH_CAP) err(`length ${length}: over the grid's ${LENGTH_CAP}`, cell);
+    else if (!LENGTHS.includes(length))
+      warn(`length ${length}: the disc's are ${LENGTHS.join(" and ")}`, cell);
+    if (!inWord(speed)) err(`speed ${speed}: outside the file's range`, cell);
+    else if (speed !== DEFAULT_SPEED) warn(`speed ${speed}: the disc's is ${DEFAULT_SPEED}`, cell);
     for (const c of runOf(b)) {
       const key = keyOf(c);
       if (!sameCell(c, cell) && blocksAt.has(key))
-        err(`the platform's run crosses the block at ${cellText(c)}`, cell);
+        err(`run: crosses the block at ${cellText(c)}`, cell);
       for (const laser of beams.get(key) ?? [])
-        err(`the platform's run crosses the beam from ${cellText(laser.cell)}`, cell);
+        err(`run: crosses the beam from ${cellText(laser.cell)}`, cell);
       if (ends.has(key))
-        err(
-          `the platform's run crosses the end of the beam from ${cellText(ends.get(key).cell)}`,
-          cell,
-        );
+        err(`run: crosses the end of the beam from ${cellText(ends.get(key).cell)}`, cell);
     }
     return;
   }
@@ -262,19 +254,15 @@ function validateSpan(b, blocksAt, loader, err, warn) {
     if (sameCell(c, cell)) continue;
     if (sameCell(c, far)) {
       if (other && other.kind === KIND.PLAIN && facesOf(other).length)
-        warn(
-          "the beam's end makes a bare plain block of the block there; what stands on it still works but its faces paint plain",
-          cell,
-        );
+        warn(`beam end at ${cellText(c)}: the block there paints plain`, cell);
       else if (other && other.kind !== KIND.PLAIN && other.kind !== KIND.LASER)
-        err("a beam ends on an empty cell, a plain block or another laser's block", cell);
+        err(`beam end at ${cellText(c)}: not a plain block or a laser`, cell);
       for (const laser of beams.get(key) ?? [])
-        err(`the beam ends in the beam from ${cellText(laser.cell)}`, cell);
+        err(`beam end: in the beam from ${cellText(laser.cell)}`, cell);
       continue;
     }
-    if (other) err(`the beam crosses the block at ${cellText(c)}`, cell);
-    if (runs.has(key))
-      err(`the beam crosses the platform's run from ${cellText(runs.get(key).cell)}`, cell);
+    if (other) err(`beam: crosses the block at ${cellText(c)}`, cell);
+    if (runs.has(key)) err(`beam: crosses the run from ${cellText(runs.get(key).cell)}`, cell);
   }
 }
 
@@ -297,7 +285,7 @@ export const typeWord = (type, names) => {
   return name ? `the ${lower(name)}` : `type ${type}`;
 };
 
-/** The things a keyless level places that the bonus artwork has no picture for, by name. */
+/** The things a keyless level places that the bonus artwork has no texture for, by name. */
 function undrawnInBonus(blocks, names) {
   const found = [];
   const add = (name) => {
@@ -342,26 +330,15 @@ function validateCircuits(project, warn, names) {
   circuitMembers(project).forEach((m, c) => {
     const word = names.circuit?.(c);
     if (circuits[String(c)] === "off" && !m.switches && (m.lasers || m.teleporters))
-      warn(
-        `${word ? `the ${word} circuit` : `circuit ${c}`} starts off and has no switch to turn it on`,
-      );
+      warn(`${word ? `${word} circuit` : `circuit ${c}`}: starts off, no switch`);
     if (m.teleporters === 1)
-      warn(
-        word
-          ? `the one ${word} teleporter leads to itself`
-          : `the one teleporter of circuit ${c} leads to itself`,
-      );
+      warn(`${word ? `${word} teleporter` : `teleporter of circuit ${c}`}: alone, leads to itself`);
     if (m.switches && !m.teleporters && !m.lasers)
-      warn(
-        word
-          ? `the ${word} switches have nothing to switch`
-          : `the switches of circuit ${c} have nothing to switch`,
-      );
+      warn(`${word ? `${word} switches` : `switches of circuit ${c}`}: nothing to switch`);
   });
 }
 
-const overCap = (what, n) =>
-  `${n} ${COUNTER_WORDS[what]}, over the ${CAPS[what]} the game has room for`;
+const overCap = (what, n) => `${n} ${COUNTER_WORDS[what]}: over the cap of ${CAPS[what]}`;
 
 /** The checks' sentence for a project whose blocks carry more records than a link word can
     name, which the writer has no bytes for; null where it has room. */
@@ -388,22 +365,18 @@ export function validate(project, hides, names = {}) {
     out.push({ level: WARNING, text, at: at(cell, face) });
 
   const world = typeof project.world === "string" ? project.world : "";
-  if (!WORLDS.includes(world)) err(`the world '${world}' is not one of the disc's ten worlds`);
+  if (!WORLDS.includes(world)) err(`world '${world}': not one of the disc's ten`);
   if (project.into != null) {
     const text = typeof project.into === "string" ? project.into : JSON.stringify(project.into);
     const hash = text.lastIndexOf("#");
     const pack = hash < 0 ? "" : text.slice(0, hash);
     const index = text.slice(hash + 1);
-    if (!/^\d+$/.test(index) || !slotOf(pack, Number(index)))
-      err(
-        `the target '${text}' is not a slot of a world pack, a finals pack or the Simon rooms' pack`,
-      );
+    if (!/^\d+$/.test(index) || !slotOf(pack, Number(index))) err(`target '${text}': no such slot`);
   }
   const time = project.time ?? DEFAULT_TIME;
-  if (!inWord(time)) err(`a time of ${time} seconds, outside the file's range`);
-  else if (timeOf(time) === null) err(`a time of ${time} seconds`);
-  else if (time > TIME_MAX)
-    warn(`a time of ${time} seconds, above the ${TIME_MAX} the game's levels keep to`);
+  if (!inWord(time)) err(`time ${time} s: outside the file's range`);
+  else if (timeOf(time) === null) err(`time ${time} s: below 1`);
+  else if (time > TIME_MAX) warn(`time ${time} s: above the disc's ${TIME_MAX}`);
 
   const blocks = [...project.blocks].sort(byCell);
   const blocksAt = new Map();
@@ -411,7 +384,7 @@ export function validate(project, hides, names = {}) {
     const key = keyOf(b.cell);
     if (blocksAt.has(key)) err("two blocks on one cell", b.cell);
     blocksAt.set(key, b);
-    if (!b.cell.every(inner)) err("the game builds nothing past the edge", b.cell);
+    if (!b.cell.every(inner)) err("block past the edge", b.cell);
   }
   const kinds = kindsAt(blocks);
   const loader = filled(blocks);
@@ -420,68 +393,60 @@ export function validate(project, hides, names = {}) {
   for (const b of blocks) {
     const { cell, kind } = b;
     if (!Number.isInteger(kind) || kind < 0 || kind >= KIND.SETTINGS) {
-      err(`kind ${kind} is not a kind of block`, cell);
+      err(`kind ${kind}: no such kind`, cell);
       continue;
     }
-    if (kind >= BLOCK_KINDS && b.faces && Object.keys(b.faces).length)
-      err("nothing stands on a platform's, laser's, crumbling or vanishing block's faces", cell);
+    if (kind >= BLOCK_KINDS && b.faces && Object.keys(b.faces).length) {
+      const name = names.kind?.(kind);
+      err(`faces: none allowed on ${name ? `a ${lower(name)}` : `kind ${kind}`}`, cell);
+    }
     const twice = faceNamedTwice(b);
-    if (twice !== null) err(`face ${twice} is named twice`, cell);
+    if (twice !== null) err(`face ${twice}: named twice`, cell);
     if (kind === KIND.VANISHING) {
       const phase = b.phase ?? 0;
-      if (DIM_AT_ONCE.includes(phase)) warn(`a phase of ${phase} dims at once`, cell);
+      if (DIM_AT_ONCE.includes(phase)) warn(`phase ${phase}: dims at once`, cell);
       else if (!Number.isInteger(phase) || phase < 0 || phase >= PHASES)
-        err(`a phase of ${phase}`, cell);
+        err(`phase ${phase}: outside 0 to 5`, cell);
     }
     if (kind === KIND.LASER && !(Number.isInteger(b.colour) && b.colour >= 0 && b.colour < COLOURS))
-      err(`a colour of ${b.colour ?? "none"}`, cell);
+      err(`colour ${b.colour ?? "none"}: outside 0 to 3`, cell);
     if (isSpan(b)) validateSpan(b, blocksAt, loader, err, warn);
     for (const [j, o] of facesOf(b)) {
       const t = o.type;
       if (j < 0 || j >= FACES) {
-        err(`face ${j} is not one of the six`, cell);
+        err(`face ${j}: not one of the six`, cell);
         continue;
       }
-      if (!PLAYED.has(t)) err(`type ${t} is nothing the game plays`, cell, j);
-      if (PLAIN_ONLY.has(t) && kind !== KIND.PLAIN)
-        err("a device works on a plain block only", cell, j);
+      if (!PLAYED.has(t)) err(`type ${t}: unknown to the game`, cell, j);
+      if (PLAIN_ONLY.has(t) && kind !== KIND.PLAIN) err("device: plain block only", cell, j);
       if (t === TYPE.HIDDEN_EXIT && kind !== KIND.PLAIN)
-        warn(
-          "the game has not been seen to take a hidden exit on a block that is not plain",
-          cell,
-          j,
-        );
-      if (FACING_NEEDED.has(t) && !facingOk(o.facing)) err("a facing of 1 to 4 is needed", cell, j);
+        warn("hidden exit on a non-plain block: untested", cell, j);
+      if (FACING_NEEDED.has(t) && !facingOk(o.facing)) err("facing: 1 to 4 needed", cell, j);
       else if (FACING_TYPES.has(t) && o.facing !== undefined && !facingOk(o.facing))
-        err("a facing of 1 to 4, or none", cell, j);
+        err(`facing ${o.facing}: 1 to 4 or none`, cell, j);
       if (VARIANT_TYPES.has(t)) {
         const v = o.variant ?? 0;
         if (!Number.isInteger(v) || v < 0 || v >= VARIANTS[t])
-          err(`a variant of ${o.variant}`, cell, j);
+          err(`variant ${o.variant}: outside its range`, cell, j);
       }
       if (STARTS.has(t)) starts.push([cell, j]);
-      if (t === TYPE.HEDGEHOG) warn(`${typeWord(t, names)} is untested in play`, cell, j);
+      if (t === TYPE.HEDGEHOG) warn(`${typeWord(t, names)}: untested in play`, cell, j);
       validateOutlook(cell, j, kinds, beams, warn);
     }
     for (const key of strayFaceKeys(b))
-      err(`face ${JSON.stringify(key)} is not one of the six`, cell);
+      err(`face ${JSON.stringify(key)}: not one of the six`, cell);
   }
   if (!starts.length) err("no start");
   else if (starts.length > 1) {
     const [cell, j] = starts[starts.length - 1];
-    warn(
-      `${starts.length} starts; the game takes the one on face ${j} of the block at ${cellText(cell)}`,
-    );
+    warn(`${starts.length} starts: the game takes face ${j} of ${cellText(cell)}`);
   }
 
   validateCircuits(project, warn, names);
   const n = counts(project, hides);
   const undrawn = n.keys || project.hidden || project.simon ? [] : undrawnInBonus(blocks, names);
-  if (undrawn.length)
-    warn(
-      `with no key the game draws the bonus artwork, which has no picture for ${listed(undrawn)}`,
-    );
-  if (!hides) warn("the face count could not be read, so the faces and the blocks are not counted");
+  if (undrawn.length) warn(`no key: the bonus artwork has no texture for ${listed(undrawn)}`);
+  if (!hides) warn("face table missing: faces and blocks not counted");
   if (
     n.keys &&
     !blocks.some((b) =>

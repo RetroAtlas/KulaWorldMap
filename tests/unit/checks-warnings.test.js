@@ -46,29 +46,23 @@ test("what the format takes, and what it warns about", () => {
     }),
   ];
   const found = errors(blocks);
-  assert.ok(found.includes("type 3 is nothing the game plays"));
-  assert.ok(found.includes("a variant of 7"));
-  assert.ok(found.includes("a facing of 1 to 4 is needed"));
+  assert.ok(found.includes("type 3: unknown to the game"));
+  assert.ok(found.includes("variant 7: outside its range"));
+  assert.ok(found.includes("facing: 1 to 4 needed"));
   const turned = [
     plain([5, 5, 5], 0, { 0: start(), 1: { type: WANDERING, facing: 7 }, 2: { type: 56 } }),
   ];
-  assert.deepEqual(errors(turned), ["a facing of 1 to 4, or none"]);
+  assert.deepEqual(errors(turned), ["facing 7: 1 to 4 or none"]);
   const warned = warnings(blocks);
-  assert.ok(warned.includes("the hedgehog is untested in play"));
+  assert.ok(warned.includes("the hedgehog: untested in play"));
   assert.deepEqual(
     warned.filter((w) => w.includes("next fruit")),
     [],
   );
   const one = [plain([5, 5, 5], 0, { 0: start() })];
-  assert.ok(errors(one, { time: 0 }).includes("a time of 0 seconds"));
-  assert.ok(
-    warnings(one, { time: 120 }).includes(
-      "a time of 120 seconds, above the 99 the game's levels keep to",
-    ),
-  );
-  assert.ok(
-    errors(one, { time: 40000 }).includes("a time of 40000 seconds, outside the file's range"),
-  );
+  assert.ok(errors(one, { time: 0 }).includes("time 0 s: below 1"));
+  assert.ok(warnings(one, { time: 120 }).includes("time 120 s: above the disc's 99"));
+  assert.ok(errors(one, { time: 40000 }).includes("time 40000 s: outside the file's range"));
   const wide = {
     cell: [10, 10, 17],
     kind: KIND.PLATFORM,
@@ -76,15 +70,13 @@ test("what the format takes, and what it warns about", () => {
     length: 2,
     speed: 65566,
   };
-  assert.ok(errors([...one, wide]).includes("a speed of 65566, outside the file's range"));
+  assert.ok(errors([...one, wide]).includes("speed 65566: outside the file's range"));
   assert.ok(
     errors([...one, { ...wide, length: 40000, speed: 30 }]).includes(
-      "a length of 40000, outside the file's range",
+      "length 40000: outside the file's range",
     ),
   );
-  assert.ok(
-    errors(one, { world: "MOON" }).includes("the world 'MOON' is not one of the disc's ten worlds"),
-  );
+  assert.ok(errors(one, { world: "MOON" }).includes("world 'MOON': not one of the disc's ten"));
   for (const [into, ok] of [
     ["/HIRO/HIRO.PAK#0", true],
     ["/HELL/HELLFI.PAK#1", true],
@@ -95,37 +87,33 @@ test("what the format takes, and what it warns about", () => {
     ["HIRO#0", false],
   ])
     assert.equal(
-      errors(one, { into }).some((e) => e.includes("is not a slot of")),
+      errors(one, { into }).some((e) => e.includes(": no such slot")),
       !ok,
       into,
     );
   assert.ok(
     errors([...one, { cell: [7, 5, 5], kind: 6, faces: { 0: { type: COIN } } }]).includes(
-      "nothing stands on a platform's, laser's, crumbling or vanishing block's faces",
+      "faces: none allowed on a crumbling block",
     ),
   );
   assert.ok(
-    warnings([...one, { cell: [7, 5, 5], kind: 7, phase: 4 }]).includes(
-      "a phase of 4 dims at once",
-    ),
-  );
-  assert.ok(errors([...one, { cell: [7, 5, 5], kind: 7, phase: 9 }]).includes("a phase of 9"));
-  assert.ok(
-    errors([...one, { cell: [7, 5, 5], kind: 12 }]).includes("kind 12 is not a kind of block"),
+    warnings([...one, { cell: [7, 5, 5], kind: 7, phase: 4 }]).includes("phase 4: dims at once"),
   );
   assert.ok(
-    errors([...one, plain([7, 5, 5], 0, { 9: coin })]).includes("face 9 is not one of the six"),
+    errors([...one, { cell: [7, 5, 5], kind: 7, phase: 9 }]).includes("phase 9: outside 0 to 5"),
+  );
+  assert.ok(errors([...one, { cell: [7, 5, 5], kind: 12 }]).includes("kind 12: no such kind"));
+  assert.ok(
+    errors([...one, plain([7, 5, 5], 0, { 9: coin })]).includes("face 9: not one of the six"),
   );
   assert.ok(
-    errors([...one, plain([7, 5, 5], 0, { top: coin })]).includes(
-      'face "top" is not one of the six',
-    ),
+    errors([...one, plain([7, 5, 5], 0, { top: coin })]).includes('face "top": not one of the six'),
   );
   assert.ok(errors([...one, plain([5, 5, 5])]).includes("two blocks on one cell"));
   const rail = { cell: [10, 10, 17], kind: KIND.PLATFORM, far: [10, 14, 17], length: 5, speed: 20 };
   assert.deepEqual(errors([...one, rail]), []);
-  assert.ok(warnings([...one, rail]).includes("a platform 5 blocks long"));
-  assert.ok(warnings([...one, rail]).includes("a platform running at 20"));
+  assert.ok(warnings([...one, rail]).includes("length 5: the disc's are 2 and 3"));
+  assert.ok(warnings([...one, rail]).includes("speed 20: the disc's is 30"));
 });
 
 test("a typed time yields the nearest whole second from 1 to the file's limit, and null off it", () => {
@@ -203,16 +191,16 @@ test("the circuits' warnings", () => {
     { cell: [9, 9, 9], kind: KIND.LASER, far: [9, 12, 9], colour: 2 },
   ];
   const warned = warnings(blocks, { circuits: { 2: "off" } });
-  assert.ok(warned.includes("the green circuit starts off and has no switch to turn it on"));
-  assert.ok(warned.includes("the one yellow teleporter leads to itself"));
-  assert.ok(warned.includes("the blue switches have nothing to switch"));
+  assert.ok(warned.includes("green circuit: starts off, no switch"));
+  assert.ok(warned.includes("yellow teleporter: alone, leads to itself"));
+  assert.ok(warned.includes("blue switches: nothing to switch"));
   setAnnotations({ ...annotations, types: { ...annotations.types, [SWITCH]: { name: "Switch" } } });
   try {
     const unnamed = warnings(blocks, { circuits: { 2: "off" } });
     for (const text of [
-      "circuit 2 starts off and has no switch to turn it on",
-      "the one teleporter of circuit 0 leads to itself",
-      "the switches of circuit 1 have nothing to switch",
+      "circuit 2: starts off, no switch",
+      "teleporter of circuit 0: alone, leads to itself",
+      "switches of circuit 1: nothing to switch",
     ])
       assert.ok(unnamed.includes(text), text);
   } finally {
@@ -235,7 +223,7 @@ test("the circuits' warnings", () => {
 
 // The bonus artwork is the second model set, whose only picture for several kinds
 // and types is the placeholder texture; the two lists are what the shipped table says.
-test("a keyless level is warned of what the bonus artwork has no picture for", () => {
+test("a keyless level is warned of what the bonus artwork has no texture for", () => {
   const { bonus } = objects.skins.sets;
   const placeholder = (models) => models.every((m) => m.length === 1 && m[0] === 8);
   assert.deepEqual(BONUS_UNDRAWN_KINDS, [
@@ -264,12 +252,12 @@ test("a keyless level is warned of what the bonus artwork has no picture for", (
   ];
   assert.ok(
     warnings(blocks).includes(
-      "with no key the game draws the bonus artwork, which has no picture for the clock, the fruit, the exit, the fire block, the ice block or the moving platform",
+      "no key: the bonus artwork has no texture for the clock, the fruit, the exit, the fire block, the ice block or the moving platform",
     ),
   );
   assert.ok(
     warnings([plain([5, 5, 5], 0, { 0: start(), 1: { type: 1 } })]).includes(
-      "with no key the game draws the bonus artwork, which has no picture for the fire",
+      "no key: the bonus artwork has no texture for the fire",
     ),
   );
   assert.ok(!warnings(blocks, { hidden: true }).some((w) => w.includes("bonus artwork")));

@@ -210,11 +210,7 @@ test("a move lays the blocks named at their cells plus the delta, a span's far e
   assert.equal(moveBlocks(p, [[19, 20, 17]], [12, 0, 0]), null);
   const run = moveBlocks(p, [[19, 20, 17]], [11, 0, 0]);
   assert.deepEqual(blockAt(run, [30, 20, 17]).far, [32, 20, 17]);
-  assert.ok(
-    texts(validate(run, HIDES, NAMES), "error").includes(
-      "the platform's run reaches past the edge",
-    ),
-  );
+  assert.ok(texts(validate(run, HIDES, NAMES), "error").includes("run: past the edge"));
   // a cell with no block names nothing to move
   assert.deepEqual(moveBlocks(p, [[6, 6, 6]], [1, 1, 1]), p);
 });
@@ -390,13 +386,13 @@ test("the reader leaves out what the writer has no bytes for, and holds a word t
   assert.doesNotThrow(() => writeKwl(p));
   const found = texts(validate(p, HIDES, NAMES), "error");
   for (const text of [
-    "a facing of 1 to 4 is needed",
-    "type 32767 is nothing the game plays",
-    "a phase of 32767",
-    "a time of -32768 seconds",
+    "facing: 1 to 4 needed",
+    "type 32767: unknown to the game",
+    "phase 32767: outside 0 to 5",
+    "time -32768 s: below 1",
   ])
     assert.ok(found.includes(text), text);
-  assert.ok(texts(validate(p, HIDES, NAMES), "warning").includes("a platform running at -32768"));
+  assert.ok(texts(validate(p, HIDES, NAMES), "warning").includes("speed -32768: the disc's is 30"));
   // the one project the reader hands on that the writer refuses: records enough to outrun a link word
   const crowd = Array.from({ length: 2049 }, (_, i) =>
     plain([1 + (i % 32), 1 + (Math.floor(i / 32) % 32), 1 + Math.floor(i / 1024)], 0, { 0: coin }),
@@ -404,21 +400,19 @@ test("the reader leaves out what the writer has no bytes for, and holds a word t
   crowd.find((b) => b.cell.join() === "32,32,2").faces[1] = { type: SWITCH, variant: 0 };
   const { project: q, report: lines } = readProject(project(crowd));
   assert.deepEqual(lines, []);
-  assert.ok(errors(crowd).includes("2049 records, over the 123 the game has room for"));
-  assert.equal(recordOverflow(q), "2049 records, over the 123 the game has room for");
+  assert.ok(errors(crowd).includes("2049 records: over the cap of 123"));
+  assert.equal(recordOverflow(q), "2049 records: over the cap of 123");
   assert.equal(recordOverflow(p), null);
   // the settings record takes no link word, so a flagged crowd of 2048 writes
   const flagged = readProject(project(crowd.slice(0, 2048), { hidden: true })).project;
   assert.ok(
-    errors(crowd.slice(0, 2048), { hidden: true }).includes(
-      "2049 records, over the 123 the game has room for",
-    ),
+    errors(crowd.slice(0, 2048), { hidden: true }).includes("2049 records: over the cap of 123"),
   );
   assert.equal(recordOverflow(flagged), null);
   assert.doesNotThrow(() => writeKwl(flagged));
   assert.equal(
     recordOverflow(readProject(project(crowd, { hidden: true })).project),
-    "2050 records, over the 123 the game has room for",
+    "2050 records: over the cap of 123",
   );
   assert.throws(
     () => writeKwl(q),
@@ -426,8 +420,8 @@ test("the reader leaves out what the writer has no bytes for, and holds a word t
   );
   // the gate goes by the count alone, so a crowd with no device, which the writer writes, is refused too
   const { project: r } = readProject(project(crowd.map((b) => ({ ...b, faces: { 0: coin } }))));
-  assert.equal(recordOverflow(r), "2049 records, over the 123 the game has room for");
-  assert.ok(errors(r.blocks).includes("2049 records, over the 123 the game has room for"));
+  assert.equal(recordOverflow(r), "2049 records: over the cap of 123");
+  assert.ok(errors(r.blocks).includes("2049 records: over the cap of 123"));
   assert.doesNotThrow(() => writeKwl(r));
 });
 
@@ -535,10 +529,10 @@ test("a platform's length that runs past the edge is cut on the way in, to a run
   ]);
   // the run's edge error stays only where the cell itself is past the edge
   assert.deepEqual(texts(validate(p, HIDES, NAMES), "error"), [
-    "the game builds nothing past the edge",
-    "a platform 19 blocks long, more than the 7 the game's grid holds",
-    "the far end is past the edge",
-    "the platform's run reaches past the edge",
+    "block past the edge",
+    "length 19: over the grid's 7",
+    "far end 16,33,17: past the edge",
+    "run: past the edge",
   ]);
   const c = hostile.cases.find((c) => c.name === "two hundred platforms of length 32767");
   const { project: q, report: lines, repairs } = readProject(structuredClone(c.input));
@@ -550,9 +544,7 @@ test("a platform's length that runs past the edge is cut on the way in, to a run
   );
   assert.equal(lines.length, 4);
   assert.equal(repairs, 200);
-  assert.ok(
-    !texts(validate(q, HIDES, NAMES), "error").includes("the platform's run reaches past the edge"),
-  );
+  assert.ok(!texts(validate(q, HIDES, NAMES), "error").includes("run: past the edge"));
   const walked = toLevel(q, 1)
     .records.filter((r) => r.kind === KIND.PLATFORM)
     .reduce((n, r) => n + platformCells(r).length, 0);
@@ -719,7 +711,7 @@ test("a face key is read by its number, and a second spelling of one face is lef
   assert.deepEqual(texts(validate(p, HIDES, NAMES), "error"), []);
   assert.ok(
     errors([plain([5, 5, 5], 0, { 0: start(), 5: coin, "05": coin })]).includes(
-      "face 5 is named twice",
+      "face 5: named twice",
     ),
   );
   const ones = "1".repeat(4301);

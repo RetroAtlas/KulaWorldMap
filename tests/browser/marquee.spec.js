@@ -287,8 +287,8 @@ test("the set's ghosts are red for whatever the lift would refuse, a platform's 
     blocked: [0, 1],
   });
   await page.mouse.up();
-  expect(await toasts(page)).toEqual(["The platform's run crosses the block at 20,20,17."]);
-  await expect(status(page)).toHaveText("The platform's run crosses the block at 20,20,17.");
+  expect(await toasts(page)).toEqual(["Run: crosses the block at 20,20,17."]);
+  await expect(status(page)).toHaveText("Run: crosses the block at 20,20,17.");
   expect(await cells(page)).toEqual(before);
   expect(await move(page)).toBeNull();
   expect(errors).toEqual([]);

@@ -775,32 +775,32 @@ class ReadsProjects(unittest.TestCase):
         # what is kept writes, and the checks name what the game would make of it
         canonical(p)
         errors = texts(validate(p, HIDES), "error")
-        for text in ("a facing of 1 to 4 is needed", "type 32767 is nothing the game plays", "a phase of 32767",
-                     "a time of -32768 seconds"):
+        for text in ("facing: 1 to 4 needed", "type 32767: unknown to the game", "phase 32767: outside 0 to 5",
+                     "time -32768 s: below 1"):
             self.assertIn(text, errors)
-        self.assertIn("a platform running at -32768", texts(validate(p, HIDES), "warning"))
+        self.assertIn("speed -32768: the disc's is 30", texts(validate(p, HIDES), "warning"))
         # the one project the reader hands on that the writer refuses: records enough to outrun a link word
         crowd = [plain((1 + i % 32, 1 + i // 32 % 32, 1 + i // 1024), t0=coin) for i in range(2049)]
         max(crowd, key=lambda b: tuple(b["cell"]))["faces"]["1"] = {"type": SWITCH, "variant": 0}
         q, lines, _ = read_project(project(crowd))
         self.assertEqual(lines, [])
-        self.assertIn("2049 records, over the 123 the game has room for", texts(validate(q, HIDES), "error"))
-        self.assertEqual(record_overflow(q), "2049 records, over the 123 the game has room for")
+        self.assertIn("2049 records: over the cap of 123", texts(validate(q, HIDES), "error"))
+        self.assertEqual(record_overflow(q), "2049 records: over the cap of 123")
         self.assertIsNone(record_overflow(p))
         # the settings record takes no link word, so a flagged crowd of 2048 writes
         flagged = read_project(project(crowd[:2048], hidden=True))[0]
-        self.assertIn("2049 records, over the 123 the game has room for", texts(validate(flagged, HIDES), "error"))
+        self.assertIn("2049 records: over the cap of 123", texts(validate(flagged, HIDES), "error"))
         self.assertIsNone(record_overflow(flagged))
         canonical(flagged)
         self.assertEqual(record_overflow(read_project(project(crowd, hidden=True))[0]),
-                         "2050 records, over the 123 the game has room for")
+                         "2050 records: over the cap of 123")
         with self.assertRaises(ValueError) as caught:
             canonical(q)
         self.assertEqual(str(caught.exception), "a word of the block at 32,32,2 is outside the file's range")
         # the gate goes by the count alone, so a crowd with no device, which the writer writes, is refused too
         coins = read_project(project([dict(b, faces={"0": coin}) for b in crowd]))[0]
-        self.assertEqual(record_overflow(coins), "2049 records, over the 123 the game has room for")
-        self.assertIn("2049 records, over the 123 the game has room for", texts(validate(coins, HIDES), "error"))
+        self.assertEqual(record_overflow(coins), "2049 records: over the cap of 123")
+        self.assertIn("2049 records: over the cap of 123", texts(validate(coins, HIDES), "error"))
         canonical(coins)
 
     def test_a_whole_number_is_whole_however_json_spells_it(self):
@@ -832,10 +832,10 @@ class ReadsProjects(unittest.TestCase):
         ])
         # the run's edge error stays only where the cell itself is past the edge
         self.assertEqual(texts(validate(p, HIDES), "error"), [
-            "the game builds nothing past the edge",
-            "a platform 19 blocks long, more than the 7 the game's grid holds",
-            "the far end is past the edge",
-            "the platform's run reaches past the edge",
+            "block past the edge",
+            "length 19: over the grid's 7",
+            "far end 16,33,17: past the edge",
+            "run: past the edge",
         ])
         case = next(c for c in json.loads(HOSTILE.read_text())["cases"]
                     if c["name"] == "two hundred platforms of length 32767")
@@ -845,7 +845,7 @@ class ReadsProjects(unittest.TestCase):
         self.assertEqual([b["length"] for b in platforms], [SIDE - 1 - max(b["cell"][1], b["far"][1]) for b in platforms])
         self.assertEqual(len(lines), 4)
         self.assertEqual(repairs, 200)
-        self.assertNotIn("the platform's run reaches past the edge", texts(validate(q, HIDES), "error"))
+        self.assertNotIn("run: past the edge", texts(validate(q, HIDES), "error"))
         self.assertEqual(Level(canonical(q)).verify(), [])
 
     def test_a_title_an_author_notes_a_world_a_target_or_a_source_past_their_most_are_cut_to_it_counted_in_characters(self):
@@ -942,34 +942,34 @@ class Validates(unittest.TestCase):
         n = counts(project(blocks), None)
         self.assertEqual((n["faces"], n["blocks"], n["cells"], n["objects"]), (None, None, 2, 1))
         found = validate(project(blocks), None)
-        self.assertEqual(texts(found, "error"), ["the game builds nothing past the edge", "no start"])
-        self.assertIn("the face count could not be read, so the faces and the blocks are not counted", texts(found, "warning"))
+        self.assertEqual(texts(found, "error"), ["block past the edge", "no start"])
+        self.assertIn("face table missing: faces and blocks not counted", texts(found, "warning"))
         h10 = next(l for l in json.loads(DATA.read_text())["levels"] if l["name"] == "HIDDEN 10")
         self.assertEqual(texts(validate(project_of(h10), None), "error"), [])
-        self.assertFalse(any("could not be read" in w for w in texts(validate(project_of(h10), HIDES), "warning")))
+        self.assertFalse(any("face table missing" in w for w in texts(validate(project_of(h10), HIDES), "warning")))
 
     def test_a_level_needs_one_start_and_says_which_of_several_the_game_takes(self):
         self.assertIn("no start", self.errors([plain((5, 5, 5), t0={"type": COIN, "variant": 0})]))
         several = [plain((5, 5, 5), t0=start()), plain((7, 5, 5), t2=start(1), t5=start(2))]
         self.assertEqual(self.errors(several), [])
-        self.assertIn("3 starts; the game takes the one on face 5 of the block at 7,5,5", self.warnings(several))
+        self.assertIn("3 starts: the game takes face 5 of 7,5,5", self.warnings(several))
         unordered = [plain((7, 5, 5), t5=start(2), t2=start(1)), plain((5, 5, 5), t0=start())]
-        self.assertIn("3 starts; the game takes the one on face 5 of the block at 7,5,5", self.warnings(unordered))
+        self.assertIn("3 starts: the game takes face 5 of 7,5,5", self.warnings(unordered))
 
     def test_a_device_works_on_a_plain_block_only(self):
         blocks = [plain((5, 5, 5), t0=start()), plain((7, 5, 5), kind=2, t0={"type": TELEPORTER, "facing": 1, "variant": 0})]
-        self.assertIn("a device works on a plain block only", self.errors(blocks))
+        self.assertIn("device: plain block only", self.errors(blocks))
         blocks[1]["kind"] = 0
         self.assertEqual(self.errors(blocks), [])
         hidden = [plain((5, 5, 5), t0=start()), plain((7, 5, 5), kind=2, t0={"type": 26})]
         self.assertEqual(self.errors(hidden), [])
-        self.assertIn("the game has not been seen to take a hidden exit on a block that is not plain", self.warnings(hidden))
+        self.assertIn("hidden exit on a non-plain block: untested", self.warnings(hidden))
         hidden[1]["kind"] = 0
         self.assertFalse(any("hidden exit" in w for w in self.warnings(hidden)))
 
     def test_the_game_builds_nothing_past_the_edge(self):
         for cell in ((0, 5, 5), (5, 33, 5)):
-            self.assertIn("the game builds nothing past the edge", self.errors([plain((5, 5, 5), t0=start()), plain(cell)]))
+            self.assertIn("block past the edge", self.errors([plain((5, 5, 5), t0=start()), plain(cell)]))
         self.assertEqual(self.errors([plain((1, 32, 1), t0=start())]), [])
 
     def test_a_platform_runs_over_empty_cells(self):
@@ -977,13 +977,13 @@ class Validates(unittest.TestCase):
         self.assertEqual(self.errors([plain((5, 5, 5), t0=start()), rail]), [])
         for cell in ((10, 12, 17), (10, 14, 17), (10, 16, 17)):
             self.assertEqual(self.errors([plain((5, 5, 5), t0=start()), rail, plain(cell)]),
-                             [f"the platform's run crosses the block at {cell[0]},{cell[1]},{cell[2]}"])
+                             [f"run: crosses the block at {cell[0]},{cell[1]},{cell[2]}"])
         self.assertEqual(self.errors([plain((5, 5, 5), t0=start()), rail, plain((10, 17, 17))]), [])
         edge = {"cell": [30, 10, 17], "kind": PLATFORM_KIND, "far": [31, 10, 17], "length": 2, "speed": 30}
         self.assertEqual(self.errors([plain((5, 5, 5), t0=start()), edge]), [])
         for over in (dict(edge, far=[32, 10, 17]), dict(edge, length=3)):
-            self.assertEqual(self.errors([plain((5, 5, 5), t0=start()), over]), ["the platform's run reaches past the edge"])
-        self.assertIn("a platform 30000 blocks long, which the lattice cannot hold",
+            self.assertEqual(self.errors([plain((5, 5, 5), t0=start()), over]), ["run: past the edge"])
+        self.assertIn("length 30000: past the lattice",
                       self.errors([plain((5, 5, 5), t0=start()), dict(edge, length=30000)]))
 
     def test_every_length_the_writer_refuses_is_an_error_of_its_own_text_whatever_else_the_platform_has(self):
@@ -993,7 +993,7 @@ class Validates(unittest.TestCase):
                      "length": length, "speed": 30}]
 
         def held(length):
-            return f"a platform {length} blocks long, which the lattice cannot hold"
+            return f"length {length}: past the lattice"
 
         for upper in (30, 31, 32, 33):
             for length in range(1, 6):
@@ -1006,13 +1006,13 @@ class Validates(unittest.TestCase):
                 else:
                     canonical(project(blocks))
         # a run that ends on cell 33 is past the edge and the writer still has bytes for it
-        self.assertEqual(self.errors(rail(31, 3)), ["the platform's run reaches past the edge"])
+        self.assertEqual(self.errors(rail(31, 3)), ["run: past the edge"])
         self.assertEqual(self.errors(rail(31, 4)), [held(4)])
         # a far end on the lattice's last cell says so, and hides nothing of the length
-        self.assertEqual(self.errors(rail(33, 1)), ["the far end is past the edge"])
+        self.assertEqual(self.errors(rail(33, 1)), ["far end 10,33,17: past the edge"])
         self.assertEqual(self.errors(rail(33, 2)), [held(2)])
         # a far end off the lattice is the far end's error, not the length's error
-        self.assertEqual(self.errors(rail(31, 2, far=40)), ["the far end is past the edge"])
+        self.assertEqual(self.errors(rail(31, 2, far=40)), ["far end 10,40,17: past the edge"])
 
     def test_a_beam_ends_on_nothing_a_plain_block_or_another_laser_and_crosses_nothing(self):
         beam = {"cell": [10, 10, 17], "kind": LASER_KIND, "far": [14, 10, 17], "colour": 0}
@@ -1020,12 +1020,12 @@ class Validates(unittest.TestCase):
         self.assertEqual(self.errors(base), [])
         self.assertEqual(self.errors(base + [plain((14, 10, 17))]), [])
         self.assertEqual(self.errors(base + [{"cell": [14, 10, 17], "kind": LASER_KIND, "far": [14, 14, 17], "colour": 1}]), [])
-        self.assertIn("a beam ends on an empty cell, a plain block or another laser's block",
+        self.assertIn("beam end at 14,10,17: not a plain block or a laser",
                       self.errors(base + [plain((14, 10, 17), kind=2)]))
-        self.assertIn("the beam crosses the block at 12,10,17", self.errors(base + [plain((12, 10, 17))]))
+        self.assertIn("beam: crosses the block at 12,10,17", self.errors(base + [plain((12, 10, 17))]))
         self.assertEqual(self.errors(base + [plain((14, 10, 17), t0={"type": COIN, "variant": 0})]), [])
-        self.assertTrue(any(w.startswith("the beam's end makes a bare plain block")
-                            for w in self.warnings(base + [plain((14, 10, 17), t0={"type": COIN, "variant": 0})])))
+        self.assertIn("beam end at 14,10,17: the block there paints plain",
+                      self.warnings(base + [plain((14, 10, 17), t0={"type": COIN, "variant": 0})]))
 
     def test_the_cells_the_loaders_fill_are_checked_against_each_other(self):
         base = plain((5, 5, 5), t0=start())
@@ -1034,29 +1034,29 @@ class Validates(unittest.TestCase):
         self.assertEqual(self.errors([base, beam, across]), [])
         self.assertEqual([w for w in self.warnings([base, beam, across]) if "crosses the beam" in w], [])
         into = {"cell": [8, 13, 17], "kind": LASER_KIND, "far": [10, 13, 17], "colour": 1}
-        self.assertEqual(self.errors([base, beam, into]), ["the beam ends in the beam from 10,10,17"])
+        self.assertEqual(self.errors([base, beam, into]), ["beam end: in the beam from 10,10,17"])
         rail = {"cell": [8, 13, 17], "kind": PLATFORM_KIND, "far": [12, 13, 17], "length": 2, "speed": 30}
         self.assertEqual(self.errors([base, beam, rail]),
-                         ["the platform's run crosses the beam from 10,10,17", "the beam crosses the platform's run from 8,13,17"])
+                         ["run: crosses the beam from 10,10,17", "beam: crosses the run from 8,13,17"])
         over_end = {"cell": [8, 16, 17], "kind": PLATFORM_KIND, "far": [12, 16, 17], "length": 2, "speed": 30}
-        self.assertEqual(self.errors([base, beam, over_end]), ["the platform's run crosses the end of the beam from 10,10,17"])
+        self.assertEqual(self.errors([base, beam, over_end]), ["run: crosses the end of the beam from 10,10,17"])
         clear = {"cell": [8, 18, 17], "kind": PLATFORM_KIND, "far": [12, 18, 17], "length": 2, "speed": 30}
         self.assertEqual(self.errors([base, beam, clear]), [])
 
     def test_a_span_lies_along_one_axis_inside_the_edge(self):
-        for far, text in (([10, 10, 17], "the far end is the block's own cell"),
-                          ([12, 12, 17], "the far end is not along one axis from the block"),
-                          ([10, 33, 17], "the far end is past the edge"),
-                          ([10, 32767, 17], "the far end is past the edge")):
+        for far, text in (([10, 10, 17], "far end: the block's own cell"),
+                          ([12, 12, 17], "far end 12,12,17: not along one axis"),
+                          ([10, 33, 17], "far end 10,33,17: past the edge"),
+                          ([10, 32767, 17], "far end 10,32767,17: past the edge")):
             beam = {"cell": [10, 10, 17], "kind": LASER_KIND, "far": far, "colour": 0}
             self.assertIn(text, self.errors([plain((5, 5, 5), t0=start()), beam]))
         # the walk over a span's cells never leaves the lattice, however far the end lies
         far = [{"cell": [1 + i % 32, 1 + i // 32, 5], "kind": LASER_KIND, "far": [1 + i % 32, 1 + i // 32, 32767],
                 "colour": 0} for i in range(200)]
         errors = self.errors([plain((5, 5, 5), t0=start())] + far)
-        self.assertEqual(errors.count("the far end is past the edge"), 200)
+        self.assertEqual(sum(e.endswith(",32767: past the edge") for e in errors), 200)
         long = {"cell": [10, 10, 17], "kind": PLATFORM_KIND, "far": [10, 12, 17], "length": 32000, "speed": 30}
-        self.assertIn("a platform 32000 blocks long, which the lattice cannot hold", self.errors([plain((5, 5, 5), t0=start()), long]))
+        self.assertIn("length 32000: past the lattice", self.errors([plain((5, 5, 5), t0=start()), long]))
 
     def test_a_keyless_level_with_a_laser_counts_the_blocks_the_loader_makes(self):
         ring = [(12, 10, 17), (11, 9, 17), (11, 11, 17), (11, 10, 16), (11, 10, 18)]
@@ -1069,7 +1069,7 @@ class Validates(unittest.TestCase):
         blocks[0]["faces"]["0"] = start()
         self.assertEqual(self.errors(blocks), [])
         blocks.append(plain((1, 10, 5), t0={"type": COIN, "variant": 0}))
-        self.assertIn("124 records, over the 123 the game has room for", self.errors(blocks))
+        self.assertIn("124 records: over the cap of 123", self.errors(blocks))
 
     def test_the_block_cap(self):
         blocks = [plain((x, y, 17)) for x in range(1, 17) for y in range(1, 17)]
@@ -1079,7 +1079,7 @@ class Validates(unittest.TestCase):
         self.assertEqual(self.errors(blocks), [])
         self.assertEqual(self.warnings(blocks), [])
         blocks.append(plain((17, 1, 17)))
-        self.assertIn("257 blocks, over the 256 the game has room for", self.errors(blocks))
+        self.assertIn("257 blocks: over the cap of 256", self.errors(blocks))
 
     def test_a_document_that_bypassed_the_reader_is_checked_alike_on_both_sides(self):
         findings = validate({
@@ -1094,18 +1094,18 @@ class Validates(unittest.TestCase):
             ],
         }, HIDES)
         self.assertEqual([describe(f) for f in findings], [
-            "error: the world '' is not one of the disc's ten worlds",
-            "error: the target '{\"pack\":1}' is not a slot of a world pack, a finals pack or the Simon rooms' pack",
-            "error: a time of true seconds, outside the file's range",
-            "error at 5,5,5 face 0: a facing of 1 to 4 is needed",
-            "error at 5,5,5 face 1: a variant of true",
-            "error at 6,5,5: kind true is not a kind of block",
-            "error at 7,5,5: a phase of true",
-            "error at 8,5,5: a colour of false",
-            "error at 8,5,5: the far end is past the edge",
-            "error at 10,5,5: a length of false, outside the file's range",
+            "error: world '': not one of the disc's ten",
+            "error: target '{\"pack\":1}': no such slot",
+            "error: time true s: outside the file's range",
+            "error at 5,5,5 face 0: facing: 1 to 4 needed",
+            "error at 5,5,5 face 1: variant true: outside its range",
+            "error at 6,5,5: kind true: no such kind",
+            "error at 7,5,5: phase true: outside 0 to 5",
+            "error at 8,5,5: colour false: outside 0 to 3",
+            "error at 8,5,5: far end 8,5,50: past the edge",
+            "error at 10,5,5: length false: outside the file's range",
             "warning at 5,5,5 face 1: looks into the block at 6,5,5",
-            "warning: with no key the game draws the bonus artwork, which has no picture for the moving platform",
+            "warning: no key: the bonus artwork has no texture for the moving platform",
         ])
         # JSON spelled otherwise than the readers spell it: whole numbers with a point, null where a
         # key is missing, a list for a table, a boolean or text for a number
@@ -1125,16 +1125,16 @@ class Validates(unittest.TestCase):
   ]
 }''')
         self.assertEqual([describe(f) for f in validate(spelled, HIDES)], [
-            "error: a time of false seconds, outside the file's range",
-            "error at 6,5,5: kind null is not a kind of block",
-            "error at 8,5,5: a span needs a far end",
-            "error at 8,13,17: the beam crosses the platform's run from 10,10,17",
-            "error at 9,5,5: the far end is not along one axis from the block",
-            "error at 10,5,5: a colour of none",
-            "error at 10,10,17: a length of 2, outside the file's range",
+            "error: time false s: outside the file's range",
+            "error at 6,5,5: kind null: no such kind",
+            "error at 8,5,5: span: no far end",
+            "error at 8,13,17: beam: crosses the run from 10,10,17",
+            "error at 9,5,5: far end [object Object]: not along one axis",
+            "error at 10,5,5: colour none: outside 0 to 3",
+            "error at 10,10,17: length 2: outside the file's range",
             "warning at 5,5,5 face 1: looks into the block at 6,5,5",
-            "warning: 2 starts; the game takes the one on face 0 of the block at 12,5,5",
-            "warning: the yellow circuit starts off and has no switch to turn it on",
+            "warning: 2 starts: the game takes face 0 of 12,5,5",
+            "warning: yellow circuit: starts off, no switch",
         ])
         self.assertEqual(counts(spelled, HIDES), {"records": 10, "cells": 10, "faces": 75, "blocks": 5, "objects": 1, "platforms": 2, "lasers": 4, "vanishing": 1, "crumbling": 0, "captivators": 0, "keys": 0, "lights": 0, "spikes": 0})
         self.assertEqual(plays_as(spelled), "Plays as a hidden bonus level since it has no key, with the glass ball on half-seen blocks.")
@@ -1145,9 +1145,9 @@ class Validates(unittest.TestCase):
 
         self.assertEqual(into("/HIRO/HIRO.PAK#3"), [])
         for text in ("/HIRO/HIRO.PAK#٣", "/HIRO/HIRO.PAK#²", "/HIRO/HIRO.PAK#3 "):
-            self.assertEqual(into(text), [f"the target '{text}' is not a slot of a world pack, a finals pack or the Simon rooms' pack"])
+            self.assertEqual(into(text), [f"target '{text}': no such slot"])
         self.assertEqual(self.errors([plain((5, 5, 5), t0=start())], world="it's"),
-                         ["the world 'it's' is not one of the disc's ten worlds"])
+                         ["world 'it's': not one of the disc's ten"])
 
     def test_the_face_cap_with_the_level_that_sits_under_it(self):
         data = json.loads(DATA.read_text())
@@ -1159,7 +1159,7 @@ class Validates(unittest.TestCase):
         self.assertTrue(all(c in range(1, 33) for c in free))
         p["blocks"].append({"cell": free, "kind": 0})
         self.assertEqual(counts(p, HIDES)["faces"], 772)
-        self.assertIn("772 faces, over the 768 the game has room for", texts(validate(p, HIDES), "error"))
+        self.assertIn("772 faces: over the cap of 768", texts(validate(p, HIDES), "error"))
 
     def test_the_object_cap_counts_what_the_loader_numbers(self):
         coin = {"type": COIN, "variant": 0}
@@ -1170,7 +1170,7 @@ class Validates(unittest.TestCase):
         self.assertEqual(counts(project(blocks), HIDES)["objects"], 255)
         self.assertEqual(self.errors(blocks), [])
         blocks.append(plain((22, 25, 5), t0=coin))
-        self.assertIn("256 objects the loader numbers, over the 255 the game has room for", self.errors(blocks))
+        self.assertIn("256 objects the loader numbers: over the cap of 255", self.errors(blocks))
 
     def test_the_platform_vanishing_crumbling_and_captivator_caps(self):
         def with_start(more):
@@ -1181,20 +1181,20 @@ class Validates(unittest.TestCase):
 
         rails = [rail(i) for i in range(8)]
         self.assertEqual(self.errors(with_start(rails)), [])
-        self.assertIn("9 platforms, over the 8 the game has room for", self.errors(with_start(rails + [rail(8)])))
+        self.assertIn("9 platforms: over the cap of 8", self.errors(with_start(rails + [rail(8)])))
 
         vanishing = [{"cell": [1 + i % 32, 20 + 2 * (i // 32), 5], "kind": 7, "phase": 0} for i in range(64)]
         n = counts(project(with_start(vanishing)), HIDES)
         self.assertEqual((n["vanishing"], n["records"], n["blocks"]), (64, 65, 65))
         self.assertEqual(self.errors(with_start(vanishing)), [])
         self.assertEqual(self.warnings(with_start(vanishing[:15])), [])
-        self.assertIn("65 vanishing blocks, over the 64 the game has room for",
+        self.assertIn("65 vanishing blocks: over the cap of 64",
                       self.errors(with_start(vanishing + [{"cell": [1, 24, 5], "kind": 7, "phase": 0}])))
 
         crumbling = [{"cell": [1 + i % 32, 20 + 2 * (i // 32), 5], "kind": 6} for i in range(64)]
         self.assertEqual(self.errors(with_start(crumbling)), [])
         self.assertEqual(self.warnings(with_start(crumbling[:34])), [])
-        self.assertIn("65 crumbling blocks, over the 64 the game has room for",
+        self.assertIn("65 crumbling blocks: over the cap of 64",
                       self.errors(with_start(crumbling + [{"cell": [1, 24, 5], "kind": 6}])))
 
         wandering = {"type": 53}
@@ -1204,7 +1204,7 @@ class Validates(unittest.TestCase):
         self.assertEqual(self.errors(with_start(captive)), [])
         self.assertEqual(self.warnings(with_start(captive)), [])
         captive[5]["faces"]["2"] = wandering
-        self.assertIn("33 captivators, over the 32 the game has room for", self.errors(with_start(captive)))
+        self.assertIn("33 captivators: over the cap of 32", self.errors(with_start(captive)))
 
     def test_the_light_and_the_moving_spikes_caps(self):
         def switch(colour):
@@ -1216,7 +1216,7 @@ class Validates(unittest.TestCase):
         self.assertEqual(counts(project(blocks), HIDES)["lights"], 32)
         self.assertEqual(self.errors(blocks), [])
         blocks[6]["faces"]["2"] = switch(2)
-        self.assertIn("33 devices that cast a light, over the 32 the game has room for", self.errors(blocks))
+        self.assertIn("33 devices that cast a light: over the cap of 32", self.errors(blocks))
 
         spiked = {f"t{j}": {"type": 11, "variant": 0} for j in range(6)}
         spikes = [plain((5, 5, 5), t0=start())]
@@ -1226,7 +1226,7 @@ class Validates(unittest.TestCase):
         self.assertEqual(self.errors(spikes), [])
         self.assertEqual(self.warnings(spikes[:5]), [])
         spikes[11]["faces"]["4"] = {"type": 11, "variant": 0}
-        self.assertIn("65 moving spikes, over the 64 the game has room for", self.errors(spikes))
+        self.assertIn("65 moving spikes: over the cap of 64", self.errors(spikes))
 
     def test_a_platform_longer_than_the_rides_grid(self):
         def rail(length):
@@ -1234,54 +1234,54 @@ class Validates(unittest.TestCase):
                     {"cell": [10, 10, 17], "kind": PLATFORM_KIND, "far": [10, 14, 17], "length": length, "speed": 30}]
 
         self.assertEqual(self.errors(rail(7)), [])
-        self.assertIn("a platform 7 blocks long", self.warnings(rail(7)))
-        self.assertEqual(self.errors(rail(8)), ["a platform 8 blocks long, more than the 7 the game's grid holds"])
-        self.assertFalse(any("blocks long" in w for w in self.warnings(rail(8))))
+        self.assertIn("length 7: the disc's are 2 and 3", self.warnings(rail(7)))
+        self.assertEqual(self.errors(rail(8)), ["length 8: over the grid's 7"])
+        self.assertFalse(any(w.startswith("length 8:") for w in self.warnings(rail(8))))
 
     def test_a_platform_shorter_than_one_block(self):
         def rail(length):
             return [plain((5, 5, 5), t0=start()),
                     {"cell": [10, 10, 17], "kind": PLATFORM_KIND, "far": [10, 14, 17], "length": length, "speed": 30}]
 
-        self.assertEqual(self.errors(rail(0)), ["a platform 0 blocks long, which is less than one block"])
-        self.assertEqual(self.errors(rail(-3)), ["a platform -3 blocks long, which is less than one block"])
-        self.assertFalse(any("blocks long" in w for w in self.warnings(rail(0))))
+        self.assertEqual(self.errors(rail(0)), ["length 0: below 1"])
+        self.assertEqual(self.errors(rail(-3)), ["length -3: below 1"])
+        self.assertFalse(any(w.startswith("length 0:") for w in self.warnings(rail(0))))
 
     def test_what_the_format_takes_and_what_it_warns_about(self):
         blocks = [plain((5, 5, 5), t0=start(), t1={"type": 3}, t2={"type": COIN, "variant": 7},
                         t3={"type": START}, t4={"type": 42}, t5={"type": 46})]
         errors = self.errors(blocks)
-        self.assertIn("type 3 is nothing the game plays", errors)
-        self.assertIn("a variant of 7", errors)
-        self.assertIn("a facing of 1 to 4 is needed", errors)
+        self.assertIn("type 3: unknown to the game", errors)
+        self.assertIn("variant 7: outside its range", errors)
+        self.assertIn("facing: 1 to 4 needed", errors)
         turned = [plain((5, 5, 5), t0=start(), t1={"type": 53, "facing": 7}, t2={"type": 56})]
-        self.assertEqual(self.errors(turned), ["a facing of 1 to 4, or none"])
+        self.assertEqual(self.errors(turned), ["facing 7: 1 to 4 or none"])
         warnings = self.warnings(blocks)
-        self.assertIn("the hedgehog is untested in play", warnings)
+        self.assertIn("the hedgehog: untested in play", warnings)
         self.assertEqual([w for w in warnings if "next fruit" in w], [])
-        self.assertIn("a time of 0 seconds", self.errors([plain((5, 5, 5), t0=start())], time=0))
-        self.assertIn("a time of 120 seconds, above the 99 the game's levels keep to",
+        self.assertIn("time 0 s: below 1", self.errors([plain((5, 5, 5), t0=start())], time=0))
+        self.assertIn("time 120 s: above the disc's 99",
                       self.warnings([plain((5, 5, 5), t0=start())], time=120))
-        self.assertIn("a time of 40000 seconds, outside the file's range",
+        self.assertIn("time 40000 s: outside the file's range",
                       self.errors([plain((5, 5, 5), t0=start())], time=40000))
         wide = {"cell": [10, 10, 17], "kind": PLATFORM_KIND, "far": [10, 14, 17], "length": 2, "speed": 65566}
-        self.assertIn("a speed of 65566, outside the file's range", self.errors([plain((5, 5, 5), t0=start()), wide]))
-        self.assertIn("a length of 40000, outside the file's range",
+        self.assertIn("speed 65566: outside the file's range", self.errors([plain((5, 5, 5), t0=start()), wide]))
+        self.assertIn("length 40000: outside the file's range",
                       self.errors([plain((5, 5, 5), t0=start()), dict(wide, length=40000, speed=30)]))
-        self.assertIn("the world 'MOON' is not one of the disc's ten worlds", self.errors([plain((5, 5, 5), t0=start())], world="MOON"))
+        self.assertIn("world 'MOON': not one of the disc's ten", self.errors([plain((5, 5, 5), t0=start())], world="MOON"))
         for into, ok in (("/HIRO/HIRO.PAK#0", True), ("/HELL/HELLFI.PAK#1", True), ("/HELL/HELLFI.PAK#2", False),
                          ("/HIRO/COPYCAT.PAK#0", True), ("/HIRO/COPYCAT.PAK#9", True), ("/HIRO/COPYCAT.PAK#10", False),
                          ("HIRO#0", False)):
-            self.assertEqual(any("is not a slot of" in e for e in self.errors([plain((5, 5, 5), t0=start())], into=into)),
+            self.assertEqual(any(": no such slot" in e for e in self.errors([plain((5, 5, 5), t0=start())], into=into)),
                              not ok, into)
-        self.assertIn("nothing stands on a platform's, laser's, crumbling or vanishing block's faces",
+        self.assertIn("faces: none allowed on a crumbling block",
                       self.errors([plain((5, 5, 5), t0=start()), {"cell": [7, 5, 5], "kind": 6, "faces": {"0": {"type": COIN}}}]))
-        self.assertIn("face 5 is named twice",
+        self.assertIn("face 5: named twice",
                       self.errors([plain((5, 5, 5), t0=start(), t5={"type": COIN, "variant": 0}, t05={"type": KEY})]))
-        self.assertIn("a phase of 4 dims at once", self.warnings([plain((5, 5, 5), t0=start()), {"cell": [7, 5, 5], "kind": 7, "phase": 4}]))
-        self.assertIn("a phase of 9", self.errors([plain((5, 5, 5), t0=start()), {"cell": [7, 5, 5], "kind": 7, "phase": 9}]))
+        self.assertIn("phase 4: dims at once", self.warnings([plain((5, 5, 5), t0=start()), {"cell": [7, 5, 5], "kind": 7, "phase": 4}]))
+        self.assertIn("phase 9: outside 0 to 5", self.errors([plain((5, 5, 5), t0=start()), {"cell": [7, 5, 5], "kind": 7, "phase": 9}]))
         stray = [plain((5, 5, 5), t0=start()), {"cell": [7, 5, 5], "kind": 0, "faces": {"top": {"type": COIN, "variant": 0}}}]
-        self.assertIn('face "top" is not one of the six', self.errors(stray))
+        self.assertIn('face "top": not one of the six', self.errors(stray))
 
     def test_an_object_looks_into_an_empty_cell(self):
         blocks = [plain((5, 5, 5), t0=start(), t1={"type": COIN, "variant": 0}, t2={"type": KEY}, t3={"type": GEM, "variant": 0}),
@@ -1301,7 +1301,8 @@ class Validates(unittest.TestCase):
                   {"cell": [9, 9, 12], "kind": LASER_KIND, "far": [9, 12, 12]}]
         findings = validate(project(blocks, circuits={"7": "off"}), HIDES)
         errors = texts(findings, "error")
-        for text in ("a variant of 7", "a variant of -1", "a variant of gold", "a colour of 7", "a colour of none"):
+        for text in ("variant 7: outside its range", "variant -1: outside its range", "variant gold: outside its range",
+                     "colour 7: outside 0 to 3", "colour none: outside 0 to 3"):
             self.assertIn(text, errors)
         self.assertFalse(any(" 7 " in w or " -1 " in w for w in texts(findings, "warning")))
         self.assertEqual(counts(project(blocks), HIDES)["lasers"], 2)
@@ -1325,13 +1326,13 @@ class Validates(unittest.TestCase):
         blocks = [plain((5, 5, 5), t0=start(), t1={"type": TELEPORTER, "facing": 1, "variant": 0}, t2={"type": SWITCH, "variant": 1}),
                   {"cell": [9, 9, 9], "kind": LASER_KIND, "far": [9, 12, 9], "colour": 2}]
         warnings = self.warnings(blocks, circuits={"2": "off"})
-        self.assertIn("the green circuit starts off and has no switch to turn it on", warnings)
-        self.assertIn("the one yellow teleporter leads to itself", warnings)
-        self.assertIn("the blue switches have nothing to switch", warnings)
+        self.assertIn("green circuit: starts off, no switch", warnings)
+        self.assertIn("yellow teleporter: alone, leads to itself", warnings)
+        self.assertIn("blue switches: nothing to switch", warnings)
         with mock.patch("kula_kwl._names", return_value={"kinds": {}, "types": {}}):
             unnamed = self.warnings(blocks, circuits={"2": "off"})
-        for text in ("circuit 2 starts off and has no switch to turn it on", "the one teleporter of circuit 0 leads to itself",
-                     "the switches of circuit 1 have nothing to switch"):
+        for text in ("circuit 2: starts off, no switch", "teleporter of circuit 0: alone, leads to itself",
+                     "switches of circuit 1: nothing to switch"):
             self.assertIn(text, unnamed)
         for name in ("Switch ()", "Switch ( )"):
             with mock.patch("kula_kwl._names", return_value=self.switches_named(name)):
@@ -1366,9 +1367,9 @@ class Validates(unittest.TestCase):
         blocks = [plain((5, 5, 5), t0=start(), t1={"type": 8}, t2={"type": 46}, t3={"type": 43}, t4={"type": EXIT}),
                   plain((7, 5, 5), kind=1), plain((9, 5, 5), kind=2),
                   {"cell": [11, 5, 5], "kind": PLATFORM_KIND, "far": [11, 8, 5], "length": 2, "speed": 30}]
-        self.assertIn("with no key the game draws the bonus artwork, which has no picture for the clock, the fruit, the exit, "
-                      "the fire block, the ice block or the moving platform", self.warnings(blocks))
-        self.assertIn("with no key the game draws the bonus artwork, which has no picture for the fire",
+        self.assertIn("no key: the bonus artwork has no texture for the clock, the fruit, the exit, the fire block, the ice block "
+                      "or the moving platform", self.warnings(blocks))
+        self.assertIn("no key: the bonus artwork has no texture for the fire",
                       self.warnings([plain((5, 5, 5), t0=start(), t1={"type": 1})]))
         self.assertFalse(any("bonus artwork" in w for w in self.warnings(blocks, hidden=True)))
         self.assertFalse(any("bonus artwork" in w for w in self.warnings(blocks, simon=True)))
@@ -1441,7 +1442,7 @@ class TheCli(unittest.TestCase):
                 src, out = scratch / f"{name}.kula.json", scratch / f"{name}.kwl"
                 done = self.run_tool("--from-json", src, "--kwl", out)
                 self.assertEqual(done.returncode, 1, done.stderr)
-                self.assertEqual(done.stderr.splitlines(), [f"{src} has 2049 records, over the 123 the game has room for"])
+                self.assertEqual(done.stderr.splitlines(), [f"{src} has 2049 records: over the cap of 123"])
                 self.assertFalse(out.exists())
             (scratch / "other.json").write_text('{"format": "orbit"}')
             done = self.run_tool("--from-json", scratch / "other.json", "--kwl", scratch / "other.kwl")

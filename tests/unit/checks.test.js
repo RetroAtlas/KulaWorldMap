@@ -167,16 +167,12 @@ test("without the skins table the checks run every rule but the face count, and 
   const n = counts(project(blocks), undefined);
   assert.deepEqual([n.faces, n.blocks, n.cells, n.objects], [null, null, 2, 1]);
   const found = validate(project(blocks), undefined);
-  assert.deepEqual(texts(found, "error"), ["the game builds nothing past the edge", "no start"]);
-  assert.ok(
-    texts(found, "warning").includes(
-      "the face count could not be read, so the faces and the blocks are not counted",
-    ),
-  );
+  assert.deepEqual(texts(found, "error"), ["block past the edge", "no start"]);
+  assert.ok(texts(found, "warning").includes("face table missing: faces and blocks not counted"));
   const h10 = fromLevel(level("HIDDEN 10"));
   assert.deepEqual(texts(validate(h10, undefined), "error"), []);
   assert.ok(
-    !texts(validate(h10, HIDES, NAMES), "warning").some((w) => w.includes("could not be read")),
+    !texts(validate(h10, HIDES, NAMES), "warning").some((w) => w.includes("face table missing")),
   );
 });
 
@@ -187,9 +183,7 @@ test("a level needs one start, and says which of several the game takes", () => 
     plain([7, 5, 5], 0, { 2: start(1), 5: start(2) }),
   ];
   assert.deepEqual(errors(several), []);
-  assert.ok(
-    warnings(several).includes("3 starts; the game takes the one on face 5 of the block at 7,5,5"),
-  );
+  assert.ok(warnings(several).includes("3 starts: the game takes face 5 of 7,5,5"));
 });
 
 test("a device works on a plain block only", () => {
@@ -197,16 +191,12 @@ test("a device works on a plain block only", () => {
     plain([5, 5, 5], 0, { 0: start() }),
     plain([7, 5, 5], 2, { 0: { type: TELEPORTER, facing: 1, variant: 0 } }),
   ];
-  assert.ok(errors(blocks).includes("a device works on a plain block only"));
+  assert.ok(errors(blocks).includes("device: plain block only"));
   blocks[1].kind = 0;
   assert.deepEqual(errors(blocks), []);
   const hidden = [plain([5, 5, 5], 0, { 0: start() }), plain([7, 5, 5], 2, { 0: { type: 26 } })];
   assert.deepEqual(errors(hidden), []);
-  assert.ok(
-    warnings(hidden).includes(
-      "the game has not been seen to take a hidden exit on a block that is not plain",
-    ),
-  );
+  assert.ok(warnings(hidden).includes("hidden exit on a non-plain block: untested"));
   hidden[1].kind = 0;
   assert.ok(!warnings(hidden).some((w) => w.includes("hidden exit")));
 });
@@ -217,9 +207,7 @@ test("the game builds nothing past the edge", () => {
     [5, 33, 5],
   ])
     assert.ok(
-      errors([plain([5, 5, 5], 0, { 0: start() }), plain(cell)]).includes(
-        "the game builds nothing past the edge",
-      ),
+      errors([plain([5, 5, 5], 0, { 0: start() }), plain(cell)]).includes("block past the edge"),
     );
   assert.deepEqual(errors([plain([1, 32, 1], 0, { 0: start() })]), []);
 });
@@ -234,7 +222,7 @@ test("a platform runs over empty cells", () => {
     [10, 16, 17],
   ])
     assert.deepEqual(errors([...base, plain(cell)]), [
-      `the platform's run crosses the block at ${cell.join(",")}`,
+      `run: crosses the block at ${cell.join(",")}`,
     ]);
   assert.deepEqual(errors([...base, plain([10, 17, 17])]), []);
   const edge = { cell: [30, 10, 17], kind: KIND.PLATFORM, far: [31, 10, 17], length: 2, speed: 30 };
@@ -243,11 +231,9 @@ test("a platform runs over empty cells", () => {
     { ...edge, far: [32, 10, 17] },
     { ...edge, length: 3 },
   ])
-    assert.deepEqual(errors([base[0], over]), ["the platform's run reaches past the edge"]);
+    assert.deepEqual(errors([base[0], over]), ["run: past the edge"]);
   assert.ok(
-    errors([base[0], { ...edge, length: 30000 }]).includes(
-      "a platform 30000 blocks long, which the lattice cannot hold",
-    ),
+    errors([base[0], { ...edge, length: 30000 }]).includes("length 30000: past the lattice"),
   );
 });
 
@@ -256,7 +242,7 @@ test("every length the writer refuses is an error of its own text, whatever else
     plain([5, 5, 5], 0, { 0: start() }),
     { cell: [10, upper - 1, 17], kind: KIND.PLATFORM, far: [10, far, 17], length, speed: 30 },
   ];
-  const held = (upper, length) => `a platform ${length} blocks long, which the lattice cannot hold`;
+  const held = (upper, length) => `length ${length}: past the lattice`;
   for (const upper of [30, 31, 32, 33])
     for (const length of [1, 2, 3, 4, 5]) {
       const blocks = rail(upper, length);
@@ -266,13 +252,13 @@ test("every length the writer refuses is an error of its own text, whatever else
       else assert.doesNotThrow(() => writeKwl(project(blocks)), `${upper} ${length}`);
     }
   // a run that ends on cell 33 is past the edge and the writer still has bytes for it
-  assert.deepEqual(errors(rail(31, 3)), ["the platform's run reaches past the edge"]);
+  assert.deepEqual(errors(rail(31, 3)), ["run: past the edge"]);
   assert.deepEqual(errors(rail(31, 4)), [held(31, 4)]);
   // a far end on the lattice's last cell says so, and hides nothing of the length
-  assert.deepEqual(errors(rail(33, 1)), ["the far end is past the edge"]);
+  assert.deepEqual(errors(rail(33, 1)), ["far end 10,33,17: past the edge"]);
   assert.deepEqual(errors(rail(33, 2)), [held(33, 2)]);
   // a far end off the lattice is the far end's error, not the length's error
-  assert.deepEqual(errors(rail(31, 2, 40)), ["the far end is past the edge"]);
+  assert.deepEqual(errors(rail(31, 2, 40)), ["far end 10,40,17: past the edge"]);
 });
 
 test("a beam ends on nothing, a plain block or another laser, and crosses nothing", () => {
@@ -286,20 +272,16 @@ test("a beam ends on nothing, a plain block or another laser, and crosses nothin
   );
   assert.ok(
     errors([...base, plain([14, 10, 17], 2)]).includes(
-      "a beam ends on an empty cell, a plain block or another laser's block",
+      "beam end at 14,10,17: not a plain block or a laser",
     ),
   );
-  assert.ok(
-    errors([...base, plain([12, 10, 17])]).includes("the beam crosses the block at 12,10,17"),
-  );
+  assert.ok(errors([...base, plain([12, 10, 17])]).includes("beam: crosses the block at 12,10,17"));
   const carrying = [...base, plain([14, 10, 17], 0, { 0: coin })];
   assert.deepEqual(errors(carrying), []);
-  assert.ok(
-    warnings(carrying).some((w) => w.startsWith("the beam's end makes a bare plain block")),
-  );
+  assert.ok(warnings(carrying).includes("beam end at 14,10,17: the block there paints plain"));
   assert.ok(
     errors([...base, { ...beam, cell: [20, 20, 17], far: [24, 20, 17], colour: 7 }]).includes(
-      "a colour of 7",
+      "colour 7: outside 0 to 3",
     ),
   );
 });
@@ -314,11 +296,11 @@ test("the cells the loaders fill are checked against each other", () => {
     [],
   );
   const into = { cell: [8, 13, 17], kind: KIND.LASER, far: [10, 13, 17], colour: 1 };
-  assert.deepEqual(errors([base, beam, into]), ["the beam ends in the beam from 10,10,17"]);
+  assert.deepEqual(errors([base, beam, into]), ["beam end: in the beam from 10,10,17"]);
   const rail = { cell: [8, 13, 17], kind: KIND.PLATFORM, far: [12, 13, 17], length: 2, speed: 30 };
   assert.deepEqual(errors([base, beam, rail]), [
-    "the platform's run crosses the beam from 10,10,17",
-    "the beam crosses the platform's run from 8,13,17",
+    "run: crosses the beam from 10,10,17",
+    "beam: crosses the run from 8,13,17",
   ]);
   const overEnd = {
     cell: [8, 16, 17],
@@ -328,7 +310,7 @@ test("the cells the loaders fill are checked against each other", () => {
     speed: 30,
   };
   assert.deepEqual(errors([base, beam, overEnd]), [
-    "the platform's run crosses the end of the beam from 10,10,17",
+    "run: crosses the end of the beam from 10,10,17",
   ]);
   const clear = { cell: [8, 18, 17], kind: KIND.PLATFORM, far: [12, 18, 17], length: 2, speed: 30 };
   assert.deepEqual(errors([base, beam, clear]), []);
@@ -336,10 +318,10 @@ test("the cells the loaders fill are checked against each other", () => {
 
 test("a span lies along one axis inside the edge", () => {
   for (const [far, text] of [
-    [[10, 10, 17], "the far end is the block's own cell"],
-    [[12, 12, 17], "the far end is not along one axis from the block"],
-    [[10, 33, 17], "the far end is past the edge"],
-    [[10, 32767, 17], "the far end is past the edge"],
+    [[10, 10, 17], "far end: the block's own cell"],
+    [[12, 12, 17], "far end 12,12,17: not along one axis"],
+    [[10, 33, 17], "far end 10,33,17: past the edge"],
+    [[10, 32767, 17], "far end 10,32767,17: past the edge"],
   ]) {
     const beam = { cell: [10, 10, 17], kind: KIND.LASER, far, colour: 0 };
     assert.ok(errors([plain([5, 5, 5], 0, { 0: start() }), beam]).includes(text), text);
@@ -352,7 +334,7 @@ test("a span lies along one axis inside the edge", () => {
     colour: 0,
   }));
   const found = errors([plain([5, 5, 5], 0, { 0: start() }), ...far]);
-  assert.equal(found.filter((e) => e === "the far end is past the edge").length, 1000);
+  assert.equal(found.filter((e) => e.endsWith(",32767: past the edge")).length, 1000);
   const long = {
     cell: [10, 10, 17],
     kind: KIND.PLATFORM,
@@ -361,15 +343,13 @@ test("a span lies along one axis inside the edge", () => {
     speed: 30,
   };
   assert.ok(
-    errors([plain([5, 5, 5], 0, { 0: start() }), long]).includes(
-      "a platform 32000 blocks long, which the lattice cannot hold",
-    ),
+    errors([plain([5, 5, 5], 0, { 0: start() }), long]).includes("length 32000: past the lattice"),
   );
   assert.ok(
     errors([
       plain([5, 5, 5], 0, { 0: start() }),
       { cell: [10, 10, 17], kind: KIND.LASER, colour: 0 },
-    ]).includes("a span needs a far end"),
+    ]).includes("span: no far end"),
   );
 });
 
@@ -396,7 +376,7 @@ test("the record cap", () => {
   blocks[0].faces = { 0: start() };
   assert.deepEqual(errors(blocks), []);
   blocks.push(plain([1, 10, 5], 0, { 0: coin }));
-  assert.ok(errors(blocks).includes("124 records, over the 123 the game has room for"));
+  assert.ok(errors(blocks).includes("124 records: over the cap of 123"));
 });
 
 test("the block cap", () => {
@@ -408,7 +388,7 @@ test("the block cap", () => {
   assert.deepEqual(errors(blocks), []);
   assert.deepEqual(warnings(blocks), []);
   blocks.push(plain([17, 1, 17]));
-  assert.ok(errors(blocks).includes("257 blocks, over the 256 the game has room for"));
+  assert.ok(errors(blocks).includes("257 blocks: over the cap of 256"));
 });
 
 test("a bad colour or variant is a finding and leaves the circuits pass alone", () => {
@@ -425,11 +405,11 @@ test("a bad colour or variant is a finding and leaves the circuits pass alone", 
   const findings = validate(project(blocks, { circuits: { 7: "off" } }), HIDES, NAMES);
   const found = texts(findings, "error");
   for (const text of [
-    "a variant of 7",
-    "a variant of -1",
-    "a variant of gold",
-    "a colour of 7",
-    "a colour of none",
+    "variant 7: outside its range",
+    "variant -1: outside its range",
+    "variant gold: outside its range",
+    "colour 7: outside 0 to 3",
+    "colour none: outside 0 to 3",
   ])
     assert.ok(found.includes(text), text);
   assert.ok(!texts(findings, "warning").some((w) => w.includes(" 7 ") || w.includes(" -1 ")));
@@ -460,18 +440,18 @@ test("a document that bypassed the reader is checked alike on both sides", () =>
     NAMES,
   ).map(describe);
   assert.deepEqual(findings, [
-    "error: the world '' is not one of the disc's ten worlds",
-    "error: the target '{\"pack\":1}' is not a slot of a world pack, a finals pack or the Simon rooms' pack",
-    "error: a time of true seconds, outside the file's range",
-    "error at 5,5,5 face 0: a facing of 1 to 4 is needed",
-    "error at 5,5,5 face 1: a variant of true",
-    "error at 6,5,5: kind true is not a kind of block",
-    "error at 7,5,5: a phase of true",
-    "error at 8,5,5: a colour of false",
-    "error at 8,5,5: the far end is past the edge",
-    "error at 10,5,5: a length of false, outside the file's range",
+    "error: world '': not one of the disc's ten",
+    "error: target '{\"pack\":1}': no such slot",
+    "error: time true s: outside the file's range",
+    "error at 5,5,5 face 0: facing: 1 to 4 needed",
+    "error at 5,5,5 face 1: variant true: outside its range",
+    "error at 6,5,5: kind true: no such kind",
+    "error at 7,5,5: phase true: outside 0 to 5",
+    "error at 8,5,5: colour false: outside 0 to 3",
+    "error at 8,5,5: far end 8,5,50: past the edge",
+    "error at 10,5,5: length false: outside the file's range",
     "warning at 5,5,5 face 1: looks into the block at 6,5,5",
-    "warning: with no key the game draws the bonus artwork, which has no picture for the moving platform",
+    "warning: no key: the bonus artwork has no texture for the moving platform",
   ]);
 
   // JSON spelled otherwise than the readers spell it: whole numbers with a point, null where a
@@ -492,16 +472,16 @@ test("a document that bypassed the reader is checked alike on both sides", () =>
   ]
 }`);
   assert.deepEqual(validate(spelled, HIDES, NAMES).map(describe), [
-    "error: a time of false seconds, outside the file's range",
-    "error at 6,5,5: kind null is not a kind of block",
-    "error at 8,5,5: a span needs a far end",
-    "error at 8,13,17: the beam crosses the platform's run from 10,10,17",
-    "error at 9,5,5: the far end is not along one axis from the block",
-    "error at 10,5,5: a colour of none",
-    "error at 10,10,17: a length of 2, outside the file's range",
+    "error: time false s: outside the file's range",
+    "error at 6,5,5: kind null: no such kind",
+    "error at 8,5,5: span: no far end",
+    "error at 8,13,17: beam: crosses the run from 10,10,17",
+    "error at 9,5,5: far end [object Object]: not along one axis",
+    "error at 10,5,5: colour none: outside 0 to 3",
+    "error at 10,10,17: length 2: outside the file's range",
     "warning at 5,5,5 face 1: looks into the block at 6,5,5",
-    "warning: 2 starts; the game takes the one on face 0 of the block at 12,5,5",
-    "warning: the yellow circuit starts off and has no switch to turn it on",
+    "warning: 2 starts: the game takes face 0 of 12,5,5",
+    "warning: yellow circuit: starts off, no switch",
   ]);
   assert.deepEqual(counts(spelled, HIDES), {
     records: 10,
@@ -528,11 +508,9 @@ test("the target's slot is a run of ASCII digits, and the world and the target a
   const into = (text) => errors([plain([5, 5, 5], 0, { 0: start() })], { into: text });
   assert.deepEqual(into("/HIRO/HIRO.PAK#3"), []);
   for (const text of ["/HIRO/HIRO.PAK#٣", "/HIRO/HIRO.PAK#²", "/HIRO/HIRO.PAK#3 "])
-    assert.deepEqual(into(text), [
-      `the target '${text}' is not a slot of a world pack, a finals pack or the Simon rooms' pack`,
-    ]);
+    assert.deepEqual(into(text), [`target '${text}': no such slot`]);
   assert.deepEqual(errors([plain([5, 5, 5], 0, { 0: start() })], { world: "it's" }), [
-    "the world 'it's' is not one of the disc's ten worlds",
+    "world 'it's': not one of the disc's ten",
   ]);
 });
 
@@ -546,9 +524,7 @@ test("the face cap, with the level that sits under it", () => {
   const over = setBlock(p, free, { kind: 0 });
   assert.equal(counts(over, HIDES).faces, 772);
   assert.ok(
-    texts(validate(over, HIDES, NAMES), "error").includes(
-      "772 faces, over the 768 the game has room for",
-    ),
+    texts(validate(over, HIDES, NAMES), "error").includes("772 faces: over the cap of 768"),
   );
 });
 
@@ -561,9 +537,7 @@ test("the object cap counts what the loader numbers", () => {
   assert.equal(counts(project(blocks), HIDES).objects, 255);
   assert.deepEqual(errors(blocks), []);
   blocks.push(plain([22, 25, 5], 0, { 0: coin }));
-  assert.ok(
-    errors(blocks).includes("256 objects the loader numbers, over the 255 the game has room for"),
-  );
+  assert.ok(errors(blocks).includes("256 objects the loader numbers: over the cap of 255"));
 });
 
 test("the platform, vanishing, crumbling and captivator caps", () => {
@@ -577,11 +551,7 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
   });
   const rails = Array.from({ length: 8 }, (_, i) => rail(i));
   assert.deepEqual(errors(withStart(rails)), []);
-  assert.ok(
-    errors(withStart([...rails, rail(8)])).includes(
-      "9 platforms, over the 8 the game has room for",
-    ),
-  );
+  assert.ok(errors(withStart([...rails, rail(8)])).includes("9 platforms: over the cap of 8"));
 
   const vanishing = Array.from({ length: 64 }, (_, i) => ({
     cell: [1 + (i % 32), 20 + 2 * Math.floor(i / 32), 5],
@@ -594,7 +564,7 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
   assert.deepEqual(warnings(withStart(vanishing.slice(0, 15))), []);
   assert.ok(
     errors(withStart([...vanishing, { cell: [1, 24, 5], kind: 7, phase: 0 }])).includes(
-      "65 vanishing blocks, over the 64 the game has room for",
+      "65 vanishing blocks: over the cap of 64",
     ),
   );
 
@@ -606,7 +576,7 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
   assert.deepEqual(warnings(withStart(crumbling.slice(0, 34))), []);
   assert.ok(
     errors(withStart([...crumbling, { cell: [1, 24, 5], kind: 6 }])).includes(
-      "65 crumbling blocks, over the 64 the game has room for",
+      "65 crumbling blocks: over the cap of 64",
     ),
   );
 
@@ -618,9 +588,7 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
   assert.deepEqual(errors(withStart(captive)), []);
   assert.deepEqual(warnings(withStart(captive)), []);
   captive[5].faces[2] = wandering;
-  assert.ok(
-    errors(withStart(captive)).includes("33 captivators, over the 32 the game has room for"),
-  );
+  assert.ok(errors(withStart(captive)).includes("33 captivators: over the cap of 32"));
 });
 
 test("the light and the moving spikes caps", () => {
@@ -635,9 +603,7 @@ test("the light and the moving spikes caps", () => {
   assert.equal(counts(project(blocks), HIDES).lights, 32);
   assert.deepEqual(errors(blocks), []);
   blocks[6].faces[2] = { type: SWITCH, variant: 2 };
-  assert.ok(
-    errors(blocks).includes("33 devices that cast a light, over the 32 the game has room for"),
-  );
+  assert.ok(errors(blocks).includes("33 devices that cast a light: over the cap of 32"));
 
   const spiked = Object.fromEntries([0, 1, 2, 3, 4, 5].map((j) => [j, { type: 11, variant: 0 }]));
   const spikes = [plain([5, 5, 5], 0, { 0: start() })];
@@ -654,7 +620,7 @@ test("the light and the moving spikes caps", () => {
   assert.deepEqual(errors(spikes), []);
   assert.deepEqual(warnings(spikes.slice(0, 5)), []);
   spikes[11].faces[4] = { type: 11, variant: 0 };
-  assert.ok(errors(spikes).includes("65 moving spikes, over the 64 the game has room for"));
+  assert.ok(errors(spikes).includes("65 moving spikes: over the cap of 64"));
 });
 
 test("a platform longer than the ride's grid", () => {
@@ -663,11 +629,9 @@ test("a platform longer than the ride's grid", () => {
     { cell: [10, 10, 17], kind: KIND.PLATFORM, far: [10, 14, 17], length, speed: 30 },
   ];
   assert.deepEqual(errors(rail(7)), []);
-  assert.ok(warnings(rail(7)).includes("a platform 7 blocks long"));
-  assert.deepEqual(errors(rail(8)), [
-    "a platform 8 blocks long, more than the 7 the game's grid holds",
-  ]);
-  assert.ok(!warnings(rail(8)).some((w) => w.includes("blocks long")));
+  assert.ok(warnings(rail(7)).includes("length 7: the disc's are 2 and 3"));
+  assert.deepEqual(errors(rail(8)), ["length 8: over the grid's 7"]);
+  assert.ok(!warnings(rail(8)).some((w) => w.startsWith("length 8:")));
 });
 
 test("a platform shorter than one block", () => {
@@ -675,7 +639,7 @@ test("a platform shorter than one block", () => {
     plain([5, 5, 5], 0, { 0: start() }),
     { cell: [10, 10, 17], kind: KIND.PLATFORM, far: [10, 14, 17], length, speed: 30 },
   ];
-  assert.deepEqual(errors(rail(0)), ["a platform 0 blocks long, which is less than one block"]);
-  assert.deepEqual(errors(rail(-3)), ["a platform -3 blocks long, which is less than one block"]);
-  assert.ok(!warnings(rail(0)).some((w) => w.includes("blocks long")));
+  assert.deepEqual(errors(rail(0)), ["length 0: below 1"]);
+  assert.deepEqual(errors(rail(-3)), ["length -3: below 1"]);
+  assert.ok(!warnings(rail(0)).some((w) => w.startsWith("length 0:")));
 });

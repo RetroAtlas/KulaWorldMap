@@ -1280,7 +1280,7 @@ def _slot_of(pack, index):
 
 
 def _over_cap(what, n):
-    return f"{n} {COUNTER_WORDS[what]}, over the {CAPS[what]} the game has room for"
+    return f"{n} {COUNTER_WORDS[what]}: over the cap of {CAPS[what]}"
 
 
 def record_overflow(project):
@@ -1304,20 +1304,20 @@ def validate(project, hides):
 
     world = project.get("world") if isinstance(project.get("world"), str) else ""
     if world not in WORLDS:
-        err(f"the world '{world}' is not one of the disc's ten worlds")
+        err(f"world '{world}': not one of the disc's ten")
     into = project.get("into")
     if into is not None:
         text = into if isinstance(into, str) else _show(into)
         pack, _, index = text.rpartition("#")
         if not (re.fullmatch(r"[0-9]+", index) and _slot_of(pack, int(index))):
-            err(f"the target '{text}' is not a slot of a world pack, a finals pack or the Simon rooms' pack")
+            err(f"target '{text}': no such slot")
     time = _or(project.get("time"), DEFAULT_TIME)
     if not _is_int(time) or time not in WORD:
-        err(f"a time of {_js_text(time)} seconds, outside the file's range")
+        err(f"time {_js_text(time)} s: outside the file's range")
     elif time < 1:
-        err(f"a time of {time} seconds")
+        err(f"time {time} s: below 1")
     elif time > TIME_MAX:
-        warn(f"a time of {time} seconds, above the {TIME_MAX} the game's levels keep to")
+        warn(f"time {time} s: above the disc's {TIME_MAX}")
 
     blocks = sorted(project["blocks"], key=lambda b: tuple(b["cell"]))
     at = {}
@@ -1327,7 +1327,7 @@ def validate(project, hides):
             err("two blocks on one cell", cell)
         at[cell] = b
         if any(c not in INNER for c in cell):
-            err("the game builds nothing past the edge", cell)
+            err("block past the edge", cell)
     kinds = _kinds_at(blocks)
     loader = _filled(blocks)
     beams = set(loader[0])
@@ -1335,64 +1335,65 @@ def validate(project, hides):
     for b in blocks:
         cell, kind = tuple(b["cell"]), b["kind"]
         if not _is_int(kind) or kind not in range(UNPLACED_KIND):
-            err(f"kind {_js_text(kind)} is not a kind of block", cell)
+            err(f"kind {_js_text(kind)}: no such kind", cell)
             continue
         faces = _faces_of(b)
         if kind >= BLOCK_KINDS and _entries_of(b.get("faces")):
-            err("nothing stands on a platform's, laser's, crumbling or vanishing block's faces", cell)
+            name = _names()["kinds"].get(str(kind), {}).get("name")
+            err(f"faces: none allowed on {f'a {_lower(name)}' if name else f'kind {kind}'}", cell)
         twice = _named_twice(b)
         if twice is not None:
-            err(f"face {twice} is named twice", cell)
+            err(f"face {twice}: named twice", cell)
         if kind == VANISHING_KIND:
             phase = _or(b.get("phase"), 0)
             if phase in DIM_AT_ONCE:
-                warn(f"a phase of {phase} dims at once", cell)
+                warn(f"phase {phase}: dims at once", cell)
             elif not _is_int(phase) or phase not in PHASES:
-                err(f"a phase of {_js_text(phase)}", cell)
+                err(f"phase {_js_text(phase)}: outside 0 to 5", cell)
         colour = b.get("colour")
         if kind == LASER_KIND and not (_is_int(colour) and colour in range(COLOURS)):
-            err(f"a colour of {'none' if colour is None else _js_text(colour)}", cell)
+            err(f"colour {'none' if colour is None else _js_text(colour)}: outside 0 to 3", cell)
         if kind in SPAN_KINDS:
             _validate_span(b, at, loader, err, warn)
         for j, o in sorted(faces.items()):
             t = o["type"]
             if j not in range(FACES):
-                err(f"face {j} is not one of the six", cell)
+                err(f"face {j}: not one of the six", cell)
                 continue
             if t not in PLAYED:
-                err(f"type {t} is nothing the game plays", cell, j)
+                err(f"type {t}: unknown to the game", cell, j)
             if t in PLAIN_ONLY and kind != 0:
-                err("a device works on a plain block only", cell, j)
+                err("device: plain block only", cell, j)
             if t == HIDDEN_EXIT and kind != 0:
-                warn("the game has not been seen to take a hidden exit on a block that is not plain", cell, j)
+                warn("hidden exit on a non-plain block: untested", cell, j)
             if t in FACING_NEEDED and not _facing_ok(o.get("facing")):
-                err("a facing of 1 to 4 is needed", cell, j)
+                err("facing: 1 to 4 needed", cell, j)
             elif t in FACING_TYPES and "facing" in o and not _facing_ok(o["facing"]):
-                err("a facing of 1 to 4, or none", cell, j)
+                err(f"facing {_js_text(o['facing'])}: 1 to 4 or none", cell, j)
             if t in VARIANT_TYPES:
                 v = _or(o.get("variant"), 0)
                 if not _is_int(v) or v not in VARIANTS[t]:
-                    err(f"a variant of {_js_text(v)}", cell, j)
+                    err(f"variant {_js_text(v)}: outside its range", cell, j)
             if t in (START, START_ON_CLOCK):
                 starts.append((cell, j))
             if t == HEDGEHOG:
-                warn("the hedgehog is untested in play", cell, j)
+                warn(f"{_type_word(t)}: untested in play", cell, j)
             _validate_outlook(cell, j, kinds, beams, warn)
         for key in _stray_face_keys(b):
-            err(f"face {json.dumps(key, ensure_ascii=False)} is not one of the six", cell)
+            err(f"face {json.dumps(key, ensure_ascii=False)}: not one of the six", cell)
     if not starts:
         err("no start")
     elif len(starts) > 1:
         cell, j = starts[-1]
-        warn(f"{len(starts)} starts; the game takes the one on face {j} of the block at {cell_text(cell)}")
+        warn(f"{len(starts)} starts: the game takes face {j} of {cell_text(cell)}")
 
     _validate_circuits(project, warn)
     n = counts(project, hides)
     undrawn = [] if n["keys"] or _truthy(project.get("hidden")) or _truthy(project.get("simon")) else _undrawn_in_bonus(blocks)
     if undrawn:
-        warn(f"with no key the game draws the bonus artwork, which has no picture for {_listed(undrawn)}")
+        warn(f"no key: the bonus artwork has no texture for {_listed(undrawn)}")
     if not hides:
-        warn("the face count could not be read, so the faces and the blocks are not counted")
+        warn("face table missing: faces and blocks not counted")
     if n["keys"] and not any(o["type"] in (EXIT, HIDDEN_EXIT) for b in blocks for o in _faces_of(b).values()):
         warn("a key and no exit")
     for what, cap in CAPS.items():
@@ -1474,57 +1475,57 @@ def _filled(blocks):
 def _validate_span(b, at, loader, err, warn):
     cell = tuple(b["cell"])
     if not _truthy(b.get("far")):
-        err("a span needs a far end", cell)
+        err("span: no far end", cell)
         return
     if not _is_far(b["far"]):
-        err("the far end is not along one axis from the block", cell)
+        err(f"far end {_js_text(b['far'])}: not along one axis", cell)
         return
     far = tuple(b["far"])
     if far == cell:
-        err("the far end is the block's own cell", cell)
+        err("far end: the block's own cell", cell)
         return
     if direction(cell, far) is None:
-        err("the far end is not along one axis from the block", cell)
+        err(f"far end {cell_text(far)}: not along one axis", cell)
         return
     if any(c not in LATTICE for c in far):
-        err("the far end is past the edge", cell)
+        err(f"far end {cell_text(far)}: past the edge", cell)
         return
     length = _or(b.get("length"), DEFAULT_LENGTH) if b["kind"] == PLATFORM_KIND else 1
     if b["kind"] == PLATFORM_KIND:
         if not _is_int(length) or length not in WORD:
-            err(f"a length of {_js_text(length)}, outside the file's range", cell)
+            err(f"length {_js_text(length)}: outside the file's range", cell)
             return
         if length < 1:
-            err(f"a platform {length} blocks long, which is less than one block", cell)
+            err(f"length {length}: below 1", cell)
             return
         if length > room_for(cell, far):
-            err(f"a platform {length} blocks long, which the lattice cannot hold", cell)
+            err(f"length {length}: past the lattice", cell)
             return
     if any(c not in INNER for c in far):
-        err("the far end is past the edge", cell)
+        err(f"far end {cell_text(far)}: past the edge", cell)
         return
     beams, ends, runs = loader
     if b["kind"] == PLATFORM_KIND:
         speed = _or(b.get("speed"), DEFAULT_SPEED)
         axis = span_axis(cell, far)
         if max(cell[axis], far[axis]) + length - 1 not in INNER:
-            err("the platform's run reaches past the edge", cell)
+            err("run: past the edge", cell)
             return
         if length > LENGTH_CAP:
-            err(f"a platform {length} blocks long, more than the {LENGTH_CAP} the game's grid holds", cell)
+            err(f"length {length}: over the grid's {LENGTH_CAP}", cell)
         elif length not in LENGTHS:
-            warn(f"a platform {length} blocks long", cell)
+            warn(f"length {length}: the disc's are {' and '.join(str(n) for n in LENGTHS)}", cell)
         if not _is_int(speed) or speed not in WORD:
-            err(f"a speed of {_js_text(speed)}, outside the file's range", cell)
+            err(f"speed {_js_text(speed)}: outside the file's range", cell)
         elif speed != DEFAULT_SPEED:
-            warn(f"a platform running at {speed}", cell)
+            warn(f"speed {speed}: the disc's is {DEFAULT_SPEED}", cell)
         for c in _run(b):
             if c != cell and c in at:
-                err(f"the platform's run crosses the block at {cell_text(c)}", cell)
+                err(f"run: crosses the block at {cell_text(c)}", cell)
             for laser in beams.get(c, ()):
-                err(f"the platform's run crosses the beam from {cell_text(laser['cell'])}", cell)
+                err(f"run: crosses the beam from {cell_text(laser['cell'])}", cell)
             if c in ends:
-                err(f"the platform's run crosses the end of the beam from {cell_text(ends[c]['cell'])}", cell)
+                err(f"run: crosses the end of the beam from {cell_text(ends[c]['cell'])}", cell)
         return
     for c in _run(b):
         other = at.get(c)
@@ -1532,17 +1533,16 @@ def _validate_span(b, at, loader, err, warn):
             continue
         if c == far:
             if other is not None and other["kind"] == 0 and _faces_of(other):
-                warn("the beam's end makes a bare plain block of the block there; what stands on it "
-                     "still works but its faces paint plain", cell)
+                warn(f"beam end at {cell_text(c)}: the block there paints plain", cell)
             elif other is not None and other["kind"] not in (0, LASER_KIND):
-                err("a beam ends on an empty cell, a plain block or another laser's block", cell)
+                err(f"beam end at {cell_text(c)}: not a plain block or a laser", cell)
             for laser in beams.get(c, ()):
-                err(f"the beam ends in the beam from {cell_text(laser['cell'])}", cell)
+                err(f"beam end: in the beam from {cell_text(laser['cell'])}", cell)
             continue
         if other is not None:
-            err(f"the beam crosses the block at {cell_text(c)}", cell)
+            err(f"beam: crosses the block at {cell_text(c)}", cell)
         if c in runs:
-            err(f"the beam crosses the platform's run from {cell_text(runs[c]['cell'])}", cell)
+            err(f"beam: crosses the run from {cell_text(runs[c]['cell'])}", cell)
 
 
 def _validate_outlook(cell, j, kinds, beams, warn):
@@ -1574,8 +1574,14 @@ def _listed(items):
     return f"{', '.join(items[:-1])} or {items[-1]}" if len(items) > 1 else items[0]
 
 
+def _type_word(t):
+    """A type as a finding names it, with the article: by its name, else by its number."""
+    name = _names()["types"].get(str(t), {}).get("name")
+    return f"the {_lower(name)}" if name else f"type {t}"
+
+
 def _undrawn_in_bonus(blocks):
-    """The things a keyless level places that the bonus artwork has no picture for, by name."""
+    """The things a keyless level places that the bonus artwork has no texture for, by name."""
     names = []
 
     def add(name):
@@ -1589,8 +1595,7 @@ def _undrawn_in_bonus(blocks):
             add(f"the {_lower(name)}" if name else f"kind {b['kind']}")
         for o in _faces_of(b).values():
             if o["type"] in BONUS_UNDRAWN_TYPES:
-                name = ann["types"].get(str(o["type"]), {}).get("name")
-                add(f"the {_lower(name)}" if name else f"type {o['type']}")
+                add(_type_word(o["type"]))
     return names
 
 
@@ -1630,11 +1635,11 @@ def _validate_circuits(project, warn):
     for c, m in enumerate(circuit_members(project)):
         word = _circuit_word(c)
         if _property(circuits, str(c)) == "off" and not m["switches"] and (m["lasers"] or m["teleporters"]):
-            warn(f"{f'the {word} circuit' if word else f'circuit {c}'} starts off and has no switch to turn it on")
+            warn(f"{f'{word} circuit' if word else f'circuit {c}'}: starts off, no switch")
         if m["teleporters"] == 1:
-            warn(f"the one {word} teleporter leads to itself" if word else f"the one teleporter of circuit {c} leads to itself")
+            warn(f"{f'{word} teleporter' if word else f'teleporter of circuit {c}'}: alone, leads to itself")
         if m["switches"] and not m["teleporters"] and not m["lasers"]:
-            warn(f"the {word} switches have nothing to switch" if word else f"the switches of circuit {c} have nothing to switch")
+            warn(f"{f'{word} switches' if word else f'switches of circuit {c}'}: nothing to switch")
 
 
 # --- what holds the writer to the data ----------------------------------------

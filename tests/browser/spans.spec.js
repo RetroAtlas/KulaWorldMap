@@ -223,7 +223,7 @@ test("a run of one cell, and a run across a block, are refused before anything i
     blocked: true,
   });
   await click(page, await top(page, [18, 19, 17]));
-  expect(await toasts(page)).toContain("The platform's run crosses the block at 18,19,17.");
+  expect(await toasts(page)).toContain("Run: crosses the block at 18,19,17.");
   expect(await spans(page)).toEqual([]);
   expect(await preview(page)).not.toBe(null);
   expect(errors).toEqual([]);

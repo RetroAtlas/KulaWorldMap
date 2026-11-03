@@ -218,7 +218,7 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   );
   // a speed is any word the file holds, which the checks warn of away from the disc's speeds, and
   // an empty field is put back
-  const slow = page.locator("#chipNote .findings li", { hasText: "a platform running at 0" });
+  const slow = page.locator("#chipNote .findings li", { hasText: "speed 0: the disc's is 30" });
   await field(page, "speed").fill("0");
   await field(page, "speed").press("Enter");
   expect(blockAt(await doc(page), [18, 17, 17]).speed).toBe(0);
@@ -257,9 +257,9 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   // a length below one, or one the lattice or the game's grid cannot hold, is refused, said,
   // and the field put back
   for (const [bad, why] of [
-    ["0", "A platform 0 blocks long, which is less than one block."],
-    ["32767", "A platform 32767 blocks long, which the lattice cannot hold."],
-    ["8", "A platform 8 blocks long, more than the 7 the game's grid holds."],
+    ["0", "Length 0: below 1."],
+    ["32767", "Length 32767: past the lattice."],
+    ["8", "Length 8: over the grid's 7."],
   ]) {
     await field(page, "length").fill(bad);
     await field(page, "length").press("Enter");
@@ -270,7 +270,7 @@ test("a run's own block types a platform's length and speed or picks a laser's c
   }
   await page.clock.runFor(3000 + 150);
   // a speed past the file's word is refused the same way
-  const fast = "A speed of 32768, outside the file's range.";
+  const fast = "Speed 32768: outside the file's range.";
   await field(page, "speed").fill("32768");
   await field(page, "speed").press("Enter");
   await expect(page.locator("#toastStack .toast").first()).toHaveText(fast);

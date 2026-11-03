@@ -177,8 +177,7 @@ test("opening a file makes a saved draft out of what it holds, or refuses it wit
     cell: [1 + (i % 32), 1 + (Math.floor(i / 32) % 32), 1 + Math.floor(i / 1024)],
     kind: 6,
   }));
-  const crowded =
-    "That file cannot be read as a level: 2049 records, over the 123 the game has room for.";
+  const crowded = "That file cannot be read as a level: 2049 records: over the cap of 123.";
   await input.setInputFiles(
     file("crowd.kula.json", JSON.stringify({ ...project, hidden: false, blocks: crowd })),
   );

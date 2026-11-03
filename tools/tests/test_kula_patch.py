@@ -782,7 +782,7 @@ class TheTool(unittest.TestCase):
                                            "--out", scratch / "simon", "--disc", scratch / "image.bin"],
                                           capture_output=True, text=True)
                     self.assertNotEqual(done.returncode, 0)
-                    self.assertIn(f"error: the target {into!r} is not a slot of a world pack, a finals pack or the Simon rooms' pack",
+                    self.assertIn(f"error: target {into!r}: no such slot",
                                   done.stderr)
             # a slot is a run of ASCII digits, so a digit of another script is refused at the gate
             for into in ("/HIRO/HIRO.PAK#\u00b2", "/HIRO/HIRO.PAK#\u0663", "/HIRO/HIRO.PAK#"):
@@ -804,7 +804,7 @@ class TheTool(unittest.TestCase):
                                    "--out", scratch / "loop", "--disc", scratch / "image.bin"],
                                   capture_output=True, text=True)
             self.assertNotEqual(done.returncode, 0)
-            self.assertNotIn("is not a slot of", done.stderr)
+            self.assertNotIn("no such slot", done.stderr)
             self.assertEqual(done.stderr.splitlines()[-1], "no such pack on the disc: /HIRO/COPYCAT.PAK")
             self.assertEqual(sorted(p.name for p in scratch.iterdir()), ["image.bin", "loop.kula.json"])
 

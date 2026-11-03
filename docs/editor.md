@@ -215,50 +215,52 @@ The game walks the lattice by value and the records by the count, so the lattice
 
 `validate(project, hides)` returns findings, each a level, a text and where it is, a cell and perhaps a face; errors are what the game would mishandle, warnings what an author should know. `counts` gives the figures the caps are read against and `plays_as` the line the editor shows.
 
-Both take `skins.hides` of `public/objects.json` for the face count, and without it, where that file has not loaded, run every other rule, leave the faces and the blocks uncounted, null, and say so in a warning, so a level is never checked less for a file that did not arrive. The two sides give one reading of every project a reader gives them; a document handed to the checks without a reader, which no path of the page or the tool takes, may read apart where a value has a shape no reader passes on.
+Both take `skins.hides` of `public/objects.json` for the face count, and without it, where that file has not loaded, run every other rule, leave the faces and the blocks uncounted, null, and say so in a warning, "face table missing: faces and blocks not counted", so a level is never checked less for a file that did not arrive. The two sides give one reading of every project a reader gives them; a document handed to the checks without a reader, which no path of the page or the tool takes, may read apart where a value has a shape no reader passes on.
+
+Each bullet below ends with the sentence its finding says, a value the finding prints standing in braces, a cell printed as `x,y,z`, and `describe` puts the level and the place before it, `error at 5,5,5 face 1: `.
 
 **Errors.**
 
-- A cell outside 1 to 32, since the face builder at `0x800271d8` walks 1 to 32 and builds nothing beyond.
-- Two blocks on one cell.
-- A kind that is not 0 to 8.
-- Anything on the faces of a block of kinds 5 to 8.
-- A face key with something standing under it that is not one of the six, by number or by spelling.
-- A face named twice.
-- A type the game does not play, which is anything but the 32 types the disc places and the acid patch 4.
-- A device, 5, 7 or 9, or the moving spikes 11 on a block that is not plain, since the glow loader at `0x8002977c` and the spikes' init at `0x8002a0b0` take kind 0 alone.
-- A `facing` outside 1 to 4, or none on the teleporter, the arrow, the starts, the two stars and the wheel, which the disc always turns, the wandering ball and the corkscrew heading as 1 does with none.
-- A `variant` outside its range.
-- A laser's `colour` that is not one of the four.
-- A `phase` outside 0 to 5.
-- A span with no far end, or whose far end is its own cell, lies along no one axis or lies past the edge.
-- A platform's run, lower end to upper end plus its length, reaching past the edge, or past the lattice itself, which the checks name apart since the writer has no bytes for it, or holding any block but its own blocks.
-- A platform longer than 7 blocks, since the ride at `0x80033810` marks its run in an 8 by 8 by 8 grid at `0x800d4e30` by its length word and an eighth block lands past the row.
-- A platform shorter than one block.
-- A platform's length or speed outside the file's range.
-- A beam crossing a block, or ending on a block that is neither plain nor another laser's block, since the loader writes style 0 over both ends and `-2` between unconditionally.
-- A platform's run through a beam or over a beam's end, a beam through a platform's run, or a beam ending in another's beam, since the loaders fill the lattice in record order and the last to write a cell has it.
-- No start.
-- A time below 1 or outside the file's range.
-- A world that is not one of the ten.
-- A target that is not a world or finals slot.
-- A counter over its cap, below.
+- A cell outside 1 to 32, since the face builder at `0x800271d8` walks 1 to 32 and builds nothing beyond: "block past the edge".
+- Two blocks on one cell: "two blocks on one cell".
+- A kind that is not 0 to 8: "kind {kind}: no such kind".
+- Anything on the faces of a block of kinds 5 to 8: "faces: none allowed on a {kind}", the kind named as the annotations name it.
+- A face key with something standing under it that is not one of the six, by number or by spelling: "face {key}: not one of the six", a spelling quoted.
+- A face named twice: "face {face}: named twice".
+- A type the game does not play, which is anything but the 32 types the disc places and the acid patch 4: "type {type}: unknown to the game".
+- A device, 5, 7 or 9, or the moving spikes 11 on a block that is not plain, since the glow loader at `0x8002977c` and the spikes' init at `0x8002a0b0` take kind 0 alone: "device: plain block only".
+- A `facing` outside 1 to 4, or none on the teleporter, the arrow, the starts, the two stars and the wheel, which the disc always turns, the wandering ball and the corkscrew heading as 1 does with none: "facing: 1 to 4 needed" where one is needed, else "facing {facing}: 1 to 4 or none".
+- A `variant` outside its range: "variant {variant}: outside its range".
+- A laser's `colour` that is not one of the four: "colour {colour}: outside 0 to 3", "none" where the laser has no colour.
+- A `phase` outside 0 to 5: "phase {phase}: outside 0 to 5".
+- A span with no far end, or whose far end is its own cell, lies along no one axis or lies past the edge: "span: no far end", "far end: the block's own cell", "far end {far}: not along one axis" and "far end {far}: past the edge".
+- A platform's run, lower end to upper end plus its length, reaching past the edge, or past the lattice itself, which the checks name apart since the writer has no bytes for it, or holding any block but its own blocks: "run: past the edge", "length {length}: past the lattice" and "run: crosses the block at {cell}".
+- A platform longer than 7 blocks, since the ride at `0x80033810` marks its run in an 8 by 8 by 8 grid at `0x800d4e30` by its length word and an eighth block lands past the row: "length {length}: over the grid's 7".
+- A platform shorter than one block: "length {length}: below 1".
+- A platform's length or speed outside the file's range: "length {length}: outside the file's range" and "speed {speed}: outside the file's range".
+- A beam crossing a block, or ending on a block that is neither plain nor another laser's block, since the loader writes style 0 over both ends and `-2` between unconditionally: "beam: crosses the block at {cell}" and "beam end at {cell}: not a plain block or a laser".
+- A platform's run through a beam or over a beam's end, a beam through a platform's run, or a beam ending in another's beam, since the loaders fill the lattice in record order and the last to write a cell has it: "run: crosses the beam from {cell}", "run: crosses the end of the beam from {cell}", "beam: crosses the run from {cell}" and "beam end: in the beam from {cell}".
+- No start: "no start".
+- A time below 1 or outside the file's range: "time {time} s: below 1" and "time {time} s: outside the file's range".
+- A world that is not one of the ten: "world '{world}': not one of the disc's ten".
+- A target that is not a world or finals slot: "target '{target}': no such slot".
+- A counter over its cap, below: "{count} {counter}: over the cap of {cap}".
 
 **Warnings.**
 
-- Several starts, naming the one the game takes, the last in record then face order.
-- An object looking into a block, a crumbling or vanishing block or a beam's cell.
-- A beam ending on a plain block that carries something, which keeps working but paints plain.
-- A hidden exit 26 on a block that is not plain, which the glow loader passes over and the game has not been seen to take.
-- A level with no key that is neither hidden nor a Simon room, which the game draws with the bonus artwork, placing a block or a face that artwork has no picture for, the fire, ice and acid blocks, the moving platform's four textures and the fire, ice and acid paint, the exit, the clock, the start on a clock and the fruit, whose models in the second set are the placeholder texture ([tgi.md](tgi.md)), named in the warning by their annotation names, and which no keyless level of the disc places.
-- A platform's speed other than 30 or length outside 2 to 3.
-- A time above 99, which the clock has never been seen to show.
-- A phase of 4 or 5.
-- A colour that starts off with teleporters or lasers and no switch to turn it on.
-- A lone teleporter leading to itself.
-- A switch whose colour has nothing to switch.
-- A key with no exit, hidden or not.
-- The hedgehog, type 42, untested in play.
+- Several starts, naming the one the game takes, the last in record then face order: "{count} starts: the game takes face {face} of {cell}".
+- An object looking into a block, a crumbling or vanishing block or a beam's cell: "looks into the block at {cell}", "looks into a crumbling block", "looks into a vanishing block" and "looks into a beam".
+- A beam ending on a plain block that carries something, which keeps working but paints plain: "beam end at {cell}: the block there paints plain".
+- A hidden exit 26 on a block that is not plain, which the glow loader passes over and the game has not been seen to take: "hidden exit on a non-plain block: untested".
+- A level with no key that is neither hidden nor a Simon room, which the game draws with the bonus artwork, placing a block or a face that artwork has no picture for, the fire, ice and acid blocks, the moving platform's four textures and the fire, ice and acid paint, the exit, the clock, the start on a clock and the fruit, whose models in the second set are the placeholder texture ([tgi.md](tgi.md)), named in the warning by their annotation names, and which no keyless level of the disc places: "no key: the bonus artwork has no texture for {names}".
+- A platform's speed other than 30 or length outside 2 to 3: "speed {speed}: the disc's is 30" and "length {length}: the disc's are 2 and 3".
+- A time above 99, which the clock has never been seen to show: "time {time} s: above the disc's 99".
+- A phase of 4 or 5: "phase {phase}: dims at once".
+- A colour that starts off with teleporters or lasers and no switch to turn it on: "{colour} circuit: starts off, no switch", or "circuit {n}: starts off, no switch" where the annotations give the colour no word.
+- A lone teleporter leading to itself: "{colour} teleporter: alone, leads to itself", or "teleporter of circuit {n}: alone, leads to itself".
+- A switch whose colour has nothing to switch: "{colour} switches: nothing to switch", or "switches of circuit {n}: nothing to switch".
+- A key with no exit, hidden or not: "a key and no exit".
+- The hedgehog, type 42, untested in play: "the hedgehog: untested in play".
 
 The most on the disc, in the table below, is read by the overview's counts line alone, which marks a count above it; the checks say nothing of a count the game has room for.
 

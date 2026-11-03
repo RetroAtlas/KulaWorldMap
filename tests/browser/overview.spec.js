@@ -188,11 +188,11 @@ test("a draft's note carries how it plays, its counts and the findings, each fin
   await expect(more.locator("summary")).toHaveText("1 warning; the counts are below");
   await field(page, "thing").selectOption("t42");
   const findings = note.locator(".findings li");
-  await expect(findings).toHaveText([/^warning: the hedgehog is untested in play at /]);
+  await expect(findings).toHaveText([/^warning: the hedgehog: untested in play at /]);
   await expect(findings.first()).toHaveClass("warning");
   await expect(findings.first().locator(".there")).toHaveText("17, 17, 17");
   await expect(findings.first().locator(".there")).toHaveAccessibleName(
-    "the hedgehog is untested in play at 17, 17, 17, +x side",
+    "the hedgehog: untested in play at 17, 17, 17, +x side",
   );
   await expect(findings.first()).toContainText(", +x side");
   await field(page, "face-0").click();
@@ -238,7 +238,7 @@ test("a counter reads amber past the most any level on the disc has and red past
   await expect(counts.locator(".over")).toHaveText(["65 of 64 vanishing blocks"]);
   await expect(counts.locator(".high")).toHaveCount(0);
   await expect(findings.locator("..").locator("li.error")).toHaveText([
-    "error: 65 vanishing blocks, over the 64 the game has room for",
+    "error: 65 vanishing blocks: over the cap of 64",
   ]);
   expect(errors).toEqual([]);
 });
@@ -260,7 +260,7 @@ test("without the face table the counts line leaves the faces and the blocks out
     "0 of 64 moving spikes",
   ]);
   await expect(
-    page.locator("#chipNote .findings li", { hasText: "the face count could not be read" }),
+    page.locator("#chipNote .findings li", { hasText: "face table missing" }),
   ).toHaveCount(1);
 });
 
@@ -280,7 +280,7 @@ test("a finding's link that holds the focus keeps it through an edit", async ({ 
   expect(await selected(page)).toEqual({ cell: HOME, face: 1 });
   await expect(link).toBeFocused();
   await page.keyboard.press("Control+z");
-  await expect(findings).toHaveText([/^warning: the hedgehog is untested in play at /]);
+  await expect(findings).toHaveText([/^warning: the hedgehog: untested in play at /]);
   await expect(link).toBeFocused();
   await field(page, "face-0").click();
   expect(await selected(page)).toEqual({ cell: HOME, face: 0 });

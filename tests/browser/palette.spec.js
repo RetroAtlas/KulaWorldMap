@@ -546,7 +546,7 @@ test("where the annotations have no word for a circuit, the page names it circui
   await toggle.click();
   await expect(toggle).toHaveAttribute("title", "Turn circuit 2 on");
   await expect(page.locator("#chipNote .findings li")).toContainText([
-    "circuit 2 starts off and has no switch to turn it on",
+    "circuit 2: starts off, no switch",
   ]);
 
   // the panel's row and the laser's swatches on the laser's block

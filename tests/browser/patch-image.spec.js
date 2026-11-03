@@ -349,7 +349,7 @@ test("a target the file names that is no slot is an error until a slot is chosen
   const dialog = page.locator("#patch");
   await expect(dialog).toBeVisible();
   await expect(dialog.locator("#patchChecks .errors li")).toHaveText([
-    "error: the target '/HIRO/COPYCAT.PAK#10' is not a slot of a world pack, a finals pack or the Simon rooms' pack",
+    "error: target '/HIRO/COPYCAT.PAK#10': no such slot",
   ]);
   const slot = dialog.locator("#patchSlot");
   await expect(slot).toHaveValue("");
