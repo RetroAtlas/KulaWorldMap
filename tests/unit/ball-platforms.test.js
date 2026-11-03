@@ -497,7 +497,7 @@ test("the body landing measures the centre along the run alone, against the plat
   const between = letFall(17 * UNIT + 300, [-300, 0, 0]);
   assert.deepEqual(between.frames.at(-1), RODE);
   const onStone = letFall(17 * UNIT, [-300, 0, 0], 17 * UNIT);
-  assert.deepEqual(onStone.frames.at(-1), [{ at: "landed" }]);
+  assert.deepEqual(onStone.frames.at(-1), [{ at: "landed", down: -55 }]);
   assert.equal(onStone.b.riding, null);
   assert.equal(onStone.b.state, REST);
   assert.deepEqual(blockUnder(onStone.b), [17, 17, 17]);

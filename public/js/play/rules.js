@@ -59,8 +59,10 @@ import {
   drawn,
   effectsOf,
   lastsOf,
+  shaken,
   startEffect,
   startFlash,
+  startShake,
 } from "./passes.js";
 import { SIDE, cellKey, KIND, TYPE } from "../format/lattice.js";
 import { OFF_LATTICE, layHeading, startsOf, TANGENT } from "../viewer/data.js";
@@ -175,6 +177,8 @@ export function startRun(l, idx, tables, circuits, at = null, game = null, match
       flash: 0,
       flashing: null,
       effects: [],
+      shake: null,
+      shift: [0, 0],
       latch: { up: 0, cross: 0, count: 0 },
       idle: 0,
       index: 0,
@@ -413,14 +417,17 @@ function held(live) {
   w.pills[TYPE.BOUNCY_PILL] += 1;
 }
 
-/** One game frame with `pad` as held: what happened, as events. The frame the clock runs out on
-    runs to its end, as the game's does, the crumbling blocks breaking up and the screen's words
-    stepping last as the draw runs them, and nothing runs once the outcome stands; the ending's
-    view is the one the mode gives. */
+/** One game frame with `pad` as held: what happened, as events. The screen's shake steps first,
+    as the game's loop draws it before the level's routine, and alone runs on once the outcome
+    stands; the frame the clock runs out on runs to its end, as the game's does, the crumbling
+    blocks breaking up and the screen's words stepping last as the draw runs them, and nothing
+    else runs once the outcome stands; the ending's view is the one the mode gives. A block
+    landing at the fall's top speed starts the shake with the ball's `fall.shake`. */
 export function frame(live, pad) {
   const w = live.words;
   const b = live.ball;
   const out = [];
+  shaken(live);
   if (w.outcome) return out;
   const { start, clock, ending } = live.tables.motion.play;
   const probe = probeOf(live);
@@ -465,6 +472,8 @@ export function frame(live, pad) {
   const ahead = add(blockUnder(b), b.h);
   run(b, probe, out);
   w.way = b.way;
+  const { fall } = b.table;
+  if (out.some((e) => e.at === "landed" && e.down === fall.top)) startShake(live, fall.shake);
   if (w.bonus && out.some((e) => e.face === "climb")) mark(live, ahead, out);
   if (!w.guard) contact(live, out);
   // the bursts, the teleporter's burst as its count starts and a pickup's burst as it is taken, and

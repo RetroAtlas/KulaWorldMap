@@ -88,7 +88,9 @@ test("a held Cross starts the next hop on the frame after the end, each hop endi
   );
   assert.equal(b.v, table.fall.hop);
   assert.equal(b.speed, 0);
-  assert.deepEqual(run(b, probe, 1, PAD.cross), [{ at: "landed" }]);
+  assert.deepEqual(run(b, probe, 1, PAD.cross), [
+    { at: "landed", down: table.fall.hop + table.fall.gain },
+  ]);
   assert.equal(b.state, REST);
   assert.deepEqual(b.pos, [17 * UNIT, 18 * UNIT, rest]);
   assert.deepEqual(blockUnder(b), [17, 18, 17]);
@@ -108,7 +110,7 @@ test("Cross let go after eight hops leaves the ball at rest at its radius on its
   const lone = lattice([17, 18, 17]);
   const b = held(lone);
   assert.equal(b.state, FALL);
-  assert.deepEqual(run(b, lone, 1, 0), [{ at: "landed" }]);
+  assert.deepEqual(run(b, lone, 1, 0), [{ at: "landed", down: table.fall.hop + table.fall.gain }]);
   const deep = lattice([17, 18, 17], [17, 18, 18]);
   const c = held(deep);
   assert.equal(c.state, REST);
@@ -166,7 +168,7 @@ test("a table with no skip runs a jump over one row fewer than its arc's count a
     heights,
     rows.slice(0, count - 1).map((r) => r[0]),
   );
-  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed" }]);
+  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed", down: 0 }]);
   assert.deepEqual([b.state, blockUnder(b)], [REST, [17, 16, 17]]);
 });
 
@@ -174,7 +176,7 @@ test("the spin's speed is nothing on every frame of a hop after a jump with Cros
   const probe = row(10, 18);
   const b = ballAt(RULES, [17, 18, 17], TOP, UP);
   run(b, probe, 30, PAD.up | PAD.cross);
-  assert.deepEqual(run(b, probe, 1, PAD.cross), [{ at: "landed" }]);
+  assert.deepEqual(run(b, probe, 1, PAD.cross), [{ at: "landed", down: 0 }]);
   assert.equal(b.state, REST);
   // the landing writes the spin's speed nowhere, so the body turns on the landing frame too
   assert.equal(b.spinSpeed, table.jump.speed);
@@ -206,7 +208,7 @@ test("Up with Space jumps the ball along the rows, 458 up on the 15th and 16th f
   assert.equal(heightOf(b), 100 + 41);
   assert.equal(b.spinSpeed, 33);
   const events = run(b, probe, 1, 0);
-  assert.deepEqual(events, [{ at: "landed" }]);
+  assert.deepEqual(events, [{ at: "landed", down: 0 }]);
   assert.deepEqual(b.pos, [17 * UNIT, 16 * UNIT, 17 * UNIT - 356]);
   assert.equal(b.state, REST);
   assert.deepEqual(blockUnder(b), [17, 16, 17]);
@@ -222,7 +224,11 @@ test("a forward jump on a face whose normal points the positive way along its ax
     assert.equal(b.state, JUMP, `face ${face}`);
     assert.deepEqual(run(b, probe, 1, 0), [], `face ${face}: the snap lands nothing`);
     assert.deepEqual([b.state, b.pos], [FALL, snapped], `face ${face}`);
-    assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed" }], `face ${face}: the fall lands`);
+    assert.deepEqual(
+      run(b, probe, 1, 0),
+      [{ at: "landed", down: -61 }],
+      `face ${face}: the fall lands`,
+    );
     assert.deepEqual([b.state, b.pos], [REST, snapped], `face ${face}`);
     assert.deepEqual(blockUnder(b), [17, 16, 17], `face ${face}`);
     assert.equal(heightOf(b), 100, `face ${face}`);
@@ -239,7 +245,7 @@ test("a jump taken early in a block lands short of the middle's third at rest wi
   run(b, probe, 1, PAD.up | PAD.cross);
   assert.equal(b.state, JUMP);
   run(b, probe, 29, PAD.up);
-  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed" }]);
+  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed", down: 0 }]);
   assert.deepEqual(blockUnder(b), [17, 15, 17]);
   assert.equal(b.progress, from);
   assert.deepEqual([b.state, b.forward, b.speed], [REST, true, table.rolling.top]);
@@ -254,7 +260,7 @@ test("a jump taken early in a block lands short of the middle's third at rest wi
   const c = ballAt(RULES, [17, 18, 17], TOP, UP);
   run(c, probe, 11, PAD.up);
   run(c, probe, 30, PAD.up | PAD.cross);
-  assert.deepEqual(run(c, probe, 1, PAD.up), [{ at: "landed" }]);
+  assert.deepEqual(run(c, probe, 1, PAD.up), [{ at: "landed", down: 0 }]);
   assert.deepEqual(
     [c.state, c.forward, c.speed, c.progress],
     [REST, true, table.rolling.top, from],
@@ -270,7 +276,7 @@ test("a jump landing leaves the speed at the top for the roll asked next, where 
   const probe = row(10, 18);
   const b = ballAt(RULES, [17, 18, 17], TOP, UP);
   run(b, probe, 30, PAD.up | PAD.cross);
-  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed" }]);
+  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed", down: 0 }]);
   assert.deepEqual([b.state, b.speed], [REST, table.jump.speed]);
   run(b, probe, 3, 0);
   assert.deepEqual([b.state, b.speed], [REST, table.jump.speed]);
@@ -320,7 +326,7 @@ test("the long jump's word scales every row's three halfwords three halves over,
     Array.from({ length: 30 }, (_, i) => j.arm + i + 1),
   );
   assert.ok(b.long >= j.long);
-  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed" }]);
+  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed", down: 0 }]);
   assert.deepEqual(b.pos, [17 * UNIT, 18 * UNIT - j.far, 17 * UNIT - 356]);
   assert.deepEqual(blockUnder(b), [17, 15, 17]);
   assert.equal(b.long, 0);
@@ -512,7 +518,7 @@ test("a jump that finds no block two blocks on comes straight down in that cell,
   const flat = lattice(...[8, 9, 10, 11, 12, 13].map((y) => [23, y, 21]));
   const c = ballAt(RULES, [23, 13, 21], TOP, UP);
   run(c, flat, 30, PAD.up | PAD.cross);
-  assert.deepEqual(run(c, flat, 1, 0), [{ at: "landed" }]);
+  assert.deepEqual(run(c, flat, 1, 0), [{ at: "landed", down: 0 }]);
   assert.deepEqual(blockUnder(c), [23, 11, 21]);
   assert.deepEqual(c.pos, [23 * UNIT, 11 * UNIT, 21 * UNIT - 356]);
 });
@@ -590,7 +596,7 @@ test("a block met above sets the ball back by twice its rise and drops it with n
     events = run(b, probe, 1, 0);
     assert.equal(b.pos[1], y);
   }
-  assert.deepEqual(events, [{ at: "landed" }]);
+  assert.deepEqual(events, [{ at: "landed", down: -64 }]);
   assert.deepEqual(blockUnder(b), [17, 15, 17]);
   // the hop's frames run from the second row, so it meets the block over it a frame sooner
   const over = row(15, 18, [[17, 16, 15]]);
@@ -647,7 +653,7 @@ test("a block above and the floor ahead are asked about the cell the centre lies
     events.push(...run(b, high, 1, PAD.up | PAD.cross).map((e) => [f, e]));
     assert.notEqual(b.state, FALL, `frame ${f}`);
   }
-  assert.deepEqual(events, [[31, { at: "landed" }]]);
+  assert.deepEqual(events, [[31, { at: "landed", down: 0 }]]);
   assert.deepEqual([b.state, blockUnder(b), b.progress], [REST, [15, 19, 17], 256]);
   const over = lattice(...floor, [15, 17, 14]);
   const c = ballAt(RULES, [15, 17, 17], TOP, [0, 1, 0]);
@@ -739,7 +745,7 @@ test("a landing at the climb's progress under a wall climbs on the frame after, 
   let events = [];
   for (let f = 0; f < 40 && !events.some((e) => e.at === "landed"); f++)
     events = run(b, probe, 1, PAD.up);
-  assert.deepEqual(events, [{ at: "landed" }]);
+  assert.deepEqual(events, [{ at: "landed", down: 0 }]);
   assert.deepEqual(blockUnder(b), [17, 15, 17]);
   assert.equal(b.ramp, null);
   assert.deepEqual(run(b, probe, 1, PAD.up), [{ face: "climb" }]);

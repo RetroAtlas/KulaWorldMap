@@ -527,6 +527,46 @@ test("relevel carries a breaking block's word and size where the level still hol
   assert.equal(viewOf(again).breaking, undefined);
 });
 
+test("a block landing at the fall's top speed starts the screen's shake with the ball's fall.shake, which the frame after steps down the screen alone, and a landing short of that speed, or from a jump, starts none", () => {
+  const { fall } = motion.types["30"];
+  const landing = (live) => {
+    let landed = null;
+    for (let f = 0; f < 60 && !landed; f++)
+      landed = frame(live, 0).find((e) => e.at === "landed") ?? null;
+    return landed;
+  };
+  const dropped = (lift) => {
+    const live = begin(level(row(10, 18), [start()]));
+    live.words.wait = 0;
+    const b = live.ball;
+    b.state = FALL;
+    b.v = fall.start;
+    b.pos = b.pos.map((v, i) => v + b.n[i] * lift);
+    return { live, landed: landing(live) };
+  };
+  const far = dropped(2 * UNIT);
+  assert.equal(far.landed.down, fall.top);
+  assert.deepEqual(far.live.words.shake, {
+    magnitude: fall.shake.magnitude,
+    left: fall.shake.frames,
+    over: fall.shake.frames,
+    axes: fall.shake.axes,
+  });
+  assert.deepEqual(far.live.words.shift, [0, 0]);
+  frame(far.live, 0);
+  assert.equal(far.live.words.shake.left, fall.shake.frames - 1);
+  assert.equal(far.live.words.shift[0], 0, "down the screen alone");
+  const short = dropped(150);
+  assert.ok(short.landed.down > fall.top && short.landed.down < 0, String(short.landed.down));
+  assert.equal(short.live.words.shake, null);
+  const jumped = begin(level(row(10, 18), [start()]));
+  jumped.words.wait = 0;
+  frame(jumped, PAD.up | PAD.cross);
+  assert.equal(jumped.ball.state, JUMP);
+  assert.equal(landing(jumped).down, 0, "a jump comes down at no speed along the normal");
+  assert.equal(jumped.words.shake, null);
+});
+
 test("the landings try a platform before a block: a jump that comes down on a platform's body where it stands rides it at rest, the standing word the platform's word, and one that comes down on its home cell while the body is away falls through", () => {
   const { live, key, w, arrived, seen } = riding();
   assert.equal(w.dwell <= PLATFORM.dwell && w.dwell > 0, true);

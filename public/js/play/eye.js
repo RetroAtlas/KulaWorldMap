@@ -14,7 +14,7 @@ import {
 } from "../viewer/state.js";
 import { blockUnits, motionTable } from "../viewer/data.js";
 import { offsetFrame, turned } from "./ball.js";
-import { drawn, rockOf } from "./passes.js";
+import { drawn, rockOf, shaken } from "./passes.js";
 import { FORM } from "./game.js";
 import { TYPE } from "../format/lattice.js";
 
@@ -190,12 +190,13 @@ function swung(live) {
   state.cam.panY = -(e.free / 2 - state.view.h / 2) / (zoom * BLOCK);
 }
 
-/** One frame of the ending's view: the screen's words stepped as the game's draw steps them, the
-    yaw turned by the game's third angle, the pitch by its first, the eye along its swing: whether
-    the view's length has run out. */
+/** One frame of the ending's view: the screen's shake and the screen's words stepped as the
+    game's loop and its draw step them, the yaw turned by the game's third angle, the pitch by its
+    first, the eye along its swing: whether the view's length has run out. */
 export function turning(live) {
   const e = live.ended;
   const { turn } = motionTable();
+  shaken(live.run);
   drawn(live.run);
   const [pitch, , yaw] = e.view.angles;
   state.cam.yaw += (yaw * 360) / turn;

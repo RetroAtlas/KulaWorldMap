@@ -666,7 +666,7 @@ test("a landing stands between read and run, and run clears it as it begins", ()
   const b = ballAt(RULES, [17, 18, 17], TOP, UP);
   run(b, probe, 30, PAD.up | PAD.cross);
   assert.equal(b.landed, false);
-  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed" }]);
+  assert.deepEqual(run(b, probe, 1, 0), [{ at: "landed", down: 0 }]);
   assert.equal(b.landed, true);
   b.pad = 0;
   const out = [];
@@ -733,7 +733,7 @@ test("frozen, the ball's state, its move and its landing stand still while a ram
   assert.deepEqual(blockUnder(e), [17, 14, 19]);
 });
 
-test("a ball at rest whose block goes falls at the fall's start on the frame after the one whose read finds the block gone, and lands on the block below", () => {
+test("a ball at rest whose block goes falls at the fall's start on the frame after the one whose read finds the block gone, and lands on the block below at the fall's top speed, which the landing says", () => {
   const gone = new Set();
   const base = row(15, 18, [[17, 18, 19]]);
   const probe = { solid: (c) => !gone.has(cellKey(...c)) && base.solid(c) };
@@ -753,7 +753,7 @@ test("a ball at rest whose block goes falls at the fall's start on the frame aft
   assert.deepEqual(blockUnder(b), [17, 18, 17]);
   const events = [];
   for (let f = 0; f < 100 && b.state === FALL; f++) events.push(...run(b, probe, 1, 0));
-  assert.deepEqual(events, [{ at: "landed" }]);
+  assert.deepEqual(events, [{ at: "landed", down: table.fall.top }]);
   assert.equal(b.state, REST);
   assert.deepEqual(blockUnder(b), [17, 18, 19]);
   assert.deepEqual(b.pos, [17 * UNIT, 18 * UNIT, 19 * UNIT - 356]);

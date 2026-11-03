@@ -449,13 +449,15 @@ function dock(b, probe, out) {
     part of a platform: laid the radius off its face at rest, the speed the top where the roll is
     asked, which a landing short of the middle's third with no jump asked asks itself, a request
     the pad's reading replaces on the frame after, and the speed as the air left it otherwise,
-    for the roll asked next; the long jump's word is cleared. */
+    for the roll asked next; the long jump's word is cleared, and the landing says the speed the
+    ball came down at. */
 function land(b, probe, out) {
   if (b.rules.ride && probe.platform && (board(b, probe, out) || dock(b, probe, out))) return true;
   const block = cellOf(b, add(b.pos, b.n, -b.radius));
   if (!probe.solid(block) || probe.platform?.(block)) return false;
   const i = axisOf(b.n);
   b.pos[i] = block[i] * b.unit + b.n[i] * (b.half + b.radius);
+  const down = b.v;
   b.v = 0;
   b.landed = true;
   b.long = 0;
@@ -463,7 +465,7 @@ function land(b, probe, out) {
   b.progress = progressOf(b);
   if (b.progress < b.table.fall.short && !b.wantJump) b.forward = true;
   if (b.forward) b.speed = b.table.rolling.top;
-  out.push({ at: "landed" });
+  out.push({ at: "landed", down });
   return true;
 }
 
@@ -699,7 +701,8 @@ function spinning(b) {
     Between the state and the move step the ball's words for the block under its cell are read,
     whether one is there and whether it is brittle, which the rest state, the roll and the pad's
     reading ask on the next frame, and the probe's `stood`, where it has one, is told the ball,
-    which is where the game reads the cells about it. A landing on a platform, on its body or
+    which is where the game reads the cells about it. A landing on a block says the speed the
+    ball came down at along the normal as `down`; a landing on a platform, on its body or
     against its end, rides it, said as `rode`, and the jump and the hop leave it, said as `alit`,
     while a ball that rides never drops. A lost ball says so and stays where it is. */
 export function run(b, probe, out) {

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { objects } from "./fixtures.js";
+import { objects, releases } from "./fixtures.js";
 import { cellKey } from "../../public/js/format/lattice.js";
 import { fieldIndex, index } from "../../public/js/viewer/data.js";
 import { dice } from "../../public/js/viewer/travel.js";
@@ -16,7 +16,9 @@ import {
   glowStep,
   particlesOf,
   rockOf,
+  shaken,
   startEffect,
+  startShake,
 } from "../../public/js/play/passes.js";
 import { settle, startGame } from "../../public/js/play/game.js";
 import {
@@ -115,6 +117,21 @@ const COIN = 37;
 const FIRST_FRUIT = 43;
 
 const effectTable = (kind) => EFFECTS.tables[EFFECTS.kinds[String(kind)]];
+
+const BREAK = motion.kinds["6"].shake;
+
+const THUD = motion.types["30"].fall.shake;
+
+/** The least and the greatest shift along each axis over `seen`, the shifts a shake's steps gave. */
+const reach = (seen) =>
+  [0, 1].map((i) => [Math.min(...seen.map((s) => s[i])), Math.max(...seen.map((s) => s[i]))]);
+
+/** The fresh dice's draw of a turn after `n` draws. */
+function drawAfter(n) {
+  const d = dice(motion.dice);
+  for (let i = 0; i < n; i++) d(1);
+  return d(motion.turn);
+}
 
 /** A pickup of `type` on the top of the row's block at `y`. */
 const pickup = (y, type) => pill(y, type);
@@ -248,17 +265,119 @@ test("a level with no key opens in the flash in the opening's mode at the table'
   assert.deepEqual([again.words.flashing, again.words.flash], [FLASH.bonus, OPENING_FLASH.from]);
 });
 
-test("a run and a restart of a level with a key start the screen's mode, its fade and the flash at nothing", () => {
+test("a run and a restart of a level with a key start the screen's mode, its fade, the flash and the screen's shake at nothing", () => {
   const live = begin(level(row(2, 18), [start(), pill(16, Number(LETHARGY))]));
   const w = live.words;
   assert.deepEqual([w.screen, w.fade, w.flashing, w.flash], [SCREEN.off, 0, null, 0]);
+  assert.deepEqual([w.shake, w.shift], [null, [0, 0]]);
   assert.ok(until(live, PAD.up, (_, events) => taken(events, Number(LETHARGY))));
   Object.assign(w, { flashing: FLASH.teleport, flash: TELEPORT_FLASH.from });
+  startShake(live, BREAK);
+  shaken(live);
   assert.equal(blanksOf(live), LETHARGIC.blanks);
   const again = restart(live);
   const a = again.words;
   assert.deepEqual([a.screen, a.fade, a.flashing, a.flash], [SCREEN.off, 0, null, 0]);
+  assert.deepEqual([a.shake, a.shift], [null, [0, 0]]);
   assert.equal(blanksOf(again), 1);
+});
+
+test("the screen's shake steps as the game's step does: started with the table's figures, the frames as the timer and the divisor, each step takes one off the timer and draws under twice the magnitude from the dice for each axis of the mask, x then y, adds the draw less the magnitude times the timer over the divisor to the display's origin, clamps the sum at nothing and shifts by that less the origin, so with the origin at nothing the picture jolts one way alone, by the magnitude less two at most, nothing on the step the timer reaches nothing, and the step below nothing lets the shake go with the shift put back", () => {
+  const live = begin(level(row(2, 18), [start()]));
+  const w = live.words;
+  assert.deepEqual(motion.play.screen.origin, [0, 0]);
+  startShake(live, BREAK);
+  assert.deepEqual(w.shake, {
+    magnitude: BREAK.magnitude,
+    left: BREAK.frames,
+    over: BREAK.frames,
+    axes: BREAK.axes,
+  });
+  assert.deepEqual(w.shift, [0, 0], "the start draws nothing");
+  const seen = [];
+  for (let i = 0; i < BREAK.frames; i++) {
+    shaken(live);
+    assert.equal(w.shake.left, BREAK.frames - 1 - i);
+    seen.push([...w.shift]);
+  }
+  assert.deepEqual(
+    reach(seen),
+    [
+      [0, BREAK.magnitude - 2],
+      [0, BREAK.magnitude - 2],
+    ],
+    "one way alone along each axis, by the magnitude less two at most, the timer having lost one before the first draw",
+  );
+  assert.deepEqual(seen.at(-1), [0, 0], "nothing as the timer reaches nothing");
+  assert.ok(
+    seen.slice(0, 8).some(([x, y]) => x === 0 || y === 0),
+    "a draw short of the magnitude is clamped at nothing while the timer is high",
+  );
+  shaken(live);
+  assert.deepEqual([w.shake, w.shift], [null, [0, 0]], "let go below nothing");
+  shaken(live);
+  assert.deepEqual([w.shake, w.shift], [null, [0, 0]]);
+});
+
+test("a shake of the y axis alone draws once a step and shifts nothing along x, a shake started over one running takes the new figures, and the dice after a shake stand where the game's stand, two draws a frame over the break's frames and one over the landing's", () => {
+  const live = begin(level(row(2, 18), [start()]));
+  const w = live.words;
+  startShake(live, THUD);
+  const seen = [];
+  for (let i = 0; i < THUD.frames; i++) {
+    shaken(live);
+    seen.push([...w.shift]);
+  }
+  assert.deepEqual(
+    reach(seen),
+    [
+      [0, 0],
+      [0, THUD.magnitude - 2],
+    ],
+    "down alone, by the magnitude less two at most",
+  );
+  assert.equal(live.world.roll(motion.turn), drawAfter(THUD.frames), "one draw a frame");
+  const after = (entry) => {
+    const run = begin(level(row(2, 18), [start()]));
+    startShake(run, entry);
+    for (let i = 0; i <= entry.frames; i++) shaken(run);
+    assert.equal(run.words.shake, null);
+    return run.world.roll(motion.turn);
+  };
+  assert.equal(after(BREAK), drawAfter(2 * BREAK.frames), "two draws a frame");
+  assert.equal(after(THUD), drawAfter(THUD.frames));
+  const over = begin(level(row(2, 18), [start()]));
+  startShake(over, BREAK);
+  shaken(over);
+  startShake(over, THUD);
+  assert.deepEqual(over.words.shake, {
+    magnitude: THUD.magnitude,
+    left: THUD.frames,
+    over: THUD.frames,
+    axes: THUD.axes,
+  });
+});
+
+test("with the display's origin down at 18, as the PAL disc lays it, the step's sum along y never meets the clamp and the shift is the offset itself, up as well as down, by no more than the magnitude less one up and the magnitude less two down, while x, whose origin is nothing, jolts right alone", () => {
+  const pal = { ...motion, ...releases[1].objects.motion };
+  assert.deepEqual(pal.play.screen.origin, [0, 18]);
+  const live = {
+    words: { shake: null, shift: [0, 0] },
+    world: { roll: dice(pal.dice) },
+    tables: { motion: pal },
+  };
+  const { shake } = pal.kinds["6"];
+  startShake(live, shake);
+  const seen = [];
+  for (let i = 0; i < shake.frames; i++) {
+    shaken(live);
+    seen.push([...live.words.shift]);
+  }
+  const [[xLow, xHigh], [yLow, yHigh]] = reach(seen);
+  assert.deepEqual([xLow, xHigh, yHigh], [0, shake.magnitude - 2, shake.magnitude - 2]);
+  assert.ok(yLow < 0 && yLow >= -(shake.magnitude - 1), `up as well as down: ${yLow}`);
+  shaken(live);
+  assert.deepEqual([live.words.shake, live.words.shift], [null, [0, 0]]);
 });
 
 test("the draw's step alone, as the ending's view runs it, keeps the ghost standing with no hazards to end it, wanes the flash to nothing and runs an asked end through the fade", () => {

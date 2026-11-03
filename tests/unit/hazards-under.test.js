@@ -15,7 +15,8 @@ import {
   positionOf,
   progressOf,
 } from "../../public/js/play/ball.js";
-import { frame } from "../../public/js/play/rules.js";
+import { end, frame } from "../../public/js/play/rules.js";
+import { shaken, startShake } from "../../public/js/play/passes.js";
 import { probeOf } from "../../public/js/play/world.js";
 import {
   BEAM,
@@ -323,7 +324,7 @@ test("in the air over an arrow the jump's wall test throws the ball back from 41
   assert.deepEqual(blockUnder(along.live.ball), [17, 16, 17], "down two blocks on");
 });
 
-test("a crumbling block under the ball scores the table's points once and is written broken on every frame the ball stands on it, breaking up at the frame's end with its size kept for the frame on every frame it shrinks, and is gone on the twentieth frame, out of the blocks breaking up, the resting ball falling two frames after onto the block below, the first frame's read finding the cell empty and the next's rest state reading that", () => {
+test("a crumbling block under the ball scores the table's points once and is written broken on every frame the ball stands on it, breaking up at the frame's end with its size kept for the frame on every frame it shrinks and the screen's shake started afresh with the table's figures, which the frame after steps first, and is gone on the twentieth frame, out of the blocks breaking up, the shake running down from there, the resting ball falling two frames after onto the block below, the first frame's read finding the cell empty and the next's rest state reading that", () => {
   const l = level([...row(15, 18), [17, 15, 19]], [start(), crumbling(15)]);
   const live = standing(l, { cell: [17, 15, 17], face: TOP, h: UP });
   const key = cellKey(17, 15, 17);
@@ -337,12 +338,30 @@ test("a crumbling block under the ball scores the table's points once and is wri
   assert.equal(block.type, 3, "written broken by the hazards, breaking up by the frame's end");
   assert.equal(block.size, CRUMBLE.size - CRUMBLE.shrink, "shrunk on the frame it breaks");
   assert.deepEqual([...live.world.breaking], [[key, block.size]], "its size kept for the frame");
+  const { shake } = CRUMBLE;
+  assert.deepEqual(
+    live.words.shake,
+    { magnitude: shake.magnitude, left: shake.frames, over: shake.frames, axes: shake.axes },
+    "the break starts the screen's shake with the table's figures",
+  );
+  assert.deepEqual(live.words.shift, [0, 0], "which draws nothing on the break's frame");
+  const alone = standing(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  startShake(alone, shake);
+  shaken(alone);
   const stood = [];
   const sizes = [];
+  const shifts = [];
   for (let i = 0; i < 18; i++) {
     stood.push(...trace(live, 1, 0));
     sizes.push(live.world.breaking.get(key));
+    shifts.push([...live.words.shift]);
   }
+  assert.deepEqual(shifts[0], alone.words.shift, "the frame after draws the first offsets");
+  assert.equal(
+    live.words.shake.left,
+    shake.frames,
+    "started afresh on every frame the ball stands there, the word written broken again",
+  );
   assert.equal(live.words.score, CRUMBLE.points, "scored once");
   assert.ok(
     stood.every((f) => has(f, "broke") && !has(f, "fell")),
@@ -368,6 +387,7 @@ test("a crumbling block under the ball scores the table's points once and is wri
   assert.equal(read.state, REST, "at rest still on the frame whose read finds the cell empty");
   assert.equal(live.words.standing, -1, "nothing under the ball from that read");
   assert.ok(!has(read, "broke"));
+  assert.equal(live.words.shake.left, shake.frames - 1, "the shake running down from the going");
   const [after] = trace(live, 1, 0);
   assert.equal(after.state, FALL, "dropped on the frame after that");
   assert.equal(live.words.frame, 22);
@@ -375,6 +395,20 @@ test("a crumbling block under the ball scores the table's points once and is wri
   assert.deepEqual(after.pos, twentieth.pos, "from where it rested");
   trace(live, 60, 0, resting);
   assert.deepEqual(blockUnder(live.ball), [17, 15, 19]);
+});
+
+test("the screen's shake runs on once the outcome stands, stepped first in the frame as the game's loop draws it outside the level's routine, while nothing else runs", () => {
+  const l = level([...row(15, 18), [17, 15, 19]], [start(), crumbling(15)]);
+  const live = standing(l, { cell: [17, 15, 17], face: TOP, h: UP });
+  trace(live, 1, 0);
+  const { left } = live.words.shake;
+  end(live, play.ending.lost, []);
+  assert.deepEqual(frame(live, 0), []);
+  assert.equal(live.words.shake.left, left - 1);
+  assert.equal(live.words.frame, 1, "the frame not counted");
+  for (let i = 0; i < left; i++) frame(live, 0);
+  assert.equal(live.words.shake, null, "let go as its frames run out");
+  assert.deepEqual(live.words.shift, [0, 0]);
 });
 
 test("a ball rolling on crosses a crumbling block before it goes, and one on it as it goes falls from between the roll's bounds two frames after, by the word the read of the frame between left", () => {

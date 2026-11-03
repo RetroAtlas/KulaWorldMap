@@ -4,6 +4,7 @@ import { REST, acrossOf, aloft, blockUnder, cellOf, faceUnder, place, progressOf
 import { cellKey, FACE_NORMAL, KIND, TYPE } from "../format/lattice.js";
 import { layHeading, markerCircuit, markerDestination, TANGENT } from "../viewer/data.js";
 import { phaseField, pose } from "../viewer/motion.js";
+import { startShake } from "./passes.js";
 import { fell } from "./world.js";
 
 // a crumbling block's type word
@@ -134,15 +135,17 @@ export function broken(live) {
   block.type = BROKEN;
 }
 
-/** The draw's part of the frame: a block broken under the ball breaks up, and a breaking block
-    shrinks by the table's step a frame, its size kept for the frame to draw it at, until its size
-    goes negative, when it is gone from the lattice. */
+/** The draw's part of the frame: a block broken under the ball breaks up, starting the screen's
+    shake afresh with the table's figures, and a breaking block shrinks by the table's step a
+    frame, its size kept for the frame to draw it at, until its size goes negative, when it is gone
+    from the lattice. */
 export function crumble(live, out) {
-  const { shrink } = live.tables.motion.kinds[String(KIND.CRUMBLING)];
+  const { shrink, shake } = live.tables.motion.kinds[String(KIND.CRUMBLING)];
   const { crumbling, breaking } = live.world;
   for (const [key, block] of crumbling) {
     if (block.type === BROKEN) {
       block.type = BREAKING;
+      startShake(live, shake);
       out.push({ broke: { key } });
     }
     if (block.type !== BREAKING) continue;

@@ -603,6 +603,8 @@ The break makes each of the block's six faces active, drawn whatever stands beyo
 
 The type is then set to 3 (`0x8002b57c`, `0x8002b580`), the screen's shake started with a magnitude of 4, 36 frames and the mask 3, both axes (`0x8002b584` to `0x8002b590`, "The crumbling block" below), and the pad shuddered (`0x8002b594` to `0x8002b5ac`); the break's sound is the hazards', played as they score the block.
 
+While the ball stands on the block the hazards write 2 into the word again on every frame and the routine breaks the block again, so the shake's timer is put back to 36 and the pad shuddered on each of those frames, and the shake runs down only once the ball has left the block or the block has gone.
+
 While `f2` is not below nothing the six faces are laid again by the face function of each direction, from the table at `0x800a3228`, with the quad, `f2` as the width, the cell's coordinates times 512 and a texture turn of nothing (`0x8002b5d4` to `0x8002b60c`); each takes half the width off every coordinate and lays its corners from there to there plus the width (`0x800297fc` to `0x80029818`, `0x8002987c`), so the six are the faces of a cube of side `f2` about the cell's point, the block's middle, as a whole block is the width 512 about the same point, and a breaking block shrinks about its middle, its textures squashed onto the smaller faces, the neighbours' faces behind it showing.
 
 A block takes 15 or 16 frames at full speed, so a ball rolling on crosses a crumbling block before it goes, and one that stops at its middle, eight frames in, has about a dozen frames left.
@@ -1104,7 +1106,7 @@ The step (`0x80022814`), which the level's frame loop runs on every pass, after 
 
 Else, where the mask has bit 1, it draws from the game's dice a number under twice the magnitude (`0x80022894`, `0x80022898`), takes the magnitude off it, multiplies by the timer and divides by the divisor, cut toward nothing (`0x800228a4` to `0x800228bc`), adds that to the display's x origin, clamps the sum at nothing (`0x800228cc` to `0x800228d8`) and writes it as the display's x (`0x800228fc`); where the mask has bit 2 it does the same for y (`0x80022908` to `0x80022980`).
 
-The origin words (`0x800a5ee8`, `0x800a5eec`) are the player's screen-position setting, nothing by default, so by default a negative offset is clamped away and the picture jolts right and down alone, by at most the magnitude less one of the game's 320 by 240 pixels on the first frame and less as the timer runs down, 3 pixels for the break and 2 for the landing.
+The origin words (`0x800a5ee8`, `0x800a5eec`) are the player's screen-position setting, laid at nothing as the game starts on this disc and the Japanese (`0x80040024`, `0x8004002c`; `SCPS_100.64`, `0x8003fbb0`, `0x8003fbb8`) and by the setting's reset (`0x8004865c`, `0x80048664`), so by default a negative offset is clamped away here and the picture jolts right and down alone, by at most the magnitude less two of the game's 320 by 240 pixels on the first frame, the timer having lost one before the first draw, and less as the timer runs down, 2 pixels for the break and 1 for the landing.
 
 The step's draws come before the walkers' and the effects' on the same frame ("The captivators" below), two a frame over the break's 36 frames and one over the landing's 24, so a shake shifts the dice's sequence for everything drawn after it.
 
@@ -1116,7 +1118,7 @@ On the PAL disc the origin down is laid at 18 as the game starts (`SCES_010.00`,
 
 On the PAL disc the shake's start and step stand at `0x800230c4` and `0x800230e4` (`SCES_010.00`), laid out as here.
 
-The viewer breaks the block by the same words: the rules keep each crumbling block's type word and size, the hazards write the word under the ball and the frame's last part breaks, shrinks and empties the block as the routine does ("The blocks under the ball" above), and the map draws a block that is gone no longer, with a burst of dust where it stood, while a breaking block is drawn whole until it goes, the faces its neighbours show toward it stay hidden and the screen stands still.
+The viewer breaks the block by the same words: the rules keep each crumbling block's type word and size, the hazards write the word under the ball and the frame's last part breaks, shrinks and empties the block as the routine does ("The blocks under the ball" above), and the map draws a block that is gone no longer, with a burst of dust where it stood, while a breaking block is drawn whole until it goes, the faces its neighbours show toward it stay hidden, and the shake runs in the map's words alone, started by the break, afresh on every frame the ball stands on the breaking block, and by the −66 landing with the table's figures and stepped from the game's dice as the step is, the picture standing still.
 
 ## The moving platform
 
@@ -1194,7 +1196,7 @@ In the loop the balls draw in the order the loader lifted them, record by record
 
 So a level watched without playing walks its balls by their own draws alone, 1, 2, 3, 2, 3, 1, 2, 2, 2, 3, 0 and on from the start, the same on every play, and play on OBJ LEVEL bore that out move for move, 58 moves of the top ball from the start until the time ran out; a pickup collected, a shake or a pause on the way can shift the sequence for everything after, as far as the three routines' gates show.
 
-The table ships the seed, the multiplier and the addend as `dice`, from which the viewer draws the wandering balls' ways and a burst's angles where a row asks a draw, and from which the game's shake draws too, which the viewer does not, so after a break or a −66 landing its walkers' ways diverge from the game's.
+The table ships the seed, the multiplier and the addend as `dice`, from which the viewer draws the wandering balls' ways and a burst's angles where a row asks a draw, and from which the map's shake draws as the game's does, so its walkers' ways after a break or a −66 landing are the game's.
 
 ## The effects
 
@@ -1366,7 +1368,7 @@ Of the body and the hop: the draw's marks for the Simon rooms and the bouncy pil
 
 Whether the game's ball is seen to sink under a held Cross, a fifth of a block after eight hops, snapping back with a squash over a lone block and sinking on over a deeper floor until the 26th hop lays it inside its block, is for the emulator to show; the draw takes the position at 60 with the squash's offset and the word at 84 (`0x800314c4`, `0x800314f0`), so the listing says it is seen.
 
-`0x8004ddbc`, which the button's launch calls with 10, a landing and a hop's end with 102 and a capture with 113, and which takes a number under 120 to a table (`0x8003b280`, `0x80030c6c`, `0x800301f4`, `0x800367c0`, `0x8004dddc`), is the sound call, and `0x800227f4` the screen's shake, read in "The crumbling block" above; the map plays no sound and shudders no pad, the button's shudder included (`0x8003b298`).
+`0x8004ddbc`, which the button's launch calls with 10, a landing and a hop's end with 102 and a capture with 113, and which takes a number under 120 to a table (`0x8003b280`, `0x80030c6c`, `0x800301f4`, `0x800367c0`, `0x8004dddc`), is the sound call, and `0x800227f4` the screen's shake, read in "The crumbling block" above; the map plays no sound and shudders no pad, the button's shudder included (`0x8003b298`), and runs the shake in its words from the game's dice, the picture standing still.
 
 Why the hop reads a row ahead of the jump is not traced, nor what the word at the record's start selects, 3 at a jump's start and in a fall, 1 at a hop's start and a turn, 2 at a roll's start and 0 at a landing, a hop's end and a teleport's send.
 

@@ -1,9 +1,10 @@
 import { TYPE } from "../format/lattice.js";
 // The draw's passes over the game's words: the step over the screen's words as each pass ends and
-// the effects' run after it, the bursts a pickup and a teleporter start, the flash a send and a
-// level with no key start, the blanks a pass waits, the view's roll by the pill's word, the
-// invincible ball's glow by its counter and the sunglasses' blink, which says whether every
-// invisible block is seen.
+// the effects' run after it, the screen's shake a break and the thud landing start, stepped before
+// the level's routine, the bursts a pickup and a teleporter start, the flash a send and a level
+// with no key start, the blanks a pass waits, the view's roll by the pill's word, the invincible
+// ball's glow by its counter and the sunglasses' blink, which says whether every invisible block
+// is seen.
 
 export const lastsOf = (live, type) => live.tables.motion.types[String(type)].lasts;
 const flashOf = (live, mode) => live.tables.motion.effects.flash[mode];
@@ -114,6 +115,40 @@ export function startFlash(live, mode) {
   const w = live.words;
   w.flashing = mode;
   w.flash = flashOf(live, mode).from;
+}
+
+/** The game's start of the screen's shake by `entry`, the table's magnitude, frames and axes
+    mask: the frames kept as the timer and again as the divisor, a shake already running taking
+    the new figures. */
+export function startShake(live, { magnitude, frames, axes }) {
+  live.words.shake = { magnitude, left: frames, over: frames, axes };
+}
+
+/** The game's step of the screen's shake, run first in the frame, before the level's routine,
+    and on every pass of the ending's view: the timer loses one, and below nothing the shake is
+    let go and the shift put back; else for each axis of the mask, x then y, a draw under twice
+    the magnitude from the game's dice, less the magnitude, times the timer over the divisor, cut
+    toward nothing and added to the display's origin along that axis, the sum clamped at
+    nothing, is the display's word, and the shift is that word less the origin, in the game's
+    screen pixels, so an origin at nothing jolts one way alone; an axis the mask lacks reads
+    nothing. */
+export function shaken(live) {
+  const w = live.words;
+  const s = w.shake;
+  if (!s) return;
+  s.left -= 1;
+  if (s.left < 0) {
+    w.shake = null;
+    w.shift = [0, 0];
+    return;
+  }
+  const { origin } = live.tables.motion.play.screen;
+  w.shift = [1, 2].map((bit, i) => {
+    if (!(s.axes & bit)) return 0;
+    const draw = live.world.roll(2 * s.magnitude);
+    const offset = Math.trunc(((draw - s.magnitude) * s.left) / s.over);
+    return Math.max(0, origin[i] + offset) - origin[i];
+  });
 }
 
 /** The draw's step over the screen's words, run as each pass ends, the ending's view's passes

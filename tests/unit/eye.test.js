@@ -24,7 +24,7 @@ import {
   viewNow,
   viewOf,
 } from "../../public/js/play/eye.js";
-import { rockOf } from "../../public/js/play/passes.js";
+import { rockOf, startShake } from "../../public/js/play/passes.js";
 import { LETHARGY, SIMON, begin, level, motion, play, row, start } from "./rules-level.js";
 
 const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
@@ -202,6 +202,21 @@ test("each frame of the ending's view turns the yaw by the game's third angle an
   assert.equal(state.cam.pitch, 34.296875);
   while (!ran) ran = turning(live);
   assert.equal(live.ended.frame, 341);
+});
+
+test("each frame of the ending's view steps the screen's shake, so a shake started on the level's last frames runs on through the view until its frames run out", () => {
+  fresh();
+  const live = ended(playOn(levelNamed("LEVEL 1")));
+  frameEnding(live, 600);
+  const { shake } = motion.kinds["6"];
+  startShake(live.run, shake);
+  turning(live);
+  assert.equal(live.run.words.shake.left, shake.frames - 1);
+  for (let i = 1; i < shake.frames; i++) turning(live);
+  assert.equal(live.run.words.shake.left, 0);
+  turning(live);
+  assert.equal(live.run.words.shake, null);
+  assert.deepEqual(live.run.words.shift, [0, 0]);
 });
 
 test("the view behind the ball stands at yaw 20 and pitch 30 the first time it is framed and keeps them as turned after, zoomed to eight blocks across the smaller of the view's width and what the strip leaves free, within its bounds, and panned so the ball stands a fifth below the middle of the free height", () => {

@@ -716,6 +716,8 @@ Play mode loads the same way, under `js/play/`, when the ball is first asked for
 
 The frame run clears the last frame's landing as it begins.
 
+The frame run says, on a landing on a block, the speed the ball came down at along the normal, which a landing on a platform leaves unsaid.
+
 The frame run holds the ball's state, its move and its landings still while the ball is frozen, a ramp, the look and the spin going on.
 
 The frame run drops a ball at rest, or one rolling between the roll's bounds, where its last read of the cells found no block under it, which is the frame after the block has gone.
@@ -750,6 +752,7 @@ A caller may place the ball at rest on any face, its ramp and its look gone, and
 
 `js/play/rules.js` is the game's frame over the ball's motion and the level as play holds it, pure too, one game frame in the order the executable runs it:
 
+- The screen's shake stepped, which the game's loop draws before the level's routine and which alone runs on once the outcome stands, as the loop draws it outside that routine.
 - The level's clock.
 - The guard a level that follows an ending opens with.
 - The wait that holds the pad off and clears the ball's requests.
@@ -759,6 +762,7 @@ A caller may place the ball at rest on any face, its ramp and its look gone, and
 - The pills' words run down.
 - The devices under the ball and a riding ball's travel taken afresh from its platform's travel.
 - The ball run, reading what it stands on where the game does.
+- The screen's shake started by a block landing at the fall's top speed, with the ball's `fall.shake`, along the screen's y axis alone.
 - The ball's contact with what stands about it.
 - The endings, with a run's start, its start again after an ending and the return of a lost ball, the game carried through the start again.
 
@@ -771,7 +775,7 @@ The module has every count and threshold read from the motion table, the clock's
 - What harms it, a lit beam in its own cell by the last frame's read of the cells about it, on the ground or in the air, fire under it on the ground, heating it a frame and by the landing's measure on the frame after a landing, and cooling off fire, acid on the ground, the spikes, and the moving spikes on the frames the table says their flag held the deadly value, read as the game's hazards read it, what the last frame's step left, each death the countdown the game sets, with its ending and its wait, the ball frozen and marked where the game freezes and marks it and its speeds dropped where the game drops them, refused while a wait runs or the invincibility pill stands, with the burning ball's swell and the acid's melt growing in the wait's slot.
 - The arrow under the ball, on the ground or in the air, whose way is laid from its facing as the start's heading is and which drops the forward request where the ball's heading differs from it, the strip told where the ball is at rest, the way standing for the jump's wall test while the ball is in the air over an arrow and cleared on the ground.
 - Ice under the ball, which makes the forward request and drops a turn's request on every frame and on the ground cools the heat by the chill and grows the cold, set back past its top, the cold waning off ice.
-- The crumbling block under the ball on the ground, scored while its word is whole and written broken on every frame, and the frame's last part, where the game's draw runs the crumbling blocks, which breaks a broken block, shrinks a breaking one a frame, keeping its size for the frame to draw it at, and empties its cell as the size goes negative, so that nothing stands or rolls on it and the frame draws it no longer.
+- The crumbling block under the ball on the ground, scored while its word is whole and written broken on every frame, and the frame's last part, where the game's draw runs the crumbling blocks, which breaks a broken block, starting the screen's shake afresh with the table's figures, shrinks a breaking one a frame, keeping its size for the frame to draw it at, and empties its cell as the size goes negative, so that nothing stands or rolls on it and the frame draws it no longer.
 - The captivators' hit test that follows the routine every frame the pill does not stand, over each walker where the rules have stepped it and each other entry where the loader stands it, the corkscrew's point risen with its bounce as the frame draws it, a ball rolling under it while it is up and a jump over it caught then, from the ball's position words as they stand, so that a ball riding a platform is caught by nothing, as in the game, which catches the ball over any countdown but its own countdown, the captivators standing while it stands.
 - The switch thrown as the ball comes within the table's band of its middle along and across, which turns its circuit over through the map's own presses as the panel's button does.
 - The teleporter that is on counting its frames while the ball stands within its band, the wait held and the ball's requests cleared, and then placing the ball at rest on the face its slot names, facing as that teleporter does.
@@ -780,6 +784,8 @@ The module has every count and threshold read from the motion table, the clock's
 `js/play/game.js` is the game's words, pure too: the mode a level is played in and where it stands in the game's count, the run's total and its fruit, settled on the frame an ending stands, the slot the game loads next, and the Simon rooms' match, its rounds, its two players' turns and points, the room it goes on to and the moves the rooms read from the pad, pack and hold to the sequence.
 
 `js/play/passes.js` is the draw's passes, pure too: the lethargy pill's screen, its mode moved on and its fade stepped as each pass ends, the effects' rows, each burst a pickup or the teleporter starts drawing the row of its frame count and a world effect's light in the colour its particles sum to, the flash a send and a level with no key start, waning by its step as each pass ends, the blanks the frame loop waits before a pass while the pill's screen or the teleport's flash stands, the view's roll by the pill's word, the invincible ball's glow by its counter, and whether every invisible block is seen, while the sunglasses' word stands and in the on spells of their blink.
+
+The screen's shake is among its words too, which a break and the thud landing start with the table's figures, its timer losing one a frame and its shift along each axis of its mask drawn from the game's dice, the draw less the magnitude times the timer over the frames added to the display's origin, the sum clamped at nothing and the origin taken off again, let go as the timer passes nothing.
 
 ### Pad words
 
@@ -820,6 +826,7 @@ The module has every count and threshold read from the motion table, the clock's
 
 - Once the level has ended, by its clock, the ball lost off the lattice, a death, the exit or the last block of a level with no key, it shows no ball, reads no key, lets the camera's frame go and turns the view about the level's middle by the game's own angles, the yaw by the third of the three, which the game turns about the lattice's upright, and the pitch by the first, which it turns about the view's own across, the second, whose axis the orbit has not, left out, and with the zoom standing in for the game's eye, since the orbit has none, the eye standing the level's radius and the table's offset off the middle and swinging its reach nearer and further by turns, and the zoom following how large the level would look from it, for the length of one swing of an arcade level's eye, whichever figures the level's own eye swings by, or until Space, Enter or a tap of the pad starts the level again, the view easing back behind the ball.
 - It takes the camera through the frame, the anchored target and the parked view in `js/viewer/state.js` and frames it in the fit's place through `js/viewer/chrome/navigate.js`.
+- Each frame of the ending's view steps the screen's shake and then the screen's words, as the game's loop and its draw run them on through an ending.
 
 ### The pill's screen
 
