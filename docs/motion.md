@@ -1374,6 +1374,8 @@ Whether the game's ball is seen to sink under a held Cross, a fifth of a block a
 
 `0x8004ddbc`, which the button's launch calls with 10, a landing and a hop's end with 102 and a capture with 113, and which takes a number under 120 to a table (`0x8003b280`, `0x80030c6c`, `0x800301f4`, `0x800367c0`, `0x8004dddc`), is the sound call, and `0x800227f4` the screen's shake, read in "The crumbling block" above; the map plays no sound and shudders no pad, the button's shudder included (`0x8003b298`), and shakes the screen as the game does, from the game's dice.
 
+The shake's step writes the display's word along an axis of its mask alone, into the buffer the frame draws to (`0x800228fc`, `0x80022980`), and puts both axes of both buffers back to the origin as the timer passes nothing (`0x80022858` to `0x80022870`), so where a −66 landing's shake, down alone, starts while a break's runs, which a crumbling block with a block one below it gives, the game's picture stands across at what the break's last two draws left in the two buffers, one on each frame, until the timer passes nothing; the map reads an axis the mask lacks as nothing, so its picture stands still across from the landing's shake's first frame.
+
 Why the hop reads a row ahead of the jump is not traced, nor what the word at the record's start selects, 3 at a jump's start and in a fall, 1 at a hop's start and a turn, 2 at a roll's start and 0 at a landing, a hop's end and a teleport's send.
 
 What a jump over flat ground shows otherwise than the game's jump, the landing cell and the 31 frames being as in the game, is for play to show.
