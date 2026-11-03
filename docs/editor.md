@@ -259,7 +259,8 @@ Both take `skins.hides` of `public/objects.json` for the face count, and without
 - A switch whose colour has nothing to switch.
 - A key with no exit, hidden or not.
 - The hedgehog, type 42, untested in play.
-- A counter above the disc's own maximum, below.
+
+The most on the disc, in the table below, is read by the overview's counts line alone, which marks a count above it; the checks say nothing of a count the game has room for.
 
 | counter | what is counted | cap | most on the disc |
 | --- | --- | --- | --- |
@@ -500,6 +501,8 @@ How the level plays, its counts against the caps and the disc's maxima and `vali
 The note floats over the map, so the counts and the findings stand under one summary line that tallies the errors and the warnings, a `details` element open where the sidebar stands beside the map and closed where it overlays it, by `sidebarOverlays` of `public/js/viewer/chrome/sidebar.js`, until the author opens it, which is kept for the session.
 
 The plays-as sentence stands whole above the fold, since it is what tells an author what a level with no key does, and the counts line holds every capped counter, those at nought dimmed, since a counter that appears only once it is above nought reads as a surprise, leaving out only the faces and the blocks where `counts` has them uncounted, null, for want of the face count.
+
+A count above the most any level on the disc has reads amber on the counts line, by `DISC_MAX` of `public/js/format/kwl.js`, which a unit test holds to the levels' counts, and raises no finding, since the game has room for it up to its cap.
 
 ### The focus, the face and the helpers
 

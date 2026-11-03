@@ -14,7 +14,6 @@ import {
   DEFAULT_SPEED,
   DEFAULT_TIME,
   DIM_AT_ONCE,
-  DISC_MAX,
   FACES,
   FACING_NEEDED,
   FACING_TYPES,
@@ -492,9 +491,6 @@ export function validate(project, hides, names = {}) {
     warn("a key and no exit");
   for (const [what, cap] of Object.entries(CAPS))
     if (n[what] !== null && n[what] > cap) err(overCap(what, n[what]));
-  for (const [what, most] of Object.entries(DISC_MAX))
-    if (n[what] !== null && n[what] > most)
-      warn(`${n[what]} ${COUNTER_WORDS[what]}, more than any level on the disc`);
   return [...out.filter((f) => f.level === ERROR), ...out.filter((f) => f.level !== ERROR)];
 }
 

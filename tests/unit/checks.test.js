@@ -406,7 +406,7 @@ test("the block cap", () => {
   const n = counts(project(blocks), HIDES);
   assert.deepEqual([n.blocks, n.faces], [256, 576]);
   assert.deepEqual(errors(blocks), []);
-  assert.ok(warnings(blocks).includes("256 blocks, more than any level on the disc"));
+  assert.deepEqual(warnings(blocks), []);
   blocks.push(plain([17, 1, 17]));
   assert.ok(errors(blocks).includes("257 blocks, over the 256 the game has room for"));
 });
@@ -560,9 +560,6 @@ test("the object cap counts what the loader numbers", () => {
   blocks.push(plain([20, 25, 5], 0, { 0: coin, 1: coin, 2: coin }));
   assert.equal(counts(project(blocks), HIDES).objects, 255);
   assert.deepEqual(errors(blocks), []);
-  assert.ok(
-    warnings(blocks).includes("255 objects the loader numbers, more than any level on the disc"),
-  );
   blocks.push(plain([22, 25, 5], 0, { 0: coin }));
   assert.ok(
     errors(blocks).includes("256 objects the loader numbers, over the 255 the game has room for"),
@@ -580,7 +577,6 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
   });
   const rails = Array.from({ length: 8 }, (_, i) => rail(i));
   assert.deepEqual(errors(withStart(rails)), []);
-  assert.ok(warnings(withStart(rails)).includes("8 platforms, more than any level on the disc"));
   assert.ok(
     errors(withStart([...rails, rail(8)])).includes(
       "9 platforms, over the 8 the game has room for",
@@ -595,17 +591,7 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
   const n = counts(project(withStart(vanishing)), HIDES);
   assert.deepEqual([n.vanishing, n.records, n.blocks], [64, 65, 65]);
   assert.deepEqual(errors(withStart(vanishing)), []);
-  assert.ok(
-    warnings(withStart(vanishing)).includes("64 vanishing blocks, more than any level on the disc"),
-  );
-  assert.ok(
-    !warnings(withStart(vanishing.slice(0, 14))).some((w) => w.includes("vanishing, more")),
-  );
-  assert.ok(
-    warnings(withStart(vanishing.slice(0, 15))).includes(
-      "15 vanishing blocks, more than any level on the disc",
-    ),
-  );
+  assert.deepEqual(warnings(withStart(vanishing.slice(0, 15))), []);
   assert.ok(
     errors(withStart([...vanishing, { cell: [1, 24, 5], kind: 7, phase: 0 }])).includes(
       "65 vanishing blocks, over the 64 the game has room for",
@@ -617,14 +603,7 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
     kind: 6,
   }));
   assert.deepEqual(errors(withStart(crumbling)), []);
-  assert.ok(
-    !warnings(withStart(crumbling.slice(0, 33))).some((w) => w.includes("crumbling, more")),
-  );
-  assert.ok(
-    warnings(withStart(crumbling.slice(0, 34))).includes(
-      "34 crumbling blocks, more than any level on the disc",
-    ),
-  );
+  assert.deepEqual(warnings(withStart(crumbling.slice(0, 34))), []);
   assert.ok(
     errors(withStart([...crumbling, { cell: [1, 24, 5], kind: 6 }])).includes(
       "65 crumbling blocks, over the 64 the game has room for",
@@ -637,9 +616,7 @@ test("the platform, vanishing, crumbling and captivator caps", () => {
   captive.push(plain([12, 20, 5], 0, { 0: wandering, 1: wandering }));
   assert.equal(counts(project(withStart(captive)), HIDES).captivators, 32);
   assert.deepEqual(errors(withStart(captive)), []);
-  assert.ok(
-    warnings(withStart(captive)).includes("32 captivators, more than any level on the disc"),
-  );
+  assert.deepEqual(warnings(withStart(captive)), []);
   captive[5].faces[2] = wandering;
   assert.ok(
     errors(withStart(captive)).includes("33 captivators, over the 32 the game has room for"),
@@ -657,9 +634,6 @@ test("the light and the moving spikes caps", () => {
   );
   assert.equal(counts(project(blocks), HIDES).lights, 32);
   assert.deepEqual(errors(blocks), []);
-  assert.ok(
-    warnings(blocks).includes("32 devices that cast a light, more than any level on the disc"),
-  );
   blocks[6].faces[2] = { type: SWITCH, variant: 2 };
   assert.ok(
     errors(blocks).includes("33 devices that cast a light, over the 32 the game has room for"),
@@ -678,11 +652,7 @@ test("the light and the moving spikes caps", () => {
   );
   assert.equal(counts(project(spikes), HIDES).spikes, 64);
   assert.deepEqual(errors(spikes), []);
-  assert.ok(warnings(spikes).includes("64 moving spikes, more than any level on the disc"));
-  assert.ok(!warnings(spikes.slice(0, 4)).some((w) => w.includes("moving spikes, more")));
-  assert.ok(
-    warnings(spikes.slice(0, 5)).includes("24 moving spikes, more than any level on the disc"),
-  );
+  assert.deepEqual(warnings(spikes.slice(0, 5)), []);
   spikes[11].faces[4] = { type: 11, variant: 0 };
   assert.ok(errors(spikes).includes("65 moving spikes, over the 64 the game has room for"));
 });

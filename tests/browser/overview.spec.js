@@ -233,9 +233,7 @@ test("a counter reads amber past the most any level on the disc has and red past
   await fill(page, [START, ...vanishing(15)]);
   await expect(counts.locator(".high")).toHaveText(["15 of 64 vanishing blocks"]);
   await expect(counts.locator(".over")).toHaveCount(0);
-  await expect(
-    findings.filter({ hasText: "warning: 15 vanishing blocks, more than any level on the disc" }),
-  ).toHaveCount(1);
+  await expect(findings).toHaveCount(0);
   await fill(page, [START, ...vanishing(65)]);
   await expect(counts.locator(".over")).toHaveText(["65 of 64 vanishing blocks"]);
   await expect(counts.locator(".high")).toHaveCount(0);

@@ -142,12 +142,10 @@ NEVER_SET = [-1] * (WORDS - SLOT * FACES - 3)
 FRAME_WORD = 8          # f8, the draw command's frame, 0 on every object
 SETTINGS_CELL = (0, 0, 0)
 
-# What the game's memory holds room for, and the most the disc asks of it.
+# What the game's memory holds room for.
 CAPS = {"records": 123, "faces": 768, "blocks": 256, "objects": 255, "platforms": 8,
         "vanishing": 64, "crumbling": 64, "captivators": 32, "lights": 32, "spikes": 64}
 LENGTH_CAP = 7       # the longest run the ride's grid holds a platform of
-DISC_MAX = {"records": 75, "cells": 178, "faces": 766, "blocks": 178, "objects": 81, "platforms": 4,
-            "lasers": 12, "vanishing": 14, "crumbling": 33, "captivators": 12, "keys": 4, "lights": 19, "spikes": 19}
 COUNTED_KINDS = frozenset({0, 1, 2, 4, CRUMBLING_KIND, VANISHING_KIND})
 
 ERROR, WARNING = "error", "warning"
@@ -1209,8 +1207,8 @@ TABLE_COUNTERS = ("faces", "blocks")   # the counters that need the skins table
 
 
 def counts(project, hides):
-    """The counters the caps and the disc's maxima are read against; without the
-    skins table the faces and the blocks are None."""
+    """The counters the caps are read against; without the skins table the
+    faces and the blocks are None."""
     blocks = _as_page(project["blocks"])
     at = {tuple(b["cell"]): b for b in blocks}
     kinds = _kinds_at(blocks)
@@ -1400,9 +1398,6 @@ def validate(project, hides):
     for what, cap in CAPS.items():
         if n[what] is not None and n[what] > cap:
             err(_over_cap(what, n[what]))
-    for what, most in DISC_MAX.items():
-        if n[what] is not None and n[what] > most:
-            warn(f"{n[what]} {COUNTER_WORDS[what]}, more than any level on the disc")
     out.sort(key=lambda f: f[0] != ERROR)
     return out
 

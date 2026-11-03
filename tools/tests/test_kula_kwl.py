@@ -18,12 +18,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_kwl import (  # noqa: E402
     BONUS_UNDRAWN_KINDS,
     BONUS_UNDRAWN_TYPES,
-    COUNTERS,
     DATA,
     COPYCAT_PACK,
     COPYCAT_SLOTS,
     DIGESTS,
-    DISC_MAX,
     FINAL_SLOTS,
     FORMAT,
     HOSTILE,
@@ -1079,7 +1077,7 @@ class Validates(unittest.TestCase):
         n = counts(project(blocks), HIDES)
         self.assertEqual((n["blocks"], n["faces"]), (256, 576))
         self.assertEqual(self.errors(blocks), [])
-        self.assertIn("256 blocks, more than any level on the disc", self.warnings(blocks))
+        self.assertEqual(self.warnings(blocks), [])
         blocks.append(plain((17, 1, 17)))
         self.assertIn("257 blocks, over the 256 the game has room for", self.errors(blocks))
 
@@ -1171,7 +1169,6 @@ class Validates(unittest.TestCase):
         blocks.append(plain((20, 25, 5), t0=coin, t1=coin, t2=coin))
         self.assertEqual(counts(project(blocks), HIDES)["objects"], 255)
         self.assertEqual(self.errors(blocks), [])
-        self.assertIn("255 objects the loader numbers, more than any level on the disc", self.warnings(blocks))
         blocks.append(plain((22, 25, 5), t0=coin))
         self.assertIn("256 objects the loader numbers, over the 255 the game has room for", self.errors(blocks))
 
@@ -1184,23 +1181,19 @@ class Validates(unittest.TestCase):
 
         rails = [rail(i) for i in range(8)]
         self.assertEqual(self.errors(with_start(rails)), [])
-        self.assertIn("8 platforms, more than any level on the disc", self.warnings(with_start(rails)))
         self.assertIn("9 platforms, over the 8 the game has room for", self.errors(with_start(rails + [rail(8)])))
 
         vanishing = [{"cell": [1 + i % 32, 20 + 2 * (i // 32), 5], "kind": 7, "phase": 0} for i in range(64)]
         n = counts(project(with_start(vanishing)), HIDES)
         self.assertEqual((n["vanishing"], n["records"], n["blocks"]), (64, 65, 65))
         self.assertEqual(self.errors(with_start(vanishing)), [])
-        self.assertIn("64 vanishing blocks, more than any level on the disc", self.warnings(with_start(vanishing)))
-        self.assertFalse(any("vanishing, more" in w for w in self.warnings(with_start(vanishing[:14]))))
-        self.assertIn("15 vanishing blocks, more than any level on the disc", self.warnings(with_start(vanishing[:15])))
+        self.assertEqual(self.warnings(with_start(vanishing[:15])), [])
         self.assertIn("65 vanishing blocks, over the 64 the game has room for",
                       self.errors(with_start(vanishing + [{"cell": [1, 24, 5], "kind": 7, "phase": 0}])))
 
         crumbling = [{"cell": [1 + i % 32, 20 + 2 * (i // 32), 5], "kind": 6} for i in range(64)]
         self.assertEqual(self.errors(with_start(crumbling)), [])
-        self.assertFalse(any("crumbling, more" in w for w in self.warnings(with_start(crumbling[:33]))))
-        self.assertIn("34 crumbling blocks, more than any level on the disc", self.warnings(with_start(crumbling[:34])))
+        self.assertEqual(self.warnings(with_start(crumbling[:34])), [])
         self.assertIn("65 crumbling blocks, over the 64 the game has room for",
                       self.errors(with_start(crumbling + [{"cell": [1, 24, 5], "kind": 6}])))
 
@@ -1209,7 +1202,7 @@ class Validates(unittest.TestCase):
         captive.append(plain((12, 20, 5), t0=wandering, t1=wandering))
         self.assertEqual(counts(project(with_start(captive)), HIDES)["captivators"], 32)
         self.assertEqual(self.errors(with_start(captive)), [])
-        self.assertIn("32 captivators, more than any level on the disc", self.warnings(with_start(captive)))
+        self.assertEqual(self.warnings(with_start(captive)), [])
         captive[5]["faces"]["2"] = wandering
         self.assertIn("33 captivators, over the 32 the game has room for", self.errors(with_start(captive)))
 
@@ -1222,7 +1215,6 @@ class Validates(unittest.TestCase):
         blocks.append(plain((12, 20, 5), t0=switch(0), t1=switch(1)))
         self.assertEqual(counts(project(blocks), HIDES)["lights"], 32)
         self.assertEqual(self.errors(blocks), [])
-        self.assertIn("32 devices that cast a light, more than any level on the disc", self.warnings(blocks))
         blocks[6]["faces"]["2"] = switch(2)
         self.assertIn("33 devices that cast a light, over the 32 the game has room for", self.errors(blocks))
 
@@ -1232,9 +1224,7 @@ class Validates(unittest.TestCase):
         spikes.append(plain((22, 20, 5), **{f"t{j}": {"type": 11, "variant": 0} for j in range(4)}))
         self.assertEqual(counts(project(spikes), HIDES)["spikes"], 64)
         self.assertEqual(self.errors(spikes), [])
-        self.assertIn("64 moving spikes, more than any level on the disc", self.warnings(spikes))
-        self.assertFalse(any("moving spikes, more" in w for w in self.warnings(spikes[:4])))
-        self.assertIn("24 moving spikes, more than any level on the disc", self.warnings(spikes[:5]))
+        self.assertEqual(self.warnings(spikes[:5]), [])
         spikes[11]["faces"]["4"] = {"type": 11, "variant": 0}
         self.assertIn("65 moving spikes, over the 64 the game has room for", self.errors(spikes))
 
@@ -1256,14 +1246,6 @@ class Validates(unittest.TestCase):
         self.assertEqual(self.errors(rail(0)), ["a platform 0 blocks long, which is less than one block"])
         self.assertEqual(self.errors(rail(-3)), ["a platform -3 blocks long, which is less than one block"])
         self.assertFalse(any("blocks long" in w for w in self.warnings(rail(0))))
-
-    def test_the_disc_maxima_are_the_most_any_shipped_level_counts(self):
-        most = dict.fromkeys(COUNTERS, 0)
-        for l in json.loads(DATA.read_text())["levels"]:
-            n = counts(project_of(l), HIDES)
-            for what in COUNTERS:
-                most[what] = max(most[what], n[what])
-        self.assertEqual(DISC_MAX, most)
 
     def test_what_the_format_takes_and_what_it_warns_about(self):
         blocks = [plain((5, 5, 5), t0=start(), t1={"type": 3}, t2={"type": COIN, "variant": 7},
