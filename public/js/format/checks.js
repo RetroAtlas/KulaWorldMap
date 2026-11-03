@@ -277,10 +277,10 @@ function validateOutlook(cell, j, kinds, beams, warn) {
 }
 
 const lower = (name) => name[0].toLowerCase() + name.slice(1);
-export const listed = (items) =>
+const listed = (items) =>
   items.length > 1 ? `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}` : items[0];
 /** A type as a finding names it, with the article: by its name, else by its number. */
-export const typeWord = (type, names) => {
+const typeWord = (type, names) => {
   const name = names.entry?.({ face: 0, type });
   return name ? `the ${lower(name)}` : `type ${type}`;
 };
