@@ -185,7 +185,9 @@ On the PAL disc a hop ends at the face's level and falls from there where nothin
 
 On the PAL disc the fire's, the invisible block's and the swirl's cycles run at that disc's own counts.
 
-Play's clock follows the disc shown, filled as that disc's game fills it and shown as its HUD shows it, so a 99-second level opens at 83 on the US disc, whose clock runs 82.5 seconds, at 100 on the PAL disc, where it runs its 99, and at 120 on the Japanese disc, where every 99-second level runs 119.
+Play's clock follows the disc shown, filled as that disc's game fills it and shown as its HUD shows it, so a 99-second level opens at 83 on the US disc, whose clock runs 82.5 seconds, at 99 on the PAL disc, where it runs its 99, and at 119 on the Japanese disc, where every 99-second level runs 119.
+
+The PAL and Japanese HUDs read 100 and 120 for the one tick the clock is full, before the 99 and 119 a player sees.
 
 On the Japanese disc the ball's breath follows that disc's own count of the clock, measured against 7200 ticks and quickened by a fiftieth of what the clock is short, where the US ball's is measured against 6000 and quickened by a fortieth.
 

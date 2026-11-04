@@ -257,7 +257,7 @@ On the Japanese disc the hourglass's case (`SCPS_100.64`, `0x80039684` to `0x800
 
 Play turns and scores the hourglass by the rules of the disc shown as the level's clock stands, which the start fills by that disc's rules ([motion.md](motion.md)), so taken the moment a 99-second level starts it leaves 1049 ticks and scores 200 on the US disc, 49 ticks and nothing on the PAL disc, whose clock starts at the same 4950, and 59 ticks and nothing on the Japanese disc, whose start fills such a level's clock to 7140, and taken with a tick left it scores 1190, 990 and nothing.
 
-The notes count a take from the level's start rather than from the timer's reading, since the HUD shows one more than the whole seconds its clock holds, 83 as a 99-second level starts on the US disc and 100 on the PAL disc, never 99.
+The notes count a take from the level's start rather than from the timer's reading, since the HUD shows one more than the whole seconds its clock holds and differs by disc, 83 as a 99-second level starts on the US disc, 99 on the PAL disc once its clock has ticked and 119 on the Japanese, so a reading names a moment on one disc alone where the start is one moment on all three.
 
 The notes put that take on a level of the usual length, since 84 of the US disc's 92 levels with an hourglass run 99 seconds and the other 8 run 20 to 35, where a take as the level starts scores 990 down to 840 on that disc and 790 down to 640 on the PAL disc.
 
